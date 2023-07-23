@@ -102,5 +102,4 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(InspectorPlugin, InspectorPluginMain)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_Main);

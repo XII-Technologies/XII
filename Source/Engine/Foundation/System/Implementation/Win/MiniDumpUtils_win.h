@@ -41,11 +41,7 @@ xiiMinWindows::HANDLE xiiMiniDumpUtils::GetProcessHandleWithNecessaryRights(xiiU
   return hProcess;
 }
 
-xiiStatus xiiMiniDumpUtils::WriteProcessMiniDump(
-  const char*                 szDumpFile,
-  xiiUInt32                   uiProcessID,
-  xiiMinWindows::HANDLE       pProcess,
-  struct _EXCEPTION_POINTERS* pExceptionInfo)
+xiiStatus xiiMiniDumpUtils::WriteProcessMiniDump(xiiStringView sDumpFile, xiiUInt32 uiProcessID, xiiMinWindows::HANDLE pProcess, struct _EXCEPTION_POINTERS* pExceptionInfo)
 {
   HMODULE hDLL = ::LoadLibraryA("dbghelp.dll");
 
@@ -71,17 +67,17 @@ xiiStatus xiiMiniDumpUtils::WriteProcessMiniDump(
 
   // Make sure the target folder exists
   {
-    xiiStringBuilder folder = szDumpFile;
+    xiiStringBuilder folder = sDumpFile;
     folder.PathParentDirectory();
     if (xiiOSFile::CreateDirectoryStructure(folder).Failed())
       return xiiStatus("Failed to create output directory structure.");
   }
 
-  HANDLE hFile = CreateFileW(xiiDosDevicePath(szDumpFile), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+  HANDLE hFile = CreateFileW(xiiDosDevicePath(sDumpFile), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 
   if (hFile == INVALID_HANDLE_VALUE)
   {
-    return xiiStatus(xiiFmt("Creating dump file '{}' failed (Error: '{}').", szDumpFile, xiiArgErrorCode(GetLastError())));
+    return xiiStatus(xiiFmt("Creating dump file '{}' failed (Error: '{}').", sDumpFile, xiiArgErrorCode(GetLastError())));
   }
 
   XII_SCOPE_EXIT(CloseHandle(hFile););
@@ -91,8 +87,7 @@ xiiStatus xiiMiniDumpUtils::WriteProcessMiniDump(
   exceptionParam.ExceptionPointers = pExceptionInfo;
   exceptionParam.ClientPointers    = TRUE;
 
-  if (MiniDumpWriteDumpFunc(
-        pProcess, uiProcessID, hFile, (MINIDUMP_TYPE)dumpType, pExceptionInfo != nullptr ? &exceptionParam : nullptr, nullptr, nullptr) == FALSE)
+  if (MiniDumpWriteDumpFunc(pProcess, uiProcessID, hFile, (MINIDUMP_TYPE)dumpType, pExceptionInfo != nullptr ? &exceptionParam : nullptr, nullptr, nullptr) == FALSE)
   {
     return xiiStatus(xiiFmt("Writing dump file failed: '{}'.", xiiArgErrorCode(GetLastError())));
   }
@@ -100,19 +95,19 @@ xiiStatus xiiMiniDumpUtils::WriteProcessMiniDump(
   return xiiStatus(XII_SUCCESS);
 }
 
-xiiStatus xiiMiniDumpUtils::WriteOwnProcessMiniDump(const char* szDumpFile, struct _EXCEPTION_POINTERS* pExceptionInfo)
+xiiStatus xiiMiniDumpUtils::WriteOwnProcessMiniDump(xiiStringView sDumpFile, struct _EXCEPTION_POINTERS* pExceptionInfo)
 {
-  return WriteProcessMiniDump(szDumpFile, GetCurrentProcessId(), GetCurrentProcess(), pExceptionInfo);
+  return WriteProcessMiniDump(sDumpFile, GetCurrentProcessId(), GetCurrentProcess(), pExceptionInfo);
 }
 
-xiiStatus xiiMiniDumpUtils::WriteExternalProcessMiniDump(const char* szDumpFile, xiiUInt32 uiProcessID, xiiMinWindows::HANDLE pProcess)
+xiiStatus xiiMiniDumpUtils::WriteExternalProcessMiniDump(xiiStringView sDumpFile, xiiUInt32 uiProcessID, xiiMinWindows::HANDLE pProcess)
 {
-  return WriteProcessMiniDump(szDumpFile, uiProcessID, pProcess, nullptr);
+  return WriteProcessMiniDump(sDumpFile, uiProcessID, pProcess, nullptr);
 }
 
 #endif
 
-xiiStatus xiiMiniDumpUtils::WriteExternalProcessMiniDump(const char* szDumpFile, xiiUInt32 uiProcessID)
+xiiStatus xiiMiniDumpUtils::WriteExternalProcessMiniDump(xiiStringView sDumpFile, xiiUInt32 uiProcessID)
 {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   HANDLE hProcess = xiiMiniDumpUtils::GetProcessHandleWithNecessaryRights(uiProcessID);
@@ -122,14 +117,14 @@ xiiStatus xiiMiniDumpUtils::WriteExternalProcessMiniDump(const char* szDumpFile,
     return xiiStatus("Cannot access process for mini-dump writing (PID invalid or not enough rights).");
   }
 
-  return WriteProcessMiniDump(szDumpFile, uiProcessID, hProcess, nullptr);
+  return WriteProcessMiniDump(sDumpFile, uiProcessID, hProcess, nullptr);
 
 #else
   return xiiStatus("Not implemented on UWP");
 #endif
 }
 
-xiiStatus xiiMiniDumpUtils::LaunchMiniDumpTool(const char* szDumpFile)
+xiiStatus xiiMiniDumpUtils::LaunchMiniDumpTool(xiiStringView sDumpFile)
 {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   xiiStringBuilder sDumpToolPath = xiiOSFile::GetApplicationDirectory();
@@ -144,7 +139,7 @@ xiiStatus xiiMiniDumpUtils::LaunchMiniDumpTool(const char* szDumpFile)
   procOpt.m_Arguments.PushBack("-PID");
   procOpt.AddArgument("{}", xiiProcess::GetCurrentProcessID());
   procOpt.m_Arguments.PushBack("-f");
-  procOpt.m_Arguments.PushBack(szDumpFile);
+  procOpt.m_Arguments.PushBack(sDumpFile);
 
   if (opt_FullCrashDumps.GetOptionValue(xiiCommandLineOption::LogMode::Always))
   {

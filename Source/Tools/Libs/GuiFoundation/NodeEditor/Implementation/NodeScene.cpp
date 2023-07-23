@@ -26,6 +26,8 @@ xiiQtNodeScene::xiiQtNodeScene(QObject* pParent) :
 
 xiiQtNodeScene::~xiiQtNodeScene()
 {
+  disconnect(this, &QGraphicsScene::selectionChanged, this, &xiiQtNodeScene::OnSelectionChanged);
+
   SetDocumentNodeManager(nullptr);
 }
 
@@ -58,7 +60,11 @@ void xiiQtNodeScene::SetDocumentNodeManager(const xiiDocumentNodeManager* pManag
       {
         CreateQtNode(pObject);
       }
-      else if (pManager->IsConnection(pObject))
+    }
+
+    for (const auto& pObject : rootObjects)
+    {
+      if (pManager->IsConnection(pObject))
       {
         CreateQtConnection(pObject);
       }
@@ -630,9 +636,9 @@ void xiiQtNodeScene::MarkupConnectablePins(xiiQtPin* pQtSourcePin)
         xiiDocumentNodeManager::CanConnectResult res;
 
         if (bConnectForward)
-          m_pManager->CanConnect(pConnectionType, *pSourcePin, *pin, res).AssertSuccess();
+          m_pManager->CanConnect(pConnectionType, *pSourcePin, *pin, res).IgnoreResult();
         else
-          m_pManager->CanConnect(pConnectionType, *pin, *pSourcePin, res).AssertSuccess();
+          m_pManager->CanConnect(pConnectionType, *pin, *pSourcePin, res).IgnoreResult();
 
         if (res == xiiDocumentNodeManager::CanConnectResult::ConnectNever)
         {
@@ -698,27 +704,27 @@ void xiiQtNodeScene::OpenSearchMenu(QPoint screenPos)
   connect(pSearchMenu, &xiiQtSearchableMenu::MenuItemTriggered, this, &xiiQtNodeScene::OnMenuItemTriggered);
   connect(pSearchMenu, &xiiQtSearchableMenu::MenuItemTriggered, this, [&menu]() { menu.close(); });
 
-  xiiStringBuilder sFullName, sCleanName;
+  xiiStringBuilder sFullName, sCleanName2;
 
   xiiHybridArray<const xiiRTTI*, 32> types;
   m_pManager->GetCreateableTypes(types);
 
   for (const xiiRTTI* pRtti : types)
   {
-    const char* szCleanName = pRtti->GetTypeName();
+    xiiStringView sCleanName = pRtti->GetTypeName();
 
-    const char* szColonColon = xiiStringUtils::FindLastSubString(szCleanName, "::");
+    const char* szColonColon = sCleanName.FindLastSubString("::");
     if (szColonColon != nullptr)
-      szCleanName = szColonColon + 2;
+      sCleanName.SetStartPosition(szColonColon + 2);
 
-    const char* szUnderscore = xiiStringUtils::FindLastSubString(szCleanName, "_");
+    const char* szUnderscore = sCleanName.FindLastSubString("_");
     if (szUnderscore != nullptr)
-      szCleanName = szUnderscore + 1;
+      sCleanName.SetStartPosition(szUnderscore + 1);
 
-    sCleanName = szCleanName;
-    if (const char* szBracket = sCleanName.FindLastSubString("<"))
+    sCleanName2 = sCleanName;
+    if (const char* szBracket = sCleanName2.FindLastSubString("<"))
     {
-      sCleanName.SetSubString_FromTo(sCleanName.GetData(), szBracket);
+      sCleanName2.SetSubString_FromTo(sCleanName2.GetData(), szBracket);
     }
 
     sFullName = m_pManager->GetTypeCategory(pRtti);
@@ -731,7 +737,7 @@ void xiiQtNodeScene::OpenSearchMenu(QPoint screenPos)
       }
     }
 
-    sFullName.AppendPath(xiiTranslate(sCleanName));
+    sFullName.AppendPath(xiiTranslate(sCleanName2));
 
     pSearchMenu->AddItem(sFullName, QVariant::fromValue((void*)pRtti));
   }

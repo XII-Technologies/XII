@@ -7,14 +7,14 @@
 
 static xiiGlobalEvent::EventMap s_LastState;
 
-static void SendGlobalEventTelemetry(const char* szEvent, const xiiGlobalEvent::EventData& ed)
+static void SendGlobalEventTelemetry(xiiStringView sEvent, const xiiGlobalEvent::EventData& ed)
 {
   if (!xiiTelemetry::IsConnectedToClient())
     return;
 
   xiiTelemetryMessage msg;
   msg.SetMessageID('EVNT', 'DATA');
-  msg.GetWriter() << szEvent;
+  msg.GetWriter() << sEvent;
   msg.GetWriter() << ed.m_uiNumTimesFired;
   msg.GetWriter() << ed.m_uiNumEventHandlersRegular;
   msg.GetWriter() << ed.m_uiNumEventHandlersOnce;
@@ -39,7 +39,7 @@ static void SendAllGlobalEventTelemetry()
 
   for (xiiGlobalEvent::EventMap::ConstIterator it = s_LastState.GetIterator(); it.IsValid(); ++it)
   {
-    SendGlobalEventTelemetry(it.Key().GetData(), it.Value());
+    SendGlobalEventTelemetry(it.Key(), it.Value());
   }
 }
 

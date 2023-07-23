@@ -164,7 +164,7 @@ namespace xiiStreamWriterUtil
   // single element serialization
 
   template <class T>
-  XII_ALWAYS_INLINE auto SerializeImpl(xiiStreamWriter& ref_stream, const T& obj, int) -> decltype(ref_stream << obj, xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto SerializeImpl(xiiStreamWriter& ref_stream, const T& obj, xiiInt32) -> decltype(ref_stream << obj, xiiResult(XII_SUCCESS))
   {
     ref_stream << obj;
 
@@ -193,7 +193,7 @@ namespace xiiStreamWriterUtil
 
 #if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
   template <class T>
-  XII_ALWAYS_INLINE auto SerializeArrayImpl(xiiStreamWriter& ref_stream, const T* pArray, xiiUInt64 uiCount, int) -> decltype(SerializeArray(ref_stream, pArray, uiCount), xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto SerializeArrayImpl(xiiStreamWriter& ref_stream, const T* pArray, xiiUInt64 uiCount, xiiInt32) -> decltype(SerializeArray(ref_stream, pArray, uiCount), xiiResult(XII_SUCCESS))
   {
     return SerializeArray(ref_stream, pArray, uiCount);
   }
@@ -291,7 +291,7 @@ xiiResult xiiStreamWriter::WriteHashTable(const xiiHashTableBase<KeyType, ValueT
 namespace xiiStreamReaderUtil
 {
   template <class T>
-  XII_ALWAYS_INLINE auto DeserializeImpl(xiiStreamReader& ref_stream, T& ref_obj, int) -> decltype(ref_stream >> ref_obj, xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto DeserializeImpl(xiiStreamReader& ref_stream, T& ref_obj, xiiInt32) -> decltype(ref_stream >> ref_obj, xiiResult(XII_SUCCESS))
   {
     ref_stream >> ref_obj;
 
@@ -320,7 +320,7 @@ namespace xiiStreamReaderUtil
 
 #if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
   template <class T>
-  XII_ALWAYS_INLINE auto DeserializeArrayImpl(xiiStreamReader& ref_stream, T* pArray, xiiUInt64 uiCount, int) -> decltype(DeserializeArray(ref_stream, pArray, uiCount), xiiResult(XII_SUCCESS))
+  XII_ALWAYS_INLINE auto DeserializeArrayImpl(xiiStreamReader& ref_stream, T* pArray, xiiUInt64 uiCount, xiiInt32) -> decltype(DeserializeArray(ref_stream, pArray, uiCount), xiiResult(XII_SUCCESS))
   {
     return DeserializeArray(ref_stream, pArray, uiCount);
   }

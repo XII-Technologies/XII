@@ -3,8 +3,8 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/ThreadWithDispatcher.h>
 
-xiiThreadWithDispatcher::xiiThreadWithDispatcher(const char* szName /*= "xiiThreadWithDispatcher"*/, xiiUInt32 uiStackSize /*= 128 * 1024*/) :
-  xiiThread(szName, uiStackSize)
+xiiThreadWithDispatcher::xiiThreadWithDispatcher(xiiStringView sName /*= "xiiThreadWithDispatcher"*/, xiiUInt32 uiStackSize /*= 128 * 1024*/) :
+  xiiThread(sName, uiStackSize)
 {
 }
 

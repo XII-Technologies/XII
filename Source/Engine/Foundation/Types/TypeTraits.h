@@ -5,7 +5,7 @@
 #include <Foundation/Basics.h>
 
 /// Type traits
-template <int v>
+template <xiiInt32 v>
 struct xiiTraitInt
 {
   enum
@@ -19,7 +19,7 @@ using xiiTypeIsPod            = xiiTraitInt<1>;
 using xiiTypeIsClass          = xiiTraitInt<0>;
 
 using xiiCompileTimeTrueType  = char;
-using xiiCompileTimeFalseType = int;
+using xiiCompileTimeFalseType = xiiInt32;
 
 /// \brief Converts a bool condition to CompileTimeTrue/FalseType
 template <bool cond>
@@ -51,7 +51,7 @@ struct xiiIsPodType<T*> : public xiiTypeIsPod
 };
 
 /// \brief arrays are POD types
-template <typename T, int N>
+template <typename T, xiiInt32 N>
 struct xiiIsPodType<T[N]> : public xiiTypeIsPod
 {
 };

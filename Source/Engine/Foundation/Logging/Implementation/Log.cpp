@@ -243,7 +243,7 @@ void xiiLog::Print(const char* szText)
   OutputDebugStringW(xiiStringWChar(szText).GetData());
 #endif
 #if XII_ENABLED(XII_PLATFORM_ANDROID)
-  __android_log_print(ANDROID_LOG_ERROR, "xiiEngine", "%s", szText);
+  __android_log_print(ANDROID_LOG_ERROR, "XII", "%s", szText);
 #endif
 
   if (s_CustomPrintFunction)
@@ -342,7 +342,7 @@ xiiLogInterface* xiiLog::GetThreadLocalLogSystem()
 
 void xiiLog::SetDefaultLogLevel(xiiLogMsgType::Enum logLevel)
 {
-  XII_ASSERT_DEV(logLevel >= xiiLogMsgType::None && logLevel <= xiiLogMsgType::All, "Invalid default log level {}", (int)logLevel);
+  XII_ASSERT_DEV(logLevel >= xiiLogMsgType::None && logLevel <= xiiLogMsgType::All, "Invalid default log level {}", (xiiInt32)logLevel);
 
   s_DefaultLogLevel = logLevel;
 }

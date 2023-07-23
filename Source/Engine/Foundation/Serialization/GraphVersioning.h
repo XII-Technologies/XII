@@ -21,13 +21,15 @@ class xiiGraphVersioning;
 /// \brief Tuple used for identifying patches and tracking patch progression.
 struct xiiVersionKey
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiVersionKey() = default;
   xiiVersionKey(xiiStringView sType, xiiUInt32 uiTypeVersion)
   {
     m_sType.Assign(sType);
     m_uiTypeVersion = uiTypeVersion;
   }
-  XII_DECLARE_POD_TYPE();
+
   xiiHashedString m_sType;
   xiiUInt32       m_uiTypeVersion;
 };
@@ -52,10 +54,10 @@ struct xiiGraphVersioningHash
 /// \brief A class that overlaps xiiReflectedTypeDescriptor with the properties needed for patching.
 struct XII_FOUNDATION_DLL xiiTypeVersionInfo
 {
-  const char* GetTypeName() const;
-  void        SetTypeName(const char* szName);
-  const char* GetParentTypeName() const;
-  void        SetParentTypeName(const char* szName);
+  xiiStringView GetTypeName() const;
+  void          SetTypeName(xiiStringView sName);
+  xiiStringView GetParentTypeName() const;
+  void          SetParentTypeName(xiiStringView sName);
 
   xiiHashedString m_sTypeName;
   xiiHashedString m_sParentTypeName;
@@ -72,13 +74,13 @@ public:
   ///  If bForcePatch is set, the current version of the base class is reset back to force the execution
   ///  of this patch if necessary. This is mainly necessary for backwards compatibility with patches that
   ///  were written before the type information of all base classes was written to the doc.
-  void PatchBaseClass(const char* szType, xiiUInt32 uiTypeVersion, bool bForcePatch = false); // [tested]
+  void PatchBaseClass(xiiStringView sType, xiiUInt32 uiTypeVersion, bool bForcePatch = false); // [tested]
 
   /// \brief Renames current class type.
-  void RenameClass(const char* szTypeName); // [tested]
+  void RenameClass(xiiStringView sTypeName); // [tested]
 
   /// \brief Renames current class type.
-  void RenameClass(const char* szTypeName, xiiUInt32 uiVersion);
+  void RenameClass(xiiStringView sTypeName, xiiUInt32 uiVersion);
 
   /// \brief Changes the base class hierarchy to the given one.
   void ChangeBaseClass(xiiArrayPtr<xiiVersionKey> baseClasses); // [tested]

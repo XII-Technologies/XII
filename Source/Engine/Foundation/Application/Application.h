@@ -23,7 +23,7 @@ XII_FOUNDATION_DLL void xiiRun_MainLoop(xiiApplication* pApplicationInstance);
 /// \brief [internal] Called by xiiRun()
 XII_FOUNDATION_DLL void xiiRun_Shutdown(xiiApplication* pApplicationInstance);
 
-/// \brief Base class to be used by applications based on xiiEngine.
+/// \brief Base class to be used by applications based on XII.
 ///
 /// The platform abstraction layer will ensure that the correct functions are called independent of the basic main loop structure
 /// (traditional or event-based). Derive an application specific class from xiiApplication and implement at least the abstract Run()

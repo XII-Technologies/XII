@@ -51,16 +51,16 @@ public:
   xiiPrefabReferenceComponent();
   ~xiiPrefabReferenceComponent();
 
-  void        SetPrefabFile(const char* szFile); // [ property ]
-  const char* GetPrefabFile() const;             // [ property ]
+  void          SetPrefabFile(xiiStringView sFile); // [ property ]
+  xiiStringView GetPrefabFile() const;              // [ property ]
 
   void                    SetPrefab(const xiiPrefabResourceHandle& hPrefab);               // [ property ]
   XII_ALWAYS_INLINE const xiiPrefabResourceHandle& GetPrefab() const { return m_hPrefab; } // [ property ]
 
-  const xiiRangeView<const char*, xiiUInt32> GetParameters() const;                                        // [ property ] (exposed parameter)
-  void                                       SetParameter(const char* szKey, const xiiVariant& value);     // [ property ] (exposed parameter)
-  void                                       RemoveParameter(const char* szKey);                           // [ property ] (exposed parameter)
-  bool                                       GetParameter(const char* szKey, xiiVariant& out_value) const; // [ property ] (exposed parameter)
+  const xiiRangeView<xiiStringView, xiiUInt32> GetParameters() const;                                         // [ property ] (exposed parameter)
+  void                                         SetParameter(xiiStringView sKey, const xiiVariant& value);     // [ property ] (exposed parameter)
+  void                                         RemoveParameter(xiiStringView sKey);                           // [ property ] (exposed parameter)
+  bool                                         GetParameter(xiiStringView sKey, xiiVariant& out_value) const; // [ property ] (exposed parameter)
 
   static void SerializePrefabParameters(const xiiWorld& world, xiiWorldWriter& ref_stream, xiiArrayMap<xiiHashedString, xiiVariant> parameters);
   static void DeserializePrefabParameters(xiiArrayMap<xiiHashedString, xiiVariant>& out_parameters, xiiWorldReader& ref_stream);

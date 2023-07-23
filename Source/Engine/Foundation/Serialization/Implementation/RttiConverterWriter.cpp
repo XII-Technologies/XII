@@ -169,11 +169,11 @@ xiiRttiConverterWriter::xiiRttiConverterWriter(xiiAbstractObjectGraph* pGraph, x
   XII_ASSERT_DEBUG(filter.IsValid(), "Either filter function must be valid or a different ctor must be chosen.");
 }
 
-xiiAbstractObjectNode* xiiRttiConverterWriter::AddObjectToGraph(const xiiRTTI* pRtti, const void* pObject, const char* szNodeName)
+xiiAbstractObjectNode* xiiRttiConverterWriter::AddObjectToGraph(const xiiRTTI* pRtti, const void* pObject, xiiStringView sNodeName)
 {
   const xiiUuid guid = m_pContext->GetObjectGUID(pRtti, pObject);
   XII_ASSERT_DEV(guid.IsValid(), "The object was not registered. Call xiiRttiConverterContext::RegisterObject before adding.");
-  xiiAbstractObjectNode* pNode = AddSubObjectToGraph(pRtti, pObject, guid, szNodeName);
+  xiiAbstractObjectNode* pNode = AddSubObjectToGraph(pRtti, pObject, guid, sNodeName);
 
   xiiRttiConverterObject obj = m_pContext->DequeueObject();
   while (obj.m_pObject != nullptr)
@@ -187,9 +187,9 @@ xiiAbstractObjectNode* xiiRttiConverterWriter::AddObjectToGraph(const xiiRTTI* p
   return pNode;
 }
 
-xiiAbstractObjectNode* xiiRttiConverterWriter::AddSubObjectToGraph(const xiiRTTI* pRtti, const void* pObject, const xiiUuid& guid, const char* szNodeName)
+xiiAbstractObjectNode* xiiRttiConverterWriter::AddSubObjectToGraph(const xiiRTTI* pRtti, const void* pObject, const xiiUuid& guid, xiiStringView sNodeName)
 {
-  xiiAbstractObjectNode* pNode = m_pGraph->AddNode(guid, pRtti->GetTypeName(), pRtti->GetTypeVersion(), szNodeName);
+  xiiAbstractObjectNode* pNode = m_pGraph->AddNode(guid, pRtti->GetTypeName(), pRtti->GetTypeVersion(), sNodeName);
   AddProperties(pNode, pRtti, pObject);
   return pNode;
 }
@@ -442,7 +442,5 @@ void xiiRttiConverterWriter::AddProperties(xiiAbstractObjectNode* pNode, const x
     AddProperty(pNode, pProp, pObject);
   }
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Serialization_Implementation_RttiConverterWriter);

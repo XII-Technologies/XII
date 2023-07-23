@@ -11,13 +11,11 @@ template <typename Type>
 class xiiTypedArrayProperty : public xiiAbstractArrayProperty
 {
 public:
-  xiiTypedArrayProperty(const char* szPropertyName) :
-    xiiAbstractArrayProperty(szPropertyName)
+  xiiTypedArrayProperty(xiiStringView sPropertyName) :
+    xiiAbstractArrayProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<Type>();
-    XII_CHECK_AT_COMPILETIME_MSG(!std::is_pointer<Type>::value ||
-                                   xiiVariantTypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value ==
-                                     xiiVariantType::Invalid,
+    XII_CHECK_AT_COMPILETIME_MSG(!std::is_pointer<Type>::value || xiiVariantTypeDeduction<typename xiiTypeTraits<Type>::NonConstReferencePointerType>::value == xiiVariantType::Invalid,
                                  "Pointer to standard types are not supported.");
   }
 
@@ -29,8 +27,8 @@ template <>
 class xiiTypedArrayProperty<const char*> : public xiiAbstractArrayProperty
 {
 public:
-  xiiTypedArrayProperty(const char* szPropertyName) :
-    xiiAbstractArrayProperty(szPropertyName)
+  xiiTypedArrayProperty(xiiStringView sPropertyName) :
+    xiiAbstractArrayProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<const char*>();
   }
@@ -50,15 +48,8 @@ public:
   using InsertFunc   = void (Class::*)(xiiUInt32 uiIndex, Type value);
   using RemoveFunc   = void (Class::*)(xiiUInt32 uiIndex);
 
-
-  xiiAccessorArrayProperty(
-    const char*  szPropertyName,
-    GetCountFunc getCount,
-    GetValueFunc getter,
-    SetValueFunc setter,
-    InsertFunc   insert,
-    RemoveFunc   remove) :
-    xiiTypedArrayProperty<Type>(szPropertyName)
+  xiiAccessorArrayProperty(xiiStringView sPropertyName, GetCountFunc getCount, GetValueFunc getter, SetValueFunc setter, InsertFunc insert, RemoveFunc remove) :
+    xiiTypedArrayProperty<Type>(sPropertyName)
   {
     XII_ASSERT_DEBUG(getCount != nullptr, "The get count function of an array property cannot be nullptr.");
     XII_ASSERT_DEBUG(getter != nullptr, "The get value function of an array property cannot be nullptr.");
@@ -72,7 +63,6 @@ public:
     if (m_Setter == nullptr)
       xiiAbstractArrayProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
   }
-
 
   virtual xiiUInt32 GetCount(const void* pInstance) const override { return (static_cast<const Class*>(pInstance)->*m_GetCount)(); }
 
@@ -150,8 +140,8 @@ public:
   using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
   using GetContainerFunc      = Container& (*)(Class* pInstance);
 
-  xiiMemberArrayProperty(const char* szPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
-    xiiTypedArrayProperty<RealType>(szPropertyName)
+  xiiMemberArrayProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
+    xiiTypedArrayProperty<RealType>(sPropertyName)
   {
     XII_ASSERT_DEBUG(constGetter != nullptr, "The const get count function of an array property cannot be nullptr.");
 
@@ -208,6 +198,13 @@ public:
     m_Getter(static_cast<Class*>(pInstance)).SetCount(uiCount);
   }
 
+  virtual void* GetValuePointer(void* pInstance, xiiUInt32 uiIndex) override
+  {
+    XII_ASSERT_DEBUG(uiIndex < GetCount(pInstance), "GetValue: uiIndex ('{0}') is out of range ('{1}')", uiIndex, GetCount(pInstance));
+
+    return &(m_Getter(static_cast<Class*>(pInstance))[uiIndex]);
+  }
+
 private:
   GetConstContainerFunc m_ConstGetter;
   GetContainerFunc      m_Getter;
@@ -221,8 +218,8 @@ public:
   using RealType              = typename xiiTypeTraits<Type>::NonConstReferenceType;
   using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
 
-  xiiMemberArrayReadOnlyProperty(const char* szPropertyName, GetConstContainerFunc constGetter) :
-    xiiTypedArrayProperty<RealType>(szPropertyName)
+  xiiMemberArrayReadOnlyProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter) :
+    xiiTypedArrayProperty<RealType>(sPropertyName)
   {
     XII_ASSERT_DEBUG(constGetter != nullptr, "The const get count function of an array property cannot be nullptr.");
 

@@ -16,7 +16,7 @@ public:
   virtual void StartTransaction(xiiStringView sDisplayString);
   virtual void CancelTransaction();
   virtual void FinishTransaction();
-  virtual void BeginTemporaryCommands(const char* szDisplayString, bool bFireEventsWhenUndoingTempCommands = false);
+  virtual void BeginTemporaryCommands(xiiStringView sDisplayString, bool bFireEventsWhenUndoingTempCommands = false);
   virtual void CancelTemporaryCommands();
   virtual void FinishTemporaryCommands();
 
@@ -43,28 +43,28 @@ public:
   /// \name Object Access Convenience Functions
   ///@{
 
-  xiiStatus GetValue(const xiiDocumentObject* pObject, const char* szProp, xiiVariant& out_value, xiiVariant index = xiiVariant());
-  xiiStatus SetValue(const xiiDocumentObject* pObject, const char* szProp, const xiiVariant& newValue, xiiVariant index = xiiVariant());
-  xiiStatus InsertValue(const xiiDocumentObject* pObject, const char* szProp, const xiiVariant& newValue, xiiVariant index = xiiVariant());
-  xiiStatus RemoveValue(const xiiDocumentObject* pObject, const char* szProp, xiiVariant index = xiiVariant());
-  xiiStatus MoveValue(const xiiDocumentObject* pObject, const char* szProp, const xiiVariant& oldIndex, const xiiVariant& newIndex);
-  xiiStatus GetCount(const xiiDocumentObject* pObject, const char* szProp, xiiInt32& out_iCount);
+  xiiStatus GetValue(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant& out_value, xiiVariant index = xiiVariant());
+  xiiStatus SetValue(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& newValue, xiiVariant index = xiiVariant());
+  xiiStatus InsertValue(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& newValue, xiiVariant index = xiiVariant());
+  xiiStatus RemoveValue(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index = xiiVariant());
+  xiiStatus MoveValue(const xiiDocumentObject* pObject, xiiStringView sProp, const xiiVariant& oldIndex, const xiiVariant& newIndex);
+  xiiStatus GetCount(const xiiDocumentObject* pObject, xiiStringView sProp, xiiInt32& out_iCount);
 
-  xiiStatus AddObject(const xiiDocumentObject* pParent, const char* szParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid);
-  xiiStatus MoveObject(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, const char* szParentProp, const xiiVariant& index);
+  xiiStatus AddObject(const xiiDocumentObject* pParent, xiiStringView sParentProp, const xiiVariant& index, const xiiRTTI* pType, xiiUuid& inout_objectGuid);
+  xiiStatus MoveObject(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView sParentProp, const xiiVariant& index);
 
-  xiiStatus                GetKeys(const xiiDocumentObject* pObject, const char* szProp, xiiDynamicArray<xiiVariant>& out_keys);
-  xiiStatus                GetValues(const xiiDocumentObject* pObject, const char* szProp, xiiDynamicArray<xiiVariant>& out_values);
-  const xiiDocumentObject* GetChildObject(const xiiDocumentObject* pObject, const char* szProp, xiiVariant index);
+  xiiStatus                GetKeys(const xiiDocumentObject* pObject, xiiStringView sProp, xiiDynamicArray<xiiVariant>& out_keys);
+  xiiStatus                GetValues(const xiiDocumentObject* pObject, xiiStringView sProp, xiiDynamicArray<xiiVariant>& out_values);
+  const xiiDocumentObject* GetChildObject(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index);
 
-  xiiStatus Clear(const xiiDocumentObject* pObject, const char* szProp);
+  xiiStatus Clear(const xiiDocumentObject* pObject, xiiStringView sProp);
 
   template <typename T>
   T Get(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index = xiiVariant());
   template <typename T>
-  T        Get(const xiiDocumentObject* pObject, const char* szProp, xiiVariant index = xiiVariant());
+  T        Get(const xiiDocumentObject* pObject, xiiStringView sProp, xiiVariant index = xiiVariant());
   xiiInt32 GetCount(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp);
-  xiiInt32 GetCount(const xiiDocumentObject* pObject, const char* szProp);
+  xiiInt32 GetCount(const xiiDocumentObject* pObject, xiiStringView sProp);
 
   ///@}
 

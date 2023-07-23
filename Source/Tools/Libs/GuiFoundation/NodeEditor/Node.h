@@ -14,8 +14,8 @@ class xiiQtPin;
 class xiiDocumentNodeManager;
 class QLabel;
 class xiiDocumentObject;
-class QGraphicsGridLayout;
 class QGraphicsTextItem;
+class QGraphicsPixmapItem;
 class QGraphicsDropShadowEffect;
 
 struct xiiNodeFlags
@@ -71,10 +71,11 @@ protected:
   virtual void     paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
   virtual QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
-  QColor             m_HeaderColor;
-  QRectF             m_HeaderRect;
-  QGraphicsTextItem* m_pTitleLabel    = nullptr;
-  QGraphicsTextItem* m_pSubtitleLabel = nullptr;
+  QColor               m_HeaderColor;
+  QRectF               m_HeaderRect;
+  QGraphicsTextItem*   m_pTitleLabel    = nullptr;
+  QGraphicsTextItem*   m_pSubtitleLabel = nullptr;
+  QGraphicsPixmapItem* m_pIcon          = nullptr;
 
 private:
   const xiiDocumentNodeManager* m_pManager = nullptr;

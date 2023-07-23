@@ -36,12 +36,12 @@ public:
     return *this;
   }
 
-  XII_ALWAYS_INLINE const_iterator_base operator++(int)
+  XII_ALWAYS_INLINE const_iterator_base operator++(xiiInt32)
   {
     m_uiIndex += 1;
     return const_iterator_base(*m_pArray, m_uiIndex - 1);
   }
-  XII_ALWAYS_INLINE const_iterator_base operator--(int)
+  XII_ALWAYS_INLINE const_iterator_base operator--(xiiInt32)
   {
     m_uiIndex -= 1;
     return const_iterator_base(*m_pArray, m_uiIndex + 1);
@@ -110,12 +110,12 @@ public:
     return *this;
   }
 
-  XII_ALWAYS_INLINE iterator_base operator++(int)
+  XII_ALWAYS_INLINE iterator_base operator++(xiiInt32)
   {
     this->m_uiIndex += 1;
     return iterator_base(*this->m_pArray, this->m_uiIndex - 1);
   }
-  XII_ALWAYS_INLINE iterator_base operator--(int)
+  XII_ALWAYS_INLINE iterator_base operator--(xiiInt32)
   {
     this->m_uiIndex -= 1;
     return iterator_base(*this->m_pArray, this->m_uiIndex + 1);
@@ -174,12 +174,12 @@ public:
     return *this;
   }
 
-  XII_ALWAYS_INLINE const_reverse_pointer_iterator operator++(int)
+  XII_ALWAYS_INLINE const_reverse_pointer_iterator operator++(xiiInt32)
   {
     m_pPtr--;
     return const_reverse_pointer_iterator(m_pPtr + 1);
   }
-  XII_ALWAYS_INLINE const_reverse_pointer_iterator operator--(int)
+  XII_ALWAYS_INLINE const_reverse_pointer_iterator operator--(xiiInt32)
   {
     m_pPtr++;
     return const_reverse_pointer_iterator(m_pPtr - 1);
@@ -235,12 +235,12 @@ public:
     return *this;
   }
 
-  XII_ALWAYS_INLINE reverse_pointer_iterator operator++(int)
+  XII_ALWAYS_INLINE reverse_pointer_iterator operator++(xiiInt32)
   {
     this->m_pPtr--;
     return reverse_pointer_iterator(this->m_pPtr + 1);
   }
-  XII_ALWAYS_INLINE reverse_pointer_iterator operator--(int)
+  XII_ALWAYS_INLINE reverse_pointer_iterator operator--(xiiInt32)
   {
     this->m_pPtr++;
     return reverse_pointer_iterator(this->m_pPtr - 1);

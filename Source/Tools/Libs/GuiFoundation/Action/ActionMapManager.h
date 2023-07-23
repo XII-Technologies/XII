@@ -7,9 +7,9 @@
 class XII_GUIFOUNDATION_DLL xiiActionMapManager
 {
 public:
-  static xiiResult     RegisterActionMap(const char* szMapping);
-  static xiiResult     UnregisterActionMap(const char* szMapping);
-  static xiiActionMap* GetActionMap(const char* szMapping);
+  static xiiResult     RegisterActionMap(xiiStringView sMapping);
+  static xiiResult     UnregisterActionMap(xiiStringView sMapping);
+  static xiiActionMap* GetActionMap(xiiStringView sMapping);
 
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GuiFoundation, ActionMapManager);

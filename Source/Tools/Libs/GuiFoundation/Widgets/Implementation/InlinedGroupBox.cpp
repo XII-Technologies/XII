@@ -38,9 +38,9 @@ xiiQtInlinedGroupBox::xiiQtInlinedGroupBox(QWidget* pParent) :
   installEventFilter(this);
 }
 
-void xiiQtInlinedGroupBox::SetTitle(const char* szTitle)
+void xiiQtInlinedGroupBox::SetTitle(xiiStringView sTitle)
 {
-  xiiQtGroupBoxBase::SetTitle(szTitle);
+  xiiQtGroupBoxBase::SetTitle(sTitle);
   update();
 }
 

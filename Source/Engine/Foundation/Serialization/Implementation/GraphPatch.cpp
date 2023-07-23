@@ -7,21 +7,20 @@
 
 XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiGraphPatch);
 
-xiiGraphPatch::xiiGraphPatch(const char* szType, xiiUInt32 uiTypeVersion, PatchType type) :
-  m_szType(szType), m_uiTypeVersion(uiTypeVersion), m_PatchType(type)
+xiiGraphPatch::xiiGraphPatch(xiiStringView sType, xiiUInt32 uiTypeVersion, PatchType type) :
+  m_sType(sType), m_uiTypeVersion(uiTypeVersion), m_PatchType(type)
 {
 }
 
-const char* xiiGraphPatch::GetType() const
+xiiStringView xiiGraphPatch::GetType() const
 {
-  return m_szType;
+  return m_sType;
 }
 
 xiiUInt32 xiiGraphPatch::GetTypeVersion() const
 {
   return m_uiTypeVersion;
 }
-
 
 xiiGraphPatch::PatchType xiiGraphPatch::GetPatchType() const
 {

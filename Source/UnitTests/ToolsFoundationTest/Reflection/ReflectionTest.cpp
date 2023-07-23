@@ -10,10 +10,9 @@
 
 XII_CREATE_SIMPLE_TEST_GROUP(Reflection);
 
-
-void VariantToPropertyTest(void* pIntStruct, const xiiRTTI* pRttiInt, const char* szPropName, xiiVariant::Type::Enum type)
+void VariantToPropertyTest(void* pIntStruct, const xiiRTTI* pRttiInt, xiiStringView sPropName, xiiVariant::Type::Enum type)
 {
-  xiiAbstractMemberProperty* pProp = xiiReflectionUtils::GetMemberProperty(pRttiInt, szPropName);
+  xiiAbstractMemberProperty* pProp = xiiReflectionUtils::GetMemberProperty(pRttiInt, sPropName);
   XII_TEST_BOOL(pProp != nullptr);
   if (pProp)
   {
@@ -65,7 +64,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectionUtils)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Float Properties")
   {
     xiiFloatStruct floatStruct;
-    xiiRTTI*       pRttiFloat = xiiRTTI::FindTypeByName("xiiFloatStruct");
+    const xiiRTTI* pRttiFloat = xiiRTTI::FindTypeByName("xiiFloatStruct");
     XII_TEST_BOOL(pRttiFloat != nullptr);
 
     VariantToPropertyTest(&floatStruct, pRttiFloat, "Float", xiiVariant::Type::Float);
@@ -76,12 +75,14 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectionUtils)
     XII_TEST_FLOAT(0, floatStruct.GetTime().GetSeconds(), 0);
     VariantToPropertyTest(&floatStruct, pRttiFloat, "Angle", xiiVariant::Type::Angle);
     XII_TEST_FLOAT(0, floatStruct.GetAngle().GetDegree(), 0);
+    VariantToPropertyTest(&floatStruct, pRttiFloat, "Angled", xiiVariant::Type::Angled);
+    XII_TEST_DOUBLE(0, floatStruct.GetAngled().GetDegree(), 0);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Misc Properties")
   {
-    xiiPODClass podClass;
-    xiiRTTI*    pRttiPOD = xiiRTTI::FindTypeByName("xiiPODClass");
+    xiiPODClass    podClass;
+    const xiiRTTI* pRttiPOD = xiiRTTI::FindTypeByName("xiiPODClass");
     XII_TEST_BOOL(pRttiPOD != nullptr);
 
     VariantToPropertyTest(&podClass, pRttiPOD, "Bool", xiiVariant::Type::Bool);
@@ -94,38 +95,70 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectionUtils)
     XII_TEST_BOOL(podClass.GetBuffer() == xiiDataBuffer());
     VariantToPropertyTest(&podClass, pRttiPOD, "VarianceAngle", xiiVariant::Type::TypedObject);
     XII_TEST_BOOL(podClass.GetCustom() == xiiVarianceTypeAngle{});
+    VariantToPropertyTest(&podClass, pRttiPOD, "VarianceAngled", xiiVariant::Type::TypedObject);
+    XII_TEST_BOOL(podClass.GetCustom2() == xiiVarianceTypeAngled{});
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Math Properties")
   {
-    xiiMathClass mathClass;
-    xiiRTTI*     pRttiMath = xiiRTTI::FindTypeByName("xiiMathClass");
+    xiiMathClass   mathClass;
+    const xiiRTTI* pRttiMath = xiiRTTI::FindTypeByName("xiiMathClass");
     XII_TEST_BOOL(pRttiMath != nullptr);
 
-    VariantToPropertyTest(&mathClass, pRttiMath, "Vec2", xiiVariant::Type::Vector2);
-    XII_TEST_BOOL(mathClass.GetVec2() == xiiVec2(0.0f, 0.0f));
-    VariantToPropertyTest(&mathClass, pRttiMath, "Vec3", xiiVariant::Type::Vector3);
-    XII_TEST_BOOL(mathClass.GetVec3() == xiiVec3(0.0f, 0.0f, 0.0f));
-    VariantToPropertyTest(&mathClass, pRttiMath, "Vec4", xiiVariant::Type::Vector4);
-    XII_TEST_BOOL(mathClass.GetVec4() == xiiVec4(0.0f, 0.0f, 0.0f, 0.0f));
     VariantToPropertyTest(&mathClass, pRttiMath, "Vec2I", xiiVariant::Type::Vector2I);
     XII_TEST_BOOL(mathClass.m_Vec2I == xiiVec2I32(0, 0));
     VariantToPropertyTest(&mathClass, pRttiMath, "Vec3I", xiiVariant::Type::Vector3I);
     XII_TEST_BOOL(mathClass.m_Vec3I == xiiVec3I32(0, 0, 0));
     VariantToPropertyTest(&mathClass, pRttiMath, "Vec4I", xiiVariant::Type::Vector4I);
     XII_TEST_BOOL(mathClass.m_Vec4I == xiiVec4I32(0, 0, 0, 0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec2U", xiiVariant::Type::Vector2U);
+    XII_TEST_BOOL(mathClass.m_Vec2U == xiiVec2U32(0, 0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec3U", xiiVariant::Type::Vector3U);
+    XII_TEST_BOOL(mathClass.m_Vec3U == xiiVec3U32(0, 0, 0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec4U", xiiVariant::Type::Vector4U);
+    XII_TEST_BOOL(mathClass.m_Vec4U == xiiVec4U32(0, 0, 0, 0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec2I64", xiiVariant::Type::Vector2I64);
+    XII_TEST_BOOL(mathClass.m_Vec2I64 == xiiVec2I64(0, 0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec3I64", xiiVariant::Type::Vector3I64);
+    XII_TEST_BOOL(mathClass.m_Vec3I64 == xiiVec3I64(0, 0, 0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec4I64", xiiVariant::Type::Vector4I64);
+    XII_TEST_BOOL(mathClass.m_Vec4I64 == xiiVec4I64(0, 0, 0, 0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec2U64", xiiVariant::Type::Vector2U64);
+    XII_TEST_BOOL(mathClass.m_Vec2U64 == xiiVec2U64(0, 0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec3U64", xiiVariant::Type::Vector3U64);
+    XII_TEST_BOOL(mathClass.m_Vec3U64 == xiiVec3U64(0, 0, 0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec4U64", xiiVariant::Type::Vector4U64);
+    XII_TEST_BOOL(mathClass.m_Vec4U64 == xiiVec4U64(0, 0, 0, 0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec2", xiiVariant::Type::Vector2);
+    XII_TEST_BOOL(mathClass.GetVec2() == xiiVec2(0.0f, 0.0f));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec3", xiiVariant::Type::Vector3);
+    XII_TEST_BOOL(mathClass.GetVec3() == xiiVec3(0.0f, 0.0f, 0.0f));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec4", xiiVariant::Type::Vector4);
+    XII_TEST_BOOL(mathClass.GetVec4() == xiiVec4(0.0f, 0.0f, 0.0f, 0.0f));
     VariantToPropertyTest(&mathClass, pRttiMath, "Quat", xiiVariant::Type::Quaternion);
     XII_TEST_BOOL(mathClass.GetQuat() == xiiQuat(0.0f, 0.0f, 0.0f, 1.0f));
     VariantToPropertyTest(&mathClass, pRttiMath, "Mat3", xiiVariant::Type::Matrix3);
     XII_TEST_BOOL(mathClass.GetMat3() == xiiMat3::IdentityMatrix());
     VariantToPropertyTest(&mathClass, pRttiMath, "Mat4", xiiVariant::Type::Matrix4);
     XII_TEST_BOOL(mathClass.GetMat4() == xiiMat4::IdentityMatrix());
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec2d", xiiVariant::Type::Vector2d);
+    XII_TEST_BOOL(mathClass.GetVec2d() == xiiVec2d(0.0, 0.0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec3d", xiiVariant::Type::Vector3d);
+    XII_TEST_BOOL(mathClass.GetVec3d() == xiiVec3d(0.0, 0.0, 0.0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Vec4d", xiiVariant::Type::Vector4d);
+    XII_TEST_BOOL(mathClass.GetVec4d() == xiiVec4d(0.0, 0.0, 0.0, 0.0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Quatd", xiiVariant::Type::Quaterniond);
+    XII_TEST_BOOL(mathClass.GetQuatd() == xiiQuatd(0.0, 0.0, 0.0, 1.0));
+    VariantToPropertyTest(&mathClass, pRttiMath, "Mat3d", xiiVariant::Type::Matrix3d);
+    XII_TEST_BOOL(mathClass.GetMat3d() == xiiMat3d::IdentityMatrix());
+    VariantToPropertyTest(&mathClass, pRttiMath, "Mat4d", xiiVariant::Type::Matrix4d);
+    XII_TEST_BOOL(mathClass.GetMat4d() == xiiMat4d::IdentityMatrix());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Enumeration Properties")
   {
     xiiEnumerationsClass enumClass;
-    xiiRTTI*             pRttiEnum = xiiRTTI::FindTypeByName("xiiEnumerationsClass");
+    const xiiRTTI*       pRttiEnum = xiiRTTI::FindTypeByName("xiiEnumerationsClass");
     XII_TEST_BOOL(pRttiEnum != nullptr);
 
     VariantToPropertyTest(&enumClass, pRttiEnum, "Enum", xiiVariant::Type::Int64);
@@ -135,19 +168,19 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectionUtils)
   }
 }
 
-void AccessorPropertyTest(xiiIReflectedTypeAccessor& ref_accessor, const char* szProperty, xiiVariant::Type::Enum type)
+void AccessorPropertyTest(xiiIReflectedTypeAccessor& ref_accessor, xiiStringView sProperty, xiiVariant::Type::Enum type)
 {
-  xiiVariant oldValue = ref_accessor.GetValue(szProperty);
+  xiiVariant oldValue = ref_accessor.GetValue(sProperty);
   XII_TEST_BOOL(oldValue.IsValid());
   XII_TEST_BOOL(oldValue.GetType() == type);
 
-  xiiAbstractProperty* pProp        = ref_accessor.GetType()->FindPropertyByName(szProperty);
+  xiiAbstractProperty* pProp        = ref_accessor.GetType()->FindPropertyByName(sProperty);
   xiiVariant           defaultValue = xiiReflectionUtils::GetDefaultValue(pProp);
   XII_TEST_BOOL(defaultValue.GetType() == type);
-  bool bSetSuccess = ref_accessor.SetValue(szProperty, defaultValue);
+  bool bSetSuccess = ref_accessor.SetValue(sProperty, defaultValue);
   XII_TEST_BOOL(bSetSuccess);
 
-  xiiVariant newValue = ref_accessor.GetValue(szProperty);
+  xiiVariant newValue = ref_accessor.GetValue(sProperty);
   XII_TEST_BOOL(newValue.IsValid());
   XII_TEST_BOOL(newValue.GetType() == type);
   XII_TEST_BOOL(newValue == defaultValue);
@@ -224,18 +257,13 @@ xiiUInt32 AccessorPropertiesTest(xiiIReflectedTypeAccessor& ref_accessor)
 static xiiUInt32 GetTypeCount()
 {
   xiiUInt32 uiCount = 0;
-  xiiRTTI*  pType   = xiiRTTI::GetFirstInstance();
-  while (pType != nullptr)
-  {
-    uiCount++;
-    pType = pType->GetNextInstance();
-  }
+  xiiRTTI::ForEachType([&](const xiiRTTI* pRtti) { uiCount++; });
   return uiCount;
 }
 
-static const xiiRTTI* RegisterType(const char* szTypeName)
+static const xiiRTTI* RegisterType(xiiStringView sTypeName)
 {
-  const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(szTypeName);
+  const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(sTypeName);
   XII_TEST_BOOL(pRtti != nullptr);
 
   xiiReflectedTypeDescriptor desc;
@@ -268,17 +296,17 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectedType)
     }
     {
       xiiDocumentObject* pObject = manager.CreateObject(pRttiFloat);
-      XII_TEST_INT(AccessorPropertiesTest(pObject->GetTypeAccessor()), 4);
+      XII_TEST_INT(AccessorPropertiesTest(pObject->GetTypeAccessor()), 5);
       manager.DestroyObject(pObject);
     }
     {
       xiiDocumentObject* pObject = manager.CreateObject(pRttiPOD);
-      XII_TEST_INT(AccessorPropertiesTest(pObject->GetTypeAccessor()), 18);
+      XII_TEST_INT(AccessorPropertiesTest(pObject->GetTypeAccessor()), 20);
       manager.DestroyObject(pObject);
     }
     {
       xiiDocumentObject* pObject = manager.CreateObject(pRttiMath);
-      XII_TEST_INT(AccessorPropertiesTest(pObject->GetTypeAccessor()), 27);
+      XII_TEST_INT(AccessorPropertiesTest(pObject->GetTypeAccessor()), 44);
       manager.DestroyObject(pObject);
     }
     {

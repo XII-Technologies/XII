@@ -19,7 +19,7 @@ public:
   /// \brief Removes the stat with the given name.
   ///
   /// This will also send a 'remove' message through xiiTelemetry, such that external tools can remove it from their list.
-  static void RemoveStat(const char* szStatName);
+  static void RemoveStat(xiiStringView sStatName);
 
   /// \brief Sets the value of the given stat, adds it if it did not exist before.
   ///
@@ -27,10 +27,10 @@ public:
   /// to display the stats in a hierarchical way.
   /// This function will also send the name and value of the stat through xiiTelemetry, such that tools like xiiInspector will show the
   /// changed value.
-  static void SetStat(const char* szStatName, const xiiVariant& value);
+  static void SetStat(xiiStringView sStatName, const xiiVariant& value);
 
   /// \brief Returns the value of the given stat. Returns an invalid xiiVariant, if the stat did not exist before.
-  static const xiiVariant& GetStat(const char* szStatName) { return s_Stats[szStatName]; }
+  static const xiiVariant& GetStat(xiiStringView sStatName) { return s_Stats[sStatName]; }
 
   /// \brief Returns the entire map of stats, can be used to display them.
   static const MapType& GetAllStats() { return s_Stats; }
@@ -46,9 +46,9 @@ public:
       Remove ///< A variable that existed has been removed.
     };
 
-    EventType   m_EventType;
-    const char* m_szStatName;
-    xiiVariant  m_NewStatValue;
+    EventType     m_EventType;
+    xiiStringView m_sStatName;
+    xiiVariant    m_NewStatValue;
   };
 
   using xiiEventStats = xiiEvent<const StatsEventData&, xiiMutex>;

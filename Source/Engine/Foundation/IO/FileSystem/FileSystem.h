@@ -157,7 +157,7 @@ public:
   ///
   /// \sa SetSdkRootDirectory
   /// \sa DetectSdkRootDirectory
-  static const char* GetSdkRootDirectory();
+  static xiiStringView GetSdkRootDirectory();
 
   /// \brief Special directories are used when mounting data directories as basic references.
   ///
@@ -242,7 +242,7 @@ public:
   /// \param result If successful, this contains the folder path in which szSubPath exists.
   /// \param szStartDirectory The directory in which to start the search and iterate upwards.
   /// \param szSubPath the relative path to look for in each visited directory. The function succeeds if such a file or folder is found.
-  /// \param szRedirectionFileName An optional file name for a redirection file. If in any visited folder a file with this name is found, it will be opened, read entirely, and appended to the current search path, and it is checked whether \a szSubPath can be found there. This step is not recursive and can't result in an endless loop. It allows to relocate the SDK folder and still have it found, by placing such a redirection file. A common use case, is when xiiEngine is used as a Git submodule and therefore the overall file structure is slightly different.
+  /// \param szRedirectionFileName An optional file name for a redirection file. If in any visited folder a file with this name is found, it will be opened, read entirely, and appended to the current search path, and it is checked whether \a szSubPath can be found there. This step is not recursive and can't result in an endless loop. It allows to relocate the SDK folder and still have it found, by placing such a redirection file. A common use case, is when XII is used as a Git submodule and therefore the overall file structure is slightly different.
   static xiiResult FindFolderWithSubPath(xiiStringBuilder& ref_sResult, xiiStringView sStartDirectory, xiiStringView sSubPath, xiiStringView sRedirectionFileName = {}); // [tested]
 
   /// \brief Returns true, if any data directory knows how to redirect the given path. Otherwise the original string is returned in out_sRedirection.

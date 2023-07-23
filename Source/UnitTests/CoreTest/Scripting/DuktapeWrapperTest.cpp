@@ -16,9 +16,9 @@ static duk_ret_t ModuleSearchFunction(duk_context* pCtx);
 static int CFuncPrint(duk_context* pContext)
 {
   xiiDuktapeFunction wrapper(pContext);
-  const char*        szText = wrapper.GetStringValue(0, nullptr);
+  xiiStringView      sText = wrapper.GetStringValue(0, nullptr);
 
-  xiiLog::Info("Print: '{}'", szText);
+  xiiLog::Info("Print: '{}'", sText);
   return wrapper.ReturnVoid();
 }
 
@@ -45,7 +45,7 @@ static int CFuncPrintVA(duk_context* pContext)
     }
     else if (wrapper.IsString(arg))
     {
-      const char* val = wrapper.GetStringValue(arg);
+      xiiStringView val = wrapper.GetStringValue(arg);
       s.AppendFormat(", #{}: String = {}", arg, val);
     }
     else if (wrapper.IsNull(arg))

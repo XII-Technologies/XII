@@ -58,7 +58,7 @@ class XII_TOOLSFOUNDATION_DLL xiiDocument : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiDocument, xiiReflectedClass);
 
 public:
-  xiiDocument(const char* szPath, xiiDocumentObjectManager* pDocumentObjectManagerImpl);
+  xiiDocument(xiiStringView sPath, xiiDocumentObjectManager* pDocumentObjectManagerImpl);
   virtual ~xiiDocument();
 
   /// \name Document State Functions
@@ -99,7 +99,7 @@ protected:
 
 public:
   /// \brief Returns the absolute path to the document.
-  const char* GetDocumentPath() const { return m_sDocumentPath; }
+  xiiStringView GetDocumentPath() const { return m_sDocumentPath; }
 
   /// \brief Saves the document, if it is modified.
   /// If bForce is true, the document will be written, even if it is not considered modified.
@@ -107,7 +107,7 @@ public:
   using AfterSaveCallback = xiiDelegate<void(xiiDocument*, xiiStatus)>;
   xiiTaskGroupID SaveDocumentAsync(AfterSaveCallback callback, bool bForce = false);
 
-  static xiiStatus ReadDocument(const char* szDocumentPath, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pHeader, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pObjects, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pTypes);
+  static xiiStatus ReadDocument(xiiStringView sDocumentPath, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pHeader, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pObjects, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pTypes);
   static xiiStatus ReadAndRegisterTypes(const xiiAbstractObjectGraph& types);
 
   xiiStatus LoadDocument() { return InternalLoadDocument(); }
@@ -122,7 +122,7 @@ public:
   const xiiDocumentTypeDescriptor* GetDocumentTypeDescriptor() const { return m_pTypeDescriptor; }
 
   /// \brief Returns the document's type name. Same as GetDocumentTypeDescriptor()->m_sDocumentTypeName.
-  const char* GetDocumentTypeName() const
+  xiiStringView GetDocumentTypeName() const
   {
     if (m_pTypeDescriptor == nullptr)
     {
@@ -158,7 +158,7 @@ public:
   virtual void GetSupportedMimeTypesForPasting(xiiHybridArray<xiiString, 4>& out_mimeTypes) const {}
   /// \brief Creates the abstract graph of data to be copied and returns the mime type for the clipboard to identify the data
   virtual bool CopySelectedObjects(xiiAbstractObjectGraph& out_objectGraph, xiiStringBuilder& out_sMimeType) const { return false; };
-  virtual bool Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bAllowPickedPosition, const char* szMimeType)
+  virtual bool Paste(const xiiArrayPtr<PasteInfo>& info, const xiiAbstractObjectGraph& objectGraph, bool bAllowPickedPosition, xiiStringView sMimeType)
   {
     return false;
   };
@@ -227,11 +227,11 @@ public:
   /// \brief Removes the link between a prefab instance and its template, turning the instance into a regular object.
   virtual void UnlinkPrefabs(const xiiDeque<const xiiDocumentObject*>& selection);
 
-  virtual xiiStatus CreatePrefabDocumentFromSelection(const char* szFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB = {}, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});
-  virtual xiiStatus CreatePrefabDocument(const char* szFile, xiiArrayPtr<const xiiDocumentObject*> rootObjects, const xiiUuid& invPrefabSeed, xiiUuid& out_newDocumentGuid, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, bool bKeepOpen = false, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});
+  virtual xiiStatus CreatePrefabDocumentFromSelection(xiiStringView sFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB = {}, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});
+  virtual xiiStatus CreatePrefabDocument(xiiStringView sFile, xiiArrayPtr<const xiiDocumentObject*> rootObjects, const xiiUuid& invPrefabSeed, xiiUuid& out_newDocumentGuid, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, bool bKeepOpen = false, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});
 
   // Returns new guid of reverted object.
-  virtual xiiUuid ReplaceByPrefab(const xiiDocumentObject* pRootObject, const char* szPrefabFile, const xiiUuid& prefabAsset, const xiiUuid& prefabSeed, bool bEnginePrefab);
+  virtual xiiUuid ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiStringView sPrefabFile, const xiiUuid& prefabAsset, const xiiUuid& prefabSeed, bool bEnginePrefab);
   // Returns new guid of reverted object.
   virtual xiiUuid RevertPrefab(const xiiDocumentObject* pObject);
 
@@ -269,7 +269,7 @@ protected:
   ///@{
 
   virtual void UpdatePrefabsRecursive(xiiDocumentObject* pObject);
-  virtual void UpdatePrefabObject(xiiDocumentObject* pObject, const xiiUuid& PrefabAsset, const xiiUuid& PrefabSeed, const char* szBasePrefab);
+  virtual void UpdatePrefabObject(xiiDocumentObject* pObject, const xiiUuid& PrefabAsset, const xiiUuid& PrefabSeed, xiiStringView sBasePrefab);
 
   ///@}
 

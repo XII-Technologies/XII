@@ -26,9 +26,8 @@ void MSVC_OutOfLine_DebugBreak(...)
 bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg)
 {
   char szTemp[1024 * 4] = "";
-  xiiStringUtils::snprintf(szTemp, XII_ARRAY_SIZE(szTemp),
-                           "\n\n *** Assertion ***\n\n    Expression: \"%s\"\n    Function: \"%s\"\n    File: \"%s\"\n    Line: %u\n    Message: \"%s\"\n\n", szExpression,
-                           szFunction, szSourceFile, uiLine, szAssertMsg);
+  xiiStringUtils::snprintf(szTemp, XII_ARRAY_SIZE(szTemp), "\n\n *** Assertion ***\n\n    Expression: \"%s\"\n    Function: \"%s\"\n    File: \"%s\"\n    Line: %u\n    Message: \"%s\"\n\n",
+                           szExpression, szFunction, szSourceFile, uiLine, szAssertMsg);
   szTemp[1024 * 4 - 1] = '\0';
 
   xiiLog::Print(szTemp);
@@ -36,7 +35,7 @@ bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const c
   if (xiiSystemInformation::IsDebuggerAttached())
     return true;
 
-  // If no debugger is attached we append the assert to a common file so that postmortem debugging is easier
+  // If no debugger is attached we append the assert to a common file so that postmortem debugging is easier.
   if (FILE* assertLogFP = fopen("xiiDefaultAssertHandlerOutput.txt", "a"))
   {
     time_t timeUTC = time(&timeUTC);
@@ -51,7 +50,7 @@ bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const c
     fclose(assertLogFP);
   }
 
-  // if the environment variable "XII_SILENT_ASSERTS" is set to a value like "1", "on", "true", "enable" or "yes"
+  // If the environment variable "XII_SILENT_ASSERTS" is set to a value like "1", "on", "true", "enable" or "yes"
   // the assert handler will never show a GUI that may block the application from continuing to run
   // this should be set on machines that run tests which should never get stuck but rather crash asap
   bool bSilentAsserts = false;
@@ -66,7 +65,7 @@ bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const c
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 
-    // make sure the cursor is definitely shown, since the user must be able to click buttons
+    // Ensure the cursor is definitely shown, since the user must be able to click buttons.
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
     // Todo: Use modern Windows API to show cursor in current window.
     // http://stackoverflow.com/questions/37956628/change-mouse-pointer-in-uwp-app
@@ -104,8 +103,7 @@ bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const c
 
 #endif
 
-  // always do a debug-break
-  // in release-builds this will just crash the app
+  // Always do a debug-break, in release-builds this will just crash the program.
   return true;
 }
 
@@ -135,6 +133,5 @@ bool xiiFailedCheck(const char* szSourceFile, xiiUInt32 uiLine, const char* szFu
   xiiStringBuilder tmp;
   return xiiFailedCheck(szSourceFile, uiLine, szFunction, szExpression, msg.GetTextCStr(tmp));
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Basics_Assert);

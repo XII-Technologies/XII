@@ -8,13 +8,13 @@ XII_ALWAYS_INLINE xiiStringView::xiiStringView(char* pStart) :
 }
 
 template <typename T>
-constexpr XII_ALWAYS_INLINE xiiStringView::xiiStringView(T pStart, typename std::enable_if<std::is_same<T, const char*>::value, int>::type*) :
+constexpr XII_ALWAYS_INLINE xiiStringView::xiiStringView(T pStart, typename std::enable_if<std::is_same<T, const char*>::value, xiiInt32>::type*) :
   m_pStart(pStart), m_pEnd(pStart + xiiStringUtils::GetStringElementCount(pStart))
 {
 }
 
 template <typename T>
-XII_ALWAYS_INLINE xiiStringView::xiiStringView(const T&& str, typename std::enable_if<std::is_same<T, const char*>::value == false && std::is_convertible<T, const char*>::value, int>::type*)
+XII_ALWAYS_INLINE xiiStringView::xiiStringView(const T&& str, typename std::enable_if<std::is_same<T, const char*>::value == false && std::is_convertible<T, const char*>::value, xiiInt32>::type*)
 {
   m_pStart = str;
   m_pEnd   = m_pStart + xiiStringUtils::GetStringElementCount(m_pStart);

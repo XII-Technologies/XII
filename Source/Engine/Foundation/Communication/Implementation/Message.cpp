@@ -5,11 +5,9 @@
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMessage, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
 // clang-format on
 
 xiiMessageId xiiMessage::s_NextMsgId = 0;
-
 
 void xiiMessage::PackageForTransfer(const xiiMessage& msg, xiiStreamWriter& ref_stream)
 {
@@ -29,21 +27,7 @@ xiiUniquePtr<xiiMessage> xiiMessage::ReplicatePackedMessage(xiiStreamReader& ref
   xiiUInt8 uiTypeVersion = 0;
   ref_stream >> uiTypeVersion;
 
-  static xiiHashTable<xiiUInt64, const xiiRTTI*, xiiHashHelper<xiiUInt64>, xiiStaticAllocatorWrapper> MessageTypes;
-
-  const xiiRTTI* pRtti = nullptr;
-  if (!MessageTypes.TryGetValue(uiTypeHash, pRtti))
-  {
-    for (pRtti = xiiRTTI::GetFirstInstance(); pRtti != nullptr; pRtti = pRtti->GetNextInstance())
-    {
-      if (pRtti->GetTypeNameHash() == uiTypeHash)
-      {
-        MessageTypes[uiTypeHash] = pRtti;
-        break;
-      }
-    }
-  }
-
+  const xiiRTTI* pRtti = xiiRTTI::FindTypeByNameHash(uiTypeHash);
   if (pRtti == nullptr || !pRtti->GetAllocator()->CanAllocate())
     return nullptr;
 

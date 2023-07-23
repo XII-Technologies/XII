@@ -20,11 +20,11 @@ void xiiWorldWriter::Clear()
   }
 }
 
-void xiiWorldWriter::WriteWorld(xiiStreamWriter& inout_stream, xiiWorld& ref_world, const xiiTagSet* pExclude)
+void xiiWorldWriter::WriteWorld(xiiStreamWriter& ref_stream, xiiWorld& ref_world, const xiiTagSet* pExclude)
 {
   Clear();
 
-  m_pStream  = &inout_stream;
+  m_pStream  = &ref_stream;
   m_pExclude = pExclude;
 
   XII_LOCK(ref_world.GetReadMarker());
@@ -34,11 +34,11 @@ void xiiWorldWriter::WriteWorld(xiiStreamWriter& inout_stream, xiiWorld& ref_wor
   WriteToStream().IgnoreResult();
 }
 
-void xiiWorldWriter::WriteObjects(xiiStreamWriter& inout_stream, const xiiDeque<const xiiGameObject*>& rootObjects)
+void xiiWorldWriter::WriteObjects(xiiStreamWriter& ref_stream, const xiiDeque<const xiiGameObject*>& rootObjects)
 {
   Clear();
 
-  m_pStream = &inout_stream;
+  m_pStream = &ref_stream;
 
   for (const xiiGameObject* pObject : rootObjects)
   {
@@ -49,11 +49,11 @@ void xiiWorldWriter::WriteObjects(xiiStreamWriter& inout_stream, const xiiDeque<
   WriteToStream().IgnoreResult();
 }
 
-void xiiWorldWriter::WriteObjects(xiiStreamWriter& inout_stream, xiiArrayPtr<const xiiGameObject*> rootObjects)
+void xiiWorldWriter::WriteObjects(xiiStreamWriter& ref_stream, xiiArrayPtr<const xiiGameObject*> rootObjects)
 {
   Clear();
 
-  m_pStream = &inout_stream;
+  m_pStream = &ref_stream;
 
   for (const xiiGameObject* pObject : rootObjects)
   {

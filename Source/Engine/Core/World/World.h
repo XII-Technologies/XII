@@ -252,6 +252,8 @@ public:
   /// \brief Returns a task implementation that calls Update on this world.
   const xiiSharedPtr<xiiTask>& GetUpdateTask();
 
+  /// \brief Returns the number of update calls. Can be used to determine whether an operation has already been done during a frame.
+  xiiUInt32 GetUpdateCounter() const;
 
   /// \brief Returns the spatial system that is associated with this world.
   xiiSpatialSystem* GetSpatialSystem();
@@ -393,6 +395,8 @@ private:
   void RecreateHierarchyData(xiiGameObject* pObject, bool bWasDynamic);
 
   bool ReportErrorWhenStaticObjectMoves() const;
+
+  float GetInvDeltaSeconds() const;
 
   xiiSharedPtr<xiiTask> m_pUpdateTask;
 

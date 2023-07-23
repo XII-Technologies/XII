@@ -8,9 +8,9 @@
 #include <Foundation/Utilities/ConversionUtils.h>
 #include <ToolsFoundation/Utilities/RecentFilesList.h>
 
-void xiiRecentFilesList::Insert(const char* szFile, xiiInt32 iContainerWindow)
+void xiiRecentFilesList::Insert(xiiStringView sFile, xiiInt32 iContainerWindow)
 {
-  xiiStringBuilder sCleanPath = szFile;
+  xiiStringBuilder sCleanPath = sFile;
   sCleanPath.MakeCleanPath();
 
   xiiString s = sCleanPath;
@@ -29,13 +29,13 @@ void xiiRecentFilesList::Insert(const char* szFile, xiiInt32 iContainerWindow)
     m_Files.SetCount(m_uiMaxElements);
 }
 
-void xiiRecentFilesList::Save(const char* szFile)
+void xiiRecentFilesList::Save(xiiStringView sFile)
 {
   if (m_Files.IsEmpty())
     return;
 
   xiiDeferredFileWriter File;
-  File.SetOutput(szFile);
+  File.SetOutput(sFile);
 
   for (const RecentFile& file : m_Files)
   {
@@ -46,15 +46,15 @@ void xiiRecentFilesList::Save(const char* szFile)
   }
 
   if (File.Close().Failed())
-    xiiLog::Error("Unable to open file '{0}' for writing!", szFile);
+    xiiLog::Error("Unable to open file '{0}' for writing!", sFile);
 }
 
-void xiiRecentFilesList::Load(const char* szFile)
+void xiiRecentFilesList::Load(xiiStringView sFile)
 {
   m_Files.Clear();
 
   xiiFileReader File;
-  if (File.Open(szFile).Failed())
+  if (File.Open(sFile).Failed())
     return;
 
   xiiStringBuilder sAllLines;

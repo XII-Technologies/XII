@@ -170,14 +170,14 @@ protected:
 class XII_FOUNDATION_DLL xiiCommandLineOptionInt : public xiiCommandLineOptionDoc
 {
 public:
-  xiiCommandLineOptionInt(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, int iDefaultValue, int iMinValue = xiiMath::MinValue<int>(), int iMaxValue = xiiMath::MaxValue<int>(), bool bCaseSensitive = false);
+  xiiCommandLineOptionInt(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, xiiInt32 iDefaultValue, xiiInt32 iMinValue = xiiMath::MinValue<xiiInt32>(), xiiInt32 iMaxValue = xiiMath::MaxValue<xiiInt32>(), bool bCaseSensitive = false);
 
   virtual void GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
   virtual void GetParamShortDesc(xiiStringBuilder& ref_sOut) const override; // [tested]
 
   /// \brief Returns the value of this option. Either what was specified on the command line, or the default value.
-  int GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
+  xiiInt32 GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
 
   /// \brief Modifies the default value
   void SetDefaultValue(xiiInt32 value)

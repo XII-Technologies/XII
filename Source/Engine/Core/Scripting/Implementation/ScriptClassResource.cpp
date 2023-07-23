@@ -3,54 +3,6 @@
 #include <Core/Scripting/ScriptAttributes.h>
 #include <Core/Scripting/ScriptClassResource.h>
 
-xiiScriptRTTI::xiiScriptRTTI(xiiStringView sName, const xiiRTTI* pParentType, FunctionList&& functions, MessageHandlerList&& messageHandlers) :
-  xiiRTTI(nullptr, pParentType, 0, 1, xiiVariantType::Invalid, xiiTypeFlags::Class, nullptr, xiiArrayPtr<xiiAbstractProperty*>(), xiiArrayPtr<xiiAbstractFunctionProperty*>(), xiiArrayPtr<xiiPropertyAttribute*>(), xiiArrayPtr<xiiAbstractMessageHandler*>(), xiiArrayPtr<xiiMessageSenderInfo>(), nullptr), m_sTypeNameStorage(sName), m_FunctionStorage(std::move(functions)), m_MessageHandlerStorage(std::move(messageHandlers))
-{
-  m_szTypeName = m_sTypeNameStorage.GetData();
-
-  for (auto& pFunction : m_FunctionStorage)
-  {
-    if (pFunction != nullptr)
-    {
-      m_FunctionRawPtrs.PushBack(pFunction.Borrow());
-    }
-  }
-
-  for (auto& pMessageHandler : m_MessageHandlerStorage)
-  {
-    if (pMessageHandler != nullptr)
-    {
-      m_MessageHandlerRawPtrs.PushBack(pMessageHandler.Borrow());
-    }
-  }
-
-  m_Functions       = m_FunctionRawPtrs;
-  m_MessageHandlers = m_MessageHandlerRawPtrs;
-
-  RegisterType();
-
-  SetupParentHierarchy();
-  GatherDynamicMessageHandlers();
-}
-
-xiiScriptRTTI::~xiiScriptRTTI()
-{
-  UnregisterType();
-  m_szTypeName = nullptr;
-}
-
-const xiiAbstractFunctionProperty* xiiScriptRTTI::GetFunctionByIndex(xiiUInt32 uiIndex) const
-{
-  if (uiIndex < m_FunctionStorage.GetCount())
-  {
-    return m_FunctionStorage.GetData()[uiIndex].Borrow();
-  }
-
-  return nullptr;
-}
-
-//////////////////////////////////////////////////////////////////////////
-
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiScriptClassResource, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -64,7 +16,7 @@ xiiScriptClassResource::xiiScriptClassResource() :
 
 xiiScriptClassResource::~xiiScriptClassResource() = default;
 
-void xiiScriptClassResource::CreateScriptType(xiiStringView sName, const xiiRTTI* pBaseType, xiiScriptRTTI::FunctionList&& functions, xiiScriptRTTI::MessageHandlerList&& messageHandlers)
+xiiSharedPtr<xiiScriptRTTI> xiiScriptClassResource::CreateScriptType(xiiStringView sName, const xiiRTTI* pBaseType, xiiScriptRTTI::FunctionList&& functions, xiiScriptRTTI::MessageHandlerList&& messageHandlers)
 {
   xiiScriptRTTI::FunctionList sortedFunctions;
   for (auto pFuncProp : pBaseType->GetFunctions())
@@ -79,23 +31,42 @@ void xiiScriptClassResource::CreateScriptType(xiiStringView sName, const xiiRTTI
     xiiUInt16 uiIndex = pBaseClassFuncAttr->GetIndex();
     sortedFunctions.EnsureCount(uiIndex + 1);
 
-    for (auto& pScriptFuncProp : functions)
+    for (xiiUInt32 i = 0; i < functions.GetCount(); ++i)
     {
+      auto& pScriptFuncProp = functions[i];
       if (pScriptFuncProp == nullptr)
         continue;
 
       if (sBaseClassFuncName == pScriptFuncProp->GetPropertyName())
       {
         sortedFunctions[uiIndex] = std::move(pScriptFuncProp);
+        functions.RemoveAtAndSwap(i);
         break;
       }
     }
   }
 
   m_pType = XII_DEFAULT_NEW(xiiScriptRTTI, sName, pBaseType, std::move(sortedFunctions), std::move(messageHandlers));
+  return m_pType;
 }
 
 void xiiScriptClassResource::DeleteScriptType()
 {
   m_pType = nullptr;
+}
+
+xiiSharedPtr<xiiScriptCoroutineRTTI> xiiScriptClassResource::CreateScriptCoroutineType(xiiStringView sScriptClassName, xiiStringView sFunctionName, xiiUniquePtr<xiiRTTIAllocator>&& pAllocator)
+{
+  xiiStringBuilder sCoroutineTypeName;
+  sCoroutineTypeName.Set(sScriptClassName, "::", sFunctionName, "<Coroutine>");
+
+  xiiSharedPtr<xiiScriptCoroutineRTTI> pCoroutineType = XII_DEFAULT_NEW(xiiScriptCoroutineRTTI, sCoroutineTypeName, std::move(pAllocator));
+  m_CoroutineTypes.PushBack(pCoroutineType);
+
+  return pCoroutineType;
+}
+
+void xiiScriptClassResource::DeleteAllScriptCoroutineTypes()
+{
+  m_CoroutineTypes.Clear();
 }

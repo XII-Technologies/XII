@@ -24,23 +24,23 @@ public:
   const xiiRTTI* GetType() const { return m_pRtti; } // [tested]
 
   /// \brief Returns the value of the property defined by its path. Return value is invalid iff the path was invalid.
-  virtual const xiiVariant GetValue(const char* szProperty, xiiVariant index = xiiVariant(), xiiStatus* pRes = nullptr) const = 0;
+  virtual const xiiVariant GetValue(xiiStringView sProperty, xiiVariant index = xiiVariant(), xiiStatus* pRes = nullptr) const = 0;
 
   /// \brief Sets a property defined by its path to the given value. Returns whether the operation was successful.
-  virtual bool SetValue(const char* szProperty, const xiiVariant& value, xiiVariant index = xiiVariant()) = 0;
+  virtual bool SetValue(xiiStringView sProperty, const xiiVariant& value, xiiVariant index = xiiVariant()) = 0;
 
-  virtual xiiInt32 GetCount(const char* szProperty) const                                       = 0;
-  virtual bool     GetKeys(const char* szProperty, xiiDynamicArray<xiiVariant>& out_keys) const = 0;
+  virtual xiiInt32 GetCount(xiiStringView sProperty) const                                       = 0;
+  virtual bool     GetKeys(xiiStringView sProperty, xiiDynamicArray<xiiVariant>& out_keys) const = 0;
 
-  virtual bool InsertValue(const char* szProperty, xiiVariant index, const xiiVariant& value) = 0;
-  virtual bool RemoveValue(const char* szProperty, xiiVariant index)                          = 0;
-  virtual bool MoveValue(const char* szProperty, xiiVariant oldIndex, xiiVariant newIndex)    = 0;
+  virtual bool InsertValue(xiiStringView sProperty, xiiVariant index, const xiiVariant& value) = 0;
+  virtual bool RemoveValue(xiiStringView sProperty, xiiVariant index)                          = 0;
+  virtual bool MoveValue(xiiStringView sProperty, xiiVariant oldIndex, xiiVariant newIndex)    = 0;
 
-  virtual xiiVariant GetPropertyChildIndex(const char* szProperty, const xiiVariant& value) const = 0;
+  virtual xiiVariant GetPropertyChildIndex(xiiStringView sProperty, const xiiVariant& value) const = 0;
 
   const xiiDocumentObject* GetOwner() const { return m_pOwner; }
 
-  bool GetValues(const char* szProperty, xiiDynamicArray<xiiVariant>& out_values) const;
+  bool GetValues(xiiStringView sProperty, xiiDynamicArray<xiiVariant>& out_values) const;
 
 
 private:

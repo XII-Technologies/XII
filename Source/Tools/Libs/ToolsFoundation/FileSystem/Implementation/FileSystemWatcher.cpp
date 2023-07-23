@@ -47,11 +47,11 @@ void xiiFileSystemWatcher::Initialize()
     m_Watchers.PushBack(pWatcher);
   }
 
-  m_pWatcherTask = XII_DEFAULT_NEW(xiiDelegateTask<void>, "Watcher Changes", [this]() {
+  m_pWatcherTask = XII_DEFAULT_NEW(xiiDelegateTask<void>, "Watcher Changes", xiiTaskNesting::Never, [this]() {
     xiiHybridArray<WatcherResult, 16> watcherResults;
     for (xiiDirectoryWatcher* pWatcher : m_Watchers)
     {
-      pWatcher->EnumerateChanges([pWatcher, &watcherResults](const char* szFilename, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) { watcherResults.PushBack({szFilename, action, type}); });
+      pWatcher->EnumerateChanges([pWatcher, &watcherResults](xiiStringView sFilename, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) { watcherResults.PushBack({sFilename, action, type}); });
     }
     for (const WatcherResult& res : watcherResults)
     {
@@ -59,7 +59,7 @@ void xiiFileSystemWatcher::Initialize()
     } //
   });
   // This is a separate task as these trigger callbacks which can potentially take a long time and we can't have the watcher changes task be blocked for so long or notifications might get lost.
-  m_pNotifyTask = XII_DEFAULT_NEW(xiiDelegateTask<void>, "Watcher Notify", [this]() { NotifyChanges(); });
+  m_pNotifyTask = XII_DEFAULT_NEW(xiiDelegateTask<void>, "Watcher Notify", xiiTaskNesting::Never, [this]() { NotifyChanges(); });
 }
 
 void xiiFileSystemWatcher::Deinitialize()

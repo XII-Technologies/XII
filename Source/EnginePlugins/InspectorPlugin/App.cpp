@@ -7,12 +7,7 @@
 
 static xiiAssertHandler g_PreviousAssertHandler = nullptr;
 
-static bool TelemetryAssertHandler(
-  const char* szSourceFile,
-  xiiUInt32   uiLine,
-  const char* szFunction,
-  const char* szExpression,
-  const char* szAssertMsg)
+static bool TelemetryAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg)
 {
   if (xiiTelemetry::IsConnectedToClient())
   {

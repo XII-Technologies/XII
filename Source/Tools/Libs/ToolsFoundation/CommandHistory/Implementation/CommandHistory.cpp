@@ -64,10 +64,10 @@ xiiCommandHistory::~xiiCommandHistory()
   }
 }
 
-void xiiCommandHistory::BeginTemporaryCommands(const char* szDisplayString, bool bFireEventsWhenUndoingTempCommands)
+void xiiCommandHistory::BeginTemporaryCommands(xiiStringView sDisplayString, bool bFireEventsWhenUndoingTempCommands)
 {
   XII_ASSERT_DEV(!m_bTemporaryMode, "Temporary Mode cannot be nested");
-  StartTransaction(szDisplayString);
+  StartTransaction(sDisplayString);
   StartTransaction("[Temporary]");
 
   m_bFireEventsWhenUndoingTempCommands = bFireEventsWhenUndoingTempCommands;

@@ -121,6 +121,17 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4d)
     XII_TEST_BOOL((m.m_col3 == xiiSimdVec4d(0, 0, 0, 1)).AllSet());
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetZero")
+  {
+    xiiSimdMat4d m;
+    m.SetZero();
+
+    XII_TEST_BOOL((m.m_col0 == xiiSimdVec4d(0, 0, 0, 0)).AllSet());
+    XII_TEST_BOOL((m.m_col1 == xiiSimdVec4d(0, 0, 0, 0)).AllSet());
+    XII_TEST_BOOL((m.m_col2 == xiiSimdVec4d(0, 0, 0, 0)).AllSet());
+    XII_TEST_BOOL((m.m_col3 == xiiSimdVec4d(0, 0, 0, 0)).AllSet());
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IdentityMatrix")
   {
     xiiSimdMat4d m = xiiSimdMat4d::IdentityMatrix();
@@ -129,6 +140,16 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4d)
     XII_TEST_BOOL((m.m_col1 == xiiSimdVec4d(0, 1, 0, 0)).AllSet());
     XII_TEST_BOOL((m.m_col2 == xiiSimdVec4d(0, 0, 1, 0)).AllSet());
     XII_TEST_BOOL((m.m_col3 == xiiSimdVec4d(0, 0, 0, 1)).AllSet());
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ZeroMatrix")
+  {
+    xiiSimdMat4d m = xiiSimdMat4d::ZeroMatrix();
+
+    XII_TEST_BOOL((m.m_col0 == xiiSimdVec4d(0, 0, 0, 0)).AllSet());
+    XII_TEST_BOOL((m.m_col1 == xiiSimdVec4d(0, 0, 0, 0)).AllSet());
+    XII_TEST_BOOL((m.m_col2 == xiiSimdVec4d(0, 0, 0, 0)).AllSet());
+    XII_TEST_BOOL((m.m_col3 == xiiSimdVec4d(0, 0, 0, 0)).AllSet());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Transpose")

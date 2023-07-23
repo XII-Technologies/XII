@@ -13,7 +13,7 @@ public:
   using DispatchFunction = xiiDelegate<void(), 128>;
 
   /// \brief Initializes the runnable class
-  xiiThreadWithDispatcher(const char* szName = "xiiThreadWithDispatcher", xiiUInt32 uiStackSize = 128 * 1024);
+  xiiThreadWithDispatcher(xiiStringView sName = "xiiThreadWithDispatcher", xiiUInt32 uiStackSize = 128 * 1024);
 
   /// \brief Destructor checks if the thread is deleted while still running, which is not allowed as this is a data hazard
   virtual ~xiiThreadWithDispatcher();

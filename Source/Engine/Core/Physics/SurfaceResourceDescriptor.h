@@ -16,7 +16,7 @@ struct xiiSurfaceInteractionAlignment
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     SurfaceNormal,
     IncidentDirection,
@@ -34,8 +34,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiSurfaceInteractionAlignment);
 
 struct XII_CORE_DLL xiiSurfaceInteraction
 {
-  void        SetPrefab(const char* szPrefab);
-  const char* GetPrefab() const;
+  void          SetPrefab(xiiStringView sPrefab);
+  xiiStringView GetPrefab() const;
 
   xiiString m_sInteractionType;
 
@@ -45,10 +45,10 @@ struct XII_CORE_DLL xiiSurfaceInteraction
   float                                   m_fImpulseThreshold = 0.0f;
   float                                   m_fImpulseScale     = 1.0f;
 
-  const xiiRangeView<const char*, xiiUInt32> GetParameters() const;                                        // [ property ] (exposed parameter)
-  void                                       SetParameter(const char* szKey, const xiiVariant& value);     // [ property ] (exposed parameter)
-  void                                       RemoveParameter(const char* szKey);                           // [ property ] (exposed parameter)
-  bool                                       GetParameter(const char* szKey, xiiVariant& out_value) const; // [ property ] (exposed parameter)
+  const xiiRangeView<xiiStringView, xiiUInt32> GetParameters() const;                                         // [ property ] (exposed parameter)
+  void                                         SetParameter(xiiStringView sKey, const xiiVariant& value);     // [ property ] (exposed parameter)
+  void                                         RemoveParameter(xiiStringView sKey);                           // [ property ] (exposed parameter)
+  bool                                         GetParameter(xiiStringView sKey, xiiVariant& out_value) const; // [ property ] (exposed parameter)
 
   xiiArrayMap<xiiHashedString, xiiVariant> m_Parameters;
 };
@@ -63,17 +63,17 @@ public:
   void Load(xiiStreamReader& ref_stream);
   void Save(xiiStreamWriter& ref_stream) const;
 
-  void        SetBaseSurfaceFile(const char* szFile);
-  const char* GetBaseSurfaceFile() const;
+  void          SetBaseSurfaceFile(xiiStringView sFile);
+  xiiStringView GetBaseSurfaceFile() const;
 
-  void        SetCollisionInteraction(const char* szName);
-  const char* GetCollisionInteraction() const;
+  void          SetCollisionInteraction(xiiStringView sName);
+  xiiStringView GetCollisionInteraction() const;
 
-  void        SetSlideReactionPrefabFile(const char* szFile);
-  const char* GetSlideReactionPrefabFile() const;
+  void          SetSlideReactionPrefabFile(xiiStringView sFile);
+  xiiStringView GetSlideReactionPrefabFile() const;
 
-  void        SetRollReactionPrefabFile(const char* szFile);
-  const char* GetRollReactionPrefabFile() const;
+  void          SetRollReactionPrefabFile(xiiStringView sFile);
+  xiiStringView GetRollReactionPrefabFile() const;
 
 
   xiiSurfaceResourceHandle m_hBaseSurface;

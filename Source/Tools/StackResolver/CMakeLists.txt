@@ -1,6 +1,6 @@
 xii_cmake_init()
 
-# currently the requirements are only met on Windows (ie. file iteration)
+# Currently the requirements are only met on Windows and Linux (ie. file iteration)
 xii_requires_windows_desktop()
 
 # Get the name of this folder as the project name

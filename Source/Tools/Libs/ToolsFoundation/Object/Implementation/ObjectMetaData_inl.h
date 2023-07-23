@@ -100,7 +100,7 @@ void xiiObjectMetaData<KEY, VALUE>::AttachMetaDataToAbstractGraph(xiiAbstractObj
 
   XII_LOCK(m_pMetaStorage->m_Mutex);
 
-  xiiHashTable<const char*, xiiVariant> DefaultValues;
+  xiiHashTable<xiiStringView, xiiVariant> DefaultValues;
 
   // store the default values in an easily accessible hash map, to be able to compare against them
   {
@@ -111,8 +111,7 @@ void xiiObjectMetaData<KEY, VALUE>::AttachMetaDataToAbstractGraph(xiiAbstractObj
       if (pProp->GetCategory() != xiiPropertyCategory::Member)
         continue;
 
-      DefaultValues[pProp->GetPropertyName()] =
-        xiiReflectionUtils::GetMemberPropertyValue(static_cast<xiiAbstractMemberProperty*>(pProp), &m_DefaultValue);
+      DefaultValues[pProp->GetPropertyName()] = xiiReflectionUtils::GetMemberPropertyValue(static_cast<xiiAbstractMemberProperty*>(pProp), &m_DefaultValue);
     }
   }
 

@@ -26,7 +26,7 @@ public:
   // Ownership
   const xiiDocumentObject* GetParent() const { return m_pParent; }
 
-  virtual void InsertSubObject(xiiDocumentObject* pObject, const char* szProperty, const xiiVariant& index);
+  virtual void InsertSubObject(xiiDocumentObject* pObject, xiiStringView sProperty, const xiiVariant& index);
   virtual void RemoveSubObject(xiiDocumentObject* pObject);
 
   // Helper
@@ -34,7 +34,7 @@ public:
   const xiiHybridArray<xiiDocumentObject*, 8>& GetChildren() const { return m_Children; }
   xiiDocumentObject*                           GetChild(const xiiUuid& guid);
   const xiiDocumentObject*                     GetChild(const xiiUuid& guid) const;
-  const char*                                  GetParentProperty() const { return m_sParentProperty; }
+  xiiStringView                                GetParentProperty() const { return m_sParentProperty; }
   xiiAbstractProperty*                         GetParentPropertyType() const;
   xiiVariant                                   GetPropertyIndex() const;
   bool                                         IsOnHeap() const;

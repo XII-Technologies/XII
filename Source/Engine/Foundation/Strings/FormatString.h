@@ -59,6 +59,7 @@ public:
   XII_ALWAYS_INLINE xiiFormatString() = default;
   XII_ALWAYS_INLINE xiiFormatString(const char* szString) { m_sString = szString; }
   XII_ALWAYS_INLINE xiiFormatString(xiiStringView sString) { m_sString = sString; }
+
   xiiFormatString(const xiiStringBuilder& s);
   virtual ~xiiFormatString() = default;
 

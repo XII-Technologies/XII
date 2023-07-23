@@ -159,8 +159,8 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
     auto info = (const FILE_NOTIFY_EXTENDED_INFORMATION*)buffer.GetData();
     while (true)
     {
-      auto directory   = xiiArrayPtr<const WCHAR>(info->FileName, info->FileNameLength / sizeof(WCHAR));
-      int  bytesNeeded = WideCharToMultiByte(CP_UTF8, 0, directory.GetPtr(), directory.GetCount(), nullptr, 0, nullptr, nullptr);
+      auto     directory   = xiiArrayPtr<const WCHAR>(info->FileName, info->FileNameLength / sizeof(WCHAR));
+      xiiInt32 bytesNeeded = WideCharToMultiByte(CP_UTF8, 0, directory.GetPtr(), directory.GetCount(), nullptr, 0, nullptr, nullptr);
       if (bytesNeeded > 0)
       {
         xiiHybridArray<char, 1024> dir;

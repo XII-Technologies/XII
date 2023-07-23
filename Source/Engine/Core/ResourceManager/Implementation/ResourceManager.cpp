@@ -173,7 +173,7 @@ xiiUInt32 xiiResourceManager::FreeAllUnusedResources()
 
       for (auto itType = s_pState->m_LoadedResources.GetIterator(); itType.IsValid(); ++itType)
       {
-        LoadedResources& lr    = itType.Value();
+        LoadedResources& lr = itType.Value();
 
         for (auto it = lr.m_Resources.GetIterator(); it.IsValid(); /* empty */)
         {
@@ -344,13 +344,7 @@ bool xiiResourceManager::IsResourceTypeAcquireDuringUpdateContentAllowed(const x
 
     for (const xiiRTTI* pRtti : info.m_NestedTypes)
     {
-      xiiHybridArray<const xiiRTTI*, 16> derived;
-      xiiRTTI::GetAllTypesDerivedFrom(pRtti, derived, false);
-
-      for (const xiiRTTI* pDerived : derived)
-      {
-        todo.Insert(pDerived);
-      }
+      xiiRTTI::ForEachDerivedType(pRtti, [&](const xiiRTTI* pDerived) { todo.Insert(pDerived); });
     }
 
     while (!todo.IsEmpty())
@@ -369,13 +363,7 @@ bool xiiResourceManager::IsResourceTypeAcquireDuringUpdateContentAllowed(const x
       {
         if (!visited.Contains(pNestedRtti))
         {
-          xiiHybridArray<const xiiRTTI*, 16> derived;
-          xiiRTTI::GetAllTypesDerivedFrom(pNestedRtti, derived, false);
-
-          for (const xiiRTTI* pDerived : derived)
-          {
-            todo.Insert(pDerived);
-          }
+          xiiRTTI::ForEachDerivedType(pNestedRtti, [&](const xiiRTTI* pDerived) { todo.Insert(pDerived); });
         }
       }
     }

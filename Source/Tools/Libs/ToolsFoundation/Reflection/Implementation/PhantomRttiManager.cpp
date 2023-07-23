@@ -10,7 +10,7 @@
 
 xiiCopyOnBroadcastEvent<const xiiPhantomRttiManagerEvent&> xiiPhantomRttiManager::s_Events;
 
-xiiHashTable<const char*, xiiPhantomRTTI*> xiiPhantomRttiManager::s_NameToPhantom;
+xiiHashTable<xiiStringView, xiiPhantomRTTI*> xiiPhantomRttiManager::s_NameToPhantom;
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(ToolsFoundation, ReflectedTypeManager)
@@ -39,7 +39,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 const xiiRTTI* xiiPhantomRttiManager::RegisterType(xiiReflectedTypeDescriptor& ref_desc)
 {
   XII_PROFILE_SCOPE("RegisterType");
-  xiiRTTI*        pType    = xiiRTTI::FindTypeByName(ref_desc.m_sTypeName);
+  const xiiRTTI*  pType    = xiiRTTI::FindTypeByName(ref_desc.m_sTypeName);
   xiiPhantomRTTI* pPhantom = nullptr;
   s_NameToPhantom.TryGetValue(ref_desc.m_sTypeName, pPhantom);
 

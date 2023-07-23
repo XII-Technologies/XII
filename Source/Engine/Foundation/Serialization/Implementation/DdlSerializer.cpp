@@ -56,11 +56,11 @@ namespace
   }
 } // namespace
 
-static void WriteGraph(xiiOpenDdlWriter& ref_writer, const xiiAbstractObjectGraph* pGraph, const char* szName)
+static void WriteGraph(xiiOpenDdlWriter& ref_writer, const xiiAbstractObjectGraph* pGraph, xiiStringView sName)
 {
   xiiMap<xiiStringView, const xiiVariant*> SortedProperties;
 
-  ref_writer.BeginObject(szName);
+  ref_writer.BeginObject(sName);
 
   const auto& Nodes = pGraph->GetAllNodes();
   for (auto itNode = Nodes.GetIterator(); itNode.IsValid(); ++itNode)
@@ -70,7 +70,6 @@ static void WriteGraph(xiiOpenDdlWriter& ref_writer, const xiiAbstractObjectGrap
     ref_writer.BeginObject("o");
 
     {
-
       xiiOpenDdlUtils::StoreUuid(ref_writer, node.GetGuid(), "id");
       xiiOpenDdlUtils::StoreString(ref_writer, node.GetType(), "t");
       xiiOpenDdlUtils::StoreUInt32(ref_writer, node.GetTypeVersion(), "v");
@@ -112,11 +111,7 @@ void xiiAbstractGraphDdlSerializer::Write(xiiStreamWriter& ref_stream, const xii
   Write(writer, pGraph, pTypesGraph);
 }
 
-
-void xiiAbstractGraphDdlSerializer::Write(
-  xiiOpenDdlWriter&             ref_writer,
-  const xiiAbstractObjectGraph* pGraph,
-  const xiiAbstractObjectGraph* pTypesGraph /*= nullptr*/)
+void xiiAbstractGraphDdlSerializer::Write(xiiOpenDdlWriter& ref_writer, const xiiAbstractObjectGraph* pGraph, const xiiAbstractObjectGraph* pTypesGraph /*= nullptr*/)
 {
   WriteGraph(ref_writer, pGraph, "Objects");
   if (pTypesGraph)
@@ -179,11 +174,7 @@ static void ReadGraph(xiiAbstractObjectGraph* pGraph, const xiiOpenDdlReaderElem
   }
 }
 
-xiiResult xiiAbstractGraphDdlSerializer::Read(
-  xiiStreamReader&        ref_stream,
-  xiiAbstractObjectGraph* pGraph,
-  xiiAbstractObjectGraph* pTypesGraph,
-  bool                    bApplyPatches)
+xiiResult xiiAbstractGraphDdlSerializer::Read(xiiStreamReader& ref_stream, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectGraph* pTypesGraph, bool bApplyPatches)
 {
   xiiOpenDdlReader reader;
   if (reader.ParseDocument(ref_stream, 0, xiiLog::GetThreadLocalLogSystem()).Failed())
@@ -194,7 +185,6 @@ xiiResult xiiAbstractGraphDdlSerializer::Read(
 
   return Read(reader.GetRootElement(), pGraph, pTypesGraph, bApplyPatches);
 }
-
 
 xiiResult xiiAbstractGraphDdlSerializer::Read(const xiiOpenDdlReaderElement* pRootElement, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectGraph* pTypesGraph /*= nullptr*/, bool bApplyPatches /*= true*/)
 {
@@ -265,7 +255,7 @@ void xiiAbstractGraphDdlSerializer::WriteDocument(xiiStreamWriter& ref_stream, c
     writer.SetIndentation(-1);
 
   xiiStringBuilder sHeaderVersion;
-  sHeaderVersion.Format("HeaderV{0}", (int)XII_DOCUMENT_VERSION);
+  sHeaderVersion.Format("HeaderV{0}", (xiiInt32)XII_DOCUMENT_VERSION);
   WriteGraph(writer, pHeader, sHeaderVersion);
   WriteGraph(writer, pGraph, "Objects");
   WriteGraph(writer, pTypes, "Types");
@@ -450,7 +440,5 @@ xiiResult xiiAbstractGraphDdlSerializer::ReadHeader(xiiStreamReader& ref_stream,
   }
   return XII_SUCCESS;
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Serialization_Implementation_DdlSerializer);

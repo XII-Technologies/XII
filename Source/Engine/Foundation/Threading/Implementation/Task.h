@@ -15,7 +15,7 @@ public:
 
   /// \brief Sets the most important task properties. This has to be done before the task is added to a task group for the first time.
   ///
-  /// \param szTaskName
+  /// \param sTaskName
   ///  Will be displayed in profiling tools and is useful for debugging.
   ///
   /// \param nestingMode
@@ -24,7 +24,7 @@ public:
   /// \param Callback
   /// A callback to execute when the task is finished (or canceled).
   /// The most common use case for this is to deallocate the task at that time.
-  void ConfigureTask(const char* szTaskName, xiiTaskNesting nestingMode, xiiOnTaskFinishedCallback callback = xiiOnTaskFinishedCallback()); // [tested]
+  void ConfigureTask(xiiStringView sTaskName, xiiTaskNesting nestingMode, xiiOnTaskFinishedCallback callback = xiiOnTaskFinishedCallback()); // [tested]
 
   /// \brief Changes the multiplicity of this task.
   ///

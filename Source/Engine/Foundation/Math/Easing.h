@@ -1,21 +1,23 @@
 #pragma once
 
-#include <Foundation/Basics.h>
 #include <Foundation/Math/Declarations.h>
+#include <Foundation/Reflection/Reflection.h>
 
-namespace xiiMath
+/// \brief Available Procedural Curve Generators.
+///
+/// Supported easing function types adapted from https://easings.net. To view some of these in action, please
+/// visit the above mentioned source link.
+///
+/// Types:
+/// - EaseIn: Indicates a transition from the zero strength to full strength.
+/// - EaseOut: Indicates a transition from full strength to zero strength.
+/// - EaseInOut: Indicates a transition from zero strength to full strength halfway, then a transition back to zero strength.
+/// - EaseOutIn: Indicates a transition from full strength to zero strength halfway, then a transition back to full strength.
+struct XII_FOUNDATION_DLL xiiEasingFunction
 {
-  /// \brief Available Procedural Curve Generators.
-  ///
-  /// Supported easing function types adapted from https://easings.net. To view some of these in action, please
-  /// visit the above mentioned source link.
-  ///
-  /// Types:
-  /// - EaseIn: Indicates a transition from the zero strength to full strength.
-  /// - EaseOut: Indicates a transition from full strength to zero strength.
-  /// - EaseInOut: Indicates a transition from zero strength to full strength halfway, then a transition back to zero strength.
-  /// - EaseOutIn: Indicates a transition from full strength to zero strength halfway, then a transition back to full strength.
-  enum xiiEasingFunctions
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
   {
     ConstantZero,
     ConstantQuarter,
@@ -55,13 +57,13 @@ namespace xiiMath
     OutCirc,
     InOutCirc,
 
-    InBack,
-    OutBack,
-    InOutBack,
+    InBack,    ///< Values exceed the 0-1 range briefly.
+    OutBack,   ///< Values exceed the 0-1 range briefly.
+    InOutBack, ///< Values exceed the 0-1 range briefly.
 
-    InElastic,
-    OutElastic,
-    InOutElastic,
+    InElastic,    ///< Values exceed the 0-1 range briefly.
+    OutElastic,   ///< Values exceed the 0-1 range briefly.
+    InOutElastic, ///< Values exceed the 0-1 range briefly.
 
     InBounce,
     OutBounce,
@@ -73,144 +75,65 @@ namespace xiiMath
     Bell,
 
     ENUM_COUNT, // All easing function types must be stated before this.
+
+    Default = InLinear
   };
 
-  /// \brief Helper function that returns the easing value from an easing function.
-  template <typename Type>
-  Type GetEasingValue(xiiEasingFunctions easingFunction, Type input);
+  /// \brief Helper function that returns the function value at the given input.
+  static double GetValue(Enum function, double fInput);
 
-  /// \brief Helper function that returns the function value at the given x coordinate.
+  /// \brief Helper function that returns the function value at the given input.
   ///
-  /// If \a inverse is true, the value (1-Y) is returned.
-  template <typename Type>
-  Type GetEasingValue(xiiEasingFunctions easingFunction, Type input, bool bInverse);
+  /// if \a inverse is true, the value (1 - result) is returned.
+  static double GetValue(Enum function, double fInput, bool bInverse);
+};
 
-  template <typename Type>
-  Type EaseConstantZero(Type t);
+XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiEasingFunction);
 
-  template <typename Type>
-  Type EaseConstantQuarter(Type t);
-
-  template <typename Type>
-  Type EaseConstantHalf(Type t);
-
-  template <typename Type>
-  Type EaseConstantThreeFourths(Type t);
-
-  template <typename Type>
-  Type EaseConstantOne(Type t);
-
-  template <typename Type>
-  Type EaseInLinear(Type t);
-
-  template <typename Type>
-  Type EaseOutLinear(Type t);
-
-  template <typename Type>
-  Type EaseInOutLinear(Type t);
-
-  template <typename Type>
-  Type EaseInSine(Type t);
-
-  template <typename Type>
-  Type EaseOutSine(Type t);
-
-  template <typename Type>
-  Type EaseInOutSine(Type t);
-
-  template <typename Type>
-  Type EaseInQuad(Type t);
-
-  template <typename Type>
-  Type EaseOutQuad(Type t);
-
-  template <typename Type>
-  Type EaseInOutQuad(Type t);
-
-  template <typename Type>
-  Type EaseInCubic(Type t);
-
-  template <typename Type>
-  Type EaseOutCubic(Type t);
-
-  template <typename Type>
-  Type EaseInOutCubic(Type t);
-
-  template <typename Type>
-  Type EaseInQuartic(Type t);
-
-  template <typename Type>
-  Type EaseOutQuartic(Type t);
-
-  template <typename Type>
-  Type EaseInOutQuartic(Type t);
-
-  template <typename Type>
-  Type EaseInQuintic(Type t);
-
-  template <typename Type>
-  Type EaseOutQuintic(Type t);
-
-  template <typename Type>
-  Type EaseInOutQuintic(Type t);
-
-  template <typename Type>
-  Type EaseInExpo(Type t);
-
-  template <typename Type>
-  Type EaseOutExpo(Type t);
-
-  template <typename Type>
-  Type EaseInOutExpo(Type t);
-
-  template <typename Type>
-  Type EaseInCirc(Type t);
-
-  template <typename Type>
-  Type EaseOutCirc(Type t);
-
-  template <typename Type>
-  Type EaseInOutCirc(Type t);
-
-  template <typename Type>
-  Type EaseInBack(Type t);
-
-  template <typename Type>
-  Type EaseOutBack(Type t);
-
-  template <typename Type>
-  Type EaseInOutBack(Type t);
-
-  template <typename Type>
-  Type EaseInElastic(Type t);
-
-  template <typename Type>
-  Type EaseOutElastic(Type t);
-
-  template <typename Type>
-  Type EaseInOutElastic(Type t);
-
-  template <typename Type>
-  Type EaseInBounce(Type t);
-
-  template <typename Type>
-  Type EaseOutBounce(Type t);
-
-  template <typename Type>
-  Type EaseInOutBounce(Type t);
-
-  template <typename Type>
-  Type EaseConical(Type t);
-
-  template <typename Type>
-  Type EaseFadeInHoldFadeOut(Type t);
-
-  template <typename Type>
-  Type EaseFadeInFadeOut(Type t);
-
-  template <typename Type>
-  Type EaseBell(Type t);
-
+namespace xiiMath
+{
+  double EaseConstantZero(double t);
+  double EaseConstantQuarter(double t);
+  double EaseConstantHalf(double t);
+  double EaseConstantThreeFourths(double t);
+  double EaseConstantOne(double t);
+  double EaseInLinear(double t);
+  double EaseOutLinear(double t);
+  double EaseInOutLinear(double t);
+  double EaseInSine(double t);
+  double EaseOutSine(double t);
+  double EaseInOutSine(double t);
+  double EaseInQuad(double t);
+  double EaseOutQuad(double t);
+  double EaseInOutQuad(double t);
+  double EaseInCubic(double t);
+  double EaseOutCubic(double t);
+  double EaseInOutCubic(double t);
+  double EaseInQuartic(double t);
+  double EaseOutQuartic(double t);
+  double EaseInOutQuartic(double t);
+  double EaseInQuintic(double t);
+  double EaseOutQuintic(double t);
+  double EaseInOutQuintic(double t);
+  double EaseInExpo(double t);
+  double EaseOutExpo(double t);
+  double EaseInOutExpo(double t);
+  double EaseInCirc(double t);
+  double EaseOutCirc(double t);
+  double EaseInOutCirc(double t);
+  double EaseInBack(double t);
+  double EaseOutBack(double t);
+  double EaseInOutBack(double t);
+  double EaseInElastic(double t);
+  double EaseOutElastic(double t);
+  double EaseInOutElastic(double t);
+  double EaseInBounce(double t);
+  double EaseOutBounce(double t);
+  double EaseInOutBounce(double t);
+  double EaseConical(double t);
+  double EaseFadeInHoldFadeOut(double t);
+  double EaseFadeInFadeOut(double t);
+  double EaseBell(double t);
 } // namespace xiiMath
 
 #include <Foundation/Math/Implementation/Easing_inl.h>

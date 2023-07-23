@@ -457,12 +457,12 @@ XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::HorizontalMax<4>() const
   return xiiMath::Max((float)HorizontalMax<3>(), m_v.w);
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::Dot(const xiiSimdVec4f& v) const
 {
   float result = 0.0f;
 
-  for (int i = 0; i < N; ++i)
+  for (xiiInt32 i = 0; i < N; ++i)
   {
     result += (&m_v.x)[i] * (&v.m_v.x)[i];
   }

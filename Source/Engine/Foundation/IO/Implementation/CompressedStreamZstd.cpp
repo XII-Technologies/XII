@@ -135,9 +135,9 @@ xiiResult xiiCompressedStreamReaderZstd::RefillReadCache()
 
 xiiCompressedStreamWriterZstd::xiiCompressedStreamWriterZstd() = default;
 
-xiiCompressedStreamWriterZstd::xiiCompressedStreamWriterZstd(xiiStreamWriter* pOutputStream, Compression ratio)
+xiiCompressedStreamWriterZstd::xiiCompressedStreamWriterZstd(xiiStreamWriter* pOutputStream, xiiUInt32 uiMaxNumWorkerThreads, Compression ratio /*= Compression::Default*/, xiiUInt32 uiCompressionCacheSizeKB /*= 4*/)
 {
-  SetOutputStream(pOutputStream, ratio);
+  SetOutputStream(pOutputStream, uiMaxNumWorkerThreads, ratio, uiCompressionCacheSizeKB);
 }
 
 xiiCompressedStreamWriterZstd::~xiiCompressedStreamWriterZstd()
@@ -159,7 +159,7 @@ xiiCompressedStreamWriterZstd::~xiiCompressedStreamWriterZstd()
   }
 }
 
-void xiiCompressedStreamWriterZstd::SetOutputStream(xiiStreamWriter* pOutputStream, Compression ratio /*= Compression::Default*/, xiiUInt32 uiCompressionCacheSizeKB /*= 4*/)
+void xiiCompressedStreamWriterZstd::SetOutputStream(xiiStreamWriter* pOutputStream, xiiUInt32 uiMaxNumWorkerThreads, Compression ratio /*= Compression::Default*/, xiiUInt32 uiCompressionCacheSizeKB /*= 4*/)
 {
   if (m_pOutputStream == pOutputStream)
     return;
@@ -183,11 +183,11 @@ void xiiCompressedStreamWriterZstd::SetOutputStream(xiiStreamWriter* pOutputStre
       m_pZstdCStream = ZSTD_createCStream();
     }
 
-    const xiiUInt32 uiCoreCount = xiiMath::Clamp(xiiSystemInformation::Get().GetCPUCoreCount(), 1u, 12u);
+    const xiiUInt32 uiCoreCount = (uiMaxNumWorkerThreads > 0) ? xiiMath::Clamp(xiiSystemInformation::Get().GetCPUCoreCount(), 1u, uiMaxNumWorkerThreads) : 0u;
 
     ZSTD_CCtx_reset(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), ZSTD_reset_session_only);
     ZSTD_CCtx_refCDict(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), nullptr);
-    ZSTD_CCtx_setParameter(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), ZSTD_c_compressionLevel, (int)ratio);
+    ZSTD_CCtx_setParameter(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), ZSTD_c_compressionLevel, (xiiInt32)ratio);
     ZSTD_CCtx_setParameter(reinterpret_cast<ZSTD_CStream*>(m_pZstdCStream), ZSTD_c_nbWorkers, uiCoreCount);
 
     m_CompressedCache.SetCountUninitialized(xiiMath::Max(1U, uiCompressionCacheSizeKB) * 1024);

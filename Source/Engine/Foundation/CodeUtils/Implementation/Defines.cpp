@@ -4,9 +4,9 @@
 
 using namespace xiiTokenParseUtils;
 
-bool xiiPreprocessor::RemoveDefine(const char* szName)
+bool xiiPreprocessor::RemoveDefine(xiiStringView sName)
 {
-  auto it = m_Macros.Find(szName);
+  auto it = m_Macros.Find(sName);
 
   if (it.IsValid())
   {
@@ -148,11 +148,11 @@ xiiResult xiiPreprocessor::HandleDefine(const TokenStream& Tokens, xiiUInt32& ui
   return XII_SUCCESS;
 }
 
-xiiResult xiiPreprocessor::AddCustomDefine(const char* szDefinition)
+xiiResult xiiPreprocessor::AddCustomDefine(xiiStringView sDefinition)
 {
   m_CustomDefines.PushBack();
-  m_CustomDefines.PeekBack().m_Content.SetCountUninitialized(xiiStringUtils::GetStringElementCount(szDefinition));
-  xiiMemoryUtils::Copy(&m_CustomDefines.PeekBack().m_Content[0], (xiiUInt8*)szDefinition, m_CustomDefines.PeekBack().m_Content.GetCount());
+  m_CustomDefines.PeekBack().m_Content.SetCountUninitialized(sDefinition.GetElementCount());
+  xiiMemoryUtils::Copy(&m_CustomDefines.PeekBack().m_Content[0], (xiiUInt8*)sDefinition.GetStartPointer(), m_CustomDefines.PeekBack().m_Content.GetCount());
   m_CustomDefines.PeekBack().m_Tokenized.Tokenize(m_CustomDefines.PeekBack().m_Content, m_pLog);
 
   xiiUInt32                           uiFirstToken = 0;
@@ -179,7 +179,5 @@ xiiResult xiiPreprocessor::AddCustomDefine(const char* szDefinition)
   xiiUInt32 uiCurToken = 0;
   return HandleDefine(Tokens, uiCurToken);
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Implementation_Defines);

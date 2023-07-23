@@ -51,11 +51,11 @@ const xiiWorld* xiiComponent::GetWorld() const
   return m_pManager->GetWorld();
 }
 
-void xiiComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
+void xiiComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
 }
 
-void xiiComponent::DeserializeComponent(xiiWorldReader& inout_stream)
+void xiiComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
 }
 
@@ -255,5 +255,6 @@ bool xiiComponent::SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg) cons
 
   return false;
 }
+
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_Component);

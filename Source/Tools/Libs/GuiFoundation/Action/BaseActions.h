@@ -10,23 +10,23 @@ class XII_GUIFOUNDATION_DLL xiiNamedAction : public xiiAction
   XII_ADD_DYNAMIC_REFLECTION(xiiNamedAction, xiiAction);
 
 public:
-  xiiNamedAction(const xiiActionContext& context, const char* szName, const char* szIconPath) :
-    xiiAction(context), m_sName(szName), m_sIconPath(szIconPath)
+  xiiNamedAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath) :
+    xiiAction(context), m_sName(sName), m_sIconPath(sIconPath)
   {
   }
 
-  const char* GetName() const { return m_sName; }
+  xiiStringView GetName() const { return m_sName; }
 
-  const char* GetAdditionalDisplayString() { return m_sAdditionalDisplayString; }
-  void        SetAdditionalDisplayString(const char* szString, bool bTriggerUpdate = true)
+  xiiStringView GetAdditionalDisplayString() { return m_sAdditionalDisplayString; }
+  void          SetAdditionalDisplayString(xiiStringView sString, bool bTriggerUpdate = true)
   {
-    m_sAdditionalDisplayString = szString;
+    m_sAdditionalDisplayString = sString;
     if (bTriggerUpdate)
       TriggerUpdate();
   }
 
-  const char* GetIconPath() const { return m_sIconPath; }
-  void        SetIconPath(const char* szIconPath) { m_sIconPath = szIconPath; }
+  xiiStringView GetIconPath() const { return m_sIconPath; }
+  void          SetIconPath(xiiStringView sIconPath) { m_sIconPath = sIconPath; }
 
 protected:
   xiiString m_sName;
@@ -54,8 +54,8 @@ class XII_GUIFOUNDATION_DLL xiiMenuAction : public xiiNamedAction
   XII_ADD_DYNAMIC_REFLECTION(xiiMenuAction, xiiNamedAction);
 
 public:
-  xiiMenuAction(const xiiActionContext& context, const char* szName, const char* szIconPath) :
-    xiiNamedAction(context, szName, szIconPath)
+  xiiMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath) :
+    xiiNamedAction(context, sName, sIconPath)
   {
   }
 
@@ -101,8 +101,8 @@ public:
     xiiVariant             m_UserValue;
   };
 
-  xiiDynamicMenuAction(const xiiActionContext& context, const char* szName, const char* szIconPath) :
-    xiiMenuAction(context, szName, szIconPath)
+  xiiDynamicMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath) :
+    xiiMenuAction(context, sName, sIconPath)
   {
   }
   virtual void GetEntries(xiiHybridArray<Item, 16>& out_entries) = 0;
@@ -114,7 +114,7 @@ class XII_GUIFOUNDATION_DLL xiiDynamicActionAndMenuAction : public xiiDynamicMen
   XII_ADD_DYNAMIC_REFLECTION(xiiDynamicActionAndMenuAction, xiiDynamicMenuAction);
 
 public:
-  xiiDynamicActionAndMenuAction(const xiiActionContext& context, const char* szName, const char* szIconPath);
+  xiiDynamicActionAndMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath);
 
   bool IsEnabled() const { return m_bEnabled; }
   void SetEnabled(bool bEnable, bool bTriggerUpdate = true)
@@ -143,7 +143,7 @@ class XII_GUIFOUNDATION_DLL xiiEnumerationMenuAction : public xiiDynamicMenuActi
   XII_ADD_DYNAMIC_REFLECTION(xiiEnumerationMenuAction, xiiDynamicMenuAction);
 
 public:
-  xiiEnumerationMenuAction(const xiiActionContext& context, const char* szName, const char* szIconPath);
+  xiiEnumerationMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath);
   void             InitEnumerationType(const xiiRTTI* pEnumerationType);
   virtual void     GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries) override;
   virtual xiiInt64 GetValue() const = 0;
@@ -158,7 +158,7 @@ class XII_GUIFOUNDATION_DLL xiiButtonAction : public xiiNamedAction
   XII_ADD_DYNAMIC_REFLECTION(xiiButtonAction, xiiNamedAction);
 
 public:
-  xiiButtonAction(const xiiActionContext& context, const char* szName, bool bCheckable, const char* szIconPath);
+  xiiButtonAction(const xiiActionContext& context, xiiStringView sName, bool bCheckable, xiiStringView sIconPath);
 
   bool IsEnabled() const { return m_bEnabled; }
   void SetEnabled(bool bEnable, bool bTriggerUpdate = true)
@@ -205,7 +205,7 @@ class XII_GUIFOUNDATION_DLL xiiSliderAction : public xiiNamedAction
   XII_ADD_DYNAMIC_REFLECTION(xiiSliderAction, xiiNamedAction);
 
 public:
-  xiiSliderAction(const xiiActionContext& context, const char* szName);
+  xiiSliderAction(const xiiActionContext& context, xiiStringView sName);
 
   bool IsEnabled() const { return m_bEnabled; }
   void SetEnabled(bool bEnable, bool bTriggerUpdate = true)

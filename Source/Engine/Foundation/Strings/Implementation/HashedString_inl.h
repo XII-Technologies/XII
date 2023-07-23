@@ -29,9 +29,8 @@ inline xiiHashedString::~xiiHashedString()
     m_Data.Value().m_iRefCount.Decrement();
   }
 }
-#else
-XII_FORCE_INLINE xiiHashedString::~xiiHashedString() = default;
 #endif
+
 inline void xiiHashedString::operator=(const xiiHashedString& rhs)
 {
   // first increase the other refcount, then decrease ours

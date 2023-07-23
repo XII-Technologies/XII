@@ -15,8 +15,8 @@ public:
   using SetterFunc = void (Class::*)(Type value);
 
   /// \brief Constructor.
-  xiiBitflagsAccessorProperty(const char* szPropertyName, GetterFunc getter, SetterFunc setter) :
-    xiiTypedEnumProperty<EnumType>(szPropertyName)
+  xiiBitflagsAccessorProperty(xiiStringView sPropertyName, GetterFunc getter, SetterFunc setter) :
+    xiiTypedEnumProperty<EnumType>(sPropertyName)
   {
     XII_ASSERT_DEBUG(getter != nullptr, "The getter of a property cannot be nullptr.");
     xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::Bitflags);
@@ -63,8 +63,8 @@ public:
   using PointerFunc = void* (*)(const Class* pInstance);
 
   /// \brief Constructor.
-  xiiBitflagsMemberProperty(const char* szPropertyName, GetterFunc getter, SetterFunc setter, PointerFunc pointer) :
-    xiiTypedEnumProperty<EnumType>(szPropertyName)
+  xiiBitflagsMemberProperty(xiiStringView sPropertyName, GetterFunc getter, SetterFunc setter, PointerFunc pointer) :
+    xiiTypedEnumProperty<EnumType>(sPropertyName)
   {
     XII_ASSERT_DEBUG(getter != nullptr, "The getter of a property cannot be nullptr.");
     xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::Bitflags);

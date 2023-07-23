@@ -5,8 +5,6 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Configuration/Plugin.h>
 #include <Foundation/Reflection/Implementation/StaticRTTI.h>
-#include <Foundation/Utilities/EnumerableClass.h>
-
 
 // *****************************************
 // ***** Runtime Type Information Data *****
@@ -21,21 +19,18 @@ class xiiMessage;
 
 using xiiMessageId = xiiUInt16;
 
-/// \brief This enumerable class holds information about reflected types. Each instance represents one type that is known to the reflection
+/// \brief This class holds information about reflected types. Each instance represents one type that is known to the reflection
 /// system.
 ///
 /// Instances of this class are typically created through the macros from the StaticRTTI.h header.
 /// Each instance represents one type. This class holds information about derivation hierarchies and exposed properties. You can thus find
 /// out whether a type is derived from some base class and what properties of which types are available. Properties can then be read and
 /// modified on instances of this type.
-class XII_FOUNDATION_DLL xiiRTTI : public xiiEnumerable<xiiRTTI>
+class XII_FOUNDATION_DLL xiiRTTI
 {
-  XII_DECLARE_ENUMERABLE_CLASS(xiiRTTI);
-
 public:
   /// \brief The constructor requires all the information about the type that this object represents.
-  xiiRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractFunctionProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)());
-
+  xiiRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractFunctionProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)());
 
   ~xiiRTTI();
 
@@ -46,7 +41,7 @@ public:
   static void VerifyCorrectnessForAllTypes();
 
   /// \brief Returns the name of this type.
-  XII_ALWAYS_INLINE const char* GetTypeName() const { return m_szTypeName; } // [tested]
+  XII_ALWAYS_INLINE xiiStringView GetTypeName() const { return m_sTypeName; } // [tested]
 
   /// \brief Returns the hash of the name of this type.
   XII_ALWAYS_INLINE xiiUInt64 GetTypeNameHash() const { return m_uiTypeNameHash; } // [tested]
@@ -100,17 +95,22 @@ public:
   XII_ALWAYS_INLINE const xiiBitflags<xiiTypeFlags>& GetTypeFlags() const { return m_TypeFlags; } // [tested]
 
   /// \brief Searches all xiiRTTI instances for the one with the given name, or nullptr if no such type exists.
-  static xiiRTTI* FindTypeByName(xiiStringView sName); // [tested]
+  static const xiiRTTI* FindTypeByName(xiiStringView sName); // [tested]
 
   /// \brief Searches all xiiRTTI instances for the one with the given hashed name, or nullptr if no such type exists.
-  static xiiRTTI* FindTypeByNameHash(xiiUInt64 uiNameHash); // [tested]
-  static xiiRTTI* FindTypeByNameHash32(xiiUInt32 uiNameHash);
+  static const xiiRTTI* FindTypeByNameHash(xiiUInt64 uiNameHash); // [tested]
+  static const xiiRTTI* FindTypeByNameHash32(xiiUInt32 uiNameHash);
+
+  using PredicateFunc = xiiDelegate<bool(const xiiRTTI*), 48>;
+
+  /// \brief Searches all xiiRTTI instances for one where the given predicate function returns true.
+  static const xiiRTTI* FindTypeIf(PredicateFunc func);
 
   /// \brief Will iterate over all properties of this type and (optionally) the base types to search for a property with the given name.
   xiiAbstractProperty* FindPropertyByName(xiiStringView sName, bool bSearchBaseTypes = true) const; // [tested]
 
   /// \brief Returns the name of the plugin which this type is declared in.
-  XII_ALWAYS_INLINE const char* GetPluginName() const { return m_szPluginName; } // [tested]
+  XII_ALWAYS_INLINE xiiStringView GetPluginName() const { return m_sPluginName; } // [tested]
 
   /// \brief Returns the array of message handlers that this type has.
   XII_ALWAYS_INLINE const xiiArrayPtr<xiiAbstractMessageHandler*>& GetMessageHandlers() const { return m_MessageHandlers; }
@@ -133,9 +133,9 @@ public:
   /// \brief Returns whether this type can handle the message type with the given id.
   inline bool CanHandleMessage(xiiMessageId id) const
   {
-    XII_ASSERT_DEBUG(m_bGatheredDynamicMessageHandlers, "Message handler table should have been gathered at this point.\n"
-                                                        "If this assert is triggered for a type loaded from a dynamic plugin,\n"
-                                                        "you may have forgotten to instantiate a xiiPlugin object inside your plugin DLL.");
+    XII_ASSERT_DEBUG(m_uiMsgIdOffset != xiiSmallInvalidIndex, "Message handler table should have been gathered at this point.\n"
+                                                              "If this assert is triggered for a type loaded from a dynamic plugin,\n"
+                                                              "you may have forgotten to instantiate a xiiPlugin object inside your plugin DLL.");
 
     const xiiUInt32 uiIndex = id - m_uiMsgIdOffset;
     return uiIndex < m_DynamicMessageHandlers.GetCount() && m_DynamicMessageHandlers.GetData()[uiIndex] != nullptr;
@@ -143,52 +143,74 @@ public:
 
   XII_ALWAYS_INLINE const xiiArrayPtr<xiiMessageSenderInfo>& GetMessageSender() const { return m_MessageSenders; }
 
-  /// \brief Writes all types derived from \a pBaseType to the provided array. Optionally sorts the array by type name to yield a stable result.
-  ///
-  /// Returns the provided array, such that the function can be used in a foreach loop right away.
-  static const xiiDynamicArray<const xiiRTTI*>& GetAllTypesDerivedFrom(
-    const xiiRTTI*                   pBaseType,
-    xiiDynamicArray<const xiiRTTI*>& out_derivedTypes,
-    bool                             bSortByName);
+  struct ForEachOptions
+  {
+    using StorageType = xiiUInt8;
+
+    enum Enum : StorageType
+    {
+      None                  = 0,
+      ExcludeNonAllocatable = XII_BIT(0),
+      ExcludeAbstract       = XII_BIT(1),
+
+      Default = None
+    };
+
+    struct Bits
+    {
+      xiiUInt8 ExcludeNonAllocatable : 1;
+    };
+  };
+
+  using VisitorFunc = xiiDelegate<void(const xiiRTTI*), 48>;
+
+  static void ForEachType(VisitorFunc func, xiiBitflags<ForEachOptions> options = ForEachOptions::Default); // [tested]
+
+  static void ForEachDerivedType(const xiiRTTI* pBaseType, VisitorFunc func, xiiBitflags<ForEachOptions> options = ForEachOptions::Default);
+
+  template <typename T>
+  static XII_ALWAYS_INLINE void ForEachDerivedType(VisitorFunc func, xiiBitflags<ForEachOptions> options = ForEachOptions::Default)
+  {
+    ForEachDerivedType(xiiGetStaticRTTI<T>(), func, options);
+  }
 
 protected:
-  const char*                               m_szPluginName = nullptr;
-  const char*                               m_szTypeName;
+  xiiStringView                             m_sPluginName;
+  xiiStringView                             m_sTypeName;
   xiiArrayPtr<xiiAbstractProperty*>         m_Properties;
   xiiArrayPtr<xiiAbstractFunctionProperty*> m_Functions;
   xiiArrayPtr<xiiPropertyAttribute*>        m_Attributes;
-  void                                      UpdateType(const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags);
+  void                                      UpdateType(const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags);
   void                                      RegisterType();
   void                                      UnregisterType();
 
   void GatherDynamicMessageHandlers();
   void SetupParentHierarchy();
 
-  const xiiRTTI*    m_pParentType;
-  xiiRTTIAllocator* m_pAllocator;
+  const xiiRTTI*    m_pParentType = nullptr;
+  xiiRTTIAllocator* m_pAllocator  = nullptr;
 
-  xiiUInt32                 m_uiVariantType;
-  xiiUInt32                 m_uiTypeSize;
+  xiiUInt32                 m_uiTypeSize     = 0;
   xiiUInt32                 m_uiTypeVersion  = 0;
   xiiUInt64                 m_uiTypeNameHash = 0;
+  xiiUInt32                 m_uiTypeIndex    = 0;
   xiiBitflags<xiiTypeFlags> m_TypeFlags;
-  xiiUInt32                 m_uiMsgIdOffset = 0;
+  xiiUInt8                  m_uiVariantType = 0;
+  xiiUInt16                 m_uiMsgIdOffset = xiiSmallInvalidIndex;
 
-  bool m_bGatheredDynamicMessageHandlers = false;
   const xiiRTTI* (*m_VerifyParent)();
 
-  xiiArrayPtr<xiiAbstractMessageHandler*> m_MessageHandlers;
-  xiiDynamicArray<xiiAbstractMessageHandler*, xiiStaticAllocatorWrapper>
-    m_DynamicMessageHandlers; // do not track this data, it won't be deallocated before shutdown
+  xiiArrayPtr<xiiAbstractMessageHandler*>                                 m_MessageHandlers;
+  xiiSmallArray<xiiAbstractMessageHandler*, 1, xiiStaticAllocatorWrapper> m_DynamicMessageHandlers; // Do not track this data, it won't be deallocated before shutdown.
 
-  xiiArrayPtr<xiiMessageSenderInfo> m_MessageSenders;
-  xiiHybridArray<const xiiRTTI*, 8> m_ParentHierarchy;
+  xiiArrayPtr<xiiMessageSenderInfo>                           m_MessageSenders;
+  xiiSmallArray<const xiiRTTI*, 7, xiiStaticAllocatorWrapper> m_ParentHierarchy;
 
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Foundation, Reflection);
 
   /// \brief Assigns the given plugin name to every xiiRTTI instance that has no plugin assigned yet.
-  static void AssignPlugin(const char* szPluginName);
+  static void AssignPlugin(xiiStringView sPluginName);
 
   static void SanityCheckType(xiiRTTI* pType);
 
@@ -196,6 +218,7 @@ private:
   static void PluginEventHandler(const xiiPluginEvent& EventData);
 };
 
+XII_DECLARE_FLAGS_OPERATORS(xiiRTTI::ForEachOptions);
 
 // ***********************************
 // ***** Object Allocator Struct *****
@@ -204,6 +227,8 @@ private:
 /// \brief The interface for an allocator that creates instances of reflected types.
 struct XII_FOUNDATION_DLL xiiRTTIAllocator
 {
+  virtual ~xiiRTTIAllocator();
+
   /// \brief Returns whether the type that is represented by this allocator, can be dynamically allocated at runtime.
   virtual bool CanAllocate() const { return true; } // [tested]
 

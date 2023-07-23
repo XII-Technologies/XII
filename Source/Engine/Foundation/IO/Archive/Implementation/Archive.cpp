@@ -15,9 +15,9 @@ void operator>>(xiiStreamReader& ref_stream, xiiArchiveStoredString& value)
   ref_stream >> value.m_uiSrcStringOffset;
 }
 
-xiiUInt32 xiiArchiveTOC::FindEntry(const char* szFile) const
+xiiUInt32 xiiArchiveTOC::FindEntry(xiiStringView sFile) const
 {
-  xiiStringBuilder sLowerCasePath = szFile;
+  xiiStringBuilder sLowerCasePath = sFile;
   sLowerCasePath.ToLower();
 
   xiiUInt32 uiIndex;
@@ -27,11 +27,12 @@ xiiUInt32 xiiArchiveTOC::FindEntry(const char* szFile) const
   if (!m_PathToEntryIndex.TryGetValue(lookup, uiIndex))
     return xiiInvalidIndex;
 
-  XII_ASSERT_DEBUG(xiiStringUtils::IsEqual_NoCase(szFile, GetEntryPathString(uiIndex)), "Hash table corruption detected.");
+  XII_ASSERT_DEBUG(sFile.IsEqual_NoCase(GetEntryPathString(uiIndex)), "Hash table corruption detected.");
+
   return uiIndex;
 }
 
-const char* xiiArchiveTOC::GetEntryPathString(xiiUInt32 uiEntryIdx) const
+xiiStringView xiiArchiveTOC::GetEntryPathString(xiiUInt32 uiEntryIdx) const
 {
   return reinterpret_cast<const char*>(&m_AllPathStrings[m_Entries[uiEntryIdx].m_uiPathStringOffset]);
 }
@@ -137,9 +138,9 @@ xiiResult xiiArchiveTOC::Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiArc
     {
       const xiiUInt32 uiSrcStringOffset = m_Entries[i].m_uiPathStringOffset;
 
-      const char* szEntryString = GetEntryPathString(i);
+      xiiStringView sEntryString = GetEntryPathString(i);
 
-      sLowerCasePath = szEntryString;
+      sLowerCasePath = sEntryString;
       sLowerCasePath.ToLower();
 
       // cut off the upper 32 bit, we don't need them here
@@ -148,7 +149,7 @@ xiiResult xiiArchiveTOC::Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiArc
       m_PathToEntryIndex.Insert(xiiArchiveStoredString(uiLowerCaseHash, uiSrcStringOffset), i);
 
       // Verify that the conversion worked
-      XII_ASSERT_DEBUG(FindEntry(szEntryString) == i, "Hashed path retrieval did not yield inserted index");
+      XII_ASSERT_DEBUG(FindEntry(sEntryString) == i, "Hashed path retrieval did not yield inserted index");
     }
   }
 
@@ -178,6 +179,7 @@ xiiResult xiiArchiveEntry::Deserialize(xiiStreamReader& ref_stream)
   ref_stream >> m_uiDataStartOffset;
   ref_stream >> m_uiUncompressedDataSize;
   ref_stream >> m_uiStoredDataSize;
+
   xiiUInt8 uiCompressionMode = 0;
   ref_stream >> uiCompressionMode;
   m_CompressionMode = (xiiArchiveCompressionMode)uiCompressionMode;
@@ -185,6 +187,5 @@ xiiResult xiiArchiveEntry::Deserialize(xiiStreamReader& ref_stream)
 
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Archive_Implementation_Archive);

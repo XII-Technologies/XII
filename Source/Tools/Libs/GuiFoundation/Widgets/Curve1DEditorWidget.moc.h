@@ -62,7 +62,7 @@ private Q_SLOTS:
   void onFlattenTangents();
   void onSelectionChanged();
   void onMoveCurve(xiiInt32 iCurve, double moveY);
-  void onGenerateCurve(xiiMath::xiiEasingFunctions function, bool inverse);
+  void onGenerateCurve(xiiEasingFunction::Enum function, bool inverse);
   void onSaveAsPreset();
   void onLoadPreset();
 
@@ -73,8 +73,8 @@ private:
   void      UpdateSpinBoxes();
   void      SetTangentMode(xiiCurveTangentMode::Enum mode, bool bLeft, bool bRight);
   void      ClampPoint(double& x, double& y) const;
-  void      SaveCurvePreset(const char* szFile) const;
-  xiiResult LoadCurvePreset(const char* szFile);
+  void      SaveCurvePreset(xiiStringView sFile) const;
+  xiiResult LoadCurvePreset(xiiStringView sFile);
   void      FindAllPresets();
 
   double            m_fCurveDuration;

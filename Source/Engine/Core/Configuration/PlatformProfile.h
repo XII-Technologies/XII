@@ -8,8 +8,6 @@ class xiiChunkStreamReader;
 
 struct xiiProfileTargetPlatform
 {
-  using StorageType = xiiUInt8;
-
   enum Enum
   {
     PC,
@@ -18,6 +16,8 @@ struct xiiProfileTargetPlatform
 
     Default = PC
   };
+
+  using StorageType = xiiUInt8;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiProfileTargetPlatform);

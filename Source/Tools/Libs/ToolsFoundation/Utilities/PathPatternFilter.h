@@ -45,7 +45,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiPathPatternFilter
   /// After preprocessing, every line represents a single pattern.
   /// Lines that contain '[INCLUDE]' or '[EXCLUDE]' are special and change whether the
   /// following lines are considered as include patterns or exclude patterns.
-  xiiResult ReadConfigFile(const char* szFile, const xiiDynamicArray<xiiString>& preprocessorDefines);
+  xiiResult ReadConfigFile(xiiStringView sFile, const xiiDynamicArray<xiiString>& preprocessorDefines);
 
   /// \brief Adds a pattern.
   void AddFilter(xiiStringView sText, bool bIncludeFilter);

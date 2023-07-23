@@ -56,6 +56,6 @@ public:
   static xiiCopyOnBroadcastEvent<const xiiPhantomRttiManagerEvent&> s_Events;
 
 private:
-  static xiiSet<const xiiRTTI*>                     s_RegisteredConcreteTypes;
-  static xiiHashTable<const char*, xiiPhantomRTTI*> s_NameToPhantom;
+  static xiiSet<const xiiRTTI*>                       s_RegisteredConcreteTypes;
+  static xiiHashTable<xiiStringView, xiiPhantomRTTI*> s_NameToPhantom;
 };

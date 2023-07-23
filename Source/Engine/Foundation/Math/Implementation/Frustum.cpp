@@ -223,7 +223,7 @@ void xiiFrustum::SetFrustum(const xiiMat4& mModelViewProjection0, xiiClipSpaceDe
   planes[FarPlane]    = -ModelViewProjection.GetRow(3) + ModelViewProjection.GetRow(2);
 
   // Normalize planes
-  for (int p = 0; p < 6; ++p)
+  for (xiiInt32 p = 0; p < 6; ++p)
   {
     const float len = planes[p].GetAsVec3().GetLength();
     // doing the division here manually since we want to accept the case where length is 0 (infinite plane)

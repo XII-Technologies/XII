@@ -561,14 +561,13 @@ void xiiAbstractObjectGraph::ModifyNodeViaNativeCounterpart(xiiAbstractObjectNod
 
   // Create native object graph
   xiiAbstractObjectGraph graph;
-  xiiAbstractObjectNode* pRootNode2 = nullptr;
   {
     // The xiiApplyNativePropertyChangesContext takes care of generating guids for native pointers that match those
     // of the object manager.
     xiiApplyNativePropertyChangesContext nativeChangesContext(context, origGraph);
     xiiRttiConverterWriter               rttiConverter(&graph, &nativeChangesContext, true, true);
     nativeChangesContext.RegisterObject(pOrigRootNode->GetGuid(), pType, pNativeRoot);
-    pRootNode2 = rttiConverter.AddObjectToGraph(pType, pNativeRoot, "Object");
+    rttiConverter.AddObjectToGraph(pType, pNativeRoot, "Object");
   }
 
   // Create diff from native to cloned sub-graph and then apply the diff to the original graph.

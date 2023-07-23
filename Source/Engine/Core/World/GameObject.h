@@ -262,6 +262,9 @@ public:
   void         SetGlobalTransform(const xiiTransform& transform);
   xiiTransform GetGlobalTransform() const;
 
+  /// \brief Last frame's global transform (only valid if XII_GAMEOBJECT_VELOCITY is set, otherwise the same as GetGlobalTransform())
+  xiiTransform GetLastGlobalTransform() const;
+
   // Simd variants of above methods
   void                SetLocalPosition(const xiiSimdVec4f& vPosition, UpdateBehaviorIfStatic updateBehavior = UpdateBehaviorIfStatic::UpdateImmediately);
   const xiiSimdVec4f& GetLocalPositionSimd() const;
@@ -289,6 +292,8 @@ public:
   void                    SetGlobalTransform(const xiiSimdTransform& transform);
   const xiiSimdTransform& GetGlobalTransformSimd() const;
 
+  const xiiSimdTransform& GetLastGlobalTransformSimd() const;
+
   /// \brief Returns the 'forwards' direction of the world's xiiCoordinateSystem, rotated into the object's global space
   xiiVec3 GetGlobalDirForwards() const;
   /// \brief Returns the 'right' direction of the world's xiiCoordinateSystem, rotated into the object's global space
@@ -297,16 +302,16 @@ public:
   xiiVec3 GetGlobalDirUp() const;
 
 #if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
-  /// \brief Sets the object's velocity.
+  /// \brief The last global transform is used to calculate the object's velocity. By default this is set automatically to the global transform of the last frame.
   ///
-  /// This is used for some rendering techniques or for the computation of sound Doppler effect.
-  /// It has no effect on the object's subsequent position.
-  void SetVelocity(const xiiVec3& vVelocity);
+  /// It might make sense to manually override the last global transform to e.g. indicate an object has been teleported instead of moved.
+  void SetLastGlobalTransform(const xiiSimdTransform& transform);
 
-  /// \brief Returns the velocity of the object in units per second. This is not only the diff between last frame's position and this
-  /// frame's position, but
-  ///        also the time difference is divided out.
-  xiiVec3 GetVelocity() const;
+  /// \brief Returns the linear velocity of the object in units per second. This is only guaranteed to be correct in the PostTransform phase.
+  xiiVec3 GetLinearVelocity() const;
+
+  /// \brief Returns the angular velocity of the object in radians per second. This is only guaranteed to be correct in the PostTransform phase.
+  xiiVec3 GetAngularVelocity() const;
 #endif
 
   /// \brief Updates the global transform immediately. Usually this done during the world update after the "Post-async" phase.
@@ -489,12 +494,6 @@ private:
   friend class xiiComponentManagerBase;
   friend class xiiGameObjectTest;
 
-  // only needed until reflection can deal with xiiStringView
-  void        SetNameInternal(const char* szName);
-  const char* GetNameInternal() const;
-  void        SetGlobalKeyInternal(const char* szKey);
-  const char* GetGlobalKeyInternal() const;
-
   bool SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg);
   bool SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg) const;
   bool SendMessageRecursiveInternal(xiiMessage& msg, bool bWasPostedMsg);
@@ -521,6 +520,7 @@ private:
   void MakeStaticInternal();
 
   void UpdateGlobalTransformAndBoundsRecursive();
+  void UpdateLastGlobalTransform();
 
   void OnMsgDeleteGameObject(xiiMsgDeleteGameObject& msg);
 
@@ -551,8 +551,7 @@ private:
     xiiSimdTransform m_globalTransform;
 
 #if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
-    xiiSimdVec4f m_lastGlobalPosition;
-    xiiSimdVec4f m_velocity; // w != 0 indicates custom velocity
+    xiiSimdTransform m_lastGlobalTransform;
 #endif
 
     xiiSimdBBoxSphere m_localBounds; // m_BoxHalfExtents.w != 0 indicates that the object should be always visible
@@ -563,32 +562,36 @@ private:
 
     xiiUInt32 m_uiStableRandomSeed = 0;
 
+#if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
+    xiiUInt32 m_uiLastGlobalTransformUpdateCounter = 0;
+#else
     xiiUInt32 m_uiPadding2[1];
+#endif
 
     /// \brief Recomputes the local transform from this object's global transform and, if available, the parent's global transform.
     void UpdateLocalTransform();
 
     /// \brief Calls UpdateGlobalTransformWithoutParent or UpdateGlobalTransformWithParent depending on whether there is a parent transform.
     /// In case there is a parent transform it also recursively calls itself on the parent transform to ensure everything is up-to-date.
-    void UpdateGlobalTransformRecursive();
+    void UpdateGlobalTransformRecursive(xiiUInt32 uiUpdateCounter);
 
     /// \brief Calls UpdateGlobalTransformWithoutParent or UpdateGlobalTransformWithParent depending on whether there is a parent transform.
     /// Assumes that the parent's global transform is already up to date.
-    void UpdateGlobalTransformNonRecursive();
+    void UpdateGlobalTransformNonRecursive(xiiUInt32 uiUpdateCounter);
 
     /// \brief Updates the global transform by copying the object's local transform into the global transform.
     /// This is for objects that have no parent.
-    void UpdateGlobalTransformWithoutParent();
+    void UpdateGlobalTransformWithoutParent(xiiUInt32 uiUpdateCounter);
 
     /// \brief Updates the global transform by combining the parents global transform with this object's local transform.
     /// Assumes that the parent's global transform is already up to date.
-    void UpdateGlobalTransformWithParent();
+    void UpdateGlobalTransformWithParent(xiiUInt32 uiUpdateCounter);
 
     void UpdateGlobalBounds(xiiSpatialSystem* pSpatialSystem);
     void UpdateGlobalBounds();
     void UpdateGlobalBoundsAndSpatialData(xiiSpatialSystem& ref_spatialSystem);
 
-    void UpdateVelocity(const xiiSimdFloat& fInvDeltaSeconds);
+    void UpdateLastGlobalTransform(xiiUInt32 uiUpdateCounter);
 
     void RecreateSpatialData(xiiSpatialSystem& ref_spatialSystem);
   };

@@ -90,6 +90,9 @@ private:
     xiiTime m_Interval;
     xiiTime m_DueTime;
     xiiTime m_LastScheduledTime;
+
+    bool IsValid() const;
+    void MarkAsInvalid();
   };
 
   using DataMap = xiiMap<xiiTime, Data>;

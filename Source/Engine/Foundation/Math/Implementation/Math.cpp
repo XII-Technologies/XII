@@ -1,5 +1,6 @@
 #include <Foundation/FoundationPCH.h>
 
+#include <Foundation/Math/Easing.h>
 #include <Foundation/Math/Mat3.h>
 #include <Foundation/Math/Math.h>
 #include <Foundation/Math/Quat.h>
@@ -239,7 +240,7 @@ double xiiMath::ReplaceNaN(double fValue, double fFallback)
   return fValue;
 }
 
-xiiVec3 xiiBasisAxis::GetBasisVectorFloat(Enum basisAxis)
+xiiVec3 xiiBasisAxis::GetBasisVector(Enum basisAxis)
 {
   switch (basisAxis)
   {
@@ -267,84 +268,28 @@ xiiVec3 xiiBasisAxis::GetBasisVectorFloat(Enum basisAxis)
   }
 }
 
-xiiVec3d xiiBasisAxis::GetBasisVectorDouble(Enum basisAxis)
-{
-  switch (basisAxis)
-  {
-    case xiiBasisAxis::PositiveX:
-      return xiiVec3d(1, 0, 0);
-
-    case xiiBasisAxis::NegativeX:
-      return xiiVec3d(-1, 0, 0);
-
-    case xiiBasisAxis::PositiveY:
-      return xiiVec3d(0, 1, 0);
-
-    case xiiBasisAxis::NegativeY:
-      return xiiVec3d(0, -1, 0);
-
-    case xiiBasisAxis::PositiveZ:
-      return xiiVec3d(0, 0, 1);
-
-    case xiiBasisAxis::NegativeZ:
-      return xiiVec3d(0, 0, -1);
-
-    default:
-      XII_REPORT_FAILURE("Invalid basis dir {0}", basisAxis);
-      return xiiVec3d::ZeroVector();
-  }
-}
-
-xiiVec3Real xiiBasisAxis::GetBasisVectorReal(Enum basisAxis)
-{
-  switch (basisAxis)
-  {
-    case xiiBasisAxis::PositiveX:
-      return xiiVec3Real(1, 0, 0);
-
-    case xiiBasisAxis::NegativeX:
-      return xiiVec3Real(-1, 0, 0);
-
-    case xiiBasisAxis::PositiveY:
-      return xiiVec3Real(0, 1, 0);
-
-    case xiiBasisAxis::NegativeY:
-      return xiiVec3Real(0, -1, 0);
-
-    case xiiBasisAxis::PositiveZ:
-      return xiiVec3Real(0, 0, 1);
-
-    case xiiBasisAxis::NegativeZ:
-      return xiiVec3Real(0, 0, -1);
-
-    default:
-      XII_REPORT_FAILURE("Invalid basis dir {0}", basisAxis);
-      return xiiVec3Real::ZeroVector();
-  }
-}
-
 xiiMat3 xiiBasisAxis::CalculateTransformationMatrix(Enum forwardDir, Enum rightDir, Enum upDir, float fUniformScale /*= 1.0f*/, float fScaleX /*= 1.0f*/, float fScaleY /*= 1.0f*/, float fScaleZ /*= 1.0f*/)
 {
   xiiMat3 mResult;
-  mResult.SetRow(0, xiiBasisAxis::GetBasisVectorFloat(forwardDir) * fUniformScale * fScaleX);
-  mResult.SetRow(1, xiiBasisAxis::GetBasisVectorFloat(rightDir) * fUniformScale * fScaleY);
-  mResult.SetRow(2, xiiBasisAxis::GetBasisVectorFloat(upDir) * fUniformScale * fScaleZ);
+  mResult.SetRow(0, xiiBasisAxis::GetBasisVector(forwardDir) * fUniformScale * fScaleX);
+  mResult.SetRow(1, xiiBasisAxis::GetBasisVector(rightDir) * fUniformScale * fScaleY);
+  mResult.SetRow(2, xiiBasisAxis::GetBasisVector(upDir) * fUniformScale * fScaleZ);
 
   return mResult;
 }
 
 xiiMat3d xiiBasisAxis::CalculateTransformationMatrix(Enum forwardDir, Enum rightDir, Enum upDir, double fUniformScale /*= 1.0f*/, double fScaleX /*= 1.0*/, double fScaleY /*= 1.0*/, double fScaleZ /*= 1.0*/)
 {
-  xiiVec3d mTemp;
+  xiiVec3  mTemp;
   xiiMat3d mResult;
 
-  mTemp = xiiBasisAxis::GetBasisVectorDouble(forwardDir);
+  mTemp = xiiBasisAxis::GetBasisVector(forwardDir);
   mResult.SetRow(0, xiiVec3d(mTemp.x, mTemp.y, mTemp.z) * fUniformScale * fScaleX);
 
-  mTemp = xiiBasisAxis::GetBasisVectorDouble(rightDir);
+  mTemp = xiiBasisAxis::GetBasisVector(rightDir);
   mResult.SetRow(1, xiiVec3d(mTemp.x, mTemp.y, mTemp.z) * fUniformScale * fScaleY);
 
-  mTemp = xiiBasisAxis::GetBasisVectorDouble(upDir);
+  mTemp = xiiBasisAxis::GetBasisVector(upDir);
   mResult.SetRow(2, xiiVec3d(mTemp.x, mTemp.y, mTemp.z) * fUniformScale * fScaleZ);
 
   return mResult;
@@ -372,62 +317,6 @@ xiiQuat xiiBasisAxis::GetBasisRotation_PosX(Enum axis)
       break;
     case xiiBasisAxis::NegativeZ:
       rotAxis.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
-      break;
-  }
-
-  return rotAxis;
-}
-
-xiiQuatd xiiBasisAxis::GetBasisRotationDouble_PosX(Enum axis)
-{
-  xiiQuatd rotAxis;
-  switch (axis)
-  {
-    case xiiBasisAxis::PositiveX:
-      rotAxis.SetIdentity();
-      break;
-    case xiiBasisAxis::PositiveY:
-      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 0, 1), xiiAngled::Degree(90));
-      break;
-    case xiiBasisAxis::PositiveZ:
-      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 1, 0), xiiAngled::Degree(-90));
-      break;
-    case xiiBasisAxis::NegativeX:
-      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 1, 0), xiiAngled::Degree(180));
-      break;
-    case xiiBasisAxis::NegativeY:
-      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 0, 1), xiiAngled::Degree(-90));
-      break;
-    case xiiBasisAxis::NegativeZ:
-      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 1, 0), xiiAngled::Degree(90));
-      break;
-  }
-
-  return rotAxis;
-}
-
-xiiQuatReal xiiBasisAxis::GetBasisRotationReal_PosX(Enum axis)
-{
-  xiiQuatReal rotAxis;
-  switch (axis)
-  {
-    case xiiBasisAxis::PositiveX:
-      rotAxis.SetIdentity();
-      break;
-    case xiiBasisAxis::PositiveY:
-      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 0, 1), xiiAngleReal::Degree(90));
-      break;
-    case xiiBasisAxis::PositiveZ:
-      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 1, 0), xiiAngleReal::Degree(-90));
-      break;
-    case xiiBasisAxis::NegativeX:
-      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 1, 0), xiiAngleReal::Degree(180));
-      break;
-    case xiiBasisAxis::NegativeY:
-      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 0, 1), xiiAngleReal::Degree(-90));
-      break;
-    case xiiBasisAxis::NegativeZ:
-      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 1, 0), xiiAngleReal::Degree(90));
       break;
   }
 
@@ -485,112 +374,10 @@ xiiQuat xiiBasisAxis::GetBasisRotation(Enum identity, Enum axis)
   return rotAxis * rotId;
 }
 
-xiiQuatd xiiBasisAxis::GetBasisRotationDouble(Enum identity, Enum axis)
-{
-  xiiQuatd rotId;
-  switch (identity)
-  {
-    case xiiBasisAxis::PositiveX:
-      rotId.SetIdentity();
-      break;
-    case xiiBasisAxis::PositiveY:
-      rotId.SetFromAxisAndAngle(xiiVec3d(0, 0, 1), xiiAngled::Degree(-90));
-      break;
-    case xiiBasisAxis::PositiveZ:
-      rotId.SetFromAxisAndAngle(xiiVec3d(0, 1, 0), xiiAngled::Degree(90));
-      break;
-    case xiiBasisAxis::NegativeX:
-      rotId.SetFromAxisAndAngle(xiiVec3d(0, 1, 0), xiiAngled::Degree(180));
-      break;
-    case xiiBasisAxis::NegativeY:
-      rotId.SetFromAxisAndAngle(xiiVec3d(0, 0, 1), xiiAngled::Degree(90));
-      break;
-    case xiiBasisAxis::NegativeZ:
-      rotId.SetFromAxisAndAngle(xiiVec3d(0, 1, 0), xiiAngled::Degree(90));
-      break;
-  }
-
-  xiiQuatd rotAxis;
-  switch (axis)
-  {
-    case xiiBasisAxis::PositiveX:
-      rotAxis.SetIdentity();
-      break;
-    case xiiBasisAxis::PositiveY:
-      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 0, 1), xiiAngled::Degree(90));
-      break;
-    case xiiBasisAxis::PositiveZ:
-      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 1, 0), xiiAngled::Degree(-90));
-      break;
-    case xiiBasisAxis::NegativeX:
-      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 1, 0), xiiAngled::Degree(180));
-      break;
-    case xiiBasisAxis::NegativeY:
-      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 0, 1), xiiAngled::Degree(-90));
-      break;
-    case xiiBasisAxis::NegativeZ:
-      rotAxis.SetFromAxisAndAngle(xiiVec3d(0, 1, 0), xiiAngled::Degree(90));
-      break;
-  }
-
-  return rotAxis * rotId;
-}
-
-xiiQuatReal xiiBasisAxis::GetBasisRotationReal(Enum identity, Enum axis)
-{
-  xiiQuatReal rotId;
-  switch (identity)
-  {
-    case xiiBasisAxis::PositiveX:
-      rotId.SetIdentity();
-      break;
-    case xiiBasisAxis::PositiveY:
-      rotId.SetFromAxisAndAngle(xiiVec3Real(0, 0, 1), xiiAngleReal::Degree(-90));
-      break;
-    case xiiBasisAxis::PositiveZ:
-      rotId.SetFromAxisAndAngle(xiiVec3Real(0, 1, 0), xiiAngleReal::Degree(90));
-      break;
-    case xiiBasisAxis::NegativeX:
-      rotId.SetFromAxisAndAngle(xiiVec3Real(0, 1, 0), xiiAngleReal::Degree(180));
-      break;
-    case xiiBasisAxis::NegativeY:
-      rotId.SetFromAxisAndAngle(xiiVec3Real(0, 0, 1), xiiAngleReal::Degree(90));
-      break;
-    case xiiBasisAxis::NegativeZ:
-      rotId.SetFromAxisAndAngle(xiiVec3Real(0, 1, 0), xiiAngleReal::Degree(90));
-      break;
-  }
-
-  xiiQuatReal rotAxis;
-  switch (axis)
-  {
-    case xiiBasisAxis::PositiveX:
-      rotAxis.SetIdentity();
-      break;
-    case xiiBasisAxis::PositiveY:
-      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 0, 1), xiiAngleReal::Degree(90));
-      break;
-    case xiiBasisAxis::PositiveZ:
-      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 1, 0), xiiAngleReal::Degree(-90));
-      break;
-    case xiiBasisAxis::NegativeX:
-      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 1, 0), xiiAngleReal::Degree(180));
-      break;
-    case xiiBasisAxis::NegativeY:
-      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 0, 1), xiiAngleReal::Degree(-90));
-      break;
-    case xiiBasisAxis::NegativeZ:
-      rotAxis.SetFromAxisAndAngle(xiiVec3Real(0, 1, 0), xiiAngleReal::Degree(90));
-      break;
-  }
-
-  return rotAxis * rotId;
-}
-
 xiiBasisAxis::Enum xiiBasisAxis::GetOrthogonalAxis(Enum axis1, Enum axis2, bool bFlip)
 {
-  const xiiVec3 a1 = xiiBasisAxis::GetBasisVectorFloat(axis1);
-  const xiiVec3 a2 = xiiBasisAxis::GetBasisVectorFloat(axis2);
+  const xiiVec3 a1 = xiiBasisAxis::GetBasisVector(axis1);
+  const xiiVec3 a2 = xiiBasisAxis::GetBasisVector(axis2);
 
   xiiVec3 c = a1.CrossRH(a2);
 
@@ -622,6 +409,51 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiComparisonOperator, 1)
   XII_ENUM_CONSTANTS(xiiComparisonOperator::Equal, xiiComparisonOperator::NotEqual)
   XII_ENUM_CONSTANTS(xiiComparisonOperator::Less, xiiComparisonOperator::LessEqual)
   XII_ENUM_CONSTANTS(xiiComparisonOperator::Greater, xiiComparisonOperator::GreaterEqual)
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiEasingFunction, 1)
+ XII_ENUM_CONSTANT(xiiEasingFunction::ConstantZero),
+ XII_ENUM_CONSTANT(xiiEasingFunction::ConstantQuarter),
+ XII_ENUM_CONSTANT(xiiEasingFunction::ConstantHalf),
+ XII_ENUM_CONSTANT(xiiEasingFunction::ConstantThreeFourths),
+ XII_ENUM_CONSTANT(xiiEasingFunction::ConstantOne),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InLinear),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutLinear),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutLinear),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InSine),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutSine),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutSine),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InQuad),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutQuad),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutQuad),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InCubic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutCubic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutCubic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InQuartic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutQuartic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutQuartic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InQuintic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutQuintic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutQuintic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InExpo),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutExpo),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutExpo),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InCirc),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutCirc),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutCirc),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InBack),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutBack),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutBack), 
+ XII_ENUM_CONSTANT(xiiEasingFunction::InElastic), 
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutElastic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutElastic),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InBounce),
+ XII_ENUM_CONSTANT(xiiEasingFunction::OutBounce),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutBounce),
+ XII_ENUM_CONSTANT(xiiEasingFunction::Conical),
+ XII_ENUM_CONSTANT(xiiEasingFunction::FadeInHoldFadeOut),
+ XII_ENUM_CONSTANT(xiiEasingFunction::FadeInFadeOut),
+ XII_ENUM_CONSTANT(xiiEasingFunction::Bell),
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 

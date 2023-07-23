@@ -289,7 +289,7 @@ xiiStringView xiiMemoryTracker::GetAllocatorName(xiiAllocatorId allocatorId)
 {
   XII_LOCK(*s_pTrackerData);
 
-  return s_pTrackerData->m_AllocatorData[allocatorId].m_sName.GetData();
+  return s_pTrackerData->m_AllocatorData[allocatorId].m_sName;
 }
 
 // static

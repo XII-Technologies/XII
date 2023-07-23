@@ -15,11 +15,11 @@ namespace xiiInternal
     {
     }
 
-    virtual void GetCoordinateSystem(const xiiVec3Real& vGlobalPosition, xiiCoordinateSystem& out_coordinateSystem) const override
+    virtual void GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_coordinateSystem) const override
     {
-      out_coordinateSystem.m_vForwardDir = xiiVec3Real(xiiReal(1), xiiReal(0), xiiReal(0));
-      out_coordinateSystem.m_vRightDir   = xiiVec3Real(xiiReal(0), xiiReal(1), xiiReal(0));
-      out_coordinateSystem.m_vUpDir      = xiiVec3Real(xiiReal(0), xiiReal(0), xiiReal(1));
+      out_coordinateSystem.m_vForwardDir = xiiVec3(1.0f, 0.0f, 0.0f);
+      out_coordinateSystem.m_vRightDir   = xiiVec3(0.0f, 1.0f, 0.0f);
+      out_coordinateSystem.m_vUpDir      = xiiVec3(0.0f, 0.0f, 1.0f);
     }
   };
 
@@ -54,7 +54,7 @@ namespace xiiInternal
     m_Objects.Insert(nullptr);
 
 #if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
-    XII_CHECK_AT_COMPILETIME(sizeof(xiiGameObject::TransformationData) == 224);
+    XII_CHECK_AT_COMPILETIME(sizeof(xiiGameObject::TransformationData) == 240);
 #else
     XII_CHECK_AT_COMPILETIME(sizeof(xiiGameObject::TransformationData) == 192);
 #endif
@@ -288,50 +288,54 @@ namespace xiiInternal
     return xiiVisitorExecution::Continue;
   }
 
-  void WorldData::UpdateGlobalTransforms(float fInvDeltaSeconds)
+  void WorldData::UpdateGlobalTransforms()
   {
     struct UserData
     {
-      xiiSimdFloat      m_fInvDt;
       xiiSpatialSystem* m_pSpatialSystem;
+      xiiUInt32         m_uiUpdateCounter;
     };
 
     UserData userData;
-    userData.m_fInvDt         = fInvDeltaSeconds;
-    userData.m_pSpatialSystem = m_pSpatialSystem.Borrow();
+    userData.m_pSpatialSystem  = m_pSpatialSystem.Borrow();
+    userData.m_uiUpdateCounter = m_uiUpdateCounter;
 
     struct RootLevel
     {
-      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData)
+      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData0)
       {
-        WorldData::UpdateGlobalTransform(pData, static_cast<UserData*>(pUserData)->m_fInvDt);
+        auto pUserData = static_cast<const UserData*>(pUserData0);
+        WorldData::UpdateGlobalTransform(pData, pUserData->m_uiUpdateCounter);
         return xiiVisitorExecution::Continue;
       }
     };
 
     struct WithParent
     {
-      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData)
+      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData0)
       {
-        WorldData::UpdateGlobalTransformWithParent(pData, static_cast<UserData*>(pUserData)->m_fInvDt);
+        auto pUserData = static_cast<const UserData*>(pUserData0);
+        WorldData::UpdateGlobalTransformWithParent(pData, pUserData->m_uiUpdateCounter);
         return xiiVisitorExecution::Continue;
       }
     };
 
     struct RootLevelWithSpatialData
     {
-      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData)
+      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData0)
       {
-        WorldData::UpdateGlobalTransformAndSpatialData(pData, static_cast<UserData*>(pUserData)->m_fInvDt, *static_cast<UserData*>(pUserData)->m_pSpatialSystem);
+        auto pUserData = static_cast<UserData*>(pUserData0);
+        WorldData::UpdateGlobalTransformAndSpatialData(pData, pUserData->m_uiUpdateCounter, *pUserData->m_pSpatialSystem);
         return xiiVisitorExecution::Continue;
       }
     };
 
     struct WithParentWithSpatialData
     {
-      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData)
+      XII_ALWAYS_INLINE static xiiVisitorExecution::Enum Visit(xiiGameObject::TransformationData* pData, void* pUserData0)
       {
-        WorldData::UpdateGlobalTransformWithParentAndSpatialData(pData, static_cast<UserData*>(pUserData)->m_fInvDt, *static_cast<UserData*>(pUserData)->m_pSpatialSystem);
+        auto pUserData = static_cast<UserData*>(pUserData0);
+        WorldData::UpdateGlobalTransformWithParentAndSpatialData(pData, pUserData->m_uiUpdateCounter, *pUserData->m_pSpatialSystem);
         return xiiVisitorExecution::Continue;
       }
     };

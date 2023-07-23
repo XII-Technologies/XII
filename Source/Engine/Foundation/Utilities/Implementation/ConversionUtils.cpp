@@ -901,7 +901,7 @@ namespace xiiConversionUtils
     guid.Data2 = 0;
     guid.Data3 = 0;
 
-    for (int i = 0; i < 8; ++i)
+    for (xiiInt32 i = 0; i < 8; ++i)
     {
       guid.Data4[i] = 0;
       guid.Data1    = (guid.Data1 << 4) | HexCharacterToIntValue(*szText);
@@ -910,7 +910,7 @@ namespace xiiConversionUtils
 
     // -
     ++szText;
-    for (int i = 0; i < 4; ++i)
+    for (xiiInt32 i = 0; i < 4; ++i)
     {
       guid.Data2 = (guid.Data2 << 4) | HexCharacterToIntValue(*szText);
       ++szText;
@@ -918,7 +918,7 @@ namespace xiiConversionUtils
 
     // -
     ++szText;
-    for (int i = 0; i < 4; ++i)
+    for (xiiInt32 i = 0; i < 4; ++i)
     {
       guid.Data3 = (guid.Data3 << 4) | HexCharacterToIntValue(*szText);
       ++szText;
@@ -927,7 +927,7 @@ namespace xiiConversionUtils
     // -
     ++szText;
 
-    for (int i = 0; i < 2; ++i)
+    for (xiiInt32 i = 0; i < 2; ++i)
     {
       guid.Data4[i] = (guid.Data4[i] << 4) | HexCharacterToIntValue(*szText);
       ++szText;
@@ -938,7 +938,7 @@ namespace xiiConversionUtils
     // -
     ++szText;
 
-    for (int i = 2; i < 8; ++i)
+    for (xiiInt32 i = 2; i < 8; ++i)
     {
       guid.Data4[i] = (guid.Data4[i] << 4) | HexCharacterToIntValue(*szText);
       ++szText;

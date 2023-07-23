@@ -110,27 +110,29 @@ const xiiConnection& xiiDocumentNodeManager::GetConnection(const xiiDocumentObje
   return *it.Value();
 }
 
-const xiiPin* xiiDocumentNodeManager::GetInputPinByName(const xiiDocumentObject* pObject, const char* szName) const
+const xiiPin* xiiDocumentNodeManager::GetInputPinByName(const xiiDocumentObject* pObject, xiiStringView sName) const
 {
   XII_ASSERT_DEV(pObject != nullptr, "Invalid input!");
+
   auto it = m_ObjectToNode.Find(pObject->GetGuid());
   XII_ASSERT_DEV(it.IsValid(), "Can't get input pins of objects that aren't nodes!");
   for (auto& pPin : it.Value().m_Inputs)
   {
-    if (xiiStringUtils::IsEqual(pPin->GetName(), szName))
+    if (pPin->GetName() == sName)
       return pPin.Borrow();
   }
   return nullptr;
 }
 
-const xiiPin* xiiDocumentNodeManager::GetOutputPinByName(const xiiDocumentObject* pObject, const char* szName) const
+const xiiPin* xiiDocumentNodeManager::GetOutputPinByName(const xiiDocumentObject* pObject, xiiStringView sName) const
 {
   XII_ASSERT_DEV(pObject != nullptr, "Invalid input!");
+
   auto it = m_ObjectToNode.Find(pObject->GetGuid());
   XII_ASSERT_DEV(it.IsValid(), "Can't get input pins of objects that aren't nodes!");
   for (auto& pPin : it.Value().m_Outputs)
   {
-    if (xiiStringUtils::IsEqual(pPin->GetName(), szName))
+    if (pPin->GetName() == sName)
       return pPin.Borrow();
   }
   return nullptr;
@@ -616,19 +618,19 @@ bool xiiDocumentNodeManager::WouldConnectionCreateCircle(const xiiPin& source, c
   return CanReachNode(pTargetNode, pSourceNode, Visited);
 }
 
-void xiiDocumentNodeManager::GetDynamicPinNames(const xiiDocumentObject* pObject, const char* szPropertyName, xiiStringView sPinName, xiiDynamicArray<xiiString>& out_Names) const
+void xiiDocumentNodeManager::GetDynamicPinNames(const xiiDocumentObject* pObject, xiiStringView sPropertyName, xiiStringView sPinName, xiiDynamicArray<xiiString>& out_Names) const
 {
   out_Names.Clear();
 
-  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(szPropertyName);
+  const xiiAbstractProperty* pProp = pObject->GetType()->FindPropertyByName(sPropertyName);
   if (pProp == nullptr)
   {
-    xiiLog::Warning("Property '{0}' not found in type '{1}'", szPropertyName, pObject->GetType()->GetTypeName());
+    xiiLog::Warning("Property '{0}' not found in type '{1}'", sPropertyName, pObject->GetType()->GetTypeName());
     return;
   }
 
   xiiStringBuilder sTemp;
-  xiiVariant       value = pObject->GetTypeAccessor().GetValue(szPropertyName);
+  xiiVariant       value = pObject->GetTypeAccessor().GetValue(sPropertyName);
 
   if (pProp->GetCategory() == xiiPropertyCategory::Member)
   {
@@ -752,6 +754,8 @@ void xiiDocumentNodeManager::ObjectHandler(const xiiDocumentObjectEvent& e)
       }
     }
     break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 

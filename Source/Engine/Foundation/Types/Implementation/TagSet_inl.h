@@ -4,27 +4,26 @@
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Types/Tag.h>
 
-
 // Template specialization to be able to use xiiTagSet properties as XII_SET_MEMBER_PROPERTY.
 template <typename T>
 struct xiiContainerSubTypeResolver<xiiTagSetTemplate<T>>
 {
-  using Type = const char*;
+  using Type = xiiStringView;
 };
 
 // Template specialization to be able to use xiiTagSet properties as XII_SET_MEMBER_PROPERTY.
 template <typename Class>
-class xiiMemberSetProperty<Class, xiiTagSet, const char*> : public xiiTypedSetProperty<typename xiiTypeTraits<const char*>::NonConstReferenceType>
+class xiiMemberSetProperty<Class, xiiTagSet, xiiStringView> : public xiiTypedSetProperty<typename xiiTypeTraits<xiiStringView>::NonConstReferenceType>
 {
 public:
   using Container             = xiiTagSet;
-  using Type                  = xiiConstCharPtr;
+  using Type                  = xiiStringView;
   using RealType              = typename xiiTypeTraits<Type>::NonConstReferenceType;
   using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
   using GetContainerFunc      = Container& (*)(Class* pInstance);
 
-  xiiMemberSetProperty(const char* szPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
-    xiiTypedSetProperty<RealType>(szPropertyName)
+  xiiMemberSetProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
+    xiiTypedSetProperty<RealType>(sPropertyName)
   {
     XII_ASSERT_DEBUG(constGetter != nullptr, "The const get count function of an set property cannot be nullptr.");
 
@@ -76,11 +75,11 @@ private:
 
 // Template specialization to be able to use xiiTagSet properties as XII_SET_ACCESSOR_PROPERTY.
 template <typename Class>
-class xiiAccessorSetProperty<Class, const char*, const xiiTagSet&> : public xiiTypedSetProperty<const char*>
+class xiiAccessorSetProperty<Class, xiiStringView, const xiiTagSet&> : public xiiTypedSetProperty<xiiStringView>
 {
 public:
   using Container = const xiiTagSet&;
-  using Type      = xiiConstCharPtr;
+  using Type      = xiiStringView;
 
   using ContainerType = typename xiiTypeTraits<Container>::NonConstReferenceType;
   using RealType      = typename xiiTypeTraits<Type>::NonConstReferenceType;
@@ -89,8 +88,8 @@ public:
   using RemoveFunc    = void (Class::*)(Type value);
   using GetValuesFunc = Container (Class::*)() const;
 
-  xiiAccessorSetProperty(const char* szPropertyName, GetValuesFunc getValues, InsertFunc insert, RemoveFunc remove) :
-    xiiTypedSetProperty<Type>(szPropertyName)
+  xiiAccessorSetProperty(xiiStringView sPropertyName, GetValuesFunc getValues, InsertFunc insert, RemoveFunc remove) :
+    xiiTypedSetProperty<Type>(sPropertyName)
   {
     XII_ASSERT_DEBUG(getValues != nullptr, "The get values function of an set property cannot be nullptr.");
 
@@ -345,25 +344,25 @@ void xiiTagSetTemplate<BlockStorageAllocator>::Clear()
 }
 
 template <typename BlockStorageAllocator>
-void xiiTagSetTemplate<BlockStorageAllocator>::SetByName(const char* szTag)
+void xiiTagSetTemplate<BlockStorageAllocator>::SetByName(xiiStringView sTag)
 {
-  const xiiTag& tag = xiiTagRegistry::GetGlobalRegistry().RegisterTag(szTag);
+  const xiiTag& tag = xiiTagRegistry::GetGlobalRegistry().RegisterTag(sTag);
   Set(tag);
 }
 
 template <typename BlockStorageAllocator>
-void xiiTagSetTemplate<BlockStorageAllocator>::RemoveByName(const char* szTag)
+void xiiTagSetTemplate<BlockStorageAllocator>::RemoveByName(xiiStringView sTag)
 {
-  if (const xiiTag* tag = xiiTagRegistry::GetGlobalRegistry().GetTagByName(xiiTempHashedString(szTag)))
+  if (const xiiTag* tag = xiiTagRegistry::GetGlobalRegistry().GetTagByName(xiiTempHashedString(sTag)))
   {
     Remove(*tag);
   }
 }
 
 template <typename BlockStorageAllocator>
-bool xiiTagSetTemplate<BlockStorageAllocator>::IsSetByName(const char* szTag) const
+bool xiiTagSetTemplate<BlockStorageAllocator>::IsSetByName(xiiStringView sTag) const
 {
-  if (const xiiTag* tag = xiiTagRegistry::GetGlobalRegistry().GetTagByName(xiiTempHashedString(szTag)))
+  if (const xiiTag* tag = xiiTagRegistry::GetGlobalRegistry().GetTagByName(xiiTempHashedString(sTag)))
   {
     return IsSet(*tag);
   }

@@ -29,18 +29,18 @@ private:
   virtual void OnInit() override;
   void         OnAction(const xiiRTTI* pRtti);
 
-  QMenu* CreateCategoryMenu(const char* szCategory, xiiMap<xiiString, QMenu*>& existingMenus);
+  QMenu* CreateCategoryMenu(xiiStringView sCategory, xiiMap<xiiString, QMenu*>& existingMenus);
 
   QHBoxLayout* m_pLayout;
   QPushButton* m_pButton;
 
   xiiSet<const xiiRTTI*> m_SupportedTypes;
 
-  bool                                m_bNoMoreElementsAllowed = false;
-  QMenu*                              m_pMenu                  = nullptr;
-  xiiQtSearchableMenu*                m_pSearchableMenu        = nullptr;
-  xiiUInt32                           m_uiMaxElements          = 0; // 0 means unlimited
-  bool                                m_bPreventDuplicates     = false;
+  bool                 m_bNoMoreElementsAllowed = false;
+  QMenu*               m_pMenu                  = nullptr;
+  xiiQtSearchableMenu* m_pSearchableMenu        = nullptr;
+  xiiUInt32            m_uiMaxElements          = 0; // 0 means unlimited
+  bool                 m_bPreventDuplicates     = false;
 
   // used to remember the last search term entered into the searchable menu
   // this should probably be per 'distinguishable menu', but currently it is just global

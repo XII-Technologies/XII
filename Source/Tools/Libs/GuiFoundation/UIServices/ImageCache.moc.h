@@ -28,7 +28,7 @@ public:
   xiiQtImageCache();
 
   /// \brief Specifies which images to return when a requested image is currently not available (loading) or could not be found (unavailable).
-  void SetFallbackImages(const char* szLoading, const char* szUnavailable);
+  void SetFallbackImages(xiiStringView sLoading, xiiStringView sUnavailable);
 
   /// \brief Queries an image by an absolute path. If the image is cached, it is returned right away.
   ///
@@ -36,15 +36,15 @@ public:
   /// Once it is finished loading, the ImageLoaded() signal is emitted and \a index, \a UserData1 and \a UserData2 are passed through.
   /// Additionally an ImageID may be returned through \a out_pImageID. This can be used to identify an image when it is invalidated through the
   /// ImageInvalidated() signal.
-  const QPixmap* QueryPixmap(const char* szAbsolutePath, QModelIndex index = QModelIndex(), QVariant userData1 = QVariant(), QVariant userData2 = QVariant(), xiiUInt32* out_pImageID = nullptr);
+  const QPixmap* QueryPixmap(xiiStringView sAbsolutePath, QModelIndex index = QModelIndex(), QVariant userData1 = QVariant(), QVariant userData2 = QVariant(), xiiUInt32* out_pImageID = nullptr);
 
   /// \brief Same as QueryPixmap(), but first \a szType is used to call QueryTypeImage() and check whether a type specific image was registerd. If
   /// yes, that is used instead of szAbsolutePath.
-  const QPixmap* QueryPixmapForType(const char* szType, const char* szAbsolutePath, QModelIndex index = QModelIndex(), QVariant userData1 = QVariant(), QVariant userData2 = QVariant(), xiiUInt32* out_pImageID = nullptr);
+  const QPixmap* QueryPixmapForType(xiiStringView sType, xiiStringView sAbsolutePath, QModelIndex index = QModelIndex(), QVariant userData1 = QVariant(), QVariant userData2 = QVariant(), xiiUInt32* out_pImageID = nullptr);
 
   /// \brief Invalidate the cached image with the given path. This is typically done when a thumbnail was just written to disk, to inform this system
   /// to reload the latest image from disk.
-  void InvalidateCache(const char* szAbsolutePath);
+  void InvalidateCache(xiiStringView sAbsolutePath);
 
   /// \brief When this threshold is reached, images that haven't been requested in a while are being evicted from the cache.
   void SetMemoryUsageThreshold(xiiUInt64 uiMemoryThreshold) { m_iMemoryUsageThreshold = (xiiInt64)uiMemoryThreshold; }
@@ -56,10 +56,10 @@ public:
   void EnableRequestProcessing();
 
   /// \brief Registers a pixmap to be used when an image for a certain type is requested. See QueryPixmapForType.
-  void RegisterTypeImage(const char* szType, QPixmap pixmap);
+  void RegisterTypeImage(xiiStringView sType, QPixmap pixmap);
 
   /// \brief Returns a pixmap or nullptr that was registered with RegisterTypeImage()
-  const QPixmap* QueryTypeImage(const char* szType) const;
+  const QPixmap* QueryTypeImage(xiiStringView sType) const;
 
 Q_SIGNALS:
   void ImageLoaded(QString sPath, QModelIndex index, QVariant userData1, QVariant userData2);
@@ -90,15 +90,17 @@ private:
       if (rhs.m_Index < m_Index)
         return false;
 
-      // not supported in Qt 5.15 anymore, but doesn't look like it's vital
-      //if (m_UserData1 < rhs.m_UserData1)
-      //  return true;
-      //if (rhs.m_UserData1 < m_UserData1)
-      //  return false;
-      //if (m_UserData2 < rhs.m_UserData2)
-      //  return true;
-      //if (rhs.m_UserData2 < m_UserData2)
-      //  return false;
+        // not supported in Qt 5.15 anymore, but doesn't look like it's vital
+#if 0
+      if (m_UserData1 < rhs.m_UserData1)
+        return true;
+      if (rhs.m_UserData1 < m_UserData1)
+        return false;
+      if (m_UserData2 < rhs.m_UserData2)
+        return true;
+      if (rhs.m_UserData2 < m_UserData2)
+        return false;
+#endif
 
       return false;
     }
@@ -130,7 +132,8 @@ private:
 
 constexpr static xiiUInt32 xiiThumbnailSize = 256;
 
-XII_ALWAYS_INLINE QPixmap xiiSvgThumbnailToPixmap(const char* szFilePath)
+XII_ALWAYS_INLINE QPixmap xiiSvgThumbnailToPixmap(xiiStringView sFilePath)
 {
-  return QIcon(szFilePath).pixmap(QSize(xiiThumbnailSize, xiiThumbnailSize));
+  xiiStringBuilder tmp;
+  return QIcon(sFilePath.GetData(tmp)).pixmap(QSize(xiiThumbnailSize, xiiThumbnailSize));
 }

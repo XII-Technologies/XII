@@ -65,10 +65,10 @@ void xiiEventSet::AddAvailableEvent(xiiStringView sEvent)
   m_AvailableEvents.Insert(sEvent);
 }
 
-xiiResult xiiEventSet::WriteToDDL(const char* szFile)
+xiiResult xiiEventSet::WriteToDDL(xiiStringView sFile)
 {
   xiiDeferredFileWriter file;
-  file.SetOutput(szFile);
+  file.SetOutput(sFile);
 
   xiiOpenDdlWriter ddl;
   ddl.SetOutputStream(&file);
@@ -88,12 +88,12 @@ xiiResult xiiEventSet::WriteToDDL(const char* szFile)
   return XII_FAILURE;
 }
 
-xiiResult xiiEventSet::ReadFromDDL(const char* szFile)
+xiiResult xiiEventSet::ReadFromDDL(xiiStringView sFile)
 {
   m_AvailableEvents.Clear();
 
   xiiFileReader file;
-  if (file.Open(szFile).Failed())
+  if (file.Open(sFile).Failed())
     return XII_FAILURE;
 
   xiiOpenDdlReader ddl;

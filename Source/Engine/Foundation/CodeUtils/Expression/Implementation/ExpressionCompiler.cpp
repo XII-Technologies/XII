@@ -516,7 +516,7 @@ xiiResult xiiExpressionCompiler::GenerateConstantByteCode(const xiiExpressionAST
   }
   else if (pConstant->m_ReturnType == xiiExpressionAST::DataType::Int)
   {
-    byteCode.PushBack(pConstant->m_Value.Get<int>());
+    byteCode.PushBack(pConstant->m_Value.Get<xiiInt32>());
     return XII_SUCCESS;
   }
   else if (pConstant->m_ReturnType == xiiExpressionAST::DataType::Bool)

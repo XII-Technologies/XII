@@ -38,7 +38,7 @@ private:
     Send
   };
 
-  void RegisterWait(xiiPipeChannel_linux* pChannel, WaitType type, int fd);
+  void RegisterWait(xiiPipeChannel_linux* pChannel, WaitType type, xiiInt32 fd);
   void RemovePendingWaits(xiiPipeChannel_linux* pChannel);
 
 private:
@@ -56,8 +56,8 @@ private:
   xiiHybridArray<struct pollfd, 16> m_pollInfos;
   xiiMutex                          m_pollMutex;
   xiiAtomicInteger32                m_numPendingPollModifications = 0;
-  int                               m_wakeupPipeReadEndFd         = -1;
-  int                               m_wakeupPipeWriteEndFd        = -1;
+  xiiInt32                          m_wakeupPipeReadEndFd         = -1;
+  xiiInt32                          m_wakeupPipeWriteEndFd        = -1;
 };
 
 #endif

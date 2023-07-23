@@ -12,11 +12,11 @@ public:
   {
   }
 
-  virtual void GetCoordinateSystem(const xiiVec3Real& vGlobalPosition, xiiCoordinateSystem& out_coordinateSystem) const override
+  virtual void GetCoordinateSystem(const xiiVec3& vGlobalPosition, xiiCoordinateSystem& out_coordinateSystem) const override
   {
-    out_coordinateSystem.m_vForwardDir = xiiBasisAxis::GetBasisVectorReal(m_ForwardAxis);
-    out_coordinateSystem.m_vRightDir   = xiiBasisAxis::GetBasisVectorReal(m_RightAxis);
-    out_coordinateSystem.m_vUpDir      = xiiBasisAxis::GetBasisVectorReal(m_UpAxis);
+    out_coordinateSystem.m_vForwardDir = xiiBasisAxis::GetBasisVector(m_ForwardAxis);
+    out_coordinateSystem.m_vRightDir   = xiiBasisAxis::GetBasisVector(m_RightAxis);
+    out_coordinateSystem.m_vUpDir      = xiiBasisAxis::GetBasisVector(m_UpAxis);
   }
 
   xiiBasisAxis::Enum m_ForwardAxis = xiiBasisAxis::PositiveX;
@@ -45,12 +45,12 @@ xiiCamera::xiiCamera()
   SetCoordinateSystem(xiiBasisAxis::PositiveX, xiiBasisAxis::PositiveY, xiiBasisAxis::PositiveZ);
 }
 
-void xiiCamera::SetCoordinateSystem(xiiBasisAxis::Enum forwardAxis, xiiBasisAxis::Enum rightAxis, xiiBasisAxis::Enum upAxis)
+void xiiCamera::SetCoordinateSystem(xiiBasisAxis::Enum forwardAxis, xiiBasisAxis::Enum rightAxis, xiiBasisAxis::Enum axis)
 {
   auto provider           = XII_DEFAULT_NEW(RemapCoordinateSystemProvider);
   provider->m_ForwardAxis = forwardAxis;
   provider->m_RightAxis   = rightAxis;
-  provider->m_UpAxis      = upAxis;
+  provider->m_UpAxis      = axis;
 
   m_pCoordinateSystem = provider;
 }
@@ -375,9 +375,9 @@ void xiiCamera::ClampRotationAngles(bool bLocalSpace, xiiAngle& forwardAxis, xii
   }
 }
 
-void xiiCamera::RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle upAxis)
+void xiiCamera::RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle axis)
 {
-  ClampRotationAngles(true, forwardAxis, rightAxis, upAxis);
+  ClampRotationAngles(true, forwardAxis, rightAxis, axis);
 
   xiiVec3 vDirForwards = InternalGetDirForwards();
   xiiVec3 vDirUp       = InternalGetDirUp();
@@ -401,10 +401,10 @@ void xiiCamera::RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle
     vDirForwards = m * vDirForwards;
   }
 
-  if (upAxis.GetRadian() != 0.0f)
+  if (axis.GetRadian() != 0.0f)
   {
     xiiMat3 m;
-    m.SetRotationMatrix(vDirUp, upAxis);
+    m.SetRotationMatrix(vDirUp, axis);
 
     vDirRight    = m * vDirRight;
     vDirForwards = m * vDirForwards;
@@ -419,9 +419,9 @@ void xiiCamera::RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle
   CameraOrientationChanged(false, true);
 }
 
-void xiiCamera::RotateGlobally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle upAxis)
+void xiiCamera::RotateGlobally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle axis)
 {
-  ClampRotationAngles(false, forwardAxis, rightAxis, upAxis);
+  ClampRotationAngles(false, forwardAxis, rightAxis, axis);
 
   xiiVec3 vDirForwards = InternalGetDirForwards();
   xiiVec3 vDirUp       = InternalGetDirUp();
@@ -444,10 +444,10 @@ void xiiCamera::RotateGlobally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngl
     vDirForwards = m * vDirForwards;
   }
 
-  if (upAxis.GetRadian() != 0.0f)
+  if (axis.GetRadian() != 0.0f)
   {
     xiiMat3 m;
-    m.SetRotationMatrixZ(upAxis);
+    m.SetRotationMatrixZ(axis);
 
     vDirUp       = m * vDirUp;
     vDirForwards = m * vDirForwards;

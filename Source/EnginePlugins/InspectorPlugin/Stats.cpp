@@ -20,7 +20,7 @@ static void StatsEventHandler(const xiiStats::StatsEventData& e)
     {
       xiiTelemetryMessage msg;
       msg.SetMessageID('STAT', ' SET');
-      msg.GetWriter() << e.m_szStatName;
+      msg.GetWriter() << e.m_sStatName;
       msg.GetWriter() << e.m_NewStatValue;
       msg.GetWriter() << xiiTime::Now();
 
@@ -31,7 +31,7 @@ static void StatsEventHandler(const xiiStats::StatsEventData& e)
     {
       xiiTelemetryMessage msg;
       msg.SetMessageID('STAT', ' DEL');
-      msg.GetWriter() << e.m_szStatName;
+      msg.GetWriter() << e.m_sStatName;
       msg.GetWriter() << xiiTime::Now();
 
       xiiTelemetry::Broadcast(xiiTelemetry::Reliable, msg);

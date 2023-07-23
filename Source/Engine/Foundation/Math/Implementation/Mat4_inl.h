@@ -52,7 +52,7 @@ void xiiMat4Template<Type>::SetFromArray(const Type* const pData, xiiMatrixLayou
   }
   else
   {
-    for (int i = 0; i < 4; ++i)
+    for (xiiInt32 i = 0; i < 4; ++i)
     {
       Element(0, i) = pData[i * 4 + 0];
       Element(1, i) = pData[i * 4 + 1];
@@ -81,7 +81,7 @@ void xiiMat4Template<Type>::GetAsArray(Type* out_pData, xiiMatrixLayout::Enum la
   }
   else
   {
-    for (int i = 0; i < 4; ++i)
+    for (xiiInt32 i = 0; i < 4; ++i)
     {
       out_pData[i * 4 + 0] = Element(0, i);
       out_pData[i * 4 + 1] = Element(1, i);

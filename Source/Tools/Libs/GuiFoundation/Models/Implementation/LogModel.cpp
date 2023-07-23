@@ -53,12 +53,12 @@ void xiiQtLogModel::SetLogLevel(xiiLogMsgType::Enum logLevel)
   Invalidate();
 }
 
-void xiiQtLogModel::SetSearchText(const char* szText)
+void xiiQtLogModel::SetSearchText(xiiStringView sText)
 {
-  if (m_sSearchText == szText)
+  if (m_sSearchText == sText)
     return;
 
-  m_sSearchText = szText;
+  m_sSearchText = sText;
   Invalidate();
 }
 

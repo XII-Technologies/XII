@@ -28,22 +28,22 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 //////////////////////////////////////////////////////////////////////////
 
-void operator<<(xiiStreamWriter& inout_stream, const xiiGameObjectHandle& hValue)
+void operator<<(xiiStreamWriter& ref_stream, const xiiGameObjectHandle& hValue)
 {
   XII_ASSERT_DEV(false, "This function should not be called. Use xiiWorldWriter::WriteGameObjectHandle instead.");
 }
 
-void operator>>(xiiStreamReader& inout_stream, xiiGameObjectHandle& ref_hValue)
+void operator>>(xiiStreamReader& ref_stream, xiiGameObjectHandle& ref_hValue)
 {
   XII_ASSERT_DEV(false, "This function should not be called. Use xiiWorldReader::ReadGameObjectHandle instead.");
 }
 
-void operator<<(xiiStreamWriter& inout_stream, const xiiComponentHandle& hValue)
+void operator<<(xiiStreamWriter& ref_stream, const xiiComponentHandle& hValue)
 {
   XII_ASSERT_DEV(false, "This function should not be called. Use xiiWorldWriter::WriteComponentHandle instead.");
 }
 
-void operator>>(xiiStreamReader& inout_stream, xiiComponentHandle& ref_hValue)
+void operator>>(xiiStreamReader& ref_stream, xiiComponentHandle& ref_hValue)
 {
   XII_ASSERT_DEV(false, "This function should not be called. Use xiiWorldReader::ReadComponentHandle instead.");
 }

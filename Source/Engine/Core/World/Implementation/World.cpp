@@ -44,7 +44,7 @@ XII_END_STATIC_REFLECTED_TYPE;
 xiiWorld::xiiWorld(xiiWorldDesc& ref_desc) :
   m_Data(ref_desc)
 {
-  m_pUpdateTask                                     = XII_DEFAULT_NEW(xiiDelegateTask<void>, "", xiiMakeDelegate(&xiiWorld::UpdateFromThread, this));
+  m_pUpdateTask                                     = XII_DEFAULT_NEW(xiiDelegateTask<void>, "WorldUpdate", xiiTaskNesting::Never, xiiMakeDelegate(&xiiWorld::UpdateFromThread, this));
   m_Data.m_pCoordinateSystemProvider->m_pOwnerWorld = this;
 
   xiiStringBuilder sb = ref_desc.m_sName.GetString();
@@ -198,7 +198,8 @@ xiiGameObjectHandle xiiWorld::CreateObject(const xiiGameObjectDesc& desc, xiiGam
   pTransformationData->m_localScaling  = xiiSimdConversion::ToVec4(desc.m_LocalScaling.GetAsVec4(desc.m_LocalUniformScaling));
   pTransformationData->m_globalTransform.SetIdentity();
 #if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
-  pTransformationData->m_velocity.SetZero();
+  pTransformationData->m_lastGlobalTransform.SetIdentity();
+  pTransformationData->m_uiLastGlobalTransformUpdateCounter = xiiInvalidIndex;
 #endif
   pTransformationData->m_localBounds.SetInvalid();
   pTransformationData->m_localBounds.m_BoxHalfExtents.SetW(xiiSimdFloat::Zero());
@@ -225,11 +226,7 @@ xiiGameObjectHandle xiiWorld::CreateObject(const xiiGameObjectDesc& desc, xiiGam
     pTransformationData->m_uiStableRandomSeed = GetRandomNumberGenerator().UInt();
   }
 
-  pTransformationData->UpdateGlobalTransformNonRecursive();
-
-#if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
-  pTransformationData->m_lastGlobalPosition = pTransformationData->m_globalTransform.m_Position;
-#endif
+  pTransformationData->UpdateGlobalTransformNonRecursive(0);
 
   // link the transformation data to the game object
   pNewObject->m_pTransformationData = pTransformationData;
@@ -381,8 +378,13 @@ void xiiWorld::PostMessage(const xiiGameObjectHandle& receiverObject, const xiiM
   metaData.m_uiReceiverIsComponent       = false;
   metaData.m_uiRecursive                 = bRecursive;
 
+  if (m_Data.m_ProcessingMessageQueue == queueType)
+  {
+    delay = xiiMath::Max(delay, xiiTime::Milliseconds(1));
+  }
+
   xiiRTTIAllocator* pMsgRTTIAllocator = msg.GetDynamicRTTI()->GetAllocator();
-  if (delay.GetSeconds() > 0.0)
+  if (delay.IsPositive())
   {
     xiiMessage* pMsgCopy = pMsgRTTIAllocator->Clone<xiiMessage>(&msg, &m_Data.m_Allocator);
 
@@ -407,8 +409,13 @@ void xiiWorld::PostMessage(const xiiComponentHandle& hReceiverComponent, const x
   metaData.m_uiReceiverIsComponent       = true;
   metaData.m_uiRecursive                 = false;
 
+  if (m_Data.m_ProcessingMessageQueue == queueType)
+  {
+    delay = xiiMath::Max(delay, xiiTime::Milliseconds(1));
+  }
+
   xiiRTTIAllocator* pMsgRTTIAllocator = msg.GetDynamicRTTI()->GetAllocator();
-  if (delay.GetSeconds() > 0.0)
+  if (delay.IsPositive())
   {
     xiiMessage* pMsgCopy = pMsgRTTIAllocator->Clone<xiiMessage>(&msg, &m_Data.m_Allocator);
 
@@ -445,6 +452,8 @@ void xiiWorld::Update()
     xiiStringBuilder sStatValue;
     xiiStats::SetStat(sStatName, GetObjectCount());
   }
+
+  ++m_Data.m_uiUpdateCounter;
 
   if (!m_Data.m_bSimulateWorld)
   {
@@ -510,15 +519,8 @@ void xiiWorld::Update()
 
   // update transforms
   {
-    float fInvDelta = 0.0f;
-
-    // when the clock is paused just use zero
-    const float fDelta = (float)m_Data.m_Clock.GetTimeDiff().GetSeconds();
-    if (fDelta > 0.0f)
-      fInvDelta = 1.0f / fDelta;
-
     XII_PROFILE_SCOPE("Update Transforms");
-    m_Data.UpdateGlobalTransforms(fInvDelta);
+    m_Data.UpdateGlobalTransforms();
   }
 
   // post-transform phase
@@ -867,12 +869,14 @@ void xiiWorld::ProcessQueuedMessages(xiiObjectMsgQueueType::Enum queueType)
     xiiInternal::WorldData::MessageQueue& queue = m_Data.m_MessageQueues[queueType];
     queue.Sort(MessageComparer());
 
+    m_Data.m_ProcessingMessageQueue = queueType;
     for (xiiUInt32 i = 0; i < queue.GetCount(); ++i)
     {
       ProcessQueuedMessage(queue[i]);
 
       // no need to deallocate these messages, they are allocated through a frame allocator
     }
+    m_Data.m_ProcessingMessageQueue = xiiObjectMsgQueueType::COUNT;
 
     queue.Clear();
   }
@@ -884,6 +888,7 @@ void xiiWorld::ProcessQueuedMessages(xiiObjectMsgQueueType::Enum queueType)
 
     const xiiTime now = m_Data.m_Clock.GetAccumulatedTime();
 
+    m_Data.m_ProcessingMessageQueue = queueType;
     while (!queue.IsEmpty())
     {
       auto& entry = queue.Peek();
@@ -896,6 +901,7 @@ void xiiWorld::ProcessQueuedMessages(xiiObjectMsgQueueType::Enum queueType)
 
       queue.Dequeue();
     }
+    m_Data.m_ProcessingMessageQueue = xiiObjectMsgQueueType::COUNT;
   }
 }
 
@@ -1390,7 +1396,7 @@ void xiiWorld::PatchHierarchyData(xiiGameObject* pObject, xiiGameObject::Transfo
   {
     // Explicitly trigger transform AND bounds update, otherwise bounds would be outdated for static objects
     // Don't call pObject->UpdateGlobalTransformAndBounds() here since that would recursively update the parent global transform which is already up-to-date.
-    pObject->m_pTransformationData->UpdateGlobalTransformNonRecursive();
+    pObject->m_pTransformationData->UpdateGlobalTransformNonRecursive(GetUpdateCounter());
 
     pObject->m_pTransformationData->UpdateGlobalBounds(GetSpatialSystem());
   }
@@ -1438,7 +1444,5 @@ void xiiWorld::SetMaxInitializationTimePerFrame(xiiTime maxInitTime)
 
   m_Data.m_MaxInitializationTimePerFrame = maxInitTime;
 }
-
-
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_World);

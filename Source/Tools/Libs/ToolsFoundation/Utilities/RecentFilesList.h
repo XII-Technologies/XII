@@ -24,7 +24,7 @@ public:
     xiiInt32  m_iContainerWindow;
   };
   /// \brief Moves the inserted file to the front with the given container ID.
-  void Insert(const char* szFile, xiiInt32 iContainerWindow);
+  void Insert(xiiStringView sFile, xiiInt32 iContainerWindow);
 
   /// \brief Returns all files in the list.
   const xiiDeque<RecentFile>& GetFileList() const { return m_Files; }
@@ -33,10 +33,10 @@ public:
   void Clear() { m_Files.Clear(); }
 
   /// \brief Saves the recent files list to the given file. Uses a simple text file format (one line per item).
-  void Save(const char* szFile);
+  void Save(xiiStringView sFile);
 
   /// \brief Loads the recent files list from the given file. Uses a simple text file format (one line per item).
-  void Load(const char* szFile);
+  void Load(xiiStringView sFile);
 
 private:
   xiiUInt32            m_uiMaxElements;

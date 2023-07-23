@@ -16,7 +16,7 @@ xiiCommandLineUtils* xiiCommandLineUtils::GetGlobalInstance()
   return &g_pCmdLineInstance;
 }
 
-void xiiCommandLineUtils::SplitCommandLineString(const char* szCommandString, bool bAddExecutableDir, xiiDynamicArray<xiiString>& out_args, xiiDynamicArray<const char*>& out_argsV)
+void xiiCommandLineUtils::SplitCommandLineString(xiiStringView sCommandString, bool bAddExecutableDir, xiiDynamicArray<xiiString>& out_args, xiiDynamicArray<const char*>& out_argsV)
 {
   // Add application dir as first argument as customary on other platforms.
   if (bAddExecutableDir)
@@ -31,7 +31,7 @@ void xiiCommandLineUtils::SplitCommandLineString(const char* szCommandString, bo
   }
 
   // Simple args splitting. Not as powerful as Win32's CommandLineToArgvW.
-  const char* currentChar = szCommandString;
+  const char* currentChar = sCommandString.GetStartPointer();
   const char* lastEnd     = currentChar;
   bool        inQuotes    = false;
   while (*currentChar != '\0')
@@ -79,7 +79,7 @@ void xiiCommandLineUtils::SetCommandLine(xiiArrayPtr<xiiString> commands)
 
 void xiiCommandLineUtils::SetCommandLine()
 {
-  int argc = 0;
+  xiiInt32 argc = 0;
 
   LPWSTR* argvw = CommandLineToArgvW(::GetCommandLineW(), &argc);
 

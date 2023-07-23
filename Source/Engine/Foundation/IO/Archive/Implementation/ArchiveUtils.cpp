@@ -112,9 +112,12 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView
 
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
     case xiiArchiveCompressionMode::Compressed_zstd:
-      zstdWriter.SetOutputStream(&ref_stream, (xiiCompressedStreamWriterZstd::Compression)iCompressionLevel);
+    {
+      constexpr xiiUInt32 uiMaxNumWorkerThreads = 12u;
+      zstdWriter.SetOutputStream(&ref_stream, uiMaxNumWorkerThreads, (xiiCompressedStreamWriterZstd::Compression)iCompressionLevel);
       pWriter = &zstdWriter;
-      break;
+    }
+    break;
 #endif
 
     default:
@@ -550,6 +553,5 @@ xiiResult xiiArchiveUtils::ExtractZipTOC(xiiMemoryMappedFile& ref_memFile, xiiAr
 
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Archive_Implementation_ArchiveUtils);

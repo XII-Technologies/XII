@@ -42,7 +42,7 @@ xiiResult xiiPreprocessor::CopyTokensAndEvaluateDefined(const TokenStream& Sourc
           ProcessingEvent pe;
           pe.m_pToken = Source[uiIdentifier];
           pe.m_Type   = ProcessingEvent::CheckDefined;
-          pe.m_szInfo = bDefined ? "defined" : "undefined";
+          pe.m_sInfo  = bDefined ? "defined" : "undefined";
           m_ProcessingEvents.Broadcast(pe);
         }
 

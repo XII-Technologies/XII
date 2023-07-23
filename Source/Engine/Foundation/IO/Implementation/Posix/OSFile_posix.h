@@ -43,7 +43,7 @@ xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum Ope
   const char*      szFile    = sFileCopy;
 
 #if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP) // UWP does not support these functions
-  int fd = -1;
+  xiiInt32 fd = -1;
   switch (OpenMode)
   {
     // O_CLOEXEC = don't forward to child processes
@@ -75,13 +75,13 @@ xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum Ope
     return XII_FAILURE;
   }
 
-  const int     iSharedMode = (FileShareMode == xiiFileShareMode::Exclusive) ? LOCK_EX : LOCK_SH;
-  const xiiTime sleepTime   = xiiTime::Milliseconds(20);
-  xiiInt32      iRetries    = m_bRetryOnSharingViolation ? 20 : 1;
+  const xiiInt32 iSharedMode = (FileShareMode == xiiFileShareMode::Exclusive) ? LOCK_EX : LOCK_SH;
+  const xiiTime  sleepTime   = xiiTime::Milliseconds(20);
+  xiiInt32       iRetries    = m_bRetryOnSharingViolation ? 20 : 1;
 
   while (flock(fd, iSharedMode | LOCK_NB /* do not block */) != 0)
   {
-    int errorCode = errno;
+    xiiInt32 errorCode = errno;
     iRetries--;
     if (iRetries == 0 || errorCode != EWOULDBLOCK)
     {
@@ -285,9 +285,9 @@ bool xiiOSFile::InternalExistsDirectory(xiiStringView sDirectory)
 xiiResult xiiOSFile::InternalDeleteFile(xiiStringView sFile)
 {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  int iRes = _unlink(xiiString(sFile));
+  xiiInt32 iRes = _unlink(xiiString(sFile));
 #else
-  int iRes = unlink(xiiString(sFile));
+  xiiInt32 iRes = unlink(xiiString(sFile));
 #endif
 
   if (iRes == 0 || (iRes == -1 && errno == ENOENT))
@@ -299,9 +299,9 @@ xiiResult xiiOSFile::InternalDeleteFile(xiiStringView sFile)
 xiiResult xiiOSFile::InternalDeleteDirectory(xiiStringView sDirectory)
 {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  int iRes = _rmdir(xiiString(sDirectory));
+  xiiInt32 iRes = _rmdir(xiiString(sDirectory));
 #else
-  int iRes = rmdir(xiiString(sDirectory));
+  xiiInt32 iRes = rmdir(xiiString(sDirectory));
 #endif
 
   if (iRes == 0 || (iRes == -1 && errno == ENOENT))
@@ -317,9 +317,9 @@ xiiResult xiiOSFile::InternalCreateDirectory(xiiStringView sDirectory)
     return XII_SUCCESS;
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  int iRes = _mkdir(xiiString(sDirectory));
+  xiiInt32 iRes = _mkdir(xiiString(sDirectory));
 #else
-  int iRes = mkdir(xiiString(sDirectory), 0777);
+  xiiInt32 iRes = mkdir(xiiString(sDirectory), 0777);
 #endif
 
   if (iRes == 0 || (iRes == -1 && errno == EEXIST))
@@ -347,7 +347,7 @@ xiiResult xiiOSFile::InternalMoveFileOrDirectory(xiiStringView sDirectoryFrom, x
 xiiResult xiiOSFile::InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileStats& out_Stats)
 {
   struct stat tempStat;
-  int         iRes = stat(xiiString(sFileOrFolder), &tempStat);
+  xiiInt32    iRes = stat(xiiString(sFileOrFolder), &tempStat);
 
   if (iRes != 0)
     return XII_FAILURE;

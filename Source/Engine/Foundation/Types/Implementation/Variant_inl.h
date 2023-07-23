@@ -205,7 +205,7 @@ XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiColorGammaUB& value)
   InitInplace(value);
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, xiiInt32>>
 XII_ALWAYS_INLINE xiiVariant::xiiVariant(const T& value)
 {
   const constexpr bool forceSharing = TypeDeduction<T>::forceSharing;
@@ -312,13 +312,13 @@ XII_ALWAYS_INLINE bool xiiVariant::IsString() const
   return IsStringStatic(m_uiType);
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, xiiInt32>>
 XII_ALWAYS_INLINE bool xiiVariant::IsA() const
 {
   return m_uiType == TypeDeduction<T>::value;
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, xiiInt32>>
 XII_ALWAYS_INLINE bool xiiVariant::IsA() const
 {
   if (m_uiType == TypeDeduction<T>::value)
@@ -344,13 +344,13 @@ XII_ALWAYS_INLINE bool xiiVariant::IsA() const
   return false;
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::TypedObject, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::TypedObject, xiiInt32>>
 XII_ALWAYS_INLINE bool xiiVariant::IsA() const
 {
   return m_uiType == TypeDeduction<T>::value;
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, xiiInt32>>
 XII_ALWAYS_INLINE bool xiiVariant::IsA() const
 {
   using NonRefT = typename xiiTypeTraits<T>::NonConstReferenceType;
@@ -369,49 +369,49 @@ XII_ALWAYS_INLINE xiiVariant::Type::Enum xiiVariant::GetType() const
   return static_cast<Type::Enum>(m_uiType);
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, xiiInt32>>
 XII_ALWAYS_INLINE const T& xiiVariant::Get() const
 {
   XII_ASSERT_DEV(IsA<T>(), "Stored type '{0}' does not match requested type '{1}'", m_uiType, TypeDeduction<T>::value);
   return Cast<T>();
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, xiiInt32>>
 XII_ALWAYS_INLINE T xiiVariant::Get() const
 {
   XII_ASSERT_DEV(IsA<T>(), "Stored type '{0}' does not match requested type '{1}'", m_uiType, TypeDeduction<T>::value);
   return Cast<T>();
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::TypedObject, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::TypedObject, xiiInt32>>
 XII_ALWAYS_INLINE const T xiiVariant::Get() const
 {
   XII_ASSERT_DEV(IsA<T>(), "Stored type '{0}' does not match requested type '{1}'", m_uiType, TypeDeduction<T>::value);
   return Cast<T>();
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, xiiInt32>>
 XII_ALWAYS_INLINE const T& xiiVariant::Get() const
 {
   XII_ASSERT_DEV(m_uiType == TypeDeduction<T>::value, "Stored type '{0}' does not match requested type '{1}'", m_uiType, TypeDeduction<T>::value);
   return Cast<T>();
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, xiiInt32>>
 XII_ALWAYS_INLINE T& xiiVariant::GetWritable()
 {
   GetWriteAccess();
   return const_cast<T&>(Get<T>());
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, xiiInt32>>
 XII_ALWAYS_INLINE T xiiVariant::GetWritable()
 {
   GetWriteAccess();
   return const_cast<T>(Get<T>());
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, xiiInt32>>
 XII_ALWAYS_INLINE T& xiiVariant::GetWritable()
 {
   GetWriteAccess();
@@ -540,7 +540,7 @@ XII_ALWAYS_INLINE void xiiVariant::MoveFrom(xiiVariant&& other)
   other.m_Data.shared = nullptr;
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, xiiInt32>>
 const T& xiiVariant::Cast() const
 {
   const bool validType = xiiConversionTest<T, typename TypeDeduction<T>::StorageType>::sameType;
@@ -549,7 +549,7 @@ const T& xiiVariant::Cast() const
   return m_bIsShared ? *static_cast<const T*>(m_Data.shared->m_Ptr) : *reinterpret_cast<const T*>(&m_Data);
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::PointerCast, xiiInt32>>
 T xiiVariant::Cast() const
 {
   const xiiTypedPointer& ptr = *reinterpret_cast<const xiiTypedPointer*>(&m_Data);
@@ -563,7 +563,7 @@ T xiiVariant::Cast() const
   return static_cast<T>(ptr.m_pObject);
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::TypedObject, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::TypedObject, xiiInt32>>
 const T xiiVariant::Cast() const
 {
   xiiTypedObject obj;
@@ -572,7 +572,7 @@ const T xiiVariant::Cast() const
   return obj;
 }
 
-template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, int>>
+template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::CustomTypeCast, xiiInt32>>
 const T& xiiVariant::Cast() const
 {
   const xiiRTTI* pType = GetReflectedType();

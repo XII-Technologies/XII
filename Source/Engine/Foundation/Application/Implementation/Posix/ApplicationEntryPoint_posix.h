@@ -18,18 +18,21 @@
   XII_APPLICATION_ENTRY_POINT_CODE_INJECTION                                                                                      \
   int main(int argc, const char** argv)                                                                                           \
   {                                                                                                                               \
-                                                                                                                                  \
     AppClass* pApp = new (appBuffer) AppClass(__VA_ARGS__);                                                                       \
     pApp->SetCommandLineArguments((xiiUInt32)argc, argv);                                                                         \
+                                                                                                                                  \
     xiiRun(pApp); /* Life cycle & run method calling */                                                                           \
-    const int iReturnCode = pApp->GetReturnCode();                                                                                \
+                                                                                                                                  \
+    const xiiInt32 iReturnCode = pApp->GetReturnCode();                                                                           \
     if (iReturnCode != 0)                                                                                                         \
     {                                                                                                                             \
       const char* szReturnCode = pApp->TranslateReturnCode();                                                                     \
       if (szReturnCode != nullptr && szReturnCode[0] != '\0')                                                                     \
         xiiLog::Printf("Return Code: '%s'\n", szReturnCode);                                                                      \
     }                                                                                                                             \
+                                                                                                                                  \
     pApp->~AppClass();                                                                                                            \
     memset((void*)pApp, 0, sizeof(AppClass));                                                                                     \
+                                                                                                                                  \
     return iReturnCode;                                                                                                           \
   }

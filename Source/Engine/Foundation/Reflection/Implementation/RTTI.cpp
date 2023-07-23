@@ -7,33 +7,35 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Containers/HashTable.h>
 
-struct xiiTypeHashTable
+struct xiiTypeData
 {
-  xiiMutex                                                                                       m_Mutex;
-  xiiHashTable<xiiStringView, xiiRTTI*, xiiHashHelper<xiiStringView>, xiiStaticAllocatorWrapper> m_Table;
+  xiiMutex                                                                               m_Mutex;
+  xiiHashTable<xiiUInt64, xiiRTTI*, xiiHashHelper<xiiUInt64>, xiiStaticAllocatorWrapper> m_TypeNameHashToType;
+  xiiDynamicArray<xiiRTTI*>                                                              m_AllTypes;
+
+  bool m_bIsIterating = false;
 };
 
-xiiTypeHashTable* GetTypeHashTable()
+xiiTypeData* GetTypeData()
 {
   // Prevent static initialization hazard between first xiiRTTI instance
-  // and the hash table and also make sure it is sufficiently sized before first use.
-  auto CreateTable = []() -> xiiTypeHashTable* {
-    xiiTypeHashTable* table = new xiiTypeHashTable();
-    table->m_Table.Reserve(512);
-    return table;
+  // and type data and also make sure it is sufficiently sized before first use.
+  auto CreateData = []() -> xiiTypeData* {
+    xiiTypeData* pData = new xiiTypeData();
+    pData->m_TypeNameHashToType.Reserve(512);
+    pData->m_AllTypes.Reserve(512);
+    return pData;
   };
-  static xiiTypeHashTable* table = CreateTable();
-  return table;
+  static xiiTypeData* pData = CreateData();
+  return pData;
 }
-
-XII_ENUMERABLE_CLASS_IMPLEMENTATION(xiiRTTI);
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, Reflection)
 
-  //BEGIN_SUBSYSTEM_DEPENDENCIES
-  //  "FileSystem"
-  //END_SUBSYSTEM_DEPENDENCIES
+  // BEGIN_SUBSYSTEM_DEPENDENCIES
+  //   "FileSystem"
+  // END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
   {
@@ -49,8 +51,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, Reflection)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiRTTI::xiiRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractFunctionProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)()) :
-  m_szTypeName(szName), m_pAllocator(pAllocator), m_Properties(properties), m_Functions(functions), m_Attributes(attributes), m_MessageHandlers(messageHandlers), m_MessageSenders(messageSenders), m_VerifyParent(fnVerifyParent)
+xiiRTTI::xiiRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractFunctionProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)()) :
+  m_sTypeName(sName), m_pAllocator(pAllocator), m_Properties(properties), m_Functions(functions), m_Attributes(attributes), m_MessageHandlers(messageHandlers), m_MessageSenders(messageSenders), m_VerifyParent(fnVerifyParent)
 {
   UpdateType(pParentType, uiTypeSize, uiTypeVersion, uiVariantType, flags);
 
@@ -66,34 +68,38 @@ xiiRTTI::xiiRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTyp
 #endif
   }
 
-  if (m_szTypeName)
+  if (!m_sTypeName.IsEmpty())
+  {
     RegisterType();
+  }
 }
 
 xiiRTTI::~xiiRTTI()
 {
-  if (m_szTypeName)
+  if (!m_sTypeName.IsEmpty())
+  {
     UnregisterType();
+  }
 }
 
 void xiiRTTI::GatherDynamicMessageHandlers()
 {
   // This cannot be done in the constructor, because the parent types are not guaranteed to be initialized at that point
 
-  if (m_bGatheredDynamicMessageHandlers)
+  if (m_uiMsgIdOffset != xiiSmallInvalidIndex)
     return;
 
-  m_bGatheredDynamicMessageHandlers = true;
+  m_uiMsgIdOffset = 0;
 
-  xiiUInt32 uiMinMsgId = xiiInvalidIndex;
-  xiiUInt32 uiMaxMsgId = 0;
+  xiiUInt16 uiMinMsgId = xiiSmallInvalidIndex;
+  xiiUInt16 uiMaxMsgId = 0;
 
   const xiiRTTI* pInstance = this;
   while (pInstance != nullptr)
   {
     for (xiiUInt32 i = 0; i < pInstance->m_MessageHandlers.GetCount(); ++i)
     {
-      xiiUInt32 id = pInstance->m_MessageHandlers[i]->GetMessageId();
+      xiiUInt16 id = pInstance->m_MessageHandlers[i]->GetMessageId();
       uiMinMsgId   = xiiMath::Min(uiMinMsgId, id);
       uiMaxMsgId   = xiiMath::Max(uiMaxMsgId, id);
     }
@@ -101,10 +107,10 @@ void xiiRTTI::GatherDynamicMessageHandlers()
     pInstance = pInstance->m_pParentType;
   }
 
-  if (uiMinMsgId != xiiInvalidIndex)
+  if (uiMinMsgId != xiiSmallInvalidIndex)
   {
     m_uiMsgIdOffset            = uiMinMsgId;
-    xiiUInt32 uiNeededCapacity = uiMaxMsgId - uiMinMsgId + 1;
+    xiiUInt16 uiNeededCapacity = uiMaxMsgId - uiMinMsgId + 1;
 
     m_DynamicMessageHandlers.SetCount(uiNeededCapacity);
 
@@ -114,7 +120,7 @@ void xiiRTTI::GatherDynamicMessageHandlers()
       for (xiiUInt32 i = 0; i < pInstance->m_MessageHandlers.GetCount(); ++i)
       {
         xiiAbstractMessageHandler* pHandler = pInstance->m_MessageHandlers[i];
-        xiiUInt32                  uiIndex  = pHandler->GetMessageId() - m_uiMsgIdOffset;
+        xiiUInt16                  uiIndex  = pHandler->GetMessageId() - m_uiMsgIdOffset;
 
         // this check ensures that handlers in base classes do not override the derived handlers
         if (m_DynamicMessageHandlers[uiIndex] == nullptr)
@@ -143,7 +149,7 @@ void xiiRTTI::VerifyCorrectness() const
   if (m_VerifyParent != nullptr)
   {
     XII_ASSERT_DEV(m_VerifyParent() == m_pParentType, "Type '{0}': The given parent type '{1}' does not match the actual parent type '{2}'",
-                   m_szTypeName, (m_pParentType != nullptr) ? m_pParentType->GetTypeName() : "null",
+                   m_sTypeName, (m_pParentType != nullptr) ? m_pParentType->GetTypeName() : "null",
                    (m_VerifyParent() != nullptr) ? m_VerifyParent()->GetTypeName() : "null");
   }
 
@@ -159,7 +165,7 @@ void xiiRTTI::VerifyCorrectness() const
         const bool bNewProperty = !Known.Find(pInstance->m_Properties[i]->GetPropertyName()).IsValid();
         Known.Insert(pInstance->m_Properties[i]->GetPropertyName());
 
-        XII_ASSERT_DEV(bNewProperty, "{0}: The property with name '{1}' is already defined in type '{2}'.", m_szTypeName,
+        XII_ASSERT_DEV(bNewProperty, "{0}: The property with name '{1}' is already defined in type '{2}'.", m_sTypeName,
                        pInstance->m_Properties[i]->GetPropertyName(), pInstance->GetTypeName());
       }
 
@@ -177,17 +183,10 @@ void xiiRTTI::VerifyCorrectness() const
 
 void xiiRTTI::VerifyCorrectnessForAllTypes()
 {
-  xiiRTTI* pRtti = xiiRTTI::GetFirstInstance();
-
-  while (pRtti)
-  {
-    pRtti->VerifyCorrectness();
-    pRtti = pRtti->GetNextInstance();
-  }
+  xiiRTTI::ForEachType([](const xiiRTTI* pRtti) { pRtti->VerifyCorrectness(); });
 }
 
-
-void xiiRTTI::UpdateType(const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags)
+void xiiRTTI::UpdateType(const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags)
 {
   m_pParentType   = pParentType;
   m_uiVariantType = uiVariantType;
@@ -199,18 +198,29 @@ void xiiRTTI::UpdateType(const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUI
 
 void xiiRTTI::RegisterType()
 {
-  m_uiTypeNameHash = xiiHashingUtils::StringHash(m_szTypeName);
+  m_uiTypeNameHash = xiiHashingUtils::StringHash(m_sTypeName);
 
-  auto pTable = GetTypeHashTable();
-  XII_LOCK(pTable->m_Mutex);
-  pTable->m_Table.Insert(m_szTypeName, this);
+  auto pData = GetTypeData();
+  XII_LOCK(pData->m_Mutex);
+  pData->m_TypeNameHashToType.Insert(m_uiTypeNameHash, this);
+
+  m_uiTypeIndex = pData->m_AllTypes.GetCount();
+  pData->m_AllTypes.PushBack(this);
 }
 
 void xiiRTTI::UnregisterType()
 {
-  auto pTable = GetTypeHashTable();
-  XII_LOCK(pTable->m_Mutex);
-  pTable->m_Table.Remove(m_szTypeName);
+  auto pData = GetTypeData();
+  XII_LOCK(pData->m_Mutex);
+  pData->m_TypeNameHashToType.Remove(m_uiTypeNameHash);
+
+  XII_ASSERT_DEV(pData->m_bIsIterating == false, "Unregistering types while iterating over types might cause unexpected behavior");
+
+  pData->m_AllTypes.RemoveAtAndSwap(m_uiTypeIndex);
+  if (m_uiTypeIndex != pData->m_AllTypes.GetCount())
+  {
+    pData->m_AllTypes[m_uiTypeIndex]->m_uiTypeIndex = m_uiTypeIndex;
+  }
 }
 
 void xiiRTTI::GetAllProperties(xiiHybridArray<xiiAbstractProperty*, 32>& out_properties) const
@@ -223,66 +233,31 @@ void xiiRTTI::GetAllProperties(xiiHybridArray<xiiAbstractProperty*, 32>& out_pro
   out_properties.PushBackRange(GetProperties());
 }
 
-xiiRTTI* xiiRTTI::FindTypeByName(xiiStringView sName)
+const xiiRTTI* xiiRTTI::FindTypeByName(xiiStringView sName)
 {
-  xiiRTTI* pInstance = nullptr;
-  {
-    auto pTable = GetTypeHashTable();
-    XII_LOCK(pTable->m_Mutex);
-    if (pTable->m_Table.TryGetValue(sName, pInstance))
-      return pInstance;
-  }
+  xiiUInt64 uiNameHash = xiiHashingUtils::StringHash(sName);
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  pInstance = xiiRTTI::GetFirstInstance();
+  auto pData = GetTypeData();
+  XII_LOCK(pData->m_Mutex);
 
-  while (pInstance)
-  {
-    if (pInstance->GetTypeName() == sName)
-    {
-      XII_REPORT_FAILURE("The hash table lookup should have already found the RTTI type '{}'", sName);
-      return pInstance;
-    }
-
-    pInstance = pInstance->GetNextInstance();
-  }
-#endif
-
-  return nullptr;
+  xiiRTTI* pType = nullptr;
+  pData->m_TypeNameHashToType.TryGetValue(uiNameHash, pType);
+  return pType;
 }
 
-xiiRTTI* xiiRTTI::FindTypeByNameHash(xiiUInt64 uiNameHash)
+const xiiRTTI* xiiRTTI::FindTypeByNameHash(xiiUInt64 uiNameHash)
 {
-  // TODO: actually reuse the hash table for the lookup
+  auto pData = GetTypeData();
+  XII_LOCK(pData->m_Mutex);
 
-  xiiRTTI* pInstance = xiiRTTI::GetFirstInstance();
-
-  while (pInstance)
-  {
-    if (pInstance->GetTypeNameHash() == uiNameHash)
-      return pInstance;
-
-    pInstance = pInstance->GetNextInstance();
-  }
-
-  return nullptr;
+  xiiRTTI* pType = nullptr;
+  pData->m_TypeNameHashToType.TryGetValue(uiNameHash, pType);
+  return pType;
 }
 
-xiiRTTI* xiiRTTI::FindTypeByNameHash32(xiiUInt32 uiNameHash)
+const xiiRTTI* xiiRTTI::FindTypeByNameHash32(xiiUInt32 uiNameHash)
 {
-  // TODO: actually reuse the hash table for the lookup
-
-  xiiRTTI* pInstance = xiiRTTI::GetFirstInstance();
-
-  while (pInstance)
-  {
-    if (xiiHashingUtils::StringHashTo32(pInstance->GetTypeNameHash()) == uiNameHash)
-      return pInstance;
-
-    pInstance = pInstance->GetNextInstance();
-  }
-
-  return nullptr;
+  return FindTypeIf([=](const xiiRTTI* pRtti) { return (xiiHashingUtils::StringHashTo32(pRtti->GetTypeNameHash()) == uiNameHash); });
 }
 
 xiiAbstractProperty* xiiRTTI::FindPropertyByName(xiiStringView sName, bool bSearchBaseTypes /* = true */) const
@@ -308,11 +283,27 @@ xiiAbstractProperty* xiiRTTI::FindPropertyByName(xiiStringView sName, bool bSear
   return nullptr;
 }
 
+const xiiRTTI* xiiRTTI::FindTypeIf(PredicateFunc func)
+{
+  auto pData = GetTypeData();
+  XII_LOCK(pData->m_Mutex);
+
+  for (const xiiRTTI* pRtti : pData->m_AllTypes)
+  {
+    if (func(pRtti))
+    {
+      return pRtti;
+    }
+  }
+
+  return nullptr;
+}
+
 bool xiiRTTI::DispatchMessage(void* pInstance, xiiMessage& ref_msg) const
 {
-  XII_ASSERT_DEBUG(m_bGatheredDynamicMessageHandlers, "Message handler table should have been gathered at this point.\n"
-                                                      "If this assert is triggered for a type loaded from a dynamic plugin,\n"
-                                                      "you may have forgotten to instantiate a xiiPlugin object inside your plugin DLL.");
+  XII_ASSERT_DEBUG(m_uiMsgIdOffset != xiiSmallInvalidIndex, "Message handler table should have been gathered at this point.\n"
+                                                            "If this assert is triggered for a type loaded from a dynamic plugin,\n"
+                                                            "you may have forgotten to instantiate a xiiPlugin object inside your plugin DLL.");
 
   const xiiUInt32 uiIndex = ref_msg.GetId() - m_uiMsgIdOffset;
 
@@ -332,9 +323,9 @@ bool xiiRTTI::DispatchMessage(void* pInstance, xiiMessage& ref_msg) const
 
 bool xiiRTTI::DispatchMessage(const void* pInstance, xiiMessage& ref_msg) const
 {
-  XII_ASSERT_DEBUG(m_bGatheredDynamicMessageHandlers, "Message handler table should have been gathered at this point.\n"
-                                                      "If this assert is triggered for a type loaded from a dynamic plugin,\n"
-                                                      "you may have forgotten to instantiate a xiiPlugin object inside your plugin DLL.");
+  XII_ASSERT_DEBUG(m_uiMsgIdOffset != xiiSmallInvalidIndex, "Message handler table should have been gathered at this point.\n"
+                                                            "If this assert is triggered for a type loaded from a dynamic plugin,\n"
+                                                            "you may have forgotten to instantiate a xiiPlugin object inside your plugin DLL.");
 
   const xiiUInt32 uiIndex = ref_msg.GetId() - m_uiMsgIdOffset;
 
@@ -352,46 +343,70 @@ bool xiiRTTI::DispatchMessage(const void* pInstance, xiiMessage& ref_msg) const
   return false;
 }
 
-const xiiDynamicArray<const xiiRTTI*>& xiiRTTI::GetAllTypesDerivedFrom(
-  const xiiRTTI*                   pBaseType,
-  xiiDynamicArray<const xiiRTTI*>& out_derivedTypes,
-  bool                             bSortByName)
+void xiiRTTI::ForEachType(VisitorFunc func, xiiBitflags<ForEachOptions> options /*= ForEachOptions::Default*/)
 {
-  for (auto pRtti = xiiRTTI::GetFirstInstance(); pRtti != nullptr; pRtti = pRtti->GetNextInstance())
+  auto pData = GetTypeData();
+  XII_LOCK(pData->m_Mutex);
+
+  pData->m_bIsIterating = true;
+  // Cannot use ranged based for loop here since we might add new types while iterating and the m_AllTypes array might re-allocate.
+  for (xiiUInt32 i = 0; i < pData->m_AllTypes.GetCount(); ++i)
   {
+    auto pRtti = pData->m_AllTypes.GetData()[i];
+
+    if (options.IsSet(ForEachOptions::ExcludeNonAllocatable) && (pRtti->GetAllocator() == nullptr || pRtti->GetAllocator()->CanAllocate() == false))
+      continue;
+
+    if (options.IsSet(ForEachOptions::ExcludeAbstract) && pRtti->GetTypeFlags().IsSet(xiiTypeFlags::Abstract))
+      continue;
+
+    func(pRtti);
+  }
+  pData->m_bIsIterating = false;
+}
+
+void xiiRTTI::ForEachDerivedType(const xiiRTTI* pBaseType, VisitorFunc func, xiiBitflags<ForEachOptions> options /*= ForEachOptions::Default*/)
+{
+  auto pData = GetTypeData();
+  XII_LOCK(pData->m_Mutex);
+
+  pData->m_bIsIterating = true;
+  // Can't use ranged based for loop here since we might add new types while iterating and the m_AllTypes array might re-allocate.
+  for (xiiUInt32 i = 0; i < pData->m_AllTypes.GetCount(); ++i)
+  {
+    auto pRtti = pData->m_AllTypes.GetData()[i];
+
     if (!pRtti->IsDerivedFrom(pBaseType))
       continue;
 
-    out_derivedTypes.PushBack(pRtti);
-  }
+    if (options.IsSet(ForEachOptions::ExcludeNonAllocatable) && (pRtti->GetAllocator() == nullptr || pRtti->GetAllocator()->CanAllocate() == false))
+      continue;
 
-  if (bSortByName)
-  {
-    out_derivedTypes.Sort([](const xiiRTTI* p1, const xiiRTTI* p2) -> bool {
-      return xiiStringUtils::Compare(p1->GetTypeName(), p2->GetTypeName()) < 0;
-    });
-  }
+    if (options.IsSet(ForEachOptions::ExcludeAbstract) && pRtti->GetTypeFlags().IsSet(xiiTypeFlags::Abstract))
+      continue;
 
-  return out_derivedTypes;
+    func(pRtti);
+  }
+  pData->m_bIsIterating = false;
 }
 
-void xiiRTTI::AssignPlugin(const char* szPluginName)
+void xiiRTTI::AssignPlugin(xiiStringView sPluginName)
 {
-  // assigns the given plugin name to every xiiRTTI instance that has no plugin assigned yet
+  // Assigns the given plugin name to every xiiRTTI instance that has no plugin assigned yet
 
-  xiiRTTI* pInstance = xiiRTTI::GetFirstInstance();
+  auto pData = GetTypeData();
+  XII_LOCK(pData->m_Mutex);
 
-  while (pInstance)
+  for (xiiRTTI* pRtti : pData->m_AllTypes)
   {
-    if (pInstance->m_szPluginName == nullptr)
+    if (pRtti->m_sPluginName.IsEmpty())
     {
-      pInstance->m_szPluginName = szPluginName;
-      SanityCheckType(pInstance);
+      pRtti->m_sPluginName = sPluginName;
+      SanityCheckType(pRtti);
 
-      pInstance->SetupParentHierarchy();
-      pInstance->GatherDynamicMessageHandlers();
+      pRtti->SetupParentHierarchy();
+      pRtti->GatherDynamicMessageHandlers();
     }
-    pInstance = pInstance->GetNextInstance();
   }
 }
 
@@ -436,9 +451,7 @@ static bool IsValidIdentifierName(xiiStringView sIdentifier)
 
 void xiiRTTI::SanityCheckType(xiiRTTI* pType)
 {
-  XII_ASSERT_DEV(pType->GetTypeFlags().IsSet(xiiTypeFlags::StandardType) + pType->GetTypeFlags().IsSet(xiiTypeFlags::IsEnum) +
-                     pType->GetTypeFlags().IsSet(xiiTypeFlags::Bitflags) + pType->GetTypeFlags().IsSet(xiiTypeFlags::Class) ==
-                   1,
+  XII_ASSERT_DEV(pType->GetTypeFlags().IsSet(xiiTypeFlags::StandardType) + pType->GetTypeFlags().IsSet(xiiTypeFlags::IsEnum) + pType->GetTypeFlags().IsSet(xiiTypeFlags::Bitflags) + pType->GetTypeFlags().IsSet(xiiTypeFlags::Class) == 1,
                  "Types are mutually exclusive!");
 
   for (auto pProp : pType->m_Properties)
@@ -459,9 +472,7 @@ void xiiRTTI::SanityCheckType(xiiRTTI* pType)
 
     if (pProp->GetCategory() != xiiPropertyCategory::Function)
     {
-      XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) + pProp->GetFlags().IsSet(xiiPropertyFlags::IsEnum) +
-                         pProp->GetFlags().IsSet(xiiPropertyFlags::Bitflags) + pProp->GetFlags().IsSet(xiiPropertyFlags::Class) <=
-                       1,
+      XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) + pProp->GetFlags().IsSet(xiiPropertyFlags::IsEnum) + pProp->GetFlags().IsSet(xiiPropertyFlags::Bitflags) + pProp->GetFlags().IsSet(xiiPropertyFlags::Class) <= 1,
                      "Types are mutually exclusive!");
     }
 
@@ -520,7 +531,7 @@ void xiiRTTI::PluginEventHandler(const xiiPluginEvent& EventData)
     {
       // after we loaded a new plugin, but before it is initialized,
       // find all new rtti instances and assign them to that new plugin
-      AssignPlugin(EventData.m_szPluginBinary);
+      AssignPlugin(EventData.m_sPluginBinary);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
       xiiRTTI::VerifyCorrectnessForAllTypes();
@@ -533,6 +544,6 @@ void xiiRTTI::PluginEventHandler(const xiiPluginEvent& EventData)
   }
 }
 
-
+xiiRTTIAllocator::~xiiRTTIAllocator() = default;
 
 XII_STATICLINK_FILE(Foundation, Foundation_Reflection_Implementation_RTTI);

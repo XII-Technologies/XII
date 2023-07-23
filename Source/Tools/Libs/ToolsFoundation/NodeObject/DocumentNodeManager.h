@@ -80,7 +80,7 @@ public:
   Shape m_Shape = Shape::Default;
 
   Type                     GetType() const { return m_Type; }
-  const char*              GetName() const { return m_sName; }
+  xiiStringView            GetName() const { return m_sName; }
   const xiiColorGammaUB&   GetColor() const { return m_Color; }
   const xiiDocumentObject* GetParent() const { return m_pParent; }
 
@@ -106,8 +106,8 @@ public:
   xiiVec2              GetNodePos(const xiiDocumentObject* pObject) const;
   const xiiConnection& GetConnection(const xiiDocumentObject* pObject) const;
 
-  const xiiPin*                                 GetInputPinByName(const xiiDocumentObject* pObject, const char* szName) const;
-  const xiiPin*                                 GetOutputPinByName(const xiiDocumentObject* pObject, const char* szName) const;
+  const xiiPin*                                 GetInputPinByName(const xiiDocumentObject* pObject, xiiStringView sName) const;
+  const xiiPin*                                 GetOutputPinByName(const xiiDocumentObject* pObject, xiiStringView sName) const;
   xiiArrayPtr<const xiiUniquePtr<const xiiPin>> GetInputPins(const xiiDocumentObject* pObject) const;
   xiiArrayPtr<const xiiUniquePtr<const xiiPin>> GetOutputPins(const xiiDocumentObject* pObject) const;
 
@@ -151,7 +151,7 @@ protected:
   /// \brief Returns true if adding a connection between the two pins would create a circular graph
   bool WouldConnectionCreateCircle(const xiiPin& source, const xiiPin& target) const;
 
-  void         GetDynamicPinNames(const xiiDocumentObject* pObject, const char* szPropertyName, xiiStringView sPinName, xiiDynamicArray<xiiString>& out_Names) const;
+  void         GetDynamicPinNames(const xiiDocumentObject* pObject, xiiStringView sPropertyName, xiiStringView sPinName, xiiDynamicArray<xiiString>& out_Names) const;
   virtual bool TryRecreatePins(const xiiDocumentObject* pObject);
 
   struct NodeInternal

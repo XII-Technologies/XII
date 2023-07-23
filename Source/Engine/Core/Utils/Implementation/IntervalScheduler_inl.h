@@ -34,16 +34,31 @@ XII_ALWAYS_INLINE xiiTime xiiIntervalSchedulerBase::GetRandomTimeJitter(int pos,
 //////////////////////////////////////////////////////////////////////////
 
 template <typename T>
+bool xiiIntervalScheduler<T>::Data::IsValid() const
+{
+  return m_Interval.IsZeroOrPositive();
+}
+
+template <typename T>
+void xiiIntervalScheduler<T>::Data::MarkAsInvalid()
+{
+  m_Interval = xiiTime::Seconds(-1);
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+template <typename T>
 void xiiIntervalScheduler<T>::AddOrUpdateWork(const T& work, xiiTime interval)
 {
   typename DataMap::Iterator it;
   if (m_WorkIdToData.TryGetValue(work, it))
   {
-    xiiTime oldInterval = it.Value().m_Interval;
+    auto&   data        = it.Value();
+    xiiTime oldInterval = data.m_Interval;
     if (interval == oldInterval)
       return;
 
-    m_Data.Remove(it);
+    data.MarkAsInvalid();
 
     const xiiUInt32 uiHistogramIndex = GetHistogramIndex(oldInterval);
     m_Histogram[uiHistogramIndex]--;
@@ -65,13 +80,15 @@ template <typename T>
 void xiiIntervalScheduler<T>::RemoveWork(const T& work)
 {
   typename DataMap::Iterator it;
-  XII_VERIFY(m_WorkIdToData.Remove(work, &it), "Entry not found");
+  if (m_WorkIdToData.Remove(work, &it))
+  {
+    auto&   data        = it.Value();
+    xiiTime oldInterval = data.m_Interval;
+    data.MarkAsInvalid();
 
-  xiiTime oldInterval = it.Value().m_Interval;
-  m_Data.Remove(it);
-
-  const xiiUInt32 uiHistogramIndex = GetHistogramIndex(oldInterval);
-  m_Histogram[uiHistogramIndex]--;
+    const xiiUInt32 uiHistogramIndex = GetHistogramIndex(oldInterval);
+    m_Histogram[uiHistogramIndex]--;
+  }
 }
 
 template <typename T>
@@ -87,6 +104,8 @@ void xiiIntervalScheduler<T>::Update(xiiTime deltaTime, RunWorkCallback runWorkC
 {
   if (deltaTime <= xiiTime::Zero())
     return;
+
+  m_CurrentTime += deltaTime;
 
   if (m_Data.IsEmpty())
   {
@@ -122,14 +141,17 @@ void xiiIntervalScheduler<T>::Update(xiiTime deltaTime, RunWorkCallback runWorkC
       for (xiiUInt32 i = 0; i < uiScheduleCount; ++i, ++it)
       {
         auto& data = it.Value();
-        if (runWorkCallback.IsValid())
+        if (data.IsValid())
         {
-          runWorkCallback(data.m_Work, m_CurrentTime - data.m_LastScheduledTime);
-        }
+          if (runWorkCallback.IsValid())
+          {
+            runWorkCallback(data.m_Work, m_CurrentTime - data.m_LastScheduledTime);
+          }
 
-        // add a little bit of random jitter so we don't end up with perfect timings that might collide with other work
-        data.m_DueTime           = m_CurrentTime + xiiMath::Max(data.m_Interval, deltaTime) + GetRandomTimeJitter(i, m_uiSeed);
-        data.m_LastScheduledTime = m_CurrentTime;
+          // add a little bit of random jitter so we don't end up with perfect timings that might collide with other work
+          data.m_DueTime           = m_CurrentTime + xiiMath::Max(data.m_Interval, deltaTime) + GetRandomTimeJitter(i, m_uiSeed);
+          data.m_LastScheduledTime = m_CurrentTime;
+        }
 
         m_ScheduledWork.PushBack(it);
       }
@@ -138,14 +160,17 @@ void xiiIntervalScheduler<T>::Update(xiiTime deltaTime, RunWorkCallback runWorkC
     // re-sort
     for (auto& it : m_ScheduledWork)
     {
-      Data data                   = it.Value();
-      m_WorkIdToData[data.m_Work] = InsertData(data);
+      if (it.Value().IsValid())
+      {
+        // make a copy of data and re-insert at new due time
+        Data data                   = it.Value();
+        m_WorkIdToData[data.m_Work] = InsertData(data);
+      }
+
       m_Data.Remove(it);
     }
     m_ScheduledWork.Clear();
   }
-
-  m_CurrentTime += deltaTime;
 }
 
 template <typename T>

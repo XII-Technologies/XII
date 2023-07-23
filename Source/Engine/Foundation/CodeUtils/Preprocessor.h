@@ -72,21 +72,21 @@ public:
 
   /// \brief This type of callback is used to read an #include file. \a szAbsoluteFile is the path that the FileLocatorCB reported, the result needs
   /// to be stored in \a FileContent.
-  using FileOpenCB = xiiDelegate<xiiResult(const char* szAbsoluteFile, xiiDynamicArray<xiiUInt8>& FileContent, xiiTimestamp& out_FileModification)>;
+  using FileOpenCB = xiiDelegate<xiiResult(xiiStringView sAbsoluteFile, xiiDynamicArray<xiiUInt8>& FileContent, xiiTimestamp& out_FileModification)>;
 
   /// \brief This type of callback is used to retrieve the absolute path of the \a szIncludeFile when #included inside \a szCurAbsoluteFile.
   ///
   /// Note that you should ensure that \a out_sAbsoluteFilePath is always identical (including casing and path slashes) when it is supposed to point
   /// to the same file, as this exact name is used for file lookup (and therefore also file caching).
   /// If it is not identical, file caching will not work, and on different OSes the file may be found or not.
-  using FileLocatorCB = xiiDelegate<xiiResult(const char* szCurAbsoluteFile, const char* szIncludeFile, IncludeType IncType, xiiStringBuilder& out_sAbsoluteFilePath)>;
+  using FileLocatorCB = xiiDelegate<xiiResult(xiiStringView sCurAbsoluteFile, xiiStringView sIncludeFile, IncludeType IncType, xiiStringBuilder& out_sAbsoluteFilePath)>;
 
   /// \brief Every time an unknown command (e.g. '#version') is encountered, this callback is used to determine whether the command shall be passed
   /// through.
   ///
   /// If the callback returns false, an error is generated and parsing fails. The callback thus acts as a whitelist for all commands that shall be
   /// passed through.
-  using PassThroughUnknownCmdCB = xiiDelegate<bool(const char* szUnknownCommand)>;
+  using PassThroughUnknownCmdCB = xiiDelegate<bool(xiiStringView sUnknownCommand)>;
 
   using MacroParameters = xiiDeque<xiiTokenParseUtils::TokenStream>;
 
@@ -111,17 +111,9 @@ public:
       Redefine,        ///< A #define for an already existing macro name (also logged as a warning)
     };
 
-    ProcessingEvent()
-    {
-      m_Type   = Error;
-      m_pToken = nullptr;
-      m_szInfo = "";
-    }
-
-    EventType m_Type;
-
-    const xiiToken* m_pToken;
-    const char*     m_szInfo;
+    EventType       m_Type   = Error;
+    const xiiToken* m_pToken = nullptr;
+    xiiStringView   m_sInfo;
   };
 
   /// \brief Broadcasts events during the processing. This can be used to create detailed callstacks when an error is encountered.
@@ -173,18 +165,18 @@ public:
   ///
   /// If the definition is invalid, XII_FAILURE is returned. Also the preprocessor might end up in an invalid state, so using it any
   /// further might fail (including crashing).
-  xiiResult AddCustomDefine(const char* szDefinition);
+  xiiResult AddCustomDefine(xiiStringView sDefinition);
 
   /// \brief Processes the given file and returns the result as a stream of tokens.
   ///
   /// This function is useful when you want to further process the output afterwards and thus need it in a tokenized form anyway.
-  xiiResult Process(const char* szMainFile, xiiTokenParseUtils::TokenStream& ref_tokenOutput);
+  xiiResult Process(xiiStringView sMainFile, xiiTokenParseUtils::TokenStream& ref_tokenOutput);
 
   /// \brief Processes the given file and returns the result as a string.
   ///
   /// This function creates a string from the tokenized result. If \a bKeepComments is true, all block and line comments
   /// are included in the output string, otherwise they are removed.
-  xiiResult Process(const char* szMainFile, xiiStringBuilder& ref_sOutput, bool bKeepComments = true, bool bRemoveRedundantWhitespace = false, bool bInsertLine = false);
+  xiiResult Process(xiiStringView sMainFile, xiiStringBuilder& ref_sOutput, bool bKeepComments = true, bool bRemoveRedundantWhitespace = false, bool bInsertLine = false);
 
 
 private:
@@ -251,22 +243,22 @@ private:
 
   xiiDeque<IfDefState> m_IfdefActiveStack;
 
-  xiiResult ProcessFile(const char* szFile, xiiTokenParseUtils::TokenStream& TokenOutput);
+  xiiResult ProcessFile(xiiStringView sFile, xiiTokenParseUtils::TokenStream& TokenOutput);
   xiiResult ProcessCmd(const xiiTokenParseUtils::TokenStream& Tokens, xiiTokenParseUtils::TokenStream& TokenOutput);
 
 public:
-  static xiiResult DefaultFileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath);
-  static xiiResult DefaultFileOpen(const char* szAbsoluteFile, xiiDynamicArray<xiiUInt8>& ref_fileContent, xiiTimestamp& out_fileModification);
+  static xiiResult DefaultFileLocator(xiiStringView sCurAbsoluteFile, xiiStringView sIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath);
+  static xiiResult DefaultFileOpen(xiiStringView sAbsoluteFile, xiiDynamicArray<xiiUInt8>& ref_fileContent, xiiTimestamp& out_fileModification);
 
 private: // *** File Handling ***
-  xiiResult OpenFile(const char* szFile, const xiiTokenizer** pTokenizer);
+  xiiResult OpenFile(xiiStringView sFile, const xiiTokenizer** pTokenizer);
 
   FileOpenCB                  m_FileOpenCallback;
   FileLocatorCB               m_FileLocatorCallback;
   xiiSet<xiiTempHashedString> m_PragmaOnce;
 
 private: // *** Macro Definition ***
-  bool      RemoveDefine(const char* szName);
+  bool      RemoveDefine(xiiStringView sName);
   xiiResult HandleDefine(const xiiTokenParseUtils::TokenStream& Tokens, xiiUInt32& uiCurToken);
 
   struct MacroDefinition
@@ -308,9 +300,9 @@ private: // *** Parsing ***
   xiiResult CopyTokensAndEvaluateDefined(const xiiTokenParseUtils::TokenStream& Source, xiiUInt32 uiFirstSourceToken, xiiTokenParseUtils::TokenStream& Destination);
   void      CopyTokensReplaceParams(const xiiTokenParseUtils::TokenStream& Source, xiiUInt32 uiFirstSourceToken, xiiTokenParseUtils::TokenStream& Destination, const xiiHybridArray<xiiString, 16>& parameters);
 
-  xiiResult Expect(const xiiTokenParseUtils::TokenStream& Tokens, xiiUInt32& uiCurToken, const char* szToken, xiiUInt32* pAccepted = nullptr);
+  xiiResult Expect(const xiiTokenParseUtils::TokenStream& Tokens, xiiUInt32& uiCurToken, xiiStringView sToken, xiiUInt32* pAccepted = nullptr);
   xiiResult Expect(const xiiTokenParseUtils::TokenStream& Tokens, xiiUInt32& uiCurToken, xiiTokenType::Enum Type, xiiUInt32* pAccepted = nullptr);
-  xiiResult Expect(const xiiTokenParseUtils::TokenStream& Tokens, xiiUInt32& uiCurToken, const char* szToken1, const char* szToken2, xiiUInt32* pAccepted = nullptr);
+  xiiResult Expect(const xiiTokenParseUtils::TokenStream& Tokens, xiiUInt32& uiCurToken, xiiStringView sToken1, xiiStringView sToken2, xiiUInt32* pAccepted = nullptr);
   xiiResult ExpectEndOfLine(const xiiTokenParseUtils::TokenStream& Tokens, xiiUInt32 uiCurToken);
 
 private: // *** Macro Expansion ***
@@ -374,7 +366,7 @@ private: // *** Other ***
     ProcessingEvent pe;                                                                                                                              \
     pe.m_Type   = ProcessingEvent::Type;                                                                                                             \
     pe.m_pToken = ErrorToken;                                                                                                                        \
-    pe.m_szInfo = FormatStr;                                                                                                                         \
+    pe.m_sInfo  = FormatStr;                                                                                                                         \
     if (pe.m_pToken->m_uiLine == 0 && pe.m_pToken->m_uiColumn == 0)                                                                                  \
     {                                                                                                                                                \
       const_cast<xiiToken*>(pe.m_pToken)->m_uiLine = m_CurrentFileStack.PeekBack().m_iCurrentLine;                                                   \
@@ -396,7 +388,7 @@ private: // *** Other ***
     }                                                                                                                                                   \
     xiiStringBuilder sInfo;                                                                                                                             \
     sInfo.Format(FormatStr, ##__VA_ARGS__);                                                                                                             \
-    _pe.m_szInfo = sInfo.GetData();                                                                                                                     \
+    _pe.m_sInfo = sInfo.GetData();                                                                                                                      \
     m_ProcessingEvents.Broadcast(_pe);                                                                                                                  \
     xiiLog::Type(m_pLog, "File '{0}', Line {1} ({2}): {3}", _pe.m_pToken->m_File.GetString(), _pe.m_pToken->m_uiLine, _pe.m_pToken->m_uiColumn, sInfo); \
   }

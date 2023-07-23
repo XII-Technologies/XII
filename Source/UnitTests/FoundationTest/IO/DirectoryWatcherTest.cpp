@@ -31,9 +31,7 @@ namespace DirectoryWatcherTestHelpers
 
   void TickWatcher(xiiDirectoryWatcher& ref_watcher)
   {
-    ref_watcher.EnumerateChanges([&](const char* szPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
-    },
-                                 xiiTime::Milliseconds(100));
+    ref_watcher.EnumerateChanges([&](xiiStringView sPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {}, xiiTime::Milliseconds(100));
   }
 } // namespace DirectoryWatcherTestHelpers
 
@@ -48,8 +46,8 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
   auto CheckExpectedEvents = [&](xiiDirectoryWatcher& ref_watcher, xiiArrayPtr<ExpectedEvent> events) {
     xiiDynamicArray<ExpectedEventStorage> firedEvents;
     xiiUInt32                             i = 0;
-    ref_watcher.EnumerateChanges([&](const char* szPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
-      tmp = szPath;
+    ref_watcher.EnumerateChanges([&](xiiStringView sPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
+      tmp = sPath;
       tmp.Shrink(sTestRootPath.GetCharacterCount(), 0);
       firedEvents.PushBack({tmp, action, type});
       if (i < events.GetCount())
@@ -69,8 +67,8 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
     xiiUInt32                             i = 0;
     xiiDynamicArray<bool>                 eventFired;
     eventFired.SetCount(events.GetCount());
-    ref_watcher.EnumerateChanges([&](const char* szPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
-      tmp = szPath;
+    ref_watcher.EnumerateChanges([&](xiiStringView sPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
+      tmp = sPath;
       tmp.Shrink(sTestRootPath.GetCharacterCount(), 0);
       firedEvents.PushBack({tmp, action, type});
       auto index = events.IndexOf({tmp, action, type});
@@ -93,8 +91,8 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
     xiiDynamicArray<ExpectedEventStorage> firedEvents;
     xiiUInt32                             i = 0;
     xiiDirectoryWatcher::EnumerateChanges(
-      watchers, [&](const char* szPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
-        tmp = szPath;
+      watchers, [&](xiiStringView sPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
+        tmp = sPath;
         tmp.Shrink(sTestRootPath.GetCharacterCount(), 0);
         firedEvents.PushBack({tmp, action, type});
         if (i < events.GetCount())

@@ -11,7 +11,7 @@ public:
   ~xiiPhantomRTTI();
 
 private:
-  xiiPhantomRTTI(const char* szName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt32 uiVariantType, xiiBitflags<xiiTypeFlags> flags, const char* szPluginName);
+  xiiPhantomRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiStringView sPluginName);
 
   void SetProperties(xiiDynamicArray<xiiReflectedPropertyDescriptor>& properties);
   void SetFunctions(xiiDynamicArray<xiiReflectedFunctionDescriptor>& functions);

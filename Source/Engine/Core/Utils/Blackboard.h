@@ -166,13 +166,13 @@ public:
   xiiUInt32 GetBlackboardEntryChangeCounter() const { return m_uiBlackboardEntryChangeCounter; }
 
   /// \brief Stores all entries that have the 'Save' flag in the stream.
-  xiiResult Serialize(xiiStreamWriter& inout_stream) const;
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
 
   /// \brief Restores entries from the stream.
   ///
   /// If the blackboard already contains entries, the deserialized data is ADDED to the blackboard.
   /// If deserialized entries overlap with existing ones, the deserialized entries will overwrite the existing ones (both values and flags).
-  xiiResult Deserialize(xiiStreamReader& inout_stream);
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 
 private:
   XII_ALLOW_PRIVATE_PROPERTIES(xiiBlackboard);
@@ -206,8 +206,8 @@ struct XII_CORE_DLL xiiBlackboardCondition
 
   bool IsConditionMet(const xiiBlackboard& blackboard) const;
 
-  xiiResult Serialize(xiiStreamWriter& inout_stream) const;
-  xiiResult Deserialize(xiiStreamReader& inout_stream);
+  xiiResult Serialize(xiiStreamWriter& ref_stream) const;
+  xiiResult Deserialize(xiiStreamReader& ref_stream);
 
   const char* GetEntryName() const { return m_sEntryName; }
   void        SetEntryName(const char* szName) { m_sEntryName.Assign(szName); }

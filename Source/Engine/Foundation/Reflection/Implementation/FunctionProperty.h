@@ -10,8 +10,8 @@ template <class R, class... Args>
 class xiiTypedFunctionProperty : public xiiAbstractFunctionProperty
 {
 public:
-  xiiTypedFunctionProperty(const char* szPropertyName) :
-    xiiAbstractFunctionProperty(szPropertyName)
+  xiiTypedFunctionProperty(xiiStringView sPropertyName) :
+    xiiAbstractFunctionProperty(sPropertyName)
   {
   }
 
@@ -37,8 +37,7 @@ public:
   xiiBitflags<xiiPropertyFlags> GetParameterFlagsImpl(xiiUInt32 uiParamIndex, std::index_sequence<I...>) const
   {
     // There is a dummy entry at the end to support zero parameter functions (can't have zero-size arrays).
-    static xiiBitflags<xiiPropertyFlags> params[] = {
-      xiiPropertyFlags::GetParameterFlags<typename getArgument<I, Args...>::Type>()..., xiiPropertyFlags::Void};
+    static xiiBitflags<xiiPropertyFlags> params[] = {xiiPropertyFlags::GetParameterFlags<typename getArgument<I, Args...>::Type>()..., xiiPropertyFlags::Void};
     return params[uiParamIndex];
   }
 
@@ -59,8 +58,8 @@ class xiiFunctionProperty<R (CLASS::*)(Args...)> : public xiiTypedFunctionProper
 public:
   using TargetFunction = R (CLASS::*)(Args...);
 
-  xiiFunctionProperty(const char* szPropertyName, TargetFunction func) :
-    xiiTypedFunctionProperty<R, Args...>(szPropertyName)
+  xiiFunctionProperty(xiiStringView sPropertyName, TargetFunction func) :
+    xiiTypedFunctionProperty<R, Args...>(sPropertyName)
   {
     m_Function = func;
   }
@@ -101,8 +100,8 @@ class xiiFunctionProperty<R (CLASS::*)(Args...) const> : public xiiTypedFunction
 public:
   using TargetFunction = R (CLASS::*)(Args...) const;
 
-  xiiFunctionProperty(const char* szPropertyName, TargetFunction func) :
-    xiiTypedFunctionProperty<R, Args...>(szPropertyName)
+  xiiFunctionProperty(xiiStringView sPropertyName, TargetFunction func) :
+    xiiTypedFunctionProperty<R, Args...>(sPropertyName)
   {
     m_Function = func;
     this->AddFlags(xiiPropertyFlags::Const);
@@ -144,8 +143,8 @@ class xiiFunctionProperty<R (*)(Args...)> : public xiiTypedFunctionProperty<R, A
 public:
   using TargetFunction = R (*)(Args...);
 
-  xiiFunctionProperty(const char* szPropertyName, TargetFunction func) :
-    xiiTypedFunctionProperty<R, Args...>(szPropertyName)
+  xiiFunctionProperty(xiiStringView sPropertyName, TargetFunction func) :
+    xiiTypedFunctionProperty<R, Args...>(sPropertyName)
   {
     m_Function = func;
   }

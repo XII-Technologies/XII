@@ -22,7 +22,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiScriptExtensionClass_Log, xiiNoBase, 1, xiiRT
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiStringView BuildFormattedText(xiiStringView sText, const xiiVariantArray& params, xiiStringBuilder& ref_sStorage)
+static xiiStringView BuildFormattedText(xiiStringView sText, const xiiVariantArray& params, xiiStringBuilder& ref_sStorage)
 {
   xiiHybridArray<xiiString, 12> stringStorage;
   stringStorage.Reserve(params.GetCount());

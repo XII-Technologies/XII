@@ -167,7 +167,7 @@ xiiStatus xiiPrefabDefaultStateProvider::CreateRevertContainerDiff(SuperArray su
     // We create a sub-graph of only the parent node in both re-mapped prefab as well as from the actually object. We limit the graph to only the container property.
     auto                   pNode = pGraph->GetNode(objectPrefabGuid);
     xiiAbstractObjectGraph prefabSubGraph;
-    xiiAbstractObjectNode* pPrefabSubRoot = pGraph->Clone(prefabSubGraph, pNode, [pRootNode = pNode, pRootProp = pProp](const xiiAbstractObjectNode* pNode, const xiiAbstractObjectNode::Property* pProp) {
+    pGraph->Clone(prefabSubGraph, pNode, [pRootNode = pNode, pRootProp = pProp](const xiiAbstractObjectNode* pNode, const xiiAbstractObjectNode::Property* pProp) {
       if (pNode == pRootNode && pProp->m_sPropertyName != pRootProp->GetPropertyName())
         return false;
 
@@ -184,7 +184,7 @@ xiiStatus xiiPrefabDefaultStateProvider::CreateRevertContainerDiff(SuperArray su
       return true;
     });
 
-    xiiAbstractObjectNode* pInstanceSubRoot = writer.AddObjectToGraph(pObject);
+    writer.AddObjectToGraph(pObject);
 
     prefabSubGraph.CreateDiffWithBaseGraph(instanceSubGraph, out_diff);
 

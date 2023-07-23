@@ -61,50 +61,49 @@ namespace xiiInternal
   }
 
   // static
-  XII_FORCE_INLINE void WorldData::UpdateGlobalTransform(xiiGameObject::TransformationData* pData, const xiiSimdFloat& fInvDeltaSeconds)
+  XII_FORCE_INLINE void WorldData::UpdateGlobalTransform(xiiGameObject::TransformationData* pData, xiiUInt32 uiUpdateCounter)
   {
-    pData->UpdateGlobalTransformWithoutParent();
-    pData->UpdateVelocity(fInvDeltaSeconds);
+    pData->UpdateGlobalTransformWithoutParent(uiUpdateCounter);
     pData->UpdateGlobalBounds();
   }
 
   // static
-  XII_FORCE_INLINE void WorldData::UpdateGlobalTransformWithParent(xiiGameObject::TransformationData* pData, const xiiSimdFloat& fInvDeltaSeconds)
+  XII_FORCE_INLINE void WorldData::UpdateGlobalTransformWithParent(xiiGameObject::TransformationData* pData, xiiUInt32 uiUpdateCounter)
   {
-    pData->UpdateGlobalTransformWithParent();
-    pData->UpdateVelocity(fInvDeltaSeconds);
+    pData->UpdateGlobalTransformWithParent(uiUpdateCounter);
     pData->UpdateGlobalBounds();
   }
 
   // static
-  XII_FORCE_INLINE void WorldData::UpdateGlobalTransformAndSpatialData(
-    xiiGameObject::TransformationData* pData,
-    const xiiSimdFloat&                fInvDeltaSeconds,
-    xiiSpatialSystem&                  spatialSystem)
+  XII_FORCE_INLINE void WorldData::UpdateGlobalTransformAndSpatialData(xiiGameObject::TransformationData* pData, xiiUInt32 uiUpdateCounter, xiiSpatialSystem& spatialSystem)
   {
-    pData->UpdateGlobalTransformWithoutParent();
-    pData->UpdateVelocity(fInvDeltaSeconds);
+    pData->UpdateGlobalTransformWithoutParent(uiUpdateCounter);
     pData->UpdateGlobalBoundsAndSpatialData(spatialSystem);
   }
 
   // static
-  XII_FORCE_INLINE void WorldData::UpdateGlobalTransformWithParentAndSpatialData(
-    xiiGameObject::TransformationData* pData,
-    const xiiSimdFloat&                fInvDeltaSeconds,
-    xiiSpatialSystem&                  spatialSystem)
+  XII_FORCE_INLINE void WorldData::UpdateGlobalTransformWithParentAndSpatialData(xiiGameObject::TransformationData* pData, xiiUInt32 uiUpdateCounter, xiiSpatialSystem& spatialSystem)
   {
-    pData->UpdateGlobalTransformWithParent();
-    pData->UpdateVelocity(fInvDeltaSeconds);
+    pData->UpdateGlobalTransformWithParent(uiUpdateCounter);
     pData->UpdateGlobalBoundsAndSpatialData(spatialSystem);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-  XII_ALWAYS_INLINE const xiiGameObject& WorldData::ConstObjectIterator::operator*() const { return *m_Iterator; }
+  XII_ALWAYS_INLINE const xiiGameObject& WorldData::ConstObjectIterator::operator*() const
+  {
+    return *m_Iterator;
+  }
 
-  XII_ALWAYS_INLINE const xiiGameObject* WorldData::ConstObjectIterator::operator->() const { return m_Iterator; }
+  XII_ALWAYS_INLINE const xiiGameObject* WorldData::ConstObjectIterator::operator->() const
+  {
+    return m_Iterator;
+  }
 
-  XII_ALWAYS_INLINE WorldData::ConstObjectIterator::operator const xiiGameObject*() const { return m_Iterator; }
+  XII_ALWAYS_INLINE WorldData::ConstObjectIterator::operator const xiiGameObject*() const
+  {
+    return m_Iterator;
+  }
 
   XII_ALWAYS_INLINE void WorldData::ConstObjectIterator::Next()
   {
@@ -116,9 +115,15 @@ namespace xiiInternal
     }
   }
 
-  XII_ALWAYS_INLINE bool WorldData::ConstObjectIterator::IsValid() const { return m_Iterator.IsValid(); }
+  XII_ALWAYS_INLINE bool WorldData::ConstObjectIterator::IsValid() const
+  {
+    return m_Iterator.IsValid();
+  }
 
-  XII_ALWAYS_INLINE void WorldData::ConstObjectIterator::operator++() { Next(); }
+  XII_ALWAYS_INLINE void WorldData::ConstObjectIterator::operator++()
+  {
+    Next();
+  }
 
   XII_ALWAYS_INLINE WorldData::ConstObjectIterator::ConstObjectIterator(ObjectStorage::ConstIterator iterator) :
     m_Iterator(iterator)
@@ -131,11 +136,20 @@ namespace xiiInternal
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-  XII_ALWAYS_INLINE xiiGameObject& WorldData::ObjectIterator::operator*() { return *m_Iterator; }
+  XII_ALWAYS_INLINE xiiGameObject& WorldData::ObjectIterator::operator*()
+  {
+    return *m_Iterator;
+  }
 
-  XII_ALWAYS_INLINE xiiGameObject* WorldData::ObjectIterator::operator->() { return m_Iterator; }
+  XII_ALWAYS_INLINE xiiGameObject* WorldData::ObjectIterator::operator->()
+  {
+    return m_Iterator;
+  }
 
-  XII_ALWAYS_INLINE WorldData::ObjectIterator::operator xiiGameObject*() { return m_Iterator; }
+  XII_ALWAYS_INLINE WorldData::ObjectIterator::operator xiiGameObject*()
+  {
+    return m_Iterator;
+  }
 
   XII_ALWAYS_INLINE void WorldData::ObjectIterator::Next()
   {
@@ -147,9 +161,15 @@ namespace xiiInternal
     }
   }
 
-  XII_ALWAYS_INLINE bool WorldData::ObjectIterator::IsValid() const { return m_Iterator.IsValid(); }
+  XII_ALWAYS_INLINE bool WorldData::ObjectIterator::IsValid() const
+  {
+    return m_Iterator.IsValid();
+  }
 
-  XII_ALWAYS_INLINE void WorldData::ObjectIterator::operator++() { Next(); }
+  XII_ALWAYS_INLINE void WorldData::ObjectIterator::operator++()
+  {
+    Next();
+  }
 
   XII_ALWAYS_INLINE WorldData::ObjectIterator::ObjectIterator(ObjectStorage::Iterator iterator) :
     m_Iterator(iterator)
@@ -205,7 +225,10 @@ namespace xiiInternal
     m_Data.m_iReadCounter.Increment();
   }
 
-  XII_ALWAYS_INLINE void WorldData::ReadMarker::Unlock() { m_Data.m_iReadCounter.Decrement(); }
+  XII_ALWAYS_INLINE void WorldData::ReadMarker::Unlock()
+  {
+    m_Data.m_iReadCounter.Decrement();
+  }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
 

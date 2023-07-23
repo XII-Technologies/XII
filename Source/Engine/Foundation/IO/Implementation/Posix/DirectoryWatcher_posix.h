@@ -60,7 +60,7 @@ namespace
   struct RenamedDirectory
   {
     xiiString path;
-    int       wd;
+    xiiInt32  wd;
   };
 
   using xiiFileSystemMirrorType = xiiFileSystemMirror<bool>;
@@ -70,11 +70,11 @@ XII_DEFINE_AS_POD_TYPE(struct pollfd);
 
 struct xiiDirectoryWatcherImpl
 {
-  xiiHashTable<int, xiiString> m_wdToPath;
-  xiiMap<xiiString, int>       m_pathToWd;
-  xiiString                    m_topLevelPath;
+  xiiHashTable<xiiInt32, xiiString> m_wdToPath;
+  xiiMap<xiiString, xiiInt32>       m_pathToWd;
+  xiiString                         m_topLevelPath;
 
-  int                                     m_inotifyFd        = -1;
+  xiiInt32                                m_inotifyFd        = -1;
   uint32_t                                m_inotifyWatchMask = 0;
   xiiBitflags<xiiDirectoryWatcher::Watch> m_whatToWatch;
   xiiDynamicArray<xiiUInt8>               m_buffer;
@@ -114,7 +114,7 @@ struct xiiDirectoryWatcherImpl
     }
 
     RemoveTrailingSlash(tmpPath);
-    int wd = inotify_add_watch(m_inotifyFd, tmpPath.GetData(), m_inotifyWatchMask);
+    xiiInt32 wd = inotify_add_watch(m_inotifyFd, tmpPath.GetData(), m_inotifyWatchMask);
     if (wd >= 0)
     {
       DEBUG_LOG("Now watching {}", tmpPath);
@@ -151,7 +151,7 @@ struct xiiDirectoryWatcherImpl
           if (!m_pathToWd.Contains(tmpPath2))
           {
             RemoveTrailingSlash(tmpPath2);
-            int wd = inotify_add_watch(m_inotifyFd, tmpPath2.GetData(), m_inotifyWatchMask);
+            xiiInt32 wd = inotify_add_watch(m_inotifyFd, tmpPath2.GetData(), m_inotifyWatchMask);
             if (wd >= 0)
             {
               DEBUG_LOG("Now watching {}", tmpPath2);
@@ -194,7 +194,7 @@ xiiDirectoryWatcher::xiiDirectoryWatcher() :
 
 xiiDirectoryWatcher::~xiiDirectoryWatcher()
 {
-  const int inotifyFd = m_pImpl->m_inotifyFd;
+  const xiiInt32 inotifyFd = m_pImpl->m_inotifyFd;
   CloseDirectory();
   XII_DEFAULT_DELETE(m_pImpl);
 }
@@ -213,7 +213,7 @@ xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBit
   }
 
   // Configure the file descriptor to be non-blocking
-  int flags = fcntl(m_pImpl->m_inotifyFd, F_GETFL, 0);
+  xiiInt32 flags = fcntl(m_pImpl->m_inotifyFd, F_GETFL, 0);
   if (fcntl(m_pImpl->m_inotifyFd, F_SETFL, flags | O_NONBLOCK) != 0)
   {
     close(m_pImpl->m_inotifyFd);
@@ -226,7 +226,7 @@ xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBit
 
   m_pImpl->m_topLevelPath = folder;
 
-  const int inotifyFd = m_pImpl->m_inotifyFd;
+  const xiiInt32 inotifyFd = m_pImpl->m_inotifyFd;
 
   uint32_t watchMask = IN_MOVE_SELF;
   // TODO add IN_MOVE_SELF handling
@@ -254,7 +254,7 @@ xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBit
     watchMask |= IN_DELETE;
   }
 
-  int wd = inotify_add_watch(inotifyFd, folder.GetData(), watchMask);
+  xiiInt32 wd = inotify_add_watch(inotifyFd, folder.GetData(), watchMask);
   if (wd < 0)
   {
     close(m_pImpl->m_inotifyFd);
@@ -299,7 +299,7 @@ xiiResult xiiDirectoryWatcher::OpenDirectory(xiiStringView sAbsolutePath, xiiBit
 
 void xiiDirectoryWatcher::CloseDirectory()
 {
-  const int inotifyFd = m_pImpl->m_inotifyFd;
+  const xiiInt32 inotifyFd = m_pImpl->m_inotifyFd;
   if (inotifyFd >= 0)
   {
     for (auto& paths : m_pImpl->m_wdToPath)
@@ -317,7 +317,7 @@ void xiiDirectoryWatcher::CloseDirectory()
 
 void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTime waitUpTo)
 {
-  const int      inotifyFd  = m_pImpl->m_inotifyFd;
+  const xiiInt32 inotifyFd  = m_pImpl->m_inotifyFd;
   uint8_t* const buffer     = m_pImpl->m_buffer.GetData();
   const size_t   bufferSize = m_pImpl->m_buffer.GetCount();
 
@@ -385,11 +385,11 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
 
   if (inotifyFd >= 0)
   {
-    int timeout = static_cast<int>(waitUpTo.GetMilliseconds());
+    xiiInt32 timeout = static_cast<xiiInt32>(waitUpTo.GetMilliseconds());
     if (timeout > 0)
     {
       struct pollfd pollFor    = {inotifyFd, POLLIN, 0};
-      int           pollResult = poll(&pollFor, 1, timeout);
+      xiiInt32      pollResult = poll(&pollFor, 1, timeout);
       if (pollResult < 0)
       {
         // Error, stop
@@ -485,8 +485,8 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
                 auto deletedDirIt = m_pImpl->m_pathToWd.Find(tmpPath);
                 if (deletedDirIt.IsValid())
                 {
-                  int deletedWd = deletedDirIt.Value();
-                  deletedDirIt  = m_pImpl->m_pathToWd.Remove(deletedDirIt);
+                  xiiInt32 deletedWd = deletedDirIt.Value();
+                  deletedDirIt       = m_pImpl->m_pathToWd.Remove(deletedDirIt);
                   inotify_rm_watch(inotifyFd, deletedWd);
                   m_pImpl->m_wdToPath.Remove(deletedWd);
                   DEBUG_LOG("No longer watching {}", tmpPath);
@@ -632,7 +632,7 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
 
 void xiiDirectoryWatcher::EnumerateChanges(xiiArrayPtr<xiiDirectoryWatcher*> watchers, EnumerateChangesFunction func, xiiTime waitUpTo)
 {
-  int timeout = static_cast<int>(waitUpTo.GetMilliseconds());
+  xiiInt32 timeout = static_cast<xiiInt32>(waitUpTo.GetMilliseconds());
   if (timeout > 0)
   {
     xiiHybridArray<struct pollfd, 16> pollFor;
@@ -645,7 +645,7 @@ void xiiDirectoryWatcher::EnumerateChanges(xiiArrayPtr<xiiDirectoryWatcher*> wat
     }
 
 
-    int pollResult = poll(pollFor.GetData(), pollFor.GetCount(), timeout);
+    xiiInt32 pollResult = poll(pollFor.GetData(), pollFor.GetCount(), timeout);
     if (pollResult < 0)
     {
       // Error, stop

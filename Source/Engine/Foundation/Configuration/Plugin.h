@@ -22,8 +22,8 @@ struct xiiPluginEvent
     AfterPluginChanges,     ///< Sent (once) after all (group) plugin changes (unload/load) are finished.
   };
 
-  Type        m_EventType;                ///< Which type of event this is.
-  const char* m_szPluginBinary = nullptr; ///< The file name of the affected plugin.
+  Type          m_EventType;               ///< Which type of event this is.
+  xiiStringView m_sPluginBinary = nullptr; ///< The file name of the affected plugin.
 };
 
 /// \brief Flags for loading a plugin.
@@ -84,7 +84,7 @@ public:
   static void EndPluginChanges();
 
   /// \brief Checks whether a plugin with the given name exists. Does not guarantee that the plugin could be loaded successfully.
-  static bool ExistsPluginFile(const char* szPluginFile);
+  static bool ExistsPluginFile(xiiStringView sPluginFile);
 
   /// \brief Tries to load a DLL dynamically into the program.
   ///
@@ -92,7 +92,7 @@ public:
   /// XII_FAILURE is returned if the DLL cannot be located or it could not be loaded properly.
   ///
   /// See xiiPluginLoadFlags for additional options.
-  static xiiResult LoadPlugin(const char* szPluginFile, xiiBitflags<xiiPluginLoadFlags> flags = xiiPluginLoadFlags::Default); // [tested]
+  static xiiResult LoadPlugin(xiiStringView sPluginFile, xiiBitflags<xiiPluginLoadFlags> flags = xiiPluginLoadFlags::Default); // [tested]
 
   /// \brief Unloads all previously loaded plugins in the reverse order in which they were loaded.
   ///
@@ -110,7 +110,7 @@ public:
   struct XII_FOUNDATION_DLL Init
   {
     Init(xiiPluginInitCallback onLoadOrUnloadCB, bool bOnLoad);
-    Init(const char* szAddPluginDependency);
+    Init(xiiStringView sAddPluginDependency);
   };
 
   /// \brief Contains basic information about a loaded plugin.
@@ -125,7 +125,7 @@ public:
   static void GetAllPluginInfos(xiiDynamicArray<PluginInfo>& ref_infos);
 
   /// \internal Determines the plugin paths.
-  static void GetPluginPaths(const char* szPluginName, xiiStringBuilder& ref_sOriginalFile, xiiStringBuilder& ref_sCopiedFile, xiiUInt8 uiFileCopyNumber);
+  static void GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& ref_sOriginalFile, xiiStringBuilder& ref_sCopiedFile, xiiUInt8 uiFileCopyNumber);
 
 private:
   xiiPlugin() = delete;

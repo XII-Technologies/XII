@@ -9,5 +9,5 @@ struct xiiDocumentTypeDescriptor;
 class XII_TOOLSFOUNDATION_DLL xiiDocumentUtils
 {
 public:
-  static xiiStatus IsValidSaveLocationForDocument(const char* szDocument, const xiiDocumentTypeDescriptor** out_pTypeDesc = nullptr);
+  static xiiStatus IsValidSaveLocationForDocument(xiiStringView sDocument, const xiiDocumentTypeDescriptor** out_pTypeDesc = nullptr);
 };

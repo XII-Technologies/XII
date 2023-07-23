@@ -31,17 +31,3 @@ if (XII_3RDPARTY_DUKTAPE_SUPPORT)
     Duktape
   )
 endif()
-
-if (XII_3RDPARTY_SDL_SUPPORT)
-  if(XII_COMPILE_ENGINE_AS_DLL)
-    target_link_libraries(${PROJECT_NAME} PRIVATE SDL2)
-  else()
-    target_link_libraries(${PROJECT_NAME} PRIVATE SDL2-static)
-  endif()
-  if (XII_CMAKE_PLATFORM_LINUX)
-    target_link_libraries(${PROJECT_NAME}
-      PRIVATE
-      X11-xcb
-    )
-  endif()
-endif()

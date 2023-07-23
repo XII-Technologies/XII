@@ -5,19 +5,19 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 using xiiPluginModule = void*;
 
-void xiiPlugin::GetPluginPaths(const char* szPluginName, xiiStringBuilder& sOriginalFile, xiiStringBuilder& sCopiedFile, xiiUInt8 uiFileCopyNumber)
+void xiiPlugin::GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& sOriginalFile, xiiStringBuilder& sCopiedFile, xiiUInt8 uiFileCopyNumber)
 {
   XII_ASSERT_NOT_IMPLEMENTED;
 }
 
-xiiResult UnloadPluginModule(xiiPluginModule& Module, const char* szPluginFile)
+xiiResult UnloadPluginModule(xiiPluginModule& Module, xiiStringView sPluginFile)
 {
   XII_ASSERT_NOT_IMPLEMENTED;
 
   return XII_FAILURE;
 }
 
-xiiResult LoadPluginModule(const char* szFileToLoad, xiiPluginModule& Module, const char* szPluginFile)
+xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& Module, xiiStringView sPluginFile)
 {
   XII_ASSERT_NOT_IMPLEMENTED;
   return XII_FAILURE;

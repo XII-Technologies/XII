@@ -217,7 +217,7 @@ bool xiiPathUtils::IsValidFilenameChar(xiiUInt32 uiCharacter)
   // this:
   static const xiiUInt32 forbiddenFilenameChars[] = {'<', '>', ':', '"', '|', '?', '*', '\\', '/', '\t', '\b', '\n', '\r', '\0'};
 
-  for (int i = 0; i < XII_ARRAY_SIZE(forbiddenFilenameChars); ++i)
+  for (xiiInt32 i = 0; i < XII_ARRAY_SIZE(forbiddenFilenameChars); ++i)
   {
     if (forbiddenFilenameChars[i] == uiCharacter)
       return false;

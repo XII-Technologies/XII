@@ -41,7 +41,7 @@ public:
   static void RegisterActions();
   static void UnregisterActions();
 
-  static void MapActions(const char* szMapping, const xiiBitflags<xiiStandardMenuTypes>& menus);
+  static void MapActions(xiiStringView sMapping, const xiiBitflags<xiiStandardMenuTypes>& menus);
 
   static xiiActionDescriptorHandle s_hMenuFile;
   static xiiActionDescriptorHandle s_hMenuEdit;
@@ -60,8 +60,8 @@ class XII_GUIFOUNDATION_DLL xiiApplicationPanelsMenuAction : public xiiDynamicMe
   XII_ADD_DYNAMIC_REFLECTION(xiiApplicationPanelsMenuAction, xiiDynamicMenuAction);
 
 public:
-  xiiApplicationPanelsMenuAction(const xiiActionContext& context, const char* szName, const char* szIconPath) :
-    xiiDynamicMenuAction(context, szName, szIconPath)
+  xiiApplicationPanelsMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath) :
+    xiiDynamicMenuAction(context, sName, sIconPath)
   {
   }
   virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries) override;
@@ -81,7 +81,7 @@ public:
     ReportProblem,
   };
 
-  xiiHelpActions(const xiiActionContext& context, const char* szName, ButtonType button);
+  xiiHelpActions(const xiiActionContext& context, xiiStringView sName, ButtonType button);
   ~xiiHelpActions();
 
   virtual void Execute(const xiiVariant& value) override;

@@ -48,6 +48,24 @@ void xiiPrefabResource::InstantiatePrefab(xiiWorld& ref_world, const xiiTransfor
   }
 }
 
+xiiPrefabResource::InstantiateResult xiiPrefabResource::InstantiatePrefab(const xiiPrefabResourceHandle& hPrefab, bool bBlockTillLoaded, xiiWorld& ref_world, const xiiTransform& rootTransform, xiiPrefabInstantiationOptions options, const xiiArrayMap<xiiHashedString, xiiVariant>* pExposedParamValues /*= nullptr*/)
+{
+  xiiResourceLock<xiiPrefabResource> pPrefab(hPrefab, bBlockTillLoaded ? xiiResourceAcquireMode::BlockTillLoaded_NeverFail : xiiResourceAcquireMode::AllowLoadingFallback_NeverFail);
+
+  switch (pPrefab.GetAcquireResult())
+  {
+    case xiiResourceAcquireResult::Final:
+      pPrefab->InstantiatePrefab(ref_world, rootTransform, options, pExposedParamValues);
+      return InstantiateResult::Success;
+
+    case xiiResourceAcquireResult::LoadingFallback:
+      return InstantiateResult::NotYetLoaded;
+
+    default:
+      return InstantiateResult::Error;
+  }
+}
+
 void xiiPrefabResource::ApplyExposedParameterValues(const xiiArrayMap<xiiHashedString, xiiVariant>* pExposedParamValues, const xiiDynamicArray<xiiGameObject*>& createdChildObjects, const xiiDynamicArray<xiiGameObject*>& createdRootObjects) const
 {
   const xiiUInt32 uiNumParamDescs = m_PrefabParamDescs.GetCount();
@@ -158,10 +176,8 @@ xiiResourceLoadDesc xiiPrefabResource::UpdateContent(xiiStreamReader* Stream)
     {
       auto& ppd = m_PrefabParamDescs[i];
 
-      if (assetHeader.GetFileVersion() < 6)
-        ppd.LoadOld(s);
-      else
-        ppd.Load(s);
+      XII_ASSERT_DEV(assetHeader.GetFileVersion() >= 6, "Old resource version not supported anymore");
+      ppd.Load(s);
 
       // initialize the cached property path here once
       // so we can only apply it later as often as needed
@@ -172,13 +188,9 @@ xiiResourceLoadDesc xiiPrefabResource::UpdateContent(xiiStreamReader* Stream)
         }
         else
         {
-          for (const xiiRTTI* pRtti = xiiRTTI::GetFirstInstance(); pRtti != nullptr; pRtti = pRtti->GetNextInstance())
+          if (const xiiRTTI* pRtti = xiiRTTI::FindTypeByNameHash(ppd.m_sComponentType.GetHash()))
           {
-            if (pRtti->GetTypeNameHash() == ppd.m_sComponentType.GetHash())
-            {
-              ppd.m_CachedPropertyPath.InitializeFromPath(*pRtti, ppd.m_sProperty).IgnoreResult();
-              break;
-            }
+            ppd.m_CachedPropertyPath.InitializeFromPath(*pRtti, ppd.m_sProperty).IgnoreResult();
           }
         }
       }
@@ -247,34 +259,6 @@ void xiiExposedPrefabParameterDesc::Load(xiiStreamReader& ref_stream)
   ref_stream >> comb;
   ref_stream >> m_sComponentType;
   ref_stream >> m_sProperty;
-
-  m_uiWorldReaderObjectIndex = comb & 0x7FFFFFFF;
-  m_uiWorldReaderChildObject = (comb >> 31);
-}
-
-void xiiExposedPrefabParameterDesc::LoadOld(xiiStreamReader& ref_stream)
-{
-  xiiUInt32 comb = 0;
-
-  xiiUInt32 uiComponentTypeMurmurHash;
-
-  ref_stream >> m_sExposeName;
-  ref_stream >> comb;
-  ref_stream >> uiComponentTypeMurmurHash;
-  ref_stream >> m_sProperty;
-
-  m_sComponentType.Clear();
-  if (uiComponentTypeMurmurHash != 0)
-  {
-    for (const xiiRTTI* pRtti = xiiRTTI::GetFirstInstance(); pRtti != nullptr; pRtti = pRtti->GetNextInstance())
-    {
-      if (xiiHashingUtils::MurmurHash32String(pRtti->GetTypeName()) == uiComponentTypeMurmurHash)
-      {
-        m_sComponentType.Assign(pRtti->GetTypeName());
-        break;
-      }
-    }
-  }
 
   m_uiWorldReaderObjectIndex = comb & 0x7FFFFFFF;
   m_uiWorldReaderChildObject = (comb >> 31);

@@ -5,8 +5,8 @@
 
 xiiEvent<const xiiThreadEvent&, xiiMutex> xiiThread::s_ThreadEvents;
 
-xiiThread::xiiThread(const char* szName /*= "xiiThread"*/, xiiUInt32 uiStackSize /*= 128 * 1024*/) :
-  xiiOSThread(xiiThreadClassEntryPoint, this, szName, uiStackSize), m_sName(szName)
+xiiThread::xiiThread(xiiStringView sName /*= "xiiThread"*/, xiiUInt32 uiStackSize /*= 128 * 1024*/) :
+  xiiOSThread(xiiThreadClassEntryPoint, this, sName, uiStackSize), m_sName(sName)
 {
   xiiThreadEvent e;
   e.m_pThread = this;
@@ -70,6 +70,5 @@ xiiUInt32 RunThread(xiiThread* pThread)
 #else
 #  error "Runnable thread entry functions are not implemented on current platform"
 #endif
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_Thread);

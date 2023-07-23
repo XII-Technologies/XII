@@ -195,9 +195,9 @@ xiiBitflags<xiiBlackboardEntryFlags> xiiBlackboard::GetEntryFlags(const xiiTempH
   return itEntry.Value().m_Flags;
 }
 
-xiiResult xiiBlackboard::Serialize(xiiStreamWriter& inout_stream) const
+xiiResult xiiBlackboard::Serialize(xiiStreamWriter& ref_stream) const
 {
-  inout_stream.WriteVersion(1);
+  ref_stream.WriteVersion(1);
 
   xiiUInt32 uiEntries = 0;
 
@@ -209,7 +209,7 @@ xiiResult xiiBlackboard::Serialize(xiiStreamWriter& inout_stream) const
     }
   }
 
-  inout_stream << uiEntries;
+  ref_stream << uiEntries;
 
   for (auto it : m_Entries)
   {
@@ -217,32 +217,32 @@ xiiResult xiiBlackboard::Serialize(xiiStreamWriter& inout_stream) const
 
     if (e.m_Flags.IsSet(xiiBlackboardEntryFlags::Save))
     {
-      inout_stream << it.Key();
-      inout_stream << e.m_Flags;
-      inout_stream << e.m_Value;
+      ref_stream << it.Key();
+      ref_stream << e.m_Flags;
+      ref_stream << e.m_Value;
     }
   }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiBlackboard::Deserialize(xiiStreamReader& inout_stream)
+xiiResult xiiBlackboard::Deserialize(xiiStreamReader& ref_stream)
 {
-  inout_stream.ReadVersion(1);
+  ref_stream.ReadVersion(1);
 
   xiiUInt32 uiEntries = 0;
-  inout_stream >> uiEntries;
+  ref_stream >> uiEntries;
 
   for (xiiUInt32 e = 0; e < uiEntries; ++e)
   {
     xiiHashedString name;
-    inout_stream >> name;
+    ref_stream >> name;
 
     xiiBitflags<xiiBlackboardEntryFlags> flags;
-    inout_stream >> flags;
+    ref_stream >> flags;
 
     xiiVariant value;
-    inout_stream >> value;
+    ref_stream >> value;
 
     RegisterEntry(name, value, flags);
   }
@@ -317,24 +317,24 @@ bool xiiBlackboardCondition::IsConditionMet(const xiiBlackboard& blackboard) con
 
 constexpr xiiTypeVersion s_BlackboardConditionVersion = 1;
 
-xiiResult xiiBlackboardCondition::Serialize(xiiStreamWriter& inout_stream) const
+xiiResult xiiBlackboardCondition::Serialize(xiiStreamWriter& ref_stream) const
 {
-  inout_stream.WriteVersion(s_BlackboardConditionVersion);
+  ref_stream.WriteVersion(s_BlackboardConditionVersion);
 
-  inout_stream << m_sEntryName;
-  inout_stream << m_Operator;
-  inout_stream << m_fComparisonValue;
+  ref_stream << m_sEntryName;
+  ref_stream << m_Operator;
+  ref_stream << m_fComparisonValue;
   return XII_SUCCESS;
 }
 
-xiiResult xiiBlackboardCondition::Deserialize(xiiStreamReader& inout_stream)
+xiiResult xiiBlackboardCondition::Deserialize(xiiStreamReader& ref_stream)
 {
-  const xiiTypeVersion uiVersion = inout_stream.ReadVersion(s_BlackboardConditionVersion);
+  const xiiTypeVersion uiVersion = ref_stream.ReadVersion(s_BlackboardConditionVersion);
   XII_IGNORE_UNUSED(uiVersion);
 
-  inout_stream >> m_sEntryName;
-  inout_stream >> m_Operator;
-  inout_stream >> m_fComparisonValue;
+  ref_stream >> m_sEntryName;
+  ref_stream >> m_Operator;
+  ref_stream >> m_fComparisonValue;
   return XII_SUCCESS;
 }
 

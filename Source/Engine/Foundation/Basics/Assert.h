@@ -27,8 +27,6 @@
 /// is not executed anymore.
 ///
 
-
-
 /// \brief Assert handler callback. Should return true to trigger a break point or false if the assert should be ignored
 using xiiAssertHandler = bool (*)(const char* szSourceFile, xiiUInt32 uiLine, const char* szFunction, const char* szExpression, const char* szAssertMsg);
 
@@ -77,6 +75,8 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
       if (!!(bCondition) == false)                       \
         ClangTidyDoNotReturn();                          \
     } while (false)
+
+#  define XII_ANALYSIS_ASSUME(bCondition) XII_ASSERT_ALWAYS(bCondition, "")
 #else
 /// \brief Macro to raise an error, if a condition is not met. Allows to write a message using printf style. This assert will be triggered, even in
 /// non-development builds and cannot be deactivated.
@@ -92,6 +92,10 @@ XII_FOUNDATION_DLL void MSVC_OutOfLine_DebugBreak(...);
       }                                                                                                                            \
       XII_MSVC_ANALYSIS_WARNING_POP                                                                                                \
     } while (false)
+
+/// \brief Macro to inform the static analysis that the given condition can be assumed to be true. Usefull to give additional information to
+/// static analysis if it can't figure it out by itself. Will do nothing outside of static analysis runs.
+#  define XII_ANALYSIS_ASSUME(bCondition)
 #endif
 
 /// \brief This type of assert can be used to mark code as 'not (yet) implemented' and makes it easier to find it later on by just searching for these

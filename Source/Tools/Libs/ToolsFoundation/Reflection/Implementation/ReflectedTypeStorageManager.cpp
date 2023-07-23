@@ -296,8 +296,8 @@ void xiiReflectedTypeStorageManager::Shutdown()
 
     for (auto inst : pMapping->m_Instances)
     {
-      const char* sz = inst->GetType()->GetTypeName();
-      xiiLog::Error("Type '{0}' survived shutdown!", sz);
+      xiiStringView s = inst->GetType()->GetTypeName();
+      xiiLog::Error("Type '{0}' survived shutdown!", s);
     }
 
     XII_ASSERT_DEV(pMapping->m_Instances.IsEmpty(), "A type was removed which still has instances using the type!");
@@ -354,12 +354,12 @@ void xiiReflectedTypeStorageManager::TypeEventHandler(const xiiPhantomRttiManage
       ReflectedTypeStorageMapping* pMapping = s_ReflectedTypeToStorageMapping[e.m_pChangedType];
       XII_ASSERT_DEV(pMapping != nullptr, "A type was updated but no mapping exists for it!");
 
-      if (pNewType->GetParentType() != nullptr && xiiStringUtils::IsEqual(pNewType->GetParentType()->GetTypeName(), "xiiEnumBase"))
+      if (pNewType->GetParentType() != nullptr && pNewType->GetParentType()->GetTypeName() == "xiiEnumBase")
       {
         // XII_ASSERT_DEV(false, "Updating enums not implemented yet!");
         break;
       }
-      else if (pNewType->GetParentType() != nullptr && xiiStringUtils::IsEqual(pNewType->GetParentType()->GetTypeName(), "xiiBitflagsBase"))
+      else if (pNewType->GetParentType() != nullptr && pNewType->GetParentType()->GetTypeName() == "xiiBitflagsBase")
       {
         XII_ASSERT_DEV(false, "Updating bitflags not implemented yet!");
       }

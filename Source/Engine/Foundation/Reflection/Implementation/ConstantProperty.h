@@ -15,8 +15,8 @@ class xiiTypedConstantProperty : public xiiAbstractConstantProperty
 {
 public:
   /// \brief Passes the property name through to xiiAbstractMemberProperty.
-  xiiTypedConstantProperty(const char* szPropertyName) :
-    xiiAbstractConstantProperty(szPropertyName)
+  xiiTypedConstantProperty(xiiStringView sPropertyName) :
+    xiiAbstractConstantProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<Type>();
   }
@@ -38,8 +38,8 @@ class xiiConstantProperty : public xiiTypedConstantProperty<Type>
 {
 public:
   /// \brief Constructor.
-  xiiConstantProperty(const char* szPropertyName, Type value) :
-    xiiTypedConstantProperty<Type>(szPropertyName), m_Value(value)
+  xiiConstantProperty(xiiStringView sPropertyName, Type value) :
+    xiiTypedConstantProperty<Type>(sPropertyName), m_Value(value)
   {
     XII_ASSERT_DEBUG(this->m_Flags.IsSet(xiiPropertyFlags::StandardType), "Only constants that can be put in a xiiVariant are currently supported!");
   }

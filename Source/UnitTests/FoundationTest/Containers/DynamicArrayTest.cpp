@@ -5,6 +5,11 @@
 #include <Foundation/Time/Stopwatch.h>
 #include <Foundation/Types/UniquePtr.h>
 
+static xiiInt32 iCallPodConstructor    = 0;
+static xiiInt32 iCallPodDestructor     = 0;
+static xiiInt32 iCallNonPodConstructor = 0;
+static xiiInt32 iCallNonPodDestructor  = 0;
+
 namespace DynamicArrayTestDetail
 {
   using st = xiiConstructionCounter;
@@ -1245,6 +1250,77 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
     for (xiiUInt32 i = 1; i < list.GetCount(); i++)
     {
       XII_TEST_BOOL(list[i - 1].m_iKey <= list[i].m_iKey);
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetCountUninitialized")
+  {
+    struct POD
+    {
+      XII_DECLARE_POD_TYPE();
+
+      xiiUInt32 a = 2;
+      xiiUInt32 b = 4;
+
+      POD()
+      {
+        iCallPodConstructor++;
+      }
+
+      // This is not allowed anymore in types that use XII_DECLARE_POD_TYPE
+      // unfortunately that means we cannot do this kind of check either
+      // ~POD()
+      // {
+      //   iCallPodDestructor++;
+      // }
+    };
+
+    static_assert(std::is_trivial<POD>::value == 0);
+    static_assert(xiiIsPodType<POD>::value == 1);
+
+    struct NonPOD
+    {
+      xiiUInt32 a = 3;
+      xiiUInt32 b = 5;
+
+      NonPOD()
+      {
+        iCallNonPodConstructor++;
+      }
+
+      ~NonPOD()
+      {
+        iCallNonPodDestructor++;
+      }
+    };
+
+    static_assert(std::is_trivial<NonPOD>::value == 0);
+    static_assert(xiiIsPodType<NonPOD>::value == 0);
+
+    // check that SetCountUninitialized doesn't construct and Clear doesn't destruct POD types
+    {
+      xiiDynamicArray<POD> s1a;
+
+      s1a.SetCountUninitialized(16);
+      XII_TEST_INT(iCallPodConstructor, 0);
+      XII_TEST_INT(iCallPodDestructor, 0);
+
+      s1a.Clear();
+      XII_TEST_INT(iCallPodConstructor, 0);
+      XII_TEST_INT(iCallPodDestructor, 0);
+    }
+
+    // check that SetCount constructs and Clear destructs Non-POD types
+    {
+      xiiDynamicArray<NonPOD> s2a;
+
+      s2a.SetCount(16);
+      XII_TEST_INT(iCallNonPodConstructor, 16);
+      XII_TEST_INT(iCallNonPodDestructor, 0);
+
+      s2a.Clear();
+      XII_TEST_INT(iCallNonPodConstructor, 16);
+      XII_TEST_INT(iCallNonPodDestructor, 16);
     }
   }
 }

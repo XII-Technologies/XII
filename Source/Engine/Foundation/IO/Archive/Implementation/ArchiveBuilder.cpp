@@ -44,23 +44,23 @@ void xiiArchiveBuilder::AddFolder(xiiStringView sAbsFolderPath, xiiArchiveCompre
 
           case InclusionMode::Compress_zstd_fastest:
             compression       = xiiArchiveCompressionMode::Compressed_zstd;
-            iCompressionLevel = xiiCompressedStreamWriterZstd::Compression::Fastest;
+            iCompressionLevel = static_cast<xiiInt32>(xiiCompressedStreamWriterZstd::Compression::Fastest);
             break;
           case InclusionMode::Compress_zstd_fast:
             compression       = xiiArchiveCompressionMode::Compressed_zstd;
-            iCompressionLevel = xiiCompressedStreamWriterZstd::Compression::Fast;
+            iCompressionLevel = static_cast<xiiInt32>(xiiCompressedStreamWriterZstd::Compression::Fast);
             break;
           case InclusionMode::Compress_zstd_average:
             compression       = xiiArchiveCompressionMode::Compressed_zstd;
-            iCompressionLevel = xiiCompressedStreamWriterZstd::Compression::Average;
+            iCompressionLevel = static_cast<xiiInt32>(xiiCompressedStreamWriterZstd::Compression::Average);
             break;
           case InclusionMode::Compress_zstd_high:
             compression       = xiiArchiveCompressionMode::Compressed_zstd;
-            iCompressionLevel = xiiCompressedStreamWriterZstd::Compression::High;
+            iCompressionLevel = static_cast<xiiInt32>(xiiCompressedStreamWriterZstd::Compression::High);
             break;
           case InclusionMode::Compress_zstd_highest:
             compression       = xiiArchiveCompressionMode::Compressed_zstd;
-            iCompressionLevel = xiiCompressedStreamWriterZstd::Compression::Highest;
+            iCompressionLevel = static_cast<xiiInt32>(xiiCompressedStreamWriterZstd::Compression::Highest);
             break;
         }
       }

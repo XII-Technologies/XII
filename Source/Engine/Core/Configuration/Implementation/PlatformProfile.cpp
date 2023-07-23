@@ -62,11 +62,9 @@ void xiiPlatformProfile::Clear()
 
 void xiiPlatformProfile::AddMissingConfigs()
 {
-  for (auto pRtti = xiiRTTI::GetFirstInstance(); pRtti != nullptr; pRtti = pRtti->GetNextInstance())
-  {
-    // find all types derived from xiiProfileConfigData
-    if (!pRtti->GetTypeFlags().IsAnySet(xiiTypeFlags::Abstract) && pRtti->IsDerivedFrom<xiiProfileConfigData>() && pRtti->GetAllocator()->CanAllocate())
-    {
+  xiiRTTI::ForEachDerivedType<xiiProfileConfigData>(
+    [this](const xiiRTTI* pRtti) {
+      // find all types derived from xiiProfileConfigData
       bool bHasTypeAlready = false;
 
       // check whether we already have an instance of this type
@@ -88,11 +86,11 @@ void xiiPlatformProfile::AddMissingConfigs()
 
         m_Configs.PushBack(pObject);
       }
-    }
-  }
+    },
+    xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
 
   // sort all configs alphabetically
-  m_Configs.Sort([](const xiiProfileConfigData* lhs, const xiiProfileConfigData* rhs) -> bool { return xiiStringUtils::Compare(lhs->GetDynamicRTTI()->GetTypeName(), rhs->GetDynamicRTTI()->GetTypeName()) < 0; });
+  m_Configs.Sort([](const xiiProfileConfigData* lhs, const xiiProfileConfigData* rhs) -> bool { return lhs->GetDynamicRTTI()->GetTypeName().Compare(rhs->GetDynamicRTTI()->GetTypeName()) < 0; });
 }
 
 const xiiProfileConfigData* xiiPlatformProfile::GetTypeConfig(const xiiRTTI* pRtti) const

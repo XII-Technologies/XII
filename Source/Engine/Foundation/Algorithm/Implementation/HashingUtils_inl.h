@@ -87,9 +87,9 @@ struct xiiHashHelper<xiiInt64>
 template <>
 struct xiiHashHelper<const char*>
 {
-  XII_ALWAYS_INLINE static xiiUInt32 Hash(const char* szValue)
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(xiiStringView sValue)
   {
-    return xiiHashingUtils::StringHashTo32(xiiHashingUtils::StringHash(szValue));
+    return xiiHashingUtils::StringHashTo32(xiiHashingUtils::StringHash(sValue));
   }
 
   XII_ALWAYS_INLINE static bool Equal(const char* a, const char* b) { return xiiStringUtils::IsEqual(a, b); }

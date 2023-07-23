@@ -16,12 +16,12 @@ class xiiThread;
 class XII_FOUNDATION_DLL xiiProfilingScope
 {
 public:
-  xiiProfilingScope(xiiStringView sName, const char* szFunctionName, xiiTime timeout);
+  xiiProfilingScope(xiiStringView sName, xiiStringView sFunctionName, xiiTime timeout);
   ~xiiProfilingScope();
 
 protected:
   xiiStringView m_sName;
-  const char*   m_szFunction;
+  xiiStringView m_sFunction;
   xiiTime       m_BeginTime;
   xiiTime       m_Timeout;
 };
@@ -37,7 +37,7 @@ protected:
 class xiiProfilingListScope
 {
 public:
-  XII_FOUNDATION_DLL xiiProfilingListScope(xiiStringView sListName, xiiStringView sFirstSectionName, const char* szFunctionName);
+  XII_FOUNDATION_DLL xiiProfilingListScope(xiiStringView sListName, xiiStringView sFirstSectionName, xiiStringView sFunctionName);
   XII_FOUNDATION_DLL ~xiiProfilingListScope();
 
   XII_FOUNDATION_DLL static void StartNextSection(xiiStringView sNextSectionName);
@@ -48,7 +48,7 @@ protected:
   xiiProfilingListScope* m_pPreviousList;
 
   xiiStringView m_sListName;
-  const char*   m_szListFunction;
+  xiiStringView m_sListFunction;
   xiiTime       m_ListBeginTime;
 
   xiiStringView m_sCurSectionName;
@@ -71,10 +71,10 @@ public:
 
     static constexpr xiiUInt32 NAME_SIZE = 40;
 
-    const char* m_szFunctionName;
-    xiiTime     m_BeginTime;
-    xiiTime     m_EndTime;
-    char        m_szName[NAME_SIZE];
+    xiiStringView m_sFunctionName;
+    xiiTime       m_BeginTime;
+    xiiTime       m_EndTime;
+    char          m_szName[NAME_SIZE];
   };
 
   struct CPUScopesBufferFlat
@@ -136,7 +136,7 @@ public:
   static void StartNewFrame();
 
   /// \brief Adds a new scoped event for the calling thread in the profiling system
-  static void AddCPUScope(xiiStringView sName, const char* szFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout);
+  static void AddCPUScope(xiiStringView sName, xiiStringView sFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout);
 
   /// \brief Get current frame counter
   static xiiUInt64 GetFrameCount();

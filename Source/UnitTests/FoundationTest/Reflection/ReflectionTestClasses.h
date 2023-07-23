@@ -221,8 +221,8 @@ public:
 
   bool operator==(const xiiTestClass2& rhs) const { return m_Time == rhs.m_Time && m_enumClass == rhs.m_enumClass && m_bitflagsClass == rhs.m_bitflagsClass && m_array == rhs.m_array && m_Variant == rhs.m_Variant && m_sText == rhs.m_sText; }
 
-  const char* GetText() const { return m_sText.GetData(); }
-  void        SetText(const char* szSz) { m_sText = szSz; }
+  xiiStringView GetText() const { return m_sText; }
+  void          SetText(xiiStringView sSz) { m_sText = sSz; }
 
   xiiTime                         m_Time;
   xiiEnum<xiiExampleEnum>         m_enumClass;
@@ -264,8 +264,8 @@ class xiiTestClass2b : xiiReflectedClass
 public:
   xiiTestClass2b() { m_sText = "Tut"; }
 
-  const char* GetText() const { return m_sText.GetData(); }
-  void        SetText(const char* szSz) { m_sText = szSz; }
+  xiiStringView GetText() const { return m_sText; }
+  void          SetText(xiiStringView sSz) { m_sText = sSz; }
 
   xiiTestStruct3 m_Struct;
   xiiColor       m_Color;
@@ -284,7 +284,7 @@ public:
 
   bool operator==(const xiiTestArrays& rhs) const
   {
-    return m_Hybrid == rhs.m_Hybrid && m_Dynamic == rhs.m_Dynamic && m_Deque == rhs.m_Deque && m_HybridChar == rhs.m_HybridChar && m_CustomVariant == rhs.m_CustomVariant;
+    return m_Hybrid == rhs.m_Hybrid && m_Dynamic == rhs.m_Dynamic && m_Deque == rhs.m_Deque && m_HybridChar == rhs.m_HybridChar && m_CustomVariant == rhs.m_CustomVariant && m_CustomVariant2 == rhs.m_CustomVariant2;
   }
 
   bool operator!=(const xiiTestArrays& rhs) const { return !(*this == rhs); }
@@ -295,11 +295,11 @@ public:
   void      Insert(xiiUInt32 uiIndex, double value);
   void      Remove(xiiUInt32 uiIndex);
 
-  xiiUInt32   GetCountChar() const;
-  const char* GetValueChar(xiiUInt32 uiIndex) const;
-  void        SetValueChar(xiiUInt32 uiIndex, const char* value);
-  void        InsertChar(xiiUInt32 uiIndex, const char* value);
-  void        RemoveChar(xiiUInt32 uiIndex);
+  xiiUInt32     GetCountChar() const;
+  xiiStringView GetValueChar(xiiUInt32 uiIndex) const;
+  void          SetValueChar(xiiUInt32 uiIndex, xiiStringView sValue);
+  void          InsertChar(xiiUInt32 uiIndex, xiiStringView sValue);
+  void          RemoveChar(xiiUInt32 uiIndex);
 
   xiiUInt32             GetCountDyn() const;
   const xiiTestStruct3& GetValueDyn(xiiUInt32 uiIndex) const;
@@ -364,8 +364,8 @@ public:
   void                         PseudoInsert2(const xiiString& value);
   void                         PseudoRemove2(const xiiString& value);
 
-  void PseudoInsert2b(const char* value);
-  void PseudoRemove2b(const char* value);
+  void PseudoInsert2b(xiiStringView sValue);
+  void PseudoRemove2b(xiiStringView sValue);
 
   const xiiHashSet<xiiVarianceTypeAngle>& GetCustomHashSet() const;
   void                                    CustomHashInsert(xiiVarianceTypeAngle value);
@@ -398,17 +398,17 @@ public:
   bool operator==(const xiiTestMaps& rhs) const;
 
   const xiiMap<xiiString, xiiInt64>& GetContainer() const;
-  void                               Insert(const char* szKey, xiiInt64 value);
-  void                               Remove(const char* szKey);
+  void                               Insert(xiiStringView sKey, xiiInt64 value);
+  void                               Remove(xiiStringView sKey);
 
   const xiiHashTable<xiiString, xiiString>& GetContainer2() const;
-  void                                      Insert2(const char* szKey, const xiiString& value);
-  void                                      Remove2(const char* szKey);
+  void                                      Insert2(xiiStringView sKey, const xiiString& value);
+  void                                      Remove2(xiiStringView sKey);
 
-  const xiiRangeView<const char*, xiiUInt32> GetKeys3() const;
-  void                                       Insert3(const char* szKey, const xiiVariant& value);
-  void                                       Remove3(const char* szKey);
-  bool                                       GetValue3(const char* szKey, xiiVariant& out_value) const;
+  const xiiRangeView<xiiStringView, xiiUInt32> GetKeys3() const;
+  void                                         Insert3(xiiStringView sKey, const xiiVariant& value);
+  void                                         Remove3(xiiStringView sKey);
+  bool                                         GetValue3(xiiStringView sKey, xiiVariant& out_value) const;
 
   xiiMap<xiiString, int>      m_MapMember;
   xiiMap<xiiString, xiiInt64> m_MapAccessor;
@@ -479,7 +479,7 @@ public:
   }
 
   void        SetString(const char* szPzValue) { m_sString = szPzValue; }
-  const char* GetString() const { return m_sString; }
+  const char* GetString() const { return m_sString.GetData(); }
 
   void           SetArrays(xiiTestArrays* pValue) { m_pArrays = pValue; }
   xiiTestArrays* GetArrays() const { return m_pArrays; }

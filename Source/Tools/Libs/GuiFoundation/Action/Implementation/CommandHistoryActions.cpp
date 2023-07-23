@@ -28,20 +28,20 @@ void xiiCommandHistoryActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hRedo);
 }
 
-void xiiCommandHistoryActions::MapActions(const char* szMapping, const char* szPath)
+void xiiCommandHistoryActions::MapActions(xiiStringView sMapping, xiiStringView sPath)
 {
-  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(szMapping);
-  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the actions failed!", szMapping);
+  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
+  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the actions failed!", sMapping);
 
-  xiiStringBuilder sSubPath(szPath, "/CmdHistoryCategory");
+  xiiStringBuilder sSubPath(sPath, "/CmdHistoryCategory");
 
-  pMap->MapAction(s_hCommandHistoryCategory, szPath, 3.0f);
+  pMap->MapAction(s_hCommandHistoryCategory, sPath, 3.0f);
   pMap->MapAction(s_hUndo, sSubPath, 1.0f);
   pMap->MapAction(s_hRedo, sSubPath, 2.0f);
 }
 
-xiiCommandHistoryAction::xiiCommandHistoryAction(const xiiActionContext& context, const char* szName, ButtonType button) :
-  xiiDynamicActionAndMenuAction(context, szName, "")
+xiiCommandHistoryAction::xiiCommandHistoryAction(const xiiActionContext& context, xiiStringView sName, ButtonType button) :
+  xiiDynamicActionAndMenuAction(context, sName, "")
 {
   m_ButtonType = button;
 

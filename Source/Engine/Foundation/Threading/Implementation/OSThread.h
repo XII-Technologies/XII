@@ -15,7 +15,7 @@ public:
   ///
   /// Note that the thread won't start execution until Start() is called. Please note that szName must be valid until Start() has been
   /// called!
-  xiiOSThread(xiiOSThreadEntryPoint threadEntryPoint, void* pUserData = nullptr, const char* szName = "xiiOSThread", xiiUInt32 uiStackSize = 128 * 1024);
+  xiiOSThread(xiiOSThreadEntryPoint threadEntryPoint, void* pUserData = nullptr, xiiStringView sName = "xiiOSThread", xiiUInt32 uiStackSize = 128 * 1024);
 
   /// \brief Destructor.
   virtual ~xiiOSThread();
@@ -41,10 +41,9 @@ protected:
 
   void* m_pUserData;
 
-  const char* m_szName;
+  xiiStringView m_sName;
 
   xiiUInt32 m_uiStackSize;
-
 
 private:
   /// Stores how many xiiOSThread are currently active.

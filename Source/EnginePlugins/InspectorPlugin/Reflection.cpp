@@ -20,28 +20,50 @@ namespace ReflectionDetail
     xiiTelemetry::Broadcast(xiiTelemetry::Reliable, msg);
   }
 
-  static const char* GetParentType(xiiRTTI* pRTTI)
+  static xiiStringView GetParentType(const xiiRTTI* pRTTI)
   {
     if (pRTTI->GetParentType())
+    {
       return pRTTI->GetParentType()->GetTypeName();
+    }
 
-    if ((xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "bool")) || (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "float")) ||
-        (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "double")) || (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiInt8")) ||
-        (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiUInt8")) || (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiInt16")) ||
-        (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiUInt16")) || (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiInt32")) ||
-        (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiUInt32")) || (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiInt64")) ||
-        (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiUInt64")) || (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiConstCharPtr")) ||
-        (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiVec2")) || (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiVec3")) ||
-        (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiVec4")) || (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiMat3")) ||
-        (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiMat4")) || (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiTime")) ||
-        (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiUuid")) || (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiColor")) ||
-        (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiVariant")) || (xiiStringUtils::IsEqual(pRTTI->GetTypeName(), "xiiQuat")))
+    if ((pRTTI->GetTypeName() == "bool") || (pRTTI->GetTypeName() == "float") ||
+        (pRTTI->GetTypeName() == "double") || (pRTTI->GetTypeName() == "xiiInt8") ||
+        (pRTTI->GetTypeName() == "xiiUInt8") || (pRTTI->GetTypeName() == "xiiInt16") ||
+        (pRTTI->GetTypeName() == "xiiUInt16") || (pRTTI->GetTypeName() == "xiiInt32") ||
+        (pRTTI->GetTypeName() == "xiiUInt32") || (pRTTI->GetTypeName() == "xiiInt64") ||
+        (pRTTI->GetTypeName() == "xiiUInt64") || (pRTTI->GetTypeName() == "xiiConstCharPtr") ||
+
+        (pRTTI->GetTypeName() == "xiiVec2") || (pRTTI->GetTypeName() == "xiiVec3") ||
+        (pRTTI->GetTypeName() == "xiiVec4") || (pRTTI->GetTypeName() == "xiiMat3") ||
+        (pRTTI->GetTypeName() == "xiiMat4") ||
+
+        (pRTTI->GetTypeName() == "xiiVec2d") || (pRTTI->GetTypeName() == "xiiVec3d") ||
+        (pRTTI->GetTypeName() == "xiiVec4d") || (pRTTI->GetTypeName() == "xiiMat3d") ||
+        (pRTTI->GetTypeName() == "xiiMat4d") ||
+
+        (pRTTI->GetTypeName() == "xiiVec2I") || (pRTTI->GetTypeName() == "xiiVec3I") ||
+        (pRTTI->GetTypeName() == "xiiVec4I") ||
+
+        (pRTTI->GetTypeName() == "xiiVec2U") || (pRTTI->GetTypeName() == "xiiVec3U") ||
+        (pRTTI->GetTypeName() == "xiiVec4U") ||
+
+        (pRTTI->GetTypeName() == "xiiVec2I64") || (pRTTI->GetTypeName() == "xiiVec3I64") ||
+        (pRTTI->GetTypeName() == "xiiVec4I64") ||
+
+        (pRTTI->GetTypeName() == "xiiVec2U64") || (pRTTI->GetTypeName() == "xiiVec3U64") ||
+        (pRTTI->GetTypeName() == "xiiVec4U64") ||
+
+        (pRTTI->GetTypeName() == "xiiTime") || (pRTTI->GetTypeName() == "xiiUuid") || (pRTTI->GetTypeName() == "xiiColor") ||
+        (pRTTI->GetTypeName() == "xiiVariant") || (pRTTI->GetTypeName() == "xiiQuat") || (pRTTI->GetTypeName() == "xiiQuatd"))
+    {
       return "Basic Types";
+    }
 
-    return "";
+    return {};
   }
 
-  static void SendReflectionTelemetry(xiiRTTI* pRTTI)
+  static void SendReflectionTelemetry(const xiiRTTI* pRTTI)
   {
     xiiTelemetryMessage msg;
     msg.SetMessageID('RFLC', 'DATA');
@@ -92,14 +114,7 @@ namespace ReflectionDetail
 
     SendBasicTypesGroup();
 
-    xiiRTTI* pRTTI = xiiRTTI::GetFirstInstance();
-
-    while (pRTTI)
-    {
-      SendReflectionTelemetry(pRTTI);
-
-      pRTTI = pRTTI->GetNextInstance();
-    }
+    xiiRTTI::ForEachType([](const xiiRTTI* pRtti) { SendReflectionTelemetry(pRtti); });
   }
 
 

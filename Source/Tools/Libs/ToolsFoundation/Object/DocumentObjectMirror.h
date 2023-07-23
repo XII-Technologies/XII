@@ -40,7 +40,7 @@ public:
   void InitReceiver(xiiRttiConverterContext* pContext);
   void DeInit();
 
-  using FilterFunction = xiiDelegate<bool(const xiiDocumentObject*, const char*)>;
+  using FilterFunction = xiiDelegate<bool(const xiiDocumentObject*, xiiStringView)>;
   /// \brief
   ///
   /// \param filter
@@ -58,9 +58,9 @@ public:
 
 protected:
   bool           IsRootObject(const xiiDocumentObject* pParent);
-  bool           IsHeapAllocated(const xiiDocumentObject* pParent, const char* szParentProperty);
-  bool           IsDiscardedByFilter(const xiiDocumentObject* pObject, const char* szProperty) const;
-  static void    CreatePath(xiiObjectChange& out_change, const xiiDocumentObject* pRoot, const char* szProperty);
+  bool           IsHeapAllocated(const xiiDocumentObject* pParent, xiiStringView sParentProperty);
+  bool           IsDiscardedByFilter(const xiiDocumentObject* pObject, xiiStringView sProperty) const;
+  static void    CreatePath(xiiObjectChange& out_change, const xiiDocumentObject* pRoot, xiiStringView sProperty);
   static xiiUuid FindRootOpObject(const xiiDocumentObject* pObject, xiiHybridArray<const xiiDocumentObject*, 8>& path);
   static void    FlattenSteps(const xiiArrayPtr<const xiiDocumentObject* const> path, xiiHybridArray<xiiPropertyPathStep, 2>& out_steps);
 

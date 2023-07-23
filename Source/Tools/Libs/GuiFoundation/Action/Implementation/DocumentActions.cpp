@@ -65,13 +65,13 @@ void xiiDocumentActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hUpdatePrefabs);
 }
 
-void xiiDocumentActions::MapActions(const char* szMapping, const char* szPath, bool bForToolbar)
+void xiiDocumentActions::MapActions(xiiStringView sMapping, xiiStringView sPath, bool bForToolbar)
 {
-  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(szMapping);
-  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the documents actions failed!", szMapping);
+  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
+  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the documents actions failed!", sMapping);
 
-  pMap->MapAction(s_hSaveCategory, szPath, 1.0f);
-  xiiStringBuilder sSubPath(szPath, "/SaveCategory");
+  pMap->MapAction(s_hSaveCategory, sPath, 1.0f);
+  xiiStringBuilder sSubPath(sPath, "/SaveCategory");
 
   pMap->MapAction(s_hSave, sSubPath, 1.0f);
   pMap->MapAction(s_hSaveAll, sSubPath, 3.0f);
@@ -80,8 +80,8 @@ void xiiDocumentActions::MapActions(const char* szMapping, const char* szPath, b
   {
     pMap->MapAction(s_hSaveAs, sSubPath, 2.0f);
 
-    sSubPath.Set(szPath, "/CloseCategory");
-    pMap->MapAction(s_hCloseCategory, szPath, 2.0f);
+    sSubPath.Set(sPath, "/CloseCategory");
+    pMap->MapAction(s_hCloseCategory, sPath, 2.0f);
     pMap->MapAction(s_hClose, sSubPath, 1.0f);
     pMap->MapAction(s_hCloseAll, sSubPath, 2.0f);
     pMap->MapAction(s_hCloseAllButThis, sSubPath, 3.0f);
@@ -90,13 +90,13 @@ void xiiDocumentActions::MapActions(const char* szMapping, const char* szPath, b
   }
 }
 
-void xiiDocumentActions::MapToolsActions(const char* szMapping, const char* szPath)
+void xiiDocumentActions::MapToolsActions(xiiStringView sMapping, xiiStringView sPath)
 {
-  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(szMapping);
-  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the documents actions failed!", szMapping);
+  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
+  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the documents actions failed!", sMapping);
 
-  pMap->MapAction(s_hDocumentCategory, szPath, 1.0f);
-  xiiStringBuilder sSubPath(szPath, "/Tools.DocumentCategory");
+  pMap->MapAction(s_hDocumentCategory, sPath, 1.0f);
+  xiiStringBuilder sSubPath(sPath, "/Tools.DocumentCategory");
 
   pMap->MapAction(s_hUpdatePrefabs, sSubPath, 1.0f);
 }
@@ -105,8 +105,8 @@ void xiiDocumentActions::MapToolsActions(const char* szMapping, const char* szPa
 // xiiDocumentAction
 ////////////////////////////////////////////////////////////////////////
 
-xiiDocumentAction::xiiDocumentAction(const xiiActionContext& context, const char* szName, ButtonType button) :
-  xiiButtonAction(context, szName, false, "")
+xiiDocumentAction::xiiDocumentAction(const xiiActionContext& context, xiiStringView sName, ButtonType button) :
+  xiiButtonAction(context, sName, false, "")
 {
   m_ButtonType = button;
 
@@ -201,6 +201,7 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
 
     case xiiDocumentAction::ButtonType::SaveAs:
     {
+      xiiStringBuilder     tmp;
       xiiQtDocumentWindow* pWnd = xiiQtDocumentWindow::FindWindowByDocument(m_Context.m_pDocument);
       if (pWnd->SaveDocument().Succeeded())
       {
@@ -209,7 +210,7 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
         sAllFilters.Append(desc->m_sDocumentTypeName, " (*.", desc->m_sFileExtension, ")");
         QString   sSelectedExt;
         xiiString sFile = QFileDialog::getSaveFileName(QApplication::activeWindow(), QLatin1String("Create Document"),
-                                                       m_Context.m_pDocument->GetDocumentPath(), QString::fromUtf8(sAllFilters.GetData()), &sSelectedExt, QFileDialog::Option::DontResolveSymlinks)
+                                                       m_Context.m_pDocument->GetDocumentPath().GetData(tmp), QString::fromUtf8(sAllFilters.GetData()), &sSelectedExt, QFileDialog::Option::DontResolveSymlinks)
                             .toUtf8()
                             .data();
 
@@ -265,7 +266,7 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
           continue;
 
         // Prevent closing the settings window.
-        if (xiiStringUtils::Compare(pWindow->GetUniqueName(), "Settings") == 0)
+        if (pWindow->GetUniqueName().Compare("Settings") == 0)
           continue;
 
         pWindow->CloseDocumentWindow();
@@ -284,7 +285,7 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
           continue;
 
         // Prevent closing the settings window.
-        if (xiiStringUtils::Compare(pWindow->GetUniqueName(), "Settings") == 0)
+        if (pWindow->GetUniqueName().Compare("Settings") == 0)
           continue;
 
         pWindow->CloseDocumentWindow();

@@ -55,7 +55,7 @@ void xiiDuktapeHelper::operator=(const xiiDuktapeHelper& rhs)
 }
 
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-void xiiDuktapeHelper::VerifyExpectedStackChange(xiiInt32 iExpectedStackChange, const char* szFile, xiiUInt32 uiLine, const char* szFunction) const
+void xiiDuktapeHelper::VerifyExpectedStackChange(xiiInt32 iExpectedStackChange, xiiStringView sFile, xiiUInt32 uiLine, xiiStringView sFunction) const
 {
   if (m_bVerifyStackChange && m_pContext)
   {
@@ -64,7 +64,7 @@ void xiiDuktapeHelper::VerifyExpectedStackChange(xiiInt32 iExpectedStackChange, 
 
     if (iStackChange != iExpectedStackChange)
     {
-      xiiLog::Error("{}:{} ({}): Stack change {} != {}", szFile, uiLine, szFunction, iStackChange, iExpectedStackChange);
+      xiiLog::Error("{}:{} ({}): Stack change {} != {}", sFile, uiLine, sFunction, iStackChange, iExpectedStackChange);
     }
   }
 }
@@ -112,11 +112,11 @@ void xiiDuktapeHelper::PushGlobalStash()
   duk_push_global_stash(m_pContext); // [ stash ]
 }
 
-xiiResult xiiDuktapeHelper::PushLocalObject(const char* szName, xiiInt32 iParentObjectIndex /* = -1*/)
+xiiResult xiiDuktapeHelper::PushLocalObject(xiiStringView sName, xiiInt32 iParentObjectIndex /* = -1*/)
 {
   duk_require_top_index(m_pContext);
 
-  if (duk_get_prop_string(m_pContext, iParentObjectIndex, szName) == false) // [ obj/undef ]
+  if (duk_get_prop_string(m_pContext, iParentObjectIndex, sName.GetStartPointer()) == false) // [ obj/undef ]
   {
     duk_pop(m_pContext); // [ ]
     return XII_FAILURE;
@@ -126,18 +126,18 @@ xiiResult xiiDuktapeHelper::PushLocalObject(const char* szName, xiiInt32 iParent
   return XII_SUCCESS;
 }
 
-bool xiiDuktapeHelper::HasProperty(const char* szPropertyName, xiiInt32 iParentObjectIndex /*= -1*/) const
+bool xiiDuktapeHelper::HasProperty(xiiStringView sPropertyName, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
-  return duk_is_object(m_pContext, iParentObjectIndex) && duk_has_prop_string(m_pContext, iParentObjectIndex, szPropertyName);
+  return duk_is_object(m_pContext, iParentObjectIndex) && duk_has_prop_string(m_pContext, iParentObjectIndex, sPropertyName.GetStartPointer());
 }
 
-bool xiiDuktapeHelper::GetBoolProperty(const char* szPropertyName, bool bFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
+bool xiiDuktapeHelper::GetBoolProperty(xiiStringView sPropertyName, bool bFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
   bool result = bFallback;
 
   if (duk_is_object(m_pContext, iParentObjectIndex))
   {
-    if (duk_get_prop_string(m_pContext, iParentObjectIndex, szPropertyName)) // [ value/undef ]
+    if (duk_get_prop_string(m_pContext, iParentObjectIndex, sPropertyName.GetStartPointer())) // [ value/undef ]
     {
       result = duk_get_boolean_default(m_pContext, -1, bFallback); // [ value ]
     }
@@ -148,13 +148,13 @@ bool xiiDuktapeHelper::GetBoolProperty(const char* szPropertyName, bool bFallbac
   return result;
 }
 
-xiiInt32 xiiDuktapeHelper::GetIntProperty(const char* szPropertyName, xiiInt32 iFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
+xiiInt32 xiiDuktapeHelper::GetIntProperty(xiiStringView sPropertyName, xiiInt32 iFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
   xiiInt32 result = iFallback;
 
   if (duk_is_object(m_pContext, iParentObjectIndex))
   {
-    if (duk_get_prop_string(m_pContext, iParentObjectIndex, szPropertyName)) // [ value/undef ]
+    if (duk_get_prop_string(m_pContext, iParentObjectIndex, sPropertyName.GetStartPointer())) // [ value/undef ]
     {
       result = duk_get_int_default(m_pContext, -1, iFallback); // [ value ]
     }
@@ -165,13 +165,13 @@ xiiInt32 xiiDuktapeHelper::GetIntProperty(const char* szPropertyName, xiiInt32 i
   return result;
 }
 
-xiiUInt32 xiiDuktapeHelper::GetUIntProperty(const char* szPropertyName, xiiUInt32 uiFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
+xiiUInt32 xiiDuktapeHelper::GetUIntProperty(xiiStringView sPropertyName, xiiUInt32 uiFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
   xiiUInt32 result = uiFallback;
 
   if (duk_is_object(m_pContext, iParentObjectIndex))
   {
-    if (duk_get_prop_string(m_pContext, iParentObjectIndex, szPropertyName)) // [ value/undef ]
+    if (duk_get_prop_string(m_pContext, iParentObjectIndex, sPropertyName.GetStartPointer())) // [ value/undef ]
     {
       result = duk_get_uint_default(m_pContext, -1, uiFallback); // [ value ]
     }
@@ -182,18 +182,18 @@ xiiUInt32 xiiDuktapeHelper::GetUIntProperty(const char* szPropertyName, xiiUInt3
   return result;
 }
 
-float xiiDuktapeHelper::GetFloatProperty(const char* szPropertyName, float fFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
+float xiiDuktapeHelper::GetFloatProperty(xiiStringView sPropertyName, float fFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
-  return static_cast<float>(GetNumberProperty(szPropertyName, fFallback, iParentObjectIndex));
+  return static_cast<float>(GetNumberProperty(sPropertyName.GetStartPointer(), fFallback, iParentObjectIndex));
 }
 
-double xiiDuktapeHelper::GetNumberProperty(const char* szPropertyName, double fFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
+double xiiDuktapeHelper::GetNumberProperty(xiiStringView sPropertyName, double fFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
   double result = fFallback;
 
   if (duk_is_object(m_pContext, iParentObjectIndex))
   {
-    if (duk_get_prop_string(m_pContext, iParentObjectIndex, szPropertyName)) // [ value/undef ]
+    if (duk_get_prop_string(m_pContext, iParentObjectIndex, sPropertyName.GetStartPointer())) // [ value/undef ]
     {
       result = duk_get_number_default(m_pContext, -1, fFallback); // [ value ]
     }
@@ -204,15 +204,15 @@ double xiiDuktapeHelper::GetNumberProperty(const char* szPropertyName, double fF
   return result;
 }
 
-const char* xiiDuktapeHelper::GetStringProperty(const char* szPropertyName, const char* szFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
+xiiStringView xiiDuktapeHelper::GetStringProperty(xiiStringView sPropertyName, xiiStringView sFallback, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
-  const char* result = szFallback;
+  xiiStringView result = sFallback;
 
   if (duk_is_object(m_pContext, iParentObjectIndex))
   {
-    if (duk_get_prop_string(m_pContext, iParentObjectIndex, szPropertyName)) // [ value/undef ]
+    if (duk_get_prop_string(m_pContext, iParentObjectIndex, sPropertyName.GetStartPointer())) // [ value/undef ]
     {
-      result = duk_get_string_default(m_pContext, -1, szFallback); // [ value ]
+      result = duk_get_string_default(m_pContext, -1, sFallback.GetStartPointer()); // [ value ]
     }
 
     duk_pop(m_pContext); // [ ]
@@ -221,77 +221,77 @@ const char* xiiDuktapeHelper::GetStringProperty(const char* szPropertyName, cons
   return result;
 }
 
-void xiiDuktapeHelper::SetBoolProperty(const char* szPropertyName, bool value, xiiInt32 iParentObjectIndex /*= -1*/) const
+void xiiDuktapeHelper::SetBoolProperty(xiiStringView sPropertyName, bool value, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
   xiiDuktapeHelper duk(m_pContext);
 
   duk_push_boolean(m_pContext, value); // [ value ]
 
   if (iParentObjectIndex >= 0)
-    duk_put_prop_string(m_pContext, iParentObjectIndex, szPropertyName); // [ ]
+    duk_put_prop_string(m_pContext, iParentObjectIndex, sPropertyName.GetStartPointer()); // [ ]
   else
-    duk_put_prop_string(m_pContext, iParentObjectIndex - 1, szPropertyName); // [ ]
+    duk_put_prop_string(m_pContext, iParentObjectIndex - 1, sPropertyName.GetStartPointer()); // [ ]
 
   XII_DUK_RETURN_VOID_AND_VERIFY_STACK(duk, 0);
 }
 
-void xiiDuktapeHelper::SetNumberProperty(const char* szPropertyName, double value, xiiInt32 iParentObjectIndex /*= -1*/) const
+void xiiDuktapeHelper::SetNumberProperty(xiiStringView sPropertyName, double value, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
   xiiDuktapeHelper duk(m_pContext);
 
   duk_push_number(m_pContext, value); // [ value ]
 
   if (iParentObjectIndex >= 0)
-    duk_put_prop_string(m_pContext, iParentObjectIndex, szPropertyName); // [ ]
+    duk_put_prop_string(m_pContext, iParentObjectIndex, sPropertyName.GetStartPointer()); // [ ]
   else
-    duk_put_prop_string(m_pContext, iParentObjectIndex - 1, szPropertyName); // [ ]
+    duk_put_prop_string(m_pContext, iParentObjectIndex - 1, sPropertyName.GetStartPointer()); // [ ]
 
   XII_DUK_RETURN_VOID_AND_VERIFY_STACK(duk, 0);
 }
 
-void xiiDuktapeHelper::SetStringProperty(const char* szPropertyName, const char* value, xiiInt32 iParentObjectIndex /*= -1*/) const
+void xiiDuktapeHelper::SetStringProperty(xiiStringView sPropertyName, xiiStringView value, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
   xiiDuktapeHelper duk(m_pContext);
 
-  duk_push_string(m_pContext, value); // [ value ]
+  duk_push_string(m_pContext, value.GetStartPointer()); // [ value ]
 
   if (iParentObjectIndex >= 0)
-    duk_put_prop_string(m_pContext, iParentObjectIndex, szPropertyName); // [ ]
+    duk_put_prop_string(m_pContext, iParentObjectIndex, sPropertyName.GetStartPointer()); // [ ]
   else
-    duk_put_prop_string(m_pContext, iParentObjectIndex - 1, szPropertyName); // [ ]
+    duk_put_prop_string(m_pContext, iParentObjectIndex - 1, sPropertyName.GetStartPointer()); // [ ]
 
   XII_DUK_RETURN_VOID_AND_VERIFY_STACK(duk, 0);
 }
 
-void xiiDuktapeHelper::SetCustomProperty(const char* szPropertyName, xiiInt32 iParentObjectIndex /*= -1*/) const
+void xiiDuktapeHelper::SetCustomProperty(xiiStringView sPropertyName, xiiInt32 iParentObjectIndex /*= -1*/) const
 {
   xiiDuktapeHelper duk(m_pContext); // [ value ]
 
   if (iParentObjectIndex >= 0)
-    duk_put_prop_string(m_pContext, iParentObjectIndex, szPropertyName); // [ ]
+    duk_put_prop_string(m_pContext, iParentObjectIndex, sPropertyName.GetStartPointer()); // [ ]
   else
-    duk_put_prop_string(m_pContext, iParentObjectIndex - 1, szPropertyName); // [ ]
+    duk_put_prop_string(m_pContext, iParentObjectIndex - 1, sPropertyName.GetStartPointer()); // [ ]
 
   XII_DUK_RETURN_VOID_AND_VERIFY_STACK(duk, -1);
 }
 
-void xiiDuktapeHelper::StorePointerInStash(const char* szKey, void* pPointer)
+void xiiDuktapeHelper::StorePointerInStash(xiiStringView sKey, void* pPointer)
 {
   duk_push_global_stash(m_pContext);                                                      // [ stash ]
   *reinterpret_cast<void**>(duk_push_fixed_buffer(m_pContext, sizeof(void*))) = pPointer; // [ stash buffer ]
-  duk_put_prop_string(m_pContext, -2, szKey);                                             // [ stash ]
+  duk_put_prop_string(m_pContext, -2, sKey.GetStartPointer());                            // [ stash ]
   duk_pop(m_pContext);                                                                    // [ ]
 }
 
-void* xiiDuktapeHelper::RetrievePointerFromStash(const char* szKey) const
+void* xiiDuktapeHelper::RetrievePointerFromStash(xiiStringView sKey) const
 {
   void* pPointer = nullptr;
 
   duk_push_global_stash(m_pContext); // [ stash ]
 
-  if (duk_get_prop_string(m_pContext, -1, szKey)) // [ stash obj/undef ]
+  if (duk_get_prop_string(m_pContext, -1, sKey.GetStartPointer())) // [ stash obj/undef ]
   {
-    XII_ASSERT_DEBUG(duk_is_buffer(m_pContext, -1), "Object '{}' in stash is not a buffer", szKey);
+    XII_ASSERT_DEBUG(duk_is_buffer(m_pContext, -1), "Object '{}' in stash is not a buffer", sKey);
 
     pPointer = *reinterpret_cast<void**>(duk_get_buffer(m_pContext, -1, nullptr)); // [ stash obj/undef ]
   }
@@ -301,28 +301,28 @@ void* xiiDuktapeHelper::RetrievePointerFromStash(const char* szKey) const
   return pPointer;
 }
 
-void xiiDuktapeHelper::StoreStringInStash(const char* szKey, const char* value)
+void xiiDuktapeHelper::StoreStringInStash(xiiStringView sKey, xiiStringView value)
 {
-  duk_push_global_stash(m_pContext);          // [ stash ]
-  duk_push_string(m_pContext, value);         // [ stash value ]
-  duk_put_prop_string(m_pContext, -2, szKey); // [ stash ]
-  duk_pop(m_pContext);                        // [ ]
+  duk_push_global_stash(m_pContext);                           // [ stash ]
+  duk_push_string(m_pContext, value.GetStartPointer());        // [ stash value ]
+  duk_put_prop_string(m_pContext, -2, sKey.GetStartPointer()); // [ stash ]
+  duk_pop(m_pContext);                                         // [ ]
 }
 
-const char* xiiDuktapeHelper::RetrieveStringFromStash(const char* szKey, const char* szFallback /*= nullptr*/) const
+xiiStringView xiiDuktapeHelper::RetrieveStringFromStash(xiiStringView sKey, xiiStringView sFallback /*= nullptr*/) const
 {
   duk_push_global_stash(m_pContext); // [ stash ]
 
-  if (!duk_get_prop_string(m_pContext, -1, szKey)) // [ stash string/undef ]
+  if (!duk_get_prop_string(m_pContext, -1, sKey.GetStartPointer())) // [ stash string/undef ]
   {
     duk_pop_2(m_pContext); // [ ]
-    return szFallback;
+    return sFallback;
   }
 
-  szFallback = duk_get_string_default(m_pContext, -1, szFallback); // [ stash string ]
-  duk_pop_2(m_pContext);                                           // [ ]
+  sFallback = duk_get_string_default(m_pContext, -1, sFallback.GetStartPointer()); // [ stash string ]
+  duk_pop_2(m_pContext);                                                           // [ ]
 
-  return szFallback;
+  return sFallback;
 }
 
 bool xiiDuktapeHelper::IsOfType(xiiBitflags<xiiDuktapeTypeMask> mask, xiiInt32 iStackElement /*= -1*/) const
@@ -375,82 +375,73 @@ bool xiiDuktapeHelper::IsNullOrUndefined(xiiInt32 iStackElement /*= -1*/) const
   return duk_check_type_mask(m_pContext, iStackElement, DUK_TYPE_MASK_NULL | DUK_TYPE_MASK_UNDEFINED);
 }
 
-void xiiDuktapeHelper::RegisterGlobalFunction(
-  const char*    szFunctionName,
-  duk_c_function function,
-  xiiUInt8       uiNumArguments,
-  xiiInt16       iMagicValue /*= 0*/)
+void xiiDuktapeHelper::RegisterGlobalFunction(xiiStringView sFunctionName, duk_c_function function, xiiUInt8 uiNumArguments, xiiInt16 iMagicValue /*= 0*/)
 {
   // TODO: could store iFuncIdx for faster function calls
 
   duk_push_global_object(m_pContext);                                                // [ global ]
   /*const int iFuncIdx =*/duk_push_c_function(m_pContext, function, uiNumArguments); // [ global func ]
   duk_set_magic(m_pContext, -1, iMagicValue);                                        // [ global func ]
-  duk_put_prop_string(m_pContext, -2, szFunctionName);                               // [ global ]
+  duk_put_prop_string(m_pContext, -2, sFunctionName.GetStartPointer());              // [ global ]
   duk_pop(m_pContext);                                                               // [ ]
 }
 
-void xiiDuktapeHelper::RegisterGlobalFunctionWithVarArgs(const char* szFunctionName, duk_c_function function, xiiInt16 iMagicValue /*= 0*/)
+void xiiDuktapeHelper::RegisterGlobalFunctionWithVarArgs(xiiStringView sFunctionName, duk_c_function function, xiiInt16 iMagicValue /*= 0*/)
 {
   // TODO: could store iFuncIdx for faster function calls
 
   duk_push_global_object(m_pContext);                                             // [ global ]
   /*const int iFuncIdx =*/duk_push_c_function(m_pContext, function, DUK_VARARGS); // [ global func ]
   duk_set_magic(m_pContext, -1, iMagicValue);                                     // [ global func ]
-  duk_put_prop_string(m_pContext, -2, szFunctionName);                            // [ global ]
+  duk_put_prop_string(m_pContext, -2, sFunctionName.GetStartPointer());           // [ global ]
   duk_pop(m_pContext);                                                            // [ ]
 }
 
-void xiiDuktapeHelper::RegisterObjectFunction(
-  const char*    szFunctionName,
-  duk_c_function function,
-  xiiUInt8       uiNumArguments,
-  xiiInt32       iParentObjectIndex /*= -1*/,
-  xiiInt16       iMagicValue /*= 0*/)
+void xiiDuktapeHelper::RegisterObjectFunction(xiiStringView sFunctionName, duk_c_function function, xiiUInt8 uiNumArguments, xiiInt32 iParentObjectIndex /*= -1*/, xiiInt16 iMagicValue /*= 0*/)
 {
   /*const int iFuncIdx =*/duk_push_c_function(m_pContext, function, uiNumArguments); // [ func ]
   duk_set_magic(m_pContext, -1, iMagicValue);                                        // [ func ]
 
   if (iParentObjectIndex < 0)
   {
-    duk_put_prop_string(m_pContext, iParentObjectIndex - 1, szFunctionName); // [ ]
+    duk_put_prop_string(m_pContext, iParentObjectIndex - 1, sFunctionName.GetStartPointer()); // [ ]
   }
   else
   {
-    duk_put_prop_string(m_pContext, iParentObjectIndex, szFunctionName); // [ ]
+    duk_put_prop_string(m_pContext, iParentObjectIndex, sFunctionName.GetStartPointer()); // [ ]
   }
 }
 
-xiiResult xiiDuktapeHelper::PrepareGlobalFunctionCall(const char* szFunctionName)
+xiiResult xiiDuktapeHelper::PrepareGlobalFunctionCall(xiiStringView sFunctionName)
 {
-  if (!duk_get_global_string(m_pContext, szFunctionName)) // [ func/undef ]
-    goto failure;
+  if (!duk_get_global_string(m_pContext, sFunctionName.GetStartPointer())) // [ func/undef ]
+    goto Failed;
 
   if (!duk_is_function(m_pContext, -1)) // [ func ]
-    goto failure;
+    goto Failed;
 
   m_iPushedValues = 0;
   return XII_SUCCESS; // [ func ]
 
-failure:
+Failed:
   duk_pop(m_pContext); // [ ]
   return XII_FAILURE;
 }
 
-xiiResult xiiDuktapeHelper::PrepareObjectFunctionCall(const char* szFunctionName, xiiInt32 iParentObjectIndex /*= -1*/)
+xiiResult xiiDuktapeHelper::PrepareObjectFunctionCall(xiiStringView sFunctionName, xiiInt32 iParentObjectIndex /*= -1*/)
 {
   duk_require_top_index(m_pContext);
 
-  if (!duk_get_prop_string(m_pContext, iParentObjectIndex, szFunctionName)) // [ func/undef ]
-    goto failure;
+  if (!duk_get_prop_string(m_pContext, iParentObjectIndex, sFunctionName.GetStartPointer())) // [ func/undef ]
+    goto Failed;
 
   if (!duk_is_function(m_pContext, -1)) // [ func ]
-    goto failure;
+    goto Failed;
 
   m_iPushedValues = 0;
   return XII_SUCCESS; // [ func ]
 
-failure:
+Failed:
   duk_pop(m_pContext); // [ ]
   return XII_FAILURE;
 }
@@ -471,13 +462,13 @@ xiiResult xiiDuktapeHelper::CallPreparedFunction()
   }
 }
 
-xiiResult xiiDuktapeHelper::PrepareMethodCall(const char* szMethodName, xiiInt32 iParentObjectIndex /*= -1*/)
+xiiResult xiiDuktapeHelper::PrepareMethodCall(xiiStringView sMethodName, xiiInt32 iParentObjectIndex /*= -1*/)
 {
-  if (!duk_get_prop_string(m_pContext, iParentObjectIndex, szMethodName)) // [ func/undef ]
-    goto failure;
+  if (!duk_get_prop_string(m_pContext, iParentObjectIndex, sMethodName.GetStartPointer())) // [ func/undef ]
+    goto Failed;
 
   if (!duk_is_function(m_pContext, -1)) // [ func ]
-    goto failure;
+    goto Failed;
 
   if (iParentObjectIndex < 0)
   {
@@ -491,7 +482,7 @@ xiiResult xiiDuktapeHelper::PrepareMethodCall(const char* szMethodName, xiiInt32
   m_iPushedValues = 0;
   return XII_SUCCESS; // [ func this ]
 
-failure:
+Failed:
   duk_pop(m_pContext); // [ ]
   return XII_FAILURE;
 }
@@ -584,15 +575,15 @@ double xiiDuktapeHelper::GetNumberValue(xiiInt32 iStackElement, double fFallback
   return duk_get_number_default(m_pContext, iStackElement, fFallback);
 }
 
-const char* xiiDuktapeHelper::GetStringValue(xiiInt32 iStackElement, const char* szFallback /*= ""*/) const
+xiiStringView xiiDuktapeHelper::GetStringValue(xiiInt32 iStackElement, xiiStringView sFallback /*= ""*/) const
 {
-  return duk_get_string_default(m_pContext, iStackElement, szFallback);
+  return duk_get_string_default(m_pContext, iStackElement, sFallback.GetStartPointer());
 }
 
-xiiResult xiiDuktapeHelper::ExecuteString(const char* szString, const char* szDebugName /*= "eval"*/)
+xiiResult xiiDuktapeHelper::ExecuteString(xiiStringView sString, xiiStringView sDebugName /*= "eval"*/)
 {
-  duk_push_string(m_pContext, szDebugName);                       // [ filename ]
-  if (duk_pcompile_string_filename(m_pContext, 0, szString) != 0) // [ function/error ]
+  duk_push_string(m_pContext, sDebugName.GetStartPointer());                       // [ filename ]
+  if (duk_pcompile_string_filename(m_pContext, 0, sString.GetStartPointer()) != 0) // [ function/error ]
   {
     XII_LOG_BLOCK("DukTape::ExecuteString", "Compilation failed");
 
@@ -601,7 +592,7 @@ xiiResult xiiDuktapeHelper::ExecuteString(const char* szString, const char* szDe
     LogStackTrace(-1);
 
     // TODO: print out line by line
-    xiiLog::Info("[duktape]Source: {0}", szString);
+    xiiLog::Info("[duktape]Source: {0}", sString);
 
     duk_pop(m_pContext); // [ ]
     return XII_FAILURE;
@@ -618,7 +609,7 @@ xiiResult xiiDuktapeHelper::ExecuteString(const char* szString, const char* szDe
     LogStackTrace(-1);
 
     // TODO: print out line by line
-    xiiLog::Info("[duktape]Source: {0}", szString);
+    xiiLog::Info("[duktape]Source: {0}", sString);
 
     duk_pop(m_pContext); // [ ]
     return XII_FAILURE;
@@ -628,23 +619,22 @@ xiiResult xiiDuktapeHelper::ExecuteString(const char* szString, const char* szDe
   return XII_SUCCESS;
 }
 
-xiiResult xiiDuktapeHelper::ExecuteStream(xiiStreamReader& ref_stream, const char* szDebugName)
+xiiResult xiiDuktapeHelper::ExecuteStream(xiiStreamReader& ref_stream, xiiStringView sDebugName)
 {
   xiiStringBuilder source;
   source.ReadAll(ref_stream);
 
-  return ExecuteString(source, szDebugName);
+  return ExecuteString(source, sDebugName);
 }
 
-xiiResult xiiDuktapeHelper::ExecuteFile(const char* szFile)
+xiiResult xiiDuktapeHelper::ExecuteFile(xiiStringView sFile)
 {
   xiiFileReader file;
-  XII_SUCCEED_OR_RETURN(file.Open(szFile));
+  XII_SUCCEED_OR_RETURN(file.Open(sFile));
 
-  return ExecuteStream(file, szFile);
+  return ExecuteStream(file, sFile);
 }
 
 #endif
-
 
 XII_STATICLINK_FILE(Core, Core_Scripting_Duktape_DuktapeHelper);

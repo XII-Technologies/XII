@@ -14,11 +14,11 @@ void xiiTask::Reset()
   m_bUsesMultiplicity = m_uiMultiplicity > 0;
 }
 
-void xiiTask::ConfigureTask(const char* szTaskName, xiiTaskNesting nestingMode, xiiOnTaskFinishedCallback callback /*= xiiOnTaskFinishedCallback()*/)
+void xiiTask::ConfigureTask(xiiStringView sTaskName, xiiTaskNesting nestingMode, xiiOnTaskFinishedCallback callback /*= xiiOnTaskFinishedCallback()*/)
 {
   XII_ASSERT_DEV(IsTaskFinished(), "This function must be called before the task is started.");
 
-  m_sTaskName      = szTaskName;
+  m_sTaskName      = sTaskName;
   m_NestingMode    = nestingMode;
   m_OnTaskFinished = callback;
 }
@@ -58,6 +58,5 @@ void xiiTask::Run(xiiUInt32 uiInvocation)
 
   m_iRemainingRuns.Decrement();
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_Task);

@@ -47,7 +47,7 @@ struct xiiContainerElementMetaStateEvent
   /// The object for which the information is queried
   const xiiDocumentObject* m_pObject = nullptr;
   /// The Container property
-  const char* m_szProperty = nullptr;
+  xiiStringView m_sProperty;
   /// The map into which event handlers should write their information about the state of each container element.
   /// The xiiVariant should be the key of the container element, either xiiUInt32 for arrays and sets or xiiString for maps.
   xiiHashTable<xiiVariant, xiiPropertyUiState>* m_pContainerElementStates = nullptr;
@@ -74,12 +74,12 @@ public:
   void GetTypePropertiesState(const xiiHybridArray<xiiPropertySelection, 8>& items, xiiMap<xiiString, xiiPropertyUiState>& out_propertyStates);
 
   /// \brief Queries the meta state for the elements of a single container property on one xiiDocumentObject.
-  void GetContainerElementsState(const xiiDocumentObject* pObject, const char* szProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates);
+  void GetContainerElementsState(const xiiDocumentObject* pObject, xiiStringView sProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates);
 
   /// \brief Queries the meta state for the elements of a single container property on a multi selection of xiiDocumentObjects.
   ///
   /// This will query the information for every single selected object and then merge the result into one.
-  void GetContainerElementsState(const xiiHybridArray<xiiPropertySelection, 8>& items, const char* szProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates);
+  void GetContainerElementsState(const xiiHybridArray<xiiPropertySelection, 8>& items, xiiStringView sProperty, xiiHashTable<xiiVariant, xiiPropertyUiState>& out_propertyStates);
 
   /// Attach to this event to get notified of property state queries.
   /// Add information to xiiPropertyMetaStateEvent::m_pPropertyStates to return data.

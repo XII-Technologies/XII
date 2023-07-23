@@ -1,5 +1,6 @@
 #include <GuiFoundation/GuiFoundationPCH.h>
 
+#include <Foundation/Strings/TranslationLookup.h>
 #include <GuiFoundation/NodeEditor/Connection.h>
 #include <GuiFoundation/NodeEditor/Pin.h>
 #include <QApplication>
@@ -49,7 +50,8 @@ void xiiQtPin::SetPin(const xiiPin& pin)
 {
   m_pPin = &pin;
 
-  m_pLabel->setPlainText(pin.GetName());
+  xiiStringBuilder tmp;
+  m_pLabel->setPlainText(xiiTranslate(pin.GetName().GetData(tmp)));
   auto rectLabel = m_pLabel->boundingRect();
 
   const int iRadus = rectLabel.height();

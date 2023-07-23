@@ -132,7 +132,7 @@ namespace xiiInternal
   struct DeserializeHelper
   {
     template <typename T>
-    static auto Deserialize(xiiStreamReader& ref_stream, T& ref_obj, int) -> decltype(xiiStreamReaderUtil::Deserialize(ref_stream, ref_obj))
+    static auto Deserialize(xiiStreamReader& ref_stream, T& ref_obj, xiiInt32) -> decltype(xiiStreamReaderUtil::Deserialize(ref_stream, ref_obj))
     {
       return xiiStreamReaderUtil::Deserialize(ref_stream, ref_obj);
     }

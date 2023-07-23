@@ -52,8 +52,8 @@ struct XII_CORE_DLL xiiMsgGenericEvent : public xiiEventMessage
   xiiVariant      m_Value;
 
 private:
-  const char* GetMessage() const { return m_sMessage; }
-  void        SetMessage(const char* szMessage) { m_sMessage.Assign(szMessage); }
+  xiiStringView GetMessage() const { return m_sMessage; }
+  void          SetMessage(xiiStringView sMessage) { m_sMessage.Assign(sMessage); }
 };
 
 /// \brief Sent when an animation reached its end (either forwards or backwards playing)

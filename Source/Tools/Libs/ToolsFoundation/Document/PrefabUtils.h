@@ -11,7 +11,7 @@ class XII_TOOLSFOUNDATION_DLL xiiPrefabUtils
 {
 public:
   /// \brief
-  static void LoadGraph(xiiAbstractObjectGraph& out_graph, const char* szGraph);
+  static void LoadGraph(xiiAbstractObjectGraph& out_graph, xiiStringView sGraph);
 
   static xiiAbstractObjectNode* GetFirstRootNode(xiiAbstractObjectGraph& ref_graph);
 
@@ -19,12 +19,7 @@ public:
 
   static xiiUuid GetPrefabRoot(const xiiDocumentObject* pObject, const xiiObjectMetaData<xiiUuid, xiiDocumentObjectMetaData>& documentObjectMetaData, xiiInt32* pDepth = nullptr);
 
-  static xiiVariant GetDefaultValue(
-    const xiiAbstractObjectGraph& graph,
-    const xiiUuid&                objectGuid,
-    const char*                   szProperty,
-    xiiVariant                    index       = xiiVariant(),
-    bool*                         pValueFound = nullptr);
+  static xiiVariant GetDefaultValue(const xiiAbstractObjectGraph& graph, const xiiUuid& objectGuid, xiiStringView sProperty, xiiVariant index = xiiVariant(), bool* pValueFound = nullptr);
 
   static void WriteDiff(const xiiDeque<xiiAbstractGraphDiffOperation>& mergedDiff, xiiStringBuilder& out_sText);
 
@@ -33,7 +28,7 @@ public:
 
   /// \brief Merges diffs of left and right graphs relative to their base graph. Conflicts prefer the right graph. Base and left are provided as
   /// serialized DDL graphs and the right graph is build directly from pRight and its PrefabSeed.
-  static void Merge(const char* szBase, const char* szLeft, xiiDocumentObject* pRight, bool bRightIsNotPartOfPrefab, const xiiUuid& prefabSeed, xiiStringBuilder& out_sNewGraph);
+  static void Merge(xiiStringView sBase, xiiStringView sLeft, xiiDocumentObject* pRight, bool bRightIsNotPartOfPrefab, const xiiUuid& prefabSeed, xiiStringBuilder& out_sNewGraph);
 
-  static xiiString ReadDocumentAsString(const char* szFile);
+  static xiiString ReadDocumentAsString(xiiStringView sFile);
 };

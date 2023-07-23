@@ -119,7 +119,7 @@ xiiResult xiiExpressionVM::ScalarizeStreams(xiiArrayPtr<const xiiProcessingStrea
   return XII_SUCCESS;
 }
 
-xiiResult xiiExpressionVM::MapStreams(xiiArrayPtr<const xiiExpression::StreamDesc> streamDescs, xiiArrayPtr<xiiProcessingStream> streams, const char* szStreamType, xiiUInt32 uiNumInstances, xiiDynamicArray<xiiProcessingStream*>& out_MappedStreams)
+xiiResult xiiExpressionVM::MapStreams(xiiArrayPtr<const xiiExpression::StreamDesc> streamDescs, xiiArrayPtr<xiiProcessingStream> streams, xiiStringView sStreamType, xiiUInt32 uiNumInstances, xiiDynamicArray<xiiProcessingStream*>& out_MappedStreams)
 {
   out_MappedStreams.Clear();
   out_MappedStreams.Reserve(streamDescs.GetCount());
@@ -136,7 +136,7 @@ xiiResult xiiExpressionVM::MapStreams(xiiArrayPtr<const xiiExpression::StreamDes
         // verify stream data type
         if (stream.GetDataType() != streamDesc.m_DataType)
         {
-          xiiLog::Error("{} stream '{}' expects data of type '{}' or a compatible type. Given type '{}' is not compatible.", szStreamType, streamDesc.m_sName, xiiProcessingStream::GetDataTypeName(streamDesc.m_DataType), xiiProcessingStream::GetDataTypeName(stream.GetDataType()));
+          xiiLog::Error("{} stream '{}' expects data of type '{}' or a compatible type. Given type '{}' is not compatible.", sStreamType, streamDesc.m_sName, xiiProcessingStream::GetDataTypeName(streamDesc.m_DataType), xiiProcessingStream::GetDataTypeName(stream.GetDataType()));
           return XII_FAILURE;
         }
 
@@ -146,7 +146,7 @@ xiiResult xiiExpressionVM::MapStreams(xiiArrayPtr<const xiiExpression::StreamDes
 
         if (stream.GetDataSize() < uiExpectedSize)
         {
-          xiiLog::Error("{} stream '{}' data size must be {} bytes or more. Only {} bytes given", szStreamType, streamDesc.m_sName, uiExpectedSize, stream.GetDataSize());
+          xiiLog::Error("{} stream '{}' data size must be {} bytes or more. Only {} bytes given", sStreamType, streamDesc.m_sName, uiExpectedSize, stream.GetDataSize());
           return XII_FAILURE;
         }
 
@@ -158,7 +158,7 @@ xiiResult xiiExpressionVM::MapStreams(xiiArrayPtr<const xiiExpression::StreamDes
 
     if (!bFound)
     {
-      xiiLog::Error("Bytecode expects an {} stream '{}'", szStreamType, streamDesc.m_sName);
+      xiiLog::Error("Bytecode expects an {} stream '{}'", sStreamType, streamDesc.m_sName);
       return XII_FAILURE;
     }
   }
@@ -203,6 +203,5 @@ xiiResult xiiExpressionVM::MapFunctions(xiiArrayPtr<const xiiExpression::Functio
 
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Expression_Implementation_ExpressionVM);

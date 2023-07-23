@@ -11,11 +11,11 @@
 class XII_TOOLSFOUNDATION_DLL xiiAssetFileExtensionWhitelist
 {
 public:
-  static void AddAssetFileExtension(const char* szAssetType, const char* szAllowedFileExtension);
+  static void AddAssetFileExtension(xiiStringView sAssetType, xiiStringView sAllowedFileExtension);
 
-  static bool IsFileOnAssetWhitelist(const char* szAssetType, const char* szFile);
+  static bool IsFileOnAssetWhitelist(xiiStringView sAssetType, xiiStringView sFile);
 
-  static const xiiSet<xiiString>& GetAssetFileExtensions(const char* szAssetType);
+  static const xiiSet<xiiString>& GetAssetFileExtensions(xiiStringView sAssetType);
 
 private:
   static xiiMap<xiiString, xiiSet<xiiString>> s_ExtensionWhitelist;

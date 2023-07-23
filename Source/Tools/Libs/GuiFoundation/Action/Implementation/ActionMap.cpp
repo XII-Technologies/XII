@@ -28,14 +28,14 @@ xiiActionMap::~xiiActionMap()
   // DestroyAllObjects();
 }
 
-void xiiActionMap::MapAction(xiiActionDescriptorHandle hAction, const char* szPath, float fOrder)
+void xiiActionMap::MapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath, float fOrder)
 {
-  xiiStringBuilder sPath = szPath;
-  sPath.MakeCleanPath();
-  sPath.Trim("/");
+  xiiStringBuilder sPath0 = sPath;
+  sPath0.MakeCleanPath();
+  sPath0.Trim("/");
   xiiActionMapDescriptor d;
   d.m_hAction = hAction;
-  d.m_sPath   = sPath;
+  d.m_sPath   = sPath0;
   d.m_fOrder  = fOrder;
 
   XII_VERIFY(MapAction(d).IsValid(), "Mapping Failed");
@@ -110,14 +110,15 @@ xiiResult xiiActionMap::UnmapAction(const xiiUuid& guid)
   return XII_SUCCESS;
 }
 
-xiiResult xiiActionMap::UnmapAction(xiiActionDescriptorHandle hAction, const char* szPath)
+xiiResult xiiActionMap::UnmapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath)
 {
-  xiiStringBuilder sPath = szPath;
-  sPath.MakeCleanPath();
-  sPath.Trim("/");
+  xiiStringBuilder sPath0 = sPath;
+  sPath0.MakeCleanPath();
+  sPath0.Trim("/");
+
   xiiActionMapDescriptor d;
   d.m_hAction = hAction;
-  d.m_sPath   = sPath;
+  d.m_sPath   = sPath0;
   d.m_fOrder  = 0.0f; // unused.
   return UnmapAction(d);
 }

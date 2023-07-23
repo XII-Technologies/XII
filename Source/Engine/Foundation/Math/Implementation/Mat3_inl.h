@@ -43,7 +43,7 @@ void xiiMat3Template<Type>::SetFromArray(const Type* const pData, xiiMatrixLayou
   }
   else
   {
-    for (int i = 0; i < 3; ++i)
+    for (xiiInt32 i = 0; i < 3; ++i)
     {
       Element(0, i) = pData[i * 3 + 0];
       Element(1, i) = pData[i * 3 + 1];
@@ -63,7 +63,7 @@ void xiiMat3Template<Type>::GetAsArray(Type* out_pData, xiiMatrixLayout::Enum la
   }
   else
   {
-    for (int i = 0; i < 3; ++i)
+    for (xiiInt32 i = 0; i < 3; ++i)
     {
       out_pData[i * 3 + 0] = Element(0, i);
       out_pData[i * 3 + 1] = Element(1, i);
@@ -482,7 +482,7 @@ Type xiiMat3Template<Type>::GetDeterminant() const
 {
   // Using rule of Sarrus
   Type fDeterminant = 0;
-  for (int i = 0; i < 3; i++)
+  for (xiiInt32 i = 0; i < 3; i++)
   {
     fDeterminant += Element(i, 0) * Element((i + 1) % 3, 1) * Element((i + 2) % 3, 2);
     fDeterminant -= Element(i, 2) * Element((i + 1) % 3, 1) * Element((i + 2) % 3, 0);

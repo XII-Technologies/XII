@@ -17,17 +17,17 @@ public:
   xiiReflectedTypeStorageAccessor(const xiiRTTI* pReflectedType, xiiDocumentObject* pOwner); // [tested]
   ~xiiReflectedTypeStorageAccessor();
 
-  virtual const xiiVariant GetValue(const char* szProperty, xiiVariant index = xiiVariant(), xiiStatus* pRes = nullptr) const override; // [tested]
-  virtual bool             SetValue(const char* szProperty, const xiiVariant& value, xiiVariant index = xiiVariant()) override;         // [tested]
+  virtual const xiiVariant GetValue(xiiStringView sProperty, xiiVariant index = xiiVariant(), xiiStatus* pRes = nullptr) const override; // [tested]
+  virtual bool             SetValue(xiiStringView sProperty, const xiiVariant& value, xiiVariant index = xiiVariant()) override;         // [tested]
 
-  virtual xiiInt32 GetCount(const char* szProperty) const override;
-  virtual bool     GetKeys(const char* szProperty, xiiDynamicArray<xiiVariant>& out_keys) const override;
+  virtual xiiInt32 GetCount(xiiStringView sProperty) const override;
+  virtual bool     GetKeys(xiiStringView sProperty, xiiDynamicArray<xiiVariant>& out_keys) const override;
 
-  virtual bool InsertValue(const char* szProperty, xiiVariant index, const xiiVariant& value) override;
-  virtual bool RemoveValue(const char* szProperty, xiiVariant index) override;
-  virtual bool MoveValue(const char* szProperty, xiiVariant oldIndex, xiiVariant newIndex) override;
+  virtual bool InsertValue(xiiStringView sProperty, xiiVariant index, const xiiVariant& value) override;
+  virtual bool RemoveValue(xiiStringView sProperty, xiiVariant index) override;
+  virtual bool MoveValue(xiiStringView sProperty, xiiVariant oldIndex, xiiVariant newIndex) override;
 
-  virtual xiiVariant GetPropertyChildIndex(const char* szProperty, const xiiVariant& value) const override;
+  virtual xiiVariant GetPropertyChildIndex(xiiStringView sProperty, const xiiVariant& value) const override;
 
 private:
   xiiDynamicArray<xiiVariant>                                        m_Data;

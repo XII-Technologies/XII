@@ -49,7 +49,9 @@ namespace InputDetail
     xiiInputManager::RetrieveAllKnownInputSlots(InputSlots);
 
     for (xiiUInt32 i = 0; i < InputSlots.GetCount(); ++i)
+    {
       SendInputSlotData(InputSlots[i]);
+    }
   }
 
   static void SendAllInputActions()

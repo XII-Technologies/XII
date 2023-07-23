@@ -1,27 +1,3 @@
 [submodule "Data/Tools/Precompiled"]
 	path = Data/Tools/Precompiled
 	url = https://github.com/XII-Technologies/PrecompiledTools.git
-[submodule "Source/ThirdParty/DiligentCore/ThirdParty/SPIRV-Cross"]
-	path = Source/ThirdParty/DiligentCore/ThirdParty/SPIRV-Cross
-	url = https://github.com/XII-Technologies/SPIRV-Cross.git
-[submodule "Source/ThirdParty/DiligentCore/ThirdParty/SPIRV-Headers"]
-	path = Source/ThirdParty/DiligentCore/ThirdParty/SPIRV-Headers
-	url = https://github.com/XII-Technologies/SPIRV-Headers.git
-[submodule "Source/ThirdParty/DiligentCore/ThirdParty/SPIRV-Tools"]
-	path = Source/ThirdParty/DiligentCore/ThirdParty/SPIRV-Tools
-	url = https://github.com/XII-Technologies/SPIRV-Tools.git
-[submodule "Source/ThirdParty/DiligentCore/ThirdParty/glslang"]
-	path = Source/ThirdParty/DiligentCore/ThirdParty/glslang
-	url = https://github.com/XII-Technologies/glslang.git
-[submodule "Source/ThirdParty/DiligentCore/ThirdParty/volk"]
-	path = Source/ThirdParty/DiligentCore/ThirdParty/volk
-	url = https://github.com/XII-Technologies/volk.git
-[submodule "Source/ThirdParty/DiligentCore/ThirdParty/Vulkan-Headers"]
-	path = Source/ThirdParty/DiligentCore/ThirdParty/Vulkan-Headers
-	url = https://github.com/XII-Technologies/Vulkan-Headers.git
-[submodule "Source/ThirdParty/DiligentCore/ThirdParty/xxHash"]
-	path = Source/ThirdParty/DiligentCore/ThirdParty/xxHash
-	url = https://github.com/XII-Technologies/xxHash.git
-[submodule "Source/ThirdParty/DiligentCore/ThirdParty/googletest"]
-	path = Source/ThirdParty/DiligentCore/ThirdParty/googletest
-	url = https://github.com/XII-Technologies/googletest.git

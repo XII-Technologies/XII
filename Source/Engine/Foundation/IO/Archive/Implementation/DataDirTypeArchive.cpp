@@ -133,14 +133,14 @@ xiiResult xiiDataDirectory::ArchiveType::GetFileStats(xiiStringView sFileOrFolde
 
   const xiiArchiveEntry* pEntry = &toc.m_Entries[uiEntryIndex];
 
-  const char* szPath = toc.GetEntryPathString(uiEntryIndex);
+  xiiStringView sPath = toc.GetEntryPathString(uiEntryIndex);
 
   out_Stats.m_bIsDirectory         = false;
   out_Stats.m_LastModificationTime = m_LastModificationTime;
   out_Stats.m_uiFileSize           = pEntry->m_uiUncompressedDataSize;
-  out_Stats.m_sParentPath          = szPath;
+  out_Stats.m_sParentPath          = sPath;
   out_Stats.m_sParentPath.PathParentDirectory();
-  out_Stats.m_sName = xiiPathUtils::GetFileNameAndExtension(szPath);
+  out_Stats.m_sName = xiiPathUtils::GetFileNameAndExtension(sPath);
 
   return XII_SUCCESS;
 }
@@ -160,7 +160,6 @@ xiiResult xiiDataDirectory::ArchiveType::InternalInitializeDataDirectory(xiiStri
 
   xiiHybridArray<xiiString, 4, xiiStaticAllocatorWrapper> extensions = xiiArchiveUtils::GetAcceptedArchiveFileExtensions();
 
-
   for (const auto& ext : extensions)
   {
     const xiiUInt32 uiLength = ext.GetElementCount();
@@ -169,7 +168,7 @@ xiiResult xiiDataDirectory::ArchiveType::InternalInitializeDataDirectory(xiiStri
       sArchivePath        = sRedirected;
       m_sArchiveSubFolder = "";
       bSupported          = true;
-      goto endloop;
+      goto EndLoop;
     }
     const char* szFound = nullptr;
     do
@@ -180,12 +179,12 @@ xiiResult xiiDataDirectory::ArchiveType::InternalInitializeDataDirectory(xiiStri
         sArchivePath        = xiiStringView(sRedirected.GetData(), szFound + uiLength);
         m_sArchiveSubFolder = szFound + uiLength + 1;
         bSupported          = true;
-        goto endloop;
+        goto EndLoop;
       }
 
     } while (szFound != nullptr);
   }
-endloop:
+EndLoop:
   if (!bSupported)
     return XII_FAILURE;
 
@@ -285,7 +284,5 @@ xiiResult xiiDataDirectory::ArchiveReaderZstd::InternalOpen(xiiFileShareMode::En
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Archive_Implementation_DataDirTypeArchive);

@@ -171,8 +171,8 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::CompDiv(const xiiSimdVec4i& v) cons
 #if XII_ENABLED(XII_COMPILER_MSVC)
   return _mm_div_epi32(m_v, v.m_v);
 #else
-  int a[4];
-  int b[4];
+  xiiInt32 a[4];
+  xiiInt32 b[4];
   Store<4>(a);
   v.Store<4>(b);
 
@@ -220,8 +220,8 @@ XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::operator>>(xiiUInt32 uiShift) const
 
 XII_FORCE_INLINE xiiSimdVec4i xiiSimdVec4i::operator<<(const xiiSimdVec4i& v) const
 {
-  int a[4];
-  int b[4];
+  xiiInt32 a[4];
+  xiiInt32 b[4];
   Store<4>(a);
   v.Store<4>(b);
 
@@ -237,8 +237,8 @@ XII_FORCE_INLINE xiiSimdVec4i xiiSimdVec4i::operator<<(const xiiSimdVec4i& v) co
 
 XII_FORCE_INLINE xiiSimdVec4i xiiSimdVec4i::operator>>(const xiiSimdVec4i& v) const
 {
-  int a[4];
-  int b[4];
+  xiiInt32 a[4];
+  xiiInt32 b[4];
   Store<4>(a);
   v.Store<4>(b);
 

@@ -80,8 +80,8 @@ struct xiiPipeWin
       m_readThread = std::thread([&]() {
         xiiHybridArray<char, 256> overflowBuffer;
 
-        constexpr int BUFSIZE = 512;
-        char          chBuf[BUFSIZE];
+        constexpr xiiInt32 BUFSIZE = 512;
+        char               chBuf[BUFSIZE];
         while (true)
         {
           DWORD bytesRead = 0;
@@ -244,8 +244,7 @@ static BOOL CreateProcessWithExplicitHandles(LPCWSTR pLpApplicationName, LPWSTR 
     if (fSuccess)
     {
       fInitialized = TRUE;
-      fSuccess     = UpdateProcThreadAttribute(
-        lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, pRgHandlesToInherit, uiHandlesToInherit * sizeof(HANDLE), nullptr, nullptr);
+      fSuccess     = UpdateProcThreadAttribute(lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, pRgHandlesToInherit, uiHandlesToInherit * sizeof(HANDLE), nullptr, nullptr);
     }
   }
 
@@ -261,10 +260,13 @@ static BOOL CreateProcessWithExplicitHandles(LPCWSTR pLpApplicationName, LPWSTR 
     fSuccess = CreateProcessW(pLpApplicationName, pLpCommandLine, pLpProcessAttributes, pLpThreadAttributes, inheritHandles,
                               uiDwCreationFlags | EXTENDED_STARTUPINFO_PRESENT, pLpEnvironment, pLpCurrentDirectory, &info.StartupInfo, pLpProcessInformation);
   }
+
   if (fInitialized)
     DeleteProcThreadAttributeList(lpAttributeList);
+
   if (lpAttributeList)
     HeapFree(GetProcessHeap(), 0, lpAttributeList);
+
   return fSuccess;
 }
 

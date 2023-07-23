@@ -192,10 +192,10 @@ void xiiWorldModuleFactory::AdjustBaseTypeId(const xiiRTTI* pParentRtti, const x
   xiiDynamicArray<xiiPlugin::PluginInfo> infos;
   xiiPlugin::GetAllPluginInfos(infos);
 
-  auto HasManualDependency = [&](const char* szPluginName) -> bool {
+  auto HasManualDependency = [&](xiiStringView sPluginName) -> bool {
     for (const auto& p : infos)
     {
-      if (p.m_sName == szPluginName)
+      if (p.m_sName == sPluginName)
       {
         return !p.m_LoadFlags.IsSet(xiiPluginLoadFlags::CustomDependency);
       }
@@ -204,8 +204,8 @@ void xiiWorldModuleFactory::AdjustBaseTypeId(const xiiRTTI* pParentRtti, const x
     return false;
   };
 
-  const char* szPlugin1 = m_CreatorFuncs[uiParentTypeId].m_pRtti->GetPluginName();
-  const char* szPlugin2 = pRtti->GetPluginName();
+  xiiStringView szPlugin1 = m_CreatorFuncs[uiParentTypeId].m_pRtti->GetPluginName();
+  xiiStringView szPlugin2 = pRtti->GetPluginName();
 
   const bool bPrio1 = HasManualDependency(szPlugin1);
   const bool bPrio2 = HasManualDependency(szPlugin2);
@@ -298,11 +298,7 @@ void xiiWorldModuleFactory::FillBaseTypeIds()
 void xiiWorldModuleFactory::ClearUnloadedTypeToIDs()
 {
   xiiSet<const xiiRTTI*> allRttis;
-
-  for (const xiiRTTI* pRtti = xiiRTTI::GetFirstInstance(); pRtti != nullptr; pRtti = pRtti->GetNextInstance())
-  {
-    allRttis.Insert(pRtti);
-  }
+  xiiRTTI::ForEachType([&](const xiiRTTI* pRtti) { allRttis.Insert(pRtti); });
 
   xiiSet<xiiWorldModuleTypeId> mappedIdsToRemove;
 

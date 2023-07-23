@@ -11,10 +11,11 @@ struct XII_CORE_DLL xiiMsgParentChanged : public xiiMessage
   {
     ParentLinked,
     ParentUnlinked,
+    Invalid
   };
 
-  Type                m_Type;
-  xiiGameObjectHandle m_hParent; // Previous or new parent, depending on m_Type
+  Type                m_Type = Type::Invalid;
+  xiiGameObjectHandle m_hParent; // previous or new parent, depending on m_Type
 };
 
 struct XII_CORE_DLL xiiMsgChildrenChanged : public xiiMessage
@@ -39,10 +40,11 @@ struct XII_CORE_DLL xiiMsgComponentsChanged : public xiiMessage
   enum class Type
   {
     ComponentAdded,
-    ComponentRemoved
+    ComponentRemoved,
+    Invalid
   };
 
-  Type                m_Type;
+  Type                m_Type = Type::Invalid;
   xiiGameObjectHandle m_hOwner;
   xiiComponentHandle  m_hComponent;
 };

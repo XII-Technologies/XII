@@ -17,8 +17,8 @@ public:
 private:
   void RegisterDefaultFunctions();
 
-  xiiResult ScalarizeStreams(xiiArrayPtr<const xiiProcessingStream> streams, xiiDynamicArray<xiiProcessingStream>& out_ScalarizedStreams);
-  xiiResult MapStreams(xiiArrayPtr<const xiiExpression::StreamDesc> streamDescs, xiiArrayPtr<xiiProcessingStream> streams, const char* szStreamType, xiiUInt32 uiNumInstances, xiiDynamicArray<xiiProcessingStream*>& out_MappedStreams);
+  static xiiResult ScalarizeStreams(xiiArrayPtr<const xiiProcessingStream> streams, xiiDynamicArray<xiiProcessingStream>& out_ScalarizedStreams);
+  static xiiResult MapStreams(xiiArrayPtr<const xiiExpression::StreamDesc> streamDescs, xiiArrayPtr<xiiProcessingStream> streams, xiiStringView sStreamType, xiiUInt32 uiNumInstances, xiiDynamicArray<xiiProcessingStream*>& out_MappedStreams);
   xiiResult MapFunctions(xiiArrayPtr<const xiiExpression::FunctionDesc> functionDescs, const xiiExpression::GlobalData& globalData);
 
   xiiDynamicArray<xiiExpression::Register, xiiAlignedAllocatorWrapper> m_Registers;

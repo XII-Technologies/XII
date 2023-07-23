@@ -38,22 +38,22 @@ public:
   static void InsertSetPropertyValue(xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value);
   static void RemoveSetPropertyValue(xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value);
 
-  static xiiVariant GetMapPropertyValue(const xiiAbstractMapProperty* pProp, const void* pObject, const char* szKey);
-  static void       SetMapPropertyValue(xiiAbstractMapProperty* pProp, void* pObject, const char* szKey, const xiiVariant& value);
+  static xiiVariant GetMapPropertyValue(const xiiAbstractMapProperty* pProp, const void* pObject, xiiStringView sKey);
+  static void       SetMapPropertyValue(xiiAbstractMapProperty* pProp, void* pObject, xiiStringView sKey, const xiiVariant& value);
 
   static void InsertArrayPropertyValue(xiiAbstractArrayProperty* pProp, void* pObject, const xiiVariant& value, xiiUInt32 uiIndex);
   static void RemoveArrayPropertyValue(xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex);
 
   static xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, xiiUInt32 uiPropertyIndex);
-  static xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, const char* szPropertyName); // [tested] via ToolsFoundation
+  static xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, xiiStringView sPropertyName); // [tested] via ToolsFoundation
 
-  /// \brief Gathers all RTTI types that are derived from pRtti.
+  /// \brief Gathers all RTTI types that are derived from pBaseRtti.
   ///
-  /// This includes all classes that have pRtti as a base class, either direct or indirect.
+  /// This includes all classes that have pBaseRtti as a base class, either direct or indirect.
   /// If bIncludeDependencies is set to true, the resulting set will also contain all dependent types.
   ///
   /// \sa GatherDependentTypes
-  static void GatherTypesDerivedFromClass(const xiiRTTI* pRtti, xiiSet<const xiiRTTI*>& out_types, bool bIncludeDependencies);
+  static void GatherTypesDerivedFromClass(const xiiRTTI* pBaseRtti, xiiSet<const xiiRTTI*>& out_types, bool bIncludeDependencies);
 
   /// \brief Gathers all RTTI types that pRtti depends on and adds them to inout_types.
   ///
@@ -83,8 +83,7 @@ public:
   /// \brief Converts an enum or bitfield value into its string representation.
   ///
   /// The type of pEnumerationRtti will be automatically detected. The syntax of out_sOutput equals MSVC debugger output.
-  static bool EnumerationToString(const xiiRTTI* pEnumerationRtti, xiiInt64 iValue, xiiStringBuilder& out_sOutput,
-                                  xiiEnum<EnumConversionMode> conversionMode = EnumConversionMode::Default); // [tested]
+  static bool EnumerationToString(const xiiRTTI* pEnumerationRtti, xiiInt64 iValue, xiiStringBuilder& out_sOutput, xiiEnum<EnumConversionMode> conversionMode = EnumConversionMode::Default); // [tested]
 
   /// \brief Helper template to shorten the call for xiiEnums
   template <typename T>
@@ -111,15 +110,15 @@ public:
 
   /// \brief Converts an enum or bitfield in its string representation to its value.
   ///
-  /// The type of pEnumerationRtti will be automatically detected. The syntax of szValue must equal the MSVC debugger output.
-  static bool StringToEnumeration(const xiiRTTI* pEnumerationRtti, const char* szValue, xiiInt64& out_iValue); // [tested]
+  /// The type of pEnumerationRtti will be automatically detected. The syntax of sValue must equal the MSVC debugger output.
+  static bool StringToEnumeration(const xiiRTTI* pEnumerationRtti, xiiStringView sValue, xiiInt64& out_iValue); // [tested]
 
   /// \brief Helper template to shorten the call for xiiEnums
   template <typename T>
-  static bool StringToEnumeration(const char* szValue, xiiEnum<T>& out_value)
+  static bool StringToEnumeration(xiiStringView sValue, xiiEnum<T>& out_value)
   {
     xiiInt64   value;
-    const auto retval = StringToEnumeration(xiiGetStaticRTTI<T>(), szValue, value);
+    const auto retval = StringToEnumeration(xiiGetStaticRTTI<T>(), sValue, value);
     out_value         = static_cast<typename T::Enum>(value);
     return retval;
   }

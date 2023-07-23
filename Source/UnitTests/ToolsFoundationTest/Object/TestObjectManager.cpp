@@ -6,7 +6,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTestDocument, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 
-xiiTestDocumentObjectManager::xiiTestDocumentObjectManager() = default;
+xiiTestDocumentObjectManager::xiiTestDocumentObjectManager()  = default;
 xiiTestDocumentObjectManager::~xiiTestDocumentObjectManager() = default;
 
 xiiTestDocument::xiiTestDocument(const char* szDocumentPath, bool bUseIPCObjectMirror /*= false*/) :

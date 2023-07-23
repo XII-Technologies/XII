@@ -13,7 +13,7 @@
 /// \todo Refcount ? (Max?)
 /// \todo Select Resource -> send to App for preview
 
-void FormatSize(xiiStringBuilder& s, const char* szPrefix, xiiUInt64 uiSize);
+void FormatSize(xiiStringBuilder& s, xiiStringView sPrefix, xiiUInt64 uiSize);
 
 xiiQtResourceWidget* xiiQtResourceWidget::s_pWidget = nullptr;
 
@@ -367,7 +367,7 @@ void xiiQtResourceWidget::on_CheckShowDeleted_toggled(bool checked)
   UpdateAll();
 }
 
-static const char* StateToString(xiiResourceState state)
+static xiiStringView StateToString(xiiResourceState state)
 {
   switch (state)
   {
@@ -384,7 +384,7 @@ static const char* StateToString(xiiResourceState state)
   return "unknown";
 }
 
-static const char* PriorityToString(xiiResourcePriority priority)
+static xiiStringView PriorityToString(xiiResourcePriority priority)
 {
   switch (priority)
   {

@@ -111,9 +111,9 @@ struct xiiIsValueType<T, xiiVariant>
 //////////////////////////////////////////////////////////////////////////
 /// \brief Used to automatically assign any value to a xiiVariant using the assignment rules
 /// outlined in xiiAbstractFunctionProperty::Execute.
-template <class T,                                         ///< Only this parameter needs to be provided, the actual type of the value.
-          class C        = typename xiiCleanType<T>::Type, ///< Same as T but without the const&* fluff.
-          int VALUE_TYPE = xiiIsValueType<T>::value>       ///< Is 1 if T is a xiiTypeFlags::StandardType or a custom type
+template <class T,                                              ///< Only this parameter needs to be provided, the actual type of the value.
+          class C             = typename xiiCleanType<T>::Type, ///< Same as T but without the const&* fluff.
+          xiiInt32 VALUE_TYPE = xiiIsValueType<T>::value>       ///< Is 1 if T is a xiiTypeFlags::StandardType or a custom type
 struct xiiVariantAssignmentAdapter
 {
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
@@ -203,10 +203,10 @@ struct xiiVariantAssignmentAdapter<T, xiiVariantDictionary, 0>
 
 /// \brief Used to implicitly retrieve any value from a xiiVariant to be used as a function argument
 /// using the assignment rules outlined in xiiAbstractFunctionProperty::Execute.
-template <class T,                                         ///< Only this parameter needs to be provided, the actual type of the argument. Rest is used to force specializations.
-          class C        = typename xiiCleanType<T>::Type, ///< Same as T but without the const&* fluff.
-          int VALUE_TYPE = xiiIsValueType<T>::value,       ///< Is 1 if T is a xiiTypeFlags::StandardType or a custom type
-          int OUT_PARAM  = xiiIsOutParam<T>::value>         ///< Is 1 if T a non-const reference or pointer.
+template <class T,                                              ///< Only this parameter needs to be provided, the actual type of the argument. Rest is used to force specializations.
+          class C             = typename xiiCleanType<T>::Type, ///< Same as T but without the const&* fluff.
+          xiiInt32 VALUE_TYPE = xiiIsValueType<T>::value,       ///< Is 1 if T is a xiiTypeFlags::StandardType or a custom type
+          xiiInt32 OUT_PARAM  = xiiIsOutParam<T>::value>         ///< Is 1 if T a non-const reference or pointer.
 struct xiiVariantAdapter
 {
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
@@ -245,6 +245,7 @@ template <class T, class S>
 struct xiiVariantAdapter<T, xiiEnum<S>, 0, 1>
 {
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
+
   xiiVariantAdapter(xiiVariant& value) :
     m_value(value)
   {
@@ -268,6 +269,7 @@ template <class T, class S>
 struct xiiVariantAdapter<T, xiiBitflags<S>, 0, 0>
 {
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
+
   xiiVariantAdapter(xiiVariant& value) :
     m_value(value)
   {
@@ -286,6 +288,7 @@ template <class T, class S>
 struct xiiVariantAdapter<T, xiiBitflags<S>, 0, 1>
 {
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
+
   xiiVariantAdapter(xiiVariant& value) :
     m_value(value)
   {
@@ -309,6 +312,7 @@ template <class T, class C>
 struct xiiVariantAdapter<T, C, 1, 0>
 {
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
+
   xiiVariantAdapter(xiiVariant& value) :
     m_value(value)
   {
@@ -341,6 +345,7 @@ template <class T, class C>
 struct xiiVariantAdapter<T, C, 1, 1>
 {
   using RealType = typename xiiTypeTraits<T>::NonConstReferencePointerType;
+
   xiiVariantAdapter(xiiVariant& value) :
     m_value(value)
   {

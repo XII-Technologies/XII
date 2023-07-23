@@ -39,7 +39,7 @@ void xiiETWProvider::LogMessge(xiiLogMsgType::Enum eventType, xiiUInt8 uiIndenta
 {
   const xiiStringBuilder sTemp = sText;
 
-  TraceLoggingWrite(g_xiiETWLogProvider, "LogMessge", TraceLoggingValue((int)eventType, "Type"), TraceLoggingValue(uiIndentation, "Indentation"),
+  TraceLoggingWrite(g_xiiETWLogProvider, "LogMessge", TraceLoggingValue((xiiInt32)eventType, "Type"), TraceLoggingValue(uiIndentation, "Indentation"),
                     TraceLoggingValue(sTemp.GetData(), "Text"));
 }
 
@@ -49,6 +49,5 @@ xiiETWProvider& xiiETWProvider::GetInstance()
   return instance;
 }
 #endif
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_Win_ETWProvider_win);

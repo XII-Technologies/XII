@@ -176,17 +176,17 @@ xiiUInt32 xiiTestArrays::GetCountChar() const
 {
   return m_HybridChar.GetCount();
 }
-const char* xiiTestArrays::GetValueChar(xiiUInt32 uiIndex) const
+xiiStringView xiiTestArrays::GetValueChar(xiiUInt32 uiIndex) const
 {
   return m_HybridChar[uiIndex];
 }
-void xiiTestArrays::SetValueChar(xiiUInt32 uiIndex, const char* value)
+void xiiTestArrays::SetValueChar(xiiUInt32 uiIndex, xiiStringView sValue)
 {
-  m_HybridChar[uiIndex] = value;
+  m_HybridChar[uiIndex] = sValue;
 }
-void xiiTestArrays::InsertChar(xiiUInt32 uiIndex, const char* value)
+void xiiTestArrays::InsertChar(xiiUInt32 uiIndex, xiiStringView sValue)
 {
-  m_HybridChar.Insert(value, uiIndex);
+  m_HybridChar.Insert(sValue, uiIndex);
 }
 void xiiTestArrays::RemoveChar(xiiUInt32 uiIndex)
 {
@@ -373,15 +373,15 @@ void xiiTestSets::PseudoRemove2(const xiiString& value)
   m_Array.RemoveAndCopy(value);
 }
 
-void xiiTestSets::PseudoInsert2b(const char* value)
+void xiiTestSets::PseudoInsert2b(xiiStringView sValue)
 {
-  if (!m_Array.Contains(value))
-    m_Array.PushBack(value);
+  if (!m_Array.Contains(sValue))
+    m_Array.PushBack(sValue);
 }
 
-void xiiTestSets::PseudoRemove2b(const char* value)
+void xiiTestSets::PseudoRemove2b(xiiStringView sValue)
 {
-  m_Array.RemoveAndCopy(value);
+  m_Array.RemoveAndCopy(sValue);
 }
 
 const xiiHashSet<xiiVarianceTypeAngle>& xiiTestSets::GetCustomHashSet() const
@@ -461,14 +461,14 @@ const xiiMap<xiiString, xiiInt64>& xiiTestMaps::GetContainer() const
   return m_MapAccessor;
 }
 
-void xiiTestMaps::Insert(const char* szKey, xiiInt64 value)
+void xiiTestMaps::Insert(xiiStringView sKey, xiiInt64 value)
 {
-  m_MapAccessor.Insert(szKey, value);
+  m_MapAccessor.Insert(sKey, value);
 }
 
-void xiiTestMaps::Remove(const char* szKey)
+void xiiTestMaps::Remove(xiiStringView sKey)
 {
-  m_MapAccessor.Remove(szKey);
+  m_MapAccessor.Remove(sKey);
 }
 
 const xiiHashTable<xiiString, xiiString>& xiiTestMaps::GetContainer2() const
@@ -476,43 +476,43 @@ const xiiHashTable<xiiString, xiiString>& xiiTestMaps::GetContainer2() const
   return m_HashTableAccessor;
 }
 
-void xiiTestMaps::Insert2(const char* szKey, const xiiString& value)
+void xiiTestMaps::Insert2(xiiStringView sKey, const xiiString& value)
 {
-  m_HashTableAccessor.Insert(szKey, value);
+  m_HashTableAccessor.Insert(sKey, value);
 }
 
 
-void xiiTestMaps::Remove2(const char* szKey)
+void xiiTestMaps::Remove2(xiiStringView sKey)
 {
-  m_HashTableAccessor.Remove(szKey);
+  m_HashTableAccessor.Remove(sKey);
 }
 
-const xiiRangeView<const char*, xiiUInt32> xiiTestMaps::GetKeys3() const
+const xiiRangeView<xiiStringView, xiiUInt32> xiiTestMaps::GetKeys3() const
 {
-  return xiiRangeView<const char*, xiiUInt32>([this]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Accessor3.GetCount(); }, [this](xiiUInt32& ref_uiIt) { ++ref_uiIt; }, [this](const xiiUInt32& uiIt) -> const char* { return m_Accessor3[uiIt].m_Key; });
+  return xiiRangeView<xiiStringView, xiiUInt32>([this]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Accessor3.GetCount(); }, [this](xiiUInt32& ref_uiIt) { ++ref_uiIt; }, [this](const xiiUInt32& uiIt) -> const char* { return m_Accessor3[uiIt].m_Key; });
 }
 
-void xiiTestMaps::Insert3(const char* szKey, const xiiVariant& value)
+void xiiTestMaps::Insert3(xiiStringView sKey, const xiiVariant& value)
 {
   for (auto&& t : m_Accessor3)
   {
-    if (t.m_Key == szKey)
+    if (t.m_Key == sKey)
     {
       t.m_Value = value;
       return;
     }
   }
   auto&& t  = m_Accessor3.ExpandAndGetRef();
-  t.m_Key   = szKey;
+  t.m_Key   = sKey;
   t.m_Value = value;
 }
 
-void xiiTestMaps::Remove3(const char* szKey)
+void xiiTestMaps::Remove3(xiiStringView sKey)
 {
   for (xiiUInt32 i = 0; i < m_Accessor3.GetCount(); i++)
   {
     const Tuple& t = m_Accessor3[i];
-    if (t.m_Key == szKey)
+    if (t.m_Key == sKey)
     {
       m_Accessor3.RemoveAtAndSwap(i);
       break;
@@ -520,11 +520,11 @@ void xiiTestMaps::Remove3(const char* szKey)
   }
 }
 
-bool xiiTestMaps::GetValue3(const char* szKey, xiiVariant& out_value) const
+bool xiiTestMaps::GetValue3(xiiStringView sKey, xiiVariant& out_value) const
 {
   for (const auto& t : m_Accessor3)
   {
-    if (t.m_Key == szKey)
+    if (t.m_Key == sKey)
     {
       out_value = t.m_Value;
       return true;

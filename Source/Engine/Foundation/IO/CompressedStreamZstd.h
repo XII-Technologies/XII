@@ -62,7 +62,7 @@ class XII_FOUNDATION_DLL xiiCompressedStreamWriterZstd final : public xiiStreamW
 {
 public:
   /// \brief Specifies the compression level of the stream.
-  enum Compression
+  enum class Compression
   {
     Fastest = 1,
     Fast    = 5,
@@ -76,7 +76,7 @@ public:
   xiiCompressedStreamWriterZstd();
 
   /// \brief The constructor takes another stream writer to pass the output into, and a compression level.
-  xiiCompressedStreamWriterZstd(xiiStreamWriter* pOutputStream, Compression ratio = Compression::Default); // [tested]
+  xiiCompressedStreamWriterZstd(xiiStreamWriter* pOutputStream, xiiUInt32 uiMaxNumWorkerThreads, Compression ratio = Compression::Default, xiiUInt32 uiCompressionCacheSizeKB = 4); // [tested]
 
   /// \brief Calls FinishCompressedStream() internally.
   ~xiiCompressedStreamWriterZstd(); // [tested]
@@ -92,7 +92,7 @@ public:
   /// another stream. This can prevent internal allocations, if one wants to use compression on multiple streams consecutively. It also
   /// allows to create a compressor stream early, but decide at a later pointer whether or with which stream to use it, and it will only
   /// allocate internal structures once that final decision is made.
-  void SetOutputStream(xiiStreamWriter* pOutputStream, Compression ratio = Compression::Default, xiiUInt32 uiCompressionCacheSizeKB = 4); // [tested]
+  void SetOutputStream(xiiStreamWriter* pOutputStream, xiiUInt32 uiMaxNumWorkerThreads, Compression ratio = Compression::Default, xiiUInt32 uiCompressionCacheSizeKB = 4); // [tested]
 
   /// \brief Compresses \a uiBytesToWrite from \a pWriteBuffer.
   ///

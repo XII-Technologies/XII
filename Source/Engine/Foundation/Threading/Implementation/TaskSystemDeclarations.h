@@ -36,8 +36,10 @@ class xiiAllocatorBase;
 /// executed on the main thread should never assume a certain state of other systems.
 struct xiiTaskPriority
 {
+  using StorageType = xiiUInt8;
+
   // clang-format off
-  enum Enum : xiiUInt8
+  enum Enum : StorageType
   {
     EarlyThisFrame,           ///< Highest priority, guaranteed to get finished in this frame.
     ThisFrame,                ///< Medium priority, guaranteed to get finished in this frame.
@@ -75,7 +77,9 @@ struct xiiTaskPriority
 /// \brief Enum that describes what to do when waiting for or canceling tasks, that have already started execution.
 struct xiiOnTaskRunning
 {
-  enum Enum : xiiUInt8
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
   {
     WaitTillFinished,
     ReturnWithoutBlocking
@@ -85,7 +89,9 @@ struct xiiOnTaskRunning
 /// \internal Enum that lists the different task worker thread types.
 struct xiiWorkerThreadType
 {
-  enum Enum : xiiUInt8
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
   {
     Unknown,    ///< Default for all non-xiiTaskSystem-worker threads. Will only execute short tasks.
     MainThread, ///< May only be used by the main thread (automatically used by the xiiTaskSystem)
@@ -158,7 +164,7 @@ struct xiiTaskGroupDependency
 /// If the nesting specification is violated, the task system will assert.
 enum class xiiTaskNesting
 {
-  Maybe,
+  Maybe = 0,
   Never,
 };
 

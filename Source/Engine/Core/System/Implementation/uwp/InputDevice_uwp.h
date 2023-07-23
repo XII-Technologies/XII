@@ -28,8 +28,6 @@ private:
   HRESULT OnPointerCaptureLost(ABI::Windows::UI::Core::ICoreWindow* coreWindow, ABI::Windows::UI::Core::IPointerEventArgs* args);
   HRESULT OnMouseMoved(ABI::Windows::Devices::Input::IMouseDevice* mouseDevice, ABI::Windows::Devices::Input::IMouseEventArgs* args);
 
-
-
   HRESULT UpdateMouseButtonStates(ABI::Windows::UI::Input::IPointerPoint* pointerPoint);
 
   virtual void InitializeDevice() override;

@@ -8,10 +8,7 @@
 #include <Foundation/IO/OpenDdlWriter.h>
 #include <Foundation/System/Screen.h>
 
-#if XII_ENABLED(XII_SUPPORTS_SDL)
-#  include <Core/System/Implementation/SDL/InputDevice_SDL.inl>
-#  include <Core/System/Implementation/SDL/Window_SDL.inl>
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <Core/System/Implementation/Win/InputDevice_win32.inl>
 #  include <Core/System/Implementation/Win/Window_win32.inl>
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)

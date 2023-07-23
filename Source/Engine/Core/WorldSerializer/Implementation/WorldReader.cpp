@@ -10,12 +10,12 @@ xiiWorldReader::FindComponentTypeCallback xiiWorldReader::s_FindComponentTypeCal
 xiiWorldReader::xiiWorldReader()  = default;
 xiiWorldReader::~xiiWorldReader() = default;
 
-xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& inout_stream, bool bWarningOnUknownSkip)
+xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& ref_stream, bool bWarningOnUknownSkip)
 {
-  m_pStream = &inout_stream;
+  m_pStream = &ref_stream;
 
   m_uiVersion = 0;
-  inout_stream >> m_uiVersion;
+  ref_stream >> m_uiVersion;
 
   if (m_uiVersion < 8 || m_uiVersion > 10)
   {
@@ -25,22 +25,22 @@ xiiResult xiiWorldReader::ReadWorldDescription(xiiStreamReader& inout_stream, bo
 
   // destroy old context first
   m_pStringDedupReadContext = nullptr;
-  m_pStringDedupReadContext = XII_DEFAULT_NEW(xiiStringDeduplicationReadContext, inout_stream);
+  m_pStringDedupReadContext = XII_DEFAULT_NEW(xiiStringDeduplicationReadContext, ref_stream);
 
   if (m_uiVersion == 8)
   {
     // add tags from the stream
-    XII_SUCCEED_OR_RETURN(xiiTagRegistry::GetGlobalRegistry().Load(inout_stream));
+    XII_SUCCEED_OR_RETURN(xiiTagRegistry::GetGlobalRegistry().Load(ref_stream));
   }
 
   xiiUInt32 uiNumRootObjects = 0;
-  inout_stream >> uiNumRootObjects;
+  ref_stream >> uiNumRootObjects;
 
   xiiUInt32 uiNumChildObjects = 0;
-  inout_stream >> uiNumChildObjects;
+  ref_stream >> uiNumChildObjects;
 
   xiiUInt32 uiNumComponentTypes = 0;
-  inout_stream >> uiNumComponentTypes;
+  ref_stream >> uiNumComponentTypes;
 
   if (uiNumComponentTypes > xiiMath::MaxValue<xiiUInt16>())
   {
@@ -375,7 +375,7 @@ xiiWorldReader::InstantiationContext::StepResult xiiWorldReader::InstantiationCo
   {
     if (!m_Options.m_ReplaceNamedRootWithParent.IsEmpty())
     {
-      XII_ASSERT_DEV(!m_Options.m_hParent.IsInvalidated(), "Parent must be provided when m_ReplaceNamedRootWithParent is specified.");
+      XII_ASSERT_DEBUG(!m_Options.m_hParent.IsInvalidated(), "Parent must be provided when m_ReplaceNamedRootWithParent is specified.");
 
       if (m_WorldReader.m_RootObjectsToCreate.GetCount() == 1 && m_WorldReader.m_RootObjectsToCreate[0].m_Desc.m_sName == m_Options.m_ReplaceNamedRootWithParent)
       {

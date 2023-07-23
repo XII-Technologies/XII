@@ -12,7 +12,7 @@
 /// With the template argument 'DecimalBits' you can specify how many bits are used for the fractional part.
 /// I.e. a simple integer has zero DecimalBits. For a precision of about 1/1000 you need at least 10 DecimalBits
 /// (1 << 10) == 1024.
-/// Conversion between integer and fixed point is very fast (a shift), in contrast to float/int conversion.
+/// Conversion between integer and fixed point is very fast (a shift), in contrast to float/xiiInt32 conversion.
 ///
 /// If you are using xiiFixedPoint to get guaranteed deterministic behavior, you should minimize the usage of
 /// xiiFixedPoint <-> float conversions. You can set xiiFixedPoint variables from float constants, but you should
@@ -43,7 +43,7 @@ public:
   /// \brief Assignment from a double.
   const xiiFixedPoint<DecimalBits>& operator=(double fVal); // [tested]
 
-  /// \brief Implicit conversion to int (the fractional part is dropped).
+  /// \brief Implicit conversion to xiiInt32 (the fractional part is dropped).
   xiiInt32 ToInt() const; // [tested]
 
   /// \brief Implicit conversion to float.
@@ -113,9 +113,9 @@ xiiFixedPoint operator+ (xiiFixedPoint, xiiFixedPoint); // [tested]
 xiiFixedPoint operator- (xiiFixedPoint, xiiFixedPoint); // [tested]
 xiiFixedPoint operator* (xiiFixedPoint, xiiFixedPoint); // [tested]
 xiiFixedPoint operator/ (xiiFixedPoint, xiiFixedPoint); // [tested]
-xiiFixedPoint operator* (int, xiiFixedPoint); // [tested]
-xiiFixedPoint operator* (xiiFixedPoint, int); // [tested]
-xiiFixedPoint operator/ (xiiFixedPoint, int); // [tested]
+xiiFixedPoint operator* (xiiInt32, xiiFixedPoint); // [tested]
+xiiFixedPoint operator* (xiiFixedPoint, xiiInt32); // [tested]
+xiiFixedPoint operator/ (xiiFixedPoint, xiiInt32); // [tested]
 #endif
 
 #include <Foundation/Math/Implementation/FixedPoint_inl.h>

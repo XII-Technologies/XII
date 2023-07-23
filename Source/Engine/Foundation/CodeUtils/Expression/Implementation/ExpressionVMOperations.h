@@ -358,16 +358,16 @@ namespace
 
     if (input.GetDataType() == xiiProcessingStream::DataType::Int)
     {
-      LoadInput<xiiSimdVec4i, int, int>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
+      LoadInput<xiiSimdVec4i, xiiInt32, xiiInt32>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
     }
     else if (input.GetDataType() == xiiProcessingStream::DataType::Short)
     {
-      LoadInput<xiiSimdVec4i, int, xiiInt16>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
+      LoadInput<xiiSimdVec4i, xiiInt32, xiiInt16>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
     }
     else
     {
       XII_ASSERT_DEBUG(input.GetDataType() == xiiProcessingStream::DataType::Byte, "Unsupported input type '{}' for LoadI instruction", xiiProcessingStream::GetDataTypeName(input.GetDataType()));
-      LoadInput<xiiSimdVec4i, int, xiiInt8>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
+      LoadInput<xiiSimdVec4i, xiiInt32, xiiInt8>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), input, uiNumRemainderInstances);
     }
   }
 
@@ -408,16 +408,16 @@ namespace
 
     if (output.GetDataType() == xiiProcessingStream::DataType::Int)
     {
-      StoreOutput<xiiSimdVec4i, int, int>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
+      StoreOutput<xiiSimdVec4i, xiiInt32, xiiInt32>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
     }
     else if (output.GetDataType() == xiiProcessingStream::DataType::Short)
     {
-      StoreOutput<xiiSimdVec4i, int, xiiInt16>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
+      StoreOutput<xiiSimdVec4i, xiiInt32, xiiInt16>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
     }
     else
     {
       XII_ASSERT_DEBUG(output.GetDataType() == xiiProcessingStream::DataType::Byte, "Unsupported input type '{}' for StoreI instruction", xiiProcessingStream::GetDataTypeName(output.GetDataType()));
-      StoreOutput<xiiSimdVec4i, int, xiiInt8>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
+      StoreOutput<xiiSimdVec4i, xiiInt32, xiiInt8>(reinterpret_cast<xiiSimdVec4i*>(r), reinterpret_cast<xiiSimdVec4i*>(re), output, uiNumRemainderInstances);
     }
   }
 

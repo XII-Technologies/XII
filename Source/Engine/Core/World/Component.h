@@ -96,13 +96,13 @@ public:
 
 
   /// \brief Override this to save the current state of the component to the given stream.
-  virtual void SerializeComponent(xiiWorldWriter& inout_stream) const;
+  virtual void SerializeComponent(xiiWorldWriter& ref_stream) const;
 
   /// \brief Override this to load the current state of the component from the given stream.
   ///
   /// The active state will be automatically serialized. The 'initialized' state is not serialized, all components
   /// will be initialized after creation, even if they were already in an initialized state when they were serialized.
-  virtual void DeserializeComponent(xiiWorldReader& inout_stream);
+  virtual void DeserializeComponent(xiiWorldReader& ref_stream);
 
 
   /// \brief Ensures that the component is initialized. Must only be called from another component's Initialize callback.

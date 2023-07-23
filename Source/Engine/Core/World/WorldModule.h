@@ -162,14 +162,11 @@ private:
 };
 
 /// \brief Add this macro to the declaration of your module type.
-#define XII_DECLARE_WORLD_MODULE()                       \
-public:                                                  \
-  static XII_ALWAYS_INLINE xiiWorldModuleTypeId TypeId() \
-  {                                                      \
-    return s_TypeId;                                     \
-  }                                                      \
-                                                         \
-private:                                                 \
+#define XII_DECLARE_WORLD_MODULE()                                            \
+public:                                                                       \
+  static XII_ALWAYS_INLINE xiiWorldModuleTypeId TypeId() { return s_TypeId; } \
+                                                                              \
+private:                                                                      \
   static xiiWorldModuleTypeId s_TypeId;
 
 /// \brief Implements the given module type. Add this macro to a cpp outside of the type declaration.

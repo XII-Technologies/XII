@@ -53,10 +53,10 @@ XII_END_ABSTRACT_COMPONENT_TYPE;
 xiiEventMessageHandlerComponent::xiiEventMessageHandlerComponent()  = default;
 xiiEventMessageHandlerComponent::~xiiEventMessageHandlerComponent() = default;
 
-void xiiEventMessageHandlerComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
+void xiiEventMessageHandlerComponent::SerializeComponent(xiiWorldWriter& ref_stream) const
 {
-  SUPER::SerializeComponent(inout_stream);
-  auto& s = inout_stream.GetStream();
+  SUPER::SerializeComponent(ref_stream);
+  auto& s = ref_stream.GetStream();
 
   // version 2
   s << m_bIsGlobalEventHandler;
@@ -65,11 +65,11 @@ void xiiEventMessageHandlerComponent::SerializeComponent(xiiWorldWriter& inout_s
   s << m_bPassThroughUnhandledEvents;
 }
 
-void xiiEventMessageHandlerComponent::DeserializeComponent(xiiWorldReader& inout_stream)
+void xiiEventMessageHandlerComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
-  SUPER::DeserializeComponent(inout_stream);
-  const xiiUInt32 uiVersion = inout_stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto&           s         = inout_stream.GetStream();
+  SUPER::DeserializeComponent(ref_stream);
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   if (uiVersion >= 2)
   {
@@ -140,6 +140,7 @@ xiiArrayPtr<xiiComponentHandle> xiiEventMessageHandlerComponent::GetAllGlobalEve
   return xiiArrayPtr<xiiComponentHandle>();
 }
 
+
 void xiiEventMessageHandlerComponent::ClearGlobalEventHandlersForWorld(const xiiWorld* pWorld)
 {
   xiiUInt32 uiWorldIndex = pWorld->GetIndex();
@@ -149,7 +150,5 @@ void xiiEventMessageHandlerComponent::ClearGlobalEventHandlersForWorld(const xii
     s_GlobalEventHandlerPerWorld[uiWorldIndex]->Clear();
   }
 }
-
-
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_EventMessageHandlerComponent);

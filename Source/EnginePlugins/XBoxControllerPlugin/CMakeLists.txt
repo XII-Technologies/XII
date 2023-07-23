@@ -2,11 +2,6 @@ xii_cmake_init()
 
 xii_requires(XII_CMAKE_PLATFORM_WINDOWS)
 
-# When using SDL, SDL will handle XBox Controller Input so this plugin is not needed.
-if(XII_3RDPARTY_SDL_SUPPORT)
-  return()
-endif()
-
 # Get the name of this folder as the project name
 get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 

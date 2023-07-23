@@ -55,15 +55,15 @@ xiiToken* xiiPreprocessor::AddCustomToken(const xiiToken* pPrevious, const xiiSt
   return &pToken->m_Token;
 }
 
-xiiResult xiiPreprocessor::ProcessFile(const char* szFile, TokenStream& TokenOutput)
+xiiResult xiiPreprocessor::ProcessFile(xiiStringView sFile, TokenStream& TokenOutput)
 {
   const xiiTokenizer* pTokenizer = nullptr;
 
-  if (OpenFile(szFile, &pTokenizer).Failed())
+  if (OpenFile(sFile, &pTokenizer).Failed())
     return XII_FAILURE;
 
   FileData fd;
-  fd.m_sFileName.Assign(szFile);
+  fd.m_sFileName.Assign(sFile);
   fd.m_sVirtualFileName = fd.m_sFileName;
 
   m_CurrentFileStack.PushBack(fd);
@@ -117,7 +117,7 @@ xiiResult xiiPreprocessor::ProcessFile(const char* szFile, TokenStream& TokenOut
   return XII_SUCCESS;
 }
 
-xiiResult xiiPreprocessor::Process(const char* szMainFile, TokenStream& ref_tokenOutput)
+xiiResult xiiPreprocessor::Process(xiiStringView sMainFile, TokenStream& ref_tokenOutput)
 {
   XII_ASSERT_DEV(m_FileLocatorCallback.IsValid(), "No file locator callback has been set.");
 
@@ -155,9 +155,9 @@ xiiResult xiiPreprocessor::Process(const char* szMainFile, TokenStream& ref_toke
   m_IfdefActiveStack.PushBack(IfDefActivity::IsActive);
 
   xiiStringBuilder sFileToOpen;
-  if (m_FileLocatorCallback("", szMainFile, IncludeType::MainFile, sFileToOpen).Failed())
+  if (m_FileLocatorCallback("", sMainFile, IncludeType::MainFile, sFileToOpen).Failed())
   {
-    xiiLog::Error(m_pLog, "Could not locate file '{0}'", szMainFile);
+    xiiLog::Error(m_pLog, "Could not locate file '{0}'", sMainFile);
     return XII_FAILURE;
   }
 
@@ -181,12 +181,12 @@ xiiResult xiiPreprocessor::Process(const char* szMainFile, TokenStream& ref_toke
   return XII_SUCCESS;
 }
 
-xiiResult xiiPreprocessor::Process(const char* szMainFile, xiiStringBuilder& ref_sOutput, bool bKeepComments, bool bRemoveRedundantWhitespace, bool bInsertLine)
+xiiResult xiiPreprocessor::Process(xiiStringView sMainFile, xiiStringBuilder& ref_sOutput, bool bKeepComments, bool bRemoveRedundantWhitespace, bool bInsertLine)
 {
   ref_sOutput.Clear();
 
   TokenStream TokenOutput;
-  if (Process(szMainFile, TokenOutput).Failed())
+  if (Process(sMainFile, TokenOutput).Failed())
     return XII_FAILURE;
 
   // generate the final text output
@@ -369,7 +369,7 @@ xiiResult xiiPreprocessor::HandleIfdef(const TokenStream& Tokens, xiiUInt32 uiCu
     ProcessingEvent pe;
     pe.m_pToken = Tokens[uiIdentifier];
     pe.m_Type   = bIsIfdef ? ProcessingEvent::CheckIfdef : ProcessingEvent::CheckIfndef;
-    pe.m_szInfo = bDefined ? "defined" : "undefined";
+    pe.m_sInfo  = bDefined ? "defined" : "undefined";
     m_ProcessingEvents.Broadcast(pe);
   }
 
@@ -535,7 +535,5 @@ xiiResult xiiPreprocessor::HandleWarningDirective(const TokenStream& Tokens, xii
 
   return XII_SUCCESS;
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Implementation_Preprocessor);

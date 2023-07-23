@@ -10,7 +10,7 @@ static void TimeEventHandler(const xiiClock::EventData& e)
 
   xiiTelemetryMessage Msg;
   Msg.SetMessageID('TIME', 'UPDT');
-  Msg.GetWriter() << e.m_szClockName;
+  Msg.GetWriter() << e.m_sClockName;
   Msg.GetWriter() << xiiTime::Now();
   Msg.GetWriter() << e.m_RawTimeStep;
   Msg.GetWriter() << e.m_SmoothedTimeStep;

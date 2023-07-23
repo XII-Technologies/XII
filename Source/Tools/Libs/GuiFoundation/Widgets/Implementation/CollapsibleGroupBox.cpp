@@ -14,9 +14,9 @@ xiiQtCollapsibleGroupBox::xiiQtCollapsibleGroupBox(QWidget* pParent) :
   Header->installEventFilter(this);
 }
 
-void xiiQtCollapsibleGroupBox::SetTitle(const char* szTitle)
+void xiiQtCollapsibleGroupBox::SetTitle(xiiStringView sTitle)
 {
-  xiiQtGroupBoxBase::SetTitle(szTitle);
+  xiiQtGroupBoxBase::SetTitle(sTitle);
   update();
 }
 

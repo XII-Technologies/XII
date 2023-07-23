@@ -129,6 +129,78 @@ namespace
       out_coordinateSystem.m_vForwardDir = mTmp.GetRow(2);
     }
   };
+
+  class VelocityTestModule : public xiiWorldModule
+  {
+    XII_ADD_DYNAMIC_REFLECTION(VelocityTestModule, xiiWorldModule);
+    XII_DECLARE_WORLD_MODULE();
+
+  public:
+    VelocityTestModule(xiiWorld* pWorld) :
+      xiiWorldModule(pWorld)
+    {
+    }
+
+    virtual void Initialize() override
+    {
+      {
+        auto desc = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(VelocityTestModule::SetLocalPos, this);
+        RegisterUpdateFunction(desc);
+      }
+
+      {
+        auto desc = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(VelocityTestModule::ResetGlobalPos, this);
+        RegisterUpdateFunction(desc);
+      }
+    }
+
+    void SetLocalPos(const UpdateContext&)
+    {
+      if (m_bSetLocalPos == false)
+        return;
+
+      for (auto it = GetWorld()->GetObjects(); it.IsValid(); ++it)
+      {
+        xiiUInt32 i = it->GetHandle().GetInternalID().m_InstanceIndex;
+
+        xiiVec3 newPos = xiiVec3(i * 10.0f, 0, 0);
+        it->SetLocalPosition(newPos);
+
+        xiiQuat newRot;
+        newRot.SetFromAxisAndAngle(xiiVec3::UnitZAxis(), xiiAngle::Degree(i * 30.0f));
+        it->SetLocalRotation(newRot);
+
+        if (i > 5)
+        {
+          it->UpdateGlobalTransform();
+        }
+        if (i > 8)
+        {
+          it->UpdateGlobalTransformAndBounds();
+        }
+      }
+    }
+
+    void ResetGlobalPos(const UpdateContext&)
+    {
+      if (m_bResetGlobalPos == false)
+        return;
+
+      for (auto it = GetWorld()->GetObjects(); it.IsValid(); ++it)
+      {
+        it->SetGlobalPosition(xiiVec3::ZeroVector());
+      }
+    }
+
+    bool m_bSetLocalPos    = false;
+    bool m_bResetGlobalPos = false;
+  };
+
+  // clang-format off
+  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(VelocityTestModule, 1, xiiRTTINoAllocator)
+  XII_END_DYNAMIC_REFLECTED_TYPE;
+  XII_IMPLEMENT_WORLD_MODULE(VelocityTestModule);
+  // clang-format on
 } // namespace
 
 class xiiGameObjectTest
@@ -641,4 +713,66 @@ XII_CREATE_SIMPLE_TEST(World, World)
       XII_TEST_BOOL(pObjects[i]->IsActive() == (i < iTopDisabled));
     }
   }
+
+#if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Velocity")
+  {
+    constexpr xiiUInt32 numObjects = 10;
+
+    xiiWorldDesc worldDesc("Test");
+    xiiWorld     world(worldDesc);
+    XII_LOCK(world.GetWriteMarker());
+
+    auto pModule = world.GetOrCreateModule<VelocityTestModule>();
+
+    xiiGameObjectDesc objectDesc;
+    objectDesc.m_bDynamic = true;
+
+    xiiGameObjectHandle hObjects[numObjects];
+    xiiGameObject*      pObjects[numObjects];
+    for (xiiUInt32 i = 0; i < numObjects; ++i)
+    {
+      objectDesc.m_LocalPosition = xiiVec3(0, 0, 5);
+      objectDesc.m_LocalRotation.SetFromAxisAndAngle(xiiVec3::UnitZAxis(), xiiAngle::Degree(90));
+
+      hObjects[i] = world.CreateObject(objectDesc, pObjects[i]);
+    }
+
+    pModule->m_bSetLocalPos    = true;
+    pModule->m_bResetGlobalPos = false;
+
+    world.GetClock().SetFixedTimeStep(xiiTime::Milliseconds(100));
+    world.Update();
+
+    for (auto& pObject : pObjects)
+    {
+      xiiUInt32 i                      = pObject->GetHandle().GetInternalID().m_InstanceIndex;
+      xiiVec3   expectedLastPos        = xiiVec3(0, 0, 5);
+      xiiVec3   expectedPos            = xiiVec3(i * 10, 0, 0);
+      xiiVec3   expectedLinearVelocity = xiiVec3(i * 100, 0, -50);
+      XII_TEST_VEC3(pObject->GetLastGlobalTransform().m_vPosition, expectedLastPos, xiiMath::DefaultEpsilon<float>());
+      XII_TEST_VEC3(pObject->GetGlobalPosition(), expectedPos, xiiMath::DefaultEpsilon<float>());
+      XII_TEST_VEC3(pObject->GetLinearVelocity(), expectedLinearVelocity, xiiMath::DefaultEpsilon<float>());
+
+      xiiVec3 expectedAngularVelocity = xiiVec3(0, 0, (xiiAngle::Degree(i * 30) - xiiAngle::Degree(90)).GetRadian() * 10);
+      xiiVec3 angularVelocity         = pObject->GetAngularVelocity();
+      XII_TEST_VEC3(angularVelocity, expectedAngularVelocity, xiiMath::DefaultEpsilon<float>());
+    }
+
+    pModule->m_bSetLocalPos    = false;
+    pModule->m_bResetGlobalPos = true;
+
+    world.Update();
+
+    for (auto& pObject : pObjects)
+    {
+      xiiUInt32 i                      = pObject->GetHandle().GetInternalID().m_InstanceIndex;
+      xiiVec3   expectedLastPos        = xiiVec3(i * 10, 0, 0);
+      xiiVec3   expectedLinearVelocity = xiiVec3(i * -100.0f, 0, 0);
+      XII_TEST_VEC3(pObject->GetLastGlobalTransform().m_vPosition, expectedLastPos, xiiMath::DefaultEpsilon<float>());
+      XII_TEST_VEC3(pObject->GetGlobalPosition(), xiiVec3::ZeroVector(), xiiMath::DefaultEpsilon<float>());
+      XII_TEST_VEC3(pObject->GetLinearVelocity(), expectedLinearVelocity, xiiMath::DefaultEpsilon<float>());
+    }
+  }
+#endif
 }

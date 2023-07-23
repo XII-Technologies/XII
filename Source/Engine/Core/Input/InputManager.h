@@ -250,7 +250,7 @@ public:
       InputActionChanged, ///< An input action has been registered or its state changed.
     };
 
-    EventType     m_EventType = InputActionChanged;
+    EventType     m_EventType = InputSlotChanged;
     xiiStringView m_sInputSlot;
     xiiStringView m_sInputSet;
     xiiStringView m_sInputAction;

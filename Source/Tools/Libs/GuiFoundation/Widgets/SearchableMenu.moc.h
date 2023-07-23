@@ -26,7 +26,7 @@ public:
   xiiQtSearchableMenu(QObject* pParent);
 
   /// \brief Use slashes to separate sub-items.
-  void AddItem(const char* szName, const QVariant& variant, QIcon icon = QIcon());
+  void AddItem(xiiStringView sName, const QVariant& variant, QIcon icon = QIcon());
 
   /// \brief Returns the currently entered search text.
   QString GetSearchText() const;
@@ -52,7 +52,7 @@ protected:
   virtual bool eventFilter(QObject*, QEvent*) override;
 
 private:
-  QStandardItem* CreateCategoryMenu(const char* szCategory);
+  QStandardItem* CreateCategoryMenu(xiiStringView sCategory);
   bool           SelectFirstLeaf(QModelIndex parent);
 
   QWidget*                          m_pGroup;

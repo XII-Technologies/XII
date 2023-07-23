@@ -710,7 +710,6 @@ xiiFileStatus xiiFileSystemModel::HandleSingleFile(const xiiString& sAbsolutePat
   if (xiiOSFile::GetFileStats(sAbsolutePath, Stats).Failed())
   {
     xiiFileStatus         fileStatus;
-    xiiFileStatus::Status folderStatus   = xiiFileStatus::Status::Unknown;
     bool                  bFileExisted   = false;
     bool                  bFolderExisted = false;
     {
@@ -724,7 +723,6 @@ xiiFileStatus xiiFileSystemModel::HandleSingleFile(const xiiString& sAbsolutePat
       if (auto it = m_ReferencedFolders.Find(sAbsolutePath); it.IsValid())
       {
         bFolderExisted = true;
-        folderStatus   = it.Value();
         m_ReferencedFolders.Remove(it);
       }
     }

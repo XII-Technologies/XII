@@ -9,11 +9,11 @@ class xiiDelegateTask final : public xiiTask
 public:
   using FunctionType = xiiDelegate<void(const T&)>;
 
-  xiiDelegateTask(const char* szTaskName, FunctionType func, const T& param)
+  xiiDelegateTask(xiiStringView sTaskName, xiiTaskNesting taskNesting, FunctionType func, const T& param)
   {
     m_Func  = func;
     m_param = param;
-    ConfigureTask(szTaskName, xiiTaskNesting::Never);
+    ConfigureTask(sTaskName, taskNesting);
   }
 
 private:
@@ -29,10 +29,10 @@ class xiiDelegateTask<void> final : public xiiTask
 public:
   using FunctionType = xiiDelegate<void()>;
 
-  xiiDelegateTask(const char* szTaskName, FunctionType func)
+  xiiDelegateTask(xiiStringView sTaskName, xiiTaskNesting taskNesting, FunctionType func)
   {
     m_Func = func;
-    ConfigureTask(szTaskName, xiiTaskNesting::Never);
+    ConfigureTask(sTaskName, taskNesting);
   }
 
 private:

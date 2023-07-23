@@ -43,6 +43,13 @@ namespace
   }
 
   template <>
+  void GetDoubleFunc::operator()<xiiAngled>()
+  {
+    m_fValue = m_Value.Get<xiiAngled>().GetDegree();
+    m_bValid = true;
+  }
+
+  template <>
   void GetDoubleFunc::operator()<xiiTime>()
   {
     m_fValue = m_Value.Get<xiiTime>().GetSeconds();
@@ -80,6 +87,13 @@ namespace
   void GetVariantFunc::operator()<xiiAngle>()
   {
     m_Value  = xiiAngle::Degree((float)m_fValue);
+    m_bValid = true;
+  }
+
+  template <>
+  void GetVariantFunc::operator()<xiiAngled>()
+  {
+    m_Value  = xiiAngled::Degree(m_fValue);
     m_bValid = true;
   }
 
@@ -195,8 +209,7 @@ void xiiToolsReflectionUtils::GetReflectedTypeDescriptorFromRtti(const xiiRTTI* 
       case xiiPropertyCategory::Map:
       {
         const xiiRTTI* pPropRtti = prop->GetSpecificType();
-        out_desc.m_Properties.PushBack(xiiReflectedPropertyDescriptor(
-          prop->GetCategory(), prop->GetPropertyName(), pPropRtti->GetTypeName(), prop->GetFlags(), prop->GetAttributes()));
+        out_desc.m_Properties.PushBack(xiiReflectedPropertyDescriptor(prop->GetCategory(), prop->GetPropertyName(), pPropRtti->GetTypeName(), prop->GetFlags(), prop->GetAttributes()));
       }
       break;
 
@@ -215,8 +228,7 @@ void xiiToolsReflectionUtils::GetReflectedTypeDescriptorFromRtti(const xiiRTTI* 
   for (xiiUInt32 i = 0; i < uiFuncCount; ++i)
   {
     xiiAbstractFunctionProperty* prop = rttiFunc[i];
-    out_desc.m_Functions.PushBack(
-      xiiReflectedFunctionDescriptor(prop->GetPropertyName(), prop->GetFlags(), prop->GetFunctionType(), prop->GetAttributes()));
+    out_desc.m_Functions.PushBack(xiiReflectedFunctionDescriptor(prop->GetPropertyName(), prop->GetFlags(), prop->GetFunctionType(), prop->GetAttributes()));
     xiiReflectedFunctionDescriptor& desc = out_desc.m_Functions.PeekBack();
     desc.m_ReturnValue                   = xiiFunctionArgumentDescriptor(prop->GetReturnType() ? prop->GetReturnType()->GetTypeName() : "", prop->GetReturnFlags());
     const xiiUInt32 uiArguments          = prop->GetArgumentCount();

@@ -293,8 +293,8 @@ bool xiiCommandLineOptionBool::GetOptionValue(LogMode logMode, const xiiCommandL
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-xiiCommandLineOptionInt::xiiCommandLineOptionInt(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, int iDefaultValue, int iMinValue /*= xiiMath::MinValue<int>()*/, int iMaxValue /*= xiiMath::MaxValue<int>()*/, bool bCaseSensitive /*= false*/) :
-  xiiCommandLineOptionDoc(sSortingGroup, sArgument, "<int>", sLongDesc, "0", bCaseSensitive)
+xiiCommandLineOptionInt::xiiCommandLineOptionInt(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, xiiInt32 iDefaultValue, xiiInt32 iMinValue /*= xiiMath::MinValue<xiiInt32>()*/, xiiInt32 iMaxValue /*= xiiMath::MaxValue<xiiInt32>()*/, bool bCaseSensitive /*= false*/) :
+  xiiCommandLineOptionDoc(sSortingGroup, sArgument, "<xiiInt32>", sLongDesc, "0", bCaseSensitive)
 {
   m_iDefaultValue = iDefaultValue;
   m_iMinValue     = iMinValue;
@@ -311,7 +311,7 @@ void xiiCommandLineOptionInt::GetParamDefaultValueDesc(xiiStringBuilder& ref_sOu
 
 void xiiCommandLineOptionInt::GetParamShortDesc(xiiStringBuilder& ref_sOut) const
 {
-  if (m_iMinValue == xiiMath::MinValue<int>() && m_iMaxValue == xiiMath::MaxValue<int>())
+  if (m_iMinValue == xiiMath::MinValue<xiiInt32>() && m_iMaxValue == xiiMath::MaxValue<xiiInt32>())
   {
     ref_sOut = "<int>";
   }
@@ -321,9 +321,9 @@ void xiiCommandLineOptionInt::GetParamShortDesc(xiiStringBuilder& ref_sOut) cons
   }
 }
 
-int xiiCommandLineOptionInt::GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/) const
+xiiInt32 xiiCommandLineOptionInt::GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/) const
 {
-  int result = m_iDefaultValue;
+  xiiInt32 result = m_iDefaultValue;
 
   xiiStringBuilder sOption, tmp;
   const bool       bSpecified = IsOptionSpecified(&sOption, pUtils);
@@ -500,7 +500,7 @@ xiiInt32 xiiCommandLineOptionEnum::GetOptionValue(LogMode logMode, const xiiComm
       if (e.m_Key.IsEqual_NoCase(selected))
       {
         result = e.m_iValue;
-        goto found;
+        goto Found;
       }
     }
 
@@ -510,7 +510,7 @@ xiiInt32 xiiCommandLineOptionEnum::GetOptionValue(LogMode logMode, const xiiComm
     }
   }
 
-found:
+Found:
 
   if (ShouldLog(logMode, bSpecified))
   {

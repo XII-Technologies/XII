@@ -136,7 +136,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
         {
           // Revert object member property
           xiiDefaultObjectState defaultState(m_pObjectAccessor, m_Items);
-          xiiStatus res = defaultState.RevertProperty(m_pProp);
+          xiiStatus             res = defaultState.RevertProperty(m_pProp);
           if (res.Failed())
           {
             res.LogFailure();
@@ -169,19 +169,19 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
 
     connect(pCopy, &QAction::triggered, this, [this, szMimeType, commonValue]() {
       xiiPropertyClipboard content;
-      content.m_Type = m_pProp->GetSpecificType()->GetTypeName();
+      content.m_Type  = m_pProp->GetSpecificType()->GetTypeName();
       content.m_Value = commonValue;
 
       // Serialize
       xiiContiguousMemoryStreamStorage streamStorage;
-      xiiMemoryStreamWriter memoryWriter(&streamStorage);
+      xiiMemoryStreamWriter            memoryWriter(&streamStorage);
       xiiReflectionSerializer::WriteObjectToDDL(memoryWriter, xiiGetStaticRTTI<xiiPropertyClipboard>(), &content);
       memoryWriter.WriteBytes("\0", 1).IgnoreResult(); // null terminate
 
       // Write to clipboard
       QClipboard* clipboard = QApplication::clipboard();
-      QMimeData* mimeData = new QMimeData();
-      QByteArray encodedData((const char*)streamStorage.GetData(), streamStorage.GetStorageSize32());
+      QMimeData*  mimeData  = new QMimeData();
+      QByteArray  encodedData((const char*)streamStorage.GetData(), streamStorage.GetStorageSize32());
 
       mimeData->setData(szMimeType, encodedData);
       mimeData->setText(QString::fromUtf8((const char*)streamStorage.GetData()));
@@ -214,7 +214,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
     else
     {
       QByteArray               ba = mimedata->data(szMimeType);
-      xiiRawMemoryStreamReader memoryReader(ba.data(), ba.count());
+      xiiRawMemoryStreamReader memoryReader(ba.data(), ba.size());
 
       xiiPropertyClipboard content;
       xiiReflectionSerializer::ReadObjectPropertiesFromDDL(memoryReader, *xiiGetStaticRTTI<xiiPropertyClipboard>(), &content);
@@ -288,9 +288,10 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
   // copy internal name
   {
     auto lambda = [this]() {
-      QClipboard* clipboard = QApplication::clipboard();
-      QMimeData*  mimeData  = new QMimeData();
-      mimeData->setText(m_pProp->GetPropertyName());
+      xiiStringBuilder tmp;
+      QClipboard*      clipboard = QApplication::clipboard();
+      QMimeData*       mimeData  = new QMimeData();
+      mimeData->setText(m_pProp->GetPropertyName().GetData(tmp));
       clipboard->setMimeData(mimeData);
 
       xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(
@@ -300,7 +301,8 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
     QAction* pAction = m.addAction("Copy Internal Property Name:");
     connect(pAction, &QAction::triggered, this, lambda);
 
-    QAction* pAction2 = m.addAction(m_pProp->GetPropertyName());
+    xiiStringBuilder tmp;
+    QAction*         pAction2 = m.addAction(m_pProp->GetPropertyName().GetData(tmp));
     connect(pAction2, &QAction::triggered, this, lambda);
   }
 }
@@ -452,13 +454,14 @@ void xiiQtPropertyWidget::PropertyChangedHandler(const xiiPropertyEvent& ed)
   if (m_bUndead)
     return;
 
+  xiiStringBuilder tmp;
 
   switch (ed.m_Type)
   {
     case xiiPropertyEvent::Type::SingleValueChanged:
     {
       xiiStringBuilder sTemp;
-      sTemp.Format("Change Property '{0}'", xiiTranslate(ed.m_pProperty->GetPropertyName()));
+      sTemp.Format("Change Property '{0}'", xiiTranslate(ed.m_pProperty->GetPropertyName().GetData(tmp)));
       m_pObjectAccessor->StartTransaction(sTemp);
 
       xiiStatus res;
@@ -481,7 +484,7 @@ void xiiQtPropertyWidget::PropertyChangedHandler(const xiiPropertyEvent& ed)
     case xiiPropertyEvent::Type::BeginTemporary:
     {
       xiiStringBuilder sTemp;
-      sTemp.Format("Change Property '{0}'", xiiTranslate(ed.m_pProperty->GetPropertyName()));
+      sTemp.Format("Change Property '{0}'", xiiTranslate(ed.m_pProperty->GetPropertyName().GetData(tmp)));
       m_pObjectAccessor->BeginTemporaryCommands(sTemp);
     }
     break;
@@ -517,7 +520,7 @@ bool xiiQtPropertyWidget::eventFilter(QObject* pWatched, QEvent* pEvent)
 
 /// *** xiiQtUnsupportedPropertyWidget ***
 
-xiiQtUnsupportedPropertyWidget::xiiQtUnsupportedPropertyWidget(const char* szMessage) :
+xiiQtUnsupportedPropertyWidget::xiiQtUnsupportedPropertyWidget(xiiStringView sMessage) :
   xiiQtPropertyWidget()
 {
   m_pLayout = new QHBoxLayout(this);
@@ -527,14 +530,15 @@ xiiQtUnsupportedPropertyWidget::xiiQtUnsupportedPropertyWidget(const char* szMes
   m_pWidget = new QLabel(this);
   m_pWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
   m_pLayout->addWidget(m_pWidget);
-  m_sMessage = szMessage;
+  m_sMessage = sMessage;
 }
 
 void xiiQtUnsupportedPropertyWidget::OnInit()
 {
+  xiiStringBuilder        tmp;
   xiiQtScopedBlockSignals bs(m_pWidget);
 
-  QString sMessage = QStringLiteral("Unsupported Type: ") % QString::fromUtf8(m_pProp->GetSpecificType()->GetTypeName());
+  QString sMessage = QStringLiteral("Unsupported Type: ") % QString::fromUtf8(m_pProp->GetSpecificType()->GetTypeName().GetData(tmp));
   if (!m_sMessage.IsEmpty())
     sMessage += QStringLiteral(" (") % QString::fromUtf8(m_sMessage, m_sMessage.GetElementCount()) % QStringLiteral(")");
   m_pWidget->setText(sMessage);
@@ -690,10 +694,11 @@ void xiiQtPropertyPointerWidget::DoPrepareToDie()
 
 void xiiQtPropertyPointerWidget::UpdateTitle(const xiiRTTI* pType /*= nullptr*/)
 {
-  xiiStringBuilder sb = xiiTranslate(m_pProp->GetPropertyName());
+  xiiStringBuilder tmp;
+  xiiStringBuilder sb = xiiTranslate(m_pProp->GetPropertyName().GetData(tmp));
   if (pType != nullptr)
   {
-    sb.Append(": ", xiiTranslate(pType->GetTypeName()));
+    sb.Append(": ", xiiTranslate(pType->GetTypeName().GetData(tmp)));
   }
   m_pGroup->SetTitle(sb);
 }
@@ -888,7 +893,8 @@ void xiiQtPropertyTypeWidget::OnInit()
 {
   if (m_pGroup)
   {
-    m_pGroup->SetTitle(xiiTranslate(m_pProp->GetPropertyName()));
+    xiiStringBuilder tmp;
+    m_pGroup->SetTitle(xiiTranslate(m_pProp->GetPropertyName().GetData(tmp)));
     m_pGrid->SetCollapseState(m_pGroup);
     connect(m_pGroup, &xiiQtGroupBoxBase::CollapseStateChanged, m_pGrid, &xiiQtPropertyGridWidget::OnCollapseStateChanged);
   }
@@ -1157,9 +1163,9 @@ void xiiQtPropertyContainerWidget::OnElementButtonClicked()
 
 void xiiQtPropertyContainerWidget::OnDragStarted(QMimeData& ref_mimeData)
 {
-  xiiQtGroupBoxBase* pGroup = qobject_cast<xiiQtGroupBoxBase*>(sender());
-  Element*           pDragElement =
-    std::find_if(begin(m_Elements), end(m_Elements), [pGroup](const Element& elem) -> bool { return elem.m_pSubGroup == pGroup; });
+  xiiQtGroupBoxBase* pGroup       = qobject_cast<xiiQtGroupBoxBase*>(sender());
+  Element*           pDragElement = std::find_if(begin(m_Elements), end(m_Elements), [pGroup](const Element& elem) -> bool { return elem.m_pSubGroup == pGroup; });
+
   if (pDragElement)
   {
     ref_mimeData.setData("application/x-groupBoxDragProperty", QByteArray());
@@ -1598,6 +1604,8 @@ void xiiQtPropertyTypeContainerWidget::UpdateElement(xiiUInt32 index)
   }
 
   {
+    xiiStringBuilder tmp;
+
     // To get the correct name we actually need to resolve the selection to the actual objects
     // they are pointing to.
     xiiHybridArray<xiiPropertySelection, 8> ResolvedObjects;
@@ -1614,7 +1622,7 @@ void xiiQtPropertyTypeContainerWidget::UpdateElement(xiiUInt32 index)
     // Label
     {
       xiiStringBuilder sTitle;
-      sTitle.Format("[{0}] - {1}", m_Keys[index].ConvertTo<xiiString>(), xiiTranslate(pCommonType->GetTypeName()));
+      sTitle.Format("[{0}] - {1}", m_Keys[index].ConvertTo<xiiString>(), xiiTranslate(pCommonType->GetTypeName().GetData(tmp)));
 
       if (auto pInDev = pCommonType->GetAttributeByType<xiiInDevelopmentAttribute>())
       {
@@ -1633,7 +1641,7 @@ void xiiQtPropertyTypeContainerWidget::UpdateElement(xiiUInt32 index)
 
     // help URL
     {
-      QString url = xiiTranslateHelpURL(pCommonType->GetTypeName());
+      QString url = xiiTranslateHelpURL(pCommonType->GetTypeName().GetData(tmp));
 
       if (!url.isEmpty())
       {
@@ -1668,8 +1676,7 @@ void xiiQtPropertyTypeContainerWidget::StructureEventHandler(const xiiDocumentOb
       if (!e.m_sParentProperty.IsEqual(m_pProp->GetPropertyName()))
         return;
 
-      if (std::none_of(cbegin(m_Items), cend(m_Items),
-                       [&](const xiiPropertySelection& sel) { return e.m_pNewParent == sel.m_pObject || e.m_pPreviousParent == sel.m_pObject; }))
+      if (std::none_of(cbegin(m_Items), cend(m_Items), [&](const xiiPropertySelection& sel) { return e.m_pNewParent == sel.m_pObject || e.m_pPreviousParent == sel.m_pObject; }))
         return;
 
       m_bNeedsUpdate = true;

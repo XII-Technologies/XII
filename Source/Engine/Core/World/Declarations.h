@@ -16,13 +16,7 @@
 
 class xiiWorld;
 class xiiSpatialSystem;
-
-template <typename Type>
-class xiiCoordinateSystemProviderTemplate;
-
-using xiiCoordinateSystemProvider       = xiiCoordinateSystemProviderTemplate<xiiReal>;
-using xiiCoordinateSystemProviderDouble = xiiCoordinateSystemProviderTemplate<double>;
-using xiiCoordinateSystemProviderFloat  = xiiCoordinateSystemProviderTemplate<float>;
+class xiiCoordinateSystemProvider;
 
 namespace xiiInternal
 {
@@ -96,8 +90,8 @@ struct xiiHashHelper<xiiGameObjectHandle>
 };
 
 /// \brief Currently not implemented as it is not needed for game object handles.
-XII_CORE_DLL void operator<<(xiiStreamWriter& inout_stream, const xiiGameObjectHandle& hValue);
-XII_CORE_DLL void operator>>(xiiStreamReader& inout_stream, xiiGameObjectHandle& ref_hValue);
+XII_CORE_DLL void operator<<(xiiStreamWriter& ref_stream, const xiiGameObjectHandle& hValue);
+XII_CORE_DLL void operator>>(xiiStreamReader& ref_stream, xiiGameObjectHandle& ref_hValue);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiGameObjectHandle);
 XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiGameObjectHandle);
@@ -164,8 +158,8 @@ struct xiiHashHelper<xiiComponentHandle>
 };
 
 /// \brief Currently not implemented as it is not needed for component handles.
-XII_CORE_DLL void operator<<(xiiStreamWriter& inout_stream, const xiiComponentHandle& hValue);
-XII_CORE_DLL void operator>>(xiiStreamReader& inout_stream, xiiComponentHandle& ref_hValue);
+XII_CORE_DLL void operator<<(xiiStreamWriter& ref_stream, const xiiComponentHandle& hValue);
+XII_CORE_DLL void operator>>(xiiStreamReader& ref_stream, xiiComponentHandle& ref_hValue);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiComponentHandle);
 XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiComponentHandle);
@@ -178,22 +172,23 @@ struct xiiObjectFlags
   enum Enum
   {
     None         = 0,
-    Dynamic      = XII_BIT(0),             ///< Usually detected automatically. A dynamic object will not cache render data across frames.
-    ForceDynamic = XII_BIT(1),             ///< Set by the user to enforce the 'Dynamic' mode. Necessary when user code (or scripts) should change
-                                           ///< objects, and the automatic detection cannot know that.
-    ActiveFlag              = XII_BIT(2),  ///< The object/component has the 'active flag' set
-    ActiveState             = XII_BIT(3),  ///< The object/component and all its parents have the active flag
-    Initialized             = XII_BIT(4),  ///< The object/component has been initialized
-    Initializing            = XII_BIT(5),  ///< The object/component is currently initializing. Used to prevent recursions during initialization.
-    SimulationStarted       = XII_BIT(6),  ///< OnSimulationStarted() has been called on the component
-    SimulationStarting      = XII_BIT(7),  ///< Used to prevent recursion during OnSimulationStarted()
-    UnhandledMessageHandler = XII_BIT(8),  ///< For components, when a message is not handled, a virtual function is called
-    CreatedByPrefab         = XII_BIT(13), ///< Such flagged objects and components are ignored during scene export (see xiiWorldWriter) and will be removed when a prefab needs to be re-instantiated.
+    Dynamic      = XII_BIT(0),            ///< Usually detected automatically. A dynamic object will not cache render data across frames.
+    ForceDynamic = XII_BIT(1),            ///< Set by the user to enforce the 'Dynamic' mode. Necessary when user code (or scripts) should change
+                                          ///< objects, and the automatic detection cannot know that.
+    ActiveFlag              = XII_BIT(2), ///< The object/component has the 'active flag' set
+    ActiveState             = XII_BIT(3), ///< The object/component and all its parents have the active flag
+    Initialized             = XII_BIT(4), ///< The object/component has been initialized
+    Initializing            = XII_BIT(5), ///< The object/component is currently initializing. Used to prevent recursions during initialization.
+    SimulationStarted       = XII_BIT(6), ///< OnSimulationStarted() has been called on the component
+    SimulationStarting      = XII_BIT(7), ///< Used to prevent recursion during OnSimulationStarted()
+    UnhandledMessageHandler = XII_BIT(8), ///< For components, when a message is not handled, a virtual function is called
 
     ChildChangesNotifications           = XII_BIT(9),  ///< The object should send a notification message when children are added or removed.
     ComponentChangesNotifications       = XII_BIT(10), ///< The object should send a notification message when components are added or removed.
     StaticTransformChangesNotifications = XII_BIT(11), ///< The object should send a notification message if it is static and its transform changes.
     ParentChangesNotifications          = XII_BIT(12), ///< The object should send a notification message when the parent is changes.
+
+    CreatedByPrefab = XII_BIT(13), ///< Such flagged objects and components are ignored during scene export (see xiiWorldWriter) and will be removed when a prefab needs to be re-instantiated.
 
     UserFlag0 = XII_BIT(24),
     UserFlag1 = XII_BIT(25),
@@ -273,7 +268,9 @@ struct xiiComponentMode
 /// \brief Specifies at which phase the queued message should be processed.
 struct xiiObjectMsgQueueType
 {
-  enum Enum
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
   {
     PostAsync,        ///< Process the message in the PostAsync phase.
     PostTransform,    ///< Process the message in the PostTransform phase.

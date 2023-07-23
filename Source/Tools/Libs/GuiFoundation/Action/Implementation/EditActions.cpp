@@ -45,14 +45,14 @@ void xiiEditActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hDelete);
 }
 
-void xiiEditActions::MapActions(const char* szMapping, const char* szPath, bool bDeleteAction, bool bAdvancedPasteActions)
+void xiiEditActions::MapActions(xiiStringView sMapping, xiiStringView sPath, bool bDeleteAction, bool bAdvancedPasteActions)
 {
-  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(szMapping);
-  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the edit actions failed!", szMapping);
+  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
+  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the edit actions failed!", sMapping);
 
-  xiiStringBuilder sSubPath(szPath, "/EditCategory");
+  xiiStringBuilder sSubPath(sPath, "/EditCategory");
 
-  pMap->MapAction(s_hEditCategory, szPath, 3.5f);
+  pMap->MapAction(s_hEditCategory, sPath, 3.5f);
 
   pMap->MapAction(s_hCopy, sSubPath, 1.0f);
   pMap->MapAction(s_hPaste, sSubPath, 2.0f);
@@ -68,14 +68,14 @@ void xiiEditActions::MapActions(const char* szMapping, const char* szPath, bool 
 }
 
 
-void xiiEditActions::MapContextMenuActions(const char* szMapping, const char* szPath)
+void xiiEditActions::MapContextMenuActions(xiiStringView sMapping, xiiStringView sPath)
 {
-  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(szMapping);
-  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the edit actions failed!", szMapping);
+  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
+  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the edit actions failed!", sMapping);
 
-  xiiStringBuilder sSubPath(szPath, "/EditCategory");
+  xiiStringBuilder sSubPath(sPath, "/EditCategory");
 
-  pMap->MapAction(s_hEditCategory, szPath, 10.0f);
+  pMap->MapAction(s_hEditCategory, sPath, 10.0f);
 
   pMap->MapAction(s_hCopy, sSubPath, 1.0f);
   pMap->MapAction(s_hPasteAsChild, sSubPath, 2.0f);
@@ -83,14 +83,14 @@ void xiiEditActions::MapContextMenuActions(const char* szMapping, const char* sz
 }
 
 
-void xiiEditActions::MapViewContextMenuActions(const char* szMapping, const char* szPath)
+void xiiEditActions::MapViewContextMenuActions(xiiStringView sMapping, xiiStringView sPath)
 {
-  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(szMapping);
-  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the edit actions failed!", szMapping);
+  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
+  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the edit actions failed!", sMapping);
 
-  xiiStringBuilder sSubPath(szPath, "/EditCategory");
+  xiiStringBuilder sSubPath(sPath, "/EditCategory");
 
-  pMap->MapAction(s_hEditCategory, szPath, 10.0f);
+  pMap->MapAction(s_hEditCategory, sPath, 10.0f);
 
   pMap->MapAction(s_hCopy, sSubPath, 1.0f);
   pMap->MapAction(s_hPasteAsChild, sSubPath, 2.0f);
@@ -102,8 +102,8 @@ void xiiEditActions::MapViewContextMenuActions(const char* szMapping, const char
 // xiiEditAction
 ////////////////////////////////////////////////////////////////////////
 
-xiiEditAction::xiiEditAction(const xiiActionContext& context, const char* szName, ButtonType button) :
-  xiiButtonAction(context, szName, false, "")
+xiiEditAction::xiiEditAction(const xiiActionContext& context, xiiStringView sName, ButtonType button) :
+  xiiButtonAction(context, sName, false, "")
 {
   m_ButtonType = button;
 

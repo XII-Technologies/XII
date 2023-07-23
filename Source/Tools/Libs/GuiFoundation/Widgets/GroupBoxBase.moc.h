@@ -12,7 +12,7 @@ class XII_GUIFOUNDATION_DLL xiiQtGroupBoxBase : public QWidget
 public:
   xiiQtGroupBoxBase(QWidget* pParent, bool bCollapsible);
 
-  virtual void SetTitle(const char* szTitle);
+  virtual void SetTitle(xiiStringView sTitle);
   QString      GetTitle() const;
 
   virtual void SetBoldTitle(bool bBold);

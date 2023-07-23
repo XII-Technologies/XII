@@ -5,7 +5,7 @@
 
 #if XII_ENABLED(XII_PLATFORM_ANDROID)
 #  include <android/log.h>
-#  define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "xiiEngine", __VA_ARGS__)
+#  define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "XII", __VA_ARGS__)
 #endif
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)

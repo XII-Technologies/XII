@@ -15,6 +15,7 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Foundation/Threading/TaskSystem.h>
 #include <Foundation/Time/Clock.h>
+#include <Foundation/Time/Stopwatch.h>
 #include <Foundation/Time/Timestamp.h>
 #include <Texture/Image/Image.h>
 
@@ -266,22 +267,19 @@ xiiUniquePtr<xiiGameStateBase> xiiGameApplicationBase::CreateGameState(xiiWorld*
   {
     xiiInt32 iBestPriority = -1;
 
-    for (auto pRtti = xiiRTTI::GetFirstInstance(); pRtti != nullptr; pRtti = pRtti->GetNextInstance())
-    {
-      if (!pRtti->IsDerivedFrom<xiiGameStateBase>() || !pRtti->GetAllocator()->CanAllocate())
-        continue;
+    xiiRTTI::ForEachDerivedType<xiiGameStateBase>(
+      [&](const xiiRTTI* pRtti) {
+        xiiUniquePtr<xiiGameStateBase> pState = pRtti->GetAllocator()->Allocate<xiiGameStateBase>();
 
-      xiiUniquePtr<xiiGameStateBase> pState = pRtti->GetAllocator()->Allocate<xiiGameStateBase>();
+        const xiiInt32 iPriority = (xiiInt32)pState->DeterminePriority(pWorld);
+        if (iPriority > iBestPriority)
+        {
+          iBestPriority = iPriority;
 
-      const xiiInt32 iPriority = (xiiInt32)pState->DeterminePriority(pWorld);
-
-      if (iPriority > iBestPriority)
-      {
-        iBestPriority = iPriority;
-
-        pCurState = std::move(pState);
-      }
-    }
+          pCurState = std::move(pState);
+        }
+      },
+      xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
   }
 
   return pCurState;

@@ -461,6 +461,7 @@ inline bool xiiHashTableBase<K, V, H>::TryGetValue(const CompatibleKeyType& key,
   if (uiIndex != xiiInvalidIndex)
   {
     out_pValue = &m_pEntries[uiIndex].value;
+    XII_ANALYSIS_ASSUME(out_pValue != nullptr);
     return true;
   }
 
@@ -475,6 +476,7 @@ inline bool xiiHashTableBase<K, V, H>::TryGetValue(const CompatibleKeyType& key,
   if (uiIndex != xiiInvalidIndex)
   {
     out_pValue = &m_pEntries[uiIndex].value;
+    XII_ANALYSIS_ASSUME(out_pValue != nullptr);
     return true;
   }
 
@@ -567,6 +569,9 @@ V& xiiHashTableBase<K, V, H>::FindOrAdd(const K& key, bool* out_pExisted)
     MarkEntryAsValid(uiIndex);
     ++m_uiCount;
   }
+
+  XII_ASSERT_DEBUG(m_pEntries != nullptr, "Entries should be present");
+
   return m_pEntries[uiIndex].value;
 }
 

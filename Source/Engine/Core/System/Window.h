@@ -13,9 +13,7 @@ class xiiOpenDdlReader;
 class xiiOpenDdlReaderElement;
 
 // Include the proper Input implementation to use
-#if XII_ENABLED(XII_SUPPORTS_SDL)
-#  include <Core/System/Implementation/SDL/InputDevice_SDL.h>
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <Core/System/Implementation/Win/InputDevice_win32.h>
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
 #  include <Core/System/Implementation/uwp/InputDevice_uwp.h>
@@ -25,83 +23,7 @@ class xiiOpenDdlReaderElement;
 #  include <Core/System/Implementation/null/InputDevice_null.h>
 #endif
 
-// Currently the following scenarios are possible
-// - Windows native implementation, using HWND.
-// - Android native implementation, using ANativeWindow.
-// - SDL on windows, using SDLWindow* internally and HWND to pass windows around.
-// - SDL / XCB on linux. Runtime uses SDL_Window*. Editor uses xcb-window. Tagged union is passed around as window handle.
-
-#if XII_ENABLED(XII_SUPPORTS_SDL)
-extern "C"
-{
-  using SDL_Window = struct SDL_Window;
-}
-#  if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
-#    include <Foundation/Basics/Platform/Win/MinWindows.h>
-using xiiWindowHandle         = xiiMinWindows::HWND;
-using xiiWindowInternalHandle = SDL_Window*;
-#    define INVALID_WINDOW_HANDLE_VALUE (xiiWindowHandle)(0)
-#  elif XII_ENABLED(XII_PLATFORM_LINUX)
-#    include <Foundation/Basics/Platform/Linux/MinX11.h>
-struct xiiXcbWindowHandle
-{
-  xiiMinX11::xcb_connection_t m_pConnection;
-  xiiMinX11::Window           m_hWindow;
-};
-
-struct xiiWindowHandle
-{
-  enum class Type
-  {
-    Invalid = 0,
-    SDL     = 1, // Used by the Runtime
-    XCB     = 2  // Used by the Editor
-  };
-  Type type;
-
-  union
-  {
-    SDL_Window*        sdlWindow;
-    xiiXcbWindowHandle xcbWindow;
-  };
-
-  bool operator==(xiiWindowHandle& rhs)
-  {
-    if (type != rhs.type)
-      return false;
-
-    if (type == Type::SDL)
-    {
-      return sdlWindow == rhs.sdlWindow;
-    }
-    else
-    {
-      // We don't compare the connection because we only want to know if we reference the same window.
-      return xcbWindow.m_hWindow == rhs.xcbWindow.m_hWindow;
-    }
-  }
-};
-
-using xiiWindowInternalHandle = xiiWindowHandle;
-#    define INVALID_WINDOW_HANDLE_VALUE \
-      xiiWindowHandle                   \
-      {}
-
-#  elif XII_ENABLED(XII_PLATFORM_ANDROID)
-extern "C"
-{
-  using ANativeWindow = struct ANativeWindow;
-}
-using xiiWindowHandle         = ANativeWindow*;
-using xiiWindowInternalHandle = SDL_Window*;
-#    define INVALID_WINDOW_HANDLE_VALUE nullptr
-#  else
-using xiiWindowHandle         = SDL_Window*;
-using xiiWindowInternalHandle = SDL_Window*;
-#    define INVALID_WINDOW_HANDLE_VALUE (SDL_Window*)(0)
-#  endif
-
-#elif XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 
 #  include <Foundation/Basics/Platform/Win/MinWindows.h>
 using xiiWindowHandle         = xiiMinWindows::HWND;

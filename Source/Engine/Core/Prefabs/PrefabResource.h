@@ -22,7 +22,6 @@ struct XII_CORE_DLL xiiExposedPrefabParameterDesc
 
   void Save(xiiStreamWriter& ref_stream) const;
   void Load(xiiStreamReader& ref_stream);
-  void LoadOld(xiiStreamReader& ref_stream);
 };
 
 class XII_CORE_DLL xiiPrefabResource : public xiiResource
@@ -33,6 +32,16 @@ class XII_CORE_DLL xiiPrefabResource : public xiiResource
 
 public:
   xiiPrefabResource();
+
+  enum class InstantiateResult : xiiUInt8
+  {
+    Success,
+    NotYetLoaded,
+    Error,
+  };
+
+  /// \brief Helper function to instantiate a prefab without having to deal with resource acquisition.
+  static xiiPrefabResource::InstantiateResult InstantiatePrefab(const xiiPrefabResourceHandle& hPrefab, bool bBlockTillLoaded, xiiWorld& ref_world, const xiiTransform& rootTransform, xiiPrefabInstantiationOptions options = {}, const xiiArrayMap<xiiHashedString, xiiVariant>* pExposedParamValues = nullptr);
 
   /// \brief Creates an instance of this prefab in the given world.
   void InstantiatePrefab(xiiWorld& ref_world, const xiiTransform& rootTransform, xiiPrefabInstantiationOptions options, const xiiArrayMap<xiiHashedString, xiiVariant>* pExposedParamValues = nullptr);

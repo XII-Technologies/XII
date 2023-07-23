@@ -88,7 +88,7 @@ public:
   XII_ALWAYS_INLINE operator duk_context*() const { return m_pContext; }
 
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  void VerifyExpectedStackChange(xiiInt32 iExpectedStackChange, const char* szFile, xiiUInt32 uiLine, const char* szFunction) const;
+  void VerifyExpectedStackChange(xiiInt32 iExpectedStackChange, xiiStringView sFile, xiiUInt32 uiLine, xiiStringView sFunction) const;
 #  endif
 
   ///@}
@@ -110,38 +110,38 @@ public:
 
   void PushGlobalStash();
 
-  xiiResult PushLocalObject(const char* szName, xiiInt32 iParentObjectIndex = -1);
+  xiiResult PushLocalObject(xiiStringView sName, xiiInt32 iParentObjectIndex = -1);
 
   ///@}
   /// \name Object Properties
   ///@{
 
-  bool HasProperty(const char* szPropertyName, xiiInt32 iParentObjectIndex = -1) const;
+  bool HasProperty(xiiStringView sPropertyName, xiiInt32 iParentObjectIndex = -1) const;
 
-  bool        GetBoolProperty(const char* szPropertyName, bool bFallback, xiiInt32 iParentObjectIndex = -1) const;
-  xiiInt32    GetIntProperty(const char* szPropertyName, xiiInt32 iFallback, xiiInt32 iParentObjectIndex = -1) const;
-  xiiUInt32   GetUIntProperty(const char* szPropertyName, xiiUInt32 uiFallback, xiiInt32 iParentObjectIndex = -1) const;
-  float       GetFloatProperty(const char* szPropertyName, float fFallback, xiiInt32 iParentObjectIndex = -1) const;
-  double      GetNumberProperty(const char* szPropertyName, double fFallback, xiiInt32 iParentObjectIndex = -1) const;
-  const char* GetStringProperty(const char* szPropertyName, const char* szFallback, xiiInt32 iParentObjectIndex = -1) const;
+  bool          GetBoolProperty(xiiStringView sPropertyName, bool bFallback, xiiInt32 iParentObjectIndex = -1) const;
+  xiiInt32      GetIntProperty(xiiStringView sPropertyName, xiiInt32 iFallback, xiiInt32 iParentObjectIndex = -1) const;
+  xiiUInt32     GetUIntProperty(xiiStringView sPropertyName, xiiUInt32 uiFallback, xiiInt32 iParentObjectIndex = -1) const;
+  float         GetFloatProperty(xiiStringView sPropertyName, float fFallback, xiiInt32 iParentObjectIndex = -1) const;
+  double        GetNumberProperty(xiiStringView sPropertyName, double fFallback, xiiInt32 iParentObjectIndex = -1) const;
+  xiiStringView GetStringProperty(xiiStringView sPropertyName, xiiStringView sFallback, xiiInt32 iParentObjectIndex = -1) const;
 
-  void SetBoolProperty(const char* szPropertyName, bool value, xiiInt32 iParentObjectIndex = -1) const;
-  void SetNumberProperty(const char* szPropertyName, double value, xiiInt32 iParentObjectIndex = -1) const;
-  void SetStringProperty(const char* szPropertyName, const char* value, xiiInt32 iParentObjectIndex = -1) const;
+  void SetBoolProperty(xiiStringView sPropertyName, bool value, xiiInt32 iParentObjectIndex = -1) const;
+  void SetNumberProperty(xiiStringView sPropertyName, double value, xiiInt32 iParentObjectIndex = -1) const;
+  void SetStringProperty(xiiStringView sPropertyName, xiiStringView value, xiiInt32 iParentObjectIndex = -1) const;
 
   /// \note If a negative parent index is given, the parent object taken is actually ParentIdx - 1 (obj at idx -1 is the custom object to use)
-  void SetCustomProperty(const char* szPropertyName, xiiInt32 iParentObjectIndex = -1) const;
+  void SetCustomProperty(xiiStringView sPropertyName, xiiInt32 iParentObjectIndex = -1) const;
 
 
   ///@}
   /// \name Global State
   ///@{
 
-  void  StorePointerInStash(const char* szKey, void* pPointer);
-  void* RetrievePointerFromStash(const char* szKey) const;
+  void  StorePointerInStash(xiiStringView sKey, void* pPointer);
+  void* RetrievePointerFromStash(xiiStringView sKey) const;
 
-  void        StoreStringInStash(const char* szKey, const char* value);
-  const char* RetrieveStringFromStash(const char* szKey, const char* szFallback = nullptr) const;
+  void          StoreStringInStash(xiiStringView sKey, xiiStringView value);
+  xiiStringView RetrieveStringFromStash(xiiStringView sKey, xiiStringView sFallback = nullptr) const;
 
   ///@}
   /// \name Type Checks
@@ -162,21 +162,16 @@ public:
   /// \name C Functions
   ///@{
 
-  void RegisterGlobalFunction(const char* szFunctionName, duk_c_function function, xiiUInt8 uiNumArguments, xiiInt16 iMagicValue = 0);
-  void RegisterGlobalFunctionWithVarArgs(const char* szFunctionName, duk_c_function function, xiiInt16 iMagicValue = 0);
+  void RegisterGlobalFunction(xiiStringView sFunctionName, duk_c_function function, xiiUInt8 uiNumArguments, xiiInt16 iMagicValue = 0);
+  void RegisterGlobalFunctionWithVarArgs(xiiStringView sFunctionName, duk_c_function function, xiiInt16 iMagicValue = 0);
 
-  void RegisterObjectFunction(
-    const char*    szFunctionName,
-    duk_c_function function,
-    xiiUInt8       uiNumArguments,
-    xiiInt32       iParentObjectIndex = -1,
-    xiiInt16       iMagicValue        = 0);
+  void RegisterObjectFunction(xiiStringView sFunctionName, duk_c_function function, xiiUInt8 uiNumArguments, xiiInt32 iParentObjectIndex = -1, xiiInt16 iMagicValue = 0);
 
-  xiiResult PrepareGlobalFunctionCall(const char* szFunctionName);
-  xiiResult PrepareObjectFunctionCall(const char* szFunctionName, xiiInt32 iParentObjectIndex = -1);
+  xiiResult PrepareGlobalFunctionCall(xiiStringView sFunctionName);
+  xiiResult PrepareObjectFunctionCall(xiiStringView sFunctionName, xiiInt32 iParentObjectIndex = -1);
   xiiResult CallPreparedFunction();
 
-  xiiResult PrepareMethodCall(const char* szMethodName, xiiInt32 iParentObjectIndex = -1);
+  xiiResult PrepareMethodCall(xiiStringView sMethodName, xiiInt32 iParentObjectIndex = -1);
   xiiResult CallPreparedMethod();
 
 
@@ -193,22 +188,22 @@ public:
   void PushUndefined();
   void PushCustom(xiiUInt32 uiNum = 1);
 
-  bool        GetBoolValue(xiiInt32 iStackElement, bool bFallback = false) const;
-  xiiInt32    GetIntValue(xiiInt32 iStackElement, xiiInt32 iFallback = 0) const;
-  xiiUInt32   GetUIntValue(xiiInt32 iStackElement, xiiUInt32 uiFallback = 0) const;
-  float       GetFloatValue(xiiInt32 iStackElement, float fFallback = 0) const;
-  double      GetNumberValue(xiiInt32 iStackElement, double fFallback = 0) const;
-  const char* GetStringValue(xiiInt32 iStackElement, const char* szFallback = "") const;
+  bool          GetBoolValue(xiiInt32 iStackElement, bool bFallback = false) const;
+  xiiInt32      GetIntValue(xiiInt32 iStackElement, xiiInt32 iFallback = 0) const;
+  xiiUInt32     GetUIntValue(xiiInt32 iStackElement, xiiUInt32 uiFallback = 0) const;
+  float         GetFloatValue(xiiInt32 iStackElement, float fFallback = 0) const;
+  double        GetNumberValue(xiiInt32 iStackElement, double fFallback = 0) const;
+  xiiStringView GetStringValue(xiiInt32 iStackElement, xiiStringView sFallback = "") const;
 
   ///@}
   /// \name Executing Scripts
   ///@{
 
-  xiiResult ExecuteString(const char* szString, const char* szDebugName = "eval");
+  xiiResult ExecuteString(xiiStringView sString, xiiStringView sDebugName = "eval");
 
-  xiiResult ExecuteStream(xiiStreamReader& ref_stream, const char* szDebugName);
+  xiiResult ExecuteStream(xiiStreamReader& ref_stream, xiiStringView sDebugName);
 
-  xiiResult ExecuteFile(const char* szFile);
+  xiiResult ExecuteFile(xiiStringView sFile);
 
   ///@}
 

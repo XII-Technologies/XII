@@ -217,9 +217,6 @@ void xiiQtColorGradientWidget::PaintColorGradient(QPainter& p) const
 
     for (xiiInt32 posX = 0; posX < width; ++posX)
     {
-
-      const xiiInt32 xPos = GradientArea.left() + posX;
-
       xiiColorGammaUB rgba;
       float           intensity;
 
@@ -535,7 +532,7 @@ void xiiQtColorGradientWidget::mousePressEvent(QMouseEvent* event)
   {
     if (event->button() == Qt::MouseButton::RightButton)
     {
-      m_LastMousePosition = event->globalPos();
+      m_LastMousePosition = event->globalPosition();
     }
 
     if (event->buttons() == Qt::MouseButton::LeftButton)
@@ -675,8 +672,8 @@ void xiiQtColorGradientWidget::mouseMoveEvent(QMouseEvent* event)
         // scroll displayed area
         if (m_fDisplayExtentMinX < m_fDisplayExtentMaxX)
         {
-          const QPoint mouseMove = event->globalPos() - m_LastMousePosition;
-          m_LastMousePosition    = event->globalPos();
+          const QPointF mouseMove = event->globalPosition() - m_LastMousePosition;
+          m_LastMousePosition     = event->globalPosition();
 
           const double range = m_fDisplayExtentMaxX - m_fDisplayExtentMinX;
 

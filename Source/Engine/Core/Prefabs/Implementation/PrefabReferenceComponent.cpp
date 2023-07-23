@@ -57,7 +57,7 @@ void xiiPrefabReferenceComponent::SerializePrefabParameters(const xiiWorld& worl
         if (var.IsA<xiiString>())
         {
           // and the resolver CAN map this string to a game object handle
-          xiiGameObjectHandle hObject = resolver(var.Get<xiiString>().GetData(), xiiComponentHandle(), nullptr);
+          xiiGameObjectHandle hObject = resolver(var.Get<xiiString>(), xiiComponentHandle(), nullptr);
           if (!hObject.IsInvalidated())
           {
             // write the handle properly to file (this enables correct remapping during deserialization)
@@ -188,23 +188,23 @@ void xiiPrefabReferenceComponent::DeserializeComponent(xiiWorldReader& ref_strea
   xiiPrefabReferenceComponent::DeserializePrefabParameters(m_Parameters, ref_stream);
 }
 
-void xiiPrefabReferenceComponent::SetPrefabFile(const char* szFile)
+void xiiPrefabReferenceComponent::SetPrefabFile(xiiStringView sFile)
 {
   xiiPrefabResourceHandle hResource;
 
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
+  if (!sFile.IsEmpty())
   {
-    hResource = xiiResourceManager::LoadResource<xiiPrefabResource>(szFile);
+    hResource = xiiResourceManager::LoadResource<xiiPrefabResource>(sFile);
     xiiResourceManager::PreloadResource(hResource);
   }
 
   SetPrefab(hResource);
 }
 
-const char* xiiPrefabReferenceComponent::GetPrefabFile() const
+xiiStringView xiiPrefabReferenceComponent::GetPrefabFile() const
 {
   if (!m_hPrefab.IsValid())
-    return "";
+    return {};
 
   return m_hPrefab.GetResourceID();
 }
@@ -250,7 +250,7 @@ void xiiPrefabReferenceComponent::InstantiatePrefab()
       options.m_pCreatedRootObjectsOut  = &createdRootObjects;
       options.m_pCreatedChildObjectsOut = &createdChildObjects;
 
-      xiiUInt32 uiPrevComponentCount = GetOwner()->GetComponents().GetCount();
+      xiiUInt32 uiPrevCompCount = GetOwner()->GetComponents().GetCount();
 
       pResource->InstantiatePrefab(*GetWorld(), id, options, &m_Parameters);
 
@@ -280,10 +280,10 @@ void xiiPrefabReferenceComponent::InstantiatePrefab()
         FixComponent(pChild, uiUniqueID);
       }
 
-      for (; uiPrevComponentCount < GetOwner()->GetComponents().GetCount(); ++uiPrevComponentCount)
+      for (; uiPrevCompCount < GetOwner()->GetComponents().GetCount(); ++uiPrevCompCount)
       {
-        GetOwner()->GetComponents()[uiPrevComponentCount]->SetUniqueID(GetUniqueID());
-        GetOwner()->GetComponents()[uiPrevComponentCount]->SetCreatedByPrefab();
+        GetOwner()->GetComponents()[uiPrevCompCount]->SetUniqueID(GetUniqueID());
+        GetOwner()->GetComponents()[uiPrevCompCount]->SetCreatedByPrefab();
       }
     }
     else
@@ -319,15 +319,16 @@ void xiiPrefabReferenceComponent::ClearPreviousInstances()
     // if this is in the editor, and the 'activate' flag is toggled,
     // get rid of all our created child objects
 
-    xiiArrayPtr<xiiComponent* const> components = GetOwner()->GetComponents();
+    xiiArrayPtr<xiiComponent* const> comps = GetOwner()->GetComponents();
 
-    for (xiiUInt32 ip1 = components.GetCount(); ip1 > 0; --ip1)
+    for (xiiUInt32 ip1 = comps.GetCount(); ip1 > 0; ip1--)
     {
       const xiiUInt32 i = ip1 - 1;
 
-      if (components[i] != this && components[i]->WasCreatedByPrefab())
+      if (comps[i] != this && // don't try to delete yourself
+          comps[i]->WasCreatedByPrefab())
       {
-        components[i]->GetOwningManager()->DeleteComponent(components[i]);
+        comps[i]->GetOwningManager()->DeleteComponent(comps[i]);
       }
     }
 
@@ -369,18 +370,18 @@ void xiiPrefabReferenceComponent::OnSimulationStarted()
   }
 }
 
-const xiiRangeView<const char*, xiiUInt32> xiiPrefabReferenceComponent::GetParameters() const
+const xiiRangeView<xiiStringView, xiiUInt32> xiiPrefabReferenceComponent::GetParameters() const
 {
-  return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; },
-                                              [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
-                                              [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                              [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
+  return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
+                                                [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
+                                                [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt); });
 }
 
-void xiiPrefabReferenceComponent::SetParameter(const char* szKey, const xiiVariant& value)
+void xiiPrefabReferenceComponent::SetParameter(xiiStringView sKey, const xiiVariant& value)
 {
   xiiHashedString hs;
-  hs.Assign(szKey);
+  hs.Assign(sKey);
 
   auto it = m_Parameters.Find(hs);
   if (it != xiiInvalidIndex && m_Parameters.GetValue(it) == value)
@@ -396,9 +397,9 @@ void xiiPrefabReferenceComponent::SetParameter(const char* szKey, const xiiVaria
   }
 }
 
-void xiiPrefabReferenceComponent::RemoveParameter(const char* szKey)
+void xiiPrefabReferenceComponent::RemoveParameter(xiiStringView sKey)
 {
-  if (m_Parameters.RemoveAndCopy(xiiTempHashedString(szKey)))
+  if (m_Parameters.RemoveAndCopy(xiiTempHashedString(sKey)))
   {
     if (IsActiveAndInitialized())
     {
@@ -409,9 +410,9 @@ void xiiPrefabReferenceComponent::RemoveParameter(const char* szKey)
   }
 }
 
-bool xiiPrefabReferenceComponent::GetParameter(const char* szKey, xiiVariant& out_value) const
+bool xiiPrefabReferenceComponent::GetParameter(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Parameters.Find(szKey);
+  xiiUInt32 it = m_Parameters.Find(xiiTempHashedString(sKey));
 
   if (it == xiiInvalidIndex)
     return false;
@@ -484,6 +485,5 @@ void xiiPrefabReferenceComponentManager::AddToUpdateList(xiiPrefabReferenceCompo
     pComponent->m_bInUpdateList = true;
   }
 }
-
 
 XII_STATICLINK_FILE(Core, Core_Prefabs_Implementation_PrefabReferenceComponent);

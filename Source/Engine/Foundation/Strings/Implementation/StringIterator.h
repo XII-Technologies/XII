@@ -79,7 +79,7 @@ struct xiiStringIterator
   }
 
   /// \brief Move to the next Utf8 character
-  XII_ALWAYS_INLINE xiiStringIterator operator++(int) // [tested]
+  XII_ALWAYS_INLINE xiiStringIterator operator++(xiiInt32) // [tested]
   {
     xiiStringIterator tmp = *this;
     ++(*this);
@@ -87,7 +87,7 @@ struct xiiStringIterator
   }
 
   /// \brief Move to the previous Utf8 character
-  XII_ALWAYS_INLINE xiiStringIterator operator--(int) // [tested]
+  XII_ALWAYS_INLINE xiiStringIterator operator--(xiiInt32) // [tested]
   {
     xiiStringIterator tmp = *this;
     --(*this);
@@ -238,7 +238,7 @@ struct xiiStringReverseIterator
   }
 
   /// \brief Move to the next Utf8 character
-  XII_ALWAYS_INLINE xiiStringReverseIterator operator++(int) // [tested]
+  XII_ALWAYS_INLINE xiiStringReverseIterator operator++(xiiInt32) // [tested]
   {
     xiiStringReverseIterator tmp = *this;
     ++(*this);
@@ -246,7 +246,7 @@ struct xiiStringReverseIterator
   }
 
   /// \brief Move to the previous Utf8 character
-  XII_ALWAYS_INLINE xiiStringReverseIterator operator--(int) // [tested]
+  XII_ALWAYS_INLINE xiiStringReverseIterator operator--(xiiInt32) // [tested]
   {
     xiiStringReverseIterator tmp = *this;
     --(*this);

@@ -293,7 +293,7 @@ const char* xiiTranslatorMakeMoreReadable::Translate(const char* szString, xiiUI
       continue;
     }
 
-    if (IsNumber(uiPrev) != IsNumber(uiCur))
+    if (uiPrev != '[' && uiCur != ']' && IsNumber(uiPrev) != IsNumber(uiCur))
     {
       result.Append(" ");
       result.Append(uiCur);
@@ -324,6 +324,10 @@ const char* xiiTranslatorMakeMoreReadable::Translate(const char* szString, xiiUI
   }
 
   result.Trim(" ");
+  while (result.ReplaceAll("  ", " ") > 0)
+  {
+    // Remove double whitespaces.
+  }
 
   if (GetHighlightUntranslated())
   {

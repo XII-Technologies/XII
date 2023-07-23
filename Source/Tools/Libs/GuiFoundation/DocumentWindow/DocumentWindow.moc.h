@@ -39,7 +39,7 @@ public:
 
 public:
   xiiQtDocumentWindow(xiiDocument* pDocument);
-  xiiQtDocumentWindow(const char* szUniqueName);
+  xiiQtDocumentWindow(xiiStringView sUniqueName);
   virtual ~xiiQtDocumentWindow();
 
   void EnsureVisible();
@@ -48,10 +48,10 @@ public:
   virtual xiiString GetDisplayName() const { return GetUniqueName(); }
   virtual xiiString GetDisplayNameShort() const;
 
-  const char* GetUniqueName() const { return m_sUniqueName; }
+  xiiStringView GetUniqueName() const { return m_sUniqueName; }
 
   /// \brief The 'GroupName' is used for serializing window layouts. It should be unique among different window types.
-  virtual const char* GetWindowLayoutGroupName() const = 0;
+  virtual xiiStringView GetWindowLayoutGroupName() const = 0;
 
   xiiDocument* GetDocument() const { return m_pDocument; }
 
@@ -81,7 +81,7 @@ public:
   void SetPermanentStatusBarMsg(const xiiFormatString& text);
 
   /// \brief For unit tests to take a screenshot of the window (may include multiple views) to do image comparisons.
-  virtual void CreateImageCapture(const char* szOutputPath);
+  virtual void CreateImageCapture(xiiStringView sOutputPath);
 
   /// \brief In 'safe' mode we want to prevent the documents from using the stored window layout state
   static bool s_bAllowRestoreWindowLayout;

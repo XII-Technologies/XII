@@ -112,7 +112,7 @@ static void SendCVarTelemetry(xiiCVar* pCVar)
     break;
     case xiiCVarType::String:
     {
-      const char* val = ((xiiCVarString*)pCVar)->GetValue().GetData();
+      xiiStringView val = ((xiiCVarString*)pCVar)->GetValue();
       msg.GetWriter() << val;
     }
     break;

@@ -19,10 +19,7 @@ public:
   ///   Name of the property that is used for finding children on an object.
   /// \param szRootProperty
   ///   Same as szChildrenProperty, but for the root object of the document.
-  xiiDocumentObjectVisitor(
-    const xiiDocumentObjectManager* pManager,
-    const char*                     szChildrenProperty = "Children",
-    const char*                     szRootProperty     = "Children");
+  xiiDocumentObjectVisitor(const xiiDocumentObjectManager* pManager, xiiStringView sChildrenProperty = "Children", xiiStringView sRootProperty = "Children");
 
   using VisitorFunction = xiiDelegate<bool(const xiiDocumentObject*)>;
   /// \brief Executes depth first traversal starting at the given node.
@@ -36,7 +33,7 @@ public:
   void Visit(const xiiDocumentObject* pObject, bool bVisitStart, VisitorFunction function);
 
 private:
-  void TraverseChildren(const xiiDocumentObject* pObject, const char* szProperty, VisitorFunction& function);
+  void TraverseChildren(const xiiDocumentObject* pObject, xiiStringView sProperty, VisitorFunction& function);
 
   const xiiDocumentObjectManager* m_pManager = nullptr;
   xiiString                       m_sChildrenProperty;

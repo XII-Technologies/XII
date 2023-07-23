@@ -15,7 +15,7 @@ public:
   Q_OBJECT
 
 public:
-  xiiQtApplicationPanel(const char* szPanelName);
+  xiiQtApplicationPanel(xiiStringView sPanelName);
   ~xiiQtApplicationPanel();
 
   void EnsureVisible();

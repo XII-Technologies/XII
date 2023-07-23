@@ -24,16 +24,16 @@ namespace MemoryWidgetDetail
   };
 }
 
-void FormatSize(xiiStringBuilder& s, const char* szPrefix, xiiUInt64 uiSize)
+void FormatSize(xiiStringBuilder& s, xiiStringView sPrefix, xiiUInt64 uiSize)
 {
   if (uiSize < 1024)
-    s.Format("{0}{1} Bytes", szPrefix, uiSize);
+    s.Format("{0}{1} Bytes", sPrefix, uiSize);
   else if (uiSize < 1024 * 1024)
-    s.Format("{0}{1} KB", szPrefix, xiiArgF(uiSize / 1024.0, 1));
+    s.Format("{0}{1} KB", sPrefix, xiiArgF(uiSize / 1024.0, 1));
   else if (uiSize < 1024 * 1024 * 1024)
-    s.Format("{0}{1} MB", szPrefix, xiiArgF(uiSize / 1024.0 / 1024.0, 2));
+    s.Format("{0}{1} MB", sPrefix, xiiArgF(uiSize / 1024.0 / 1024.0, 2));
   else
-    s.Format("{0}{1} GB", szPrefix, xiiArgF(uiSize / 1024.0 / 1024.0 / 1024.0, 2));
+    s.Format("{0}{1} GB", sPrefix, xiiArgF(uiSize / 1024.0 / 1024.0 / 1024.0, 2));
 }
 
 xiiQtMemoryWidget::xiiQtMemoryWidget(QWidget* pParent) :

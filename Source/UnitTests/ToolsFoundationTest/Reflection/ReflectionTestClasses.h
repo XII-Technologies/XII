@@ -51,22 +51,26 @@ public:
     m_fDouble = 1.0;
     m_Time    = xiiTime::Seconds(1.0);
     m_Angle   = xiiAngle::Degree(45.0f);
+    m_Angled  = xiiAngled::Degree(45.0);
   }
 
-  void     SetFloat(float f) { m_fFloat = f; }
-  float    GetFloat() const { return m_fFloat; }
-  void     SetDouble(double d) { m_fDouble = d; }
-  double   GetDouble() const { return m_fDouble; }
-  void     SetTime(xiiTime t) { m_Time = t; }
-  xiiTime  GetTime() const { return m_Time; }
-  xiiAngle GetAngle() const { return m_Angle; }
-  void     SetAngle(xiiAngle t) { m_Angle = t; }
+  void      SetFloat(float f) { m_fFloat = f; }
+  float     GetFloat() const { return m_fFloat; }
+  void      SetDouble(double d) { m_fDouble = d; }
+  double    GetDouble() const { return m_fDouble; }
+  void      SetTime(xiiTime t) { m_Time = t; }
+  xiiTime   GetTime() const { return m_Time; }
+  xiiAngle  GetAngle() const { return m_Angle; }
+  void      SetAngle(xiiAngle t) { m_Angle = t; }
+  xiiAngled GetAngled() const { return m_Angled; }
+  void      SetAngled(xiiAngled t) { m_Angled = t; }
 
 private:
-  float    m_fFloat;
-  double   m_fDouble;
-  xiiTime  m_Time;
-  xiiAngle m_Angle;
+  float     m_fFloat;
+  double    m_fDouble;
+  xiiTime   m_Time;
+  xiiAngle  m_Angle;
+  xiiAngled m_Angled;
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiFloatStruct);
 
@@ -85,7 +89,8 @@ public:
     m_Buffer.PushBack(0xFF);
     m_Buffer.PushBack(0x0);
     m_Buffer.PushBack(0xCD);
-    m_VarianceAngle = {0.1f, xiiAngle::Degree(90.0f)};
+    m_VarianceAngle  = {0.1f, xiiAngle::Degree(90.0f)};
+    m_VarianceAngled = {0.1, xiiAngled::Degree(90.0)};
   }
 
   xiiIntegerStruct m_IntegerStruct;
@@ -95,7 +100,7 @@ public:
   bool        GetBool() const { return m_bBool; }
   void        SetColor(xiiColor c) { m_Color = c; }
   xiiColor    GetColor() const { return m_Color; }
-  const char* GetString() const { return m_sString.GetData(); }
+  const char* GetString() const { return m_sString; }
   void        SetString(const char* szSz) { m_sString = szSz; }
 
   const xiiDataBuffer& GetBuffer() const { return m_Buffer; }
@@ -104,13 +109,18 @@ public:
   xiiVarianceTypeAngle GetCustom() const { return m_VarianceAngle; }
   void                 SetCustom(xiiVarianceTypeAngle value) { m_VarianceAngle = value; }
 
+  xiiVarianceTypeAngled GetCustom2() const { return m_VarianceAngled; }
+  void                  SetCustom2(xiiVarianceTypeAngled value) { m_VarianceAngled = value; }
+
 private:
-  bool                 m_bBool;
-  xiiColor             m_Color;
-  xiiColorGammaUB      m_Color2;
-  xiiString            m_sString;
-  xiiDataBuffer        m_Buffer;
-  xiiVarianceTypeAngle m_VarianceAngle;
+  bool                  m_bBool;
+  xiiColor              m_Color;
+  xiiColorGammaUB       m_Color2;
+  xiiString             m_sString;
+  xiiString             m_sString2;
+  xiiDataBuffer         m_Buffer;
+  xiiVarianceTypeAngle  m_VarianceAngle;
+  xiiVarianceTypeAngled m_VarianceAngled;
 };
 
 
@@ -121,15 +131,30 @@ class xiiMathClass : public xiiPODClass
 public:
   xiiMathClass()
   {
-    m_vVec2 = xiiVec2(1.0f, 1.0f);
-    m_vVec3 = xiiVec3(1.0f, 1.0f, 1.0f);
-    m_vVec4 = xiiVec4(1.0f, 1.0f, 1.0f, 1.0f);
-    m_Vec2I = xiiVec2I32(1, 1);
-    m_Vec3I = xiiVec3I32(1, 1, 1);
-    m_Vec4I = xiiVec4I32(1, 1, 1, 1);
-    m_qQuat = xiiQuat(1.0f, 1.0f, 1.0f, 1.0f);
+    m_Vec2I   = xiiVec2I32(1, 1);
+    m_Vec3I   = xiiVec3I32(1, 1, 1);
+    m_Vec4I   = xiiVec4I32(1, 1, 1, 1);
+    m_Vec2U   = xiiVec2U32(1, 1);
+    m_Vec3U   = xiiVec3U32(1, 1, 1);
+    m_Vec4U   = xiiVec4U32(1, 1, 1, 1);
+    m_Vec2I64 = xiiVec2I64(1, 1);
+    m_Vec3I64 = xiiVec3I64(1, 1, 1);
+    m_Vec4I64 = xiiVec4I64(1, 1, 1, 1);
+    m_Vec2U64 = xiiVec2U64(1, 1);
+    m_Vec3U64 = xiiVec3U64(1, 1, 1);
+    m_Vec4U64 = xiiVec4U64(1, 1, 1, 1);
+    m_vVec2   = xiiVec2(1.0f, 1.0f);
+    m_vVec3   = xiiVec3(1.0f, 1.0f, 1.0f);
+    m_vVec4   = xiiVec4(1.0f, 1.0f, 1.0f, 1.0f);
+    m_qQuat   = xiiQuat(1.0f, 1.0f, 1.0f, 1.0f);
+    m_vVec2d  = xiiVec2d(1.0, 1.0);
+    m_vVec3d  = xiiVec3d(1.0, 1.0, 1.0);
+    m_vVec4d  = xiiVec4d(1.0, 1.0, 1.0, 1.0);
+    m_qQuatd  = xiiQuatd(1.0, 1.0, 1.0, 1.0);
     m_mMat3.SetZero();
     m_mMat4.SetZero();
+    m_mMat3d.SetZero();
+    m_mMat4d.SetZero();
   }
 
   void    SetVec2(xiiVec2 v) { m_vVec2 = v; }
@@ -145,9 +170,34 @@ public:
   void    SetMat4(xiiMat4 m) { m_mMat4 = m; }
   xiiMat4 GetMat4() const { return m_mMat4; }
 
+  void     SetVec2d(xiiVec2d v) { m_vVec2d = v; }
+  xiiVec2d GetVec2d() const { return m_vVec2d; }
+  void     SetVec3d(xiiVec3d v) { m_vVec3d = v; }
+  xiiVec3d GetVec3d() const { return m_vVec3d; }
+  void     SetVec4d(xiiVec4d v) { m_vVec4d = v; }
+  xiiVec4d GetVec4d() const { return m_vVec4d; }
+  void     SetQuatd(xiiQuatd q) { m_qQuatd = q; }
+  xiiQuatd GetQuatd() const { return m_qQuatd; }
+  void     SetMat3d(xiiMat3d m) { m_mMat3d = m; }
+  xiiMat3d GetMat3d() const { return m_mMat3d; }
+  void     SetMat4d(xiiMat4d m) { m_mMat4d = m; }
+  xiiMat4d GetMat4d() const { return m_mMat4d; }
+
   xiiVec2I32 m_Vec2I;
   xiiVec3I32 m_Vec3I;
   xiiVec4I32 m_Vec4I;
+
+  xiiVec2I64 m_Vec2I64;
+  xiiVec3I64 m_Vec3I64;
+  xiiVec4I64 m_Vec4I64;
+
+  xiiVec2U32 m_Vec2U;
+  xiiVec3U32 m_Vec3U;
+  xiiVec4U32 m_Vec4U;
+
+  xiiVec2U64 m_Vec2U64;
+  xiiVec3U64 m_Vec3U64;
+  xiiVec4U64 m_Vec4U64;
 
 private:
   xiiVec2 m_vVec2;
@@ -156,6 +206,13 @@ private:
   xiiQuat m_qQuat;
   xiiMat3 m_mMat3;
   xiiMat4 m_mMat4;
+
+  xiiVec2d m_vVec2d;
+  xiiVec3d m_vVec3d;
+  xiiVec4d m_vVec4d;
+  xiiQuatd m_qQuatd;
+  xiiMat3d m_mMat3d;
+  xiiMat4d m_mMat4d;
 };
 
 
@@ -164,10 +221,11 @@ struct xiiExampleEnum
   using StorageType = xiiInt8;
   enum Enum
   {
-    Value1  = 0,     // normal value
-    Value2  = -2,    // normal value
-    Value3  = 4,     // normal value
-    Default = Value1 // Default initialization value (required)
+    Value1 = 0,  // Normal value.
+    Value2 = -2, // Normal value.
+    Value3 = 4,  // Normal value.
+
+    Default = Value1 // Default initialization value (required).
   };
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiExampleEnum);
@@ -176,12 +234,14 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiExampleEnum);
 struct xiiExampleBitflags
 {
   using StorageType = xiiUInt64;
+
   enum Enum : xiiUInt64
   {
-    Value1  = XII_BIT(0),  // normal value
-    Value2  = XII_BIT(31), // normal value
-    Value3  = XII_BIT(63), // normal value
-    Default = Value1       // Default initialization value (required)
+    Value1 = XII_BIT(0),  // Normal value.
+    Value2 = XII_BIT(31), // Normal value.
+    Value3 = XII_BIT(63), // Normal value.
+
+    Default = Value1 // Default initialization value (required).
   };
 
   struct Bits

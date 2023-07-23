@@ -1493,7 +1493,7 @@ void xiiTestFramework::WriteImageDiffHtml(const char* szFileName, xiiImage& ref_
   outputFile.Close();
 }
 
-bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const xiiImage& img, xiiUInt32 uiMaxError, char* szErrorMsg)
+bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const xiiImage& img, xiiUInt32 uiMaxError, bool bIsLineImage, char* szErrorMsg)
 {
   xiiImage imgRgba;
   if (xiiImageConversion::Convert(img, imgRgba, xiiImageFormat::R8G8B8A8_UNORM).Failed())
@@ -1551,7 +1551,10 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
   }
 
   xiiImage imgDiffRgba;
-  xiiImageUtils::ComputeImageDifferenceABS(imgExpRgba, imgRgba, imgDiffRgba);
+  if (bIsLineImage)
+    xiiImageUtils::ComputeImageDifferenceABSRelaxed(imgExpRgba, imgRgba, imgDiffRgba);
+  else
+    xiiImageUtils::ComputeImageDifferenceABS(imgExpRgba, imgRgba, imgDiffRgba);
 
   const xiiUInt32 uiMeanError = xiiImageUtils::ComputeMeanSquareError(imgDiffRgba, 32);
 
@@ -1600,7 +1603,7 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
   return true;
 }
 
-bool xiiTestFramework::CompareImages(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, char* szErrorMsg, bool bIsDepthImage)
+bool xiiTestFramework::CompareImages(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, char* szErrorMsg, bool bIsDepthImage, bool bIsLineImage)
 {
   xiiStringBuilder sImgName;
   GenerateComparisonImageName(uiImageNumber, sImgName);
@@ -1627,7 +1630,7 @@ bool xiiTestFramework::CompareImages(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxErr
   bool bImagesMatch = true;
   if (img.GetNumArrayIndices() <= 1)
   {
-    bImagesMatch = PerformImageComparison(sImgName, img, uiMaxError, szErrorMsg);
+    bImagesMatch = PerformImageComparison(sImgName, img, uiMaxError, bIsLineImage, szErrorMsg);
   }
   else
   {
@@ -1636,7 +1639,7 @@ bool xiiTestFramework::CompareImages(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxErr
     {
       xiiStringBuilder subImageName;
       subImageName.AppendFormat("{0}_{1}", sImgName, i);
-      if (!PerformImageComparison(subImageName, img.GetSubImageView(0, 0, i), uiMaxError, szErrorMsg))
+      if (!PerformImageComparison(subImageName, img.GetSubImageView(0, 0, i), uiMaxError, bIsLineImage, szErrorMsg))
       {
         bImagesMatch = false;
         if (!lastError.IsEmpty())
@@ -1992,11 +1995,11 @@ bool xiiTestTextFiles(const char* szFile1, const char* szFile2, const char* szFi
   return XII_SUCCESS;
 }
 
-bool xiiTestImage(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, bool bIsDepthImage, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...)
+bool xiiTestImage(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, bool bIsDepthImage, bool bIsLineImage, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...)
 {
   char szErrorText[s_iMaxErrorMessageLength] = "";
 
-  if (!xiiTestFramework::GetInstance()->CompareImages(uiImageNumber, uiMaxError, szErrorText, bIsDepthImage))
+  if (!xiiTestFramework::GetInstance()->CompareImages(uiImageNumber, uiMaxError, szErrorText, bIsDepthImage, bIsLineImage))
   {
     OUTPUT_TEST_ERROR
   }

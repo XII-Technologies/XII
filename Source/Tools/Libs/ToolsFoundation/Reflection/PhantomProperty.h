@@ -14,9 +14,9 @@ public:
   virtual xiiVariant     GetConstant() const override { return m_Value; }
 
 private:
-  xiiVariant m_Value;
-  xiiString  m_sPropertyNameStorage;
-  xiiRTTI*   m_pPropertyType;
+  xiiVariant     m_Value;
+  xiiString      m_sPropertyNameStorage;
+  const xiiRTTI* m_pPropertyType;
 };
 
 class xiiPhantomMemberProperty : public xiiAbstractMemberProperty
@@ -31,8 +31,8 @@ public:
   virtual void           SetValuePtr(void* pInstance, const void* pObject) override {}
 
 private:
-  xiiString m_sPropertyNameStorage;
-  xiiRTTI*  m_pPropertyType;
+  xiiString      m_sPropertyNameStorage;
+  const xiiRTTI* m_pPropertyType;
 };
 
 class xiiPhantomFunctionProperty : public xiiAbstractFunctionProperty
@@ -72,10 +72,9 @@ public:
   virtual void           Clear(void* pInstance) override {}
   virtual void           SetCount(void* pInstance, xiiUInt32 uiCount) override {}
 
-
 private:
-  xiiString m_sPropertyNameStorage;
-  xiiRTTI*  m_pPropertyType;
+  xiiString      m_sPropertyNameStorage;
+  const xiiRTTI* m_pPropertyType;
 };
 
 
@@ -94,8 +93,8 @@ public:
   virtual void           GetValues(const void* pInstance, xiiDynamicArray<xiiVariant>& out_keys) const override {}
 
 private:
-  xiiString m_sPropertyNameStorage;
-  xiiRTTI*  m_pPropertyType;
+  xiiString      m_sPropertyNameStorage;
+  const xiiRTTI* m_pPropertyType;
 };
 
 
@@ -108,13 +107,13 @@ public:
   virtual const xiiRTTI* GetSpecificType() const override;
   virtual bool           IsEmpty(const void* pInstance) const override { return true; }
   virtual void           Clear(void* pInstance) override {}
-  virtual void           Insert(void* pInstance, const char* szKey, const void* pObject) override {}
-  virtual void           Remove(void* pInstance, const char* szKey) override {}
-  virtual bool           Contains(const void* pInstance, const char* szKey) const override { return false; }
-  virtual bool           GetValue(const void* pInstance, const char* szKey, void* pObject) const override { return false; }
+  virtual void           Insert(void* pInstance, xiiStringView sKey, const void* pObject) override {}
+  virtual void           Remove(void* pInstance, xiiStringView sKey) override {}
+  virtual bool           Contains(const void* pInstance, xiiStringView sKey) const override { return false; }
+  virtual bool           GetValue(const void* pInstance, xiiStringView sKey, void* pObject) const override { return false; }
   virtual void           GetKeys(const void* pInstance, xiiHybridArray<xiiString, 16>& out_keys) const override {}
 
 private:
-  xiiString m_sPropertyNameStorage;
-  xiiRTTI*  m_pPropertyType;
+  xiiString      m_sPropertyNameStorage;
+  const xiiRTTI* m_pPropertyType;
 };

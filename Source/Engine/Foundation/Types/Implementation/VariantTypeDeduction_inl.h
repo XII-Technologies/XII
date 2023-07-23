@@ -761,7 +761,7 @@ struct xiiVariantTypeDeduction<xiiVariantDictionary>
 
 namespace xiiInternal
 {
-  template <int v>
+  template <xiiInt32 v>
   struct PointerDeductionHelper
   {
   };

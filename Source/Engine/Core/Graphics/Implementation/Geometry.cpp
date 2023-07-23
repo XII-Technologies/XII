@@ -195,40 +195,40 @@ struct TangentContext
     TangentContext& context = *static_cast<TangentContext*>(pContext->m_pUserData);
     return context.m_pGeom->GetPolygons()[iFace].m_Vertices.GetCount();
   }
-  static void getPosition(const SMikkTSpaceContext* pContext, float pFvPosOut[], const int iFace, const int iVert)
+  static void getPosition(const SMikkTSpaceContext* pContext, float pPosOut[], const int iFace, const int iVert)
   {
     TangentContext& context      = *static_cast<TangentContext*>(pContext->m_pUserData);
     xiiUInt32       iVertexIndex = context.m_pGeom->GetPolygons()[iFace].m_Vertices[iVert];
     const xiiVec3&  pos          = context.m_pGeom->GetVertices()[iVertexIndex].m_vPosition;
-    pFvPosOut[0]                 = pos.x;
-    pFvPosOut[1]                 = pos.y;
-    pFvPosOut[2]                 = pos.z;
+    pPosOut[0]                   = pos.x;
+    pPosOut[1]                   = pos.y;
+    pPosOut[2]                   = pos.z;
   }
-  static void getNormal(const SMikkTSpaceContext* pContext, float pFvNormOut[], const int iFace, const int iVert)
+  static void getNormal(const SMikkTSpaceContext* pContext, float pNormOut[], const int iFace, const int iVert)
   {
     TangentContext& context      = *static_cast<TangentContext*>(pContext->m_pUserData);
     xiiUInt32       iVertexIndex = context.m_pGeom->GetPolygons()[iFace].m_Vertices[iVert];
     const xiiVec3&  normal       = context.m_pGeom->GetVertices()[iVertexIndex].m_vNormal;
-    pFvNormOut[0]                = normal.x;
-    pFvNormOut[1]                = normal.y;
-    pFvNormOut[2]                = normal.z;
+    pNormOut[0]                  = normal.x;
+    pNormOut[1]                  = normal.y;
+    pNormOut[2]                  = normal.z;
   }
-  static void getTexCoord(const SMikkTSpaceContext* pContext, float pFvTexcOut[], const int iFace, const int iVert)
+  static void getTexCoord(const SMikkTSpaceContext* pContext, float pTexcOut[], const int iFace, const int iVert)
   {
     TangentContext& context      = *static_cast<TangentContext*>(pContext->m_pUserData);
     xiiUInt32       iVertexIndex = context.m_pGeom->GetPolygons()[iFace].m_Vertices[iVert];
     const xiiVec2&  tex          = context.m_pGeom->GetVertices()[iVertexIndex].m_vTexCoord;
-    pFvTexcOut[0]                = tex.x;
-    pFvTexcOut[1]                = tex.y;
+    pTexcOut[0]                  = tex.x;
+    pTexcOut[1]                  = tex.y;
   }
-  static void setTSpaceBasic(const SMikkTSpaceContext* pContext, const float pFvTangent[], const float fSign, const int iFace, const int iVert)
+  static void setTSpaceBasic(const SMikkTSpaceContext* pContext, const float pTangent[], const float fSign, const int iFace, const int iVert)
   {
     TangentContext&     context      = *static_cast<TangentContext*>(pContext->m_pUserData);
     xiiUInt32           iVertexIndex = context.m_pGeom->GetPolygons()[iFace].m_Vertices[iVert];
     xiiGeometry::Vertex v            = context.m_pGeom->GetVertices()[iVertexIndex];
-    v.m_vTangent.x                   = pFvTangent[0];
-    v.m_vTangent.y                   = pFvTangent[1];
-    v.m_vTangent.z                   = pFvTangent[2];
+    v.m_vTangent.x                   = pTangent[0];
+    v.m_vTangent.y                   = pTangent[1];
+    v.m_vTangent.z                   = pTangent[2];
     v.m_fBiTangentSign               = fSign;
 
     bool existed = false;
@@ -242,7 +242,7 @@ struct TangentContext
     context.m_Polygons[iFace].m_Vertices[iVert] = iNewVertexIndex;
   }
 
-  static void setTSpace(const SMikkTSpaceContext* pContext, const float pFvTangent[], const float pFvBiTangent[], const float fMagS, const float fMagT, const tbool isOrientationPreserving, const int iFace, const int iVert)
+  static void setTSpace(const SMikkTSpaceContext* pContext, const float pTangent[], const float pBiTangent[], const float fMagS, const float fMagT, const tbool isOrientationPreserving, const int iFace, const int iVert)
   {
     int i = 0;
     (void)i;

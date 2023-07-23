@@ -3,28 +3,28 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 #include <stdlib.h>
 
-xiiString xiiEnvironmentVariableUtils::GetValueStringImpl(const char* szName, const char* szDefault)
+xiiString xiiEnvironmentVariableUtils::GetValueStringImpl(xiiStringView sName, xiiStringView sDefault)
 {
-  const char* value = getenv(szName);
-  return value != nullptr ? value : szDefault;
+  const char* szValue = getenv(sName.GetStartPointer());
+  return szValue != nullptr ? szValue : sDefault;
 }
 
-xiiResult xiiEnvironmentVariableUtils::SetValueStringImpl(const char* szName, const char* szValue)
+xiiResult xiiEnvironmentVariableUtils::SetValueStringImpl(xiiStringView sName, xiiStringView sValue)
 {
-  if (setenv(szName, szValue, 1) == 0)
+  if (setenv(sName.GetStartPointer(), sValue.GetStartPointer(), 1) == 0)
     return XII_SUCCESS;
   else
     return XII_FAILURE;
 }
 
-bool xiiEnvironmentVariableUtils::IsVariableSetImpl(const char* szName)
+bool xiiEnvironmentVariableUtils::IsVariableSetImpl(xiiStringView sName)
 {
-  return getenv(szName) != nullptr;
+  return getenv(sName.GetStartPointer()) != nullptr;
 }
 
-xiiResult xiiEnvironmentVariableUtils::UnsetVariableImpl(const char* szName)
+xiiResult xiiEnvironmentVariableUtils::UnsetVariableImpl(xiiStringView sName)
 {
-  if (unsetenv(szName) == 0)
+  if (unsetenv(sName.GetStartPointer()) == 0)
     return XII_SUCCESS;
   else
     return XII_FAILURE;

@@ -42,10 +42,10 @@ void xiiStandardMenus::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hReportProblem);
 }
 
-void xiiStandardMenus::MapActions(const char* szMapping, const xiiBitflags<xiiStandardMenuTypes>& menus)
+void xiiStandardMenus::MapActions(xiiStringView sMapping, const xiiBitflags<xiiStandardMenuTypes>& menus)
 {
-  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(szMapping);
-  XII_ASSERT_DEV(pMap != nullptr, "'{0}' does not exist", szMapping);
+  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
+  XII_ASSERT_DEV(pMap != nullptr, "'{0}' does not exist", sMapping);
 
   xiiActionMapDescriptor md;
 
@@ -138,8 +138,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiHelpActions, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiHelpActions::xiiHelpActions(const xiiActionContext& context, const char* szName, ButtonType button) :
-  xiiButtonAction(context, szName, false, "")
+xiiHelpActions::xiiHelpActions(const xiiActionContext& context, xiiStringView sName, ButtonType button) :
+  xiiButtonAction(context, sName, false, "")
 {
   m_ButtonType = button;
 

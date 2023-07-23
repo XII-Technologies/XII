@@ -399,6 +399,11 @@ XII_ALWAYS_INLINE const xiiSharedPtr<xiiTask>& xiiWorld::GetUpdateTask()
   return m_pUpdateTask;
 }
 
+XII_ALWAYS_INLINE xiiUInt32 xiiWorld::GetUpdateCounter() const
+{
+  return m_Data.m_uiUpdateCounter;
+}
+
 XII_FORCE_INLINE xiiSpatialSystem* xiiWorld::GetSpatialSystem()
 {
   CheckForWriteAccess();
@@ -555,4 +560,16 @@ XII_ALWAYS_INLINE xiiGameObject* xiiWorld::GetObjectUnchecked(xiiUInt32 uiIndex)
 XII_ALWAYS_INLINE bool xiiWorld::ReportErrorWhenStaticObjectMoves() const
 {
   return m_Data.m_bReportErrorWhenStaticObjectMoves;
+}
+
+XII_ALWAYS_INLINE float xiiWorld::GetInvDeltaSeconds() const
+{
+  const float fDelta = (float)m_Data.m_Clock.GetTimeDiff().GetSeconds();
+  if (fDelta > 0.0f)
+  {
+    return 1.0f / fDelta;
+  }
+
+  // when the clock is paused just use zero
+  return 0.0f;
 }

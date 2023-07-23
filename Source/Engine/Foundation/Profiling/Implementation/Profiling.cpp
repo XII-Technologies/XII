@@ -102,7 +102,7 @@ namespace
   static xiiMutex                                           s_ThreadInfosMutex;
 
 #  if XII_ENABLED(XII_PLATFORM_64BIT)
-  XII_CHECK_AT_COMPILETIME(sizeof(xiiProfilingSystem::CPUScope) == 64);
+  XII_CHECK_AT_COMPILETIME(sizeof(xiiProfilingSystem::CPUScope) == 72);
   XII_CHECK_AT_COMPILETIME(sizeof(xiiProfilingSystem::GPUScope) == 64);
 #  endif
 
@@ -263,7 +263,7 @@ xiiResult xiiProfilingSystem::ProfilingData::Write(xiiStreamWriter& ref_outputSt
         writer.AddVariableString("ph", "M");
 
         writer.BeginObject("args");
-        writer.AddVariableString("name", xiiApplication::GetApplicationInstance() ? xiiApplication::GetApplicationInstance()->GetApplicationName().GetData() : "xiiEngine");
+        writer.AddVariableString("name", xiiApplication::GetApplicationInstance() ? xiiApplication::GetApplicationInstance()->GetApplicationName().GetView() : "XII");
         writer.EndObject();
       }
       writer.EndObject();
@@ -416,16 +416,16 @@ xiiResult xiiProfilingSystem::ProfilingData::Write(xiiStreamWriter& ref_outputSt
       for (const CPUScope& e : sortedScopes)
       {
         writer.BeginObject();
-        writer.AddVariableString("name", e.m_szName);
+        writer.AddVariableString("name", static_cast<const char*>(e.m_szName));
         writer.AddVariableUInt32("pid", m_uiProcessID);
         writer.AddVariableUInt64("tid", uiThreadId);
         writer.AddVariableUInt64("ts", static_cast<xiiUInt64>(e.m_BeginTime.GetMicroseconds()));
         writer.AddVariableString("ph", "B");
 
-        if (e.m_szFunctionName != nullptr)
+        if (e.m_sFunctionName != nullptr)
         {
           writer.BeginObject("args");
-          writer.AddVariableString("function", e.m_szFunctionName);
+          writer.AddVariableString("function", e.m_sFunctionName);
           writer.EndObject();
         }
 
@@ -434,7 +434,7 @@ xiiResult xiiProfilingSystem::ProfilingData::Write(xiiStreamWriter& ref_outputSt
         if (e.m_EndTime.IsPositive())
         {
           writer.BeginObject();
-          writer.AddVariableString("name", e.m_szName);
+          writer.AddVariableString("name", static_cast<const char*>(e.m_szName));
           writer.AddVariableUInt32("pid", m_uiProcessID);
           writer.AddVariableUInt64("tid", uiThreadId);
           writer.AddVariableUInt64("ts", static_cast<xiiUInt64>(e.m_EndTime.GetMicroseconds()));
@@ -499,7 +499,7 @@ xiiResult xiiProfilingSystem::ProfilingData::Write(xiiStreamWriter& ref_outputSt
           const auto& e = sortedGpuScopes[i];
 
           writer.BeginObject();
-          writer.AddVariableString("name", e.m_szName);
+          writer.AddVariableString("name", static_cast<const char*>(e.m_szName));
           writer.AddVariableUInt32("pid", m_uiProcessID);
           writer.AddVariableUInt64("tid", gpuIndex);
           writer.AddVariableUInt64("ts", static_cast<xiiUInt64>(e.m_BeginTime.GetMicroseconds()));
@@ -507,7 +507,7 @@ xiiResult xiiProfilingSystem::ProfilingData::Write(xiiStreamWriter& ref_outputSt
           writer.EndObject();
 
           writer.BeginObject();
-          writer.AddVariableString("name", e.m_szName);
+          writer.AddVariableString("name", static_cast<const char*>(e.m_szName));
           writer.AddVariableUInt32("pid", m_uiProcessID);
           writer.AddVariableUInt64("tid", gpuIndex);
           writer.AddVariableUInt64("ts", static_cast<xiiUInt64>(e.m_EndTime.GetMicroseconds()));
@@ -600,10 +600,10 @@ void xiiProfilingSystem::Capture(xiiProfilingSystem::ProfilingData& ref_profilin
       {
         const CPUScope& sourceEvent = sourceEventBuffer->IsMainThread() ? CastToMainThreadEventBuffer(sourceEventBuffer)->m_Data[j] : CastToOtherThreadEventBuffer(sourceEventBuffer)->m_Data[j];
 
-        CPUScope& copiedEvent        = targetEventBuffer.m_Data[j];
-        copiedEvent.m_szFunctionName = sourceEvent.m_szFunctionName;
-        copiedEvent.m_BeginTime      = sourceEvent.m_BeginTime;
-        copiedEvent.m_EndTime        = sourceEvent.m_EndTime;
+        CPUScope& copiedEvent       = targetEventBuffer.m_Data[j];
+        copiedEvent.m_sFunctionName = sourceEvent.m_sFunctionName;
+        copiedEvent.m_BeginTime     = sourceEvent.m_BeginTime;
+        copiedEvent.m_EndTime       = sourceEvent.m_EndTime;
         xiiStringUtils::Copy(copiedEvent.m_szName, CPUScope::NAME_SIZE, sourceEvent.m_szName);
       }
     }
@@ -675,7 +675,7 @@ void xiiProfilingSystem::StartNewFrame()
 }
 
 // static
-void xiiProfilingSystem::AddCPUScope(xiiStringView sName, const char* szFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout)
+void xiiProfilingSystem::AddCPUScope(xiiStringView sName, xiiStringView sFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout)
 {
   const xiiTime duration = endTime - beginTime;
 
@@ -706,9 +706,9 @@ void xiiProfilingSystem::AddCPUScope(xiiStringView sName, const char* szFunction
   }
 
   CPUScope scope;
-  scope.m_szFunctionName = szFunctionName;
-  scope.m_BeginTime      = beginTime;
-  scope.m_EndTime        = endTime;
+  scope.m_sFunctionName = sFunctionName;
+  scope.m_BeginTime     = beginTime;
+  scope.m_EndTime       = endTime;
   xiiStringUtils::Copy(scope.m_szName, XII_ARRAY_SIZE(scope.m_szName), sName.GetStartPointer(), sName.GetEndPointer());
 
   if (xiiThreadUtils::IsMainThread())
@@ -734,7 +734,7 @@ void xiiProfilingSystem::AddCPUScope(xiiStringView sName, const char* szFunction
 
   if (scopeTimeout.IsPositive() && duration > scopeTimeout && s_ScopeTimeoutCallback.IsValid())
   {
-    s_ScopeTimeoutCallback(sName, szFunctionName, duration);
+    s_ScopeTimeoutCallback(sName, sFunctionName, duration);
   }
 }
 
@@ -839,22 +839,22 @@ void xiiProfilingSystem::AddGPUScope(xiiStringView sName, xiiTime beginTime, xii
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiProfilingScope::xiiProfilingScope(xiiStringView sName, const char* szFunctionName, xiiTime timeout) :
-  m_sName(sName), m_szFunction(szFunctionName), m_BeginTime(xiiTime::Now()), m_Timeout(timeout)
+xiiProfilingScope::xiiProfilingScope(xiiStringView sName, xiiStringView sFunctionName, xiiTime timeout) :
+  m_sName(sName), m_sFunction(sFunctionName), m_BeginTime(xiiTime::Now()), m_Timeout(timeout)
 {
 }
 
 xiiProfilingScope::~xiiProfilingScope()
 {
-  xiiProfilingSystem::AddCPUScope(m_sName, m_szFunction, m_BeginTime, xiiTime::Now(), m_Timeout);
+  xiiProfilingSystem::AddCPUScope(m_sName, m_sFunction, m_BeginTime, xiiTime::Now(), m_Timeout);
 }
 
 //////////////////////////////////////////////////////////////////////////
 
 thread_local xiiProfilingListScope* xiiProfilingListScope::s_pCurrentList = nullptr;
 
-xiiProfilingListScope::xiiProfilingListScope(xiiStringView sListName, xiiStringView sFirstSectionName, const char* szFunctionName) :
-  m_sListName(sListName), m_szListFunction(szFunctionName), m_ListBeginTime(xiiTime::Now()), m_sCurSectionName(sFirstSectionName), m_CurSectionBeginTime(m_ListBeginTime)
+xiiProfilingListScope::xiiProfilingListScope(xiiStringView sListName, xiiStringView sFirstSectionName, xiiStringView sFunctionName) :
+  m_sListName(sListName), m_sListFunction(sFunctionName), m_ListBeginTime(xiiTime::Now()), m_sCurSectionName(sFirstSectionName), m_CurSectionBeginTime(m_ListBeginTime)
 {
   m_pPreviousList = s_pCurrentList;
   s_pCurrentList  = this;
@@ -864,7 +864,7 @@ xiiProfilingListScope::~xiiProfilingListScope()
 {
   xiiTime now = xiiTime::Now();
   xiiProfilingSystem::AddCPUScope(m_sCurSectionName, nullptr, m_CurSectionBeginTime, now, xiiTime::Zero());
-  xiiProfilingSystem::AddCPUScope(m_sListName, m_szListFunction, m_ListBeginTime, now, xiiTime::Zero());
+  xiiProfilingSystem::AddCPUScope(m_sListName, m_sListFunction, m_ListBeginTime, now, xiiTime::Zero());
 
   s_pCurrentList = m_pPreviousList;
 }
@@ -896,7 +896,7 @@ void xiiProfilingSystem::SetDiscardThreshold(xiiTime threshold) {}
 
 void xiiProfilingSystem::StartNewFrame() {}
 
-void xiiProfilingSystem::AddCPUScope(xiiStringView sName, const char* szFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout) {}
+void xiiProfilingSystem::AddCPUScope(xiiStringView sName, xiiStringView sFunctionName, xiiTime beginTime, xiiTime endTime, xiiTime scopeTimeout) {}
 
 void xiiProfilingSystem::Initialize() {}
 

@@ -97,7 +97,7 @@ class XII_GUIFOUNDATION_DLL xiiQtUnsupportedPropertyWidget : public xiiQtPropert
   Q_OBJECT;
 
 public:
-  explicit xiiQtUnsupportedPropertyWidget(const char* szMessage = nullptr);
+  explicit xiiQtUnsupportedPropertyWidget(xiiStringView sMessage = {});
 
 protected:
   virtual void OnInit() override;

@@ -10,9 +10,9 @@ public:
   static void RegisterActions();
   static void UnregisterActions();
 
-  static void MapActions(const char* szMapping, const char* szPath, bool bDeleteAction, bool bAdvancedPasteActions);
-  static void MapContextMenuActions(const char* szMapping, const char* szPath);
-  static void MapViewContextMenuActions(const char* szMapping, const char* szPath);
+  static void MapActions(xiiStringView sMapping, xiiStringView sPath, bool bDeleteAction, bool bAdvancedPasteActions);
+  static void MapContextMenuActions(xiiStringView sMapping, xiiStringView sPath);
+  static void MapViewContextMenuActions(xiiStringView sMapping, xiiStringView sPath);
 
   static xiiActionDescriptorHandle s_hEditCategory;
   static xiiActionDescriptorHandle s_hCopy;
@@ -37,7 +37,7 @@ public:
     PasteAtOriginalLocation,
     Delete,
   };
-  xiiEditAction(const xiiActionContext& context, const char* szName, ButtonType button);
+  xiiEditAction(const xiiActionContext& context, xiiStringView sName, ButtonType button);
   ~xiiEditAction();
 
   virtual void Execute(const xiiVariant& value) override;

@@ -69,7 +69,7 @@ public:
   virtual void Reload() override;
 
 protected:
-  xiiMap<xiiUInt64, xiiString> m_Translations[(int)xiiTranslationUsage::ENUM_COUNT];
+  xiiMap<xiiUInt64, xiiString> m_Translations[(xiiInt32)xiiTranslationUsage::ENUM_COUNT];
 };
 
 /// \brief Outputs a 'Missing Translation' warning the first time a string translation is requested.
@@ -131,11 +131,11 @@ private:
   static xiiHybridArray<xiiUniquePtr<xiiTranslator>, 16> s_Translators;
 };
 
-/// \brief Use this macro to query a translation for a string from the xiiTranslationLookup system
+/// \brief Use this macro to query a translation for a string from the xiiTranslationLookup system.
 #define xiiTranslate(string) xiiTranslationLookup::Translate(string, xiiHashingUtils::StringHash(string), xiiTranslationUsage::Default)
 
-/// \brief Use this macro to query a translation for a tooltip string from the xiiTranslationLookup system
+/// \brief Use this macro to query a translation for a tooltip string from the xiiTranslationLookup system.
 #define xiiTranslateTooltip(string) xiiTranslationLookup::Translate(string, xiiHashingUtils::StringHash(string), xiiTranslationUsage::Tooltip)
 
-/// \brief Use this macro to query a translation for a help URL from the xiiTranslationLookup system
+/// \brief Use this macro to query a translation for a help URL from the xiiTranslationLookup system.
 #define xiiTranslateHelpURL(string) xiiTranslationLookup::Translate(string, xiiHashingUtils::StringHash(string), xiiTranslationUsage::HelpURL)

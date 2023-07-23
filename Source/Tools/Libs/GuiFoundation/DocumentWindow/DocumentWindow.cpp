@@ -47,7 +47,7 @@ void xiiQtDocumentWindow::Constructor()
   xiiQtMenuBarActionMapView* pMenuBar = new xiiQtMenuBarActionMapView(this);
   setMenuBar(pMenuBar);
 
-  xiiInt32              iContainerWindowIndex = xiiToolsProject::SuggestContainerWindow(m_pDocument);
+  xiiToolsProject::SuggestContainerWindow(m_pDocument);
   xiiQtContainerWindow* pContainer            = xiiQtContainerWindow::GetContainerWindow();
   pContainer->AddDocumentWindow(this);
 
@@ -59,7 +59,9 @@ xiiQtDocumentWindow::xiiQtDocumentWindow(xiiDocument* pDocument)
 {
   m_pDocument   = pDocument;
   m_sUniqueName = m_pDocument->GetDocumentPath();
-  setObjectName(GetUniqueName());
+
+  xiiStringBuilder tmp;
+  setObjectName(GetUniqueName().GetData(tmp));
 
   xiiDocumentManager::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtDocumentWindow::DocumentManagerEventHandler, this));
   pDocument->m_EventsOne.AddEventHandler(xiiMakeDelegate(&xiiQtDocumentWindow::DocumentEventHandler, this));
@@ -67,11 +69,13 @@ xiiQtDocumentWindow::xiiQtDocumentWindow(xiiDocument* pDocument)
   Constructor();
 }
 
-xiiQtDocumentWindow::xiiQtDocumentWindow(const char* szUniqueName)
+xiiQtDocumentWindow::xiiQtDocumentWindow(xiiStringView sUniqueName)
 {
   m_pDocument   = nullptr;
-  m_sUniqueName = szUniqueName;
-  setObjectName(GetUniqueName());
+  m_sUniqueName = sUniqueName;
+
+  xiiStringBuilder tmp;
+  setObjectName(GetUniqueName().GetData(tmp));
 
   Constructor();
 }
@@ -449,7 +453,7 @@ void xiiQtDocumentWindow::SetPermanentStatusBarMsg(const xiiFormatString& text)
   m_pPermanentDocumentStatusText->setText(QString::fromUtf8(text.GetTextCStr(tmp)));
 }
 
-void xiiQtDocumentWindow::CreateImageCapture(const char* szOutputPath)
+void xiiQtDocumentWindow::CreateImageCapture(xiiStringView sOutputPath)
 {
   XII_ASSERT_NOT_IMPLEMENTED;
 }

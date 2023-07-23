@@ -1,4 +1,4 @@
-﻿#include <FoundationTest/FoundationTestPCH.h>
+#include <FoundationTest/FoundationTestPCH.h>
 
 // NOTE: always save as Unicode UTF-8 with signature
 
@@ -380,7 +380,6 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBase)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "substring operator ==/!=/</>/<=/>=")
   {
-
     const char* sz1 = "aaabbbcccddd";
     const char* sz2 = "aaabbbdddeee";
 
@@ -474,8 +473,7 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBase)
 
     XII_TEST_BOOL(it.FindWholeWord("abc", xiiStringUtils::IsWordDelimiter_English) == &it.GetStartPointer()[34]);
     XII_TEST_BOOL(it.FindWholeWord("def", xiiStringUtils::IsWordDelimiter_English) == &it.GetStartPointer()[38]);
-    XII_TEST_BOOL(
-      it.FindWholeWord("mompfh", xiiStringUtils::IsWordDelimiter_English) == &it.GetStartPointer()[0]); // ü is not English (thus a delimiter)
+    XII_TEST_BOOL(it.FindWholeWord("mompfh", xiiStringUtils::IsWordDelimiter_English) == &it.GetStartPointer()[0]); // ü is not English (thus a delimiter)
 
     XII_TEST_BOOL(it.FindWholeWord("abc", xiiStringUtils::IsWordDelimiter_English, it.GetStartPointer() + 34) == &it.GetStartPointer()[34]);
     XII_TEST_BOOL(it.FindWholeWord("abc", xiiStringUtils::IsWordDelimiter_English, it.GetStartPointer() + 35) == nullptr);

@@ -256,13 +256,13 @@ xiiResult xiiPlaneTemplate<Type>::SetFromPoints(const xiiVec3Template<Type>* con
 }
 
 template <typename Type>
-xiiResult xiiPlaneTemplate<Type>::FindSupportPoints(const xiiVec3Template<Type>* const pVertices, int iMaxVertices, int& out_i1, int& out_i2, int& out_i3)
+xiiResult xiiPlaneTemplate<Type>::FindSupportPoints(const xiiVec3Template<Type>* const pVertices, xiiInt32 iMaxVertices, xiiInt32& out_i1, xiiInt32& out_i2, xiiInt32& out_i3)
 {
   const xiiVec3Template<Type> v1 = pVertices[0];
 
   bool bFoundSecond = false;
 
-  int i = 1;
+  xiiInt32 i = 1;
   while (i < iMaxVertices)
   {
     if (pVertices[i].IsEqual(v1, 0.001f) == false)

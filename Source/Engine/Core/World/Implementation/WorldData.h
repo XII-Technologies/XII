@@ -133,13 +133,13 @@ namespace xiiInternal
     void                             TraverseDepthFirst(VisitorFunc& func);
     static xiiVisitorExecution::Enum TraverseObjectDepthFirst(xiiGameObject* pObject, VisitorFunc& func);
 
-    static void UpdateGlobalTransform(xiiGameObject::TransformationData* pData, const xiiSimdFloat& fInvDeltaSeconds);
-    static void UpdateGlobalTransformWithParent(xiiGameObject::TransformationData* pData, const xiiSimdFloat& fInvDeltaSeconds);
+    static void UpdateGlobalTransform(xiiGameObject::TransformationData* pData, xiiUInt32 uiUpdateCounter);
+    static void UpdateGlobalTransformWithParent(xiiGameObject::TransformationData* pData, xiiUInt32 uiUpdateCounter);
 
-    static void UpdateGlobalTransformAndSpatialData(xiiGameObject::TransformationData* pData, const xiiSimdFloat& fInvDeltaSeconds, xiiSpatialSystem& spatialSystem);
-    static void UpdateGlobalTransformWithParentAndSpatialData(xiiGameObject::TransformationData* pData, const xiiSimdFloat& fInvDeltaSeconds, xiiSpatialSystem& spatialSystem);
+    static void UpdateGlobalTransformAndSpatialData(xiiGameObject::TransformationData* pData, xiiUInt32 uiUpdateCounter, xiiSpatialSystem& spatialSystem);
+    static void UpdateGlobalTransformWithParentAndSpatialData(xiiGameObject::TransformationData* pData, xiiUInt32 uiUpdateCounter, xiiSpatialSystem& spatialSystem);
 
-    void UpdateGlobalTransforms(float fInvDeltaSeconds);
+    void UpdateGlobalTransforms();
 
     // Game object lookups
     xiiHashTable<xiiUInt64, xiiGameObjectId, xiiHashHelper<xiiUInt64>, xiiLocalAllocatorWrapper> m_GlobalKeyToIdTable;
@@ -229,15 +229,17 @@ namespace xiiInternal
     };
 
     using MessageQueue = xiiMessageQueue<QueuedMsgMetaData, xiiLocalAllocatorWrapper>;
-    mutable MessageQueue m_MessageQueues[xiiObjectMsgQueueType::COUNT];
-    mutable MessageQueue m_TimedMessageQueues[xiiObjectMsgQueueType::COUNT];
+    mutable MessageQueue        m_MessageQueues[xiiObjectMsgQueueType::COUNT];
+    mutable MessageQueue        m_TimedMessageQueues[xiiObjectMsgQueueType::COUNT];
+    xiiObjectMsgQueueType::Enum m_ProcessingMessageQueue = xiiObjectMsgQueueType::COUNT;
 
     xiiThreadID                m_WriteThreadID;
     xiiInt32                   m_iWriteCounter = 0;
     mutable xiiAtomicInteger32 m_iReadCounter;
 
-    bool m_bSimulateWorld                    = true;
-    bool m_bReportErrorWhenStaticObjectMoves = true;
+    xiiUInt32 m_uiUpdateCounter                   = 0;
+    bool      m_bSimulateWorld                    = true;
+    bool      m_bReportErrorWhenStaticObjectMoves = true;
 
     /// \brief Maps some data (given as void*) to a xiiGameObjectHandle. Only available in special situations (e.g. editor use cases).
     xiiDelegate<xiiGameObjectHandle(const void*, xiiComponentHandle, xiiStringView)> m_GameObjectReferenceResolver;

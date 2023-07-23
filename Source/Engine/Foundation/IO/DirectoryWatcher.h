@@ -74,9 +74,9 @@ public:
 
   /// \brief
   ///   Returns the opened directory, will be empty if no directory was opened.
-  const char* GetDirectory() const { return m_sDirectoryPath; }
+  xiiStringView GetDirectory() const { return m_sDirectoryPath; }
 
-  using EnumerateChangesFunction = xiiDelegate<void(const char* filename, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type), 48>;
+  using EnumerateChangesFunction = xiiDelegate<void(xiiStringView sFileName, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type), 48>;
 
   /// \brief
   ///   Calls the callback \p func for each change since the last call. For each change the filename

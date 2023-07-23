@@ -104,22 +104,7 @@ XII_ALWAYS_INLINE void xiiGameObject::SetGlobalKey(xiiStringView sKey)
 
 XII_ALWAYS_INLINE xiiStringView xiiGameObject::GetName() const
 {
-  return m_sName.GetView();
-}
-
-XII_ALWAYS_INLINE void xiiGameObject::SetNameInternal(const char* szName)
-{
-  m_sName.Assign(szName);
-}
-
-XII_ALWAYS_INLINE const char* xiiGameObject::GetNameInternal() const
-{
   return m_sName;
-}
-
-XII_ALWAYS_INLINE void xiiGameObject::SetGlobalKeyInternal(const char* szName)
-{
-  SetGlobalKey(szName);
 }
 
 XII_ALWAYS_INLINE bool xiiGameObject::HasName(const xiiTempHashedString& sName) const
@@ -261,6 +246,11 @@ XII_ALWAYS_INLINE xiiTransform xiiGameObject::GetGlobalTransform() const
   return xiiSimdConversion::ToTransform(m_pTransformationData->m_globalTransform);
 }
 
+XII_ALWAYS_INLINE xiiTransform xiiGameObject::GetLastGlobalTransform() const
+{
+  return xiiSimdConversion::ToTransform(GetLastGlobalTransformSimd());
+}
+
 
 XII_ALWAYS_INLINE void xiiGameObject::SetLocalPosition(const xiiSimdVec4f& vPosition, UpdateBehaviorIfStatic updateBehavior)
 {
@@ -336,6 +326,8 @@ XII_ALWAYS_INLINE xiiSimdTransform xiiGameObject::GetLocalTransformSimd() const
 
 XII_ALWAYS_INLINE void xiiGameObject::SetGlobalPosition(const xiiSimdVec4f& vPosition)
 {
+  UpdateLastGlobalTransform();
+
   m_pTransformationData->m_globalTransform.m_Position = vPosition;
 
   m_pTransformationData->UpdateLocalTransform();
@@ -354,6 +346,8 @@ XII_ALWAYS_INLINE const xiiSimdVec4f& xiiGameObject::GetGlobalPositionSimd() con
 
 XII_ALWAYS_INLINE void xiiGameObject::SetGlobalRotation(const xiiSimdQuat& qRotation)
 {
+  UpdateLastGlobalTransform();
+
   m_pTransformationData->m_globalTransform.m_Rotation = qRotation;
 
   m_pTransformationData->UpdateLocalTransform();
@@ -372,6 +366,8 @@ XII_ALWAYS_INLINE const xiiSimdQuat& xiiGameObject::GetGlobalRotationSimd() cons
 
 XII_ALWAYS_INLINE void xiiGameObject::SetGlobalScaling(const xiiSimdVec4f& vScaling)
 {
+  UpdateLastGlobalTransform();
+
   m_pTransformationData->m_globalTransform.m_Scale = vScaling;
 
   m_pTransformationData->UpdateLocalTransform();
@@ -390,6 +386,8 @@ XII_ALWAYS_INLINE const xiiSimdVec4f& xiiGameObject::GetGlobalScalingSimd() cons
 
 XII_ALWAYS_INLINE void xiiGameObject::SetGlobalTransform(const xiiSimdTransform& transform)
 {
+  UpdateLastGlobalTransform();
+
   m_pTransformationData->m_globalTransform = transform;
 
   // xiiTransformTemplate<Type>::SetLocalTransform will produce NaNs in w components
@@ -409,21 +407,13 @@ XII_ALWAYS_INLINE const xiiSimdTransform& xiiGameObject::GetGlobalTransformSimd(
   return m_pTransformationData->m_globalTransform;
 }
 
+XII_ALWAYS_INLINE const xiiSimdTransform& xiiGameObject::GetLastGlobalTransformSimd() const
+{
 #if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
-XII_ALWAYS_INLINE void xiiGameObject::SetVelocity(const xiiVec3& vVelocity)
-{
-  m_pTransformationData->m_velocity = xiiSimdVec4f(vVelocity.x, vVelocity.y, vVelocity.z, 1.0f);
-}
-
-XII_ALWAYS_INLINE xiiVec3 xiiGameObject::GetVelocity() const
-{
-  return xiiSimdConversion::ToVec3(m_pTransformationData->m_velocity);
-}
+  return m_pTransformationData->m_lastGlobalTransform;
+#else
+  return m_pTransformationData->m_globalTransform;
 #endif
-
-XII_ALWAYS_INLINE void xiiGameObject::UpdateGlobalTransform()
-{
-  m_pTransformationData->UpdateGlobalTransformRecursive();
 }
 
 XII_ALWAYS_INLINE void xiiGameObject::EnableStaticTransformChangesNotifications()
@@ -565,15 +555,19 @@ XII_ALWAYS_INLINE void xiiGameObject::SetStableRandomSeed(xiiUInt32 uiSeed)
 
 //////////////////////////////////////////////////////////////////////////
 
-XII_ALWAYS_INLINE void xiiGameObject::TransformationData::UpdateGlobalTransformWithoutParent()
+XII_ALWAYS_INLINE void xiiGameObject::TransformationData::UpdateGlobalTransformWithoutParent(xiiUInt32 uiUpdateCounter)
 {
+  UpdateLastGlobalTransform(uiUpdateCounter);
+
   m_globalTransform.m_Position = m_localPosition;
   m_globalTransform.m_Rotation = m_localRotation;
   m_globalTransform.m_Scale    = m_localScaling * m_localScaling.w();
 }
 
-XII_ALWAYS_INLINE void xiiGameObject::TransformationData::UpdateGlobalTransformWithParent()
+XII_ALWAYS_INLINE void xiiGameObject::TransformationData::UpdateGlobalTransformWithParent(xiiUInt32 uiUpdateCounter)
 {
+  UpdateLastGlobalTransform(uiUpdateCounter);
+
   const xiiSimdVec4f     vScale = m_localScaling * m_localScaling.w();
   const xiiSimdTransform localTransform(m_localPosition, m_localRotation, vScale);
   m_globalTransform.SetGlobalTransform(m_pParentData->m_globalTransform, localTransform);
@@ -585,15 +579,13 @@ XII_FORCE_INLINE void xiiGameObject::TransformationData::UpdateGlobalBounds()
   m_globalBounds.Transform(m_globalTransform);
 }
 
-XII_ALWAYS_INLINE void xiiGameObject::TransformationData::UpdateVelocity(const xiiSimdFloat& fInvDeltaSeconds)
+XII_ALWAYS_INLINE void xiiGameObject::TransformationData::UpdateLastGlobalTransform(xiiUInt32 uiUpdateCounter)
 {
 #if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
-  // A w value != 0 indicates a custom velocity, don't overwrite it.
-  xiiSimdVec4b customVel = (m_velocity.Get<xiiSwizzle::WWWW>() != xiiSimdVec4f::ZeroVector());
-  xiiSimdVec4f newVel    = (m_globalTransform.m_Position - m_lastGlobalPosition) * fInvDeltaSeconds;
-  m_velocity             = xiiSimdVec4f::Select(customVel, m_velocity, newVel);
-
-  m_lastGlobalPosition = m_globalTransform.m_Position;
-  m_velocity.SetW(xiiSimdFloat::Zero());
+  if (m_uiLastGlobalTransformUpdateCounter != uiUpdateCounter)
+  {
+    m_lastGlobalTransform                = m_globalTransform;
+    m_uiLastGlobalTransformUpdateCounter = uiUpdateCounter;
+  }
 #endif
 }

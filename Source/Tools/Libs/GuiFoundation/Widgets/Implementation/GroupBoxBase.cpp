@@ -15,9 +15,10 @@ xiiQtGroupBoxBase::xiiQtGroupBoxBase(QWidget* pParent, bool bCollapsible) :
   m_bCollapsible = bCollapsible;
 }
 
-void xiiQtGroupBoxBase::SetTitle(const char* szTitle)
+void xiiQtGroupBoxBase::SetTitle(xiiStringView sTitle)
 {
-  m_sTitle = szTitle;
+  xiiStringBuilder tmp;
+  m_sTitle = sTitle.GetData(tmp);
 }
 
 QString xiiQtGroupBoxBase::GetTitle() const

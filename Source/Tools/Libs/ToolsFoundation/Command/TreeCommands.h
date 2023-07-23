@@ -16,8 +16,8 @@ public:
   xiiAddObjectCommand();
 
 public: // Properties
-  void        SetType(const char* szType);
-  const char* GetType() const;
+  void          SetType(xiiStringView sType);
+  xiiStringView GetType() const;
 
   const xiiRTTI* m_pType = nullptr;
   xiiUuid        m_Parent;

@@ -30,6 +30,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiFloatStruct, xiiNoBase, 1, xiiRTTIDefaultAllo
     XII_ACCESSOR_PROPERTY("Double", GetDouble, SetDouble),
     XII_ACCESSOR_PROPERTY("Time", GetTime, SetTime),
     XII_ACCESSOR_PROPERTY("Angle", GetAngle, SetAngle),
+    XII_ACCESSOR_PROPERTY("Angled", GetAngled, SetAngled),
   }
   XII_END_PROPERTIES;
 }
@@ -48,6 +49,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPODClass, 1, xiiRTTIDefaultAllocator<xiiPODC
     XII_ACCESSOR_PROPERTY("String", GetString, SetString),
     XII_ACCESSOR_PROPERTY("Buffer", GetBuffer, SetBuffer),
     XII_ACCESSOR_PROPERTY("VarianceAngle", GetCustom, SetCustom),
+    XII_ACCESSOR_PROPERTY("VarianceAngled", GetCustom2, SetCustom2),
   }
   XII_END_PROPERTIES;
 }
@@ -58,15 +60,30 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMathClass, 1, xiiRTTIDefaultAllocator<xiiMat
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Vec2", GetVec2, SetVec2),
-    XII_ACCESSOR_PROPERTY("Vec3", GetVec3, SetVec3),
-    XII_ACCESSOR_PROPERTY("Vec4", GetVec4, SetVec4),
     XII_MEMBER_PROPERTY("Vec2I", m_Vec2I),
     XII_MEMBER_PROPERTY("Vec3I", m_Vec3I),
     XII_MEMBER_PROPERTY("Vec4I", m_Vec4I),
+    XII_MEMBER_PROPERTY("Vec2U", m_Vec2U),
+    XII_MEMBER_PROPERTY("Vec3U", m_Vec3U),
+    XII_MEMBER_PROPERTY("Vec4U", m_Vec4U),
+    XII_MEMBER_PROPERTY("Vec2I64", m_Vec2I64),
+    XII_MEMBER_PROPERTY("Vec3I64", m_Vec3I64),
+    XII_MEMBER_PROPERTY("Vec4I64", m_Vec4I64),
+    XII_MEMBER_PROPERTY("Vec2U64", m_Vec2U64),
+    XII_MEMBER_PROPERTY("Vec3U64", m_Vec3U64),
+    XII_MEMBER_PROPERTY("Vec4U64", m_Vec4U64),
+    XII_ACCESSOR_PROPERTY("Vec2", GetVec2, SetVec2),
+    XII_ACCESSOR_PROPERTY("Vec3", GetVec3, SetVec3),
+    XII_ACCESSOR_PROPERTY("Vec4", GetVec4, SetVec4),
     XII_ACCESSOR_PROPERTY("Quat", GetQuat, SetQuat),
     XII_ACCESSOR_PROPERTY("Mat3", GetMat3, SetMat3),
     XII_ACCESSOR_PROPERTY("Mat4", GetMat4, SetMat4),
+    XII_ACCESSOR_PROPERTY("Vec2d", GetVec2d, SetVec2d),
+    XII_ACCESSOR_PROPERTY("Vec3d", GetVec3d, SetVec3d),
+    XII_ACCESSOR_PROPERTY("Vec4d", GetVec4d, SetVec4d),
+    XII_ACCESSOR_PROPERTY("Quatd", GetQuatd, SetQuatd),
+    XII_ACCESSOR_PROPERTY("Mat3d", GetMat3d, SetMat3d),
+    XII_ACCESSOR_PROPERTY("Mat4d", GetMat4d, SetMat4d),
   }
   XII_END_PROPERTIES;
 }

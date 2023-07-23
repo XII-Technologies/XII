@@ -9,8 +9,8 @@ template <typename Type>
 class xiiTypedSetProperty : public xiiAbstractSetProperty
 {
 public:
-  xiiTypedSetProperty(const char* szPropertyName) :
-    xiiAbstractSetProperty(szPropertyName)
+  xiiTypedSetProperty(xiiStringView sPropertyName) :
+    xiiAbstractSetProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<Type>();
   }
@@ -23,8 +23,8 @@ template <>
 class xiiTypedSetProperty<const char*> : public xiiAbstractSetProperty
 {
 public:
-  xiiTypedSetProperty(const char* szPropertyName) :
-    xiiAbstractSetProperty(szPropertyName)
+  xiiTypedSetProperty(xiiStringView sPropertyName) :
+    xiiAbstractSetProperty(sPropertyName)
   {
     m_Flags = xiiPropertyFlags::GetParameterFlags<const char*>();
   }
@@ -44,8 +44,8 @@ public:
   using RemoveFunc    = void (Class::*)(Type value);
   using GetValuesFunc = Container (Class::*)() const;
 
-  xiiAccessorSetProperty(const char* szPropertyName, GetValuesFunc getValues, InsertFunc insert, RemoveFunc remove) :
-    xiiTypedSetProperty<Type>(szPropertyName)
+  xiiAccessorSetProperty(xiiStringView sPropertyName, GetValuesFunc getValues, InsertFunc insert, RemoveFunc remove) :
+    xiiTypedSetProperty<Type>(sPropertyName)
   {
     XII_ASSERT_DEBUG(getValues != nullptr, "The get values function of an set property cannot be nullptr.");
 
@@ -69,7 +69,7 @@ public:
     // e.g. xiiArrayPtr by value.
     while (!IsEmpty(pInstance))
     {
-      // this should be decltype(auto) c = ...; but MSVC 16 is too dumb for that (MSVC 15 works fine)
+      // This should be decltype(auto) c = ...; but MSVC 16 does not deduce that (MSVC 15 works fine)
       decltype((static_cast<const Class*>(pInstance)->*m_GetValues)()) c     = (static_cast<const Class*>(pInstance)->*m_GetValues)();
       auto                                                             it    = cbegin(c);
       RealType                                                         value = *it;
@@ -80,12 +80,14 @@ public:
   virtual void Insert(void* pInstance, const void* pObject) override
   {
     XII_ASSERT_DEBUG(m_Insert != nullptr, "The property '{0}' has no insert function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     (static_cast<Class*>(pInstance)->*m_Insert)(*static_cast<const RealType*>(pObject));
   }
 
   virtual void Remove(void* pInstance, const void* pObject) override
   {
     XII_ASSERT_DEBUG(m_Remove != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     (static_cast<Class*>(pInstance)->*m_Remove)(*static_cast<const RealType*>(pObject));
   }
 
@@ -136,8 +138,8 @@ public:
   using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
   using GetContainerFunc      = Container& (*)(Class* pInstance);
 
-  xiiMemberSetProperty(const char* szPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
-    xiiTypedSetProperty<RealType>(szPropertyName)
+  xiiMemberSetProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
+    xiiTypedSetProperty<RealType>(sPropertyName)
   {
     XII_ASSERT_DEBUG(constGetter != nullptr, "The const get count function of an set property cannot be nullptr.");
 
@@ -152,22 +154,22 @@ public:
 
   virtual void Clear(void* pInstance) override
   {
-    XII_ASSERT_DEBUG(
-      m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     m_Getter(static_cast<Class*>(pInstance)).Clear();
   }
 
   virtual void Insert(void* pInstance, const void* pObject) override
   {
-    XII_ASSERT_DEBUG(
-      m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     m_Getter(static_cast<Class*>(pInstance)).Insert(*static_cast<const RealType*>(pObject));
   }
 
   virtual void Remove(void* pInstance, const void* pObject) override
   {
-    XII_ASSERT_DEBUG(
-      m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     m_Getter(static_cast<Class*>(pInstance)).Remove(*static_cast<const RealType*>(pObject));
   }
 

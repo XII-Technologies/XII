@@ -511,7 +511,7 @@ xiiExpressionAST::Node* xiiExpressionAST::FoldConstants(Node* pNode)
       }
       else if (returnType == DataType::Int)
       {
-        const int iValue = pConstantNode->m_Value.Get<int>();
+        const xiiInt32 iValue = pConstantNode->m_Value.Get<xiiInt32>();
 
         switch (nodeType)
         {
@@ -622,8 +622,8 @@ xiiExpressionAST::Node* xiiExpressionAST::FoldConstants(Node* pNode)
       }
       else if (leftType == DataType::Int)
       {
-        const int iLeftValue  = pLeftConstant->m_Value.Get<int>();
-        const int iRightValue = pRightConstant->m_Value.Get<int>();
+        const xiiInt32 iLeftValue  = pLeftConstant->m_Value.Get<xiiInt32>();
+        const xiiInt32 iRightValue = pRightConstant->m_Value.Get<xiiInt32>();
 
         switch (nodeType)
         {
@@ -827,7 +827,7 @@ xiiExpressionAST::Node* xiiExpressionAST::FoldConstants(Node* pNode)
       }
       else if (leftType == DataType::Int)
       {
-        const int iRightValue = pConstant->m_Value.Get<int>();
+        const xiiInt32 iRightValue = pConstant->m_Value.Get<xiiInt32>();
 
         if ((nodeType == NodeType::Add || nodeType == NodeType::Subtract) && iRightValue == 0)
         {

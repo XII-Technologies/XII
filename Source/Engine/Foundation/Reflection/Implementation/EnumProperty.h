@@ -12,8 +12,8 @@ class xiiAbstractEnumerationProperty : public xiiAbstractMemberProperty
 {
 public:
   /// \brief Passes the property name through to xiiAbstractMemberProperty.
-  xiiAbstractEnumerationProperty(const char* szPropertyName) :
-    xiiAbstractMemberProperty(szPropertyName)
+  xiiAbstractEnumerationProperty(xiiStringView sPropertyName) :
+    xiiAbstractMemberProperty(sPropertyName)
   {
   }
 
@@ -43,8 +43,8 @@ class xiiTypedEnumProperty : public xiiAbstractEnumerationProperty
 {
 public:
   /// \brief Passes the property name through to xiiAbstractEnumerationProperty.
-  xiiTypedEnumProperty(const char* szPropertyName) :
-    xiiAbstractEnumerationProperty(szPropertyName)
+  xiiTypedEnumProperty(xiiStringView sPropertyName) :
+    xiiAbstractEnumerationProperty(sPropertyName)
   {
   }
 
@@ -67,8 +67,8 @@ public:
   using SetterFunc = void (Class::*)(Type value);
 
   /// \brief Constructor.
-  xiiEnumAccessorProperty(const char* szPropertyName, GetterFunc getter, SetterFunc setter) :
-    xiiTypedEnumProperty<EnumType>(szPropertyName)
+  xiiEnumAccessorProperty(xiiStringView sPropertyName, GetterFunc getter, SetterFunc setter) :
+    xiiTypedEnumProperty<EnumType>(sPropertyName)
   {
     XII_ASSERT_DEBUG(getter != nullptr, "The getter of a property cannot be nullptr.");
     xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::IsEnum);
@@ -115,8 +115,8 @@ public:
   using PointerFunc = void* (*)(const Class* pInstance);
 
   /// \brief Constructor.
-  xiiEnumMemberProperty(const char* szPropertyName, GetterFunc getter, SetterFunc setter, PointerFunc pointer) :
-    xiiTypedEnumProperty<EnumType>(szPropertyName)
+  xiiEnumMemberProperty(xiiStringView sPropertyName, GetterFunc getter, SetterFunc setter, PointerFunc pointer) :
+    xiiTypedEnumProperty<EnumType>(sPropertyName)
   {
     XII_ASSERT_DEBUG(getter != nullptr, "The getter of a property cannot be nullptr.");
     xiiAbstractMemberProperty::m_Flags.Add(xiiPropertyFlags::IsEnum);

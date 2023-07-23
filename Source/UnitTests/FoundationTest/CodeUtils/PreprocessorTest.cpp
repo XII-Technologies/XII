@@ -8,25 +8,25 @@
 
 XII_CREATE_SIMPLE_TEST_GROUP(CodeUtils);
 
-xiiResult FileLocator(const char* szCurAbsoluteFile, const char* szIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath)
+xiiResult FileLocator(xiiStringView sCurAbsoluteFile, xiiStringView sIncludeFile, xiiPreprocessor::IncludeType incType, xiiStringBuilder& out_sAbsoluteFilePath)
 {
   xiiStringBuilder& s = out_sAbsoluteFilePath;
 
   if (incType == xiiPreprocessor::RelativeInclude)
   {
-    s = szCurAbsoluteFile;
+    s = sCurAbsoluteFile;
     s.PathParentDirectory();
-    s.AppendPath(szIncludeFile);
+    s.AppendPath(sIncludeFile);
     s.MakeCleanPath();
   }
   else if (incType == xiiPreprocessor::GlobalInclude)
   {
     s = "Preprocessor";
-    s.AppendPath(szIncludeFile);
+    s.AppendPath(sIncludeFile);
     s.MakeCleanPath();
   }
   else
-    s = szIncludeFile;
+    s = sIncludeFile;
 
   return XII_SUCCESS;
 }
@@ -79,7 +79,7 @@ public:
           break;
       }
 
-      m_sOutput.AppendFormat("{0}\n", event.m_szInfo);
+      m_sOutput.AppendFormat("{0}\n", event.m_sInfo);
     }
 
     m_EventStack.PopBack();
@@ -223,7 +223,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Preprocessor)
         pp.m_ProcessingEvents.AddEventHandler(xiiDelegate<void(const xiiPreprocessor::ProcessingEvent&)>(&Logger::EventHandler, &log));
         pp.AddCustomDefine("PP_OBJ").IgnoreResult();
         pp.AddCustomDefine("PP_FUNC(a) a").IgnoreResult();
-        pp.SetPassThroughUnknownCmdsCB([](const char* s) -> bool { return xiiStringUtils::IsEqual(s, "version"); }); // TestSettings[i].m_bPassThroughUnknownCommands);
+        pp.SetPassThroughUnknownCmdsCB([](xiiStringView s) -> bool { return s.IsEqual("version"); }); // TestSettings[i].m_bPassThroughUnknownCommands);
 
         {
           fileName.Format("Preprocessor/{0}.txt", TestSettings[i].m_szFileName);
@@ -259,7 +259,6 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Preprocessor)
       }
     }
   }
-
 
   xiiFileSystem::RemoveDataDirectoryGroup("PreprocessorTest");
 }

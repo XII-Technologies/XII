@@ -5,7 +5,6 @@
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <FoundationTest/Reflection/ReflectionTestClasses.h>
 
-
 template <typename T>
 void TestSerialization(const T& source)
 {
@@ -107,21 +106,16 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
     bool bFoundClass1 = false;
     bool bFoundClass2 = false;
 
-    xiiRTTI* pRtti = xiiRTTI::GetFirstInstance();
-
-    while (pRtti)
-    {
-      if (xiiStringUtils::IsEqual(pRtti->GetTypeName(), "xiiTestStruct"))
+    xiiRTTI::ForEachType([&](const xiiRTTI* pRtti) {
+      if (pRtti->GetTypeName() == "xiiTestStruct")
         bFoundStruct = true;
-      if (xiiStringUtils::IsEqual(pRtti->GetTypeName(), "xiiTestClass1"))
+      if (pRtti->GetTypeName() == "xiiTestClass1")
         bFoundClass1 = true;
-      if (xiiStringUtils::IsEqual(pRtti->GetTypeName(), "xiiTestClass2"))
+      if (pRtti->GetTypeName() == "xiiTestClass2")
         bFoundClass2 = true;
 
       XII_TEST_STRING(pRtti->GetPluginName(), "Static");
-
-      pRtti = pRtti->GetNextInstance();
-    }
+    });
 
     XII_TEST_BOOL(bFoundStruct);
     XII_TEST_BOOL(bFoundClass1);
@@ -131,10 +125,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsDerivedFrom")
   {
     xiiDynamicArray<const xiiRTTI*> allTypes;
-    for (const xiiRTTI* pRtti = xiiRTTI::GetFirstInstance(); pRtti; pRtti = pRtti->GetNextInstance())
-    {
-      allTypes.PushBack(pRtti);
-    }
+    xiiRTTI::ForEachType([&](const xiiRTTI* pRtti) { allTypes.PushBack(pRtti); });
 
     // ground truth - traversing up the parent list
     auto ManualIsDerivedFrom = [](const xiiRTTI* t, const xiiRTTI* pBaseType) -> bool {
@@ -204,38 +195,38 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "FindTypeByName")
   {
-    xiiRTTI* pFloat = xiiRTTI::FindTypeByName("float");
+    const xiiRTTI* pFloat = xiiRTTI::FindTypeByName("float");
     XII_TEST_BOOL(pFloat != nullptr);
     XII_TEST_STRING(pFloat->GetTypeName(), "float");
 
-    xiiRTTI* pStruct = xiiRTTI::FindTypeByName("xiiTestStruct");
+    const xiiRTTI* pStruct = xiiRTTI::FindTypeByName("xiiTestStruct");
     XII_TEST_BOOL(pStruct != nullptr);
     XII_TEST_STRING(pStruct->GetTypeName(), "xiiTestStruct");
 
-    xiiRTTI* pClass2 = xiiRTTI::FindTypeByName("xiiTestClass2");
+    const xiiRTTI* pClass2 = xiiRTTI::FindTypeByName("xiiTestClass2");
     XII_TEST_BOOL(pClass2 != nullptr);
     XII_TEST_STRING(pClass2->GetTypeName(), "xiiTestClass2");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "FindTypeByNameHash")
   {
-    xiiRTTI* pFloat  = xiiRTTI::FindTypeByName("float");
-    xiiRTTI* pFloat2 = xiiRTTI::FindTypeByNameHash(pFloat->GetTypeNameHash());
+    const xiiRTTI* pFloat  = xiiRTTI::FindTypeByName("float");
+    const xiiRTTI* pFloat2 = xiiRTTI::FindTypeByNameHash(pFloat->GetTypeNameHash());
     XII_TEST_BOOL(pFloat == pFloat2);
 
-    xiiRTTI* pStruct  = xiiRTTI::FindTypeByName("xiiTestStruct");
-    xiiRTTI* pStruct2 = xiiRTTI::FindTypeByNameHash(pStruct->GetTypeNameHash());
+    const xiiRTTI* pStruct  = xiiRTTI::FindTypeByName("xiiTestStruct");
+    const xiiRTTI* pStruct2 = xiiRTTI::FindTypeByNameHash(pStruct->GetTypeNameHash());
     XII_TEST_BOOL(pStruct == pStruct2);
 
-    xiiRTTI* pClass  = xiiRTTI::FindTypeByName("xiiTestClass2");
-    xiiRTTI* pClass2 = xiiRTTI::FindTypeByNameHash(pClass->GetTypeNameHash());
+    const xiiRTTI* pClass  = xiiRTTI::FindTypeByName("xiiTestClass2");
+    const xiiRTTI* pClass2 = xiiRTTI::FindTypeByNameHash(pClass->GetTypeNameHash());
     XII_TEST_BOOL(pClass == pClass2);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetProperties")
   {
     {
-      xiiRTTI* pType = xiiRTTI::FindTypeByName("xiiTestStruct");
+      const xiiRTTI* pType = xiiRTTI::FindTypeByName("xiiTestStruct");
 
       auto Props = pType->GetProperties();
       XII_TEST_INT(Props.GetCount(), 11);
@@ -253,7 +244,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
     }
 
     {
-      xiiRTTI* pType = xiiRTTI::FindTypeByName("xiiTestClass2");
+      const xiiRTTI* pType = xiiRTTI::FindTypeByName("xiiTestClass2");
 
       auto Props = pType->GetProperties();
       XII_TEST_INT(Props.GetCount(), 6);
@@ -314,7 +305,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
     if (loadPlugin.Failed())
       return;
 
-    xiiRTTI* pStruct2 = xiiRTTI::FindTypeByName("xiiTestStruct2");
+    const xiiRTTI* pStruct2 = xiiRTTI::FindTypeByName("xiiTestStruct2");
     XII_TEST_BOOL(pStruct2 != nullptr);
 
     if (pStruct2)
@@ -324,43 +315,39 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
 
     bool bFoundStruct2 = false;
 
-    xiiRTTI* pRtti = xiiRTTI::GetFirstInstance();
+    xiiRTTI::ForEachType(
+      [&](const xiiRTTI* pRtti) {
+        if (pRtti->GetTypeName() == "xiiTestStruct2")
+        {
+          bFoundStruct2 = true;
 
-    while (pRtti)
-    {
-      if (xiiStringUtils::IsEqual(pRtti->GetTypeName(), "xiiTestStruct2"))
-      {
-        bFoundStruct2 = true;
+          XII_TEST_STRING(pRtti->GetPluginName(), xiiFoundationTest_Plugin1);
 
-        XII_TEST_STRING(pRtti->GetPluginName(), xiiFoundationTest_Plugin1);
+          void* pInstance = pRtti->GetAllocator()->Allocate<void>();
+          XII_TEST_BOOL(pInstance != nullptr);
 
-        void* pInstance = pRtti->GetAllocator()->Allocate<void>();
-        XII_TEST_BOOL(pInstance != nullptr);
+          xiiAbstractProperty* pProp = pRtti->FindPropertyByName("Float2");
 
-        xiiAbstractProperty* pProp = pRtti->FindPropertyByName("Float2");
+          XII_TEST_BOOL(pProp != nullptr);
 
-        XII_TEST_BOOL(pProp != nullptr);
+          XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Member);
+          xiiAbstractMemberProperty* pAbsMember = (xiiAbstractMemberProperty*)pProp;
 
-        XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Member);
-        xiiAbstractMemberProperty* pAbsMember = (xiiAbstractMemberProperty*)pProp;
+          XII_TEST_BOOL(pAbsMember->GetSpecificType() == xiiGetStaticRTTI<float>());
 
-        XII_TEST_BOOL(pAbsMember->GetSpecificType() == xiiGetStaticRTTI<float>());
+          xiiTypedMemberProperty<float>* pMember = (xiiTypedMemberProperty<float>*)pAbsMember;
 
-        xiiTypedMemberProperty<float>* pMember = (xiiTypedMemberProperty<float>*)pAbsMember;
+          XII_TEST_FLOAT(pMember->GetValue(pInstance), 42.0f, 0);
+          pMember->SetValue(pInstance, 43.0f);
+          XII_TEST_FLOAT(pMember->GetValue(pInstance), 43.0f, 0);
 
-        XII_TEST_FLOAT(pMember->GetValue(pInstance), 42.0f, 0);
-        pMember->SetValue(pInstance, 43.0f);
-        XII_TEST_FLOAT(pMember->GetValue(pInstance), 43.0f, 0);
-
-        pRtti->GetAllocator()->Deallocate(pInstance);
-      }
-      else
-      {
-        XII_TEST_STRING(pRtti->GetPluginName(), "Static");
-      }
-
-      pRtti = pRtti->GetNextInstance();
-    }
+          pRtti->GetAllocator()->Deallocate(pInstance);
+        }
+        else
+        {
+          XII_TEST_STRING(pRtti->GetPluginName(), "Static");
+        }
+      });
 
     XII_TEST_BOOL(bFoundStruct2);
 
@@ -549,7 +536,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, MemberProperties)
     const xiiRTTI* pRtti = xiiGetStaticRTTI<xiiTestClass2>();
 
     {
-      TestMemberProperty<const char*>("Text", &Instance, pRtti, xiiPropertyFlags::StandardType | xiiPropertyFlags::Const, xiiString("Legen"), xiiString("dary"));
+      TestMemberProperty<xiiStringView>("Text", &Instance, pRtti, xiiPropertyFlags::StandardType, xiiString("Legen"), xiiString("dary"));
       xiiAbstractProperty* pProp = pRtti->FindPropertyByName("SubVector", false);
       XII_TEST_BOOL(pProp == nullptr);
     }
@@ -653,17 +640,14 @@ XII_CREATE_SIMPLE_TEST(Reflection, Enum)
 
         // Testing the short enum name version
         XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(pEnumPropertyRTTI, pConstantProp->GetValue(), sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
-        XII_TEST_BOOL(sValue.IsEqual(pConstantProp->GetPropertyName()) ||
-                      sValue.IsEqual(xiiStringUtils::FindLastSubString(pConstantProp->GetPropertyName(), "::") + 2));
+        XII_TEST_BOOL(sValue.IsEqual(pConstantProp->GetPropertyName()) || sValue.IsEqual(pConstantProp->GetPropertyName().FindLastSubString("::") + 2));
 
         XII_TEST_BOOL(xiiReflectionUtils::StringToEnumeration(pEnumPropertyRTTI, sValue, iValue));
         XII_TEST_INT(iValue, pConstantProp->GetValue());
 
         // Testing the short enum name version
-        XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(
-          pEnumPropertyRTTI, pConstantProp->GetValue(), sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
-        XII_TEST_BOOL(sValue.IsEqual(pConstantProp->GetPropertyName()) ||
-                      sValue.IsEqual(xiiStringUtils::FindLastSubString(pConstantProp->GetPropertyName(), "::") + 2));
+        XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(pEnumPropertyRTTI, pConstantProp->GetValue(), sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
+        XII_TEST_BOOL(sValue.IsEqual(pConstantProp->GetPropertyName()) || sValue.IsEqual(pConstantProp->GetPropertyName().FindLastSubString("::") + 2));
 
         XII_TEST_BOOL(xiiReflectionUtils::StringToEnumeration(pEnumPropertyRTTI, sValue, iValue));
         XII_TEST_INT(iValue, pConstantProp->GetValue());
@@ -682,7 +666,6 @@ XII_CREATE_SIMPLE_TEST(Reflection, Enum)
     TestSerialization<xiiTestEnumStruct>(data);
   }
 }
-
 
 XII_CREATE_SIMPLE_TEST(Reflection, Bitflags)
 {
@@ -780,16 +763,14 @@ XII_CREATE_SIMPLE_TEST(Reflection, Bitflags)
         XII_TEST_INT(iValue, uiBitflagValue);
 
         // Testing the short enum name version
-        XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(
-          pBitflagsPropertyRTTI, uiBitflagValue, sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
+        XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(pBitflagsPropertyRTTI, uiBitflagValue, sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
         XII_TEST_BOOL(sValue.IsEqual(stringValuesShort[i]));
 
         XII_TEST_BOOL(xiiReflectionUtils::StringToEnumeration(pBitflagsPropertyRTTI, sValue, iValue));
         XII_TEST_INT(iValue, uiBitflagValue);
 
         // Testing the short enum name version
-        XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(
-          pBitflagsPropertyRTTI, uiBitflagValue, sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
+        XII_TEST_BOOL(xiiReflectionUtils::EnumerationToString(pBitflagsPropertyRTTI, uiBitflagValue, sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly));
         XII_TEST_BOOL(sValue.IsEqual(stringValuesShort[i]));
 
         XII_TEST_BOOL(xiiReflectionUtils::StringToEnumeration(pBitflagsPropertyRTTI, sValue, iValue));
@@ -944,16 +925,16 @@ XII_CREATE_SIMPLE_TEST(Reflection, Arrays)
     TestArrayProperty<double>("AcHybrid", &containers, pRtti, fValue);
     TestArrayProperty<double>("AcHybridRO", &containers, pRtti, fValue);
 
-    const char* szValue  = "Bla";
-    const char* szValue2 = "LongString------------------------------------------------------------------------------------";
-    xiiString   sValue   = szValue;
-    xiiString   sValue2  = szValue2;
+    xiiStringView sValue0  = "Bla";
+    xiiStringView sValue02 = "LongString------------------------------------------------------------------------------------";
+    xiiString     sValue   = sValue0;
+    xiiString     sValue2  = sValue02;
 
     TestArrayProperty<xiiString>("HybridChar", &containers, pRtti, sValue);
     TestArrayProperty<xiiString>("HybridCharRO", &containers, pRtti, sValue);
 
-    TestArrayProperty<const char*>("AcHybridChar", &containers, pRtti, szValue);
-    TestArrayProperty<const char*>("AcHybridCharRO", &containers, pRtti, szValue);
+    TestArrayProperty<xiiStringView>("AcHybridChar", &containers, pRtti, sValue0);
+    TestArrayProperty<xiiStringView>("AcHybridCharRO", &containers, pRtti, sValue0);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Struct Array")
@@ -1115,9 +1096,9 @@ XII_CREATE_SIMPLE_TEST(Reflection, Sets)
     TestSetProperty<xiiString>("AcPseudoSet2", &containers, pRtti, sValue1, sValue2);
     TestSetProperty<xiiString>("AcPseudoSet2RO", &containers, pRtti, sValue1, sValue2);
 
-    const char* szValue1 = "TestString1";
-    const char* szValue2 = "Test String Deus";
-    TestSetProperty<const char*>("AcPseudoSet2b", &containers, pRtti, szValue1, szValue2);
+    xiiStringView sValue01 = "TestString1";
+    xiiStringView sValue02 = "Test String Deus";
+    TestSetProperty<xiiStringView>("AcPseudoSet2b", &containers, pRtti, sValue01, sValue02);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Custom Variant HashSet")
@@ -1319,10 +1300,8 @@ XII_CREATE_SIMPLE_TEST(Reflection, Pointer)
       XII_TEST_BOOL(pProp->GetSpecificType() == xiiGetStaticRTTI<const char*>());
     }
 
-    TestPointerMemberProperty<xiiTestArrays>(
-      "ArraysPtr", &containers, pRtti, xiiPropertyFlags::Class | xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner, containers.m_pArrays);
-    TestPointerMemberProperty<xiiTestArrays>("ArraysPtrDirect", &containers, pRtti,
-                                             xiiPropertyFlags::Class | xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner, containers.m_pArraysDirect);
+    TestPointerMemberProperty<xiiTestArrays>("ArraysPtr", &containers, pRtti, xiiPropertyFlags::Class | xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner, containers.m_pArrays);
+    TestPointerMemberProperty<xiiTestArrays>("ArraysPtrDirect", &containers, pRtti, xiiPropertyFlags::Class | xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner, containers.m_pArraysDirect);
   }
 
   xiiTestPtr                    containers;

@@ -71,6 +71,7 @@ XII_IMPLEMENT_SERIALIZATION_CONTEXT(xiiTypeVersionReadContext)
 xiiTypeVersionReadContext::xiiTypeVersionReadContext(xiiStreamReader& ref_stream)
 {
   auto version = ref_stream.ReadVersion(s_uiTypeVersionContextVersion);
+  XII_IGNORE_UNUSED(version);
 
   xiiUInt32 uiNumTypes = 0;
   ref_stream >> uiNumTypes;

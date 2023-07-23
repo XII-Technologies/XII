@@ -189,7 +189,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetSqrt<xiiMathFloatBits::FULL>() c
   return vsqrtq_f32(m_v);
 }
 
-template <int N, xiiMathFloatBits::Enum acc>
+template <xiiInt32 N, xiiMathFloatBits::Enum acc>
 void xiiSimdVec4f::NormalizeIfNotZero(const xiiSimdFloat& fEpsilon)
 {
   xiiSimdFloat sqLength  = GetLengthSquared<N>();
@@ -198,36 +198,36 @@ void xiiSimdVec4f::NormalizeIfNotZero(const xiiSimdFloat& fEpsilon)
   m_v                    = vreinterpretq_f32_u32(vandq_u32(isNotZero, vreinterpretq_u32_f32(m_v)));
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero() const
 {
-  const int mask = XII_BIT(N) - 1;
+  const xiiInt32 mask = XII_BIT(N) - 1;
   return (xiiInternal::NeonMoveMask(vceqzq_f32(m_v)) & mask) == mask;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsZero(const xiiSimdFloat& fEpsilon) const
 {
-  const int   mask   = XII_BIT(N) - 1;
-  float32x4_t absVal = Abs().m_v;
+  const xiiInt32 mask   = XII_BIT(N) - 1;
+  float32x4_t    absVal = Abs().m_v;
   return (xiiInternal::NeonMoveMask(vcltq_f32(absVal, fEpsilon.m_v)) & mask) == mask;
 }
 
-template <int N>
+template <xiiInt32 N>
 inline bool xiiSimdVec4f::IsNaN() const
 {
-  const int mask = XII_BIT(N) - 1;
+  const xiiInt32 mask = XII_BIT(N) - 1;
   return (xiiInternal::NeonMoveMask(vceqq_f32(m_v, m_v)) & mask) != mask;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE bool xiiSimdVec4f::IsValid() const
 {
-  const int mask = XII_BIT(N) - 1;
+  const xiiInt32 mask = XII_BIT(N) - 1;
   return (xiiInternal::NeonMoveMask(vcgeq_u32(vreinterpretq_u32_f32(m_v), vmovq_n_u32(0x7f800000))) & mask) == 0;
 }
 
-template <int N>
+template <xiiInt32 N>
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdVec4f::GetComponent() const
 {
   return vdupq_laneq_f32(m_v, N);

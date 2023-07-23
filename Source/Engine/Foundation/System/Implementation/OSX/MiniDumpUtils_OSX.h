@@ -3,12 +3,12 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 #include <Foundation/System/MiniDumpUtils.h>
 
-xiiStatus xiiMiniDumpUtils::WriteExternalProcessMiniDump(const char* szDumpFile, xiiUInt32 uiProcessID)
+xiiStatus xiiMiniDumpUtils::WriteExternalProcessMiniDump(xiiStringView sDumpFile, xiiUInt32 uiProcessID)
 {
   return xiiStatus("Not implemented on OSX");
 }
 
-xiiStatus xiiMiniDumpUtils::LaunchMiniDumpTool(const char* szDumpFile)
+xiiStatus xiiMiniDumpUtils::LaunchMiniDumpTool(xiiStringView sDumpFile)
 {
   return xiiStatus("Not implemented on OSX");
 }

@@ -129,7 +129,7 @@ xiiQtMainWindow::xiiQtMainWindow() :
   if (bRestoreDockingState)
   {
     auto dockState = Settings.value("DockManagerState");
-    if (dockState.isValid() && dockState.type() == QVariant::ByteArray)
+    if (dockState.isValid() && dockState.typeId() == QMetaType::QByteArray)
     {
       m_DockManager->restoreState(dockState.toByteArray(), 1);
     }
@@ -328,6 +328,7 @@ void xiiQtMainWindow::UpdateAlwaysOnTop()
   static bool bOnTop = false;
 
   bool bNewState = bOnTop;
+  XII_IGNORE_UNUSED(bNewState);
 
   if (m_OnTopMode == Always || (m_OnTopMode == WhenConnected && xiiTelemetry::IsConnectedToServer()))
     bNewState = true;

@@ -22,9 +22,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGameObject, xiiNoBase, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Name", GetNameInternal, SetNameInternal),
+    XII_ACCESSOR_PROPERTY("Name", GetName, SetName),
     XII_ACCESSOR_PROPERTY("Active", GetActiveFlag, SetActiveFlag)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_ACCESSOR_PROPERTY("GlobalKey", GetGlobalKeyInternal, SetGlobalKeyInternal),
+    XII_ACCESSOR_PROPERTY("GlobalKey", GetGlobalKey, SetGlobalKey),
     XII_ENUM_ACCESSOR_PROPERTY("Mode", xiiObjectMode, Reflection_GetMode, Reflection_SetMode),
     XII_ACCESSOR_PROPERTY("LocalPosition", GetLocalPosition, SetLocalPosition)->AddAttributes(new xiiSuffixAttribute(" m")),
     XII_ACCESSOR_PROPERTY("LocalRotation", GetLocalRotation, SetLocalRotation),
@@ -208,7 +208,7 @@ void xiiGameObject::UpdateGlobalTransformAndBoundsRecursive()
 
   xiiSimdTransform oldGlobalTransform = GetGlobalTransformSimd();
 
-  m_pTransformationData->UpdateGlobalTransformNonRecursive();
+  m_pTransformationData->UpdateGlobalTransformNonRecursive(GetWorld()->GetUpdateCounter());
 
   if (xiiSpatialSystem* pSpatialSystem = GetWorld()->GetSpatialSystem())
   {
@@ -232,6 +232,11 @@ void xiiGameObject::UpdateGlobalTransformAndBoundsRecursive()
   {
     it->UpdateGlobalTransformAndBoundsRecursive();
   }
+}
+
+void xiiGameObject::UpdateLastGlobalTransform()
+{
+  m_pTransformationData->UpdateLastGlobalTransform(GetWorld()->GetUpdateCounter());
 }
 
 void xiiGameObject::ConstChildIterator::Next()
@@ -349,11 +354,6 @@ xiiStringView xiiGameObject::GetGlobalKey() const
   return GetWorld()->GetObjectGlobalKey(this);
 }
 
-const char* xiiGameObject::GetGlobalKeyInternal() const
-{
-  return GetWorld()->GetObjectGlobalKey(this).GetStartPointer(); // we know that it's zero terminated
-}
-
 void xiiGameObject::SetParent(const xiiGameObjectHandle& hParent, xiiGameObject::TransformPreservation preserve)
 {
   xiiWorld* pWorld = GetWorld();
@@ -361,7 +361,6 @@ void xiiGameObject::SetParent(const xiiGameObjectHandle& hParent, xiiGameObject:
   xiiGameObject* pParent = nullptr;
   bool           _       = pWorld->TryGetObject(hParent, pParent);
   XII_IGNORE_UNUSED(_);
-
   pWorld->SetParent(this, pParent, preserve);
 }
 
@@ -614,6 +613,41 @@ xiiVec3 xiiGameObject::GetGlobalDirUp() const
   return GetGlobalRotation() * coordinateSystem.m_vUpDir;
 }
 
+#if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
+void xiiGameObject::SetLastGlobalTransform(const xiiSimdTransform& transform)
+{
+  m_pTransformationData->m_lastGlobalTransform                = transform;
+  m_pTransformationData->m_uiLastGlobalTransformUpdateCounter = GetWorld()->GetUpdateCounter();
+}
+
+xiiVec3 xiiGameObject::GetLinearVelocity() const
+{
+  const xiiSimdFloat invDeltaSeconds = GetWorld()->GetInvDeltaSeconds();
+  const xiiSimdVec4f linearVelocity  = (m_pTransformationData->m_globalTransform.m_Position - m_pTransformationData->m_lastGlobalTransform.m_Position) * invDeltaSeconds;
+  return xiiSimdConversion::ToVec3(linearVelocity);
+}
+
+xiiVec3 xiiGameObject::GetAngularVelocity() const
+{
+  const xiiSimdFloat invDeltaSeconds = GetWorld()->GetInvDeltaSeconds();
+  const xiiSimdQuat  q               = m_pTransformationData->m_globalTransform.m_Rotation * -m_pTransformationData->m_lastGlobalTransform.m_Rotation;
+  xiiSimdVec4f       angularVelocity = xiiSimdVec4f::ZeroVector();
+
+  xiiSimdVec4f axis;
+  xiiSimdFloat angle;
+  if (q.GetRotationAxisAndAngle(axis, angle).Succeeded())
+  {
+    angularVelocity = axis * (angle * invDeltaSeconds);
+  }
+  return xiiSimdConversion::ToVec3(angularVelocity);
+}
+#endif
+
+void xiiGameObject::UpdateGlobalTransform()
+{
+  m_pTransformationData->UpdateGlobalTransformRecursive(GetWorld()->GetUpdateCounter());
+}
+
 void xiiGameObject::UpdateLocalBounds()
 {
   xiiMsgUpdateLocalBounds msg;
@@ -654,7 +688,7 @@ void xiiGameObject::UpdateLocalBounds()
 
 void xiiGameObject::UpdateGlobalTransformAndBounds()
 {
-  m_pTransformationData->UpdateGlobalTransformRecursive();
+  m_pTransformationData->UpdateGlobalTransformRecursive(GetWorld()->GetUpdateCounter());
   m_pTransformationData->UpdateGlobalBounds(GetWorld()->GetSpatialSystem());
 }
 
@@ -1055,28 +1089,28 @@ void xiiGameObject::TransformationData::UpdateLocalTransform()
   m_localScaling.SetW(1.0f);
 }
 
-void xiiGameObject::TransformationData::UpdateGlobalTransformNonRecursive()
+void xiiGameObject::TransformationData::UpdateGlobalTransformNonRecursive(xiiUInt32 uiUpdateCounter)
 {
   if (m_pParentData != nullptr)
   {
-    UpdateGlobalTransformWithParent();
+    UpdateGlobalTransformWithParent(uiUpdateCounter);
   }
   else
   {
-    UpdateGlobalTransformWithoutParent();
+    UpdateGlobalTransformWithoutParent(uiUpdateCounter);
   }
 }
 
-void xiiGameObject::TransformationData::UpdateGlobalTransformRecursive()
+void xiiGameObject::TransformationData::UpdateGlobalTransformRecursive(xiiUInt32 uiUpdateCounter)
 {
   if (m_pParentData != nullptr)
   {
-    m_pParentData->UpdateGlobalTransformRecursive();
-    UpdateGlobalTransformWithParent();
+    m_pParentData->UpdateGlobalTransformRecursive(uiUpdateCounter);
+    UpdateGlobalTransformWithParent(uiUpdateCounter);
   }
   else
   {
-    UpdateGlobalTransformWithoutParent();
+    UpdateGlobalTransformWithoutParent(uiUpdateCounter);
   }
 }
 

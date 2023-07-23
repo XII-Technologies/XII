@@ -35,7 +35,7 @@ public:
   void SetDocument(xiiDocument* pDocument, bool bBindToSelectionManager = true);
 
   void                            ClearSelection();
-  void                            SetSelectionIncludeExcludeProperties(const char* szIncludeProperties = nullptr, const char* szExcludeProperties = nullptr);
+  void                            SetSelectionIncludeExcludeProperties(xiiStringView sIncludeProperties = {}, xiiStringView sExcludeProperties = {});
   void                            SetSelection(const xiiDeque<const xiiDocumentObject*>& selection);
   const xiiDocument*              GetDocument() const;
   const xiiDocumentObjectManager* GetObjectManager() const;

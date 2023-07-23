@@ -77,7 +77,7 @@ xiiUInt32 xiiTaskWorkerThread::Run()
 
       if (bIsReserve)
       {
-        XII_VERIFY(m_iWorkerState.Set((int)xiiTaskWorkerState::Idle) == (int)xiiTaskWorkerState::Active, "Corrupt worker state");
+        XII_VERIFY(m_iWorkerState.Set((xiiInt32)xiiTaskWorkerState::Idle) == (xiiInt32)xiiTaskWorkerState::Active, "Corrupt worker state");
 
         // if this thread is part of the reserve, then don't continue to process tasks indefinitely
         // instead, put this thread to sleep and wake up someone else
@@ -102,12 +102,12 @@ void xiiTaskWorkerThread::WaitForWork()
   m_ThreadActiveTime += xiiTime::Now() - m_StartedWorkingTime;
   m_bExecutingTask = false;
   m_WakeUpSignal.WaitForSignal();
-  XII_ASSERT_DEBUG(m_iWorkerState == (int)xiiTaskWorkerState::Active, "Worker state should have been reset to 'active'");
+  XII_ASSERT_DEBUG(m_iWorkerState == (xiiInt32)xiiTaskWorkerState::Active, "Worker state should have been reset to 'active'");
 }
 
 xiiTaskWorkerState xiiTaskWorkerThread::WakeUpIfIdle()
 {
-  xiiTaskWorkerState prev = (xiiTaskWorkerState)m_iWorkerState.CompareAndSwap((int)xiiTaskWorkerState::Idle, (int)xiiTaskWorkerState::Active);
+  xiiTaskWorkerState prev = (xiiTaskWorkerState)m_iWorkerState.CompareAndSwap((xiiInt32)xiiTaskWorkerState::Idle, (xiiInt32)xiiTaskWorkerState::Active);
   if (prev == xiiTaskWorkerState::Idle) // was idle before
   {
     m_WakeUpSignal.RaiseSignal();
