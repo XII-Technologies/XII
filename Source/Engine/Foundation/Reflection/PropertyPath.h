@@ -33,7 +33,7 @@ public:
   /// The '[index]' part is only added for properties that require indices (arrays and maps).
   xiiResult InitializeFromPath(const xiiRTTI& rootObjectRtti, xiiStringView sPath);
   ///\brief Resolves a path provided as an array of xiiPropertyPathStep.
-  xiiResult InitializeFromPath(const xiiRTTI* rootObjectRtti, const xiiArrayPtr<const xiiPropertyPathStep> path);
+  xiiResult InitializeFromPath(const xiiRTTI* pRootObjectRtti, const xiiArrayPtr<const xiiPropertyPathStep> path);
 
   ///\brief Applies the entire path and allows writing to the target object.
   xiiResult WriteToLeafObject(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const;

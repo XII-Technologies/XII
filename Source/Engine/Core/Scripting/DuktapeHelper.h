@@ -165,7 +165,7 @@ public:
   void RegisterGlobalFunction(xiiStringView sFunctionName, duk_c_function function, xiiUInt8 uiNumArguments, xiiInt16 iMagicValue = 0);
   void RegisterGlobalFunctionWithVarArgs(xiiStringView sFunctionName, duk_c_function function, xiiInt16 iMagicValue = 0);
 
-  void RegisterObjectFunction(xiiStringView szFunctionName, duk_c_function function, xiiUInt8 uiNumArguments, xiiInt32 iParentObjectIndex = -1, xiiInt16 iMagicValue = 0);
+  void RegisterObjectFunction(xiiStringView sFunctionName, duk_c_function function, xiiUInt8 uiNumArguments, xiiInt32 iParentObjectIndex = -1, xiiInt16 iMagicValue = 0);
 
   xiiResult PrepareGlobalFunctionCall(xiiStringView sFunctionName);
   xiiResult PrepareObjectFunctionCall(xiiStringView sFunctionName, xiiInt32 iParentObjectIndex = -1);

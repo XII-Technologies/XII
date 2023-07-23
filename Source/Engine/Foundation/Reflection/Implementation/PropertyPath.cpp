@@ -104,14 +104,14 @@ xiiResult xiiPropertyPath::InitializeFromPath(const xiiRTTI& rootObjectRtti, xii
   return XII_SUCCESS;
 }
 
-xiiResult xiiPropertyPath::InitializeFromPath(const xiiRTTI* rootObjectRtti, const xiiArrayPtr<const xiiPropertyPathStep> path)
+xiiResult xiiPropertyPath::InitializeFromPath(const xiiRTTI* pRootObjectRtti, const xiiArrayPtr<const xiiPropertyPathStep> path)
 {
   m_bIsValid = false;
 
   m_PathSteps.Clear();
   m_PathSteps.Reserve(path.GetCount());
 
-  const xiiRTTI* pCurRtti = rootObjectRtti;
+  const xiiRTTI* pCurRtti = pRootObjectRtti;
   for (const xiiPropertyPathStep& pathStep : path)
   {
     xiiAbstractProperty* pAbsProp = pCurRtti->FindPropertyByName(pathStep.m_sProperty);
