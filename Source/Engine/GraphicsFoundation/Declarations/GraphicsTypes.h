@@ -294,91 +294,110 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormat
 
   enum Enum : StorageType
   {
-    Unknown = 0,              ///< Unknown format.
-    RGBA32Typeless,           ///< Four component 128-bit typeless format with 32-bit channels.
-    RGBA32Float,              ///< Four-component 128-bit floating-point format with 32-bit channels.
-    RGBA32UInt,               ///< Four-component 128-bit unsigned-integer format with 32-bit channels.
-    RGBA32SInt,               ///< Four-component 128-bit signed-integer format with 32-bit channels.
-    RGB32Typeless,            ///< Three-component 96-bit typeless format with 32-bit channels.
-    RGB32Float,               ///< Three-component 96-bit floating-point format with 32-bit channels.
-    RGB32UInt,                ///< Three-component 96-bit unsigned-integer format with 32-bit channels.
-    RGB32SInt,                ///< Three-component 96-bit signed-integer format with 32-bit channels.
-    RGBA16Typeless,           ///< Four-component 64-bit typeless format with 16-bit channels.
-    RGBA16Float,              ///< Four-component 64-bit floating-point format with 16-bit channels.
-    RGBA16UNormalized,        ///< Four-component 64-bit unsigned-normalized-integer format with 16-bit channels.
-    RGBA16UInt,               ///< Four-component 64-bit unsigned-integer format with 16-bit channels.
-    RGBA16SNormalized,        ///< Four-component 64-bit signed-normalized-integer format with 16-bit channels.s
-    RGBA16SInt,               ///< Four-component 64-bit signed-integer format with 16-bit channels.
-    RG32Typeless,             ///< Two-component 64-bit typeless format with 32-bit channels.
-    RG32Float,                ///< Two-component 64-bit floating-point format with 32-bit channels.
-    RG32UInt,                 ///< Two-component 64-bit unsigned-integer format with 32-bit channels.
-    RG32SInt,                 ///< Two-component 64-bit signed-integer format with 32-bit channels.
-    R32G8X24Typeless,         ///< Two-component 64-bit typeless format with 32 bits for the R channel and 8 bits for the G channel.
-    D32FloatS8X24UInt,        ///< Two-component 64-bit format with 32-bit floating-point depth channel and 8-bit stencil channel.
-    R32FloatX8X24Typeless,    ///< Two-component 64-bit format with 32-bit floating-point R channel ad 8+24 bits of typeless data.
-    X32TypelessG8X24UInt,     ///< Two-component 64-bit format with 32-bit typeless data and 8-bit G channel.
-    RGB10A2Typeless,          ///< Four-component 32-bit typeles format with 10 bits for the RGB channels and 2 bits for the alpha channel.
-    RGB10A2UNormalized,       ///< Four-component 32-bit unsigned-normalized-integer format with 10 bits for the RGB channels and 2 bits for the alpha channel.
-    RGB10A2UInt,              ///< Four-component 32-bit unsigned-integer format with 10 bits for the RGB channels and 2 bits for the alpha channel.
-    RG11B10Float,             ///< Three-component 32-bit format encoding three partial precision channels using 11 bits for the red and green channels, and 10-bits for the blue channel.
-    RGBA8Typeless,            ///< Four-component 32-bit typeless format with 8-bit channels.
-    RGBA8UNormalized,         ///< Four-component 32-bit unsigned-normalized-integer format with 8-bit channels.
-    RGBA8UNormalizedSRGB,     ///< Four-component 32-bit unsigned-normalized-integer sRGB format with 8-bit channels.
-    RGBA8UInt,                ///< Four-component 32-bit unsigned-integer format with 8-bit channels.
-    RGBA8SNormalized,         ///< Four-component 32-bit signed-normalized-integer format with 8-bit channels.
-    RGBA8SInt,                ///< Four-component 32-bit signed-integer format with 8-bit channels.
-    RG16Typeless,             ///< Two-component 32-bit typeless format with 16-bit channels.
-    RG16Float,                ///< Two-component 32-bit half-precision floating-point format with 16-bit channels.
-    RG16UNormalized,          ///< Two-component 32-bit unsigned-normalized-integer format with 16-bit channels.
-    RG16UInt,                 ///< Two-component 32-bit unsigned-integer format with 16-bit channels.
-    RG16SNormalized,          ///< Two-component signed-normalized-integer format with 16-bit channels.
-    RG16SInt,                 ///< Two-component 32-bit signed-integer format with 16-bit channels.
-    R32Typeless,              ///< Single-component 32-bit typeless format.
-    D32Float,                 ///< Single-component 32-bit floating-point depth format.
-    R32Float,                 ///< Single-component 32-bit floating-point format.
-    R32UInt,                  ///< Single-component 32-bit unsigned-integer format.
-    R32SInt,                  ///< Single-component 32-bit signed-integer format.
-    R24G8Typeless,            ///< Two component 32-bit format with 24 bits for the R channel and 8 bits for the G channel.
-    D24UNormalizedS8UInt,     ///< Two component 32-bit format with 24 bits for the unsigned-normalized-integer depth and 8 bits for the stencil.
-    R24UNormalizedX8Typeless, ///< Two component 32-bit format with 24 bits for the unsigned-normalized-integer data and 8 bits of unreferenced data.
-    X24TypelessG8UInt,        ///< Two-component 32-bit format with 24 bits of unreferenced data and 8 bits of unsigned-integer data.
-    RG8Typeless,              ///< Two-component 16-bit typeless format with 8-bit channels.
-    RG8UNormalized,           ///< Two-component 16-bit unsigned-normalized-integer format with 8-bit channels.
-    RG8UInt,                  ///< Two-component 16-bit unsigned-integer format with 8-bit channels.
-    RG8SNormalized,           ///< Two-component 16-bit signed-normalized-integer format with 8-bit channels.
-    RG8SInt,                  ///< Two-component 16-bit signed-integer format with 8-bit channels.
-    R16Typeless,              ///< Single-component 16-bit typeless format.
-    R16Float,                 ///< Single-component 16-bit half-precision format.
-    D16UNormalized,           ///< Single-component 16-bit unsigned-normalized-integer format.
-    R16UNormalized,           ///< Single-component 16-bit unsigned-normalized-integer format.
-    R16UInt,                  ///< Single-component 16-bit unsigned-integer format.
-    R16SNormalized,           ///< Single-component 16-bit signed-normalized-integer format.
-    R16SInt,                  ///< Single-component 16-bit signed-integer format.
-    R8Typeless,               ///< Single-component 8-bit typeless format.
-    R8UNormalized,            ///< Single-component 8-bit unsigned-normalized-integer format.
-    R8UInt,                   ///< Single-component 8-bit unsigned-integer format.
-    R8SNorm,                  ///< Single-component 8-bit signed-normalized-integer format.
-    R8SInt,                   ///< Single-component 8-bit signed-integer-format format.
-    A8UNormalized,            ///< Single-component 8-bit unsigned-normalized-integer format for alpha channel only.
-    R1UNormalized,            ///< Single-component 1-bit format.
-    RGB9E5SharedExponent,     ///< Three partial-precision floating-point numbers sharing single exponent encoded into a 32-bit value.
-    RG8BG8UNormalized,        ///< Four-component unsigned-normalized-integer format analogous to UYVY encoding.
-    RGR8GB8UNormalized,       ///< Four-component unsigned-normalized-integer format analogous to YUY2 encoding.
-    BC1Typeless,              ///< Four-component typeless block-compression format with 1:8 compression ratio.
-    BC1UNormalized,           ///< Four-component unsigned-normalized-integer block-compression format with 5 bits for R, 6 bits for G, 5 bits for B, and 0 or 1 bit for A channels. The pixel data is encoded using 8 bytes per 4x4 block (4 bits per pixel) providing 1:8 compression ratio against RGBA8 format.
-    BC1UNormalizedSRGB,       ///< Four-component unsigned-normalized-integer block-compression sRGB format with 5 bits for R, 6 bits for G, 5 bits for B, and 0 or 1 bit for A channels.  The pixel data is encoded using 8 bytes per 4x4 block (4 bits per pixel) providing 1:8 compression ratio against RGBA8 format.
-    BC2Typeless,              ///< Four-component typeless block-compression format with 1:4 compression ratio.
-    BC2UNormalized,           ///< Four-component unsigned-normalized-integer block-compression format with 5 bits for R, 6 bits for G, 5 bits for B channels and 4 bits for low-coherent separate A channel. The pixel data is encoded using 16 bytes per 4x4 block (8 bits per pixel) providing 1:4 compression ratio against RGBA8 format.
-    BC2UNormalizedSRGB,       ///< Four-component signed-normalized-integer block-compression sRGB format with 5 bits for R, 6 bits for G, 5 bits for B channels, and 4 bits for low-coherent separate A channel. The pixel data is encoded using 16 bytes per 4x4 block (8 bits per pixel) providing 1:4 compression ratio against RGBA8 format.
-    BC3Typeless,              ///< Four-component typeless block-compression format with 1:4 compression ratio.
-    BC3UNormalized,           ///< Four-component unsigned-normalized-integer block-compression format with 5 bits for R, 6 bits for G, 5 bits for B channels, and 8 bits for highly-coherent A channel. The pixel data is encoded using 16 bytes per 4x4 block (8 bits per pixel) providing 1:4 compression ratio against RGBA8 format.
-    BC3UNormalizedSRGB,       ///< Four-component unsigned-normalized-integer block-compression sRGB format with 5 bits for R, 6 bits for G, 5 bits for B, and 8 bits for highly-coherent A channel. The pixel data is encoded using 16 bytes per 4x4 block (8 bits per pixel) providing 1:4 compression ratio against RGBA8 format.
-    BC4Typeless,              ///< One-component typeless block-compression format with 1:2 compression ratio.
-    BC4UNormalized,           ///< One-component unsigned-normalized-integer block-compression format with 8 bits for R channel. The pixel data is encoded using 8 bytes per 4x4 block (4 bits per pixel) providing 1:2 compression ratio against R8 format.
-    BC4SNormalized,           ///< One-component signed-normalized-integer block-compression format with 8 bits for R channel. The pixel data is encoded using 8 bytes per 4x4 block (4 bits per pixel) providing 1:2 compression ratio against R8 format.
-    BC5Typeless,              ///< Two-component typeless block-compression format with 1:2 compression ratio.
-    BC5UNormalized,           ///< Two-component unsigned-normalized-integer block-compression format with 8 bits for R and 8 bits for G channel. The pixel data is encoded using 16 bytes per 4x4 block (8 bits per pixel) providing 1:2 compression ratio against RG8 format.
-    BC5SNormalized,           ///< Two-component signed-normalized-integer block-compression format with 8 bits for R and 8 bits for G channel. The pixel data is encoded using 16 bytes per 4x4 block (8 bits per pixel) providing 1:2 compression ratio against RG8 format.
+    Unknown = 0,                  ///< Unknown format.
+    RGBA32Typeless,               ///< Four component 128-bit typeless format with 32-bit channels.
+    RGBA32Float,                  ///< Four-component 128-bit floating-point format with 32-bit channels.
+    RGBA32UInt,                   ///< Four-component 128-bit unsigned-integer format with 32-bit channels.
+    RGBA32SInt,                   ///< Four-component 128-bit signed-integer format with 32-bit channels.
+    RGB32Typeless,                ///< Three-component 96-bit typeless format with 32-bit channels.
+    RGB32Float,                   ///< Three-component 96-bit floating-point format with 32-bit channels.
+    RGB32UInt,                    ///< Three-component 96-bit unsigned-integer format with 32-bit channels.
+    RGB32SInt,                    ///< Three-component 96-bit signed-integer format with 32-bit channels.
+    RGBA16Typeless,               ///< Four-component 64-bit typeless format with 16-bit channels.
+    RGBA16Float,                  ///< Four-component 64-bit floating-point format with 16-bit channels.
+    RGBA16UNormalized,            ///< Four-component 64-bit unsigned-normalized-integer format with 16-bit channels.
+    RGBA16UInt,                   ///< Four-component 64-bit unsigned-integer format with 16-bit channels.
+    RGBA16SNormalized,            ///< Four-component 64-bit signed-normalized-integer format with 16-bit channels.s
+    RGBA16SInt,                   ///< Four-component 64-bit signed-integer format with 16-bit channels.
+    RG32Typeless,                 ///< Two-component 64-bit typeless format with 32-bit channels.
+    RG32Float,                    ///< Two-component 64-bit floating-point format with 32-bit channels.
+    RG32UInt,                     ///< Two-component 64-bit unsigned-integer format with 32-bit channels.
+    RG32SInt,                     ///< Two-component 64-bit signed-integer format with 32-bit channels.
+    R32G8X24Typeless,             ///< Two-component 64-bit typeless format with 32 bits for the R channel and 8 bits for the G channel.
+    D32FloatS8X24UInt,            ///< Two-component 64-bit format with 32-bit floating-point depth channel and 8-bit stencil channel.
+    R32FloatX8X24Typeless,        ///< Two-component 64-bit format with 32-bit floating-point R channel ad 8+24 bits of typeless data.
+    X32TypelessG8X24UInt,         ///< Two-component 64-bit format with 32-bit typeless data and 8-bit G channel.
+    RGB10A2Typeless,              ///< Four-component 32-bit typeles format with 10 bits for the RGB channels and 2 bits for the alpha channel.
+    RGB10A2UNormalized,           ///< Four-component 32-bit unsigned-normalized-integer format with 10 bits for the RGB channels and 2 bits for the alpha channel.
+    RGB10A2UInt,                  ///< Four-component 32-bit unsigned-integer format with 10 bits for the RGB channels and 2 bits for the alpha channel.
+    RG11B10Float,                 ///< Three-component 32-bit format encoding three partial precision channels using 11 bits for the red and green channels, and 10-bits for the blue channel.
+    RGBA8Typeless,                ///< Four-component 32-bit typeless format with 8-bit channels.
+    RGBA8UNormalized,             ///< Four-component 32-bit unsigned-normalized-integer format with 8-bit channels.
+    RGBA8UNormalizedSRGB,         ///< Four-component 32-bit unsigned-normalized-integer sRGB format with 8-bit channels.
+    RGBA8UInt,                    ///< Four-component 32-bit unsigned-integer format with 8-bit channels.
+    RGBA8SNormalized,             ///< Four-component 32-bit signed-normalized-integer format with 8-bit channels.
+    RGBA8SInt,                    ///< Four-component 32-bit signed-integer format with 8-bit channels.
+    RG16Typeless,                 ///< Two-component 32-bit typeless format with 16-bit channels.
+    RG16Float,                    ///< Two-component 32-bit half-precision floating-point format with 16-bit channels.
+    RG16UNormalized,              ///< Two-component 32-bit unsigned-normalized-integer format with 16-bit channels.
+    RG16UInt,                     ///< Two-component 32-bit unsigned-integer format with 16-bit channels.
+    RG16SNormalized,              ///< Two-component signed-normalized-integer format with 16-bit channels.
+    RG16SInt,                     ///< Two-component 32-bit signed-integer format with 16-bit channels.
+    R32Typeless,                  ///< Single-component 32-bit typeless format.
+    D32Float,                     ///< Single-component 32-bit floating-point depth format.
+    R32Float,                     ///< Single-component 32-bit floating-point format.
+    R32UInt,                      ///< Single-component 32-bit unsigned-integer format.
+    R32SInt,                      ///< Single-component 32-bit signed-integer format.
+    R24G8Typeless,                ///< Two component 32-bit format with 24 bits for the R channel and 8 bits for the G channel.
+    D24UNormalizedS8UInt,         ///< Two component 32-bit format with 24 bits for the unsigned-normalized-integer depth and 8 bits for the stencil.
+    R24UNormalizedX8Typeless,     ///< Two component 32-bit format with 24 bits for the unsigned-normalized-integer data and 8 bits of unreferenced data.
+    X24TypelessG8UInt,            ///< Two-component 32-bit format with 24 bits of unreferenced data and 8 bits of unsigned-integer data.
+    RG8Typeless,                  ///< Two-component 16-bit typeless format with 8-bit channels.
+    RG8UNormalized,               ///< Two-component 16-bit unsigned-normalized-integer format with 8-bit channels.
+    RG8UInt,                      ///< Two-component 16-bit unsigned-integer format with 8-bit channels.
+    RG8SNormalized,               ///< Two-component 16-bit signed-normalized-integer format with 8-bit channels.
+    RG8SInt,                      ///< Two-component 16-bit signed-integer format with 8-bit channels.
+    R16Typeless,                  ///< Single-component 16-bit typeless format.
+    R16Float,                     ///< Single-component 16-bit half-precision format.
+    D16UNormalized,               ///< Single-component 16-bit unsigned-normalized-integer format.
+    R16UNormalized,               ///< Single-component 16-bit unsigned-normalized-integer format.
+    R16UInt,                      ///< Single-component 16-bit unsigned-integer format.
+    R16SNormalized,               ///< Single-component 16-bit signed-normalized-integer format.
+    R16SInt,                      ///< Single-component 16-bit signed-integer format.
+    R8Typeless,                   ///< Single-component 8-bit typeless format.
+    R8UNormalized,                ///< Single-component 8-bit unsigned-normalized-integer format.
+    R8UInt,                       ///< Single-component 8-bit unsigned-integer format.
+    R8SNorm,                      ///< Single-component 8-bit signed-normalized-integer format.
+    R8SInt,                       ///< Single-component 8-bit signed-integer-format format.
+    A8UNormalized,                ///< Single-component 8-bit unsigned-normalized-integer format for alpha channel only.
+    R1UNormalized,                ///< Single-component 1-bit format.
+    RGB9E5SharedExponent,         ///< Three partial-precision floating-point numbers sharing single exponent encoded into a 32-bit value.
+    RG8BG8UNormalized,            ///< Four-component unsigned-normalized-integer format analogous to UYVY encoding.
+    RGR8GB8UNormalized,           ///< Four-component unsigned-normalized-integer format analogous to YUY2 encoding.
+    BC1Typeless,                  ///< Four-component typeless block-compression format with 1:8 compression ratio.
+    BC1UNormalized,               ///< Four-component unsigned-normalized-integer block-compression format with 5 bits for R, 6 bits for G, 5 bits for B, and 0 or 1 bit for A channels. The pixel data is encoded using 8 bytes per 4x4 block (4 bits per pixel) providing 1:8 compression ratio against RGBA8 format.
+    BC1UNormalizedSRGB,           ///< Four-component unsigned-normalized-integer block-compression sRGB format with 5 bits for R, 6 bits for G, 5 bits for B, and 0 or 1 bit for A channels.  The pixel data is encoded using 8 bytes per 4x4 block (4 bits per pixel) providing 1:8 compression ratio against RGBA8 format.
+    BC2Typeless,                  ///< Four-component typeless block-compression format with 1:4 compression ratio.
+    BC2UNormalized,               ///< Four-component unsigned-normalized-integer block-compression format with 5 bits for R, 6 bits for G, 5 bits for B channels and 4 bits for low-coherent separate A channel. The pixel data is encoded using 16 bytes per 4x4 block (8 bits per pixel) providing 1:4 compression ratio against RGBA8 format.
+    BC2UNormalizedSRGB,           ///< Four-component signed-normalized-integer block-compression sRGB format with 5 bits for R, 6 bits for G, 5 bits for B channels, and 4 bits for low-coherent separate A channel. The pixel data is encoded using 16 bytes per 4x4 block (8 bits per pixel) providing 1:4 compression ratio against RGBA8 format.
+    BC3Typeless,                  ///< Four-component typeless block-compression format with 1:4 compression ratio.
+    BC3UNormalized,               ///< Four-component unsigned-normalized-integer block-compression format with 5 bits for R, 6 bits for G, 5 bits for B channels, and 8 bits for highly-coherent A channel. The pixel data is encoded using 16 bytes per 4x4 block (8 bits per pixel) providing 1:4 compression ratio against RGBA8 format.
+    BC3UNormalizedSRGB,           ///< Four-component unsigned-normalized-integer block-compression sRGB format with 5 bits for R, 6 bits for G, 5 bits for B, and 8 bits for highly-coherent A channel. The pixel data is encoded using 16 bytes per 4x4 block (8 bits per pixel) providing 1:4 compression ratio against RGBA8 format.
+    BC4Typeless,                  ///< One-component typeless block-compression format with 1:2 compression ratio.
+    BC4UNormalized,               ///< One-component unsigned-normalized-integer block-compression format with 8 bits for R channel. The pixel data is encoded using 8 bytes per 4x4 block (4 bits per pixel) providing 1:2 compression ratio against R8 format.
+    BC4SNormalized,               ///< One-component signed-normalized-integer block-compression format with 8 bits for R channel. The pixel data is encoded using 8 bytes per 4x4 block (4 bits per pixel) providing 1:2 compression ratio against R8 format.
+    BC5Typeless,                  ///< Two-component typeless block-compression format with 1:2 compression ratio.
+    BC5UNormalized,               ///< Two-component unsigned-normalized-integer block-compression format with 8 bits for R and 8 bits for G channel. The pixel data is encoded using 16 bytes per 4x4 block (8 bits per pixel) providing 1:2 compression ratio against RG8 format.
+    BC5SNormalized,               ///< Two-component signed-normalized-integer block-compression format with 8 bits for R and 8 bits for G channel. The pixel data is encoded using 16 bytes per 4x4 block (8 bits per pixel) providing 1:2 compression ratio against RG8 format.
+    B5G6R5UNormalized,            ///< Three-component 16-bit unsigned-normalized-integer format with 5 bits for B, 6 bits for G, and 5 bits for R channels.
+    B5G5R5A1UNormalized,          ///< Four-component 16-bit unsigned-normalized-integer format with 5 bits for each color channel and a 1-bit alpha channel.
+    BGRA8UNormalized,             ///< Four-component 32-bit unsigned-normalized-integer format with 8 bits for each channel.
+    BGRX8UNormalized,             ///< Four-component 32-bit unsigned-normalized-integer format with 8 bits for each color channel and 8 bits unused.
+    R10G10B10XRBiasA2UNormalized, ///< Four-component 32-bit 2.8-biased fixed-point format with 10 bits for each color channel and a 2-bit alpha channel.
+    BGRA8Typeless,                ///< Four-component 32-bit typeless format with 8 bits for each channel.
+    BGRA8UNormalizedSRGB,         ///< Four-component 32-bit unsigned-normalized sRGB format with 8 bits for each channel.
+    BGRX8Typeless,                ///< Four-component 32-bit typeless format that with 8 bits for each color channel, and 8 bits are unused.
+    BGRX8UNormalizedSRGB,         ///< Four-component 32-bit unsigned-normalized sRGB format with 8 bits for each color channel, and 8 bits are unused.
+    BC6HTypeless,                 ///< Three-component typeless block-compression format.
+    BC6HUF16,                     ///< Three-component unsigned half-precision floating-point format with 16 bits for each channel.
+    BC6HSF16,                     ///< Three-channel signed half-precision floating-point format with 16 bits per each channel.
+    BC7Typeless,                  ///< Three-component typeless block-compression format.
+    BC7UNormalized,               ///< Three-component block-compression unsigned-normalized-integer format with 4 to 7 bits per color channel and 0 to 8 bits of the alpha channel.
+    BC7UNormalizedSRGB,           ///< Three-component block-compression unsigned-normalized-integer sRGB format with 4 to 7 bits per color channel and 0 to 8 bits of the alpha channel.
+
+    ENUM_COUNT,
+
+    Default = Unknown
   };
 };
 
