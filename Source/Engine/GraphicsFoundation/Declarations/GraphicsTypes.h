@@ -402,3 +402,169 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormat
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureFormat);
+
+/// \brief This describes the filter type.
+///
+/// \note On D3D11, comparison filters only work with textures that have the following formats
+/// R32_FLOAT_X8X24_TYPELESS, R32_FLOAT, R24_UNORM_X8_TYPELESS, R16_UNORM.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALFilterType
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Unknown = 0,           ///< Unknown filter type.
+    Point,                 ///< Point filtering.
+    Linear,                ///< Linear filtering.
+    Anisotropic,           ///< Anisotropic filtering.
+    ComparisonPoint,       ///< Comparison-point filtering.
+    ComparisonLinear,      ///< Comparison-linear filtering.
+    ComparisonAnisotropic, ///< Comparison-anisotropic filtering.
+    MinimumPoint,          ///< Minimum-point filtering (D3D12 Specific)
+    MinimumLinear,         ///< Minimum-linear filtering (D3D12 Specific)
+    MinimumAnisotropic,    ///< Minimum-anisotropic filtering (D3D12 Specific)
+    MaximumPoint,          ///< Maximum-point filtering (D3D12 Specific)
+    MaximumLinear,         ///< Maximum-linear filtering (D3D12 Specific)
+    MaximumAnisotropic,    ///< Maximum-anisotropic filtering (D3D12 Specific)
+
+    ENUM_COUNT,
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALFilterType);
+
+/// [D3D11_TEXTURE_ADDRESS_MODE]: https://docs.microsoft.com/en-us/windows/win32/api/d3d11/ne-d3d11-d3d11_texture_address_mode
+/// [D3D12_TEXTURE_ADDRESS_MODE]: https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_texture_address_mode
+///
+/// \brief This describes the texture address mode. It defines a technique for resolving texture coordinates that
+/// are outside  of the boundries of a texture. The enumeration generally mirrors [D3D11_TEXTURE_ADDRESS_MODE][]/[D3D12_TEXTURE_ADDRESS_MODE][] enumeration.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureAddressMode
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Unknown = 0, ///< Unknown texture address mode.
+    Wrap,        ///< Tile the texture at every integer junction.
+    Mirror,      ///< Flip the texture at every integer junction.s
+    Clamp,       ///< Texture coordinates outside the range [0.0, 1.0] are set to the texture color at 0.0 or 1.0 respectively.
+    Border,      ///< Texture coordinates outside the range [0.0, 1.0] are set to the border color.
+    MirrorOnce,  ///< Similar to Mirror and Clamp. This takes the absolute value of the texture coordinate (thus mirroring around 0), then clamps to the the maximum value.
+
+    ENUM_COUNT,
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureAddressMode);
+
+/// [D3D11_COMPARISON_FUNC]: https://docs.microsoft.com/en-us/windows/win32/api/d3d11/ne-d3d11-d3d11_comparison_func
+/// [D3D12_COMPARISON_FUNC]: https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_comparison_func
+///
+/// \brief This describes a comparison function.
+/// This enumeration defines a comparison function. It generally mirrors [D3D11_COMPARISON_FUNC]/[D3D12_COMPARISON_FUNC] enumeration.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALComparisonFunction
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Unknown = 0,  ///< Unknown comparison function.
+    Never,        ///< Comparison never passes.
+    Less,         ///< Comparison passes if the source data is less than the destination data.
+    Equal,        ///< Comparison passes if the source data is equal to the destination data.
+    LessEqual,    ///< Comparison passes if the source data is less than or equal to the destination data.
+    Greater,      ///< Comparison passes if the source data is greater than the destination data.
+    NotEqual,     ///< Comparison passes if the source data is not equal to the destination data.
+    GreaterEqual, ///< Comparison passes if the source data is greater than or equal to the destination data.
+    Always,       ///< Comparison always passes.
+
+    ENUM_COUNT,
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALComparisonFunction);
+
+/// \brief This describes the topology of how vertices are interpreted by the pipeline.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Undefined = 0,           ///< Undefined topology.
+    TriangleList,            ///< Interpret the vertex data as a list of triangles.
+    TriangleStrip,           ///< Interpret the vertex data as a triangle strip.
+    PointList,               ///< Interpret the vertex data as a list of points.
+    LineList,                ///< Interpret the vertex data as a list of lines.
+    LineStrip,               ///< Interpret the vertex data as a line strip.
+    TriangleListAdjacent,    ///< Interpret the vertex data as a list of triangles with adjacency data.
+    TrangleStripAdjacent,    ///< Interpret the vertex data as a triangle strip with adjacency data.
+    LineListAdjacent,        ///< Interpret the vertex data as a list of lines with adjacency data.
+    LineStripAdjacent,       ///< Interpret the vertex data as a line strip with adjacency data.
+    ControlPointPatchList1,  ///< Interpret the vertex data as a list of one control point patches.
+    ControlPointPatchList2,  ///< Interpret the vertex data as a list of two control point patches.
+    ControlPointPatchList3,  ///< Interpret the vertex data as a list of three control point patches.
+    ControlPointPatchList4,  ///< Interpret the vertex data as a list of four control point patches.
+    ControlPointPatchList5,  ///< Interpret the vertex data as a list of five control point patches.
+    ControlPointPatchList6,  ///< Interpret the vertex data as a list of six control point patches.
+    ControlPointPatchList7,  ///< Interpret the vertex data as a list of seven control point patches.
+    ControlPointPatchList8,  ///< Interpret the vertex data as a list of eight control point patches.
+    ControlPointPatchList9,  ///< Interpret the vertex data as a list of nine control point patches.
+    ControlPointPatchList10, ///< Interpret the vertex data as a list of ten control point patches.
+    ControlPointPatchList11, ///< Interpret the vertex data as a list of 11 control point patches.
+    ControlPointPatchList12, ///< Interpret the vertex data as a list of 12 control point patches.
+    ControlPointPatchList13, ///< Interpret the vertex data as a list of 13 control point patches.
+    ControlPointPatchList14, ///< Interpret the vertex data as a list of 14 control point patches.
+    ControlPointPatchList15, ///< Interpret the vertex data as a list of 15 control point patches.
+    ControlPointPatchList16, ///< Interpret the vertex data as a list of 16 control point patches.
+    ControlPointPatchList17, ///< Interpret the vertex data as a list of 17 control point patches.
+    ControlPointPatchList18, ///< Interpret the vertex data as a list of 18 control point patches.
+    ControlPointPatchList19, ///< Interpret the vertex data as a list of 19 control point patches.
+    ControlPointPatchList20, ///< Interpret the vertex data as a list of 20 control point patches.
+    ControlPointPatchList21, ///< Interpret the vertex data as a list of 21 control point patches.
+    ControlPointPatchList22, ///< Interpret the vertex data as a list of 22 control point patches.
+    ControlPointPatchList23, ///< Interpret the vertex data as a list of 23 control point patches.
+    ControlPointPatchList24, ///< Interpret the vertex data as a list of 24 control point patches.
+    ControlPointPatchList25, ///< Interpret the vertex data as a list of 25 control point patches.
+    ControlPointPatchList26, ///< Interpret the vertex data as a list of 26 control point patches.
+    ControlPointPatchList27, ///< Interpret the vertex data as a list of 27 control point patches.
+    ControlPointPatchList28, ///< Interpret the vertex data as a list of 28 control point patches.
+    ControlPointPatchList29, ///< Interpret the vertex data as a list of 29 control point patches.
+    ControlPointPatchList30, ///< Interpret the vertex data as a list of 30 control point patches.
+    ControlPointPatchList31, ///< Interpret the vertex data as a list of 31 control point patches.
+    ControlPointPatchList32, ///< Interpret the vertex data as a list of 32 control point patches.
+
+    ENUM_COUNT,
+
+    Default = Undefined
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPrimitiveTopology);
+
+/// \brief This describes the optimized depth-stencil clear value.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryProperties
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Unknown      = 0,          ///< Unknown filter type.
+    HostCoherent = XII_BIT(0), ///< The device (GPU) memory is coherent with the host (CPU), meaning
+                               ///< that CPU writes are automatically available to the GPU and vice versa.
+                               ///< If memory is not coherent, it must be explicitly flushed after
+                               ///< being modified by the CPU, or invalidated before being read by the CPU.
+
+    ENUM_COUNT,
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMemoryProperties);
