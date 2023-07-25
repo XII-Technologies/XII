@@ -9,7 +9,7 @@
 #include <GraphicsFoundation/Declarations/Constants.h>
 
 /// \brief Defines the graphics device.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGraphicsDeviceType
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceType
 {
   using StorageType = xiiUInt8;
 
@@ -26,7 +26,27 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGraphicsDeviceType
   };
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGraphicsDeviceType);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALGraphicsDeviceType);
+
+/// \brief This describes the graphics device feature state.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatureState
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Disabled = 0, ///< Device feature is disabled.
+    Enabled,      ///< Device feature is enabled. If a feature is requested to be enabled during the initialization but is not supported by the device/driver/platform, the device will fail to be initialized.
+    Optional,     ///< Device feature is optional. The device will attempt to enable the feature during initialization. If the feature is not supported by the device/driver/platform, the device will initialize successfully, but the feature will be disabled.
+                  ///< The actual feature state can be queried from the device capabilities description.
+
+    ENUM_COUNT,
+
+    Default = Disabled
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDeviceFeatureState);
 
 /// \brief This describes the represented value type. It is used by the buffer description
 /// to describe the value type of a formatted buffer, and also used to specify the index type
@@ -548,14 +568,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPrimitiveTopology);
 
-/// \brief This describes the optimized depth-stencil clear value.
+/// \brief This describes memory property flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryProperties
 {
   using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Unknown      = 0,          ///< Unknown filter type.
+    Unknown      = 0,          ///< The memory properties are unknown.
     HostCoherent = XII_BIT(0), ///< The device (GPU) memory is coherent with the host (CPU), meaning
                                ///< that CPU writes are automatically available to the GPU and vice versa.
                                ///< If memory is not coherent, it must be explicitly flushed after
@@ -568,3 +588,285 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryProperties
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMemoryProperties);
+
+/// \brief This describes the hardware adapter type.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceAdapterType
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Unknown = 0, ///< Unknown adapter type.
+    Software,    ///< Software adapter.
+    Integrated,  ///< Integrated hardware adapter.
+    Discrete,    ///< Discrete hardware adapter.
+
+    ENUM_COUNT,
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDeviceAdapterType);
+
+/// \brief This describes how an image is stretched to fit a given monitor's resolution.
+/// \sa <a href = "https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/bb173066(v=vs.85)">DXGI_MODE_SCALING enumeration on MSDN</a>,
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALScalingMode
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Unspecified = 0, ///< Unspecified scaling.
+    Centered,        ///< Specifies no scaling. The image is centered on the display. This flag is typically used for a fixed-dot-pitch display (such as an LED display).
+    Stretched,       ///< Specifies a stretched scaling.
+
+    ENUM_COUNT,
+
+    Default = Unspecified
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALScalingMode);
+
+/// \brief This describes the method the raster uses to create an image on a surface.
+/// \sa <a href = "https://docs.microsoft.com/en-us/previous-versions/windows/desktop/legacy/bb173067(v=vs.85)">DXGI_MODE_SCANLINE_ORDER enumeration on MSDN</a>,
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALScanLineOrder
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Unspecified = 0, ///< Unspecified scanline order.
+    Progressive,     ///< The image is created from the first scanline to the last without skipping any.
+    UpperFieldFirst, ///< The image is created beginning with the upper field.
+    LowerFieldFirst, ///< The image is created beginning with the lower field.
+
+    ENUM_COUNT,
+
+    Default = Unspecified
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALScanLineOrder);
+
+/// \brief This describes the method the raster uses to create an image on a surface.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainUsageFlags
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None            = 0,          ///< No allowed usage.
+    RenderTarget    = XII_BIT(0), ///< The swapchain images can be used as render target outputs.
+    ShaderResource  = XII_BIT(1), ///< The swapchain images can be used as shader resources.
+    InputAttachment = XII_BIT(2), ///< The swapchain images can be used as input attachments.
+    CopySource      = XII_BIT(3), ///< The swapchain images can be used as the source of a copy operation.
+
+    ENUM_COUNT = 5,
+
+    Default = None
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSwapChainUsageFlags);
+
+/// \brief This describes the transform applied to the image content prior to presentation.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSurfaceTransform
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Optimal = 0,               ///< Use the most optimal surface transform.
+    Identity,                  ///< The image content is presented without being transformed.
+    Rotate90,                  ///< The image content is rotated 90 degrees clockwise.
+    Rotate180,                 ///< The image content is rotated 180 degrees clockwise.
+    Rotate270,                 ///< The image content is rotated 270 degrees clockwise.
+    HorizontalMirror,          ///< The image is mirrored horizontally.
+    HorizontalMirrorRotate90,  ///< The image is mirrored horizontally, then rotated 90 degrees clockwise.
+    HorizontalMirrorRotate180, ///< The image is mirrored horizontally, then rotated 180 degrees clockwise.
+    HorizontalMirrorRotate270, ///< The image is mirrored horizontally, then rotated 270 degrees clockwise.
+
+    ENUM_COUNT,
+
+    Default = Optimal
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSurfaceTransform);
+
+/// \brief This describes a query type.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryType
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Undefined = 0,      ///< The query type is undefined.
+    Occlusion,          ///< Number of samples that passed the depth and stencil test between begin and end (on a context).
+    BinaryOcclusion,    ///< Acts like Occlusion. Returns true if at least one sample passed.
+    Timestamp,          ///< Requests the GPU timestamp, similar to an EndQuery call.
+    PipelineStatistics, ///< Gets the pipeline statistics such as the number of pixel shader invocations.
+    Duration,           ///< Gets the number of high-frequency counter ticks between BeginQuery and EndQuery calls.
+
+    ENUM_COUNT,
+
+    Default = Undefined
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALQueryType);
+
+/// \brief Base class for GAL objects, stores a creation description of the object and also allows for reference counting.
+template <typename CreationDescription>
+class xiiGALObject : public xiiRefCounted
+{
+public:
+  xiiGALObject(CreationDescription& description) :
+    m_Description(description)
+  {
+  }
+
+  XII_ALWAYS_INLINE const CreationDescription& GetDescription() const { return m_Description; }
+
+protected:
+  CreationDescription m_Description;
+};
+
+namespace xiiGAL
+{
+  using xii16_16Id = xiiGenericId<16, 16>;
+  using xii18_14Id = xiiGenericId<18, 14>;
+  using xii20_12Id = xiiGenericId<20, 12>;
+} // namespace xiiGAL
+
+class xiiGALSwapChainHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALSwapChainHandle, xiiGAL::xii16_16Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALShaderHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALShaderHandle, xiiGAL::xii18_14Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALTextureHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALTextureHandle, xiiGAL::xii18_14Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALBufferHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALBufferHandle, xiiGAL::xii18_14Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALResourceViewHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALResourceViewHandle, xiiGAL::xii18_14Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALUnorderedAccessViewHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALUnorderedAccessViewHandle, xiiGAL::xii18_14Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALRenderTargetViewHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALRenderTargetViewHandle, xiiGAL::xii18_14Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALDepthStencilStateHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALDepthStencilStateHandle, xiiGAL::xii16_16Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALBlendStateHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALBlendStateHandle, xiiGAL::xii16_16Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALRasterizerStateHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALRasterizerStateHandle, xiiGAL::xii16_16Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALSamplerStateHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALSamplerStateHandle, xiiGAL::xii16_16Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALVertexDeclarationHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALVertexDeclarationHandle, xiiGAL::xii18_14Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALQueryHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALQueryHandle, xiiGAL::xii20_12Id);
+
+  friend class xiiGALDevice;
+};
+
+namespace xiiGAL
+{
+  struct ModifiedRange
+  {
+    XII_ALWAYS_INLINE void Reset()
+    {
+      m_uiMin = xiiInvalidIndex;
+      m_uiMax = 0;
+    }
+
+    XII_FORCE_INLINE void SetToIncludeValue(xiiUInt32 value)
+    {
+      m_uiMin = xiiMath::Min(m_uiMin, value);
+      m_uiMax = xiiMath::Max(m_uiMax, value);
+    }
+
+    XII_FORCE_INLINE void SetToIncludeRange(xiiUInt32 uiMin, xiiUInt32 uiMax)
+    {
+      m_uiMin = xiiMath::Min(m_uiMin, uiMin);
+      m_uiMax = xiiMath::Max(m_uiMax, uiMax);
+    }
+
+    XII_FORCE_INLINE bool HasIncludeValue(xiiUInt32 uiValue)
+    {
+      if (!IsValid())
+        return false;
+
+      return uiValue >= m_uiMin && uiValue <= m_uiMax;
+    }
+
+    XII_ALWAYS_INLINE bool IsValid() const { return m_uiMin <= m_uiMax; }
+
+    XII_ALWAYS_INLINE xiiUInt32 GetCount() const { return m_uiMax - m_uiMin + 1; }
+
+    xiiUInt32 m_uiMin = xiiInvalidIndex;
+    xiiUInt32 m_uiMax = 0;
+  };
+} // namespace xiiGAL
