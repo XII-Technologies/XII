@@ -764,6 +764,34 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryType
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALQueryType);
 
+/// \brief This describes the wave feature types.
+///
+/// In Vulkan backend, you should check which features are supported by device.
+/// In DirectX12 backend, all shader model 6.0 wave functions are supported if WaveOp feature is enabled.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALWaveFeature
+{
+  using StorageType = xiiUInt32;
+
+  enum Enum : StorageType
+  {
+    Unknown         = 0,          ///<
+    Basic           = XII_BIT(0), ///<
+    Vote            = XII_BIT(1), ///<
+    Arithmetic      = XII_BIT(2), ///<
+    BallOut         = XII_BIT(3), ///<
+    Shuffle         = XII_BIT(4), ///<
+    ShuffleRelative = XII_BIT(5), ///<
+    Clustered       = XII_BIT(6), ///<
+    Quad            = XII_BIT(7), ///<
+
+    ENUM_COUNT = 9,
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALWaveFeature);
+
 /// \brief Base class for GAL objects, stores a creation description of the object and also allows for reference counting.
 template <typename CreationDescription>
 class xiiGALObject : public xiiRefCounted
