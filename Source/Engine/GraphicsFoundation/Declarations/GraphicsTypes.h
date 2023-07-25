@@ -48,6 +48,52 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatureState
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDeviceFeatureState);
 
+/// \brief This describes the graphics device adapter vendor.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsAdapterVendor
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Unknown = 0,             ///< Adapter vendor is unknowm.
+    Nvidia,                  ///< Adapter vendor is NVidia.
+    AMD,                     ///< Adapter vendor is AMD.
+    Intel,                   ///< Adapter vendor is Intel.
+    ARM,                     ///< Adapter vendor is ARM.
+    Qualcomm,                ///< Adapter vendor is Qualcomm.
+    ImaginationTechnologies, ///< Adapter vendor is Imagination Technologies.
+    Microsoft,               ///< Adapter vendor is Microsoft (software rasterizer).
+    Apple,                   ///< Adapter vendor is Apple.
+    Mesa,                    ///< Adapter vendor is Mesa (software rasterizer).
+    Broadcom,                ///< Adapter vendor is Broadcom (Raspberry Pi).
+
+    ENUM_COUNT,
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALGraphicsAdapterVendor);
+
+/// \brief This describes common validation levels that translate to specific settings for different backends.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceValidationLevel
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Disabled = 0, ///< Validation is disabled.
+    Standard,     ///< Standard validation options are enabled.
+    All,          ///< All validation options are enabled. Note that enabling this level may add a significant overhead.
+
+    ENUM_COUNT,
+
+    Default = Disabled
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALGraphicsDeviceValidationLevel);
+
 /// \brief This describes the represented value type. It is used by the buffer description
 /// to describe the value type of a formatted buffer, and also used to specify the index type
 /// for an indexed draw call.

@@ -9,7 +9,7 @@
 #include <GraphicsFoundation/Declarations/Constants.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
-/// \brief This describes the optimized depth-stencil clear value.
+/// \brief This describes the device features.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruct<xiiGALDeviceFeatures>
 {
   XII_DECLARE_POD_TYPE();
