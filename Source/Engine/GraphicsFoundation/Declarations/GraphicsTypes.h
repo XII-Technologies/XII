@@ -792,6 +792,28 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALWaveFeature
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALWaveFeature);
 
+/// \brief This describes the ray tracing capability flags.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingCapabilityFlags
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None              = 0,           ///< No ray tracing capabilities.
+    StandaloneShaders = XII_BIT(0),  ///< The device supports standalone ray tracing shaders (e.g. ray generation, closest hit, any hit, etc.).
+                                     ///< When this feature is disabled, inline ray tracing may still be supported where rays can be traced
+                                     ///< from graphics or compute shaders.
+    InlineRayTracing   = XII_BIT(1), ///< The device supports inline ray tracing in graphics or compute shaders.
+    IndirectRayTracing = XII_BIT(2), ///< The device supports indirect ray tracing commands.
+
+    ENUM_COUNT,
+
+    Default = None
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRayTracingCapabilityFlags);
+
 /// \brief Base class for GAL objects, stores a creation description of the object and also allows for reference counting.
 template <typename CreationDescription>
 class xiiGALObject : public xiiRefCounted

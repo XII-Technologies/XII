@@ -121,4 +121,84 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFullScreenModeDescription : public xiiHa
   xiiEnum<xiiGALScanLineOrder> m_ScanLineOrder;                    ///< The scanline drawing mode.
 };
 
+/// \brief This describes the texture properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureProperties : public xiiHashableStruct<xiiGALTextureProperties>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiMaxTexture1DDimension     = 0U;    ///< Maximum dimension (width) of a 1D texture, or 0 if 1D textures are not supported.
+  xiiUInt32 m_uiMaxTexture1DArraySlices   = 0U;    ///< Maximum number of slices in a 1D texture array, or 0 if 1D texture arrays are not supported.
+  xiiUInt32 m_uiMaxTexture2DDimension     = 0U;    ///< Maximum dimension (width or height) of a 2D texture.
+  xiiUInt32 m_uiMaxTexture2DArraySlices   = 0U;    ///< Maximum number of slices in a 2D texture array, or 0 if 2D texture arrays are not supported.
+  xiiUInt32 m_uiMaxTexture3DDimension     = 0U;    ///< Maximum dimension (width, height, or depth) of a 3D texture, or 0 if 3D textures are not supported.
+  xiiUInt32 m_uiMaxTextureCubeDimension   = 0U;    ///< Maximum dimension (width or height) of a cubemap face, or 0 if cubemap textures are not supported.
+  bool      m_bTexture2DMSSupported       = false; ///< Indicates if device supports 2D multisampled textures.
+  bool      m_bTexture2DMSArraySupported  = false; ///< Indicates if device supports 2D multisampled texture arrays.
+  bool      m_bTextureViewSupported       = false; ///< Indicates if device supports texture views.
+  bool      m_bCubemapArraysSupported     = false; ///< Indicates if device supports cubemap arrays.
+  bool      m_bTextureView2DOn3DSupported = false; ///< Indicates if device supports 2D views from 3D texture.
+};
+
+/// \brief This describes the texture sampler properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerProperties : public xiiHashableStruct<xiiGALSamplerProperties>
+{
+  XII_DECLARE_POD_TYPE();
+
+  bool m_bBorderSamplingModeSupported   = false; ///< Indicates if device supports border texture addressing mode.
+  bool m_bAnisotropicFilteringSupported = false; ///< Indicates if device supports anisotropic filtering.
+  bool m_bLODBiasSupported              = false; ///< Indicates if device supports MIP load bias.
+};
+
+/// \brief This describes the sampler properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALWaveOperationProperties : public xiiHashableStruct<xiiGALWaveOperationProperties>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32                  m_uiMinSize = 0U;        ///< Minimum supported size of the wave.
+  xiiUInt32                  m_uiMaxSize = 0U;        ///< Maximum supported size of the wave. If variable wave size is not supported then this value is equal to MinSize. Direct3D12 backend: requires shader model 6.6. Vulkan backend: requires VK_EXT_subgroup_size_control.
+  xiiEnum<xiiGALShaderStage> m_SupportedShaderStages; ///< Shader stages in which wave operations can be used.
+  xiiEnum<xiiGALWaveFeature> m_WaveFeatures;          ///< Indicates which groups of wave operations are supported by this device.
+};
+
+/// \brief This describes the buffer properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferProperties : public xiiHashableStruct<xiiGALBufferProperties>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiConstantBufferAlignment         = 0U; ///< The minimum required alignment, in bytes, for the constant buffer offsets.
+  xiiUInt32 m_uiStructuredBufferOffsetAlignment = 0U; ///< The minimum required alignment, in bytes, for the structured buffer offsets.
+};
+
+/// \brief This describes the ray tracing properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProperties : public xiiHashableStruct<xiiGALRayTracingProperties>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32                                m_uiMaxRecursionDepth        = 0U; ///< The maximum ray tracing recursion depth.
+  xiiUInt32                                m_uiMaxRayGenThreads         = 0U; ///< The maximum total number of ray generation threads in one dispatch.
+  xiiUInt32                                m_uiMaxInstancesPerTLAS      = 0U; ///< The maximum number of instances in a top-level AS.
+  xiiUInt32                                m_uiMaxPrimitivesPerBLAS     = 0U; ///< The maximum number of primitives in a bottom-level AS.
+  xiiUInt32                                m_uiMaxGeometriesPerBLAS     = 0U; ///< The maximum number of geometries in a bottom-level AS.
+  xiiUInt32                                m_uiVertexBufferAlignment    = 0U; ///< The minimum alignment for the BLAS vertex buffer offset.
+  xiiUInt32                                m_uiIndexBufferAlignment     = 0U; ///< The minimum alignment for the BLAS index buffer offset.
+  xiiUInt32                                m_uiTransformBufferAlignment = 0U; ///< The minimum alignment for the BLAS transform buffer offset.
+  xiiUInt32                                m_uiBoxBufferAlignment       = 0U; ///< The minimum alignment for the BLAS box buffer offset.
+  xiiUInt32                                m_uiScratchBufferAlignment   = 0U; ///< The minimum alignment for the BLAS scratch buffer offset.
+  xiiUInt32                                m_uiInstanceBufferAlignment  = 0U; ///< The minimum alignment for the BLAS instance buffer offset.
+  xiiEnum<xiiGALRayTracingCapabilityFlags> m_CapabilityFlags;                 ///< Ray tracing capability flags. See xiiGALRayTracingCapabilityFlags;
+
+  // Internal usage.
+  xiiUInt32 m_uiShaderGroupHandleSize    = 0u;
+  xiiUInt32 m_uiMaxShaderRecordStride    = 0u;
+  xiiUInt32 m_uiShaderGroupBaseAlignment = 0u;
+};
+
+/// \brief This describes the mesh shader properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMeshBufferProperties : public xiiHashableStruct<xiiGALMeshBufferProperties>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiMaxTaskCount = 0U; ///< The maximum number of mesh shader tasks per draw command.
+};
+
 #include <GraphicsFoundation/Declarations/Implementation/Descriptors_inl.h>
