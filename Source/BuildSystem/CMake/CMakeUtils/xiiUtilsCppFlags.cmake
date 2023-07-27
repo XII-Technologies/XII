@@ -301,11 +301,11 @@ endfunction()
 function(xii_set_build_flags TARGET_NAME)
 	xii_pull_compiler_and_architecture_vars()
 
-	set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 17)
+	set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)
 
 	# On Android, we need to specify the C++ version manually.
 	if(ANDROID)
-		add_compile_options(-std=c++17)
+		add_compile_options(-std=c++20)
 	endif()
 
 	if(XII_CMAKE_COMPILER_MSVC)

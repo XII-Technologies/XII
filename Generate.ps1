@@ -3,8 +3,7 @@ param
     [Parameter(Mandatory = $True)] [ValidateSet('Win64vs2019', 'Uwp64vs2019', 'Win64vs2022', 'Uwp64vs2022')][string] $Target,
     [switch]$NoUnityBuild,
     [switch]$NoSubmoduleUpdate,
-    [string]$SolutionName,
-    [switch]$BuildDiligentGraphics
+    [string]$SolutionName
 )
 
 Set-Location $PSScriptRoot
@@ -50,17 +49,6 @@ else {
 
 if ($SolutionName -ne "") {
     $CMAKE_ARGS += "-XII_SOLUTION_NAME:STRING='$SolutionName'"
-}
-
-if ($BuildDiligentGraphics) {
-    $CMAKE_ARGS += "-DXII_BUILD_DILIGENT:BOOL=ON"
-    $CMAKE_ARGS += "-DXII_BUILD_OPENGL:BOOL=OFF"
-    $CMAKE_ARGS += "-DXII_BUILD_D3D11:BOOL=ON"
-    $CMAKE_ARGS += "-DXII_BUILD_D3D12:BOOL=ON"
-    $CMAKE_ARGS += "-DXII_BUILD_VULKAN:BOOL=ON"
-}
-else {
-    $CMAKE_ARGS += "-DXII_BUILD_D3D11:BOOL=ON"
 }
 
 $CMAKE_ARGS += "-G"
