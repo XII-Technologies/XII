@@ -15,10 +15,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceType
 
   enum Enum : StorageType
   {
-    Undefined = 0, ///< Undefined graphics device type.
-    D3D11,         ///< DirectX 11 graphics device.
-    D3D12,         ///< DirectX 12 graphics device.
-    Vulkan,        ///< Vulkan graphics device.
+    Undefined = 0U, ///< Undefined graphics device type.
+    D3D11,          ///< DirectX 11 graphics device.
+    D3D12,          ///< DirectX 12 graphics device.
+    Vulkan,         ///< Vulkan graphics device.
 
     ENUM_COUNT,
 
@@ -35,10 +35,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatureState
 
   enum Enum : StorageType
   {
-    Disabled = 0, ///< Device feature is disabled.
-    Enabled,      ///< Device feature is enabled. If a feature is requested to be enabled during the initialization but is not supported by the device/driver/platform, the device will fail to be initialized.
-    Optional,     ///< Device feature is optional. The device will attempt to enable the feature during initialization. If the feature is not supported by the device/driver/platform, the device will initialize successfully, but the feature will be disabled.
-                  ///< The actual feature state can be queried from the device capabilities description.
+    Disabled = 0U, ///< Device feature is disabled.
+    Enabled,       ///< Device feature is enabled. If a feature is requested to be enabled during the initialization but is not supported by the device/driver/platform, the device will fail to be initialized.
+    Optional,      ///< Device feature is optional. The device will attempt to enable the feature during initialization. If the feature is not supported by the device/driver/platform, the device will initialize successfully, but the feature will be disabled.
+                   ///< The actual feature state can be queried from the device capabilities description.
 
     ENUM_COUNT,
 
@@ -55,7 +55,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsAdapterVendor
 
   enum Enum : StorageType
   {
-    Unknown = 0,             ///< Adapter vendor is unknowm.
+    Unknown = 0U,            ///< Adapter vendor is unknowm.
     Nvidia,                  ///< Adapter vendor is NVidia.
     AMD,                     ///< Adapter vendor is AMD.
     Intel,                   ///< Adapter vendor is Intel.
@@ -82,9 +82,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceValidationLevel
 
   enum Enum : StorageType
   {
-    Disabled = 0, ///< Validation is disabled.
-    Standard,     ///< Standard validation options are enabled.
-    All,          ///< All validation options are enabled. Note that enabling this level may add a significant overhead.
+    Disabled = 0U, ///< Validation is disabled.
+    Standard,      ///< Standard validation options are enabled.
+    All,           ///< All validation options are enabled. Note that enabling this level may add a significant overhead.
 
     ENUM_COUNT,
 
@@ -146,7 +146,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderStage
     Callable        = XII_BIT(13), ///< Callable shader.
     Tile            = XII_BIT(14), ///< Tile shader (Only for metal graphics device).
 
-    ENUM_COUNT,
+    ENUM_COUNT = 16U,
 
     AllGraphics   = Vertex | Pixel | Geometry | Hull | Domain,                                        ///< All graphics pipeline shader stages.
     AllMesh       = Amplification | Mesh | Pixel,                                                     ///< All mesh shading pipeline stages.
@@ -183,7 +183,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBindFlags
     RayTracing            = XII_BIT(10), ///< A buffer may be used as a scratch buffer or as the source of primitive data for acceleration structure building.
     ShadingRate           = XII_BIT(11), ///< A texture may be used as shading rate texture.
 
-    ENUM_COUNT,
+    ENUM_COUNT = 13U,
 
     Default = None
   };
@@ -229,7 +229,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCPUAccessFlag
     Read  = XII_BIT(0), ///< A resource should be mapped for reading.
     Write = XII_BIT(1), ///< A resource should be mapped for writing.
 
-    ENUM_COUNT,
+    ENUM_COUNT = 3U,
 
     Default = None
   };
@@ -275,7 +275,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMapFlag
     NoOverWrite = XII_BIT(2), ///< The system will not synchronize pending operations before mapping the buffer.
                               ///< It is the responsibility of the application to ensure that the buffer contents is not overwritten while it is in use by the GPU.
 
-    ENUM_COUNT,
+    ENUM_COUNT = 4U,
 
     Default = None
   };
@@ -360,7 +360,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormat
 
   enum Enum : StorageType
   {
-    Unknown = 0,                  ///< Unknown format.
+    Unknown = 0U,                 ///< Unknown format.
     RGBA32Typeless,               ///< Four component 128-bit typeless format with 32-bit channels.
     RGBA32Float,                  ///< Four-component 128-bit floating-point format with 32-bit channels.
     RGBA32UInt,                   ///< Four-component 128-bit unsigned-integer format with 32-bit channels.
@@ -479,7 +479,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFilterType
 
   enum Enum : StorageType
   {
-    Unknown = 0,           ///< Unknown filter type.
+    Unknown = 0U,          ///< Unknown filter type.
     Point,                 ///< Point filtering.
     Linear,                ///< Linear filtering.
     Anisotropic,           ///< Anisotropic filtering.
@@ -512,12 +512,12 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureAddressMode
 
   enum Enum : StorageType
   {
-    Unknown = 0, ///< Unknown texture address mode.
-    Wrap,        ///< Tile the texture at every integer junction.
-    Mirror,      ///< Flip the texture at every integer junction.s
-    Clamp,       ///< Texture coordinates outside the range [0.0, 1.0] are set to the texture color at 0.0 or 1.0 respectively.
-    Border,      ///< Texture coordinates outside the range [0.0, 1.0] are set to the border color.
-    MirrorOnce,  ///< Similar to Mirror and Clamp. This takes the absolute value of the texture coordinate (thus mirroring around 0), then clamps to the the maximum value.
+    Unknown = 0U, ///< Unknown texture address mode.
+    Wrap,         ///< Tile the texture at every integer junction.
+    Mirror,       ///< Flip the texture at every integer junction.s
+    Clamp,        ///< Texture coordinates outside the range [0.0, 1.0] are set to the texture color at 0.0 or 1.0 respectively.
+    Border,       ///< Texture coordinates outside the range [0.0, 1.0] are set to the border color.
+    MirrorOnce,   ///< Similar to Mirror and Clamp. This takes the absolute value of the texture coordinate (thus mirroring around 0), then clamps to the the maximum value.
 
     ENUM_COUNT,
 
@@ -538,7 +538,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALComparisonFunction
 
   enum Enum : StorageType
   {
-    Unknown = 0,  ///< Unknown comparison function.
+    Unknown = 0U, ///< Unknown comparison function.
     Never,        ///< Comparison never passes.
     Less,         ///< Comparison passes if the source data is less than the destination data.
     Equal,        ///< Comparison passes if the source data is equal to the destination data.
@@ -563,7 +563,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
 
   enum Enum : StorageType
   {
-    Undefined = 0,           ///< Undefined topology.
+    Undefined = 0U,          ///< Undefined topology.
     TriangleList,            ///< Interpret the vertex data as a list of triangles.
     TriangleStrip,           ///< Interpret the vertex data as a triangle strip.
     PointList,               ///< Interpret the vertex data as a list of points.
@@ -621,13 +621,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryProperties
 
   enum Enum : StorageType
   {
-    Unknown      = 0,          ///< The memory properties are unknown.
+    Unknown      = 0U,         ///< The memory properties are unknown.
     HostCoherent = XII_BIT(0), ///< The device (GPU) memory is coherent with the host (CPU), meaning
                                ///< that CPU writes are automatically available to the GPU and vice versa.
                                ///< If memory is not coherent, it must be explicitly flushed after
                                ///< being modified by the CPU, or invalidated before being read by the CPU.
 
-    ENUM_COUNT,
+    ENUM_COUNT = 2U,
 
     Default = Unknown
   };
@@ -642,10 +642,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceAdapterType
 
   enum Enum : StorageType
   {
-    Unknown = 0, ///< Unknown adapter type.
-    Software,    ///< Software adapter.
-    Integrated,  ///< Integrated hardware adapter.
-    Discrete,    ///< Discrete hardware adapter.
+    Unknown = 0U, ///< Unknown adapter type.
+    Software,     ///< Software adapter.
+    Integrated,   ///< Integrated hardware adapter.
+    Discrete,     ///< Discrete hardware adapter.
 
     ENUM_COUNT,
 
@@ -663,9 +663,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALScalingMode
 
   enum Enum : StorageType
   {
-    Unspecified = 0, ///< Unspecified scaling.
-    Centered,        ///< Specifies no scaling. The image is centered on the display. This flag is typically used for a fixed-dot-pitch display (such as an LED display).
-    Stretched,       ///< Specifies a stretched scaling.
+    Unspecified = 0U, ///< Unspecified scaling.
+    Centered,         ///< Specifies no scaling. The image is centered on the display. This flag is typically used for a fixed-dot-pitch display (such as an LED display).
+    Stretched,        ///< Specifies a stretched scaling.
 
     ENUM_COUNT,
 
@@ -683,10 +683,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALScanLineOrder
 
   enum Enum : StorageType
   {
-    Unspecified = 0, ///< Unspecified scanline order.
-    Progressive,     ///< The image is created from the first scanline to the last without skipping any.
-    UpperFieldFirst, ///< The image is created beginning with the upper field.
-    LowerFieldFirst, ///< The image is created beginning with the lower field.
+    Unspecified = 0U, ///< Unspecified scanline order.
+    Progressive,      ///< The image is created from the first scanline to the last without skipping any.
+    UpperFieldFirst,  ///< The image is created beginning with the upper field.
+    LowerFieldFirst,  ///< The image is created beginning with the lower field.
 
     ENUM_COUNT,
 
@@ -703,13 +703,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainUsageFlags
 
   enum Enum : StorageType
   {
-    None            = 0,          ///< No allowed usage.
+    None            = 0U,         ///< No allowed usage.
     RenderTarget    = XII_BIT(0), ///< The swapchain images can be used as render target outputs.
     ShaderResource  = XII_BIT(1), ///< The swapchain images can be used as shader resources.
     InputAttachment = XII_BIT(2), ///< The swapchain images can be used as input attachments.
     CopySource      = XII_BIT(3), ///< The swapchain images can be used as the source of a copy operation.
 
-    ENUM_COUNT = 5,
+    ENUM_COUNT = 5U,
 
     Default = None
   };
@@ -724,7 +724,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSurfaceTransform
 
   enum Enum : StorageType
   {
-    Optimal = 0,               ///< Use the most optimal surface transform.
+    Optimal = 0U,              ///< Use the most optimal surface transform.
     Identity,                  ///< The image content is presented without being transformed.
     Rotate90,                  ///< The image content is rotated 90 degrees clockwise.
     Rotate180,                 ///< The image content is rotated 180 degrees clockwise.
@@ -749,7 +749,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryType
 
   enum Enum : StorageType
   {
-    Undefined = 0,      ///< The query type is undefined.
+    Undefined = 0U,     ///< The query type is undefined.
     Occlusion,          ///< Number of samples that passed the depth and stencil test between begin and end (on a context).
     BinaryOcclusion,    ///< Acts like Occlusion. Returns true if at least one sample passed.
     Timestamp,          ///< Requests the GPU timestamp, similar to an EndQuery call.
@@ -774,7 +774,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALWaveFeature
 
   enum Enum : StorageType
   {
-    Unknown         = 0,          ///<
+    Unknown         = 0U,         ///<
     Basic           = XII_BIT(0), ///<
     Vote            = XII_BIT(1), ///<
     Arithmetic      = XII_BIT(2), ///<
@@ -799,7 +799,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingCapabilityFlags
 
   enum Enum : StorageType
   {
-    None              = 0,           ///< No ray tracing capabilities.
+    None              = 0U,          ///< No ray tracing capabilities.
     StandaloneShaders = XII_BIT(0),  ///< The device supports standalone ray tracing shaders (e.g. ray generation, closest hit, any hit, etc.).
                                      ///< When this feature is disabled, inline ray tracing may still be supported where rays can be traced
                                      ///< from graphics or compute shaders.
@@ -813,6 +813,111 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingCapabilityFlags
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRayTracingCapabilityFlags);
+
+/// \brief This describes the command queue type.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueType
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Unknown       = 0u,                    ///< Queue type is unknown.
+    Transfer      = XII_BIT(0),            ///< Command queue that only supports memory transfer operations.
+    Compute       = XII_BIT(1) | Transfer, ///< Command queue that supports compute, ray tracing and transfer commands.
+    Graphics      = XII_BIT(2) | Compute,  ///< Command queue that supports graphics, compute, ray tracing and transfer commands.
+    SparseBinding = XII_BIT(3),            ///< Command queue that supports sparse binding commands.
+
+    ENUM_COUNT = 5U,
+
+    PrimaryType = Transfer | Compute | Graphics, ///< Mask to extract primary command queue type.
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandQueueType);
+
+/// \brief This describes the queue priority.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueuePriority
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Unknown = 0u, ///< Queue priority is unknown.
+    Low,          ///<
+    Medium,       ///<
+    High,         ///<
+    RealTime,     ///< Additional system privileges required to use this priority, read documentation for specific platform.
+
+    ENUM_COUNT,
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandQueuePriority);
+
+/// \brief This describes how shading rates coming from the different sources (base rate, primitive rate and VRS image rate) are combined.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCombiner
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    PassThrough      = XII_BIT(0), ///< Returns the original shading rate value.
+    CombinerOverride = XII_BIT(1), ///< Returns the new shading rate value.
+    CombinerMin      = XII_BIT(2), ///< Returns the minimum shading rate value.
+    CombinerMax      = XII_BIT(3), ///< Returns the maximum shading rate value.
+    CombinerSum      = XII_BIT(4), ///< Returns the sum of the shading rates.
+    CombinerMul      = XII_BIT(5), ///< Returns the product of the shading rates
+
+    ENUM_COUNT = 6U,
+
+    Default = PassThrough
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateCombiner);
+
+/// \brief This describes the shading rate texture format supported by the device.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateFormat
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Unknown = 0U,     ///< Variable shading rate is not supported.
+    Palette,          ///< Single channel 8-bit surface that contains shading rate values. Only 2D and 2D array textures with R8UNormalized format are allowed.
+    RG8UNormalized,   ///< RG8UNormalized texture that defines the shading rate (0.5, 0.25 etc.). The R channel is used for X axis, G channel is used for Y axis.
+    ColumnRowFloat32, ///< This format is only used in Metal when shading rate is defined by column/row rates instead of a texture. The values are 32-bit floating point values in 0 to 1 range (0.5, 0.25 etc.).
+
+    ENUM_COUNT,
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateFormat);
+
+/// \brief This describes the base shading rate along a horizontal or vertical axis.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAxis
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    X1, ///< Default shading rate.
+    X2, ///< 2x resolution per axis.
+    X4, ///< 4x resolution per axis.
+
+    ENUM_COUNT,
+
+    Default = X1
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateAxis);
 
 /// \brief Base class for GAL objects, stores a creation description of the object and also allows for reference counting.
 template <typename CreationDescription>

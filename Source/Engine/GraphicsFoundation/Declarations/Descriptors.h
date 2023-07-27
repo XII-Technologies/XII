@@ -194,11 +194,65 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProperties : public xiiHashabl
 };
 
 /// \brief This describes the mesh shader properties.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALMeshBufferProperties : public xiiHashableStruct<xiiGALMeshBufferProperties>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMeshShaderProperties : public xiiHashableStruct<xiiGALMeshShaderProperties>
 {
   XII_DECLARE_POD_TYPE();
 
   xiiUInt32 m_uiMaxTaskCount = 0U; ///< The maximum number of mesh shader tasks per draw command.
+};
+
+/// \brief This describes the compute shader properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALComputeShaderProperties : public xiiHashableStruct<xiiGALComputeShaderProperties>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiSharedMemorySize          = 0U; ///< Amount of shared memory available to threads in one group.
+  xiiUInt32 m_uiMaxThreadGroupInvocations = 0U; ///< The total maximum number of threads in one group.
+
+  xiiUInt32 m_uiMaxThreadGroupSizeX = 0U; ///< The maximum number of threads in group X dimension.
+  xiiUInt32 m_uiMaxThreadGroupSizeY = 0U; ///< The maximum number of threads in group Y dimension.
+  xiiUInt32 m_uiMaxThreadGroupSizeZ = 0U; ///< The maximum number of threads in group Z dimension.
+
+  xiiUInt32 m_uiMaxThreadGroupCountX = 0U; ///< The maximum number of thread groups that can be dispatched in X dimension.
+  xiiUInt32 m_uiMaxThreadGroupCountY = 0U; ///< The maximum number of thread groups that can be dispatched in Y dimension.
+  xiiUInt32 m_uiMaxThreadGroupCountZ = 0U; ///< The maximum number of thread groups that can be dispatched in Z dimension.
+};
+
+/// \brief This describes the normalized device coordinates attribute.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALNormalizedDeviceCoordinates : public xiiHashableStruct<xiiGALNormalizedDeviceCoordinates>
+{
+  XII_DECLARE_POD_TYPE();
+
+  float m_fMinZ          = 0.0f;
+  float m_fZToDepthScale = 0.0f;
+  float m_fYToVScale     = 0.0f;
+
+  /// \brief Returns ZtoDepthBias such that given NDC z coordinate, depth value can be computed as d = z * ZtoDepthScale + ZtoDepthBias.
+  float GetZtoDepthBias() const;
+};
+
+/// \brief This describes the graphics device creation description.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceCreationDescription : public xiiHashableStruct<xiiGALGraphicsDeviceCreationDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiEnum<xiiGALGraphicsDeviceType> m_GraphicsDeviceType;
+  xiiGALDeviceFeatures              m_DeviceFeatures;
+  xiiGALNormalizedDeviceCoordinates m_DeviceNormalizedCoordinates;
+};
+
+/// \brief This describes the device memory properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceCreationDescription : public xiiHashableStruct<xiiGALGraphicsDeviceCreationDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt64                    m_uiLocalMemory         = 0U;  ///< The amount of local video memory that is inaccessible by CPU, in bytes.
+  xiiUInt64                    m_uiHostVisibleMemory   = 0U;  ///< The amount of host-visible memory that can be accessed by CPU and is visible by GPU, in bytes.
+  xiiUInt64                    m_uiUnifiedMemory       = 0U;  ///< The amount of unified memory that can be directly accessed by both CPU and GPU, in bytes.
+  xiiUInt64                    m_uiMaxMemoryAllocation = 0U;  ///< Maximum size of a continuous memory block.
+  xiiEnum<xiiGALCPUAccessFlag> m_UnifiedMemoryCPUAccessFlags; ///< Supported access types for the unified memory.
+  xiiEnum<xiiGALBindFlags>     m_MemoryleessTextureBindFlags; ///< Indicates if device supports color and depth attachments in on-chip memory.
+                                                              ///< If supported, it will be combination of the following flags: RenderTarget, DepthStencil, InputAttachment.
 };
 
 #include <GraphicsFoundation/Declarations/Implementation/Descriptors_inl.h>
