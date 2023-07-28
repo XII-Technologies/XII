@@ -519,14 +519,14 @@ XII_CREATE_SIMPLE_TEST(Strings, StringUtils)
     XII_TEST_BOOL(xiiStringUtils::StartsWith("abcdef", "Abc") == false);
 
     // substring test
-    const char*     sz          = u8"äbc def ghi";
+    const char*     sz          = reinterpret_cast<const char*>(u8"äbc def ghi");
     const xiiUInt32 uiByteCount = xiiStringUtils::GetStringElementCount(u8"äbc");
 
-    XII_TEST_BOOL(xiiStringUtils::StartsWith(sz, u8"äbc", sz + uiByteCount) == true);
-    XII_TEST_BOOL(xiiStringUtils::StartsWith(sz, u8"äbc", sz + uiByteCount - 1) == false);
-    XII_TEST_BOOL(xiiStringUtils::StartsWith(sz, u8"äbc", sz + 0) == false);
+    XII_TEST_BOOL(xiiStringUtils::StartsWith(sz, reinterpret_cast<const char*>(u8"äbc"), sz + uiByteCount) == true);
+    XII_TEST_BOOL(xiiStringUtils::StartsWith(sz, reinterpret_cast<const char*>(u8"äbc"), sz + uiByteCount - 1) == false);
+    XII_TEST_BOOL(xiiStringUtils::StartsWith(sz, reinterpret_cast<const char*>(u8"äbc"), sz + 0) == false);
 
-    const char* sz2 = u8"äbc def";
+    const char* sz2 = reinterpret_cast<const char*>(u8"äbc def");
     XII_TEST_BOOL(xiiStringUtils::StartsWith(sz, sz2, sz + uiByteCount, sz2 + uiByteCount) == true);
   }
 
@@ -552,13 +552,13 @@ XII_CREATE_SIMPLE_TEST(Strings, StringUtils)
     XII_TEST_BOOL(xiiStringUtils::StartsWith_NoCase(sL.GetData(), sU.GetData()) == true);
 
     // substring test
-    const char*     sz          = u8"äbc def ghi";
-    const xiiUInt32 uiByteCount = xiiStringUtils::GetStringElementCount(u8"äbc");
-    XII_TEST_BOOL(xiiStringUtils::StartsWith_NoCase(sz, u8"ÄBC", sz + uiByteCount) == true);
-    XII_TEST_BOOL(xiiStringUtils::StartsWith_NoCase(sz, u8"ÄBC", sz + uiByteCount - 1) == false);
-    XII_TEST_BOOL(xiiStringUtils::StartsWith_NoCase(sz, u8"ÄBC", sz + 0) == false);
+    const char*     sz          = reinterpret_cast<const char*>(u8"äbc def ghi");
+    const xiiUInt32 uiByteCount = xiiStringUtils::GetStringElementCount(reinterpret_cast<const char*>(u8"äbc"));
+    XII_TEST_BOOL(xiiStringUtils::StartsWith_NoCase(sz, reinterpret_cast<const char*>(u8"ÄBC"), sz + uiByteCount - 1) == false);
+    XII_TEST_BOOL(xiiStringUtils::StartsWith_NoCase(sz, reinterpret_cast<const char*>(u8"ÄBC"), sz + uiByteCount) == true);
+    XII_TEST_BOOL(xiiStringUtils::StartsWith_NoCase(sz, reinterpret_cast<const char*>(u8"ÄBC"), sz + 0) == false);
 
-    const char* sz2 = u8"Äbc def";
+    const char* sz2 = reinterpret_cast<const char*>(u8"Äbc def");
     XII_TEST_BOOL(xiiStringUtils::StartsWith_NoCase(sz, sz2, sz + uiByteCount, sz2 + uiByteCount) == true);
   }
 
