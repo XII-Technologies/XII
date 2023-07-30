@@ -285,7 +285,7 @@ void xiiQtUiServices::OpenInExplorer(xiiStringView sPath, bool bIsFile)
     parentDir = parentDir.GetFileDirectory();
     sPath     = parentDir.GetData();
   }
-  args << QDir::toNativeSeparators(sPath);
+  args << QDir::toNativeSeparators(sPath.GetData(tmp));
 
   QProcess::startDetached("xdg-open", args);
 #else
