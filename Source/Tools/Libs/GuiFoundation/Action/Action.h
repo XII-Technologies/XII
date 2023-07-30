@@ -18,7 +18,6 @@ struct xiiActionContext;
 
 using xiiActionId      = xiiGenericId<24, 8>;
 using CreateActionFunc = xiiAction* (*)(const xiiActionContext&);
-typedef void;
 using DeleteActionFunc = void (*)(xiiAction*);
 
 /// \brief Handle for a xiiAction.

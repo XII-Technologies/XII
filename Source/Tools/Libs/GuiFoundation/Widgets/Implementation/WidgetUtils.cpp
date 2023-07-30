@@ -35,12 +35,7 @@ QScreen& xiiWidgetUtils::GetClosestScreen(const QPoint& point)
   return *pClosestScreen;
 }
 
-void xiiWidgetUtils::AdjustGridDensity(
-  double&   ref_fFinestDensity,
-  double&   ref_fRoughDensity,
-  xiiUInt32 uiWindowWidth,
-  double    fViewportSceneWidth,
-  xiiUInt32 uiMinPixelsForStep)
+void xiiWidgetUtils::AdjustGridDensity(double& ref_fFinestDensity, double& ref_fRoughDensity, xiiUInt32 uiWindowWidth, double fViewportSceneWidth, xiiUInt32 uiMinPixelsForStep)
 {
   const double fMaxStepsFitInWindow = (double)uiWindowWidth / (double)uiMinPixelsForStep;
 

@@ -11,12 +11,7 @@ namespace xiiWidgetUtils
   /// and also with out of bounds cursor positions.
   XII_GUIFOUNDATION_DLL QScreen& GetClosestScreen(const QPoint& point);
 
-  XII_GUIFOUNDATION_DLL void AdjustGridDensity(
-    double&   ref_fFinestDensity,
-    double&   ref_fRoughDensity,
-    xiiUInt32 uiWindowWidth,
-    double    fViewportSceneWidth,
-    xiiUInt32 uiMinPixelsForStep);
+  XII_GUIFOUNDATION_DLL void AdjustGridDensity(double& ref_fFinestDensity, double& ref_fRoughDensity, xiiUInt32 uiWindowWidth, double fViewportSceneWidth, xiiUInt32 uiMinPixelsForStep);
 
   XII_GUIFOUNDATION_DLL void ComputeGridExtentsX(const QRectF& viewportSceneRect, double fGridStops, double& out_fMinX, double& out_fMaxX);
 
