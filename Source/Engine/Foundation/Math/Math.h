@@ -292,7 +292,7 @@ namespace xiiMath
 
   /// \brief Swaps the values in the two variables f1 and f2
   template <typename T>
-  [[nodiscard]] void Swap(T& ref_f1, T& ref_f2); // [tested]
+  void Swap(T& ref_f1, T& ref_f2); // [tested]
 
   /// \brief Returns the linear interpolation of f1 and f2. factor is a value between 0 and 1.
   template <typename T>
