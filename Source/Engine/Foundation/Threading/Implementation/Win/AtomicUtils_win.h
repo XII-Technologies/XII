@@ -260,7 +260,7 @@ XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(volatile xiiInt64& ref_iDest, 
   return _InterlockedCompareExchange64(&ref_iDest, value, iExpected) == iExpected;
 }
 
-XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(void** volatile pDest, void* pExpected, void* value)
+XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(void** pDest, void* pExpected, void* value)
 {
   return _InterlockedCompareExchangePointer(pDest, value, pExpected) == pExpected;
 }

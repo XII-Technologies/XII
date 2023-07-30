@@ -98,7 +98,7 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticArray)
 
     a2 = arrayPtr;
 
-    XII_TEST_BOOL(a2 == arrayPtr);
+    XII_TEST_BOOL(a2.GetArrayPtr() == arrayPtr);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator == / !=")

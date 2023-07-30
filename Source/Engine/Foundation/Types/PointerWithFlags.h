@@ -54,7 +54,7 @@ public:
   /// \brief Changes the pointer value only. Flags stay unchanged.
   void SetPtr(PtrType* pPtr)
   {
-    const std::uintptr_t isrc = *reinterpret_cast<std::uintptr_t*>(&pPtr);
+    const std::uintptr_t isrc = *reinterpret_cast<std::uintptr_t*>(&pPtr);  
     XII_ASSERT_DEBUG((isrc & FlagsMask) == 0, "The given pointer does not have an {} byte alignment and thus cannot be stored lossless.", 1u << NumFlagBits);
 
     std::uintptr_t& iptr = *reinterpret_cast<std::uintptr_t*>(&m_pPtr);

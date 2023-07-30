@@ -130,27 +130,27 @@ namespace
 XII_CREATE_SIMPLE_TEST(Basics, TypelessBitflags)
 {
   {
-    xiiTypelessBitflags<xiiUInt32> flags = TypelessFlags1::Bit1 | TypelessFlags2::Bit4;
+    xiiTypelessBitflags<xiiUInt32> flags = static_cast<xiiUInt32>(TypelessFlags1::Bit1) | static_cast<xiiUInt32>(TypelessFlags2::Bit4);
 
-    XII_TEST_BOOL(flags.IsAnySet(TypelessFlags2::Bit4));
-    XII_TEST_BOOL(flags.AreAllSet(TypelessFlags1::Bit1 | TypelessFlags2::Bit4));
-    XII_TEST_BOOL(flags.IsAnySet(TypelessFlags1::Bit1 | TypelessFlags1::Bit2));
-    XII_TEST_BOOL(!flags.IsAnySet(TypelessFlags1::Bit2 | TypelessFlags2::Bit3));
-    XII_TEST_BOOL(flags.AreNoneSet(TypelessFlags1::Bit2 | TypelessFlags2::Bit3));
-    XII_TEST_BOOL(!flags.AreNoneSet(TypelessFlags1::Bit2 | TypelessFlags2::Bit4));
+    XII_TEST_BOOL(flags.IsAnySet(static_cast<xiiUInt32>(TypelessFlags2::Bit4)));
+    XII_TEST_BOOL(flags.AreAllSet(static_cast<xiiUInt32>(TypelessFlags1::Bit1) | static_cast<xiiUInt32>(TypelessFlags2::Bit4)));
+    XII_TEST_BOOL(flags.IsAnySet(static_cast<xiiUInt32>(TypelessFlags1::Bit1) | static_cast<xiiUInt32>(TypelessFlags1::Bit2)));
+    XII_TEST_BOOL(!flags.IsAnySet(static_cast<xiiUInt32>(TypelessFlags1::Bit2) | static_cast<xiiUInt32>(TypelessFlags2::Bit3)));
+    XII_TEST_BOOL(flags.AreNoneSet(static_cast<xiiUInt32>(TypelessFlags1::Bit2) | static_cast<xiiUInt32>(TypelessFlags2::Bit3)));
+    XII_TEST_BOOL(!flags.AreNoneSet(static_cast<xiiUInt32>(TypelessFlags1::Bit2) | static_cast<xiiUInt32>(TypelessFlags2::Bit4)));
 
-    flags.Add(TypelessFlags2::Bit3);
-    XII_TEST_BOOL(flags.IsAnySet(TypelessFlags2::Bit3));
+    flags.Add(static_cast<xiiUInt32>(TypelessFlags2::Bit3));
+    XII_TEST_BOOL(flags.IsAnySet(static_cast<xiiUInt32>(TypelessFlags2::Bit3)));
 
-    flags.Remove(TypelessFlags1::Bit1);
-    XII_TEST_BOOL(!flags.IsAnySet(TypelessFlags1::Bit1));
+    flags.Remove(static_cast<xiiUInt32>(TypelessFlags1::Bit1));
+    XII_TEST_BOOL(!flags.IsAnySet(static_cast<xiiUInt32>(TypelessFlags1::Bit1)));
 
-    flags.Toggle(TypelessFlags2::Bit4);
-    XII_TEST_BOOL(flags.AreAllSet(TypelessFlags2::Bit3));
+    flags.Toggle(static_cast<xiiUInt32>(TypelessFlags2::Bit4));
+    XII_TEST_BOOL(flags.AreAllSet(static_cast<xiiUInt32>(TypelessFlags2::Bit3)));
 
-    flags.AddOrRemove(TypelessFlags1::Bit2, true);
-    flags.AddOrRemove(TypelessFlags2::Bit3, false);
-    XII_TEST_BOOL(flags.AreAllSet(TypelessFlags1::Bit2));
+    flags.AddOrRemove(static_cast<xiiUInt32>(TypelessFlags1::Bit2), true);
+    flags.AddOrRemove(static_cast<xiiUInt32>(TypelessFlags2::Bit3), false);
+    XII_TEST_BOOL(flags.AreAllSet(static_cast<xiiUInt32>(TypelessFlags1::Bit2)));
 
     XII_TEST_BOOL(!flags.IsNoFlagSet());
     flags.Clear();
@@ -159,7 +159,7 @@ XII_CREATE_SIMPLE_TEST(Basics, TypelessBitflags)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator&")
   {
-    xiiTypelessBitflags<xiiUInt32> flags2 = TypelessFlags1::Bit1 & TypelessFlags2::Bit4;
+    xiiTypelessBitflags<xiiUInt32> flags2 = static_cast<xiiUInt32>(TypelessFlags1::Bit1) & static_cast<xiiUInt32>(TypelessFlags2::Bit4);
     XII_TEST_BOOL(flags2.GetValue() == 0);
   }
 
@@ -174,17 +174,17 @@ XII_CREATE_SIMPLE_TEST(Basics, TypelessBitflags)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator|=")
   {
-    xiiTypelessBitflags<xiiUInt32> f = TypelessFlags1::Bit1 | TypelessFlags1::Bit2;
-    f |= TypelessFlags2::Bit3;
+    xiiTypelessBitflags<xiiUInt32> f = static_cast<xiiUInt32>(TypelessFlags1::Bit1) | static_cast<xiiUInt32>(TypelessFlags1::Bit2);
+    f |= static_cast<xiiUInt32>(TypelessFlags2::Bit3);
 
-    XII_TEST_BOOL(f.GetValue() == (TypelessFlags1::Bit1 | TypelessFlags1::Bit2 | TypelessFlags2::Bit3));
+    XII_TEST_BOOL(f.GetValue() == (static_cast<xiiUInt32>(TypelessFlags1::Bit1) | static_cast<xiiUInt32>(TypelessFlags1::Bit2) | static_cast<xiiUInt32>(TypelessFlags2::Bit3)));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator&=")
   {
-    xiiTypelessBitflags<xiiUInt32> f = TypelessFlags1::Bit1 | TypelessFlags1::Bit2 | TypelessFlags2::Bit3;
-    f &= TypelessFlags2::Bit3;
+    xiiTypelessBitflags<xiiUInt32> f = static_cast<xiiUInt32>(TypelessFlags1::Bit1) | static_cast<xiiUInt32>(TypelessFlags1::Bit2) | static_cast<xiiUInt32>(TypelessFlags2::Bit3);
+    f &= static_cast<xiiUInt32>(TypelessFlags2::Bit3);
 
-    XII_TEST_BOOL(f.GetValue() == TypelessFlags2::Bit3);
+    XII_TEST_BOOL(f.GetValue() == static_cast<xiiUInt32>(TypelessFlags2::Bit3));
   }
 }
