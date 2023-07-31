@@ -63,9 +63,9 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticArray)
     xiiStaticArray<xiiInt32, 64> a2 = a1;
     xiiStaticArray<xiiInt32, 32> a3(a1);
 
-    XII_TEST_BOOL(a1 == a2);
+    XII_TEST_BOOL(a1.GetArrayPtr() == a2.GetArrayPtr());
     XII_TEST_BOOL(a1 == a3);
-    XII_TEST_BOOL(a2 == a3);
+    XII_TEST_BOOL(a2.GetArrayPtr() == a3.GetArrayPtr());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Convert to ArrayPtr")
