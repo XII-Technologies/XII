@@ -136,8 +136,7 @@ function(xii_set_build_flags_msvc TARGET_NAME)
 	# 4389 = Signed/unsigned mismatch *
 	# 4714 = Function 'function' marked as __forceinline not inlined
 	# 6326 = Potential comparison of a constant with another constant
-	# 5054 = Automatic conversion on operands. An implicit conversion between enumeration types produces a level 4 warning.
-	target_compile_options(${TARGET_NAME} PUBLIC /wd4201 /wd4251 /wd4324 /wd4345 /wd5054)
+	target_compile_options(${TARGET_NAME} PUBLIC /wd4201 /wd4251 /wd4324 /wd4345)
 	target_compile_options(${TARGET_NAME} PRIVATE /wd4100 /wd4189 /wd4127 /wd4245 /wd4389 /wd4310 /wd4714 /wd6326)
 
 	# Set Warnings as Errors: Too few/many parameters given for Macro

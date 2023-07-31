@@ -42,28 +42,19 @@ struct xiiCleanType<const char*>
 template <typename T>
 struct xiiIsOutParam
 {
-  enum
-  {
-    value = false,
-  };
+  static constexpr bool value = false;
 };
 
 template <typename T>
 struct xiiIsOutParam<T&>
 {
-  enum
-  {
-    value = !std::is_const<typename xiiTypeTraits<T>::NonReferencePointerType>::value,
-  };
+  static constexpr bool value = !std::is_const<typename xiiTypeTraits<T>::NonReferencePointerType>::value;
 };
 
 template <typename T>
 struct xiiIsOutParam<T*>
 {
-  enum
-  {
-    value = !std::is_const<typename xiiTypeTraits<T>::NonReferencePointerType>::value,
-  };
+  static constexpr bool value = !std::is_const<typename xiiTypeTraits<T>::NonReferencePointerType>::value;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -72,19 +63,13 @@ struct xiiIsOutParam<T*>
 template <class T, class C = typename xiiCleanType<T>::Type>
 struct xiiIsStandardType
 {
-  enum
-  {
-    value = xiiVariant::TypeDeduction<C>::value >= xiiVariantType::FirstStandardType && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::LastStandardType,
-  };
+  static constexpr bool value = xiiVariant::TypeDeduction<C>::value >= xiiVariantType::FirstStandardType && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::LastStandardType;
 };
 
 template <class T>
 struct xiiIsStandardType<T, xiiVariant>
 {
-  enum
-  {
-    value = true,
-  };
+  static constexpr bool value = true;
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -93,19 +78,13 @@ struct xiiIsStandardType<T, xiiVariant>
 template <class T, class C = typename xiiCleanType<T>::Type>
 struct xiiIsValueType
 {
-  enum
-  {
-    value = (xiiVariant::TypeDeduction<C>::value >= xiiVariantType::FirstStandardType && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::LastStandardType) || xiiVariantTypeDeduction<C>::classification == xiiVariantClass::CustomTypeCast,
-  };
+  static constexpr bool value = (xiiVariant::TypeDeduction<C>::value >= xiiVariantType::FirstStandardType && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::LastStandardType) || xiiVariantTypeDeduction<C>::classification == xiiVariantClass::CustomTypeCast;
 };
 
 template <class T>
 struct xiiIsValueType<T, xiiVariant>
 {
-  enum
-  {
-    value = true,
-  };
+  static constexpr bool value = true;
 };
 
 //////////////////////////////////////////////////////////////////////////
