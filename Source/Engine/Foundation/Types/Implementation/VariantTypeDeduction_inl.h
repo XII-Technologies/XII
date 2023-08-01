@@ -465,6 +465,28 @@ struct xiiVariantTypeDeduction<xiiStringView>
 };
 
 template <>
+struct xiiVariantTypeDeduction<xiiHashedString>
+{
+  using StorageType = xiiHashedString;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::HashedString;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
+};
+
+template <>
+struct xiiVariantTypeDeduction<xiiTempHashedString>
+{
+  using StorageType = xiiTempHashedString;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::TempHashedString;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
+};
+
+template <>
 struct xiiVariantTypeDeduction<xiiDataBuffer>
 {
   using StorageType = xiiDataBuffer;

@@ -234,6 +234,8 @@
             <Item Name="Value" Condition="m_uiType == Type::Angle">*reinterpret_cast&lt;xiiAngle*&gt;(&amp;m_Data)</Item>
             <Item Name="Value" Condition="m_uiType == Type::Angled">*reinterpret_cast&lt;xiiAngled*&gt;(&amp;m_Data)</Item>
             <Item Name="Value" Condition="m_uiType == Type::ColorGamma">*reinterpret_cast&lt;xiiColorGammaUB*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::HashedString">*reinterpret_cast&lt;xiiHashedString*&gt;(&amp;m_Data)</Item>
+            <Item Name="Value" Condition="m_uiType == Type::TempHashedString">*reinterpret_cast&lt;xiiTempHashedString*&gt;(&amp;m_Data)</Item>
 
             <Item Name="Value" Condition="m_uiType == Type::TypedPointer">*reinterpret_cast&lt;xiiTypedPointer*&gt;(&amp;m_Data)</Item>
             <Item Name="Value" Condition="m_uiType == Type::TypedObject &amp;&amp; m_bIsShared">reinterpret_cast&lt;void*&gt;(m_Data.shared->m_Ptr)</Item>
@@ -353,13 +355,13 @@
     </Type>
 
     <Type Name="xiiAngle">
-        <DisplayString>{{Degree = {m_fRadian*57.295}}}</DisplayString>
+        <DisplayString>{{Degree = {m_fRadian*57.2958}}}</DisplayString>
         <Expand>
             <Item Name="Radians">m_fRadian</Item>
         </Expand>
     </Type>
     <Type Name="xiiAngled">
-        <DisplayString>{{Degree = {m_fRadian*57.295}}}</DisplayString>
+        <DisplayString>{{Degree = {m_fRadian*57.2958}}}</DisplayString>
         <Expand>
             <Item Name="Radians">m_fRadian</Item>
         </Expand>

@@ -808,6 +808,18 @@ namespace xiiConversionUtils
     return out_sResult;
   }
 
+  const xiiStringBuilder& ToString(const xiiHashedString& value, xiiStringBuilder& out_sResult)
+  {
+    out_sResult = value.GetView();
+    return out_sResult;
+  }
+
+  const xiiStringBuilder& ToString(const xiiTempHashedString& value, xiiStringBuilder& out_sResult)
+  {
+    out_sResult.Format("0x{}", xiiArgU(value.GetHash(), 16, true, 16));
+    return out_sResult;
+  }
+
   const xiiStringBuilder& ToString(const xiiDynamicArray<xiiVariant>& value, xiiStringBuilder& out_sResult)
   {
     out_sResult.Append("[");

@@ -385,7 +385,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 ///   Range has to be an object that a ranged based for-loop can iterate over containing the keys
 ///   implicitly convertible to Type / xiiString.
 /// \param GetValue
-///   Function signature: bool GetValue(xiiStringView sKey, Type& value);
+///   Function signature: bool GetValue(xiiStringView sKey, Type& value) const;
 ///   Returns whether the the key existed. value must be a non const ref as it is written to.
 /// \param Insert
 ///   Function signature: void Insert(xiiStringView sKey, Type value);

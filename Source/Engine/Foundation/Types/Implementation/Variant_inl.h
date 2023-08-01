@@ -180,6 +180,16 @@ XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiQuatd& value)
   InitInplace(value);
 }
 
+XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiHashedString& value)
+{
+  InitInplace(value);
+}
+
+XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiTempHashedString& value)
+{
+  InitInplace(value);
+}
+
 XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiTime& value)
 {
   InitInplace(value);
@@ -264,24 +274,41 @@ XII_ALWAYS_INLINE bool xiiVariant::operator!=(const xiiVariant& other) const
 template <typename T>
 XII_FORCE_INLINE bool xiiVariant::operator==(const T& other) const
 {
-  using StorageType = typename TypeDeduction<T>::StorageType;
-  struct TypeInfo
-  {
-    enum
-    {
-      isNumber = TypeDeduction<T>::value > Type::Invalid&& TypeDeduction<T>::value <= Type::Double
-    };
-  };
-
   if (IsFloatingPoint())
   {
-    return xiiVariantHelper::CompareFloat(*this, other, xiiTraitInt<TypeInfo::isNumber>());
+    if constexpr (TypeDeduction<T>::value > Type::Invalid && TypeDeduction<T>::value <= Type::Double)
+    {
+      return ConvertNumber<double>() == static_cast<double>(other);
+    }
+
+    return false;
   }
   else if (IsNumber())
   {
-    return xiiVariantHelper::CompareNumber(*this, other, xiiTraitInt<TypeInfo::isNumber>());
+    if constexpr (TypeDeduction<T>::value > Type::Invalid && TypeDeduction<T>::value <= Type::Double)
+    {
+      return ConvertNumber<xiiInt64>() == static_cast<xiiInt64>(other);
+    }
+
+    return false;
   }
 
+  if constexpr (std::is_same_v<T, xiiHashedString>)
+  {
+    if (m_uiType == Type::TempHashedString)
+    {
+      return Cast<xiiTempHashedString>() == other;
+    }
+  }
+  else if constexpr (std::is_same_v<T, xiiTempHashedString>)
+  {
+    if (m_uiType == Type::HashedString)
+    {
+      return Cast<xiiHashedString>() == other;
+    }
+  }
+
+  using StorageType = typename TypeDeduction<T>::StorageType;
   XII_ASSERT_DEV(IsA<StorageType>(), "Stored type '{0}' does not match comparison type '{1}'", m_uiType, TypeDeduction<T>::value);
   return Cast<StorageType>() == other;
 }
@@ -310,6 +337,11 @@ XII_ALWAYS_INLINE bool xiiVariant::IsFloatingPoint() const
 XII_ALWAYS_INLINE bool xiiVariant::IsString() const
 {
   return IsStringStatic(m_uiType);
+}
+
+XII_ALWAYS_INLINE bool xiiVariant::IsHashedString() const
+{
+  return IsHashedStringStatic(m_uiType);
 }
 
 template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::classification == xiiVariantClass::DirectCast, xiiInt32>>
@@ -463,13 +495,15 @@ T xiiVariant::ConvertTo(xiiResult* out_pConversionStatus /* = nullptr*/) const
 }
 
 
-/// private methods
+/// Private Methods
 
 template <typename T>
 XII_FORCE_INLINE void xiiVariant::InitInplace(const T& value)
 {
-  XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value != Type::Invalid, "value of this type cannot be stored in a Variant");
-  XII_CHECK_AT_COMPILETIME_MSG(xiiIsPodType<T>::value, "in place data needs to be POD");
+  XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value != Type::Invalid, "The value of this type cannot be stored in a Variant.");
+  XII_CHECK_AT_COMPILETIME_MSG(xiiGetTypeClass<T>::value <= xiiTypeIsMemRelocatable::value, "In-place data must be POD or memory relocatable.");
+  XII_CHECK_AT_COMPILETIME_MSG(sizeof(T) <= sizeof(m_Data), "The value of this type is too large to be stored inline in a Variant.");
+
   xiiMemoryUtils::CopyConstruct(reinterpret_cast<T*>(&m_Data), value, 1);
 
   m_uiType    = TypeDeduction<T>::value;
@@ -481,8 +515,9 @@ XII_FORCE_INLINE void xiiVariant::InitTypedObject(const T& value, xiiTraitInt<0>
 {
   using StorageType = typename TypeDeduction<T>::StorageType;
 
-  XII_CHECK_AT_COMPILETIME_MSG((sizeof(StorageType) > sizeof(InlinedStruct::DataSize)) || TypeDeduction<T>::forceSharing, "Value should be inplace instead.");
-  XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value == Type::TypedObject, "value of this type cannot be stored in a Variant");
+  XII_CHECK_AT_COMPILETIME_MSG((sizeof(StorageType) > sizeof(InlinedStruct::DataSize)) || TypeDeduction<T>::forceSharing, "The value should be in-place instead.");
+  XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value == Type::TypedObject, "The value of this type cannot be stored in a Variant.");
+
   const xiiRTTI* pType = xiiGetStaticRTTI<T>();
   m_Data.shared        = XII_DEFAULT_NEW(TypedSharedData<StorageType>, value, pType);
   m_uiType             = Type::TypedObject;
@@ -493,10 +528,13 @@ template <typename T>
 XII_FORCE_INLINE void xiiVariant::InitTypedObject(const T& value, xiiTraitInt<1>)
 {
   using StorageType = typename TypeDeduction<T>::StorageType;
-  XII_CHECK_AT_COMPILETIME_MSG((sizeof(StorageType) <= InlinedStruct::DataSize) && !TypeDeduction<T>::forceSharing, "Value can't be stored inplace.");
-  XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value == Type::TypedObject, "value of this type cannot be stored in a Variant");
-  XII_CHECK_AT_COMPILETIME_MSG(xiiIsPodType<T>::value, "in place data needs to be POD");
+
+  XII_CHECK_AT_COMPILETIME_MSG((sizeof(StorageType) <= InlinedStruct::DataSize) && !TypeDeduction<T>::forceSharing, "The value cannot be stored in-place.");
+  XII_CHECK_AT_COMPILETIME_MSG(TypeDeduction<T>::value == Type::TypedObject, "The value of this type cannot be stored in a Variant.");
+  XII_CHECK_AT_COMPILETIME_MSG(xiiIsPodType<T>::value, "In-place data needs to be POD.");
+
   xiiMemoryUtils::CopyConstruct(reinterpret_cast<T*>(&m_Data), value, 1);
+
   m_Data.inlined.m_pType = xiiGetStaticRTTI<T>();
   m_uiType               = Type::TypedObject;
   m_bIsShared            = false;
@@ -544,6 +582,7 @@ template <typename T, typename std::enable_if_t<xiiVariantTypeDeduction<T>::clas
 const T& xiiVariant::Cast() const
 {
   const bool validType = xiiConversionTest<T, typename TypeDeduction<T>::StorageType>::sameType;
+
   XII_CHECK_AT_COMPILETIME_MSG(validType, "Invalid Cast, can only cast to storage type");
 
   return m_bIsShared ? *static_cast<const T*>(m_Data.shared->m_Ptr) : *reinterpret_cast<const T*>(&m_Data);
@@ -577,6 +616,7 @@ const T& xiiVariant::Cast() const
 {
   const xiiRTTI* pType = GetReflectedType();
   using NonRefT        = typename xiiTypeTraits<T>::NonConstReferenceType;
+
   XII_ASSERT_DEV(IsDerivedFrom(pType, xiiGetStaticRTTI<NonRefT>()), "Object of type '{0}' does not derive from '{}'", GetTypeName(pType), GetTypeName(xiiGetStaticRTTI<NonRefT>()));
 
   return m_bIsShared ? *static_cast<const T*>(m_Data.shared->m_Ptr) : *reinterpret_cast<const T*>(&m_Data);
@@ -595,6 +635,11 @@ XII_ALWAYS_INLINE bool xiiVariant::IsFloatingPointStatic(xiiUInt32 type)
 XII_ALWAYS_INLINE bool xiiVariant::IsStringStatic(xiiUInt32 type)
 {
   return type == Type::String || type == Type::StringView;
+}
+
+XII_ALWAYS_INLINE bool xiiVariant::IsHashedStringStatic(xiiUInt32 type)
+{
+  return type == Type::HashedString || type == Type::TempHashedString;
 }
 
 XII_ALWAYS_INLINE bool xiiVariant::IsVector2Static(xiiUInt32 type)

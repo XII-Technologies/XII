@@ -137,8 +137,8 @@ struct xiiPropertyCategory
     Member,   ///< The property is a 'member property', i.e. it represents some accessible value. Cast to xiiAbstractMemberProperty.
     Function, ///< The property is a function which can be called. Cast to xiiAbstractFunctionProperty.
     Array,    ///< The property is actually an array of values. The array dimensions might be changeable. Cast to xiiAbstractArrayProperty.
-    Set,      ///< The property is actually a set of values. Cast to xiiAbstractArrayProperty.
-    Map,      ///< The property is actually a map from string to values. Cast to xiiAbstractArrayProperty.
+    Set,      ///< The property is actually a set of values. Cast to xiiAbstractSetProperty.
+    Map,      ///< The property is actually a map from string to values. Cast to xiiAbstractMapProperty.
 
     Default = Member
   };

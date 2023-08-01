@@ -1030,6 +1030,64 @@ xiiResult xiiOpenDdlUtils::ConvertToAngle(const xiiOpenDdlReaderElement* pElemen
   return XII_FAILURE;
 }
 
+xiiResult xiiOpenDdlUtils::ConvertToHashedString(const xiiOpenDdlReaderElement* pElement, xiiHashedString& out_sResult)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 1)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::String)
+  {
+    const xiiStringView* pValues = pElement->GetPrimitivesString();
+
+    out_sResult.Assign(pValues[0]);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
+xiiResult xiiOpenDdlUtils::ConvertToTempHashedString(const xiiOpenDdlReaderElement* pElement, xiiTempHashedString& out_sResult)
+{
+  if (pElement == nullptr)
+    return XII_FAILURE;
+
+  // go into the element, if we are at the group level
+  if (pElement->IsCustomType())
+  {
+    if (pElement->GetNumChildObjects() != 1)
+      return XII_FAILURE;
+
+    pElement = pElement->GetFirstChild();
+  }
+
+  if (pElement->GetNumPrimitives() != 1)
+    return XII_FAILURE;
+
+  if (pElement->GetPrimitivesType() == xiiOpenDdlPrimitiveType::UInt64)
+  {
+    const xiiUInt64* pValues = pElement->GetPrimitivesUInt64();
+
+    out_sResult = xiiTempHashedString(pValues[0]);
+
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
 xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElement, xiiVariant& out_result)
 {
   if (pElement == nullptr)
@@ -1416,6 +1474,26 @@ xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElem
     {
       xiiAngled value;
       if (ConvertToAngle(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
+    if (pElement->GetCustomType() == "HashedString")
+    {
+      xiiHashedString value;
+      if (ConvertToHashedString(pElement, value).Failed())
+        return XII_FAILURE;
+
+      out_result = value;
+      return XII_SUCCESS;
+    }
+
+    if (pElement->GetCustomType() == "TempHashedString")
+    {
+      xiiTempHashedString value;
+      if (ConvertToTempHashedString(pElement, value).Failed())
         return XII_FAILURE;
 
       out_result = value;
@@ -1940,6 +2018,30 @@ void xiiOpenDdlUtils::StoreAngle(xiiOpenDdlWriter& ref_writer, const xiiAngled& 
   ref_writer.EndObject();
 }
 
+void xiiOpenDdlUtils::StoreHashedString(xiiOpenDdlWriter& ref_writer, const xiiHashedString& value, xiiStringView sName /*= {}*/, bool bGlobalName /*= false*/)
+{
+  ref_writer.BeginObject("HashedString", sName, bGlobalName, true);
+  {
+    ref_writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::String);
+    ref_writer.WriteString(value.GetView());
+    ref_writer.EndPrimitiveList();
+  }
+  ref_writer.EndObject();
+}
+
+void xiiOpenDdlUtils::StoreTempHashedString(xiiOpenDdlWriter& ref_writer, const xiiTempHashedString& value, xiiStringView sName /*= {}*/, bool bGlobalName /*= false*/)
+{
+  ref_writer.BeginObject("TempHashedString", sName, bGlobalName, true);
+  {
+    const xiiUInt64 uiHash = value.GetHash();
+
+    ref_writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::UInt64);
+    ref_writer.WriteUInt64(&uiHash);
+    ref_writer.EndPrimitiveList();
+  }
+  ref_writer.EndObject();
+}
+
 void xiiOpenDdlUtils::StoreVariant(xiiOpenDdlWriter& ref_writer, const xiiVariant& value, xiiStringView sName /*={}*/, bool bGlobalName /*= false*/)
 {
   switch (value.GetType())
@@ -2126,6 +2228,14 @@ void xiiOpenDdlUtils::StoreVariant(xiiOpenDdlWriter& ref_writer, const xiiVarian
 
     case xiiVariant::Type::ColorGamma:
       StoreColorGamma(ref_writer, value.Get<xiiColorGammaUB>(), sName, bGlobalName);
+      return;
+
+    case xiiVariant::Type::HashedString:
+      StoreHashedString(ref_writer, value.Get<xiiHashedString>(), sName, bGlobalName);
+      return;
+
+    case xiiVariant::Type::TempHashedString:
+      StoreTempHashedString(ref_writer, value.Get<xiiTempHashedString>(), sName, bGlobalName);
       return;
 
     case xiiVariant::Type::VariantArray:
