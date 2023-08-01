@@ -11,7 +11,7 @@ public:
   static void RegisterActions();
   static void UnregisterActions();
 
-  static void MapActions(xiiStringView sMapping, xiiStringView sPath);
+  static void MapActions(xiiStringView sMapping, xiiStringView sTargetMenu = "G.Edit");
 
   static xiiActionDescriptorHandle s_hCommandHistoryCategory;
   static xiiActionDescriptorHandle s_hUndo;

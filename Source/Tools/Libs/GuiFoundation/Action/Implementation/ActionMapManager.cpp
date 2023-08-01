@@ -68,7 +68,7 @@ xiiActionMap* xiiActionMapManager::GetActionMap(xiiStringView sMapping)
 void xiiActionMapManager::Startup()
 {
   xiiActionMapManager::RegisterActionMap("DocumentWindowTabMenu").IgnoreResult();
-  xiiDocumentActions::MapActions("DocumentWindowTabMenu", "", false);
+  xiiDocumentActions::MapMenuActions("DocumentWindowTabMenu", "");
 }
 
 void xiiActionMapManager::Shutdown()

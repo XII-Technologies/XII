@@ -6,37 +6,40 @@
 #include <GuiFoundation/DockPanels/ApplicationPanel.moc.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 
+xiiActionDescriptorHandle xiiStandardMenus::s_hMenuProject;
 xiiActionDescriptorHandle xiiStandardMenus::s_hMenuFile;
 xiiActionDescriptorHandle xiiStandardMenus::s_hMenuEdit;
 xiiActionDescriptorHandle xiiStandardMenus::s_hMenuPanels;
-xiiActionDescriptorHandle xiiStandardMenus::s_hMenuProject;
 xiiActionDescriptorHandle xiiStandardMenus::s_hMenuScene;
 xiiActionDescriptorHandle xiiStandardMenus::s_hMenuView;
+xiiActionDescriptorHandle xiiStandardMenus::s_hMenuTools;
 xiiActionDescriptorHandle xiiStandardMenus::s_hMenuHelp;
 xiiActionDescriptorHandle xiiStandardMenus::s_hCheckForUpdates;
 xiiActionDescriptorHandle xiiStandardMenus::s_hReportProblem;
 
 void xiiStandardMenus::RegisterActions()
 {
-  s_hMenuFile        = XII_REGISTER_MENU("Menu.File");
-  s_hMenuEdit        = XII_REGISTER_MENU("Menu.Edit");
-  s_hMenuPanels      = XII_REGISTER_DYNAMIC_MENU("Menu.Panels", xiiApplicationPanelsMenuAction, "");
-  s_hMenuProject     = XII_REGISTER_MENU("Menu.Project");
-  s_hMenuScene       = XII_REGISTER_MENU("Menu.Scene");
-  s_hMenuView        = XII_REGISTER_MENU("Menu.View");
-  s_hMenuHelp        = XII_REGISTER_MENU("Menu.Help");
-  s_hCheckForUpdates = XII_REGISTER_ACTION_1("Help.CheckForUpdates", xiiActionScope::Global, "Help", "", xiiHelpActions, xiiHelpActions::ButtonType::CheckForUpdates);
-  s_hReportProblem   = XII_REGISTER_ACTION_1("Help.ReportProblem", xiiActionScope::Global, "Help", "", xiiHelpActions, xiiHelpActions::ButtonType::ReportProblem);
+  s_hMenuProject     = XII_REGISTER_MENU("G.Project");
+  s_hMenuFile        = XII_REGISTER_MENU("G.File");
+  s_hMenuEdit        = XII_REGISTER_MENU("G.Edit");
+  s_hMenuPanels      = XII_REGISTER_DYNAMIC_MENU("G.Panels", xiiApplicationPanelsMenuAction, {});
+  s_hMenuScene       = XII_REGISTER_MENU("G.Scene");
+  s_hMenuView        = XII_REGISTER_MENU("G.View");
+  s_hMenuTools       = XII_REGISTER_MENU("G.Tools");
+  s_hMenuHelp        = XII_REGISTER_MENU("G.Help");
+  s_hCheckForUpdates = XII_REGISTER_ACTION_1("Help.CheckForUpdates", xiiActionScope::Global, "Help", {}, xiiHelpActions, xiiHelpActions::ButtonType::CheckForUpdates);
+  s_hReportProblem   = XII_REGISTER_ACTION_1("Help.ReportProblem", xiiActionScope::Global, "Help", {}, xiiHelpActions, xiiHelpActions::ButtonType::ReportProblem);
 }
 
 void xiiStandardMenus::UnregisterActions()
 {
+  xiiActionManager::UnregisterAction(s_hMenuProject);
   xiiActionManager::UnregisterAction(s_hMenuFile);
   xiiActionManager::UnregisterAction(s_hMenuEdit);
   xiiActionManager::UnregisterAction(s_hMenuPanels);
-  xiiActionManager::UnregisterAction(s_hMenuProject);
   xiiActionManager::UnregisterAction(s_hMenuScene);
   xiiActionManager::UnregisterAction(s_hMenuView);
+  xiiActionManager::UnregisterAction(s_hMenuTools);
   xiiActionManager::UnregisterAction(s_hMenuHelp);
   xiiActionManager::UnregisterAction(s_hCheckForUpdates);
   xiiActionManager::UnregisterAction(s_hReportProblem);
@@ -49,29 +52,32 @@ void xiiStandardMenus::MapActions(xiiStringView sMapping, const xiiBitflags<xiiS
 
   xiiActionMapDescriptor md;
 
+  if (menus.IsAnySet(xiiStandardMenuTypes::Project))
+    pMap->MapAction(s_hMenuProject, {}, -10000.0f);
+
   if (menus.IsAnySet(xiiStandardMenuTypes::File))
-    pMap->MapAction(s_hMenuFile, "", 1.0f);
+    pMap->MapAction(s_hMenuFile, {}, 1.0f);
 
   if (menus.IsAnySet(xiiStandardMenuTypes::Edit))
-    pMap->MapAction(s_hMenuEdit, "", 2.0f);
-
-  if (menus.IsAnySet(xiiStandardMenuTypes::Project))
-    pMap->MapAction(s_hMenuProject, "", 3.0f);
+    pMap->MapAction(s_hMenuEdit, {}, 2.0f);
 
   if (menus.IsAnySet(xiiStandardMenuTypes::Scene))
-    pMap->MapAction(s_hMenuScene, "", 4.0f);
+    pMap->MapAction(s_hMenuScene, {}, 3.0f);
 
   if (menus.IsAnySet(xiiStandardMenuTypes::View))
-    pMap->MapAction(s_hMenuView, "", 5.0f);
+    pMap->MapAction(s_hMenuView, {}, 4.0f);
+
+  if (menus.IsAnySet(xiiStandardMenuTypes::Tools))
+    pMap->MapAction(s_hMenuTools, {}, 5.0f);
 
   if (menus.IsAnySet(xiiStandardMenuTypes::Panels))
-    pMap->MapAction(s_hMenuPanels, "", 6.0f);
+    pMap->MapAction(s_hMenuPanels, {}, 6.0f);
 
   if (menus.IsAnySet(xiiStandardMenuTypes::Help))
   {
-    pMap->MapAction(s_hMenuHelp, "", 7.0f);
-    pMap->MapAction(s_hReportProblem, "Menu.Help", 3.0f);
-    pMap->MapAction(s_hCheckForUpdates, "Menu.Help", 10.0f);
+    pMap->MapAction(s_hMenuHelp, {}, 7.0f);
+    pMap->MapAction(s_hReportProblem, "G.Help", 3.0f);
+    pMap->MapAction(s_hCheckForUpdates, "G.Help", 10.0f);
   }
 }
 
@@ -139,7 +145,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiHelpActions::xiiHelpActions(const xiiActionContext& context, xiiStringView sName, ButtonType button) :
-  xiiButtonAction(context, sName, false, "")
+  xiiButtonAction(context, sName, false, {})
 {
   m_ButtonType = button;
 

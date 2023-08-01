@@ -10,15 +10,15 @@ public:
   static void RegisterActions();
   static void UnregisterActions();
 
-  static void MapActions(xiiStringView sMapping, xiiStringView sPath, bool bForToolbar);
-  static void MapToolsActions(xiiStringView sMapping, xiiStringView sPath);
+  static void MapMenuActions(xiiStringView sMapping, xiiStringView sTargetMenu = "G.File.Common");
+  static void MapToolbarActions(xiiStringView sMapping);
+  static void MapToolsActions(xiiStringView sMapping);
 
   static xiiActionDescriptorHandle s_hSaveCategory;
   static xiiActionDescriptorHandle s_hSave;
   static xiiActionDescriptorHandle s_hSaveAs;
   static xiiActionDescriptorHandle s_hSaveAll;
 
-  static xiiActionDescriptorHandle s_hCloseCategory;
   static xiiActionDescriptorHandle s_hClose;
   static xiiActionDescriptorHandle s_hCloseAll;
   static xiiActionDescriptorHandle s_hCloseAllButThis;
@@ -27,7 +27,6 @@ public:
   static xiiActionDescriptorHandle s_hCopyAssetGuid;
 
   static xiiActionDescriptorHandle s_hUpdatePrefabs;
-  static xiiActionDescriptorHandle s_hDocumentCategory;
 };
 
 
@@ -49,6 +48,7 @@ public:
     UpdatePrefabs,
     CopyAssetGuid,
   };
+
   xiiDocumentAction(const xiiActionContext& context, xiiStringView sName, ButtonType button);
   ~xiiDocumentAction();
 
