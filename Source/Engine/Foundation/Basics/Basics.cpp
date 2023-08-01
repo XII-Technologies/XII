@@ -12,11 +12,8 @@ using DefaultAlignedHeapType = xiiAlignedHeapAllocator;
 using DefaultStaticHeapType  = xiiHeapAllocator;
 #endif
 
-enum
-{
-  HEAP_ALLOCATOR_BUFFER_SIZE    = sizeof(DefaultHeapType),
-  ALIGNED_ALLOCATOR_BUFFER_SIZE = sizeof(DefaultAlignedHeapType)
-};
+static constexpr xiiUInt32 HEAP_ALLOCATOR_BUFFER_SIZE    = sizeof(DefaultHeapType);
+static constexpr xiiUInt32 ALIGNED_ALLOCATOR_BUFFER_SIZE = sizeof(DefaultAlignedHeapType);
 
 alignas(XII_ALIGNMENT_MINIMUM) static xiiUInt8 s_DefaultAllocatorBuffer[HEAP_ALLOCATOR_BUFFER_SIZE];
 alignas(XII_ALIGNMENT_MINIMUM) static xiiUInt8 s_StaticAllocatorBuffer[HEAP_ALLOCATOR_BUFFER_SIZE];

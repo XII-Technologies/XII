@@ -64,7 +64,7 @@ XII_CREATE_SIMPLE_TEST(Basics, PointerWithFlags)
     XII_TEST_INT(ptr.GetFlags(), 0);
 
     xiiPointerWithFlags<Dummy, 2> ptr2 = ptr;
-    XII_TEST_BOOL(ptr == ptr2);
+    XII_TEST_BOOL(ptr == ptr2.GetPtr());
 
     XII_TEST_BOOL(ptr2.GetPtr() == ptr.GetPtr());
     XII_TEST_BOOL(ptr2.GetFlags() == ptr.GetFlags());
@@ -74,7 +74,7 @@ XII_CREATE_SIMPLE_TEST(Basics, PointerWithFlags)
     XII_TEST_BOOL(ptr2.GetFlags() != ptr.GetFlags());
 
     // the two Ptrs still compare equal (pointer part is equal, even if flags are different)
-    XII_TEST_BOOL(ptr == ptr2);
+    XII_TEST_BOOL(ptr == ptr2.GetPtr());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Const ptr")

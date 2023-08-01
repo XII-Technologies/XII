@@ -8,10 +8,7 @@
 template <xiiInt32 v>
 struct xiiTraitInt
 {
-  enum
-  {
-    value = v
-  };
+  static constexpr xiiInt32 value = v;
 };
 
 using xiiTypeIsMemRelocatable = xiiTraitInt<2>;
@@ -75,22 +72,16 @@ struct xiiConversionTest
   static xiiCompileTimeFalseType Test(...);
   static From                    MakeFrom();
 
-  enum
-  {
-    exists   = sizeof(Test(MakeFrom())) == sizeof(xiiCompileTimeTrueType),
-    sameType = 0
-  };
+  static constexpr xiiInt32 exists   = sizeof(Test(MakeFrom())) == sizeof(xiiCompileTimeTrueType);
+  static constexpr xiiInt32 sameType = 0;
 };
 
 /// \brief Specialization for above Type.
 template <typename T>
 struct xiiConversionTest<T, T>
 {
-  enum
-  {
-    exists   = 1,
-    sameType = 1
-  };
+  static constexpr xiiInt32 exists   = 1;
+  static constexpr xiiInt32 sameType = 1;
 };
 
 // remapping of the 0 (not special) type to 3
@@ -139,21 +130,30 @@ struct xiiIsPointer<T*>
 
 /// \brief Embed this into a class to mark it as a POD type.
 /// POD types will get special treatment from allocators and container classes, such that they are faster to construct and copy.
-#  define XII_DECLARE_POD_TYPE() \
-    xiiCompileTimeTrueType operator%(const xiiTypeIsPod&) const { return {}; }
+#  define XII_DECLARE_POD_TYPE()                                \
+    xiiCompileTimeTrueType operator%(const xiiTypeIsPod&) const \
+    {                                                           \
+      return {};                                                \
+    }
 
 /// \brief Embed this into a class to mark it as memory relocatable.
 /// Memory relocatable types will get special treatment from allocators and container classes, such that they are faster to construct and
 /// copy. A type is memory relocatable if it does not have any internal references. e.g: struct example { char[16] buffer; char* pCur;
 /// example() pCur(buffer) {} }; A memory relocatable type also must not give out any pointers to its own location. If these two conditions
 /// are met, a type is memory relocatable.
-#  define XII_DECLARE_MEM_RELOCATABLE_TYPE() \
-    xiiCompileTimeTrueType operator%(const xiiTypeIsMemRelocatable&) const { return {}; }
+#  define XII_DECLARE_MEM_RELOCATABLE_TYPE()                               \
+    xiiCompileTimeTrueType operator%(const xiiTypeIsMemRelocatable&) const \
+    {                                                                      \
+      return {};                                                           \
+    }
 
 /// \brief mark a class as memory relocatable if the passed type is relocatable or pod.
 #  define XII_DECLARE_MEM_RELOCATABLE_TYPE_CONDITIONAL(T)                                                                                          \
     typename xiiConditionToCompileTimeBool<xiiGetTypeClass<T>::value == xiiTypeIsMemRelocatable::value || xiiIsPodType<T>::value>::type operator%( \
-      const xiiTypeIsMemRelocatable&) const { return {}; }
+      const xiiTypeIsMemRelocatable&) const                                                                                                        \
+    {                                                                                                                                              \
+      return {};                                                                                                                                   \
+    }
 
 #  define XII_DETECT_TYPE_CLASS_1(T1)                 xiiGetTypeClass<T1>
 #  define XII_DETECT_TYPE_CLASS_2(T1, T2)             xiiGetStrongestTypeClass<XII_DETECT_TYPE_CLASS_1(T1), XII_DETECT_TYPE_CLASS_1(T2)>
@@ -166,9 +166,12 @@ struct xiiIsPointer<T*>
 // \brief embed this into a class to automatically detect which type class it belongs to
 // This macro is only guaranteed to work for classes / structs which don't have any constructor / destructor / assignment operator!
 // As arguments you have to list the types of all the members of the class / struct.
-#  define XII_DETECT_TYPE_CLASS(...)  \
-    xiiCompileTimeTrueType operator%( \
-      const xiiTraitInt<XII_CALL_MACRO(XII_CONCAT(XII_DETECT_TYPE_CLASS_, XII_VA_NUM_ARGS(__VA_ARGS__)), (__VA_ARGS__))::value>&) const { return {}; }
+#  define XII_DETECT_TYPE_CLASS(...)                                                                                                    \
+    xiiCompileTimeTrueType operator%(                                                                                                   \
+      const xiiTraitInt<XII_CALL_MACRO(XII_CONCAT(XII_DETECT_TYPE_CLASS_, XII_VA_NUM_ARGS(__VA_ARGS__)), (__VA_ARGS__))::value>&) const \
+    {                                                                                                                                   \
+      return {};                                                                                                                        \
+    }
 #endif
 
 /// \brief Defines a type T as Pod.
@@ -228,18 +231,15 @@ struct xiiTypeTraits
 
 /// Generates a template named 'checkerName' which checks for the existence of a member function with
 /// the name 'functionName' and the signature 'Signature'
-#define XII_MAKE_MEMBERFUNCTION_CHECKER(functionName, checkerName)                \
-  template <typename T, typename Signature>                                       \
-  struct checkerName                                                              \
-  {                                                                               \
-    template <typename U, U>                                                      \
-    struct type_check;                                                            \
-    template <typename O>                                                         \
-    static xiiCompileTimeTrueType& chk(type_check<Signature, &O::functionName>*); \
-    template <typename>                                                           \
-    static xiiCompileTimeFalseType& chk(...);                                     \
-    enum                                                                          \
-    {                                                                             \
-      value = (sizeof(chk<T>(0)) == sizeof(xiiCompileTimeTrueType)) ? 1 : 0       \
-    };                                                                            \
+#define XII_MAKE_MEMBERFUNCTION_CHECKER(functionName, checkerName)                                         \
+  template <typename T, typename Signature>                                                                \
+  struct checkerName                                                                                       \
+  {                                                                                                        \
+    template <typename U, U>                                                                               \
+    struct type_check;                                                                                     \
+    template <typename O>                                                                                  \
+    static xiiCompileTimeTrueType& chk(type_check<Signature, &O::functionName>*);                          \
+    template <typename>                                                                                    \
+    static xiiCompileTimeFalseType& chk(...);                                                              \
+    static constexpr xiiInt32       value = (sizeof(chk<T>(0)) == sizeof(xiiCompileTimeTrueType)) ? 1 : 0; \
   }

@@ -12,7 +12,7 @@ XII_CREATE_SIMPLE_TEST(Time, Timer)
 
     XII_TEST_BOOL(TestTime.GetMicroseconds() > 0.0);
 
-    volatile xiiUInt32 testValue = 0;
+    xiiUInt32 testValue = 0;
     for (xiiUInt32 i = 0; i < 42000; ++i)
     {
       testValue += 23;

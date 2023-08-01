@@ -1718,10 +1718,7 @@ namespace
   template <class C>
   struct xiiClampCategoryType
   {
-    enum
-    {
-      value = (((xiiVariant::TypeDeduction<C>::value >= xiiVariantType::Int8 && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::Double) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Time) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Angle) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Angled))) + ((xiiVariant::TypeDeduction<C>::value >= xiiVariantType::Vector2 && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::Vector4U64) * 2)
-    };
+    static constexpr xiiInt32 value = (((xiiVariant::TypeDeduction<C>::value >= xiiVariantType::Int8 && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::Double) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Time) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Angle) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Angled))) + ((xiiVariant::TypeDeduction<C>::value >= xiiVariantType::Vector2 && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::Vector4U64) * 2);
   };
 
   template <typename T, xiiInt32 V = xiiClampCategoryType<T>::value>

@@ -4,759 +4,597 @@
 template <>
 struct xiiVariantTypeDeduction<bool>
 {
-  enum
-  {
-    value               = xiiVariantType::Bool,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = bool;
   using ReturnType  = bool;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Bool;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiInt8>
 {
-  enum
-  {
-    value               = xiiVariantType::Int8,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiInt8;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Int8;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiUInt8>
 {
-  enum
-  {
-    value               = xiiVariantType::UInt8,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiUInt8;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::UInt8;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiInt16>
 {
-  enum
-  {
-    value               = xiiVariantType::Int16,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiInt16;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Int16;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiUInt16>
 {
-  enum
-  {
-    value               = xiiVariantType::UInt16,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiUInt16;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::UInt16;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiInt32>
 {
-  enum
-  {
-    value               = xiiVariantType::Int32,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiInt32;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Int32;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiUInt32>
 {
-  enum
-  {
-    value               = xiiVariantType::UInt32,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiUInt32;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::UInt32;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiInt64>
 {
-  enum
-  {
-    value               = xiiVariantType::Int64,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiInt64;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Int64;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiUInt64>
 {
-  enum
-  {
-    value               = xiiVariantType::UInt64,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiUInt64;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::UInt64;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<float>
 {
-  enum
-  {
-    value               = xiiVariantType::Float,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = float;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Float;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<double>
 {
-  enum
-  {
-    value               = xiiVariantType::Double,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = double;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Double;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiColor>
 {
-  enum
-  {
-    value               = xiiVariantType::Color,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiColor;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Color;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiColorGammaUB>
 {
-  enum
-  {
-    value               = xiiVariantType::ColorGamma,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiColorGammaUB;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::ColorGamma;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec2>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector2,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec2;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector2;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec2d>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector2d,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec2d;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector2d;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec3>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector3,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec3;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector3;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec3d>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector3d,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec3d;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector3d;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec4>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector4,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec4;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector4;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec4d>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector4d,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec4d;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector4d;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec2I32>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector2I,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec2I32;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector2I;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec2I64>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector2I64,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec2I64;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector2I64;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec3I32>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector3I,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec3I32;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector3I;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec3I64>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector3I64,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec3I64;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector3I64;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec4I32>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector4I,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec4I32;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector4I;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec4I64>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector4I64,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec4I64;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector4I64;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec2U32>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector2U,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec2U32;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector2U;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec2U64>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector2U64,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec2U64;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector2U64;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec3U32>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector3U,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec3U32;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector3U;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec3U64>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector3U64,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec3U64;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector3U64;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec4U32>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector4U,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec4U32;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector4U;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVec4U64>
 {
-  enum
-  {
-    value               = xiiVariantType::Vector4U64,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVec4U64;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Vector4U64;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiQuat>
 {
-  enum
-  {
-    value               = xiiVariantType::Quaternion,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiQuat;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Quaternion;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiQuatd>
 {
-  enum
-  {
-    value               = xiiVariantType::Quaterniond,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiQuatd;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Quaterniond;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiMat3>
 {
-  enum
-  {
-    value               = xiiVariantType::Matrix3,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiMat3;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Matrix3;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiMat3d>
 {
-  enum
-  {
-    value               = xiiVariantType::Matrix3d,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiMat3d;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Matrix3d;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiMat4>
 {
-  enum
-  {
-    value               = xiiVariantType::Matrix4,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiMat4;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Matrix4;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiMat4d>
 {
-  enum
-  {
-    value               = xiiVariantType::Matrix4d,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiMat4d;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Matrix4d;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiTransform>
 {
-  enum
-  {
-    value               = xiiVariantType::Transform,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiTransform;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Transform;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiTransformd>
 {
-  enum
-  {
-    value               = xiiVariantType::Transformd,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiTransformd;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Transformd;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiString>
 {
-  enum
-  {
-    value               = xiiVariantType::String,
-    forceSharing        = true,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiString;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::String;
+  static constexpr bool                  forceSharing        = true;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiUntrackedString>
 {
-  enum
-  {
-    value               = xiiVariantType::String,
-    forceSharing        = true,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiString;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::String;
+  static constexpr bool                  forceSharing        = true;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiStringView>
 {
-  enum
-  {
-    value               = xiiVariantType::StringView,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiStringView;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::StringView;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiDataBuffer>
 {
-  enum
-  {
-    value               = xiiVariantType::DataBuffer,
-    forceSharing        = true,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiDataBuffer;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::DataBuffer;
+  static constexpr bool                  forceSharing        = true;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<char*>
 {
-  enum
-  {
-    value               = xiiVariantType::String,
-    forceSharing        = true,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiString;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::String;
+  static constexpr bool                  forceSharing        = true;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<const char*>
 {
-  enum
-  {
-    value               = xiiVariantType::String,
-    forceSharing        = true,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiString;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::String;
+  static constexpr bool                  forceSharing        = true;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <size_t N>
 struct xiiVariantTypeDeduction<char[N]>
 {
-  enum
-  {
-    value               = xiiVariantType::String,
-    forceSharing        = true,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiString;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::String;
+  static constexpr bool                  forceSharing        = true;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <size_t N>
 struct xiiVariantTypeDeduction<const char[N]>
 {
-  enum
-  {
-    value               = xiiVariantType::String,
-    forceSharing        = true,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiString;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::String;
+  static constexpr bool                  forceSharing        = true;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiTime>
 {
-  enum
-  {
-    value               = xiiVariantType::Time,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiTime;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Time;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiUuid>
 {
-  enum
-  {
-    value               = xiiVariantType::Uuid,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiUuid;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Uuid;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiAngle>
 {
-  enum
-  {
-    value               = xiiVariantType::Angle,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiAngle;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Angle;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiAngled>
 {
-  enum
-  {
-    value               = xiiVariantType::Angled,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiAngled;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Angled;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiVariantArray>
 {
-  enum
-  {
-    value               = xiiVariantType::VariantArray,
-    forceSharing        = true,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVariantArray;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::VariantArray;
+  static constexpr bool                  forceSharing        = true;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiArrayPtr<xiiVariant>>
 {
-  enum
-  {
-    value               = xiiVariantType::VariantArray,
-    forceSharing        = true,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVariantArray;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::VariantArray;
+  static constexpr bool                  forceSharing        = true;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 
 template <>
 struct xiiVariantTypeDeduction<xiiVariantDictionary>
 {
-  enum
-  {
-    value               = xiiVariantType::VariantDictionary,
-    forceSharing        = true,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiVariantDictionary;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::VariantDictionary;
+  static constexpr bool                  forceSharing        = true;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 namespace xiiInternal
@@ -782,43 +620,34 @@ namespace xiiInternal
 template <>
 struct xiiVariantTypeDeduction<xiiTypedPointer>
 {
-  enum
-  {
-    value               = xiiVariantType::TypedPointer,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::DirectCast
-  };
-
   using StorageType = xiiTypedPointer;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::TypedPointer;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::DirectCast;
 };
 
 template <typename T>
 struct xiiVariantTypeDeduction<T*>
 {
-  enum
-  {
-    value               = xiiVariantType::TypedPointer,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::PointerCast
-  };
-
   using StorageType = xiiTypedPointer;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::TypedPointer;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::PointerCast;
 };
 
 template <>
 struct xiiVariantTypeDeduction<xiiTypedObject>
 {
-  enum
-  {
-    value               = xiiVariantType::TypedObject,
-    forceSharing        = false,
-    hasReflectedMembers = true,
-    classification      = xiiVariantClass::TypedObject
-  };
-
   using StorageType = xiiTypedObject;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::TypedObject;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = true;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::TypedObject;
 };
 
 /// \endcond

@@ -107,33 +107,27 @@ struct xiiVariantClass
 template <typename T>
 struct xiiVariantTypeDeduction
 {
-  enum
-  {
-    value               = xiiVariantType::Invalid,
-    forceSharing        = false,
-    hasReflectedMembers = false,
-    classification      = xiiVariantClass::Invalid
-  };
-
   using StorageType = T;
+
+  static constexpr xiiVariantType::Enum  value               = xiiVariantType::Invalid;
+  static constexpr bool                  forceSharing        = false;
+  static constexpr bool                  hasReflectedMembers = false;
+  static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::Invalid;
 };
 
 /// \brief Declares a custom variant type, allowing it to be stored by value inside a xiiVariant.
 ///
 /// Needs to be called from the same header that defines the type.
 /// \sa XII_DEFINE_CUSTOM_VARIANT_TYPE
-#define XII_DECLARE_CUSTOM_VARIANT_TYPE(TYPE)               \
-  template <>                                               \
-  struct xiiVariantTypeDeduction<TYPE>                      \
-  {                                                         \
-    enum                                                    \
-    {                                                       \
-      value               = xiiVariantType::TypedObject,    \
-      forceSharing        = false,                          \
-      hasReflectedMembers = true,                           \
-      classification      = xiiVariantClass::CustomTypeCast \
-    };                                                      \
-    using StorageType = TYPE;                               \
+#define XII_DECLARE_CUSTOM_VARIANT_TYPE(TYPE)                                                     \
+  template <>                                                                                     \
+  struct xiiVariantTypeDeduction<TYPE>                                                            \
+  {                                                                                               \
+    using StorageType                                          = TYPE;                            \
+    static constexpr xiiVariantType::Enum  value               = xiiVariantType::TypedObject;     \
+    static constexpr bool                  forceSharing        = false;                           \
+    static constexpr bool                  hasReflectedMembers = true;                            \
+    static constexpr xiiVariantClass::Enum classification      = xiiVariantClass::CustomTypeCast; \
   };
 
 #include <Foundation/Types/Implementation/VariantTypeDeduction_inl.h>

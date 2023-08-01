@@ -95,7 +95,7 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
 
   /// \brief If *dest* is equal to *expected*, this function sets *dest* to *value* and returns true. Otherwise *dest* will not be modified and the
   /// function returns false.
-  static bool TestAndSet(void** volatile pDest, void* pExpected, void* value); // [tested]
+  static bool TestAndSet(void** pDest, void* pExpected, void* value); // [tested]
 
   /// \brief If *dest* is equal to *expected*, this function sets *dest* to *value*. Otherwise *dest* will not be modified. Always returns the value
   /// of *dest* before the modification.

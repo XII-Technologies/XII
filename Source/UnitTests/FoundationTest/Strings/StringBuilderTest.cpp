@@ -1329,64 +1329,64 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
   {
     xiiStringBuilder p;
 
-    p = u8"ä/b\\c/d\\\\e/f/g";
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c").Succeeded());
+    p = reinterpret_cast<const char*>(u8"ä/b\\c/d\\\\e/f/g");
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c")).Succeeded());
     XII_TEST_BOOL(p == "d/e/f/g");
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c").Failed());
-    XII_TEST_BOOL(p == "d/e/f/g");
-
-    p = u8"ä/b\\c//d\\\\e/f/g";
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c").Succeeded());
-    XII_TEST_BOOL(p == "d/e/f/g");
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c").Failed());
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c")).Failed());
     XII_TEST_BOOL(p == "d/e/f/g");
 
-    p = u8"ä/b\\c/d\\\\e/f/g";
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c/").Succeeded());
+    p = reinterpret_cast<const char*>(u8"ä/b\\c//d\\\\e/f/g");
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c")).Succeeded());
     XII_TEST_BOOL(p == "d/e/f/g");
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c/").Failed());
-    XII_TEST_BOOL(p == "d/e/f/g");
-
-    p = u8"ä/b\\c//d\\\\e/f/g";
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c/").Succeeded());
-    XII_TEST_BOOL(p == "d/e/f/g");
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c/").Failed());
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c")).Failed());
     XII_TEST_BOOL(p == "d/e/f/g");
 
-    p = u8"ä/b\\c//d\\\\e/f/g";
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c\\/d/\\e\\f/g").Succeeded());
+    p = reinterpret_cast<const char*>(u8"ä/b\\c/d\\\\e/f/g");
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c/")).Succeeded());
+    XII_TEST_BOOL(p == "d/e/f/g");
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c/")).Failed());
+    XII_TEST_BOOL(p == "d/e/f/g");
+
+    p = reinterpret_cast<const char*>(u8"ä/b\\c//d\\\\e/f/g");
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c/")).Succeeded());
+    XII_TEST_BOOL(p == "d/e/f/g");
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c/")).Failed());
+    XII_TEST_BOOL(p == "d/e/f/g");
+
+    p = reinterpret_cast<const char*>(u8"ä/b\\c//d\\\\e/f/g");
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c\\/d/\\e\\f/g")).Succeeded());
     XII_TEST_BOOL(p == "");
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c\\/d/\\e\\f/g").Failed());
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c\\/d/\\e\\f/g")).Failed());
     XII_TEST_BOOL(p == "");
 
-    p = u8"ä/b\\c//d\\\\e/f/g/";
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c\\/d//e\\f/g\\h/i").Succeeded());
+    p = reinterpret_cast<const char*>(u8"ä/b\\c//d\\\\e/f/g/");
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c\\/d//e\\f/g\\h/i")).Succeeded());
     XII_TEST_BOOL(p == "../../");
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c\\/d//e\\f/g\\h/i").Failed());
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c\\/d//e\\f/g\\h/i")).Failed());
     XII_TEST_BOOL(p == "../../");
 
-    p = u8"ä/b\\c//d\\\\e/f/g/j/k";
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c\\/d//e\\f/g\\h/i").Succeeded());
+    p = reinterpret_cast<const char*>(u8"ä/b\\c//d\\\\e/f/g/j/k");
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c\\/d//e\\f/g\\h/i")).Succeeded());
     XII_TEST_BOOL(p == "../../j/k");
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c\\/d//e\\f/g\\h/i").Failed());
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c\\/d//e\\f/g\\h/i")).Failed());
     XII_TEST_BOOL(p == "../../j/k");
 
-    p = u8"ä/b\\c//d\\\\e/f/ge";
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c//d/\\e\\f/g\\h/i").Succeeded());
+    p = reinterpret_cast<const char*>(u8"ä/b\\c//d\\\\e/f/ge");
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c//d/\\e\\f/g\\h/i")).Succeeded());
     XII_TEST_BOOL(p == "../../../ge");
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c//d/\\e\\f/g\\h/i").Failed());
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c//d/\\e\\f/g\\h/i")).Failed());
     XII_TEST_BOOL(p == "../../../ge");
 
-    p = u8"ä/b\\c//d\\\\e/f/g.txt";
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c//d//e\\f/g\\h/i").Succeeded());
+    p = reinterpret_cast<const char*>(u8"ä/b\\c//d\\\\e/f/g.txt");
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c//d//e\\f/g\\h/i")).Succeeded());
     XII_TEST_BOOL(p == "../../../g.txt");
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c//d//e\\f/g\\h/i").Failed());
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c//d//e\\f/g\\h/i")).Failed());
     XII_TEST_BOOL(p == "../../../g.txt");
 
-    p = u8"ä/b\\c//d\\\\e/f/g";
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c//d//e\\f/g\\h/i").Succeeded());
+    p = reinterpret_cast<const char*>(u8"ä/b\\c//d\\\\e/f/g");
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c//d//e\\f/g\\h/i")).Succeeded());
     XII_TEST_BOOL(p == "../../");
-    XII_TEST_BOOL(p.MakeRelativeTo(u8"ä\\b/c//d//e\\f/g\\h/i").Failed());
+    XII_TEST_BOOL(p.MakeRelativeTo(reinterpret_cast<const char*>(u8"ä\\b/c//d//e\\f/g\\h/i")).Failed());
     XII_TEST_BOOL(p == "../../");
   }
 

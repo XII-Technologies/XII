@@ -178,7 +178,7 @@ XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(volatile xiiInt64& dest, xiiIn
   return __sync_bool_compare_and_swap_8(&dest, expected, value);
 }
 
-XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(void** volatile dest, void* expected, void* value)
+XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(void** dest, void* expected, void* value)
 {
 #if XII_ENABLED(XII_PLATFORM_64BIT)
   xiiUInt64* puiTemp = reinterpret_cast<xiiUInt64*>(dest);
