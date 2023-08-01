@@ -24,28 +24,24 @@ xiiActionDescriptorHandle xiiDocumentActions::s_hSaveCategory;
 xiiActionDescriptorHandle xiiDocumentActions::s_hSave;
 xiiActionDescriptorHandle xiiDocumentActions::s_hSaveAs;
 xiiActionDescriptorHandle xiiDocumentActions::s_hSaveAll;
-xiiActionDescriptorHandle xiiDocumentActions::s_hCloseCategory;
 xiiActionDescriptorHandle xiiDocumentActions::s_hClose;
 xiiActionDescriptorHandle xiiDocumentActions::s_hCloseAll;
 xiiActionDescriptorHandle xiiDocumentActions::s_hCloseAllButThis;
 xiiActionDescriptorHandle xiiDocumentActions::s_hOpenContainingFolder;
 xiiActionDescriptorHandle xiiDocumentActions::s_hCopyAssetGuid;
 xiiActionDescriptorHandle xiiDocumentActions::s_hUpdatePrefabs;
-xiiActionDescriptorHandle xiiDocumentActions::s_hDocumentCategory;
 
 void xiiDocumentActions::RegisterActions()
 {
   s_hSaveCategory         = XII_REGISTER_CATEGORY("SaveCategory");
   s_hSave                 = XII_REGISTER_ACTION_1("Document.Save", xiiActionScope::Document, "Document", "Ctrl+S", xiiDocumentAction, xiiDocumentAction::ButtonType::Save);
   s_hSaveAll              = XII_REGISTER_ACTION_1("Document.SaveAll", xiiActionScope::Document, "Document", "Ctrl+Shift+S", xiiDocumentAction, xiiDocumentAction::ButtonType::SaveAll);
-  s_hSaveAs               = XII_REGISTER_ACTION_1("Document.SaveAs", xiiActionScope::Document, "Document", "", xiiDocumentAction, xiiDocumentAction::ButtonType::SaveAs);
-  s_hCloseCategory        = XII_REGISTER_CATEGORY("CloseCategory");
+  s_hSaveAs               = XII_REGISTER_ACTION_1("Document.SaveAs", xiiActionScope::Document, "Document", {}, xiiDocumentAction, xiiDocumentAction::ButtonType::SaveAs);
   s_hClose                = XII_REGISTER_ACTION_1("Document.Close", xiiActionScope::Document, "Document", "Ctrl+W", xiiDocumentAction, xiiDocumentAction::ButtonType::Close);
   s_hCloseAll             = XII_REGISTER_ACTION_1("Document.CloseAll", xiiActionScope::Document, "Document", "Ctrl+Shift+W", xiiDocumentAction, xiiDocumentAction::ButtonType::CloseAll);
   s_hCloseAllButThis      = XII_REGISTER_ACTION_1("Document.CloseAllButThis", xiiActionScope::Document, "Document", "Shift+Alt+W", xiiDocumentAction, xiiDocumentAction::ButtonType::CloseAllButThis);
-  s_hOpenContainingFolder = XII_REGISTER_ACTION_1("Document.OpenContainingFolder", xiiActionScope::Document, "Document", "", xiiDocumentAction, xiiDocumentAction::ButtonType::OpenContainingFolder);
-  s_hCopyAssetGuid        = XII_REGISTER_ACTION_1("Document.CopyAssetGuid", xiiActionScope::Document, "Document", "", xiiDocumentAction, xiiDocumentAction::ButtonType::CopyAssetGuid);
-  s_hDocumentCategory     = XII_REGISTER_CATEGORY("Tools.DocumentCategory");
+  s_hOpenContainingFolder = XII_REGISTER_ACTION_1("Document.OpenContainingFolder", xiiActionScope::Document, "Document", {}, xiiDocumentAction, xiiDocumentAction::ButtonType::OpenContainingFolder);
+  s_hCopyAssetGuid        = XII_REGISTER_ACTION_1("Document.CopyAssetGuid", xiiActionScope::Document, "Document", {}, xiiDocumentAction, xiiDocumentAction::ButtonType::CopyAssetGuid);
   s_hUpdatePrefabs        = XII_REGISTER_ACTION_1("Prefabs.UpdateAll", xiiActionScope::Document, "Scene", "Ctrl+Shift+P", xiiDocumentAction, xiiDocumentAction::ButtonType::UpdatePrefabs);
 }
 
@@ -55,50 +51,48 @@ void xiiDocumentActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hSave);
   xiiActionManager::UnregisterAction(s_hSaveAs);
   xiiActionManager::UnregisterAction(s_hSaveAll);
-  xiiActionManager::UnregisterAction(s_hCloseCategory);
   xiiActionManager::UnregisterAction(s_hClose);
   xiiActionManager::UnregisterAction(s_hCloseAll);
   xiiActionManager::UnregisterAction(s_hCloseAllButThis);
   xiiActionManager::UnregisterAction(s_hOpenContainingFolder);
   xiiActionManager::UnregisterAction(s_hCopyAssetGuid);
-  xiiActionManager::UnregisterAction(s_hDocumentCategory);
   xiiActionManager::UnregisterAction(s_hUpdatePrefabs);
 }
 
-void xiiDocumentActions::MapActions(xiiStringView sMapping, xiiStringView sPath, bool bForToolbar)
+void xiiDocumentActions::MapMenuActions(xiiStringView sMapping, xiiStringView sTargetMenu)
 {
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
   XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the documents actions failed!", sMapping);
 
-  pMap->MapAction(s_hSaveCategory, sPath, 1.0f);
-  xiiStringBuilder sSubPath(sPath, "/SaveCategory");
+  pMap->MapAction(s_hSave, sTargetMenu, 5.0f);
+  pMap->MapAction(s_hSaveAs, sTargetMenu, 6.0f);
+  pMap->MapAction(s_hSaveAll, sTargetMenu, 7.0f);
+  pMap->MapAction(s_hClose, sTargetMenu, 8.0f);
+  pMap->MapAction(s_hCloseAll, sTargetMenu, 9.0f);
+  pMap->MapAction(s_hCloseAllButThis, sTargetMenu, 10.0f);
+  pMap->MapAction(s_hOpenContainingFolder, sTargetMenu, 11.0f);
+
+  pMap->MapAction(s_hCopyAssetGuid, sTargetMenu, 12.0f);
+}
+
+void xiiDocumentActions::MapToolbarActions(xiiStringView sMapping)
+{
+  xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
+  XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the documents actions failed!", sMapping);
+
+  pMap->MapAction(s_hSaveCategory, {}, 1.0f);
+  xiiStringView sSubPath = "SaveCategory";
 
   pMap->MapAction(s_hSave, sSubPath, 1.0f);
   pMap->MapAction(s_hSaveAll, sSubPath, 3.0f);
-
-  if (!bForToolbar)
-  {
-    pMap->MapAction(s_hSaveAs, sSubPath, 2.0f);
-
-    sSubPath.Set(sPath, "/CloseCategory");
-    pMap->MapAction(s_hCloseCategory, sPath, 2.0f);
-    pMap->MapAction(s_hClose, sSubPath, 1.0f);
-    pMap->MapAction(s_hCloseAll, sSubPath, 2.0f);
-    pMap->MapAction(s_hCloseAllButThis, sSubPath, 3.0f);
-    pMap->MapAction(s_hCopyAssetGuid, sSubPath, 4.0f);
-    pMap->MapAction(s_hOpenContainingFolder, sSubPath, 5.0f);
-  }
 }
 
-void xiiDocumentActions::MapToolsActions(xiiStringView sMapping, xiiStringView sPath)
+void xiiDocumentActions::MapToolsActions(xiiStringView sMapping)
 {
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
   XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the documents actions failed!", sMapping);
 
-  pMap->MapAction(s_hDocumentCategory, sPath, 1.0f);
-  xiiStringBuilder sSubPath(sPath, "/Tools.DocumentCategory");
-
-  pMap->MapAction(s_hUpdatePrefabs, sSubPath, 1.0f);
+  pMap->MapAction(s_hUpdatePrefabs, "G.Tools.Document", 1.0f);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -106,7 +100,7 @@ void xiiDocumentActions::MapToolsActions(xiiStringView sMapping, xiiStringView s
 ////////////////////////////////////////////////////////////////////////
 
 xiiDocumentAction::xiiDocumentAction(const xiiActionContext& context, xiiStringView sName, ButtonType button) :
-  xiiButtonAction(context, sName, false, "")
+  xiiButtonAction(context, sName, false, {})
 {
   m_ButtonType = button;
 
@@ -116,19 +110,19 @@ xiiDocumentAction::xiiDocumentAction(const xiiActionContext& context, xiiStringV
       SetIconPath(":/GuiFoundation/Icons/Save16.png");
       break;
     case xiiDocumentAction::ButtonType::SaveAs:
-      SetIconPath("");
+      SetIconPath({});
       break;
     case xiiDocumentAction::ButtonType::SaveAll:
       SetIconPath(":/GuiFoundation/Icons/SaveAll16.png");
       break;
     case xiiDocumentAction::ButtonType::Close:
-      SetIconPath("");
+      SetIconPath({});
       break;
     case xiiDocumentAction::ButtonType::CloseAll:
-      SetIconPath("");
+      SetIconPath({});
       break;
     case xiiDocumentAction::ButtonType::CloseAllButThis:
-      SetIconPath("");
+      SetIconPath({});
       break;
     case xiiDocumentAction::ButtonType::OpenContainingFolder:
       SetIconPath(":/GuiFoundation/Icons/OpenFolder16.png");

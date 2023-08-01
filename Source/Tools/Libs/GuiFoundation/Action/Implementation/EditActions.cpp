@@ -30,9 +30,9 @@ void xiiEditActions::RegisterActions()
   s_hEditCategory            = XII_REGISTER_CATEGORY("EditCategory");
   s_hCopy                    = XII_REGISTER_ACTION_1("Selection.Copy", xiiActionScope::Document, "Document", "Ctrl+C", xiiEditAction, xiiEditAction::ButtonType::Copy);
   s_hPaste                   = XII_REGISTER_ACTION_1("Selection.Paste", xiiActionScope::Document, "Document", "Ctrl+V", xiiEditAction, xiiEditAction::ButtonType::Paste);
-  s_hPasteAsChild            = XII_REGISTER_ACTION_1("Selection.PasteAsChild", xiiActionScope::Document, "Document", "", xiiEditAction, xiiEditAction::ButtonType::PasteAsChild);
-  s_hPasteAtOriginalLocation = XII_REGISTER_ACTION_1("Selection.PasteAtOriginalLocation", xiiActionScope::Document, "Document", "", xiiEditAction, xiiEditAction::ButtonType::PasteAtOriginalLocation);
-  s_hDelete                  = XII_REGISTER_ACTION_1("Selection.Delete", xiiActionScope::Document, "Document", "", xiiEditAction, xiiEditAction::ButtonType::Delete);
+  s_hPasteAsChild            = XII_REGISTER_ACTION_1("Selection.PasteAsChild", xiiActionScope::Document, "Document", {}, xiiEditAction, xiiEditAction::ButtonType::PasteAsChild);
+  s_hPasteAtOriginalLocation = XII_REGISTER_ACTION_1("Selection.PasteAtOriginalLocation", xiiActionScope::Document, "Document", {}, xiiEditAction, xiiEditAction::ButtonType::PasteAtOriginalLocation);
+  s_hDelete                  = XII_REGISTER_ACTION_1("Selection.Delete", xiiActionScope::Document, "Document", {}, xiiEditAction, xiiEditAction::ButtonType::Delete);
 }
 
 void xiiEditActions::UnregisterActions()
@@ -45,57 +45,47 @@ void xiiEditActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hDelete);
 }
 
-void xiiEditActions::MapActions(xiiStringView sMapping, xiiStringView sPath, bool bDeleteAction, bool bAdvancedPasteActions)
+void xiiEditActions::MapActions(xiiStringView sMapping, bool bDeleteAction, bool bAdvancedPasteActions)
 {
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
   XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the edit actions failed!", sMapping);
 
-  xiiStringBuilder sSubPath(sPath, "/EditCategory");
-
-  pMap->MapAction(s_hEditCategory, sPath, 3.5f);
-
-  pMap->MapAction(s_hCopy, sSubPath, 1.0f);
-  pMap->MapAction(s_hPaste, sSubPath, 2.0f);
+  pMap->MapAction(s_hCopy, "G.Edit", "EditCategory", 1.0f);
+  pMap->MapAction(s_hPaste, "G.Edit", "EditCategory", 2.0f);
 
   if (bAdvancedPasteActions)
   {
-    pMap->MapAction(s_hPasteAsChild, sSubPath, 2.5f);
-    pMap->MapAction(s_hPasteAtOriginalLocation, sSubPath, 2.7f);
+    pMap->MapAction(s_hPasteAsChild, "G.Edit", "EditCategory", 2.5f);
+    pMap->MapAction(s_hPasteAtOriginalLocation, "G.Edit", "EditCategory", 2.7f);
   }
 
   if (bDeleteAction)
-    pMap->MapAction(s_hDelete, sSubPath, 3.0f);
+  {
+    pMap->MapAction(s_hDelete, "G.Edit", "EditCategory", 3.0f);
+  }
 }
 
 
-void xiiEditActions::MapContextMenuActions(xiiStringView sMapping, xiiStringView sPath)
+void xiiEditActions::MapContextMenuActions(xiiStringView sMapping)
 {
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
   XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the edit actions failed!", sMapping);
 
-  xiiStringBuilder sSubPath(sPath, "/EditCategory");
-
-  pMap->MapAction(s_hEditCategory, sPath, 10.0f);
-
-  pMap->MapAction(s_hCopy, sSubPath, 1.0f);
-  pMap->MapAction(s_hPasteAsChild, sSubPath, 2.0f);
-  pMap->MapAction(s_hDelete, sSubPath, 3.0f);
+  pMap->MapAction(s_hCopy, "EditCategory", 1.0f);
+  pMap->MapAction(s_hPasteAsChild, "EditCategory", 2.0f);
+  pMap->MapAction(s_hDelete, "EditCategory", 3.0f);
 }
 
 
-void xiiEditActions::MapViewContextMenuActions(xiiStringView sMapping, xiiStringView sPath)
+void xiiEditActions::MapViewContextMenuActions(xiiStringView sMapping)
 {
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
   XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the edit actions failed!", sMapping);
 
-  xiiStringBuilder sSubPath(sPath, "/EditCategory");
-
-  pMap->MapAction(s_hEditCategory, sPath, 10.0f);
-
-  pMap->MapAction(s_hCopy, sSubPath, 1.0f);
-  pMap->MapAction(s_hPasteAsChild, sSubPath, 2.0f);
-  pMap->MapAction(s_hPasteAtOriginalLocation, sSubPath, 2.5f);
-  pMap->MapAction(s_hDelete, sSubPath, 3.0f);
+  pMap->MapAction(s_hCopy, "EditCategory", 1.0f);
+  pMap->MapAction(s_hPasteAsChild, "EditCategory", 2.0f);
+  pMap->MapAction(s_hPasteAtOriginalLocation, "EditCategory", 2.5f);
+  pMap->MapAction(s_hDelete, "EditCategory", 3.0f);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -103,7 +93,7 @@ void xiiEditActions::MapViewContextMenuActions(xiiStringView sMapping, xiiString
 ////////////////////////////////////////////////////////////////////////
 
 xiiEditAction::xiiEditAction(const xiiActionContext& context, xiiStringView sName, ButtonType button) :
-  xiiButtonAction(context, sName, false, "")
+  xiiButtonAction(context, sName, false, {})
 {
   m_ButtonType = button;
 

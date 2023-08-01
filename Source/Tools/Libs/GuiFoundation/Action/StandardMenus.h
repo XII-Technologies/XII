@@ -7,27 +7,29 @@ struct xiiStandardMenuTypes
 {
   using StorageType = xiiUInt32;
 
-  enum Enum
+  enum Enum : StorageType
   {
-    File    = XII_BIT(0),
-    Edit    = XII_BIT(1),
-    Panels  = XII_BIT(2),
-    Project = XII_BIT(3),
+    Project = XII_BIT(0),
+    File    = XII_BIT(1),
+    Edit    = XII_BIT(2),
+    Panels  = XII_BIT(3),
     Scene   = XII_BIT(4),
     View    = XII_BIT(5),
-    Help    = XII_BIT(6),
+    Tools   = XII_BIT(6),
+    Help    = XII_BIT(7),
 
-    Default = 0
+    Default = Project | File | Panels | Tools | Help
   };
 
   struct Bits
   {
+    StorageType Project : 1;
     StorageType File : 1;
     StorageType Edit : 1;
     StorageType Panels : 1;
-    StorageType Project : 1;
     StorageType Scene : 1;
     StorageType View : 1;
+    StorageType Tools : 1;
     StorageType Help : 1;
   };
 };
@@ -43,12 +45,13 @@ public:
 
   static void MapActions(xiiStringView sMapping, const xiiBitflags<xiiStandardMenuTypes>& menus);
 
+  static xiiActionDescriptorHandle s_hMenuProject;
   static xiiActionDescriptorHandle s_hMenuFile;
   static xiiActionDescriptorHandle s_hMenuEdit;
   static xiiActionDescriptorHandle s_hMenuPanels;
-  static xiiActionDescriptorHandle s_hMenuProject;
   static xiiActionDescriptorHandle s_hMenuScene;
   static xiiActionDescriptorHandle s_hMenuView;
+  static xiiActionDescriptorHandle s_hMenuTools;
   static xiiActionDescriptorHandle s_hMenuHelp;
   static xiiActionDescriptorHandle s_hCheckForUpdates;
   static xiiActionDescriptorHandle s_hReportProblem;
