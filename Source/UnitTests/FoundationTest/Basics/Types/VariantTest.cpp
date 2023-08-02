@@ -129,11 +129,14 @@ inline void TestNumberCanConvertTo(const xiiVariant& v)
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Transformd) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::String));
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::StringView) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::HashedString));
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::TempHashedString));
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::DataBuffer) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Time) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Uuid) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Angle) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Angled) == false);
-  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Uuid) == false);
+  XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::ColorGamma) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::VariantArray) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::VariantDictionary) == false);
   XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::TypedPointer) == false);
@@ -176,6 +179,12 @@ inline void TestNumberCanConvertTo(const xiiVariant& v)
   XII_TEST_BOOL(v.ConvertTo<xiiString>(&conversionResult) == "3");
   XII_TEST_BOOL(conversionResult.Succeeded());
 
+  XII_TEST_BOOL(v.ConvertTo<xiiHashedString>(&conversionResult) == xiiMakeHashedString("3"));
+  XII_TEST_BOOL(conversionResult.Succeeded());
+
+  XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>(&conversionResult) == xiiTempHashedString("3"));
+  XII_TEST_BOOL(conversionResult.Succeeded());
+
   XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Bool).Get<bool>() == true);
   XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Int8).Get<xiiInt8>() == 3);
   XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::UInt8).Get<xiiUInt8>() == 3);
@@ -188,6 +197,8 @@ inline void TestNumberCanConvertTo(const xiiVariant& v)
   XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Float).Get<float>() == 3.0f);
   XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Double).Get<double>() == 3.0);
   XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "3");
+  XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("3"));
+  XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("3"));
 }
 
 inline void TestCanOnlyConvertToID(const xiiVariant& v, xiiVariant::Type::Enum type)
@@ -218,7 +229,7 @@ inline void TestCanOnlyConvertToStringAndID(const xiiVariant& v, xiiVariant::Typ
     if (iType == xiiVariant::Type::LastStandardType)
       iType = xiiVariant::Type::FirstExtendedType;
 
-    if (iType == xiiVariant::Type::String)
+    if (iType == xiiVariant::Type::String || iType == xiiVariant::Type::HashedString || iType == xiiVariant::Type::TempHashedString)
     {
       XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::String));
     }
@@ -1276,6 +1287,56 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.IsFloatingPoint() == false);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiHashedString")
+  {
+    xiiVariant v(xiiMakeHashedString("ABCDE"));
+    TestVariant<xiiHashedString>(v, xiiVariantType::HashedString);
+
+    XII_TEST_BOOL(v.Get<xiiHashedString>() == xiiMakeHashedString("ABCDE"));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiMakeHashedString("ABCDE")));
+    XII_TEST_BOOL(v != xiiVariant(xiiMakeHashedString("ABCDK")));
+    XII_TEST_BOOL(v == xiiVariant(xiiTempHashedString("ABCDE")));
+    XII_TEST_BOOL(v != xiiVariant(xiiTempHashedString("ABCDK")));
+
+    XII_TEST_BOOL(v == xiiMakeHashedString("ABCDE"));
+    XII_TEST_BOOL(v != xiiMakeHashedString("ABCDK"));
+    XII_TEST_BOOL(v == xiiTempHashedString("ABCDE"));
+    XII_TEST_BOOL(v != xiiTempHashedString("ABCDK"));
+
+    v = xiiMakeHashedString("HHH");
+    XII_TEST_BOOL(v == xiiMakeHashedString("HHH"));
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(v.IsString() == false);
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiTempHashedString")
+  {
+    xiiVariant v(xiiTempHashedString("ABCDE"));
+    TestVariant<xiiTempHashedString>(v, xiiVariantType::TempHashedString);
+
+    XII_TEST_BOOL(v.Get<xiiTempHashedString>() == xiiTempHashedString("ABCDE"));
+
+    XII_TEST_BOOL(v == xiiVariant(xiiTempHashedString("ABCDE")));
+    XII_TEST_BOOL(v != xiiVariant(xiiTempHashedString("ABCDK")));
+    XII_TEST_BOOL(v == xiiVariant(xiiMakeHashedString("ABCDE")));
+    XII_TEST_BOOL(v != xiiVariant(xiiMakeHashedString("ABCDK")));
+
+    XII_TEST_BOOL(v == xiiTempHashedString("ABCDE"));
+    XII_TEST_BOOL(v != xiiTempHashedString("ABCDK"));
+    XII_TEST_BOOL(v == xiiMakeHashedString("ABCDE"));
+    XII_TEST_BOOL(v != xiiMakeHashedString("ABCDK"));
+
+    v = xiiTempHashedString("HHH");
+    XII_TEST_BOOL(v == xiiTempHashedString("HHH"));
+
+    XII_TEST_BOOL(v.IsNumber() == false);
+    XII_TEST_BOOL(v.IsString() == false);
+    XII_TEST_BOOL(v.IsFloatingPoint() == false);
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiDataBuffer")
   {
     xiiDataBuffer a, a2;
@@ -1696,6 +1757,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<float>() == 1.0f);
     XII_TEST_BOOL(v.ConvertTo<double>() == 1.0);
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "true");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("true"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("true"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Bool).Get<bool>() == true);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Int8).Get<xiiInt8>() == 1);
@@ -1709,6 +1772,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Float).Get<float>() == 1.0f);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Double).Get<double>() == 1.0);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "true");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("true"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("true"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiInt8)")
@@ -1785,8 +1850,13 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiString>(&conversionResult) == "{ r=3, g=3, b=4, a=0 }");
     XII_TEST_BOOL(conversionResult.Succeeded());
 
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ r=3, g=3, b=4, a=0 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ r=3, g=3, b=4, a=0 }"));
+
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Color).Get<xiiColor>() == c);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ r=3, g=3, b=4, a=0 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ r=3, g=3, b=4, a=0 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ r=3, g=3, b=4, a=0 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (ColorGamma)")
@@ -1804,8 +1874,13 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(val == "{ r=0, g=128, b=64, a=255 }");
     XII_TEST_BOOL(conversionResult.Succeeded());
 
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ r=0, g=128, b=64, a=255 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ r=0, g=128, b=64, a=255 }"));
+
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::ColorGamma).Get<xiiColorGammaUB>() == c);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ r=0, g=128, b=64, a=255 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ r=0, g=128, b=64, a=255 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ r=0, g=128, b=64, a=255 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec2)")
@@ -1822,6 +1897,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec2I64>() == xiiVec2I64(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiVec2U64>() == xiiVec2U64(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2).Get<xiiVec2>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I).Get<xiiVec2I32>() == xiiVec2I32(3, 4));
@@ -1829,6 +1906,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I64).Get<xiiVec2I64>() == xiiVec2I64(3, 4));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U64).Get<xiiVec2U64>() == xiiVec2U64(3, 4));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec2d)")
@@ -1845,6 +1924,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec2I64>() == xiiVec2I64(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiVec2U64>() == xiiVec2U64(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2d).Get<xiiVec2d>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2).Get<xiiVec2>() == xiiVec2(3.0f, 4.0f));
@@ -1853,6 +1934,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I64).Get<xiiVec2I64>() == xiiVec2I64(3, 4));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U64).Get<xiiVec2U64>() == xiiVec2U64(3, 4));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec3)")
@@ -1869,6 +1952,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=6 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=6 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=6 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3).Get<xiiVec3>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3d).Get<xiiVec3d>() == xiiVec3d(3.0, 4.0, 6.0));
@@ -1877,6 +1962,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I64).Get<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U64).Get<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=6 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=6 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=6 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec3d)")
@@ -1893,6 +1980,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=6 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=6 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=6 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3d).Get<xiiVec3d>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3).Get<xiiVec3>() == xiiVec3(3.0f, 4.0f, 6.0f));
@@ -1901,6 +1990,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I64).Get<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U64).Get<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=6 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=6 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=6 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec4)")
@@ -1917,6 +2008,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4).Get<xiiVec4>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4d).Get<xiiVec4d>() == xiiVec4d(3.0, 4.0, 3.0, 56.0));
@@ -1925,6 +2018,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I64).Get<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U64).Get<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec4d)")
@@ -1941,6 +2036,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4d).Get<xiiVec4d>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4).Get<xiiVec4>() == xiiVec4(3.0f, 4.0f, 3.0f, 56.0f));
@@ -1949,6 +2046,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I64).Get<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U64).Get<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec2I32)")
@@ -1964,6 +2063,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec2I64>() == xiiVec2I64(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiVec2U64>() == xiiVec2U64(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I).Get<xiiVec2I32>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2).Get<xiiVec2>() == xiiVec2(3, 4));
@@ -1972,6 +2073,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I64).Get<xiiVec2I64>() == xiiVec2I64(3, 4));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U64).Get<xiiVec2U64>() == xiiVec2U64(3, 4));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec3I32)")
@@ -1988,6 +2091,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=6 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=6 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=6 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I).Get<xiiVec3I32>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3).Get<xiiVec3>() == xiiVec3(3, 4, 6));
@@ -1996,6 +2101,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I64).Get<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U64).Get<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=6 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=6 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=6 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec4I32)")
@@ -2012,6 +2119,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I).Get<xiiVec4I32>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4).Get<xiiVec4>() == xiiVec4(3, 4, 3, 56));
@@ -2020,6 +2129,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I64).Get<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U64).Get<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec2I64)")
@@ -2035,6 +2146,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec2U32>() == xiiVec2U32(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiVec2U64>() == xiiVec2U64(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I64).Get<xiiVec2I64>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2).Get<xiiVec2>() == xiiVec2(3, 4));
@@ -2043,6 +2156,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U).Get<xiiVec2U32>() == xiiVec2U32(3, 4));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U64).Get<xiiVec2U64>() == xiiVec2U64(3, 4));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec3I64)")
@@ -2059,6 +2174,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=6 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=6 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=6 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I64).Get<xiiVec3I64>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3).Get<xiiVec3>() == xiiVec3(3, 4, 6));
@@ -2067,6 +2184,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U).Get<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U64).Get<xiiVec3U64>() == xiiVec3U64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=6 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=6 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=6 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec4I64)")
@@ -2083,6 +2202,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I64).Get<xiiVec4I64>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4).Get<xiiVec4>() == xiiVec4(3, 4, 3, 56));
@@ -2091,6 +2212,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U).Get<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U64).Get<xiiVec4U64>() == xiiVec4U64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec2U64)")
@@ -2106,6 +2229,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec2U32>() == xiiVec2U32(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiVec2I64>() == xiiVec2I64(3, 4));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U64).Get<xiiVec2U64>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2).Get<xiiVec2>() == xiiVec2(3, 4));
@@ -2114,6 +2239,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2U).Get<xiiVec2U32>() == xiiVec2U32(3, 4));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector2I64).Get<xiiVec2I64>() == xiiVec2I64(3, 4));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec3U64)")
@@ -2130,6 +2257,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=6 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=6 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=6 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U64).Get<xiiVec3U64>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3).Get<xiiVec3>() == xiiVec3(3, 4, 6));
@@ -2138,6 +2267,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3U).Get<xiiVec3U32>() == xiiVec3U32(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector3I64).Get<xiiVec3I64>() == xiiVec3I64(3, 4, 6));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=6 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=6 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=6 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVec4U64)")
@@ -2154,6 +2285,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U64).Get<xiiVec4U64>() == vec);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4).Get<xiiVec4>() == xiiVec4(3, 4, 3, 56));
@@ -2162,6 +2295,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4U).Get<xiiVec4U32>() == xiiVec4U32(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Vector4I64).Get<xiiVec4I64>() == xiiVec4I64(3, 4, 3, 56));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiQuat)")
@@ -2174,10 +2309,14 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiQuat>() == q);
     XII_TEST_BOOL(v.ConvertTo<xiiQuatd>() == xiiQuatd(3.0, 4.0, 3.0, 56.0));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Quaternion).Get<xiiQuat>() == q);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Quaterniond).Get<xiiQuatd>() == xiiQuatd(3.0, 4.0, 3.0, 56.0));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiQuatd)")
@@ -2190,10 +2329,14 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiQuatd>() == q);
     XII_TEST_BOOL(v.ConvertTo<xiiQuat>() == xiiQuat(3.0f, 4.0f, 3.0f, 56.0f));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Quaterniond).Get<xiiQuatd>() == q);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Quaternion).Get<xiiQuat>() == xiiQuat(3.0f, 4.0f, 3.0f, 56.0f));
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ x=3, y=4, z=3, w=56 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ x=3, y=4, z=3, w=56 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ x=3, y=4, z=3, w=56 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiMat3)")
@@ -2206,11 +2349,14 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiMat3>() == m);
     XII_TEST_BOOL(v.ConvertTo<xiiMat3d>() == xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix3).Get<xiiMat3>() == m);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix3d).Get<xiiMat3d>() == xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9));
-    XII_TEST_BOOL(
-      v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiMat3d)")
@@ -2223,11 +2369,14 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.ConvertTo<xiiMat3d>() == m);
     XII_TEST_BOOL(v.ConvertTo<xiiMat3>() == xiiMat3(1, 2, 3, 4, 5, 6, 7, 8, 9));
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix3d).Get<xiiMat3d>() == m);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix3).Get<xiiMat3>() == xiiMat3(1, 2, 3, 4, 5, 6, 7, 8, 9));
-    XII_TEST_BOOL(
-      v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ c1r1=1, c2r1=2, c3r1=3, c1r2=4, c2r2=5, c3r2=6, c1r3=7, c2r3=8, c3r3=9 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiMat4)")
@@ -2239,14 +2388,15 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     XII_TEST_BOOL(v.ConvertTo<xiiMat4>() == m);
     XII_TEST_BOOL(v.ConvertTo<xiiMat4d>() == xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6));
-    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, "
-                                              "c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix4).Get<xiiMat4>() == m);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix4d).Get<xiiMat4d>() == xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6));
-    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, "
-                                                                            "c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, "
-                                                                            "c4r4=6 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiMat4d)")
@@ -2258,14 +2408,15 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     XII_TEST_BOOL(v.ConvertTo<xiiMat4d>() == m);
     XII_TEST_BOOL(v.ConvertTo<xiiMat4>() == xiiMat4(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6));
-    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, "
-                                              "c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix4d).Get<xiiMat4d>() == m);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Matrix4).Get<xiiMat4>() == xiiMat4(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6));
-    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, "
-                                                                            "c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, "
-                                                                            "c4r4=6 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{ c1r1=1, c2r1=2, c3r1=3, c4r1=4, c1r2=5, c2r2=6, c3r2=7, c4r2=8, c1r3=9, c2r3=0, c3r3=1, c4r3=2, c1r4=3, c2r4=4, c3r4=5, c4r4=6 }"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiTransform)")
@@ -2344,11 +2495,14 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Transform) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Transformd) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::String));
-    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::StringView) == true);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::StringView));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::HashedString));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::TempHashedString));
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::DataBuffer) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Time) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Angle) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Angled) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::ColorGamma) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::VariantArray) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::VariantDictionary) == false);
     XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::TypedPointer) == false);
@@ -2398,6 +2552,14 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
       ConversionStatus = XII_SUCCESS;
       XII_TEST_BOOL(v.ConvertTo<double>(&ConversionStatus) == 0.0);
       XII_TEST_BOOL(ConversionStatus == XII_FAILURE);
+
+      ConversionStatus = XII_SUCCESS;
+      XII_TEST_BOOL(v.ConvertTo<xiiHashedString>(&ConversionStatus) == xiiMakeHashedString("ich hab keine Lust mehr"));
+      XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+
+      ConversionStatus = XII_SUCCESS;
+      XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>(&ConversionStatus) == xiiTempHashedString("ich hab keine Lust mehr"));
+      XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
     }
 
     {
@@ -2565,6 +2727,134 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     }
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiHashedString)")
+  {
+    xiiVariant v(xiiMakeHashedString("78"));
+
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Invalid) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Bool));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Int8));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::UInt8));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Int16));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::UInt16));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Int32));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::UInt32));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Int64));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::UInt64));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Float));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Double));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Color) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2I) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3I) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4I) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2I64) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3I64) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4I64) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2U) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3U) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4U) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2U64) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3U64) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4U64) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector2d) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector3d) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Vector4d) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Quaternion) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Quaterniond) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix3) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix3d) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix4) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Matrix4d) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Transform) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Transformd) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::String));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::StringView));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::HashedString));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::TempHashedString));
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::DataBuffer) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Time) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Angle) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::Angled) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::ColorGamma) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::VariantArray) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::VariantDictionary) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::TypedPointer) == false);
+    XII_TEST_BOOL(v.CanConvertTo(xiiVariant::Type::TypedObject) == false);
+
+    xiiResult ConversionStatus = XII_SUCCESS;
+    XII_TEST_BOOL(v.ConvertTo<bool>(&ConversionStatus) == false);
+    XII_TEST_BOOL(ConversionStatus == XII_FAILURE);
+
+    ConversionStatus = XII_FAILURE;
+    XII_TEST_INT(v.ConvertTo<xiiInt8>(&ConversionStatus), 78);
+    XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+
+    ConversionStatus = XII_FAILURE;
+    XII_TEST_INT(v.ConvertTo<xiiUInt8>(&ConversionStatus), 78);
+    XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+
+    ConversionStatus = XII_FAILURE;
+    XII_TEST_INT(v.ConvertTo<xiiInt16>(&ConversionStatus), 78);
+    XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+
+    ConversionStatus = XII_FAILURE;
+    XII_TEST_INT(v.ConvertTo<xiiUInt16>(&ConversionStatus), 78);
+    XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+
+    ConversionStatus = XII_FAILURE;
+    XII_TEST_INT(v.ConvertTo<xiiInt32>(&ConversionStatus), 78);
+    XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+
+    ConversionStatus = XII_FAILURE;
+    XII_TEST_INT(v.ConvertTo<xiiUInt32>(&ConversionStatus), 78);
+    XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+
+    ConversionStatus = XII_FAILURE;
+    XII_TEST_INT(v.ConvertTo<xiiInt64>(&ConversionStatus), 78);
+    XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+
+    ConversionStatus = XII_FAILURE;
+    XII_TEST_INT(v.ConvertTo<xiiUInt64>(&ConversionStatus), 78);
+    XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+
+    ConversionStatus = XII_FAILURE;
+    XII_TEST_BOOL(v.ConvertTo<float>(&ConversionStatus) == 78.0f);
+    XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+
+    ConversionStatus = XII_FAILURE;
+    XII_TEST_BOOL(v.ConvertTo<double>(&ConversionStatus) == 78.0);
+    XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+
+    ConversionStatus = XII_FAILURE;
+    XII_TEST_STRING(v.ConvertTo<xiiString>(&ConversionStatus), "78");
+    XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+
+    ConversionStatus = XII_FAILURE;
+    XII_TEST_BOOL(v.ConvertTo<xiiStringView>(&ConversionStatus) == "78"_xiisv);
+    XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+
+    ConversionStatus = XII_FAILURE;
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>(&ConversionStatus) == xiiTempHashedString("78"));
+    XII_TEST_BOOL(ConversionStatus == XII_SUCCESS);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiTempHashedString)")
+  {
+    xiiTempHashedString s("VVVV");
+    xiiVariant          v(s);
+
+    TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::TempHashedString);
+
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("VVVV"));
+    XII_TEST_BOOL(v.ConvertTo<xiiString>() == "0x69d489c8b7fa5f47");
+
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("VVVV"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "0x69d489c8b7fa5f47");
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiDataBuffer)")
   {
     xiiDataBuffer va;
@@ -2616,9 +2906,13 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     XII_TEST_BOOL(v.ConvertTo<xiiAngle>() == t);
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "123.0°");
+    // XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("123.0°")); // For some reason the compiler stumbles upon the degree sign, encoding weirdness most likely
+    // XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("123.0°"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Angle).Get<xiiAngle>() == t);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "123.0°");
+    // XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("123.0°"));
+    // XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("123.0°"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiAngled)")
@@ -2630,9 +2924,13 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     XII_TEST_BOOL(v.ConvertTo<xiiAngled>() == t);
     XII_TEST_BOOL(v.ConvertTo<xiiString>() == "123.0°");
+    // XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("123.0°")); // For some reason the compiler stumbles upon the degree sign, encoding weirdness most likely
+    // XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("123.0°"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::Angled).Get<xiiAngled>() == t);
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>() == "123.0°");
+    // XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("123.0°"));
+    // XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("123.0°"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (VariantArray)")
@@ -2648,9 +2946,13 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     XII_TEST_BOOL(v.ConvertTo<xiiVariantArray>() == va);
     XII_TEST_STRING(v.ConvertTo<xiiString>(), "[2.5, ABC, <Invalid>]");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("[2.5, ABC, <Invalid>]"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("[2.5, ABC, <Invalid>]"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::VariantArray).Get<xiiVariantArray>() == va);
     XII_TEST_STRING(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>(), "[2.5, ABC, <Invalid>]");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("[2.5, ABC, <Invalid>]"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("[2.5, ABC, <Invalid>]"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiVariantDictionary)")
@@ -2666,9 +2968,13 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     XII_TEST_BOOL(v.ConvertTo<xiiVariantDictionary>() == va);
     XII_TEST_STRING(v.ConvertTo<xiiString>(), "{A=2.5, C=<Invalid>, B=ABC}");
+    XII_TEST_BOOL(v.ConvertTo<xiiHashedString>() == xiiMakeHashedString("{A=2.5, C=<Invalid>, B=ABC}"));
+    XII_TEST_BOOL(v.ConvertTo<xiiTempHashedString>() == xiiTempHashedString("{A=2.5, C=<Invalid>, B=ABC}"));
 
     XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::VariantDictionary).Get<xiiVariantDictionary>() == va);
     XII_TEST_STRING(v.ConvertTo(xiiVariant::Type::String).Get<xiiString>(), "{A=2.5, C=<Invalid>, B=ABC}");
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::HashedString).Get<xiiHashedString>() == xiiMakeHashedString("{A=2.5, C=<Invalid>, B=ABC}"));
+    XII_TEST_BOOL(v.ConvertTo(xiiVariant::Type::TempHashedString).Get<xiiTempHashedString>() == xiiTempHashedString("{A=2.5, C=<Invalid>, B=ABC}"));
   }
 }
 
