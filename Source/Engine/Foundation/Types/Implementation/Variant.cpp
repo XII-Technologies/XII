@@ -714,7 +714,9 @@ const xiiRTTI* xiiVariant::GetReflectedType() const
     GetTypeFromVariantFunc func;
     func.m_pVariant = this;
     func.m_pType    = nullptr;
+
     xiiVariant::DispatchTo(func, GetType());
+
     return func.m_pType;
   }
   return nullptr;
@@ -748,23 +750,53 @@ struct LerpFunc
 {
   constexpr static bool CanInterpolateFloat(xiiVariantType::Enum variantType)
   {
-    // clang-format off
-    return variantType == xiiVariantType::Float || (variantType >= xiiVariantType::Int8 && variantType <= xiiVariantType::Int32)
-        || (variantType >= xiiVariantType::UInt8 && variantType <= xiiVariantType::UInt32)
-        || (variantType >= xiiVariantType::Vector2I && variantType <= xiiVariantType::Vector4I)
-        || (variantType >= xiiVariantType::Vector2U && variantType <= xiiVariantType::Vector4U)
-        || (variantType >= xiiVariantType::Vector2 && variantType <= xiiVariantType::Vector4);
-    // clang-format on
+    switch (variantType)
+    {
+      case xiiVariantType::Int8:
+      case xiiVariantType::Int16:
+      case xiiVariantType::Int32:
+      case xiiVariantType::UInt8:
+      case xiiVariantType::UInt16:
+      case xiiVariantType::UInt32:
+      case xiiVariantType::Float:
+      case xiiVariantType::Color:
+      case xiiVariantType::Vector2I:
+      case xiiVariantType::Vector3I:
+      case xiiVariantType::Vector4I:
+      case xiiVariantType::Vector2U:
+      case xiiVariantType::Vector3U:
+      case xiiVariantType::Vector4U:
+      case xiiVariantType::Vector2:
+      case xiiVariantType::Vector3:
+      case xiiVariantType::Vector4:
+        return true;
+
+      default:
+        return false;
+    }
   }
 
   constexpr static bool CanInterpolateDouble(xiiVariantType::Enum variantType)
   {
-    // clang-format off
-    return variantType == xiiVariantType::Double || variantType == xiiVariantType::Int64 || variantType == xiiVariantType::UInt64
-        || (variantType >= xiiVariantType::Vector2I64 && variantType <= xiiVariantType::Vector4I64)
-        || (variantType >= xiiVariantType::Vector2U64 && variantType <= xiiVariantType::Vector4U64)
-        || (variantType >= xiiVariantType::Vector2d && variantType <= xiiVariantType::Vector4d);
-    // clang-format on
+    switch (variantType)
+    {
+      case xiiVariantType::Int64:
+      case xiiVariantType::UInt64:
+      case xiiVariantType::Double:
+      case xiiVariantType::Vector2I64:
+      case xiiVariantType::Vector3I64:
+      case xiiVariantType::Vector4I64:
+      case xiiVariantType::Vector2U64:
+      case xiiVariantType::Vector3U64:
+      case xiiVariantType::Vector4U64:
+      case xiiVariantType::Vector2d:
+      case xiiVariantType::Vector3d:
+      case xiiVariantType::Vector4d:
+        return true;
+
+      default:
+        return false;
+    }
   }
 
   template <typename T>
@@ -776,7 +808,7 @@ struct LerpFunc
       q.SetSlerp(a.Get<xiiQuat>(), b.Get<xiiQuat>(), static_cast<float>(x));
       out_res = q;
     }
-    if constexpr (std::is_same_v<T, xiiQuatd>)
+    else if constexpr (std::is_same_v<T, xiiQuatd>)
     {
       xiiQuatd q;
       q.SetSlerp(a.Get<xiiQuatd>(), b.Get<xiiQuatd>(), x);
