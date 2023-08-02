@@ -381,7 +381,7 @@ namespace xiiInternal
       return;
 
     /// \todo Core: Perhaps a better workaround for creating typeless resource handles.
-    xiiTypelessResourceHandle hResource(const_cast<xiiResource*>( e.m_pResource));
+    xiiTypelessResourceHandle hResource(const_cast<xiiResource*>(e.m_pResource));
     if (m_ReloadFunctions.Contains(hResource))
     {
       m_NeedReload.Insert(hResource);
