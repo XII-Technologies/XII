@@ -951,6 +951,8 @@ void xiiQtPropertyEditorLineEditWidget::InternalSetValue(const xiiVariant& value
 {
   xiiQtScopedBlockSignals b(m_pWidget);
 
+  m_OriginalType = value.GetType();
+
   if (!value.IsValid())
   {
     m_pWidget->setPlaceholderText(QStringLiteral("<Multiple Values>"));
@@ -964,12 +966,12 @@ void xiiQtPropertyEditorLineEditWidget::InternalSetValue(const xiiVariant& value
 
 void xiiQtPropertyEditorLineEditWidget::on_TextChanged_triggered(const QString& value)
 {
-  BroadcastValueChanged(value.toUtf8().data());
+  BroadcastValueChanged(xiiVariant(value.toUtf8().data()).ConvertTo(m_OriginalType));
 }
 
 void xiiQtPropertyEditorLineEditWidget::on_TextFinished_triggered()
 {
-  BroadcastValueChanged(m_pWidget->text().toUtf8().data());
+  BroadcastValueChanged(xiiVariant(m_pWidget->text().toUtf8().data()).ConvertTo(m_OriginalType));
 }
 
 

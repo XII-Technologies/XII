@@ -1825,7 +1825,7 @@ void xiiQtVariantPropertyWidget::ChangeVariantType(xiiVariantType::Enum type)
 
 xiiResult xiiQtVariantPropertyWidget::GetVariantTypeDisplayName(xiiVariantType::Enum type, xiiStringBuilder& out_sName) const
 {
-  if (type == xiiVariantType::FirstStandardType || type == xiiVariantType::StringView || type == xiiVariantType::DataBuffer || type >= xiiVariantType::LastStandardType)
+  if (type == xiiVariantType::FirstStandardType || type >= xiiVariantType::LastStandardType || type == xiiVariantType::StringView || type == xiiVariantType::DataBuffer || type == xiiVariantType::TempHashedString)
     return XII_FAILURE;
 
   const xiiRTTI* pVariantEnum = xiiGetStaticRTTI<xiiVariantType>();
