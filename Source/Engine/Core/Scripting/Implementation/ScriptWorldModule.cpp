@@ -196,7 +196,7 @@ void xiiScriptWorldModule::CallUpdateFunctions(const xiiWorldModule::UpdateConte
   xiiTime deltaTime;
   if (pWorld->GetWorldSimulationEnabled())
   {
-    deltaTime = GetWorld()->GetClock().GetTimeDiff();
+    deltaTime = pWorld->GetClock().GetTimeDiff();
   }
   else
   {

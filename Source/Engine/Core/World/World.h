@@ -323,7 +323,13 @@ public:
   /// \sa SetGameObjectReferenceResolver()
   const ReferenceResolver& GetGameObjectReferenceResolver() const;
 
-  /// \name Helper methods to query xiiWorld limits
+  using ResourceReloadContext = xiiInternal::WorldData::ResourceReloadContext;
+  using ResourceReloadFunc    = xiiInternal::WorldData::ResourceReloadFunc;
+
+  void AddResourceReloadFunction(xiiTypelessResourceHandle hResource, xiiComponentHandle hComponent, void* pUserData, ResourceReloadFunc function);
+  void RemoveResourceReloadFunction(xiiTypelessResourceHandle hResource, xiiComponentHandle hComponent, void* pUserData);
+
+  /// \name Helper methods to query xiiWorld limits.
   ///@{
   static constexpr xiiUInt64 GetMaxNumGameObjects();
   static constexpr xiiUInt64 GetMaxNumHierarchyLevels();
@@ -382,7 +388,7 @@ private:
   void UpdateSynchronous(const xiiArrayPtr<xiiInternal::WorldData::RegisteredUpdateFunction>& updateFunctions);
   void UpdateAsynchronous();
 
-  // returns if the batch was completely initialized
+  // Returns if the batch was completely initialized.
   bool      ProcessInitializationBatch(xiiInternal::WorldData::InitBatch& batch, xiiTime endTime);
   void      ProcessComponentsToInitialize();
   void      ProcessUpdateFunctionsToRegister();
@@ -393,6 +399,7 @@ private:
 
   void PatchHierarchyData(xiiGameObject* pObject, xiiGameObject::TransformPreservation preserve);
   void RecreateHierarchyData(xiiGameObject* pObject, bool bWasDynamic);
+  void ProcessResourceReloadFunctions();
 
   bool ReportErrorWhenStaticObjectMoves() const;
 

@@ -1,5 +1,7 @@
 #include <Core/CorePCH.h>
 
+#include <Core/ResourceManager/ResourceManager.h>
+#include <Core/World/Implementation/WorldData.h>
 #include <Core/World/SpatialSystem_RegularGrid.h>
 #include <Core/World/World.h>
 
@@ -88,9 +90,14 @@ namespace xiiInternal
     }
 
     m_Clock.SetTimeStepSmoothing(m_pTimeStepSmoothing.Borrow());
+
+    xiiResourceManager::GetResourceEvents().AddEventHandler(xiiMakeDelegate(&WorldData::ResourceEventHandler, this));
   }
 
-  WorldData::~WorldData() = default;
+  WorldData::~WorldData()
+  {
+    xiiResourceManager::GetResourceEvents().RemoveEventHandler(xiiMakeDelegate(&WorldData::ResourceEventHandler, this));
+  }
 
   void WorldData::Clear()
   {
@@ -365,6 +372,19 @@ namespace xiiInternal
           TraverseHierarchyLevel<WithParentWithSpatialData>(*dataPtr[i], &userData);
         }
       }
+    }
+  }
+
+  void WorldData::ResourceEventHandler(const xiiResourceEvent& e)
+  {
+    if (e.m_Type != xiiResourceEvent::Type::ResourceContentUnloading)
+      return;
+
+    /// \todo Core: Perhaps a better workaround for creating typeless resource handles.
+    xiiTypelessResourceHandle hResource(const_cast<xiiResource*>( e.m_pResource));
+    if (m_ReloadFunctions.Contains(hResource))
+    {
+      m_NeedReload.Insert(hResource);
     }
   }
 
