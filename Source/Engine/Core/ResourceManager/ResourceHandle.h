@@ -111,6 +111,14 @@ private:
   friend class xiiResourceHandleStreamOperations;
 };
 
+template <>
+struct xiiHashHelper<xiiTypelessResourceHandle>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiTypelessResourceHandle& value) { return xiiHashingUtils::StringHashTo32(value.GetResourceIDHash()); }
+
+  XII_ALWAYS_INLINE static bool Equal(const xiiTypelessResourceHandle& a, const xiiTypelessResourceHandle& b) { return a == b; }
+};
+
 /// \brief The xiiTypedResourceHandle controls access to a xiiResource.
 ///
 /// All resources must be referenced using xiiTypedResourceHandle instances (instantiated with the proper resource type as the template

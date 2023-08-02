@@ -4,33 +4,6 @@
 #include <Core/World/World.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
 
-namespace
-{
-  constexpr bool CanInterpolate(xiiVariantType::Enum variantType)
-  {
-    return (variantType >= xiiVariantType::Int8 && variantType <= xiiVariantType::Vector4) || variantType == xiiVariantType::Quaternion;
-  }
-
-  struct LerpFunc
-  {
-    template <typename T>
-    XII_ALWAYS_INLINE void operator()(const xiiVariant& a, const xiiVariant& b, float x, xiiVariant& out_res)
-    {
-      if constexpr (std::is_same_v<T, xiiQuat>)
-      {
-        xiiQuat q;
-        q.SetSlerp(a.Get<xiiQuat>(), b.Get<xiiQuat>(), x);
-        out_res = q;
-      }
-      else if constexpr (CanInterpolate(static_cast<xiiVariantType::Enum>(xiiVariantTypeDeduction<T>::value)))
-      {
-        out_res = xiiMath::Lerp(a.Get<T>(), b.Get<T>(), x);
-      }
-    }
-  };
-
-} // namespace
-
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiScriptCoroutine_TweenProperty, xiiScriptCoroutine, 1, xiiRTTIDefaultAllocator<xiiScriptCoroutine_TweenProperty>)
 {
@@ -66,7 +39,7 @@ void xiiScriptCoroutine_TweenProperty::Start(xiiComponentHandle hComponent, xiiS
   }
 
   xiiVariantType::Enum variantType = pProp->GetSpecificType()->GetVariantType();
-  if (variantType == xiiVariantType::Invalid || CanInterpolate(variantType) == false)
+  if (variantType == xiiVariantType::Invalid)
   {
     xiiLog::Error("TweenProperty: Can't tween property '{}' of type '{}'.", sPropertyName, pProp->GetSpecificType()->GetTypeName());
     return;
@@ -110,9 +83,7 @@ xiiScriptCoroutine::Result xiiScriptCoroutine_TweenProperty::Update(xiiTime delt
     double       fCurrentX = xiiMath::Min(fDuration > 0 ? m_TimePassed.GetSeconds() / fDuration : 1.0, 1.0);
     fCurrentX              = xiiEasingFunction::GetValue(m_EasingFunction, fCurrentX);
 
-    LerpFunc   func;
-    xiiVariant currentValue;
-    xiiVariant::DispatchTo(func, m_TargetValue.GetType(), m_SourceValue, m_TargetValue, static_cast<float>(fCurrentX), currentValue);
+    xiiVariant currentValue = xiiMath::Lerp(m_SourceValue, m_TargetValue, fCurrentX);
 
     xiiReflectionUtils::SetMemberPropertyValue(m_pProperty, pComponent, currentValue);
   }

@@ -84,7 +84,7 @@ struct xiiConversionTest<T, T>
   static constexpr xiiInt32 sameType = 1;
 };
 
-// remapping of the 0 (not special) type to 3
+// Remapping of the 0 (not special) type to 3.
 template <typename T1, typename T2>
 struct xiiGetStrongestTypeClass : public xiiTraitInt<(T1::value == 0 || T2::value == 0) ? 0 : XII_COMPILE_TIME_MAX(T1::value, T2::value)>
 {

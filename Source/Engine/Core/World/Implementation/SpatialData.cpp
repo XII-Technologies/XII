@@ -11,6 +11,9 @@ xiiHybridArray<xiiSpatialData::CategoryData, 32>& xiiSpatialData::GetCategoryDat
 // static
 xiiSpatialData::Category xiiSpatialData::RegisterCategory(xiiStringView sCategoryName, const xiiBitflags<Flags>& flags)
 {
+  if (sCategoryName.IsEmpty())
+    return xiiInvalidSpatialDataCategory;
+
   Category oldCategory = FindCategory(sCategoryName);
   if (oldCategory != xiiInvalidSpatialDataCategory)
   {
@@ -45,6 +48,18 @@ xiiSpatialData::Category xiiSpatialData::FindCategory(xiiStringView sCategoryNam
   }
 
   return xiiInvalidSpatialDataCategory;
+}
+
+// static
+const xiiHashedString& xiiSpatialData::GetCategoryName(Category category)
+{
+  if (category.m_uiValue < GetCategoryData().GetCount())
+  {
+    return GetCategoryData()[category.m_uiValue].m_sName;
+  }
+
+  static xiiHashedString sInvalidSpatialDataCategoryName;
+  return sInvalidSpatialDataCategoryName;
 }
 
 // static

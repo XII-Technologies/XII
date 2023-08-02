@@ -6,10 +6,11 @@
 #include <Foundation/Memory/FrameAllocator.h>
 #include <Foundation/Threading/DelegateTask.h>
 #include <Foundation/Time/Clock.h>
+#include <Foundation/Types/SharedPtr.h>
 
+#include <Core/ResourceManager/ResourceHandle.h>
 #include <Core/World/GameObject.h>
 #include <Core/World/WorldDesc.h>
-#include <Foundation/Types/SharedPtr.h>
 
 namespace xiiInternal
 {
@@ -141,15 +142,17 @@ namespace xiiInternal
 
     void UpdateGlobalTransforms();
 
-    // Game object lookups
+    void ResourceEventHandler(const xiiResourceEvent& e);
+
+    // Game Object Lookups.
     xiiHashTable<xiiUInt64, xiiGameObjectId, xiiHashHelper<xiiUInt64>, xiiLocalAllocatorWrapper> m_GlobalKeyToIdTable;
     xiiHashTable<xiiUInt64, xiiHashedString, xiiHashHelper<xiiUInt64>, xiiLocalAllocatorWrapper> m_IdToGlobalKeyTable;
 
-    // Modules
+    // Modules.
     xiiDynamicArray<xiiWorldModule*, xiiLocalAllocatorWrapper> m_Modules;
     xiiDynamicArray<xiiWorldModule*, xiiLocalAllocatorWrapper> m_ModulesToStartSimulation;
 
-    // Component Management
+    // Component Management.
     xiiSet<xiiComponent*, xiiCompareHelper<xiiComponent*>, xiiLocalAllocatorWrapper> m_DeadComponents;
 
     struct InitBatch
@@ -241,8 +244,29 @@ namespace xiiInternal
     bool      m_bSimulateWorld                    = true;
     bool      m_bReportErrorWhenStaticObjectMoves = true;
 
-    /// \brief Maps some data (given as void*) to a xiiGameObjectHandle. Only available in special situations (e.g. editor use cases).
+    /// \brief Maps some data (given as void*) to a xiiGameObjectHandle. Only available in special situations (e.g. Editor use cases).
     xiiDelegate<xiiGameObjectHandle(const void*, xiiComponentHandle, xiiStringView)> m_GameObjectReferenceResolver;
+
+    struct ResourceReloadContext
+    {
+      xiiWorld*     m_pWorld     = nullptr;
+      xiiComponent* m_pComponent = nullptr;
+      void*         m_pUserData  = nullptr;
+    };
+
+    using ResourceReloadFunc = xiiDelegate<void(ResourceReloadContext&)>;
+
+    struct ResourceReloadFunctionData
+    {
+      xiiComponentHandle m_hComponent;
+      void*              m_pUserData = nullptr;
+      ResourceReloadFunc m_Func;
+    };
+
+    using ReloadFunctionList = xiiHybridArray<ResourceReloadFunctionData, 8>;
+    xiiHashTable<xiiTypelessResourceHandle, ReloadFunctionList> m_ReloadFunctions;
+    xiiHashSet<xiiTypelessResourceHandle>                       m_NeedReload;
+    ReloadFunctionList                                          m_TempReloadFunctions;
 
   public:
     class ReadMarker

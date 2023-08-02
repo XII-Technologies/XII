@@ -459,7 +459,7 @@ bool xiiVariant::operator==(const xiiVariant& other) const
   }
   else if ((IsFloatingPoint() && other.IsNumber()) || (other.IsFloatingPoint() && IsNumber()))
   {
-    // if either of them is a floating point number, compare them as doubles
+    // If either of them is a floating point number, compare them as doubles
 
     return ConvertNumber<double>() == other.ConvertNumber<double>();
   }
@@ -472,6 +472,12 @@ bool xiiVariant::operator==(const xiiVariant& other) const
     const xiiStringView a = IsA<xiiStringView>() ? Get<xiiStringView>() : xiiStringView(Get<xiiString>().GetData());
     const xiiStringView b = other.IsA<xiiStringView>() ? other.Get<xiiStringView>() : xiiStringView(other.Get<xiiString>().GetData());
     return a.IsEqual(b);
+  }
+  else if (IsHashedString() && other.IsHashedString())
+  {
+    const xiiTempHashedString a = IsA<xiiTempHashedString>() ? Get<xiiTempHashedString>() : xiiTempHashedString(Get<xiiHashedString>());
+    const xiiTempHashedString b = other.IsA<xiiTempHashedString>() ? other.Get<xiiTempHashedString>() : xiiTempHashedString(other.Get<xiiHashedString>());
+    return a == b;
   }
   else if (m_uiType == other.m_uiType)
   {
@@ -561,20 +567,24 @@ bool xiiVariant::CanConvertTo(Type::Enum type) const
   if (type == Type::Invalid)
     return false;
 
-  if (type == Type::String && m_uiType == Type::Invalid)
+  const bool bTargetIsString = (type == Type::String) || (type == Type::HashedString) || (type == Type::TempHashedString);
+
+  if (bTargetIsString && m_uiType == Type::Invalid)
     return true;
 
-  if (type == Type::String && (m_uiType > Type::FirstStandardType && m_uiType < Type::LastStandardType && m_uiType != Type::DataBuffer))
+  if (bTargetIsString && (m_uiType > Type::FirstStandardType && m_uiType < Type::LastStandardType && m_uiType != Type::DataBuffer))
     return true;
-  if (type == Type::String && (m_uiType == Type::VariantArray || m_uiType == Type::VariantDictionary))
+  if (bTargetIsString && (m_uiType == Type::VariantArray || m_uiType == Type::VariantDictionary))
     return true;
-  if (type == Type::StringView && m_uiType == Type::String)
+  if (type == Type::StringView && (m_uiType == Type::String || m_uiType == Type::HashedString))
+    return true;
+  if (type == Type::TempHashedString && m_uiType == Type::HashedString)
     return true;
 
   if (!IsValid())
     return false;
 
-  if (IsNumberStatic(type) && (IsNumber() || m_uiType == Type::String))
+  if (IsNumberStatic(type) && (IsNumber() || m_uiType == Type::String || m_uiType == Type::HashedString))
     return true;
 
   if (IsVector2Static(type) && (IsVector2Static(m_uiType)))
@@ -704,7 +714,9 @@ const xiiRTTI* xiiVariant::GetReflectedType() const
     GetTypeFromVariantFunc func;
     func.m_pVariant = this;
     func.m_pType    = nullptr;
+
     xiiVariant::DispatchTo(func, GetType());
+
     return func.m_pType;
   }
   return nullptr;
@@ -731,5 +743,105 @@ xiiStringView xiiVariant::GetTypeName(const xiiRTTI* pType)
 {
   return pType->GetTypeName();
 }
+
+//////////////////////////////////////////////////////////////////////////
+
+struct LerpFunc
+{
+  constexpr static bool CanInterpolateFloat(xiiVariantType::Enum variantType)
+  {
+    switch (variantType)
+    {
+      case xiiVariantType::Int8:
+      case xiiVariantType::Int16:
+      case xiiVariantType::Int32:
+      case xiiVariantType::UInt8:
+      case xiiVariantType::UInt16:
+      case xiiVariantType::UInt32:
+      case xiiVariantType::Float:
+      case xiiVariantType::Color:
+#if 0 // These cause compile errors through ambiguous overloads.
+      case xiiVariantType::Vector2I:
+      case xiiVariantType::Vector3I:
+      case xiiVariantType::Vector4I:
+      case xiiVariantType::Vector2U:
+      case xiiVariantType::Vector3U:
+      case xiiVariantType::Vector4U:
+#endif
+      case xiiVariantType::Vector2:
+      case xiiVariantType::Vector3:
+      case xiiVariantType::Vector4:
+        return true;
+
+      default:
+        return false;
+    }
+  }
+
+  constexpr static bool CanInterpolateDouble(xiiVariantType::Enum variantType)
+  {
+    switch (variantType)
+    {
+      case xiiVariantType::Int64:
+      case xiiVariantType::UInt64:
+      case xiiVariantType::Double:
+#if 0 // These cause compile errors through ambiguous overloads.
+      case xiiVariantType::Vector2I64:
+      case xiiVariantType::Vector3I64:
+      case xiiVariantType::Vector4I64:
+      case xiiVariantType::Vector2U64:
+      case xiiVariantType::Vector3U64:
+      case xiiVariantType::Vector4U64:
+#endif
+      case xiiVariantType::Vector2d:
+      case xiiVariantType::Vector3d:
+      case xiiVariantType::Vector4d:
+        return true;
+
+      default:
+        return false;
+    }
+  }
+
+  template <typename T>
+  XII_ALWAYS_INLINE void operator()(const xiiVariant& a, const xiiVariant& b, double x, xiiVariant& out_res)
+  {
+    if constexpr (std::is_same_v<T, xiiQuat>)
+    {
+      xiiQuat q;
+      q.SetSlerp(a.Get<xiiQuat>(), b.Get<xiiQuat>(), static_cast<float>(x));
+      out_res = q;
+    }
+    else if constexpr (std::is_same_v<T, xiiQuatd>)
+    {
+      xiiQuatd q;
+      q.SetSlerp(a.Get<xiiQuatd>(), b.Get<xiiQuatd>(), x);
+      out_res = q;
+    }
+    else if constexpr (CanInterpolateFloat(static_cast<xiiVariantType::Enum>(xiiVariantTypeDeduction<T>::value)))
+    {
+      out_res = xiiMath::Lerp(a.Get<T>(), b.Get<T>(), static_cast<float>(x));
+    }
+    else if constexpr (CanInterpolateDouble(static_cast<xiiVariantType::Enum>(xiiVariantTypeDeduction<T>::value)))
+    {
+      out_res = xiiMath::Lerp(a.Get<T>(), b.Get<T>(), x);
+    }
+    else
+    {
+      out_res = (x < 0.5) ? a : b;
+    }
+  }
+};
+
+namespace xiiMath
+{
+  xiiVariant Lerp(const xiiVariant& a, const xiiVariant& b, double fFactor)
+  {
+    LerpFunc   func;
+    xiiVariant result;
+    xiiVariant::DispatchTo(func, a.GetType(), a, b, fFactor, result);
+    return result;
+  }
+} // namespace xiiMath
 
 XII_STATICLINK_FILE(Foundation, Foundation_Types_Implementation_Variant);

@@ -4,6 +4,7 @@
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Math/Declarations.h>
+#include <Foundation/Strings/HashedString.h>
 #include <Foundation/Threading/AtomicInteger.h>
 #include <Foundation/Types/TypedPointer.h>
 #include <Foundation/Types/Types.h>
@@ -22,6 +23,7 @@ class xiiRTTI;
 struct xiiTypedObject
 {
   XII_DECLARE_POD_TYPE();
+
   const void*    m_pObject = nullptr;
   const xiiRTTI* m_pType   = nullptr;
 
@@ -114,6 +116,8 @@ public:
   xiiVariant(const xiiString& value);
   xiiVariant(const xiiUntrackedString& value);
   xiiVariant(const xiiStringView& value, bool bCopyString = true);
+  xiiVariant(const xiiHashedString& value);
+  xiiVariant(const xiiTempHashedString& value);
   xiiVariant(const xiiDataBuffer& value);
   xiiVariant(const xiiTime& value);
   xiiVariant(const xiiUuid& value);
@@ -189,6 +193,9 @@ public:
 
   /// \brief Returns whether the stored type is a string (xiiString or xiiStringView).
   bool IsString() const; // [tested]
+
+  /// \brief Returns whether the stored type is a string (xiiHashedString or xiiTempHashedString).
+  bool IsHashedString() const;
 
   /// \brief Returns whether the stored type is exactly the given type.
   ///
@@ -313,7 +320,8 @@ private:
     void*              m_Ptr;
     const xiiRTTI*     m_pType;
     xiiAtomicInteger32 m_uiRef = 1;
-    XII_ALWAYS_INLINE  SharedData(void* pPtr, const xiiRTTI* pType) :
+
+    XII_ALWAYS_INLINE SharedData(void* pPtr, const xiiRTTI* pType) :
       m_Ptr(pPtr), m_pType(pType)
     {
     }
@@ -396,6 +404,7 @@ private:
   static bool IsNumberStatic(xiiUInt32 type);
   static bool IsFloatingPointStatic(xiiUInt32 type);
   static bool IsStringStatic(xiiUInt32 type);
+  static bool IsHashedStringStatic(xiiUInt32 type);
   static bool IsVector2Static(xiiUInt32 type);
   static bool IsVector3Static(xiiUInt32 type);
   static bool IsVector4Static(xiiUInt32 type);
@@ -426,6 +435,14 @@ XII_ALWAYS_INLINE T xiiDynamicCast(const xiiVariant& variant)
 
   return nullptr;
 }
+
+namespace xiiMath
+{
+  /// \brief An overload of xiiMath::Lerp to interpolate variants. A and b must have the same type.
+  ///
+  /// If the type can't be interpolated like e.g. strings, a is returned for a fFactor less than 0.5, b is returned for a fFactor greater or equal to 0.5.
+  XII_FOUNDATION_DLL xiiVariant Lerp(const xiiVariant& a, const xiiVariant& b, double fFactor);
+} // namespace xiiMath
 
 #include <Foundation/Types/Implementation/VariantHelper_inl.h>
 

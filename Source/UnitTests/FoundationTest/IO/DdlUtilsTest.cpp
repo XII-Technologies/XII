@@ -489,6 +489,60 @@ Data $v1 { float { 45.23 } }\
     XII_TEST_FLOAT(v1.GetRadian(), 45.23f, 0.0001f);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiOpenDdlUtils::ConvertToAngled")
+  {
+    const char* szTestData = "\
+Data $v1 { double { 45.22 } }\
+";
+
+    StringStream     stream(szTestData);
+    xiiOpenDdlReader doc;
+    XII_TEST_BOOL(doc.ParseDocument(stream).Succeeded());
+
+    xiiAngled v0, v1;
+
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToAngle(doc.FindElement("v0"), v0).Failed());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToAngle(doc.FindElement("v1"), v1).Succeeded());
+
+    XII_TEST_DOUBLE(v1.GetRadian(), 45.22, 0.0001);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiOpenDdlUtils::ConvertToHashedString")
+  {
+    const char* szTestData = "\
+Data $v1 { string { \"Hello World\" } }\
+";
+
+    StringStream     stream(szTestData);
+    xiiOpenDdlReader doc;
+    XII_TEST_BOOL(doc.ParseDocument(stream).Succeeded());
+
+    xiiHashedString v0, v1;
+
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToHashedString(doc.FindElement("v0"), v0).Failed());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToHashedString(doc.FindElement("v1"), v1).Succeeded());
+
+    XII_TEST_STRING(v1.GetView(), "Hello World");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiOpenDdlUtils::ConvertToTempHashedString")
+  {
+    const char* szTestData = "\
+Data $v1 { uint64 { 2720389094277464445 } }\
+";
+
+    StringStream     stream(szTestData);
+    xiiOpenDdlReader doc;
+    XII_TEST_BOOL(doc.ParseDocument(stream).Succeeded());
+
+    xiiTempHashedString v0, v1;
+
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToTempHashedString(doc.FindElement("v0"), v0).Failed());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToTempHashedString(doc.FindElement("v1"), v1).Succeeded());
+
+    XII_TEST_BOOL(v1 == xiiTempHashedString("GHIJK"));
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiOpenDdlUtils::ConvertToVariant")
   {
     const char* szTestData = "\
@@ -511,79 +565,90 @@ Quat $v10 { float { 0.1, 2, 3.2, 44.5 } }\
 Quatd $v10d { double { 0.1, 2, 3.2, 44.5 } }\
 Uuid $v11 { unsigned_int64 { 12345678910, 10987654321 } }\
 Angle $v12 { float { 45.23 } }\
+Angled $v12d { double { 22.22 } }\
+HashedString $v13 { string { \"Soo much string\" } }\
+TempHashedString $v14 { uint64 { 2720389094277464445 } }\
 ";
 
     StringStream     stream(szTestData);
     xiiOpenDdlReader doc;
     XII_TEST_BOOL(doc.ParseDocument(stream).Succeeded());
 
-    xiiVariant v0, v1, v2, v3, v4, v4d, v5, v5d, v6, v6d, v7, v7d, v8, v8d, v9, v9d, v10, v10d, v11, v12;
+    xiiVariant v[23];
 
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v0"), v0).Failed());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v1"), v1).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v2"), v2).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v3"), v3).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v4"), v4).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v4d"), v4d).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v5"), v5).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v5d"), v5d).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v6"), v6).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v6d"), v6d).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v7"), v7).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v7d"), v7d).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v8"), v8).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v8d"), v8d).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v9"), v9).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v9d"), v9d).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v10"), v10).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v10d"), v10d).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v11"), v11).Succeeded());
-    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v12"), v12).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v0"), v[0]).Failed());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v1"), v[1]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v2"), v[2]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v3"), v[3]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v4"), v[4]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v4d"), v[5]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v5"), v[6]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v5d"), v[7]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v6"), v[8]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v6d"), v[9]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v7"), v[10]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v7d"), v[11]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v8"), v[12]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v8d"), v[13]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v9"), v[14]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v9d"), v[15]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v10"), v[16]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v10d"), v[17]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v11"), v[18]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v12"), v[19]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v12d"), v[20]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v13"), v[21]).Succeeded());
+    XII_TEST_BOOL(xiiOpenDdlUtils::ConvertToVariant(doc.FindElement("v14"), v[22]).Succeeded());
 
-    XII_TEST_BOOL(v1.IsA<xiiColor>());
-    XII_TEST_BOOL(v2.IsA<xiiColorGammaUB>());
-    XII_TEST_BOOL(v3.IsA<xiiTime>());
-    XII_TEST_BOOL(v4.IsA<xiiVec2>());
-    XII_TEST_BOOL(v4d.IsA<xiiVec2d>());
-    XII_TEST_BOOL(v5.IsA<xiiVec3>());
-    XII_TEST_BOOL(v5d.IsA<xiiVec3d>());
-    XII_TEST_BOOL(v6.IsA<xiiVec4>());
-    XII_TEST_BOOL(v6d.IsA<xiiVec4d>());
-    XII_TEST_BOOL(v7.IsA<xiiMat3>());
-    XII_TEST_BOOL(v7d.IsA<xiiMat3d>());
-    XII_TEST_BOOL(v8.IsA<xiiMat4>());
-    XII_TEST_BOOL(v8d.IsA<xiiMat4d>());
-    XII_TEST_BOOL(v9.IsA<xiiTransform>());
-    XII_TEST_BOOL(v9d.IsA<xiiTransformd>());
-    XII_TEST_BOOL(v10.IsA<xiiQuat>());
-    XII_TEST_BOOL(v10d.IsA<xiiQuatd>());
-    XII_TEST_BOOL(v11.IsA<xiiUuid>());
-    XII_TEST_BOOL(v12.IsA<xiiAngle>());
+    XII_TEST_BOOL(v[1].IsA<xiiColor>());
+    XII_TEST_BOOL(v[2].IsA<xiiColorGammaUB>());
+    XII_TEST_BOOL(v[3].IsA<xiiTime>());
+    XII_TEST_BOOL(v[4].IsA<xiiVec2>());
+    XII_TEST_BOOL(v[5].IsA<xiiVec2d>());
+    XII_TEST_BOOL(v[6].IsA<xiiVec3>());
+    XII_TEST_BOOL(v[7].IsA<xiiVec3d>());
+    XII_TEST_BOOL(v[8].IsA<xiiVec4>());
+    XII_TEST_BOOL(v[9].IsA<xiiVec4d>());
+    XII_TEST_BOOL(v[10].IsA<xiiMat3>());
+    XII_TEST_BOOL(v[11].IsA<xiiMat3d>());
+    XII_TEST_BOOL(v[12].IsA<xiiMat4>());
+    XII_TEST_BOOL(v[13].IsA<xiiMat4d>());
+    XII_TEST_BOOL(v[14].IsA<xiiTransform>());
+    XII_TEST_BOOL(v[15].IsA<xiiTransformd>());
+    XII_TEST_BOOL(v[16].IsA<xiiQuat>());
+    XII_TEST_BOOL(v[17].IsA<xiiQuatd>());
+    XII_TEST_BOOL(v[18].IsA<xiiUuid>());
+    XII_TEST_BOOL(v[19].IsA<xiiAngle>());
+    XII_TEST_BOOL(v[20].IsA<xiiAngled>());
+    XII_TEST_BOOL(v[21].IsA<xiiHashedString>());
+    XII_TEST_BOOL(v[22].IsA<xiiTempHashedString>());
 
-    XII_TEST_BOOL(v1.Get<xiiColor>() == xiiColor(1, 0, 0.5));
-    XII_TEST_BOOL(v2.Get<xiiColorGammaUB>() == xiiColorGammaUB(128, 0, 32, 64));
-    XII_TEST_FLOAT(v3.Get<xiiTime>().GetSeconds(), 0.1, 0.0001f);
-    XII_TEST_VEC2(v4.Get<xiiVec2>(), xiiVec2(0.1f, 2.0f), 0.0001f);
-    XII_TEST_VEC2(v4d.Get<xiiVec2d>(), xiiVec2d(0.1, 2.0), 0.0001f);
-    XII_TEST_VEC3(v5.Get<xiiVec3>(), xiiVec3(0.1f, 2.0f, 3.2f), 0.0001f);
-    XII_TEST_VEC3(v5d.Get<xiiVec3d>(), xiiVec3d(0.1, 2.0, 3.2), 0.0001f);
-    XII_TEST_VEC4(v6.Get<xiiVec4>(), xiiVec4(0.1f, 2.0f, 3.2f, 44.5f), 0.0001f);
-    XII_TEST_VEC4(v6d.Get<xiiVec4d>(), xiiVec4d(0.1, 2.0, 3.2, 44.5), 0.0001f);
-    XII_TEST_BOOL(v7.Get<xiiMat3>().IsEqual(xiiMat3(1, 4, 7, 2, 5, 8, 3, 6, 9), 0.0001f));
-    XII_TEST_BOOL(v7d.Get<xiiMat3d>().IsEqual(xiiMat3d(1, 4, 7, 2, 5, 8, 3, 6, 9), 0.0001f));
-    XII_TEST_BOOL(v8.Get<xiiMat4>().IsEqual(xiiMat4(1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15, 4, 8, 12, 16), 0.0001f));
-    XII_TEST_BOOL(v8d.Get<xiiMat4d>().IsEqual(xiiMat4d(1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15, 4, 8, 12, 16), 0.0001f));
-    XII_TEST_BOOL(v9.Get<xiiTransform>().m_qRotation == xiiQuat(4, 5, 6, 7));
-    XII_TEST_VEC3(v9.Get<xiiTransform>().m_vPosition, xiiVec3(1, 2, 3), 0.0001f);
-    XII_TEST_VEC3(v9.Get<xiiTransform>().m_vScale, xiiVec3(8, 9, 10), 0.0001f);
-    XII_TEST_BOOL(v9d.Get<xiiTransformd>().m_qRotation == xiiQuatd(4, 5, 6, 7));
-    XII_TEST_VEC3(v9d.Get<xiiTransformd>().m_vPosition, xiiVec3d(1, 2, 3), 0.0001f);
-    XII_TEST_VEC3(v9d.Get<xiiTransformd>().m_vScale, xiiVec3d(8, 9, 10), 0.0001f);
-    XII_TEST_BOOL(v10.Get<xiiQuat>() == xiiQuat(0.1f, 2.0f, 3.2f, 44.5f));
-    XII_TEST_BOOL(v10d.Get<xiiQuatd>() == xiiQuatd(0.1, 2.0, 3.2, 44.5));
-    XII_TEST_BOOL(v11.Get<xiiUuid>() == xiiUuid(12345678910, 10987654321));
-    XII_TEST_FLOAT(v12.Get<xiiAngle>().GetRadian(), 45.23f, 0.0001f);
-
+    XII_TEST_BOOL(v[1].Get<xiiColor>() == xiiColor(1, 0, 0.5));
+    XII_TEST_BOOL(v[2].Get<xiiColorGammaUB>() == xiiColorGammaUB(128, 0, 32, 64));
+    XII_TEST_DOUBLE(v[3].Get<xiiTime>().GetSeconds(), 0.1, 0.0001f);
+    XII_TEST_VEC2(v[4].Get<xiiVec2>(), xiiVec2(0.1f, 2.0f), 0.0001f);
+    XII_TEST_VEC2(v[5].Get<xiiVec2d>(), xiiVec2d(0.1, 2.0), 0.0001f);
+    XII_TEST_VEC3(v[6].Get<xiiVec3>(), xiiVec3(0.1f, 2.0f, 3.2f), 0.0001f);
+    XII_TEST_VEC3(v[7].Get<xiiVec3d>(), xiiVec3d(0.1, 2.0, 3.2), 0.0001f);
+    XII_TEST_VEC4(v[8].Get<xiiVec4>(), xiiVec4(0.1f, 2.0f, 3.2f, 44.5f), 0.0001f);
+    XII_TEST_VEC4(v[9].Get<xiiVec4d>(), xiiVec4d(0.1, 2.0, 3.2, 44.5), 0.0001f);
+    XII_TEST_BOOL(v[10].Get<xiiMat3>().IsEqual(xiiMat3(1, 4, 7, 2, 5, 8, 3, 6, 9), 0.0001f));
+    XII_TEST_BOOL(v[11].Get<xiiMat3d>().IsEqual(xiiMat3d(1, 4, 7, 2, 5, 8, 3, 6, 9), 0.0001f));
+    XII_TEST_BOOL(v[12].Get<xiiMat4>().IsEqual(xiiMat4(1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15, 4, 8, 12, 16), 0.0001f));
+    XII_TEST_BOOL(v[13].Get<xiiMat4d>().IsEqual(xiiMat4d(1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15, 4, 8, 12, 16), 0.0001f));
+    XII_TEST_BOOL(v[14].Get<xiiTransform>().m_qRotation == xiiQuat(4, 5, 6, 7));
+    XII_TEST_VEC3(v[14].Get<xiiTransform>().m_vPosition, xiiVec3(1, 2, 3), 0.0001f);
+    XII_TEST_VEC3(v[14].Get<xiiTransform>().m_vScale, xiiVec3(8, 9, 10), 0.0001f);
+    XII_TEST_BOOL(v[15].Get<xiiTransformd>().m_qRotation == xiiQuatd(4, 5, 6, 7));
+    XII_TEST_VEC3(v[15].Get<xiiTransformd>().m_vPosition, xiiVec3d(1, 2, 3), 0.0001f);
+    XII_TEST_VEC3(v[15].Get<xiiTransformd>().m_vScale, xiiVec3d(8, 9, 10), 0.0001f);
+    XII_TEST_BOOL(v[16].Get<xiiQuat>() == xiiQuat(0.1f, 2.0f, 3.2f, 44.5f));
+    XII_TEST_BOOL(v[17].Get<xiiQuatd>() == xiiQuatd(0.1, 2.0, 3.2, 44.5));
+    XII_TEST_BOOL(v[18].Get<xiiUuid>() == xiiUuid(12345678910, 10987654321));
+    XII_TEST_FLOAT(v[19].Get<xiiAngle>().GetRadian(), 45.23f, 0.0001f);
+    XII_TEST_DOUBLE(v[20].Get<xiiAngled>().GetRadian(), 22.22, 0.0001);
+    XII_TEST_STRING(v[21].Get<xiiHashedString>().GetView(), "Soo much string");
+    XII_TEST_BOOL(v[22].Get<xiiTempHashedString>() == xiiTempHashedString("GHIJK"));
 
     /// \test Test primitive types in xiiVariant
   }
@@ -800,14 +865,45 @@ Angle $v12 { float { 45.23 } }\
     xiiOpenDdlUtils::StoreAngle(js, xiiAngle::Radian(2.3f), "v1", true);
   }
 
-  // this test also covers all the types that Variant supports
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "StoreAngled")
+  {
+    StreamComparer sc("Angled $v1{double{2.2}}\n");
+
+    xiiOpenDdlWriter js;
+    js.SetFloatPrecisionMode(xiiOpenDdlWriter::FloatPrecisionMode::Readable);
+    js.SetOutputStream(&sc);
+
+    xiiOpenDdlUtils::StoreAngle(js, xiiAngled::Radian(2.2), "v1", true);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "StoreHashedString")
+  {
+    StreamComparer sc("HashedString $v1{string{\"ABCDE\"}}\n");
+
+    xiiOpenDdlWriter js;
+    js.SetOutputStream(&sc);
+
+    xiiOpenDdlUtils::StoreHashedString(js, xiiMakeHashedString("ABCDE"), "v1", true);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "StoreTempHashedString")
+  {
+    StreamComparer sc("TempHashedString $v1{uint64{2720389094277464445}}\n");
+
+    xiiOpenDdlWriter js;
+    js.SetOutputStream(&sc);
+
+    xiiOpenDdlUtils::StoreTempHashedString(js, xiiTempHashedString("GHIJK"), "v1", true);
+  }
+
+  // This test also covers all the types that Variant supports.
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "StoreVariant")
   {
-    alignas(XII_ALIGNMENT_OF(float)) xiiUInt8 rawData[sizeof(float) * 16]; // enough for mat4
+    alignas(XII_ALIGNMENT_OF(float)) xiiUInt8 rawData[sizeof(float) * 16]; // Enough for mat4
 
     for (xiiUInt8 i = 0; i < XII_ARRAY_SIZE(rawData); ++i)
     {
-      rawData[i] = i + 1;
+      rawData[i] = i + 33;
     }
 
     rawData[XII_ARRAY_SIZE(rawData) - 1] = 0; // string terminator
@@ -844,7 +940,7 @@ static xiiVariant CreateVariant(xiiVariant::Type::Enum t, const void* pData)
   switch (t)
   {
     case xiiVariant::Type::Bool:
-      return xiiVariant(*((bool*)pData));
+      return xiiVariant(*(xiiInt8*)pData != 0);
     case xiiVariant::Type::Int8:
       return xiiVariant(*((xiiInt8*)pData));
     case xiiVariant::Type::UInt8:
@@ -922,6 +1018,14 @@ static xiiVariant CreateVariant(xiiVariant::Type::Enum t, const void* pData)
     case xiiVariant::Type::String:
     case xiiVariant::Type::StringView: // String Views are stored as full strings as well
       return xiiVariant((const char*)pData);
+    case xiiVariant::Type::HashedString:
+    {
+      xiiHashedString s;
+      s.Assign((const char*)pData);
+      return xiiVariant(s);
+    }
+    case xiiVariant::Type::TempHashedString:
+      return xiiVariant(xiiTempHashedString((const char*)pData));
     case xiiVariant::Type::DataBuffer:
     {
       xiiDataBuffer db;
@@ -942,8 +1046,7 @@ static xiiVariant CreateVariant(xiiVariant::Type::Enum t, const void* pData)
     case xiiVariant::Type::ColorGamma:
       return xiiVariant(*((xiiColorGammaUB*)pData));
 
-    default:
-      XII_REPORT_FAILURE("Unknown type");
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   return xiiVariant();

@@ -814,6 +814,9 @@ void xiiDocumentNodeManager::StructureEventHandler(const xiiDocumentObjectStruct
 
 void xiiDocumentNodeManager::PropertyEventsHandler(const xiiDocumentObjectPropertyEvent& e)
 {
+  if (e.m_pObject == nullptr)
+    return;
+
   const xiiAbstractProperty* pProp = e.m_pObject->GetType()->FindPropertyByName(e.m_sProperty);
   if (pProp == nullptr)
     return;

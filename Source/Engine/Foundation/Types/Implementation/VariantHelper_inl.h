@@ -175,6 +175,15 @@ auto xiiVariant::DispatchTo(Functor& ref_functor, Type::Enum type, Args&&... arg
       CALL_FUNCTOR(ref_functor, xiiStringView);
       break;
 
+    case Type::HashedString:
+      CALL_FUNCTOR(ref_functor, xiiHashedString);
+      break;
+
+    case Type::TempHashedString:
+      CALL_FUNCTOR(ref_functor, xiiTempHashedString);
+      break;
+
+
     case Type::DataBuffer:
       CALL_FUNCTOR(ref_functor, xiiDataBuffer);
       break;
@@ -224,46 +233,27 @@ class xiiVariantHelper
   friend class xiiVariant;
   friend struct ConvertFunc;
 
-  template <typename T>
-  XII_ALWAYS_INLINE static bool CompareFloat(const xiiVariant& v, const T& other, xiiTraitInt<1>)
-  {
-    return v.ConvertNumber<double>() == static_cast<double>(other);
-  }
-
-  template <typename T>
-  XII_ALWAYS_INLINE static bool CompareFloat(const xiiVariant& v, const T& other, xiiTraitInt<0>)
-  {
-    return false;
-  }
-
-  template <typename T>
-  XII_ALWAYS_INLINE static bool CompareNumber(const xiiVariant& v, const T& other, xiiTraitInt<1>)
-  {
-    return v.ConvertNumber<xiiInt64>() == static_cast<xiiInt64>(other);
-  }
-
-  template <typename T>
-  XII_ALWAYS_INLINE static bool CompareNumber(const xiiVariant& v, const T& other, xiiTraitInt<0>)
-  {
-    return false;
-  }
-
   static void To(const xiiVariant& value, bool& result, bool& bSuccessful)
   {
     bSuccessful = true;
 
     if (value.GetType() <= xiiVariant::Type::Double)
-      result = value.ConvertNumber<xiiInt32>() != 0;
-    else if (value.GetType() == xiiVariant::Type::String)
     {
-      if (xiiConversionUtils::StringToBool(value.Cast<xiiString>().GetData(), result) == XII_FAILURE)
+      result = value.ConvertNumber<xiiInt32>() != 0;
+    }
+    else if (value.GetType() == xiiVariant::Type::String || value.GetType() == xiiVariant::Type::HashedString)
+    {
+      xiiStringView s = value.IsA<xiiString>() ? value.Cast<xiiString>().GetView() : value.Cast<xiiHashedString>().GetView();
+      if (xiiConversionUtils::StringToBool(s, result) == XII_FAILURE)
       {
         result      = false;
         bSuccessful = false;
       }
     }
     else
+    {
       XII_REPORT_FAILURE("Conversion to bool failed");
+    }
   }
 
   static void To(const xiiVariant& value, xiiInt8& result, bool& bSuccessful)
@@ -299,17 +289,22 @@ class xiiVariantHelper
     bSuccessful = true;
 
     if (value.GetType() <= xiiVariant::Type::Double)
-      result = value.ConvertNumber<xiiInt32>();
-    else if (value.GetType() == xiiVariant::Type::String)
     {
-      if (xiiConversionUtils::StringToInt(value.Cast<xiiString>().GetData(), result) == XII_FAILURE)
+      result = value.ConvertNumber<xiiInt32>();
+    }
+    else if (value.GetType() == xiiVariant::Type::String || value.GetType() == xiiVariant::Type::HashedString)
+    {
+      xiiStringView s = value.IsA<xiiString>() ? value.Cast<xiiString>().GetView() : value.Cast<xiiHashedString>().GetView();
+      if (xiiConversionUtils::StringToInt(s, result) == XII_FAILURE)
       {
         result      = 0;
         bSuccessful = false;
       }
     }
     else
+    {
       XII_REPORT_FAILURE("Conversion to int failed");
+    }
   }
 
   static void To(const xiiVariant& value, xiiUInt32& result, bool& bSuccessful)
@@ -317,20 +312,27 @@ class xiiVariantHelper
     bSuccessful = true;
 
     if (value.GetType() <= xiiVariant::Type::Double)
-      result = value.ConvertNumber<xiiUInt32>();
-    else if (value.GetType() == xiiVariant::Type::String)
     {
-      xiiInt64 tmp = result;
-      if (xiiConversionUtils::StringToInt64(value.Cast<xiiString>().GetData(), tmp) == XII_FAILURE)
+      result = value.ConvertNumber<xiiUInt32>();
+    }
+    else if (value.GetType() == xiiVariant::Type::String || value.GetType() == xiiVariant::Type::HashedString)
+    {
+      xiiStringView s   = value.IsA<xiiString>() ? value.Cast<xiiString>().GetView() : value.Cast<xiiHashedString>().GetView();
+      xiiInt64      tmp = result;
+      if (xiiConversionUtils::StringToInt64(s, tmp) == XII_FAILURE)
       {
         result      = 0;
         bSuccessful = false;
       }
       else
+      {
         result = (xiiUInt32)tmp;
+      }
     }
     else
+    {
       XII_REPORT_FAILURE("Conversion to uint failed");
+    }
   }
 
   static void To(const xiiVariant& value, xiiInt64& result, bool& bSuccessful)
@@ -338,17 +340,22 @@ class xiiVariantHelper
     bSuccessful = true;
 
     if (value.GetType() <= xiiVariant::Type::Double)
-      result = value.ConvertNumber<xiiInt64>();
-    else if (value.GetType() == xiiVariant::Type::String)
     {
-      if (xiiConversionUtils::StringToInt64(value.Cast<xiiString>().GetData(), result) == XII_FAILURE)
+      result = value.ConvertNumber<xiiInt64>();
+    }
+    else if (value.GetType() == xiiVariant::Type::String || value.GetType() == xiiVariant::Type::HashedString)
+    {
+      xiiStringView s = value.IsA<xiiString>() ? value.Cast<xiiString>().GetView() : value.Cast<xiiHashedString>().GetView();
+      if (xiiConversionUtils::StringToInt64(s, result) == XII_FAILURE)
       {
         result      = 0;
         bSuccessful = false;
       }
     }
     else
+    {
       XII_REPORT_FAILURE("Conversion to int64 failed");
+    }
   }
 
   static void To(const xiiVariant& value, xiiUInt64& result, bool& bSuccessful)
@@ -356,20 +363,27 @@ class xiiVariantHelper
     bSuccessful = true;
 
     if (value.GetType() <= xiiVariant::Type::Double)
-      result = value.ConvertNumber<xiiUInt64>();
-    else if (value.GetType() == xiiVariant::Type::String)
     {
-      xiiInt64 tmp = result;
-      if (xiiConversionUtils::StringToInt64(value.Cast<xiiString>().GetData(), tmp) == XII_FAILURE)
+      result = value.ConvertNumber<xiiUInt64>();
+    }
+    else if (value.GetType() == xiiVariant::Type::String || value.GetType() == xiiVariant::Type::HashedString)
+    {
+      xiiStringView s   = value.IsA<xiiString>() ? value.Cast<xiiString>().GetView() : value.Cast<xiiHashedString>().GetView();
+      xiiInt64      tmp = result;
+      if (xiiConversionUtils::StringToInt64(s, tmp) == XII_FAILURE)
       {
         result      = 0;
         bSuccessful = false;
       }
       else
+      {
         result = (xiiUInt64)tmp;
+      }
     }
     else
+    {
       XII_REPORT_FAILURE("Conversion to uint64 failed");
+    }
   }
 
   static void To(const xiiVariant& value, float& result, bool& bSuccessful)
@@ -377,20 +391,27 @@ class xiiVariantHelper
     bSuccessful = true;
 
     if (value.GetType() <= xiiVariant::Type::Double)
-      result = value.ConvertNumber<float>();
-    else if (value.GetType() == xiiVariant::Type::String)
     {
+      result = value.ConvertNumber<float>();
+    }
+    else if (value.GetType() == xiiVariant::Type::String || value.GetType() == xiiVariant::Type::HashedString)
+    {
+      xiiStringView s   = value.IsA<xiiString>() ? value.Cast<xiiString>().GetView() : value.Cast<xiiHashedString>().GetView();
       double tmp = result;
-      if (xiiConversionUtils::StringToFloat(value.Cast<xiiString>().GetData(), tmp) == XII_FAILURE)
+      if (xiiConversionUtils::StringToFloat(s, tmp) == XII_FAILURE)
       {
         result      = 0.0f;
         bSuccessful = false;
       }
       else
+      {
         result = (float)tmp;
+      }
     }
     else
+    {
       XII_REPORT_FAILURE("Conversion to float failed");
+    }
   }
 
   static void To(const xiiVariant& value, double& result, bool& bSuccessful)
@@ -398,17 +419,22 @@ class xiiVariantHelper
     bSuccessful = true;
 
     if (value.GetType() <= xiiVariant::Type::Double)
-      result = value.ConvertNumber<double>();
-    else if (value.GetType() == xiiVariant::Type::String)
     {
-      if (xiiConversionUtils::StringToFloat(value.Cast<xiiString>().GetData(), result) == XII_FAILURE)
+      result = value.ConvertNumber<double>();
+    }
+    else if (value.GetType() == xiiVariant::Type::String || value.GetType() == xiiVariant::Type::HashedString)
+    {
+      xiiStringView s = value.IsA<xiiString>() ? value.Cast<xiiString>().GetView() : value.Cast<xiiHashedString>().GetView();
+      if (xiiConversionUtils::StringToFloat(s, result) == XII_FAILURE)
       {
         result      = 0.0;
         bSuccessful = false;
       }
     }
     else
+    {
       XII_REPORT_FAILURE("Conversion to double failed");
+    }
   }
 
   static void To(const xiiVariant& value, xiiString& result, bool& bSuccessful)
@@ -432,14 +458,16 @@ class xiiVariantHelper
   {
     bSuccessful = true;
 
-    result = value.Get<xiiString>().GetView();
+    result = value.IsA<xiiString>() ? value.Get<xiiString>().GetView() : value.Get<xiiHashedString>().GetView();
   }
 
   static void To(const xiiVariant& value, xiiTypedPointer& result, bool& bSuccessful)
   {
     bSuccessful = true;
+
     XII_ASSERT_DEBUG(value.GetType() == xiiVariant::Type::TypedPointer, "Only ptr can be converted to void*!");
-    result = value.Get<xiiTypedPointer>();
+
+    result = value.Cast<xiiTypedPointer>();
   }
 
   static void To(const xiiVariant& value, xiiColor& result, bool& bSuccessful)
@@ -447,9 +475,13 @@ class xiiVariantHelper
     bSuccessful = true;
 
     if (value.GetType() == xiiVariant::Type::ColorGamma)
-      result = value.Get<xiiColorGammaUB>();
+    {
+      result = value.Cast<xiiColorGammaUB>();
+    }
     else
+    {
       XII_REPORT_FAILURE("Conversion to xiiColor failed");
+    }
   }
 
   static void To(const xiiVariant& value, xiiColorGammaUB& result, bool& bSuccessful)
@@ -457,9 +489,13 @@ class xiiVariantHelper
     bSuccessful = true;
 
     if (value.GetType() == xiiVariant::Type::Color)
-      result = value.Get<xiiColor>();
+    {
+      result = value.Cast<xiiColor>();
+    }
     else
+    {
       XII_REPORT_FAILURE("Conversion to xiiColorGammaUB failed");
+    }
   }
 
   template <typename T, typename V1, typename V2, typename V3, typename V4, typename V5>
@@ -469,32 +505,33 @@ class xiiVariantHelper
 
     if (value.IsA<V1>())
     {
-      const V1& v = value.Get<V1>();
+      const V1& v = value.Cast<V1>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y));
     }
     else if (value.IsA<V2>())
     {
-      const V2& v = value.Get<V2>();
+      const V2& v = value.Cast<V2>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y));
     }
     else if (value.IsA<V3>())
     {
-      const V3& v = value.Get<V3>();
+      const V3& v = value.Cast<V3>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y));
     }
     else if (value.IsA<V4>())
     {
-      const V4& v = value.Get<V4>();
+      const V4& v = value.Cast<V4>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y));
     }
     else if (value.IsA<V5>())
     {
-      const V5& v = value.Get<V5>();
+      const V5& v = value.Cast<V5>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y));
     }
     else
     {
       XII_REPORT_FAILURE("Conversion to xiiVec2X failed");
+
       bSuccessful = false;
     }
   }
@@ -518,37 +555,33 @@ class xiiVariantHelper
 
     if (value.IsA<V1>())
     {
-      const V1& v = value.Get<V1>();
-      result =
-        T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
+      const V1& v = value.Cast<V1>();
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
     }
     else if (value.IsA<V2>())
     {
-      const V2& v = value.Get<V2>();
-      result =
-        T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
+      const V2& v = value.Cast<V2>();
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
     }
     else if (value.IsA<V3>())
     {
-      const V3& v = value.Get<V3>();
-      result =
-        T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
+      const V3& v = value.Cast<V3>();
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
     }
     else if (value.IsA<V4>())
     {
-      const V4& v = value.Get<V4>();
-      result =
-        T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
+      const V4& v = value.Cast<V4>();
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
     }
     else if (value.IsA<V5>())
     {
-      const V5& v = value.Get<V5>();
-      result =
-        T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
+      const V5& v = value.Cast<V5>();
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z));
     }
     else
     {
       XII_REPORT_FAILURE("Conversion to xiiVec3X failed");
+
       bSuccessful = false;
     }
   }
@@ -572,32 +605,33 @@ class xiiVariantHelper
 
     if (value.IsA<V1>())
     {
-      const V1& v = value.Get<V1>();
+      const V1& v = value.Cast<V1>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else if (value.IsA<V2>())
     {
-      const V2& v = value.Get<V2>();
+      const V2& v = value.Cast<V2>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else if (value.IsA<V3>())
     {
-      const V3& v = value.Get<V3>();
+      const V3& v = value.Cast<V3>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else if (value.IsA<V4>())
     {
-      const V4& v = value.Get<V4>();
+      const V4& v = value.Cast<V4>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else if (value.IsA<V5>())
     {
-      const V5& v = value.Get<V5>();
+      const V5& v = value.Cast<V5>();
       result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else
     {
       XII_REPORT_FAILURE("Conversion to xiiVec4X failed");
+
       bSuccessful = false;
     }
   }
@@ -621,12 +655,13 @@ class xiiVariantHelper
 
     if (value.IsA<V1>())
     {
-      const V1& v = value.Get<V1>();
+      const V1& v = value.Cast<V1>();
       result      = T(static_cast<typename T::ComponentType>(v.v.x), static_cast<typename T::ComponentType>(v.v.y), static_cast<typename T::ComponentType>(v.v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else
     {
       XII_REPORT_FAILURE("Conversion to xiiQuatX failed");
+
       bSuccessful = false;
     }
   }
@@ -642,7 +677,7 @@ class xiiVariantHelper
 
     if (value.IsA<V1>())
     {
-      const V1& v = value.Get<V1>();
+      const V1& v = value.Cast<V1>();
       result      = T(static_cast<typename T::ComponentType>(v.Element(0, 0)), static_cast<typename T::ComponentType>(v.Element(1, 0)), static_cast<typename T::ComponentType>(v.Element(2, 0)),
                  static_cast<typename T::ComponentType>(v.Element(0, 1)), static_cast<typename T::ComponentType>(v.Element(1, 1)), static_cast<typename T::ComponentType>(v.Element(2, 1)),
                  static_cast<typename T::ComponentType>(v.Element(0, 2)), static_cast<typename T::ComponentType>(v.Element(1, 2)), static_cast<typename T::ComponentType>(v.Element(2, 2)));
@@ -665,7 +700,7 @@ class xiiVariantHelper
 
     if (value.IsA<V1>())
     {
-      const V1& v = value.Get<V1>();
+      const V1& v = value.Cast<V1>();
       result      = T(static_cast<typename T::ComponentType>(v.Element(0, 0)), static_cast<typename T::ComponentType>(v.Element(1, 0)), static_cast<typename T::ComponentType>(v.Element(2, 0)), static_cast<typename T::ComponentType>(v.Element(3, 0)),
                  static_cast<typename T::ComponentType>(v.Element(0, 1)), static_cast<typename T::ComponentType>(v.Element(1, 1)), static_cast<typename T::ComponentType>(v.Element(2, 1)), static_cast<typename T::ComponentType>(v.Element(3, 1)),
                  static_cast<typename T::ComponentType>(v.Element(0, 2)), static_cast<typename T::ComponentType>(v.Element(1, 2)), static_cast<typename T::ComponentType>(v.Element(2, 2)), static_cast<typename T::ComponentType>(v.Element(3, 2)),
@@ -689,7 +724,7 @@ class xiiVariantHelper
 
     if (value.IsA<V1>())
     {
-      const V1&                                        v         = value.Get<V1>();
+      const V1&                                        v         = value.Cast<V1>();
       const xiiVec3Template<typename T::ComponentType> vPosition = xiiVec3Template<typename T::ComponentType>(static_cast<typename T::ComponentType>(v.m_vPosition.x), static_cast<typename T::ComponentType>(v.m_vPosition.y), static_cast<typename T::ComponentType>(v.m_vPosition.z));
       const xiiQuatTemplate<typename T::ComponentType> qRotation = xiiQuatTemplate<typename T::ComponentType>(static_cast<typename T::ComponentType>(v.m_qRotation.v.x), static_cast<typename T::ComponentType>(v.m_qRotation.v.y),
                                                                                                               static_cast<typename T::ComponentType>(v.m_qRotation.v.z), static_cast<typename T::ComponentType>(v.m_qRotation.w));
@@ -707,10 +742,55 @@ class xiiVariantHelper
 
   static void To(const xiiVariant& value, xiiTransformd& result, bool& bSuccessful) { ToTransformX<xiiTransformd, xiiTransform>(value, result, bSuccessful); }
 
+  static void To(const xiiVariant& value, xiiHashedString& result, bool& bSuccessful)
+  {
+    bSuccessful = true;
+
+    if (value.GetType() == xiiVariantType::String)
+    {
+      result.Assign(value.Cast<xiiString>());
+    }
+    else if (value.GetType() == xiiVariantType::StringView)
+    {
+      result.Assign(value.Cast<xiiStringView>());
+    }
+    else
+    {
+      xiiString s;
+      To(value, s, bSuccessful);
+      result.Assign(s.GetView());
+    }
+  }
+
+  static void To(const xiiVariant& value, xiiTempHashedString& result, bool& bSuccessful)
+  {
+    bSuccessful = true;
+
+    if (value.GetType() == xiiVariantType::String)
+    {
+      result = value.Cast<xiiString>();
+    }
+    else if (value.GetType() == xiiVariantType::StringView)
+    {
+      result = value.Cast<xiiStringView>();
+    }
+    else if (value.GetType() == xiiVariant::Type::HashedString)
+    {
+      result = value.Cast<xiiHashedString>();
+    }
+    else
+    {
+      xiiString s;
+      To(value, s, bSuccessful);
+      result = s.GetView();
+    }
+  }
+
   template <typename T>
   static void To(const xiiVariant& value, T& result, bool& bSuccessful)
   {
     XII_REPORT_FAILURE("Conversion function not implemented for target type '{0}'", xiiVariant::TypeDeduction<T>::value);
+
     bSuccessful = false;
   }
 
