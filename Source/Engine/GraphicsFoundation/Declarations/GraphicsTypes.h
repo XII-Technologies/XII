@@ -968,6 +968,40 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleCount
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSampleCount);
 
+/// \brief This describes the shading rate capability flags.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCapabilityFlags
+{
+  using StorageType = xiiUInt16;
+
+  enum Enum : StorageType
+  {
+    None                              = 0U,          ///< No shading rate capabilities.
+    PerDraw                           = XII_BIT(0),  ///< Shading rate can be specified for the whole draw call.
+    PerPrimitive                      = XII_BIT(1),  ///< Shading rate can be specified in the vertex shader for each primitive and combined with the base rate.
+    TextureBased                      = XII_BIT(2),  ///< Shading rate is specified by a texture, each texel defines a shading rate for the tile.
+    SampleMask                        = XII_BIT(3),  ///< Allows to set zero bits in graphics pipeline sample mask with the enabled variable rate shading.
+    ShaderSampleMask                  = XII_BIT(4),  ///< Allows to get or set SampleMask in the shader with enabled variable rate shading.
+    ShaderDepthStencilWrite           = XII_BIT(5),  ///< Allows to write depth and stencil from the pixel shader.
+    PerPrimitiveWithMultipleViewports = XII_BIT(6),  ///< Allows to use per primitive shading rate when multiple viewports are used.
+    SameTextureForWholeRenderPass     = XII_BIT(7),  ///< Shading rate attachment for render pass must be the same for all subpasses.
+    TextureArray                      = XII_BIT(8),  ///< Allows to use texture 2D array for shading rate.
+    ShadingRateShaderInput            = XII_BIT(9),  ///< Allows to read current shading rate in the pixel shader.
+    AdditionalInvocations             = XII_BIT(10), ///< Indicates that driver may generate additional fragment shader invocations in order to make transitions between fragment areas with different shading rates more smooth.
+    NonSubSampledRenderTarget         = XII_BIT(11), ///< Indicates that there are no additional requirements for render targets that are used in texture-based VRS rendering.
+    SubSampledRenderTarget            = XII_BIT(12), ///< Indicates that render targets that are used in texture-based VRS rendering must be created with the subsampled flag.
+                                                     ///< Intermediate targets must be scaled to the final resolution in a separate pass.
+                                                     ///< If supported, rendering to the subsampled render targets may be more optimal.
+                                                     ///<
+                                                     ///< \note Both non-subsampled and subsampled modes may be supported by a device.
+
+    ENUM_COUNT = 14U,
+
+    Default = None
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateCapabilityFlags);
+
 /// \brief Base class for GAL objects, stores a creation description of the object and also allows for reference counting.
 template <typename CreationDescription>
 class xiiGALObject : public xiiRefCounted
