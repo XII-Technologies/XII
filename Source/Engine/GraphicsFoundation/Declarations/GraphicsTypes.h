@@ -919,6 +919,55 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAxis
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateAxis);
 
+/// \brief This describes the shading rate for both the horizontal and vertical axes.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRate
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    _1X1 = ((xiiGALShadingRateAxis::X1 << XII_GAL_SHADING_RATE_X_SHIFT) | xiiGALShadingRateAxis::X1), ///< Specifies no change to the shading rate.
+    _1X2 = ((xiiGALShadingRateAxis::X1 << XII_GAL_SHADING_RATE_X_SHIFT) | xiiGALShadingRateAxis::X2), ///< Specifies default horizontal rate and 1/2 vertical shading rate.
+    _1X4 = ((xiiGALShadingRateAxis::X1 << XII_GAL_SHADING_RATE_X_SHIFT) | xiiGALShadingRateAxis::X4), ///< Specifies default horizontal rate and 1/4 vertical shading rate.
+    _2X1 = ((xiiGALShadingRateAxis::X2 << XII_GAL_SHADING_RATE_X_SHIFT) | xiiGALShadingRateAxis::X1), ///< Specifies 1/2 horizontal shading rate and default vertical rate.
+    _2X2 = ((xiiGALShadingRateAxis::X2 << XII_GAL_SHADING_RATE_X_SHIFT) | xiiGALShadingRateAxis::X2), ///< Specifies 1/2 horizontal and 1/2 vertical shading rate.
+    _2X4 = ((xiiGALShadingRateAxis::X2 << XII_GAL_SHADING_RATE_X_SHIFT) | xiiGALShadingRateAxis::X4), ///< Specifies 1/2 horizontal and 1/4 vertical shading rate.
+    _4X1 = ((xiiGALShadingRateAxis::X4 << XII_GAL_SHADING_RATE_X_SHIFT) | xiiGALShadingRateAxis::X1), ///< Specifies 1/4 horizontal and default vertical rate.
+    _4X2 = ((xiiGALShadingRateAxis::X4 << XII_GAL_SHADING_RATE_X_SHIFT) | xiiGALShadingRateAxis::X2), ///< Specifies 1/4 horizontal and 1/2 vertical rate.
+    _4X4 = ((xiiGALShadingRateAxis::X4 << XII_GAL_SHADING_RATE_X_SHIFT) | xiiGALShadingRateAxis::X4), ///< Specifies 1/4 horizontal and 1/4 vertical shading rate.
+
+    ENUM_COUNT,
+
+    Default = _1X1
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRate);
+
+/// \brief This describes the sample count.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleCount
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None             = 0U,  ///< No samples.
+    OneSample        = 1U,  ///< One sample.
+    TwoSamples       = 2U,  ///< Two samples.
+    FourSamples      = 4U,  ///< Four samples.
+    EightSamples     = 8U,  ///< Eight samples.
+    SixteenSamples   = 16U, ///< Sixteen samples.
+    ThirtyTwoSamples = 32U, ///< Thirty-two samples.
+    SixtyFourSamples = 64U, ///< Sixty-four samples.
+
+    ENUM_COUNT = 8U,
+
+    Default = None
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSampleCount);
+
 /// \brief Base class for GAL objects, stores a creation description of the object and also allows for reference counting.
 template <typename CreationDescription>
 class xiiGALObject : public xiiRefCounted

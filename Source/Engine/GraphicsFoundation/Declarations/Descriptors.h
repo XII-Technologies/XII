@@ -255,4 +255,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceCreationDescription : publ
                                                               ///< If supported, it will be combination of the following flags: RenderTarget, DepthStencil, InputAttachment.
 };
 
+/// \brief This describes a combination of a shading rate and multi-sampling mode.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateMode : public xiiHashableStruct<xiiGALShadingRateMode>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiEnum<xiiGALShadingRate> m_ShadingRate; ///< The supported shading rate.
+  xiiEnum<xiiGALSampleCount> m_SampleBits;  ///< The combination of supported sample counts.
+};
+
 #include <GraphicsFoundation/Declarations/Implementation/Descriptors_inl.h>
