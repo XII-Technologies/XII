@@ -129,17 +129,7 @@ void xiiWorld::SetCoordinateSystemProvider(const xiiSharedPtr<xiiCoordinateSyste
   m_Data.m_pCoordinateSystemProvider->m_pOwnerWorld = this;
 }
 
-void xiiWorld::SetGameObjectReferenceResolver(const ReferenceResolver& resolver)
-{
-  m_Data.m_GameObjectReferenceResolver = resolver;
-}
-
-const xiiWorld::ReferenceResolver& xiiWorld::GetGameObjectReferenceResolver() const
-{
-  return m_Data.m_GameObjectReferenceResolver;
-}
-
-// a super simple, but also efficient random number generator
+// A very simple, but also efficient random number generator.
 inline static xiiUInt32 NextStableRandomSeed(xiiUInt32& ref_uiSeed)
 {
   ref_uiSeed = 214013L * ref_uiSeed + 2531011L;
@@ -457,8 +447,7 @@ void xiiWorld::Update()
 
   if (!m_Data.m_bSimulateWorld)
   {
-    // only change the pause mode temporarily
-    // so that user choices don't get overridden
+    // Only change the pause mode temporarily, so that the user's choices do not get overridden.
 
     const bool bClockPaused = m_Data.m_Clock.GetPaused();
     m_Data.m_Clock.SetPaused(true);
@@ -475,7 +464,13 @@ void xiiWorld::Update()
     m_Data.m_pSpatialSystem->StartNewFrame();
   }
 
-  // initialize phase
+  // Reload Resources.
+  {
+    XII_PROFILE_SCOPE("Reload Resources");
+    ProcessResourceReloadFunctions();
+  }
+
+  // Initialization Phase.
   {
     XII_PROFILE_SCOPE("Initialize Phase");
     ProcessComponentsToInitialize();
@@ -484,16 +479,17 @@ void xiiWorld::Update()
     ProcessQueuedMessages(xiiObjectMsgQueueType::AfterInitialized);
   }
 
-  // pre-async phase
+  // Pre-Asynchronous Phase.
   {
     XII_PROFILE_SCOPE("Pre-Async Phase");
     ProcessQueuedMessages(xiiObjectMsgQueueType::NextFrame);
     UpdateSynchronous(m_Data.m_UpdateFunctions[xiiComponentManagerBase::UpdateFunctionDesc::Phase::PreAsync]);
   }
 
-  // async phase
+  // Asynchronous Phase.
   {
-    // remove write marker but keep the read marker. Thus no one can mark the world for writing now. Only reading is allowed in async phase.
+    // Remove the write marker, but keep the read marker.
+    // Thus, the world cannot be marked for writing, as only reading is permitted in the asynchronous phase.
     m_Data.m_WriteThreadID = (xiiThreadID)0;
 
     XII_PROFILE_SCOPE("Async Phase");
@@ -503,27 +499,27 @@ void xiiWorld::Update()
     m_Data.m_WriteThreadID = xiiThreadUtils::GetCurrentThreadID();
   }
 
-  // post-async phase
+  // Post-Asynchronous Phase.
   {
     XII_PROFILE_SCOPE("Post-Async Phase");
     ProcessQueuedMessages(xiiObjectMsgQueueType::PostAsync);
     UpdateSynchronous(m_Data.m_UpdateFunctions[xiiComponentManagerBase::UpdateFunctionDesc::Phase::PostAsync]);
   }
 
-  // delete dead objects and update the object hierarchy
+  // Delete dead objects and update the object hierarchy.
   {
     XII_PROFILE_SCOPE("Delete Dead Objects");
     DeleteDeadObjects();
     DeleteDeadComponents();
   }
 
-  // update transforms
+  // Update Transforms.
   {
     XII_PROFILE_SCOPE("Update Transforms");
     m_Data.UpdateGlobalTransforms();
   }
 
-  // post-transform phase
+  // Post-Transform Phase.
   {
     XII_PROFILE_SCOPE("Post-Transform Phase");
     ProcessQueuedMessages(xiiObjectMsgQueueType::PostTransform);
@@ -1438,11 +1434,75 @@ void xiiWorld::RecreateHierarchyData(xiiGameObject* pObject, bool bWasDynamic)
   }
 }
 
+void xiiWorld::ProcessResourceReloadFunctions()
+{
+  ResourceReloadContext context;
+  context.m_pWorld = this;
+
+  for (auto& hResource : m_Data.m_NeedReload)
+  {
+    if (m_Data.m_ReloadFunctions.TryGetValue(hResource, m_Data.m_TempReloadFunctions))
+    {
+      for (auto& data : m_Data.m_TempReloadFunctions)
+      {
+        XII_VERIFY(TryGetComponent(data.m_hComponent, context.m_pComponent), "Reload function called on dead component");
+        context.m_pUserData = data.m_pUserData;
+
+        data.m_Func(context);
+      }
+    }
+  }
+
+  m_Data.m_NeedReload.Clear();
+}
+
 void xiiWorld::SetMaxInitializationTimePerFrame(xiiTime maxInitTime)
 {
   CheckForWriteAccess();
 
   m_Data.m_MaxInitializationTimePerFrame = maxInitTime;
+}
+
+void xiiWorld::SetGameObjectReferenceResolver(const ReferenceResolver& resolver)
+{
+  m_Data.m_GameObjectReferenceResolver = resolver;
+}
+
+const xiiWorld::ReferenceResolver& xiiWorld::GetGameObjectReferenceResolver() const
+{
+  return m_Data.m_GameObjectReferenceResolver;
+}
+
+void xiiWorld::AddResourceReloadFunction(xiiTypelessResourceHandle hResource, xiiComponentHandle hComponent, void* pUserData, ResourceReloadFunc function)
+{
+  CheckForWriteAccess();
+
+  if (hResource.IsValid() == false)
+    return;
+
+  auto& data        = m_Data.m_ReloadFunctions[hResource].ExpandAndGetRef();
+  data.m_hComponent = hComponent;
+  data.m_pUserData  = pUserData;
+  data.m_Func       = function;
+}
+
+void xiiWorld::RemoveResourceReloadFunction(xiiTypelessResourceHandle hResource, xiiComponentHandle hComponent, void* pUserData)
+{
+  CheckForWriteAccess();
+
+  xiiInternal::WorldData::ReloadFunctionList* pReloadFunctions = nullptr;
+  if (m_Data.m_ReloadFunctions.TryGetValue(hResource, pReloadFunctions))
+  {
+    for (xiiUInt32 i = 0; i < pReloadFunctions->GetCount(); ++i)
+    {
+      auto& data = (*pReloadFunctions)[i];
+      if (data.m_hComponent == hComponent && data.m_pUserData == pUserData)
+      {
+        pReloadFunctions->RemoveAtAndSwap(i);
+        break;
+      }
+    }
+  }
 }
 
 XII_STATICLINK_FILE(Core, Core_World_Implementation_World);

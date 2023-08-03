@@ -80,12 +80,12 @@ struct XII_FOUNDATION_DLL xiiEasingFunction
   };
 
   /// \brief Helper function that returns the function value at the given input.
-  static double GetValue(Enum function, double fInput);
+  static double GetValue(xiiEasingFunction::Enum function, double fInput);
 
   /// \brief Helper function that returns the function value at the given input.
   ///
   /// if \a inverse is true, the value (1 - result) is returned.
-  static double GetValue(Enum function, double fInput, bool bInverse);
+  static double GetValue(xiiEasingFunction::Enum function, double fInput, bool bInverse);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiEasingFunction);

@@ -28,46 +28,40 @@ xiiQtNodeScene::~xiiQtNodeScene()
 {
   disconnect(this, &QGraphicsScene::selectionChanged, this, &xiiQtNodeScene::OnSelectionChanged);
 
-  SetDocumentNodeManager(nullptr);
-}
-
-void xiiQtNodeScene::SetDocumentNodeManager(const xiiDocumentNodeManager* pManager)
-{
-  if (pManager == m_pManager)
-    return;
-
   Clear();
+
   if (m_pManager != nullptr)
   {
     m_pManager->m_NodeEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtNodeScene::NodeEventsHandler, this));
     m_pManager->GetDocument()->GetSelectionManager()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtNodeScene::SelectionEventsHandler, this));
     m_pManager->m_PropertyEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtNodeScene::PropertyEventsHandler, this));
   }
+}
+
+void xiiQtNodeScene::InitScene(const xiiDocumentNodeManager* pManager)
+{
+  XII_ASSERT_DEV(pManager != nullptr, "Invalid node manager.");
 
   m_pManager = pManager;
 
-  if (m_pManager != nullptr)
+  m_pManager->m_NodeEvents.AddEventHandler(xiiMakeDelegate(&xiiQtNodeScene::NodeEventsHandler, this));
+  m_pManager->GetDocument()->GetSelectionManager()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtNodeScene::SelectionEventsHandler, this));
+  m_pManager->m_PropertyEvents.AddEventHandler(xiiMakeDelegate(&xiiQtNodeScene::PropertyEventsHandler, this));
+
+  // Create Nodes
+  const auto& rootObjects = pManager->GetRootObject()->GetChildren();
+  for (const auto& pObject : rootObjects)
   {
-    m_pManager->m_NodeEvents.AddEventHandler(xiiMakeDelegate(&xiiQtNodeScene::NodeEventsHandler, this));
-    m_pManager->GetDocument()->GetSelectionManager()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtNodeScene::SelectionEventsHandler, this));
-    m_pManager->m_PropertyEvents.AddEventHandler(xiiMakeDelegate(&xiiQtNodeScene::PropertyEventsHandler, this));
-
-    // Create Nodes
-    const auto& rootObjects = pManager->GetRootObject()->GetChildren();
-    for (const auto& pObject : rootObjects)
+    if (pManager->IsNode(pObject))
     {
-      if (pManager->IsNode(pObject))
-      {
-        CreateQtNode(pObject);
-      }
+      CreateQtNode(pObject);
     }
-
-    for (const auto& pObject : rootObjects)
+  }
+  for (const auto& pObject : rootObjects)
+  {
+    if (pManager->IsConnection(pObject))
     {
-      if (pManager->IsConnection(pObject))
-      {
-        CreateQtConnection(pObject);
-      }
+      CreateQtConnection(pObject);
     }
   }
 }

@@ -52,6 +52,9 @@ struct xiiSpatialData
   /// \brief Returns either an existing category with the given name or xiiInvalidSpatialDataCategory.
   XII_CORE_DLL static Category FindCategory(xiiStringView sCategoryName);
 
+  /// \brief Returns the name of the given category.
+  XII_CORE_DLL static const xiiHashedString& GetCategoryName(Category category);
+
   /// \brief Returns the flags for the given category.
   XII_CORE_DLL static const xiiBitflags<Flags>& GetCategoryFlags(Category category);
 

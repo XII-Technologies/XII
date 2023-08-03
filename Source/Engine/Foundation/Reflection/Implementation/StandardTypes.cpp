@@ -2,6 +2,7 @@
 
 #include <Foundation/Math/Transform.h>
 #include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Strings/HashedString.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiEnumBase, xiiNoBase, 1, xiiRTTINoAllocator)
@@ -548,7 +549,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiUuid, xiiNoBase, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVariant, xiiNoBase, 3, xiiRTTINoAllocator)
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVariant, xiiNoBase, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiVariantArray, xiiNoBase, 1, xiiRTTINoAllocator)
@@ -564,6 +565,12 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiUntrackedString, xiiNoBase, 1, xiiRTTINoAlloc
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiStringView, xiiNoBase, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiHashedString, xiiNoBase, 1, xiiRTTINoAllocator)
+XII_END_STATIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTempHashedString, xiiNoBase, 1, xiiRTTINoAllocator)
 XII_END_STATIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiDataBuffer, xiiNoBase, 1, xiiRTTINoAllocator)
@@ -638,21 +645,27 @@ XII_BITFLAGS_CONSTANTS(xiiPropertyFlags::PointerOwner, xiiPropertyFlags::ReadOnl
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiFunctionType, 1)
-XII_BITFLAGS_CONSTANTS(xiiFunctionType::Member, xiiFunctionType::StaticMember, xiiFunctionType::Constructor)
+XII_ENUM_CONSTANTS(xiiFunctionType::Member, xiiFunctionType::StaticMember, xiiFunctionType::Constructor)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiVariantType, 1)
-XII_BITFLAGS_CONSTANTS(xiiVariantType::Invalid, xiiVariantType::Bool, xiiVariantType::Int8, xiiVariantType::UInt8, xiiVariantType::Int16, xiiVariantType::UInt16)
-XII_BITFLAGS_CONSTANTS(xiiVariantType::Int32, xiiVariantType::UInt32, xiiVariantType::Int64, xiiVariantType::UInt64, xiiVariantType::Float, xiiVariantType::Double)
-XII_BITFLAGS_CONSTANTS(xiiVariantType::Color, xiiVariantType::Vector2, xiiVariantType::Vector3, xiiVariantType::Vector4)
-XII_BITFLAGS_CONSTANTS(xiiVariantType::Vector2I, xiiVariantType::Vector3I, xiiVariantType::Vector4I, xiiVariantType::Vector2U, xiiVariantType::Vector3U, xiiVariantType::Vector4U)
-XII_BITFLAGS_CONSTANTS(xiiVariantType::Quaternion, xiiVariantType::Matrix3, xiiVariantType::Matrix4, xiiVariantType::Transform)
-XII_BITFLAGS_CONSTANTS(xiiVariantType::String, xiiVariantType::StringView, xiiVariantType::DataBuffer, xiiVariantType::Time, xiiVariantType::Uuid, xiiVariantType::Angle, xiiVariantType::ColorGamma)
-XII_BITFLAGS_CONSTANTS(xiiVariantType::VariantArray, xiiVariantType::VariantDictionary, xiiVariantType::TypedPointer, xiiVariantType::TypedObject)
+XII_ENUM_CONSTANTS(xiiVariantType::Invalid, xiiVariantType::Bool, xiiVariantType::Int8, xiiVariantType::UInt8, xiiVariantType::Int16, xiiVariantType::UInt16)
+XII_ENUM_CONSTANTS(xiiVariantType::Int32, xiiVariantType::UInt32, xiiVariantType::Int64, xiiVariantType::UInt64, xiiVariantType::Float, xiiVariantType::Double)
+XII_ENUM_CONSTANTS(xiiVariantType::Color, xiiVariantType::Vector2I, xiiVariantType::Vector3I, xiiVariantType::Vector4I)
+XII_ENUM_CONSTANTS(xiiVariantType::Vector2I64, xiiVariantType::Vector3I64, xiiVariantType::Vector4I64)
+XII_ENUM_CONSTANTS(xiiVariantType::Vector2U, xiiVariantType::Vector3U, xiiVariantType::Vector4U)
+XII_ENUM_CONSTANTS(xiiVariantType::Vector2U64, xiiVariantType::Vector3U64, xiiVariantType::Vector4U64)
+XII_ENUM_CONSTANTS(xiiVariantType::Vector2, xiiVariantType::Vector3, xiiVariantType::Vector4)
+XII_ENUM_CONSTANTS(xiiVariantType::Vector2d, xiiVariantType::Vector3d, xiiVariantType::Vector4d)
+XII_ENUM_CONSTANTS(xiiVariantType::Quaternion, xiiVariantType::Quaterniond, xiiVariantType::Matrix3, xiiVariantType::Matrix3d)
+XII_ENUM_CONSTANTS(xiiVariantType::Matrix4, xiiVariantType::Matrix4d, xiiVariantType::Transform, xiiVariantType::Transformd)
+XII_ENUM_CONSTANTS(xiiVariantType::Angle, xiiVariantType::Angled, xiiVariantType::String, xiiVariantType::StringView, xiiVariantType::HashedString)
+XII_ENUM_CONSTANTS(xiiVariantType::TempHashedString, xiiVariantType::DataBuffer, xiiVariantType::Time, xiiVariantType::Uuid, xiiVariantType::ColorGamma)
+XII_ENUM_CONSTANTS(xiiVariantType::VariantArray, xiiVariantType::VariantDictionary, xiiVariantType::TypedPointer, xiiVariantType::TypedObject)
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiPropertyCategory, 1)
-XII_BITFLAGS_CONSTANTS(xiiPropertyCategory::Constant, xiiPropertyCategory::Member, xiiPropertyCategory::Function, xiiPropertyCategory::Array, xiiPropertyCategory::Set, xiiPropertyCategory::Map)
+XII_ENUM_CONSTANTS(xiiPropertyCategory::Constant, xiiPropertyCategory::Member, xiiPropertyCategory::Function, xiiPropertyCategory::Array, xiiPropertyCategory::Set, xiiPropertyCategory::Map)
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 

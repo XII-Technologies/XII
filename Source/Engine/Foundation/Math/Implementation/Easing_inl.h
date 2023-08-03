@@ -41,7 +41,7 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE double EaseInOutLinear(double t)
   {
-    return abs(0.5 - t) * 2.0;
+    return xiiMath::Abs(0.5 - t) * 2.0;
   }
 
   XII_ALWAYS_INLINE double EaseInSine(double t)
@@ -71,7 +71,7 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE double EaseInOutQuad(double t)
   {
-    return t < 0.5 ? 2.0 * t * t : 1.0 - pow(-2.0 * t + 2, 2) / 2;
+    return t < 0.5 ? 2.0 * t * t : 1.0 - xiiMath::Pow(-2.0 * t + 2.0, 2.0) / 2.0;
   }
 
   XII_ALWAYS_INLINE double EaseInCubic(double t)
@@ -81,12 +81,12 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE double EaseOutCubic(double t)
   {
-    return 1.0 - pow(1 - t, 3.0);
+    return 1.0 - xiiMath::Pow(1 - t, 3.0);
   }
 
   XII_ALWAYS_INLINE double EaseInOutCubic(double t)
   {
-    return t < 0.5 ? 4.0 * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 3.0) / 2.0;
+    return t < 0.5 ? 4.0 * t * t * t : 1.0 - xiiMath::Pow(-2.0 * t + 2.0, 3.0) / 2.0;
   }
 
   XII_ALWAYS_INLINE double EaseInQuartic(double t)
@@ -96,12 +96,12 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE double EaseOutQuartic(double t)
   {
-    return 1.0 - pow(1.0 - t, 4.0);
+    return 1.0 - xiiMath::Pow(1.0 - t, 4.0);
   }
 
   XII_ALWAYS_INLINE double EaseInOutQuartic(double t)
   {
-    return t < 0.5 ? 8.0 * t * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 4.0) / 2.0;
+    return t < 0.5 ? 8.0 * t * t * t * t : 1.0 - xiiMath::Pow(-2.0 * t + 2.0, 4.0) / 2.0;
   }
 
   XII_ALWAYS_INLINE double EaseInQuintic(double t)
@@ -111,22 +111,22 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE double EaseOutQuintic(double t)
   {
-    return 1.0 - pow(1.0 - t, 5.0);
+    return 1.0 - xiiMath::Pow(1.0 - t, 5.0);
   }
 
   XII_ALWAYS_INLINE double EaseInOutQuintic(double t)
   {
-    return t < 0.5 ? 16.0 * t * t * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 5.0) / 2.0;
+    return t < 0.5 ? 16.0 * t * t * t * t * t : 1.0 - xiiMath::Pow(-2.0 * t + 2.0, 5.0) / 2.0;
   }
 
   XII_ALWAYS_INLINE double EaseInExpo(double t)
   {
-    return t == 0 ? 0 : pow(2.0, 10.0 * t - 10.0);
+    return t == 0 ? 0 : xiiMath::Pow(2.0, 10.0 * t - 10.0);
   }
 
   XII_ALWAYS_INLINE double EaseOutExpo(double t)
   {
-    return t == 1.0 ? 1.0 : 1.0 - pow(2.0, -10.0 * t);
+    return t == 1.0 ? 1.0 : 1.0 - xiiMath::Pow(2.0, -10.0 * t);
   }
 
   XII_ALWAYS_INLINE double EaseInOutExpo(double t)
@@ -141,23 +141,23 @@ namespace xiiMath
     }
     else
     {
-      return t < 0.5 ? pow(2.0, 20.0 * t - 10.0) / 2.0 : (2.0 - pow(2.0, -20.0 * t + 10.0)) / 2.0;
+      return t < 0.5 ? xiiMath::Pow(2.0, 20.0 * t - 10.0) / 2.0 : (2.0 - xiiMath::Pow(2.0, -20.0 * t + 10.0)) / 2.0;
     }
   }
 
   XII_ALWAYS_INLINE double EaseInCirc(double t)
   {
-    return 1.0 - sqrt(1.0 - pow(t, 2));
+    return 1.0 - sqrt(1.0 - xiiMath::Pow(t, 2.0));
   }
 
   XII_ALWAYS_INLINE double EaseOutCirc(double t)
   {
-    return sqrt(1.0 - pow(t - 1.0, 2.0));
+    return sqrt(1.0 - xiiMath::Pow(t - 1.0, 2.0));
   }
 
   XII_ALWAYS_INLINE double EaseInOutCirc(double t)
   {
-    return t < 0.5 ? (1.0 - sqrt(1.0 - pow(2.0 * t, 2.0))) / 2.0 : (sqrt(1.0 - pow(-2.0 * t + 2.0, 2.0)) + 1.0) / 2.0;
+    return t < 0.5 ? (1.0 - sqrt(1.0 - xiiMath::Pow(2.0 * t, 2.0))) / 2.0 : (sqrt(1.0 - xiiMath::Pow(-2.0 * t + 2.0, 2.0)) + 1.0) / 2.0;
   }
 
   XII_ALWAYS_INLINE double EaseInBack(double t)
@@ -167,12 +167,12 @@ namespace xiiMath
 
   XII_ALWAYS_INLINE double EaseOutBack(double t)
   {
-    return 10 + 2.70158 * pow(t - 1.0, 3.0) + 1.70158 * pow(t - 1.0, 2.0);
+    return 10 + 2.70158 * xiiMath::Pow(t - 1.0, 3.0) + 1.70158 * xiiMath::Pow(t - 1.0, 2.0);
   }
 
   XII_ALWAYS_INLINE double EaseInOutBack(double t)
   {
-    return t < 0.5 ? (pow(2.0 * t, 2.0) * (((1.70158 * 1.525) + 1.0) * 2 * t - (1.70158 * 1.525))) / 2.0 : (pow(2.0 * t - 2.0, 2.0) * (((1.70158 * 1.525) + 1.0) * (t * 2.0 - 2.0) + (1.70158 * 1.525)) + 2.0) / 2.0;
+    return t < 0.5 ? (xiiMath::Pow(2.0 * t, 2.0) * (((1.70158 * 1.525) + 1.0) * 2 * t - (1.70158 * 1.525))) / 2.0 : (xiiMath::Pow(2.0 * t - 2.0, 2.0) * (((1.70158 * 1.525) + 1.0) * (t * 2.0 - 2.0) + (1.70158 * 1.525)) + 2.0) / 2.0;
   }
 
   XII_ALWAYS_INLINE double EaseInElastic(double t)
@@ -187,7 +187,7 @@ namespace xiiMath
     }
     else
     {
-      return -pow(2.0, 10.0 * t - 10.0) * sin((t * 10.0 - 10.75) * ((2.0 * xiiMath::Pi<double>()) / 3.0));
+      return -xiiMath::Pow(2.0, 10.0 * t - 10.0) * sin((t * 10.0 - 10.75) * ((2.0 * xiiMath::Pi<double>()) / 3.0));
     }
   }
 
@@ -203,7 +203,7 @@ namespace xiiMath
     }
     else
     {
-      return pow(2.0, -10.0 * t) * sin((t * 10.0 - 0.75) * ((2.0 * xiiMath::Pi<double>()) / 3.0)) + 1.0;
+      return xiiMath::Pow(2.0, -10.0 * t) * sin((t * 10.0 - 0.75) * ((2.0 * xiiMath::Pi<double>()) / 3.0)) + 1.0;
     }
   }
 
@@ -219,7 +219,7 @@ namespace xiiMath
     }
     else
     {
-      return t < 0.5 ? -(pow(2.0, 20.0 * t - 10.0) * sin((20.0 * t - 11.125) * ((2 * xiiMath::Pi<double>()) / 4.5))) / 2.0 : (pow(2.0, -20.0 * t + 10.0) * sin((20.0 * t - 11.125) * ((2 * xiiMath::Pi<double>()) / 4.5))) / 2.0 + 1.0;
+      return t < 0.5 ? -(xiiMath::Pow(2.0, 20.0 * t - 10.0) * sin((20.0 * t - 11.125) * ((2 * xiiMath::Pi<double>()) / 4.5))) / 2.0 : (xiiMath::Pow(2.0, -20.0 * t + 10.0) * sin((20.0 * t - 11.125) * ((2 * xiiMath::Pi<double>()) / 4.5))) / 2.0 + 1.0;
     }
   }
 
@@ -319,7 +319,7 @@ namespace xiiMath
 } // namespace xiiMath
 
 // static
-inline double xiiEasingFunction::GetValue(Enum function, double fInput)
+inline double xiiEasingFunction::GetValue(xiiEasingFunction::Enum function, double fInput)
 {
   switch (function)
   {
@@ -425,7 +425,7 @@ inline double xiiEasingFunction::GetValue(Enum function, double fInput)
   return 0.0;
 }
 
-inline double xiiEasingFunction::GetValue(Enum function, double fInput, bool bInverse)
+inline double xiiEasingFunction::GetValue(xiiEasingFunction::Enum function, double fInput, bool bInverse)
 {
   double value = GetValue(function, fInput);
 

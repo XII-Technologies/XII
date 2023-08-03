@@ -154,7 +154,7 @@ XII_CREATE_SIMPLE_TEST(Containers, SmallArray)
 
     xiiSmallArray<xiiInt32, 16> a4(aptr);
 
-    XII_TEST_BOOL(a4 == aptr);
+    XII_TEST_BOOL(a4.GetArrayPtr() == aptr);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Move Constructor / Operator")
@@ -290,7 +290,7 @@ XII_CREATE_SIMPLE_TEST(Containers, SmallArray)
 
     a2 = arrayPtr;
 
-    XII_TEST_BOOL(a2 == arrayPtr);
+    XII_TEST_BOOL(a2.GetArrayPtr() == arrayPtr);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator == / !=")

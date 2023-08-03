@@ -206,21 +206,33 @@ namespace xiiOpenDdlUtils
   /// \brief Converts the data that \a pElement points to to a xiiAngle.
   ///
   /// \a pElement maybe be a primitives list of exactly 1 float.
-  /// The value is assumed to be in degree.
+  /// The value is assumed to be in radians.
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToAngle(const xiiOpenDdlReaderElement* pElement, xiiAngle& out_result); // [tested]
 
   /// \brief Converts the data that \a pElement points to to a xiiAngled.
   ///
   /// \a pElement maybe be a primitives list of exactly 1 float.
-  /// The value is assumed to be in degree.
+  /// The value is assumed to be in radians.
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToAngle(const xiiOpenDdlReaderElement* pElement, xiiAngled& out_result); // [tested]
+
+  /// \brief Converts the data that \a pElement points to to an xiiHashedString.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 1 string.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToHashedString(const xiiOpenDdlReaderElement* pElement, xiiHashedString& out_sResult); // [tested]
+
+  /// \brief Converts the data that \a pElement points to to an xiiTempHashedString.
+  ///
+  /// \a pElement maybe be a primitives list of exactly 1 uint64.
+  /// It may also be a group that contains such a primitives list as the only child.
+  XII_FOUNDATION_DLL xiiResult ConvertToTempHashedString(const xiiOpenDdlReaderElement* pElement, xiiTempHashedString& out_sResult); // [tested]
 
   /// \brief Uses the elements custom type name to infer which type the object holds and reads it into the xiiVariant.
   ///
   /// Depending on the custom type name, one of the other ConvertToXY functions is called and the respective conditions to the data format apply.
-  /// Supported type names are: "Color", "ColorGamma", "Time", "Vec2", "Vec3", "Vec4", "Mat3", "Mat4", "Transform", "Quat", "Uuid", "Angle"
+  /// Supported type names are: "Color", "ColorGamma", "Time", "Vec2", "Vec3", "Vec4", "Mat3", "Mat4", "Transform", "Quat", "Uuid", "Angle", "HashedString", "TempHashedString".
   /// Type names are case sensitive.
   XII_FOUNDATION_DLL xiiResult ConvertToVariant(const xiiOpenDdlReaderElement* pElement, xiiVariant& out_result); // [tested]
 
@@ -323,6 +335,12 @@ namespace xiiOpenDdlUtils
 
   /// \brief Writes a xiiAngled to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreAngle(xiiOpenDdlWriter& ref_writer, const xiiAngled& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
+
+  /// \brief Writes an xiiHashedString to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreHashedString(xiiOpenDdlWriter& ref_writer, const xiiHashedString& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
+
+  /// \brief Writes an xiiTempHashedString to DDL such that the type can be reconstructed.
+  XII_FOUNDATION_DLL void StoreTempHashedString(xiiOpenDdlWriter& ref_writer, const xiiTempHashedString& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a xiiVariant to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreVariant(xiiOpenDdlWriter& ref_writer, const xiiVariant& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]

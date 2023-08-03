@@ -1539,6 +1539,10 @@ xiiVariant xiiReflectionUtils::GetDefaultVariantFromType(xiiVariant::Type::Enum 
       return xiiVariant(xiiString());
     case xiiVariant::Type::StringView:
       return xiiVariant(xiiStringView(), false);
+    case xiiVariant::Type::HashedString:
+      return xiiVariant(xiiHashedString());
+    case xiiVariant::Type::TempHashedString:
+      return xiiVariant(xiiTempHashedString());
     case xiiVariant::Type::DataBuffer:
       return xiiVariant(xiiDataBuffer());
     case xiiVariant::Type::Time:
@@ -1718,10 +1722,7 @@ namespace
   template <class C>
   struct xiiClampCategoryType
   {
-    enum
-    {
-      value = (((xiiVariant::TypeDeduction<C>::value >= xiiVariantType::Int8 && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::Double) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Time) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Angle) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Angled))) + ((xiiVariant::TypeDeduction<C>::value >= xiiVariantType::Vector2 && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::Vector4U64) * 2)
-    };
+    static constexpr xiiInt32 value = (((xiiVariant::TypeDeduction<C>::value >= xiiVariantType::Int8 && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::Double) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Time) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Angle) || (xiiVariant::TypeDeduction<C>::value == xiiVariantType::Angled))) + ((xiiVariant::TypeDeduction<C>::value >= xiiVariantType::Vector2I && xiiVariant::TypeDeduction<C>::value <= xiiVariantType::Vector4d) * 2);
   };
 
   template <typename T, xiiInt32 V = xiiClampCategoryType<T>::value>

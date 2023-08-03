@@ -3,12 +3,17 @@
 #include <Foundation/Basics.h>
 #include <GuiFoundation/Action/ActionMap.h>
 
-
+/// \brief A central place for creating and retrieving action maps.
 class XII_GUIFOUNDATION_DLL xiiActionMapManager
 {
 public:
-  static xiiResult     RegisterActionMap(xiiStringView sMapping);
-  static xiiResult     UnregisterActionMap(xiiStringView sMapping);
+  /// \brief Adds a new action map with the given name. Returns XII_FAILURE if the name was already used before.
+  static xiiResult RegisterActionMap(xiiStringView sMapping);
+
+  /// \brief Deletes the action map with the given name. Returns XII_FAILURE, if no such map exists.
+  static xiiResult UnregisterActionMap(xiiStringView sMapping);
+
+  /// \brief Returns the action map with the given name, or nullptr, if it doesn't exist.
   static xiiActionMap* GetActionMap(xiiStringView sMapping);
 
 private:

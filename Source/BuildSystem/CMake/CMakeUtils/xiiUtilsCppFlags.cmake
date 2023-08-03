@@ -124,17 +124,17 @@ function(xii_set_build_flags_msvc TARGET_NAME)
 
 	# Ignore various warnings we are not interested in
 
-	# 4100 = unreferenced formal parameter *
-	# 4127 = conditional expression is constant *
-	# 4189 = local variable is initialized but not referenced *
-	# 4201 = nonstandard extension used: nameless struct/union *
-	# 4245 = signed/unsigned mismatch *
-	# 4251 = class 'type' needs to have dll-interface to be used by clients of class 'type2' -> dll export / import issues (mostly with templates) *
-	# 4310 = cast truncates constant value *
-	# 4324 = structure was padded due to alignment specifier *
-	# 4345 = behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
-	# 4389 = signed/unsigned mismatch *
-	# 4714 = function 'function' marked as __forceinline not inlined
+	# 4100 = Unreferenced formal parameter *
+	# 4127 = Conditional expression is constant *
+	# 4189 = Local variable is initialized but not referenced *
+	# 4201 = Nonstandard extension used: nameless struct/union *
+	# 4245 = Signed/unsigned mismatch *
+	# 4251 = Class 'type' needs to have dll-interface to be used by clients of class 'type2' -> dll export / import issues (mostly with templates) *
+	# 4310 = Cast truncates constant value *
+	# 4324 = Structure was padded due to alignment specifier *
+	# 4345 = Behavior change: an object of POD type constructed with an initializer of the form () will be default-initialized
+	# 4389 = Signed/unsigned mismatch *
+	# 4714 = Function 'function' marked as __forceinline not inlined
 	# 6326 = Potential comparison of a constant with another constant
 	target_compile_options(${TARGET_NAME} PUBLIC /wd4201 /wd4251 /wd4324 /wd4345)
 	target_compile_options(${TARGET_NAME} PRIVATE /wd4100 /wd4189 /wd4127 /wd4245 /wd4389 /wd4310 /wd4714 /wd6326)
@@ -145,7 +145,7 @@ function(xii_set_build_flags_msvc TARGET_NAME)
 	# 4099 = Linker warning "PDB was not found with lib"
 	target_link_options(${TARGET_NAME} PRIVATE /ignore:4099)
 
-	# 'nodiscard': attribute is ignored in this syntactic position
+	# 'nodiscard': Attribute is ignored in this syntactic position
 	target_compile_options(${TARGET_NAME} PRIVATE /wd5240)
 
 endfunction()
@@ -301,11 +301,11 @@ endfunction()
 function(xii_set_build_flags TARGET_NAME)
 	xii_pull_compiler_and_architecture_vars()
 
-	set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 17)
+	set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)
 
 	# On Android, we need to specify the C++ version manually.
 	if(ANDROID)
-		add_compile_options(-std=c++17)
+		add_compile_options(-std=c++20)
 	endif()
 
 	if(XII_CMAKE_COMPILER_MSVC)

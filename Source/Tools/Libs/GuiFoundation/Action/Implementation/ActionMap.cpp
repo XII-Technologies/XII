@@ -16,27 +16,45 @@ XII_END_STATIC_REFLECTED_TYPE;
 // xiiActionMap public functions
 ////////////////////////////////////////////////////////////////////////
 
-xiiActionMap::xiiActionMap()
-{
-  // xiiReflectedTypeDescriptor desc;
-  // xiiToolsReflectionUtils::GetReflectedTypeDescriptorFromRtti(xiiGetStaticRTTI<xiiActionMapDescriptor>(), desc);
-  // m_pRtti = xiiPhantomRttiManager::RegisterType(desc);
-}
+xiiActionMap::xiiActionMap() = default;
 
-xiiActionMap::~xiiActionMap()
+xiiActionMap::~xiiActionMap() = default;
+
+void xiiActionMap::MapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath, xiiStringView sSubPath, float fOrder)
 {
-  // DestroyAllObjects();
+  xiiStringBuilder sFullPath = sPath;
+
+  if (!sPath.IsEmpty() && sPath.FindSubString("/") == nullptr)
+  {
+    if (SearchPathForAction(sPath, sFullPath).Failed())
+    {
+      sFullPath = sPath;
+    }
+  }
+
+  sFullPath.AppendPath(sSubPath);
+
+  MapAction(hAction, sFullPath, fOrder);
 }
 
 void xiiActionMap::MapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath, float fOrder)
 {
-  xiiStringBuilder sPath0 = sPath;
-  sPath0.MakeCleanPath();
-  sPath0.Trim("/");
+  xiiStringBuilder sCleanPath = sPath;
+  sCleanPath.MakeCleanPath();
+  sCleanPath.Trim("/");
   xiiActionMapDescriptor d;
   d.m_hAction = hAction;
-  d.m_sPath   = sPath0;
+  d.m_sPath   = sCleanPath;
   d.m_fOrder  = fOrder;
+
+  if (!d.m_sPath.IsEmpty() && d.m_sPath.FindSubString("/") == nullptr)
+  {
+    xiiStringBuilder sFullPath;
+    if (SearchPathForAction(d.m_sPath, sFullPath).Succeeded())
+    {
+      d.m_sPath = sFullPath;
+    }
+  }
 
   XII_VERIFY(MapAction(d).IsValid(), "Mapping Failed");
 }
@@ -112,14 +130,24 @@ xiiResult xiiActionMap::UnmapAction(const xiiUuid& guid)
 
 xiiResult xiiActionMap::UnmapAction(xiiActionDescriptorHandle hAction, xiiStringView sPath)
 {
-  xiiStringBuilder sPath0 = sPath;
-  sPath0.MakeCleanPath();
-  sPath0.Trim("/");
+  xiiStringBuilder sCleanPath = sPath;
+  sCleanPath.MakeCleanPath();
+  sCleanPath.Trim("/");
 
   xiiActionMapDescriptor d;
   d.m_hAction = hAction;
-  d.m_sPath   = sPath0;
+  d.m_sPath   = sCleanPath;
   d.m_fOrder  = 0.0f; // unused.
+
+  if (!d.m_sPath.IsEmpty() && d.m_sPath.FindSubString("/") == nullptr)
+  {
+    xiiStringBuilder sFullPath;
+    if (SearchPathForAction(d.m_sPath, sFullPath).Succeeded())
+    {
+      d.m_sPath = sFullPath;
+    }
+  }
+
   return UnmapAction(d);
 }
 
@@ -150,7 +178,7 @@ xiiResult xiiActionMap::UnmapAction(const xiiActionMapDescriptor& desc)
   return XII_FAILURE;
 }
 
-bool xiiActionMap::FindObjectByPath(const xiiStringView& sPath, xiiUuid& out_guid) const
+bool xiiActionMap::FindObjectByPath(xiiStringView sPath, xiiUuid& out_guid) const
 {
   out_guid = xiiUuid();
   if (sPath.IsEmpty())
@@ -172,6 +200,44 @@ bool xiiActionMap::FindObjectByPath(const xiiStringView& sPath, xiiUuid& out_gui
   return true;
 }
 
+xiiResult xiiActionMap::SearchPathForAction(xiiStringView sUniqueName, xiiStringBuilder& out_sPath) const
+{
+  out_sPath.Clear();
+
+  if (FindObjectPathByName(&m_Root, sUniqueName, out_sPath))
+  {
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}
+
+bool xiiActionMap::FindObjectPathByName(const xiiTreeNode<xiiActionMapDescriptor>* pObject, xiiStringView sName, xiiStringBuilder& out_sPath) const
+{
+  xiiStringView sObjectName;
+
+  if (!pObject->m_Data.m_hAction.IsInvalidated())
+  {
+    sObjectName = pObject->m_Data.m_hAction.GetDescriptor()->m_sActionName;
+  }
+
+  out_sPath.AppendPath(sObjectName);
+
+  if (sObjectName == sName)
+    return true;
+
+  for (const xiiTreeNode<xiiActionMapDescriptor>* pChild : pObject->GetChildren())
+  {
+    const xiiActionMapDescriptor& pDesc = pChild->m_Data;
+
+    if (FindObjectPathByName(pChild, sName, out_sPath))
+      return true;
+  }
+
+  out_sPath.PathParentDirectory();
+  return false;
+}
+
 const xiiActionMapDescriptor* xiiActionMap::GetDescriptor(const xiiUuid& guid) const
 {
   auto it = m_Descriptors.Find(guid);
@@ -188,9 +254,7 @@ const xiiActionMapDescriptor* xiiActionMap::GetDescriptor(const xiiTreeNode<xiiA
   return &pObject->m_Data;
 }
 
-const xiiTreeNode<xiiActionMapDescriptor>* xiiActionMap::GetChildByName(
-  const xiiTreeNode<xiiActionMapDescriptor>* pObject,
-  const xiiStringView&                       sName) const
+const xiiTreeNode<xiiActionMapDescriptor>* xiiActionMap::GetChildByName(const xiiTreeNode<xiiActionMapDescriptor>* pObject, xiiStringView sName) const
 {
   for (const xiiTreeNode<xiiActionMapDescriptor>* pChild : pObject->GetChildren())
   {

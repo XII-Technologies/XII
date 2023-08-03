@@ -189,8 +189,9 @@ protected:
   virtual void InternalSetValue(const xiiVariant& value) override;
 
 protected:
-  QHBoxLayout* m_pLayout;
-  QLineEdit*   m_pWidget;
+  QHBoxLayout*            m_pLayout;
+  QLineEdit*              m_pWidget;
+  xiiEnum<xiiVariantType> m_OriginalType;
 };
 
 

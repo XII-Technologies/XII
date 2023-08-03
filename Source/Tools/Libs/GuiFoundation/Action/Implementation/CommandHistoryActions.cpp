@@ -15,10 +15,8 @@ xiiActionDescriptorHandle xiiCommandHistoryActions::s_hRedo;
 void xiiCommandHistoryActions::RegisterActions()
 {
   s_hCommandHistoryCategory = XII_REGISTER_CATEGORY("CmdHistoryCategory");
-  s_hUndo                   = XII_REGISTER_ACTION_AND_DYNAMIC_MENU_1(
-    "Document.Undo", xiiActionScope::Document, "Document", "Ctrl+Z", xiiCommandHistoryAction, xiiCommandHistoryAction::ButtonType::Undo);
-  s_hRedo = XII_REGISTER_ACTION_AND_DYNAMIC_MENU_1(
-    "Document.Redo", xiiActionScope::Document, "Document", "Ctrl+Y", xiiCommandHistoryAction, xiiCommandHistoryAction::ButtonType::Redo);
+  s_hUndo                   = XII_REGISTER_ACTION_AND_DYNAMIC_MENU_1("Document.Undo", xiiActionScope::Document, "Document", "Ctrl+Z", xiiCommandHistoryAction, xiiCommandHistoryAction::ButtonType::Undo);
+  s_hRedo                   = XII_REGISTER_ACTION_AND_DYNAMIC_MENU_1("Document.Redo", xiiActionScope::Document, "Document", "Ctrl+Y", xiiCommandHistoryAction, xiiCommandHistoryAction::ButtonType::Redo);
 }
 
 void xiiCommandHistoryActions::UnregisterActions()
@@ -28,16 +26,14 @@ void xiiCommandHistoryActions::UnregisterActions()
   xiiActionManager::UnregisterAction(s_hRedo);
 }
 
-void xiiCommandHistoryActions::MapActions(xiiStringView sMapping, xiiStringView sPath)
+void xiiCommandHistoryActions::MapActions(xiiStringView sMapping, xiiStringView sTargetMenu)
 {
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
   XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the actions failed!", sMapping);
 
-  xiiStringBuilder sSubPath(sPath, "/CmdHistoryCategory");
-
-  pMap->MapAction(s_hCommandHistoryCategory, sPath, 3.0f);
-  pMap->MapAction(s_hUndo, sSubPath, 1.0f);
-  pMap->MapAction(s_hRedo, sSubPath, 2.0f);
+  pMap->MapAction(s_hCommandHistoryCategory, sTargetMenu, 3.0f);
+  pMap->MapAction(s_hUndo, sTargetMenu, "CmdHistoryCategory", 1.0f);
+  pMap->MapAction(s_hRedo, sTargetMenu, "CmdHistoryCategory", 2.0f);
 }
 
 xiiCommandHistoryAction::xiiCommandHistoryAction(const xiiActionContext& context, xiiStringView sName, ButtonType button) :

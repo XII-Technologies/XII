@@ -93,6 +93,9 @@ static xiiQtPropertyWidget* StandardTypeCreator(const xiiRTTI* pRtti)
     case xiiVariant::Type::String:
       return new xiiQtPropertyEditorLineEditWidget();
 
+    case xiiVariant::Type::HashedString:
+      return new xiiQtPropertyEditorLineEditWidget();
+
     case xiiVariant::Type::Color:
     case xiiVariant::Type::ColorGamma:
       return new xiiQtPropertyEditorColorWidget();
@@ -164,13 +167,15 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, PropertyGrid)
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiUInt64>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiConstCharPtr>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiString>(), StandardTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiHashedString>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiTime>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiColor>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiColorGammaUB>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiAngle>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVariant>(), StandardTypeCreator);
 
-    // \todo: xiiMat3, xiiMat4, xiiTransform, xiiUuid, xiiVariant
+    // \todo GUIFoundation: Double precision variants for vectors and angles.
+    // \todo GUIFoundation: xiiMat3, xiiMat4, xiiTransform, xiiUuid, xiiVariant
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiEnumBase>(), EnumCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiBitflagsBase>(), BitflagsCreator);
 

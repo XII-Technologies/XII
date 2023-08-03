@@ -3,6 +3,7 @@
 #include <GuiFoundation/Action/BaseActions.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <ToolsFoundation/Selection/SelectionManager.h>
+
 ///
 class XII_GUIFOUNDATION_DLL xiiEditActions
 {
@@ -10,9 +11,9 @@ public:
   static void RegisterActions();
   static void UnregisterActions();
 
-  static void MapActions(xiiStringView sMapping, xiiStringView sPath, bool bDeleteAction, bool bAdvancedPasteActions);
-  static void MapContextMenuActions(xiiStringView sMapping, xiiStringView sPath);
-  static void MapViewContextMenuActions(xiiStringView sMapping, xiiStringView sPath);
+  static void MapActions(xiiStringView sMapping, bool bDeleteAction, bool bAdvancedPasteActions);
+  static void MapContextMenuActions(xiiStringView sMapping);
+  static void MapViewContextMenuActions(xiiStringView sMapping);
 
   static xiiActionDescriptorHandle s_hEditCategory;
   static xiiActionDescriptorHandle s_hCopy;
@@ -37,6 +38,7 @@ public:
     PasteAtOriginalLocation,
     Delete,
   };
+
   xiiEditAction(const xiiActionContext& context, xiiStringView sName, ButtonType button);
   ~xiiEditAction();
 

@@ -1096,7 +1096,7 @@ bool xiiQtPropertyContainerWidget::updateDropIndex(QDropEvent* pEvent)
         pEvent->accept();
         xiiInt32 iNewDropTarget = -1;
         // Find closest drop target.
-        const xiiInt32 iGlobalYPos = mapToGlobal(pEvent->pos()).y();
+        const xiiInt32 iGlobalYPos = mapToGlobal(pEvent->position().toPoint()).y();
         for (xiiUInt32 j = 0; j < m_Elements.GetCount(); j++)
         {
           const QRect rect(m_Elements[j].m_pSubGroup->mapToGlobal(QPoint(0, 0)), m_Elements[j].m_pSubGroup->size());
@@ -1825,7 +1825,7 @@ void xiiQtVariantPropertyWidget::ChangeVariantType(xiiVariantType::Enum type)
 
 xiiResult xiiQtVariantPropertyWidget::GetVariantTypeDisplayName(xiiVariantType::Enum type, xiiStringBuilder& out_sName) const
 {
-  if (type == xiiVariantType::FirstStandardType || type == xiiVariantType::StringView || type == xiiVariantType::DataBuffer || type >= xiiVariantType::LastStandardType)
+  if (type == xiiVariantType::FirstStandardType || type >= xiiVariantType::LastStandardType || type == xiiVariantType::StringView || type == xiiVariantType::DataBuffer || type == xiiVariantType::TempHashedString)
     return XII_FAILURE;
 
   const xiiRTTI* pVariantEnum = xiiGetStaticRTTI<xiiVariantType>();
