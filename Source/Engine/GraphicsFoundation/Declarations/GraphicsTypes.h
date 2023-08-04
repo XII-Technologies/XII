@@ -1022,6 +1022,63 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateTextureAccess
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateTextureAccess);
 
+/// \brief This describes the draw command compatibilty flags.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawCommandCapabilityFlags
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None                      = 0U,         ///< No draw command capabilities.
+    BaseVertex                = XII_BIT(1), ///< Indicates that device supports non-zero base vertex for an indexed draw.
+    DrawIndirect              = XII_BIT(2), ///< Indicates that device supports indirect draw/dispatch commands.
+    DrawIndirectFirstInstance = XII_BIT(3), ///< Indicates that first instance location of the indirect draw command can be greater than zero.
+    NativeMultiDrawIndirect   = XII_BIT(4), ///< Indicates that device natively supports indirect draw commands with draw count greater than 1. When this flag is not set, the commands will be emulated on the host, which will produce correct results, but will be slower.
+    DrawIndirectCounterBuffer = XII_BIT(5), ///< Indicates that indirect and indexed indirect draw commands may take non-null counter buffer. If this flag is not set, the number of draw commands must be specified through the command attributes.
+
+    ENUM_COUNT = 6U,
+
+    Default = None
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDrawCommandCapabilityFlags);
+
+/// \brief Sparse memory capability flags.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceCapabilityFlags
+{
+  using StorageType = xiiUInt32;
+
+  enum Enum : StorageType
+  {
+    None                     = 0U,          ///< No sparse resource capabilities.
+    ShaderResourceResidency  = XII_BIT(0),  ///< Specifies whether texture operations that return resource residency information are supported in shader code.
+    Buffer                   = XII_BIT(1),  ///< Specifies whether the device supports sparse buffers.
+    Texture2D                = XII_BIT(2),  ///< Specifies whether the device supports sparse 2D textures with 1 sample per pixel.
+    Texture3D                = XII_BIT(3),  ///< Specifies whether the device supports sparse 3D textures.
+    Texture2Samples          = XII_BIT(4),  ///< Specifies whether the device supports sparse 2D textures with 2 samples per pixel.
+    Texture4Samples          = XII_BIT(5),  ///< Specifies whether the device supports sparse 2D textures with 4 samples per pixel.
+    Texture8Samples          = XII_BIT(6),  ///< Specifies whether the device supports sparse 2D textures with 8 samples per pixel.
+    Texture16Samples         = XII_BIT(7),  ///< Specifies whether the device supports sparse 2D textures with 16 samples per pixel.
+    Aliased                  = XII_BIT(8),  ///< Specifies whether the device can correctly access memory aliased into multiple locations, and reading physical memory from multiple aliased locations will return the same value.
+    Standard2DTileShape      = XII_BIT(9),  ///< Specifies whether the device accesses single-sample 2D sparse textures using the standard sparse texture tile shapes.
+    Standard2DMSTileShape    = XII_BIT(10), ///< Specifies whether the device accesses multi-sample 2D sparse textures using the standard sparse texture tile shapes.
+    Standard3DTileShape      = XII_BIT(11), ///< Specifies whether the device accesses 3D sparse textures using the standard sparse texture tile shapes.
+    AlignedMipSize           = XII_BIT(12), ///< Specifies if textures with mip level dimensions that are not integer multiples of the corresponding dimensions of the sparse texture tile may be placed in the mip tail.
+    NonResidentStrict        = XII_BIT(13), ///< Specifies whether the device can consistently access non-resident (without bound memory) regions of a resource.
+    Texture2DArrayMipTail    = XII_BIT(14), ///< Specifies whether the device supports sparse texture arrays with mip levels whose dimensions are less than the tile size.
+    BufferStandardBlock      = XII_BIT(15), ///< Indicates that sparse buffers use the standard block, see SparseResourceProperties::StandardBlockSize.
+    NonResidentSafe          = XII_BIT(16), ///< Reads or writes from unbound memory must not cause device removal.
+    MixedResourceTypeSupport = XII_BIT(17), ///< Indicates that single device memory object can be used to bind memory for different resource types.
+
+    ENUM_COUNT = 20U,
+
+    Default = None
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSparseResourceCapabilityFlags);
+
 /// \brief Base class for GAL objects, stores a creation description of the object and also allows for reference counting.
 template <typename CreationDescription>
 class xiiGALObject : public xiiRefCounted

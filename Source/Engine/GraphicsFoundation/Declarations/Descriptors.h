@@ -269,16 +269,48 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties : public xiiHashab
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALShadingRateMode>            m_Mode[XII_GAL_MAX_SHADING_RATE];   ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
-  xiiUInt8                                  m_uiCount;                          ///< The number of valid elements in ShadingRates array.
-  xiiEnum<xiiGALShadingRateCapabilityFlags> m_CapabilityFlags;                  ///< Shading rate capability flags.
-  xiiEnum<xiiGALShadingRateCombiner>        m_CombinerFlags;                    ///< Combination of all supported shading rate combiners.
-  xiiEnum<xiiGALShadingRateFormat>          m_Format;                           ///< Indicates which shading rate texture format is used by this device.
-  xiiEnum<xiiGALShadingRateTextureAccess>   m_TextureAccess;                    ///< Shading rate texture access type.
-  xiiEnum<xiiGALBindFlags>                  m_BindFlags;                        ///< Indicates which bind flags are allowed for shading rate texture.
-  xiiSizeU32                                m_MinTileSize = xiiSizeU32(0U, 0U); ///< Minimum supported tile size. Shading rate texture size must be less than or equal to (Framebuffer Size / MaxTileSize).
-  xiiSizeU32                                m_MaxTileSize = xiiSizeU32(0U, 0U); ///< Maximum supported tile size. Shading rate texture size must be greater than or equal to (Framebuffer Size / MaxTileSize).
-  xiiUInt32                                 m_uiMaxSubSampledArraySlices = 0U;  ///< Maximum size of the texture array created with texture subsampled flag.
+  xiiEnum<xiiGALShadingRateMode>            m_Mode[XII_GAL_MAX_SHADING_RATE];                  ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
+  xiiUInt8                                  m_uiCount;                                         ///< The number of valid elements in ShadingRates array.
+  xiiEnum<xiiGALShadingRateCapabilityFlags> m_CapabilityFlags;                                 ///< Shading rate capability flags.
+  xiiEnum<xiiGALShadingRateCombiner>        m_CombinerFlags;                                   ///< Combination of all supported shading rate combiners.
+  xiiEnum<xiiGALShadingRateFormat>          m_Format;                                          ///< Indicates which shading rate texture format is used by this device.
+  xiiEnum<xiiGALShadingRateTextureAccess>   m_TextureAccess;                                   ///< Shading rate texture access type.
+  xiiEnum<xiiGALBindFlags>                  m_BindFlags;                                       ///< Indicates which bind flags are allowed for shading rate texture.
+  xiiSizeU32                                m_MinTileSize                = xiiSizeU32(0U, 0U); ///< Minimum supported tile size. Shading rate texture size must be less than or equal to (Framebuffer Size / MaxTileSize).
+  xiiSizeU32                                m_MaxTileSize                = xiiSizeU32(0U, 0U); ///< Maximum supported tile size. Shading rate texture size must be greater than or equal to (Framebuffer Size / MaxTileSize).
+  xiiUInt32                                 m_uiMaxSubSampledArraySlices = 0U;                 ///< Maximum size of the texture array created with texture subsampled flag.
+};
+
+/// \brief The draw command properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawCommandProperties : public xiiHashableStruct<xiiGALDrawCommandProperties>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiEnum<xiiGALDrawCommandCapabilityFlags> m_CapabilityFlags;             ///< Draw command capability flags.
+  xiiUInt32                                 m_uiMaxIndexValue        = 0U; ///< Maximum supported index value for index buffer.
+  xiiUInt32                                 m_uiMaxDrawIndirectCount = 0U; ///< Maximum supported draw commands counter for indirect and indexed indirect draw commands.
+};
+
+/// \brief Sparse memory properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceProperties : public xiiHashableStruct<xiiGALSparseResourceProperties>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt64                                    m_uiAddressSpaceSize  = 0U; ///< The total amount of address space, in bytes, available for sparse resources.
+  xiiUInt64                                    m_uiResourceSpaceSize = 0U; ///< The total amount of address space, in bytes, available for a single resource.
+  xiiEnum<xiiGALSparseResourceCapabilityFlags> m_CapabilityFlags;          ///< Sparse resource capability flags.
+  xiiUInt32                                    m_uiStandardBlockSize;      ///< Size of the standard sparse memory block in bytes.
+  xiiEnum<xiiGALBindFlags>                     m_BindFlags;                ///< Allowed bind flags for sparse buffer.
+};
+
+/// \brief Command queue properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHashableStruct<xiiGALCommandQueueProperties>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiEnum<xiiGALCommandQueueType> m_Type;                           ///< Indicates which type of commands are supported by this queue.
+  xiiUInt32                       m_MaxDeviceContexts;              ///< The maximum number of immediate contexts that may be created for this queue.
+  xiiUInt32                       m_TextureCopyGranularity[3] = {}; ///< Defines required texture offset and size alignment for copy operations in transfer queues.
 };
 
 #include <GraphicsFoundation/Declarations/Implementation/Descriptors_inl.h>
