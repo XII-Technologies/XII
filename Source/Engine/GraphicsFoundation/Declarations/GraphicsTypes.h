@@ -936,7 +936,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRate
     _4X2 = ((xiiGALShadingRateAxis::X4 << XII_GAL_SHADING_RATE_X_SHIFT) | xiiGALShadingRateAxis::X2), ///< Specifies 1/4 horizontal and 1/2 vertical rate.
     _4X4 = ((xiiGALShadingRateAxis::X4 << XII_GAL_SHADING_RATE_X_SHIFT) | xiiGALShadingRateAxis::X4), ///< Specifies 1/4 horizontal and 1/4 vertical shading rate.
 
-    ENUM_COUNT,
+    ENUM_COUNT = 9U,
 
     Default = _1X1
   };
@@ -1001,6 +1001,26 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCapabilityFlags
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateCapabilityFlags);
+
+/// \brief This describes the access pattern of the shading rate texture.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateTextureAccess
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Unknown = 0U,      ///< Shading rate texture access type is unknown.
+    OnGPU,             ///< Shading rate texture is accessed by the GPU when command buffer is executed.
+    OnSubmit,          ///< Shading rate texture is accessed by the CPU when command buffer is submitted for execution. An application is not allowed to modify the texture until the command buffer is executed by the GPU. Fences or other synchronization methods must be used to control the access to the texture.
+    OnSetRenderTarget, ///< Shading rate texture is accessed by the CPU when the render target is set. An application is not allowed to modify the texture until the command buffer is executed by GPU. Fences or other synchronization methods must be used to control the access to the texture.
+
+    ENUM_COUNT,
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateTextureAccess);
 
 /// \brief Base class for GAL objects, stores a creation description of the object and also allows for reference counting.
 template <typename CreationDescription>

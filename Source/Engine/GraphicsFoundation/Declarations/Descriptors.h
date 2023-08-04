@@ -264,4 +264,21 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateMode : public xiiHashableStru
   xiiEnum<xiiGALSampleCount> m_SampleBits;  ///< The combination of supported sample counts.
 };
 
+/// \brief This describes the shading rate properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties : public xiiHashableStruct<xiiGALShadingRateProperties>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiEnum<xiiGALShadingRateMode>            m_Mode[XII_GAL_MAX_SHADING_RATE];   ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
+  xiiUInt8                                  m_uiCount;                          ///< The number of valid elements in ShadingRates array.
+  xiiEnum<xiiGALShadingRateCapabilityFlags> m_CapabilityFlags;                  ///< Shading rate capability flags.
+  xiiEnum<xiiGALShadingRateCombiner>        m_CombinerFlags;                    ///< Combination of all supported shading rate combiners.
+  xiiEnum<xiiGALShadingRateFormat>          m_Format;                           ///< Indicates which shading rate texture format is used by this device.
+  xiiEnum<xiiGALShadingRateTextureAccess>   m_TextureAccess;                    ///< Shading rate texture access type.
+  xiiEnum<xiiGALBindFlags>                  m_BindFlags;                        ///< Indicates which bind flags are allowed for shading rate texture.
+  xiiSizeU32                                m_MinTileSize = xiiSizeU32(0U, 0U); ///< Minimum supported tile size. Shading rate texture size must be less than or equal to (Framebuffer Size / MaxTileSize).
+  xiiSizeU32                                m_MaxTileSize = xiiSizeU32(0U, 0U); ///< Maximum supported tile size. Shading rate texture size must be greater than or equal to (Framebuffer Size / MaxTileSize).
+  xiiUInt32                                 m_uiMaxSubSampledArraySlices = 0U;  ///< Maximum size of the texture array created with texture subsampled flag.
+};
+
 #include <GraphicsFoundation/Declarations/Implementation/Descriptors_inl.h>
