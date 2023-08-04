@@ -242,7 +242,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceCreationDescription : publ
 };
 
 /// \brief This describes the device memory properties.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceCreationDescription : public xiiHashableStruct<xiiGALGraphicsDeviceCreationDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceMemoryProperties : public xiiHashableStruct<xiiGALDeviceMemoryProperties>
 {
   XII_DECLARE_POD_TYPE();
 
@@ -281,7 +281,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties : public xiiHashab
   xiiUInt32                                 m_uiMaxSubSampledArraySlices = 0U;                 ///< Maximum size of the texture array created with texture subsampled flag.
 };
 
-/// \brief The draw command properties.
+/// \brief This describes the draw command properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawCommandProperties : public xiiHashableStruct<xiiGALDrawCommandProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -291,7 +291,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawCommandProperties : public xiiHashab
   xiiUInt32                                 m_uiMaxDrawIndirectCount = 0U; ///< Maximum supported draw commands counter for indirect and indexed indirect draw commands.
 };
 
-/// \brief Sparse memory properties.
+/// \brief This describes the sparse memory properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceProperties : public xiiHashableStruct<xiiGALSparseResourceProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -303,7 +303,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceProperties : public xiiHas
   xiiEnum<xiiGALBindFlags>                     m_BindFlags;                ///< Allowed bind flags for sparse buffer.
 };
 
-/// \brief Command queue properties.
+/// \brief This describes the command queue properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHashableStruct<xiiGALCommandQueueProperties>
 {
   XII_DECLARE_POD_TYPE();
@@ -311,6 +311,43 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHasha
   xiiEnum<xiiGALCommandQueueType> m_Type;                           ///< Indicates which type of commands are supported by this queue.
   xiiUInt32                       m_MaxDeviceContexts;              ///< The maximum number of immediate contexts that may be created for this queue.
   xiiUInt32                       m_TextureCopyGranularity[3] = {}; ///< Defines required texture offset and size alignment for copy operations in transfer queues.
+};
+
+/// \brief This describes the graphics adapter properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGraphicsDeviceAdapterDescription : public xiiHashableStruct<xiiGraphicsDeviceAdapterDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiString                            m_sAdapterName;                                            ///< A string that contains the adapter description.
+  xiiEnum<xiiGALDeviceAdapterType>     m_Type;                                                    ///< Adapter type.
+  xiiEnum<xiiGALGraphicsAdapterVendor> m_Vendor;                                                  ///< Adapter vendor.
+  xiiUInt32                            m_uiVendorID         = 0U;                                 ///< The PCI ID of the hardware vendor (if available).
+  xiiUInt32                            m_uiDeviceID         = 0U;                                 ///< The PCI ID of the hardware device (if available).
+  xiiUInt32                            m_uiVideoOutputCount = 0U;                                 ///< Number of video outputs this adapter has (if available).
+  xiiGALDeviceMemoryProperties         m_MemoryProperties;                                        ///< Device memory information.
+  xiiGALRayTracingProperties           m_RayTracingProperties;                                    ///< Ray tracing properties.
+  xiiGALWaveOperationProperties        m_WaveOperationProperties;                                 ///< Wave operation properties.
+  xiiGALBufferProperties               m_BufferProperties;                                        ///< Buffer properties.
+  xiiGALTextureProperties              m_TextureProperties;                                       ///< Texture properties.
+  xiiGALSamplerProperties              m_SamplerProperties;                                       ///< Sampler properties.
+  xiiGALMeshShaderProperties           m_MeshShaderProperties;                                    ///< Mesh shader properties.
+  xiiGALShadingRateProperties          m_ShadingRateProperties;                                   ///< Shading rate properties.
+  xiiGALComputeShaderProperties        m_ComputeShaderProperties;                                 ///< Compute shader properties.
+  xiiGALDrawCommandProperties          m_DrawCommandProperties;                                   ///< Draw command properties.
+  xiiGALSparseResourceProperties       m_SparseResourceProperties;                                ///< Sparse resource properties.
+  xiiGALDeviceFeatures                 m_Features;                                                ///< Supported device features.
+  xiiGALCommandQueueProperties         m_CommandQueueProperties[XII_GAL_MAX_ADAPTER_QUEUES] = {}; ///< An array of NumQueues command queues supported by this device.
+  xiiUInt32                            m_AdapterQueuesCount                                 = 0U; ///< The number of queues in the command queue properties array.
+};
+
+/// \brief This describes the immediate context device creation description.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALImmediateContextCreationDescription : public xiiHashableStruct<xiiGALImmediateContextCreationDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiStringView                       m_sName;         ///< Context name.
+  xiiUInt8                            m_uiQueueID;     ///< Queue index.
+  xiiEnum<xiiGALCommandQueuePriority> m_QueuePriority; ///< Priority of the software queue created by the context.
 };
 
 #include <GraphicsFoundation/Declarations/Implementation/Descriptors_inl.h>
