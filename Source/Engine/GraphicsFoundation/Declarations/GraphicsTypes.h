@@ -94,6 +94,28 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceValidationLevel
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALGraphicsDeviceValidationLevel);
 
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceEventType
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Unknown,          ///< Unknown device event.
+    AfterInit,        ///< After initialization.
+    BeforeShutdown,   ///< Before shutdown.
+    BeforeBeginFrame, ///< Before begin frame.
+    AfterBeginFrame,  ///< After begin frame.
+    BeforeEndFrame,   ///< Before end frame.
+    AfterEndFrame,    ///< After end frame.
+
+    ENUM_COUNT,
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDeviceEventType);
+
 /// \brief This describes the represented value type. It is used by the buffer description
 /// to describe the value type of a formatted buffer, and also used to specify the index type
 /// for an indexed draw call.
@@ -1078,6 +1100,78 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceCapabilityFlags
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSparseResourceCapabilityFlags);
+
+/// \brief This describes the texture format component type.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormatComponentType
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Undefined = 0U,         ///< Undefined component type.
+    Float,                  ///< Floating point component type.
+    SignedNormalized,       ///< Signed-normalized-integer component type.
+    UnsignedNormalized,     ///< Unsigned-normalized-integer component type.
+    UnsignedNormalizedSRGB, ///< Unsigned-normalized-integer sRGB component type.
+    SignedInt,              ///< Signed-integer component type.
+    UnsignedInt,            ///< Unsigned-integer component type.
+    Depth,                  ///< Depth component type.
+    DepthStencil,           ///< Depth-stencil component type.
+    Compound,               ///< Compound component type. (eg. RG11B10Float or RGB9E5SharedEXP)
+    Compressed,             ///< Compressed component type.
+
+    ENUM_COUNT,
+
+    Default = Undefined
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureFormatComponentType);
+
+/// \brief This describes the device support of a particular resource dimension for a given texture format.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceDimensionCapabilityFlags
+{
+  using StorageType = xiiUInt32;
+
+  enum Enum : StorageType
+  {
+    None             = 0U,                                             ///< The device does not support any resources for this format.
+    Buffer           = 1 << xiiGALResourceDimension::Buffer,           ///< Indicates if the device supports buffer resources for a particular texture format.
+    Texture1D        = 1 << xiiGALResourceDimension::Texture1D,        ///< Indicates if the device supports 1D textures for a particular texture format.
+    Texture1DArray   = 1 << xiiGALResourceDimension::Texture1DArray,   ///< Indicates if the device supports 1D texture arrays for a particular texture format.
+    Texture2D        = 1 << xiiGALResourceDimension::Texture2D,        ///< Indicates if the device supports 2D textures for a particular texture format.
+    Texture2DArray   = 1 << xiiGALResourceDimension::Texture2DArray,   ///< Indicates if the device supports 2D texture arrays for a particular texture format.
+    Texture3D        = 1 << xiiGALResourceDimension::Texture3D,        ///< Indicates if the device supports 3D textures for a particular texture format.
+    TextureCube      = 1 << xiiGALResourceDimension::TextureCube,      ///< Indicates if the device supports cube textures for a particular texture format.
+    TextureCubeArray = 1 << xiiGALResourceDimension::TextureCubeArray, ///< Indicates if the device supports cube texture arrays for a particular texture format.
+
+    ENUM_COUNT = 9U,
+
+    Default = None
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceDimensionCapabilityFlags);
+
+/// \brief This describes the sparse texture packing mode.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureFlags
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None                 = 0U,         ///< No supported sparse texture packing modes.
+    SingleMipTail        = XII_BIT(0), ///< Specifies that the texture uses a single mip tail region for all array layers.
+    AlignedMipSize       = XII_BIT(1), ///< Specifies that the first mip level whose dimensions are not integer multiples of the corresponding dimensions of the sparse texture tile begins the mip tail region.
+    NonStandardBlockSize = XII_BIT(2), ///< Specifies that the texture uses non-standard sparse texture tile dimensions, and the TileSize values do not match the standard sparse texture tile dimensions.
+
+    ENUM_COUNT = 4U,
+
+    Default = None
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSparseTextureFlags);
 
 /// \brief Base class for GAL objects, stores a creation description of the object and also allows for reference counting.
 template <typename CreationDescription>

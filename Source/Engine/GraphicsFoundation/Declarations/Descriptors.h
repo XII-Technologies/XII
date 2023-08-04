@@ -350,4 +350,28 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALImmediateContextCreationDescription : pu
   xiiEnum<xiiGALCommandQueuePriority> m_QueuePriority; ///< Priority of the software queue created by the context.
 };
 
+/// \brief This describes the graphics abstraction layer device events.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceEvent : public xiiHashableStruct<xiiGALDeviceEvent>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiEnum<xiiGALDeviceEventType> m_Type;
+
+  class xiiGALDevice* m_pDevice = nullptr;
+};
+
+/// \brief This describes the invariant texture format attributes. These attributes are intrinsic to the texture format itself and do not depend on the format support.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormatDescription : public xiiHashableStruct<xiiGALTextureFormatDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiEnum<xiiGALTextureFormat>              m_Format;                ///< Texture format.
+  xiiUInt8                                  m_uiComponentSize  = 0U; ///< The size of one component in bytes.
+  xiiUInt8                                  m_uiComponentCount = 0U; ///< The number of components.
+  xiiEnum<xiiGALTextureFormatComponentType> m_ComponentType;         ///< The component type.
+  bool                                      m_bIsTypeless   = false; ///< Indicates whether the format is a typeless format.
+  xiiUInt8                                  m_uiBlockWidth  = 0U;    ///< For block-compressed formats, the compression block width.
+  xiiUInt8                                  m_uiBlockHeight = 0U;    ///< For block-compressed formats, the compression block height.
+};
+
 #include <GraphicsFoundation/Declarations/Implementation/Descriptors_inl.h>
