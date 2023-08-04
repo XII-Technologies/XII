@@ -69,13 +69,13 @@ XII_ALWAYS_INLINE void xiiSimdVec4d::SetZero()
 template <>
 XII_ALWAYS_INLINE void xiiSimdVec4d::Load<1>(const double* pValues)
 {
-  m_v = _mm256_castpd128_pd256(_mm_load_sd(pValues));
+  m_v = _mm256_maskload_pd(pValues, _mm256_set_epi64x(0, 0, 0, -1));
 }
 
 template <>
 XII_ALWAYS_INLINE void xiiSimdVec4d::Load<2>(const double* pValues)
 {
-  m_v = _mm256_castpd128_pd256(_mm_load_pd(pValues));
+  m_v = _mm256_maskload_pd(pValues, _mm256_set_epi64x(0, 0, -1, -1));
 }
 
 template <>
