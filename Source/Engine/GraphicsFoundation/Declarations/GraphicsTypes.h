@@ -1173,6 +1173,47 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureFlags
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSparseTextureFlags);
 
+/// \brief This describes the resource usage state.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceStateFlags
+{
+  using StorageType = xiiUInt32;
+
+  enum Enum : StorageType
+  {
+    Unknown            = 0U,          ///< The resource state is not known directly.
+    Undefined          = XII_BIT(0),  ///< The resource state is known to the engine, but is undefined. A resource is typically in an undefined state right after initialization.
+    VertexBuffer       = XII_BIT(1),  ///< The resource is accessed as a vertex buffer.
+    ConstantBuffer     = XII_BIT(2),  ///< The resource is accessed as a constant (uniform) buffer.
+    IndexBuffer        = XII_BIT(3),  ///< The resource is accessed as an index buffer.
+    RenderTarget       = XII_BIT(4),  ///< The resource is accessed as a render target.
+    UnorderedAccess    = XII_BIT(5),  ///< The resource is used for unordered access.
+    DepthWrite         = XII_BIT(6),  ///< The resource is used in a writable depth-stencil view or in clear operation.
+    DepthRead          = XII_BIT(7),  ///< The resource is used in a read-only depth-stencil view.
+    ShaderResource     = XII_BIT(8),  ///< The resource is accessed from a shader.
+    StreamOut          = XII_BIT(9),  ///< The resource is used as the destination for stream output.
+    IndirectArgument   = XII_BIT(10), ///< The resource is used as an indirect draw/dispatch arguments buffer.
+    CopyDestination    = XII_BIT(11), ///< The resource is used as the destination in a copy operation.
+    CopySource         = XII_BIT(12), ///< The resource is used as the source in a copy operation.
+    ResolveDestination = XII_BIT(13), ///< The resource is used as the destination in a resolve operation.
+    ResolveSource      = XII_BIT(14), ///< The resource is used as the source in a resolve operation.
+    InputAttachment    = XII_BIT(15), ///< The resource is used as an input attachment in a render pass subpass.
+    Present            = XII_BIT(16), ///< The resource is used for present.
+    BuildAsRead        = XII_BIT(17), ///< The resource is used as vertex/index/instance buffer in an amplification shader building operation or as an acceleration structure source in an amplification shader copy operation.
+    BuildAsWrite       = XII_BIT(18), ///< The resource is used as the target for AS building or AS copy operations.
+    RayTracing         = XII_BIT(19), ///< The resource is used as a top-level AS shader resource in a trace rays operation.
+    Common             = XII_BIT(20), ///< The resource state is used for read operations, but access to the resource may be slower compared to the specialized state. A transition to the common state is always a pipeline stall and can often induce a cache flush and render target decompress operation.
+    ShadingRate        = XII_BIT(21), ///< The resource is used as the source when variable shading rate rendering.
+
+    ENUM_COUNT = 23U,
+
+    GenericRead = VertexBuffer | ConstantBuffer | IndexBuffer | ShaderResource | IndirectArgument | CopySource,
+
+    Default = Unknown
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceStateFlags);
+
 /// \brief Base class for GAL objects, stores a creation description of the object and also allows for reference counting.
 template <typename CreationDescription>
 class xiiGALObject : public xiiRefCounted
