@@ -374,4 +374,29 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormatDescription : public xiiHas
   xiiUInt8                                  m_uiBlockHeight = 0U;    ///< For block-compressed formats, the compression block height.
 };
 
+/// \brief This describes the blend state for a single render target.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderTargetBlendDescription : public xiiHashableStruct<xiiGALRenderTargetBlendDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  bool                          m_bBlendEnable = false;  ///< Enable or disable blending for this render target.
+  xiiEnum<xiiGALBlendFactor>    m_SourceBlend;           ///< Specifies the blend factor to apply to the RGB value output from the pixel shader.
+  xiiEnum<xiiGALBlendFactor>    m_DestinationBlend;      ///< Specifies the blend factor to apply to the RGB value in the render target.
+  xiiEnum<xiiGALBlendOperation> m_BlendOperation;        ///< Defines how to combine the source and destination RGB values after applying the source and destination blend factors.
+  xiiEnum<xiiGALBlendFactor>    m_SourceBlendAlpha;      ///< Specifies the blend factor to apply to the alpha value output from the pixel shader.
+  xiiEnum<xiiGALBlendFactor>    m_DestinationBlendAlpha; ///< Specifies the blend factor to apply to the alpha value in the render target.
+  xiiEnum<xiiGALBlendOperation> m_BlendOperationAlpha;   ///< Defines how to combine the source and destination alpha values after applying the source and destination blend alpha factors.
+  xiiEnum<xiiGALColorMask>      m_ColorMask;             ///< Render target color write mask.
+};
+
+/// \brief This describes the blend state for all render targets in the graphics pipeline.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendStateCreationDescription : public xiiHashableStruct<xiiGALBlendStateCreationDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  bool                               m_bAlphaToCoverage  = false;                     ///< Specifies whether to use alpha-to-coverage as a multisampling technique when setting a pixel to a render target.
+  bool                               m_bIndependentBlend = false;                     ///< Specifies whether to enable independent blending in simultaneous render targets. If set to false, only m_RenderTargets[0] is used.
+  xiiGALRenderTargetBlendDescription m_RenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT]; ///< An array of RenderTargetBlendDesc structures that describe the blend states for render targets.
+};
+
 #include <GraphicsFoundation/Declarations/Implementation/Descriptors_inl.h>
