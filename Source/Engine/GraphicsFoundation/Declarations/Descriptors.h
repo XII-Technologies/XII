@@ -63,7 +63,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilClearValue : public xiiHasha
   XII_DECLARE_POD_TYPE();
 
   float    m_fDepth    = 1.0f; ///< Depth clear value.
-  xiiUInt8 m_uiStencil = 0;    ///< Stencil clear value.
+  xiiUInt8 m_uiStencil = 0U;   ///< Stencil clear value.
 };
 
 /// \brief This describes the optimized color clear value.
@@ -270,7 +270,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties : public xiiHashab
   XII_DECLARE_POD_TYPE();
 
   xiiEnum<xiiGALShadingRateMode>            m_Mode[XII_GAL_MAX_SHADING_RATE];                  ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
-  xiiUInt8                                  m_uiCount;                                         ///< The number of valid elements in ShadingRates array.
+  xiiUInt8                                  m_uiCount = 0U;                                    ///< The number of valid elements in ShadingRates array.
   xiiEnum<xiiGALShadingRateCapabilityFlags> m_CapabilityFlags;                                 ///< Shading rate capability flags.
   xiiEnum<xiiGALShadingRateCombiner>        m_CombinerFlags;                                   ///< Combination of all supported shading rate combiners.
   xiiEnum<xiiGALShadingRateFormat>          m_Format;                                          ///< Indicates which shading rate texture format is used by this device.
@@ -345,9 +345,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALImmediateContextCreationDescription : pu
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiStringView                       m_sName;         ///< Context name.
-  xiiUInt8                            m_uiQueueID;     ///< Queue index.
-  xiiEnum<xiiGALCommandQueuePriority> m_QueuePriority; ///< Priority of the software queue created by the context.
+  xiiStringView                       m_sName;          ///< Context name.
+  xiiUInt8                            m_uiQueueID = 0U; ///< Queue index.
+  xiiEnum<xiiGALCommandQueuePriority> m_QueuePriority;  ///< Priority of the software queue created by the context.
 };
 
 /// \brief This describes the graphics abstraction layer device events.
@@ -397,6 +397,47 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendStateCreationDescription : public x
   bool                               m_bAlphaToCoverage  = false;                     ///< Specifies whether to use alpha-to-coverage as a multisampling technique when setting a pixel to a render target.
   bool                               m_bIndependentBlend = false;                     ///< Specifies whether to enable independent blending in simultaneous render targets. If set to false, only m_RenderTargets[0] is used.
   xiiGALRenderTargetBlendDescription m_RenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT]; ///< An array of RenderTargetBlendDesc structures that describe the blend states for render targets.
+};
+
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleDescription : public xiiHashableStruct<xiiGALBLASTriangleDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiStringView            m_sGeometryName;               ///< The geometry name used to map triangle data.
+  xiiUInt32                m_uiMaxVertexCount = 0U;       ///< The maximum vertex count in this geometry.
+  xiiEnum<xiiGALValueType> m_VertexValueType;             ///< The type of vertices in this geometry.
+  xiiUInt8                 m_uiVertexComponentCount = 0U; ///< The number of components in the vertex.
+  xiiUInt32                m_uiMaxPrimitiveCount    = 0U; ///< The maximum primitive count in this geometry.
+  xiiEnum<xiiGALValueType> m_IndexType;                   ///< The index type of this geometry.
+};
+
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASBoundingBoxDescription : public xiiHashableStruct<xiiGALBLASBoundingBoxDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiStringView m_sGeometryName; ///< The geometry name.
+  xiiUInt32     m_uiMaxBoxCount; ///< The maximum axis aligned bounding box (AABB) count.
+};
+
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelASDescription : public xiiHashableStruct<xiiGALBottomLevelASDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  const xiiGALBLASTriangleDescription*    m_pTriangles         = nullptr;
+  xiiUInt32                               m_uiTriangleCount    = 0U;
+  const xiiGALBLASBoundingBoxDescription* m_pBoundingBoxes     = nullptr;
+  xiiUInt32                               m_uiBoundingBoxCount = 0U;
+  xiiEnum<xiiGALRaytTracingBuildASFlags>  m_BuildASFlags;
+  xiiUInt64                               m_uiCompactedSize        = 0U;
+  xiiUInt64                               m_uiImmediateContextMask = 1U;
+};
+
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALScratchBufferSizeDescription : public xiiHashableStruct<xiiGALScratchBufferSizeDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt64 m_uiBuild  = 0U; ///< Scratch buffer size for acceleration structure building. May be zero if the acceleration structure was created with a non-zero compacted size.
+  xiiUInt64 m_uiUpdate = 0U; ///< Scratch buffer size for acceleration structure updating. May be zero if acceleration structure was created without raytracing build allow update flag or with a non-zero compacted size.
 };
 
 #include <GraphicsFoundation/Declarations/Implementation/Descriptors_inl.h>
