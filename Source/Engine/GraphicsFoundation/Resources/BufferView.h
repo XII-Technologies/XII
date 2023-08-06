@@ -17,6 +17,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferViewCreationDescription : public x
 {
   XII_DECLARE_POD_TYPE();
 
+  xiiStringView                 m_sName;
   xiiEnum<xiiGALBufferViewType> m_ViewType;          ///< The view type.
   xiiGALBufferFormat            m_Format;            ///< The format of the view. This member is only used for formatted and raw buffers. To create raw view of a raw buffer, set Format.ValueType member to Undefined (default value).
   xiiUInt64                     m_uiByteOffset = 0U; ///< The offset in bytes from the beginning of the buffer to the start of the buffer region referenced by the view.

@@ -61,6 +61,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelASDescription : public xiiHas
 {
   XII_DECLARE_POD_TYPE();
 
+  xiiStringView                              m_sName;
   const xiiGALBLASTriangleDescription*       m_pTriangles         = nullptr;
   xiiUInt32                                  m_uiTriangleCount    = 0U;
   const xiiGALBLASBoundingBoxDescription*    m_pBoundingBoxes     = nullptr;
