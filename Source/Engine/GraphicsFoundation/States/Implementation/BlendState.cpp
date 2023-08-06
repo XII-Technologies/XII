@@ -1,3 +1,5 @@
+#include <GraphicsFoundation/GraphicsFoundationPCH.h>
+
 #include <GraphicsFoundation/States/BlendState.h>
 
 // clang-format off

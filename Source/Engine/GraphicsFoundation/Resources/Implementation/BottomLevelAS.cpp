@@ -1,3 +1,5 @@
+#include <GraphicsFoundation/GraphicsFoundationPCH.h>
+
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
 
 // clang-format off
