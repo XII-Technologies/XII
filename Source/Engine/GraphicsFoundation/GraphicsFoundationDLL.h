@@ -12,3 +12,8 @@
 #else
 #  define XII_GRAPHICSFOUNDATION_DLL
 #endif
+
+#include <Foundation/Algorithm/HashableStruct.h>
+#include <Foundation/Reflection/Reflection.h>
+#include <Foundation/Types/Id.h>
+#include <Foundation/Types/RefCounted.h>
