@@ -172,7 +172,32 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderStage
 
     Default = Unknown
   };
+
+  struct Bits
+  {
+    StorageType Vertex : 1;
+    StorageType Pixel : 1;
+    StorageType Geometry : 1;
+    StorageType Hull : 1;
+    StorageType Domain : 1;
+    StorageType Compute : 1;
+    StorageType Amplification : 1;
+    StorageType Mesh : 1;
+    StorageType RayGeneration : 1;
+    StorageType RayMiss : 1;
+    StorageType RayClosestHit : 1;
+    StorageType RayAnyHit : 1;
+    StorageType RayIntersection : 1;
+    StorageType Callable : 1;
+    StorageType Tile : 1;
+
+    StorageType AllGraphics : 1;
+    StorageType AllMesh : 1;
+    StorageType AllRayTracing : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALShaderStage);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderStage);
 
@@ -205,7 +230,25 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBindFlags
 
     Default = None
   };
+
+  struct Bits
+  {
+    StorageType VertexBuffer : 1;
+    StorageType IndexBuffer : 1;
+    StorageType UniformBuffer : 1;
+    StorageType ShaderResource : 1;
+    StorageType StreamOutput : 1;
+    StorageType RenderTarget : 1;
+    StorageType DepthStencil : 1;
+    StorageType UnorderedAccess : 1;
+    StorageType IndirectDrawArguments : 1;
+    StorageType InputAttachment : 1;
+    StorageType RayTracing : 1;
+    StorageType ShadingRate : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALBindFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBindFlags);
 
@@ -251,7 +294,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCPUAccessFlag
 
     Default = None
   };
+
+  struct Bits
+  {
+    StorageType Read : 1;
+    StorageType Write : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALCPUAccessFlag);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCPUAccessFlag);
 
@@ -297,7 +348,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMapFlag
 
     Default = None
   };
+
+  struct Bits
+  {
+    StorageType DoNotWait : 1;
+    StorageType Discard : 1;
+    StorageType NoOverwrite : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALMapFlag);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMapFlag);
 
@@ -649,7 +709,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryProperties
 
     Default = Unknown
   };
+
+  struct Bits
+  {
+    StorageType HostCoherent : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALMemoryProperties);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMemoryProperties);
 
@@ -731,7 +798,17 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainUsageFlags
 
     Default = None
   };
+
+  struct Bits
+  {
+    StorageType RenderTarget : 1;
+    StorageType ShaderResource : 1;
+    StorageType InputAttachment : 1;
+    StorageType CopySource : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALSwapChainUsageFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSwapChainUsageFlags);
 
@@ -806,7 +883,21 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALWaveFeature
 
     Default = Unknown
   };
+
+  struct Bits
+  {
+    StorageType Basic : 1;
+    StorageType Vote : 1;
+    StorageType Arithmetic : 1;
+    StorageType BallOut : 1;
+    StorageType Shuffle : 1;
+    StorageType ShuffleRelative : 1;
+    StorageType Clustered : 1;
+    StorageType Quad : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALWaveFeature);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALWaveFeature);
 
@@ -828,7 +919,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingCapabilityFlags
 
     Default = None
   };
+
+  struct Bits
+  {
+    StorageType StandaloneShaders : 1;
+    StorageType InlineRayTracing : 1;
+    StorageType IndirectRayTracing : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALRayTracingCapabilityFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRayTracingCapabilityFlags);
 
@@ -851,7 +951,19 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueType
 
     Default = Unknown
   };
+
+  struct Bits
+  {
+    StorageType Transfer : 1;
+    StorageType Compute : 1;
+    StorageType Graphics : 1;
+    StorageType SparseBinding : 1;
+
+    StorageType PrimaryType : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALCommandQueueType);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandQueueType);
 
@@ -894,7 +1006,19 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCombiner
 
     Default = PassThrough
   };
+
+  struct Bits
+  {
+    StorageType PassThrough : 1;
+    StorageType CombinerOverride : 1;
+    StorageType CombinerMin : 1;
+    StorageType CombinerMax : 1;
+    StorageType CombinerSum : 1;
+    StorageType CombinerMul : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALShadingRateCombiner);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateCombiner);
 
@@ -958,7 +1082,22 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRate
 
     Default = _1X1
   };
+
+  struct Bits
+  {
+    StorageType _1X1 : 1;
+    StorageType _1X2 : 1;
+    StorageType _1X4 : 1;
+    StorageType _2X1 : 1;
+    StorageType _2X2 : 1;
+    StorageType _2X4 : 1;
+    StorageType _4X1 : 1;
+    StorageType _4X2 : 1;
+    StorageType _4X4 : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALShadingRate);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRate);
 
@@ -982,7 +1121,20 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleCount
 
     Default = None
   };
+
+  struct Bits
+  {
+    StorageType OneSample : 1;
+    StorageType TwoSamples : 1;
+    StorageType FourSamples : 1;
+    StorageType EightSamples : 1;
+    StorageType SixteenSamples : 1;
+    StorageType ThirtyTwoSamples : 1;
+    StorageType SixtyFourSamples : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALSampleCount);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSampleCount);
 
@@ -1016,7 +1168,26 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCapabilityFlags
 
     Default = None
   };
+
+  struct Bits
+  {
+    StorageType PerDraw : 1;
+    StorageType PerPrimitive : 1;
+    StorageType TextureBased : 1;
+    StorageType SampleMask : 1;
+    StorageType ShaderSampleMask : 1;
+    StorageType ShaderDepthStencilWrite : 1;
+    StorageType PerPrimitiveWithMultipleViewports : 1;
+    StorageType SameTextureForWholeRenderPass : 1;
+    StorageType TextureArray : 1;
+    StorageType ShadingRateShaderInput : 1;
+    StorageType AdditionalInvocations : 1;
+    StorageType NonSubSampledRenderTarget : 1;
+    StorageType SubSampledRenderTarget : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALShadingRateCapabilityFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShadingRateCapabilityFlags);
 
@@ -1058,7 +1229,18 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawCommandCapabilityFlags
 
     Default = None
   };
+
+  struct Bits
+  {
+    StorageType BaseVertex : 1;
+    StorageType DrawIndirect : 1;
+    StorageType DrawIndirectFirstInstance : 1;
+    StorageType NativeMultiDrawIndirect : 1;
+    StorageType DrawIndirectCounterBuffer : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALDrawCommandCapabilityFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDrawCommandCapabilityFlags);
 
@@ -1093,7 +1275,31 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceCapabilityFlags
 
     Default = None
   };
+
+  struct Bits
+  {
+    StorageType ShaderResourceResidency : 1;
+    StorageType Buffer : 1;
+    StorageType Texture2D : 1;
+    StorageType Texture3D : 1;
+    StorageType Texture2Samples : 1;
+    StorageType Texture4Samples : 1;
+    StorageType Texture8Samples : 1;
+    StorageType Texture16Samples : 1;
+    StorageType Aliased : 1;
+    StorageType Standard2DTileShape : 1;
+    StorageType Standard2DMSTileShape : 1;
+    StorageType Standard3DTileShape : 1;
+    StorageType AlignedMipSize : 1;
+    StorageType NonResidentStrict : 1;
+    StorageType Texture2DArrayMipTail : 1;
+    StorageType BufferStandardBlock : 1;
+    StorageType NonResidentSafe : 1;
+    StorageType MixedResourceTypeSupport : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALSparseResourceCapabilityFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSparseResourceCapabilityFlags);
 
@@ -1145,7 +1351,21 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceDimensionCapabilityFlags
 
     Default = None
   };
+
+  struct Bits
+  {
+    StorageType Buffer : 1;
+    StorageType Texture1D : 1;
+    StorageType Texture1DArray : 1;
+    StorageType Texture2D : 1;
+    StorageType Texture2DArray : 1;
+    StorageType Texture3D : 1;
+    StorageType TextureCube : 1;
+    StorageType TextureCubeArray : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALResourceDimensionCapabilityFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceDimensionCapabilityFlags);
 
@@ -1165,7 +1385,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureFlags
 
     Default = None
   };
+
+  struct Bits
+  {
+    StorageType SingleMipTail : 1;
+    StorageType AlignedMipSize : 1;
+    StorageType NonStandardBlockSize : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALSparseTextureFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSparseTextureFlags);
 
@@ -1205,6 +1434,34 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceStateFlags
     GenericRead = VertexBuffer | ConstantBuffer | IndexBuffer | ShaderResource | IndirectArgument | CopySource,
 
     Default = Unknown
+  };
+
+  struct Bits
+  {
+    StorageType Undefined : 1;
+    StorageType VertexBuffer : 1;
+    StorageType ConstantBuffer : 1;
+    StorageType IndexBuffer : 1;
+    StorageType RenderTarget : 1;
+    StorageType UnorderedAccess : 1;
+    StorageType DepthWrite : 1;
+    StorageType DepthRead : 1;
+    StorageType ShaderResource : 1;
+    StorageType StreamOut : 1;
+    StorageType IndirectArgument : 1;
+    StorageType CopyDestination : 1;
+    StorageType CopySource : 1;
+    StorageType ResolveDestination : 1;
+    StorageType ResolveSource : 1;
+    StorageType InputAttachment : 1;
+    StorageType Present : 1;
+    StorageType BuildAsRead : 1;
+    StorageType BuildAsWrite : 1;
+    StorageType RayTracing : 1;
+    StorageType Common : 1;
+    StorageType ShadingRate : 1;
+
+    StorageType GenericRead : 1;
   };
 };
 

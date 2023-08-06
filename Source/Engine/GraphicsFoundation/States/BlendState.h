@@ -81,7 +81,21 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALColorMask
 
     Default = (((Red | Green) | Blue) | Alpha) ///< Write to all components.
   };
+
+  struct Bits
+  {
+    StorageType Red : 1;
+    StorageType Green : 1;
+    StorageType Blue : 1;
+    StorageType Alpha : 1;
+
+    StorageType RG : 1;
+    StorageType RGB : 1;
+    StorageType RGBA : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALColorMask);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALColorMask);
 
@@ -97,7 +111,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderTargetBlendDescription : public xi
   xiiEnum<xiiGALBlendFactor>    m_SourceBlendAlpha;      ///< Specifies the blend factor to apply to the alpha value output from the pixel shader.
   xiiEnum<xiiGALBlendFactor>    m_DestinationBlendAlpha; ///< Specifies the blend factor to apply to the alpha value in the render target.
   xiiEnum<xiiGALBlendOperation> m_BlendOperationAlpha;   ///< Defines how to combine the source and destination alpha values after applying the source and destination blend alpha factors.
-  xiiEnum<xiiGALColorMask>      m_ColorMask;             ///< Render target color write mask.
+  xiiBitflags<xiiGALColorMask>  m_ColorMask;             ///< Render target color write mask.
 };
 
 /// \brief This describes the blend state for all render targets in the graphics pipeline.

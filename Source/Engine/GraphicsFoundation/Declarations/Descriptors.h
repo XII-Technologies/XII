@@ -94,19 +94,19 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapchainCreationDescription : public xi
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiSizeU32                         m_Resolution        = xiiSizeU32(0U, 0U);                        ///< Swap chain resolution.
-  xiiEnum<xiiGALTextureFormat>       m_ColorBufferFormat = xiiGALTextureFormat::RGBA8UNormalizedSRGB; ///< Back buffer format.
-  xiiEnum<xiiGALTextureFormat>       m_DepthBufferFormat = xiiGALTextureFormat::D32Float;             ///< Depth buffer format. Use Unknown format to create the swapchain without a depth buffer.
-  xiiEnum<xiiGALSwapChainUsageFlags> m_Usage             = xiiGALSwapChainUsageFlags::RenderTarget;   ///< Swap chain usage flags.
-  xiiEnum<xiiGALSurfaceTransform>    m_PreTransform      = xiiGALSurfaceTransform::Optimal;           ///< The transform, relative to the presentation engine's natural orientation which is applied to the image prior to presentation.
-                                                                                                      ///<
-                                                                                                      ///< \note When xiiGALSurfaceTransform::Optimal is used, the engine will select the most optimal surface transformation.
-                                                                                                      ///< An application may request a specific transform and the engine will try to use that. If the transform is not available, the engine will
-                                                                                                      ///< select the most optimal transform. After the swapchain has been created, this member will contain the actual transform selected by the engine.
-  xiiUInt32 m_uiBufferCount         = 2U;                                                             ///< The number of buffers in the swap chain.
-  float     m_fDepthStencilValue    = 1.0f;                                                           ///< Default depth value, which is used as the optimized depth clear value in D3D12.
-  xiiUInt8  m_uiDefaultStencilValue = 0U;                                                             ///< Default stencil value, which is used as the optimized clear value in D3D12.
-  bool      m_bIsPrimary            = true;                                                           ///< This indicates if this swap chain is a primary swap chain.
+  xiiSizeU32                             m_Resolution        = xiiSizeU32(0U, 0U);                        ///< Swap chain resolution.
+  xiiEnum<xiiGALTextureFormat>           m_ColorBufferFormat = xiiGALTextureFormat::RGBA8UNormalizedSRGB; ///< Back buffer format.
+  xiiEnum<xiiGALTextureFormat>           m_DepthBufferFormat = xiiGALTextureFormat::D32Float;             ///< Depth buffer format. Use Unknown format to create the swapchain without a depth buffer.
+  xiiBitflags<xiiGALSwapChainUsageFlags> m_Usage             = xiiGALSwapChainUsageFlags::RenderTarget;   ///< Swap chain usage flags.
+  xiiEnum<xiiGALSurfaceTransform>        m_PreTransform      = xiiGALSurfaceTransform::Optimal;           ///< The transform, relative to the presentation engine's natural orientation which is applied to the image prior to presentation.
+                                                                                                          ///<
+                                                                                                          ///< \note When xiiGALSurfaceTransform::Optimal is used, the engine will select the most optimal surface transformation.
+                                                                                                          ///< An application may request a specific transform and the engine will try to use that. If the transform is not available, the engine will
+                                                                                                          ///< select the most optimal transform. After the swapchain has been created, this member will contain the actual transform selected by the engine.
+  xiiUInt32 m_uiBufferCount         = 2U;                                                                 ///< The number of buffers in the swap chain.
+  float     m_fDepthStencilValue    = 1.0f;                                                               ///< Default depth value, which is used as the optimized depth clear value in D3D12.
+  xiiUInt8  m_uiDefaultStencilValue = 0U;                                                                 ///< Default stencil value, which is used as the optimized clear value in D3D12.
+  bool      m_bIsPrimary            = true;                                                               ///< This indicates if this swap chain is a primary swap chain.
 };
 
 /// \brief This describes the full screen mode description.
@@ -154,10 +154,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALWaveOperationProperties : public xiiHash
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32                  m_uiMinSize = 0U;        ///< Minimum supported size of the wave.
-  xiiUInt32                  m_uiMaxSize = 0U;        ///< Maximum supported size of the wave. If variable wave size is not supported then this value is equal to MinSize. Direct3D12 backend: requires shader model 6.6. Vulkan backend: requires VK_EXT_subgroup_size_control.
-  xiiEnum<xiiGALShaderStage> m_SupportedShaderStages; ///< Shader stages in which wave operations can be used.
-  xiiEnum<xiiGALWaveFeature> m_WaveFeatures;          ///< Indicates which groups of wave operations are supported by this device.
+  xiiUInt32                      m_uiMinSize = 0U;        ///< Minimum supported size of the wave.
+  xiiUInt32                      m_uiMaxSize = 0U;        ///< Maximum supported size of the wave. If variable wave size is not supported then this value is equal to MinSize. Direct3D12 backend: requires shader model 6.6. Vulkan backend: requires VK_EXT_subgroup_size_control.
+  xiiBitflags<xiiGALShaderStage> m_SupportedShaderStages; ///< Shader stages in which wave operations can be used.
+  xiiBitflags<xiiGALWaveFeature> m_WaveFeatures;          ///< Indicates which groups of wave operations are supported by this device.
 };
 
 /// \brief This describes the buffer properties.
@@ -174,18 +174,18 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProperties : public xiiHashabl
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32                                m_uiMaxRecursionDepth        = 0U; ///< The maximum ray tracing recursion depth.
-  xiiUInt32                                m_uiMaxRayGenThreads         = 0U; ///< The maximum total number of ray generation threads in one dispatch.
-  xiiUInt32                                m_uiMaxInstancesPerTLAS      = 0U; ///< The maximum number of instances in a top-level AS.
-  xiiUInt32                                m_uiMaxPrimitivesPerBLAS     = 0U; ///< The maximum number of primitives in a bottom-level AS.
-  xiiUInt32                                m_uiMaxGeometriesPerBLAS     = 0U; ///< The maximum number of geometries in a bottom-level AS.
-  xiiUInt32                                m_uiVertexBufferAlignment    = 0U; ///< The minimum alignment for the BLAS vertex buffer offset.
-  xiiUInt32                                m_uiIndexBufferAlignment     = 0U; ///< The minimum alignment for the BLAS index buffer offset.
-  xiiUInt32                                m_uiTransformBufferAlignment = 0U; ///< The minimum alignment for the BLAS transform buffer offset.
-  xiiUInt32                                m_uiBoxBufferAlignment       = 0U; ///< The minimum alignment for the BLAS box buffer offset.
-  xiiUInt32                                m_uiScratchBufferAlignment   = 0U; ///< The minimum alignment for the BLAS scratch buffer offset.
-  xiiUInt32                                m_uiInstanceBufferAlignment  = 0U; ///< The minimum alignment for the BLAS instance buffer offset.
-  xiiEnum<xiiGALRayTracingCapabilityFlags> m_CapabilityFlags;                 ///< Ray tracing capability flags. See xiiGALRayTracingCapabilityFlags;
+  xiiUInt32                                    m_uiMaxRecursionDepth        = 0U; ///< The maximum ray tracing recursion depth.
+  xiiUInt32                                    m_uiMaxRayGenThreads         = 0U; ///< The maximum total number of ray generation threads in one dispatch.
+  xiiUInt32                                    m_uiMaxInstancesPerTLAS      = 0U; ///< The maximum number of instances in a top-level AS.
+  xiiUInt32                                    m_uiMaxPrimitivesPerBLAS     = 0U; ///< The maximum number of primitives in a bottom-level AS.
+  xiiUInt32                                    m_uiMaxGeometriesPerBLAS     = 0U; ///< The maximum number of geometries in a bottom-level AS.
+  xiiUInt32                                    m_uiVertexBufferAlignment    = 0U; ///< The minimum alignment for the BLAS vertex buffer offset.
+  xiiUInt32                                    m_uiIndexBufferAlignment     = 0U; ///< The minimum alignment for the BLAS index buffer offset.
+  xiiUInt32                                    m_uiTransformBufferAlignment = 0U; ///< The minimum alignment for the BLAS transform buffer offset.
+  xiiUInt32                                    m_uiBoxBufferAlignment       = 0U; ///< The minimum alignment for the BLAS box buffer offset.
+  xiiUInt32                                    m_uiScratchBufferAlignment   = 0U; ///< The minimum alignment for the BLAS scratch buffer offset.
+  xiiUInt32                                    m_uiInstanceBufferAlignment  = 0U; ///< The minimum alignment for the BLAS instance buffer offset.
+  xiiBitflags<xiiGALRayTracingCapabilityFlags> m_CapabilityFlags;                 ///< Ray tracing capability flags. See xiiGALRayTracingCapabilityFlags;
 
   // Internal usage.
   xiiUInt32 m_uiShaderGroupHandleSize    = 0u;
@@ -246,13 +246,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceMemoryProperties : public xiiHasha
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt64                    m_uiLocalMemory         = 0U;  ///< The amount of local video memory that is inaccessible by CPU, in bytes.
-  xiiUInt64                    m_uiHostVisibleMemory   = 0U;  ///< The amount of host-visible memory that can be accessed by CPU and is visible by GPU, in bytes.
-  xiiUInt64                    m_uiUnifiedMemory       = 0U;  ///< The amount of unified memory that can be directly accessed by both CPU and GPU, in bytes.
-  xiiUInt64                    m_uiMaxMemoryAllocation = 0U;  ///< Maximum size of a continuous memory block.
-  xiiEnum<xiiGALCPUAccessFlag> m_UnifiedMemoryCPUAccessFlags; ///< Supported access types for the unified memory.
-  xiiEnum<xiiGALBindFlags>     m_MemoryleessTextureBindFlags; ///< Indicates if device supports color and depth attachments in on-chip memory.
-                                                              ///< If supported, it will be combination of the following flags: RenderTarget, DepthStencil, InputAttachment.
+  xiiUInt64                        m_uiLocalMemory         = 0U;  ///< The amount of local video memory that is inaccessible by CPU, in bytes.
+  xiiUInt64                        m_uiHostVisibleMemory   = 0U;  ///< The amount of host-visible memory that can be accessed by CPU and is visible by GPU, in bytes.
+  xiiUInt64                        m_uiUnifiedMemory       = 0U;  ///< The amount of unified memory that can be directly accessed by both CPU and GPU, in bytes.
+  xiiUInt64                        m_uiMaxMemoryAllocation = 0U;  ///< Maximum size of a continuous memory block.
+  xiiBitflags<xiiGALCPUAccessFlag> m_UnifiedMemoryCPUAccessFlags; ///< Supported access types for the unified memory.
+  xiiBitflags<xiiGALBindFlags>     m_MemoryleessTextureBindFlags; ///< Indicates if device supports color and depth attachments in on-chip memory.
+                                                                  ///< If supported, it will be combination of the following flags: RenderTarget, DepthStencil, InputAttachment.
 };
 
 /// \brief This describes a combination of a shading rate and multi-sampling mode.
@@ -260,8 +260,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateMode : public xiiHashableStru
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALShadingRate> m_ShadingRate; ///< The supported shading rate.
-  xiiEnum<xiiGALSampleCount> m_SampleBits;  ///< The combination of supported sample counts.
+  xiiBitflags<xiiGALShadingRate> m_ShadingRate; ///< The supported shading rate.
+  xiiBitflags<xiiGALSampleCount> m_SampleBits;  ///< The combination of supported sample counts.
 };
 
 /// \brief This describes the shading rate properties.
@@ -269,16 +269,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties : public xiiHashab
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALShadingRateMode>            m_Mode[XII_GAL_MAX_SHADING_RATE];                  ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
-  xiiUInt8                                  m_uiCount = 0U;                                    ///< The number of valid elements in ShadingRates array.
-  xiiEnum<xiiGALShadingRateCapabilityFlags> m_CapabilityFlags;                                 ///< Shading rate capability flags.
-  xiiEnum<xiiGALShadingRateCombiner>        m_CombinerFlags;                                   ///< Combination of all supported shading rate combiners.
-  xiiEnum<xiiGALShadingRateFormat>          m_Format;                                          ///< Indicates which shading rate texture format is used by this device.
-  xiiEnum<xiiGALShadingRateTextureAccess>   m_TextureAccess;                                   ///< Shading rate texture access type.
-  xiiEnum<xiiGALBindFlags>                  m_BindFlags;                                       ///< Indicates which bind flags are allowed for shading rate texture.
-  xiiSizeU32                                m_MinTileSize                = xiiSizeU32(0U, 0U); ///< Minimum supported tile size. Shading rate texture size must be less than or equal to (Framebuffer Size / MaxTileSize).
-  xiiSizeU32                                m_MaxTileSize                = xiiSizeU32(0U, 0U); ///< Maximum supported tile size. Shading rate texture size must be greater than or equal to (Framebuffer Size / MaxTileSize).
-  xiiUInt32                                 m_uiMaxSubSampledArraySlices = 0U;                 ///< Maximum size of the texture array created with texture subsampled flag.
+  xiiEnum<xiiGALShadingRateMode>                m_Mode[XII_GAL_MAX_SHADING_RATE];                  ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
+  xiiUInt8                                      m_uiCount = 0U;                                    ///< The number of valid elements in ShadingRates array.
+  xiiBitflags<xiiGALShadingRateCapabilityFlags> m_CapabilityFlags;                                 ///< Shading rate capability flags.
+  xiiBitflags<xiiGALShadingRateCombiner>        m_CombinerFlags;                                   ///< Combination of all supported shading rate combiners.
+  xiiEnum<xiiGALShadingRateFormat>              m_Format;                                          ///< Indicates which shading rate texture format is used by this device.
+  xiiEnum<xiiGALShadingRateTextureAccess>       m_TextureAccess;                                   ///< Shading rate texture access type.
+  xiiBitflags<xiiGALBindFlags>                  m_BindFlags;                                       ///< Indicates which bind flags are allowed for shading rate texture.
+  xiiSizeU32                                    m_MinTileSize                = xiiSizeU32(0U, 0U); ///< Minimum supported tile size. Shading rate texture size must be less than or equal to (Framebuffer Size / MaxTileSize).
+  xiiSizeU32                                    m_MaxTileSize                = xiiSizeU32(0U, 0U); ///< Maximum supported tile size. Shading rate texture size must be greater than or equal to (Framebuffer Size / MaxTileSize).
+  xiiUInt32                                     m_uiMaxSubSampledArraySlices = 0U;                 ///< Maximum size of the texture array created with texture subsampled flag.
 };
 
 /// \brief This describes the draw command properties.
@@ -286,9 +286,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawCommandProperties : public xiiHashab
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALDrawCommandCapabilityFlags> m_CapabilityFlags;             ///< Draw command capability flags.
-  xiiUInt32                                 m_uiMaxIndexValue        = 0U; ///< Maximum supported index value for index buffer.
-  xiiUInt32                                 m_uiMaxDrawIndirectCount = 0U; ///< Maximum supported draw commands counter for indirect and indexed indirect draw commands.
+  xiiBitflags<xiiGALDrawCommandCapabilityFlags> m_CapabilityFlags;             ///< Draw command capability flags.
+  xiiUInt32                                     m_uiMaxIndexValue        = 0U; ///< Maximum supported index value for index buffer.
+  xiiUInt32                                     m_uiMaxDrawIndirectCount = 0U; ///< Maximum supported draw commands counter for indirect and indexed indirect draw commands.
 };
 
 /// \brief This describes the sparse memory properties.
@@ -296,11 +296,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceProperties : public xiiHas
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt64                                    m_uiAddressSpaceSize  = 0U; ///< The total amount of address space, in bytes, available for sparse resources.
-  xiiUInt64                                    m_uiResourceSpaceSize = 0U; ///< The total amount of address space, in bytes, available for a single resource.
-  xiiEnum<xiiGALSparseResourceCapabilityFlags> m_CapabilityFlags;          ///< Sparse resource capability flags.
-  xiiUInt32                                    m_uiStandardBlockSize;      ///< Size of the standard sparse memory block in bytes.
-  xiiEnum<xiiGALBindFlags>                     m_BindFlags;                ///< Allowed bind flags for sparse buffer.
+  xiiUInt64                                        m_uiAddressSpaceSize  = 0U; ///< The total amount of address space, in bytes, available for sparse resources.
+  xiiUInt64                                        m_uiResourceSpaceSize = 0U; ///< The total amount of address space, in bytes, available for a single resource.
+  xiiBitflags<xiiGALSparseResourceCapabilityFlags> m_CapabilityFlags;          ///< Sparse resource capability flags.
+  xiiUInt32                                        m_uiStandardBlockSize;      ///< Size of the standard sparse memory block in bytes.
+  xiiBitflags<xiiGALBindFlags>                     m_BindFlags;                ///< Allowed bind flags for sparse buffer.
 };
 
 /// \brief This describes the command queue properties.
@@ -308,9 +308,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHasha
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALCommandQueueType> m_Type;                           ///< Indicates which type of commands are supported by this queue.
-  xiiUInt32                       m_MaxDeviceContexts;              ///< The maximum number of immediate contexts that may be created for this queue.
-  xiiUInt32                       m_TextureCopyGranularity[3] = {}; ///< Defines required texture offset and size alignment for copy operations in transfer queues.
+  xiiBitflags<xiiGALCommandQueueType> m_Type;                           ///< Indicates which type of commands are supported by this queue.
+  xiiUInt32                           m_MaxDeviceContexts;              ///< The maximum number of immediate contexts that may be created for this queue.
+  xiiUInt32                           m_TextureCopyGranularity[3] = {}; ///< Defines required texture offset and size alignment for copy operations in transfer queues.
 };
 
 /// \brief This describes the graphics adapter properties.
@@ -372,47 +372,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormatDescription : public xiiHas
   bool                                      m_bIsTypeless   = false; ///< Indicates whether the format is a typeless format.
   xiiUInt8                                  m_uiBlockWidth  = 0U;    ///< For block-compressed formats, the compression block width.
   xiiUInt8                                  m_uiBlockHeight = 0U;    ///< For block-compressed formats, the compression block height.
-};
-
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleDescription : public xiiHashableStruct<xiiGALBLASTriangleDescription>
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiStringView            m_sGeometryName;               ///< The geometry name used to map triangle data.
-  xiiUInt32                m_uiMaxVertexCount = 0U;       ///< The maximum vertex count in this geometry.
-  xiiEnum<xiiGALValueType> m_VertexValueType;             ///< The type of vertices in this geometry.
-  xiiUInt8                 m_uiVertexComponentCount = 0U; ///< The number of components in the vertex.
-  xiiUInt32                m_uiMaxPrimitiveCount    = 0U; ///< The maximum primitive count in this geometry.
-  xiiEnum<xiiGALValueType> m_IndexType;                   ///< The index type of this geometry.
-};
-
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASBoundingBoxDescription : public xiiHashableStruct<xiiGALBLASBoundingBoxDescription>
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiStringView m_sGeometryName; ///< The geometry name.
-  xiiUInt32     m_uiMaxBoxCount; ///< The maximum axis aligned bounding box (AABB) count.
-};
-
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelASDescription : public xiiHashableStruct<xiiGALBottomLevelASDescription>
-{
-  XII_DECLARE_POD_TYPE();
-
-  const xiiGALBLASTriangleDescription*    m_pTriangles         = nullptr;
-  xiiUInt32                               m_uiTriangleCount    = 0U;
-  const xiiGALBLASBoundingBoxDescription* m_pBoundingBoxes     = nullptr;
-  xiiUInt32                               m_uiBoundingBoxCount = 0U;
-  xiiEnum<xiiGALRaytTracingBuildASFlags>  m_BuildASFlags;
-  xiiUInt64                               m_uiCompactedSize        = 0U;
-  xiiUInt64                               m_uiImmediateContextMask = 1U;
-};
-
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALScratchBufferSizeDescription : public xiiHashableStruct<xiiGALScratchBufferSizeDescription>
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiUInt64 m_uiBuild  = 0U; ///< Scratch buffer size for acceleration structure building. May be zero if the acceleration structure was created with a non-zero compacted size.
-  xiiUInt64 m_uiUpdate = 0U; ///< Scratch buffer size for acceleration structure updating. May be zero if acceleration structure was created without raytracing build allow update flag or with a non-zero compacted size.
 };
 
 #include <GraphicsFoundation/Declarations/Implementation/Descriptors_inl.h>
