@@ -104,7 +104,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderTargetBlendDescription : public xi
 {
   XII_DECLARE_POD_TYPE();
 
-  bool                          m_bBlendEnable = false;  ///< Enable or disable blending for this render target.
+  bool                          m_bBlendEnable = false;  ///< Enable or disable blending for this render target. The default is false.
   xiiEnum<xiiGALBlendFactor>    m_SourceBlend;           ///< Specifies the blend factor to apply to the RGB value output from the pixel shader.
   xiiEnum<xiiGALBlendFactor>    m_DestinationBlend;      ///< Specifies the blend factor to apply to the RGB value in the render target.
   xiiEnum<xiiGALBlendOperation> m_BlendOperation;        ///< Defines how to combine the source and destination RGB values after applying the source and destination blend factors.

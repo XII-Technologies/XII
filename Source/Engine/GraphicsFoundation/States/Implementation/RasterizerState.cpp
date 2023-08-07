@@ -1,3 +1,20 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/States/RasterizerState.h>
+
+// clang-format off
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALFillMode, 1)
+  XII_ENUM_CONSTANT(xiiGALFillMode::Undefined),
+  XII_ENUM_CONSTANT(xiiGALFillMode::Wireframe),
+  XII_ENUM_CONSTANT(xiiGALFillMode::Solid),
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALCullMode, 1)
+  XII_ENUM_CONSTANT(xiiGALCullMode::Undefined),
+  XII_ENUM_CONSTANT(xiiGALCullMode::None),
+  XII_ENUM_CONSTANT(xiiGALCullMode::Front),
+  XII_ENUM_CONSTANT(xiiGALCullMode::Back),
+XII_END_STATIC_REFLECTED_ENUM;
+
+// clang-format on
