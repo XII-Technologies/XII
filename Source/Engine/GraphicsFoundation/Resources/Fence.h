@@ -1,3 +1,5 @@
+#pragma once
+
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 /// \brief This describes the fence type.
