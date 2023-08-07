@@ -68,7 +68,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelASDescription : public xiiHas
   xiiUInt32                                  m_uiBoundingBoxCount = 0U;
   xiiBitflags<xiiGALRaytTracingBuildASFlags> m_BuildASFlags;
   xiiUInt64                                  m_uiCompactedSize        = 0U;
-  xiiUInt64                                  m_uiImmediateContextMask = 1U;
+  xiiUInt64                                  m_uiImmediateContextMask = XII_BIT(0);
 };
 
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALScratchBufferSizeDescription : public xiiHashableStruct<xiiGALScratchBufferSizeDescription>

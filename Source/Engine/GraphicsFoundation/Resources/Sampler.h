@@ -12,7 +12,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerFlags
   enum Enum : xiiUInt8
   {
     None                           = 0U,         ///< No sampler flags.
-    Subsampled                     = XII_BIT(0), ///< Specifies that the sampler will read from a subsampled texture created with the miscallanous texture subsampled flag.
+    Subsampled                     = XII_BIT(0), ///< Specifies that the sampler will read from a subsampled texture created with the miscellanous texture subsampled flag.
     SubsampledCoarseReconstruction = XII_BIT(1), ///< Specifies that the GPU is allowed to use fast approximation when reconstructing full-resolution value from the subsampled texture accessed by the sampler.
 
     ENUM_COUNT = 3U,

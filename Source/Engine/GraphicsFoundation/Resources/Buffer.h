@@ -55,14 +55,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferCreationDescription : public xiiHa
   XII_DECLARE_POD_TYPE();
 
   xiiStringView                      m_sName;
-  xiiUInt64                          m_uiSize = 0U;                 ///< The size of the buffer in bytes. For a uniform (constant) buffer, this must be a multiple of 16.
-  xiiBitflags<xiiGALBindFlags>       m_BindFlags;                   ///< The bind flags.
-  xiiEnum<xiiGALResourceUsage>       m_ResourceUsage;               ///< The resource usage.
-  xiiBitflags<xiiGALCPUAccessFlag>   m_CPUAccessFlags;              ///< The CPU access flags or None if no CPU access is allowed.
-  xiiEnum<xiiGALBufferMode>          m_Mode;                        ///< The buffer mode.
-  xiiBitflags<xiiGALMiscBufferFlags> m_MiscFlags;                   ///< The miscellaneous flags.
-  xiiUInt32                          m_uiElementByteStride    = 0U; ///< The buffer element stride in bytes.
-  xiiUInt64                          m_uiImmediateContextMask = 1U; ///< Indicates which immediate contexts are allowed to execute commands that use this buffer.
+  xiiUInt64                          m_uiSize = 0U;                         ///< The size of the buffer in bytes. For a uniform (constant) buffer, this must be a multiple of 16.
+  xiiBitflags<xiiGALBindFlags>       m_BindFlags;                           ///< The bind flags.
+  xiiEnum<xiiGALResourceUsage>       m_ResourceUsage;                       ///< The resource usage.
+  xiiBitflags<xiiGALCPUAccessFlag>   m_CPUAccessFlags;                      ///< The CPU access flags or None if no CPU access is allowed.
+  xiiEnum<xiiGALBufferMode>          m_Mode;                                ///< The buffer mode.
+  xiiBitflags<xiiGALMiscBufferFlags> m_MiscFlags;                           ///< The miscellaneous flags.
+  xiiUInt32                          m_uiElementByteStride    = 0U;         ///< The buffer element stride in bytes.
+  xiiUInt64                          m_uiImmediateContextMask = XII_BIT(0); ///< Indicates which immediate contexts are allowed to execute commands that use this buffer.
 };
 
 /// \brief This describes the buffer initial data.

@@ -77,7 +77,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALOptimizedClearValue : public xiiHashable
 };
 
 /// \brief This describes the display mode attributes.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALOptimizedClearValue : public xiiHashableStruct<xiiGALOptimizedClearValue>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDisplayModeDescription : public xiiHashableStruct<xiiGALDisplayModeDescription>
 {
   XII_DECLARE_POD_TYPE();
 
@@ -269,7 +269,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties : public xiiHashab
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALShadingRateMode>                m_Mode[XII_GAL_MAX_SHADING_RATE];                  ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
+  xiiGALShadingRateMode                         m_Mode[XII_GAL_MAX_SHADING_RATE];                  ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
   xiiUInt8                                      m_uiCount = 0U;                                    ///< The number of valid elements in ShadingRates array.
   xiiBitflags<xiiGALShadingRateCapabilityFlags> m_CapabilityFlags;                                 ///< Shading rate capability flags.
   xiiBitflags<xiiGALShadingRateCombiner>        m_CombinerFlags;                                   ///< Combination of all supported shading rate combiners.
