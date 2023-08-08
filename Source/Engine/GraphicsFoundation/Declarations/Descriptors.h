@@ -198,7 +198,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMeshShaderProperties : public xiiHashabl
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32 m_uiMaxTaskCount = 0U; ///< The maximum number of mesh shader tasks per draw command.
+  xiiUInt32 m_uiMaxThreadGroupCountX     = 0U; ///< The maximum number of mesh shader thread groups in X direction.
+  xiiUInt32 m_uiMaxThreadGroupCountY     = 0U; ///< The maximum number of mesh shader thread groups in Y direction.
+  xiiUInt32 m_uiMaxThreadGroupCountZ     = 0U; ///< The maximum number of mesh shader thread groups in Z direction.
+  xiiUInt32 m_uiMaxThreadGroupTotalCount = 0U; ///< The total maximum number of mesh shader groups per draw command.
 };
 
 /// \brief This describes the compute shader properties.
