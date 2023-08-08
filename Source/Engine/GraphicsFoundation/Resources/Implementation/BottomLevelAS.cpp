@@ -15,7 +15,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
-xiiGALBottomLevelAS::xiiGALBottomLevelAS(const xiiGALBottomLevelASCreationDescription creationDescription) :
+xiiGALBottomLevelAS::xiiGALBottomLevelAS(const xiiGALBottomLevelASCreationDescription& creationDescription) :
   xiiGALResource<xiiGALBottomLevelASCreationDescription>(creationDescription)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)

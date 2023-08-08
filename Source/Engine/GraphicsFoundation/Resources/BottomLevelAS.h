@@ -13,7 +13,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRaytTracingBuildASFlags
   enum Enum : xiiUInt8
   {
     None            = 0U,         ///< No raytracing acceleration structure build flags.
-    AllowUpdate     = XII_BIT(0), ///< Indicates that the specified acceleration structure can be updated with the build blas/tlas device functions. With this flag, the acceleration structure may allocate more memory and take more time to build.
+    AllowUpdate     = XII_BIT(0), ///< Indicates that the specified acceleration structure can be updated with the build BLAS/TLAS device functions. With this flag, the acceleration structure may allocate more memory and take more time to build.
     AllowCompaction = XII_BIT(1), ///< Indicates that the specified acceleration structure can act as the source for a copy acceleration structure command with the copy AS compact mode to produce a compacted acceleration structure. With this flag acceleration structure may allocate more memory and take more time on build.
     PreferFastTrace = XII_BIT(2), ///< Indicates that the given acceleration structure build should prioritize trace performance over build time.
     PreferFastBuild = XII_BIT(3), ///< Indicates that the given acceleration structure build should prioritize build time over trace performance.
@@ -46,9 +46,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleDescription : public xiiHash
   xiiStringView            m_sGeometryName;                                    ///< The geometry name used to map triangle data. The default is an empty string view.
   xiiUInt32                m_uiMaxVertexCount = 0U;                            ///< The maximum vertex count in this geometry. The default is 0.
   xiiEnum<xiiGALValueType> m_VertexValueType  = xiiGALValueType::Undefined;    ///< The type of vertices in this geometry. The default is Undefined.
+                                                                               ///
                                                                                ///< \remarks Only Float32, Float16, and Int16 are valid. Int16 defines 16-bit signed-normalized vertex components.
   xiiUInt8 m_uiVertexComponentCount = 0U;                                      ///< The number of components in the vertex. The default is 0.
-                                                                               ///< \remarks Valid values are only 2 or 3. For 2-component formats, the third component is assumed to be 0.
+                                                                               ///
+                                                                               ///  \remarks Valid values are only 2 or 3. For 2-component formats, the third component is assumed to be 0.
   xiiUInt32                m_uiMaxPrimitiveCount = 0U;                         ///< The maximum primitive count in this geometry. The default is 0.
   xiiEnum<xiiGALValueType> m_IndexType           = xiiGALValueType::Undefined; ///< The index type of this geometry. This must be UInt16, UInt32 or Undefined. If Undefined, then the vertex array is used instead of the indexed vertices. The default is Undefined.
 };
@@ -75,7 +77,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelASCreationDescription : publi
   xiiBitflags<xiiGALRaytTracingBuildASFlags> m_BuildASFlags           = xiiGALRaytTracingBuildASFlags::None; ///< Ray tracing build flags. The default is None.
   xiiUInt64                                  m_uiCompactedSize        = 0U;                                  ///< Compacted size, if this acceleration structure will be the target of a compacted copy operation. The default is 0.
   xiiUInt64                                  m_uiImmediateContextMask = XII_BIT(0);                          ///< Defines which immediate contexts are allowed to execute commands that use this bottom level acceleration structure. The default is the main immediate context.
-                                                                                                             ///< Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
+                                                                                                             ///  Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
 };
 
 /// \brief This describes the scratch buffer information for the acceleration structure.
@@ -131,7 +133,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALBottomLevelAS(const xiiGALBottomLevelASCreationDescription creationDescription);
+  xiiGALBottomLevelAS(const xiiGALBottomLevelASCreationDescription& creationDescription);
 
   virtual ~xiiGALBottomLevelAS();
 

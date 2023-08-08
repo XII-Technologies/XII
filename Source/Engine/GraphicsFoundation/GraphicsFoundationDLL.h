@@ -24,6 +24,9 @@ struct xiiGALBLASTriangleDescription;
 struct xiiGALBLASBoundingBoxDescription;
 struct xiiGALBottomLevelASCreationDescription;
 struct xiiGALScratchBufferSizeDescription;
+struct xiiGALBufferCreationDescription;
+struct xiiGALBufferData;
 
 class xiiGALDevice;
 class xiiGALBottomLevelAS;
+class xiiGALBuffer;

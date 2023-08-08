@@ -3,6 +3,7 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief This describes the buffer access mode.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferMode
@@ -54,15 +55,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferCreationDescription : public xiiHa
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiStringView                      m_sName;
-  xiiUInt64                          m_uiSize = 0U;                         ///< The size of the buffer in bytes. For a uniform (constant) buffer, this must be a multiple of 16.
-  xiiBitflags<xiiGALBindFlags>       m_BindFlags;                           ///< The bind flags.
-  xiiEnum<xiiGALResourceUsage>       m_ResourceUsage;                       ///< The resource usage.
-  xiiBitflags<xiiGALCPUAccessFlag>   m_CPUAccessFlags;                      ///< The CPU access flags or None if no CPU access is allowed.
-  xiiEnum<xiiGALBufferMode>          m_Mode;                                ///< The buffer mode.
-  xiiBitflags<xiiGALMiscBufferFlags> m_MiscFlags;                           ///< The miscellaneous flags.
-  xiiUInt32                          m_uiElementByteStride    = 0U;         ///< The buffer element stride in bytes.
-  xiiUInt64                          m_uiImmediateContextMask = XII_BIT(0); ///< Indicates which immediate contexts are allowed to execute commands that use this buffer.
+  xiiStringView                      m_sName;                                                 ///< Resource name. The default is an empty string view.
+  xiiUInt64                          m_uiSize                 = 0U;                           ///< The size of the buffer in bytes. For a uniform (constant) buffer, this must be a multiple of 16. The default is 0.
+  xiiBitflags<xiiGALBindFlags>       m_BindFlags              = xiiGALBindFlags::None;        ///< The bind flags. Allowed flags are Vertex, Index, Uniform (Constant), Shader Resource, Stream Output, Unordered Access, Indirect Draw Args, Ray Tracing. Allowed flags for sparse resources are stored in the allowed sparse resource properties. The default is None.
+  xiiEnum<xiiGALResourceUsage>       m_ResourceUsage          = xiiGALResourceUsage::Default; ///< The resource usage. The default is Default.
+  xiiBitflags<xiiGALCPUAccessFlag>   m_CPUAccessFlags         = xiiGALCPUAccessFlag::None;    ///< The CPU access flags or None if no CPU access is allowed. The default is None.
+  xiiEnum<xiiGALBufferMode>          m_Mode                   = xiiGALBufferMode::Undefined;  ///< The buffer mode. The default is Undefined.
+  xiiBitflags<xiiGALMiscBufferFlags> m_MiscFlags              = xiiGALMiscBufferFlags::None;  ///< The miscellaneous flags. The default is None.
+  xiiUInt32                          m_uiElementByteStride    = 0U;                           ///< The buffer element stride in bytes. For a structured buffer, this member defines the size of each buffer element. For a formatted buffer and optionally a raw buffer, this member defines the size of the format that will be used for views created for this buffer. The default is 0.
+  xiiUInt64                          m_uiImmediateContextMask = XII_BIT(0);                   ///< Defines which immediate contexts are allowed to execute commands that use this bottom level acceleration structure. The default is the main immediate context.
+                                                                                              ///< Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
 };
 
 /// \brief This describes the buffer initial data.
@@ -72,6 +74,73 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferData : public xiiHashableStruct<xi
 
   const void* m_pData      = nullptr; ///< The pointer to the data.
   xiiUInt64   m_uiDataSize = 0U;      ///< The data size in bytes.
+};
+
+/// \brief This describes the sparse buffer properties.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseBufferProperties : public xiiHashableStruct<xiiGALSparseBufferProperties>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt64 m_uiAddressSpaceSize = 0U; ///< The size of the sparse buffer virtual address space.
+  xiiUInt32 m_uiBlockSize        = 0U; ///< The size of the sparse memory block.
+                                       ///
+                                       ///  \note Offset in the buffer, memory offset and memory size that are used in sparse resource binding command, must be multiples of the block size. In Direct3D11 and Direct3D12, the block size is always 64Kb. In Vulkan, the block size is not documented, but is usually also 64Kb.
+};
+
+class XII_GRAPHICSFOUNDATION_DLL xiiGALBuffer : public xiiGALResource<xiiGALBufferCreationDescription>
+{
+public:
+  /// \brief This sets the buffer usage state.
+  ///
+  /// \note This method does not perform state transition, but resets the internal buffer state to the given value.
+  ///       This method should be used after the application finished manually managing the buffer state and wants to hand over state management back to the engine.
+  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) = 0;
+
+  /// \brief This returns the internal buffer state.
+  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const = 0;
+
+  /// \brief This returns the buffer memory properties.
+  ///
+  /// The memory properties are only relevant for persistently mapped buffers.
+  /// In particular, if the memory is not coherent, an application must call xiiGALBuffer::FlushMappedRange() to make writes by the CPU available to the GPU, and
+  /// call xiiGALBuffer::InvalidateMappedRange() to make writes by the GPU visible to the CPU.
+  virtual xiiGALMemoryProperties GetMemoryProperties() const = 0;
+
+  /// \brief This flushes the specified range of non-coherent memory from the host cache to make it available to the GPU.
+  ///
+  /// \param uiStartOffset The offset in bytes from the beginning of the buffer to the start of the memory range to flush.
+  /// \param uiSize The size in bytes of the memory range to flush.
+  ///
+  /// This method should only be used for persistently-mapped buffers that do not report the xiiGALMemoryProperties::HostCoherent property. After an application modifies
+  /// a mapped memory range on the CPU, it must flush the range to make it available to the GPU.
+  ///
+  /// \note This method must not be called for Dynamic buffers. When a mapped buffer is unmapped, it is automatically flushed by the engine if necessary.
+  virtual void FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) = 0;
+
+  /// \brief This invalidates the specified range of non-coherent memory modified by the GPU to make it visible to the CPU.
+  ///
+  /// \param uiStartOffset The offset in bytes from the beginning of the buffer to the start of the memory to invalidate.
+  /// \param uiSize The size in bytes of the memory range to invalidate.
+  ///
+  /// This method should only be used for persistently-mapped buffers that do not report the xiiGALMemoryProperties::HostCoherent property. After an application modifies
+  /// a mapped memory range on the CPU, it must invalidate the range to make it visible to the CPU.
+  ///
+  /// \note This method must not be called for Dynamic buffers. When a mapped buffer is unmapped, it is automatically flushed by the engine if necessary.
+  virtual void InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) = 0;
+
+  /// \brief This returns the sparse buffer memory properties.
+  virtual xiiGALSparseBufferProperties GetSparseProperties() const = 0;
+
+protected:
+  friend class xiiGALDevice;
+
+  xiiGALBuffer(const xiiGALBufferCreationDescription& creationDescription);
+
+  virtual ~xiiGALBuffer();
+
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALBufferData& initialData) = 0;
+
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
 
 #include <GraphicsFoundation/Resources/Implementation/Buffer_inl.h>

@@ -17,3 +17,15 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALMiscBufferFlags, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
+
+xiiGALBuffer::xiiGALBuffer(const xiiGALBufferCreationDescription& creationDescription) :
+  xiiGALResource<xiiGALBufferCreationDescription>(creationDescription)
+{
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  m_sDebugName.Assign(creationDescription.m_sName);
+#endif
+}
+
+xiiGALBuffer::~xiiGALBuffer() = default;
+
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_Buffer);
