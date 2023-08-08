@@ -54,7 +54,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALStencilOperationDescription : public xii
 /// [D3D11_DEPTH_STENCIL_DESC]: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476110(v=vs.85).aspx
 /// [D3D12_DEPTH_STENCIL_DESC]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770356(v=vs.85).aspx
 /// The structure generally mirrors [D3D11_DEPTH_STENCIL_DESC][]/[D3D12_DEPTH_STENCIL_DESC][] structure.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendStateCreationDescription : public xiiHashableStruct<xiiGALBlendStateCreationDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilStateCreationDescription : public xiiHashableStruct<xiiGALDepthStencilStateCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
 
