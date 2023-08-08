@@ -5,6 +5,11 @@
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 /// \brief This describes the blend factor.
+///
+/// [D3D11_BLEND]: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476086(v=vs.85).aspx
+/// [D3D12_BLEND]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770338(v=vs.85).aspx
+/// It generally mirrors the [D3D11_BLEND][] and [D3D12_BLEND][] enumerations, and is used
+/// to define source and destination blend factors for color and alpha channels.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendFactor
 {
   using StorageType = xiiUInt8;
@@ -39,6 +44,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendFactor
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBlendFactor);
 
 /// \brief This describes the blend operation.
+///
+/// [D3D11_BLEND_OP]: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476088(v=vs.85).aspx
+/// [D3D12_BLEND_OP]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770340(v=vs.85).aspx
+/// It generally mirrors the [D3D11_BLEND_OP][] and [D3D12_BLEND_OP][] enumerations, and is used to define RGB and Alpha
+/// blending operations.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendOperation
 {
   using StorageType = xiiUInt8;
@@ -104,14 +114,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderTargetBlendDescription : public xi
 {
   XII_DECLARE_POD_TYPE();
 
-  bool                          m_bBlendEnable = false;  ///< Enable or disable blending for this render target. The default is false.
-  xiiEnum<xiiGALBlendFactor>    m_SourceBlend;           ///< Specifies the blend factor to apply to the RGB value output from the pixel shader.
-  xiiEnum<xiiGALBlendFactor>    m_DestinationBlend;      ///< Specifies the blend factor to apply to the RGB value in the render target.
-  xiiEnum<xiiGALBlendOperation> m_BlendOperation;        ///< Defines how to combine the source and destination RGB values after applying the source and destination blend factors.
-  xiiEnum<xiiGALBlendFactor>    m_SourceBlendAlpha;      ///< Specifies the blend factor to apply to the alpha value output from the pixel shader.
-  xiiEnum<xiiGALBlendFactor>    m_DestinationBlendAlpha; ///< Specifies the blend factor to apply to the alpha value in the render target.
-  xiiEnum<xiiGALBlendOperation> m_BlendOperationAlpha;   ///< Defines how to combine the source and destination alpha values after applying the source and destination blend alpha factors.
-  xiiBitflags<xiiGALColorMask>  m_ColorMask;             ///< Render target color write mask.
+  bool                          m_bBlendEnable          = false;                     ///< Enable or disable blending for this render target. The default is false.
+  xiiEnum<xiiGALBlendFactor>    m_SourceBlend           = xiiGALBlendFactor::One;    ///< Specifies the blend factor to apply to the RGB value output from the pixel shader. The default is One.
+  xiiEnum<xiiGALBlendFactor>    m_DestinationBlend      = xiiGALBlendFactor::Zero;   ///< Specifies the blend factor to apply to the RGB value in the render target. The default is Zero.
+  xiiEnum<xiiGALBlendOperation> m_BlendOperation        = xiiGALBlendOperation::Add; ///< Defines how to combine the source and destination RGB values after applying the source and destination blend factors. The default is Add.
+  xiiEnum<xiiGALBlendFactor>    m_SourceBlendAlpha      = xiiGALBlendFactor::One;    ///< Specifies the blend factor to apply to the alpha value output from the pixel shader. The default is One.
+  xiiEnum<xiiGALBlendFactor>    m_DestinationBlendAlpha = xiiGALBlendFactor::Zero;   ///< Specifies the blend factor to apply to the alpha value in the render target. The default is Zero.
+  xiiEnum<xiiGALBlendOperation> m_BlendOperationAlpha   = xiiGALBlendOperation::Add; ///< Defines how to combine the source and destination alpha values after applying the source and destination blend alpha factors. The default is Add.
+  xiiBitflags<xiiGALColorMask>  m_ColorMask             = xiiGALColorMask::RGBA;     ///< Render target color write mask. The default is default is RGBA.
 };
 
 /// \brief This describes the blend state for all render targets in the graphics pipeline.
@@ -119,9 +129,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendStateCreationDescription : public x
 {
   XII_DECLARE_POD_TYPE();
 
-  bool                               m_bAlphaToCoverage  = false;                     ///< Specifies whether to use alpha-to-coverage as a multisampling technique when setting a pixel to a render target.
-  bool                               m_bIndependentBlend = false;                     ///< Specifies whether to enable independent blending in simultaneous render targets. If set to false, only m_RenderTargets[0] is used.
-  xiiGALRenderTargetBlendDescription m_RenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT]; ///< An array of RenderTargetBlendDesc structures that describe the blend states for render targets.
+  bool                               m_bAlphaToCoverage  = false;                     ///< Specifies whether to use alpha-to-coverage as a multisampling technique when setting a pixel to a render target. The default is false.
+  bool                               m_bIndependentBlend = false;                     ///< Specifies whether to enable independent blending in simultaneous render targets. If set to false, only m_RenderTargets[0] is used. The default is false.
+  xiiGALRenderTargetBlendDescription m_RenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT]; ///< An array of render target blend descriptions that describe the blend states for each render targets at an index.
 };
 
 #include <GraphicsFoundation/States/Implementation/BlendState_inl.h>
