@@ -46,3 +46,5 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALColorMask, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
+
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_BlendState);

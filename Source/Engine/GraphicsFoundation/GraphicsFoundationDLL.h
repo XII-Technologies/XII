@@ -17,3 +17,13 @@
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Id.h>
 #include <Foundation/Types/RefCounted.h>
+
+////////// Forward Declarations //////////
+
+struct xiiGALBLASTriangleDescription;
+struct xiiGALBLASBoundingBoxDescription;
+struct xiiGALBottomLevelASCreationDescription;
+struct xiiGALScratchBufferSizeDescription;
+
+class xiiGALDevice;
+class xiiGALBottomLevelAS;

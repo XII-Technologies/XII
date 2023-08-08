@@ -17,3 +17,5 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALStencilOperation, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
+
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_DepthStencilState);
