@@ -87,6 +87,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseBufferProperties : public xiiHasha
                                        ///  \note Offset in the buffer, memory offset and memory size that are used in sparse resource binding command, must be multiples of the block size. In Direct3D11 and Direct3D12, the block size is always 64Kb. In Vulkan, the block size is not documented, but is usually also 64Kb.
 };
 
+/// \brief Interface that defines methods to manipulate a buffer object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALBuffer : public xiiGALResource<xiiGALBufferCreationDescription>
 {
 public:
