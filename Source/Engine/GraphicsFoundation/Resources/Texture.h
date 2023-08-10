@@ -4,7 +4,7 @@
 
 #include <Foundation/Math/Size.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief This describes the miscellaneous texture flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMiscTextureFlags
@@ -15,9 +15,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMiscTextureFlags
   {
     None         = 0U,         ///< No miscellaneous texture flags.
     GenerateMips = XII_BIT(0), ///< Allow automatic mipmap generation.
-    Memoryless   = XII_BIT(1), ///< The texture will be used as a transient framebuffer attachment.
-    SparseAlias  = XII_BIT(2), ///< For sparse textures, allow binding the same memory range in different texture regions or in different sparse textures.
-    Subsampled   = XII_BIT(3), ///< The texture will be used as an intermediate render target for rendering with texture-based variable rate shading.
+                               ///
+                               ///  \note The texture must be created with the xiiGALBindFlags::RenderTarget bind flag.
+    Memoryless = XII_BIT(1),   ///< The texture will be used as a transient framebuffer attachment.
+                               ///
+                               ///  \note Memoryless textures may only be used within a render pass in a framebuffer; the corresponding sub pass load operation must be Clear or Discard, and the sub pass store operation must be Discard.
+    SparseAlias = XII_BIT(2),  ///< For sparse textures, allow binding the same memory range in different texture regions or in different sparse textures.
+    Subsampled  = XII_BIT(3),  ///< The texture will be used as an intermediate render target for rendering with texture-based variable rate shading. This requires the xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget capability.
+                               ///
+                               ///  \note Copy operations are not supported for subsampled textures.
 
     ENUM_COUNT = 5U,
 
@@ -42,7 +48,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiStringView                       m_sName;
+  xiiStringView                       m_sName;                                                   ///< Resource name. The default is an empty string view.
   xiiEnum<xiiGALResourceDimension>    m_Type               = xiiGALResourceDimension::Undefined; ///< Texture type.
   xiiSizeU32                          m_Size               = xiiSizeU32(0, 0);                   ///< Texture width and height in pixels.
   xiiUInt32                           m_uiArraySizeOrDepth = 1U;                                 ///< For a 1D Array or 2D Array, the number of array slices. For a 3D texture, the number of depth slices.
@@ -54,18 +60,40 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
   xiiBitflags<xiiGALCPUAccessFlag>    m_CPUAccessFlags     = xiiGALCPUAccessFlag::None;          ///< CPU access flags.
   xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags          = xiiGALMiscTextureFlags::None;       ///< Miscellaneous flags.
   xiiGALOptimizedClearValue           m_ClearValue;                                              ///< Optimized clear value.
-  xiiUInt64                           m_uiImmediateContextMask = XII_BIT(0);                     ///< Defines which immediate contexts are allowed to execute commands that use this texture.
+  xiiUInt64                           m_uiImmediateContextMask = XII_BIT(0);                     ///< Defines which immediate contexts are allowed to execute commands that use this texture. The default is the main immediate context.
+                                                                                                 ///< Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
 };
 
-// \todo Add xiiGALTextureSubResData, xiiGALTextureData
+/// \brief This describes the data for one texture sub-resource.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureSubResourceData : public xiiHashableStruct<xiiGALTextureSubResourceData>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiGALBufferHandle m_hSourceBuffer;            ///< Handle to the GPU buffer that contains the sub-resource data. If provided, the pData member must be nullptr.
+  const void*        m_pData          = nullptr; ///< Pointer to the sub-resource data in GPU memory. If provided, the hSourceBuffer member must be invalidated.
+  xiiUInt64          m_uiSourceOffset = 0U;      ///< When updating data from the buffer (hSourceOffset is not invalidated), the offset from the beginning of the buffer to the data.
+  xiiUInt64          m_uiStride       = 0U;      ///< For 2D and 3D textures, the row stride in bytes.
+  xiiUInt64          m_uiDepthStride  = 0U;      ///< For 3D textures, the depth slice stride in bytes.
+};
+
+/// \brief This describes the initial data to store in the texture.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureData : public xiiHashableStruct<xiiGALTextureData>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiGALTextureSubResourceData* m_pSubResources       = nullptr; ///< Pointer to the array of the texture sub-resource elements containing the information about each sub-resource.
+  xiiUInt32                     m_uiSubResourcesCount = 0U;      ///< The number of elements in the pSubResources member array. This must match exactly the number of sub-resources in the texture, otherwise an error will occur.
+
+  // \todo GraphicsFoundation: Add command encoder that should be used to initialize the texture?
+};
 
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMappedTextureSubresource : public xiiHashableStruct<xiiGALMappedTextureSubresource>
 {
   XII_DECLARE_POD_TYPE();
 
-  void*     m_pData         = nullptr;
-  xiiUInt64 m_uiStride      = 0U;
-  xiiUInt64 m_uiDepthStride = 0U;
+  void*     m_pData         = nullptr; ///< The pointer to the mapped texture sub-resource data.
+  xiiUInt64 m_uiStride      = 0U;      ///< For 2D and 3D textures, the row stride in bytes.
+  xiiUInt64 m_uiDepthStride = 0U;      ///< For 3D textures, the depth stride in bytes.
 };
 
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureProperties : public xiiHashableStruct<xiiGALSparseTextureProperties>

@@ -47,7 +47,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleDescription : public xiiHash
   xiiUInt32                m_uiMaxVertexCount = 0U;                            ///< The maximum vertex count in this geometry. The default is 0.
   xiiEnum<xiiGALValueType> m_VertexValueType  = xiiGALValueType::Undefined;    ///< The type of vertices in this geometry. The default is Undefined.
                                                                                ///
-                                                                               ///< \remarks Only Float32, Float16, and Int16 are valid. Int16 defines 16-bit signed-normalized vertex components.
+                                                                               ///  \remarks Only Float32, Float16, and Int16 are valid. Int16 defines 16-bit signed-normalized vertex components.
   xiiUInt8 m_uiVertexComponentCount = 0U;                                      ///< The number of components in the vertex. The default is 0.
                                                                                ///
                                                                                ///  \remarks Valid values are only 2 or 3. For 2-component formats, the third component is assumed to be 0.
