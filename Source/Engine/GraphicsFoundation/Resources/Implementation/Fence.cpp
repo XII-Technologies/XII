@@ -10,3 +10,15 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALFenceType, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
+
+xiiGALFence::xiiGALFence(const xiiGALFenceCreationDescription& creationDescription) :
+  xiiGALResource<xiiGALFenceCreationDescription>(creationDescription)
+{
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  m_sDebugName.Assign(creationDescription.m_sName);
+#endif
+}
+
+xiiGALFence::~xiiGALFence() = default;
+
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_Fence);

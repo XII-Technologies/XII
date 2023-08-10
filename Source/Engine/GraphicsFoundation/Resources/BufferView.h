@@ -44,7 +44,7 @@ protected:
 
   virtual ~xiiGALBufferView();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALBufferData& initialData) = 0;
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 
