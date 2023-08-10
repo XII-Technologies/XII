@@ -3,6 +3,7 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief This describes the unordered access view flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALUnorderedAccessViewFlags
@@ -41,7 +42,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewFlags
   enum Enum : xiiUInt8
   {
     None               = 0U,         ///< No texture view flags.
-    AllowMipGeneration = XII_BIT(0), ///< Allow automatic mipmap generation for this view. This flag is only allowed for shader resource view type. The texture must be created with the xiiGALMiscTextureFlags::GenerateMips flag.
+    AllowMipGeneration = XII_BIT(0), ///< Allow automatic mipmap generation for this view. This flag is only allowed for xiiGALTextureViewType::ShaderResource view type. The texture must be created with the xiiGALMiscTextureFlags::GenerateMips flag.
 
     ENUM_COUNT = 2U,
 
@@ -97,17 +98,41 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewCreationDescription : public 
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiStringView                               m_sName;
-  xiiEnum<xiiGALTextureViewType>              m_ViewType                  = xiiGALTextureViewType::Undefined;            ///< Describes the texture view type.
+  xiiStringView                               m_sName;                                                                   ///< Resource name. The default is an empty string view.
+  xiiGALTextureHandle                         m_hTexture;                                                                ///< The handle to the texture of which the view is created.
+  xiiEnum<xiiGALTextureViewType>              m_ViewType                  = xiiGALTextureViewType::Undefined;            ///< Describes the texture view type. The default is Undefined.
   xiiEnum<xiiGALResourceDimension>            m_ResourceDimension         = xiiGALResourceDimension::Undefined;          ///< The view interpretation of the original texture. If default value xiiGALResourceDimension::Undefined is provided, the view type will match the type of the referenced texture.
   xiiEnum<xiiGALTextureFormat>                m_Format                    = xiiGALTextureFormat::Unknown;                ///< The view format. If default value xiiGALTextureFormat::Unknown is provided, the view format will match the referenced texture format.
-  xiiUInt32                                   m_uiMostDetailedMip         = 0U;                                          ///< The most detailed mip level to use.
-  xiiUInt32                                   m_uiMipLevelCount           = 0U;                                          ///< The total number of mip levels for the view of the texture. Render target and depth stencil views can address only one mip level. If 0 is provided, then for a shader resource view all mip levels will be referenced, and for a render target or a depth stencil view, one mip level will be referenced.
-  xiiUInt32                                   m_uiFirstArrayOrDepthSlice  = 0U;                                          ///< For a texture array, first array slice to address in the view. For a 3D texture, first depth slice to address the view.
-  xiiUInt32                                   m_uiArrayOrDepthSlicesCount = 0U;                                          ///< For a texture array, number of array slices to address in the view. For a 3D texture, number of depth slices to address in the view. Set to 0 to address all array or depth slices.
-  xiiBitflags<xiiGALUnorderedAccessViewFlags> m_AccessFlags               = xiiGALUnorderedAccessViewFlags::Unspecified; ///< For an unordered access view, allowed access flags.
-  xiiBitflags<xiiGALTextureViewFlags>         m_Flags                     = xiiGALTextureViewFlags::None;                ///< Texture view flags.
+  xiiUInt32                                   m_uiMostDetailedMip         = 0U;                                          ///< The most detailed mip level to use. The default is 0.
+  xiiUInt32                                   m_uiMipLevelCount           = 0U;                                          ///< The total number of mip levels for the view of the texture. Render target and depth stencil views can address only one mip level. If 0 is provided, then for a shader resource view all mip levels will be referenced, and for a render target or a depth stencil view, one mip level will be referenced. The default is 0.
+  xiiUInt32                                   m_uiFirstArrayOrDepthSlice  = 0U;                                          ///< For a texture array, first array slice to address in the view. For a 3D texture, first depth slice to address the view. The default is 0.
+  xiiUInt32                                   m_uiArrayOrDepthSlicesCount = 0U;                                          ///< For a texture array, number of array slices to address in the view. For a 3D texture, number of depth slices to address in the view. Set to 0 to address all array or depth slices. The default is 0.
+  xiiBitflags<xiiGALUnorderedAccessViewFlags> m_AccessFlags               = xiiGALUnorderedAccessViewFlags::Unspecified; ///< For an unordered access view, allowed access flags. The default is Unspecified.
+  xiiBitflags<xiiGALTextureViewFlags>         m_Flags                     = xiiGALTextureViewFlags::None;                ///< Texture view flags. The default is None.
   xiiGALTextureComponentSwizzle               m_ComponentSwizzle;                                                        ///< Texture component swizzle.
+};
+
+/// \brief Interface that defines methods to manipulate a texture view object.
+///
+/// \note The texture view holds strong references to the texture. The texture will not be destroyed until all views are released.
+class XII_GRAPHICSFOUNDATION_DLL xiiGALTextureView : public xiiGALResource<xiiGALTextureViewCreationDescription>
+{
+public:
+  /// \brief Returns the resource of which the texture view is created with.
+  XII_ALWAYS_INLINE xiiGALResourceBase* GetResource() const { return m_pResource; }
+
+protected:
+  friend class xiiGALDevice;
+
+  xiiGALTextureView(xiiGALResourceBase* pResource, const xiiGALTextureViewCreationDescription& creationDescription);
+
+  virtual ~xiiGALTextureView();
+
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+
+  xiiGALResourceBase* m_pResource = nullptr;
 };
 
 #include <GraphicsFoundation/Resources/Implementation/TextureView_inl.h>
