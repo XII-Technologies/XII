@@ -3,6 +3,7 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief This describes the occlusion query data.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataOcclusion : public xiiHashableStruct<xiiGALQueryDataOcclusion>
@@ -66,7 +67,38 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryCreationDescription : public xiiHas
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALQueryType> m_Type; ///< Query type.
+  xiiStringView            m_sName;                             ///< Resource name. The default is an empty string view.
+  xiiEnum<xiiGALQueryType> m_Type = xiiGALQueryType::Undefined; ///< Query type.
+};
+
+/// \brief Interface that defines methods to manipulate a query object.
+class XII_GRAPHICSFOUNDATION_DLL xiiGALQuery : public xiiGALResource<xiiGALQueryCreationDescription>
+{
+public:
+  /// \brief This retrieves the query data.
+  ///
+  /// \param pData The pointer to the query data structure. This must be a pointer to one of Occlusion, BinaryOcclusion, Timestamp, PipelineStatistics, and Duration structures. An application may provide nullptr to only check the query status.
+  /// \param uiDataSize The size of the data structure.
+  /// \param bAutoInvalidate Whether to invalidate the query if the results are available and release associated resources. An application should typically always invalidate completed queries unless it needs to retrieve the same data through GetData() multiple times. A query will not be invalidated if pData is nullptr.
+  ///
+  /// \return True if the query data is available, false otherwise.
+  ///
+  /// \note  In Direct3D11 backend timestamp queries will only be available after FinishFrame is called for the frame in which they were collected. If AutoInvalidate is set to true, and the data have been retrieved, an application must not call GetData() until it begins and ends the query again.
+  virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate = true) = 0;
+
+  /// \brief This invalidates the query and releases the associated resources.
+  virtual void Invalidate() = 0;
+
+protected:
+  friend class xiiGALDevice;
+
+  xiiGALQuery(const xiiGALQueryCreationDescription& creationDescription);
+
+  virtual ~xiiGALQuery();
+
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
 
 #include <GraphicsFoundation/Resources/Implementation/Query_inl.h>
