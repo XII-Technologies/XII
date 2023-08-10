@@ -3,6 +3,7 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief This describes the sampler flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerFlags
@@ -12,7 +13,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerFlags
   enum Enum : xiiUInt8
   {
     None                           = 0U,         ///< No sampler flags.
-    Subsampled                     = XII_BIT(0), ///< Specifies that the sampler will read from a subsampled texture created with the miscellanous texture subsampled flag.
+    Subsampled                     = XII_BIT(0), ///< Specifies that the sampler will read from a subsampled texture created with the miscellaneous texture subsampled flag.
     SubsampledCoarseReconstruction = XII_BIT(1), ///< Specifies that the GPU is allowed to use fast approximation when reconstructing full-resolution value from the subsampled texture accessed by the sampler.
 
     ENUM_COUNT = 3U,
@@ -32,10 +33,17 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALSamplerFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSamplerFlags);
 
 /// \brief This describes the sampler creation description.
+///
+/// To create an anisotropic filter, all three filters must either be xiiGALFilterType::Anisotropic or xiiGALFilterType::ComparisonAnisotropic.
+///
+/// The MipFilter member cannot be comparison filter except for xiiGALFilterType::Anisotropic if all three filters have that value.
+///
+/// The MinFilter and MagFilter members must either be regular filters or comparison filters, as mixing comparison filters and regular filters is an error.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerCreationDescription : public xiiHashableStruct<xiiGALSamplerCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
 
+  xiiStringView                     m_sName;                                                ///< Resource name. The default is an empty string view.
   xiiEnum<xiiGALFilterType>         m_MinFilter          = xiiGALFilterType::Linear;        ///< Texture minification filter. The default is Linear.
   xiiEnum<xiiGALFilterType>         m_MagFilter          = xiiGALFilterType::Linear;        ///< Texture magnification filter. The default is Linear.
   xiiEnum<xiiGALFilterType>         m_MipFilter          = xiiGALFilterType::Linear;        ///< Texture mip filter. The default is Linear.
@@ -49,6 +57,22 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerCreationDescription : public xiiH
   xiiColor                          m_BorderColor        = xiiColor::Black;                 ///< Border color to use if the texture address border is specified for AddressU, AddressV, or AddressW. The default is xiiColor::Black.
   float                             m_fMinLOD            = 0.0f;                            ///< Specifies the minimum value that LOD is clamped to before accessing the texture MIP levels. The default is 0.
   float                             m_fMaxLOD            = xiiMath::MaxValue<float>();      ///< Specifies the maximum value that LOD is clamped to before accessing the texture MIP levels. The default is xiiMath::MaxValue<float>().
+};
+
+/// \brief Interface that defines methods to manipulate a texture sampler object used to perform texture filtering.
+class XII_GRAPHICSFOUNDATION_DLL xiiGALSampler : public xiiGALResource<xiiGALSamplerCreationDescription>
+{
+public:
+protected:
+  friend class xiiGALDevice;
+
+  xiiGALSampler(const xiiGALSamplerCreationDescription& creationDescription);
+
+  virtual ~xiiGALSampler();
+
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
 
 #include <GraphicsFoundation/Resources/Implementation/Sampler_inl.h>
