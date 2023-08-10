@@ -13,3 +13,15 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALMiscTextureFlags, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
+
+xiiGALTexture::xiiGALTexture(const xiiGALTextureCreationDescription& creationDescription) :
+  xiiGALResource<xiiGALTextureCreationDescription>(creationDescription)
+{
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  m_sDebugName.Assign(creationDescription.m_sName);
+#endif
+}
+
+xiiGALTexture::~xiiGALTexture() = default;
+
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_Texture);

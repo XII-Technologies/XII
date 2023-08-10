@@ -139,7 +139,7 @@ protected:
 
   virtual ~xiiGALBuffer();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALBufferData& initialData) = 0;
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALBufferData* pInitialData) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };

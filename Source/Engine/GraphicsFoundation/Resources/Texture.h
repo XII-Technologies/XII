@@ -2,7 +2,6 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <Foundation/Math/Size.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/Resource.h>
 
@@ -49,16 +48,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
   XII_DECLARE_POD_TYPE();
 
   xiiStringView                       m_sName;                                                   ///< Resource name. The default is an empty string view.
-  xiiEnum<xiiGALResourceDimension>    m_Type               = xiiGALResourceDimension::Undefined; ///< Texture type.
-  xiiSizeU32                          m_Size               = xiiSizeU32(0, 0);                   ///< Texture width and height in pixels.
-  xiiUInt32                           m_uiArraySizeOrDepth = 1U;                                 ///< For a 1D Array or 2D Array, the number of array slices. For a 3D texture, the number of depth slices.
-  xiiEnum<xiiGALTextureFormat>        m_Format             = xiiGALTextureFormat::Unknown;       ///< Texture format.
-  xiiUInt32                           m_uiMipLevels        = 1U;                                 ///< Number of Mip levels in the texture. Multisampled textures can only have 1 Mip level. Specify 0 to create full mipmap chain.
-  xiiUInt32                           m_uiSampleCount      = 1U;                                 ///< Number of samples. Only 2D textures or 2D texture arrays can be multisampled.
-  xiiBitflags<xiiGALBindFlags>        m_BindFlags          = xiiGALBindFlags::None;              ///< Bind flags.
-  xiiEnum<xiiGALResourceUsage>        m_Usage              = xiiGALResourceUsage::Default;       ///< Texture usage.
-  xiiBitflags<xiiGALCPUAccessFlag>    m_CPUAccessFlags     = xiiGALCPUAccessFlag::None;          ///< CPU access flags.
-  xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags          = xiiGALMiscTextureFlags::None;       ///< Miscellaneous flags.
+  xiiEnum<xiiGALResourceDimension>    m_Type               = xiiGALResourceDimension::Undefined; ///< Texture type. The default is Undefined.
+  xiiSizeU32                          m_Size               = xiiSizeU32(0, 0);                   ///< Texture width and height in pixels. The default is (0, 0).
+  xiiUInt32                           m_uiArraySizeOrDepth = 1U;                                 ///< For a 1D Array or 2D Array, the number of array slices. For a 3D texture, the number of depth slices. The default is 1.
+  xiiEnum<xiiGALTextureFormat>        m_Format             = xiiGALTextureFormat::Unknown;       ///< Texture format. The default is Unknown.
+  xiiUInt32                           m_uiMipLevels        = 1U;                                 ///< Number of Mip levels in the texture. Multi-sampled textures can only have 1 Mip level. Specify 0 to create full mipmap chain. The default is 1.
+  xiiUInt32                           m_uiSampleCount      = 1U;                                 ///< Number of samples. Only 2D textures or 2D texture arrays can be multi-sampled. The default is 1.
+  xiiBitflags<xiiGALBindFlags>        m_BindFlags          = xiiGALBindFlags::None;              ///< Bind flags. The default is None.
+  xiiEnum<xiiGALResourceUsage>        m_Usage              = xiiGALResourceUsage::Default;       ///< Texture usage. The default is Default.
+  xiiBitflags<xiiGALCPUAccessFlag>    m_CPUAccessFlags     = xiiGALCPUAccessFlag::None;          ///< CPU access flags. The default is None.
+  xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags          = xiiGALMiscTextureFlags::None;       ///< Miscellaneous flags. The default is None.
   xiiGALOptimizedClearValue           m_ClearValue;                                              ///< Optimized clear value.
   xiiUInt64                           m_uiImmediateContextMask = XII_BIT(0);                     ///< Defines which immediate contexts are allowed to execute commands that use this texture. The default is the main immediate context.
                                                                                                  ///< Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
@@ -100,16 +99,47 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureProperties : public xiiHash
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt64                             m_uiAddressSpaceSize = 0U;                      ///< The size of the texture's virtual address space.
-  xiiUInt64                             m_uiMipTailOffset    = 0U;                      ///< Specifies where to bind the mip tail memory. Reserved for internal use.
-  xiiUInt64                             m_uiMipTailStride    = 0U;                      ///< Specifies how to calculate the mip tail offset for 2D array texture. Reserved for internal use.
-  xiiUInt64                             m_uiMipTailSize      = 0U;                      ///< Specifies the mip tail size in bytes.
-  xiiUInt32                             m_uiFirstMipInTail   = 0U;                      ///< The first mip level in the mip tail that is packed as a whole into one or multiple memory blocks.
-  xiiStaticArray<xiiUInt32, 3U>         m_TailSize;                                     ///< Specifies the dimension of a tile packed into a single memory block.
-  xiiUInt32                             m_uiBlockSize = 0U;                             ///< Size of the sparse memory block, in bytes.
-  xiiBitflags<xiiGALSparseTextureFlags> m_Flags       = xiiGALSparseTextureFlags::None; ///< Flags that describe additional packing modes.
+  xiiUInt64 m_uiAddressSpaceSize = 0U;                                            ///< The size of the texture's virtual address space. The default is 0.
+  xiiUInt64 m_uiMipTailOffset    = 0U;                                            ///< Specifies where to bind the mip tail memory. Reserved for internal use.
+  xiiUInt64 m_uiMipTailStride    = 0U;                                            ///< Specifies how to calculate the mip tail offset for 2D array texture. Reserved for internal use.
+  xiiUInt64 m_uiMipTailSize      = 0U;                                            ///< Specifies the mip tail size in bytes. The default is 0.
+                                                                                  ///
+                                                                                  ///  \note A single mip tail for a 2D array may exceed the 32-bit limit.
+  xiiUInt32                     m_uiFirstMipInTail = 0U;                          ///< The first mip level in the mip tail that is packed as a whole into one or multiple memory blocks. The default is 0.
+  xiiStaticArray<xiiUInt32, 3U> m_TailSize;                                       ///< Specifies the dimension of a tile packed into a single memory block.
+  xiiUInt32                     m_uiBlockSize = 0U;                               ///< Size of the sparse memory block, in bytes. The default is 0.
+                                                                                  ///
+                                                                                  ///  \remarks The offset in the packed mip tail, memory offset and memory size that are used in sparse memory binding command must be multiples of the block size.
+                                                                                  ///           If the xiiGALSparseTextureFlags::NonStandardBlockSize flag is not set in the Flags member, the block size is equal to xiiGALSparseResourceProperties::m_uiStandardBlockSize.
+  xiiBitflags<xiiGALSparseTextureFlags> m_Flags = xiiGALSparseTextureFlags::None; ///< Flags that describe additional packing modes. The default is None.
 };
 
-// \todo Add texture resource abstraction.
+/// \brief Interface that defines methods to manipulate a texture object.
+class XII_GRAPHICSFOUNDATION_DLL xiiGALTexture : public xiiGALResource<xiiGALTextureCreationDescription>
+{
+public:
+  /// \brief This sets the texture usage state.
+  ///
+  /// \note This method does not perform state transition, but resets the internal texture state to the given value.
+  ///       This method should be used after the application finished manually managing the texture state and wants to hand over state management back to the engine.
+  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) = 0;
+
+  /// \brief This returns the internal texture state.
+  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const = 0;
+
+  /// \brief This returns the sparse texture properties.
+  virtual const xiiGALSparseTextureProperties& GetSparseProperties() const = 0;
+
+protected:
+  friend class xiiGALDevice;
+
+  xiiGALTexture(const xiiGALTextureCreationDescription& creationDescription);
+
+  virtual ~xiiGALTexture();
+
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALTextureData* pInitialData) = 0;
+
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+};
 
 #include <GraphicsFoundation/Resources/Implementation/Texture_inl.h>
