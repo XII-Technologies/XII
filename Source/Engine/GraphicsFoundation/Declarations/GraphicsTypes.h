@@ -1581,9 +1581,9 @@ class xiiGALSamplerStateHandle
   friend class xiiGALDevice;
 };
 
-class xiiGALVertexDeclarationHandle
+class xiiGALInputLayoutHandle
 {
-  XII_DECLARE_HANDLE_TYPE(xiiGALVertexDeclarationHandle, xiiGAL::xii18_14Id);
+  XII_DECLARE_HANDLE_TYPE(xiiGALInputLayoutHandle, xiiGAL::xii18_14Id);
 
   friend class xiiGALDevice;
 };
