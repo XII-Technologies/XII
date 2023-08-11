@@ -43,3 +43,12 @@ XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Shader_Implementation_InputLayout);
+
+xiiGALInputLayout::xiiGALInputLayout(const xiiGALInputLayoutCreationDescription& creationDescription) :
+  xiiGALResource<xiiGALInputLayoutCreationDescription>(creationDescription)
+{
+}
+
+xiiGALInputLayout::~xiiGALInputLayout() = default;
+
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Shader_Implementation_InputLayout);
