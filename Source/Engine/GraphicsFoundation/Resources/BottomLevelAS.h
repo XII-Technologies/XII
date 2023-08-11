@@ -6,7 +6,7 @@
 #include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief This describes the acceleration structure build flags.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALRaytTracingBuildASFlags
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingBuildASFlags
 {
   using StorageType = xiiUInt8;
 
@@ -34,9 +34,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRaytTracingBuildASFlags
   };
 };
 
-XII_DECLARE_FLAGS_OPERATORS(xiiGALRaytTracingBuildASFlags);
+XII_DECLARE_FLAGS_OPERATORS(xiiGALRayTracingBuildASFlags);
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRaytTracingBuildASFlags);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRayTracingBuildASFlags);
 
 /// \brief This describes the bottom level acceleration structure triangles.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASTriangleDescription : public xiiHashableStruct<xiiGALBLASTriangleDescription>
@@ -69,15 +69,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelASCreationDescription : publi
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiStringView                              m_sName;                                                        ///< Resource name. The default is an empty string view.
-  const xiiGALBLASTriangleDescription*       m_pTriangles             = nullptr;                             ///< Array of triangle geometry descriptions.
-  xiiUInt32                                  m_uiTriangleCount        = 0U;                                  ///< The number of triangle geometries in pTriangles array.
-  const xiiGALBLASBoundingBoxDescription*    m_pBoundingBoxes         = nullptr;                             ///< Array of AABB geometry descriptions.
-  xiiUInt32                                  m_uiBoundingBoxCount     = 0U;                                  ///< The number of AABB geometries in pBoxes array.
-  xiiBitflags<xiiGALRaytTracingBuildASFlags> m_BuildASFlags           = xiiGALRaytTracingBuildASFlags::None; ///< Ray tracing build flags. The default is None.
-  xiiUInt64                                  m_uiCompactedSize        = 0U;                                  ///< Compacted size, if this acceleration structure will be the target of a compacted copy operation. The default is 0.
-  xiiUInt64                                  m_uiImmediateContextMask = XII_BIT(0);                          ///< Defines which immediate contexts are allowed to execute commands that use this bottom level acceleration structure. The default is the main immediate context.
-                                                                                                             ///  Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
+  xiiStringView                             m_sName;                                                       ///< Resource name. The default is an empty string view.
+  const xiiGALBLASTriangleDescription*      m_pTriangles             = nullptr;                            ///< Array of triangle geometry descriptions.
+  xiiUInt32                                 m_uiTriangleCount        = 0U;                                 ///< The number of triangle geometries in pTriangles array.
+  const xiiGALBLASBoundingBoxDescription*   m_pBoundingBoxes         = nullptr;                            ///< Array of AABB geometry descriptions.
+  xiiUInt32                                 m_uiBoundingBoxCount     = 0U;                                 ///< The number of AABB geometries in pBoxes array.
+  xiiBitflags<xiiGALRayTracingBuildASFlags> m_BuildASFlags           = xiiGALRayTracingBuildASFlags::None; ///< Ray tracing build flags. The default is None.
+  xiiUInt64                                 m_uiCompactedSize        = 0U;                                 ///< Compacted size, if this acceleration structure will be the target of a compacted copy operation. The default is 0.
+  xiiUInt64                                 m_uiImmediateContextMask = XII_BIT(0);                         ///< Defines which immediate contexts are allowed to execute commands that use this bottom level acceleration structure. The default is the main immediate context.
+                                                                                                           ///  Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
 };
 
 /// \brief This describes the scratch buffer information for the acceleration structure.

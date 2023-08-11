@@ -1539,6 +1539,20 @@ class xiiGALRenderTargetViewHandle
   friend class xiiGALDevice;
 };
 
+class xiiGALTopLevelASHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALTopLevelASHandle, xiiGAL::xii18_14Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALBottomLevelASHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALBottomLevelASHandle, xiiGAL::xii18_14Id);
+
+  friend class xiiGALDevice;
+};
+
 class xiiGALDepthStencilStateHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALDepthStencilStateHandle, xiiGAL::xii16_16Id);
@@ -1577,6 +1591,13 @@ class xiiGALVertexDeclarationHandle
 class xiiGALQueryHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALQueryHandle, xiiGAL::xii20_12Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALFenceHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALFenceHandle, xiiGAL::xii20_12Id);
 
   friend class xiiGALDevice;
 };
