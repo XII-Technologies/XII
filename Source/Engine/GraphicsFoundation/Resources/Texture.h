@@ -86,6 +86,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureData : public xiiHashableStruct<x
   // \todo GraphicsFoundation: Add command encoder that should be used to initialize the texture?
 };
 
+/// \brief This describes the mapped texture sub-resource data.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMappedTextureSubresource : public xiiHashableStruct<xiiGALMappedTextureSubresource>
 {
   XII_DECLARE_POD_TYPE();
@@ -95,6 +96,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMappedTextureSubresource : public xiiHas
   xiiUInt64 m_uiDepthStride = 0U;      ///< For 3D textures, the depth stride in bytes.
 };
 
+/// \brief This describes the sparse texture properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureProperties : public xiiHashableStruct<xiiGALSparseTextureProperties>
 {
   XII_DECLARE_POD_TYPE();
