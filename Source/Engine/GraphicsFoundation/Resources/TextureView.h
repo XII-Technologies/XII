@@ -10,7 +10,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALUnorderedAccessViewFlags
 {
   using StorageType = xiiUInt8;
 
-  enum Enum : xiiUInt8
+  enum Enum : StorageType
   {
     Unspecified = 0U,           ///< Access mode is unspecified.
     Read        = XII_BIT(0),   ///< Allow read operations on the unordered access view.
@@ -39,7 +39,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewFlags
 {
   using StorageType = xiiUInt8;
 
-  enum Enum : xiiUInt8
+  enum Enum : StorageType
   {
     None               = 0U,         ///< No texture view flags.
     AllowMipGeneration = XII_BIT(0), ///< Allow automatic mipmap generation for this view. This flag is only allowed for xiiGALTextureViewType::ShaderResource view type. The texture must be created with the xiiGALMiscTextureFlags::GenerateMips flag.
@@ -64,7 +64,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureComponentSwizzle
 {
   using StorageType = xiiUInt8;
 
-  enum Enum : xiiUInt8
+  enum Enum : StorageType
   {
     Identity = 0U, ///< Identity swizzle (e.g. R->R, G->G, B->B, A->A).
     Zero,          ///< The component is set to zero.

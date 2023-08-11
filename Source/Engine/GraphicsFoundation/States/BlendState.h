@@ -75,7 +75,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALColorMask
 {
   using StorageType = xiiUInt8;
 
-  enum Enum : xiiUInt8
+  enum Enum : StorageType
   {
     None  = 0U,         ///< Do not write to any components.
     Red   = XII_BIT(0), ///< Write to the red component.

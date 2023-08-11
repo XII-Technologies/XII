@@ -10,7 +10,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingBuildASFlags
 {
   using StorageType = xiiUInt8;
 
-  enum Enum : xiiUInt8
+  enum Enum : StorageType
   {
     None            = 0U,         ///< No raytracing acceleration structure build flags.
     AllowUpdate     = XII_BIT(0), ///< Indicates that the specified acceleration structure can be updated with the build BLAS/TLAS device functions. With this flag, the acceleration structure may allocate more memory and take more time to build.

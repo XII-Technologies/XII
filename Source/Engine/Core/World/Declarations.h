@@ -242,7 +242,7 @@ struct xiiObjectMode
 {
   using StorageType = xiiUInt8;
 
-  enum Enum : xiiUInt8
+  enum Enum : StorageType
   {
     Automatic,
     ForceDynamic,

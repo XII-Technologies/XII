@@ -10,7 +10,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerFlags
 {
   using StorageType = xiiUInt8;
 
-  enum Enum : xiiUInt8
+  enum Enum : StorageType
   {
     None                           = 0U,         ///< No sampler flags.
     Subsampled                     = XII_BIT(0), ///< Specifies that the sampler will read from a subsampled texture created with the miscellaneous texture subsampled flag.

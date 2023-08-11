@@ -9,7 +9,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALHitGroupBindingMode
 {
   using StorageType = xiiUInt8;
 
-  enum Enum : xiiUInt8
+  enum Enum : StorageType
   {
     PerGeometry = 0U,                 ///< Each geometry in every instance may use a unique hit shader group. In this mode, space is reserved for each geometry in every instance in the top level acceleration structure and uses the most memory.
     PerInstance,                      ///< Each instance may use a unique hit shader group. In this mode, one slot is reserved for each instance irrespective of how many geometries it contains, so it uses less memory.

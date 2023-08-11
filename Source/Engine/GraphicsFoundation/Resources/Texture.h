@@ -10,7 +10,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMiscTextureFlags
 {
   using StorageType = xiiUInt8;
 
-  enum Enum : xiiUInt8
+  enum Enum : StorageType
   {
     None         = 0U,         ///< No miscellaneous texture flags.
     GenerateMips = XII_BIT(0), ///< Allow automatic mipmap generation.

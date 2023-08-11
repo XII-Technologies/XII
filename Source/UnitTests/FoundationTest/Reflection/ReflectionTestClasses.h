@@ -22,7 +22,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiExampleEnum);
 struct xiiExampleBitflags
 {
   using StorageType = xiiUInt64;
-  enum Enum : xiiUInt64
+
+  enum Enum : StorageType
   {
     Value1  = XII_BIT(0),  // normal value
     Value2  = XII_BIT(31), // normal value
