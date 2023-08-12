@@ -434,8 +434,7 @@ xiiJniObject xiiJniObject::FindConstructor(const xiiJniClass& type, xiiJniClass*
     jsize numMethods = xiiJniAttachment::GetEnv()->GetArrayLength(jarray(methodArray.m_object));
     for (jsize methodIdx = 0; methodIdx < numMethods; ++methodIdx)
     {
-      xiiJniObject candidateMethod(
-        xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(methodArray.m_object), methodIdx), xiiJniOwnerShip::OWN);
+      xiiJniObject candidateMethod(xiiJniAttachment::GetEnv()->GetObjectArrayElement(jobjectArray(methodArray.m_object), methodIdx), xiiJniOwnerShip::OWN);
 
       if (!IsConstructorViable(candidateMethod, inputTypes, N))
       {

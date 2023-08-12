@@ -151,16 +151,9 @@ public:
   void MakeAutoTangentRight(xiiUInt32 uiCpIdx);
 
 private:
-  void RecomputeLinearApproxExtremes();
-  void ApproximateMinMaxValues(const ControlPoint& lhs, const ControlPoint& rhs, double& fMinY, double& fMaxY);
-  void ApproximateCurve(
-    const xiiVec2d& p0,
-    const xiiVec2d& p1,
-    const xiiVec2d& p2,
-    const xiiVec2d& p3,
-    double          fMaxErrorX,
-    double          fMaxErrorY,
-    xiiInt32        iSubDivLeft);
+  void     RecomputeLinearApproxExtremes();
+  void     ApproximateMinMaxValues(const ControlPoint& lhs, const ControlPoint& rhs, double& fMinY, double& fMaxY);
+  void     ApproximateCurve(const xiiVec2d& p0, const xiiVec2d& p1, const xiiVec2d& p2, const xiiVec2d& p3, double fMaxErrorX, double fMaxErrorY, xiiInt32 iSubDivLeft);
   void     ApproximateCurvePiece(const xiiVec2d& p0, const xiiVec2d& p1, const xiiVec2d& p2, const xiiVec2d& p3, double tLeft, const xiiVec2d& pLeft, double tRight, const xiiVec2d& pRight, double fMaxErrorX, double fMaxErrorY, xiiInt32 iSubDivLeft);
   xiiInt32 FindApproxControlPoint(double x) const;
 

@@ -88,8 +88,7 @@ void xiiAbstractGraphBinarySerializer::Read(
   ref_stream >> uiVersion;
   if (uiVersion != xiiBinarySerializerVersion::CurrentVersion)
   {
-    XII_REPORT_FAILURE(
-      "Binary serializer version {0} does not match expected version {1}, re-export file.", uiVersion, xiiBinarySerializerVersion::CurrentVersion);
+    XII_REPORT_FAILURE("Binary serializer version {0} does not match expected version {1}, re-export file.", uiVersion, xiiBinarySerializerVersion::CurrentVersion);
     return;
   }
   ReadGraph(ref_stream, pGraph);

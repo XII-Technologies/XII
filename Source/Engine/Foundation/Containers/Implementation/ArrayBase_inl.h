@@ -82,6 +82,7 @@ template <typename T, typename Derived>
 XII_ALWAYS_INLINE const T& xiiArrayBase<T, Derived>::operator[](const xiiUInt32 uiIndex) const
 {
   XII_ASSERT_DEBUG(uiIndex < m_uiCount, "Out of bounds access. Array has {0} elements, trying to access element at index {1}.", m_uiCount, uiIndex);
+
   return static_cast<const Derived*>(this)->GetElementsPtr()[uiIndex];
 }
 
@@ -89,6 +90,7 @@ template <typename T, typename Derived>
 XII_ALWAYS_INLINE T& xiiArrayBase<T, Derived>::operator[](const xiiUInt32 uiIndex)
 {
   XII_ASSERT_DEBUG(uiIndex < m_uiCount, "Out of bounds access. Array has {0} elements, trying to access element at index {1}.", m_uiCount, uiIndex);
+
   return static_cast<Derived*>(this)->GetElementsPtr()[uiIndex];
 }
 
@@ -378,6 +380,7 @@ template <typename T, typename Derived>
 XII_FORCE_INLINE T& xiiArrayBase<T, Derived>::PeekBack()
 {
   XII_ASSERT_DEBUG(m_uiCount > 0, "Out of bounds access. Trying to peek into an empty array.");
+
   return static_cast<Derived*>(this)->GetElementsPtr()[m_uiCount - 1];
 }
 
@@ -385,6 +388,7 @@ template <typename T, typename Derived>
 XII_FORCE_INLINE const T& xiiArrayBase<T, Derived>::PeekBack() const
 {
   XII_ASSERT_DEBUG(m_uiCount > 0, "Out of bounds access. Trying to peek into an empty array.");
+
   return static_cast<const Derived*>(this)->GetElementsPtr()[m_uiCount - 1];
 }
 

@@ -164,15 +164,15 @@ void xiiDequeBase<T, Construct>::Reserve(xiiUInt32 uiCount)
 {
   // This is the function where all the complicated stuff happens.
   // The basic idea is as follows:
-  // * do not do anything unless necessary
-  // * if the index array (for the redirection) is already large enough to handle the 'address space', try to reuse it
+  // * Do not do anything unless necessary
+  // * If the index array (for the redirection) is already large enough to handle the 'address space', try to reuse it
   //   by moving data around (shift it left or right), if necessary
-  // * if the chunk index array is not large enough to handle the required amount of redirections, allocate a new
+  // * If the chunk index array is not large enough to handle the required amount of redirections, allocate a new
   //   index array and move the old data over
   // This function does not allocate any of the chunks itself (that's what 'ElementAt' does), it only takes care
   // that the amount of reserved elements can be redirected once the deque is enlarged accordingly.
 
-  // no need to change anything in this case
+  // There is no need to change anything in this case.
   if (uiCount <= m_uiCount)
     return;
 

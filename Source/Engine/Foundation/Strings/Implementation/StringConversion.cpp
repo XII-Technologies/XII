@@ -104,8 +104,7 @@ void xiiStringWChar::operator=(xiiStringView sUtf8)
 
 void xiiStringUtf8::operator=(const char* szUtf8)
 {
-  XII_ASSERT_DEV(
-    xiiUnicodeUtils::IsValidUtf8(szUtf8), "Input Data is not a valid Utf8 string. Did you intend to use a Wide-String and forget the 'L' prefix?");
+  XII_ASSERT_DEV(xiiUnicodeUtils::IsValidUtf8(szUtf8), "Input Data is not a valid Utf8 string. Did you intend to use a Wide-String and forget the 'L' prefix?");
 
   m_Data.Clear();
 
@@ -228,8 +227,7 @@ void xiiStringUtf8::operator=(const HSTRING& hstring)
 
 void xiiStringUtf16::operator=(const char* szUtf8)
 {
-  XII_ASSERT_DEV(
-    xiiUnicodeUtils::IsValidUtf8(szUtf8), "Input Data is not a valid Utf8 string. Did you intend to use a Wide-String and forget the 'L' prefix?");
+  XII_ASSERT_DEV(xiiUnicodeUtils::IsValidUtf8(szUtf8), "Input Data is not a valid Utf8 string. Did you intend to use a Wide-String and forget the 'L' prefix?");
 
   m_Data.Clear();
 
@@ -328,8 +326,7 @@ void xiiStringUtf16::operator=(const wchar_t* pWChar)
 
 void xiiStringUtf32::operator=(const char* szUtf8)
 {
-  XII_ASSERT_DEV(
-    xiiUnicodeUtils::IsValidUtf8(szUtf8), "Input Data is not a valid Utf8 string. Did you intend to use a Wide-String and forget the 'L' prefix?");
+  XII_ASSERT_DEV(xiiUnicodeUtils::IsValidUtf8(szUtf8), "Input Data is not a valid Utf8 string. Did you intend to use a Wide-String and forget the 'L' prefix?");
 
   m_Data.Clear();
 

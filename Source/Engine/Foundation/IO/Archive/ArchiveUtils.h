@@ -50,10 +50,7 @@ namespace xiiArchiveUtils
   /// \brief Configures \a memReader as a view into the data stored for \a entry in the archive file.
   ///
   /// The raw memory stream may be compressed or uncompressed. This only creates a view for the stored data, it does not interpret it.
-  XII_FOUNDATION_DLL void ConfigureRawMemoryStreamReader(
-    const xiiArchiveEntry&    entry,
-    const void*               pStartOfArchiveData,
-    xiiRawMemoryStreamReader& ref_memReader);
+  XII_FOUNDATION_DLL void ConfigureRawMemoryStreamReader(const xiiArchiveEntry& entry, const void* pStartOfArchiveData, xiiRawMemoryStreamReader& ref_memReader);
 
   /// \brief Creates a new stream reader which allows to read the uncompressed data for the given archive entry.
   ///
