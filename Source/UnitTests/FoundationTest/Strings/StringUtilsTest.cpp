@@ -745,8 +745,7 @@ XII_CREATE_SIMPLE_TEST(Strings, StringUtils)
     XII_TEST_BOOL(xiiStringUtils::FindWholeWord_NoCase(s.GetData(), "momPFH", xiiStringUtils::IsWordDelimiter_English) == &s.GetData()[0]);
 
     // substring test
-    XII_TEST_BOOL(
-      xiiStringUtils::FindWholeWord_NoCase(s.GetData(), "ABC", xiiStringUtils::IsWordDelimiter_English, s.GetData() + 37) == &s.GetData()[34]);
+    XII_TEST_BOOL(xiiStringUtils::FindWholeWord_NoCase(s.GetData(), "ABC", xiiStringUtils::IsWordDelimiter_English, s.GetData() + 37) == &s.GetData()[34]);
     XII_TEST_BOOL(xiiStringUtils::FindWholeWord_NoCase(s.GetData(), "ABC", xiiStringUtils::IsWordDelimiter_English, s.GetData() + 36) == nullptr);
   }
 

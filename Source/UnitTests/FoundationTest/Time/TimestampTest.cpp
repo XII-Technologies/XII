@@ -169,24 +169,19 @@ XII_CREATE_SIMPLE_TEST(Time, Timestamp)
     BuildString(szTimestampFormatted, 256, xiiArgDateTime(dateTime, xiiArgDateTime::Default | xiiArgDateTime::ShowTimeZone));
     XII_TEST_STRING("2019-08-16 - 13:40:30 (UTC)", szTimestampFormatted);
     // no names, with UTC, with milliseconds
-    BuildString(
-      szTimestampFormatted, 256, xiiArgDateTime(dateTime, xiiArgDateTime::ShowDate | xiiArgDateTime::ShowMilliseconds | xiiArgDateTime::ShowTimeZone));
+    BuildString(szTimestampFormatted, 256, xiiArgDateTime(dateTime, xiiArgDateTime::ShowDate | xiiArgDateTime::ShowMilliseconds | xiiArgDateTime::ShowTimeZone));
     XII_TEST_STRING("2019-08-16 - 13:40:30.345 (UTC)", szTimestampFormatted);
     // with names, no UTC, no milliseconds
     BuildString(szTimestampFormatted, 256, xiiArgDateTime(dateTime, xiiArgDateTime::DefaultTextual | xiiArgDateTime::ShowWeekday));
     XII_TEST_STRING("2019 Aug 16 (Fri) - 13:40:30", szTimestampFormatted);
     // no names, no UTC, with milliseconds
-    BuildString(szTimestampFormatted, 256,
-                xiiArgDateTime(dateTime, xiiArgDateTime::DefaultTextual | xiiArgDateTime::ShowWeekday | xiiArgDateTime::ShowMilliseconds));
+    BuildString(szTimestampFormatted, 256, xiiArgDateTime(dateTime, xiiArgDateTime::DefaultTextual | xiiArgDateTime::ShowWeekday | xiiArgDateTime::ShowMilliseconds));
     XII_TEST_STRING("2019 Aug 16 (Fri) - 13:40:30.345", szTimestampFormatted);
     // no names, with UTC, no milliseconds
-    BuildString(
-      szTimestampFormatted, 256, xiiArgDateTime(dateTime, xiiArgDateTime::DefaultTextual | xiiArgDateTime::ShowWeekday | xiiArgDateTime::ShowTimeZone));
+    BuildString(szTimestampFormatted, 256, xiiArgDateTime(dateTime, xiiArgDateTime::DefaultTextual | xiiArgDateTime::ShowWeekday | xiiArgDateTime::ShowTimeZone));
     XII_TEST_STRING("2019 Aug 16 (Fri) - 13:40:30 (UTC)", szTimestampFormatted);
     // no names, with UTC, with milliseconds
-    BuildString(szTimestampFormatted, 256,
-                xiiArgDateTime(
-                  dateTime, xiiArgDateTime::DefaultTextual | xiiArgDateTime::ShowWeekday | xiiArgDateTime::ShowMilliseconds | xiiArgDateTime::ShowTimeZone));
+    BuildString(szTimestampFormatted, 256, xiiArgDateTime(dateTime, xiiArgDateTime::DefaultTextual | xiiArgDateTime::ShowWeekday | xiiArgDateTime::ShowMilliseconds | xiiArgDateTime::ShowTimeZone));
     XII_TEST_STRING("2019 Aug 16 (Fri) - 13:40:30.345 (UTC)", szTimestampFormatted);
 
     BuildString(szTimestampFormatted, 256, xiiArgDateTime(dateTime, xiiArgDateTime::ShowDate));

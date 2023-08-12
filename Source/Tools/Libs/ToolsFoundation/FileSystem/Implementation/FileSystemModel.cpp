@@ -709,9 +709,9 @@ xiiFileStatus xiiFileSystemModel::HandleSingleFile(const xiiString& sAbsolutePat
   xiiFileStats Stats;
   if (xiiOSFile::GetFileStats(sAbsolutePath, Stats).Failed())
   {
-    xiiFileStatus         fileStatus;
-    bool                  bFileExisted   = false;
-    bool                  bFolderExisted = false;
+    xiiFileStatus fileStatus;
+    bool          bFileExisted   = false;
+    bool          bFolderExisted = false;
     {
       XII_LOCK(m_FilesMutex);
       if (auto it = m_ReferencedFiles.Find(sAbsolutePath); it.IsValid())

@@ -167,8 +167,7 @@ class xiiImageConversionStep_Decompress16bpp : xiiImageConversionStepLinear
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     xiiImageFormat::Enum sourceFormatSrgb = xiiImageFormat::AsSrgb(templateSourceFormat);
-    XII_ASSERT_DEV(
-      sourceFormatSrgb != templateSourceFormat, "Format '%s' should have a corresponding sRGB format", xiiImageFormat::GetName(templateSourceFormat));
+    XII_ASSERT_DEV(sourceFormatSrgb != templateSourceFormat, "Format '%s' should have a corresponding sRGB format", xiiImageFormat::GetName(templateSourceFormat));
 
     static xiiImageConversionEntry supportedConversions[] = {
       xiiImageConversionEntry(templateSourceFormat, xiiImageFormat::R8G8B8A8_UNORM, xiiImageConversionFlags::Default),
@@ -205,8 +204,7 @@ class xiiImageConversionStep_Compress16bpp : xiiImageConversionStepLinear
   virtual xiiArrayPtr<const xiiImageConversionEntry> GetSupportedConversions() const override
   {
     xiiImageFormat::Enum targetFormatSrgb = xiiImageFormat::AsSrgb(templateTargetFormat);
-    XII_ASSERT_DEV(
-      targetFormatSrgb != templateTargetFormat, "Format '%s' should have a corresponding sRGB format", xiiImageFormat::GetName(templateTargetFormat));
+    XII_ASSERT_DEV(targetFormatSrgb != templateTargetFormat, "Format '%s' should have a corresponding sRGB format", xiiImageFormat::GetName(templateTargetFormat));
 
     static xiiImageConversionEntry supportedConversions[] = {
       xiiImageConversionEntry(xiiImageFormat::R8G8B8A8_UNORM, templateTargetFormat, xiiImageConversionFlags::Default),

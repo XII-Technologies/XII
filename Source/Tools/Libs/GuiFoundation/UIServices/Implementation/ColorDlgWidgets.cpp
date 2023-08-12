@@ -170,7 +170,7 @@ void xiiQtColorRangeWidget::paintEvent(QPaintEvent* event)
 
 void xiiQtColorRangeWidget::UpdateImage()
 {
-  const int width  = rect().width();
+  const int width = rect().width();
 
   m_Image = QImage(width, 1, QImage::Format::Format_RGB32);
 

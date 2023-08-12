@@ -433,8 +433,7 @@ void xiiQtColorGradientWidget::PaintColorCPs(QPainter& p) const
 
     const bool selected = (i == m_iSelectedColorCP);
 
-    PaintControlPoint(
-      p, area, cp.m_PosX, selected ? xiiColor::White : xiiColor::Black, xiiColorGammaUB(cp.m_GammaRed, cp.m_GammaGreen, cp.m_GammaBlue), selected);
+    PaintControlPoint(p, area, cp.m_PosX, selected ? xiiColor::White : xiiColor::Black, xiiColorGammaUB(cp.m_GammaRed, cp.m_GammaGreen, cp.m_GammaBlue), selected);
   }
 }
 

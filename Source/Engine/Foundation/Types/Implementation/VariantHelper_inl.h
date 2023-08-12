@@ -397,7 +397,7 @@ class xiiVariantHelper
     else if (value.GetType() == xiiVariant::Type::String || value.GetType() == xiiVariant::Type::HashedString)
     {
       xiiStringView s   = value.IsA<xiiString>() ? value.Cast<xiiString>().GetView() : value.Cast<xiiHashedString>().GetView();
-      double tmp = result;
+      double        tmp = result;
       if (xiiConversionUtils::StringToFloat(s, tmp) == XII_FAILURE)
       {
         result      = 0.0f;

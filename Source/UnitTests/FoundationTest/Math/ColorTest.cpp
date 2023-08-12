@@ -46,12 +46,10 @@ XII_CREATE_SIMPLE_TEST(Math, Color)
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "Conversion float")
     {
       float* pFloats = cornflowerBlue.GetData();
-      XII_TEST_BOOL(
-        pFloats[0] == cornflowerBlue.r && pFloats[1] == cornflowerBlue.g && pFloats[2] == cornflowerBlue.b && pFloats[3] == cornflowerBlue.a);
+      XII_TEST_BOOL(pFloats[0] == cornflowerBlue.r && pFloats[1] == cornflowerBlue.g && pFloats[2] == cornflowerBlue.b && pFloats[3] == cornflowerBlue.a);
 
       const float* pConstFloats = cornflowerBlue.GetData();
-      XII_TEST_BOOL(pConstFloats[0] == cornflowerBlue.r && pConstFloats[1] == cornflowerBlue.g && pConstFloats[2] == cornflowerBlue.b &&
-                    pConstFloats[3] == cornflowerBlue.a);
+      XII_TEST_BOOL(pConstFloats[0] == cornflowerBlue.r && pConstFloats[1] == cornflowerBlue.g && pConstFloats[2] == cornflowerBlue.b && pConstFloats[3] == cornflowerBlue.a);
     }
   }
 

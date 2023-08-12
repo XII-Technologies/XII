@@ -134,20 +134,10 @@ public:
   static xiiResult Convert(const xiiImageView& source, xiiImage& ref_target, xiiArrayPtr<ConversionPathNode> path, xiiUInt32 uiNumScratchBuffers);
 
   /// \brief Converts the raw source data into a target data buffer with the given format. Source and target may be the same.
-  static xiiResult ConvertRaw(
-    xiiConstByteBlobPtr  source,
-    xiiByteBlobPtr       target,
-    xiiUInt32            uiNumElements,
-    xiiImageFormat::Enum sourceFormat,
-    xiiImageFormat::Enum targetFormat);
+  static xiiResult ConvertRaw(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat);
 
   /// \brief Converts the raw source data into a target data buffer using a precomputed conversion path.
-  static xiiResult ConvertRaw(
-    xiiConstByteBlobPtr             source,
-    xiiByteBlobPtr                  target,
-    xiiUInt32                       uiNumElements,
-    xiiArrayPtr<ConversionPathNode> path,
-    xiiUInt32                       uiNumScratchBuffers);
+  static xiiResult ConvertRaw(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumElements, xiiArrayPtr<ConversionPathNode> path, xiiUInt32 uiNumScratchBuffers);
 
 private:
   xiiImageConversion();

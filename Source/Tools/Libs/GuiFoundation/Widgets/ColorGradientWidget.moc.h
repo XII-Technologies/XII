@@ -79,13 +79,7 @@ private:
   void PaintCoordinateStrip(QPainter& p, const QRect& area) const;
   void PaintCoordinateLines(QPainter& p);
 
-  void PaintControlPoint(
-    QPainter&              p,
-    const QRect&           area,
-    double                 posX,
-    const xiiColorGammaUB& outlineColor,
-    const xiiColorGammaUB& fillColor,
-    bool                   selected) const;
+  void PaintControlPoint(QPainter& p, const QRect& area, double posX, const xiiColorGammaUB& outlineColor, const xiiColorGammaUB& fillColor, bool selected) const;
   void PaintColorCPs(QPainter& p) const;
   void PaintAlphaCPs(QPainter& p) const;
   void PaintIntensityCPs(QPainter& p) const;

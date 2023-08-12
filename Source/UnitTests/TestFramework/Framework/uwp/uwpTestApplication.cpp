@@ -25,12 +25,9 @@ HRESULT xiiUwpTestApplication::CreateView(IFrameworkView** viewProvider)
 
 HRESULT xiiUwpTestApplication::Initialize(ICoreApplicationView* applicationView)
 {
-  using OnActivatedHandler =
-    __FITypedEventHandler_2_Windows__CApplicationModel__CCore__CCoreApplicationView_Windows__CApplicationModel__CActivation__CIActivatedEventArgs;
-  XII_SUCCEED_OR_RETURN(
-    applicationView->add_Activated(Callback<OnActivatedHandler>(this, &xiiUwpTestApplication::OnActivated).Get(), &m_eventRegistrationOnActivate));
+  using OnActivatedHandler = __FITypedEventHandler_2_Windows__CApplicationModel__CCore__CCoreApplicationView_Windows__CApplicationModel__CActivation__CIActivatedEventArgs;
 
-
+  XII_SUCCEED_OR_RETURN(applicationView->add_Activated(Callback<OnActivatedHandler>(this, &xiiUwpTestApplication::OnActivated).Get(), &m_eventRegistrationOnActivate));
 
   xiiStartup::StartupBaseSystems();
 
@@ -50,8 +47,7 @@ HRESULT xiiUwpTestApplication::Load(HSTRING entryPoint)
 HRESULT xiiUwpTestApplication::Run()
 {
   ComPtr<ABI::Windows::UI::Core::ICoreWindowStatic> coreWindowStatics;
-  XII_SUCCEED_OR_RETURN(
-    ABI::Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_UI_Core_CoreWindow).Get(), &coreWindowStatics));
+  XII_SUCCEED_OR_RETURN(ABI::Windows::Foundation::GetActivationFactory(HStringReference(RuntimeClass_Windows_UI_Core_CoreWindow).Get(), &coreWindowStatics));
   ComPtr<ABI::Windows::UI::Core::ICoreWindow> coreWindow;
   XII_SUCCEED_OR_RETURN(coreWindowStatics->GetForCurrentThread(&coreWindow));
   ComPtr<ABI::Windows::UI::Core::ICoreDispatcher> dispatcher;
@@ -96,16 +92,14 @@ HRESULT xiiUwpTestApplication::OnActivated(ICoreApplicationView* applicationView
     m_testFramework.GetTestSettingsFromCommandLine(cmd);
 
     // Setup an extended execution session to prevent app from going to sleep during testing.
-    xiiUwpUtils::CreateInstance<IExtendedExecutionSession>(
-      RuntimeClass_Windows_ApplicationModel_ExtendedExecution_ExtendedExecutionSession, m_extendedExecutionSession);
+    xiiUwpUtils::CreateInstance<IExtendedExecutionSession>(RuntimeClass_Windows_ApplicationModel_ExtendedExecution_ExtendedExecutionSession, m_extendedExecutionSession);
     XII_ASSERT_DEV(m_extendedExecutionSession, "Failed to create extended session. Can't prevent app from backgrounding during testing.");
     m_extendedExecutionSession->put_Reason(ExtendedExecutionReason::ExtendedExecutionReason_Unspecified);
     xiiStringHString desc("Keep Unit Tests Running");
     m_extendedExecutionSession->put_Description(desc.GetData().Get());
 
     using OnRevokedHandler = __FITypedEventHandler_2_IInspectable_Windows__CApplicationModel__CExtendedExecution__CExtendedExecutionRevokedEventArgs;
-    XII_SUCCEED_OR_RETURN(m_extendedExecutionSession->add_Revoked(
-      Callback<OnRevokedHandler>(this, &xiiUwpTestApplication::OnSessionRevoked).Get(), &m_eventRegistrationOnRevokedSession));
+    XII_SUCCEED_OR_RETURN(m_extendedExecutionSession->add_Revoked(Callback<OnRevokedHandler>(this, &xiiUwpTestApplication::OnSessionRevoked).Get(), &m_eventRegistrationOnRevokedSession));
 
     ComPtr<__FIAsyncOperation_1_Windows__CApplicationModel__CExtendedExecution__CExtendedExecutionResult> pAsyncOp;
     if (SUCCEEDED(m_extendedExecutionSession->RequestExtensionAsync(&pAsyncOp)))
