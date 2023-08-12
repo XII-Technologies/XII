@@ -129,9 +129,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendStateCreationDescription : public x
 {
   XII_DECLARE_POD_TYPE();
 
-  bool                               m_bAlphaToCoverage  = false;                     ///< Specifies whether to use alpha-to-coverage as a multisampling technique when setting a pixel to a render target. The default is false.
-  bool                               m_bIndependentBlend = false;                     ///< Specifies whether to enable independent blending in simultaneous render targets. If set to false, only m_RenderTargets[0] is used. The default is false.
-  xiiGALRenderTargetBlendDescription m_RenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT]; ///< An array of render target blend descriptions that describe the blend states for each render targets at an index.
+  bool                                                                               m_bAlphaToCoverage  = false; ///< Specifies whether to use alpha-to-coverage as a multisampling technique when setting a pixel to a render target. The default is false.
+  bool                                                                               m_bIndependentBlend = false; ///< Specifies whether to enable independent blending in simultaneous render targets. If set to false, only m_RenderTargets[0] is used. The default is false.
+  xiiStaticArray<xiiGALRenderTargetBlendDescription, XII_GAL_MAX_RENDERTARGET_COUNT> m_RenderTargets;             ///< An array of render target blend descriptions that describe the blend states for each render targets at an index.
 };
 
 #include <GraphicsFoundation/States/Implementation/BlendState_inl.h>

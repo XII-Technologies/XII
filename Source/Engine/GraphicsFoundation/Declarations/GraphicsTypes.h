@@ -789,10 +789,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainUsageFlags
   enum Enum : StorageType
   {
     None            = 0U,         ///< No allowed usage.
-    RenderTarget    = XII_BIT(0), ///< The swapchain images can be used as render target outputs.
-    ShaderResource  = XII_BIT(1), ///< The swapchain images can be used as shader resources.
-    InputAttachment = XII_BIT(2), ///< The swapchain images can be used as input attachments.
-    CopySource      = XII_BIT(3), ///< The swapchain images can be used as the source of a copy operation.
+    RenderTarget    = XII_BIT(0), ///< The swap chain images can be used as render target outputs.
+    ShaderResource  = XII_BIT(1), ///< The swap chain images can be used as shader resources.
+    InputAttachment = XII_BIT(2), ///< The swap chain images can be used as input attachments.
+    CopySource      = XII_BIT(3), ///< The swap chain images can be used as the source of a copy operation.
 
     ENUM_COUNT = 5U,
 
@@ -1153,7 +1153,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCapabilityFlags
     ShaderSampleMask                  = XII_BIT(4),  ///< Allows to get or set SampleMask in the shader with enabled variable rate shading.
     ShaderDepthStencilWrite           = XII_BIT(5),  ///< Allows to write depth and stencil from the pixel shader.
     PerPrimitiveWithMultipleViewports = XII_BIT(6),  ///< Allows to use per primitive shading rate when multiple viewports are used.
-    SameTextureForWholeRenderPass     = XII_BIT(7),  ///< Shading rate attachment for render pass must be the same for all subpasses.
+    SameTextureForWholeRenderPass     = XII_BIT(7),  ///< Shading rate attachment for render pass must be the same for all sub passes.
     TextureArray                      = XII_BIT(8),  ///< Allows to use texture 2D array for shading rate.
     ShadingRateShaderInput            = XII_BIT(9),  ///< Allows to read current shading rate in the pixel shader.
     AdditionalInvocations             = XII_BIT(10), ///< Indicates that driver may generate additional fragment shader invocations in order to make transitions between fragment areas with different shading rates more smooth.
@@ -1315,8 +1315,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormatComponentType
     SignedNormalized,       ///< Signed-normalized-integer component type.
     UnsignedNormalized,     ///< Unsigned-normalized-integer component type.
     UnsignedNormalizedSRGB, ///< Unsigned-normalized-integer sRGB component type.
-    SignedInt,              ///< Signed-integer component type.
-    UnsignedInt,            ///< Unsigned-integer component type.
+    SignedInteger,          ///< Signed-integer component type.
+    UnsignedInteger,        ///< Unsigned-integer component type.
     Depth,                  ///< Depth component type.
     DepthStencil,           ///< Depth-stencil component type.
     Compound,               ///< Compound component type. (eg. RG11B10Float or RGB9E5SharedEXP)
@@ -1421,7 +1421,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceStateFlags
     CopySource         = XII_BIT(12), ///< The resource is used as the source in a copy operation.
     ResolveDestination = XII_BIT(13), ///< The resource is used as the destination in a resolve operation.
     ResolveSource      = XII_BIT(14), ///< The resource is used as the source in a resolve operation.
-    InputAttachment    = XII_BIT(15), ///< The resource is used as an input attachment in a render pass subpass.
+    InputAttachment    = XII_BIT(15), ///< The resource is used as an input attachment in a render pass sub pass.
     Present            = XII_BIT(16), ///< The resource is used for present.
     BuildAsRead        = XII_BIT(17), ///< The resource is used as vertex/index/instance buffer in an amplification shader building operation or as an acceleration structure source in an amplification shader copy operation.
     BuildAsWrite       = XII_BIT(18), ///< The resource is used as the target for AS building or AS copy operations.
@@ -1489,6 +1489,11 @@ namespace xiiGAL
   using xii18_14Id = xiiGenericId<18, 14>;
   using xii20_12Id = xiiGenericId<20, 12>;
 } // namespace xiiGAL
+
+class xiiGALDeviceHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALDeviceHandle, xiiGAL::xii16_16Id);
+};
 
 class xiiGALSwapChainHandle
 {
