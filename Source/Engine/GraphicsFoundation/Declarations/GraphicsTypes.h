@@ -1465,6 +1465,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceStateFlags
   };
 };
 
+XII_DECLARE_FLAGS_OPERATORS(xiiGALResourceStateFlags);
+
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceStateFlags);
 
 /// \brief Base class for GAL objects, stores a creation description of the object and also allows for reference counting.
