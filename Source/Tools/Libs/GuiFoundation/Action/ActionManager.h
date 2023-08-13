@@ -3,27 +3,27 @@
 #include <Foundation/Basics.h>
 #include <GuiFoundation/Action/Action.h>
 
-/// \brief Registers an xiiAction whose constructor takes no arguments.
+/// \brief Registers a xiiAction whose constructor takes no arguments.
 #define XII_REGISTER_ACTION_0(ActionName, Scope, CategoryName, ShortCut, ActionClass)                                    \
   xiiActionManager::RegisterAction(xiiActionDescriptor(xiiActionType::Action, Scope, ActionName, CategoryName, ShortCut, \
                                                        [](const xiiActionContext& context) -> xiiAction* { return XII_DEFAULT_NEW(ActionClass, context, ActionName); }));
 
-/// \brief Registers an xiiAction whose constructor takes one argument.
+/// \brief Registers a xiiAction whose constructor takes one argument.
 #define XII_REGISTER_ACTION_1(ActionName, Scope, CategoryName, ShortCut, ActionClass, Param1)                            \
   xiiActionManager::RegisterAction(xiiActionDescriptor(xiiActionType::Action, Scope, ActionName, CategoryName, ShortCut, \
                                                        [](const xiiActionContext& context) -> xiiAction* { return XII_DEFAULT_NEW(ActionClass, context, ActionName, Param1); }));
 
-/// \brief Registers an xiiAction whose constructor takes two arguments.
+/// \brief Registers a xiiAction whose constructor takes two arguments.
 #define XII_REGISTER_ACTION_2(ActionName, Scope, CategoryName, ShortCut, ActionClass, Param1, Param2)                    \
   xiiActionManager::RegisterAction(xiiActionDescriptor(xiiActionType::Action, Scope, ActionName, CategoryName, ShortCut, \
                                                        [](const xiiActionContext& context) -> xiiAction* { return XII_DEFAULT_NEW(ActionClass, context, ActionName, Param1, Param2); }));
 
-/// \brief Registers an xiiDynamicMenuAction
+/// \brief Registers a xiiDynamicMenuAction
 #define XII_REGISTER_DYNAMIC_MENU(ActionName, ActionClass, IconPath)                                                     \
   xiiActionManager::RegisterAction(xiiActionDescriptor(xiiActionType::Menu, xiiActionScope::Default, ActionName, "", "", \
                                                        [](const xiiActionContext& context) -> xiiAction* { return XII_DEFAULT_NEW(ActionClass, context, ActionName, IconPath); }));
 
-/// \brief Registers an xiiDynamicActionAndMenuAction.
+/// \brief Registers a xiiDynamicActionAndMenuAction.
 #define XII_REGISTER_ACTION_AND_DYNAMIC_MENU_1(ActionName, Scope, CategoryName, ShortCut, ActionClass, Param1)                  \
   xiiActionManager::RegisterAction(xiiActionDescriptor(xiiActionType::ActionAndMenu, Scope, ActionName, CategoryName, ShortCut, \
                                                        [](const xiiActionContext& context) -> xiiAction* { return XII_DEFAULT_NEW(ActionClass, context, ActionName, Param1); }));
