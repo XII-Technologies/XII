@@ -41,12 +41,11 @@ xiiResult xiiTaskWorkerThread::DeactivateWorker()
 
 xiiUInt32 xiiTaskWorkerThread::Run()
 {
-  XII_ASSERT_DEBUG(
-    m_WorkerType != xiiWorkerThreadType::Unknown && m_WorkerType != xiiWorkerThreadType::MainThread, "Worker threads cannot use this type");
+  XII_ASSERT_DEBUG(m_WorkerType != xiiWorkerThreadType::Unknown && m_WorkerType != xiiWorkerThreadType::MainThread, "Worker threads cannot use this type");
   XII_ASSERT_DEBUG(m_WorkerType < xiiWorkerThreadType::ENUM_COUNT, "Worker Thread Type is invalid: {0}", m_WorkerType);
 
-  // once this thread is running, store the worker type in the thread_local variable
-  // such that the xiiTaskSystem is able to look this up (e.g. in WaitForGroup) to know which types of tasks to help with
+  // Once this thread is running, store the worker type in the thread_local variable
+  // Such that the xiiTaskSystem is able to look this up (e.g. in WaitForGroup) to know which types of tasks to help with
   tl_TaskWorkerInfo.m_WorkerType   = m_WorkerType;
   tl_TaskWorkerInfo.m_iWorkerIndex = m_uiWorkerThreadNumber;
   tl_TaskWorkerInfo.m_pWorkerState = &m_iWorkerState;

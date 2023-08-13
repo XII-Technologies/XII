@@ -548,8 +548,7 @@ XII_ALWAYS_INLINE void xiiWorld::CheckForReadAccess() const
 
 XII_ALWAYS_INLINE void xiiWorld::CheckForWriteAccess() const
 {
-  XII_ASSERT_DEV(
-    m_Data.m_WriteThreadID == xiiThreadUtils::GetCurrentThreadID(), "Trying to write to World '{0}', but it is not marked for writing.", GetName());
+  XII_ASSERT_DEV(m_Data.m_WriteThreadID == xiiThreadUtils::GetCurrentThreadID(), "Trying to write to World '{0}', but it is not marked for writing.", GetName());
 }
 
 XII_ALWAYS_INLINE xiiGameObject* xiiWorld::GetObjectUnchecked(xiiUInt32 uiIndex) const

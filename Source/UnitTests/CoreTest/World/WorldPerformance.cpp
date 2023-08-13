@@ -84,18 +84,11 @@ namespace
         pMan->CreateComponent(pObj, comp);
       }
 
-      AddObjectsToWorld(
-        ref_world, bDynamic, xiiMath::Max(uiNumObjects / uiTreeLevelNumNodeDiv, 1U), uiTreeLevelNumNodeDiv, uiTreeDepth - 1, iAttachCompsDepth - 1, hObj);
+      AddObjectsToWorld(ref_world, bDynamic, xiiMath::Max(uiNumObjects / uiTreeLevelNumNodeDiv, 1U), uiTreeLevelNumNodeDiv, uiTreeDepth - 1, iAttachCompsDepth - 1, hObj);
     }
   }
 
-  void MeasureCreationTime(
-    bool      bDynamic,
-    xiiUInt32 uiNumObjects,
-    xiiUInt32 uiTreeLevelNumNodeDiv,
-    xiiUInt32 uiTreeDepth,
-    xiiInt32  iAttachCompsDepth,
-    xiiWorld* pWorld = nullptr)
+  void MeasureCreationTime(bool bDynamic, xiiUInt32 uiNumObjects, xiiUInt32 uiTreeLevelNumNodeDiv, xiiUInt32 uiTreeDepth, xiiInt32 iAttachCompsDepth, xiiWorld* pWorld = nullptr)
   {
     xiiWorldDesc worldDesc("Test");
     xiiWorld     world(worldDesc);

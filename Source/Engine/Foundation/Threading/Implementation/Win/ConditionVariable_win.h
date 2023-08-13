@@ -27,8 +27,7 @@ void xiiConditionVariable::UnlockWaitForSignalAndLock() const
 {
   XII_ASSERT_DEV(m_iLockCount > 0, "xiiConditionVariable must be locked when calling UnlockWaitForSignalAndLock.");
 
-  SleepConditionVariableCS(
-    reinterpret_cast<CONDITION_VARIABLE*>(&m_Data.m_ConditionVariable), (CRITICAL_SECTION*)&m_Mutex.GetMutexHandle(), INFINITE);
+  SleepConditionVariableCS(reinterpret_cast<CONDITION_VARIABLE*>(&m_Data.m_ConditionVariable), (CRITICAL_SECTION*)&m_Mutex.GetMutexHandle(), INFINITE);
 }
 
 xiiConditionVariable::WaitResult xiiConditionVariable::UnlockWaitForSignalAndLock(xiiTime timeout) const

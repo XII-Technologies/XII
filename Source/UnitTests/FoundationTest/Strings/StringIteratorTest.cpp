@@ -10,11 +10,9 @@ void TestConstruction(const STRING& value, const char* szStart, const char* szEn
   xiiStringUtf8 sUtf8(L"A単語F");
   XII_TEST_BOOL(value.IsEqual(sUtf8.GetData()));
   const bool bEqualForwardItTypes = xiiConversionTest<typename STRING::iterator, typename STRING::const_iterator>::sameType == 1;
-  XII_CHECK_AT_COMPILETIME_MSG(
-    bEqualForwardItTypes, "As the string iterator is read-only, both const and non-const versions should be the same type.");
+  XII_CHECK_AT_COMPILETIME_MSG(bEqualForwardItTypes, "As the string iterator is read-only, both const and non-const versions should be the same type.");
   const bool bEqualReverseItTypes = xiiConversionTest<typename STRING::reverse_iterator, typename STRING::const_reverse_iterator>::sameType == 1;
-  XII_CHECK_AT_COMPILETIME_MSG(
-    bEqualReverseItTypes, "As the reverse string iterator is read-only, both const and non-const versions should be the same type.");
+  XII_CHECK_AT_COMPILETIME_MSG(bEqualReverseItTypes, "As the reverse string iterator is read-only, both const and non-const versions should be the same type.");
 
   typename STRING::iterator itInvalid;
   XII_TEST_BOOL(!itInvalid.IsValid());
@@ -205,16 +203,14 @@ XII_CREATE_SIMPLE_TEST(Strings, StringIterator)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Construction")
   {
     TestConstruction<xiiString>(sTextString, sTextString.GetData(), sTextString.GetData() + sTextString.GetElementCount());
-    TestConstruction<xiiStringBuilder>(
-      sTestStringBuilder, sTestStringBuilder.GetData(), sTestStringBuilder.GetData() + sTestStringBuilder.GetElementCount());
+    TestConstruction<xiiStringBuilder>(sTestStringBuilder, sTestStringBuilder.GetData(), sTestStringBuilder.GetData() + sTestStringBuilder.GetElementCount());
     TestConstruction<xiiStringView>(view, view.GetStartPointer(), view.GetEndPointer());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Operators")
   {
     TestOperators<xiiString>(sTextString, sTextString.GetData(), sTextString.GetData() + sTextString.GetElementCount());
-    TestOperators<xiiStringBuilder>(
-      sTestStringBuilder, sTestStringBuilder.GetData(), sTestStringBuilder.GetData() + sTestStringBuilder.GetElementCount());
+    TestOperators<xiiStringBuilder>(sTestStringBuilder, sTestStringBuilder.GetData(), sTestStringBuilder.GetData() + sTestStringBuilder.GetElementCount());
     TestOperators<xiiStringView>(view, view.GetStartPointer(), view.GetEndPointer());
   }
 

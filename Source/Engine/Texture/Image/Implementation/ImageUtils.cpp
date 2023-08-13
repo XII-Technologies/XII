@@ -685,15 +685,7 @@ static xiiSimdVec4f LoadSample(const xiiSimdVec4f* pSource, xiiUInt32 uiNumSourc
   return pSource[iIndex * uiStride];
 }
 
-inline static void FilterLine(
-  xiiUInt32 uiNumSourceElements,
-  const xiiSimdVec4f* __restrict pSourceBegin,
-  xiiSimdVec4f* __restrict pTargetBegin,
-  xiiUInt32                    uiStride,
-  const xiiImageFilterWeights& weights,
-  xiiArrayPtr<const xiiInt32>  firstSampleIndices,
-  xiiImageAddressMode::Enum    addressMode,
-  const xiiSimdVec4f&          vBorderColor)
+inline static void FilterLine(xiiUInt32 uiNumSourceElements, const xiiSimdVec4f* __restrict pSourceBegin, xiiSimdVec4f* __restrict pTargetBegin, xiiUInt32 uiStride, const xiiImageFilterWeights& weights, xiiArrayPtr<const xiiInt32> firstSampleIndices, xiiImageAddressMode::Enum addressMode, const xiiSimdVec4f& vBorderColor)
 {
   // Convolve the image using the precomputed weights
   const xiiUInt32 numWeights = weights.GetNumWeights();

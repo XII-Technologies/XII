@@ -31,6 +31,7 @@ public:
       Newer,         ///< Just compares values and returns true if the left-hand side is larger than the right hand side
     };
   };
+
   /// \brief  Returns the current timestamp. Returned value will always be valid.
   ///
   /// Depending on the platform the precision varies between seconds and nanoseconds.
@@ -87,6 +88,7 @@ public:
 
 private:
   XII_ALLOW_PRIVATE_PROPERTIES(xiiTimestamp);
+
   /// \brief The date is stored as microseconds since Unix epoch.
   xiiInt64 m_iTimestamp;
 };
@@ -195,6 +197,7 @@ private:
 };
 
 XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiDateTime& arg);
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiTimestamp& arg);
 
 struct xiiArgDateTime
 {
@@ -216,9 +219,19 @@ struct xiiArgDateTime
   /// \param dateTime The xiiDateTime instance to format.
   /// \param bUseNames Indicates whether to use names for days of week and months (true)
   ///        or a purely numerical representation (false).
-  /// \param bShowTimeZoneIndicator Whether to indicate the timxiione of the xiiDateTime object.
+  /// \param bShowTimeZoneIndicator Whether to indicate the timezone of the xiiDateTime object.
   inline explicit xiiArgDateTime(const xiiDateTime& dateTime, xiiUInt32 uiFormattingFlags = Default) :
     m_Value(dateTime), m_uiFormattingFlags(uiFormattingFlags)
+  {
+  }
+
+  /// \brief Initialized a formatting object for a xiiTimestamp instance.
+  /// \param timestamp The xiiTimestamp instance to format.
+  /// \param bUseNames Indicates whether to use names for days of week and months (true)
+  ///        or a purely numerical representation (false).
+  /// \param bShowTimeZoneIndicator Whether to indicate the timezone of the xiiDateTime object.
+  inline explicit xiiArgDateTime(const xiiTimestamp& timestamp, xiiUInt32 uiFormattingFlags = Default) :
+    m_Value(timestamp), m_uiFormattingFlags(uiFormattingFlags)
   {
   }
 

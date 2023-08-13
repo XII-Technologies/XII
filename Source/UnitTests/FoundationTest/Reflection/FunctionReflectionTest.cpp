@@ -548,8 +548,8 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
       ParamSig(xiiGetStaticRTTI<xiiString>(), xiiPropertyFlags::StandardType | xiiPropertyFlags::Reference),
       ParamSig(xiiGetStaticRTTI<xiiStringView>(), xiiPropertyFlags::StandardType),
     };
-    VerifyFunctionSignature(
-      &funccall, xiiArrayPtr<ParamSig>(testSet), ParamSig(xiiGetStaticRTTI<const char*>(), xiiPropertyFlags::StandardType | xiiPropertyFlags::Const));
+
+    VerifyFunctionSignature(&funccall, xiiArrayPtr<ParamSig>(testSet), ParamSig(xiiGetStaticRTTI<const char*>(), xiiPropertyFlags::StandardType | xiiPropertyFlags::Const));
     XII_TEST_BOOL(funccall.GetFunctionType() == xiiFunctionType::Member);
 
     FunctionTest test;
@@ -898,12 +898,14 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
       ParamSig(xiiGetStaticRTTI<bool>(), xiiPropertyFlags::StandardType),
       ParamSig(xiiGetStaticRTTI<xiiVariant>(), xiiPropertyFlags::StandardType),
     };
+
     VerifyFunctionSignature(&funccall, xiiArrayPtr<ParamSig>(testSet), ParamSig(xiiGetStaticRTTI<void>(), xiiPropertyFlags::Void));
     XII_TEST_BOOL(funccall.GetFunctionType() == xiiFunctionType::StaticMember);
 
     xiiDynamicArray<xiiVariant> values;
     values.PushBack(true);
     values.PushBack(4.0f);
+
     xiiVariant ret;
     funccall.Execute(nullptr, values, ret);
     XII_TEST_BOOL(ret.GetType() == xiiVariantType::Invalid);
@@ -927,8 +929,8 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
       ParamSig(xiiGetStaticRTTI<float>(), xiiPropertyFlags::StandardType),
       ParamSig(xiiGetStaticRTTI<float>(), xiiPropertyFlags::StandardType),
     };
-    VerifyFunctionSignature(
-      &funccall, xiiArrayPtr<ParamSig>(testSet), ParamSig(xiiGetStaticRTTI<xiiVec4>(), xiiPropertyFlags::StandardType | xiiPropertyFlags::Pointer));
+
+    VerifyFunctionSignature(&funccall, xiiArrayPtr<ParamSig>(testSet), ParamSig(xiiGetStaticRTTI<xiiVec4>(), xiiPropertyFlags::StandardType | xiiPropertyFlags::Pointer));
     XII_TEST_BOOL(funccall.GetFunctionType() == xiiFunctionType::Constructor);
 
     xiiDynamicArray<xiiVariant> values;
@@ -936,6 +938,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
     values.PushBack(2.0f);
     values.PushBack(3.0f);
     values.PushBack(4.0f);
+
     xiiVariant ret;
     funccall.Execute(nullptr, values, ret);
     XII_TEST_BOOL(ret.GetType() == xiiVariantType::Vector4);
@@ -949,13 +952,14 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
       ParamSig(xiiGetStaticRTTI<double>(), xiiPropertyFlags::StandardType),
       ParamSig(xiiGetStaticRTTI<xiiInt16>(), xiiPropertyFlags::StandardType),
     };
-    VerifyFunctionSignature(
-      &funccall, xiiArrayPtr<ParamSig>(testSet), ParamSig(xiiGetStaticRTTI<xiiTestStruct3>(), xiiPropertyFlags::Class | xiiPropertyFlags::Pointer));
+
+    VerifyFunctionSignature(&funccall, xiiArrayPtr<ParamSig>(testSet), ParamSig(xiiGetStaticRTTI<xiiTestStruct3>(), xiiPropertyFlags::Class | xiiPropertyFlags::Pointer));
     XII_TEST_BOOL(funccall.GetFunctionType() == xiiFunctionType::Constructor);
 
     xiiDynamicArray<xiiVariant> values;
     values.PushBack(59.0);
     values.PushBack((xiiInt16)666);
+
     xiiVariant ret;
     funccall.Execute(nullptr, values, ret);
     XII_TEST_BOOL(ret.GetType() == xiiVariantType::TypedPointer);
@@ -977,16 +981,19 @@ XII_CREATE_SIMPLE_TEST(Reflection, Functions)
       ParamSig(xiiGetStaticRTTI<xiiColor>(), xiiPropertyFlags::StandardType | xiiPropertyFlags::Const | xiiPropertyFlags::Reference),
       ParamSig(xiiGetStaticRTTI<xiiTestStruct>(), xiiPropertyFlags::Class | xiiPropertyFlags::Const | xiiPropertyFlags::Reference),
     };
-    VerifyFunctionSignature(
-      &funccall, xiiArrayPtr<ParamSig>(testSet), ParamSig(xiiGetStaticRTTI<xiiTestClass1>(), xiiPropertyFlags::Class | xiiPropertyFlags::Pointer));
+
+    VerifyFunctionSignature(&funccall, xiiArrayPtr<ParamSig>(testSet), ParamSig(xiiGetStaticRTTI<xiiTestClass1>(), xiiPropertyFlags::Class | xiiPropertyFlags::Pointer));
     XII_TEST_BOOL(funccall.GetFunctionType() == xiiFunctionType::Constructor);
 
     xiiDynamicArray<xiiVariant> values;
     xiiTestStruct               s;
+
     s.m_fFloat1 = 1.0f;
     s.m_UInt8   = 255;
+
     values.PushBack(xiiColor::CornflowerBlue);
     values.PushBack(xiiVariant(&s));
+
     xiiVariant ret;
     funccall.Execute(nullptr, values, ret);
     XII_TEST_BOOL(ret.GetType() == xiiVariantType::TypedPointer);

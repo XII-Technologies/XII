@@ -16,9 +16,9 @@ const xiiTimestamp xiiTimestamp::CurrentTimestamp()
 
 const xiiTimestamp xiiDateTime::GetTimestamp() const
 {
-  xiiScopedCFRef<CFTimeZoneRef> timxiione(CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorDefault, 0));
+  xiiScopedCFRef<CFTimeZoneRef> timezone(CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorDefault, 0));
   xiiScopedCFRef<CFCalendarRef> calendar(CFCalendarCreateWithIdentifier(kCFAllocatorSystemDefault, kCFGregorianCalendar));
-  CFCalendarSetTimeZone(calendar, timxiione);
+  CFCalendarSetTimeZone(calendar, timezone);
 
   xiiInt32 year = m_iYear, month = m_uiMonth, day = m_uiDay, hour = m_uiHour, minute = m_uiMinute, second = m_uiSecond;
 
@@ -69,9 +69,9 @@ bool xiiDateTime::SetTimestamp(xiiTimestamp timestamp)
 
   CFAbsoluteTime at = (static_cast<CFAbsoluteTime>((us - microseconds) / 1000000.0)) - kCFAbsoluteTimeIntervalSince1970;
 
-  xiiScopedCFRef<CFTimeZoneRef> timxiione(CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorDefault, 0));
+  xiiScopedCFRef<CFTimeZoneRef> timezone(CFTimeZoneCreateWithTimeIntervalFromGMT(kCFAllocatorDefault, 0));
   xiiScopedCFRef<CFCalendarRef> calendar(CFCalendarCreateWithIdentifier(kCFAllocatorSystemDefault, kCFGregorianCalendar));
-  CFCalendarSetTimeZone(calendar, timxiione);
+  CFCalendarSetTimeZone(calendar, timezone);
 
   xiiInt32 year, month, day, dayOfWeek, hour, minute, second;
 

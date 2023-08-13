@@ -248,8 +248,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
 
     // operator* (float, xiiVec3T)
     xiiVec3T vMulFloatVec3 = ((xiiMathTestType)2 * vOp1);
-    XII_TEST_BOOL(
-      vMulFloatVec3.IsEqual(xiiVec3T((xiiMathTestType)-8.0, (xiiMathTestType)0.4, (xiiMathTestType)-14.0), xiiMath::SmallEpsilon<xiiMathTestType>()));
+    XII_TEST_BOOL(vMulFloatVec3.IsEqual(xiiVec3T((xiiMathTestType)-8.0, (xiiMathTestType)0.4, (xiiMathTestType)-14.0), xiiMath::SmallEpsilon<xiiMathTestType>()));
     vMulFloatVec3 = ((xiiMathTestType)0 * vOp1);
     XII_TEST_BOOL(vMulFloatVec3.IsEqual(xiiVec3T::ZeroVector(), xiiMath::SmallEpsilon<xiiMathTestType>()));
 

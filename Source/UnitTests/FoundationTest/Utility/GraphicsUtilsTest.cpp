@@ -24,8 +24,7 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
         XII_TEST_VEC3(vDir, vPoint.GetNormalized(), 0.01f);
 
         xiiVec3 vScreen;
-        XII_TEST_BOOL(
-          xiiGraphicsUtils::ConvertWorldPosToScreenPos(mProj, 0, 0, 50, 25, vPoint, vScreen, xiiClipSpaceDepthRange::MinusOneToOne).Succeeded());
+        XII_TEST_BOOL(xiiGraphicsUtils::ConvertWorldPosToScreenPos(mProj, 0, 0, 50, 25, vPoint, vScreen, xiiClipSpaceDepthRange::MinusOneToOne).Succeeded());
 
         XII_TEST_VEC3(vScreen, xiiVec3((float)x, (float)y, 0.5f), 0.01f);
       }
@@ -78,8 +77,7 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
         XII_TEST_VEC3(vDir, xiiVec3(0, 0, 1.0f), 0.01f);
 
         xiiVec3 vScreen;
-        XII_TEST_BOOL(
-          xiiGraphicsUtils::ConvertWorldPosToScreenPos(mProj, 0, 0, 50, 25, vPoint, vScreen, xiiClipSpaceDepthRange::MinusOneToOne).Succeeded());
+        XII_TEST_BOOL(xiiGraphicsUtils::ConvertWorldPosToScreenPos(mProj, 0, 0, 50, 25, vPoint, vScreen, xiiClipSpaceDepthRange::MinusOneToOne).Succeeded());
 
         XII_TEST_VEC3(vScreen, xiiVec3((float)x, (float)y, 0.5f), 0.01f);
       }

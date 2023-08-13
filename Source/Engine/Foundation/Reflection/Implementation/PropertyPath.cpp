@@ -131,26 +131,22 @@ xiiResult xiiPropertyPath::InitializeFromPath(const xiiRTTI* pRootObjectRtti, co
 
 xiiResult xiiPropertyPath::WriteToLeafObject(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const
 {
-  XII_ASSERT_DEBUG(
-    m_PathSteps.IsEmpty() || m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetTypeFlags().IsSet(xiiTypeFlags::Class),
-    "To resolve the leaf object the path needs to be empty or end in a class.");
+  XII_ASSERT_DEBUG(m_PathSteps.IsEmpty() || m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetTypeFlags().IsSet(xiiTypeFlags::Class), "To resolve the leaf object the path needs to be empty or end in a class.");
+
   return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr(), true, func);
 }
 
 xiiResult xiiPropertyPath::ReadFromLeafObject(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const
 {
-  XII_ASSERT_DEBUG(
-    m_PathSteps.IsEmpty() || m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetTypeFlags().IsSet(xiiTypeFlags::Class),
-    "To resolve the leaf object the path needs to be empty or end in a class.");
+  XII_ASSERT_DEBUG(m_PathSteps.IsEmpty() || m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetTypeFlags().IsSet(xiiTypeFlags::Class), "To resolve the leaf object the path needs to be empty or end in a class.");
+
   return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr(), false, func);
 }
 
-xiiResult xiiPropertyPath::WriteProperty(
-  void*                                                                                                               pRootObject,
-  const xiiRTTI&                                                                                                      type,
-  xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, xiiAbstractProperty* pProp, const xiiVariant& index)> func) const
+xiiResult xiiPropertyPath::WriteProperty(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, xiiAbstractProperty* pProp, const xiiVariant& index)> func) const
 {
   XII_ASSERT_DEBUG(!m_PathSteps.IsEmpty(), "Call InitializeFromPath before WriteToObject");
+
   return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr().GetSubArray(0, m_PathSteps.GetCount() - 1), true,
                      [this, &func](void* pLeafObject, const xiiRTTI& leafType) {
                        auto& lastStep = m_PathSteps[m_PathSteps.GetCount() - 1];
@@ -158,12 +154,10 @@ xiiResult xiiPropertyPath::WriteProperty(
                      });
 }
 
-xiiResult xiiPropertyPath::ReadProperty(
-  void*                                                                                                                     pRootObject,
-  const xiiRTTI&                                                                                                            type,
-  xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, const xiiAbstractProperty* pProp, const xiiVariant& index)> func) const
+xiiResult xiiPropertyPath::ReadProperty(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, const xiiAbstractProperty* pProp, const xiiVariant& index)> func) const
 {
   XII_ASSERT_DEBUG(m_bIsValid, "Call InitializeFromPath before WriteToObject");
+
   return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr().GetSubArray(0, m_PathSteps.GetCount() - 1), false,
                      [this, &func](void* pLeafObject, const xiiRTTI& leafType) {
                        auto& lastStep = m_PathSteps[m_PathSteps.GetCount() - 1];
@@ -173,9 +167,7 @@ xiiResult xiiPropertyPath::ReadProperty(
 
 void xiiPropertyPath::SetValue(void* pRootObject, const xiiRTTI& type, const xiiVariant& value) const
 {
-  // XII_ASSERT_DEBUG(!m_PathSteps.IsEmpty() &&
-  //                    value.CanConvertTo(m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetVariantType()),
-  //                "The given value does not match the type at the given path.");
+  // XII_ASSERT_DEBUG(!m_PathSteps.IsEmpty() && value.CanConvertTo(m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetVariantType()), "The given value does not match the type at the given path.");
 
   WriteProperty(pRootObject, type, [&value](void* pLeaf, const xiiRTTI& type, xiiAbstractProperty* pProp, const xiiVariant& index) {
     switch (pProp->GetCategory())
@@ -189,9 +181,8 @@ void xiiPropertyPath::SetValue(void* pRootObject, const xiiRTTI& type, const xii
       case xiiPropertyCategory::Map:
         xiiReflectionUtils::SetMapPropertyValue(static_cast<xiiAbstractMapProperty*>(pProp), pLeaf, index.Get<xiiString>(), value);
         break;
-      default:
-        XII_ASSERT_NOT_IMPLEMENTED;
-        break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }).IgnoreResult();
 }

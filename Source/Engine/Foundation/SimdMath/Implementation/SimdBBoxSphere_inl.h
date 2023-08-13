@@ -33,8 +33,7 @@ XII_ALWAYS_INLINE void xiiSimdBBoxSphere::SetInvalid()
 
 XII_ALWAYS_INLINE bool xiiSimdBBoxSphere::IsValid() const
 {
-  return m_CenterAndRadius.IsValid<4>() && m_CenterAndRadius.w() >= xiiSimdFloat::Zero() && m_BoxHalfExtents.IsValid<3>() &&
-    (m_BoxHalfExtents >= xiiSimdVec4f::ZeroVector()).AllSet<3>();
+  return m_CenterAndRadius.IsValid<4>() && m_CenterAndRadius.w() >= xiiSimdFloat::Zero() && m_BoxHalfExtents.IsValid<3>() && (m_BoxHalfExtents >= xiiSimdVec4f::ZeroVector()).AllSet<3>();
 }
 
 inline bool xiiSimdBBoxSphere::IsNaN() const

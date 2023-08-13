@@ -274,14 +274,7 @@ static void OutputInf(char* szOutputBuffer, unsigned int uiBufferSize, unsigned 
 }
 
 
-static void OutputString(
-  char*         szOutputBuffer,
-  unsigned int  uiBufferSize,
-  unsigned int& ref_uiWritePos,
-  const char*   szString,
-  unsigned int  uiFlags,
-  int           iMinSize,
-  int           iMaxSize)
+static void OutputString(char* szOutputBuffer, unsigned int uiBufferSize, unsigned int& ref_uiWritePos, const char* szString, unsigned int uiFlags, int iMinSize, int iMaxSize)
 {
   if (!szString)
   {
@@ -574,14 +567,7 @@ static bool IsNaN(double value)
   return (((i2f.i & 0x7FF0000000000000LL) == 0x7FF0000000000000LL) && ((i2f.i & 0xFFFFFFFFFFFFFLL) != 0));
 }
 
-static bool FormatUFloat(
-  char*         szOutputBuffer,
-  unsigned int  uiBufferSize,
-  unsigned int& ref_uiWritePos,
-  double&       ref_fValue0,
-  int           iPrecision,
-  unsigned int  uiFlags,
-  bool          bRemoveZeroes)
+static bool FormatUFloat(char* szOutputBuffer, unsigned int uiBufferSize, unsigned int& ref_uiWritePos, double& ref_fValue0, int iPrecision, unsigned int uiFlags, bool bRemoveZeroes)
 {
   if (IsNaN(ref_fValue0))
   {

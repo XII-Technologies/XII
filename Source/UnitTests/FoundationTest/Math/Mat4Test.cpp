@@ -674,10 +674,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
     xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiVec3T s = m.GetScalingFactors();
-    XII_TEST_VEC3(s,
-                  xiiVec3T(xiiMath::Sqrt((xiiMathTestType)(1 * 1 + 5 * 5 + 9 * 9)), xiiMath::Sqrt((xiiMathTestType)(2 * 2 + 6 * 6 + 10 * 10)),
-                           xiiMath::Sqrt((xiiMathTestType)(3 * 3 + 7 * 7 + 11 * 11))),
-                  0.0001f);
+    XII_TEST_VEC3(s, xiiVec3T(xiiMath::Sqrt((xiiMathTestType)(1 * 1 + 5 * 5 + 9 * 9)), xiiMath::Sqrt((xiiMathTestType)(2 * 2 + 6 * 6 + 10 * 10)), xiiMath::Sqrt((xiiMathTestType)(3 * 3 + 7 * 7 + 11 * 11))), 0.0001f);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetScalingFactors")
@@ -740,9 +737,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
     const xiiVec4T r = m.Transform(xiiVec4T(1, 2, 3, 4));
 
-    XII_TEST_VEC4(r,
-                  xiiVec4T(1 * 1 + 2 * 2 + 3 * 3 + 4 * 4, 1 * 5 + 2 * 6 + 3 * 7 + 8 * 4, 1 * 9 + 2 * 10 + 3 * 11 + 12 * 4, 1 * 13 + 2 * 14 + 3 * 15 + 4 * 16),
-                  0.0001f);
+    XII_TEST_VEC4(r, xiiVec4T(1 * 1 + 2 * 2 + 3 * 3 + 4 * 4, 1 * 5 + 2 * 6 + 3 * 7 + 8 * 4, 1 * 9 + 2 * 10 + 3 * 11 + 12 * 4, 1 * 13 + 2 * 14 + 3 * 15 + 4 * 16), 0.0001f);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Transform(array)")
@@ -853,9 +848,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
     const xiiVec4T r = m * xiiVec4T(1, 2, 3, 4);
 
-    XII_TEST_VEC4(r,
-                  xiiVec4T(1 * 1 + 2 * 2 + 3 * 3 + 4 * 4, 1 * 5 + 2 * 6 + 3 * 7 + 4 * 8, 1 * 9 + 2 * 10 + 3 * 11 + 4 * 12, 1 * 13 + 2 * 14 + 3 * 15 + 4 * 16),
-                  0.0001f);
+    XII_TEST_VEC4(r, xiiVec4T(1 * 1 + 2 * 2 + 3 * 3 + 4 * 4, 1 * 5 + 2 * 6 + 3 * 7 + 4 * 8, 1 * 9 + 2 * 10 + 3 * 11 + 4 * 12, 1 * 13 + 2 * 14 + 3 * 15 + 4 * 16), 0.0001f);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*(mat, float) | operator*(float, mat)")

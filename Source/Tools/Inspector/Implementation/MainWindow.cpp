@@ -69,8 +69,7 @@ xiiQtMainWindow::xiiQtMainWindow() :
   XII_VERIFY(nullptr != QWidget::connect(pSubsystemsWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
   XII_VERIFY(nullptr != QWidget::connect(pFileWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
   XII_VERIFY(nullptr != QWidget::connect(pPluginsWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
-  XII_VERIFY(
-    nullptr != QWidget::connect(pGlobalEventesWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
+  XII_VERIFY(nullptr != QWidget::connect(pGlobalEventesWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
   XII_VERIFY(nullptr != QWidget::connect(pDataWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
   XII_VERIFY(nullptr != QWidget::connect(pResourceWidget, &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
 
@@ -84,8 +83,7 @@ xiiQtMainWindow::xiiQtMainWindow() :
     m_pStatHistoryWidgets[i] = new xiiQtStatVisWidget(this, i);
     m_DockManager->addDockWidgetTab(ads::BottomDockWidgetArea, m_pStatHistoryWidgets[i]);
 
-    XII_VERIFY(
-      nullptr != QWidget::connect(m_pStatHistoryWidgets[i], &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
+    XII_VERIFY(nullptr != QWidget::connect(m_pStatHistoryWidgets[i], &ads::CDockWidget::viewToggled, this, &xiiQtMainWindow::DockWidgetVisibilityChanged), "");
 
     pHistoryMenu->addAction(&m_pStatHistoryWidgets[i]->m_ShowWindowAction);
 

@@ -74,8 +74,7 @@ namespace
       XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteArray(ref_stream, m_Transforms));
       XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteArray(ref_stream, m_Positions));
       XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteArray(ref_stream, m_Scales));
-      XII_SUCCEED_OR_RETURN(
-        xiiDeduplicationWriteContext::GetContext()->WriteMap(ref_stream, m_TransformMap, xiiDeduplicationWriteContext::WriteMapMode::DedupValue));
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteMap(ref_stream, m_TransformMap, xiiDeduplicationWriteContext::WriteMapMode::DedupValue));
       XII_SUCCEED_OR_RETURN(xiiDeduplicationWriteContext::GetContext()->WriteSet(ref_stream, m_UniquePositions));
       XII_SUCCEED_OR_RETURN(ref_stream.WriteArray(m_Components));
       return XII_SUCCESS;

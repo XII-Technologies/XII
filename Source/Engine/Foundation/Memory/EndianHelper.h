@@ -70,8 +70,7 @@ struct XII_FOUNDATION_DLL xiiEndianHelper
   template <typename T>
   static void SwitchInPlace(T* pValue) // [tested]
   {
-    XII_CHECK_AT_COMPILETIME_MSG(
-      (sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8), "Switch in place only works for type equivalents of xiiUInt16, xiiUInt32, xiiUInt64!");
+    XII_CHECK_AT_COMPILETIME_MSG((sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8), "Switch in place only works for type equivalents of xiiUInt16, xiiUInt32, xiiUInt64!");
 
     if (sizeof(T) == 2)
     {

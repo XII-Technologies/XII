@@ -30,5 +30,5 @@ namespace xiiInternal
 
 } // namespace xiiInternal
 
-// Converts an xiiSwizzle into the mask selection format of __builtin_shufflevector
+// Converts a xiiSwizzle into the mask selection format of __builtin_shufflevector
 #define XII_TO_SHUFFLE(s) (s >> 12) & 3, (s >> 8) & 3, ((s >> 4) & 0x3) + 4, (s & 3) + 4
