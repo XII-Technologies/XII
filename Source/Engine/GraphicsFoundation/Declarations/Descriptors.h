@@ -268,7 +268,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateMode : public xiiHashableStru
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties : public xiiHashableStruct<xiiGALShadingRateProperties>
 {
   xiiStaticArray<xiiGALShadingRateMode, XII_GAL_MAX_SHADING_RATE> m_Mode;                                                                 ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
-  xiiUInt8                                                        m_uiCount                    = 0U;                                      ///< The number of valid elements in ShadingRates array.
   xiiBitflags<xiiGALShadingRateCapabilityFlags>                   m_CapabilityFlags            = xiiGALShadingRateCapabilityFlags::None;  ///< Shading rate capability flags.
   xiiBitflags<xiiGALShadingRateCombiner>                          m_CombinerFlags              = xiiGALShadingRateCombiner::PassThrough;  ///< Combination of all supported shading rate combiners.
   xiiEnum<xiiGALShadingRateFormat>                                m_Format                     = xiiGALShadingRateFormat::Unknown;        ///< Indicates which shading rate texture format is used by this device.
@@ -331,7 +330,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGraphicsDeviceAdapterDescription : public x
   xiiGALSparseResourceProperties                                           m_SparseResourceProperties;                                  ///< Sparse resource properties.
   xiiGALDeviceFeatures                                                     m_Features;                                                  ///< Supported device features.
   xiiStaticArray<xiiGALCommandQueueProperties, XII_GAL_MAX_ADAPTER_QUEUES> m_CommandQueueProperties;                                    ///< An array of NumQueues command queues supported by this device.
-  xiiUInt32                                                                m_AdapterQueuesCount = 0U;                                   ///< The number of queues in the command queue properties array.
 };
 
 /// \brief This describes the immediate context device creation description.
@@ -358,13 +356,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormatDescription : public xiiHas
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiEnum<xiiGALTextureFormat>              m_Format = xiiGALTextureFormat::Unknown;                ///< Texture format.
-  xiiUInt8                                  m_uiComponentSize  = 0U; ///< The size of one component in bytes.
-  xiiUInt8                                  m_uiComponentCount = 0U; ///< The number of components.
-  xiiEnum<xiiGALTextureFormatComponentType> m_ComponentType = xiiGALTextureFormatComponentType::Undefined;         ///< The component type.
-  bool                                      m_bIsTypeless   = false; ///< Indicates whether the format is a typeless format.
-  xiiUInt8                                  m_uiBlockWidth  = 0U;    ///< For block-compressed formats, the compression block width.
-  xiiUInt8                                  m_uiBlockHeight = 0U;    ///< For block-compressed formats, the compression block height.
+  xiiEnum<xiiGALTextureFormat>              m_Format           = xiiGALTextureFormat::Unknown;                ///< Texture format.
+  xiiUInt8                                  m_uiComponentSize  = 0U;                                          ///< The size of one component in bytes.
+  xiiUInt8                                  m_uiComponentCount = 0U;                                          ///< The number of components.
+  xiiEnum<xiiGALTextureFormatComponentType> m_ComponentType    = xiiGALTextureFormatComponentType::Undefined; ///< The component type.
+  bool                                      m_bIsTypeless      = false;                                       ///< Indicates whether the format is a typeless format.
+  xiiUInt8                                  m_uiBlockWidth     = 0U;                                          ///< For block-compressed formats, the compression block width.
+  xiiUInt8                                  m_uiBlockHeight    = 0U;                                          ///< For block-compressed formats, the compression block height.
 };
 
 #include <GraphicsFoundation/Declarations/Implementation/Descriptors_inl.h>

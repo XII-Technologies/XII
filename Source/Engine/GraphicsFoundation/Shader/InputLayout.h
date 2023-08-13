@@ -93,8 +93,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALLayoutElement : public xiiHashableStruct
 /// \brief This describes the input layout creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayoutCreationDescription : public xiiHashableStruct<xiiGALInputLayoutCreationDescription>
 {
-  XII_DECLARE_POD_TYPE();
-
   xiiGALShaderHandle                                               m_hShader;        ///< The handle to the shader.
   xiiStaticArray<xiiGALLayoutElement, XII_GAL_MAX_LAYOUT_ELEMENTS> m_LayoutElements; ///< The input layout elements.
 };
