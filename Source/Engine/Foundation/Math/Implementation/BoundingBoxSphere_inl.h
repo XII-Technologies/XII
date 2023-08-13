@@ -18,6 +18,22 @@ xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiVec3Te
 }
 
 template <typename Type>
+XII_FORCE_INLINE xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiBoundingBoxSphereTemplate& rhs)
+{
+  m_vCenter         = rhs.m_vCenter;
+  m_fSphereRadius   = rhs.m_fSphereRadius;
+  m_vBoxHalfExtends = rhs.m_vBoxHalfExtends;
+}
+
+template <typename Type>
+void xiiBoundingBoxSphereTemplate<Type>::operator=(const xiiBoundingBoxSphereTemplate& rhs)
+{
+  m_vCenter         = rhs.m_vCenter;
+  m_fSphereRadius   = rhs.m_fSphereRadius;
+  m_vBoxHalfExtends = rhs.m_vBoxHalfExtends;
+}
+
+template <typename Type>
 xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiBoundingBoxTemplate<Type>& box, const xiiBoundingSphereTemplate<Type>& sphere) :
   m_vCenter(box.GetCenter()), m_vBoxHalfExtends(box.GetHalfExtents())
 {
