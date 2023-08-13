@@ -578,8 +578,7 @@ bool xiiImageFormat::IsCompatible(Enum left, Enum right)
     case xiiImageFormat::R8_SINT:
     case xiiImageFormat::R8_UNORM:
     case xiiImageFormat::R8_SNORM:
-      return (
-        right == xiiImageFormat::R8_UINT || right == xiiImageFormat::R8_SINT || right == xiiImageFormat::R8_UNORM || right == xiiImageFormat::R8_SNORM);
+      return (right == xiiImageFormat::R8_UINT || right == xiiImageFormat::R8_SINT || right == xiiImageFormat::R8_UNORM || right == xiiImageFormat::R8_SNORM);
     case xiiImageFormat::BC1_UNORM:
     case xiiImageFormat::BC1_UNORM_SRGB:
       return (right == xiiImageFormat::BC1_UNORM || right == xiiImageFormat::BC1_UNORM_SRGB);

@@ -20,6 +20,10 @@ public:
   /// \brief Default constructor does not initialize anything.
   xiiBoundingBoxSphereTemplate(); // [tested]
 
+  xiiBoundingBoxSphereTemplate(const xiiBoundingBoxSphereTemplate& rhs);
+
+  void operator=(const xiiBoundingBoxSphereTemplate& rhs);
+
   /// \brief Constructs the bounds from the center position, the box half extends and the sphere radius.
   xiiBoundingBoxSphereTemplate(const xiiVec3Template<Type>& vCenter, const xiiVec3Template<Type>& vBoxHalfExtents, Type fSphereRadius); // [tested]
 

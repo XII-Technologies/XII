@@ -19,8 +19,7 @@ XII_ALWAYS_INLINE xiiUInt32 xiiBitfield<Container>::GetCount() const
 }
 
 template <class Container>
-template <typename> // Second template needed so that the compiler only instantiates it when called. Needed to prevent errors with containers that do
-                    // not support this.
+template <typename> // Second template needed so that the compiler only instantiates it when called. Needed to prevent errors with containers that do not support this.
 void xiiBitfield<Container>::SetCountUninitialized(xiiUInt32 uiBitCount)
 {
   const xiiUInt32 uiInts = (uiBitCount + 31) >> 5;

@@ -11,11 +11,7 @@ void TestLength(const xiiCoordinateSystemConversion& atoB, const xiiCoordinateSy
   XII_TEST_FLOAT(btoA.ConvertSourceLength(fTargetLength), fSourceLength, xiiMath::DefaultEpsilon<float>());
 }
 
-void TestPosition(
-  const xiiCoordinateSystemConversion& atoB,
-  const xiiCoordinateSystemConversion& btoA,
-  const xiiVec3&                       vSourcePos,
-  const xiiVec3&                       vTargetPos)
+void TestPosition(const xiiCoordinateSystemConversion& atoB, const xiiCoordinateSystemConversion& btoA, const xiiVec3& vSourcePos, const xiiVec3& vTargetPos)
 {
   TestLength(atoB, btoA, vSourcePos.GetLength(), vTargetPos.GetLength());
 

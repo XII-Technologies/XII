@@ -8,7 +8,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiWindWorldModuleInterface, 1, xiiRTTINoAlloca
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiWindStrength, 1)
-  XII_ENUM_CONSTANTS(xiiWindStrength::Calm, xiiWindStrength::LightBrexiie, xiiWindStrength::GentleBrexiie, xiiWindStrength::ModerateBrexiie, xiiWindStrength::StrongBrexiie, xiiWindStrength::Storm)
+  XII_ENUM_CONSTANTS(xiiWindStrength::Calm, xiiWindStrength::LightBreeze, xiiWindStrength::GentleBreeze, xiiWindStrength::ModerateBreeze, xiiWindStrength::StrongBreeze, xiiWindStrength::Storm)
   XII_ENUM_CONSTANTS(xiiWindStrength::WeakShockwave, xiiWindStrength::MediumShockwave, xiiWindStrength::StrongShockwave, xiiWindStrength::ExtremeShockwave)
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
@@ -23,16 +23,16 @@ float xiiWindStrength::GetInMetersPerSecond(Enum strength)
     case Calm:
       return 0.5f;
 
-    case LightBrexiie:
+    case LightBreeze:
       return 2.0f;
 
-    case GentleBrexiie:
+    case GentleBreeze:
       return 5.0f;
 
-    case ModerateBrexiie:
+    case ModerateBreeze:
       return 9.0f;
 
-    case StrongBrexiie:
+    case StrongBreeze:
       return 14.0f;
 
     case Storm:

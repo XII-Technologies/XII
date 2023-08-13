@@ -226,8 +226,7 @@ XII_CREATE_SIMPLE_TEST(IO, StandardJSONWriter)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec4")
   {
-    StreamComparer sc(
-      "\"var1\" : { \"$t\" : \"vec4\", \"$v\" : \"(1.0000, 2.0000, 3.0000, 4.0000)\", \"$b\" : \"0x0000803F000000400000404000008040\" }");
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec4\", \"$v\" : \"(1.0000, 2.0000, 3.0000, 4.0000)\", \"$b\" : \"0x0000803F000000400000404000008040\" }");
 
     xiiStandardJSONWriter js;
     js.SetOutputStream(&sc);
@@ -237,8 +236,7 @@ XII_CREATE_SIMPLE_TEST(IO, StandardJSONWriter)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableVec4d")
   {
-    StreamComparer sc(
-      "\"var1\" : { \"$t\" : \"vec4d\", \"$v\" : \"(1.00000000, 2.00000000, 3.00000000, 4.00000000)\", \"$b\" : \"0x000000000000F03F000000000000004000000000000008400000000000001040\" }");
+    StreamComparer sc("\"var1\" : { \"$t\" : \"vec4d\", \"$v\" : \"(1.00000000, 2.00000000, 3.00000000, 4.00000000)\", \"$b\" : \"0x000000000000F03F000000000000004000000000000008400000000000001040\" }");
 
     xiiStandardJSONWriter js;
     js.SetOutputStream(&sc);

@@ -48,7 +48,7 @@ void xiiQtDocumentWindow::Constructor()
   setMenuBar(pMenuBar);
 
   xiiToolsProject::SuggestContainerWindow(m_pDocument);
-  xiiQtContainerWindow* pContainer            = xiiQtContainerWindow::GetContainerWindow();
+  xiiQtContainerWindow* pContainer = xiiQtContainerWindow::GetContainerWindow();
   pContainer->AddDocumentWindow(this);
 
   xiiQtUiServices::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtDocumentWindow::UIServicesEventHandler, this));

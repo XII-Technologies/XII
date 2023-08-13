@@ -28,10 +28,7 @@ public:
 
   const xiiManipulatorAttribute* GetActiveManipulator(const xiiDocument* pDoc, const xiiHybridArray<xiiPropertySelection, 8>*& out_pSelection) const;
 
-  void SetActiveManipulator(
-    const xiiDocument*                             pDoc,
-    const xiiManipulatorAttribute*                 pManipulator,
-    const xiiHybridArray<xiiPropertySelection, 8>& selection);
+  void SetActiveManipulator(const xiiDocument* pDoc, const xiiManipulatorAttribute* pManipulator, const xiiHybridArray<xiiPropertySelection, 8>& selection);
 
   void ClearActiveManipulator(const xiiDocument* pDoc);
 
@@ -54,11 +51,7 @@ private:
     bool                                    m_bHideManipulators;
   };
 
-  void InternalSetActiveManipulator(
-    const xiiDocument*                             pDoc,
-    const xiiManipulatorAttribute*                 pManipulator,
-    const xiiHybridArray<xiiPropertySelection, 8>& selection,
-    bool                                           bUnhide);
+  void InternalSetActiveManipulator(const xiiDocument* pDoc, const xiiManipulatorAttribute* pManipulator, const xiiHybridArray<xiiPropertySelection, 8>& selection, bool bUnhide);
 
   void StructureEventHandler(const xiiDocumentObjectStructureEvent& e);
   void SelectionEventHandler(const xiiSelectionManagerEvent& e);

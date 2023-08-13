@@ -325,8 +325,7 @@ xiiStatus xiiDocument::InternalLoadDocument()
 
   {
     XII_PROFILE_SCOPE("Restoring Objects");
-    xiiDocumentObjectConverterReader objectConverter(
-      objects.Borrow(), GetObjectManager(), xiiDocumentObjectConverterReader::Mode::CreateAndAddToDocument);
+    xiiDocumentObjectConverterReader objectConverter(objects.Borrow(), GetObjectManager(), xiiDocumentObjectConverterReader::Mode::CreateAndAddToDocument);
     // range.BeginNextStep("Restoring Objects");
     auto* pRootNode = objects->GetNodeByName("ObjectTree");
     objectConverter.ApplyPropertiesToObject(pRootNode, GetObjectManager()->GetRootObject());

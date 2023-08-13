@@ -270,8 +270,7 @@ xiiResult xiiVec3Template<Type>::CalculateNormal(const xiiVec3Template<Type>& v1
 template <typename Type>
 void xiiVec3Template<Type>::MakeOrthogonalTo(const xiiVec3Template<Type>& vNormal)
 {
-  XII_ASSERT_DEBUG(
-    vNormal.IsNormalized(), "The vector to make this vector orthogonal to, must be normalized. It's length is {0}", xiiArgF(vNormal.GetLength(), 3));
+  XII_ASSERT_DEBUG(vNormal.IsNormalized(), "The vector to make this vector orthogonal to, must be normalized. It's length is {0}", xiiArgF(vNormal.GetLength(), 3));
 
   xiiVec3Template<Type> vOrtho = vNormal.CrossRH(*this);
   *this                        = vOrtho.CrossRH(vNormal);

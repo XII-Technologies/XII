@@ -130,8 +130,7 @@ void xiiWorldModuleFactory::RegisterInterfaceImplementation(xiiStringView sInter
 xiiWorldModuleTypeId xiiWorldModuleFactory::RegisterWorldModule(const xiiRTTI* pRtti, CreatorFunc creatorFunc)
 {
   XII_ASSERT_DEV(pRtti != xiiGetStaticRTTI<xiiWorldModule>(), "Trying to register a world module that is not reflected!");
-  XII_ASSERT_DEV(
-    m_TypeToId.GetCount() < xiiWorld::GetMaxNumWorldModules(), "Max number of world modules reached: {}", xiiWorld::GetMaxNumWorldModules());
+  XII_ASSERT_DEV(m_TypeToId.GetCount() < xiiWorld::GetMaxNumWorldModules(), "Max number of world modules reached: {}", xiiWorld::GetMaxNumWorldModules());
 
   xiiWorldModuleTypeId uiTypeId = s_InvalidWorldModuleTypeId;
   if (m_TypeToId.TryGetValue(pRtti, uiTypeId))

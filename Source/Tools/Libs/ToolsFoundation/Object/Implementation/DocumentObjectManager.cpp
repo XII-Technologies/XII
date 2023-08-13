@@ -272,8 +272,7 @@ void xiiDocumentObjectManager::AddObject(xiiDocumentObject* pObject, xiiDocument
     sParentProperty = "Children";
 
   XII_ASSERT_DEV(pObject->GetGuid().IsValid(), "Object Guid invalid! Object was not created via a xiiObjectManagerBase!");
-  XII_ASSERT_DEV(
-    CanAdd(pObject->GetTypeAccessor().GetType(), pParent, sParentProperty, index).m_Result.Succeeded(), "Trying to execute invalid add!");
+  XII_ASSERT_DEV(CanAdd(pObject->GetTypeAccessor().GetType(), pParent, sParentProperty, index).m_Result.Succeeded(), "Trying to execute invalid add!");
 
   InternalAddObject(pObject, pParent, sParentProperty, index);
 }
@@ -281,6 +280,7 @@ void xiiDocumentObjectManager::AddObject(xiiDocumentObject* pObject, xiiDocument
 void xiiDocumentObjectManager::RemoveObject(xiiDocumentObject* pObject)
 {
   XII_ASSERT_DEV(CanRemove(pObject).m_Result.Succeeded(), "Trying to execute invalid remove!");
+
   InternalRemoveObject(pObject);
 }
 
@@ -349,25 +349,27 @@ xiiStatus xiiDocumentObjectManager::CanAdd(const xiiRTTI* pRtti, const xiiDocume
                                 "or a valid index).",
                                 sParentProperty));
       }
+
       xiiInt32 iNewIndex = index.ConvertTo<xiiInt32>();
+
       if (iNewIndex > (xiiInt32)iCount)
-        return xiiStatus(xiiFmt(
-          "Cannot add object to its new location '{0}' is out of the bounds of the parent's property range '{1}'!", iNewIndex, (xiiInt32)iCount));
+        return xiiStatus(xiiFmt("Cannot add object to its new location '{0}' is out of the bounds of the parent's property range '{1}'!", iNewIndex, (xiiInt32)iCount));
+
       if (iNewIndex < 0 && iNewIndex != -1)
-        return xiiStatus(xiiFmt("Cannot add object to the property '{0}', the index '{1}' is not valid (Either use '-1' to append or a valid index).",
-                                sParentProperty, iNewIndex));
+        return xiiStatus(xiiFmt("Cannot add object to the property '{0}', the index '{1}' is not valid (Either use '-1' to append or a valid index).", sParentProperty, iNewIndex));
     }
     if (pProp->GetCategory() == xiiPropertyCategory::Map)
     {
       if (!index.IsA<xiiString>())
         return xiiStatus(xiiFmt("Cannot add object to the map property '{0}' as its index type is not a string.", sParentProperty));
+
       xiiVariant value = accessor.GetValue(sParentProperty, index);
       if (value.IsValid() && value.IsA<xiiUuid>())
       {
         xiiUuid guid = value.Get<xiiUuid>();
+
         if (guid.IsValid())
-          return xiiStatus(
-            xiiFmt("Cannot add object to the map property '{0}' at key '{1}'. Delete old value first.", sParentProperty, index.Get<xiiString>()));
+          return xiiStatus(xiiFmt("Cannot add object to the map property '{0}' at key '{1}'. Delete old value first.", sParentProperty, index.Get<xiiString>()));
       }
     }
     else if (pProp->GetCategory() == xiiPropertyCategory::Member)
@@ -398,9 +400,11 @@ xiiStatus xiiDocumentObjectManager::CanRemove(const xiiDocumentObject* pObject) 
   {
     xiiAbstractProperty* pProp = pObject->GetParentPropertyType();
     XII_ASSERT_DEV(pProp != nullptr, "Parent property should always be valid!");
+
     if (pProp->GetCategory() == xiiPropertyCategory::Member && !pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer))
       return xiiStatus("Non pointer members can't be deleted!");
   }
+
   XII_ASSERT_DEV(pObjectInTree == pObject, "Tree Corruption!!!");
 
   return InternalCanRemove(pObject);
@@ -474,13 +478,14 @@ xiiStatus xiiDocumentObjectManager::CanMove(const xiiDocumentObject* pObject, co
   {
     if (!index.IsA<xiiString>())
       return xiiStatus(xiiFmt("Cannot add object to the map property '{0}' as its index type is not a string.", sParentProperty));
+
     xiiVariant value = accessor.GetValue(sParentProperty, index);
     if (value.IsValid() && value.IsA<xiiUuid>())
     {
       xiiUuid guid = value.Get<xiiUuid>();
+
       if (guid.IsValid())
-        return xiiStatus(
-          xiiFmt("Cannot add object to the map property '{0}' at key '{1}'. Delete old value first.", sParentProperty, index.Get<xiiString>()));
+        return xiiStatus(xiiFmt("Cannot add object to the map property '{0}' at key '{1}'. Delete old value first.", sParentProperty, index.Get<xiiString>()));
     }
   }
 

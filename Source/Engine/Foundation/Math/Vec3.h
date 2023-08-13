@@ -109,9 +109,7 @@ public:
 
   /// \brief Tries to normalize this vector. If the vector is too close to zero, XII_FAILURE is returned and the vector is set to the given
   /// fallback value.
-  xiiResult NormalizeIfNotZero(
-    const xiiVec3Template<Type>& vFallback = xiiVec3Template(1, 0, 0),
-    Type                         fEpsilon  = xiiMath::SmallEpsilon<Type>()); // [tested]
+  xiiResult NormalizeIfNotZero(const xiiVec3Template<Type>& vFallback = xiiVec3Template(1, 0, 0), Type fEpsilon = xiiMath::SmallEpsilon<Type>()); // [tested]
 
   /// \brief Returns, whether this vector is (0, 0, 0).
   bool IsZero() const; // [tested]

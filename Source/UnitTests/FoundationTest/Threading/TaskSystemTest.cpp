@@ -312,8 +312,7 @@ XII_CREATE_SIMPLE_TEST(Threading, TaskSystem)
         }
       }
 
-      XII_TEST_BOOL(
-        uiNotAllThisTasksFinished + uiNotAllNextTasksFinished <= xiiTaskSystem::GetNumAllocatedWorkerThreads(xiiWorkerThreadType::ShortTasks));
+      XII_TEST_BOOL(uiNotAllThisTasksFinished + uiNotAllNextTasksFinished <= xiiTaskSystem::GetNumAllocatedWorkerThreads(xiiWorkerThreadType::ShortTasks));
     }
 
     // 'finish' all frames
@@ -348,8 +347,7 @@ XII_CREATE_SIMPLE_TEST(Threading, TaskSystem)
 
       // even after finishing multiple frames, the previous frame tasks may still be in execution
       // since no N+x tasks enforce their completion in this test
-      XII_TEST_BOOL(
-        uiNotAllThisTasksFinished + uiNotAllNextTasksFinished <= xiiTaskSystem::GetNumAllocatedWorkerThreads(xiiWorkerThreadType::ShortTasks));
+      XII_TEST_BOOL(uiNotAllThisTasksFinished + uiNotAllNextTasksFinished <= xiiTaskSystem::GetNumAllocatedWorkerThreads(xiiWorkerThreadType::ShortTasks));
     }
   }
 

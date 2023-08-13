@@ -9,17 +9,17 @@ struct XII_CORE_DLL xiiWindStrength
   enum Enum
   {
     Calm,
-    LightBrexiie,
-    GentleBrexiie,
-    ModerateBrexiie,
-    StrongBrexiie,
+    LightBreeze,
+    GentleBreeze,
+    ModerateBreeze,
+    StrongBreeze,
     Storm,
     WeakShockwave,
     MediumShockwave,
     StrongShockwave,
     ExtremeShockwave,
 
-    Default = LightBrexiie
+    Default = LightBreeze
   };
 
   static float GetInMetersPerSecond(xiiWindStrength::Enum strength);

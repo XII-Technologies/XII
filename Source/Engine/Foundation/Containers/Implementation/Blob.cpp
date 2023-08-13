@@ -66,5 +66,4 @@ void xiiBlob::ZeroFill()
   }
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_Containers_Implementation_Blob);

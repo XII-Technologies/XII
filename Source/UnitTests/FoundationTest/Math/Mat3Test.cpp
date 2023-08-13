@@ -474,10 +474,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
     xiiMat3T m(1, 2, 3, 5, 6, 7, 9, 10, 11);
 
     xiiVec3T s = m.GetScalingFactors();
-    XII_TEST_VEC3(s,
-                  xiiVec3T(xiiMath::Sqrt((xiiMathTestType)(1 * 1 + 5 * 5 + 9 * 9)), xiiMath::Sqrt((xiiMathTestType)(2 * 2 + 6 * 6 + 10 * 10)),
-                           xiiMath::Sqrt((xiiMathTestType)(3 * 3 + 7 * 7 + 11 * 11))),
-                  0.0001f);
+    XII_TEST_VEC3(s, xiiVec3T(xiiMath::Sqrt((xiiMathTestType)(1 * 1 + 5 * 5 + 9 * 9)), xiiMath::Sqrt((xiiMathTestType)(2 * 2 + 6 * 6 + 10 * 10)), xiiMath::Sqrt((xiiMathTestType)(3 * 3 + 7 * 7 + 11 * 11))), 0.0001f);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetScalingFactors")

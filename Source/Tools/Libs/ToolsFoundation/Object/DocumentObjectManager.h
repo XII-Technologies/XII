@@ -196,11 +196,7 @@ private:
     return xiiStatus(XII_SUCCESS);
   };
   virtual xiiStatus InternalCanRemove(const xiiDocumentObject* pObject) const { return xiiStatus(XII_SUCCESS); };
-  virtual xiiStatus InternalCanMove(
-    const xiiDocumentObject* pObject,
-    const xiiDocumentObject* pNewParent,
-    xiiStringView            szParentProperty,
-    const xiiVariant&        index) const
+  virtual xiiStatus InternalCanMove(const xiiDocumentObject* pObject, const xiiDocumentObject* pNewParent, xiiStringView szParentProperty, const xiiVariant& index) const
   {
     return xiiStatus(XII_SUCCESS);
   };

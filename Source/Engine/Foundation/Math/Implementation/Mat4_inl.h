@@ -8,15 +8,27 @@ xiiMat4Template<Type>::xiiMat4Template()
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   const Type TypeNaN = xiiMath::NaN<Type>();
-  SetElements(
-    TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN);
+  SetElements(TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN);
 #endif
 }
 
 template <typename Type>
 xiiMat4Template<Type>::xiiMat4Template(const Type* const pData, xiiMatrixLayout::Enum layout)
 {
-  SetFromArray(pData, layout);
+  if (layout == xiiMatrixLayout::ColumnMajor)
+  {
+    xiiMemoryUtils::Copy(m_fElementsCM, pData, 16);
+  }
+  else
+  {
+    for (int i = 0; i < 4; ++i)
+    {
+      Element(0, i) = pData[i * 4 + 0];
+      Element(1, i) = pData[i * 4 + 1];
+      Element(2, i) = pData[i * 4 + 2];
+      Element(3, i) = pData[i * 4 + 3];
+    }
+  }
 }
 
 template <typename Type>

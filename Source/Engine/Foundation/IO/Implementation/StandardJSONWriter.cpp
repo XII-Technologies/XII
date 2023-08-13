@@ -785,8 +785,7 @@ void xiiStandardJSONWriter::EndObject()
 {
   const xiiStandardJSONWriter::State state = m_StateStack.PeekBack().m_State;
   XII_IGNORE_UNUSED(state);
-  XII_ASSERT_DEV(
-    state == xiiStandardJSONWriter::Object || state == xiiStandardJSONWriter::NamedObject, "EndObject() must be called in sync with BeginObject().");
+  XII_ASSERT_DEV(state == xiiStandardJSONWriter::Object || state == xiiStandardJSONWriter::NamedObject, "EndObject() must be called in sync with BeginObject().");
 
   const State CurState = m_StateStack.PeekBack().m_State;
 

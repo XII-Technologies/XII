@@ -44,12 +44,7 @@ public:
 
   /// \brief Creates the navmesh from the given xiiGameGrid.
   template <class CellData>
-  void CreateFromGrid(
-    const xiiGameGrid<CellData>& grid,
-    CellComparator               isSameCellType,
-    void*                        pPassThroughSame,
-    CellBlocked                  isCellBlocked,
-    void*                        pPassThroughBlocked);
+  void CreateFromGrid(const xiiGameGrid<CellData>& grid, CellComparator isSameCellType, void* pPassThroughSame, CellBlocked isCellBlocked, void* pPassThroughBlocked);
 
   /// \brief Returns the index of the ConvexArea at the given cell coordinates. Negative, if the cell is blocked.
   xiiInt32 GetAreaAt(const xiiVec2I32& vCoord) const { return m_NodesGrid.GetCell(vCoord); }

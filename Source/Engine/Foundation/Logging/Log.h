@@ -360,7 +360,7 @@ public:
     None     = 0, ///< No timestamp will be added at all.
     Numeric  = 1, ///< A purely numeric timestamp will be added. Ex.: [2019-08-16 13:40:30.345 (UTC)] Log message.
     Textual  = 2, ///< A timestamp with textual fields will be added. Ex.: [2019 Aug 16 (Fri) 13:40:30.345 (UTC)] Log message.
-    TimeOnly = 3, ///< A short timestamp (time only, no timxiione indicator) is added. Ex: [13:40:30.345] Log message.
+    TimeOnly = 3, ///< A short timestamp (time only, no timezone indicator) is added. Ex: [13:40:30.345] Log message.
   };
 
   static void GenerateFormattedTimestamp(TimestampMode mode, xiiStringBuilder& ref_sTimestampOut);

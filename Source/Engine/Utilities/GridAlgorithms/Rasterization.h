@@ -89,20 +89,10 @@ namespace xii2DGridUtils
   /// Note that the FloodFill function requires an internal queue to store which cells still need to be visited, as such it will do
   /// dynamic memory allocations. You can pass in a queue that will be used as the temp buffer, thus you can reuse the same container for
   /// several operations, which will reduce the amount of memory allocations that need to be done.
-  XII_UTILITIES_DLL xiiUInt32 FloodFill(
-    xiiInt32                      iStartX,
-    xiiInt32                      iStartY,
-    XII_RASTERIZED_POINT_CALLBACK callback,
-    void*                         pPassThrough = nullptr,
-    xiiDeque<xiiVec2I32>*         pTempArray   = nullptr);
+  XII_UTILITIES_DLL xiiUInt32 FloodFill(xiiInt32 iStartX, xiiInt32 iStartY, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr, xiiDeque<xiiVec2I32>* pTempArray = nullptr);
 
   /// \brief Same as FloodFill() but also visits the diagonal neighbors, ie. all eight neighboring cells.
-  XII_UTILITIES_DLL xiiUInt32 FloodFillDiag(
-    xiiInt32                      iStartX,
-    xiiInt32                      iStartY,
-    XII_RASTERIZED_POINT_CALLBACK callback,
-    void*                         pPassThrough = nullptr,
-    xiiDeque<xiiVec2I32>*         pTempArray   = nullptr);
+  XII_UTILITIES_DLL xiiUInt32 FloodFillDiag(xiiInt32 iStartX, xiiInt32 iStartY, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr, xiiDeque<xiiVec2I32>* pTempArray = nullptr);
 
   /// \brief Describes the different circle types that can be rasterized
   enum xiiBlobType : xiiUInt8
@@ -128,21 +118,11 @@ namespace xii2DGridUtils
   ///
   /// RasterizeBlob() will stop immediately and return xiiRasterizationResult::Aborted when the callback function returns
   /// xiiCallbackResult::Stop.
-  XII_UTILITIES_DLL xiiRasterizationResult::Enum RasterizeBlob(
-    xiiInt32                      iPosX,
-    xiiInt32                      iPosY,
-    xiiBlobType                   type,
-    XII_RASTERIZED_POINT_CALLBACK callback,
-    void*                         pPassThrough = nullptr);
+  XII_UTILITIES_DLL xiiRasterizationResult::Enum RasterizeBlob(xiiInt32 iPosX, xiiInt32 iPosY, xiiBlobType type, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr);
 
   /// \brief Same as RasterizeBlob(), but the distance from the center is passed through to the callback, which can use this information to
   /// adjust what it is doing.
-  XII_UTILITIES_DLL xiiRasterizationResult::Enum RasterizeBlobWithDistance(
-    xiiInt32                     iPosX,
-    xiiInt32                     iPosY,
-    xiiBlobType                  type,
-    XII_RASTERIZED_BLOB_CALLBACK callback,
-    void*                        pPassThrough = nullptr);
+  XII_UTILITIES_DLL xiiRasterizationResult::Enum RasterizeBlobWithDistance(xiiInt32 iPosX, xiiInt32 iPosY, xiiBlobType type, XII_RASTERIZED_BLOB_CALLBACK callback, void* pPassThrough = nullptr);
 
   /// \brief Rasterizes a circle of any size (unlike RasterizeBlob()), though finding the right radius values for nice looking small circles
   /// can be more difficult.
@@ -152,12 +132,7 @@ namespace xii2DGridUtils
   ///
   /// RasterizeCircle() will stop immediately and return xiiRasterizationResult::Aborted when the callback function returns
   /// xiiCallbackResult::Stop.
-  XII_UTILITIES_DLL xiiRasterizationResult::Enum RasterizeCircle(
-    xiiInt32                      iPosX,
-    xiiInt32                      iPosY,
-    float                         fRadius,
-    XII_RASTERIZED_POINT_CALLBACK callback,
-    void*                         pPassThrough = nullptr);
+  XII_UTILITIES_DLL xiiRasterizationResult::Enum RasterizeCircle(xiiInt32 iPosX, xiiInt32 iPosY, float fRadius, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr);
 
 
   /// \brief Computes which points are visible from the start position by tracing lines radially outwards.

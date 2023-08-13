@@ -217,13 +217,13 @@ namespace xiiOpenDdlUtils
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToAngle(const xiiOpenDdlReaderElement* pElement, xiiAngled& out_result); // [tested]
 
-  /// \brief Converts the data that \a pElement points to to an xiiHashedString.
+  /// \brief Converts the data that \a pElement points to to a xiiHashedString.
   ///
   /// \a pElement maybe be a primitives list of exactly 1 string.
   /// It may also be a group that contains such a primitives list as the only child.
   XII_FOUNDATION_DLL xiiResult ConvertToHashedString(const xiiOpenDdlReaderElement* pElement, xiiHashedString& out_sResult); // [tested]
 
-  /// \brief Converts the data that \a pElement points to to an xiiTempHashedString.
+  /// \brief Converts the data that \a pElement points to to a xiiTempHashedString.
   ///
   /// \a pElement maybe be a primitives list of exactly 1 uint64.
   /// It may also be a group that contains such a primitives list as the only child.
@@ -336,10 +336,10 @@ namespace xiiOpenDdlUtils
   /// \brief Writes a xiiAngled to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreAngle(xiiOpenDdlWriter& ref_writer, const xiiAngled& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
-  /// \brief Writes an xiiHashedString to DDL such that the type can be reconstructed.
+  /// \brief Writes a xiiHashedString to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreHashedString(xiiOpenDdlWriter& ref_writer, const xiiHashedString& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
-  /// \brief Writes an xiiTempHashedString to DDL such that the type can be reconstructed.
+  /// \brief Writes a xiiTempHashedString to DDL such that the type can be reconstructed.
   XII_FOUNDATION_DLL void StoreTempHashedString(xiiOpenDdlWriter& ref_writer, const xiiTempHashedString& value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
   /// \brief Writes a xiiVariant to DDL such that the type can be reconstructed.

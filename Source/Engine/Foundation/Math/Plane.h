@@ -74,10 +74,7 @@ public:
   xiiResult SetFromPoints(const xiiVec3Template<Type>* const pVertices, xiiUInt32 uiMaxVertices); // [tested]
 
   /// \brief Creates a plane from two direction vectors that span the plane, and one point on it.
-  xiiResult SetFromDirections(
-    const xiiVec3Template<Type>& vTangent1,
-    const xiiVec3Template<Type>& vTangent2,
-    const xiiVec3Template<Type>& vPointOnPlane); // [tested]
+  xiiResult SetFromDirections(const xiiVec3Template<Type>& vTangent1, const xiiVec3Template<Type>& vTangent2, const xiiVec3Template<Type>& vPointOnPlane); // [tested]
 
   /// \brief Sets the plane to an invalid state (all zero).
   void SetInvalid(); // [tested]
