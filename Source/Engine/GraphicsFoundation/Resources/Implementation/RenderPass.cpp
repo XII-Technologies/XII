@@ -16,3 +16,15 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALAttachmentStoreOperation, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
+
+xiiGALRenderPass::xiiGALRenderPass(const xiiGALRenderPassCreationDescription& creationDescription) :
+  xiiGALResource<xiiGALRenderPassCreationDescription>(creationDescription)
+{
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  m_sDebugName.Assign(creationDescription.m_sName);
+#endif
+}
+
+xiiGALRenderPass::~xiiGALRenderPass() = default;
+
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_RenderPass);

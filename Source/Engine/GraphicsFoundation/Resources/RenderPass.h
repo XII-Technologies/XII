@@ -4,6 +4,7 @@
 
 #include <Foundation/Math/Size.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief A special constant used to indicate that the render pass is unused.
 #define XII_GAL_ATTACHMENT_UNUSED 0xFFFFFFFFU
@@ -124,6 +125,22 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassCreationDescription : public x
   xiiUInt32                                    m_uiSubPassCount    = 0U;      ///< The number of sub passes in the render pass.
   const xiiGALSubPassDependencyDescription*    m_pDependencies     = nullptr; ///< The pointer to the array of sub pass dependencies.
   xiiUInt32                                    m_uiDependencyCount = 0U;      ///< The number of memory dependencies between pairs of sub passes.
+};
+
+/// \brief Interface that defines methods to manipulate a render pass object.
+class XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPass : public xiiGALResource<xiiGALRenderPassCreationDescription>
+{
+public:
+protected:
+  friend class xiiGALDevice;
+
+  xiiGALRenderPass(const xiiGALRenderPassCreationDescription& creationDescription);
+
+  virtual ~xiiGALRenderPass();
+
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
 
 #include <GraphicsFoundation/Resources/Implementation/RenderPass_inl.h>
