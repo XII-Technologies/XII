@@ -1532,6 +1532,13 @@ class xiiGALResourceViewHandle
   friend class xiiGALDevice;
 };
 
+class xiiGALTextureViewHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALTextureViewHandle, xiiGAL::xii18_14Id);
+
+  friend class xiiGALDevice;
+};
+
 class xiiGALUnorderedAccessViewHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALUnorderedAccessViewHandle, xiiGAL::xii18_14Id);
@@ -1556,6 +1563,13 @@ class xiiGALTopLevelASHandle
 class xiiGALBottomLevelASHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALBottomLevelASHandle, xiiGAL::xii18_14Id);
+
+  friend class xiiGALDevice;
+};
+
+class xiiGALRenderPassHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALRenderPassHandle, xiiGAL::xii18_14Id);
 
   friend class xiiGALDevice;
 };
