@@ -50,3 +50,15 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShaderVariableClassType, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
+
+xiiGALShader::xiiGALShader(const xiiGALShaderCreationDescription& creationDescription) :
+  xiiGALResource<xiiGALShaderCreationDescription>(creationDescription)
+{
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  m_sDebugName.Assign(creationDescription.m_sName);
+#endif
+}
+
+xiiGALShader::~xiiGALShader() = default;
+
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Shader_Implementation_Shader);

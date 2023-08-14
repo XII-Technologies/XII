@@ -3,6 +3,7 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsFoundation/Resources/Resource.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
 /// \brief This describes the shader resource type.
@@ -145,3 +146,27 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHa
 
   xiiStaticArray<xiiScopedRefPointer<xiiGALShaderByteCode>, xiiGALShaderStage::ENUM_COUNT> m_ByteCodes; ///< The shader byte code per stage.
 };
+
+/// \brief Interface that defines methods to manipulate a shader object.
+class XII_GRAPHICSFOUNDATION_DLL xiiGALShader : public xiiGALResource<xiiGALShaderCreationDescription>
+{
+public:
+  /// \brief This returns the total number of shader resources.
+  virtual xiiUInt32 GetResourceCount() const = 0;
+
+  /// \brief This returns a pointer to the array of shader resources.
+  virtual void GetResourceDescription(xiiUInt32 uiIndex, xiiGALShaderResourceDescription& out_ResourceDescription) const = 0;
+
+protected:
+  friend class xiiGALDevice;
+
+  xiiGALShader(const xiiGALShaderCreationDescription& creationDescription);
+
+  virtual ~xiiGALShader();
+
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+};
+
+#include <GraphicsFoundation/Shader/Implementation/Shader_inl.h>
