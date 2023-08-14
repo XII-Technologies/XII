@@ -91,17 +91,12 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateAttachmentDescription : publi
 /// \brief This describes the render pass sub pass.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDescription : public xiiHashableStruct<xiiGALSubPassDescription>
 {
-  XII_DECLARE_POD_TYPE();
-
-  const xiiGALAttachmentReferenceDescription*   m_pInputAttachments             = nullptr; ///< The pointer to the array of input attachments.
-  xiiUInt32                                     m_uiInputAttachmentCount        = 0U;      ///< The number of input attachments the sub pass uses.
-  const xiiGALAttachmentReferenceDescription*   m_pRenderTargetAttachments      = nullptr; ///< The pointer to the array of color render target attachments. Each element of the m_pRenderTargetAttachments array corresponds to an output in the pixel shader, i.e. if the shader declares an output variable decorated with a render target index X, then it uses the attachment provided in m_pRenderTargetAttachments[X]. If the attachment index is XII_GAL_ATTACHMENT_UNUSED, writes to this render target are ignored.
-  xiiUInt32                                     m_uiRenderTargetAttachmentCount = 0U;      ///< The number of color render target attachments.
-  const xiiGALAttachmentReferenceDescription*   m_pResolveAttachments           = nullptr; ///< The pointer to the array of resolve attachments. If m_pResolveAttachments is not nullptr, each of its elements corresponds to a render target attachment (the element in m_pRenderTargetAttachments at the same index), and a multisample resolve operation is defined for each attachment. At the end of each sub pass, multisample resolve operations read the sub pass's color attachments, and resolve the samples for each pixel within the render area to the same pixel location in the corresponding resolve attachments, unless the resolve attachment index is XII_GAL_ATTACHMENT_UNUSED.
-  const xiiGALAttachmentReferenceDescription*   m_pDepthStencilAttachments      = nullptr; ///< The pointer to the depth-stencil attachment.
-  const xiiUInt32*                              m_pPreserveAttachments          = nullptr; ///< The pointer to the array of preserve attachments.
-  xiiUInt32                                     m_uiPreserveAttachmentCount     = 0U;      ///< The number of preserve attachments.
-  const xiiGALShadingRateAttachmentDescription* m_pShadingRateAttachment        = nullptr; ///< The pointer to the shading rate attachment.
+  xiiHybridArray<xiiGALAttachmentReferenceDescription, 16U>  m_InputAttachments;        ///< The array of input attachments.
+  xiiHybridArray<xiiGALAttachmentReferenceDescription, 16U>  m_RenderTargetAttachments; ///< The array of color render target attachments. Each element of the m_pRenderTargetAttachments array corresponds to an output in the pixel shader, i.e. if the shader declares an output variable decorated with a render target index X, then it uses the attachment provided in m_pRenderTargetAttachments[X]. If the attachment index is XII_GAL_ATTACHMENT_UNUSED, writes to this render target are ignored.
+  xiiHybridArray<xiiGALAttachmentReferenceDescription, 16U>  m_ResolveAttachments;      ///< The array of resolve attachments. If m_pResolveAttachments is not nullptr, each of its elements corresponds to a render target attachment (the element in m_pRenderTargetAttachments at the same index), and a multisample resolve operation is defined for each attachment. At the end of each sub pass, multisample resolve operations read the sub pass's color attachments, and resolve the samples for each pixel within the render area to the same pixel location in the corresponding resolve attachments, unless the resolve attachment index is XII_GAL_ATTACHMENT_UNUSED.
+  xiiStaticArray<xiiGALAttachmentReferenceDescription, 1U>   m_DepthStencilAttachment;  ///< The array of depth-stencil attachment. Note that this array can only hold a single depth stencil attachment reference.
+  xiiHybridArray<xiiUInt32, 16U>                             m_PreserveAttachments;     ///< The array of preserve attachments.
+  xiiStaticArray<xiiGALShadingRateAttachmentDescription, 1U> m_ShadingRateAttachment;   ///< The array of shading rate attachment. Note that this array can only hold a single shading rate attachment reference.
 };
 
 /// \brief This describes the sub pass dependency.
@@ -116,15 +111,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDependencyDescription : public xi
 /// \brief This describes the render pass creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassCreationDescription : public xiiHashableStruct<xiiGALRenderPassCreationDescription>
 {
-  XII_DECLARE_POD_TYPE();
-
-  xiiStringView                                m_sName;                       ///< Resource name. The default is an empty string view.
-  const xiiGALRenderPassAttachmentDescription* m_pAttachments      = nullptr; ///< The pointer to the array of sub pass attachments.
-  xiiUInt32                                    m_uiAttachmentCount = 0U;      ///< The number of attachments used by the render pass.
-  const xiiGALSubPassDescription*              m_pSubPasses        = nullptr; ///< The pointer to the array of sub pass descriptions.
-  xiiUInt32                                    m_uiSubPassCount    = 0U;      ///< The number of sub passes in the render pass.
-  const xiiGALSubPassDependencyDescription*    m_pDependencies     = nullptr; ///< The pointer to the array of sub pass dependencies.
-  xiiUInt32                                    m_uiDependencyCount = 0U;      ///< The number of memory dependencies between pairs of sub passes.
+  xiiStringView                                              m_sName;        ///< Resource name. The default is an empty string view.
+  xiiHybridArray<xiiGALRenderPassAttachmentDescription, 16U> m_Attachments;  ///< The pointer to the array of sub pass attachments.
+  xiiHybridArray<xiiGALSubPassDescription, 16U>              m_SubPasses;    ///< The pointer to the array of sub pass descriptions.
+  xiiHybridArray<xiiGALSubPassDependencyDescription, 16U>    m_Dependencies; ///< The pointer to the array of sub pass dependencies.
 };
 
 /// \brief Interface that defines methods to manipulate a render pass object.

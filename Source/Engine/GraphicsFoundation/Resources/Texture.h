@@ -78,10 +78,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureSubResourceData : public xiiHasha
 /// \brief This describes the initial data to store in the texture.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureData : public xiiHashableStruct<xiiGALTextureData>
 {
-  XII_DECLARE_POD_TYPE();
-
-  xiiGALTextureSubResourceData* m_pSubResources       = nullptr; ///< Pointer to the array of the texture sub-resource elements containing the information about each sub-resource.
-  xiiUInt32                     m_uiSubResourcesCount = 0U;      ///< The number of elements in the pSubResources member array. This must match exactly the number of sub-resources in the texture, otherwise an error will occur.
+  xiiHybridArray<xiiGALTextureSubResourceData, 16U> m_SubResources; ///< Pointer to the array of the texture sub-resource elements containing the information about each sub-resource.
 
   // \todo GraphicsFoundation: Add command encoder that should be used to initialize the texture?
 };

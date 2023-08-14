@@ -11,12 +11,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFramebufferCreationDescription : public 
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiStringView                  m_sName;                                  ///< Resource name. The default is an empty string view.
-  xiiGALRenderPassHandle         m_hRenderPass;                            ///< The handle to the render pass that the frame buffer will be compatible with.
-  const xiiGALTextureViewHandle* m_pAttachments      = nullptr;            ///< The pointer to the array of attachments.
-  xiiUInt32                      m_uiAttachmentCount = 0U;                 ///< The number of attachments.
-  xiiSizeU32                     m_FramebufferSize   = xiiSizeU32(0U, 0U); ///< The size of the frame buffer. The default is (0, 0).
-  xiiUInt32                      m_uiArraySliceCount = 0U;                 ///< The number of array slices in the frame buffer. The default is 0.
+  xiiStringView                                m_sName;                                  ///< Resource name. The default is an empty string view.
+  xiiGALRenderPassHandle                       m_hRenderPass;                            ///< The handle to the render pass that the frame buffer will be compatible with.
+  xiiHybridArray<xiiGALTextureViewHandle, 16U> m_Attachments;                            ///< An array of attachments.
+  xiiSizeU32                                   m_FramebufferSize   = xiiSizeU32(0U, 0U); ///< The size of the frame buffer. The default is (0, 0).
+  xiiUInt32                                    m_uiArraySliceCount = 0U;                 ///< The number of array slices in the frame buffer. The default is 0.
 };
 
 /// \brief Interface that defines methods to manipulate a frame buffer object.
