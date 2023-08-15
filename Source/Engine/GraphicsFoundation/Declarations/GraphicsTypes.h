@@ -278,8 +278,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceUsage
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceUsage);
 
-/// \brief This describes the allowed CPU access mode flags when mappoing a resource.
+/// \brief This describes the allowed CPU access mode flags when mapping a resource.
 /// This is used by the buffer and texture descriptions to describe the CPU access mode for buffers and textures.
+///
+/// \note Only resources with xiiGALResourceUsage::Dynamic can be mapped.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCPUAccessFlag
 {
   using StorageType = xiiUInt8;
@@ -337,7 +339,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMapFlag
   enum Enum : StorageType
   {
     None      = 0U,           ///< No map flag specified.
-    DoNotWait = XII_BIT(0),   ///< Specifies that the map operationn should not wait until previous command that is using the same resource goes to completion.
+    DoNotWait = XII_BIT(0),   ///< Specifies that the map operation should not wait until previous command that is using the same resource goes to completion.
                               ///< Map returns a null pointer if the resource is still in use.
     Discard = XII_BIT(1),     ///< Specifies that the previous contents of the resource will be discarded and undefined.
                               ///< This flag is only compatible with xiiGALMapType::Write.
@@ -394,11 +396,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewType
 
   enum Enum : StorageType
   {
-    Undefined = 0U,  ///< Undefined texture view type.
-    ShaderResource,  ///< A texture view will define the shader resource view that will be used as the source for the shader read operations.
-    RenderTarget,    ///< A texture view will define a render target view that will be used as the render target for rendering operations.
-    UnorderedAccess, ///< A texture view will define an unordered access view that will be used for unordered read or write operations from the shaders.
-    ShadingRate,     ///< A texture view will define a variable shading rate view that will be used as the shading rate source for rendering operations.
+    Undefined = 0U,       ///< Undefined texture view type.
+    ShaderResource,       ///< A texture view will define the shader resource view that will be used as the source for the shader read operations.
+    RenderTarget,         ///< A texture view will define a render target view that will be used as the render target for rendering operations.
+    DepthStencil,         ///< A texture view will define a depth stencil view that will be used as the target for rendering operations.
+    ReadOnlyDepthStencil, ///< A texture view will define a read-only depth stencil view that will be used as depth stencil source for rendering operations, but can also be simultaneously read from shaders.
+    UnorderedAccess,      ///< A texture view will define an unordered access view that will be used for unordered read or write operations from the shaders.
+    ShadingRate,          ///< A texture view will define a variable shading rate view that will be used as the shading rate source for rendering operations.
 
     ENUN_COUNT,
 
@@ -931,6 +935,35 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingCapabilityFlags
 XII_DECLARE_FLAGS_OPERATORS(xiiGALRayTracingCapabilityFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRayTracingCapabilityFlags);
+
+/// \brief This describes common validation flags.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALValidationFlags
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None                  = 0U,         ///< Extra validations are disabled.
+    CheckShaderBufferSize = XII_BIT(0), ///< Verify that constant or structured buffer size is not smaller than what is expected by the shader.
+                                        ///<
+                                        ///< \remarks This flag only has effect in Debug/Development builds. This type of validation is never performed in Shipping builds.
+                                        ///<
+                                        ///< \note This option is currently supported by Vulkan backend only.
+
+    ENUM_COUNT,
+
+    Default = None
+  };
+
+  struct Bits
+  {
+    StorageType CheckShaderBufferSize : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALValidationFlags);
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALValidationFlags);
 
 /// \brief This describes the command queue type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueType

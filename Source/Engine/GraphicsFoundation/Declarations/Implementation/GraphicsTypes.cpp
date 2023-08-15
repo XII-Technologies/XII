@@ -142,6 +142,8 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALTextureViewType, 1)
   XII_ENUM_CONSTANT(xiiGALTextureViewType::Undefined),
   XII_ENUM_CONSTANT(xiiGALTextureViewType::ShaderResource),
   XII_ENUM_CONSTANT(xiiGALTextureViewType::RenderTarget),
+  XII_ENUM_CONSTANT(xiiGALTextureViewType::DepthStencil),
+  XII_ENUM_CONSTANT(xiiGALTextureViewType::ReadOnlyDepthStencil),
   XII_ENUM_CONSTANT(xiiGALTextureViewType::UnorderedAccess),
   XII_ENUM_CONSTANT(xiiGALTextureViewType::ShadingRate),
 XII_END_STATIC_REFLECTED_ENUM;
@@ -408,6 +410,11 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALRayTracingCapabilityFlags, 1)
   XII_ENUM_CONSTANT(xiiGALRayTracingCapabilityFlags::StandaloneShaders),
   XII_ENUM_CONSTANT(xiiGALRayTracingCapabilityFlags::InlineRayTracing),
   XII_ENUM_CONSTANT(xiiGALRayTracingCapabilityFlags::IndirectRayTracing),
+XII_END_STATIC_REFLECTED_ENUM;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALValidationFlags, 1)
+  XII_ENUM_CONSTANT(xiiGALValidationFlags::None),
+  XII_ENUM_CONSTANT(xiiGALValidationFlags::CheckShaderBufferSize),
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALCommandQueueType, 1)
