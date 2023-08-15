@@ -37,4 +37,11 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
+xiiGALShaderResourceVariable::xiiGALShaderResourceVariable(const xiiGALShaderResourceVariableCreationDescription& creationDescription) :
+  xiiGALResource<xiiGALShaderResourceVariableCreationDescription>(creationDescription)
+{
+}
+
+xiiGALShaderResourceVariable::~xiiGALShaderResourceVariable() = default;
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Shader_Implementation_ShaderResourceVariable);
