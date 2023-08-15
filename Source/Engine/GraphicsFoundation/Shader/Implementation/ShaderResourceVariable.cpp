@@ -38,7 +38,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 xiiGALShaderResourceVariable::xiiGALShaderResourceVariable(const xiiGALShaderResourceVariableCreationDescription& creationDescription) :
-  xiiGALResource<xiiGALShaderResourceVariableCreationDescription>(creationDescription)
+  xiiGALObject<xiiGALShaderResourceVariableCreationDescription>(creationDescription)
 {
 }
 

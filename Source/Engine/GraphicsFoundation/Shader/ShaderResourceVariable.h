@@ -138,7 +138,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariableCreationDescriptio
 };
 
 /// \brief Interface that defines methods to manipulate a shader resource variable object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariable : public xiiGALResource<xiiGALShaderResourceVariableCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariable : public xiiGALObject<xiiGALShaderResourceVariableCreationDescription>
 {
 public:
   /// \brief This binds a resource to the variable.
