@@ -22,7 +22,7 @@
 #define XII_GAL_DEFAULT_ADAPTER_ID 0xFFFFFFFFU
 
 /// \brief Special constant for the default queue index.
-#define XII_GAL_DEFAULT_QUEUE_ID 0xFF
+#define XII_GAL_DEFAULT_QUEUE_ID 0xFFU
 
 /// \brief The maximum number of shading rate modes.
 #define XII_GAL_MAX_SHADING_RATE 9
