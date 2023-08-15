@@ -83,8 +83,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseBufferProperties : public xiiHasha
 
   xiiUInt64 m_uiAddressSpaceSize = 0U; ///< The size of the sparse buffer virtual address space.
   xiiUInt32 m_uiBlockSize        = 0U; ///< The size of the sparse memory block.
-                                       ///
-                                       ///  \note Offset in the buffer, memory offset and memory size that are used in sparse resource binding command, must be multiples of the block size. In Direct3D11 and Direct3D12, the block size is always 64Kb. In Vulkan, the block size is not documented, but is usually also 64Kb.
+                                       ///<
+                                       ///< \note Offset in the buffer, memory offset and memory size that are used in sparse resource binding command, must be multiples of the block size. In Direct3D11 and Direct3D12, the block size is always 64Kb. In Vulkan, the block size is not documented, but is usually also 64Kb.
 };
 
 /// \brief Interface that defines methods to manipulate a buffer object.

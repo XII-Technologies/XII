@@ -162,7 +162,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderStage
     RayAnyHit       = XII_BIT(11), ///< Ray any hit shader.
     RayIntersection = XII_BIT(12), ///< Ray intersection shader.
     Callable        = XII_BIT(13), ///< Callable shader.
-    Tile            = XII_BIT(14), ///< Tile shader (Only for metal graphics device).
+    Tile            = XII_BIT(14), ///< Tile shader (Only for Metal graphics device).
 
     ENUM_COUNT = 16U,
 

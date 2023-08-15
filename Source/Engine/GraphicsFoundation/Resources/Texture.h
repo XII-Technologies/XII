@@ -14,15 +14,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMiscTextureFlags
   {
     None         = 0U,         ///< No miscellaneous texture flags.
     GenerateMips = XII_BIT(0), ///< Allow automatic mipmap generation.
-                               ///
-                               ///  \note The texture must be created with the xiiGALBindFlags::RenderTarget bind flag.
+                               ///<
+                               ///< \note The texture must be created with the xiiGALBindFlags::RenderTarget bind flag.
     Memoryless = XII_BIT(1),   ///< The texture will be used as a transient framebuffer attachment.
-                               ///
-                               ///  \note Memoryless textures may only be used within a render pass in a framebuffer; the corresponding sub pass load operation must be Clear or Discard, and the sub pass store operation must be Discard.
+                               ///<
+                               ///< \note Memoryless textures may only be used within a render pass in a framebuffer; the corresponding sub pass load operation must be Clear or Discard, and the sub pass store operation must be Discard.
     SparseAlias = XII_BIT(2),  ///< For sparse textures, allow binding the same memory range in different texture regions or in different sparse textures.
     Subsampled  = XII_BIT(3),  ///< The texture will be used as an intermediate render target for rendering with texture-based variable rate shading. This requires the xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget capability.
-                               ///
-                               ///  \note Copy operations are not supported for subsampled textures.
+                               ///<
+                               ///< \note Copy operations are not supported for subsampled textures.
 
     ENUM_COUNT = 5U,
 
@@ -102,14 +102,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureProperties : public xiiHash
   xiiUInt64 m_uiMipTailOffset    = 0U;                                            ///< Specifies where to bind the mip tail memory. Reserved for internal use.
   xiiUInt64 m_uiMipTailStride    = 0U;                                            ///< Specifies how to calculate the mip tail offset for 2D array texture. Reserved for internal use.
   xiiUInt64 m_uiMipTailSize      = 0U;                                            ///< Specifies the mip tail size in bytes. The default is 0.
-                                                                                  ///
-                                                                                  ///  \note A single mip tail for a 2D array may exceed the 32-bit limit.
+                                                                                  ///<
+                                                                                  ///< \note A single mip tail for a 2D array may exceed the 32-bit limit.
   xiiUInt32                     m_uiFirstMipInTail = 0U;                          ///< The first mip level in the mip tail that is packed as a whole into one or multiple memory blocks. The default is 0.
   xiiStaticArray<xiiUInt32, 3U> m_TailSize;                                       ///< Specifies the dimension of a tile packed into a single memory block.
   xiiUInt32                     m_uiBlockSize = 0U;                               ///< Size of the sparse memory block, in bytes. The default is 0.
-                                                                                  ///
-                                                                                  ///  \remarks The offset in the packed mip tail, memory offset and memory size that are used in sparse memory binding command must be multiples of the block size.
-                                                                                  ///           If the xiiGALSparseTextureFlags::NonStandardBlockSize flag is not set in the Flags member, the block size is equal to xiiGALSparseResourceProperties::m_uiStandardBlockSize.
+                                                                                  ///<
+                                                                                  ///< \remarks The offset in the packed mip tail, memory offset and memory size that are used in sparse memory binding command must be multiples of the block size.
+                                                                                  ///<          If the xiiGALSparseTextureFlags::NonStandardBlockSize flag is not set in the Flags member, the block size is equal to xiiGALSparseResourceProperties::m_uiStandardBlockSize.
   xiiBitflags<xiiGALSparseTextureFlags> m_Flags = xiiGALSparseTextureFlags::None; ///< Flags that describe additional packing modes. The default is None.
 };
 

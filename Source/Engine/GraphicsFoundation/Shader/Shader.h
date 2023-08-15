@@ -132,17 +132,17 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHa
   xiiStringView                  m_sName;                                                    ///< Resource name. The default is an empty string view.
   xiiBitflags<xiiGALShaderStage> m_ShaderStage                 = xiiGALShaderStage::Unknown; ///< The shader stages. The default is xiiGALShaderStage::Unknown.
   bool                           m_bUseCombinedTextureSamplers = false;                      ///< If set to true, textures will be combined with texture samplers.
-                                                                                             ///
-                                                                                             ///  The m_bCombinedSamplerSuffix member defines the suffix added to the texture variable name to get corresponding sampler name.
-                                                                                             ///  When using combined samplers, the sampler assigned to the shader resource view is automatically set when
-                                                                                             ///  the view is bound. Otherwise, samplers need to be explicitly set similar to other shader variables.
-                                                                                             ///
-                                                                                             ///  This member has no effect if the shader is used in the PSO that uses pipeline resource signature(s).
+                                                                                             ///<
+                                                                                             ///< The m_bCombinedSamplerSuffix member defines the suffix added to the texture variable name to get corresponding sampler name.
+                                                                                             ///< When using combined samplers, the sampler assigned to the shader resource view is automatically set when
+                                                                                             ///< the view is bound. Otherwise, samplers need to be explicitly set similar to other shader variables.
+                                                                                             ///<
+                                                                                             ///< This member has no effect if the shader is used in the PSO that uses pipeline resource signature(s).
 
   xiiStringView m_sCombinedSamplerSuffix = "_Sampler"; ///< If m_bUseCombinedTextureSamplers is true, defines the suffix added to the texture variable name to get corresponding sampler name. For example,
-                                                       ///  for the default value "_Sampler", a texture named "Tex" will be combined with the sampler named "Tex_Sampler". If m_bUseCombinedTextureSamplers is false, this member is ignored.
-                                                       ///
-                                                       ///  This member has no effect if the shader is used in the PSO that uses pipeline resource signature(s).
+                                                       ///< for the default value "_Sampler", a texture named "Tex" will be combined with the sampler named "Tex_Sampler". If m_bUseCombinedTextureSamplers is false, this member is ignored.
+                                                       ///<
+                                                       ///< This member has no effect if the shader is used in the PSO that uses pipeline resource signature(s).
 
   xiiStaticArray<xiiScopedRefPointer<xiiGALShaderByteCode>, xiiGALShaderStage::ENUM_COUNT> m_ByteCodes; ///< The shader byte code per stage.
 };

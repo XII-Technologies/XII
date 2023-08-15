@@ -14,8 +14,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableFlags
   {
     None             = 0U,         ///< Shader variable has no special properties.
     NoDynamicBuffers = XII_BIT(0), ///< This indicates that dynamic buffers will never be bound to the resource variable. This applies to uniform (constant) buffers, unordered access views, and shader resource views.
-                                   ///
-                                   ///  \remarks This flag directly translates to the xiiGALPipelineResourceFlag::NoDynamicBuffers in the internal pipeline resource signature.
+                                   ///<
+                                   ///< \remarks This flag directly translates to the xiiGALPipelineResourceFlag::NoDynamicBuffers in the internal pipeline resource signature.
 
     ENUM_COUNT = 2U,
 
