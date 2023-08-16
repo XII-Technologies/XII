@@ -126,7 +126,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHa
   xiiGALShaderCreationDescription();
   ~xiiGALShaderCreationDescription();
 
-  bool HasByteCodeForStage(xiiGALShaderStage::Enum stage) const;
+  bool HasByteCodeForStage(xiiBitflags<xiiGALShaderStage> stage) const;
 
   xiiStringView                  m_sName;                                                    ///< Resource name. The default is an empty string view.
   xiiBitflags<xiiGALShaderStage> m_ShaderStage                 = xiiGALShaderStage::Unknown; ///< The shader stages. The default is xiiGALShaderStage::Unknown.
@@ -143,7 +143,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHa
                                                        ///<
                                                        ///< This member has no effect if the shader is used in the PSO that uses pipeline resource signature(s).
 
-  xiiStaticArray<xiiScopedRefPointer<xiiGALShaderByteCode>, xiiGALShaderStage::ENUM_COUNT> m_ByteCodes; ///< The shader byte code per stage.
+  xiiScopedRefPointer<xiiGALShaderByteCode> m_ByteCodes[xiiGALShaderStage::ENUM_COUNT]; ///< The shader byte code per stage.
 };
 
 /// \brief Interface that defines methods to manipulate a shader object.

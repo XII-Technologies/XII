@@ -332,7 +332,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMapType);
 
 /// \brief This describes special arguments for a map operation. This is used to describe addition map flags
 /// when mapping buffers and textures.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALMapFlag
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMapFlags
 {
   using StorageType = xiiUInt8;
 
@@ -359,9 +359,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMapFlag
   };
 };
 
-XII_DECLARE_FLAGS_OPERATORS(xiiGALMapFlag);
+XII_DECLARE_FLAGS_OPERATORS(xiiGALMapFlags);
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMapFlag);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMapFlags);
 
 /// \brief This describes the resorurce dimension. This is used by the texture description to describe the texture type,
 /// and the texture view description to describe the texture view type.
@@ -549,19 +549,19 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormat
   };
 
   /// \brief The size in bits per element (usually pixels, except for mesh stream elements) of a single element of the given texture format.
-  static xiiUInt32 GetBitsPerElement(xiiGALTextureFormat::Enum format);
+  static xiiUInt32 GetBitsPerElement(xiiEnum<xiiGALTextureFormat> format);
 
   /// \brief The number of color channels this format contains.
-  static xiiUInt8 GetChannelCount(xiiGALTextureFormat::Enum format);
+  static xiiUInt8 GetChannelCount(xiiEnum<xiiGALTextureFormat> format);
 
   /// \brief Returns whether the given texture format is a depth format.
-  static bool IsDepthFormat(xiiGALTextureFormat::Enum format);
+  static bool IsDepthFormat(xiiEnum<xiiGALTextureFormat> format);
 
   /// \brief Returns whether the given texture format is a stencil format
-  static bool IsStencilFormat(xiiGALTextureFormat::Enum format);
+  static bool IsStencilFormat(xiiEnum<xiiGALTextureFormat> format);
 
   /// \brief Returns whether the given texture format is a sRGB format.
-  static bool IsSrgb(xiiGALTextureFormat::Enum format);
+  static bool IsSrgb(xiiEnum<xiiGALTextureFormat> format);
 
 private:
   static const xiiUInt8 s_BitsPerElement[xiiGALTextureFormat::ENUM_COUNT];
@@ -1588,20 +1588,6 @@ class xiiGALBufferViewHandle
 class xiiGALTextureViewHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALTextureViewHandle, xiiGAL::xii18_14Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALUnorderedAccessViewHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALUnorderedAccessViewHandle, xiiGAL::xii18_14Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALRenderTargetViewHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALRenderTargetViewHandle, xiiGAL::xii18_14Id);
 
   friend class xiiGALDevice;
 };

@@ -6,7 +6,7 @@ XII_FORCE_INLINE xiiGALShaderCreationDescription::xiiGALShaderCreationDescriptio
 
 XII_FORCE_INLINE xiiGALShaderCreationDescription::~xiiGALShaderCreationDescription()
 {
-  for (xiiUInt32 i = 0; i < m_ByteCodes.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
   {
     xiiGALShaderByteCode* pByteCode = m_ByteCodes[i];
     m_ByteCodes[i]                  = nullptr;
@@ -18,7 +18,7 @@ XII_FORCE_INLINE xiiGALShaderCreationDescription::~xiiGALShaderCreationDescripti
   }
 }
 
-XII_FORCE_INLINE bool xiiGALShaderCreationDescription::HasByteCodeForStage(xiiGALShaderStage::Enum stage) const
+XII_FORCE_INLINE bool xiiGALShaderCreationDescription::HasByteCodeForStage(xiiBitflags<xiiGALShaderStage> stage) const
 {
   return m_ByteCodes[stage] != nullptr && m_ByteCodes[stage]->IsValid();
 }

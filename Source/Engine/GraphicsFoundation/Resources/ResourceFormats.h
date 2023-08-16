@@ -40,9 +40,9 @@ class xiiGALFormatLookupTable
 public:
   xiiGALFormatLookupTable();
 
-  XII_ALWAYS_INLINE const FormatClass& GetFormatInfo(xiiGALTextureFormat::Enum format) const;
+  XII_ALWAYS_INLINE const FormatClass& GetFormatInfo(xiiEnum<xiiGALTextureFormat> format) const;
 
-  XII_ALWAYS_INLINE void SetFormatInfo(xiiGALTextureFormat::Enum format, const FormatClass& newFormatInfo);
+  XII_ALWAYS_INLINE void SetFormatInfo(xiiEnum<xiiGALTextureFormat> format, const FormatClass& newFormatInfo);
 
 private:
   xiiStaticArray<FormatClass, xiiGALTextureFormat::ENUM_COUNT> m_Formats;

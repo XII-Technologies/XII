@@ -64,13 +64,13 @@ xiiGALFormatLookupTable<FormatClass>::xiiGALFormatLookupTable()
 }
 
 template <typename FormatClass>
-const FormatClass& xiiGALFormatLookupTable<FormatClass>::GetFormatInfo(xiiGALTextureFormat::Enum format) const
+const FormatClass& xiiGALFormatLookupTable<FormatClass>::GetFormatInfo(xiiEnum<xiiGALTextureFormat> format) const
 {
   return m_Formats[format];
 }
 
 template <typename FormatClass>
-void xiiGALFormatLookupTable<FormatClass>::SetFormatInfo(xiiGALTextureFormat::Enum format, const FormatClass& newFormatInfo)
+void xiiGALFormatLookupTable<FormatClass>::SetFormatInfo(xiiEnum<xiiGALTextureFormat> format, const FormatClass& newFormatInfo)
 {
   m_Formats[format] = newFormatInfo;
 }
