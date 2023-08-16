@@ -109,19 +109,56 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALColorMask);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALColorMask);
 
+/// \brief This describes the logic operation.
+///
+/// [D3D12_LOGIC_OP]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770379(v=vs.85).aspx
+/// It generally mirrors [D3D12_LOGIC_OP][] enum, and is only available on the DirectX backend.
+/// \sa [D3D12_LOGIC_OP on MSDN][D3D12_LOGIC_OP]
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALLogicOperation
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Clear = 0U,   ///< Clear the render target.
+    Set,          ///< Set the render target.
+    Copy,         ///< Copy the render target.
+    CopyInverted, ///< Perform an inverted-copy of the render target.
+    NoOperation,  ///< No operation is performed on the render target.
+    Invert,       ///< Invert the render target.
+    AND,          ///< Perform a logical AND operation on the render target.
+    NAND,         ///< Perform a logical NAND operation on the render target.
+    OR,           ///< Perform a logical OR operation on the render target.
+    NOR,          ///< Perform a logical NOR operation on the render target.
+    XOR,          ///< Perform a logical XOR operation on the render target.
+    Equivalent,   ///< Perform a logical equal operation on the render target.
+    AndReversed,  ///< Perform a logical AND and reverse operation on the render target.
+    AndInverted,  ///< Perform a logical AND and invert operation on the render target.
+    OrReversed,   ///< Perform a logical OR and reverse operation on the render target.
+    OrInverted,   ///< Perform a logical OR and invert operation on the render target.
+
+    ENUM_COUNT,
+
+    Default = Clear
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALLogicOperation);
+
 /// \brief This describes the blend state for a single render target.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderTargetBlendDescription : public xiiHashableStruct<xiiGALRenderTargetBlendDescription>
 {
   XII_DECLARE_POD_TYPE();
 
-  bool                          m_bBlendEnable          = false;                     ///< Enable or disable blending for this render target. The default is false.
-  xiiEnum<xiiGALBlendFactor>    m_SourceBlend           = xiiGALBlendFactor::One;    ///< Specifies the blend factor to apply to the RGB value output from the pixel shader. The default is One.
-  xiiEnum<xiiGALBlendFactor>    m_DestinationBlend      = xiiGALBlendFactor::Zero;   ///< Specifies the blend factor to apply to the RGB value in the render target. The default is Zero.
-  xiiEnum<xiiGALBlendOperation> m_BlendOperation        = xiiGALBlendOperation::Add; ///< Defines how to combine the source and destination RGB values after applying the source and destination blend factors. The default is Add.
-  xiiEnum<xiiGALBlendFactor>    m_SourceBlendAlpha      = xiiGALBlendFactor::One;    ///< Specifies the blend factor to apply to the alpha value output from the pixel shader. The default is One.
-  xiiEnum<xiiGALBlendFactor>    m_DestinationBlendAlpha = xiiGALBlendFactor::Zero;   ///< Specifies the blend factor to apply to the alpha value in the render target. The default is Zero.
-  xiiEnum<xiiGALBlendOperation> m_BlendOperationAlpha   = xiiGALBlendOperation::Add; ///< Defines how to combine the source and destination alpha values after applying the source and destination blend alpha factors. The default is Add.
-  xiiBitflags<xiiGALColorMask>  m_ColorMask             = xiiGALColorMask::RGBA;     ///< Render target color write mask. The default is default is RGBA.
+  bool                          m_bBlendEnable          = false;                             ///< Enable or disable blending for this render target. The default is false.
+  xiiEnum<xiiGALBlendFactor>    m_SourceBlend           = xiiGALBlendFactor::One;            ///< Specifies the blend factor to apply to the RGB value output from the pixel shader. The default is One.
+  xiiEnum<xiiGALBlendFactor>    m_DestinationBlend      = xiiGALBlendFactor::Zero;           ///< Specifies the blend factor to apply to the RGB value in the render target. The default is Zero.
+  xiiEnum<xiiGALBlendOperation> m_BlendOperation        = xiiGALBlendOperation::Add;         ///< Defines how to combine the source and destination RGB values after applying the source and destination blend factors. The default is Add.
+  xiiEnum<xiiGALBlendFactor>    m_SourceBlendAlpha      = xiiGALBlendFactor::One;            ///< Specifies the blend factor to apply to the alpha value output from the pixel shader. The default is One.
+  xiiEnum<xiiGALBlendFactor>    m_DestinationBlendAlpha = xiiGALBlendFactor::Zero;           ///< Specifies the blend factor to apply to the alpha value in the render target. The default is Zero.
+  xiiEnum<xiiGALBlendOperation> m_BlendOperationAlpha   = xiiGALBlendOperation::Add;         ///< Defines how to combine the source and destination alpha values after applying the source and destination blend alpha factors. The default is Add.
+  xiiEnum<xiiGALLogicOperation> m_LogicOperation        = xiiGALLogicOperation::NoOperation; ///< Defines logical operation for the render target. The default is NoOperation.
+  xiiBitflags<xiiGALColorMask>  m_ColorMask             = xiiGALColorMask::RGBA;             ///< Render target color write mask. The default is default is RGBA.
 };
 
 /// \brief This describes the blend state for all render targets in the graphics pipeline.

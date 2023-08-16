@@ -45,6 +45,25 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALColorMask, 1)
   XII_ENUM_CONSTANT(xiiGALColorMask::RGBA),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALLogicOperation, 1)
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::Clear),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::Set),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::Copy),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::CopyInverted),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::NoOperation),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::Invert),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::AND),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::NAND),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::OR),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::NOR),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::XOR),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::Equivalent),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::AndReversed),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::AndInverted),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::OrReversed),
+  XII_ENUM_CONSTANT(xiiGALLogicOperation::OrInverted),
+XII_END_STATIC_REFLECTED_ENUM;
+
 // clang-format on
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_BlendState);
