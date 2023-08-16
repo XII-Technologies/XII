@@ -1507,7 +1507,7 @@ template <typename CreationDescription>
 class xiiGALObject : public xiiRefCounted
 {
 public:
-  xiiGALObject(CreationDescription& description) :
+  xiiGALObject(const CreationDescription& description) :
     m_Description(description)
   {
   }

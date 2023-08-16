@@ -147,7 +147,7 @@ public:
   /// \param flags Flags. See xiiGALSetShaderResourceFlags.
   ///
   /// \remark The method performs run-time correctness checks. For instance, shader resource view cannot be assigned to a constant buffer variable.
-  virtual void Set(xiiGALResource* pResource, xiiBitflags<xiiGALSetShaderResourceFlags> flags = xiiGALSetShaderResourceFlags::None) = 0;
+  virtual void Set(xiiGALResourceBase* pResource, xiiBitflags<xiiGALSetShaderResourceFlags> flags = xiiGALSetShaderResourceFlags::None) = 0;
 
   /// \brief This binds a resource array to the variable.
   ///
@@ -157,7 +157,7 @@ public:
   /// \param flags Flags. See xiiGALSetShaderResourceFlags.
   ///
   /// \remark The method performs run-time correctness checks. For instance, shader resource view cannot be assigned to a constant buffer variable.
-  virtual void SetArray(xiiGALResource* const* ppResources, xiiUInt32 uiFirstElement, xiiUInt32 uiElementCount, xiiBitflags<xiiGALSetShaderResourceFlags> flags = xiiGALSetShaderResourceFlags::None) = 0;
+  virtual void SetArray(xiiGALResourceBase* const* ppResources, xiiUInt32 uiFirstElement, xiiUInt32 uiElementCount, xiiBitflags<xiiGALSetShaderResourceFlags> flags = xiiGALSetShaderResourceFlags::None) = 0;
 
   /// \brief This binds a specified constant buffer range to the variable.
   ///
@@ -172,7 +172,7 @@ public:
   ///          The method resets dynamic offset previously set for this variable to zero.
   ///
   /// \warning The Offset must be an integer multiple of m_uiConstantBufferOffsetAlignment member specified by the device limits xiiGALDeviceLimits.
-  virtual void SetBufferRange(xiiGALResource* pResource, xiiUInt64 uiOffset, xiiUInt64 uiSize, xiiUInt32 uiArrayIndex = 0U, xiiBitflags<xiiGALSetShaderResourceFlags> flags = xiiGALSetShaderResourceFlags::None) = 0;
+  virtual void SetBufferRange(xiiGALResourceBase* pResource, xiiUInt64 uiOffset, xiiUInt64 uiSize, xiiUInt32 uiArrayIndex = 0U, xiiBitflags<xiiGALSetShaderResourceFlags> flags = xiiGALSetShaderResourceFlags::None) = 0;
 
   /// \brief This sets the constant or structured buffer dynamic offset.
   ///
@@ -204,7 +204,7 @@ public:
   /// \brief This returns a pointer to the resource that is bound to this variable.
   ///
   /// \brief uiArrayIndex The resource array index that can be used to access the variable. This must be 0 for non-array variables.
-  virtual xiiGALResource* Get(xiiUInt32 uiIndex = 0U) const = 0;
+  virtual xiiGALResourceBase* Get(xiiUInt32 uiIndex = 0U) const = 0;
 
 protected:
   friend class xiiGALDevice;
