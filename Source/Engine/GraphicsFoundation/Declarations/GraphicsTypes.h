@@ -479,7 +479,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormat
     RG16Float,                    ///< Two-component 32-bit half-precision floating-point format with 16-bit channels.
     RG16UNormalized,              ///< Two-component 32-bit unsigned-normalized-integer format with 16-bit channels.
     RG16UInt,                     ///< Two-component 32-bit unsigned-integer format with 16-bit channels.
-    RG16SNormalized,              ///< Two-component signed-normalized-integer format with 16-bit channels.
+    RG16SNormalized,              ///< Two-component 32-bit signed-normalized-integer format with 16-bit channels.
     RG16SInt,                     ///< Two-component 32-bit signed-integer format with 16-bit channels.
     R32Typeless,                  ///< Single-component 32-bit typeless format.
     D32Float,                     ///< Single-component 32-bit floating-point depth format.
@@ -496,8 +496,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormat
     RG8SNormalized,               ///< Two-component 16-bit signed-normalized-integer format with 8-bit channels.
     RG8SInt,                      ///< Two-component 16-bit signed-integer format with 8-bit channels.
     R16Typeless,                  ///< Single-component 16-bit typeless format.
-    R16Float,                     ///< Single-component 16-bit half-precision format.
-    D16UNormalized,               ///< Single-component 16-bit unsigned-normalized-integer format.
+    R16Float,                     ///< Single-component 16-bit half-precision floating-point format.
+    D16UNormalized,               ///< Single-component 16-bit unsigned-normalized-integer depth format.
     R16UNormalized,               ///< Single-component 16-bit unsigned-normalized-integer format.
     R16UInt,                      ///< Single-component 16-bit unsigned-integer format.
     R16SNormalized,               ///< Single-component 16-bit signed-normalized-integer format.
@@ -511,7 +511,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormat
     R1UNormalized,                ///< Single-component 1-bit format.
     RGB9E5SharedExponent,         ///< Three partial-precision floating-point numbers sharing single exponent encoded into a 32-bit value.
     RG8BG8UNormalized,            ///< Four-component unsigned-normalized-integer format analogous to UYVY encoding.
-    RGR8GB8UNormalized,           ///< Four-component unsigned-normalized-integer format analogous to YUY2 encoding.
+    GR8GB8UNormalized,            ///< Four-component unsigned-normalized-integer format analogous to YUY2 encoding.
     BC1Typeless,                  ///< Four-component typeless block-compression format with 1:8 compression ratio.
     BC1UNormalized,               ///< Four-component unsigned-normalized-integer block-compression format with 5 bits for R, 6 bits for G, 5 bits for B, and 0 or 1 bit for A channels. The pixel data is encoded using 8 bytes per 4x4 block (4 bits per pixel) providing 1:8 compression ratio against RGBA8 format.
     BC1UNormalizedSRGB,           ///< Four-component unsigned-normalized-integer block-compression sRGB format with 5 bits for R, 6 bits for G, 5 bits for B, and 0 or 1 bit for A channels.  The pixel data is encoded using 8 bytes per 4x4 block (4 bits per pixel) providing 1:8 compression ratio against RGBA8 format.
@@ -539,14 +539,34 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormat
     BC6HTypeless,                 ///< Three-component typeless block-compression format.
     BC6HUF16,                     ///< Three-component unsigned half-precision floating-point format with 16 bits for each channel.
     BC6HSF16,                     ///< Three-channel signed half-precision floating-point format with 16 bits per each channel.
-    BC7Typeless,                  ///< Three-component typeless block-compression format.
-    BC7UNormalized,               ///< Three-component block-compression unsigned-normalized-integer format with 4 to 7 bits per color channel and 0 to 8 bits of the alpha channel.
-    BC7UNormalizedSRGB,           ///< Three-component block-compression unsigned-normalized-integer sRGB format with 4 to 7 bits per color channel and 0 to 8 bits of the alpha channel.
+    BC7Typeless,                  ///< Four-component typeless block-compression format.
+    BC7UNormalized,               ///< Four-component block-compression unsigned-normalized-integer format with 4 to 7 bits per color channel and 0 to 8 bits of the alpha channel.
+    BC7UNormalizedSRGB,           ///< Four-component block-compression unsigned-normalized-integer sRGB format with 4 to 7 bits per color channel and 0 to 8 bits of the alpha channel.
 
     ENUM_COUNT,
 
     Default = Unknown
   };
+
+  /// \brief The size in bits per element (usually pixels, except for mesh stream elements) of a single element of the given texture format.
+  static xiiUInt32 GetBitsPerElement(xiiGALTextureFormat::Enum format);
+
+  /// \brief The number of color channels this format contains.
+  static xiiUInt8 GetChannelCount(xiiGALTextureFormat::Enum format);
+
+  /// \brief Returns whether the given texture format is a depth format.
+  static bool IsDepthFormat(xiiGALTextureFormat::Enum format);
+
+  /// \brief Returns whether the given texture format is a stencil format
+  static bool IsStencilFormat(xiiGALTextureFormat::Enum format);
+
+  /// \brief Returns whether the given texture format is a sRGB format.
+  static bool IsSrgb(xiiGALTextureFormat::Enum format);
+
+private:
+  static const xiiUInt8 s_BitsPerElement[xiiGALTextureFormat::ENUM_COUNT];
+
+  static const xiiUInt8 s_ChannelCount[xiiGALTextureFormat::ENUM_COUNT];
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureFormat);
@@ -1694,3 +1714,5 @@ namespace xiiGAL
     xiiUInt32 m_uiMax = 0;
   };
 } // namespace xiiGAL
+
+#include <GraphicsFoundation/Declarations/Implementation/GraphicsTypes_inl.h>
