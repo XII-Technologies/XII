@@ -3,7 +3,7 @@
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 xiiGALSwapChain::xiiGALSwapChain(const xiiGALSwapChainCreationDescription& creationDescription) :
-  xiiGALResource<xiiGALSwapChainCreationDescription>(creationDescription)
+  xiiGALObject<xiiGALSwapChainCreationDescription>(creationDescription)
 {
 }
 

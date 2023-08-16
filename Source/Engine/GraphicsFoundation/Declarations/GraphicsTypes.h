@@ -1558,9 +1558,9 @@ class xiiGALBufferHandle
   friend class xiiGALDevice;
 };
 
-class xiiGALResourceViewHandle
+class xiiGALBufferViewHandle
 {
-  XII_DECLARE_HANDLE_TYPE(xiiGALResourceViewHandle, xiiGAL::xii18_14Id);
+  XII_DECLARE_HANDLE_TYPE(xiiGALBufferViewHandle, xiiGAL::xii18_14Id);
 
   friend class xiiGALDevice;
 };

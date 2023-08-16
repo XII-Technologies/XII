@@ -3,10 +3,9 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/Descriptors.h>
-#include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief Interface that defines methods to manipulate a swap chain object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChain : public xiiGALResource<xiiGALSwapChainCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChain : public xiiGALObject<xiiGALSwapChainCreationDescription>
 {
 public:
   /// \brief This presents a rendered image to the screen.

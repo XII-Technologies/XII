@@ -3,7 +3,6 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <Foundation/Math/Size.h>
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief A special constant used to indicate that the render pass is unused.

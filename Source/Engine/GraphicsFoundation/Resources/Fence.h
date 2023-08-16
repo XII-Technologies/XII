@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
+
 #include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief This describes the fence type.
