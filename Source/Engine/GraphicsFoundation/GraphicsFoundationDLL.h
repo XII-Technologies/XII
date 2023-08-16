@@ -67,6 +67,7 @@ struct xiiGALDepthStencilStateCreationDescription;
 struct xiiGALRasterizerStateCreationDescription;
 
 class xiiGALDevice;
+class xiiGALPass;
 class xiiGALResourceBase;
 template <typename CreationDescription>
 class xiiGALResource;

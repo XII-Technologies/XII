@@ -1634,9 +1634,9 @@ class xiiGALRasterizerStateHandle
   friend class xiiGALDevice;
 };
 
-class xiiGALSamplerStateHandle
+class xiiGALSamplerHandle
 {
-  XII_DECLARE_HANDLE_TYPE(xiiGALSamplerStateHandle, xiiGAL::xii16_16Id);
+  XII_DECLARE_HANDLE_TYPE(xiiGALSamplerHandle, xiiGAL::xii16_16Id);
 
   friend class xiiGALDevice;
 };
