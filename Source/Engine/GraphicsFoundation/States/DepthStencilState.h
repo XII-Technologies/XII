@@ -68,4 +68,20 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilStateCreationDescription : p
   xiiGALStencilOperationDescription m_BackFace;                                                 ///< Identify stencil operations for the back-facing triangles.
 };
 
+/// \brief Interface that defines methods to manipulate a depth stencil state object.
+class XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilState : public xiiGALObject<xiiGALDepthStencilStateCreationDescription>
+{
+public:
+protected:
+  friend class xiiGALDevice;
+
+  xiiGALDepthStencilState(const xiiGALDepthStencilStateCreationDescription& creationDescription);
+
+  virtual ~xiiGALDepthStencilState();
+
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+};
+
 #include <GraphicsFoundation/States/Implementation/DepthStencilState_inl.h>

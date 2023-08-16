@@ -18,4 +18,11 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
+xiiGALDepthStencilState::xiiGALDepthStencilState(const xiiGALDepthStencilStateCreationDescription& creationDescription) :
+  xiiGALObject<xiiGALDepthStencilStateCreationDescription>(creationDescription)
+{
+}
+
+xiiGALDepthStencilState::~xiiGALDepthStencilState() = default;
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_DepthStencilState);
