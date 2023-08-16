@@ -171,4 +171,20 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendStateCreationDescription : public x
   xiiStaticArray<xiiGALRenderTargetBlendDescription, XII_GAL_MAX_RENDERTARGET_COUNT> m_RenderTargets;             ///< An array of render target blend descriptions that describe the blend states for each render targets at an index.
 };
 
+/// \brief Interface that defines methods to manipulate a blend state object.
+class XII_GRAPHICSFOUNDATION_DLL xiiGALBlendState : public xiiGALObject<xiiGALBlendStateCreationDescription>
+{
+public:
+protected:
+  friend class xiiGALDevice;
+
+  xiiGALBlendState(const xiiGALBlendStateCreationDescription& creationDescription);
+
+  virtual ~xiiGALBlendState();
+
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+};
+
 #include <GraphicsFoundation/States/Implementation/BlendState_inl.h>
