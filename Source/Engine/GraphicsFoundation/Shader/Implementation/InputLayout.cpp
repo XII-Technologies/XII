@@ -45,7 +45,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Shader_Implementation_InputLayout);
 
 xiiGALInputLayout::xiiGALInputLayout(const xiiGALInputLayoutCreationDescription& creationDescription) :
-  xiiGALResource<xiiGALInputLayoutCreationDescription>(creationDescription)
+  xiiGALObject<xiiGALInputLayoutCreationDescription>(creationDescription)
 {
 }
 

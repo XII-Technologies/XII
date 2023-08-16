@@ -1,7 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
-#include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief The maximum number of layout elements.
 #define XII_GAL_MAX_LAYOUT_ELEMENTS 16
@@ -98,7 +97,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayoutCreationDescription : public 
 };
 
 /// \brief Interface that defines methods to manipulate an input layout object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayout : public xiiGALResource<xiiGALInputLayoutCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayout : public xiiGALObject<xiiGALInputLayoutCreationDescription>
 {
 public:
 protected:
