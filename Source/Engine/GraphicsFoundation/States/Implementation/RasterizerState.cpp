@@ -19,4 +19,11 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
+xiiGALRasterizerState::xiiGALRasterizerState(const xiiGALRasterizerStateCreationDescription& creationDescription) :
+  xiiGALObject<xiiGALRasterizerStateCreationDescription>(creationDescription)
+{
+}
+
+xiiGALRasterizerState::~xiiGALRasterizerState() = default;
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_RasterizerState);

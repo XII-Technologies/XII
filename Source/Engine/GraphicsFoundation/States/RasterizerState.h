@@ -2,8 +2,10 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+
 /// \brief This describes the fill mode.
-/// 
+///
 /// [D3D11_FILL_MODE]: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476131(v=vs.85).aspx
 /// [D3D12_FILL_MODE]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770366(v=vs.85).aspx
 /// This enumeration determines the fill mode to use when rendering triangles and mirrors the
@@ -27,7 +29,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFillMode
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALFillMode);
 
 /// \brief This describes the cull mode.
-/// 
+///
 /// [D3D11_CULL_MODE]: https://msdn.microsoft.com/en-us/library/windows/desktop/ff476108(v=vs.85).aspx
 /// [D3D12_CULL_MODE]: https://msdn.microsoft.com/en-us/library/windows/desktop/dn770354(v=vs.85).aspx
 /// This enumeration defines which triangles are not drawn during the rasterization and mirrors
@@ -52,7 +54,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCullMode
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCullMode);
 
 /// \brief This describes the rasterize state creation description.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerCreationDescription : public xiiHashableStruct<xiiGALRasterizerCreationDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerStateCreationDescription : public xiiHashableStruct<xiiGALRasterizerStateCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
 
@@ -65,6 +67,22 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerCreationDescription : public x
   xiiInt32                m_iDepthBias             = 0;                     ///< Constant value added to the depth of a given pixel. The default is false.
   float                   m_fDepthBiasClamp        = 0.0f;                  ///< The maximum depth bias of a pixel. The default is 0.
   float                   m_fSlopeScaledDepthBias  = 0.0f;                  ///< Scalar that scales the given pixel's slope before adding to the pixel's depth. The default is 0.
+};
+
+/// \brief Interface that defines methods to manipulate a rasterizer state object.
+class XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerState : public xiiGALObject<xiiGALRasterizerStateCreationDescription>
+{
+public:
+protected:
+  friend class xiiGALDevice;
+
+  xiiGALRasterizerState(const xiiGALRasterizerStateCreationDescription& creationDescription);
+
+  virtual ~xiiGALRasterizerState();
+
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
 
 #include <GraphicsFoundation/States/Implementation/RasterizerState_inl.h>
