@@ -217,4 +217,6 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderResourceVariable);
+
 #include <GraphicsFoundation/Shader/Implementation/ShaderResourceVariable_inl.h>

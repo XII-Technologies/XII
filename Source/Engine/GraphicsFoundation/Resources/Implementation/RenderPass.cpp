@@ -4,6 +4,11 @@
 
 // clang-format off
 
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALRenderPass, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALAttachmentLoadOperation, 1)
   XII_ENUM_CONSTANT(xiiGALAttachmentLoadOperation::Load),
   XII_ENUM_CONSTANT(xiiGALAttachmentLoadOperation::Clear),

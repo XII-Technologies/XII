@@ -2,6 +2,15 @@
 
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
+// clang-format off
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALShaderByteCode, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+// clang-format on
+
 xiiGALShaderByteCode::xiiGALShaderByteCode() = default;
 
 xiiGALShaderByteCode::xiiGALShaderByteCode(const xiiArrayPtr<const xiiUInt8>& byteCode)

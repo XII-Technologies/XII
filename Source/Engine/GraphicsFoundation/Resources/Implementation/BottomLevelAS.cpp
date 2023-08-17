@@ -4,6 +4,11 @@
 
 // clang-format off
 
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALBottomLevelAS, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALRayTracingBuildASFlags, 1)
   XII_ENUM_CONSTANT(xiiGALRayTracingBuildASFlags::None),
   XII_ENUM_CONSTANT(xiiGALRayTracingBuildASFlags::AllowUpdate),

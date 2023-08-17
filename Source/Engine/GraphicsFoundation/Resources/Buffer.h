@@ -165,4 +165,6 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBuffer);
+
 #include <GraphicsFoundation/Resources/Implementation/Buffer_inl.h>

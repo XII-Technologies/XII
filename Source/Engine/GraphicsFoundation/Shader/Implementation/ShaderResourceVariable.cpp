@@ -6,6 +6,11 @@
 
 // clang-format off
 
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALShaderResourceVariable, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShaderResourceVariableType, 1)
   XII_ENUM_CONSTANT(xiiGALShaderResourceVariableType::Static),
   XII_ENUM_CONSTANT(xiiGALShaderResourceVariableType::Mutable),

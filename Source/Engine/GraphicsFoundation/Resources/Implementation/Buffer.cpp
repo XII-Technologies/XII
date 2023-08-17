@@ -4,6 +4,11 @@
 
 // clang-format off
 
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALBuffer, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALBufferMode, 1)
   XII_ENUM_CONSTANT(xiiGALBufferMode::Undefined),
   XII_ENUM_CONSTANT(xiiGALBufferMode::Formatted),

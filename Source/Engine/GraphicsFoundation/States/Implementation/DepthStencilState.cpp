@@ -4,6 +4,11 @@
 
 // clang-format off
 
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALDepthStencilState, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALStencilOperation, 1)
   XII_ENUM_CONSTANT(xiiGALStencilOperation::Undefined),
   XII_ENUM_CONSTANT(xiiGALStencilOperation::Keep),

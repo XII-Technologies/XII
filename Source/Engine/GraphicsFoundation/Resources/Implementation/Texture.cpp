@@ -4,6 +4,11 @@
 
 // clang-format off
 
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALTexture, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALMiscTextureFlags, 1)
   XII_ENUM_CONSTANT(xiiGALMiscTextureFlags::None),
   XII_ENUM_CONSTANT(xiiGALMiscTextureFlags::GenerateMips),

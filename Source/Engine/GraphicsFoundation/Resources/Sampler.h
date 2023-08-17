@@ -79,4 +79,6 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSampler);
+
 #include <GraphicsFoundation/Resources/Implementation/Sampler_inl.h>

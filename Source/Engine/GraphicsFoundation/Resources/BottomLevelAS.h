@@ -139,4 +139,6 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBottomLevelAS);
+
 #include <GraphicsFoundation/Resources/Implementation/BottomLevelAS_inl.h>

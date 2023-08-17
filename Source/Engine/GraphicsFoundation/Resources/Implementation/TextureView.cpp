@@ -4,6 +4,11 @@
 
 // clang-format off
 
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALTextureView, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALUnorderedAccessViewFlags, 1)
   XII_ENUM_CONSTANT(xiiGALUnorderedAccessViewFlags::Unspecified),
   XII_ENUM_CONSTANT(xiiGALUnorderedAccessViewFlags::Read),

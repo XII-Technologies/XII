@@ -100,4 +100,6 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALQuery);
+
 #include <GraphicsFoundation/Resources/Implementation/Query_inl.h>

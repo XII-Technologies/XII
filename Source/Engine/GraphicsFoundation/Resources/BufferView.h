@@ -50,4 +50,6 @@ protected:
   xiiGALResourceBase* m_pResource = nullptr;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBufferView);
+
 #include <GraphicsFoundation/Resources/Implementation/BufferView_inl.h>

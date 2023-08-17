@@ -2,6 +2,15 @@
 
 #include <GraphicsFoundation/Resources/BufferView.h>
 
+// clang-format off
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALBufferView, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+// clang-format on
+
 xiiGALBufferView::xiiGALBufferView(xiiGALResourceBase* pResource, const xiiGALBufferViewCreationDescription& creationDescription) :
   xiiGALResource<xiiGALBufferViewCreationDescription>(creationDescription), m_pResource(pResource)
 {

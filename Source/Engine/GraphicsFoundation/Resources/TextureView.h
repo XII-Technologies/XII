@@ -134,4 +134,6 @@ protected:
   xiiGALResourceBase* m_pResource = nullptr;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureView);
+
 #include <GraphicsFoundation/Resources/Implementation/TextureView_inl.h>

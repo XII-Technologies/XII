@@ -11,17 +11,35 @@
 /// \brief The xiiRenderDevice class is the primary interface for interactions with rendering APIs.
 /// It contains a set of (non-virtual) functions to set state, create resources etc. which rely on API specific implementations provided by protected virtual functions.
 /// Redundant state changes are prevented at the platform independent level in the non-virtual functions.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALDevice
+class XII_GRAPHICSFOUNDATION_DLL xiiGALDevice : public xiiGALObject<xiiGALGraphicsDeviceCreationDescription>
 {
 public:
+  /// \brief Initialize device.
   xiiResult Initialize();
+
+  /// \brief Shutdown device.
   xiiResult Shutdown();
 
+
+  /// \brief Begins a pipeline scope.
   void BeginPipeline(xiiStringView Name, xiiGALSwapChainHandle hSwapChain);
+
+  /// \brief Ends a pipeline scope.
   void EndPipeline(xiiGALSwapChainHandle hSwapChain);
 
+
+  /// \brief Begins a pass scope.
   xiiGALPass* BeginPass(xiiStringView Name);
-  void        EndPass(xiiGALPass* pPass);
+
+  /// \brief Ends a pass scope.
+  void EndPass(xiiGALPass* pPass);
+
+
+  /// \brief Begins a render frame.
+  void BeginFrame(const xiiUInt64 uiRenderFrame = 0U);
+
+  /// \brief Ends a render frame.
+  void EndFrame();
 
 public:
   /// \brief This creates a new blend state object.
@@ -201,7 +219,6 @@ public:
   /// \remarks The method does not flush immediate contexts, so it will only wait for commands that have been previously submitted for execution. An application should explicitly flush
   ///          the contexts using xiiGALCommandEncoder::Flush() if it needs to make sure all recorded commands are complete when the method returns.
   virtual void WaitIdle();
-
 
 public:
   xiiEvent<const xiiGALDeviceEvent&> m_Events;

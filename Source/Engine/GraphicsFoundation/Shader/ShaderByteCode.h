@@ -29,4 +29,6 @@ protected:
   xiiDynamicArray<xiiUInt8> m_Source;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderByteCode);
+
 #include <GraphicsFoundation/Shader/Implementation/ShaderByteCode_inl.h>

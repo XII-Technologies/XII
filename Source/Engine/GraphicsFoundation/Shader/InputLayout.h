@@ -112,4 +112,6 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
 
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALInputLayout);
+
 #include <GraphicsFoundation/Shader/Implementation/InputLayout_inl.h>
