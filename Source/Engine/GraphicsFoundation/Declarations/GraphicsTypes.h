@@ -1543,7 +1543,22 @@ namespace xiiGAL
   using xii16_16Id = xiiGenericId<16, 16>;
   using xii18_14Id = xiiGenericId<18, 14>;
   using xii20_12Id = xiiGenericId<20, 12>;
+  using xii24_8Id  = xiiGenericId<24, 8>;
 } // namespace xiiGAL
+
+// Command Encoder
+
+class xiiGALCommandListHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALCommandListHandle, xiiGAL::xii20_12Id);
+};
+
+class xiiGALCommandQueueHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALCommandQueueHandle, xiiGAL::xii20_12Id);
+};
+
+// Device
 
 class xiiGALDeviceHandle
 {
@@ -1553,120 +1568,112 @@ class xiiGALDeviceHandle
 class xiiGALSwapChainHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALSwapChainHandle, xiiGAL::xii16_16Id);
-
-  friend class xiiGALDevice;
 };
 
-class xiiGALShaderHandle
+// Resources
+
+class xiiGALBottomLevelASHandle
 {
-  XII_DECLARE_HANDLE_TYPE(xiiGALShaderHandle, xiiGAL::xii18_14Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALTextureHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALTextureHandle, xiiGAL::xii18_14Id);
-
-  friend class xiiGALDevice;
+  XII_DECLARE_HANDLE_TYPE(xiiGALBottomLevelASHandle, xiiGAL::xii24_8Id);
 };
 
 class xiiGALBufferHandle
 {
-  XII_DECLARE_HANDLE_TYPE(xiiGALBufferHandle, xiiGAL::xii18_14Id);
-
-  friend class xiiGALDevice;
+  XII_DECLARE_HANDLE_TYPE(xiiGALBufferHandle, xiiGAL::xii24_8Id);
 };
 
 class xiiGALBufferViewHandle
 {
-  XII_DECLARE_HANDLE_TYPE(xiiGALBufferViewHandle, xiiGAL::xii18_14Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALTextureViewHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALTextureViewHandle, xiiGAL::xii18_14Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALTopLevelASHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALTopLevelASHandle, xiiGAL::xii18_14Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALBottomLevelASHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALBottomLevelASHandle, xiiGAL::xii18_14Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALRenderPassHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALRenderPassHandle, xiiGAL::xii18_14Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALFramebufferHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALFramebufferHandle, xiiGAL::xii18_14Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALDepthStencilStateHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALDepthStencilStateHandle, xiiGAL::xii16_16Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALBlendStateHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALBlendStateHandle, xiiGAL::xii16_16Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALRasterizerStateHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALRasterizerStateHandle, xiiGAL::xii16_16Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALSamplerHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALSamplerHandle, xiiGAL::xii16_16Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALInputLayoutHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALInputLayoutHandle, xiiGAL::xii18_14Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALQueryHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALQueryHandle, xiiGAL::xii20_12Id);
-
-  friend class xiiGALDevice;
+  XII_DECLARE_HANDLE_TYPE(xiiGALBufferViewHandle, xiiGAL::xii24_8Id);
 };
 
 class xiiGALFenceHandle
 {
-  XII_DECLARE_HANDLE_TYPE(xiiGALFenceHandle, xiiGAL::xii20_12Id);
+  XII_DECLARE_HANDLE_TYPE(xiiGALFenceHandle, xiiGAL::xii24_8Id);
+};
 
-  friend class xiiGALDevice;
+class xiiGALFramebufferHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALFramebufferHandle, xiiGAL::xii24_8Id);
+};
+
+class xiiGALQueryHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALQueryHandle, xiiGAL::xii24_8Id);
+};
+
+class xiiGALRenderPassHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALRenderPassHandle, xiiGAL::xii24_8Id);
+};
+
+class xiiGALSamplerHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALSamplerHandle, xiiGAL::xii24_8Id);
+};
+
+class xiiGALTextureHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALTextureHandle, xiiGAL::xii24_8Id);
+};
+
+class xiiGALTextureViewHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALTextureViewHandle, xiiGAL::xii24_8Id);
+};
+
+class xiiGALTopLevelASHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALTopLevelASHandle, xiiGAL::xii24_8Id);
+};
+
+// Shader
+
+class xiiGALInputLayoutHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALInputLayoutHandle, xiiGAL::xii24_8Id);
+};
+
+class xiiGALShaderHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALShaderHandle, xiiGAL::xii24_8Id);
+};
+
+class xiiGALShaderBindingTableHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALShaderBindingTableHandle, xiiGAL::xii24_8Id);
+};
+
+class xiiGALShaderByteCodeHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALShaderByteCodeHandle, xiiGAL::xii24_8Id);
+};
+
+class xiiGALShaderResourceBindingHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALShaderResourceBindingHandle, xiiGAL::xii24_8Id);
+};
+
+// States
+
+class xiiGALBlendStateHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALBlendStateHandle, xiiGAL::xii24_8Id);
+};
+
+class xiiGALDepthStencilStateHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALDepthStencilStateHandle, xiiGAL::xii24_8Id);
+};
+
+class xiiGALPipelineStateHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALPipelineStateHandle, xiiGAL::xii24_8Id);
+};
+
+class xiiGALRasterizerStateHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALRasterizerStateHandle, xiiGAL::xii24_8Id);
 };
 
 namespace xiiGAL
