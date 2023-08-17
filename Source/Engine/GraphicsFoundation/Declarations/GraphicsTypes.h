@@ -1613,6 +1613,13 @@ class xiiGALRenderPassHandle
   friend class xiiGALDevice;
 };
 
+class xiiGALFramebufferHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALFramebufferHandle, xiiGAL::xii18_14Id);
+
+  friend class xiiGALDevice;
+};
+
 class xiiGALDepthStencilStateHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALDepthStencilStateHandle, xiiGAL::xii16_16Id);
