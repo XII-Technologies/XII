@@ -9,11 +9,11 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALSampler, xiiNoBase, 1, xiiRTTINoAllocator)
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALSamplerFlags, 1)
-  XII_ENUM_CONSTANT(xiiGALSamplerFlags::None),
-  XII_ENUM_CONSTANT(xiiGALSamplerFlags::Subsampled),
-  XII_ENUM_CONSTANT(xiiGALSamplerFlags::SubsampledCoarseReconstruction),
-XII_END_STATIC_REFLECTED_ENUM;
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSamplerFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALSamplerFlags::None),
+  XII_BITFLAGS_CONSTANT(xiiGALSamplerFlags::Subsampled),
+  XII_BITFLAGS_CONSTANT(xiiGALSamplerFlags::SubsampledCoarseReconstruction),
+XII_END_STATIC_REFLECTED_BITFLAGS;
 
 // clang-format on
 

@@ -9,14 +9,14 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALBottomLevelAS, xiiNoBase, 1, xiiRTTINoAllo
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALRayTracingBuildASFlags, 1)
-  XII_ENUM_CONSTANT(xiiGALRayTracingBuildASFlags::None),
-  XII_ENUM_CONSTANT(xiiGALRayTracingBuildASFlags::AllowUpdate),
-  XII_ENUM_CONSTANT(xiiGALRayTracingBuildASFlags::AllowCompaction),
-  XII_ENUM_CONSTANT(xiiGALRayTracingBuildASFlags::PreferFastTrace),
-  XII_ENUM_CONSTANT(xiiGALRayTracingBuildASFlags::PreferFastBuild),
-  XII_ENUM_CONSTANT(xiiGALRayTracingBuildASFlags::LowMemory),
-XII_END_STATIC_REFLECTED_ENUM;
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALRayTracingBuildASFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::None),
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::AllowUpdate),
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::AllowCompaction),
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::PreferFastTrace),
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::PreferFastBuild),
+  XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::LowMemory),
+XII_END_STATIC_REFLECTED_BITFLAGS;
 
 // clang-format on
 

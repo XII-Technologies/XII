@@ -9,13 +9,13 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALTexture, xiiNoBase, 1, xiiRTTINoAllocator)
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALMiscTextureFlags, 1)
-  XII_ENUM_CONSTANT(xiiGALMiscTextureFlags::None),
-  XII_ENUM_CONSTANT(xiiGALMiscTextureFlags::GenerateMips),
-  XII_ENUM_CONSTANT(xiiGALMiscTextureFlags::Memoryless),
-  XII_ENUM_CONSTANT(xiiGALMiscTextureFlags::SparseAlias),
-  XII_ENUM_CONSTANT(xiiGALMiscTextureFlags::Subsampled),
-XII_END_STATIC_REFLECTED_ENUM;
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALMiscTextureFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::None),
+  XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::GenerateMips),
+  XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::Memoryless),
+  XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::SparseAlias),
+  XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::Subsampled),
+XII_END_STATIC_REFLECTED_BITFLAGS;
 
 // clang-format on
 

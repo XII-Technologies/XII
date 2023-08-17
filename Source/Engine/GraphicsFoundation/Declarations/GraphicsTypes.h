@@ -1390,15 +1390,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceDimensionCapabilityFlags
 
   enum Enum : StorageType
   {
-    None             = 0U,                                             ///< The device does not support any resources for this format.
-    Buffer           = 1 << xiiGALResourceDimension::Buffer,           ///< Indicates if the device supports buffer resources for a particular texture format.
-    Texture1D        = 1 << xiiGALResourceDimension::Texture1D,        ///< Indicates if the device supports 1D textures for a particular texture format.
-    Texture1DArray   = 1 << xiiGALResourceDimension::Texture1DArray,   ///< Indicates if the device supports 1D texture arrays for a particular texture format.
-    Texture2D        = 1 << xiiGALResourceDimension::Texture2D,        ///< Indicates if the device supports 2D textures for a particular texture format.
-    Texture2DArray   = 1 << xiiGALResourceDimension::Texture2DArray,   ///< Indicates if the device supports 2D texture arrays for a particular texture format.
-    Texture3D        = 1 << xiiGALResourceDimension::Texture3D,        ///< Indicates if the device supports 3D textures for a particular texture format.
-    TextureCube      = 1 << xiiGALResourceDimension::TextureCube,      ///< Indicates if the device supports cube textures for a particular texture format.
-    TextureCubeArray = 1 << xiiGALResourceDimension::TextureCubeArray, ///< Indicates if the device supports cube texture arrays for a particular texture format.
+    None             = 0U,                                                 ///< The device does not support any resources for this format.
+    Buffer           = XII_BIT(xiiGALResourceDimension::Buffer),           ///< Indicates if the device supports buffer resources for a particular texture format.
+    Texture1D        = XII_BIT(xiiGALResourceDimension::Texture1D),        ///< Indicates if the device supports 1D textures for a particular texture format.
+    Texture1DArray   = XII_BIT(xiiGALResourceDimension::Texture1DArray),   ///< Indicates if the device supports 1D texture arrays for a particular texture format.
+    Texture2D        = XII_BIT(xiiGALResourceDimension::Texture2D),        ///< Indicates if the device supports 2D textures for a particular texture format.
+    Texture2DArray   = XII_BIT(xiiGALResourceDimension::Texture2DArray),   ///< Indicates if the device supports 2D texture arrays for a particular texture format.
+    Texture3D        = XII_BIT(xiiGALResourceDimension::Texture3D),        ///< Indicates if the device supports 3D textures for a particular texture format.
+    TextureCube      = XII_BIT(xiiGALResourceDimension::TextureCube),      ///< Indicates if the device supports cube textures for a particular texture format.
+    TextureCubeArray = XII_BIT(xiiGALResourceDimension::TextureCubeArray), ///< Indicates if the device supports cube texture arrays for a particular texture format.
 
     ENUM_COUNT = 9U,
 

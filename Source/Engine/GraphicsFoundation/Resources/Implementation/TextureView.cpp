@@ -9,17 +9,17 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALTextureView, xiiNoBase, 1, xiiRTTINoAlloca
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALUnorderedAccessViewFlags, 1)
-  XII_ENUM_CONSTANT(xiiGALUnorderedAccessViewFlags::Unspecified),
-  XII_ENUM_CONSTANT(xiiGALUnorderedAccessViewFlags::Read),
-  XII_ENUM_CONSTANT(xiiGALUnorderedAccessViewFlags::Write),
-  XII_ENUM_CONSTANT(xiiGALUnorderedAccessViewFlags::ReadWrite),
-XII_END_STATIC_REFLECTED_ENUM;
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALUnorderedAccessViewFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::Unspecified),
+  XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::Read),
+  XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::Write),
+  XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::ReadWrite),
+XII_END_STATIC_REFLECTED_BITFLAGS;
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALTextureViewFlags, 1)
-  XII_ENUM_CONSTANT(xiiGALTextureViewFlags::None),
-  XII_ENUM_CONSTANT(xiiGALTextureViewFlags::AllowMipGeneration),
-XII_END_STATIC_REFLECTED_ENUM;
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALTextureViewFlags, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALTextureViewFlags::None),
+  XII_BITFLAGS_CONSTANT(xiiGALTextureViewFlags::AllowMipGeneration),
+XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALTextureComponentSwizzle, 1)
   XII_ENUM_CONSTANT(xiiGALTextureComponentSwizzle::Identity),
