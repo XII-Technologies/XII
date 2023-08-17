@@ -12,8 +12,9 @@ public:
   virtual void Present(xiiUInt32 uiSyncInterval) = 0;
 
   /// \brief This changes the swap chain size.
-  /// \param newSize The new logical swap chain width and height (not accounting for the pre-transform), in pixels.
-  /// \param newTransform The new surface transform.
+  /// 
+  /// \param newSize      - The new logical swap chain width and height (not accounting for the pre-transform), in pixels.
+  /// \param newTransform - newTransform The new surface transform.
   ///
   /// \note When resizing non-primary swap chains, the engine unbinds the swap chain buffers from the output.
   virtual void Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) = 0;

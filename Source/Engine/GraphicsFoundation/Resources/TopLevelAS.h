@@ -65,7 +65,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALTopLevelAS : public xiiGALResource<xiiGAL
 public:
   /// \brief This returns the instance description that can be used in the shader binding table.
   ///
-  /// \param sName The instance name that is specified in the xiiGALTLASBuildInstanceData.
+  /// \param sName - The instance name that is specified in the xiiGALTLASBuildInstanceData.
   ///
   /// \return The top level acceleration structure instance description, see xiiGALTopLevelASInstanceDescription. If the instance does not exist, then the contribution to hit group index and instance index are set to xiiInvalidIndex.
   ///

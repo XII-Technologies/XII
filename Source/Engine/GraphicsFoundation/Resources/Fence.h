@@ -46,7 +46,7 @@ public:
 
   /// \brief This sets the fence to the specified value.
   ///
-  /// \param uiValue The new value the fence should reach. The value must be greater than the current value of the fence.
+  /// \param uiValue - The new value the fence should reach. The value must be greater than the current value of the fence.
   ///
   /// \note Fence value will be changed immediately on the CPU. Use device to enqueue a signal command that will change the value on the GPU after all previously submitted commands are complete.
   ///
@@ -55,7 +55,7 @@ public:
 
   /// \brief This waits until the fence reaches or exceeds the specified value on the host.
   ///
-  /// \param uiValue The value that the fence is waiting to reach.
+  /// \param uiValue - The value that the fence is waiting to reach.
   ///
   /// \note The method blocks the execution of the calling thread until the wait is complete.
   virtual void Wait(xiiUInt64 uiValue) = 0;

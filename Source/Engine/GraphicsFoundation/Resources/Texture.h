@@ -3,7 +3,7 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/Descriptors.h>
-#include <GraphicsFoundation/Resources/Resource.h>
+#include <GraphicsFoundation/Resources/TextureView.h>
 
 /// \brief This describes the miscellaneous texture flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMiscTextureFlags
@@ -16,13 +16,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMiscTextureFlags
     GenerateMips = XII_BIT(0), ///< Allow automatic mipmap generation.
                                ///<
                                ///< \note The texture must be created with the xiiGALBindFlags::RenderTarget bind flag.
-    Memoryless = XII_BIT(1),   ///< The texture will be used as a transient framebuffer attachment.
-                               ///<
-                               ///< \note Memoryless textures may only be used within a render pass in a framebuffer; the corresponding sub pass load operation must be Clear or Discard, and the sub pass store operation must be Discard.
-    SparseAlias = XII_BIT(2),  ///< For sparse textures, allow binding the same memory range in different texture regions or in different sparse textures.
-    Subsampled  = XII_BIT(3),  ///< The texture will be used as an intermediate render target for rendering with texture-based variable rate shading. This requires the xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget capability.
-                               ///<
-                               ///< \note Copy operations are not supported for subsampled textures.
+
+    Memoryless = XII_BIT(1), ///< The texture will be used as a transient framebuffer attachment.
+                             ///<
+                             ///< \note Memoryless textures may only be used within a render pass in a framebuffer; the corresponding sub pass load operation must be Clear or Discard, and the sub pass store operation must be Discard.
+
+    SparseAlias = XII_BIT(2), ///< For sparse textures, allow binding the same memory range in different texture regions or in different sparse textures.
+    Subsampled  = XII_BIT(3), ///< The texture will be used as an intermediate render target for rendering with texture-based variable rate shading. This requires the xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget capability.
+                              ///<
+                              ///< \note Copy operations are not supported for subsampled textures.
 
     ENUM_COUNT = 5U,
 
@@ -98,18 +100,20 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureProperties : public xiiHash
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt64 m_uiAddressSpaceSize = 0U;                                            ///< The size of the texture's virtual address space. The default is 0.
-  xiiUInt64 m_uiMipTailOffset    = 0U;                                            ///< Specifies where to bind the mip tail memory. Reserved for internal use.
-  xiiUInt64 m_uiMipTailStride    = 0U;                                            ///< Specifies how to calculate the mip tail offset for 2D array texture. Reserved for internal use.
-  xiiUInt64 m_uiMipTailSize      = 0U;                                            ///< Specifies the mip tail size in bytes. The default is 0.
-                                                                                  ///<
-                                                                                  ///< \note A single mip tail for a 2D array may exceed the 32-bit limit.
-  xiiUInt32                     m_uiFirstMipInTail = 0U;                          ///< The first mip level in the mip tail that is packed as a whole into one or multiple memory blocks. The default is 0.
-  xiiStaticArray<xiiUInt32, 3U> m_TailSize;                                       ///< Specifies the dimension of a tile packed into a single memory block.
-  xiiUInt32                     m_uiBlockSize = 0U;                               ///< Size of the sparse memory block, in bytes. The default is 0.
-                                                                                  ///<
-                                                                                  ///< \remarks The offset in the packed mip tail, memory offset and memory size that are used in sparse memory binding command must be multiples of the block size.
-                                                                                  ///<          If the xiiGALSparseTextureFlags::NonStandardBlockSize flag is not set in the Flags member, the block size is equal to xiiGALSparseResourceProperties::m_uiStandardBlockSize.
+  xiiUInt64 m_uiAddressSpaceSize = 0U; ///< The size of the texture's virtual address space. The default is 0.
+  xiiUInt64 m_uiMipTailOffset    = 0U; ///< Specifies where to bind the mip tail memory. Reserved for internal use.
+  xiiUInt64 m_uiMipTailStride    = 0U; ///< Specifies how to calculate the mip tail offset for 2D array texture. Reserved for internal use.
+  xiiUInt64 m_uiMipTailSize      = 0U; ///< Specifies the mip tail size in bytes. The default is 0.
+                                       ///<
+                                       ///< \note A single mip tail for a 2D array may exceed the 32-bit limit.
+
+  xiiUInt32                     m_uiFirstMipInTail = 0U; ///< The first mip level in the mip tail that is packed as a whole into one or multiple memory blocks. The default is 0.
+  xiiStaticArray<xiiUInt32, 3U> m_TailSize;              ///< Specifies the dimension of a tile packed into a single memory block.
+  xiiUInt32                     m_uiBlockSize = 0U;      ///< Size of the sparse memory block, in bytes. The default is 0.
+                                                         ///<
+                                                         ///< \remarks The offset in the packed mip tail, memory offset and memory size that are used in sparse memory binding command must be multiples of the block size.
+                                                         ///<          If the xiiGALSparseTextureFlags::NonStandardBlockSize flag is not set in the Flags member, the block size is equal to xiiGALSparseResourceProperties::m_uiStandardBlockSize.
+
   xiiBitflags<xiiGALSparseTextureFlags> m_Flags = xiiGALSparseTextureFlags::None; ///< Flags that describe additional packing modes. The default is None.
 };
 
@@ -117,6 +121,34 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureProperties : public xiiHash
 class XII_GRAPHICSFOUNDATION_DLL xiiGALTexture : public xiiGALResource<xiiGALTextureCreationDescription>
 {
 public:
+  /// \brief This creates a new texture view.
+  ///
+  /// \param viewDescription - The view description. see xiiGALTextureViewCreationDescription for details.
+  ///
+  /// \return The handle to the texture view
+  ///
+  /// \remarks To create a shader resource view addressing the entire texture, set only xiiGALTextureViewCreationDescription::m_ViewType member of the viewDescription parameter to xiiGALTextureViewType::ShaderResource and leave all other
+  ///          members in their default values. Using the same method, you can create render target or depth stencil view addressing the largest mip level.\n
+  ///          If texture view format is xiiGALTextureFormat::Unknown, the view format will match the texture format.\n
+  ///          If texture view type is xiiGALTextureViewType::Undefined, the type will match the texture type.\n
+  ///          If the number of mip levels is 0, and the view type is shader resource, the view will address all mip levels. For other view types it will address one mip level.\n
+  ///          If the number of slices is 0, all slices from m_uiFirstArraySlice or m_uiFirstDepthSlice will be referenced by the view.
+  ///          For non-array textures, the only allowed values for the number of slices are 0 and 1.\n
+  ///          Texture view will contain strong reference to the texture, so the texture will not be destroyed until all views are released.\n
+  ///          The function calls AddRef() for the created interface, so it must be released by a call to ReleaseRef() when it is no longer needed.
+  virtual xiiGALTextureViewHandle CreateView(const xiiGALTextureViewCreationDescription& viewDescription) = 0;
+
+  /// \brief This returns the handle of the default view.
+  ///
+  /// \param viewType - The type of the requested view. See xiiGALTextureViewType.
+  ///
+  /// \return The handle to the buffer view.
+  ///
+  /// \remarks Default views are only created for structured and raw buffers. As for formatted buffers the view format is unknown at buffer initialization time, no default views are created.
+  ///
+  /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
+  virtual xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType) = 0;
+
   /// \brief This sets the texture usage state.
   ///
   /// \note This method does not perform state transition, but resets the internal texture state to the given value.

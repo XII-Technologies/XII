@@ -2,7 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Resources/Resource.h>
+#include <GraphicsFoundation/Resources/BufferView.h>
 
 /// \brief This describes the buffer access mode.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferMode
@@ -90,6 +90,28 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseBufferProperties : public xiiHasha
 class XII_GRAPHICSFOUNDATION_DLL xiiGALBuffer : public xiiGALResource<xiiGALBufferCreationDescription>
 {
 public:
+  /// \brief This creates a new buffer view.
+  ///
+  /// \param viewDescription - The view description. see xiiGALBufferViewCreationDescription for details.
+  ///
+  /// \return The handle to the buffer view
+  ///
+  /// \remarks To create a view addressing the entire buffer, set only xiiGALBufferViewCreationDescription::m_ViewType member of the ViewDesc structure and leave all other members in their default values.
+  ///          The buffer view will contain strong reference to the buffer, so the buffer will not be destroyed until all views are released.
+  ///          The function calls AddRef() for the created interface, so it must be released by a call to ReleaseRef() when it is no longer needed.
+  virtual xiiGALBufferViewHandle CreateView(const xiiGALBufferViewCreationDescription& viewDescription) = 0;
+
+  /// \brief This returns the handle of the default view.
+  ///
+  /// \param viewType - The type of the requested view. See xiiGALBufferViewType.
+  ///
+  /// \return The handle to the buffer view.
+  ///
+  /// \remarks Default views are only created for structured and raw buffers. As for formatted buffers the view format is unknown at buffer initialization time, no default views are created.
+  ///
+  /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
+  virtual xiiGALBufferViewHandle GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType) = 0;
+
   /// \brief This sets the buffer usage state.
   ///
   /// \note This method does not perform state transition, but resets the internal buffer state to the given value.
@@ -108,8 +130,8 @@ public:
 
   /// \brief This flushes the specified range of non-coherent memory from the host cache to make it available to the GPU.
   ///
-  /// \param uiStartOffset The offset in bytes from the beginning of the buffer to the start of the memory range to flush.
-  /// \param uiSize The size in bytes of the memory range to flush.
+  /// \param uiStartOffset - The offset in bytes from the beginning of the buffer to the start of the memory range to flush.
+  /// \param uiSize        - The size in bytes of the memory range to flush.
   ///
   /// This method should only be used for persistently-mapped buffers that do not report the xiiGALMemoryProperties::HostCoherent property. After an application modifies
   /// a mapped memory range on the CPU, it must flush the range to make it available to the GPU.
@@ -119,8 +141,8 @@ public:
 
   /// \brief This invalidates the specified range of non-coherent memory modified by the GPU to make it visible to the CPU.
   ///
-  /// \param uiStartOffset The offset in bytes from the beginning of the buffer to the start of the memory to invalidate.
-  /// \param uiSize The size in bytes of the memory range to invalidate.
+  /// \param uiStartOffset - The offset in bytes from the beginning of the buffer to the start of the memory to invalidate.
+  /// \param uiSize        - The size in bytes of the memory range to invalidate.
   ///
   /// This method should only be used for persistently-mapped buffers that do not report the xiiGALMemoryProperties::HostCoherent property. After an application modifies
   /// a mapped memory range on the CPU, it must invalidate the range to make it visible to the CPU.

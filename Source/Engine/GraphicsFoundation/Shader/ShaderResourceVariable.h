@@ -143,32 +143,31 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariable : public xiiGALObj
 public:
   /// \brief This binds a resource to the variable.
   ///
-  /// \param pResource A pointer to the resource to bind.
-  /// \param flags Flags. See xiiGALSetShaderResourceFlags.
+  /// \param pResource - A pointer to the resource to bind.
+  /// \param flags     - Flags. See xiiGALSetShaderResourceFlags.
   ///
   /// \remark The method performs run-time correctness checks. For instance, shader resource view cannot be assigned to a constant buffer variable.
   virtual void Set(xiiGALResourceBase* pResource, xiiBitflags<xiiGALSetShaderResourceFlags> flags = xiiGALSetShaderResourceFlags::None) = 0;
 
   /// \brief This binds a resource array to the variable.
   ///
-  /// \param ppResources A pointer to the array of resources.
-  /// \param uiFirstElement The first array element to set.
-  /// \param uiElementCount The number of resources in the ppResources array.
-  /// \param flags Flags. See xiiGALSetShaderResourceFlags.
+  /// \param ppResources    - A pointer to the array of resources.
+  /// \param uiFirstElement - The first array element to set.
+  /// \param uiElementCount - The number of resources in the ppResources array.
+  /// \param flags          - Flags. See xiiGALSetShaderResourceFlags.
   ///
   /// \remark The method performs run-time correctness checks. For instance, shader resource view cannot be assigned to a constant buffer variable.
   virtual void SetArray(xiiGALResourceBase* const* ppResources, xiiUInt32 uiFirstElement, xiiUInt32 uiElementCount, xiiBitflags<xiiGALSetShaderResourceFlags> flags = xiiGALSetShaderResourceFlags::None) = 0;
 
   /// \brief This binds a specified constant buffer range to the variable.
   ///
-  /// \param pResource The pointer to the resource.
-  /// \param uiOffset The offset in bytes to the start of the buffer range to bind.
-  /// \param uiSize The size in bytes of the buffer range to bind.
-  /// \param uiArrayIndex For array variables, the index of the array element.
-  /// \param flags Flags. See xiiGALSetShaderResourceFlags.
+  /// \param pResource    - The pointer to the resource.
+  /// \param uiOffset     - The offset in bytes to the start of the buffer range to bind.
+  /// \param uiSize       - The size in bytes of the buffer range to bind.
+  /// \param uiArrayIndex - For array variables, the index of the array element.
+  /// \param              - flags Flags. See xiiGALSetShaderResourceFlags.
   ///
   /// \remarks This method is only allowed for constant buffers. If dynamic offset is further set by SetBufferOffset() method, it is added to the base offset set by this method.
-  ///
   ///          The method resets dynamic offset previously set for this variable to zero.
   ///
   /// \warning The Offset must be an integer multiple of m_uiConstantBufferOffsetAlignment member specified by the device limits xiiGALDeviceLimits.
@@ -176,8 +175,8 @@ public:
 
   /// \brief This sets the constant or structured buffer dynamic offset.
   ///
-  /// \param uiOffset The additional offset in bytes, that is added to the base offset (see remarks). Only 32-bit offsets are supported.
-  /// \param uiArrayIndex For array variables, the index of the array element.
+  /// \param uiOffset     - The additional offset in bytes, that is added to the base offset (see remarks). Only 32-bit offsets are supported.
+  /// \param uiArrayIndex - For array variables, the index of the array element.
   ///
   /// \remarks This method is only allowed for constant or structured buffer variables that were not created with xiiGALShaderVariableFlags::NoDynamicBuffers or xiiGALPipelineResourceFlags::NoDynamicBuffers.
   ///          The method is also not allowed for static resource variables.

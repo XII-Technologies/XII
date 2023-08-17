@@ -76,9 +76,9 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALQuery : public xiiGALResource<xiiGALQuery
 public:
   /// \brief This retrieves the query data.
   ///
-  /// \param pData The pointer to the query data structure. This must be a pointer to one of Occlusion, BinaryOcclusion, Timestamp, PipelineStatistics, and Duration structures. An application may provide nullptr to only check the query status.
-  /// \param uiDataSize The size of the data structure.
-  /// \param bAutoInvalidate Whether to invalidate the query if the results are available and release associated resources. An application should typically always invalidate completed queries unless it needs to retrieve the same data through GetData() multiple times. A query will not be invalidated if pData is nullptr.
+  /// \param pData           - The pointer to the query data structure. This must be a pointer to one of Occlusion, BinaryOcclusion, Timestamp, PipelineStatistics, and Duration structures. An application may provide nullptr to only check the query status.
+  /// \param uiDataSize      - The size of the data structure.
+  /// \param bAutoInvalidate - Whether to invalidate the query if the results are available and release associated resources. An application should typically always invalidate completed queries unless it needs to retrieve the same data through GetData() multiple times. A query will not be invalidated if pData is nullptr.
   ///
   /// \return True if the query data is available, false otherwise.
   ///
