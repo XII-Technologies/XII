@@ -206,18 +206,6 @@ function(xii_set_common_target_definitions TARGET_NAME)
 	string(TOUPPER ${TARGET_NAME} PROJECT_NAME_UPPER)
 	target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_BUILDING_${PROJECT_NAME_UPPER}_LIB)
 
-	if (XII_BUILD_DILIGENT)
-		target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_DILIGENT_SUPPORT)
-	endif()
-
-    if (XII_BUILD_OPENGL)
-        target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_OPENGL_SUPPORT)
-    endif()
-
-    if (XII_BUILD_D3D11)
-		target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_D3D11_SUPPORT)
-    endif()
-
     if (XII_BUILD_D3D12)
 		target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_D3D12_SUPPORT)
     endif()
@@ -225,7 +213,7 @@ function(xii_set_common_target_definitions TARGET_NAME)
     if (XII_BUILD_VULKAN)
 		target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_VULKAN_SUPPORT)
     endif()
-	
+
 	# On Windows, make sure to use the Unicode API
 	target_compile_definitions(${TARGET_NAME} PUBLIC UNICODE _UNICODE)
 endfunction()
@@ -341,15 +329,15 @@ endfunction()
 # ## xii_glob_source_files(<path-to-folder> <out-files>)
 # #####################################
 function(xii_glob_source_files ROOT_DIR RESULT_ALL_SOURCES)
-	file(GLOB_RECURSE RELEVANT_FILES 
-		"${ROOT_DIR}/*.cpp" 
-		"${ROOT_DIR}/*.cxx" 
-		"${ROOT_DIR}/*.cc" 
-		"${ROOT_DIR}/*.h" 
-		"${ROOT_DIR}/*.hpp" 
-		"${ROOT_DIR}/*.inl" 
-		"${ROOT_DIR}/*.c" 
-		"${ROOT_DIR}/*.cs" 
+	file(GLOB_RECURSE RELEVANT_FILES
+		"${ROOT_DIR}/*.cpp"
+		"${ROOT_DIR}/*.cxx"
+		"${ROOT_DIR}/*.cc"
+		"${ROOT_DIR}/*.h"
+		"${ROOT_DIR}/*.hpp"
+		"${ROOT_DIR}/*.inl"
+		"${ROOT_DIR}/*.c"
+		"${ROOT_DIR}/*.cs"
 		"${ROOT_DIR}/*.ui"
 		"${ROOT_DIR}/*.qrc"
 		"${ROOT_DIR}/*.def"

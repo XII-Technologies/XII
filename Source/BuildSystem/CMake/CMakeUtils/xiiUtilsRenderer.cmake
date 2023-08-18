@@ -3,7 +3,7 @@
 # #####################################
 
 macro(xii_requires_renderer)
-	xii_requires_one_of(XII_BUILD_D3D11 XII_BUILD_D3D12 XII_BUILD_VULKAN)
+	xii_requires_one_of(XII_BUILD_D3D12 XII_BUILD_VULKAN)
 endmacro()
 
 # #####################################
@@ -12,18 +12,17 @@ endmacro()
 # #####################################
 
 function(xii_add_renderers TARGET_NAME)
-    if (XII_BUILD_D3D11)
+    if (XII_BUILD_D3D12)
 		target_link_libraries(${TARGET_NAME}
 			PRIVATE
-			RendererDX11
+			GraphicsD3D12
 		)
-		xii_link_target_d3d11(${TARGET_NAME})
 	endif()
 
-	if (XII_BUILD_DILIGENT)
+	if (XII_BUILD_Vulkan)
 		target_link_libraries(${TARGET_NAME}
 			PRIVATE
-			RendererDiligent
+			GraphicsVulkan
 		)
 	endif()
 

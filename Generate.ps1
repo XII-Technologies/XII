@@ -1,4 +1,4 @@
-param 
+param
 (
     [Parameter(Mandatory = $True)] [ValidateSet('Win64vs2019', 'Uwp64vs2019', 'Win64vs2022', 'Uwp64vs2022')][string] $Target,
     [switch]$NoUnityBuild,
@@ -14,7 +14,7 @@ if ($NoSubmoduleUpdate -eq $False) {
     Write-Host "Current commit: $CURRENT_COMMIT"
 
     $UPDATE_SUBMODULES = $True
-    $LAST_UPDATE_FILE = "$PSScriptRoot\Data\Content\AssetCache\LastSubmoduleUpdate.txt" 
+    $LAST_UPDATE_FILE = "$PSScriptRoot\Data\Content\AssetCache\LastSubmoduleUpdate.txt"
 
     if (Test-Path $LAST_UPDATE_FILE -PathType Leaf -ErrorAction SilentlyContinue) {
         $LAST_COMMIT = Get-Content -Path $LAST_UPDATE_FILE
@@ -50,6 +50,9 @@ else {
 if ($SolutionName -ne "") {
     $CMAKE_ARGS += "-XII_SOLUTION_NAME:STRING='$SolutionName'"
 }
+
+$CMAKE_ARGS += "-DXII_BUILD_D3D12:BOOL=ON"
+$CMAKE_ARGS += "-DXII_BUILD_VULKAN:BOOL=ON"
 
 $CMAKE_ARGS += "-G"
 
