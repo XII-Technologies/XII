@@ -2,8 +2,17 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 
+// clang-format off
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALCommandList, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+}
+XII_END_STATIC_REFLECTED_TYPE;
+
+// clang-format on
+
 xiiGALCommandList::xiiGALCommandList(const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALResource<xiiGALCommandListCreationDescription>(creationDescription)
+  xiiGALObject<xiiGALCommandListCreationDescription>(creationDescription)
 {
 }
 
