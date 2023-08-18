@@ -20,5 +20,9 @@ XII_FORCE_INLINE xiiGALShaderCreationDescription::~xiiGALShaderCreationDescripti
 
 XII_FORCE_INLINE bool xiiGALShaderCreationDescription::HasByteCodeForStage(xiiBitflags<xiiGALShaderStage> stage) const
 {
-  return m_ByteCodes[stage] != nullptr && m_ByteCodes[stage]->IsValid();
+  if (stage == xiiGALShaderStage::Unknown)
+    return false;
+
+  const xiiUInt32 uiStageIndex = xiiGALShaderStage::GetStageIndex(stage);
+  return m_ByteCodes[uiStageIndex] != nullptr && m_ByteCodes[uiStageIndex]->IsValid();
 }

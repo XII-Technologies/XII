@@ -164,7 +164,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderStage
     Callable        = XII_BIT(13), ///< Callable shader.
     Tile            = XII_BIT(14), ///< Tile shader (Only for Metal graphics device).
 
-    ENUM_COUNT = 16U,
+    ENUM_COUNT = 15U,
 
     AllGraphics   = Vertex | Pixel | Geometry | Hull | Domain,                                        ///< All graphics pipeline shader stages.
     AllMesh       = Amplification | Mesh | Pixel,                                                     ///< All mesh shading pipeline stages.
@@ -195,6 +195,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderStage
     StorageType AllMesh : 1;
     StorageType AllRayTracing : 1;
   };
+
+  /// \brief Retrieves the shader stage index of a single shader stage.
+  static xiiUInt32 GetStageIndex(xiiBitflags<xiiGALShaderStage> stage);
 };
 
 XII_DECLARE_FLAGS_OPERATORS(xiiGALShaderStage);

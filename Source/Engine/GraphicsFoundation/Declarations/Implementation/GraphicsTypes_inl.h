@@ -1,5 +1,50 @@
 
 // static
+XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderStage::GetStageIndex(xiiBitflags<xiiGALShaderStage> stage)
+{
+  // \todo Assert that a single shader stage is set.
+  XII_ASSERT_DEV(!stage.IsNoFlagSet() && !stage.IsAnyFlagSet(), "Expected a single shader stage.");
+
+  switch (stage.GetValue())
+  {
+    case xiiGALShaderStage::Vertex:
+      return 0U;
+    case xiiGALShaderStage::Pixel:
+      return 1U;
+    case xiiGALShaderStage::Geometry:
+      return 2U;
+    case xiiGALShaderStage::Hull:
+      return 3U;
+    case xiiGALShaderStage::Domain:
+      return 4U;
+    case xiiGALShaderStage::Compute:
+      return 5U;
+    case xiiGALShaderStage::Amplification:
+      return 6U;
+    case xiiGALShaderStage::Mesh:
+      return 7U;
+    case xiiGALShaderStage::RayGeneration:
+      return 8U;
+    case xiiGALShaderStage::RayMiss:
+      return 9U;
+    case xiiGALShaderStage::RayClosestHit:
+      return 10U;
+    case xiiGALShaderStage::RayAnyHit:
+      return 11U;
+    case xiiGALShaderStage::RayIntersection:
+      return 12U;
+    case xiiGALShaderStage::Callable:
+      return 13U;
+    case xiiGALShaderStage::Tile:
+      return 14U;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return xiiInvalidIndex;
+}
+
+// static
 XII_ALWAYS_INLINE xiiUInt32 xiiGALTextureFormat::GetBitsPerElement(xiiEnum<xiiGALTextureFormat> format)
 {
   return s_BitsPerElement[format];
