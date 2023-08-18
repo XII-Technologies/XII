@@ -19,7 +19,7 @@ function(xii_add_renderers TARGET_NAME)
 		)
 	endif()
 
-	if (XII_BUILD_Vulkan)
+	if (XII_BUILD_VULKAN)
 		target_link_libraries(${TARGET_NAME}
 			PRIVATE
 			GraphicsVulkan
