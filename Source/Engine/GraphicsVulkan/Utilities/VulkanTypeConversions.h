@@ -2,6 +2,8 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+#include <GraphicsFoundation/States/BlendState.h>
+
 #include <vulkan/vulkan.hpp>
 
 XII_DEFINE_AS_POD_TYPE(vk::PresentModeKHR);
@@ -22,6 +24,10 @@ public:
   {
     return static_cast<typename T::MaskType>(value);
   }
+
+  static vk::BlendOp     GetVkBlendOp(xiiEnum<xiiGALBlendOperation> e);
+  static vk::BlendFactor GetVkBlendFactor(xiiEnum<xiiGALBlendFactor> e);
+  static vk::LogicOp     GetVkLogicOp(xiiEnum<xiiGALLogicOperation> e);
 };
 
-#include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
+#include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

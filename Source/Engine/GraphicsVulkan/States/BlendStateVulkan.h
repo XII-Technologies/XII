@@ -4,10 +4,19 @@
 
 #include <GraphicsFoundation/States/BlendState.h>
 
-/// \brief Interface that defines methods to manipulate a blend state object.
+namespace vk
+{
+  struct PipelineColorBlendStateCreateInfo;
+  struct PipelineColorBlendAttachmentState;
+} // namespace vk
+
+XII_DEFINE_AS_POD_TYPE(vk::PipelineColorBlendAttachmentState);
+
 class XII_GRAPHICSVULKAN_DLL xiiGALBlendStateVulkan : xiiGALBlendState
 {
 public:
+  XII_ALWAYS_INLINE const vk::PipelineColorBlendStateCreateInfo* GetBlendState() const;
+
 protected:
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
@@ -19,6 +28,10 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
+
+protected:
+  vk::PipelineColorBlendStateCreateInfo                                                 m_BlendState = {};
+  xiiStaticArray<vk::PipelineColorBlendAttachmentState, XII_GAL_MAX_RENDERTARGET_COUNT> m_BlendAttachmentState;
 };
 
 #include <GraphicsVulkan/States/Implementation/BlendStateVulkan_inl.h>
