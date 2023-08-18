@@ -3,6 +3,7 @@
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
 #include <GraphicsFoundation/States/BlendState.h>
+#include <GraphicsFoundation/States/DepthStencilState.h>
 
 #include <vulkan/vulkan.hpp>
 
@@ -28,6 +29,9 @@ public:
   static vk::BlendOp     GetVkBlendOp(xiiEnum<xiiGALBlendOperation> e);
   static vk::BlendFactor GetVkBlendFactor(xiiEnum<xiiGALBlendFactor> e);
   static vk::LogicOp     GetVkLogicOp(xiiEnum<xiiGALLogicOperation> e);
+
+  static vk::CompareOp GetVkCompareOp(xiiEnum<xiiGALComparisonFunction> e);
+  static vk::StencilOp GetVkStencilOp(xiiEnum<xiiGALStencilOperation> e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

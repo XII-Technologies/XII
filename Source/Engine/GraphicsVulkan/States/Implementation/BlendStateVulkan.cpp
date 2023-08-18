@@ -22,7 +22,7 @@ xiiResult xiiGALBlendStateVulkan::InitPlatform(xiiGALDevice* pDevice)
   m_BlendState.sType             = vk::StructureType::ePipelineColorBlendStateCreateInfo;
   m_BlendState.pNext             = nullptr;
   m_BlendState.flags             = {};
-  m_BlendState.logicOpEnable     = m_Description.m_RenderTargets[0].m_LogicOperationEnable;
+  m_BlendState.logicOpEnable     = m_Description.m_RenderTargets[0].m_LogicOperationEnable ? VK_TRUE : VK_FALSE;
   m_BlendState.logicOp           = xiiVulkanTypeConversions::GetVkLogicOp(m_Description.m_RenderTargets[0].m_LogicOperation);
   m_BlendState.blendConstants[0] = 0.0f; // We use dynamic blend constants.
   m_BlendState.blendConstants[1] = 0.0f;
@@ -36,7 +36,7 @@ xiiResult xiiGALBlendStateVulkan::InitPlatform(xiiGALDevice* pDevice)
       auto& rtBlendState      = m_Description.m_RenderTargets[uiAttachmentIndex];
       auto& rtAttachmentState = m_BlendAttachmentState.ExpandAndGetRef();
 
-      rtAttachmentState.blendEnable         = rtBlendState.m_bBlendEnable;
+      rtAttachmentState.blendEnable         = rtBlendState.m_bBlendEnable ? VK_TRUE : VK_FALSE;
       rtAttachmentState.colorBlendOp        = xiiVulkanTypeConversions::GetVkBlendOp(rtBlendState.m_BlendOperation);
       rtAttachmentState.alphaBlendOp        = xiiVulkanTypeConversions::GetVkBlendOp(rtBlendState.m_BlendOperationAlpha);
       rtAttachmentState.srcColorBlendFactor = xiiVulkanTypeConversions::GetVkBlendFactor(rtBlendState.m_SourceBlend);
@@ -59,7 +59,7 @@ xiiResult xiiGALBlendStateVulkan::InitPlatform(xiiGALDevice* pDevice)
     auto& rtBlendState0 = m_Description.m_RenderTargets[0];
 
     vk::PipelineColorBlendAttachmentState rtAttachmentState0 = {};
-    rtAttachmentState0.blendEnable                           = rtBlendState0.m_bBlendEnable;
+    rtAttachmentState0.blendEnable                           = rtBlendState0.m_bBlendEnable ? VK_TRUE : VK_FALSE;
     rtAttachmentState0.colorBlendOp                          = xiiVulkanTypeConversions::GetVkBlendOp(rtBlendState0.m_BlendOperation);
     rtAttachmentState0.alphaBlendOp                          = xiiVulkanTypeConversions::GetVkBlendOp(rtBlendState0.m_BlendOperationAlpha);
     rtAttachmentState0.srcColorBlendFactor                   = xiiVulkanTypeConversions::GetVkBlendFactor(rtBlendState0.m_SourceBlend);

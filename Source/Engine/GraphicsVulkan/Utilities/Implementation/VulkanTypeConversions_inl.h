@@ -67,9 +67,7 @@ XII_ALWAYS_INLINE vk::BlendFactor xiiVulkanTypeConversions::GetVkBlendFactor(xii
 
 XII_ALWAYS_INLINE vk::LogicOp xiiVulkanTypeConversions::GetVkLogicOp(xiiEnum<xiiGALLogicOperation> e)
 {
-  xiiGALLogicOperation::Enum d = e;
-
-  switch (d)
+  switch (e)
   {
     case xiiGALLogicOperation::Clear:
       return vk::LogicOp::eClear;
@@ -108,4 +106,58 @@ XII_ALWAYS_INLINE vk::LogicOp xiiVulkanTypeConversions::GetVkLogicOp(xiiEnum<xii
   }
 
   return vk::LogicOp::eClear;
+}
+
+XII_ALWAYS_INLINE vk::CompareOp xiiVulkanTypeConversions::GetVkCompareOp(xiiEnum<xiiGALComparisonFunction> e)
+{
+  switch (e)
+  {
+    case xiiGALComparisonFunction::Never:
+      return vk::CompareOp::eNever;
+    case xiiGALComparisonFunction::Less:
+      return vk::CompareOp::eLess;
+    case xiiGALComparisonFunction::Equal:
+      return vk::CompareOp::eEqual;
+    case xiiGALComparisonFunction::LessEqual:
+      return vk::CompareOp::eLessOrEqual;
+    case xiiGALComparisonFunction::Greater:
+      return vk::CompareOp::eGreater;
+    case xiiGALComparisonFunction::NotEqual:
+      return vk::CompareOp::eNotEqual;
+    case xiiGALComparisonFunction::GreaterEqual:
+      return vk::CompareOp::eGreaterOrEqual;
+    case xiiGALComparisonFunction::Always:
+      return vk::CompareOp::eAlways;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return vk::CompareOp::eNever;
+}
+
+XII_ALWAYS_INLINE vk::StencilOp xiiVulkanTypeConversions::GetVkStencilOp(xiiEnum<xiiGALStencilOperation> e)
+{
+  switch (e)
+  {
+    case xiiGALStencilOperation::Keep:
+      return vk::StencilOp::eKeep;
+    case xiiGALStencilOperation::Zero:
+      return vk::StencilOp::eZero;
+    case xiiGALStencilOperation::Replace:
+      return vk::StencilOp::eReplace;
+    case xiiGALStencilOperation::IncrementSaturate:
+      return vk::StencilOp::eIncrementAndClamp;
+    case xiiGALStencilOperation::DecrementSaturate:
+      return vk::StencilOp::eDecrementAndClamp;
+    case xiiGALStencilOperation::Invert:
+      return vk::StencilOp::eInvert;
+    case xiiGALStencilOperation::IncrementWrap:
+      return vk::StencilOp::eIncrementAndWrap;
+    case xiiGALStencilOperation::DecrementWrap:
+      return vk::StencilOp::eDecrementAndWrap;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return vk::StencilOp::eKeep;
 }
