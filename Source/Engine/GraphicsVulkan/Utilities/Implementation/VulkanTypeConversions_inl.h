@@ -161,3 +161,35 @@ XII_ALWAYS_INLINE vk::StencilOp xiiVulkanTypeConversions::GetVkStencilOp(xiiEnum
 
   return vk::StencilOp::eKeep;
 }
+
+XII_ALWAYS_INLINE vk::PolygonMode xiiVulkanTypeConversions::GetVkPolygonMode(xiiEnum<xiiGALFillMode> e)
+{
+  switch (e)
+  {
+    case xiiGALFillMode::Wireframe:
+      return vk::PolygonMode::eLine;
+    case xiiGALFillMode::Solid:
+      return vk::PolygonMode::eFill;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return vk::PolygonMode::eFill;
+}
+
+XII_ALWAYS_INLINE vk::CullModeFlagBits xiiVulkanTypeConversions::GetVkCullMode(xiiEnum<xiiGALCullMode> e)
+{
+  switch (e)
+  {
+    case xiiGALCullMode::None:
+      return vk::CullModeFlagBits::eNone;
+    case xiiGALCullMode::Front:
+      return vk::CullModeFlagBits::eFront;
+    case xiiGALCullMode::Back:
+      return vk::CullModeFlagBits::eBack;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return vk::CullModeFlagBits::eNone;
+}

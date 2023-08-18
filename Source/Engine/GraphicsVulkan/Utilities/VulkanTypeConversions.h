@@ -4,6 +4,7 @@
 
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
+#include <GraphicsFoundation/States/RasterizerState.h>
 
 #include <vulkan/vulkan.hpp>
 
@@ -32,6 +33,9 @@ public:
 
   static vk::CompareOp GetVkCompareOp(xiiEnum<xiiGALComparisonFunction> e);
   static vk::StencilOp GetVkStencilOp(xiiEnum<xiiGALStencilOperation> e);
+
+  static vk::PolygonMode      GetVkPolygonMode(xiiEnum<xiiGALFillMode> e);
+  static vk::CullModeFlagBits GetVkCullMode(xiiEnum<xiiGALCullMode> e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

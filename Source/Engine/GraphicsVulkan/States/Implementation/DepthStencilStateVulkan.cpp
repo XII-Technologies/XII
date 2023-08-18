@@ -13,8 +13,10 @@ xiiGALDepthStencilStateVulkan::~xiiGALDepthStencilStateVulkan() = default;
 
 xiiResult xiiGALDepthStencilStateVulkan::InitPlatform(xiiGALDevice* pDevice)
 {
-  m_DepthStencilState.sType                 = vk::StructureType::ePipelineDepthStencilStateCreateInfo;
-  m_DepthStencilState.pNext                 = nullptr;
+  m_DepthStencilState.sType = vk::StructureType::ePipelineDepthStencilStateCreateInfo;
+  m_DepthStencilState.pNext = nullptr;
+  m_DepthStencilState.flags = {};
+
   m_DepthStencilState.depthTestEnable       = m_Description.m_bDepthEnable ? VK_TRUE : VK_FALSE;
   m_DepthStencilState.depthWriteEnable      = m_Description.m_bDepthWriteEnable ? VK_TRUE : VK_FALSE;
   m_DepthStencilState.depthCompareOp        = xiiVulkanTypeConversions::GetVkCompareOp(m_Description.m_ComparisonDepthFunction);
