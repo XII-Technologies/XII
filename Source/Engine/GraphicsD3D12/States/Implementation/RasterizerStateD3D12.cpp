@@ -1,34 +1,12 @@
-#include <GraphicsFoundation/GraphicsFoundationPCH.h>
+#include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
-#include <GraphicsFoundation/States/RasterizerState.h>
+#include <GraphicsD3D12/States/RasterizerStateD3D12.h>
 
-// clang-format off
-
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALRasterizerState, xiiNoBase, 1, xiiRTTINoAllocator)
-{
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALFillMode, 1)
-  XII_ENUM_CONSTANT(xiiGALFillMode::Undefined),
-  XII_ENUM_CONSTANT(xiiGALFillMode::Wireframe),
-  XII_ENUM_CONSTANT(xiiGALFillMode::Solid),
-XII_END_STATIC_REFLECTED_ENUM;
-
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALCullMode, 1)
-  XII_ENUM_CONSTANT(xiiGALCullMode::Undefined),
-  XII_ENUM_CONSTANT(xiiGALCullMode::None),
-  XII_ENUM_CONSTANT(xiiGALCullMode::Front),
-  XII_ENUM_CONSTANT(xiiGALCullMode::Back),
-XII_END_STATIC_REFLECTED_ENUM;
-
-// clang-format on
-
-xiiGALRasterizerState::xiiGALRasterizerState(const xiiGALRasterizerStateCreationDescription& creationDescription) :
-  xiiGALObject<xiiGALRasterizerStateCreationDescription>(creationDescription)
+xiiGALRasterizerStateD3D12::xiiGALRasterizerStateD3D12(const xiiGALRasterizerStateCreationDescription& creationDescription) :
+  xiiGALRasterizerState(creationDescription)
 {
 }
 
-xiiGALRasterizerState::~xiiGALRasterizerState() = default;
+xiiGALRasterizerStateD3D12::~xiiGALRasterizerStateD3D12() = default;
 
-XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_RasterizerState);
+XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_States_Implementation_RasterizerStateD3D12);

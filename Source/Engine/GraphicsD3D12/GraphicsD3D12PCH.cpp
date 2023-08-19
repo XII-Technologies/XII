@@ -1,9 +1,7 @@
-#include <GraphicsFoundation/GraphicsFoundationPCH.h>
+#include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
-XII_STATICLINK_LIBRARY(GraphicsFoundation)
+XII_STATICLINK_LIBRARY(GraphicsD3D12)
 {
   if (bReturn)
     return;
-
-  XII_STATICLINK_REFERENCE(GraphicsFoundation_Basics);
 }

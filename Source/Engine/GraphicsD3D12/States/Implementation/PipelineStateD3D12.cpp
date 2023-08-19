@@ -1,21 +1,5 @@
-#include <GraphicsFoundation/GraphicsFoundationPCH.h>
+#include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
-#include <GraphicsFoundation/States/PipelineState.h>
+#include <GraphicsD3D12/States/PipelineStateD3D12.h>
 
-// clang-format off
-
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShaderVariableFlags, 1)
-  XII_ENUM_CONSTANT(xiiGALShaderVariableFlags::None),
-  XII_ENUM_CONSTANT(xiiGALShaderVariableFlags::NoDynamicBuffers),
-  XII_ENUM_CONSTANT(xiiGALShaderVariableFlags::InputAttachment),
-XII_END_STATIC_REFLECTED_ENUM;
-
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALPipelineShadingRateFlags, 1)
-  XII_ENUM_CONSTANT(xiiGALPipelineShadingRateFlags::None),
-  XII_ENUM_CONSTANT(xiiGALPipelineShadingRateFlags::PerPrimitive),
-  XII_ENUM_CONSTANT(xiiGALPipelineShadingRateFlags::TextureBased),
-XII_END_STATIC_REFLECTED_ENUM;
-
-// clang-format on
-
-XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_PipelineState);
+XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_States_Implementation_PipelineStateD3D12);
