@@ -9,6 +9,8 @@ struct D3D12_BLEND_DESC;
 class XII_GRAPHICSD3D12_DLL xiiGALBlendStateD3D12 : public xiiGALBlendState
 {
 public:
+  XII_ALWAYS_INLINE const D3D12_BLEND_DESC* GetBlendState() const;
+
 protected:
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
