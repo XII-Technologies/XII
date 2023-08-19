@@ -4,6 +4,8 @@
 
 #include <GraphicsFoundation/States/BlendState.h>
 
+struct D3D12_BLEND_DESC;
+
 class XII_GRAPHICSD3D12_DLL xiiGALBlendStateD3D12 : public xiiGALBlendState
 {
 public:
@@ -15,9 +17,12 @@ protected:
 
   virtual ~xiiGALBlendStateD3D12();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice);
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
+
+protected:
+  D3D12_BLEND_DESC m_BlendState = {};
 };
 
 #include <GraphicsD3D12/States/Implementation/BlendStateD3D12_inl.h>
