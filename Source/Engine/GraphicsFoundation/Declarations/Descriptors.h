@@ -308,7 +308,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHasha
   xiiStaticArray<xiiUInt32, 3U>       m_TextureCopyGranularity;                              ///< Defines required texture offset and size alignment for copy operations in transfer queues.
 };
 
-/// \brief This describes the graphics adapter properties.
+/// \brief This describes the graphics device adapter properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGraphicsDeviceAdapterDescription : public xiiHashableStruct<xiiGraphicsDeviceAdapterDescription>
 {
   xiiString                                                                m_sAdapterName;                                              ///< A string that contains the adapter description.

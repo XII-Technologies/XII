@@ -275,6 +275,21 @@ public:
   /// \brief Retrieves a pointer to the top-level acceleration structure object with the given handle.
   const xiiGALTopLevelAS* GetTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS) const;
 
+  /// \brief This retrieves the device properties. See xiiGraphicsDeviceAdapterDescription.
+  const xiiGraphicsDeviceAdapterDescription& GetGraphicsDeviceAdapterProperties() const;
+
+  /// \brief This returns the basic texture information for a particular format.
+  ///
+  /// \param format - The texture format for which to provide the information.
+  ///
+  /// \return A const reference to the xiiGALTextureFormatDescription structure containing the texture format description.
+  ///
+  /// \remarks This method must be externally synchronized.
+  const xiiGALTextureFormatDescription& GetTextureFormatProperties(xiiEnum<xiiGALTextureFormat> format) const;
+
+  /// \brief This returns the sparse texture format information for the given texture format, resource dimension and sample count.
+  const xiiGALSparseTextureProperties GetSparseTextureProperties(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount) const;
+
 protected:
   xiiGALDevice(const xiiGALDeviceCreationDescription& Description);
 
@@ -349,6 +364,8 @@ protected:
 
   xiiDynamicArray<DeadObject, xiiLocalAllocatorWrapper> m_DeadObjects;
 
+  xiiGraphicsDeviceAdapterDescription m_AdapterDescription;
+
 protected:
   friend class xiiMemoryUtils;
 
@@ -407,6 +424,12 @@ protected:
   virtual void                   DestroyTopLevelASPlatform(xiiGALTopLevelASHandle hTopLevelAS)                    = 0;
 
   virtual void WaitIdlePlatform() = 0;
+
+  virtual void FillCapabilitiesPlatform() = 0;
+
+  virtual const xiiGALTextureFormatDescription& GetTextureFormatPropertiesPlatform(xiiEnum<xiiGALTextureFormat> format) const = 0;
+
+  virtual const xiiGALSparseTextureProperties GetSparseTexturePropertiesPlatform(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount) const = 0;
 
 protected:
   xiiGALTextureHandle FinalizeTextureInternal(const xiiGALTextureCreationDescription& desc, xiiGALTexture* pTexture);
