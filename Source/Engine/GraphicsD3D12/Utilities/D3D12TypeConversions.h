@@ -29,6 +29,9 @@ public:
 
   static D3D12_BLEND    GetD3D12BlendFactor(xiiEnum<xiiGALBlendFactor> e);
   static D3D12_BLEND_OP GetD3D12BlendOp(xiiEnum<xiiGALBlendOperation> e);
+
+  static D3D12_COMPARISON_FUNC GetD3D12ComparisonFunc(xiiEnum<xiiGALComparisonFunction> e);
+  static D3D12_STENCIL_OP      GetD3D12StencilOp(xiiEnum<xiiGALStencilOperation> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/D3D12TypeConversions_inl.h>

@@ -64,3 +64,57 @@ XII_ALWAYS_INLINE D3D12_BLEND_OP xiiD3D12TypeConversions::GetD3D12BlendOp(xiiEnu
 
   return D3D12_BLEND_OP::D3D12_BLEND_OP_ADD;
 }
+
+XII_ALWAYS_INLINE D3D12_COMPARISON_FUNC xiiD3D12TypeConversions::GetD3D12ComparisonFunc(xiiEnum<xiiGALComparisonFunction> e)
+{
+  switch (e)
+  {
+    case xiiGALComparisonFunction::Never:
+      return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_NEVER;
+    case xiiGALComparisonFunction::Less:
+      return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_LESS;
+    case xiiGALComparisonFunction::Equal:
+      return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_EQUAL;
+    case xiiGALComparisonFunction::LessEqual:
+      return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_LESS_EQUAL;
+    case xiiGALComparisonFunction::Greater:
+      return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER;
+    case xiiGALComparisonFunction::NotEqual:
+      return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_NOT_EQUAL;
+    case xiiGALComparisonFunction::GreaterEqual:
+      return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_GREATER_EQUAL;
+    case xiiGALComparisonFunction::Always:
+      return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_ALWAYS;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return D3D12_COMPARISON_FUNC::D3D12_COMPARISON_FUNC_NEVER;
+}
+
+XII_ALWAYS_INLINE D3D12_STENCIL_OP xiiD3D12TypeConversions::GetD3D12StencilOp(xiiEnum<xiiGALStencilOperation> e)
+{
+  switch (e)
+  {
+    case xiiGALStencilOperation::Keep:
+      return D3D12_STENCIL_OP::D3D12_STENCIL_OP_KEEP;
+    case xiiGALStencilOperation::Zero:
+      return D3D12_STENCIL_OP::D3D12_STENCIL_OP_ZERO;
+    case xiiGALStencilOperation::Replace:
+      return D3D12_STENCIL_OP::D3D12_STENCIL_OP_REPLACE;
+    case xiiGALStencilOperation::IncrementSaturate:
+      return D3D12_STENCIL_OP::D3D12_STENCIL_OP_INCR_SAT;
+    case xiiGALStencilOperation::DecrementSaturate:
+      return D3D12_STENCIL_OP::D3D12_STENCIL_OP_DECR_SAT;
+    case xiiGALStencilOperation::Invert:
+      return D3D12_STENCIL_OP::D3D12_STENCIL_OP_INVERT;
+    case xiiGALStencilOperation::IncrementWrap:
+      return D3D12_STENCIL_OP::D3D12_STENCIL_OP_INCR;
+    case xiiGALStencilOperation::DecrementWrap:
+      return D3D12_STENCIL_OP::D3D12_STENCIL_OP_DECR;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return D3D12_STENCIL_OP::D3D12_STENCIL_OP_KEEP;
+}
