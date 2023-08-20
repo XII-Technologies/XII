@@ -118,3 +118,35 @@ XII_ALWAYS_INLINE D3D12_STENCIL_OP xiiD3D12TypeConversions::GetD3D12StencilOp(xi
 
   return D3D12_STENCIL_OP::D3D12_STENCIL_OP_KEEP;
 }
+
+XII_ALWAYS_INLINE D3D12_FILL_MODE xiiD3D12TypeConversions::GetD3D12FillMode(xiiEnum<xiiGALFillMode> e)
+{
+  switch (e)
+  {
+    case xiiGALFillMode::Wireframe:
+      return D3D12_FILL_MODE::D3D12_FILL_MODE_WIREFRAME;
+    case xiiGALFillMode::Solid:
+      return D3D12_FILL_MODE::D3D12_FILL_MODE_WIREFRAME;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return D3D12_FILL_MODE::D3D12_FILL_MODE_WIREFRAME;
+}
+
+XII_ALWAYS_INLINE D3D12_CULL_MODE xiiD3D12TypeConversions::GetD3D12CullMode(xiiEnum<xiiGALCullMode> e)
+{
+  switch (e)
+  {
+    case xiiGALCullMode::None:
+      return D3D12_CULL_MODE::D3D12_CULL_MODE_NONE;
+    case xiiGALCullMode::Front:
+      return D3D12_CULL_MODE::D3D12_CULL_MODE_FRONT;
+    case xiiGALCullMode::Back:
+      return D3D12_CULL_MODE::D3D12_CULL_MODE_BACK;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return D3D12_CULL_MODE::D3D12_CULL_MODE_NONE;
+}

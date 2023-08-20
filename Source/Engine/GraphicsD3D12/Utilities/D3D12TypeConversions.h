@@ -32,6 +32,9 @@ public:
 
   static D3D12_COMPARISON_FUNC GetD3D12ComparisonFunc(xiiEnum<xiiGALComparisonFunction> e);
   static D3D12_STENCIL_OP      GetD3D12StencilOp(xiiEnum<xiiGALStencilOperation> e);
+
+  static D3D12_FILL_MODE GetD3D12FillMode(xiiEnum<xiiGALFillMode> e);
+  static D3D12_CULL_MODE GetD3D12CullMode(xiiEnum<xiiGALCullMode> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/D3D12TypeConversions_inl.h>
