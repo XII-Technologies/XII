@@ -4,6 +4,7 @@
 
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
+/// \brief This stores a native format type for various GAL texture formats.
 template <typename NativeFormatType, NativeFormatType InvalidFormat>
 class xiiGALFormatLookupEntry
 {
@@ -12,16 +13,22 @@ public:
 
   inline xiiGALFormatLookupEntry(NativeFormatType storage);
 
+  /// \brief This retrieves the render target texture format type.
   inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& RT(NativeFormatType renderTargetType);
 
+  /// \brief This retrieves the depth texture format type.
   inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& D(NativeFormatType depthOnlyType);
 
+  /// \brief This retrieves the stencil format type.
   inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& S(NativeFormatType stencilOnlyType);
 
+  /// \brief This retrieves the depth stencil format type.
   inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& DS(NativeFormatType depthStencilType);
 
+  /// \brief This retrieves the input layout format type.
   inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& IL(NativeFormatType inputLayoutType);
 
+  /// \brief This retrieves the resource view format type.
   inline xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& RV(NativeFormatType resourceViewType);
 
   NativeFormatType m_eStorage;

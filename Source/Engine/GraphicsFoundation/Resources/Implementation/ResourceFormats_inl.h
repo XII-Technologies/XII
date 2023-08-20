@@ -57,9 +57,9 @@ xiiGALFormatLookupEntry<NativeFormatType, InvalidFormat>& xiiGALFormatLookupEntr
 template <typename FormatClass>
 xiiGALFormatLookupTable<FormatClass>::xiiGALFormatLookupTable()
 {
-  for (xiiUInt32 i = 0; i < xiiGALTextureFormat::ENUM_COUNT; i++)
+  for (xiiUInt32 i = 0; i < xiiGALTextureFormat::ENUM_COUNT; ++i)
   {
-    m_Formats[i] = FormatClass();
+    m_Formats.PushBack(FormatClass());
   }
 }
 
