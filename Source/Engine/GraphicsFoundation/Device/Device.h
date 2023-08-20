@@ -140,10 +140,10 @@ public:
   /// \param description - The input layout description. See xiiGALInputLayoutCreationDescription.
   ///
   /// \return The handle to the created input layout object. The function calls AddRef(), so that the new object will have one reference.
-  virtual xiiGALInputLayoutHandle CreateVertexDeclaration(const xiiGALInputLayoutCreationDescription& description);
+  virtual xiiGALInputLayoutHandle CreateInputLayout(const xiiGALInputLayoutCreationDescription& description);
 
   /// \brief This destroys the input layout with the given handle.
-  virtual void DestroyVertexDeclaration(xiiGALInputLayoutHandle hInputLayout);
+  virtual void DestroyInputLayout(xiiGALInputLayoutHandle hInputLayout);
 
 
   /// \brief This creates a new query object.
@@ -221,7 +221,142 @@ public:
   virtual void WaitIdle();
 
 public:
+  /// \brief Registers event handlers.
   xiiEvent<const xiiGALDeviceEvent&> m_Events;
+
+  /// \brief Retrieves a pointer to the swap chain object with the given handle.
+  const xiiGALSwapChain* GetSwapChain(xiiGALSwapChainHandle hSwapChain) const;
+
+  /// \brief Retrieves a pointer to the blend state object with the given handle.
+  const xiiGALBlendState* GetBlendState(xiiGALBlendStateHandle hBlendState) const;
+
+  /// \brief Retrieves a pointer to the depth stencil state object with the given handle.
+  const xiiGALDepthStencilState* GetDepthStencilState(xiiGALDepthStencilStateHandle hDepthStencilState) const;
+
+  /// \brief Retrieves a pointer to the rasterizer state object with the given handle.
+  const xiiGALRasterizerState* GetRasterizerState(xiiGALRasterizerStateHandle hRasterizerState) const;
+
+  /// \brief Retrieves a pointer to the shader object with the given handle.
+  const xiiGALShader* GetShader(xiiGALShaderHandle hShader) const;
+
+  /// \brief Retrieves a pointer to the buffer object with the given handle.
+  const xiiGALBuffer* GetBuffer(xiiGALBufferHandle hBuffer) const;
+
+  /// \brief Retrieves a pointer to the texture object with the given handle.
+  const xiiGALTexture* GetTexture(xiiGALTextureHandle hTexture) const;
+
+  /// \brief Retrieves a pointer to the buffer view object with the given handle.
+  const xiiGALBufferView* GetBufferView(xiiGALBufferViewHandle hBufferView) const;
+
+  /// \brief Retrieves a pointer to the texture view object with the given handle.
+  const xiiGALTextureView* GetTextureView(xiiGALTextureViewHandle hTextureView) const;
+
+  /// \brief Retrieves a pointer to the sampler object with the given handle.
+  const xiiGALSampler* GetSampler(xiiGALSamplerHandle hSampler) const;
+
+  /// \brief Retrieves a pointer to the input layout object with the given handle.
+  const xiiGALInputLayout* GetInputLayout(xiiGALInputLayout hInputLayout) const;
+
+  /// \brief Retrieves a pointer to the query object with the given handle.
+  const xiiGALQuery* GetQuery(xiiGALQueryHandle hQuery) const;
+
+  /// \brief Retrieves a pointer to the fence object with the given handle.
+  const xiiGALFence* GetFence(xiiGALFenceHandle hFence) const;
+
+  /// \brief Retrieves a pointer to the render pass object with the given handle.
+  const xiiGALRenderPass* GetRenderPass(xiiGALRenderPassHandle hRenderPass) const;
+
+  /// \brief Retrieves a pointer to the framebuffer object with the given handle.
+  const xiiGALFramebuffer* GetFramebuffer(xiiGALFramebufferHandle hFramebuffer) const;
+
+  /// \brief Retrieves a pointer to the bottom-level acceleration structure object with the given handle.
+  const xiiGALBottomLevelAS* GetBottomLevelAS(xiiGALBottomLevelASHandle hBottomLevelAS) const;
+
+  /// \brief Retrieves a pointer to the top-level acceleration structure object with the given handle.
+  const xiiGALTopLevelAS* GetTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS) const;
+
+protected:
+  xiiGALDevice(const xiiGALDeviceCreationDescription& Description);
+
+  virtual ~xiiGALDevice();
+
+  template <typename IdTableType, typename ReturnType>
+  ReturnType* Get(typename IdTableType::TypeOfId hHandle, const IdTableType& IdTable) const;
+
+  template <typename HandleType>
+  void AddDeadObject(xiiUInt32 uiType, HandleType handle);
+
+  template <typename HandleType>
+  void ReviveDeadObject(xiiUInt32 uiType, HandleType handle);
+
+  void DestroyDeadObjects();
+
+  void DestroyViews(xiiGALResourceBase* pResource);
+
+  xiiProxyAllocator        m_Allocator;
+  xiiLocalAllocatorWrapper m_AllocatorWrapper;
+
+  using SwapChainTable         = xiiIdTable<xiiGALSwapChainHandle::IdType, xiiGALSwapChain*, xiiLocalAllocatorWrapper>;
+  using BlendStateTable        = xiiIdTable<xiiGALBlendStateHandle::IdType, xiiGALBlendState*, xiiLocalAllocatorWrapper>;
+  using DepthStencilStateTable = xiiIdTable<xiiGALDepthStencilStateHandle::IdType, xiiGALDepthStencilState*, xiiLocalAllocatorWrapper>;
+  using RasterizerStateTable   = xiiIdTable<xiiGALRasterizerStateHandle::IdType, xiiGALRasterizerState*, xiiLocalAllocatorWrapper>;
+  using ShaderTable            = xiiIdTable<xiiGALShaderHandle::IdType, xiiGALShader*, xiiLocalAllocatorWrapper>;
+  using BufferTable            = xiiIdTable<xiiGALBufferHandle::IdType, xiiGALBuffer*, xiiLocalAllocatorWrapper>;
+  using TextureTable           = xiiIdTable<xiiGALTextureHandle::IdType, xiiGALTexture*, xiiLocalAllocatorWrapper>;
+  using BufferViewTable        = xiiIdTable<xiiGALBufferViewHandle::IdType, xiiGALBufferView*, xiiLocalAllocatorWrapper>;
+  using TextureViewTable       = xiiIdTable<xiiGALTextureViewHandle::IdType, xiiGALTextureView*, xiiLocalAllocatorWrapper>;
+  using SamplerStateTable      = xiiIdTable<xiiGALSamplerHandle::IdType, xiiGALSampler*, xiiLocalAllocatorWrapper>;
+  using InputLayoutTable       = xiiIdTable<xiiGALInputLayoutHandle::IdType, xiiGALInputLayout*, xiiLocalAllocatorWrapper>;
+  using QueryTable             = xiiIdTable<xiiGALQueryHandle::IdType, xiiGALQuery*, xiiLocalAllocatorWrapper>;
+  using FenceTable             = xiiIdTable<xiiGALFenceHandle::IdType, xiiGALFence*, xiiLocalAllocatorWrapper>;
+  using RenderPassTable        = xiiIdTable<xiiGALRenderPassHandle::IdType, xiiGALRenderPass*, xiiLocalAllocatorWrapper>;
+  using FramebufferTable       = xiiIdTable<xiiGALFramebufferHandle::IdType, xiiGALFramebuffer*, xiiLocalAllocatorWrapper>;
+  using BottomLevelASTable     = xiiIdTable<xiiGALBottomLevelASHandle::IdType, xiiGALBottomLevelAS*, xiiLocalAllocatorWrapper>;
+  using TopLevelASTable        = xiiIdTable<xiiGALTopLevelASHandle::IdType, xiiGALTopLevelAS*, xiiLocalAllocatorWrapper>;
+
+  SwapChainTable         m_SwapChains;
+  BlendStateTable        m_BlendStates;
+  DepthStencilStateTable m_DepthStencilStates;
+  RasterizerStateTable   m_RasterizerStates;
+  ShaderTable            m_Shaders;
+  BufferTable            m_Buffers;
+  TextureTable           m_Textures;
+  BufferViewTable        m_BufferViews;
+  TextureViewTable       m_TextureViews;
+  SamplerStateTable      m_Samplers;
+  InputLayoutTable       m_InputLayouts;
+  QueryTable             m_Queries;
+  FenceTable             m_Fences;
+  RenderPassTable        m_RenderPasses;
+  FramebufferTable       m_Framebuffers;
+  BottomLevelASTable     m_BottomLevelAccelerationStructures;
+  TopLevelASTable        m_TopLevelAccelerationStructures;
+
+  // Deduplication Contexts: Hash tables used to prevent state object duplication.
+  xiiHashTable<xiiUInt32, xiiGALBlendStateHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>        m_BlendStateTable;
+  xiiHashTable<xiiUInt32, xiiGALDepthStencilStateHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper> m_DepthStencilStateTable;
+  xiiHashTable<xiiUInt32, xiiGALRasterizerStateHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>   m_RasterizerStateTable;
+  xiiHashTable<xiiUInt32, xiiGALSamplerHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>           m_SamplerStateTable;
+  xiiHashTable<xiiUInt32, xiiGALInputLayout, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>             m_VertexDeclarationTable;
+
+  struct DeadObject
+  {
+    XII_DECLARE_POD_TYPE();
+
+    xiiUInt32 m_uiType;
+    xiiUInt32 m_uiHandle;
+  };
+
+  xiiDynamicArray<DeadObject, xiiLocalAllocatorWrapper> m_DeadObjects;
+
+protected:
+  xiiGALTextureHandle FinalizeTextureInternal(const xiiGALTextureCreationDescription& desc, xiiGALTexture* pTexture);
+  xiiGALBufferHandle  FinalizeBufferInternal(const xiiGALBufferCreationDescription& desc, xiiGALBuffer* pBuffer);
+
+private:
+  bool m_bBeginFrameCalled    = false;
+  bool m_bBeginPipelineCalled = false;
+  bool m_bBeginPassCalled     = false;
 };
 
 #include <GraphicsFoundation/Device/Implementation/Device_inl.h>

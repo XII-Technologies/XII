@@ -20,6 +20,7 @@
 
 ////////// Forward Declarations //////////
 
+struct xiiGALSwapChainCreationDescription;
 struct xiiGALBLASTriangleDescription;
 struct xiiGALBLASBoundingBoxDescription;
 struct xiiGALBottomLevelASCreationDescription;
@@ -68,6 +69,7 @@ struct xiiGALRasterizerStateCreationDescription;
 
 class xiiGALDevice;
 class xiiGALPass;
+class xiiGALSwapChain;
 class xiiGALResourceBase;
 template <typename CreationDescription>
 class xiiGALResource;

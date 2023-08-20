@@ -233,7 +233,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALNormalizedDeviceCoordinates : public xii
 };
 
 /// \brief This describes the graphics device creation description.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceCreationDescription : public xiiHashableStruct<xiiGALGraphicsDeviceCreationDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceCreationDescription : public xiiHashableStruct<xiiGALDeviceCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
 
