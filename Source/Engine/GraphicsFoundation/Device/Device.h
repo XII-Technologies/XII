@@ -11,7 +11,7 @@
 /// \brief The xiiRenderDevice class is the primary interface for interactions with rendering APIs.
 /// It contains a set of (non-virtual) functions to set state, create resources etc. which rely on API specific implementations provided by protected virtual functions.
 /// Redundant state changes are prevented at the platform independent level in the non-virtual functions.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALDevice : public xiiGALObject<xiiGALGraphicsDeviceCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALDevice : public xiiGALObject<xiiGALDeviceCreationDescription>
 {
 public:
   /// \brief Initialize device.
@@ -140,10 +140,10 @@ public:
   /// \param description - The input layout description. See xiiGALInputLayoutCreationDescription.
   ///
   /// \return The handle to the created input layout object. The function calls AddRef(), so that the new object will have one reference.
-  virtual xiiGALInputLayoutHandle CreateInputLayout(const xiiGALInputLayoutCreationDescription& description);
+  xiiGALInputLayoutHandle CreateInputLayout(const xiiGALInputLayoutCreationDescription& description);
 
   /// \brief This destroys the input layout with the given handle.
-  virtual void DestroyInputLayout(xiiGALInputLayoutHandle hInputLayout);
+  void DestroyInputLayout(xiiGALInputLayoutHandle hInputLayout);
 
 
   /// \brief This creates a new query object.
@@ -151,10 +151,10 @@ public:
   /// \param description - The query description. See xiiGALQueryCreationDescription.
   ///
   /// \return The handle to the created query object. The function calls AddRef(), so that the new object will have one reference.
-  virtual xiiGALQueryHandle CreateQuery(const xiiGALQueryCreationDescription& description);
+  xiiGALQueryHandle CreateQuery(const xiiGALQueryCreationDescription& description);
 
   /// \brief This destroys the sampler with the given handle.
-  virtual void DestroyQuery(xiiGALQueryHandle hQuery);
+  void DestroyQuery(xiiGALQueryHandle hQuery);
 
 
   /// \brief This creates a new fence object.
@@ -162,10 +162,10 @@ public:
   /// \param description - The fence description. See xiiGALFenceCreationDescription.
   ///
   /// \return The handle to the created fence object. The function calls AddRef(), so that the new object will have one reference.
-  virtual xiiGALFenceHandle CreateFence(const xiiGALFenceCreationDescription& description);
+  xiiGALFenceHandle CreateFence(const xiiGALFenceCreationDescription& description);
 
   /// \brief This destroys the fence with the given handle.
-  virtual void DestroyFence(xiiGALFenceHandle hFence);
+  void DestroyFence(xiiGALFenceHandle hFence);
 
 
   /// \brief This creates a new render pass object.
@@ -173,10 +173,10 @@ public:
   /// \param description - The render pass description. See xiiGALRenderPassCreationDescription.
   ///
   /// \return The handle to the created render pass object. The function calls AddRef(), so that the new object will have one reference.
-  virtual xiiGALRenderPassHandle CreateRenderPass(const xiiGALRenderPassCreationDescription& description);
+  xiiGALRenderPassHandle CreateRenderPass(const xiiGALRenderPassCreationDescription& description);
 
   /// \brief This destroys the render pass with the given handle.
-  virtual void DestroyRenderPass(xiiGALRenderPassHandle hRenderPass);
+  void DestroyRenderPass(xiiGALRenderPassHandle hRenderPass);
 
 
   /// \brief This creates a new frame buffer object.
@@ -184,10 +184,10 @@ public:
   /// \param description - The frame buffer description. See xiiGALFramebufferCreationDescription.
   ///
   /// \return The handle to the created frame buffer object. The function calls AddRef(), so that the new object will have one reference.
-  virtual xiiGALFramebufferHandle CreateFramebuffer(const xiiGALFramebufferCreationDescription& description);
+  xiiGALFramebufferHandle CreateFramebuffer(const xiiGALFramebufferCreationDescription& description);
 
   /// \brief This destroys the frame buffer with the given handle.
-  virtual void DestroyFramebuffer(xiiGALFramebufferHandle hFramebuffer);
+  void DestroyFramebuffer(xiiGALFramebufferHandle hFramebuffer);
 
 
   /// \brief This creates a new bottom-level acceleration structure object.
@@ -195,10 +195,10 @@ public:
   /// \param description - The bottom-level acceleration structure description. See xiiGALBottomLevelASCreationDescription.
   ///
   /// \return The handle to the created bottom-level acceleration structure object. The function calls AddRef(), so that the new object will have one reference.
-  virtual xiiGALBottomLevelASHandle CreateBottomLevelAS(const xiiGALBottomLevelASCreationDescription& description);
+  xiiGALBottomLevelASHandle CreateBottomLevelAS(const xiiGALBottomLevelASCreationDescription& description);
 
   /// \brief This destroys the bottom-level acceleration structure with the given handle.
-  virtual void DestroyBottomLevelAS(xiiGALBottomLevelASHandle hBottomLevelAS);
+  void DestroyBottomLevelAS(xiiGALBottomLevelASHandle hBottomLevelAS);
 
 
   /// \brief This creates a new top-level acceleration structure object.
@@ -206,10 +206,10 @@ public:
   /// \param description - The top-level acceleration structure description. See xiiGALTopLevelASCreationDescription.
   ///
   /// \return The handle to the created top-level acceleration structure object. The function calls AddRef(), so that the new object will have one reference.
-  virtual xiiGALTopLevelASHandle CreateTopLevelAS(const xiiGALTopLevelASCreationDescription& description);
+  xiiGALTopLevelASHandle CreateTopLevelAS(const xiiGALTopLevelASCreationDescription& description);
 
   /// \brief This destroys the top-level acceleration structure with the given handle.
-  virtual void DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS);
+  void DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS);
 
 
   /// \brief Waits until all outstanding operations on the GPU are complete and destroys any pending resources and GPU objects.
@@ -218,7 +218,7 @@ public:
   ///
   /// \remarks The method does not flush immediate contexts, so it will only wait for commands that have been previously submitted for execution. An application should explicitly flush
   ///          the contexts using xiiGALCommandEncoder::Flush() if it needs to make sure all recorded commands are complete when the method returns.
-  virtual void WaitIdle();
+  void WaitIdle();
 
 public:
   /// \brief Registers event handlers.
@@ -348,6 +348,65 @@ protected:
   };
 
   xiiDynamicArray<DeadObject, xiiLocalAllocatorWrapper> m_DeadObjects;
+
+protected:
+  friend class xiiMemoryUtils;
+
+  virtual xiiResult InitializePlatform() = 0;
+  virtual xiiResult ShutdownPlatform()   = 0;
+
+  virtual void BeginPipelinePlatform(xiiStringView Name, xiiGALSwapChainHandle hSwapChain) = 0;
+  virtual void EndPipelinePlatform(xiiGALSwapChainHandle hSwapChain)                       = 0;
+
+  virtual xiiGALPass* BeginPassPlatform(xiiStringView Name) = 0;
+  virtual void        EndPassPlatform(xiiGALPass* pPass)    = 0;
+
+  virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame = 0U) = 0;
+  virtual void EndFramePlatform()                                     = 0;
+
+  virtual xiiGALBlendStateHandle CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) = 0;
+  virtual void                   DestroyBlendStatePlatform(xiiGALBlendStateHandle hBlendState)                    = 0;
+
+  virtual xiiGALDepthStencilStateHandle CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description) = 0;
+  virtual void                          DestroyDepthStencilStatePlatform(xiiGALDepthStencilStateHandle hDepthStencilState)             = 0;
+
+  virtual xiiGALRasterizerStateHandle CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description) = 0;
+  virtual void                        DestroyRasterizerStatePlatform(xiiGALRasterizerStateHandle hRasterizerState)               = 0;
+
+  virtual xiiGALShaderHandle CreateShaderPlatform(const xiiGALShaderCreationDescription& description) = 0;
+  virtual void               DestroyShaderPlatform(xiiGALShaderHandle hShader)                        = 0;
+
+  virtual xiiGALBufferHandle CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr) = 0;
+  virtual void               DestroyBufferPlatform(xiiGALBufferHandle hBuffer)                                                                        = 0;
+
+  virtual xiiGALTextureHandle CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) = 0;
+  virtual void                DestroyTexturePlatform(xiiGALTextureHandle hTexture)                                                                        = 0;
+
+  virtual xiiGALSamplerHandle CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) = 0;
+  virtual void                DestroySamplerPlatform(xiiGALSamplerHandle hSamplerState)                  = 0;
+
+  virtual xiiGALInputLayoutHandle CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description) = 0;
+  virtual void                    DestroyInputLayoutPlatform(xiiGALInputLayoutHandle hInputLayout)                   = 0;
+
+  virtual xiiGALQueryHandle CreateQueryPlatform(const xiiGALQueryCreationDescription& description) = 0;
+  virtual void              DestroyQueryPlatform(xiiGALQueryHandle hQuery)                         = 0;
+
+  virtual xiiGALFenceHandle CreateFencePlatform(const xiiGALFenceCreationDescription& description) = 0;
+  virtual void              DestroyFencePlatform(xiiGALFenceHandle hFence)                         = 0;
+
+  virtual xiiGALRenderPassHandle CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description) = 0;
+  virtual void                   DestroyRenderPassPlatform(xiiGALRenderPassHandle hRenderPass)                    = 0;
+
+  virtual xiiGALFramebufferHandle CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description) = 0;
+  virtual void                    DestroyFramebufferPlatform(xiiGALFramebufferHandle hFramebuffer)                   = 0;
+
+  virtual xiiGALBottomLevelASHandle CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description) = 0;
+  virtual void                      DestroyBottomLevelASPlatform(xiiGALBottomLevelASHandle hBottomLevelAS)                 = 0;
+
+  virtual xiiGALTopLevelASHandle CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description) = 0;
+  virtual void                   DestroyTopLevelASPlatform(xiiGALTopLevelASHandle hTopLevelAS)                    = 0;
+
+  virtual void WaitIdlePlatform() = 0;
 
 protected:
   xiiGALTextureHandle FinalizeTextureInternal(const xiiGALTextureCreationDescription& desc, xiiGALTexture* pTexture);
