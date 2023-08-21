@@ -347,8 +347,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceEvent : public xiiHashableStruct<x
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiGALDeviceHandle             m_hDevice;
-  xiiEnum<xiiGALDeviceEventType> m_Type = xiiGALDeviceEventType::Unknown;
+  xiiGALDevice*                  m_pDevice = nullptr;
+  xiiEnum<xiiGALDeviceEventType> m_Type    = xiiGALDeviceEventType::Unknown;
 };
 
 /// \brief This describes the invariant texture format attributes. These attributes are intrinsic to the texture format itself and do not depend on the format support.

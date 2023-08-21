@@ -255,7 +255,7 @@ public:
   const xiiGALSampler* GetSampler(xiiGALSamplerHandle hSampler) const;
 
   /// \brief Retrieves a pointer to the input layout object with the given handle.
-  const xiiGALInputLayout* GetInputLayout(xiiGALInputLayout hInputLayout) const;
+  const xiiGALInputLayout* GetInputLayout(xiiGALInputLayoutHandle hInputLayout) const;
 
   /// \brief Retrieves a pointer to the query object with the given handle.
   const xiiGALQuery* GetQuery(xiiGALQueryHandle hQuery) const;
@@ -290,8 +290,22 @@ public:
   /// \brief This returns the sparse texture format information for the given texture format, resource dimension and sample count.
   const xiiGALSparseTextureProperties GetSparseTextureProperties(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount) const;
 
+  /// \brief This returns critical section lock.
+  xiiMutex& GetMutex() const;
+
+  /// \brief Sets a default graphics device.
+  ///
+  /// \remarks This does not increase the reference count on the device.
+  static void SetDefaultDevice(xiiGALDevice* pDefaultDevice);
+
+  /// \brief Retrieves the default device. This will be nullptr if none is set.
+  static xiiGALDevice* GetDefaultDevice();
+
+  /// \brief This returns true if there is a set default device.
+  static bool HasDefaultDevice();
+
 protected:
-  xiiGALDevice(const xiiGALDeviceCreationDescription& Description);
+  xiiGALDevice(const xiiGALDeviceCreationDescription& creationDescription);
 
   virtual ~xiiGALDevice();
 
@@ -308,8 +322,13 @@ protected:
 
   void DestroyViews(xiiGALResourceBase* pResource);
 
+  /// \brief Asserts that either this device supports multi-threaded resource creation, or that this function is executed on the main thread.
+  void VerifyMultithreadedAccess() const;
+
   xiiProxyAllocator        m_Allocator;
   xiiLocalAllocatorWrapper m_AllocatorWrapper;
+
+  mutable xiiMutex m_Mutex;
 
   using SwapChainTable         = xiiIdTable<xiiGALSwapChainHandle::IdType, xiiGALSwapChain*, xiiLocalAllocatorWrapper>;
   using BlendStateTable        = xiiIdTable<xiiGALBlendStateHandle::IdType, xiiGALBlendState*, xiiLocalAllocatorWrapper>;
@@ -320,7 +339,7 @@ protected:
   using TextureTable           = xiiIdTable<xiiGALTextureHandle::IdType, xiiGALTexture*, xiiLocalAllocatorWrapper>;
   using BufferViewTable        = xiiIdTable<xiiGALBufferViewHandle::IdType, xiiGALBufferView*, xiiLocalAllocatorWrapper>;
   using TextureViewTable       = xiiIdTable<xiiGALTextureViewHandle::IdType, xiiGALTextureView*, xiiLocalAllocatorWrapper>;
-  using SamplerStateTable      = xiiIdTable<xiiGALSamplerHandle::IdType, xiiGALSampler*, xiiLocalAllocatorWrapper>;
+  using SamplerTable           = xiiIdTable<xiiGALSamplerHandle::IdType, xiiGALSampler*, xiiLocalAllocatorWrapper>;
   using InputLayoutTable       = xiiIdTable<xiiGALInputLayoutHandle::IdType, xiiGALInputLayout*, xiiLocalAllocatorWrapper>;
   using QueryTable             = xiiIdTable<xiiGALQueryHandle::IdType, xiiGALQuery*, xiiLocalAllocatorWrapper>;
   using FenceTable             = xiiIdTable<xiiGALFenceHandle::IdType, xiiGALFence*, xiiLocalAllocatorWrapper>;
@@ -338,7 +357,7 @@ protected:
   TextureTable           m_Textures;
   BufferViewTable        m_BufferViews;
   TextureViewTable       m_TextureViews;
-  SamplerStateTable      m_Samplers;
+  SamplerTable           m_Samplers;
   InputLayoutTable       m_InputLayouts;
   QueryTable             m_Queries;
   FenceTable             m_Fences;
@@ -351,8 +370,8 @@ protected:
   xiiHashTable<xiiUInt32, xiiGALBlendStateHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>        m_BlendStateTable;
   xiiHashTable<xiiUInt32, xiiGALDepthStencilStateHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper> m_DepthStencilStateTable;
   xiiHashTable<xiiUInt32, xiiGALRasterizerStateHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>   m_RasterizerStateTable;
-  xiiHashTable<xiiUInt32, xiiGALSamplerHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>           m_SamplerStateTable;
-  xiiHashTable<xiiUInt32, xiiGALInputLayout, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>             m_VertexDeclarationTable;
+  xiiHashTable<xiiUInt32, xiiGALSamplerHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>           m_SamplerTable;
+  xiiHashTable<xiiUInt32, xiiGALInputLayoutHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>       m_InputLayoutTable;
 
   struct DeadObject
   {
@@ -366,14 +385,18 @@ protected:
 
   xiiGraphicsDeviceAdapterDescription m_AdapterDescription;
 
+  // Deactivate Doxygen document generation for the following block. (API abstraction only)
+  /// \cond
+
+  // These functions need to be implemented by a graphics API abstraction.
 protected:
   friend class xiiMemoryUtils;
 
   virtual xiiResult InitializePlatform() = 0;
   virtual xiiResult ShutdownPlatform()   = 0;
 
-  virtual void BeginPipelinePlatform(xiiStringView Name, xiiGALSwapChainHandle hSwapChain) = 0;
-  virtual void EndPipelinePlatform(xiiGALSwapChainHandle hSwapChain)                       = 0;
+  virtual void BeginPipelinePlatform(xiiStringView Name, xiiGALSwapChain* pSwapChain) = 0;
+  virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain)                       = 0;
 
   virtual xiiGALPass* BeginPassPlatform(xiiStringView Name) = 0;
   virtual void        EndPassPlatform(xiiGALPass* pPass)    = 0;
@@ -381,47 +404,47 @@ protected:
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame = 0U) = 0;
   virtual void EndFramePlatform()                                     = 0;
 
-  virtual xiiGALBlendStateHandle CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) = 0;
-  virtual void                   DestroyBlendStatePlatform(xiiGALBlendStateHandle hBlendState)                    = 0;
+  virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) = 0;
+  virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState)                         = 0;
 
-  virtual xiiGALDepthStencilStateHandle CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description) = 0;
-  virtual void                          DestroyDepthStencilStatePlatform(xiiGALDepthStencilStateHandle hDepthStencilState)             = 0;
+  virtual xiiGALDepthStencilState* CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description) = 0;
+  virtual void                     DestroyDepthStencilStatePlatform(xiiGALDepthStencilState* pDepthStencilState)                  = 0;
 
-  virtual xiiGALRasterizerStateHandle CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description) = 0;
-  virtual void                        DestroyRasterizerStatePlatform(xiiGALRasterizerStateHandle hRasterizerState)               = 0;
+  virtual xiiGALRasterizerState* CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description) = 0;
+  virtual void                   DestroyRasterizerStatePlatform(xiiGALRasterizerState* pRasterizerState)                    = 0;
 
-  virtual xiiGALShaderHandle CreateShaderPlatform(const xiiGALShaderCreationDescription& description) = 0;
-  virtual void               DestroyShaderPlatform(xiiGALShaderHandle hShader)                        = 0;
+  virtual xiiGALShader* CreateShaderPlatform(const xiiGALShaderCreationDescription& description) = 0;
+  virtual void          DestroyShaderPlatform(xiiGALShader* pShader)                             = 0;
 
-  virtual xiiGALBufferHandle CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr) = 0;
-  virtual void               DestroyBufferPlatform(xiiGALBufferHandle hBuffer)                                                                        = 0;
+  virtual xiiGALBuffer* CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr) = 0;
+  virtual void          DestroyBufferPlatform(xiiGALBuffer* pBuffer)                                                                             = 0;
 
-  virtual xiiGALTextureHandle CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) = 0;
-  virtual void                DestroyTexturePlatform(xiiGALTextureHandle hTexture)                                                                        = 0;
+  virtual xiiGALTexture* CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) = 0;
+  virtual void           DestroyTexturePlatform(xiiGALTexture* pTexture)                                                                             = 0;
 
-  virtual xiiGALSamplerHandle CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) = 0;
-  virtual void                DestroySamplerPlatform(xiiGALSamplerHandle hSamplerState)                  = 0;
+  virtual xiiGALSampler* CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) = 0;
+  virtual void           DestroySamplerPlatform(xiiGALSampler* pSamplerState)                       = 0;
 
-  virtual xiiGALInputLayoutHandle CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description) = 0;
-  virtual void                    DestroyInputLayoutPlatform(xiiGALInputLayoutHandle hInputLayout)                   = 0;
+  virtual xiiGALInputLayout* CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description) = 0;
+  virtual void               DestroyInputLayoutPlatform(xiiGALInputLayout* pInputLayout)                        = 0;
 
-  virtual xiiGALQueryHandle CreateQueryPlatform(const xiiGALQueryCreationDescription& description) = 0;
-  virtual void              DestroyQueryPlatform(xiiGALQueryHandle hQuery)                         = 0;
+  virtual xiiGALQuery* CreateQueryPlatform(const xiiGALQueryCreationDescription& description) = 0;
+  virtual void         DestroyQueryPlatform(xiiGALQuery* pQuery)                              = 0;
 
-  virtual xiiGALFenceHandle CreateFencePlatform(const xiiGALFenceCreationDescription& description) = 0;
-  virtual void              DestroyFencePlatform(xiiGALFenceHandle hFence)                         = 0;
+  virtual xiiGALFence* CreateFencePlatform(const xiiGALFenceCreationDescription& description) = 0;
+  virtual void         DestroyFencePlatform(xiiGALFence* pFence)                              = 0;
 
-  virtual xiiGALRenderPassHandle CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description) = 0;
-  virtual void                   DestroyRenderPassPlatform(xiiGALRenderPassHandle hRenderPass)                    = 0;
+  virtual xiiGALRenderPass* CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description) = 0;
+  virtual void              DestroyRenderPassPlatform(xiiGALRenderPass* pRenderPass)                         = 0;
 
-  virtual xiiGALFramebufferHandle CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description) = 0;
-  virtual void                    DestroyFramebufferPlatform(xiiGALFramebufferHandle hFramebuffer)                   = 0;
+  virtual xiiGALFramebuffer* CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description) = 0;
+  virtual void               DestroyFramebufferPlatform(xiiGALFramebuffer* pFramebuffer)                        = 0;
 
-  virtual xiiGALBottomLevelASHandle CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description) = 0;
-  virtual void                      DestroyBottomLevelASPlatform(xiiGALBottomLevelASHandle hBottomLevelAS)                 = 0;
+  virtual xiiGALBottomLevelAS* CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description) = 0;
+  virtual void                 DestroyBottomLevelASPlatform(xiiGALBottomLevelAS* pBottomLevelAS)                      = 0;
 
-  virtual xiiGALTopLevelASHandle CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description) = 0;
-  virtual void                   DestroyTopLevelASPlatform(xiiGALTopLevelASHandle hTopLevelAS)                    = 0;
+  virtual xiiGALTopLevelAS* CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description) = 0;
+  virtual void              DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS)                         = 0;
 
   virtual void WaitIdlePlatform() = 0;
 
@@ -431,9 +454,14 @@ protected:
 
   virtual const xiiGALSparseTextureProperties GetSparseTexturePropertiesPlatform(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount) const = 0;
 
+  /// \endcond
+
 protected:
   xiiGALTextureHandle FinalizeTextureInternal(const xiiGALTextureCreationDescription& desc, xiiGALTexture* pTexture);
   xiiGALBufferHandle  FinalizeBufferInternal(const xiiGALBufferCreationDescription& desc, xiiGALBuffer* pBuffer);
+
+private:
+  static xiiGALDevice* s_pDefaultDevice;
 
 private:
   bool m_bBeginFrameCalled    = false;
