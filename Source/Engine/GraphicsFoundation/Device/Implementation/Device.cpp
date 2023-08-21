@@ -290,4 +290,64 @@ void xiiGALDevice::EndFrame()
     m_Events.Broadcast(e);
   }
 }
+
+xiiGALBlendStateHandle xiiGALDevice::CreateBlendState(const xiiGALBlendStateCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  // Hash description and return any existing one (including increasing the refcount).
+  xiiUInt32 uiHash = description.CalculateHash();
+
+  {
+    xiiGALBlendStateHandle hBlendState;
+    if (m_BlendStateTable.TryGetValue(uiHash, hBlendState))
+    {
+      xiiGALBlendState* pBlendState = m_BlendStates[hBlendState];
+      if (pBlendState->GetRefCount() == 0)
+      {
+        ReviveDeadObject(GALObjectType::BlendState, hBlendState);
+      }
+
+      pBlendState->AddRef();
+      return hBlendState;
+    }
+  }
+
+  xiiGALBlendState* pBlendState = CreateBlendStatePlatform(description);
+
+  if (pBlendState != nullptr)
+  {
+    XII_ASSERT_DEBUG(pBlendState->GetDescription().CalculateHash() == uiHash, "BlendState hash does not match.");
+
+    pBlendState->AddRef();
+
+    xiiGALBlendStateHandle hBlendState(m_BlendStates.Insert(pBlendState));
+    m_BlendStateTable.Insert(uiHash, hBlendState);
+
+    return hBlendState;
+  }
+
+  return xiiGALBlendStateHandle();
+}
+
+void xiiGALDevice::DestroyBlendState(xiiGALBlendStateHandle hBlendState)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALBlendState* pBlendState = nullptr;
+
+  if (m_BlendStates.TryGetValue(hBlendState, pBlendState))
+  {
+    pBlendState->ReleaseRef();
+
+    if (pBlendState->GetRefCount() == 0)
+    {
+      AddDeadObject(GALObjectType::BlendState, hBlendState);
+    }
+  }
+  else
+  {
+    xiiLog::Warning("DestroyBlendState called on invalid handle (double free?).");
+  }
+}
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);
