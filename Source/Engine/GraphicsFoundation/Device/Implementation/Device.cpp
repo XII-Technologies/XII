@@ -470,4 +470,54 @@ void xiiGALDevice::DestroyRasterizerState(xiiGALRasterizerStateHandle hRasterize
     xiiLog::Warning("DestroyRasterizerState called on invalid handle (double free?).");
   }
 }
+
+xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  bool bHasByteCodes = false;
+
+  for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderStage::ENUM_COUNT; ++uiStage)
+  {
+    if (description.HasByteCodeForStage((xiiGALShaderStage::Enum)uiStage))
+    {
+      bHasByteCodes = true;
+      break;
+    }
+  }
+
+  if (!bHasByteCodes)
+  {
+    xiiLog::Error("A shader cannot be created with no shader bytecode.");
+
+    return xiiGALShaderHandle();
+  }
+
+  xiiGALShader* pShader = CreateShaderPlatform(description);
+
+  if (pShader == nullptr)
+  {
+    return xiiGALShaderHandle();
+  }
+  else
+  {
+    return xiiGALShaderHandle(m_Shaders.Insert(pShader));
+  }
+}
+
+void xiiGALDevice::DestroyShader(xiiGALShaderHandle hShader)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALShader* pShader = nullptr;
+
+  if (m_Shaders.TryGetValue(hShader, pShader))
+  {
+    AddDeadObject(GALObjectType::Shader, hShader);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyShader called on invalid handle (double free?).");
+  }
+}
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);
