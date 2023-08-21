@@ -477,7 +477,6 @@ void xiiGALDevice::DestroyRasterizerState(xiiGALRasterizerStateHandle hRasterize
     if (!(expression))                     \
     {                                      \
       xiiLog::Error(__VA_ARGS__);          \
-                                           \
       return xiiGALShaderHandle();         \
     }                                      \
   } while (false);
@@ -568,7 +567,6 @@ void xiiGALDevice::DestroyShader(xiiGALShaderHandle hShader)
     if (!(expression))                     \
     {                                      \
       xiiLog::Error(__VA_ARGS__);          \
-                                           \
       return xiiGALBufferHandle();         \
     }                                      \
   } while (false);
@@ -760,5 +758,262 @@ void xiiGALDevice::DestroyBuffer(xiiGALBufferHandle hBuffer)
 }
 
 #undef XII_VERIFY_BUFFER
+
+#define XII_VERIFY_TEXTURE(expression, ...) \
+  do                                        \
+  {                                         \
+    if (!(expression))                      \
+    {                                       \
+      xiiLog::Error(__VA_ARGS__);           \
+      return xiiGALTextureHandle();         \
+    }                                       \
+  } while (false);
+
+xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  const auto& formatProperties = GetTextureFormatProperties(description.m_Format);
+
+  // Validate texture description.
+
+  XII_VERIFY_TEXTURE(description.m_Type != xiiGALResourceDimension::Undefined, "The texture resource dimension is undefined.");
+  XII_VERIFY_TEXTURE(description.m_Type > xiiGALResourceDimension::Undefined && description.m_Type < xiiGALResourceDimension::ENUM_COUNT, "The texture resource dimension is invalid.");
+  XII_VERIFY_TEXTURE(description.m_Size.width != 0U, "The texture width cannot be zero.");
+
+  if (description.m_Type == xiiGALResourceDimension::Texture1D || description.m_Type == xiiGALResourceDimension::Texture1DArray)
+  {
+    if (description.m_Size.height != formatProperties.m_uiBlockHeight)
+    {
+      if (formatProperties.m_uiBlockHeight == 1U)
+      {
+        XII_VERIFY_TEXTURE(false, "The texture height ({0}) of a Texture1D or Texture1DArray must be equal to 1.");
+      }
+      else
+      {
+        XII_VERIFY_TEXTURE(false, "For block-compressed formats, the height ({0}) of a Texture1D or Texture1DArray must be equal to the compressed block height ({1}).", description.m_Size.height, formatProperties.m_uiBlockHeight);
+      }
+    }
+  }
+  else
+  {
+    XII_VERIFY_TEXTURE(description.m_Size.height != 0U, "The texture height cannot be zero.");
+  }
+
+  XII_VERIFY_TEXTURE(description.m_Type != xiiGALResourceDimension::Texture3D && description.m_uiArraySizeOrDepth != 0U, "A 3D texture depth cannot be zero.");
+
+  if (description.m_Type == xiiGALResourceDimension::Texture1D || description.m_Type == xiiGALResourceDimension::Texture2D)
+  {
+    XII_VERIFY_TEXTURE(description.m_uiArraySizeOrDepth == 1U, "A Texture1D or Texture2D must have 1 array slice, ({0}) provided. Use Texture1DArray or Texture2DArray if more than one slice is needed.", description.m_uiArraySizeOrDepth);
+  }
+
+  if (description.m_Type == xiiGALResourceDimension::TextureCube || description.m_Type == xiiGALResourceDimension::TextureCubeArray)
+  {
+    XII_VERIFY_TEXTURE(description.m_Size.width == description.m_Size.height, "For TextureCube or TextureCubeArray textures, the width ({0} provided) must match the height ({1} provided).", description.m_Size.width, description.m_Size.height);
+    XII_VERIFY_TEXTURE(description.m_uiArraySizeOrDepth >= 6U, "For TextureCube or TextureCubeArray textures, a minimum of 6 slices must be given ({0} provided).", description.m_uiArraySizeOrDepth);
+  }
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  {
+    xiiUInt32 uiMaxDimension = 0;
+    if (description.Is1D())
+      uiMaxDimension = description.m_Size.width;
+    else if (description.Is3D())
+      uiMaxDimension = xiiMath::Max(description.m_Size.width, description.m_Size.height);
+    else if (description.Is3D())
+      uiMaxDimension = xiiMath::Max(xiiMath::Max(description.m_Size.width, description.m_Size.height), description.m_uiArraySizeOrDepth);
+
+    XII_VERIFY_TEXTURE((uiMaxDimension >= XII_BIT(description.m_uiMipLevels - 1)), "Texture '{0}' has an incorrect number of Mip levels ({1}).", description.m_sName, description.m_uiMipLevels);
+  }
+#endif
+
+  if (description.m_uiSampleCount > 1U)
+  {
+    XII_VERIFY_TEXTURE(xiiMath::IsPowerOf2(description.m_uiSampleCount), "The texture sample count must be a power of two.");
+    XII_VERIFY_TEXTURE(description.m_Type == xiiGALResourceDimension::Texture2D || description.m_Type == xiiGALResourceDimension::Texture2DArray, "Only Texture2D and Texture2DArray can be multi-sampled.");
+    XII_VERIFY_TEXTURE(description.m_uiMipLevels == 1U, "Multi-sampled textures must have one mip level ({0} levels specified).", description.m_uiMipLevels);
+    XII_VERIFY_TEXTURE(description.m_BindFlags.AreNoneSet(xiiGALBindFlags::UnorderedAccess), "xiiGALBindFlags::UnorderedAccess is not allowed for multi-sampled resources.");
+  }
+
+  if (description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Memoryless))
+  {
+    XII_VERIFY_TEXTURE(m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags.IsAnyFlagSet(), "Memoryless textures are not supported by this device.");
+    XII_VERIFY_TEXTURE(description.m_BindFlags.IsStrictlyAnySet(m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags), "Unsupported bind flags given for memoryless textures.");
+    XII_VERIFY_TEXTURE(description.m_Usage == xiiGALResourceUsage::Default, "Memoryless attachment requires xiiGALResourceUsage::Default.");
+    XII_VERIFY_TEXTURE(description.m_CPUAccessFlags.IsNoFlagSet(), "Memoryless attachment requires xiiGALCPUAccessFlags::None.");
+    XII_VERIFY_TEXTURE(description.m_MiscFlags.AreNoneSet(xiiGALMiscTextureFlags::GenerateMips), "Memoryless attachment is not compatible with mip map generation.");
+  }
+
+  if (description.m_Usage == xiiGALResourceUsage::Staging)
+  {
+    XII_VERIFY_TEXTURE(description.m_BindFlags.IsNoFlagSet(), "Staging textures cannot be bound to any GPU pipeline stage.");
+    XII_VERIFY_TEXTURE(description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips), "Mipmaps cannot be automatically generated for staging textures.");
+    XII_VERIFY_TEXTURE(description.m_CPUAccessFlags.IsAnyFlagSet(), "Staging textures must specify the CPU access flags.");
+    XII_VERIFY_TEXTURE(description.m_CPUAccessFlags.IsStrictlyAnySet(xiiGALCPUAccessFlag::Read) || description.m_CPUAccessFlags.IsStrictlyAnySet(xiiGALCPUAccessFlag::Write), "Staging textures must use exactly one of xiiGALCPUAccessFlags::Read or xiiGALCPUAccessFlags::Write.");
+  }
+  else if (description.m_Usage == xiiGALResourceUsage::Unified)
+  {
+    XII_VERIFY_TEXTURE(false, "xiiGALResourceUsage::Unified textures are currently not supported.");
+  }
+
+  if (description.m_Usage == xiiGALResourceUsage::Dynamic && xiiMath::CountBits(description.m_uiImmediateContextMask) > 1U)
+  {
+    // Dynamic textures always use a backing resource that requires implicit state transitions in map/unmap operations, which is not safe in multiple device contexts.
+    XII_VERIFY_TEXTURE(false, "xiiGALResourceUsage::Dynamic textures may only be used in one immediate device context.");
+  }
+
+  if (description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Subsampled))
+  {
+    XII_VERIFY_TEXTURE(m_AdapterDescription.m_Features.m_VariableRateShading == xiiGALDeviceFeatureState::Enabled, "xiiGALMiscTextureFlags::Subsampled requires the Variable Shading Rate device feature.");
+    XII_VERIFY_TEXTURE(m_Description.m_GraphicsDeviceType != xiiGALGraphicsDeviceType::Metal, "xiiGALMiscTextureFlags::Subsampled is unsupported in Metal. Use IRasterizationRateMapMtl to implement Variable Rate Shading in Metal.");
+    XII_VERIFY_TEXTURE(m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget), "xiiGALMiscTextureFlags::Subsampled requires the xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget capability.");
+    XII_VERIFY_TEXTURE(!description.m_BindFlags.AreAllSet(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil), "Subsampled textures must use one of xiiGALBindFlags::RenderTarget or xiiGALBindFlags::DepthStencil bind flags.");
+    XII_VERIFY_TEXTURE(!description.m_BindFlags.IsSet(xiiGALBindFlags::ShadingRate), "xiiGALMiscTextureFlags::Subsampled is not compatible with xiiGALBindFlags::ShadingRate.");
+  }
+
+  if (description.m_BindFlags.IsSet(xiiGALBindFlags::ShadingRate))
+  {
+    XII_VERIFY_TEXTURE(m_AdapterDescription.m_Features.m_VariableRateShading == xiiGALDeviceFeatureState::Enabled, "xiiGALBindFlags::ShadingRate requires the Variable Shading Rate device feature.");
+    XII_VERIFY_TEXTURE(m_Description.m_GraphicsDeviceType != xiiGALGraphicsDeviceType::Metal, "xiiGALBindFlags::ShadingRate is unsupported in Metal. Use IRasterizationRateMapMtl to implement Variable Rate Shading in Metal.");
+    XII_VERIFY_TEXTURE(m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::TextureBased), "xiiGALBindFlags::ShadingRate requires the xiiGALShadingRateCapabilityFlags::TextureBased capability.");
+    XII_VERIFY_TEXTURE(description.m_uiSampleCount == 1U, "xiiGALBindFlags::ShadingRate is not allowed for multi-sampled textures.");
+
+    if (description.m_Type == xiiGALResourceDimension::Texture2DArray && description.m_uiArraySizeOrDepth > 1U)
+    {
+      XII_VERIFY_TEXTURE(m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::TextureArray), "Shading rate texture arrays require the xiiGALShadingRateCapabilityFlags::TextureArray capability.");
+    }
+
+    XII_VERIFY_TEXTURE(description.m_Usage == xiiGALResourceUsage::Default || description.m_Usage == xiiGALResourceUsage::Immutable, "Shading rate textures only allow xiiGALResourceUsage::Default or xiiGALResourceUsage::Immutable.");
+
+    XII_VERIFY_TEXTURE(description.m_uiMipLevels == 1U, "Shading rate textures must have a single mip level.");
+    XII_VERIFY_TEXTURE(description.m_uiMipLevels != 1U, "Shading rate textures must have a single mip level."); // For Direct3D12 and Vulkan with VK_EXT_fragment_density_map
+    XII_VERIFY_TEXTURE(description.m_BindFlags.IsStrictlyAnySet(m_AdapterDescription.m_ShadingRateProperties.m_BindFlags), "Unsupported bind flags are specified for the shading rate texture.");
+
+    /// \todo GraphicsFoundation: Vulkan allows the creation of 2D texture arrays, and using a single slice for view even if xiiGALShadingRateCapabilityFlags::TextureArray is not supported by the device.
+    if (description.m_Type != xiiGALResourceDimension::Texture2D && !(description.m_Type == xiiGALResourceDimension::Texture2DArray && m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::TextureArray)))
+    {
+      XII_VERIFY_TEXTURE(false, "Shading rate texture must be Texture2D or Texture2DArray with the xiiGALShadingRateCapabilityFlags::TextureArray capability.");
+    }
+
+    switch (m_AdapterDescription.m_ShadingRateProperties.m_Format)
+    {
+      case xiiGALShadingRateFormat::Palette:
+      {
+        XII_VERIFY_TEXTURE(description.m_Format == xiiGALTextureFormat::R8UInt, "The shading rate texture format must be xiiGALTextureFormat::R8UInt.");
+      }
+      break;
+      case xiiGALShadingRateFormat::RG8UNormalized:
+      {
+        XII_VERIFY_TEXTURE(description.m_Format == xiiGALTextureFormat::R8UNormalized, "The shading rate texture format must be xiiGALTextureFormat::R8UNormalized.");
+      }
+      break;
+
+      case xiiGALShadingRateFormat::ColumnRowFloat32:
+      default:
+        XII_VERIFY_TEXTURE(false, "The shading rate texture is not supported.");
+    }
+  }
+
+  if (description.m_Usage == xiiGALResourceUsage::Sparse)
+  {
+    XII_VERIFY_TEXTURE(m_AdapterDescription.m_Features.m_SparseResources == xiiGALDeviceFeatureState::Enabled, "Sparse texture requires the Sparse Resources device feature.");
+
+    if (description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::SparseAlias))
+    {
+      XII_VERIFY_TEXTURE(m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.AreNoneSet(xiiGALSparseResourceCapabilityFlags::Aliased), "xiiGALMiscTextureFlags::SparseAlias flag requires the xiiGALSparseResourceCapabilityFlags::Aliased capability.");
+    }
+
+    switch (description.m_Type)
+    {
+      case xiiGALResourceDimension::Texture2D:
+      {
+        XII_VERIFY_TEXTURE(m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.IsSet(xiiGALSparseResourceCapabilityFlags::Texture2D), "Texture2D requires the xiiGALSparseResourceCapabilityFlags::Texture2D capability.");
+      }
+      break;
+      case xiiGALResourceDimension::Texture2DArray:
+      case xiiGALResourceDimension::TextureCube:
+      case xiiGALResourceDimension::TextureCubeArray:
+      {
+        XII_VERIFY_TEXTURE(m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.IsSet(xiiGALSparseResourceCapabilityFlags::Texture2D), "Texture2DArray, Texture2DCube and TextureCubeArray requires the xiiGALSparseResourceCapabilityFlags::Texture2D capability.");
+
+        if (m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.AreNoneSet(xiiGALSparseResourceCapabilityFlags::Texture2DArrayMipTail))
+        {
+          /// \todo GraphicsFoundation: Validate texture mip size to the tile size property.
+        }
+      }
+      break;
+      case xiiGALResourceDimension::Texture3D:
+      {
+        XII_VERIFY_TEXTURE(m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.IsSet(xiiGALSparseResourceCapabilityFlags::Texture3D), "Texture3D requires the xiiGALSparseResourceCapabilityFlags::Texture3D capability.");
+      }
+      break;
+      case xiiGALResourceDimension::Texture1D:
+      case xiiGALResourceDimension::Texture1DArray:
+      {
+        XII_VERIFY_TEXTURE(false, "Texture1D and Texture1DArray sparse textures are not supported.");
+      }
+      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+  }
+  else
+  {
+    XII_VERIFY_TEXTURE(description.m_MiscFlags.AreNoneSet(xiiGALMiscTextureFlags::SparseAlias), "The miscellaneous flags must not have xiiGALMiscTextureFlags::SparseAlias if the usage is not xiiGALResourceUsage::Sparse.");
+  }
+
+  xiiGALTexture* pTexture = CreateTexturePlatform(description, pInitialData);
+
+  return FinalizeTextureInternal(description, pTexture);
+}
+
+xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCreationDescription& description, xiiGALTexture* pTexture)
+{
+  if (pTexture != nullptr)
+  {
+    xiiGALTextureHandle hTexture(m_Textures.Insert(pTexture));
+
+    // Create default resource view.
+    if (description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+    {
+      xiiGALTextureViewCreationDescription viewDescription;
+      viewDescription.m_hTexture                  = hTexture;
+      viewDescription.m_uiArrayOrDepthSlicesCount = description.m_uiArraySizeOrDepth;
+      pTexture->m_hDefaultTextureView             = pTexture->CreateView(viewDescription);
+    }
+
+    // Create default render target view.
+    if (description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
+    {
+      xiiGALTextureViewCreationDescription viewDescription;
+      viewDescription.m_hTexture                  = hTexture;
+      viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
+      viewDescription.m_uiArrayOrDepthSlicesCount = description.m_uiArraySizeOrDepth;
+
+      pTexture->m_hDefaultRenderTargetView = pTexture->CreateView(viewDescription);
+    }
+
+    return hTexture;
+  }
+
+  return xiiGALTextureHandle();
+}
+
+void xiiGALDevice::DestroyTexture(xiiGALTextureHandle hTexture)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALTexture* pTexture = nullptr;
+  if (m_Textures.TryGetValue(hTexture, pTexture))
+  {
+    AddDeadObject(GALObjectType::Texture, hTexture);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyTexture called on invalid handle (double free?)");
+  }
+}
+
+#undef XII_VERIFY_TEXTURE
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);
