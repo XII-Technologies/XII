@@ -471,6 +471,17 @@ void xiiGALDevice::DestroyRasterizerState(xiiGALRasterizerStateHandle hRasterize
   }
 }
 
+#define XII_VERIFY_SHADER(expression, ...) \
+  do                                       \
+  {                                        \
+    if (!(expression))                     \
+    {                                      \
+      xiiLog::Error(__VA_ARGS__);          \
+                                           \
+      return xiiGALShaderHandle();         \
+    }                                      \
+  } while (false);
+
 xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
@@ -491,6 +502,34 @@ xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescript
     xiiLog::Error("A shader cannot be created with no shader bytecode.");
 
     return xiiGALShaderHandle();
+  }
+
+  if (description.m_ShaderStage.IsSet(xiiGALShaderStage::Geometry) && m_AdapterDescription.m_Features.m_GeometryShaders != xiiGALDeviceFeatureState::Enabled)
+  {
+    XII_VERIFY_SHADER(false, "Geometry shaders are not supported by this device.");
+  }
+  if (description.m_ShaderStage.IsAnySet(xiiGALShaderStage::Domain | xiiGALShaderStage::Hull) && m_AdapterDescription.m_Features.m_Tessellation != xiiGALDeviceFeatureState::Enabled)
+  {
+    XII_VERIFY_SHADER(false, "Tessellation shaders are not supported by this device.");
+  }
+  if (description.m_ShaderStage.IsSet(xiiGALShaderStage::Compute) && m_AdapterDescription.m_Features.m_ComputeShaders != xiiGALDeviceFeatureState::Enabled)
+  {
+    XII_VERIFY_SHADER(false, "Compute shaders are not supported by this device.");
+  }
+  if (description.m_ShaderStage.IsAnySet(xiiGALShaderStage::Amplification | xiiGALShaderStage::Mesh) && m_AdapterDescription.m_Features.m_MeshShaders != xiiGALDeviceFeatureState::Enabled)
+  {
+    XII_VERIFY_SHADER(false, "Mesh shaders are not supported by this device.");
+  }
+  if (description.m_ShaderStage.IsAnySet(xiiGALShaderStage::AllRayTracing))
+  {
+    if (m_AdapterDescription.m_Features.m_RayTracing != xiiGALDeviceFeatureState::Enabled || m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags.AreNoneSet(xiiGALRayTracingCapabilityFlags::StandaloneShaders))
+    {
+      XII_VERIFY_SHADER(false, "Standalone ray tracing shaders are not supported by this device.");
+    }
+  }
+  if (description.m_ShaderStage.IsSet(xiiGALShaderStage::Tile) && m_AdapterDescription.m_Features.m_TileShaders != xiiGALDeviceFeatureState::Enabled)
+  {
+    XII_VERIFY_SHADER(false, "Tile shaders are not supported by this device.");
   }
 
   xiiGALShader* pShader = CreateShaderPlatform(description);
@@ -520,6 +559,8 @@ void xiiGALDevice::DestroyShader(xiiGALShaderHandle hShader)
     xiiLog::Warning("DestroyShader called on an invalid handle (double free?).");
   }
 }
+
+#undef XII_VERIFY_SHADER
 
 #define XII_VERIFY_BUFFER(expression, ...) \
   do                                       \
@@ -635,6 +676,7 @@ xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescript
   }
 
   // Validate buffer initial data.
+
   const bool bHasInitialData = (pInitialData != nullptr && pInitialData->m_pData != nullptr);
 
   if (description.m_ResourceUsage == xiiGALResourceUsage::Immutable && !bHasInitialData)
@@ -717,6 +759,6 @@ void xiiGALDevice::DestroyBuffer(xiiGALBufferHandle hBuffer)
   }
 }
 
-#undef XII_VERIFY_BUFFER_RETURN
+#undef XII_VERIFY_BUFFER
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);
