@@ -410,4 +410,64 @@ void xiiGALDevice::DestroyDepthStencilState(xiiGALDepthStencilStateHandle hDepth
     xiiLog::Warning("DestroyDepthStencilState called on invalid handle (double free?).");
   }
 }
+
+xiiGALRasterizerStateHandle xiiGALDevice::CreateRasterizerState(const xiiGALRasterizerStateCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  // Hash description and return any existing one (including increasing the refcount).
+  xiiUInt32 uiHash = description.CalculateHash();
+
+  {
+    xiiGALRasterizerStateHandle hRasterizerState;
+    if (m_RasterizerStateTable.TryGetValue(uiHash, hRasterizerState))
+    {
+      xiiGALRasterizerState* pRasterizerState = m_RasterizerStates[hRasterizerState];
+      if (pRasterizerState->GetRefCount() == 0)
+      {
+        ReviveDeadObject(GALObjectType::RasterizerState, hRasterizerState);
+      }
+
+      pRasterizerState->AddRef();
+      return hRasterizerState;
+    }
+  }
+
+  xiiGALRasterizerState* pRasterizerState = CreateRasterizerStatePlatform(description);
+
+  if (pRasterizerState != nullptr)
+  {
+    XII_ASSERT_DEBUG(pRasterizerState->GetDescription().CalculateHash() == uiHash, "RasterizerState hash does not match.");
+
+    pRasterizerState->AddRef();
+
+    xiiGALRasterizerStateHandle hRasterizerState(m_RasterizerStates.Insert(pRasterizerState));
+    m_RasterizerStateTable.Insert(uiHash, hRasterizerState);
+
+    return hRasterizerState;
+  }
+
+  return xiiGALRasterizerStateHandle();
+}
+
+void xiiGALDevice::DestroyRasterizerState(xiiGALRasterizerStateHandle hRasterizerState)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALRasterizerState* pRasterizerState = nullptr;
+
+  if (m_RasterizerStates.TryGetValue(hRasterizerState, pRasterizerState))
+  {
+    pRasterizerState->ReleaseRef();
+
+    if (pRasterizerState->GetRefCount() == 0)
+    {
+      AddDeadObject(GALObjectType::RasterizerState, hRasterizerState);
+    }
+  }
+  else
+  {
+    xiiLog::Warning("DestroyRasterizerState called on invalid handle (double free?).");
+  }
+}
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);
