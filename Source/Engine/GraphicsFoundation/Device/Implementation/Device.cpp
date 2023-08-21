@@ -350,4 +350,64 @@ void xiiGALDevice::DestroyBlendState(xiiGALBlendStateHandle hBlendState)
     xiiLog::Warning("DestroyBlendState called on invalid handle (double free?).");
   }
 }
+
+xiiGALDepthStencilStateHandle xiiGALDevice::CreateDepthStencilState(const xiiGALDepthStencilStateCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  // Hash description and return any existing one (including increasing the refcount).
+  xiiUInt32 uiHash = description.CalculateHash();
+
+  {
+    xiiGALDepthStencilStateHandle hDepthStencilState;
+    if (m_DepthStencilStateTable.TryGetValue(uiHash, hDepthStencilState))
+    {
+      xiiGALDepthStencilState* pDepthStencilState = m_DepthStencilStates[hDepthStencilState];
+      if (pDepthStencilState->GetRefCount() == 0)
+      {
+        ReviveDeadObject(GALObjectType::DepthStencilState, hDepthStencilState);
+      }
+
+      pDepthStencilState->AddRef();
+      return hDepthStencilState;
+    }
+  }
+
+  xiiGALDepthStencilState* pDepthStencilState = CreateDepthStencilStatePlatform(description);
+
+  if (pDepthStencilState != nullptr)
+  {
+    XII_ASSERT_DEBUG(pDepthStencilState->GetDescription().CalculateHash() == uiHash, "DepthStencilState hash does not match.");
+
+    pDepthStencilState->AddRef();
+
+    xiiGALDepthStencilStateHandle hDepthStencilState(m_DepthStencilStates.Insert(pDepthStencilState));
+    m_DepthStencilStateTable.Insert(uiHash, hDepthStencilState);
+
+    return hDepthStencilState;
+  }
+
+  return xiiGALDepthStencilStateHandle();
+}
+
+void xiiGALDevice::DestroyDepthStencilState(xiiGALDepthStencilStateHandle hDepthStencilState)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALDepthStencilState* pDepthStencilState = nullptr;
+
+  if (m_DepthStencilStates.TryGetValue(hDepthStencilState, pDepthStencilState))
+  {
+    pDepthStencilState->ReleaseRef();
+
+    if (pDepthStencilState->GetRefCount() == 0)
+    {
+      AddDeadObject(GALObjectType::DepthStencilState, hDepthStencilState);
+    }
+  }
+  else
+  {
+    xiiLog::Warning("DestroyDepthStencilState called on invalid handle (double free?).");
+  }
+}
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);
