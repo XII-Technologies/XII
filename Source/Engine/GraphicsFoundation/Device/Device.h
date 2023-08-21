@@ -457,8 +457,8 @@ protected:
   /// \endcond
 
 protected:
-  xiiGALTextureHandle FinalizeTextureInternal(const xiiGALTextureCreationDescription& desc, xiiGALTexture* pTexture);
-  xiiGALBufferHandle  FinalizeBufferInternal(const xiiGALBufferCreationDescription& desc, xiiGALBuffer* pBuffer);
+  xiiGALTextureHandle FinalizeTextureInternal(const xiiGALTextureCreationDescription& description, xiiGALTexture* pTexture);
+  xiiGALBufferHandle  FinalizeBufferInternal(const xiiGALBufferCreationDescription& description, xiiGALBuffer* pBuffer);
 
 private:
   static xiiGALDevice* s_pDefaultDevice;

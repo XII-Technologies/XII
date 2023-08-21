@@ -347,7 +347,7 @@ void xiiGALDevice::DestroyBlendState(xiiGALBlendStateHandle hBlendState)
   }
   else
   {
-    xiiLog::Warning("DestroyBlendState called on invalid handle (double free?).");
+    xiiLog::Warning("DestroyBlendState called on an invalid handle (double free?).");
   }
 }
 
@@ -407,7 +407,7 @@ void xiiGALDevice::DestroyDepthStencilState(xiiGALDepthStencilStateHandle hDepth
   }
   else
   {
-    xiiLog::Warning("DestroyDepthStencilState called on invalid handle (double free?).");
+    xiiLog::Warning("DestroyDepthStencilState called on an invalid handle (double free?).");
   }
 }
 
@@ -467,7 +467,7 @@ void xiiGALDevice::DestroyRasterizerState(xiiGALRasterizerStateHandle hRasterize
   }
   else
   {
-    xiiLog::Warning("DestroyRasterizerState called on invalid handle (double free?).");
+    xiiLog::Warning("DestroyRasterizerState called on an invalid handle (double free?).");
   }
 }
 
@@ -517,7 +517,206 @@ void xiiGALDevice::DestroyShader(xiiGALShaderHandle hShader)
   }
   else
   {
-    xiiLog::Warning("DestroyShader called on invalid handle (double free?).");
+    xiiLog::Warning("DestroyShader called on an invalid handle (double free?).");
   }
 }
+
+#define XII_VERIFY_BUFFER(expression, ...) \
+  do                                       \
+  {                                        \
+    if (!(expression))                     \
+    {                                      \
+      xiiLog::Error(__VA_ARGS__);          \
+                                           \
+      return xiiGALBufferHandle();         \
+    }                                      \
+  } while (false);
+
+xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData /* = nullptr*/)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  // Validate buffer description.
+
+  auto allowedBindFlags = xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::UniformBuffer | xiiGALBindFlags::ShaderResource | xiiGALBindFlags::StreamOutput | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments | xiiGALBindFlags::RayTracing;
+
+  XII_VERIFY_BUFFER(description.m_BindFlags.IsStrictlyAnySet(allowedBindFlags), "The buffer description bind flags contain unsupported bind flags.");
+
+  if (description.m_BindFlags.IsAnySet(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess))
+  {
+    XII_VERIFY_BUFFER(description.m_Mode.GetValue() > xiiGALBufferMode::Undefined && description.m_Mode.GetValue() < xiiGALBufferMode::ENUM_COUNT, "The given buffer mode is not a valid buffer mode for a buffer created with xiiGALBindFlags::ShaderResource or xiiGALBindFlags::UnorderedAccess.");
+
+    if (description.m_Mode == xiiGALBufferMode::Structured || description.m_Mode == xiiGALBufferMode::Formatted)
+    {
+      XII_VERIFY_BUFFER(description.m_uiElementByteStride != 0U, "The element stride must not be zero for structured and formatted buffers.");
+    }
+    else if (description.m_Mode == xiiGALBufferMode::Raw)
+    {
+      // Nothing to do.
+    }
+  }
+
+  if (description.m_BindFlags.IsSet(xiiGALBindFlags::RayTracing))
+  {
+    XII_VERIFY_BUFFER(m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled, "xiiGALBindFlags::RayTracing flag cannot be used when the Ray Tracing feature is disabled.");
+  }
+  if (description.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments))
+  {
+    XII_VERIFY_BUFFER(m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags.IsSet(xiiGALDrawCommandCapabilityFlags::DrawIndirect), "xiiGALBindFlags::IndirectDrawArguments flag cannot be used when the xiiGALDrawCommandCapabilityFlags::DrawIndirect capability is not supported.");
+  }
+
+  switch (description.m_ResourceUsage)
+  {
+    case xiiGALResourceUsage::Immutable:
+    case xiiGALResourceUsage::Default:
+    {
+      XII_VERIFY_BUFFER(description.m_CPUAccessFlags.IsNoFlagSet(), "Static and default buffers cannot have any CPU flags set.");
+    }
+    break;
+    case xiiGALResourceUsage::Dynamic:
+    {
+      XII_VERIFY_BUFFER(description.m_CPUAccessFlags == xiiGALCPUAccessFlag::Write, "Dynamic buffers require the xiiGALCPUAccessFlag::Write flag.");
+    }
+    break;
+    case xiiGALResourceUsage::Staging:
+    {
+      XII_VERIFY_BUFFER(description.m_CPUAccessFlags == xiiGALCPUAccessFlag::Write || description.m_CPUAccessFlags == xiiGALCPUAccessFlag::Read, "Exactly one of xiiGALCPUAccessFlag::Write or xiiGALCPUAccessFlag::Read must be specified for a staging buffer.");
+      XII_VERIFY_BUFFER(description.m_BindFlags.IsNoFlagSet(), "Staging buffers cannot be bound to any part of the graphics pipeline and cannot have any bind flags set.");
+    }
+    break;
+    case xiiGALResourceUsage::Unified:
+    {
+      XII_VERIFY_BUFFER(m_AdapterDescription.m_MemoryProperties.m_uiUnifiedMemory != 0U, "Unified memory is not present in this device. Check the amount of unified memory in the device adapter information before creating unified buffers.");
+      XII_VERIFY_BUFFER(description.m_CPUAccessFlags.IsAnyFlagSet(), "At least one of xiiGALCPUAccessFlag::Write or xiiGALCPUAccessFlag::Read must be specified for a unified buffer.");
+
+      if (description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write))
+      {
+        XII_VERIFY_BUFFER(m_AdapterDescription.m_MemoryProperties.m_UnifiedMemoryCPUAccessFlags.IsAnySet(xiiGALCPUAccessFlag::Write), "Unified memory on this device does not support write access. Check for available access flags in the device properties before creating unified buffers.");
+      }
+      if (description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read))
+      {
+        XII_VERIFY_BUFFER(m_AdapterDescription.m_MemoryProperties.m_UnifiedMemoryCPUAccessFlags.IsAnySet(xiiGALCPUAccessFlag::Read), "Unified memory on this device does not support read access. Check for available access flags in the device properties before creating unified buffers.");
+      }
+    }
+    break;
+    case xiiGALResourceUsage::Sparse:
+    {
+      XII_VERIFY_BUFFER(m_AdapterDescription.m_Features.m_SparseResources == xiiGALDeviceFeatureState::Enabled, "Sparse buffer requires the Sparse Resources device feature to be enabled.");
+      XII_VERIFY_BUFFER(description.m_CPUAccessFlags.IsNoFlagSet(), "Sparse buffers cannot have any CPU access flags set.");
+      XII_VERIFY_BUFFER(description.m_uiSize <= m_AdapterDescription.m_SparseResourceProperties.m_uiResourceSpaceSize, "Sparse buffer size ({0}), must not exceed the Resource Space Size ({1}).", description.m_uiSize, m_AdapterDescription.m_SparseResourceProperties.m_uiResourceSpaceSize);
+      XII_VERIFY_BUFFER(m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.IsSet(xiiGALSparseResourceCapabilityFlags::Buffer), "Sparse buffer requires the xiiGALSparseResourceCapabilityFlags::Buffer capability.");
+
+      if (description.m_MiscFlags.IsSet(xiiGALMiscBufferFlags::SparseAlias))
+      {
+        XII_VERIFY_BUFFER(m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.IsSet(xiiGALSparseResourceCapabilityFlags::Aliased), "xiiGALMiscBufferFlags::SparseAlias flag requires the xiiGALSparseResourceCapabilityFlags::Aliased capability.");
+      }
+      XII_VERIFY_BUFFER(description.m_BindFlags.IsStrictlyAnySet(m_AdapterDescription.m_SparseResourceProperties.m_BindFlags), "The buffer description bind flags contain unsupported bind flags.");
+    }
+    break;
+
+    default:
+      xiiLog::Error("Unknown resource usage given.");
+      return xiiGALBufferHandle();
+  }
+
+  if (description.m_ResourceUsage == xiiGALResourceUsage::Dynamic && xiiMath::CountBits(description.m_uiImmediateContextMask) > 1U)
+  {
+    const bool bNeedsBackingResource = (description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess) || description.m_Mode == xiiGALBufferMode::Formatted);
+    XII_VERIFY_BUFFER(!bNeedsBackingResource, "xiiGALResourceUsage::Dynamic buffers that use the Unordered Access flag or Formatted mode requires an internal backing resource. "
+                                              "This resource is implicitly transitioned by the device context and thus cannot be relied upon to be safely used in multiple contexts. Create a xiiGALResourceUsage::Dynamic buffer "
+                                              "without the xiiGALResourceUsage::UnorderedAccess flag and use xiiGALResourceUsage::Undefined mode and copy the contents to a xiiGALResourceUsage::Default buffer with required flags, "
+                                              "which can be shared between device contexts.");
+  }
+
+  if (description.m_ResourceUsage != xiiGALResourceUsage::Sparse)
+  {
+    XII_VERIFY_BUFFER(m_AdapterDescription.m_MemoryProperties.m_uiMaxMemoryAllocation == 0U || description.m_uiSize <= m_AdapterDescription.m_MemoryProperties.m_uiMaxMemoryAllocation, "Non-sparse buffer size ({0}) must not exceed the maximum allocation size ({1}).", description.m_uiSize, m_AdapterDescription.m_MemoryProperties.m_uiMaxMemoryAllocation);
+    XII_VERIFY_BUFFER(description.m_MiscFlags.AreNoneSet(xiiGALMiscBufferFlags::SparseAlias), "Miscellaneous flags must not have xiiGALMiscBufferFlags::SparseAlias if the buffer usage is not xiiGALResourceUsage::Sparse.");
+  }
+
+  // Validate buffer initial data.
+  const bool bHasInitialData = (pInitialData != nullptr && pInitialData->m_pData != nullptr);
+
+  if (description.m_ResourceUsage == xiiGALResourceUsage::Immutable && !bHasInitialData)
+  {
+    XII_VERIFY_BUFFER(false, "The initial data must not be nullptr, as immutable buffers must be initialized at creation.");
+  }
+  if (description.m_ResourceUsage == xiiGALResourceUsage::Dynamic && bHasInitialData)
+  {
+    XII_VERIFY_BUFFER(false, "The initial data must be nullptr for dynamic buffers.");
+  }
+  if (description.m_ResourceUsage == xiiGALResourceUsage::Sparse && bHasInitialData)
+  {
+    XII_VERIFY_BUFFER(false, "The initial data must be nullptr for sparse buffers.");
+  }
+
+  if (description.m_ResourceUsage == xiiGALResourceUsage::Staging)
+  {
+    if (description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write))
+    {
+      XII_VERIFY_BUFFER(bHasInitialData, "Staging buffers with CPU write access must be updated via map.");
+    }
+  }
+  else if (description.m_ResourceUsage == xiiGALResourceUsage::Unified)
+  {
+    XII_VERIFY_BUFFER(description.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write) && bHasInitialData, "xiiGALCPUAccessFlag::Write is required to initialize a unified buffer.");
+  }
+
+  if (pInitialData != nullptr /* && pInitialData->m_pCommandEncoder != nullptr */)
+  {
+    /// \todo GraphicsFoundation: Assert that the command encoder used to initialize the resource is not a deferred context, as those cannot be used to initialize resources.
+  }
+
+  if (bHasInitialData)
+  {
+    XII_VERIFY_BUFFER(pInitialData->m_uiDataSize >= description.m_uiSize, "The buffer initial data size ({0}) must be larger than the buffer size ({1]).", pInitialData->m_uiDataSize, description.m_uiSize);
+  }
+
+  xiiGALBuffer* pBuffer = CreateBufferPlatform(description, pInitialData);
+
+  return FinalizeBufferInternal(description, pBuffer);
+}
+
+xiiGALBufferHandle xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreationDescription& description, xiiGALBuffer* pBuffer)
+{
+  if (pBuffer != nullptr)
+  {
+    xiiGALBufferHandle hBuffer(m_Buffers.Insert(pBuffer));
+
+    // Create default resource view.
+
+    if (!description.m_BindFlags.IsAnySet(xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::ShaderResource))
+    {
+      xiiGALBufferViewCreationDescription viewDescription;
+      viewDescription.m_hBuffer      = hBuffer;
+      viewDescription.m_uiByteOffset = 0U;
+      viewDescription.m_uiByteWidth  = (description.m_uiElementByteStride != 0U) ? (description.m_uiSize / description.m_uiElementByteStride) : description.m_uiSize;
+
+      pBuffer->m_hDefaultBufferView = pBuffer->CreateView(viewDescription);
+    }
+
+    return hBuffer;
+  }
+
+  return xiiGALBufferHandle();
+}
+
+void xiiGALDevice::DestroyBuffer(xiiGALBufferHandle hBuffer)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALBuffer* pBuffer = nullptr;
+
+  if (m_Buffers.TryGetValue(hBuffer, pBuffer))
+  {
+    AddDeadObject(GALObjectType::Buffer, hBuffer);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyBuffer called on an invalid handle (double free?).");
+  }
+}
+
+#undef XII_VERIFY_BUFFER_RETURN
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);

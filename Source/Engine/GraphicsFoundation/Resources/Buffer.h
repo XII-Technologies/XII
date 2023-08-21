@@ -73,6 +73,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferData : public xiiHashableStruct<xi
 
   const void* m_pData      = nullptr; ///< The pointer to the data.
   xiiUInt64   m_uiDataSize = 0U;      ///< The data size in bytes.
+
+  /// \todo GraphicsFoundation: Add command encoder which will be used to initialize the buffer.
 };
 
 /// \brief This describes the sparse buffer properties.
