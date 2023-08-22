@@ -954,7 +954,7 @@ xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescr
       }
       break;
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
   else
@@ -1015,5 +1015,92 @@ void xiiGALDevice::DestroyTexture(xiiGALTextureHandle hTexture)
 }
 
 #undef XII_VERIFY_TEXTURE
+
+#define XII_VERIFY_SAMPLER(expression, ...) \
+  do                                        \
+  {                                         \
+    if (!(expression))                      \
+    {                                       \
+      xiiLog::Error(__VA_ARGS__);           \
+      return xiiGALSamplerHandle();         \
+    }                                       \
+  } while (false);
+
+xiiGALSamplerHandle xiiGALDevice::CreateSampler(const xiiGALSamplerCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  if (description.m_Flags.AreAllSet(xiiGALSamplerFlags::Subsampled | xiiGALSamplerFlags::SubsampledCoarseReconstruction))
+  {
+    XII_VERIFY_SAMPLER(m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget), "Subsampled sampler requires the xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget capability.");
+  }
+  if (description.m_bUnormalizedCoords)
+  {
+    XII_VERIFY_SAMPLER(m_Description.m_GraphicsDeviceType == xiiGALGraphicsDeviceType::Vulkan || m_Description.m_GraphicsDeviceType == xiiGALGraphicsDeviceType::Metal, "Unnormalized coordinates are only supported in Vulkan and Metal.");
+    XII_VERIFY_SAMPLER(description.m_MinFilter == description.m_MagFilter, "When unnormalized coordinates are enabled, the MipFilter must equal the MagFilter.");
+    XII_VERIFY_SAMPLER(description.m_MipFilter == xiiGALFilterType::Point, "When unnormalized coordinates are enabled, the MipFilter must be xiiGALFilterType::Point.");
+    XII_VERIFY_SAMPLER(description.m_AddressU == xiiGALTextureAddressMode::Clamp || description.m_AddressU == xiiGALTextureAddressMode::Border, "When unnormalized coordinates are enabled, the AddressU must be xiiGALTextureAddressMode::Clamp or xiiGALTextureAddressMode::Border.");
+    XII_VERIFY_SAMPLER(description.m_AddressV == xiiGALTextureAddressMode::Clamp || description.m_AddressV == xiiGALTextureAddressMode::Border, "When unnormalized coordinates are enabled, the AddressV must be xiiGALTextureAddressMode::Clamp or xiiGALTextureAddressMode::Border.");
+    XII_VERIFY_SAMPLER(!xiiGALFilterType::IsComparisonFilter(description.m_MinFilter), "When unnormalized coordinates are enabled, the MinFilter and MagFilter must not be of the comparison type.");
+    XII_VERIFY_SAMPLER(!xiiGALFilterType::IsAnisotropicFilter(description.m_MinFilter), "When unnormalized coordinates are enabled, the MinFilter and MagFilter must not be of the anisotropic type.");
+  }
+
+  // Hash description and return any existing one (including increasing the refcount).
+  xiiUInt32 uiHash = description.CalculateHash();
+
+  {
+    xiiGALSamplerHandle hSampler;
+    if (m_SamplerTable.TryGetValue(uiHash, hSampler))
+    {
+      xiiGALSampler* pSampler = m_Samplers[hSampler];
+      if (pSampler->GetRefCount() == 0)
+      {
+        ReviveDeadObject(GALObjectType::Sampler, hSampler);
+      }
+
+      pSampler->AddRef();
+      return hSampler;
+    }
+  }
+
+  xiiGALSampler* pSampler = CreateSamplerPlatform(description);
+
+  if (pSampler != nullptr)
+  {
+    XII_ASSERT_DEBUG(pSampler->GetDescription().CalculateHash() == uiHash, "Sampler hash does not match");
+
+    pSampler->AddRef();
+
+    xiiGALSamplerHandle hSampler(m_Samplers.Insert(pSampler));
+    m_SamplerTable.Insert(uiHash, hSampler);
+
+    return hSampler;
+  }
+
+  return xiiGALSamplerHandle();
+}
+
+void xiiGALDevice::DestroySampler(xiiGALSamplerHandle hSampler)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALSampler* pSampler = nullptr;
+
+  if (m_Samplers.TryGetValue(hSampler, pSampler))
+  {
+    pSampler->ReleaseRef();
+
+    if (pSampler->GetRefCount() == 0)
+    {
+      AddDeadObject(GALObjectType::Sampler, hSampler);
+    }
+  }
+  else
+  {
+    xiiLog::Warning("DestroySampler called on an invalid handle (double free?). ");
+  }
+}
+
+#undef XII_VERIFY_SAMPLER
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);

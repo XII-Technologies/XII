@@ -73,3 +73,15 @@ XII_FORCE_INLINE bool xiiGALTextureFormat::IsSrgb(xiiEnum<xiiGALTextureFormat> f
 {
   return format == RGBA8UNormalizedSRGB || format == BGRX8UNormalizedSRGB || format == BGRA8UNormalizedSRGB || format == BC1UNormalizedSRGB || format == BC2UNormalizedSRGB || format == BC3UNormalizedSRGB || format == BC7UNormalizedSRGB;
 }
+
+// static
+XII_FORCE_INLINE bool xiiGALFilterType::IsComparisonFilter(xiiEnum<xiiGALFilterType> e)
+{
+  return e == ComparisonPoint || e == ComparisonLinear || e == ComparisonAnisotropic;
+}
+
+// static
+XII_FORCE_INLINE bool xiiGALFilterType::IsAnisotropicFilter(xiiEnum<xiiGALFilterType> e)
+{
+  return e == Anisotropic || e == ComparisonAnisotropic || e == MinimumAnisotropic || e == MaximumAnisotropic;
+}

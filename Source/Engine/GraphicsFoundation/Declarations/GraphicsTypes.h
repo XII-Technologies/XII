@@ -602,6 +602,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFilterType
 
     Default = Unknown
   };
+
+  static bool IsComparisonFilter(xiiEnum<xiiGALFilterType> e);
+  static bool IsAnisotropicFilter(xiiEnum<xiiGALFilterType> e);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALFilterType);
