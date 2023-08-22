@@ -1235,4 +1235,80 @@ void xiiGALDevice::DestroyInputLayout(xiiGALInputLayoutHandle hInputLayout)
   }
 }
 
+#define XII_VERIFY_QUERY(expression, ...) \
+  do                                      \
+  {                                       \
+    if (!(expression))                    \
+    {                                     \
+      xiiLog::Error(__VA_ARGS__);         \
+      return xiiGALQueryHandle();         \
+    }                                     \
+  } while (false);
+
+xiiGALQueryHandle xiiGALDevice::CreateQuery(const xiiGALQueryCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  switch (description.m_Type)
+  {
+    case xiiGALQueryType::Occlusion:
+    {
+      XII_VERIFY_QUERY(m_AdapterDescription.m_Features.m_OcclusionQueries == xiiGALDeviceFeatureState::Enabled, "Occlusion queries are not supported by this device.");
+    }
+    break;
+    case xiiGALQueryType::BinaryOcclusion:
+    {
+      XII_VERIFY_QUERY(m_AdapterDescription.m_Features.m_BinaryOcclusionQueries == xiiGALDeviceFeatureState::Enabled, "Binary occlusion queries are not supported by this device.");
+    }
+    break;
+    case xiiGALQueryType::Timestamp:
+    {
+      XII_VERIFY_QUERY(m_AdapterDescription.m_Features.m_TimestampQueries == xiiGALDeviceFeatureState::Enabled, "Timestamp queries are not supported by this device.");
+    }
+    break;
+    case xiiGALQueryType::PipelineStatistics:
+    {
+      XII_VERIFY_QUERY(m_AdapterDescription.m_Features.m_PipelineStateQueries == xiiGALDeviceFeatureState::Enabled, "Pipeline statistics queries are not supported by this device.");
+    }
+    break;
+    case xiiGALQueryType::Duration:
+    {
+      XII_VERIFY_QUERY(m_AdapterDescription.m_Features.m_DurationQueries == xiiGALDeviceFeatureState::Enabled, "Duration queries are not supported by this device.");
+    }
+    break;
+
+    default:
+      XII_VERIFY_QUERY(false, "Unexpected query type.");
+  }
+
+  xiiGALQuery* pQuery = CreateQueryPlatform(description);
+
+  if (pQuery == nullptr)
+  {
+    return xiiGALQueryHandle();
+  }
+  else
+  {
+    return xiiGALQueryHandle(m_Queries.Insert(pQuery));
+  }
+}
+
+void xiiGALDevice::DestroyQuery(xiiGALQueryHandle hQuery)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALQuery* pQuery = nullptr;
+
+  if (m_Queries.TryGetValue(hQuery, pQuery))
+  {
+    AddDeadObject(GALObjectType::Query, hQuery);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyQuery called on an invalid handle (double free?).");
+  }
+}
+
+#undef XII_VERIFY_QUERY
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);
