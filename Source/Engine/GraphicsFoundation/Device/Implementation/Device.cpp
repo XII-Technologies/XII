@@ -1175,4 +1175,64 @@ void xiiGALDevice::DestroySampler(xiiGALSamplerHandle hSampler)
 
 #undef XII_VERIFY_SAMPLER
 
+xiiGALInputLayoutHandle xiiGALDevice::CreateInputLayout(const xiiGALInputLayoutCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  /// \todo Platform independent validation.
+
+  // Hash description and return any existing one (including increasing the refcount).
+  xiiUInt32 uiHash = description.CalculateHash();
+
+  {
+    xiiGALInputLayoutHandle hInputLayout;
+    if (m_InputLayoutTable.TryGetValue(uiHash, hInputLayout))
+    {
+      xiiGALInputLayout* pInputLayout = m_InputLayouts[hInputLayout];
+      if (pInputLayout->GetRefCount() == 0)
+      {
+        ReviveDeadObject(GALObjectType::InputLayout, hInputLayout);
+      }
+
+      pInputLayout->AddRef();
+      return hInputLayout;
+    }
+  }
+
+  xiiGALInputLayout* pInputLayout = CreateInputLayoutPlatform(description);
+
+  if (pInputLayout != nullptr)
+  {
+    pInputLayout->AddRef();
+
+    xiiGALInputLayoutHandle hInputLayout(m_InputLayouts.Insert(pInputLayout));
+    m_InputLayoutTable.Insert(uiHash, hInputLayout);
+
+    return hInputLayout;
+  }
+
+  return xiiGALInputLayoutHandle();
+}
+
+void xiiGALDevice::DestroyInputLayout(xiiGALInputLayoutHandle hInputLayout)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALInputLayout* pInputLayout = nullptr;
+
+  if (m_InputLayouts.TryGetValue(hInputLayout, pInputLayout))
+  {
+    pInputLayout->ReleaseRef();
+
+    if (pInputLayout->GetRefCount() == 0)
+    {
+      AddDeadObject(GALObjectType::InputLayout, hInputLayout);
+    }
+  }
+  else
+  {
+    xiiLog::Warning("DestroyInputLayout called on an invalid handle (double free?).");
+  }
+}
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);
