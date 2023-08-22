@@ -468,9 +468,22 @@ void xiiGALDevice::DestroyDepthStencilState(xiiGALDepthStencilStateHandle hDepth
 
 #undef XII_VERIFY_DEPTH_STENCIL_STATE
 
+#define XII_VERIFY_RASTERIZER_STATE(expression, ...) \
+  do                                                 \
+  {                                                  \
+    if (!(expression))                               \
+    {                                                \
+      xiiLog::Error(__VA_ARGS__);                    \
+      return xiiGALRasterizerStateHandle();          \
+    }                                                \
+  } while (false);
+
 xiiGALRasterizerStateHandle xiiGALDevice::CreateRasterizerState(const xiiGALRasterizerStateCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  XII_VERIFY_RASTERIZER_STATE(description.m_FillMode != xiiGALFillMode::Undefined, "The fill mode cannot be xiiGALFillMode::Undefined.");
+  XII_VERIFY_RASTERIZER_STATE(description.m_CullMode != xiiGALCullMode::Undefined, "The cull mode cannot be xiiGALCullMode::Undefined.");
 
   // Hash description and return any existing one (including increasing the refcount).
   xiiUInt32 uiHash = description.CalculateHash();
@@ -527,6 +540,8 @@ void xiiGALDevice::DestroyRasterizerState(xiiGALRasterizerStateHandle hRasterize
     xiiLog::Warning("DestroyRasterizerState called on an invalid handle (double free?).");
   }
 }
+
+#undef XII_VERIFY_RASTERIZER_STATE
 
 #define XII_VERIFY_SHADER(expression, ...) \
   do                                       \
