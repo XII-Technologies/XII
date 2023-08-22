@@ -291,9 +291,37 @@ void xiiGALDevice::EndFrame()
   }
 }
 
+#define XII_VERIFY_BLEND_STATE(expression, ...) \
+  do                                            \
+  {                                             \
+    if (!(expression))                          \
+    {                                           \
+      xiiLog::Error(__VA_ARGS__);               \
+      return xiiGALBlendStateHandle();          \
+    }                                           \
+  } while (false);
+
 xiiGALBlendStateHandle xiiGALDevice::CreateBlendState(const xiiGALBlendStateCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  for (xiiUInt32 i = 0U; i < description.m_RenderTargets.GetCount(); ++i)
+  {
+    const auto& rtDescription = description.m_RenderTargets[i];
+
+    const bool bBlendEnable = rtDescription.m_bBlendEnable && (i == 0U || (description.m_bIndependentBlend && i > 0U));
+
+    if (bBlendEnable)
+    {
+      XII_VERIFY_BLEND_STATE(rtDescription.m_SourceBlend != xiiGALBlendFactor::Undefined, "The source blend must not be xiiGALBlendFactor::Undefined.");
+      XII_VERIFY_BLEND_STATE(rtDescription.m_DestinationBlend != xiiGALBlendFactor::Undefined, "The destination blend must not be xiiGALBlendFactor::Undefined.");
+      XII_VERIFY_BLEND_STATE(rtDescription.m_BlendOperation != xiiGALBlendOperation::Undefined, "The blend operation must not be xiiGALBlendOperation::Undefined.");
+
+      XII_VERIFY_BLEND_STATE(rtDescription.m_SourceBlendAlpha != xiiGALBlendFactor::Undefined, "The alpha source blend must not be xiiGALBlendFactor::Undefined.");
+      XII_VERIFY_BLEND_STATE(rtDescription.m_DestinationBlendAlpha != xiiGALBlendFactor::Undefined, "The alpha destination blend must not be xiiGALBlendFactor::Undefined.");
+      XII_VERIFY_BLEND_STATE(rtDescription.m_BlendOperationAlpha != xiiGALBlendOperation::Undefined, "The alpha blend operation must not be xiiGALBlendOperation::Undefined.");
+    }
+  }
 
   // Hash description and return any existing one (including increasing the refcount).
   xiiUInt32 uiHash = description.CalculateHash();
@@ -350,6 +378,8 @@ void xiiGALDevice::DestroyBlendState(xiiGALBlendStateHandle hBlendState)
     xiiLog::Warning("DestroyBlendState called on an invalid handle (double free?).");
   }
 }
+
+#undef XII_VERIFY_BLEND_STATE
 
 xiiGALDepthStencilStateHandle xiiGALDevice::CreateDepthStencilState(const xiiGALDepthStencilStateCreationDescription& description)
 {
