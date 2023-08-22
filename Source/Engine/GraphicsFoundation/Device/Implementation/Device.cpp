@@ -381,9 +381,34 @@ void xiiGALDevice::DestroyBlendState(xiiGALBlendStateHandle hBlendState)
 
 #undef XII_VERIFY_BLEND_STATE
 
+#define XII_VERIFY_DEPTH_STENCIL_STATE(expression, ...) \
+  do                                                    \
+  {                                                     \
+    if (!(expression))                                  \
+    {                                                   \
+      xiiLog::Error(__VA_ARGS__);                       \
+      return xiiGALDepthStencilStateHandle();           \
+    }                                                   \
+  } while (false);
+
 xiiGALDepthStencilStateHandle xiiGALDevice::CreateDepthStencilState(const xiiGALDepthStencilStateCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  XII_VERIFY_DEPTH_STENCIL_STATE(!description.m_bDepthEnable && description.m_ComparisonDepthFunction == xiiGALComparisonFunction::Unknown, "The depth comparison function must not be xiiGALComparisonFunction::Unknown when depth is enabled.");
+
+  if (description.m_bStencilEnable)
+  {
+    XII_VERIFY_DEPTH_STENCIL_STATE(description.m_FrontFace.m_StencilFailOperation != xiiGALStencilOperation::Undefined, "The front face stencil fail operation must not be xiiGALStencilOperation::Undefined when stencil is enabled.");
+    XII_VERIFY_DEPTH_STENCIL_STATE(description.m_FrontFace.m_StencilDepthFailOperation != xiiGALStencilOperation::Undefined, "The front face stencil depth fail operation must not be xiiGALStencilOperation::Undefined when stencil is enabled.");
+    XII_VERIFY_DEPTH_STENCIL_STATE(description.m_FrontFace.m_StencilPassOperation != xiiGALStencilOperation::Undefined, "The front face stencil pass operation must not be xiiGALStencilOperation::Undefined when stencil is enabled.");
+    XII_VERIFY_DEPTH_STENCIL_STATE(description.m_FrontFace.m_ComparisonFunction != xiiGALComparisonFunction::Unknown, "The front face stencil comparison function must not be xiiGALComparisonFunction::Unknown when stencil is enabled.");
+
+    XII_VERIFY_DEPTH_STENCIL_STATE(description.m_BackFace.m_StencilFailOperation != xiiGALStencilOperation::Undefined, "The back face stencil fail operation must not be xiiGALStencilOperation::Undefined when stencil is enabled.");
+    XII_VERIFY_DEPTH_STENCIL_STATE(description.m_BackFace.m_StencilDepthFailOperation != xiiGALStencilOperation::Undefined, "The back face stencil depth fail operation must not be xiiGALStencilOperation::Undefined when stencil is enabled.");
+    XII_VERIFY_DEPTH_STENCIL_STATE(description.m_BackFace.m_StencilPassOperation != xiiGALStencilOperation::Undefined, "The back face stencil pass operation must not be xiiGALStencilOperation::Undefined when stencil is enabled.");
+    XII_VERIFY_DEPTH_STENCIL_STATE(description.m_BackFace.m_ComparisonFunction != xiiGALComparisonFunction::Unknown, "The back face stencil comparison function must not be xiiGALComparisonFunction::Unknown when stencil is enabled.");
+  }
 
   // Hash description and return any existing one (including increasing the refcount).
   xiiUInt32 uiHash = description.CalculateHash();
@@ -440,6 +465,8 @@ void xiiGALDevice::DestroyDepthStencilState(xiiGALDepthStencilStateHandle hDepth
     xiiLog::Warning("DestroyDepthStencilState called on an invalid handle (double free?).");
   }
 }
+
+#undef XII_VERIFY_DEPTH_STENCIL_STATE
 
 xiiGALRasterizerStateHandle xiiGALDevice::CreateRasterizerState(const xiiGALRasterizerStateCreationDescription& description)
 {
