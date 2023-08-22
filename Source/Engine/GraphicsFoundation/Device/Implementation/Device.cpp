@@ -1311,4 +1311,62 @@ void xiiGALDevice::DestroyQuery(xiiGALQueryHandle hQuery)
 
 #undef XII_VERIFY_QUERY
 
+#define XII_VERIFY_FENCE(expression, ...) \
+  do                                      \
+  {                                       \
+    if (!(expression))                    \
+    {                                     \
+      xiiLog::Error(__VA_ARGS__);         \
+      return xiiGALFenceHandle();         \
+    }                                     \
+  } while (false);
+
+xiiGALFenceHandle xiiGALDevice::CreateFence(const xiiGALFenceCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  switch (description.m_Type)
+  {
+    case xiiGALFenceType::CpuWaitOnly:
+      break;
+    case xiiGALFenceType::General:
+    {
+      XII_VERIFY_FENCE(m_AdapterDescription.m_Features.m_NativeFence == xiiGALDeviceFeatureState::Enabled, "xiiGALFenceType::General requires the Native Fence device feature.");
+    }
+    break;
+
+    default:
+      XII_VERIFY_FENCE(false, "Unexpected query type.");
+  }
+
+  xiiGALFence* pFence = CreateFencePlatform(description);
+
+  if (pFence == nullptr)
+  {
+    return xiiGALFenceHandle();
+  }
+  else
+  {
+    return xiiGALFenceHandle(m_Fences.Insert(pFence));
+  }
+}
+
+void xiiGALDevice::DestroyFence(xiiGALFenceHandle hFence)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALFence* pFence = nullptr;
+
+  if (m_Fences.TryGetValue(hFence, pFence))
+  {
+    AddDeadObject(GALObjectType::Fence, hFence);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyFence called on an invalid handle (double free?).");
+  }
+}
+
+#undef XII_VERIFY_FENCE
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);
