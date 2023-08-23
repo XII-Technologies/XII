@@ -1426,7 +1426,7 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
         // the sub pass is not XII_GAL_ATTACHMENT_UNUSED, it must be less than the attachment count.
         // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkRenderPassCreateInfo-attachment-00834
         XII_VERIFY_RENDER_PASS(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The attachment index ({0}) of the input attachment reference {1} of sub pass {2} must be less than the number of attachments ({3}).", attachmentReference.m_uiAttachmentIndex, uiInputAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
-        XII_VERIFY_RENDER_PASS(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::InputAttachment || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags.IsSet(xiiGALResourceStateFlags::Common)), "The attachment with index {0} referenced as an input attachment in sub pass {1} must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::InputAttachment or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::InputAttachment"));
+        XII_VERIFY_RENDER_PASS(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::InputAttachment || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::Common), "The attachment with index {0} referenced as an input attachment in sub pass {1} must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::InputAttachment or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::InputAttachment"));
       }
 
       for (xiiUInt32 uiColorAttachmentIndex = 0U; uiColorAttachmentIndex < subpass.m_RenderTargetAttachments.GetCount(); ++uiColorAttachmentIndex)
@@ -1440,7 +1440,7 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
         // the sub pass is not XII_GAL_ATTACHMENT_UNUSED, it must be less than the attachment count.
         // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkRenderPassCreateInfo-attachment-00834
         XII_VERIFY_RENDER_PASS(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The attachment index ({0}) of the render target attachment reference {1} of sub pass {2} must be less than the number of attachments ({3}).", attachmentReference.m_uiAttachmentIndex, uiColorAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
-        XII_VERIFY_RENDER_PASS(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::RenderTarget || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags.IsSet(xiiGALResourceStateFlags::Common)), "The attachment with index {0} referenced as an input attachment in sub pass {1} must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::RenderTarget or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::RenderTarget"));
+        XII_VERIFY_RENDER_PASS(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::RenderTarget || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::Common), "The attachment with index {0} referenced as an input attachment in sub pass {1} must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::RenderTarget or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::RenderTarget"));
 
         const auto& format             = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
         const auto& rtFormatProperties = GetTextureFormatProperties(format);
@@ -1460,6 +1460,69 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
           // the sub pass is not XII_GAL_ATTACHMENT_UNUSED, it must be less than the attachment count.
           // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkRenderPassCreateInfo-attachment-00834
           XII_VERIFY_RENDER_PASS(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The attachment index ({0}) of the resolve attachment reference {1} of sub pass {2} must be less than the number of attachments ({3}).", attachmentReference.m_uiAttachmentIndex, uiResolveAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
+        }
+      }
+
+      if (!subpass.m_DepthStencilAttachment.IsEmpty())
+      {
+        const auto& attachmentReference = subpass.m_DepthStencilAttachment[0];
+
+        if (attachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
+        {
+          // If the attachment member of any element of Input Attachment, Color Attachment, Resolve Attachment or Depth Stencil attachment, or any element of Preserve Attachments in any element of
+          // the sub pass is not XII_GAL_ATTACHMENT_UNUSED, it must be less than the attachment count.
+          // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkRenderPassCreateInfo-attachment-00834
+          XII_VERIFY_RENDER_PASS(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The attachment index ({0}) of the depth-stencil attachment reference of sub pass {1} must be less than the number of attachments ({3}).", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
+          XII_VERIFY_RENDER_PASS(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::DepthRead || attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::DepthWrite || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::Common), "The attachment with index ({0}) of the depth-stencil attachment reference of sub pass {1} must be must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::DepthRead or xiiGALResourceStateFlags::DepthWrite or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::DepthRead or xiiGALResourceStateFlags::DepthWrite"));
+
+          const auto& format                = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
+          const auto& depthFormatProperties = GetTextureFormatProperties(format);
+          XII_VERIFY_RENDER_PASS(depthFormatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || depthFormatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil, "Attachment with index {0} referenced as a depth-stencil attachment in sub pass {1} uses format {2}, which is not a valid depth buffer format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
+        }
+      }
+
+      for (xiiUInt32 uiPreserveAttachmentIndex = 0U; uiPreserveAttachmentIndex < subpass.m_PreserveAttachments.GetCount(); ++uiPreserveAttachmentIndex)
+      {
+        const auto& attachmentReference = subpass.m_PreserveAttachments[uiPreserveAttachmentIndex];
+
+        XII_VERIFY_RENDER_PASS(attachmentReference != XII_GAL_ATTACHMENT_UNUSED, "The attachment index of preserve attachment reference {0} of sub pass {1} is XII_GAL_ATTACHMENT_UNUSED.");
+        XII_VERIFY_RENDER_PASS(attachmentReference < description.m_Attachments.GetCount(), "The attachment index ({0}) of the preserve attachment reference {1} of sub pass {2} must be less than the number of attachments ({3}).", attachmentReference, uiPreserveAttachmentIndex, uiSubPassIndex, description.m_Attachments.GetCount());
+      }
+
+      if (!subpass.m_ResolveAttachments.IsEmpty())
+      {
+        for (xiiUInt32 uiColorAttachmentIndex = 0U; uiColorAttachmentIndex < subpass.m_RenderTargetAttachments.GetCount(); ++uiColorAttachmentIndex)
+        {
+          const auto& attachmentReference       = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
+          const auto& resolveAttacmentReference = subpass.m_ResolveAttachments[uiColorAttachmentIndex];
+
+          if (resolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+          {
+            // If pResolveAttachments is not NULL, for each resolve attachment that is not VK_ATTACHMENT_UNUSED, the corresponding color attachment must not be VK_ATTACHMENT_UNUSED.
+            // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkSubpassDescription-pResolveAttachments-00847
+            XII_VERIFY_RENDER_PASS(false, "The resolve attachment of sub pass {0} is not unused but the render target attachment reference {1} is unused.", uiSubPassIndex, uiColorAttachmentIndex);
+          }
+
+          if (resolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_uiSampleCount == 1U)
+          {
+            // If pResolveAttachments is not NULL, for each resolve attachment that is not VK_ATTACHMENT_UNUSED, the corresponding color attachment must not have a sample count of VK_SAMPLE_COUNT_1_BIT.
+            // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkSubpassDescription-pResolveAttachments-00848
+            XII_VERIFY_RENDER_PASS(false, "The render target attachment at index {0} referenced by attachment reference {1} of sub pass {2} is used as the source of a resolve operation, but its sample count is 1.", attachmentReference.m_uiAttachmentIndex, uiColorAttachmentIndex, uiSubPassIndex);
+          }
+
+          if (resolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && description.m_Attachments[resolveAttacmentReference.m_uiAttachmentIndex].m_uiSampleCount != 1U)
+          {
+            // If pResolveAttachments is not NULL, each resolve attachment that is not VK_ATTACHMENT_UNUSED must have a sample count of VK_SAMPLE_COUNT_1_BIT.
+            // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkSubpassDescription-pResolveAttachments-00849
+            XII_VERIFY_RENDER_PASS(false, "The resolve attachment at index {0} referenced by attachment reference {1} of sub pass {2} must have a sample count of 1.", resolveAttacmentReference.m_uiAttachmentIndex, uiColorAttachmentIndex, uiSubPassIndex);
+          }
+
+          if (resolveAttacmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && attachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED && description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format != description.m_Attachments[resolveAttacmentReference.m_uiAttachmentIndex].m_Format)
+          {
+            // If pResolveAttachments is not NULL, each resolve attachment that is not VK_ATTACHMENT_UNUSED must have the same VkFormat as its corresponding color attachment.
+            // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkSubpassDescription-pResolveAttachments-00850
+            XII_VERIFY_RENDER_PASS(false, "The format ({0}) of render target attachment at index {1} referenced by attachment reference {2} of sub pass {3} does not match the format ({4}) of the corresponding resolve attachment at index {5}.", description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format.GetValue(), attachmentReference.m_uiAttachmentIndex, uiColorAttachmentIndex, uiSubPassIndex, description.m_Attachments[resolveAttacmentReference.m_uiAttachmentIndex].m_Format.GetValue(), resolveAttacmentReference.m_uiAttachmentIndex);
+          }
         }
       }
     }
