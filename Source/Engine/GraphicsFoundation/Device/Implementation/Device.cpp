@@ -1366,7 +1366,7 @@ void xiiGALDevice::DestroyFence(xiiGALFenceHandle hFence)
   }
 }
 
-#undef XII_VERIFY_RENDER_PASS
+#undef XII_VERIFY_FENCE
 
 #define XII_VERIFY_RENDER_PASS(expression, ...) \
   do                                            \
@@ -1604,5 +1604,60 @@ void xiiGALDevice::DestroyRenderPass(xiiGALRenderPassHandle hRenderPass)
 }
 
 #undef XII_VERIFY_RENDER_PASS
+
+#define XII_VERIFY_TOP_LEVEL_AS(expression, ...) \
+  do                                             \
+  {                                              \
+    if (!(expression))                           \
+    {                                            \
+      xiiLog::Error(__VA_ARGS__);                \
+      return xiiGALTopLevelASHandle();           \
+    }                                            \
+  } while (false);
+
+xiiGALTopLevelASHandle xiiGALDevice::CreateTopLevelAS(const xiiGALTopLevelASCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  if (description.m_uiCompactedSize > 0U)
+  {
+    XII_VERIFY_TOP_LEVEL_AS(description.m_uiMaxInstanceCount == 0U, "If a non-zero compacted size is given, the Max Instance Count must be zero.");
+    XII_VERIFY_TOP_LEVEL_AS(description.m_Flags == xiiGALRayTracingBuildASFlags::None, "If a non-zero compacted size is given, the specified Flags must be xiiGALRayTracingBuildASFlags::None.");
+  }
+  else
+  {
+    XII_VERIFY_TOP_LEVEL_AS(description.m_uiMaxInstanceCount > 0U, "The max instance count must be greater than zero.");
+    XII_VERIFY_TOP_LEVEL_AS(!description.m_Flags.AreAllSet(xiiGALRayTracingBuildASFlags::PreferFastTrace | xiiGALRayTracingBuildASFlags::PreferFastBuild), "xiiGALRayTracingBuildASFlags::PreferFastTrace and xiiGALRayTracingBuildASFlags::PreferFastBuild are mutually exclusive.");
+  }
+
+  xiiGALTopLevelAS* pTopLevelAS = CreateTopLevelASPlatform(description);
+
+  if (pTopLevelAS == nullptr)
+  {
+    return xiiGALTopLevelASHandle();
+  }
+  else
+  {
+    return xiiGALTopLevelASHandle(m_TopLevelAccelerationStructures.Insert(pTopLevelAS));
+  }
+}
+
+void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALTopLevelAS* pTopLevelAS = nullptr;
+
+  if (m_TopLevelAccelerationStructures.TryGetValue(hTopLevelAS, pTopLevelAS))
+  {
+    AddDeadObject(GALObjectType::TopLevelAS, hTopLevelAS);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyTopLevelAS called on an invalid handle (double free?).");
+  }
+}
+
+#undef XII_VERIFY_TOP_LEVEL_AS
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);
