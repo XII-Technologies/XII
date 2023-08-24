@@ -450,10 +450,6 @@ protected:
 
   virtual void FillCapabilitiesPlatform() = 0;
 
-  virtual const xiiGALTextureFormatDescription& GetTextureFormatPropertiesPlatform(xiiEnum<xiiGALTextureFormat> format) const = 0;
-
-  virtual const xiiGALSparseTextureProperties GetSparseTexturePropertiesPlatform(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount) const = 0;
-
   /// \endcond
 
 protected:

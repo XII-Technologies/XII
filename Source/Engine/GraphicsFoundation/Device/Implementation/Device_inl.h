@@ -104,6 +104,11 @@ inline const xiiGALTopLevelAS* xiiGALDevice::GetTopLevelAS(xiiGALTopLevelASHandl
   return Get<TopLevelASTable, xiiGALTopLevelAS>(hTopLevelAS, m_TopLevelAccelerationStructures);
 }
 
+inline const xiiGraphicsDeviceAdapterDescription& xiiGALDevice::GetGraphicsDeviceAdapterProperties() const
+{
+  return m_AdapterDescription;
+}
+
 // static
 XII_ALWAYS_INLINE void xiiGALDevice::SetDefaultDevice(xiiGALDevice* pDefaultDevice)
 {
