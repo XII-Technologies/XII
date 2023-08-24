@@ -70,6 +70,8 @@ namespace
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALRasterizerStateHandle) == sizeof(xiiUInt32));
 } // namespace
 
+xiiGALDevice* xiiGALDevice::s_pDefaultDevice = nullptr;
+
 xiiGALDevice::xiiGALDevice(const xiiGALDeviceCreationDescription& creationDescription) :
   xiiGALObject<xiiGALDeviceCreationDescription>(creationDescription), m_Allocator("GALDevice", xiiFoundation::GetDefaultAllocator()), m_AllocatorWrapper(&m_Allocator)
 {
@@ -1605,6 +1607,89 @@ void xiiGALDevice::DestroyRenderPass(xiiGALRenderPassHandle hRenderPass)
 
 #undef XII_VERIFY_RENDER_PASS
 
+#define XII_VERIFY_BOTTOM_LEVEL_AS(expression, ...) \
+  do                                                \
+  {                                                 \
+    if (!(expression))                              \
+    {                                               \
+      xiiLog::Error(__VA_ARGS__);                   \
+      return xiiGALBottomLevelASHandle();           \
+    }                                               \
+  } while (false);
+
+xiiGALBottomLevelASHandle xiiGALDevice::CreateBottomLevelAS(const xiiGALBottomLevelASCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  if (description.m_uiCompactedSize > 0U)
+  {
+    XII_VERIFY_BOTTOM_LEVEL_AS(!description.m_Triangles.IsEmpty() && !description.m_BoundingBoxes.IsEmpty(), "If a non-zero compacted size is given, the Triangles and Bounding Boxes must not be empty.");
+    XII_VERIFY_BOTTOM_LEVEL_AS(description.m_BuildASFlags == xiiGALRayTracingBuildASFlags::None, "If a non-zero compacted size is given, the Flags must be xiiGALRayTracingBuildASFlags::None.");
+  }
+  else
+  {
+    XII_VERIFY_BOTTOM_LEVEL_AS(((description.m_BoundingBoxes.GetCount() != 0U) ^ (description.m_Triangles.GetCount() != 0U)), "Exactly one of the Bounding Box count {0}, and the Triangles count {1} must be non-zero.", description.m_BoundingBoxes.GetCount(), description.m_Triangles.GetCount());
+    XII_VERIFY_BOTTOM_LEVEL_AS(!description.m_BuildASFlags.AreAllSet(xiiGALRayTracingBuildASFlags::PreferFastTrace | xiiGALRayTracingBuildASFlags::PreferFastBuild), "xiiGALRayTracingBuildASFlags::PreferFastTrace and xiiGALRayTracingBuildASFlags::PreferFastBuild are mutually exclusive.");
+
+    for (xiiUInt32 i = 0U; i < description.m_Triangles.GetCount(); ++i)
+    {
+      const auto& triangle = description.m_Triangles[i];
+
+      XII_VERIFY_BOTTOM_LEVEL_AS(!triangle.m_sGeometryName.IsEmpty(), "The geometry name at triangle {0} must not be empty.", i);
+      XII_VERIFY_BOTTOM_LEVEL_AS(triangle.m_VertexValueType == xiiGALValueType::Float32 || triangle.m_VertexValueType == xiiGALValueType::Float16 || triangle.m_VertexValueType == xiiGALValueType::Int32, "The Vertex Value Type specified in triangle {0} is invalid. Allowed types are xiiGALValueType::Float32, xiiGALValueType::Float16 or xiiGALValueType::Int32.", i);
+      XII_VERIFY_BOTTOM_LEVEL_AS(triangle.m_uiVertexComponentCount == 2U || triangle.m_uiVertexComponentCount == 3U, "The Vertex Component Count specified in triangle {0} is invalid. Allowed values are 2 or 3.", i);
+      XII_VERIFY_BOTTOM_LEVEL_AS(triangle.m_uiMaxVertexCount > 0U, "The Max Vertex Count specified in triangle {0} must be greater than zero.", i);
+      XII_VERIFY_BOTTOM_LEVEL_AS(triangle.m_uiMaxPrimitiveCount > 0U, "The Max Primitive Count specified in triangle {0} must be greater than zero.", i);
+
+      if (triangle.m_IndexType == xiiGALValueType::Undefined)
+      {
+        XII_VERIFY_BOTTOM_LEVEL_AS(triangle.m_uiMaxVertexCount == (triangle.m_uiMaxPrimitiveCount * 3U), "The Max Vertex Count ({0}) specified in triangle {1} must be equal to the Max Vertex Count multiplied by 3 ({2}).", triangle.m_uiMaxVertexCount, i, (triangle.m_uiMaxPrimitiveCount * 3U));
+      }
+      else
+      {
+        XII_VERIFY_BOTTOM_LEVEL_AS(triangle.m_IndexType == xiiGALValueType::UInt32 || triangle.m_IndexType == xiiGALValueType::UInt16, "The Index Type specified in triangle {0} must be xiiGALValueType::UInt16 or xiiGALValueType::UInt32.");
+      }
+    }
+
+    for (xiiUInt32 i = 0U; i < description.m_BoundingBoxes.GetCount(); ++i)
+    {
+      const auto& boundingBox = description.m_BoundingBoxes[i];
+
+      XII_VERIFY_BOTTOM_LEVEL_AS(!boundingBox.m_sGeometryName.IsEmpty(), "The Geometry Name in bounding box {0} must not be empty.");
+      XII_VERIFY_BOTTOM_LEVEL_AS(boundingBox.m_uiMaxBoxCount > 0U, "The Max Box Count in bounding box {0} must be greater than zero.");
+    }
+  }
+
+  xiiGALBottomLevelAS* pBottomLevelAS = CreateBottomLevelASPlatform(description);
+
+  if (pBottomLevelAS == nullptr)
+  {
+    return xiiGALBottomLevelASHandle();
+  }
+  else
+  {
+    return xiiGALBottomLevelASHandle(m_BottomLevelAccelerationStructures.Insert(pBottomLevelAS));
+  }
+}
+
+void xiiGALDevice::DestroyBottomLevelAS(xiiGALBottomLevelASHandle hBottomLevelAS)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALBottomLevelAS* pBottomLevelAS = nullptr;
+
+  if (m_BottomLevelAccelerationStructures.TryGetValue(hBottomLevelAS, pBottomLevelAS))
+  {
+    AddDeadObject(GALObjectType::BottomLevelAS, hBottomLevelAS);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyBottomLevelAS called on an invalid handle (double free?).");
+  }
+}
+
+#undef XII_VERIFY_BOTTOM_LEVEL_AS
+
 #define XII_VERIFY_TOP_LEVEL_AS(expression, ...) \
   do                                             \
   {                                              \
@@ -1659,5 +1744,10 @@ void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
 }
 
 #undef XII_VERIFY_TOP_LEVEL_AS
+
+void xiiGALDevice::WaitIdle()
+{
+  WaitIdlePlatform();
+}
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);
