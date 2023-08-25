@@ -117,13 +117,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewCreationDescription : public 
 class XII_GRAPHICSFOUNDATION_DLL xiiGALTextureView : public xiiGALResource<xiiGALTextureViewCreationDescription>
 {
 public:
-  /// \brief Returns the resource of which the texture view is created with.
-  XII_ALWAYS_INLINE xiiGALResourceBase* GetResource() const { return m_pResource; }
+  /// \brief Returns the texture of which the texture view is created with.
+  XII_ALWAYS_INLINE xiiGALTexture* GetTexture() const { return m_pTexture; }
 
 protected:
   friend class xiiGALDevice;
 
-  xiiGALTextureView(xiiGALResourceBase* pResource, const xiiGALTextureViewCreationDescription& creationDescription);
+  xiiGALTextureView(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
 
   virtual ~xiiGALTextureView();
 
@@ -131,7 +131,7 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 
-  xiiGALResourceBase* m_pResource = nullptr;
+  xiiGALTexture* m_pTexture = nullptr;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureView);

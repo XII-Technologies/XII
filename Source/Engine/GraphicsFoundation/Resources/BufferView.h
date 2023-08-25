@@ -33,13 +33,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferViewCreationDescription : public x
 class XII_GRAPHICSFOUNDATION_DLL xiiGALBufferView : public xiiGALResource<xiiGALBufferViewCreationDescription>
 {
 public:
-  /// \brief Returns the resource of which the buffer view is created with.
-  XII_ALWAYS_INLINE xiiGALResourceBase* GetResource() const { return m_pResource; }
+  /// \brief Returns the buffer of which the buffer view is created with.
+  XII_ALWAYS_INLINE xiiGALBuffer* GetBuffer() const { return m_pBuffer; }
 
 protected:
   friend class xiiGALDevice;
 
-  xiiGALBufferView(xiiGALResourceBase* pResource, const xiiGALBufferViewCreationDescription& creationDescription);
+  xiiGALBufferView(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
 
   virtual ~xiiGALBufferView();
 
@@ -47,7 +47,7 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 
-  xiiGALResourceBase* m_pResource = nullptr;
+  xiiGALBuffer* m_pBuffer = nullptr;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBufferView);

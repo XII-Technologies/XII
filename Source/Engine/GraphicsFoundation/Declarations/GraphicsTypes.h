@@ -12,7 +12,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceType
   enum Enum : StorageType
   {
     Undefined = 0U, ///< Undefined graphics device type.
-    DirectX12,      ///< DirectX 12 graphics device.
+    Direct3D12,     ///< Direct3D 12 graphics device.
     Vulkan,         ///< Vulkan graphics device.
     Metal,          ///< Metal graphics device.
 

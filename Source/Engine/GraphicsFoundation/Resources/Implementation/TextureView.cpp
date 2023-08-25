@@ -33,14 +33,14 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
-xiiGALTextureView::xiiGALTextureView(xiiGALResourceBase* pResource, const xiiGALTextureViewCreationDescription& creationDescription) :
-  xiiGALResource<xiiGALTextureViewCreationDescription>(creationDescription), m_pResource(pResource)
+xiiGALTextureView::xiiGALTextureView(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
+  xiiGALResource<xiiGALTextureViewCreationDescription>(creationDescription), m_pTexture(pTexture)
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   m_sDebugName.Assign(creationDescription.m_sName);
 #endif
 
-  XII_ASSERT_DEV(m_pResource != nullptr, "The given resource must not be nullptr.");
+  XII_ASSERT_DEV(m_pTexture != nullptr, "The given texture must not be nullptr.");
 }
 
 xiiGALTextureView::~xiiGALTextureView() = default;

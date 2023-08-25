@@ -1607,6 +1607,94 @@ void xiiGALDevice::DestroyRenderPass(xiiGALRenderPassHandle hRenderPass)
 
 #undef XII_VERIFY_RENDER_PASS
 
+#define XII_VERIFY_FRAME_BUFFER(expression, ...) \
+  do                                             \
+  {                                              \
+    if (!(expression))                           \
+    {                                            \
+      xiiLog::Error(__VA_ARGS__);                \
+      return xiiGALFramebufferHandle();          \
+    }                                            \
+  } while (false);
+
+xiiGALFramebufferHandle xiiGALDevice::CreateFramebuffer(const xiiGALFramebufferCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  XII_VERIFY_FRAME_BUFFER(!description.m_hRenderPass.IsInvalidated(), "The render pass handle is invalid.");
+
+  for (xiiUInt32 i = 0U; i < description.m_Attachments.GetCount(); ++i)
+  {
+    const auto& attachment = description.m_Attachments[i];
+
+    // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, and attachmentCount is not 0, pAttachments must be a valid pointer to an array of attachmentCount valid VkImageView handles.
+    // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-flags-02778
+    XII_VERIFY_FRAME_BUFFER(!attachment.IsInvalidated(), "The framebuffer attachment at index {0} is invalid.", i);
+  }
+
+  const auto& renderPassDescription = GetRenderPass(description.m_hRenderPass)->GetDescription();
+
+  XII_VERIFY_FRAME_BUFFER(description.m_Attachments.GetCount() == renderPassDescription.m_Attachments.GetCount(), "The number of framebuffer attachments ({0}) must be equal to the number of attachments ({1}) in render pass '{2}'.", description.m_Attachments.GetCount(), renderPassDescription.m_Attachments.GetCount(), renderPassDescription.m_sName);
+
+  for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
+  {
+    const auto& attachmentDescription = renderPassDescription.m_Attachments[i];
+    const auto& viewDescription       = GetTextureView(description.m_Attachments[i])->GetDescription();
+    const auto& textureDescription    = GetTextureView(description.m_Attachments[i])->GetTexture()->GetDescription();
+
+    // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments must have been created with a VkFormat value that matches the VkFormat specified by the corresponding VkAttachmentDescription in renderPass.
+    // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00880
+    XII_VERIFY_FRAME_BUFFER(viewDescription.m_Format == textureDescription.m_Format, "The format ({0}) of attachment {1} does not match the format ({2}) defined by the render pass for the same attachment.", viewDescription.m_Format.GetValue(), i, textureDescription.m_Format.GetValue());
+
+    // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments must have been created with a samples value that matches the samples value specified by the corresponding VkAttachmentDescription in renderPass
+    // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00881
+    XII_VERIFY_FRAME_BUFFER(textureDescription.m_uiSampleCount == attachmentDescription.m_uiSampleCount, "The sample count ({0}) of attachment {1} does not match the sample count ({2}) defined by the render pass for the same attachment.", textureDescription.m_uiSampleCount, i, attachmentDescription.m_uiSampleCount);
+
+    if (textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Memoryless))
+    {
+      const bool bHasStencilComponent = GetTextureFormatProperties(attachmentDescription.m_Format).m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil;
+
+      XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_LoadOperation != xiiGALAttachmentLoadOperation::Load && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Load), "Memoryless attachment {i} is not compatible with xiiGALAttachmentLoadOperation::Load.", i);
+      XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_StencilStoreOperation != xiiGALAttachmentStoreOperation::Store && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentStoreOperation::Store), "Memoryless attachment {i} is not compatible with xiiGALAttachmentStoreOperation::Store.", i);
+
+#if XII_ENABLED(XII_PLATFORM_OSX) || 1
+      {
+        xiiUInt32 uiNumSubPasses = 0U;
+      }
+#endif
+    }
+  }
+
+  xiiGALFramebuffer* pFramebuffer = CreateFramebufferPlatform(description);
+
+  if (pFramebuffer == nullptr)
+  {
+    return xiiGALFramebufferHandle();
+  }
+  else
+  {
+    return xiiGALFramebufferHandle(m_Framebuffers.Insert(pFramebuffer));
+  }
+}
+
+void xiiGALDevice::DestroyFramebuffer(xiiGALFramebufferHandle hFramebuffer)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALFramebuffer* pFramebuffer = nullptr;
+
+  if (m_Framebuffers.TryGetValue(hFramebuffer, pFramebuffer))
+  {
+    AddDeadObject(GALObjectType::Framebuffer, hFramebuffer);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyFramebuffer called on an invalid handle (double free?).");
+  }
+}
+
+#undef XII_VERIFY_FRAME_BUFFER
+
 #define XII_VERIFY_BOTTOM_LEVEL_AS(expression, ...) \
   do                                                \
   {                                                 \
@@ -1765,7 +1853,7 @@ const xiiGALTextureFormatDescription& xiiGALDevice::GetTextureFormatProperties(x
   formatDescriptions[format].m_ComponentType    = componentType;                                                            \
   formatDescriptions[format].m_bIsTypeless      = isTypeless;                                                               \
   formatDescriptions[format].m_uiBlockWidth     = blockWidth;                                                               \
-  formatDescriptions[format].m_uiBlockHeight    = blockHeight;
+  formatDescriptions[format].m_uiBlockHeight    = blockHeight
 
     // clang-format off
 
@@ -1912,7 +2000,8 @@ const xiiGALTextureFormatDescription& xiiGALDevice::GetTextureFormatProperties(x
 
 const xiiGALSparseTextureProperties xiiGALDevice::GetSparseTextureProperties(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount) const
 {
-  return GetSparseTexturePropertiesPlatform(format, dimension, uiSampleCount);
+  /// \todo GraphicsFoundation: To be implemented.
+  return xiiGALSparseTextureProperties();
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);
