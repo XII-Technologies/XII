@@ -1636,32 +1636,196 @@ xiiGALFramebufferHandle xiiGALDevice::CreateFramebuffer(const xiiGALFramebufferC
 
   XII_VERIFY_FRAME_BUFFER(description.m_Attachments.GetCount() == renderPassDescription.m_Attachments.GetCount(), "The number of framebuffer attachments ({0}) must be equal to the number of attachments ({1}) in render pass '{2}'.", description.m_Attachments.GetCount(), renderPassDescription.m_Attachments.GetCount(), renderPassDescription.m_sName);
 
-  for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
+  for (xiiUInt32 uiAttachmentIndex = 0U; uiAttachmentIndex < renderPassDescription.m_Attachments.GetCount(); ++uiAttachmentIndex)
   {
-    const auto& attachmentDescription = renderPassDescription.m_Attachments[i];
-    const auto& viewDescription       = GetTextureView(description.m_Attachments[i])->GetDescription();
-    const auto& textureDescription    = GetTextureView(description.m_Attachments[i])->GetTexture()->GetDescription();
+    const auto& attachmentDescription = renderPassDescription.m_Attachments[uiAttachmentIndex];
+    const auto& viewDescription       = GetTextureView(description.m_Attachments[uiAttachmentIndex])->GetDescription();
+    const auto& textureDescription    = GetTextureView(description.m_Attachments[uiAttachmentIndex])->GetTexture()->GetDescription();
 
     // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments must have been created with a VkFormat value that matches the VkFormat specified by the corresponding VkAttachmentDescription in renderPass.
     // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00880
-    XII_VERIFY_FRAME_BUFFER(viewDescription.m_Format == textureDescription.m_Format, "The format ({0}) of attachment {1} does not match the format ({2}) defined by the render pass for the same attachment.", viewDescription.m_Format.GetValue(), i, textureDescription.m_Format.GetValue());
+    XII_VERIFY_FRAME_BUFFER(viewDescription.m_Format == textureDescription.m_Format, "The format ({0}) of attachment {1} does not match the format ({2}) defined by the render pass for the same attachment.", viewDescription.m_Format.GetValue(), uiAttachmentIndex, textureDescription.m_Format.GetValue());
 
     // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments must have been created with a samples value that matches the samples value specified by the corresponding VkAttachmentDescription in renderPass
     // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00881
-    XII_VERIFY_FRAME_BUFFER(textureDescription.m_uiSampleCount == attachmentDescription.m_uiSampleCount, "The sample count ({0}) of attachment {1} does not match the sample count ({2}) defined by the render pass for the same attachment.", textureDescription.m_uiSampleCount, i, attachmentDescription.m_uiSampleCount);
+    XII_VERIFY_FRAME_BUFFER(textureDescription.m_uiSampleCount == attachmentDescription.m_uiSampleCount, "The sample count ({0}) of attachment {1} does not match the sample count ({2}) defined by the render pass for the same attachment.", textureDescription.m_uiSampleCount, uiAttachmentIndex, attachmentDescription.m_uiSampleCount);
 
     if (textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Memoryless))
     {
       const bool bHasStencilComponent = GetTextureFormatProperties(attachmentDescription.m_Format).m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil;
 
-      XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_LoadOperation != xiiGALAttachmentLoadOperation::Load && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Load), "Memoryless attachment {i} is not compatible with xiiGALAttachmentLoadOperation::Load.", i);
-      XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_StencilStoreOperation != xiiGALAttachmentStoreOperation::Store && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentStoreOperation::Store), "Memoryless attachment {i} is not compatible with xiiGALAttachmentStoreOperation::Store.", i);
+      XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_LoadOperation != xiiGALAttachmentLoadOperation::Load && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Load), "Memoryless attachment {i} is not compatible with xiiGALAttachmentLoadOperation::Load.", uiAttachmentIndex);
+      XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_StencilStoreOperation != xiiGALAttachmentStoreOperation::Store && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentStoreOperation::Store), "Memoryless attachment {i} is not compatible with xiiGALAttachmentStoreOperation::Store.", uiAttachmentIndex);
 
-#if XII_ENABLED(XII_PLATFORM_OSX) || 1
+#if XII_ENABLED(XII_PLATFORM_OSX)
       {
         xiiUInt32 uiNumSubPasses = 0U;
+
+        for (xiiUInt32 j = 0; j < renderPassDescription.m_SubPasses.GetCount(); ++j)
+        {
+          const auto& subpass = renderPassDescription.m_SubPasses[j];
+
+          bool bUsedInSubPass = false;
+          for (xiiUInt32 k = 0; k < subpass.m_RenderTargetAttachments.GetCount(); ++k)
+          {
+            const auto& attachmentReference = subpass.m_RenderTargetAttachments[k];
+
+            if (attachmentReference.m_uiAttachmentIndex == uiAttachmentIndex)
+              bUsedInSubPass = true;
+          }
+          for (xiiUInt32 k = 0; k < subpass.m_InputAttachments.GetCount(); ++k)
+          {
+            const auto& attachmentReference = subpass.m_InputAttachments[k];
+
+            if (attachmentReference.m_uiAttachmentIndex == uiAttachmentIndex)
+              bUsedInSubPass = true;
+          }
+          if (!subpass.m_DepthStencilAttachment.IsEmpty() && subpass.m_DepthStencilAttachment[0].m_uiAttachmentIndex == uiAttachmentIndex)
+            bUsedInSubPass = true;
+
+          if (bUsedInSubPass)
+            ++uiNumSubPasses;
+        }
+
+        XII_VERIFY_FRAME_BUFFER(uiNumSubPasses == 1U, "Memoryless attachment {0} is used in more than one sub pass, which is not supported on MacOS/iOS as the contents of the attachment cannot be preserved between sub passes without storing it in global memory.");
       }
 #endif
+    }
+  }
+
+  for (xiiUInt32 uiSubPassIndex = 0U; uiSubPassIndex < renderPassDescription.m_SubPasses.GetCount(); ++uiSubPassIndex)
+  {
+    const auto& subpass = renderPassDescription.m_SubPasses[uiSubPassIndex];
+
+    for (xiiUInt32 uiInputAttachmentIndex = 0U; uiInputAttachmentIndex < subpass.m_InputAttachments.GetCount(); ++uiInputAttachmentIndex)
+    {
+      const auto& attachmentReference = subpass.m_InputAttachments[uiInputAttachmentIndex];
+
+      if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+        continue;
+
+      XII_VERIFY_FRAME_BUFFER(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The input attachment index ({0}) at {1} must be less than the attachment count ({2}).", attachmentReference.m_uiAttachmentIndex, uiInputAttachmentIndex, description.m_Attachments.GetCount());
+
+      const auto& hAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
+      XII_VERIFY_FRAME_BUFFER(!hAttachment.IsInvalidated(), "The attachment at index {0} is used as an input attachment by sub pass {1} of render pass '{2}' and must be valid.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+
+      const auto& textureDescription = GetTextureView(hAttachment)->GetTexture()->GetDescription();
+
+      // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as an input attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT.
+      // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00879
+      XII_VERIFY_FRAME_BUFFER(textureDescription.m_BindFlags.IsSet(xiiGALBindFlags::InputAttachment), "The attachment '{0}' at index {1} is used as an input attachment in sub pass {2} of render pass '{3}', but was not created with the xiiGALBindFlags::InputAttachment bind flag.", textureDescription.m_sName, attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+    }
+
+    for (xiiUInt32 uiColorAttachmentIndex = 0U; uiColorAttachmentIndex < subpass.m_RenderTargetAttachments.GetCount(); ++uiColorAttachmentIndex)
+    {
+      const auto& attachmentReference = subpass.m_RenderTargetAttachments[uiColorAttachmentIndex];
+
+      if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+        continue;
+
+      XII_VERIFY_FRAME_BUFFER(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The render target attachment index ({0}) at {1} must be less than the attachment count ({2}).", attachmentReference.m_uiAttachmentIndex, uiColorAttachmentIndex, description.m_Attachments.GetCount());
+
+      const auto& hAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
+      XII_VERIFY_FRAME_BUFFER(!hAttachment.IsInvalidated(), "The attachment at index {0} is used as a render target attachment by sub pass {1} of render pass '{2}' and must be valid.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+
+      const auto& viewDescription = GetTextureView(hAttachment)->GetDescription();
+      XII_VERIFY_FRAME_BUFFER(viewDescription.m_ViewType == xiiGALTextureViewType::RenderTarget, "The attachment at index {0} is used as a render target attachment by sub pass {1} of render pass '{2}', but is not of the xiiGALTextureViewType::RenderTarget type.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+
+      const auto& textureDescription = GetTextureView(hAttachment)->GetTexture()->GetDescription();
+
+      // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as a color attachment or resolve attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT.
+      // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00877
+      XII_VERIFY_FRAME_BUFFER(textureDescription.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget), "The attachment at index {0} is used as a render target attachment by sub pass {1} of render pass '{2}', but was not created with the xiiGALBindFlags::RenderTarget bind flag.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+    }
+
+    for (xiiUInt32 uiResolveAttachmentIndex = 0U; uiResolveAttachmentIndex < subpass.m_ResolveAttachments.GetCount(); ++uiResolveAttachmentIndex)
+    {
+      const auto& attachmentReference = subpass.m_ResolveAttachments[uiResolveAttachmentIndex];
+
+      if (attachmentReference.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+        continue;
+
+      XII_VERIFY_FRAME_BUFFER(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The resolve attachment index ({0}) at {1} must be less than the attachment count ({2}).", attachmentReference.m_uiAttachmentIndex, uiResolveAttachmentIndex, description.m_Attachments.GetCount());
+
+      const auto& hAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
+      XII_VERIFY_FRAME_BUFFER(!hAttachment.IsInvalidated(), "The attachment at index {0} is used as a resolve attachment by sub pass {1} of render pass '{2}' and must be valid.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+
+      const auto& viewDescription = GetTextureView(hAttachment)->GetDescription();
+      XII_VERIFY_FRAME_BUFFER(viewDescription.m_ViewType == xiiGALTextureViewType::RenderTarget, "The attachment at index {0} is used as a resolve attachment by sub pass {1} of render pass '{2}', but is not of the xiiGALTextureViewType::RenderTarget type.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+
+      const auto& textureDescription = GetTextureView(hAttachment)->GetTexture()->GetDescription();
+
+      // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as a color attachment or resolve attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT.
+      // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-00877
+      XII_VERIFY_FRAME_BUFFER(textureDescription.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget), "The attachment at index {0} is used as a resolve attachment by sub pass {1} of render pass '{2}', but was not created with the xiiGALBindFlags::RenderTarget bind flag.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+    }
+
+    if (!subpass.m_DepthStencilAttachment.IsEmpty())
+    {
+      const auto& attachmentReference = subpass.m_DepthStencilAttachment[0];
+
+      if (attachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
+      {
+        XII_VERIFY_FRAME_BUFFER(attachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The depth-stencil attachment index ({0}) must be less than the attachment count ({1}).", attachmentReference.m_uiAttachmentIndex, description.m_Attachments.GetCount());
+
+        const auto& hAttachment = description.m_Attachments[attachmentReference.m_uiAttachmentIndex];
+        XII_VERIFY_FRAME_BUFFER(!hAttachment.IsInvalidated(), "The attachment at index {0} is used as a depth-stencil attachment by sub pass {1} of render pass '{2}' and must be valid.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+
+        const auto& viewDescription = GetTextureView(hAttachment)->GetDescription();
+        XII_VERIFY_FRAME_BUFFER(viewDescription.m_ViewType == xiiGALTextureViewType::DepthStencil, "The attachment at index {0} is used as a depth-stencil attachment by sub pass {1} of render pass '{2}', but is not of the xiiGALTextureViewType::DepthStencil type.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+
+        const auto& textureDescription = GetTextureView(hAttachment)->GetTexture()->GetDescription();
+
+        // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as a depth/stencil attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT.
+        // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-02633
+        XII_VERIFY_FRAME_BUFFER(textureDescription.m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil), "The attachment at index {0} is used as a depth-stencil attachment by sub pass {1} of render pass '{2}', but was not created with the xiiGALBindFlags::DepthStencil bind flag.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+      }
+    }
+  }
+
+  bool bIsVRSEnabled = false;
+  for (xiiUInt32 uiSubPassIndex = 0U; uiSubPassIndex < renderPassDescription.m_SubPasses.GetCount(); ++uiSubPassIndex)
+  {
+    const auto& subpass = renderPassDescription.m_SubPasses[uiSubPassIndex];
+
+    if (!subpass.m_ShadingRateAttachment.IsEmpty())
+    {
+      const auto& attachmentReference = subpass.m_ShadingRateAttachment[0];
+      if (attachmentReference.m_AttachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
+      {
+        XII_VERIFY_FRAME_BUFFER(attachmentReference.m_AttachmentReference.m_uiAttachmentIndex < description.m_Attachments.GetCount(), "The shading rate attachment index ({0}) must be less than the attachment count ({1}).", attachmentReference.m_AttachmentReference.m_uiAttachmentIndex, description.m_Attachments.GetCount());
+
+        const auto& hAttachment = description.m_Attachments[attachmentReference.m_AttachmentReference.m_uiAttachmentIndex];
+        XII_VERIFY_FRAME_BUFFER(!hAttachment.IsInvalidated(), "The attachment at index {0} is used as a shading rate attachment by sub pass {1} of render pass '{2}' and must be valid.", attachmentReference.m_AttachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+
+        const auto& viewDescription = GetTextureView(hAttachment)->GetDescription();
+        XII_VERIFY_FRAME_BUFFER(viewDescription.m_ViewType == xiiGALTextureViewType::ShadingRate, "The attachment at index {0} is used as a shading rate attachment by sub pass {1} of render pass '{2}', but is not of the xiiGALTextureViewType::ShadingRate type.", attachmentReference.m_AttachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+
+        const auto& textureDescription = GetTextureView(hAttachment)->GetTexture()->GetDescription();
+
+        // If flags does not include VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT, each element of pAttachments that is used as a depth/stencil attachment by renderPass must have been created with a usage value including VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT.
+        // Link: https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VUID-VkFramebufferCreateInfo-pAttachments-02633
+        XII_VERIFY_FRAME_BUFFER(textureDescription.m_BindFlags.IsSet(xiiGALBindFlags::ShadingRate), "The attachment at index {0} is used as a shading rate attachment by sub pass {1} of render pass '{2}', but was not created with the xiiGALBindFlags::ShadingRate bind flag.", attachmentReference.m_AttachmentReference.m_uiAttachmentIndex, uiSubPassIndex, renderPassDescription.m_sName);
+
+        bIsVRSEnabled = true;
+      }
+    }
+  }
+
+  if (bIsVRSEnabled && !m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::NonSubSampledRenderTarget))
+  {
+    XII_VERIFY_FRAME_BUFFER(!m_AdapterDescription.m_ShadingRateProperties.m_CapabilityFlags.IsSet(xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget), "One of xiiGALShadingRateCapabilityFlags::NonSubSampledRenderTarget or xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget capabilities must be presented if texture based variable rate shading is supported.");
+
+    for (xiiUInt32 uiAttachmentIndex = 0; uiAttachmentIndex < renderPassDescription.m_Attachments.GetCount(); ++uiAttachmentIndex)
+    {
+      const auto& attachmentReference = description.m_Attachments[uiAttachmentIndex];
+
+      if (GetTextureView(attachmentReference)->GetDescription().m_ViewType == xiiGALTextureViewType::ShadingRate)
+        continue;
+
+      const auto& textureDescription = GetTextureView(attachmentReference)->GetTexture()->GetDescription();
+
+      XII_VERIFY_FRAME_BUFFER(textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Subsampled), "The attachment at index {0} must be created with the xiiGALMiscTextureFlags::Subsampled flag. If the xiiGALShadingRateCapabilityFlags::NonSubSampledRenderTarget capability is not supported, all attachments except the shading rate texture must have been created with a xiiGALMiscTextureFlags::Subsampled flag.");
     }
   }
 
