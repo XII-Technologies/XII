@@ -12,7 +12,7 @@ namespace vk
 
 XII_DEFINE_AS_POD_TYPE(vk::PipelineColorBlendAttachmentState);
 
-class XII_GRAPHICSVULKAN_DLL xiiGALBlendStateVulkan : xiiGALBlendState
+class XII_GRAPHICSVULKAN_DLL xiiGALBlendStateVulkan : public xiiGALBlendState
 {
 public:
   XII_ALWAYS_INLINE const vk::PipelineColorBlendStateCreateInfo* GetBlendState() const;

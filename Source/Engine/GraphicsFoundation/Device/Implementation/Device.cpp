@@ -807,7 +807,7 @@ xiiGALBufferHandle xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreati
       viewDescription.m_uiByteOffset = 0U;
       viewDescription.m_uiByteWidth  = (description.m_uiElementByteStride != 0U) ? (description.m_uiSize / description.m_uiElementByteStride) : description.m_uiSize;
 
-      pBuffer->m_hDefaultBufferView = pBuffer->CreateView(viewDescription);
+      pBuffer->m_hDefaultBufferView = CreateBufferView(viewDescription);
     }
 
     return hBuffer;
@@ -833,6 +833,15 @@ void xiiGALDevice::DestroyBuffer(xiiGALBufferHandle hBuffer)
 }
 
 #undef XII_VERIFY_BUFFER
+
+xiiGALBufferViewHandle xiiGALDevice::CreateBufferView(const xiiGALBufferViewCreationDescription& description)
+{
+  return xiiGALBufferViewHandle();
+}
+
+void xiiGALDevice::DestroyBufferView(xiiGALBufferHandle hBufferView)
+{
+}
 
 #define XII_VERIFY_TEXTURE(expression, ...) \
   do                                        \
@@ -1054,7 +1063,7 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
       xiiGALTextureViewCreationDescription viewDescription;
       viewDescription.m_hTexture                  = hTexture;
       viewDescription.m_uiArrayOrDepthSlicesCount = description.m_uiArraySizeOrDepth;
-      pTexture->m_hDefaultTextureView             = pTexture->CreateView(viewDescription);
+      pTexture->m_hDefaultTextureView             = CreateTextureView(viewDescription);
     }
 
     // Create default render target view.
@@ -1065,7 +1074,7 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
       viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
       viewDescription.m_uiArrayOrDepthSlicesCount = description.m_uiArraySizeOrDepth;
 
-      pTexture->m_hDefaultRenderTargetView = pTexture->CreateView(viewDescription);
+      pTexture->m_hDefaultRenderTargetView = CreateTextureView(viewDescription);
     }
 
     return hTexture;
@@ -1090,6 +1099,15 @@ void xiiGALDevice::DestroyTexture(xiiGALTextureHandle hTexture)
 }
 
 #undef XII_VERIFY_TEXTURE
+
+xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(const xiiGALTextureViewCreationDescription& description)
+{
+  return xiiGALTextureViewHandle();
+}
+
+void xiiGALDevice::DestroyTextureView(xiiGALTextureViewHandle hTextureView)
+{
+}
 
 #define XII_VERIFY_SAMPLER(expression, ...) \
   do                                        \

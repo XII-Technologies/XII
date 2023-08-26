@@ -92,17 +92,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseBufferProperties : public xiiHasha
 class XII_GRAPHICSFOUNDATION_DLL xiiGALBuffer : public xiiGALResource<xiiGALBufferCreationDescription>
 {
 public:
-  /// \brief This creates a new buffer view.
-  ///
-  /// \param viewDescription - The view description. see xiiGALBufferViewCreationDescription for details.
-  ///
-  /// \return The handle to the buffer view
-  ///
-  /// \remarks To create a view addressing the entire buffer, set only xiiGALBufferViewCreationDescription::m_ViewType member of the ViewDesc structure and leave all other members in their default values.
-  ///          The buffer view will contain strong reference to the buffer, so the buffer will not be destroyed until all views are released.
-  ///          The function calls AddRef() for the created interface, so it must be released by a call to ReleaseRef() when it is no longer needed.
-  virtual xiiGALBufferViewHandle CreateView(const xiiGALBufferViewCreationDescription& viewDescription) = 0;
-
   /// \brief This returns the handle of the default view.
   ///
   /// \param viewType - The type of the requested view. See xiiGALBufferViewType.

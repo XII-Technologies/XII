@@ -102,6 +102,21 @@ public:
   void DestroyBuffer(xiiGALBufferHandle hBuffer);
 
 
+  /// \brief This creates a new buffer view.
+  ///
+  /// \param description - The buffer view description. See xiiGALBufferViewCreationDescription.
+  ///
+  /// \return The handle to the buffer view.
+  ///
+  /// \remarks To create a view addressing the entire buffer, set only xiiGALBufferViewCreationDescription::m_ViewType member of the ViewDesc structure and leave all other members in their default values.
+  ///          The buffer view will contain strong reference to the buffer, so the buffer will not be destroyed until all views are released.
+  ///          The function calls AddRef() for the created interface, so it must be released by a call to ReleaseRef() when it is no longer needed.
+  xiiGALBufferViewHandle CreateBufferView(const xiiGALBufferViewCreationDescription& description);
+
+  /// \brief This destroys the buffer with the given handle.
+  void DestroyBufferView(xiiGALBufferHandle hBufferView);
+
+
   /// \brief This creates a new texture object.
   ///
   /// \param description  - The texture description. See xiiGALTextureCreationDescription.
@@ -120,6 +135,27 @@ public:
 
   /// \brief This destroys the texture with the given handle.
   void DestroyTexture(xiiGALTextureHandle hTexture);
+
+
+  /// \brief This creates a new texture view.
+  ///
+  /// \param description - The texture view description. See xiiGALTextureViewCreationDescription.
+  ///
+  /// \return The handle to the texture view.
+  ///
+  /// \remarks To create a shader resource view addressing the entire texture, set only xiiGALTextureViewCreationDescription::m_ViewType member of the description parameter to xiiGALTextureViewType::ShaderResource and leave all other
+  ///          members in their default values. Using the same method, you can create render target or depth stencil view addressing the largest mip level.\n
+  ///          If texture view format is xiiGALTextureFormat::Unknown, the view format will match the texture format.\n
+  ///          If texture view type is xiiGALTextureViewType::Undefined, the type will match the texture type.\n
+  ///          If the number of mip levels is 0, and the view type is shader resource, the view will address all mip levels. For other view types it will address one mip level.\n
+  ///          If the number of slices is 0, all slices from m_uiFirstArraySlice or m_uiFirstDepthSlice will be referenced by the view.
+  ///          For non-array textures, the only allowed values for the number of slices are 0 and 1.\n
+  ///          Texture view will contain strong reference to the texture, so the texture will not be destroyed until all views are released.\n
+  ///          The function calls AddRef() for the created interface, so it must be released by a call to ReleaseRef() when it is no longer needed.
+  xiiGALTextureViewHandle CreateTextureView(const xiiGALTextureViewCreationDescription& description);
+
+  /// \brief This destroys the texture view with the given handle.
+  void DestroyTextureView(xiiGALTextureViewHandle hTextureView);
 
 
   /// \brief This creates a new sampler object.
@@ -419,8 +455,14 @@ protected:
   virtual xiiGALBuffer* CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr) = 0;
   virtual void          DestroyBufferPlatform(xiiGALBuffer* pBuffer)                                                                             = 0;
 
+  virtual xiiGALBufferView* CreateBufferViewPlatform(const xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description) = 0;
+  virtual void              DestroyBufferViewPlatform(xiiGALBufferView* pBufferView)                                                      = 0;
+
   virtual xiiGALTexture* CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) = 0;
   virtual void           DestroyTexturePlatform(xiiGALTexture* pTexture)                                                                             = 0;
+
+  virtual xiiGALTextureView* CreateTextureViewPlatform(const xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description) = 0;
+  virtual void               DestroyTextureViewPlatform(xiiGALTextureView* pTextureView)                                                       = 0;
 
   virtual xiiGALSampler* CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) = 0;
   virtual void           DestroySamplerPlatform(xiiGALSampler* pSamplerState)                       = 0;

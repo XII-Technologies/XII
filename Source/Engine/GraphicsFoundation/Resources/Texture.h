@@ -127,23 +127,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureProperties : public xiiHash
 class XII_GRAPHICSFOUNDATION_DLL xiiGALTexture : public xiiGALResource<xiiGALTextureCreationDescription>
 {
 public:
-  /// \brief This creates a new texture view.
-  ///
-  /// \param viewDescription - The view description. see xiiGALTextureViewCreationDescription for details.
-  ///
-  /// \return The handle to the texture view
-  ///
-  /// \remarks To create a shader resource view addressing the entire texture, set only xiiGALTextureViewCreationDescription::m_ViewType member of the viewDescription parameter to xiiGALTextureViewType::ShaderResource and leave all other
-  ///          members in their default values. Using the same method, you can create render target or depth stencil view addressing the largest mip level.\n
-  ///          If texture view format is xiiGALTextureFormat::Unknown, the view format will match the texture format.\n
-  ///          If texture view type is xiiGALTextureViewType::Undefined, the type will match the texture type.\n
-  ///          If the number of mip levels is 0, and the view type is shader resource, the view will address all mip levels. For other view types it will address one mip level.\n
-  ///          If the number of slices is 0, all slices from m_uiFirstArraySlice or m_uiFirstDepthSlice will be referenced by the view.
-  ///          For non-array textures, the only allowed values for the number of slices are 0 and 1.\n
-  ///          Texture view will contain strong reference to the texture, so the texture will not be destroyed until all views are released.\n
-  ///          The function calls AddRef() for the created interface, so it must be released by a call to ReleaseRef() when it is no longer needed.
-  virtual xiiGALTextureViewHandle CreateView(const xiiGALTextureViewCreationDescription& viewDescription) = 0;
-
   /// \brief This returns the handle of the default view.
   ///
   /// \param viewType - The type of the requested view. See xiiGALTextureViewType.

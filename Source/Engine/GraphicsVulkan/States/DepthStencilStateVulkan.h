@@ -9,7 +9,7 @@ namespace vk
   struct PipelineDepthStencilStateCreateInfo;
 } // namespace vk
 
-class XII_GRAPHICSVULKAN_DLL xiiGALDepthStencilStateVulkan : xiiGALDepthStencilState
+class XII_GRAPHICSVULKAN_DLL xiiGALDepthStencilStateVulkan : public xiiGALDepthStencilState
 {
 public:
   XII_ALWAYS_INLINE const vk::PipelineDepthStencilStateCreateInfo* GetDepthStencilState() const;
