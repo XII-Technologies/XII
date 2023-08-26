@@ -1100,14 +1100,137 @@ void xiiGALDevice::DestroyTexture(xiiGALTextureHandle hTexture)
 
 #undef XII_VERIFY_TEXTURE
 
+#define XII_VERIFY_TEXTURE_VIEW(expression, ...) \
+  do                                             \
+  {                                              \
+    if (!(expression))                           \
+    {                                            \
+      xiiLog::Error(__VA_ARGS__);                \
+      return xiiGALTextureViewHandle();          \
+    }                                            \
+  } while (false);
+
 xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(const xiiGALTextureViewCreationDescription& description)
 {
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALTexture* pTexture = Get<TextureTable, xiiGALTexture>(description.m_hTexture, m_Textures);
+
+  XII_VERIFY_TEXTURE_VIEW(pTexture != nullptr, "The texture handle given for texture view creation is invalid.");
+
+  const auto& textureDescription = pTexture->GetDescription();
+
+  XII_VERIFY_TEXTURE_VIEW(description.m_ViewType > xiiGALTextureViewType::Undefined && description.m_ViewType < xiiGALTextureViewType::ENUN_COUNT, "The texture view type is invalid.");
+  XII_VERIFY_TEXTURE_VIEW(description.m_uiMostDetailedMip < description.m_uiMipLevelCount, "The most detailed mip ({0}) is out of range. The texture has only {1} mip level (s).", description.m_uiMostDetailedMip, description.m_uiMipLevelCount);
+
+  if (textureDescription.IsArray())
+  {
+    XII_VERIFY_TEXTURE_VIEW(description.m_uiFirstArrayOrDepthSlice < textureDescription.m_uiArraySizeOrDepth, "The first array slice ({0}) is out of range. The texture has only ({1}) slice (s)", description.m_uiFirstArrayOrDepthSlice, textureDescription.m_uiArraySizeOrDepth);
+    XII_VERIFY_TEXTURE_VIEW(description.m_uiFirstArrayOrDepthSlice + description.m_uiArrayOrDepthSlicesCount <= textureDescription.m_uiArraySizeOrDepth, "The first array slice ({0}) and the number of array slice (s) ({1}) are out of range. The texture has only ({2}) slice (s)", description.m_uiFirstArrayOrDepthSlice, description.m_uiArrayOrDepthSlicesCount, textureDescription.m_uiArraySizeOrDepth);
+  }
+  else if (textureDescription.Is3D())
+  {
+    XII_VERIFY_TEXTURE_VIEW(description.m_uiFirstArrayOrDepthSlice == 0U, "For non-array texture, the First Array or Depth Slice must be zero.");
+  }
+
+  switch (textureDescription.m_Type)
+  {
+    case xiiGALResourceDimension::Texture1D:
+    {
+      const bool bIsValid = description.m_ResourceDimension == xiiGALResourceDimension::Texture1D;
+      XII_VERIFY_TEXTURE_VIEW(bIsValid, "Incorrect texture view type for a Texture 1D view, only xiiGALResourceDimension Texture1D is allowed.");
+    }
+    break;
+    case xiiGALResourceDimension::Texture1DArray:
+    {
+      const bool bIsValid = description.m_ResourceDimension == xiiGALResourceDimension::Texture1D || description.m_ResourceDimension == xiiGALResourceDimension::Texture1DArray;
+      XII_VERIFY_TEXTURE_VIEW(bIsValid, "Incorrect texture view type for a Texture 1D Array view, only xiiGALResourceDimension Texture1D or Texture1DArray is allowed.");
+    }
+    break;
+    case xiiGALResourceDimension::Texture2D:
+    {
+      const bool bIsValid = description.m_ResourceDimension == xiiGALResourceDimension::Texture2D || description.m_ResourceDimension == xiiGALResourceDimension::Texture2DArray;
+      XII_VERIFY_TEXTURE_VIEW(bIsValid, "Incorrect texture view type for a Texture 2D view, only xiiGALResourceDimension Texture2D or Texture2DArray is allowed.");
+    }
+    break;
+    case xiiGALResourceDimension::Texture2DArray:
+    {
+      const bool bIsValid = description.m_ResourceDimension == xiiGALResourceDimension::Texture2D || description.m_ResourceDimension == xiiGALResourceDimension::Texture2DArray;
+      XII_VERIFY_TEXTURE_VIEW(bIsValid, "Incorrect texture view type for a Texture 2D Array view, only xiiGALResourceDimension Texture2D or Texture2DArray is allowed.");
+    }
+    break;
+    case xiiGALResourceDimension::Texture3D:
+    {
+      const bool bIsValid = description.m_ResourceDimension == xiiGALResourceDimension::Texture3D;
+      XII_VERIFY_TEXTURE_VIEW(bIsValid, "Incorrect texture view type for a Texture 3D view, only xiiGALResourceDimension Texture3D is allowed.");
+    }
+    break;
+    case xiiGALResourceDimension::TextureCube:
+    {
+      if (description.m_ViewType == xiiGALTextureViewType::ShaderResource)
+      {
+        const bool bIsValid = description.m_ResourceDimension == xiiGALResourceDimension::Texture2D || description.m_ResourceDimension == xiiGALResourceDimension::Texture2DArray || description.m_ResourceDimension == xiiGALResourceDimension::TextureCube;
+        XII_VERIFY_TEXTURE_VIEW(bIsValid, "Incorrect texture view type for a Texture Cube shader resource view, only xiiGALResourceDimension Texture2D or Texture2DArray or TextureCube is allowed.");
+      }
+      else
+      {
+        const bool bIsValid = description.m_ResourceDimension == xiiGALResourceDimension::Texture2D || description.m_ResourceDimension == xiiGALResourceDimension::Texture2DArray;
+        XII_VERIFY_TEXTURE_VIEW(bIsValid, "Incorrect texture view type for a Texture Cube non-shader resource view, only xiiGALResourceDimension Texture2D or Texture2DArray is allowed.");
+      }
+    }
+    break;
+    case xiiGALResourceDimension::TextureCubeArray:
+    {
+      if (description.m_ViewType == xiiGALTextureViewType::ShaderResource)
+      {
+        const bool bIsValid = description.m_ResourceDimension == xiiGALResourceDimension::Texture2D || description.m_ResourceDimension == xiiGALResourceDimension::Texture2DArray || description.m_ResourceDimension == xiiGALResourceDimension::TextureCube || description.m_ResourceDimension == xiiGALResourceDimension::TextureCubeArray;
+        XII_VERIFY_TEXTURE_VIEW(bIsValid, "Incorrect texture view type for a Texture Cube Array shader resource view, only xiiGALResourceDimension Texture2D or Texture2DArray or TextureCube TextureCubeArray is allowed.");
+      }
+      else
+      {
+        const bool bIsValid = description.m_ResourceDimension == xiiGALResourceDimension::Texture2D || description.m_ResourceDimension == xiiGALResourceDimension::Texture2DArray;
+        XII_VERIFY_TEXTURE_VIEW(bIsValid, "Incorrect texture view type for a Texture Cube Array non-shader resource view, only xiiGALResourceDimension Texture2D or Texture2DArray is allowed.");
+      }
+    }
+    break;
+
+    default:
+      XII_VERIFY_TEXTURE_VIEW(false, "Encountered an unexpected view type.");
+  }
+
+  // Hash description and return any existing one (including increasing the refcount).
+  xiiUInt32 uiHash = description.CalculateHash();
+
+  {
+    xiiGALTextureViewHandle hTextureView;
+    if (pTexture->m_TextureViews.TryGetValue(uiHash, hTextureView))
+    {
+      return hTextureView;
+    }
+  }
+
+  xiiGALTextureView* pTextureView = CreateTextureViewPlatform(pTexture, description);
+
+  if (pTextureView != nullptr)
+  {
+    XII_ASSERT_DEBUG(pTextureView->GetDescription().CalculateHash() == uiHash, "TextureView hash does not match.");
+
+    pTextureView->AddRef();
+
+    xiiGALTextureViewHandle hTextureView(m_TextureViews.Insert(pTextureView));
+    pTexture->m_TextureViews.Insert(uiHash, hTextureView);
+
+    return hTextureView;
+  }
+
   return xiiGALTextureViewHandle();
 }
 
 void xiiGALDevice::DestroyTextureView(xiiGALTextureViewHandle hTextureView)
 {
 }
+
+#undef XII_VERIFY_TEXTURE_VIEW
 
 #define XII_VERIFY_SAMPLER(expression, ...) \
   do                                        \
