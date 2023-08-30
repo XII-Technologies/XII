@@ -108,7 +108,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewCreationDescription : public 
   xiiUInt32                                   m_uiArrayOrDepthSlicesCount = 0U;                                          ///< For a texture array, number of array slices to address in the view. For a 3D texture, number of depth slices to address in the view. Set to 0 to address all array or depth slices. The default is 0.
   xiiBitflags<xiiGALUnorderedAccessViewFlags> m_AccessFlags               = xiiGALUnorderedAccessViewFlags::Unspecified; ///< For an unordered access view, allowed access flags. The default is Unspecified.
   xiiBitflags<xiiGALTextureViewFlags>         m_Flags                     = xiiGALTextureViewFlags::None;                ///< Texture view flags. The default is None.
-  xiiGALTextureComponentSwizzle               m_ComponentSwizzle;                                                        ///< Texture component swizzle.
+  xiiGALTextureComponentMapping               m_ComponentSwizzle;                                                        ///< Texture component swizzle.
 };
 
 /// \brief Interface that defines methods to manipulate a texture view object.

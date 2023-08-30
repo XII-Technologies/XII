@@ -218,7 +218,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALTextureFormat, 1)
   XII_ENUM_CONSTANT(xiiGALTextureFormat::R8Typeless),
   XII_ENUM_CONSTANT(xiiGALTextureFormat::R8UNormalized),
   XII_ENUM_CONSTANT(xiiGALTextureFormat::R8UInt),
-  XII_ENUM_CONSTANT(xiiGALTextureFormat::R8SNorm),
+  XII_ENUM_CONSTANT(xiiGALTextureFormat::R8SNormalized),
   XII_ENUM_CONSTANT(xiiGALTextureFormat::R8SInt),
   XII_ENUM_CONSTANT(xiiGALTextureFormat::A8UNormalized),
   XII_ENUM_CONSTANT(xiiGALTextureFormat::R1UNormalized),

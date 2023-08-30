@@ -111,7 +111,7 @@ public:
   /// \remarks To create a view addressing the entire buffer, set only xiiGALBufferViewCreationDescription::m_ViewType member of the ViewDesc structure and leave all other members in their default values.
   ///          The buffer view will contain strong reference to the buffer, so the buffer will not be destroyed until all views are released.
   ///          The function calls AddRef() for the created interface, so it must be released by a call to ReleaseRef() when it is no longer needed.
-  xiiGALBufferViewHandle CreateBufferView(const xiiGALBufferViewCreationDescription& description);
+  xiiGALBufferViewHandle CreateBufferView(xiiGALBufferViewCreationDescription& description);
 
   /// \brief This destroys the buffer with the given handle.
   void DestroyBufferView(xiiGALBufferHandle hBufferView);
@@ -152,7 +152,7 @@ public:
   ///          For non-array textures, the only allowed values for the number of slices are 0 and 1.\n
   ///          Texture view will contain strong reference to the texture, so the texture will not be destroyed until all views are released.\n
   ///          The function calls AddRef() for the created interface, so it must be released by a call to ReleaseRef() when it is no longer needed.
-  xiiGALTextureViewHandle CreateTextureView(const xiiGALTextureViewCreationDescription& description);
+  xiiGALTextureViewHandle CreateTextureView(xiiGALTextureViewCreationDescription& description);
 
   /// \brief This destroys the texture view with the given handle.
   void DestroyTextureView(xiiGALTextureViewHandle hTextureView);

@@ -508,7 +508,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormat
     R8Typeless,                   ///< Single-component 8-bit typeless format.
     R8UNormalized,                ///< Single-component 8-bit unsigned-normalized-integer format.
     R8UInt,                       ///< Single-component 8-bit unsigned-integer format.
-    R8SNorm,                      ///< Single-component 8-bit signed-normalized-integer format.
+    R8SNormalized,                ///< Single-component 8-bit signed-normalized-integer format.
     R8SInt,                       ///< Single-component 8-bit signed-integer-format format.
     A8UNormalized,                ///< Single-component 8-bit unsigned-normalized-integer format for alpha channel only.
     R1UNormalized,                ///< Single-component 1-bit format.
