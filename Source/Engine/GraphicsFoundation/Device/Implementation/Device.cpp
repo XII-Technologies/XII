@@ -835,14 +835,119 @@ void xiiGALDevice::DestroyBuffer(xiiGALBufferHandle hBuffer)
 
 #undef XII_VERIFY_BUFFER
 
+#define XII_VERIFY_BUFFER_VIEW(expression, ...) \
+  do                                            \
+  {                                             \
+    if (!(expression))                          \
+    {                                           \
+      xiiLog::Error(__VA_ARGS__);               \
+      return xiiGALBufferViewHandle();          \
+    }                                           \
+  } while (false);
+
 xiiGALBufferViewHandle xiiGALDevice::CreateBufferView(xiiGALBufferViewCreationDescription& description)
 {
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALBuffer* pBuffer = Get<BufferTable, xiiGALBuffer>(description.m_hBuffer, m_Buffers);
+
+  XII_VERIFY_BUFFER_VIEW(pBuffer != nullptr, "The buffer handle given for buffer view creation is invalid.");
+
+  const auto& bufferDescription = pBuffer->GetDescription();
+
+  if (description.m_uiByteWidth == 0U)
+  {
+    XII_VERIFY_BUFFER_VIEW(bufferDescription.m_uiSize > description.m_uiByteOffset, "The byte offset ({0}) exceeds the buffer size ({1}).", description.m_uiByteOffset, bufferDescription.m_uiSize);
+
+    description.m_uiByteWidth = bufferDescription.m_uiSize - description.m_uiByteOffset;
+  }
+
+  XII_VERIFY_BUFFER_VIEW((description.m_uiByteOffset + description.m_uiByteWidth) <= bufferDescription.m_uiSize, "The buffer view range [{0}, {1}) is out of the buffer boundaries [0, {2}).", description.m_uiByteOffset, (description.m_uiByteOffset + description.m_uiByteWidth), bufferDescription.m_uiSize);
+
+  if (bufferDescription.m_BindFlags.IsAnySet(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess))
+  {
+    if (bufferDescription.m_Mode == xiiGALBufferMode::Structured || bufferDescription.m_Mode == xiiGALBufferMode::Formatted)
+    {
+      XII_VERIFY_BUFFER_VIEW(bufferDescription.m_uiElementByteStride != 0U, "The element byte stride is zero.");
+      XII_VERIFY_BUFFER_VIEW((description.m_uiByteOffset % bufferDescription.m_uiElementByteStride) == 0U, "The buffer view byte offset ({0}) is not a multiple of the element byte stride ({1}).", description.m_uiByteOffset, bufferDescription.m_uiElementByteStride);
+      XII_VERIFY_BUFFER_VIEW((description.m_uiByteWidth % bufferDescription.m_uiElementByteStride) == 0U, "The buffer view byte width ({0}) is not a multiple of the element byte stride ({1}).", description.m_uiByteWidth, bufferDescription.m_uiElementByteStride);
+    }
+
+    XII_VERIFY_BUFFER_VIEW(bufferDescription.m_Mode != xiiGALBufferMode::Formatted && description.m_Format.m_ValueType != xiiGALValueType::Undefined, "The format must be specified when creating a view of a formatted buffer.");
+
+    if (bufferDescription.m_Mode == xiiGALBufferMode::Formatted || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && description.m_Format.m_ValueType != xiiGALValueType::Undefined))
+    {
+      XII_VERIFY_BUFFER_VIEW(description.m_Format.m_uiComponents > 0U && description.m_Format.m_uiComponents <= 4U, "Incorrect number of format components ({0}). 1, 2, 3, or 4 are allowed values.");
+
+      if (description.m_Format.m_ValueType == xiiGALValueType::Float16 || description.m_Format.m_ValueType == xiiGALValueType::Float32)
+        description.m_Format.m_bIsNormalized = false;
+
+      XII_VERIFY_BUFFER_VIEW(bufferDescription.m_Mode != xiiGALBufferMode::Raw && bufferDescription.m_uiElementByteStride != 0U, "To enable formatted views of a raw buffer, the element byte stride must be specified in the buffer creation description.");
+
+      const xiiUInt32 uiViewElementStride = xiiGALValueType::GetSize(description.m_Format.m_ValueType) * description.m_Format.m_uiComponents;
+
+      XII_VERIFY_BUFFER_VIEW(bufferDescription.m_uiElementByteStride == uiViewElementStride, "The buffer element byte stride ({0}) is not consistent with the size ({1}) defined by the format value type of the view ({2}).", bufferDescription.m_uiElementByteStride, uiViewElementStride, description.m_Format.m_ValueType);
+    }
+
+    if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && description.m_Format.m_ValueType == xiiGALValueType::Undefined)
+    {
+      XII_VERIFY_BUFFER_VIEW((description.m_uiByteOffset % 16U) == 0U, "When creating a Raw buffer view, the offset of the first element from the start of the buffer ({0}) must be a multiple of 16 bytes.", description.m_uiByteOffset);
+    }
+
+    if (bufferDescription.m_Mode == xiiGALBufferMode::Structured)
+    {
+      const xiiUInt32 uiStructuredBufferOffsetAlignment = m_AdapterDescription.m_BufferProperties.m_uiStructuredBufferOffsetAlignment;
+
+      XII_VERIFY_BUFFER_VIEW(uiStructuredBufferOffsetAlignment != 0, "Device structured buffer offset alignment may not have been initialized.");
+      XII_VERIFY_BUFFER_VIEW((description.m_uiByteOffset % uiStructuredBufferOffsetAlignment) == 0U, "Structured buffer view byte offset ({0}) is not a multiple of the required structured buffer offset alignment ({1}).", description.m_uiByteOffset, uiStructuredBufferOffsetAlignment);
+    }
+  }
+
+  // Hash description and return any existing one.
+  xiiUInt32 uiHash = description.CalculateHash();
+
+  {
+    xiiGALBufferViewHandle hBufferView;
+    if (pBuffer->m_BufferViews.TryGetValue(uiHash, hBufferView))
+    {
+      return hBufferView;
+    }
+  }
+
+  xiiGALBufferView* pBufferView = CreateBufferViewPlatform(pBuffer, description);
+
+  if (pBufferView != nullptr)
+  {
+    XII_ASSERT_DEBUG(pBufferView->GetDescription().CalculateHash() == uiHash, "BufferView hash does not match.");
+
+    pBufferView->AddRef();
+
+    xiiGALBufferViewHandle hBufferView(m_BufferViews.Insert(pBufferView));
+    pBuffer->m_BufferViews.Insert(uiHash, hBufferView);
+
+    return hBufferView;
+  }
+
   return xiiGALBufferViewHandle();
 }
 
 void xiiGALDevice::DestroyBufferView(xiiGALBufferHandle hBufferView)
 {
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALBufferView* pBufferView = nullptr;
+
+  if (m_BufferViews.TryGetValue(hBufferView, pBufferView))
+  {
+    AddDeadObject(GALObjectType::BufferView, hBufferView);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyBufferView called on an invalid handle (double free?).");
+  }
 }
+
+#undef XII_VERIFY_BUFFER_VIEW
 
 #define XII_VERIFY_TEXTURE(expression, ...) \
   do                                        \
@@ -1305,7 +1410,7 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
     }
   }
 
-  // Hash description and return any existing one (including increasing the refcount).
+  // Hash description and return any existing one.
   xiiUInt32 uiHash = description.CalculateHash();
 
   {
@@ -1335,6 +1440,18 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
 
 void xiiGALDevice::DestroyTextureView(xiiGALTextureViewHandle hTextureView)
 {
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALTextureView* pTextureView = nullptr;
+
+  if (m_TextureViews.TryGetValue(hTextureView, pTextureView))
+  {
+    AddDeadObject(GALObjectType::TextureView, hTextureView);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyTextureView called on an invalid handle (double free?).");
+  }
 }
 
 #undef XII_VERIFY_TEXTURE_VIEW

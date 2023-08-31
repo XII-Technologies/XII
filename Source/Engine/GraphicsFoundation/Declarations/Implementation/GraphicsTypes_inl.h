@@ -1,5 +1,35 @@
 
 // static
+XII_ALWAYS_INLINE xiiUInt32 xiiGALValueType::GetSize(const xiiGALValueType::Enum type)
+{
+  switch (type)
+  {
+    case xiiGALValueType::Int8:
+      return 1U;
+    case xiiGALValueType::Int16:
+      return 2U;
+    case xiiGALValueType::Int32:
+      return 4U;
+    case xiiGALValueType::UInt8:
+      return 1U;
+    case xiiGALValueType::UInt16:
+      return 2U;
+    case xiiGALValueType::UInt32:
+      return 4U;
+    case xiiGALValueType::Float16:
+      return 2U;
+    case xiiGALValueType::Float32:
+      return 4U;
+    case xiiGALValueType::Float64:
+      return 8U;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return 0U;
+}
+
+// static
 XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderStage::GetStageIndex(xiiBitflags<xiiGALShaderStage> stage)
 {
   // \todo Assert that a single shader stage is set.

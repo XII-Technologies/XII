@@ -136,6 +136,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALValueType
 
     Default = Undefined
   };
+
+  /// \brief This returns the size in bytes, of the given value type.
+  static xiiUInt32 GetSize(const xiiGALValueType::Enum type);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALValueType);
