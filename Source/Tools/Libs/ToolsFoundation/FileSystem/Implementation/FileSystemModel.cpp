@@ -333,8 +333,8 @@ xiiResult xiiFileSystemModel::UnlinkDocument(xiiStringView sAbsolutePath)
     auto it = m_ReferencedFiles.Find(sAbsolutePath);
     if (it.IsValid())
     {
-      bDocumentLinkChanged    = it.Value().m_DocumentID != xiiUuid();
-      fileStatus              = it.Value();
+      bDocumentLinkChanged = it.Value().m_DocumentID != xiiUuid();
+      fileStatus           = it.Value();
       it.Value().m_DocumentID.SetInvalid();
     }
     else

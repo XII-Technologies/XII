@@ -571,8 +571,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
       ClearFiles();
       xiiFolderChangedEvent expected[] = {
         xiiFolderChangedEvent(sFolderPath, xiiFolderChangedEvent::Type::FolderAdded),
-        xiiFolderChangedEvent(sFolderSubPath, xiiFolderChangedEvent::Type::FolderAdded)
-      };
+        xiiFolderChangedEvent(sFolderSubPath, xiiFolderChangedEvent::Type::FolderAdded)};
       CompareFolders(xiiMakeArrayPtr(expected));
       ClearFolders();
       XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFiles()->GetCount(), 1);
@@ -587,8 +586,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
       ClearFiles();
       xiiFolderChangedEvent expected[] = {
         xiiFolderChangedEvent(sFolderSubPath, xiiFolderChangedEvent::Type::FolderRemoved),
-        xiiFolderChangedEvent(sFolderPath, xiiFolderChangedEvent::Type::FolderRemoved)
-      };
+        xiiFolderChangedEvent(sFolderPath, xiiFolderChangedEvent::Type::FolderRemoved)};
       CompareFolders(xiiMakeArrayPtr(expected));
       ClearFolders();
       XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFiles()->GetCount(), 1);
