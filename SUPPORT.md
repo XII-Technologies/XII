@@ -8,4 +8,4 @@ or any question.
 
 ## Bug reports
 
-See the [contributing guidelines](CONTRIBUTING.md) for sharing bug reports and read our [code of conduct](CODE_OF_CONDUCT.md).
+See the [contributing guidelines](CONTRIBUTING.md) for sharing bug reports and read our developer guide.
