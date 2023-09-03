@@ -297,7 +297,12 @@ QVariant xiiQtCVarModel::data(const QModelIndex& index, int iRole) const
         return e->m_sDisplayString;
 
       case 1:
-        return e->m_Value.ConvertTo<xiiString>().GetData();
+      {
+        if (e->m_Value.IsValid())
+          return e->m_Value.ConvertTo<xiiString>().GetData();
+        else
+          return QVariant();
+      }
 
       case 2:
         return e->m_sDescription;
@@ -337,7 +342,7 @@ QVariant xiiQtCVarModel::data(const QModelIndex& index, int iRole) const
       case xiiVariantType::Int32:
         return e->m_Value.Get<xiiInt32>();
       case xiiVariantType::Float:
-        return e->m_Value.ConvertTo<double>();
+        return e->m_Value.ConvertTo<float>();
       case xiiVariantType::Double:
         return e->m_Value.ConvertTo<double>();
       case xiiVariantType::String:
