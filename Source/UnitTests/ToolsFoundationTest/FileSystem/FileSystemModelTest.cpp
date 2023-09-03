@@ -103,7 +103,8 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
       {
         XII_TEST_INT((int)expected[i].m_Type, (int)fileEvents[i].m_Type);
         XII_TEST_STRING(expected[i].m_sPath, fileEvents[i].m_sPath);
-        // Ignore stats
+        XII_TEST_BOOL(expected[i].m_Status.m_DocumentID == fileEvents[i].m_Status.m_DocumentID);
+        // Ignore stats besudes GUID.
       }
     }
   };
@@ -570,7 +571,8 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
       ClearFiles();
       xiiFolderChangedEvent expected[] = {
         xiiFolderChangedEvent(sFolderPath, xiiFolderChangedEvent::Type::FolderAdded),
-        xiiFolderChangedEvent(sFolderSubPath, xiiFolderChangedEvent::Type::FolderAdded)};
+        xiiFolderChangedEvent(sFolderSubPath, xiiFolderChangedEvent::Type::FolderAdded)
+      };
       CompareFolders(xiiMakeArrayPtr(expected));
       ClearFolders();
       XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFiles()->GetCount(), 1);
@@ -585,7 +587,8 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
       ClearFiles();
       xiiFolderChangedEvent expected[] = {
         xiiFolderChangedEvent(sFolderSubPath, xiiFolderChangedEvent::Type::FolderRemoved),
-        xiiFolderChangedEvent(sFolderPath, xiiFolderChangedEvent::Type::FolderRemoved)};
+        xiiFolderChangedEvent(sFolderPath, xiiFolderChangedEvent::Type::FolderRemoved)
+      };
       CompareFolders(xiiMakeArrayPtr(expected));
       ClearFolders();
       XII_TEST_INT(xiiFileSystemModel::GetSingleton()->GetFiles()->GetCount(), 1);
@@ -598,16 +601,17 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     xiiStringBuilder sFilePathNew(sOutputFolder);
     sFilePathNew.AppendPath("Folder2", "rootFile2.txt");
 
-    auto callback = [](const xiiFileStatus& status, xiiStreamReader& ref_reader) -> xiiUuid {
+    xiiUuid docGuid  = xiiUuid::CreateUuid();
+    auto    callback = [&](const xiiFileStatus& status, xiiStreamReader& ref_reader) {
       XII_TEST_INT((xiiInt64)status.m_uiHash, (xiiInt64)10983861097202158394u);
-      xiiUuid guid;
-      guid.CreateNewUuid();
-      return guid;
+      xiiFileSystemModel::GetSingleton()->LinkDocument(sFilePathNew, docGuid).IgnoreResult();
     };
 
     XII_TEST_RESULT(xiiFileSystemModel::GetSingleton()->ReadDocument(sFilePathNew, callback));
 
-    xiiFileChangedEvent expected[] = {xiiFileChangedEvent(sFilePathNew, {}, xiiFileChangedEvent::Type::DocumentLinked)};
+    xiiFileStatus stat;
+    stat.m_DocumentID              = docGuid;
+    xiiFileChangedEvent expected[] = {xiiFileChangedEvent(sFilePathNew, stat, xiiFileChangedEvent::Type::DocumentLinked)};
     CompareFiles(xiiMakeArrayPtr(expected));
     ClearFiles();
   }
@@ -617,13 +621,22 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     xiiStringBuilder sFilePathNew(sOutputFolder);
     sFilePathNew.AppendPath("Folder2", "rootFile2.txt");
 
+    xiiUuid guid  = xiiUuid::CreateUuid();
+    xiiUuid guid2 = xiiUuid::CreateUuid();
     {
-      xiiUuid guid;
-      guid.CreateNewUuid();
       XII_TEST_RESULT(xiiFileSystemModel::GetSingleton()->LinkDocument(sFilePathNew, guid));
       XII_TEST_RESULT(xiiFileSystemModel::GetSingleton()->LinkDocument(sFilePathNew, guid));
+      XII_TEST_RESULT(xiiFileSystemModel::GetSingleton()->LinkDocument(sFilePathNew, guid2));
 
-      xiiFileChangedEvent expected[] = {xiiFileChangedEvent(sFilePathNew, {}, xiiFileChangedEvent::Type::DocumentLinked)};
+      xiiFileStatus stat;
+      stat.m_DocumentID = guid;
+      xiiFileStatus stat2;
+      stat2.m_DocumentID = guid2;
+
+      xiiFileChangedEvent expected[] = {
+        xiiFileChangedEvent(sFilePathNew, stat, xiiFileChangedEvent::Type::DocumentLinked),
+        xiiFileChangedEvent(sFilePathNew, stat, xiiFileChangedEvent::Type::DocumentUnlinked),
+        xiiFileChangedEvent(sFilePathNew, stat2, xiiFileChangedEvent::Type::DocumentLinked)};
       CompareFiles(xiiMakeArrayPtr(expected));
       ClearFiles();
     }
@@ -631,7 +644,10 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
       XII_TEST_RESULT(xiiFileSystemModel::GetSingleton()->UnlinkDocument(sFilePathNew));
       XII_TEST_RESULT(xiiFileSystemModel::GetSingleton()->UnlinkDocument(sFilePathNew));
 
-      xiiFileChangedEvent expected[] = {xiiFileChangedEvent(sFilePathNew, {}, xiiFileChangedEvent::Type::DocumentUnlinked)};
+      xiiFileStatus stat2;
+      stat2.m_DocumentID = guid2;
+
+      xiiFileChangedEvent expected[] = {xiiFileChangedEvent(sFilePathNew, stat2, xiiFileChangedEvent::Type::DocumentUnlinked)};
       CompareFiles(xiiMakeArrayPtr(expected));
       ClearFiles();
     }
@@ -659,14 +675,12 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     }
 
     {
-      xiiFolderChangedEvent expected[] = {
-        xiiFolderChangedEvent(sFolderPath, xiiFolderChangedEvent::Type::FolderRemoved)};
+      xiiFolderChangedEvent expected[] = {xiiFolderChangedEvent(sFolderPath, xiiFolderChangedEvent::Type::FolderRemoved)};
       CompareFolders(xiiMakeArrayPtr(expected));
     }
 
     {
-      xiiFileChangedEvent expected[] = {
-        xiiFileChangedEvent(sFilePath, {}, xiiFileChangedEvent::Type::FileRemoved)};
+      xiiFileChangedEvent expected[] = {xiiFileChangedEvent(sFilePath, {}, xiiFileChangedEvent::Type::FileRemoved)};
       CompareFiles(xiiMakeArrayPtr(expected));
     }
 

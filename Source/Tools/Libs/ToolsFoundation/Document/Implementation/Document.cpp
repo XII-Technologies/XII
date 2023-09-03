@@ -163,6 +163,18 @@ xiiTaskGroupID xiiDocument::SaveDocumentAsync(AfterSaveCallback callback, bool b
   return m_ActiveSaveTask;
 }
 
+void xiiDocument::DocumentRenamed(xiiStringView sNewDocumentPath)
+{
+  m_sDocumentPath = sNewDocumentPath;
+
+  xiiDocumentEvent e;
+  e.m_pDocument = this;
+  e.m_Type      = xiiDocumentEvent::Type::DocumentRenamed;
+
+  m_EventsOne.Broadcast(e);
+  s_EventsAny.Broadcast(e);
+}
+
 void xiiDocument::EnsureVisible()
 {
   xiiDocumentEvent e;

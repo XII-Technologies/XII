@@ -179,6 +179,16 @@ void xiiQtDocumentWindow::DocumentEventHandler(const xiiDocumentEvent& e)
 {
   switch (e.m_Type)
   {
+    case xiiDocumentEvent::Type::DocumentRenamed:
+    {
+      xiiStringBuilder tmp;
+      m_sUniqueName = m_pDocument->GetDocumentPath();
+      setObjectName(GetUniqueName().GetData(tmp));
+      xiiQtContainerWindow* pContainer = xiiQtContainerWindow::GetContainerWindow();
+      pContainer->DocumentWindowRenamed(this);
+
+      [[fallthrough]];
+    }
     case xiiDocumentEvent::Type::ModifiedChanged:
     {
       xiiQtDocumentWindowEvent dwe;

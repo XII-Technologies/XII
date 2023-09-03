@@ -217,11 +217,10 @@ void xiiFileSystemModel::CheckFileSystem()
   if (xiiThreadUtils::IsMainThread())
   {
     range = nullptr;
-    // Broadcast reset only if we are on the main thread.
-    // Otherwise we are on the init task thread and the reset will be called on the main thread by WaitForInitialize.
-    FireFileChangedEvent({}, {}, xiiFileChangedEvent::Type::ModelReset);
-    FireFolderChangedEvent({}, xiiFolderChangedEvent::Type::ModelReset);
   }
+
+  FireFileChangedEvent({}, {}, xiiFileChangedEvent::Type::ModelReset);
+  FireFolderChangedEvent({}, xiiFolderChangedEvent::Type::ModelReset);
 }
 
 
@@ -295,15 +294,14 @@ xiiResult xiiFileSystemModel::LinkDocument(xiiStringView sAbsolutePath, const xi
     return XII_FAILURE;
 
   xiiFileStatus fileStatus;
-  bool          bDocumentLinkChanged = false;
   {
     XII_LOCK(m_FilesMutex);
     auto it = m_ReferencedFiles.Find(sAbsolutePath);
     if (it.IsValid())
     {
-      bDocumentLinkChanged    = it.Value().m_DocumentID != documentId;
-      it.Value().m_DocumentID = documentId;
+      // Store status before updates so we can fire the unlink if a guid was already set.
       fileStatus              = it.Value();
+      it.Value().m_DocumentID = documentId;
     }
     else
     {
@@ -311,8 +309,13 @@ xiiResult xiiFileSystemModel::LinkDocument(xiiStringView sAbsolutePath, const xi
     }
   }
 
-  if (bDocumentLinkChanged)
+  if (fileStatus.m_DocumentID != documentId)
   {
+    if (fileStatus.m_DocumentID.IsValid())
+    {
+      FireFileChangedEvent(sAbsolutePath, fileStatus, xiiFileChangedEvent::Type::DocumentUnlinked);
+    }
+    fileStatus.m_DocumentID = documentId;
     FireFileChangedEvent(sAbsolutePath, fileStatus, xiiFileChangedEvent::Type::DocumentLinked);
   }
   return XII_SUCCESS;
@@ -330,9 +333,9 @@ xiiResult xiiFileSystemModel::UnlinkDocument(xiiStringView sAbsolutePath)
     auto it = m_ReferencedFiles.Find(sAbsolutePath);
     if (it.IsValid())
     {
-      bDocumentLinkChanged = it.Value().m_DocumentID != xiiUuid();
+      bDocumentLinkChanged    = it.Value().m_DocumentID != xiiUuid();
+      fileStatus              = it.Value();
       it.Value().m_DocumentID.SetInvalid();
-      fileStatus = it.Value();
     }
     else
     {
@@ -479,7 +482,7 @@ xiiUInt64 xiiFileSystemModel::HashFile(xiiStreamReader& ref_inputStream, xiiStre
   return hsw.GetHashValue();
 }
 
-xiiResult xiiFileSystemModel::ReadDocument(xiiStringView sAbsolutePath, const xiiDelegate<xiiUuid(const xiiFileStatus&, xiiStreamReader&)>& callback)
+xiiResult xiiFileSystemModel::ReadDocument(xiiStringView sAbsolutePath, const xiiDelegate<void(const xiiFileStatus&, xiiStreamReader&)>& callback)
 {
   if (!m_bInitialized)
     return XII_FAILURE;
@@ -523,20 +526,18 @@ xiiResult xiiFileSystemModel::ReadDocument(xiiStringView sAbsolutePath, const xi
 
   if (callback.IsValid())
   {
-    stat.m_DocumentID = callback(stat, MemReader);
+    callback(stat, MemReader);
   }
 
-  bool bFileChanged         = false;
-  bool bDocumentLinkChanged = false;
+  bool bFileChanged = false;
   {
     // Update state. No need to compare timestamps we hold a lock on the file via the reader.
     XII_LOCK(m_FilesMutex);
     auto it = m_ReferencedFiles.Find(sAbsolutePath);
     if (it.IsValid())
     {
-      bFileChanged         = !it.Value().m_LastModified.Compare(stat.m_LastModified, xiiTimestamp::CompareMode::Identical);
-      bDocumentLinkChanged = it.Value().m_DocumentID != stat.m_DocumentID;
-      it.Value()           = stat;
+      bFileChanged = !it.Value().m_LastModified.Compare(stat.m_LastModified, xiiTimestamp::CompareMode::Identical);
+      it.Value()   = stat;
     }
     else
     {
@@ -546,10 +547,6 @@ xiiResult xiiFileSystemModel::ReadDocument(xiiStringView sAbsolutePath, const xi
     if (bFileChanged)
     {
       FireFileChangedEvent(sAbsolutePath, stat, xiiFileChangedEvent::Type::FileChanged);
-    }
-    if (bDocumentLinkChanged)
-    {
-      FireFileChangedEvent(sAbsolutePath, stat, xiiFileChangedEvent::Type::DocumentLinked);
     }
   }
 
@@ -858,7 +855,9 @@ void xiiFileSystemModel::FireFileChangedEvent(xiiStringView sFile, xiiFileStatus
 
   for (xiiUInt32 i = 0; i < g_PostponedFiles.GetCount(); i++)
   {
-    m_FileChangedEvents.Broadcast(g_PostponedFiles[i]);
+    // Need to make a copy as new elements can be added and the array resized during broadcast.
+    xiiFileChangedEvent tempEvent = std::move(g_PostponedFiles[i]);
+    m_FileChangedEvents.Broadcast(tempEvent);
   }
   g_PostponedFiles.Clear();
 }
@@ -880,7 +879,9 @@ void xiiFileSystemModel::FireFolderChangedEvent(xiiStringView sFile, xiiFolderCh
 
   for (xiiUInt32 i = 0; i < g_PostponedFolders.GetCount(); i++)
   {
-    m_FolderChangedEvents.Broadcast(g_PostponedFolders[i]);
+    // Need to make a copy as new elements can be added and the array resized during broadcast.
+    xiiFolderChangedEvent tempEvent = std::move(g_PostponedFolders[i]);
+    m_FolderChangedEvents.Broadcast(tempEvent);
   }
   g_PostponedFolders.Clear();
 }
