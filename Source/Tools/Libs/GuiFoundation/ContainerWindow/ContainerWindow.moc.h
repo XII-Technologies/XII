@@ -36,6 +36,7 @@ public:
   static xiiQtContainerWindow* GetContainerWindow() { return s_pContainerWindow; }
 
   void AddDocumentWindow(xiiQtDocumentWindow* pDocWindow);
+  void DocumentWindowRenamed(xiiQtDocumentWindow* pDocWindow);
   void AddApplicationPanel(xiiQtApplicationPanel* pPanel);
 
   ads::CDockManager* GetDockManager() { return m_pDockManager; }

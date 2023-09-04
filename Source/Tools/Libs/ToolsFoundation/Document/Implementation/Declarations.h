@@ -57,6 +57,7 @@ struct xiiDocumentEvent
     ReadOnlyChanged,
     EnsureVisible,
     DocumentSaved,
+    DocumentRenamed,
     DocumentStatusMsg,
   };
 

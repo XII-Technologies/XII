@@ -29,12 +29,12 @@ class XII_TOOLSFOUNDATION_DLL xiiDocumentObjectMetaData : public xiiReflectedCla
   XII_ADD_DYNAMIC_REFLECTION(xiiDocumentObjectMetaData, xiiReflectedClass);
 
 public:
-  enum ModifiedFlags : unsigned int
+  enum ModifiedFlags : xiiUInt32
   {
     HiddenFlag = XII_BIT(0),
     PrefabFlag = XII_BIT(1),
 
-    AllFlags = 0xFFFFFFFF
+    AllFlags = 0xFFFFFFFFU
   };
 
   xiiDocumentObjectMetaData() { m_bHidden = false; }
@@ -106,6 +106,7 @@ public:
   xiiStatus SaveDocument(bool bForce = false);
   using AfterSaveCallback = xiiDelegate<void(xiiDocument*, xiiStatus)>;
   xiiTaskGroupID SaveDocumentAsync(AfterSaveCallback callback, bool bForce = false);
+  void           DocumentRenamed(xiiStringView sNewDocumentPath);
 
   static xiiStatus ReadDocument(xiiStringView sDocumentPath, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pHeader, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pObjects, xiiUniquePtr<xiiAbstractObjectGraph>& ref_pTypes);
   static xiiStatus ReadAndRegisterTypes(const xiiAbstractObjectGraph& types);
