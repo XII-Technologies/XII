@@ -4,7 +4,7 @@ All commands given should be executed in a powershell.
 
 * Clone the LLVM Repository: `git clone https://github.com/llvm/llvm-project`
 * `cd llvm-project`
-* Checkout the latest release version (for the current build llvm-15.0.3 is used): `git checkout llvmorg-15.0.3`
+* Checkout the latest release version (for the current build llvm-16.0.6 is used): `git checkout llvmorg-16.0.6`
 * Apply the `llvm-xii` patch: `git apply llvm-xii.patch`
 * Copy the XII folder to `llvm-project/clang-tools-extra/clang-tidy/`
 * Create a build folder: `mkdir build`

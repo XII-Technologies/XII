@@ -1,6 +1,6 @@
 # **Reporting Security Issues**
 
-The project's team and community take security issues.
+The project's team and community take security issues seriously.
 
 We appreciate your efforts to disclose your findings responsibly and will make every effort to acknowledge your contributions.
 
