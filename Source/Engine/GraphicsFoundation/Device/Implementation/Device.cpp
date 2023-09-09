@@ -2533,4 +2533,244 @@ const xiiGALSparseTextureProperties xiiGALDevice::GetSparseTextureProperties(xii
   return xiiGALSparseTextureProperties();
 }
 
+void xiiGALDevice::DestroyDeadObjects()
+{
+  // Can't use range based for here since new objects might be added during iteration
+  for (xiiUInt32 i = 0; i < m_DeadObjects.GetCount(); ++i)
+  {
+    const auto& deadObject = m_DeadObjects[i];
+
+    switch (deadObject.m_uiType)
+    {
+      case GALObjectType::SwapChain:
+      {
+        xiiGALSwapChainHandle hSwapChain(xiiGAL::xii16_16Id(deadObject.m_uiHandle));
+        xiiGALSwapChain*      pSwapChain = nullptr;
+
+        XII_VERIFY(m_SwapChains.Remove(hSwapChain, &pSwapChain), "SwapChain not found in idTable.");
+
+        if (pSwapChain != nullptr)
+        {
+          pSwapChain->DeInitPlatform(this).IgnoreResult();
+          XII_DELETE(&m_Allocator, pSwapChain);
+        }
+      }
+      break;
+      case GALObjectType::BottomLevelAS:
+      {
+        xiiGALBottomLevelASHandle hBottomLevelAS(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALBottomLevelAS*      pBottomLevelAS = nullptr;
+
+        XII_VERIFY(m_BottomLevelAccelerationStructures.Remove(hBottomLevelAS, &pBottomLevelAS), "BottomLevelAS not found in idTable.");
+
+        DestroyBottomLevelASPlatform(pBottomLevelAS);
+      }
+      break;
+      case GALObjectType::Buffer:
+      {
+        xiiGALBufferHandle hBuffer(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALBuffer*      pBuffer = nullptr;
+
+        XII_VERIFY(m_Buffers.Remove(hBuffer, &pBuffer), "Buffer not found in idTable.");
+
+        DestroyViews(pBuffer);
+        DestroyBufferPlatform(pBuffer);
+      }
+      break;
+      case GALObjectType::BufferView:
+      {
+        xiiGALBufferViewHandle hBufferView(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALBufferView*      pBufferView = nullptr;
+
+        m_BufferViews.Remove(hBufferView, &pBufferView);
+
+        xiiGALBuffer* pResource = pBufferView->m_pBuffer;
+        XII_ASSERT_DEBUG(pResource != nullptr, "");
+
+        XII_VERIFY(pResource->m_BufferViews.Remove(pBufferView->GetDescription().CalculateHash()), "");
+        pBufferView->m_pBuffer = nullptr;
+
+        DestroyBufferViewPlatform(pBufferView);
+      }
+      break;
+      case GALObjectType::Fence:
+      {
+        xiiGALFenceHandle hFence(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALFence*      pFence = nullptr;
+
+        XII_VERIFY(m_Fences.Remove(hFence, &pFence), "Fence not found in idTable.");
+
+        DestroyFencePlatform(pFence);
+      }
+      break;
+      case GALObjectType::Framebuffer:
+      {
+        xiiGALFramebufferHandle hFramebuffer(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALFramebuffer*      pFramebuffer = nullptr;
+
+        XII_VERIFY(m_Framebuffers.Remove(hFramebuffer, &pFramebuffer), "Framebuffer not found in idTable.");
+
+        DestroyFramebufferPlatform(pFramebuffer);
+      }
+      break;
+      case GALObjectType::Query:
+      {
+        xiiGALQueryHandle hQuery(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALQuery*      pQuery = nullptr;
+
+        XII_VERIFY(m_Queries.Remove(hQuery, &pQuery), "Query not found in idTable.");
+
+        DestroyQueryPlatform(pQuery);
+      }
+      break;
+      case GALObjectType::RenderPass:
+      {
+        xiiGALRenderPassHandle hRenderPass(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALRenderPass*      pRenderPass = nullptr;
+
+        XII_VERIFY(m_RenderPasses.Remove(hRenderPass, &pRenderPass), "RenderPass not found in idTable.");
+
+        DestroyRenderPassPlatform(pRenderPass);
+      }
+      break;
+      case GALObjectType::Sampler:
+      {
+        xiiGALSamplerHandle hSampler(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALSampler*      pSampler = nullptr;
+
+        XII_VERIFY(m_Samplers.Remove(hSampler, &pSampler), "Sampler not found in idTable.");
+        XII_VERIFY(m_SamplerTable.Remove(pSampler->GetDescription().CalculateHash()), "Sampler not found in de-duplication table.");
+
+        DestroySamplerPlatform(pSampler);
+      }
+      break;
+      case GALObjectType::Texture:
+      {
+        xiiGALTextureHandle hTexture(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALTexture*      pTexture = nullptr;
+
+        XII_VERIFY(m_Textures.Remove(hTexture, &pTexture), "Texture not found in idTable.");
+
+        DestroyViews(pTexture);
+        DestroyTexturePlatform(pTexture);
+      }
+      break;
+      case GALObjectType::TextureView:
+      {
+        xiiGALTextureViewHandle hTextureView(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALTextureView*      pTextureView = nullptr;
+
+        m_TextureViews.Remove(hTextureView, &pTextureView);
+
+        xiiGALTexture* pResource = pTextureView->m_pTexture;
+        XII_ASSERT_DEBUG(pResource != nullptr, "");
+
+        XII_VERIFY(pResource->m_TextureViews.Remove(pTextureView->GetDescription().CalculateHash()), "");
+        pTextureView->m_pTexture = nullptr;
+
+        DestroyTextureViewPlatform(pTextureView);
+      }
+      break;
+      case GALObjectType::TopLevelAS:
+      {
+        xiiGALTopLevelASHandle hTopLevelAS(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALTopLevelAS*      pTopLevelAS = nullptr;
+
+        XII_VERIFY(m_TopLevelAccelerationStructures.Remove(hTopLevelAS, &pTopLevelAS), "TopLevelAS not found in idTable.");
+
+        DestroyTopLevelASPlatform(pTopLevelAS);
+      }
+      break;
+      case GALObjectType::InputLayout:
+      {
+        xiiGALInputLayoutHandle hInputLayout(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALInputLayout*      pInputLayout = nullptr;
+
+        XII_VERIFY(m_InputLayouts.Remove(hInputLayout, &pInputLayout), "InputLayout not found in idTable.");
+        XII_VERIFY(m_InputLayoutTable.Remove(pInputLayout->GetDescription().CalculateHash()), "InputLayout not found in de-duplication table.");
+
+        DestroyInputLayoutPlatform(pInputLayout);
+      }
+      break;
+      case GALObjectType::Shader:
+      {
+        xiiGALShaderHandle hShader(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALShader*      pShader = nullptr;
+
+        XII_VERIFY(m_Shaders.Remove(hShader, &pShader), "Shader not found in idTable.");
+
+        DestroyShaderPlatform(pShader);
+      }
+      break;
+      case GALObjectType::BlendState:
+      {
+        xiiGALBlendStateHandle hBlendState(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALBlendState*      pBlendState = nullptr;
+
+        XII_VERIFY(m_BlendStates.Remove(hBlendState, &pBlendState), "BlendState not found in idTable.");
+        XII_VERIFY(m_BlendStateTable.Remove(pBlendState->GetDescription().CalculateHash()), "BlendState not found in de-duplication table.");
+
+        DestroyBlendStatePlatform(pBlendState);
+      }
+      break;
+      case GALObjectType::DepthStencilState:
+      {
+        xiiGALDepthStencilStateHandle hDepthStencilState(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALDepthStencilState*      pDepthStencilState = nullptr;
+
+        XII_VERIFY(m_DepthStencilStates.Remove(hDepthStencilState, &pDepthStencilState), "DepthStencilState not found in idTable.");
+        XII_VERIFY(m_DepthStencilStateTable.Remove(pDepthStencilState->GetDescription().CalculateHash()), "DepthStencilState not found in de-duplication table.");
+
+        DestroyDepthStencilStatePlatform(pDepthStencilState);
+      }
+      break;
+      case GALObjectType::RasterizerState:
+      {
+        xiiGALRasterizerStateHandle hRasterizerState(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALRasterizerState*      pRasterizerState = nullptr;
+
+        XII_VERIFY(m_RasterizerStates.Remove(hRasterizerState, &pRasterizerState), "RasterizerState not found in idTable.");
+        XII_VERIFY(m_RasterizerStateTable.Remove(pRasterizerState->GetDescription().CalculateHash()), "RasterizerState not found in de-duplication table.");
+
+        DestroyRasterizerStatePlatform(pRasterizerState);
+      }
+      break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+  }
+
+  m_DeadObjects.Clear();
+}
+
+void xiiGALDevice::DestroyViews(xiiGALResourceBase* pResource)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  for (auto it = pResource->m_BufferViews.GetIterator(); it.IsValid(); ++it)
+  {
+    xiiGALBufferViewHandle hBufferView = it.Value();
+    xiiGALBufferView*      pBufferView = m_BufferViews[hBufferView];
+
+    m_BufferViews.Remove(hBufferView);
+
+    DestroyBufferViewPlatform(pBufferView);
+  }
+  pResource->m_BufferViews.Clear();
+  pResource->m_hDefaultBufferView.Invalidate();
+
+  for (auto it = pResource->m_TextureViews.GetIterator(); it.IsValid(); ++it)
+  {
+    xiiGALTextureViewHandle hTextureView = it.Value();
+    xiiGALTextureView*      pTextureView = m_TextureViews[hTextureView];
+
+    m_TextureViews.Remove(hTextureView);
+
+    DestroyTextureViewPlatform(pTextureView);
+  }
+  pResource->m_TextureViews.Clear();
+  pResource->m_hDefaultTextureView.Invalidate();
+  pResource->m_hDefaultRenderTargetView.Invalidate();
+}
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);

@@ -47,6 +47,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiMemoryUtils;
 
   xiiGALSwapChain(const xiiGALSwapChainCreationDescription& creationDescription);
 
