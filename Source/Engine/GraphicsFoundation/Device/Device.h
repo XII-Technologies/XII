@@ -42,6 +42,18 @@ public:
   void EndFrame();
 
 public:
+  using SwapChainFactoryFunction = xiiDelegate<xiiGALSwapChain*(xiiAllocatorBase*)>;
+
+  /// \brief This creates a swap chain object.
+  ///
+  /// \param factoryFunction - The swap chain factory function.
+  ///
+  /// \return The handle to the created swap chain object. The function calls AddRef(), so that the new object will have one reference.
+  xiiGALSwapChainHandle CreateSwapChain(const SwapChainFactoryFunction& factoryFunction);
+
+  /// \brief This destroys the swap chain with the given handle.
+  void DestroySwapChain(xiiGALSwapChainHandle hSwapChain);
+
   /// \brief This creates a new blend state object.
   ///
   /// \param description - The blend state description. See xiiGALBlendStateCreationDescription.

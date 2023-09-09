@@ -295,6 +295,37 @@ void xiiGALDevice::EndFrame()
   }
 }
 
+xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const SwapChainFactoryFunction& factoryFunction)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALSwapChain* pSwapChain = factoryFunction(&m_Allocator);
+
+  if (!pSwapChain->InitPlatform(this).Succeeded())
+  {
+    XII_DELETE(&m_Allocator, pSwapChain);
+    return xiiGALSwapChainHandle();
+  }
+
+  return xiiGALSwapChainHandle(m_SwapChains.Insert(pSwapChain));
+}
+
+void xiiGALDevice::DestroySwapChain(xiiGALSwapChainHandle hSwapChain)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALSwapChain* pSwapChain = nullptr;
+
+  if (m_SwapChains.TryGetValue(hSwapChain, pSwapChain))
+  {
+    AddDeadObject(GALObjectType::SwapChain, hSwapChain);
+  }
+  else
+  {
+    xiiLog::Warning("DestroySwapChain called on invalid handle (double free?)");
+  }
+}
+
 #define XII_VERIFY_BLEND_STATE(expression, ...) \
   do                                            \
   {                                             \
