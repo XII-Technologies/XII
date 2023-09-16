@@ -26,7 +26,7 @@ XII_END_STATIC_REFLECTED_ENUM;
   xiiTime xiiUpdateRate::GetInterval(Enum updateRate)
   {
     return s_Intervals[updateRate];
-}
+  }
 
 //////////////////////////////////////////////////////////////////////////
 
