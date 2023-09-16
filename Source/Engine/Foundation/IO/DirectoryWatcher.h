@@ -14,7 +14,7 @@ struct xiiDirectoryWatcherImpl;
 /// \brief Which action has been performed on a file.
 enum class xiiDirectoryWatcherAction
 {
-  None,           ///< Nothing happend
+  None,           ///< Nothing happened.
   Added,          ///< A file or directory was added
   Removed,        ///< A file or directory was removed
   Modified,       ///< A file was modified. Both Reads and Writes can 'modify' the timestamps of a file.
@@ -63,31 +63,31 @@ public:
   ~xiiDirectoryWatcher();
 
   /// \brief
-  ///   Opens the directory at \p absolutePath for watching. \p whatToWatch controls what exactly should be watched.
+  /// Opens the directory at \p absolutePath for watching. \p whatToWatch controls what exactly should be watched.
   ///
   /// \note A instance of xiiDirectoryWatcher can only watch one directory at a time.
   xiiResult OpenDirectory(xiiStringView sAbsolutePath, xiiBitflags<Watch> whatToWatch);
 
   /// \brief
-  ///   Closes the currently watched directory if any.
+  /// Closes the currently watched directory if any.
   void CloseDirectory();
 
   /// \brief
-  ///   Returns the opened directory, will be empty if no directory was opened.
+  /// Returns the opened directory, will be empty if no directory was opened.
   xiiStringView GetDirectory() const { return m_sDirectoryPath; }
 
   using EnumerateChangesFunction = xiiDelegate<void(xiiStringView sFileName, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type), 48>;
 
   /// \brief
-  ///   Calls the callback \p func for each change since the last call. For each change the filename
-  ///   and the action, which was performed on the file, is passed to \p func.
-  ///   If waitUpToMilliseconds is greater than 0, blocks until either a change was observed or the timelimit is reached.
+  /// Calls the callback \p func for each change since the last call. For each change the filename
+  /// and the action, which was performed on the file, is passed to \p func.
+  /// If waitUpToMilliseconds is greater than 0, blocks until either a change was observed or the timelimit is reached.
   ///
   /// \note There might be multiple changes on the same file reported.
   void EnumerateChanges(EnumerateChangesFunction func, xiiTime waitUpTo = xiiTime::Zero());
 
   /// \brief
-  ///   Same as the other EnumerateChanges function, but enumerates multiple watchers.
+  /// Same as the other EnumerateChanges function, but enumerates multiple watchers.
   static void EnumerateChanges(xiiArrayPtr<xiiDirectoryWatcher*> watchers, EnumerateChangesFunction func, xiiTime waitUpTo = xiiTime::Zero());
 
 private:

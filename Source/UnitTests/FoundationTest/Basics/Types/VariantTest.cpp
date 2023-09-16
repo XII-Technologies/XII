@@ -1631,7 +1631,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
       XII_TEST_BOOL(v != v2);
 
       xiiUInt64 uiHash = v.ComputeHash(0);
-      XII_TEST_INT(uiHash, 13667342936068485827ul);
+      XII_TEST_INT(uiHash, 8527525522777555267UL);
 
       xiiVarianceTypeAngle* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngle, {0.1f, xiiAngle::Radian(1.57079637f)});
       xiiVariant            copy;
@@ -1666,7 +1666,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
       XII_TEST_BOOL(v != v2);
 
       xiiUInt64 uiHash = v.ComputeHash(0);
-      XII_TEST_INT(uiHash, 18210881463222323195ul);
+      XII_TEST_INT(uiHash, 5230335272281280496UL);
 
       xiiVarianceTypeAngled* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngled, {0.1, xiiAngled::Radian(1.57079637)});
       xiiVariant             copy;

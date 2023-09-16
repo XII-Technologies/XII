@@ -211,16 +211,17 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
 
       if (m_pSearchableMenu != nullptr)
       {
-        xiiStringBuilder fullName;
-        fullName = pCatA ? pCatA->GetCategory() : "";
-        fullName.AppendPath(xiiTranslate(pRtti->GetTypeName().GetData(tmp)));
+        xiiStringBuilder sFullPath;
+        sFullPath = pCatA ? pCatA->GetCategory() : "";
+        sFullPath.AppendPath(pRtti->GetTypeName());
 
+        xiiStringBuilder sDisplayName = xiiTranslate(pRtti->GetTypeName().GetData(tmp));
         if (pInDev)
         {
-          fullName.AppendFormat(" [ {} ]", pInDev->GetString());
+          sDisplayName.AppendFormat(" [ {} ]", pInDev->GetString());
         }
 
-        m_pSearchableMenu->AddItem(fullName, QVariant::fromValue((void*)pRtti), actionIcon);
+        m_pSearchableMenu->AddItem(sDisplayName, sFullPath, QVariant::fromValue((void*)pRtti), actionIcon);
       }
       else
       {

@@ -13,12 +13,12 @@ class XII_FOUNDATION_DLL xiiAbstractMessageHandler
 public:
   virtual ~xiiAbstractMessageHandler() = default;
 
-  XII_ALWAYS_INLINE void operator()(void* pInstance, xiiMessage& ref_msg) { (*m_DispatchFunc)(pInstance, ref_msg); }
+  XII_ALWAYS_INLINE void operator()(void* pInstance, xiiMessage& ref_msg) { (*m_DispatchFunc)(this, pInstance, ref_msg); }
 
   XII_FORCE_INLINE void operator()(const void* pInstance, xiiMessage& ref_msg)
   {
     XII_ASSERT_DEV(m_bIsConst, "Calling a non const message handler with a const instance.");
-    (*m_ConstDispatchFunc)(pInstance, ref_msg);
+    (*m_ConstDispatchFunc)(this, pInstance, ref_msg);
   }
 
   XII_ALWAYS_INLINE xiiMessageId GetMessageId() const { return m_Id; }
@@ -26,16 +26,16 @@ public:
   XII_ALWAYS_INLINE bool IsConst() const { return m_bIsConst; }
 
 protected:
-  using DispatchFunc      = void (*)(void*, xiiMessage&);
-  using ConstDispatchFunc = void (*)(const void*, xiiMessage&);
+  using DispatchFunc      = void (*)(xiiAbstractMessageHandler* pSelf, void* pInstance, xiiMessage&);
+  using ConstDispatchFunc = void (*)(xiiAbstractMessageHandler* pSelf, const void* pInstance, xiiMessage&);
 
   union
   {
-    DispatchFunc      m_DispatchFunc;
+    DispatchFunc      m_DispatchFunc = nullptr;
     ConstDispatchFunc m_ConstDispatchFunc;
   };
-  xiiMessageId m_Id;
-  bool         m_bIsConst;
+  xiiMessageId m_Id       = xiiSmallInvalidIndex;
+  bool         m_bIsConst = false;
 };
 
 struct xiiMessageSenderInfo
@@ -67,7 +67,7 @@ namespace xiiInternal
         m_bIsConst     = false;
       }
 
-      static void Dispatch(void* pInstance, xiiMessage& ref_msg)
+      static void Dispatch(xiiAbstractMessageHandler* pSelf, void* pInstance, xiiMessage& ref_msg)
       {
         Class* pTargetInstance = static_cast<Class*>(pInstance);
         (pTargetInstance->*Method)(static_cast<MessageType&>(ref_msg));
@@ -90,7 +90,7 @@ namespace xiiInternal
       }
 
       /// \brief Casts the given message to the type of this message handler, then passes that to the class instance.
-      static void Dispatch(const void* pInstance, xiiMessage& ref_msg)
+      static void Dispatch(xiiAbstractMessageHandler* pSelf, const void* pInstance, xiiMessage& ref_msg)
       {
         const Class* pTargetInstance = static_cast<const Class*>(pInstance);
         (pTargetInstance->*Method)(static_cast<MessageType&>(ref_msg));

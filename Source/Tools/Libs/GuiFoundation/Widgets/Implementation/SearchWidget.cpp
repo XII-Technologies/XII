@@ -58,6 +58,11 @@ void xiiQtSearchWidget::onLineEditTextChanged(const QString& text)
   Q_EMIT textChanged(text);
 }
 
+void xiiQtSearchWidget::selectAll()
+{
+  QTimer::singleShot(0, m_pLineEdit, &QLineEdit::selectAll);
+}
+
 void xiiQtSearchWidget::onClearButtonClicked(bool checked)
 {
   m_pLineEdit->setText(QString());

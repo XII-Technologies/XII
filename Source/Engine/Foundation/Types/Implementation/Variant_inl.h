@@ -719,5 +719,8 @@ struct xiiHashHelper<xiiVariant>
     return (xiiUInt32)uiHash;
   }
 
-  XII_ALWAYS_INLINE static bool Equal(const xiiVariant& a, const xiiVariant& b) { return a == b; }
+  XII_ALWAYS_INLINE static bool Equal(const xiiVariant& a, const xiiVariant& b)
+  {
+    return a.GetType() == b.GetType() && a == b;
+  }
 };

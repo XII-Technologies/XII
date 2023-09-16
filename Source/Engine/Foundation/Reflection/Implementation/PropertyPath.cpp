@@ -20,7 +20,6 @@ XII_END_STATIC_REFLECTED_TYPE;
 xiiPropertyPath::xiiPropertyPath()  = default;
 xiiPropertyPath::~xiiPropertyPath() = default;
 
-
 bool xiiPropertyPath::IsValid() const
 {
   return m_bIsValid;
@@ -189,10 +188,7 @@ void xiiPropertyPath::SetValue(void* pRootObject, const xiiRTTI& type, const xii
 
 void xiiPropertyPath::GetValue(void* pRootObject, const xiiRTTI& type, xiiVariant& out_value) const
 {
-  // XII_ASSERT_DEBUG(!m_PathSteps.IsEmpty() &&
-  //                    m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetVariantType() != xiiVariantType::Invalid,
-  //                "The property path of value {} cannot be stored in a xiiVariant.", m_PathSteps[m_PathSteps.GetCount() -
-  //                1].m_pProperty->GetSpecificType()->GetTypeName());
+  // XII_ASSERT_DEBUG(!m_PathSteps.IsEmpty() && m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetVariantType() != xiiVariantType::Invalid, "The property path of value {} cannot be stored in a xiiVariant.", m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetTypeName());
 
   ReadProperty(pRootObject, type, [&out_value](void* pLeaf, const xiiRTTI& type, const xiiAbstractProperty* pProp, const xiiVariant& index) {
     switch (pProp->GetCategory())
@@ -206,9 +202,8 @@ void xiiPropertyPath::GetValue(void* pRootObject, const xiiRTTI& type, xiiVarian
       case xiiPropertyCategory::Map:
         out_value = xiiReflectionUtils::GetMapPropertyValue(static_cast<const xiiAbstractMapProperty*>(pProp), pLeaf, index.Get<xiiString>());
         break;
-      default:
-        XII_ASSERT_NOT_IMPLEMENTED;
-        break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }).IgnoreResult();
 }
@@ -323,7 +318,5 @@ xiiResult xiiPropertyPath::ResolvePath(void* pCurrentObject, const xiiRTTI* pTyp
     return XII_FAILURE;
   }
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Reflection_Implementation_PropertyPath);

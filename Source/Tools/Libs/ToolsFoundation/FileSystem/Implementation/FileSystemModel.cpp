@@ -703,64 +703,31 @@ xiiFileStatus xiiFileSystemModel::HandleSingleFile(const xiiString& sAbsolutePat
 {
   FILESYSTEM_PROFILE("HandleSingleFile");
 
-  xiiFileStats Stats;
-  if (xiiOSFile::GetFileStats(sAbsolutePath, Stats).Failed())
+  xiiFileStats    Stats;
+  const xiiResult statCheck = xiiOSFile::GetFileStats(sAbsolutePath, Stats);
+
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  if (statCheck.Succeeded() && Stats.m_sName != xiiPathUtils::GetFileNameAndExtension(sAbsolutePath))
   {
-    xiiFileStatus fileStatus;
-    bool          bFileExisted   = false;
-    bool          bFolderExisted = false;
-    {
-      XII_LOCK(m_FilesMutex);
-      if (auto it = m_ReferencedFiles.Find(sAbsolutePath); it.IsValid())
-      {
-        bFileExisted = true;
-        fileStatus   = it.Value();
-        m_ReferencedFiles.Remove(it);
-      }
-      if (auto it = m_ReferencedFolders.Find(sAbsolutePath); it.IsValid())
-      {
-        bFolderExisted = true;
-        m_ReferencedFolders.Remove(it);
-      }
-    }
+    // Casing has changed.
+    xiiStringBuilder sCorrectCasingPath = sAbsolutePath;
+    sCorrectCasingPath.ChangeFileNameAndExtension(Stats.m_sName);
+    // Add new casing
+    xiiFileStatus res = HandleSingleFile(sCorrectCasingPath, Stats, bRecurseIntoFolders);
+    // Remove old casing
+    RemoveFileOrFolder(sAbsolutePath, bRecurseIntoFolders);
+    return res;
+  }
+#  endif
 
-    if (bFileExisted)
-    {
-      FireFileChangedEvent(sAbsolutePath, fileStatus, xiiFileChangedEvent::Type::FileRemoved);
-    }
-
-    if (bFolderExisted)
-    {
-      if (bRecurseIntoFolders)
-      {
-        xiiSet<xiiString> previouslyKnownFiles;
-        {
-          FILESYSTEM_PROFILE("FindReferencedFiles");
-          XII_LOCK(m_FilesMutex);
-          auto itlowerBound = m_ReferencedFiles.LowerBound(sAbsolutePath);
-          while (itlowerBound.IsValid() && itlowerBound.Key().StartsWith(sAbsolutePath))
-          {
-            previouslyKnownFiles.Insert(itlowerBound.Key());
-            ++itlowerBound;
-          }
-        }
-        {
-          FILESYSTEM_PROFILE("HandleRemovedFiles");
-          for (const xiiString& sFile : previouslyKnownFiles)
-          {
-            HandleSingleFile(sFile, false);
-          }
-        }
-      }
-      FireFolderChangedEvent(sAbsolutePath, xiiFolderChangedEvent::Type::FolderRemoved);
-    }
-
+  if (statCheck.Failed())
+  {
+    RemoveFileOrFolder(sAbsolutePath, bRecurseIntoFolders);
     return {};
   }
 
   return HandleSingleFile(sAbsolutePath, Stats, bRecurseIntoFolders);
 }
-
 
 xiiFileStatus xiiFileSystemModel::HandleSingleFile(const xiiString& sAbsolutePath, const xiiFileStats& FileStat, bool bRecurseIntoFolders)
 {
@@ -820,6 +787,58 @@ xiiFileStatus xiiFileSystemModel::HandleSingleFile(const xiiString& sAbsolutePat
       FireFileChangedEvent(sAbsolutePath, status, xiiFileChangedEvent::Type::FileChanged);
     }
     return status;
+  }
+}
+
+void xiiFileSystemModel::RemoveFileOrFolder(const xiiString& sAbsolutePath, bool bRecurseIntoFolders)
+{
+  xiiFileStatus fileStatus;
+  bool          bFileExisted   = false;
+  bool          bFolderExisted = false;
+  {
+    XII_LOCK(m_FilesMutex);
+    if (auto it = m_ReferencedFiles.Find(sAbsolutePath); it.IsValid())
+    {
+      bFileExisted = true;
+      fileStatus   = it.Value();
+      m_ReferencedFiles.Remove(it);
+    }
+    if (auto it = m_ReferencedFolders.Find(sAbsolutePath); it.IsValid())
+    {
+      bFolderExisted = true;
+      m_ReferencedFolders.Remove(it);
+    }
+  }
+
+  if (bFileExisted)
+  {
+    FireFileChangedEvent(sAbsolutePath, fileStatus, xiiFileChangedEvent::Type::FileRemoved);
+  }
+
+  if (bFolderExisted)
+  {
+    if (bRecurseIntoFolders)
+    {
+      xiiSet<xiiString> previouslyKnownFiles;
+      {
+        FILESYSTEM_PROFILE("FindReferencedFiles");
+        XII_LOCK(m_FilesMutex);
+        auto itlowerBound = m_ReferencedFiles.LowerBound(sAbsolutePath);
+        while (itlowerBound.IsValid() && itlowerBound.Key().StartsWith(sAbsolutePath))
+        {
+          previouslyKnownFiles.Insert(itlowerBound.Key());
+          ++itlowerBound;
+        }
+      }
+      {
+        FILESYSTEM_PROFILE("HandleRemovedFiles");
+        for (const xiiString& sFile : previouslyKnownFiles)
+        {
+          RemoveFileOrFolder(sFile, false);
+        }
+      }
+    }
+    FireFolderChangedEvent(sAbsolutePath, xiiFolderChangedEvent::Type::FolderRemoved);
   }
 }
 

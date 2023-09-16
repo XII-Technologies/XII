@@ -25,8 +25,8 @@ public:
   /// \brief The parent should usually be a QMenu into which this QWidgetAction is inserted as an action.
   xiiQtSearchableMenu(QObject* pParent);
 
-  /// \brief Use slashes to separate sub-items.
-  void AddItem(xiiStringView sName, const QVariant& variant, QIcon icon = QIcon());
+  /// \brief Use slashes in the sInternalPath to separate sub-items.
+  void AddItem(xiiStringView sDisplayName, xiiStringView sInternalPath, const QVariant& variant, QIcon icon = QIcon());
 
   /// \brief Returns the currently entered search text.
   QString GetSearchText() const;

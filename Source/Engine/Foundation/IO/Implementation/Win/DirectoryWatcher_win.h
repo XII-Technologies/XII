@@ -14,7 +14,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 // #define DEBUG_FILE_WATCHER
 
 #ifdef DEBUG_FILE_WATCHER
-#  define DEBUG_LOG(...) xiiLog::Debug(__VA_ARGS__)
+#  define DEBUG_LOG(...) xiiLog::Warning(__VA_ARGS__)
 #else
 #  define DEBUG_LOG(...)
 #endif
@@ -120,15 +120,58 @@ void xiiDirectoryWatcherImpl::DoRead()
 {
   ResetEvent(m_overlappedEvent);
   memset(&m_overlapped, 0, sizeof(m_overlapped));
+
   m_overlapped.hEvent = m_overlappedEvent;
-  BOOL success =
-    ReadDirectoryChangesExW(m_directoryHandle, m_buffer.GetData(), m_buffer.GetCount(), m_whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories), m_filter, nullptr, &m_overlapped, nullptr, ReadDirectoryNotifyExtendedInformation);
+  BOOL success        = ReadDirectoryChangesExW(m_directoryHandle, m_buffer.GetData(), m_buffer.GetCount(), m_whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories), m_filter, nullptr, &m_overlapped, nullptr, ReadDirectoryNotifyExtendedInformation);
+
   XII_ASSERT_DEV(success, "ReadDirectoryChangesW failed.");
 }
 
 void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTime waitUpTo)
 {
+  MoveEvent                                     pendingRemoveOrRename;
+  const xiiBitflags<xiiDirectoryWatcher::Watch> whatToWatch = m_pImpl->m_whatToWatch;
+  xiiFileSystemMirrorType*                      mirror      = m_pImpl->m_mirror.Borrow();
+
+  // Renaming a file to the same filename with different casing triggers the events REMOVED (old casing) -> RENAMED_OLD_NAME -> _RENAMED_NEW_NAME.
+  // Thus, we need to cache every remove event to make sure the very next event is not a rename of the exact same file.
+  auto FirePendingRemove = [&]() {
+    if (!pendingRemoveOrRename.IsEmpty())
+    {
+      if (pendingRemoveOrRename.isDirectory)
+      {
+        if (whatToWatch.IsSet(Watch::Deletes))
+        {
+          if (mirror && whatToWatch.IsSet(Watch::Subdirectories))
+          {
+            mirror->Enumerate(pendingRemoveOrRename.path, [&](const xiiStringBuilder& sPath, xiiFileSystemMirrorType::Type type) { func(sPath, xiiDirectoryWatcherAction::Removed, (type == xiiFileSystemMirrorType::Type::File) ? xiiDirectoryWatcherType::File : xiiDirectoryWatcherType::Directory); }).AssertSuccess();
+          }
+          func(pendingRemoveOrRename.path, xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::Directory);
+        }
+        if (mirror)
+        {
+          mirror->RemoveDirectory(pendingRemoveOrRename.path).AssertSuccess();
+        }
+      }
+      else
+      {
+        if (mirror)
+        {
+          mirror->RemoveFile(pendingRemoveOrRename.path).AssertSuccess();
+        }
+        if (whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Deletes))
+        {
+          func(pendingRemoveOrRename.path, xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::File);
+        }
+      }
+      pendingRemoveOrRename.Clear();
+    }
+  };
+
+  XII_SCOPE_EXIT(FirePendingRemove());
+
   XII_ASSERT_DEV(!m_sDirectoryPath.IsEmpty(), "No directory opened!");
+
   while (WaitForSingleObject(m_pImpl->m_overlappedEvent, static_cast<DWORD>(waitUpTo.GetMilliseconds())) == WAIT_OBJECT_0)
   {
     waitUpTo = xiiTime::Zero(); // only wait on the first call to GetQueuedCompletionStatus
@@ -148,10 +191,6 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
     {
       return;
     }
-
-    const xiiBitflags<xiiDirectoryWatcher::Watch> whatToWatch = m_pImpl->m_whatToWatch;
-
-    xiiFileSystemMirrorType* mirror = m_pImpl->m_mirror.Borrow();
 
     MoveEvent lastMoveFrom;
 
@@ -173,11 +212,20 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
         eventFilePath.AppendPath(xiiStringView(dir.GetData(), dir.GetCount()));
         eventFilePath.MakeCleanPath();
 
-        if ((info->FileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+        const bool isFile = (info->FileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
+        if (!pendingRemoveOrRename.IsEmpty() && isFile == !pendingRemoveOrRename.isDirectory && info->Action == FILE_ACTION_RENAMED_OLD_NAME && pendingRemoveOrRename.path == eventFilePath)
+        {
+          // This is the bogus removed event because we changed the casing of a file / directory, ignore.
+          pendingRemoveOrRename.Clear();
+        }
+        FirePendingRemove();
+
+        if (isFile)
         {
           switch (info->Action)
           {
             case FILE_ACTION_ADDED:
+            {
               DEBUG_LOG("FILE_ACTION_ADDED {} ({})", eventFilePath, info->LastModificationTime.QuadPart);
               action    = xiiDirectoryWatcherAction::Added;
               fireEvent = whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Creates);
@@ -190,16 +238,16 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
                   fireEvent = false;
                 }
               }
-              break;
+            }
+            break;
             case FILE_ACTION_REMOVED:
+            {
               DEBUG_LOG("FILE_ACTION_REMOVED {} ({})", eventFilePath, info->LastModificationTime.QuadPart);
-              action    = xiiDirectoryWatcherAction::Removed;
-              fireEvent = whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Deletes);
-              if (mirror)
-              {
-                mirror->RemoveFile(eventFilePath.GetData()).AssertSuccess();
-              }
-              break;
+              action                = xiiDirectoryWatcherAction::Removed;
+              fireEvent             = false;
+              pendingRemoveOrRename = {eventFilePath, false};
+            }
+            break;
             case FILE_ACTION_MODIFIED:
             {
               DEBUG_LOG("FILE_ACTION_MODIFIED {} ({})", eventFilePath, info->LastModificationTime.QuadPart);
@@ -218,14 +266,17 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
             }
             break;
             case FILE_ACTION_RENAMED_OLD_NAME:
+            {
               DEBUG_LOG("FILE_ACTION_RENAMED_OLD_NAME {} ({})", eventFilePath, info->LastModificationTime.QuadPart);
               XII_ASSERT_DEV(lastMoveFrom.IsEmpty(), "there should be no pending move from");
               action    = xiiDirectoryWatcherAction::RenamedOldName;
               fireEvent = whatToWatch.IsAnySet(xiiDirectoryWatcher::Watch::Renames);
               XII_ASSERT_DEV(lastMoveFrom.IsEmpty(), "there should be no pending last move from");
               lastMoveFrom = {eventFilePath, false};
-              break;
+            }
+            break;
             case FILE_ACTION_RENAMED_NEW_NAME:
+            {
               DEBUG_LOG("FILE_ACTION_RENAMED_NEW_NAME {} ({})", eventFilePath, info->LastModificationTime.QuadPart);
               action    = xiiDirectoryWatcherAction::RenamedNewName;
               fireEvent = whatToWatch.IsAnySet(xiiDirectoryWatcher::Watch::Renames);
@@ -236,7 +287,8 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
                 mirror->AddFile(eventFilePath, false, nullptr, nullptr).AssertSuccess();
               }
               lastMoveFrom.Clear();
-              break;
+            }
+            break;
           }
 
           if (fireEvent)
@@ -266,8 +318,7 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
               // So iterate the file system and make sure we track all files / subdirectories
               xiiFileSystemIterator subdirIt;
 
-              subdirIt.StartSearch(eventFilePath.GetData(),
-                                   whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories) ? xiiFileSystemIteratorFlags::ReportFilesAndFoldersRecursive : xiiFileSystemIteratorFlags::ReportFiles);
+              subdirIt.StartSearch(eventFilePath.GetData(), whatToWatch.IsSet(xiiDirectoryWatcher::Watch::Subdirectories) ? xiiFileSystemIteratorFlags::ReportFilesAndFoldersRecursive : xiiFileSystemIteratorFlags::ReportFiles);
 
               xiiStringBuilder tmpPath2;
               for (; subdirIt.IsValid(); subdirIt.Next())
@@ -302,29 +353,20 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
             }
             break;
             case FILE_ACTION_REMOVED:
+            {
               DEBUG_LOG("DIR_ACTION_REMOVED {}", eventFilePath);
-              if (whatToWatch.IsSet(Watch::Deletes))
-              {
-                if (mirror && whatToWatch.IsSet(Watch::Subdirectories))
-                {
-                  mirror->Enumerate(eventFilePath, [&](const xiiStringBuilder& sPath, xiiFileSystemMirrorType::Type type) {
-                          func(sPath, xiiDirectoryWatcherAction::Removed, (type == xiiFileSystemMirrorType::Type::File) ? xiiDirectoryWatcherType::File : xiiDirectoryWatcherType::Directory);
-                        })
-                    .AssertSuccess();
-                }
-                func(eventFilePath, xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::Directory);
-              }
-              if (mirror)
-              {
-                mirror->RemoveDirectory(eventFilePath).AssertSuccess();
-              }
-              break;
+              pendingRemoveOrRename = {eventFilePath, true};
+            }
+            break;
             case FILE_ACTION_RENAMED_OLD_NAME:
+            {
               DEBUG_LOG("DIR_ACTION_OLD_NAME {}", eventFilePath);
               XII_ASSERT_DEV(lastMoveFrom.IsEmpty(), "there should be no pending move from");
               lastMoveFrom = {eventFilePath, true};
-              break;
+            }
+            break;
             case FILE_ACTION_RENAMED_NEW_NAME:
+            {
               DEBUG_LOG("DIR_ACTION_NEW_NAME {}", eventFilePath);
               XII_ASSERT_DEV(!lastMoveFrom.IsEmpty(), "rename old name and rename new name should always appear in pairs");
               if (mirror)
@@ -337,20 +379,25 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
                 func(eventFilePath, xiiDirectoryWatcherAction::RenamedNewName, xiiDirectoryWatcherType::Directory);
               }
               lastMoveFrom.Clear();
-              break;
+            }
+            break;
             default:
               break;
           }
         }
       }
+
       if (info->NextEntryOffset == 0)
+      {
         break;
+      }
       else
+      {
         info = (const FILE_NOTIFY_EXTENDED_INFORMATION*)(((xiiUInt8*)info) + info->NextEntryOffset);
+      }
     }
   }
 }
-
 
 void xiiDirectoryWatcher::EnumerateChanges(xiiArrayPtr<xiiDirectoryWatcher*> watchers, EnumerateChangesFunction func, xiiTime waitUpTo)
 {

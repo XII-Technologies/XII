@@ -698,7 +698,8 @@ void xiiQtNodeScene::OpenSearchMenu(QPoint screenPos)
   connect(pSearchMenu, &xiiQtSearchableMenu::MenuItemTriggered, this, &xiiQtNodeScene::OnMenuItemTriggered);
   connect(pSearchMenu, &xiiQtSearchableMenu::MenuItemTriggered, this, [&menu]() { menu.close(); });
 
-  xiiStringBuilder sFullName, sCleanName2;
+  xiiStringBuilder tmp;
+  xiiStringBuilder sFullPath;
 
   xiiHybridArray<const xiiRTTI*, 32> types;
   m_pManager->GetCreateableTypes(types);
@@ -707,33 +708,29 @@ void xiiQtNodeScene::OpenSearchMenu(QPoint screenPos)
   {
     xiiStringView sCleanName = pRtti->GetTypeName();
 
-    const char* szColonColon = sCleanName.FindLastSubString("::");
-    if (szColonColon != nullptr)
-      sCleanName.SetStartPosition(szColonColon + 2);
-
-    const char* szUnderscore = sCleanName.FindLastSubString("_");
-    if (szUnderscore != nullptr)
-      sCleanName.SetStartPosition(szUnderscore + 1);
-
-    sCleanName2 = sCleanName;
-    if (const char* szBracket = sCleanName2.FindLastSubString("<"))
+    if (const char* szUnderscore = sCleanName.FindLastSubString("_"))
     {
-      sCleanName2.SetSubString_FromTo(sCleanName2.GetData(), szBracket);
+      sCleanName.SetStartPosition(szUnderscore + 1);
     }
 
-    sFullName = m_pManager->GetTypeCategory(pRtti);
+    if (const char* szBracket = sCleanName.FindLastSubString("<"))
+    {
+      sCleanName = xiiStringView(sCleanName.GetStartPointer(), szBracket);
+    }
 
-    if (sFullName.IsEmpty())
+    sFullPath = m_pManager->GetTypeCategory(pRtti);
+
+    if (sFullPath.IsEmpty())
     {
       if (auto pAttr = pRtti->GetAttributeByType<xiiCategoryAttribute>())
       {
-        sFullName = pAttr->GetCategory();
+        sFullPath = pAttr->GetCategory();
       }
     }
 
-    sFullName.AppendPath(xiiTranslate(sCleanName2));
+    sFullPath.AppendPath(sCleanName);
 
-    pSearchMenu->AddItem(sFullName, QVariant::fromValue((void*)pRtti));
+    pSearchMenu->AddItem(xiiTranslate(sCleanName.GetData(tmp)), sFullPath, QVariant::fromValue((void*)pRtti));
   }
 
   pSearchMenu->Finalize(m_sContextMenuSearchText);
