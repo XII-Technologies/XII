@@ -62,7 +62,7 @@ xiiResult xiiStreamWriter::WriteDWordValue(const T* pDWordValue)
 {
   XII_CHECK_AT_COMPILETIME(sizeof(T) == sizeof(xiiUInt32));
 
-  xiiUInt32 uiTemp = *reinterpret_cast<const xiiUInt16*>(pDWordValue);
+  xiiUInt32 uiTemp = *reinterpret_cast<const xiiUInt32*>(pDWordValue);
   uiTemp           = xiiEndianHelper::Switch(uiTemp);
 
   return WriteBytes(reinterpret_cast<xiiUInt8*>(&uiTemp), sizeof(T));

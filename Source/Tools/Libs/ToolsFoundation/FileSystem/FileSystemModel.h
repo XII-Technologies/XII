@@ -174,6 +174,8 @@ private:
   xiiFileStatus HandleSingleFile(const xiiString& sAbsolutePath, const xiiFileStats& FileStat, bool bRecurseIntoFolders);
   void          MarkFileLocked(xiiStringView sAbsolutePath);
 
+  void RemoveFileOrFolder(const xiiString& sAbsolutePath, bool bRecurseIntoFolders);
+
   void FireFileChangedEvent(xiiStringView sFile, xiiFileStatus fileStatus, xiiFileChangedEvent::Type type);
   void FireFolderChangedEvent(xiiStringView sFile, xiiFolderChangedEvent::Type type);
 

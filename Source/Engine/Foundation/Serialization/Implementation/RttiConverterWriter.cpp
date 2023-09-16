@@ -70,8 +70,7 @@ void xiiRttiConverterContext::RegisterObject(const xiiUuid& guid, const xiiRTTI*
   }
 
   // TODO: Actually remove child owner ptr from register when deleting an object
-  // XII_ASSERT_DEV(co.m_pObject == nullptr || (co.m_pObject == pObject && co.m_pType == pRtti), "Registered same guid twice with different
-  // values");
+  // XII_ASSERT_DEV(co.m_pObject == nullptr || (co.m_pObject == pObject && co.m_pType == pRtti), "Registered same guid twice with different values");
 
   co.m_pObject = pObject;
   co.m_pType   = pRtti;
@@ -104,6 +103,11 @@ xiiUuid xiiRttiConverterContext::GetObjectGUID(const xiiRTTI* pRtti, const void*
     m_ObjectToGuid.TryGetValue(pObject, guid);
 
   return guid;
+}
+
+const xiiRTTI* xiiRttiConverterContext::FindTypeByName(xiiStringView sName) const
+{
+  return xiiRTTI::FindTypeByName(sName);
 }
 
 xiiUuid xiiRttiConverterContext::EnqueObject(const xiiUuid& guid, const xiiRTTI* pRtti, void* pObject)

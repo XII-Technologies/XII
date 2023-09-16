@@ -28,7 +28,7 @@ public:
   virtual const xiiRTTI* GetSpecificType() const override;
   virtual void*          GetPropertyPointer(const void* pInstance) const override { return nullptr; }
   virtual void           GetValuePtr(const void* pInstance, void* pObject) const override {}
-  virtual void           SetValuePtr(void* pInstance, const void* pObject) override {}
+  virtual void           SetValuePtr(void* pInstance, const void* pObject) const override {}
 
 private:
   xiiString      m_sPropertyNameStorage;

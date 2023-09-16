@@ -8,9 +8,7 @@
 xiiQtConnection::xiiQtConnection(QGraphicsItem* pParent) :
   QGraphicsPathItem(pParent)
 {
-  auto palette = QApplication::palette();
-
-  QPen pen(palette.highlightedText().color(), 3, Qt::SolidLine);
+  QPen pen(xiiToQtColor(xiiColor::White), 3, Qt::SolidLine);
   setPen(pen);
   setBrush(Qt::NoBrush);
 

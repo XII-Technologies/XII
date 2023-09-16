@@ -3,16 +3,22 @@
 
 XII_ALWAYS_INLINE xiiUInt32 xiiIntervalSchedulerBase::GetHistogramIndex(xiiTime value)
 {
+  if (value.IsZero())
+    return 0;
+
   constexpr xiiUInt32 maxSlotIndex = HistogramSize - 1;
   const double        x            = xiiMath::Max((value - m_MinInterval).GetSeconds() * m_fInvIntervalRange, 0.0);
-  const double        i            = xiiMath::Sqrt(x) * maxSlotIndex;
+  const double        i            = xiiMath::Sqrt(x) * (maxSlotIndex - 1) + 1;
   return xiiMath::Min(static_cast<xiiUInt32>(i), maxSlotIndex);
 }
 
 XII_ALWAYS_INLINE xiiTime xiiIntervalSchedulerBase::GetHistogramSlotValue(xiiUInt32 uiIndex)
 {
-  constexpr double norm = 1.0 / (HistogramSize - 1.0);
-  const double     x    = uiIndex * norm;
+  if (uiIndex == 0)
+    return xiiTime::Zero();
+
+  constexpr double norm = 1.0 / (HistogramSize - 2.0);
+  const double     x    = (uiIndex - 1) * norm;
   return (x * x) * (m_MaxInterval - m_MinInterval) + m_MinInterval;
 }
 
@@ -114,7 +120,7 @@ void xiiIntervalScheduler<T>::Update(xiiTime deltaTime, RunWorkCallback runWorkC
   else
   {
     double fNumWork = 0;
-    for (xiiUInt32 i = 0; i < HistogramSize; ++i)
+    for (xiiUInt32 i = 1; i < HistogramSize; ++i)
     {
       fNumWork += (1.0 / xiiMath::Max(m_HistogramSlotValues[i], deltaTime).GetSeconds()) * m_Histogram[i];
     }
@@ -133,13 +139,11 @@ void xiiIntervalScheduler<T>::Update(xiiTime deltaTime, RunWorkCallback runWorkC
     const float     fRemainder      = static_cast<float>(xiiMath::Fraction(m_fNumWorkToSchedule));
     const int       pos             = static_cast<int>(m_CurrentTime.GetNanoseconds());
     const xiiUInt32 extra           = GetRandomZeroToOne(pos, m_uiSeed) < fRemainder ? 1 : 0;
-    const xiiUInt32 uiScheduleCount = xiiMath::Min(static_cast<xiiUInt32>(m_fNumWorkToSchedule) + extra, m_Data.GetCount());
+    const xiiUInt32 uiScheduleCount = xiiMath::Min(static_cast<xiiUInt32>(m_fNumWorkToSchedule) + extra + m_Histogram[0], m_Data.GetCount());
 
     // schedule work
     {
-      auto it = m_Data.GetIterator();
-      for (xiiUInt32 i = 0; i < uiScheduleCount; ++i, ++it)
-      {
+      auto RunWork = [&](typename DataMap::Iterator it, xiiUInt32 uiIndex) {
         auto& data = it.Value();
         if (data.IsValid())
         {
@@ -149,11 +153,31 @@ void xiiIntervalScheduler<T>::Update(xiiTime deltaTime, RunWorkCallback runWorkC
           }
 
           // add a little bit of random jitter so we don't end up with perfect timings that might collide with other work
-          data.m_DueTime           = m_CurrentTime + xiiMath::Max(data.m_Interval, deltaTime) + GetRandomTimeJitter(i, m_uiSeed);
+          data.m_DueTime           = m_CurrentTime + data.m_Interval + GetRandomTimeJitter(uiIndex, m_uiSeed);
           data.m_LastScheduledTime = m_CurrentTime;
         }
 
         m_ScheduledWork.PushBack(it);
+      };
+
+      auto it = m_Data.GetIterator();
+      for (xiiUInt32 i = 0; i < uiScheduleCount; ++i, ++it)
+      {
+        RunWork(it, i);
+      }
+
+      // check if the next works have a zero interval if so execute them as well to fulfill the every frame guarantee
+      xiiUInt32 uiNumExtras = 0;
+      while (it.IsValid())
+      {
+        auto& data = it.Value();
+        if (data.m_Interval.IsPositive())
+          break;
+
+        RunWork(it, uiNumExtras);
+
+        ++uiNumExtras;
+        ++it;
       }
     }
 

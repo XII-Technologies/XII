@@ -1,8 +1,10 @@
 #pragma once
 
-#include <Foundation/Containers/Map.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
+
+#include <Foundation/Containers/Map.h>
 #include <QSortFilterProxyModel>
+#include <ToolsFoundation/Utilities/SearchPatternFilter.h>
 
 class QWidget;
 
@@ -26,6 +28,6 @@ protected:
 
   bool                      m_bIncludeChildren;
   QAbstractItemModel*       m_pSourceModel;
-  QString                   m_sFilterText;
+  xiiSearchPatternFilter    m_Filter;
   xiiMap<QModelIndex, bool> m_Visible;
 };

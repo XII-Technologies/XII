@@ -253,8 +253,14 @@ const char* xiiTranslatorMakeMoreReadable::Translate(const char* szString, xiiUI
   xiiStringBuilder result;
   xiiStringBuilder tmp = szString;
   tmp.Trim(" _-");
+
   tmp.TrimWordStart("xii");
-  tmp.TrimWordEnd("Component");
+
+  xiiStringView sComponent = "Component";
+  if (tmp.EndsWith(sComponent) && tmp.GetElementCount() > sComponent.GetElementCount())
+  {
+    tmp.Shrink(0, sComponent.GetElementCount());
+  }
 
   auto IsUpper = [](xiiUInt32 c) {
     return c == xiiStringUtils::ToUpperChar(c);

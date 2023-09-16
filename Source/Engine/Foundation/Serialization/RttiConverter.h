@@ -45,6 +45,24 @@ public:
   virtual xiiRttiConverterObject GetObjectByGUID(const xiiUuid& guid) const;
   virtual xiiUuid                GetObjectGUID(const xiiRTTI* pRtti, const void* pObject) const;
 
+  virtual const xiiRTTI* FindTypeByName(xiiStringView sName) const;
+
+  template <typename T>
+  void GetObjectsByType(xiiDynamicArray<T*>& out_objects, xiiDynamicArray<xiiUuid>* out_pUuids = nullptr)
+  {
+    for (auto it : m_GuidToObject)
+    {
+      if (it.Value().m_pType->IsDerivedFrom(xiiGetStaticRTTI<T>()))
+      {
+        out_objects.PushBack(static_cast<T*>(it.Value().m_pObject));
+        if (out_pUuids)
+        {
+          out_pUuids->PushBack(it.Key());
+        }
+      }
+    }
+  }
+
   virtual xiiUuid                EnqueObject(const xiiUuid& guid, const xiiRTTI* pRtti, void* pObject);
   virtual xiiRttiConverterObject DequeueObject();
 

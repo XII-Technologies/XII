@@ -472,7 +472,7 @@ void xiiDocumentObjectMirror::ApplyOp(xiiRttiConverterObject object, const xiiOb
       change.GetGraph(graph);
       xiiRttiConverterReader       reader(&graph, m_pContext);
       const xiiAbstractObjectNode* pNode  = graph.GetNodeByName("Object");
-      const xiiRTTI*               pType  = xiiRTTI::FindTypeByName(pNode->GetType());
+      const xiiRTTI*               pType  = m_pContext->FindTypeByName(pNode->GetType());
       void*                        pValue = reader.CreateObjectFromNode(pNode);
       if (!pValue)
       {

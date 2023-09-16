@@ -184,7 +184,7 @@ void xiiQtPin::SetActive(bool bActive)
 bool xiiQtPin::UpdatePinColors(const xiiColorGammaUB* pOverwriteColor)
 {
   xiiColorGammaUB pinColor = pOverwriteColor != nullptr ? *pOverwriteColor : GetPin()->GetColor();
-  QColor          base     = QApplication::palette().base().color();
+  QColor          base     = QApplication::palette().window().color();
 
   if (!m_bIsActive)
     pinColor = xiiMath::Lerp<xiiColor>(xiiColorGammaUB(base.red(), base.green(), base.blue()), pinColor, 0.2f);

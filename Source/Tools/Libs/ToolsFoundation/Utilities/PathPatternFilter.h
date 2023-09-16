@@ -1,9 +1,8 @@
 #pragma once
 
-#include <Foundation/Containers/DynamicArray.h>
-#include <Foundation/Strings/String.h>
-#include <Foundation/Strings/StringView.h>
 #include <ToolsFoundation/ToolsFoundationDLL.h>
+
+#include <Foundation/Strings/String.h>
 
 /// \brief Describes a single path pattern.
 ///

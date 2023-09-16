@@ -13,12 +13,12 @@ void xiiQtTreeSearchFilterModel::SetFilterText(const QString& sText)
 {
   // only clear the current visible state, if the new filter text got shorter
   // this way previous information stays valid and can be used to early out
-  if (!sText.contains(m_sFilterText, Qt::CaseInsensitive))
+  if (!sText.contains(m_Filter.GetSearchText().GetData(), Qt::CaseInsensitive) || m_Filter.ContainsExclusions())
     m_Visible.Clear();
 
-  m_sFilterText = sText;
+  m_Filter.SetSearchText(sText.toUtf8().data());
 
-  if (!m_sFilterText.isEmpty())
+  if (!m_Filter.IsEmpty())
   {
     RecomputeVisibleItems();
   }
@@ -31,7 +31,7 @@ void xiiQtTreeSearchFilterModel::SetIncludeChildren(bool bInclude)
 {
   m_bIncludeChildren = true;
 
-  if (!m_sFilterText.isEmpty())
+  if (!m_Filter.IsEmpty())
   {
     RecomputeVisibleItems();
     invalidateFilter();
@@ -61,11 +61,12 @@ bool xiiQtTreeSearchFilterModel::UpdateVisibility(const QModelIndex& idx, bool b
   if (bExisted && !itVis.Value())
     return false;
 
-  QString name = m_pSourceModel->data(idx, Qt::DisplayRole).toString();
+  QString  displayName     = m_pSourceModel->data(idx, Qt::DisplayRole).toString();
+  QVariant internalNameVar = m_pSourceModel->data(idx, Qt::UserRole + 1);
 
   bool bSubTreeAnyVisible = false;
 
-  if (name.contains(m_sFilterText, Qt::CaseInsensitive))
+  if (m_Filter.PassesFilters(displayName.toUtf8().data()) || (internalNameVar.canConvert<QString>() && m_Filter.PassesFilters(internalNameVar.toString().toUtf8().data())))
   {
     bParentIsVisible   = true;
     bSubTreeAnyVisible = true;
@@ -97,7 +98,7 @@ bool xiiQtTreeSearchFilterModel::filterAcceptsRow(int source_row, const QModelIn
 {
   QModelIndex idx = sourceModel()->index(source_row, 0, source_parent);
 
-  if (m_sFilterText.isEmpty())
+  if (m_Filter.IsEmpty())
     return true;
 
   auto itVis = m_Visible.Find(idx);
