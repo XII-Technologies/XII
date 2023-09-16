@@ -16,6 +16,7 @@ struct XII_CORE_DLL xiiUpdateRate
     Max5fps,
     Max2fps,
     Max1fps,
+    Never,
 
     Default = Max30fps
   };

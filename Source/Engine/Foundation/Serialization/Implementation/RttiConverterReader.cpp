@@ -13,7 +13,7 @@ xiiRttiConverterReader::xiiRttiConverterReader(const xiiAbstractObjectGraph* pGr
 
 xiiInternal::NewInstance<void> xiiRttiConverterReader::CreateObjectFromNode(const xiiAbstractObjectNode* pNode)
 {
-  const xiiRTTI* pRtti = xiiRTTI::FindTypeByName(pNode->GetType());
+  const xiiRTTI* pRtti = m_pContext->FindTypeByName(pNode->GetType());
   if (pRtti == nullptr)
   {
     m_pContext->OnUnknownTypeError(pNode->GetType());

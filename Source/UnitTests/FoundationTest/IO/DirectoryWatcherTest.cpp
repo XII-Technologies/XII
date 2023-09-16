@@ -213,18 +213,71 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple rename file")
   {
     xiiDirectoryWatcher watcher;
-    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames).Succeeded());
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
 
     CreateFile("test.file");
     Rename("test.file", "supertest.file");
 
     ExpectedEvent expectedEvents[] = {
+      {"test.file", xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::File},
       {"test.file", xiiDirectoryWatcherAction::RenamedOldName, xiiDirectoryWatcherType::File},
       {"supertest.file", xiiDirectoryWatcherAction::RenamedNewName, xiiDirectoryWatcherType::File},
     };
     CheckExpectedEvents(watcher, expectedEvents);
 
     DeleteFile("supertest.file");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Change file casing")
+  {
+    xiiDirectoryWatcher watcher;
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
+
+    CreateFile("rename.file");
+    Rename("rename.file", "Rename.file");
+
+    ExpectedEvent expectedEvents[] = {
+      {"rename.file", xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::File},
+      {"rename.file", xiiDirectoryWatcherAction::RenamedOldName, xiiDirectoryWatcherType::File},
+      {"Rename.file", xiiDirectoryWatcherAction::RenamedNewName, xiiDirectoryWatcherType::File},
+    };
+    CheckExpectedEvents(watcher, expectedEvents);
+
+    DeleteFile("Rename.file");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Windows check for correct handling of pending file remove event #1")
+  {
+    xiiDirectoryWatcher watcher;
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
+
+    CreateFile("rename.file");
+    DeleteFile("rename.file");
+
+    ExpectedEvent expectedEvents[] = {
+      {"rename.file", xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::File},
+      {"rename.file", xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::File},
+    };
+    CheckExpectedEvents(watcher, expectedEvents);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Windows check for correct handling of pending file remove event #2")
+  {
+    xiiDirectoryWatcher watcher;
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
+
+    CreateFile("rename.file");
+    DeleteFile("rename.file");
+    CreateFile("Rename.file");
+    DeleteFile("Rename.file");
+
+    ExpectedEvent expectedEvents[] = {
+      {"rename.file", xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::File},
+      {"rename.file", xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::File},
+      {"Rename.file", xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::File},
+      {"Rename.file", xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::File},
+    };
+    CheckExpectedEvents(watcher, expectedEvents);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Simple create directory")
@@ -271,6 +324,58 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
     CheckExpectedEvents(watcher, expectedEvents);
 
     DeleteDirectory("supertestDir");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Change directory casing")
+  {
+    xiiDirectoryWatcher watcher;
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
+
+    CreateDirectory("renameDir");
+    Rename("renameDir", "RenameDir");
+
+    ExpectedEvent expectedEvents[] = {
+      {"renameDir", xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::Directory},
+      {"renameDir", xiiDirectoryWatcherAction::RenamedOldName, xiiDirectoryWatcherType::Directory},
+      {"RenameDir", xiiDirectoryWatcherAction::RenamedNewName, xiiDirectoryWatcherType::Directory},
+    };
+    CheckExpectedEvents(watcher, expectedEvents);
+
+    DeleteDirectory("RenameDir");
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Windows check for correct handling of pending directory remove event #1")
+  {
+    xiiDirectoryWatcher watcher;
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
+
+    CreateDirectory("renameDir");
+    DeleteDirectory("renameDir");
+
+    ExpectedEvent expectedEvents[] = {
+      {"renameDir", xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::Directory},
+      {"renameDir", xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::Directory},
+    };
+    CheckExpectedEvents(watcher, expectedEvents);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Windows check for correct handling of pending directory remove event #2")
+  {
+    xiiDirectoryWatcher watcher;
+    XII_TEST_BOOL(watcher.OpenDirectory(sTestRootPath, xiiDirectoryWatcher::Watch::Renames | xiiDirectoryWatcher::Watch::Creates | xiiDirectoryWatcher::Watch::Deletes | xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded());
+
+    CreateDirectory("renameDir");
+    DeleteDirectory("renameDir");
+    CreateDirectory("RenameDir");
+    DeleteDirectory("RenameDir");
+
+    ExpectedEvent expectedEvents[] = {
+      {"renameDir", xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::Directory},
+      {"renameDir", xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::Directory},
+      {"RenameDir", xiiDirectoryWatcherAction::Added, xiiDirectoryWatcherType::Directory},
+      {"RenameDir", xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::Directory},
+    };
+    CheckExpectedEvents(watcher, expectedEvents);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Subdirectory Create File")

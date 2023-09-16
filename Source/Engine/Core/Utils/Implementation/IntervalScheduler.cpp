@@ -7,6 +7,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiUpdateRate, 1)
   XII_ENUM_CONSTANTS(xiiUpdateRate::EveryFrame)
   XII_ENUM_CONSTANTS(xiiUpdateRate::Max30fps, xiiUpdateRate::Max20fps, xiiUpdateRate::Max10fps)
   XII_ENUM_CONSTANTS(xiiUpdateRate::Max5fps, xiiUpdateRate::Max2fps, xiiUpdateRate::Max1fps)
+  XII_ENUM_CONSTANTS(xiiUpdateRate::Never)
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
