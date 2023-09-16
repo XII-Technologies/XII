@@ -652,7 +652,7 @@ xiiUInt64 xiiVariant::ComputeHash(xiiUInt64 uiSeed) const
     return uiSeed;
 
   ComputeHashFunc obj;
-  return DispatchTo<ComputeHashFunc>(obj, GetType(), *this, GetData(), uiSeed);
+  return DispatchTo<ComputeHashFunc>(obj, GetType(), *this, GetData(), uiSeed + GetType());
 }
 
 

@@ -651,11 +651,20 @@ void xiiDocumentNodeManager::GetDynamicPinNames(const xiiDocumentObject* pObject
     auto&           a       = value.Get<xiiVariantArray>();
     const xiiUInt32 uiCount = a.GetCount();
 
-    if (pArrayProp->GetSpecificType() == xiiGetStaticRTTI<xiiString>())
+    auto variantType = pArrayProp->GetSpecificType()->GetVariantType();
+    if (variantType >= xiiVariantType::Int8 && variantType <= xiiVariantType::UInt64)
     {
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        out_Names.PushBack(a[i].Get<xiiString>());
+        sTemp.Format("{}", a[i]);
+        out_Names.PushBack(sTemp);
+      }
+    }
+    else if (variantType == xiiVariantType::String || variantType == xiiVariantType::HashedString)
+    {
+      for (xiiUInt32 i = 0; i < uiCount; ++i)
+      {
+        out_Names.PushBack(a[i].ConvertTo<xiiString>());
       }
     }
     else

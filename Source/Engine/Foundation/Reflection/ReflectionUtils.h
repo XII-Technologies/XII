@@ -29,8 +29,8 @@ public:
   static void      SetComponent(xiiVariant& ref_vector, xiiUInt32 uiComponent, double fValue); // [tested]
   static double    GetComponent(const xiiVariant& vector, xiiUInt32 uiComponent);
 
-  static xiiVariant GetMemberPropertyValue(const xiiAbstractMemberProperty* pProp, const void* pObject);              // [tested] via ToolsFoundation
-  static void       SetMemberPropertyValue(xiiAbstractMemberProperty* pProp, void* pObject, const xiiVariant& value); // [tested] via ToolsFoundation
+  static xiiVariant GetMemberPropertyValue(const xiiAbstractMemberProperty* pProp, const void* pObject);                    // [tested] via ToolsFoundation
+  static void       SetMemberPropertyValue(const xiiAbstractMemberProperty* pProp, void* pObject, const xiiVariant& value); // [tested] via ToolsFoundation
 
   static xiiVariant GetArrayPropertyValue(const xiiAbstractArrayProperty* pProp, const void* pObject, xiiUInt32 uiIndex);
   static void       SetArrayPropertyValue(xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex, const xiiVariant& value);

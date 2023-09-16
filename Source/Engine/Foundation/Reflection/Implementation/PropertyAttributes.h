@@ -995,6 +995,22 @@ private:
   xiiHybridArray<xiiUInt8, 6>           m_ArgTypes;
 };
 
+/// \brief Wrapper Attribute to add an attribute to a function argument
+class XII_FOUNDATION_DLL xiiFunctionArgumentAttributes : public xiiPropertyAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiFunctionArgumentAttributes, xiiPropertyAttribute);
+
+  xiiFunctionArgumentAttributes() = default;
+  xiiFunctionArgumentAttributes(xiiUInt32 uiArgIndex, const xiiPropertyAttribute* pAttribute1, const xiiPropertyAttribute* pAttribute2 = nullptr, const xiiPropertyAttribute* pAttribute3 = nullptr, const xiiPropertyAttribute* pAttribute4 = nullptr);
+
+  xiiUInt32                                      GetArgumentIndex() const { return m_uiArgIndex; }
+  xiiArrayPtr<const xiiPropertyAttribute* const> GetArgumentAttributes() const { return m_ArgAttributes; }
+
+private:
+  xiiUInt32                                      m_uiArgIndex = 0;
+  xiiHybridArray<const xiiPropertyAttribute*, 4> m_ArgAttributes;
+};
+
 /// \brief Used to annotate properties to which pin or function parameter they belong (if necessary)
 class XII_FOUNDATION_DLL xiiVisScriptMappingAttribute : public xiiPropertyAttribute
 {

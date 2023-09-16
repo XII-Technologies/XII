@@ -40,9 +40,10 @@ public:
     return (xiiInt64)enumTemp;
   }
 
-  virtual void SetValue(void* pInstance, xiiInt64 value) override // [tested]
+  virtual void SetValue(void* pInstance, xiiInt64 value) const override // [tested]
   {
     XII_ASSERT_DEV(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     if (m_Setter)
       (static_cast<Class*>(pInstance)->*m_Setter)((typename EnumType::Enum)value);
   }
@@ -85,7 +86,7 @@ public:
     return (xiiInt64)enumTemp;
   }
 
-  virtual void SetValue(void* pInstance, xiiInt64 value) override // [tested]
+  virtual void SetValue(void* pInstance, xiiInt64 value) const override // [tested]
   {
     XII_ASSERT_DEV(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 

@@ -961,6 +961,50 @@ xiiScriptableFunctionAttribute::xiiScriptableFunctionAttribute(ArgType argType1 
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFunctionArgumentAttributes, 1, xiiRTTIDefaultAllocator<xiiFunctionArgumentAttributes>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("ArgIndex", m_uiArgIndex),
+    XII_ARRAY_MEMBER_PROPERTY("ArgAttributes", m_ArgAttributes),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiFunctionArgumentAttributes::xiiFunctionArgumentAttributes(xiiUInt32 uiArgIndex, const xiiPropertyAttribute* pAttribute1, const xiiPropertyAttribute* pAttribute2 /*= nullptr*/, const xiiPropertyAttribute* pAttribute3 /*= nullptr*/, const xiiPropertyAttribute* pAttribute4 /*= nullptr*/) :
+  m_uiArgIndex(uiArgIndex)
+{
+  {
+    if (pAttribute1 == nullptr)
+      return;
+
+    m_ArgAttributes.PushBack(pAttribute1);
+  }
+  {
+    if (pAttribute2 == nullptr)
+      return;
+
+    m_ArgAttributes.PushBack(pAttribute2);
+  }
+  {
+    if (pAttribute3 == nullptr)
+      return;
+
+    m_ArgAttributes.PushBack(pAttribute3);
+  }
+  {
+    if (pAttribute4 == nullptr)
+      return;
+
+    m_ArgAttributes.PushBack(pAttribute4);
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisScriptMappingAttribute, 1, xiiRTTIDefaultAllocator<xiiVisScriptMappingAttribute>)
 {
   XII_BEGIN_PROPERTIES

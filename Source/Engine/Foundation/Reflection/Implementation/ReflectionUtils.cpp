@@ -328,7 +328,7 @@ namespace
   struct SetValueFunc
   {
     template <typename T>
-    XII_FORCE_INLINE void operator()(xiiAbstractMemberProperty* pProp, void* pObject, const xiiVariant& value)
+    XII_FORCE_INLINE void operator()(const xiiAbstractMemberProperty* pProp, void* pObject, const xiiVariant& value)
     {
       xiiVariantToProperty<T> setter(value, pProp);
       pProp->SetValuePtr(pObject, setter);
@@ -697,7 +697,7 @@ xiiVariant xiiReflectionUtils::GetMemberPropertyValue(const xiiAbstractMemberPro
   return res;
 }
 
-void xiiReflectionUtils::SetMemberPropertyValue(xiiAbstractMemberProperty* pProp, void* pObject, const xiiVariant& value)
+void xiiReflectionUtils::SetMemberPropertyValue(const xiiAbstractMemberProperty* pProp, void* pObject, const xiiVariant& value)
 {
   XII_ASSERT_DEBUG(pProp != nullptr && pObject != nullptr, "SetMemberPropertyValue: missing data!");
   if (pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
@@ -705,7 +705,7 @@ void xiiReflectionUtils::SetMemberPropertyValue(xiiAbstractMemberProperty* pProp
 
   if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::Bitflags | xiiPropertyFlags::IsEnum))
   {
-    xiiAbstractEnumerationProperty* pEnumerationProp = static_cast<xiiAbstractEnumerationProperty*>(pProp);
+    auto pEnumerationProp = static_cast<const xiiAbstractEnumerationProperty*>(pProp);
 
     // Value can either be an integer or a string (human readable value)
     if (value.IsA<xiiString>())

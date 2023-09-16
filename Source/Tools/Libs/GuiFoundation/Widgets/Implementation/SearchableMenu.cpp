@@ -8,6 +8,14 @@
 #include <QStandardItemModel>
 #include <QTreeWidget>
 
+namespace
+{
+  enum CustomRoles
+  {
+    InternalPathRole = Qt::UserRole + 1,
+    VariantRole      = Qt::UserRole + 2
+  };
+}
 
 class QNullWidget : public QWidget
 {
@@ -103,7 +111,7 @@ bool xiiQtSearchableMenu::SelectFirstLeaf(QModelIndex parent)
 
     if (!m_pFilterModel->hasChildren(child))
     {
-      if (m_pFilterModel->data(child, Qt::UserRole + 1).isValid())
+      if (m_pFilterModel->data(child, VariantRole).isValid())
       {
         // set this one item as the new selection
         m_pTreeView->selectionModel()->setCurrentIndex(
@@ -141,25 +149,23 @@ bool xiiQtSearchableMenu::eventFilter(QObject* pObject, QEvent* event)
   return false;
 }
 
-void xiiQtSearchableMenu::AddItem(xiiStringView sName, const QVariant& variant, QIcon icon)
+void xiiQtSearchableMenu::AddItem(xiiStringView sDisplayName, xiiStringView sInternalPath, const QVariant& variant, QIcon icon)
 {
   xiiStringBuilder tmp;
   QStandardItem*   pParent = m_pItemModel->invisibleRootItem();
 
-  const char* szLastCat = sName.FindLastSubString("/");
+  const char* szLastCat = sInternalPath.FindLastSubString("/");
   if (szLastCat != nullptr)
   {
-    xiiStringBuilder sCategory;
-    sCategory.SetSubString_FromTo(sName.GetData(tmp), szLastCat);
+    xiiStringView sCategory(sInternalPath.GetStartPointer(), szLastCat);
 
     pParent = CreateCategoryMenu(sCategory);
-
-    sName = szLastCat + 1;
   }
 
-  QStandardItem* pThisItem = new QStandardItem(sName.GetData(tmp));
+  QStandardItem* pThisItem = new QStandardItem(sInternalPath.GetData(tmp));
   pThisItem->setFlags(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable);
-  pThisItem->setData(variant, Qt::UserRole + 1);
+  pThisItem->setData(sInternalPath.GetData(tmp), InternalPathRole);
+  pThisItem->setData(variant, VariantRole);
   pThisItem->setIcon(icon);
 
   pParent->appendRow(pThisItem);
@@ -176,6 +182,7 @@ void xiiQtSearchableMenu::Finalize(const QString& sSearchText)
 
   m_pSearch->setText(sSearchText);
   m_pSearch->setFocus();
+  m_pSearch->selectAll();
 }
 
 void xiiQtSearchableMenu::OnItemActivated(const QModelIndex& index)
@@ -186,7 +193,7 @@ void xiiQtSearchableMenu::OnItemActivated(const QModelIndex& index)
   QModelIndex realIndex = m_pFilterModel->mapToSource(index);
 
   QString  sName   = m_pItemModel->data(realIndex, Qt::DisplayRole).toString();
-  QVariant variant = m_pItemModel->data(realIndex, Qt::UserRole + 1);
+  QVariant variant = m_pItemModel->data(realIndex, VariantRole);
 
   // potentially only a folder item
   if (!variant.isValid())
@@ -229,4 +236,5 @@ void xiiQtSearchableMenu::OnSearchChanged(const QString& text)
 void xiiQtSearchableMenu::OnShow()
 {
   m_pSearch->setFocus();
+  m_pSearch->selectAll();
 }

@@ -33,6 +33,9 @@ xiiTime xiiUpdateRate::GetInterval(Enum updateRate)
 xiiIntervalSchedulerBase::xiiIntervalSchedulerBase(xiiTime minInterval, xiiTime maxInterval) :
   m_MinInterval(minInterval), m_MaxInterval(maxInterval)
 {
+  XII_ASSERT_DEV(m_MinInterval.IsPositive(), "Min interval must be greater than zero.");
+  XII_ASSERT_DEV(m_MaxInterval > m_MinInterval, "Max interval must be greater than min interval.");
+
   m_fInvIntervalRange = 1.0 / (m_MaxInterval - m_MinInterval).GetSeconds();
 
   for (xiiUInt32 i = 0; i < HistogramSize; ++i)
@@ -42,6 +45,5 @@ xiiIntervalSchedulerBase::xiiIntervalSchedulerBase(xiiTime minInterval, xiiTime 
 }
 
 xiiIntervalSchedulerBase::~xiiIntervalSchedulerBase() = default;
-
 
 XII_STATICLINK_FILE(Core, Core_Utils_Implementation_IntervalScheduler);
