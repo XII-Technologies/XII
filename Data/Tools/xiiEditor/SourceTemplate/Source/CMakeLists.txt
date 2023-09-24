@@ -18,6 +18,9 @@ if(PROJECT_IS_TOP_LEVEL)
 
 	set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${XII_SDK_DIR}/${XII_CMAKE_RELPATH}")
 
+	set(XII_ROOT ${XII_SDK_DIR})
+	set_property(GLOBAL PROPERTY XII_ROOT ${XII_ROOT})
+
 	include("xiiUtils")
 	include("xiiPlatformVars")
 

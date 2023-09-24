@@ -16,10 +16,7 @@ xiiTaskGroupID xiiTaskSystem::StartSingleTask(const xiiSharedPtr<xiiTask>& pTask
   return Group;
 }
 
-xiiTaskGroupID xiiTaskSystem::StartSingleTask(
-  const xiiSharedPtr<xiiTask>&   pTask,
-  xiiTaskPriority::Enum          priority,
-  xiiOnTaskGroupFinishedCallback callback /*= xiiOnTaskGroupFinishedCallback()*/)
+xiiTaskGroupID xiiTaskSystem::StartSingleTask(const xiiSharedPtr<xiiTask>& pTask, xiiTaskPriority::Enum priority, xiiOnTaskGroupFinishedCallback callback /*= xiiOnTaskGroupFinishedCallback()*/)
 {
   xiiTaskGroupID Group = CreateTaskGroup(priority, callback);
   AddTaskToGroup(Group, pTask);
@@ -30,9 +27,12 @@ xiiTaskGroupID xiiTaskSystem::StartSingleTask(
 void xiiTaskSystem::TaskHasFinished(xiiSharedPtr<xiiTask>&& pTask, xiiTaskGroup* pGroup)
 {
   // call task finished callback and deallocate the task (if last reference)
-  if (pTask && pTask->m_OnTaskFinished.IsValid() && pTask->m_iRemainingRuns == 0)
+  if (pTask && pTask->m_iRemainingRuns == 0)
   {
-    pTask->m_OnTaskFinished(pTask);
+    if (pTask->m_OnTaskFinished.IsValid())
+    {
+      pTask->m_OnTaskFinished(pTask);
+    }
 
     // make sure to clear the task sharedptr BEFORE we mark the task (group) as finished,
     // so that if this is the last reference, the task gets deallocated first
@@ -56,20 +56,20 @@ void xiiTaskSystem::TaskHasFinished(xiiSharedPtr<xiiTask>&& pTask, xiiTaskGroup*
       pGroup->m_uiGroupCounter += 2;
     }
 
-    // wake up all threads that are waiting for this group
-    pGroup->m_CondVarGroupFinished.SignalAll();
-
     {
       XII_LOCK(s_TaskSystemMutex);
+
+      // unless an outside reference is held onto a task, this will deallocate the tasks
+      pGroup->m_Tasks.Clear();
 
       for (xiiUInt32 dep = 0; dep < pGroup->m_OthersDependingOnMe.GetCount(); ++dep)
       {
         DependencyHasFinished(pGroup->m_OthersDependingOnMe[dep].m_pTaskGroup);
       }
-
-      // unless an outside reference is held onto a task, this will deallocate the tasks
-      pGroup->m_Tasks.Clear();
     }
+
+    // wake up all threads that are waiting for this group
+    pGroup->m_CondVarGroupFinished.SignalAll();
 
     if (pGroup->m_OnFinishedCallback.IsValid())
     {
@@ -180,13 +180,13 @@ xiiResult xiiTaskSystem::CancelTask(const xiiSharedPtr<xiiTask>& pTask, xiiOnTas
         {
           if (it->m_pTask == pTask)
           {
-            s_pState->m_Tasks[i].Remove(it);
-
             // we set the task to finished, even though it was not executed
             pTask->m_iRemainingRuns = 0;
 
             // tell the system that one task of that group is 'finished', to ensure its dependencies will get scheduled
             TaskHasFinished(std::move(it->m_pTask), it->m_pBelongsToGroup);
+
+            s_pState->m_Tasks[i].Remove(it);
             return XII_SUCCESS;
           }
 
@@ -407,6 +407,5 @@ void xiiTaskSystem::FinishFrameTasks()
     }
   }
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_TaskSystemTasks);

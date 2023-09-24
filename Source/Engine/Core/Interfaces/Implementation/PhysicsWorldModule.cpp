@@ -43,13 +43,13 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgPhysicsJointBroke);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgPhysicsJointBroke, 1, xiiRTTIDefaultAllocator<xiiMsgPhysicsJointBroke>)
-//{
-  //XII_BEGIN_PROPERTIES
-  //{
-  //  XII_MEMBER_PROPERTY("JointObject", m_hJointObject)
-  //}
-  //XII_END_PROPERTIES;
-//}
+// {
+  // XII_BEGIN_PROPERTIES
+  // {
+  //   XII_MEMBER_PROPERTY("JointObject", m_hJointObject)
+  // }
+  // XII_END_PROPERTIES;
+// }
 XII_END_DYNAMIC_REFLECTED_TYPE
 
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgObjectGrabbed);

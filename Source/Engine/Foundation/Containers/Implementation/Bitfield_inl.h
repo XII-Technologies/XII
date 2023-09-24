@@ -336,25 +336,40 @@ bool xiiStaticBitfield<T>::AreAllBitsSet() const
 template <typename T>
 void xiiStaticBitfield<T>::ClearBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBits)
 {
-  XII_ASSERT_DEBUG(uiFirstBit < GetNumBits(), "Cannot access first bit {0}, the bitfield only has {1} bits.", uiFirstBit, GetNumBits());
+  XII_ASSERT_DEBUG(uiFirstBit < GetStorageTypeBitCount(), "Cannot access first bit {0}, the bitfield only has {1} bits.", uiFirstBit, GetStorageTypeBitCount());
 
-  for (xiiUInt32 i = 0; i < uiNumBits; ++i)
-  {
-    const xiiUInt32 uiBit = uiFirstBit + i;
-    m_Storage &= ~(static_cast<T>(1u) << uiBit);
-  }
+  T mask = (uiNumBits / 8 >= sizeof(T)) ? (~static_cast<T>(0)) : ((static_cast<T>(1) << uiNumBits) - 1);
+  mask <<= uiFirstBit;
+  mask = ~mask;
+  m_Storage &= mask;
 }
 
 template <typename T>
 void xiiStaticBitfield<T>::SetBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBits)
 {
-  XII_ASSERT_DEBUG(uiFirstBit < GetNumBits(), "Cannot access first bit {0}, the bitfield only has {1} bits.", uiFirstBit, GetNumBits());
+  XII_ASSERT_DEBUG(uiFirstBit < GetStorageTypeBitCount(), "Cannot access first bit {0}, the bitfield only has {1} bits.", uiFirstBit, GetStorageTypeBitCount());
 
-  for (xiiUInt32 i = 0; i < uiNumBits; ++i)
-  {
-    const xiiUInt32 uiBit = uiFirstBit + i;
-    m_Storage |= static_cast<T>(1u) << uiBit;
-  }
+  T mask = (uiNumBits / 8 >= sizeof(T)) ? (~static_cast<T>(0)) : ((static_cast<T>(1) << uiNumBits) - 1);
+  mask <<= uiFirstBit;
+  m_Storage |= mask;
+}
+
+template <typename T>
+XII_ALWAYS_INLINE xiiUInt32 xiiStaticBitfield<T>::GetNumBitsSet() const
+{
+  return xiiMath::CountBits(m_Storage);
+}
+
+template <typename T>
+XII_ALWAYS_INLINE xiiUInt32 xiiStaticBitfield<T>::GetHighestBitSet() const
+{
+  return m_Storage == 0 ? GetStorageTypeBitCount() : xiiMath::FirstBitHigh(m_Storage);
+}
+
+template <typename T>
+XII_ALWAYS_INLINE xiiUInt32 xiiStaticBitfield<T>::GetLowestBitSet() const
+{
+  return m_Storage == 0 ? GetStorageTypeBitCount() : xiiMath::FirstBitLow(m_Storage);
 }
 
 template <typename T>
@@ -372,7 +387,7 @@ XII_ALWAYS_INLINE void xiiStaticBitfield<T>::ClearAllBits()
 template <typename T>
 XII_ALWAYS_INLINE bool xiiStaticBitfield<T>::IsBitSet(xiiUInt32 uiBit) const
 {
-  XII_ASSERT_DEBUG(uiBit < GetNumBits(), "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, GetNumBits());
+  XII_ASSERT_DEBUG(uiBit < GetStorageTypeBitCount(), "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, GetStorageTypeBitCount());
 
   return (m_Storage & (static_cast<T>(1u) << uiBit)) != 0;
 }
@@ -380,7 +395,7 @@ XII_ALWAYS_INLINE bool xiiStaticBitfield<T>::IsBitSet(xiiUInt32 uiBit) const
 template <typename T>
 XII_ALWAYS_INLINE void xiiStaticBitfield<T>::ClearBit(xiiUInt32 uiBit)
 {
-  XII_ASSERT_DEBUG(uiBit < GetNumBits(), "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, GetNumBits());
+  XII_ASSERT_DEBUG(uiBit < GetStorageTypeBitCount(), "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, GetStorageTypeBitCount());
 
   m_Storage &= ~(static_cast<T>(1u) << uiBit);
 }
@@ -401,7 +416,7 @@ XII_ALWAYS_INLINE void xiiStaticBitfield<T>::SetBitValue(xiiUInt32 uiBit, bool b
 template <typename T>
 XII_ALWAYS_INLINE void xiiStaticBitfield<T>::SetBit(xiiUInt32 uiBit)
 {
-  XII_ASSERT_DEBUG(uiBit < GetNumBits(), "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, GetNumBits());
+  XII_ASSERT_DEBUG(uiBit < GetStorageTypeBitCount(), "Cannot access bit {0}, the bitfield only has {1} bits.", uiBit, GetStorageTypeBitCount());
 
   m_Storage |= static_cast<T>(1u) << uiBit;
 }

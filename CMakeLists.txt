@@ -25,6 +25,10 @@ endif()
 
 set_property(GLOBAL PROPERTY XII_SUBMODULE_MODE ${XII_SUBMODULE_MODE})
 
+# Set a global variable pointing to the root of the XII source tree
+set(XII_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+set_property(GLOBAL PROPERTY XII_ROOT ${XII_ROOT})
+
 xii_build_filter_init()
 
 xii_detect_project_name(DETECTED_NAME)

@@ -90,7 +90,7 @@ class xiiStaticBitfield
 {
 public:
   using StorageType = T;
-  static constexpr xiiUInt32 GetNumBits() { return xiiMath::NumBits<T>(); }
+  static constexpr xiiUInt32 GetStorageTypeBitCount() { return xiiMath::NumBits<T>(); }
 
   /// \brief Initializes the bitfield to all zero.
   xiiStaticBitfield();
@@ -129,6 +129,15 @@ public:
 
   /// \brief Clears the range starting at uiFirstBit up to (and including) uiLastBit to 0.
   void ClearBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBits); // [tested]
+
+  /// \brief Returns the index of the lowest bit that is set. Returns the max index+1 in case no bit is set, at all.
+  xiiUInt32 GetLowestBitSet() const; // [tested]
+
+  /// \brief Returns the index of the highest bit that is set. Returns the max index+1 in case no bit is set, at all.
+  xiiUInt32 GetHighestBitSet() const; // [tested]
+
+  /// \brief Returns the count of how many bits are set in total.
+  xiiUInt32 GetNumBitsSet() const; // [tested]
 
   /// \brief Returns the raw uint that stores all bits.
   T GetValue() const; // [tested]

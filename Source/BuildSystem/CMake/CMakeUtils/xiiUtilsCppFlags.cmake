@@ -13,7 +13,7 @@ endfunction()
 # ## xii_set_build_flags_msvc(<target>)
 # #####################################
 function(xii_set_build_flags_msvc TARGET_NAME)
-	set(ARG_OPTIONS ENABLE_RTTI NO_WARNINGS_AS_ERRORS NO_CONTROLFLOWGUARD NO_DEBUG)
+	set(ARG_OPTIONS ENABLE_RTTI NO_WARNINGS_AS_ERRORS NO_COMPLIANCE NO_DEBUG)
 	set(ARG_ONEVALUEARGS "")
 	set(ARG_MULTIVALUEARGS "")
 	cmake_parse_arguments(ARG "${ARG_OPTIONS}" "${ARG_ONEVALUEARGS}" "${ARG_MULTIVALUEARGS}" ${ARGN})
@@ -227,7 +227,7 @@ function(xii_set_build_flags_clang TARGET_NAME)
 
 	# Ignore any warnings caused by headers inside the ThirdParty directory.
 	if(XII_SUBMODULE_PREFIX_PATH)
-		target_compile_options(${TARGET_NAME} PRIVATE "--system-header-prefix=\"${CMAKE_SOURCE_DIR}/${XII_SUBMODULE_PREFIX_PATH}/Source/ThirdParty\"")
+		target_compile_options(${TARGET_NAME} PRIVATE "--system-header-prefix=\"${XII_ROOT}/Source/ThirdParty\"")
 	else()
 		target_compile_options(${TARGET_NAME} PRIVATE "--system-header-prefix=\"${CMAKE_SOURCE_DIR}/Source/ThirdParty\"")
 	endif()

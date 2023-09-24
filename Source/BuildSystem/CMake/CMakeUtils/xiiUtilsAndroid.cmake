@@ -53,7 +53,7 @@ function(xii_android_add_default_content TARGET_NAME)
 	get_property(XII_SUBMODULE_PREFIX_PATH GLOBAL PROPERTY XII_SUBMODULE_PREFIX_PATH)
 
 	set(CONTENT_DIRECTORY_DST "${CMAKE_CURRENT_BINARY_DIR}/package")
-	set(CONTENT_DIRECTORY_SRC "${CMAKE_SOURCE_DIR}/${XII_SUBMODULE_PREFIX_PATH}/Data/Platform/Android")
+	set(CONTENT_DIRECTORY_SRC "${XII_ROOT}/Data/Platform/Android")
 
 	# Copy content files.
 	set(ANDROID_ASSET_NAMES
@@ -111,7 +111,7 @@ function(xii_android_add_default_content TARGET_NAME)
 	add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
 		BYPRODUCTS "${APK_OUTPUT_DIR}/${TARGET_NAME}.apk" "${APK_OUTPUT_DIR}/${TARGET_NAME}.unaligned.apk"
 		COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${CONTENT_DIRECTORY_DST}/lib/${ANDROID_ABI}/lib${TARGET_NAME}.so
-		COMMAND powershell -ExecutionPolicy Bypass -NoLogo -NoProfile -File ${CMAKE_SOURCE_DIR}/${XII_SUBMODULE_PREFIX_PATH}/Utilities/BuildApk.ps1 -BuildToolsPath "${ANDROID_BUILD_TOOLS}" -ContentDirectory "${CONTENT_DIRECTORY_DST}" -Manifest "${CMAKE_CURRENT_BINARY_DIR}/AndroidManifest.xml" -AndroidPlatformRoot "${ANDROID_PLATFORM_ROOT}" -TargetName "${TARGET_NAME}" -OutDir "${APK_OUTPUT_DIR}" -SignKey "${CONTENT_DIRECTORY_SRC}/debug.keystore" -SignPassword "pass:android"
+		COMMAND powershell -ExecutionPolicy Bypass -NoLogo -NoProfile -File ${XII_ROOT}/Utilities/BuildApk.ps1 -BuildToolsPath "${ANDROID_BUILD_TOOLS}" -ContentDirectory "${CONTENT_DIRECTORY_DST}" -Manifest "${CMAKE_CURRENT_BINARY_DIR}/AndroidManifest.xml" -AndroidPlatformRoot "${ANDROID_PLATFORM_ROOT}" -TargetName "${TARGET_NAME}" -OutDir "${APK_OUTPUT_DIR}" -SignKey "${CONTENT_DIRECTORY_SRC}/debug.keystore" -SignPassword "pass:android"
 		USES_TERMINAL
 	)
 endfunction()

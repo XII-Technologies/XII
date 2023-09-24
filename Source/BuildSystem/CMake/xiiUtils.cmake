@@ -230,9 +230,11 @@ function(xii_set_project_ide_folder TARGET_NAME PROJECT_SOURCE_DIR)
 
 	set(IDE_FOLDER "${FOLDER_NAME}")
 
-	if(${PROJECT_SOURCE_DIR} MATCHES "${CMAKE_SOURCE_DIR}/")
+	set(CMAKE_SOURCE_DIR_PREFIX "${CMAKE_SOURCE_DIR}/")
+	cmake_path(IS_PREFIX CMAKE_SOURCE_DIR_PREFIX ${PROJECT_SOURCE_DIR} NORMALIZE FOLDER_IN_TREE)
+	if(FOLDER_IN_TREE)
 		set(IDE_FOLDER "")
-		string(REPLACE "${CMAKE_SOURCE_DIR}/" "" PARENT_FOLDER ${PROJECT_SOURCE_DIR})
+		string(REPLACE ${CMAKE_SOURCE_DIR_PREFIX} "" PARENT_FOLDER ${PROJECT_SOURCE_DIR})
 
 		get_filename_component(PARENT_FOLDER "${PARENT_FOLDER}" PATH)
 		get_filename_component(FOLDER_NAME "${PARENT_FOLDER}" NAME)
@@ -503,7 +505,7 @@ endfunction()
 # The build filter is intended to only build a subset of xiiEngine.
 # The build filters are configured through cmake files in the 'BuildFilters' directory.
 function(xii_build_filter_init)
-	file(GLOB_RECURSE FILTER_FILES "${CMAKE_SOURCE_DIR}/${XII_SUBMODULE_PREFIX_PATH}/Source/BuildSystem/CMake/BuildFilters/*.BuildFilter")
+	file(GLOB_RECURSE FILTER_FILES "${XII_ROOT}/Source/BuildSystem/CMake/BuildFilters/*.BuildFilter")
 
 	get_property(XII_BUILD_FILTER_NAMES GLOBAL PROPERTY XII_BUILD_FILTER_NAMES)
 
@@ -671,7 +673,8 @@ function(xii_download_and_extract URL DEST_FOLDER DEST_FILENAME)
 	message(STATUS "Extracting '${FULL_FILENAME}'...")
 
 	if(${PKG_TYPE} MATCHES "7z")
-		execute_process(COMMAND "${XII_CONFIG_PATH_7ZA}"
+		set(FULL_7ZA_PATH "${XII_ROOT}/${XII_CONFIG_PATH_7ZA}")
+		execute_process(COMMAND "${FULL_7ZA_PATH}"
 			x "${PKG_FILE}"
 			-aoa
 			WORKING_DIRECTORY "${DEST_FOLDER}"

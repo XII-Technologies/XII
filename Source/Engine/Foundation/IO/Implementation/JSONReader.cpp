@@ -30,7 +30,10 @@ xiiResult xiiJSONReader::Parse(xiiStreamReader& ref_inputStream, xiiUInt32 uiFir
 
   // make sure there is one top level element
   if (m_Stack.IsEmpty())
-    m_Stack.PushBack(Element());
+  {
+    Element& e = m_Stack.ExpandAndGetRef();
+    e.m_Mode   = ElementType::None;
+  }
 
   return XII_SUCCESS;
 }
@@ -44,7 +47,7 @@ bool xiiJSONReader::OnVariable(xiiStringView sVarName)
 
 void xiiJSONReader::OnReadValue(xiiStringView sValue)
 {
-  if (m_Stack.PeekBack().m_Mode == ElementMode::Array)
+  if (m_Stack.PeekBack().m_Mode == ElementType::Array)
     m_Stack.PeekBack().m_Array.PushBack(std::move(xiiString(sValue)));
   else
     m_Stack.PeekBack().m_Dictionary[m_sLastName] = std::move(xiiString(sValue));
@@ -54,7 +57,7 @@ void xiiJSONReader::OnReadValue(xiiStringView sValue)
 
 void xiiJSONReader::OnReadValue(double fValue)
 {
-  if (m_Stack.PeekBack().m_Mode == ElementMode::Array)
+  if (m_Stack.PeekBack().m_Mode == ElementType::Array)
     m_Stack.PeekBack().m_Array.PushBack(xiiVariant(fValue));
   else
     m_Stack.PeekBack().m_Dictionary[m_sLastName] = xiiVariant(fValue);
@@ -64,7 +67,7 @@ void xiiJSONReader::OnReadValue(double fValue)
 
 void xiiJSONReader::OnReadValue(bool bValue)
 {
-  if (m_Stack.PeekBack().m_Mode == ElementMode::Array)
+  if (m_Stack.PeekBack().m_Mode == ElementType::Array)
     m_Stack.PeekBack().m_Array.PushBack(xiiVariant(bValue));
   else
     m_Stack.PeekBack().m_Dictionary[m_sLastName] = xiiVariant(bValue);
@@ -74,7 +77,7 @@ void xiiJSONReader::OnReadValue(bool bValue)
 
 void xiiJSONReader::OnReadValueNULL()
 {
-  if (m_Stack.PeekBack().m_Mode == ElementMode::Array)
+  if (m_Stack.PeekBack().m_Mode == ElementType::Array)
     m_Stack.PeekBack().m_Array.PushBack(xiiVariant());
   else
     m_Stack.PeekBack().m_Dictionary[m_sLastName] = xiiVariant();
@@ -85,7 +88,7 @@ void xiiJSONReader::OnReadValueNULL()
 void xiiJSONReader::OnBeginObject()
 {
   m_Stack.PushBack(Element());
-  m_Stack.PeekBack().m_Mode  = ElementMode::Dictionary;
+  m_Stack.PeekBack().m_Mode  = ElementType::Dictionary;
   m_Stack.PeekBack().m_sName = m_sLastName;
 
   m_sLastName.Clear();
@@ -99,7 +102,7 @@ void xiiJSONReader::OnEndObject()
   {
     Element& Parent = m_Stack[m_Stack.GetCount() - 2];
 
-    if (Parent.m_Mode == ElementMode::Array)
+    if (Parent.m_Mode == ElementType::Array)
     {
       Parent.m_Array.PushBack(Child.m_Dictionary);
     }
@@ -119,7 +122,7 @@ void xiiJSONReader::OnEndObject()
 void xiiJSONReader::OnBeginArray()
 {
   m_Stack.PushBack(Element());
-  m_Stack.PeekBack().m_Mode  = ElementMode::Array;
+  m_Stack.PeekBack().m_Mode  = ElementType::Array;
   m_Stack.PeekBack().m_sName = m_sLastName;
 
   m_sLastName.Clear();
@@ -127,19 +130,27 @@ void xiiJSONReader::OnBeginArray()
 
 void xiiJSONReader::OnEndArray()
 {
-  Element& Child  = m_Stack[m_Stack.GetCount() - 1];
-  Element& Parent = m_Stack[m_Stack.GetCount() - 2];
+  Element& Child = m_Stack[m_Stack.GetCount() - 1];
 
-  if (Parent.m_Mode == ElementMode::Array)
+  if (m_Stack.GetCount() > 1)
   {
-    Parent.m_Array.PushBack(Child.m_Array);
+    Element& Parent = m_Stack[m_Stack.GetCount() - 2];
+
+    if (Parent.m_Mode == ElementType::Array)
+    {
+      Parent.m_Array.PushBack(Child.m_Array);
+    }
+    else
+    {
+      Parent.m_Dictionary[Child.m_sName] = std::move(Child.m_Array);
+    }
+
+    m_Stack.PopBack();
   }
   else
   {
-    Parent.m_Dictionary[Child.m_sName] = std::move(Child.m_Array);
+    // do nothing, keep the top-level array
   }
-
-  m_Stack.PopBack();
 }
 
 void xiiJSONReader::OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn)

@@ -20,7 +20,7 @@ class xiiImageConversionTest : public xiiTestBaseClass
 public:
   virtual const char* GetTestName() const override { return "Image Conversion"; }
 
-  virtual xiiResult GetImage(xiiImage& ref_img) override
+  virtual xiiResult GetImage(xiiImage& ref_img, const xiiSubTestEntry& subTest, xiiUInt32 uiImageNumber) override
   {
     ref_img.ResetAndMove(std::move(m_Image));
     return XII_SUCCESS;

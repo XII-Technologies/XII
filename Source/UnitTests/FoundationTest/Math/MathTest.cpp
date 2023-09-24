@@ -47,28 +47,30 @@ XII_CREATE_SIMPLE_TEST_GROUP(Math);
 
 XII_CREATE_SIMPLE_TEST(Math, General)
 {
-  // XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constants")
-  //{
-  //  // Macro test
-  //  XII_TEST_BOOL(XII_8BIT(01010101) == 85);
-  //  XII_TEST_BOOL(XII_16BIT(10101010, 01010101) == 43605);
-  //  XII_TEST_BOOL(XII_32BIT(10000000, 11111111, 10101010, 01010101) == 2164238933);
+#if 0
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constants")
+  {
+    // Macro test
+    XII_TEST_BOOL(XII_8BIT(01010101) == 85);
+    XII_TEST_BOOL(XII_16BIT(10101010, 01010101) == 43605);
+    XII_TEST_BOOL(XII_32BIT(10000000, 11111111, 10101010, 01010101) == 2164238933);
 
-  //  // Infinity test
-  //  //                           Sign:_
-  //  //                       Exponent: _______  _
-  //  //                       Fraction:           _______  ________  ________
-  //  xiiIntFloatUnion uInf = { XII_32BIT(01111111, 10000000, 00000000, 00000000) };
-  //  XII_TEST_BOOL(uInf.f == xiiMath::FloatInfinity());
+    // Infinity test
+    //                           Sign:_
+    //                       Exponent: _______  _
+    //                       Fraction:           _______  ________  ________
+    xiiIntFloatUnion uInf = {XII_32BIT(01111111, 10000000, 00000000, 00000000)};
+    XII_TEST_BOOL(uInf.f == xiiMath::FloatInfinity());
 
-  //  // FloatMax_Pos test
-  //  xiiIntFloatUnion uMax = { XII_32BIT(01111111, 01111111, 11111111, 11111111) };
-  //  XII_TEST_BOOL(uMax.f == xiiMath::FloatMax_Pos());
+    // FloatMax_Pos test
+    xiiIntFloatUnion uMax = {XII_32BIT(01111111, 01111111, 11111111, 11111111)};
+    XII_TEST_BOOL(uMax.f == xiiMath::FloatMax_Pos());
 
-  //  // FloatMax_Neg test
-  //  xiiIntFloatUnion uMin = { XII_32BIT(11111111, 01111111, 11111111, 11111111) };
-  //  XII_TEST_BOOL(uMin.f == xiiMath::FloatMax_Neg());
-  //}
+    // FloatMax_Neg test
+    xiiIntFloatUnion uMin = {XII_32BIT(11111111, 01111111, 11111111, 11111111)};
+    XII_TEST_BOOL(uMin.f == xiiMath::FloatMax_Neg());
+  }
+#endif
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Sin")
   {
@@ -851,6 +853,52 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_INT(xiiMath::CountLeadingZeros(0b0001), 31);
     XII_TEST_INT(xiiMath::CountLeadingZeros(0xFFFFFFFF), 0);
     XII_TEST_INT(xiiMath::CountLeadingZeros(0), 32);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Bitmask_LowN")
+  {
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt32>(0), 0);
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt32>(1), 1);
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt32>(2), 3);
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt32>(3), 7);
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt32>(31), 0x7fffffff);
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt32>(32), 0xffffffffu);
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt32>(33), 0xffffffffu);
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt32>(50), 0xffffffffu);
+
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt64>(0), 0);
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt64>(1), 1);
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt64>(2), 3);
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt64>(3), 7);
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt64>(31), 0x7fffffff);
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt64>(32), 0xffffffffu);
+    XII_TEST_INT(xiiMath::Bitmask_LowN<xiiUInt64>(63), 0x7fffffffffffffffull);
+    XII_TEST_BOOL(xiiMath::Bitmask_LowN<xiiUInt64>(64) == 0xffffffffffffffffull);
+    XII_TEST_BOOL(xiiMath::Bitmask_LowN<xiiUInt64>(65) == 0xffffffffffffffffull);
+    XII_TEST_BOOL(xiiMath::Bitmask_LowN<xiiUInt64>(100) == 0xffffffffffffffffull);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Bitmask_HighN")
+  {
+    XII_TEST_INT(xiiMath::Bitmask_HighN<xiiUInt32>(0), 0u);
+    XII_TEST_INT(xiiMath::Bitmask_HighN<xiiUInt32>(1), 0x80000000u);
+    XII_TEST_INT(xiiMath::Bitmask_HighN<xiiUInt32>(2), 0xC0000000u);
+    XII_TEST_INT(xiiMath::Bitmask_HighN<xiiUInt32>(3), 0xE0000000u);
+    XII_TEST_INT(xiiMath::Bitmask_HighN<xiiUInt32>(31), 0xfffffffeu);
+    XII_TEST_INT(xiiMath::Bitmask_HighN<xiiUInt32>(32), 0xffffffffu);
+    XII_TEST_INT(xiiMath::Bitmask_HighN<xiiUInt32>(33), 0xffffffffu);
+    XII_TEST_INT(xiiMath::Bitmask_HighN<xiiUInt32>(60), 0xffffffffu);
+
+    XII_TEST_BOOL(xiiMath::Bitmask_HighN<xiiUInt64>(0) == 0);
+    XII_TEST_BOOL(xiiMath::Bitmask_HighN<xiiUInt64>(1) == 0x8000000000000000llu);
+    XII_TEST_BOOL(xiiMath::Bitmask_HighN<xiiUInt64>(2) == 0xC000000000000000llu);
+    XII_TEST_BOOL(xiiMath::Bitmask_HighN<xiiUInt64>(3) == 0xE000000000000000llu);
+    XII_TEST_BOOL(xiiMath::Bitmask_HighN<xiiUInt64>(31) == 0xfffffffe00000000llu);
+    XII_TEST_BOOL(xiiMath::Bitmask_HighN<xiiUInt64>(32) == 0xffffffff00000000llu);
+    XII_TEST_BOOL(xiiMath::Bitmask_HighN<xiiUInt64>(63) == 0xfffffffffffffffellu);
+    XII_TEST_BOOL(xiiMath::Bitmask_HighN<xiiUInt64>(64) == 0xffffffffffffffffull);
+    XII_TEST_BOOL(xiiMath::Bitmask_HighN<xiiUInt64>(65) == 0xffffffffffffffffull);
+    XII_TEST_BOOL(xiiMath::Bitmask_HighN<xiiUInt64>(1000) == 0xffffffffffffffffull);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "TryMultiply32")

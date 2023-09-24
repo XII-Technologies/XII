@@ -73,8 +73,15 @@ public:
   void               SetTestEnabled(xiiUInt32 uiTestIndex, bool bEnabled);
   void               SetSubTestEnabled(xiiUInt32 uiTestIndex, xiiUInt32 uiSubTestIndex, bool bEnabled);
 
-  xiiInt32            GetCurrentTestIndex() const { return m_iCurrentTestIndex; }
-  xiiInt32            GetCurrentSubTestIndex() const { return m_iCurrentSubTestIndex; }
+  xiiUInt32 GetCurrentTestIndex() const { return m_uiCurrentTestIndex; }
+  xiiUInt32 GetCurrentSubTestIndex() const { return m_uiCurrentSubTestIndex; }
+  xiiInt32  GetCurrentSubTestIdentifier() const;
+
+  /// \brief Returns the index of the sub-test with the given identifier.
+  ///
+  /// Only looks at the currently running test, assuming that the identifier is unique among its sub-tests.
+  xiiUInt32 FindSubTestIndexForSubTestIdentifier(xiiInt32 iSubTestIdentifier) const;
+
   xiiTestEntry*       GetTest(xiiUInt32 uiTestIndex);
   const xiiTestEntry* GetTest(xiiUInt32 uiTestIndex) const;
   bool                GetTestsRunning() const { return m_bTestsRunning; }
@@ -129,7 +136,8 @@ protected:
   /// \brief Receives xiiLog messages (via LogWriter) as well as test-framework internal logging. Any xiiTestOutput::Error will
   /// cause the test to fail.
   virtual void OutputImpl(xiiTestOutput::Enum Type, const char* szMsg);
-  virtual void TestResultImpl(xiiInt32 iSubTestIndex, bool bSuccess, double fDuration);
+  virtual void TestResultImpl(xiiUInt32 uiSubTestIndex, bool bSuccess, double fDuration);
+  virtual void SetSubTestStatusImpl(xiiUInt32 uiSubTestIndex, const char* szStatus);
   void         FlushAsserts();
   void         TimeoutThread();
   void         UpdateTestTimeout();
@@ -145,14 +153,15 @@ public:
 public:
   static XII_ALWAYS_INLINE xiiTestFramework* GetInstance() { return s_pInstance; }
 
-  /// \brief Returns whether to asset on test failure.
+  /// \brief Returns whether to assert on test failure.
   static bool GetAssertOnTestFail();
 
   static void Output(xiiTestOutput::Enum type, const char* szMsg, ...);
   static void OutputArgs(xiiTestOutput::Enum type, const char* szMsg, va_list szArgs);
   static void Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, xiiStringView sMsg, ...);
   static void Error(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, xiiStringView sMsg, va_list szArgs);
-  static void TestResult(xiiInt32 iSubTestIndex, bool bSuccess, double fDuration);
+  static void TestResult(xiiUInt32 uiSubTestIndex, bool bSuccess, double fDuration);
+  static void SetSubTestStatus(xiiUInt32 uiSubTestIndex, const char* szStatus);
 
   // static members
 private:
@@ -183,8 +192,8 @@ private:
   std::condition_variable m_TimeoutCV;
   std::thread             m_TimeoutThread;
 
-  xiiInt32  m_iExecutingTest           = 0;
-  xiiInt32  m_iExecutingSubTest        = 0;
+  xiiUInt32 m_uiExecutingTest          = 0;
+  xiiUInt32 m_uiExecutingSubTest       = 0;
   bool      m_bSubTestInitialized      = false;
   bool      m_bAbortTests              = false;
   xiiUInt8  m_uiPassesLeft             = 0;
@@ -208,9 +217,9 @@ private:
   std::string m_sImageReferenceOverrideFolderName;
 
 protected:
-  xiiInt32 m_iCurrentTestIndex    = -1;
-  xiiInt32 m_iCurrentSubTestIndex = -1;
-  bool     m_bTestsRunning        = false;
+  xiiUInt32 m_uiCurrentTestIndex    = xiiInvalidIndex;
+  xiiUInt32 m_uiCurrentSubTestIndex = xiiInvalidIndex;
+  bool      m_bTestsRunning         = false;
 };
 
 #ifdef XII_NV_OPTIMUS
