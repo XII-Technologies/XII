@@ -61,6 +61,12 @@ struct xiiPhysicsOverlapResultArray
   xiiHybridArray<xiiPhysicsOverlapResult, 16> m_Results;
 };
 
+struct xiiPhysicsTriangle
+{
+  xiiVec3                   m_Vertices[3];
+  const xiiSurfaceResource* m_pSurface = nullptr;
+};
+
 /// \brief Flags for selecting which types of physics shapes should be included in things like overlap queries and raycasts.
 ///
 /// This is mainly for optimization purposes. It is up to the physics integration to support some or all of these flags.
@@ -109,6 +115,11 @@ protected:
   }
 
 public:
+  /// \brief Searches for a collision layer with the given name and returns its index.
+  ///
+  /// Returns xiiInvalidIndex if no such collision layer exists.
+  virtual xiiUInt32 GetCollisionLayerByName(xiiStringView sName) const = 0;
+
   virtual bool Raycast(xiiPhysicsCastResult& out_result, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params, xiiPhysicsHitCollection collection = xiiPhysicsHitCollection::Closest) const = 0;
 
   virtual bool RaycastAll(xiiPhysicsCastResultArray& out_results, const xiiVec3& vStart, const xiiVec3& vDir, float fDistance, const xiiPhysicsQueryParameters& params) const = 0;
@@ -126,6 +137,8 @@ public:
   virtual void QueryShapesInSphere(xiiPhysicsOverlapResultArray& out_results, float fSphereRadius, const xiiVec3& vPosition, const xiiPhysicsQueryParameters& params) const = 0;
 
   virtual xiiVec3 GetGravity() const = 0;
+
+  virtual void QueryGeometryInBox(const xiiPhysicsQueryParameters& params, xiiBoundingBox box, xiiDynamicArray<xiiPhysicsTriangle>& out_triangles) const = 0;
 
   //////////////////////////////////////////////////////////////////////////
   // ABSTRACTION HELPERS

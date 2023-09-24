@@ -34,7 +34,8 @@ namespace xiiMath
   template <typename T>
   constexpr XII_ALWAYS_INLINE T Sign(T f)
   {
-    return (f < 0 ? T(-1) : f > 0 ? T(1) : 0);
+    return (f < 0 ? T(-1) : f > 0 ? T(1) :
+                                    0);
   }
 
   template <typename T>
@@ -182,7 +183,10 @@ namespace xiiMath
 #endif
   }
 
-  XII_ALWAYS_INLINE xiiUInt32 CountTrailingZeros(xiiUInt32 uiBitmask) { return (uiBitmask == 0) ? 32 : FirstBitLow(uiBitmask); }
+  XII_ALWAYS_INLINE xiiUInt32 CountTrailingZeros(xiiUInt32 uiBitmask)
+  {
+    return (uiBitmask == 0) ? 32 : FirstBitLow(uiBitmask);
+  }
 
   XII_ALWAYS_INLINE xiiUInt32 CountTrailingZeros(xiiUInt64 uiBitmask)
   {
@@ -192,8 +196,10 @@ namespace xiiMath
     return (numLow == 32) ? (32 + numHigh) : numLow;
   }
 
-  XII_ALWAYS_INLINE xiiUInt32 CountLeadingZeros(xiiUInt32 uiBitmask) { return (uiBitmask == 0) ? 32 : (31u - FirstBitHigh(uiBitmask)); }
-
+  XII_ALWAYS_INLINE xiiUInt32 CountLeadingZeros(xiiUInt32 uiBitmask)
+  {
+    return (uiBitmask == 0) ? 32 : (31u - FirstBitHigh(uiBitmask));
+  }
 
   XII_ALWAYS_INLINE xiiUInt32 CountBits(xiiUInt32 value)
   {
@@ -218,6 +224,18 @@ namespace xiiMath
     result += CountBits(xiiUInt32(value));
     result += CountBits(xiiUInt32(value >> 32));
     return result;
+  }
+
+  template <typename Type>
+  XII_ALWAYS_INLINE Type Bitmask_LowN(xiiUInt32 uiNumBitsToSet)
+  {
+    return (uiNumBitsToSet >= sizeof(Type) * 8) ? ~static_cast<Type>(0) : ((static_cast<Type>(1) << uiNumBitsToSet) - static_cast<Type>(1));
+  }
+
+  template <typename Type>
+  XII_ALWAYS_INLINE Type Bitmask_HighN(xiiUInt32 uiNumBitsToSet)
+  {
+    return (uiNumBitsToSet == 0) ? 0 : ~static_cast<Type>(0) << ((sizeof(Type) * 8) - xiiMath::Min<xiiUInt32>(uiNumBitsToSet, sizeof(Type) * 8));
   }
 
   template <typename T>
@@ -251,9 +269,15 @@ namespace xiiMath
     return (value >= edge ? T(1) : T(0));
   }
 
-  constexpr XII_FORCE_INLINE bool IsPowerOf2(xiiInt32 value) { return (value < 1) ? false : ((value & (value - 1)) == 0); }
+  constexpr XII_FORCE_INLINE bool IsPowerOf2(xiiInt32 value)
+  {
+    return (value < 1) ? false : ((value & (value - 1)) == 0);
+  }
 
-  constexpr XII_FORCE_INLINE bool IsPowerOf2(xiiUInt32 value) { return (value < 1) ? false : ((value & (value - 1)) == 0); }
+  constexpr XII_FORCE_INLINE bool IsPowerOf2(xiiUInt32 value)
+  {
+    return (value < 1) ? false : ((value & (value - 1)) == 0);
+  }
 
   template <typename Type>
   constexpr bool IsEqual(Type lhs, Type rhs, Type fEpsilon)
