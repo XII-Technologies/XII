@@ -161,5 +161,4 @@ xiiFloat16Vec4::operator xiiVec4() const
   return xiiVec4(x, y, z, w);
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_Math_Implementation_Float16);
