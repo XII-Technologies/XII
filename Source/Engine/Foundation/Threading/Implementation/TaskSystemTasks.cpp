@@ -180,13 +180,13 @@ xiiResult xiiTaskSystem::CancelTask(const xiiSharedPtr<xiiTask>& pTask, xiiOnTas
         {
           if (it->m_pTask == pTask)
           {
-            s_pState->m_Tasks[i].Remove(it);
-
             // we set the task to finished, even though it was not executed
             pTask->m_iRemainingRuns = 0;
 
             // tell the system that one task of that group is 'finished', to ensure its dependencies will get scheduled
             TaskHasFinished(std::move(it->m_pTask), it->m_pBelongsToGroup);
+
+            s_pState->m_Tasks[i].Remove(it);
             return XII_SUCCESS;
           }
 
