@@ -517,7 +517,7 @@ endfunction()
 # The build filter is intended to only build a subset of xiiEngine.
 # The build filters are configured through cmake files in the 'BuildFilters' directory.
 function(xii_build_filter_init)
-	file(GLOB_RECURSE FILTER_FILES "${CMAKE_SOURCE_DIR}/${XII_SUBMODULE_PREFIX_PATH}/Source/BuildSystem/CMake/BuildFilters/*.BuildFilter")
+	file(GLOB_RECURSE FILTER_FILES "${XII_ROOT}/Source/BuildSystem/CMake/BuildFilters/*.BuildFilter")
 
 	get_property(XII_BUILD_FILTER_NAMES GLOBAL PROPERTY XII_BUILD_FILTER_NAMES)
 
@@ -685,7 +685,8 @@ function(xii_download_and_extract URL DEST_FOLDER DEST_FILENAME)
 	message(STATUS "Extracting '${FULL_FILENAME}'...")
 
 	if(${PKG_TYPE} MATCHES "7z")
-		execute_process(COMMAND "${XII_CONFIG_PATH_7ZA}"
+		set(FULL_7ZA_PATH "${XII_ROOT}/${XII_CONFIG_PATH_7ZA}")
+		execute_process(COMMAND "${FULL_7ZA_PATH}"
 			x "${PKG_FILE}"
 			-aoa
 			WORKING_DIRECTORY "${DEST_FOLDER}"

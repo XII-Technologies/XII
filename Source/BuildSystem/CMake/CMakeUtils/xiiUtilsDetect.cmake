@@ -306,8 +306,8 @@ function(xii_detect_compiler_and_architecture)
 	set_property(GLOBAL PROPERTY XII_CMAKE_COMPILER_CLANG OFF)
 	set_property(GLOBAL PROPERTY XII_CMAKE_COMPILER_GCC OFF)
 
-	set(FILE_TO_COMPILE "${CMAKE_SOURCE_DIR}/${XII_SUBMODULE_PREFIX_PATH}/${XII_CMAKE_RELPATH}/ProbingSrc/ArchitectureDetect.c")
-	
+	set(FILE_TO_COMPILE "${XII_ROOT}/${XII_CMAKE_RELPATH}/ProbingSrc/ArchitectureDetect.c")
+
 	if (XII_SDK_DIR)
 		set(FILE_TO_COMPILE "${XII_SDK_DIR}/${XII_CMAKE_RELPATH}/ProbingSrc/ArchitectureDetect.c")
 	endif()
@@ -336,7 +336,7 @@ function(xii_detect_compiler_and_architecture)
 		else()
 			message(FATAL_ERROR "The compile test did not output the compiler. Compiler broken? Compiler output: ${COMPILE_OUTPUT}")
 		endif()
-		
+
 		if(XII_DETECTED_COMPILER STREQUAL "msvc")
 			if(${COMPILE_OUTPUT} MATCHES "MSC_VER:'([^']*)'")
 				set(XII_DETECTED_MSVC_VER ${CMAKE_MATCH_1} CACHE INTERNAL "")
@@ -532,7 +532,7 @@ function(xii_detect_version)
 		return()
 	endif()
 
-	xii_get_version("${CMAKE_SOURCE_DIR}/${XII_SUBMODULE_PREFIX_PATH}/version.txt" VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
+	xii_get_version("${XII_ROOT}/version.txt" VERSION_MAJOR VERSION_MINOR VERSION_PATCH)
 
 	set_property(GLOBAL PROPERTY XII_CMAKE_SDKVERSION_MAJOR "${VERSION_MAJOR}")
 	set_property(GLOBAL PROPERTY XII_CMAKE_SDKVERSION_MINOR "${VERSION_MINOR}")

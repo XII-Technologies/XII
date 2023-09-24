@@ -227,7 +227,7 @@ function(xii_set_build_flags_clang TARGET_NAME)
 
 	# Ignore any warnings caused by headers inside the ThirdParty directory.
 	if(XII_SUBMODULE_PREFIX_PATH)
-		target_compile_options(${TARGET_NAME} PRIVATE "--system-header-prefix=\"${CMAKE_SOURCE_DIR}/${XII_SUBMODULE_PREFIX_PATH}/Source/ThirdParty\"")
+		target_compile_options(${TARGET_NAME} PRIVATE "--system-header-prefix=\"${XII_ROOT}/Source/ThirdParty\"")
 	else()
 		target_compile_options(${TARGET_NAME} PRIVATE "--system-header-prefix=\"${CMAKE_SOURCE_DIR}/Source/ThirdParty\"")
 	endif()
