@@ -38,6 +38,7 @@ void xiiTestResultData::Reset()
   m_fTestDuration = 0.0;
   m_iFirstOutput  = -1;
   m_iLastOutput   = -1;
+  m_sCustomStatus.clear();
 }
 
 void xiiTestResultData::AddOutput(xiiInt32 iOutputIndex)
@@ -197,7 +198,7 @@ bool xiiTestFrameworkResult::WriteJsonToFile(const char* szFileName) const
         xiiUInt32 uiTests = GetTestCount();
         for (xiiUInt32 uiTestIdx = 0; uiTestIdx < uiTests; ++uiTestIdx)
         {
-          const xiiTestResultData& testResult = GetTestResultData(uiTestIdx, -1);
+          const xiiTestResultData& testResult = GetTestResultData(uiTestIdx, xiiInvalidIndex);
           js.BeginObject();
           {
             js.AddVariableString("m_sName", testResult.m_sName.c_str());
@@ -308,29 +309,31 @@ xiiUInt32 xiiTestFrameworkResult::GetSubTestCount(xiiUInt32 uiTestIndex, xiiTest
   return uiAccumulator;
 }
 
-xiiInt32 xiiTestFrameworkResult::GetTestIndexByName(const char* szTestName) const
+xiiUInt32 xiiTestFrameworkResult::GetTestIndexByName(const char* szTestName) const
 {
-  xiiInt32 iTestCount = (xiiInt32)GetTestCount();
-  for (xiiInt32 i = 0; i < iTestCount; ++i)
+  const xiiUInt32 uiTestCount = GetTestCount();
+  for (xiiUInt32 i = 0; i < uiTestCount; ++i)
   {
     if (m_Tests[i].m_Result.m_sName.compare(szTestName) == 0)
       return i;
   }
-  return -1;
+
+  return xiiInvalidIndex;
 }
 
-xiiInt32 xiiTestFrameworkResult::GetSubTestIndexByName(xiiUInt32 uiTestIndex, const char* szSubTestName) const
+xiiUInt32 xiiTestFrameworkResult::GetSubTestIndexByName(xiiUInt32 uiTestIndex, const char* szSubTestName) const
 {
   if (uiTestIndex >= GetTestCount())
-    return -1;
+    return xiiInvalidIndex;
 
-  xiiInt32 iSubTestCount = (xiiInt32)GetSubTestCount(uiTestIndex);
-  for (xiiInt32 i = 0; i < iSubTestCount; ++i)
+  const xiiUInt32 uiSubTestCount = GetSubTestCount(uiTestIndex);
+  for (xiiUInt32 i = 0; i < uiSubTestCount; ++i)
   {
     if (m_Tests[uiTestIndex].m_SubTests[i].m_Result.m_sName.compare(szSubTestName) == 0)
       return i;
   }
-  return -1;
+
+  return xiiInvalidIndex;
 }
 
 double xiiTestFrameworkResult::GetTotalTestDuration() const
@@ -344,19 +347,19 @@ double xiiTestFrameworkResult::GetTotalTestDuration() const
   return fTotalTestDuration;
 }
 
-const xiiTestResultData& xiiTestFrameworkResult::GetTestResultData(xiiUInt32 uiTestIndex, xiiInt32 iSubTestIndex) const
+const xiiTestResultData& xiiTestFrameworkResult::GetTestResultData(xiiUInt32 uiTestIndex, xiiUInt32 uiSubTestIndex) const
 {
-  return (iSubTestIndex == -1) ? m_Tests[uiTestIndex].m_Result : m_Tests[uiTestIndex].m_SubTests[iSubTestIndex].m_Result;
+  return (uiSubTestIndex == xiiInvalidIndex) ? m_Tests[uiTestIndex].m_Result : m_Tests[uiTestIndex].m_SubTests[uiSubTestIndex].m_Result;
 }
 
-void xiiTestFrameworkResult::TestOutput(xiiUInt32 uiTestIndex, xiiInt32 iSubTestIndex, xiiTestOutput::Enum type, const char* szMsg)
+void xiiTestFrameworkResult::TestOutput(xiiUInt32 uiTestIndex, xiiUInt32 uiSubTestIndex, xiiTestOutput::Enum type, const char* szMsg)
 {
-  if (uiTestIndex != -1)
+  if (uiTestIndex != xiiInvalidIndex)
   {
-    m_Tests[uiTestIndex].m_Result.AddOutput((xiiInt32)m_TestOutput.size());
-    if (iSubTestIndex != -1)
+    m_Tests[uiTestIndex].m_Result.AddOutput((xiiUInt32)m_TestOutput.size());
+    if (uiSubTestIndex != xiiInvalidIndex)
     {
-      m_Tests[uiTestIndex].m_SubTests[iSubTestIndex].m_Result.AddOutput((xiiInt32)m_TestOutput.size());
+      m_Tests[uiTestIndex].m_SubTests[uiSubTestIndex].m_Result.AddOutput((xiiUInt32)m_TestOutput.size());
     }
   }
 
@@ -366,10 +369,10 @@ void xiiTestFrameworkResult::TestOutput(xiiUInt32 uiTestIndex, xiiInt32 iSubTest
   outputMessage.m_sMessage.assign(szMsg);
 }
 
-void xiiTestFrameworkResult::TestError(xiiUInt32 uiTestIndex, xiiInt32 iSubTestIndex, const char* szError, const char* szBlock, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg)
+void xiiTestFrameworkResult::TestError(xiiUInt32 uiTestIndex, xiiUInt32 uiSubTestIndex, const char* szError, const char* szBlock, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg)
 {
   // In case there is no message set, we use the error as the message.
-  TestOutput(uiTestIndex, iSubTestIndex, xiiTestOutput::Error, szError);
+  TestOutput(uiTestIndex, uiSubTestIndex, xiiTestOutput::Error, szError);
   m_TestOutput.rbegin()->m_iErrorIndex = (xiiInt32)m_Errors.size();
 
   m_Errors.push_back(xiiTestErrorMessage());
@@ -382,9 +385,9 @@ void xiiTestFrameworkResult::TestError(xiiUInt32 uiTestIndex, xiiInt32 iSubTestI
   errorMessage.m_sMessage.assign(szMsg);
 }
 
-void xiiTestFrameworkResult::TestResult(xiiUInt32 uiTestIndex, xiiInt32 iSubTestIndex, bool bSuccess, double fDuration)
+void xiiTestFrameworkResult::TestResult(xiiUInt32 uiTestIndex, xiiUInt32 uiSubTestIndex, bool bSuccess, double fDuration)
 {
-  xiiTestResultData& Result = (iSubTestIndex == -1) ? m_Tests[uiTestIndex].m_Result : m_Tests[uiTestIndex].m_SubTests[iSubTestIndex].m_Result;
+  xiiTestResultData& Result = (uiSubTestIndex == xiiInvalidIndex) ? m_Tests[uiTestIndex].m_Result : m_Tests[uiTestIndex].m_SubTests[uiSubTestIndex].m_Result;
 
   Result.m_bExecuted     = true;
   Result.m_bSuccess      = bSuccess;
@@ -393,36 +396,44 @@ void xiiTestFrameworkResult::TestResult(xiiUInt32 uiTestIndex, xiiInt32 iSubTest
   // Accumulate sub-test duration onto test duration to get duration feedback while the sub-tests are running.
   // Final time will be set again once the entire test finishes and currently these times are identical as
   // init and de-init times aren't measured at the moment due to missing timer when engine is shut down.
-  if (iSubTestIndex != -1)
+  if (uiSubTestIndex != xiiInvalidIndex)
   {
     m_Tests[uiTestIndex].m_Result.m_fTestDuration += fDuration;
   }
 }
 
-void xiiTestFrameworkResult::AddAsserts(xiiUInt32 uiTestIndex, xiiInt32 iSubTestIndex, int iCount)
+void xiiTestFrameworkResult::AddAsserts(xiiUInt32 uiTestIndex, xiiUInt32 uiSubTestIndex, int iCount)
 {
-  if (uiTestIndex != -1)
+  if (uiTestIndex != xiiInvalidIndex)
   {
     m_Tests[uiTestIndex].m_Result.m_iTestAsserts += iCount;
   }
 
-  if (iSubTestIndex != -1)
+  if (uiSubTestIndex != xiiInvalidIndex)
   {
-    m_Tests[uiTestIndex].m_SubTests[iSubTestIndex].m_Result.m_iTestAsserts += iCount;
+    m_Tests[uiTestIndex].m_SubTests[uiSubTestIndex].m_Result.m_iTestAsserts += iCount;
   }
 }
 
-xiiUInt32 xiiTestFrameworkResult::GetOutputMessageCount(xiiInt32 iTestIndex, xiiInt32 iSubTestIndex, xiiTestOutput::Enum type) const
+void xiiTestFrameworkResult::SetCustomStatus(xiiUInt32 uiTestIndex, xiiUInt32 uiSubTestIndex, const char* szCustomStatus)
 {
-  if (iTestIndex == -1 && type == xiiTestOutput::AllOutputTypes)
+  if (uiTestIndex != xiiInvalidIndex && uiSubTestIndex != xiiInvalidIndex)
+  {
+    m_Tests[uiTestIndex].m_SubTests[uiSubTestIndex].m_Result.m_sCustomStatus = szCustomStatus;
+  }
+}
+
+xiiUInt32 xiiTestFrameworkResult::GetOutputMessageCount(xiiUInt32 uiTestIndex, xiiUInt32 uiSubTestIndex, xiiTestOutput::Enum type) const
+{
+  if (uiTestIndex == xiiInvalidIndex && type == xiiTestOutput::AllOutputTypes)
     return (xiiUInt32)m_TestOutput.size();
 
   xiiInt32 iStartIdx = 0;
   xiiInt32 iEndIdx   = (xiiInt32)m_TestOutput.size() - 1;
 
-  if (iTestIndex != -1)
+  if (uiTestIndex != xiiInvalidIndex)
   {
-    const xiiTestResultData& result = GetTestResultData(iTestIndex, iSubTestIndex);
+    const xiiTestResultData& result = GetTestResultData(uiTestIndex, uiSubTestIndex);
     iStartIdx                       = result.m_iFirstOutput;
     iEndIdx                         = result.m_iLastOutput;
 
@@ -449,15 +460,15 @@ const xiiTestOutputMessage* xiiTestFrameworkResult::GetOutputMessage(xiiUInt32 u
   return &m_TestOutput[uiOutputMessageIdx];
 }
 
-xiiUInt32 xiiTestFrameworkResult::GetErrorMessageCount(xiiInt32 iTestIndex, xiiInt32 iSubTestIndex) const
+xiiUInt32 xiiTestFrameworkResult::GetErrorMessageCount(xiiUInt32 uiTestIndex, xiiUInt32 uiSubTestIndex) const
 {
   // If no test is given we can simply return the total error count.
-  if (iTestIndex == -1)
+  if (uiTestIndex == xiiInvalidIndex)
   {
     return (xiiUInt32)m_Errors.size();
   }
 
-  return GetOutputMessageCount(iTestIndex, iSubTestIndex, xiiTestOutput::Error);
+  return GetOutputMessageCount(uiTestIndex, uiSubTestIndex, xiiTestOutput::Error);
 }
 
 const xiiTestErrorMessage* xiiTestFrameworkResult::GetErrorMessage(xiiUInt32 uiErrorMessageIdx) const
@@ -479,7 +490,5 @@ void xiiTestFrameworkResult::xiiTestResult::Reset()
     m_SubTests[uiSubTest].m_Result.Reset();
   }
 }
-
-
 
 XII_STATICLINK_FILE(TestFramework, TestFramework_Framework_TestResults);

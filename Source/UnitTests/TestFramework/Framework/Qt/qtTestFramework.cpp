@@ -26,10 +26,16 @@ void xiiQtTestFramework::OutputImpl(xiiTestOutput::Enum Type, const char* szMsg)
   xiiTestFramework::OutputImpl(Type, szMsg);
 }
 
-void xiiQtTestFramework::TestResultImpl(xiiInt32 iSubTestIndex, bool bSuccess, double fDuration)
+void xiiQtTestFramework::TestResultImpl(xiiUInt32 uiSubTestIndex, bool bSuccess, double fDuration)
 {
-  xiiTestFramework::TestResultImpl(iSubTestIndex, bSuccess, fDuration);
-  Q_EMIT TestResultReceived(m_iCurrentTestIndex, iSubTestIndex);
+  xiiTestFramework::TestResultImpl(uiSubTestIndex, bSuccess, fDuration);
+  Q_EMIT TestResultReceived(m_uiCurrentTestIndex, uiSubTestIndex);
+}
+
+void xiiQtTestFramework::SetSubTestStatusImpl(xiiUInt32 uiSubTestIndex, const char* szStatus)
+{
+  xiiTestFramework::SetSubTestStatusImpl(uiSubTestIndex, szStatus);
+  Q_EMIT TestResultReceived(m_uiCurrentTestIndex, uiSubTestIndex);
 }
 
 #endif

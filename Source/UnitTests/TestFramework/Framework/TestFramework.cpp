@@ -148,6 +148,7 @@ void xiiTestFramework::Initialize()
   xiiSetAssertHandler(TestAssertHandler);
 
   CreateOutputFolder();
+  xiiFileSystem::DetectSdkRootDirectory().IgnoreResult();
 
   xiiCommandLineUtils& cmd = *xiiCommandLineUtils::GetGlobalInstance();
   // figure out which tests exist
@@ -172,8 +173,6 @@ void xiiTestFramework::Initialize()
   AutoSaveTestOrder();
 
   m_bIsInitialized = true;
-
-  xiiFileSystem::DetectSdkRootDirectory().IgnoreResult();
 }
 
 void xiiTestFramework::DeInitialize()
@@ -249,8 +248,8 @@ void xiiTestFramework::GatherAllTests()
   m_iErrorCount         = 0;
   m_iTestsFailed        = 0;
   m_iTestsPassed        = 0;
-  m_iExecutingTest      = -1;
-  m_iExecutingSubTest   = -1;
+  m_uiExecutingTest     = xiiInvalidIndex;
+  m_uiExecutingSubTest  = xiiInvalidIndex;
   m_bSubTestInitialized = false;
 
   // first let all simple tests register themselves
@@ -459,8 +458,7 @@ void xiiTestFramework::UpdateReferenceImages()
 
 #  endif
 
-  // If some target files already exist somewhere (ie. custom folders for the tests),
-  // overwrite the existing files in their location
+  // If some target files already exist somewhere (ie. custom folders for the tests), overwrite the existing files in their location
   {
     xiiHybridArray<xiiString, 32> targetFolders;
     xiiStringBuilder              sFullPath, sTargetPath;
@@ -622,8 +620,8 @@ void xiiTestFramework::ResetTests()
   m_iErrorCount         = 0;
   m_iTestsFailed        = 0;
   m_iTestsPassed        = 0;
-  m_iExecutingTest      = -1;
-  m_iExecutingSubTest   = -1;
+  m_uiExecutingTest     = xiiInvalidIndex;
+  m_uiExecutingSubTest  = xiiInvalidIndex;
   m_bSubTestInitialized = false;
   m_bAbortTests         = false;
 
@@ -660,17 +658,17 @@ xiiTestAppRun xiiTestFramework::RunTestExecutionLoop()
 #endif
 
 
-  if (m_iExecutingTest < 0)
+  if (m_uiExecutingTest == xiiInvalidIndex)
   {
     StartTests();
-    m_iExecutingTest = 0;
-    XII_ASSERT_DEV(m_iExecutingSubTest == -1, "Invalid test framework state");
+    m_uiExecutingTest = 0;
+    XII_ASSERT_DEV(m_uiExecutingSubTest == xiiInvalidIndex, "Invalid test framework state");
     XII_ASSERT_DEV(!m_bSubTestInitialized, "Invalid test framework state");
   }
 
   ExecuteNextTest();
 
-  if (m_iExecutingTest >= (xiiInt32)m_TestEntries.size())
+  if (m_uiExecutingTest >= (xiiUInt32)m_TestEntries.size())
   {
     EndTests();
 
@@ -678,8 +676,8 @@ xiiTestAppRun xiiTestFramework::RunTestExecutionLoop()
     {
       --m_uiPassesLeft;
 
-      m_iExecutingTest    = -1;
-      m_iExecutingSubTest = -1;
+      m_uiExecutingTest    = xiiInvalidIndex;
+      m_uiExecutingSubTest = xiiInvalidIndex;
 
       return xiiTestAppRun::Continue;
     }
@@ -743,39 +741,39 @@ static void LogWriter(const xiiLoggingEventData& e)
 
 void xiiTestFramework::ExecuteNextTest()
 {
-  XII_ASSERT_DEV(m_iExecutingTest >= 0, "Invalid current test.");
+  XII_ASSERT_DEV(m_uiExecutingTest >= 0, "Invalid current test.");
 
-  if (m_iExecutingTest == (xiiInt32)GetTestCount())
+  if (m_uiExecutingTest == (xiiUInt32)GetTestCount())
     return;
 
-  if (!m_TestEntries[m_iExecutingTest].m_bEnableTest)
+  if (!m_TestEntries[m_uiExecutingTest].m_bEnableTest)
   {
     // next time run the next test and start with the first subtest
-    m_iExecutingTest++;
-    m_iExecutingSubTest = -1;
+    m_uiExecutingTest++;
+    m_uiExecutingSubTest = xiiInvalidIndex;
     return;
   }
 
-  xiiTestEntry&     TestEntry  = m_TestEntries[m_iExecutingTest];
-  xiiTestBaseClass* pTestClass = m_TestEntries[m_iExecutingTest].m_pTest;
+  xiiTestEntry&     TestEntry  = m_TestEntries[m_uiExecutingTest];
+  xiiTestBaseClass* pTestClass = m_TestEntries[m_uiExecutingTest].m_pTest;
 
   // Execute test
   {
-    if (m_iExecutingSubTest == -1) // no subtest has run yet, so initialize the test first
+    if (m_uiExecutingSubTest == xiiInvalidIndex) // no subtest has run yet, so initialize the test first
     {
       if (m_bAbortTests)
       {
-        m_iExecutingTest    = (xiiInt32)m_TestEntries.size(); // skip to the end of all tests
-        m_iExecutingSubTest = -1;
+        m_uiExecutingTest    = (xiiUInt32)m_TestEntries.size(); // skip to the end of all tests
+        m_uiExecutingSubTest = xiiInvalidIndex;
         return;
       }
 
-      m_iExecutingSubTest  = 0;
+      m_uiExecutingSubTest = 0;
       m_fTotalTestDuration = 0.0;
 
       // Reset assert counter. This variable is used to reduce the overhead of counting millions of asserts.
-      s_iAssertCounter    = 0;
-      m_iCurrentTestIndex = m_iExecutingTest;
+      s_iAssertCounter     = 0;
+      m_uiCurrentTestIndex = m_uiExecutingTest;
       // Log writer translates engine warnings / errors into test framework error messages.
       xiiGlobalLog::AddLogWriter(LogWriter);
 
@@ -789,24 +787,24 @@ void xiiTestFramework::ExecuteNextTest()
         UpdateTestTimeout();
         if (pTestClass->DoTestInitialization().Failed())
         {
-          m_iExecutingSubTest = (xiiInt32)TestEntry.m_SubTests.size(); // make sure all sub-tests are skipped
+          m_uiExecutingSubTest = (xiiUInt32)TestEntry.m_SubTests.size(); // make sure all sub-tests are skipped
         }
       }
       else
       {
         xiiTestFramework::Output(xiiTestOutput::ImportantInfo, "Test not available: %s", TestEntry.m_sNotAvailableReason.c_str());
-        m_iExecutingSubTest = (xiiInt32)TestEntry.m_SubTests.size(); // make sure all sub-tests are skipped
+        m_uiExecutingSubTest = (xiiUInt32)TestEntry.m_SubTests.size(); // make sure all sub-tests are skipped
       }
     }
 
-    if (m_iExecutingSubTest < (xiiInt32)TestEntry.m_SubTests.size())
+    if (m_uiExecutingSubTest < (xiiUInt32)TestEntry.m_SubTests.size())
     {
-      xiiSubTestEntry& subTest            = TestEntry.m_SubTests[m_iExecutingSubTest];
+      xiiSubTestEntry& subTest            = TestEntry.m_SubTests[m_uiExecutingSubTest];
       xiiInt32         iSubTestIdentifier = subTest.m_iSubTestIdentifier;
 
       if (!subTest.m_bEnableTest)
       {
-        ++m_iExecutingSubTest;
+        ++m_uiExecutingSubTest;
         return;
       }
 
@@ -816,8 +814,8 @@ void xiiTestFramework::ExecuteNextTest()
         {
           // tests shall be aborted, so do not start a new one
 
-          m_iExecutingTest    = (xiiInt32)m_TestEntries.size(); // skip to the end of all tests
-          m_iExecutingSubTest = -1;
+          m_uiExecutingTest    = (xiiInt32)m_TestEntries.size(); // skip to the end of all tests
+          m_uiExecutingSubTest = xiiInvalidIndex;
           return;
         }
 
@@ -826,7 +824,7 @@ void xiiTestFramework::ExecuteNextTest()
 
         // First flush of assert counter, these are all asserts during test init.
         FlushAsserts();
-        m_iCurrentSubTestIndex = m_iExecutingSubTest;
+        m_uiCurrentSubTestIndex = m_uiExecutingSubTest;
         xiiTestFramework::Output(xiiTestOutput::BeginBlock, "Executing Sub-Test: '%s'", subTest.m_szSubTestName);
 
         // *** Sub-Test Initialization ***
@@ -875,23 +873,23 @@ void xiiTestFramework::ExecuteNextTest()
         UpdateTestTimeout();
         pTestClass->DoSubTestDeInitialization(iSubTestIdentifier);
 
-        bool bSubTestSuccess = m_bSubTestInitialized && (m_Result.GetErrorMessageCount(m_iExecutingTest, m_iExecutingSubTest) == 0);
-        xiiTestFramework::TestResult(m_iExecutingSubTest, bSubTestSuccess, m_fTotalSubTestDuration);
+        bool bSubTestSuccess = m_bSubTestInitialized && (m_Result.GetErrorMessageCount(m_uiExecutingTest, m_uiExecutingSubTest) == 0);
+        xiiTestFramework::TestResult(m_uiExecutingSubTest, bSubTestSuccess, m_fTotalSubTestDuration);
 
         m_fTotalTestDuration += m_fTotalSubTestDuration;
 
         // advance to the next (sub) test
         m_bSubTestInitialized = false;
-        ++m_iExecutingSubTest;
+        ++m_uiExecutingSubTest;
 
         // Second flush of assert counter, these are all asserts for the current subtest.
         FlushAsserts();
         xiiTestFramework::Output(xiiTestOutput::EndBlock, "");
-        m_iCurrentSubTestIndex = -1;
+        m_uiCurrentSubTestIndex = xiiInvalidIndex;
       }
     }
 
-    if (m_bAbortTests || m_iExecutingSubTest >= (xiiInt32)TestEntry.m_SubTests.size())
+    if (m_bAbortTests || m_uiExecutingSubTest >= (xiiInt32)TestEntry.m_SubTests.size())
     {
       // *** Test De-Initialization ***
       if (TestEntry.m_sNotAvailableReason.empty())
@@ -908,11 +906,11 @@ void xiiTestFramework::ExecuteNextTest()
       bool bTestSuccess = m_iErrorCountBeforeTest == GetTotalErrorCount();
       xiiTestFramework::TestResult(-1, bTestSuccess, m_fTotalTestDuration);
       xiiTestFramework::Output(xiiTestOutput::EndBlock, "");
-      m_iCurrentTestIndex = -1;
+      m_uiCurrentTestIndex = xiiInvalidIndex;
 
       // advance to the next test
-      m_iExecutingTest++;
-      m_iExecutingSubTest = -1;
+      m_uiExecutingTest++;
+      m_uiExecutingSubTest = xiiInvalidIndex;
     }
   }
 }
@@ -928,9 +926,9 @@ void xiiTestFramework::EndTests()
   if (!m_Settings.m_sJsonOutput.empty())
     m_Result.WriteJsonToFile(m_Settings.m_sJsonOutput.c_str());
 
-  m_iExecutingTest    = -1;
-  m_iExecutingSubTest = -1;
-  m_bAbortTests       = false;
+  m_uiExecutingTest    = xiiInvalidIndex;
+  m_uiExecutingSubTest = xiiInvalidIndex;
+  m_bAbortTests        = false;
 
   // Stop timeout thread.
   {
@@ -1022,6 +1020,25 @@ void xiiTestFramework::SetSubTestEnabled(xiiUInt32 uiTestIndex, xiiUInt32 uiSubT
   m_TestEntries[uiTestIndex].m_SubTests[uiSubTestIndex].m_bEnableTest = bEnabled;
 }
 
+xiiInt32 xiiTestFramework::GetCurrentSubTestIdentifier() const
+{
+  return GetCurrentSubTest()->m_iSubTestIdentifier;
+}
+
+xiiUInt32 xiiTestFramework::FindSubTestIndexForSubTestIdentifier(xiiInt32 iSubTestIdentifier) const
+{
+  const xiiTestEntry* pTest = GetCurrentTest();
+
+  const xiiUInt32 uiSubTests = (xiiUInt32)pTest->m_SubTests.size();
+  for (xiiUInt32 i = 0; i < uiSubTests; ++i)
+  {
+    if (pTest->m_SubTests[i].m_iSubTestIdentifier == iSubTestIdentifier)
+      return i;
+  }
+
+  return xiiInvalidIndex;
+}
+
 xiiTestEntry* xiiTestFramework::GetTest(xiiUInt32 uiTestIndex)
 {
   if (uiTestIndex >= GetTestCount())
@@ -1047,10 +1064,10 @@ const xiiSubTestEntry* xiiTestFramework::GetCurrentSubTest() const
 {
   if (auto pTest = GetCurrentTest())
   {
-    if (m_iCurrentSubTestIndex >= (xiiInt32)pTest->m_SubTests.size())
+    if (m_uiCurrentSubTestIndex >= (xiiInt32)pTest->m_SubTests.size())
       return nullptr;
 
-    return &pTest->m_SubTests[m_iCurrentSubTestIndex];
+    return &pTest->m_SubTests[m_uiCurrentSubTestIndex];
   }
 
   return nullptr;
@@ -1114,14 +1131,14 @@ void xiiTestFramework::OutputImpl(xiiTestOutput::Enum Type, const char* szMsg)
   if (g_bBlockOutput)
     return;
 
-  m_Result.TestOutput(m_iCurrentTestIndex, m_iCurrentSubTestIndex, Type, szMsg);
+  m_Result.TestOutput(m_uiCurrentTestIndex, m_uiCurrentSubTestIndex, Type, szMsg);
 }
 
 void xiiTestFramework::ErrorImpl(const char* szError, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg)
 {
   std::scoped_lock _(m_OutputMutex);
 
-  m_Result.TestError(m_iCurrentTestIndex, m_iCurrentSubTestIndex, szError, xiiTestFramework::s_szTestBlockName, szFile, iLine, szFunction, szMsg);
+  m_Result.TestError(m_uiCurrentTestIndex, m_uiCurrentSubTestIndex, szError, xiiTestFramework::s_szTestBlockName, szFile, iLine, szFunction, szMsg);
 
   g_bBlockOutput = true;
   xiiTestFramework::Output(xiiTestOutput::Error, "%s", szError); // This will also increase the global error count.
@@ -1141,11 +1158,11 @@ void xiiTestFramework::ErrorImpl(const char* szError, const char* szFile, xiiInt
   g_bBlockOutput = false;
 }
 
-void xiiTestFramework::TestResultImpl(xiiInt32 iSubTestIndex, bool bSuccess, double fDuration)
+void xiiTestFramework::TestResultImpl(xiiUInt32 uiSubTestIndex, bool bSuccess, double fDuration)
 {
   std::scoped_lock _(m_OutputMutex);
 
-  m_Result.TestResult(m_iCurrentTestIndex, iSubTestIndex, bSuccess, fDuration);
+  m_Result.TestResult(m_uiCurrentTestIndex, uiSubTestIndex, bSuccess, fDuration);
 
   const xiiUInt32 uiMin = (xiiUInt32)(fDuration / 1000.0 / 60.0);
   const xiiUInt32 uiSec = (xiiUInt32)(fDuration / 1000.0 - uiMin * 60.0);
@@ -1153,9 +1170,9 @@ void xiiTestFramework::TestResultImpl(xiiInt32 iSubTestIndex, bool bSuccess, dou
 
   xiiTestFramework::Output(xiiTestOutput::Duration, "%i:%02i:%03i", uiMin, uiSec, uiMS);
 
-  if (iSubTestIndex == -1)
+  if (uiSubTestIndex == xiiInvalidIndex)
   {
-    const char* szTestName = m_TestEntries[m_iCurrentTestIndex].m_szTestName;
+    const char* szTestName = m_TestEntries[m_uiCurrentTestIndex].m_szTestName;
     if (bSuccess)
     {
       m_iTestsPassed++;
@@ -1163,32 +1180,49 @@ void xiiTestFramework::TestResultImpl(xiiInt32 iSubTestIndex, bool bSuccess, dou
 
       if (GetSettings().m_bAutoDisableSuccessfulTests)
       {
-        m_TestEntries[m_iCurrentTestIndex].m_bEnableTest = false;
+        m_TestEntries[m_uiCurrentTestIndex].m_bEnableTest = false;
         xiiTestFramework::AutoSaveTestOrder();
       }
     }
     else
     {
       m_iTestsFailed++;
-      xiiTestFramework::Output(xiiTestOutput::Error, "Test '%s' failed: %i Errors (%.2f sec).", szTestName, (xiiUInt32)m_Result.GetErrorMessageCount(m_iCurrentTestIndex, iSubTestIndex), m_fTotalTestDuration / 1000.0f);
+      xiiTestFramework::Output(xiiTestOutput::Error, "Test '%s' failed: %i Errors (%.2f sec).", szTestName, (xiiUInt32)m_Result.GetErrorMessageCount(m_uiCurrentTestIndex, uiSubTestIndex), m_fTotalTestDuration / 1000.0f);
     }
   }
   else
   {
-    const char* szSubTestName = m_TestEntries[m_iCurrentTestIndex].m_SubTests[iSubTestIndex].m_szSubTestName;
+    const char* szSubTestName = m_TestEntries[m_uiCurrentTestIndex].m_SubTests[uiSubTestIndex].m_szSubTestName;
     if (bSuccess)
     {
       xiiTestFramework::Output(xiiTestOutput::Success, "Sub-Test '%s' succeeded (%.2f sec).", szSubTestName, m_fTotalSubTestDuration / 1000.0f);
 
       if (GetSettings().m_bAutoDisableSuccessfulTests)
       {
-        m_TestEntries[m_iCurrentTestIndex].m_SubTests[iSubTestIndex].m_bEnableTest = false;
+        m_TestEntries[m_uiCurrentTestIndex].m_SubTests[uiSubTestIndex].m_bEnableTest = false;
         xiiTestFramework::AutoSaveTestOrder();
       }
     }
     else
     {
-      xiiTestFramework::Output(xiiTestOutput::Error, "Sub-Test '%s' failed: %i Errors (%.2f sec).", szSubTestName, (xiiUInt32)m_Result.GetErrorMessageCount(m_iCurrentTestIndex, iSubTestIndex), m_fTotalSubTestDuration / 1000.0f);
+      xiiTestFramework::Output(xiiTestOutput::Error, "Sub-Test '%s' failed: %i Errors (%.2f sec).", szSubTestName, (xiiUInt32)m_Result.GetErrorMessageCount(m_uiCurrentTestIndex, uiSubTestIndex), m_fTotalSubTestDuration / 1000.0f);
+    }
+  }
+}
+
+void xiiTestFramework::SetSubTestStatusImpl(xiiUInt32 uiSubTestIndex, const char* szStatus)
+{
+  std::scoped_lock _(m_OutputMutex);
+
+  if (m_uiCurrentTestIndex != xiiInvalidIndex && uiSubTestIndex != xiiInvalidIndex)
+  {
+    const xiiSubTestEntry& subtest = m_TestEntries[m_uiCurrentTestIndex].m_SubTests[uiSubTestIndex];
+
+    m_Result.SetCustomStatus(m_uiCurrentTestIndex, uiSubTestIndex, szStatus);
+
+    if (!xiiStringUtils::IsNullOrEmpty(szStatus))
+    {
+      xiiTestFramework::Output(xiiTestOutput::Details, "Status of sub-test '%s': %s.", subtest.m_szSubTestName, szStatus);
     }
   }
 }
@@ -1196,7 +1230,7 @@ void xiiTestFramework::TestResultImpl(xiiInt32 iSubTestIndex, bool bSuccess, dou
 void xiiTestFramework::FlushAsserts()
 {
   std::scoped_lock _(m_OutputMutex);
-  m_Result.AddAsserts(m_iCurrentTestIndex, m_iCurrentSubTestIndex, s_iAssertCounter);
+  m_Result.AddAsserts(m_uiCurrentTestIndex, m_uiCurrentSubTestIndex, s_iAssertCounter);
   s_iAssertCounter = 0;
 }
 
@@ -1216,9 +1250,11 @@ void xiiTestFramework::ScheduleDepthImageComparison(xiiUInt32 uiImageNumber, xii
 
 void xiiTestFramework::GenerateComparisonImageName(xiiUInt32 uiImageNumber, xiiStringBuilder& ref_sImgName)
 {
-  const char* szTestName    = GetTest(GetCurrentTestIndex())->m_szTestName;
-  const char* szSubTestName = GetTest(GetCurrentTestIndex())->m_SubTests[GetCurrentSubTestIndex()].m_szSubTestName;
-  GetTest(GetCurrentTestIndex())->m_pTest->MapImageNumberToString(szTestName, szSubTestName, uiImageNumber, ref_sImgName);
+  xiiTestEntry* pMainTest = GetTest(GetCurrentTestIndex());
+
+  const char*            szTestName = pMainTest->m_szTestName;
+  const xiiSubTestEntry& subTest    = pMainTest->m_SubTests[GetCurrentSubTestIndex()];
+  pMainTest->m_pTest->MapImageNumberToString(szTestName, subTest, uiImageNumber, ref_sImgName);
 }
 
 void xiiTestFramework::GetCurrentComparisonImageName(xiiStringBuilder& ref_sImgName)
@@ -1506,7 +1542,9 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
 
   if (!m_sImageReferenceOverrideFolderName.empty())
   {
-    sImgPathReference.Format("{0}/{1}.png", m_sImageReferenceOverrideFolderName.c_str(), sImgName);
+    sImgPathReference = m_sImageReferenceOverrideFolderName.c_str();
+    sImgPathReference.AppendPath(sImgName);
+    sImgPathReference.ChangeFileExtension(".png");
 
     if (!xiiFileSystem::ExistsFile(sImgPathReference))
     {
@@ -1517,10 +1555,42 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
 
   if (sImgPathReference.IsEmpty())
   {
-    sImgPathReference.Format("{0}/{1}.png", m_sImageReferenceFolderName.c_str(), sImgName);
+    sImgPathReference = m_sImageReferenceFolderName.c_str();
+    sImgPathReference.AppendPath(sImgName);
+    sImgPathReference.ChangeFileExtension(".png");
   }
 
-  sImgPathResult.Format(":imgout/Images_Result/{0}.png", sImgName);
+  sImgPathResult = ":imgout/Images_Result";
+  sImgPathResult.AppendPath(sImgName);
+  sImgPathResult.ChangeFileExtension(".png");
+
+  auto SaveResultImage = [&]() {
+    imgRgba.SaveTo(sImgPathResult).IgnoreResult();
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+    xiiStringBuilder sAbsPath;
+    if (xiiFileSystem::ResolvePath(sImgPathResult, &sAbsPath, nullptr).Failed())
+    {
+      xiiLog::Warning("Failed to resolve absolute path of '{}'. Image will not be compressed with optipng.", sImgPathResult);
+      return;
+    }
+
+    xiiStringBuilder sOptiPng = xiiFileSystem::GetSdkRootDirectory();
+    sOptiPng.AppendPath("Data/Tools/Precompiled/optipng/optipng.exe");
+
+    if (xiiOSFile::ExistsFile(sOptiPng))
+    {
+      xiiProcessOptions opt;
+      opt.m_sProcess = sOptiPng;
+      opt.m_Arguments.PushBack(sAbsPath);
+      xiiInt32 iReturnCode = 0;
+      if (xiiProcess::Execute(opt, &iReturnCode).Failed() || iReturnCode != 0)
+      {
+        xiiLog::Warning("Failed to run optipng with return code {}. Image will not be compressed with optipng.", iReturnCode);
+      }
+    }
+#endif
+  };
 
   // if a previous output image exists, get rid of it
   xiiFileSystem::DeleteFile(sImgPathResult);
@@ -1528,7 +1598,7 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
   xiiImage imgExp, imgExpRgba;
   if (imgExp.LoadFrom(sImgPathReference).Failed())
   {
-    imgRgba.SaveTo(sImgPathResult).IgnoreResult();
+    SaveResultImage();
 
     safeprintf(szErrorMsg, s_iMaxErrorMessageLength, "Comparison Image '%s' could not be read", sImgPathReference.GetData());
     return false;
@@ -1536,7 +1606,7 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
 
   if (xiiImageConversion::Convert(imgExp, imgExpRgba, xiiImageFormat::R8G8B8A8_UNORM).Failed())
   {
-    imgRgba.SaveTo(sImgPathResult).IgnoreResult();
+    SaveResultImage();
 
     safeprintf(szErrorMsg, s_iMaxErrorMessageLength, "Comparison Image '%s' could not be converted to RGBA8", sImgPathReference.GetData());
     return false;
@@ -1544,7 +1614,7 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
 
   if (imgRgba.GetWidth() != imgExpRgba.GetWidth() || imgRgba.GetHeight() != imgExpRgba.GetHeight())
   {
-    imgRgba.SaveTo(sImgPathResult).IgnoreResult();
+    SaveResultImage();
 
     safeprintf(szErrorMsg, s_iMaxErrorMessageLength, "Comparison Image '%s' size (%ix%i) does not match captured image size (%ix%i)", sImgPathReference.GetData(), imgExpRgba.GetWidth(), imgExpRgba.GetHeight(), imgRgba.GetWidth(), imgRgba.GetHeight());
     return false;
@@ -1612,7 +1682,7 @@ bool xiiTestFramework::CompareImages(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxErr
   if (bIsDepthImage)
   {
     sImgName.Append("-depth");
-    if (GetTest(GetCurrentTestIndex())->m_pTest->GetDepthImage(img).Failed())
+    if (GetTest(GetCurrentTestIndex())->m_pTest->GetDepthImage(img, *GetCurrentSubTest(), uiImageNumber).Failed())
     {
       safeprintf(szErrorMsg, s_iMaxErrorMessageLength, "Depth image '%s' could not be captured", sImgName.GetData());
       return false;
@@ -1620,7 +1690,7 @@ bool xiiTestFramework::CompareImages(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxErr
   }
   else
   {
-    if (GetTest(GetCurrentTestIndex())->m_pTest->GetImage(img).Failed())
+    if (GetTest(GetCurrentTestIndex())->m_pTest->GetImage(img, *GetCurrentSubTest(), uiImageNumber).Failed())
     {
       safeprintf(szErrorMsg, s_iMaxErrorMessageLength, "Image '%s' could not be captured", sImgName.GetData());
       return false;
@@ -1745,9 +1815,14 @@ void xiiTestFramework::Error(const char* szError, const char* szFile, xiiInt32 i
   GetInstance()->ErrorImpl(szError, szFile, iLine, szFunction, szBuffer);
 }
 
-void xiiTestFramework::TestResult(xiiInt32 iSubTestIndex, bool bSuccess, double fDuration)
+void xiiTestFramework::TestResult(xiiUInt32 uiSubTestIndex, bool bSuccess, double fDuration)
 {
-  GetInstance()->TestResultImpl(iSubTestIndex, bSuccess, fDuration);
+  GetInstance()->TestResultImpl(uiSubTestIndex, bSuccess, fDuration);
+}
+
+void xiiTestFramework::SetSubTestStatus(xiiUInt32 uiSubTestIndex, const char* szStatus)
+{
+  GetInstance()->SetSubTestStatusImpl(uiSubTestIndex, szStatus);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1760,6 +1835,15 @@ void xiiTestFramework::TestResult(xiiInt32 iSubTestIndex, bool bSuccess, double 
     va_start(args, szMsg);                                                        \
     xiiTestFramework::Error(szErrorText, szFile, iLine, szFunction, szMsg, args); \
     XII_TEST_DEBUG_BREAK                                                          \
+    va_end(args);                                                                 \
+    return XII_FAILURE;                                                           \
+  }
+
+#define OUTPUT_TEST_ERROR_NO_BREAK                                                \
+  {                                                                               \
+    va_list args;                                                                 \
+    va_start(args, szMsg);                                                        \
+    xiiTestFramework::Error(szErrorText, szFile, iLine, szFunction, szMsg, args); \
     va_end(args);                                                                 \
     return XII_FAILURE;                                                           \
   }
@@ -1822,14 +1906,14 @@ bool xiiTestInt(xiiInt64 i1, xiiInt64 i2, const char* szI1, const char* szI2, co
   return XII_SUCCESS;
 }
 
-bool xiiTestWString(std::wstring sWs1, std::wstring sWs2, const char* szWString1, const char* szWString2, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...)
+bool xiiTestWString(std::wstring s1, std::wstring s2, const char* szWString1, const char* szWString2, const char* szFile, xiiInt32 iLine, const char* szFunction, const char* szMsg, ...)
 {
   xiiTestFramework::s_iAssertCounter++;
 
-  if (sWs1 != sWs2)
+  if (s1 != s2)
   {
     char szErrorText[2048];
-    safeprintf(szErrorText, 2048, "Failure: '%s' (%s) does not equal '%s' (%s)", szWString1, xiiStringUtf8(sWs1.c_str()).GetData(), szWString2, xiiStringUtf8(sWs2.c_str()).GetData());
+    safeprintf(szErrorText, 2048, "Failure: '%s' (%s) does not equal '%s' (%s)", szWString1, xiiStringUtf8(s1.c_str()).GetData(), szWString2, xiiStringUtf8(s2.c_str()).GetData());
 
     OUTPUT_TEST_ERROR
   }
@@ -2001,7 +2085,7 @@ bool xiiTestImage(xiiUInt32 uiImageNumber, xiiUInt32 uiMaxError, bool bIsDepthIm
 
   if (!xiiTestFramework::GetInstance()->CompareImages(uiImageNumber, uiMaxError, szErrorText, bIsDepthImage, bIsLineImage))
   {
-    OUTPUT_TEST_ERROR
+    OUTPUT_TEST_ERROR_NO_BREAK
   }
 
   return XII_SUCCESS;

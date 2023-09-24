@@ -12,6 +12,7 @@
 
 xiiQtTestModelEntry::xiiQtTestModelEntry(const xiiTestFrameworkResult* pResult, xiiInt32 iTestIndex, xiiInt32 iSubTestIndex) :
   m_pResult(pResult), m_iTestIndex(iTestIndex), m_iSubTestIndex(iSubTestIndex)
+
 {
 }
 
@@ -86,8 +87,9 @@ xiiQtTestModel::xiiQtTestModel(QObject* pParent, xiiQtTestFramework* pTestFramew
   m_pResult        = &pTestFramework->GetTestResult();
 
   // Derive state colors from the current active palette.
-  m_SucessColor = ToneColor(palette.text().color(), QColor(Qt::green)).toRgb();
-  m_FailedColor = ToneColor(palette.text().color(), QColor(Qt::red)).toRgb();
+  m_SucessColor       = ToneColor(palette.text().color(), QColor(Qt::green)).toRgb();
+  m_FailedColor       = ToneColor(palette.text().color(), QColor(Qt::red)).toRgb();
+  m_CustomStatusColor = ToneColor(palette.text().color(), QColor(Qt::yellow)).toRgb();
 
   m_TestColor    = ToneColor(palette.base().color(), QColor(Qt::cyan)).toRgb();
   m_SubTestColor = ToneColor(palette.base().color(), QColor(Qt::blue)).toRgb();
@@ -123,7 +125,7 @@ void xiiQtTestModel::TestDataChanged(xiiInt32 iTestIndex, xiiInt32 iSubTestIndex
   // Invalidate all sub-tests
   const xiiQtTestModelEntry* pEntry    = (xiiQtTestModelEntry*)TestModelIndex.internalPointer();
   xiiInt32                   iChildren = (xiiInt32)pEntry->GetNumSubEntries();
-  Q_EMIT                     dataChanged(index(0, 0, TestModelIndex), index(iChildren - 1, columnCount() - 1, TestModelIndex));
+  Q_EMIT dataChanged(index(0, 0, TestModelIndex), index(iChildren - 1, columnCount() - 1, TestModelIndex));
 }
 
 
@@ -139,6 +141,11 @@ QVariant xiiQtTestModel::data(const QModelIndex& index, int iRole) const
   const xiiQtTestModelEntry*                       pEntry       = (xiiQtTestModelEntry*)index.internalPointer();
   const xiiQtTestModelEntry*                       pParentEntry = pEntry->GetParentEntry();
   const xiiQtTestModelEntry::xiiTestModelEntryType entryType    = pEntry->GetNodeType();
+
+  const xiiInt32 iExecutingTest    = m_pTestFramework->GetCurrentTestIndex();
+  const xiiInt32 iExecutingSubTest = m_pTestFramework->GetCurrentSubTestIndex();
+
+  const bool bIsExecuting = pEntry->GetTestIndex() == iExecutingTest && pEntry->GetSubTestIndex() == iExecutingSubTest;
 
   bool               bTestEnabled          = true;
   bool               bParentEnabled        = true;
@@ -156,6 +163,11 @@ QVariant xiiQtTestModel::data(const QModelIndex& index, int iRole) const
   }
 
   const xiiTestResultData& TestResult = *pEntry->GetTestResult();
+
+  if (bIsExecuting && iRole == Qt::BackgroundRole)
+  {
+    return QColor(115, 100, 40);
+  }
 
   // Name
   if (index.column() == Columns::Name)
@@ -356,6 +368,11 @@ QVariant xiiQtTestModel::data(const QModelIndex& index, int iRole) const
             }
             else
             {
+              if (!TestResult.m_sCustomStatus.empty())
+              {
+                return QString(TestResult.m_sCustomStatus.c_str());
+              }
+
               return QString("Pending");
             }
           }
@@ -398,6 +415,11 @@ QVariant xiiQtTestModel::data(const QModelIndex& index, int iRole) const
         {
           return TestResult.m_bSuccess ? m_SucessColor : m_FailedColor;
         }
+        else if (!TestResult.m_sCustomStatus.empty())
+        {
+          return m_CustomStatusColor;
+        }
+
         return QVariant();
       }
       case Qt::TextAlignmentRole:
@@ -567,7 +589,6 @@ void xiiQtTestModel::UpdateModel()
   }
   // reset();
 }
-
 
 #endif
 
