@@ -15,7 +15,7 @@ class xiiTexConvTest : public xiiTestBaseClass
 public:
   virtual const char* GetTestName() const override { return "TexConvTool"; }
 
-  virtual xiiResult GetImage(xiiImage& ref_img) override
+  virtual xiiResult GetImage(xiiImage& ref_img, const xiiSubTestEntry& subTest, xiiUInt32 uiImageNumber) override
   {
     ref_img.ResetAndMove(std::move(m_pState->m_image));
     return XII_SUCCESS;

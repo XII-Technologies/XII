@@ -11,7 +11,7 @@ set_property(GLOBAL PROPERTY XII_DEV_BUILD_LINKERFLAGS "DEBUG")
 set_property(GLOBAL PROPERTY XII_CMAKE_RELPATH "Source/BuildSystem/CMake")
 set_property(GLOBAL PROPERTY XII_CMAKE_RELPATH_CODE "Source")
 
-set_property(GLOBAL PROPERTY XII_CONFIG_PATH_7ZA "${CMAKE_SOURCE_DIR}/Data/Tools/Precompiled/7z.exe")
+set_property(GLOBAL PROPERTY XII_CONFIG_PATH_7ZA "Data/Tools/Precompiled/7z.exe")
 
 set_property(GLOBAL PROPERTY XII_CONFIG_QT_WINX64_VERSION "Qt6-6.4.0-vs143-x64")
 set_property(GLOBAL PROPERTY XII_CONFIG_QT_WINX64_URL "https://github.com/ezEngine/thirdparty/releases/download/Qt6-6.4.0-vs143-x64/Qt6-6.4.0-vs143-x64.7z")

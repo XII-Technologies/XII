@@ -69,6 +69,11 @@ XII_CREATE_SIMPLE_TEST_GROUP(Containers);
 
 XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
 {
+  iCallPodConstructor    = 0;
+  iCallPodDestructor     = 0;
+  iCallNonPodConstructor = 0;
+  iCallNonPodDestructor  = 0;
+
   xiiProxyAllocator proxy("DynamicArrayTestAllocator", xiiFoundation::GetDefaultAllocator());
   DynamicArrayTestDetail::g_pTestAllocator = &proxy;
 

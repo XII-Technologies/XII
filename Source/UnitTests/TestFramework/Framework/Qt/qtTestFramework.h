@@ -23,7 +23,8 @@ Q_SIGNALS:
 
 protected:
   virtual void OutputImpl(xiiTestOutput::Enum Type, const char* szMsg) override;
-  virtual void TestResultImpl(xiiInt32 iSubTestIndex, bool bSuccess, double fDuration) override;
+  virtual void TestResultImpl(xiiUInt32 uiSubTestIndex, bool bSuccess, double fDuration) override;
+  virtual void SetSubTestStatusImpl(xiiUInt32 uiSubTestIndex, const char* szStatus) override;
 };
 
 #endif

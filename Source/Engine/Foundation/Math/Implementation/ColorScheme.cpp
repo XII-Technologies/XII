@@ -216,5 +216,4 @@ xiiColor xiiColorScheme::GetColor(float fIndex, xiiUInt8 uiBrightness, float fSa
   return xiiMath::Lerp(xiiColor(l, l, l), c, fSaturation).WithAlpha(fAlpha);
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_Math_Implementation_ColorScheme);

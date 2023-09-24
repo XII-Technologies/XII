@@ -207,17 +207,17 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
   {
     xiiStaticBitfield64 bf;
 
-    for (xiiUInt32 i = 0; i < bf.GetNumBits(); ++i)
+    for (xiiUInt32 i = 0; i < bf.GetStorageTypeBitCount(); ++i)
       XII_TEST_BOOL(!bf.IsBitSet(i));
 
     bf.SetAllBits();
 
-    for (xiiUInt32 i = 0; i < bf.GetNumBits(); ++i)
+    for (xiiUInt32 i = 0; i < bf.GetStorageTypeBitCount(); ++i)
       XII_TEST_BOOL(bf.IsBitSet(i));
 
     bf.ClearAllBits();
 
-    for (xiiUInt32 i = 0; i < bf.GetNumBits(); ++i)
+    for (xiiUInt32 i = 0; i < bf.GetStorageTypeBitCount(); ++i)
       XII_TEST_BOOL(!bf.IsBitSet(i));
   }
 
@@ -225,36 +225,36 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
   {
     xiiStaticBitfield32 bf;
 
-    for (xiiUInt32 i = 0; i < bf.GetNumBits(); ++i)
+    for (xiiUInt32 i = 0; i < bf.GetStorageTypeBitCount(); ++i)
       XII_TEST_BOOL(!bf.IsBitSet(i));
 
-    for (xiiUInt32 i = 0; i < bf.GetNumBits(); i += 2)
+    for (xiiUInt32 i = 0; i < bf.GetStorageTypeBitCount(); i += 2)
       bf.SetBit(i);
 
-    for (xiiUInt32 i = 0; i < bf.GetNumBits(); i += 2)
+    for (xiiUInt32 i = 0; i < bf.GetStorageTypeBitCount(); i += 2)
     {
       XII_TEST_BOOL(bf.IsBitSet(i));
       XII_TEST_BOOL(!bf.IsBitSet(i + 1));
     }
 
-    for (xiiUInt32 i = 0; i < bf.GetNumBits(); i += 2)
+    for (xiiUInt32 i = 0; i < bf.GetStorageTypeBitCount(); i += 2)
     {
       bf.ClearBit(i);
       bf.SetBit(i + 1);
     }
 
-    for (xiiUInt32 i = 0; i < bf.GetNumBits(); i += 2)
+    for (xiiUInt32 i = 0; i < bf.GetStorageTypeBitCount(); i += 2)
     {
       XII_TEST_BOOL(!bf.IsBitSet(i));
       XII_TEST_BOOL(bf.IsBitSet(i + 1));
     }
 
-    for (xiiUInt32 i = 0; i < bf.GetNumBits(); ++i)
+    for (xiiUInt32 i = 0; i < bf.GetStorageTypeBitCount(); ++i)
     {
       bf.SetBitValue(i, (i % 3) == 0);
     }
 
-    for (xiiUInt32 i = 0; i < bf.GetNumBits(); ++i)
+    for (xiiUInt32 i = 0; i < bf.GetStorageTypeBitCount(); ++i)
     {
       XII_TEST_BOOL(bf.IsBitSet(i) == ((i % 3) == 0));
     }
@@ -266,7 +266,7 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
     {
       xiiStaticBitfield64 bf;
 
-      for (xiiUInt32 count = 0; count < bf.GetNumBits(); ++count)
+      for (xiiUInt32 count = 0; count < bf.GetStorageTypeBitCount(); ++count)
         XII_TEST_BOOL(!bf.IsBitSet(count));
 
       xiiUInt32 uiEnd = uiStart + 3;
@@ -277,7 +277,7 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
         XII_TEST_BOOL(!bf.IsBitSet(count));
       for (xiiUInt32 count = uiStart; count <= uiEnd; ++count)
         XII_TEST_BOOL(bf.IsBitSet(count));
-      for (xiiUInt32 count = uiEnd + 1; count < bf.GetNumBits(); ++count)
+      for (xiiUInt32 count = uiEnd + 1; count < bf.GetStorageTypeBitCount(); ++count)
         XII_TEST_BOOL(!bf.IsBitSet(count));
     }
   }
@@ -289,7 +289,7 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
       xiiStaticBitfield64 bf;
       bf.SetAllBits();
 
-      for (xiiUInt32 count = 0; count < bf.GetNumBits(); ++count)
+      for (xiiUInt32 count = 0; count < bf.GetStorageTypeBitCount(); ++count)
         XII_TEST_BOOL(bf.IsBitSet(count));
 
       xiiUInt32 uiEnd = uiStart + 3;
@@ -300,7 +300,7 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
         XII_TEST_BOOL(bf.IsBitSet(count));
       for (xiiUInt32 count = uiStart; count <= uiEnd; ++count)
         XII_TEST_BOOL(!bf.IsBitSet(count));
-      for (xiiUInt32 count = uiEnd + 1; count < bf.GetNumBits(); ++count)
+      for (xiiUInt32 count = uiEnd + 1; count < bf.GetStorageTypeBitCount(); ++count)
         XII_TEST_BOOL(bf.IsBitSet(count));
     }
   }
@@ -313,18 +313,56 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
     XII_TEST_BOOL(bf.IsNoBitSet() == true);
     XII_TEST_BOOL(bf.AreAllBitsSet() == false); // empty
 
-    for (xiiUInt32 i = 0; i < bf.GetNumBits(); i += 2)
+    for (xiiUInt32 i = 0; i < bf.GetStorageTypeBitCount(); i += 2)
       bf.SetBit(i);
 
     XII_TEST_BOOL(bf.IsAnyBitSet() == true);
     XII_TEST_BOOL(bf.IsNoBitSet() == false);
     XII_TEST_BOOL(bf.AreAllBitsSet() == false);
 
-    for (xiiUInt32 i = 0; i < bf.GetNumBits(); i++)
+    for (xiiUInt32 i = 0; i < bf.GetStorageTypeBitCount(); i++)
       bf.SetBit(i);
 
     XII_TEST_BOOL(bf.IsAnyBitSet() == true);
     XII_TEST_BOOL(bf.IsNoBitSet() == false);
     XII_TEST_BOOL(bf.AreAllBitsSet() == true);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetNumBitsSet")
+  {
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0).GetNumBitsSet(), 0);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff).GetNumBitsSet(), 8);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xffff).GetNumBitsSet(), 16);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xffffffffu).GetNumBitsSet(), 32);
+    XII_TEST_INT(xiiStaticBitfield64::FromMask(0).GetNumBitsSet(), 0);
+    XII_TEST_INT(xiiStaticBitfield64::FromMask(0xff).GetNumBitsSet(), 8);
+    XII_TEST_INT(xiiStaticBitfield64::FromMask(0xffff).GetNumBitsSet(), 16);
+    XII_TEST_INT(xiiStaticBitfield64::FromMask(0xffffffffu).GetNumBitsSet(), 32);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetLowestBitSet")
+  {
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0u).GetLowestBitSet(), 32);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(1u).GetLowestBitSet(), 0);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xffu).GetLowestBitSet(), 0);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff00u).GetLowestBitSet(), 8);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff0000u).GetLowestBitSet(), 16);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff000000u).GetLowestBitSet(), 24);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0x80000000u).GetLowestBitSet(), 31);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xffffffffu).GetLowestBitSet(), 0);
+    XII_TEST_INT(xiiStaticBitfield64::FromMask(0xffffffffffffffffull).GetLowestBitSet(), 0);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetHighestBitSet")
+  {
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0u).GetHighestBitSet(), 32);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(1u).GetHighestBitSet(), 0);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xffu).GetHighestBitSet(), 7);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff00u).GetHighestBitSet(), 15);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff0000u).GetHighestBitSet(), 23);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff000000u).GetHighestBitSet(), 31);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0x80000000u).GetHighestBitSet(), 31);
+    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xffffffffu).GetHighestBitSet(), 31);
+    XII_TEST_INT(xiiStaticBitfield64::FromMask(0xffffffffffffffffull).GetHighestBitSet(), 63);
   }
 }

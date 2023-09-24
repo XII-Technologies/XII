@@ -78,6 +78,38 @@ void xiiRectTemplate<Type>::ExpandToInclude(const xiiRectTemplate<Type>& other)
 }
 
 template <typename Type>
+void xiiRectTemplate<Type>::ExpandToInclude(const xiiVec2Template<Type>& other)
+{
+  Type thisRight  = Right();
+  Type thisBottom = Bottom();
+
+  if (other.x < x)
+    x = other.x;
+
+  if (other.y < y)
+    y = other.y;
+
+  if (other.x > thisRight)
+    width = other.x - x;
+  else
+    width = thisRight - x;
+
+  if (other.y > thisBottom)
+    height = other.y - y;
+  else
+    height = thisBottom - y;
+}
+
+template <typename Type>
+void xiiRectTemplate<Type>::Grow(Type xy)
+{
+  x -= xy;
+  y -= xy;
+  width += xy * 2;
+  height += xy * 2;
+}
+
+template <typename Type>
 XII_ALWAYS_INLINE void xiiRectTemplate<Type>::Clip(const xiiRectTemplate<Type>& clipRect)
 {
   Type newLeft = xiiMath::Max<Type>(x, clipRect.x);

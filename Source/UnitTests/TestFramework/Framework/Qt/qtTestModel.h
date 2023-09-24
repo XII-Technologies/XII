@@ -104,6 +104,7 @@ private:
   xiiQtTestModelEntry     m_Root;
   QColor                  m_SucessColor;
   QColor                  m_FailedColor;
+  QColor                  m_CustomStatusColor;
   QColor                  m_TestColor;
   QColor                  m_SubTestColor;
   QIcon                   m_TestIcon;
