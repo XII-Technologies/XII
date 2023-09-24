@@ -125,7 +125,7 @@ void xiiQtTestModel::TestDataChanged(xiiInt32 iTestIndex, xiiInt32 iSubTestIndex
   // Invalidate all sub-tests
   const xiiQtTestModelEntry* pEntry    = (xiiQtTestModelEntry*)TestModelIndex.internalPointer();
   xiiInt32                   iChildren = (xiiInt32)pEntry->GetNumSubEntries();
-  Q_EMIT dataChanged(index(0, 0, TestModelIndex), index(iChildren - 1, columnCount() - 1, TestModelIndex));
+  Q_EMIT                     dataChanged(index(0, 0, TestModelIndex), index(iChildren - 1, columnCount() - 1, TestModelIndex));
 }
 
 

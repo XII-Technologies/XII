@@ -55,7 +55,7 @@ public:
   /// The larger value along y. Same as Bottom().
   Type GetY2() const { return y + height; }
 
-   /// \brief Returns the center point of the rectangle.
+  /// \brief Returns the center point of the rectangle.
   xiiVec2Template<Type> GetCenter() const { return xiiVec2Template<Type>(x + width / 2, y + height / 2); }
 
   /// \brief Returns the width and height as a vec2.
