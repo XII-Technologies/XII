@@ -162,5 +162,6 @@ private:
   xiiString                        m_sProcess;
   xiiDelegate<void(xiiStringView)> m_OnStdOut;
   xiiDelegate<void(xiiStringView)> m_OnStdError;
+  mutable xiiTime                  m_ProcessExited = xiiTime::Zero();
 };
 #endif

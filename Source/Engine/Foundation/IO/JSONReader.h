@@ -13,6 +13,13 @@
 class XII_FOUNDATION_DLL xiiJSONReader : public xiiJSONParser
 {
 public:
+  enum class ElementType : xiiInt8
+  {
+    None,       ///< The JSON document is entirely empty (not even containing an empty object or array)
+    Dictionary, ///< The top level element in the JSON document is an object
+    Array,      ///< The top level element in the JSON document is an array
+  };
+
   xiiJSONReader();
 
   /// \brief Reads the entire stream and creates the internal data structure that represents the JSON document. Returns XII_FAILURE if any parsing
@@ -21,6 +28,12 @@ public:
 
   /// \brief Returns the top-level object of the JSON document.
   const xiiVariantDictionary& GetTopLevelObject() const { return m_Stack.PeekBack().m_Dictionary; }
+
+  /// \brief Returns the top-level array of the JSON document.
+  const xiiVariantArray& GetTopLevelArray() const { return m_Stack.PeekBack().m_Array; }
+
+  /// \brief Returns whether the top level element is an array or an object.
+  ElementType GetTopLevelElementType() const { return m_Stack.PeekBack().m_Mode; }
 
 private:
   /// \brief This function can be overridden to skip certain variables, however the overriding function must still call this.
@@ -53,22 +66,16 @@ private:
   virtual void OnParsingError(xiiStringView sMessage, bool bFatal, xiiUInt32 uiLine, xiiUInt32 uiColumn) override;
 
 protected:
-  enum class ElementMode : xiiInt8
-  {
-    Array,
-    Dictionary
-  };
-
   struct Element
   {
     xiiString            m_sName;
-    ElementMode          m_Mode;
+    ElementType          m_Mode = ElementType::None;
     xiiVariantArray      m_Array;
     xiiVariantDictionary m_Dictionary;
   };
 
   xiiHybridArray<Element, 32> m_Stack;
 
-  bool      m_bParsingError;
+  bool      m_bParsingError = false;
   xiiString m_sLastName;
 };

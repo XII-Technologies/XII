@@ -55,7 +55,7 @@ void xiiJSONParser::StartParsing()
   switch (m_uiCurByte)
   {
     case '\0':
-      // document is empty
+      // Document is empty.
       return;
 
     case '{':
@@ -68,18 +68,34 @@ void xiiJSONParser::StartParsing()
 
       if (!m_bSkippingMode)
         OnBeginObject();
-    }
+
       return;
+    }
+
+    case '[':
+    {
+      JSONState s;
+      s.m_State = ReadingArray;
+      m_StateStack.PushBack(s);
+
+      SkipWhitespace();
+
+      if (!m_bSkippingMode)
+        OnBeginArray();
+
+      return;
+    }
 
     default:
     {
-      // document is malformed
+      // Document is malformed
 
       xiiStringBuilder s;
-      s.Format("Start of document: Expected a { or an empty document. Got '{0}' instead.", xiiArgC(m_uiCurByte));
+      s.Format("Start of document: Expected a { or [ or an empty document. Got '{0}' instead.", xiiArgC(m_uiCurByte));
       ParsingError(s.GetData(), true);
-    }
+
       return;
+    }
   }
 }
 

@@ -211,16 +211,16 @@ xiiOsProcessID xiiProcess::GetCurrentProcessID()
 
 // Taken from "Programmatically controlling which handles are inherited by new processes in Win32" by Raymond Chen
 // https://devblogs.microsoft.com/oldnewthing/20111216-00/?p=8873
-static BOOL CreateProcessWithExplicitHandles(LPCWSTR pLpApplicationName, LPWSTR pLpCommandLine, LPSECURITY_ATTRIBUTES pLpProcessAttributes, LPSECURITY_ATTRIBUTES pLpThreadAttributes, BOOL inheritHandles, DWORD uiDwCreationFlags, LPVOID pLpEnvironment, LPCWSTR pLpCurrentDirectory, LPSTARTUPINFOW pLpStartupInfo, LPPROCESS_INFORMATION pLpProcessInformation,
+static BOOL CreateProcessWithExplicitHandles(LPCWSTR pApplicationName, LPWSTR pCommandLine, LPSECURITY_ATTRIBUTES pProcessAttributes, LPSECURITY_ATTRIBUTES pThreadAttributes, BOOL inheritHandles, DWORD uiCreationFlags, LPVOID pEnvironment, LPCWSTR pCurrentDirectory, LPSTARTUPINFOW pStartupInfo, LPPROCESS_INFORMATION pProcessInformation,
                                              // here is the new stuff
                                              DWORD   uiHandlesToInherit,
-                                             HANDLE* pRgHandlesToInherit)
+                                             HANDLE* pHandlesToInherit)
 {
   BOOL                         fSuccess;
   BOOL                         fInitialized    = FALSE;
   SIZE_T                       size            = 0;
   LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList = nullptr;
-  fSuccess                                     = uiHandlesToInherit < 0xFFFFFFFF / sizeof(HANDLE) && pLpStartupInfo->cb == sizeof(*pLpStartupInfo);
+  fSuccess                                     = uiHandlesToInherit < 0xFFFFFFFF / sizeof(HANDLE) && pStartupInfo->cb == sizeof(*pStartupInfo);
   if (!fSuccess)
   {
     SetLastError(ERROR_INVALID_PARAMETER);
@@ -244,7 +244,7 @@ static BOOL CreateProcessWithExplicitHandles(LPCWSTR pLpApplicationName, LPWSTR 
     if (fSuccess)
     {
       fInitialized = TRUE;
-      fSuccess     = UpdateProcThreadAttribute(lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, pRgHandlesToInherit, uiHandlesToInherit * sizeof(HANDLE), nullptr, nullptr);
+      fSuccess     = UpdateProcThreadAttribute(lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST, pHandlesToInherit, uiHandlesToInherit * sizeof(HANDLE), nullptr, nullptr);
     }
   }
 
@@ -252,13 +252,12 @@ static BOOL CreateProcessWithExplicitHandles(LPCWSTR pLpApplicationName, LPWSTR 
   {
     STARTUPINFOEXW info;
     ZeroMemory(&info, sizeof(info));
-    info.StartupInfo     = *pLpStartupInfo;
+    info.StartupInfo     = *pStartupInfo;
     info.StartupInfo.cb  = sizeof(info);
     info.lpAttributeList = lpAttributeList;
 
     // It is both possible to pass in (STARTUPINFOW*)&info OR info.StartupInfo ...
-    fSuccess = CreateProcessW(pLpApplicationName, pLpCommandLine, pLpProcessAttributes, pLpThreadAttributes, inheritHandles,
-                              uiDwCreationFlags | EXTENDED_STARTUPINFO_PRESENT, pLpEnvironment, pLpCurrentDirectory, &info.StartupInfo, pLpProcessInformation);
+    fSuccess = CreateProcessW(pApplicationName, pCommandLine, pProcessAttributes, pThreadAttributes, inheritHandles, uiCreationFlags | EXTENDED_STARTUPINFO_PRESENT, pEnvironment, pCurrentDirectory, &info.StartupInfo, pProcessInformation);
   }
 
   if (fInitialized)
@@ -286,10 +285,9 @@ xiiResult xiiProcess::Launch(const xiiProcessOptions& opt, xiiBitflags<xiiProces
   STARTUPINFOW startupInformation;
   xiiMemoryUtils::ZeroFill(&startupInformation, 1);
   startupInformation.cb      = sizeof(startupInformation);
-  startupInformation.dwFlags = STARTF_FORCEOFFFEEDBACK; // Do not show a wait cursor while launching the process
+  startupInformation.dwFlags = STARTF_FORCEOFFFEEDBACK; // Do not show a wait cursor while launching the process.
 
-  // Attention: passing in even a single null handle will fail the handle inheritance entirely,
-  // but CreateProcess will still return success.
+  // Attention: passing in even a single null handle will fail the handle inheritance entirely, but CreateProcess will still return success.
   // Therefore we must ensure to only pass non-null handles to inherit
   HANDLE    HandlesToInherit[2];
   xiiUInt32 uiNumHandlesToInherit = 0;
@@ -308,6 +306,10 @@ xiiResult xiiProcess::Launch(const xiiProcessOptions& opt, xiiBitflags<xiiProces
     startupInformation.dwFlags |= STARTF_USESTDHANDLES;
     HandlesToInherit[uiNumHandlesToInherit++] = m_pImpl->m_pipeStdErr.m_pipeWrite;
   }
+
+  // In theory this can be used to force the process's main window to be in the background, but except for SW_HIDE and SW_SHOWMINNOACTIVE this doesn't work, and those are not useful.
+  // startupInformation.wShowWindow = SW_SHOWNOACTIVATE;
+  // startupInformation.dwFlags    |= STARTF_USESHOWWINDOW;
 
   PROCESS_INFORMATION processInformation;
   xiiMemoryUtils::ZeroFill(&processInformation, 1);
@@ -443,6 +445,10 @@ xiiResult xiiProcess::Terminate()
 
   if (TerminateProcess(m_pImpl->m_ProcessHandle, 0xFFFFFFFF) == FALSE)
   {
+    const DWORD uiError = GetLastError();
+    if (uiError == ERROR_ACCESS_DENIED) // This means the process already terminated, so from our perspective the goal was achieved.
+      return XII_SUCCESS;
+
     xiiLog::Error("Failed to terminate process '{}' - {}", m_sProcess, xiiArgErrorCode(GetLastError()));
     return XII_FAILURE;
   }
@@ -470,9 +476,22 @@ xiiProcessState xiiProcess::GetState() const
   if (exitCode == STILL_ACTIVE)
     return xiiProcessState::Running;
 
+  if (m_ProcessExited.IsZero())
+  {
+    m_ProcessExited = xiiTime::Now();
+  }
+
   // Do not consider a process finished if the pipe threads have not exited yet.
   if (m_pImpl->m_pipeStdOut.IsRunning() || m_pImpl->m_pipeStdErr.IsRunning())
-    return xiiProcessState::Running;
+  {
+    if (xiiTime::Now() - m_ProcessExited < xiiTime::Seconds(2))
+    {
+      return xiiProcessState::Running;
+    }
+
+    m_pImpl->m_pipeStdOut.Close();
+    m_pImpl->m_pipeStdErr.Close();
+  }
 
   m_iExitCode = (xiiInt32)exitCode;
   return xiiProcessState::Finished;
