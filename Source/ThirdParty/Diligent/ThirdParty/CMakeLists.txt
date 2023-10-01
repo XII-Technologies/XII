@@ -40,7 +40,7 @@ if (VULKAN_SUPPORTED OR METAL_SUPPORTED)
         install(FILES "${Vulkan-Headers_SOURCE_DIR}/LICENSE.md" DESTINATION "Licenses/ThirdParty/${DILIGENT_CORE_DIR}" RENAME Vulkan-Headers-License.md)
     endif()
 
-    option(DILIGENT_NO_GLSLANG "Do NOT build glslang compiler" OFF)
+    option(DILIGENT_NO_GLSLANG "Do NOT build glslang compiler" ON)
     option(DILIGENT_IMPROVE_SPIRV_TOOLS_DEBUG_PERF "Enable some optimizations for SPIRV-Tools, glslang, SPIRV-Cross and related projects in debug build to improve performance" ON)
 
     if (NOT (${DILIGENT_NO_GLSLANG} AND ${DILIGENT_NO_HLSL}) AND (NOT TARGET SPIRV-Tools-static))
@@ -113,7 +113,7 @@ if (VULKAN_SUPPORTED OR METAL_SUPPORTED)
     endif()
 
     if (MSVC)
-        foreach(TARGET ${THIRD_PARTY_LIBS}) 
+        foreach(TARGET ${THIRD_PARTY_LIBS})
             if (${DILIGENT_IMPROVE_SPIRV_TOOLS_DEBUG_PERF})
                 # Enable function inlining (/Ob1) in Debug build to improve shader compilation performance
                 target_compile_options(${TARGET} PRIVATE "$<$<CONFIG:DEBUG>:/Ob1>")

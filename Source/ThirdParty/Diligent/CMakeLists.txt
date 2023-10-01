@@ -1,3 +1,23 @@
+######################################
+### XII Additions Begin
+######################################
+
+if (NOT XII_BUILD_DILIGENT)
+  return()
+endif()
+
+function(custom_post_configure_target TARGET)
+
+set_property(GLOBAL APPEND PROPERTY "EXPORT_PROJECTS" ${TARGET})
+
+xii_set_target_output_dirs(${TARGET} ${XII_OUTPUT_DIRECTORY_LIB} ${XII_OUTPUT_DIRECTORY_DLL})
+
+endfunction(custom_post_configure_target)
+
+######################################
+### XII Additions End
+######################################
+
 cmake_minimum_required (VERSION 3.19)
 
 project(DiligentCore)
@@ -20,7 +40,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(DEBUG_CONFIGURATIONS DEBUG CACHE INTERNAL "Debug configurations")
-set(RELEASE_CONFIGURATIONS RELEASE RELWITHDEBINFO MINSIZEREL CACHE INTERNAL "Release configurations")
+set(RELEASE_CONFIGURATIONS DEV SHIPPING CACHE INTERNAL "Release configurations")
 
 if(BUILD_CONFIGURATION_FILE)
     message("Using build configuration file " ${CUSTOM_BUILD_SCRIPT})
@@ -187,7 +207,7 @@ elseif(PLATFORM_TVOS)
     target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_TVOS=1)
 elseif(PLATFORM_EMSCRIPTEN)
     set(GLES_SUPPORTED TRUE CACHE INTERNAL "OpenGLES is supported on Emscripten platform")
-    target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_EMSCRIPTEN=1)   
+    target_compile_definitions(Diligent-PublicBuildSettings INTERFACE PLATFORM_EMSCRIPTEN=1)
 else()
     message(FATAL_ERROR "No PLATFORM_XXX variable defined. Make sure that 'DiligentCore' folder is processed first")
 endif()
@@ -258,14 +278,32 @@ else()
 endif()
 
 
-option(DILIGENT_NO_HLSL              "Disable HLSL support in non-Direct3D backends" OFF)
-option(DILIGENT_NO_FORMAT_VALIDATION "Disable source code format validation" OFF)
-option(DILIGENT_NO_DIRECT3D11        "Disable Direct3D11 backend" OFF)
-option(DILIGENT_NO_DIRECT3D12        "Disable Direct3D12 backend" OFF)
-option(DILIGENT_NO_OPENGL            "Disable OpenGL/GLES backend" OFF)
-option(DILIGENT_NO_VULKAN            "Disable Vulkan backend" OFF)
-option(DILIGENT_NO_METAL             "Disable Metal backend" OFF)
-option(DILIGENT_NO_ARCHIVER          "Do not build archiver" OFF)
+option(DILIGENT_NO_HLSL              "Disable HLSL support in non-Direct3D backends" ON)
+option(DILIGENT_NO_FORMAT_VALIDATION "Disable source code format validation" ON)
+
+# XII Additions Begin
+if (XII_BUILD_D3D11)
+  option(DILIGENT_NO_DIRECT3D11  "Disable Direct3D11 backend" OFF)
+else()
+  option(DILIGENT_NO_DIRECT3D11  "Disable Direct3D11 backend" ON)
+endif()
+
+if (XII_BUILD_D3D12)
+  option(DILIGENT_NO_DIRECT3D12  "Disable Direct3D12 backend" OFF)
+else()
+  option(DILIGENT_NO_DIRECT3D12  "Disable Direct3D12 backend" ON)
+endif()
+
+if (XII_BUILD_VULKAN)
+  option(DILIGENT_NO_VULKAN  "Disable Vulkan backend" OFF)
+else()
+  option(DILIGENT_NO_VULKAN  "Disable Vulkan backend" ON)
+endif()
+# XII Additions End
+
+option(DILIGENT_NO_OPENGL            "Disable OpenGL/GLES backend" ON)
+option(DILIGENT_NO_METAL             "Disable Metal backend" ON)
+option(DILIGENT_NO_ARCHIVER          "Do not build archiver" ON)
 if(${DILIGENT_NO_DIRECT3D11})
     set(D3D11_SUPPORTED FALSE CACHE INTERNAL "D3D11 backend is forcibly disabled")
 endif()
@@ -528,7 +566,7 @@ add_subdirectory(Primitives)
 add_subdirectory(Platforms)
 add_subdirectory(Common)
 add_subdirectory(Graphics)
-add_subdirectory(Tests)
+# add_subdirectory(Tests)
 
 
 # Installation instructions
