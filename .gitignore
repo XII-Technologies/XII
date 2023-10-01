@@ -365,5 +365,5 @@ compile-commands.json
 **/tags
 
 # Diligent-Core generated files
-Source/ThirdParty/DiligentCore/Graphics/HLSL2GLSLConverterLib/include/GLSLDefinitions_inc.h
-Source/ThirdParty/DiligentCore/Graphics/ShaderTools/include/HLSLDefinitions_inc.fxh
+Source/ThirdParty/Diligent/Graphics/HLSL2GLSLConverterLib/include/GLSLDefinitions_inc.h
+Source/ThirdParty/Diligent/Graphics/ShaderTools/include/HLSLDefinitions_inc.fxh
