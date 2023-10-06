@@ -58,6 +58,7 @@ function(xii_link_target_diligent_d3d12 TARGET_NAME)
 	if(D3D12_SUPPORTED)
 		target_link_libraries(${TARGET_NAME}
             PRIVATE
+			Diligent-GraphicsEngineD3D12-static
             Diligent-GraphicsEngineD3D12-shared
         )
 		list(APPEND ENGINE_DLLS Diligent-GraphicsEngineD3D12-shared)
@@ -90,6 +91,7 @@ function(xii_link_target_diligent_vulkan TARGET_NAME)
 	if(VULKAN_SUPPORTED)
 		target_link_libraries(${TARGET_NAME}
             PRIVATE
+			Diligent-GraphicsEngineVk-static
             Diligent-GraphicsEngineVk-shared
         )
 		list(APPEND ENGINE_DLLS Diligent-GraphicsEngineVk-shared)
