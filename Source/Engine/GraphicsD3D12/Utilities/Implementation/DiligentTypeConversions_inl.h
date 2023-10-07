@@ -59,7 +59,7 @@ XII_ALWAYS_INLINE Diligent::BLEND_FACTOR xiiDiligentTypeConversions::GetBlendFac
   return Diligent::BLEND_FACTOR_UNDEFINED;
 }
 
-XII_ALWAYS_INLINE Diligent::BLEND_OPERATION xiiDiligentTypeConversions::GetBlendOperation(xiiEnum<xiiGALBlendOperation> e)
+XII_ALWAYS_INLINE Diligent::BLEND_OPERATION xiiDiligentTypeConversions::GetBlendOp(xiiEnum<xiiGALBlendOperation> e)
 {
   switch (e)
   {
@@ -81,7 +81,7 @@ XII_ALWAYS_INLINE Diligent::BLEND_OPERATION xiiDiligentTypeConversions::GetBlend
   return Diligent::BLEND_OPERATION_UNDEFINED;
 }
 
-XII_ALWAYS_INLINE Diligent::COMPARISON_FUNCTION xiiDiligentTypeConversions::GetComparisonFunction(xiiEnum<xiiGALComparisonFunction> e)
+XII_ALWAYS_INLINE Diligent::COMPARISON_FUNCTION xiiDiligentTypeConversions::GetComparisonFunc(xiiEnum<xiiGALComparisonFunction> e)
 {
   switch (e)
   {
@@ -106,9 +106,10 @@ XII_ALWAYS_INLINE Diligent::COMPARISON_FUNCTION xiiDiligentTypeConversions::GetC
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
+  return Diligent::COMPARISON_FUNC_UNKNOWN;
 }
 
-XII_ALWAYS_INLINE Diligent::STENCIL_OP xiiDiligentTypeConversions::GetStencilOperation(xiiEnum<xiiGALStencilOperation> e)
+XII_ALWAYS_INLINE Diligent::STENCIL_OP xiiDiligentTypeConversions::GetStencilOp(xiiEnum<xiiGALStencilOperation> e)
 {
   switch (e)
   {
@@ -136,6 +137,38 @@ XII_ALWAYS_INLINE Diligent::STENCIL_OP xiiDiligentTypeConversions::GetStencilOpe
   return Diligent::STENCIL_OP::STENCIL_OP_UNDEFINED;
 }
 
+XII_ALWAYS_INLINE Diligent::FILL_MODE xiiDiligentTypeConversions::GetFillMode(xiiEnum<xiiGALFillMode> e)
+{
+  switch (e)
+  {
+    case xiiGALFillMode::Undefined:
+      return Diligent::FILL_MODE_UNDEFINED;
+    case xiiGALFillMode::Wireframe:
+      return Diligent::FILL_MODE_WIREFRAME;
+    case xiiGALFillMode::Solid:
+      return Diligent::FILL_MODE_SOLID;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::FILL_MODE_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE Diligent::CULL_MODE xiiDiligentTypeConversions::GetCullMode(xiiEnum<xiiGALCullMode> e)
+{
+  switch (e)
+  {
+    case xiiGALCullMode::Undefined:
+      return Diligent::CULL_MODE_UNDEFINED;
+    case xiiGALCullMode::None:
+      return Diligent::CULL_MODE_NONE;
+    case xiiGALCullMode::Front:
+      return Diligent::CULL_MODE_NONE;
+    case xiiGALCullMode::Back:
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::CULL_MODE_UNDEFINED;
+}
 
 XII_ALWAYS_INLINE Diligent::FILTER_TYPE xiiDiligentTypeConversions::GetFilter(xiiEnum<xiiGALFilterType> e)
 {

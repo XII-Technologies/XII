@@ -4,12 +4,10 @@
 
 #include <GraphicsFoundation/States/DepthStencilState.h>
 
-struct D3D12_DEPTH_STENCIL_DESC;
-
 class XII_GRAPHICSD3D12_DLL xiiGALDepthStencilStateD3D12 : public xiiGALDepthStencilState
 {
 public:
-  XII_ALWAYS_INLINE const D3D12_DEPTH_STENCIL_DESC* GetDepthStencilState() const;
+  XII_ALWAYS_INLINE const Diligent::DepthStencilStateDesc* GetDepthStencilState() const;
 
 protected:
   friend class xiiGALDevice;
@@ -24,7 +22,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
 
 protected:
-  D3D12_DEPTH_STENCIL_DESC m_DepthStencilState = {};
+  Diligent::DepthStencilStateDesc m_DepthStencilState = {};
 };
 
 #include <GraphicsD3D12/States/Implementation/DepthStencilStateD3D12_inl.h>

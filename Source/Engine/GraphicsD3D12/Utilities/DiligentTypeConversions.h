@@ -12,10 +12,13 @@ public:
   static Diligent::RENDER_DEVICE_TYPE GetRenderDeviceType(const xiiEnum<xiiGALGraphicsDeviceType> e);
 
   static Diligent::BLEND_FACTOR    GetBlendFactor(xiiEnum<xiiGALBlendFactor> e);
-  static Diligent::BLEND_OPERATION GetBlendOperation(xiiEnum<xiiGALBlendOperation> e);
+  static Diligent::BLEND_OPERATION GetBlendOp(xiiEnum<xiiGALBlendOperation> e);
 
-  static Diligent::STENCIL_OP          GetStencilOperation(xiiEnum<xiiGALStencilOperation> e);
-  static Diligent::COMPARISON_FUNCTION GetComparisonFunction(xiiEnum<xiiGALComparisonFunction> e);
+  static Diligent::COMPARISON_FUNCTION GetComparisonFunc(xiiEnum<xiiGALComparisonFunction> e);
+  static Diligent::STENCIL_OP          GetStencilOp(xiiEnum<xiiGALStencilOperation> e);
+
+  static Diligent::FILL_MODE GetFillMode(xiiEnum<xiiGALFillMode> e);
+  static Diligent::CULL_MODE GetCullMode(xiiEnum<xiiGALCullMode> e);
 
   static Diligent::FILTER_TYPE GetFilter(xiiEnum<xiiGALFilterType> e);
 
