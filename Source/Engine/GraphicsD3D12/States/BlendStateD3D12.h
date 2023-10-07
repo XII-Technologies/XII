@@ -10,7 +10,7 @@ public:
   XII_ALWAYS_INLINE const Diligent::BlendStateDesc* GetBlendState() const;
 
 protected:
-  friend class xiiGALDevice;
+  friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
   xiiGALBlendStateD3D12(const xiiGALBlendStateCreationDescription& creationDescription);

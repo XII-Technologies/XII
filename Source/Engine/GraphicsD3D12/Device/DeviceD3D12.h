@@ -72,7 +72,7 @@ protected:
   virtual void               DestroyTextureViewPlatform(xiiGALTextureView* pTextureView) override;
 
   virtual xiiGALSampler* CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) override;
-  virtual void           DestroySamplerPlatform(xiiGALSampler* pSamplerState) override;
+  virtual void           DestroySamplerPlatform(xiiGALSampler* pSampler) override;
 
   virtual xiiGALInputLayout* CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description) override;
   virtual void               DestroyInputLayoutPlatform(xiiGALInputLayout* pInputLayout) override;

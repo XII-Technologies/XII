@@ -180,7 +180,7 @@ public:
   xiiGALSamplerHandle CreateSampler(const xiiGALSamplerCreationDescription& description);
 
   /// \brief This destroys the sampler with the given handle.
-  void DestroySampler(xiiGALSamplerHandle hSamplerState);
+  void DestroySampler(xiiGALSamplerHandle hSampler);
 
 
   /// \brief This creates a new input layout object.
@@ -477,7 +477,7 @@ protected:
   virtual void               DestroyTextureViewPlatform(xiiGALTextureView* pTextureView)                                                       = 0;
 
   virtual xiiGALSampler* CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) = 0;
-  virtual void           DestroySamplerPlatform(xiiGALSampler* pSamplerState)                       = 0;
+  virtual void           DestroySamplerPlatform(xiiGALSampler* pSampler)                            = 0;
 
   virtual xiiGALInputLayout* CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description) = 0;
   virtual void               DestroyInputLayoutPlatform(xiiGALInputLayout* pInputLayout)                        = 0;

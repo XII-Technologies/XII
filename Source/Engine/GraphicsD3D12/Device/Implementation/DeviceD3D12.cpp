@@ -5,6 +5,8 @@
 
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 
+#include <GraphicsD3D12/Resources/SamplerD3D12.h>
+
 xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
   return XII_NEW(pAllocator, xiiGALDeviceD3D12, description);
@@ -150,11 +152,23 @@ void xiiGALDeviceD3D12::DestroyTextureViewPlatform(xiiGALTextureView* pTextureVi
 
 xiiGALSampler* xiiGALDeviceD3D12::CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)
 {
+  xiiGALSamplerD3D12* pSamplerD3D12 = XII_NEW(&m_Allocator, xiiGALSamplerD3D12, description);
+
+  if (pSamplerD3D12->InitPlatform(this).Succeeded())
+    return pSamplerD3D12;
+
+  XII_DELETE(&m_Allocator, pSamplerD3D12);
+
   return nullptr;
 }
 
-void xiiGALDeviceD3D12::DestroySamplerPlatform(xiiGALSampler* pSamplerState)
+void xiiGALDeviceD3D12::DestroySamplerPlatform(xiiGALSampler* pSampler)
 {
+  xiiGALSamplerD3D12* pSamplerD3D12 = static_cast<xiiGALSamplerD3D12*>(pSampler);
+
+  pSamplerD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pSamplerD3D12);
 }
 
 xiiGALInputLayout* xiiGALDeviceD3D12::CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description)

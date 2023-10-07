@@ -10,7 +10,7 @@ public:
   XII_ALWAYS_INLINE const Diligent::DepthStencilStateDesc* GetDepthStencilState() const;
 
 protected:
-  friend class xiiGALDevice;
+  friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
   xiiGALDepthStencilStateD3D12(const xiiGALDepthStencilStateCreationDescription& creationDescription);

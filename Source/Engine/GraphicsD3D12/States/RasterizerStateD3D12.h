@@ -10,7 +10,7 @@ public:
   XII_ALWAYS_INLINE const Diligent::RasterizerStateDesc* GetRasterizerState() const;
 
 protected:
-  friend class xiiGALDevice;
+  friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
   xiiGALRasterizerStateD3D12(const xiiGALRasterizerStateCreationDescription& creationDescription);

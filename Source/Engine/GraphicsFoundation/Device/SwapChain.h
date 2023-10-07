@@ -8,6 +8,9 @@
 class XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChain : public xiiGALObject<xiiGALSwapChainCreationDescription>
 {
 public:
+  /// \brief Acquires the next render target for presenting.
+  virtual void AcquireNextRenderTarget() = 0;
+
   /// \brief This presents a rendered image to the screen.
   virtual void Present(xiiUInt32 uiSyncInterval) = 0;
 
