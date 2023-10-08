@@ -204,3 +204,207 @@ XII_ALWAYS_INLINE Diligent::COLOR_MASK xiiDiligentTypeConversions::GetColorMask(
                               ((mask.IsSet(xiiGALColorMask::Blue)) ? Diligent::COLOR_MASK_BLUE : 0) |
                               ((mask.IsSet(xiiGALColorMask::Alpha)) ? Diligent::COLOR_MASK_ALPHA : 0));
 }
+
+XII_ALWAYS_INLINE Diligent::BIND_FLAGS xiiDiligentTypeConversions::GetBindFlags(xiiBitflags<xiiGALBindFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::BIND_NONE;
+
+  Diligent::BIND_FLAGS bindFlags = {};
+
+  if (e.IsSet(xiiGALBindFlags::VertexBuffer))
+    bindFlags |= Diligent::BIND_VERTEX_BUFFER;
+  if (e.IsSet(xiiGALBindFlags::IndexBuffer))
+    bindFlags |= Diligent::BIND_INDEX_BUFFER;
+  if (e.IsSet(xiiGALBindFlags::UniformBuffer))
+    bindFlags |= Diligent::BIND_UNIFORM_BUFFER;
+  if (e.IsSet(xiiGALBindFlags::ShaderResource))
+    bindFlags |= Diligent::BIND_SHADER_RESOURCE;
+  if (e.IsSet(xiiGALBindFlags::StreamOutput))
+    bindFlags |= Diligent::BIND_STREAM_OUTPUT;
+  if (e.IsSet(xiiGALBindFlags::RenderTarget))
+    bindFlags |= Diligent::BIND_RENDER_TARGET;
+  if (e.IsSet(xiiGALBindFlags::DepthStencil))
+    bindFlags |= Diligent::BIND_DEPTH_STENCIL;
+  if (e.IsSet(xiiGALBindFlags::UnorderedAccess))
+    bindFlags |= Diligent::BIND_UNORDERED_ACCESS;
+  if (e.IsSet(xiiGALBindFlags::IndirectDrawArguments))
+    bindFlags |= Diligent::BIND_INDIRECT_DRAW_ARGS;
+  if (e.IsSet(xiiGALBindFlags::InputAttachment))
+    bindFlags |= Diligent::BIND_INPUT_ATTACHMENT;
+  if (e.IsSet(xiiGALBindFlags::RayTracing))
+    bindFlags |= Diligent::BIND_RAY_TRACING;
+  if (e.IsSet(xiiGALBindFlags::ShadingRate))
+    bindFlags |= Diligent::BIND_SHADING_RATE;
+
+  return bindFlags;
+}
+
+XII_ALWAYS_INLINE Diligent::CPU_ACCESS_FLAGS xiiDiligentTypeConversions::GetCPUAccessFlags(xiiBitflags<xiiGALCPUAccessFlag> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::CPU_ACCESS_NONE;
+
+  Diligent::CPU_ACCESS_FLAGS accessFlags = {};
+
+  if (e.IsSet(xiiGALCPUAccessFlag::Read))
+    accessFlags |= Diligent::CPU_ACCESS_READ;
+  if (e.IsSet(xiiGALCPUAccessFlag::Write))
+    accessFlags |= Diligent::CPU_ACCESS_WRITE;
+
+  return accessFlags;
+}
+
+XII_ALWAYS_INLINE Diligent::BUFFER_MODE xiiDiligentTypeConversions::GetBufferMode(xiiEnum<xiiGALBufferMode> e)
+{
+  switch (e)
+  {
+    case xiiGALBufferMode::Undefined:
+      return Diligent::BUFFER_MODE_UNDEFINED;
+    case xiiGALBufferMode::Formatted:
+      return Diligent::BUFFER_MODE_FORMATTED;
+    case xiiGALBufferMode::Structured:
+      return Diligent::BUFFER_MODE_STRUCTURED;
+    case xiiGALBufferMode::Raw:
+      return Diligent::BUFFER_MODE_RAW;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::BUFFER_MODE_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE Diligent::USAGE xiiDiligentTypeConversions::GetUsage(xiiEnum<xiiGALResourceUsage> e)
+{
+  switch (e)
+  {
+    case xiiGALResourceUsage::Immutable:
+      return Diligent::USAGE_IMMUTABLE;
+    case xiiGALResourceUsage::Default:
+      return Diligent::USAGE_DEFAULT;
+    case xiiGALResourceUsage::Dynamic:
+      return Diligent::USAGE_DYNAMIC;
+    case xiiGALResourceUsage::Staging:
+      return Diligent::USAGE_STAGING;
+    case xiiGALResourceUsage::Unified:
+      return Diligent::USAGE_UNIFIED;
+    case xiiGALResourceUsage::Sparse:
+      return Diligent::USAGE_SPARSE;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::USAGE_IMMUTABLE;
+}
+
+XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentTypeConversions::GetResourceState(xiiBitflags<xiiGALResourceStateFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::RESOURCE_STATE_UNKNOWN;
+
+  Diligent::RESOURCE_STATE resourceState = {};
+
+  if (e.IsSet(xiiGALResourceStateFlags::Unknown))
+    resourceState |= Diligent::RESOURCE_STATE_UNKNOWN;
+  if (e.IsSet(xiiGALResourceStateFlags::Undefined))
+    resourceState |= Diligent::RESOURCE_STATE_UNDEFINED;
+  if (e.IsSet(xiiGALResourceStateFlags::VertexBuffer))
+    resourceState |= Diligent::RESOURCE_STATE_VERTEX_BUFFER;
+  if (e.IsSet(xiiGALResourceStateFlags::ConstantBuffer))
+    resourceState |= Diligent::RESOURCE_STATE_CONSTANT_BUFFER;
+  if (e.IsSet(xiiGALResourceStateFlags::IndexBuffer))
+    resourceState |= Diligent::RESOURCE_STATE_INDEX_BUFFER;
+  if (e.IsSet(xiiGALResourceStateFlags::RenderTarget))
+    resourceState |= Diligent::RESOURCE_STATE_RENDER_TARGET;
+  if (e.IsSet(xiiGALResourceStateFlags::UnorderedAccess))
+    resourceState |= Diligent::RESOURCE_STATE_UNORDERED_ACCESS;
+  if (e.IsSet(xiiGALResourceStateFlags::DepthWrite))
+    resourceState |= Diligent::RESOURCE_STATE_DEPTH_WRITE;
+  if (e.IsSet(xiiGALResourceStateFlags::DepthRead))
+    resourceState |= Diligent::RESOURCE_STATE_DEPTH_READ;
+  if (e.IsSet(xiiGALResourceStateFlags::ShaderResource))
+    resourceState |= Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+  if (e.IsSet(xiiGALResourceStateFlags::StreamOut))
+    resourceState |= Diligent::RESOURCE_STATE_STREAM_OUT;
+  if (e.IsSet(xiiGALResourceStateFlags::IndirectArgument))
+    resourceState |= Diligent::RESOURCE_STATE_INDIRECT_ARGUMENT;
+  if (e.IsSet(xiiGALResourceStateFlags::CopyDestination))
+    resourceState |= Diligent::RESOURCE_STATE_COPY_DEST;
+  if (e.IsSet(xiiGALResourceStateFlags::CopySource))
+    resourceState |= Diligent::RESOURCE_STATE_COPY_SOURCE;
+  if (e.IsSet(xiiGALResourceStateFlags::ResolveDestination))
+    resourceState |= Diligent::RESOURCE_STATE_RESOLVE_DEST;
+  if (e.IsSet(xiiGALResourceStateFlags::ResolveSource))
+    resourceState |= Diligent::RESOURCE_STATE_RESOLVE_SOURCE;
+  if (e.IsSet(xiiGALResourceStateFlags::InputAttachment))
+    resourceState |= Diligent::RESOURCE_STATE_INPUT_ATTACHMENT;
+  if (e.IsSet(xiiGALResourceStateFlags::Present))
+    resourceState |= Diligent::RESOURCE_STATE_PRESENT;
+  if (e.IsSet(xiiGALResourceStateFlags::BuildAsRead))
+    resourceState |= Diligent::RESOURCE_STATE_BUILD_AS_READ;
+  if (e.IsSet(xiiGALResourceStateFlags::BuildAsWrite))
+    resourceState |= Diligent::RESOURCE_STATE_BUILD_AS_WRITE;
+  if (e.IsSet(xiiGALResourceStateFlags::RayTracing))
+    resourceState |= Diligent::RESOURCE_STATE_RAY_TRACING;
+  if (e.IsSet(xiiGALResourceStateFlags::Common))
+    resourceState |= Diligent::RESOURCE_STATE_COMMON;
+  if (e.IsSet(xiiGALResourceStateFlags::ShadingRate))
+    resourceState |= Diligent::RESOURCE_STATE_SHADING_RATE;
+
+  return Diligent::RESOURCE_STATE_UNKNOWN;
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiDiligentTypeConversions::GetResourceState(Diligent::RESOURCE_STATE e)
+{
+  if (e == Diligent::RESOURCE_STATE_UNKNOWN)
+    return xiiBitflags<xiiGALResourceStateFlags>();
+
+  xiiBitflags<xiiGALResourceStateFlags> resourceStateFlags;
+
+  if (e & Diligent::RESOURCE_STATE_UNKNOWN)
+    resourceStateFlags |= xiiGALResourceStateFlags::Unknown;
+  if (e & Diligent::RESOURCE_STATE_UNDEFINED)
+    resourceStateFlags |= xiiGALResourceStateFlags::Undefined;
+  if (e & Diligent::RESOURCE_STATE_VERTEX_BUFFER)
+    resourceStateFlags |= xiiGALResourceStateFlags::VertexBuffer;
+  if (e & Diligent::RESOURCE_STATE_CONSTANT_BUFFER)
+    resourceStateFlags |= xiiGALResourceStateFlags::ConstantBuffer;
+  if (e & Diligent::RESOURCE_STATE_INDEX_BUFFER)
+    resourceStateFlags |= xiiGALResourceStateFlags::IndexBuffer;
+  if (e & Diligent::RESOURCE_STATE_RENDER_TARGET)
+    resourceStateFlags |= xiiGALResourceStateFlags::RenderTarget;
+  if (e & Diligent::RESOURCE_STATE_UNORDERED_ACCESS)
+    resourceStateFlags |= xiiGALResourceStateFlags::UnorderedAccess;
+  if (e & Diligent::RESOURCE_STATE_DEPTH_WRITE)
+    resourceStateFlags |= xiiGALResourceStateFlags::DepthWrite;
+  if (e & Diligent::RESOURCE_STATE_DEPTH_READ)
+    resourceStateFlags |= xiiGALResourceStateFlags::DepthRead;
+  if (e & Diligent::RESOURCE_STATE_SHADER_RESOURCE)
+    resourceStateFlags |= xiiGALResourceStateFlags::ShaderResource;
+  if (e & Diligent::RESOURCE_STATE_STREAM_OUT)
+    resourceStateFlags |= xiiGALResourceStateFlags::StreamOut;
+  if (e & Diligent::RESOURCE_STATE_INDIRECT_ARGUMENT)
+    resourceStateFlags |= xiiGALResourceStateFlags::IndirectArgument;
+  if (e & Diligent::RESOURCE_STATE_COPY_DEST)
+    resourceStateFlags |= xiiGALResourceStateFlags::CopyDestination;
+  if (e & Diligent::RESOURCE_STATE_COPY_SOURCE)
+    resourceStateFlags |= xiiGALResourceStateFlags::CopySource;
+  if (e & Diligent::RESOURCE_STATE_RESOLVE_DEST)
+    resourceStateFlags |= xiiGALResourceStateFlags::ResolveDestination;
+  if (e & Diligent::RESOURCE_STATE_RESOLVE_SOURCE)
+    resourceStateFlags |= xiiGALResourceStateFlags::ResolveSource;
+  if (e & Diligent::RESOURCE_STATE_INPUT_ATTACHMENT)
+    resourceStateFlags |= xiiGALResourceStateFlags::InputAttachment;
+  if (e & Diligent::RESOURCE_STATE_PRESENT)
+    resourceStateFlags |= xiiGALResourceStateFlags::Present;
+  if (e & Diligent::RESOURCE_STATE_BUILD_AS_READ)
+    resourceStateFlags |= xiiGALResourceStateFlags::BuildAsRead;
+  if (e & Diligent::RESOURCE_STATE_BUILD_AS_WRITE)
+    resourceStateFlags |= xiiGALResourceStateFlags::BuildAsWrite;
+  if (e & Diligent::RESOURCE_STATE_RAY_TRACING)
+    resourceStateFlags |= xiiGALResourceStateFlags::RayTracing;
+  if (e & Diligent::RESOURCE_STATE_COMMON)
+    resourceStateFlags |= xiiGALResourceStateFlags::Common;
+  if (e & Diligent::RESOURCE_STATE_SHADING_RATE)
+    resourceStateFlags |= xiiGALResourceStateFlags::ShadingRate;
+
+  return resourceStateFlags;
+}

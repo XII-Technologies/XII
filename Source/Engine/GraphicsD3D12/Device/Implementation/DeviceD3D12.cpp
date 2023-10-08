@@ -5,6 +5,7 @@
 
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 
+#include <GraphicsD3D12/Resources/BufferD3D12.h>
 #include <GraphicsD3D12/Resources/SamplerD3D12.h>
 
 xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
@@ -116,11 +117,23 @@ void xiiGALDeviceD3D12::DestroyShaderPlatform(xiiGALShader* pShader)
 
 xiiGALBuffer* xiiGALDeviceD3D12::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData)
 {
-  return nullptr;
+  xiiGALBufferD3D12* pBufferD3D12 = XII_NEW(&m_Allocator, xiiGALBufferD3D12, description);
+
+  if (pBufferD3D12->InitPlatform(this, pInitialData).Succeeded())
+    return pBufferD3D12;
+
+  XII_DELETE(&m_Allocator, pBufferD3D12);
+
+  return pBufferD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyBufferPlatform(xiiGALBuffer* pBuffer)
 {
+  xiiGALBufferD3D12* pBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pBuffer);
+
+  pBufferD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pBufferD3D12);
 }
 
 xiiGALBufferView* xiiGALDeviceD3D12::CreateBufferViewPlatform(const xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description)
@@ -159,7 +172,7 @@ xiiGALSampler* xiiGALDeviceD3D12::CreateSamplerPlatform(const xiiGALSamplerCreat
 
   XII_DELETE(&m_Allocator, pSamplerD3D12);
 
-  return nullptr;
+  return pSamplerD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroySamplerPlatform(xiiGALSampler* pSampler)
