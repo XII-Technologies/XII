@@ -408,3 +408,260 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiDiligentTypeConversio
 
   return resourceStateFlags;
 }
+
+XII_ALWAYS_INLINE Diligent::RESOURCE_DIMENSION xiiDiligentTypeConversions::GetResourceDimension(xiiEnum<xiiGALResourceDimension> e)
+{
+  switch (e)
+  {
+    case xiiGALResourceDimension::Undefined:
+      return Diligent::RESOURCE_DIM_UNDEFINED;
+    case xiiGALResourceDimension::Buffer:
+      return Diligent::RESOURCE_DIM_BUFFER;
+    case xiiGALResourceDimension::Texture1D:
+      return Diligent::RESOURCE_DIM_TEX_1D;
+    case xiiGALResourceDimension::Texture1DArray:
+      return Diligent::RESOURCE_DIM_TEX_1D_ARRAY;
+    case xiiGALResourceDimension::Texture2D:
+      return Diligent::RESOURCE_DIM_TEX_2D;
+    case xiiGALResourceDimension::Texture2DArray:
+      return Diligent::RESOURCE_DIM_TEX_2D_ARRAY;
+    case xiiGALResourceDimension::Texture3D:
+      return Diligent::RESOURCE_DIM_TEX_3D;
+    case xiiGALResourceDimension::TextureCube:
+      return Diligent::RESOURCE_DIM_TEX_CUBE;
+    case xiiGALResourceDimension::TextureCubeArray:
+      return Diligent::RESOURCE_DIM_TEX_CUBE_ARRAY;
+  }
+  return Diligent::RESOURCE_DIM_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE Diligent::TEXTURE_FORMAT xiiDiligentTypeConversions::GetTextureFormat(xiiEnum<xiiGALTextureFormat> e)
+{
+  switch (e)
+  {
+    case xiiGALTextureFormat::Unknown:
+      return Diligent::TEX_FORMAT_UNKNOWN;
+    case xiiGALTextureFormat::RGBA32Typeless:
+      return Diligent::TEX_FORMAT_RGBA32_TYPELESS;
+    case xiiGALTextureFormat::RGBA32Float:
+      return Diligent::TEX_FORMAT_RGBA32_FLOAT;
+    case xiiGALTextureFormat::RGBA32UInt:
+      return Diligent::TEX_FORMAT_RGBA32_UINT;
+    case xiiGALTextureFormat::RGBA32SInt:
+      return Diligent::TEX_FORMAT_RGBA32_SINT;
+    case xiiGALTextureFormat::RGB32Typeless:
+      return Diligent::TEX_FORMAT_RGBA32_TYPELESS;
+    case xiiGALTextureFormat::RGB32Float:
+      return Diligent::TEX_FORMAT_RGBA32_FLOAT;
+    case xiiGALTextureFormat::RGB32UInt:
+      return Diligent::TEX_FORMAT_RGBA32_UINT;
+    case xiiGALTextureFormat::RGB32SInt:
+      return Diligent::TEX_FORMAT_RGBA32_SINT;
+    case xiiGALTextureFormat::RGBA16Typeless:
+      return Diligent::TEX_FORMAT_RGBA16_TYPELESS;
+    case xiiGALTextureFormat::RGBA16Float:
+      return Diligent::TEX_FORMAT_RGBA16_FLOAT;
+    case xiiGALTextureFormat::RGBA16UNormalized:
+      return Diligent::TEX_FORMAT_RGBA16_UNORM;
+    case xiiGALTextureFormat::RGBA16UInt:
+      return Diligent::TEX_FORMAT_RGBA16_UINT;
+    case xiiGALTextureFormat::RGBA16SNormalized:
+      return Diligent::TEX_FORMAT_RGBA16_SNORM;
+    case xiiGALTextureFormat::RGBA16SInt:
+      return Diligent::TEX_FORMAT_RGBA16_SINT;
+    case xiiGALTextureFormat::RG32Typeless:
+      return Diligent::TEX_FORMAT_RG32_TYPELESS;
+    case xiiGALTextureFormat::RG32Float:
+      return Diligent::TEX_FORMAT_RG32_FLOAT;
+    case xiiGALTextureFormat::RG32UInt:
+      return Diligent::TEX_FORMAT_RG32_UINT;
+    case xiiGALTextureFormat::RG32SInt:
+      return Diligent::TEX_FORMAT_RG32_SINT;
+    case xiiGALTextureFormat::R32G8X24Typeless:
+      return Diligent::TEX_FORMAT_R32G8X24_TYPELESS;
+    case xiiGALTextureFormat::D32FloatS8X24UInt:
+      return Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT;
+    case xiiGALTextureFormat::R32FloatX8X24Typeless:
+      return Diligent::TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS;
+    case xiiGALTextureFormat::X32TypelessG8X24UInt:
+      return Diligent::TEX_FORMAT_X32_TYPELESS_G8X24_UINT;
+    case xiiGALTextureFormat::RGB10A2Typeless:
+      return Diligent::TEX_FORMAT_RGB10A2_TYPELESS;
+    case xiiGALTextureFormat::RGB10A2UNormalized:
+      return Diligent::TEX_FORMAT_RGB10A2_UNORM;
+    case xiiGALTextureFormat::RGB10A2UInt:
+      return Diligent::TEX_FORMAT_RGB10A2_UINT;
+    case xiiGALTextureFormat::RG11B10Float:
+      return Diligent::TEX_FORMAT_R11G11B10_FLOAT;
+    case xiiGALTextureFormat::RGBA8Typeless:
+      return Diligent::TEX_FORMAT_RGBA8_TYPELESS;
+    case xiiGALTextureFormat::RGBA8UNormalized:
+      return Diligent::TEX_FORMAT_RGBA8_UNORM;
+    case xiiGALTextureFormat::RGBA8UNormalizedSRGB:
+      return Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB;
+    case xiiGALTextureFormat::RGBA8UInt:
+      return Diligent::TEX_FORMAT_RGBA8_UINT;
+    case xiiGALTextureFormat::RGBA8SNormalized:
+      return Diligent::TEX_FORMAT_RGBA8_SNORM;
+    case xiiGALTextureFormat::RGBA8SInt:
+      return Diligent::TEX_FORMAT_RGBA8_SINT;
+    case xiiGALTextureFormat::RG16Typeless:
+      return Diligent::TEX_FORMAT_RG16_TYPELESS;
+    case xiiGALTextureFormat::RG16Float:
+      return Diligent::TEX_FORMAT_RG16_FLOAT;
+    case xiiGALTextureFormat::RG16UNormalized:
+      return Diligent::TEX_FORMAT_RG16_UNORM;
+    case xiiGALTextureFormat::RG16UInt:
+      return Diligent::TEX_FORMAT_RG16_UINT;
+    case xiiGALTextureFormat::RG16SNormalized:
+      return Diligent::TEX_FORMAT_RG16_SNORM;
+    case xiiGALTextureFormat::RG16SInt:
+      return Diligent::TEX_FORMAT_RG16_SINT;
+    case xiiGALTextureFormat::R32Typeless:
+      return Diligent::TEX_FORMAT_R32_TYPELESS;
+    case xiiGALTextureFormat::D32Float:
+      return Diligent::TEX_FORMAT_D32_FLOAT;
+    case xiiGALTextureFormat::R32Float:
+      return Diligent::TEX_FORMAT_R32_FLOAT;
+    case xiiGALTextureFormat::R32UInt:
+      return Diligent::TEX_FORMAT_R32_UINT;
+    case xiiGALTextureFormat::R32SInt:
+      return Diligent::TEX_FORMAT_R32_SINT;
+    case xiiGALTextureFormat::R24G8Typeless:
+      return Diligent::TEX_FORMAT_R24G8_TYPELESS;
+    case xiiGALTextureFormat::D24UNormalizedS8UInt:
+      return Diligent::TEX_FORMAT_D24_UNORM_S8_UINT;
+    case xiiGALTextureFormat::R24UNormalizedX8Typeless:
+      return Diligent::TEX_FORMAT_R24_UNORM_X8_TYPELESS;
+    case xiiGALTextureFormat::X24TypelessG8UInt:
+      return Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT;
+    case xiiGALTextureFormat::RG8Typeless:
+      return Diligent::TEX_FORMAT_RG8_TYPELESS;
+    case xiiGALTextureFormat::RG8UNormalized:
+      return Diligent::TEX_FORMAT_RG8_UNORM;
+    case xiiGALTextureFormat::RG8UInt:
+      return Diligent::TEX_FORMAT_RG8_UINT;
+    case xiiGALTextureFormat::RG8SNormalized:
+      return Diligent::TEX_FORMAT_RG8_SNORM;
+    case xiiGALTextureFormat::RG8SInt:
+      return Diligent::TEX_FORMAT_RG8_SINT;
+    case xiiGALTextureFormat::R16Typeless:
+      return Diligent::TEX_FORMAT_R16_TYPELESS;
+    case xiiGALTextureFormat::R16Float:
+      return Diligent::TEX_FORMAT_R16_FLOAT;
+    case xiiGALTextureFormat::D16UNormalized:
+      return Diligent::TEX_FORMAT_D16_UNORM;
+    case xiiGALTextureFormat::R16UNormalized:
+      return Diligent::TEX_FORMAT_R16_UNORM;
+    case xiiGALTextureFormat::R16UInt:
+      return Diligent::TEX_FORMAT_R16_UINT;
+    case xiiGALTextureFormat::R16SNormalized:
+      return Diligent::TEX_FORMAT_R16_SNORM;
+    case xiiGALTextureFormat::R16SInt:
+      return Diligent::TEX_FORMAT_R16_SINT;
+    case xiiGALTextureFormat::R8Typeless:
+      return Diligent::TEX_FORMAT_R8_TYPELESS;
+    case xiiGALTextureFormat::R8UNormalized:
+      return Diligent::TEX_FORMAT_R8_UNORM;
+    case xiiGALTextureFormat::R8UInt:
+      return Diligent::TEX_FORMAT_R8_UINT;
+    case xiiGALTextureFormat::R8SNormalized:
+      return Diligent::TEX_FORMAT_R8_SNORM;
+    case xiiGALTextureFormat::R8SInt:
+      return Diligent::TEX_FORMAT_R8_SINT;
+    case xiiGALTextureFormat::A8UNormalized:
+      return Diligent::TEX_FORMAT_A8_UNORM;
+    case xiiGALTextureFormat::R1UNormalized:
+      return Diligent::TEX_FORMAT_R1_UNORM;
+    case xiiGALTextureFormat::RGB9E5SharedExponent:
+      return Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP;
+    case xiiGALTextureFormat::RG8BG8UNormalized:
+      return Diligent::TEX_FORMAT_RG8_B8G8_UNORM;
+    case xiiGALTextureFormat::GR8GB8UNormalized:
+      return Diligent::TEX_FORMAT_G8R8_G8B8_UNORM;
+    case xiiGALTextureFormat::BC1Typeless:
+      return Diligent::TEX_FORMAT_BC1_TYPELESS;
+    case xiiGALTextureFormat::BC1UNormalized:
+      return Diligent::TEX_FORMAT_BC1_UNORM;
+    case xiiGALTextureFormat::BC1UNormalizedSRGB:
+      return Diligent::TEX_FORMAT_BC1_UNORM_SRGB;
+    case xiiGALTextureFormat::BC2Typeless:
+      return Diligent::TEX_FORMAT_BC2_TYPELESS;
+    case xiiGALTextureFormat::BC2UNormalized:
+      return Diligent::TEX_FORMAT_BC2_UNORM;
+    case xiiGALTextureFormat::BC2UNormalizedSRGB:
+      return Diligent::TEX_FORMAT_BC2_UNORM_SRGB;
+    case xiiGALTextureFormat::BC3Typeless:
+      return Diligent::TEX_FORMAT_BC3_TYPELESS;
+    case xiiGALTextureFormat::BC3UNormalized:
+      return Diligent::TEX_FORMAT_BC3_UNORM;
+    case xiiGALTextureFormat::BC3UNormalizedSRGB:
+      return Diligent::TEX_FORMAT_BC3_UNORM_SRGB;
+    case xiiGALTextureFormat::BC4Typeless:
+      return Diligent::TEX_FORMAT_BC4_TYPELESS;
+    case xiiGALTextureFormat::BC4UNormalized:
+      return Diligent::TEX_FORMAT_BC4_UNORM;
+    case xiiGALTextureFormat::BC4SNormalized:
+      return Diligent::TEX_FORMAT_BC4_SNORM;
+    case xiiGALTextureFormat::BC5Typeless:
+      return Diligent::TEX_FORMAT_BC5_TYPELESS;
+    case xiiGALTextureFormat::BC5UNormalized:
+      return Diligent::TEX_FORMAT_BC5_UNORM;
+    case xiiGALTextureFormat::BC5SNormalized:
+      return Diligent::TEX_FORMAT_BC5_SNORM;
+    case xiiGALTextureFormat::B5G6R5UNormalized:
+      return Diligent::TEX_FORMAT_B5G6R5_UNORM;
+    case xiiGALTextureFormat::B5G5R5A1UNormalized:
+      return Diligent::TEX_FORMAT_B5G5R5A1_UNORM;
+    case xiiGALTextureFormat::BGRA8UNormalized:
+      return Diligent::TEX_FORMAT_BGRA8_UNORM;
+    case xiiGALTextureFormat::BGRX8UNormalized:
+      return Diligent::TEX_FORMAT_BGRX8_UNORM;
+    case xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized:
+      return Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM;
+    case xiiGALTextureFormat::BGRA8Typeless:
+      return Diligent::TEX_FORMAT_BGRA8_TYPELESS;
+    case xiiGALTextureFormat::BGRA8UNormalizedSRGB:
+      return Diligent::TEX_FORMAT_BGRA8_UNORM_SRGB;
+    case xiiGALTextureFormat::BGRX8Typeless:
+      return Diligent::TEX_FORMAT_BGRX8_TYPELESS;
+    case xiiGALTextureFormat::BGRX8UNormalizedSRGB:
+      return Diligent::TEX_FORMAT_BGRX8_UNORM_SRGB;
+    case xiiGALTextureFormat::BC6HTypeless:
+      return Diligent::TEX_FORMAT_BC6H_TYPELESS;
+    case xiiGALTextureFormat::BC6HUF16:
+      return Diligent::TEX_FORMAT_BC6H_UF16;
+    case xiiGALTextureFormat::BC6HSF16:
+      return Diligent::TEX_FORMAT_BC6H_SF16;
+    case xiiGALTextureFormat::BC7Typeless:
+      return Diligent::TEX_FORMAT_BC7_TYPELESS;
+    case xiiGALTextureFormat::BC7UNormalized:
+      return Diligent::TEX_FORMAT_BC7_UNORM;
+    case xiiGALTextureFormat::BC7UNormalizedSRGB:
+      return Diligent::TEX_FORMAT_BC7_UNORM_SRGB;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::TEX_FORMAT_UNKNOWN;
+}
+
+XII_ALWAYS_INLINE Diligent::MISC_TEXTURE_FLAGS xiiDiligentTypeConversions::GetMiscTextureFlags(xiiBitflags<xiiGALMiscTextureFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::MISC_TEXTURE_FLAG_NONE;
+
+  Diligent::MISC_TEXTURE_FLAGS miscTextureFlags = {};
+
+  if (e.IsSet(xiiGALMiscTextureFlags::None))
+    miscTextureFlags |= Diligent::MISC_TEXTURE_FLAG_NONE;
+  if (e.IsSet(xiiGALMiscTextureFlags::GenerateMips))
+    miscTextureFlags |= Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS;
+  if (e.IsSet(xiiGALMiscTextureFlags::Memoryless))
+    miscTextureFlags |= Diligent::MISC_TEXTURE_FLAG_MEMORYLESS;
+  if (e.IsSet(xiiGALMiscTextureFlags::SparseAlias))
+    miscTextureFlags |= Diligent::MISC_TEXTURE_FLAG_SPARSE_ALIASING;
+  if (e.IsSet(xiiGALMiscTextureFlags::Subsampled))
+    miscTextureFlags |= Diligent::MISC_TEXTURE_FLAG_SUBSAMPLED;
+
+  return miscTextureFlags;
+}

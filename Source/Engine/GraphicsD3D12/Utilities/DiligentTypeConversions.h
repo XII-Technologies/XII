@@ -3,6 +3,7 @@
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
@@ -32,6 +33,10 @@ public:
 
   static Diligent::RESOURCE_STATE              GetResourceState(xiiBitflags<xiiGALResourceStateFlags> e);
   static xiiBitflags<xiiGALResourceStateFlags> GetResourceState(Diligent::RESOURCE_STATE e);
+
+  static Diligent::RESOURCE_DIMENSION GetResourceDimension(xiiEnum<xiiGALResourceDimension> e);
+  static Diligent::TEXTURE_FORMAT     GetTextureFormat(xiiEnum<xiiGALTextureFormat> e);
+  static Diligent::MISC_TEXTURE_FLAGS GetMiscTextureFlags(xiiBitflags<xiiGALMiscTextureFlags> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>
