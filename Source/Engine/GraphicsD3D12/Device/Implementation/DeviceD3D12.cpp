@@ -6,6 +6,7 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
+#include <GraphicsD3D12/Resources/BufferViewD3D12.h>
 #include <GraphicsD3D12/Resources/FenceD3D12.h>
 #include <GraphicsD3D12/Resources/QueryD3D12.h>
 #include <GraphicsD3D12/Resources/RenderPassD3D12.h>
@@ -142,11 +143,23 @@ void xiiGALDeviceD3D12::DestroyBufferPlatform(xiiGALBuffer* pBuffer)
 
 xiiGALBufferView* xiiGALDeviceD3D12::CreateBufferViewPlatform(const xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description)
 {
-  return nullptr;
+  xiiGALBufferViewD3D12* pBufferViewD3D12 = XII_NEW(&m_Allocator, xiiGALBufferViewD3D12, const_cast<xiiGALBuffer*>(pBuffer), description);
+
+  if (pBufferViewD3D12->InitPlatform(this).Succeeded())
+    return pBufferViewD3D12;
+
+  XII_DELETE(&m_Allocator, pBufferViewD3D12);
+
+  return pBufferViewD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyBufferViewPlatform(xiiGALBufferView* pBufferView)
 {
+  xiiGALBufferViewD3D12* pBufferViewD3D12 = static_cast<xiiGALBufferViewD3D12*>(pBufferView);
+
+  pBufferViewD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pBufferViewD3D12);
 }
 
 xiiGALTexture* xiiGALDeviceD3D12::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData)
@@ -253,11 +266,23 @@ void xiiGALDeviceD3D12::DestroyFencePlatform(xiiGALFence* pFence)
 
 xiiGALRenderPass* xiiGALDeviceD3D12::CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description)
 {
-  return nullptr;
+  xiiGALRenderPassD3D12* pRenderPassD3D12 = XII_NEW(&m_Allocator, xiiGALRenderPassD3D12, description);
+
+  if (pRenderPassD3D12->InitPlatform(this).Succeeded())
+    return pRenderPassD3D12;
+
+  XII_DELETE(&m_Allocator, pRenderPassD3D12);
+
+  return pRenderPassD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyRenderPassPlatform(xiiGALRenderPass* pRenderPass)
 {
+  xiiGALRenderPassD3D12* pRenderPassD3D12 = static_cast<xiiGALRenderPassD3D12*>(pRenderPass);
+
+  pRenderPassD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pRenderPassD3D12);
 }
 
 xiiGALFramebuffer* xiiGALDeviceD3D12::CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description)

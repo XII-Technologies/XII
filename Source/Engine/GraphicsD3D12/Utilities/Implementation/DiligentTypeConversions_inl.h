@@ -731,3 +731,95 @@ XII_ALWAYS_INLINE Diligent::ATTACHMENT_STORE_OP xiiDiligentTypeConversions::GetS
   }
   return Diligent::ATTACHMENT_STORE_OP_STORE;
 }
+
+XII_ALWAYS_INLINE Diligent::BUFFER_VIEW_TYPE xiiDiligentTypeConversions::GetBufferViewType(xiiEnum<xiiGALBufferViewType> e)
+{
+  switch (e)
+  {
+    case xiiGALBufferViewType::Undefined:
+      return Diligent::BUFFER_VIEW_UNDEFINED;
+    case xiiGALBufferViewType::ShaderResource:
+      return Diligent::BUFFER_VIEW_SHADER_RESOURCE;
+    case xiiGALBufferViewType::UnorderedAccess:
+      return Diligent::BUFFER_VIEW_UNORDERED_ACCESS;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::BUFFER_VIEW_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE Diligent::TEXTURE_VIEW_TYPE xiiDiligentTypeConversions::GetTextureViewType(xiiEnum<xiiGALTextureViewType> e)
+{
+  switch (e)
+  {
+    case xiiGALTextureViewType::Undefined:
+      return Diligent::TEXTURE_VIEW_UNDEFINED;
+    case xiiGALTextureViewType::ShaderResource:
+      return Diligent::TEXTURE_VIEW_SHADER_RESOURCE;
+    case xiiGALTextureViewType::RenderTarget:
+      return Diligent::TEXTURE_VIEW_RENDER_TARGET;
+    case xiiGALTextureViewType::DepthStencil:
+      return Diligent::TEXTURE_VIEW_DEPTH_STENCIL;
+    case xiiGALTextureViewType::ReadOnlyDepthStencil:
+      return Diligent::TEXTURE_VIEW_READ_ONLY_DEPTH_STENCIL;
+    case xiiGALTextureViewType::UnorderedAccess:
+      return Diligent::TEXTURE_VIEW_UNORDERED_ACCESS;
+    case xiiGALTextureViewType::ShadingRate:
+      return Diligent::TEXTURE_VIEW_SHADING_RATE;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::TEXTURE_VIEW_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE Diligent::TEXTURE_ADDRESS_MODE xiiDiligentTypeConversions::GetTextureAddress(xiiEnum<xiiGALTextureAddressMode> e)
+{
+  switch (e)
+  {
+    case xiiGALTextureAddressMode::Unknown:
+      return Diligent::TEXTURE_ADDRESS_UNKNOWN;
+    case xiiGALTextureAddressMode::Wrap:
+      return Diligent::TEXTURE_ADDRESS_WRAP;
+    case xiiGALTextureAddressMode::Mirror:
+      return Diligent::TEXTURE_ADDRESS_MIRROR;
+    case xiiGALTextureAddressMode::Clamp:
+      return Diligent::TEXTURE_ADDRESS_CLAMP;
+    case xiiGALTextureAddressMode::Border:
+      return Diligent::TEXTURE_ADDRESS_BORDER;
+    case xiiGALTextureAddressMode::MirrorOnce:
+      return Diligent::TEXTURE_ADDRESS_MIRROR_ONCE;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::TEXTURE_ADDRESS_UNKNOWN;
+}
+
+XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentTypeConversions::GetValueType(xiiEnum<xiiGALValueType> e)
+{
+  switch (e)
+  {
+    case xiiGALValueType::Undefined:
+      return Diligent::VT_UNDEFINED;
+    case xiiGALValueType::Int8:
+      return Diligent::VT_INT8;
+    case xiiGALValueType::Int16:
+      return Diligent::VT_INT16;
+    case xiiGALValueType::Int32:
+      return Diligent::VT_INT32;
+    case xiiGALValueType::UInt8:
+      return Diligent::VT_UINT8;
+    case xiiGALValueType::UInt16:
+      return Diligent::VT_UINT16;
+    case xiiGALValueType::UInt32:
+      return Diligent::VT_UINT32;
+    case xiiGALValueType::Float16:
+      return Diligent::VT_FLOAT16;
+    case xiiGALValueType::Float32:
+      return Diligent::VT_FLOAT32;
+    case xiiGALValueType::Float64:
+      return Diligent::VT_FLOAT64;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::VT_UNDEFINED;
+}

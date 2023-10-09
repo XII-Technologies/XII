@@ -3,18 +3,6 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Resources/SamplerD3D12.h>
 
-// clang-format off
-static const Diligent::TEXTURE_ADDRESS_MODE GALTextureAddressModeToD3D12[xiiGALTextureAddressMode::ENUM_COUNT] =
-{
-  Diligent::TEXTURE_ADDRESS_UNKNOWN,
-  Diligent::TEXTURE_ADDRESS_WRAP,
-  Diligent::TEXTURE_ADDRESS_MIRROR,
-  Diligent::TEXTURE_ADDRESS_CLAMP,
-  Diligent::TEXTURE_ADDRESS_BORDER,
-  Diligent::TEXTURE_ADDRESS_MIRROR_ONCE,
-};
-// clang-format on
-
 xiiGALSamplerD3D12::xiiGALSamplerD3D12(const xiiGALSamplerCreationDescription& creationDescription) :
   xiiGALSampler(creationDescription)
 {
@@ -25,9 +13,9 @@ xiiGALSamplerD3D12::~xiiGALSamplerD3D12() = default;
 xiiResult xiiGALSamplerD3D12::InitPlatform(xiiGALDevice* pDevice)
 {
   Diligent::SamplerDesc samplerDescription;
-  samplerDescription.AddressU       = GALTextureAddressModeToD3D12[m_Description.m_AddressU];
-  samplerDescription.AddressV       = GALTextureAddressModeToD3D12[m_Description.m_AddressV];
-  samplerDescription.AddressW       = GALTextureAddressModeToD3D12[m_Description.m_AddressW];
+  samplerDescription.AddressU       = xiiDiligentTypeConversions::GetTextureAddress(m_Description.m_AddressU);
+  samplerDescription.AddressV       = xiiDiligentTypeConversions::GetTextureAddress(m_Description.m_AddressV);
+  samplerDescription.AddressW       = xiiDiligentTypeConversions::GetTextureAddress(m_Description.m_AddressW);
   samplerDescription.BorderColor[0] = m_Description.m_BorderColor.r;
   samplerDescription.BorderColor[1] = m_Description.m_BorderColor.g;
   samplerDescription.BorderColor[2] = m_Description.m_BorderColor.b;

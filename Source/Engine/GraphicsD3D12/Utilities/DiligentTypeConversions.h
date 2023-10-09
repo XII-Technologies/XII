@@ -3,6 +3,7 @@
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/BufferView.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Resources/Query.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
@@ -47,6 +48,14 @@ public:
 
   static Diligent::ATTACHMENT_LOAD_OP  GetLoadOperation(xiiEnum<xiiGALAttachmentLoadOperation> e);
   static Diligent::ATTACHMENT_STORE_OP GetStoreOperation(xiiEnum<xiiGALAttachmentStoreOperation> e);
+
+  static Diligent::BUFFER_VIEW_TYPE GetBufferViewType(xiiEnum<xiiGALBufferViewType> e);
+
+  static Diligent::TEXTURE_VIEW_TYPE GetTextureViewType(xiiEnum<xiiGALTextureViewType> e);
+
+  static Diligent::TEXTURE_ADDRESS_MODE GetTextureAddress(xiiEnum<xiiGALTextureAddressMode> e);
+
+  static Diligent::VALUE_TYPE GetValueType(xiiEnum<xiiGALValueType> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>
