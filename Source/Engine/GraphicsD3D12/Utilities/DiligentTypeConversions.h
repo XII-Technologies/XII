@@ -8,6 +8,7 @@
 #include <GraphicsFoundation/Resources/Query.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Resources/TextureView.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
@@ -56,6 +57,10 @@ public:
   static Diligent::TEXTURE_ADDRESS_MODE GetTextureAddress(xiiEnum<xiiGALTextureAddressMode> e);
 
   static Diligent::VALUE_TYPE GetValueType(xiiEnum<xiiGALValueType> e);
+
+  static Diligent::UAV_ACCESS_FLAG           GetUAVAccessFlags(xiiBitflags<xiiGALUnorderedAccessViewFlags> e);
+  static Diligent::TEXTURE_VIEW_FLAGS        GetTextureViewFlags(xiiBitflags<xiiGALTextureViewFlags> e);
+  static Diligent::TEXTURE_COMPONENT_SWIZZLE GetComponentSwizzle(xiiEnum<xiiGALTextureComponentSwizzle> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>

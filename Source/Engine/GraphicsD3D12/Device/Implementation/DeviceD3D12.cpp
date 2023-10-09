@@ -8,10 +8,12 @@
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
 #include <GraphicsD3D12/Resources/BufferViewD3D12.h>
 #include <GraphicsD3D12/Resources/FenceD3D12.h>
+#include <GraphicsD3D12/Resources/FramebufferD3D12.h>
 #include <GraphicsD3D12/Resources/QueryD3D12.h>
 #include <GraphicsD3D12/Resources/RenderPassD3D12.h>
 #include <GraphicsD3D12/Resources/SamplerD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
+#include <GraphicsD3D12/Resources/TextureViewD3D12.h>
 
 xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
@@ -185,11 +187,23 @@ void xiiGALDeviceD3D12::DestroyTexturePlatform(xiiGALTexture* pTexture)
 
 xiiGALTextureView* xiiGALDeviceD3D12::CreateTextureViewPlatform(const xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description)
 {
-  return nullptr;
+  xiiGALTextureViewD3D12* pTextureViewD3D12 = XII_NEW(&m_Allocator, xiiGALTextureViewD3D12, const_cast<xiiGALTexture*>(pTexture), description);
+
+  if (pTextureViewD3D12->InitPlatform(this).Succeeded())
+    return pTextureViewD3D12;
+
+  XII_DELETE(&m_Allocator, pTextureViewD3D12);
+
+  return pTextureViewD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyTextureViewPlatform(xiiGALTextureView* pTextureView)
 {
+  xiiGALTextureViewD3D12* pTextureViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(pTextureView);
+
+  pTextureViewD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pTextureViewD3D12);
 }
 
 xiiGALSampler* xiiGALDeviceD3D12::CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)

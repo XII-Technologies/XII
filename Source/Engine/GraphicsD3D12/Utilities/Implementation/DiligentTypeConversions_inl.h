@@ -823,3 +823,56 @@ XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentTypeConversions::GetValueType(
   }
   return Diligent::VT_UNDEFINED;
 }
+
+XII_ALWAYS_INLINE Diligent::UAV_ACCESS_FLAG xiiDiligentTypeConversions::GetUAVAccessFlags(xiiBitflags<xiiGALUnorderedAccessViewFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::UAV_ACCESS_FLAG_READ;
+
+  Diligent::UAV_ACCESS_FLAG uavAccessFlags = {};
+
+  if (e.IsSet(xiiGALUnorderedAccessViewFlags::Read))
+    uavAccessFlags |= Diligent::UAV_ACCESS_FLAG_READ;
+  if (e.IsSet(xiiGALUnorderedAccessViewFlags::Write))
+    uavAccessFlags |= Diligent::UAV_ACCESS_FLAG_WRITE;
+
+  return uavAccessFlags;
+}
+
+XII_ALWAYS_INLINE Diligent::TEXTURE_VIEW_FLAGS xiiDiligentTypeConversions::GetTextureViewFlags(xiiBitflags<xiiGALTextureViewFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::TEXTURE_VIEW_FLAG_NONE;
+
+  Diligent::TEXTURE_VIEW_FLAGS textureViewFlags = {};
+
+  if (e.IsSet(xiiGALTextureViewFlags::AllowMipGeneration))
+    textureViewFlags |= Diligent::TEXTURE_VIEW_FLAG_ALLOW_MIP_MAP_GENERATION;
+
+  return textureViewFlags;
+}
+
+XII_ALWAYS_INLINE Diligent::TEXTURE_COMPONENT_SWIZZLE xiiDiligentTypeConversions::GetComponentSwizzle(xiiEnum<xiiGALTextureComponentSwizzle> e)
+{
+  switch (e)
+  {
+    case xiiGALTextureComponentSwizzle::Identity:
+      return Diligent::TEXTURE_COMPONENT_SWIZZLE_IDENTITY;
+    case xiiGALTextureComponentSwizzle::Zero:
+      return Diligent::TEXTURE_COMPONENT_SWIZZLE_ZERO;
+    case xiiGALTextureComponentSwizzle::One:
+      return Diligent::TEXTURE_COMPONENT_SWIZZLE_ONE;
+    case xiiGALTextureComponentSwizzle::R:
+      return Diligent::TEXTURE_COMPONENT_SWIZZLE_R;
+    case xiiGALTextureComponentSwizzle::G:
+      return Diligent::TEXTURE_COMPONENT_SWIZZLE_G;
+    case xiiGALTextureComponentSwizzle::B:
+      return Diligent::TEXTURE_COMPONENT_SWIZZLE_B;
+    case xiiGALTextureComponentSwizzle::A:
+      return Diligent::TEXTURE_COMPONENT_SWIZZLE_A;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return Diligent::TEXTURE_COMPONENT_SWIZZLE_IDENTITY;
+}

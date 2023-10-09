@@ -13,7 +13,7 @@ xiiGALBufferViewD3D12::~xiiGALBufferViewD3D12() = default;
 
 xiiResult xiiGALBufferViewD3D12::InitPlatform(xiiGALDevice* pDevice)
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
+  // xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 
   Diligent::BufferViewDesc viewDescription;
   viewDescription.ViewType             = xiiDiligentTypeConversions::GetBufferViewType(m_Description.m_ViewType);
