@@ -14,6 +14,9 @@
 #include <GraphicsD3D12/Resources/SamplerD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 #include <GraphicsD3D12/Resources/TextureViewD3D12.h>
+#include <GraphicsD3D12/States/BlendStateD3D12.h>
+#include <GraphicsD3D12/States/DepthStencilStateD3D12.h>
+#include <GraphicsD3D12/States/RasterizerStateD3D12.h>
 
 xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
@@ -88,29 +91,65 @@ void xiiGALDeviceD3D12::EndFramePlatform()
 
 xiiGALBlendState* xiiGALDeviceD3D12::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
 {
-  return nullptr;
+  xiiGALBlendStateD3D12* pBlendStateD3D12 = XII_NEW(&m_Allocator, xiiGALBlendStateD3D12, description);
+
+  if (pBlendStateD3D12->InitPlatform(this).Succeeded())
+    return pBlendStateD3D12;
+
+  XII_DELETE(&m_Allocator, pBlendStateD3D12);
+
+  return pBlendStateD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyBlendStatePlatform(xiiGALBlendState* pBlendState)
 {
+  xiiGALBlendStateD3D12* pBlendStateD3D12 = static_cast<xiiGALBlendStateD3D12*>(pBlendState);
+
+  pBlendStateD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pBlendStateD3D12);
 }
 
 xiiGALDepthStencilState* xiiGALDeviceD3D12::CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description)
 {
-  return nullptr;
+  xiiGALDepthStencilStateD3D12* pDepthStencilStateD3D12 = XII_NEW(&m_Allocator, xiiGALDepthStencilStateD3D12, description);
+
+  if (pDepthStencilStateD3D12->InitPlatform(this).Succeeded())
+    return pDepthStencilStateD3D12;
+
+  XII_DELETE(&m_Allocator, pDepthStencilStateD3D12);
+
+  return pDepthStencilStateD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyDepthStencilStatePlatform(xiiGALDepthStencilState* pDepthStencilState)
 {
+  xiiGALDepthStencilStateD3D12* pDepthStencilStateD3D12 = static_cast<xiiGALDepthStencilStateD3D12*>(pDepthStencilState);
+
+  pDepthStencilStateD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pDepthStencilStateD3D12);
 }
 
 xiiGALRasterizerState* xiiGALDeviceD3D12::CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description)
 {
-  return nullptr;
+  xiiGALRasterizerStateD3D12* pRasterizerStateD3D12 = XII_NEW(&m_Allocator, xiiGALRasterizerStateD3D12, description);
+
+  if (pRasterizerStateD3D12->InitPlatform(this).Succeeded())
+    return pRasterizerStateD3D12;
+
+  XII_DELETE(&m_Allocator, pRasterizerStateD3D12);
+
+  return pRasterizerStateD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyRasterizerStatePlatform(xiiGALRasterizerState* pRasterizerState)
 {
+  xiiGALRasterizerStateD3D12* pRasterizerStateD3D12 = static_cast<xiiGALRasterizerStateD3D12*>(pRasterizerState);
+
+  pRasterizerStateD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pRasterizerStateD3D12);
 }
 
 xiiGALShader* xiiGALDeviceD3D12::CreateShaderPlatform(const xiiGALShaderCreationDescription& description)
