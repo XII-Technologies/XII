@@ -4,6 +4,7 @@
 
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Fence.h>
+#include <GraphicsFoundation/Resources/Query.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
@@ -40,6 +41,8 @@ public:
   static Diligent::MISC_TEXTURE_FLAGS GetMiscTextureFlags(xiiBitflags<xiiGALMiscTextureFlags> e);
 
   static Diligent::FENCE_TYPE GetFenceType(xiiEnum<xiiGALFenceType> e);
+
+  static Diligent::QUERY_TYPE GetQueryType(xiiEnum<xiiGALQueryType> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>

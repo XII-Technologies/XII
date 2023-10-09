@@ -679,3 +679,25 @@ XII_ALWAYS_INLINE Diligent::FENCE_TYPE xiiDiligentTypeConversions::GetFenceType(
   }
   return Diligent::FENCE_TYPE_CPU_WAIT_ONLY;
 }
+
+XII_ALWAYS_INLINE Diligent::QUERY_TYPE xiiDiligentTypeConversions::GetQueryType(xiiEnum<xiiGALQueryType> e)
+{
+  switch (e)
+  {
+    case xiiGALQueryType::Undefined:
+      return Diligent::QUERY_TYPE_UNDEFINED;
+    case xiiGALQueryType::Occlusion:
+      return Diligent::QUERY_TYPE_OCCLUSION;
+    case xiiGALQueryType::BinaryOcclusion:
+      return Diligent::QUERY_TYPE_BINARY_OCCLUSION;
+    case xiiGALQueryType::Timestamp:
+      return Diligent::QUERY_TYPE_TIMESTAMP;
+    case xiiGALQueryType::PipelineStatistics:
+      return Diligent::QUERY_TYPE_PIPELINE_STATISTICS;
+    case xiiGALQueryType::Duration:
+      return Diligent::QUERY_TYPE_DURATION;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::QUERY_TYPE_UNDEFINED;
+}

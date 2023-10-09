@@ -7,6 +7,7 @@
 
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
 #include <GraphicsD3D12/Resources/FenceD3D12.h>
+#include <GraphicsD3D12/Resources/QueryD3D12.h>
 #include <GraphicsD3D12/Resources/SamplerD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 
@@ -209,11 +210,23 @@ void xiiGALDeviceD3D12::DestroyInputLayoutPlatform(xiiGALInputLayout* pInputLayo
 
 xiiGALQuery* xiiGALDeviceD3D12::CreateQueryPlatform(const xiiGALQueryCreationDescription& description)
 {
-  return nullptr;
+  xiiGALQueryD3D12* pQueryD3D12 = XII_NEW(&m_Allocator, xiiGALQueryD3D12, description);
+
+  if (pQueryD3D12->InitPlatform(this).Succeeded())
+    return pQueryD3D12;
+
+  XII_DELETE(&m_Allocator, pQueryD3D12);
+
+  return pQueryD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyQueryPlatform(xiiGALQuery* pQuery)
 {
+  xiiGALQueryD3D12* pQueryD3D12 = static_cast<xiiGALQueryD3D12*>(pQuery);
+
+  pQueryD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pQueryD3D12);
 }
 
 xiiGALFence* xiiGALDeviceD3D12::CreateFencePlatform(const xiiGALFenceCreationDescription& description)
