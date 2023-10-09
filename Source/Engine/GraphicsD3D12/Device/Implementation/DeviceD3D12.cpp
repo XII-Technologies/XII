@@ -6,6 +6,7 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
+#include <GraphicsD3D12/Resources/FenceD3D12.h>
 #include <GraphicsD3D12/Resources/SamplerD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 
@@ -217,11 +218,23 @@ void xiiGALDeviceD3D12::DestroyQueryPlatform(xiiGALQuery* pQuery)
 
 xiiGALFence* xiiGALDeviceD3D12::CreateFencePlatform(const xiiGALFenceCreationDescription& description)
 {
-  return nullptr;
+  xiiGALFenceD3D12* pFenceD3D12 = XII_NEW(&m_Allocator, xiiGALFenceD3D12, description);
+
+  if (pFenceD3D12->InitPlatform(this).Succeeded())
+    return pFenceD3D12;
+
+  XII_DELETE(&m_Allocator, pFenceD3D12);
+
+  return pFenceD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyFencePlatform(xiiGALFence* pFence)
 {
+  xiiGALFenceD3D12* pFenceD3D12 = static_cast<xiiGALFenceD3D12*>(pFence);
+
+  pFenceD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pFenceD3D12);
 }
 
 xiiGALRenderPass* xiiGALDeviceD3D12::CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description)

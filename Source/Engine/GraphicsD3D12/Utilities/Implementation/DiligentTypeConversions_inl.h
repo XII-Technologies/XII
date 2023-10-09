@@ -665,3 +665,17 @@ XII_ALWAYS_INLINE Diligent::MISC_TEXTURE_FLAGS xiiDiligentTypeConversions::GetMi
 
   return miscTextureFlags;
 }
+
+XII_ALWAYS_INLINE Diligent::FENCE_TYPE xiiDiligentTypeConversions::GetFenceType(xiiEnum<xiiGALFenceType> e)
+{
+  switch (e)
+  {
+    case xiiGALFenceType::CpuWaitOnly:
+      return Diligent::FENCE_TYPE_CPU_WAIT_ONLY;
+    case xiiGALFenceType::General:
+      return Diligent::FENCE_TYPE_GENERAL;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::FENCE_TYPE_CPU_WAIT_ONLY;
+}

@@ -3,6 +3,7 @@
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
@@ -37,6 +38,8 @@ public:
   static Diligent::RESOURCE_DIMENSION GetResourceDimension(xiiEnum<xiiGALResourceDimension> e);
   static Diligent::TEXTURE_FORMAT     GetTextureFormat(xiiEnum<xiiGALTextureFormat> e);
   static Diligent::MISC_TEXTURE_FLAGS GetMiscTextureFlags(xiiBitflags<xiiGALMiscTextureFlags> e);
+
+  static Diligent::FENCE_TYPE GetFenceType(xiiEnum<xiiGALFenceType> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>
