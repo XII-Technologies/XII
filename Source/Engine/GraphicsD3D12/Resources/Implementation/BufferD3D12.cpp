@@ -50,3 +50,5 @@ xiiResult xiiGALBufferD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 
   return XII_SUCCESS;
 }
+
+XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Resources_Implementation_BufferD3D12);

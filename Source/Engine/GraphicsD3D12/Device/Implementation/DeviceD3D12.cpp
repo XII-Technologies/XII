@@ -5,6 +5,7 @@
 
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 
+#include <GraphicsD3D12/Resources/BottomLevelASD3D12.h>
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
 #include <GraphicsD3D12/Resources/BufferViewD3D12.h>
 #include <GraphicsD3D12/Resources/FenceD3D12.h>
@@ -14,6 +15,7 @@
 #include <GraphicsD3D12/Resources/SamplerD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 #include <GraphicsD3D12/Resources/TextureViewD3D12.h>
+#include <GraphicsD3D12/Resources/TopLevelASD3D12.h>
 #include <GraphicsD3D12/States/BlendStateD3D12.h>
 #include <GraphicsD3D12/States/DepthStencilStateD3D12.h>
 #include <GraphicsD3D12/States/RasterizerStateD3D12.h>
@@ -379,6 +381,7 @@ void xiiGALDeviceD3D12::DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS)
 
 void xiiGALDeviceD3D12::WaitIdlePlatform()
 {
+  m_pDevice->IdleGPU();
 }
 
 void xiiGALDeviceD3D12::FillCapabilitiesPlatform()

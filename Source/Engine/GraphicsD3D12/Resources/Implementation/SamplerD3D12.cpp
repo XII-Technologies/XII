@@ -12,6 +12,8 @@ xiiGALSamplerD3D12::~xiiGALSamplerD3D12() = default;
 
 xiiResult xiiGALSamplerD3D12::InitPlatform(xiiGALDevice* pDevice)
 {
+  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
+
   Diligent::SamplerDesc samplerDescription;
   samplerDescription.AddressU       = xiiDiligentTypeConversions::GetTextureAddress(m_Description.m_AddressU);
   samplerDescription.AddressV       = xiiDiligentTypeConversions::GetTextureAddress(m_Description.m_AddressV);
@@ -45,7 +47,6 @@ xiiResult xiiGALSamplerD3D12::InitPlatform(xiiGALDevice* pDevice)
   samplerDescription.MaxLOD        = m_Description.m_fMaxLOD;
   samplerDescription.MipLODBias    = m_Description.m_fMipLODBias;
 
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
   pDeviceD3D12->GetDevice()->CreateSampler(samplerDescription, &m_pSampler);
 
   return m_pSampler == nullptr ? XII_FAILURE : XII_SUCCESS;

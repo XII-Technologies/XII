@@ -176,3 +176,5 @@ xiiResult xiiGALRenderPassD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 
   return XII_SUCCESS;
 }
+
+XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Resources_Implementation_RenderPassD3D12);
