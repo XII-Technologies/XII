@@ -8,6 +8,7 @@
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
 #include <GraphicsD3D12/Resources/FenceD3D12.h>
 #include <GraphicsD3D12/Resources/QueryD3D12.h>
+#include <GraphicsD3D12/Resources/RenderPassD3D12.h>
 #include <GraphicsD3D12/Resources/SamplerD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 
@@ -261,11 +262,23 @@ void xiiGALDeviceD3D12::DestroyRenderPassPlatform(xiiGALRenderPass* pRenderPass)
 
 xiiGALFramebuffer* xiiGALDeviceD3D12::CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description)
 {
-  return nullptr;
+  xiiGALFramebufferD3D12* pFramebufferD3D12 = XII_NEW(&m_Allocator, xiiGALFramebufferD3D12, description);
+
+  if (pFramebufferD3D12->InitPlatform(this).Succeeded())
+    return pFramebufferD3D12;
+
+  XII_DELETE(&m_Allocator, pFramebufferD3D12);
+
+  return pFramebufferD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyFramebufferPlatform(xiiGALFramebuffer* pFramebuffer)
 {
+  xiiGALFramebufferD3D12* pFramebufferD3D12 = static_cast<xiiGALFramebufferD3D12*>(pFramebuffer);
+
+  pFramebufferD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pFramebufferD3D12);
 }
 
 xiiGALBottomLevelAS* xiiGALDeviceD3D12::CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description)

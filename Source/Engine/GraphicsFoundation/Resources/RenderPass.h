@@ -74,7 +74,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALAttachmentReferenceDescription : public 
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32                             m_uiAttachmentIndex  = 0U;                                ///< Either an integer value identifying an attachment at the corresponding index in the xiiGALRenderPassCreationDescription, or XII_GAL_ATTACHMENT_UNUSED to signify that this attachment is not used. The default is 0.
+  xiiUInt32                             m_uiAttachmentIndex  = XII_GAL_ATTACHMENT_UNUSED;         ///< Either an integer value identifying an attachment at the corresponding index in the xiiGALRenderPassCreationDescription, or XII_GAL_ATTACHMENT_UNUSED to signify that this attachment is not used. The default is 0.
   xiiBitflags<xiiGALResourceStateFlags> m_ResourceStateFlags = xiiGALResourceStateFlags::Unknown; ///< The state of the attachment during the sub pass.
 };
 

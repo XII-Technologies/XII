@@ -701,3 +701,33 @@ XII_ALWAYS_INLINE Diligent::QUERY_TYPE xiiDiligentTypeConversions::GetQueryType(
   }
   return Diligent::QUERY_TYPE_UNDEFINED;
 }
+
+XII_ALWAYS_INLINE Diligent::ATTACHMENT_LOAD_OP xiiDiligentTypeConversions::GetLoadOperation(xiiEnum<xiiGALAttachmentLoadOperation> e)
+{
+  switch (e)
+  {
+    case xiiGALAttachmentLoadOperation::Load:
+      return Diligent::ATTACHMENT_LOAD_OP_LOAD;
+    case xiiGALAttachmentLoadOperation::Clear:
+      return Diligent::ATTACHMENT_LOAD_OP_CLEAR;
+    case xiiGALAttachmentLoadOperation::Discard:
+      return Diligent::ATTACHMENT_LOAD_OP_DISCARD;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::ATTACHMENT_LOAD_OP_LOAD;
+}
+
+XII_ALWAYS_INLINE Diligent::ATTACHMENT_STORE_OP xiiDiligentTypeConversions::GetStoreOperation(xiiEnum<xiiGALAttachmentStoreOperation> e)
+{
+  switch (e)
+  {
+    case xiiGALAttachmentStoreOperation::Store:
+      return Diligent::ATTACHMENT_STORE_OP_STORE;
+    case xiiGALAttachmentStoreOperation::Discard:
+      return Diligent::ATTACHMENT_STORE_OP_DISCARD;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::ATTACHMENT_STORE_OP_STORE;
+}

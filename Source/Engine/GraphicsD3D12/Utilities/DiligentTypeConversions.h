@@ -5,6 +5,7 @@
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Resources/Query.h>
+#include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
@@ -43,6 +44,9 @@ public:
   static Diligent::FENCE_TYPE GetFenceType(xiiEnum<xiiGALFenceType> e);
 
   static Diligent::QUERY_TYPE GetQueryType(xiiEnum<xiiGALQueryType> e);
+
+  static Diligent::ATTACHMENT_LOAD_OP  GetLoadOperation(xiiEnum<xiiGALAttachmentLoadOperation> e);
+  static Diligent::ATTACHMENT_STORE_OP GetStoreOperation(xiiEnum<xiiGALAttachmentStoreOperation> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>
