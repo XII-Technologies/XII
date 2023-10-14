@@ -9,6 +9,7 @@
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
+#include <GraphicsFoundation/Resources/TopLevelAS.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
@@ -61,6 +62,10 @@ public:
   static Diligent::UAV_ACCESS_FLAG           GetUAVAccessFlags(xiiBitflags<xiiGALUnorderedAccessViewFlags> e);
   static Diligent::TEXTURE_VIEW_FLAGS        GetTextureViewFlags(xiiBitflags<xiiGALTextureViewFlags> e);
   static Diligent::TEXTURE_COMPONENT_SWIZZLE GetComponentSwizzle(xiiEnum<xiiGALTextureComponentSwizzle> e);
+
+  static Diligent::RAYTRACING_BUILD_AS_FLAGS GetRayTracingBuildASFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> e);
+  static Diligent::HIT_GROUP_BINDING_MODE    GetHitGroupBindingMode(xiiEnum<xiiGALHitGroupBindingMode> e);
+  static xiiEnum<xiiGALHitGroupBindingMode>  GetGALHitGroupBindingMode(Diligent::HIT_GROUP_BINDING_MODE e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>

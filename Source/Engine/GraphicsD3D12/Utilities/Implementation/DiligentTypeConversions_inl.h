@@ -873,6 +873,63 @@ XII_ALWAYS_INLINE Diligent::TEXTURE_COMPONENT_SWIZZLE xiiDiligentTypeConversions
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-
   return Diligent::TEXTURE_COMPONENT_SWIZZLE_IDENTITY;
+}
+
+XII_ALWAYS_INLINE Diligent::RAYTRACING_BUILD_AS_FLAGS xiiDiligentTypeConversions::GetRayTracingBuildASFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::RAYTRACING_BUILD_AS_NONE;
+
+  Diligent::RAYTRACING_BUILD_AS_FLAGS rayTracingBuildASFlags = {};
+
+  if (e.IsSet(xiiGALRayTracingBuildASFlags::AllowUpdate))
+    rayTracingBuildASFlags |= Diligent::RAYTRACING_BUILD_AS_NONE;
+  if (e.IsSet(xiiGALRayTracingBuildASFlags::AllowCompaction))
+    rayTracingBuildASFlags |= Diligent::RAYTRACING_BUILD_AS_ALLOW_COMPACTION;
+  if (e.IsSet(xiiGALRayTracingBuildASFlags::PreferFastTrace))
+    rayTracingBuildASFlags |= Diligent::RAYTRACING_BUILD_AS_PREFER_FAST_TRACE;
+  if (e.IsSet(xiiGALRayTracingBuildASFlags::PreferFastBuild))
+    rayTracingBuildASFlags |= Diligent::RAYTRACING_BUILD_AS_PREFER_FAST_BUILD;
+  if (e.IsSet(xiiGALRayTracingBuildASFlags::LowMemory))
+    rayTracingBuildASFlags |= Diligent::RAYTRACING_BUILD_AS_LOW_MEMORY;
+
+  return rayTracingBuildASFlags;
+}
+
+XII_ALWAYS_INLINE Diligent::HIT_GROUP_BINDING_MODE xiiDiligentTypeConversions::GetHitGroupBindingMode(xiiEnum<xiiGALHitGroupBindingMode> e)
+{
+  switch (e)
+  {
+    case xiiGALHitGroupBindingMode::PerGeometry:
+      return Diligent::HIT_GROUP_BINDING_MODE_PER_GEOMETRY;
+    case xiiGALHitGroupBindingMode::PerInstance:
+      return Diligent::HIT_GROUP_BINDING_MODE_PER_INSTANCE;
+    case xiiGALHitGroupBindingMode::PerTopLevelAccelerationStructure:
+      return Diligent::HIT_GROUP_BINDING_MODE_PER_TLAS;
+    case xiiGALHitGroupBindingMode::UserDefined:
+      return Diligent::HIT_GROUP_BINDING_MODE_USER_DEFINED;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::HIT_GROUP_BINDING_MODE_PER_GEOMETRY;
+}
+
+XII_ALWAYS_INLINE xiiEnum<xiiGALHitGroupBindingMode> xiiDiligentTypeConversions::GetGALHitGroupBindingMode(Diligent::HIT_GROUP_BINDING_MODE e)
+{
+  switch (e)
+  {
+    case Diligent::HIT_GROUP_BINDING_MODE_PER_GEOMETRY:
+      return xiiGALHitGroupBindingMode::PerGeometry;
+    case Diligent::HIT_GROUP_BINDING_MODE_PER_INSTANCE:
+      return xiiGALHitGroupBindingMode::PerInstance;
+    case Diligent::HIT_GROUP_BINDING_MODE_PER_TLAS:
+      return xiiGALHitGroupBindingMode::PerTopLevelAccelerationStructure;
+    case Diligent::HIT_GROUP_BINDING_MODE_USER_DEFINED:
+      return xiiGALHitGroupBindingMode::UserDefined;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return xiiEnum<xiiGALHitGroupBindingMode>();
 }

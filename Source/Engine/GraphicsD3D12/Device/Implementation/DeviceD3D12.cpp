@@ -363,11 +363,23 @@ void xiiGALDeviceD3D12::DestroyFramebufferPlatform(xiiGALFramebuffer* pFramebuff
 
 xiiGALBottomLevelAS* xiiGALDeviceD3D12::CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description)
 {
-  return nullptr;
+  xiiGALBottomLevelASD3D12* pBottomLevelASD3D12 = XII_NEW(&m_Allocator, xiiGALBottomLevelASD3D12, description);
+
+  if (pBottomLevelASD3D12->InitPlatform(this).Succeeded())
+    return pBottomLevelASD3D12;
+
+  XII_DELETE(&m_Allocator, pBottomLevelASD3D12);
+
+  return pBottomLevelASD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyBottomLevelASPlatform(xiiGALBottomLevelAS* pBottomLevelAS)
 {
+  xiiGALBottomLevelASD3D12* pBottomLevelASD3D12 = static_cast<xiiGALBottomLevelASD3D12*>(pBottomLevelAS);
+
+  pBottomLevelASD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pBottomLevelASD3D12);
 }
 
 xiiGALTopLevelAS* xiiGALDeviceD3D12::CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description)
