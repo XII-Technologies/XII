@@ -1,7 +1,7 @@
 
 XII_ALWAYS_INLINE xiiGALTextureViewHandle xiiGALTextureD3D12::GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType)
 {
-  // \todo GraphicsD3D12: Not yet implemented.
+  /// \todo GraphicsD3D12: Not yet implemented.
 
   XII_ASSERT_NOT_IMPLEMENTED;
 
@@ -25,7 +25,7 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALTextureD3D12::GetS
 
 XII_ALWAYS_INLINE const xiiGALSparseTextureProperties& xiiGALTextureD3D12::GetSparseProperties() const
 {
-  // \todo GraphicsD3D12: Not yet implemented.
+  /// \todo GraphicsD3D12: Not yet implemented.
 
   static xiiGALSparseTextureProperties temporary;
 

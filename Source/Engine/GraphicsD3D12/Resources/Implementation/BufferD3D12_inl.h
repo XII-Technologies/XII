@@ -1,7 +1,7 @@
 
 XII_ALWAYS_INLINE xiiGALBufferViewHandle xiiGALBufferD3D12::GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType)
 {
-  // \todo GraphicsD3D12: Not yet implemented.
+  /// \todo GraphicsD3D12: Not yet implemented.
 
   XII_ASSERT_NOT_IMPLEMENTED;
 
@@ -25,7 +25,7 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALBufferD3D12::GetSt
 
 XII_ALWAYS_INLINE xiiGALMemoryProperties xiiGALBufferD3D12::GetMemoryProperties() const
 {
-  // \todo GraphicsD3D12: Not yet implemented.
+  /// \todo GraphicsD3D12: Not yet implemented.
 
   XII_ASSERT_NOT_IMPLEMENTED;
 
@@ -44,7 +44,7 @@ XII_ALWAYS_INLINE void xiiGALBufferD3D12::InvalidateMappedRange(xiiUInt64 uiStar
 
 XII_ALWAYS_INLINE xiiGALSparseBufferProperties xiiGALBufferD3D12::GetSparseProperties() const
 {
-  // \todo GraphicsD3D12: Not yet implemented.
+  /// \todo GraphicsD3D12: Not yet implemented.
 
   XII_ASSERT_NOT_IMPLEMENTED;
 

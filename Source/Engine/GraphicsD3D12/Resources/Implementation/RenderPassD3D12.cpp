@@ -157,7 +157,7 @@ xiiResult xiiGALRenderPassD3D12::InitPlatform(xiiGALDevice* pDevice)
     const auto& xiiDependency = m_Description.m_Dependencies[i];
     auto&       dependency    = dependencies[i];
 
-    // \todo GraphicsD3D12: Update dependency description with pipeline stage and access flags.
+    /// \todo GraphicsD3D12: Update dependency description with pipeline stage and access flags.
 
     dependency.SrcSubpass = xiiDependency.m_uiSourceSubPass;
     dependency.DstSubpass = xiiDependency.m_uiDestinationSubPass;
