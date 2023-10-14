@@ -384,11 +384,23 @@ void xiiGALDeviceD3D12::DestroyBottomLevelASPlatform(xiiGALBottomLevelAS* pBotto
 
 xiiGALTopLevelAS* xiiGALDeviceD3D12::CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description)
 {
-  return nullptr;
+  xiiGALTopLevelASD3D12* pTopLevelASD3D12 = XII_NEW(&m_Allocator, xiiGALTopLevelASD3D12, description);
+
+  if (pTopLevelASD3D12->InitPlatform(this).Succeeded())
+    return pTopLevelASD3D12;
+
+  XII_DELETE(&m_Allocator, pTopLevelASD3D12);
+
+  return pTopLevelASD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS)
 {
+  xiiGALTopLevelASD3D12* pTopLevelASD3D12 = static_cast<xiiGALTopLevelASD3D12*>(pTopLevelAS);
+
+  pTopLevelASD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pTopLevelASD3D12);
 }
 
 void xiiGALDeviceD3D12::WaitIdlePlatform()
