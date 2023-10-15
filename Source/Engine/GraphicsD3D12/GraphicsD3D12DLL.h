@@ -189,6 +189,17 @@ namespace Diligent
 } // namespace Diligent
 
 class xiiGALDeviceD3D12;
+class xiiGALBottomLevelASD3D12;
+class xiiGALBufferD3D12;
+class xiiGALBufferViewD3D12;
+class xiiGALFenceD3D12;
+class xiiGALFramebufferD3D12;
+class xiiGALQueryD3D12;
+class xiiGALRenderPassD3D12;
+class xiiGALSamplerD3D12;
+class xiiGALTextureD3D12;
+class xiiGALTextureViewD3D12;
+class xiiGALTopLevelASD3D12;
 class xiiGALBlendStateD3D12;
 class xiiGALDepthStencilStateD3D12;
 class xiiGALRasterizerStateD3D12;

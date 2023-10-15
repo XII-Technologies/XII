@@ -4,30 +4,25 @@
 
 #include <GraphicsFoundation/States/RasterizerState.h>
 
-namespace vk
-{
-  struct PipelineRasterizationStateCreateInfo;
-} // namespace vk
-
 class XII_GRAPHICSVULKAN_DLL xiiGALRasterizerStateVulkan : public xiiGALRasterizerState
 {
 public:
-  XII_ALWAYS_INLINE const vk::PipelineRasterizationStateCreateInfo* GetRasterizerState() const;
+  XII_ALWAYS_INLINE const Diligent::RasterizerStateDesc* GetRasterizerState() const;
 
 protected:
-  friend class xiiGALDevice;
+  friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
   xiiGALRasterizerStateVulkan(const xiiGALRasterizerStateCreationDescription& creationDescription);
 
   virtual ~xiiGALRasterizerStateVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice);
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
 
 protected:
-  vk::PipelineRasterizationStateCreateInfo m_RasterizerState = {};
+  Diligent::RasterizerStateDesc m_RasterizerState = {};
 };
 
 #include <GraphicsVulkan/States/Implementation/RasterizerStateVulkan_inl.h>

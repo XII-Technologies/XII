@@ -4,30 +4,25 @@
 
 #include <GraphicsFoundation/States/DepthStencilState.h>
 
-namespace vk
-{
-  struct PipelineDepthStencilStateCreateInfo;
-} // namespace vk
-
 class XII_GRAPHICSVULKAN_DLL xiiGALDepthStencilStateVulkan : public xiiGALDepthStencilState
 {
 public:
-  XII_ALWAYS_INLINE const vk::PipelineDepthStencilStateCreateInfo* GetDepthStencilState() const;
+  XII_ALWAYS_INLINE const Diligent::DepthStencilStateDesc* GetDepthStencilState() const;
 
 protected:
-  friend class xiiGALDevice;
+  friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
   xiiGALDepthStencilStateVulkan(const xiiGALDepthStencilStateCreationDescription& creationDescription);
 
   virtual ~xiiGALDepthStencilStateVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice);
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
 
 protected:
-  vk::PipelineDepthStencilStateCreateInfo m_DepthStencilState = {};
+  Diligent::DepthStencilStateDesc m_DepthStencilState = {};
 };
 
 #include <GraphicsVulkan/States/Implementation/DepthStencilStateVulkan_inl.h>

@@ -6,8 +6,6 @@
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
 
-#include <vulkan/vulkan.hpp>
-
 XII_DEFINE_AS_POD_TYPE(vk::PresentModeKHR);
 
 class XII_GRAPHICSVULKAN_DLL xiiVulkanTypeConversions

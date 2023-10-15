@@ -4,4 +4,21 @@ XII_STATICLINK_LIBRARY(GraphicsVulkan)
 {
   if (bReturn)
     return;
+
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Device_Implementation_DeviceVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_BottomLevelASVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_BufferVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_BufferViewVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_FenceVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_FramebufferVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_QueryVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_RenderPassVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_SamplerVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_TextureVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_TextureViewVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_TopLevelASVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_BlendStateVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_DepthStencilStateVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_PipelineStateVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_RasterizerStateVulkan);
 }

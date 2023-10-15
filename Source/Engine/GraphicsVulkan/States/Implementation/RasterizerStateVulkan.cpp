@@ -13,21 +13,16 @@ xiiGALRasterizerStateVulkan::~xiiGALRasterizerStateVulkan() = default;
 
 xiiResult xiiGALRasterizerStateVulkan::InitPlatform(xiiGALDevice* pDevice)
 {
-  m_RasterizerState.sType = vk::StructureType::ePipelineRasterizationStateCreateInfo;
-  m_RasterizerState.pNext = nullptr;
-  m_RasterizerState.flags = {};
+  m_RasterizerState.FillMode              = xiiDiligentTypeConversions::GetFillMode(m_Description.m_FillMode);
+  m_RasterizerState.CullMode              = xiiDiligentTypeConversions::GetCullMode(m_Description.m_CullMode);
+  m_RasterizerState.FrontCounterClockwise = m_Description.m_bFrontCounterClockwise;
+  m_RasterizerState.DepthBias             = m_Description.m_iDepthBias;
+  m_RasterizerState.DepthBiasClamp        = m_Description.m_fDepthBiasClamp;
+  m_RasterizerState.SlopeScaledDepthBias  = m_Description.m_fSlopeScaledDepthBias;
+  m_RasterizerState.DepthClipEnable       = m_Description.m_bDepthClipEnable;
+  m_RasterizerState.AntialiasedLineEnable = m_Description.m_bAntialiasedLineEnable;
 
-  m_RasterizerState.depthClampEnable        = m_Description.m_bDepthClipEnable ? VK_TRUE : VK_FALSE;
-  m_RasterizerState.rasterizerDiscardEnable = VK_FALSE;
-  m_RasterizerState.polygonMode             = xiiVulkanTypeConversions::GetVkPolygonMode(m_Description.m_FillMode);
-  m_RasterizerState.cullMode                = xiiVulkanTypeConversions::GetVkCullMode(m_Description.m_CullMode);
-  m_RasterizerState.frontFace               = m_Description.m_bFrontCounterClockwise ? vk::FrontFace::eCounterClockwise : vk::FrontFace::eClockwise;
-
-  m_RasterizerState.depthBiasEnable         = (m_Description.m_iDepthBias != 0 || m_Description.m_fSlopeScaledDepthBias != 0.0f) ? VK_TRUE : VK_FALSE;
-  m_RasterizerState.depthBiasConstantFactor = static_cast<float>(m_Description.m_iDepthBias);
-  m_RasterizerState.depthBiasClamp          = m_Description.m_fDepthBiasClamp;
-  m_RasterizerState.depthBiasSlopeFactor    = m_Description.m_fSlopeScaledDepthBias;
-  m_RasterizerState.lineWidth               = 1.0f;
+  m_RasterizerState.ScissorEnable = m_Description.m_bScissorEnable;
 
   return XII_SUCCESS;
 }
