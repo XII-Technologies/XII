@@ -72,7 +72,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsAdapterVendor
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALGraphicsAdapterVendor);
 
 /// \brief This describes common validation levels that translate to specific settings for different backends.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceValidationLevel
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceValidationLevel
 {
   using StorageType = xiiUInt8;
 
@@ -88,7 +88,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceValidationLevel
   };
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALGraphicsDeviceValidationLevel);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDeviceValidationLevel);
 
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceEventType
 {

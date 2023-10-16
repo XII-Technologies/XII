@@ -933,3 +933,39 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALHitGroupBindingMode> xiiDiligentTypeConversions:
 
   return xiiEnum<xiiGALHitGroupBindingMode>();
 }
+
+XII_ALWAYS_INLINE Diligent::ADAPTER_TYPE xiiDiligentTypeConversions::GetAdapterType(xiiEnum<xiiGALDeviceAdapterType> e)
+{
+  switch (e)
+  {
+    case xiiGALDeviceAdapterType::Unknown:
+      return Diligent::ADAPTER_TYPE_UNKNOWN;
+    case xiiGALDeviceAdapterType::Software:
+      return Diligent::ADAPTER_TYPE_SOFTWARE;
+    case xiiGALDeviceAdapterType::Integrated:
+      return Diligent::ADAPTER_TYPE_INTEGRATED;
+    case xiiGALDeviceAdapterType::Discrete:
+      return Diligent::ADAPTER_TYPE_DISCRETE;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::ADAPTER_TYPE_UNKNOWN;
+}
+
+XII_ALWAYS_INLINE xiiEnum<xiiGALDeviceAdapterType> xiiDiligentTypeConversions::GetGALAdapterType(Diligent::ADAPTER_TYPE e)
+{
+  switch (e)
+  {
+    case Diligent::ADAPTER_TYPE_UNKNOWN:
+      return xiiGALDeviceAdapterType::Unknown;
+    case Diligent::ADAPTER_TYPE_SOFTWARE:
+      return xiiGALDeviceAdapterType::Software;
+    case Diligent::ADAPTER_TYPE_INTEGRATED:
+      return xiiGALDeviceAdapterType::Integrated;
+    case Diligent::ADAPTER_TYPE_DISCRETE:
+      return xiiGALDeviceAdapterType::Discrete;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiEnum<xiiGALDeviceAdapterType>();
+}

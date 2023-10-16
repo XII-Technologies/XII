@@ -9,6 +9,21 @@
 using xiiGALFormatLookupEntryD3D12 = xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, (Diligent::TEXTURE_FORMAT)0U>;
 using xiiGALFormatLookupTableD3D12 = xiiGALFormatLookupTable<xiiGALFormatLookupEntryD3D12>;
 
+struct xiiAllocatorDiligent : public Diligent::IMemoryAllocator
+{
+public:
+  xiiAllocatorDiligent(const char* szName) :
+    m_Allocator(szName, xiiAlignedAllocatorWrapper::GetAllocator()) {}
+
+  virtual ~xiiAllocatorDiligent() = default;
+
+  virtual void* Allocate(size_t Size, const Diligent::Char* dbgDescription, const char* dbgFileName, const Diligent::Int32 dbgLineNumber) override { return m_Allocator.Allocate(Size, 16U); }
+
+  virtual void Free(void* Ptr) override { return m_Allocator.Deallocate(Ptr); }
+
+  xiiProxyAllocator m_Allocator;
+};
+
 class XII_GRAPHICSD3D12_DLL xiiGALDeviceD3D12 final : public xiiGALDevice
 {
 private:
@@ -25,7 +40,6 @@ public:
   Diligent::IRenderDevice*  GetDevice();
   Diligent::IDeviceContext* GetImmediateContext();
   Diligent::IEngineFactory* GetFactory();
-  xiiInt32                  GetValidationLevel() const;
 
   const xiiGALFormatLookupTableD3D12& GetFormatLookupTable() const;
 
@@ -109,10 +123,7 @@ private:
   Diligent::GraphicsAdapterInfo                                      m_AdapterAttribs;
   xiiDynamicArray<Diligent::DisplayModeAttribs>                      m_DisplayModes;
 
-  xiiInt32               m_iValidationLevel = -1;
-  xiiUInt32              m_uiAdapterId      = Diligent::DEFAULT_ADAPTER_ID;
-  Diligent::ADAPTER_TYPE m_AdapterType      = Diligent::ADAPTER_TYPE_UNKNOWN;
-  xiiString              m_sAdapterDetailsString;
+  xiiAllocatorDiligent m_AllocatorDiligent{"D3D12 Memory Allocation"};
 };
 
 #include <GraphicsD3D12/Device/Implementation/DeviceD3D12_inl.h>

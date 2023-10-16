@@ -31,10 +31,10 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALGraphicsAdapterVendor, 1)
   XII_ENUM_CONSTANT(xiiGALGraphicsAdapterVendor::Broadcom),
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALGraphicsDeviceValidationLevel, 1)
-  XII_ENUM_CONSTANT(xiiGALGraphicsDeviceValidationLevel::Disabled),
-  XII_ENUM_CONSTANT(xiiGALGraphicsDeviceValidationLevel::Standard),
-  XII_ENUM_CONSTANT(xiiGALGraphicsDeviceValidationLevel::All),
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALDeviceValidationLevel, 1)
+  XII_ENUM_CONSTANT(xiiGALDeviceValidationLevel::Disabled),
+  XII_ENUM_CONSTANT(xiiGALDeviceValidationLevel::Standard),
+  XII_ENUM_CONSTANT(xiiGALDeviceValidationLevel::All),
 XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALDeviceEventType, 1)

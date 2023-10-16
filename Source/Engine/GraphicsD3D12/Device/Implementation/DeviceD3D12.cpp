@@ -20,6 +20,31 @@
 #include <GraphicsD3D12/States/DepthStencilStateD3D12.h>
 #include <GraphicsD3D12/States/RasterizerStateD3D12.h>
 
+#include <Diligent/Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
+
+/// Reroutes Diligent Logs To XII.
+void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity, const Diligent::Char* Message, const Diligent::Char* Function, const Diligent::Char* File, xiiInt32 Line)
+{
+  // Format Diligent string as it is in printf format.
+  switch (Severity)
+  {
+    case Diligent::DEBUG_MESSAGE_SEVERITY_INFO:
+      xiiLog::Info("{}", Message);
+      break;
+    case Diligent::DEBUG_MESSAGE_SEVERITY_WARNING:
+      xiiLog::Warning("{}", Message);
+      break;
+    case Diligent::DEBUG_MESSAGE_SEVERITY_ERROR:
+      xiiLog::SeriousWarning("{}", Message);
+      break;
+    case Diligent::DEBUG_MESSAGE_SEVERITY_FATAL_ERROR:
+      xiiLog::Error("{}", Message);
+      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+}
+
 xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
   return XII_NEW(pAllocator, xiiGALDeviceD3D12, description);
@@ -50,6 +75,108 @@ xiiGALDeviceD3D12::~xiiGALDeviceD3D12() = default;
 
 xiiResult xiiGALDeviceD3D12::InitializePlatform()
 {
+  using namespace Diligent;
+
+  XII_LOG_BLOCK("xiiGALDeviceD3D12::InitializePlatform");
+
+  auto FindAdapter = [this](Diligent::IEngineFactoryD3D12* pFactory, Diligent::Version apiVersion, Diligent::GraphicsAdapterInfo& adapterInfo, xiiUInt32& out_AdatapterID) -> xiiResult {
+    xiiUInt32 uiAdapterCount = 0U;
+    pFactory->EnumerateAdapters(apiVersion, uiAdapterCount, nullptr);
+
+    xiiHybridArray<Diligent::GraphicsAdapterInfo, 2U> graphicsAdapters;
+    graphicsAdapters.Reserve(uiAdapterCount);
+
+    if (uiAdapterCount > 0U)
+    {
+      pFactory->EnumerateAdapters(apiVersion, uiAdapterCount, graphicsAdapters.GetData());
+    }
+    else
+    {
+      xiiLog::Error("Failed to find compatible hardware adapters.");
+      return XII_FAILURE;
+    }
+
+    xiiUInt32 uiAdapterID = m_Description.m_uiAdapterID;
+    if (uiAdapterID != XII_GAL_DEFAULT_ADAPTER_ID)
+    {
+      if (uiAdapterID < graphicsAdapters.GetCount())
+      {
+        m_Description.m_AdapterType = xiiDiligentTypeConversions::GetGALAdapterType(graphicsAdapters[uiAdapterID].Type);
+      }
+      else
+      {
+        xiiLog::Error("Adapter ID ('{0}') is invalid. Only {1} compatible adapter (s) present in the system.", uiAdapterID, graphicsAdapters.GetCount());
+
+        uiAdapterID = XII_GAL_DEFAULT_ADAPTER_ID;
+      }
+    }
+
+    if (uiAdapterID == XII_GAL_DEFAULT_ADAPTER_ID && m_Description.m_AdapterType != xiiGALDeviceAdapterType::Unknown)
+    {
+      for (xiiUInt32 i = 0; i < graphicsAdapters.GetCount(); ++i)
+      {
+        if (graphicsAdapters[i].Type == xiiDiligentTypeConversions::GetAdapterType(m_Description.m_AdapterType))
+        {
+          uiAdapterID = i;
+          break;
+        }
+      }
+
+      if (uiAdapterID == XII_GAL_DEFAULT_ADAPTER_ID)
+      {
+        xiiLog::Warning("Unable to find the requested adapter type. Using default adapter.");
+      }
+    }
+
+    if (uiAdapterID == XII_GAL_DEFAULT_ADAPTER_ID)
+    {
+      m_Description.m_AdapterType = xiiGALDeviceAdapterType::Unknown;
+
+      for (xiiUInt32 i = 0; i < graphicsAdapters.GetCount(); ++i)
+      {
+        const Diligent::GraphicsAdapterInfo& AdapterInfo = graphicsAdapters[i];
+        const Diligent::ADAPTER_TYPE         AdapterType = adapterInfo.Type;
+
+        XII_CHECK_AT_COMPILETIME_MSG((Diligent::ADAPTER_TYPE_DISCRETE > Diligent::ADAPTER_TYPE_INTEGRATED && Diligent::ADAPTER_TYPE_INTEGRATED > Diligent::ADAPTER_TYPE_SOFTWARE && Diligent::ADAPTER_TYPE_SOFTWARE > Diligent::ADAPTER_TYPE_UNKNOWN), "xiiGraphicsD3D12: Unexpected ADAPTER_TYPE enum ordering");
+
+        if (AdapterType > xiiDiligentTypeConversions::GetAdapterType(m_Description.m_AdapterType))
+        {
+          // Prefer Discrete over Integrated over Software adapters.
+          m_Description.m_AdapterType = xiiDiligentTypeConversions::GetGALAdapterType(AdapterType);
+          m_Description.m_uiAdapterID = i;
+        }
+        else if (AdapterType == xiiDiligentTypeConversions::GetAdapterType(m_Description.m_AdapterType))
+        {
+          // Select adapter with more memory.
+          const Diligent::AdapterMemoryInfo& newAdapterMemory     = adapterInfo.Memory;
+          const xiiUInt64                    uiNewTotalMemory     = newAdapterMemory.LocalMemory + newAdapterMemory.HostVisibleMemory + newAdapterMemory.UnifiedMemory;
+          const Diligent::AdapterMemoryInfo& currentAdapterMemory = graphicsAdapters[uiAdapterID].Memory;
+          const xiiUInt64                    uiCurrentTotalMemory = currentAdapterMemory.LocalMemory + currentAdapterMemory.HostVisibleMemory + currentAdapterMemory.UnifiedMemory;
+
+          if (uiNewTotalMemory > uiCurrentTotalMemory)
+          {
+            uiAdapterID = i;
+          }
+        }
+      }
+    }
+
+    if (uiAdapterID != XII_GAL_DEFAULT_ADAPTER_ID)
+    {
+      adapterInfo = graphicsAdapters[uiAdapterID];
+
+      xiiLog::Info("Using Adapter {0}: '{1}'", uiAdapterID, adapterInfo.Description);
+    }
+
+    out_AdatapterID = uiAdapterID;
+
+    return XII_SUCCESS;
+  };
+
+
+  xiiHybridArray<Diligent::IDeviceContext*, 1U> deviceContexts;
+  xiiUInt32                                     uiImmediateContextCount = 0U;
+
   return XII_SUCCESS;
 }
 

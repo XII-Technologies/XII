@@ -66,6 +66,9 @@ public:
   static Diligent::RAYTRACING_BUILD_AS_FLAGS GetRayTracingBuildASFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> e);
   static Diligent::HIT_GROUP_BINDING_MODE    GetHitGroupBindingMode(xiiEnum<xiiGALHitGroupBindingMode> e);
   static xiiEnum<xiiGALHitGroupBindingMode>  GetGALHitGroupBindingMode(Diligent::HIT_GROUP_BINDING_MODE e);
+
+  static Diligent::ADAPTER_TYPE           GetAdapterType(xiiEnum<xiiGALDeviceAdapterType> e);
+  static xiiEnum<xiiGALDeviceAdapterType> GetGALAdapterType(Diligent::ADAPTER_TYPE e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>

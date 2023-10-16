@@ -14,11 +14,6 @@ XII_ALWAYS_INLINE Diligent::IDeviceContext* xiiGALDeviceD3D12::GetImmediateConte
   return m_pDeviceContexts[0];
 }
 
-XII_ALWAYS_INLINE xiiInt32 xiiGALDeviceD3D12::GetValidationLevel() const
-{
-  return m_iValidationLevel;
-}
-
 XII_ALWAYS_INLINE const xiiGALFormatLookupTableD3D12& xiiGALDeviceD3D12::GetFormatLookupTable() const
 {
   return m_FormatLookupTable;
