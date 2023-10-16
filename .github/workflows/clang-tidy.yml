@@ -37,7 +37,7 @@ jobs:
           $srcExe = "C:\Program Files (x86)\Windows Kits\10\bin\$WindowsSdkVersion\x64\rc.exe" -replace "\\","/"
           $clangCppExe = "$pwd\llvm\bin\clang++.exe" -replace "\\","/"
           $clangExe = "$pwd\llvm\bin\clang.exe" -replace "\\","/"
-          $ninjaExe = ${env:GITHUB_WORKSPACE}/Data/Tools/Precompiled/ninja/ninja.exe
+          $ninjaExe = "${env:GITHUB_WORKSPACE}/Data/Tools/Precompiled/ninja/ninja.exe"
 
           & ${env:GITHUB_WORKSPACE}/Data/Tools/Precompiled/cmake/bin/cmake.exe -G Ninja -B workspace-clang -S . "-DCMAKE_MAKE_PROGRAM=$ninjaExe" "-DCMAKE_CXX_COMPILER=$clangCppExe" "-DCMAKE_C_COMPILER=$clangExe" "-DCMAKE_RC_COMPILER=$srcExe" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DXII_USE_PCH=OFF -DXII_ENABLE_FOLDER_UNITY_FILES=OFF
 
