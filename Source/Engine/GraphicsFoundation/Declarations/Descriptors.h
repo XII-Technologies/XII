@@ -27,7 +27,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruc
   xiiEnum<xiiGALDeviceFeatureState> m_OcclusionQueries                  = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports occlusion queries.
   xiiEnum<xiiGALDeviceFeatureState> m_BinaryOcclusionQueries            = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports binary occlusion queries.
   xiiEnum<xiiGALDeviceFeatureState> m_TimestampQueries                  = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports timestamp queries.
-  xiiEnum<xiiGALDeviceFeatureState> m_PipelineStateQueries              = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports pipeline statistics queries.
+  xiiEnum<xiiGALDeviceFeatureState> m_PipelineStatisticsQueries         = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports pipeline statistics queries.
   xiiEnum<xiiGALDeviceFeatureState> m_DurationQueries                   = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports duration queries.
   xiiEnum<xiiGALDeviceFeatureState> m_DepthBiasClamp                    = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports depth bias clamp.
   xiiEnum<xiiGALDeviceFeatureState> m_DepthClamp                        = xiiGALDeviceFeatureState::Disabled; ///< Indicates if the device supports depth clamp.

@@ -1665,7 +1665,7 @@ xiiGALQueryHandle xiiGALDevice::CreateQuery(const xiiGALQueryCreationDescription
     break;
     case xiiGALQueryType::PipelineStatistics:
     {
-      XII_VERIFY_QUERY(m_AdapterDescription.m_Features.m_PipelineStateQueries == xiiGALDeviceFeatureState::Enabled, "Pipeline statistics queries are not supported by this device.");
+      XII_VERIFY_QUERY(m_AdapterDescription.m_Features.m_PipelineStatisticsQueries == xiiGALDeviceFeatureState::Enabled, "Pipeline statistics queries are not supported by this device.");
     }
     break;
     case xiiGALQueryType::Duration:

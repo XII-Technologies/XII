@@ -969,3 +969,35 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALDeviceAdapterType> xiiDiligentTypeConversions::G
   }
   return xiiEnum<xiiGALDeviceAdapterType>();
 }
+
+XII_ALWAYS_INLINE Diligent::DEVICE_FEATURE_STATE xiiDiligentTypeConversions::GetDeviceFeatureState(xiiEnum<xiiGALDeviceFeatureState> e)
+{
+  switch (e)
+  {
+    case xiiGALDeviceFeatureState::Disabled:
+      return Diligent::DEVICE_FEATURE_STATE_DISABLED;
+    case xiiGALDeviceFeatureState::Enabled:
+      return Diligent::DEVICE_FEATURE_STATE_ENABLED;
+    case xiiGALDeviceFeatureState::Optional:
+      return Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::DEVICE_FEATURE_STATE_DISABLED;
+}
+
+XII_ALWAYS_INLINE Diligent::VALIDATION_LEVEL xiiDiligentTypeConversions::GetDeviceValidationLevel(xiiEnum<xiiGALDeviceValidationLevel> e)
+{
+  switch (e)
+  {
+    case xiiGALDeviceValidationLevel::Disabled:
+      return Diligent::VALIDATION_LEVEL_DISABLED;
+    case xiiGALDeviceValidationLevel::Standard:
+      return Diligent::VALIDATION_LEVEL_1;
+    case xiiGALDeviceValidationLevel::All:
+      return Diligent::VALIDATION_LEVEL_2;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::VALIDATION_LEVEL_DISABLED;
+}

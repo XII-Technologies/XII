@@ -23,7 +23,7 @@
 #include <Diligent/Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
 
 /// Reroutes Diligent Logs To XII.
-void XIILogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity, const Diligent::Char* Message, const Diligent::Char* Function, const Diligent::Char* File, xiiInt32 Line)
+void xiiLogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity, const Diligent::Char* Message, const Diligent::Char* Function, const Diligent::Char* File, xiiInt32 Line)
 {
   // Format Diligent string as it is in printf format.
   switch (Severity)
@@ -176,6 +176,111 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
 
   xiiHybridArray<Diligent::IDeviceContext*, 1U> deviceContexts;
   xiiUInt32                                     uiImmediateContextCount = 0U;
+
+#if ENGINE_DLL
+  auto GetEngineFactoryD3D12 = Diligent::LoadGraphicsEngineD3D12();
+#endif
+
+  auto* pFactoryD3D12 = GetEngineFactoryD3D12();
+  if (pFactoryD3D12->LoadD3D12() != Diligent::True)
+  {
+    xiiLog::Error("Failed to load Direct3D12 Library.");
+    return XII_FAILURE;
+  }
+  m_pEngineFactory = pFactoryD3D12;
+
+  // Register custom message callback.
+  m_pEngineFactory->SetMessageCallback(xiiLogDiligent);
+
+  Diligent::EngineD3D12CreateInfo d3d12CreateInfo;
+  d3d12CreateInfo.GraphicsAPIVersion = {12, 0};
+  d3d12CreateInfo.pRawMemAllocator   = &m_AllocatorDiligent;
+  d3d12CreateInfo.EnableValidation   = m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled;
+
+  d3d12CreateInfo.Features.SeparablePrograms                 = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_SeparablePrograms);
+  d3d12CreateInfo.Features.ShaderResourceQueries             = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ShaderResourceQueries);
+  d3d12CreateInfo.Features.WireframeFill                     = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_WireframeFill);
+  d3d12CreateInfo.Features.MultithreadedResourceCreation     = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_MultithreadedResourceCreation);
+  d3d12CreateInfo.Features.ComputeShaders                    = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ComputeShaders);
+  d3d12CreateInfo.Features.GeometryShaders                   = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_GeometryShaders);
+  d3d12CreateInfo.Features.Tessellation                      = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_Tessellation);
+  d3d12CreateInfo.Features.MeshShaders                       = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_MeshShaders);
+  d3d12CreateInfo.Features.RayTracing                        = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_RayTracing);
+  d3d12CreateInfo.Features.BindlessResources                 = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_BindlessResources);
+  d3d12CreateInfo.Features.OcclusionQueries                  = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_OcclusionQueries);
+  d3d12CreateInfo.Features.BinaryOcclusionQueries            = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_BinaryOcclusionQueries);
+  d3d12CreateInfo.Features.TimestampQueries                  = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_TimestampQueries);
+  d3d12CreateInfo.Features.PipelineStatisticsQueries         = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_PipelineStatisticsQueries);
+  d3d12CreateInfo.Features.DurationQueries                   = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_DurationQueries);
+  d3d12CreateInfo.Features.DepthBiasClamp                    = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_DepthBiasClamp);
+  d3d12CreateInfo.Features.DepthClamp                        = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_DepthClamp);
+  d3d12CreateInfo.Features.IndependentBlend                  = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_IndependentBlend);
+  d3d12CreateInfo.Features.DualSourceBlend                   = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_DualSourceBlend);
+  d3d12CreateInfo.Features.MultiViewport                     = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_MultiViewport);
+  d3d12CreateInfo.Features.TextureCompressionBC              = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_TextureCompressionBC);
+  d3d12CreateInfo.Features.VertexPipelineUAVWritesAndAtomics = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_VertexPipelineUAVWritesAndAtomics);
+  d3d12CreateInfo.Features.PixelUAVWritesAndAtomics          = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_PixelUAVWritesAndAtomics);
+  d3d12CreateInfo.Features.TextureUAVExtendedFormats         = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_TextureUAVExtendedFormats);
+  d3d12CreateInfo.Features.ShaderFloat16                     = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ShaderFloat16);
+  d3d12CreateInfo.Features.ResourceBuffer16BitAccess         = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ResourceBuffer16BitAccess);
+  d3d12CreateInfo.Features.UniformBuffer16BitAccess          = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_UniformBuffer16BitAccess);
+  d3d12CreateInfo.Features.ShaderInputOutput16               = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ShaderInputOutput16);
+  d3d12CreateInfo.Features.ShaderInt8                        = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ShaderInt8);
+  d3d12CreateInfo.Features.ResourceBuffer8BitAccess          = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ResourceBuffer8BitAccess);
+  d3d12CreateInfo.Features.UniformBuffer8BitAccess           = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_UniformBuffer8BitAccess);
+  d3d12CreateInfo.Features.ShaderResourceRuntimeArray        = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ShaderResourceRuntimeArray);
+  d3d12CreateInfo.Features.WaveOp                            = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_WaveOp);
+  d3d12CreateInfo.Features.InstanceDataStepRate              = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_InstanceDataStepRate);
+  d3d12CreateInfo.Features.NativeFence                       = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_NativeFence);
+  d3d12CreateInfo.Features.TileShaders                       = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_TileShaders);
+  d3d12CreateInfo.Features.TransferQueueTimestampQueries     = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_TransferQueueTimestampQueries);
+  d3d12CreateInfo.Features.VariableRateShading               = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_VariableRateShading);
+  d3d12CreateInfo.Features.SparseResources                   = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_SparseResources);
+  d3d12CreateInfo.Features.SubpassFramebufferFetch           = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_SubpassFramebufferFetch);
+  d3d12CreateInfo.Features.TextureComponentSwizzle           = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_TextureComponentSwizzle);
+
+  if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
+    d3d12CreateInfo.SetValidationLevel(xiiDiligentTypeConversions::GetDeviceValidationLevel(m_Description.m_ValidationLevel));
+
+  try
+  {
+    xiiUInt32 uiAdapterID = xiiInvalidIndex;
+
+    XII_SUCCEED_OR_RETURN_LOG(FindAdapter(pFactoryD3D12, d3d12CreateInfo.GraphicsAPIVersion, m_AdapterAttribs, uiAdapterID));
+
+    d3d12CreateInfo.AdapterId = uiAdapterID;
+  }
+  catch (...)
+  {
+    xiiLog::Error("Failed to locate DirectX12 compatible hardware adapters.");
+  }
+
+  if (m_Description.m_AdapterType != xiiGALDeviceAdapterType::Software and m_Description.m_uiAdapterID != XII_GAL_DEFAULT_ADAPTER_ID)
+  {
+    // Display mode enumeration fails with error for software adapter.
+    xiiUInt32 uiDisplayModeCount = 0U;
+    pFactoryD3D12->EnumerateDisplayModes(d3d12CreateInfo.GraphicsAPIVersion, d3d12CreateInfo.AdapterId, 0, Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB, uiDisplayModeCount, nullptr);
+    m_DisplayModes.SetCount(uiDisplayModeCount);
+    pFactoryD3D12->EnumerateDisplayModes(d3d12CreateInfo.GraphicsAPIVersion, d3d12CreateInfo.AdapterId, 0, Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB, uiDisplayModeCount, m_DisplayModes.GetData());
+  }
+
+  uiImmediateContextCount = xiiMath::Max(1U, d3d12CreateInfo.NumImmediateContexts);
+  deviceContexts.SetCount(uiImmediateContextCount + d3d12CreateInfo.NumDeferredContexts);
+  pFactoryD3D12->CreateDeviceAndContextsD3D12(d3d12CreateInfo, &m_pDevice, deviceContexts.GetData());
+
+  if (m_pDevice == nullptr)
+  {
+    xiiLog::Error("Unable to load Diligent Engine in Direct3D12 mode. The API may not be available, or required features may not be supported by this GPU/Driver/OS version.");
+    return XII_FAILURE;
+  }
+
+  m_uiImmediateContextsCount = uiImmediateContextCount;
+  m_pDeviceContexts.SetCount(deviceContexts.GetCount());
+  for (xiiUInt32 i = 0; i < deviceContexts.GetCount(); ++i)
+    m_pDeviceContexts[i].Attach(deviceContexts[i]);
+
+  xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
+  xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
   return XII_SUCCESS;
 }
