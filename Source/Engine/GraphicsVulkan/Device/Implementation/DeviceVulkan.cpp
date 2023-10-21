@@ -30,12 +30,14 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsVulkan, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
-  xiiGALDeviceFactory::RegisterCreatorFunc("Vulkan", &CreateVulkanDevice, "Vulkan_SM60", "xiiShaderCompiler");
+  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Vulkan, .m_sShaderModel = "Vulkan_SM60", .m_sShaderCompiler = "xiiShaderCompiler" };
+
+  xiiGALDeviceFactory::RegisterImplementation("Vulkan", &CreateVulkanDevice, implementation);
 }
 
 ON_CORESYSTEMS_SHUTDOWN
 {
-  xiiGALDeviceFactory::UnregisterCreatorFunc("Vulkan");
+  xiiGALDeviceFactory::UnregisterImplementation("Vulkan");
 }
 
 XII_END_SUBSYSTEM_DECLARATION;

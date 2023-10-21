@@ -5,16 +5,24 @@
 #include <Foundation/Types/Delegate.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceImplementationDescription
+{
+  xiiEnum<xiiGALGraphicsDeviceType> m_APIType = xiiGALGraphicsDeviceType::Undefined;
+  xiiString                         m_sShaderModel;
+  xiiString                         m_sShaderCompiler;
+};
+
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFactory
 {
   using CreatorFunc = xiiDelegate<xiiInternal::NewInstance<xiiGALDevice>(xiiAllocatorBase*, const xiiGALDeviceCreationDescription&)>;
 
-  static xiiInternal::NewInstance<xiiGALDevice> CreateDevice(xiiStringView sRendererName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
+  static xiiInternal::NewInstance<xiiGALDevice> CreateDevice(xiiStringView sImplementationName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
 
-  static void GetShaderModelAndCompiler(xiiStringView sRendererName, const char*& ref_szShaderModel, const char*& ref_szShaderCompiler);
+  static void RegisterImplementation(xiiStringView sImplementationName, const CreatorFunc& func, const xiiGALDeviceImplementationDescription& description);
 
-  static void RegisterCreatorFunc(const char* szRendererName, const CreatorFunc& func, const char* szShaderModel, const char* szShaderCompiler);
-  static void UnregisterCreatorFunc(const char* szRendererName);
+  static void UnregisterImplementation(xiiStringView sImplementationName);
+
+  static void GetShaderModelAndCompiler(xiiStringView sRendererName, xiiStringView& ref_sShaderModel, xiiStringView& ref_sShaderCompiler);
 };
 
 #include <GraphicsFoundation/Device/Implementation/DeviceFactory_inl.h>

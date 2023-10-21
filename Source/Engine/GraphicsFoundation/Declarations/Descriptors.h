@@ -312,7 +312,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHasha
 };
 
 /// \brief This describes the graphics device adapter properties.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGraphicsDeviceAdapterDescription : public xiiHashableStruct<xiiGraphicsDeviceAdapterDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceAdapterDescription : public xiiHashableStruct<xiiGALGraphicsDeviceAdapterDescription>
 {
   xiiString                                                                     m_sAdapterName;                                              ///< A string that contains the adapter description.
   xiiEnum<xiiGALDeviceAdapterType>                                              m_Type               = xiiGALDeviceAdapterType::Unknown;     ///< Adapter type.

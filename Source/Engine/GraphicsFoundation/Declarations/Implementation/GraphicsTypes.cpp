@@ -6,6 +6,9 @@
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALGraphicsDeviceType, 1)
   XII_ENUM_CONSTANT(xiiGALGraphicsDeviceType::Undefined),
+  XII_ENUM_CONSTANT(xiiGALGraphicsDeviceType::OpenGLES),
+  XII_ENUM_CONSTANT(xiiGALGraphicsDeviceType::OpenGL),
+  XII_ENUM_CONSTANT(xiiGALGraphicsDeviceType::Direct3D11),
   XII_ENUM_CONSTANT(xiiGALGraphicsDeviceType::Direct3D12),
   XII_ENUM_CONSTANT(xiiGALGraphicsDeviceType::Vulkan),
   XII_ENUM_CONSTANT(xiiGALGraphicsDeviceType::Metal),

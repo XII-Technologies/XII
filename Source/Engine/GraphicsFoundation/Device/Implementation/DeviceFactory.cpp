@@ -11,26 +11,26 @@ struct CreatorFuncInfo
 
 static xiiHashTable<xiiString, CreatorFuncInfo> s_CreatorFunctions;
 
-CreatorFuncInfo* GetCreatorFuncInfo(xiiStringView sRendererName)
+CreatorFuncInfo* GetCreatorFuncInfo(xiiStringView sImplementationName)
 {
-  auto pFuncInfo = s_CreatorFunctions.GetValue(sRendererName);
+  auto pFuncInfo = s_CreatorFunctions.GetValue(sImplementationName);
   if (pFuncInfo == nullptr)
   {
     xiiStringBuilder sPluginName = "xiiGraphics";
-    sPluginName.Append(sRendererName);
+    sPluginName.Append(sImplementationName);
 
     XII_VERIFY(xiiPlugin::LoadPlugin(sPluginName).Succeeded(), "Graphics API plugin '{}' not found.", sPluginName);
 
-    pFuncInfo = s_CreatorFunctions.GetValue(sRendererName);
-    XII_ASSERT_DEV(pFuncInfo != nullptr, "Graphics API plugin '{}' is not registered.", sRendererName);
+    pFuncInfo = s_CreatorFunctions.GetValue(sImplementationName);
+    XII_ASSERT_DEV(pFuncInfo != nullptr, "Graphics API plugin '{}' is not registered.", sImplementationName);
   }
 
   return pFuncInfo;
 }
 
-xiiInternal::NewInstance<xiiGALDevice> xiiGALDeviceFactory::CreateDevice(xiiStringView sRendererName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
+xiiInternal::NewInstance<xiiGALDevice> xiiGALDeviceFactory::CreateDevice(xiiStringView sImplementationName, xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
-  if (auto pFuncInfo = GetCreatorFuncInfo(sRendererName))
+  if (auto pFuncInfo = GetCreatorFuncInfo(sImplementationName))
   {
     return pFuncInfo->m_Func(pAllocator, description);
   }
@@ -38,28 +38,28 @@ xiiInternal::NewInstance<xiiGALDevice> xiiGALDeviceFactory::CreateDevice(xiiStri
   return xiiInternal::NewInstance<xiiGALDevice>(nullptr, pAllocator);
 }
 
-void xiiGALDeviceFactory::GetShaderModelAndCompiler(xiiStringView sRendererName, const char*& ref_szShaderModel, const char*& ref_szShaderCompiler)
+void xiiGALDeviceFactory::RegisterImplementation(xiiStringView sImplementationName, const CreatorFunc& func, const xiiGALDeviceImplementationDescription& description)
+{
+  CreatorFuncInfo info;
+  info.m_Func            = func;
+  info.m_sShaderModel    = description.m_sShaderModel;
+  info.m_sShaderCompiler = description.m_sShaderCompiler;
+
+  XII_VERIFY(s_CreatorFunctions.Insert(sImplementationName, info) == false, "Graphics API implementation is already registered.");
+}
+
+void xiiGALDeviceFactory::UnregisterImplementation(xiiStringView sImplementationName)
+{
+  XII_VERIFY(s_CreatorFunctions.Remove(sImplementationName), "Graphics API implementation is not registered.");
+}
+
+void xiiGALDeviceFactory::GetShaderModelAndCompiler(xiiStringView sRendererName, xiiStringView& ref_sShaderModel, xiiStringView& ref_sShaderCompiler)
 {
   if (auto pFuncInfo = GetCreatorFuncInfo(sRendererName))
   {
-    ref_szShaderModel    = pFuncInfo->m_sShaderModel;
-    ref_szShaderCompiler = pFuncInfo->m_sShaderCompiler;
+    ref_sShaderModel    = pFuncInfo->m_sShaderModel;
+    ref_sShaderCompiler = pFuncInfo->m_sShaderCompiler;
   }
-}
-
-void xiiGALDeviceFactory::RegisterCreatorFunc(const char* szRendererName, const CreatorFunc& func, const char* szShaderModel, const char* szShaderCompiler)
-{
-  CreatorFuncInfo funcInfo;
-  funcInfo.m_Func            = func;
-  funcInfo.m_sShaderModel    = szShaderModel;
-  funcInfo.m_sShaderCompiler = szShaderCompiler;
-
-  XII_VERIFY(s_CreatorFunctions.Insert(szRendererName, funcInfo) == false, "Creator function is already registered");
-}
-
-void xiiGALDeviceFactory::UnregisterCreatorFunc(const char* szRendererName)
-{
-  XII_VERIFY(s_CreatorFunctions.Remove(szRendererName), "Creator function is not registered.");
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_DeviceFactory);
