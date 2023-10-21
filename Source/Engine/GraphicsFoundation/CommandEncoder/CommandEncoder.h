@@ -40,20 +40,14 @@ public:
 
   void CopyBuffer(xiiGALBufferHandle hDestination, xiiGALBufferHandle hSource);
   void CopyBufferRegion(xiiGALBufferHandle hDestination, xiiUInt32 uiDestinationOffset, xiiGALBufferHandle hSource, xiiUInt32 uiSourceOffset, xiiUInt32 uiByteCount);
-
   void UpdateBuffer(xiiGALBufferHandle hDestination, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard);
 
   void CopyTexture(xiiGALTextureHandle hDestination, xiiGALTextureHandle hSource);
   void CopyTextureRegion(xiiGALTextureHandle hDestination, const xiiGALTextureSubResourceData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureSubResourceData& sourceSubResource, const xiiBoundingBoxu32& box);
-
   void UpdateTexture(xiiGALTextureHandle hDestination, const xiiGALTextureSubResourceData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureData& sourceData);
-
   void ResolveTexture(xiiGALTextureHandle hDestination, const xiiGALTextureSubResourceData& destinationSubResource, xiiGALTextureHandle hSource, const xiiGALTextureSubResourceData& sourceSubResource);
-
   void ReadbackTexture(xiiGALTextureHandle hTexture);
-
   void CopyTextureReadbackResult(xiiGALTextureHandle hTexture, xiiArrayPtr<xiiGALTextureSubResourceData> sourceSubResource, xiiArrayPtr<xiiGALTextureData> targetData);
-
   void GenerateMipMaps(xiiGALTextureViewHandle hTextureView);
 
   // Miscellaneous
