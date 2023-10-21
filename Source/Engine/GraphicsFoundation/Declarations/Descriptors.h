@@ -314,25 +314,25 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHasha
 /// \brief This describes the graphics device adapter properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGraphicsDeviceAdapterDescription : public xiiHashableStruct<xiiGraphicsDeviceAdapterDescription>
 {
-  xiiString                                                                m_sAdapterName;                                              ///< A string that contains the adapter description.
-  xiiEnum<xiiGALDeviceAdapterType>                                         m_Type               = xiiGALDeviceAdapterType::Unknown;     ///< Adapter type.
-  xiiEnum<xiiGALGraphicsAdapterVendor>                                     m_Vendor             = xiiGALGraphicsAdapterVendor::Unknown; ///< Adapter vendor.
-  xiiUInt32                                                                m_uiVendorID         = 0U;                                   ///< The PCI ID of the hardware vendor (if available).
-  xiiUInt32                                                                m_uiDeviceID         = 0U;                                   ///< The PCI ID of the hardware device (if available).
-  xiiUInt32                                                                m_uiVideoOutputCount = 0U;                                   ///< Number of video outputs this adapter has (if available).
-  xiiGALDeviceMemoryProperties                                             m_MemoryProperties;                                          ///< Device memory information.
-  xiiGALRayTracingProperties                                               m_RayTracingProperties;                                      ///< Ray tracing properties.
-  xiiGALWaveOperationProperties                                            m_WaveOperationProperties;                                   ///< Wave operation properties.
-  xiiGALBufferProperties                                                   m_BufferProperties;                                          ///< Buffer properties.
-  xiiGALTextureProperties                                                  m_TextureProperties;                                         ///< Texture properties.
-  xiiGALSamplerProperties                                                  m_SamplerProperties;                                         ///< Sampler properties.
-  xiiGALMeshShaderProperties                                               m_MeshShaderProperties;                                      ///< Mesh shader properties.
-  xiiGALShadingRateProperties                                              m_ShadingRateProperties;                                     ///< Shading rate properties.
-  xiiGALComputeShaderProperties                                            m_ComputeShaderProperties;                                   ///< Compute shader properties.
-  xiiGALDrawCommandProperties                                              m_DrawCommandProperties;                                     ///< Draw command properties.
-  xiiGALSparseResourceProperties                                           m_SparseResourceProperties;                                  ///< Sparse resource properties.
-  xiiGALDeviceFeatures                                                     m_Features;                                                  ///< Supported device features.
-  xiiStaticArray<xiiGALCommandQueueProperties, XII_GAL_MAX_ADAPTER_QUEUES> m_CommandQueueProperties;                                    ///< An array of NumQueues command queues supported by this device.
+  xiiString                                                                     m_sAdapterName;                                              ///< A string that contains the adapter description.
+  xiiEnum<xiiGALDeviceAdapterType>                                              m_Type               = xiiGALDeviceAdapterType::Unknown;     ///< Adapter type.
+  xiiEnum<xiiGALGraphicsAdapterVendor>                                          m_Vendor             = xiiGALGraphicsAdapterVendor::Unknown; ///< Adapter vendor.
+  xiiUInt32                                                                     m_uiVendorID         = 0U;                                   ///< The PCI ID of the hardware vendor (if available).
+  xiiUInt32                                                                     m_uiDeviceID         = 0U;                                   ///< The PCI ID of the hardware device (if available).
+  xiiUInt32                                                                     m_uiVideoOutputCount = 0U;                                   ///< Number of video outputs this adapter has (if available).
+  xiiGALDeviceMemoryProperties                                                  m_MemoryProperties;                                          ///< Device memory information.
+  xiiGALRayTracingProperties                                                    m_RayTracingProperties;                                      ///< Ray tracing properties.
+  xiiGALWaveOperationProperties                                                 m_WaveOperationProperties;                                   ///< Wave operation properties.
+  xiiGALBufferProperties                                                        m_BufferProperties;                                          ///< Buffer properties.
+  xiiGALTextureProperties                                                       m_TextureProperties;                                         ///< Texture properties.
+  xiiGALSamplerProperties                                                       m_SamplerProperties;                                         ///< Sampler properties.
+  xiiGALMeshShaderProperties                                                    m_MeshShaderProperties;                                      ///< Mesh shader properties.
+  xiiGALShadingRateProperties                                                   m_ShadingRateProperties;                                     ///< Shading rate properties.
+  xiiGALComputeShaderProperties                                                 m_ComputeShaderProperties;                                   ///< Compute shader properties.
+  xiiGALDrawCommandProperties                                                   m_DrawCommandProperties;                                     ///< Draw command properties.
+  xiiGALSparseResourceProperties                                                m_SparseResourceProperties;                                  ///< Sparse resource properties.
+  xiiGALDeviceFeatures                                                          m_Features;                                                  ///< Supported device features.
+  xiiStaticArray<xiiGALCommandQueueProperties, XII_GAL_MAX_ADAPTER_QUEUE_COUNT> m_CommandQueueProperties;                                    ///< An array of NumQueues command queues supported by this device.
 };
 
 /// \brief This describes the immediate context device creation description.

@@ -13,10 +13,10 @@
 #define XII_GAL_MAX_RENDERTARGET_COUNT 8
 
 /// \brief The maximum number of bound viewports.
-#define XII_GAL_MAX_VIEWPORTS 16
+#define XII_GAL_MAX_VIEWPORT_COUNT 16
 
 /// \brief The maximum number of queues in graphics adapter description.
-#define XII_GAL_MAX_ADAPTER_QUEUES 16
+#define XII_GAL_MAX_ADAPTER_QUEUE_COUNT 16
 
 /// \brief Special constant for the default adapter index.
 #define XII_GAL_DEFAULT_ADAPTER_ID 0xFFFFFFFFU
