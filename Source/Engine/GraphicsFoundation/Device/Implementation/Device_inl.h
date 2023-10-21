@@ -1,5 +1,5 @@
 
-/// \brief Used to guard xiiGALDevice functions from multi-threaded access and to verify that executing them on non-main-threads is allowed/
+/// \brief Used to guard xiiGALDevice functions from multi-threaded access and to verify that executing them on non-main-threads is allowed.
 #define XII_GAL_DEVICE_LOCK_AND_CHECK() \
   XII_LOCK(m_Mutex);                    \
   VerifyMultithreadedAccess()
@@ -104,7 +104,7 @@ inline const xiiGALTopLevelAS* xiiGALDevice::GetTopLevelAS(xiiGALTopLevelASHandl
   return Get<TopLevelASTable, xiiGALTopLevelAS>(hTopLevelAS, m_TopLevelAccelerationStructures);
 }
 
-inline const xiiGraphicsDeviceAdapterDescription& xiiGALDevice::GetGraphicsDeviceAdapterProperties() const
+inline const xiiGALGraphicsDeviceAdapterDescription& xiiGALDevice::GetGraphicsDeviceAdapterProperties() const
 {
   return m_AdapterDescription;
 }

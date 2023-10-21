@@ -324,7 +324,7 @@ public:
   const xiiGALTopLevelAS* GetTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS) const;
 
   /// \brief This retrieves the device properties. See xiiGraphicsDeviceAdapterDescription.
-  const xiiGraphicsDeviceAdapterDescription& GetGraphicsDeviceAdapterProperties() const;
+  const xiiGALGraphicsDeviceAdapterDescription& GetGraphicsDeviceAdapterProperties() const;
 
   /// \brief This returns the basic texture information for a particular format.
   ///
@@ -431,7 +431,7 @@ protected:
 
   xiiDynamicArray<DeadObject, xiiLocalAllocatorWrapper> m_DeadObjects;
 
-  xiiGraphicsDeviceAdapterDescription m_AdapterDescription;
+  xiiGALGraphicsDeviceAdapterDescription m_AdapterDescription;
 
   // Deactivate Doxygen document generation for the following block. (API abstraction only)
   /// \cond

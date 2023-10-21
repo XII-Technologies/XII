@@ -67,6 +67,15 @@ struct xiiGALStencilOperationDescription;
 struct xiiGALDepthStencilStateCreationDescription;
 struct xiiGALRasterizerStateCreationDescription;
 
+class xiiGALCommandEncoder;
+class xiiGALGraphicsCommandEncoder;
+class xiiGALCommandEncoderCommonPlatformInterface;
+class xiiGALCommandEncoderGraphicsPlatformInterface;
+class xiiGALCommandEncoderComputePlatformInterface;
+class xiiGALCommandList;
+class xiiGALCommandQueue;
+class xiiGALComputeCommandEncoder;
+class xiiGALGraphicsCommandEncoder;
 class xiiGALDevice;
 class xiiGALPass;
 class xiiGALSwapChain;
