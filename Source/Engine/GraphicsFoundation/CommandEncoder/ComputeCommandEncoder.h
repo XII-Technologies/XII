@@ -8,6 +8,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALComputeCommandEncoder : public xiiGALComm
 {
 public:
   xiiGALComputeCommandEncoder(xiiGALDevice& ref_device, xiiGALCommandEncoderState& ref_state, xiiGALCommandEncoderCommonPlatformInterface& ref_commonImpl, xiiGALCommandEncoderComputePlatformInterface& ref_computeImpl);
+
   virtual ~xiiGALComputeCommandEncoder();
 
   // Dispatch
@@ -18,10 +19,12 @@ public:
   virtual void ClearStatisticsCounters() override;
 
 private:
-  void CountDispatchCall() { m_uiDispatchCalls++; }
+  void CountDispatchCall();
 
   // Statistic variables
-  xiiUInt32 m_uiDispatchCalls = 0;
+  xiiUInt32 m_uiDispatchCalls = 0U;
 
   xiiGALCommandEncoderComputePlatformInterface& m_ComputeImpl;
 };
+
+#include <GraphicsFoundation/CommandEncoder/Implementation/ComputeCommandEncoder_inl.h>
