@@ -30,7 +30,7 @@ void xiiGALCommandEncoderState::InvalidateState()
   {
     for (xiiUInt32 j = 0; j < XII_GAL_MAX_SAMPLER_COUNT; ++j)
     {
-      m_hSamplerStates[i][j].Invalidate();
+      m_hSamplers[i][j].Invalidate();
     }
   }
 }

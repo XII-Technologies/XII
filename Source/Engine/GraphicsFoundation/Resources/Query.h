@@ -90,6 +90,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
+  friend class xiiGALCommandEncoder;
 
   xiiGALQuery(const xiiGALQueryCreationDescription& creationDescription);
 
@@ -98,6 +99,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+
+protected:
+  bool m_bStarted = false;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALQuery);

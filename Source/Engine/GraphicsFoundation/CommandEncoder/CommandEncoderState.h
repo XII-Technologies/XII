@@ -26,7 +26,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandEncoderState
   xiiHybridArray<const xiiGALBuffer*, 16U>  m_pResourcesForUnorderedAccessBufferViews;
   xiiHybridArray<const xiiGALTexture*, 16U> m_pResourcesForUnorderedAccessTextureViews;
 
-  xiiGALSamplerHandle m_hSamplerStates[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT];
+  xiiGALSamplerHandle m_hSamplers[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT];
 };
 
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandEncoderGraphicsState : public xiiGALCommandEncoderState

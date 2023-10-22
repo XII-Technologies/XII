@@ -14,12 +14,13 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandEncoderCommonPlatformInterface
 public:
   // State setting functions
 
-  virtual void SetShaderPlatform(const xiiGALShader* pShader) = 0;
-
+  virtual void SetShaderPlatform(const xiiGALShader* pShader)                                                                         = 0;
   virtual void SetConstantBufferPlatform(xiiUInt32 uiSlot, const xiiGALBuffer* pBuffer)                                               = 0;
-  virtual void SetSamplerStatePlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, const xiiGALSampler* pSamplerState)    = 0;
+  virtual void SetSamplerPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, const xiiGALSampler* pSampler)              = 0;
   virtual void SetBufferViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, const xiiGALBufferView* pBufferView)     = 0;
   virtual void SetTextureViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, const xiiGALTextureView* pRTextureView) = 0;
+  virtual void SetUnorderedAccessBufferViewPlatform(xiiUInt32 uiSlot, const xiiGALBufferView* pUnorderedAccessBufferView)             = 0;
+  virtual void SetUnorderedAccessTextureViewPlatform(xiiUInt32 uiSlot, const xiiGALTextureView* pUnorderedAccessTextureView)          = 0;
 
   // Query functions
 
@@ -44,8 +45,8 @@ public:
   virtual void CopyTextureRegionPlatform(const xiiGALTexture* pDestination, const xiiGALTextureSubResourceData& destinationSubResource, const xiiVec3U32& vDestinationPoint, const xiiGALTexture* pSource, const xiiGALTextureSubResourceData& sourceSubResource, const xiiBoundingBoxu32& box) = 0;
   virtual void UpdateTexturePlatform(const xiiGALTexture* pDestination, const xiiGALTextureSubResourceData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureData& sourceData)                                                                               = 0;
   virtual void ResolveTexturePlatform(const xiiGALTexture* pDestination, const xiiGALTextureSubResourceData& destinationSubResource, const xiiGALTexture* pSource, const xiiGALTextureSubResourceData& sourceSubResource)                                                                       = 0;
-  virtual void ReadbackTexturePlatform(const xiiGALTexture* pTexture)                                                                                                                                                                                                                           = 0;
-  virtual void CopyTextureReadbackResultPlatform(const xiiGALTexture* pTexture, xiiArrayPtr<xiiGALTextureSubResourceData> sourceSubResource, xiiArrayPtr<xiiGALTextureData> targetData)                                                                                                         = 0;
+  virtual void ReadbackTexturePlatform(const xiiGALTexture* pTexture, const xiiGALTexture* pStagingTexture)                                                                                                                                                                                            = 0;
+  virtual void CopyTextureReadbackResultPlatform(const xiiGALTexture* pTexture, const xiiGALTexture* pStagingTexture, xiiArrayPtr<xiiGALTextureSubResourceData> sourceSubResource, xiiArrayPtr<xiiGALTextureData> targetData)                                                                   = 0;
   virtual void GenerateMipMapsPlatform(const xiiGALTextureView* pTextureView)                                                                                                                                                                                                                   = 0;
 
   // Miscellaneous

@@ -10,18 +10,26 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandEncoder
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiGALCommandEncoder);
 
+protected:
+  xiiGALCommandEncoder(xiiGALDevice& device, xiiGALCommandEncoderState& state, xiiGALCommandEncoderCommonPlatformInterface& commonImpl);
+
+  virtual ~xiiGALCommandEncoder();
+
 public:
   // State setting functions
 
   void SetShader(xiiGALShaderHandle hShader);
+  void SetConstantBuffer(xiiUInt32 uiSlot, xiiGALBufferHandle hBuffer);
+  void SetSampler(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALSamplerHandle hSampler);
+  void SetBufferView(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALBufferViewHandle hBufferView);
+  void SetTextureView(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALTextureViewHandle hTextureView);
+  void SetUnorderedAccessBufferView(xiiUInt32 uiSlot, xiiGALBufferViewHandle hUnorderedAccessBufferView);
+  void SetUnorderedAccessTextureView(xiiUInt32 uiSlot, xiiGALTextureViewHandle hUnorderedAccessTextureView);
 
-  void SetConstantBufferPlatform(xiiUInt32 uiSlot, const xiiGALBuffer* pBuffer);
-  void SetSamplerStatePlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, const xiiGALSampler* pSamplerState);
-  void SetBufferViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, const xiiGALBufferView* pBufferView);
-  void SetTextureViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, const xiiGALTextureView* pRTextureView);
-
-  bool UnsetResourceViews(const xiiGALResourceBase* pResource);
-  bool UnsetUnorderedAccessViews(const xiiGALResourceBase* pResource);
+  bool UnsetBufferView(const xiiGALBuffer* pBuffer);
+  bool UnsetTextureView(const xiiGALTexture* pTexture);
+  bool UnsetUnorderedAccessBufferView(const xiiGALBuffer* pBuffer);
+  bool UnsetUnorderedAccessTextureView(const xiiGALTexture* pTexture);
 
   // Query functions
 
@@ -46,8 +54,8 @@ public:
   void CopyTextureRegion(xiiGALTextureHandle hDestination, const xiiGALTextureSubResourceData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureSubResourceData& sourceSubResource, const xiiBoundingBoxu32& box);
   void UpdateTexture(xiiGALTextureHandle hDestination, const xiiGALTextureSubResourceData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureData& sourceData);
   void ResolveTexture(xiiGALTextureHandle hDestination, const xiiGALTextureSubResourceData& destinationSubResource, xiiGALTextureHandle hSource, const xiiGALTextureSubResourceData& sourceSubResource);
-  void ReadbackTexture(xiiGALTextureHandle hTexture);
-  void CopyTextureReadbackResult(xiiGALTextureHandle hTexture, xiiArrayPtr<xiiGALTextureSubResourceData> sourceSubResource, xiiArrayPtr<xiiGALTextureData> targetData);
+  void ReadbackTexture(xiiGALTextureHandle hTexture, xiiGALTextureHandle hStagingTexture);
+  void CopyTextureReadbackResult(xiiGALTextureHandle hTexture, xiiGALTextureHandle hStagingTexture, xiiArrayPtr<xiiGALTextureSubResourceData> sourceSubResource, xiiArrayPtr<xiiGALTextureData> targetData);
   void GenerateMipMaps(xiiGALTextureViewHandle hTextureView);
 
   // Miscellaneous
@@ -69,10 +77,6 @@ public:
 
 protected:
   friend class xiiGALDevice;
-
-  xiiGALCommandEncoder(xiiGALDevice& device, xiiGALCommandEncoderState& state, xiiGALCommandEncoderCommonPlatformInterface& commonImpl);
-
-  virtual ~xiiGALCommandEncoder();
 
   void AssertRenderingThread() const;
 
