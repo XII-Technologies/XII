@@ -11,6 +11,7 @@ public:
 
   virtual ~xiiGALComputeCommandEncoder();
 
+public:
   // Dispatch
 
   void Dispatch(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ);

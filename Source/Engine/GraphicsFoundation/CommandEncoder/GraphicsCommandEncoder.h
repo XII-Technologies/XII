@@ -8,9 +8,11 @@
 class XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsCommandEncoder : public xiiGALCommandEncoder
 {
 public:
-  xiiGALGraphicsCommandEncoder(xiiGALDevice& ref_device, xiiGALCommandEncoderGraphicsState& ref_renderState, xiiGALCommandEncoderCommonPlatformInterface& ref_commonImpl, xiiGALCommandEncoderGraphicsPlatformInterface& ref_renderImpl);
+  xiiGALGraphicsCommandEncoder(xiiGALDevice& ref_device, xiiGALCommandEncoderGraphicsState& ref_graphicsState, xiiGALCommandEncoderCommonPlatformInterface& ref_commonImpl, xiiGALCommandEncoderGraphicsPlatformInterface& ref_graphicsImpl);
+
   virtual ~xiiGALGraphicsCommandEncoder();
 
+public:
   // Draw functions
 
   /// \brief Clears active rendertargets.
@@ -25,7 +27,6 @@ public:
   void DrawIndexedInstancedIndirect(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
   void DrawInstanced(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex);
   void DrawInstancedIndirect(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
-  void DrawAuto();
 
   void BeginStreamOut();
   void EndStreamOut();
@@ -36,8 +37,7 @@ public:
   void SetVertexBuffer(xiiUInt32 uiSlot, xiiGALBufferHandle hVertexBuffer);
   void SetInputLayout(xiiGALInputLayoutHandle hInputLayout);
 
-  xiiEnum<xiiGALPrimitiveTopology> GetPrimitiveTopology() const { return m_GraphicsState.m_Topology; }
-  void                             SetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> topology);
+  void SetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> topology);
 
   void SetBlendState(xiiGALBlendStateHandle hBlendState, const xiiColor& blendFactor = xiiColor::White, xiiUInt32 uiSampleMask = 0xFFFFFFFFU);
   void SetDepthStencilState(xiiGALDepthStencilStateHandle hDepthStencilState, xiiUInt8 uiStencilRefValue = 0xFFU);
@@ -50,8 +50,11 @@ public:
 
   virtual void ClearStatisticsCounters() override;
 
+public:
+  xiiEnum<xiiGALPrimitiveTopology> GetPrimitiveTopology();
+
 private:
-  void CountDrawCall() { m_uiDrawCalls++; }
+  void CountDrawCall();
 
   // Statistic variables
   xiiUInt32 m_uiDrawCalls = 0;
@@ -60,3 +63,5 @@ private:
 
   xiiGALCommandEncoderGraphicsPlatformInterface& m_GraphicsImpl;
 };
+
+#include <GraphicsFoundation/CommandEncoder/Implementation/GraphicsCommandEncoder_inl.h>
