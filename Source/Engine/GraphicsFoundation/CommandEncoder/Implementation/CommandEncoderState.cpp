@@ -63,5 +63,4 @@ void xiiGALCommandEncoderGraphicsState::InvalidateState()
   m_fViewPortMaxDepth = -xiiMath::MaxValue<float>();
 }
 
-
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_CommandEncoder_Implementation_CommandEncoderState);
