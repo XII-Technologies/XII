@@ -156,7 +156,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsFoundation, GPUProfilingSystem)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiDeque<GPUTimingScope, xiiStaticAllocatorWrapper> GPUProfilingSystem::s_TimingScopes;
+xiiDeque<GPUTimingScope, xiiStaticAllocatorWrapper>        GPUProfilingSystem::s_TimingScopes;
+xiiDynamicArray<GPUTimingScope, xiiStaticAllocatorWrapper> GPUProfilingSystem::s_PendingScopes;
 
 //////////////////////////////////////////////////////////////////////////
 
