@@ -2,7 +2,7 @@
 # ## Vulkan support
 # #####################################
 
-set(XII_BUILD_VULKAN OFF CACHE BOOL "Build the Vulkan Graphics Device")
+set(XII_BUILD_VULKAN OFF CACHE BOOL "Build the Vulkan Graphics Device.")
 
 # #####################################
 # ## xii_requires_vulkan()
@@ -10,7 +10,7 @@ set(XII_BUILD_VULKAN OFF CACHE BOOL "Build the Vulkan Graphics Device")
 
 macro(xii_requires_vulkan)
 	xii_requires_one_of(XII_CMAKE_PLATFORM_LINUX XII_CMAKE_PLATFORM_WINDOWS)
-    xii_requires(XII_BUILD_VULKAN)
+  xii_requires(XII_BUILD_VULKAN)
 	find_package(XIIVulkan REQUIRED)
 endmacro()
 
@@ -71,3 +71,4 @@ function(xii_sources_target_spirv_reflect TARGET_NAME)
 		source_group("SPIRV-Reflect" FILES "${XII_VULKAN_DIR}/source/SPIRV-Reflect/spirv_reflect.h" "${XII_VULKAN_DIR}/source/SPIRV-Reflect/spirv_reflect.c")
 	endif()
 endfunction()
+

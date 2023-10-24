@@ -143,6 +143,6 @@ fi
 
 if [ "$RunCMake" = true ]; then
   BuildDir="build-${BuildType}-${CompilerShort}"
-  cmake -B $BuildDir -S . -G Ninja -DCMAKE_CXX_COMPILER=$cxx_compiler -DCMAKE_C_COMPILER=$c_compiler -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $NoUnityBuild && \
+  cmake -B $BuildDir -S . -G Ninja -DCMAKE_CXX_COMPILER=$cxx_compiler -DCMAKE_C_COMPILER=$c_compiler -DCMAKE_BUILD_TYPE=$BuildType -DCMAKE_EXPORT_COMPILE_COMMANDS=ON $NoUnityBuild -DXII_BUILD_DILIGENT=ON -DXII_BUILD_VULKAN=ON && \
   echo -e "\nRun 'ninja -C ${BuildDir}' to build"
 fi
