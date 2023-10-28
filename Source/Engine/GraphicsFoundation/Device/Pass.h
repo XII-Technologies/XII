@@ -17,7 +17,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandEncoderType
 
     ENUM_COUNT,
 
-    Invalid = 0xFF,
+    Invalid = 0xFFU,
 
     Default = Graphics
   };
