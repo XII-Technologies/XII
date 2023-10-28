@@ -7,6 +7,8 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
 xii_create_target(LIBRARY ${PROJECT_NAME} NO_XII_PREFIX ALL_SYMBOLS_VISIBLE)
 
+xii_set_clib_build_flags(${PROJECT_NAME})
+
 target_compile_definitions(${PROJECT_NAME} PUBLIC BUILDSYSTEM_ENABLE_ENET_SUPPORT)
 
 if(XII_CMAKE_PLATFORM_WINDOWS)

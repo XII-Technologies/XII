@@ -303,8 +303,8 @@ function(xii_set_build_flags TARGET_NAME)
 
   set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)
 
-  # On Android, we need to specify the C++ version manually.
-  if(ANDROID)
+  # On Android or Clang, we need to specify the C++ version manually.
+  if(ANDROID OR XII_CMAKE_COMPILER_CLANG)
     add_compile_options(-std=c++20)
   endif()
 
@@ -334,3 +334,16 @@ function(xii_enable_strict_warnings TARGET_NAME)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
   endif()
 endfunction()
+
+# #####################################
+# ## xii_set_clib_build_flags(<target>)
+# #####################################
+function(xii_set_clib_build_flags TARGET_NAME)
+  # Since Clang does not support the C++20 flag on C libraries, ensure to remove the flag (compilation will fail otherwise).
+  if(XII_CMAKE_COMPILER_CLANG)
+    get_target_property(TARGET_COMPILE_OPTS ${PROJECT_NAME} COMPILE_OPTIONS)
+    list(REMOVE_ITEM TARGET_COMPILE_OPTS -std=c++20)
+    set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_OPTIONS "${TARGET_COMPILE_OPTS}")
+  endif()
+endfunction()
+
