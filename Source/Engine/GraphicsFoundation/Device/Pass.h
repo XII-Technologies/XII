@@ -2,6 +2,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Resources/RenderTargetSetup.h>
+
 /// \brief This describes the shader variable property flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandEncoderType
 {
