@@ -297,6 +297,25 @@ void xiiGALDeviceD3D12::FlushPendingObjects()
 
 xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
 {
+  if (!m_pDeviceContexts.IsEmpty())
+  {
+    for (xiiUInt32 uiContext = 0; uiContext < m_uiImmediateContextsCount; ++uiContext)
+    {
+      m_pDeviceContexts[uiContext]->Flush();
+      m_pDeviceContexts[uiContext]->FinishFrame();
+      m_pDeviceContexts[uiContext]->InvalidateState();
+
+      XII_GAL_DILIGENT_REF_RELEASE(m_pDeviceContexts[uiContext]);
+    }
+
+    m_pDeviceContexts.Clear();
+  }
+
+  XII_GAL_DILIGENT_REF_RELEASE(m_pDevice);
+  XII_GAL_DILIGENT_REF_RELEASE(m_pEngineFactory);
+
+  ReportLiveGPUObjects();
+
   return XII_SUCCESS;
 }
 
@@ -644,6 +663,114 @@ void xiiGALDeviceD3D12::WaitIdlePlatform()
 
 void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 {
+}
+
+void xiiGALDeviceD3D12::FillFormatLookupTable()
+{
+  // The list below is in the same order as the xiiGALTextureFormat enumeration, no format should be missing.
+
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA32_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA32_TYPELESS).IL(Diligent::TEX_FORMAT_RGBA32_TYPELESS).RV(Diligent::TEX_FORMAT_RGBA32_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32Float, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA32_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA32_FLOAT).IL(Diligent::TEX_FORMAT_RGBA32_FLOAT).RV(Diligent::TEX_FORMAT_RGBA32_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA32_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA32_UINT).IL(Diligent::TEX_FORMAT_RGBA32_UINT).RV(Diligent::TEX_FORMAT_RGBA32_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32SInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA32_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA32_SINT).IL(Diligent::TEX_FORMAT_RGBA32_SINT).RV(Diligent::TEX_FORMAT_RGBA32_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB32_TYPELESS).RT(Diligent::TEX_FORMAT_RGB32_TYPELESS).IL(Diligent::TEX_FORMAT_RGB32_TYPELESS).RV(Diligent::TEX_FORMAT_RGB32_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32Float, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB32_TYPELESS).RT(Diligent::TEX_FORMAT_RGB32_FLOAT).IL(Diligent::TEX_FORMAT_RGB32_FLOAT).RV(Diligent::TEX_FORMAT_RGB32_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB32_TYPELESS).RT(Diligent::TEX_FORMAT_RGB32_UINT).IL(Diligent::TEX_FORMAT_RGB32_UINT).RV(Diligent::TEX_FORMAT_RGB32_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32SInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB32_TYPELESS).RT(Diligent::TEX_FORMAT_RGB32_SINT).IL(Diligent::TEX_FORMAT_RGB32_SINT).RV(Diligent::TEX_FORMAT_RGB32_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA16_TYPELESS).IL(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RV(Diligent::TEX_FORMAT_RGBA16_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16Float, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA16_FLOAT).IL(Diligent::TEX_FORMAT_RGBA16_FLOAT).RV(Diligent::TEX_FORMAT_RGBA16_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16UNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA16_UNORM).IL(Diligent::TEX_FORMAT_RGBA16_UNORM).RV(Diligent::TEX_FORMAT_RGBA16_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA16_UINT).IL(Diligent::TEX_FORMAT_RGBA16_UINT).RV(Diligent::TEX_FORMAT_RGBA16_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16SNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA16_SNORM).IL(Diligent::TEX_FORMAT_RGBA16_SNORM).RV(Diligent::TEX_FORMAT_RGBA16_SNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16SInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA16_SINT).IL(Diligent::TEX_FORMAT_RGBA16_SINT).RV(Diligent::TEX_FORMAT_RGBA16_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG32_TYPELESS).RT(Diligent::TEX_FORMAT_RG32_TYPELESS).IL(Diligent::TEX_FORMAT_RG32_TYPELESS).RV(Diligent::TEX_FORMAT_RG32_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32Float, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG32_TYPELESS).RT(Diligent::TEX_FORMAT_RG32_FLOAT).IL(Diligent::TEX_FORMAT_RG32_FLOAT).RV(Diligent::TEX_FORMAT_RG32_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG32_TYPELESS).RT(Diligent::TEX_FORMAT_RG32_UINT).IL(Diligent::TEX_FORMAT_RG32_UINT).RV(Diligent::TEX_FORMAT_RG32_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32SInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG32_TYPELESS).RT(Diligent::TEX_FORMAT_RG32_SINT).IL(Diligent::TEX_FORMAT_RG32_SINT).RV(Diligent::TEX_FORMAT_RG32_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32G8X24Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R32G8X24_TYPELESS).RT(Diligent::TEX_FORMAT_R32G8X24_TYPELESS).IL(Diligent::TEX_FORMAT_R32G8X24_TYPELESS).RV(Diligent::TEX_FORMAT_R32G8X24_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D32FloatS8X24UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT).D(Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT).DS(Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT).S(Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32FloatX8X24Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS).RT(Diligent::TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS).IL(Diligent::TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS).RV(Diligent::TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::X32TypelessG8X24UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X32_TYPELESS_G8X24_UINT).RT(Diligent::TEX_FORMAT_X32_TYPELESS_G8X24_UINT).IL(Diligent::TEX_FORMAT_X32_TYPELESS_G8X24_UINT).RV(Diligent::TEX_FORMAT_X32_TYPELESS_G8X24_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB10A2_TYPELESS).RT(Diligent::TEX_FORMAT_RGB10A2_TYPELESS).IL(Diligent::TEX_FORMAT_RGB10A2_TYPELESS).RV(Diligent::TEX_FORMAT_RGB10A2_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2UNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB10A2_TYPELESS).RT(Diligent::TEX_FORMAT_RGB10A2_UNORM).IL(Diligent::TEX_FORMAT_RGB10A2_UNORM).RV(Diligent::TEX_FORMAT_RGB10A2_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB10A2_TYPELESS).RT(Diligent::TEX_FORMAT_RGB10A2_UINT).IL(Diligent::TEX_FORMAT_RGB10A2_UINT).RV(Diligent::TEX_FORMAT_RGB10A2_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG11B10Float, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R11G11B10_FLOAT).RT(Diligent::TEX_FORMAT_R11G11B10_FLOAT).IL(Diligent::TEX_FORMAT_R11G11B10_FLOAT).RV(Diligent::TEX_FORMAT_R11G11B10_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA8_TYPELESS).IL(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RV(Diligent::TEX_FORMAT_RGBA8_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA8_UNORM).IL(Diligent::TEX_FORMAT_RGBA8_UNORM).RV(Diligent::TEX_FORMAT_RGBA8_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UNormalizedSRGB, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB).IL(Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB).RV(Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA8_UINT).IL(Diligent::TEX_FORMAT_RGBA8_UINT).RV(Diligent::TEX_FORMAT_RGBA8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8SNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA8_SNORM).IL(Diligent::TEX_FORMAT_RGBA8_SNORM).RV(Diligent::TEX_FORMAT_RGBA8_SNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8SInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA8_SINT).IL(Diligent::TEX_FORMAT_RGBA8_SINT).RV(Diligent::TEX_FORMAT_RGBA8_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG16_TYPELESS).RT(Diligent::TEX_FORMAT_RG16_TYPELESS).IL(Diligent::TEX_FORMAT_RG16_TYPELESS).RV(Diligent::TEX_FORMAT_RG16_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16Float, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG16_FLOAT).RT(Diligent::TEX_FORMAT_RG16_FLOAT).IL(Diligent::TEX_FORMAT_RG16_FLOAT).RV(Diligent::TEX_FORMAT_RG16_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16UNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG16_TYPELESS).RT(Diligent::TEX_FORMAT_RG16_UNORM).IL(Diligent::TEX_FORMAT_RG16_UNORM).RV(Diligent::TEX_FORMAT_RG16_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG16_TYPELESS).RT(Diligent::TEX_FORMAT_RG16_UINT).IL(Diligent::TEX_FORMAT_RG16_UINT).RV(Diligent::TEX_FORMAT_RG16_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16SNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG16_TYPELESS).RT(Diligent::TEX_FORMAT_RG16_SNORM).IL(Diligent::TEX_FORMAT_RG16_SNORM).RV(Diligent::TEX_FORMAT_RG16_SNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16SInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG16_TYPELESS).RT(Diligent::TEX_FORMAT_RG16_SINT).IL(Diligent::TEX_FORMAT_RG16_SINT).RV(Diligent::TEX_FORMAT_RG16_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R32_TYPELESS).RT(Diligent::TEX_FORMAT_R32_TYPELESS).IL(Diligent::TEX_FORMAT_R32_TYPELESS).RV(Diligent::TEX_FORMAT_R32_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D32Float, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_D32_FLOAT).RT(Diligent::TEX_FORMAT_D32_FLOAT).IL(Diligent::TEX_FORMAT_D32_FLOAT).RV(Diligent::TEX_FORMAT_D32_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32Float, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R32_TYPELESS).RT(Diligent::TEX_FORMAT_R32_FLOAT).IL(Diligent::TEX_FORMAT_R32_FLOAT).RV(Diligent::TEX_FORMAT_R32_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R32_TYPELESS).RT(Diligent::TEX_FORMAT_R32_UINT).IL(Diligent::TEX_FORMAT_R32_UINT).RV(Diligent::TEX_FORMAT_R32_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32SInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R32_TYPELESS).RT(Diligent::TEX_FORMAT_R32_SINT).IL(Diligent::TEX_FORMAT_R32_SINT).RV(Diligent::TEX_FORMAT_R32_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R24G8Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R24G8_TYPELESS).RT(Diligent::TEX_FORMAT_R24G8_TYPELESS).IL(Diligent::TEX_FORMAT_R24G8_TYPELESS).RV(Diligent::TEX_FORMAT_R24G8_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D24UNormalizedS8UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_D24_UNORM_S8_UINT).RT(Diligent::TEX_FORMAT_D24_UNORM_S8_UINT).IL(Diligent::TEX_FORMAT_D24_UNORM_S8_UINT).RV(Diligent::TEX_FORMAT_D24_UNORM_S8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R24UNormalizedX8Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R24_UNORM_X8_TYPELESS).RT(Diligent::TEX_FORMAT_R24_UNORM_X8_TYPELESS).IL(Diligent::TEX_FORMAT_R24_UNORM_X8_TYPELESS).RV(Diligent::TEX_FORMAT_R24_UNORM_X8_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::X24TypelessG8UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RT(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).IL(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RV(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG8_TYPELESS).RT(Diligent::TEX_FORMAT_RG8_TYPELESS).IL(Diligent::TEX_FORMAT_RG8_TYPELESS).RV(Diligent::TEX_FORMAT_RG8_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8UNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG8_TYPELESS).RT(Diligent::TEX_FORMAT_RG8_UNORM).IL(Diligent::TEX_FORMAT_RG8_UNORM).RV(Diligent::TEX_FORMAT_RG8_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG8_TYPELESS).RT(Diligent::TEX_FORMAT_RG8_UINT).IL(Diligent::TEX_FORMAT_RG8_UINT).RV(Diligent::TEX_FORMAT_RG8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8SNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG8_TYPELESS).RT(Diligent::TEX_FORMAT_RG8_SNORM).IL(Diligent::TEX_FORMAT_RG8_SNORM).RV(Diligent::TEX_FORMAT_RG8_SNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8SInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG8_TYPELESS).RT(Diligent::TEX_FORMAT_RG8_SINT).IL(Diligent::TEX_FORMAT_RG8_SINT).RV(Diligent::TEX_FORMAT_RG8_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).RT(Diligent::TEX_FORMAT_R16_TYPELESS).IL(Diligent::TEX_FORMAT_R16_TYPELESS).RV(Diligent::TEX_FORMAT_R16_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16Float, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).RT(Diligent::TEX_FORMAT_R16_FLOAT).IL(Diligent::TEX_FORMAT_R16_FLOAT).RV(Diligent::TEX_FORMAT_R16_FLOAT));
+
+
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D16UNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).RT(Diligent::TEX_FORMAT_D16_UNORM).IL(Diligent::TEX_FORMAT_D16_UNORM).RV(Diligent::TEX_FORMAT_D16_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16UNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).RT(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).IL(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RV(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).RT(Diligent::TEX_FORMAT_R16_TYPELESS).IL(Diligent::TEX_FORMAT_R16_TYPELESS).RV(Diligent::TEX_FORMAT_R16_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16SNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).RT(Diligent::TEX_FORMAT_R16_TYPELESS).IL(Diligent::TEX_FORMAT_R16_TYPELESS).RV(Diligent::TEX_FORMAT_R16_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16SInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).RT(Diligent::TEX_FORMAT_R16_TYPELESS).IL(Diligent::TEX_FORMAT_R16_TYPELESS).RV(Diligent::TEX_FORMAT_R16_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8Typeless, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RT(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).IL(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RV(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8UNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RT(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).IL(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RV(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8UInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RT(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).IL(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RV(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8SNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RT(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).IL(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RV(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8SInt, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RT(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).IL(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RV(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::A8UNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RT(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).IL(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RV(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R1UNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RT(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).IL(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RV(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB9E5SharedExponent, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RT(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).IL(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RV(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8BG8UNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RT(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).IL(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RV(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::GR8GB8UNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RT(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).IL(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RV(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT));
+
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1Typeless, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1UNormalized, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1UNormalizedSRGB, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2Typeless, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2UNormalized, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2UNormalizedSRGB, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3Typeless, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3UNormalized, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3UNormalizedSRGB, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4Typeless, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4UNormalized, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4SNormalized, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5Typeless, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5UNormalized, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5SNormalized, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::B5G6R5UNormalized, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::B5G5R5A1UNormalized, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8UNormalized, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8UNormalized, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8Typeless, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8UNormalizedSRGB, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8Typeless, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8UNormalizedSRGB, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HTypeless, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HUF16, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HSF16, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7Typeless, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7UNormalized, xiiGALFormatLookupEntryD3D12());
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7UNormalizedSRGB, xiiGALFormatLookupEntryD3D12());
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Device_Implementation_DeviceD3D12);

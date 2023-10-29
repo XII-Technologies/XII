@@ -113,6 +113,8 @@ protected:
 
   virtual void FillCapabilitiesPlatform() override;
 
+  void FillFormatLookupTable();
+
 private:
   xiiGALFormatLookupTableD3D12 m_FormatLookupTable;
 
