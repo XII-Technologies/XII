@@ -18,7 +18,7 @@ xiiResult xiiGALFramebufferD3D12::InitPlatform(xiiGALDevice* pDevice)
 
   Diligent::FramebufferDesc framebufferDescription;
   framebufferDescription.Name           = m_Description.m_sName.GetStartPointer();
-  framebufferDescription.pRenderPass    = const_cast<Diligent::IRenderPass*>(static_cast<const xiiGALRenderPassD3D12*>(pDeviceD3D12->GetRenderPass(m_Description.m_hRenderPass))->GetRenderPass());
+  framebufferDescription.pRenderPass    = static_cast<xiiGALRenderPassD3D12*>(pDeviceD3D12->GetRenderPass(m_Description.m_hRenderPass))->GetRenderPass();
   framebufferDescription.Width          = m_Description.m_FramebufferSize.width;
   framebufferDescription.Height         = m_Description.m_FramebufferSize.height;
   framebufferDescription.NumArraySlices = m_Description.m_uiArraySliceCount;
@@ -33,7 +33,7 @@ xiiResult xiiGALFramebufferD3D12::InitPlatform(xiiGALDevice* pDevice)
     const auto& xiiAttachmentView = m_Description.m_Attachments[i];
     auto        attachmentView    = attachmentViews[i];
 
-    attachmentView = const_cast<Diligent::ITextureView*>(static_cast<const xiiGALTextureViewD3D12*>(pDeviceD3D12->GetTextureView(xiiAttachmentView))->GetTextureView());
+    attachmentView = static_cast<xiiGALTextureViewD3D12*>(pDeviceD3D12->GetTextureView(xiiAttachmentView))->GetTextureView();
   }
   framebufferDescription.AttachmentCount = uiAttachmentViewCount;
   framebufferDescription.ppAttachments   = attachmentViews.GetData();

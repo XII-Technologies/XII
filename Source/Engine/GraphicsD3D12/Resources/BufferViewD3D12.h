@@ -7,7 +7,7 @@
 class XII_GRAPHICSD3D12_DLL xiiGALBufferViewD3D12 final : public xiiGALBufferView
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::IBufferView* GetBufferView() const;
+  XII_ALWAYS_INLINE Diligent::IBufferView* GetBufferView() const;
 
 protected:
   friend class xiiGALDeviceD3D12;

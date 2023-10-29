@@ -7,7 +7,7 @@
 class XII_GRAPHICSD3D12_DLL xiiGALTextureViewD3D12 final : public xiiGALTextureView
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::ITextureView* GetTextureView() const;
+  XII_ALWAYS_INLINE Diligent::ITextureView* GetTextureView() const;
 
 protected:
   friend class xiiGALDeviceD3D12;

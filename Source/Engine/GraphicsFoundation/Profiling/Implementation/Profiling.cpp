@@ -35,8 +35,8 @@ public:
     {
       auto& timingScope = s_PendingScopes.PeekBack();
 
-      xiiGALQuery* pStartQuery = const_cast<xiiGALQuery*>(xiiGALDevice::GetDefaultDevice()->GetQuery(timingScope.m_BeginTimestamp));
-      xiiGALQuery* pEndQuery   = const_cast<xiiGALQuery*>(xiiGALDevice::GetDefaultDevice()->GetQuery(timingScope.m_EndTimestamp));
+      xiiGALQuery* pStartQuery = xiiGALDevice::GetDefaultDevice()->GetQuery(timingScope.m_BeginTimestamp);
+      xiiGALQuery* pEndQuery   = xiiGALDevice::GetDefaultDevice()->GetQuery(timingScope.m_EndTimestamp);
 
       xiiGALQueryDataTimestamp startTimestampData;
 

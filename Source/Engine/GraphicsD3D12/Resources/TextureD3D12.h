@@ -15,7 +15,7 @@ public:
 
   virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override;
 
-  XII_ALWAYS_INLINE const Diligent::ITexture* GetTexture() const;
+  XII_ALWAYS_INLINE Diligent::ITexture* GetTexture() const;
 
 protected:
   friend class xiiGALDeviceD3D12;

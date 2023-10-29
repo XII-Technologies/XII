@@ -21,7 +21,7 @@ public:
 
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override;
 
-  XII_ALWAYS_INLINE const Diligent::IBuffer* GetBuffer() const;
+  XII_ALWAYS_INLINE Diligent::IBuffer* GetBuffer() const;
 
 protected:
   friend class xiiGALDeviceD3D12;

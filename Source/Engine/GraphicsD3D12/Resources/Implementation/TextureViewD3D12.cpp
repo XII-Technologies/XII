@@ -32,7 +32,7 @@ xiiResult xiiGALTextureViewD3D12::InitPlatform(xiiGALDevice* pDevice)
   viewDescription.Swizzle.B       = xiiDiligentTypeConversions::GetComponentSwizzle(m_Description.m_ComponentSwizzle.m_B);
   viewDescription.Swizzle.A       = xiiDiligentTypeConversions::GetComponentSwizzle(m_Description.m_ComponentSwizzle.m_A);
 
-  Diligent::ITexture* pTextureD3D12 = const_cast<Diligent::ITexture*>(static_cast<xiiGALTextureD3D12*>(m_pTexture)->GetTexture());
+  Diligent::ITexture* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(m_pTexture)->GetTexture();
 
   pTextureD3D12->CreateView(viewDescription, &m_pTextureView);
 

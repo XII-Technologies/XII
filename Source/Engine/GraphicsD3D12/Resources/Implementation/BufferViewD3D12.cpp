@@ -23,7 +23,7 @@ xiiResult xiiGALBufferViewD3D12::InitPlatform(xiiGALDevice* pDevice)
   viewDescription.ByteOffset           = m_Description.m_uiByteOffset;
   viewDescription.ByteWidth            = m_Description.m_uiByteWidth;
 
-  Diligent::IBuffer* pBufferD3D12 = const_cast<Diligent::IBuffer*>(static_cast<xiiGALBufferD3D12*>(m_pBuffer)->GetBuffer());
+  Diligent::IBuffer* pBufferD3D12 = static_cast<xiiGALBufferD3D12*>(m_pBuffer)->GetBuffer();
 
   pBufferD3D12->CreateView(viewDescription, &m_pBufferView);
 

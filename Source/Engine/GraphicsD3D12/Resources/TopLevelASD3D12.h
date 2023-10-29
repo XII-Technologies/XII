@@ -17,7 +17,7 @@ public:
 
   virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override;
 
-  XII_ALWAYS_INLINE const Diligent::ITopLevelAS* GetTopLevelAS() const;
+  XII_ALWAYS_INLINE Diligent::ITopLevelAS* GetTopLevelAS() const;
 
 protected:
   friend class xiiGALDeviceD3D12;

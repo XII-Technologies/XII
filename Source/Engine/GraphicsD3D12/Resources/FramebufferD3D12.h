@@ -7,7 +7,7 @@
 class XII_GRAPHICSD3D12_DLL xiiGALFramebufferD3D12 final : public xiiGALFramebuffer
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::IFramebuffer* GetFramebuffer() const;
+  XII_ALWAYS_INLINE Diligent::IFramebuffer* GetFramebuffer() const;
 
 protected:
   friend class xiiGALDeviceD3D12;

@@ -44,7 +44,7 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALTopLevelASD3D12::G
   return xiiDiligentTypeConversions::GetResourceState(m_pTopLevelAS->GetState());
 }
 
-XII_ALWAYS_INLINE const Diligent::ITopLevelAS* xiiGALTopLevelASD3D12::GetTopLevelAS() const
+XII_ALWAYS_INLINE Diligent::ITopLevelAS* xiiGALTopLevelASD3D12::GetTopLevelAS() const
 {
   return m_pTopLevelAS;
 }

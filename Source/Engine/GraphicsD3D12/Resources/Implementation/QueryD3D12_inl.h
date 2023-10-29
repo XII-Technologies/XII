@@ -96,7 +96,7 @@ XII_ALWAYS_INLINE void xiiGALQueryD3D12::Invalidate()
   m_pQuery->Invalidate();
 }
 
-XII_ALWAYS_INLINE const Diligent::IQuery* xiiGALQueryD3D12::GetQuery() const
+XII_ALWAYS_INLINE Diligent::IQuery* xiiGALQueryD3D12::GetQuery() const
 {
   return m_pQuery;
 }

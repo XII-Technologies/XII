@@ -51,7 +51,7 @@ XII_ALWAYS_INLINE xiiGALSparseBufferProperties xiiGALBufferD3D12::GetSparsePrope
   return xiiGALSparseBufferProperties();
 }
 
-XII_ALWAYS_INLINE const Diligent::IBuffer* xiiGALBufferD3D12::GetBuffer() const
+XII_ALWAYS_INLINE Diligent::IBuffer* xiiGALBufferD3D12::GetBuffer() const
 {
   return m_pBuffer;
 }

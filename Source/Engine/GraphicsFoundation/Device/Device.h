@@ -273,55 +273,55 @@ public:
   xiiEvent<const xiiGALDeviceEvent&> m_Events;
 
   /// \brief Retrieves a pointer to the swap chain object with the given handle.
-  const xiiGALSwapChain* GetSwapChain(xiiGALSwapChainHandle hSwapChain) const;
+  xiiGALSwapChain* GetSwapChain(xiiGALSwapChainHandle hSwapChain) const;
 
   /// \brief Retrieves a pointer to the blend state object with the given handle.
-  const xiiGALBlendState* GetBlendState(xiiGALBlendStateHandle hBlendState) const;
+  xiiGALBlendState* GetBlendState(xiiGALBlendStateHandle hBlendState) const;
 
   /// \brief Retrieves a pointer to the depth stencil state object with the given handle.
-  const xiiGALDepthStencilState* GetDepthStencilState(xiiGALDepthStencilStateHandle hDepthStencilState) const;
+  xiiGALDepthStencilState* GetDepthStencilState(xiiGALDepthStencilStateHandle hDepthStencilState) const;
 
   /// \brief Retrieves a pointer to the rasterizer state object with the given handle.
-  const xiiGALRasterizerState* GetRasterizerState(xiiGALRasterizerStateHandle hRasterizerState) const;
+  xiiGALRasterizerState* GetRasterizerState(xiiGALRasterizerStateHandle hRasterizerState) const;
 
   /// \brief Retrieves a pointer to the shader object with the given handle.
-  const xiiGALShader* GetShader(xiiGALShaderHandle hShader) const;
+  xiiGALShader* GetShader(xiiGALShaderHandle hShader) const;
 
   /// \brief Retrieves a pointer to the buffer object with the given handle.
-  const xiiGALBuffer* GetBuffer(xiiGALBufferHandle hBuffer) const;
+  xiiGALBuffer* GetBuffer(xiiGALBufferHandle hBuffer) const;
 
   /// \brief Retrieves a pointer to the texture object with the given handle.
-  const xiiGALTexture* GetTexture(xiiGALTextureHandle hTexture) const;
+  xiiGALTexture* GetTexture(xiiGALTextureHandle hTexture) const;
 
   /// \brief Retrieves a pointer to the buffer view object with the given handle.
-  const xiiGALBufferView* GetBufferView(xiiGALBufferViewHandle hBufferView) const;
+  xiiGALBufferView* GetBufferView(xiiGALBufferViewHandle hBufferView) const;
 
   /// \brief Retrieves a pointer to the texture view object with the given handle.
-  const xiiGALTextureView* GetTextureView(xiiGALTextureViewHandle hTextureView) const;
+  xiiGALTextureView* GetTextureView(xiiGALTextureViewHandle hTextureView) const;
 
   /// \brief Retrieves a pointer to the sampler object with the given handle.
-  const xiiGALSampler* GetSampler(xiiGALSamplerHandle hSampler) const;
+  xiiGALSampler* GetSampler(xiiGALSamplerHandle hSampler) const;
 
   /// \brief Retrieves a pointer to the input layout object with the given handle.
-  const xiiGALInputLayout* GetInputLayout(xiiGALInputLayoutHandle hInputLayout) const;
+  xiiGALInputLayout* GetInputLayout(xiiGALInputLayoutHandle hInputLayout) const;
 
   /// \brief Retrieves a pointer to the query object with the given handle.
-  const xiiGALQuery* GetQuery(xiiGALQueryHandle hQuery) const;
+  xiiGALQuery* GetQuery(xiiGALQueryHandle hQuery) const;
 
   /// \brief Retrieves a pointer to the fence object with the given handle.
-  const xiiGALFence* GetFence(xiiGALFenceHandle hFence) const;
+  xiiGALFence* GetFence(xiiGALFenceHandle hFence) const;
 
   /// \brief Retrieves a pointer to the render pass object with the given handle.
-  const xiiGALRenderPass* GetRenderPass(xiiGALRenderPassHandle hRenderPass) const;
+  xiiGALRenderPass* GetRenderPass(xiiGALRenderPassHandle hRenderPass) const;
 
   /// \brief Retrieves a pointer to the framebuffer object with the given handle.
-  const xiiGALFramebuffer* GetFramebuffer(xiiGALFramebufferHandle hFramebuffer) const;
+  xiiGALFramebuffer* GetFramebuffer(xiiGALFramebufferHandle hFramebuffer) const;
 
   /// \brief Retrieves a pointer to the bottom-level acceleration structure object with the given handle.
-  const xiiGALBottomLevelAS* GetBottomLevelAS(xiiGALBottomLevelASHandle hBottomLevelAS) const;
+  xiiGALBottomLevelAS* GetBottomLevelAS(xiiGALBottomLevelASHandle hBottomLevelAS) const;
 
   /// \brief Retrieves a pointer to the top-level acceleration structure object with the given handle.
-  const xiiGALTopLevelAS* GetTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS) const;
+  xiiGALTopLevelAS* GetTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS) const;
 
   /// \brief This retrieves the device properties. See xiiGraphicsDeviceAdapterDescription.
   const xiiGALGraphicsDeviceAdapterDescription& GetGraphicsDeviceAdapterProperties() const;
@@ -467,14 +467,14 @@ protected:
   virtual xiiGALBuffer* CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr) = 0;
   virtual void          DestroyBufferPlatform(xiiGALBuffer* pBuffer)                                                                             = 0;
 
-  virtual xiiGALBufferView* CreateBufferViewPlatform(const xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description) = 0;
-  virtual void              DestroyBufferViewPlatform(xiiGALBufferView* pBufferView)                                                      = 0;
+  virtual xiiGALBufferView* CreateBufferViewPlatform(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description) = 0;
+  virtual void              DestroyBufferViewPlatform(xiiGALBufferView* pBufferView)                                                = 0;
 
   virtual xiiGALTexture* CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) = 0;
   virtual void           DestroyTexturePlatform(xiiGALTexture* pTexture)                                                                             = 0;
 
-  virtual xiiGALTextureView* CreateTextureViewPlatform(const xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description) = 0;
-  virtual void               DestroyTextureViewPlatform(xiiGALTextureView* pTextureView)                                                       = 0;
+  virtual xiiGALTextureView* CreateTextureViewPlatform(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description) = 0;
+  virtual void               DestroyTextureViewPlatform(xiiGALTextureView* pTextureView)                                                 = 0;
 
   virtual xiiGALSampler* CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) = 0;
   virtual void           DestroySamplerPlatform(xiiGALSampler* pSampler)                            = 0;

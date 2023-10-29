@@ -14,7 +14,7 @@ XII_ALWAYS_INLINE void xiiGALFenceD3D12::Wait(xiiUInt64 uiValue)
   m_pFence->Wait(uiValue);
 }
 
-XII_ALWAYS_INLINE const Diligent::IFence* xiiGALFenceD3D12::GetFence() const
+XII_ALWAYS_INLINE Diligent::IFence* xiiGALFenceD3D12::GetFence() const
 {
   return m_pFence;
 }

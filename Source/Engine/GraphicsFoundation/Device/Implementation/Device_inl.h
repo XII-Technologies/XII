@@ -19,87 +19,87 @@ XII_ALWAYS_INLINE ReturnType* xiiGALDevice::Get(typename IdTableType::TypeOfId h
   return pObject;
 }
 
-inline const xiiGALSwapChain* xiiGALDevice::GetSwapChain(xiiGALSwapChainHandle hSwapChain) const
+inline xiiGALSwapChain* xiiGALDevice::GetSwapChain(xiiGALSwapChainHandle hSwapChain) const
 {
   return Get<SwapChainTable, xiiGALSwapChain>(hSwapChain, m_SwapChains);
 }
 
-inline const xiiGALBlendState* xiiGALDevice::GetBlendState(xiiGALBlendStateHandle hBlendState) const
+inline xiiGALBlendState* xiiGALDevice::GetBlendState(xiiGALBlendStateHandle hBlendState) const
 {
   return Get<BlendStateTable, xiiGALBlendState>(hBlendState, m_BlendStates);
 }
 
-inline const xiiGALDepthStencilState* xiiGALDevice::GetDepthStencilState(xiiGALDepthStencilStateHandle hDepthStencilState) const
+inline xiiGALDepthStencilState* xiiGALDevice::GetDepthStencilState(xiiGALDepthStencilStateHandle hDepthStencilState) const
 {
   return Get<DepthStencilStateTable, xiiGALDepthStencilState>(hDepthStencilState, m_DepthStencilStates);
 }
 
-inline const xiiGALRasterizerState* xiiGALDevice::GetRasterizerState(xiiGALRasterizerStateHandle hRasterizerState) const
+inline xiiGALRasterizerState* xiiGALDevice::GetRasterizerState(xiiGALRasterizerStateHandle hRasterizerState) const
 {
   return Get<RasterizerStateTable, xiiGALRasterizerState>(hRasterizerState, m_RasterizerStates);
 }
 
-inline const xiiGALShader* xiiGALDevice::GetShader(xiiGALShaderHandle hShader) const
+inline xiiGALShader* xiiGALDevice::GetShader(xiiGALShaderHandle hShader) const
 {
   return Get<ShaderTable, xiiGALShader>(hShader, m_Shaders);
 }
 
-inline const xiiGALBuffer* xiiGALDevice::GetBuffer(xiiGALBufferHandle hBuffer) const
+inline xiiGALBuffer* xiiGALDevice::GetBuffer(xiiGALBufferHandle hBuffer) const
 {
   return Get<BufferTable, xiiGALBuffer>(hBuffer, m_Buffers);
 }
 
-inline const xiiGALTexture* xiiGALDevice::GetTexture(xiiGALTextureHandle hTexture) const
+inline xiiGALTexture* xiiGALDevice::GetTexture(xiiGALTextureHandle hTexture) const
 {
   return Get<TextureTable, xiiGALTexture>(hTexture, m_Textures);
 }
 
-inline const xiiGALBufferView* xiiGALDevice::GetBufferView(xiiGALBufferViewHandle hBufferView) const
+inline xiiGALBufferView* xiiGALDevice::GetBufferView(xiiGALBufferViewHandle hBufferView) const
 {
   return Get<BufferViewTable, xiiGALBufferView>(hBufferView, m_BufferViews);
 }
 
-inline const xiiGALTextureView* xiiGALDevice::GetTextureView(xiiGALTextureViewHandle hTextureView) const
+inline xiiGALTextureView* xiiGALDevice::GetTextureView(xiiGALTextureViewHandle hTextureView) const
 {
   return Get<TextureViewTable, xiiGALTextureView>(hTextureView, m_TextureViews);
 }
 
-inline const xiiGALSampler* xiiGALDevice::GetSampler(xiiGALSamplerHandle hSampler) const
+inline xiiGALSampler* xiiGALDevice::GetSampler(xiiGALSamplerHandle hSampler) const
 {
   return Get<SamplerTable, xiiGALSampler>(hSampler, m_Samplers);
 }
 
-inline const xiiGALInputLayout* xiiGALDevice::GetInputLayout(xiiGALInputLayoutHandle hInputLayout) const
+inline xiiGALInputLayout* xiiGALDevice::GetInputLayout(xiiGALInputLayoutHandle hInputLayout) const
 {
   return Get<InputLayoutTable, xiiGALInputLayout>(hInputLayout, m_InputLayouts);
 }
 
-inline const xiiGALQuery* xiiGALDevice::GetQuery(xiiGALQueryHandle hQuery) const
+inline xiiGALQuery* xiiGALDevice::GetQuery(xiiGALQueryHandle hQuery) const
 {
   return Get<QueryTable, xiiGALQuery>(hQuery, m_Queries);
 }
 
-inline const xiiGALFence* xiiGALDevice::GetFence(xiiGALFenceHandle hFence) const
+inline xiiGALFence* xiiGALDevice::GetFence(xiiGALFenceHandle hFence) const
 {
   return Get<FenceTable, xiiGALFence>(hFence, m_Fences);
 }
 
-inline const xiiGALRenderPass* xiiGALDevice::GetRenderPass(xiiGALRenderPassHandle hRenderPass) const
+inline xiiGALRenderPass* xiiGALDevice::GetRenderPass(xiiGALRenderPassHandle hRenderPass) const
 {
   return Get<RenderPassTable, xiiGALRenderPass>(hRenderPass, m_RenderPasses);
 }
 
-inline const xiiGALFramebuffer* xiiGALDevice::GetFramebuffer(xiiGALFramebufferHandle hFramebuffer) const
+inline xiiGALFramebuffer* xiiGALDevice::GetFramebuffer(xiiGALFramebufferHandle hFramebuffer) const
 {
   return Get<FramebufferTable, xiiGALFramebuffer>(hFramebuffer, m_Framebuffers);
 }
 
-inline const xiiGALBottomLevelAS* xiiGALDevice::GetBottomLevelAS(xiiGALBottomLevelASHandle hBottomLevelAS) const
+inline xiiGALBottomLevelAS* xiiGALDevice::GetBottomLevelAS(xiiGALBottomLevelASHandle hBottomLevelAS) const
 {
   return Get<BottomLevelASTable, xiiGALBottomLevelAS>(hBottomLevelAS, m_BottomLevelAccelerationStructures);
 }
 
-inline const xiiGALTopLevelAS* xiiGALDevice::GetTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS) const
+inline xiiGALTopLevelAS* xiiGALDevice::GetTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS) const
 {
   return Get<TopLevelASTable, xiiGALTopLevelAS>(hTopLevelAS, m_TopLevelAccelerationStructures);
 }

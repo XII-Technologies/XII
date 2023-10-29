@@ -76,13 +76,13 @@ protected:
   virtual xiiGALBuffer* CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr) override;
   virtual void          DestroyBufferPlatform(xiiGALBuffer* pBuffer) override;
 
-  virtual xiiGALBufferView* CreateBufferViewPlatform(const xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description) override;
+  virtual xiiGALBufferView* CreateBufferViewPlatform(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description) override;
   virtual void              DestroyBufferViewPlatform(xiiGALBufferView* pBufferView) override;
 
   virtual xiiGALTexture* CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) override;
   virtual void           DestroyTexturePlatform(xiiGALTexture* pTexture) override;
 
-  virtual xiiGALTextureView* CreateTextureViewPlatform(const xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description) override;
+  virtual xiiGALTextureView* CreateTextureViewPlatform(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description) override;
   virtual void               DestroyTextureViewPlatform(xiiGALTextureView* pTextureView) override;
 
   virtual xiiGALSampler* CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) override;

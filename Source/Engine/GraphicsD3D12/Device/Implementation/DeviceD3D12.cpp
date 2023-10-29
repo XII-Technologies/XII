@@ -418,9 +418,9 @@ void xiiGALDeviceD3D12::DestroyBufferPlatform(xiiGALBuffer* pBuffer)
   XII_DELETE(&m_Allocator, pBufferD3D12);
 }
 
-xiiGALBufferView* xiiGALDeviceD3D12::CreateBufferViewPlatform(const xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description)
+xiiGALBufferView* xiiGALDeviceD3D12::CreateBufferViewPlatform(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description)
 {
-  xiiGALBufferViewD3D12* pBufferViewD3D12 = XII_NEW(&m_Allocator, xiiGALBufferViewD3D12, const_cast<xiiGALBuffer*>(pBuffer), description);
+  xiiGALBufferViewD3D12* pBufferViewD3D12 = XII_NEW(&m_Allocator, xiiGALBufferViewD3D12, pBuffer, description);
 
   if (pBufferViewD3D12->InitPlatform(this).Succeeded())
     return pBufferViewD3D12;
@@ -460,9 +460,9 @@ void xiiGALDeviceD3D12::DestroyTexturePlatform(xiiGALTexture* pTexture)
   XII_DELETE(&m_Allocator, pTextureD3D12);
 }
 
-xiiGALTextureView* xiiGALDeviceD3D12::CreateTextureViewPlatform(const xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description)
+xiiGALTextureView* xiiGALDeviceD3D12::CreateTextureViewPlatform(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description)
 {
-  xiiGALTextureViewD3D12* pTextureViewD3D12 = XII_NEW(&m_Allocator, xiiGALTextureViewD3D12, const_cast<xiiGALTexture*>(pTexture), description);
+  xiiGALTextureViewD3D12* pTextureViewD3D12 = XII_NEW(&m_Allocator, xiiGALTextureViewD3D12, pTexture, description);
 
   if (pTextureViewD3D12->InitPlatform(this).Succeeded())
     return pTextureViewD3D12;

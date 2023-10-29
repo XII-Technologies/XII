@@ -32,7 +32,7 @@ XII_ALWAYS_INLINE const xiiGALSparseTextureProperties& xiiGALTextureD3D12::GetSp
   return temporary;
 }
 
-XII_ALWAYS_INLINE const Diligent::ITexture* xiiGALTextureD3D12::GetTexture() const
+XII_ALWAYS_INLINE Diligent::ITexture* xiiGALTextureD3D12::GetTexture() const
 {
   return m_pTexture;
 }

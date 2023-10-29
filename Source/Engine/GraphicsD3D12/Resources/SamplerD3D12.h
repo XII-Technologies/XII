@@ -7,7 +7,7 @@
 class XII_GRAPHICSD3D12_DLL xiiGALSamplerD3D12 final : public xiiGALSampler
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::ISampler* GetSampler() const;
+  XII_ALWAYS_INLINE Diligent::ISampler* GetSampler() const;
 
 protected:
   friend class xiiGALDeviceD3D12;
