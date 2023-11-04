@@ -348,7 +348,7 @@ namespace
   struct SetArrayValueFunc
   {
     template <typename T>
-    XII_FORCE_INLINE void operator()(xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex, const xiiVariant& value)
+    XII_FORCE_INLINE void operator()(const xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex, const xiiVariant& value)
     {
       xiiVariantToProperty<T> setter(value, pProp);
       pProp->SetValue(pObject, uiIndex, setter);
@@ -358,7 +358,7 @@ namespace
   struct InsertArrayValueFunc
   {
     template <typename T>
-    XII_FORCE_INLINE void operator()(xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex, const xiiVariant& value)
+    XII_FORCE_INLINE void operator()(const xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex, const xiiVariant& value)
     {
       xiiVariantToProperty<T> setter(value, pProp);
       pProp->Insert(pObject, uiIndex, setter);
@@ -368,7 +368,7 @@ namespace
   struct InsertSetValueFunc
   {
     template <typename T>
-    XII_FORCE_INLINE void operator()(xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value)
+    XII_FORCE_INLINE void operator()(const xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value)
     {
       xiiVariantToProperty<T> setter(value, pProp);
       pProp->Insert(pObject, setter);
@@ -378,7 +378,7 @@ namespace
   struct RemoveSetValueFunc
   {
     template <typename T>
-    XII_FORCE_INLINE void operator()(xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value)
+    XII_FORCE_INLINE void operator()(const xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value)
     {
       xiiVariantToProperty<T> setter(value, pProp);
       pProp->Remove(pObject, setter);
@@ -398,7 +398,7 @@ namespace
   struct SetMapValueFunc
   {
     template <typename T>
-    XII_FORCE_INLINE void operator()(xiiAbstractMapProperty* pProp, void* pObject, xiiStringView sKey, const xiiVariant& value)
+    XII_FORCE_INLINE void operator()(const xiiAbstractMapProperty* pProp, void* pObject, xiiStringView sKey, const xiiVariant& value)
     {
       xiiVariantToProperty<T> setter(value, pProp);
       pProp->Insert(pObject, sKey, setter);
@@ -743,7 +743,7 @@ xiiVariant xiiReflectionUtils::GetArrayPropertyValue(const xiiAbstractArrayPrope
   return res;
 }
 
-void xiiReflectionUtils::SetArrayPropertyValue(xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex, const xiiVariant& value)
+void xiiReflectionUtils::SetArrayPropertyValue(const xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex, const xiiVariant& value)
 {
   XII_ASSERT_DEBUG(pProp != nullptr && pObject != nullptr, "GetArrayPropertyValue: missing data!");
   if (pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
@@ -761,7 +761,7 @@ void xiiReflectionUtils::SetArrayPropertyValue(xiiAbstractArrayProperty* pProp, 
   }
 }
 
-void xiiReflectionUtils::InsertSetPropertyValue(xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value)
+void xiiReflectionUtils::InsertSetPropertyValue(const xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value)
 {
   XII_ASSERT_DEBUG(pProp != nullptr && pObject != nullptr, "InsertSetPropertyValue: missing data!");
   if (pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
@@ -771,7 +771,7 @@ void xiiReflectionUtils::InsertSetPropertyValue(xiiAbstractSetProperty* pProp, v
   DispatchTo(func, pProp, pProp, pObject, value);
 }
 
-void xiiReflectionUtils::RemoveSetPropertyValue(xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value)
+void xiiReflectionUtils::RemoveSetPropertyValue(const xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value)
 {
   XII_ASSERT_DEBUG(pProp != nullptr && pObject != nullptr, "RemoveSetPropertyValue: missing data!");
   if (pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
@@ -791,7 +791,7 @@ xiiVariant xiiReflectionUtils::GetMapPropertyValue(const xiiAbstractMapProperty*
   return value;
 }
 
-void xiiReflectionUtils::SetMapPropertyValue(xiiAbstractMapProperty* pProp, void* pObject, xiiStringView sKey, const xiiVariant& value)
+void xiiReflectionUtils::SetMapPropertyValue(const xiiAbstractMapProperty* pProp, void* pObject, xiiStringView sKey, const xiiVariant& value)
 {
   XII_ASSERT_DEBUG(pProp != nullptr && pObject != nullptr, "SetMapPropertyValue: missing data!");
   if (pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
@@ -801,7 +801,7 @@ void xiiReflectionUtils::SetMapPropertyValue(xiiAbstractMapProperty* pProp, void
   DispatchTo(func, pProp, pProp, pObject, sKey, value);
 }
 
-void xiiReflectionUtils::InsertArrayPropertyValue(xiiAbstractArrayProperty* pProp, void* pObject, const xiiVariant& value, xiiUInt32 uiIndex)
+void xiiReflectionUtils::InsertArrayPropertyValue(const xiiAbstractArrayProperty* pProp, void* pObject, const xiiVariant& value, xiiUInt32 uiIndex)
 {
   XII_ASSERT_DEBUG(pProp != nullptr && pObject != nullptr, "InsertArrayPropertyValue: missing data!");
   if (pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
@@ -818,7 +818,7 @@ void xiiReflectionUtils::InsertArrayPropertyValue(xiiAbstractArrayProperty* pPro
   DispatchTo(func, pProp, pProp, pObject, uiIndex, value);
 }
 
-void xiiReflectionUtils::RemoveArrayPropertyValue(xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex)
+void xiiReflectionUtils::RemoveArrayPropertyValue(const xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex)
 {
   XII_ASSERT_DEBUG(pProp != nullptr && pObject != nullptr, "RemoveArrayPropertyValue: missing data!");
   if (pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
@@ -834,32 +834,32 @@ void xiiReflectionUtils::RemoveArrayPropertyValue(xiiAbstractArrayProperty* pPro
   pProp->Remove(pObject, uiIndex);
 }
 
-xiiAbstractMemberProperty* xiiReflectionUtils::GetMemberProperty(const xiiRTTI* pRtti, xiiUInt32 uiPropertyIndex)
+const xiiAbstractMemberProperty* xiiReflectionUtils::GetMemberProperty(const xiiRTTI* pRtti, xiiUInt32 uiPropertyIndex)
 {
   if (pRtti == nullptr)
     return nullptr;
 
-  xiiHybridArray<xiiAbstractProperty*, 32> props;
+  xiiHybridArray<const xiiAbstractProperty*, 32> props;
   pRtti->GetAllProperties(props);
   if (uiPropertyIndex < props.GetCount())
   {
-    xiiAbstractProperty* pProp = props[uiPropertyIndex];
+    const xiiAbstractProperty* pProp = props[uiPropertyIndex];
     if (pProp->GetCategory() == xiiPropertyCategory::Member)
-      return static_cast<xiiAbstractMemberProperty*>(pProp);
+      return static_cast<const xiiAbstractMemberProperty*>(pProp);
   }
 
   return nullptr;
 }
 
-xiiAbstractMemberProperty* xiiReflectionUtils::GetMemberProperty(const xiiRTTI* pRtti, xiiStringView sPropertyName)
+const xiiAbstractMemberProperty* xiiReflectionUtils::GetMemberProperty(const xiiRTTI* pRtti, xiiStringView sPropertyName)
 {
   if (pRtti == nullptr)
     return nullptr;
 
-  if (xiiAbstractProperty* pProp = pRtti->FindPropertyByName(sPropertyName))
+  if (const xiiAbstractProperty* pProp = pRtti->FindPropertyByName(sPropertyName))
   {
     if (pProp->GetCategory() == xiiPropertyCategory::Member)
-      return static_cast<xiiAbstractMemberProperty*>(pProp);
+      return static_cast<const xiiAbstractMemberProperty*>(pProp);
   }
 
   return nullptr;
@@ -886,12 +886,12 @@ void xiiReflectionUtils::GatherDependentTypes(const xiiRTTI* pRtti, xiiSet<const
     GatherDependentTypes(pParentRtti, inout_types);
   }
 
-  const xiiArrayPtr<xiiAbstractProperty*>& rttiProps = pRtti->GetProperties();
-  const xiiUInt32                          uiCount   = rttiProps.GetCount();
+  auto            rttiProps = pRtti->GetProperties();
+  const xiiUInt32 uiCount   = rttiProps.GetCount();
 
   for (xiiUInt32 i = 0; i < uiCount; ++i)
   {
-    xiiAbstractProperty* prop = rttiProps[i];
+    const xiiAbstractProperty* prop = rttiProps[i];
     if (prop->GetFlags().IsSet(xiiPropertyFlags::StandardType))
       continue;
     if (prop->GetAttributeByType<xiiTemporaryAttribute>() != nullptr)
@@ -1133,7 +1133,7 @@ xiiInt64 xiiReflectionUtils::MakeEnumerationValid(const xiiRTTI* pEnumerationRtt
   }
 }
 
-bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiAbstractProperty* pProp)
+bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, const xiiAbstractProperty* pProp)
 {
   // #VAR TEST
   const xiiRTTI* pPropType = pProp->GetSpecificType();
@@ -1147,14 +1147,16 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
   {
     case xiiPropertyCategory::Member:
     {
-      xiiAbstractMemberProperty* pSpecific = static_cast<xiiAbstractMemberProperty*>(pProp);
+      auto pSpecific = static_cast<const xiiAbstractMemberProperty*>(pProp);
 
       if (pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer))
       {
-        vTemp                   = xiiReflectionUtils::GetMemberPropertyValue(pSpecific, pObject);
-        vTemp2                  = xiiReflectionUtils::GetMemberPropertyValue(pSpecific, pObject2);
+        vTemp  = xiiReflectionUtils::GetMemberPropertyValue(pSpecific, pObject);
+        vTemp2 = xiiReflectionUtils::GetMemberPropertyValue(pSpecific, pObject2);
+
         void* pRefrencedObject  = vTemp.ConvertTo<void*>();
         void* pRefrencedObject2 = vTemp2.ConvertTo<void*>();
+
         if ((pRefrencedObject == nullptr) != (pRefrencedObject2 == nullptr))
           return false;
         if ((pRefrencedObject == nullptr) && (pRefrencedObject2 == nullptr))
@@ -1181,6 +1183,7 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
         {
           void* pSubObject  = pSpecific->GetPropertyPointer(pObject);
           void* pSubObject2 = pSpecific->GetPropertyPointer(pObject2);
+
           // Do we have direct access to the property?
           if (pSubObject != nullptr)
           {
@@ -1191,11 +1194,15 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
           {
             pSubObject  = pPropType->GetAllocator()->Allocate<void>();
             pSubObject2 = pPropType->GetAllocator()->Allocate<void>();
+
             pSpecific->GetValuePtr(pObject, pSubObject);
             pSpecific->GetValuePtr(pObject2, pSubObject2);
+
             bool bEqual = IsEqual(pSubObject, pSubObject2, pPropType);
+
             pPropType->GetAllocator()->Deallocate(pSubObject);
             pPropType->GetAllocator()->Deallocate(pSubObject2);
+
             return bEqual;
           }
           else
@@ -1209,10 +1216,11 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
     break;
     case xiiPropertyCategory::Array:
     {
-      xiiAbstractArrayProperty* pSpecific = static_cast<xiiAbstractArrayProperty*>(pProp);
+      auto pSpecific = static_cast<const xiiAbstractArrayProperty*>(pProp);
 
       const xiiUInt32 uiCount  = pSpecific->GetCount(pObject);
       const xiiUInt32 uiCount2 = pSpecific->GetCount(pObject2);
+
       if (uiCount != uiCount2)
         return false;
 
@@ -1220,10 +1228,12 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
       {
         for (xiiUInt32 i = 0; i < uiCount; ++i)
         {
-          vTemp                   = xiiReflectionUtils::GetArrayPropertyValue(pSpecific, pObject, i);
-          vTemp2                  = xiiReflectionUtils::GetArrayPropertyValue(pSpecific, pObject2, i);
+          vTemp  = xiiReflectionUtils::GetArrayPropertyValue(pSpecific, pObject, i);
+          vTemp2 = xiiReflectionUtils::GetArrayPropertyValue(pSpecific, pObject2, i);
+
           void* pRefrencedObject  = vTemp.ConvertTo<void*>();
           void* pRefrencedObject2 = vTemp2.ConvertTo<void*>();
+
           if ((pRefrencedObject == nullptr) != (pRefrencedObject2 == nullptr))
             return false;
           if ((pRefrencedObject == nullptr) && (pRefrencedObject2 == nullptr))
@@ -1250,6 +1260,7 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
           {
             vTemp  = xiiReflectionUtils::GetArrayPropertyValue(pSpecific, pObject, i);
             vTemp2 = xiiReflectionUtils::GetArrayPropertyValue(pSpecific, pObject2, i);
+
             if (vTemp != vTemp2)
               return false;
           }
@@ -1265,6 +1276,7 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
           {
             pSpecific->GetValue(pObject, i, pSubObject);
             pSpecific->GetValue(pObject2, i, pSubObject2);
+
             bEqual = IsEqual(pSubObject, pSubObject2, pPropType);
             if (!bEqual)
               break;
@@ -1279,7 +1291,7 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
     break;
     case xiiPropertyCategory::Set:
     {
-      xiiAbstractSetProperty* pSpecific = static_cast<xiiAbstractSetProperty*>(pProp);
+      auto pSpecific = static_cast<const xiiAbstractSetProperty*>(pProp);
 
       xiiHybridArray<xiiVariant, 16> values;
       pSpecific->GetValues(pObject, values);
@@ -1312,6 +1324,7 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
           {
             void* pRefrencedObject  = values[i].ConvertTo<void*>();
             void* pRefrencedObject2 = values2[i].ConvertTo<void*>();
+
             if ((pRefrencedObject == nullptr) != (pRefrencedObject2 == nullptr))
               return false;
             if ((pRefrencedObject == nullptr) && (pRefrencedObject2 == nullptr))
@@ -1329,7 +1342,7 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
     break;
     case xiiPropertyCategory::Map:
     {
-      xiiAbstractMapProperty* pSpecific = static_cast<xiiAbstractMapProperty*>(pProp);
+      auto pSpecific = static_cast<const xiiAbstractMapProperty*>(pProp);
 
       xiiHybridArray<xiiString, 16> keys;
       pSpecific->GetKeys(pObject, keys);
@@ -1349,6 +1362,7 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
           bEqual = keys2.Contains(keys[i]);
           if (!bEqual)
             break;
+
           xiiVariant value1 = GetMapPropertyValue(pSpecific, pObject, keys[i]);
           xiiVariant value2 = GetMapPropertyValue(pSpecific, pObject2, keys[i]);
           bEqual            = value1 == value2;
@@ -1370,12 +1384,15 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
           {
             const void* value1 = nullptr;
             const void* value2 = nullptr;
+
             pSpecific->GetValue(pObject, keys[i], &value1);
             pSpecific->GetValue(pObject2, keys[i], &value2);
+
             if ((value1 == nullptr) != (value2 == nullptr))
               return false;
             if ((value1 == nullptr) && (value2 == nullptr))
               continue;
+
             bEqual = IsEqual(value1, value2, pPropType);
           }
           else
@@ -1384,15 +1401,18 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
             {
               void* value1 = pPropType->GetAllocator()->Allocate<void>();
               XII_SCOPE_EXIT(pPropType->GetAllocator()->Deallocate(value1););
+
               void* value2 = pPropType->GetAllocator()->Allocate<void>();
               XII_SCOPE_EXIT(pPropType->GetAllocator()->Deallocate(value2););
 
               bool bRes1 = pSpecific->GetValue(pObject, keys[i], value1);
               bool bRes2 = pSpecific->GetValue(pObject2, keys[i], value2);
+
               if (bRes1 != bRes2)
                 return false;
               if (!bRes1 && !bRes2)
                 continue;
+
               bEqual = IsEqual(value1, value2, pPropType);
             }
             else
@@ -1408,9 +1428,7 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
     }
     break;
 
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
-      break;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return true;
 }
@@ -1418,6 +1436,7 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, xiiA
 bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, const xiiRTTI* pType)
 {
   XII_ASSERT_DEV(pObject && pObject2 && pType, "invalid type.");
+
   if (pType->IsDerivedFrom<xiiReflectedClass>())
   {
     const xiiReflectedClass* pRefObject  = static_cast<const xiiReflectedClass*>(pObject);
@@ -1431,7 +1450,7 @@ bool xiiReflectionUtils::IsEqual(const void* pObject, const void* pObject2, cons
 }
 
 
-void xiiReflectionUtils::DeleteObject(void* pObject, xiiAbstractProperty* pOwnerProperty)
+void xiiReflectionUtils::DeleteObject(void* pObject, const xiiAbstractProperty* pOwnerProperty)
 {
   if (!pObject)
     return;
@@ -1703,16 +1722,16 @@ xiiVariant xiiReflectionUtils::GetDefaultVariantFromType(const xiiRTTI* pRtti)
 
 void xiiReflectionUtils::SetAllMemberPropertiesToDefault(const xiiRTTI* pRtti, void* pObject)
 {
-  xiiHybridArray<xiiAbstractProperty*, 32> properties;
+  xiiHybridArray<const xiiAbstractProperty*, 32> properties;
   pRtti->GetAllProperties(properties);
 
-  for (xiiAbstractProperty* pProp : properties)
+  for (auto pProp : properties)
   {
     if (pProp->GetCategory() == xiiPropertyCategory::Member)
     {
       const xiiVariant defValue = xiiReflectionUtils::GetDefaultValue(pProp);
 
-      xiiReflectionUtils::SetMemberPropertyValue(static_cast<xiiAbstractMemberProperty*>(pProp), pObject, defValue);
+      xiiReflectionUtils::SetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), pObject, defValue);
     }
   }
 }

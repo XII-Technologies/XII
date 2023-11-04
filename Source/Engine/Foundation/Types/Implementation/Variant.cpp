@@ -7,7 +7,7 @@
 #if XII_ENABLED(XII_PLATFORM_64BIT)
 XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == 40);
 #else
-XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == 40); // \todo Resolve
+XII_CHECK_AT_COMPILETIME(sizeof(xiiVariant) == 40); // TODO: Resolve
 #endif
 
 /// constructors
@@ -356,8 +356,8 @@ struct IndexFunc
   template <typename T>
   XII_FORCE_INLINE xiiVariant Impl(xiiTraitInt<1>)
   {
-    const xiiRTTI*             pRtti = m_pThis->GetReflectedType();
-    xiiAbstractMemberProperty* pProp = xiiReflectionUtils::GetMemberProperty(pRtti, m_uiIndex);
+    const xiiRTTI*                   pRtti = m_pThis->GetReflectedType();
+    const xiiAbstractMemberProperty* pProp = xiiReflectionUtils::GetMemberProperty(pRtti, m_uiIndex);
     if (!pProp)
       return xiiVariant();
 
@@ -394,8 +394,8 @@ struct KeyFunc
   template <typename T>
   XII_FORCE_INLINE xiiVariant Impl(xiiTraitInt<1>)
   {
-    const xiiRTTI*             pRtti = m_pThis->GetReflectedType();
-    xiiAbstractMemberProperty* pProp = xiiReflectionUtils::GetMemberProperty(pRtti, m_szKey);
+    const xiiRTTI*                   pRtti = m_pThis->GetReflectedType();
+    const xiiAbstractMemberProperty* pProp = xiiReflectionUtils::GetMemberProperty(pRtti, m_szKey);
     if (!pProp)
       return xiiVariant();
     if (m_pThis->GetType() == xiiVariantType::TypedPointer)

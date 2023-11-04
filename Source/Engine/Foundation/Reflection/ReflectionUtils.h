@@ -33,19 +33,19 @@ public:
   static void       SetMemberPropertyValue(const xiiAbstractMemberProperty* pProp, void* pObject, const xiiVariant& value); // [tested] via ToolsFoundation
 
   static xiiVariant GetArrayPropertyValue(const xiiAbstractArrayProperty* pProp, const void* pObject, xiiUInt32 uiIndex);
-  static void       SetArrayPropertyValue(xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex, const xiiVariant& value);
+  static void       SetArrayPropertyValue(const xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex, const xiiVariant& value);
 
-  static void InsertSetPropertyValue(xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value);
-  static void RemoveSetPropertyValue(xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value);
+  static void InsertSetPropertyValue(const xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value);
+  static void RemoveSetPropertyValue(const xiiAbstractSetProperty* pProp, void* pObject, const xiiVariant& value);
 
   static xiiVariant GetMapPropertyValue(const xiiAbstractMapProperty* pProp, const void* pObject, xiiStringView sKey);
-  static void       SetMapPropertyValue(xiiAbstractMapProperty* pProp, void* pObject, xiiStringView sKey, const xiiVariant& value);
+  static void       SetMapPropertyValue(const xiiAbstractMapProperty* pProp, void* pObject, xiiStringView sKey, const xiiVariant& value);
 
-  static void InsertArrayPropertyValue(xiiAbstractArrayProperty* pProp, void* pObject, const xiiVariant& value, xiiUInt32 uiIndex);
-  static void RemoveArrayPropertyValue(xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex);
+  static void InsertArrayPropertyValue(const xiiAbstractArrayProperty* pProp, void* pObject, const xiiVariant& value, xiiUInt32 uiIndex);
+  static void RemoveArrayPropertyValue(const xiiAbstractArrayProperty* pProp, void* pObject, xiiUInt32 uiIndex);
 
-  static xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, xiiUInt32 uiPropertyIndex);
-  static xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, xiiStringView sPropertyName); // [tested] via ToolsFoundation
+  static const xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, xiiUInt32 uiPropertyIndex);
+  static const xiiAbstractMemberProperty* GetMemberProperty(const xiiRTTI* pRtti, xiiStringView sPropertyName); // [tested] via ToolsFoundation
 
   /// \brief Gathers all RTTI types that are derived from pBaseRtti.
   ///
@@ -147,10 +147,10 @@ public:
   static bool IsEqual(const void* pObject, const void* pObject2, const xiiRTTI* pType); // [tested]
 
   /// \brief Compares property pProp of pObject and pObject2 and returns whether it is equal in both.
-  static bool IsEqual(const void* pObject, const void* pObject2, xiiAbstractProperty* pProp);
+  static bool IsEqual(const void* pObject, const void* pObject2, const xiiAbstractProperty* pProp);
 
   /// \brief Deletes pObject using the allocator found in the owning property's type.
-  static void DeleteObject(void* pObject, xiiAbstractProperty* pOwnerProperty);
+  static void DeleteObject(void* pObject, const xiiAbstractProperty* pOwnerProperty);
 
   /// \brief Returns a global default initialization value for the given variant type.
   static xiiVariant GetDefaultVariantFromType(xiiVariant::Type::Enum type); // [tested]
