@@ -151,13 +151,11 @@ public:
 
   /// \brief This binds a resource array to the variable.
   ///
-  /// \param ppResources    - A pointer to the array of resources.
-  /// \param uiFirstElement - The first array element to set.
-  /// \param uiElementCount - The number of resources in the ppResources array.
-  /// \param flags          - Flags. See xiiGALSetShaderResourceFlags.
+  /// \param ppResources - A pointer to the array of resources.
+  /// \param flags       - Flags. See xiiGALSetShaderResourceFlags.
   ///
   /// \remark The method performs run-time correctness checks. For instance, shader resource view cannot be assigned to a constant buffer variable.
-  virtual void SetArray(xiiGALResourceBase* const* ppResources, xiiUInt32 uiFirstElement, xiiUInt32 uiElementCount, xiiBitflags<xiiGALSetShaderResourceFlags> flags = xiiGALSetShaderResourceFlags::None) = 0;
+  virtual void SetArray(xiiArrayPtr<xiiGALResourceBase* const> ppResources, xiiBitflags<xiiGALSetShaderResourceFlags> flags = xiiGALSetShaderResourceFlags::None) = 0;
 
   /// \brief This binds a specified constant buffer range to the variable.
   ///
