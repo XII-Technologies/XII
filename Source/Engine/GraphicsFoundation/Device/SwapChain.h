@@ -15,7 +15,7 @@ public:
   virtual void Present(xiiUInt32 uiSyncInterval) = 0;
 
   /// \brief This changes the swap chain size.
-  /// 
+  ///
   /// \param newSize      - The new logical swap chain width and height (not accounting for the pre-transform), in pixels.
   /// \param newTransform - newTransform The new surface transform.
   ///

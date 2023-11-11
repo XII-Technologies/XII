@@ -33,11 +33,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALInputElementFrequ
 /// \brief This describes the vertex attribute semantic.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayoutSemantic
 {
-  using StorageType = xiiUInt8;
+  using StorageType = xiiInt8;
 
   enum Enum : StorageType
   {
-    Undefined = 0U,
+    Undefined = -1,
     Position,
     Normal,
     Tangent,

@@ -47,5 +47,5 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
 #include <GraphicsVulkan/Utilities/DiligentTypeConversions.h>
+#include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>

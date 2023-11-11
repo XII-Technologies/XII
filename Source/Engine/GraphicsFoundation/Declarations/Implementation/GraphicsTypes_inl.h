@@ -33,7 +33,6 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALValueType::GetSize(const xiiGALValueType::Enum
 XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderStage::GetStageIndex(xiiBitflags<xiiGALShaderStage> stage)
 {
   // \todo Assert that a single shader stage is set.
-  XII_ASSERT_DEV(!stage.IsNoFlagSet() && !stage.IsAnyFlagSet(), "Expected a single shader stage.");
 
   switch (stage.GetValue())
   {
@@ -72,6 +71,47 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderStage::GetStageIndex(xiiBitflags<xiiGALS
   }
 
   return xiiInvalidIndex;
+}
+
+// static
+XII_ALWAYS_INLINE xiiGALShaderStage::Enum xiiGALShaderStage::GetStageFlag(xiiUInt32 uiIndex)
+{
+  switch (uiIndex)
+  {
+    case 0U:
+      return xiiGALShaderStage::Vertex;
+    case 1U:
+      return xiiGALShaderStage::Pixel;
+    case 2U:
+      return xiiGALShaderStage::Geometry;
+    case 3U:
+      return xiiGALShaderStage::Hull;
+    case 4U:
+      return xiiGALShaderStage::Domain;
+    case 5U:
+      return xiiGALShaderStage::Compute;
+    case 6U:
+      return xiiGALShaderStage::Amplification;
+    case 7U:
+      return xiiGALShaderStage::Mesh;
+    case 8U:
+      return xiiGALShaderStage::RayGeneration;
+    case 9U:
+      return xiiGALShaderStage::RayMiss;
+    case 10U:
+      return xiiGALShaderStage::RayClosestHit;
+    case 11U:
+      return xiiGALShaderStage::RayAnyHit;
+    case 12U:
+      return xiiGALShaderStage::RayIntersection;
+    case 13U:
+      return xiiGALShaderStage::Callable;
+    case 14U:
+      return xiiGALShaderStage::Tile;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiGALShaderStage::Unknown;
 }
 
 // static

@@ -1001,3 +1001,43 @@ XII_ALWAYS_INLINE Diligent::VALIDATION_LEVEL xiiDiligentTypeConversions::GetDevi
   }
   return Diligent::VALIDATION_LEVEL_DISABLED;
 }
+
+XII_ALWAYS_INLINE Diligent::SHADER_TYPE xiiDiligentTypeConversions::GetShaderTypeFlags(xiiBitflags<xiiGALShaderStage> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::SHADER_TYPE_UNKNOWN;
+
+  Diligent::SHADER_TYPE shaderTypeFlags = {};
+  if (e.IsSet(xiiGALShaderStage::Vertex))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_VERTEX;
+  if (e.IsSet(xiiGALShaderStage::Pixel))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_PIXEL;
+  if (e.IsSet(xiiGALShaderStage::Geometry))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_GEOMETRY;
+  if (e.IsSet(xiiGALShaderStage::Hull))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_HULL;
+  if (e.IsSet(xiiGALShaderStage::Domain))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_DOMAIN;
+  if (e.IsSet(xiiGALShaderStage::Compute))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_COMPUTE;
+  if (e.IsSet(xiiGALShaderStage::Amplification))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_AMPLIFICATION;
+  if (e.IsSet(xiiGALShaderStage::Mesh))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_MESH;
+  if (e.IsSet(xiiGALShaderStage::RayGeneration))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_RAY_GEN;
+  if (e.IsSet(xiiGALShaderStage::RayMiss))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_RAY_MISS;
+  if (e.IsSet(xiiGALShaderStage::RayClosestHit))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_RAY_CLOSEST_HIT;
+  if (e.IsSet(xiiGALShaderStage::RayAnyHit))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_RAY_ANY_HIT;
+  if (e.IsSet(xiiGALShaderStage::RayIntersection))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_RAY_INTERSECTION;
+  if (e.IsSet(xiiGALShaderStage::Callable))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_CALLABLE;
+  if (e.IsSet(xiiGALShaderStage::Tile))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_TILE;
+
+  return Diligent::SHADER_TYPE();
+}

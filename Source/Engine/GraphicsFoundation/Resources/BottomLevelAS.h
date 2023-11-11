@@ -91,7 +91,7 @@ public:
   /// \brief This returns the geometry description index in the BLAS triangle or axis-aligned bounding box descriptions.
   ///
   /// \param sName - The geometry name that is specified in the BLAS triangle or axis-aligned bounding box descriptions.
-  /// 
+  ///
   /// \return The geometry the index or xiiInvalidIndex if the geometry does not exist.
   ///
   /// \note Access to the BLAS must be externally synchronized.
@@ -100,7 +100,7 @@ public:
   /// \brief This returns the geometry index that can be used in a shader binding table.
   ///
   /// \param sName - The geometry name that is specified in the BLAS triangle or axis-aligned bounding box descriptions.
-  /// 
+  ///
   /// \return The geometry index or xiiInvalidIndex if the geometry does not exist.
   ///
   /// \note Access to the BLAS must be externally synchronized.

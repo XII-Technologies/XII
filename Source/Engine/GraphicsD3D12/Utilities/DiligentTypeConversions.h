@@ -71,6 +71,8 @@ public:
   static xiiEnum<xiiGALDeviceAdapterType> GetGALAdapterType(Diligent::ADAPTER_TYPE e);
   static Diligent::DEVICE_FEATURE_STATE   GetDeviceFeatureState(xiiEnum<xiiGALDeviceFeatureState> e);
   static Diligent::VALIDATION_LEVEL       GetDeviceValidationLevel(xiiEnum<xiiGALDeviceValidationLevel> e);
+
+  static Diligent::SHADER_TYPE GetShaderTypeFlags(xiiBitflags<xiiGALShaderStage> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>
