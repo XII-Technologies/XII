@@ -1,3 +1,5 @@
+#pragma once
+
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
@@ -73,6 +75,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayoutSemantic
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALInputLayoutSemantic);
+
+/// \brief Shader Vertex Input Attributes.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALVertexInputLayout
+{
+  xiiEnum<xiiGALInputLayoutSemantic> m_Semantic        = xiiGALInputLayoutSemantic::Undefined;
+  xiiUInt8                           m_uiSemanticIndex = 0U;
+  xiiEnum<xiiGALTextureFormat>       m_Format          = xiiGALTextureFormat::RGB32Float;
+};
 
 /// \brief This describes a single element in the input layout.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALLayoutElement : public xiiHashableStruct<xiiGALLayoutElement>
