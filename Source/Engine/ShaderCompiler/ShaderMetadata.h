@@ -45,6 +45,37 @@ public:
     }
   }
 
+  static void ReadShaderVariableMembers(xiiRawMemoryStreamReader& stream, const xiiArrayPtr<const xiiUInt8> pData, xiiDynamicArray<xiiGALShaderVariableDescription>& variableDescriptions)
+  {
+    xiiUInt32 uiResourceVariableCount = 0U;
+    stream >> uiResourceVariableCount;
+
+    if (uiResourceVariableCount == 0)
+      return;
+
+    variableDescriptions.Reserve(uiResourceVariableCount);
+
+    for (xiiUInt32 i = 0; i < uiResourceVariableCount; ++i)
+    {
+      xiiGALShaderVariableDescription& variableDescription = variableDescriptions[i];
+
+      xiiUInt32 uiStringElements = 0;
+      stream >> uiStringElements;
+
+      variableDescription.m_sName = xiiStringView(reinterpret_cast<const char*>(&pData[(xiiUInt32)stream.GetReadPosition()]), uiStringElements);
+      stream.SkipBytes(uiStringElements);
+
+      stream >> variableDescription.m_Class;
+      stream >> variableDescription.m_PrimitiveType;
+      stream >> variableDescription.m_uiRowCount;
+      stream >> variableDescription.m_uiColumnCount;
+      stream >> variableDescription.m_uiOffset;
+      stream >> variableDescription.m_uiArraySize;
+
+      ReadShaderVariableMembers(stream, pData, variableDescription.m_Members);
+    }
+  }
+
   /// \brief Writes the custom shader bytecode format to a stream.
   static void Write(xiiStreamWriter& stream, const xiiArrayPtr<xiiUInt8>& shaderByteCode, const xiiDynamicArray<xiiGALShaderResourceBinding>& shaderResourceBinding, const xiiDynamicArray<xiiGALVertexInputLayout>& vertexInputLayouts)
   {
@@ -67,13 +98,15 @@ public:
       stream << resourceBinding.m_uiSize;
 
       const xiiUInt32 uiResourceVariableCount = resourceBinding.m_Variables.GetCount();
+      stream << uiResourceVariableCount;
+
       for (xiiUInt32 j = 0; j < uiResourceVariableCount; ++j)
       {
         const xiiGALShaderVariableDescription& variableDescription = resourceBinding.m_Variables[j];
 
         stream.WriteString(variableDescription.m_sName).AssertSuccess();
-        stream << variableDescription.m_Class.GetValue();
-        stream << variableDescription.m_PrimitiveType.GetValue();
+        stream << variableDescription.m_Class;
+        stream << variableDescription.m_PrimitiveType;
         stream << variableDescription.m_uiRowCount;
         stream << variableDescription.m_uiColumnCount;
         stream << variableDescription.m_uiOffset;
@@ -97,11 +130,82 @@ public:
   }
 
   /// \brief Reads Shader code and meta data from a data buffer. Note that 'data' must be kept alive for the lifetime of the shader as this functions stores views into this memory in its out parameters.
-  /// \param data Raw data buffer to read the shader code and meta data from.
+  /// \param pData Raw data buffer to read the shader code and meta data from.
   /// \param out_shaderByteCode Will be filled with a view into data that contains the shader byte code.
   /// \param out_shaderResourceBinding Will be filled with shader meta data. Note that this array contains string views into 'data'.
   /// \param out_vertexInputLayout Contains the shader vertex input layout, if any.
-  static void Read(const xiiArrayPtr<const xiiUInt8> data, xiiArrayPtr<const xiiUInt8>& out_shaderByteCode, xiiDynamicArray<xiiGALShaderResourceBinding>& out_shaderResourceBinding, xiiDynamicArray<xiiGALVertexInputLayout>& out_vertexInputLayout)
+  static void Read(const xiiArrayPtr<const xiiUInt8> pData, xiiArrayPtr<const xiiUInt8>& out_shaderByteCode, xiiDynamicArray<xiiGALShaderResourceBinding>& out_shaderResourceBinding, xiiDynamicArray<xiiGALVertexInputLayout>& out_vertexInputLayout)
   {
+    xiiRawMemoryStreamReader stream(pData.GetPtr(), pData.GetCount());
+
+    xiiUInt32 uiMetadataTag;
+    stream >> uiMetadataTag;
+
+    XII_ASSERT_DEV(uiMetadataTag == x_uiMetaDataTag, "Shader byte code does not begin with x_uiMetaDataTag.");
+
+    xiiTypeVersion uiVersion = stream.ReadVersion(MetaDataVersion::CurrentVersion);
+
+    xiiUInt32 uiSize = 0;
+    stream >> uiSize;
+    out_shaderByteCode = xiiArrayPtr<const xiiUInt8>(&pData[(xiiUInt32)stream.GetReadPosition()], uiSize);
+    stream.SkipBytes(uiSize);
+
+    xiiUInt32 uiBindingCount = 0;
+    stream >> uiBindingCount;
+
+    out_shaderResourceBinding.Reserve(uiBindingCount);
+
+    for (xiiUInt32 i = 0; i < uiBindingCount; ++i)
+    {
+      xiiGALShaderResourceBinding& resourceBinding = out_shaderResourceBinding[i];
+
+      xiiUInt32 uiStringElements = 0;
+      stream >> uiStringElements;
+
+      resourceBinding.m_sName.Assign(xiiStringView(reinterpret_cast<const char*>(&pData[(xiiUInt32)stream.GetReadPosition()]), uiStringElements));
+      stream.SkipBytes(uiStringElements);
+
+      stream >> resourceBinding.m_Type;
+      stream >> resourceBinding.m_uiSize;
+
+      xiiUInt32 uiResourceVariableCount = 0;
+      stream >> uiResourceVariableCount;
+
+      resourceBinding.m_Variables.Reserve(uiResourceVariableCount);
+
+      for (xiiUInt32 j = 0; j < uiResourceVariableCount; ++j)
+      {
+        xiiGALShaderVariableDescription& variableDescription = resourceBinding.m_Variables[j];
+
+        uiStringElements = 0;
+        stream >> uiStringElements;
+
+        variableDescription.m_sName = xiiStringView(reinterpret_cast<const char*>(&pData[(xiiUInt32)stream.GetReadPosition()]), uiStringElements);
+        stream.SkipBytes(uiStringElements);
+
+        stream >> variableDescription.m_Class;
+        stream >> variableDescription.m_PrimitiveType;
+        stream >> variableDescription.m_uiRowCount;
+        stream >> variableDescription.m_uiColumnCount;
+        stream >> variableDescription.m_uiOffset;
+        stream >> variableDescription.m_uiArraySize;
+
+        ReadShaderVariableMembers(stream, pData, variableDescription.m_Members);
+      }
+    }
+
+    xiiUInt32 uiVertexInputLayoutCount = 0;
+    stream >> uiVertexInputLayoutCount;
+
+    out_vertexInputLayout.Reserve(uiVertexInputLayoutCount);
+
+    for (xiiUInt32 i = 0; i < uiVertexInputLayoutCount; ++i)
+    {
+      xiiGALVertexInputLayout& vertexInputLayout = out_vertexInputLayout[i];
+
+      stream >> vertexInputLayout.m_Semantic;
+      stream >> vertexInputLayout.m_uiSemanticIndex;
+      stream >> vertexInputLayout.m_Format;
+    }
   }
 };
