@@ -16,6 +16,8 @@
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 #include <GraphicsD3D12/Resources/TextureViewD3D12.h>
 #include <GraphicsD3D12/Resources/TopLevelASD3D12.h>
+#include <GraphicsD3D12/Shader/InputLayoutD3D12.h>
+#include <GraphicsD3D12/Shader/ShaderD3D12.h>
 #include <GraphicsD3D12/States/BlendStateD3D12.h>
 #include <GraphicsD3D12/States/DepthStencilStateD3D12.h>
 #include <GraphicsD3D12/States/RasterizerStateD3D12.h>
@@ -411,11 +413,23 @@ void xiiGALDeviceD3D12::DestroyRasterizerStatePlatform(xiiGALRasterizerState* pR
 
 xiiGALShader* xiiGALDeviceD3D12::CreateShaderPlatform(const xiiGALShaderCreationDescription& description)
 {
-  return nullptr;
+  xiiGALShaderD3D12* pShaderD3D12 = XII_NEW(&m_Allocator, xiiGALShaderD3D12, description);
+
+  if (pShaderD3D12->InitPlatform(this).Succeeded())
+    return pShaderD3D12;
+
+  XII_DELETE(&m_Allocator, pShaderD3D12);
+
+  return pShaderD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyShaderPlatform(xiiGALShader* pShader)
 {
+  xiiGALShaderD3D12* pShaderD3D12 = static_cast<xiiGALShaderD3D12*>(pShader);
+
+  pShaderD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pShaderD3D12);
 }
 
 xiiGALBuffer* xiiGALDeviceD3D12::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData)
@@ -525,11 +539,23 @@ void xiiGALDeviceD3D12::DestroySamplerPlatform(xiiGALSampler* pSampler)
 
 xiiGALInputLayout* xiiGALDeviceD3D12::CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description)
 {
-  return nullptr;
+  xiiGALInputLayoutD3D12* pInputLayoutD3D12 = XII_NEW(&m_Allocator, xiiGALInputLayoutD3D12, description);
+
+  if (pInputLayoutD3D12->InitPlatform(this).Succeeded())
+    return pInputLayoutD3D12;
+
+  XII_DELETE(&m_Allocator, pInputLayoutD3D12);
+
+  return pInputLayoutD3D12;
 }
 
 void xiiGALDeviceD3D12::DestroyInputLayoutPlatform(xiiGALInputLayout* pInputLayout)
 {
+  xiiGALInputLayoutD3D12* pInputLayoutD3D12 = static_cast<xiiGALInputLayoutD3D12*>(pInputLayout);
+
+  pInputLayoutD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pInputLayoutD3D12);
 }
 
 xiiGALQuery* xiiGALDeviceD3D12::CreateQueryPlatform(const xiiGALQueryCreationDescription& description)

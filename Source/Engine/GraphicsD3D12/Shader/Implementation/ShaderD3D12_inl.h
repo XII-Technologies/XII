@@ -1,4 +1,16 @@
 
+XII_FORCE_INLINE xiiUInt32 xiiGALShaderD3D12::GetResourceCount() const
+{
+  return m_ShaderResourceBindings.GetCount();
+}
+
+XII_FORCE_INLINE void xiiGALShaderD3D12::GetResourceDescription(xiiUInt32 uiIndex, xiiGALShaderResourceDescription& out_ResourceDescription) const
+{
+  /// \todo GraphicsD3D12: Not yet implemented.
+
+  XII_ASSERT_NOT_IMPLEMENTED;
+}
+
 XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D12::GetVertexShader() const
 {
   return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)];

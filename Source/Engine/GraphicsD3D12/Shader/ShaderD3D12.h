@@ -8,6 +8,12 @@
 class XII_GRAPHICSD3D12_DLL xiiGALShaderD3D12 : public xiiGALShader
 {
 public:
+  /// \brief This returns the total number of shader resources.
+  virtual xiiUInt32 GetResourceCount() const override;
+
+  /// \brief This returns a pointer to the array of shader resources.
+  virtual void GetResourceDescription(xiiUInt32 uiIndex, xiiGALShaderResourceDescription& out_ResourceDescription) const override;
+
   XII_ALWAYS_INLINE Diligent::IShader* GetVertexShader() const;
   XII_ALWAYS_INLINE Diligent::IShader* GetPixelShader() const;
   XII_ALWAYS_INLINE Diligent::IShader* GetGeometryShader() const;
