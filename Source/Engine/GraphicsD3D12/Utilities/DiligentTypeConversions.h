@@ -10,6 +10,7 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
+#include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
@@ -42,6 +43,7 @@ public:
 
   static Diligent::RESOURCE_DIMENSION GetResourceDimension(xiiEnum<xiiGALResourceDimension> e);
   static Diligent::TEXTURE_FORMAT     GetTextureFormat(xiiEnum<xiiGALTextureFormat> e);
+  static xiiEnum<xiiGALTextureFormat> GetGALTextureFormat(Diligent::TEXTURE_FORMAT e);
   static Diligent::MISC_TEXTURE_FLAGS GetMiscTextureFlags(xiiBitflags<xiiGALMiscTextureFlags> e);
 
   static Diligent::FENCE_TYPE GetFenceType(xiiEnum<xiiGALFenceType> e);
@@ -73,6 +75,11 @@ public:
   static Diligent::VALIDATION_LEVEL       GetDeviceValidationLevel(xiiEnum<xiiGALDeviceValidationLevel> e);
 
   static Diligent::SHADER_TYPE GetShaderTypeFlags(xiiBitflags<xiiGALShaderStage> e);
+
+  static Diligent::INPUT_ELEMENT_FREQUENCY GetElementFrequency(xiiEnum<xiiGALInputElementFrequency> e);
+
+  static Diligent::VALUE_TYPE GetDiligentValueType(Diligent::TEXTURE_FORMAT e);
+  static bool                 GetFormatNormalized(Diligent::TEXTURE_FORMAT e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>
