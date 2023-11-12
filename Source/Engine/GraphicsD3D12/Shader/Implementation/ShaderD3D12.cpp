@@ -5,6 +5,8 @@
 
 #include <GraphicsD3D12/Utilities/D3D12TypeConversions.h>
 
+#include <ShaderCompiler/ShaderMetadata.h>
+
 xiiBitflags<xiiGALShaderStage> GetShaderStages(xiiBitflags<xiiGALShaderStage> e)
 {
   if (e.IsNoFlagSet())
@@ -23,9 +25,12 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
 {
   xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 
-  xiiArrayPtr<const xiiUInt8> pByteCode[xiiGALShaderStage::ENUM_COUNT];
-
   xiiBitflags<xiiGALShaderStage> shaderStages = GetShaderStages(m_Description.m_ShaderStage);
+
+  // Extract meta data and shader byte code.
+  xiiArrayPtr<const xiiUInt8>                  pByteCodes[xiiGALShaderStage::ENUM_COUNT];
+  xiiDynamicArray<xiiGALShaderResourceBinding> resourceBindings[xiiGALShaderStage::ENUM_COUNT];
+  xiiUInt32                                    uiBindingCount = 0U;
 
   for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
   {
@@ -34,11 +39,15 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
 
     xiiArrayPtr<const xiiUInt8> metaData(reinterpret_cast<const xiiUInt8*>(m_Description.m_ByteCodes[i]->GetByteCode()), m_Description.m_ByteCodes[i]->GetSize());
 
+    // Only the vertex shader stores inputlayouts, so passing in the array into other shaders is just a no op.
+    xiiShaderMetaData::Read(metaData, pByteCodes[i], resourceBindings[i], m_VertexInputLayouts);
+    uiBindingCount += resourceBindings[i].GetCount();
+
     Diligent::ShaderCreateInfo shaderDescription;
     shaderDescription.Desc.Name                    = m_Description.m_sName.GetStartPointer();
     shaderDescription.Desc.ShaderType              = xiiDiligentTypeConversions::GetShaderTypeFlags(xiiGALShaderStage::GetStageFlag(i));
-    shaderDescription.ByteCode                     = reinterpret_cast<const void*>(pByteCode[i].GetPtr());
-    shaderDescription.ByteCodeSize                 = pByteCode[i].GetCount();
+    shaderDescription.ByteCode                     = reinterpret_cast<const void*>(pByteCodes[i].GetPtr());
+    shaderDescription.ByteCodeSize                 = pByteCodes[i].GetCount();
     shaderDescription.SourceLanguage               = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
     shaderDescription.LoadConstantBufferReflection = false;
 
@@ -49,6 +58,74 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
       xiiLog::Error("Failed to create native shader from bytecode from type: {}.", xiiGALShaderStage::GetStageFlag(i));
       return XII_FAILURE;
     }
+  }
+
+  Diligent::PipelineResourceSignatureDesc pipelineResourceSignatureDescription;
+  pipelineResourceSignatureDescription.Name                       = m_Description.m_sName.GetStartPointer();
+  pipelineResourceSignatureDescription.BindingIndex               = 0U;
+  pipelineResourceSignatureDescription.ImmutableSamplers          = nullptr;
+  pipelineResourceSignatureDescription.NumImmutableSamplers       = 0U;
+  pipelineResourceSignatureDescription.UseCombinedTextureSamplers = false; // Handled by XII.
+  pipelineResourceSignatureDescription.SRBAllocationGranularity   = 1U;    // Default.
+
+  xiiHybridArray<Diligent::PipelineResourceDesc, 2U> resources;
+  resources.SetCount(uiBindingCount);
+
+  for (xiiUInt32 uiShaderStage = 0; uiShaderStage < xiiGALShaderStage::ENUM_COUNT; ++uiShaderStage)
+  {
+    for (xiiUInt32 uiBindingIndex = 0; uiBindingIndex < m_ShaderResourceBindings.GetCount(); ++uiBindingIndex)
+    {
+      xiiGALShaderResourceBinding&    resourceBinding     = m_ShaderResourceBindings[uiBindingIndex];
+      Diligent::PipelineResourceDesc& resourceDescription = resources[uiBindingIndex];
+
+      resourceDescription.Name         = resourceBinding.m_sName.GetView().GetStartPointer();
+      resourceDescription.ShaderStages = xiiDiligentTypeConversions::GetShaderTypeFlags(xiiGALShaderStage::GetStageFlag(uiBindingIndex));
+      resourceDescription.ArraySize    = resourceBinding.m_Variables.IsEmpty() ? 1U : resourceBinding.m_Variables.GetCount();
+
+      switch (resourceBinding.m_Type)
+      {
+        case xiiGALShaderResourceType::ConstantBuffer:
+          resourceDescription.ResourceType = Diligent::SHADER_RESOURCE_TYPE_CONSTANT_BUFFER;
+          break;
+        case xiiGALShaderResourceType::TextureSRV:
+          resourceDescription.ResourceType = Diligent::SHADER_RESOURCE_TYPE_TEXTURE_SRV;
+          break;
+        case xiiGALShaderResourceType::BufferSRV:
+          resourceDescription.ResourceType = Diligent::SHADER_RESOURCE_TYPE_BUFFER_SRV;
+          break;
+        case xiiGALShaderResourceType::TextureUAV:
+          resourceDescription.ResourceType = Diligent::SHADER_RESOURCE_TYPE_TEXTURE_UAV;
+          break;
+        case xiiGALShaderResourceType::BufferUAV:
+          resourceDescription.ResourceType = Diligent::SHADER_RESOURCE_TYPE_BUFFER_UAV;
+          break;
+        case xiiGALShaderResourceType::Sampler:
+          resourceDescription.ResourceType = Diligent::SHADER_RESOURCE_TYPE_SAMPLER;
+          break;
+        case xiiGALShaderResourceType::InputAttachment:
+          resourceDescription.ResourceType = Diligent::SHADER_RESOURCE_TYPE_INPUT_ATTACHMENT;
+          break;
+        case xiiGALShaderResourceType::AccelerationStructure:
+          resourceDescription.ResourceType = Diligent::SHADER_RESOURCE_TYPE_ACCEL_STRUCT;
+          break;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+
+      resourceDescription.VarType = Diligent::SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE; // Variables are always mutable for now.
+      resourceDescription.Flags   = Diligent::PIPELINE_RESOURCE_FLAG_NONE;           // Not yet assessed.
+    }
+  }
+
+  pipelineResourceSignatureDescription.Resources    = resources.GetData();
+  pipelineResourceSignatureDescription.NumResources = resources.GetCount();
+
+  pDeviceD3D12->GetDevice()->CreatePipelineResourceSignature(pipelineResourceSignatureDescription, &m_PipelineResourceSignatures.ExpandAndGetRef());
+
+  for (xiiUInt32 i = 0; i < m_PipelineResourceSignatures.GetCount(); ++i)
+  {
+    xiiLog::Error("Failed to create pipeline resource signature ({0}) for shader '{1}'.", i, m_Description.m_sName);
+    return XII_FAILURE;
   }
 
   return XII_SUCCESS;
@@ -67,6 +144,9 @@ xiiResult xiiGALShaderD3D12::DeInitPlatform(xiiGALDevice* pDevice)
   {
     XII_GAL_DILIGENT_REF_RELEASE(m_PipelineResourceSignatures[i]);
   }
+
+  m_VertexInputLayouts.Clear();
+  m_ShaderResourceBindings.Clear();
 
   return XII_SUCCESS;
 }

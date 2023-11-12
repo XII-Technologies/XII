@@ -2,6 +2,7 @@
 
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
+#include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/Shader/Shader.h>
 
 class XII_GRAPHICSD3D12_DLL xiiGALShaderD3D12 : public xiiGALShader
@@ -23,6 +24,8 @@ public:
   XII_ALWAYS_INLINE Diligent::IShader* GetCallableShader() const;
 
   XII_ALWAYS_INLINE xiiArrayPtr<Diligent::RefCntAutoPtr<Diligent::IPipelineResourceSignature>> GetResourceSignatures();
+  XII_ALWAYS_INLINE xiiArrayPtr<xiiGALVertexInputLayout> GetInputLayouts();
+  XII_ALWAYS_INLINE xiiArrayPtr<xiiGALShaderResourceBinding> GetShaderResourceBinding();
 
 protected:
   friend class xiiGALDeviceD3D12;
@@ -39,6 +42,9 @@ protected:
 protected:
   Diligent::RefCntAutoPtr<Diligent::IShader>                                        m_pShaderStages[xiiGALShaderStage::ENUM_COUNT];
   xiiHybridArray<Diligent::RefCntAutoPtr<Diligent::IPipelineResourceSignature>, 3U> m_PipelineResourceSignatures;
+
+  xiiHybridArray<xiiGALVertexInputLayout, 8U>  m_VertexInputLayouts;
+  xiiDynamicArray<xiiGALShaderResourceBinding> m_ShaderResourceBindings;
 };
 
 #include <GraphicsD3D12/Shader/Implementation/ShaderD3D12_inl.h>

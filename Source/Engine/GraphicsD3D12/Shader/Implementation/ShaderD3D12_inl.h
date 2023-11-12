@@ -73,3 +73,13 @@ XII_ALWAYS_INLINE xiiArrayPtr<Diligent::RefCntAutoPtr<Diligent::IPipelineResourc
 {
   return m_PipelineResourceSignatures;
 }
+
+XII_ALWAYS_INLINE xiiArrayPtr<xiiGALVertexInputLayout> xiiGALShaderD3D12::GetInputLayouts()
+{
+  return m_VertexInputLayouts;
+}
+
+XII_ALWAYS_INLINE xiiArrayPtr<xiiGALShaderResourceBinding> xiiGALShaderD3D12::GetShaderResourceBinding()
+{
+  return m_ShaderResourceBindings;
+}
