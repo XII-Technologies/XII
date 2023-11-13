@@ -95,6 +95,7 @@ public:
 
       stream.WriteString(resourceBinding.m_sName).AssertSuccess();
       stream << resourceBinding.m_Type;
+      stream << resourceBinding.m_uiSlot;
       stream << resourceBinding.m_uiSize;
 
       const xiiUInt32 uiResourceVariableCount = resourceBinding.m_Variables.GetCount();
@@ -166,6 +167,7 @@ public:
       stream.SkipBytes(uiStringElements);
 
       stream >> resourceBinding.m_Type;
+      stream >> resourceBinding.m_uiSlot;
       stream >> resourceBinding.m_uiSize;
 
       xiiUInt32 uiResourceVariableCount = 0;
