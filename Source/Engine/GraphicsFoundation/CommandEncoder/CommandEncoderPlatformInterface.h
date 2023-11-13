@@ -74,7 +74,6 @@ public:
   virtual void DrawIndexedInstancedIndirectPlatform(const xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) = 0;
   virtual void DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex)        = 0;
   virtual void DrawInstancedIndirectPlatform(const xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)        = 0;
-  virtual void DrawAutoPlatform()                                                                                                   = 0;
 
   virtual void BeginStreamOutPlatform() = 0;
   virtual void EndStreamOutPlatform()   = 0;

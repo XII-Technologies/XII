@@ -1218,6 +1218,7 @@ XII_ALWAYS_INLINE Diligent::SHADER_TYPE xiiDiligentTypeConversions::GetShaderTyp
     return Diligent::SHADER_TYPE_UNKNOWN;
 
   Diligent::SHADER_TYPE shaderTypeFlags = {};
+
   if (e.IsSet(xiiGALShaderStage::Vertex))
     shaderTypeFlags |= Diligent::SHADER_TYPE_VERTEX;
   if (e.IsSet(xiiGALShaderStage::Pixel))
@@ -1249,7 +1250,7 @@ XII_ALWAYS_INLINE Diligent::SHADER_TYPE xiiDiligentTypeConversions::GetShaderTyp
   if (e.IsSet(xiiGALShaderStage::Tile))
     shaderTypeFlags |= Diligent::SHADER_TYPE_TILE;
 
-  return Diligent::SHADER_TYPE();
+  return Diligent::SHADER_TYPE_UNKNOWN;
 }
 
 XII_ALWAYS_INLINE Diligent::INPUT_ELEMENT_FREQUENCY xiiDiligentTypeConversions::GetElementFrequency(xiiEnum<xiiGALInputElementFrequency> e)
@@ -1501,4 +1502,114 @@ XII_ALWAYS_INLINE Diligent::SURFACE_TRANSFORM xiiDiligentTypeConversions::GetSur
       return Diligent::SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270;
   }
   return Diligent::SURFACE_TRANSFORM_OPTIMAL;
+}
+
+XII_ALWAYS_INLINE Diligent::SWAP_CHAIN_USAGE_FLAGS xiiDiligentTypeConversions::GetSwapChainUsageFlags(xiiBitflags<xiiGALSwapChainUsageFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::SWAP_CHAIN_USAGE_NONE;
+
+  Diligent::SWAP_CHAIN_USAGE_FLAGS swapChainUsageFlags = {};
+
+  if (e.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
+    swapChainUsageFlags |= Diligent::SWAP_CHAIN_USAGE_RENDER_TARGET;
+  if (e.IsSet(xiiGALSwapChainUsageFlags::ShaderResource))
+    swapChainUsageFlags |= Diligent::SWAP_CHAIN_USAGE_SHADER_RESOURCE;
+  if (e.IsSet(xiiGALSwapChainUsageFlags::InputAttachment))
+    swapChainUsageFlags |= Diligent::SWAP_CHAIN_USAGE_INPUT_ATTACHMENT;
+  if (e.IsSet(xiiGALSwapChainUsageFlags::CopySource))
+    swapChainUsageFlags |= Diligent::SWAP_CHAIN_USAGE_COPY_SOURCE;
+
+  return Diligent::SWAP_CHAIN_USAGE_FLAGS();
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALBindFlags> xiiDiligentTypeConversions::GetGALBindFlags(Diligent::BIND_FLAGS e)
+{
+  if (e == Diligent::BIND_NONE)
+    return xiiBitflags<xiiGALBindFlags>();
+
+  xiiBitflags<xiiGALBindFlags> bindFlags;
+
+  if (e & Diligent::BIND_VERTEX_BUFFER)
+    bindFlags |= xiiGALBindFlags::VertexBuffer;
+  if (e & Diligent::BIND_INDEX_BUFFER)
+    bindFlags |= xiiGALBindFlags::IndexBuffer;
+  if (e & Diligent::BIND_UNIFORM_BUFFER)
+    bindFlags |= xiiGALBindFlags::UniformBuffer;
+  if (e & Diligent::BIND_SHADER_RESOURCE)
+    bindFlags |= xiiGALBindFlags::ShaderResource;
+  if (e & Diligent::BIND_STREAM_OUTPUT)
+    bindFlags |= xiiGALBindFlags::StreamOutput;
+  if (e & Diligent::BIND_RENDER_TARGET)
+    bindFlags |= xiiGALBindFlags::RenderTarget;
+  if (e & Diligent::BIND_DEPTH_STENCIL)
+    bindFlags |= xiiGALBindFlags::DepthStencil;
+  if (e & Diligent::BIND_UNORDERED_ACCESS)
+    bindFlags |= xiiGALBindFlags::UnorderedAccess;
+  if (e & Diligent::BIND_INDIRECT_DRAW_ARGS)
+    bindFlags |= xiiGALBindFlags::IndirectDrawArguments;
+  if (e & Diligent::BIND_INPUT_ATTACHMENT)
+    bindFlags |= xiiGALBindFlags::InputAttachment;
+  if (e & Diligent::BIND_RAY_TRACING)
+    bindFlags |= xiiGALBindFlags::RayTracing;
+  if (e & Diligent::BIND_SHADING_RATE)
+    bindFlags |= xiiGALBindFlags::ShadingRate;
+
+  return bindFlags;
+}
+
+XII_ALWAYS_INLINE xiiEnum<xiiGALResourceUsage> xiiDiligentTypeConversions::GetGALUsage(Diligent::USAGE e)
+{
+  switch (e)
+  {
+    case Diligent::USAGE_IMMUTABLE:
+      return xiiGALResourceUsage::Immutable;
+    case Diligent::USAGE_DEFAULT:
+      return xiiGALResourceUsage::Default;
+    case Diligent::USAGE_DYNAMIC:
+      return xiiGALResourceUsage::Dynamic;
+    case Diligent::USAGE_STAGING:
+      return xiiGALResourceUsage::Staging;
+    case Diligent::USAGE_UNIFIED:
+      return xiiGALResourceUsage::Unified;
+    case Diligent::USAGE_SPARSE:
+      return xiiGALResourceUsage::Sparse;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiEnum<xiiGALResourceUsage>();
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALCPUAccessFlag> xiiDiligentTypeConversions::GetGALCPUAccessFlags(Diligent::CPU_ACCESS_FLAGS e)
+{
+  if (e == Diligent::CPU_ACCESS_NONE)
+    return xiiBitflags<xiiGALCPUAccessFlag>();
+
+  xiiBitflags<xiiGALCPUAccessFlag> cpuAccessFlags;
+
+  if (e & Diligent::CPU_ACCESS_READ)
+    cpuAccessFlags |= xiiGALCPUAccessFlag::Read;
+  if (e & Diligent::CPU_ACCESS_WRITE)
+    cpuAccessFlags |= xiiGALCPUAccessFlag::Write;
+
+  return cpuAccessFlags;
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALMiscTextureFlags> xiiDiligentTypeConversions::GetGALMiscTextureFlags(Diligent::MISC_TEXTURE_FLAGS e)
+{
+  if (e == Diligent::MISC_TEXTURE_FLAG_NONE)
+    return xiiBitflags<xiiGALMiscTextureFlags>();
+
+  xiiBitflags<xiiGALMiscTextureFlags> miscTextureFlags;
+
+  if (e & Diligent::MISC_TEXTURE_FLAG_MEMORYLESS)
+    miscTextureFlags |= xiiGALMiscTextureFlags::Memoryless;
+  if (e & Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS)
+    miscTextureFlags |= xiiGALMiscTextureFlags::GenerateMips;
+  if (e & Diligent::MISC_TEXTURE_FLAG_SPARSE_ALIASING)
+    miscTextureFlags |= xiiGALMiscTextureFlags::SparseAlias;
+  if (e & Diligent::MISC_TEXTURE_FLAG_SUBSAMPLED)
+    miscTextureFlags |= xiiGALMiscTextureFlags::Subsampled;
+
+  return miscTextureFlags;
 }
