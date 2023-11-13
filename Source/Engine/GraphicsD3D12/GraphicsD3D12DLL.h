@@ -188,7 +188,12 @@ namespace Diligent
   class DurationQueryHelper;
 } // namespace Diligent
 
+class xiiGALCommandEncoderD3D12;
+class xiiGALCommandListD3D12;
+class xiiGALCommandQueueD3D12;
 class xiiGALDeviceD3D12;
+class xiiGALPassD3D12;
+class xiiGALSwapChainD3D12;
 class xiiGALBottomLevelASD3D12;
 class xiiGALBufferD3D12;
 class xiiGALBufferViewD3D12;
@@ -200,6 +205,8 @@ class xiiGALSamplerD3D12;
 class xiiGALTextureD3D12;
 class xiiGALTextureViewD3D12;
 class xiiGALTopLevelASD3D12;
+class xiiGALInputLayoutD3D12;
+class xiiGALShaderD3D12;
 class xiiGALBlendStateD3D12;
 class xiiGALDepthStencilStateD3D12;
 class xiiGALRasterizerStateD3D12;

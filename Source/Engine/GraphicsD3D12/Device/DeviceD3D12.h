@@ -2,6 +2,7 @@
 
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
+#include <Foundation/Types/UniquePtr.h>
 #include <Foundation/Basics/Platform/Win/MinWindows.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/ResourceFormats.h>
@@ -60,6 +61,9 @@ protected:
 
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame) override;
   virtual void EndFramePlatform() override;
+
+  virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override;
+  virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)                          override;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override;
@@ -126,6 +130,12 @@ private:
   xiiDynamicArray<Diligent::DisplayModeAttribs>                      m_DisplayModes;
 
   xiiAllocatorDiligent m_AllocatorDiligent{"D3D12 Memory Allocation"};
+
+  xiiUniquePtr<xiiGALPassD3D12> m_pDefaultPass;
+
+  struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
+  struct GPUTimingScope* m_pPipelineTimingScope = nullptr;
+  struct GPUTimingScope* m_pPassTimingScope     = nullptr;
 };
 
 #include <GraphicsD3D12/Device/Implementation/DeviceD3D12_inl.h>

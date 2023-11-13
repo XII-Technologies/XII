@@ -4,7 +4,8 @@
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
-
+#include <GraphicsD3D12/Device/PassD3D12.h>
+#include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/Resources/BottomLevelASD3D12.h>
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
 #include <GraphicsD3D12/Resources/BufferViewD3D12.h>
@@ -288,6 +289,8 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
+  m_pDefaultPass = XII_NEW(&m_Allocator, xiiGALPassD3D12, *this);
+
   return XII_SUCCESS;
 }
 
@@ -346,6 +349,27 @@ void xiiGALDeviceD3D12::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 
 void xiiGALDeviceD3D12::EndFramePlatform()
 {
+}
+
+xiiGALSwapChain* xiiGALDeviceD3D12::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)
+{
+  xiiGALSwapChainD3D12* pSwapChainD3D12 = XII_NEW(&m_Allocator, xiiGALSwapChainD3D12, description);
+
+  if (pSwapChainD3D12->InitPlatform(this).Succeeded())
+    return pSwapChainD3D12;
+
+  XII_DELETE(&m_Allocator, pSwapChainD3D12);
+
+  return pSwapChainD3D12;
+}
+
+void xiiGALDeviceD3D12::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
+{
+  xiiGALSwapChainD3D12* pSwapChainD3D12 = static_cast<xiiGALSwapChainD3D12*>(pSwapChain);
+
+  pSwapChainD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pSwapChainD3D12);
 }
 
 xiiGALBlendState* xiiGALDeviceD3D12::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)

@@ -42,14 +42,12 @@ public:
   void EndFrame();
 
 public:
-  using SwapChainFactoryFunction = xiiDelegate<xiiGALSwapChain*(xiiAllocatorBase*)>;
-
   /// \brief This creates a swap chain object.
   ///
-  /// \param factoryFunction - The swap chain factory function.
+  /// \param description - The swap chain description. See xiiGALSwapChainCreationDescription.
   ///
   /// \return The handle to the created swap chain object. The function calls AddRef(), so that the new object will have one reference.
-  xiiGALSwapChainHandle CreateSwapChain(const SwapChainFactoryFunction& factoryFunction);
+  xiiGALSwapChainHandle CreateSwapChain(const xiiGALSwapChainCreationDescription& description);
 
   /// \brief This destroys the swap chain with the given handle.
   void DestroySwapChain(xiiGALSwapChainHandle hSwapChain);
@@ -451,6 +449,9 @@ protected:
 
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame = 0U) = 0;
   virtual void EndFramePlatform()                                     = 0;
+
+  virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) = 0;
+  virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)                          = 0;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) = 0;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState)                         = 0;

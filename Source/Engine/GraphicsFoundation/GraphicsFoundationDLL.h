@@ -76,6 +76,8 @@ class xiiGALCommandList;
 class xiiGALCommandQueue;
 class xiiGALComputeCommandEncoder;
 class xiiGALGraphicsCommandEncoder;
+struct xiiGALCommandEncoderState;
+struct xiiGALCommandEncoderGraphicsState;
 class xiiGALDevice;
 class xiiGALPass;
 class xiiGALSwapChain;

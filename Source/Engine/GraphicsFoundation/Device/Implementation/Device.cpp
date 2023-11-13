@@ -295,19 +295,22 @@ void xiiGALDevice::EndFrame()
   }
 }
 
-xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const SwapChainFactoryFunction& factoryFunction)
+xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const xiiGALSwapChainCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
-  xiiGALSwapChain* pSwapChain = factoryFunction(&m_Allocator);
+  /// \todo GraphicsFoundation: Add swap chain description validation.
 
-  if (!pSwapChain->InitPlatform(this).Succeeded())
+  xiiGALSwapChain* pSwapChain = CreateSwapChainPlatform(description);
+
+  if (pSwapChain == nullptr)
   {
-    XII_DELETE(&m_Allocator, pSwapChain);
     return xiiGALSwapChainHandle();
   }
-
-  return xiiGALSwapChainHandle(m_SwapChains.Insert(pSwapChain));
+  else
+  {
+    return xiiGALSwapChainHandle(m_SwapChains.Insert(pSwapChain));
+  }
 }
 
 void xiiGALDevice::DestroySwapChain(xiiGALSwapChainHandle hSwapChain)
@@ -322,7 +325,7 @@ void xiiGALDevice::DestroySwapChain(xiiGALSwapChainHandle hSwapChain)
   }
   else
   {
-    xiiLog::Warning("DestroySwapChain called on invalid handle (double free?)");
+    xiiLog::Warning("DestroySwapChain called on invalid handle (double free?).");
   }
 }
 
