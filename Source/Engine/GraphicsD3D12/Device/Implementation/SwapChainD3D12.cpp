@@ -206,7 +206,7 @@ xiiResult xiiGALSwapChainD3D12::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize
   DestroyBackBufferInternal(pDeviceD3D12);
 
   // Need to flush dead objects or ResizeBuffers will fail as the backbuffer is still referenced.
-  pDeviceD3D12->WaitIdle();
+  pDeviceD3D12->FlushPendingObjects();
 
   m_pSwapChain->Resize(newSize.width, newSize.height, xiiDiligentTypeConversions::GetSurfaceTransform(newTransform));
 
