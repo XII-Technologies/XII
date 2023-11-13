@@ -163,7 +163,7 @@ void xiiGALSwapChainD3D12::AcquireNextRenderTarget(xiiGALDevice* pDevice)
   }
 }
 
-void xiiGALSwapChainD3D12::Present(xiiGALDevice* pDevice, xiiUInt32 uiSyncInterval)
+void xiiGALSwapChainD3D12::Present(xiiGALDevice* pDevice)
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");
 
@@ -183,6 +183,17 @@ void xiiGALSwapChainD3D12::Present(xiiGALDevice* pDevice, xiiUInt32 uiSyncInterv
     transitionDesc.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
 
     pDeviceD3D12->GetImmediateContext()->TransitionResourceStates(1u, &transitionDesc);
+  }
+
+  xiiUInt32 uiSyncInterval = 0U;
+  switch (m_PresentMode)
+  {
+    case xiiGALPresentMode::Immediate:
+      uiSyncInterval = 0U;
+      break;
+    case xiiGALPresentMode::VSync:
+      uiSyncInterval = 1U;
+      break;
   }
 
   m_pSwapChain->Present(uiSyncInterval);

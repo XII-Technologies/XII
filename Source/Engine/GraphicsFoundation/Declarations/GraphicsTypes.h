@@ -1539,6 +1539,24 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALResourceStateFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALResourceStateFlags);
 
+/// \brief This describes the swap chain present mode.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALPresentMode
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Immediate,
+    VSync,
+
+    ENUM_COUNT,
+
+    Default = VSync
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPresentMode);
+
 /// \brief Base class for GAL objects, stores a creation description of the object and also allows for reference counting.
 template <typename CreationDescription>
 class xiiGALObject : public xiiRefCounted

@@ -13,7 +13,7 @@ public:
   virtual void AcquireNextRenderTarget(xiiGALDevice* pDevice) = 0;
 
   /// \brief This presents a rendered image to the screen.
-  virtual void Present(xiiGALDevice* pDevice, xiiUInt32 uiSyncInterval) = 0;
+  virtual void Present(xiiGALDevice* pDevice) = 0;
 
   /// \brief This changes the swap chain size.
   ///
@@ -36,11 +36,15 @@ public:
   /// to 1, then Present command of frame 1 will block until Present of frame 0 is complete.
   virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) = 0;
 
+  void SetPresentMode(xiiEnum<xiiGALPresentMode> presentMode);
+
   const xiiGALRenderTargets& GetRenderTargets() const;
 
   xiiGALTextureHandle GetBackBufferTexture() const;
 
   xiiSizeU32 GetCurrentSize() const;
+
+  xiiEnum<xiiGALPresentMode> GetPresentMode() const;
 
 protected:
   friend class xiiGALDevice;
@@ -54,8 +58,9 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 
-  xiiGALRenderTargets m_RenderTargets;
-  xiiSizeU32          m_CurrentSize = {};
+  xiiGALRenderTargets        m_RenderTargets;
+  xiiSizeU32                 m_CurrentSize = {};
+  xiiEnum<xiiGALPresentMode> m_PresentMode = xiiGALPresentMode::VSync;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSwapChain);

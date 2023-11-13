@@ -9,7 +9,7 @@ class XII_GRAPHICSD3D12_DLL xiiGALSwapChainD3D12 : public xiiGALSwapChain
 public:
   virtual void AcquireNextRenderTarget(xiiGALDevice* pDevice) override;
 
-  virtual void Present(xiiGALDevice* pDevice, xiiUInt32 uiSyncInterval) override;
+  virtual void Present(xiiGALDevice* pDevice) override;
 
   virtual xiiResult Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override;
 
