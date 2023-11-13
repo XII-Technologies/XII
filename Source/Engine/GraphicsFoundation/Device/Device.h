@@ -22,14 +22,14 @@ public:
 
 
   /// \brief Begins a pipeline scope.
-  void BeginPipeline(xiiStringView Name, xiiGALSwapChainHandle hSwapChain);
+  void BeginPipeline(xiiStringView sName, xiiGALSwapChainHandle hSwapChain);
 
   /// \brief Ends a pipeline scope.
   void EndPipeline(xiiGALSwapChainHandle hSwapChain);
 
 
   /// \brief Begins a pass scope.
-  xiiGALPass* BeginPass(xiiStringView Name);
+  xiiGALPass* BeginPass(xiiStringView sName);
 
   /// \brief Ends a pass scope.
   void EndPass(xiiGALPass* pPass);
@@ -441,11 +441,11 @@ protected:
   virtual xiiResult InitializePlatform() = 0;
   virtual xiiResult ShutdownPlatform()   = 0;
 
-  virtual void BeginPipelinePlatform(xiiStringView Name, xiiGALSwapChain* pSwapChain) = 0;
-  virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain)                       = 0;
+  virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) = 0;
+  virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain)                        = 0;
 
-  virtual xiiGALPass* BeginPassPlatform(xiiStringView Name) = 0;
-  virtual void        EndPassPlatform(xiiGALPass* pPass)    = 0;
+  virtual xiiGALPass* BeginPassPlatform(xiiStringView sName) = 0;
+  virtual void        EndPassPlatform(xiiGALPass* pPass)     = 0;
 
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame = 0U) = 0;
   virtual void EndFramePlatform()                                     = 0;

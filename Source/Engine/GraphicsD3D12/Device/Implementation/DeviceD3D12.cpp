@@ -1,8 +1,11 @@
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
 #include <Foundation/Configuration/Startup.h>
+#include <GraphicsFoundation/CommandEncoder/GraphicsCommandEncoder.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
+#include <GraphicsFoundation/Profiling/Profiling.h>
 
+#include <GraphicsD3D12/CommandEncoder/CommandEncoderD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Device/PassD3D12.h>
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
@@ -300,6 +303,7 @@ void xiiGALDeviceD3D12::ReportLiveGPUObjects()
 
 void xiiGALDeviceD3D12::FlushPendingObjects()
 {
+  DestroyDeadObjects();
 }
 
 xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
@@ -326,21 +330,48 @@ xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceD3D12::BeginPipelinePlatform(xiiStringView Name, xiiGALSwapChain* pSwapChain)
+void xiiGALDeviceD3D12::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain)
 {
+#if XII_ENABLED(XII_USE_PROFILING)
+  xiiStringBuilder sb;
+  sb.Format("{} - Frame {}", !sName.IsEmpty() ? sName : "Unavailable", GetImmediateContext()->GetFrameNumber());
+  m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sb);
+#endif
+
+  if (pSwapChain)
+  {
+    pSwapChain->AcquireNextRenderTarget(this);
+  }
 }
 
 void xiiGALDeviceD3D12::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
 {
+#if XII_ENABLED(XII_USE_PROFILING)
+  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPipelineTimingScope);
+#endif
+
+  if (pSwapChain)
+  {
+    pSwapChain->Present(this);
+  }
 }
 
-xiiGALPass* xiiGALDeviceD3D12::BeginPassPlatform(xiiStringView Name)
+xiiGALPass* xiiGALDeviceD3D12::BeginPassPlatform(xiiStringView sName)
 {
-  return nullptr;
+#if XII_ENABLED(XII_USE_PROFILING)
+  m_pPassTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sName);
+#endif
+
+  return m_pDefaultPass.Borrow();
 }
 
 void xiiGALDeviceD3D12::EndPassPlatform(xiiGALPass* pPass)
 {
+  XII_ASSERT_DEV(m_pDefaultPass.Borrow() == pPass, "Invalid pass.");
+
+#if XII_ENABLED(XII_USE_PROFILING)
+  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPassTimingScope);
+#endif
 }
 
 void xiiGALDeviceD3D12::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
@@ -349,6 +380,15 @@ void xiiGALDeviceD3D12::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 
 void xiiGALDeviceD3D12::EndFramePlatform()
 {
+  // Call FinishFrame() to release references to Swapchain resources
+  {
+    for (auto& pContext : m_pDeviceContexts)
+    {
+      pContext->Flush();
+      pContext->FinishFrame();
+    }
+    m_pDevice->ReleaseStaleResources();
+  }
 }
 
 xiiGALSwapChain* xiiGALDeviceD3D12::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)
@@ -711,6 +751,10 @@ void xiiGALDeviceD3D12::DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS)
 void xiiGALDeviceD3D12::WaitIdlePlatform()
 {
   m_pDevice->IdleGPU();
+
+  FlushPendingObjects();
+
+  m_pDevice->ReleaseStaleResources(true);
 }
 
 void xiiGALDeviceD3D12::FillCapabilitiesPlatform()

@@ -53,10 +53,10 @@ protected:
   virtual xiiResult InitializePlatform() override;
   virtual xiiResult ShutdownPlatform() override;
 
-  virtual void BeginPipelinePlatform(xiiStringView Name, xiiGALSwapChain* pSwapChain) override;
+  virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override;
 
-  virtual xiiGALPass* BeginPassPlatform(xiiStringView Name) override;
+  virtual xiiGALPass* BeginPassPlatform(xiiStringView sName) override;
   virtual void        EndPassPlatform(xiiGALPass* pPass) override;
 
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame) override;
