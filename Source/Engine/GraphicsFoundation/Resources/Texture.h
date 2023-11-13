@@ -63,6 +63,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
   xiiGALOptimizedClearValue           m_ClearValue;                                              ///< Optimized clear value.
   xiiUInt64                           m_uiImmediateContextMask = XII_BIT(0);                     ///< Defines which immediate contexts are allowed to execute commands that use this texture. The default is the main immediate context.
                                                                                                  ///< Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
+  void* m_pExisitingNativeObject = nullptr;                                                      ///< Can be used to encapsulate existing native textures in objects usable by the GAL
 
   bool IsArray() const;
   bool Is1D() const;

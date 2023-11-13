@@ -9,6 +9,8 @@
 #include <GraphicsFoundation/Declarations/Constants.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
+class xiiWindowBase;
+
 /// \brief This describes the device features.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceFeatures : public xiiHashableStruct<xiiGALDeviceFeatures>
 {
@@ -94,15 +96,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xi
 {
   XII_DECLARE_POD_TYPE();
 
+  xiiWindowBase*                         m_pWindow           = nullptr;                                   ///< Pointer to the window class.
   xiiSizeU32                             m_Resolution        = xiiSizeU32(0U, 0U);                        ///< Swap chain resolution.
   xiiEnum<xiiGALTextureFormat>           m_ColorBufferFormat = xiiGALTextureFormat::RGBA8UNormalizedSRGB; ///< Back buffer format.
-  xiiEnum<xiiGALTextureFormat>           m_DepthBufferFormat = xiiGALTextureFormat::D32Float;             ///< Depth buffer format. Use Unknown format to create the swap chain without a depth buffer.
   xiiBitflags<xiiGALSwapChainUsageFlags> m_Usage             = xiiGALSwapChainUsageFlags::RenderTarget;   ///< Swap chain usage flags.
   xiiEnum<xiiGALSurfaceTransform>        m_PreTransform      = xiiGALSurfaceTransform::Optimal;           ///< The transform, relative to the presentation engine's natural orientation which is applied to the image prior to presentation.
                                                                                                           ///<
                                                                                                           ///< \note When xiiGALSurfaceTransform::Optimal is used, the engine will select the most optimal surface transformation. An application may request a specific transform and the engine will try to use that. If the transform is not available, the engine will select the most optimal transform. After the swap chain has been created, this member will contain the actual transform selected by the engine.
   xiiUInt32 m_uiBufferCount         = 2U;                                                                 ///< The number of buffers in the swap chain.
-  float     m_fDepthStencilValue    = 1.0f;                                                               ///< Default depth value, which is used as the optimized depth clear value in D3D12.
+  float     m_fDefaultDepthValue    = 1.0f;                                                               ///< Default depth value, which is used as the optimized depth clear value in D3D12.
   xiiUInt8  m_uiDefaultStencilValue = 0U;                                                                 ///< Default stencil value, which is used as the optimized clear value in D3D12.
   bool      m_bIsPrimary            = true;                                                               ///< This indicates if this swap chain is a primary swap chain.
 };

@@ -1442,3 +1442,63 @@ XII_ALWAYS_INLINE bool xiiDiligentTypeConversions::GetFormatNormalized(Diligent:
   }
   return false;
 }
+
+XII_ALWAYS_INLINE Diligent::SCALING_MODE xiiDiligentTypeConversions::GetScalingMode(xiiEnum<xiiGALScalingMode> e)
+{
+  switch (e)
+  {
+    case xiiGALScalingMode::Unspecified:
+      return Diligent::SCALING_MODE_UNSPECIFIED;
+    case xiiGALScalingMode::Centered:
+      return Diligent::SCALING_MODE_CENTERED;
+    case xiiGALScalingMode::Stretched:
+      return Diligent::SCALING_MODE_STRETCHED;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::SCALING_MODE_UNSPECIFIED;
+}
+
+XII_ALWAYS_INLINE Diligent::SCANLINE_ORDER xiiDiligentTypeConversions::GetScanLineOrder(xiiEnum<xiiGALScanLineOrder> e)
+{
+  switch (e)
+  {
+    case xiiGALScanLineOrder::Unspecified:
+      return Diligent::SCANLINE_ORDER_UNSPECIFIED;
+    case xiiGALScanLineOrder::Progressive:
+      return Diligent::SCANLINE_ORDER_PROGRESSIVE;
+    case xiiGALScanLineOrder::UpperFieldFirst:
+      return Diligent::SCANLINE_ORDER_UPPER_FIELD_FIRST;
+    case xiiGALScanLineOrder::LowerFieldFirst:
+      return Diligent::SCANLINE_ORDER_LOWER_FIELD_FIRST;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::SCANLINE_ORDER_UNSPECIFIED;
+}
+
+XII_ALWAYS_INLINE Diligent::SURFACE_TRANSFORM xiiDiligentTypeConversions::GetSurfaceTransform(xiiEnum<xiiGALSurfaceTransform> e)
+{
+  switch (e)
+  {
+    case xiiGALSurfaceTransform::Optimal:
+      return Diligent::SURFACE_TRANSFORM_OPTIMAL;
+    case xiiGALSurfaceTransform::Identity:
+      return Diligent::SURFACE_TRANSFORM_IDENTITY;
+    case xiiGALSurfaceTransform::Rotate90:
+      return Diligent::SURFACE_TRANSFORM_ROTATE_90;
+    case xiiGALSurfaceTransform::Rotate180:
+      return Diligent::SURFACE_TRANSFORM_ROTATE_180;
+    case xiiGALSurfaceTransform::Rotate270:
+      return Diligent::SURFACE_TRANSFORM_ROTATE_270;
+    case xiiGALSurfaceTransform::HorizontalMirror:
+      return Diligent::SURFACE_TRANSFORM_HORIZONTAL_MIRROR;
+    case xiiGALSurfaceTransform::HorizontalMirrorRotate90:
+      return Diligent::SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90;
+    case xiiGALSurfaceTransform::HorizontalMirrorRotate180:
+      return Diligent::SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180;
+    case xiiGALSurfaceTransform::HorizontalMirrorRotate270:
+      return Diligent::SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270;
+  }
+  return Diligent::SURFACE_TRANSFORM_OPTIMAL;
+}

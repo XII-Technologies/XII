@@ -3,16 +3,17 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/Descriptors.h>
+#include <GraphicsFoundation/Resources/RenderTargetSetup.h>
 
 /// \brief Interface that defines methods to manipulate a swap chain object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChain : public xiiGALObject<xiiGALSwapChainCreationDescription>
 {
 public:
   /// \brief Acquires the next render target for presenting.
-  virtual void AcquireNextRenderTarget() = 0;
+  virtual void AcquireNextRenderTarget(xiiGALDevice* pDevice) = 0;
 
   /// \brief This presents a rendered image to the screen.
-  virtual void Present(xiiUInt32 uiSyncInterval) = 0;
+  virtual void Present(xiiGALDevice* pDevice, xiiUInt32 uiSyncInterval) = 0;
 
   /// \brief This changes the swap chain size.
   ///
@@ -20,7 +21,7 @@ public:
   /// \param newTransform - newTransform The new surface transform.
   ///
   /// \note When resizing non-primary swap chains, the engine unbinds the swap chain buffers from the output.
-  virtual void Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) = 0;
+  virtual xiiResult Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) = 0;
 
   /// \brief This sets the swap chain to full screen mode. Note that this is only supported on the Windows platform.
   virtual void SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode) = 0;
@@ -35,18 +36,11 @@ public:
   /// to 1, then Present command of frame 1 will block until Present of frame 0 is complete.
   virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) = 0;
 
-  /// \brief This returns the render target view handle of the current back buffer in the swap chain.
-  ///
-  /// \note For the Direct3D12 and Vulkan backends, the function returns a different handle for every offscreen buffer in the swap chain
-  /// (flipped by every call to xiiGALSwapChain::Present()). For the Direct3D11 backend it always returns the same handle.
-  ///
-  /// The method does *NOT* increment the reference counter of the returned object, so ReleaseRef() must not be called.
-  virtual xiiGALTextureViewHandle GetCurrentBackBufferRTV() = 0;
+  const xiiGALRenderTargets& GetRenderTargets() const;
 
-  /// \brief This returns the depth-stencil view handle of the depth buffer.
-  ///
-  /// The method does *NOT* increment the reference counter of the returned object, so ReleaseRef() must not be called.
-  virtual xiiGALTextureViewHandle GetDepthBufferDSV() = 0;
+  xiiGALTextureHandle GetBackBufferTexture() const;
+
+  xiiSizeU32 GetCurrentSize() const;
 
 protected:
   friend class xiiGALDevice;
@@ -59,6 +53,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+
+  xiiGALRenderTargets m_RenderTargets;
+  xiiSizeU32          m_CurrentSize = {};
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSwapChain);

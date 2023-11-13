@@ -80,6 +80,17 @@ public:
 
   static Diligent::VALUE_TYPE GetDiligentValueType(Diligent::TEXTURE_FORMAT e);
   static bool                 GetFormatNormalized(Diligent::TEXTURE_FORMAT e);
+
+  static Diligent::SCALING_MODE      GetScalingMode(xiiEnum<xiiGALScalingMode> e);
+  static Diligent::SCANLINE_ORDER    GetScanLineOrder(xiiEnum<xiiGALScanLineOrder> e);
+  static Diligent::SURFACE_TRANSFORM GetSurfaceTransform(xiiEnum<xiiGALSurfaceTransform> e);
+
+  static Diligent::SWAP_CHAIN_USAGE_FLAGS GetSwapChainUsageFlags(xiiBitflags<xiiGALSwapChainUsageFlags> e);
+
+  static xiiBitflags<xiiGALBindFlags>        GetGALBindFlags(Diligent::BIND_FLAGS e);
+  static xiiEnum<xiiGALResourceUsage>        GetGALUsage(Diligent::USAGE e);
+  static xiiBitflags<xiiGALCPUAccessFlag>    GetGALCPUAccessFlags(Diligent::CPU_ACCESS_FLAGS e);
+  static xiiBitflags<xiiGALMiscTextureFlags> GetGALMiscTextureFlags(Diligent::MISC_TEXTURE_FLAGS e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>

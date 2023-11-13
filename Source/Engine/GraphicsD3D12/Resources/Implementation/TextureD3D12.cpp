@@ -14,6 +14,13 @@ xiiResult xiiGALTextureD3D12::InitPlatform(xiiGALDevice* pDevice, const xiiGALTe
 {
   xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 
+  if (m_Description.m_pExisitingNativeObject != nullptr)
+  {
+    m_pTexture = static_cast<Diligent::ITexture*>(m_Description.m_pExisitingNativeObject);
+
+    return XII_SUCCESS;
+  }
+
   Diligent::TextureDesc textureDescription;
   textureDescription.Name                 = m_Description.m_sName.GetStartPointer();
   textureDescription.Type                 = xiiDiligentTypeConversions::GetResourceDimension(m_Description.m_Type);
