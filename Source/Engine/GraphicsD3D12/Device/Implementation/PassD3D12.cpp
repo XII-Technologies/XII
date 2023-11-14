@@ -22,24 +22,32 @@ xiiGALPassD3D12::xiiGALPassD3D12(xiiGALDevice& device) :
 
 xiiGALPassD3D12::~xiiGALPassD3D12() = default;
 
-xiiGALGraphicsCommandEncoder* xiiGALPassD3D12::BeginRenderingPlatform(xiiStringView sName /* = {} */)
+xiiGALGraphicsCommandEncoder* xiiGALPassD3D12::BeginRenderingPlatform(xiiGALRenderPass* pRenderPass, xiiStringView sName /* = {} */)
 {
+  m_pCommandEncoderImpl->BeginRendering(pRenderPass);
+
   return m_pGraphicsCommandEncoder.Borrow();
 }
 
 void xiiGALPassD3D12::EndRenderingPlatform(xiiGALGraphicsCommandEncoder* pCommandEncoder)
 {
   XII_ASSERT_DEV(m_pGraphicsCommandEncoder.Borrow() == pCommandEncoder, "Invalid command encoder.");
+
+  m_pCommandEncoderImpl->EndRendering();
 }
 
 xiiGALComputeCommandEncoder* xiiGALPassD3D12::BeginComputePlatform(xiiStringView sName /* = {} */)
 {
+  m_pCommandEncoderImpl->BeginCompute();
+
   return m_pComputeCommandEncoder.Borrow();
 }
 
 void xiiGALPassD3D12::EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder)
 {
   XII_ASSERT_DEV(m_pComputeCommandEncoder.Borrow() == pCommandEncoder, "Invalid command encoder.");
+
+  m_pCommandEncoderImpl->EndCompute();
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Device_Implementation_PassD3D12);

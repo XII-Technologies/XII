@@ -595,6 +595,22 @@ void xiiGALCommandEncoderD3D12::DispatchIndirectPlatform(xiiGALBuffer* pIndirect
   m_pContext->DispatchComputeIndirect(DispatchAttribs);
 }
 
+void xiiGALCommandEncoderD3D12::BeginRendering(xiiGALRenderPass* pRenderPass)
+{
+}
+
+void xiiGALCommandEncoderD3D12::EndRendering()
+{
+}
+
+void xiiGALCommandEncoderD3D12::BeginCompute()
+{
+}
+
+void xiiGALCommandEncoderD3D12::EndCompute()
+{
+}
+
 void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 {
 }

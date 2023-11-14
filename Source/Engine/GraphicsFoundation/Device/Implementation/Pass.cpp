@@ -11,14 +11,15 @@ xiiGALPass::xiiGALPass(xiiGALDevice& device) :
 
 xiiGALPass::~xiiGALPass() = default;
 
-xiiGALGraphicsCommandEncoder* xiiGALPass::BeginRendering(xiiStringView sName)
+xiiGALGraphicsCommandEncoder* xiiGALPass::BeginRendering(xiiGALRenderPass* pRenderPass, xiiStringView sName)
 {
+  XII_ASSERT_DEV(pRenderPass != nullptr, "pRenderPass is nullptr.");
   XII_ASSERT_DEV(m_CurrentCommandEncoderType == xiiGALCommandEncoderType::Invalid, "Command Encoder nesting is not permitted.");
 
   m_sName                     = sName;
   m_CurrentCommandEncoderType = xiiGALCommandEncoderType::Graphics;
 
-  xiiGALGraphicsCommandEncoder* pCommandEncoder = BeginRenderingPlatform(m_sName);
+  xiiGALGraphicsCommandEncoder* pCommandEncoder = BeginRenderingPlatform(pRenderPass, m_sName);
 
   if (!m_sName.IsEmpty())
   {

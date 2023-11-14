@@ -16,18 +16,18 @@ protected:
   xiiGALPassD3D12(xiiGALDevice& device);
   virtual ~xiiGALPassD3D12();
 
-  virtual xiiGALGraphicsCommandEncoder* BeginRenderingPlatform(xiiStringView sName = {}) override;
+  virtual xiiGALGraphicsCommandEncoder* BeginRenderingPlatform(xiiGALRenderPass* pRenderPass, xiiStringView sName = {}) override;
   virtual void                          EndRenderingPlatform(xiiGALGraphicsCommandEncoder* pCommandEncoder) override;
 
   virtual xiiGALComputeCommandEncoder* BeginComputePlatform(xiiStringView sName = {}) override;
   virtual void                         EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder) override;
 
 private:
-  xiiUniquePtr<xiiGALCommandEncoderGraphicsState>  m_pCommandEncoderState;
-  xiiUniquePtr<xiiGALCommandEncoderD3D12>       m_pCommandEncoderImpl;
+  xiiUniquePtr<xiiGALCommandEncoderGraphicsState> m_pCommandEncoderState;
+  xiiUniquePtr<xiiGALCommandEncoderD3D12>         m_pCommandEncoderImpl;
 
-  xiiUniquePtr<xiiGALGraphicsCommandEncoder>  m_pGraphicsCommandEncoder;
-  xiiUniquePtr<xiiGALComputeCommandEncoder> m_pComputeCommandEncoder;
+  xiiUniquePtr<xiiGALGraphicsCommandEncoder> m_pGraphicsCommandEncoder;
+  xiiUniquePtr<xiiGALComputeCommandEncoder>  m_pComputeCommandEncoder;
 
   xiiGALDeviceD3D12& m_GALDeviceD3D12;
 };

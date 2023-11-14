@@ -92,6 +92,15 @@ public:
   virtual void DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) override;
   virtual void DispatchIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override;
 
+  // xiiGALCommandEncoderGraphicsPlatformInterface
+  void BeginRendering(xiiGALRenderPass* pRenderPass);
+  void EndRendering();
+
+  // xiiGALCommandEncoderComputePlatformInterface
+
+  void BeginCompute();
+  void EndCompute();
+
 private:
   friend class xiiGALPassD3D12;
 

@@ -2,8 +2,8 @@
 
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
-#include <Foundation/Types/UniquePtr.h>
 #include <Foundation/Basics/Platform/Win/MinWindows.h>
+#include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/ResourceFormats.h>
 
@@ -63,7 +63,7 @@ protected:
   virtual void EndFramePlatform() override;
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override;
-  virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)                          override;
+  virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override;

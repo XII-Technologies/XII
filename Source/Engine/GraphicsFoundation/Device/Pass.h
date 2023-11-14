@@ -36,7 +36,7 @@ protected:
   virtual ~xiiGALPass();
 
 public:
-  xiiGALGraphicsCommandEncoder* BeginRendering(xiiStringView sName = {});
+  xiiGALGraphicsCommandEncoder* BeginRendering(xiiGALRenderPass* pRenderPass, xiiStringView sName = {});
   void                          EndRendering(xiiGALGraphicsCommandEncoder* pCommandEncoder);
 
   xiiGALComputeCommandEncoder* BeginCompute(xiiStringView sName = {});
@@ -51,18 +51,18 @@ public:
 #endif
 
 protected:
-  virtual xiiGALGraphicsCommandEncoder* BeginRenderingPlatform(xiiStringView sName = {})                    = 0;
+  virtual xiiGALGraphicsCommandEncoder* BeginRenderingPlatform(xiiGALRenderPass* pRenderPass, xiiStringView sName = {}) = 0;
   virtual void                          EndRenderingPlatform(xiiGALGraphicsCommandEncoder* pCommandEncoder) = 0;
 
   virtual xiiGALComputeCommandEncoder* BeginComputePlatform(xiiStringView sName = {})                   = 0;
   virtual void                         EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder) = 0;
 
 #if 0 // Not yet implemented.
-  virtual xiiGALGraphicsCommandEncoder* BeginMeshPlatform(xiiStringView sName = {}) = 0;
-virtual   void                          EndMeshPlatform(xiiGALGraphicsCommandEncoder* pCommandEncoder) = 0;
+  virtual xiiGALGraphicsCommandEncoder* BeginMeshPlatform(xiiStringView sName = {})                    = 0;
+  virtual void                          EndMeshPlatform(xiiGALGraphicsCommandEncoder* pCommandEncoder) = 0;
 
-  virtual xiiGALComputeCommandEncoder* BeginRayTracingPlatform(xiiStringView sName = {}) = 0;
-virtual   void                         EndRayTracingPlatform(xiiGALComputeCommandEncoder* pCommandEncoder) = 0;
+  virtual xiiGALComputeCommandEncoder* BeginRayTracingPlatform(xiiStringView sName = {})                   = 0;
+  virtual void                         EndRayTracingPlatform(xiiGALComputeCommandEncoder* pCommandEncoder) = 0;
 #endif
 
 protected:
