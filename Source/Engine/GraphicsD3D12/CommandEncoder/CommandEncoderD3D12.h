@@ -96,7 +96,7 @@ public:
   virtual void DispatchIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override;
 
   // xiiGALCommandEncoderGraphicsPlatformInterface
-  void BeginRendering(xiiGALRenderPass* pRenderPass);
+  void BeginRendering(xiiGALRenderPassD3D12* pRenderPassD3D12, xiiGALFramebufferD3D12* pFramebufferD3D12);
   void EndRendering();
 
   // xiiGALCommandEncoderComputePlatformInterface

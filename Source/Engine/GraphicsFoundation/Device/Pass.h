@@ -2,6 +2,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Resources/Framebuffer.h>
+#include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/RenderTargetSetup.h>
 
 /// \brief This describes the shader variable property flags.
@@ -36,7 +38,7 @@ protected:
   virtual ~xiiGALPass();
 
 public:
-  xiiGALGraphicsCommandEncoder* BeginRendering(xiiGALRenderPass* pRenderPass, xiiStringView sName = {});
+  xiiGALGraphicsCommandEncoder* BeginRendering(const xiiGALRenderPassCreationDescription& renderPassDescription);
   void                          EndRendering(xiiGALGraphicsCommandEncoder* pCommandEncoder);
 
   xiiGALComputeCommandEncoder* BeginCompute(xiiStringView sName = {});
@@ -51,8 +53,8 @@ public:
 #endif
 
 protected:
-  virtual xiiGALGraphicsCommandEncoder* BeginRenderingPlatform(xiiGALRenderPass* pRenderPass, xiiStringView sName = {}) = 0;
-  virtual void                          EndRenderingPlatform(xiiGALGraphicsCommandEncoder* pCommandEncoder) = 0;
+  virtual xiiGALGraphicsCommandEncoder* BeginRenderingPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiStringView sName = {}) = 0;
+  virtual void                          EndRenderingPlatform(xiiGALGraphicsCommandEncoder* pCommandEncoder)                                              = 0;
 
   virtual xiiGALComputeCommandEncoder* BeginComputePlatform(xiiStringView sName = {})                   = 0;
   virtual void                         EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder) = 0;
@@ -66,10 +68,20 @@ protected:
 #endif
 
 protected:
+  struct RenderPassFrameBufferInfo
+  {
+    xiiGALRenderPassHandle  hRenderPass;
+    xiiGALFramebufferHandle hFrameBuffer;
+  };
+
+  void GetRenderPassAndFramebuffer(const xiiGALRenderPassCreationDescription& renderPassDescription, xiiGALRenderPass* out_pRenderPass, xiiGALFramebuffer* out_pFramebuffer);
+
   xiiGALDevice& m_Device;
 
-  xiiStringView                     m_sName;
+  bool                              m_bMarkerPushed             = false;
   xiiEnum<xiiGALCommandEncoderType> m_CurrentCommandEncoderType = xiiGALCommandEncoderType::Invalid;
+
+  xiiHashTable<xiiUInt32, RenderPassFrameBufferInfo> m_RenderPassFramebufferCache;
 };
 
 #include <GraphicsFoundation/Device/Implementation/Pass_inl.h>

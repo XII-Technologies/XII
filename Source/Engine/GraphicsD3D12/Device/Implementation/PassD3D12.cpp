@@ -7,6 +7,8 @@
 #include <GraphicsD3D12/CommandEncoder/CommandEncoderD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Device/PassD3D12.h>
+#include <GraphicsD3D12/Resources/FramebufferD3D12.h>
+#include <GraphicsD3D12/Resources/RenderPassD3D12.h>
 
 xiiGALPassD3D12::xiiGALPassD3D12(xiiGALDevice& device) :
   xiiGALPass(device), m_GALDeviceD3D12(static_cast<xiiGALDeviceD3D12&>(device))
@@ -22,9 +24,12 @@ xiiGALPassD3D12::xiiGALPassD3D12(xiiGALDevice& device) :
 
 xiiGALPassD3D12::~xiiGALPassD3D12() = default;
 
-xiiGALGraphicsCommandEncoder* xiiGALPassD3D12::BeginRenderingPlatform(xiiGALRenderPass* pRenderPass, xiiStringView sName /* = {} */)
+xiiGALGraphicsCommandEncoder* xiiGALPassD3D12::BeginRenderingPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiStringView sName /* = {} */)
 {
-  m_pCommandEncoderImpl->BeginRendering(pRenderPass);
+  auto pRenderPassD3D12  = static_cast<xiiGALRenderPassD3D12*>(pRenderPass);
+  auto pFramebufferD3D12 = static_cast<xiiGALFramebufferD3D12*>(pFramebuffer);
+
+  m_pCommandEncoderImpl->BeginRendering(pRenderPassD3D12, pFramebufferD3D12);
 
   return m_pGraphicsCommandEncoder.Borrow();
 }

@@ -3,7 +3,7 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Resources/FramebufferD3D12.h>
 #include <GraphicsD3D12/Resources/RenderPassD3D12.h>
-#include <GraphicsD3D12/Resources/TextureViewD3D12.h>
+#include <GraphicsD3D12/Resources/TextureD3D12.h>
 
 xiiGALFramebufferD3D12::xiiGALFramebufferD3D12(const xiiGALFramebufferCreationDescription& creationDescription) :
   xiiGALFramebuffer(creationDescription)
@@ -39,6 +39,15 @@ xiiResult xiiGALFramebufferD3D12::InitPlatform(xiiGALDevice* pDevice)
   framebufferDescription.ppAttachments   = attachmentViews.GetData();
 
   pDeviceD3D12->GetDevice()->CreateFramebuffer(framebufferDescription, &m_pFramebuffer);
+
+  // Resolve frame buffer size if none was provided in the creation description.
+  if (!m_Description.m_FramebufferSize.HasNonZeroArea())
+  {
+    const auto& description = m_pFramebuffer->GetDesc();
+
+    m_Description.m_FramebufferSize.width  = description.Width;
+    m_Description.m_FramebufferSize.height = description.Height;
+  }
 
   return (m_pFramebuffer != nullptr) ? XII_SUCCESS : XII_FAILURE;
 }
