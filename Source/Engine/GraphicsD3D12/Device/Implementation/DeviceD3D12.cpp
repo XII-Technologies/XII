@@ -308,6 +308,8 @@ void xiiGALDeviceD3D12::FlushPendingObjects()
 
 xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
 {
+  m_pDefaultPass = nullptr;
+
   if (!m_pDeviceContexts.IsEmpty())
   {
     for (xiiUInt32 uiContext = 0; uiContext < m_uiImmediateContextsCount; ++uiContext)

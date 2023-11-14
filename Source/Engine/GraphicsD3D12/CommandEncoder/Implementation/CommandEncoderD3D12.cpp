@@ -5,7 +5,9 @@
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
 #include <GraphicsD3D12/Resources/BufferViewD3D12.h>
 #include <GraphicsD3D12/Resources/FenceD3D12.h>
+#include <GraphicsD3D12/Resources/FramebufferD3D12.h>
 #include <GraphicsD3D12/Resources/QueryD3D12.h>
+#include <GraphicsD3D12/Resources/RenderPassD3D12.h>
 #include <GraphicsD3D12/Resources/SamplerD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 #include <GraphicsD3D12/Resources/TextureViewD3D12.h>
@@ -20,13 +22,50 @@
 
 #include <GraphicsD3D12/Utilities/DiligentTypeConversions.h>
 
+XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt32) == sizeof(xiiGALTextureViewHandle));
+
+namespace
+{
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& Stream, const xiiGALTextureViewHandle& Value)
+  {
+    Stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return Stream;
+  }
+
+  XII_ALWAYS_INLINE bool operator==(const Diligent::Rect& lhs, const Diligent::Rect& rhs)
+  {
+    return lhs.top == rhs.top && lhs.left == rhs.left && lhs.right == rhs.right && lhs.bottom == rhs.bottom;
+  };
+
+  XII_ALWAYS_INLINE bool operator!=(const Diligent::Rect& lhs, const Diligent::Rect& rhs)
+  {
+    return !(lhs == rhs);
+  };
+
+  XII_ALWAYS_INLINE bool operator==(const Diligent::Viewport& lhs, const Diligent::Viewport& rhs)
+  {
+    return lhs.TopLeftX == rhs.TopLeftX && lhs.TopLeftY == rhs.TopLeftY && lhs.Width == rhs.Width && lhs.Height == rhs.Height && lhs.MinDepth == rhs.MinDepth && lhs.MaxDepth == rhs.MaxDepth;
+  };
+
+  XII_ALWAYS_INLINE bool operator!=(const Diligent::Viewport& lhs, const Diligent::Viewport& rhs)
+  {
+    return !(lhs == rhs);
+  };
+} // namespace
+
 xiiGALCommandEncoderD3D12::xiiGALCommandEncoderD3D12(xiiGALDeviceD3D12& deviceD3D12) :
   m_GALDeviceD3D12(deviceD3D12), m_pContext(deviceD3D12.GetImmediateContext())
 {
+  // Create synchronization fence.
+  Diligent::FenceDesc synchronizationFenceDescription;
+  synchronizationFenceDescription.Name = "Command Encoder D3D12 Readback Fence.";
+  synchronizationFenceDescription.Type = Diligent::FENCE_TYPE_GENERAL;
+  m_GALDeviceD3D12.GetDevice()->CreateFence(synchronizationFenceDescription, &m_pSynchronizationFence);
 }
 
 xiiGALCommandEncoderD3D12::~xiiGALCommandEncoderD3D12()
 {
+  XII_GAL_DILIGENT_REF_RELEASE(m_pSynchronizationFence);
 }
 
 void xiiGALCommandEncoderD3D12::SetShaderPlatform(xiiGALShader* pShader)
@@ -412,6 +451,8 @@ void xiiGALCommandEncoderD3D12::GenerateMipMapsPlatform(xiiGALTextureView* pText
 
 void xiiGALCommandEncoderD3D12::FlushPlatform()
 {
+  FlushDeferredStateChanges();
+
   m_pContext->Flush();
 }
 
@@ -614,5 +655,155 @@ void xiiGALCommandEncoderD3D12::EndCompute()
 void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 {
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Resource Cache Hash
+
+xiiUInt32 xiiGALCommandEncoderD3D12::ResourceCacheHash::Hash(const Diligent::GraphicsPipelineStateCreateInfo& desc)
+{
+  xiiHashStreamWriter32 writer;
+
+  writer << desc.PSODesc.PipelineType;
+  writer << static_cast<xiiUInt32>(desc.PSODesc.SRBAllocationGranularity);
+  writer << static_cast<xiiUInt64>(desc.PSODesc.ImmediateContextMask);
+  writer << desc.PSODesc.ResourceLayout.DefaultVariableType;
+  writer << desc.PSODesc.ResourceLayout.DefaultVariableMergeStages;
+
+  for (xiiUInt32 i = 0; i < desc.PSODesc.ResourceLayout.NumVariables; ++i)
+  {
+    writer << (desc.PSODesc.ResourceLayout.Variables + i);
+  }
+
+  for (xiiUInt32 i = 0; i < desc.PSODesc.ResourceLayout.NumImmutableSamplers; ++i)
+  {
+    writer << (desc.PSODesc.ResourceLayout.ImmutableSamplers + i);
+  }
+
+  writer << desc.Flags;
+
+  for (xiiUInt32 i = 0; i < desc.ResourceSignaturesCount; ++i)
+  {
+    writer << *(desc.ppResourceSignatures + i);
+  }
+
+  writer << desc.pPSOCache;
+
+  writer << desc.GraphicsPipeline.BlendDesc.AlphaToCoverageEnable;
+  writer << desc.GraphicsPipeline.BlendDesc.IndependentBlendEnable;
+
+  for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
+  {
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].BlendEnable;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].LogicOperationEnable;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].SrcBlend;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].DestBlend;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].BlendOp;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].SrcBlendAlpha;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].DestBlendAlpha;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].BlendOpAlpha;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].LogicOp;
+    writer << desc.GraphicsPipeline.BlendDesc.RenderTargets[i].RenderTargetWriteMask;
+  }
+
+  writer << desc.GraphicsPipeline.SampleMask;
+  writer << desc.GraphicsPipeline.RasterizerDesc.FillMode;
+  writer << desc.GraphicsPipeline.RasterizerDesc.CullMode;
+  writer << desc.GraphicsPipeline.RasterizerDesc.FrontCounterClockwise;
+  writer << desc.GraphicsPipeline.RasterizerDesc.DepthClipEnable;
+  writer << desc.GraphicsPipeline.RasterizerDesc.ScissorEnable;
+  writer << desc.GraphicsPipeline.RasterizerDesc.AntialiasedLineEnable;
+  writer << desc.GraphicsPipeline.RasterizerDesc.DepthBias;
+  writer << desc.GraphicsPipeline.RasterizerDesc.DepthBiasClamp;
+  writer << desc.GraphicsPipeline.RasterizerDesc.SlopeScaledDepthBias;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.DepthEnable;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.DepthWriteEnable;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.DepthFunc;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.StencilEnable;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.StencilReadMask;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.StencilWriteMask;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilFailOp;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilDepthFailOp;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilPassOp;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.FrontFace.StencilFunc;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.BackFace.StencilFailOp;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.BackFace.StencilDepthFailOp;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.BackFace.StencilPassOp;
+  writer << desc.GraphicsPipeline.DepthStencilDesc.BackFace.StencilFunc;
+
+  for (xiiUInt32 i = 0; i < desc.GraphicsPipeline.InputLayout.NumElements; ++i)
+  {
+    writer << (desc.GraphicsPipeline.InputLayout.LayoutElements + i);
+  }
+
+  writer << desc.GraphicsPipeline.PrimitiveTopology;
+  writer << desc.GraphicsPipeline.NumViewports;
+  writer << desc.GraphicsPipeline.NumRenderTargets;
+  writer << desc.GraphicsPipeline.SubpassIndex;
+
+  for (xiiUInt32 i = 0; i < XII_GAL_MAX_RENDERTARGET_COUNT; ++i)
+  {
+    writer << desc.GraphicsPipeline.RTVFormats[i];
+  }
+
+  writer << desc.GraphicsPipeline.DSVFormat;
+  writer << desc.GraphicsPipeline.SmplDesc.Count;
+  writer << desc.GraphicsPipeline.SmplDesc.Quality;
+  writer << desc.GraphicsPipeline.pRenderPass;
+  writer << desc.GraphicsPipeline.NodeMask;
+  writer << desc.pVS;
+  writer << desc.pPS;
+  writer << desc.pDS;
+  writer << desc.pHS;
+  writer << desc.pGS;
+  writer << desc.pAS;
+  writer << desc.pMS;
+
+  return writer.GetHashValue();
+}
+
+bool xiiGALCommandEncoderD3D12::ResourceCacheHash::Equal(const Diligent::GraphicsPipelineStateCreateInfo& a, const Diligent::GraphicsPipelineStateCreateInfo& b)
+{
+  return a == b;
+}
+
+xiiUInt32 xiiGALCommandEncoderD3D12::ResourceCacheHash::Hash(const Diligent::ComputePipelineStateCreateInfo& desc)
+{
+  xiiHashStreamWriter32 writer;
+
+  writer << desc.PSODesc.PipelineType;
+  writer << static_cast<xiiUInt32>(desc.PSODesc.SRBAllocationGranularity);
+  writer << static_cast<xiiUInt64>(desc.PSODesc.ImmediateContextMask);
+  writer << desc.PSODesc.ResourceLayout.DefaultVariableType;
+  writer << desc.PSODesc.ResourceLayout.DefaultVariableMergeStages;
+
+  for (xiiUInt32 i = 0; i < desc.PSODesc.ResourceLayout.NumVariables; ++i)
+  {
+    writer << (desc.PSODesc.ResourceLayout.Variables + i);
+  }
+
+  for (xiiUInt32 i = 0; i < desc.PSODesc.ResourceLayout.NumImmutableSamplers; ++i)
+  {
+    writer << (desc.PSODesc.ResourceLayout.ImmutableSamplers + i);
+  }
+
+  writer << desc.Flags;
+
+  for (xiiUInt32 i = 0; i < desc.ResourceSignaturesCount; ++i)
+  {
+    writer << *desc.ppResourceSignatures;
+  }
+
+  writer << desc.pPSOCache;
+  writer << desc.pCS;
+
+  return writer.GetHashValue();
+}
+
+bool xiiGALCommandEncoderD3D12::ResourceCacheHash::Equal(const Diligent::ComputePipelineStateCreateInfo& a, const Diligent::ComputePipelineStateCreateInfo& b)
+{
+  return a == b;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_CommandEncoder_Implementation_CommandEncoderD3D12);

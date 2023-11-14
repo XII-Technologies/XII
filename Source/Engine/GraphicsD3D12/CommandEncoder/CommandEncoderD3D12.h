@@ -2,6 +2,9 @@
 
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
+#include <Foundation/Algorithm/HashStream.h>
+#include <Foundation/Algorithm/HashingUtils.h>
+
 #include <GraphicsFoundation/CommandEncoder/CommandEncoderPlatformInterface.h>
 
 class XII_GRAPHICSD3D12_DLL xiiGALCommandEncoderD3D12 final : public xiiGALCommandEncoderCommonPlatformInterface, public xiiGALCommandEncoderGraphicsPlatformInterface, public xiiGALCommandEncoderComputePlatformInterface
@@ -104,6 +107,34 @@ public:
 private:
   friend class xiiGALPassD3D12;
 
+  struct ShaderResourceViewDesc
+  {
+    enum Enum : xiiUInt8
+    {
+      Invalid,
+      BufferView,
+      TextureView
+    };
+
+    Enum                    m_Type = Invalid;
+    xiiGALBufferViewD3D12*  m_pBufferView;
+    xiiGALTextureViewD3D12* m_pTextureView;
+  };
+
+  struct ResourceCacheHash
+  {
+    static xiiUInt32 Hash(const Diligent::GraphicsPipelineStateCreateInfo& desc);
+    static bool      Equal(const Diligent::GraphicsPipelineStateCreateInfo& a, const Diligent::GraphicsPipelineStateCreateInfo& b);
+
+    static xiiUInt32 Hash(const Diligent::ComputePipelineStateCreateInfo& desc);
+    static bool      Equal(const Diligent::ComputePipelineStateCreateInfo& a, const Diligent::ComputePipelineStateCreateInfo& b);
+  };
+
+  struct PipelineStateInfo
+  {
+    Diligent::IPipelineState* m_pPipelineState = nullptr;
+  };
+
   void FlushDeferredStateChanges();
 
   xiiGALDeviceD3D12&    m_GALDeviceD3D12;
@@ -111,7 +142,61 @@ private:
 
   Diligent::IDeviceContext* m_pContext = nullptr;
 
-  xiiGALBufferD3D12* m_pIndexBuffer = nullptr;
+  // Render Pass and Framebuffer
+  xiiGALRenderPassD3D12*  m_pRenderPass  = nullptr;
+  xiiGALFramebufferD3D12* m_pFramebuffer = nullptr;
+
+  // Pipeline state description
+  xiiEnum<xiiGALPrimitiveTopology> m_PrimitiveTopology;
+  xiiGALInputLayoutD3D12*          m_pInputLayout       = nullptr;
+  xiiGALBlendStateD3D12*           m_pBlendState        = nullptr;
+  xiiGALDepthStencilStateD3D12*    m_pDepthStencilState = nullptr;
+  xiiGALRasterizerStateD3D12*      m_pRasterizerState   = nullptr;
+
+  xiiHashTable<Diligent::GraphicsPipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash> m_CachedGraphicsPipelineStates;
+  xiiHashTable<Diligent::ComputePipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash>  m_CachedComputePipelineStates;
+
+  Diligent::IPipelineState*         m_pCurrentPipelineState         = nullptr;
+  Diligent::IShaderResourceBinding* m_pCurrentShaderResourceBinding = nullptr;
+
+  // Cache flags
+  bool m_bPipelineStateModified = true;
+  bool m_bViewportModified      = true;
+  bool m_bIndexBufferModified   = false;
+  bool m_bDescriptorsModified   = false;
+  bool m_bRenderPassActive      = false;
+  bool m_bIsComputeRequested    = false;
+  bool m_bClearSubmitted        = false;
+
+  // Viewport and Viewport scissor
+  Diligent::Viewport m_Viewport        = {};
+  Diligent::Rect     m_ScissorRect     = {};
+  bool               m_bScissorEnabled = false;
+
+  // Shader
+
+  xiiGALShaderD3D12* m_pCurrentShader = nullptr;
+
+  // Bound objects for deferred state flushes.
+  xiiGALBufferD3D12*    m_pIndexBuffer                                         = nullptr;
+  xiiGALBufferD3D12*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundVertexBuffersRange;
+
+  xiiGALBufferD3D12*    m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[XII_GAL_MAX_CONSTANT_BUFFER_COUNT];
+
+  xiiHybridArray<ShaderResourceViewDesc, 16U> m_pBoundShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
+  xiiGAL::ModifiedRange                       m_BoundShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiHybridArray<ShaderResourceViewDesc, 16U> m_pBoundUnorderedAccessViews;
+  xiiGAL::ModifiedRange                       m_BoundUnorderedAccessViewsRange;
+
+  xiiGALSamplerD3D12*   m_pBoundSamplers[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundSamplersRange[xiiGALShaderStage::ENUM_COUNT];
+
+  // Synchronization fences.
+  Diligent::RefCntAutoPtr<Diligent::IFence> m_pSynchronizationFence;
+  xiiUInt64                                 m_uiSynchronizationFenceCompletedValue = 0u;
 };
 
 #include <GraphicsD3D12/CommandEncoder/Implementation/CommandEncoderD3D12_inl.h>
