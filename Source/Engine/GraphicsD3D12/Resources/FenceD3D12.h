@@ -13,7 +13,7 @@ public:
 
   virtual void Wait(xiiUInt64 uiValue) override;
 
-  XII_ALWAYS_INLINE Diligent::IFence* GetFence() const;
+  Diligent::IFence* GetFence() const;
 
 protected:
   friend class xiiGALDeviceD3D12;

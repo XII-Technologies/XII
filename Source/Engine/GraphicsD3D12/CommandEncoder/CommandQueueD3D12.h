@@ -16,7 +16,7 @@ public:
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override;
 
-  XII_ALWAYS_INLINE const Diligent::ICommandQueue* GetCommandQueue() const;
+  const Diligent::ICommandQueue* GetCommandQueue() const;
 
 protected:
   friend class xiiGALDeviceD3D12;

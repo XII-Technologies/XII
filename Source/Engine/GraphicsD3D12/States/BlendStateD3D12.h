@@ -7,7 +7,7 @@
 class XII_GRAPHICSD3D12_DLL xiiGALBlendStateD3D12 : public xiiGALBlendState
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::BlendStateDesc* GetBlendState() const;
+  const Diligent::BlendStateDesc* GetBlendState() const;
 
 protected:
   friend class xiiGALDeviceD3D12;

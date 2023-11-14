@@ -19,7 +19,7 @@ public:
 
   virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) override;
 
-  XII_ALWAYS_INLINE Diligent::ISwapChain* GetSwapChain() const;
+  Diligent::ISwapChain* GetSwapChain() const;
 
 protected:
   friend class xiiGALDeviceD3D12;

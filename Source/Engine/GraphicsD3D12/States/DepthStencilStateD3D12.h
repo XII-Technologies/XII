@@ -7,7 +7,7 @@
 class XII_GRAPHICSD3D12_DLL xiiGALDepthStencilStateD3D12 : public xiiGALDepthStencilState
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::DepthStencilStateDesc* GetDepthStencilState() const;
+  const Diligent::DepthStencilStateDesc* GetDepthStencilState() const;
 
 protected:
   friend class xiiGALDeviceD3D12;

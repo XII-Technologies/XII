@@ -7,7 +7,7 @@
 class XII_GRAPHICSD3D12_DLL xiiGALCommandListD3D12 final : public xiiGALCommandList
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::ICommandList* GetCommandList() const;
+  Diligent::ICommandList* GetCommandList() const;
 
 protected:
   friend class xiiGALDeviceD3D12;

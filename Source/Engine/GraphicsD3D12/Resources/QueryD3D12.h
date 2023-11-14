@@ -11,7 +11,7 @@ public:
 
   virtual void Invalidate() override;
 
-  XII_ALWAYS_INLINE Diligent::IQuery* GetQuery() const;
+  Diligent::IQuery* GetQuery() const;
 
 protected:
   friend class xiiGALDeviceD3D12;

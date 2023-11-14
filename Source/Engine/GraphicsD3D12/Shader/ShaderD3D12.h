@@ -14,24 +14,24 @@ public:
   /// \brief This returns a pointer to the array of shader resources.
   virtual void GetResourceDescription(xiiUInt32 uiIndex, xiiGALShaderResourceDescription& out_ResourceDescription) const override;
 
-  XII_ALWAYS_INLINE Diligent::IShader* GetVertexShader() const;
-  XII_ALWAYS_INLINE Diligent::IShader* GetPixelShader() const;
-  XII_ALWAYS_INLINE Diligent::IShader* GetGeometryShader() const;
-  XII_ALWAYS_INLINE Diligent::IShader* GetHullShader() const;
-  XII_ALWAYS_INLINE Diligent::IShader* GetDomainShader() const;
-  XII_ALWAYS_INLINE Diligent::IShader* GetComputeShader() const;
-  XII_ALWAYS_INLINE Diligent::IShader* GetAmplificationShader() const;
-  XII_ALWAYS_INLINE Diligent::IShader* GetMeshShader() const;
-  XII_ALWAYS_INLINE Diligent::IShader* GetRayGenerationShader() const;
-  XII_ALWAYS_INLINE Diligent::IShader* GetRayMissShader() const;
-  XII_ALWAYS_INLINE Diligent::IShader* GetRayClosestHitShader() const;
-  XII_ALWAYS_INLINE Diligent::IShader* GetRayAnyHitShader() const;
-  XII_ALWAYS_INLINE Diligent::IShader* GetRayIntersectionShader() const;
-  XII_ALWAYS_INLINE Diligent::IShader* GetCallableShader() const;
+  Diligent::IShader* GetVertexShader() const;
+  Diligent::IShader* GetPixelShader() const;
+  Diligent::IShader* GetGeometryShader() const;
+  Diligent::IShader* GetHullShader() const;
+  Diligent::IShader* GetDomainShader() const;
+  Diligent::IShader* GetComputeShader() const;
+  Diligent::IShader* GetAmplificationShader() const;
+  Diligent::IShader* GetMeshShader() const;
+  Diligent::IShader* GetRayGenerationShader() const;
+  Diligent::IShader* GetRayMissShader() const;
+  Diligent::IShader* GetRayClosestHitShader() const;
+  Diligent::IShader* GetRayAnyHitShader() const;
+  Diligent::IShader* GetRayIntersectionShader() const;
+  Diligent::IShader* GetCallableShader() const;
 
-  XII_ALWAYS_INLINE xiiArrayPtr<Diligent::RefCntAutoPtr<Diligent::IPipelineResourceSignature>> GetResourceSignatures();
-  XII_ALWAYS_INLINE xiiArrayPtr<xiiGALVertexInputLayout> GetInputLayouts();
-  XII_ALWAYS_INLINE xiiArrayPtr<xiiGALShaderResourceBinding> GetShaderResourceBinding();
+  xiiArrayPtr<Diligent::RefCntAutoPtr<Diligent::IPipelineResourceSignature>> GetResourceSignatures();
+  xiiArrayPtr<xiiGALVertexInputLayout> GetInputLayouts();
+  xiiArrayPtr<xiiGALShaderResourceBinding> GetShaderResourceBinding();
 
 protected:
   friend class xiiGALDeviceD3D12;

@@ -7,7 +7,7 @@
 class XII_GRAPHICSD3D12_DLL xiiGALRenderPassD3D12 final : public xiiGALRenderPass
 {
 public:
-  XII_ALWAYS_INLINE Diligent::IRenderPass* GetRenderPass() const;
+  Diligent::IRenderPass* GetRenderPass() const;
 
 protected:
   friend class xiiGALDeviceD3D12;
