@@ -21,7 +21,9 @@ public:
 
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override;
 
-  XII_ALWAYS_INLINE Diligent::IBuffer* GetBuffer() const;
+  Diligent::IBuffer* GetBuffer() const;
+
+  Diligent::VALUE_TYPE GetIndexFormat() const;
 
 protected:
   friend class xiiGALDeviceD3D12;
@@ -37,6 +39,8 @@ protected:
 
 protected:
   Diligent::RefCntAutoPtr<Diligent::IBuffer> m_pBuffer;
+
+  Diligent::VALUE_TYPE m_IndexFormat = {}; // Strictly index buffers.
 };
 
 #include <GraphicsD3D12/Resources/Implementation/BufferD3D12_inl.h>

@@ -55,3 +55,8 @@ XII_ALWAYS_INLINE Diligent::IBuffer* xiiGALBufferD3D12::GetBuffer() const
 {
   return m_pBuffer;
 }
+
+XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiGALBufferD3D12::GetIndexFormat() const
+{
+  return m_IndexFormat;
+}

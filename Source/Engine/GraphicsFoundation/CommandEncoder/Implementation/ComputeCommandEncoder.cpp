@@ -31,7 +31,7 @@ void xiiGALComputeCommandEncoder::DispatchIndirect(xiiGALBufferHandle hIndirectA
   /// \todo Assert for indirect dispatch
   /// \todo Assert offset < buffer size
 
-  const xiiGALBuffer* pBuffer = GetDevice().GetBuffer(hIndirectArgumentBuffer);
+  xiiGALBuffer* pBuffer = GetDevice().GetBuffer(hIndirectArgumentBuffer);
   XII_ASSERT_DEV(pBuffer != nullptr, "Invalid buffer handle for indirect arguments!");
 
   XII_ASSERT_DEV(pBuffer->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The buffer must be created with the xiiGALBindFlags::IndirectDrawArguments bind flag.");

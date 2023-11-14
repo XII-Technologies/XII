@@ -28,6 +28,10 @@ xiiResult xiiGALBufferD3D12::InitPlatform(xiiGALDevice* pDevice, const xiiGALBuf
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
     bufferDescription.Size = xiiMemoryUtils::AlignSize(m_Description.m_uiSize, 64ULL);
 
+  // Set the index format for index buffers.
+  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::IndexBuffer))
+    m_IndexFormat = m_Description.m_uiSize == 2U ? Diligent::VT_UINT16 : Diligent::VT_UINT32;
+
   if (pInitialData != nullptr)
   {
     Diligent::BufferData initialData = {};

@@ -91,6 +91,8 @@ public:
   static xiiEnum<xiiGALResourceUsage>        GetGALUsage(Diligent::USAGE e);
   static xiiBitflags<xiiGALCPUAccessFlag>    GetGALCPUAccessFlags(Diligent::CPU_ACCESS_FLAGS e);
   static xiiBitflags<xiiGALMiscTextureFlags> GetGALMiscTextureFlags(Diligent::MISC_TEXTURE_FLAGS e);
+
+  static Diligent::MAP_FLAGS GetMapFlags(xiiBitflags<xiiGALMapFlags> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>

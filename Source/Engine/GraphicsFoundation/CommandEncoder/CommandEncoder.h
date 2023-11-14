@@ -26,16 +26,15 @@ public:
   void SetUnorderedAccessBufferView(xiiUInt32 uiSlot, xiiGALBufferViewHandle hUnorderedAccessBufferView);
   void SetUnorderedAccessTextureView(xiiUInt32 uiSlot, xiiGALTextureViewHandle hUnorderedAccessTextureView);
 
-  bool UnsetBufferView(const xiiGALBuffer* pBuffer);
-  bool UnsetTextureView(const xiiGALTexture* pTexture);
-  bool UnsetUnorderedAccessBufferView(const xiiGALBuffer* pBuffer);
-  bool UnsetUnorderedAccessTextureView(const xiiGALTexture* pTexture);
+  bool UnsetBufferView(xiiGALBuffer* pBuffer);
+  bool UnsetTextureView(xiiGALTexture* pTexture);
+  bool UnsetUnorderedAccessBufferView(xiiGALBuffer* pBuffer);
+  bool UnsetUnorderedAccessTextureView(xiiGALTexture* pTexture);
 
   // Query functions
 
-  void      BeginQuery(xiiGALQueryHandle hQuery);
-  void      EndQuery(xiiGALQueryHandle hQuery);
-  xiiResult GetQueryResult(xiiGALQueryHandle hQuery, void* pData);
+  void BeginQuery(xiiGALQueryHandle hQuery);
+  void EndQuery(xiiGALQueryHandle hQuery);
 
   // Fence functions
 
@@ -51,11 +50,11 @@ public:
   void UpdateBuffer(xiiGALBufferHandle hDestination, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard);
 
   void CopyTexture(xiiGALTextureHandle hDestination, xiiGALTextureHandle hSource);
-  void CopyTextureRegion(xiiGALTextureHandle hDestination, const xiiGALTextureSubResourceData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureSubResourceData& sourceSubResource, const xiiBoundingBoxu32& box);
-  void UpdateTexture(xiiGALTextureHandle hDestination, const xiiGALTextureSubResourceData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureData& sourceData);
-  void ResolveTexture(xiiGALTextureHandle hDestination, const xiiGALTextureSubResourceData& destinationSubResource, xiiGALTextureHandle hSource, const xiiGALTextureSubResourceData& sourceSubResource);
+  void CopyTextureRegion(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxu32& box);
+  void UpdateTexture(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALMappedTextureSubresource& sourceData);
+  void ResolveTexture(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, xiiGALTextureHandle hSource, const xiiGALTextureMipLevelData& sourceSubResource);
   void ReadbackTexture(xiiGALTextureHandle hTexture, xiiGALTextureHandle hStagingTexture);
-  void CopyTextureReadbackResult(xiiGALTextureHandle hTexture, xiiGALTextureHandle hStagingTexture, xiiArrayPtr<xiiGALTextureSubResourceData> sourceSubResource, xiiArrayPtr<xiiGALTextureData> targetData);
+  void CopyTextureReadbackResult(xiiGALTextureHandle hTexture, xiiGALTextureHandle hStagingTexture, xiiArrayPtr<xiiGALTextureMipLevelData> mipLevelData, xiiArrayPtr<xiiGALMappedTextureSubresource> targetData);
   void GenerateMipMaps(xiiGALTextureViewHandle hTextureView);
 
   // Miscellaneous

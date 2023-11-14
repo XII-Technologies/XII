@@ -60,7 +60,7 @@ void xiiGALGraphicsCommandEncoder::DrawIndexedInstancedIndirect(xiiGALBufferHand
   /// \todo Assert for indirect draw
   /// \todo Assert offset < buffer size
 
-  const xiiGALBuffer* pBuffer = GetDevice().GetBuffer(hIndirectArgumentBuffer);
+  xiiGALBuffer* pBuffer = GetDevice().GetBuffer(hIndirectArgumentBuffer);
   XII_ASSERT_DEV(pBuffer != nullptr, "Invalid buffer handle for indirect arguments!");
 
   XII_ASSERT_DEV(pBuffer->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The buffer must be created with the xiiGALBindFlags::IndirectDrawArguments bind flag.");
@@ -92,7 +92,7 @@ void xiiGALGraphicsCommandEncoder::DrawInstancedIndirect(xiiGALBufferHandle hInd
   /// \todo Assert for indirect draw
   /// \todo Assert offset < buffer size
 
-  const xiiGALBuffer* pBuffer = GetDevice().GetBuffer(hIndirectArgumentBuffer);
+  xiiGALBuffer* pBuffer = GetDevice().GetBuffer(hIndirectArgumentBuffer);
   XII_ASSERT_DEV(pBuffer != nullptr, "Invalid buffer handle for indirect arguments!");
 
   XII_ASSERT_DEV(pBuffer->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The buffer must be created with the xiiGALBindFlags::IndirectDrawArguments bind flag.");
@@ -100,22 +100,6 @@ void xiiGALGraphicsCommandEncoder::DrawInstancedIndirect(xiiGALBufferHandle hInd
   m_GraphicsImpl.DrawInstancedIndirectPlatform(pBuffer, uiArgumentOffsetInBytes);
 
   CountDrawCall();
-}
-
-void xiiGALGraphicsCommandEncoder::BeginStreamOut()
-{
-  AssertRenderingThread();
-
-  /// \todo Assert for streamout support
-
-  m_GraphicsImpl.BeginStreamOutPlatform();
-}
-
-void xiiGALGraphicsCommandEncoder::EndStreamOut()
-{
-  AssertRenderingThread();
-
-  m_GraphicsImpl.EndStreamOutPlatform();
 }
 
 void xiiGALGraphicsCommandEncoder::SetIndexBuffer(xiiGALBufferHandle hIndexBuffer)
@@ -126,7 +110,7 @@ void xiiGALGraphicsCommandEncoder::SetIndexBuffer(xiiGALBufferHandle hIndexBuffe
     return;
   }
 
-  const xiiGALBuffer* pBuffer = GetDevice().GetBuffer(hIndexBuffer);
+  xiiGALBuffer* pBuffer = GetDevice().GetBuffer(hIndexBuffer);
   XII_ASSERT_DEV(pBuffer != nullptr, "Invalid index buffer handle!");
 
   XII_ASSERT_DEV(pBuffer->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::IndexBuffer), "The buffer must be created with the xiiGALBindFlags::IndexBuffer bind flag.");
@@ -146,7 +130,7 @@ void xiiGALGraphicsCommandEncoder::SetVertexBuffer(xiiUInt32 uiSlot, xiiGALBuffe
     return;
   }
 
-  const xiiGALBuffer* pBuffer = GetDevice().GetBuffer(hVertexBuffer);
+  xiiGALBuffer* pBuffer = GetDevice().GetBuffer(hVertexBuffer);
   XII_ASSERT_DEV(pBuffer != nullptr, "Invalid vertex buffer handle!");
 
   XII_ASSERT_DEV(pBuffer->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::VertexBuffer), "The buffer must be created with the xiiGALBindFlags::VertexBuffer bind flag.");
@@ -168,7 +152,7 @@ void xiiGALGraphicsCommandEncoder::SetInputLayout(xiiGALInputLayoutHandle hInput
     return;
   }
 
-  const xiiGALInputLayout* pInputLayout = GetDevice().GetInputLayout(hInputLayout);
+  xiiGALInputLayout* pInputLayout = GetDevice().GetInputLayout(hInputLayout);
   XII_ASSERT_DEV(pInputLayout != nullptr, "Invalid input layout handle!");
 
   // Assert on vertex buffer type (if non-zero)
@@ -207,7 +191,7 @@ void xiiGALGraphicsCommandEncoder::SetBlendState(xiiGALBlendStateHandle hBlendSt
     return;
   }
 
-  const xiiGALBlendState* pBlendState = GetDevice().GetBlendState(hBlendState);
+  xiiGALBlendState* pBlendState = GetDevice().GetBlendState(hBlendState);
   XII_ASSERT_DEV(pBlendState != nullptr, "Invalid blend state handle!");
 
   m_GraphicsImpl.SetBlendStatePlatform(pBlendState, blendFactor, uiSampleMask);
@@ -229,7 +213,7 @@ void xiiGALGraphicsCommandEncoder::SetDepthStencilState(xiiGALDepthStencilStateH
     return;
   }
 
-  const xiiGALDepthStencilState* pDepthStencilState = GetDevice().GetDepthStencilState(hDepthStencilState);
+  xiiGALDepthStencilState* pDepthStencilState = GetDevice().GetDepthStencilState(hDepthStencilState);
   XII_ASSERT_DEV(pDepthStencilState != nullptr, "Invalid depth-stencil state handle!");
 
   m_GraphicsImpl.SetDepthStencilStatePlatform(pDepthStencilState, uiStencilRefValue);
@@ -250,7 +234,7 @@ void xiiGALGraphicsCommandEncoder::SetRasterizerState(xiiGALRasterizerStateHandl
     return;
   }
 
-  const xiiGALRasterizerState* pRasterizerState = GetDevice().GetRasterizerState(hRasterizerState);
+  xiiGALRasterizerState* pRasterizerState = GetDevice().GetRasterizerState(hRasterizerState);
   XII_ASSERT_DEV(pRasterizerState != nullptr, "Invalid rasterizer state handle!");
 
   m_GraphicsImpl.SetRasterizerStatePlatform(pRasterizerState);
@@ -292,13 +276,6 @@ void xiiGALGraphicsCommandEncoder::SetScissorRect(const xiiRectU32& rect)
   m_GraphicsImpl.SetScissorRectPlatform(rect);
 
   m_GraphicsState.m_ScissorRect = rect;
-
-  CountStateChange();
-}
-
-void xiiGALGraphicsCommandEncoder::SetStreamOutBuffer(xiiUInt32 uiSlot, xiiGALBufferHandle hBuffer, xiiUInt32 uiOffset)
-{
-  XII_ASSERT_NOT_IMPLEMENTED;
 
   CountStateChange();
 }

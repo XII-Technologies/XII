@@ -1613,3 +1613,20 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALMiscTextureFlags> xiiDiligentTypeConversions
 
   return miscTextureFlags;
 }
+
+XII_ALWAYS_INLINE Diligent::MAP_FLAGS xiiDiligentTypeConversions::GetMapFlags(xiiBitflags<xiiGALMapFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::MAP_FLAG_NONE;
+
+  Diligent::MAP_FLAGS mapFlags = {};
+
+  if (e.IsSet(xiiGALMapFlags::DoNotWait))
+    mapFlags |= Diligent::MAP_FLAG_DO_NOT_WAIT;
+  if (e.IsSet(xiiGALMapFlags::Discard))
+    mapFlags |= Diligent::MAP_FLAG_DISCARD;
+  if (e.IsSet(xiiGALMapFlags::NoOverWrite))
+    mapFlags |= Diligent::MAP_FLAG_NO_OVERWRITE;
+
+  return mapFlags;
+}

@@ -27,7 +27,7 @@ void xiiGALCommandEncoder::SetShader(xiiGALShaderHandle hShader)
     return;
   }
 
-  const xiiGALShader* pShader = m_Device.GetShader(hShader);
+  xiiGALShader* pShader = m_Device.GetShader(hShader);
   XII_ASSERT_DEV(pShader != nullptr, "The given shader handle is invalid, this may be a use after destroy!");
 
   m_CommonImpl.SetShaderPlatform(pShader);
@@ -49,7 +49,7 @@ void xiiGALCommandEncoder::SetConstantBuffer(xiiUInt32 uiSlot, xiiGALBufferHandl
     return;
   }
 
-  const xiiGALBuffer* pBuffer = m_Device.GetBuffer(hBuffer);
+  xiiGALBuffer* pBuffer = m_Device.GetBuffer(hBuffer);
   XII_ASSERT_DEV(pBuffer == nullptr || pBuffer->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer), "Expected xiiGALBindFlags::UniformBuffer bind flag on buffer.");
 
   m_CommonImpl.SetConstantBufferPlatform(uiSlot, pBuffer);
@@ -71,7 +71,7 @@ void xiiGALCommandEncoder::SetSampler(xiiBitflags<xiiGALShaderStage> stage, xiiU
     return;
   }
 
-  const xiiGALSampler* pSampler = m_Device.GetSampler(hSampler);
+  xiiGALSampler* pSampler = m_Device.GetSampler(hSampler);
 
   m_CommonImpl.SetSamplerPlatform(stage, uiSlot, pSampler);
 
@@ -93,7 +93,7 @@ void xiiGALCommandEncoder::SetBufferView(xiiBitflags<xiiGALShaderStage> stage, x
     return;
   }
 
-  const xiiGALBufferView* pBufferView = m_Device.GetBufferView(hBufferView);
+  xiiGALBufferView* pBufferView = m_Device.GetBufferView(hBufferView);
   if (pBufferView != nullptr)
   {
     if (UnsetUnorderedAccessBufferView(pBufferView->GetBuffer()))
@@ -127,7 +127,7 @@ void xiiGALCommandEncoder::SetTextureView(xiiBitflags<xiiGALShaderStage> stage, 
     return;
   }
 
-  const xiiGALTextureView* pTextureView = m_Device.GetTextureView(hTextureView);
+  xiiGALTextureView* pTextureView = m_Device.GetTextureView(hTextureView);
   if (pTextureView != nullptr)
   {
     if (UnsetUnorderedAccessTextureView(pTextureView->GetTexture()))
@@ -160,7 +160,7 @@ void xiiGALCommandEncoder::SetUnorderedAccessBufferView(xiiUInt32 uiSlot, xiiGAL
     return;
   }
 
-  const xiiGALBufferView* pUnorderedAccessBufferView = m_Device.GetBufferView(hUnorderedAccessBufferView);
+  xiiGALBufferView* pUnorderedAccessBufferView = m_Device.GetBufferView(hUnorderedAccessBufferView);
   if (pUnorderedAccessBufferView != nullptr)
   {
     if (UnsetBufferView(pUnorderedAccessBufferView->GetBuffer()))
@@ -192,7 +192,7 @@ void xiiGALCommandEncoder::SetUnorderedAccessTextureView(xiiUInt32 uiSlot, xiiGA
     return;
   }
 
-  const xiiGALTextureView* pUnorderedAccessTextureView = m_Device.GetTextureView(hUnorderedAccessTextureView);
+  xiiGALTextureView* pUnorderedAccessTextureView = m_Device.GetTextureView(hUnorderedAccessTextureView);
   if (pUnorderedAccessTextureView != nullptr)
   {
     if (UnsetTextureView(pUnorderedAccessTextureView->GetTexture()))
@@ -212,7 +212,7 @@ void xiiGALCommandEncoder::SetUnorderedAccessTextureView(xiiUInt32 uiSlot, xiiGA
   CountStateChange();
 }
 
-bool xiiGALCommandEncoder::UnsetBufferView(const xiiGALBuffer* pBuffer)
+bool xiiGALCommandEncoder::UnsetBufferView(xiiGALBuffer* pBuffer)
 {
   bool bResult = false;
 
@@ -235,7 +235,7 @@ bool xiiGALCommandEncoder::UnsetBufferView(const xiiGALBuffer* pBuffer)
   return bResult;
 }
 
-bool xiiGALCommandEncoder::UnsetTextureView(const xiiGALTexture* pTexture)
+bool xiiGALCommandEncoder::UnsetTextureView(xiiGALTexture* pTexture)
 {
   bool bResult = false;
 
@@ -258,7 +258,7 @@ bool xiiGALCommandEncoder::UnsetTextureView(const xiiGALTexture* pTexture)
   return bResult;
 }
 
-bool xiiGALCommandEncoder::UnsetUnorderedAccessBufferView(const xiiGALBuffer* pBuffer)
+bool xiiGALCommandEncoder::UnsetUnorderedAccessBufferView(xiiGALBuffer* pBuffer)
 {
   bool bResult = false;
 
@@ -278,7 +278,7 @@ bool xiiGALCommandEncoder::UnsetUnorderedAccessBufferView(const xiiGALBuffer* pB
   return bResult;
 }
 
-bool xiiGALCommandEncoder::UnsetUnorderedAccessTextureView(const xiiGALTexture* pTexture)
+bool xiiGALCommandEncoder::UnsetUnorderedAccessTextureView(xiiGALTexture* pTexture)
 {
   bool bResult = false;
 
@@ -318,21 +318,11 @@ void xiiGALCommandEncoder::EndQuery(xiiGALQueryHandle hQuery)
   m_CommonImpl.EndQueryPlatform(pQuery);
 }
 
-xiiResult xiiGALCommandEncoder::GetQueryResult(xiiGALQueryHandle hQuery, void* pData)
-{
-  AssertRenderingThread();
-
-  auto pQuery = m_Device.GetQuery(hQuery);
-  XII_ASSERT_DEV(!pQuery->m_bStarted, "Attempting to get data of query '{0}' that has not been ended.", pQuery->GetDescription().m_sName);
-
-  return m_CommonImpl.GetQueryResultPlatform(pQuery, pData);
-}
-
 void xiiGALCommandEncoder::ClearUnorderedAccessView(xiiGALBufferViewHandle hBufferView, xiiVec4 vClearValues)
 {
   AssertRenderingThread();
 
-  const xiiGALBufferView* pUnorderedAccessBufferView = m_Device.GetBufferView(hBufferView);
+  xiiGALBufferView* pUnorderedAccessBufferView = m_Device.GetBufferView(hBufferView);
   if (pUnorderedAccessBufferView == nullptr)
   {
     XII_REPORT_FAILURE("ClearUnorderedAccessView failed, unordered access buffer view handle invalid.");
@@ -346,7 +336,7 @@ void xiiGALCommandEncoder::ClearUnorderedAccessView(xiiGALTextureViewHandle hTex
 {
   AssertRenderingThread();
 
-  const xiiGALTextureView* pUnorderedAccessTextureView = m_Device.GetTextureView(hTextureView);
+  xiiGALTextureView* pUnorderedAccessTextureView = m_Device.GetTextureView(hTextureView);
   if (pUnorderedAccessTextureView == nullptr)
   {
     XII_REPORT_FAILURE("ClearUnorderedAccessView failed, unordered access texture view handle invalid.");
@@ -360,7 +350,7 @@ void xiiGALCommandEncoder::ClearUnorderedAccessView(xiiGALBufferViewHandle hBuff
 {
   AssertRenderingThread();
 
-  const xiiGALBufferView* pUnorderedAccessBufferView = m_Device.GetBufferView(hBufferView);
+  xiiGALBufferView* pUnorderedAccessBufferView = m_Device.GetBufferView(hBufferView);
   if (pUnorderedAccessBufferView == nullptr)
   {
     XII_REPORT_FAILURE("ClearUnorderedAccessView failed, unordered access buffer view handle invalid.");
@@ -374,7 +364,7 @@ void xiiGALCommandEncoder::ClearUnorderedAccessView(xiiGALTextureViewHandle hTex
 {
   AssertRenderingThread();
 
-  const xiiGALTextureView* pUnorderedAccessTextureView = m_Device.GetTextureView(hTextureView);
+  xiiGALTextureView* pUnorderedAccessTextureView = m_Device.GetTextureView(hTextureView);
   if (pUnorderedAccessTextureView == nullptr)
   {
     XII_REPORT_FAILURE("ClearUnorderedAccessView failed, unordered access texture view handle invalid.");
@@ -388,8 +378,8 @@ void xiiGALCommandEncoder::CopyBuffer(xiiGALBufferHandle hDestination, xiiGALBuf
 {
   AssertRenderingThread();
 
-  const xiiGALBuffer* pDestination = m_Device.GetBuffer(hDestination);
-  const xiiGALBuffer* pSource      = m_Device.GetBuffer(hSource);
+  xiiGALBuffer* pDestination = m_Device.GetBuffer(hDestination);
+  xiiGALBuffer* pSource      = m_Device.GetBuffer(hSource);
 
   if (pDestination != nullptr && pSource != nullptr)
   {
@@ -405,8 +395,8 @@ void xiiGALCommandEncoder::CopyBufferRegion(xiiGALBufferHandle hDestination, xii
 {
   AssertRenderingThread();
 
-  const xiiGALBuffer* pDestination = m_Device.GetBuffer(hDestination);
-  const xiiGALBuffer* pSource      = m_Device.GetBuffer(hSource);
+  xiiGALBuffer* pDestination = m_Device.GetBuffer(hDestination);
+  xiiGALBuffer* pSource      = m_Device.GetBuffer(hSource);
 
   if (pDestination != nullptr && pSource != nullptr)
   {
@@ -430,7 +420,7 @@ void xiiGALCommandEncoder::UpdateBuffer(xiiGALBufferHandle hDestination, xiiUInt
 
   XII_ASSERT_DEV(!sourceData.IsEmpty(), "Source data for buffer update is invalid!");
 
-  const xiiGALBuffer* pDestination = m_Device.GetBuffer(hDestination);
+  xiiGALBuffer* pDestination = m_Device.GetBuffer(hDestination);
 
   if (pDestination != nullptr)
   {
@@ -447,8 +437,8 @@ void xiiGALCommandEncoder::CopyTexture(xiiGALTextureHandle hDestination, xiiGALT
 {
   AssertRenderingThread();
 
-  const xiiGALTexture* pDestination = m_Device.GetTexture(hDestination);
-  const xiiGALTexture* pSource      = m_Device.GetTexture(hSource);
+  xiiGALTexture* pDestination = m_Device.GetTexture(hDestination);
+  xiiGALTexture* pSource      = m_Device.GetTexture(hSource);
 
   if (pDestination != nullptr && pSource != nullptr)
   {
@@ -460,12 +450,12 @@ void xiiGALCommandEncoder::CopyTexture(xiiGALTextureHandle hDestination, xiiGALT
   }
 }
 
-void xiiGALCommandEncoder::CopyTextureRegion(xiiGALTextureHandle hDestination, const xiiGALTextureSubResourceData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureSubResourceData& sourceSubResource, const xiiBoundingBoxu32& box)
+void xiiGALCommandEncoder::CopyTextureRegion(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxu32& box)
 {
   AssertRenderingThread();
 
-  const xiiGALTexture* pDestination = m_Device.GetTexture(hDestination);
-  const xiiGALTexture* pSource      = m_Device.GetTexture(hSource);
+  xiiGALTexture* pDestination = m_Device.GetTexture(hDestination);
+  xiiGALTexture* pSource      = m_Device.GetTexture(hSource);
 
   if (pDestination != nullptr && pSource != nullptr)
   {
@@ -477,11 +467,11 @@ void xiiGALCommandEncoder::CopyTextureRegion(xiiGALTextureHandle hDestination, c
   }
 }
 
-void xiiGALCommandEncoder::UpdateTexture(xiiGALTextureHandle hDestination, const xiiGALTextureSubResourceData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureData& sourceData)
+void xiiGALCommandEncoder::UpdateTexture(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALMappedTextureSubresource& sourceData)
 {
   AssertRenderingThread();
 
-  const xiiGALTexture* pDestination = m_Device.GetTexture(hDestination);
+  xiiGALTexture* pDestination = m_Device.GetTexture(hDestination);
 
   if (pDestination != nullptr)
   {
@@ -493,12 +483,12 @@ void xiiGALCommandEncoder::UpdateTexture(xiiGALTextureHandle hDestination, const
   }
 }
 
-void xiiGALCommandEncoder::ResolveTexture(xiiGALTextureHandle hDestination, const xiiGALTextureSubResourceData& destinationSubResource, xiiGALTextureHandle hSource, const xiiGALTextureSubResourceData& sourceSubResource)
+void xiiGALCommandEncoder::ResolveTexture(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, xiiGALTextureHandle hSource, const xiiGALTextureMipLevelData& sourceSubResource)
 {
   AssertRenderingThread();
 
-  const xiiGALTexture* pDestination = m_Device.GetTexture(hDestination);
-  const xiiGALTexture* pSource      = m_Device.GetTexture(hSource);
+  xiiGALTexture* pDestination = m_Device.GetTexture(hDestination);
+  xiiGALTexture* pSource      = m_Device.GetTexture(hSource);
 
   if (pDestination != nullptr && pSource != nullptr)
   {
@@ -514,8 +504,8 @@ void xiiGALCommandEncoder::ReadbackTexture(xiiGALTextureHandle hTexture, xiiGALT
 {
   AssertRenderingThread();
 
-  const xiiGALTexture* pTexture        = m_Device.GetTexture(hTexture);
-  const xiiGALTexture* pStagingTexture = m_Device.GetTexture(hStagingTexture);
+  xiiGALTexture* pTexture        = m_Device.GetTexture(hTexture);
+  xiiGALTexture* pStagingTexture = m_Device.GetTexture(hStagingTexture);
 
   if (pTexture != nullptr && pStagingTexture != nullptr)
   {
@@ -527,16 +517,16 @@ void xiiGALCommandEncoder::ReadbackTexture(xiiGALTextureHandle hTexture, xiiGALT
   }
 }
 
-void xiiGALCommandEncoder::CopyTextureReadbackResult(xiiGALTextureHandle hTexture, xiiGALTextureHandle hStagingTexture, xiiArrayPtr<xiiGALTextureSubResourceData> sourceSubResource, xiiArrayPtr<xiiGALTextureData> targetData)
+void xiiGALCommandEncoder::CopyTextureReadbackResult(xiiGALTextureHandle hTexture, xiiGALTextureHandle hStagingTexture, xiiArrayPtr<xiiGALTextureMipLevelData> mipLevelData, xiiArrayPtr<xiiGALMappedTextureSubresource> targetData)
 {
   AssertRenderingThread();
 
-  const xiiGALTexture* pTexture        = m_Device.GetTexture(hTexture);
-  const xiiGALTexture* pStagingTexture = m_Device.GetTexture(hStagingTexture);
+  xiiGALTexture* pTexture        = m_Device.GetTexture(hTexture);
+  xiiGALTexture* pStagingTexture = m_Device.GetTexture(hStagingTexture);
 
   if (pTexture != nullptr && pStagingTexture != nullptr)
   {
-    m_CommonImpl.CopyTextureReadbackResultPlatform(pTexture, pStagingTexture, sourceSubResource, targetData);
+    m_CommonImpl.CopyTextureReadbackResultPlatform(pTexture, pStagingTexture, mipLevelData, targetData);
   }
   else
   {
@@ -548,7 +538,7 @@ void xiiGALCommandEncoder::GenerateMipMaps(xiiGALTextureViewHandle hTextureView)
 {
   AssertRenderingThread();
 
-  const xiiGALTextureView* pTextureView = m_Device.GetTextureView(hTextureView);
+  xiiGALTextureView* pTextureView = m_Device.GetTextureView(hTextureView);
 
   if (pTextureView != nullptr)
   {

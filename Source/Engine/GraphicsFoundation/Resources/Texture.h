@@ -102,6 +102,15 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMappedTextureSubresource : public xiiHas
   xiiUInt64 m_uiDepthStride = 0U;      ///< For 3D textures, the depth stride in bytes.
 };
 
+/// \brief This describes the mapped texture sub-resource mip-level data.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureMipLevelData : public xiiHashableStruct<xiiGALTextureMipLevelData>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiUInt32 m_uiMipLevel   = 0U; ///<
+  xiiUInt32 m_uiArraySlice = 0U; ///<
+};
+
 /// \brief This describes the sparse texture properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureProperties : public xiiHashableStruct<xiiGALSparseTextureProperties>
 {

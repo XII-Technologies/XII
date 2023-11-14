@@ -28,9 +28,6 @@ public:
   void DrawInstanced(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex);
   void DrawInstancedIndirect(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
 
-  void BeginStreamOut();
-  void EndStreamOut();
-
   // State functions
 
   void SetIndexBuffer(xiiGALBufferHandle hIndexBuffer);
@@ -45,8 +42,6 @@ public:
 
   void SetViewport(const xiiRectFloat& rect, float fMinDepth = 0.0f, float fMaxDepth = 1.0f);
   void SetScissorRect(const xiiRectU32& rect);
-
-  void SetStreamOutBuffer(xiiUInt32 uiSlot, xiiGALBufferHandle hBuffer, xiiUInt32 uiOffset);
 
   virtual void ClearStatisticsCounters() override;
 
