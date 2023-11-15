@@ -85,4 +85,14 @@ void xiiGALRenderTargetSetup::DestroyAllAttachedViews()
   m_uiRTCount = 0;
 }
 
+bool xiiGALRenderingSetup::operator==(const xiiGALRenderingSetup& other) const
+{
+  return m_RenderTargetSetup == other.m_RenderTargetSetup && m_uiRenderTargetClearMask == other.m_uiRenderTargetClearMask && m_bClearDepth == other.m_bClearDepth && m_bClearStencil == other.m_bClearStencil && m_bDiscardColor == other.m_bDiscardColor && m_bDiscardDepth == other.m_bDiscardDepth;
+}
+
+bool xiiGALRenderingSetup::operator!=(const xiiGALRenderingSetup& other) const
+{
+  return !(*this == other);
+}
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_RenderTargetSetup);

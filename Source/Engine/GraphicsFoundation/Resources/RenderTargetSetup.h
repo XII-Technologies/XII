@@ -40,4 +40,17 @@ protected:
   xiiUInt8 m_uiRTCount = 0;
 };
 
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderingSetup
+{
+  bool operator==(const xiiGALRenderingSetup& other) const;
+  bool operator!=(const xiiGALRenderingSetup& other) const;
+
+  xiiGALRenderTargetSetup m_RenderTargetSetup;
+  xiiUInt32               m_uiRenderTargetClearMask = 0x0U;
+  bool                    m_bClearDepth             = false;
+  bool                    m_bClearStencil           = false;
+  bool                    m_bDiscardColor           = false;
+  bool                    m_bDiscardDepth           = false;
+};
+
 #include <GraphicsFoundation/Resources/Implementation/RenderTargetSetup_inl.h>

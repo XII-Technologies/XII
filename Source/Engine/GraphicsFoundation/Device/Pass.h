@@ -38,7 +38,7 @@ protected:
   virtual ~xiiGALPass();
 
 public:
-  xiiGALGraphicsCommandEncoder* BeginRendering(const xiiGALRenderPassCreationDescription& renderPassDescription);
+  xiiGALGraphicsCommandEncoder* BeginRendering(const xiiGALRenderingSetup& renderingSetup, xiiStringView sName = {});
   void                          EndRendering(xiiGALGraphicsCommandEncoder* pCommandEncoder);
 
   xiiGALComputeCommandEncoder* BeginCompute(xiiStringView sName = {});
@@ -74,14 +74,24 @@ protected:
     xiiGALFramebufferHandle hFrameBuffer;
   };
 
-  void GetRenderPassAndFramebuffer(const xiiGALRenderPassCreationDescription& renderPassDescription, xiiGALRenderPass* out_pRenderPass, xiiGALFramebuffer* out_pFramebuffer);
+  struct ResourceCacheHash
+  {
+    static xiiUInt32 Hash(const xiiGALRenderTargetSetup& renderTargetSetup);
+    static bool      Equal(const xiiGALRenderTargetSetup& a, const xiiGALRenderTargetSetup& b);
+
+    static xiiUInt32 Hash(const xiiGALRenderingSetup& renderingSetup);
+    static bool      Equal(const xiiGALRenderingSetup& a, const xiiGALRenderingSetup& b);
+  };
+
+  void GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPass* out_pRenderPass, xiiGALFramebuffer* out_pFramebuffer);
 
   xiiGALDevice& m_Device;
 
   bool                              m_bMarkerPushed             = false;
   xiiEnum<xiiGALCommandEncoderType> m_CurrentCommandEncoderType = xiiGALCommandEncoderType::Invalid;
 
-  xiiHashTable<xiiUInt32, RenderPassFrameBufferInfo> m_RenderPassFramebufferCache;
+  xiiHashTable<xiiGALRenderTargetSetup, xiiGALRenderPassHandle, xiiGALPass::ResourceCacheHash> m_RenderPassCache;
+  xiiHashTable<xiiGALRenderingSetup, RenderPassFrameBufferInfo, xiiGALPass::ResourceCacheHash> m_FramebufferCache;
 };
 
 #include <GraphicsFoundation/Device/Implementation/Pass_inl.h>
