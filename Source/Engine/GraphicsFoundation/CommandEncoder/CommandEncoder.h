@@ -65,7 +65,7 @@ public:
 
   void PushMarker(xiiStringView sMarker);
   void PopMarker();
-  void InsertEventMarker(xiiStringView sMarker);
+  void InsertEventMarker(xiiStringView sMarker, const xiiColor& color = xiiColor::White);
 
 public:
   xiiGALDevice& GetDevice();

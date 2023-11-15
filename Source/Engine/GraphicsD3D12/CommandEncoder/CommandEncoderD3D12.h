@@ -59,7 +59,7 @@ public:
 
   virtual void PushMarkerPlatform(xiiStringView sMarker) override;
   virtual void PopMarkerPlatform() override;
-  virtual void InsertEventMarkerPlatform(xiiStringView sMarker) override;
+  virtual void InsertEventMarkerPlatform(xiiStringView sMarker, const xiiColor& color) override;
 
   // xiiGALCommandEncoderGraphicsPlatformInterface
 

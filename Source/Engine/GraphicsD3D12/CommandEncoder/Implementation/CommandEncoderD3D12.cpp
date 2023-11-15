@@ -466,11 +466,9 @@ void xiiGALCommandEncoderD3D12::PopMarkerPlatform()
   m_pContext->EndDebugGroup();
 }
 
-void xiiGALCommandEncoderD3D12::InsertEventMarkerPlatform(xiiStringView sMarker)
+void xiiGALCommandEncoderD3D12::InsertEventMarkerPlatform(xiiStringView sMarker, const xiiColor& color)
 {
-  // TODO: Add support for debug label colours.
-
-  m_pContext->InsertDebugLabel(sMarker.GetStartPointer());
+  m_pContext->InsertDebugLabel(sMarker.GetStartPointer(), color.GetData());
 }
 
 void xiiGALCommandEncoderD3D12::ClearPlatform(const xiiColor& clearColor, xiiUInt32 uiRenderTargetClearMask, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)

@@ -54,9 +54,9 @@ public:
 
   // Debug helper functions
 
-  virtual void PushMarkerPlatform(xiiStringView sMarker)        = 0;
-  virtual void PopMarkerPlatform()                              = 0;
-  virtual void InsertEventMarkerPlatform(xiiStringView sMarker) = 0;
+  virtual void PushMarkerPlatform(xiiStringView sMarker)                               = 0;
+  virtual void PopMarkerPlatform()                                                     = 0;
+  virtual void InsertEventMarkerPlatform(xiiStringView sMarker, const xiiColor& color) = 0;
 };
 
 /// \brief The command encoder graphics platform interface.

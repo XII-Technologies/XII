@@ -576,13 +576,13 @@ void xiiGALCommandEncoder::PopMarker()
   m_CommonImpl.PopMarkerPlatform();
 }
 
-void xiiGALCommandEncoder::InsertEventMarker(xiiStringView sMarker)
+void xiiGALCommandEncoder::InsertEventMarker(xiiStringView sMarker, const xiiColor& color /* = xiiColor::White */)
 {
   AssertRenderingThread();
 
   XII_ASSERT_DEV(!sMarker.IsEmpty(), "Marker must not be empty.");
 
-  m_CommonImpl.InsertEventMarkerPlatform(sMarker);
+  m_CommonImpl.InsertEventMarkerPlatform(sMarker, color);
 }
 
 void xiiGALCommandEncoder::ClearStatisticsCounters()
