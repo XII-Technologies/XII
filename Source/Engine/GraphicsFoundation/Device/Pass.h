@@ -70,6 +70,8 @@ protected:
 protected:
   struct RenderPassFrameBufferInfo
   {
+    XII_DECLARE_POD_TYPE();
+
     xiiGALRenderPassHandle  hRenderPass;
     xiiGALFramebufferHandle hFrameBuffer;
   };

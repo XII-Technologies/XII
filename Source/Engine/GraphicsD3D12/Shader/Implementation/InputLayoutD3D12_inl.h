@@ -4,7 +4,7 @@ XII_ALWAYS_INLINE const Diligent::InputLayoutDesc* xiiGALInputLayoutD3D12::GetLa
   return &m_InputLayout;
 }
 
-XII_ALWAYS_INLINE xiiArrayPtr<const Diligent::LayoutElement> xiiGALInputLayoutD3D12::GetElements() const
+XII_ALWAYS_INLINE xiiArrayPtr<Diligent::LayoutElement> xiiGALInputLayoutD3D12::GetElements()
 {
   return m_InputElements;
 }

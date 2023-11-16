@@ -9,7 +9,7 @@ class XII_GRAPHICSD3D12_DLL xiiGALInputLayoutD3D12 : public xiiGALInputLayout
 public:
   const Diligent::InputLayoutDesc* GetLayout() const;
 
-  xiiArrayPtr<const Diligent::LayoutElement> GetElements() const;
+  xiiArrayPtr<Diligent::LayoutElement> GetElements();
 
 protected:
   friend class xiiGALDeviceD3D12;

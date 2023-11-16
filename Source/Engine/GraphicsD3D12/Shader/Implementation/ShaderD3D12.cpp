@@ -29,7 +29,6 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
 
   // Extract meta data and shader byte code.
   xiiArrayPtr<const xiiUInt8>                  pByteCodes[xiiGALShaderStage::ENUM_COUNT];
-  xiiDynamicArray<xiiGALShaderResourceBinding> resourceBindings[xiiGALShaderStage::ENUM_COUNT];
   xiiUInt32                                    uiBindingCount = 0U;
 
   for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
@@ -40,8 +39,8 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
     xiiArrayPtr<const xiiUInt8> metaData(reinterpret_cast<const xiiUInt8*>(m_Description.m_ByteCodes[i]->GetByteCode()), m_Description.m_ByteCodes[i]->GetSize());
 
     // Only the vertex shader stores inputlayouts, so passing in the array into other shaders is just a no op.
-    xiiShaderMetaData::Read(metaData, pByteCodes[i], resourceBindings[i], m_VertexInputLayouts);
-    uiBindingCount += resourceBindings[i].GetCount();
+    xiiShaderMetaData::Read(metaData, pByteCodes[i], m_ShaderResourceBindings[i], m_VertexInputLayouts);
+    uiBindingCount += m_ShaderResourceBindings[i].GetCount();
 
     Diligent::ShaderCreateInfo shaderDescription;
     shaderDescription.Desc.Name                    = m_Description.m_sName.GetStartPointer();
@@ -73,9 +72,12 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
 
   for (xiiUInt32 uiShaderStage = 0; uiShaderStage < xiiGALShaderStage::ENUM_COUNT; ++uiShaderStage)
   {
-    for (xiiUInt32 uiBindingIndex = 0; uiBindingIndex < m_ShaderResourceBindings.GetCount(); ++uiBindingIndex)
+    const auto& shaderResourceBinding = m_ShaderResourceBindings[uiShaderStage];
+    const xiiUInt32 uiShaderResourceBindingCount = shaderResourceBinding.GetCount();
+
+    for (xiiUInt32 uiBindingIndex = 0; uiBindingIndex < uiShaderResourceBindingCount; ++uiBindingIndex)
     {
-      xiiGALShaderResourceBinding&    resourceBinding     = m_ShaderResourceBindings[uiBindingIndex];
+      const xiiGALShaderResourceBinding&    resourceBinding     = shaderResourceBinding[uiBindingIndex];
       Diligent::PipelineResourceDesc& resourceDescription = resources[uiBindingIndex];
 
       resourceDescription.Name         = resourceBinding.m_sName.GetView().GetStartPointer();
@@ -124,8 +126,15 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
 
   for (xiiUInt32 i = 0; i < m_PipelineResourceSignatures.GetCount(); ++i)
   {
-    xiiLog::Error("Failed to create pipeline resource signature ({0}) for shader '{1}'.", i, m_Description.m_sName);
-    return XII_FAILURE;
+    if (m_PipelineResourceSignatures[i] == nullptr)
+    {
+      xiiLog::Error("Failed to create pipeline resource signature ({0}) for shader '{1}'.", i, m_Description.m_sName);
+      return XII_FAILURE;
+    }
+    else
+    {
+      m_PipelineResourceSignatures[i]->AddRef();
+    }
   }
 
   return XII_SUCCESS;
@@ -142,11 +151,15 @@ xiiResult xiiGALShaderD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 
   for (xiiUInt32 i = 0; i < m_PipelineResourceSignatures.GetCount(); ++i)
   {
-    XII_GAL_DILIGENT_REF_RELEASE(m_PipelineResourceSignatures[i]);
+    XII_GAL_DILIGENT_PTR_RELEASE(m_PipelineResourceSignatures[i]);
   }
 
   m_VertexInputLayouts.Clear();
-  m_ShaderResourceBindings.Clear();
+
+  for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
+  {
+    m_ShaderResourceBindings[i].Clear();
+  }
 
   return XII_SUCCESS;
 }

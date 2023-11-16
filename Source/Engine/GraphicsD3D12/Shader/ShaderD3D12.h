@@ -29,9 +29,9 @@ public:
   Diligent::IShader* GetRayIntersectionShader() const;
   Diligent::IShader* GetCallableShader() const;
 
-  xiiArrayPtr<Diligent::RefCntAutoPtr<Diligent::IPipelineResourceSignature>> GetResourceSignatures();
-  xiiArrayPtr<xiiGALVertexInputLayout>                                       GetInputLayouts();
-  xiiArrayPtr<xiiGALShaderResourceBinding>                                   GetShaderResourceBinding();
+  xiiArrayPtr<Diligent::IPipelineResourceSignature*> GetResourceSignatures();
+  xiiArrayPtr<xiiGALVertexInputLayout>               GetInputLayouts();
+  xiiArrayPtr<xiiGALShaderResourceBinding>           GetShaderResourceBinding(xiiBitflags<xiiGALShaderStage> e);
 
 protected:
   friend class xiiGALDeviceD3D12;
@@ -46,11 +46,11 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IShader>                                        m_pShaderStages[xiiGALShaderStage::ENUM_COUNT];
-  xiiHybridArray<Diligent::RefCntAutoPtr<Diligent::IPipelineResourceSignature>, 3U> m_PipelineResourceSignatures;
+  Diligent::RefCntAutoPtr<Diligent::IShader>                m_pShaderStages[xiiGALShaderStage::ENUM_COUNT];
+  xiiHybridArray<Diligent::IPipelineResourceSignature*, 3U> m_PipelineResourceSignatures;
 
   xiiHybridArray<xiiGALVertexInputLayout, 8U>  m_VertexInputLayouts;
-  xiiDynamicArray<xiiGALShaderResourceBinding> m_ShaderResourceBindings;
+  xiiDynamicArray<xiiGALShaderResourceBinding> m_ShaderResourceBindings[xiiGALShaderStage::ENUM_COUNT];
 };
 
 #include <GraphicsD3D12/Shader/Implementation/ShaderD3D12_inl.h>

@@ -1630,3 +1630,97 @@ XII_ALWAYS_INLINE Diligent::MAP_FLAGS xiiDiligentTypeConversions::GetMapFlags(xi
 
   return mapFlags;
 }
+
+XII_ALWAYS_INLINE Diligent::PRIMITIVE_TOPOLOGY xiiDiligentTypeConversions::GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e)
+{
+  switch (e)
+  {
+    case xiiGALPrimitiveTopology::Undefined:
+      return Diligent::PRIMITIVE_TOPOLOGY_UNDEFINED;
+    case xiiGALPrimitiveTopology::TriangleList:
+      return Diligent::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    case xiiGALPrimitiveTopology::TriangleStrip:
+      return Diligent::PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    case xiiGALPrimitiveTopology::PointList:
+      return Diligent::PRIMITIVE_TOPOLOGY_POINT_LIST;
+    case xiiGALPrimitiveTopology::LineList:
+      return Diligent::PRIMITIVE_TOPOLOGY_LINE_LIST;
+    case xiiGALPrimitiveTopology::LineStrip:
+      return Diligent::PRIMITIVE_TOPOLOGY_LINE_STRIP;
+    case xiiGALPrimitiveTopology::TriangleListAdjacent:
+      return Diligent::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_ADJ;
+    case xiiGALPrimitiveTopology::TrangleStripAdjacent:
+      return Diligent::PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ;
+    case xiiGALPrimitiveTopology::LineListAdjacent:
+      return Diligent::PRIMITIVE_TOPOLOGY_LINE_LIST_ADJ;
+    case xiiGALPrimitiveTopology::LineStripAdjacent:
+      return Diligent::PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ;
+    case xiiGALPrimitiveTopology::ControlPointPatchList1:
+      return Diligent::PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList2:
+      return Diligent::PRIMITIVE_TOPOLOGY_2_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList3:
+      return Diligent::PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList4:
+      return Diligent::PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList5:
+      return Diligent::PRIMITIVE_TOPOLOGY_5_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList6:
+      return Diligent::PRIMITIVE_TOPOLOGY_6_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList7:
+      return Diligent::PRIMITIVE_TOPOLOGY_7_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList8:
+      return Diligent::PRIMITIVE_TOPOLOGY_8_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList9:
+      return Diligent::PRIMITIVE_TOPOLOGY_9_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList10:
+      return Diligent::PRIMITIVE_TOPOLOGY_10_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList11:
+      return Diligent::PRIMITIVE_TOPOLOGY_11_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList12:
+      return Diligent::PRIMITIVE_TOPOLOGY_12_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList13:
+      return Diligent::PRIMITIVE_TOPOLOGY_13_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList14:
+      return Diligent::PRIMITIVE_TOPOLOGY_14_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList15:
+      return Diligent::PRIMITIVE_TOPOLOGY_15_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList16:
+      return Diligent::PRIMITIVE_TOPOLOGY_16_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList17:
+      return Diligent::PRIMITIVE_TOPOLOGY_17_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList18:
+      return Diligent::PRIMITIVE_TOPOLOGY_18_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList19:
+      return Diligent::PRIMITIVE_TOPOLOGY_19_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList20:
+      return Diligent::PRIMITIVE_TOPOLOGY_20_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList21:
+      return Diligent::PRIMITIVE_TOPOLOGY_21_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList22:
+      return Diligent::PRIMITIVE_TOPOLOGY_22_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList23:
+      return Diligent::PRIMITIVE_TOPOLOGY_23_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList24:
+      return Diligent::PRIMITIVE_TOPOLOGY_24_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList25:
+      return Diligent::PRIMITIVE_TOPOLOGY_25_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList26:
+      return Diligent::PRIMITIVE_TOPOLOGY_26_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList27:
+      return Diligent::PRIMITIVE_TOPOLOGY_27_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList28:
+      return Diligent::PRIMITIVE_TOPOLOGY_28_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList29:
+      return Diligent::PRIMITIVE_TOPOLOGY_29_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList30:
+      return Diligent::PRIMITIVE_TOPOLOGY_30_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList31:
+      return Diligent::PRIMITIVE_TOPOLOGY_31_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList32:
+      return Diligent::PRIMITIVE_TOPOLOGY_32_CONTROL_POINT_PATCHLIST;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::PRIMITIVE_TOPOLOGY_UNDEFINED;
+}

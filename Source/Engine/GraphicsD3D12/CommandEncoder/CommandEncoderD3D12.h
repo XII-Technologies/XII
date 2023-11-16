@@ -110,6 +110,8 @@ private:
 
   struct ShaderResourceViewDesc
   {
+    XII_DECLARE_POD_TYPE(); 
+
     enum Enum : xiiUInt8
     {
       Invalid,
@@ -118,8 +120,8 @@ private:
     };
 
     Enum                    m_Type = Invalid;
-    xiiGALBufferViewD3D12*  m_pBufferView;
-    xiiGALTextureViewD3D12* m_pTextureView;
+    Diligent::IBufferView*  m_pBufferView;
+    Diligent::ITextureView* m_pTextureView;
   };
 
   struct ResourceCacheHash
@@ -133,10 +135,16 @@ private:
 
   struct PipelineStateInfo
   {
-    Diligent::IPipelineState* m_pPipelineState = nullptr;
+    Diligent::IPipelineState*         m_pPipelineState;
+    Diligent::IShaderResourceBinding* m_pShaderResourceBinding;
   };
 
   void FlushDeferredStateChanges();
+
+  void FlushPipelineStateCache();
+
+  void BeginRenderPass();
+  void EndRenderPass();
 
   xiiGALDeviceD3D12&    m_GALDeviceD3D12;
   xiiGALCommandEncoder* m_pOwner = nullptr;
@@ -173,14 +181,16 @@ private:
   xiiGALShaderD3D12* m_pCurrentShader = nullptr;
 
   // Bound objects for deferred state flushes.
-  xiiGALBufferD3D12*    m_pIndexBuffer                                         = nullptr;
-  xiiGALBufferD3D12*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  Diligent::VALUE_TYPE  m_IndexFormat                                          = {};
+  xiiUInt64             m_uiIndexBufferByteOffset                              = 0U;
+  Diligent::IBuffer*    m_pIndexBuffer                                         = nullptr;
+  Diligent::IBuffer*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
   xiiGAL::ModifiedRange m_BoundVertexBuffersRange;
 
   xiiUInt32        m_VertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
   Diligent::Uint64 m_VertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 
-  xiiGALBufferD3D12*    m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
+  Diligent::IBuffer*    m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
   xiiGAL::ModifiedRange m_BoundConstantBuffersRange[XII_GAL_MAX_CONSTANT_BUFFER_COUNT];
 
   xiiHybridArray<ShaderResourceViewDesc, 16U> m_pBoundShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
@@ -189,7 +199,7 @@ private:
   xiiHybridArray<ShaderResourceViewDesc, 16U> m_pBoundUnorderedAccessViews;
   xiiGAL::ModifiedRange                       m_BoundUnorderedAccessViewsRange;
 
-  xiiGALSamplerD3D12*   m_pBoundSamplers[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
+  Diligent::ISampler*   m_pBoundSamplers[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
   xiiGAL::ModifiedRange m_BoundSamplersRange[xiiGALShaderStage::ENUM_COUNT];
 
   // Synchronization fences.

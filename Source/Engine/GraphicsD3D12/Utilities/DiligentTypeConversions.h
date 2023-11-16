@@ -93,6 +93,8 @@ public:
   static xiiBitflags<xiiGALMiscTextureFlags> GetGALMiscTextureFlags(Diligent::MISC_TEXTURE_FLAGS e);
 
   static Diligent::MAP_FLAGS GetMapFlags(xiiBitflags<xiiGALMapFlags> e);
+
+  static Diligent::PRIMITIVE_TOPOLOGY GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>
