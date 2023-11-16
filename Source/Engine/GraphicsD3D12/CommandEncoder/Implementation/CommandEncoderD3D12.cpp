@@ -914,7 +914,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
           graphicsPipelineDescription.InputLayout = *m_pInputLayout->GetLayout();
         }
 
-        if (!m_CachedGraphicsPipelineStates.TryGetValue(graphicsPipelineDescription, pipelineInfo))
+        if (!m_CachedGraphicsPipelineStates.TryGetValue(graphicsPipelineStateDescription, pipelineInfo))
         {
           m_GALDeviceD3D12.GetDevice()->CreatePipelineState(graphicsPipelineStateDescription, &pipelineInfo.m_pPipelineState);
 

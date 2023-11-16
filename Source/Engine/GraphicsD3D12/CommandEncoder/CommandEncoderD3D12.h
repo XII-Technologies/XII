@@ -135,6 +135,8 @@ private:
 
   struct PipelineStateInfo
   {
+    XII_DECLARE_POD_TYPE();
+
     Diligent::IPipelineState*         m_pPipelineState;
     Diligent::IShaderResourceBinding* m_pShaderResourceBinding;
   };
