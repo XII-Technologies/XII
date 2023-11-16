@@ -21,7 +21,7 @@ public:
   virtual void SetConstantBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pBuffer) override;
   virtual void SetSamplerPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALSampler* pSampler) override;
   virtual void SetBufferViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALBufferView* pBufferView) override;
-  virtual void SetTextureViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALTextureView* pRTextureView) override;
+  virtual void SetTextureViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALTextureView* pTextureView) override;
   virtual void SetUnorderedAccessBufferViewPlatform(xiiUInt32 uiSlot, xiiGALBufferView* pUnorderedAccessBufferView) override;
   virtual void SetUnorderedAccessTextureViewPlatform(xiiUInt32 uiSlot, xiiGALTextureView* pUnorderedAccessTextureView) override;
 
@@ -65,7 +65,8 @@ public:
 
   // Draw functions
 
-  virtual void ClearPlatform(const xiiColor& clearColor, xiiUInt32 uiRenderTargetClearMask, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) override;
+  virtual void ClearRenderTargetPlatform(xiiGALTextureView* pTextureView, const xiiColor& clearColor) override;
+  virtual void ClearDepthStencilPlatform(xiiGALTextureView* pTextureView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) override;
 
   virtual void DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex) override;
   virtual void DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex) override;
@@ -76,7 +77,7 @@ public:
 
   // State functions
 
-  virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer) override;
+  virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset) override;
   virtual void SetVertexBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pVertexBuffer) override;
   virtual void SetInputLayoutPlatform(xiiGALInputLayout* pInputLayout) override;
   virtual void SetPrimitiveTopologyPlatform(xiiEnum<xiiGALPrimitiveTopology> topology) override;
@@ -161,17 +162,11 @@ private:
 
   // Cache flags
   bool m_bPipelineStateModified = true;
-  bool m_bViewportModified      = true;
   bool m_bIndexBufferModified   = false;
   bool m_bDescriptorsModified   = false;
   bool m_bRenderPassActive      = false;
   bool m_bIsComputeRequested    = false;
   bool m_bClearSubmitted        = false;
-
-  // Viewport and Viewport scissor
-  Diligent::Viewport m_Viewport        = {};
-  Diligent::Rect     m_ScissorRect     = {};
-  bool               m_bScissorEnabled = false;
 
   // Shader
 
@@ -181,6 +176,9 @@ private:
   xiiGALBufferD3D12*    m_pIndexBuffer                                         = nullptr;
   xiiGALBufferD3D12*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
   xiiGAL::ModifiedRange m_BoundVertexBuffersRange;
+
+  xiiUInt32        m_VertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  Diligent::Uint64 m_VertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 
   xiiGALBufferD3D12*    m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
   xiiGAL::ModifiedRange m_BoundConstantBuffersRange[XII_GAL_MAX_CONSTANT_BUFFER_COUNT];

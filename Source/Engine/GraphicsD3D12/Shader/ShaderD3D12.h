@@ -30,8 +30,8 @@ public:
   Diligent::IShader* GetCallableShader() const;
 
   xiiArrayPtr<Diligent::RefCntAutoPtr<Diligent::IPipelineResourceSignature>> GetResourceSignatures();
-  xiiArrayPtr<xiiGALVertexInputLayout> GetInputLayouts();
-  xiiArrayPtr<xiiGALShaderResourceBinding> GetShaderResourceBinding();
+  xiiArrayPtr<xiiGALVertexInputLayout>                                       GetInputLayouts();
+  xiiArrayPtr<xiiGALShaderResourceBinding>                                   GetShaderResourceBinding();
 
 protected:
   friend class xiiGALDeviceD3D12;

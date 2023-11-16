@@ -15,11 +15,8 @@ public:
 public:
   // Draw functions
 
-  /// \brief Clears active rendertargets.
-  ///
-  /// \param uiRenderTargetClearMask
-  ///   Each bit represents a bound color target. If all bits are set, all bound color targets will be cleared.
-  void Clear(const xiiColor& clearColor, xiiUInt32 uiRenderTargetClearMask = 0xFFFFFFFFU, bool bClearDepth = true, bool bClearStencil = true, float fDepthClear = 1.0f, xiiUInt8 uiStencilClear = 0x0U);
+  void ClearRenderTarget(xiiGALTextureViewHandle hTextureView, const xiiColor& clearColor);
+  void ClearDepthStencil(xiiGALTextureViewHandle hTextureView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear);
 
   void Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex);
   void DrawIndexed(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex);
@@ -30,7 +27,7 @@ public:
 
   // State functions
 
-  void SetIndexBuffer(xiiGALBufferHandle hIndexBuffer);
+  void SetIndexBuffer(xiiGALBufferHandle hIndexBuffer, xiiUInt64 uiByteOffset);
   void SetVertexBuffer(xiiUInt32 uiSlot, xiiGALBufferHandle hVertexBuffer);
   void SetInputLayout(xiiGALInputLayoutHandle hInputLayout);
 

@@ -4,6 +4,7 @@
 #include <GraphicsD3D12/Resources/FramebufferD3D12.h>
 #include <GraphicsD3D12/Resources/RenderPassD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
+#include <GraphicsD3D12/Resources/TextureViewD3D12.h>
 
 xiiGALFramebufferD3D12::xiiGALFramebufferD3D12(const xiiGALFramebufferCreationDescription& creationDescription) :
   xiiGALFramebuffer(creationDescription)

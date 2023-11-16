@@ -14,13 +14,13 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandEncoderCommonPlatformInterface
 public:
   // State setting functions
 
-  virtual void SetShaderPlatform(xiiGALShader* pShader)                                                                         = 0;
-  virtual void SetConstantBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pBuffer)                                               = 0;
-  virtual void SetSamplerPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALSampler* pSampler)              = 0;
-  virtual void SetBufferViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALBufferView* pBufferView)     = 0;
-  virtual void SetTextureViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALTextureView* pRTextureView) = 0;
-  virtual void SetUnorderedAccessBufferViewPlatform(xiiUInt32 uiSlot, xiiGALBufferView* pUnorderedAccessBufferView)             = 0;
-  virtual void SetUnorderedAccessTextureViewPlatform(xiiUInt32 uiSlot, xiiGALTextureView* pUnorderedAccessTextureView)          = 0;
+  virtual void SetShaderPlatform(xiiGALShader* pShader)                                                                        = 0;
+  virtual void SetConstantBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pBuffer)                                              = 0;
+  virtual void SetSamplerPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALSampler* pSampler)             = 0;
+  virtual void SetBufferViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALBufferView* pBufferView)    = 0;
+  virtual void SetTextureViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALTextureView* pTextureView) = 0;
+  virtual void SetUnorderedAccessBufferViewPlatform(xiiUInt32 uiSlot, xiiGALBufferView* pUnorderedAccessBufferView)            = 0;
+  virtual void SetUnorderedAccessTextureViewPlatform(xiiUInt32 uiSlot, xiiGALTextureView* pUnorderedAccessTextureView)         = 0;
 
   // Query functions
 
@@ -65,7 +65,8 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandEncoderGraphicsPlatformInterface
 public:
   // Draw functions
 
-  virtual void ClearPlatform(const xiiColor& clearColor, xiiUInt32 uiRenderTargetClearMask, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) = 0;
+  virtual void ClearRenderTargetPlatform(xiiGALTextureView* pTextureView, const xiiColor& clearColor)                                                       = 0;
+  virtual void ClearDepthStencilPlatform(xiiGALTextureView* pTextureView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) = 0;
 
   virtual void DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)                                                     = 0;
   virtual void DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex)                                                = 0;
@@ -76,10 +77,10 @@ public:
 
   // State functions
 
-  virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer)                      = 0;
-  virtual void SetVertexBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pVertexBuffer)  = 0;
-  virtual void SetInputLayoutPlatform(xiiGALInputLayout* pInputLayout)                 = 0;
-  virtual void SetPrimitiveTopologyPlatform(xiiEnum<xiiGALPrimitiveTopology> topology) = 0;
+  virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset) = 0;
+  virtual void SetVertexBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pVertexBuffer)     = 0;
+  virtual void SetInputLayoutPlatform(xiiGALInputLayout* pInputLayout)                    = 0;
+  virtual void SetPrimitiveTopologyPlatform(xiiEnum<xiiGALPrimitiveTopology> topology)    = 0;
 
   virtual void SetBlendStatePlatform(xiiGALBlendState* pBlendState, const xiiColor& blendFactor, xiiUInt32 uiSampleMask) = 0;
   virtual void SetDepthStencilStatePlatform(xiiGALDepthStencilState* pDepthStencilState, xiiUInt8 uiStencilRefValue)     = 0;

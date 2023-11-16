@@ -13,11 +13,24 @@ xiiGALGraphicsCommandEncoder::xiiGALGraphicsCommandEncoder(xiiGALDevice& ref_dev
 
 xiiGALGraphicsCommandEncoder::~xiiGALGraphicsCommandEncoder() = default;
 
-void xiiGALGraphicsCommandEncoder::Clear(const xiiColor& clearColor, xiiUInt32 uiRenderTargetClearMask, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
+void xiiGALGraphicsCommandEncoder::ClearRenderTarget(xiiGALTextureViewHandle hTextureView, const xiiColor& clearColor)
 {
   AssertRenderingThread();
 
-  m_GraphicsImpl.ClearPlatform(clearColor, uiRenderTargetClearMask, bClearDepth, bClearStencil, fDepthClear, uiStencilClear);
+  /// \todo Verify texture view.
+  xiiGALTextureView* pTextureView = GetDevice().GetTextureView(hTextureView);
+
+  m_GraphicsImpl.ClearRenderTargetPlatform(pTextureView, clearColor);
+}
+
+void xiiGALGraphicsCommandEncoder::ClearDepthStencil(xiiGALTextureViewHandle hTextureView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
+{
+  AssertRenderingThread();
+
+  /// \todo Verify texture view.
+  xiiGALTextureView* pTextureView = GetDevice().GetTextureView(hTextureView);
+
+  m_GraphicsImpl.ClearDepthStencilPlatform(pTextureView, bClearDepth, bClearStencil, fDepthClear, uiStencilClear);
 }
 
 void xiiGALGraphicsCommandEncoder::Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -102,7 +115,7 @@ void xiiGALGraphicsCommandEncoder::DrawInstancedIndirect(xiiGALBufferHandle hInd
   CountDrawCall();
 }
 
-void xiiGALGraphicsCommandEncoder::SetIndexBuffer(xiiGALBufferHandle hIndexBuffer)
+void xiiGALGraphicsCommandEncoder::SetIndexBuffer(xiiGALBufferHandle hIndexBuffer, xiiUInt64 uiByteOffset)
 {
   if (m_GraphicsState.m_hIndexBuffer == hIndexBuffer)
   {
@@ -115,7 +128,7 @@ void xiiGALGraphicsCommandEncoder::SetIndexBuffer(xiiGALBufferHandle hIndexBuffe
 
   XII_ASSERT_DEV(pBuffer->GetDescription().m_BindFlags.IsSet(xiiGALBindFlags::IndexBuffer), "The buffer must be created with the xiiGALBindFlags::IndexBuffer bind flag.");
 
-  m_GraphicsImpl.SetIndexBufferPlatform(pBuffer);
+  m_GraphicsImpl.SetIndexBufferPlatform(pBuffer, uiByteOffset);
 
   m_GraphicsState.m_hIndexBuffer = hIndexBuffer;
 
@@ -124,6 +137,8 @@ void xiiGALGraphicsCommandEncoder::SetIndexBuffer(xiiGALBufferHandle hIndexBuffe
 
 void xiiGALGraphicsCommandEncoder::SetVertexBuffer(xiiUInt32 uiSlot, xiiGALBufferHandle hVertexBuffer)
 {
+  XII_ASSERT_DEV(uiSlot < XII_GAL_MAX_VERTEX_BUFFER_COUNT, "Invalid slot index.");
+
   if (m_GraphicsState.m_hVertexBuffers[uiSlot] == hVertexBuffer)
   {
     CountRedundantStateChange();

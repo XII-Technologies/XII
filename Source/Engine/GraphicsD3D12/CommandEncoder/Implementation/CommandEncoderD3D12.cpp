@@ -11,6 +11,8 @@
 #include <GraphicsD3D12/Resources/SamplerD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 #include <GraphicsD3D12/Resources/TextureViewD3D12.h>
+#include <GraphicsD3D12/Shader/InputLayoutD3D12.h>
+#include <GraphicsD3D12/Shader/ShaderD3D12.h>
 #include <GraphicsD3D12/States/BlendStateD3D12.h>
 #include <GraphicsD3D12/States/DepthStencilStateD3D12.h>
 #include <GraphicsD3D12/States/RasterizerStateD3D12.h>
@@ -65,35 +67,95 @@ xiiGALCommandEncoderD3D12::xiiGALCommandEncoderD3D12(xiiGALDeviceD3D12& deviceD3
 
 xiiGALCommandEncoderD3D12::~xiiGALCommandEncoderD3D12()
 {
+  m_uiSynchronizationFenceCompletedValue = 0U;
   XII_GAL_DILIGENT_REF_RELEASE(m_pSynchronizationFence);
 }
 
 void xiiGALCommandEncoderD3D12::SetShaderPlatform(xiiGALShader* pShader)
 {
+  auto pShaderD3D12 = static_cast<xiiGALShaderD3D12*>(pShader);
+
+  if (m_pCurrentShader != pShaderD3D12)
+  {
+    m_pCurrentShader = pShaderD3D12;
+
+    m_bPipelineStateModified = true;
+  }
 }
 
 void xiiGALCommandEncoderD3D12::SetConstantBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pBuffer)
 {
+  auto pBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pBuffer);
+
+  m_pBoundConstantBuffers[uiSlot] = pBufferD3D12;
+  m_bDescriptorsModified          = true;
+
+  for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  {
+    m_BoundConstantBuffersRange[stage].SetToIncludeValue(uiSlot);
+  }
 }
 
 void xiiGALCommandEncoderD3D12::SetSamplerPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALSampler* pSampler)
 {
+  auto pSamplerD3D12 = static_cast<xiiGALSamplerD3D12*>(pSampler);
+
+  m_pBoundSamplers[xiiGALShaderStage::GetStageIndex(stage)][uiSlot] = pSamplerD3D12;
+  m_bDescriptorsModified                                            = true;
+
+  m_BoundSamplersRange[xiiGALShaderStage::GetStageIndex(stage)].SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderD3D12::SetBufferViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALBufferView* pBufferView)
 {
+  auto            pBufferViewD3D12         = static_cast<xiiGALBufferViewD3D12*>(pBufferView);
+  const xiiUInt32 uiStage                  = xiiGALShaderStage::GetStageIndex(stage);
+  auto&           boundShaderResourceViews = m_pBoundShaderResourceViews[uiStage];
+
+  boundShaderResourceViews.EnsureCount(uiSlot + 1);
+
+  boundShaderResourceViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::BufferView, pBufferViewD3D12, nullptr};
+  m_bDescriptorsModified           = true;
+
+  m_BoundShaderResourceViewsRange[uiStage].SetToIncludeValue(uiSlot);
 }
 
-void xiiGALCommandEncoderD3D12::SetTextureViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALTextureView* pRTextureView)
+void xiiGALCommandEncoderD3D12::SetTextureViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALTextureView* pTextureView)
 {
+  auto            pTextureViewD3D12        = static_cast<xiiGALTextureViewD3D12*>(pTextureView);
+  const xiiUInt32 uiStage                  = xiiGALShaderStage::GetStageIndex(stage);
+  auto&           boundShaderResourceViews = m_pBoundShaderResourceViews[uiStage];
+
+  boundShaderResourceViews.EnsureCount(uiSlot + 1);
+
+  boundShaderResourceViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::TextureView, nullptr, pTextureViewD3D12};
+  m_bDescriptorsModified           = true;
+
+  m_BoundShaderResourceViewsRange[uiStage].SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderD3D12::SetUnorderedAccessBufferViewPlatform(xiiUInt32 uiSlot, xiiGALBufferView* pUnorderedAccessBufferView)
 {
+  auto pUnorderedAccessBufferViewD3D12 = static_cast<xiiGALBufferViewD3D12*>(pUnorderedAccessBufferView);
+
+  m_pBoundUnorderedAccessViews.EnsureCount(uiSlot + 1);
+
+  m_pBoundUnorderedAccessViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::BufferView, pUnorderedAccessBufferViewD3D12, nullptr};
+  m_bDescriptorsModified               = true;
+
+  m_BoundUnorderedAccessViewsRange.SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderD3D12::SetUnorderedAccessTextureViewPlatform(xiiUInt32 uiSlot, xiiGALTextureView* pUnorderedAccessTextureView)
 {
+  auto pUnorderedAccessTextureViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(pUnorderedAccessTextureView);
+
+  m_pBoundUnorderedAccessViews.EnsureCount(uiSlot + 1);
+
+  m_pBoundUnorderedAccessViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::TextureView, nullptr, pUnorderedAccessTextureViewD3D12};
+  m_bDescriptorsModified               = true;
+
+  m_BoundUnorderedAccessViewsRange.SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderD3D12::BeginQueryPlatform(xiiGALQuery* pQuery)
@@ -110,20 +172,26 @@ void xiiGALCommandEncoderD3D12::EndQueryPlatform(xiiGALQuery* pQuery)
   m_pContext->EndQuery(pQueryD3D12->GetQuery());
 }
 
+/// \todo GraphicsD3D12: Implement Unordered Access View Clear.
+
 void xiiGALCommandEncoderD3D12::ClearUnorderedAccessViewPlatform(xiiGALBufferView* pBufferView, xiiVec4 vClearValues)
 {
+  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiGALCommandEncoderD3D12::ClearUnorderedAccessViewPlatform(xiiGALTextureView* pTextureView, xiiVec4 vClearValues)
 {
+  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiGALCommandEncoderD3D12::ClearUnorderedAccessViewPlatform(xiiGALBufferView* pBufferView, xiiVec4U32 vClearValues)
 {
+  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiGALCommandEncoderD3D12::ClearUnorderedAccessViewPlatform(xiiGALTextureView* pTextureView, xiiVec4U32 vClearValues)
 {
+  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiGALCommandEncoderD3D12::CopyBufferPlatform(xiiGALBuffer* pDestination, xiiGALBuffer* pSource)
@@ -131,7 +199,7 @@ void xiiGALCommandEncoderD3D12::CopyBufferPlatform(xiiGALBuffer* pDestination, x
   auto pSourceBufferD3D12      = static_cast<xiiGALBufferD3D12*>(pSource);
   auto pDestinationBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pDestination);
 
-  m_pContext->CopyBuffer(pSourceBufferD3D12->GetBuffer(), 0U, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY, pDestinationBufferD3D12->GetBuffer(), 0U, pDestination->GetDescription().m_uiSize, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+  m_pContext->CopyBuffer(pSourceBufferD3D12->GetBuffer(), 0U, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, pDestinationBufferD3D12->GetBuffer(), 0U, pDestination->GetDescription().m_uiSize, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 void xiiGALCommandEncoderD3D12::CopyBufferRegionPlatform(xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, xiiGALBuffer* pSource, xiiUInt32 uiSourceOffset, xiiUInt32 uiByteCount)
@@ -139,7 +207,7 @@ void xiiGALCommandEncoderD3D12::CopyBufferRegionPlatform(xiiGALBuffer* pDestinat
   auto pSourceBufferD3D12      = static_cast<xiiGALBufferD3D12*>(pSource);
   auto pDestinationBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pDestination);
 
-  m_pContext->CopyBuffer(pSourceBufferD3D12->GetBuffer(), uiSourceOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY, pDestinationBufferD3D12->GetBuffer(), uiDestOffset, uiByteCount, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+  m_pContext->CopyBuffer(pSourceBufferD3D12->GetBuffer(), uiSourceOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, pDestinationBufferD3D12->GetBuffer(), uiDestOffset, uiByteCount, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 void xiiGALCommandEncoderD3D12::UpdateBufferPlatform(xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
@@ -158,7 +226,7 @@ void xiiGALCommandEncoderD3D12::UpdateBufferPlatform(xiiGALBuffer* pDestination,
   {
     case xiiGALResourceUsage::Default:
     {
-      m_pContext->UpdateBuffer(pDestinationBufferD3D12->GetBuffer(), uiDestOffset, sourceData.GetCount(), reinterpret_cast<const void*>(sourceData.GetPtr()), Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+      m_pContext->UpdateBuffer(pDestinationBufferD3D12->GetBuffer(), uiDestOffset, sourceData.GetCount(), reinterpret_cast<const void*>(sourceData.GetPtr()), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     }
     break;
     case xiiGALResourceUsage::Dynamic:
@@ -191,8 +259,8 @@ void xiiGALCommandEncoderD3D12::CopyTexturePlatform(xiiGALTexture* pDestination,
   Diligent::CopyTextureAttribs copyTextureDescription = {};
   copyTextureDescription.pSrcTexture                  = pSourceTexture->GetTexture();
   copyTextureDescription.pDstTexture                  = pDestinationTexture->GetTexture();
-  copyTextureDescription.SrcTextureTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
-  copyTextureDescription.DstTextureTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+  copyTextureDescription.SrcTextureTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  copyTextureDescription.DstTextureTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
   m_pContext->CopyTexture(copyTextureDescription);
 }
@@ -217,11 +285,11 @@ void xiiGALCommandEncoderD3D12::CopyTextureRegionPlatform(xiiGALTexture* pDestin
 
   copyTextureDescription.SrcMipLevel              = sourceSubResource.m_uiMipLevel;
   copyTextureDescription.SrcSlice                 = sourceSubResource.m_uiArraySlice;
-  copyTextureDescription.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+  copyTextureDescription.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
   copyTextureDescription.DstMipLevel              = destinationSubResource.m_uiMipLevel;
   copyTextureDescription.DstSlice                 = destinationSubResource.m_uiArraySlice;
-  copyTextureDescription.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+  copyTextureDescription.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
   copyTextureDescription.DstX                     = vDestinationPoint.x;
   copyTextureDescription.DstY                     = vDestinationPoint.y;
   copyTextureDescription.DstZ                     = vDestinationPoint.z;
@@ -263,7 +331,7 @@ void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestinatio
       subResData.Stride                      = uiRowPitch;
       subResData.DepthStride                 = uiSlicePitch;
 
-      m_pContext->UpdateTexture(pDestinationTextureD3D12->GetTexture(), destinationSubResource.m_uiMipLevel, destinationSubResource.m_uiArraySlice, subRegion, subResData, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+      m_pContext->UpdateTexture(pDestinationTextureD3D12->GetTexture(), destinationSubResource.m_uiMipLevel, destinationSubResource.m_uiArraySlice, subRegion, subResData, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     }
     break;
     case xiiGALResourceUsage::Dynamic:
@@ -334,11 +402,11 @@ void xiiGALCommandEncoderD3D12::ResolveTexturePlatform(xiiGALTexture* pDestinati
 
   ResolveTexAttribs.SrcMipLevel              = sourceSubResource.m_uiMipLevel;
   ResolveTexAttribs.SrcSlice                 = sourceSubResource.m_uiArraySlice;
-  ResolveTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+  ResolveTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
   ResolveTexAttribs.DstMipLevel              = destinationSubResource.m_uiMipLevel;
   ResolveTexAttribs.DstSlice                 = destinationSubResource.m_uiArraySlice;
-  ResolveTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+  ResolveTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
   m_pContext->ResolveTextureSubresource(pSourceTextureD3D12->GetTexture(), pDestinationTextureD3D12->GetTexture(), ResolveTexAttribs);
 }
@@ -359,8 +427,8 @@ void xiiGALCommandEncoderD3D12::ReadbackTexturePlatform(xiiGALTexture* pTexture,
 
     Diligent::ResolveTextureSubresourceAttribs resolveTextureSubresourceDescription;
     resolveTextureSubresourceDescription.Format                   = xiiDiligentTypeConversions::GetTextureFormat(textureDescription.m_Format);
-    resolveTextureSubresourceDescription.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
-    resolveTextureSubresourceDescription.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+    resolveTextureSubresourceDescription.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+    resolveTextureSubresourceDescription.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
     m_pContext->ResolveTextureSubresource(pTextureD3D12->GetTexture(), pStagingTextureD3D12->GetTexture(), resolveTextureSubresourceDescription);
   }
@@ -369,13 +437,17 @@ void xiiGALCommandEncoderD3D12::ReadbackTexturePlatform(xiiGALTexture* pTexture,
     Diligent::CopyTextureAttribs copyTextureDescription;
     copyTextureDescription.pSrcTexture              = pTextureD3D12->GetTexture();
     copyTextureDescription.pDstTexture              = pStagingTextureD3D12->GetTexture();
-    copyTextureDescription.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
-    copyTextureDescription.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+    copyTextureDescription.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+    copyTextureDescription.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
     m_pContext->CopyTexture(copyTextureDescription);
   }
 
-  /// \todo Add GPU Synchronization.
+  xiiUInt64 uiWaitValue = ++m_uiSynchronizationFenceCompletedValue;
+
+  m_pContext->EnqueueSignal(m_pSynchronizationFence, uiWaitValue);
+  m_pContext->Flush();
+  m_pSynchronizationFence->Wait(uiWaitValue);
 }
 
 xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel)
@@ -405,7 +477,11 @@ void xiiGALCommandEncoderD3D12::CopyTextureReadbackResultPlatform(xiiGALTexture*
     Diligent::MappedTextureSubresource mappedSubResource = {};
     m_pContext->MapTextureSubresource(pTextureD3D12->GetTexture(), subResourceData.m_uiMipLevel, subResourceData.m_uiArraySlice, Diligent::MAP_READ, Diligent::MAP_FLAG_DO_NOT_WAIT, nullptr, mappedSubResource);
 
-    /// \todo Wait for GPU to synchronize.
+    xiiUInt64 uiWaitValue = ++m_uiSynchronizationFenceCompletedValue;
+
+    m_pContext->EnqueueSignal(m_pSynchronizationFence, uiWaitValue);
+    m_pContext->Flush();
+    m_pSynchronizationFence->Wait(uiWaitValue);
 
     if (mappedSubResource.pData)
     {
@@ -471,8 +547,25 @@ void xiiGALCommandEncoderD3D12::InsertEventMarkerPlatform(xiiStringView sMarker,
   m_pContext->InsertDebugLabel(sMarker.GetStartPointer(), color.GetData());
 }
 
-void xiiGALCommandEncoderD3D12::ClearPlatform(const xiiColor& clearColor, xiiUInt32 uiRenderTargetClearMask, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
+void xiiGALCommandEncoderD3D12::ClearRenderTargetPlatform(xiiGALTextureView* pTextureView, const xiiColor& clearColor)
 {
+  auto pTextureViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(pTextureView);
+
+  m_pContext->ClearRenderTarget(pTextureViewD3D12->GetTextureView(), clearColor.GetData(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+}
+
+void xiiGALCommandEncoderD3D12::ClearDepthStencilPlatform(xiiGALTextureView* pTextureView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
+{
+  auto pTextureViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(pTextureView);
+
+  Diligent::CLEAR_DEPTH_STENCIL_FLAGS clearFlags = {};
+
+  if (bClearDepth)
+    clearFlags |= Diligent::CLEAR_DEPTH_FLAG;
+  if (bClearStencil)
+    clearFlags |= Diligent::CLEAR_STENCIL_FLAG;
+
+  m_pContext->ClearDepthStencil(pTextureViewD3D12->GetTextureView(), clearFlags, fDepthClear, uiStencilClear, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 void xiiGALCommandEncoderD3D12::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -532,10 +625,10 @@ void xiiGALCommandEncoderD3D12::DrawIndexedInstancedIndirectPlatform(xiiGALBuffe
   drawAttribs.Flags                            = Diligent::DRAW_FLAG_VERIFY_ALL;
   drawAttribs.DrawCount                        = 1U;
   drawAttribs.DrawArgsStride                   = sizeof(xiiUInt32) * 5U;
-  drawAttribs.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+  drawAttribs.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
   drawAttribs.pCounterBuffer                   = nullptr;
   drawAttribs.CounterOffset                    = 0U;
-  drawAttribs.CounterBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+  drawAttribs.CounterBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
   m_pContext->DrawIndexedIndirect(drawAttribs);
 }
@@ -566,48 +659,117 @@ void xiiGALCommandEncoderD3D12::DrawInstancedIndirectPlatform(xiiGALBuffer* pInd
   drawAttribs.Flags                            = Diligent::DRAW_FLAG_VERIFY_ALL;
   drawAttribs.DrawCount                        = 1U;
   drawAttribs.DrawArgsStride                   = sizeof(xiiUInt32) * 4U;
-  drawAttribs.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+  drawAttribs.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
   drawAttribs.pCounterBuffer                   = nullptr;
   drawAttribs.CounterOffset                    = 0U;
-  drawAttribs.CounterBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+  drawAttribs.CounterBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
   m_pContext->DrawIndirect(drawAttribs);
 }
 
-void xiiGALCommandEncoderD3D12::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer)
+void xiiGALCommandEncoderD3D12::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)
 {
+  auto pIndexBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pIndexBuffer);
+
+  if (m_pIndexBuffer != pIndexBufferD3D12)
+  {
+    m_pIndexBuffer         = pIndexBufferD3D12;
+    m_bIndexBufferModified = true;
+  }
 }
 
 void xiiGALCommandEncoderD3D12::SetVertexBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pVertexBuffer)
 {
+  auto pVertexBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pVertexBuffer);
+
+  if (m_pBoundVertexBuffers[uiSlot] != pVertexBufferD3D12)
+  {
+    m_pBoundVertexBuffers[uiSlot] = pVertexBufferD3D12;
+    m_bPipelineStateModified      = true;
+
+    m_BoundVertexBuffersRange.SetToIncludeValue(uiSlot);
+  }
 }
 
 void xiiGALCommandEncoderD3D12::SetInputLayoutPlatform(xiiGALInputLayout* pInputLayout)
 {
+  auto pInputLayoutD3D12 = static_cast<xiiGALInputLayoutD3D12*>(pInputLayout);
+
+  if (m_pInputLayout != pInputLayoutD3D12)
+  {
+    m_pInputLayout           = pInputLayoutD3D12;
+    m_bPipelineStateModified = true;
+  }
 }
 
 void xiiGALCommandEncoderD3D12::SetPrimitiveTopologyPlatform(xiiEnum<xiiGALPrimitiveTopology> topology)
 {
+  if (m_PrimitiveTopology != topology)
+  {
+    m_PrimitiveTopology      = topology;
+    m_bPipelineStateModified = true;
+  }
 }
 
 void xiiGALCommandEncoderD3D12::SetBlendStatePlatform(xiiGALBlendState* pBlendState, const xiiColor& blendFactor, xiiUInt32 uiSampleMask)
 {
+  auto pBlendStateD3D12 = static_cast<xiiGALBlendStateD3D12*>(pBlendState);
+
+  m_pContext->SetBlendFactors(blendFactor.GetData());
+
+  if (m_pBlendState != pBlendStateD3D12)
+  {
+    m_pBlendState            = pBlendStateD3D12;
+    m_bPipelineStateModified = true;
+  }
 }
 
 void xiiGALCommandEncoderD3D12::SetDepthStencilStatePlatform(xiiGALDepthStencilState* pDepthStencilState, xiiUInt8 uiStencilRefValue)
 {
+  auto pDepthStencilStateD3D12 = static_cast<xiiGALDepthStencilStateD3D12*>(pDepthStencilState);
+
+  m_pContext->SetStencilRef(uiStencilRefValue);
+
+  if (m_pDepthStencilState != pDepthStencilStateD3D12)
+  {
+    m_pDepthStencilState     = pDepthStencilStateD3D12;
+    m_bPipelineStateModified = true;
+  }
 }
 
 void xiiGALCommandEncoderD3D12::SetRasterizerStatePlatform(xiiGALRasterizerState* pRasterizerState)
 {
+  auto pRasterizerStateD3D12 = static_cast<xiiGALRasterizerStateD3D12*>(pRasterizerState);
+
+  if (m_pRasterizerState != pRasterizerStateD3D12)
+  {
+    m_pRasterizerState       = pRasterizerStateD3D12;
+    m_bPipelineStateModified = true;
+  }
 }
 
 void xiiGALCommandEncoderD3D12::SetViewportPlatform(const xiiRectFloat& rect, float fMinDepth, float fMaxDepth)
 {
+  Diligent::Viewport viewport;
+  viewport.TopLeftX = rect.x;
+  viewport.TopLeftY = rect.y;
+  viewport.Width    = rect.width;
+  viewport.Height   = rect.height;
+  viewport.MinDepth = fMinDepth;
+  viewport.MaxDepth = fMaxDepth;
+
+  m_pContext->SetViewports(1U, &viewport, rect.width, rect.height);
 }
 
 void xiiGALCommandEncoderD3D12::SetScissorRectPlatform(const xiiRectU32& rect)
 {
+  Diligent::Rect scissorRect;
+  scissorRect.left   = rect.x;
+  scissorRect.top    = rect.y;
+  scissorRect.right  = rect.x + rect.width;
+  scissorRect.bottom = rect.y + rect.height;
+
+  m_pContext->SetScissorRects(1U, &scissorRect, rect.width, rect.height);
 }
 
 void xiiGALCommandEncoderD3D12::DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
@@ -628,7 +790,7 @@ void xiiGALCommandEncoderD3D12::DispatchIndirectPlatform(xiiGALBuffer* pIndirect
 
   Diligent::DispatchComputeIndirectAttribs DispatchAttribs;
   DispatchAttribs.pAttribsBuffer                   = static_cast<xiiGALBufferD3D12*>(pIndirectArgumentBuffer)->GetBuffer();
-  DispatchAttribs.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY;
+  DispatchAttribs.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
   DispatchAttribs.DispatchArgsByteOffset           = uiArgumentOffsetInBytes;
 
   m_pContext->DispatchComputeIndirect(DispatchAttribs);
@@ -638,18 +800,36 @@ void xiiGALCommandEncoderD3D12::BeginRendering(xiiGALRenderPassD3D12* pRenderPas
 {
   m_pRenderPass  = pRenderPassD3D12;
   m_pFramebuffer = pFramebufferD3D12;
+
+  Diligent::BeginRenderPassAttribs renderPassBeginDescription;
+  renderPassBeginDescription.pRenderPass         = m_pRenderPass->GetRenderPass();
+  renderPassBeginDescription.pFramebuffer        = m_pFramebuffer->GetFramebuffer();
+  renderPassBeginDescription.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+
+  /// \todo Add render target optimized clear values.
+
+  m_pContext->BeginRenderPass(renderPassBeginDescription);
+  m_bRenderPassActive = true;
 }
 
 void xiiGALCommandEncoderD3D12::EndRendering()
 {
+  m_pContext->EndRenderPass();
+  m_bRenderPassActive = false;
+
+  m_pRenderPass  = nullptr;
+  m_pFramebuffer = nullptr;
 }
 
 void xiiGALCommandEncoderD3D12::BeginCompute()
 {
+  m_bIsComputeRequested    = true;
+  m_bPipelineStateModified = true;
 }
 
 void xiiGALCommandEncoderD3D12::EndCompute()
 {
+  m_bIsComputeRequested = false;
 }
 
 void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
