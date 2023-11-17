@@ -761,6 +761,107 @@ void xiiGALDeviceD3D12::WaitIdlePlatform()
 
 void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 {
+  const Diligent::GraphicsAdapterInfo& adapterInformation = m_pDevice->GetAdapterInfo();
+
+  m_AdapterDescription.m_sAdapterName = adapterInformation.Description;
+
+  switch (adapterInformation.Type)
+  {
+    case Diligent::ADAPTER_TYPE_UNKNOWN:
+      m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Unknown;
+      break;
+    case Diligent::ADAPTER_TYPE_SOFTWARE:
+      m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Software;
+      break;
+    case Diligent::ADAPTER_TYPE_INTEGRATED:
+      m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Integrated;
+      break;
+    case Diligent::ADAPTER_TYPE_DISCRETE:
+      m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Discrete;
+      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  switch (adapterInformation.Vendor)
+  {
+    case Diligent::ADAPTER_VENDOR_UNKNOWN:
+      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Unknown;
+      break;
+    case Diligent::ADAPTER_VENDOR_NVIDIA:
+      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Nvidia;
+      break;
+    case Diligent::ADAPTER_VENDOR_AMD:
+      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::AMD;
+      break;
+    case Diligent::ADAPTER_VENDOR_INTEL:
+      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Intel;
+      break;
+    case Diligent::ADAPTER_VENDOR_ARM:
+      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::ARM;
+      break;
+    case Diligent::ADAPTER_VENDOR_QUALCOMM:
+      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Qualcomm;
+      break;
+    case Diligent::ADAPTER_VENDOR_IMGTECH:
+      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::ImaginationTechnologies;
+      break;
+    case Diligent::ADAPTER_VENDOR_MSFT:
+      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Microsoft;
+      break;
+    case Diligent::ADAPTER_VENDOR_APPLE:
+      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Apple;
+      break;
+    case Diligent::ADAPTER_VENDOR_MESA:
+      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Mesa;
+      break;
+    case Diligent::ADAPTER_VENDOR_BROADCOM:
+      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Broadcom;
+      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  m_AdapterDescription.m_uiVendorID         = adapterInformation.VendorId;
+  m_AdapterDescription.m_uiDeviceID         = adapterInformation.DeviceId;
+  m_AdapterDescription.m_uiVideoOutputCount = adapterInformation.NumOutputs;
+
+  // Memory properties
+
+  m_AdapterDescription.m_MemoryProperties.m_uiLocalMemory = adapterInformation.Memory.LocalMemory;
+  m_AdapterDescription.m_MemoryProperties.m_uiHostVisibleMemory = adapterInformation.Memory.HostVisibleMemory;
+  m_AdapterDescription.m_MemoryProperties.m_uiUnifiedMemory = adapterInformation.Memory.UnifiedMemory;
+  m_AdapterDescription.m_MemoryProperties.m_uiMaxMemoryAllocation = adapterInformation.Memory.MaxMemoryAllocation;
+
+  if (adapterInformation.Memory.UnifiedMemoryCPUAccess & Diligent::CPU_ACCESS_READ)
+    m_AdapterDescription.m_MemoryProperties.m_UnifiedMemoryCPUAccessFlags |= xiiGALCPUAccessFlag::Read;
+  if (adapterInformation.Memory.UnifiedMemoryCPUAccess & Diligent::CPU_ACCESS_WRITE)
+    m_AdapterDescription.m_MemoryProperties.m_UnifiedMemoryCPUAccessFlags |= xiiGALCPUAccessFlag::Write;
+
+  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_VERTEX_BUFFER)
+    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::VertexBuffer;
+  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_INDEX_BUFFER)
+    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::IndexBuffer;
+  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_UNIFORM_BUFFER)
+    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::UniformBuffer;
+  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_SHADER_RESOURCE)
+    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::ShaderResource;
+  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_STREAM_OUTPUT)
+    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::StreamOutput;
+  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_RENDER_TARGET)
+    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::RenderTarget;
+  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_DEPTH_STENCIL)
+    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::DepthStencil;
+  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_INDIRECT_DRAW_ARGS)
+    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::IndirectDrawArguments;
+  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_INPUT_ATTACHMENT)
+    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::InputAttachment;
+  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_RAY_TRACING)
+    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::RayTracing;
+  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_SHADING_RATE)
+    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::ShadingRate;
+
+  // Raytracing properties
 }
 
 void xiiGALDeviceD3D12::FillFormatLookupTable()
