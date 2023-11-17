@@ -95,6 +95,8 @@ public:
   static Diligent::MAP_FLAGS GetMapFlags(xiiBitflags<xiiGALMapFlags> e);
 
   static Diligent::PRIMITIVE_TOPOLOGY GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e);
+
+  static xiiEnum<xiiGALDeviceFeatureState> GetGALDeviceFeatureState(Diligent::DEVICE_FEATURE_STATE e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>

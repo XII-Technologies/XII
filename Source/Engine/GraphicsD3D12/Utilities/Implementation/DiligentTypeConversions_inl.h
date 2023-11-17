@@ -1724,3 +1724,17 @@ XII_ALWAYS_INLINE Diligent::PRIMITIVE_TOPOLOGY xiiDiligentTypeConversions::GetPr
   }
   return Diligent::PRIMITIVE_TOPOLOGY_UNDEFINED;
 }
+
+XII_ALWAYS_INLINE xiiEnum<xiiGALDeviceFeatureState> xiiDiligentTypeConversions::GetGALDeviceFeatureState(Diligent::DEVICE_FEATURE_STATE e)
+{
+  switch (e)
+  {
+    case Diligent::DEVICE_FEATURE_STATE_DISABLED:
+      return xiiGALDeviceFeatureState::Disabled;
+    case Diligent::DEVICE_FEATURE_STATE_ENABLED:
+      return xiiGALDeviceFeatureState::Enabled;
+    case Diligent::DEVICE_FEATURE_STATE_OPTIONAL:
+      return xiiGALDeviceFeatureState::Optional;
+  }
+  return xiiEnum<xiiGALDeviceFeatureState>();
+}

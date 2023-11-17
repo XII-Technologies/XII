@@ -1341,7 +1341,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceCapabilityFlags
     NonResidentSafe          = XII_BIT(16), ///< Reads or writes from unbound memory must not cause device removal.
     MixedResourceTypeSupport = XII_BIT(17), ///< Indicates that single device memory object can be used to bind memory for different resource types.
 
-    ENUM_COUNT = 20U,
+    ENUM_COUNT = 18U,
 
     Default = None
   };
