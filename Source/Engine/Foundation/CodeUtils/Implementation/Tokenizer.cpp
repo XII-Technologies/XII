@@ -434,7 +434,7 @@ void xiiTokenizer::HandleNumber()
     NextChar();
 
     xiiUInt32 uiDigitsRead = 0;
-    while (xiiStringUtils::IsHexDigit(m_uiCurChar) || m_uiCurChar == '\'') // Integer literal (Eg. 100'000).
+    while (xiiStringUtils::IsHexDigit(m_uiCurChar))
     {
       NextChar();
       ++uiDigitsRead;
@@ -449,7 +449,7 @@ void xiiTokenizer::HandleNumber()
   {
     NextChar();
 
-    while (xiiStringUtils::IsDecimalDigit(m_uiCurChar))
+    while (xiiStringUtils::IsDecimalDigit(m_uiCurChar) || m_uiCurChar == '\'') // Integer literal (e.g. 100'000).
     {
       NextChar();
     }
@@ -662,7 +662,5 @@ xiiResult xiiTokenizer::GetNextLine(xiiUInt32& ref_uiFirstToken, xiiHybridArray<
 
   return XII_SUCCESS;
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Implementation_Tokenizer);
