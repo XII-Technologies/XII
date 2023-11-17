@@ -38,9 +38,35 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGameObject, xiiNoBase, 1, xiiRTTINoAllocator)
   XII_BEGIN_FUNCTIONS
   {
     XII_SCRIPT_FUNCTION_PROPERTY(IsActive),
+    XII_SCRIPT_FUNCTION_PROPERTY(SetCreatedByPrefab),
+    XII_SCRIPT_FUNCTION_PROPERTY(WasCreatedByPrefab),
 
-    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_FindChildByName, In, "Name", In, "Recursive")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(HasName, In, "Name"),
+
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_GetParent),
+    XII_SCRIPT_FUNCTION_PROPERTY(FindChildByName, In, "Name", In, "Recursive")->AddFlags(xiiPropertyFlags::Const),
     XII_SCRIPT_FUNCTION_PROPERTY(FindChildByPath, In, "Path")->AddFlags(xiiPropertyFlags::Const),
+
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_SetGlobalPosition, In, "Position"),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetGlobalPosition),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_SetGlobalRotation, In, "Rotation"),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetGlobalRotation),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_SetGlobalScaling, In, "Scaling"),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetGlobalScaling),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_SetGlobalTransform, In, "Transform"),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetGlobalTransform),
+
+    XII_SCRIPT_FUNCTION_PROPERTY(GetGlobalDirForwards),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetGlobalDirRight),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetGlobalDirUp),
+
+#if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
+    XII_SCRIPT_FUNCTION_PROPERTY(GetLinearVelocity),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetAngularVelocity),
+#endif
+
+    XII_SCRIPT_FUNCTION_PROPERTY(SetTeamID, In, "Id"),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetTeamID),    
   }
   XII_END_FUNCTIONS;
   XII_BEGIN_MESSAGEHANDLERS
@@ -145,9 +171,29 @@ void xiiGameObject::Reflection_SetMode(xiiObjectMode::Enum mode)
   }
 }
 
-xiiGameObject* xiiGameObject::Reflection_FindChildByName(xiiStringView sName, bool bRecursive)
+xiiGameObject* xiiGameObject::Reflection_GetParent() const
 {
-  return FindChildByName(xiiTempHashedString(sName), bRecursive);
+  return GetWorld()->GetObjectUnchecked(m_uiParentIndex);
+}
+
+void xiiGameObject::Reflection_SetGlobalPosition(const xiiVec3& vPosition)
+{
+  SetGlobalPosition(vPosition);
+}
+
+void xiiGameObject::Reflection_SetGlobalRotation(const xiiQuat& qRotation)
+{
+  SetGlobalRotation(qRotation);
+}
+
+void xiiGameObject::Reflection_SetGlobalScaling(const xiiVec3& vScaling)
+{
+  SetGlobalScaling(vScaling);
+}
+
+void xiiGameObject::Reflection_SetGlobalTransform(const xiiTransform& transform)
+{
+  SetGlobalTransform(transform);
 }
 
 bool xiiGameObject::DetermineDynamicMode(xiiComponent* pComponentToIgnore /*= nullptr*/) const
@@ -944,7 +990,7 @@ void xiiGameObject::PostMessageRecursive(const xiiMessage& msg, xiiTime delay, x
   GetWorld()->PostMessageRecursive(GetHandle(), msg, delay, queueType);
 }
 
-void xiiGameObject::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent)
+bool xiiGameObject::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent)
 {
   if (auto pEventMsg = xiiDynamicCast<xiiEventMessage*>(&ref_msg))
   {
@@ -964,13 +1010,15 @@ void xiiGameObject::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pS
   }
 #endif
 
+  bool bResult = false;
   for (auto pEventMsgHandler : eventMsgHandlers)
   {
-    pEventMsgHandler->SendMessage(ref_msg);
+    bResult |= pEventMsgHandler->SendMessage(ref_msg);
   }
+  return bResult;
 }
 
-void xiiGameObject::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent) const
+bool xiiGameObject::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent) const
 {
   if (auto pEventMsg = xiiDynamicCast<xiiEventMessage*>(&ref_msg))
   {
@@ -980,10 +1028,12 @@ void xiiGameObject::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pS
   xiiHybridArray<const xiiComponent*, 4> eventMsgHandlers;
   GetWorld()->FindEventMsgHandlers(ref_msg, this, eventMsgHandlers);
 
+  bool bResult = false;
   for (auto pEventMsgHandler : eventMsgHandlers)
   {
-    pEventMsgHandler->SendMessage(ref_msg);
+    bResult |= pEventMsgHandler->SendMessage(ref_msg);
   }
+  return bResult;
 }
 
 void xiiGameObject::PostEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent, xiiTime delay, xiiObjectMsgQueueType::Enum queueType) const
@@ -998,7 +1048,7 @@ void xiiGameObject::PostEventMessage(xiiMessage& ref_msg, const xiiComponent* pS
 
   for (auto pEventMsgHandler : eventMsgHandlers)
   {
-    pEventMsgHandler->PostMessage(ref_msg);
+    pEventMsgHandler->PostMessage(ref_msg, delay, queueType);
   }
 }
 

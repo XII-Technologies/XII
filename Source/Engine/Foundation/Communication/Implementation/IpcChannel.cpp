@@ -5,7 +5,6 @@
 #include <Foundation/Communication/IpcChannel.h>
 #include <Foundation/Communication/RemoteMessage.h>
 #include <Foundation/Logging/Log.h>
-#include <Foundation/Serialization/ReflectionSerializer.h>
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
 #  include <Foundation/Communication/Implementation/Win/PipeChannel_win.h>
@@ -13,21 +12,23 @@
 #  include <Foundation/Communication/Implementation/Linux/PipeChannel_linux.h>
 #endif
 
+XII_CHECK_AT_COMPILETIME((xiiInt32)xiiIpcChannel::ConnectionState::Disconnected == (xiiInt32)xiiIpcChannelEvent::Disconnected);
+XII_CHECK_AT_COMPILETIME((xiiInt32)xiiIpcChannel::ConnectionState::Connecting == (xiiInt32)xiiIpcChannelEvent::Connecting);
+XII_CHECK_AT_COMPILETIME((xiiInt32)xiiIpcChannel::ConnectionState::Connected == (xiiInt32)xiiIpcChannelEvent::Connected);
+
 xiiIpcChannel::xiiIpcChannel(xiiStringView sAddress, Mode::Enum mode) :
-  m_Mode(mode), m_pOwner(xiiMessageLoop::GetSingleton())
+  m_sAddress(sAddress), m_Mode(mode), m_pOwner(xiiMessageLoop::GetSingleton())
 {
 }
 
 xiiIpcChannel::~xiiIpcChannel()
 {
-  xiiDeque<xiiUniquePtr<xiiProcessMessage>> messages;
-  SwapWorkQueue(messages);
-  messages.Clear();
+
 
   m_pOwner->RemoveChannel(this);
 }
 
-xiiIpcChannel* xiiIpcChannel::CreatePipeChannel(xiiStringView sAddress, Mode::Enum mode)
+xiiInternal::NewInstance<xiiIpcChannel> xiiIpcChannel::CreatePipeChannel(xiiStringView sAddress, Mode::Enum mode)
 {
   if (sAddress.IsEmpty() || sAddress.GetElementCount() > 200)
   {
@@ -46,7 +47,7 @@ xiiIpcChannel* xiiIpcChannel::CreatePipeChannel(xiiStringView sAddress, Mode::En
 }
 
 
-xiiIpcChannel* xiiIpcChannel::CreateNetworkChannel(xiiStringView sAddress, Mode::Enum mode)
+xiiInternal::NewInstance<xiiIpcChannel> xiiIpcChannel::CreateNetworkChannel(xiiStringView sAddress, Mode::Enum mode)
 {
 #ifdef BUILDSYSTEM_ENABLE_ENET_SUPPORT
   return XII_DEFAULT_NEW(xiiIpcChannelEnet, sAddress, mode);
@@ -71,81 +72,80 @@ void xiiIpcChannel::Disconnect()
   m_pOwner->WakeUp();
 }
 
-bool xiiIpcChannel::Send(xiiProcessMessage* pMsg)
+
+bool xiiIpcChannel::Send(xiiArrayPtr<const xiiUInt8> data)
 {
   {
     XII_LOCK(m_OutputQueueMutex);
     xiiMemoryStreamStorageInterface& storage = m_OutputQueue.ExpandAndGetRef();
     xiiMemoryStreamWriter            writer(&storage);
-    xiiUInt32                        uiSize  = 0;
+    xiiUInt32                        uiSize  = data.GetCount() + HEADER_SIZE;
     xiiUInt32                        uiMagic = MAGIC_VALUE;
     writer << uiMagic;
     writer << uiSize;
     XII_ASSERT_DEBUG(storage.GetStorageSize32() == HEADER_SIZE, "Magic value and size should have written HEADER_SIZE bytes.");
-    xiiReflectionSerializer::WriteObjectToBinary(writer, pMsg->GetDynamicRTTI(), pMsg);
-
-    // reset to the beginning and write the stored size again
-    writer.SetWritePosition(4);
-    writer << storage.GetStorageSize32();
+    writer.WriteBytes(data.GetPtr(), data.GetCount()).AssertSuccess("Failed to write to in-memory buffer, out of memory?");
   }
-  if (m_bConnected)
+  if (IsConnected())
   {
     if (NeedWakeup())
     {
       XII_LOCK(m_pOwner->m_TasksMutex);
+
       if (!m_pOwner->m_SendQueue.Contains(this))
         m_pOwner->m_SendQueue.PushBack(this);
+
       m_pOwner->WakeUp();
+
       return true;
     }
   }
   return false;
 }
 
-bool xiiIpcChannel::ProcessMessages()
+void xiiIpcChannel::SetReceiveCallback(ReceiveCallback callback)
 {
-  xiiDeque<xiiUniquePtr<xiiProcessMessage>> messages;
-  SwapWorkQueue(messages);
-  if (messages.IsEmpty())
-  {
-    return false;
-  }
+  XII_LOCK(m_ReceiveCallbackMutex);
 
-  while (!messages.IsEmpty())
-  {
-    xiiUniquePtr<xiiProcessMessage> msg = std::move(messages.PeekFront());
-    messages.PopFront();
-    m_MessageEvent.Broadcast(msg.Borrow());
-  }
-
-  return true;
-}
-
-void xiiIpcChannel::WaitForMessages()
-{
-  if (m_bConnected)
-  {
-    m_IncomingMessages.WaitForSignal();
-    ProcessMessages();
-  }
+  m_ReceiveCallback = callback;
 }
 
 xiiResult xiiIpcChannel::WaitForMessages(xiiTime timeout)
 {
-  if (m_bConnected)
+  if (IsConnected())
   {
-    if (m_IncomingMessages.WaitForSignal(timeout) == xiiThreadSignal::WaitResult::Timeout)
+    if (timeout == xiiTime::Zero())
+    {
+      m_IncomingMessages.WaitForSignal();
+    }
+    else if (m_IncomingMessages.WaitForSignal(timeout) == xiiThreadSignal::WaitResult::Timeout)
     {
       return XII_FAILURE;
     }
-    ProcessMessages();
   }
-
   return XII_SUCCESS;
 }
 
-void xiiIpcChannel::ReceiveMessageData(xiiArrayPtr<const xiiUInt8> data)
+void xiiIpcChannel::SetConnectionState(xiiEnum<xiiIpcChannel::ConnectionState> state)
 {
+  const xiiEnum<xiiIpcChannel::ConnectionState> oldValue = m_iConnectionState.Set(state);
+
+  if (state != oldValue)
+  {
+    m_Events.Broadcast(xiiIpcChannelEvent((xiiIpcChannelEvent::Type)state.GetValue(), this));
+  }
+}
+
+void xiiIpcChannel::ReceiveData(xiiArrayPtr<const xiiUInt8> data)
+{
+  XII_LOCK(m_ReceiveCallbackMutex);
+
+  if (!m_ReceiveCallback.IsValid())
+  {
+    m_MessageAccumulator.PushBackRange(data);
+    return;
+  }
+
   xiiArrayPtr<const xiiUInt8> remainingData = data;
   while (true)
   {
@@ -190,43 +190,12 @@ void xiiIpcChannel::ReceiveMessageData(xiiArrayPtr<const xiiUInt8> data)
     remainingData = remainingData.GetSubArray(remainingMessageData);
 
     {
-      // Message complete, de-serialize
-      xiiRawMemoryStreamReader reader(m_MessageAccumulator.GetData() + HEADER_SIZE, uiMessageSize - HEADER_SIZE);
-      const xiiRTTI*           pRtti = nullptr;
-
-      xiiProcessMessage*              pMsg = (xiiProcessMessage*)xiiReflectionSerializer::ReadObjectFromBinary(reader, pRtti);
-      xiiUniquePtr<xiiProcessMessage> msg(pMsg, xiiFoundation::GetDefaultAllocator());
-      if (msg != nullptr)
-      {
-        EnqueueMessage(std::move(msg));
-      }
-      else
-      {
-        xiiLog::Error("Channel received invalid Message!");
-      }
+      m_ReceiveCallback(xiiArrayPtr<const xiiUInt8>(m_MessageAccumulator.GetData() + HEADER_SIZE, uiMessageSize - HEADER_SIZE));
+      m_IncomingMessages.RaiseSignal();
+      m_Events.Broadcast(xiiIpcChannelEvent(xiiIpcChannelEvent::NewMessages, this));
       m_MessageAccumulator.Clear();
     }
   }
-}
-
-void xiiIpcChannel::EnqueueMessage(xiiUniquePtr<xiiProcessMessage>&& msg)
-{
-  {
-    XII_LOCK(m_IncomingQueueMutex);
-    m_IncomingQueue.PushBack(std::move(msg));
-  }
-  m_IncomingMessages.RaiseSignal();
-
-  m_Events.Broadcast(xiiIpcChannelEvent(xiiIpcChannelEvent::NewMessages, this));
-}
-
-void xiiIpcChannel::SwapWorkQueue(xiiDeque<xiiUniquePtr<xiiProcessMessage>>& messages)
-{
-  XII_ASSERT_DEBUG(messages.IsEmpty(), "Swap target must be empty!");
-  XII_LOCK(m_IncomingQueueMutex);
-  if (m_IncomingQueue.IsEmpty())
-    return;
-  messages.Swap(m_IncomingQueue);
 }
 
 void xiiIpcChannel::FlushPendingOperations()

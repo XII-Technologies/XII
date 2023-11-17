@@ -612,8 +612,38 @@ XII_CREATE_SIMPLE_TEST(IO, JSONReader)
 
     sCompare.PushBack("</object>");
 
-    JSONReaderTestDetail::TraverseTree(reader.GetTopLevelObject(), sCompare);
+    if (XII_TEST_BOOL(reader.GetTopLevelElementType() == xiiJSONReader::ElementType::Dictionary))
+    {
+      JSONReaderTestDetail::TraverseTree(reader.GetTopLevelObject(), sCompare);
 
-    XII_TEST_BOOL(sCompare.IsEmpty());
+      XII_TEST_BOOL(sCompare.IsEmpty());
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Array document")
+  {
+    const char* szTestData = "[\"a\",\"b\"]";
+
+    // NOTE: The way this test is implemented, it might break, if the HashMap uses another insertion algorithm.
+    // xiiVariantDictionary is an xiiHashmap and this test currently relies on one exact order in of the result.
+    // If this should ever change (or be arbitrary at runtime), the test needs to be implemented in a more robust way.
+
+    JSONReaderTestDetail::StringStream stream(szTestData);
+
+    xiiJSONReader reader;
+    XII_TEST_BOOL(reader.Parse(stream).Succeeded());
+
+    xiiDeque<xiiString> sCompare;
+    sCompare.PushBack("<array>");
+    sCompare.PushBack("a");
+    sCompare.PushBack("b");
+    sCompare.PushBack("</array>");
+
+    if (XII_TEST_BOOL(reader.GetTopLevelElementType() == xiiJSONReader::ElementType::Array))
+    {
+      JSONReaderTestDetail::TraverseTree(reader.GetTopLevelArray(), sCompare);
+
+      XII_TEST_BOOL(sCompare.IsEmpty());
+    }
   }
 }

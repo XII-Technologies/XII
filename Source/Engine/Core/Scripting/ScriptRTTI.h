@@ -27,11 +27,11 @@ public:
   const xiiAbstractFunctionProperty* GetFunctionByIndex(xiiUInt32 uiIndex) const;
 
 private:
-  xiiString                                                        m_sTypeNameStorage;
-  FunctionList                                                     m_FunctionStorage;
-  MessageHandlerList                                               m_MessageHandlerStorage;
-  xiiSmallArray<xiiAbstractFunctionProperty*, NumInplaceFunctions> m_FunctionRawPtrs;
-  xiiSmallArray<xiiAbstractMessageHandler*, NumInplaceFunctions>   m_MessageHandlerRawPtrs;
+  xiiString                                                              m_sTypeNameStorage;
+  FunctionList                                                           m_FunctionStorage;
+  MessageHandlerList                                                     m_MessageHandlerStorage;
+  xiiSmallArray<const xiiAbstractFunctionProperty*, NumInplaceFunctions> m_FunctionRawPtrs;
+  xiiSmallArray<xiiAbstractMessageHandler*, NumInplaceFunctions>         m_MessageHandlerRawPtrs;
 };
 
 class XII_CORE_DLL xiiScriptFunctionProperty : public xiiAbstractFunctionProperty
@@ -42,6 +42,24 @@ public:
 
 private:
   xiiHashedString m_sPropertyNameStorage;
+};
+
+struct xiiScriptMessageDesc
+{
+  const xiiRTTI*                                m_pType = nullptr;
+  xiiArrayPtr<const xiiAbstractProperty* const> m_Properties;
+};
+
+class XII_CORE_DLL xiiScriptMessageHandler : public xiiAbstractMessageHandler
+{
+public:
+  xiiScriptMessageHandler(const xiiScriptMessageDesc& desc);
+  ~xiiScriptMessageHandler();
+
+  void FillMessagePropertyValues(const xiiMessage& msg, xiiDynamicArray<xiiVariant>& out_propertyValues);
+
+private:
+  xiiArrayPtr<const xiiAbstractProperty* const> m_Properties;
 };
 
 class XII_CORE_DLL xiiScriptInstance
@@ -59,3 +77,11 @@ private:
   xiiReflectedClass& m_Owner;
   xiiWorld*          m_pWorld = nullptr;
 };
+
+struct XII_CORE_DLL xiiScriptAllocator
+{
+  static xiiAllocatorBase* GetAllocator();
+};
+
+/// \brief creates a new instance of type using the script allocator
+#define XII_SCRIPT_NEW(type, ...) XII_NEW(xiiScriptAllocator::GetAllocator(), type, __VA_ARGS__)

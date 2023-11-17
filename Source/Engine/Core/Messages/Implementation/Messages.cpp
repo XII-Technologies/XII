@@ -32,16 +32,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgComponentInternalTrigger, 1, xiiRTTIDefau
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Message", GetMessage, SetMessage),
+    XII_MEMBER_PROPERTY("Message", m_sMessage),
     XII_MEMBER_PROPERTY("Payload", m_iPayload),
   }
   XII_END_PROPERTIES;
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiAutoGenVisScriptMsgSender(),
-    new xiiAutoGenVisScriptMsgHandler()
-  }
-  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -49,6 +43,13 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgUpdateLocalBounds);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgUpdateLocalBounds, 1, xiiRTTIDefaultAllocator<xiiMsgUpdateLocalBounds>)
+{
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiExcludeFromScript()
+  }
+  XII_END_ATTRIBUTES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 //////////////////////////////////////////////////////////////////////////
@@ -61,11 +62,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgSetPlaying, 1, xiiRTTIDefaultAllocator<xi
     XII_MEMBER_PROPERTY("Play", m_bPlay)->AddAttributes(new xiiDefaultValueAttribute(true)),
   }
   XII_END_PROPERTIES;
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiAutoGenVisScriptMsgSender(),
-  }
-  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -73,24 +69,52 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgParentChanged);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgParentChanged, 1, xiiRTTIDefaultAllocator<xiiMsgParentChanged>)
+{
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiExcludeFromScript()
+  }
+  XII_END_ATTRIBUTES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 //////////////////////////////////////////////////////////////////////////
 
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgChildrenChanged);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgChildrenChanged, 1, xiiRTTIDefaultAllocator<xiiMsgChildrenChanged>)
+{
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiExcludeFromScript()
+  }
+  XII_END_ATTRIBUTES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 //////////////////////////////////////////////////////////////////////////
 
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgComponentsChanged);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgComponentsChanged, 1, xiiRTTIDefaultAllocator<xiiMsgComponentsChanged>)
+{
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiExcludeFromScript()
+  }
+  XII_END_ATTRIBUTES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 //////////////////////////////////////////////////////////////////////////
 
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgTransformChanged);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgTransformChanged, 1, xiiRTTIDefaultAllocator<xiiMsgTransformChanged>)
+{
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiExcludeFromScript()
+  }
+  XII_END_ATTRIBUTES;
+}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 //////////////////////////////////////////////////////////////////////////
@@ -104,11 +128,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgSetFloatParameter, 1, xiiRTTIDefaultAlloc
     XII_MEMBER_PROPERTY("Value", m_fValue),
   }
   XII_END_PROPERTIES;
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiAutoGenVisScriptMsgSender(),
-  }
-  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -123,11 +142,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgSetDoubleParameter, 1, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("Value", m_fValue),
   }
   XII_END_PROPERTIES;
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiAutoGenVisScriptMsgSender(),
-  }
-  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -142,11 +156,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgSetRealParameter, 1, xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("Value", m_fValue),
   }
   XII_END_PROPERTIES;
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiAutoGenVisScriptMsgSender(),
-  }
-  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -157,17 +166,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgGenericEvent, 1, xiiRTTIDefaultAllocator<
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Message", GetMessage, SetMessage),
+    XII_MEMBER_PROPERTY("Message", m_sMessage),
     XII_MEMBER_PROPERTY("Value", m_Value)->AddAttributes(new xiiDefaultValueAttribute(0))
   }
   XII_END_PROPERTIES;
-
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiAutoGenVisScriptMsgSender(),
-    new xiiAutoGenVisScriptMsgHandler()
-  }
-  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
@@ -175,13 +177,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgAnimationReachedEnd);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgAnimationReachedEnd, 1, xiiRTTIDefaultAllocator<xiiMsgAnimationReachedEnd>)
-{
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiAutoGenVisScriptMsgHandler(),
-  }
-  XII_END_ATTRIBUTES;
-}
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 //////////////////////////////////////////////////////////////////////////
@@ -191,9 +186,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgTriggerTriggered, 1, xiiRTTIDefaultAlloca
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Message", GetMessage, SetMessage),
+    XII_MEMBER_PROPERTY("Message", m_sMessage),
     XII_ENUM_MEMBER_PROPERTY("TriggerState", xiiTriggerState, m_TriggerState),
-    //XII_MEMBER_PROPERTY("GameObject", m_hTriggeringObject),
+    XII_MEMBER_PROPERTY("GameObject", m_hTriggeringObject),
   }
   XII_END_PROPERTIES;
 }

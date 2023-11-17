@@ -266,7 +266,32 @@ bool xiiPathUtils::IsSubPath(xiiStringView sPrefixPath, xiiStringView sFullPath)
   tmp.MakeCleanPath();
   tmp.AppendPath("");
 
-  return sFullPath.StartsWith_NoCase(tmp);
+  if (sFullPath.StartsWith(tmp))
+  {
+    if (tmp.GetElementCount() == sFullPath.GetElementCount())
+      return true;
+
+    return sFullPath.GetStartPointer()[tmp.GetElementCount()] == '/';
+  }
+
+  return false;
+}
+
+bool xiiPathUtils::IsSubPath_NoCase(xiiStringView sPrefixPath, xiiStringView sFullPath)
+{
+  xiiStringBuilder tmp = sPrefixPath;
+  tmp.MakeCleanPath();
+  tmp.AppendPath("");
+
+  if (sFullPath.StartsWith_NoCase(tmp))
+  {
+    if (tmp.GetElementCount() == sFullPath.GetElementCount())
+      return true;
+
+    return sFullPath.GetStartPointer()[tmp.GetElementCount()] == '/';
+  }
+
+  return false;
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_PathUtils);

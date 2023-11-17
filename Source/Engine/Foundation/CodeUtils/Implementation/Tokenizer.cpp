@@ -15,6 +15,10 @@ const char* xiiTokenType::EnumNames[xiiTokenType::ENUM_COUNT] = {
   "String2",
   "Integer",
   "Float",
+  "RawString1",
+  "RawString1Prefix",
+  "RawString1Postfix",
+  "EndOfFile",
 };
 
 namespace
@@ -145,6 +149,10 @@ void xiiTokenizer::Tokenize(xiiArrayPtr<const xiiUInt8> data, xiiLogInterface* p
         HandleString('\"');
         break;
 
+      case xiiTokenType::RawString1:
+        HandleRawString();
+        break;
+
       case xiiTokenType::String2:
         HandleString('\'');
         break;
@@ -174,6 +182,8 @@ void xiiTokenizer::Tokenize(xiiArrayPtr<const xiiUInt8> data, xiiLogInterface* p
         HandleNonIdentifier();
         break;
 
+      case xiiTokenType::RawString1Prefix:
+      case xiiTokenType::RawString1Postfix:
       case xiiTokenType::Newline:
       case xiiTokenType::EndOfFile:
       case xiiTokenType::ENUM_COUNT:
@@ -217,6 +227,14 @@ void xiiTokenizer::HandleUnknown()
   if (m_uiCurChar == '\"')
   {
     m_CurMode = xiiTokenType::String1;
+    NextChar();
+    return;
+  }
+
+  if (m_uiCurChar == 'R' && m_uiNextChar == '\"')
+  {
+    m_CurMode = xiiTokenType::RawString1;
+    NextChar();
     NextChar();
     return;
   }
@@ -343,6 +361,71 @@ void xiiTokenizer::HandleString(char terminator)
   AddToken();
 }
 
+void xiiTokenizer::HandleRawString()
+{
+  const char* markerStart = m_szCurCharStart;
+  while (m_uiCurChar != '\0')
+  {
+    if (m_uiCurChar == '(')
+    {
+      m_sRawStringMarker = xiiStringView(markerStart, m_szCurCharStart);
+      NextChar(); // consume '('
+      break;
+    }
+    NextChar();
+  }
+  if (m_uiCurChar == '\0')
+  {
+    xiiLog::Error(m_pLog, "Failed to find '(' for raw string before end of file.");
+    AddToken();
+    return;
+  }
+
+  m_CurMode = xiiTokenType::RawString1Prefix;
+  AddToken();
+
+  m_CurMode = xiiTokenType::RawString1;
+
+  while (m_uiCurChar != '\0')
+  {
+    if (m_uiCurChar == ')')
+    {
+      if (m_sRawStringMarker.GetElementCount() == 0 && m_uiNextChar == '\"')
+      {
+        AddToken();
+        NextChar();
+        NextChar();
+        m_CurMode = xiiTokenType::RawString1Postfix;
+        AddToken();
+        return;
+      }
+      else if (m_szCurCharStart + m_sRawStringMarker.GetElementCount() + 2 <= m_sIterator.GetEndPointer())
+      {
+        if (xiiStringUtils::CompareN(m_szCurCharStart + 1, m_sRawStringMarker.GetStartPointer(), m_sRawStringMarker.GetElementCount()) == 0 &&
+            m_szCurCharStart[m_sRawStringMarker.GetElementCount() + 1] == '\"')
+        {
+          AddToken();
+          for (xiiUInt32 i = 0; i < m_sRawStringMarker.GetElementCount() + 2; ++i) // consume )marker"
+          {
+            NextChar();
+          }
+          m_CurMode = xiiTokenType::RawString1Postfix;
+          AddToken();
+          return;
+        }
+      }
+      NextChar();
+    }
+    else
+    {
+      NextChar();
+    }
+  }
+
+  xiiLog::Error(m_pLog, "Raw string not closed at end of file.");
+  AddToken();
+}
+
 void xiiTokenizer::HandleNumber()
 {
   if (m_uiCurChar == '0' && (m_uiNextChar == 'x' || m_uiNextChar == 'X'))
@@ -351,7 +434,7 @@ void xiiTokenizer::HandleNumber()
     NextChar();
 
     xiiUInt32 uiDigitsRead = 0;
-    while (xiiStringUtils::IsHexDigit(m_uiCurChar))
+    while (xiiStringUtils::IsHexDigit(m_uiCurChar) || m_uiCurChar == '\'') // Integer literal (Eg. 100'000).
     {
       NextChar();
       ++uiDigitsRead;
@@ -359,7 +442,7 @@ void xiiTokenizer::HandleNumber()
 
     if (uiDigitsRead < 1)
     {
-      xiiLog::Error(m_pLog, "Invalid hex literal");
+      xiiLog::Error(m_pLog, "Invalid hex literal.");
     }
   }
   else
@@ -407,11 +490,11 @@ void xiiTokenizer::HandleNumber()
 
         if (uiDigitsRead < 1)
         {
-          xiiLog::Error(m_pLog, "Invalid float literal");
+          xiiLog::Error(m_pLog, "Invalid float literal.");
         }
       }
 
-      if (m_uiCurChar == 'f') // skip float suffix
+      if (m_uiCurChar == 'f') // Skip float suffix.
       {
         NextChar();
       }

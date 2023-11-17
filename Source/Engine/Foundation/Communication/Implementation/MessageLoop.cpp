@@ -180,7 +180,6 @@ void xiiMessageLoop::AddChannel(xiiIpcChannel* pChannel)
 
   StartUpdateThread();
   pChannel->m_pOwner = this;
-  pChannel->AddToMessageLoop(this);
 }
 
 void xiiMessageLoop::RemoveChannel(xiiIpcChannel* pChannel)

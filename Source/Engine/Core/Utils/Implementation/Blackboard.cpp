@@ -20,13 +20,14 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiBlackboard, xiiNoBase, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_FUNCTIONS
   {
-    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_GetOrCreateGlobal, In, "Name"),
-    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_FindGlobal, In, "Name"),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_GetOrCreateGlobal, In, "Name")->AddAttributes(new xiiFunctionArgumentAttributes(0, new xiiDynamicStringEnumAttribute("BlackboardNamesEnum"))),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_FindGlobal, In, "Name")->AddAttributes(new xiiFunctionArgumentAttributes(0, new xiiDynamicStringEnumAttribute("BlackboardNamesEnum"))),
 
     XII_SCRIPT_FUNCTION_PROPERTY(GetName),
-    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_RegisterEntry, In, "Name", In, "InitialValue", In, "Save", In, "OnChangeEvent"),
-    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_SetEntryValue, In, "Name", In, "Value"),
-    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_GetEntryValue, In, "Name", In, "Fallback"),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_SetEntryValue, In, "Name", In, "Value")->AddAttributes(new xiiFunctionArgumentAttributes(0, new xiiDynamicStringEnumAttribute("BlackboardKeysEnum"))),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetEntryValue, In, "Name", In, "Fallback")->AddAttributes(new xiiFunctionArgumentAttributes(0, new xiiDynamicStringEnumAttribute("BlackboardKeysEnum"))),
+    XII_SCRIPT_FUNCTION_PROPERTY(IncrementEntryValue, In, "Name")->AddAttributes(new xiiFunctionArgumentAttributes(0, new xiiDynamicStringEnumAttribute("BlackboardKeysEnum"))),
+    XII_SCRIPT_FUNCTION_PROPERTY(DecrementEntryValue, In, "Name")->AddAttributes(new xiiFunctionArgumentAttributes(0, new xiiDynamicStringEnumAttribute("BlackboardKeysEnum"))),
     XII_SCRIPT_FUNCTION_PROPERTY(GetBlackboardChangeCounter),
     XII_SCRIPT_FUNCTION_PROPERTY(GetBlackboardEntryChangeCounter)
   }
@@ -52,7 +53,7 @@ xiiHashTable<xiiHashedString, xiiSharedPtr<xiiBlackboard>> xiiBlackboard::s_Glob
 // static
 xiiSharedPtr<xiiBlackboard> xiiBlackboard::Create(xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/)
 {
-  return XII_NEW(pAllocator, xiiBlackboard);
+  return XII_NEW(pAllocator, xiiBlackboard, false);
 }
 
 // static
@@ -67,7 +68,7 @@ xiiSharedPtr<xiiBlackboard> xiiBlackboard::GetOrCreateGlobal(const xiiHashedStri
     return it.Value();
   }
 
-  xiiSharedPtr<xiiBlackboard> pShrd = XII_NEW(pAllocator, xiiBlackboard);
+  xiiSharedPtr<xiiBlackboard> pShrd = XII_NEW(pAllocator, xiiBlackboard, true);
   pShrd->m_sName                    = sBlackboardName;
   s_GlobalBlackboards.Insert(sBlackboardName, pShrd);
 
@@ -84,7 +85,11 @@ xiiSharedPtr<xiiBlackboard> xiiBlackboard::FindGlobal(const xiiTempHashedString&
   return pBlackboard;
 }
 
-xiiBlackboard::xiiBlackboard()  = default;
+xiiBlackboard::xiiBlackboard(bool bIsGlobal)
+{
+  m_bIsGlobal = bIsGlobal;
+}
+
 xiiBlackboard::~xiiBlackboard() = default;
 
 void xiiBlackboard::SetName(xiiStringView sName)
@@ -93,27 +98,7 @@ void xiiBlackboard::SetName(xiiStringView sName)
   m_sName.Assign(sName);
 }
 
-void xiiBlackboard::RegisterEntry(const xiiHashedString& sName, const xiiVariant& initialValue, xiiBitflags<xiiBlackboardEntryFlags> flags /*= xiiBlackboardEntryFlags::None*/)
-{
-  XII_ASSERT_ALWAYS(!flags.IsSet(xiiBlackboardEntryFlags::Invalid), "The invalid flag is reserved for internal use.");
-
-  bool   bExisted = false;
-  Entry& entry    = m_Entries.FindOrAdd(sName, &bExisted);
-
-  if (!bExisted || entry.m_Flags != flags)
-  {
-    ++m_uiBlackboardChangeCounter;
-    entry.m_Flags |= flags;
-  }
-
-  if (!bExisted && entry.m_Value != initialValue)
-  {
-    // broadcasts the change event, in case we overwrite an existing entry
-    SetEntryValue(sName, initialValue).IgnoreResult();
-  }
-}
-
-void xiiBlackboard::UnregisterEntry(const xiiHashedString& sName)
+void xiiBlackboard::RemoveEntry(const xiiHashedString& sName)
 {
   if (m_Entries.Remove(sName))
   {
@@ -121,7 +106,7 @@ void xiiBlackboard::UnregisterEntry(const xiiHashedString& sName)
   }
 }
 
-void xiiBlackboard::UnregisterAllEntries()
+void xiiBlackboard::RemoveAllEntries()
 {
   if (m_Entries.IsEmpty() == false)
   {
@@ -131,39 +116,80 @@ void xiiBlackboard::UnregisterAllEntries()
   m_Entries.Clear();
 }
 
-xiiResult xiiBlackboard::SetEntryValue(const xiiTempHashedString& sName, const xiiVariant& value, bool bForce /*= false*/)
+void xiiBlackboard::ImplSetEntryValue(const xiiHashedString& sName, Entry& entry, const xiiVariant& value)
+{
+  if (entry.m_Value != value)
+  {
+    ++m_uiBlackboardEntryChangeCounter;
+    ++entry.m_uiChangeCounter;
+
+    if (entry.m_Flags.IsSet(xiiBlackboardEntryFlags::OnChangeEvent))
+    {
+      EntryEvent e;
+      e.m_sName    = sName;
+      e.m_OldValue = entry.m_Value;
+      e.m_pEntry   = &entry;
+
+      m_EntryEvents.Broadcast(e, 1); // limited recursion is allowed
+    }
+
+    entry.m_Value = value;
+  }
+}
+
+void xiiBlackboard::SetEntryValue(xiiStringView sName, const xiiVariant& value)
+{
+  const xiiTempHashedString sNameTH(sName);
+
+  auto itEntry = m_Entries.Find(sNameTH);
+
+  if (!itEntry.IsValid())
+  {
+    xiiHashedString sNameHS;
+    sNameHS.Assign(sName);
+    m_Entries[sNameHS].m_Value = value;
+
+    ++m_uiBlackboardChangeCounter;
+  }
+  else
+  {
+    ImplSetEntryValue(itEntry.Key(), itEntry.Value(), value);
+  }
+}
+
+void xiiBlackboard::SetEntryValue(const xiiHashedString& sName, const xiiVariant& value)
 {
   auto itEntry = m_Entries.Find(sName);
 
   if (!itEntry.IsValid())
   {
-    return XII_FAILURE;
-  }
+    m_Entries[sName].m_Value = value;
 
-  Entry& entry = itEntry.Value();
-
-  if (!bForce && entry.m_Value == value)
-    return XII_SUCCESS;
-
-  ++m_uiBlackboardEntryChangeCounter;
-  ++entry.m_uiChangeCounter;
-
-  if (entry.m_Flags.IsSet(xiiBlackboardEntryFlags::OnChangeEvent))
-  {
-    EntryEvent e;
-    e.m_sName    = itEntry.Key();
-    e.m_OldValue = entry.m_Value;
-    e.m_pEntry   = &entry;
-
-    entry.m_Value = value;
-
-    m_EntryEvents.Broadcast(e, 1); // limited recursion is allowed
+    ++m_uiBlackboardChangeCounter;
   }
   else
   {
-    entry.m_Value = value;
+    ImplSetEntryValue(itEntry.Key(), itEntry.Value(), value);
   }
+}
 
+void xiiBlackboard::Reflection_SetEntryValue(xiiStringView sName, const xiiVariant& value)
+{
+  SetEntryValue(sName, value);
+}
+
+bool xiiBlackboard::HasEntry(const xiiTempHashedString& sName) const
+{
+  return m_Entries.Find(sName).IsValid();
+}
+
+xiiResult xiiBlackboard::SetEntryFlags(const xiiTempHashedString& sName, xiiBitflags<xiiBlackboardEntryFlags> flags)
+{
+  auto itEntry = m_Entries.Find(sName);
+  if (!itEntry.IsValid())
+    return XII_FAILURE;
+
+  itEntry.Value().m_Flags = flags;
   return XII_SUCCESS;
 }
 
@@ -179,8 +205,34 @@ const xiiBlackboard::Entry* xiiBlackboard::GetEntry(const xiiTempHashedString& s
 
 xiiVariant xiiBlackboard::GetEntryValue(const xiiTempHashedString& sName, const xiiVariant& fallback /*= xiiVariant()*/) const
 {
-  auto value = m_Entries.GetValue(sName);
-  return value != nullptr ? value->m_Value : fallback;
+  auto pEntry = m_Entries.GetValue(sName);
+  return pEntry != nullptr ? pEntry->m_Value : fallback;
+}
+
+xiiVariant xiiBlackboard::IncrementEntryValue(const xiiTempHashedString& sName)
+{
+  auto pEntry = m_Entries.GetValue(sName);
+  if (pEntry != nullptr && pEntry->m_Value.IsNumber())
+  {
+    xiiVariant one  = xiiVariant(1).ConvertTo(pEntry->m_Value.GetType());
+    pEntry->m_Value = pEntry->m_Value + one;
+    return pEntry->m_Value;
+  }
+
+  return xiiVariant();
+}
+
+xiiVariant xiiBlackboard::DecrementEntryValue(const xiiTempHashedString& sName)
+{
+  auto pEntry = m_Entries.GetValue(sName);
+  if (pEntry != nullptr && pEntry->m_Value.IsNumber())
+  {
+    xiiVariant one  = xiiVariant(1).ConvertTo(pEntry->m_Value.GetType());
+    pEntry->m_Value = pEntry->m_Value - one;
+    return pEntry->m_Value;
+  }
+
+  return xiiVariant();
 }
 
 xiiBitflags<xiiBlackboardEntryFlags> xiiBlackboard::GetEntryFlags(const xiiTempHashedString& sName) const
@@ -244,47 +296,23 @@ xiiResult xiiBlackboard::Deserialize(xiiStreamReader& ref_stream)
     xiiVariant value;
     ref_stream >> value;
 
-    RegisterEntry(name, value, flags);
+    SetEntryValue(name, value);
+    SetEntryFlags(name, flags).AssertSuccess();
   }
 
   return XII_SUCCESS;
 }
 
 // static
-xiiBlackboard* xiiBlackboard::Reflection_GetOrCreateGlobal(xiiStringView sName)
+xiiBlackboard* xiiBlackboard::Reflection_GetOrCreateGlobal(const xiiHashedString& sName)
 {
-  xiiHashedString sNameHashed;
-  sNameHashed.Assign(sName);
-
-  return GetOrCreateGlobal(sNameHashed).Borrow();
+  return GetOrCreateGlobal(sName).Borrow();
 }
 
 // static
-xiiBlackboard* xiiBlackboard::Reflection_FindGlobal(xiiStringView sName)
+xiiBlackboard* xiiBlackboard::Reflection_FindGlobal(xiiTempHashedString sName)
 {
-  return FindGlobal(xiiTempHashedString(sName));
-}
-
-void xiiBlackboard::Reflection_RegisterEntry(xiiStringView sName, const xiiVariant& initialValue, bool bSave, bool bOnChangeEvent)
-{
-  xiiHashedString sNameHashed;
-  sNameHashed.Assign(sName);
-
-  xiiBitflags<xiiBlackboardEntryFlags> flags;
-  flags.AddOrRemove(xiiBlackboardEntryFlags::Save, bSave);
-  flags.AddOrRemove(xiiBlackboardEntryFlags::OnChangeEvent, bOnChangeEvent);
-
-  RegisterEntry(sNameHashed, initialValue, flags);
-}
-
-bool xiiBlackboard::Reflection_SetEntryValue(xiiStringView sName, const xiiVariant& value)
-{
-  return SetEntryValue(xiiTempHashedString(sName), value).Succeeded();
-}
-
-xiiVariant xiiBlackboard::Reflection_GetEntryValue(xiiStringView sName, const xiiVariant& fallback) const
-{
-  return GetEntryValue(xiiTempHashedString(sName), fallback);
+  return FindGlobal(sName);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -294,7 +322,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiBlackboardCondition, xiiNoBase, 1, xiiRTTIDef
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("EntryName", GetEntryName, SetEntryName),
+    XII_MEMBER_PROPERTY("EntryName", m_sEntryName)->AddAttributes(new xiiDynamicStringEnumAttribute("BlackboardKeysEnum")),
     XII_ENUM_MEMBER_PROPERTY("Operator", xiiComparisonOperator, m_Operator),
     XII_MEMBER_PROPERTY("ComparisonValue", m_fComparisonValue),
   }

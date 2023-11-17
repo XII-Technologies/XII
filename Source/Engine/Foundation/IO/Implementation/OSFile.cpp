@@ -5,7 +5,9 @@
 xiiString64        xiiOSFile::s_sApplicationPath;
 xiiString64        xiiOSFile::s_sUserDataPath;
 xiiString64        xiiOSFile::s_sTempDataPath;
+xiiString64        xiiOSFile::s_sUserDocumentsPath;
 xiiAtomicInteger32 xiiOSFile::s_iFileCounter;
+
 xiiOSFile::Event   xiiOSFile::s_FileEvents;
 
 xiiFileStats::xiiFileStats()  = default;

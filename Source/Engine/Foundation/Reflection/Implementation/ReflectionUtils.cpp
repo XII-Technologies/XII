@@ -865,100 +865,93 @@ const xiiAbstractMemberProperty* xiiReflectionUtils::GetMemberProperty(const xii
   return nullptr;
 }
 
-void xiiReflectionUtils::GatherTypesDerivedFromClass(const xiiRTTI* pBaseRtti, xiiSet<const xiiRTTI*>& out_types, bool bIncludeDependencies)
+void xiiReflectionUtils::GatherTypesDerivedFromClass(const xiiRTTI* pBaseRtti, xiiSet<const xiiRTTI*>& out_types)
 {
   xiiRTTI::ForEachDerivedType(pBaseRtti,
                               [&](const xiiRTTI* pRtti) {
                                 out_types.Insert(pRtti);
-                                if (bIncludeDependencies)
-                                {
-                                  GatherDependentTypes(pRtti, out_types);
-                                }
                               });
 }
 
-void xiiReflectionUtils::GatherDependentTypes(const xiiRTTI* pRtti, xiiSet<const xiiRTTI*>& inout_types)
+void xiiReflectionUtils::GatherDependentTypes(const xiiRTTI* pRtti, xiiSet<const xiiRTTI*>& inout_typesAsSet, xiiDynamicArray<const xiiRTTI*>* out_pTypesAsStack /*= nullptr*/)
 {
-  const xiiRTTI* pParentRtti = pRtti->GetParentType();
-  if (pParentRtti != nullptr)
+  auto AddType = [&](const xiiRTTI* pNewRtti) {
+    if (pNewRtti != pRtti && pNewRtti->GetTypeFlags().IsSet(xiiTypeFlags::StandardType) == false && inout_typesAsSet.Contains(pNewRtti) == false)
+    {
+      inout_typesAsSet.Insert(pNewRtti);
+      if (out_pTypesAsStack != nullptr)
+      {
+        out_pTypesAsStack->PushBack(pNewRtti);
+      }
+
+      GatherDependentTypes(pNewRtti, inout_typesAsSet, out_pTypesAsStack);
+    }
+  };
+
+  if (const xiiRTTI* pParentRtti = pRtti->GetParentType())
   {
-    inout_types.Insert(pParentRtti);
-    GatherDependentTypes(pParentRtti, inout_types);
+    AddType(pParentRtti);
   }
 
-  auto            rttiProps = pRtti->GetProperties();
-  const xiiUInt32 uiCount   = rttiProps.GetCount();
-
-  for (xiiUInt32 i = 0; i < uiCount; ++i)
+  for (const xiiAbstractProperty* prop : pRtti->GetProperties())
   {
-    const xiiAbstractProperty* prop = rttiProps[i];
-    if (prop->GetFlags().IsSet(xiiPropertyFlags::StandardType))
+    if (prop->GetCategory() == xiiPropertyCategory::Constant)
       continue;
+
     if (prop->GetAttributeByType<xiiTemporaryAttribute>() != nullptr)
       continue;
-    switch (prop->GetCategory())
+
+    AddType(prop->GetSpecificType());
+  }
+
+  for (const xiiAbstractFunctionProperty* func : pRtti->GetFunctions())
+  {
+    xiiUInt32 uiNumArgs = func->GetArgumentCount();
+    for (xiiUInt32 i = 0; i < uiNumArgs; ++i)
     {
-      case xiiPropertyCategory::Member:
-      case xiiPropertyCategory::Array:
-      case xiiPropertyCategory::Set:
-      case xiiPropertyCategory::Map:
-      {
-        const xiiRTTI* pPropRtti = prop->GetSpecificType();
-
-        if (inout_types.Contains(pPropRtti))
-          continue;
-
-        inout_types.Insert(pPropRtti);
-        GatherDependentTypes(pPropRtti, inout_types);
-      }
-      break;
-      case xiiPropertyCategory::Function:
-      case xiiPropertyCategory::Constant:
-      default:
-        break;
+      AddType(func->GetArgumentType(i));
     }
+  }
+
+  for (const xiiPropertyAttribute* attr : pRtti->GetAttributes())
+  {
+    AddType(attr->GetDynamicRTTI());
   }
 }
 
-bool xiiReflectionUtils::CreateDependencySortedTypeArray(const xiiSet<const xiiRTTI*>& types, xiiDynamicArray<const xiiRTTI*>& out_sortedTypes)
+xiiResult xiiReflectionUtils::CreateDependencySortedTypeArray(const xiiSet<const xiiRTTI*>& types, xiiDynamicArray<const xiiRTTI*>& out_sortedTypes)
 {
   out_sortedTypes.Clear();
   out_sortedTypes.Reserve(types.GetCount());
 
-  xiiMap<const xiiRTTI*, xiiSet<const xiiRTTI*>> dependencies;
-
-  xiiSet<const xiiRTTI*> accu;
+  xiiSet<const xiiRTTI*>          accu;
+  xiiDynamicArray<const xiiRTTI*> tmpStack;
 
   for (const xiiRTTI* pType : types)
   {
-    auto it = dependencies.Insert(pType, xiiSet<const xiiRTTI*>());
-    GatherDependentTypes(pType, it.Value());
-  }
+    if (accu.Contains(pType))
+      continue;
 
+    GatherDependentTypes(pType, accu, &tmpStack);
 
-  while (!dependencies.IsEmpty())
-  {
-    bool bDeadEnd = true;
-    for (auto it = dependencies.GetIterator(); it.IsValid(); ++it)
+    while (tmpStack.IsEmpty() == false)
     {
-      // Are the types dependencies met?
-      if (accu.ContainsSet(it.Value()))
-      {
-        out_sortedTypes.PushBack(it.Key());
-        accu.Insert(it.Key());
-        dependencies.Remove(it);
-        bDeadEnd = false;
-        break;
-      }
+      const xiiRTTI* pDependentType = tmpStack.PeekBack();
+      XII_ASSERT_DEBUG(pDependentType != pType, "A type must not be reported as dependency of itself.");
+      tmpStack.PopBack();
+
+      if (types.Contains(pDependentType) == false)
+        return XII_FAILURE;
+
+      out_sortedTypes.PushBack(pDependentType);
     }
 
-    if (bDeadEnd)
-    {
-      return false;
-    }
+    accu.Insert(pType);
+    out_sortedTypes.PushBack(pType);
   }
 
-  return true;
+  XII_ASSERT_DEV(types.GetCount() == out_sortedTypes.GetCount(), "Not all types have been sorted or the sorted list contains duplicates.");
+  return XII_SUCCESS;
 }
 
 bool xiiReflectionUtils::EnumerationToString(const xiiRTTI* pEnumerationRtti, xiiInt64 iValue, xiiStringBuilder& out_sOutput, xiiEnum<EnumConversionMode> conversionMode)

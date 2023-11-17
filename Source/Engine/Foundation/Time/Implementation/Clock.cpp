@@ -19,6 +19,25 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, Clock)
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
+
+XII_BEGIN_STATIC_REFLECTED_TYPE(xiiClock, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_ACCESSOR_PROPERTY("Paused", GetPaused, SetPaused),
+    XII_ACCESSOR_PROPERTY("Speed", GetSpeed, SetSpeed),
+  }
+  XII_END_PROPERTIES;
+
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_SCRIPT_FUNCTION_PROPERTY(GetGlobalClock),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetAccumulatedTime),
+    XII_SCRIPT_FUNCTION_PROPERTY(GetTimeDiff)
+  }
+  XII_END_FUNCTIONS;
+}
+XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiClock::xiiClock(xiiStringView sName)

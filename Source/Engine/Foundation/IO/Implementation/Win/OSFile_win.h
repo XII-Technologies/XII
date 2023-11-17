@@ -654,6 +654,32 @@ xiiString xiiOSFile::GetTempDataFolder(xiiStringView sSubFolder /*= nullptr*/)
   return s;
 }
 
+xiiString xiiOSFile::GetUserDocumentsFolder(xiiStringView sSubFolder /*= {}*/)
+{
+  if (s_sUserDocumentsPath.IsEmpty())
+  {
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
+    XII_ASSERT_NOT_IMPLEMENTED;
+#else
+    wchar_t* pPath = nullptr;
+    if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_PublicDocuments, KF_FLAG_DEFAULT, nullptr, &pPath)))
+    {
+      s_sUserDocumentsPath = xiiStringWChar(pPath);
+    }
+
+    if (pPath != nullptr)
+    {
+      CoTaskMemFree(pPath);
+    }
+#endif
+  }
+
+  xiiStringBuilder s = s_sUserDocumentsPath;
+  s.AppendPath(sSubFolder);
+  s.MakeCleanPath();
+  return s;
+}
+
 const xiiString xiiOSFile::GetCurrentWorkingDirectory()
 {
   const xiiUInt32 uiRequiredLength = GetCurrentDirectoryW(0, nullptr);

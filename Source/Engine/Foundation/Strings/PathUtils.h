@@ -91,7 +91,9 @@ public:
   static void MakeValidFilename(xiiStringView sFilename, xiiUInt32 uiReplacementCharacter, xiiStringBuilder& out_sFilename);
 
   /// \brief Checks whether \a sFullPath starts with \a sPrefixPath.
-  static bool IsSubPath(xiiStringView sPrefixPath, xiiStringView sFullPath);
+  static bool IsSubPath(xiiStringView sPrefixPath, xiiStringView sFullPath); // [tested]
+  /// \brief Checks whether \a sFullPath starts with \a sPrefixPath. Case insensitive.
+  static bool IsSubPath_NoCase(xiiStringView sPrefixPath, xiiStringView sFullPath); // [tested]
 };
 
 #include <Foundation/Strings/Implementation/PathUtils_inl.h>

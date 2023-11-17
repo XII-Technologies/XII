@@ -646,7 +646,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 ///   The name of the member variable that should get exposed as a message sender.
 ///
 /// \note A message sender must be derived from xiiMessageSenderBase.
-#define XII_MESSAGE_SENDER(MemberName)                                                 \
-  {                                                                                    \
-    #MemberName, xiiGetStaticRTTI<XII_MEMBER_TYPE(OwnType, MemberName)::MessageType>() \
+#define XII_MESSAGE_SENDER(MemberName)                                                   \
+  {                                                                                      \
+#    MemberName, xiiGetStaticRTTI < XII_MEMBER_TYPE(OwnType, MemberName)::MessageType>() \
   }

@@ -19,6 +19,7 @@ public:
   ~xiiScriptWorldModule();
 
   virtual void Initialize() override;
+  virtual void WorldClear() override;
 
   void AddUpdateFunctionToSchedule(const xiiAbstractFunctionProperty* pFunction, void* pInstance, xiiTime updateInterval, bool bOnlyWhenSimulating);
   void RemoveUpdateFunctionToSchedule(const xiiAbstractFunctionProperty* pFunction, void* pInstance);
@@ -47,14 +48,6 @@ public:
   bool IsCoroutineFinished(xiiScriptCoroutineHandle hCoroutine) const;
 
   ///@}
-  /// \name Script Reload Functions
-  ///@{
-
-  using ReloadFunction = xiiDelegate<void()>;
-  void AddScriptReloadFunction(xiiScriptClassResourceHandle hScript, ReloadFunction function);
-  void RemoveScriptReloadFunction(xiiScriptClassResourceHandle hScript, ReloadFunction function);
-
-  ///@}
 
   struct FunctionContext
   {
@@ -69,25 +62,18 @@ public:
 
     bool operator==(const FunctionContext& other) const
     {
-      return m_pFunctionAndFlags == other.m_pFunctionAndFlags.GetPtr() && m_pInstance == other.m_pInstance;
+      return m_pFunctionAndFlags == other.m_pFunctionAndFlags && m_pInstance == other.m_pInstance;
     }
   };
 
 private:
   void CallUpdateFunctions(const xiiWorldModule::UpdateContext& context);
-  void ReloadScripts(const xiiWorldModule::UpdateContext& context);
-  void ResourceEventHandler(const xiiResourceEvent& e);
 
   xiiIntervalScheduler<FunctionContext> m_Scheduler;
 
   xiiIdTable<xiiScriptCoroutineId, xiiUniquePtr<xiiScriptCoroutine>>           m_RunningScriptCoroutines;
   xiiHashTable<xiiScriptInstance*, xiiSmallArray<xiiScriptCoroutineHandle, 8>> m_InstanceToScriptCoroutines;
   xiiDynamicArray<xiiUniquePtr<xiiScriptCoroutine>>                            m_DeadScriptCoroutines;
-
-  using ReloadFunctionList = xiiHybridArray<ReloadFunction, 8>;
-  xiiHashTable<xiiScriptClassResourceHandle, ReloadFunctionList> m_ReloadFunctions;
-  xiiHashSet<xiiScriptClassResourceHandle>                       m_NeedReload;
-  ReloadFunctionList                                             m_TempReloadFunctions;
 };
 
 //////////////////////////////////////////////////////////////////////////

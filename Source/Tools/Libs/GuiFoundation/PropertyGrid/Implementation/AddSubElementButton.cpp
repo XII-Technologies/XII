@@ -134,7 +134,7 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
     if (pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer))
     {
       m_SupportedTypes.Clear();
-      xiiReflectionUtils::GatherTypesDerivedFromClass(pProp->GetSpecificType(), m_SupportedTypes, false);
+      xiiReflectionUtils::GatherTypesDerivedFromClass(pProp->GetSpecificType(), m_SupportedTypes);
     }
     m_SupportedTypes.Insert(pProp->GetSpecificType());
 

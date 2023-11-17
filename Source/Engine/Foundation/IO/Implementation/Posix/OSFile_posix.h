@@ -459,6 +459,28 @@ xiiString xiiOSFile::GetTempDataFolder(xiiStringView sSubFolder)
   return s;
 }
 
+xiiString xiiOSFile::GetUserDocumentsFolder(xiiStringView sSubFolder)
+{
+  if (s_sUserDocumentsPath.IsEmpty())
+  {
+#  if XII_ENABLED(XII_PLATFORM_ANDROID)
+    android_app* pAndroidApp = xiiAndroidUtils::GetNativeAndroidApp();
+    // s_sUserDataPath = pAndroidApp->activity->internalDataPath;
+    XII_ASSERT_NOT_IMPLEMENTED;
+#  else
+    s_sUserDataPath = getenv("HOME");
+
+    if (s_sUserDataPath.IsEmpty())
+      s_sUserDataPath = getpwuid(getuid())->pw_dir;
+#  endif
+  }
+
+  xiiStringBuilder s = s_sUserDocumentsPath;
+  s.AppendPath(sSubFolder);
+  s.MakeCleanPath();
+  return s;
+}
+
 const xiiString xiiOSFile::GetCurrentWorkingDirectory()
 {
   char tmp[PATH_MAX];

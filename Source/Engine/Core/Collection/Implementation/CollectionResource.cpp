@@ -14,6 +14,9 @@ xiiCollectionResource::xiiCollectionResource() :
 {
 }
 
+// UnloadData() already makes sure to call UnregisterNames();
+xiiCollectionResource::~xiiCollectionResource() = default;
+
 bool xiiCollectionResource::PreloadResources(xiiUInt32 uiNumResourcesToPreload)
 {
   XII_LOCK(m_PreloadMutex);

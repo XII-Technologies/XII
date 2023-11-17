@@ -14,7 +14,7 @@ private:
   xiiGameObjectHandle        m_hObject;
   xiiVec3                    m_vSourcePos;
   xiiVec3                    m_vTargetPos;
-  xiiEnum<xiiEasingFunction> m_EasingFunction;
+  xiiEnum<xiiEasingFunction> m_Easing;
 
   xiiTime m_Duration;
   xiiTime m_TimePassed;

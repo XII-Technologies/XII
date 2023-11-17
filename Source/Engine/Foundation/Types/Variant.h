@@ -436,6 +436,12 @@ XII_ALWAYS_INLINE T xiiDynamicCast(const xiiVariant& variant)
   return nullptr;
 }
 
+// Simple math operator overloads. An invalid variant is returned if the given variants have incompatible types.
+XII_FOUNDATION_DLL xiiVariant operator+(const xiiVariant& a, const xiiVariant& b);
+XII_FOUNDATION_DLL xiiVariant operator-(const xiiVariant& a, const xiiVariant& b);
+XII_FOUNDATION_DLL xiiVariant operator*(const xiiVariant& a, const xiiVariant& b);
+XII_FOUNDATION_DLL xiiVariant operator/(const xiiVariant& a, const xiiVariant& b);
+
 namespace xiiMath
 {
   /// \brief An overload of xiiMath::Lerp to interpolate variants. A and b must have the same type.

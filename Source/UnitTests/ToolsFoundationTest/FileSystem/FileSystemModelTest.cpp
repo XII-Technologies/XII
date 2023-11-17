@@ -322,10 +322,10 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     sFilePathOld.AppendPath("Folder1", "rootFile2.txt");
 
     xiiStringBuilder sFolderPathNew(sOutputFolder);
-    sFolderPathNew.AppendPath("Folder2");
+    sFolderPathNew.AppendPath("Folder12");
 
     xiiStringBuilder sFilePathNew(sOutputFolder);
-    sFilePathNew.AppendPath("Folder2", "rootFile2.txt");
+    sFilePathNew.AppendPath("Folder12", "rootFile2.txt");
 
     XII_TEST_RESULT(xiiOSFile::MoveFileOrDirectory(sFolderPathOld, sFolderPathNew));
 
@@ -372,7 +372,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "HashFile")
   {
     xiiStringBuilder sFilePathNew(sOutputFolder);
-    sFilePathNew.AppendPath("Folder2", "rootFile2.txt");
+    sFilePathNew.AppendPath("Folder12", "rootFile2.txt");
 
     xiiFileStatus status;
     XII_TEST_RESULT(xiiFileSystemModel::GetSingleton()->HashFile(sFilePathNew, status));
@@ -413,7 +413,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetFiles")
   {
     xiiStringBuilder sFilePathNew(sOutputFolder);
-    sFilePathNew.AppendPath("Folder2", "rootFile2.txt");
+    sFilePathNew.AppendPath("Folder12", "rootFile2.txt");
 
     xiiFileSystemModel::LockedFiles files = xiiFileSystemModel::GetSingleton()->GetFiles();
     XII_TEST_INT(files->GetCount(), 1);
@@ -427,7 +427,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetFolders")
   {
     xiiStringBuilder sFolder(sOutputFolder);
-    sFolder.AppendPath("Folder2");
+    sFolder.AppendPath("Folder12");
 
     xiiFileSystemModel::LockedFolders folders = xiiFileSystemModel::GetSingleton()->GetFolders();
     XII_TEST_INT(folders->GetCount(), 2);
@@ -445,10 +445,10 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "CheckFileSystem")
   {
     xiiStringBuilder sFolderPath(sOutputFolder);
-    sFolderPath.AppendPath("Folder2");
+    sFolderPath.AppendPath("Folder12");
 
     xiiStringBuilder sFilePath(sOutputFolder);
-    sFilePath.AppendPath("Folder2", "rootFile2.txt");
+    sFilePath.AppendPath("Folder12", "rootFile2.txt");
 
     xiiFileSystemModel::GetSingleton()->CheckFileSystem();
 
@@ -545,7 +545,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "CheckFolder - File")
   {
     xiiStringBuilder sFilePath(sOutputFolder);
-    sFilePath.AppendPath("Folder2", "subFile.txt");
+    sFilePath.AppendPath("Folder12", "subFile.txt");
     {
       XII_TEST_RESULT(xiitCreateFile(sFilePath));
       xiiFileSystemModel::GetSingleton()->CheckFolder(sOutputFolder);
@@ -625,7 +625,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ReadDocument")
   {
     xiiStringBuilder sFilePathNew(sOutputFolder);
-    sFilePathNew.AppendPath("Folder2", "rootFile2.txt");
+    sFilePathNew.AppendPath("Folder12", "rootFile2.txt");
 
     xiiUuid docGuid  = xiiUuid::CreateUuid();
     auto    callback = [&](const xiiFileStatus& status, xiiStreamReader& ref_reader) {
@@ -645,7 +645,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "LinkDocument")
   {
     xiiStringBuilder sFilePathNew(sOutputFolder);
-    sFilePathNew.AppendPath("Folder2", "rootFile2.txt");
+    sFilePathNew.AppendPath("Folder12", "rootFile2.txt");
 
     xiiUuid guid  = xiiUuid::CreateUuid();
     xiiUuid guid2 = xiiUuid::CreateUuid();
@@ -689,10 +689,10 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Change file casing")
   {
     xiiStringBuilder sFilePathOld(sOutputFolder);
-    sFilePathOld.AppendPath("Folder2", "rootFile2.txt");
+    sFilePathOld.AppendPath("Folder12", "rootFile2.txt");
 
     xiiStringBuilder sFilePathNew(sOutputFolder);
-    sFilePathNew.AppendPath("Folder2", "RootFile2.txt");
+    sFilePathNew.AppendPath("Folder12", "RootFile2.txt");
 
     XII_TEST_RESULT(xiiOSFile::MoveFileOrDirectory(sFilePathOld, sFilePathNew));
 
@@ -720,10 +720,10 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Change folder casing")
   {
     xiiStringBuilder sFolderPathOld(sOutputFolder);
-    sFolderPathOld.AppendPath("Folder2");
+    sFolderPathOld.AppendPath("Folder12");
 
     xiiStringBuilder sFolderPathNew(sOutputFolder);
-    sFolderPathNew.AppendPath("FOLDER2");
+    sFolderPathNew.AppendPath("FOLDER12");
 
     XII_TEST_RESULT(xiiOSFile::MoveFileOrDirectory(sFolderPathOld, sFolderPathNew));
 
@@ -747,9 +747,9 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
 
     {
       xiiStringBuilder sFilePathOld(sOutputFolder);
-      sFilePathOld.AppendPath("Folder2", "RootFile2.txt");
+      sFilePathOld.AppendPath("Folder12", "RootFile2.txt");
       xiiStringBuilder sFilePathNew(sOutputFolder);
-      sFilePathNew.AppendPath("FOLDER2", "RootFile2.txt");
+      sFilePathNew.AppendPath("FOLDER12", "RootFile2.txt");
 
       xiiFileChangedEvent expected[] = {
         xiiFileChangedEvent(sFilePathNew, {}, xiiFileChangedEvent::Type::FileAdded),
@@ -765,10 +765,10 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "delete folder")
   {
     xiiStringBuilder sFolderPath(sOutputFolder);
-    sFolderPath.AppendPath("FOLDER2");
+    sFolderPath.AppendPath("FOLDER12");
 
     xiiStringBuilder sFilePath(sOutputFolder);
-    sFilePath.AppendPath("FOLDER2", "RootFile2.txt");
+    sFilePath.AppendPath("FOLDER12", "RootFile2.txt");
 
     XII_TEST_RESULT(xiiOSFile::DeleteFolder(sFolderPath));
 

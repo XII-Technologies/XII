@@ -323,6 +323,21 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDynamicStringEnumAttribute, 1, xiiRTTIDefaul
   XII_END_FUNCTIONS;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDynamicBitflagsAttribute, 1, xiiRTTIDefaultAllocator<xiiDynamicBitflagsAttribute>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+   XII_MEMBER_PROPERTY("DynamicBitflags", m_sDynamicBitflagsName),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_FUNCTIONS
+  {
+   XII_CONSTRUCTOR_PROPERTY(xiiStringView),
+  }
+  XII_END_FUNCTIONS;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 //////////////////////////////////////////////////////////////////////////
@@ -886,14 +901,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 //////////////////////////////////////////////////////////////////////////
 
 // clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAutoGenVisScriptMsgSender, 1, xiiRTTIDefaultAllocator<xiiAutoGenVisScriptMsgSender>)
-XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
-
-//////////////////////////////////////////////////////////////////////////
-
-// clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAutoGenVisScriptMsgHandler, 1, xiiRTTIDefaultAllocator<xiiAutoGenVisScriptMsgHandler>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExcludeFromScript, 1, xiiRTTIDefaultAllocator<xiiExcludeFromScript>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -1001,20 +1009,6 @@ xiiFunctionArgumentAttributes::xiiFunctionArgumentAttributes(xiiUInt32 uiArgInde
     m_ArgAttributes.PushBack(pAttribute4);
   }
 }
-
-//////////////////////////////////////////////////////////////////////////
-
-// clang-format off
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisScriptMappingAttribute, 1, xiiRTTIDefaultAllocator<xiiVisScriptMappingAttribute>)
-{
-  XII_BEGIN_PROPERTIES
-  {
-    XII_MEMBER_PROPERTY("Mapping", m_iMapping)
-  }
-  XII_END_PROPERTIES;
-}
-XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format on
 
 //////////////////////////////////////////////////////////////////////////
 

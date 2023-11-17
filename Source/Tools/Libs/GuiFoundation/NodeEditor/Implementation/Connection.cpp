@@ -94,11 +94,14 @@ void xiiQtConnection::UpdateGeometry()
   else
   {
     p.moveTo(m_OutPoint);
-    float fDotOut = QPointF::dotProduct(m_OutDir, dir);
-    float fDotIn  = QPointF::dotProduct(m_InDir, -dir);
+    float fDotOut = xiiMath::Abs(QPointF::dotProduct(m_OutDir, dir));
+    float fDotIn  = xiiMath::Abs(QPointF::dotProduct(m_InDir, -dir));
 
-    fDotOut = xiiMath::Max(100.0f, xiiMath::Abs(fDotOut));
-    fDotIn  = xiiMath::Max(100.0f, xiiMath::Abs(fDotIn));
+    float fMinDistance = xiiMath::Abs(QPointF::dotProduct(m_OutDir.transposed(), dir));
+    fMinDistance       = xiiMath::Min(200.0f, fMinDistance);
+
+    fDotOut = xiiMath::Max(fMinDistance, fDotOut);
+    fDotIn  = xiiMath::Max(fMinDistance, fDotIn);
 
     QPointF ctr1 = m_OutPoint + m_OutDir * (fDotOut * 0.5f);
     QPointF ctr2 = m_InPoint + m_InDir * (fDotIn * 0.5f);

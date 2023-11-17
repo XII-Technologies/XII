@@ -138,6 +138,11 @@ XII_CREATE_SIMPLE_TEST(Utility, ConversionUtils)
     szString = "-2147483649"; // invalid
     XII_TEST_BOOL(xiiConversionUtils::StringToInt(szString, iRes, &szResultPos) == XII_FAILURE);
     XII_TEST_INT(iRes, 42);
+
+    iRes     = 42;
+    szString = "100'000"; // valid with c++ separator
+    XII_TEST_BOOL(xiiConversionUtils::StringToInt(szString, iRes, &szResultPos) == XII_SUCCESS);
+    XII_TEST_INT(iRes, 100'000);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "StringToUInt")
@@ -414,6 +419,11 @@ XII_CREATE_SIMPLE_TEST(Utility, ConversionUtils)
     XII_TEST_BOOL(xiiConversionUtils::StringToFloat(szString, fRes, &szResultPos) == XII_SUCCESS);
     XII_TEST_DOUBLE(fRes, -2314565.345789, 0.000001);
     XII_TEST_BOOL(szResultPos == szString + 25);
+
+    fRes     = 42;
+    szString = "100'000.0";
+    XII_TEST_BOOL(xiiConversionUtils::StringToFloat(szString, fRes, &szResultPos) == XII_SUCCESS);
+    XII_TEST_DOUBLE(fRes, 100'000.0, 0.000001);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "StringToBool")

@@ -251,6 +251,8 @@ protected:
 public:
   virtual xiiApplication::Execution Run() override;
 
+  void RunOneFrame();
+
   xiiCopyOnBroadcastEvent<const xiiGameApplicationExecutionEvent&> m_ExecutionEvents;
 
   xiiTime GetFrameTime() const { return m_FrameTime; }

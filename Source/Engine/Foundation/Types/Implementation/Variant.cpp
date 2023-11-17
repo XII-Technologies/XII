@@ -746,6 +746,236 @@ xiiStringView xiiVariant::GetTypeName(const xiiRTTI* pType)
 
 //////////////////////////////////////////////////////////////////////////
 
+struct AddFunc
+{
+  template <typename T>
+  XII_ALWAYS_INLINE void operator()(const xiiVariant& a, const xiiVariant& b, xiiVariant& out_res)
+  {
+    if constexpr (std::is_same_v<T, xiiInt8> || std::is_same_v<T, xiiUInt8> ||
+                  std::is_same_v<T, xiiInt16> || std::is_same_v<T, xiiUInt16> ||
+                  std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiUInt32> ||
+                  std::is_same_v<T, xiiInt64> || std::is_same_v<T, xiiUInt64> ||
+                  std::is_same_v<T, float> || std::is_same_v<T, double> ||
+                  std::is_same_v<T, xiiColor> ||
+                  std::is_same_v<T, xiiVec2> || std::is_same_v<T, xiiVec3> || std::is_same_v<T, xiiVec4> ||
+                  std::is_same_v<T, xiiVec2d> || std::is_same_v<T, xiiVec3d> || std::is_same_v<T, xiiVec4d> ||
+                  std::is_same_v<T, xiiVec2I32> || std::is_same_v<T, xiiVec3I32> || std::is_same_v<T, xiiVec4I32> ||
+                  std::is_same_v<T, xiiVec2I64> || std::is_same_v<T, xiiVec3I64> || std::is_same_v<T, xiiVec4I64> ||
+                  std::is_same_v<T, xiiVec2U32> || std::is_same_v<T, xiiVec3U32> || std::is_same_v<T, xiiVec4U32> ||
+                  std::is_same_v<T, xiiVec2U64> || std::is_same_v<T, xiiVec3U64> || std::is_same_v<T, xiiVec4U64> ||
+                  std::is_same_v<T, xiiTime> ||
+                  std::is_same_v<T, xiiAngle> || std::is_same_v<T, xiiAngled>)
+    {
+      out_res = a.Get<T>() + b.Get<T>();
+    }
+    else if constexpr (std::is_same_v<T, xiiString> || std::is_same_v<T, xiiStringView>)
+    {
+      xiiStringBuilder s;
+      s.Set(a.Get<T>(), b.Get<T>());
+      out_res = xiiString(s.GetView());
+    }
+    else if constexpr (std::is_same_v<T, xiiHashedString>)
+    {
+      xiiStringBuilder s;
+      s.Set(a.Get<T>(), b.Get<T>());
+
+      xiiHashedString hashedS;
+      hashedS.Assign(s);
+      out_res = hashedS;
+    }
+  }
+};
+
+xiiVariant operator+(const xiiVariant& a, const xiiVariant& b)
+{
+  if (a.IsNumber() && b.IsNumber())
+  {
+    auto biggerType = xiiMath::Max(a.GetType(), b.GetType());
+
+    AddFunc    func;
+    xiiVariant result;
+    xiiVariant::DispatchTo(func, biggerType, a.ConvertTo(biggerType), b.ConvertTo(biggerType), result);
+    return result;
+  }
+  else if (a.GetType() == b.GetType())
+  {
+    AddFunc    func;
+    xiiVariant result;
+    xiiVariant::DispatchTo(func, a.GetType(), a, b, result);
+    return result;
+  }
+
+  return xiiVariant();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+struct SubFunc
+{
+  template <typename T>
+  XII_ALWAYS_INLINE void operator()(const xiiVariant& a, const xiiVariant& b, xiiVariant& out_res)
+  {
+    if constexpr (std::is_same_v<T, xiiInt8> || std::is_same_v<T, xiiUInt8> ||
+                  std::is_same_v<T, xiiInt16> || std::is_same_v<T, xiiUInt16> ||
+                  std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiUInt32> ||
+                  std::is_same_v<T, xiiInt64> || std::is_same_v<T, xiiUInt64> ||
+                  std::is_same_v<T, float> || std::is_same_v<T, double> ||
+                  std::is_same_v<T, xiiColor> ||
+                  std::is_same_v<T, xiiVec2> || std::is_same_v<T, xiiVec3> || std::is_same_v<T, xiiVec4> ||
+                  std::is_same_v<T, xiiVec2d> || std::is_same_v<T, xiiVec3d> || std::is_same_v<T, xiiVec4d> ||
+                  std::is_same_v<T, xiiVec2I32> || std::is_same_v<T, xiiVec3I32> || std::is_same_v<T, xiiVec4I32> ||
+                  std::is_same_v<T, xiiVec2I64> || std::is_same_v<T, xiiVec3I64> || std::is_same_v<T, xiiVec4I64> ||
+                  std::is_same_v<T, xiiVec2U32> || std::is_same_v<T, xiiVec3U32> || std::is_same_v<T, xiiVec4U32> ||
+                  std::is_same_v<T, xiiVec2U64> || std::is_same_v<T, xiiVec3U64> || std::is_same_v<T, xiiVec4U64> ||
+                  std::is_same_v<T, xiiTime> ||
+                  std::is_same_v<T, xiiAngle> || std::is_same_v<T, xiiAngled>)
+    {
+      out_res = a.Get<T>() - b.Get<T>();
+    }
+  }
+};
+
+xiiVariant operator-(const xiiVariant& a, const xiiVariant& b)
+{
+  if (a.IsNumber() && b.IsNumber())
+  {
+    auto biggerType = xiiMath::Max(a.GetType(), b.GetType());
+
+    SubFunc    func;
+    xiiVariant result;
+    xiiVariant::DispatchTo(func, biggerType, a.ConvertTo(biggerType), b.ConvertTo(biggerType), result);
+    return result;
+  }
+  else if (a.GetType() == b.GetType())
+  {
+    SubFunc    func;
+    xiiVariant result;
+    xiiVariant::DispatchTo(func, a.GetType(), a, b, result);
+    return result;
+  }
+
+  return xiiVariant();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+struct MulFunc
+{
+  template <typename T>
+  XII_ALWAYS_INLINE void operator()(const xiiVariant& a, const xiiVariant& b, xiiVariant& out_res)
+  {
+    if constexpr (std::is_same_v<T, xiiInt8> || std::is_same_v<T, xiiUInt8> ||
+                  std::is_same_v<T, xiiInt16> || std::is_same_v<T, xiiUInt16> ||
+                  std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiUInt32> ||
+                  std::is_same_v<T, xiiInt64> || std::is_same_v<T, xiiUInt64> ||
+                  std::is_same_v<T, float> || std::is_same_v<T, double> ||
+                  std::is_same_v<T, xiiColor> ||
+                  std::is_same_v<T, xiiTime>)
+    {
+      out_res = a.Get<T>() * b.Get<T>();
+    }
+    else if constexpr (std::is_same_v<T, xiiVec2> || std::is_same_v<T, xiiVec3> || std::is_same_v<T, xiiVec4> ||
+                       std::is_same_v<T, xiiVec2d> || std::is_same_v<T, xiiVec3d> || std::is_same_v<T, xiiVec4d> ||
+                       std::is_same_v<T, xiiVec2I32> || std::is_same_v<T, xiiVec3I32> || std::is_same_v<T, xiiVec4I32> ||
+                       std::is_same_v<T, xiiVec2I64> || std::is_same_v<T, xiiVec3I64> || std::is_same_v<T, xiiVec4I64> ||
+                       std::is_same_v<T, xiiVec2U32> || std::is_same_v<T, xiiVec3U32> || std::is_same_v<T, xiiVec4U32> ||
+                       std::is_same_v<T, xiiVec2U64> || std::is_same_v<T, xiiVec3U64> || std::is_same_v<T, xiiVec4U64>)
+    {
+      out_res = a.Get<T>().CompMul(b.Get<T>());
+    }
+    else if constexpr (std::is_same_v<T, xiiAngle>)
+    {
+      out_res = xiiAngle(a.Get<T>() * b.Get<T>().GetRadian());
+    }
+    else if constexpr (std::is_same_v<T, xiiAngled>)
+    {
+      out_res = xiiAngled(a.Get<T>() * b.Get<T>().GetRadian());
+    }
+  }
+};
+
+xiiVariant operator*(const xiiVariant& a, const xiiVariant& b)
+{
+  if (a.IsNumber() && b.IsNumber())
+  {
+    auto biggerType = xiiMath::Max(a.GetType(), b.GetType());
+
+    MulFunc    func;
+    xiiVariant result;
+    xiiVariant::DispatchTo(func, biggerType, a.ConvertTo(biggerType), b.ConvertTo(biggerType), result);
+    return result;
+  }
+  else if (a.GetType() == b.GetType())
+  {
+    MulFunc    func;
+    xiiVariant result;
+    xiiVariant::DispatchTo(func, a.GetType(), a, b, result);
+    return result;
+  }
+
+  return xiiVariant();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+struct DivFunc
+{
+  template <typename T>
+  XII_ALWAYS_INLINE void operator()(const xiiVariant& a, const xiiVariant& b, xiiVariant& out_res)
+  {
+    if constexpr (std::is_same_v<T, xiiInt8> || std::is_same_v<T, xiiUInt8> ||
+                  std::is_same_v<T, xiiInt16> || std::is_same_v<T, xiiUInt16> ||
+                  std::is_same_v<T, xiiInt32> || std::is_same_v<T, xiiUInt32> ||
+                  std::is_same_v<T, xiiInt64> || std::is_same_v<T, xiiUInt64> ||
+                  std::is_same_v<T, float> || std::is_same_v<T, double> ||
+                  std::is_same_v<T, xiiTime>)
+    {
+      out_res = a.Get<T>() / b.Get<T>();
+    }
+    else if constexpr (std::is_same_v<T, xiiVec2> || std::is_same_v<T, xiiVec3> || std::is_same_v<T, xiiVec4> ||
+                       std::is_same_v<T, xiiVec2d> || std::is_same_v<T, xiiVec3d> || std::is_same_v<T, xiiVec4d> ||
+                       std::is_same_v<T, xiiVec2I32> || std::is_same_v<T, xiiVec3I32> || std::is_same_v<T, xiiVec4I32> ||
+                       std::is_same_v<T, xiiVec2I64> || std::is_same_v<T, xiiVec3I64> || std::is_same_v<T, xiiVec4I64> ||
+                       std::is_same_v<T, xiiVec2U32> || std::is_same_v<T, xiiVec3U32> || std::is_same_v<T, xiiVec4U32> ||
+                       std::is_same_v<T, xiiVec2U64> || std::is_same_v<T, xiiVec3U64> || std::is_same_v<T, xiiVec4U64>)
+    {
+      out_res = a.Get<T>().CompDiv(b.Get<T>());
+    }
+    else if constexpr (std::is_same_v<T, xiiAngle>)
+    {
+      out_res = xiiAngle(a.Get<T>() / b.Get<T>().GetRadian());
+    }
+    else if constexpr (std::is_same_v<T, xiiAngled>)
+    {
+      out_res = xiiAngled(a.Get<T>() / b.Get<T>().GetRadian());
+    }
+  }
+};
+
+xiiVariant operator/(const xiiVariant& a, const xiiVariant& b)
+{
+  if (a.IsNumber() && b.IsNumber())
+  {
+    auto biggerType = xiiMath::Max(a.GetType(), b.GetType());
+
+    DivFunc    func;
+    xiiVariant result;
+    xiiVariant::DispatchTo(func, biggerType, a.ConvertTo(biggerType), b.ConvertTo(biggerType), result);
+    return result;
+  }
+  else if (a.GetType() == b.GetType())
+  {
+    DivFunc    func;
+    xiiVariant result;
+    xiiVariant::DispatchTo(func, a.GetType(), a, b, result);
+    return result;
+  }
+
+  return xiiVariant();
+}
+
+//////////////////////////////////////////////////////////////////////////
+
 struct LerpFunc
 {
   constexpr static bool CanInterpolateFloat(xiiVariantType::Enum variantType)

@@ -428,5 +428,16 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode
 }
 #endif
 
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+#  include <string.h>
+
+xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrno& arg)
+{
+  static thread_local char FullMessage[256];
+  const char*              szErrorMsg = strerror_r(arg.m_iErrno, FullMessage, 256);
+  xiiStringUtils::snprintf(szTmp, uiLength, "%i (\"%s\")", arg.m_iErrno, szErrorMsg);
+  return xiiStringView(szTmp);
+}
+#endif
 
 XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_FormatString);

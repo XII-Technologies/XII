@@ -22,24 +22,14 @@ protected:
   virtual void OnDeactivated() override;
   virtual void OnSimulationStarted() override;
 
-  /*virtual bool OnUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg) override;
-  virtual bool OnUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg) const override;
-
-  bool HandleUnhandledMessage(xiiMessage& msg, bool bWasPostedMsg);*/
-
-  //////////////////////////////////////////////////////////////////////////
-  // xiiEventMessageHandlerComponent
-
-protected:
-  // virtual bool HandlesEventMessage(const xiiEventMessage& msg) const override;
-
   //////////////////////////////////////////////////////////////////////////
   // xiiScriptComponent
 public:
   xiiScriptComponent();
   ~xiiScriptComponent();
 
-  void BroadcastEventMsg(xiiEventMessage& inout_msg);
+  bool SendEventMessage(xiiMessage& ref_msg);
+  void PostEventMessage(xiiMessage& ref_msg, xiiTime delay);
 
   void                                SetScriptClass(const xiiScriptClassResourceHandle& hScript);
   const xiiScriptClassResourceHandle& GetScriptClass() const { return m_hScriptClass; }
@@ -57,20 +47,25 @@ public:
   void                                         RemoveParameter(xiiStringView sKey);
   bool                                         GetParameter(xiiStringView sKey, xiiVariant& out_value) const;
 
+  XII_ALWAYS_INLINE xiiScriptInstance* GetScriptInstance() { return m_pInstance.Borrow(); }
+
 private:
   void InstantiateScript(bool bActivate);
   void ClearInstance(bool bDeactivate);
-  void UpdateScheduling();
+  void AddUpdateFunctionToSchedule();
+  void RemoveUpdateFunctionToSchedule();
 
   const xiiAbstractFunctionProperty* GetScriptFunction(xiiUInt32 uiFunctionIndex);
   void                               CallScriptFunction(xiiUInt32 uiFunctionIndex);
 
   void ReloadScript();
 
+  xiiEventMessageSender<xiiMessage>& FindSender(xiiMessage& ref_msg);
+
   struct EventSender
   {
-    const xiiRTTI*                         m_pMsgType = nullptr;
-    xiiEventMessageSender<xiiEventMessage> m_Sender;
+    const xiiRTTI*                    m_pMsgType = nullptr;
+    xiiEventMessageSender<xiiMessage> m_Sender;
   };
 
   xiiHybridArray<EventSender, 2> m_EventSenders;

@@ -130,4 +130,44 @@ XII_CREATE_SIMPLE_TEST(Strings, PathUtils)
     XII_TEST_BOOL(root.IsEmpty());
     XII_TEST_BOOL(relPath == "folder\\file2.txt");
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsSubPath")
+  {
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:/DataDir", "C:/DataDir/SomeFolder"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:/DataDir", "C:/DataDir"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:/DataDir", "C:/DataDir/"));
+    XII_TEST_BOOL(!xiiPathUtils::IsSubPath("C:/DataDir", "C:/DataDir2"));
+
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:\\DataDir", "C:/DataDir/SomeFolder"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:\\DataDir", "C:/DataDir"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:\\DataDir", "C:/DataDir/"));
+    XII_TEST_BOOL(!xiiPathUtils::IsSubPath("C:\\DataDir", "C:/DataDir2"));
+
+    XII_TEST_BOOL(!xiiPathUtils::IsSubPath("C:\\DataDiR", "C:/DataDir/SomeFolder"));
+    XII_TEST_BOOL(!xiiPathUtils::IsSubPath("C:\\DataDiR", "C:/DataDir"));
+    XII_TEST_BOOL(!xiiPathUtils::IsSubPath("C:\\DataDiR", "C:/DataDir/"));
+    XII_TEST_BOOL(!xiiPathUtils::IsSubPath("C:\\DataDiR", "C:/DataDir2"));
+
+    XII_TEST_BOOL(!xiiPathUtils::IsSubPath("C:/DataDir/SomeFolder", "C:/DataDir"));
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsSubPath_NoCase")
+  {
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:/DataDir", "C:/DataDir/SomeFolder"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:/DataDir", "C:/DataDir"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:/DataDir", "C:/DataDir/"));
+    XII_TEST_BOOL(!xiiPathUtils::IsSubPath_NoCase("C:/DataDir", "C:/DataDir2"));
+
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:\\DataDir", "C:/DataDir/SomeFolder"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:\\DataDir", "C:/DataDir"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:\\DataDir", "C:/DataDir/"));
+    XII_TEST_BOOL(!xiiPathUtils::IsSubPath_NoCase("C:\\DataDir", "C:/DataDir2"));
+
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:\\DataDiR", "C:/DataDir/SomeFolder"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:\\DataDiR", "C:/DataDir"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:\\DataDiR", "C:/DataDir/"));
+    XII_TEST_BOOL(!xiiPathUtils::IsSubPath_NoCase("C:\\DataDiR", "C:/DataDir2"));
+
+    XII_TEST_BOOL(!xiiPathUtils::IsSubPath_NoCase("C:/DataDir/SomeFolder", "C:/DataDir"));
+  }
 }

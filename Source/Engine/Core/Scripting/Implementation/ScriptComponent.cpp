@@ -18,7 +18,6 @@ XII_BEGIN_COMPONENT_TYPE(xiiScriptComponent, 1, xiiComponentMode::Static)
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Scripting"),
-    new xiiInDevelopmentAttribute(xiiInDevelopmentAttribute::Phase::Alpha),
   }
   XII_END_ATTRIBUTES;
 }
@@ -92,6 +91,8 @@ void xiiScriptComponent::OnActivated()
   SUPER::OnActivated();
 
   CallScriptFunction(xiiComponent_ScriptBaseClassFunctions::OnActivated);
+
+  AddUpdateFunctionToSchedule();
 }
 
 void xiiScriptComponent::OnDeactivated()
@@ -99,6 +100,8 @@ void xiiScriptComponent::OnDeactivated()
   SUPER::OnDeactivated();
 
   CallScriptFunction(xiiComponent_ScriptBaseClassFunctions::OnDeactivated);
+
+  RemoveUpdateFunctionToSchedule();
 }
 
 void xiiScriptComponent::OnSimulationStarted()
@@ -108,21 +111,16 @@ void xiiScriptComponent::OnSimulationStarted()
   CallScriptFunction(xiiComponent_ScriptBaseClassFunctions::OnSimulationStarted);
 }
 
-void xiiScriptComponent::BroadcastEventMsg(xiiEventMessage& inout_msg)
+bool xiiScriptComponent::SendEventMessage(xiiMessage& ref_msg)
 {
-  const xiiRTTI* pType = inout_msg.GetDynamicRTTI();
-  for (auto& sender : m_EventSenders)
-  {
-    if (sender.m_pMsgType == pType)
-    {
-      sender.m_Sender.SendEventMessage(inout_msg, this, GetOwner());
-      return;
-    }
-  }
+  auto& sender = FindSender(ref_msg);
+  return sender.SendEventMessage(ref_msg, this, GetOwner());
+}
 
-  auto& sender      = m_EventSenders.ExpandAndGetRef();
-  sender.m_pMsgType = pType;
-  sender.m_Sender.SendEventMessage(inout_msg, this, GetOwner());
+void xiiScriptComponent::PostEventMessage(xiiMessage& ref_msg, xiiTime delay)
+{
+  auto& sender = FindSender(ref_msg);
+  sender.PostEventMessage(ref_msg, this, GetOwner(), delay);
 }
 
 void xiiScriptComponent::SetScriptClass(const xiiScriptClassResourceHandle& hScript)
@@ -164,10 +162,7 @@ void xiiScriptComponent::SetUpdateInterval(xiiTime interval)
 {
   m_UpdateInterval = interval;
 
-  if (IsActiveAndInitialized())
-  {
-    UpdateScheduling();
-  }
+  AddUpdateFunctionToSchedule();
 }
 
 xiiTime xiiScriptComponent::GetUpdateInterval() const
@@ -180,7 +175,7 @@ const xiiRangeView<xiiStringView, xiiUInt32> xiiScriptComponent::GetParameters()
   return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
                                                 [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
                                                 [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt); });
+                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString(); });
 }
 
 void xiiScriptComponent::SetParameter(xiiStringView sKey, const xiiVariant& value)
@@ -193,12 +188,21 @@ void xiiScriptComponent::SetParameter(xiiStringView sKey, const xiiVariant& valu
     return;
 
   m_Parameters[hs] = value;
+
+  if (IsInitialized() && m_hScriptClass.IsValid())
+  {
+    InstantiateScript(IsActiveAndInitialized());
+  }
 }
 
 void xiiScriptComponent::RemoveParameter(xiiStringView sKey)
 {
   if (m_Parameters.RemoveAndCopy(xiiTempHashedString(sKey)))
   {
+    if (IsInitialized() && m_hScriptClass.IsValid())
+    {
+      InstantiateScript(IsActiveAndInitialized());
+    }
   }
 }
 
@@ -240,13 +244,23 @@ void xiiScriptComponent::InstantiateScript(bool bActivate)
     m_pInstance->ApplyParameters(m_Parameters);
   }
 
-  UpdateScheduling();
+  GetWorld()->AddResourceReloadFunction(m_hScriptClass, GetHandle(), nullptr,
+                                        [](const xiiWorld::ResourceReloadContext& context) {
+                                          xiiStaticCast<xiiScriptComponent*>(context.m_pComponent)->ReloadScript();
+                                        });
 
   CallScriptFunction(xiiComponent_ScriptBaseClassFunctions::Initialize);
   if (bActivate)
   {
     CallScriptFunction(xiiComponent_ScriptBaseClassFunctions::OnActivated);
+
+    if (GetWorld()->GetWorldSimulationEnabled())
+    {
+      CallScriptFunction(xiiComponent_ScriptBaseClassFunctions::OnSimulationStarted);
+    }
   }
+
+  AddUpdateFunctionToSchedule();
 }
 
 void xiiScriptComponent::ClearInstance(bool bDeactivate)
@@ -257,14 +271,12 @@ void xiiScriptComponent::ClearInstance(bool bDeactivate)
   }
   CallScriptFunction(xiiComponent_ScriptBaseClassFunctions::Deinitialize);
 
-  auto pModule = GetWorld()->GetOrCreateModule<xiiScriptWorldModule>();
-  if (auto pUpdateFunction = GetScriptFunction(xiiComponent_ScriptBaseClassFunctions::Update))
-  {
-    pModule->RemoveUpdateFunctionToSchedule(pUpdateFunction, m_pInstance.Borrow());
-  }
+  RemoveUpdateFunctionToSchedule();
 
+  auto pModule = GetWorld()->GetOrCreateModule<xiiScriptWorldModule>();
   pModule->StopAndDeleteAllCoroutines(m_pInstance.Borrow());
-  pModule->RemoveScriptReloadFunction(m_hScriptClass, xiiMakeDelegate(&xiiScriptComponent::ReloadScript, this));
+
+  GetWorld()->RemoveResourceReloadFunction(m_hScriptClass, GetHandle(), nullptr);
 
   m_pInstance   = nullptr;
   m_pScriptType = nullptr;
@@ -272,16 +284,26 @@ void xiiScriptComponent::ClearInstance(bool bDeactivate)
   m_pMessageDispatchType = GetDynamicRTTI();
 }
 
-void xiiScriptComponent::UpdateScheduling()
+void xiiScriptComponent::AddUpdateFunctionToSchedule()
 {
+  if (IsActiveAndInitialized() == false)
+    return;
+
   auto pModule = GetWorld()->GetOrCreateModule<xiiScriptWorldModule>();
   if (auto pUpdateFunction = GetScriptFunction(xiiComponent_ScriptBaseClassFunctions::Update))
   {
     const bool bOnlyWhenSimulating = true;
     pModule->AddUpdateFunctionToSchedule(pUpdateFunction, m_pInstance.Borrow(), m_UpdateInterval, bOnlyWhenSimulating);
   }
+}
 
-  pModule->AddScriptReloadFunction(m_hScriptClass, xiiMakeDelegate(&xiiScriptComponent::ReloadScript, this));
+void xiiScriptComponent::RemoveUpdateFunctionToSchedule()
+{
+  auto pModule = GetWorld()->GetOrCreateModule<xiiScriptWorldModule>();
+  if (auto pUpdateFunction = GetScriptFunction(xiiComponent_ScriptBaseClassFunctions::Update))
+  {
+    pModule->RemoveUpdateFunctionToSchedule(pUpdateFunction, m_pInstance.Borrow());
+  }
 }
 
 const xiiAbstractFunctionProperty* xiiScriptComponent::GetScriptFunction(xiiUInt32 uiFunctionIndex)
@@ -306,4 +328,25 @@ void xiiScriptComponent::CallScriptFunction(xiiUInt32 uiFunctionIndex)
 void xiiScriptComponent::ReloadScript()
 {
   InstantiateScript(IsActiveAndInitialized());
+}
+
+xiiEventMessageSender<xiiMessage>& xiiScriptComponent::FindSender(xiiMessage& ref_msg)
+{
+  const xiiRTTI* pType = ref_msg.GetDynamicRTTI();
+  if (pType->IsDerivedFrom<xiiEventMessage>())
+  {
+    static_cast<xiiEventMessage&>(ref_msg).FillFromSenderComponent(this);
+  }
+
+  for (auto& sender : m_EventSenders)
+  {
+    if (sender.m_pMsgType == pType)
+    {
+      return sender.m_Sender;
+    }
+  }
+
+  auto& sender      = m_EventSenders.ExpandAndGetRef();
+  sender.m_pMsgType = pType;
+  return sender.m_Sender;
 }

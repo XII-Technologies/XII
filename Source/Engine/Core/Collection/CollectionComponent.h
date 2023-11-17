@@ -43,5 +43,6 @@ protected:
   /// \brief Triggers the preload on the referenced xiiCollectionResource
   void InitiatePreload();
 
+  bool                        m_bRegisterNames = false;
   xiiCollectionResourceHandle m_hCollection;
 };

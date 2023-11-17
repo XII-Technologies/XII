@@ -83,7 +83,7 @@ void xiiGameApplicationBase::TakeScreenshot()
   m_bTakeScreenshot = true;
 }
 
-void xiiGameApplicationBase::StoreScreenshot(xiiImage&& image, xiiStringView sContext /*= {}*/)
+void xiiGameApplicationBase::StoreScreenshot(xiiImage&& image, xiiStringView sContext /*= {} */)
 {
   class WriteFileTask final : public xiiTask
   {
@@ -122,7 +122,7 @@ void xiiGameApplicationBase::StoreScreenshot(xiiImage&& image, xiiStringView sCo
   xiiTaskSystem::StartSingleTask(pWriteTask, xiiTaskPriority::LongRunning);
 }
 
-void xiiGameApplicationBase::ExecuteTakeScreenshot(xiiWindowOutputTargetBase* pOutputTarget, xiiStringView sContext /* = {}*/)
+void xiiGameApplicationBase::ExecuteTakeScreenshot(xiiWindowOutputTargetBase* pOutputTarget, xiiStringView sContext /* = {} */)
 {
   if (m_bTakeScreenshot)
   {
@@ -160,7 +160,7 @@ xiiResult xiiGameApplicationBase::GetAbsFrameCaptureOutputPath(xiiStringBuilder&
   return xiiFileSystem::ResolvePath(sPath, &ref_sOutputPath, nullptr);
 }
 
-void xiiGameApplicationBase::ExecuteFrameCapture(xiiWindowHandle targetWindowHandle, xiiStringView sContext /*= {}*/)
+void xiiGameApplicationBase::ExecuteFrameCapture(xiiWindowHandle targetWindowHandle, xiiStringView sContext /*= {} */)
 {
   xiiFrameCaptureInterface* pCaptureInterface = xiiSingletonRegistry::GetSingletonInstance<xiiFrameCaptureInterface>();
   if (!pCaptureInterface)
@@ -374,16 +374,23 @@ XII_ON_GLOBAL_EVENT(GameApp_UpdatePlugins)
 
 xiiApplication::Execution xiiGameApplicationBase::Run()
 {
-  XII_PROFILE_SCOPE("Run");
   if (m_bWasQuitRequested)
     return xiiApplication::Execution::Quit;
 
+  RunOneFrame();
+
+  return xiiApplication::Execution::Continue;
+}
+
+void xiiGameApplicationBase::RunOneFrame()
+{
+  XII_PROFILE_SCOPE("Run");
   s_bUpdatePluginsExecuted = false;
 
   xiiActorManager::GetSingleton()->Update();
 
   if (!IsGameUpdateEnabled())
-    return xiiApplication::Execution::Continue;
+    return;
 
   {
     // for plugins that need to hook into this without a link dependency on this lib
@@ -441,7 +448,6 @@ xiiApplication::Execution xiiGameApplicationBase::Run()
     XII_PROFILE_SCOPE("Run_FinishFrame");
     Run_FinishFrame();
   }
-  return xiiApplication::Execution::Continue;
 }
 
 void xiiGameApplicationBase::Run_InputUpdate()
