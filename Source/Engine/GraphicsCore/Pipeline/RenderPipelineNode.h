@@ -52,7 +52,7 @@ struct xiiRenderPipelineNodePassThrougPin : public xiiRenderPipelineNodePin
   XII_ALWAYS_INLINE xiiRenderPipelineNodePassThrougPin() { m_Type = Type::PassThrough; }
 };
 
-class XII_RENDERERCORE_DLL xiiRenderPipelineNode : public xiiReflectedClass
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineNode : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineNode, xiiReflectedClass);
 
@@ -73,7 +73,7 @@ private:
   xiiHashTable<xiiHashedString, const xiiRenderPipelineNodePin*> m_NameToPin;
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiRenderPipelineNodePin);
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiRenderPipelineNodeInputPin);
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiRenderPipelineNodeOutputPin);
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiRenderPipelineNodePassThrougPin);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePin);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeInputPin);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodeOutputPin);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineNodePassThrougPin);

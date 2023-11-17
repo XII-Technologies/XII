@@ -3,7 +3,7 @@
 #include <Foundation/Strings/HashedString.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 
-struct XII_RENDERERCORE_DLL xiiViewRenderMode
+struct XII_GRAPHICSCORE_DLL xiiViewRenderMode
 {
   using StorageType = xiiUInt8;
 
@@ -42,4 +42,4 @@ struct XII_RENDERERCORE_DLL xiiViewRenderMode
   static int                 GetRenderPassForShader(Enum renderMode);
   static void                GetDebugText(Enum renderMode, xiiStringBuilder& out_sDebugText);
 };
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiViewRenderMode);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiViewRenderMode);

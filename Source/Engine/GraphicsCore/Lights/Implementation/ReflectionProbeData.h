@@ -17,10 +17,10 @@ struct xiiReflectionProbeMode
     Default = Static
   };
 };
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiReflectionProbeMode);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiReflectionProbeMode);
 
 /// \brief Describes how a cube map should be generated.
-struct XII_RENDERERCORE_DLL xiiReflectionProbeDesc
+struct XII_GRAPHICSCORE_DLL xiiReflectionProbeDesc
 {
   xiiUuid m_uniqueID;
 
@@ -50,7 +50,7 @@ struct xiiHashHelper<xiiReflectionProbeId>
 };
 
 /// \brief Render data for a reflection probe.
-class XII_RENDERERCORE_DLL xiiReflectionProbeRenderData : public xiiRenderData
+class XII_GRAPHICSCORE_DLL xiiReflectionProbeRenderData : public xiiRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiReflectionProbeRenderData, xiiRenderData);
 
@@ -119,4 +119,4 @@ struct xiiProbeFlags
 
 XII_DECLARE_FLAGS_OPERATORS(xiiProbeFlags);
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiProbeFlags);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiProbeFlags);

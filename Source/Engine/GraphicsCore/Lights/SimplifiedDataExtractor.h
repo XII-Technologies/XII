@@ -14,7 +14,7 @@ public:
   xiiEnum<xiiCameraUsageHint> m_cameraUsageHint      = xiiCameraUsageHint::Default;
 };
 
-class XII_RENDERERCORE_DLL xiiSimplifiedDataExtractor : public xiiExtractor
+class XII_GRAPHICSCORE_DLL xiiSimplifiedDataExtractor : public xiiExtractor
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSimplifiedDataExtractor, xiiExtractor);
 

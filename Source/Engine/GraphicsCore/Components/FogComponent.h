@@ -9,7 +9,7 @@ struct xiiMsgUpdateLocalBounds;
 using xiiFogComponentManager = xiiSettingsComponentManager<class xiiFogComponent>;
 
 /// \brief The render data object for ambient light.
-class XII_RENDERERCORE_DLL xiiFogRenderData : public xiiRenderData
+class XII_GRAPHICSCORE_DLL xiiFogRenderData : public xiiRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiFogRenderData, xiiRenderData);
 
@@ -20,7 +20,7 @@ public:
   float    m_fInvSkyDistance;
 };
 
-class XII_RENDERERCORE_DLL xiiFogComponent : public xiiSettingsComponent
+class XII_GRAPHICSCORE_DLL xiiFogComponent : public xiiSettingsComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiFogComponent, xiiSettingsComponent, xiiFogComponentManager);
 

@@ -3,7 +3,7 @@
 #include <GraphicsCore/Meshes/MeshRenderer.h>
 
 /// \brief Implements rendering of skinned meshes
-class XII_RENDERERCORE_DLL xiiSkinnedMeshRenderer : public xiiMeshRenderer
+class XII_GRAPHICSCORE_DLL xiiSkinnedMeshRenderer : public xiiMeshRenderer
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSkinnedMeshRenderer, xiiMeshRenderer);
   XII_DISALLOW_COPY_AND_ASSIGN(xiiSkinnedMeshRenderer);

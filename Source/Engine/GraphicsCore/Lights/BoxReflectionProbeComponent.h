@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/Lights/ReflectionProbeComponentBase.h>
 
-class XII_RENDERERCORE_DLL xiiBoxReflectionProbeComponentManager final : public xiiComponentManager<class xiiBoxReflectionProbeComponent, xiiBlockStorageType::Compact>
+class XII_GRAPHICSCORE_DLL xiiBoxReflectionProbeComponentManager final : public xiiComponentManager<class xiiBoxReflectionProbeComponent, xiiBlockStorageType::Compact>
 {
 public:
   xiiBoxReflectionProbeComponentManager(xiiWorld* pWorld);
@@ -11,7 +11,7 @@ public:
 /// \brief Box reflection probe component.
 ///
 /// The generated reflection cube map is projected on a box defined by this component's extents. The influence volume can be smaller than the projection which is defined by a scale and shift parameter. Each side of the influence volume has a separate falloff parameter to smoothly blend the probe into others.
-class XII_RENDERERCORE_DLL xiiBoxReflectionProbeComponent : public xiiReflectionProbeComponentBase
+class XII_GRAPHICSCORE_DLL xiiBoxReflectionProbeComponent : public xiiReflectionProbeComponentBase
 {
   XII_DECLARE_COMPONENT_TYPE(xiiBoxReflectionProbeComponent, xiiReflectionProbeComponentBase, xiiBoxReflectionProbeComponentManager);
 
@@ -70,7 +70,7 @@ protected:
 };
 
 /// \brief A special visualizer attribute for box reflection probes
-class XII_RENDERERCORE_DLL xiiBoxReflectionProbeVisualizerAttribute : public xiiVisualizerAttribute
+class XII_GRAPHICSCORE_DLL xiiBoxReflectionProbeVisualizerAttribute : public xiiVisualizerAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiBoxReflectionProbeVisualizerAttribute, xiiVisualizerAttribute);
 

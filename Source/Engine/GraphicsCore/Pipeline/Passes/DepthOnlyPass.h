@@ -3,7 +3,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
 /// \brief A render pass that renders into a depth target only.
-class XII_RENDERERCORE_DLL xiiDepthOnlyPass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiDepthOnlyPass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDepthOnlyPass, xiiRenderPipelinePass);
 

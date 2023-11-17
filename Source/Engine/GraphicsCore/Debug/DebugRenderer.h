@@ -30,7 +30,7 @@ struct xiiDebugTextHAlign
   };
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiDebugTextHAlign);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDebugTextHAlign);
 
 /// \brief Vertical alignment of debug text
 struct xiiDebugTextVAlign
@@ -47,7 +47,7 @@ struct xiiDebugTextVAlign
   };
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiDebugTextVAlign);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDebugTextVAlign);
 
 /// \brief Screen placement of debug text
 struct xiiDebugTextPlacement
@@ -69,7 +69,7 @@ struct xiiDebugTextPlacement
   };
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiDebugTextPlacement);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDebugTextPlacement);
 
 /// \brief Draws simple shapes into the scene or view.
 ///
@@ -77,7 +77,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiDebugTextPlacement);
 /// The 'context' specifies whether shapes are generally visible in a scene, from all views,
 /// or specific to a single view. See the xiiDebugRendererContext constructors for what can be implicitly
 /// used as a context.
-class XII_RENDERERCORE_DLL xiiDebugRenderer
+class XII_GRAPHICSCORE_DLL xiiDebugRenderer
 {
 public:
   struct Line
@@ -229,7 +229,7 @@ private:
 };
 
 /// \brief Helper class to expose debug rendering to scripting
-class XII_RENDERERCORE_DLL xiiScriptExtensionClass_Debug
+class XII_GRAPHICSCORE_DLL xiiScriptExtensionClass_Debug
 {
 public:
   static void DrawCross(const xiiWorld* pWorld, const xiiVec3& vPosition, float fSize, const xiiColor& color, const xiiTransform& transform);
@@ -247,6 +247,6 @@ public:
   static void AddPersistentLineSphere(const xiiWorld* pWorld, const xiiVec3& vPosition, float fRadius, const xiiColor& color, const xiiTransform& transform, xiiTime duration);
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiScriptExtensionClass_Debug);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiScriptExtensionClass_Debug);
 
 #include <GraphicsCore/Debug/Implementation/DebugRenderer_inl.h>

@@ -18,7 +18,7 @@ struct xiiRenderPipelineResourceDescriptor
   xiiString                 m_sPath;
 };
 
-class XII_RENDERERCORE_DLL xiiRenderPipelineResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiRenderPipelineResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelineResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiRenderPipelineResource);

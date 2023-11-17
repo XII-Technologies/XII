@@ -36,7 +36,7 @@ struct xiiRenderWorldRenderEvent
   xiiUInt64                   m_uiFrameCounter     = 0;
 };
 
-class XII_RENDERERCORE_DLL xiiRenderWorld
+class XII_GRAPHICSCORE_DLL xiiRenderWorld
 {
 public:
   static xiiViewHandle CreateView(const char* szName, xiiView*& out_pView);

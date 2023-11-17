@@ -8,7 +8,7 @@ struct xiiPerInstanceData;
 class xiiInstanceDataProvider;
 class xiiInstancedMeshComponent;
 
-struct XII_RENDERERCORE_DLL xiiInstanceData
+struct XII_GRAPHICSCORE_DLL xiiInstanceData
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiInstanceData);
 
@@ -37,7 +37,7 @@ private:
   xiiDynamicArray<xiiPerInstanceData, xiiAlignedAllocatorWrapper> m_PerInstanceData;
 };
 
-class XII_RENDERERCORE_DLL xiiInstanceDataProvider : public xiiFrameDataProvider<xiiInstanceData>
+class XII_GRAPHICSCORE_DLL xiiInstanceDataProvider : public xiiFrameDataProvider<xiiInstanceData>
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiInstanceDataProvider, xiiFrameDataProviderBase);
 

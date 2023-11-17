@@ -11,7 +11,7 @@
 /// Just add all permutation variables and their possible values.
 /// Then the number of possible permutations and each permutation
 /// can be queried.
-class XII_RENDERERCORE_DLL xiiPermutationGenerator
+class XII_GRAPHICSCORE_DLL xiiPermutationGenerator
 {
 public:
   /// \brief Resets everything.

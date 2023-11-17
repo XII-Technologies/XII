@@ -4,7 +4,7 @@
 #include <GraphicsCore/Shader/ConstantBufferStorage.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 
-class XII_RENDERERCORE_DLL xiiSelectionHighlightPass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiSelectionHighlightPass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSelectionHighlightPass, xiiRenderPipelinePass);
 

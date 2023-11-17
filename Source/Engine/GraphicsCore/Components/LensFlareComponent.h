@@ -9,7 +9,7 @@
 struct xiiMsgSetColor;
 using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DResource>;
 
-class XII_RENDERERCORE_DLL xiiLensFlareRenderData : public xiiRenderData
+class XII_GRAPHICSCORE_DLL xiiLensFlareRenderData : public xiiRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiLensFlareRenderData, xiiRenderData);
 
@@ -52,11 +52,11 @@ struct xiiLensFlareElement
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiLensFlareElement);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLensFlareElement);
 
 using xiiLensFlareComponentManager = xiiComponentManager<class xiiLensFlareComponent, xiiBlockStorageType::Compact>;
 
-class XII_RENDERERCORE_DLL xiiLensFlareComponent : public xiiRenderComponent
+class XII_GRAPHICSCORE_DLL xiiLensFlareComponent : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiLensFlareComponent, xiiRenderComponent, xiiLensFlareComponentManager);
 

@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/Lights/ReflectionProbeComponentBase.h>
 
-class XII_RENDERERCORE_DLL xiiSphereReflectionProbeComponentManager final : public xiiComponentManager<class xiiSphereReflectionProbeComponent, xiiBlockStorageType::Compact>
+class XII_GRAPHICSCORE_DLL xiiSphereReflectionProbeComponentManager final : public xiiComponentManager<class xiiSphereReflectionProbeComponent, xiiBlockStorageType::Compact>
 {
 public:
   xiiSphereReflectionProbeComponentManager(xiiWorld* pWorld);
@@ -14,7 +14,7 @@ public:
 /// \brief Sphere reflection probe component.
 ///
 /// The generated reflection cube map is is projected to infinity. So parallax correction takes place.
-class XII_RENDERERCORE_DLL xiiSphereReflectionProbeComponent : public xiiReflectionProbeComponentBase
+class XII_GRAPHICSCORE_DLL xiiSphereReflectionProbeComponent : public xiiReflectionProbeComponentBase
 {
   XII_DECLARE_COMPONENT_TYPE(xiiSphereReflectionProbeComponent, xiiReflectionProbeComponentBase, xiiSphereReflectionProbeComponentManager);
 

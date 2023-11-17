@@ -5,7 +5,7 @@
 
 namespace xiiShaderHelper
 {
-  class XII_RENDERERCORE_DLL xiiTextSectionizer
+  class XII_GRAPHICSCORE_DLL xiiTextSectionizer
   {
   public:
     void Clear();
@@ -62,7 +62,7 @@ namespace xiiShaderHelper
     };
   };
 
-  XII_RENDERERCORE_DLL void GetShaderSections(const char* szContent, xiiTextSectionizer& out_sections);
+  XII_GRAPHICSCORE_DLL void GetShaderSections(const char* szContent, xiiTextSectionizer& out_sections);
 
   xiiUInt32 CalculateHash(const xiiArrayPtr<xiiPermutationVar>& vars);
 } // namespace xiiShaderHelper

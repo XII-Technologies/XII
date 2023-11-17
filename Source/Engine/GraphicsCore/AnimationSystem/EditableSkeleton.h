@@ -20,9 +20,9 @@ namespace ozz::animation
   }
 } // namespace ozz::animation
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiSkeletonJointGeometryType);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSkeletonJointGeometryType);
 
-struct XII_RENDERERCORE_DLL xiiEditableSkeletonBoneShape : public xiiReflectedClass
+struct XII_GRAPHICSCORE_DLL xiiEditableSkeletonBoneShape : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiEditableSkeletonBoneShape, xiiReflectedClass);
 
@@ -36,7 +36,7 @@ struct XII_RENDERERCORE_DLL xiiEditableSkeletonBoneShape : public xiiReflectedCl
   float m_fThickness = 0; // Sphere radius, Capsule radius
 };
 
-struct XII_RENDERERCORE_DLL xiiEditableSkeletonBoneCollider : public xiiReflectedClass
+struct XII_GRAPHICSCORE_DLL xiiEditableSkeletonBoneCollider : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiEditableSkeletonBoneCollider, xiiReflectedClass);
 
@@ -45,7 +45,7 @@ struct XII_RENDERERCORE_DLL xiiEditableSkeletonBoneCollider : public xiiReflecte
   xiiDynamicArray<xiiUInt8> m_TriangleIndices;
 };
 
-class XII_RENDERERCORE_DLL xiiEditableSkeletonJoint : public xiiReflectedClass
+class XII_GRAPHICSCORE_DLL xiiEditableSkeletonJoint : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiEditableSkeletonJoint, xiiReflectedClass);
 
@@ -89,7 +89,7 @@ public:
   xiiUInt8  m_uiCollisionLayerOverride;
 };
 
-class XII_RENDERERCORE_DLL xiiEditableSkeleton : public xiiReflectedClass
+class XII_GRAPHICSCORE_DLL xiiEditableSkeleton : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiEditableSkeleton, xiiReflectedClass);
 
@@ -120,7 +120,7 @@ public:
   xiiHybridArray<xiiEditableSkeletonJoint*, 4> m_Children;
 };
 
-struct XII_RENDERERCORE_DLL xiiExposedBone
+struct XII_GRAPHICSCORE_DLL xiiExposedBone
 {
   xiiString    m_sName;
   xiiString    m_sParent;
@@ -130,9 +130,9 @@ struct XII_RENDERERCORE_DLL xiiExposedBone
 
 XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiExposedBone);
 
-XII_RENDERERCORE_DLL void operator<<(xiiStreamWriter& inout_stream, const xiiExposedBone& bone);
-XII_RENDERERCORE_DLL void operator>>(xiiStreamReader& inout_stream, xiiExposedBone& ref_bone);
-XII_RENDERERCORE_DLL bool operator==(const xiiExposedBone& lhs, const xiiExposedBone& rhs);
+XII_GRAPHICSCORE_DLL void operator<<(xiiStreamWriter& inout_stream, const xiiExposedBone& bone);
+XII_GRAPHICSCORE_DLL void operator>>(xiiStreamReader& inout_stream, xiiExposedBone& ref_bone);
+XII_GRAPHICSCORE_DLL bool operator==(const xiiExposedBone& lhs, const xiiExposedBone& rhs);
 
 template <>
 struct xiiHashHelper<xiiExposedBone>
@@ -145,4 +145,4 @@ struct xiiHashHelper<xiiExposedBone>
   XII_ALWAYS_INLINE static bool Equal(const xiiExposedBone& a, const xiiExposedBone& b) { return a == b; }
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiExposedBone);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiExposedBone);

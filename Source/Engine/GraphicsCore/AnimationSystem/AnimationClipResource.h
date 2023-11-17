@@ -14,7 +14,7 @@ namespace ozz::animation
   class Animation;
 }
 
-struct XII_RENDERERCORE_DLL xiiAnimationClipResourceDescriptor
+struct XII_GRAPHICSCORE_DLL xiiAnimationClipResourceDescriptor
 {
 public:
   xiiAnimationClipResourceDescriptor();
@@ -90,7 +90,7 @@ private:
 
 using xiiAnimationClipResourceHandle = xiiTypedResourceHandle<class xiiAnimationClipResource>;
 
-class XII_RENDERERCORE_DLL xiiAnimationClipResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiAnimationClipResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimationClipResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiAnimationClipResource);

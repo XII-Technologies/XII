@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/Pipeline/Declarations.h>
 
-class XII_RENDERERCORE_DLL xiiFrameDataProviderBase : public xiiReflectedClass
+class XII_GRAPHICSCORE_DLL xiiFrameDataProviderBase : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiFrameDataProviderBase, xiiReflectedClass);
 

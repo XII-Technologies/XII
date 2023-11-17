@@ -4,7 +4,7 @@
 
 struct xiiGALRenderTargets;
 
-class XII_RENDERERCORE_DLL xiiTargetPass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiTargetPass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiTargetPass, xiiRenderPipelinePass);
 

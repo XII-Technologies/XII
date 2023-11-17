@@ -15,7 +15,7 @@ class xiiImage;
 using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DResource>;
 
 /// \brief Use this descriptor in calls to xiiResourceManager::CreateResource<xiiTexture2DResource> to create textures from data in memory.
-struct XII_RENDERERCORE_DLL xiiTexture2DResourceDescriptor
+struct XII_GRAPHICSCORE_DLL xiiTexture2DResourceDescriptor
 {
   /// Describes the texture format, etc.
   xiiGALTextureCreationDescription      m_DescGAL;
@@ -32,7 +32,7 @@ struct XII_RENDERERCORE_DLL xiiTexture2DResourceDescriptor
   xiiArrayPtr<xiiGALSystemMemoryDescription> m_InitialContent;
 };
 
-class XII_RENDERERCORE_DLL xiiTexture2DResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiTexture2DResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiTexture2DResource, xiiResource);
 
@@ -75,7 +75,7 @@ protected:
 
 using xiiRenderToTexture2DResourceHandle = xiiTypedResourceHandle<class xiiRenderToTexture2DResource>;
 
-struct XII_RENDERERCORE_DLL xiiRenderToTexture2DResourceDescriptor
+struct XII_GRAPHICSCORE_DLL xiiRenderToTexture2DResourceDescriptor
 {
   xiiUInt32                                  m_uiWidth  = 0;
   xiiUInt32                                  m_uiHeight = 0;
@@ -85,7 +85,7 @@ struct XII_RENDERERCORE_DLL xiiRenderToTexture2DResourceDescriptor
   xiiArrayPtr<xiiGALSystemMemoryDescription> m_InitialContent;
 };
 
-class XII_RENDERERCORE_DLL xiiRenderToTexture2DResource : public xiiTexture2DResource
+class XII_GRAPHICSCORE_DLL xiiRenderToTexture2DResource : public xiiTexture2DResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderToTexture2DResource, xiiTexture2DResource);
 

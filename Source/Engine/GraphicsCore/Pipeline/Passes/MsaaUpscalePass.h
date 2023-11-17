@@ -3,7 +3,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 
-class XII_RENDERERCORE_DLL xiiMsaaUpscalePass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiMsaaUpscalePass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMsaaUpscalePass, xiiRenderPipelinePass);
 

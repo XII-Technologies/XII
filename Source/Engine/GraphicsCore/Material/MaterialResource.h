@@ -55,7 +55,7 @@ struct xiiMaterialResourceDescriptor
   xiiRenderData::Category             m_RenderDataCategory;
 };
 
-class XII_RENDERERCORE_DLL xiiMaterialResource final : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiMaterialResource final : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMaterialResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiMaterialResource);

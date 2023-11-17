@@ -3,7 +3,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 
-class XII_RENDERERCORE_DLL xiiCopyTexturePass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiCopyTexturePass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiCopyTexturePass, xiiRenderPipelinePass);
 

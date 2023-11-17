@@ -5,7 +5,7 @@
 #include <GraphicsFoundation/Resources/ResourceFormats.h>
 #include <Texture/Image/Image.h>
 
-struct XII_RENDERERCORE_DLL xiiTextureUtils
+struct XII_GRAPHICSCORE_DLL xiiTextureUtils
 {
   static xiiGALResourceFormat::Enum ImageFormatToGalFormat(xiiImageFormat::Enum format, bool bSRGB);
   static xiiImageFormat::Enum       GalFormatToImageFormat(xiiGALResourceFormat::Enum format, bool bRemoveSRGB);

@@ -42,10 +42,10 @@ struct xiiSkeletonPoseMode
   };
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiSkeletonPoseMode);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSkeletonPoseMode);
 
 
-class XII_RENDERERCORE_DLL xiiSkeletonPoseComponent : public xiiComponent
+class XII_GRAPHICSCORE_DLL xiiSkeletonPoseComponent : public xiiComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiSkeletonPoseComponent, xiiComponent, xiiSkeletonPoseComponentManager);
 

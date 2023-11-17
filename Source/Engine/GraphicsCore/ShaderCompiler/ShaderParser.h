@@ -5,7 +5,7 @@
 
 class xiiPropertyAttribute;
 
-class XII_RENDERERCORE_DLL xiiShaderParser
+class XII_GRAPHICSCORE_DLL xiiShaderParser
 {
 public:
   struct AttributeDefinition

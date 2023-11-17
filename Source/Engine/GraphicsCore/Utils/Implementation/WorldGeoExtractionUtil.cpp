@@ -13,11 +13,12 @@
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgExtractGeometry);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgExtractGeometry, 1, xiiRTTIDefaultAllocator<xiiMsgExtractGeometry>)
 {
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiExcludeFromScript()
-  }
-  XII_END_ATTRIBUTES;
+  /// \todo Add exclude from script attribute.
+  // XII_BEGIN_ATTRIBUTES
+  // {
+  //   new xiiExcludeFromScript()
+  // }
+  // XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
@@ -74,7 +75,7 @@ void xiiWorldGeoExtractionUtil::WriteWorldGeometryToOBJ(const char* szFile, cons
     return;
   }
 
-  xiiMat4 transform = xiiMat4::MakeIdentity();
+  xiiMat4 transform = xiiMat4::IdentityMatrix();
   transform.SetRotationalPart(mTransform);
 
   xiiStringBuilder line;
@@ -189,7 +190,7 @@ void xiiMsgExtractGeometry::AddBox(const xiiTransform& transform, xiiVec3 vExten
     desc.SetMaterial(0, "{ 1c47ee4c-0379-4280-85f5-b8cda61941d2 }"); // Data/Base/Materials/Common/Pattern.xiiMaterialAsset
 
     desc.MeshBufferDesc().AddCommonStreams();
-    desc.MeshBufferDesc().AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::Triangles);
+    desc.MeshBufferDesc().AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
     desc.AddSubMesh(desc.MeshBufferDesc().GetPrimitiveCount(), 0, 0);
 

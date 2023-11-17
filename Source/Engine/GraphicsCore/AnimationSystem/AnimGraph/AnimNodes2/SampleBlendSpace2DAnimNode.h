@@ -5,7 +5,7 @@
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphNode.h>
 #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 
-struct XII_RENDERERCORE_DLL xiiAnimationClip2D
+struct XII_GRAPHICSCORE_DLL xiiAnimationClip2D
 {
   xiiHashedString m_sClip;
   xiiVec2         m_vPosition;
@@ -14,9 +14,9 @@ struct XII_RENDERERCORE_DLL xiiAnimationClip2D
   const char* GetAnimationFile() const;
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiAnimationClip2D);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiAnimationClip2D);
 
-class XII_RENDERERCORE_DLL xiiSampleBlendSpace2DAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiSampleBlendSpace2DAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSampleBlendSpace2DAnimNode, xiiAnimGraphNode);
 

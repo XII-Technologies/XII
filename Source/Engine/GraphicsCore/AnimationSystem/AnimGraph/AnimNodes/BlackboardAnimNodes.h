@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphNode.h>
 
-class XII_RENDERERCORE_DLL xiiSetBlackboardNumberAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiSetBlackboardNumberAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSetBlackboardNumberAnimNode, xiiAnimGraphNode);
 
@@ -34,7 +34,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-class XII_RENDERERCORE_DLL xiiGetBlackboardNumberAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiGetBlackboardNumberAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGetBlackboardNumberAnimNode, xiiAnimGraphNode);
 
@@ -63,7 +63,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-class XII_RENDERERCORE_DLL xiiCompareBlackboardNumberAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiCompareBlackboardNumberAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiCompareBlackboardNumberAnimNode, xiiAnimGraphNode);
 
@@ -103,7 +103,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-class XII_RENDERERCORE_DLL xiiCheckBlackboardBoolAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiCheckBlackboardBoolAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiCheckBlackboardBoolAnimNode, xiiAnimGraphNode);
 
@@ -140,7 +140,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-class XII_RENDERERCORE_DLL xiiSetBlackboardBoolAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiSetBlackboardBoolAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSetBlackboardBoolAnimNode, xiiAnimGraphNode);
 
@@ -172,7 +172,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-class XII_RENDERERCORE_DLL xiiGetBlackboardBoolAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiGetBlackboardBoolAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGetBlackboardBoolAnimNode, xiiAnimGraphNode);
 
@@ -201,7 +201,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-class XII_RENDERERCORE_DLL xiiOnBlackboardValueChangedAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiOnBlackboardValueChangedAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiOnBlackboardValueChangedAnimNode, xiiAnimGraphNode);
 

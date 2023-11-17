@@ -6,7 +6,7 @@
 
 /// \brief The skeleton builder class provides the means to build skeleton instances from scratch.
 /// This class is not necessary to use skeletons, usually they should be deserialized from data created by the tools.
-class XII_RENDERERCORE_DLL xiiSkeletonBuilder
+class XII_GRAPHICSCORE_DLL xiiSkeletonBuilder
 {
 
 public:

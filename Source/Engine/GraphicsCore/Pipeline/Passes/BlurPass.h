@@ -6,7 +6,7 @@
 #include <GraphicsCore/Shader/ShaderResource.h>
 
 /// \brief Blurs input and writes it to an output buffer of the same format.
-class XII_RENDERERCORE_DLL xiiBlurPass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiBlurPass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiBlurPass, xiiRenderPipelinePass);
 

@@ -52,7 +52,7 @@ enum class xiiAnimPoseEventTrackSampleMode : xiiUInt8
 /// The pose generation graph is built by allocating commands on the graph and then setting up
 /// which command is an input to which other node.
 /// A command can be an input to multiple other commands. It will be evaluated only once.
-struct XII_RENDERERCORE_DLL xiiAnimPoseGeneratorCommand
+struct XII_GRAPHICSCORE_DLL xiiAnimPoseGeneratorCommand
 {
   xiiHybridArray<xiiAnimPoseGeneratorCommandID, 4> m_Inputs;
 
@@ -72,7 +72,7 @@ private:
 /// The command has to be added as an input to one of
 /// * xiiAnimPoseGeneratorCommandCombinePoses
 /// * xiiAnimPoseGeneratorCommandLocalToModelPose
-struct XII_RENDERERCORE_DLL xiiAnimPoseGeneratorCommandRestPose final : public xiiAnimPoseGeneratorCommand
+struct XII_GRAPHICSCORE_DLL xiiAnimPoseGeneratorCommandRestPose final : public xiiAnimPoseGeneratorCommand
 {
 private:
   friend class xiiAnimPoseGenerator;
@@ -89,7 +89,7 @@ private:
 /// If the event track shall be sampled as well, event messages are sent to the xiiGameObject for which the pose is generated.
 ///
 /// This command can optionally have input commands of type xiiAnimPoseGeneratorCommandSampleEventTrack.
-struct XII_RENDERERCORE_DLL xiiAnimPoseGeneratorCommandSampleTrack final : public xiiAnimPoseGeneratorCommand
+struct XII_GRAPHICSCORE_DLL xiiAnimPoseGeneratorCommandSampleTrack final : public xiiAnimPoseGeneratorCommand
 {
   xiiAnimationClipResourceHandle m_hAnimationClip;
   float                          m_fNormalizedSamplePos;
@@ -114,7 +114,7 @@ private:
 ///
 /// Every input pose gets both an overall weight, as well as optionally a per-bone weight mask.
 /// If a per-bone mask is used, the respective input pose will only affect those bones.
-struct XII_RENDERERCORE_DLL xiiAnimPoseGeneratorCommandCombinePoses final : public xiiAnimPoseGeneratorCommand
+struct XII_GRAPHICSCORE_DLL xiiAnimPoseGeneratorCommandCombinePoses final : public xiiAnimPoseGeneratorCommand
 {
   xiiHybridArray<float, 4>                                    m_InputWeights;
   xiiHybridArray<xiiArrayPtr<const ozz::math::SimdFloat4>, 4> m_InputBoneWeights;
@@ -131,7 +131,7 @@ private:
 /// * xiiAnimPoseGeneratorCommandSampleTrack
 /// * xiiAnimPoseGeneratorCommandCombinePoses
 /// * xiiAnimPoseGeneratorCommandRestPose
-struct XII_RENDERERCORE_DLL xiiAnimPoseGeneratorCommandLocalToModelPose final : public xiiAnimPoseGeneratorCommand
+struct XII_GRAPHICSCORE_DLL xiiAnimPoseGeneratorCommandLocalToModelPose final : public xiiAnimPoseGeneratorCommand
 {
   xiiGameObject* m_pSendLocalPoseMsgTo = nullptr;
 
@@ -148,7 +148,7 @@ private:
 ///
 /// Every graph should have exactly one of these nodes. Commands that are not (indirectly) connected to an
 /// output node will not be evaluated and won't have any effect.
-struct XII_RENDERERCORE_DLL xiiAnimPoseGeneratorCommandModelPoseToOutput final : public xiiAnimPoseGeneratorCommand
+struct XII_GRAPHICSCORE_DLL xiiAnimPoseGeneratorCommandModelPoseToOutput final : public xiiAnimPoseGeneratorCommand
 {
 };
 
@@ -159,7 +159,7 @@ struct XII_RENDERERCORE_DLL xiiAnimPoseGeneratorCommandModelPoseToOutput final :
 /// * xiiAnimPoseGeneratorCommandSampleEventTrack
 ///
 /// They are used to sample event tracks only.
-struct XII_RENDERERCORE_DLL xiiAnimPoseGeneratorCommandSampleEventTrack final : public xiiAnimPoseGeneratorCommand
+struct XII_GRAPHICSCORE_DLL xiiAnimPoseGeneratorCommandSampleEventTrack final : public xiiAnimPoseGeneratorCommand
 {
   xiiAnimationClipResourceHandle m_hAnimationClip;
   float                          m_fNormalizedSamplePos;
@@ -173,7 +173,7 @@ private:
   xiiUInt32 m_uiUniqueID = 0;
 };
 
-class XII_RENDERERCORE_DLL xiiAnimPoseGenerator final
+class XII_GRAPHICSCORE_DLL xiiAnimPoseGenerator final
 {
 public:
   xiiAnimPoseGenerator();

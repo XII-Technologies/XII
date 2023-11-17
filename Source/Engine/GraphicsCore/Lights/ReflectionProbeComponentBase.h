@@ -9,7 +9,7 @@ struct xiiMsgTransformChanged;
 class xiiAbstractObjectNode;
 
 /// \brief Base class for all reflection probes.
-class XII_RENDERERCORE_DLL xiiReflectionProbeComponentBase : public xiiComponent
+class XII_GRAPHICSCORE_DLL xiiReflectionProbeComponentBase : public xiiComponent
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiReflectionProbeComponentBase, xiiComponent);
 

@@ -8,7 +8,7 @@
 #include <Texture/Image/Image.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
-class XII_RENDERERCORE_DLL xiiTextureResourceLoader : public xiiResourceTypeLoader
+class XII_GRAPHICSCORE_DLL xiiTextureResourceLoader : public xiiResourceTypeLoader
 {
 public:
   struct LoadedData

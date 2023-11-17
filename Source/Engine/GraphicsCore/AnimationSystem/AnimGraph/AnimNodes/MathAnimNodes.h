@@ -3,7 +3,7 @@
 #include <Foundation/CodeUtils/MathExpression.h>
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphNode.h>
 
-class XII_RENDERERCORE_DLL xiiMathExpressionAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiMathExpressionAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMathExpressionAnimNode, xiiAnimGraphNode);
 
@@ -46,7 +46,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-class XII_RENDERERCORE_DLL xiiCompareNumberAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiCompareNumberAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiCompareNumberAnimNode, xiiAnimGraphNode);
 
@@ -77,7 +77,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-class XII_RENDERERCORE_DLL xiiBoolToNumberAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiBoolToNumberAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiBoolToNumberAnimNode, xiiAnimGraphNode);
 

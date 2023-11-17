@@ -48,7 +48,7 @@ struct xiiAnimGraphPinDataModelTransforms
   bool                          m_bUseRootMotion = false;
 };
 
-class XII_RENDERERCORE_DLL xiiAnimController
+class XII_GRAPHICSCORE_DLL xiiAnimController
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiAnimController);
 

@@ -23,7 +23,7 @@ namespace ozz::animation
 /// \brief Describes a single joint.
 /// The transforms of the joints are in their local space and thus need to be correctly multiplied with their parent transforms to get the
 /// final transform.
-class XII_RENDERERCORE_DLL xiiSkeletonJoint
+class XII_GRAPHICSCORE_DLL xiiSkeletonJoint
 {
 public:
   const xiiTransform& GetRestPoseLocalTransform() const { return m_RestPoseLocal; }
@@ -71,7 +71,7 @@ private:
 };
 
 /// \brief The skeleton class encapsulates the information about the joint structure for a model.
-class XII_RENDERERCORE_DLL xiiSkeleton
+class XII_GRAPHICSCORE_DLL xiiSkeleton
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiSkeleton);
 

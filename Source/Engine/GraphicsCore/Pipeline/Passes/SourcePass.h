@@ -20,10 +20,10 @@ struct xiiSourceFormat
     Default = Color4Channel8BitNormalized_sRGB
   };
 };
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiSourceFormat);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSourceFormat);
 
 
-class XII_RENDERERCORE_DLL xiiSourcePass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiSourcePass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSourcePass, xiiRenderPipelinePass);
 

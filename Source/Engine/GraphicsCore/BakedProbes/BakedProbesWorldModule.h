@@ -6,7 +6,7 @@
 
 using xiiProbeTreeSectorResourceHandle = xiiTypedResourceHandle<class xiiProbeTreeSectorResource>;
 
-class XII_RENDERERCORE_DLL xiiBakedProbesWorldModule : public xiiWorldModule
+class XII_GRAPHICSCORE_DLL xiiBakedProbesWorldModule : public xiiWorldModule
 {
   XII_DECLARE_WORLD_MODULE();
   XII_ADD_DYNAMIC_REFLECTION(xiiBakedProbesWorldModule, xiiWorldModule);

@@ -6,7 +6,7 @@
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 
-class XII_RENDERERCORE_DLL xiiExtractedRenderData
+class XII_GRAPHICSCORE_DLL xiiExtractedRenderData
 {
 public:
   xiiExtractedRenderData();

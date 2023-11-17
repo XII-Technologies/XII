@@ -4,7 +4,7 @@
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphNode.h>
 #include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 
-class XII_RENDERERCORE_DLL xiiSampleFrameAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiSampleFrameAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSampleFrameAnimNode, xiiAnimGraphNode);
 

@@ -15,7 +15,7 @@ struct xiiDecalAtlasResourceDescriptor
 {
 };
 
-class XII_RENDERERCORE_DLL xiiDecalAtlasResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiDecalAtlasResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDecalAtlasResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiDecalAtlasResource);

@@ -4,7 +4,7 @@
 #include <GraphicsCore/Pipeline/FrameDataProvider.h>
 #include <GraphicsCore/Shader/ConstantBufferStorage.h>
 
-struct XII_RENDERERCORE_DLL xiiClusteredDataGPU
+struct XII_GRAPHICSCORE_DLL xiiClusteredDataGPU
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiClusteredDataGPU);
 
@@ -31,7 +31,7 @@ public:
   void BindResources(xiiRenderContext* pRenderContext);
 };
 
-class XII_RENDERERCORE_DLL xiiClusteredDataProvider : public xiiFrameDataProvider<xiiClusteredDataGPU>
+class XII_GRAPHICSCORE_DLL xiiClusteredDataProvider : public xiiFrameDataProvider<xiiClusteredDataGPU>
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiClusteredDataProvider, xiiFrameDataProviderBase);
 

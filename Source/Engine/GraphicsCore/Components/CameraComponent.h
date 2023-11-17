@@ -8,7 +8,7 @@
 class xiiView;
 struct xiiResourceEvent;
 
-class XII_RENDERERCORE_DLL xiiCameraComponentManager : public xiiComponentManager<class xiiCameraComponent, xiiBlockStorageType::Compact>
+class XII_GRAPHICSCORE_DLL xiiCameraComponentManager : public xiiComponentManager<class xiiCameraComponent, xiiBlockStorageType::Compact>
 {
 public:
   xiiCameraComponentManager(xiiWorld* pWorld);
@@ -38,7 +38,7 @@ private:
 };
 
 
-class XII_RENDERERCORE_DLL xiiCameraComponent : public xiiComponent
+class XII_GRAPHICSCORE_DLL xiiCameraComponent : public xiiComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiCameraComponent, xiiComponent, xiiCameraComponentManager);
 

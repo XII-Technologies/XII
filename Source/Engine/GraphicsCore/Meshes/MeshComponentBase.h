@@ -9,7 +9,7 @@
 struct xiiMsgSetColor;
 struct xiiInstanceData;
 
-class XII_RENDERERCORE_DLL xiiMeshRenderData : public xiiRenderData
+class XII_GRAPHICSCORE_DLL xiiMeshRenderData : public xiiRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshRenderData, xiiRenderData);
 
@@ -44,7 +44,7 @@ protected:
   }
 };
 
-struct XII_RENDERERCORE_DLL xiiMsgSetMeshMaterial : public xiiMessage
+struct XII_GRAPHICSCORE_DLL xiiMsgSetMeshMaterial : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgSetMeshMaterial, xiiMessage);
 
@@ -58,7 +58,7 @@ struct XII_RENDERERCORE_DLL xiiMsgSetMeshMaterial : public xiiMessage
   virtual void Deserialize(xiiStreamReader& inout_stream, xiiUInt8 uiTypeVersion) override;
 };
 
-class XII_RENDERERCORE_DLL xiiMeshComponentBase : public xiiRenderComponent
+class XII_GRAPHICSCORE_DLL xiiMeshComponentBase : public xiiRenderComponent
 {
   XII_DECLARE_ABSTRACT_COMPONENT_TYPE(xiiMeshComponentBase, xiiRenderComponent);
 

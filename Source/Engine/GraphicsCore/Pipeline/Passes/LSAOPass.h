@@ -8,7 +8,7 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 /// \brief Defines the depth compare function to be used to decide sample weights.
-struct XII_RENDERERCORE_DLL xiiLSAODepthCompareFunction
+struct XII_GRAPHICSCORE_DLL xiiLSAODepthCompareFunction
 {
   using StorageType = xiiUInt8;
 
@@ -24,7 +24,7 @@ struct XII_RENDERERCORE_DLL xiiLSAODepthCompareFunction
   };
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiLSAODepthCompareFunction);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiLSAODepthCompareFunction);
 
 /// Screen space ambient occlusion using "line sweep ambient occlusion" by Ville Timonen
 ///
@@ -35,7 +35,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiLSAODepthCompareFunction);
 ///
 /// There are a few adjustments and own ideas worked into this implementation.
 /// The biggest change probably is that pixels in the gather pass compute their target linesample arithmetically instead of relying on lookups.
-class XII_RENDERERCORE_DLL xiiLSAOPass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiLSAOPass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiLSAOPass, xiiRenderPipelinePass);
 

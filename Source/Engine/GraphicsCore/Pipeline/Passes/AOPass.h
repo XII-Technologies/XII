@@ -5,7 +5,7 @@
 #include <GraphicsCore/Shader/ConstantBufferStorage.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 
-class XII_RENDERERCORE_DLL xiiAOPass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiAOPass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiAOPass, xiiRenderPipelinePass);
 

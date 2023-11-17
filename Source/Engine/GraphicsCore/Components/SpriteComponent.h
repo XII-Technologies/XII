@@ -25,9 +25,9 @@ struct xiiSpriteBlendMode
   static xiiTempHashedString GetPermutationValue(Enum blendMode);
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiSpriteBlendMode);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSpriteBlendMode);
 
-class XII_RENDERERCORE_DLL xiiSpriteRenderData : public xiiRenderData
+class XII_GRAPHICSCORE_DLL xiiSpriteRenderData : public xiiRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSpriteRenderData, xiiRenderData);
 
@@ -51,7 +51,7 @@ public:
 
 using xiiSpriteComponentManager = xiiComponentManager<class xiiSpriteComponent, xiiBlockStorageType::Compact>;
 
-class XII_RENDERERCORE_DLL xiiSpriteComponent : public xiiRenderComponent
+class XII_GRAPHICSCORE_DLL xiiSpriteComponent : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiSpriteComponent, xiiRenderComponent, xiiSpriteComponentManager);
 

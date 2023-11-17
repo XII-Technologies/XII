@@ -35,7 +35,7 @@ struct xiiTextureCubeResourceDescriptor
   xiiArrayPtr<xiiGALSystemMemoryDescription> m_InitialContent;
 };
 
-class XII_RENDERERCORE_DLL xiiTextureCubeResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiTextureCubeResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiTextureCubeResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiTextureCubeResource);

@@ -10,7 +10,7 @@ struct xiiGALDeviceEvent;
 
 /// \brief This class serves as a pool for GPU related resources (e.g. buffers and textures required for rendering).
 /// Note that the functions creating and returning render targets are thread safe (by using a mutex).
-class XII_RENDERERCORE_DLL xiiGPUResourcePool
+class XII_GRAPHICSCORE_DLL xiiGPUResourcePool
 {
 public:
   xiiGPUResourcePool();

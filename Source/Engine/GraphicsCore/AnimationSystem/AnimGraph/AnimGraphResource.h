@@ -15,7 +15,7 @@ class xiiAnimGraphNode;
 
 using xiiAnimGraphResourceHandle = xiiTypedResourceHandle<class xiiAnimGraphResource>;
 
-struct XII_RENDERERCORE_DLL xiiAnimationClipMapping : public xiiReflectedClass
+struct XII_GRAPHICSCORE_DLL xiiAnimationClipMapping : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimationClipMapping, xiiReflectedClass);
 
@@ -29,7 +29,7 @@ struct XII_RENDERERCORE_DLL xiiAnimationClipMapping : public xiiReflectedClass
   void        SetClip(const char* szName);
 };
 
-class XII_RENDERERCORE_DLL xiiAnimGraphResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiAnimGraphResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimGraphResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiAnimGraphResource);

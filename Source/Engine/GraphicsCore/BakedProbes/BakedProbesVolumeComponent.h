@@ -7,7 +7,7 @@ struct xiiMsgUpdateLocalBounds;
 
 using xiiBakedProbesVolumeComponentManager = xiiComponentManager<class xiiBakedProbesVolumeComponent, xiiBlockStorageType::Compact>;
 
-class XII_RENDERERCORE_DLL xiiBakedProbesVolumeComponent : public xiiComponent
+class XII_GRAPHICSCORE_DLL xiiBakedProbesVolumeComponent : public xiiComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiBakedProbesVolumeComponent, xiiComponent, xiiBakedProbesVolumeComponentManager);
 

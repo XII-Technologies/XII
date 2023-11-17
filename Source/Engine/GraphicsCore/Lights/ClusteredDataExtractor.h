@@ -41,7 +41,7 @@ public:
   xiiColor m_FogColor               = xiiColor::Black;
 };
 
-class XII_RENDERERCORE_DLL xiiClusteredDataExtractor : public xiiExtractor
+class XII_GRAPHICSCORE_DLL xiiClusteredDataExtractor : public xiiExtractor
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiClusteredDataExtractor, xiiExtractor);
 

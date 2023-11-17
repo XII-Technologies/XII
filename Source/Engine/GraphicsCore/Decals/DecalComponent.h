@@ -11,7 +11,7 @@ struct xiiMsgComponentInternalTrigger;
 struct xiiMsgOnlyApplyToObject;
 struct xiiMsgSetColor;
 
-class XII_RENDERERCORE_DLL xiiDecalComponentManager final : public xiiComponentManager<class xiiDecalComponent, xiiBlockStorageType::Compact>
+class XII_GRAPHICSCORE_DLL xiiDecalComponentManager final : public xiiComponentManager<class xiiDecalComponent, xiiBlockStorageType::Compact>
 {
 public:
   xiiDecalComponentManager(xiiWorld* pWorld);
@@ -23,7 +23,7 @@ private:
   xiiDecalAtlasResourceHandle m_hDecalAtlas;
 };
 
-class XII_RENDERERCORE_DLL xiiDecalRenderData : public xiiRenderData
+class XII_GRAPHICSCORE_DLL xiiDecalRenderData : public xiiRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDecalRenderData, xiiRenderData);
 
@@ -45,7 +45,7 @@ public:
   xiiUInt32 m_uiORMAtlasOffset;
 };
 
-class XII_RENDERERCORE_DLL xiiDecalComponent final : public xiiRenderComponent
+class XII_GRAPHICSCORE_DLL xiiDecalComponent final : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiDecalComponent, xiiRenderComponent, xiiDecalComponentManager);
 

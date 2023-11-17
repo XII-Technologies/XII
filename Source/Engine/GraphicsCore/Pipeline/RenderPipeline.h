@@ -16,7 +16,7 @@ class xiiDGMLGraph;
 class xiiFrustum;
 class xiiRasterizerView;
 
-class XII_RENDERERCORE_DLL xiiRenderPipeline : public xiiRefCounted
+class XII_GRAPHICSCORE_DLL xiiRenderPipeline : public xiiRefCounted
 {
 public:
   enum class PipelineState

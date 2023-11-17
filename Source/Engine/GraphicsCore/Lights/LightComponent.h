@@ -6,7 +6,7 @@
 struct xiiMsgSetColor;
 
 /// \brief Base class for light render data objects.
-class XII_RENDERERCORE_DLL xiiLightRenderData : public xiiRenderData
+class XII_GRAPHICSCORE_DLL xiiLightRenderData : public xiiRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiLightRenderData, xiiRenderData);
 
@@ -19,7 +19,7 @@ public:
 };
 
 /// \brief Base class for all xii light components containing shared properties
-class XII_RENDERERCORE_DLL xiiLightComponent : public xiiRenderComponent
+class XII_GRAPHICSCORE_DLL xiiLightComponent : public xiiRenderComponent
 {
   XII_DECLARE_ABSTRACT_COMPONENT_TYPE(xiiLightComponent, xiiRenderComponent);
 

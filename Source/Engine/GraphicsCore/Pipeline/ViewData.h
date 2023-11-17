@@ -7,7 +7,7 @@
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 /// \brief Holds view data like the viewport, view and projection matrices
-struct XII_RENDERERCORE_DLL xiiViewData
+struct XII_GRAPHICSCORE_DLL xiiViewData
 {
   xiiViewData()
   {

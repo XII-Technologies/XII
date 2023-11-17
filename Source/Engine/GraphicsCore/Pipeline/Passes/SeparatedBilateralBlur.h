@@ -9,7 +9,7 @@
 ///
 /// In theory it is mathematical nonsense to separate a bilateral blur, but it is common praxis and works good enough.
 /// (Thus the name "separated" in contrast to "separable")
-class XII_RENDERERCORE_DLL xiiSeparatedBilateralBlurPass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiSeparatedBilateralBlurPass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSeparatedBilateralBlurPass, xiiRenderPipelinePass);
 

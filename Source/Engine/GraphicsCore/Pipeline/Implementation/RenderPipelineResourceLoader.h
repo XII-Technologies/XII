@@ -9,7 +9,7 @@ class xiiStreamWriter;
 class xiiRenderPipelinePass;
 class xiiExtractor;
 
-struct XII_RENDERERCORE_DLL xiiRenderPipelineResourceLoaderConnection
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceLoaderConnection
 {
   xiiUInt32 m_uiSource;
   xiiUInt32 m_uiTarget;
@@ -19,9 +19,9 @@ struct XII_RENDERERCORE_DLL xiiRenderPipelineResourceLoaderConnection
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiRenderPipelineResourceLoaderConnection);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiRenderPipelineResourceLoaderConnection);
 
-struct XII_RENDERERCORE_DLL xiiRenderPipelineResourceLoader
+struct XII_GRAPHICSCORE_DLL xiiRenderPipelineResourceLoader
 {
   static xiiInternal::NewInstance<xiiRenderPipeline> CreateRenderPipeline(const xiiRenderPipelineResourceDescriptor& desc);
   static void                                        CreateRenderPipelineResourceDescriptor(const xiiRenderPipeline* pPipeline, xiiRenderPipelineResourceDescriptor& ref_desc);

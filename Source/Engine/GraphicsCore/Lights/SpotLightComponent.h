@@ -7,7 +7,7 @@
 using xiiSpotLightComponentManager = xiiComponentManager<class xiiSpotLightComponent, xiiBlockStorageType::Compact>;
 
 /// \brief The render data object for spot lights.
-class XII_RENDERERCORE_DLL xiiSpotLightRenderData : public xiiLightRenderData
+class XII_GRAPHICSCORE_DLL xiiSpotLightRenderData : public xiiLightRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSpotLightRenderData, xiiLightRenderData);
 
@@ -20,7 +20,7 @@ public:
 
 /// \brief The standard spot light component.
 /// This component represents spot lights with various properties (e.g. a projected texture, range, spot angle, etc.)
-class XII_RENDERERCORE_DLL xiiSpotLightComponent : public xiiLightComponent
+class XII_GRAPHICSCORE_DLL xiiSpotLightComponent : public xiiLightComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiSpotLightComponent, xiiLightComponent, xiiSpotLightComponentManager);
 
@@ -77,7 +77,7 @@ protected:
 };
 
 /// \brief A special visualizer attribute for spot lights
-class XII_RENDERERCORE_DLL xiiSpotLightVisualizerAttribute : public xiiVisualizerAttribute
+class XII_GRAPHICSCORE_DLL xiiSpotLightVisualizerAttribute : public xiiVisualizerAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSpotLightVisualizerAttribute, xiiVisualizerAttribute);
 

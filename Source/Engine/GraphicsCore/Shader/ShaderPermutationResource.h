@@ -14,7 +14,7 @@ struct xiiShaderPermutationResourceDescriptor
 {
 };
 
-class XII_RENDERERCORE_DLL xiiShaderPermutationResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiShaderPermutationResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiShaderPermutationResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiShaderPermutationResource);

@@ -5,7 +5,7 @@
 #include <GraphicsCore/Shader/ShaderStageBinary.h>
 #include <GraphicsFoundation/Descriptors/Descriptors.h>
 
-struct XII_RENDERERCORE_DLL xiiShaderStateResourceDescriptor
+struct XII_GRAPHICSCORE_DLL xiiShaderStateResourceDescriptor
 {
   xiiGALBlendStateCreationDescription        m_BlendDesc;
   xiiGALDepthStencilStateCreationDescription m_DepthStencilDesc;
@@ -18,7 +18,7 @@ struct XII_RENDERERCORE_DLL xiiShaderStateResourceDescriptor
   xiiUInt32 CalculateHash() const;
 };
 
-class XII_RENDERERCORE_DLL xiiShaderPermutationBinary
+class XII_GRAPHICSCORE_DLL xiiShaderPermutationBinary
 {
 public:
   xiiShaderPermutationBinary();

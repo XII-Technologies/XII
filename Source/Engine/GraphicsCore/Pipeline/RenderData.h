@@ -10,7 +10,7 @@
 class xiiRasterizerObject;
 
 /// \brief Base class for all render data. Render data must contain all information that is needed to render the corresponding object.
-class XII_RENDERERCORE_DLL xiiRenderData : public xiiReflectedClass
+class XII_GRAPHICSCORE_DLL xiiRenderData : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderData, xiiReflectedClass);
 
@@ -90,7 +90,7 @@ private:
 template <typename T>
 static T* xiiCreateRenderDataForThisFrame(const xiiGameObject* pOwner);
 
-struct XII_RENDERERCORE_DLL xiiDefaultRenderDataCategories
+struct XII_GRAPHICSCORE_DLL xiiDefaultRenderDataCategories
 {
   static xiiRenderData::Category Light;
   static xiiRenderData::Category Decal;
@@ -110,7 +110,7 @@ struct XII_RENDERERCORE_DLL xiiDefaultRenderDataCategories
 
 #define xiiInvalidRenderDataCategory xiiRenderData::Category()
 
-struct XII_RENDERERCORE_DLL xiiMsgExtractRenderData : public xiiMessage
+struct XII_GRAPHICSCORE_DLL xiiMsgExtractRenderData : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgExtractRenderData, xiiMessage);
 
@@ -135,7 +135,7 @@ private:
   xiiUInt32                m_uiNumCacheIfStatic = 0;
 };
 
-struct XII_RENDERERCORE_DLL xiiMsgExtractOccluderData : public xiiMessage
+struct XII_GRAPHICSCORE_DLL xiiMsgExtractOccluderData : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgExtractOccluderData, xiiMessage);
 

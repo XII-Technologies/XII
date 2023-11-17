@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphNode.h>
 
-class XII_RENDERERCORE_DLL xiiLogicAndAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiLogicAndAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiLogicAndAnimNode, xiiAnimGraphNode);
 
@@ -29,7 +29,7 @@ private:
   xiiAnimGraphBoolOutputPin                   m_OutIsFalse;      // [ property ]
 };
 
-class XII_RENDERERCORE_DLL xiiLogicEventAndAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiLogicEventAndAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiLogicEventAndAnimNode, xiiAnimGraphNode);
 
@@ -59,7 +59,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-class XII_RENDERERCORE_DLL xiiLogicOrAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiLogicOrAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiLogicOrAnimNode, xiiAnimGraphNode);
 
@@ -90,7 +90,7 @@ private:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-class XII_RENDERERCORE_DLL xiiLogicNotAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiLogicNotAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiLogicNotAnimNode, xiiAnimGraphNode);
 

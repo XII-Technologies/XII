@@ -5,7 +5,7 @@
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 
-class XII_RENDERERCORE_DLL xiiMeshResourceDescriptor
+class XII_GRAPHICSCORE_DLL xiiMeshResourceDescriptor
 {
 public:
   struct SubMesh

@@ -12,7 +12,7 @@ class xiiColorLinearUB;
 class xiiCamera;
 class xiiSimdBBox;
 
-class XII_RENDERERCORE_DLL xiiRasterizerView final
+class XII_GRAPHICSCORE_DLL xiiRasterizerView final
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRasterizerView);
 

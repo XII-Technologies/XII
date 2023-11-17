@@ -8,7 +8,7 @@ struct xiiMsgUpdateLocalBounds;
 
 using xiiAmbientLightComponentManager = xiiSettingsComponentManager<class xiiAmbientLightComponent>;
 
-class XII_RENDERERCORE_DLL xiiAmbientLightComponent : public xiiSettingsComponent
+class XII_GRAPHICSCORE_DLL xiiAmbientLightComponent : public xiiSettingsComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiAmbientLightComponent, xiiSettingsComponent, xiiAmbientLightComponentManager);
 

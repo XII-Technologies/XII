@@ -6,7 +6,7 @@
 using xiiSkyBoxComponentManager    = xiiComponentManager<class xiiSkyBoxComponent, xiiBlockStorageType::Compact>;
 using xiiTextureCubeResourceHandle = xiiTypedResourceHandle<class xiiTextureCubeResource>;
 
-class XII_RENDERERCORE_DLL xiiSkyBoxComponent : public xiiRenderComponent
+class XII_GRAPHICSCORE_DLL xiiSkyBoxComponent : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiSkyBoxComponent, xiiRenderComponent, xiiSkyBoxComponentManager);
 

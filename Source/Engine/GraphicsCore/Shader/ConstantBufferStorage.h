@@ -4,7 +4,7 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-class XII_RENDERERCORE_DLL xiiConstantBufferStorageBase
+class XII_GRAPHICSCORE_DLL xiiConstantBufferStorageBase
 {
 protected:
   friend class xiiRenderContext;

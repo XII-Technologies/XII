@@ -20,7 +20,7 @@ struct xiiSkeletonResourceGeometry
   xiiDynamicArray<xiiUInt8> m_TriangleIndices;
 };
 
-struct XII_RENDERERCORE_DLL xiiSkeletonResourceDescriptor
+struct XII_GRAPHICSCORE_DLL xiiSkeletonResourceDescriptor
 {
   xiiSkeletonResourceDescriptor();
   ~xiiSkeletonResourceDescriptor();
@@ -43,7 +43,7 @@ struct XII_RENDERERCORE_DLL xiiSkeletonResourceDescriptor
 
 using xiiSkeletonResourceHandle = xiiTypedResourceHandle<class xiiSkeletonResource>;
 
-class XII_RENDERERCORE_DLL xiiSkeletonResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiSkeletonResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSkeletonResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiSkeletonResource);

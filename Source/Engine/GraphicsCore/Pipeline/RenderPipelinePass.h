@@ -22,7 +22,7 @@ struct xiiRenderPipelinePassConnection
   xiiHybridArray<const xiiRenderPipelineNodePin*, 4> m_Inputs;  ///< The various input pins this connection is connected to.
 };
 
-class XII_RENDERERCORE_DLL xiiRenderPipelinePass : public xiiRenderPipelineNode
+class XII_GRAPHICSCORE_DLL xiiRenderPipelinePass : public xiiRenderPipelineNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderPipelinePass, xiiRenderPipelineNode);
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderPipelinePass);

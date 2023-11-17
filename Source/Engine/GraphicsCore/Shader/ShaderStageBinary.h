@@ -8,7 +8,7 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsFoundation/Descriptors/Descriptors.h>
 
-class XII_RENDERERCORE_DLL xiiShaderConstantBufferLayout : public xiiRefCounted
+class XII_GRAPHICSCORE_DLL xiiShaderConstantBufferLayout : public xiiRefCounted
 {
 public:
   struct Constant
@@ -74,7 +74,7 @@ public:
   xiiHybridArray<Constant, 16> m_Constants;
 };
 
-struct XII_RENDERERCORE_DLL xiiShaderResourceBinding
+struct XII_GRAPHICSCORE_DLL xiiShaderResourceBinding
 {
   XII_DECLARE_MEM_RELOCATABLE_TYPE();
 
@@ -88,7 +88,7 @@ struct XII_RENDERERCORE_DLL xiiShaderResourceBinding
   xiiScopedRefPointer<xiiShaderConstantBufferLayout> m_pLayout;
 };
 
-class XII_RENDERERCORE_DLL xiiShaderStageBinary
+class XII_GRAPHICSCORE_DLL xiiShaderStageBinary
 {
 public:
   enum Version

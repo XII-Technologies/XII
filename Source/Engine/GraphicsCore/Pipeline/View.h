@@ -17,7 +17,7 @@ class xiiRenderPipeline;
 
 /// \brief Encapsulates a view on the given world through the given camera
 /// and rendered with the specified RenderPipeline into the given render target setup.
-class XII_RENDERERCORE_DLL xiiView : public xiiRenderPipelineNode
+class XII_GRAPHICSCORE_DLL xiiView : public xiiRenderPipelineNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiView, xiiRenderPipelineNode);
 

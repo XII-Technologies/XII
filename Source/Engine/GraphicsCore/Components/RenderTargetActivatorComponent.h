@@ -8,7 +8,7 @@ struct xiiMsgExtractRenderData;
 
 using xiiRenderTargetComponentManager = xiiComponentManager<class xiiRenderTargetActivatorComponent, xiiBlockStorageType::Compact>;
 
-class XII_RENDERERCORE_DLL xiiRenderTargetActivatorComponent : public xiiRenderComponent
+class XII_GRAPHICSCORE_DLL xiiRenderTargetActivatorComponent : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiRenderTargetActivatorComponent, xiiRenderComponent, xiiRenderTargetComponentManager);
 

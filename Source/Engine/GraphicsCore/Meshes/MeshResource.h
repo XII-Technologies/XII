@@ -5,7 +5,7 @@
 
 using xiiMaterialResourceHandle = xiiTypedResourceHandle<class xiiMaterialResource>;
 
-class XII_RENDERERCORE_DLL xiiMeshResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiMeshResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiMeshResource);

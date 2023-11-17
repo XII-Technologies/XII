@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphNode.h>
 
-class XII_RENDERERCORE_DLL xiiSwitchBoneWeightsAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiSwitchBoneWeightsAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSwitchBoneWeightsAnimNode, xiiAnimGraphNode);
 

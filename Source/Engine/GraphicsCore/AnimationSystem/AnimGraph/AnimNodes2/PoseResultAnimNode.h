@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphNode.h>
 
-class XII_RENDERERCORE_DLL xiiPoseResultAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiPoseResultAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiPoseResultAnimNode, xiiAnimGraphNode);
 

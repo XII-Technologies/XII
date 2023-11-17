@@ -5,7 +5,7 @@
 struct xiiMsgExtractGeometry;
 using xiiMeshComponentManager = xiiComponentManager<class xiiMeshComponent, xiiBlockStorageType::Compact>;
 
-class XII_RENDERERCORE_DLL xiiMeshComponent : public xiiMeshComponentBase
+class XII_GRAPHICSCORE_DLL xiiMeshComponent : public xiiMeshComponentBase
 {
   XII_DECLARE_COMPONENT_TYPE(xiiMeshComponent, xiiMeshComponentBase, xiiMeshComponentManager);
 

@@ -6,7 +6,7 @@
 using xiiDirectionalLightComponentManager = xiiComponentManager<class xiiDirectionalLightComponent, xiiBlockStorageType::Compact>;
 
 /// \brief The render data object for directional lights.
-class XII_RENDERERCORE_DLL xiiDirectionalLightRenderData : public xiiLightRenderData
+class XII_GRAPHICSCORE_DLL xiiDirectionalLightRenderData : public xiiLightRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDirectionalLightRenderData, xiiLightRenderData);
 
@@ -15,7 +15,7 @@ public:
 
 /// \brief The standard directional light component.
 /// This component represents directional lights.
-class XII_RENDERERCORE_DLL xiiDirectionalLightComponent : public xiiLightComponent
+class XII_GRAPHICSCORE_DLL xiiDirectionalLightComponent : public xiiLightComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiDirectionalLightComponent, xiiLightComponent, xiiDirectionalLightComponentManager);
 

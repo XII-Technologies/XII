@@ -5,7 +5,7 @@
 /// \brief This is the base class for types that handle rendering of different object types.
 ///
 /// E.g. there are different renderers for meshes, particle effects, light sources, etc.
-class XII_RENDERERCORE_DLL xiiRenderer : public xiiReflectedClass
+class XII_GRAPHICSCORE_DLL xiiRenderer : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiRenderer, xiiReflectedClass);
 

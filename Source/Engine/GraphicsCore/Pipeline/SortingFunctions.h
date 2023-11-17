@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/Pipeline/Declarations.h>
 
-class XII_RENDERERCORE_DLL xiiRenderSortingFunctions
+class XII_GRAPHICSCORE_DLL xiiRenderSortingFunctions
 {
 public:
   static xiiUInt64 ByRenderDataThenFrontToBack(const xiiRenderData* pRenderData, const xiiCamera& camera);

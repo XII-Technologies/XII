@@ -11,7 +11,7 @@ struct xiiMsgTransformChanged;
 
 using xiiSkyLightComponentManager = xiiSettingsComponentManager<class xiiSkyLightComponent>;
 
-class XII_RENDERERCORE_DLL xiiSkyLightComponent : public xiiSettingsComponent
+class XII_GRAPHICSCORE_DLL xiiSkyLightComponent : public xiiSettingsComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiSkyLightComponent, xiiSettingsComponent, xiiSkyLightComponentManager);
 

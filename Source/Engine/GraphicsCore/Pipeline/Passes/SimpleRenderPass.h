@@ -7,7 +7,7 @@
 /// Can either works as passthrough or if no input is present creates
 /// output targets matching the view's render target.
 /// Needs to be connected to a xiiTargetPass to function.
-class XII_RENDERERCORE_DLL xiiSimpleRenderPass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiSimpleRenderPass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSimpleRenderPass, xiiRenderPipelinePass);
 

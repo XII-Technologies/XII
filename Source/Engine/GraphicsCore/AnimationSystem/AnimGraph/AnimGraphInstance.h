@@ -11,7 +11,7 @@ class xiiGameObject;
 class xiiAnimGraph;
 class xiiAnimController;
 
-class XII_RENDERERCORE_DLL xiiAnimGraphInstance
+class XII_GRAPHICSCORE_DLL xiiAnimGraphInstance
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiAnimGraphInstance);
 

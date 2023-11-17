@@ -12,7 +12,7 @@ struct xiiMsgExtractRenderData;
 struct xiiRenderWorldRenderEvent;
 class xiiAbstractObjectNode;
 
-class XII_RENDERERCORE_DLL xiiBakedProbesComponentManager : public xiiSettingsComponentManager<class xiiBakedProbesComponent>
+class XII_GRAPHICSCORE_DLL xiiBakedProbesComponentManager : public xiiSettingsComponentManager<class xiiBakedProbesComponent>
 {
 public:
   xiiBakedProbesComponentManager(xiiWorld* pWorld);
@@ -30,7 +30,7 @@ private:
   void CreateDebugResources();
 };
 
-class XII_RENDERERCORE_DLL xiiBakedProbesComponent : public xiiSettingsComponent
+class XII_GRAPHICSCORE_DLL xiiBakedProbesComponent : public xiiSettingsComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiBakedProbesComponent, xiiSettingsComponent, xiiBakedProbesComponentManager);
 

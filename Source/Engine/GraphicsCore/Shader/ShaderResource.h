@@ -10,7 +10,7 @@ struct xiiShaderResourceDescriptor
 {
 };
 
-class XII_RENDERERCORE_DLL xiiShaderResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiShaderResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiShaderResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiShaderResource);

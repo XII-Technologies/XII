@@ -7,8 +7,8 @@ using xiiCompressedSkyVisibility = xiiUInt32;
 
 namespace xiiBakingUtils
 {
-  XII_RENDERERCORE_DLL xiiVec3 FibonacciSphere(xiiUInt32 uiSampleIndex, xiiUInt32 uiNumSamples);
+  XII_GRAPHICSCORE_DLL xiiVec3 FibonacciSphere(xiiUInt32 uiSampleIndex, xiiUInt32 uiNumSamples);
 
-  XII_RENDERERCORE_DLL xiiCompressedSkyVisibility CompressSkyVisibility(const xiiAmbientCube<float>& skyVisibility);
-  XII_RENDERERCORE_DLL void                       DecompressSkyVisibility(xiiCompressedSkyVisibility compressedSkyVisibility, xiiAmbientCube<float>& out_skyVisibility);
+  XII_GRAPHICSCORE_DLL xiiCompressedSkyVisibility CompressSkyVisibility(const xiiAmbientCube<float>& skyVisibility);
+  XII_GRAPHICSCORE_DLL void                       DecompressSkyVisibility(xiiCompressedSkyVisibility compressedSkyVisibility, xiiAmbientCube<float>& out_skyVisibility);
 } // namespace xiiBakingUtils

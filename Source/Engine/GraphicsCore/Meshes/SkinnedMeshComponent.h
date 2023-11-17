@@ -6,7 +6,7 @@
 
 class xiiShaderTransform;
 
-class XII_RENDERERCORE_DLL xiiSkinnedMeshRenderData : public xiiMeshRenderData
+class XII_GRAPHICSCORE_DLL xiiSkinnedMeshRenderData : public xiiMeshRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSkinnedMeshRenderData, xiiMeshRenderData);
 
@@ -17,7 +17,7 @@ public:
   std::shared_ptr<bool>       m_bTransformsUpdated;
 };
 
-struct XII_RENDERERCORE_DLL xiiSkinningState
+struct XII_GRAPHICSCORE_DLL xiiSkinningState
 {
   xiiSkinningState();
   ~xiiSkinningState();

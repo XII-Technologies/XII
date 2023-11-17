@@ -7,7 +7,7 @@ class xiiWorld;
 class xiiViewHandle;
 
 /// \brief Used in xiiDebugRenderer to determine where debug geometry should be rendered
-class XII_RENDERERCORE_DLL xiiDebugRendererContext
+class XII_GRAPHICSCORE_DLL xiiDebugRendererContext
 {
 public:
   XII_ALWAYS_INLINE xiiDebugRendererContext() :

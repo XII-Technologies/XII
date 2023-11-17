@@ -19,7 +19,7 @@ struct xiiForwardRenderShadingQuality
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, xiiForwardRenderShadingQuality);
 
 /// \brief A standard forward render pass that renders into the color target.
-class XII_RENDERERCORE_DLL xiiForwardRenderPass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiForwardRenderPass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiForwardRenderPass, xiiRenderPipelinePass);
 

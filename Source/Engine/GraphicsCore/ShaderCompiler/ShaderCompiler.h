@@ -28,7 +28,7 @@ struct xiiShaderCompilerFlags
 };
 XII_DECLARE_FLAGS_OPERATORS(xiiShaderCompilerFlags);
 
-class XII_RENDERERCORE_DLL xiiShaderProgramCompiler : public xiiReflectedClass
+class XII_GRAPHICSCORE_DLL xiiShaderProgramCompiler : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiShaderProgramCompiler, xiiReflectedClass);
 
@@ -60,7 +60,7 @@ public:
   virtual xiiResult Compile(xiiShaderProgramData& inout_data, xiiLogInterface* pLog) = 0;
 };
 
-class XII_RENDERERCORE_DLL xiiShaderCompiler
+class XII_GRAPHICSCORE_DLL xiiShaderCompiler
 {
 public:
   xiiResult CompileShaderPermutationForPlatforms(xiiStringView sFile, const xiiArrayPtr<const xiiPermutationVar>& permutationVars, xiiLogInterface* pLog, xiiStringView sPlatform = "ALL");

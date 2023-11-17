@@ -32,7 +32,7 @@ namespace ozz
 /// The nodes implement different functionality. For example logic nodes are used to figure out how to play an animation,
 /// other nodes then sample and combining animation poses, and yet other nodes can inform the user about events
 /// or they write state back to the animation graph's blackboard.
-class XII_RENDERERCORE_DLL xiiAnimGraphNode : public xiiReflectedClass
+class XII_GRAPHICSCORE_DLL xiiAnimGraphNode : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiAnimGraphNode, xiiReflectedClass);
 
@@ -65,7 +65,7 @@ protected:
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-struct XII_RENDERERCORE_DLL xiiAnimState
+struct XII_GRAPHICSCORE_DLL xiiAnimState
 {
   enum class State
   {
@@ -118,4 +118,4 @@ private:
   float m_fCurWeight                  = 0.0f;
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiAnimState);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiAnimState);

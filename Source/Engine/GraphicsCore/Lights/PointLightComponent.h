@@ -7,7 +7,7 @@
 using xiiPointLightComponentManager = xiiComponentManager<class xiiPointLightComponent, xiiBlockStorageType::Compact>;
 
 /// \brief The render data object for point lights.
-class XII_RENDERERCORE_DLL xiiPointLightRenderData : public xiiLightRenderData
+class XII_GRAPHICSCORE_DLL xiiPointLightRenderData : public xiiLightRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiPointLightRenderData, xiiLightRenderData);
 
@@ -18,7 +18,7 @@ public:
 
 /// \brief The standard point light component.
 /// This component represents point lights with various properties (e.g. a projected cube map, range, etc.)
-class XII_RENDERERCORE_DLL xiiPointLightComponent : public xiiLightComponent
+class XII_GRAPHICSCORE_DLL xiiPointLightComponent : public xiiLightComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiPointLightComponent, xiiLightComponent, xiiPointLightComponentManager);
 
@@ -65,7 +65,7 @@ protected:
 };
 
 /// \brief A special visualizer attribute for point lights
-class XII_RENDERERCORE_DLL xiiPointLightVisualizerAttribute : public xiiVisualizerAttribute
+class XII_GRAPHICSCORE_DLL xiiPointLightVisualizerAttribute : public xiiVisualizerAttribute
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiPointLightVisualizerAttribute, xiiVisualizerAttribute);
 

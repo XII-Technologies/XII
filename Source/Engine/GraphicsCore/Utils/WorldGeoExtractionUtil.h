@@ -15,7 +15,7 @@ using xiiCpuMeshResourceHandle = xiiTypedResourceHandle<class xiiCpuMeshResource
 /// The utility sends xiiMsgExtractGeometry to world components and they may fill out the geometry information.
 /// \a ExtractionMode defines what the geometry is needed for. This ranges from finding geometry that is used to generate the navmesh from
 /// to exporting the geometry to a file for use in another program, e.g. a modeling software.
-class XII_RENDERERCORE_DLL xiiWorldGeoExtractionUtil
+class XII_GRAPHICSCORE_DLL xiiWorldGeoExtractionUtil
 {
 public:
   struct MeshObject
@@ -52,7 +52,7 @@ public:
 ///
 /// The mode defines what the geometry is needed for, thus components should decide to participate or not
 /// and how detailed the geometry is they return.
-struct XII_RENDERERCORE_DLL xiiMsgExtractGeometry : public xiiMessage
+struct XII_GRAPHICSCORE_DLL xiiMsgExtractGeometry : public xiiMessage
 {
   XII_DECLARE_MESSAGE_TYPE(xiiMsgExtractGeometry, xiiMessage);
 

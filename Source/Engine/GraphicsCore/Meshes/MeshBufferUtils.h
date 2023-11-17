@@ -26,7 +26,7 @@ struct xiiMeshNormalPrecision
   static xiiGALResourceFormat::Enum ToResourceFormatTangent(Enum value);
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiMeshNormalPrecision);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshNormalPrecision);
 
 struct xiiMeshTexCoordPrecision
 {
@@ -44,7 +44,7 @@ struct xiiMeshTexCoordPrecision
   static xiiGALResourceFormat::Enum ToResourceFormat(Enum value);
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiMeshTexCoordPrecision);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshTexCoordPrecision);
 
 struct xiiMeshBoneWeigthPrecision
 {
@@ -64,9 +64,9 @@ struct xiiMeshBoneWeigthPrecision
   static xiiGALResourceFormat::Enum ToResourceFormat(Enum value);
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiMeshBoneWeigthPrecision);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshBoneWeigthPrecision);
 
-struct XII_RENDERERCORE_DLL xiiMeshBufferUtils
+struct XII_GRAPHICSCORE_DLL xiiMeshBufferUtils
 {
   static xiiResult EncodeNormal(const xiiVec3& vNormal, xiiArrayPtr<xiiUInt8> dest, xiiMeshNormalPrecision::Enum normalPrecision);
   static xiiResult EncodeTangent(const xiiVec3& vTangent, float fTangentSign, xiiArrayPtr<xiiUInt8> dest, xiiMeshNormalPrecision::Enum tangentPrecision);

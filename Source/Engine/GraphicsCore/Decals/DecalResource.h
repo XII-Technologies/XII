@@ -10,7 +10,7 @@ struct xiiDecalResourceDescriptor
 {
 };
 
-class XII_RENDERERCORE_DLL xiiDecalResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiDecalResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDecalResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiDecalResource);
@@ -25,7 +25,7 @@ private:
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 };
 
-class XII_RENDERERCORE_DLL xiiDecalResourceLoader : public xiiResourceTypeLoader
+class XII_GRAPHICSCORE_DLL xiiDecalResourceLoader : public xiiResourceTypeLoader
 {
 public:
   struct LoadedData

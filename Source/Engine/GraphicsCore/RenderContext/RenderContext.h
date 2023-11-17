@@ -28,7 +28,7 @@ struct xiiRenderWorldRenderEvent;
 // xiiRenderContext
 //////////////////////////////////////////////////////////////////////////
 
-class XII_RENDERERCORE_DLL xiiRenderContext
+class XII_GRAPHICSCORE_DLL xiiRenderContext
 {
 private:
   xiiRenderContext();

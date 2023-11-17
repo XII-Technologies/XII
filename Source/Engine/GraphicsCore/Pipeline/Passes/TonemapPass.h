@@ -6,7 +6,7 @@
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 
-class XII_RENDERERCORE_DLL xiiTonemapPass : public xiiRenderPipelinePass
+class XII_GRAPHICSCORE_DLL xiiTonemapPass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiTonemapPass, xiiRenderPipelinePass);
 

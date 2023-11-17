@@ -7,7 +7,7 @@
 // xiiShaderBindFlags
 //////////////////////////////////////////////////////////////////////////
 
-struct XII_RENDERERCORE_DLL xiiShaderBindFlags
+struct XII_GRAPHICSCORE_DLL xiiShaderBindFlags
 {
   using StorageType = xiiUInt32;
 
@@ -42,7 +42,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiShaderBindFlags);
 // xiiRenderContextFlags
 //////////////////////////////////////////////////////////////////////////
 
-struct XII_RENDERERCORE_DLL xiiRenderContextFlags
+struct XII_GRAPHICSCORE_DLL xiiRenderContextFlags
 {
   using StorageType = xiiUInt32;
 
@@ -82,7 +82,7 @@ XII_DECLARE_FLAGS_OPERATORS(xiiRenderContextFlags);
 // xiiDefaultSamplerFlags
 //////////////////////////////////////////////////////////////////////////
 
-struct XII_RENDERERCORE_DLL xiiDefaultSamplerFlags
+struct XII_GRAPHICSCORE_DLL xiiDefaultSamplerFlags
 {
   using StorageType = xiiUInt32;
 

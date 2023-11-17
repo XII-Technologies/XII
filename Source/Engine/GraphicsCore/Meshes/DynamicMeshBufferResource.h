@@ -16,7 +16,7 @@ struct xiiDynamicMeshBufferResourceDescriptor
   bool                          m_bColorStream    = false;
 };
 
-struct XII_RENDERERCORE_DLL xiiDynamicMeshVertex
+struct XII_GRAPHICSCORE_DLL xiiDynamicMeshVertex
 {
   XII_DECLARE_POD_TYPE();
 
@@ -48,7 +48,7 @@ struct XII_RENDERERCORE_DLL xiiDynamicMeshVertex
   }
 };
 
-class XII_RENDERERCORE_DLL xiiDynamicMeshBufferResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiDynamicMeshBufferResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiDynamicMeshBufferResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiDynamicMeshBufferResource);

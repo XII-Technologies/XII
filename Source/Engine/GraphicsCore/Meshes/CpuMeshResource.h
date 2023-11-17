@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/Meshes/MeshResourceDescriptor.h>
 
-class XII_RENDERERCORE_DLL xiiCpuMeshResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiCpuMeshResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiCpuMeshResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiCpuMeshResource);

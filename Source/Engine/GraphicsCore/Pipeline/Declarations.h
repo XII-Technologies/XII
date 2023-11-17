@@ -77,7 +77,7 @@ struct xiiHashHelper<xiiViewHandle>
 };
 
 /// \brief Usage hint of a camera/view.
-struct XII_RENDERERCORE_DLL xiiCameraUsageHint
+struct XII_GRAPHICSCORE_DLL xiiCameraUsageHint
 {
   using StorageType = xiiUInt8;
 
@@ -98,4 +98,4 @@ struct XII_RENDERERCORE_DLL xiiCameraUsageHint
   };
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiCameraUsageHint);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiCameraUsageHint);

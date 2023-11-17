@@ -187,7 +187,7 @@ void xiiOzzUtils::CopyAnimation(ozz::animation::Animation* pDst, const ozz::anim
   }
 }
 
-XII_RENDERERCORE_DLL void xiiOzzUtils::CopySkeleton(ozz::animation::Skeleton* pDst, const ozz::animation::Skeleton* pSrc)
+XII_GRAPHICSCORE_DLL void xiiOzzUtils::CopySkeleton(ozz::animation::Skeleton* pDst, const ozz::animation::Skeleton* pSrc)
 {
   xiiOzzArchiveData ozzArchiveData;
 

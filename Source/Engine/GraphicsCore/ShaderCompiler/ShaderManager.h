@@ -5,7 +5,7 @@
 #include <GraphicsCore/ShaderCompiler/PermutationGenerator.h>
 #include <GraphicsCore/ShaderCompiler/ShaderParser.h>
 
-class XII_RENDERERCORE_DLL xiiShaderManager
+class XII_GRAPHICSCORE_DLL xiiShaderManager
 {
 public:
   static void             Configure(const char* szActivePlatform, bool bEnableRuntimeCompilation, const char* szShaderCacheDirectory = ":shadercache/ShaderCache", const char* szPermVarSubDirectory = "Shaders/PermutationVars");

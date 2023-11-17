@@ -12,7 +12,7 @@ using xiiCustomMeshComponentManager      = xiiComponentManager<class xiiCustomMe
 /// The xiiDynamicMeshBufferResource is an easy to use resource to build geometry and change it frequently.
 /// This component takes such a resource and takes care of rendering it.
 /// The same resource can be set on multiple components to instantiate it in different locations.
-class XII_RENDERERCORE_DLL xiiCustomMeshComponent : public xiiRenderComponent
+class XII_GRAPHICSCORE_DLL xiiCustomMeshComponent : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiCustomMeshComponent, xiiRenderComponent, xiiCustomMeshComponentManager);
 
@@ -92,7 +92,7 @@ protected:
 };
 
 /// \brief Temporary data used to feed the xiiCustomMeshRenderer.
-class XII_RENDERERCORE_DLL xiiCustomMeshRenderData : public xiiRenderData
+class XII_GRAPHICSCORE_DLL xiiCustomMeshRenderData : public xiiRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiCustomMeshRenderData, xiiRenderData);
 
@@ -113,7 +113,7 @@ public:
 };
 
 /// \brief A renderer that handles all xiiCustomMeshRenderData.
-class XII_RENDERERCORE_DLL xiiCustomMeshRenderer : public xiiRenderer
+class XII_GRAPHICSCORE_DLL xiiCustomMeshRenderer : public xiiRenderer
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiCustomMeshRenderer, xiiRenderer);
   XII_DISALLOW_COPY_AND_ASSIGN(xiiCustomMeshRenderer);

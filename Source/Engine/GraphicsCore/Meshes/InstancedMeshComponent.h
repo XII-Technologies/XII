@@ -10,7 +10,7 @@ struct xiiMsgExtractGeometry;
 class xiiStreamWriter;
 class xiiStreamReader;
 
-struct XII_RENDERERCORE_DLL xiiMeshInstanceData
+struct XII_GRAPHICSCORE_DLL xiiMeshInstanceData
 {
   void    SetLocalPosition(xiiVec3 vPosition);
   xiiVec3 GetLocalPosition() const;
@@ -29,11 +29,11 @@ struct XII_RENDERERCORE_DLL xiiMeshInstanceData
   xiiColor m_color;
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiMeshInstanceData);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiMeshInstanceData);
 
 //////////////////////////////////////////////////////////////////////////
 
-class XII_RENDERERCORE_DLL xiiInstancedMeshRenderData : public xiiMeshRenderData
+class XII_GRAPHICSCORE_DLL xiiInstancedMeshRenderData : public xiiMeshRenderData
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiInstancedMeshRenderData, xiiMeshRenderData);
 
@@ -46,7 +46,7 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-class XII_RENDERERCORE_DLL xiiInstancedMeshComponentManager : public xiiComponentManager<class xiiInstancedMeshComponent, xiiBlockStorageType::Compact>
+class XII_GRAPHICSCORE_DLL xiiInstancedMeshComponentManager : public xiiComponentManager<class xiiInstancedMeshComponent, xiiBlockStorageType::Compact>
 {
 public:
   using SUPER = xiiComponentManager<xiiInstancedMeshComponent, xiiBlockStorageType::Compact>;
@@ -72,7 +72,7 @@ protected:
   virtual void Deinitialize() override;
 };
 
-class XII_RENDERERCORE_DLL xiiInstancedMeshComponent : public xiiMeshComponentBase
+class XII_GRAPHICSCORE_DLL xiiInstancedMeshComponent : public xiiMeshComponentBase
 {
   XII_DECLARE_COMPONENT_TYPE(xiiInstancedMeshComponent, xiiMeshComponentBase, xiiInstancedMeshComponentManager);
 

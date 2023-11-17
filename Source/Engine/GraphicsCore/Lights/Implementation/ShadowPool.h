@@ -11,7 +11,7 @@ class xiiView;
 struct xiiRenderWorldExtractionEvent;
 struct xiiRenderWorldRenderEvent;
 
-class XII_RENDERERCORE_DLL xiiShadowPool
+class XII_GRAPHICSCORE_DLL xiiShadowPool
 {
 public:
   static xiiUInt32 AddDirectionalLight(const xiiDirectionalLightComponent* pDirLight, const xiiView* pReferenceView);

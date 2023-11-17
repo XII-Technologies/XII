@@ -6,7 +6,7 @@ class xiiSkeletonResource;
 class xiiStreamWriter;
 class xiiStreamReader;
 
-class XII_RENDERERCORE_DLL xiiBoneWeightsAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiBoneWeightsAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiBoneWeightsAnimNode, xiiAnimGraphNode);
 

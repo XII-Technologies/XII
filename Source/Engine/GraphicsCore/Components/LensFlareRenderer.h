@@ -8,7 +8,7 @@ class xiiRenderDataBatch;
 using xiiShaderResourceHandle = xiiTypedResourceHandle<class xiiShaderResource>;
 
 /// \brief Implements rendering of lens flares
-class XII_RENDERERCORE_DLL xiiLensFlareRenderer : public xiiRenderer
+class XII_GRAPHICSCORE_DLL xiiLensFlareRenderer : public xiiRenderer
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiLensFlareRenderer, xiiRenderer);
   XII_DISALLOW_COPY_AND_ASSIGN(xiiLensFlareRenderer);

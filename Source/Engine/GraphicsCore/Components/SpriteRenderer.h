@@ -8,7 +8,7 @@ class xiiRenderDataBatch;
 using xiiShaderResourceHandle = xiiTypedResourceHandle<class xiiShaderResource>;
 
 /// \brief Implements rendering of sprites
-class XII_RENDERERCORE_DLL xiiSpriteRenderer : public xiiRenderer
+class XII_GRAPHICSCORE_DLL xiiSpriteRenderer : public xiiRenderer
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSpriteRenderer, xiiRenderer);
   XII_DISALLOW_COPY_AND_ASSIGN(xiiSpriteRenderer);

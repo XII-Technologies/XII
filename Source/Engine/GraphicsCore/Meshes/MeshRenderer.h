@@ -6,7 +6,7 @@ class xiiMeshRenderData;
 struct xiiPerInstanceData;
 
 /// \brief Implements rendering of static meshes
-class XII_RENDERERCORE_DLL xiiMeshRenderer : public xiiRenderer
+class XII_GRAPHICSCORE_DLL xiiMeshRenderer : public xiiRenderer
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshRenderer, xiiRenderer);
   XII_DISALLOW_COPY_AND_ASSIGN(xiiMeshRenderer);

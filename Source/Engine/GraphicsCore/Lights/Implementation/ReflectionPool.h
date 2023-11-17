@@ -18,7 +18,7 @@ using xiiReflectionProbeId = xiiGenericId<24, 8>;
 class xiiReflectionProbeComponentBase;
 class xiiSkyLightComponent;
 
-class XII_RENDERERCORE_DLL xiiReflectionPool
+class XII_GRAPHICSCORE_DLL xiiReflectionPool
 {
 public:
   //Probes

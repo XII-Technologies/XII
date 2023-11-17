@@ -14,7 +14,7 @@ class xiiGeometry;
 class xiiMeshResourceDescriptor;
 
 /// \brief A beam component
-class XII_RENDERERCORE_DLL xiiBeamComponent : public xiiRenderComponent
+class XII_GRAPHICSCORE_DLL xiiBeamComponent : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiBeamComponent, xiiRenderComponent, xiiBeamComponentManager);
 

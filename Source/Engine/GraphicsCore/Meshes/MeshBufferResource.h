@@ -9,7 +9,7 @@
 using xiiMeshBufferResourceHandle = xiiTypedResourceHandle<class xiiMeshBufferResource>;
 class xiiGeometry;
 
-struct XII_RENDERERCORE_DLL xiiVertexStreamInfo : public xiiHashableStruct<xiiVertexStreamInfo>
+struct XII_GRAPHICSCORE_DLL xiiVertexStreamInfo : public xiiHashableStruct<xiiVertexStreamInfo>
 {
   XII_DECLARE_POD_TYPE();
 
@@ -20,7 +20,7 @@ struct XII_RENDERERCORE_DLL xiiVertexStreamInfo : public xiiHashableStruct<xiiVe
   xiiUInt16                           m_uiElementSize; ///< the number of bytes for this element type (depends on the format); this is not the stride between elements!
 };
 
-struct XII_RENDERERCORE_DLL xiiVertexDeclarationInfo
+struct XII_GRAPHICSCORE_DLL xiiVertexDeclarationInfo
 {
   void ComputeHash();
 
@@ -29,7 +29,7 @@ struct XII_RENDERERCORE_DLL xiiVertexDeclarationInfo
 };
 
 
-struct XII_RENDERERCORE_DLL xiiMeshBufferResourceDescriptor
+struct XII_GRAPHICSCORE_DLL xiiMeshBufferResourceDescriptor
 {
 public:
   xiiMeshBufferResourceDescriptor();
@@ -130,7 +130,7 @@ private:
   xiiDynamicArray<xiiUInt8, xiiAlignedAllocatorWrapper> m_IndexBufferData;
 };
 
-class XII_RENDERERCORE_DLL xiiMeshBufferResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiMeshBufferResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiMeshBufferResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiMeshBufferResource);

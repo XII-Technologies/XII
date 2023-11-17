@@ -9,7 +9,7 @@ struct xiiMsgQueryAnimationSkeleton;
 
 using xiiVisualizeSkeletonComponentManager = xiiComponentManagerSimple<class xiiSkeletonComponent, xiiComponentUpdateType::Always, xiiBlockStorageType::Compact>;
 
-class XII_RENDERERCORE_DLL xiiSkeletonComponent : public xiiRenderComponent
+class XII_GRAPHICSCORE_DLL xiiSkeletonComponent : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiSkeletonComponent, xiiRenderComponent, xiiVisualizeSkeletonComponentManager);
 

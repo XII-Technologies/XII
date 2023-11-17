@@ -3,7 +3,7 @@
 #include <GraphicsCore/Pipeline/Passes/ForwardRenderPass.h>
 
 /// \brief A forward render pass that renders all opaque objects into the color target.
-class XII_RENDERERCORE_DLL xiiOpaqueForwardRenderPass : public xiiForwardRenderPass
+class XII_GRAPHICSCORE_DLL xiiOpaqueForwardRenderPass : public xiiForwardRenderPass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiOpaqueForwardRenderPass, xiiForwardRenderPass);
 

@@ -4,7 +4,7 @@
 #include <Foundation/Utilities/Progress.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-struct XII_RENDERERCORE_DLL xiiBakingSettings
+struct XII_GRAPHICSCORE_DLL xiiBakingSettings
 {
   xiiVec3   m_vProbeSpacing        = xiiVec3(4);
   xiiUInt32 m_uiNumSamplesPerProbe = 128;
@@ -14,7 +14,7 @@ struct XII_RENDERERCORE_DLL xiiBakingSettings
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_RENDERERCORE_DLL, xiiBakingSettings);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiBakingSettings);
 
 class xiiWorld;
 

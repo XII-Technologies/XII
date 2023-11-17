@@ -4,7 +4,7 @@
 #include <Core/World/World.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
-class XII_RENDERERCORE_DLL xiiRenderComponent : public xiiComponent
+class XII_GRAPHICSCORE_DLL xiiRenderComponent : public xiiComponent
 {
   XII_DECLARE_ABSTRACT_COMPONENT_TYPE(xiiRenderComponent, xiiComponent);
 

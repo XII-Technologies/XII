@@ -19,5 +19,5 @@ if (XII_3RDPARTY_OZZ_SUPPORT)
   )
 endif()
 
-# needed for shader structure includes
+# This is needed for shader structure includes
 target_include_directories(${PROJECT_NAME} PRIVATE "${XII_ROOT}/Data/Base")

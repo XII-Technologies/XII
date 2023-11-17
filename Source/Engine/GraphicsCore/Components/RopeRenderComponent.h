@@ -13,7 +13,7 @@ class xiiShaderTransform;
 
 using xiiRopeRenderComponentManager = xiiComponentManager<class xiiRopeRenderComponent, xiiBlockStorageType::Compact>;
 
-class XII_RENDERERCORE_DLL xiiRopeRenderComponent : public xiiRenderComponent
+class XII_GRAPHICSCORE_DLL xiiRopeRenderComponent : public xiiRenderComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiRopeRenderComponent, xiiRenderComponent, xiiRopeRenderComponentManager);
 

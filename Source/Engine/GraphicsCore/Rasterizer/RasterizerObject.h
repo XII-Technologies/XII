@@ -9,7 +9,7 @@
 
 class xiiGeometry;
 
-class XII_RENDERERCORE_DLL xiiRasterizerObject : public xiiRefCounted
+class XII_GRAPHICSCORE_DLL xiiRasterizerObject : public xiiRefCounted
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRasterizerObject);
 

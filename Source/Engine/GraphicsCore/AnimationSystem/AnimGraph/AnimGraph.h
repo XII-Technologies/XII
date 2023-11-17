@@ -7,7 +7,7 @@
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphNode.h>
 
-class XII_RENDERERCORE_DLL xiiAnimGraph
+class XII_GRAPHICSCORE_DLL xiiAnimGraph
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiAnimGraph);
 

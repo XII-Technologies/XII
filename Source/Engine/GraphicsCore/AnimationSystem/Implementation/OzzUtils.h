@@ -15,7 +15,7 @@ namespace ozz::animation
 ///
 /// Since ozz::io::Stream requires seek/tell functionality, it cannot be implemented with basic xiiStreamReader / xiiStreamWriter.
 /// Instead, we must have the entire ozz archive data in memory, to be able to jump around arbitrarily.
-class XII_RENDERERCORE_DLL xiiOzzArchiveData
+class XII_GRAPHICSCORE_DLL xiiOzzArchiveData
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiOzzArchiveData);
 
@@ -33,7 +33,7 @@ public:
 /// \brief Implements the ozz::io::Stream interface for reading. The data has to be present in an xiiOzzArchiveData object.
 ///
 /// The class is implemented inline and not DLL exported because ozz is only available as a static library.
-class XII_RENDERERCORE_DLL xiiOzzStreamReader : public ozz::io::Stream
+class XII_GRAPHICSCORE_DLL xiiOzzStreamReader : public ozz::io::Stream
 {
 public:
   xiiOzzStreamReader(const xiiOzzArchiveData& data);
@@ -57,7 +57,7 @@ private:
 /// \brief Implements the ozz::io::Stream interface for writing. The data is gathered in an xiiOzzArchiveData object.
 ///
 /// The class is implemented inline and not DLL exported because ozz is only available as a static library.
-class XII_RENDERERCORE_DLL xiiOzzStreamWriter : public ozz::io::Stream
+class XII_GRAPHICSCORE_DLL xiiOzzStreamWriter : public ozz::io::Stream
 {
 public:
   xiiOzzStreamWriter(xiiOzzArchiveData& ref_data);
@@ -80,6 +80,6 @@ private:
 
 namespace xiiOzzUtils
 {
-  XII_RENDERERCORE_DLL void CopyAnimation(ozz::animation::Animation* pDst, const ozz::animation::Animation* pSrc);
-  XII_RENDERERCORE_DLL void CopySkeleton(ozz::animation::Skeleton* pDst, const ozz::animation::Skeleton* pSrc);
+  XII_GRAPHICSCORE_DLL void CopyAnimation(ozz::animation::Animation* pDst, const ozz::animation::Animation* pSrc);
+  XII_GRAPHICSCORE_DLL void CopySkeleton(ozz::animation::Skeleton* pDst, const ozz::animation::Skeleton* pSrc);
 } // namespace xiiOzzUtils

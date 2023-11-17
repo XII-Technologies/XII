@@ -6,7 +6,7 @@
 
 using xiiProbeTreeSectorResourceHandle = xiiTypedResourceHandle<class xiiProbeTreeSectorResource>;
 
-struct XII_RENDERERCORE_DLL xiiProbeTreeSectorResourceDescriptor
+struct XII_GRAPHICSCORE_DLL xiiProbeTreeSectorResourceDescriptor
 {
   XII_DISALLOW_COPY_AND_ASSIGN(xiiProbeTreeSectorResourceDescriptor);
 
@@ -28,7 +28,7 @@ struct XII_RENDERERCORE_DLL xiiProbeTreeSectorResourceDescriptor
   xiiResult Deserialize(xiiStreamReader& inout_stream);
 };
 
-class XII_RENDERERCORE_DLL xiiProbeTreeSectorResource : public xiiResource
+class XII_GRAPHICSCORE_DLL xiiProbeTreeSectorResource : public xiiResource
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiProbeTreeSectorResource, xiiResource);
   XII_RESOURCE_DECLARE_COMMON_CODE(xiiProbeTreeSectorResource);

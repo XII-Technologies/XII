@@ -9,13 +9,13 @@ struct xiiMsgTransformChanged;
 struct xiiMsgUpdateLocalBounds;
 struct xiiMsgExtractOccluderData;
 
-class XII_RENDERERCORE_DLL xiiOccluderComponentManager final : public xiiComponentManager<class xiiOccluderComponent, xiiBlockStorageType::FreeList>
+class XII_GRAPHICSCORE_DLL xiiOccluderComponentManager final : public xiiComponentManager<class xiiOccluderComponent, xiiBlockStorageType::FreeList>
 {
 public:
   xiiOccluderComponentManager(xiiWorld* pWorld);
 };
 
-class XII_RENDERERCORE_DLL xiiOccluderComponent : public xiiComponent
+class XII_GRAPHICSCORE_DLL xiiOccluderComponent : public xiiComponent
 {
   XII_DECLARE_COMPONENT_TYPE(xiiOccluderComponent, xiiComponent, xiiOccluderComponentManager);
 

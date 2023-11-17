@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphNode.h>
 
-class XII_RENDERERCORE_DLL xiiLogAnimNode : public xiiAnimGraphNode
+class XII_GRAPHICSCORE_DLL xiiLogAnimNode : public xiiAnimGraphNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiLogAnimNode, xiiAnimGraphNode);
 
@@ -23,7 +23,7 @@ protected:
   xiiHybridArray<xiiAnimGraphNumberInputPin, 2> m_InNumbers;         // [ property ]
 };
 
-class XII_RENDERERCORE_DLL xiiLogInfoAnimNode : public xiiLogAnimNode
+class XII_GRAPHICSCORE_DLL xiiLogInfoAnimNode : public xiiLogAnimNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiLogInfoAnimNode, xiiLogAnimNode);
 
@@ -34,7 +34,7 @@ protected:
   virtual void Step(xiiAnimController& ref_controller, xiiAnimGraphInstance& ref_graph, xiiTime tDiff, const xiiSkeletonResource* pSkeleton, xiiGameObject* pTarget) const override;
 };
 
-class XII_RENDERERCORE_DLL xiiLogErrorAnimNode : public xiiLogAnimNode
+class XII_GRAPHICSCORE_DLL xiiLogErrorAnimNode : public xiiLogAnimNode
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiLogErrorAnimNode, xiiLogAnimNode);
 

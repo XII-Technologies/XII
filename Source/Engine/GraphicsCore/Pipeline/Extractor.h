@@ -5,7 +5,7 @@
 
 class xiiStreamWriter;
 
-class XII_RENDERERCORE_DLL xiiExtractor : public xiiReflectedClass
+class XII_GRAPHICSCORE_DLL xiiExtractor : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiExtractor, xiiReflectedClass);
   XII_DISALLOW_COPY_AND_ASSIGN(xiiExtractor);
@@ -51,7 +51,7 @@ protected:
 };
 
 
-class XII_RENDERERCORE_DLL xiiVisibleObjectsExtractor : public xiiExtractor
+class XII_GRAPHICSCORE_DLL xiiVisibleObjectsExtractor : public xiiExtractor
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiVisibleObjectsExtractor, xiiExtractor);
 
@@ -64,7 +64,7 @@ public:
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream) override;
 };
 
-class XII_RENDERERCORE_DLL xiiSelectedObjectsExtractorBase : public xiiExtractor
+class XII_GRAPHICSCORE_DLL xiiSelectedObjectsExtractorBase : public xiiExtractor
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSelectedObjectsExtractorBase, xiiExtractor);
 
@@ -89,7 +89,7 @@ public:
 ///
 /// As long as there is also an xiiSelectionHighlightPass in the render pipeline, all objects in this selection will be rendered
 /// with an outline.
-class XII_RENDERERCORE_DLL xiiSelectedObjectsContext : public xiiReflectedClass
+class XII_GRAPHICSCORE_DLL xiiSelectedObjectsContext : public xiiReflectedClass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSelectedObjectsContext, xiiReflectedClass);
 
@@ -107,7 +107,7 @@ public:
 /// \brief An extractor that can be instantiated in a render pipeline, to define manually which objects should be rendered with a selection outline.
 ///
 /// \sa xiiSelectedObjectsContext
-class XII_RENDERERCORE_DLL xiiSelectedObjectsExtractor : public xiiSelectedObjectsExtractorBase
+class XII_GRAPHICSCORE_DLL xiiSelectedObjectsExtractor : public xiiSelectedObjectsExtractorBase
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSelectedObjectsExtractor, xiiSelectedObjectsExtractorBase);
 
