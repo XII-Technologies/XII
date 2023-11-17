@@ -361,7 +361,7 @@ function(install_combined_static_lib COMBINED_LIB_NAME LIBS_LIST CUSTOM_TARGET_N
                     DESTINATION ${INSTALL_DESTINATION}
             )
         else()
-            message("ar command is not found")
+            message(STATUS "ar command is not found")
         endif()
     endif()
 
@@ -370,7 +370,7 @@ function(install_combined_static_lib COMBINED_LIB_NAME LIBS_LIST CUSTOM_TARGET_N
             FOLDER ${CUSTOM_TARGET_FOLDER}
         )
     else()
-        message("Unable to find librarian tool. Combined ${COMBINED_LIB_NAME} static library will not be produced.")
+        message(STATUS "Unable to find librarian tool. Combined ${COMBINED_LIB_NAME} static library will not be produced.")
     endif()
 
 endfunction()

@@ -176,7 +176,7 @@ set(PRIVATE_DEPENDENCIES
 )
 
 if (${DILIGENT_NO_HLSL})
-    message("HLSL support is disabled. Vulkan backend will not be able to consume SPIRV bytecode generated from HLSL.")
+    message(STATUS "HLSL support is disabled. Vulkan backend will not be able to consume SPIRV bytecode generated from HLSL.")
 else()
     list(APPEND PRIVATE_DEPENDENCIES SPIRV-Tools-opt)
 endif()
@@ -227,7 +227,7 @@ elseif(PLATFORM_MACOS)
     endif()
 
     if (VULKAN_LIB_PATH)
-        message("Using Vulkan library path: " ${VULKAN_LIB_PATH})
+        message(STATUS "Using Vulkan library path: " ${VULKAN_LIB_PATH})
     else()
         message(WARNING "Vulkan library is not found. Executables may fail to start because the library may not be in rpath. Define VULKAN_SDK environment or CMake variable to specify the SDK path.")
     endif()
@@ -308,7 +308,7 @@ else()
 endif()
 
 if (${DILIGENT_NO_GLSLANG})
-    message("GLSLang is not being built. Vulkan backend will only be able to consume SPIRV byte code.")
+    message(STATUS "GLSLang is not being built. Vulkan backend will only be able to consume SPIRV byte code.")
 endif()
 
 target_compile_definitions(Diligent-GraphicsEngineVk-static
