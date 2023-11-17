@@ -4,7 +4,7 @@
 
 #include <GraphicsFoundation/States/DepthStencilState.h>
 
-class XII_GRAPHICSD3D12_DLL xiiGALDepthStencilStateD3D12 : public xiiGALDepthStencilState
+class XII_GRAPHICSD3D12_DLL xiiGALDepthStencilStateD3D12 final : public xiiGALDepthStencilState
 {
 public:
   const Diligent::DepthStencilStateDesc* GetDepthStencilState() const;

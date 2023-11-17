@@ -5,7 +5,7 @@
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/Shader/Shader.h>
 
-class XII_GRAPHICSD3D12_DLL xiiGALShaderD3D12 : public xiiGALShader
+class XII_GRAPHICSD3D12_DLL xiiGALShaderD3D12 final : public xiiGALShader
 {
 public:
   /// \brief This returns the total number of shader resources.

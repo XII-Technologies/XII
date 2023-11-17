@@ -4,7 +4,7 @@
 
 #include <GraphicsFoundation/Shader/InputLayout.h>
 
-class XII_GRAPHICSD3D12_DLL xiiGALInputLayoutD3D12 : public xiiGALInputLayout
+class XII_GRAPHICSD3D12_DLL xiiGALInputLayoutD3D12 final : public xiiGALInputLayout
 {
 public:
   const Diligent::InputLayoutDesc* GetLayout() const;

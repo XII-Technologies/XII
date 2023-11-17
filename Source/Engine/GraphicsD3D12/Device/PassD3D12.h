@@ -6,7 +6,7 @@
 
 #include <GraphicsFoundation/Device/Pass.h>
 
-class XII_GRAPHICSD3D12_DLL xiiGALPassD3D12 : public xiiGALPass
+class XII_GRAPHICSD3D12_DLL xiiGALPassD3D12 final : public xiiGALPass
 {
 public:
 protected:

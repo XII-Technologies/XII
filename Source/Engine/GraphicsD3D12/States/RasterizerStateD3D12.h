@@ -4,7 +4,7 @@
 
 #include <GraphicsFoundation/States/RasterizerState.h>
 
-class XII_GRAPHICSD3D12_DLL xiiGALRasterizerStateD3D12 : public xiiGALRasterizerState
+class XII_GRAPHICSD3D12_DLL xiiGALRasterizerStateD3D12 final : public xiiGALRasterizerState
 {
 public:
   const Diligent::RasterizerStateDesc* GetRasterizerState() const;

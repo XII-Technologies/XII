@@ -4,7 +4,7 @@
 
 #include <GraphicsFoundation/Device/SwapChain.h>
 
-class XII_GRAPHICSD3D12_DLL xiiGALSwapChainD3D12 : public xiiGALSwapChain
+class XII_GRAPHICSD3D12_DLL xiiGALSwapChainD3D12 final : public xiiGALSwapChain
 {
 public:
   virtual void AcquireNextRenderTarget(xiiGALDevice* pDevice) override;

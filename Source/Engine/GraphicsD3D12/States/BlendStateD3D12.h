@@ -4,7 +4,7 @@
 
 #include <GraphicsFoundation/States/BlendState.h>
 
-class XII_GRAPHICSD3D12_DLL xiiGALBlendStateD3D12 : public xiiGALBlendState
+class XII_GRAPHICSD3D12_DLL xiiGALBlendStateD3D12 final : public xiiGALBlendState
 {
 public:
   const Diligent::BlendStateDesc* GetBlendState() const;

@@ -10,7 +10,7 @@
 using xiiGALFormatLookupEntryD3D12 = xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, (Diligent::TEXTURE_FORMAT)0U>;
 using xiiGALFormatLookupTableD3D12 = xiiGALFormatLookupTable<xiiGALFormatLookupEntryD3D12>;
 
-struct xiiAllocatorDiligent : public Diligent::IMemoryAllocator
+struct xiiAllocatorDiligent final : public Diligent::IMemoryAllocator
 {
 public:
   xiiAllocatorDiligent(const char* szName) :
