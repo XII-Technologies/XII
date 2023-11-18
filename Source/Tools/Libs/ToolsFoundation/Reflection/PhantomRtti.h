@@ -15,7 +15,7 @@ private:
 
   void SetProperties(xiiDynamicArray<xiiReflectedPropertyDescriptor>& properties);
   void SetFunctions(xiiDynamicArray<xiiReflectedFunctionDescriptor>& functions);
-  void SetAttributes(xiiHybridArray<xiiPropertyAttribute*, 2>& attributes);
+  void SetAttributes(xiiDynamicArray<const xiiPropertyAttribute*>& attributes);
   bool IsEqualToDescriptor(const xiiReflectedTypeDescriptor& desc);
 
   void UpdateType(xiiReflectedTypeDescriptor& desc);
@@ -25,5 +25,5 @@ private:
   xiiString                                     m_sPluginNameStorage;
   xiiDynamicArray<xiiAbstractProperty*>         m_PropertiesStorage;
   xiiDynamicArray<xiiAbstractFunctionProperty*> m_FunctionsStorage;
-  xiiDynamicArray<xiiPropertyAttribute*>        m_AttributesStorage;
+  xiiDynamicArray<const xiiPropertyAttribute*>  m_AttributesStorage;
 };

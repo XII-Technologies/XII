@@ -77,7 +77,6 @@ xiiDocumentNodeManager::xiiDocumentNodeManager()
 {
   m_ObjectEvents.AddEventHandler(xiiMakeDelegate(&xiiDocumentNodeManager::ObjectHandler, this));
   m_StructureEvents.AddEventHandler(xiiMakeDelegate(&xiiDocumentNodeManager::StructureEventHandler, this));
-
   m_PropertyEvents.AddEventHandler(xiiMakeDelegate(&xiiDocumentNodeManager::PropertyEventsHandler, this));
 }
 
@@ -85,7 +84,6 @@ xiiDocumentNodeManager::~xiiDocumentNodeManager()
 {
   m_ObjectEvents.RemoveEventHandler(xiiMakeDelegate(&xiiDocumentNodeManager::ObjectHandler, this));
   m_StructureEvents.RemoveEventHandler(xiiMakeDelegate(&xiiDocumentNodeManager::StructureEventHandler, this));
-
   m_PropertyEvents.RemoveEventHandler(xiiMakeDelegate(&xiiDocumentNodeManager::PropertyEventsHandler, this));
 }
 
@@ -97,16 +95,20 @@ const xiiRTTI* xiiDocumentNodeManager::GetConnectionType() const
 xiiVec2 xiiDocumentNodeManager::GetNodePos(const xiiDocumentObject* pObject) const
 {
   XII_ASSERT_DEV(pObject != nullptr, "Invalid input!");
+
   auto it = m_ObjectToNode.Find(pObject->GetGuid());
   XII_ASSERT_DEV(it.IsValid(), "Can't get pos of objects that aren't nodes!");
+
   return it.Value().m_vPos;
 }
 
 const xiiConnection& xiiDocumentNodeManager::GetConnection(const xiiDocumentObject* pObject) const
 {
   XII_ASSERT_DEV(pObject != nullptr, "Invalid input!");
+
   auto it = m_ObjectToConnection.Find(pObject->GetGuid());
   XII_ASSERT_DEV(it.IsValid(), "Can't get connection for objects that aren't connections!");
+
   return *it.Value();
 }
 
@@ -116,6 +118,7 @@ const xiiPin* xiiDocumentNodeManager::GetInputPinByName(const xiiDocumentObject*
 
   auto it = m_ObjectToNode.Find(pObject->GetGuid());
   XII_ASSERT_DEV(it.IsValid(), "Can't get input pins of objects that aren't nodes!");
+
   for (auto& pPin : it.Value().m_Inputs)
   {
     if (pPin->GetName() == sName)
@@ -130,6 +133,7 @@ const xiiPin* xiiDocumentNodeManager::GetOutputPinByName(const xiiDocumentObject
 
   auto it = m_ObjectToNode.Find(pObject->GetGuid());
   XII_ASSERT_DEV(it.IsValid(), "Can't get input pins of objects that aren't nodes!");
+
   for (auto& pPin : it.Value().m_Outputs)
   {
     if (pPin->GetName() == sName)
@@ -141,22 +145,27 @@ const xiiPin* xiiDocumentNodeManager::GetOutputPinByName(const xiiDocumentObject
 xiiArrayPtr<const xiiUniquePtr<const xiiPin>> xiiDocumentNodeManager::GetInputPins(const xiiDocumentObject* pObject) const
 {
   XII_ASSERT_DEV(pObject != nullptr, "Invalid input!");
+
   auto it = m_ObjectToNode.Find(pObject->GetGuid());
   XII_ASSERT_DEV(it.IsValid(), "Can't get input pins of objects that aren't nodes!");
+
   return xiiMakeArrayPtr((xiiUniquePtr<const xiiPin>*)it.Value().m_Inputs.GetData(), it.Value().m_Inputs.GetCount());
 }
 
 xiiArrayPtr<const xiiUniquePtr<const xiiPin>> xiiDocumentNodeManager::GetOutputPins(const xiiDocumentObject* pObject) const
 {
   XII_ASSERT_DEV(pObject != nullptr, "Invalid input!");
+
   auto it = m_ObjectToNode.Find(pObject->GetGuid());
   XII_ASSERT_DEV(it.IsValid(), "Can't get input pins of objects that aren't nodes!");
+
   return xiiMakeArrayPtr((xiiUniquePtr<const xiiPin>*)it.Value().m_Outputs.GetData(), it.Value().m_Outputs.GetCount());
 }
 
 bool xiiDocumentNodeManager::IsNode(const xiiDocumentObject* pObject) const
 {
   XII_ASSERT_DEV(pObject != nullptr, "Invalid input!");
+
   if (pObject == nullptr)
     return false;
   if (pObject == GetRootObject())
@@ -168,6 +177,7 @@ bool xiiDocumentNodeManager::IsNode(const xiiDocumentObject* pObject) const
 bool xiiDocumentNodeManager::IsConnection(const xiiDocumentObject* pObject) const
 {
   XII_ASSERT_DEV(pObject != nullptr, "Invalid input!");
+
   if (pObject == nullptr)
     return false;
   if (pObject == GetRootObject())
@@ -419,9 +429,18 @@ void xiiDocumentNodeManager::RestoreMetaDataAfterLoading(const xiiAbstractObject
       }
 
       const xiiPin* pSourcePin = GetOutputPinByName(pSource, connectionMetaData.m_SourcePin);
-      const xiiPin* pTargetPin = GetInputPinByName(pTarget, connectionMetaData.m_TargetPin);
-      if (pSourcePin == nullptr || pTargetPin == nullptr)
+      if (pSourcePin == nullptr)
       {
+        xiiLog::Error("Unknown output pin '{}' on '{}'. The connection has been removed.", connectionMetaData.m_SourcePin, pSource->GetType()->GetTypeName());
+        RemoveObject(pObject);
+        DestroyObject(pObject);
+        continue;
+      }
+
+      const xiiPin* pTargetPin = GetInputPinByName(pTarget, connectionMetaData.m_TargetPin);
+      if (pTargetPin == nullptr)
+      {
+        xiiLog::Error("Unknown input pin '{}' on '{}'. The connection has been removed.", connectionMetaData.m_TargetPin, pTarget->GetType()->GetTypeName());
         RemoveObject(pObject);
         DestroyObject(pObject);
         continue;
@@ -873,9 +892,7 @@ void xiiDocumentNodeManager::RestoreOldMetaDataAfterLoading(const xiiAbstractObj
     xiiDocumentNodeManager::CanConnectResult res;
     if (CanConnect(pConnectionType, *pSourcePin, *pTargetPin, res).m_Result.Succeeded())
     {
-      xiiUuid ObjectGuid;
-      ObjectGuid.CreateNewUuid();
-      xiiDocumentObject* pConnectionObject = CreateObject(pConnectionType, ObjectGuid);
+      xiiDocumentObject* pConnectionObject = CreateObject(pConnectionType, xiiUuid::CreateUuid());
 
       AddObject(pConnectionObject, nullptr, "", -1);
 

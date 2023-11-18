@@ -77,8 +77,8 @@ public:
   bool CanUndo() const;
   bool CanRedo() const;
 
-  const char* GetUndoDisplayString() const;
-  const char* GetRedoDisplayString() const;
+  xiiStringView GetUndoDisplayString() const;
+  xiiStringView GetRedoDisplayString() const;
 
   void StartTransaction(const xiiFormatString& displayString);
   void CancelTransaction() { EndTransaction(true); }

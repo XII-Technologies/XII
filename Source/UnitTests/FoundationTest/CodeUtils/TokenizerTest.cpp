@@ -69,7 +69,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Tokenizer)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Token Types")
   {
-    const char* stringLiteral = R"(
+    const char*  stringLiteral = R"(
 float f=10.3f + 100'000.0;
 int i=100'000*12345;
 // line comment

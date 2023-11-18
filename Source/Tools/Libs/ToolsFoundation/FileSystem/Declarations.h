@@ -9,8 +9,10 @@
 
 #if 0 // Define to enable extensive file system profile scopes
 #  define FILESYSTEM_PROFILE(szName) XII_PROFILE_SCOPE(szName)
+
 #else
 #  define FILESYSTEM_PROFILE(Name)
+
 #endif
 
 /// \brief Information about a single file on disk. The file might be a document or any other file found in the data directories.
@@ -30,17 +32,16 @@ struct XII_TOOLSFOUNDATION_DLL xiiFileStatus
   xiiUuid      m_DocumentID; ///< If the file is linked to a document, the GUID is valid, otherwise not.
   Status       m_Status = Status::Unknown;
 };
-
 XII_DECLARE_REFLECTABLE_TYPE(XII_TOOLSFOUNDATION_DLL, xiiFileStatus);
 
-inline xiiStreamWriter& operator<<(xiiStreamWriter& inout_stream, const xiiFileStatus& value)
+XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiFileStatus& value)
 {
-  inout_stream.WriteBytes(&value, sizeof(xiiFileStatus)).IgnoreResult();
-  return inout_stream;
+  ref_stream.WriteBytes(&value, sizeof(xiiFileStatus)).IgnoreResult();
+  return ref_stream;
 }
 
-inline xiiStreamReader& operator>>(xiiStreamReader& inout_stream, xiiFileStatus& ref_value)
+XII_ALWAYS_INLINE xiiStreamReader& operator>>(xiiStreamReader& ref_stream, xiiFileStatus& ref_value)
 {
-  inout_stream.ReadBytes(&ref_value, sizeof(xiiFileStatus));
-  return inout_stream;
+  ref_stream.ReadBytes(&ref_value, sizeof(xiiFileStatus));
+  return ref_stream;
 }

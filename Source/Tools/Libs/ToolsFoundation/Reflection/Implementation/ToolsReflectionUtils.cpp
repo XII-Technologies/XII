@@ -177,19 +177,19 @@ void xiiToolsReflectionUtils::GetReflectedTypeDescriptorFromRtti(const xiiRTTI* 
   GetMinimalReflectedTypeDescriptorFromRtti(pRtti, out_desc);
   out_desc.m_Flags.Remove(xiiTypeFlags::Minimal);
 
-  const xiiArrayPtr<xiiAbstractProperty*>& rttiProps = pRtti->GetProperties();
-  const xiiUInt32                          uiCount   = rttiProps.GetCount();
+  auto            rttiProps = pRtti->GetProperties();
+  const xiiUInt32 uiCount   = rttiProps.GetCount();
   out_desc.m_Properties.Reserve(uiCount);
   for (xiiUInt32 i = 0; i < uiCount; ++i)
   {
-    xiiAbstractProperty* prop = rttiProps[i];
+    const xiiAbstractProperty* prop = rttiProps[i];
 
     switch (prop->GetCategory())
     {
       case xiiPropertyCategory::Constant:
       {
-        xiiAbstractConstantProperty* constantProp = static_cast<xiiAbstractConstantProperty*>(prop);
-        const xiiRTTI*               pPropRtti    = constantProp->GetSpecificType();
+        auto           constantProp = static_cast<const xiiAbstractConstantProperty*>(prop);
+        const xiiRTTI* pPropRtti    = constantProp->GetSpecificType();
         if (xiiReflectionUtils::IsBasicType(pPropRtti))
         {
           xiiVariant value = constantProp->GetConstant();
@@ -221,13 +221,13 @@ void xiiToolsReflectionUtils::GetReflectedTypeDescriptorFromRtti(const xiiRTTI* 
     }
   }
 
-  const xiiArrayPtr<xiiAbstractFunctionProperty*>& rttiFunc    = pRtti->GetFunctions();
-  const xiiUInt32                                  uiFuncCount = rttiFunc.GetCount();
+  auto            rttiFunc    = pRtti->GetFunctions();
+  const xiiUInt32 uiFuncCount = rttiFunc.GetCount();
   out_desc.m_Functions.Reserve(uiFuncCount);
 
   for (xiiUInt32 i = 0; i < uiFuncCount; ++i)
   {
-    xiiAbstractFunctionProperty* prop = rttiFunc[i];
+    const xiiAbstractFunctionProperty* prop = rttiFunc[i];
     out_desc.m_Functions.PushBack(xiiReflectedFunctionDescriptor(prop->GetPropertyName(), prop->GetFlags(), prop->GetFunctionType(), prop->GetAttributes()));
     xiiReflectedFunctionDescriptor& desc = out_desc.m_Functions.PeekBack();
     desc.m_ReturnValue                   = xiiFunctionArgumentDescriptor(prop->GetReturnType() ? prop->GetReturnType()->GetTypeName() : "", prop->GetReturnFlags());

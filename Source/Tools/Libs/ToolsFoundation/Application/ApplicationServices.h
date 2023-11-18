@@ -25,6 +25,8 @@ public:
   /// \brief The writable location where preferences for the current xiiToolsProject should be stored (user specific settings)
   xiiString GetProjectPreferencesFolder() const;
 
+  xiiString GetProjectPreferencesFolder(xiiStringView sProjectFilePath) const;
+
   /// \brief The writable location where preferences for the given xiiDocument should be stored (user specific settings)
   xiiString GetDocumentPreferencesFolder(const xiiDocument* pDocument) const;
 

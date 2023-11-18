@@ -40,6 +40,6 @@ private:
 private:
   xiiIpcChannel* m_pChannel = nullptr;
 
-  xiiMutex                                m_IncomingQueueMutex;
+  xiiMutex                                  m_IncomingQueueMutex;
   xiiDeque<xiiUniquePtr<xiiProcessMessage>> m_IncomingQueue;
 };

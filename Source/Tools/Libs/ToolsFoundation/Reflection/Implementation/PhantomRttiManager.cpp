@@ -54,8 +54,7 @@ const xiiRTTI* xiiPhantomRttiManager::RegisterType(xiiReflectedTypeDescriptor& r
 
   if (pPhantom == nullptr)
   {
-    pPhantom = XII_DEFAULT_NEW(xiiPhantomRTTI, ref_desc.m_sTypeName.GetData(), xiiRTTI::FindTypeByName(ref_desc.m_sParentTypeName), 0,
-                               ref_desc.m_uiTypeVersion, xiiVariantType::Invalid, ref_desc.m_Flags, ref_desc.m_sPluginName.GetData());
+    pPhantom = XII_DEFAULT_NEW(xiiPhantomRTTI, ref_desc.m_sTypeName, xiiRTTI::FindTypeByName(ref_desc.m_sParentTypeName), 0, ref_desc.m_uiTypeVersion, xiiVariantType::Invalid, ref_desc.m_Flags, ref_desc.m_sPluginName);
 
     pPhantom->SetProperties(ref_desc.m_Properties);
     pPhantom->SetAttributes(ref_desc.m_Attributes);
@@ -67,8 +66,7 @@ const xiiRTTI* xiiPhantomRttiManager::RegisterType(xiiReflectedTypeDescriptor& r
     xiiPhantomRttiManagerEvent msg;
     msg.m_pChangedType = pPhantom;
     msg.m_Type         = xiiPhantomRttiManagerEvent::Type::TypeAdded;
-    s_Events.Broadcast(msg, 1); /// \todo Had to increase the recursion depth to allow registering phantom types that are based on actual
-                                /// types coming from the engine process
+    s_Events.Broadcast(msg, 1); /// \todo Had to increase the recursion depth to allow registering phantom types that are based on actual types coming from the engine process.
   }
   else
   {

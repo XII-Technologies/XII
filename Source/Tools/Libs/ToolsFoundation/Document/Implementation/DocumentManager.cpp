@@ -131,7 +131,7 @@ void xiiDocumentManager::GetSupportedDocumentTypes(xiiDynamicArray<const xiiDocu
 
   for (auto& dt : inout_documentTypes)
   {
-    XII_ASSERT_DEBUG(dt->m_pDocumentType != nullptr, "No document type is set");
+    XII_ASSERT_DEBUG(dt->m_bCanCreate == false || dt->m_pDocumentType != nullptr, "No document type is set");
     XII_ASSERT_DEBUG(!dt->m_sFileExtension.IsEmpty(), "File extension must be valid");
     XII_ASSERT_DEBUG(dt->m_pManager != nullptr, "Document manager must be set");
   }
@@ -178,12 +178,12 @@ void xiiDocumentManager::EnsureWindowRequested(xiiDocument* pDocument, const xii
   s_Events.Broadcast(e);
 }
 
-xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView sDocumentTypeName, xiiStringView sPath, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext /*= nullptr*/)
+xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView sDocumentTypeName, xiiStringView sPath2, xiiDocument*& out_pDocument, xiiBitflags<xiiDocumentFlags> flags, const xiiDocumentObject* pOpenContext /*= nullptr*/)
 {
   xiiFileStats     fs;
-  xiiStringBuilder sPath0 = sPath;
-  sPath0.MakeCleanPath();
-  if (!bCreate && xiiOSFile::GetFileStats(sPath0, fs).Failed())
+  xiiStringBuilder sPath = sPath2;
+  sPath.MakeCleanPath();
+  if (!bCreate && xiiOSFile::GetFileStats(sPath, fs).Failed())
   {
     return xiiStatus("The file does not exist.");
   }
@@ -192,7 +192,7 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView s
   r.m_Type                   = Request::Type::DocumentAllowedToOpen;
   r.m_RequestStatus.m_Result = XII_SUCCESS;
   r.m_sDocumentType          = sDocumentTypeName;
-  r.m_sDocumentPath          = sPath0;
+  r.m_sDocumentPath          = sPath;
   s_Requests.Broadcast(r);
 
   // if for example no project is open, or not the correct one, then a document cannot be opened
@@ -215,14 +215,14 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView s
       if (bCreate && !flags.IsSet(xiiDocumentFlags::EmptyDocument))
       {
         xiiStringBuilder sTemplateDoc = "Editor/DocumentTemplates/Default";
-        sTemplateDoc.ChangeFileExtension(sPath0.GetFileExtension());
+        sTemplateDoc.ChangeFileExtension(sPath.GetFileExtension());
 
         if (xiiFileSystem::ExistsFile(sTemplateDoc))
         {
           xiiUuid CloneUuid;
-          if (CloneDocument(sTemplateDoc, sPath0, CloneUuid).Succeeded())
+          if (CloneDocument(sTemplateDoc, sPath, CloneUuid).Succeeded())
           {
-            if (OpenDocument(sDocumentTypeName, sPath0, out_pDocument, flags, pOpenContext).Succeeded())
+            if (OpenDocument(sDocumentTypeName, sPath, out_pDocument, flags, pOpenContext).Succeeded())
             {
               return xiiStatus(XII_SUCCESS);
             }
@@ -237,7 +237,7 @@ xiiStatus xiiDocumentManager::CreateOrOpenDocument(bool bCreate, xiiStringView s
       {
         XII_PROFILE_SCOPE(sDocumentTypeName);
         status = xiiStatus(XII_SUCCESS);
-        InternalCreateDocument(sDocumentTypeName, sPath0, bCreate, out_pDocument, pOpenContext);
+        InternalCreateDocument(sDocumentTypeName, sPath, bCreate, out_pDocument, pOpenContext);
       }
       out_pDocument->SetAddToResetFilesList(flags.IsSet(xiiDocumentFlags::AddToRecentFilesList));
 

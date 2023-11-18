@@ -26,7 +26,6 @@ void xiiDocumentRootObject::InsertSubObject(xiiDocumentObject* pObject, xiiStrin
 {
   if (sProperty.IsEmpty())
     sProperty = "Children";
-
   return xiiDocumentObject::InsertSubObject(pObject, sProperty, index);
 }
 
@@ -92,7 +91,7 @@ xiiDocumentObject* xiiDocumentObjectManager::CreateObject(const xiiRTTI* pRtti, 
   if (guid.IsValid())
     pObject->m_Guid = guid;
   else
-    pObject->m_Guid.CreateNewUuid();
+    pObject->m_Guid = xiiUuid::CreateUuid();
 
   PatchEmbeddedClassObjectsInternal(pObject, pRtti, false);
 
@@ -280,7 +279,6 @@ void xiiDocumentObjectManager::AddObject(xiiDocumentObject* pObject, xiiDocument
 void xiiDocumentObjectManager::RemoveObject(xiiDocumentObject* pObject)
 {
   XII_ASSERT_DEV(CanRemove(pObject).m_Result.Succeeded(), "Trying to execute invalid remove!");
-
   InternalRemoveObject(pObject);
 }
 
@@ -345,16 +343,11 @@ xiiStatus xiiDocumentObjectManager::CanAdd(const xiiRTTI* pRtti, const xiiDocume
       xiiInt32 iCount = accessor.GetCount(sParentProperty);
       if (!index.CanConvertTo<xiiInt32>())
       {
-        return xiiStatus(xiiFmt("Cannot add object to the property '{0}', the given index is an invalid xiiVariant (Either use '-1' to append "
-                                "or a valid index).",
-                                sParentProperty));
+        return xiiStatus(xiiFmt("Cannot add object to the property '{0}', the given index is an invalid xiiVariant (Either use '-1' to append or a valid index).", sParentProperty));
       }
-
       xiiInt32 iNewIndex = index.ConvertTo<xiiInt32>();
-
       if (iNewIndex > (xiiInt32)iCount)
         return xiiStatus(xiiFmt("Cannot add object to its new location '{0}' is out of the bounds of the parent's property range '{1}'!", iNewIndex, (xiiInt32)iCount));
-
       if (iNewIndex < 0 && iNewIndex != -1)
         return xiiStatus(xiiFmt("Cannot add object to the property '{0}', the index '{1}' is not valid (Either use '-1' to append or a valid index).", sParentProperty, iNewIndex));
     }
@@ -367,7 +360,6 @@ xiiStatus xiiDocumentObjectManager::CanAdd(const xiiRTTI* pRtti, const xiiDocume
       if (value.IsValid() && value.IsA<xiiUuid>())
       {
         xiiUuid guid = value.Get<xiiUuid>();
-
         if (guid.IsValid())
           return xiiStatus(xiiFmt("Cannot add object to the map property '{0}' at key '{1}'. Delete old value first.", sParentProperty, index.Get<xiiString>()));
       }
@@ -398,13 +390,11 @@ xiiStatus xiiDocumentObjectManager::CanRemove(const xiiDocumentObject* pObject) 
 
   if (pObject->GetParent())
   {
-    xiiAbstractProperty* pProp = pObject->GetParentPropertyType();
+    const xiiAbstractProperty* pProp = pObject->GetParentPropertyType();
     XII_ASSERT_DEV(pProp != nullptr, "Parent property should always be valid!");
-
     if (pProp->GetCategory() == xiiPropertyCategory::Member && !pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer))
       return xiiStatus("Non pointer members can't be deleted!");
   }
-
   XII_ASSERT_DEV(pObjectInTree == pObject, "Tree Corruption!!!");
 
   return InternalCanRemove(pObject);
@@ -478,12 +468,10 @@ xiiStatus xiiDocumentObjectManager::CanMove(const xiiDocumentObject* pObject, co
   {
     if (!index.IsA<xiiString>())
       return xiiStatus(xiiFmt("Cannot add object to the map property '{0}' as its index type is not a string.", sParentProperty));
-
     xiiVariant value = accessor.GetValue(sParentProperty, index);
     if (value.IsValid() && value.IsA<xiiUuid>())
     {
       xiiUuid guid = value.Get<xiiUuid>();
-
       if (guid.IsValid())
         return xiiStatus(xiiFmt("Cannot add object to the map property '{0}' at key '{1}'. Delete old value first.", sParentProperty, index.Get<xiiString>()));
     }
@@ -514,7 +502,7 @@ bool xiiDocumentObjectManager::IsUnderRootProperty(xiiStringView sRootProperty, 
   {
     pObject = pObject->GetParent();
   }
-  return pObject->GetParentProperty() == sRootProperty;
+  return sRootProperty == pObject->GetParentProperty();
 }
 
 
@@ -714,8 +702,7 @@ const xiiAbstractProperty* xiiDocumentObjectStructureEvent::GetProperty() const
 
 xiiVariant xiiDocumentObjectStructureEvent::getInsertIndex() const
 {
-  if ((m_EventType == Type::BeforeObjectMoved || m_EventType == Type::AfterObjectMoved || m_EventType == Type::AfterObjectMoved2) &&
-      m_pNewParent == m_pPreviousParent)
+  if ((m_EventType == Type::BeforeObjectMoved || m_EventType == Type::AfterObjectMoved || m_EventType == Type::AfterObjectMoved2) && m_pNewParent == m_pPreviousParent)
   {
     const xiiIReflectedTypeAccessor& accessor = m_pPreviousParent->GetTypeAccessor();
     const xiiRTTI*                   pType    = accessor.GetType();

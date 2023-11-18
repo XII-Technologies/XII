@@ -77,11 +77,11 @@ public:
   }
 
 private:
-  bool                             m_bPing = false;
-  xiiMutex                          m_Mutex;
-  xiiIpcChannel*                    m_pChannel = nullptr;
+  bool                                m_bPing = false;
+  xiiMutex                            m_Mutex;
+  xiiIpcChannel*                      m_pChannel = nullptr;
   xiiDeque<xiiDynamicArray<xiiUInt8>> m_ReceivedMessages;
-  xiiDeque<xiiIpcChannelEvent>       m_ReceivedEvents;
+  xiiDeque<xiiIpcChannelEvent>        m_ReceivedEvents;
 };
 
 void TestIPCChannel(xiiIpcChannel* pServer, ChannelTester* pServerTester, xiiIpcChannel* pClient, ChannelTester* pClientTester)
@@ -243,10 +243,10 @@ XII_CREATE_SIMPLE_TEST(Communication, IpcChannel_Network)
 
 XII_CREATE_SIMPLE_TEST(Communication, IpcChannel_Pipe)
 {
-  xiiUniquePtr<xiiIpcChannel>  pServer       = xiiIpcChannel::CreatePipeChannel("XII_unit_test_channel", xiiIpcChannel::Mode::Server);
+  xiiUniquePtr<xiiIpcChannel> pServer       = xiiIpcChannel::CreatePipeChannel("XII_unit_test_channel", xiiIpcChannel::Mode::Server);
   xiiUniquePtr<ChannelTester> pServerTester = XII_DEFAULT_NEW(ChannelTester, pServer.Borrow(), true);
 
-  xiiUniquePtr<xiiIpcChannel>  pClient       = xiiIpcChannel::CreatePipeChannel("XII_unit_test_channel", xiiIpcChannel::Mode::Client);
+  xiiUniquePtr<xiiIpcChannel> pClient       = xiiIpcChannel::CreatePipeChannel("XII_unit_test_channel", xiiIpcChannel::Mode::Client);
   xiiUniquePtr<ChannelTester> pClientTester = XII_DEFAULT_NEW(ChannelTester, pClient.Borrow(), false);
 
   TestIPCChannel(pServer.Borrow(), pServerTester.Borrow(), pClient.Borrow(), pClientTester.Borrow());

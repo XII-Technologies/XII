@@ -64,7 +64,7 @@ namespace
       xiiString file;
     };
 
-    void Initialize(xiiStreamReader& inout_stream)
+    void Initialize(xiiStreamReader& ref_stream)
     {
       SetInputStream(inout_stream);
     }

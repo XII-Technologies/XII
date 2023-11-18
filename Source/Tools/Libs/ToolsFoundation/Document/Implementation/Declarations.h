@@ -25,6 +25,7 @@ struct xiiDocumentFlags
     StorageType RequestWindow : 1;
     StorageType AddToRecentFilesList : 1;
     StorageType AsyncSave : 1;
+    StorageType EmptyDocument : 1;
   };
 };
 
@@ -39,6 +40,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiDocumentTypeDescriptor
   xiiString           m_sIcon;
   const xiiRTTI*      m_pDocumentType = nullptr;
   xiiDocumentManager* m_pManager      = nullptr;
+  xiiStringView       m_sAssetCategory; // passed to xiiColorScheme::GetCategoryColor() with CategoryColorUsage::AssetMenuIcon
 
   /// This list is used to decide which asset types can be picked from the asset browser for a property.
   /// The strings are arbitrary and don't need to be registered anywhere else.

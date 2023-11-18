@@ -62,6 +62,7 @@ void xiiDocumentObject::RemoveSubObject(xiiDocumentObject* pObject)
   XII_ASSERT_DEV(pObject != nullptr, "");
   XII_ASSERT_DEV(!pObject->m_sParentProperty.IsEmpty(), "");
   XII_ASSERT_DEV(this == pObject->m_pParent, "");
+
   xiiIReflectedTypeAccessor& accessor = GetTypeAccessor();
 
   // Property patching
@@ -115,7 +116,7 @@ const xiiDocumentObject* xiiDocumentObject::GetChild(const xiiUuid& guid) const
   return nullptr;
 }
 
-xiiAbstractProperty* xiiDocumentObject::GetParentPropertyType() const
+const xiiAbstractProperty* xiiDocumentObject::GetParentPropertyType() const
 {
   if (!m_pParent)
     return nullptr;

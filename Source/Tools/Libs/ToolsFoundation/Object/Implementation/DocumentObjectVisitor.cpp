@@ -11,8 +11,8 @@ xiiDocumentObjectVisitor::xiiDocumentObjectVisitor(const xiiDocumentObjectManage
   XII_ASSERT_DEV(pRootProp->GetCategory() == xiiPropertyCategory::Set || pRootProp->GetCategory() == xiiPropertyCategory::Array,
                  "Traverser only works on arrays and sets.");
 
-  // const xiiAbstractProperty* pChildProp = pRootProp->GetSpecificType()->FindPropertyByName(sChildrenProperty);
-  // XII_ASSERT_DEV(pChildProp, "Given child property '{0}' does not exist", sChildrenProperty);
+  // const xiiAbstractProperty* pChildProp = pRootProp->GetSpecificType()->FindPropertyByName(szChildrenProperty);
+  // XII_ASSERT_DEV(pChildProp, "Given child property '{0}' does not exist", szChildrenProperty);
   // XII_ASSERT_DEV(pChildProp->GetCategory() == xiiPropertyCategory::Set || pRootProp->GetCategory() == xiiPropertyCategory::Array, "Traverser only works on arrays and sets.");
 }
 
