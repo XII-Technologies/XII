@@ -139,6 +139,15 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
 
 void xiiSampleWindowApp::AfterCoreSystemsStartup()
 {
+  xiiStringBuilder sProjectDir = ">sdk/Data/Samples/SampleWindow";
+  xiiStringBuilder sProjectDirResolved;
+  xiiFileSystem::ResolveSpecialDirectory(sProjectDir, sProjectDirResolved).IgnoreResult();
+
+  xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
+
+  xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").IgnoreResult();
+  xiiFileSystem::AddDataDirectory(">project/", "Project", "project", xiiFileSystem::AllowWrites).IgnoreResult();
+
   xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
   xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
