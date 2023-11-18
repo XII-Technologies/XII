@@ -194,7 +194,7 @@ xiiUuid xiiDocument::ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiSt
     instCmd.m_CreateFromPrefab     = prefabAsset;
     instCmd.m_Parent               = pRootObject->GetParent() == GetObjectManager()->GetRootObject() ? xiiUuid() : pRootObject->GetParent()->GetGuid();
     instCmd.m_sBasePrefabGraph     = xiiPrefabUtils::ReadDocumentAsString(sPrefabFile); // Since the prefab might have been created just now, going through the cache (via GUID) will most likely fail.
-    instCmd.m_RemapGuid = prefabSeed;
+    instCmd.m_RemapGuid            = prefabSeed;
 
     GetCommandHistory()->AddCommand(instCmd).AssertSuccess();
 

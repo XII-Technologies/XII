@@ -47,7 +47,7 @@ public:
   void SetStorageFile(xiiStringView sFile) { m_sStorageFile = sFile; }
 
   /// \brief The file where values will be stored.
-  const char* GetStorageFile() const { return m_sStorageFile; }
+  xiiStringView GetStorageFile() const { return m_sStorageFile; }
 
   void ReadFromStorage();
 
