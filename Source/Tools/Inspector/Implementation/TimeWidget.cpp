@@ -28,6 +28,8 @@ xiiQtTimeWidget::xiiQtTimeWidget(QWidget* pParent) :
   setupUi(this);
   setWidget(TimeWidgetFrame);
 
+  setIcon(QIcon(":/Icons/Icons/Time.svg"));
+
   {
     xiiQtScopedUpdatesDisabled _1(ComboTimeframe);
 

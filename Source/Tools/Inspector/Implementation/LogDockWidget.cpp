@@ -16,6 +16,8 @@ xiiQtLogDockWidget::xiiQtLogDockWidget(QWidget* pParent) :
   setupUi(this);
   LogWidget->GetSearchWidget()->setPlaceholderText(QStringLiteral("Search Log"));
 
+  setIcon(QIcon(":/Icons/Icons/Log.svg"));
+
   this->setWidget(LogWidget);
 }
 
