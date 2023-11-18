@@ -1,5 +1,6 @@
 #include <Foundation/FoundationPCH.h>
 
+#include <Foundation/Logging/Log.h>
 #include <Foundation/Math/Color8UNorm.h>
 #include <Foundation/Math/ColorScheme.h>
 
@@ -164,7 +165,7 @@ xiiColor xiiColorScheme::s_Colors[Count][10] = {
 
 // We could use a lower brightness here for our dark UI but the colors looks much nicer at higher brightness so we just apply a scale factor instead.
 static constexpr xiiUInt8 DarkUIBrightness                      = 3;
-static constexpr xiiUInt8 DarkUIGrayBrightness                  = 4; // Gray is too dark at UIBrightness
+static constexpr xiiUInt8 DarkUIGrayBrightness                  = 4; // gray is too dark at UIBrightness
 static constexpr float    DarkUISaturation                      = 0.95f;
 static constexpr xiiColor DarkUIFactor                          = xiiColor(0.5f, 0.5f, 0.5f, 1.0f);
 xiiColor                  xiiColorScheme::s_DarkUIColors[Count] = {
@@ -184,7 +185,7 @@ xiiColor                  xiiColorScheme::s_DarkUIColors[Count] = {
 };
 
 static constexpr xiiUInt8 LightUIBrightness                      = 4;
-static constexpr xiiUInt8 LightUIGrayBrightness                  = 5; // Gray is too dark at UIBrightness
+static constexpr xiiUInt8 LightUIGrayBrightness                  = 5; // gray is too dark at UIBrightness
 static constexpr float    LightUISaturation                      = 1.0f;
 xiiColor                  xiiColorScheme::s_LightUIColors[Count] = {
   GetColor(xiiColorScheme::Red, LightUIBrightness, LightUISaturation),
@@ -214,6 +215,114 @@ xiiColor xiiColorScheme::GetColor(float fIndex, xiiUInt8 uiBrightness, float fSa
   const xiiColor c = xiiMath::Lerp(a, b, fFrac);
   const float    l = c.GetLuminance();
   return xiiMath::Lerp(xiiColor(l, l, l), c, fSaturation).WithAlpha(fAlpha);
+}
+
+xiiColorScheme::CategoryColorFunc xiiColorScheme::s_CategoryColorFunc = nullptr;
+
+xiiColor xiiColorScheme::GetCategoryColor(xiiStringView sCategory, CategoryColorUsage usage)
+{
+  if (s_CategoryColorFunc != nullptr)
+  {
+    return s_CategoryColorFunc(sCategory, usage);
+  }
+
+  xiiInt8  iBrightnessOffset = -3;
+  xiiUInt8 uiSaturationStep  = 0;
+
+  if (usage == xiiColorScheme::CategoryColorUsage::BorderIconColor)
+  {
+    // Do not color these icons at all.
+    return xiiColor::ZeroColor();
+  }
+
+  if (usage == xiiColorScheme::CategoryColorUsage::MenuEntryIcon || usage == xiiColorScheme::CategoryColorUsage::AssetMenuIcon)
+  {
+    iBrightnessOffset = 2;
+    uiSaturationStep  = 0;
+  }
+  else if (usage == xiiColorScheme::CategoryColorUsage::ViewportIcon)
+  {
+    iBrightnessOffset = 2;
+    uiSaturationStep  = 2;
+  }
+  else if (usage == xiiColorScheme::CategoryColorUsage::OverlayIcon)
+  {
+    iBrightnessOffset = 2;
+    uiSaturationStep  = 0;
+  }
+  else if (usage == xiiColorScheme::CategoryColorUsage::SceneTreeIcon)
+  {
+    iBrightnessOffset = 2;
+    uiSaturationStep  = 0;
+  }
+  else if (usage == xiiColorScheme::CategoryColorUsage::BorderColor)
+  {
+    iBrightnessOffset = -3;
+    uiSaturationStep  = 0;
+  }
+
+  const xiiUInt8 uiBrightness = (xiiUInt8)xiiMath::Clamp<xiiInt32>(DarkUIBrightness + iBrightnessOffset, 0, 9);
+  const float    fSaturation  = DarkUISaturation - (uiSaturationStep * 0.2f);
+
+  if (const char* sep = sCategory.FindSubString("/"))
+  {
+    // chop off everything behind the first separator
+    sCategory = xiiStringView(sCategory.GetStartPointer(), sep);
+  }
+
+  if (sCategory.IsEqual_NoCase("AI"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Cyan, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Animation"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Pink, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Construction"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Orange, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Custom"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Red, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Effects"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Grape, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Gameplay"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Indigo, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Input"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Red, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Lighting"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Violet, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Logic"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Teal, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Physics"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Blue, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Prefabs"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Orange, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Rendering"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Lime, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Terrain"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Lime, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Scripting"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Green, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Sound"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Blue, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("Utilities") || sCategory.IsEqual_NoCase("Editing"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Gray, uiBrightness, fSaturation) * DarkUIFactor;
+
+  if (sCategory.IsEqual_NoCase("XR"))
+    return xiiColorScheme::GetColor(xiiColorScheme::Cyan, uiBrightness, fSaturation) * DarkUIFactor;
+
+  xiiLog::Warning("Color for category '{}' is undefined.", sCategory);
+  return xiiColor::ZeroColor();
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_Math_Implementation_ColorScheme);
