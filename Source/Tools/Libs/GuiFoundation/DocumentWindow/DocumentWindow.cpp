@@ -136,7 +136,7 @@ void xiiQtDocumentWindow::UIServicesTickEventHandler(const xiiQtUiServices::Tick
 
     // if the application does not have focus, drastically reduce the update rate to limit CPU draw etc.
     if (QApplication::activeWindow() == nullptr)
-      iTargetFramerate = xiiMath::Min(10, iTargetFramerate / 4);
+      iTargetFramerate = xiiMath::Max(10, iTargetFramerate / 4);
 
     // We do not hit the requested framerate directly if the system framerate can't be evenly divided. We will chose the next higher framerate.
     if (iTargetFramerate < iSystemFramerate)
