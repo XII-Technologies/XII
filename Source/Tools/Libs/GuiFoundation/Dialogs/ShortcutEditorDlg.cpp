@@ -72,7 +72,7 @@ xiiQtShortcutEditorDlg::xiiQtShortcutEditorDlg(QWidget* pParent) :
         pItem->setData(0, Qt::DisplayRole, item->m_sActionName.GetData());
         pItem->setData(1, Qt::DisplayRole, sTemp.GetData());
         pItem->setData(2, Qt::DisplayRole, item->m_sShortcut.GetData());
-        pItem->setData(3, Qt::DisplayRole, xiiTranslateTooltip(item->m_sActionName));
+        pItem->setData(3, Qt::DisplayRole, xiiMakeQString(xiiTranslateTooltip(item->m_sActionName)));
 
         if (item->m_sShortcut == item->m_sDefaultShortcut)
           pItem->setBackground(2, QBrush());

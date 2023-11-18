@@ -119,9 +119,9 @@ QPen xiiQtConnection::DeterminePen() const
     return pen();
   }
 
-  xiiColorGammaUB       color;
-  const xiiColorGammaUB sourceColor = m_pConnection->GetSourcePin().GetColor();
-  const xiiColorGammaUB targetColor = m_pConnection->GetTargetPin().GetColor();
+  xiiColor       color;
+  const xiiColor sourceColor = m_pConnection->GetSourcePin().GetColor();
+  const xiiColor targetColor = m_pConnection->GetTargetPin().GetColor();
 
   const bool isSourceGrey = (sourceColor.r == sourceColor.g && sourceColor.r == sourceColor.b);
   const bool isTargetGrey = (targetColor.r == targetColor.g && targetColor.r == targetColor.b);
@@ -141,7 +141,7 @@ QPen xiiQtConnection::DeterminePen() const
 
   if (m_bAdjacentNodeSelected)
   {
-    color = xiiMath::Lerp(color, xiiColorGammaUB(255, 255, 255), 0.1f);
+    color = xiiMath::Lerp(color, xiiColor::White, 0.1f);
     return QPen(QBrush(xiiToQtColor(color)), 3, Qt::DashLine);
   }
   else

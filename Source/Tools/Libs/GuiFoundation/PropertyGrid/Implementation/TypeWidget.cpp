@@ -244,7 +244,7 @@ void xiiQtTypeWidget::BuildUI(const xiiRTTI* pType, xiiStringView sIncludeProper
     const auto&    attr         = pCurrentType->GetAttributes();
 
     // Traverse type attributes
-    for (xiiPropertyAttribute* pAttr : attr)
+    for (auto pAttr : attr)
     {
       if (pAttr->GetDynamicRTTI()->IsDerivedFrom<xiiManipulatorAttribute>())
       {
@@ -426,8 +426,8 @@ void xiiQtTypeWidget::UpdatePropertyMetaState()
       if (itData.IsValid() && !itData.Value().m_sNewLabelText.IsEmpty())
       {
         const char* szLabelText = itData.Value().m_sNewLabelText;
-        it.Value().m_pLabel->setText(QString::fromUtf8(xiiTranslate(szLabelText)));
-        it.Value().m_pLabel->setToolTip(QString::fromUtf8(xiiTranslateTooltip(szLabelText)));
+        it.Value().m_pLabel->setText(xiiMakeQString(xiiTranslate(szLabelText)));
+        it.Value().m_pLabel->setToolTip(xiiMakeQString(xiiTranslateTooltip(szLabelText)));
       }
       else
       {
@@ -436,11 +436,11 @@ void xiiQtTypeWidget::UpdatePropertyMetaState()
 
         // unless there is a specific override, we want to show the exact property name
         // also we don't want to force people to add translations for each and every property name
-        it.Value().m_pLabel->setText(QString::fromUtf8(xiiTranslate(it.Value().m_sOriginalLabelText)));
+        it.Value().m_pLabel->setText(xiiMakeQString(xiiTranslate(it.Value().m_sOriginalLabelText)));
 
         // though do try to get a tooltip for the property
         // this will not log an error message, if the string is not translated
-        it.Value().m_pLabel->setToolTip(QString::fromUtf8(xiiTranslateTooltip(it.Value().m_sOriginalLabelText)));
+        it.Value().m_pLabel->setToolTip(xiiMakeQString(xiiTranslateTooltip(it.Value().m_sOriginalLabelText)));
 
         xiiTranslatorLogMissing::s_bActive = temp;
       }

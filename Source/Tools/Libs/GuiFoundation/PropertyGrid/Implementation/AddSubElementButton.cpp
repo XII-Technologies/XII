@@ -116,7 +116,7 @@ QMenu* xiiQtAddSubElementButton::CreateCategoryMenu(xiiStringView sCategory, xii
   sPath = sCategory;
   sPath = sPath.GetFileName();
 
-  QMenu* pNewMenu          = pParentMenu->addMenu(xiiTranslate(sPath));
+  QMenu* pNewMenu          = pParentMenu->addMenu(xiiMakeQString(xiiTranslate(sPath)));
   existingMenus[sCategory] = pNewMenu;
 
   return pNewMenu;
@@ -197,17 +197,28 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
       }
     }
 
-    xiiStringBuilder tmp;
-
     // second round: create the actions
     for (const xiiRTTI* pRtti : supportedTypes)
     {
-      sIconName.Set(":/TypeIcons/", pRtti->GetTypeName());
-      const QIcon actionIcon = xiiQtUiServices::GetCachedIconResource(sIconName.GetData());
+      sIconName.Set(":/TypeIcons/", pRtti->GetTypeName(), ".svg");
 
       // Determine current menu
       const xiiCategoryAttribute*      pCatA  = pRtti->GetAttributeByType<xiiCategoryAttribute>();
       const xiiInDevelopmentAttribute* pInDev = pRtti->GetAttributeByType<xiiInDevelopmentAttribute>();
+      const xiiColorAttribute*         pColA  = pRtti->GetAttributeByType<xiiColorAttribute>();
+
+      xiiColor iconColor = xiiColor::ZeroColor();
+
+      if (pColA)
+      {
+        iconColor = pColA->GetColor();
+      }
+      else if (pCatA && iconColor == xiiColor::ZeroColor())
+      {
+        iconColor = xiiColorScheme::GetCategoryColor(pCatA->GetCategory(), xiiColorScheme::CategoryColorUsage::MenuEntryIcon);
+      }
+
+      const QIcon actionIcon = xiiQtUiServices::GetCachedIconResource(sIconName.GetView(), iconColor);
 
       if (m_pSearchableMenu != nullptr)
       {
@@ -215,7 +226,7 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
         sFullPath = pCatA ? pCatA->GetCategory() : "";
         sFullPath.AppendPath(pRtti->GetTypeName());
 
-        xiiStringBuilder sDisplayName = xiiTranslate(pRtti->GetTypeName().GetData(tmp));
+        xiiStringBuilder sDisplayName = xiiTranslate(pRtti->GetTypeName());
         if (pInDev)
         {
           sDisplayName.AppendFormat(" [ {} ]", pInDev->GetString());
@@ -227,7 +238,7 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
       {
         QMenu* pCat = CreateCategoryMenu(pCatA ? pCatA->GetCategory() : nullptr, existingMenus);
 
-        xiiStringBuilder fullName = xiiTranslate(pRtti->GetTypeName().GetData(tmp));
+        xiiStringBuilder fullName = xiiTranslate(pRtti->GetTypeName());
 
         if (pInDev)
         {

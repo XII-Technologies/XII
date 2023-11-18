@@ -249,10 +249,9 @@ void xiiQtPropertyEditorDoubleSpinboxWidget::OnInit()
 
   if (const xiiMinValueTextAttribute* pMinValueText = m_pProp->GetAttributeByType<xiiMinValueTextAttribute>())
   {
-    xiiStringBuilder tmp;
     for (int i = 0; i < m_iNumComponents; ++i)
     {
-      m_pWidget[i]->setSpecialValueText(pMinValueText->GetText().GetData(tmp));
+      m_pWidget[i]->setSpecialValueText(xiiMakeQString(pMinValueText->GetText()));
     }
   }
 }
@@ -484,8 +483,7 @@ void xiiQtPropertyEditorAngleWidget::OnInit()
   const xiiMinValueTextAttribute* pMinValueText = m_pProp->GetAttributeByType<xiiMinValueTextAttribute>();
   if (pMinValueText)
   {
-    xiiStringBuilder tmp;
-    m_pWidget->setSpecialValueText(pMinValueText->GetText().GetData(tmp));
+    m_pWidget->setSpecialValueText(xiiMakeQString(pMinValueText->GetText()));
   }
 }
 
@@ -720,10 +718,9 @@ void xiiQtPropertyEditorIntSpinboxWidget::OnInit()
 
   if (const xiiMinValueTextAttribute* pMinValueText = m_pProp->GetAttributeByType<xiiMinValueTextAttribute>())
   {
-    xiiStringBuilder tmp;
     for (int i = 0; i < m_iNumComponents; ++i)
     {
-      m_pWidget[i]->setSpecialValueText(pMinValueText->GetText().GetData(tmp));
+      m_pWidget[i]->setSpecialValueText(xiiMakeQString(pMinValueText->GetText()));
     }
   }
 }
@@ -1132,8 +1129,6 @@ void xiiQtPropertyEditorEnumWidget::OnInit()
 {
   const xiiRTTI* pType = m_pProp->GetSpecificType();
 
-  xiiStringBuilder tmp;
-
   xiiQtScopedBlockSignals bs(m_pWidget);
 
   xiiUInt32 uiCount = pType->GetProperties().GetCount();
@@ -1147,7 +1142,7 @@ void xiiQtPropertyEditorEnumWidget::OnInit()
 
     const xiiAbstractConstantProperty* pConstant = static_cast<const xiiAbstractConstantProperty*>(pProp);
 
-    m_pWidget->addItem(QString::fromUtf8(xiiTranslate(pConstant->GetPropertyName().GetData(tmp))), pConstant->GetConstant().ConvertTo<xiiInt64>());
+    m_pWidget->addItem(xiiMakeQString(xiiTranslate(pConstant->GetPropertyName())), pConstant->GetConstant().ConvertTo<xiiInt64>());
   }
 }
 
@@ -1185,7 +1180,6 @@ xiiQtPropertyEditorBitflagsWidget::xiiQtPropertyEditorBitflagsWidget() :
 
   m_pWidget = new QPushButton(this);
   m_pWidget->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Preferred);
-  m_pMenu = nullptr;
   m_pMenu = new QMenu(m_pWidget);
   m_pWidget->setMenu(m_pMenu);
   m_pLayout->addWidget(m_pWidget);
@@ -1196,11 +1190,8 @@ xiiQtPropertyEditorBitflagsWidget::xiiQtPropertyEditorBitflagsWidget() :
 
 xiiQtPropertyEditorBitflagsWidget::~xiiQtPropertyEditorBitflagsWidget()
 {
-  m_Constants.Clear();
   m_pWidget->setMenu(nullptr);
-
   delete m_pMenu;
-  m_pMenu = nullptr;
 }
 
 void xiiQtPropertyEditorBitflagsWidget::OnInit()
@@ -1209,8 +1200,6 @@ void xiiQtPropertyEditorBitflagsWidget::OnInit()
 
   const xiiRTTI* pType   = enumType;
   xiiUInt32      uiCount = pType->GetProperties().GetCount();
-
-  xiiStringBuilder tmp;
 
   // Start at 1 to skip default value.
   for (xiiUInt32 i = 1; i < uiCount; ++i)
@@ -1223,13 +1212,28 @@ void xiiQtPropertyEditorBitflagsWidget::OnInit()
     const xiiAbstractConstantProperty* pConstant = static_cast<const xiiAbstractConstantProperty*>(pProp);
 
     QWidgetAction* pAction   = new QWidgetAction(m_pMenu);
-    QCheckBox*     pCheckBox = new QCheckBox(QString::fromUtf8(xiiTranslate(pConstant->GetPropertyName().GetData(tmp))), m_pMenu);
+    QCheckBox*     pCheckBox = new QCheckBox(xiiMakeQString(xiiTranslate(pConstant->GetPropertyName())), m_pMenu);
     pCheckBox->setCheckable(true);
     pCheckBox->setCheckState(Qt::Unchecked);
     pAction->setDefaultWidget(pCheckBox);
 
     m_Constants[pConstant->GetConstant().ConvertTo<xiiInt64>()] = pCheckBox;
     m_pMenu->addAction(pAction);
+  }
+
+  // sets all bits to clear or set
+  {
+    QWidgetAction* pAllAction = new QWidgetAction(m_pMenu);
+    m_pAllButton              = new QPushButton(QString::fromUtf8("All"), m_pMenu);
+    connect(m_pAllButton, &QPushButton::clicked, this, [this](bool bChecked) { SetAllChecked(true); });
+    pAllAction->setDefaultWidget(m_pAllButton);
+    m_pMenu->addAction(pAllAction);
+
+    QWidgetAction* pClearAction = new QWidgetAction(m_pMenu);
+    m_pClearButton              = new QPushButton(QString::fromUtf8("Clear"), m_pMenu);
+    connect(m_pClearButton, &QPushButton::clicked, this, [this](bool bChecked) { SetAllChecked(false); });
+    pClearAction->setDefaultWidget(m_pClearButton);
+    m_pMenu->addAction(pClearAction);
   }
 }
 
@@ -1253,6 +1257,14 @@ void xiiQtPropertyEditorBitflagsWidget::InternalSetValue(const xiiVariant& value
     sText = sText.left(sText.size() - 1);
 
   m_pWidget->setText(sText);
+}
+
+void xiiQtPropertyEditorBitflagsWidget::SetAllChecked(bool bChecked)
+{
+  for (auto& pCheckBox : m_Constants)
+  {
+    pCheckBox.Value()->setCheckState(bChecked ? Qt::Checked : Qt::Unchecked);
+  }
 }
 
 void xiiQtPropertyEditorBitflagsWidget::on_Menu_aboutToShow()

@@ -29,15 +29,15 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSliderAction, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiDynamicActionAndMenuAction::xiiDynamicActionAndMenuAction(const xiiActionContext& context, const char* szName, const char* szIconPath) :
-  xiiDynamicMenuAction(context, szName, szIconPath)
+xiiDynamicActionAndMenuAction::xiiDynamicActionAndMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath) :
+  xiiDynamicMenuAction(context, sName, sIconPath)
 {
   m_bEnabled = true;
   m_bVisible = true;
 }
 
-xiiEnumerationMenuAction::xiiEnumerationMenuAction(const xiiActionContext& context, const char* szName, const char* szIconPath) :
-  xiiDynamicMenuAction(context, szName, szIconPath)
+xiiEnumerationMenuAction::xiiEnumerationMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath) :
+  xiiDynamicMenuAction(context, sName, sIconPath)
 {
   m_pEnumerationType = nullptr;
 }
@@ -141,8 +141,8 @@ void xiiEnumerationMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::I
   appendToOutput();
 }
 
-xiiButtonAction::xiiButtonAction(const xiiActionContext& context, const char* szName, bool bCheckable, const char* szIconPath) :
-  xiiNamedAction(context, szName, szIconPath)
+xiiButtonAction::xiiButtonAction(const xiiActionContext& context, xiiStringView sName, bool bCheckable, xiiStringView sIconPath) :
+  xiiNamedAction(context, sName, sIconPath)
 {
   m_bCheckable = false;
   m_bChecked   = false;
@@ -151,8 +151,8 @@ xiiButtonAction::xiiButtonAction(const xiiActionContext& context, const char* sz
 }
 
 
-xiiSliderAction::xiiSliderAction(const xiiActionContext& context, const char* szName) :
-  xiiNamedAction(context, szName, nullptr)
+xiiSliderAction::xiiSliderAction(const xiiActionContext& context, xiiStringView sName) :
+  xiiNamedAction(context, sName, nullptr)
 {
   m_bEnabled  = true;
   m_bVisible  = true;

@@ -3,8 +3,9 @@
 #include <GuiFoundation/GuiFoundationDLL.h>
 
 #include <Foundation/Containers/Map.h>
-#include <QSortFilterProxyModel>
 #include <ToolsFoundation/Utilities/SearchPatternFilter.h>
+
+#include <QSortFilterProxyModel>
 
 class QWidget;
 

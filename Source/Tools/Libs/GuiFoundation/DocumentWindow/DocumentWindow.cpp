@@ -59,9 +59,7 @@ xiiQtDocumentWindow::xiiQtDocumentWindow(xiiDocument* pDocument)
 {
   m_pDocument   = pDocument;
   m_sUniqueName = m_pDocument->GetDocumentPath();
-
-  xiiStringBuilder tmp;
-  setObjectName(GetUniqueName().GetData(tmp));
+  setObjectName(xiiMakeQString(GetUniqueName()));
 
   xiiDocumentManager::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtDocumentWindow::DocumentManagerEventHandler, this));
   pDocument->m_EventsOne.AddEventHandler(xiiMakeDelegate(&xiiQtDocumentWindow::DocumentEventHandler, this));
@@ -73,9 +71,7 @@ xiiQtDocumentWindow::xiiQtDocumentWindow(xiiStringView sUniqueName)
 {
   m_pDocument   = nullptr;
   m_sUniqueName = sUniqueName;
-
-  xiiStringBuilder tmp;
-  setObjectName(GetUniqueName().GetData(tmp));
+  setObjectName(xiiMakeQString(GetUniqueName()));
 
   Constructor();
 }
@@ -181,9 +177,8 @@ void xiiQtDocumentWindow::DocumentEventHandler(const xiiDocumentEvent& e)
   {
     case xiiDocumentEvent::Type::DocumentRenamed:
     {
-      xiiStringBuilder tmp;
       m_sUniqueName = m_pDocument->GetDocumentPath();
-      setObjectName(GetUniqueName().GetData(tmp));
+      setObjectName(xiiMakeQString(GetUniqueName()));
       xiiQtContainerWindow* pContainer = xiiQtContainerWindow::GetContainerWindow();
       pContainer->DocumentWindowRenamed(this);
 
@@ -251,17 +246,17 @@ void xiiQtDocumentWindow::UIServicesEventHandler(const xiiQtUiServices::Event& e
         switch (e.m_TextType)
         {
           case xiiQtUiServices::Event::Info:
-            m_pPermanentGlobalStatusButton->setIcon(QIcon(":/GuiFoundation/Icons/Log.png"));
+            m_pPermanentGlobalStatusButton->setIcon(QIcon(":/GuiFoundation/Icons/Log.svg"));
             break;
 
           case xiiQtUiServices::Event::Warning:
             pal.setColor(QPalette::WindowText, QColor(255, 100, 0));
-            m_pPermanentGlobalStatusButton->setIcon(QIcon(":/GuiFoundation/Icons/Warning16.png"));
+            m_pPermanentGlobalStatusButton->setIcon(QIcon(":/GuiFoundation/Icons/Warning.svg"));
             break;
 
           case xiiQtUiServices::Event::Error:
             pal.setColor(QPalette::WindowText, QColor(Qt::red));
-            m_pPermanentGlobalStatusButton->setIcon(QIcon(":/GuiFoundation/Icons/Error16.png"));
+            m_pPermanentGlobalStatusButton->setIcon(QIcon(":/GuiFoundation/Icons/Error.svg"));
             break;
         }
 
@@ -302,14 +297,14 @@ void xiiQtDocumentWindow::hideEvent(QHideEvent* event)
 
 bool xiiQtDocumentWindow::eventFilter(QObject* obj, QEvent* e)
 {
-  if (e->type() == QEvent::ShortcutOverride)
+  if (e->type() == QEvent::ShortcutOverride || e->type() == QEvent::KeyPress)
   {
     // This filter is added by xiiQtContainerWindow::AddDocumentWindow as that ones is the ony code path that can connect dock container to their content.
     // This filter is necessary as clicking any action in a menu bar sets the focus to the parent CDockWidget at which point further shortcuts would stop working.
     if (qobject_cast<ads::CDockWidget*>(obj))
     {
       QKeyEvent* keyEvent = static_cast<QKeyEvent*>(e);
-      if (xiiQtProxy::TriggerDocumentAction(m_pDocument, keyEvent))
+      if (xiiQtProxy::TriggerDocumentAction(m_pDocument, keyEvent, e->type() == QEvent::ShortcutOverride))
         return true;
     }
   }
@@ -318,10 +313,10 @@ bool xiiQtDocumentWindow::eventFilter(QObject* obj, QEvent* e)
 
 bool xiiQtDocumentWindow::event(QEvent* event)
 {
-  if (event->type() == QEvent::ShortcutOverride)
+  if (event->type() == QEvent::ShortcutOverride || event->type() == QEvent::KeyPress)
   {
     QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-    if (xiiQtProxy::TriggerDocumentAction(m_pDocument, keyEvent))
+    if (xiiQtProxy::TriggerDocumentAction(m_pDocument, keyEvent, event->type() == QEvent::ShortcutOverride))
       return true;
   }
   return QMainWindow::event(event);
@@ -447,7 +442,7 @@ xiiStatus xiiQtDocumentWindow::SaveDocument()
 void xiiQtDocumentWindow::ShowTemporaryStatusBarMsg(const xiiFormatString& msg, xiiTime duration)
 {
   xiiStringBuilder tmp;
-  statusBar()->showMessage(QString::fromUtf8(msg.GetTextCStr(tmp)), (int)duration.GetMilliseconds());
+  statusBar()->showMessage(QString::fromUtf8(msg.GetTextCStr(tmp)), (xiiInt32)duration.GetMilliseconds());
 }
 
 

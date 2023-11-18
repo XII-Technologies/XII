@@ -124,7 +124,7 @@ void xiiQtNode::UpdateGeometry()
   int y = h;
 
   // Align inputs
-  int maxInputWidth = 0;
+  int maxInputWidth = 10;
   for (xiiQtPin* pQtPin : m_Inputs)
   {
     auto rectPin = pQtPin->GetPinRect();
@@ -138,7 +138,7 @@ void xiiQtNode::UpdateGeometry()
   y             = h;
 
   // Align outputs
-  int maxOutputWidth = 0;
+  int maxOutputWidth = 10;
   for (xiiQtPin* pQtPin : m_Outputs)
   {
     auto rectPin = pQtPin->GetPinRect();
@@ -148,16 +148,7 @@ void xiiQtNode::UpdateGeometry()
     y += rectPin.height();
   }
 
-  int w = 0;
-
-  if (maxInputWidth == 0)
-    w = maxOutputWidth;
-  else if (maxOutputWidth == 0)
-    w = maxInputWidth;
-  else
-    w = xiiMath::Max(maxInputWidth, maxOutputWidth) * 2;
-
-  w += 10;
+  int w = maxInputWidth + maxOutputWidth + 20;
 
   const int headerWidth = xiiMath::Max(titleRect.width(), subtitleRect.width()) + iconRect.width();
   w                     = xiiMath::Max(w, headerWidth);
@@ -191,8 +182,7 @@ void xiiQtNode::UpdateState()
   }
   else
   {
-    xiiStringBuilder tmp;
-    m_pTitleLabel->setPlainText(xiiTranslate(typeAccessor.GetType()->GetTypeName().GetData(tmp)));
+    m_pTitleLabel->setPlainText(xiiMakeQString(xiiTranslate(typeAccessor.GetType()->GetTypeName())));
   }
 }
 

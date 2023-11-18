@@ -467,9 +467,9 @@ void xiiQtNodeScene::CreateNodeObject(const xiiRTTI* pRtti)
   xiiStatus res;
   {
     xiiAddObjectCommand cmd;
-    cmd.m_pType = pRtti;
-    cmd.m_NewObjectGuid.CreateNewUuid();
-    cmd.m_Index = -1;
+    cmd.m_pType         = pRtti;
+    cmd.m_NewObjectGuid = xiiUuid::CreateUuid();
+    cmd.m_Index         = -1;
 
     res = history->AddCommand(cmd);
     if (res.m_Result.Succeeded())

@@ -46,7 +46,7 @@ xiiQtModifiedDocumentsDlg::xiiQtModifiedDocumentsDlg(QWidget* pParent, const xii
     QPushButton* pButtonSave = new QPushButton(QLatin1String("Save"));
     XII_VERIFY(connect(pButtonSave, SIGNAL(clicked()), this, SLOT(SlotSaveDocument())) != nullptr, "signal/slot connection failed");
 
-    pButtonSave->setIcon(QIcon(":/GuiFoundation/Icons/Save16.png"));
+    pButtonSave->setIcon(QIcon(":/GuiFoundation/Icons/Save.svg"));
     pButtonSave->setProperty("document", QVariant::fromValue((void*)pDoc));
 
     pButtonSave->setMinimumWidth(100);
@@ -55,7 +55,7 @@ xiiQtModifiedDocumentsDlg::xiiQtModifiedDocumentsDlg(QWidget* pParent, const xii
     TableDocuments->setCellWidget(iRow, 2, pButtonSave);
 
     QTableWidgetItem* pItem0 = new QTableWidgetItem();
-    pItem0->setData(Qt::DisplayRole, QString::fromUtf8(xiiTranslate(pDoc->GetDocumentTypeDescriptor()->m_sDocumentTypeName)));
+    pItem0->setData(Qt::DisplayRole, xiiMakeQString(xiiTranslate(pDoc->GetDocumentTypeDescriptor()->m_sDocumentTypeName)));
     pItem0->setIcon(xiiQtUiServices::GetCachedIconResource(pDoc->GetDocumentTypeDescriptor()->m_sIcon));
     TableDocuments->setItem(iRow, 0, pItem0);
 

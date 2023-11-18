@@ -264,7 +264,7 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
       mimeData->setText(sGuid.GetData());
       clipboard->setMimeData(mimeData);
 
-      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied asset GUID: {}", sGuid), xiiTime::MakeFromSeconds(5));
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied asset GUID: {}", sGuid), xiiTime::Seconds(5));
     }
     break;
 

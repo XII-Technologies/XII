@@ -367,8 +367,7 @@ void xiiQtContainerWindow::AddDocumentWindow(xiiQtDocumentWindow* pDocWindow)
   ads::CDockWidget* dock        = new ads::CDockWidget(QString::fromUtf8(displayName.GetData(), displayName.GetElementCount()));
   dock->installEventFilter(pDocWindow);
 
-  xiiStringBuilder tmp;
-  dock->setObjectName(pDocWindow->GetUniqueName().GetData(tmp));
+  dock->setObjectName(xiiMakeQString(pDocWindow->GetUniqueName()));
   XII_ASSERT_DEV(!dock->objectName().isEmpty(), "Dock name must not be empty.");
   XII_ASSERT_DEV(!m_DockNames.contains(dock->objectName()), "Dock name must be unique.");
   m_DockNames.insert(dock->objectName());
@@ -406,8 +405,7 @@ void xiiQtContainerWindow::DocumentWindowRenamed(xiiQtDocumentWindow* pDocWindow
   XII_ASSERT_DEV(m_DockNames.contains(dock->objectName()), "Object name must not change during lifetime.");
   m_DockNames.remove(dock->objectName());
 
-  xiiStringBuilder tmp;
-  dock->setObjectName(pDocWindow->GetUniqueName().GetData(tmp));
+  dock->setObjectName(xiiMakeQString(pDocWindow->GetUniqueName()));
   XII_ASSERT_DEV(!dock->objectName().isEmpty(), "Dock name must not be empty.");
   XII_ASSERT_DEV(!m_DockNames.contains(dock->objectName()), "Dock name must be unique.");
   m_DockNames.insert(dock->objectName());

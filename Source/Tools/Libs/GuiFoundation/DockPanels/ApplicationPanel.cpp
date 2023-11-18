@@ -15,13 +15,12 @@ XII_END_STATIC_REFLECTED_TYPE;
 xiiDynamicArray<xiiQtApplicationPanel*> xiiQtApplicationPanel::s_AllApplicationPanels;
 
 xiiQtApplicationPanel::xiiQtApplicationPanel(xiiStringView sPanelName) :
-  ads::CDockWidget(sPanelName.GetStartPointer(), xiiQtContainerWindow::GetContainerWindow())
+  ads::CDockWidget(xiiMakeQString(sPanelName), xiiQtContainerWindow::GetContainerWindow())
 {
-  xiiStringBuilder tmp;
   xiiStringBuilder sPanel("AppPanel_", sPanelName);
 
   setObjectName(QString::fromUtf8(sPanel.GetData()));
-  setWindowTitle(QString::fromUtf8(xiiTranslate(sPanelName.GetData(tmp))));
+  setWindowTitle(xiiMakeQString(xiiTranslate(sPanelName)));
 
   s_AllApplicationPanels.PushBack(this);
 
@@ -74,13 +73,13 @@ void xiiQtApplicationPanel::ToolsProjectEventHandler(const xiiToolsProjectEvent&
   }
 }
 
-bool xiiQtApplicationPanel::event(QEvent* event)
+bool xiiQtApplicationPanel::event(QEvent* pEvent)
 {
-  if (event->type() == QEvent::ShortcutOverride)
+  if (pEvent->type() == QEvent::ShortcutOverride || pEvent->type() == QEvent::KeyPress)
   {
-    QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-    if (xiiQtProxy::TriggerDocumentAction(nullptr, keyEvent))
+    QKeyEvent* keyEvent = static_cast<QKeyEvent*>(pEvent);
+    if (xiiQtProxy::TriggerDocumentAction(nullptr, keyEvent, pEvent->type() == QEvent::ShortcutOverride))
       return true;
   }
-  return ads::CDockWidget::event(event);
+  return ads::CDockWidget::event(pEvent);
 }
