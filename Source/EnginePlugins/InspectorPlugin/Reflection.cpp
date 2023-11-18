@@ -73,7 +73,7 @@ namespace ReflectionDetail
     msg.GetWriter() << pRTTI->GetPluginName();
 
     {
-      const xiiArrayPtr<xiiAbstractProperty*>& properties = pRTTI->GetProperties();
+      auto properties = pRTTI->GetProperties();
 
       msg.GetWriter() << properties.GetCount();
 

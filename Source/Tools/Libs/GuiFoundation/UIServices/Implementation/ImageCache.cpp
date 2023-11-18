@@ -82,7 +82,7 @@ void xiiQtImageCache::InvalidateCache(xiiStringView sAbsolutePath)
   Q_EMIT g_pImageCacheSingleton->ImageInvalidated(sPath, id);
 }
 
-const QPixmap* xiiQtImageCache::QueryPixmap(xiiStringView sAbsolutePath,QModelIndex index,QVariant    userData1,QVariant    userData2,xiiUInt32*  out_pImageID)
+const QPixmap* xiiQtImageCache::QueryPixmap(xiiStringView sAbsolutePath, QModelIndex index, QVariant userData1, QVariant userData2, xiiUInt32* out_pImageID)
 {
   if (out_pImageID)
     *out_pImageID = 0;
