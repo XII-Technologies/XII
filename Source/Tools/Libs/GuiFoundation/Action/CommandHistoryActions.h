@@ -31,7 +31,7 @@ public:
     Redo,
   };
 
-  xiiCommandHistoryAction(const xiiActionContext& context, xiiStringView sName, ButtonType button);
+  xiiCommandHistoryAction(const xiiActionContext& context, const char* szName, ButtonType button);
   ~xiiCommandHistoryAction();
 
   virtual void Execute(const xiiVariant& value) override;

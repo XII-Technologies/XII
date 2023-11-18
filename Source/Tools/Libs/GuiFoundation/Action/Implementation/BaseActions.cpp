@@ -29,15 +29,15 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSliderAction, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiDynamicActionAndMenuAction::xiiDynamicActionAndMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath) :
-  xiiDynamicMenuAction(context, sName, sIconPath)
+xiiDynamicActionAndMenuAction::xiiDynamicActionAndMenuAction(const xiiActionContext& context, const char* szName, const char* szIconPath) :
+  xiiDynamicMenuAction(context, szName, szIconPath)
 {
   m_bEnabled = true;
   m_bVisible = true;
 }
 
-xiiEnumerationMenuAction::xiiEnumerationMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath) :
-  xiiDynamicMenuAction(context, sName, sIconPath)
+xiiEnumerationMenuAction::xiiEnumerationMenuAction(const xiiActionContext& context, const char* szName, const char* szIconPath) :
+  xiiDynamicMenuAction(context, szName, szIconPath)
 {
   m_pEnumerationType = nullptr;
 }
@@ -98,7 +98,6 @@ void xiiEnumerationMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::I
     unsortedItems.Clear();
   };
 
-  xiiStringBuilder tmp;
   for (auto pProp : m_pEnumerationType->GetProperties().GetSubArray(1))
   {
     if (pProp->GetCategory() == xiiPropertyCategory::Constant)
@@ -122,7 +121,7 @@ void xiiEnumerationMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::I
       {
         xiiInt64 iValue = static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant().ConvertTo<xiiInt64>();
 
-        item.m_sDisplay = xiiTranslate(pProp->GetPropertyName().GetData(tmp));
+        item.m_sDisplay = xiiTranslate(pProp->GetPropertyName());
 
         item.m_UserValue = iValue;
         if (m_pEnumerationType->IsDerivedFrom<xiiEnumBase>())
@@ -142,8 +141,8 @@ void xiiEnumerationMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::I
   appendToOutput();
 }
 
-xiiButtonAction::xiiButtonAction(const xiiActionContext& context, xiiStringView sName, bool bCheckable, xiiStringView sIconPath) :
-  xiiNamedAction(context, sName, sIconPath)
+xiiButtonAction::xiiButtonAction(const xiiActionContext& context, const char* szName, bool bCheckable, const char* szIconPath) :
+  xiiNamedAction(context, szName, szIconPath)
 {
   m_bCheckable = false;
   m_bChecked   = false;
@@ -152,8 +151,8 @@ xiiButtonAction::xiiButtonAction(const xiiActionContext& context, xiiStringView 
 }
 
 
-xiiSliderAction::xiiSliderAction(const xiiActionContext& context, xiiStringView sName) :
-  xiiNamedAction(context, sName, nullptr)
+xiiSliderAction::xiiSliderAction(const xiiActionContext& context, const char* szName) :
+  xiiNamedAction(context, szName, nullptr)
 {
   m_bEnabled  = true;
   m_bVisible  = true;

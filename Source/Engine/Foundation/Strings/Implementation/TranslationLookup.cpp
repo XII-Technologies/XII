@@ -53,17 +53,17 @@ void xiiTranslationLookup::AddTranslator(xiiUniquePtr<xiiTranslator> pTranslator
 }
 
 
-const char* xiiTranslationLookup::Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
+xiiStringView xiiTranslationLookup::Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
 {
   for (xiiUInt32 i = s_Translators.GetCount(); i > 0; --i)
   {
-    const char* szResult = s_Translators[i - 1]->Translate(szString, uiStringHash, usage);
+    xiiStringView sResult = s_Translators[i - 1]->Translate(sString, uiStringHash, usage);
 
-    if (szResult != nullptr)
-      return szResult;
+    if (sResult != nullptr)
+      return sResult;
   }
 
-  return szString;
+  return sString;
 }
 
 
@@ -74,18 +74,18 @@ void xiiTranslationLookup::Clear()
 
 //////////////////////////////////////////////////////////////////////////
 
-void xiiTranslatorFromFiles::AddTranslationFilesFromFolder(const char* szFolder)
+void xiiTranslatorFromFiles::AddTranslationFilesFromFolder(xiiStringView sFolder)
 {
-  XII_LOG_BLOCK("AddTranslationFilesFromFolder", szFolder);
+  XII_LOG_BLOCK("AddTranslationFilesFromFolder", sFolder);
 
-  if (!m_Folders.Contains(szFolder))
+  if (!m_Folders.Contains(sFolder))
   {
-    m_Folders.PushBack(szFolder);
+    m_Folders.PushBack(sFolder);
   }
 
 #if XII_ENABLED(XII_SUPPORTS_FILE_ITERATORS)
   xiiStringBuilder startPath;
-  if (xiiFileSystem::ResolvePath(szFolder, &startPath, nullptr).Failed())
+  if (xiiFileSystem::ResolvePath(sFolder, &startPath, nullptr).Failed())
     return;
 
   xiiStringBuilder fullpath;
@@ -107,9 +107,9 @@ void xiiTranslatorFromFiles::AddTranslationFilesFromFolder(const char* szFolder)
 #endif
 }
 
-const char* xiiTranslatorFromFiles::Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
+xiiStringView xiiTranslatorFromFiles::Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
 {
-  return xiiTranslatorStorage::Translate(szString, uiStringHash, usage);
+  return xiiTranslatorStorage::Translate(sString, uiStringHash, usage);
 }
 
 void xiiTranslatorFromFiles::Reload()
@@ -122,16 +122,16 @@ void xiiTranslatorFromFiles::Reload()
   }
 }
 
-void xiiTranslatorFromFiles::LoadTranslationFile(const char* szFullPath)
+void xiiTranslatorFromFiles::LoadTranslationFile(xiiStringView sFullPath)
 {
-  XII_LOG_BLOCK("LoadTranslationFile", szFullPath);
+  XII_LOG_BLOCK("LoadTranslationFile", sFullPath);
 
-  xiiLog::Dev("Loading Localization File '{0}'", szFullPath);
+  xiiLog::Dev("Loading Localization File '{0}'", sFullPath);
 
   xiiFileReader file;
-  if (file.Open(szFullPath).Failed())
+  if (file.Open(sFullPath).Failed())
   {
-    xiiLog::Warning("Failed to open localization file '{0}'", szFullPath);
+    xiiLog::Warning("Failed to open localization file '{0}'", sFullPath);
     return;
   }
 
@@ -191,12 +191,12 @@ void xiiTranslatorFromFiles::LoadTranslationFile(const char* szFullPath)
 
 //////////////////////////////////////////////////////////////////////////
 
-void xiiTranslatorStorage::StoreTranslation(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
+void xiiTranslatorStorage::StoreTranslation(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
 {
-  m_Translations[(xiiUInt32)usage][uiStringHash] = szString;
+  m_Translations[(xiiUInt32)usage][uiStringHash] = sString;
 }
 
-const char* xiiTranslatorStorage::Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
+xiiStringView xiiTranslatorStorage::Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
 {
   auto it = m_Translations[(xiiUInt32)usage].Find(uiStringHash);
   if (it.IsValid())
@@ -222,7 +222,7 @@ void xiiTranslatorStorage::Reload()
 
 bool xiiTranslatorLogMissing::s_bActive = true;
 
-const char* xiiTranslatorLogMissing::Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
+xiiStringView xiiTranslatorLogMissing::Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
 {
   if (!xiiTranslatorLogMissing::s_bActive && !GetHighlightUntranslated())
     return nullptr;
@@ -230,28 +230,28 @@ const char* xiiTranslatorLogMissing::Translate(const char* szString, xiiUInt64 u
   if (usage != xiiTranslationUsage::Default)
     return nullptr;
 
-  const char* szResult = xiiTranslatorStorage::Translate(szString, uiStringHash, usage);
+  xiiStringView sResult = xiiTranslatorStorage::Translate(sString, uiStringHash, usage);
 
-  if (szResult == nullptr)
+  if (sResult == nullptr)
   {
-    xiiLog::Warning("Missing translation: {0};", szString);
+    xiiLog::Warning("Missing translation: {0};", sString);
 
-    StoreTranslation(szString, uiStringHash, usage);
+    StoreTranslation(sString, uiStringHash, usage);
   }
 
   return nullptr;
 }
 
-const char* xiiTranslatorMakeMoreReadable::Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
+xiiStringView xiiTranslatorMakeMoreReadable::Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
 {
-  const char* szResult = xiiTranslatorStorage::Translate(szString, uiStringHash, usage);
+  xiiStringView sResult = xiiTranslatorStorage::Translate(sString, uiStringHash, usage);
 
-  if (szResult != nullptr)
-    return szResult;
+  if (sResult != nullptr)
+    return sResult;
 
 
   xiiStringBuilder result;
-  xiiStringBuilder tmp = szString;
+  xiiStringBuilder tmp = sString;
   tmp.Trim(" _-");
 
   tmp.TrimWordStart("xii");
@@ -337,12 +337,12 @@ const char* xiiTranslatorMakeMoreReadable::Translate(const char* szString, xiiUI
 
   if (GetHighlightUntranslated())
   {
-    result.Append(" (@", szString, ")");
+    result.Append(" (@", sString, ")");
   }
 
   StoreTranslation(result, uiStringHash, usage);
 
-  return xiiTranslatorStorage::Translate(szString, uiStringHash, usage);
+  return xiiTranslatorStorage::Translate(sString, uiStringHash, usage);
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_TranslationLookup);

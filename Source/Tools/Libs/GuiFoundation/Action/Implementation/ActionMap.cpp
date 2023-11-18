@@ -113,6 +113,7 @@ xiiUuid xiiActionMap::MapAction(const xiiActionMapDescriptor& desc)
   return pChild->GetGuid();
 }
 
+
 xiiResult xiiActionMap::UnmapAction(const xiiUuid& guid)
 {
   auto it = m_Descriptors.Find(guid);
@@ -133,7 +134,6 @@ xiiResult xiiActionMap::UnmapAction(xiiActionDescriptorHandle hAction, xiiString
   xiiStringBuilder sCleanPath = sPath;
   sCleanPath.MakeCleanPath();
   sCleanPath.Trim("/");
-
   xiiActionMapDescriptor d;
   d.m_hAction = hAction;
   d.m_sPath   = sCleanPath;

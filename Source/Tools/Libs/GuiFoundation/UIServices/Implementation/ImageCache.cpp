@@ -41,8 +41,6 @@ xiiQtImageCache::xiiQtImageCache() :
 
 void xiiQtImageCache::SetFallbackImages(xiiStringView sLoading, xiiStringView sUnavailable)
 {
-  xiiStringBuilder tmp;
-
   delete m_pImageLoading;
   if (sLoading.EndsWith(".svg"))
   {
@@ -50,7 +48,7 @@ void xiiQtImageCache::SetFallbackImages(xiiStringView sLoading, xiiStringView sU
   }
   else
   {
-    m_pImageLoading = new QPixmap(sLoading.GetData(tmp));
+    m_pImageLoading = new QPixmap(xiiMakeQString(sLoading));
   }
 
   delete m_pImageUnavailable;
@@ -60,7 +58,7 @@ void xiiQtImageCache::SetFallbackImages(xiiStringView sLoading, xiiStringView sU
   }
   else
   {
-    m_pImageUnavailable = new QPixmap(sUnavailable.GetData(tmp));
+    m_pImageUnavailable = new QPixmap(xiiMakeQString(sUnavailable));
   }
 }
 
@@ -84,7 +82,7 @@ void xiiQtImageCache::InvalidateCache(xiiStringView sAbsolutePath)
   Q_EMIT g_pImageCacheSingleton->ImageInvalidated(sPath, id);
 }
 
-const QPixmap* xiiQtImageCache::QueryPixmap(xiiStringView sAbsolutePath, QModelIndex index, QVariant userData1, QVariant userData2, xiiUInt32* out_pImageID)
+const QPixmap* xiiQtImageCache::QueryPixmap(xiiStringView sAbsolutePath,QModelIndex index,QVariant    userData1,QVariant    userData2,xiiUInt32*  out_pImageID)
 {
   if (out_pImageID)
     *out_pImageID = 0;
@@ -221,14 +219,12 @@ void xiiQtImageCache::EnableRequestProcessing()
 
 void xiiQtImageCache::RegisterTypeImage(xiiStringView sType, QPixmap pixmap)
 {
-  xiiStringBuilder tmp;
-  m_TypeImages[QString::fromUtf8(sType.GetData(tmp))] = pixmap;
+  m_TypeImages[xiiMakeQString(sType)] = pixmap;
 }
 
 const QPixmap* xiiQtImageCache::QueryTypeImage(xiiStringView sType) const
 {
-  xiiStringBuilder tmp;
-  auto             it = m_TypeImages.Find(QString::fromUtf8(sType.GetData(tmp)));
+  auto it = m_TypeImages.Find(xiiMakeQString(sType));
 
   if (it.IsValid())
     return &it.Value();

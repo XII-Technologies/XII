@@ -36,18 +36,18 @@ void xiiCommandHistoryActions::MapActions(xiiStringView sMapping, xiiStringView 
   pMap->MapAction(s_hRedo, sTargetMenu, "CmdHistoryCategory", 2.0f);
 }
 
-xiiCommandHistoryAction::xiiCommandHistoryAction(const xiiActionContext& context, xiiStringView sName, ButtonType button) :
-  xiiDynamicActionAndMenuAction(context, sName, "")
+xiiCommandHistoryAction::xiiCommandHistoryAction(const xiiActionContext& context, const char* szName, ButtonType button) :
+  xiiDynamicActionAndMenuAction(context, szName, "")
 {
   m_ButtonType = button;
 
   switch (m_ButtonType)
   {
     case xiiCommandHistoryAction::ButtonType::Undo:
-      SetIconPath(":/GuiFoundation/Icons/Undo16.png");
+      SetIconPath(":/GuiFoundation/Icons/Undo.svg");
       break;
     case xiiCommandHistoryAction::ButtonType::Redo:
-      SetIconPath(":/GuiFoundation/Icons/Redo16.png");
+      SetIconPath(":/GuiFoundation/Icons/Redo.svg");
       break;
   }
 
