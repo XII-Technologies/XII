@@ -1,6 +1,6 @@
 name: Build Release Package
 
-on: 
+on:
   workflow_dispatch:
     inputs:
       full-binaries-artifact:
@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout XII Engine repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           path: repo
           token: ${{ secrets.API_TOKEN_GITHUB }}
@@ -52,7 +52,7 @@ jobs:
 
       - name: Artifact - Full Binaries
         if: github.event.inputs.full-binaries-artifact == 'true'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: full-binaries
           path: repo\Output\Bin\WinVs2022Dev64
@@ -93,7 +93,7 @@ jobs:
 
       - name: Artifact - Release Package
         if: github.event.inputs.release-artifact == 'true'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: XII-Engine.Release.${{ steps.sdk-version.outputs.content }}
           path: XII-Engine.Release.${{ steps.sdk-version.outputs.content }}.zip

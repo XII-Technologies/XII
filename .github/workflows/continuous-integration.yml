@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout XII repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.API_TOKEN_GITHUB }}
           path: repo
@@ -43,7 +43,7 @@ jobs:
 
       - name: Artifact - Full Binaries
         if: env.FULL_BINARIES_ARTIFACT == 'true'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: full-binaries
           path: repo\Output\Bin\WinVs2022Dev64
@@ -55,7 +55,7 @@ jobs:
 
           rm -r -fo repo\Data\Platform
           rm -r -fo repo\Data\UnitTests
-      
+
         #rm -r -fo repo\Output\lib
         #rm -r -fo repo\Data\Tools\Precompiled
 
@@ -85,7 +85,7 @@ jobs:
 
       - name: Artifact - Release Package
         if: env.RELEASE_ARTIFACT == 'true'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: XII.Release.${{ steps.sdk-version.outputs.content }}
           path: XII.Release.${{ steps.sdk-version.outputs.content }}.zip

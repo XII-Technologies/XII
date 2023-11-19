@@ -9,13 +9,13 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: Run ClangFormat
         id: format_files
         shell: pwsh
         run: |
-          echo "::set-output name=push::false"
+          echo "push=false" >> $GITHUB_OUTPUT
 
           git fetch origin "${env:GITHUB_BASE_REF}:refs/remotes/origin/${env:GITHUB_BASE_REF}"
           git fetch origin "${env:GITHUB_HEAD_REF}:refs/remotes/origin/${env:GITHUB_HEAD_REF}"
@@ -44,21 +44,21 @@ jobs:
             #Write out patch file
             $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
             [System.IO.File]::WriteAllText("${env:GITHUB_WORKSPACE}/clangFormat.patch", "$clangDiff`n", $Utf8NoBomEncoding)
-            
+
             # this doesn't work
             #git apply -p0 "${env:GITHUB_WORKSPACE}/clangFormat.patch"
 
             echo "Committing ClangFormat patch"
             git config --global user.email "automation@xiitechnologies.com"
             git config --global user.name "XII Automation"
-            
+
             git add `*.h | Out-Null
             git add `*.inl | Out-Null
             git add `*.cpp | Out-Null
-            
+
             git commit -m "Applied code formatting rules"
 
-            echo "::set-output name=push::true"
+            echo "push=true" >> $GITHUB_OUTPUT
           }
           else
           {
@@ -73,7 +73,7 @@ jobs:
 
       - name: Upload Patch File
         if: ${{ steps.format_files.outputs.push == 'true' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ClangFormatPatch
           path: ${{github.workspace}}/clangFormat.patch
