@@ -20,14 +20,6 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 #include <memory>
 
-#ifdef StackWalk
-#  undef StackWalk
-#endif
-
-#ifdef SearchPath
-#  undef SearchPath
-#endif
-
 // Deactivate Doxygen document generation for the following block.
 /// \cond
 
@@ -35,7 +27,9 @@ namespace
 {
   using CaptureStackBackTraceFunc = WORD(__stdcall*)(DWORD FramesToSkip, DWORD FramesToCapture, PVOID* BackTrace, PDWORD BackTraceHash);
   using SymbolInitializeFunc      = BOOL(__stdcall*)(HANDLE hProcess, PCWSTR UserSearchPath, BOOL fInvadeProcess);
+  using SymCleanupFunc            = BOOL(__stdcall*)(HANDLE hProcess);
   using SymbolLoadModuleFunc      = DWORD64(__stdcall*)(HANDLE hProcess, HANDLE hFile, PCWSTR ImageName, PCWSTR ModuleName, DWORD64 BaseOfDll, DWORD DllSize, PMODLOAD_DATA Data, DWORD Flags);
+  using SymRefreshModuleListFunc  = BOOL(__stdcall*)(HANDLE hProcess);
   using SymbolGetModuleInfoFunc   = BOOL(__stdcall*)(HANDLE hProcess, DWORD64 qwAddr, PIMAGEHLP_MODULEW64 ModuleInfo);
   using SymbolFunctionTableAccess = PVOID(__stdcall*)(HANDLE hProcess, DWORD64 AddrBase);
   using SymbolGetModuleBaseFunc   = DWORD64(__stdcall*)(HANDLE hProcess, DWORD64 qwAddr);
@@ -51,6 +45,8 @@ namespace
 
     CaptureStackBackTraceFunc captureStackBackTrace;
     SymbolInitializeFunc      symbolInitialize;
+    SymCleanupFunc            symCleanup;
+    SymRefreshModuleListFunc  symRefreshModuleList;
     SymbolLoadModuleFunc      symbolLoadModule;
     SymbolGetModuleInfoFunc   getModuleInfo;
     SymbolFunctionTableAccess getFunctionTableAccess;
@@ -78,13 +74,26 @@ namespace
       {
         symSetSearchPath       = (SymSetSearchPathFunc)GetProcAddress(dbgHelpDll, "SymSetSearchPathW");
         symbolInitialize       = (SymbolInitializeFunc)GetProcAddress(dbgHelpDll, "SymInitializeW");
+        symCleanup             = (SymCleanupFunc)GetProcAddress(dbgHelpDll, "SymCleanup");
+        symRefreshModuleList   = (SymRefreshModuleListFunc)GetProcAddress(dbgHelpDll, "SymRefreshModuleList");
         symbolLoadModule       = (SymbolLoadModuleFunc)GetProcAddress(dbgHelpDll, "SymLoadModuleExW");
         getModuleInfo          = (SymbolGetModuleInfoFunc)GetProcAddress(dbgHelpDll, "SymGetModuleInfoW64");
         getFunctionTableAccess = (SymbolFunctionTableAccess)GetProcAddress(dbgHelpDll, "SymFunctionTableAccess64");
         getModuleBase          = (SymbolGetModuleBaseFunc)GetProcAddress(dbgHelpDll, "SymGetModuleBase64");
         stackWalk              = (StackWalk)GetProcAddress(dbgHelpDll, "StackWalk64");
-        if (symbolInitialize == nullptr || symbolLoadModule == nullptr || getModuleInfo == nullptr || getFunctionTableAccess == nullptr || getModuleBase == nullptr || stackWalk == nullptr || symSetSearchPath == nullptr)
+
+        if (symbolInitialize == nullptr ||
+            symCleanup == nullptr ||
+            symbolLoadModule == nullptr ||
+            symRefreshModuleList == nullptr ||
+            getModuleInfo == nullptr ||
+            getFunctionTableAccess == nullptr ||
+            getModuleBase == nullptr ||
+            stackWalk == nullptr ||
+            symSetSearchPath == nullptr)
+        {
           return;
+        }
 
         symbolFromAddress = (SymbolFromAddressFunc)GetProcAddress(dbgHelpDll, "SymFromAddrW");
         lineFromAdress    = (LineFromAddressFunc)GetProcAddress(dbgHelpDll, "SymGetLineFromAddrW64");
@@ -104,24 +113,48 @@ namespace
     }
   }
 
+  static bool SymbolInitializeImpl()
+  {
+    // Initializing symbol loading easily fails if any other code had already initialized it.
+    // Thus, when using XII together with for example a third party library that also records stack traces, just calling SymInitialize will fail and we do not get any callstacks.
+    // This multi-step approach below has worked in known problematic scenarios, but no guarantee that there isn't a better "right way" to do it.
+
+    // Try SymInitialize first
+    if ((*s_pImplementation->symbolInitialize)(GetCurrentProcess(), nullptr, TRUE))
+      return true;
+
+    // Try SymRefreshModuleList next
+    if ((*s_pImplementation->symRefreshModuleList)(GetCurrentProcess()))
+      return true;
+
+    // Otherwise cleanup and try again
+    if (!(*s_pImplementation->symCleanup)(GetCurrentProcess()))
+      return false;
+
+    if ((*s_pImplementation->symbolInitialize)(GetCurrentProcess(), nullptr, TRUE))
+      return true;
+
+    return false;
+  }
+
   static void SymbolInitialize()
   {
-    if (!s_pImplementation->m_bInitDbgHelp)
+    if (s_pImplementation->m_bInitDbgHelp)
+      return;
+
+    s_pImplementation->m_bInitDbgHelp = true;
+
+    if (!SymbolInitializeImpl())
     {
-      s_pImplementation->m_bInitDbgHelp = true;
+      xiiLog::Error("StackTracer could not initialize symbols. Error-Code {0}", xiiArgErrorCode(::GetLastError()));
+      return;
+    }
 
-      if (!(*s_pImplementation->symbolInitialize)(GetCurrentProcess(), nullptr, TRUE))
-      {
-        xiiLog::Error("StackTracer could not initialize symbols. Error-Code {0}", xiiArgErrorCode(::GetLastError()));
-        return;
-      }
-
-      // We want to seach for the PDBs in the same directory where the EXE is located, no matter what the current working directory is
-      if (!(*s_pImplementation->symSetSearchPath)(GetCurrentProcess(), xiiStringWChar(xiiOSFile::GetApplicationDirectory())))
-      {
-        xiiLog::Error("StackTracer could not set symbol search path. Error-Code {0}", xiiArgErrorCode(::GetLastError()));
-        return;
-      }
+    // We want to search for the PDBs in the same directory where the EXE is located, no matter what the current working directory is.
+    if (!(*s_pImplementation->symSetSearchPath)(GetCurrentProcess(), xiiStringWChar(xiiOSFile::GetApplicationDirectory())))
+    {
+      xiiLog::Error("StackTracer could not set symbol search path. Error-Code {0}", xiiArgErrorCode(::GetLastError()));
+      return;
     }
   }
 } // namespace
@@ -143,16 +176,18 @@ void xiiStackTracer::OnPluginEvent(const xiiPluginEvent& e)
 
   if (false) // e.m_EventType == xiiPluginEvent::AfterLoading)
   {
+    xiiStringBuilder tmp;
+
     char buffer[1024];
     strcpy_s(buffer, xiiOSFile::GetApplicationDirectory().GetStartPointer());
-    strcat_s(buffer, e.m_sPluginBinary.GetStartPointer());
+    strcat_s(buffer, e.m_sPluginBinary.GetData(tmp));
     strcat_s(buffer, ".dll");
 
     wchar_t szPluginPath[1024];
     mbstowcs(szPluginPath, buffer, XII_ARRAY_SIZE(szPluginPath));
 
     wchar_t szPluginName[256];
-    mbstowcs(szPluginName, e.m_sPluginBinary.GetStartPointer(), XII_ARRAY_SIZE(szPluginName));
+    mbstowcs(szPluginName, e.m_sPluginBinary.GetData(tmp), XII_ARRAY_SIZE(szPluginName));
 
     HANDLE currentProcess = GetCurrentProcess();
 
@@ -177,11 +212,10 @@ void xiiStackTracer::OnPluginEvent(const xiiPluginEvent& e)
       DWORD  err      = GetLastError();
       LPVOID lpMsgBuf = nullptr;
 
-      FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, err,
-                    MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), (LPTSTR)&lpMsgBuf, 0, nullptr);
+      FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, err, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), (LPTSTR)&lpMsgBuf, 0, nullptr);
 
       char errStr[1024];
-      sprintf_s(errStr, "StackTracer could not get module info for '%s'. Error-Code %u (\"%s\")\n", e.m_sPluginBinary.GetStartPointer(), err, static_cast<char*>(lpMsgBuf));
+      sprintf_s(errStr, "StackTracer could not get module info for '%s'. Error-Code %u (\"%s\")\n", e.m_sPluginBinary.GetData(tmp), err, static_cast<char*>(lpMsgBuf));
       xiiLog::Print(errStr);
 
       LocalFree(lpMsgBuf);
@@ -198,13 +232,14 @@ xiiUInt32 xiiStackTracer::GetStackTrace(xiiArrayPtr<void*>& ref_trace, void* pCo
   {
     // We need dbghelp init for stackWalk call.
     SymbolInitialize();
-    // in order not to destroy the pContext handed in we need to make a copy of it
-    // see StackWalk/StackWalk64 docs https://docs.microsoft.com/windows/win32/api/dbghelp/nf-dbghelp-stackwalk
+
+    // In order not to destroy the pContext handed in we need to make a copy of it.
+    // See StackWalk/StackWalk64 docs https://docs.microsoft.com/windows/win32/api/dbghelp/nf-dbghelp-stackwalk
     PCONTEXT originalContext = static_cast<PCONTEXT>(pContext);
     PCONTEXT copiedContext   = nullptr;
 
     DWORD contextSize = 0;
-    // get size needed for buffer and allocate buffer of that size
+    // Retrieve the size needed for buffer and allocate buffer of that size.
     InitializeContext(nullptr, originalContext->ContextFlags, &copiedContext, &contextSize);
     unsigned char* rawBuffer = new (std::nothrow) unsigned char[contextSize];
     if (rawBuffer == nullptr)
@@ -260,7 +295,7 @@ xiiUInt32 xiiStackTracer::GetStackTrace(xiiArrayPtr<void*>& ref_trace, void* pCo
       }
       else
       {
-        // Skip the last three stack-frames since they are useless
+        // Skip the last three stack-frames since they are not important.
         return xiiMath::Max(i - 4, 0);
       }
     }
@@ -271,7 +306,7 @@ xiiUInt32 xiiStackTracer::GetStackTrace(xiiArrayPtr<void*>& ref_trace, void* pCo
     const xiiUInt32 uiMaxNumTrace = xiiMath::Min(62U, ref_trace.GetCount());
     xiiInt32        iNumTraces    = (*s_pImplementation->captureStackBackTrace)(uiSkip, uiMaxNumTrace, ref_trace.GetPtr(), nullptr);
 
-    // Skip the last three stack-frames since they are useless
+    // Skip the last three stack-frames since they are not important.
     return xiiMath::Max(iNumTraces - 3, 0);
   }
 
@@ -321,6 +356,5 @@ void xiiStackTracer::ResolveStackTrace(const xiiArrayPtr<void*>& trace, PrintFun
     }
   }
 }
-
 
 /// \endcond

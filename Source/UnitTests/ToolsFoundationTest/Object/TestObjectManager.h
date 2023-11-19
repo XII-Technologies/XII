@@ -21,7 +21,7 @@ class xiiTestDocument : public xiiDocument
   XII_ADD_DYNAMIC_REFLECTION(xiiTestDocument, xiiDocument);
 
 public:
-  xiiTestDocument(const char* szDocumentPath, bool bUseIPCObjectMirror = false);
+  xiiTestDocument(xiiStringView sDocumentPath, bool bUseIPCObjectMirror = false);
   ~xiiTestDocument();
 
   virtual void             InitializeAfterLoading(bool bFirstTimeCreation) override;

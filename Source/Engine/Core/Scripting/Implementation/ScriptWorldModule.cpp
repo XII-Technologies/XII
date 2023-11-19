@@ -12,13 +12,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiScriptWorldModule::xiiScriptWorldModule(xiiWorld* pWorld) :
   xiiWorldModule(pWorld)
 {
-  xiiResourceManager::GetResourceEvents().AddEventHandler(xiiMakeDelegate(&xiiScriptWorldModule::ResourceEventHandler, this));
 }
 
-xiiScriptWorldModule::~xiiScriptWorldModule()
-{
-  xiiResourceManager::GetResourceEvents().RemoveEventHandler(xiiMakeDelegate(&xiiScriptWorldModule::ResourceEventHandler, this));
-}
+xiiScriptWorldModule::~xiiScriptWorldModule() = default;
 
 void xiiScriptWorldModule::Initialize()
 {
@@ -30,14 +26,11 @@ void xiiScriptWorldModule::Initialize()
 
     RegisterUpdateFunction(updateDesc);
   }
+}
 
-  {
-    auto updateDesc        = XII_CREATE_MODULE_UPDATE_FUNCTION_DESC(xiiScriptWorldModule::ReloadScripts, this);
-    updateDesc.m_Phase     = xiiWorldModule::UpdateFunctionDesc::Phase::PreAsync;
-    updateDesc.m_fPriority = 10000.0f;
-
-    RegisterUpdateFunction(updateDesc);
-  }
+void xiiScriptWorldModule::WorldClear()
+{
+  m_Scheduler.Clear();
 }
 
 void xiiScriptWorldModule::AddUpdateFunctionToSchedule(const xiiAbstractFunctionProperty* pFunction, void* pInstance, xiiTime updateInterval, bool bOnlyWhenSimulating)
@@ -58,13 +51,13 @@ void xiiScriptWorldModule::RemoveUpdateFunctionToSchedule(const xiiAbstractFunct
   m_Scheduler.RemoveWork(context);
 }
 
-xiiScriptCoroutineHandle xiiScriptWorldModule::CreateCoroutine(const xiiRTTI* pCoroutineType, xiiStringView sName, xiiScriptInstance& inout_instance, xiiScriptCoroutineCreationMode::Enum creationMode, xiiScriptCoroutine*& out_pCoroutine)
+xiiScriptCoroutineHandle xiiScriptWorldModule::CreateCoroutine(const xiiRTTI* pCoroutineType, xiiStringView sName, xiiScriptInstance& ref_instance, xiiScriptCoroutineCreationMode::Enum creationMode, xiiScriptCoroutine*& out_pCoroutine)
 {
   if (creationMode != xiiScriptCoroutineCreationMode::AllowOverlap)
   {
     xiiScriptCoroutine* pOverlappingCoroutine = nullptr;
 
-    auto& runningCoroutines = m_InstanceToScriptCoroutines[&inout_instance];
+    auto& runningCoroutines = m_InstanceToScriptCoroutines[&ref_instance];
     for (auto& hCoroutine : runningCoroutines)
     {
       xiiUniquePtr<xiiScriptCoroutine>* pCoroutine = nullptr;
@@ -93,12 +86,12 @@ xiiScriptCoroutineHandle xiiScriptWorldModule::CreateCoroutine(const xiiRTTI* pC
     }
   }
 
-  auto pCoroutine = pCoroutineType->GetAllocator()->Allocate<xiiScriptCoroutine>(xiiFoundation::GetDefaultAllocator());
+  auto pCoroutine = pCoroutineType->GetAllocator()->Allocate<xiiScriptCoroutine>(xiiScriptAllocator::GetAllocator());
 
   xiiScriptCoroutineId id = m_RunningScriptCoroutines.Insert(pCoroutine);
-  pCoroutine->Initialize(id, sName, inout_instance, *this);
+  pCoroutine->Initialize(id, sName, ref_instance, *this);
 
-  m_InstanceToScriptCoroutines[&inout_instance].PushBack(xiiScriptCoroutineHandle(id));
+  m_InstanceToScriptCoroutines[&ref_instance].PushBack(xiiScriptCoroutineHandle(id));
 
   out_pCoroutine = pCoroutine;
   return xiiScriptCoroutineHandle(id);
@@ -162,33 +155,6 @@ bool xiiScriptWorldModule::IsCoroutineFinished(xiiScriptCoroutineHandle hCorouti
   return m_RunningScriptCoroutines.Contains(hCoroutine.GetInternalID()) == false;
 }
 
-void xiiScriptWorldModule::AddScriptReloadFunction(xiiScriptClassResourceHandle hScript, ReloadFunction function)
-{
-  if (hScript.IsValid() == false)
-    return;
-
-  XII_ASSERT_DEV(function.IsComparable(), "Function must be comparable otherwise it can't be removed");
-  m_ReloadFunctions[hScript].PushBack(function);
-}
-
-void xiiScriptWorldModule::RemoveScriptReloadFunction(xiiScriptClassResourceHandle hScript, ReloadFunction function)
-{
-  XII_ASSERT_DEV(function.IsComparable(), "Function must be comparable otherwise it can't be removed");
-
-  ReloadFunctionList* pReloadFunctions = nullptr;
-  if (m_ReloadFunctions.TryGetValue(hScript, pReloadFunctions))
-  {
-    for (xiiUInt32 i = 0; i < pReloadFunctions->GetCount(); ++i)
-    {
-      if ((*pReloadFunctions)[i].IsEqualIfComparable(function))
-      {
-        pReloadFunctions->RemoveAtAndSwap(i);
-        break;
-      }
-    }
-  }
-}
-
 void xiiScriptWorldModule::CallUpdateFunctions(const xiiWorldModule::UpdateContext& context)
 {
   xiiWorld* pWorld = GetWorld();
@@ -230,32 +196,4 @@ void xiiScriptWorldModule::CallUpdateFunctions(const xiiWorldModule::UpdateConte
     pCoroutine = nullptr;
   }
   m_DeadScriptCoroutines.Clear();
-}
-
-void xiiScriptWorldModule::ReloadScripts(const xiiWorldModule::UpdateContext& context)
-{
-  for (auto hScript : m_NeedReload)
-  {
-    if (m_ReloadFunctions.TryGetValue(hScript, m_TempReloadFunctions))
-    {
-      for (auto& reloadFunction : m_TempReloadFunctions)
-      {
-        reloadFunction();
-      }
-    }
-  }
-
-  m_NeedReload.Clear();
-}
-
-void xiiScriptWorldModule::ResourceEventHandler(const xiiResourceEvent& e)
-{
-  if (e.m_Type != xiiResourceEvent::Type::ResourceContentUnloading)
-    return;
-
-  if (auto pResource = xiiDynamicCast<const xiiScriptClassResource*>(e.m_pResource))
-  {
-    xiiScriptClassResourceHandle hScript = pResource->GetResourceHandle();
-    m_NeedReload.Insert(hScript);
-  }
 }

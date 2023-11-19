@@ -30,9 +30,9 @@ void xiiEditActions::RegisterActions()
   s_hEditCategory            = XII_REGISTER_CATEGORY("EditCategory");
   s_hCopy                    = XII_REGISTER_ACTION_1("Selection.Copy", xiiActionScope::Document, "Document", "Ctrl+C", xiiEditAction, xiiEditAction::ButtonType::Copy);
   s_hPaste                   = XII_REGISTER_ACTION_1("Selection.Paste", xiiActionScope::Document, "Document", "Ctrl+V", xiiEditAction, xiiEditAction::ButtonType::Paste);
-  s_hPasteAsChild            = XII_REGISTER_ACTION_1("Selection.PasteAsChild", xiiActionScope::Document, "Document", {}, xiiEditAction, xiiEditAction::ButtonType::PasteAsChild);
-  s_hPasteAtOriginalLocation = XII_REGISTER_ACTION_1("Selection.PasteAtOriginalLocation", xiiActionScope::Document, "Document", {}, xiiEditAction, xiiEditAction::ButtonType::PasteAtOriginalLocation);
-  s_hDelete                  = XII_REGISTER_ACTION_1("Selection.Delete", xiiActionScope::Document, "Document", {}, xiiEditAction, xiiEditAction::ButtonType::Delete);
+  s_hPasteAsChild            = XII_REGISTER_ACTION_1("Selection.PasteAsChild", xiiActionScope::Document, "Document", "", xiiEditAction, xiiEditAction::ButtonType::PasteAsChild);
+  s_hPasteAtOriginalLocation = XII_REGISTER_ACTION_1("Selection.PasteAtOriginalLocation", xiiActionScope::Document, "Document", "", xiiEditAction, xiiEditAction::ButtonType::PasteAtOriginalLocation);
+  s_hDelete                  = XII_REGISTER_ACTION_1("Selection.Delete", xiiActionScope::Document, "Document", "", xiiEditAction, xiiEditAction::ButtonType::Delete);
 }
 
 void xiiEditActions::UnregisterActions()
@@ -50,6 +50,8 @@ void xiiEditActions::MapActions(xiiStringView sMapping, bool bDeleteAction, bool
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
   XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the edit actions failed!", sMapping);
 
+  pMap->MapAction(s_hEditCategory, "G.Edit", 3.5f);
+
   pMap->MapAction(s_hCopy, "G.Edit", "EditCategory", 1.0f);
   pMap->MapAction(s_hPaste, "G.Edit", "EditCategory", 2.0f);
 
@@ -60,9 +62,7 @@ void xiiEditActions::MapActions(xiiStringView sMapping, bool bDeleteAction, bool
   }
 
   if (bDeleteAction)
-  {
     pMap->MapAction(s_hDelete, "G.Edit", "EditCategory", 3.0f);
-  }
 }
 
 
@@ -70,6 +70,8 @@ void xiiEditActions::MapContextMenuActions(xiiStringView sMapping)
 {
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
   XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the edit actions failed!", sMapping);
+
+  pMap->MapAction(s_hEditCategory, "", 10.0f);
 
   pMap->MapAction(s_hCopy, "EditCategory", 1.0f);
   pMap->MapAction(s_hPasteAsChild, "EditCategory", 2.0f);
@@ -82,6 +84,8 @@ void xiiEditActions::MapViewContextMenuActions(xiiStringView sMapping)
   xiiActionMap* pMap = xiiActionMapManager::GetActionMap(sMapping);
   XII_ASSERT_DEV(pMap != nullptr, "The given mapping ('{0}') does not exist, mapping the edit actions failed!", sMapping);
 
+  pMap->MapAction(s_hEditCategory, "", 10.0f);
+
   pMap->MapAction(s_hCopy, "EditCategory", 1.0f);
   pMap->MapAction(s_hPasteAsChild, "EditCategory", 2.0f);
   pMap->MapAction(s_hPasteAtOriginalLocation, "EditCategory", 2.5f);
@@ -92,27 +96,27 @@ void xiiEditActions::MapViewContextMenuActions(xiiStringView sMapping)
 // xiiEditAction
 ////////////////////////////////////////////////////////////////////////
 
-xiiEditAction::xiiEditAction(const xiiActionContext& context, xiiStringView sName, ButtonType button) :
-  xiiButtonAction(context, sName, false, {})
+xiiEditAction::xiiEditAction(const xiiActionContext& context, const char* szName, ButtonType button) :
+  xiiButtonAction(context, szName, false, "")
 {
   m_ButtonType = button;
 
   switch (m_ButtonType)
   {
     case xiiEditAction::ButtonType::Copy:
-      SetIconPath(":/GuiFoundation/Icons/Copy16.png");
+      SetIconPath(":/GuiFoundation/Icons/Copy.svg");
       break;
     case xiiEditAction::ButtonType::Paste:
-      SetIconPath(":/GuiFoundation/Icons/Paste16.png");
+      SetIconPath(":/GuiFoundation/Icons/Paste.svg");
       break;
     case xiiEditAction::ButtonType::PasteAsChild:
-      SetIconPath(":/GuiFoundation/Icons/Paste16.png"); /// \todo Icon
+      SetIconPath(":/GuiFoundation/Icons/Paste.svg"); /// \todo Icon
       break;
     case xiiEditAction::ButtonType::PasteAtOriginalLocation:
-      SetIconPath(":/GuiFoundation/Icons/Paste16.png");
+      SetIconPath(":/GuiFoundation/Icons/Paste.svg");
       break;
     case xiiEditAction::ButtonType::Delete:
-      SetIconPath(":/GuiFoundation/Icons/Delete16.png");
+      SetIconPath(":/GuiFoundation/Icons/Delete.svg");
       break;
   }
 

@@ -60,7 +60,7 @@ xiiQtContainerWindow::xiiQtContainerWindow()
 
   s_pContainerWindow = this;
 
-  setObjectName("xiiEditor");
+  setObjectName("XII Editor");
   setWindowIcon(QIcon(QStringLiteral(":/GuiFoundation/XII-Logo.svg")));
 
   xiiQtDocumentWindow::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtContainerWindow::DocumentWindowEventHandler, this));
@@ -112,7 +112,7 @@ void xiiQtContainerWindow::UpdateWindowTitle()
 
   sTitle.Append(xiiApplication::GetApplicationInstance()->GetApplicationName().GetView());
 
-  setWindowTitle(QString::fromUtf8(sTitle.GetData()));
+  setWindowTitle(xiiMakeQString(sTitle.GetView()));
 }
 
 void xiiQtContainerWindow::ScheduleRestoreWindowLayout()
@@ -274,9 +274,9 @@ void xiiQtContainerWindow::UpdateWindowDecoration(xiiQtDocumentWindow* pDocWindo
 
   ads::CDockWidget* dock = m_DocumentDocks[uiListIndex];
 
-  dock->setTabToolTip(QString::fromUtf8(pDocWindow->GetDisplayName().GetData()));
-  dock->setIcon(xiiQtUiServices::GetCachedIconResource(pDocWindow->GetWindowIcon().GetData()));
-  dock->setWindowTitle(QString::fromUtf8(pDocWindow->GetDisplayNameShort().GetData()));
+  dock->setTabToolTip(xiiMakeQString(pDocWindow->GetDisplayName()));
+  dock->setIcon(xiiQtUiServices::GetCachedIconResource(pDocWindow->GetWindowIcon()));
+  dock->setWindowTitle(xiiMakeQString(pDocWindow->GetDisplayNameShort()));
 
   // this is a hacky way to detect the xiiQtSettingsTab
   if (pDocWindow->GetDisplayNameShort().IsEmpty())
@@ -364,11 +364,10 @@ void xiiQtContainerWindow::AddDocumentWindow(xiiQtDocumentWindow* pDocWindow)
 
   m_DocumentWindows.PushBack(pDocWindow);
   xiiString         displayName = pDocWindow->GetDisplayNameShort();
-  ads::CDockWidget* dock        = new ads::CDockWidget(QString::fromUtf8(displayName.GetData(), displayName.GetElementCount()));
+  ads::CDockWidget* dock        = new ads::CDockWidget(xiiMakeQString(displayName));
   dock->installEventFilter(pDocWindow);
 
-  xiiStringBuilder tmp;
-  dock->setObjectName(pDocWindow->GetUniqueName().GetData(tmp));
+  dock->setObjectName(xiiMakeQString(pDocWindow->GetUniqueName()));
   XII_ASSERT_DEV(!dock->objectName().isEmpty(), "Dock name must not be empty.");
   XII_ASSERT_DEV(!m_DockNames.contains(dock->objectName()), "Dock name must be unique.");
   m_DockNames.insert(dock->objectName());
@@ -406,8 +405,7 @@ void xiiQtContainerWindow::DocumentWindowRenamed(xiiQtDocumentWindow* pDocWindow
   XII_ASSERT_DEV(m_DockNames.contains(dock->objectName()), "Object name must not change during lifetime.");
   m_DockNames.remove(dock->objectName());
 
-  xiiStringBuilder tmp;
-  dock->setObjectName(pDocWindow->GetUniqueName().GetData(tmp));
+  dock->setObjectName(xiiMakeQString(pDocWindow->GetUniqueName()));
   XII_ASSERT_DEV(!dock->objectName().isEmpty(), "Dock name must not be empty.");
   XII_ASSERT_DEV(!m_DockNames.contains(dock->objectName()), "Dock name must be unique.");
   m_DockNames.insert(dock->objectName());
@@ -589,7 +587,7 @@ void xiiQtContainerWindow::UIServicesEventHandler(const xiiQtUiServices::Event& 
       }
 
       statusBar()->setHidden(e.m_sText.IsEmpty());
-      m_pStatusBarLabel->setText(QString::fromUtf8(e.m_sText.GetData()));
+      m_pStatusBarLabel->setText(xiiMakeQString(e.m_sText));
     }
     break;
 

@@ -20,7 +20,7 @@ T xiiObjectAccessorBase::Get(const xiiDocumentObject* pObject, xiiStringView sPr
   return value.ConvertTo<T>();
 }
 
-XII_FORCE_INLINE xiiInt32 xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp)
+inline xiiInt32 xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp)
 {
   xiiInt32  iCount = 0;
   xiiStatus res    = GetCount(pObject, pProp, iCount);
@@ -29,7 +29,7 @@ XII_FORCE_INLINE xiiInt32 xiiObjectAccessorBase::GetCount(const xiiDocumentObjec
   return iCount;
 }
 
-XII_FORCE_INLINE xiiInt32 xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject, xiiStringView sProp)
+inline xiiInt32 xiiObjectAccessorBase::GetCount(const xiiDocumentObject* pObject, xiiStringView sProp)
 {
   xiiInt32  iCount = 0;
   xiiStatus res    = GetCount(pObject, sProp, iCount);

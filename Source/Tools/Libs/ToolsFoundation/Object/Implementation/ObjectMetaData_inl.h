@@ -94,9 +94,9 @@ void xiiObjectMetaData<KEY, VALUE>::EndModifyMetaData(xiiUInt32 uiModifiedFlags 
 
 
 template <typename KEY, typename VALUE>
-void xiiObjectMetaData<KEY, VALUE>::AttachMetaDataToAbstractGraph(xiiAbstractObjectGraph& ref_graph) const
+void xiiObjectMetaData<KEY, VALUE>::AttachMetaDataToAbstractGraph(xiiAbstractObjectGraph& inout_graph) const
 {
-  auto& AllNodes = ref_graph.GetAllNodes();
+  auto& AllNodes = inout_graph.GetAllNodes();
 
   XII_LOCK(m_pMetaStorage->m_Mutex);
 
@@ -111,7 +111,7 @@ void xiiObjectMetaData<KEY, VALUE>::AttachMetaDataToAbstractGraph(xiiAbstractObj
       if (pProp->GetCategory() != xiiPropertyCategory::Member)
         continue;
 
-      DefaultValues[pProp->GetPropertyName()] = xiiReflectionUtils::GetMemberPropertyValue(static_cast<xiiAbstractMemberProperty*>(pProp), &m_DefaultValue);
+      DefaultValues[pProp->GetPropertyName()] = xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), &m_DefaultValue);
     }
   }
 
@@ -133,7 +133,7 @@ void xiiObjectMetaData<KEY, VALUE>::AttachMetaDataToAbstractGraph(xiiAbstractObj
         if (pProp->GetCategory() != xiiPropertyCategory::Member)
           continue;
 
-        value = xiiReflectionUtils::GetMemberPropertyValue(static_cast<xiiAbstractMemberProperty*>(pProp), pMeta);
+        value = xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), pMeta);
 
         if (value.IsValid() && DefaultValues[pProp->GetPropertyName()] != value)
         {
@@ -177,7 +177,7 @@ void xiiObjectMetaData<KEY, VALUE>::RestoreMetaDataFromAbstractGraph(const xiiAb
         VALUE* pValue = &m_pMetaStorage->m_MetaData[guid];
 
         xiiReflectionUtils::SetMemberPropertyValue(
-          static_cast<xiiAbstractMemberProperty*>(pValue->GetDynamicRTTI()->FindPropertyByName(name)), pValue, pProp->m_Value);
+          static_cast<const xiiAbstractMemberProperty*>(pValue->GetDynamicRTTI()->FindPropertyByName(name)), pValue, pProp->m_Value);
       }
     }
   }

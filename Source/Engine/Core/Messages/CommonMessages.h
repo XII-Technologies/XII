@@ -36,7 +36,7 @@ struct XII_CORE_DLL xiiMsgSetRealParameter : public xiiMessage
   XII_DECLARE_MESSAGE_TYPE(xiiMsgSetRealParameter, xiiMessage);
 
   xiiString m_sParameterName;
-  xiiReal   m_fValue = static_cast<xiiReal>(0.0);
+  xiiReal   m_fValue = static_cast<xiiReal>(0);
 };
 
 /// \brief For use in scripts to signal a custom event that some game event has occurred.
@@ -50,10 +50,6 @@ struct XII_CORE_DLL xiiMsgGenericEvent : public xiiEventMessage
   /// A custom string to identify the intent.
   xiiHashedString m_sMessage;
   xiiVariant      m_Value;
-
-private:
-  xiiStringView GetMessage() const { return m_sMessage; }
-  void          SetMessage(xiiStringView sMessage) { m_sMessage.Assign(sMessage); }
 };
 
 /// \brief Sent when an animation reached its end (either forwards or backwards playing)

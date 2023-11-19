@@ -65,9 +65,6 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
   // Update all input state
   xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
 
-  // Make sure telemetry is sent out regularly
-  xiiTelemetry::PerFrameUpdate();
-
   // Engage mouse look
   if (xiiInputManager::GetInputActionState("Main", "Look") == xiiKeyState::Down)
   {
@@ -126,6 +123,9 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
       cameraMotion.y -= fInputValue;
   }
 
+  // Make sure telemetry is sent out regularly.
+  xiiTelemetry::PerFrameUpdate();
+
   // Needs to be called once per frame
   xiiResourceManager::PerFrameUpdate();
 
@@ -139,13 +139,28 @@ xiiApplication::Execution xiiSampleWindowApp::Run()
 
 void xiiSampleWindowApp::AfterCoreSystemsStartup()
 {
+  xiiStringBuilder sProjectDir = ">sdk/Data/Samples/SampleWindow";
+  xiiStringBuilder sProjectDirResolved;
+  xiiFileSystem::ResolveSpecialDirectory(sProjectDir, sProjectDirResolved).IgnoreResult();
+
+  xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
+
+  xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").IgnoreResult();
+  xiiFileSystem::AddDataDirectory(">project/", "Project", "project", xiiFileSystem::AllowWrites).IgnoreResult();
+
   xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
   xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
-  xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
-  xiiTelemetry::SetServerName(GetApplicationName());
+  xiiTelemetry::SetServerName("Sample Window");
+
+  // Activate xiiTelemetry such that the inspector plugin can use the network connection.
   xiiTelemetry::CreateServer();
+
+  // Load the inspector plugin.
+  // The plugin contains automatic configuration code (through the xiiStartup system), so it will configure itself properly when the engine is initialized by calling xiiStartup::StartupCore().
+  // When you are using xiiApplication, this is done automatically.
+  xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 #endif
 
   // Register Input
@@ -241,7 +256,10 @@ void xiiSampleWindowApp::AfterCoreSystemsStartup()
 
 void xiiSampleWindowApp::BeforeCoreSystemsShutdown()
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
+  // Shut down telemetry if it was set up.
   xiiTelemetry::CloseConnection();
+#endif
 
   SUPER::BeforeCoreSystemsShutdown();
 }

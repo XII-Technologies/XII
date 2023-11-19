@@ -43,8 +43,7 @@ void xiiQtUiServices::MessageBoxInformation(const xiiFormatString& msg)
     xiiLog::Info(msg.GetText(tmp));
   else
   {
-    QMessageBox::information(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(),
-                             QString::fromUtf8(msg.GetTextCStr(tmp)), QMessageBox::StandardButton::Ok);
+    QMessageBox::information(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(), QString::fromUtf8(msg.GetTextCStr(tmp)), QMessageBox::StandardButton::Ok);
   }
 }
 
@@ -56,15 +55,11 @@ void xiiQtUiServices::MessageBoxWarning(const xiiFormatString& msg)
     xiiLog::Warning(msg.GetText(tmp));
   else
   {
-    QMessageBox::warning(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(),
-                         QString::fromUtf8(msg.GetTextCStr(tmp)), QMessageBox::StandardButton::Ok);
+    QMessageBox::warning(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(), QString::fromUtf8(msg.GetTextCStr(tmp)), QMessageBox::StandardButton::Ok);
   }
 }
 
-QMessageBox::StandardButton xiiQtUiServices::MessageBoxQuestion(
-  const xiiFormatString&       msg,
-  QMessageBox::StandardButtons buttons,
-  QMessageBox::StandardButton  defaultButton)
+QMessageBox::StandardButton xiiQtUiServices::MessageBoxQuestion(const xiiFormatString& msg, QMessageBox::StandardButtons buttons, QMessageBox::StandardButton defaultButton)
 {
   if (s_bHeadless)
   {
@@ -73,7 +68,7 @@ QMessageBox::StandardButton xiiQtUiServices::MessageBoxQuestion(
   else
   {
     xiiStringBuilder tmp;
-    return QMessageBox::question(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(),
-                                 QString::fromUtf8(msg.GetTextCStr(tmp)), buttons, defaultButton);
+
+    return QMessageBox::question(QApplication::activeWindow(), xiiApplication::GetApplicationInstance()->GetApplicationName().GetData(), QString::fromUtf8(msg.GetTextCStr(tmp)), buttons, defaultButton);
   }
 }

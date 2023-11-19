@@ -59,9 +59,7 @@ xiiQtDocumentWindow::xiiQtDocumentWindow(xiiDocument* pDocument)
 {
   m_pDocument   = pDocument;
   m_sUniqueName = m_pDocument->GetDocumentPath();
-
-  xiiStringBuilder tmp;
-  setObjectName(GetUniqueName().GetData(tmp));
+  setObjectName(xiiMakeQString(GetUniqueName()));
 
   xiiDocumentManager::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtDocumentWindow::DocumentManagerEventHandler, this));
   pDocument->m_EventsOne.AddEventHandler(xiiMakeDelegate(&xiiQtDocumentWindow::DocumentEventHandler, this));
@@ -73,9 +71,7 @@ xiiQtDocumentWindow::xiiQtDocumentWindow(xiiStringView sUniqueName)
 {
   m_pDocument   = nullptr;
   m_sUniqueName = sUniqueName;
-
-  xiiStringBuilder tmp;
-  setObjectName(GetUniqueName().GetData(tmp));
+  setObjectName(xiiMakeQString(GetUniqueName()));
 
   Constructor();
 }
@@ -140,7 +136,7 @@ void xiiQtDocumentWindow::UIServicesTickEventHandler(const xiiQtUiServices::Tick
 
     // if the application does not have focus, drastically reduce the update rate to limit CPU draw etc.
     if (QApplication::activeWindow() == nullptr)
-      iTargetFramerate = xiiMath::Min(10, iTargetFramerate / 4);
+      iTargetFramerate = xiiMath::Max(10, iTargetFramerate / 4);
 
     // We do not hit the requested framerate directly if the system framerate can't be evenly divided. We will chose the next higher framerate.
     if (iTargetFramerate < iSystemFramerate)
@@ -181,9 +177,8 @@ void xiiQtDocumentWindow::DocumentEventHandler(const xiiDocumentEvent& e)
   {
     case xiiDocumentEvent::Type::DocumentRenamed:
     {
-      xiiStringBuilder tmp;
       m_sUniqueName = m_pDocument->GetDocumentPath();
-      setObjectName(GetUniqueName().GetData(tmp));
+      setObjectName(xiiMakeQString(GetUniqueName()));
       xiiQtContainerWindow* pContainer = xiiQtContainerWindow::GetContainerWindow();
       pContainer->DocumentWindowRenamed(this);
 
@@ -251,22 +246,22 @@ void xiiQtDocumentWindow::UIServicesEventHandler(const xiiQtUiServices::Event& e
         switch (e.m_TextType)
         {
           case xiiQtUiServices::Event::Info:
-            m_pPermanentGlobalStatusButton->setIcon(QIcon(":/GuiFoundation/Icons/Log.png"));
+            m_pPermanentGlobalStatusButton->setIcon(QIcon(":/GuiFoundation/Icons/Log.svg"));
             break;
 
           case xiiQtUiServices::Event::Warning:
             pal.setColor(QPalette::WindowText, QColor(255, 100, 0));
-            m_pPermanentGlobalStatusButton->setIcon(QIcon(":/GuiFoundation/Icons/Warning16.png"));
+            m_pPermanentGlobalStatusButton->setIcon(QIcon(":/GuiFoundation/Icons/Warning.svg"));
             break;
 
           case xiiQtUiServices::Event::Error:
             pal.setColor(QPalette::WindowText, QColor(Qt::red));
-            m_pPermanentGlobalStatusButton->setIcon(QIcon(":/GuiFoundation/Icons/Error16.png"));
+            m_pPermanentGlobalStatusButton->setIcon(QIcon(":/GuiFoundation/Icons/Error.svg"));
             break;
         }
 
         m_pPermanentGlobalStatusButton->setPalette(pal);
-        m_pPermanentGlobalStatusButton->setText(QString::fromUtf8(e.m_sText, e.m_sText.GetElementCount()));
+        m_pPermanentGlobalStatusButton->setText(xiiMakeQString(e.m_sText));
         m_pPermanentGlobalStatusButton->setVisible(!m_pPermanentGlobalStatusButton->text().isEmpty());
       }
     }
@@ -302,14 +297,14 @@ void xiiQtDocumentWindow::hideEvent(QHideEvent* event)
 
 bool xiiQtDocumentWindow::eventFilter(QObject* obj, QEvent* e)
 {
-  if (e->type() == QEvent::ShortcutOverride)
+  if (e->type() == QEvent::ShortcutOverride || e->type() == QEvent::KeyPress)
   {
     // This filter is added by xiiQtContainerWindow::AddDocumentWindow as that ones is the ony code path that can connect dock container to their content.
     // This filter is necessary as clicking any action in a menu bar sets the focus to the parent CDockWidget at which point further shortcuts would stop working.
     if (qobject_cast<ads::CDockWidget*>(obj))
     {
       QKeyEvent* keyEvent = static_cast<QKeyEvent*>(e);
-      if (xiiQtProxy::TriggerDocumentAction(m_pDocument, keyEvent))
+      if (xiiQtProxy::TriggerDocumentAction(m_pDocument, keyEvent, e->type() == QEvent::ShortcutOverride))
         return true;
     }
   }
@@ -318,10 +313,10 @@ bool xiiQtDocumentWindow::eventFilter(QObject* obj, QEvent* e)
 
 bool xiiQtDocumentWindow::event(QEvent* event)
 {
-  if (event->type() == QEvent::ShortcutOverride)
+  if (event->type() == QEvent::ShortcutOverride || event->type() == QEvent::KeyPress)
   {
     QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
-    if (xiiQtProxy::TriggerDocumentAction(m_pDocument, keyEvent))
+    if (xiiQtProxy::TriggerDocumentAction(m_pDocument, keyEvent, event->type() == QEvent::ShortcutOverride))
       return true;
   }
   return QMainWindow::event(event);
@@ -360,7 +355,7 @@ void xiiQtDocumentWindow::SaveWindowLayout()
   sGroup.Format("DocumentWnd_{0}", GetWindowLayoutGroupName());
 
   QSettings Settings;
-  Settings.beginGroup(QString::fromUtf8(sGroup, sGroup.GetElementCount()));
+  Settings.beginGroup(xiiMakeQString(sGroup.GetView()));
   {
     // All other properties are defined by the outer container window.
     Settings.setValue("WindowState", saveState());
@@ -380,7 +375,7 @@ void xiiQtDocumentWindow::RestoreWindowLayout()
 
   {
     QSettings Settings;
-    Settings.beginGroup(QString::fromUtf8(sGroup, sGroup.GetElementCount()));
+    Settings.beginGroup(xiiMakeQString(sGroup.GetView()));
     {
       restoreState(Settings.value("WindowState", saveState()).toByteArray());
     }
@@ -447,7 +442,7 @@ xiiStatus xiiQtDocumentWindow::SaveDocument()
 void xiiQtDocumentWindow::ShowTemporaryStatusBarMsg(const xiiFormatString& msg, xiiTime duration)
 {
   xiiStringBuilder tmp;
-  statusBar()->showMessage(QString::fromUtf8(msg.GetTextCStr(tmp)), (int)duration.GetMilliseconds());
+  statusBar()->showMessage(QString::fromUtf8(msg.GetTextCStr(tmp)), (xiiInt32)duration.GetMilliseconds());
 }
 
 

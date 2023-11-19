@@ -132,6 +132,12 @@ public:
     const xiiStringView includeSource = "includeSource";
     const xiiStringView byName        = "byName";
 
+    if (jsonReader.GetTopLevelElementType() != xiiJSONReader::ElementType::Dictionary)
+    {
+      xiiLog::Error("Ignore file {0} does not start with a json object", sIgnoreFilePath);
+      return XII_FAILURE;
+    }
+
     auto topLevel = jsonReader.GetTopLevelObject();
     for (auto it = topLevel.GetIterator(); it.IsValid(); it.Next())
     {

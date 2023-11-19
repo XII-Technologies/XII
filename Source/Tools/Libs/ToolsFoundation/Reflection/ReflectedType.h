@@ -25,16 +25,16 @@ struct XII_TOOLSFOUNDATION_DLL xiiAttributeHolder
   xiiAttributeHolder(const xiiAttributeHolder& rhs);
   virtual ~xiiAttributeHolder();
 
-  xiiUInt32             GetCount() const;
-  xiiPropertyAttribute* GetValue(xiiUInt32 uiIndex) const;
-  void                  SetValue(xiiUInt32 uiIndex, xiiPropertyAttribute* value);
-  void                  Insert(xiiUInt32 uiIndex, xiiPropertyAttribute* value);
-  void                  Remove(xiiUInt32 uiIndex);
+  xiiUInt32                   GetCount() const;
+  const xiiPropertyAttribute* GetValue(xiiUInt32 uiIndex) const;
+  void                        SetValue(xiiUInt32 uiIndex, const xiiPropertyAttribute* value);
+  void                        Insert(xiiUInt32 uiIndex, const xiiPropertyAttribute* value);
+  void                        Remove(xiiUInt32 uiIndex);
 
   void operator=(const xiiAttributeHolder& rhs);
 
-  mutable xiiHybridArray<xiiPropertyAttribute*, 2> m_Attributes;
-  xiiArrayPtr<xiiPropertyAttribute* const>         m_ReferenceAttributes;
+  mutable xiiHybridArray<const xiiPropertyAttribute*, 2> m_Attributes;
+  xiiArrayPtr<const xiiPropertyAttribute* const>         m_ReferenceAttributes;
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_TOOLSFOUNDATION_DLL, xiiAttributeHolder);
 
@@ -43,10 +43,10 @@ struct XII_TOOLSFOUNDATION_DLL xiiReflectedPropertyDescriptor : public xiiAttrib
 {
   xiiReflectedPropertyDescriptor() = default;
   xiiReflectedPropertyDescriptor(xiiPropertyCategory::Enum category, xiiStringView sName, xiiStringView sType, xiiBitflags<xiiPropertyFlags> flags);
-  xiiReflectedPropertyDescriptor(xiiPropertyCategory::Enum category, xiiStringView sName, xiiStringView sType, xiiBitflags<xiiPropertyFlags> flags, const xiiArrayPtr<xiiPropertyAttribute* const> attributes); // [tested]
+  xiiReflectedPropertyDescriptor(xiiPropertyCategory::Enum category, xiiStringView sName, xiiStringView sType, xiiBitflags<xiiPropertyFlags> flags, xiiArrayPtr<const xiiPropertyAttribute* const> attributes); // [tested]
 
   /// \brief Initialize to a constant.
-  xiiReflectedPropertyDescriptor(xiiStringView sName, const xiiVariant& constantValue, const xiiArrayPtr<xiiPropertyAttribute* const> attributes); // [tested]
+  xiiReflectedPropertyDescriptor(xiiStringView sName, const xiiVariant& constantValue, xiiArrayPtr<const xiiPropertyAttribute* const> attributes); // [tested]
   xiiReflectedPropertyDescriptor(const xiiReflectedPropertyDescriptor& rhs);
   ~xiiReflectedPropertyDescriptor();
 
@@ -75,7 +75,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_TOOLSFOUNDATION_DLL, xiiFunctionArgumentDescrip
 struct XII_TOOLSFOUNDATION_DLL xiiReflectedFunctionDescriptor : public xiiAttributeHolder
 {
   xiiReflectedFunctionDescriptor();
-  xiiReflectedFunctionDescriptor(xiiStringView sName, xiiBitflags<xiiPropertyFlags> flags, xiiEnum<xiiFunctionType> type, const xiiArrayPtr<xiiPropertyAttribute* const> attributes);
+  xiiReflectedFunctionDescriptor(xiiStringView sName, xiiBitflags<xiiPropertyFlags> flags, xiiEnum<xiiFunctionType> type, xiiArrayPtr<const xiiPropertyAttribute* const> attributes);
 
   xiiReflectedFunctionDescriptor(const xiiReflectedFunctionDescriptor& rhs);
   ~xiiReflectedFunctionDescriptor();

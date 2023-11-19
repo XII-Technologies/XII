@@ -253,10 +253,10 @@ public:
   void    SetGlobalPosition(const xiiVec3& vPosition);
   xiiVec3 GetGlobalPosition() const;
 
-  void    SetGlobalRotation(const xiiQuat qRotation);
+  void    SetGlobalRotation(const xiiQuat& qRotation);
   xiiQuat GetGlobalRotation() const;
 
-  void    SetGlobalScaling(const xiiVec3 vScaling);
+  void    SetGlobalScaling(const xiiVec3& vScaling);
   xiiVec3 GetGlobalScaling() const;
 
   void         SetGlobalTransform(const xiiTransform& transform);
@@ -424,14 +424,14 @@ public:
   /// \param senderComponent The component that triggered the event in the first place. May be nullptr.
   ///        If not null, this information is stored in \a msg as xiiEventMessage::m_hSenderObject and xiiEventMessage::m_hSenderComponent.
   ///        This information is used to pass through more contextual information for the event handler.
-  ///        For instance, a trigger would pass through which object entered the trigger.
-  ///        A projectile component sending a 'take damage event' to the hit object, would pass through itself (the projectile)
+  ///        For instance, a trigger component would pass through itself.
+  ///        A projectile component sending a 'take damage event' to the hit object, would also pass through itself (the projectile)
   ///        such that the handling code can detect which object was responsible for the damage (and using the xiiGameObject's team-ID,
   ///        it can detect which player fired the projectile).
-  void SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent);
+  bool SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent);
 
   /// \copydoc xiiGameObject::SendEventMessage()
-  void SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent) const;
+  bool SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent) const;
 
   /// \copydoc xiiGameObject::SendEventMessage()
   ///
@@ -513,7 +513,11 @@ private:
   xiiObjectMode::Enum Reflection_GetMode() const;
   void                Reflection_SetMode(xiiObjectMode::Enum mode);
 
-  xiiGameObject* Reflection_FindChildByName(xiiStringView sName, bool bRecursive);
+  xiiGameObject* Reflection_GetParent() const;
+  void           Reflection_SetGlobalPosition(const xiiVec3& vPosition);
+  void           Reflection_SetGlobalRotation(const xiiQuat& qRotation);
+  void           Reflection_SetGlobalScaling(const xiiVec3& vScaling);
+  void           Reflection_SetGlobalTransform(const xiiTransform& transform);
 
   bool DetermineDynamicMode(xiiComponent* pComponentToIgnore = nullptr) const;
   void ConditionalMakeStatic(xiiComponent* pComponentToIgnore = nullptr);

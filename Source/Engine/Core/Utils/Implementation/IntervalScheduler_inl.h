@@ -108,16 +108,14 @@ xiiTime xiiIntervalScheduler<T>::GetInterval(const T& work) const
 template <typename T>
 void xiiIntervalScheduler<T>::Update(xiiTime deltaTime, RunWorkCallback runWorkCallback)
 {
-  if (deltaTime <= xiiTime::Zero())
+  if (deltaTime.IsZeroOrNegative())
     return;
 
   m_CurrentTime += deltaTime;
 
   if (m_Data.IsEmpty())
-  {
-    m_fNumWorkToSchedule = 0.0;
-  }
-  else
+    return;
+
   {
     double fNumWork = 0;
     for (xiiUInt32 i = 1; i < HistogramSize; ++i)
@@ -126,20 +124,10 @@ void xiiIntervalScheduler<T>::Update(xiiTime deltaTime, RunWorkCallback runWorkC
     }
     fNumWork *= deltaTime.GetSeconds();
 
-    if (m_fNumWorkToSchedule == 0.0)
-    {
-      m_fNumWorkToSchedule = fNumWork;
-    }
-    else
-    {
-      // running average of num work per update to prevent huge spikes
-      m_fNumWorkToSchedule = xiiMath::Lerp<double>(m_fNumWorkToSchedule, fNumWork, 0.05);
-    }
-
-    const float     fRemainder      = static_cast<float>(xiiMath::Fraction(m_fNumWorkToSchedule));
+    const float     fRemainder      = static_cast<float>(xiiMath::Fraction(fNumWork));
     const int       pos             = static_cast<int>(m_CurrentTime.GetNanoseconds());
     const xiiUInt32 extra           = GetRandomZeroToOne(pos, m_uiSeed) < fRemainder ? 1 : 0;
-    const xiiUInt32 uiScheduleCount = xiiMath::Min(static_cast<xiiUInt32>(m_fNumWorkToSchedule) + extra + m_Histogram[0], m_Data.GetCount());
+    const xiiUInt32 uiScheduleCount = xiiMath::Min(static_cast<xiiUInt32>(fNumWork) + extra + m_Histogram[0], m_Data.GetCount());
 
     // schedule work
     {
@@ -195,6 +183,17 @@ void xiiIntervalScheduler<T>::Update(xiiTime deltaTime, RunWorkCallback runWorkC
     }
     m_ScheduledWork.Clear();
   }
+}
+
+template <typename T>
+void xiiIntervalScheduler<T>::Clear()
+{
+  m_CurrentTime = xiiTime::Zero();
+  m_uiSeed      = 0;
+  xiiMemoryUtils::ZeroFill(m_Histogram, HistogramSize);
+
+  m_Data.Clear();
+  m_WorkIdToData.Clear();
 }
 
 template <typename T>

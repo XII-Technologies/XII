@@ -3,7 +3,6 @@
 #include <GuiFoundation/Action/BaseActions.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 #include <ToolsFoundation/Selection/SelectionManager.h>
-
 ///
 class XII_GUIFOUNDATION_DLL xiiEditActions
 {
@@ -38,8 +37,7 @@ public:
     PasteAtOriginalLocation,
     Delete,
   };
-
-  xiiEditAction(const xiiActionContext& context, xiiStringView sName, ButtonType button);
+  xiiEditAction(const xiiActionContext& context, const char* szName, ButtonType button);
   ~xiiEditAction();
 
   virtual void Execute(const xiiVariant& value) override;

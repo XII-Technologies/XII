@@ -38,6 +38,8 @@ xiiQtStatVisWidget::xiiQtStatVisWidget(QWidget* pParent, xiiInt32 iWindowNumber)
   setupUi(this);
   setWidget(StatVisWidgetFrame);
 
+  setIcon(QIcon(":/Icons/Icons/StatHistory.svg"));
+
   {
     xiiQtScopedUpdatesDisabled _1(ComboTimeframe);
 

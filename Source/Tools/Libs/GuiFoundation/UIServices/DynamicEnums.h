@@ -32,7 +32,7 @@ public:
   bool IsValueValid(xiiInt32 iValue) const;
 
   /// \brief Returns the name for the given value. Returns "<invalid value>" if the value is not in use.
-  const char* GetValueName(xiiInt32 iValue) const;
+  xiiStringView GetValueName(xiiInt32 iValue) const;
 
 private:
   xiiMap<xiiInt32, xiiString> m_ValidValues;

@@ -214,7 +214,7 @@ XII_ALWAYS_INLINE xiiVec3 xiiGameObject::GetGlobalPosition() const
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetGlobalRotation(const xiiQuat qRotation)
+XII_ALWAYS_INLINE void xiiGameObject::SetGlobalRotation(const xiiQuat& qRotation)
 {
   SetGlobalRotation(xiiSimdConversion::ToQuat(qRotation));
 }
@@ -225,7 +225,7 @@ XII_ALWAYS_INLINE xiiQuat xiiGameObject::GetGlobalRotation() const
 }
 
 
-XII_ALWAYS_INLINE void xiiGameObject::SetGlobalScaling(const xiiVec3 vScaling)
+XII_ALWAYS_INLINE void xiiGameObject::SetGlobalScaling(const xiiVec3& vScaling)
 {
   SetGlobalScaling(xiiSimdConversion::ToVec3(vScaling));
 }

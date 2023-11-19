@@ -30,7 +30,7 @@ class XII_FOUNDATION_DLL xiiRTTI
 {
 public:
   /// \brief The constructor requires all the information about the type that this object represents.
-  xiiRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractFunctionProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)());
+  xiiRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<const xiiAbstractProperty*> properties, xiiArrayPtr<const xiiAbstractFunctionProperty*> functions, xiiArrayPtr<const xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)());
 
   ~xiiRTTI();
 
@@ -72,18 +72,18 @@ public:
   XII_ALWAYS_INLINE xiiRTTIAllocator* GetAllocator() const { return m_pAllocator; } // [tested]
 
   /// \brief Returns the array of properties that this type has. Does NOT include properties from base classes.
-  XII_ALWAYS_INLINE const xiiArrayPtr<xiiAbstractProperty*>& GetProperties() const { return m_Properties; } // [tested]
+  XII_ALWAYS_INLINE xiiArrayPtr<const xiiAbstractProperty* const> GetProperties() const { return m_Properties; } // [tested]
 
-  XII_ALWAYS_INLINE const xiiArrayPtr<xiiAbstractFunctionProperty*>& GetFunctions() const { return m_Functions; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const xiiAbstractFunctionProperty* const> GetFunctions() const { return m_Functions; }
 
-  XII_ALWAYS_INLINE const xiiArrayPtr<xiiPropertyAttribute*>& GetAttributes() const { return m_Attributes; }
+  XII_ALWAYS_INLINE xiiArrayPtr<const xiiPropertyAttribute* const> GetAttributes() const { return m_Attributes; }
 
   /// \brief Returns the first attribute that derives from the given type, or nullptr if nothing is found.
   template <typename Type>
   const Type* GetAttributeByType() const;
 
   /// \brief Returns the list of properties that this type has, including derived properties from all base classes.
-  void GetAllProperties(xiiHybridArray<xiiAbstractProperty*, 32>& out_properties) const; // [tested]
+  void GetAllProperties(xiiDynamicArray<const xiiAbstractProperty*>& out_properties) const; // [tested]
 
   /// \brief Returns the size (in bytes) of an instance of this type.
   XII_ALWAYS_INLINE xiiUInt32 GetTypeSize() const { return m_uiTypeSize; } // [tested]
@@ -107,7 +107,7 @@ public:
   static const xiiRTTI* FindTypeIf(PredicateFunc func);
 
   /// \brief Will iterate over all properties of this type and (optionally) the base types to search for a property with the given name.
-  xiiAbstractProperty* FindPropertyByName(xiiStringView sName, bool bSearchBaseTypes = true) const; // [tested]
+  const xiiAbstractProperty* FindPropertyByName(xiiStringView sName, bool bSearchBaseTypes = true) const; // [tested]
 
   /// \brief Returns the name of the plugin which this type is declared in.
   XII_ALWAYS_INLINE xiiStringView GetPluginName() const { return m_sPluginName; } // [tested]
@@ -175,14 +175,14 @@ public:
   }
 
 protected:
-  xiiStringView                             m_sPluginName;
-  xiiStringView                             m_sTypeName;
-  xiiArrayPtr<xiiAbstractProperty*>         m_Properties;
-  xiiArrayPtr<xiiAbstractFunctionProperty*> m_Functions;
-  xiiArrayPtr<xiiPropertyAttribute*>        m_Attributes;
-  void                                      UpdateType(const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags);
-  void                                      RegisterType();
-  void                                      UnregisterType();
+  xiiStringView                                         m_sPluginName;
+  xiiStringView                                         m_sTypeName;
+  xiiArrayPtr<const xiiAbstractProperty* const>         m_Properties;
+  xiiArrayPtr<const xiiAbstractFunctionProperty* const> m_Functions;
+  xiiArrayPtr<const xiiPropertyAttribute* const>        m_Attributes;
+  void                                                  UpdateType(const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags);
+  void                                                  RegisterType();
+  void                                                  UnregisterType();
 
   void GatherDynamicMessageHandlers();
   void SetupParentHierarchy();

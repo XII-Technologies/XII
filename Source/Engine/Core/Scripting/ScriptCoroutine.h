@@ -167,6 +167,21 @@ protected:
   xiiEnum<xiiScriptCoroutineCreationMode> m_CreationMode;
 };
 
+/// \brief A message handler that creates an instance of the given coroutine type and starts it immediately.
+class XII_CORE_DLL xiiScriptCoroutineMessageHandler : public xiiScriptMessageHandler
+{
+public:
+  xiiScriptCoroutineMessageHandler(xiiStringView sName, const xiiScriptMessageDesc& desc, const xiiSharedPtr<xiiScriptCoroutineRTTI>& pType, xiiScriptCoroutineCreationMode::Enum creationMode);
+  ~xiiScriptCoroutineMessageHandler();
+
+  static void Dispatch(xiiAbstractMessageHandler* pSelf, void* pInstance, xiiMessage& ref_msg);
+
+protected:
+  xiiHashedString                         m_sName;
+  xiiSharedPtr<xiiScriptCoroutineRTTI>    m_pType;
+  xiiEnum<xiiScriptCoroutineCreationMode> m_CreationMode;
+};
+
 /// \brief HashHelper implementation so coroutine handles can be used as key in a hash table. Also needed to store in a variant.
 template <>
 struct xiiHashHelper<xiiScriptCoroutineHandle>

@@ -160,7 +160,7 @@ xiiAddObjectCommand::xiiAddObjectCommand() = default;
 xiiStringView xiiAddObjectCommand::GetType() const
 {
   if (m_pType == nullptr)
-    return "";
+    return {};
 
   return m_pType->GetTypeName();
 }
@@ -249,9 +249,7 @@ xiiStatus xiiPasteObjectsCommand::DoInternal(bool bRedo)
     }
 
     // Remap
-    xiiUuid seed;
-    seed.CreateNewUuid();
-    graph.ReMapNodeGuids(seed);
+    graph.ReMapNodeGuids(xiiUuid::CreateUuid());
 
     xiiDocumentObjectConverterReader reader(&graph, pDocument->GetObjectManager(), xiiDocumentObjectConverterReader::Mode::CreateOnly);
 
@@ -375,8 +373,8 @@ xiiStatus xiiInstantiatePrefabCommand::DoInternal(bool bRedo)
   if (!bRedo)
   {
     // TODO: this is hard-coded, it only works for scene documents !
-    const xiiRTTI* pRootObjectType  = xiiRTTI::FindTypeByName("xiiGameObject");
-    const char*    szParentProperty = "Children";
+    const xiiRTTI* pRootObjectType = xiiRTTI::FindTypeByName("xiiGameObject");
+    xiiStringView  sParentProperty = "Children"_xiisv;
 
     xiiDocumentObject*                         pRootObject = nullptr;
     xiiHybridArray<xiiDocument::PasteInfo, 16> ToBePasted;
@@ -384,7 +382,7 @@ xiiStatus xiiInstantiatePrefabCommand::DoInternal(bool bRedo)
 
     // create root object
     {
-      XII_SUCCEED_OR_RETURN(pDocument->GetObjectManager()->CanAdd(pRootObjectType, pParent, szParentProperty, m_Index));
+      XII_SUCCEED_OR_RETURN(pDocument->GetObjectManager()->CanAdd(pRootObjectType, pParent, sParentProperty, m_Index));
 
       // use the same GUID for the root object ID as the remap GUID, this way the object ID is deterministic and reproducible
       m_CreatedRootObject = m_RemapGuid;
@@ -459,7 +457,7 @@ xiiStatus xiiInstantiatePrefabCommand::DoInternal(bool bRedo)
         reader.ApplyPropertiesToObject(pPrefabRoot, pNewObject);
 
         // attach all prefab nodes to the main group node
-        pDocument->GetObjectManager()->AddObject(pNewObject, pRootObject, szParentProperty, -1);
+        pDocument->GetObjectManager()->AddObject(pNewObject, pRootObject, sParentProperty, -1);
       }
     }
   }
@@ -715,7 +713,7 @@ xiiStatus xiiSetObjectPropertyCommand::DoInternal(bool bRedo)
     m_OldValue = accessor0.GetValue(m_sProperty, m_Index, &res);
     if (res.Failed())
       return res;
-    xiiAbstractProperty* pProp = accessor0.GetType()->FindPropertyByName(m_sProperty);
+    const xiiAbstractProperty* pProp = accessor0.GetType()->FindPropertyByName(m_sProperty);
     if (pProp == nullptr)
       return xiiStatus(xiiFmt("Set Property: The property '{0}' does not exist", m_sProperty));
 
@@ -832,7 +830,7 @@ xiiStatus xiiInsertObjectPropertyCommand::DoInternal(bool bRedo)
     if (m_Index.CanConvertTo<xiiInt32>() && m_Index.ConvertTo<xiiInt32>() == -1)
     {
       xiiIReflectedTypeAccessor& accessor = m_pObject->GetTypeAccessor();
-      m_Index                             = accessor.GetCount(m_sProperty.GetData());
+      m_Index                             = accessor.GetCount(m_sProperty.GetView());
     }
   }
 

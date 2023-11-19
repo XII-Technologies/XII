@@ -1209,7 +1209,6 @@ void xiiQtPropertyContainerWidget::OnCustomElementContextMenu(const QPoint& pt)
 xiiQtGroupBoxBase* xiiQtPropertyContainerWidget::CreateElement(QWidget* pParent)
 {
   auto pBox = new xiiQtCollapsibleGroupBox(pParent);
-  pBox->SetFillColor(palette().window().color());
   return pBox;
 }
 
@@ -1226,7 +1225,7 @@ xiiQtPropertyContainerWidget::Element& xiiQtPropertyContainerWidget::AddElement(
   connect(pSubGroup, &QWidget::customContextMenuRequested, this, &xiiQtPropertyContainerWidget::OnCustomElementContextMenu);
 
   QVBoxLayout* pSubLayout = new QVBoxLayout(nullptr);
-  pSubLayout->setContentsMargins(5, 0, 0, 0);
+  pSubLayout->setContentsMargins(5, 0, 5, 0);
   pSubLayout->setSpacing(1);
   pSubGroup->GetContent()->setLayout(pSubLayout);
 
@@ -1358,8 +1357,8 @@ void xiiQtPropertyContainerWidget::UpdatePropertyMetaState()
   QColor qColor = xiiQtPropertyWidget::SetPaletteBackgroundColor(defaultState.GetBackgroundColor(), m_Pal);
   setPalette(m_Pal);
 
-  const bool bReadOnly = m_pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly) ||
-    (m_pProp->GetAttributeByType<xiiReadOnlyAttribute>() != nullptr);
+  const bool bReadOnly = m_pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly) || (m_pProp->GetAttributeByType<xiiReadOnlyAttribute>() != nullptr);
+
   for (xiiUInt32 i = 0; i < m_Elements.GetCount(); i++)
   {
     Element&                       element    = m_Elements[i];
@@ -1379,7 +1378,7 @@ void xiiQtPropertyContainerWidget::UpdatePropertyMetaState()
       element.m_pSubGroup->SetBoldTitle(!bIsDefault);
 
       // If the fill color is invalid that means no border is drawn and we don't want to change the color then.
-      if (element.m_pSubGroup->GetFillColor().isValid())
+      if (!element.m_pSubGroup->GetFillColor().isValid())
       {
         element.m_pSubGroup->SetFillColor(qColor);
       }
@@ -1573,16 +1572,14 @@ xiiQtPropertyTypeContainerWidget::xiiQtPropertyTypeContainerWidget() = default;
 
 xiiQtPropertyTypeContainerWidget::~xiiQtPropertyTypeContainerWidget()
 {
-  m_pGrid->GetDocument()->GetObjectManager()->m_StructureEvents.RemoveEventHandler(
-    xiiMakeDelegate(&xiiQtPropertyTypeContainerWidget::StructureEventHandler, this));
+  m_pGrid->GetDocument()->GetObjectManager()->m_StructureEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyTypeContainerWidget::StructureEventHandler, this));
   m_pGrid->GetCommandHistory()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtPropertyTypeContainerWidget::CommandHistoryEventHandler, this));
 }
 
 void xiiQtPropertyTypeContainerWidget::OnInit()
 {
   xiiQtPropertyContainerWidget::OnInit();
-  m_pGrid->GetDocument()->GetObjectManager()->m_StructureEvents.AddEventHandler(
-    xiiMakeDelegate(&xiiQtPropertyTypeContainerWidget::StructureEventHandler, this));
+  m_pGrid->GetDocument()->GetObjectManager()->m_StructureEvents.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyTypeContainerWidget::StructureEventHandler, this));
   m_pGrid->GetCommandHistory()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyTypeContainerWidget::CommandHistoryEventHandler, this));
 }
 
@@ -1604,8 +1601,6 @@ void xiiQtPropertyTypeContainerWidget::UpdateElement(xiiUInt32 index)
   }
 
   {
-    xiiStringBuilder tmp;
-
     // To get the correct name we actually need to resolve the selection to the actual objects
     // they are pointing to.
     xiiHybridArray<xiiPropertySelection, 8> ResolvedObjects;
@@ -1622,7 +1617,7 @@ void xiiQtPropertyTypeContainerWidget::UpdateElement(xiiUInt32 index)
     // Label
     {
       xiiStringBuilder sTitle;
-      sTitle.Format("[{0}] - {1}", m_Keys[index].ConvertTo<xiiString>(), xiiTranslate(pCommonType->GetTypeName().GetData(tmp)));
+      sTitle.Format("[{0}] - {1}", m_Keys[index].ConvertTo<xiiString>(), xiiTranslate(pCommonType->GetTypeName()));
 
       if (auto pInDev = pCommonType->GetAttributeByType<xiiInDevelopmentAttribute>())
       {
@@ -1632,16 +1627,34 @@ void xiiQtPropertyTypeContainerWidget::UpdateElement(xiiUInt32 index)
       elem.m_pSubGroup->SetTitle(sTitle);
     }
 
+    xiiColor borderIconColor = xiiColor::ZeroColor();
+
+    if (const xiiColorAttribute* pColorAttrib = pCommonType->GetAttributeByType<xiiColorAttribute>())
+    {
+      borderIconColor = pColorAttrib->GetColor();
+      elem.m_pSubGroup->SetFillColor(xiiToQtColor(pColorAttrib->GetColor()));
+    }
+    else if (const xiiCategoryAttribute* pCatAttrib = pCommonType->GetAttributeByType<xiiCategoryAttribute>())
+    {
+      borderIconColor = xiiColorScheme::GetCategoryColor(pCatAttrib->GetCategory(), xiiColorScheme::CategoryColorUsage::BorderIconColor);
+      elem.m_pSubGroup->SetFillColor(xiiToQtColor(xiiColorScheme::GetCategoryColor(pCatAttrib->GetCategory(), xiiColorScheme::CategoryColorUsage::BorderColor)));
+    }
+    else
+    {
+      const QPalette& pal = palette();
+      elem.m_pSubGroup->SetFillColor(pal.mid().color());
+    }
+
     // Icon
     {
       xiiStringBuilder sIconName;
-      sIconName.Set(":/TypeIcons/", pCommonType->GetTypeName());
-      elem.m_pSubGroup->SetIcon(xiiQtUiServices::GetCachedIconResource(sIconName.GetData()));
+      sIconName.Set(":/TypeIcons/", pCommonType->GetTypeName(), ".svg");
+      elem.m_pSubGroup->SetIcon(xiiQtUiServices::GetCachedIconResource(sIconName.GetData(), borderIconColor));
     }
 
     // help URL
     {
-      QString url = xiiTranslateHelpURL(pCommonType->GetTypeName().GetData(tmp));
+      QString url = xiiMakeQString(xiiTranslateHelpURL(pCommonType->GetTypeName()));
 
       if (!url.isEmpty())
       {
@@ -1736,7 +1749,7 @@ void xiiQtVariantPropertyWidget::OnInit()
     auto type = static_cast<xiiVariantType::Enum>(i);
     if (GetVariantTypeDisplayName(type, sName).Succeeded())
     {
-      m_pTypeList->addItem(xiiTranslate(sName), i);
+      m_pTypeList->addItem(xiiMakeQString(xiiTranslate(sName)), i);
     }
   }
 

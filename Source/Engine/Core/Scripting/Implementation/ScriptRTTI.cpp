@@ -1,9 +1,12 @@
 #include <Core/CorePCH.h>
 
 #include <Core/Scripting/ScriptRTTI.h>
+#include <Foundation/Communication/Message.h>
+#include <Foundation/Memory/CommonAllocators.h>
+#include <Foundation/Reflection/ReflectionUtils.h>
 
 xiiScriptRTTI::xiiScriptRTTI(xiiStringView sName, const xiiRTTI* pParentType, FunctionList&& functions, MessageHandlerList&& messageHandlers) :
-  xiiRTTI(nullptr, pParentType, 0, 1, xiiVariantType::Invalid, xiiTypeFlags::Class, nullptr, xiiArrayPtr<xiiAbstractProperty*>(), xiiArrayPtr<xiiAbstractFunctionProperty*>(), xiiArrayPtr<xiiPropertyAttribute*>(), xiiArrayPtr<xiiAbstractMessageHandler*>(), xiiArrayPtr<xiiMessageSenderInfo>(), nullptr), m_sTypeNameStorage(sName), m_FunctionStorage(std::move(functions)), m_MessageHandlerStorage(std::move(messageHandlers))
+  xiiRTTI(nullptr, pParentType, 0, 1, xiiVariantType::Invalid, xiiTypeFlags::Class, nullptr, xiiArrayPtr<const xiiAbstractProperty*>(), xiiArrayPtr<const xiiAbstractFunctionProperty*>(), xiiArrayPtr<const xiiPropertyAttribute*>(), xiiArrayPtr<xiiAbstractMessageHandler*>(), xiiArrayPtr<xiiMessageSenderInfo>(), nullptr), m_sTypeNameStorage(sName), m_FunctionStorage(std::move(functions)), m_MessageHandlerStorage(std::move(messageHandlers))
 {
   m_sTypeName = m_sTypeNameStorage.GetData();
 
@@ -54,14 +57,53 @@ xiiScriptFunctionProperty::xiiScriptFunctionProperty(xiiStringView sName) :
   xiiAbstractFunctionProperty(nullptr)
 {
   m_sPropertyNameStorage.Assign(sName);
-  m_sPropertyName = m_sPropertyNameStorage.GetData();
+  m_sPropertyName = m_sPropertyNameStorage.GetView();
 }
 
 xiiScriptFunctionProperty::~xiiScriptFunctionProperty() = default;
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiScriptInstance::xiiScriptInstance(xiiReflectedClass& inout_owner, xiiWorld* pWorld) :
-  m_Owner(inout_owner), m_pWorld(pWorld)
+xiiScriptMessageHandler::xiiScriptMessageHandler(const xiiScriptMessageDesc& desc) :
+  m_Properties(desc.m_Properties)
 {
+  xiiUniquePtr<xiiMessage> pMessage = desc.m_pType->GetAllocator()->Allocate<xiiMessage>();
+
+  m_Id       = pMessage->GetId();
+  m_bIsConst = true;
+}
+
+xiiScriptMessageHandler::~xiiScriptMessageHandler() = default;
+
+void xiiScriptMessageHandler::FillMessagePropertyValues(const xiiMessage& msg, xiiDynamicArray<xiiVariant>& out_propertyValues)
+{
+  out_propertyValues.Clear();
+
+  for (auto pProp : m_Properties)
+  {
+    if (pProp->GetCategory() == xiiPropertyCategory::Member)
+    {
+      out_propertyValues.PushBack(xiiReflectionUtils::GetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), &msg));
+    }
+    else
+    {
+      XII_ASSERT_NOT_IMPLEMENTED;
+    }
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+xiiScriptInstance::xiiScriptInstance(xiiReflectedClass& ref_owner, xiiWorld* pWorld) :
+  m_Owner(ref_owner), m_pWorld(pWorld)
+{
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+// static
+xiiAllocatorBase* xiiScriptAllocator::GetAllocator()
+{
+  static xiiProxyAllocator s_ScriptAllocator("Script", xiiFoundation::GetDefaultAllocator());
+  return &s_ScriptAllocator;
 }

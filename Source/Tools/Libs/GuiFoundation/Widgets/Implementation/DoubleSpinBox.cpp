@@ -33,8 +33,8 @@ void xiiQtDoubleSpinBox::SetIntMode(bool bEnable)
 
 void xiiQtDoubleSpinBox::setDisplaySuffix(xiiStringView sSuffix)
 {
-  xiiStringBuilder tmp;
-  m_sSuffix = QString::fromUtf8(sSuffix.GetData(tmp));
+  ;
+  m_sSuffix = xiiMakeQString(sSuffix);
 }
 
 void xiiQtDoubleSpinBox::setDefaultValue(double value)

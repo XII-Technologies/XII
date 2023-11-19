@@ -75,7 +75,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, ObjectMetaData)
     for (xiiUInt32 i = 0; i < num; ++i)
     {
       xiiUuid& uid = obj[i];
-      uid.CreateNewUuid();
+      uid          = xiiUuid::CreateUuid();
 
       if (xiiMath::IsEven(i))
       {

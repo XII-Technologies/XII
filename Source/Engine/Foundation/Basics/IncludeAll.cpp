@@ -25,6 +25,7 @@
 
 #include <Foundation/Communication/Event.h>
 #include <Foundation/Communication/GlobalEvent.h>
+#include <Foundation/Communication/IpcProcessMessageProtocol.h>
 #include <Foundation/Communication/Message.h>
 #include <Foundation/Communication/MessageQueue.h>
 
@@ -124,6 +125,7 @@
 #include <Foundation/Memory/Policies/ProxyAllocation.h>
 
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Profiling/ProfilingUtils.h>
 
 #include <Foundation/Serialization/AbstractObjectGraph.h>
 

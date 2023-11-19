@@ -58,7 +58,7 @@ public:
 
   /// \brief Uses reflection information from VALUE to store all properties that differ from the default value as additional properties for the graph
   /// objects.
-  void AttachMetaDataToAbstractGraph(xiiAbstractObjectGraph& ref_graph) const;
+  void AttachMetaDataToAbstractGraph(xiiAbstractObjectGraph& inout_graph) const;
 
   /// \brief Uses reflection information from VALUE to restore all meta data properties from the graph.
   void RestoreMetaDataFromAbstractGraph(const xiiAbstractObjectGraph& graph);

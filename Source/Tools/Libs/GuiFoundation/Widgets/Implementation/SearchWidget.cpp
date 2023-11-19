@@ -18,7 +18,7 @@ xiiQtSearchWidget::xiiQtSearchWidget(QWidget* pParent)
     m_pClearButton->setAutoDefault(false);
     m_pClearButton->setDefault(false);
     m_pClearButton->setEnabled(false);
-    m_pClearButton->setIcon(QIcon(":/GuiFoundation/Icons/Delete16.png"));
+    m_pClearButton->setIcon(QIcon(":/GuiFoundation/Icons/Delete.svg"));
   }
 
   {
@@ -51,16 +51,16 @@ void xiiQtSearchWidget::setPlaceholderText(const QString& sText)
   m_pLineEdit->setPlaceholderText(sText);
 }
 
+void xiiQtSearchWidget::selectAll()
+{
+  QTimer::singleShot(0, m_pLineEdit, &QLineEdit::selectAll);
+}
+
 void xiiQtSearchWidget::onLineEditTextChanged(const QString& text)
 {
   m_pClearButton->setEnabled(!text.isEmpty());
 
   Q_EMIT textChanged(text);
-}
-
-void xiiQtSearchWidget::selectAll()
-{
-  QTimer::singleShot(0, m_pLineEdit, &QLineEdit::selectAll);
 }
 
 void xiiQtSearchWidget::onClearButtonClicked(bool checked)

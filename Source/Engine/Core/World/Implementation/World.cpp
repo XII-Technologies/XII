@@ -38,6 +38,15 @@ static xiiGameObjectHandle DefaultGameObjectReferenceResolver(const void* pData,
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiWorld, xiiNoBase, 1, xiiRTTINoAllocator)
+{
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_SCRIPT_FUNCTION_PROPERTY(DeleteObjectDelayed, In, "GameObject", In, "DeleteEmptyParents")->AddAttributes(new xiiFunctionArgumentAttributes(1, new xiiDefaultValueAttribute(true))),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_TryGetObjectWithGlobalKey, In, "GlobalKey")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(Reflection_GetClock)->AddFlags(xiiPropertyFlags::Const),
+  }
+  XII_END_FUNCTIONS;
+}
 XII_END_STATIC_REFLECTED_TYPE;
 // clang-format on
 
@@ -609,6 +618,19 @@ const xiiWorldModule* xiiWorld::GetModule(const xiiRTTI* pRtti) const
   }
 
   return nullptr;
+}
+
+xiiGameObject* xiiWorld::Reflection_TryGetObjectWithGlobalKey(xiiTempHashedString sGlobalKey)
+{
+  xiiGameObject* pObject = nullptr;
+  bool           res     = TryGetObjectWithGlobalKey(sGlobalKey, pObject);
+  XII_IGNORE_UNUSED(res);
+  return pObject;
+}
+
+xiiClock* xiiWorld::Reflection_GetClock()
+{
+  return &m_Data.m_Clock;
 }
 
 void xiiWorld::SetParent(xiiGameObject* pObject, xiiGameObject* pNewParent, xiiGameObject::TransformPreservation preserve)
@@ -1445,7 +1467,7 @@ void xiiWorld::ProcessResourceReloadFunctions()
     {
       for (auto& data : m_Data.m_TempReloadFunctions)
       {
-        XII_VERIFY(TryGetComponent(data.m_hComponent, context.m_pComponent), "Reload function called on dead component");
+        XII_VERIFY(data.m_hComponent.IsInvalidated() || TryGetComponent(data.m_hComponent, context.m_pComponent), "Reload function called on dead component");
         context.m_pUserData = data.m_pUserData;
 
         data.m_Func(context);

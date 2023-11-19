@@ -41,7 +41,7 @@ xiiMinWindows::HANDLE xiiMiniDumpUtils::GetProcessHandleWithNecessaryRights(xiiU
   return hProcess;
 }
 
-xiiStatus xiiMiniDumpUtils::WriteProcessMiniDump(xiiStringView sDumpFile, xiiUInt32 uiProcessID, xiiMinWindows::HANDLE pProcess, struct _EXCEPTION_POINTERS* pExceptionInfo)
+xiiStatus xiiMiniDumpUtils::WriteProcessMiniDump(xiiStringView sDumpFile, xiiUInt32 uiProcessID, xiiMinWindows::HANDLE hProcess, struct _EXCEPTION_POINTERS* pExceptionInfo)
 {
   HMODULE hDLL = ::LoadLibraryA("dbghelp.dll");
 
@@ -87,7 +87,7 @@ xiiStatus xiiMiniDumpUtils::WriteProcessMiniDump(xiiStringView sDumpFile, xiiUIn
   exceptionParam.ExceptionPointers = pExceptionInfo;
   exceptionParam.ClientPointers    = TRUE;
 
-  if (MiniDumpWriteDumpFunc(pProcess, uiProcessID, hFile, (MINIDUMP_TYPE)dumpType, pExceptionInfo != nullptr ? &exceptionParam : nullptr, nullptr, nullptr) == FALSE)
+  if (MiniDumpWriteDumpFunc(hProcess, uiProcessID, hFile, (MINIDUMP_TYPE)dumpType, pExceptionInfo != nullptr ? &exceptionParam : nullptr, nullptr, nullptr) == FALSE)
   {
     return xiiStatus(xiiFmt("Writing dump file failed: '{}'.", xiiArgErrorCode(GetLastError())));
   }
@@ -100,9 +100,9 @@ xiiStatus xiiMiniDumpUtils::WriteOwnProcessMiniDump(xiiStringView sDumpFile, str
   return WriteProcessMiniDump(sDumpFile, GetCurrentProcessId(), GetCurrentProcess(), pExceptionInfo);
 }
 
-xiiStatus xiiMiniDumpUtils::WriteExternalProcessMiniDump(xiiStringView sDumpFile, xiiUInt32 uiProcessID, xiiMinWindows::HANDLE pProcess)
+xiiStatus xiiMiniDumpUtils::WriteExternalProcessMiniDump(xiiStringView sDumpFile, xiiUInt32 uiProcessID, xiiMinWindows::HANDLE hProcess)
 {
-  return WriteProcessMiniDump(sDumpFile, uiProcessID, pProcess, nullptr);
+  return WriteProcessMiniDump(sDumpFile, uiProcessID, hProcess, nullptr);
 }
 
 #endif

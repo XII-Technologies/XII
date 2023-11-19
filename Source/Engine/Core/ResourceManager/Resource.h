@@ -219,7 +219,7 @@ private:
   xiiUInt64          m_uiUniqueIDHash          = 0;
   xiiUInt32          m_uiResourceChangeCounter = 0;
   xiiAtomicInteger32 m_iReferenceCount         = 0;
-  //xiiAtomicInteger32 m_iLockCount = 0; // currently not used
+  // xiiAtomicInteger32 m_iLockCount = 0; // currently not used
   xiiString                     m_sUniqueID;
   xiiString                     m_sResourceDescription;
   MemoryUsage                   m_MemoryUsage;
@@ -274,9 +274,18 @@ private:                                                                        
   /* These functions are needed to access the static members, such that they get DLL exported, otherwise you get unresolved symbols */         \
   static void                                SetResourceTypeLoadingFallback(const xiiTypedResourceHandle<SELF>& hResource);                    \
   static void                                SetResourceTypeMissingFallback(const xiiTypedResourceHandle<SELF>& hResource);                    \
-  static const xiiTypedResourceHandle<SELF>& GetResourceTypeLoadingFallback() { return s_TypeLoadingFallback; }                                \
-  static const xiiTypedResourceHandle<SELF>& GetResourceTypeMissingFallback() { return s_TypeMissingFallback; }                                \
-  virtual bool                               HasResourceTypeLoadingFallback() const override { return s_TypeLoadingFallback.IsValid(); }       \
+  static const xiiTypedResourceHandle<SELF>& GetResourceTypeLoadingFallback()                                                                  \
+  {                                                                                                                                            \
+    return s_TypeLoadingFallback;                                                                                                              \
+  }                                                                                                                                            \
+  static const xiiTypedResourceHandle<SELF>& GetResourceTypeMissingFallback()                                                                  \
+  {                                                                                                                                            \
+    return s_TypeMissingFallback;                                                                                                              \
+  }                                                                                                                                            \
+  virtual bool HasResourceTypeLoadingFallback() const override                                                                                 \
+  {                                                                                                                                            \
+    return s_TypeLoadingFallback.IsValid();                                                                                                    \
+  }                                                                                                                                            \
                                                                                                                                                \
   static xiiTypedResourceHandle<SELF> s_TypeLoadingFallback;                                                                                   \
   static xiiTypedResourceHandle<SELF> s_TypeMissingFallback;                                                                                   \
@@ -285,40 +294,41 @@ private:                                                                        
 
 
 
-#define XII_RESOURCE_IMPLEMENT_COMMON_CODE(SELF)                                             \
-  xiiTypedResourceHandle<SELF> SELF::s_TypeLoadingFallback;                                  \
-  xiiTypedResourceHandle<SELF> SELF::s_TypeMissingFallback;                                  \
-                                                                                             \
-  void SELF::CleanupDynamicPluginReferences()                                                \
-  {                                                                                          \
-    s_TypeLoadingFallback.Invalidate();                                                      \
-    s_TypeMissingFallback.Invalidate();                                                      \
-    xiiResourceManager::ClearResourceCleanupCallback(&SELF::CleanupDynamicPluginReferences); \
-  }                                                                                          \
-                                                                                             \
-  xiiTypedResourceHandle<SELF> SELF::GetResourceHandle() const                               \
-  {                                                                                          \
-    xiiTypedResourceHandle<SELF> handle((SELF*)this);                                        \
-    return handle;                                                                           \
-  }                                                                                          \
-                                                                                             \
-  void SELF::SetLoadingFallbackResource(const xiiTypedResourceHandle<SELF>& hResource)       \
-  {                                                                                          \
-    m_hLoadingFallback = hResource;                                                          \
-    SetHasLoadingFallback(m_hLoadingFallback.IsValid());                                     \
-  }                                                                                          \
-                                                                                             \
-  void SELF::SetResourceTypeLoadingFallback(const xiiTypedResourceHandle<SELF>& hResource)   \
-  {                                                                                          \
-    s_TypeLoadingFallback = hResource;                                                       \
-    XII_RESOURCE_VALIDATE_FALLBACK(SELF);                                                    \
-    xiiResourceManager::AddResourceCleanupCallback(&SELF::CleanupDynamicPluginReferences);   \
-  }                                                                                          \
-  void SELF::SetResourceTypeMissingFallback(const xiiTypedResourceHandle<SELF>& hResource)   \
-  {                                                                                          \
-    s_TypeMissingFallback = hResource;                                                       \
-    XII_RESOURCE_VALIDATE_FALLBACK(SELF);                                                    \
-    xiiResourceManager::AddResourceCleanupCallback(&SELF::CleanupDynamicPluginReferences);   \
+#define XII_RESOURCE_IMPLEMENT_COMMON_CODE(SELF)                                                                         \
+  xiiTypedResourceHandle<SELF> SELF::s_TypeLoadingFallback;                                                              \
+  xiiTypedResourceHandle<SELF> SELF::s_TypeMissingFallback;                                                              \
+                                                                                                                         \
+  void SELF::CleanupDynamicPluginReferences()                                                                            \
+  {                                                                                                                      \
+    s_TypeLoadingFallback.Invalidate();                                                                                  \
+    s_TypeMissingFallback.Invalidate();                                                                                  \
+    xiiResourceManager::ClearResourceCleanupCallback(&SELF::CleanupDynamicPluginReferences);                             \
+  }                                                                                                                      \
+                                                                                                                         \
+  xiiTypedResourceHandle<SELF> SELF::GetResourceHandle() const                                                           \
+  {                                                                                                                      \
+    XII_ASSERT_DEV(GetReferenceCount() > 0, "This resource is being deallocated, do not store a handle to it anymore!"); \
+    xiiTypedResourceHandle<SELF> handle((SELF*)this);                                                                    \
+    return handle;                                                                                                       \
+  }                                                                                                                      \
+                                                                                                                         \
+  void SELF::SetLoadingFallbackResource(const xiiTypedResourceHandle<SELF>& hResource)                                   \
+  {                                                                                                                      \
+    m_hLoadingFallback = hResource;                                                                                      \
+    SetHasLoadingFallback(m_hLoadingFallback.IsValid());                                                                 \
+  }                                                                                                                      \
+                                                                                                                         \
+  void SELF::SetResourceTypeLoadingFallback(const xiiTypedResourceHandle<SELF>& hResource)                               \
+  {                                                                                                                      \
+    s_TypeLoadingFallback = hResource;                                                                                   \
+    XII_RESOURCE_VALIDATE_FALLBACK(SELF);                                                                                \
+    xiiResourceManager::AddResourceCleanupCallback(&SELF::CleanupDynamicPluginReferences);                               \
+  }                                                                                                                      \
+  void SELF::SetResourceTypeMissingFallback(const xiiTypedResourceHandle<SELF>& hResource)                               \
+  {                                                                                                                      \
+    s_TypeMissingFallback = hResource;                                                                                   \
+    XII_RESOURCE_VALIDATE_FALLBACK(SELF);                                                                                \
+    xiiResourceManager::AddResourceCleanupCallback(&SELF::CleanupDynamicPluginReferences);                               \
   }
 
 

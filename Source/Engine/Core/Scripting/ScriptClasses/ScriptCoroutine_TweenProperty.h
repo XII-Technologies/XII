@@ -7,15 +7,15 @@
 class XII_CORE_DLL xiiScriptCoroutine_TweenProperty : public xiiTypedScriptCoroutine<xiiScriptCoroutine_TweenProperty, xiiComponentHandle, xiiStringView, xiiVariant, xiiTime, xiiEnum<xiiEasingFunction>>
 {
 public:
-  void           Start(xiiComponentHandle hComponent, xiiStringView sPropertyName, xiiVariant targetValue, xiiTime duration, xiiEnum<xiiEasingFunction> easingFunction);
+  void           Start(xiiComponentHandle hComponent, xiiStringView sPropertyName, xiiVariant targetValue, xiiTime duration, xiiEnum<xiiEasingFunction> easing);
   virtual Result Update(xiiTime deltaTimeSinceLastUpdate) override;
 
 private:
-  xiiAbstractMemberProperty* m_pProperty = nullptr;
-  xiiComponentHandle         m_hComponent;
-  xiiVariant                 m_SourceValue;
-  xiiVariant                 m_TargetValue;
-  xiiEnum<xiiEasingFunction> m_EasingFunction;
+  const xiiAbstractMemberProperty* m_pProperty = nullptr;
+  xiiComponentHandle               m_hComponent;
+  xiiVariant                       m_SourceValue;
+  xiiVariant                       m_TargetValue;
+  xiiEnum<xiiEasingFunction>       m_Easing;
 
   xiiTime m_Duration;
   xiiTime m_TimePassed;

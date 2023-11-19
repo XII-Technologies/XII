@@ -255,7 +255,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
       XII_TEST_STRING(Props[4]->GetPropertyName(), "Array");
       XII_TEST_STRING(Props[5]->GetPropertyName(), "Variant");
 
-      xiiHybridArray<xiiAbstractProperty*, 32> AllProps;
+      xiiHybridArray<const xiiAbstractProperty*, 32> AllProps;
       pType->GetAllProperties(AllProps);
 
       XII_TEST_INT(AllProps.GetCount(), 9);
@@ -326,16 +326,16 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
           void* pInstance = pRtti->GetAllocator()->Allocate<void>();
           XII_TEST_BOOL(pInstance != nullptr);
 
-          xiiAbstractProperty* pProp = pRtti->FindPropertyByName("Float2");
+          const xiiAbstractProperty* pProp = pRtti->FindPropertyByName("Float2");
 
           XII_TEST_BOOL(pProp != nullptr);
 
           XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Member);
-          xiiAbstractMemberProperty* pAbsMember = (xiiAbstractMemberProperty*)pProp;
+          auto pAbsMember = static_cast<const xiiAbstractMemberProperty*>(pProp);
 
           XII_TEST_BOOL(pAbsMember->GetSpecificType() == xiiGetStaticRTTI<float>());
 
-          xiiTypedMemberProperty<float>* pMember = (xiiTypedMemberProperty<float>*)pAbsMember;
+          auto pMember = static_cast<const xiiTypedMemberProperty<float>*>(pAbsMember);
 
           XII_TEST_FLOAT(pMember->GetValue(pInstance), 42.0f, 0);
           pMember->SetValue(pInstance, 43.0f);
@@ -449,13 +449,13 @@ XII_CREATE_SIMPLE_TEST(Reflection, Hierarchies)
 template <typename T, typename T2>
 void TestMemberProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti, xiiBitflags<xiiPropertyFlags> expectedFlags, T2 expectedValue, T2 testValue, bool bTestDefaultValue = true)
 {
-  xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
+  const xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
   XII_TEST_BOOL(pProp != nullptr);
 
   XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Member);
 
   XII_TEST_BOOL(pProp->GetSpecificType() == xiiGetStaticRTTI<T>());
-  xiiTypedMemberProperty<T>* pMember = (xiiTypedMemberProperty<T>*)pProp;
+  auto pMember = static_cast<const xiiTypedMemberProperty<T>*>(pProp);
 
   XII_TEST_INT(pMember->GetFlags().GetValue(), expectedFlags.GetValue());
 
@@ -537,18 +537,18 @@ XII_CREATE_SIMPLE_TEST(Reflection, MemberProperties)
 
     {
       TestMemberProperty<xiiStringView>("Text", &Instance, pRtti, xiiPropertyFlags::StandardType, xiiString("Legen"), xiiString("dary"));
-      xiiAbstractProperty* pProp = pRtti->FindPropertyByName("SubVector", false);
+      const xiiAbstractProperty* pProp = pRtti->FindPropertyByName("SubVector", false);
       XII_TEST_BOOL(pProp == nullptr);
     }
 
     {
       TestMemberProperty<xiiVec3>("SubVector", &Instance, pRtti, xiiPropertyFlags::StandardType | xiiPropertyFlags::ReadOnly, xiiVec3(3, 4, 5), xiiVec3(3, 4, 5));
-      xiiAbstractProperty* pProp = pRtti->FindPropertyByName("SubStruct", false);
+      const xiiAbstractProperty* pProp = pRtti->FindPropertyByName("SubStruct", false);
       XII_TEST_BOOL(pProp == nullptr);
     }
 
     {
-      xiiAbstractProperty* pProp = pRtti->FindPropertyByName("SubStruct");
+      const xiiAbstractProperty* pProp = pRtti->FindPropertyByName("SubStruct");
       XII_TEST_BOOL(pProp != nullptr);
 
       XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Member);
@@ -581,8 +581,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Enum)
     for (auto pProp : props)
     {
       XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Constant);
-      xiiAbstractConstantProperty* pConstantProp = static_cast<xiiAbstractConstantProperty*>(pProp);
-      XII_TEST_BOOL(pConstantProp->GetSpecificType() == xiiGetStaticRTTI<xiiInt8>());
+      XII_TEST_BOOL(pProp->GetSpecificType() == xiiGetStaticRTTI<xiiInt8>());
     }
     XII_TEST_INT(xiiExampleEnum::Default, xiiReflectionUtils::DefaultEnumerationValue(pEnumRTTI));
 
@@ -591,10 +590,10 @@ XII_CREATE_SIMPLE_TEST(Reflection, Enum)
     XII_TEST_STRING(props[2]->GetPropertyName(), "xiiExampleEnum::Value2");
     XII_TEST_STRING(props[3]->GetPropertyName(), "xiiExampleEnum::Value3");
 
-    auto pTypedConstantProp0 = static_cast<xiiTypedConstantProperty<xiiInt8>*>(props[0]);
-    auto pTypedConstantProp1 = static_cast<xiiTypedConstantProperty<xiiInt8>*>(props[1]);
-    auto pTypedConstantProp2 = static_cast<xiiTypedConstantProperty<xiiInt8>*>(props[2]);
-    auto pTypedConstantProp3 = static_cast<xiiTypedConstantProperty<xiiInt8>*>(props[3]);
+    auto pTypedConstantProp0 = static_cast<const xiiTypedConstantProperty<xiiInt8>*>(props[0]);
+    auto pTypedConstantProp1 = static_cast<const xiiTypedConstantProperty<xiiInt8>*>(props[1]);
+    auto pTypedConstantProp2 = static_cast<const xiiTypedConstantProperty<xiiInt8>*>(props[2]);
+    auto pTypedConstantProp3 = static_cast<const xiiTypedConstantProperty<xiiInt8>*>(props[3]);
     XII_TEST_INT(pTypedConstantProp0->GetValue(), xiiExampleEnum::Default);
     XII_TEST_INT(pTypedConstantProp1->GetValue(), xiiExampleEnum::Value1);
     XII_TEST_INT(pTypedConstantProp2->GetValue(), xiiExampleEnum::Value2);
@@ -610,17 +609,16 @@ XII_CREATE_SIMPLE_TEST(Reflection, Enum)
     for (auto pProp : props)
     {
       XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Member);
-      xiiAbstractMemberProperty* pMemberProp = static_cast<xiiAbstractMemberProperty*>(pProp);
-      XII_TEST_INT(pMemberProp->GetFlags().GetValue(), xiiPropertyFlags::IsEnum);
-      XII_TEST_BOOL(pMemberProp->GetSpecificType() == pEnumRTTI);
-      xiiAbstractEnumerationProperty* pEnumProp = static_cast<xiiAbstractEnumerationProperty*>(pProp);
+      XII_TEST_INT(pProp->GetFlags().GetValue(), xiiPropertyFlags::IsEnum);
+      XII_TEST_BOOL(pProp->GetSpecificType() == pEnumRTTI);
+      auto pEnumProp = static_cast<const xiiAbstractEnumerationProperty*>(pProp);
       XII_TEST_BOOL(pEnumProp->GetValue(&data) == xiiExampleEnum::Value1);
 
       const xiiRTTI* pEnumPropertyRTTI = pEnumProp->GetSpecificType();
       // Set and get all valid enum values.
       for (auto pProp2 : pEnumPropertyRTTI->GetProperties().GetSubArray(1))
       {
-        xiiTypedConstantProperty<xiiInt8>* pConstantProp = static_cast<xiiTypedConstantProperty<xiiInt8>*>(pProp2);
+        auto pConstantProp = static_cast<const xiiTypedConstantProperty<xiiInt8>*>(pProp2);
         pEnumProp->SetValue(&data, pConstantProp->GetValue());
         XII_TEST_INT(pEnumProp->GetValue(&data), pConstantProp->GetValue());
 
@@ -667,6 +665,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Enum)
   }
 }
 
+
 XII_CREATE_SIMPLE_TEST(Reflection, Bitflags)
 {
   const xiiRTTI* pBitflagsRTTI = xiiGetStaticRTTI<xiiExampleBitflags>();
@@ -690,10 +689,10 @@ XII_CREATE_SIMPLE_TEST(Reflection, Bitflags)
     XII_TEST_STRING(props[2]->GetPropertyName(), "xiiExampleBitflags::Value2");
     XII_TEST_STRING(props[3]->GetPropertyName(), "xiiExampleBitflags::Value3");
 
-    auto pTypedConstantProp0 = static_cast<xiiTypedConstantProperty<xiiUInt64>*>(props[0]);
-    auto pTypedConstantProp1 = static_cast<xiiTypedConstantProperty<xiiUInt64>*>(props[1]);
-    auto pTypedConstantProp2 = static_cast<xiiTypedConstantProperty<xiiUInt64>*>(props[2]);
-    auto pTypedConstantProp3 = static_cast<xiiTypedConstantProperty<xiiUInt64>*>(props[3]);
+    auto pTypedConstantProp0 = static_cast<const xiiTypedConstantProperty<xiiUInt64>*>(props[0]);
+    auto pTypedConstantProp1 = static_cast<const xiiTypedConstantProperty<xiiUInt64>*>(props[1]);
+    auto pTypedConstantProp2 = static_cast<const xiiTypedConstantProperty<xiiUInt64>*>(props[2]);
+    auto pTypedConstantProp3 = static_cast<const xiiTypedConstantProperty<xiiUInt64>*>(props[3]);
     XII_TEST_BOOL(pTypedConstantProp0->GetValue() == xiiExampleBitflags::Default);
     XII_TEST_BOOL(pTypedConstantProp1->GetValue() == xiiExampleBitflags::Value1);
     XII_TEST_BOOL(pTypedConstantProp2->GetValue() == xiiExampleBitflags::Value2);
@@ -711,15 +710,17 @@ XII_CREATE_SIMPLE_TEST(Reflection, Bitflags)
       XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Member);
       XII_TEST_BOOL(pProp->GetSpecificType() == pBitflagsRTTI);
       XII_TEST_INT(pProp->GetFlags().GetValue(), xiiPropertyFlags::Bitflags);
-      xiiAbstractEnumerationProperty* pBitflagsProp = static_cast<xiiAbstractEnumerationProperty*>(pProp);
+      auto pBitflagsProp = static_cast<const xiiAbstractEnumerationProperty*>(pProp);
       XII_TEST_BOOL(pBitflagsProp->GetValue(&data) == xiiExampleBitflags::Value1);
 
       const xiiRTTI* pBitflagsPropertyRTTI = pBitflagsProp->GetSpecificType();
 
       // Set and get all valid bitflags values. (skip default value)
-      xiiUInt64 constants[] = {static_cast<xiiTypedConstantProperty<xiiUInt64>*>(pBitflagsPropertyRTTI->GetProperties()[1])->GetValue(),
-                               static_cast<xiiTypedConstantProperty<xiiUInt64>*>(pBitflagsPropertyRTTI->GetProperties()[2])->GetValue(),
-                               static_cast<xiiTypedConstantProperty<xiiUInt64>*>(pBitflagsPropertyRTTI->GetProperties()[3])->GetValue()};
+      xiiUInt64 constants[] = {
+        static_cast<const xiiTypedConstantProperty<xiiUInt64>*>(pBitflagsPropertyRTTI->GetProperties()[1])->GetValue(),
+        static_cast<const xiiTypedConstantProperty<xiiUInt64>*>(pBitflagsPropertyRTTI->GetProperties()[2])->GetValue(),
+        static_cast<const xiiTypedConstantProperty<xiiUInt64>*>(pBitflagsPropertyRTTI->GetProperties()[3])->GetValue(),
+      };
 
       const char* stringValues[] = {"",
                                     "xiiExampleBitflags::Value1",
@@ -789,7 +790,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Bitflags)
 
 
 template <typename T>
-void TestArrayPropertyVariant(xiiAbstractArrayProperty* pArrayProp, void* pObject, const xiiRTTI* pRtti, T& value)
+void TestArrayPropertyVariant(const xiiAbstractArrayProperty* pArrayProp, void* pObject, const xiiRTTI* pRtti, T& value)
 {
   T temp = {};
 
@@ -810,23 +811,23 @@ void TestArrayPropertyVariant(xiiAbstractArrayProperty* pArrayProp, void* pObjec
 }
 
 template <>
-void TestArrayPropertyVariant<xiiTestArrays>(xiiAbstractArrayProperty* pArrayProp, void* pObject, const xiiRTTI* pRtti, xiiTestArrays& value)
+void TestArrayPropertyVariant<xiiTestArrays>(const xiiAbstractArrayProperty* pArrayProp, void* pObject, const xiiRTTI* pRtti, xiiTestArrays& value)
 {
 }
 
 template <>
-void TestArrayPropertyVariant<xiiTestStruct3>(xiiAbstractArrayProperty* pArrayProp, void* pObject, const xiiRTTI* pRtti, xiiTestStruct3& value)
+void TestArrayPropertyVariant<xiiTestStruct3>(const xiiAbstractArrayProperty* pArrayProp, void* pObject, const xiiRTTI* pRtti, xiiTestStruct3& value)
 {
 }
 
 template <typename T>
 void TestArrayProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti, T& value)
 {
-  xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
+  const xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
   XII_TEST_BOOL(pProp != nullptr);
   XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Array);
-  xiiAbstractArrayProperty* pArrayProp = static_cast<xiiAbstractArrayProperty*>(pProp);
-  const xiiRTTI*            pElemRtti  = pProp->GetSpecificType();
+  auto           pArrayProp = static_cast<const xiiAbstractArrayProperty*>(pProp);
+  const xiiRTTI* pElemRtti  = pProp->GetSpecificType();
   XII_TEST_BOOL(pElemRtti == xiiGetStaticRTTI<T>());
   if (!pArrayProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
   {
@@ -995,13 +996,13 @@ XII_CREATE_SIMPLE_TEST(Reflection, Arrays)
 template <typename T>
 void TestSetProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti, T& ref_value1, T& ref_value2)
 {
-  xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
+  const xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
   if (!XII_TEST_BOOL(pProp != nullptr))
     return;
 
   XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Set);
-  xiiAbstractSetProperty* pSetProp  = static_cast<xiiAbstractSetProperty*>(pProp);
-  const xiiRTTI*          pElemRtti = pProp->GetSpecificType();
+  auto           pSetProp  = static_cast<const xiiAbstractSetProperty*>(pProp);
+  const xiiRTTI* pElemRtti = pProp->GetSpecificType();
   XII_TEST_BOOL(pElemRtti == xiiGetStaticRTTI<T>());
 
   if (!pSetProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
@@ -1137,11 +1138,11 @@ XII_CREATE_SIMPLE_TEST(Reflection, Sets)
 template <typename T>
 void TestMapProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti, T& ref_value1, T& ref_value2)
 {
-  xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
+  const xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
   XII_TEST_BOOL(pProp != nullptr);
   XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Map);
-  xiiAbstractMapProperty* pMapProp  = static_cast<xiiAbstractMapProperty*>(pProp);
-  const xiiRTTI*          pElemRtti = pProp->GetSpecificType();
+  auto           pMapProp  = static_cast<const xiiAbstractMapProperty*>(pProp);
+  const xiiRTTI* pElemRtti = pProp->GetSpecificType();
   XII_TEST_BOOL(pElemRtti == xiiGetStaticRTTI<T>());
   XII_TEST_BOOL(xiiReflectionUtils::IsBasicType(pElemRtti) || pElemRtti == xiiGetStaticRTTI<xiiVariant>() || pElemRtti == xiiGetStaticRTTI<xiiVarianceTypeAngle>() || pElemRtti == xiiGetStaticRTTI<xiiVarianceTypeAngled>());
 
@@ -1252,10 +1253,10 @@ XII_CREATE_SIMPLE_TEST(Reflection, Maps)
 template <typename T>
 void TestPointerMemberProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti, xiiBitflags<xiiPropertyFlags> expectedFlags, T* pExpectedValue)
 {
-  xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
+  const xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
   XII_TEST_BOOL(pProp != nullptr);
   XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Member);
-  xiiAbstractMemberProperty* pAbsMember = (xiiAbstractMemberProperty*)pProp;
+  auto pAbsMember = static_cast<const xiiAbstractMemberProperty*>(pProp);
   XII_TEST_INT(pProp->GetFlags().GetValue(), expectedFlags.GetValue());
   XII_TEST_BOOL(pProp->GetSpecificType() == xiiGetStaticRTTI<T>());
   void* pData = nullptr;
@@ -1293,7 +1294,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Pointer)
   {
     xiiTestPtr containers;
     {
-      xiiAbstractProperty* pProp = pRtti->FindPropertyByName("ConstCharPtr");
+      const xiiAbstractProperty* pProp = pRtti->FindPropertyByName("ConstCharPtr");
       XII_TEST_BOOL(pProp != nullptr);
       XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Member);
       XII_TEST_INT(pProp->GetFlags().GetValue(), (xiiPropertyFlags::StandardType | xiiPropertyFlags::Const).GetValue());

@@ -4,8 +4,8 @@
 
 #include <Foundation/Basics.h>
 #include <Foundation/Communication/Event.h>
-#include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/IO/Stream.h>
+#include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Time/Time.h>
 
 class xiiTimeStepSmoothing;
@@ -195,6 +195,6 @@ public:
   virtual void Reset(const xiiClock* pClock) = 0;
 };
 
-
+XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiClock);
 
 #include <Foundation/Time/Implementation/Clock_inl.h>

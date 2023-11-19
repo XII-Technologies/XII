@@ -2,8 +2,10 @@
 
 #include <Foundation/Basics.h>
 #include <Foundation/Math/Color8UNorm.h>
+#include <Foundation/Strings/String.h>
 #include <Foundation/Types/Uuid.h>
 #include <QColor>
+#include <QDataStream>
 #include <QMetaType>
 #include <ToolsFoundation/ToolsFoundationDLL.h>
 
@@ -55,4 +57,59 @@ XII_ALWAYS_INLINE QColor xiiToQtColor(const xiiColorGammaUB& c)
 XII_ALWAYS_INLINE xiiColorGammaUB qtToXIIColor(const QColor& c)
 {
   return xiiColorGammaUB(c.red(), c.green(), c.blue(), c.alpha());
+}
+
+XII_ALWAYS_INLINE xiiString qtToXIIString(const QString& sString)
+{
+  QByteArray data = sString.toUtf8();
+  return xiiString(xiiStringView(data.data(), data.size()));
+}
+
+XII_ALWAYS_INLINE QString xiiMakeQString(xiiStringView sString)
+{
+  return QString::fromUtf8(sString.GetStartPointer(), sString.GetElementCount());
+}
+
+template <typename T>
+void operator>>(QDataStream& inout_stream, T*& rhs)
+{
+  void* p   = nullptr;
+  uint  len = sizeof(void*);
+  inout_stream.readRawData((char*)&p, len);
+  rhs = (T*)p;
+}
+
+
+template <typename T>
+void operator<<(QDataStream& inout_stream, T* rhs)
+{
+  inout_stream.writeRawData((const char*)&rhs, sizeof(void*));
+}
+
+template <typename T>
+void operator>>(QDataStream& inout_stream, xiiDynamicArray<T>& rhs)
+{
+  xiiUInt32 uiIndices = 0;
+  inout_stream >> uiIndices;
+  rhs.Clear();
+  rhs.Reserve(uiIndices);
+
+  for (int i = 0; i < uiIndices; ++i)
+  {
+    T obj = {};
+    inout_stream >> obj;
+    rhs.PushBack(obj);
+  }
+}
+
+template <typename T>
+void operator<<(QDataStream& inout_stream, xiiDynamicArray<T>& rhs)
+{
+  xiiUInt32 iIndices = rhs.GetCount();
+  inout_stream << iIndices;
+
+  for (xiiUInt32 i = 0; i < iIndices; ++i)
+  {
+    inout_stream << rhs[i];
+  }
 }

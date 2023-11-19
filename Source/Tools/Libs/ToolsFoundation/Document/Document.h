@@ -127,9 +127,10 @@ public:
   {
     if (m_pTypeDescriptor == nullptr)
     {
-      // If this is a document type descriptor, use the RTTI type name as a fallback.
+      // if this is a document without a type descriptor, use the RTTI type name as a fallback
       return GetDynamicRTTI()->GetTypeName();
     }
+
     return m_pTypeDescriptor->m_sDocumentTypeName;
   }
 
@@ -231,7 +232,7 @@ public:
   virtual xiiStatus CreatePrefabDocumentFromSelection(xiiStringView sFile, const xiiRTTI* pRootType, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, xiiDelegate<void(xiiDocumentObject*)> adjustNewNodesCB = {}, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});
   virtual xiiStatus CreatePrefabDocument(xiiStringView sFile, xiiArrayPtr<const xiiDocumentObject*> rootObjects, const xiiUuid& invPrefabSeed, xiiUuid& out_newDocumentGuid, xiiDelegate<void(xiiAbstractObjectNode*)> adjustGraphNodeCB = {}, bool bKeepOpen = false, xiiDelegate<void(xiiAbstractObjectGraph& graph, xiiDynamicArray<xiiAbstractObjectNode*>& graphRootNodes)> finalizeGraphCB = {});
 
-  // Returns new guid of reverted object.
+  // Returns new guid of replaced object.
   virtual xiiUuid ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiStringView sPrefabFile, const xiiUuid& prefabAsset, const xiiUuid& prefabSeed, bool bEnginePrefab);
   // Returns new guid of reverted object.
   virtual xiiUuid RevertPrefab(const xiiDocumentObject* pObject);

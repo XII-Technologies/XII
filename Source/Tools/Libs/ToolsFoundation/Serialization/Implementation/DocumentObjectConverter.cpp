@@ -14,7 +14,7 @@ xiiAbstractObjectNode* xiiDocumentObjectConverterWriter::AddObjectToGraph(const 
   {
     auto itCur = m_QueuedObjects.GetIterator();
 
-    AddSubObjectToGraph(itCur.Key(), {});
+    AddSubObjectToGraph(itCur.Key(), nullptr);
 
     m_QueuedObjects.Remove(itCur);
   }
@@ -54,8 +54,7 @@ void xiiDocumentObjectConverterWriter::AddProperty(xiiAbstractObjectNode* pNode,
         if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
         {
           xiiStringBuilder sTemp;
-          xiiReflectionUtils::EnumerationToString(
-            pPropType, pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName()).ConvertTo<xiiInt64>(), sTemp);
+          xiiReflectionUtils::EnumerationToString(pPropType, pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName()).ConvertTo<xiiInt64>(), sTemp);
           pNode->AddProperty(pProp->GetPropertyName(), sTemp.GetData());
         }
         else if (bIsValueType)
@@ -126,10 +125,10 @@ void xiiDocumentObjectConverterWriter::AddProperty(xiiAbstractObjectNode* pNode,
 
 void xiiDocumentObjectConverterWriter::AddProperties(xiiAbstractObjectNode* pNode, const xiiDocumentObject* pObject)
 {
-  xiiHybridArray<xiiAbstractProperty*, 32> Properties;
-  pObject->GetTypeAccessor().GetType()->GetAllProperties(Properties);
+  xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+  pObject->GetTypeAccessor().GetType()->GetAllProperties(properties);
 
-  for (const auto* pProp : Properties)
+  for (const auto* pProp : properties)
   {
     AddProperty(pNode, pProp, pObject);
   }
@@ -186,10 +185,10 @@ void xiiDocumentObjectConverterReader::AddObject(xiiDocumentObject* pObject, xii
 void xiiDocumentObjectConverterReader::ApplyPropertiesToObject(const xiiAbstractObjectNode* pNode, xiiDocumentObject* pObject)
 {
   // XII_ASSERT_DEV(pObject->GetChildren().GetCount() == 0, "Can only apply properties to empty objects!");
-  xiiHybridArray<xiiAbstractProperty*, 32> Properties;
-  pObject->GetTypeAccessor().GetType()->GetAllProperties(Properties);
+  xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+  pObject->GetTypeAccessor().GetType()->GetAllProperties(properties);
 
-  for (auto* pProp : Properties)
+  for (auto* pProp : properties)
   {
     auto* pOtherProp = pNode->FindProperty(pProp->GetPropertyName());
     if (pOtherProp == nullptr)
@@ -211,7 +210,7 @@ void xiiDocumentObjectConverterReader::ApplyDiffToObject(xiiObjectAccessorBase* 
 
   for (auto* op : change)
   {
-    xiiAbstractProperty* pProp = pObject->GetTypeAccessor().GetType()->FindPropertyByName(op->m_sProperty);
+    const xiiAbstractProperty* pProp = pObject->GetTypeAccessor().GetType()->FindPropertyByName(op->m_sProperty);
     if (!pProp)
       continue;
 
@@ -225,7 +224,7 @@ void xiiDocumentObjectConverterReader::ApplyDiffToObject(xiiObjectAccessorBase* 
   }
 }
 
-void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pObject, xiiAbstractProperty* pProp, xiiAbstractGraphDiffOperation& op, xiiDeque<xiiAbstractGraphDiffOperation>& diff)
+void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiAbstractGraphDiffOperation& op, xiiDeque<xiiAbstractGraphDiffOperation>& diff)
 {
   xiiStringBuilder sTemp;
 
@@ -401,7 +400,7 @@ void xiiDocumentObjectConverterReader::ApplyDiff(xiiObjectAccessorBase* pObjectA
   }
 }
 
-void xiiDocumentObjectConverterReader::ApplyProperty(xiiDocumentObject* pObject, xiiAbstractProperty* pProp, const xiiAbstractObjectNode::Property* pSource)
+void xiiDocumentObjectConverterReader::ApplyProperty(xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiAbstractObjectNode::Property* pSource)
 {
   xiiStringBuilder sTemp;
 

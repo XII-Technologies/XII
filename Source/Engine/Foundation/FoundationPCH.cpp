@@ -45,6 +45,7 @@ XII_STATICLINK_LIBRARY(Foundation)
   XII_STATICLINK_REFERENCE(Foundation_Communication_Implementation_DataTransfer);
   XII_STATICLINK_REFERENCE(Foundation_Communication_Implementation_GlobalEvent);
   XII_STATICLINK_REFERENCE(Foundation_Communication_Implementation_IpcChannel);
+  XII_STATICLINK_REFERENCE(Foundation_Communication_Implementation_IpcProcessMessageProtocol);
   XII_STATICLINK_REFERENCE(Foundation_Communication_Implementation_IpcChannelEnet);
   XII_STATICLINK_REFERENCE(Foundation_Communication_Implementation_Linux_MessageLoop_linux);
   XII_STATICLINK_REFERENCE(Foundation_Communication_Implementation_Linux_PipeChannel_linux);
@@ -125,6 +126,7 @@ XII_STATICLINK_LIBRARY(Foundation)
   XII_STATICLINK_REFERENCE(Foundation_Memory_Implementation_PageAllocator);
   XII_STATICLINK_REFERENCE(Foundation_Memory_Policies_GuardedAllocation);
   XII_STATICLINK_REFERENCE(Foundation_Profiling_Implementation_Profiling);
+  XII_STATICLINK_REFERENCE(Foundation_Profiling_Implementation_ProfilingUtils);
   XII_STATICLINK_REFERENCE(Foundation_Reflection_Implementation_DynamicRTTI);
   XII_STATICLINK_REFERENCE(Foundation_Reflection_Implementation_PropertyAttributes);
   XII_STATICLINK_REFERENCE(Foundation_Reflection_Implementation_PropertyPath);

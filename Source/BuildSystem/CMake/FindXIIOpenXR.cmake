@@ -77,7 +77,7 @@ if(XIIOPENXR_FOUND)
 		set_target_properties(xiiOpenXR::Loader PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${XII_OPENXR_HEADERS_DIR}/include")
 	endif()
 
-	if(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP AND XII_CMAKE_ARCHITECTURE_64BIT)
+	if(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP AND XII_CMAKE_ARCHITECTURE_64BIT AND MSVC)
 		# As this is a windows only library, we are relying on the .targets file to handle to includes / imports.
 		add_library(xiiOpenXR::Remoting SHARED IMPORTED)
 		set_target_properties(xiiOpenXR::Remoting PROPERTIES IMPORTED_LOCATION ${XII_OPENXR_REMOTING_DIR}/build/native/Microsoft.Holographic.Remoting.OpenXr.targets)

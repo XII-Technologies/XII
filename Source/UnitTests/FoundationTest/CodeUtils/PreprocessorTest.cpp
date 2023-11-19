@@ -201,6 +201,8 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Preprocessor)
       PPTestSettings("Redefine"),
       PPTestSettings("ErrorBadBrackets"),
       PPTestSettings("IfTrueFalse"),
+      PPTestSettings("RawStrings1"),
+      PPTestSettings("RawStrings2"),
     };
 
     xiiStringBuilder sOutput;

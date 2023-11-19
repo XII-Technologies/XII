@@ -33,6 +33,10 @@ struct TestId
 
 using LargeTestId = xiiGenericId<32, 10>;
 
+#pragma warning(disable : 4068)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wbitfield-constant-conversion"
+
 XII_CREATE_SIMPLE_TEST(Basics, Id)
 {
   TestId id1;
@@ -67,3 +71,5 @@ XII_CREATE_SIMPLE_TEST(Basics, Id)
   XII_TEST_INT(id4.m_InstanceIndex, 1);
   XII_TEST_INT(id4.m_Generation, 200);
 }
+
+#pragma GCC diagnostic pop

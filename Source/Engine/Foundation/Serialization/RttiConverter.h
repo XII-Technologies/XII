@@ -111,7 +111,7 @@ public:
   void                           ApplyPropertiesToObject(const xiiAbstractObjectNode* pNode, const xiiRTTI* pRtti, void* pObject);
 
 private:
-  void ApplyProperty(void* pObject, xiiAbstractProperty* pProperty, const xiiAbstractObjectNode::Property* pSource);
+  void ApplyProperty(void* pObject, const xiiAbstractProperty* pProperty, const xiiAbstractObjectNode::Property* pSource);
   void CallOnObjectCreated(const xiiAbstractObjectNode* pNode, const xiiRTTI* pRtti, void* pObject);
 
   xiiRttiConverterContext*      m_pContext = nullptr;

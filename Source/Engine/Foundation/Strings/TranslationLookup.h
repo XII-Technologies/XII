@@ -24,7 +24,7 @@ public:
   virtual ~xiiTranslator();
 
   /// \brief The given string (with the given hash) shall be translated
-  virtual const char* Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) = 0;
+  virtual xiiStringView Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) = 0;
 
   /// \brief Called to reset internal state
   virtual void Reset();
@@ -48,7 +48,7 @@ private:
 class XII_FOUNDATION_DLL xiiTranslatorPassThrough : public xiiTranslator
 {
 public:
-  virtual const char* Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override { return szString; }
+  virtual xiiStringView Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override { return sString; }
 };
 
 /// \brief Can store translated strings and all translation requests will come from that storage. Returns nullptr if the requested string is
@@ -56,11 +56,11 @@ public:
 class XII_FOUNDATION_DLL xiiTranslatorStorage : public xiiTranslator
 {
 public:
-  /// \brief Stores szString as the translation for the string with the given hash
-  virtual void StoreTranslation(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage);
+  /// \brief Stores sString as the translation for the string with the given hash
+  virtual void StoreTranslation(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage);
 
   /// \brief Returns the translated string for uiStringHash, or nullptr, if not available
-  virtual const char* Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override;
+  virtual xiiStringView Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override;
 
   /// \brief Clears all stored translation strings
   virtual void Reset() override;
@@ -80,7 +80,7 @@ public:
   /// Can be used from external code to (temporarily) deactivate error logging (a bit hacky)
   static bool s_bActive;
 
-  virtual const char* Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override;
+  virtual xiiStringView Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override;
 };
 
 /// \brief Loads translations from files. Each translator can have different search paths, but the files to be loaded are the same for all of them.
@@ -92,14 +92,14 @@ public:
   /// The given path must be absolute or resolvable to an absolute path.
   /// On failure, the function does nothing.
   /// This function depends on xiiFileSystemIterator to be available.
-  void AddTranslationFilesFromFolder(const char* szFolder);
+  void AddTranslationFilesFromFolder(xiiStringView sFolder);
 
-  virtual const char* Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override;
+  virtual xiiStringView Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override;
 
   virtual void Reload() override;
 
 private:
-  void LoadTranslationFile(const char* szFullPath);
+  void LoadTranslationFile(xiiStringView sFullPath);
 
   xiiHybridArray<xiiString, 4> m_Folders;
 };
@@ -108,7 +108,7 @@ private:
 class XII_FOUNDATION_DLL xiiTranslatorMakeMoreReadable : public xiiTranslatorStorage
 {
 public:
-  virtual const char* Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override;
+  virtual xiiStringView Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage) override;
 };
 
 /// \brief Handles looking up translations for strings.
@@ -122,7 +122,7 @@ public:
 
   /// \brief Prefer to use the xiiTranslate macro instead of calling this function directly. Will query all translators for a translation,
   /// until one is found.
-  static const char* Translate(const char* szString, xiiUInt64 uiStringHash, xiiTranslationUsage usage);
+  static xiiStringView Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage);
 
   /// \brief Deletes all translators.
   static void Clear();

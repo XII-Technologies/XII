@@ -88,9 +88,9 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, QtProxies)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-bool xiiQtProxy::TriggerDocumentAction(xiiDocument* pDocument, QKeyEvent* pEvent)
+bool xiiQtProxy::TriggerDocumentAction(xiiDocument* pDocument, QKeyEvent* pEvent, bool bTestOnly)
 {
-  auto CheckActions = [](QKeyEvent* pEvent, xiiMap<xiiActionDescriptorHandle, QWeakPointer<xiiQtProxy>>& ref_actions) -> bool {
+  auto CheckActions = [&](QKeyEvent* pEvent, xiiMap<xiiActionDescriptorHandle, QWeakPointer<xiiQtProxy>>& ref_actions) -> bool {
     for (auto weakActionProxy : ref_actions)
     {
       if (auto pProxy = weakActionProxy.Value().toStrongRef())
@@ -110,7 +110,10 @@ bool xiiQtProxy::TriggerDocumentAction(xiiDocument* pDocument, QKeyEvent* pEvent
           QKeySequence ks = pQAction->shortcut();
           if (pQAction->isEnabled() && QKeySequence(pEvent->key() | pEvent->modifiers()) == ks)
           {
-            pQAction->trigger();
+            if (!bTestOnly)
+            {
+              pQAction->trigger();
+            }
             pEvent->accept();
             return true;
           }
@@ -259,11 +262,10 @@ xiiQtMenuProxy::~xiiQtMenuProxy()
 
 void xiiQtMenuProxy::Update()
 {
-  xiiStringBuilder tmp;
-  auto             pMenu = static_cast<xiiMenuAction*>(m_pAction);
+  auto pMenu = static_cast<xiiMenuAction*>(m_pAction);
 
   m_pMenu->setIcon(xiiQtUiServices::GetCachedIconResource(pMenu->GetIconPath()));
-  m_pMenu->setTitle(QString::fromUtf8(xiiTranslate(pMenu->GetName().GetData(tmp))));
+  m_pMenu->setTitle(xiiMakeQString(xiiTranslate(pMenu->GetName())));
 }
 
 void xiiQtMenuProxy::SetAction(xiiAction* pAction)
@@ -307,14 +309,14 @@ void xiiQtButtonProxy::Update()
 
   auto pButton = static_cast<xiiButtonAction*>(m_pAction);
 
-  xiiStringBuilder           tmp;
+
   const xiiActionDescriptor* pDesc = m_pAction->GetDescriptorHandle().GetDescriptor();
-  m_pQtAction->setShortcut(QKeySequence(QString::fromUtf8(pDesc->m_sShortcut.GetData())));
+  m_pQtAction->setShortcut(QKeySequence(xiiMakeQString(pDesc->m_sShortcut)));
 
   const QString sDisplayShortcut = m_pQtAction->shortcut().toString(QKeySequence::NativeText);
-  QString       sTooltip         = xiiTranslateTooltip(pButton->GetName().GetData(tmp));
+  QString       sTooltip         = xiiMakeQString(xiiTranslateTooltip(pButton->GetName()));
 
-  xiiStringBuilder sDisplay = xiiTranslate(pButton->GetName().GetData(tmp));
+  xiiStringBuilder sDisplay = xiiTranslate(pButton->GetName());
 
   if (sTooltip.isEmpty())
   {
@@ -333,7 +335,7 @@ void xiiQtButtonProxy::Update()
     sDisplay.Append(" '", pButton->GetAdditionalDisplayString(), "'"); // TODO: translate this as well?
 
   m_pQtAction->setIcon(xiiQtUiServices::GetCachedIconResource(pButton->GetIconPath()));
-  m_pQtAction->setText(QString::fromUtf8(sDisplay.GetData()));
+  m_pQtAction->setText(xiiMakeQString(sDisplay));
   m_pQtAction->setToolTip(sTooltip);
   m_pQtAction->setCheckable(pButton->IsCheckable());
   m_pQtAction->setChecked(pButton->IsChecked());
@@ -443,7 +445,7 @@ void xiiQtDynamicMenuProxy::SlotMenuAboutToShow()
       }
       else
       {
-        auto pAction = m_pMenu->addAction(QString::fromUtf8(p.m_sDisplay.GetData()));
+        auto pAction = m_pMenu->addAction(xiiMakeQString(p.m_sDisplay));
         pAction->setData(i);
         pAction->setIcon(p.m_Icon);
         pAction->setCheckable(p.m_CheckState != xiiDynamicMenuAction::Item::CheckMark::NotCheckable);
@@ -503,17 +505,16 @@ void xiiQtDynamicActionAndMenuProxy::Update()
 
   auto pButton = static_cast<xiiDynamicActionAndMenuAction*>(m_pAction);
 
-  xiiStringBuilder           tmp;
   const xiiActionDescriptor* pDesc = m_pAction->GetDescriptorHandle().GetDescriptor();
-  m_pQtAction->setShortcut(QKeySequence(QString::fromUtf8(pDesc->m_sShortcut.GetData())));
+  m_pQtAction->setShortcut(QKeySequence(xiiMakeQString(pDesc->m_sShortcut)));
 
-  xiiStringBuilder sDisplay = xiiTranslate(pButton->GetName().GetData(tmp));
+  xiiStringBuilder sDisplay = xiiTranslate(pButton->GetName());
 
   if (!pButton->GetAdditionalDisplayString().IsEmpty())
     sDisplay.Append(" '", pButton->GetAdditionalDisplayString(), "'"); // TODO: translate this as well?
 
   const QString sDisplayShortcut = m_pQtAction->shortcut().toString(QKeySequence::NativeText);
-  QString       sTooltip         = xiiTranslateTooltip(pButton->GetName().GetData(tmp));
+  QString       sTooltip         = xiiMakeQString(xiiTranslateTooltip(pButton->GetName()));
 
   if (sTooltip.isEmpty())
   {
@@ -529,7 +530,7 @@ void xiiQtDynamicActionAndMenuProxy::Update()
   }
 
   m_pQtAction->setIcon(xiiQtUiServices::GetCachedIconResource(pButton->GetIconPath()));
-  m_pQtAction->setText(QString::fromUtf8(sDisplay.GetData()));
+  m_pQtAction->setText(xiiMakeQString(sDisplay));
   m_pQtAction->setToolTip(sTooltip);
   m_pQtAction->setEnabled(pButton->IsEnabled());
   m_pQtAction->setVisible(pButton->IsVisible());
@@ -695,15 +696,13 @@ void xiiQtSliderProxy::Update()
   xiiQtSliderWidgetAction* pSliderAction = qobject_cast<xiiQtSliderWidgetAction*>(m_pQtAction);
   xiiQtScopedBlockSignals  bs(pSliderAction);
 
-  xiiStringBuilder tmp;
-
   xiiInt32 minVal, maxVal;
   pAction->GetRange(minVal, maxVal);
   pSliderAction->setMinimum(minVal);
   pSliderAction->setMaximum(maxVal);
   pSliderAction->setValue(pAction->GetValue());
-  pSliderAction->setText(xiiTranslate(pAction->GetName().GetData(tmp)));
-  pSliderAction->setToolTip(xiiTranslateTooltip(pAction->GetName().GetData(tmp)));
+  pSliderAction->setText(xiiMakeQString(xiiTranslate(pAction->GetName())));
+  pSliderAction->setToolTip(xiiMakeQString(xiiTranslateTooltip(pAction->GetName())));
   pSliderAction->setEnabled(pAction->IsEnabled());
   pSliderAction->setVisible(pAction->IsVisible());
 }

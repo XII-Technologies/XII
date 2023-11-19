@@ -1520,7 +1520,7 @@ xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElem
           if (!pChildElement->HasName())
             continue;
 
-          if (xiiAbstractProperty* pProp = pRTTI->FindPropertyByName(pChildElement->GetName()))
+          if (const xiiAbstractProperty* pProp = pRTTI->FindPropertyByName(pChildElement->GetName()))
           {
             // Custom types should be POD and only consist of member properties.
             if (pProp->GetCategory() == xiiPropertyCategory::Member)
@@ -1528,7 +1528,7 @@ xiiResult xiiOpenDdlUtils::ConvertToVariant(const xiiOpenDdlReaderElement* pElem
               xiiVariant subValue;
               if (ConvertToVariant(pChildElement, subValue).Succeeded())
               {
-                xiiReflectionUtils::SetMemberPropertyValue(static_cast<xiiAbstractMemberProperty*>(pProp), pObject, subValue);
+                xiiReflectionUtils::SetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), pObject, subValue);
               }
             }
           }
@@ -2292,7 +2292,7 @@ void xiiOpenDdlUtils::StoreVariant(xiiOpenDdlWriter& ref_writer, const xiiVarian
       {
         ref_writer.BeginObject(obj.m_pType->GetTypeName(), sName, bGlobalName);
         {
-          xiiHybridArray<xiiAbstractProperty*, 32> properties;
+          xiiHybridArray<const xiiAbstractProperty*, 32> properties;
           obj.m_pType->GetAllProperties(properties);
           for (const xiiAbstractProperty* pProp : properties)
           {

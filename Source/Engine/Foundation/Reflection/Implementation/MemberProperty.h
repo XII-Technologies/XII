@@ -67,7 +67,7 @@ public:
     return xiiGetStaticRTTI<const char*>();
   }
 
-  virtual const char* GetValue(const void* pInstance) const        = 0;
+  virtual const char* GetValue(const void* pInstance) const              = 0;
   virtual void        SetValue(void* pInstance, const char* value) const = 0;
   virtual void        GetValuePtr(const void* pInstance, void* pObject) const override { *static_cast<const char**>(pObject) = GetValue(pInstance); };
   virtual void        SetValuePtr(void* pInstance, const void* pObject) const override { SetValue(pInstance, *static_cast<const char* const*>(pObject)); };

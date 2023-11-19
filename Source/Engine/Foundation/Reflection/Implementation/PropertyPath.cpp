@@ -59,7 +59,7 @@ xiiResult xiiPropertyPath::InitializeFromPath(const xiiRTTI& rootObjectRtti, xii
       sIndex.Clear();
     }
 
-    xiiAbstractProperty* pAbsProp = pCurRtti->FindPropertyByName(sFieldName);
+    const xiiAbstractProperty* pAbsProp = pCurRtti->FindPropertyByName(sFieldName);
 
     if (pAbsProp == nullptr)
       return XII_FAILURE;
@@ -113,7 +113,7 @@ xiiResult xiiPropertyPath::InitializeFromPath(const xiiRTTI* pRootObjectRtti, co
   const xiiRTTI* pCurRtti = pRootObjectRtti;
   for (const xiiPropertyPathStep& pathStep : path)
   {
-    xiiAbstractProperty* pAbsProp = pCurRtti->FindPropertyByName(pathStep.m_sProperty);
+    const xiiAbstractProperty* pAbsProp = pCurRtti->FindPropertyByName(pathStep.m_sProperty);
     if (pAbsProp == nullptr)
       return XII_FAILURE;
 
@@ -142,7 +142,7 @@ xiiResult xiiPropertyPath::ReadFromLeafObject(void* pRootObject, const xiiRTTI& 
   return ResolvePath(pRootObject, &type, m_PathSteps.GetArrayPtr(), false, func);
 }
 
-xiiResult xiiPropertyPath::WriteProperty(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, xiiAbstractProperty* pProp, const xiiVariant& index)> func) const
+xiiResult xiiPropertyPath::WriteProperty(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, const xiiAbstractProperty* pProp, const xiiVariant& index)> func) const
 {
   XII_ASSERT_DEBUG(!m_PathSteps.IsEmpty(), "Call InitializeFromPath before WriteToObject");
 
@@ -168,17 +168,17 @@ void xiiPropertyPath::SetValue(void* pRootObject, const xiiRTTI& type, const xii
 {
   // XII_ASSERT_DEBUG(!m_PathSteps.IsEmpty() && value.CanConvertTo(m_PathSteps[m_PathSteps.GetCount() - 1].m_pProperty->GetSpecificType()->GetVariantType()), "The given value does not match the type at the given path.");
 
-  WriteProperty(pRootObject, type, [&value](void* pLeaf, const xiiRTTI& type, xiiAbstractProperty* pProp, const xiiVariant& index) {
+  WriteProperty(pRootObject, type, [&value](void* pLeaf, const xiiRTTI& type, const xiiAbstractProperty* pProp, const xiiVariant& index) {
     switch (pProp->GetCategory())
     {
       case xiiPropertyCategory::Member:
-        xiiReflectionUtils::SetMemberPropertyValue(static_cast<xiiAbstractMemberProperty*>(pProp), pLeaf, value);
+        xiiReflectionUtils::SetMemberPropertyValue(static_cast<const xiiAbstractMemberProperty*>(pProp), pLeaf, value);
         break;
       case xiiPropertyCategory::Array:
-        xiiReflectionUtils::SetArrayPropertyValue(static_cast<xiiAbstractArrayProperty*>(pProp), pLeaf, index.Get<xiiInt32>(), value);
+        xiiReflectionUtils::SetArrayPropertyValue(static_cast<const xiiAbstractArrayProperty*>(pProp), pLeaf, index.Get<xiiInt32>(), value);
         break;
       case xiiPropertyCategory::Map:
-        xiiReflectionUtils::SetMapPropertyValue(static_cast<xiiAbstractMapProperty*>(pProp), pLeaf, index.Get<xiiString>(), value);
+        xiiReflectionUtils::SetMapPropertyValue(static_cast<const xiiAbstractMapProperty*>(pProp), pLeaf, index.Get<xiiString>(), value);
         break;
 
         XII_DEFAULT_CASE_NOT_IMPLEMENTED;
@@ -217,14 +217,14 @@ xiiResult xiiPropertyPath::ResolvePath(void* pCurrentObject, const xiiRTTI* pTyp
   }
   else // Recurse
   {
-    xiiAbstractProperty* pProp     = path[0].m_pProperty;
-    const xiiRTTI*       pPropType = pProp->GetSpecificType();
+    const xiiAbstractProperty* pProp     = path[0].m_pProperty;
+    const xiiRTTI*             pPropType = pProp->GetSpecificType();
 
     switch (pProp->GetCategory())
     {
       case xiiPropertyCategory::Member:
       {
-        xiiAbstractMemberProperty* pSpecific = static_cast<xiiAbstractMemberProperty*>(pProp);
+        auto pSpecific = static_cast<const xiiAbstractMemberProperty*>(pProp);
         if (pPropType->GetProperties().GetCount() > 0)
         {
           void* pSubObject = pSpecific->GetPropertyPointer(pCurrentObject);
@@ -256,7 +256,7 @@ xiiResult xiiPropertyPath::ResolvePath(void* pCurrentObject, const xiiRTTI* pTyp
       break;
       case xiiPropertyCategory::Array:
       {
-        xiiAbstractArrayProperty* pSpecific = static_cast<xiiAbstractArrayProperty*>(pProp);
+        auto pSpecific = static_cast<const xiiAbstractArrayProperty*>(pProp);
 
         if (pPropType->GetAllocator()->CanAllocate())
         {
@@ -283,8 +283,8 @@ xiiResult xiiPropertyPath::ResolvePath(void* pCurrentObject, const xiiRTTI* pTyp
       break;
       case xiiPropertyCategory::Map:
       {
-        xiiAbstractMapProperty* pSpecific = static_cast<xiiAbstractMapProperty*>(pProp);
-        const xiiString&        sKey      = path[0].m_Index.Get<xiiString>();
+        auto             pSpecific = static_cast<const xiiAbstractMapProperty*>(pProp);
+        const xiiString& sKey      = path[0].m_Index.Get<xiiString>();
         if (!pSpecific->Contains(pCurrentObject, sKey))
           return XII_FAILURE;
 

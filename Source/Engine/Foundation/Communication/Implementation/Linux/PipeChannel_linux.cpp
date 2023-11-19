@@ -28,40 +28,6 @@ xiiPipeChannel_linux::xiiPipeChannel_linux(xiiStringView sAddress, Mode::Enum Mo
   pipePath.Append(".client");
   m_clientSocketPath = pipePath;
 
-  const char* thisSocketPath = (Mode == Mode::Server) ? m_serverSocketPath.GetData() : m_clientSocketPath.GetData();
-
-  xiiInt32& targetSocket = (Mode == Mode::Server) ? m_serverSocketFd : m_clientSocketFd;
-
-  targetSocket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
-  if (targetSocket == -1)
-  {
-    xiiLog::Error("[IPC]Failed to create unix domain socket. error {}", errno);
-    return;
-  }
-
-  // If the socket file already exists, delete it
-  xiiOSFile::DeleteFile(thisSocketPath).IgnoreResult();
-
-  struct sockaddr_un addr = {};
-  addr.sun_family         = AF_UNIX;
-
-  if (strlen(thisSocketPath) >= XII_ARRAY_SIZE(addr.sun_path) - 1)
-  {
-    xiiLog::Error("[IPC]Given ipc channel address is to long. Resulting path '{}' path length limit {}", strlen(thisSocketPath), XII_ARRAY_SIZE(addr.sun_path) - 1);
-    close(targetSocket);
-    targetSocket = -1;
-    return;
-  }
-
-  strcpy(addr.sun_path, thisSocketPath);
-  if (bind(targetSocket, (struct sockaddr*)&addr, SUN_LEN(&addr)) == -1)
-  {
-    xiiLog::Error("[IPC]Failed to bind unix domain socket to '{}' error {}", thisSocketPath, errno);
-    close(targetSocket);
-    targetSocket = -1;
-    return;
-  }
-
   m_pOwner->AddChannel(this);
 }
 
@@ -94,17 +60,47 @@ xiiPipeChannel_linux::~xiiPipeChannel_linux()
   }
 }
 
-void xiiPipeChannel_linux::AddToMessageLoop(xiiMessageLoop* pMessageLoop)
-{
-}
-
 void xiiPipeChannel_linux::InternalConnect()
 {
-  if (m_bConnected || m_Connecting)
-  {
+  if (GetConnectionState() != ConnectionState::Disconnected)
     return;
-  }
 
+  int& targetSocket = (m_Mode == Mode::Server) ? m_serverSocketFd : m_clientSocketFd;
+
+  if (targetSocket < 0)
+  {
+    const char* thisSocketPath = (m_Mode == Mode::Server) ? m_serverSocketPath.GetData() : m_clientSocketPath.GetData();
+
+    targetSocket = socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+    if (targetSocket == -1)
+    {
+      xiiLog::Error("[IPC]Failed to create unix domain socket. error {}", errno);
+      return;
+    }
+
+    // If the socket file already exists, delete it
+    xiiOSFile::DeleteFile(thisSocketPath).IgnoreResult();
+
+    struct sockaddr_un addr = {};
+    addr.sun_family         = AF_UNIX;
+
+    if (strlen(thisSocketPath) >= XII_ARRAY_SIZE(addr.sun_path) - 1)
+    {
+      xiiLog::Error("[IPC]Given ipc channel address is to long. Resulting path '{}' path length limit {}", strlen(thisSocketPath), XII_ARRAY_SIZE(addr.sun_path) - 1);
+      close(targetSocket);
+      targetSocket = -1;
+      return;
+    }
+
+    strcpy(addr.sun_path, thisSocketPath);
+    if (bind(targetSocket, (struct sockaddr*)&addr, SUN_LEN(&addr)) == -1)
+    {
+      xiiLog::Error("[IPC]Failed to bind unix domain socket to '{}' error {}", thisSocketPath, errno);
+      close(targetSocket);
+      targetSocket = -1;
+      return;
+    }
+  }
 
   if (m_Mode == Mode::Server)
   {
@@ -112,8 +108,8 @@ void xiiPipeChannel_linux::InternalConnect()
     {
       return;
     }
-    m_Connecting = true;
     listen(m_serverSocketFd, 1);
+    SetConnectionState(ConnectionState::Connecting);
     static_cast<xiiMessageLoop_linux*>(m_pOwner)->RegisterWait(this, xiiMessageLoop_linux::WaitType::Accept, m_serverSocketFd);
   }
   else
@@ -122,7 +118,7 @@ void xiiPipeChannel_linux::InternalConnect()
     {
       return;
     }
-    m_Connecting                     = true;
+    SetConnectionState(ConnectionState::Connecting);
     struct sockaddr_un serverAddress = {};
     serverAddress.sun_family         = AF_UNIX;
     strcpy(serverAddress.sun_path, m_serverSocketPath.GetData());
@@ -135,10 +131,8 @@ void xiiPipeChannel_linux::InternalConnect()
 
 void xiiPipeChannel_linux::InternalDisconnect()
 {
-  if (!m_bConnected && !m_Connecting)
-  {
+  if (GetConnectionState() == ConnectionState::Disconnected)
     return;
-  }
 
   static_cast<xiiMessageLoop_linux*>(m_pOwner)->RemovePendingWaits(this);
 
@@ -150,10 +144,7 @@ void xiiPipeChannel_linux::InternalDisconnect()
     m_OutputQueue.Clear();
   }
 
-  m_bConnected = false;
-  m_Connecting = false;
-
-  m_Events.Broadcast(xiiIpcChannelEvent(m_Mode == Mode::Server ? xiiIpcChannelEvent::DisconnectedFromClient : xiiIpcChannelEvent::DisconnectedFromServer, this));
+  SetConnectionState(ConnectionState::Disconnected);
 
   m_IncomingMessages.RaiseSignal(); // Wakeup anyone still waiting for messages
 }
@@ -227,9 +218,7 @@ void xiiPipeChannel_linux::AcceptIncomingConnection()
   }
   else
   {
-    m_bConnected = true;
-    m_Events.Broadcast(xiiIpcChannelEvent(xiiIpcChannelEvent::ConnectedToClient, this));
-
+    SetConnectionState(ConnectionState::Connected);
     // We are connected. Register for incoming messages events.
     static_cast<xiiMessageLoop_linux*>(m_pOwner)->RegisterWait(this, xiiMessageLoop_linux::WaitType::IncomingMessage, m_clientSocketFd);
   }
@@ -242,9 +231,7 @@ bool xiiPipeChannel_linux::NeedWakeup() const
 
 void xiiPipeChannel_linux::ProcessConnectSuccessfull()
 {
-  m_Connecting = false;
-  m_bConnected = true;
-  m_Events.Broadcast(xiiIpcChannelEvent(xiiIpcChannelEvent::ConnectedToServer, this));
+  SetConnectionState(ConnectionState::Connected);
 
   // We are connected. Register for incoming messages events.
   static_cast<xiiMessageLoop_linux*>(m_pOwner)->RegisterWait(this, xiiMessageLoop_linux::WaitType::IncomingMessage, m_clientSocketFd);
@@ -276,11 +263,10 @@ void xiiPipeChannel_linux::ProcessIncomingPackages()
       return;
     }
 
-    ReceiveMessageData(xiiArrayPtr(m_InputBuffer, static_cast<xiiUInt32>(recieveResult)));
+    ReceiveData(xiiArrayPtr(m_InputBuffer, static_cast<xiiUInt32>(recieveResult)));
   }
 }
 
 #endif
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_Linux_PipeChannel_linux);

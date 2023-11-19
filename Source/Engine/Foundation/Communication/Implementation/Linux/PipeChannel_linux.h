@@ -22,8 +22,6 @@ private:
   friend class xiiMessageLoop;
   friend class xiiMessageLoop_linux;
 
-  virtual void AddToMessageLoop(xiiMessageLoop* pMsgLoop) override;
-
   // All functions from here on down are run from worker thread only
   virtual void InternalConnect() override;
   virtual void InternalDisconnect() override;
@@ -41,8 +39,7 @@ private:
   xiiInt32  m_serverSocketFd = -1;
   xiiInt32  m_clientSocketFd = -1;
 
-  xiiUInt8      m_InputBuffer[4096];
-  xiiAtomicBool m_Connecting = false;
+  xiiUInt8 m_InputBuffer[4096];
 
   xiiUInt64 m_previousSendOffset = 0;
 };

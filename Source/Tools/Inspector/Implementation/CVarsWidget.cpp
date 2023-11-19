@@ -39,6 +39,8 @@ xiiQtCVarsWidget::xiiQtCVarsWidget(QWidget* pParent) :
   setupUi(this);
   setWidget(CVarWidget);
 
+  setIcon(QIcon(":/GuiFoundation/Icons/CVar.svg"));
+
   connect(CVarWidget, &xiiQtCVarWidget::onBoolChanged, this, &xiiQtCVarsWidget::BoolChanged);
   connect(CVarWidget, &xiiQtCVarWidget::onFloatChanged, this, &xiiQtCVarsWidget::FloatChanged);
   connect(CVarWidget, &xiiQtCVarWidget::onDoubleChanged, this, &xiiQtCVarsWidget::DoubleChanged);

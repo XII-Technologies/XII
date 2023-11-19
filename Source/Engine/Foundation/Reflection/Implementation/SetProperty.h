@@ -60,7 +60,7 @@ public:
 
   virtual bool IsEmpty(const void* pInstance) const override { return (static_cast<const Class*>(pInstance)->*m_GetValues)().IsEmpty(); }
 
-  virtual void Clear(void* pInstance) override
+  virtual void Clear(void* pInstance) const override
   {
     XII_ASSERT_DEBUG(m_Insert != nullptr && m_Remove != nullptr, "The property '{0}' has no remove and insert function, thus it is read-only",
                      xiiAbstractProperty::GetPropertyName());
@@ -77,14 +77,14 @@ public:
     }
   }
 
-  virtual void Insert(void* pInstance, const void* pObject) override
+  virtual void Insert(void* pInstance, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(m_Insert != nullptr, "The property '{0}' has no insert function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     (static_cast<Class*>(pInstance)->*m_Insert)(*static_cast<const RealType*>(pObject));
   }
 
-  virtual void Remove(void* pInstance, const void* pObject) override
+  virtual void Remove(void* pInstance, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(m_Remove != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
@@ -152,21 +152,21 @@ public:
 
   virtual bool IsEmpty(const void* pInstance) const override { return m_ConstGetter(static_cast<const Class*>(pInstance)).IsEmpty(); }
 
-  virtual void Clear(void* pInstance) override
+  virtual void Clear(void* pInstance) const override
   {
     XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     m_Getter(static_cast<Class*>(pInstance)).Clear();
   }
 
-  virtual void Insert(void* pInstance, const void* pObject) override
+  virtual void Insert(void* pInstance, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 
     m_Getter(static_cast<Class*>(pInstance)).Insert(*static_cast<const RealType*>(pObject));
   }
 
-  virtual void Remove(void* pInstance, const void* pObject) override
+  virtual void Remove(void* pInstance, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
 

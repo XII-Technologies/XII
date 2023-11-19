@@ -261,7 +261,7 @@ public:
   ///   Will be called <i>after</i> the On[...] callbacks!
   ///
   /// \see OnResizeMessage
-  virtual void OnWindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM wparam, xiiMinWindows::LPARAM lparam);
+  virtual void OnWindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM wparam, xiiMinWindows::LPARAM lparam);
 
 #elif XII_ENABLED(XII_PLATFORM_OSX)
 

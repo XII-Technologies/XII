@@ -665,4 +665,22 @@ XII_CREATE_SIMPLE_TEST(IO, JSONParser)
 
     XII_TEST_INT(reader.m_iExpectedParsingErrors, 0);
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Array Document")
+  {
+    const char* szTestData = "[\"a\",\"b\"]";
+
+    StringStream stream(szTestData);
+
+    TestReader reader;
+
+    reader.Add(ParseResult(BeginArray));
+    reader.Add(ParseResult("a"));
+    reader.Add(ParseResult("b"));
+    reader.Add(ParseResult(EndArray));
+
+    reader.ParseStream(stream);
+
+    XII_TEST_INT(reader.m_iExpectedParsingErrors, 0);
+  }
 }

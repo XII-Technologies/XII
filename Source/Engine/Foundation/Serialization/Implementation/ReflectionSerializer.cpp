@@ -149,7 +149,7 @@ void xiiReflectionSerializer::ReadObjectPropertiesFromBinary(xiiStreamReader& re
 
 namespace
 {
-  static void CloneProperty(const void* pObject, void* pClone, xiiAbstractProperty* pProp)
+  static void CloneProperty(const void* pObject, void* pClone, const xiiAbstractProperty* pProp)
   {
     if (pProp->GetFlags().IsSet(xiiPropertyFlags::ReadOnly))
       return;
@@ -163,7 +163,7 @@ namespace
     {
       case xiiPropertyCategory::Member:
       {
-        xiiAbstractMemberProperty* pSpecific = static_cast<xiiAbstractMemberProperty*>(pProp);
+        auto pSpecific = static_cast<const xiiAbstractMemberProperty*>(pProp);
 
         if (pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer))
         {
@@ -211,7 +211,7 @@ namespace
       break;
       case xiiPropertyCategory::Array:
       {
-        xiiAbstractArrayProperty* pSpecific = static_cast<xiiAbstractArrayProperty*>(pProp);
+        auto pSpecific = static_cast<const xiiAbstractArrayProperty*>(pProp);
         // Delete old values
         if (pProp->GetFlags().AreAllSet(xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner))
         {
@@ -269,7 +269,7 @@ namespace
       break;
       case xiiPropertyCategory::Set:
       {
-        xiiAbstractSetProperty* pSpecific = static_cast<xiiAbstractSetProperty*>(pProp);
+        auto pSpecific = static_cast<const xiiAbstractSetProperty*>(pProp);
 
         // Delete old values
         if (pProp->GetFlags().AreAllSet(xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner))
@@ -314,7 +314,7 @@ namespace
       break;
       case xiiPropertyCategory::Map:
       {
-        xiiAbstractMapProperty* pSpecific = static_cast<xiiAbstractMapProperty*>(pProp);
+        auto pSpecific = static_cast<const xiiAbstractMapProperty*>(pProp);
 
         // Delete old values
         if (pProp->GetFlags().AreAllSet(xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner))

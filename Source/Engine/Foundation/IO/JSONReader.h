@@ -15,9 +15,9 @@ class XII_FOUNDATION_DLL xiiJSONReader : public xiiJSONParser
 public:
   enum class ElementType : xiiInt8
   {
-    None,       ///< The JSON document is entirely empty (not even containing an empty object or array)
-    Dictionary, ///< The top level element in the JSON document is an object
-    Array,      ///< The top level element in the JSON document is an array
+    None,       ///< The JSON document is entirely empty (not even containing an empty object or array).
+    Dictionary, ///< The top level element in the JSON document is an dictionary.
+    Array,      ///< The top level element in the JSON document is an array.
   };
 
   xiiJSONReader();

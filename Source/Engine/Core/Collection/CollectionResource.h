@@ -49,6 +49,7 @@ class XII_CORE_DLL xiiCollectionResource : public xiiResource
 
 public:
   xiiCollectionResource();
+  ~xiiCollectionResource();
 
   /// \brief Registers the named resources in the collection with the xiiResourceManager, such that they can be loaded by those names.
   ///

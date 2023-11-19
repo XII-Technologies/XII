@@ -10,11 +10,12 @@ XII_BEGIN_COMPONENT_TYPE(xiiCollectionComponent, 1, xiiComponentMode::Static)
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("Collection", GetCollectionFile, SetCollectionFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_AssetCollection", xiiDependencyFlags::Package)),
+    XII_MEMBER_PROPERTY("RegisterNames", m_bRegisterNames),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("General"),
+    new xiiCategoryAttribute("Utilities"),
   }
   XII_END_ATTRIBUTES;
 }
@@ -30,15 +31,17 @@ void xiiCollectionComponent::SerializeComponent(xiiWorldWriter& ref_stream) cons
   auto& s = ref_stream.GetStream();
 
   s << m_hCollection;
+  s << m_bRegisterNames;
 }
 
 void xiiCollectionComponent::DeserializeComponent(xiiWorldReader& ref_stream)
 {
   SUPER::DeserializeComponent(ref_stream);
-  // const xiiUInt32 uiVersion = stream.GetComponentTypeVersion(GetStaticRTTI());
-  auto& s = ref_stream.GetStream();
+  const xiiUInt32 uiVersion = ref_stream.GetComponentTypeVersion(GetStaticRTTI());
+  auto&           s         = ref_stream.GetStream();
 
   s >> m_hCollection;
+  s >> m_bRegisterNames;
 }
 
 void xiiCollectionComponent::SetCollectionFile(xiiStringView sFile)
@@ -86,6 +89,11 @@ void xiiCollectionComponent::InitiatePreload()
     if (pCollection.GetAcquireResult() == xiiResourceAcquireResult::Final)
     {
       pCollection->PreloadResources();
+
+      if (m_bRegisterNames)
+      {
+        pCollection->RegisterNames();
+      }
     }
   }
 }

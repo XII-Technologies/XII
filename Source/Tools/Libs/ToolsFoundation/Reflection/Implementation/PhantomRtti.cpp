@@ -5,7 +5,7 @@
 #include <ToolsFoundation/Reflection/PhantomRtti.h>
 
 xiiPhantomRTTI::xiiPhantomRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiStringView sPluginName) :
-  xiiRTTI(nullptr, pParentType, uiTypeSize, uiTypeVersion, uiVariantType, flags | xiiTypeFlags::Phantom, nullptr, xiiArrayPtr<xiiAbstractProperty*>(), xiiArrayPtr<xiiAbstractFunctionProperty*>(), xiiArrayPtr<xiiPropertyAttribute*>(), xiiArrayPtr<xiiAbstractMessageHandler*>(), xiiArrayPtr<xiiMessageSenderInfo>(), nullptr)
+  xiiRTTI(nullptr, pParentType, uiTypeSize, uiTypeVersion, uiVariantType, flags | xiiTypeFlags::Phantom, nullptr, xiiArrayPtr<const xiiAbstractProperty*>(), xiiArrayPtr<const xiiAbstractFunctionProperty*>(), xiiArrayPtr<const xiiPropertyAttribute*>(), xiiArrayPtr<xiiAbstractMessageHandler*>(), xiiArrayPtr<xiiMessageSenderInfo>(), nullptr)
 {
   m_sTypeNameStorage   = sName;
   m_sPluginNameStorage = sPluginName;
@@ -31,7 +31,8 @@ xiiPhantomRTTI::~xiiPhantomRTTI()
   }
   for (auto pAttrib : m_AttributesStorage)
   {
-    XII_DEFAULT_DELETE(pAttrib);
+    auto pAttribNonConst = const_cast<xiiPropertyAttribute*>(pAttrib);
+    XII_DEFAULT_DELETE(pAttribNonConst);
   }
 }
 
@@ -80,7 +81,7 @@ void xiiPhantomRTTI::SetProperties(xiiDynamicArray<xiiReflectedPropertyDescripto
     }
   }
 
-  m_Properties = m_PropertiesStorage;
+  m_Properties = m_PropertiesStorage.GetArrayPtr();
 }
 
 
@@ -100,14 +101,15 @@ void xiiPhantomRTTI::SetFunctions(xiiDynamicArray<xiiReflectedFunctionDescriptor
     m_FunctionsStorage.PushBack(XII_DEFAULT_NEW(xiiPhantomFunctionProperty, &functions[i]));
   }
 
-  m_Functions = m_FunctionsStorage;
+  m_Functions = m_FunctionsStorage.GetArrayPtr();
 }
 
-void xiiPhantomRTTI::SetAttributes(xiiHybridArray<xiiPropertyAttribute*, 2>& attributes)
+void xiiPhantomRTTI::SetAttributes(xiiDynamicArray<const xiiPropertyAttribute*>& attributes)
 {
   for (auto pAttrib : m_AttributesStorage)
   {
-    XII_DEFAULT_DELETE(pAttrib);
+    auto pAttribNonConst = const_cast<xiiPropertyAttribute*>(pAttrib);
+    XII_DEFAULT_DELETE(pAttribNonConst);
   }
   m_AttributesStorage.Clear();
   m_AttributesStorage = attributes;
@@ -120,7 +122,7 @@ void xiiPhantomRTTI::UpdateType(xiiReflectedTypeDescriptor& desc)
   xiiRTTI::UpdateType(xiiRTTI::FindTypeByName(desc.m_sParentTypeName), 0, desc.m_uiTypeVersion, xiiVariantType::Invalid, desc.m_Flags);
 
   m_sPluginNameStorage = desc.m_sPluginName;
-  m_sPluginName        = m_sPluginNameStorage.GetData();
+  m_sPluginName        = m_sPluginNameStorage;
 
   SetProperties(desc.m_Properties);
   SetFunctions(desc.m_Functions);

@@ -41,7 +41,7 @@ public:
   xiiResult ReadFromLeafObject(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)> func) const;
 
   ///\brief Applies the path up to the last step and allows a functor to write to the final property.
-  xiiResult WriteProperty(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, xiiAbstractProperty* pProp, const xiiVariant& index)> func) const;
+  xiiResult WriteProperty(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, const xiiAbstractProperty* pProp, const xiiVariant& index)> func) const;
   ///\brief Applies the path up to the last step and allows a functor to read from the final property.
   xiiResult ReadProperty(void* pRootObject, const xiiRTTI& type, xiiDelegate<void(void* pLeafObject, const xiiRTTI& pLeafType, const xiiAbstractProperty* pProp, const xiiVariant& index)> func) const;
 
@@ -66,8 +66,8 @@ public:
 private:
   struct ResolvedStep
   {
-    xiiAbstractProperty* m_pProperty = nullptr;
-    xiiVariant           m_Index;
+    const xiiAbstractProperty* m_pProperty = nullptr;
+    xiiVariant                 m_Index;
   };
 
   static xiiResult ResolvePath(void* pCurrentObject, const xiiRTTI* pType, const xiiArrayPtr<const ResolvedStep> path, bool bWriteToObject, const xiiDelegate<void(void* pLeaf, const xiiRTTI& pType)>& func);

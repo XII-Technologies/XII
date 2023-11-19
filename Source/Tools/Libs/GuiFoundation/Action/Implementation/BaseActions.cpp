@@ -98,7 +98,6 @@ void xiiEnumerationMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::I
     unsortedItems.Clear();
   };
 
-  xiiStringBuilder tmp;
   for (auto pProp : m_pEnumerationType->GetProperties().GetSubArray(1))
   {
     if (pProp->GetCategory() == xiiPropertyCategory::Constant)
@@ -122,7 +121,7 @@ void xiiEnumerationMenuAction::GetEntries(xiiHybridArray<xiiDynamicMenuAction::I
       {
         xiiInt64 iValue = static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant().ConvertTo<xiiInt64>();
 
-        item.m_sDisplay = xiiTranslate(pProp->GetPropertyName().GetData(tmp));
+        item.m_sDisplay = xiiTranslate(pProp->GetPropertyName());
 
         item.m_UserValue = iValue;
         if (m_pEnumerationType->IsDerivedFrom<xiiEnumBase>())

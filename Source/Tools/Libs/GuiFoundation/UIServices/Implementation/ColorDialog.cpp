@@ -277,6 +277,7 @@ void xiiQtColorDialog::RecomputeRGB()
 {
   xiiColor col;
   col.SetHSV(m_fHue, m_fSaturation, m_fValue);
+
   xiiColorGammaUB colGamma = col;
 
   m_uiGammaRed   = colGamma.r;

@@ -2,6 +2,7 @@
 
 #include <Foundation/Threading/Thread.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <Foundation/Types/VariantType.h>
 
 namespace
 {
@@ -49,6 +50,14 @@ namespace
 
   void*    g_pTestAndSetPointer        = nullptr;
   xiiInt32 g_iTestAndSetPointerCounter = 0;
+
+  xiiAtomicInteger<xiiVariantType::Enum> g_EnumSet = xiiVariantType::Bool;
+
+  xiiAtomicInteger<xiiVariantType::Enum> g_EnumCompareAndSwap         = xiiVariantType::Bool;
+  xiiInt32                               g_iCompareAndSwapCounterEnum = 0;
+
+  xiiAtomicInteger<xiiVariantType::Enum> g_EnumTestAndSetVariable = xiiVariantType::Bool;
+  xiiInt32                               g_iTestAndSetCounterEnum = 0;
 
   class AtomicsTestThread : public xiiThread
   {
@@ -114,6 +123,19 @@ namespace
       if (g_iCompareAndSwapVariable64.CompareAndSwap(0, m_iIndex) == 0)
       {
         ++g_iCompareAndSwapCounter64;
+      }
+
+      const xiiVariantType::Enum targetEnum = m_iIndex == 1 ? xiiVariantType::Float : xiiVariantType::Color;
+      g_EnumSet.Set(targetEnum);
+
+      if (g_EnumTestAndSetVariable.TestAndSet(xiiVariantType::Bool, targetEnum))
+      {
+        ++g_iTestAndSetCounterEnum;
+      }
+
+      if (g_EnumCompareAndSwap.CompareAndSwap(xiiVariantType::Bool, targetEnum) == xiiVariantType::Bool)
+      {
+        ++g_iCompareAndSwapCounterEnum;
       }
 
       return 0;
@@ -204,6 +226,12 @@ XII_CREATE_SIMPLE_TEST(Threading, Atomics)
 
     g_pTestAndSetPointer        = nullptr;
     g_iTestAndSetPointerCounter = 0;
+
+    g_EnumSet                    = xiiVariantType::Bool;
+    g_EnumTestAndSetVariable     = xiiVariantType::Bool;
+    g_EnumCompareAndSwap         = xiiVariantType::Bool;
+    g_iTestAndSetCounterEnum     = 0;
+    g_iCompareAndSwapCounterEnum = 0;
   }
 
 
@@ -287,6 +315,12 @@ XII_CREATE_SIMPLE_TEST(Threading, Atomics)
 
     g_iDecVariable64 = 0;
     XII_TEST_INT(g_iDecVariable64.Decrement(), -1);
+
+    XII_TEST_BOOL(g_EnumSet == xiiVariantType::Float || g_EnumSet == xiiVariantType::Color);
+    XII_TEST_BOOL(g_EnumTestAndSetVariable == xiiVariantType::Float || g_EnumTestAndSetVariable == xiiVariantType::Color);
+    XII_TEST_INT(g_iTestAndSetCounterEnum, 1);
+    XII_TEST_BOOL(g_EnumCompareAndSwap == xiiVariantType::Float || g_EnumCompareAndSwap == xiiVariantType::Color);
+    XII_TEST_INT(g_iCompareAndSwapCounterEnum, 1);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Post Increment Atomics (basics)")

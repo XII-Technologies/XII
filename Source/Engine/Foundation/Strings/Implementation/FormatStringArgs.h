@@ -120,6 +120,9 @@ struct xiiArgFileSize : public xiiArgHumanReadable
 };
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
+/// \brief Converts a windows HRESULT into an error code and a human-readable error message.
+/// Pass in `GetLastError()` function or an HRESULT from another error source. Be careful when printing multiple values, a function could clear `GetLastError` as a side-effect so it is best to store it in a temp variable before printing a complex error message.
+/// \sa https://learn.microsoft.com/en-gb/windows/win32/api/errhandlingapi/nf-errhandlingapi-getlasterror
 struct xiiArgErrorCode
 {
   inline explicit xiiArgErrorCode(xiiUInt32 uiErrorCode) :
@@ -131,6 +134,23 @@ struct xiiArgErrorCode
 };
 XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode& arg);
 
+#endif
+
+#if XII_ENABLED(XII_PLATFORM_LINUX)
+/// \brief Many Linux APIs will fill out error on failure. This converts the error into an error code and a human-readable error message.
+/// Pass in the linux `errno` symbol. Be careful when printing multiple values, a function could clear `errno` as a side-effect so it is best to store it in a temp variable before printing a complex error message.
+/// You may have to include #include <errno.h> use this.
+/// \sa https://man7.org/linux/man-pages/man3/errno.3.html
+struct xiiArgErrno
+{
+  inline explicit xiiArgErrno(xiiInt32 iErrno) :
+    m_iErrno(iErrno)
+  {
+  }
+
+  xiiInt32 m_iErrno;
+};
+XII_FOUNDATION_DLL xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrno& arg);
 #endif
 
 /// \brief Wraps a string that may contain sensitive information, such as user file paths.

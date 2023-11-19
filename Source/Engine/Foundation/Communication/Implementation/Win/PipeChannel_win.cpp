@@ -22,7 +22,6 @@ xiiPipeChannel_win::State::~State() = default;
 xiiPipeChannel_win::xiiPipeChannel_win(xiiStringView sAddress, Mode::Enum mode) :
   xiiIpcChannel(sAddress, mode), m_InputState(this), m_OutputState(this)
 {
-  CreatePipe(sAddress);
   m_pOwner->AddChannel(this);
 }
 
@@ -32,11 +31,10 @@ xiiPipeChannel_win::~xiiPipeChannel_win()
   {
     Disconnect();
   }
-  while (m_bConnected)
+  while (IsConnected())
   {
     xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
   }
-
   m_pOwner->RemoveChannel(this);
 }
 
@@ -66,27 +64,20 @@ bool xiiPipeChannel_win::CreatePipe(xiiStringView sAddress)
     return false;
   }
 
-  return true;
-}
-
-void xiiPipeChannel_win::AddToMessageLoop(xiiMessageLoop* pMsgLoop)
-{
   if (m_hPipeHandle != INVALID_HANDLE_VALUE)
   {
-    xiiMessageLoop_win* pMsgLoopWin = static_cast<xiiMessageLoop_win*>(pMsgLoop);
+    xiiMessageLoop_win* pMsgLoopWin = static_cast<xiiMessageLoop_win*>(m_pOwner);
 
     ULONG_PTR key  = reinterpret_cast<ULONG_PTR>(this);
     HANDLE    port = CreateIoCompletionPort(m_hPipeHandle, pMsgLoopWin->GetPort(), key, 1);
     XII_ASSERT_DEBUG(pMsgLoopWin->GetPort() == port, "Failed to CreateIoCompletionPort: {0}", xiiArgErrorCode(GetLastError()));
   }
+  return true;
 }
 
 void xiiPipeChannel_win::InternalConnect()
 {
-  if (m_hPipeHandle == INVALID_HANDLE_VALUE)
-    return;
-
-  if (m_bConnected)
+  if (GetConnectionState() != ConnectionState::Disconnected)
     return;
 
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
@@ -94,13 +85,21 @@ void xiiPipeChannel_win::InternalConnect()
     m_ThreadId = xiiThreadUtils::GetCurrentThreadID();
 #  endif
 
+  if (!CreatePipe(m_sAddress))
+    return;
+
+  if (m_hPipeHandle == INVALID_HANDLE_VALUE)
+    return;
+
+  SetConnectionState(ConnectionState::Connecting);
   if (m_Mode == Mode::Server)
   {
     ProcessConnection();
   }
   else
   {
-    m_bConnected = true;
+    // If CreatePipe succeeded, we are already connected.
+    SetConnectionState(ConnectionState::Connected);
   }
 
   if (!m_InputState.IsPending)
@@ -108,10 +107,9 @@ void xiiPipeChannel_win::InternalConnect()
     OnIOCompleted(&m_InputState.Context, 0, 0);
   }
 
-  if (m_bConnected)
+  if (IsConnected())
   {
     ProcessOutgoingMessages(0);
-    m_Events.Broadcast(xiiIpcChannelEvent(m_Mode == Mode::Client ? xiiIpcChannelEvent::ConnectedToServer : xiiIpcChannelEvent::ConnectedToClient, this));
   }
 
   return;
@@ -119,6 +117,9 @@ void xiiPipeChannel_win::InternalConnect()
 
 void xiiPipeChannel_win::InternalDisconnect()
 {
+  if (GetConnectionState() == ConnectionState::Disconnected)
+    return;
+
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   if (m_ThreadId != 0)
     XII_ASSERT_DEBUG(m_ThreadId == xiiThreadUtils::GetCurrentThreadID(), "Function must be called from worker thread!");
@@ -139,21 +140,24 @@ void xiiPipeChannel_win::InternalDisconnect()
     FlushPendingOperations();
   }
 
+  bool bWasConnected = false;
   {
     XII_LOCK(m_OutputQueueMutex);
     m_OutputQueue.Clear();
-    m_bConnected = false;
+    bWasConnected = IsConnected();
   }
 
-  m_Events.Broadcast(
-    xiiIpcChannelEvent(m_Mode == Mode::Client ? xiiIpcChannelEvent::DisconnectedFromServer : xiiIpcChannelEvent::DisconnectedFromClient, this));
-  // Raise in case another thread is waiting for new messages (as we would sleep forever otherwise).
-  m_IncomingMessages.RaiseSignal();
+  if (bWasConnected)
+  {
+    SetConnectionState(ConnectionState::Disconnected);
+    // Raise in case another thread is waiting for new messages (as we would sleep forever otherwise).
+    m_IncomingMessages.RaiseSignal();
+  }
 }
 
 void xiiPipeChannel_win::InternalSend()
 {
-  if (!m_OutputState.IsPending && m_bConnected)
+  if (!m_OutputState.IsPending && IsConnected())
   {
     ProcessOutgoingMessages(0);
   }
@@ -185,8 +189,7 @@ bool xiiPipeChannel_win::ProcessConnection()
       m_InputState.IsPending = true;
       break;
     case ERROR_PIPE_CONNECTED:
-      m_bConnected = true;
-      m_Events.Broadcast(xiiIpcChannelEvent(m_Mode == Mode::Client ? xiiIpcChannelEvent::ConnectedToServer : xiiIpcChannelEvent::ConnectedToClient, this));
+      SetConnectionState(ConnectionState::Connected);
       break;
     case ERROR_NO_DATA:
       return false;
@@ -237,7 +240,7 @@ bool xiiPipeChannel_win::ProcessIncomingMessages(DWORD uiBytesRead)
     }
 
     XII_ASSERT_DEBUG(uiBytesRead != 0, "We really should have data at this point.");
-    ReceiveMessageData(xiiArrayPtr<xiiUInt8>(m_InputBuffer, uiBytesRead));
+    ReceiveData(xiiArrayPtr<xiiUInt8>(m_InputBuffer, uiBytesRead));
     uiBytesRead = 0;
   }
   return true;
@@ -245,7 +248,7 @@ bool xiiPipeChannel_win::ProcessIncomingMessages(DWORD uiBytesRead)
 
 bool xiiPipeChannel_win::ProcessOutgoingMessages(DWORD uiBytesWritten)
 {
-  XII_ASSERT_DEBUG(m_bConnected, "Must be connected to process outgoing messages.");
+  XII_ASSERT_DEBUG(IsConnected(), "Must be connected to process outgoing messages.");
   XII_ASSERT_DEBUG(m_ThreadId == xiiThreadUtils::GetCurrentThreadID(), "Function must be called from worker thread!");
 
   if (m_OutputState.IsPending)
@@ -315,7 +318,7 @@ void xiiPipeChannel_win::OnIOCompleted(IOContext* pContext, DWORD uiBytesTransfe
   bool bRes = true;
   if (pContext == &m_InputState.Context)
   {
-    if (!m_bConnected)
+    if (!IsConnected())
     {
       if (!ProcessConnection())
         return;

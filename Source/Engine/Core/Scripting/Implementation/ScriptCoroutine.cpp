@@ -1,5 +1,6 @@
 #include <Core/CorePCH.h>
 
+#include <Core/Scripting/ScriptComponent.h>
 #include <Core/Scripting/ScriptCoroutine.h>
 #include <Core/Scripting/ScriptWorldModule.h>
 #include <Foundation/Types/VariantTypeRegistry.h>
@@ -70,7 +71,7 @@ void xiiScriptCoroutine::Deinitialize()
 // static
 const xiiAbstractFunctionProperty* xiiScriptCoroutine::GetUpdateFunctionProperty()
 {
-  static const xiiAbstractFunctionProperty* pUpdateFunctionProperty = []() -> xiiAbstractFunctionProperty* {
+  static const xiiAbstractFunctionProperty* pUpdateFunctionProperty = []() -> const xiiAbstractFunctionProperty* {
     const xiiRTTI* pType     = xiiGetStaticRTTI<xiiScriptCoroutine>();
     auto           functions = pType->GetFunctions();
     for (auto pFunc : functions)
@@ -97,7 +98,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 //////////////////////////////////////////////////////////////////////////
 
 xiiScriptCoroutineRTTI::xiiScriptCoroutineRTTI(xiiStringView sName, xiiUniquePtr<xiiRTTIAllocator>&& pAllocator) :
-  xiiRTTI(nullptr, xiiGetStaticRTTI<xiiScriptCoroutine>(), 0, 1, xiiVariantType::Invalid, xiiTypeFlags::Class, nullptr, xiiArrayPtr<xiiAbstractProperty*>(), xiiArrayPtr<xiiAbstractFunctionProperty*>(), xiiArrayPtr<xiiPropertyAttribute*>(), xiiArrayPtr<xiiAbstractMessageHandler*>(), xiiArrayPtr<xiiMessageSenderInfo>(), nullptr), m_sTypeNameStorage(sName), m_pAllocatorStorage(std::move(pAllocator))
+  xiiRTTI(nullptr, xiiGetStaticRTTI<xiiScriptCoroutine>(), 0, 1, xiiVariantType::Invalid, xiiTypeFlags::Class, nullptr, xiiArrayPtr<const xiiAbstractProperty*>(), xiiArrayPtr<const xiiAbstractFunctionProperty*>(), xiiArrayPtr<const xiiPropertyAttribute*>(), xiiArrayPtr<xiiAbstractMessageHandler*>(), xiiArrayPtr<xiiMessageSenderInfo>(), nullptr), m_sTypeNameStorage(sName), m_pAllocatorStorage(std::move(pAllocator))
 {
   m_sTypeName  = m_sTypeNameStorage;
   m_pAllocator = m_pAllocatorStorage.Borrow();
@@ -146,5 +147,46 @@ void xiiScriptCoroutineFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xi
     finalArgs.PushBack(hCoroutine);
 
     pModule->StartCoroutine(hCoroutine, finalArgs);
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+xiiScriptCoroutineMessageHandler::xiiScriptCoroutineMessageHandler(xiiStringView sName, const xiiScriptMessageDesc& desc, const xiiSharedPtr<xiiScriptCoroutineRTTI>& pType, xiiScriptCoroutineCreationMode::Enum creationMode) :
+  xiiScriptMessageHandler(desc), m_pType(pType), m_CreationMode(creationMode)
+{
+  m_sName.Assign(sName);
+  m_DispatchFunc = &Dispatch;
+}
+
+xiiScriptCoroutineMessageHandler::~xiiScriptCoroutineMessageHandler() = default;
+
+// static
+void xiiScriptCoroutineMessageHandler::Dispatch(xiiAbstractMessageHandler* pSelf, void* pInstance, xiiMessage& ref_msg)
+{
+  XII_ASSERT_DEBUG(pInstance != nullptr, "Invalid instance.");
+  auto pHandler        = static_cast<xiiScriptCoroutineMessageHandler*>(pSelf);
+  auto pComponent      = static_cast<xiiScriptComponent*>(pInstance);
+  auto pScriptInstance = pComponent->GetScriptInstance();
+
+  xiiWorld* pWorld = pScriptInstance->GetWorld();
+  if (pWorld == nullptr)
+  {
+    xiiLog::Error("Script coroutines need a script instance with a valid xiiWorld.");
+    return;
+  }
+
+  auto pModule = pWorld->GetOrCreateModule<xiiScriptWorldModule>();
+
+  xiiScriptCoroutine* pCoroutine = nullptr;
+  auto                hCoroutine = pModule->CreateCoroutine(pHandler->m_pType.Borrow(), pHandler->m_sName, *pScriptInstance, pHandler->m_CreationMode, pCoroutine);
+
+  if (pCoroutine != nullptr)
+  {
+    xiiHybridArray<xiiVariant, 8> arguments;
+    pHandler->FillMessagePropertyValues(ref_msg, arguments);
+    arguments.PushBack(hCoroutine);
+
+    pModule->StartCoroutine(hCoroutine, arguments);
   }
 }

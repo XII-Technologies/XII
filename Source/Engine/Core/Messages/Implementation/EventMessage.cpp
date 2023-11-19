@@ -15,9 +15,9 @@ XII_CHECK_AT_COMPILETIME(sizeof(xiiEventMessageSender<xiiEventMessage>) == 16);
 namespace xiiInternal
 {
   template <typename World, typename GameObject>
-  static void UpdateCachedReceivers(const xiiMessage& msg, World& ref_world, GameObject pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_cachedReceivers)
+  static void UpdateCachedReceivers(const xiiMessage& msg, World& ref_world, GameObject pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& ref_cachedReceivers)
   {
-    if (inout_cachedReceivers.GetUserData<xiiUInt32>() == 0)
+    if (ref_cachedReceivers.GetUserData<xiiUInt32>() == 0)
     {
       using ComponentType = typename std::conditional<std::is_const<World>::value, const xiiComponent*, xiiComponent*>::type;
 
@@ -26,28 +26,29 @@ namespace xiiInternal
 
       for (auto pEventMsgHandler : eventMsgHandlers)
       {
-        inout_cachedReceivers.PushBack(pEventMsgHandler->GetHandle());
+        ref_cachedReceivers.PushBack(pEventMsgHandler->GetHandle());
       }
 
-      inout_cachedReceivers.GetUserData<xiiUInt32>() = 1;
+      ref_cachedReceivers.GetUserData<xiiUInt32>() = 1;
     }
   }
 
-  void EventMessageSenderHelper::SendEventMessage(xiiMessage& ref_msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_cachedReceivers)
+  bool EventMessageSenderHelper::SendEventMessage(xiiMessage& ref_msg, xiiComponent* pSenderComponent, xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& ref_cachedReceivers)
   {
     xiiWorld* pWorld = pSenderComponent->GetWorld();
-    UpdateCachedReceivers(ref_msg, *pWorld, pSearchObject, inout_cachedReceivers);
+    UpdateCachedReceivers(ref_msg, *pWorld, pSearchObject, ref_cachedReceivers);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
     bool bHandlerFound = false;
 #endif
 
-    for (auto hReceiver : inout_cachedReceivers)
+    bool bResult = false;
+    for (auto hReceiver : ref_cachedReceivers)
     {
       xiiComponent* pReceiverComponent = nullptr;
       if (pWorld->TryGetComponent(hReceiver, pReceiverComponent))
       {
-        pReceiverComponent->SendMessage(ref_msg);
+        bResult |= pReceiverComponent->SendMessage(ref_msg);
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
         bHandlerFound = true;
 #endif
@@ -60,23 +61,26 @@ namespace xiiInternal
       xiiLog::Warning("xiiEventMessageSender::SendMessage: No event message handler found for message of type {0}.", ref_msg.GetId());
     }
 #endif
+
+    return bResult;
   }
 
-  void EventMessageSenderHelper::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_cachedReceivers)
+  bool EventMessageSenderHelper::SendEventMessage(xiiMessage& ref_msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& ref_cachedReceivers)
   {
     const xiiWorld* pWorld = pSenderComponent->GetWorld();
-    UpdateCachedReceivers(ref_msg, *pWorld, pSearchObject, inout_cachedReceivers);
+    UpdateCachedReceivers(ref_msg, *pWorld, pSearchObject, ref_cachedReceivers);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
     bool bHandlerFound = false;
 #endif
 
-    for (auto hReceiver : inout_cachedReceivers)
+    bool bResult = false;
+    for (auto hReceiver : ref_cachedReceivers)
     {
       const xiiComponent* pReceiverComponent = nullptr;
       if (pWorld->TryGetComponent(hReceiver, pReceiverComponent))
       {
-        pReceiverComponent->SendMessage(ref_msg);
+        bResult |= pReceiverComponent->SendMessage(ref_msg);
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
         bHandlerFound = true;
 #endif
@@ -89,16 +93,18 @@ namespace xiiInternal
       xiiLog::Warning("xiiEventMessageSender::SendMessage: No event message handler found for message of type {0}.", ref_msg.GetId());
     }
 #endif
+
+    return bResult;
   }
 
-  void EventMessageSenderHelper::PostEventMessage(const xiiMessage& msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& inout_cachedReceivers, xiiTime delay, xiiObjectMsgQueueType::Enum queueType)
+  void EventMessageSenderHelper::PostEventMessage(const xiiMessage& msg, const xiiComponent* pSenderComponent, const xiiGameObject* pSearchObject, xiiSmallArray<xiiComponentHandle, 1>& ref_cachedReceivers, xiiTime delay, xiiObjectMsgQueueType::Enum queueType)
   {
     const xiiWorld* pWorld = pSenderComponent->GetWorld();
-    UpdateCachedReceivers(msg, *pWorld, pSearchObject, inout_cachedReceivers);
+    UpdateCachedReceivers(msg, *pWorld, pSearchObject, ref_cachedReceivers);
 
-    if (!inout_cachedReceivers.IsEmpty())
+    if (!ref_cachedReceivers.IsEmpty())
     {
-      for (auto hReceiver : inout_cachedReceivers)
+      for (auto hReceiver : ref_cachedReceivers)
       {
         pWorld->PostMessage(hReceiver, msg, delay, queueType);
       }

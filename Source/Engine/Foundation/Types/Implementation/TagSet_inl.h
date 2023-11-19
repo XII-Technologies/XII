@@ -36,21 +36,24 @@ public:
 
   virtual bool IsEmpty(const void* pInstance) const override { return m_ConstGetter(static_cast<const Class*>(pInstance)).IsEmpty(); }
 
-  virtual void Clear(void* pInstance) override
+  virtual void Clear(void* pInstance) const override
   {
     XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     m_Getter(static_cast<Class*>(pInstance)).Clear();
   }
 
-  virtual void Insert(void* pInstance, const void* pObject) override
+  virtual void Insert(void* pInstance, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     m_Getter(static_cast<Class*>(pInstance)).SetByName(*static_cast<const RealType*>(pObject));
   }
 
-  virtual void Remove(void* pInstance, const void* pObject) override
+  virtual void Remove(void* pInstance, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const set accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     m_Getter(static_cast<Class*>(pInstance)).RemoveByName(*static_cast<const RealType*>(pObject));
   }
 
@@ -104,10 +107,9 @@ public:
 
   virtual bool IsEmpty(const void* pInstance) const override { return (static_cast<const Class*>(pInstance)->*m_GetValues)().IsEmpty(); }
 
-  virtual void Clear(void* pInstance) override
+  virtual void Clear(void* pInstance) const override
   {
-    XII_ASSERT_DEBUG(m_Insert != nullptr && m_Remove != nullptr, "The property '{0}' has no remove and insert function, thus it is read-only",
-                     xiiAbstractProperty::GetPropertyName());
+    XII_ASSERT_DEBUG(m_Insert != nullptr && m_Remove != nullptr, "The property '{0}' has no remove and insert function, thus it is read-only", xiiAbstractProperty::GetPropertyName());
 
     // We must not cache the container c here as the Remove can make it invalid
     // e.g. xiiArrayPtr by value.
@@ -121,15 +123,17 @@ public:
     }
   }
 
-  virtual void Insert(void* pInstance, const void* pObject) override
+  virtual void Insert(void* pInstance, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(m_Insert != nullptr, "The property '{0}' has no insert function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     (static_cast<Class*>(pInstance)->*m_Insert)(*static_cast<const RealType*>(pObject));
   }
 
-  virtual void Remove(void* pInstance, const void* pObject) override
+  virtual void Remove(void* pInstance, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(m_Remove != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     (static_cast<Class*>(pInstance)->*m_Remove)(*static_cast<const RealType*>(pObject));
   }
 
@@ -163,7 +167,7 @@ xiiTagSetTemplate<BlockStorageAllocator>::Iterator::Iterator(const xiiTagSetTemp
     m_uiIndex = m_pTagSet->GetTagBlockStart() * (sizeof(xiiTagSetBlockStorage) * 8);
 
     if (m_pTagSet->IsEmpty())
-      m_uiIndex = 0xFFFFFFFF;
+      m_uiIndex = 0xFFFFFFFFU;
     else
     {
       if (!IsBitSet())
@@ -171,7 +175,7 @@ xiiTagSetTemplate<BlockStorageAllocator>::Iterator::Iterator(const xiiTagSetTemp
     }
   }
   else
-    m_uiIndex = 0xFFFFFFFF;
+    m_uiIndex = 0xFFFFFFFFU;
 }
 
 template <typename BlockStorageAllocator>
@@ -195,7 +199,7 @@ void xiiTagSetTemplate<BlockStorageAllocator>::Iterator::operator++()
   } while (m_uiIndex < uiMax && !IsBitSet());
 
   if (m_uiIndex >= uiMax)
-    m_uiIndex = 0xFFFFFFFF;
+    m_uiIndex = 0xFFFFFFFFU;
 }
 
 template <typename BlockStorageAllocator>

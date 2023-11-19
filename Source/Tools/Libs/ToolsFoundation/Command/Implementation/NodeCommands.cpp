@@ -279,9 +279,9 @@ xiiStatus xiiDisconnectNodePinsCommand::UndoInternal(bool bFireEvents)
 xiiStatus xiiNodeCommands::AddAndConnectCommand(xiiCommandHistory* pHistory, const xiiRTTI* pConnectionType, const xiiPin& sourcePin, const xiiPin& targetPin)
 {
   xiiAddObjectCommand cmd;
-  cmd.m_pType = pConnectionType;
-  cmd.m_NewObjectGuid.CreateNewUuid();
-  cmd.m_Index = -1;
+  cmd.m_pType         = pConnectionType;
+  cmd.m_NewObjectGuid = xiiUuid::CreateUuid();
+  cmd.m_Index         = -1;
 
   xiiStatus res = pHistory->AddCommand(cmd);
   if (res.m_Result.Succeeded())

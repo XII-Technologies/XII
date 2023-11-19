@@ -3,13 +3,7 @@
 #include <Foundation/Basics.h>
 #include <QWidget>
 
-xiiQtScopedUpdatesDisabled::xiiQtScopedUpdatesDisabled(
-  QWidget* pWidget1,
-  QWidget* pWidget2,
-  QWidget* pWidget3,
-  QWidget* pWidget4,
-  QWidget* pWidget5,
-  QWidget* pWidget6)
+xiiQtScopedUpdatesDisabled::xiiQtScopedUpdatesDisabled(QWidget* pWidget1, QWidget* pWidget2, QWidget* pWidget3, QWidget* pWidget4, QWidget* pWidget5, QWidget* pWidget6)
 {
   QWidget* pWidgets[] = {pWidget1, pWidget2, pWidget3, pWidget4, pWidget5, pWidget6};
 
@@ -38,13 +32,7 @@ xiiQtScopedUpdatesDisabled::~xiiQtScopedUpdatesDisabled()
   }
 }
 
-xiiQtScopedBlockSignals::xiiQtScopedBlockSignals(
-  QObject* pObject1,
-  QObject* pObject2,
-  QObject* pObject3,
-  QObject* pObject4,
-  QObject* pObject5,
-  QObject* pObject6)
+xiiQtScopedBlockSignals::xiiQtScopedBlockSignals(QObject* pObject1, QObject* pObject2, QObject* pObject3, QObject* pObject4, QObject* pObject5, QObject* pObject6)
 {
   QObject* pObjects[] = {pObject1, pObject2, pObject3, pObject4, pObject5, pObject6};
 
