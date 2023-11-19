@@ -15,7 +15,7 @@ public:
   xiiVisualScriptDataStorage* GetInstanceDataStorage() { return m_pInstanceDataStorage.Borrow(); }
 
 private:
-  xiiSharedPtr<xiiVisualScriptDataStorage> m_pConstantDataStorage;
-  xiiUniquePtr<xiiVisualScriptDataStorage> m_pInstanceDataStorage;
+  xiiSharedPtr<xiiVisualScriptDataStorage>         m_pConstantDataStorage;
+  xiiUniquePtr<xiiVisualScriptDataStorage>         m_pInstanceDataStorage;
   xiiSharedPtr<xiiVisualScriptInstanceDataMapping> m_pInstanceDataMapping;
 };

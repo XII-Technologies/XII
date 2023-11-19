@@ -36,7 +36,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(TypeScript, Resource)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiVisualScriptClassResource::xiiVisualScriptClassResource() = default;
+xiiVisualScriptClassResource::xiiVisualScriptClassResource()  = default;
 xiiVisualScriptClassResource::~xiiVisualScriptClassResource() = default;
 
 xiiResourceLoadDesc xiiVisualScriptClassResource::UnloadData(Unload WhatToUnload)
@@ -45,9 +45,9 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UnloadData(Unload WhatToUnload
   DeleteAllScriptCoroutineTypes();
 
   xiiResourceLoadDesc ld;
-  ld.m_State = xiiResourceState::Unloaded;
+  ld.m_State                      = xiiResourceState::Unloaded;
   ld.m_uiQualityLevelsDiscardable = 0;
-  ld.m_uiQualityLevelsLoadable = 0;
+  ld.m_uiQualityLevelsLoadable    = 0;
 
   return ld;
 }
@@ -56,8 +56,8 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UpdateContent(xiiStreamReader*
 {
   xiiResourceLoadDesc ld;
   ld.m_uiQualityLevelsDiscardable = 0;
-  ld.m_uiQualityLevelsLoadable = 0;
-  ld.m_State = xiiResourceState::LoadedResourceMissing;
+  ld.m_uiQualityLevelsLoadable    = 0;
+  ld.m_State                      = xiiResourceState::LoadedResourceMissing;
 
   if (pStream == nullptr)
   {
@@ -74,9 +74,9 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UpdateContent(xiiStreamReader*
   xiiAssetFileHeader AssetHash;
   AssetHash.Read(*pStream).IgnoreResult();
 
-  xiiString sScriptClassName;
-  const xiiRTTI* pBaseClassType = nullptr;
-  xiiScriptRTTI::FunctionList functions;
+  xiiString                         sScriptClassName;
+  const xiiRTTI*                    pBaseClassType = nullptr;
+  xiiScriptRTTI::FunctionList       functions;
   xiiScriptRTTI::MessageHandlerList messageHandlers;
   {
     xiiStringDeduplicationReadContext stringDedup(*pStream);
@@ -108,9 +108,9 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UpdateContent(xiiStreamReader*
 
         for (xiiUInt32 i = 0; i < uiNumFunctions; ++i)
         {
-          xiiString sFunctionName;
+          xiiString                                     sFunctionName;
           xiiEnum<xiiVisualScriptNodeDescription::Type> functionType;
-          xiiEnum<xiiScriptCoroutineCreationMode> coroutineCreationMode;
+          xiiEnum<xiiScriptCoroutineCreationMode>       coroutineCreationMode;
           chunk >> sFunctionName;
           chunk >> functionType;
           chunk >> coroutineCreationMode;
@@ -129,23 +129,23 @@ xiiResourceLoadDesc xiiVisualScriptClassResource::UpdateContent(xiiStreamReader*
           }
           else if (functionType == xiiVisualScriptNodeDescription::Type::EntryCall_Coroutine)
           {
-            xiiUniquePtr<xiiVisualScriptCoroutineAllocator> pCoroutineAllocator = XII_SCRIPT_NEW(xiiVisualScriptCoroutineAllocator, std::move(pDesc));
-            auto pCoroutineType = CreateScriptCoroutineType(sScriptClassName, sFunctionName, std::move(pCoroutineAllocator));
-            xiiUniquePtr<xiiScriptCoroutineFunctionProperty> pFunctionProperty = XII_SCRIPT_NEW(xiiScriptCoroutineFunctionProperty, sFunctionName, pCoroutineType, coroutineCreationMode);
+            xiiUniquePtr<xiiVisualScriptCoroutineAllocator>  pCoroutineAllocator = XII_SCRIPT_NEW(xiiVisualScriptCoroutineAllocator, std::move(pDesc));
+            auto                                             pCoroutineType      = CreateScriptCoroutineType(sScriptClassName, sFunctionName, std::move(pCoroutineAllocator));
+            xiiUniquePtr<xiiScriptCoroutineFunctionProperty> pFunctionProperty   = XII_SCRIPT_NEW(xiiScriptCoroutineFunctionProperty, sFunctionName, pCoroutineType, coroutineCreationMode);
             functions.PushBack(std::move(pFunctionProperty));
           }
           else if (functionType == xiiVisualScriptNodeDescription::Type::MessageHandler)
           {
-            auto desc = pDesc->GetMessageDesc();
+            auto                                        desc            = pDesc->GetMessageDesc();
             xiiUniquePtr<xiiVisualScriptMessageHandler> pMessageHandler = XII_SCRIPT_NEW(xiiVisualScriptMessageHandler, desc, std::move(pDesc));
             messageHandlers.PushBack(std::move(pMessageHandler));
           }
           else if (functionType == xiiVisualScriptNodeDescription::Type::MessageHandler_Coroutine)
           {
-            auto desc = pDesc->GetMessageDesc();
+            auto                                            desc                = pDesc->GetMessageDesc();
             xiiUniquePtr<xiiVisualScriptCoroutineAllocator> pCoroutineAllocator = XII_SCRIPT_NEW(xiiVisualScriptCoroutineAllocator, std::move(pDesc));
-            auto pCoroutineType = CreateScriptCoroutineType(sScriptClassName, sFunctionName, std::move(pCoroutineAllocator));
-            xiiUniquePtr<xiiScriptCoroutineMessageHandler> pMessageHandler = XII_SCRIPT_NEW(xiiScriptCoroutineMessageHandler, sFunctionName, desc, pCoroutineType, coroutineCreationMode);
+            auto                                            pCoroutineType      = CreateScriptCoroutineType(sScriptClassName, sFunctionName, std::move(pCoroutineAllocator));
+            xiiUniquePtr<xiiScriptCoroutineMessageHandler>  pMessageHandler     = XII_SCRIPT_NEW(xiiScriptCoroutineMessageHandler, sFunctionName, desc, pCoroutineType, coroutineCreationMode);
             messageHandlers.PushBack(std::move(pMessageHandler));
           }
           else

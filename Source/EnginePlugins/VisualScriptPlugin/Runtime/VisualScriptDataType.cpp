@@ -63,12 +63,12 @@ namespace
   static xiiUInt32 s_ScriptDataTypeSizes[] = {
     0, // Invalid,
 
-    sizeof(bool),                           // Bool,
+    sizeof(bool),                            // Bool,
     sizeof(xiiUInt8),                        // Byte,
     sizeof(xiiInt32),                        // Int,
     sizeof(xiiInt64),                        // Int64,
-    sizeof(float),                          // Float,
-    sizeof(double),                         // Double,
+    sizeof(float),                           // Float,
+    sizeof(double),                          // Double,
     sizeof(xiiColor),                        // Color,
     sizeof(xiiVec3),                         // Vector3,
     sizeof(xiiQuat),                         // Quaternion,
@@ -90,12 +90,12 @@ namespace
   static xiiUInt32 s_ScriptDataTypeAlignments[] = {
     0, // Invalid,
 
-    XII_ALIGNMENT_OF(bool),                           // Bool,
+    XII_ALIGNMENT_OF(bool),                            // Bool,
     XII_ALIGNMENT_OF(xiiUInt8),                        // Byte,
     XII_ALIGNMENT_OF(xiiInt32),                        // Int,
     XII_ALIGNMENT_OF(xiiInt64),                        // Int64,
-    XII_ALIGNMENT_OF(float),                          // Float,
-    XII_ALIGNMENT_OF(double),                         // Double,
+    XII_ALIGNMENT_OF(float),                           // Float,
+    XII_ALIGNMENT_OF(double),                          // Double,
     XII_ALIGNMENT_OF(xiiColor),                        // Color,
     XII_ALIGNMENT_OF(xiiVec3),                         // Vector3,
     XII_ALIGNMENT_OF(xiiQuat),                         // Quaternion,
@@ -207,12 +207,12 @@ const xiiRTTI* xiiVisualScriptDataType::GetRtti(Enum dataType)
   static const xiiRTTI* s_Rttis[] = {
     nullptr, // Invalid,
 
-    xiiGetStaticRTTI<bool>(),                    // Bool,
+    xiiGetStaticRTTI<bool>(),                     // Bool,
     xiiGetStaticRTTI<xiiUInt8>(),                 // Byte,
     xiiGetStaticRTTI<xiiInt32>(),                 // Int,
     xiiGetStaticRTTI<xiiInt64>(),                 // Int64,
-    xiiGetStaticRTTI<float>(),                   // Float,
-    xiiGetStaticRTTI<double>(),                  // Double,
+    xiiGetStaticRTTI<float>(),                    // Float,
+    xiiGetStaticRTTI<double>(),                   // Double,
     xiiGetStaticRTTI<xiiColor>(),                 // Color,
     xiiGetStaticRTTI<xiiVec3>(),                  // Vector3,
     xiiGetStaticRTTI<xiiQuat>(),                  // Quaternion,
@@ -223,13 +223,13 @@ const xiiRTTI* xiiVisualScriptDataType::GetRtti(Enum dataType)
     xiiGetStaticRTTI<xiiHashedString>(),          // HashedString,
     xiiGetStaticRTTI<xiiGameObjectHandle>(),      // GameObject,
     xiiGetStaticRTTI<xiiComponentHandle>(),       // Component,
-    nullptr,                                    // TypedPointer,
+    nullptr,                                      // TypedPointer,
     xiiGetStaticRTTI<xiiVariant>(),               // Variant,
     xiiGetStaticRTTI<xiiVariantArray>(),          // Array,
     xiiGetStaticRTTI<xiiVariantDictionary>(),     // Map,
     xiiGetStaticRTTI<xiiScriptCoroutineHandle>(), // Coroutine,
-    nullptr,                                    // Count,
-    nullptr,                                    // EnumValue,
+    nullptr,                                      // Count,
+    nullptr,                                      // EnumValue,
   };
   static_assert(XII_ARRAY_SIZE(s_Rttis) == (size_t)xiiVisualScriptDataType::ExtendedCount);
 
@@ -320,7 +320,7 @@ xiiGameObject* xiiVisualScriptGameObjectHandle::GetPtr(xiiUInt32 uiExecutionCoun
     return m_Ptr;
   }
 
-  m_Ptr = nullptr;
+  m_Ptr                = nullptr;
   m_uiExecutionCounter = uiExecutionCounter;
 
   if (xiiWorld* pWorld = xiiWorld::GetWorld(m_Handle))
@@ -339,7 +339,7 @@ xiiComponent* xiiVisualScriptComponentHandle::GetPtr(xiiUInt32 uiExecutionCounte
     return m_Ptr;
   }
 
-  m_Ptr = nullptr;
+  m_Ptr                = nullptr;
   m_uiExecutionCounter = uiExecutionCounter;
 
   if (xiiWorld* pWorld = xiiWorld::GetWorld(m_Handle))

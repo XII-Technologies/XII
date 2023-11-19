@@ -12,7 +12,7 @@ XII_CREATE_SIMPLE_TEST_GROUP(Reflection);
 
 void VariantToPropertyTest(void* pIntStruct, const xiiRTTI* pRttiInt, xiiStringView sPropName, xiiVariant::Type::Enum type)
 {
-  xiiAbstractMemberProperty* pProp = xiiReflectionUtils::GetMemberProperty(pRttiInt, sPropName);
+  const xiiAbstractMemberProperty* pProp = xiiReflectionUtils::GetMemberProperty(pRttiInt, sPropName);
   XII_TEST_BOOL(pProp != nullptr);
   if (pProp)
   {
@@ -174,8 +174,8 @@ void AccessorPropertyTest(xiiIReflectedTypeAccessor& ref_accessor, xiiStringView
   XII_TEST_BOOL(oldValue.IsValid());
   XII_TEST_BOOL(oldValue.GetType() == type);
 
-  xiiAbstractProperty* pProp        = ref_accessor.GetType()->FindPropertyByName(sProperty);
-  xiiVariant           defaultValue = xiiReflectionUtils::GetDefaultValue(pProp);
+  const xiiAbstractProperty* pProp        = ref_accessor.GetType()->FindPropertyByName(sProperty);
+  xiiVariant                 defaultValue = xiiReflectionUtils::GetDefaultValue(pProp);
   XII_TEST_BOOL(defaultValue.GetType() == type);
   bool bSetSuccess = ref_accessor.SetValue(sProperty, defaultValue);
   XII_TEST_BOOL(bSetSuccess);
@@ -201,14 +201,14 @@ xiiUInt32 AccessorPropertiesTest(xiiIReflectedTypeAccessor& ref_accessor, const 
   xiiUInt32 uiPropCount = pType->GetProperties().GetCount();
   for (xiiUInt32 i = 0; i < uiPropCount; ++i)
   {
-    xiiAbstractProperty* pProp        = pType->GetProperties()[i];
-    const bool           bIsValueType = xiiReflectionUtils::IsValueType(pProp);
+    const xiiAbstractProperty* pProp        = pType->GetProperties()[i];
+    const bool                 bIsValueType = xiiReflectionUtils::IsValueType(pProp);
 
     switch (pProp->GetCategory())
     {
       case xiiPropertyCategory::Member:
       {
-        xiiAbstractMemberProperty* pProp3 = static_cast<xiiAbstractMemberProperty*>(pProp);
+        auto pProp3 = static_cast<const xiiAbstractMemberProperty*>(pProp);
         if (pProp->GetFlags().IsSet(xiiPropertyFlags::IsEnum))
         {
           AccessorPropertyTest(ref_accessor, pProp->GetPropertyName(), xiiVariant::Type::Int64);

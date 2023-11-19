@@ -113,11 +113,11 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptNodeDescription
 
   using DataOffset = xiiVisualScriptDataDescription::DataOffset;
 
-  xiiEnum<Type> m_Type;
+  xiiEnum<Type>                    m_Type;
   xiiEnum<xiiVisualScriptDataType> m_DeductedDataType;
-  xiiSmallArray<xiiUInt16, 4> m_ExecutionIndices;
-  xiiSmallArray<DataOffset, 4> m_InputDataOffsets;
-  xiiSmallArray<DataOffset, 2> m_OutputDataOffsets;
+  xiiSmallArray<xiiUInt16, 4>      m_ExecutionIndices;
+  xiiSmallArray<DataOffset, 4>     m_InputDataOffsets;
+  xiiSmallArray<DataOffset, 2>     m_OutputDataOffsets;
 
   xiiHashedString m_sTargetTypeName;
 
@@ -135,21 +135,21 @@ public:
   ~xiiVisualScriptGraphDescription();
 
   static xiiResult Serialize(xiiArrayPtr<const xiiVisualScriptNodeDescription> nodes, const xiiVisualScriptDataDescription& localDataDesc, xiiStreamWriter& inout_stream);
-  xiiResult Deserialize(xiiStreamReader& inout_stream);
+  xiiResult        Deserialize(xiiStreamReader& inout_stream);
 
   template <typename T, xiiUInt32 Size>
   struct EmbeddedArrayOrPointer
   {
     union
     {
-      T m_Embedded[Size] = {};
+      T  m_Embedded[Size] = {};
       T* m_Ptr;
     };
 
     static void AddAdditionalDataSize(xiiArrayPtr<const T> a, xiiUInt32& inout_uiAdditionalDataSize);
     static void AddAdditionalDataSize(xiiUInt32 uiSize, xiiUInt32 uiAlignment, xiiUInt32& inout_uiAdditionalDataSize);
 
-    T* Init(xiiUInt8 uiCount, xiiUInt8*& inout_pAdditionalData);
+    T*        Init(xiiUInt8 uiCount, xiiUInt8*& inout_pAdditionalData);
     xiiResult ReadFromStream(xiiUInt8& out_uiCount, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData);
   };
 
@@ -159,7 +159,7 @@ public:
     {
       enum Enum
       {
-        Completed = 0,
+        Completed     = 0,
         ContinueLater = -1,
 
         Error = -100,
@@ -171,17 +171,17 @@ public:
     static XII_ALWAYS_INLINE ExecResult ContinueLater(xiiTime maxDelay) { return {State::ContinueLater, maxDelay}; }
     static XII_ALWAYS_INLINE ExecResult Error() { return {State::Error}; }
 
-    int m_NextExecAndState = 0;
-    xiiTime m_MaxDelay = xiiTime::Zero();
+    int     m_NextExecAndState = 0;
+    xiiTime m_MaxDelay         = xiiTime::Zero();
   };
 
   struct Node;
-  using ExecuteFunction = ExecResult (*)(xiiVisualScriptExecutionContext& inout_context, const Node& node);
-  using DataOffset = xiiVisualScriptDataDescription::DataOffset;
-  using ExecutionIndicesArray = EmbeddedArrayOrPointer<xiiUInt16, 4>;
-  using InputDataOffsetsArray = EmbeddedArrayOrPointer<DataOffset, 4>;
+  using ExecuteFunction        = ExecResult (*)(xiiVisualScriptExecutionContext& inout_context, const Node& node);
+  using DataOffset             = xiiVisualScriptDataDescription::DataOffset;
+  using ExecutionIndicesArray  = EmbeddedArrayOrPointer<xiiUInt16, 4>;
+  using InputDataOffsetsArray  = EmbeddedArrayOrPointer<DataOffset, 4>;
   using OutputDataOffsetsArray = EmbeddedArrayOrPointer<DataOffset, 2>;
-  using UserDataArray = EmbeddedArrayOrPointer<xiiUInt32, 4>;
+  using UserDataArray          = EmbeddedArrayOrPointer<xiiUInt32, 4>;
 
   struct Node
   {
@@ -190,21 +190,21 @@ public:
     xiiUInt32 m_uiPadding = 0;
 #endif
 
-    ExecutionIndicesArray m_ExecutionIndices;
-    InputDataOffsetsArray m_InputDataOffsets;
+    ExecutionIndicesArray  m_ExecutionIndices;
+    InputDataOffsetsArray  m_InputDataOffsets;
     OutputDataOffsetsArray m_OutputDataOffsets;
-    UserDataArray m_UserData;
+    UserDataArray          m_UserData;
 
     xiiEnum<xiiVisualScriptNodeDescription::Type> m_Type;
-    xiiUInt8 m_NumExecutionIndices;
-    xiiUInt8 m_NumInputDataOffsets;
-    xiiUInt8 m_NumOutputDataOffsets;
+    xiiUInt8                                      m_NumExecutionIndices;
+    xiiUInt8                                      m_NumInputDataOffsets;
+    xiiUInt8                                      m_NumOutputDataOffsets;
 
-    xiiUInt16 m_UserDataByteSize;
+    xiiUInt16                        m_UserDataByteSize;
     xiiEnum<xiiVisualScriptDataType> m_DeductedDataType;
-    xiiUInt8 m_Reserved = 0;
+    xiiUInt8                         m_Reserved = 0;
 
-    xiiUInt32 GetExecutionIndex(xiiUInt32 uiSlot) const;
+    xiiUInt32  GetExecutionIndex(xiiUInt32 uiSlot) const;
     DataOffset GetInputDataOffset(xiiUInt32 uiSlot) const;
     DataOffset GetOutputDataOffset(xiiUInt32 uiSlot) const;
 
@@ -217,14 +217,14 @@ public:
 
   const Node* GetNode(xiiUInt32 uiIndex) const;
 
-  bool IsCoroutine() const;
+  bool                 IsCoroutine() const;
   xiiScriptMessageDesc GetMessageDesc() const;
 
   const xiiSharedPtr<const xiiVisualScriptDataDescription>& GetLocalDataDesc() const;
 
 private:
   xiiArrayPtr<const Node> m_Nodes;
-  xiiBlob m_Storage;
+  xiiBlob                 m_Storage;
 
   xiiSharedPtr<const xiiVisualScriptDataDescription> m_pLocalDataDesc;
 };
@@ -261,19 +261,19 @@ public:
   void SetPointerData(DataOffset dataOffset, T ptr, const xiiRTTI* pType = nullptr);
 
   xiiVariant GetDataAsVariant(DataOffset dataOffset, const xiiRTTI* pExpectedType) const;
-  void SetDataFromVariant(DataOffset dataOffset, const xiiVariant& value);
+  void       SetDataFromVariant(DataOffset dataOffset, const xiiVariant& value);
 
   xiiScriptCoroutine* GetCurrentCoroutine() { return m_pCurrentCoroutine; }
-  void SetCurrentCoroutine(xiiScriptCoroutine* pCoroutine);
+  void                SetCurrentCoroutine(xiiScriptCoroutine* pCoroutine);
 
   xiiTime GetDeltaTimeSinceLastExecution();
 
 private:
   xiiSharedPtr<const xiiVisualScriptGraphDescription> m_pDesc;
-  xiiVisualScriptInstance* m_pInstance = nullptr;
-  xiiUInt32 m_uiCurrentNode = 0;
-  xiiUInt32 m_uiExecutionCounter = 0;
-  xiiTime m_DeltaTimeSinceLastExecution;
+  xiiVisualScriptInstance*                            m_pInstance          = nullptr;
+  xiiUInt32                                           m_uiCurrentNode      = 0;
+  xiiUInt32                                           m_uiExecutionCounter = 0;
+  xiiTime                                             m_DeltaTimeSinceLastExecution;
 
   xiiVisualScriptDataStorage* m_DataStorage[DataOffset::Source::Count] = {};
 

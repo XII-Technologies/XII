@@ -5,43 +5,43 @@
 #include <VisualScriptPlugin/Runtime/VisualScriptInstance.h>
 #include <VisualScriptPlugin/Runtime/VisualScriptNodeUserData.h>
 
-using ExecResult = xiiVisualScriptGraphDescription::ExecResult;
+using ExecResult            = xiiVisualScriptGraphDescription::ExecResult;
 using ExecuteFunctionGetter = xiiVisualScriptGraphDescription::ExecuteFunction (*)(xiiVisualScriptDataType::Enum dataType);
 
-#define MAKE_EXEC_FUNC_GETTER(funcName)                                                                               \
+#define MAKE_EXEC_FUNC_GETTER(funcName)                                                                                  \
   xiiVisualScriptGraphDescription::ExecuteFunction XII_CONCAT(funcName, _Getter)(xiiVisualScriptDataType::Enum dataType) \
-  {                                                                                                                   \
-    static xiiVisualScriptGraphDescription::ExecuteFunction functionTable[] = {                                        \
-      nullptr, /* Invalid*/                                                                                           \
-      &funcName<bool>,                                                                                                \
-      &funcName<xiiUInt8>,                                                                                             \
-      &funcName<xiiInt32>,                                                                                             \
-      &funcName<xiiInt64>,                                                                                             \
-      &funcName<float>,                                                                                               \
-      &funcName<double>,                                                                                              \
-      &funcName<xiiColor>,                                                                                             \
-      &funcName<xiiVec3>,                                                                                              \
-      &funcName<xiiQuat>,                                                                                              \
-      &funcName<xiiTransform>,                                                                                         \
-      &funcName<xiiTime>,                                                                                              \
-      &funcName<xiiAngle>,                                                                                             \
-      &funcName<xiiString>,                                                                                            \
-      &funcName<xiiHashedString>,                                                                                      \
-      &funcName<xiiGameObjectHandle>,                                                                                  \
-      &funcName<xiiComponentHandle>,                                                                                   \
-      &funcName<xiiTypedPointer>,                                                                                      \
-      &funcName<xiiVariant>,                                                                                           \
-      &funcName<xiiVariantArray>,                                                                                      \
-      &funcName<xiiVariantDictionary>,                                                                                 \
-      &funcName<xiiScriptCoroutineHandle>,                                                                             \
-    };                                                                                                                \
-                                                                                                                      \
-    static_assert(XII_ARRAY_SIZE(functionTable) == xiiVisualScriptDataType::Count);                                     \
-    if (dataType >= 0 && dataType < XII_ARRAY_SIZE(functionTable))                                                     \
-      return functionTable[dataType];                                                                                 \
-                                                                                                                      \
-    xiiLog::Error("Invalid data type for deducted type {}. Script needs re-transform.", dataType);                     \
-    return nullptr;                                                                                                   \
+  {                                                                                                                      \
+    static xiiVisualScriptGraphDescription::ExecuteFunction functionTable[] = {                                          \
+      nullptr, /* Invalid*/                                                                                              \
+      &funcName<bool>,                                                                                                   \
+      &funcName<xiiUInt8>,                                                                                               \
+      &funcName<xiiInt32>,                                                                                               \
+      &funcName<xiiInt64>,                                                                                               \
+      &funcName<float>,                                                                                                  \
+      &funcName<double>,                                                                                                 \
+      &funcName<xiiColor>,                                                                                               \
+      &funcName<xiiVec3>,                                                                                                \
+      &funcName<xiiQuat>,                                                                                                \
+      &funcName<xiiTransform>,                                                                                           \
+      &funcName<xiiTime>,                                                                                                \
+      &funcName<xiiAngle>,                                                                                               \
+      &funcName<xiiString>,                                                                                              \
+      &funcName<xiiHashedString>,                                                                                        \
+      &funcName<xiiGameObjectHandle>,                                                                                    \
+      &funcName<xiiComponentHandle>,                                                                                     \
+      &funcName<xiiTypedPointer>,                                                                                        \
+      &funcName<xiiVariant>,                                                                                             \
+      &funcName<xiiVariantArray>,                                                                                        \
+      &funcName<xiiVariantDictionary>,                                                                                   \
+      &funcName<xiiScriptCoroutineHandle>,                                                                               \
+    };                                                                                                                   \
+                                                                                                                         \
+    static_assert(XII_ARRAY_SIZE(functionTable) == xiiVisualScriptDataType::Count);                                      \
+    if (dataType >= 0 && dataType < XII_ARRAY_SIZE(functionTable))                                                       \
+      return functionTable[dataType];                                                                                    \
+                                                                                                                         \
+    xiiLog::Error("Invalid data type for deducted type {}. Script needs re-transform.", dataType);                       \
+    return nullptr;                                                                                                      \
   }
 
 template <typename T>
@@ -96,7 +96,7 @@ namespace
     auto pFunction = static_cast<const xiiAbstractFunctionProperty*>(userData.m_pProperty);
 
     xiiTypedPointer pInstance;
-    xiiUInt32 uiSlot = 0;
+    xiiUInt32       uiSlot = 0;
 
     if (pFunction->GetFunctionType() == xiiFunctionType::Member)
     {
@@ -137,8 +137,8 @@ namespace
   template <typename T>
   static ExecResult NodeFunction_GetReflectedProperty(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    auto& userData = node.GetUserData<NodeUserData_TypeAndProperty>();
-    auto pProperty = userData.m_pProperty;
+    auto& userData  = node.GetUserData<NodeUserData_TypeAndProperty>();
+    auto  pProperty = userData.m_pProperty;
 
     xiiTypedPointer pInstance;
     pInstance = inout_context.GetPointerData(node.GetInputDataOffset(0));
@@ -187,8 +187,8 @@ namespace
   template <typename T>
   static ExecResult NodeFunction_SetReflectedProperty(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    auto& userData = node.GetUserData<NodeUserData_TypeAndProperty>();
-    auto pProperty = userData.m_pProperty;
+    auto& userData  = node.GetUserData<NodeUserData_TypeAndProperty>();
+    auto  pProperty = userData.m_pProperty;
 
     xiiTypedPointer pInstance;
     pInstance = inout_context.GetPointerData(node.GetInputDataOffset(0));
@@ -265,8 +265,8 @@ namespace
       return ExecResult::ContinueLater(result.m_MaxDelay);
     }
 
-    xiiWorld* pWorld = inout_context.GetInstance().GetWorld();
-    auto pModule = pWorld->GetOrCreateModule<xiiScriptWorldModule>();
+    xiiWorld* pWorld  = inout_context.GetInstance().GetWorld();
+    auto      pModule = pWorld->GetOrCreateModule<xiiScriptWorldModule>();
     pModule->StopAndDeleteCoroutine(pCoroutine->GetHandle());
     inout_context.SetCurrentCoroutine(nullptr);
 
@@ -294,11 +294,11 @@ namespace
 
   static ExecResult NodeFunction_SendMessage(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    auto& userData = node.GetUserData<NodeUserData_TypeAndProperties>();
-    auto targetObjectDataOffset = node.GetInputDataOffset(0);
-    auto targetComponentDataOffset = node.GetInputDataOffset(1);
+    auto& userData                  = node.GetUserData<NodeUserData_TypeAndProperties>();
+    auto  targetObjectDataOffset    = node.GetInputDataOffset(0);
+    auto  targetComponentDataOffset = node.GetInputDataOffset(1);
 
-    auto pTargetObject = targetObjectDataOffset.IsValid() ? static_cast<xiiGameObject*>(inout_context.GetPointerData(targetObjectDataOffset).m_pObject) : nullptr;
+    auto pTargetObject    = targetObjectDataOffset.IsValid() ? static_cast<xiiGameObject*>(inout_context.GetPointerData(targetObjectDataOffset).m_pObject) : nullptr;
     auto pTargetComponent = targetComponentDataOffset.IsValid() ? static_cast<xiiComponent*>(inout_context.GetPointerData(targetComponentDataOffset).m_pObject) : nullptr;
     if (pTargetObject == nullptr && pTargetComponent == nullptr)
     {
@@ -306,7 +306,7 @@ namespace
       return ExecResult::Error();
     }
 
-    auto mode = static_cast<xiiVisualScriptSendMessageMode::Enum>(inout_context.GetData<xiiInt64>(node.GetInputDataOffset(2)));
+    auto    mode  = static_cast<xiiVisualScriptSendMessageMode::Enum>(inout_context.GetData<xiiInt64>(node.GetInputDataOffset(2)));
     xiiTime delay = inout_context.GetData<xiiTime>(node.GetInputDataOffset(3));
 
     xiiScriptComponent* pSenderComponent = nullptr;
@@ -320,9 +320,9 @@ namespace
     xiiUniquePtr<xiiMessage> pMessage = userData.m_pType->GetAllocator()->Allocate<xiiMessage>();
     for (xiiUInt32 i = 0; i < userData.m_uiNumProperties; ++i)
     {
-      auto pProp = userData.m_Properties[i];
+      auto           pProp     = userData.m_Properties[i];
       const xiiRTTI* pPropType = pProp->GetSpecificType();
-      xiiVariant value = inout_context.GetDataAsVariant(node.GetInputDataOffset(uiStartSlot + i), pPropType);
+      xiiVariant     value     = inout_context.GetDataAsVariant(node.GetInputDataOffset(uiStartSlot + i), pPropType);
 
       if (pProp->GetCategory() == xiiPropertyCategory::Member)
       {
@@ -376,7 +376,7 @@ namespace
         if (dataOffset.IsValid() == false)
           continue;
 
-        auto pProp = userData.m_Properties[i];
+        auto       pProp = userData.m_Properties[i];
         xiiVariant value;
 
         if (pProp->GetCategory() == xiiPropertyCategory::Member)
@@ -524,7 +524,7 @@ namespace
   static ExecResult NodeFunction_Builtin_Compare(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
     auto& userData = node.GetUserData<NodeUserData_Comparison>();
-    bool bRes = false;
+    bool  bRes     = false;
 
     if constexpr (std::is_same_v<T, bool> ||
                   std::is_same_v<T, xiiUInt8> ||
@@ -541,7 +541,7 @@ namespace
     {
       const T& a = inout_context.GetData<T>(node.GetInputDataOffset(0));
       const T& b = inout_context.GetData<T>(node.GetInputDataOffset(1));
-      bRes = xiiComparisonOperator::Compare(userData.m_ComparisonOperator, a, b);
+      bRes       = xiiComparisonOperator::Compare(userData.m_ComparisonOperator, a, b);
     }
     else if constexpr (std::is_same_v<T, xiiGameObjectHandle> ||
                        std::is_same_v<T, xiiComponentHandle> ||
@@ -549,7 +549,7 @@ namespace
     {
       xiiTypedPointer a = inout_context.GetPointerData(node.GetInputDataOffset(0));
       xiiTypedPointer b = inout_context.GetPointerData(node.GetInputDataOffset(1));
-      bRes = xiiComparisonOperator::Compare(userData.m_ComparisonOperator, a.m_pObject, b.m_pObject);
+      bRes              = xiiComparisonOperator::Compare(userData.m_ComparisonOperator, a.m_pObject, b.m_pObject);
     }
     else if constexpr (std::is_same_v<T, xiiVariant>)
     {
@@ -905,11 +905,11 @@ namespace
     return ExecResult::RunNext(0);
   }
 
-#define MAKE_TONUMBER_EXEC_FUNC(NumberType, Name)                                                                                                              \
-  template <typename T>                                                                                                                                        \
+#define MAKE_TONUMBER_EXEC_FUNC(NumberType, Name)                                                                                                                 \
+  template <typename T>                                                                                                                                           \
   static ExecResult XII_CONCAT(NodeFunction_Builtin_To, Name)(xiiVisualScriptExecutionContext & inout_context, const xiiVisualScriptGraphDescription::Node& node) \
-  {                                                                                                                                                            \
-    return NodeFunction_Builtin_ToNumber<NumberType, T>(inout_context, node, #Name);                                                                           \
+  {                                                                                                                                                               \
+    return NodeFunction_Builtin_ToNumber<NumberType, T>(inout_context, node, #Name);                                                                              \
   }
 
   MAKE_TONUMBER_EXEC_FUNC(xiiUInt8, Byte);
@@ -928,7 +928,7 @@ namespace
   static ExecResult NodeFunction_Builtin_ToString(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
     xiiStringBuilder sb;
-    xiiStringView s;
+    xiiStringView    s;
     if constexpr (std::is_same_v<T, xiiGameObjectHandle> ||
                   std::is_same_v<T, xiiComponentHandle> ||
                   std::is_same_v<T, xiiTypedPointer>)
@@ -954,7 +954,7 @@ namespace
 
   static ExecResult NodeFunction_Builtin_String_Format(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    auto& sText = inout_context.GetData<xiiString>(node.GetInputDataOffset(0));
+    auto& sText  = inout_context.GetData<xiiString>(node.GetInputDataOffset(0));
     auto& params = inout_context.GetData<xiiVariantArray>(node.GetInputDataOffset(1));
 
     xiiHybridArray<xiiString, 12> stringStorage;
@@ -971,9 +971,9 @@ namespace
       stringViews.PushBack(s);
     }
 
-    xiiFormatString fs(sText.GetView());
+    xiiFormatString  fs(sText.GetView());
     xiiStringBuilder sStorage;
-    xiiStringView sFormatted = fs.BuildFormattedText(sStorage, stringViews.GetData(), stringViews.GetCount());
+    xiiStringView    sFormatted = fs.BuildFormattedText(sStorage, stringViews.GetData(), stringViews.GetCount());
 
     inout_context.SetData(node.GetOutputDataOffset(0), sFormatted);
     return ExecResult::RunNext(0);
@@ -983,7 +983,7 @@ namespace
   static ExecResult NodeFunction_Builtin_ToHashedString(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
     xiiStringBuilder sb;
-    xiiStringView s;
+    xiiStringView    s;
     if constexpr (std::is_same_v<T, xiiGameObjectHandle> ||
                   std::is_same_v<T, xiiComponentHandle> ||
                   std::is_same_v<T, xiiTypedPointer>)
@@ -1021,7 +1021,7 @@ namespace
     if constexpr (std::is_same_v<T, xiiTypedPointer>)
     {
       xiiTypedPointer p = inout_context.GetPointerData(node.GetInputDataOffset(0));
-      v = xiiVariant(p.m_pObject, p.m_pType);
+      v                 = xiiVariant(p.m_pObject, p.m_pType);
     }
     else
     {
@@ -1091,8 +1091,8 @@ namespace
 
   static ExecResult NodeFunction_Builtin_Array_GetElement(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
   {
-    const xiiVariantArray& a = inout_context.GetData<xiiVariantArray>(node.GetInputDataOffset(0));
-    xiiUInt32 uiIndex = inout_context.GetData<int>(node.GetInputDataOffset(1));
+    const xiiVariantArray& a       = inout_context.GetData<xiiVariantArray>(node.GetInputDataOffset(0));
+    xiiUInt32              uiIndex = inout_context.GetData<int>(node.GetInputDataOffset(1));
     inout_context.SetData(node.GetOutputDataOffset(0), a[uiIndex]);
 
     return ExecResult::RunNext(0);
@@ -1140,11 +1140,11 @@ namespace
     if (pModule == nullptr)
       return ExecResult::Error();
 
-    auto& userData = node.GetUserData<NodeUserData_StartCoroutine>();
-    xiiString sName = inout_context.GetData<xiiString>(node.GetInputDataOffset(0));
+    auto&     userData = node.GetUserData<NodeUserData_StartCoroutine>();
+    xiiString sName    = inout_context.GetData<xiiString>(node.GetInputDataOffset(0));
 
     xiiScriptCoroutine* pCoroutine = nullptr;
-    auto hCoroutine = pModule->CreateCoroutine(userData.m_pType, sName, inout_context.GetInstance(), userData.m_CreationMode, pCoroutine);
+    auto                hCoroutine = pModule->CreateCoroutine(userData.m_pType, sName, inout_context.GetInstance(), userData.m_CreationMode, pCoroutine);
     pModule->StartCoroutine(hCoroutine, xiiArrayPtr<xiiVariant>());
 
     inout_context.SetData(node.GetOutputDataOffset(0), hCoroutine);
@@ -1191,8 +1191,8 @@ namespace
     if (pModule == nullptr)
       return ExecResult::Error();
 
-    const xiiUInt32 uiNumCoroutines = node.m_NumInputDataOffsets;
-    xiiUInt32 uiNumFinishedCoroutines = 0;
+    const xiiUInt32 uiNumCoroutines         = node.m_NumInputDataOffsets;
+    xiiUInt32       uiNumFinishedCoroutines = 0;
 
     for (xiiUInt32 i = 0; i < uiNumCoroutines; ++i)
     {
@@ -1241,8 +1241,8 @@ namespace
 
   struct ExecuteFunctionContext
   {
-    xiiVisualScriptGraphDescription::ExecuteFunction m_Func = nullptr;
-    ExecuteFunctionGetter m_FuncGetter = nullptr;
+    xiiVisualScriptGraphDescription::ExecuteFunction m_Func       = nullptr;
+    ExecuteFunctionGetter                            m_FuncGetter = nullptr;
   };
 
   static ExecuteFunctionContext s_TypeToExecuteFunctions[] = {

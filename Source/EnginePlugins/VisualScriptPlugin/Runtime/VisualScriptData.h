@@ -26,37 +26,37 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptDataDescription : public xiiRef
 
     enum
     {
-      BYTE_OFFSET_BITS = 24,
-      TYPE_BITS = 6,
-      SOURCE_BITS = 2,
+      BYTE_OFFSET_BITS    = 24,
+      TYPE_BITS           = 6,
+      SOURCE_BITS         = 2,
       INVALID_BYTE_OFFSET = XII_BIT(BYTE_OFFSET_BITS) - 1
     };
 
     XII_ALWAYS_INLINE DataOffset()
     {
       m_uiByteOffset = INVALID_BYTE_OFFSET;
-      m_uiType = xiiVisualScriptDataType::Invalid;
-      m_uiSource = Source::Local;
+      m_uiType       = xiiVisualScriptDataType::Invalid;
+      m_uiSource     = Source::Local;
     }
 
     XII_ALWAYS_INLINE DataOffset(xiiUInt32 uiOffset, xiiVisualScriptDataType::Enum dataType, Source::Enum source)
     {
       m_uiByteOffset = uiOffset;
-      m_uiType = dataType;
-      m_uiSource = source;
+      m_uiType       = dataType;
+      m_uiSource     = source;
     }
 
     XII_ALWAYS_INLINE bool IsValid() const
     {
       return m_uiByteOffset != INVALID_BYTE_OFFSET &&
-             m_uiType != xiiVisualScriptDataType::Invalid;
+        m_uiType != xiiVisualScriptDataType::Invalid;
     }
 
     XII_ALWAYS_INLINE xiiVisualScriptDataType::Enum GetType() const { return static_cast<xiiVisualScriptDataType::Enum>(m_uiType); }
     XII_ALWAYS_INLINE Source::Enum GetSource() const { return static_cast<Source::Enum>(m_uiSource); }
-    XII_ALWAYS_INLINE bool IsLocal() const { return m_uiSource == Source::Local; }
-    XII_ALWAYS_INLINE bool IsInstance() const { return m_uiSource == Source::Instance; }
-    XII_ALWAYS_INLINE bool IsConstant() const { return m_uiSource == Source::Constant; }
+    XII_ALWAYS_INLINE bool         IsLocal() const { return m_uiSource == Source::Local; }
+    XII_ALWAYS_INLINE bool         IsInstance() const { return m_uiSource == Source::Instance; }
+    XII_ALWAYS_INLINE bool         IsConstant() const { return m_uiSource == Source::Constant; }
 
     XII_ALWAYS_INLINE xiiResult Serialize(xiiStreamWriter& inout_stream) const { return inout_stream.WriteDWordValue(this); }
     XII_ALWAYS_INLINE xiiResult Deserialize(xiiStreamReader& inout_stream) { return inout_stream.ReadDWordValue(this); }
@@ -71,11 +71,11 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptDataDescription : public xiiRef
     XII_DECLARE_POD_TYPE();
 
     xiiUInt32 m_uiStartOffset = 0;
-    xiiUInt32 m_uiCount = 0;
+    xiiUInt32 m_uiCount       = 0;
   };
 
   OffsetAndCount m_PerTypeInfo[xiiVisualScriptDataType::Count];
-  xiiUInt32 m_uiStorageSizeNeeded = 0;
+  xiiUInt32      m_uiStorageSizeNeeded = 0;
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);
@@ -117,17 +117,17 @@ public:
   void SetPointerData(DataOffset dataOffset, T ptr, const xiiRTTI* pType, xiiUInt32 uiExecutionCounter);
 
   xiiVariant GetDataAsVariant(DataOffset dataOffset, const xiiRTTI* pExpectedType, xiiUInt32 uiExecutionCounter) const;
-  void SetDataFromVariant(DataOffset dataOffset, const xiiVariant& value, xiiUInt32 uiExecutionCounter);
+  void       SetDataFromVariant(DataOffset dataOffset, const xiiVariant& value, xiiUInt32 uiExecutionCounter);
 
 private:
   xiiSharedPtr<const xiiVisualScriptDataDescription> m_pDesc;
-  xiiBlob m_Storage;
+  xiiBlob                                            m_Storage;
 };
 
 struct xiiVisualScriptInstanceData
 {
   xiiVisualScriptDataDescription::DataOffset m_DataOffset;
-  xiiVariant m_DefaultValue;
+  xiiVariant                                 m_DefaultValue;
 
   xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   xiiResult Deserialize(xiiStreamReader& inout_stream);

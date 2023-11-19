@@ -163,8 +163,8 @@ xiiResult xiiVisualScriptGraphDescription::Serialize(xiiArrayPtr<const xiiVisual
   inout_stream.WriteVersion(s_uiVisualScriptGraphDescriptionVersion);
 
   xiiDefaultMemoryStreamStorage streamStorage;
-  xiiMemoryStreamWriter stream(&streamStorage);
-  xiiUInt32 additionalDataSize = 0;
+  xiiMemoryStreamWriter         stream(&streamStorage);
+  xiiUInt32                     additionalDataSize = 0;
   {
     for (auto& nodeDesc : nodes)
     {
@@ -180,7 +180,7 @@ xiiResult xiiVisualScriptGraphDescription::Serialize(xiiArrayPtr<const xiiVisual
 
       if (auto func = GetUserDataContext(nodeDesc.m_Type).m_SerializeFunc)
       {
-        xiiUInt32 uiSize = 0;
+        xiiUInt32 uiSize      = 0;
         xiiUInt32 uiAlignment = 0;
         XII_SUCCEED_OR_RETURN(func(nodeDesc, stream, uiSize, uiAlignment));
 
@@ -255,15 +255,15 @@ xiiScriptMessageDesc xiiVisualScriptGraphDescription::GetMessageDesc() const
 {
   auto pEntryNode = GetNode(0);
   XII_ASSERT_DEBUG(pEntryNode != nullptr &&
-                      pEntryNode->m_Type == xiiVisualScriptNodeDescription::Type::MessageHandler ||
-                    pEntryNode->m_Type == xiiVisualScriptNodeDescription::Type::MessageHandler_Coroutine ||
-                    pEntryNode->m_Type == xiiVisualScriptNodeDescription::Type::SendMessage,
-    "Entry node is invalid or not a message handler");
+                       pEntryNode->m_Type == xiiVisualScriptNodeDescription::Type::MessageHandler ||
+                     pEntryNode->m_Type == xiiVisualScriptNodeDescription::Type::MessageHandler_Coroutine ||
+                     pEntryNode->m_Type == xiiVisualScriptNodeDescription::Type::SendMessage,
+                   "Entry node is invalid or not a message handler");
 
   auto& userData = pEntryNode->GetUserData<NodeUserData_TypeAndProperties>();
 
   xiiScriptMessageDesc desc;
-  desc.m_pType = userData.m_pType;
+  desc.m_pType      = userData.m_pType;
   desc.m_Properties = xiiMakeArrayPtr(userData.m_Properties, userData.m_uiNumProperties);
   return desc;
 }
@@ -272,8 +272,8 @@ xiiScriptMessageDesc xiiVisualScriptGraphDescription::GetMessageDesc() const
 
 xiiCVarInt cvar_MaxNodeExecutions("VisualScript.MaxNodeExecutions", 100000, xiiCVarFlags::Default, "The maximum number of nodes executed within a script invocation");
 
-xiiVisualScriptExecutionContext::xiiVisualScriptExecutionContext(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc)
-  : m_pDesc(pDesc)
+xiiVisualScriptExecutionContext::xiiVisualScriptExecutionContext(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc) :
+  m_pDesc(pDesc)
 {
 }
 
@@ -286,7 +286,7 @@ void xiiVisualScriptExecutionContext::Initialize(xiiVisualScriptInstance& inout_
 {
   m_pInstance = &inout_instance;
 
-  m_DataStorage[DataOffset::Source::Local] = &inout_localDataStorage;
+  m_DataStorage[DataOffset::Source::Local]    = &inout_localDataStorage;
   m_DataStorage[DataOffset::Source::Instance] = inout_instance.GetInstanceDataStorage();
   m_DataStorage[DataOffset::Source::Constant] = inout_instance.GetConstantDataStorage();
 
@@ -340,7 +340,7 @@ xiiVisualScriptExecutionContext::ExecResult xiiVisualScriptExecutionContext::Exe
     }
 #endif
 
-    m_uiCurrentNode = pNode->GetExecutionIndex(result.m_NextExecAndState);
+    m_uiCurrentNode     = pNode->GetExecutionIndex(result.m_NextExecAndState);
     m_pCurrentCoroutine = nullptr;
 
     pNode = m_pDesc->GetNode(m_uiCurrentNode);

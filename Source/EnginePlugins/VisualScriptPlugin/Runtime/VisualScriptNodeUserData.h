@@ -3,9 +3,9 @@
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <VisualScriptPlugin/Runtime/VisualScript.h>
 
-using SerializeFunction = xiiResult (*)(const xiiVisualScriptNodeDescription& nodeDesc, xiiStreamWriter& inout_stream, xiiUInt32& out_Size, xiiUInt32& out_alignment);
+using SerializeFunction   = xiiResult (*)(const xiiVisualScriptNodeDescription& nodeDesc, xiiStreamWriter& inout_stream, xiiUInt32& out_Size, xiiUInt32& out_alignment);
 using DeserializeFunction = xiiResult (*)(xiiVisualScriptGraphDescription::Node& node, xiiStreamReader& inout_stream, xiiUInt8*& inout_pAdditionalData);
-using ToStringFunction = void (*)(const xiiVisualScriptNodeDescription& nodeDesc, xiiStringBuilder& out_sResult);
+using ToStringFunction    = void (*)(const xiiVisualScriptNodeDescription& nodeDesc, xiiStringBuilder& out_sResult);
 
 namespace
 {
@@ -32,7 +32,7 @@ namespace
     {
       inout_stream << nodeDesc.m_sTargetTypeName;
 
-      out_uiSize = sizeof(NodeUserData_Type);
+      out_uiSize      = sizeof(NodeUserData_Type);
       out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_Type);
       return XII_SUCCESS;
     }
@@ -89,7 +89,7 @@ namespace
 
       inout_stream << propertiesVar[0].Get<xiiHashedString>();
 
-      out_uiSize = sizeof(NodeUserData_TypeAndProperty);
+      out_uiSize      = sizeof(NodeUserData_TypeAndProperty);
       out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_TypeAndProperty);
       return XII_SUCCESS;
     }
@@ -188,7 +188,7 @@ namespace
       }
 
       static_assert(sizeof(void*) <= sizeof(xiiUInt64));
-      out_uiSize = GetDynamicSize<NodeUserData_TypeAndProperties, xiiUInt64>(uiCount);
+      out_uiSize      = GetDynamicSize<NodeUserData_TypeAndProperties, xiiUInt64>(uiCount);
       out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_TypeAndProperties);
       return XII_SUCCESS;
     }
@@ -202,8 +202,8 @@ namespace
       inout_stream >> uiCount;
 
       const xiiUInt32 uiByteSize = GetDynamicSize<NodeUserData_TypeAndProperties, xiiUInt64>(uiCount);
-      auto& userData = ref_node.InitUserData<NodeUserData_TypeAndProperties>(inout_pAdditionalData, uiByteSize);
-      userData.m_pType = pType;
+      auto&           userData   = ref_node.InitUserData<NodeUserData_TypeAndProperties>(inout_pAdditionalData, uiByteSize);
+      userData.m_pType           = pType;
       userData.m_uiNumProperties = uiCount;
 
       xiiHybridArray<const xiiAbstractProperty*, 32> properties;
@@ -249,7 +249,7 @@ namespace
         inout_stream << iCaseValue;
       }
 
-      out_uiSize = GetDynamicSize<NodeUserData_Switch, xiiInt64>(uiCount);
+      out_uiSize      = GetDynamicSize<NodeUserData_Switch, xiiInt64>(uiCount);
       out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_Switch);
       return XII_SUCCESS;
     }
@@ -260,8 +260,8 @@ namespace
       inout_stream >> uiCount;
 
       const xiiUInt32 uiByteSize = GetDynamicSize<NodeUserData_Switch, xiiInt64>(uiCount);
-      auto& userData = ref_node.InitUserData<NodeUserData_Switch>(inout_pAdditionalData, uiByteSize);
-      userData.m_uiNumCases = uiCount;
+      auto&           userData   = ref_node.InitUserData<NodeUserData_Switch>(inout_pAdditionalData, uiByteSize);
+      userData.m_uiNumCases      = uiCount;
 
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
@@ -288,7 +288,7 @@ namespace
       xiiEnum<xiiComparisonOperator> compOp = static_cast<xiiComparisonOperator::Enum>(nodeDesc.m_Value.Get<xiiInt64>());
       inout_stream << compOp;
 
-      out_uiSize = sizeof(NodeUserData_Comparison);
+      out_uiSize      = sizeof(NodeUserData_Comparison);
       out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_Comparison);
       return XII_SUCCESS;
     }
@@ -323,7 +323,7 @@ namespace
       xiiEnum<xiiScriptCoroutineCreationMode> creationMode = static_cast<xiiScriptCoroutineCreationMode::Enum>(nodeDesc.m_Value.Get<xiiInt64>());
       inout_stream << creationMode;
 
-      out_uiSize = sizeof(NodeUserData_StartCoroutine);
+      out_uiSize      = sizeof(NodeUserData_StartCoroutine);
       out_uiAlignment = XII_ALIGNMENT_OF(NodeUserData_StartCoroutine);
       return XII_SUCCESS;
     }
@@ -355,9 +355,9 @@ namespace
 
   struct UserDataContext
   {
-    SerializeFunction m_SerializeFunc = nullptr;
+    SerializeFunction   m_SerializeFunc   = nullptr;
     DeserializeFunction m_DeserializeFunc = nullptr;
-    ToStringFunction m_ToStringFunc = nullptr;
+    ToStringFunction    m_ToStringFunc    = nullptr;
   };
 
   inline UserDataContext s_TypeToUserDataContexts[] = {
@@ -365,27 +365,27 @@ namespace
     {}, // EntryCall,
     {}, // EntryCall_Coroutine,
     {&NodeUserData_TypeAndProperties::Serialize,
-      &NodeUserData_TypeAndProperties::Deserialize,
-      &NodeUserData_TypeAndProperties::ToString}, // MessageHandler,
+     &NodeUserData_TypeAndProperties::Deserialize,
+     &NodeUserData_TypeAndProperties::ToString}, // MessageHandler,
     {&NodeUserData_TypeAndProperties::Serialize,
-      &NodeUserData_TypeAndProperties::Deserialize,
-      &NodeUserData_TypeAndProperties::ToString}, // MessageHandler_Coroutine,
+     &NodeUserData_TypeAndProperties::Deserialize,
+     &NodeUserData_TypeAndProperties::ToString}, // MessageHandler_Coroutine,
     {&NodeUserData_TypeAndProperty::Serialize,
-      &NodeUserData_TypeAndProperty::Deserialize<true>,
-      &NodeUserData_TypeAndProperty::ToString}, // ReflectedFunction,
+     &NodeUserData_TypeAndProperty::Deserialize<true>,
+     &NodeUserData_TypeAndProperty::ToString}, // ReflectedFunction,
     {&NodeUserData_TypeAndProperty::Serialize,
-      &NodeUserData_TypeAndProperty::Deserialize<false>,
-      &NodeUserData_TypeAndProperty::ToString}, // GetReflectedProperty,
+     &NodeUserData_TypeAndProperty::Deserialize<false>,
+     &NodeUserData_TypeAndProperty::ToString}, // GetReflectedProperty,
     {&NodeUserData_TypeAndProperty::Serialize,
-      &NodeUserData_TypeAndProperty::Deserialize<false>,
-      &NodeUserData_TypeAndProperty::ToString}, // SetReflectedProperty,
+     &NodeUserData_TypeAndProperty::Deserialize<false>,
+     &NodeUserData_TypeAndProperty::ToString}, // SetReflectedProperty,
     {&NodeUserData_TypeAndProperty::Serialize,
-      &NodeUserData_TypeAndProperty::Deserialize<true>,
-      &NodeUserData_TypeAndProperty::ToString}, // InplaceCoroutine,
-    {},                                         // GetScriptOwner,
+     &NodeUserData_TypeAndProperty::Deserialize<true>,
+     &NodeUserData_TypeAndProperty::ToString}, // InplaceCoroutine,
+    {},                                        // GetScriptOwner,
     {&NodeUserData_TypeAndProperties::Serialize,
-      &NodeUserData_TypeAndProperties::Deserialize,
-      &NodeUserData_TypeAndProperties::ToString}, // SendMessage,
+     &NodeUserData_TypeAndProperties::Deserialize,
+     &NodeUserData_TypeAndProperties::ToString}, // SendMessage,
 
     {}, // FirstBuiltin,
 
@@ -397,24 +397,24 @@ namespace
 
     {}, // Builtin_Branch,
     {&NodeUserData_Switch::Serialize,
-      &NodeUserData_Switch::Deserialize,
-      &NodeUserData_Switch::ToString}, // Builtin_Switch,
-    {},                                // Builtin_WhileLoop,
-    {},                                // Builtin_ForLoop,
-    {},                                // Builtin_ForEachLoop,
-    {},                                // Builtin_ReverseForEachLoop,
-    {},                                // Builtin_Break,
-    {},                                // Builtin_Jump,
+     &NodeUserData_Switch::Deserialize,
+     &NodeUserData_Switch::ToString}, // Builtin_Switch,
+    {},                               // Builtin_WhileLoop,
+    {},                               // Builtin_ForLoop,
+    {},                               // Builtin_ForEachLoop,
+    {},                               // Builtin_ReverseForEachLoop,
+    {},                               // Builtin_Break,
+    {},                               // Builtin_Jump,
 
     {}, // Builtin_And,
     {}, // Builtin_Or,
     {}, // Builtin_Not,
     {&NodeUserData_Comparison::Serialize,
-      &NodeUserData_Comparison::Deserialize,
-      &NodeUserData_Comparison::ToString}, // Builtin_Compare,
-    {},                                    // Builtin_CompareExec,
-    {},                                    // Builtin_IsValid,
-    {},                                    // Builtin_Select,
+     &NodeUserData_Comparison::Deserialize,
+     &NodeUserData_Comparison::ToString}, // Builtin_Compare,
+    {},                                   // Builtin_CompareExec,
+    {},                                   // Builtin_IsValid,
+    {},                                   // Builtin_Select,
 
     {}, // Builtin_Add,
     {}, // Builtin_Subtract,
@@ -448,17 +448,17 @@ namespace
     {}, // Builtin_Array_RemoveAt,
 
     {&NodeUserData_Type::Serialize,
-      &NodeUserData_Type::Deserialize,
-      &NodeUserData_Type::ToString}, // Builtin_TryGetComponentOfBaseType
+     &NodeUserData_Type::Deserialize,
+     &NodeUserData_Type::ToString}, // Builtin_TryGetComponentOfBaseType
 
     {&NodeUserData_StartCoroutine::Serialize,
-      &NodeUserData_StartCoroutine::Deserialize,
-      &NodeUserData_StartCoroutine::ToString}, // Builtin_StartCoroutine,
-    {},                                        // Builtin_StopCoroutine,
-    {},                                        // Builtin_StopAllCoroutines,
-    {},                                        // Builtin_WaitForAll,
-    {},                                        // Builtin_WaitForAny,
-    {},                                        // Builtin_Yield,
+     &NodeUserData_StartCoroutine::Deserialize,
+     &NodeUserData_StartCoroutine::ToString}, // Builtin_StartCoroutine,
+    {},                                       // Builtin_StopCoroutine,
+    {},                                       // Builtin_StopAllCoroutines,
+    {},                                       // Builtin_WaitForAll,
+    {},                                       // Builtin_WaitForAny,
+    {},                                       // Builtin_Yield,
 
     {}, // LastBuiltin,
   };

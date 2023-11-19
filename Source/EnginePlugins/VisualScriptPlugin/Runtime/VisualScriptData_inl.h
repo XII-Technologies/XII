@@ -2,7 +2,7 @@
 XII_FORCE_INLINE void xiiVisualScriptDataDescription::CheckOffset(DataOffset dataOffset, const xiiRTTI* pType) const
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  auto givenDataType = dataOffset.GetType();
+  auto  givenDataType  = dataOffset.GetType();
   auto& offsetAndCount = m_PerTypeInfo[givenDataType];
   XII_ASSERT_DEBUG(offsetAndCount.m_uiCount > 0, "Invalid data offset");
   const xiiUInt32 uiLastOffset = offsetAndCount.m_uiStartOffset + (offsetAndCount.m_uiCount - 1) * xiiVisualScriptDataType::GetStorageSize(givenDataType);
@@ -18,8 +18,8 @@ XII_FORCE_INLINE void xiiVisualScriptDataDescription::CheckOffset(DataOffset dat
 
 XII_FORCE_INLINE xiiVisualScriptDataDescription::DataOffset xiiVisualScriptDataDescription::GetOffset(xiiVisualScriptDataType::Enum dataType, xiiUInt32 uiIndex, DataOffset::Source::Enum source) const
 {
-  auto& offsetAndCount = m_PerTypeInfo[dataType];
-  xiiUInt32 uiByteOffset = xiiInvalidIndex;
+  auto&     offsetAndCount = m_PerTypeInfo[dataType];
+  xiiUInt32 uiByteOffset   = xiiInvalidIndex;
   if (uiIndex < offsetAndCount.m_uiCount)
   {
     uiByteOffset = offsetAndCount.m_uiStartOffset + uiIndex * xiiVisualScriptDataType::GetStorageSize(dataType);
@@ -116,9 +116,9 @@ void xiiVisualScriptDataStorage::SetPointerData(DataOffset dataOffset, T ptr, co
 
       m_pDesc->CheckOffset(dataOffset, pType);
 
-      auto& typedPointer = *reinterpret_cast<xiiTypedPointer*>(pData);
+      auto& typedPointer     = *reinterpret_cast<xiiTypedPointer*>(pData);
       typedPointer.m_pObject = ptr;
-      typedPointer.m_pType = pType;
+      typedPointer.m_pType   = pType;
     }
   }
 }

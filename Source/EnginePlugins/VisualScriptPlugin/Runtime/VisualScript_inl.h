@@ -30,7 +30,7 @@ T* xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::Init(xiiUIn
   }
 
   inout_pAdditionalData = xiiMemoryUtils::AlignForwards(inout_pAdditionalData, XII_ALIGNMENT_OF(T));
-  m_Ptr = reinterpret_cast<T*>(inout_pAdditionalData);
+  m_Ptr                 = reinterpret_cast<T*>(inout_pAdditionalData);
   inout_pAdditionalData += uiCount * sizeof(T);
   return m_Ptr;
 }
@@ -47,7 +47,7 @@ xiiResult xiiVisualScriptGraphDescription::EmbeddedArrayOrPointer<T, Size>::Read
   }
   out_uiCount = static_cast<xiiUInt8>(uiCount);
 
-  T* pTargetPtr = Init(out_uiCount, inout_pAdditionalData);
+  T*              pTargetPtr       = Init(out_uiCount, inout_pAdditionalData);
   const xiiUInt64 uiNumBytesToRead = uiCount * sizeof(T);
   if (inout_stream.ReadBytes(pTargetPtr, uiNumBytesToRead) != uiNumBytesToRead)
     return XII_FAILURE;
@@ -98,7 +98,7 @@ template <typename T>
 T& xiiVisualScriptGraphDescription::Node::InitUserData(xiiUInt8*& inout_pAdditionalData, xiiUInt32 uiByteSize /*= sizeof(T)*/)
 {
   m_UserDataByteSize = uiByteSize;
-  auto pUserData = m_UserData.Init(uiByteSize / sizeof(xiiUInt32), inout_pAdditionalData);
+  auto pUserData     = m_UserData.Init(uiByteSize / sizeof(xiiUInt32), inout_pAdditionalData);
   XII_CHECK_ALIGNMENT(pUserData, XII_ALIGNMENT_OF(T));
   return *reinterpret_cast<T*>(pUserData);
 }

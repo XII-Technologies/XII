@@ -5,10 +5,8 @@
 #include <VisualScriptPlugin/Runtime/VisualScriptFunctionProperty.h>
 #include <VisualScriptPlugin/Runtime/VisualScriptInstance.h>
 
-xiiVisualScriptFunctionProperty::xiiVisualScriptFunctionProperty(xiiStringView sName, const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc)
-  : xiiScriptFunctionProperty(sName)
-  , m_pDesc(pDesc)
-  , m_LocalDataStorage(pDesc->GetLocalDataDesc())
+xiiVisualScriptFunctionProperty::xiiVisualScriptFunctionProperty(xiiStringView sName, const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc) :
+  xiiScriptFunctionProperty(sName), m_pDesc(pDesc), m_LocalDataStorage(pDesc->GetLocalDataDesc())
 {
   XII_ASSERT_DEBUG(m_pDesc->IsCoroutine() == false, "Must not be a coroutine");
 
@@ -33,10 +31,8 @@ void xiiVisualScriptFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xiiVa
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiVisualScriptMessageHandler::xiiVisualScriptMessageHandler(const xiiScriptMessageDesc& desc, const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc)
-  : xiiScriptMessageHandler(desc)
-  , m_pDesc(pDesc)
-  , m_LocalDataStorage(pDesc->GetLocalDataDesc())
+xiiVisualScriptMessageHandler::xiiVisualScriptMessageHandler(const xiiScriptMessageDesc& desc, const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc) :
+  xiiScriptMessageHandler(desc), m_pDesc(pDesc), m_LocalDataStorage(pDesc->GetLocalDataDesc())
 {
   XII_ASSERT_DEBUG(m_pDesc->IsCoroutine() == false, "Must not be a coroutine");
 
@@ -49,8 +45,8 @@ xiiVisualScriptMessageHandler::~xiiVisualScriptMessageHandler() = default;
 // static
 void xiiVisualScriptMessageHandler::Dispatch(xiiAbstractMessageHandler* pSelf, void* pInstance, xiiMessage& ref_msg)
 {
-  auto pHandler = static_cast<xiiVisualScriptMessageHandler*>(pSelf);
-  auto pComponent = static_cast<xiiScriptComponent*>(pInstance);
+  auto pHandler              = static_cast<xiiVisualScriptMessageHandler*>(pSelf);
+  auto pComponent            = static_cast<xiiScriptComponent*>(pInstance);
   auto pVisualScriptInstance = static_cast<xiiVisualScriptInstance*>(pComponent->GetScriptInstance());
 
   xiiHybridArray<xiiVariant, 8> arguments;

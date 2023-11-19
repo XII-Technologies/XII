@@ -3,9 +3,8 @@
 #include <VisualScriptPlugin/Runtime/VisualScriptCoroutine.h>
 #include <VisualScriptPlugin/Runtime/VisualScriptInstance.h>
 
-xiiVisualScriptCoroutine::xiiVisualScriptCoroutine(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc)
-  : m_LocalDataStorage(pDesc->GetLocalDataDesc())
-  , m_Context(pDesc)
+xiiVisualScriptCoroutine::xiiVisualScriptCoroutine(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc) :
+  m_LocalDataStorage(pDesc->GetLocalDataDesc()), m_Context(pDesc)
 {
 }
 
@@ -37,8 +36,8 @@ xiiScriptCoroutine::Result xiiVisualScriptCoroutine::Update(xiiTime deltaTimeSin
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiVisualScriptCoroutineAllocator::xiiVisualScriptCoroutineAllocator(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc)
-  : m_pDesc(pDesc)
+xiiVisualScriptCoroutineAllocator::xiiVisualScriptCoroutineAllocator(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc) :
+  m_pDesc(pDesc)
 {
 }
 

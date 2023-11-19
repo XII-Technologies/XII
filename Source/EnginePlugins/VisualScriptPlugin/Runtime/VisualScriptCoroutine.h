@@ -9,12 +9,12 @@ public:
   xiiVisualScriptCoroutine(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc);
   ~xiiVisualScriptCoroutine();
 
-  virtual void Start(xiiArrayPtr<xiiVariant> arguments) override;
-  virtual void Stop() override;
+  virtual void   Start(xiiArrayPtr<xiiVariant> arguments) override;
+  virtual void   Stop() override;
   virtual Result Update(xiiTime deltaTimeSinceLastUpdate) override;
 
 private:
-  xiiVisualScriptDataStorage m_LocalDataStorage;
+  xiiVisualScriptDataStorage      m_LocalDataStorage;
   xiiVisualScriptExecutionContext m_Context;
 };
 
@@ -23,7 +23,7 @@ class XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptCoroutineAllocator : public xiiR
 public:
   xiiVisualScriptCoroutineAllocator(const xiiSharedPtr<const xiiVisualScriptGraphDescription>& pDesc);
 
-  void Deallocate(void* pObject, xiiAllocatorBase* pAllocator = nullptr) override;
+  void                           Deallocate(void* pObject, xiiAllocatorBase* pAllocator = nullptr) override;
   xiiInternal::NewInstance<void> AllocateInternal(xiiAllocatorBase* pAllocator) override;
 
 private:

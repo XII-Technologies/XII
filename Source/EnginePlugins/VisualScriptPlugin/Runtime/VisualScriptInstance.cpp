@@ -2,10 +2,8 @@
 
 #include <VisualScriptPlugin/Runtime/VisualScriptInstance.h>
 
-xiiVisualScriptInstance::xiiVisualScriptInstance(xiiReflectedClass& inout_owner, xiiWorld* pWorld, const xiiSharedPtr<xiiVisualScriptDataStorage>& pConstantDataStorage, const xiiSharedPtr<const xiiVisualScriptDataDescription>& pInstanceDataDesc, const xiiSharedPtr<xiiVisualScriptInstanceDataMapping>& pInstanceDataMapping)
-  : xiiScriptInstance(inout_owner, pWorld)
-  , m_pConstantDataStorage(pConstantDataStorage)
-  , m_pInstanceDataMapping(pInstanceDataMapping)
+xiiVisualScriptInstance::xiiVisualScriptInstance(xiiReflectedClass& inout_owner, xiiWorld* pWorld, const xiiSharedPtr<xiiVisualScriptDataStorage>& pConstantDataStorage, const xiiSharedPtr<const xiiVisualScriptDataDescription>& pInstanceDataDesc, const xiiSharedPtr<xiiVisualScriptInstanceDataMapping>& pInstanceDataMapping) :
+  xiiScriptInstance(inout_owner, pWorld), m_pConstantDataStorage(pConstantDataStorage), m_pInstanceDataMapping(pInstanceDataMapping)
 {
   if (pInstanceDataDesc != nullptr)
   {
@@ -30,8 +28,8 @@ void xiiVisualScriptInstance::ApplyParameters(const xiiArrayMap<xiiHashedString,
     xiiVisualScriptInstanceData* pInstanceData = nullptr;
     if (m_pInstanceDataMapping->m_Content.TryGetValue(it.key, pInstanceData))
     {
-      xiiResult conversionStatus = XII_FAILURE;
-      xiiVariantType::Enum targetType = xiiVisualScriptDataType::GetVariantType(pInstanceData->m_DataOffset.GetType());
+      xiiResult            conversionStatus = XII_FAILURE;
+      xiiVariantType::Enum targetType       = xiiVisualScriptDataType::GetVariantType(pInstanceData->m_DataOffset.GetType());
 
       xiiVariant convertedValue = it.value.ConvertTo(targetType, &conversionStatus);
       if (conversionStatus.Failed())
