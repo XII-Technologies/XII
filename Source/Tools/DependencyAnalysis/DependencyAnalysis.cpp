@@ -66,7 +66,7 @@ namespace
 
     void Initialize(xiiStreamReader& ref_stream)
     {
-      SetInputStream(inout_stream);
+      SetInputStream(ref_stream);
     }
 
     xiiResult GetNextCommand(CompileCommand& out_command)
