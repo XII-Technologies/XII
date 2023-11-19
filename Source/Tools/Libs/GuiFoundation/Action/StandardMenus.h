@@ -7,7 +7,7 @@ struct xiiStandardMenuTypes
 {
   using StorageType = xiiUInt32;
 
-  enum Enum : StorageType
+  enum Enum
   {
     Project = XII_BIT(0),
     File    = XII_BIT(1),
@@ -63,8 +63,8 @@ class XII_GUIFOUNDATION_DLL xiiApplicationPanelsMenuAction : public xiiDynamicMe
   XII_ADD_DYNAMIC_REFLECTION(xiiApplicationPanelsMenuAction, xiiDynamicMenuAction);
 
 public:
-  xiiApplicationPanelsMenuAction(const xiiActionContext& context, xiiStringView sName, xiiStringView sIconPath) :
-    xiiDynamicMenuAction(context, sName, sIconPath)
+  xiiApplicationPanelsMenuAction(const xiiActionContext& context, const char* szName, const char* szIconPath) :
+    xiiDynamicMenuAction(context, szName, szIconPath)
   {
   }
   virtual void GetEntries(xiiHybridArray<xiiDynamicMenuAction::Item, 16>& out_entries) override;
@@ -84,7 +84,7 @@ public:
     ReportProblem,
   };
 
-  xiiHelpActions(const xiiActionContext& context, xiiStringView sName, ButtonType button);
+  xiiHelpActions(const xiiActionContext& context, const char* szName, ButtonType button);
   ~xiiHelpActions();
 
   virtual void Execute(const xiiVariant& value) override;

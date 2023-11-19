@@ -8,8 +8,8 @@ const xiiActionDescriptor* xiiActionDescriptorHandle::GetDescriptor() const
   return xiiActionManager::GetActionDescriptor(*this);
 }
 
-xiiActionDescriptor::xiiActionDescriptor(xiiActionType::Enum type, xiiActionScope::Enum scope, xiiStringView sName, xiiStringView sCategoryPath, xiiStringView sShortcut, CreateActionFunc createAction, DeleteActionFunc deleteAction) :
-  m_Type(type), m_Scope(scope), m_sActionName(sName), m_sCategoryPath(sCategoryPath), m_sShortcut(sShortcut), m_sDefaultShortcut(sShortcut), m_CreateAction(createAction), m_DeleteAction(deleteAction)
+xiiActionDescriptor::xiiActionDescriptor(xiiActionType::Enum type, xiiActionScope::Enum scope, const char* szName, const char* szCategoryPath, const char* szShortcut, CreateActionFunc createAction, DeleteActionFunc deleteAction) :
+  m_Type(type), m_Scope(scope), m_sActionName(szName), m_sCategoryPath(szCategoryPath), m_sShortcut(szShortcut), m_sDefaultShortcut(szShortcut), m_CreateAction(createAction), m_DeleteAction(deleteAction)
 {
 }
 

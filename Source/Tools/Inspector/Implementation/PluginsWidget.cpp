@@ -16,6 +16,8 @@ xiiQtPluginsWidget::xiiQtPluginsWidget(QWidget* pParent) :
   setupUi(this);
   setWidget(TablePlugins);
 
+  setIcon(QIcon(":/Icons/Icons/Plugin.svg"));
+
   ResetStats();
 }
 
@@ -61,7 +63,8 @@ void xiiQtPluginsWidget::UpdatePlugins()
     for (xiiMap<xiiString, PluginsData>::Iterator it = m_Plugins.GetIterator(); it.IsValid(); ++it)
     {
       QLabel* pIcon = new QLabel();
-      pIcon->setPixmap(xiiQtUiServices::GetCachedPixmapResource(":/Icons/Icons/Plugin.png"));
+      QIcon   icon  = xiiQtUiServices::GetCachedIconResource(":/Icons/Icons/Plugin.svg");
+      pIcon->setPixmap(icon.pixmap(QSize(24, 24)));
       pIcon->setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
       TablePlugins->setCellWidget(iRow, 0, pIcon);
 

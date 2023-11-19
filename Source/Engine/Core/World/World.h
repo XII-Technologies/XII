@@ -326,6 +326,7 @@ public:
   using ResourceReloadContext = xiiInternal::WorldData::ResourceReloadContext;
   using ResourceReloadFunc    = xiiInternal::WorldData::ResourceReloadFunc;
 
+  /// \brief Add a function that is called when the given resource has been reloaded.
   void AddResourceReloadFunction(xiiTypelessResourceHandle hResource, xiiComponentHandle hComponent, void* pUserData, ResourceReloadFunc function);
   void RemoveResourceReloadFunction(xiiTypelessResourceHandle hResource, xiiComponentHandle hComponent, void* pUserData);
 
@@ -357,6 +358,11 @@ private:
   friend class xiiWorldModule;
   friend class xiiComponentManagerBase;
   friend class xiiComponent;
+
+  XII_ALLOW_PRIVATE_PROPERTIES(xiiWorld);
+
+  xiiGameObject* Reflection_TryGetObjectWithGlobalKey(xiiTempHashedString sGlobalKey);
+  xiiClock*      Reflection_GetClock();
 
   void CheckForReadAccess() const;
   void CheckForWriteAccess() const;
@@ -399,6 +405,7 @@ private:
 
   void PatchHierarchyData(xiiGameObject* pObject, xiiGameObject::TransformPreservation preserve);
   void RecreateHierarchyData(xiiGameObject* pObject, bool bWasDynamic);
+
   void ProcessResourceReloadFunctions();
 
   bool ReportErrorWhenStaticObjectMoves() const;

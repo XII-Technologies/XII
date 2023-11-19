@@ -377,11 +377,10 @@ namespace xiiInternal
 
   void WorldData::ResourceEventHandler(const xiiResourceEvent& e)
   {
-    if (e.m_Type != xiiResourceEvent::Type::ResourceContentUnloading)
+    if (e.m_Type != xiiResourceEvent::Type::ResourceContentUnloading || e.m_pResource->GetReferenceCount() == 0)
       return;
 
-    /// \todo Core: Perhaps a better workaround for creating typeless resource handles.
-    xiiTypelessResourceHandle hResource(const_cast<xiiResource*>(e.m_pResource));
+    xiiTypelessResourceHandle hResource(e.m_pResource);
     if (m_ReloadFunctions.Contains(hResource))
     {
       m_NeedReload.Insert(hResource);

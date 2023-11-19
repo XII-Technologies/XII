@@ -46,7 +46,7 @@ xiiSharedPtr<xiiScriptRTTI> xiiScriptClassResource::CreateScriptType(xiiStringVi
     }
   }
 
-  m_pType = XII_DEFAULT_NEW(xiiScriptRTTI, sName, pBaseType, std::move(sortedFunctions), std::move(messageHandlers));
+  m_pType = XII_SCRIPT_NEW(xiiScriptRTTI, sName, pBaseType, std::move(sortedFunctions), std::move(messageHandlers));
   return m_pType;
 }
 
@@ -60,7 +60,7 @@ xiiSharedPtr<xiiScriptCoroutineRTTI> xiiScriptClassResource::CreateScriptCorouti
   xiiStringBuilder sCoroutineTypeName;
   sCoroutineTypeName.Set(sScriptClassName, "::", sFunctionName, "<Coroutine>");
 
-  xiiSharedPtr<xiiScriptCoroutineRTTI> pCoroutineType = XII_DEFAULT_NEW(xiiScriptCoroutineRTTI, sCoroutineTypeName, std::move(pAllocator));
+  xiiSharedPtr<xiiScriptCoroutineRTTI> pCoroutineType = XII_SCRIPT_NEW(xiiScriptCoroutineRTTI, sCoroutineTypeName, std::move(pAllocator));
   m_CoroutineTypes.PushBack(pCoroutineType);
 
   return pCoroutineType;

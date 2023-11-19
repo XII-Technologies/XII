@@ -172,12 +172,12 @@ static_assert(xiiGetTypeClass<xiiString>::value == xiiTypeIsClass::value);
 template <xiiUInt16 Size>
 struct xiiCompareHelper<xiiHybridString<Size>>
 {
-  XII_ALWAYS_INLINE bool Less(xiiStringView lhs, xiiStringView rhs) const
+  static XII_ALWAYS_INLINE bool Less(xiiStringView lhs, xiiStringView rhs)
   {
     return lhs.Compare(rhs) < 0;
   }
 
-  XII_ALWAYS_INLINE bool Equal(xiiStringView lhs, xiiStringView rhs) const
+  static XII_ALWAYS_INLINE bool Equal(xiiStringView lhs, xiiStringView rhs)
   {
     return lhs.IsEqual(rhs);
   }
@@ -185,12 +185,12 @@ struct xiiCompareHelper<xiiHybridString<Size>>
 
 struct xiiCompareString_NoCase
 {
-  XII_ALWAYS_INLINE bool Less(xiiStringView lhs, xiiStringView rhs) const
+  static XII_ALWAYS_INLINE bool Less(xiiStringView lhs, xiiStringView rhs)
   {
     return lhs.Compare_NoCase(rhs) < 0;
   }
 
-  XII_ALWAYS_INLINE bool Equal(xiiStringView lhs, xiiStringView rhs) const
+  static XII_ALWAYS_INLINE bool Equal(xiiStringView lhs, xiiStringView rhs)
   {
     return lhs.IsEqual_NoCase(rhs);
   }
@@ -199,10 +199,10 @@ struct xiiCompareString_NoCase
 struct CompareConstChar
 {
   /// \brief Returns true if a is less than b
-  XII_ALWAYS_INLINE bool Less(const char* a, const char* b) const { return xiiStringUtils::Compare(a, b) < 0; }
+  static XII_ALWAYS_INLINE bool Less(const char* a, const char* b) { return xiiStringUtils::Compare(a, b) < 0; }
 
   /// \brief Returns true if a is equal to b
-  XII_ALWAYS_INLINE bool Equal(const char* a, const char* b) const { return xiiStringUtils::IsEqual(a, b); }
+  static XII_ALWAYS_INLINE bool Equal(const char* a, const char* b) { return xiiStringUtils::IsEqual(a, b); }
 };
 
 // For xiiFormatString

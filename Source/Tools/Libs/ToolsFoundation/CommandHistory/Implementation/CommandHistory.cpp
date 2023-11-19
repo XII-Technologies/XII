@@ -236,7 +236,7 @@ bool xiiCommandHistory::CanRedo() const
 }
 
 
-const char* xiiCommandHistory::GetUndoDisplayString() const
+xiiStringView xiiCommandHistory::GetUndoDisplayString() const
 {
   if (m_pHistoryStorage->m_UndoHistory.IsEmpty())
     return "";
@@ -245,7 +245,7 @@ const char* xiiCommandHistory::GetUndoDisplayString() const
 }
 
 
-const char* xiiCommandHistory::GetRedoDisplayString() const
+xiiStringView xiiCommandHistory::GetRedoDisplayString() const
 {
   if (m_pHistoryStorage->m_RedoHistory.IsEmpty())
     return "";

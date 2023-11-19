@@ -214,8 +214,7 @@ void xiiQtMainWidget::UpdateStats()
   if (!bIsConnected)
   {
     LabelPing->setText("<p>Ping: N/A</p>");
-    LabelStatus->setText(
-      "<p><span style=\" font-weight:600;\">Status: </span><span style=\" font-weight:600; color:#ff0000;\">Not Connected</span></p>");
+    LabelStatus->setText("<p><span style=\" font-weight:600;\">Status: </span><span style=\" font-weight:600; color:#ff0000;\">Not Connected</span></p>");
     LabelServer->setText("<p>Server: N/A</p>");
   }
   else
@@ -263,9 +262,9 @@ QTreeWidgetItem* xiiQtMainWidget::CreateStat(xiiStringView sPath, bool bParent)
     sd.m_pItem->setData(0, Qt::UserRole, QString(sCleanPath.GetData()));
 
     if (bParent)
-      sd.m_pItem->setIcon(0, QIcon(":/Icons/Icons/StatGroup.png"));
+      sd.m_pItem->setIcon(0, QIcon(":/Icons/Icons/StatGroup.svg"));
     else
-      sd.m_pItem->setIcon(0, QIcon(":/Icons/Icons/Stat.png"));
+      sd.m_pItem->setIcon(0, QIcon(":/Icons/Icons/Stat.svg"));
 
     if (!bParent)
       sd.m_pItem->setCheckState(0, Qt::Unchecked);
@@ -311,7 +310,7 @@ void xiiQtMainWidget::SetFavorite(const xiiString& sStat, bool bFavorite)
       TreeFavorites->addTopLevelItem(sd.m_pItemFavorite);
       sd.m_pItemFavorite->setData(0, Qt::DisplayRole, sStat.GetData());
       sd.m_pItemFavorite->setData(1, Qt::DisplayRole, sd.m_Value.ConvertTo<xiiString>().GetData());
-      sd.m_pItemFavorite->setIcon(0, QIcon(":/Icons/Icons/StatFavorite.png"));
+      sd.m_pItemFavorite->setIcon(0, QIcon(":/Icons/Icons/StatFavorite.svg"));
 
       TreeFavorites->resizeColumnToContents(0);
     }
@@ -345,7 +344,7 @@ void xiiQtMainWidget::on_TreeStats_customContextMenuRequested(const QPoint& p)
 
   QMenu mSub;
   mSub.setTitle("Show in");
-  mSub.setIcon(QIcon(":/Icons/Icons/StatHistory.png"));
+  mSub.setIcon(QIcon(":/Icons/Icons/StatHistory.svg"));
 
   QMenu m;
   m.addMenu(&mSub);

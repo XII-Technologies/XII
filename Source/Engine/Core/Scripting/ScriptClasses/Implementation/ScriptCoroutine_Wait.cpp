@@ -29,7 +29,8 @@ xiiScriptCoroutine::Result xiiScriptCoroutine_Wait::Update(xiiTime deltaTimeSinc
   m_TimeRemaing -= deltaTimeSinceLastUpdate;
   if (m_TimeRemaing.IsPositive())
   {
-    return Result::Running(m_TimeRemaing);
+    // Don't wait for the full remaining time to prevent oversleeping due to scheduling precision.
+    return Result::Running(m_TimeRemaing * 0.8);
   }
 
   return Result::Completed();

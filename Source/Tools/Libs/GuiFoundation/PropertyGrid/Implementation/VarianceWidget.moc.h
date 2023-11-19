@@ -26,10 +26,10 @@ protected:
   virtual void OnInit() override;
   virtual void InternalSetValue(const xiiVariant& value) override;
 
-  bool                       m_bTemporaryCommand = false;
-  QHBoxLayout*               m_pLayout           = nullptr;
-  xiiQtDoubleSpinBox*        m_pValueWidget      = nullptr;
-  QSlider*                   m_pVarianceWidget   = nullptr;
-  xiiAbstractMemberProperty* m_pValueProp        = nullptr;
-  xiiAbstractMemberProperty* m_pVarianceProp     = nullptr;
+  bool                             m_bTemporaryCommand = false;
+  QHBoxLayout*                     m_pLayout           = nullptr;
+  xiiQtDoubleSpinBox*              m_pValueWidget      = nullptr;
+  QSlider*                         m_pVarianceWidget   = nullptr;
+  const xiiAbstractMemberProperty* m_pValueProp        = nullptr;
+  const xiiAbstractMemberProperty* m_pVarianceProp     = nullptr;
 };

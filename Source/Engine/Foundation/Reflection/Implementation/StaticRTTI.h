@@ -169,18 +169,18 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
   xiiRTTI GetRTTI(Type*);
 
 // internal helper macro
-#define XII_RTTIINFO_GETRTTI_IMPL_BEGIN(Type, BaseType, AllocatorType)                                \
-  xiiRTTI GetRTTI(Type*)                                                                              \
-  {                                                                                                   \
-    using OwnType     = Type;                                                                         \
-    using OwnBaseType = BaseType;                                                                     \
-    static AllocatorType                             Allocator;                                       \
-    static xiiBitflags<xiiTypeFlags>                 flags = xiiInternal::DetermineTypeFlags<Type>(); \
-    static xiiArrayPtr<xiiAbstractProperty*>         Properties;                                      \
-    static xiiArrayPtr<xiiAbstractFunctionProperty*> Functions;                                       \
-    static xiiArrayPtr<xiiPropertyAttribute*>        Attributes;                                      \
-    static xiiArrayPtr<xiiAbstractMessageHandler*>   MessageHandlers;                                 \
-    static xiiArrayPtr<xiiMessageSenderInfo>         MessageSenders;
+#define XII_RTTIINFO_GETRTTI_IMPL_BEGIN(Type, BaseType, AllocatorType)                                      \
+  xiiRTTI GetRTTI(Type*)                                                                                    \
+  {                                                                                                         \
+    using OwnType     = Type;                                                                               \
+    using OwnBaseType = BaseType;                                                                           \
+    static AllocatorType                                   Allocator;                                       \
+    static xiiBitflags<xiiTypeFlags>                       flags = xiiInternal::DetermineTypeFlags<Type>(); \
+    static xiiArrayPtr<const xiiAbstractProperty*>         Properties;                                      \
+    static xiiArrayPtr<const xiiAbstractFunctionProperty*> Functions;                                       \
+    static xiiArrayPtr<const xiiPropertyAttribute*>        Attributes;                                      \
+    static xiiArrayPtr<xiiAbstractMessageHandler*>         MessageHandlers;                                 \
+    static xiiArrayPtr<xiiMessageSenderInfo>               MessageSenders;
 
 /// \endcond
 
@@ -212,7 +212,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
 
 
 /// \brief Within a XII_BEGIN_REFLECTED_TYPE / XII_END_REFLECTED_TYPE block, use this to start the block that declares all the properties.
-#define XII_BEGIN_PROPERTIES static xiiAbstractProperty* PropertyList[] =
+#define XII_BEGIN_PROPERTIES static const xiiAbstractProperty* PropertyList[] =
 
 
 
@@ -222,7 +222,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
   Properties = PropertyList
 
 /// \brief Within a XII_BEGIN_REFLECTED_TYPE / XII_END_REFLECTED_TYPE block, use this to start the block that declares all the functions.
-#define XII_BEGIN_FUNCTIONS static xiiAbstractFunctionProperty* FunctionList[] =
+#define XII_BEGIN_FUNCTIONS static const xiiAbstractFunctionProperty* FunctionList[] =
 
 
 
@@ -232,7 +232,7 @@ XII_ALWAYS_INLINE const xiiRTTI* xiiGetStaticRTTI()
   Functions = FunctionList
 
 /// \brief Within a XII_BEGIN_REFLECTED_TYPE / XII_END_REFLECTED_TYPE block, use this to start the block that declares all the attributes.
-#define XII_BEGIN_ATTRIBUTES static xiiPropertyAttribute* AttributeList[] =
+#define XII_BEGIN_ATTRIBUTES static const xiiPropertyAttribute* AttributeList[] =
 
 
 

@@ -24,7 +24,7 @@ bool xiiDynamicEnum::IsValueValid(xiiInt32 iValue) const
   return m_ValidValues.Find(iValue).IsValid();
 }
 
-const char* xiiDynamicEnum::GetValueName(xiiInt32 iValue) const
+xiiStringView xiiDynamicEnum::GetValueName(xiiInt32 iValue) const
 {
   auto it = m_ValidValues.Find(iValue);
 

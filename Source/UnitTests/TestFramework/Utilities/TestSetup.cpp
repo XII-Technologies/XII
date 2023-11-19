@@ -91,7 +91,11 @@ xiiTestAppRun xiiTestSetup::RunTests()
   {
     new QApplication(argc, argv);
     qApp->setProperty("Shared", QVariant::fromValue((int)1));
+    qApp->setOrganizationDomain("www.xiitechnologies.com");
+    qApp->setOrganizationName("XII Technologies");
     qApp->setApplicationName(pTestFramework->GetTestName());
+    qApp->setApplicationVersion("1.0.0");
+
     xiiQtTestGUI::SetDarkTheme();
   }
 

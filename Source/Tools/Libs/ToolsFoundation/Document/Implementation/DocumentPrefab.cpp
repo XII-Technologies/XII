@@ -70,8 +70,8 @@ xiiStatus xiiDocument::CreatePrefabDocumentFromSelection(xiiStringView sFile, co
   }
 
   xiiUuid PrefabGuid, SeedGuid;
-  SeedGuid.CreateNewUuid();
-  xiiStatus res = CreatePrefabDocument(sFile, nodes, SeedGuid, PrefabGuid, adjustGraphNodeCB, true);
+  SeedGuid      = xiiUuid::CreateUuid();
+  xiiStatus res = CreatePrefabDocument(sFile, nodes, SeedGuid, PrefabGuid, adjustGraphNodeCB, true, finalizeGraphCB);
 
   if (res.m_Result.Succeeded())
   {
@@ -193,7 +193,7 @@ xiiUuid xiiDocument::ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiSt
     instCmd.m_bAllowPickedPosition = false;
     instCmd.m_CreateFromPrefab     = prefabAsset;
     instCmd.m_Parent               = pRootObject->GetParent() == GetObjectManager()->GetRootObject() ? xiiUuid() : pRootObject->GetParent()->GetGuid();
-    instCmd.m_sBasePrefabGraph     = xiiPrefabUtils::ReadDocumentAsString(sPrefabFile); // since the prefab might have been created just now, going through the cache (via GUID) will most likely fail
+    instCmd.m_sBasePrefabGraph     = xiiPrefabUtils::ReadDocumentAsString(sPrefabFile); // Since the prefab might have been created just now, going through the cache (via GUID) will most likely fail.
     instCmd.m_RemapGuid            = prefabSeed;
 
     GetCommandHistory()->AddCommand(instCmd).AssertSuccess();
@@ -205,9 +205,8 @@ xiiUuid xiiDocument::ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiSt
     auto pHistory = GetCommandHistory();
 
     xiiStringBuilder tmp;
-    xiiUuid          CmpGuid;
-    instantiatedRoot.CreateNewUuid();
-    CmpGuid.CreateNewUuid();
+    xiiUuid          CmpGuid = xiiUuid::CreateUuid();
+    instantiatedRoot         = xiiUuid::CreateUuid();
 
     xiiAddObjectCommand cmd;
     cmd.m_Parent = (pRootObject->GetParent() == GetObjectManager()->GetRootObject()) ? xiiUuid() : pRootObject->GetParent()->GetGuid();

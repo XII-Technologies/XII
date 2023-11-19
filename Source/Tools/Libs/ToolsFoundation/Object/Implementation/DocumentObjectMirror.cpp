@@ -452,7 +452,7 @@ void xiiDocumentObjectMirror::ApplyOp(xiiObjectChange& change)
 
 void xiiDocumentObjectMirror::ApplyOp(xiiRttiConverterObject object, const xiiObjectChange& change)
 {
-  xiiAbstractProperty* pProp = nullptr;
+  const xiiAbstractProperty* pProp = nullptr;
 
   if (object.m_pType != nullptr)
   {
@@ -488,7 +488,7 @@ void xiiDocumentObjectMirror::ApplyOp(xiiRttiConverterObject object, const xiiOb
 
       if (pProp->GetCategory() == xiiPropertyCategory::Member)
       {
-        auto pSpecificProp = static_cast<xiiAbstractMemberProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractMemberProperty*>(pProp);
         if (pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer))
         {
           pSpecificProp->SetValuePtr(object.m_pObject, &pValue);
@@ -500,7 +500,7 @@ void xiiDocumentObjectMirror::ApplyOp(xiiRttiConverterObject object, const xiiOb
       }
       else if (pProp->GetCategory() == xiiPropertyCategory::Array)
       {
-        auto pSpecificProp = static_cast<xiiAbstractArrayProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractArrayProperty*>(pProp);
         if (pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer))
         {
           pSpecificProp->Insert(object.m_pObject, change.m_Change.m_Index.ConvertTo<xiiUInt32>(), &pValue);
@@ -513,12 +513,12 @@ void xiiDocumentObjectMirror::ApplyOp(xiiRttiConverterObject object, const xiiOb
       else if (pProp->GetCategory() == xiiPropertyCategory::Set)
       {
         XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer), "Set object must always be pointers!");
-        auto pSpecificProp = static_cast<xiiAbstractSetProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractSetProperty*>(pProp);
         xiiReflectionUtils::InsertSetPropertyValue(pSpecificProp, object.m_pObject, xiiVariant(pValue, pType));
       }
       else if (pProp->GetCategory() == xiiPropertyCategory::Map)
       {
-        auto pSpecificProp = static_cast<xiiAbstractMapProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractMapProperty*>(pProp);
         if (pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer))
         {
           pSpecificProp->Insert(object.m_pObject, change.m_Change.m_Index.Get<xiiString>(), &pValue);
@@ -546,7 +546,7 @@ void xiiDocumentObjectMirror::ApplyOp(xiiRttiConverterObject object, const xiiOb
 
       if (pProp->GetCategory() == xiiPropertyCategory::Member)
       {
-        auto pSpecificProp = static_cast<xiiAbstractMemberProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractMemberProperty*>(pProp);
         if (!pProp->GetFlags().AreAllSet(xiiPropertyFlags::Pointer | xiiPropertyFlags::PointerOwner))
         {
           xiiLog::Error("Property '{0}' not a pointer, can't remove object!", change.m_Change.m_sProperty);
@@ -558,19 +558,19 @@ void xiiDocumentObjectMirror::ApplyOp(xiiRttiConverterObject object, const xiiOb
       }
       else if (pProp->GetCategory() == xiiPropertyCategory::Array)
       {
-        auto pSpecificProp = static_cast<xiiAbstractArrayProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractArrayProperty*>(pProp);
         xiiReflectionUtils::RemoveArrayPropertyValue(pSpecificProp, object.m_pObject, change.m_Change.m_Index.ConvertTo<xiiUInt32>());
       }
       else if (pProp->GetCategory() == xiiPropertyCategory::Set)
       {
         XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer), "Set object must always be pointers!");
-        auto pSpecificProp = static_cast<xiiAbstractSetProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractSetProperty*>(pProp);
         auto valueObject   = m_pContext->GetObjectByGUID(change.m_Change.m_Value.Get<xiiUuid>());
         xiiReflectionUtils::RemoveSetPropertyValue(pSpecificProp, object.m_pObject, xiiVariant(valueObject.m_pObject, valueObject.m_pType));
       }
       else if (pProp->GetCategory() == xiiPropertyCategory::Map)
       {
-        auto pSpecificProp = static_cast<xiiAbstractMapProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractMapProperty*>(pProp);
         pSpecificProp->Remove(object.m_pObject, change.m_Change.m_Index.Get<xiiString>());
       }
 
@@ -584,23 +584,23 @@ void xiiDocumentObjectMirror::ApplyOp(xiiRttiConverterObject object, const xiiOb
     {
       if (pProp->GetCategory() == xiiPropertyCategory::Member)
       {
-        auto pSpecificProp = static_cast<xiiAbstractMemberProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractMemberProperty*>(pProp);
         xiiReflectionUtils::SetMemberPropertyValue(pSpecificProp, object.m_pObject, change.m_Change.m_Value);
       }
       else if (pProp->GetCategory() == xiiPropertyCategory::Array)
       {
-        auto pSpecificProp = static_cast<xiiAbstractArrayProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractArrayProperty*>(pProp);
         xiiReflectionUtils::SetArrayPropertyValue(
           pSpecificProp, object.m_pObject, change.m_Change.m_Index.ConvertTo<xiiUInt32>(), change.m_Change.m_Value);
       }
       else if (pProp->GetCategory() == xiiPropertyCategory::Set)
       {
-        auto pSpecificProp = static_cast<xiiAbstractSetProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractSetProperty*>(pProp);
         xiiReflectionUtils::InsertSetPropertyValue(pSpecificProp, object.m_pObject, change.m_Change.m_Value);
       }
       else if (pProp->GetCategory() == xiiPropertyCategory::Map)
       {
-        auto pSpecificProp = static_cast<xiiAbstractMapProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractMapProperty*>(pProp);
         xiiReflectionUtils::SetMapPropertyValue(pSpecificProp, object.m_pObject, change.m_Change.m_Index.Get<xiiString>(), change.m_Change.m_Value);
       }
     }
@@ -616,17 +616,17 @@ void xiiDocumentObjectMirror::ApplyOp(xiiRttiConverterObject object, const xiiOb
 
       if (pProp->GetCategory() == xiiPropertyCategory::Array)
       {
-        auto pSpecificProp = static_cast<xiiAbstractArrayProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractArrayProperty*>(pProp);
         xiiReflectionUtils::InsertArrayPropertyValue(pSpecificProp, object.m_pObject, value, change.m_Change.m_Index.ConvertTo<xiiUInt32>());
       }
       else if (pProp->GetCategory() == xiiPropertyCategory::Set)
       {
-        auto pSpecificProp = static_cast<xiiAbstractSetProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractSetProperty*>(pProp);
         xiiReflectionUtils::InsertSetPropertyValue(pSpecificProp, object.m_pObject, value);
       }
       else if (pProp->GetCategory() == xiiPropertyCategory::Map)
       {
-        auto pSpecificProp = static_cast<xiiAbstractMapProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractMapProperty*>(pProp);
         xiiReflectionUtils::SetMapPropertyValue(pSpecificProp, object.m_pObject, change.m_Change.m_Index.Get<xiiString>(), value);
       }
     }
@@ -635,7 +635,7 @@ void xiiDocumentObjectMirror::ApplyOp(xiiRttiConverterObject object, const xiiOb
     {
       if (pProp->GetCategory() == xiiPropertyCategory::Array)
       {
-        auto pSpecificProp = static_cast<xiiAbstractArrayProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractArrayProperty*>(pProp);
         xiiReflectionUtils::RemoveArrayPropertyValue(pSpecificProp, object.m_pObject, change.m_Change.m_Index.ConvertTo<xiiUInt32>());
       }
       else if (pProp->GetCategory() == xiiPropertyCategory::Set)
@@ -647,12 +647,12 @@ void xiiDocumentObjectMirror::ApplyOp(xiiRttiConverterObject object, const xiiOb
           value            = xiiTypedPointer(valueObject.m_pObject, valueObject.m_pType);
         }
 
-        auto pSpecificProp = static_cast<xiiAbstractSetProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractSetProperty*>(pProp);
         xiiReflectionUtils::RemoveSetPropertyValue(pSpecificProp, object.m_pObject, value);
       }
       else if (pProp->GetCategory() == xiiPropertyCategory::Map)
       {
-        auto pSpecificProp = static_cast<xiiAbstractMapProperty*>(pProp);
+        auto pSpecificProp = static_cast<const xiiAbstractMapProperty*>(pProp);
         pSpecificProp->Remove(object.m_pObject, change.m_Change.m_Index.Get<xiiString>());
       }
     }

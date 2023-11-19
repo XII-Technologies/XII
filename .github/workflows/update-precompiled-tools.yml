@@ -1,6 +1,6 @@
 name: Update Precompiled Tools
 
-on: 
+on:
   workflow_dispatch:
     inputs:
       push-to-repository:
@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           path: repo
           submodules: 'recursive'
@@ -42,14 +42,14 @@ jobs:
 
       - name: Artifact - Full Binaries
         if: github.event.inputs.full-binaries-artifact == 'true'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: full-binaries
           path: repo\Output\Bin\WinVs2022Shipping64
           retention-days: 3
 
       - name: Checkout Precompiled Tools Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           repository: XII-Technologies/PrecompiledTools
           ref: master
@@ -63,7 +63,7 @@ jobs:
 
       - name: Artifact - New Precompiled Tools
         if: github.event.inputs.new-binaries-artifact == 'true'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: new-precompiled-tools
           path: _tools
@@ -87,6 +87,6 @@ jobs:
           repository: XII-Technologies/PrecompiledTools
           force: true
 
-      # In theory we could now also update the submodule in the XII Engine repository 
+      # In theory we could now also update the submodule in the XII Engine repository
       # and do an automated commit there as well
       # however, maybe it's better to have some user validation there

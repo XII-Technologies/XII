@@ -69,36 +69,40 @@ public:
   virtual void GetValue(const void* pInstance, xiiUInt32 uiIndex, void* pObject) const override
   {
     XII_ASSERT_DEBUG(uiIndex < GetCount(pInstance), "GetValue: uiIndex ('{0}') is out of range ('{1}')", uiIndex, GetCount(pInstance));
+
     *static_cast<RealType*>(pObject) = (static_cast<const Class*>(pInstance)->*m_Getter)(uiIndex);
   }
 
-  virtual void SetValue(void* pInstance, xiiUInt32 uiIndex, const void* pObject) override
+  virtual void SetValue(void* pInstance, xiiUInt32 uiIndex, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(uiIndex < GetCount(pInstance), "SetValue: uiIndex ('{0}') is out of range ('{1}')", uiIndex, GetCount(pInstance));
     XII_ASSERT_DEBUG(m_Setter != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     (static_cast<Class*>(pInstance)->*m_Setter)(uiIndex, *static_cast<const RealType*>(pObject));
   }
 
-  virtual void Insert(void* pInstance, xiiUInt32 uiIndex, const void* pObject) override
+  virtual void Insert(void* pInstance, xiiUInt32 uiIndex, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(uiIndex <= GetCount(pInstance), "Insert: uiIndex ('{0}') is out of range ('{1}')", uiIndex, GetCount(pInstance));
     XII_ASSERT_DEBUG(m_Insert != nullptr, "The property '{0}' has no insert function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     (static_cast<Class*>(pInstance)->*m_Insert)(uiIndex, *static_cast<const RealType*>(pObject));
   }
 
-  virtual void Remove(void* pInstance, xiiUInt32 uiIndex) override
+  virtual void Remove(void* pInstance, xiiUInt32 uiIndex) const override
   {
     XII_ASSERT_DEBUG(uiIndex < GetCount(pInstance), "Remove: uiIndex ('{0}') is out of range ('{1}')", uiIndex, GetCount(pInstance));
     XII_ASSERT_DEBUG(m_Remove != nullptr, "The property '{0}' has no setter function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     (static_cast<Class*>(pInstance)->*m_Remove)(uiIndex);
   }
 
-  virtual void Clear(void* pInstance) override { SetCount(pInstance, 0); }
+  virtual void Clear(void* pInstance) const override { SetCount(pInstance, 0); }
 
-  virtual void SetCount(void* pInstance, xiiUInt32 uiCount) override
+  virtual void SetCount(void* pInstance, xiiUInt32 uiCount) const override
   {
-    XII_ASSERT_DEBUG(m_Insert != nullptr && m_Remove != nullptr, "The property '{0}' has no remove and insert function, thus it is fixed-size.",
-                     xiiAbstractProperty::GetPropertyName());
+    XII_ASSERT_DEBUG(m_Insert != nullptr && m_Remove != nullptr, "The property '{0}' has no remove and insert function, thus it is fixed-size.", xiiAbstractProperty::GetPropertyName());
+
     while (uiCount < GetCount(pInstance))
     {
       Remove(pInstance, GetCount(pInstance) - 1);
@@ -157,48 +161,49 @@ public:
   virtual void GetValue(const void* pInstance, xiiUInt32 uiIndex, void* pObject) const override
   {
     XII_ASSERT_DEBUG(uiIndex < GetCount(pInstance), "GetValue: uiIndex ('{0}') is out of range ('{1}')", uiIndex, GetCount(pInstance));
+
     *static_cast<RealType*>(pObject) = m_ConstGetter(static_cast<const Class*>(pInstance))[uiIndex];
   }
 
-  virtual void SetValue(void* pInstance, xiiUInt32 uiIndex, const void* pObject) override
+  virtual void SetValue(void* pInstance, xiiUInt32 uiIndex, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(uiIndex < GetCount(pInstance), "SetValue: uiIndex ('{0}') is out of range ('{1}')", uiIndex, GetCount(pInstance));
-    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const array accessor function, thus it is read-only.",
-                     xiiAbstractProperty::GetPropertyName());
+    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const array accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     m_Getter(static_cast<Class*>(pInstance))[uiIndex] = *static_cast<const RealType*>(pObject);
   }
 
-  virtual void Insert(void* pInstance, xiiUInt32 uiIndex, const void* pObject) override
+  virtual void Insert(void* pInstance, xiiUInt32 uiIndex, const void* pObject) const override
   {
     XII_ASSERT_DEBUG(uiIndex <= GetCount(pInstance), "Insert: uiIndex ('{0}') is out of range ('{1}')", uiIndex, GetCount(pInstance));
-    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const array accessor function, thus it is read-only.",
-                     xiiAbstractProperty::GetPropertyName());
+    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const array accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     m_Getter(static_cast<Class*>(pInstance)).Insert(*static_cast<const RealType*>(pObject), uiIndex);
   }
 
-  virtual void Remove(void* pInstance, xiiUInt32 uiIndex) override
+  virtual void Remove(void* pInstance, xiiUInt32 uiIndex) const override
   {
     XII_ASSERT_DEBUG(uiIndex < GetCount(pInstance), "Remove: uiIndex ('{0}') is out of range ('{1}')", uiIndex, GetCount(pInstance));
-    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const array accessor function, thus it is read-only.",
-                     xiiAbstractProperty::GetPropertyName());
+    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const array accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     m_Getter(static_cast<Class*>(pInstance)).RemoveAtAndCopy(uiIndex);
   }
 
-  virtual void Clear(void* pInstance) override
+  virtual void Clear(void* pInstance) const override
   {
-    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const array accessor function, thus it is read-only.",
-                     xiiAbstractProperty::GetPropertyName());
+    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const array accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     m_Getter(static_cast<Class*>(pInstance)).Clear();
   }
 
-  virtual void SetCount(void* pInstance, xiiUInt32 uiCount) override
+  virtual void SetCount(void* pInstance, xiiUInt32 uiCount) const override
   {
-    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const array accessor function, thus it is read-only.",
-                     xiiAbstractProperty::GetPropertyName());
+    XII_ASSERT_DEBUG(m_Getter != nullptr, "The property '{0}' has no non-const array accessor function, thus it is read-only.", xiiAbstractProperty::GetPropertyName());
+
     m_Getter(static_cast<Class*>(pInstance)).SetCount(uiCount);
   }
 
-  virtual void* GetValuePointer(void* pInstance, xiiUInt32 uiIndex) override
+  virtual void* GetValuePointer(void* pInstance, xiiUInt32 uiIndex) const override
   {
     XII_ASSERT_DEBUG(uiIndex < GetCount(pInstance), "GetValue: uiIndex ('{0}') is out of range ('{1}')", uiIndex, GetCount(pInstance));
 
@@ -232,30 +237,31 @@ public:
   virtual void GetValue(const void* pInstance, xiiUInt32 uiIndex, void* pObject) const override
   {
     XII_ASSERT_DEBUG(uiIndex < GetCount(pInstance), "GetValue: uiIndex ('{0}') is out of range ('{1}')", uiIndex, GetCount(pInstance));
+
     *static_cast<RealType*>(pObject) = m_ConstGetter(static_cast<const Class*>(pInstance))[uiIndex];
   }
 
-  virtual void SetValue(void* pInstance, xiiUInt32 uiIndex, const void* pObject) override
+  virtual void SetValue(void* pInstance, xiiUInt32 uiIndex, const void* pObject) const override
   {
     XII_REPORT_FAILURE("The property '{0}' is read-only.", xiiAbstractProperty::GetPropertyName());
   }
 
-  virtual void Insert(void* pInstance, xiiUInt32 uiIndex, const void* pObject) override
+  virtual void Insert(void* pInstance, xiiUInt32 uiIndex, const void* pObject) const override
   {
     XII_REPORT_FAILURE("The property '{0}' is read-only.", xiiAbstractProperty::GetPropertyName());
   }
 
-  virtual void Remove(void* pInstance, xiiUInt32 uiIndex) override
+  virtual void Remove(void* pInstance, xiiUInt32 uiIndex) const override
   {
     XII_REPORT_FAILURE("The property '{0}' is read-only.", xiiAbstractProperty::GetPropertyName());
   }
 
-  virtual void Clear(void* pInstance) override
+  virtual void Clear(void* pInstance) const override
   {
     XII_REPORT_FAILURE("The property '{0}' is read-only.", xiiAbstractProperty::GetPropertyName());
   }
 
-  virtual void SetCount(void* pInstance, xiiUInt32 uiCount) override
+  virtual void SetCount(void* pInstance, xiiUInt32 uiCount) const override
   {
     XII_REPORT_FAILURE("The property '{0}' is read-only.", xiiAbstractProperty::GetPropertyName());
   }

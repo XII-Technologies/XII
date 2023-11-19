@@ -417,7 +417,7 @@ private:
 /// ## Surface on hit prefab: **Package**
 /// * Transforming a surface is not affected if the prefab it spawns on impact changes. Only the reference is stored.
 /// * The set prefab does not show up in the thumbnail so it is not needed.
-/// * We do however need to package it or otherwise the runtime would fail to spawn the prefab on impact.
+/// * We do, however, need to package it or otherwise the runtime would fail to spawn the prefab on impact.
 ///
 /// As a rule of thumb (also the default for each):
 /// * xiiFileBrowserAttribute are mostly Transform and Thumbnail.
@@ -431,7 +431,7 @@ struct xiiDependencyFlags
     None      = 0,          ///< The reference is not needed for anything in production. An example of this is editor references that are only used at edit time, e.g. a default animation clip for a skeleton.
     Thumbnail = XII_BIT(0), ///< This reference is a dependency to generating a thumbnail. The material references of a mesh for example.
     Transform = XII_BIT(1), ///< This reference is a dependency to transforming this asset. The input model of a mesh for example.
-    Package   = XII_BIT(2), ///< This reference is needs to be packaged as it is used at runtime by this asset. All sounds or debris generated on impact of a surface are common examples of this.
+    Package   = XII_BIT(2), ///< This reference needs to be packaged as it is used at runtime by this asset. All sounds or debris generated on impact of a surface are common examples of this.
 
     Default = None
   };
@@ -457,12 +457,12 @@ class XII_FOUNDATION_DLL xiiFileBrowserAttribute : public xiiTypeWidgetAttribute
 
 public:
   // Predefined common type filters
-  static constexpr const char* Meshes            = "*.obj;*.fbx;*.gltf;*.glb";
-  static constexpr const char* SkeletalMeshes    = "*.fbx;*.gltf;*.glb";
-  static constexpr const char* ImagesLdrOnly     = "*.dds;*.tga;*.png;*.jpg;*.jpeg";
-  static constexpr const char* ImagesHdrOnly     = "*.hdr;*.exr";
-  static constexpr const char* ImagesLdrAndHdr   = "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr;*.exr";
-  static constexpr const char* CubemapsLdrAndHdr = "*.dds;*.hdr";
+  static constexpr xiiStringView Meshes            = "*.obj;*.fbx;*.gltf;*.glb"_xiisv;
+  static constexpr xiiStringView SkeletalMeshes    = "*.fbx;*.gltf;*.glb"_xiisv;
+  static constexpr xiiStringView ImagesLdrOnly     = "*.dds;*.tga;*.png;*.jpg;*.jpeg"_xiisv;
+  static constexpr xiiStringView ImagesHdrOnly     = "*.hdr;*.exr"_xiisv;
+  static constexpr xiiStringView ImagesLdrAndHdr   = "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr;*.exr"_xiisv;
+  static constexpr xiiStringView CubemapsLdrAndHdr = "*.dds;*.hdr"_xiisv;
 
   xiiFileBrowserAttribute() = default;
   xiiFileBrowserAttribute(xiiStringView sDialogTitle, xiiStringView sTypeFilter, xiiStringView sCustomAction = {}, xiiBitflags<xiiDependencyFlags> dependencyFlags = xiiDependencyFlags::Transform | xiiDependencyFlags::Thumbnail) :
@@ -552,6 +552,23 @@ private:
   xiiUntrackedString m_sDynamicEnumName;
 };
 
+/// \brief Can be used on integer properties to display them as bitflags. The valid bitflags and their names may change at runtime.
+class XII_FOUNDATION_DLL xiiDynamicBitflagsAttribute : public xiiTypeWidgetAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiDynamicBitflagsAttribute, xiiTypeWidgetAttribute);
+
+public:
+  xiiDynamicBitflagsAttribute() = default;
+  xiiDynamicBitflagsAttribute(xiiStringView sDynamicName) :
+    m_sDynamicBitflagsName(sDynamicName)
+  {
+  }
+
+  xiiStringView GetDynamicBitflagsName() const { return m_sDynamicBitflagsName; }
+
+private:
+  xiiUntrackedString m_sDynamicBitflagsName;
+};
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -958,18 +975,10 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// \brief Attribute for xiiMessages to instruct the visual script framework to automatically generate a node for sending this type of
-/// message
-class XII_FOUNDATION_DLL xiiAutoGenVisScriptMsgSender : public xiiPropertyAttribute
+/// \brief Attribute for types that should not be exposed to the scripting framework.
+class XII_FOUNDATION_DLL xiiExcludeFromScript : public xiiPropertyAttribute
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiAutoGenVisScriptMsgSender, xiiPropertyAttribute);
-};
-
-/// \brief Attribute for xiiMessages to instruct the visual script framework to automatically generate a node for handling this type of
-/// message
-class XII_FOUNDATION_DLL xiiAutoGenVisScriptMsgHandler : public xiiPropertyAttribute
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiAutoGenVisScriptMsgHandler, xiiPropertyAttribute);
+  XII_ADD_DYNAMIC_REFLECTION(xiiExcludeFromScript, xiiPropertyAttribute);
 };
 
 /// \brief Attribute to mark a function up to be exposed to the scripting system. Arguments specify the names of the function parameters.
@@ -1009,20 +1018,6 @@ class XII_FOUNDATION_DLL xiiFunctionArgumentAttributes : public xiiPropertyAttri
 private:
   xiiUInt32                                      m_uiArgIndex = 0;
   xiiHybridArray<const xiiPropertyAttribute*, 4> m_ArgAttributes;
-};
-
-/// \brief Used to annotate properties to which pin or function parameter they belong (if necessary)
-class XII_FOUNDATION_DLL xiiVisScriptMappingAttribute : public xiiPropertyAttribute
-{
-  XII_ADD_DYNAMIC_REFLECTION(xiiVisScriptMappingAttribute, xiiPropertyAttribute);
-
-  xiiVisScriptMappingAttribute() = default;
-  xiiVisScriptMappingAttribute(xiiInt32 iMapping) :
-    m_iMapping(iMapping)
-  {
-  }
-
-  xiiInt32 m_iMapping = 0;
 };
 
 /// \brief Used to mark an array or (unsigned)int property as source for dynamic pin generation on nodes

@@ -2,7 +2,6 @@
 
 #include <Foundation/Basics.h>
 #include <Foundation/Communication/RemoteInterface.h>
-#include <Foundation/Communication/RemoteMessage.h>
 #include <Foundation/Threading/ThreadSignal.h>
 #include <Foundation/Types/UniquePtr.h>
 
@@ -14,71 +13,89 @@ struct XII_FOUNDATION_DLL xiiIpcChannelEvent
 {
   enum Type
   {
-    ConnectedToClient,      ///< brief Sent whenever a new connection to a client has been established.
-    ConnectedToServer,      ///< brief Sent whenever a connection to the server has been established.
-    DisconnectedFromClient, ///< Sent every time the connection to a client is dropped
-    DisconnectedFromServer, ///< Sent when the connection to the server has been lost
-    NewMessages,            ///< Sent when a new message has been received.
+    Disconnected, ///< Server or client are in a dorment state.
+    Connecting,   ///< The server is listening for clients or the client is trying to find the server.
+    Connected,    ///< Client and server are connected to each other.
+    NewMessages,  ///< Sent when a new messages have been received or when disconnected to wake up any thread waiting for messages.
   };
+
+  xiiIpcChannelEvent() = default;
 
   xiiIpcChannelEvent(Type type, xiiIpcChannel* pChannel) :
     m_Type(type), m_pChannel(pChannel)
   {
   }
 
-  Type           m_Type;
-  xiiIpcChannel* m_pChannel;
+  Type           m_Type     = NewMessages;
+  xiiIpcChannel* m_pChannel = nullptr;
 };
 
 /// \brief Base class for a communication channel between processes.
 ///
+///  The channel allows for byte blobs to be send back and forth between two processes.
+///  A client should only try to connect to a server once the server has changed to ConnectionState::Connecting as this indicates the server is ready to be conneccted to.
+///
 ///  Use xiiIpcChannel:::CreatePipeChannel to create an IPC pipe instance.
+///  To send more complex messages accross, you can create a xiiIpcProcessMessageProtocol on top of the channel.
 class XII_FOUNDATION_DLL xiiIpcChannel
 {
 public:
   struct Mode
   {
+    using StorageType = xiiUInt8;
     enum Enum
     {
       Server,
-      Client
+      Client,
+      Default = Server
+    };
+  };
+
+  struct ConnectionState
+  {
+    using StorageType = xiiUInt8;
+    enum Enum
+    {
+      Disconnected,
+      Connecting, ///< In case of the server, this state indicates that the server is ready to be connected to.
+      Connected,
+      Default = Disconnected
     };
   };
 
   virtual ~xiiIpcChannel();
 
   /// \brief Creates an IPC communication channel using pipes.
-  /// \param szAddress Name of the pipe, must be unique on a system and less than 200 characters.
+  /// \param sAddress Name of the pipe, must be unique on a system and less than 200 characters.
   /// \param mode Whether to run in client or server mode.
-  static xiiIpcChannel* CreatePipeChannel(xiiStringView sAddress, Mode::Enum mode);
+  static xiiInternal::NewInstance<xiiIpcChannel> CreatePipeChannel(xiiStringView sAddress, Mode::Enum mode);
 
-  static xiiIpcChannel* CreateNetworkChannel(xiiStringView sAddress, Mode::Enum mode);
+  static xiiInternal::NewInstance<xiiIpcChannel> CreateNetworkChannel(xiiStringView sAddress, Mode::Enum mode);
+
 
   /// \brief Connects async. On success, m_Events will be broadcasted.
   void Connect();
   /// \brief Disconnect async. On completion, m_Events will be broadcasted.
   void Disconnect();
   /// \brief Returns whether we have a connection.
-  bool IsConnected() const { return m_bConnected; }
+  bool IsConnected() const { return m_iConnectionState == ConnectionState::Connected; }
+  /// \brief Returns the current state of the connection.
+  xiiEnum<ConnectionState> GetConnectionState() const { return xiiEnum<ConnectionState>(m_iConnectionState); }
 
   /// \brief Sends a message. pMsg can be destroyed after the call.
-  bool Send(xiiProcessMessage* pMsg);
+  bool Send(xiiArrayPtr<const xiiUInt8> data);
 
-  /// \brief Processes all pending messages by broadcasting m_MessageEvent. Not re-entrant.
-  bool ProcessMessages();
-  /// \brief Block and wait for new messages and call ProcessMessages.
-  void WaitForMessages();
+  using ReceiveCallback = xiiDelegate<void(xiiArrayPtr<const xiiUInt8> message)>;
+  void SetReceiveCallback(ReceiveCallback callback);
+
   /// \brief Block and wait for new messages and call ProcessMessages.
   xiiResult WaitForMessages(xiiTime timeout);
 
-  xiiEvent<const xiiIpcChannelEvent&, xiiMutex> m_Events;       ///< Will be sent from any thread.
-  xiiEvent<const xiiProcessMessage*>            m_MessageEvent; ///< Will be sent from thread calling ProcessMessages or WaitForMessages.
+public:
+  xiiEvent<const xiiIpcChannelEvent&, xiiMutex> m_Events; ///< Will be sent from any thread.
 
 protected:
   xiiIpcChannel(xiiStringView sAddress, Mode::Enum mode);
-
-  /// \brief Called by AddChannel to do platform specific registration.
-  virtual void AddToMessageLoop(xiiMessageLoop* pMsgLoop) {}
 
   /// \brief Override this and return true, if the surrounding infrastructure should call the 'Tick()' function.
   virtual bool RequiresRegularTick() { return false; }
@@ -94,15 +111,13 @@ protected:
   /// \brief Called by Send to determine whether the message loop need to be woken up.
   virtual bool NeedWakeup() const = 0;
 
+  void SetConnectionState(xiiEnum<ConnectionState> state);
   /// \brief Implementation needs to call this when new data has been received.
   ///  data can be invalidated after the function.
-  void ReceiveMessageData(xiiArrayPtr<const xiiUInt8> data);
+  void ReceiveData(xiiArrayPtr<const xiiUInt8> data);
   void FlushPendingOperations();
 
 private:
-  void EnqueueMessage(xiiUniquePtr<xiiProcessMessage>&& msg);
-  void SwapWorkQueue(xiiDeque<xiiUniquePtr<xiiProcessMessage>>& messages);
-
 protected:
   enum Constants : xiiUInt32
   {
@@ -112,12 +127,14 @@ protected:
   };
 
   friend class xiiMessageLoop;
-  xiiThreadID   m_ThreadId   = 0;
-  xiiAtomicBool m_bConnected = false;
+  xiiThreadID m_ThreadId = 0;
+
+  xiiAtomicInteger<ConnectionState::Enum> m_iConnectionState = ConnectionState::Disconnected;
 
   // Setup in ctor
-  const Mode::Enum m_Mode;
-  xiiMessageLoop*  m_pOwner = nullptr;
+  xiiString           m_sAddress;
+  const xiiEnum<Mode> m_Mode;
+  xiiMessageLoop*     m_pOwner = nullptr;
 
   // Mutex locked
   xiiMutex                                   m_OutputQueueMutex;
@@ -127,7 +144,7 @@ protected:
   xiiDynamicArray<xiiUInt8> m_MessageAccumulator; ///< Message is assembled in here
 
   // Mutex locked
-  xiiMutex                                  m_IncomingQueueMutex;
-  xiiDeque<xiiUniquePtr<xiiProcessMessage>> m_IncomingQueue;
-  xiiThreadSignal                           m_IncomingMessages;
+  xiiMutex        m_ReceiveCallbackMutex;
+  ReceiveCallback m_ReceiveCallback;
+  xiiThreadSignal m_IncomingMessages;
 };

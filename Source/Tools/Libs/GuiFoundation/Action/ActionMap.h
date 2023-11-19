@@ -8,7 +8,7 @@ class xiiDocument;
 
 struct XII_GUIFOUNDATION_DLL xiiActionMapDescriptor
 {
-  xiiActionDescriptorHandle m_hAction; ///< Action to be mapped.
+  xiiActionDescriptorHandle m_hAction; ///< Action to be mapped
   xiiString                 m_sPath;   ///< Path where the action should be mapped excluding the action's name, e.g. "File/New" for a menu item "File -> New -> Project..." .
   float                     m_fOrder;  ///< Ordering key to sort actions in the mapping path.
 };
@@ -43,7 +43,7 @@ public:
   xiiTreeNode<T>* InsertChild(const T& data, xiiUInt32 uiIndex)
   {
     xiiTreeNode<T>* pNode = XII_DEFAULT_NEW(xiiTreeNode<T>, data);
-    pNode->m_Guid.CreateNewUuid();
+    pNode->m_Guid         = xiiUuid::CreateUuid();
     m_Children.Insert(pNode, uiIndex);
     pNode->m_pParent = this;
     return pNode;
@@ -85,7 +85,7 @@ private:
 /// Actions are usually commands that are exposed through UI.
 /// For instance a button in a toolbar or a menu entry.
 ///
-/// Actions are unique. Each action only exists once in the xiiActionManager.
+/// Actions are unique. Each action only exists once in xiiActionManager.
 ///
 /// An action map defines where in a menu an action shows up.
 /// Actions are usually grouped by categories. So for example all actions related to opening, closing
@@ -96,7 +96,7 @@ private:
 /// For example, usually there is one action map for a window menu, and another map for a toolbar.
 /// These will contain different actions, and they are organized differently.
 ///
-/// Action maps are created through the xiiActionMapManager and are simply identified by name.
+/// Action maps are created through xiiActionMapManager and are simply identified by name.
 class XII_GUIFOUNDATION_DLL xiiActionMap
 {
 public:

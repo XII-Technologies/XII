@@ -38,9 +38,9 @@ xiiStatus xiiToolsProject::Create()
     }
     else
     {
-      const char* szToken = "XII Editor Project File.";
+      xiiStringView szToken = "xiiEditor Project File";
 
-      XII_SUCCEED_OR_RETURN(ProjectFile.Write(szToken, xiiStringUtils::GetStringElementCount(szToken) + 1));
+      XII_SUCCEED_OR_RETURN(ProjectFile.Write(szToken.GetStartPointer(), szToken.GetElementCount() + 1));
       ProjectFile.Close();
     }
   }

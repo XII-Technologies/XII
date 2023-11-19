@@ -325,7 +325,7 @@ void xiiQtTestGUI::on_actionEnableAllChildren_triggered()
   if (!CurrentIndex.isValid())
     return;
 
-  for (auto idx : testTreeView->selectionModel()->selectedIndexes())
+  for (auto& idx : testTreeView->selectionModel()->selectedIndexes())
   {
     // Need to set data on column 0
     CurrentIndex = m_pModel->index(idx.row(), 0, idx.parent());

@@ -8,6 +8,7 @@
 #  include <Foundation/Configuration/Singleton.h>
 #  include <Foundation/Threading/LockedObject.h>
 #  include <Foundation/Types/UniquePtr.h>
+#  include <ToolsFoundation/FileSystem/DataDirPath.h>
 #  include <ToolsFoundation/FileSystem/Declarations.h>
 
 class xiiFileSystemWatcher;
@@ -19,16 +20,17 @@ struct XII_TOOLSFOUNDATION_DLL xiiFolderChangedEvent
 {
   enum class Type
   {
+    None,
     FolderAdded,
     FolderRemoved,
     ModelReset, ///< Model was initialized or deinitialized.
   };
 
   xiiFolderChangedEvent() = default;
-  xiiFolderChangedEvent(xiiStringView sFile, Type type);
+  xiiFolderChangedEvent(const xiiDataDirPath& file, Type type);
 
-  xiiString m_sPath;
-  Type      m_Type;
+  xiiDataDirPath m_Path;
+  Type           m_Type = Type::None;
 };
 
 /// \brief Event fired by xiiFileSystemModel::m_FileChangedEvents
@@ -36,6 +38,7 @@ struct XII_TOOLSFOUNDATION_DLL xiiFileChangedEvent
 {
   enum class Type
   {
+    None,
     FileAdded,
     FileChanged,
     DocumentLinked,
@@ -45,11 +48,11 @@ struct XII_TOOLSFOUNDATION_DLL xiiFileChangedEvent
   };
 
   xiiFileChangedEvent() = default;
-  xiiFileChangedEvent(xiiStringView sFile, xiiFileStatus status, Type type);
+  xiiFileChangedEvent(const xiiDataDirPath& file, xiiFileStatus status, Type type);
 
-  xiiString     m_sPath;
-  xiiFileStatus m_Status;
-  Type          m_Type = Type::ModelReset;
+  xiiDataDirPath m_Path;
+  xiiFileStatus  m_Status;
+  Type           m_Type = Type::None;
 };
 
 /// \brief A subsystem for tracking all files in a xiiApplicationFileSystemConfig.
@@ -62,8 +65,11 @@ class XII_TOOLSFOUNDATION_DLL xiiFileSystemModel
   XII_DECLARE_SINGLETON(xiiFileSystemModel);
 
 public:
-  using LockedFiles   = xiiLockedObject<xiiMutex, const xiiMap<xiiString, xiiFileStatus>>;
-  using LockedFolders = xiiLockedObject<xiiMutex, const xiiMap<xiiString, xiiFileStatus::Status>>;
+  using FilesMap   = xiiMap<xiiDataDirPath, xiiFileStatus, xiiCompareDataDirPath>;
+  using FoldersMap = xiiMap<xiiDataDirPath, xiiFileStatus::Status, xiiCompareDataDirPath>;
+
+  using LockedFiles   = xiiLockedObject<xiiMutex, const FilesMap>;
+  using LockedFolders = xiiLockedObject<xiiMutex, const FoldersMap>;
 
 public:
   /// \brief Return true if the two paths point to the same file on disk. On different platforms the same strings can produce different results. This function assumes both paths are absolute and cleaned via xiiStringBuilder::MakeCleanPath.
@@ -83,15 +89,18 @@ public:
   /// \param fileSystemConfig All data directories in this config will be tracked by the model.
   /// \param referencedFiles Restores the previous state of the file model. E.g. cached on disk. If the xiiFileStatus::Status is xiiFileStatus::Status::Unknown m_FileChangedEvents is guaranteed to be fired once the file is checked again, e.g. via CheckFileSystem or NotifyOfChange.
   /// \param referencedFolders Restores the previous state of the folder model. E.g. cached on disk.
-  void Initialize(const xiiApplicationFileSystemConfig& fileSystemConfig, xiiMap<xiiString, xiiFileStatus>&& referencedFiles, xiiMap<xiiString, xiiFileStatus::Status>&& referencedFolders);
+  void Initialize(const xiiApplicationFileSystemConfig& fileSystemConfig, FilesMap&& referencedFiles, FoldersMap&& referencedFolders);
 
   /// \brief Deinitialize the model.
   /// \param out_pReferencedFiles If set, filled with the current state of the file model so it can be cached, e.g. by storing it on disk.
   /// \param out_pReferencedFolders If set, filled with the current state of the folder model so it can be cached, e.g. by storing it on disk.
-  void Deinitialize(xiiMap<xiiString, xiiFileStatus>* out_pReferencedFiles = nullptr, xiiMap<xiiString, xiiFileStatus::Status>* out_pReferencedFolders = nullptr);
+  void Deinitialize(FilesMap* out_pReferencedFiles = nullptr, FoldersMap* out_pReferencedFolders = nullptr);
 
   /// \brief Needs to be called every frame to restart background tasks.
   void MainThreadTick();
+
+  const xiiApplicationFileSystemConfig& GetFileSystemConfig() const { return m_FileSystemConfig; }
+  xiiArrayPtr<const xiiString>          GetDataDirectoryRoots() const { return m_DataDirRoots.GetArrayPtr(); }
 
   ///@}
   /// \name File / Folder Access
@@ -114,7 +123,7 @@ public:
   /// \brief Searches for the first file in the model that satisfies the given visitor function.
   /// \param visitor Called for every file in the model. If this functions returns true, the search is canceled and the function returns XII_SUCCESS.
   /// \return Returns XII_SUCCESS if the visitor returned true for a file.
-  xiiResult FindFile(xiiDelegate<bool(const xiiString&, const xiiFileStatus&)> visitor) const;
+  xiiResult FindFile(xiiDelegate<bool(const xiiDataDirPath&, const xiiFileStatus&)> visitor) const;
 
   ///@}
   /// \name File / Folder Updates
@@ -170,16 +179,15 @@ private:
   void RemoveStaleFileInfos();
 
   void          OnAssetWatcherEvent(const xiiFileSystemWatcherEvent& e);
-  xiiFileStatus HandleSingleFile(const xiiString& sAbsolutePath, bool bRecurseIntoFolders);
-  xiiFileStatus HandleSingleFile(const xiiString& sAbsolutePath, const xiiFileStats& FileStat, bool bRecurseIntoFolders);
-  void          MarkFileLocked(xiiStringView sAbsolutePath);
+  xiiFileStatus HandleSingleFile(xiiDataDirPath absolutePath, bool bRecurseIntoFolders);
+  xiiFileStatus HandleSingleFile(xiiDataDirPath absolutePath, const xiiFileStats& FileStat, bool bRecurseIntoFolders);
 
-  void RemoveFileOrFolder(const xiiString& sAbsolutePath, bool bRecurseIntoFolders);
+  void RemoveFileOrFolder(const xiiDataDirPath& absolutePath, bool bRecurseIntoFolders);
 
-  void FireFileChangedEvent(xiiStringView sFile, xiiFileStatus fileStatus, xiiFileChangedEvent::Type type);
-  void FireFolderChangedEvent(xiiStringView sFile, xiiFolderChangedEvent::Type type);
+  void MarkFileLocked(xiiStringView sAbsolutePath);
 
-  int FindDataDir(const xiiStringView path);
+  void FireFileChangedEvent(const xiiDataDirPath& file, xiiFileStatus fileStatus, xiiFileChangedEvent::Type type);
+  void FireFolderChangedEvent(const xiiDataDirPath& file, xiiFolderChangedEvent::Type type);
 
 private:
   // Immutable data after Initialize
@@ -192,10 +200,10 @@ private:
   mutable xiiMutex m_FilesMutex;
   xiiAtomicBool    m_bInitialized = false;
 
-  xiiMap<xiiString, xiiFileStatus>         m_ReferencedFiles;   // Absolute path to stat map
-  xiiMap<xiiString, xiiFileStatus::Status> m_ReferencedFolders; // Absolute path to status map
-  xiiSet<xiiString>                        m_LockedFiles;
-  xiiMap<xiiString, xiiFileStatus>         m_TransiendFiles; // Absolute path to stat for files outside the data directories.
+  FilesMap                         m_ReferencedFiles;   // Absolute path to stat map
+  FoldersMap                       m_ReferencedFolders; // Absolute path to status map
+  xiiSet<xiiString>                m_LockedFiles;
+  xiiMap<xiiString, xiiFileStatus> m_TransiendFiles; // Absolute path to stat for files outside the data directories.
 };
 
 #endif

@@ -47,7 +47,7 @@ void xiiRttiConverterReader::ApplyPropertiesToObject(const xiiAbstractObjectNode
   }
 }
 
-void xiiRttiConverterReader::ApplyProperty(void* pObject, xiiAbstractProperty* pProp, const xiiAbstractObjectNode::Property* pSource)
+void xiiRttiConverterReader::ApplyProperty(void* pObject, const xiiAbstractProperty* pProp, const xiiAbstractObjectNode::Property* pSource)
 {
   const xiiRTTI* pPropType = pProp->GetSpecificType();
 
@@ -60,7 +60,7 @@ void xiiRttiConverterReader::ApplyProperty(void* pObject, xiiAbstractProperty* p
   {
     case xiiPropertyCategory::Member:
     {
-      xiiAbstractMemberProperty* pSpecific = static_cast<xiiAbstractMemberProperty*>(pProp);
+      auto pSpecific = static_cast<const xiiAbstractMemberProperty*>(pProp);
 
       if (pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer))
       {
@@ -132,7 +132,7 @@ void xiiRttiConverterReader::ApplyProperty(void* pObject, xiiAbstractProperty* p
     break;
     case xiiPropertyCategory::Array:
     {
-      xiiAbstractArrayProperty* pSpecific = static_cast<xiiAbstractArrayProperty*>(pProp);
+      auto pSpecific = static_cast<const xiiAbstractArrayProperty*>(pProp);
       if (!pSource->m_Value.IsA<xiiVariantArray>())
         return;
       const xiiVariantArray& array = pSource->m_Value.Get<xiiVariantArray>();
@@ -215,7 +215,7 @@ void xiiRttiConverterReader::ApplyProperty(void* pObject, xiiAbstractProperty* p
     break;
     case xiiPropertyCategory::Set:
     {
-      xiiAbstractSetProperty* pSpecific = static_cast<xiiAbstractSetProperty*>(pProp);
+      auto pSpecific = static_cast<const xiiAbstractSetProperty*>(pProp);
       if (!pSource->m_Value.IsA<xiiVariantArray>())
         return;
 
@@ -299,7 +299,7 @@ void xiiRttiConverterReader::ApplyProperty(void* pObject, xiiAbstractProperty* p
     break;
     case xiiPropertyCategory::Map:
     {
-      xiiAbstractMapProperty* pSpecific = static_cast<xiiAbstractMapProperty*>(pProp);
+      auto pSpecific = static_cast<const xiiAbstractMapProperty*>(pProp);
       if (!pSource->m_Value.IsA<xiiVariantDictionary>())
         return;
 
@@ -386,16 +386,14 @@ void xiiRttiConverterReader::ApplyProperty(void* pObject, xiiAbstractProperty* p
     }
     break;
 
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
-      break;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 }
 
 void xiiRttiConverterReader::CallOnObjectCreated(const xiiAbstractObjectNode* pNode, const xiiRTTI* pRtti, void* pObject)
 {
-  xiiArrayPtr<xiiAbstractFunctionProperty*> functions = pRtti->GetFunctions();
-  for (xiiAbstractFunctionProperty* pFunc : functions)
+  auto functions = pRtti->GetFunctions();
+  for (auto pFunc : functions)
   {
     // TODO: Make this compare faster
     if (pFunc->GetPropertyName().IsEqual("OnObjectCreated"))

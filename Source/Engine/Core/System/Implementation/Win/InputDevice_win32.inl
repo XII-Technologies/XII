@@ -374,7 +374,7 @@ void xiiStandardInputDevice::SetClipMouseCursor(xiiMouseCursorClipMode::Enum mod
 // When this is enabled, mouse clicks are retrieved via standard WM_LBUTTONDOWN.
 #define XII_MOUSEBUTTON_COMPATIBILTY_MODE XII_ON
 
-void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM wparam, xiiMinWindows::LPARAM lparam)
+void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindows::UINT msg, xiiMinWindows::WPARAM wparam, xiiMinWindows::LPARAM lparam)
 {
 #if XII_ENABLED(XII_MOUSEBUTTON_COMPATIBILTY_MODE)
   static xiiInt32 s_iMouseCaptureCount = 0;
@@ -399,7 +399,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
     case WM_MOUSEMOVE:
     {
       RECT area;
-      GetClientRect(xiiMinWindows::ToNative(pWnd), &area);
+      GetClientRect(xiiMinWindows::ToNative(hWnd), &area);
 
       const xiiUInt32 uiResX = area.right - area.left;
       const xiiUInt32 uiResY = area.bottom - area.top;
@@ -413,7 +413,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
 
       if (m_ClipCursorMode == xiiMouseCursorClipMode::ClipToPosition || m_ClipCursorMode == xiiMouseCursorClipMode::ClipToWindowImmediate)
       {
-        ApplyClipRect(m_ClipCursorMode, pWnd);
+        ApplyClipRect(m_ClipCursorMode, hWnd);
       }
     }
     break;
@@ -421,13 +421,13 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
     case WM_SETFOCUS:
     {
       m_bApplyClipRect = true;
-      ApplyClipRect(m_ClipCursorMode, pWnd);
+      ApplyClipRect(m_ClipCursorMode, hWnd);
     }
     break;
 
     case WM_KILLFOCUS:
     {
-      OnFocusLost(pWnd);
+      OnFocusLost(hWnd);
       return;
     }
 
@@ -468,7 +468,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
       m_uiMouseButtonReceivedDown[0]++;
 
       if (s_iMouseCaptureCount == 0)
-        SetCapture(xiiMinWindows::ToNative(pWnd));
+        SetCapture(xiiMinWindows::ToNative(hWnd));
       ++s_iMouseCaptureCount;
 
       return;
@@ -477,7 +477,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
     case WM_LBUTTONUP:
     {
       m_uiMouseButtonReceivedUp[0]++;
-      ApplyClipRect(m_ClipCursorMode, pWnd);
+      ApplyClipRect(m_ClipCursorMode, hWnd);
 
       --s_iMouseCaptureCount;
       if (s_iMouseCaptureCount <= 0)
@@ -491,7 +491,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
       m_uiMouseButtonReceivedDown[1]++;
 
       if (s_iMouseCaptureCount == 0)
-        SetCapture(xiiMinWindows::ToNative(pWnd));
+        SetCapture(xiiMinWindows::ToNative(hWnd));
       ++s_iMouseCaptureCount;
 
       return;
@@ -500,7 +500,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
     case WM_RBUTTONUP:
     {
       m_uiMouseButtonReceivedUp[1]++;
-      ApplyClipRect(m_ClipCursorMode, pWnd);
+      ApplyClipRect(m_ClipCursorMode, hWnd);
 
       --s_iMouseCaptureCount;
       if (s_iMouseCaptureCount <= 0)
@@ -514,7 +514,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
       m_uiMouseButtonReceivedDown[2]++;
 
       if (s_iMouseCaptureCount == 0)
-        SetCapture(xiiMinWindows::ToNative(pWnd));
+        SetCapture(xiiMinWindows::ToNative(hWnd));
       ++s_iMouseCaptureCount;
 
       return;
@@ -539,7 +539,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND pWnd, xiiMinWindo
         m_uiMouseButtonReceivedDown[4]++;
 
       if (s_iMouseCaptureCount == 0)
-        SetCapture(xiiMinWindows::ToNative(pWnd));
+        SetCapture(xiiMinWindows::ToNative(hWnd));
       ++s_iMouseCaptureCount;
 
       return;

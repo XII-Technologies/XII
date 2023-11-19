@@ -90,8 +90,8 @@ void xiiQtVarianceTypeWidget::SlotVarianceChanged()
 
 void xiiQtVarianceTypeWidget::OnInit()
 {
-  m_pValueProp    = static_cast<xiiAbstractMemberProperty*>(GetProperty()->GetSpecificType()->FindPropertyByName("Value"));
-  m_pVarianceProp = static_cast<xiiAbstractMemberProperty*>(GetProperty()->GetSpecificType()->FindPropertyByName("Variance"));
+  m_pValueProp    = static_cast<const xiiAbstractMemberProperty*>(GetProperty()->GetSpecificType()->FindPropertyByName("Value"));
+  m_pVarianceProp = static_cast<const xiiAbstractMemberProperty*>(GetProperty()->GetSpecificType()->FindPropertyByName("Variance"));
 
   // Property type adjustments
   xiiQtScopedBlockSignals bs(m_pValueWidget);
@@ -120,7 +120,12 @@ void xiiQtVarianceTypeWidget::OnInit()
     {
       m_pValueWidget->setMinimum(pClamp->GetMinValue());
     }
-    else if (const xiiRTTI* pType = pClamp->GetMinValue().GetReflectedType(); pType && pType->IsDerivedFrom<xiiVarianceTypeBaseFloat>())
+    else if (const xiiRTTI* pType = pClamp->GetMinValue().GetReflectedType(); pType && pType->IsDerivedFrom<xiiVarianceTypeFloat>())
+    {
+      m_pValueWidget->setMinimum(pClamp->GetMinValue()["Value"]);
+      m_pVarianceWidget->setMinimum(static_cast<xiiInt32>(pClamp->GetMinValue()["Variance"].ConvertTo<double>() * 100.0));
+    }
+    else if (const xiiRTTI* pType = pClamp->GetMinValue().GetReflectedType(); pType && pType->IsDerivedFrom<xiiVarianceTypeDouble>())
     {
       m_pValueWidget->setMinimum(pClamp->GetMinValue()["Value"]);
       m_pVarianceWidget->setMinimum(static_cast<xiiInt32>(pClamp->GetMinValue()["Variance"].ConvertTo<double>() * 100.0));
@@ -129,7 +134,12 @@ void xiiQtVarianceTypeWidget::OnInit()
     {
       m_pValueWidget->setMaximum(pClamp->GetMaxValue());
     }
-    else if (const xiiRTTI* pType = pClamp->GetMaxValue().GetReflectedType(); pType && pType->IsDerivedFrom<xiiVarianceTypeBaseFloat>())
+    else if (const xiiRTTI* pType = pClamp->GetMaxValue().GetReflectedType(); pType && pType->IsDerivedFrom<xiiVarianceTypeFloat>())
+    {
+      m_pValueWidget->setMaximum(pClamp->GetMaxValue()["Value"]);
+      m_pVarianceWidget->setMaximum(static_cast<xiiInt32>(pClamp->GetMaxValue()["Variance"].ConvertTo<double>() * 100.0));
+    }
+    else if (const xiiRTTI* pType = pClamp->GetMaxValue().GetReflectedType(); pType && pType->IsDerivedFrom<xiiVarianceTypeDouble>())
     {
       m_pValueWidget->setMaximum(pClamp->GetMaxValue()["Value"]);
       m_pVarianceWidget->setMaximum(static_cast<xiiInt32>(pClamp->GetMaxValue()["Variance"].ConvertTo<double>() * 100.0));
@@ -141,7 +151,11 @@ void xiiQtVarianceTypeWidget::OnInit()
     {
       m_pValueWidget->setDefaultValue(pDefault->GetValue());
     }
-    else if (const xiiRTTI* pType = pDefault->GetValue().GetReflectedType(); pType && pType->IsDerivedFrom<xiiVarianceTypeBaseFloat>())
+    else if (const xiiRTTI* pType = pDefault->GetValue().GetReflectedType(); pType && pType->IsDerivedFrom<xiiVarianceTypeFloat>())
+    {
+      m_pValueWidget->setDefaultValue(pDefault->GetValue()["Value"]);
+    }
+    else if (const xiiRTTI* pType = pDefault->GetValue().GetReflectedType(); pType && pType->IsDerivedFrom<xiiVarianceTypeDouble>())
     {
       m_pValueWidget->setDefaultValue(pDefault->GetValue()["Value"]);
     }

@@ -54,13 +54,13 @@ namespace
   thread_local bool                                                                g_bInFolderBroadcast = false;
 } // namespace
 
-xiiFolderChangedEvent::xiiFolderChangedEvent(xiiStringView sFile, Type type) :
-  m_sPath(sFile), m_Type(type)
+xiiFolderChangedEvent::xiiFolderChangedEvent(const xiiDataDirPath& file, Type type) :
+  m_Path(file), m_Type(type)
 {
 }
 
-xiiFileChangedEvent::xiiFileChangedEvent(xiiStringView sFile, xiiFileStatus status, Type type) :
-  m_sPath(sFile), m_Status(status), m_Type(type)
+xiiFileChangedEvent::xiiFileChangedEvent(const xiiDataDirPath& file, xiiFileStatus status, Type type) :
+  m_Path(file), m_Status(status), m_Type(type)
 {
 }
 
@@ -84,9 +84,10 @@ xiiFileSystemModel::xiiFileSystemModel() :
 
 xiiFileSystemModel::~xiiFileSystemModel() = default;
 
-void xiiFileSystemModel::Initialize(const xiiApplicationFileSystemConfig& fileSystemConfig, xiiMap<xiiString, xiiFileStatus>&& referencedFiles, xiiMap<xiiString, xiiFileStatus::Status>&& referencedFolders)
+void xiiFileSystemModel::Initialize(const xiiApplicationFileSystemConfig& fileSystemConfig, xiiFileSystemModel::FilesMap&& referencedFiles, xiiFileSystemModel::FoldersMap&& referencedFolders)
 {
   {
+    XII_PROFILE_SCOPE("Initialize");
     XII_LOCK(m_FilesMutex);
     m_FileSystemConfig = fileSystemConfig;
 
@@ -105,11 +106,38 @@ void xiiFileSystemModel::Initialize(const xiiApplicationFileSystemConfig& fileSy
       else
       {
         sDataDirPath.MakeCleanPath();
-        sDataDirPath.TrimWordEnd("/");
+        sDataDirPath.Trim(nullptr, "/");
 
         m_DataDirRoots.PushBack(sDataDirPath);
+
         // The root should always be in the model so that every file's parent folder is present in the model.
-        m_ReferencedFolders.FindOrAdd(sDataDirPath).Value() = xiiFileStatus::Status::Valid;
+        m_ReferencedFolders.FindOrAdd(xiiDataDirPath(sDataDirPath, m_DataDirRoots, i)).Value() = xiiFileStatus::Status::Valid;
+      }
+    }
+
+    // Update data dir index and remove files no longer inside a data dir.
+    for (auto it = m_ReferencedFiles.GetIterator(); it.IsValid();)
+    {
+      const bool bValid = it.Key().UpdateDataDirInfos(m_DataDirRoots, it.Key().GetDataDirIndex());
+      if (!bValid)
+      {
+        it = m_ReferencedFiles.Remove(it);
+      }
+      else
+      {
+        ++it;
+      }
+    }
+    for (auto it = m_ReferencedFolders.GetIterator(); it.IsValid();)
+    {
+      const bool bValid = it.Key().UpdateDataDirInfos(m_DataDirRoots, it.Key().GetDataDirIndex());
+      if (!bValid)
+      {
+        it = m_ReferencedFolders.Remove(it);
+      }
+      else
+      {
+        ++it;
       }
     }
 
@@ -123,11 +151,11 @@ void xiiFileSystemModel::Initialize(const xiiApplicationFileSystemConfig& fileSy
 }
 
 
-void xiiFileSystemModel::Deinitialize(xiiMap<xiiString, xiiFileStatus>* out_pReferencedFiles, xiiMap<xiiString, xiiFileStatus::Status>* out_pReferencedFolders)
+void xiiFileSystemModel::Deinitialize(xiiFileSystemModel::FilesMap* out_pReferencedFiles, xiiFileSystemModel::FoldersMap* out_pReferencedFolders)
 {
   {
     XII_LOCK(m_FilesMutex);
-
+    XII_PROFILE_SCOPE("Deinitialize");
     m_pWatcher->m_Events.RemoveEventHandler(m_WatcherSubscription);
     m_pWatcher->Deinitialize();
     m_pWatcher.Clear();
@@ -177,12 +205,16 @@ void xiiFileSystemModel::NotifyOfChange(xiiStringView sAbsolutePath)
 
   xiiStringBuilder sPath(sAbsolutePath);
   sPath.MakeCleanPath();
+  sPath.Trim(nullptr, "/");
+  if (sPath.IsEmpty())
+    return;
+  xiiDataDirPath folder(sPath, m_DataDirRoots);
 
   // We ignore any changes outside the model's data dirs.
-  if (FindDataDir(sAbsolutePath) == -1)
+  if (!folder.IsValid())
     return;
 
-  HandleSingleFile(sPath, true);
+  HandleSingleFile(std::move(folder), true);
 }
 
 void xiiFileSystemModel::CheckFileSystem()
@@ -200,15 +232,15 @@ void xiiFileSystemModel::CheckFileSystem()
     SetAllStatusUnknown();
 
     // check every data directory
-    for (auto& dd : m_FileSystemConfig.m_DataDirs)
+    for (xiiUInt32 i = 0; i < m_FileSystemConfig.m_DataDirs.GetCount(); i++)
     {
-      xiiStringBuilder sTemp;
-      xiiFileSystem::ResolveSpecialDirectory(dd.m_sDataDirSpecialPath, sTemp).IgnoreResult();
-
+      auto& dd = m_FileSystemConfig.m_DataDirs[i];
       if (xiiThreadUtils::IsMainThread())
         range->BeginNextStep(dd.m_sDataDirSpecialPath);
-
-      CheckFolder(sTemp);
+      if (!m_DataDirRoots[i].IsEmpty())
+      {
+        CheckFolder(m_DataDirRoots[i]);
+      }
     }
 
     RemoveStaleFileInfos();
@@ -230,7 +262,7 @@ xiiResult xiiFileSystemModel::FindFile(xiiStringView sPath, xiiFileStatus& out_s
     return XII_FAILURE;
 
   XII_LOCK(m_FilesMutex);
-  xiiMap<xiiString, xiiFileStatus>::ConstIterator it;
+  xiiFileSystemModel::FilesMap::ConstIterator it;
   if (xiiPathUtils::IsAbsolutePath(sPath))
   {
     it = m_ReferencedFiles.Find(sPath);
@@ -273,7 +305,7 @@ xiiResult xiiFileSystemModel::FindFile(xiiStringView sPath, xiiFileStatus& out_s
 }
 
 
-xiiResult xiiFileSystemModel::FindFile(xiiDelegate<bool(const xiiString&, const xiiFileStatus&)> visitor) const
+xiiResult xiiFileSystemModel::FindFile(xiiDelegate<bool(const xiiDataDirPath&, const xiiFileStatus&)> visitor) const
 {
   if (!m_bInitialized)
     return XII_FAILURE;
@@ -293,7 +325,8 @@ xiiResult xiiFileSystemModel::LinkDocument(xiiStringView sAbsolutePath, const xi
   if (!m_bInitialized || !documentId.IsValid())
     return XII_FAILURE;
 
-  xiiFileStatus fileStatus;
+  xiiDataDirPath filePath;
+  xiiFileStatus  fileStatus;
   {
     XII_LOCK(m_FilesMutex);
     auto it = m_ReferencedFiles.Find(sAbsolutePath);
@@ -302,6 +335,7 @@ xiiResult xiiFileSystemModel::LinkDocument(xiiStringView sAbsolutePath, const xi
       // Store status before updates so we can fire the unlink if a guid was already set.
       fileStatus              = it.Value();
       it.Value().m_DocumentID = documentId;
+      filePath                = it.Key();
     }
     else
     {
@@ -313,10 +347,10 @@ xiiResult xiiFileSystemModel::LinkDocument(xiiStringView sAbsolutePath, const xi
   {
     if (fileStatus.m_DocumentID.IsValid())
     {
-      FireFileChangedEvent(sAbsolutePath, fileStatus, xiiFileChangedEvent::Type::DocumentUnlinked);
+      FireFileChangedEvent(filePath, fileStatus, xiiFileChangedEvent::Type::DocumentUnlinked);
     }
     fileStatus.m_DocumentID = documentId;
-    FireFileChangedEvent(sAbsolutePath, fileStatus, xiiFileChangedEvent::Type::DocumentLinked);
+    FireFileChangedEvent(std::move(filePath), fileStatus, xiiFileChangedEvent::Type::DocumentLinked);
   }
   return XII_SUCCESS;
 }
@@ -326,15 +360,17 @@ xiiResult xiiFileSystemModel::UnlinkDocument(xiiStringView sAbsolutePath)
   if (!m_bInitialized)
     return XII_FAILURE;
 
-  xiiFileStatus fileStatus;
-  bool          bDocumentLinkChanged = false;
+  xiiDataDirPath filePath;
+  xiiFileStatus  fileStatus;
+  bool           bDocumentLinkChanged = false;
   {
     XII_LOCK(m_FilesMutex);
     auto it = m_ReferencedFiles.Find(sAbsolutePath);
     if (it.IsValid())
     {
-      bDocumentLinkChanged = it.Value().m_DocumentID != xiiUuid();
+      bDocumentLinkChanged = it.Value().m_DocumentID.IsValid();
       fileStatus           = it.Value();
+      filePath             = it.Key();
       it.Value().m_DocumentID.SetInvalid();
     }
     else
@@ -345,7 +381,7 @@ xiiResult xiiFileSystemModel::UnlinkDocument(xiiStringView sAbsolutePath)
 
   if (bDocumentLinkChanged)
   {
-    FireFileChangedEvent(sAbsolutePath, fileStatus, xiiFileChangedEvent::Type::DocumentUnlinked);
+    FireFileChangedEvent(std::move(filePath), fileStatus, xiiFileChangedEvent::Type::DocumentUnlinked);
   }
   return XII_SUCCESS;
 }
@@ -359,6 +395,11 @@ xiiResult xiiFileSystemModel::HashFile(xiiStringView sAbsolutePath, xiiFileStatu
 
   xiiStringBuilder sAbsolutePath2(sAbsolutePath);
   sAbsolutePath2.MakeCleanPath();
+  sAbsolutePath2.Trim("", "/");
+  if (sAbsolutePath2.IsEmpty())
+    return XII_FAILURE;
+
+  xiiDataDirPath file(sAbsolutePath2, m_DataDirRoots);
 
   xiiFileStats statDep;
   if (xiiOSFile::GetFileStats(sAbsolutePath2, statDep).Failed())
@@ -368,7 +409,7 @@ xiiResult xiiFileSystemModel::HashFile(xiiStringView sAbsolutePath, xiiFileStatu
   }
 
   // We ignore any changes outside the model's data dirs.
-  if (FindDataDir(sAbsolutePath2) != -1)
+  if (file.IsValid())
   {
     {
       XII_LOCK(m_FilesMutex);
@@ -382,7 +423,7 @@ xiiResult xiiFileSystemModel::HashFile(xiiStringView sAbsolutePath, xiiFileStatu
     // We can only hash files that are tracked.
     if (out_stat.m_Status == xiiFileStatus::Status::Unknown)
     {
-      out_stat = HandleSingleFile(sAbsolutePath2, statDep, false);
+      out_stat = HandleSingleFile(file, statDep, false);
       if (out_stat.m_Status == xiiFileStatus::Status::Unknown)
       {
         xiiLog::Error("Failed to hash file '{0}', update failed", sAbsolutePath2);
@@ -394,8 +435,8 @@ xiiResult xiiFileSystemModel::HashFile(xiiStringView sAbsolutePath, xiiFileStatu
     if (!out_stat.m_LastModified.Compare(statDep.m_LastModificationTime, xiiTimestamp::CompareMode::Identical) || out_stat.m_uiHash == 0)
     {
       FILESYSTEM_PROFILE(sAbsolutePath2);
-      xiiFileReader file;
-      if (file.Open(sAbsolutePath2).Failed())
+      xiiFileReader fileReader;
+      if (fileReader.Open(sAbsolutePath2).Failed())
       {
         MarkFileLocked(sAbsolutePath2);
         xiiLog::Error("Failed to hash file '{0}', open failed", sAbsolutePath2);
@@ -409,12 +450,12 @@ xiiResult xiiFileSystemModel::HashFile(xiiStringView sAbsolutePath, xiiFileStatu
         return XII_FAILURE;
       }
       out_stat.m_LastModified = statDep.m_LastModificationTime;
-      out_stat.m_uiHash       = xiiFileSystemModel::HashFile(file, nullptr);
+      out_stat.m_uiHash       = xiiFileSystemModel::HashFile(fileReader, nullptr);
       out_stat.m_Status       = xiiFileStatus::Status::Valid;
 
       // Update state. No need to compare timestamps we hold a lock on the file via the reader.
       XII_LOCK(m_FilesMutex);
-      m_ReferencedFiles.Insert(sAbsolutePath2, out_stat);
+      m_ReferencedFiles.Insert(file, out_stat);
     }
     return XII_SUCCESS;
   }
@@ -487,12 +528,16 @@ xiiResult xiiFileSystemModel::ReadDocument(xiiStringView sAbsolutePath, const xi
   if (!m_bInitialized)
     return XII_FAILURE;
 
+  xiiStringBuilder sAbsolutePath2(sAbsolutePath);
+  sAbsolutePath2.MakeCleanPath();
+  sAbsolutePath2.Trim(nullptr, "/");
+
   // try to read the asset file
   xiiFileReader file;
-  if (file.Open(sAbsolutePath) == XII_FAILURE)
+  if (file.Open(sAbsolutePath2) == XII_FAILURE)
   {
-    MarkFileLocked(sAbsolutePath);
-    xiiLog::Error("Failed to open file '{0}'", sAbsolutePath);
+    MarkFileLocked(sAbsolutePath2);
+    xiiLog::Error("Failed to open file '{0}'", sAbsolutePath2);
     return XII_FAILURE;
   }
 
@@ -500,7 +545,7 @@ xiiResult xiiFileSystemModel::ReadDocument(xiiStringView sAbsolutePath, const xi
   xiiFileStatus stat;
   {
     XII_LOCK(m_FilesMutex);
-    auto it = m_ReferencedFiles.Find(sAbsolutePath);
+    auto it = m_ReferencedFiles.Find(sAbsolutePath2);
     if (!it.IsValid())
       return XII_FAILURE;
 
@@ -533,7 +578,7 @@ xiiResult xiiFileSystemModel::ReadDocument(xiiStringView sAbsolutePath, const xi
   {
     // Update state. No need to compare timestamps we hold a lock on the file via the reader.
     XII_LOCK(m_FilesMutex);
-    auto it = m_ReferencedFiles.Find(sAbsolutePath);
+    auto it = m_ReferencedFiles.Find(sAbsolutePath2);
     if (it.IsValid())
     {
       bFileChanged = !it.Value().m_LastModified.Compare(stat.m_LastModified, xiiTimestamp::CompareMode::Identical);
@@ -546,7 +591,7 @@ xiiResult xiiFileSystemModel::ReadDocument(xiiStringView sAbsolutePath, const xi
 
     if (bFileChanged)
     {
-      FireFileChangedEvent(sAbsolutePath, stat, xiiFileChangedEvent::Type::FileChanged);
+      FireFileChangedEvent(it.Key(), stat, xiiFileChangedEvent::Type::FileChanged);
     }
   }
 
@@ -570,8 +615,8 @@ void xiiFileSystemModel::SetAllStatusUnknown()
 
 void xiiFileSystemModel::RemoveStaleFileInfos()
 {
-  xiiSet<xiiString> unknownFiles;
-  xiiSet<xiiString> unknownFolders;
+  xiiSet<xiiDataDirPath> unknownFiles;
+  xiiSet<xiiDataDirPath> unknownFolders;
   {
     XII_LOCK(m_FilesMutex);
     for (auto it = m_ReferencedFiles.GetIterator(); it.IsValid(); ++it)
@@ -592,13 +637,13 @@ void xiiFileSystemModel::RemoveStaleFileInfos()
     }
   }
 
-  for (const xiiString& sFile : unknownFiles)
+  for (const xiiDataDirPath& file : unknownFiles)
   {
-    HandleSingleFile(sFile, false);
+    HandleSingleFile(file, false);
   }
-  for (const xiiString& sFolders : unknownFolders)
+  for (const xiiDataDirPath& folders : unknownFolders)
   {
-    HandleSingleFile(sFolders, false);
+    HandleSingleFile(folders, false);
   }
 }
 
@@ -608,24 +653,26 @@ void xiiFileSystemModel::CheckFolder(xiiStringView sAbsolutePath)
   xiiStringBuilder sAbsolutePath2 = sAbsolutePath;
   sAbsolutePath2.MakeCleanPath();
   XII_ASSERT_DEV(xiiPathUtils::IsAbsolutePath(sAbsolutePath2), "Only absolute paths are supported for directory iteration.");
-  sAbsolutePath2.TrimWordEnd("/");
+  sAbsolutePath2.Trim(nullptr, "/");
 
   if (sAbsolutePath2.IsEmpty())
     return;
 
+  xiiDataDirPath folder(sAbsolutePath2, m_DataDirRoots);
+
   // We ignore any changes outside the model's data dirs.
-  if (FindDataDir(sAbsolutePath2) == -1)
+  if (!folder.IsValid())
     return;
 
   bool bExists = false;
   {
     XII_LOCK(m_FilesMutex);
-    bExists = m_ReferencedFolders.Contains(sAbsolutePath2);
+    bExists = m_ReferencedFolders.Contains(folder);
   }
   if (!bExists)
   {
     // If the folder does not exist yet we call NotifyOfChange which handles add / removal recursively as well.
-    NotifyOfChange(sAbsolutePath2);
+    NotifyOfChange(folder);
     return;
   }
 
@@ -650,7 +697,9 @@ void xiiFileSystemModel::CheckFolder(xiiStringView sAbsolutePath)
       visitedFolders.Insert(sPath);
     else
       visitedFiles.Insert(sPath);
-    HandleSingleFile(sPath, iterator.GetStats(), false);
+
+    xiiDataDirPath path(sPath, m_DataDirRoots, folder.GetDataDirIndex());
+    HandleSingleFile(std::move(path), iterator.GetStats(), false);
   }
 
   xiiDynamicArray<xiiString> missingFiles;
@@ -659,29 +708,36 @@ void xiiFileSystemModel::CheckFolder(xiiStringView sAbsolutePath)
   {
     XII_LOCK(m_FilesMutex);
 
-    for (auto it = m_ReferencedFiles.LowerBound(sAbsolutePath2); it.IsValid() && it.Key().StartsWith(sAbsolutePath2); ++it)
+    // As we are using xiiCompareDataDirPath, entries of different casing interleave but we are only interested in the ones with matching casing so we skip the rest.
+    for (auto it = m_ReferencedFiles.LowerBound(sAbsolutePath2.GetView()); it.IsValid(); ++it)
     {
-      if (!visitedFiles.Contains(it.Key()))
-        missingFiles.PushBack(it.Key());
+      if (xiiPathUtils::IsSubPath(sAbsolutePath2, it.Key().GetAbsolutePath()) && !visitedFiles.Contains(it.Key().GetAbsolutePath()))
+        missingFiles.PushBack(it.Key().GetAbsolutePath());
+      if (!it.Key().GetAbsolutePath().StartsWith_NoCase(sAbsolutePath2))
+        break;
     }
 
-    for (auto it = m_ReferencedFolders.LowerBound(sAbsolutePath2); it.IsValid() && it.Key().StartsWith(sAbsolutePath2); ++it)
+    for (auto it = m_ReferencedFolders.LowerBound(sAbsolutePath2.GetView()); it.IsValid(); ++it)
     {
-      if (!visitedFolders.Contains(it.Key()))
-        missingFolders.PushBack(it.Key());
+      if (xiiPathUtils::IsSubPath(sAbsolutePath2, it.Key().GetAbsolutePath()) && !visitedFolders.Contains(it.Key().GetAbsolutePath()))
+        missingFolders.PushBack(it.Key().GetAbsolutePath());
+      if (!it.Key().GetAbsolutePath().StartsWith_NoCase(sAbsolutePath2))
+        break;
     }
   }
 
-  for (const xiiString& sFile : missingFiles)
+  for (xiiString& sFile : missingFiles)
   {
-    HandleSingleFile(sFile, false);
+    xiiDataDirPath path(std::move(sFile), m_DataDirRoots, folder.GetDataDirIndex());
+    HandleSingleFile(std::move(path), false);
   }
 
   // Delete sub-folders before parent folders.
   missingFolders.Sort([](const xiiString& lhs, const xiiString& rhs) -> bool { return xiiStringUtils::Compare(lhs, rhs) > 0; });
-  for (const xiiString& sFolder : missingFolders)
+  for (xiiString& sFolder : missingFolders)
   {
-    HandleSingleFile(sFolder, false);
+    xiiDataDirPath path(std::move(sFolder), m_DataDirRoots, folder.GetDataDirIndex());
+    HandleSingleFile(std::move(path), false);
   }
 }
 
@@ -699,37 +755,39 @@ void xiiFileSystemModel::OnAssetWatcherEvent(const xiiFileSystemWatcherEvent& e)
   }
 }
 
-xiiFileStatus xiiFileSystemModel::HandleSingleFile(const xiiString& sAbsolutePath, bool bRecurseIntoFolders)
+xiiFileStatus xiiFileSystemModel::HandleSingleFile(xiiDataDirPath absolutePath, bool bRecurseIntoFolders)
 {
   FILESYSTEM_PROFILE("HandleSingleFile");
 
   xiiFileStats    Stats;
-  const xiiResult statCheck = xiiOSFile::GetFileStats(sAbsolutePath, Stats);
+  const xiiResult statCheck = xiiOSFile::GetFileStats(absolutePath, Stats);
 
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  if (statCheck.Succeeded() && Stats.m_sName != xiiPathUtils::GetFileNameAndExtension(sAbsolutePath))
+  if (statCheck.Succeeded() && Stats.m_sName != xiiPathUtils::GetFileNameAndExtension(absolutePath))
   {
     // Casing has changed.
-    xiiStringBuilder sCorrectCasingPath = sAbsolutePath;
+    xiiStringBuilder sCorrectCasingPath = absolutePath.GetAbsolutePath();
     sCorrectCasingPath.ChangeFileNameAndExtension(Stats.m_sName);
+    xiiDataDirPath correctCasingPath(sCorrectCasingPath.GetView(), m_DataDirRoots, absolutePath.GetDataDirIndex());
     // Add new casing
-    xiiFileStatus res = HandleSingleFile(sCorrectCasingPath, Stats, bRecurseIntoFolders);
+    xiiFileStatus res = HandleSingleFile(std::move(correctCasingPath), Stats, bRecurseIntoFolders);
     // Remove old casing
-    RemoveFileOrFolder(sAbsolutePath, bRecurseIntoFolders);
+    RemoveFileOrFolder(absolutePath, bRecurseIntoFolders);
     return res;
   }
 #  endif
 
   if (statCheck.Failed())
   {
-    RemoveFileOrFolder(sAbsolutePath, bRecurseIntoFolders);
+    RemoveFileOrFolder(absolutePath, bRecurseIntoFolders);
     return {};
   }
 
-  return HandleSingleFile(sAbsolutePath, Stats, bRecurseIntoFolders);
+  return HandleSingleFile(std::move(absolutePath), Stats, bRecurseIntoFolders);
 }
 
-xiiFileStatus xiiFileSystemModel::HandleSingleFile(const xiiString& sAbsolutePath, const xiiFileStats& FileStat, bool bRecurseIntoFolders)
+
+xiiFileStatus xiiFileSystemModel::HandleSingleFile(xiiDataDirPath absolutePath, const xiiFileStats& FileStat, bool bRecurseIntoFolders)
 {
   FILESYSTEM_PROFILE("HandleSingleFile2");
 
@@ -741,15 +799,15 @@ xiiFileStatus xiiFileSystemModel::HandleSingleFile(const xiiString& sAbsolutePat
     bool bExisted = false;
     {
       XII_LOCK(m_FilesMutex);
-      auto it    = m_ReferencedFolders.FindOrAdd(sAbsolutePath, &bExisted);
+      auto it    = m_ReferencedFolders.FindOrAdd(absolutePath, &bExisted);
       it.Value() = xiiFileStatus::Status::Valid;
     }
 
     if (!bExisted)
     {
-      FireFolderChangedEvent(sAbsolutePath, xiiFolderChangedEvent::Type::FolderAdded);
+      FireFolderChangedEvent(absolutePath, xiiFolderChangedEvent::Type::FolderAdded);
       if (bRecurseIntoFolders)
-        CheckFolder(sAbsolutePath);
+        CheckFolder(absolutePath);
     }
 
     return status;
@@ -761,7 +819,7 @@ xiiFileStatus xiiFileSystemModel::HandleSingleFile(const xiiString& sAbsolutePat
     bool          bFileChanged = false;
     {
       XII_LOCK(m_FilesMutex);
-      auto           it    = m_ReferencedFiles.FindOrAdd(sAbsolutePath, &bExisted);
+      auto           it    = m_ReferencedFiles.FindOrAdd(absolutePath, &bExisted);
       xiiFileStatus& value = it.Value();
       bFileChanged         = !value.m_LastModified.Compare(FileStat.m_LastModificationTime, xiiTimestamp::CompareMode::Identical);
       if (bFileChanged)
@@ -780,30 +838,30 @@ xiiFileStatus xiiFileSystemModel::HandleSingleFile(const xiiString& sAbsolutePat
 
     if (!bExisted)
     {
-      FireFileChangedEvent(sAbsolutePath, status, xiiFileChangedEvent::Type::FileAdded);
+      FireFileChangedEvent(absolutePath, status, xiiFileChangedEvent::Type::FileAdded);
     }
     else if (bFileChanged)
     {
-      FireFileChangedEvent(sAbsolutePath, status, xiiFileChangedEvent::Type::FileChanged);
+      FireFileChangedEvent(absolutePath, status, xiiFileChangedEvent::Type::FileChanged);
     }
     return status;
   }
 }
 
-void xiiFileSystemModel::RemoveFileOrFolder(const xiiString& sAbsolutePath, bool bRecurseIntoFolders)
+void xiiFileSystemModel::RemoveFileOrFolder(const xiiDataDirPath& absolutePath, bool bRecurseIntoFolders)
 {
   xiiFileStatus fileStatus;
   bool          bFileExisted   = false;
   bool          bFolderExisted = false;
   {
     XII_LOCK(m_FilesMutex);
-    if (auto it = m_ReferencedFiles.Find(sAbsolutePath); it.IsValid())
+    if (auto it = m_ReferencedFiles.Find(absolutePath); it.IsValid())
     {
       bFileExisted = true;
       fileStatus   = it.Value();
       m_ReferencedFiles.Remove(it);
     }
-    if (auto it = m_ReferencedFolders.Find(sAbsolutePath); it.IsValid())
+    if (auto it = m_ReferencedFolders.Find(absolutePath); it.IsValid())
     {
       bFolderExisted = true;
       m_ReferencedFolders.Remove(it);
@@ -812,33 +870,41 @@ void xiiFileSystemModel::RemoveFileOrFolder(const xiiString& sAbsolutePath, bool
 
   if (bFileExisted)
   {
-    FireFileChangedEvent(sAbsolutePath, fileStatus, xiiFileChangedEvent::Type::FileRemoved);
+    FireFileChangedEvent(absolutePath, fileStatus, xiiFileChangedEvent::Type::FileRemoved);
   }
 
   if (bFolderExisted)
   {
     if (bRecurseIntoFolders)
     {
-      xiiSet<xiiString> previouslyKnownFiles;
+      xiiSet<xiiDataDirPath> previouslyKnownFiles;
       {
         FILESYSTEM_PROFILE("FindReferencedFiles");
         XII_LOCK(m_FilesMutex);
-        auto itlowerBound = m_ReferencedFiles.LowerBound(sAbsolutePath);
-        while (itlowerBound.IsValid() && itlowerBound.Key().StartsWith(sAbsolutePath))
+        auto itlowerBound = m_ReferencedFiles.LowerBound(absolutePath);
+        while (itlowerBound.IsValid())
         {
-          previouslyKnownFiles.Insert(itlowerBound.Key());
+          if (xiiPathUtils::IsSubPath(absolutePath, itlowerBound.Key().GetAbsolutePath()))
+          {
+            previouslyKnownFiles.Insert(itlowerBound.Key());
+          }
+          // As we are using xiiCompareDataDirPath, entries of different casing interleave but we are only interested in the ones with matching casing so we skip the rest.
+          if (!itlowerBound.Key().GetAbsolutePath().StartsWith_NoCase(absolutePath.GetAbsolutePath()))
+          {
+            break;
+          }
           ++itlowerBound;
         }
       }
       {
         FILESYSTEM_PROFILE("HandleRemovedFiles");
-        for (const xiiString& sFile : previouslyKnownFiles)
+        for (const xiiDataDirPath& file : previouslyKnownFiles)
         {
-          RemoveFileOrFolder(sFile, false);
+          RemoveFileOrFolder(file, false);
         }
       }
     }
-    FireFolderChangedEvent(sAbsolutePath, xiiFolderChangedEvent::Type::FolderRemoved);
+    FireFolderChangedEvent(absolutePath, xiiFolderChangedEvent::Type::FolderRemoved);
   }
 }
 
@@ -853,14 +919,14 @@ void xiiFileSystemModel::MarkFileLocked(xiiStringView sAbsolutePath)
   }
 }
 
-void xiiFileSystemModel::FireFileChangedEvent(xiiStringView sFile, xiiFileStatus fileStatus, xiiFileChangedEvent::Type type)
+void xiiFileSystemModel::FireFileChangedEvent(const xiiDataDirPath& file, xiiFileStatus fileStatus, xiiFileChangedEvent::Type type)
 {
   // We queue up all requests on a thread and only return once the list is empty. The reason for this is that:
   // A: We don't want to allow recursive event calling as it creates limbo states in the model and hard to debug bugs.
   // B: If a user calls NotifyOfChange, the function should only return if the event and any indirect events that were triggered by the event handlers have been processed.
 
   xiiFileChangedEvent& e = g_PostponedFiles.ExpandAndGetRef();
-  e.m_sPath              = sFile;
+  e.m_Path               = file;
   e.m_Status             = fileStatus;
   e.m_Type               = type;
 
@@ -881,11 +947,11 @@ void xiiFileSystemModel::FireFileChangedEvent(xiiStringView sFile, xiiFileStatus
   g_PostponedFiles.Clear();
 }
 
-void xiiFileSystemModel::FireFolderChangedEvent(xiiStringView sFile, xiiFolderChangedEvent::Type type)
+void xiiFileSystemModel::FireFolderChangedEvent(const xiiDataDirPath& file, xiiFolderChangedEvent::Type type)
 {
   // See comment in FireFileChangedEvent.
   xiiFolderChangedEvent& e = g_PostponedFolders.ExpandAndGetRef();
-  e.m_sPath                = sFile;
+  e.m_Path                 = file;
   e.m_Type                 = type;
 
   if (g_bInFolderBroadcast)
@@ -903,18 +969,6 @@ void xiiFileSystemModel::FireFolderChangedEvent(xiiStringView sFile, xiiFolderCh
     m_FolderChangedEvents.Broadcast(tempEvent);
   }
   g_PostponedFolders.Clear();
-}
-
-xiiInt32 xiiFileSystemModel::FindDataDir(const xiiStringView path)
-{
-  for (xiiUInt32 i = 0; i < m_DataDirRoots.GetCount(); ++i)
-  {
-    if (path.StartsWith(m_DataDirRoots[i]))
-    {
-      return (xiiInt32)i;
-    }
-  }
-  return -1;
 }
 
 #endif

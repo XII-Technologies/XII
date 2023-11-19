@@ -191,8 +191,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
       if (pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner))
       {
         const xiiUuid oldGuid = pObjectAccessor->Get<xiiUuid>(pObject, pProp);
-        xiiUuid       newGuid;
-        newGuid.CreateNewUuid();
+        xiiUuid       newGuid = xiiUuid::CreateUuid();
         if (oldGuid.IsValid())
         {
           XII_TEST_BOOL(pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(oldGuid)).m_Result.Succeeded());
@@ -250,8 +249,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
 
       if (pProp->GetCategory() == xiiPropertyCategory::Array)
       {
-        xiiUuid newGuid;
-        newGuid.CreateNewUuid();
+        xiiUuid newGuid = xiiUuid::CreateUuid();
         XII_TEST_BOOL(pObjectAccessor->AddObject(pObject, pProp, 0, pProp->GetSpecificType(), newGuid).m_Result.Succeeded());
       }
     }
@@ -284,8 +282,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
         XII_TEST_BOOL(pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(currentValues[i].Get<xiiUuid>())).m_Result.Succeeded());
       }
 
-      xiiUuid newGuid;
-      newGuid.CreateNewUuid();
+      xiiUuid newGuid = xiiUuid::CreateUuid();
       XII_TEST_BOOL(pObjectAccessor->AddObject(pObject, pProp, "value1", pProp->GetSpecificType(), newGuid).m_Result.Succeeded());
     }
   }
@@ -293,9 +290,9 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
 
 void RecursiveModifyObject(const xiiDocumentObject* pObject, xiiObjectAccessorBase* pAccessor)
 {
-  xiiHybridArray<xiiAbstractProperty*, 32> Properties;
-  pObject->GetTypeAccessor().GetType()->GetAllProperties(Properties);
-  for (const auto* pProp : Properties)
+  xiiHybridArray<const xiiAbstractProperty*, 32> properties;
+  pObject->GetTypeAccessor().GetType()->GetAllProperties(properties);
+  for (auto pProp : properties)
   {
     RecursiveModifyProperty(pObject, pProp, pAccessor);
   }

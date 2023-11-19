@@ -4,6 +4,7 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Time/Stopwatch.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <QDesktopServices>
 #include <QDir>
@@ -72,38 +73,124 @@ void xiiQtUiServices::SaveState()
   Settings.endGroup();
 }
 
+xiiTime g_Total = xiiTime::Zero();
 
-const QIcon& xiiQtUiServices::GetCachedIconResource(xiiStringView sIdentifier)
+const QIcon& xiiQtUiServices::GetCachedIconResource(xiiStringView sIdentifier, xiiColor svgTintColor)
 {
-  auto& map = s_IconsCache;
-  auto  it  = map.Find(sIdentifier);
+  xiiStringBuilder sFullIdentifier = sIdentifier;
+  auto&            map             = s_IconsCache;
+
+  const bool bNeedsColoring = svgTintColor != xiiColor::ZeroColor() && sIdentifier.EndsWith_NoCase(".svg");
+
+  if (bNeedsColoring)
+  {
+    sFullIdentifier.AppendFormat("-{}", xiiColorGammaUB(svgTintColor));
+  }
+
+  auto it = map.Find(sFullIdentifier);
 
   if (it.IsValid())
     return it.Value();
 
-  xiiStringBuilder tmp;
-  QIcon            icon(QString::fromUtf8(sIdentifier.GetData(tmp)));
+  if (bNeedsColoring)
+  {
+    xiiStopwatch sw;
 
-  // Workaround for QIcon being stupid and treating failed to load icons as not-null.
-  if (!icon.pixmap(QSize(16, 16)).isNull())
-    map[sIdentifier] = icon;
+    // read the icon from the Qt virtual file system (QResource)
+    QFile file(xiiString(sIdentifier).GetData());
+    if (!file.open(QIODeviceBase::OpenModeFlag::ReadOnly))
+    {
+      // if it doesn't exist, return an empty QIcon
+
+      map[sFullIdentifier] = QIcon();
+      return map[sFullIdentifier];
+    }
+
+    // get the entire SVG file content
+    xiiStringBuilder sContent = QString(file.readAll()).toUtf8().data();
+
+    // replace the occurrence of the color white ("#FFFFFF") with the desired target color
+    {
+      const xiiColorGammaUB color8 = svgTintColor;
+
+      xiiStringBuilder rep;
+      rep.Format("#{}{}{}", xiiArgI((int)color8.r, 2, true, 16), xiiArgI((int)color8.g, 2, true, 16), xiiArgI((int)color8.b, 2, true, 16));
+
+      sContent.ReplaceAll_NoCase("#ffffff", rep);
+    }
+
+    // hash the content AFTER the color replacement, so it includes the custom color change
+    const xiiUInt32 uiSrcHash = xiiHashingUtils::xxHash32String(sContent);
+
+    // file the path to the temp file, including the source hash
+    const xiiStringBuilder sTempFolder = xiiOSFile::GetTempDataFolder("xiiEditor/QIcons");
+    xiiStringBuilder       sTempIconFile(sTempFolder, "/", sIdentifier.GetFileName());
+    sTempIconFile.AppendFormat("-{}.svg", uiSrcHash);
+
+    // only write to the file system, if the target file doesn't exist yet, this saves more than half the time
+    if (!xiiOSFile::ExistsFile(sTempIconFile))
+    {
+      // now write the new SVG file back to a dummy file
+      // yes, this is as stupid as it sounds, we really write the file BACK TO THE FILESYSTEM, rather than doing this stuff in-memory
+      // that's because I wasn't able to figure out whether we can somehow read a QIcon from a string rather than from file
+      // it doesn't appear to be easy at least, since we can only give it a path, not a memory stream or anything like that
+      {
+        // necessary for Qt to be able to write to the folder
+        xiiOSFile::CreateDirectoryStructure(sTempFolder).AssertSuccess();
+
+        QFile fileOut(sTempIconFile.GetData());
+        fileOut.open(QIODeviceBase::OpenModeFlag::WriteOnly);
+        fileOut.write(sContent.GetData(), sContent.GetElementCount());
+        fileOut.flush();
+        fileOut.close();
+      }
+    }
+
+    QIcon icon(sTempIconFile.GetData());
+
+    if (!icon.pixmap(QSize(16, 16)).isNull())
+      map[sFullIdentifier] = icon;
+    else
+      map[sFullIdentifier] = QIcon();
+
+    xiiTime local = sw.GetRunningTotal();
+    g_Total += local;
+
+    // kept here for debug purposes, but don't waste time on logging
+    // xiiLog::Info("Icon load time: {}, total = {}", local, g_Total);
+  }
   else
-    map[sIdentifier] = QIcon();
+  {
+    const QString sFile = xiiString(sIdentifier).GetData();
 
-  return map[sIdentifier];
+    if (QFile::exists(sFile)) // prevent Qt from spamming warnings about non-existing files by checking this manually
+    {
+      QIcon icon(sFile);
+
+      // Workaround for QIcon being stupid and treating failed to load icons as not-null.
+      if (!icon.pixmap(QSize(16, 16)).isNull())
+        map[sFullIdentifier] = icon;
+      else
+        map[sFullIdentifier] = QIcon();
+    }
+    else
+      map[sFullIdentifier] = QIcon();
+  }
+
+  return map[sFullIdentifier];
 }
 
 
 const QImage& xiiQtUiServices::GetCachedImageResource(xiiStringView sIdentifier)
 {
   auto& map = s_ImagesCache;
-  auto  it  = map.Find(sIdentifier);
+
+  auto it = map.Find(sIdentifier);
 
   if (it.IsValid())
     return it.Value();
 
-  xiiStringBuilder tmp;
-  map[sIdentifier] = QImage(QString::fromUtf8(sIdentifier.GetData(tmp)));
+  map[sIdentifier] = QImage(xiiMakeQString(sIdentifier));
 
   return map[sIdentifier];
 }
@@ -111,13 +198,13 @@ const QImage& xiiQtUiServices::GetCachedImageResource(xiiStringView sIdentifier)
 const QPixmap& xiiQtUiServices::GetCachedPixmapResource(xiiStringView sIdentifier)
 {
   auto& map = s_PixmapsCache;
-  auto  it  = map.Find(sIdentifier);
+
+  auto it = map.Find(sIdentifier);
 
   if (it.IsValid())
     return it.Value();
 
-  xiiStringBuilder tmp;
-  map[sIdentifier] = QPixmap(QString::fromUtf8(sIdentifier.GetData(tmp)));
+  map[sIdentifier] = QPixmap(xiiMakeQString(sIdentifier));
 
   return map[sIdentifier];
 }
@@ -260,20 +347,18 @@ void xiiQtUiServices::ShowGlobalStatusBarMessage(const xiiFormatString& msg)
 
 bool xiiQtUiServices::OpenFileInDefaultProgram(xiiStringView sPath)
 {
-  xiiStringBuilder tmp;
-  return QDesktopServices::openUrl(QUrl::fromLocalFile(sPath.GetData(tmp)));
+  return QDesktopServices::openUrl(QUrl::fromLocalFile(xiiMakeQString(sPath)));
 }
 
 void xiiQtUiServices::OpenInExplorer(xiiStringView sPath, bool bIsFile)
 {
-  xiiStringBuilder tmp;
-  QStringList      args;
+  QStringList args;
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   if (bIsFile)
     args << "/select,";
 
-  args << QDir::toNativeSeparators(sPath.GetData(tmp));
+  args << QDir::toNativeSeparators(xiiMakeQString(sPath));
 
   QProcess::startDetached("explorer", args);
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
@@ -283,9 +368,9 @@ void xiiQtUiServices::OpenInExplorer(xiiStringView sPath, bool bIsFile)
   {
     parentDir = sPath;
     parentDir = parentDir.GetFileDirectory();
-    sPath     = parentDir.GetData();
+    sPath     = parentDir.GetView();
   }
-  args << QDir::toNativeSeparators(sPath.GetData(tmp));
+  args << QDir::toNativeSeparators(sPath);
 
   QProcess::startDetached("xdg-open", args);
 #else
@@ -295,7 +380,8 @@ void xiiQtUiServices::OpenInExplorer(xiiStringView sPath, bool bIsFile)
 
 xiiStatus xiiQtUiServices::OpenInVsCode(const QStringList& arguments)
 {
-  QString sVsCodeExe = QStandardPaths::locate(QStandardPaths::GenericDataLocation, "Programs/Microsoft VS Code/Code.exe", QStandardPaths::LocateOption::LocateFile);
+  QString sVsCodeExe =
+    QStandardPaths::locate(QStandardPaths::GenericDataLocation, "Programs/Microsoft VS Code/Code.exe", QStandardPaths::LocateOption::LocateFile);
 
   if (!QFile().exists(sVsCodeExe))
   {

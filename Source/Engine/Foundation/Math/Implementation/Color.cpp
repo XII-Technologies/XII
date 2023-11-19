@@ -231,6 +231,16 @@ void xiiColor::NormalizeToLdrRange()
   ScaleRGB(1.0f / ComputeHdrMultiplier());
 }
 
+xiiColor xiiColor::GetDarker(float fFactor /*= 2.0f*/) const
+{
+  float h, s, v;
+  GetHSV(h, s, v);
+
+  xiiColor result;
+  result.SetHSV(h, s, v / fFactor);
+  return result;
+}
+
 xiiColor xiiColor::GetComplementaryColor() const
 {
   float hue, sat, val;

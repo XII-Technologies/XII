@@ -35,7 +35,7 @@ public:
   xiiDocumentObject*                           GetChild(const xiiUuid& guid);
   const xiiDocumentObject*                     GetChild(const xiiUuid& guid) const;
   xiiStringView                                GetParentProperty() const { return m_sParentProperty; }
-  xiiAbstractProperty*                         GetParentPropertyType() const;
+  const xiiAbstractProperty*                   GetParentPropertyType() const;
   xiiVariant                                   GetPropertyIndex() const;
   bool                                         IsOnHeap() const;
   xiiUInt32                                    GetChildIndex(const xiiDocumentObject* pChild) const;

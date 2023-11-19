@@ -77,7 +77,7 @@ xiiResource::xiiResource(DoUpdate ResourceUpdateThread, xiiUInt8 uiQualityLevels
 }
 
 #if XII_ENABLED(XII_RESOURCEHANDLE_STACK_TRACES)
-static void LogStackTrace(xiiStringView sText)
+static void LogStackTrace(const char* szText)
 {
   xiiLog::Info(szText);
 };

@@ -65,10 +65,12 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiBlackboardEntryFlags);
 class XII_CORE_DLL xiiBlackboard : public xiiRefCounted
 {
 private:
-  xiiBlackboard();
+  xiiBlackboard(bool bIsGlobal);
 
 public:
   ~xiiBlackboard();
+
+  bool IsGlobalBlackboard() const { return m_bIsGlobal; }
 
   /// \brief Factory method to create a new blackboard.
   ///
@@ -98,7 +100,7 @@ public:
   /// \note For global blackboards this has no effect under which name they are found. A global blackboard continues to
   /// be found by the name under which it was originally registered.
   void                   SetName(xiiStringView sName);
-  const char*            GetName() const { return m_sName; }
+  xiiStringView          GetName() const { return m_sName; }
   const xiiHashedString& GetNameHashed() const { return m_sName; }
 
   struct Entry
@@ -118,27 +120,33 @@ public:
     const Entry*    m_pEntry;
   };
 
-  /// \brief Registers an entry with a name, value and flags.
-  ///
-  /// If the entry already exists, it will add the entry flags that hadn't been set before, but NOT change the value.
-  /// Thus you can use it to make sure that a value exists with a given start value, but keep it unchanged, if it already existed.
-  void RegisterEntry(const xiiHashedString& sName, const xiiVariant& initialValue, xiiBitflags<xiiBlackboardEntryFlags> flags = xiiBlackboardEntryFlags::None);
-
   /// \brief Removes the named entry. Does nothing, if no such entry exists.
-  void UnregisterEntry(const xiiHashedString& sName);
+  void RemoveEntry(const xiiHashedString& sName);
 
   ///  \brief Removes all entries.
-  void UnregisterAllEntries();
+  void RemoveAllEntries();
 
-  /// \brief Sets the value of the named entry.
-  ///
-  /// If the entry doesn't exist, XII_FAILURE is returned.
+  /// \brief Returns whether an entry with the given name already exists.
+  bool HasEntry(const xiiTempHashedString& sName) const;
+
+  /// \brief Sets the value of the named entry. If the entry doesn't exist, yet, it will be created with default flags.
   ///
   /// If the 'OnChangeEvent' flag is set for this entry, OnEntryEvent() will be broadcast.
-  /// However, if the new value is no different to the old, no event will be broadcast, unless 'force' is set to true.
+  /// However, if the new value is no different to the old, no event will be broadcast.
   ///
-  /// Returns XII_FAILURE, if the named entry hasn't been registered before.
-  xiiResult SetEntryValue(const xiiTempHashedString& sName, const xiiVariant& value, bool bForce = false);
+  /// For new entries, no OnEntryEvent() is sent.
+  ///
+  /// For best efficiency, cache the entry name in a xiiHashedString and use the other overload of this function.
+  /// DO NOT RECREATE the xiiHashedString every time, though.
+  void SetEntryValue(xiiStringView sName, const xiiVariant& value);
+
+  /// \brief Overload of SetEntryValue() that takes a xiiHashedString rather than a xiiStringView.
+  ///
+  /// Using this function is more efficient, if you access the blackboard often, but you must ensure
+  /// to only create the xiiHashedString once and cache it for reuse.
+  /// Assigning a value to a xiiHashedString is an expensive operation, so if you do not cache the string,
+  /// prefer to use the other overload.
+  void SetEntryValue(const xiiHashedString& sName, const xiiVariant& value);
 
   /// \brief Returns a pointer to the named entry, or nullptr if no such entry was registered.
   const Entry* GetEntry(const xiiTempHashedString& sName) const;
@@ -146,8 +154,17 @@ public:
   /// \brief Returns the flags of the named entry, or xiiBlackboardEntryFlags::Invalid, if no such entry was registered.
   xiiBitflags<xiiBlackboardEntryFlags> GetEntryFlags(const xiiTempHashedString& sName) const;
 
+  /// \brief Sets the flags of an existing entry. Returns XII_FAILURE, if it wasn't created via SetEntryValue() or SetEntryValue() before.
+  xiiResult SetEntryFlags(const xiiTempHashedString& sName, xiiBitflags<xiiBlackboardEntryFlags> flags);
+
   /// \brief Returns the value of the named entry, or the fallback xiiVariant, if no such entry was registered.
   xiiVariant GetEntryValue(const xiiTempHashedString& sName, const xiiVariant& fallback = xiiVariant()) const;
+
+  /// \brief Increments the value of the named entry. Returns the incremented value or an invalid variant if the entry does not exist or is not a number type.
+  xiiVariant IncrementEntryValue(const xiiTempHashedString& sName);
+
+  /// \brief Decrements the value of the named entry. Returns the decremented value or an invalid variant if the entry does not exist or is not a number type.
+  xiiVariant DecrementEntryValue(const xiiTempHashedString& sName);
 
   /// \brief Grants read access to the entire map of entries.
   const xiiHashTable<xiiHashedString, Entry>& GetAllEntries() const { return m_Entries; }
@@ -177,12 +194,13 @@ public:
 private:
   XII_ALLOW_PRIVATE_PROPERTIES(xiiBlackboard);
 
-  static xiiBlackboard* Reflection_GetOrCreateGlobal(xiiStringView sName);
-  static xiiBlackboard* Reflection_FindGlobal(xiiStringView sName);
-  void                  Reflection_RegisterEntry(xiiStringView sName, const xiiVariant& initialValue, bool bSave, bool bOnChangeEvent);
-  bool                  Reflection_SetEntryValue(xiiStringView sName, const xiiVariant& value);
-  xiiVariant            Reflection_GetEntryValue(xiiStringView sName, const xiiVariant& fallback) const;
+  static xiiBlackboard* Reflection_GetOrCreateGlobal(const xiiHashedString& sName);
+  static xiiBlackboard* Reflection_FindGlobal(xiiTempHashedString sName);
+  void                  Reflection_SetEntryValue(xiiStringView sName, const xiiVariant& value);
 
+  void ImplSetEntryValue(const xiiHashedString& sName, Entry& entry, const xiiVariant& value);
+
+  bool                                 m_bIsGlobal = false;
   xiiHashedString                      m_sName;
   xiiEvent<EntryEvent>                 m_EntryEvents;
   xiiUInt32                            m_uiBlackboardChangeCounter      = 0;
@@ -208,9 +226,6 @@ struct XII_CORE_DLL xiiBlackboardCondition
 
   xiiResult Serialize(xiiStreamWriter& ref_stream) const;
   xiiResult Deserialize(xiiStreamReader& ref_stream);
-
-  const char* GetEntryName() const { return m_sEntryName; }
-  void        SetEntryName(const char* szName) { m_sEntryName.Assign(szName); }
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_CORE_DLL, xiiBlackboardCondition);

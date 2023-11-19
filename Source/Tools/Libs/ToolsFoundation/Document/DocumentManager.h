@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Foundation/Strings/StringView.h"
 #include <Foundation/Types/Status.h>
 #include <ToolsFoundation/Document/Document.h>
 #include <ToolsFoundation/ToolsFoundationDLL.h>

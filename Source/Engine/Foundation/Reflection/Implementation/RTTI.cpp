@@ -51,7 +51,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, Reflection)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiRTTI::xiiRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<xiiAbstractProperty*> properties, xiiArrayPtr<xiiAbstractFunctionProperty*> functions, xiiArrayPtr<xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)()) :
+xiiRTTI::xiiRTTI(xiiStringView sName, const xiiRTTI* pParentType, xiiUInt32 uiTypeSize, xiiUInt32 uiTypeVersion, xiiUInt8 uiVariantType, xiiBitflags<xiiTypeFlags> flags, xiiRTTIAllocator* pAllocator, xiiArrayPtr<const xiiAbstractProperty*> properties, xiiArrayPtr<const xiiAbstractFunctionProperty*> functions, xiiArrayPtr<const xiiPropertyAttribute*> attributes, xiiArrayPtr<xiiAbstractMessageHandler*> messageHandlers, xiiArrayPtr<xiiMessageSenderInfo> messageSenders, const xiiRTTI* (*fnVerifyParent)()) :
   m_sTypeName(sName), m_pAllocator(pAllocator), m_Properties(properties), m_Functions(functions), m_Attributes(attributes), m_MessageHandlers(messageHandlers), m_MessageSenders(messageSenders), m_VerifyParent(fnVerifyParent)
 {
   UpdateType(pParentType, uiTypeSize, uiTypeVersion, uiVariantType, flags);
@@ -165,8 +165,7 @@ void xiiRTTI::VerifyCorrectness() const
         const bool bNewProperty = !Known.Find(pInstance->m_Properties[i]->GetPropertyName()).IsValid();
         Known.Insert(pInstance->m_Properties[i]->GetPropertyName());
 
-        XII_ASSERT_DEV(bNewProperty, "{0}: The property with name '{1}' is already defined in type '{2}'.", m_sTypeName,
-                       pInstance->m_Properties[i]->GetPropertyName(), pInstance->GetTypeName());
+        XII_ASSERT_DEV(bNewProperty, "{0}: The property with name '{1}' is already defined in type '{2}'.", m_sTypeName, pInstance->m_Properties[i]->GetPropertyName(), pInstance->GetTypeName());
       }
 
       pInstance = pInstance->m_pParentType;
@@ -174,7 +173,7 @@ void xiiRTTI::VerifyCorrectness() const
   }
 
   {
-    for (xiiAbstractProperty* pFunc : m_Functions)
+    for (const xiiAbstractProperty* pFunc : m_Functions)
     {
       XII_ASSERT_DEV(pFunc->GetCategory() == xiiPropertyCategory::Function, "Invalid function property '{}'", pFunc->GetPropertyName());
     }
@@ -223,7 +222,7 @@ void xiiRTTI::UnregisterType()
   }
 }
 
-void xiiRTTI::GetAllProperties(xiiHybridArray<xiiAbstractProperty*, 32>& out_properties) const
+void xiiRTTI::GetAllProperties(xiiDynamicArray<const xiiAbstractProperty*>& out_properties) const
 {
   out_properties.Clear();
 
@@ -260,7 +259,7 @@ const xiiRTTI* xiiRTTI::FindTypeByNameHash32(xiiUInt32 uiNameHash)
   return FindTypeIf([=](const xiiRTTI* pRtti) { return (xiiHashingUtils::StringHashTo32(pRtti->GetTypeNameHash()) == uiNameHash); });
 }
 
-xiiAbstractProperty* xiiRTTI::FindPropertyByName(xiiStringView sName, bool bSearchBaseTypes /* = true */) const
+const xiiAbstractProperty* xiiRTTI::FindPropertyByName(xiiStringView sName, bool bSearchBaseTypes /* = true */) const
 {
   const xiiRTTI* pInstance = this;
 

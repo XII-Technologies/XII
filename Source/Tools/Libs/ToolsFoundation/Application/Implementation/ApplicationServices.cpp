@@ -43,14 +43,23 @@ xiiString xiiApplicationServices::GetApplicationPreferencesFolder() const
 
 xiiString xiiApplicationServices::GetProjectPreferencesFolder() const
 {
+  return GetProjectPreferencesFolder(xiiToolsProject::GetSingleton()->GetProjectDirectory());
+}
+
+xiiString xiiApplicationServices::GetProjectPreferencesFolder(xiiStringView sProjectFilePath) const
+{
   xiiStringBuilder path = GetApplicationUserDataFolder();
 
-  xiiStringBuilder ProjectName = xiiToolsProject::GetSingleton()->GetProjectDirectory();
+  sProjectFilePath.TrimWordEnd("xiiProject");
+  sProjectFilePath.TrimWordEnd("xiiRemoteProject");
+  sProjectFilePath.Trim("/\\");
+
+  xiiStringBuilder ProjectName = sProjectFilePath;
 
   xiiStringBuilder ProjectPath = ProjectName;
   ProjectPath.PathParentDirectory();
 
-  const xiiUInt64 uiPathHash = xiiHashingUtils::StringHash(ProjectPath.GetData());
+  const xiiUInt64 uiPathHash = xiiHashingUtils::StringHash(ProjectPath.GetView());
 
   ProjectName = ProjectName.GetFileName();
 

@@ -284,18 +284,18 @@ xiiResult xiiTgaFileFormat::WriteImage(xiiStreamWriter& ref_stream, const xiiIma
   return XII_SUCCESS;
 }
 
-static xiiResult ReadBytesChecked(xiiStreamReader& inout_stream, void* pDest, xiiUInt32 uiNumBytes)
+static xiiResult ReadBytesChecked(xiiStreamReader& ref_stream, void* pDest, xiiUInt32 uiNumBytes)
 {
-  if (inout_stream.ReadBytes(pDest, uiNumBytes) == uiNumBytes)
+  if (ref_stream.ReadBytes(pDest, uiNumBytes) == uiNumBytes)
     return XII_SUCCESS;
 
   return XII_FAILURE;
 }
 
 template <typename TYPE>
-static xiiResult ReadBytesChecked(xiiStreamReader& inout_stream, TYPE& ref_dest)
+static xiiResult ReadBytesChecked(xiiStreamReader& ref_stream, TYPE& ref_dest)
 {
-  return ReadBytesChecked(inout_stream, &ref_dest, sizeof(TYPE));
+  return ReadBytesChecked(ref_stream, &ref_dest, sizeof(TYPE));
 }
 
 static xiiResult ReadImageHeaderImpl(xiiStreamReader& ref_stream, xiiImageHeader& ref_header, xiiStringView sFileExtension, TgaHeader& ref_tgaHeader)

@@ -11,18 +11,21 @@ struct XII_FOUNDATION_DLL xiiTokenType
 {
   enum Enum
   {
-    Unknown,       ///< for internal use
-    Whitespace,    ///< The token is a space or tab
-    Identifier,    ///< a series of alphanumerics or underscores
-    NonIdentifier, ///< Everything else
-    Newline,       ///< Either '\n' or '\r\n'
-    LineComment,   ///< A comment that starts with two slashes and ends at the next newline (or end of file)
-    BlockComment,  ///< A comment that starts with a slash and a star, and ends at the next star/slash combination (or end of file)
-    String1,       ///< A string enclosed in "
-    String2,       ///< A string enclosed in '
-    Integer,       ///< An integer number
-    Float,         ///< A floating point number
-    EndOfFile,     ///< End-of-file marker
+    Unknown,           ///< for internal use
+    Whitespace,        ///< The token is a space or tab
+    Identifier,        ///< a series of alphanumerics or underscores
+    NonIdentifier,     ///< Everything else
+    Newline,           ///< Either '\n' or '\r\n'
+    LineComment,       ///< A comment that starts with two slashes and ends at the next newline (or end of file)
+    BlockComment,      ///< A comment that starts with a slash and a star, and ends at the next star/slash combination (or end of file)
+    String1,           ///< A string enclosed in "
+    String2,           ///< A string enclosed in '
+    Integer,           ///< An integer number
+    Float,             ///< A floating point number
+    RawString1,        ///< A raw c++11 string enclosed in ". Contents do not contain the enclosing " or the start / end marker.
+    RawString1Prefix,  ///< The prefix part of a C++11 string. E.g: R"foo(
+    RawString1Postfix, ///< The postfix part of a C++11 string. E.g: )foo"
+    EndOfFile,         ///< End-of-file marker
     ENUM_COUNT,
   };
 
@@ -122,6 +125,7 @@ private:
 
   void HandleUnknown();
   void HandleString(char terminator);
+  void HandleRawString();
   void HandleNumber();
   void HandleLineComment();
   void HandleBlockComment();
@@ -132,6 +136,7 @@ private:
   xiiLogInterface*   m_pLog    = nullptr;
   xiiTokenType::Enum m_CurMode = xiiTokenType::Unknown;
   xiiStringView      m_sIterator;
+  xiiStringView      m_sRawStringMarker;
   xiiUInt32          m_uiCurLine   = 1;
   xiiUInt32          m_uiCurColumn = -1;
   xiiUInt32          m_uiCurChar   = '\0';

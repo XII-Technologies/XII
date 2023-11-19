@@ -402,6 +402,8 @@ xiiResult xiiResourceManager::DeallocateResource(xiiResource* pResource)
     xiiResourceManager::BroadcastResourceEvent(e);
   }
 
+  XII_ASSERT_DEV(pResource->GetReferenceCount() == 0, "The resource '{}' ({}) is being deallocated, you just stored a handle to it, which won't work! If you are listening to xiiResourceEvent::Type::ResourceContentUnloading then additionally listen to xiiResourceEvent::Type::ResourceDeleted to clean up handles to dead resources.", pResource->GetResourceID(), pResource->GetResourceDescription());
+
   // delete the resource via the RTTI provided allocator
   pResource->GetDynamicRTTI()->GetAllocator()->Deallocate(pResource);
 

@@ -296,8 +296,7 @@ void xiiReflectedTypeStorageManager::Shutdown()
 
     for (auto inst : pMapping->m_Instances)
     {
-      xiiStringView s = inst->GetType()->GetTypeName();
-      xiiLog::Error("Type '{0}' survived shutdown!", s);
+      xiiLog::Error("Type '{0}' survived shutdown!", inst->GetType()->GetTypeName());
     }
 
     XII_ASSERT_DEV(pMapping->m_Instances.IsEmpty(), "A type was removed which still has instances using the type!");

@@ -9,8 +9,7 @@ xiiStatus xiiDocumentUtils::IsValidSaveLocationForDocument(xiiStringView sDocume
   if (xiiDocumentManager::FindDocumentTypeFromPath(sDocument, true, pTypeDesc).Failed())
   {
     xiiStringBuilder sTemp;
-    sTemp.Format("The selected file extension '{0}' is not registered with any known type.\nCannot create file '{1}'",
-                 xiiPathUtils::GetFileExtension(sDocument), sDocument);
+    sTemp.Format("The selected file extension '{0}' is not registered with any known type.\nCannot create file '{1}'", xiiPathUtils::GetFileExtension(sDocument), sDocument);
     return xiiStatus(sTemp.GetData());
   }
 

@@ -7,6 +7,7 @@
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Profiling/ProfilingUtils.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 
 namespace
@@ -288,14 +289,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
     xiiStringBuilder outputPath = xiiTestFramework::GetInstance()->GetAbsOutputPath();
     XII_TEST_BOOL(xiiFileSystem::AddDataDirectory(outputPath.GetData(), "test", "output", xiiFileSystem::AllowWrites) == XII_SUCCESS);
 
-    xiiFileWriter fileWriter;
-    if (fileWriter.Open(":output/profiling.json") == XII_SUCCESS)
-    {
-      xiiProfilingSystem::ProfilingData profilingData;
-      xiiProfilingSystem::Capture(profilingData);
-      profilingData.Write(fileWriter).IgnoreResult();
-      xiiLog::Info("Profiling capture saved to '{0}'.", fileWriter.GetFilePathAbsolute().GetData());
-    }
+    xiiProfilingUtils::SaveProfilingCapture(":output/profiling.json").IgnoreResult();
   }
 
   // Test multiple categories for spatial data

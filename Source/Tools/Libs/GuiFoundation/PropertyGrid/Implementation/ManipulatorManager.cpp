@@ -218,7 +218,7 @@ void xiiManipulatorManager::TransferToCurrentSelection(const xiiDocument* pDoc)
       {
         if (pOtherAttr->IsInstanceOf(pAttribute->GetDynamicRTTI()))
         {
-          xiiManipulatorAttribute* pOtherManip = static_cast<xiiManipulatorAttribute*>(pOtherAttr);
+          auto pOtherManip = static_cast<const xiiManipulatorAttribute*>(pOtherAttr);
 
           if (pOtherManip->m_sProperty1 == pAttribute->m_sProperty1 && pOtherManip->m_sProperty2 == pAttribute->m_sProperty2 &&
               pOtherManip->m_sProperty3 == pAttribute->m_sProperty3 && pOtherManip->m_sProperty4 == pAttribute->m_sProperty4 &&
@@ -246,7 +246,7 @@ void xiiManipulatorManager::TransferToCurrentSelection(const xiiDocument* pDoc)
         {
           if (pOtherAttr->IsInstanceOf(pAttribute->GetDynamicRTTI()))
           {
-            xiiManipulatorAttribute* pOtherManip = static_cast<xiiManipulatorAttribute*>(pOtherAttr);
+            auto pOtherManip = static_cast<const xiiManipulatorAttribute*>(pOtherAttr);
 
             if (pOtherManip->m_sProperty1 == pAttribute->m_sProperty1 && pOtherManip->m_sProperty2 == pAttribute->m_sProperty2 &&
                 pOtherManip->m_sProperty3 == pAttribute->m_sProperty3 && pOtherManip->m_sProperty4 == pAttribute->m_sProperty4 &&

@@ -16,12 +16,6 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgSetColor, 1, xiiRTTIDefaultAllocator<xiiM
     XII_ENUM_MEMBER_PROPERTY("Mode", xiiSetColorMode, m_Mode)
   }
   XII_END_PROPERTIES;
-
-  XII_BEGIN_ATTRIBUTES
-  {
-    new xiiAutoGenVisScriptMsgSender,
-  }
-  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

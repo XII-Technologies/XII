@@ -114,9 +114,9 @@ xiiStatus xiiDefaultObjectState::RevertObject()
   {
     xiiDefaultStateProvider::SuperArray super = m_Providers[i].GetArrayPtr().GetSubArray(1);
 
-    xiiHybridArray<xiiAbstractProperty*, 32> properties;
+    xiiHybridArray<const xiiAbstractProperty*, 32> properties;
     m_Selection[i].m_pObject->GetType()->GetAllProperties(properties);
-    for (xiiAbstractProperty* pProp : properties)
+    for (auto pProp : properties)
     {
       if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::Hidden | xiiPropertyFlags::ReadOnly))
         continue;

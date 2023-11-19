@@ -76,7 +76,7 @@ xiiQtMainWindow::xiiQtMainWindow() :
   QMenu* pHistoryMenu = new QMenu;
   pHistoryMenu->setTearOffEnabled(true);
   pHistoryMenu->setTitle(QLatin1String("Stat Histories"));
-  pHistoryMenu->setIcon(QIcon(":/Icons/Icons/StatHistory.png"));
+  pHistoryMenu->setIcon(QIcon(":/Icons/Icons/StatHistory.svg"));
 
   for (xiiUInt32 i = 0; i < 10; ++i)
   {
@@ -342,7 +342,7 @@ void xiiQtMainWindow::UpdateAlwaysOnTop()
     if (bOnTop)
       setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
     else
-      setWindowFlags(windowFlags() & ~Qt::WindowStaysOnTopHint | Qt::WindowStaysOnBottomHint);
+      setWindowFlags(windowFlags() & ~Qt::WindowStaysOnTopHint);
 
     show();
   }

@@ -29,10 +29,10 @@ void xiiScriptCoroutine_MoveTo::Start(xiiGameObjectHandle hObject, const xiiVec3
     return;
   }
 
-  m_hObject        = hObject;
-  m_vSourcePos     = pObject->GetLocalPosition();
-  m_vTargetPos     = vTargetPos;
-  m_EasingFunction = easing;
+  m_hObject    = hObject;
+  m_vSourcePos = pObject->GetLocalPosition();
+  m_vTargetPos = vTargetPos;
+  m_Easing     = easing;
 
   m_Duration   = duration;
   m_TimePassed = xiiTime::Zero();
@@ -52,7 +52,7 @@ xiiScriptCoroutine::Result xiiScriptCoroutine_MoveTo::Update(xiiTime deltaTimeSi
 
     const double fDuration = m_Duration.GetSeconds();
     double       fCurrentX = xiiMath::Min(fDuration > 0 ? m_TimePassed.GetSeconds() / fDuration : 1.0, 1.0);
-    fCurrentX              = xiiEasingFunction::GetValue(m_EasingFunction, fCurrentX);
+    fCurrentX              = xiiEasingFunction::GetValue(m_Easing, fCurrentX);
 
     xiiVec3 vCurrentPos = xiiMath::Lerp(m_vSourcePos, m_vTargetPos, static_cast<float>(fCurrentX));
     pObject->SetLocalPosition(vCurrentPos);

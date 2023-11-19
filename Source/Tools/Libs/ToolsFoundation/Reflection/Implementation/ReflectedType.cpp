@@ -33,7 +33,7 @@ xiiAttributeHolder::~xiiAttributeHolder()
 {
   for (auto pAttr : m_Attributes)
   {
-    pAttr->GetDynamicRTTI()->GetAllocator()->Deallocate(pAttr);
+    pAttr->GetDynamicRTTI()->GetAllocator()->Deallocate(const_cast<xiiPropertyAttribute*>(pAttr));
   }
 }
 
@@ -53,7 +53,7 @@ xiiUInt32 xiiAttributeHolder::GetCount() const
   return xiiMath::Max(m_ReferenceAttributes.GetCount(), m_Attributes.GetCount());
 }
 
-xiiPropertyAttribute* xiiAttributeHolder::GetValue(xiiUInt32 uiIndex) const
+const xiiPropertyAttribute* xiiAttributeHolder::GetValue(xiiUInt32 uiIndex) const
 {
   if (!m_ReferenceAttributes.IsEmpty())
     return m_ReferenceAttributes[uiIndex];
@@ -61,12 +61,12 @@ xiiPropertyAttribute* xiiAttributeHolder::GetValue(xiiUInt32 uiIndex) const
   return m_Attributes[uiIndex];
 }
 
-void xiiAttributeHolder::SetValue(xiiUInt32 uiIndex, xiiPropertyAttribute* value)
+void xiiAttributeHolder::SetValue(xiiUInt32 uiIndex, const xiiPropertyAttribute* value)
 {
   m_Attributes[uiIndex] = value;
 }
 
-void xiiAttributeHolder::Insert(xiiUInt32 uiIndex, xiiPropertyAttribute* value)
+void xiiAttributeHolder::Insert(xiiUInt32 uiIndex, const xiiPropertyAttribute* value)
 {
   m_Attributes.Insert(value, uiIndex);
 }
@@ -147,13 +147,13 @@ xiiReflectedPropertyDescriptor::xiiReflectedPropertyDescriptor(xiiPropertyCatego
 {
 }
 
-xiiReflectedPropertyDescriptor::xiiReflectedPropertyDescriptor(xiiPropertyCategory::Enum category, xiiStringView sName, xiiStringView sType, xiiBitflags<xiiPropertyFlags> flags, const xiiArrayPtr<xiiPropertyAttribute* const> attributes) :
+xiiReflectedPropertyDescriptor::xiiReflectedPropertyDescriptor(xiiPropertyCategory::Enum category, xiiStringView sName, xiiStringView sType, xiiBitflags<xiiPropertyFlags> flags, xiiArrayPtr<const xiiPropertyAttribute* const> attributes) :
   m_Category(category), m_sName(sName), m_sType(sType), m_Flags(flags)
 {
   m_ReferenceAttributes = attributes;
 }
 
-xiiReflectedPropertyDescriptor::xiiReflectedPropertyDescriptor(xiiStringView sName, const xiiVariant& constantValue, const xiiArrayPtr<xiiPropertyAttribute* const> attributes) :
+xiiReflectedPropertyDescriptor::xiiReflectedPropertyDescriptor(xiiStringView sName, const xiiVariant& constantValue, xiiArrayPtr<const xiiPropertyAttribute* const> attributes) :
   m_Category(xiiPropertyCategory::Constant), m_sName(sName), m_sType(), m_Flags(xiiPropertyFlags::StandardType | xiiPropertyFlags::ReadOnly), m_ConstantValue(constantValue)
 {
   m_ReferenceAttributes = attributes;
@@ -230,7 +230,7 @@ XII_END_STATIC_REFLECTED_TYPE;
 
 xiiReflectedFunctionDescriptor::xiiReflectedFunctionDescriptor() = default;
 
-xiiReflectedFunctionDescriptor::xiiReflectedFunctionDescriptor(xiiStringView sName, xiiBitflags<xiiPropertyFlags> flags, xiiEnum<xiiFunctionType> type, const xiiArrayPtr<xiiPropertyAttribute* const> attributes) :
+xiiReflectedFunctionDescriptor::xiiReflectedFunctionDescriptor(xiiStringView sName, xiiBitflags<xiiPropertyFlags> flags, xiiEnum<xiiFunctionType> type, xiiArrayPtr<const xiiPropertyAttribute* const> attributes) :
   m_sName(sName), m_Flags(flags), m_Type(type)
 {
   m_ReferenceAttributes = attributes;
@@ -247,6 +247,7 @@ void xiiReflectedFunctionDescriptor::operator=(const xiiReflectedFunctionDescrip
 {
   m_sName                     = rhs.m_sName;
   m_Flags                     = rhs.m_Flags;
+  m_Type                      = rhs.m_Type;
   m_ReturnValue               = rhs.m_ReturnValue;
   m_Arguments                 = rhs.m_Arguments;
   xiiAttributeHolder::operator=(rhs);

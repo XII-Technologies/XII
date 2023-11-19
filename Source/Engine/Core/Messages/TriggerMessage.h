@@ -30,10 +30,6 @@ struct XII_CORE_DLL xiiMsgComponentInternalTrigger : public xiiMessage
   xiiHashedString m_sMessage;
 
   xiiInt32 m_iPayload = 0;
-
-private:
-  xiiStringView GetMessage() const { return m_sMessage; }
-  void          SetMessage(xiiStringView sMessage) { m_sMessage.Assign(sMessage); }
 };
 
 /// \brief Sent when something enters or leaves a trigger
@@ -49,8 +45,4 @@ struct XII_CORE_DLL xiiMsgTriggerTriggered : public xiiEventMessage
 
   /// The object that entered the trigger volume.
   xiiGameObjectHandle m_hTriggeringObject;
-
-private:
-  xiiStringView GetMessage() const { return m_sMessage; }
-  void          SetMessage(xiiStringView sMessage) { m_sMessage.Assign(sMessage); }
 };

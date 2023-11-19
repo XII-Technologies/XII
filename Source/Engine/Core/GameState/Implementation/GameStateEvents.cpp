@@ -7,7 +7,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiForwardEventsToGameStateComponent, 1 /* version */, 
 {
   XII_BEGIN_ATTRIBUTES
   {
-    new xiiCategoryAttribute("Gameplay/Logic"),
+    new xiiCategoryAttribute("Logic"),
   }
   XII_END_ATTRIBUTES;
 }

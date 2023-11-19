@@ -385,7 +385,10 @@ xiiWorldReader::InstantiationContext::StepResult xiiWorldReader::InstantiationCo
         xiiGameObject* pParent = nullptr;
         if (m_WorldReader.m_pWorld->TryGetObject(m_Options.m_hParent, pParent))
         {
-          m_Options.m_pCreatedRootObjectsOut->PushBack(pParent);
+          if (m_Options.m_pCreatedRootObjectsOut)
+          {
+            m_Options.m_pCreatedRootObjectsOut->PushBack(pParent);
+          }
 
           if (m_WorldReader.m_RootObjectsToCreate[0].m_Desc.m_bDynamic)
           {

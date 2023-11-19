@@ -4,10 +4,29 @@
 
 #include <Foundation/Threading/AtomicUtils.h>
 
+template <xiiInt32 T>
+struct xiiAtomicStorageType
+{
+};
+
+template <>
+struct xiiAtomicStorageType<0>
+{
+  using Type = xiiInt32;
+};
+
+template <>
+struct xiiAtomicStorageType<1>
+{
+  using Type = xiiInt64;
+};
+
 /// \brief Integer class that can be manipulated in an atomic (i.e. thread-safe) fashion.
 template <typename T>
 class xiiAtomicInteger
 {
+  using UnderlyingType = typename xiiAtomicStorageType<sizeof(T) / 32>::Type;
+
 public:
   XII_DECLARE_POD_TYPE();
 
@@ -61,7 +80,7 @@ public:
   operator T() const; // [tested]
 
 private:
-  volatile T m_value;
+  volatile UnderlyingType m_Value;
 };
 
 /// \brief An atomic boolean variable. This is just a wrapper around an atomic int32 for convenience.

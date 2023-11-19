@@ -18,7 +18,7 @@ void xiiAssetFileExtensionWhitelist::AddAssetFileExtension(xiiStringView sAssetT
 
 bool xiiAssetFileExtensionWhitelist::IsFileOnAssetWhitelist(xiiStringView sAssetType, xiiStringView sFile)
 {
-  xiiStringBuilder sLowerExt = sFile.GetFileExtension();
+  xiiStringBuilder sLowerExt = xiiPathUtils::GetFileExtension(sFile);
   sLowerExt.ToLower();
 
   xiiStringBuilder sLowerType = sAssetType;

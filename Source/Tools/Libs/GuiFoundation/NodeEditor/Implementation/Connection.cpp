@@ -94,11 +94,14 @@ void xiiQtConnection::UpdateGeometry()
   else
   {
     p.moveTo(m_OutPoint);
-    float fDotOut = QPointF::dotProduct(m_OutDir, dir);
-    float fDotIn  = QPointF::dotProduct(m_InDir, -dir);
+    float fDotOut = xiiMath::Abs(QPointF::dotProduct(m_OutDir, dir));
+    float fDotIn  = xiiMath::Abs(QPointF::dotProduct(m_InDir, -dir));
 
-    fDotOut = xiiMath::Max(100.0f, xiiMath::Abs(fDotOut));
-    fDotIn  = xiiMath::Max(100.0f, xiiMath::Abs(fDotIn));
+    float fMinDistance = xiiMath::Abs(QPointF::dotProduct(m_OutDir.transposed(), dir));
+    fMinDistance       = xiiMath::Min(200.0f, fMinDistance);
+
+    fDotOut = xiiMath::Max(fMinDistance, fDotOut);
+    fDotIn  = xiiMath::Max(fMinDistance, fDotIn);
 
     QPointF ctr1 = m_OutPoint + m_OutDir * (fDotOut * 0.5f);
     QPointF ctr2 = m_InPoint + m_InDir * (fDotIn * 0.5f);
@@ -116,9 +119,9 @@ QPen xiiQtConnection::DeterminePen() const
     return pen();
   }
 
-  xiiColorGammaUB       color;
-  const xiiColorGammaUB sourceColor = m_pConnection->GetSourcePin().GetColor();
-  const xiiColorGammaUB targetColor = m_pConnection->GetTargetPin().GetColor();
+  xiiColor       color;
+  const xiiColor sourceColor = m_pConnection->GetSourcePin().GetColor();
+  const xiiColor targetColor = m_pConnection->GetTargetPin().GetColor();
 
   const bool isSourceGrey = (sourceColor.r == sourceColor.g && sourceColor.r == sourceColor.b);
   const bool isTargetGrey = (targetColor.r == targetColor.g && targetColor.r == targetColor.b);
@@ -138,7 +141,7 @@ QPen xiiQtConnection::DeterminePen() const
 
   if (m_bAdjacentNodeSelected)
   {
-    color = xiiMath::Lerp(color, xiiColorGammaUB(255, 255, 255), 0.1f);
+    color = xiiMath::Lerp(color, xiiColor::White, 0.1f);
     return QPen(QBrush(xiiToQtColor(color)), 3, Qt::DashLine);
   }
   else

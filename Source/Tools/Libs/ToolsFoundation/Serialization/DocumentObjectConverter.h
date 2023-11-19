@@ -55,8 +55,8 @@ public:
 
 private:
   void        AddObject(xiiDocumentObject* pObject, xiiDocumentObject* pParent, xiiStringView sParentProperty, xiiVariant index);
-  void        ApplyProperty(xiiDocumentObject* pObject, xiiAbstractProperty* pProp, const xiiAbstractObjectNode::Property* pSource);
-  static void ApplyDiff(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pObject, xiiAbstractProperty* pProp, xiiAbstractGraphDiffOperation& op, xiiDeque<xiiAbstractGraphDiffOperation>& diff);
+  void        ApplyProperty(xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiAbstractObjectNode::Property* pSource);
+  static void ApplyDiff(xiiObjectAccessorBase* pObjectAccessor, const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiAbstractGraphDiffOperation& op, xiiDeque<xiiAbstractGraphDiffOperation>& diff);
 
   Mode                          m_Mode;
   xiiDocumentObjectManager*     m_pManager;

@@ -28,24 +28,24 @@ public:
   ~xiiFileSystemMirror();
 
   // \brief Adds the directory, and all files in it recursively.
-  xiiResult AddDirectory(const char* path, bool* outDirectoryExistsAlready = nullptr);
+  xiiResult AddDirectory(xiiStringView sPath, bool* out_pDirectoryExistsAlready = nullptr);
 
   // \brief Adds a file. Creates directories if they do not exist.
-  xiiResult AddFile(const char* path, const T& value, bool* outFileExistsAlready, T* outOldValue);
+  xiiResult AddFile(xiiStringView sPath, const T& value, bool* out_pFileExistsAlready, T* out_pOldValue);
 
   // \brief Removes a file.
-  xiiResult RemoveFile(const char* path);
+  xiiResult RemoveFile(xiiStringView sPath);
 
   // \brief Removes a directory. Deletes any files & directories inside.
-  xiiResult RemoveDirectory(const char* path);
+  xiiResult RemoveDirectory(xiiStringView sPath);
 
   // \brief Moves a directory. Any files & folders inside are moved with it.
-  xiiResult MoveDirectory(const char* fromPath, const char* toPath);
+  xiiResult MoveDirectory(xiiStringView sFromPath, xiiStringView sToPath);
 
   using EnumerateFunc = xiiDelegate<void(const xiiStringBuilder& path, Type type)>;
 
   // \brief Enumerates the files & directories under the given path
-  xiiResult Enumerate(const char* path, EnumerateFunc callbackFunc);
+  xiiResult Enumerate(xiiStringView sPath, EnumerateFunc callbackFunc);
 
 private:
   DirEntry* FindDirectory(xiiStringBuilder& path);
@@ -82,9 +82,9 @@ template <typename T>
 xiiFileSystemMirror<T>::~xiiFileSystemMirror() = default;
 
 template <typename T>
-xiiResult xiiFileSystemMirror<T>::AddDirectory(const char* path, bool* outDirectoryExistsAlready)
+xiiResult xiiFileSystemMirror<T>::AddDirectory(xiiStringView sPath, bool* out_pDirectoryExistsAlready)
 {
-  xiiStringBuilder currentDirAbsPath = path;
+  xiiStringBuilder currentDirAbsPath = sPath;
   currentDirAbsPath.MakeCleanPath();
   EnsureTrailingSlash(currentDirAbsPath);
 
@@ -127,9 +127,9 @@ xiiResult xiiFileSystemMirror<T>::AddDirectory(const char* path, bool* outDirect
         currentDir->m_files.Insert(std::move(stats.m_sName), T{});
       }
     }
-    if (outDirectoryExistsAlready != nullptr)
+    if (out_pDirectoryExistsAlready != nullptr)
     {
-      *outDirectoryExistsAlready = false;
+      *out_pDirectoryExistsAlready = false;
     }
   }
   else
@@ -140,9 +140,9 @@ xiiResult xiiFileSystemMirror<T>::AddDirectory(const char* path, bool* outDirect
       return XII_FAILURE;
     }
 
-    if (outDirectoryExistsAlready != nullptr)
+    if (out_pDirectoryExistsAlready != nullptr)
     {
-      *outDirectoryExistsAlready = currentDirAbsPath.IsEmpty();
+      *out_pDirectoryExistsAlready = currentDirAbsPath.IsEmpty();
     }
 
     while (!currentDirAbsPath.IsEmpty())
@@ -159,45 +159,45 @@ xiiResult xiiFileSystemMirror<T>::AddDirectory(const char* path, bool* outDirect
 }
 
 template <typename T>
-xiiResult xiiFileSystemMirror<T>::AddFile(const char* path, const T& value, bool* outFileExistsAlready, T* outOldValue)
+xiiResult xiiFileSystemMirror<T>::AddFile(xiiStringView sPath, const T& value, bool* out_pFileExistsAlready, T* out_pOldValue)
 {
-  xiiStringBuilder sPath = path;
-  DirEntry*        dir   = FindDirectory(sPath);
+  xiiStringBuilder sPathBuilder = sPath;
+  DirEntry*        dir          = FindDirectory(sPathBuilder);
   if (dir == nullptr)
   {
     return XII_FAILURE; // file not under top level directory
   }
 
-  const char* szSlashPos = sPath.FindSubString("/");
+  const char* szSlashPos = sPathBuilder.FindSubString("/");
 
   while (szSlashPos != nullptr)
   {
-    xiiStringView subdirName(sPath.GetData(), szSlashPos + 1);
+    xiiStringView subdirName(sPathBuilder.GetData(), szSlashPos + 1);
     auto          insertIt = dir->m_subDirectories.Insert(subdirName, DirEntry());
     dir                    = &insertIt.Value();
-    sPath.Shrink(xiiStringUtils::GetCharacterCount(subdirName.GetStartPointer(), subdirName.GetEndPointer()), 0);
-    szSlashPos = sPath.FindSubString("/");
+    sPathBuilder.Shrink(xiiStringUtils::GetCharacterCount(subdirName.GetStartPointer(), subdirName.GetEndPointer()), 0);
+    szSlashPos = sPathBuilder.FindSubString("/");
   }
 
-  auto it = dir->m_files.Find(sPath);
+  auto it = dir->m_files.Find(sPathBuilder);
   // Do not add the file twice
   if (!it.IsValid())
   {
-    dir->m_files.Insert(sPath, value);
-    if (outFileExistsAlready != nullptr)
+    dir->m_files.Insert(sPathBuilder, value);
+    if (out_pFileExistsAlready != nullptr)
     {
-      *outFileExistsAlready = false;
+      *out_pFileExistsAlready = false;
     }
   }
   else
   {
-    if (outFileExistsAlready != nullptr)
+    if (out_pFileExistsAlready != nullptr)
     {
-      *outFileExistsAlready = true;
+      *out_pFileExistsAlready = true;
     }
-    if (outOldValue != nullptr)
+    if (out_pOldValue != nullptr)
     {
-      *outOldValue = it.Value();
+      *out_pOldValue = it.Value();
     }
     it.Value() = value;
   }
@@ -205,16 +205,16 @@ xiiResult xiiFileSystemMirror<T>::AddFile(const char* path, const T& value, bool
 }
 
 template <typename T>
-xiiResult xiiFileSystemMirror<T>::RemoveFile(const char* path)
+xiiResult xiiFileSystemMirror<T>::RemoveFile(xiiStringView sPath)
 {
-  xiiStringBuilder sPath = path;
-  DirEntry*        dir   = FindDirectory(sPath);
+  xiiStringBuilder sPathBuilder = sPath;
+  DirEntry*        dir          = FindDirectory(sPathBuilder);
   if (dir == nullptr)
   {
     return XII_FAILURE; // file not under top level directory
   }
 
-  if (sPath.FindSubString("/") != nullptr)
+  if (sPathBuilder.FindSubString("/") != nullptr)
   {
     return XII_FAILURE; // file does not exist
   }
@@ -224,7 +224,7 @@ xiiResult xiiFileSystemMirror<T>::RemoveFile(const char* path)
     return XII_FAILURE; // there are no files in this directory
   }
 
-  auto it = dir->m_files.Find(sPath);
+  auto it = dir->m_files.Find(sPathBuilder);
   if (!it.IsValid())
   {
     return XII_FAILURE; // file does not exist
@@ -235,10 +235,10 @@ xiiResult xiiFileSystemMirror<T>::RemoveFile(const char* path)
 }
 
 template <typename T>
-xiiResult xiiFileSystemMirror<T>::RemoveDirectory(const char* path)
+xiiResult xiiFileSystemMirror<T>::RemoveDirectory(xiiStringView sPath)
 {
-  xiiStringBuilder parentPath = path;
-  xiiStringBuilder dirName    = path;
+  xiiStringBuilder parentPath = sPath;
+  xiiStringBuilder dirName    = sPath;
   parentPath.PathParentDirectory();
   EnsureTrailingSlash(parentPath);
   dirName.Shrink(parentPath.GetCharacterCount(), 0);
@@ -259,46 +259,46 @@ xiiResult xiiFileSystemMirror<T>::RemoveDirectory(const char* path)
 }
 
 template <typename T>
-xiiResult xiiFileSystemMirror<T>::MoveDirectory(const char* fromPath, const char* toPath)
+xiiResult xiiFileSystemMirror<T>::MoveDirectory(xiiStringView sFromPath, xiiStringView sToPath)
 {
-  xiiStringBuilder sFromPath = fromPath;
-  xiiStringBuilder sFromName = fromPath;
-  sFromPath.PathParentDirectory();
-  EnsureTrailingSlash(sFromPath);
-  sFromName.Shrink(sFromPath.GetCharacterCount(), 0);
+  xiiStringBuilder sFromPathBuilder = sFromPath;
+  xiiStringBuilder sFromName        = sFromPath;
+  sFromPathBuilder.PathParentDirectory();
+  EnsureTrailingSlash(sFromPathBuilder);
+  sFromName.Shrink(sFromPathBuilder.GetCharacterCount(), 0);
   EnsureTrailingSlash(sFromName);
 
 
-  xiiStringBuilder sToPath = toPath;
-  xiiStringBuilder sToName = toPath;
-  sToPath.PathParentDirectory();
-  EnsureTrailingSlash(sToPath);
-  sToName.Shrink(sToPath.GetCharacterCount(), 0);
+  xiiStringBuilder sToPathBuilder = sToPath;
+  xiiStringBuilder sToName        = sToPath;
+  sToPathBuilder.PathParentDirectory();
+  EnsureTrailingSlash(sToPathBuilder);
+  sToName.Shrink(sToPathBuilder.GetCharacterCount(), 0);
   EnsureTrailingSlash(sToName);
 
-  DirEntry* moveFromDir = FindDirectory(sFromPath);
+  DirEntry* moveFromDir = FindDirectory(sFromPathBuilder);
   if (!moveFromDir)
   {
     return XII_FAILURE;
   }
-  XII_ASSERT_DEV(sFromPath.IsEmpty(), "move from directory should fully exist");
+  XII_ASSERT_DEV(sFromPathBuilder.IsEmpty(), "move from directory should fully exist");
 
-  DirEntry* moveToDir = FindDirectory(sToPath);
+  DirEntry* moveToDir = FindDirectory(sToPathBuilder);
   if (!moveToDir)
   {
     return XII_FAILURE;
   }
 
-  if (!sToPath.IsEmpty())
+  if (!sToPathBuilder.IsEmpty())
   {
     do
     {
-      const char*   dirEnd = sToPath.FindSubString("/");
-      xiiStringView subdirName(sToPath.GetData(), dirEnd + 1);
+      const char*   dirEnd = sToPathBuilder.FindSubString("/");
+      xiiStringView subdirName(sToPathBuilder.GetData(), dirEnd + 1);
       auto          insertIt = moveToDir->m_subDirectories.Insert(subdirName, DirEntry());
       moveToDir              = &insertIt.Value();
-      sToPath.Shrink(0, xiiStringUtils::GetCharacterCount(subdirName.GetStartPointer(), subdirName.GetEndPointer()));
-    } while (!sToPath.IsEmpty());
+      sToPathBuilder.Shrink(0, xiiStringUtils::GetCharacterCount(subdirName.GetStartPointer(), subdirName.GetEndPointer()));
+    } while (!sToPathBuilder.IsEmpty());
   }
 
   DirEntry movedDir;
@@ -329,33 +329,33 @@ namespace
 } // namespace
 
 template <typename T>
-xiiResult xiiFileSystemMirror<T>::Enumerate(const char* path, EnumerateFunc callbackFunc)
+xiiResult xiiFileSystemMirror<T>::Enumerate(xiiStringView sPath, EnumerateFunc callbackFunc)
 {
   xiiHybridArray<xiiDirEnumerateState<T>, 16> dirStack;
-  xiiStringBuilder                            sPath = path;
-  if (!sPath.EndsWith("/"))
+  xiiStringBuilder                            sPathBuilder = sPath;
+  if (!sPathBuilder.EndsWith("/"))
   {
-    sPath.Append("/");
+    sPathBuilder.Append("/");
   }
-  DirEntry* dirToEnumerate = FindDirectory(sPath);
+  DirEntry* dirToEnumerate = FindDirectory(sPathBuilder);
   if (dirToEnumerate == nullptr)
   {
     return XII_FAILURE;
   }
-  if (!sPath.IsEmpty())
+  if (!sPathBuilder.IsEmpty())
   {
     return XII_FAILURE; // requested folder to enumerate doesn't exist
   }
   DirEntry*                                                           currentDir      = dirToEnumerate;
   typename xiiMap<xiiString, xiiFileSystemMirror::DirEntry>::Iterator currentSubDirIt = currentDir->m_subDirectories.GetIterator();
-  sPath                                                                               = path;
+  sPathBuilder                                                                        = sPath;
 
   while (currentDir != nullptr)
   {
     if (currentSubDirIt.IsValid())
     {
       DirEntry* nextDir = &currentSubDirIt.Value();
-      sPath.AppendPath(currentSubDirIt.Key());
+      sPathBuilder.AppendPath(currentSubDirIt.Key());
       currentSubDirIt.Next();
       dirStack.PushBack({currentDir, currentSubDirIt});
       currentDir = nextDir;
@@ -365,18 +365,18 @@ xiiResult xiiFileSystemMirror<T>::Enumerate(const char* path, EnumerateFunc call
       xiiStringBuilder sFilePath;
       for (auto& file : currentDir->m_files)
       {
-        sFilePath = sPath;
+        sFilePath = sPathBuilder;
         sFilePath.AppendPath(file.Key());
         callbackFunc(sFilePath, Type::File);
       }
 
       if (currentDir != dirToEnumerate)
       {
-        if (sPath.EndsWith("/") && sPath.GetElementCount() > 1)
+        if (sPathBuilder.EndsWith("/") && sPathBuilder.GetElementCount() > 1)
         {
-          sPath.Shrink(0, 1);
+          sPathBuilder.Shrink(0, 1);
         }
-        callbackFunc(sPath, Type::Directory);
+        callbackFunc(sPathBuilder, Type::Directory);
       }
 
       if (dirStack.IsEmpty())
@@ -388,10 +388,10 @@ xiiResult xiiFileSystemMirror<T>::Enumerate(const char* path, EnumerateFunc call
         currentDir      = dirStack.PeekBack().dir;
         currentSubDirIt = dirStack.PeekBack().subDirIt;
         dirStack.PopBack();
-        sPath.PathParentDirectory();
-        if (sPath.GetElementCount() > 1 && sPath.EndsWith("/"))
+        sPathBuilder.PathParentDirectory();
+        if (sPathBuilder.GetElementCount() > 1 && sPathBuilder.EndsWith("/"))
         {
-          sPath.Shrink(0, 1);
+          sPathBuilder.Shrink(0, 1);
         }
       }
     }
