@@ -189,10 +189,7 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
         xiiStringBuilder sAllFilters;
         sAllFilters.Append(desc->m_sDocumentTypeName, " (*.", desc->m_sFileExtension, ")");
         QString   sSelectedExt;
-        xiiString sFile = QFileDialog::getSaveFileName(QApplication::activeWindow(), QLatin1String("Create Document"),
-                                                       xiiMakeQString(m_Context.m_pDocument->GetDocumentPath()), QString::fromUtf8(sAllFilters.GetData()), &sSelectedExt, QFileDialog::Option::DontResolveSymlinks)
-                            .toUtf8()
-                            .data();
+        xiiString sFile = QFileDialog::getSaveFileName(QApplication::activeWindow(), QLatin1String("Create Document"), xiiMakeQString(m_Context.m_pDocument->GetDocumentPath()), xiiMakeQString(sAllFilters), &sSelectedExt, QFileDialog::Option::DontResolveSymlinks).toUtf8().data();
 
         if (!sFile.IsEmpty())
         {

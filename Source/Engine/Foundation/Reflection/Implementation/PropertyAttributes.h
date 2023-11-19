@@ -457,12 +457,12 @@ class XII_FOUNDATION_DLL xiiFileBrowserAttribute : public xiiTypeWidgetAttribute
 
 public:
   // Predefined common type filters
-  static constexpr const char* Meshes            = "*.obj;*.fbx;*.gltf;*.glb";
-  static constexpr const char* SkeletalMeshes    = "*.fbx;*.gltf;*.glb";
-  static constexpr const char* ImagesLdrOnly     = "*.dds;*.tga;*.png;*.jpg;*.jpeg";
-  static constexpr const char* ImagesHdrOnly     = "*.hdr;*.exr";
-  static constexpr const char* ImagesLdrAndHdr   = "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr;*.exr";
-  static constexpr const char* CubemapsLdrAndHdr = "*.dds;*.hdr";
+  static constexpr xiiStringView Meshes            = "*.obj;*.fbx;*.gltf;*.glb"_xiisv;
+  static constexpr xiiStringView SkeletalMeshes    = "*.fbx;*.gltf;*.glb"_xiisv;
+  static constexpr xiiStringView ImagesLdrOnly     = "*.dds;*.tga;*.png;*.jpg;*.jpeg"_xiisv;
+  static constexpr xiiStringView ImagesHdrOnly     = "*.hdr;*.exr"_xiisv;
+  static constexpr xiiStringView ImagesLdrAndHdr   = "*.dds;*.tga;*.png;*.jpg;*.jpeg;*.hdr;*.exr"_xiisv;
+  static constexpr xiiStringView CubemapsLdrAndHdr = "*.dds;*.hdr"_xiisv;
 
   xiiFileBrowserAttribute() = default;
   xiiFileBrowserAttribute(xiiStringView sDialogTitle, xiiStringView sTypeFilter, xiiStringView sCustomAction = {}, xiiBitflags<xiiDependencyFlags> dependencyFlags = xiiDependencyFlags::Transform | xiiDependencyFlags::Thumbnail) :

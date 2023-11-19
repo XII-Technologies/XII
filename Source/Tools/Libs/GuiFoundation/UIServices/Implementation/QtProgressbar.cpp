@@ -58,7 +58,7 @@ void xiiQtProgressbar::ProgressbarEventHandler(const xiiProgressEvent& e)
 
       xiiStringBuilder sText(e.m_pProgressbar->GetMainDisplayText(), "\n", e.m_pProgressbar->GetStepDisplayText());
 
-      m_pDialog->setLabelText(QString::fromUtf8(sText.GetData()));
+      m_pDialog->setLabelText(xiiMakeQString(sText.GetView()));
       XII_ASSERT_DEV(m_pDialog != nullptr, "Progress dialog was destroyed while being in use");
 
       const xiiUInt32 uiProMille = xiiMath::Clamp<xiiUInt32>((xiiUInt32)(e.m_pProgressbar->GetCompletion() * 1000.0), 0, 1000);

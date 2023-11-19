@@ -123,7 +123,7 @@ const QIcon& xiiQtUiServices::GetCachedIconResource(xiiStringView sIdentifier, x
     const xiiUInt32 uiSrcHash = xiiHashingUtils::xxHash32String(sContent);
 
     // file the path to the temp file, including the source hash
-    const xiiStringBuilder sTempFolder = xiiOSFile::GetTempDataFolder("xiiEditor/QIcons");
+    const xiiStringBuilder sTempFolder = xiiOSFile::GetTempDataFolder("XII Editor/QIcons");
     xiiStringBuilder       sTempIconFile(sTempFolder, "/", sIdentifier.GetFileName());
     sTempIconFile.AppendFormat("-{}.svg", uiSrcHash);
 

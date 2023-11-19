@@ -150,7 +150,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
     });
   }
 
-  const char* szMimeType = "application/xiiEditor.Property";
+  const char* szMimeType = "application/XII Editor.Property";
   bool        bValueType = xiiReflectionUtils::IsValueType(m_pProp) || m_pProp->GetFlags().IsAnySet(xiiPropertyFlags::Bitflags | xiiPropertyFlags::IsEnum);
   // Copy
   {

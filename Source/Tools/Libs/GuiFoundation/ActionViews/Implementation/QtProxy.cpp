@@ -311,7 +311,7 @@ void xiiQtButtonProxy::Update()
 
 
   const xiiActionDescriptor* pDesc = m_pAction->GetDescriptorHandle().GetDescriptor();
-  m_pQtAction->setShortcut(QKeySequence(QString::fromUtf8(pDesc->m_sShortcut.GetData())));
+  m_pQtAction->setShortcut(QKeySequence(xiiMakeQString(pDesc->m_sShortcut)));
 
   const QString sDisplayShortcut = m_pQtAction->shortcut().toString(QKeySequence::NativeText);
   QString       sTooltip         = xiiMakeQString(xiiTranslateTooltip(pButton->GetName()));
@@ -335,7 +335,7 @@ void xiiQtButtonProxy::Update()
     sDisplay.Append(" '", pButton->GetAdditionalDisplayString(), "'"); // TODO: translate this as well?
 
   m_pQtAction->setIcon(xiiQtUiServices::GetCachedIconResource(pButton->GetIconPath()));
-  m_pQtAction->setText(QString::fromUtf8(sDisplay.GetData()));
+  m_pQtAction->setText(xiiMakeQString(sDisplay));
   m_pQtAction->setToolTip(sTooltip);
   m_pQtAction->setCheckable(pButton->IsCheckable());
   m_pQtAction->setChecked(pButton->IsChecked());
@@ -445,7 +445,7 @@ void xiiQtDynamicMenuProxy::SlotMenuAboutToShow()
       }
       else
       {
-        auto pAction = m_pMenu->addAction(QString::fromUtf8(p.m_sDisplay.GetData()));
+        auto pAction = m_pMenu->addAction(xiiMakeQString(p.m_sDisplay));
         pAction->setData(i);
         pAction->setIcon(p.m_Icon);
         pAction->setCheckable(p.m_CheckState != xiiDynamicMenuAction::Item::CheckMark::NotCheckable);
@@ -506,7 +506,7 @@ void xiiQtDynamicActionAndMenuProxy::Update()
   auto pButton = static_cast<xiiDynamicActionAndMenuAction*>(m_pAction);
 
   const xiiActionDescriptor* pDesc = m_pAction->GetDescriptorHandle().GetDescriptor();
-  m_pQtAction->setShortcut(QKeySequence(QString::fromUtf8(pDesc->m_sShortcut.GetData())));
+  m_pQtAction->setShortcut(QKeySequence(xiiMakeQString(pDesc->m_sShortcut)));
 
   xiiStringBuilder sDisplay = xiiTranslate(pButton->GetName());
 
@@ -530,7 +530,7 @@ void xiiQtDynamicActionAndMenuProxy::Update()
   }
 
   m_pQtAction->setIcon(xiiQtUiServices::GetCachedIconResource(pButton->GetIconPath()));
-  m_pQtAction->setText(QString::fromUtf8(sDisplay.GetData()));
+  m_pQtAction->setText(xiiMakeQString(sDisplay));
   m_pQtAction->setToolTip(sTooltip);
   m_pQtAction->setEnabled(pButton->IsEnabled());
   m_pQtAction->setVisible(pButton->IsVisible());

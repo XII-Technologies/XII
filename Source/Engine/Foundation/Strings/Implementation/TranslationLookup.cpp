@@ -59,7 +59,7 @@ xiiStringView xiiTranslationLookup::Translate(xiiStringView sString, xiiUInt64 u
   {
     xiiStringView sResult = s_Translators[i - 1]->Translate(sString, uiStringHash, usage);
 
-    if (sResult != nullptr)
+    if (!sResult.IsEmpty())
       return sResult;
   }
 
@@ -202,7 +202,7 @@ xiiStringView xiiTranslatorStorage::Translate(xiiStringView sString, xiiUInt64 u
   if (it.IsValid())
     return it.Value().GetData();
 
-  return nullptr;
+  return {};
 }
 
 void xiiTranslatorStorage::Reset()
@@ -225,30 +225,29 @@ bool xiiTranslatorLogMissing::s_bActive = true;
 xiiStringView xiiTranslatorLogMissing::Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
 {
   if (!xiiTranslatorLogMissing::s_bActive && !GetHighlightUntranslated())
-    return nullptr;
+    return {};
 
   if (usage != xiiTranslationUsage::Default)
-    return nullptr;
+    return {};
 
   xiiStringView sResult = xiiTranslatorStorage::Translate(sString, uiStringHash, usage);
 
-  if (sResult == nullptr)
+  if (sResult.IsEmpty())
   {
     xiiLog::Warning("Missing translation: {0};", sString);
 
     StoreTranslation(sString, uiStringHash, usage);
   }
 
-  return nullptr;
+  return {};
 }
 
 xiiStringView xiiTranslatorMakeMoreReadable::Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
 {
   xiiStringView sResult = xiiTranslatorStorage::Translate(sString, uiStringHash, usage);
 
-  if (sResult != nullptr)
+  if (!sResult.IsEmpty())
     return sResult;
-
 
   xiiStringBuilder result;
   xiiStringBuilder tmp = sString;

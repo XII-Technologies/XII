@@ -67,7 +67,7 @@ void xiiQtImageCache::InvalidateCache(xiiStringView sAbsolutePath)
   xiiStringBuilder sCleanPath = sAbsolutePath;
   sCleanPath.MakeCleanPath();
 
-  const QString sPath = QString::fromUtf8(sCleanPath.GetData());
+  const QString sPath = xiiMakeQString(sCleanPath.GetView());
 
   XII_LOCK(m_Mutex);
 
@@ -93,7 +93,7 @@ const QPixmap* xiiQtImageCache::QueryPixmap(xiiStringView sAbsolutePath, QModelI
   xiiStringBuilder sCleanPath = sAbsolutePath;
   sCleanPath.MakeCleanPath();
 
-  const QString sPath = QString::fromUtf8(sCleanPath.GetData());
+  const QString sPath = xiiMakeQString(sCleanPath.GetView());
 
   XII_LOCK(m_Mutex);
 
@@ -159,7 +159,7 @@ void xiiQtImageCache::RunLoadingTask()
     auto    it  = m_Requests.GetIterator();
     Request req = it.Key();
 
-    const QString sQtPath = QString::fromUtf8(req.m_sPath.GetData());
+    const QString sQtPath = xiiMakeQString(req.m_sPath.GetView());
 
     // do not try to load something that has already been loaded in the mean time
     if (!m_ImageCache.Find(sQtPath).IsValid())

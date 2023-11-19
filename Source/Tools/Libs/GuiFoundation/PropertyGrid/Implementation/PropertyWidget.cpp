@@ -957,7 +957,7 @@ void xiiQtPropertyEditorLineEditWidget::InternalSetValue(const xiiVariant& value
   else
   {
     m_pWidget->setPlaceholderText(QString());
-    m_pWidget->setText(QString::fromUtf8(value.ConvertTo<xiiString>().GetData()));
+    m_pWidget->setText(xiiMakeQString(value.ConvertTo<xiiString>()));
   }
 }
 

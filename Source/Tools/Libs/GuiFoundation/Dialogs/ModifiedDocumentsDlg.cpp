@@ -60,7 +60,7 @@ xiiQtModifiedDocumentsDlg::xiiQtModifiedDocumentsDlg(QWidget* pParent, const xii
     TableDocuments->setItem(iRow, 0, pItem0);
 
     QTableWidgetItem* pItem1 = new QTableWidgetItem();
-    pItem1->setData(Qt::DisplayRole, QString::fromUtf8(sText.GetData()));
+    pItem1->setData(Qt::DisplayRole, xiiMakeQString(sText));
     TableDocuments->setItem(iRow, 1, pItem1);
 
     ++iRow;

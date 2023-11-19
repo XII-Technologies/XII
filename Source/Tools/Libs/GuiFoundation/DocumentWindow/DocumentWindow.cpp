@@ -261,7 +261,7 @@ void xiiQtDocumentWindow::UIServicesEventHandler(const xiiQtUiServices::Event& e
         }
 
         m_pPermanentGlobalStatusButton->setPalette(pal);
-        m_pPermanentGlobalStatusButton->setText(QString::fromUtf8(e.m_sText, e.m_sText.GetElementCount()));
+        m_pPermanentGlobalStatusButton->setText(xiiMakeQString(e.m_sText));
         m_pPermanentGlobalStatusButton->setVisible(!m_pPermanentGlobalStatusButton->text().isEmpty());
       }
     }
@@ -355,7 +355,7 @@ void xiiQtDocumentWindow::SaveWindowLayout()
   sGroup.Format("DocumentWnd_{0}", GetWindowLayoutGroupName());
 
   QSettings Settings;
-  Settings.beginGroup(QString::fromUtf8(sGroup, sGroup.GetElementCount()));
+  Settings.beginGroup(xiiMakeQString(sGroup.GetView()));
   {
     // All other properties are defined by the outer container window.
     Settings.setValue("WindowState", saveState());
@@ -375,7 +375,7 @@ void xiiQtDocumentWindow::RestoreWindowLayout()
 
   {
     QSettings Settings;
-    Settings.beginGroup(QString::fromUtf8(sGroup, sGroup.GetElementCount()));
+    Settings.beginGroup(xiiMakeQString(sGroup.GetView()));
     {
       restoreState(Settings.value("WindowState", saveState()).toByteArray());
     }

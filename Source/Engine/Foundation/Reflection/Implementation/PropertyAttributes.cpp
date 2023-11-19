@@ -273,6 +273,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiFileBrowserAttribute, 1, xiiRTTIDefaultAlloc
   XII_BEGIN_FUNCTIONS
   {
     XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView),
+    XII_CONSTRUCTOR_PROPERTY(xiiStringView, xiiStringView, xiiStringView),
   }
   XII_END_FUNCTIONS;
 }
