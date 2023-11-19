@@ -174,7 +174,7 @@ void xiiQtContainerWindow::SaveWindowLayout()
   GetProjectLayoutPath(sProjectFile, true);
 
   QSettings Settings(xiiToolsProject::IsProjectOpen() ? sProjectFile.GetData() : sFile.GetData(), QSettings::IniFormat);
-  Settings.beginGroup(QString::fromUtf8("ContainerWnd_XII Editor"));
+  Settings.beginGroup(QString::fromUtf8("ContainerWnd_xiiEditor"));
   {
     Settings.setValue("DockManagerState", m_pDockManager->saveState(1));
     Settings.setValue("WindowGeometry", saveGeometry());
@@ -217,7 +217,7 @@ void xiiQtContainerWindow::RestoreWindowLayout()
 
   {
     QSettings Settings(sFile.GetData(), QSettings::IniFormat);
-    Settings.beginGroup(QString::fromUtf8("ContainerWnd_XII Editor"));
+    Settings.beginGroup(QString::fromUtf8("ContainerWnd_xiiEditor"));
     {
       restoreGeometry(Settings.value("WindowGeometry", saveGeometry()).toByteArray());
       restoreState(Settings.value("WindowState", saveState()).toByteArray());
