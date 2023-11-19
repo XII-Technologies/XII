@@ -28,10 +28,10 @@ public:
   ~xiiFileSystemMirror();
 
   // \brief Adds the directory, and all files in it recursively.
-  xiiResult AddDirectory(xiiStringView sPath, bool* outDirectoryExistsAlready = nullptr);
+  xiiResult AddDirectory(xiiStringView sPath, bool* out_pDirectoryExistsAlready = nullptr);
 
   // \brief Adds a file. Creates directories if they do not exist.
-  xiiResult AddFile(xiiStringView sPath, const T& value, bool* outFileExistsAlready, T* outOldValue);
+  xiiResult AddFile(xiiStringView sPath, const T& value, bool* out_pFileExistsAlready, T* out_pOldValue);
 
   // \brief Removes a file.
   xiiResult RemoveFile(xiiStringView sPath);
@@ -82,7 +82,7 @@ template <typename T>
 xiiFileSystemMirror<T>::~xiiFileSystemMirror() = default;
 
 template <typename T>
-xiiResult xiiFileSystemMirror<T>::AddDirectory(xiiStringView sPath, bool* outDirectoryExistsAlready)
+xiiResult xiiFileSystemMirror<T>::AddDirectory(xiiStringView sPath, bool* out_pDirectoryExistsAlready)
 {
   xiiStringBuilder currentDirAbsPath = sPath;
   currentDirAbsPath.MakeCleanPath();
@@ -127,9 +127,9 @@ xiiResult xiiFileSystemMirror<T>::AddDirectory(xiiStringView sPath, bool* outDir
         currentDir->m_files.Insert(std::move(stats.m_sName), T{});
       }
     }
-    if (outDirectoryExistsAlready != nullptr)
+    if (out_pDirectoryExistsAlready != nullptr)
     {
-      *outDirectoryExistsAlready = false;
+      *out_pDirectoryExistsAlready = false;
     }
   }
   else
@@ -140,9 +140,9 @@ xiiResult xiiFileSystemMirror<T>::AddDirectory(xiiStringView sPath, bool* outDir
       return XII_FAILURE;
     }
 
-    if (outDirectoryExistsAlready != nullptr)
+    if (out_pDirectoryExistsAlready != nullptr)
     {
-      *outDirectoryExistsAlready = currentDirAbsPath.IsEmpty();
+      *out_pDirectoryExistsAlready = currentDirAbsPath.IsEmpty();
     }
 
     while (!currentDirAbsPath.IsEmpty())
@@ -159,7 +159,7 @@ xiiResult xiiFileSystemMirror<T>::AddDirectory(xiiStringView sPath, bool* outDir
 }
 
 template <typename T>
-xiiResult xiiFileSystemMirror<T>::AddFile(xiiStringView sPath, const T& value, bool* outFileExistsAlready, T* outOldValue)
+xiiResult xiiFileSystemMirror<T>::AddFile(xiiStringView sPath, const T& value, bool* out_pFileExistsAlready, T* out_pOldValue)
 {
   xiiStringBuilder sPathBuilder = sPath;
   DirEntry*        dir          = FindDirectory(sPathBuilder);
@@ -184,20 +184,20 @@ xiiResult xiiFileSystemMirror<T>::AddFile(xiiStringView sPath, const T& value, b
   if (!it.IsValid())
   {
     dir->m_files.Insert(sPathBuilder, value);
-    if (outFileExistsAlready != nullptr)
+    if (out_pFileExistsAlready != nullptr)
     {
-      *outFileExistsAlready = false;
+      *out_pFileExistsAlready = false;
     }
   }
   else
   {
-    if (outFileExistsAlready != nullptr)
+    if (out_pFileExistsAlready != nullptr)
     {
-      *outFileExistsAlready = true;
+      *out_pFileExistsAlready = true;
     }
-    if (outOldValue != nullptr)
+    if (out_pOldValue != nullptr)
     {
-      *outOldValue = it.Value();
+      *out_pOldValue = it.Value();
     }
     it.Value() = value;
   }
