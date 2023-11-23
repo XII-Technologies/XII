@@ -4,6 +4,7 @@
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
+
 #include <RenderDocPlugin/RenderDocSingleton.h>
 #include <RenderDocPlugin/ThirdParty/renderdoc_app.h>
 
@@ -38,8 +39,8 @@ xiiRenderDoc::xiiRenderDoc() :
   if (pRENDERDOC_GetAPI RenderDoc_GetAPI = (pRENDERDOC_GetAPI)GetProcAddress(dllHandle, "RENDERDOC_GetAPI"))
   {
     void* pApi = nullptr;
-    RenderDoc_GetAPI(eRENDERDOC_API_Version_1_4_0, &pApi);
-    m_pRenderDocAPI = (RENDERDOC_API_1_4_1*)pApi;
+    RenderDoc_GetAPI(eRENDERDOC_API_Version_1_6_0, &pApi);
+    m_pRenderDocAPI = (RENDERDOC_API_1_6_0*)pApi;
   }
 
   if (m_pRenderDocAPI)

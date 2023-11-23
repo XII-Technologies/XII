@@ -6,14 +6,13 @@
 #include <Foundation/Configuration/Plugin.h>
 #include <Foundation/Configuration/Singleton.h>
 
-struct RENDERDOC_API_1_4_1;
+struct RENDERDOC_API_1_6_0;
 
 /// \brief RenderDoc implementation of the xiiFrameCaptureInterface interface
 ///
 /// Adds support for capturing frames through RenderDoc.
 /// When the plugin gets loaded, an xiiRenderDoc instance is created and initialized.
-/// It tries to find a RenderDoc DLL dynamically, so for initialization to succeed,
-/// the DLL has to be available in some search directory (e.g. binary folder or PATH).
+/// It tries to find a RenderDoc DLL dynamically, so for initialization to succeed, the DLL has to be available in some search directory (e.g. binary folder or PATH).
 /// If an outdated RenderDoc DLL is found, initialization will fail and the plugin will be deactivated.
 ///
 /// For interface documentation see \ref xiiFrameCaptureInterface
@@ -35,6 +34,6 @@ public:
   virtual xiiResult     GetLastAbsCaptureFileName(xiiStringBuilder& out_sFileName) const override;
 
 private:
-  RENDERDOC_API_1_4_1*   m_pRenderDocAPI = nullptr;
+  RENDERDOC_API_1_6_0*   m_pRenderDocAPI = nullptr;
   xiiMinWindows::HMODULE m_pHandleToFree = nullptr;
 };
