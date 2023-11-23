@@ -76,7 +76,7 @@ xiiUInt32 xiiUnicodeUtils::DecodeUtf16ToUtf32(UInt16Iterator& ref_szUtf16Iterato
 template <typename WCharIterator>
 xiiUInt32 xiiUnicodeUtils::DecodeWCharToUtf32(WCharIterator& ref_szWCharIterator)
 {
-  if (sizeof(wchar_t) == 2)
+  if constexpr (sizeof(wchar_t) == 2)
   {
     return DecodeUtf16ToUtf32(ref_szWCharIterator);
   }
@@ -110,7 +110,7 @@ void xiiUnicodeUtils::EncodeUtf32ToUtf16(xiiUInt32 uiUtf32, UInt16Iterator& ref_
 template <typename WCharIterator>
 void xiiUnicodeUtils::EncodeUtf32ToWChar(xiiUInt32 uiUtf32, WCharIterator& ref_szWCharOutput)
 {
-  if (sizeof(wchar_t) == 2)
+  if constexpr (sizeof(wchar_t) == 2)
   {
     EncodeUtf32ToUtf16(uiUtf32, ref_szWCharOutput);
   }

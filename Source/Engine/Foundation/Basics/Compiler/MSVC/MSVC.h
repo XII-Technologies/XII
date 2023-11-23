@@ -68,4 +68,13 @@
 #    define XII_VA_NUM_ARGS(...) XII_VA_NUM_ARGS_HELPER XII_LEFT_PARENTHESIS __VA_ARGS__, XII_VA_NUM_ARGS_REVERSE_SEQUENCE XII_RIGHT_PARENTHESIS
 #  endif
 
+#  define XII_WARNING_PUSH()           __pragma(warning(push))
+#  define XII_WARNING_POP()            __pragma(warning(pop))
+#  define XII_WARNING_DISABLE_MSVC(_x) __pragma(warning(disable \
+                                                       : _x))
+
+#else
+
+#  define XII_WARNING_DISABLE_MSVC(_x)
+
 #endif

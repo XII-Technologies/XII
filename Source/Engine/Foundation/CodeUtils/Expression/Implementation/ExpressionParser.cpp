@@ -380,8 +380,6 @@ xiiExpressionAST::Node* xiiExpressionParser::ParseFactor()
     auto                pIdentifierToken = m_TokenStream[uiIdentifierToken];
     const xiiStringView sIdentifier      = pIdentifierToken->m_DataView;
 
-    xiiExpressionAST::Node* pNode = nullptr;
-
     if (Accept(m_TokenStream, m_uiCurrentToken, "("))
     {
       return ParseSwizzle(ParseFunctionCall(sIdentifier));

@@ -231,8 +231,8 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiAngleTemplat
   xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 2, writepos, arg.GetDegree(), 1, false, 1, false);
 
   // Utf-8 representation of the degree sign
-  szTmp[writepos + 0] = (char)0xC2;
-  szTmp[writepos + 1] = (char)0xB0;
+  szTmp[writepos + 0] = /*(char)0xC2;*/ -62;
+  szTmp[writepos + 1] = /*(char)0xB0;*/ -80;
   szTmp[writepos + 2] = '\0';
 
   return xiiStringView(szTmp, szTmp + writepos + 2);
@@ -244,8 +244,8 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiAngleTemplat
   xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 2, writepos, arg.GetDegree(), 1, false, 1, false);
 
   // Utf-8 representation of the degree sign
-  szTmp[writepos + 0] = (char)0xC2;
-  szTmp[writepos + 1] = (char)0xB0;
+  szTmp[writepos + 0] = /*(char)0xC2;*/ -62;
+  szTmp[writepos + 1] = /*(char)0xB0;*/ -80;
   szTmp[writepos + 2] = '\0';
 
   return xiiStringView(szTmp, szTmp + writepos + 2);
@@ -288,8 +288,8 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiTime& arg)
 
     // tmp[writepos++] = ' ';
     // Utf-8 representation of the microsecond (us) sign
-    szTmp[writepos++] = (char)0xC2;
-    szTmp[writepos++] = (char)0xB5;
+    szTmp[writepos++] = /*(char)0xC2;*/ -62;
+    szTmp[writepos++] = /*(char)0xB5;*/ -75;
     szTmp[writepos++] = 's';
   }
   else if (fAbsSec < 1.0)
