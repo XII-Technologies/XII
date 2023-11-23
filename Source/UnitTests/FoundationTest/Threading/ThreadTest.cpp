@@ -7,8 +7,8 @@
 
 namespace
 {
-  volatile xiiInt32 g_iCrossThreadVariable = 0;
-  const xiiUInt32   g_uiIncrementSteps     = 160000;
+  xiiInt32        g_iCrossThreadVariable = 0;
+  const xiiUInt32 g_uiIncrementSteps     = 160000;
 
   class TestThread3 : public xiiThread
   {

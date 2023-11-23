@@ -14,84 +14,84 @@
 struct XII_FOUNDATION_DLL xiiAtomicUtils
 {
   /// \brief Returns src as an atomic operation and returns its value.
-  static xiiInt32 Read(volatile const xiiInt32& iSrc); // [tested]
+  static xiiInt32 Read(const xiiInt32& iSrc); // [tested]
 
   /// \brief Returns src as an atomic operation and returns its value.
-  static xiiInt64 Read(volatile const xiiInt64& iSrc); // [tested]
+  static xiiInt64 Read(const xiiInt64& iSrc); // [tested]
 
   /// \brief Increments dest as an atomic operation and returns the new value.
-  static xiiInt32 Increment(volatile xiiInt32& ref_iDest); // [tested]
+  static xiiInt32 Increment(xiiInt32& ref_iDest); // [tested]
 
   /// \brief Increments dest as an atomic operation and returns the new value.
-  static xiiInt64 Increment(volatile xiiInt64& ref_iDest); // [tested]
+  static xiiInt64 Increment(xiiInt64& ref_iDest); // [tested]
 
   /// \brief Decrements dest as an atomic operation and returns the new value.
-  static xiiInt32 Decrement(volatile xiiInt32& ref_iDest); // [tested]
+  static xiiInt32 Decrement(xiiInt32& ref_iDest); // [tested]
 
   /// \brief Decrements dest as an atomic operation and returns the new value.
-  static xiiInt64 Decrement(volatile xiiInt64& ref_iDest); // [tested]
+  static xiiInt64 Decrement(xiiInt64& ref_iDest); // [tested]
 
   /// \brief Increments dest as an atomic operation and returns the old value.
-  static xiiInt32 PostIncrement(volatile xiiInt32& ref_iDest); // [tested]
+  static xiiInt32 PostIncrement(xiiInt32& ref_iDest); // [tested]
 
   /// \brief Increments dest as an atomic operation and returns the old value.
-  static xiiInt64 PostIncrement(volatile xiiInt64& ref_iDest); // [tested]
+  static xiiInt64 PostIncrement(xiiInt64& ref_iDest); // [tested]
 
   /// \brief Decrements dest as an atomic operation and returns the old value.
-  static xiiInt32 PostDecrement(volatile xiiInt32& ref_iDest); // [tested]
+  static xiiInt32 PostDecrement(xiiInt32& ref_iDest); // [tested]
 
   /// \brief Decrements dest as an atomic operation and returns the old value.
-  static xiiInt64 PostDecrement(volatile xiiInt64& ref_iDest); // [tested]
+  static xiiInt64 PostDecrement(xiiInt64& ref_iDest); // [tested]
 
   /// \brief Adds value to dest as an atomic operation.
-  static void Add(volatile xiiInt32& ref_iDest, xiiInt32 value); // [tested]
+  static void Add(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
 
   /// \brief Adds value to dest as an atomic operation.
-  static void Add(volatile xiiInt64& ref_iDest, xiiInt64 value); // [tested]
+  static void Add(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
 
   /// \brief Performs an atomic bitwise AND on dest using value.
-  static void And(volatile xiiInt32& ref_iDest, xiiInt32 value); // [tested]
+  static void And(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
 
   /// \brief Performs an atomic bitwise AND on dest using value.
-  static void And(volatile xiiInt64& ref_iDest, xiiInt64 value); // [tested]
+  static void And(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
 
   /// \brief Performs an atomic bitwise OR on dest using value.
-  static void Or(volatile xiiInt32& ref_iDest, xiiInt32 value); // [tested]
+  static void Or(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
 
   /// \brief Performs an atomic bitwise OR on dest using value.
-  static void Or(volatile xiiInt64& ref_iDest, xiiInt64 value); // [tested]
+  static void Or(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
 
   /// \brief Performs an atomic bitwise XOR on dest using value.
-  static void Xor(volatile xiiInt32& ref_iDest, xiiInt32 value); // [tested]
+  static void Xor(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
 
   /// \brief Performs an atomic bitwise XOR on dest using value.
-  static void Xor(volatile xiiInt64& ref_iDest, xiiInt64 value); // [tested]
+  static void Xor(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
 
   /// \brief Performs an atomic min operation on dest using value.
-  static void Min(volatile xiiInt32& ref_iDest, xiiInt32 value); // [tested]
+  static void Min(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
 
   /// \brief Performs an atomic min operation on dest using value.
-  static void Min(volatile xiiInt64& ref_iDest, xiiInt64 value); // [tested]
+  static void Min(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
 
   /// \brief Performs an atomic max operation on dest using value.
-  static void Max(volatile xiiInt32& ref_iDest, xiiInt32 value); // [tested]
+  static void Max(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
 
   /// \brief Performs an atomic max operation on dest using value.
-  static void Max(volatile xiiInt64& ref_iDest, xiiInt64 value); // [tested]
+  static void Max(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
 
   /// \brief Sets dest to value as an atomic operation and returns the original value of dest.
-  static xiiInt32 Set(volatile xiiInt32& ref_iDest, xiiInt32 value); // [tested]
+  static xiiInt32 Set(xiiInt32& ref_iDest, xiiInt32 value); // [tested]
 
   /// \brief Sets dest to value as an atomic operation and returns the original value of dest.
-  static xiiInt64 Set(volatile xiiInt64& ref_iDest, xiiInt64 value); // [tested]
+  static xiiInt64 Set(xiiInt64& ref_iDest, xiiInt64 value); // [tested]
 
   /// \brief If *dest* is equal to *expected*, this function sets *dest* to *value* and returns true. Otherwise *dest* will not be modified and the
   /// function returns false.
-  static bool TestAndSet(volatile xiiInt32& ref_iDest, xiiInt32 iExpected, xiiInt32 value); // [tested]
+  static bool TestAndSet(xiiInt32& ref_iDest, xiiInt32 iExpected, xiiInt32 value); // [tested]
 
   /// \brief If *dest* is equal to *expected*, this function sets *dest* to *value* and returns true. Otherwise *dest* will not be modified and the
   /// function returns false.
-  static bool TestAndSet(volatile xiiInt64& ref_iDest, xiiInt64 iExpected, xiiInt64 value); // [tested]
+  static bool TestAndSet(xiiInt64& ref_iDest, xiiInt64 iExpected, xiiInt64 value); // [tested]
 
   /// \brief If *dest* is equal to *expected*, this function sets *dest* to *value* and returns true. Otherwise *dest* will not be modified and the
   /// function returns false.
@@ -99,11 +99,11 @@ struct XII_FOUNDATION_DLL xiiAtomicUtils
 
   /// \brief If *dest* is equal to *expected*, this function sets *dest* to *value*. Otherwise *dest* will not be modified. Always returns the value
   /// of *dest* before the modification.
-  static xiiInt32 CompareAndSwap(volatile xiiInt32& ref_iDest, xiiInt32 iExpected, xiiInt32 value); // [tested]
+  static xiiInt32 CompareAndSwap(xiiInt32& ref_iDest, xiiInt32 iExpected, xiiInt32 value); // [tested]
 
   /// \brief If *dest* is equal to *expected*, this function sets *dest* to *value*. Otherwise *dest* will not be modified. Always returns the value
   /// of *dest* before the modification.
-  static xiiInt64 CompareAndSwap(volatile xiiInt64& ref_iDest, xiiInt64 iExpected, xiiInt64 value); // [tested]
+  static xiiInt64 CompareAndSwap(xiiInt64& ref_iDest, xiiInt64 iExpected, xiiInt64 value); // [tested]
 };
 
 // Include inline file

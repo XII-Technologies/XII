@@ -42,6 +42,7 @@ void xiiArchiveBuilder::AddFolder(xiiStringView sAbsFolderPath, xiiArchiveCompre
             compression = xiiArchiveCompressionMode::Uncompressed;
             break;
 
+#  ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
           case InclusionMode::Compress_zstd_fastest:
             compression       = xiiArchiveCompressionMode::Compressed_zstd;
             iCompressionLevel = static_cast<xiiInt32>(xiiCompressedStreamWriterZstd::Compression::Fastest);
@@ -62,6 +63,7 @@ void xiiArchiveBuilder::AddFolder(xiiStringView sAbsFolderPath, xiiArchiveCompre
             compression       = xiiArchiveCompressionMode::Compressed_zstd;
             iCompressionLevel = static_cast<xiiInt32>(xiiCompressedStreamWriterZstd::Compression::Highest);
             break;
+#  endif
         }
       }
 

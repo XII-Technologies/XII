@@ -180,7 +180,7 @@ void xiiLargeBlockAllocator<BlockSize>::Deallocate(void* ptr)
   // find super block
   bool      bFound            = false;
   xiiUInt32 uiSuperBlockIndex = m_SuperBlocks.GetCount();
-  ptrdiff_t diff              = 0;
+  std::ptrdiff_t diff              = 0;
 
   for (; uiSuperBlockIndex-- > 0;)
   {

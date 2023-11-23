@@ -433,8 +433,7 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrno& arg)
 {
-  static thread_local char FullMessage[256];
-  const char*              szErrorMsg = strerror_r(arg.m_iErrno, FullMessage, 256);
+  const char* szErrorMsg = std::strerror(arg.m_iErrno);
   xiiStringUtils::snprintf(szTmp, uiLength, "%i (\"%s\")", arg.m_iErrno, szErrorMsg);
   return xiiStringView(szTmp);
 }

@@ -7,8 +7,8 @@ xiiProcessingStreamIterator<Type>::xiiProcessingStreamIterator(const xiiProcessi
 
   m_uiElementStride = pStream->GetElementStride();
 
-  m_pCurrentPtr = xiiMemoryUtils::AddByteOffset(pStream->GetWritableData(), static_cast<ptrdiff_t>(uiStartIndex * m_uiElementStride));
-  m_pEndPtr     = xiiMemoryUtils::AddByteOffset(pStream->GetWritableData(), static_cast<ptrdiff_t>((uiStartIndex + uiNumElements) * m_uiElementStride));
+  m_pCurrentPtr = xiiMemoryUtils::AddByteOffset(pStream->GetWritableData(), static_cast<std::ptrdiff_t>(uiStartIndex * m_uiElementStride));
+  m_pEndPtr     = xiiMemoryUtils::AddByteOffset(pStream->GetWritableData(), static_cast<std::ptrdiff_t>((uiStartIndex + uiNumElements) * m_uiElementStride));
 }
 
 template <typename Type>
@@ -26,11 +26,11 @@ XII_ALWAYS_INLINE bool xiiProcessingStreamIterator<Type>::HasReachedEnd() const
 template <typename Type>
 XII_ALWAYS_INLINE void xiiProcessingStreamIterator<Type>::Advance()
 {
-  m_pCurrentPtr = xiiMemoryUtils::AddByteOffset(m_pCurrentPtr, static_cast<ptrdiff_t>(m_uiElementStride));
+  m_pCurrentPtr = xiiMemoryUtils::AddByteOffset(m_pCurrentPtr, static_cast<std::ptrdiff_t>(m_uiElementStride));
 }
 
 template <typename Type>
 XII_ALWAYS_INLINE void xiiProcessingStreamIterator<Type>::Advance(xiiUInt32 uiNumElements)
 {
-  m_pCurrentPtr = xiiMemoryUtils::AddByteOffset(m_pCurrentPtr, static_cast<ptrdiff_t>(m_uiElementStride * uiNumElements));
+  m_pCurrentPtr = xiiMemoryUtils::AddByteOffset(m_pCurrentPtr, static_cast<std::ptrdiff_t>(m_uiElementStride * uiNumElements));
 }

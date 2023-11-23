@@ -6,31 +6,31 @@
 
 #include <intrin.h>
 
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Read(volatile const xiiInt32& iSrc)
+XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Read(const xiiInt32& iSrc)
 {
-  return _InterlockedOr((volatile long*)(&iSrc), 0);
+  return _InterlockedOr((long*)(&iSrc), 0);
 }
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Read(volatile const xiiInt64& iSrc)
+XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Read(const xiiInt64& iSrc)
 {
 #if XII_ENABLED(XII_PLATFORM_32BIT)
   xiiInt64 old;
   do
   {
     old = src;
-  } while (_InterlockedCompareExchange64(const_cast<volatile xiiInt64*>(&iSrc), old, old) != old);
+  } while (_InterlockedCompareExchange64(const_cast<xiiInt64*>(&iSrc), old, old) != old);
   return old;
 #else
-  return _InterlockedOr64(const_cast<volatile xiiInt64*>(&iSrc), 0);
+  return _InterlockedOr64(const_cast<xiiInt64*>(&iSrc), 0);
 #endif
 }
 
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Increment(volatile xiiInt32& ref_iDest)
+XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Increment(xiiInt32& ref_iDest)
 {
-  return _InterlockedIncrement(reinterpret_cast<volatile long*>(&ref_iDest));
+  return _InterlockedIncrement(reinterpret_cast<long*>(&ref_iDest));
 }
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Increment(volatile xiiInt64& ref_iDest)
+XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Increment(xiiInt64& ref_iDest)
 {
 #if XII_ENABLED(XII_PLATFORM_32BIT)
   xiiInt64 old;
@@ -44,12 +44,12 @@ XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Increment(volatile xiiInt64& ref_iDes
 #endif
 }
 
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Decrement(volatile xiiInt32& ref_iDest)
+XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::Decrement(xiiInt32& ref_iDest)
 {
-  return _InterlockedDecrement(reinterpret_cast<volatile long*>(&ref_iDest));
+  return _InterlockedDecrement(reinterpret_cast<long*>(&ref_iDest));
 }
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Decrement(volatile xiiInt64& ref_iDest)
+XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Decrement(xiiInt64& ref_iDest)
 {
 #if XII_ENABLED(XII_PLATFORM_32BIT)
   xiiInt64 old;
@@ -63,12 +63,12 @@ XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Decrement(volatile xiiInt64& ref_iDes
 #endif
 }
 
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::PostIncrement(volatile xiiInt32& ref_iDest)
+XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::PostIncrement(xiiInt32& ref_iDest)
 {
-  return _InterlockedExchangeAdd(reinterpret_cast<volatile long*>(&ref_iDest), 1);
+  return _InterlockedExchangeAdd(reinterpret_cast<long*>(&ref_iDest), 1);
 }
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::PostIncrement(volatile xiiInt64& ref_iDest)
+XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::PostIncrement(xiiInt64& ref_iDest)
 {
 #if XII_ENABLED(XII_PLATFORM_32BIT)
   xiiInt64 old;
@@ -82,12 +82,12 @@ XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::PostIncrement(volatile xiiInt64& ref_
 #endif
 }
 
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::PostDecrement(volatile xiiInt32& ref_iDest)
+XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::PostDecrement(xiiInt32& ref_iDest)
 {
-  return _InterlockedExchangeAdd(reinterpret_cast<volatile long*>(&ref_iDest), -1);
+  return _InterlockedExchangeAdd(reinterpret_cast<long*>(&ref_iDest), -1);
 }
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::PostDecrement(volatile xiiInt64& ref_iDest)
+XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::PostDecrement(xiiInt64& ref_iDest)
 {
 #if XII_ENABLED(XII_PLATFORM_32BIT)
   xiiInt64 old;
@@ -101,12 +101,12 @@ XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::PostDecrement(volatile xiiInt64& ref_
 #endif
 }
 
-XII_ALWAYS_INLINE void xiiAtomicUtils::Add(volatile xiiInt32& ref_iDest, xiiInt32 value)
+XII_ALWAYS_INLINE void xiiAtomicUtils::Add(xiiInt32& ref_iDest, xiiInt32 value)
 {
-  _InterlockedExchangeAdd(reinterpret_cast<volatile long*>(&ref_iDest), value);
+  _InterlockedExchangeAdd(reinterpret_cast<long*>(&ref_iDest), value);
 }
 
-XII_ALWAYS_INLINE void xiiAtomicUtils::Add(volatile xiiInt64& ref_iDest, xiiInt64 value)
+XII_ALWAYS_INLINE void xiiAtomicUtils::Add(xiiInt64& ref_iDest, xiiInt64 value)
 {
 #if XII_ENABLED(XII_PLATFORM_32BIT)
   xiiInt64 old;
@@ -120,12 +120,12 @@ XII_ALWAYS_INLINE void xiiAtomicUtils::Add(volatile xiiInt64& ref_iDest, xiiInt6
 }
 
 
-XII_ALWAYS_INLINE void xiiAtomicUtils::And(volatile xiiInt32& ref_iDest, xiiInt32 value)
+XII_ALWAYS_INLINE void xiiAtomicUtils::And(xiiInt32& ref_iDest, xiiInt32 value)
 {
-  _InterlockedAnd(reinterpret_cast<volatile long*>(&ref_iDest), value);
+  _InterlockedAnd(reinterpret_cast<long*>(&ref_iDest), value);
 }
 
-XII_ALWAYS_INLINE void xiiAtomicUtils::And(volatile xiiInt64& ref_iDest, xiiInt64 value)
+XII_ALWAYS_INLINE void xiiAtomicUtils::And(xiiInt64& ref_iDest, xiiInt64 value)
 {
 #if XII_ENABLED(XII_PLATFORM_32BIT)
   xiiInt64 old;
@@ -139,12 +139,12 @@ XII_ALWAYS_INLINE void xiiAtomicUtils::And(volatile xiiInt64& ref_iDest, xiiInt6
 }
 
 
-XII_ALWAYS_INLINE void xiiAtomicUtils::Or(volatile xiiInt32& ref_iDest, xiiInt32 value)
+XII_ALWAYS_INLINE void xiiAtomicUtils::Or(xiiInt32& ref_iDest, xiiInt32 value)
 {
-  _InterlockedOr(reinterpret_cast<volatile long*>(&ref_iDest), value);
+  _InterlockedOr(reinterpret_cast<long*>(&ref_iDest), value);
 }
 
-XII_ALWAYS_INLINE void xiiAtomicUtils::Or(volatile xiiInt64& ref_iDest, xiiInt64 value)
+XII_ALWAYS_INLINE void xiiAtomicUtils::Or(xiiInt64& ref_iDest, xiiInt64 value)
 {
 #if XII_ENABLED(XII_PLATFORM_32BIT)
   xiiInt64 old;
@@ -158,12 +158,12 @@ XII_ALWAYS_INLINE void xiiAtomicUtils::Or(volatile xiiInt64& ref_iDest, xiiInt64
 }
 
 
-XII_ALWAYS_INLINE void xiiAtomicUtils::Xor(volatile xiiInt32& ref_iDest, xiiInt32 value)
+XII_ALWAYS_INLINE void xiiAtomicUtils::Xor(xiiInt32& ref_iDest, xiiInt32 value)
 {
-  _InterlockedXor(reinterpret_cast<volatile long*>(&ref_iDest), value);
+  _InterlockedXor(reinterpret_cast<long*>(&ref_iDest), value);
 }
 
-XII_ALWAYS_INLINE void xiiAtomicUtils::Xor(volatile xiiInt64& ref_iDest, xiiInt64 value)
+XII_ALWAYS_INLINE void xiiAtomicUtils::Xor(xiiInt64& ref_iDest, xiiInt64 value)
 {
 #if XII_ENABLED(XII_PLATFORM_32BIT)
   xiiInt64 old;
@@ -177,7 +177,7 @@ XII_ALWAYS_INLINE void xiiAtomicUtils::Xor(volatile xiiInt64& ref_iDest, xiiInt6
 }
 
 
-inline void xiiAtomicUtils::Min(volatile xiiInt32& ref_iDest, xiiInt32 value)
+inline void xiiAtomicUtils::Min(xiiInt32& ref_iDest, xiiInt32 value)
 {
   // tries to exchange dest with the new value as long as the oldValue is not what we expected
   while (true)
@@ -185,12 +185,12 @@ inline void xiiAtomicUtils::Min(volatile xiiInt32& ref_iDest, xiiInt32 value)
     xiiInt32 iOldValue = ref_iDest;
     xiiInt32 iNewValue = value < iOldValue ? value : iOldValue; // do Min manually here, to break #include cycles
 
-    if (_InterlockedCompareExchange(reinterpret_cast<volatile long*>(&ref_iDest), iNewValue, iOldValue) == iOldValue)
+    if (_InterlockedCompareExchange(reinterpret_cast<long*>(&ref_iDest), iNewValue, iOldValue) == iOldValue)
       break;
   }
 }
 
-inline void xiiAtomicUtils::Min(volatile xiiInt64& ref_iDest, xiiInt64 value)
+inline void xiiAtomicUtils::Min(xiiInt64& ref_iDest, xiiInt64 value)
 {
   // tries to exchange dest with the new value as long as the oldValue is not what we expected
   while (true)
@@ -203,7 +203,7 @@ inline void xiiAtomicUtils::Min(volatile xiiInt64& ref_iDest, xiiInt64 value)
   }
 }
 
-inline void xiiAtomicUtils::Max(volatile xiiInt32& ref_iDest, xiiInt32 value)
+inline void xiiAtomicUtils::Max(xiiInt32& ref_iDest, xiiInt32 value)
 {
   // tries to exchange dest with the new value as long as the oldValue is not what we expected
   while (true)
@@ -211,12 +211,12 @@ inline void xiiAtomicUtils::Max(volatile xiiInt32& ref_iDest, xiiInt32 value)
     xiiInt32 iOldValue = ref_iDest;
     xiiInt32 iNewValue = iOldValue < value ? value : iOldValue; // do Max manually here, to break #include cycles
 
-    if (_InterlockedCompareExchange(reinterpret_cast<volatile long*>(&ref_iDest), iNewValue, iOldValue) == iOldValue)
+    if (_InterlockedCompareExchange(reinterpret_cast<long*>(&ref_iDest), iNewValue, iOldValue) == iOldValue)
       break;
   }
 }
 
-inline void xiiAtomicUtils::Max(volatile xiiInt64& ref_iDest, xiiInt64 value)
+inline void xiiAtomicUtils::Max(xiiInt64& ref_iDest, xiiInt64 value)
 {
   // tries to exchange dest with the new value as long as the oldValue is not what we expected
   while (true)
@@ -230,12 +230,12 @@ inline void xiiAtomicUtils::Max(volatile xiiInt64& ref_iDest, xiiInt64 value)
 }
 
 
-inline xiiInt32 xiiAtomicUtils::Set(volatile xiiInt32& ref_iDest, xiiInt32 value)
+inline xiiInt32 xiiAtomicUtils::Set(xiiInt32& ref_iDest, xiiInt32 value)
 {
-  return _InterlockedExchange(reinterpret_cast<volatile long*>(&ref_iDest), value);
+  return _InterlockedExchange(reinterpret_cast<long*>(&ref_iDest), value);
 }
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Set(volatile xiiInt64& ref_iDest, xiiInt64 value)
+XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Set(xiiInt64& ref_iDest, xiiInt64 value)
 {
 #if XII_ENABLED(XII_PLATFORM_32BIT)
   xiiInt64 old;
@@ -250,12 +250,12 @@ XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Set(volatile xiiInt64& ref_iDest, xii
 }
 
 
-XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(volatile xiiInt32& ref_iDest, xiiInt32 iExpected, xiiInt32 value)
+XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(xiiInt32& ref_iDest, xiiInt32 iExpected, xiiInt32 value)
 {
-  return _InterlockedCompareExchange(reinterpret_cast<volatile long*>(&ref_iDest), value, iExpected) == iExpected;
+  return _InterlockedCompareExchange(reinterpret_cast<long*>(&ref_iDest), value, iExpected) == iExpected;
 }
 
-XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(volatile xiiInt64& ref_iDest, xiiInt64 iExpected, xiiInt64 value)
+XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(xiiInt64& ref_iDest, xiiInt64 iExpected, xiiInt64 value)
 {
   return _InterlockedCompareExchange64(&ref_iDest, value, iExpected) == iExpected;
 }
@@ -265,12 +265,12 @@ XII_ALWAYS_INLINE bool xiiAtomicUtils::TestAndSet(void** pDest, void* pExpected,
   return _InterlockedCompareExchangePointer(pDest, value, pExpected) == pExpected;
 }
 
-XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::CompareAndSwap(volatile xiiInt32& ref_iDest, xiiInt32 iExpected, xiiInt32 value)
+XII_ALWAYS_INLINE xiiInt32 xiiAtomicUtils::CompareAndSwap(xiiInt32& ref_iDest, xiiInt32 iExpected, xiiInt32 value)
 {
-  return _InterlockedCompareExchange(reinterpret_cast<volatile long*>(&ref_iDest), value, iExpected);
+  return _InterlockedCompareExchange(reinterpret_cast<long*>(&ref_iDest), value, iExpected);
 }
 
-XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::CompareAndSwap(volatile xiiInt64& ref_iDest, xiiInt64 iExpected, xiiInt64 value)
+XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::CompareAndSwap(xiiInt64& ref_iDest, xiiInt64 iExpected, xiiInt64 value)
 {
   return _InterlockedCompareExchange64(&ref_iDest, value, iExpected);
 }
