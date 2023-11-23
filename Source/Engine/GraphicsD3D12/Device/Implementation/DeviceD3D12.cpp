@@ -74,7 +74,8 @@ ON_CORESYSTEMS_SHUTDOWN
 {
   xiiGALDeviceFactory::UnregisterImplementation("D3D12");
 
-  g_pAllocatorDiligent.Clear();
+  // Clearing the allocator causes the memory tracker to have invalid name for the allocator.
+  // g_pAllocatorDiligent.Clear();
 }
 
 XII_END_SUBSYSTEM_DECLARATION;

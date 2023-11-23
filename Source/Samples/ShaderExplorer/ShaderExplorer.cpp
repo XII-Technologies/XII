@@ -66,6 +66,8 @@ public:
     if (g_bWindowResized)
     {
       g_bWindowResized = false;
+
+      UpdateSwapChain();
     }
 
     if (m_pWindow->m_bCloseRequested || xiiInputManager::GetInputActionState("Main", "CloseApp") == xiiKeyState::Pressed)
@@ -96,6 +98,9 @@ public:
         mouseMotion.y -= fInputValue * fMouseSpeed;
       if (xiiInputManager::GetInputActionState("Main", "LookNegY", &fInputValue) != xiiKeyState::Up)
         mouseMotion.y += fInputValue * fMouseSpeed;
+
+      m_pCamera->RotateLocally(xiiAngle::Radian(0.0f), xiiAngle::Radian(mouseMotion.y), xiiAngle::Radian(0.0f));
+      m_pCamera->RotateGlobally(xiiAngle::Radian(0.0f), xiiAngle::Radian(mouseMotion.x), xiiAngle::Radian(0.0f));
     }
     else
     {
@@ -118,6 +123,9 @@ public:
         mouseMotion.y += fInputValue * fTurnSpeed;
       if (xiiInputManager::GetInputActionState("Main", "TurnNegY", &fInputValue) != xiiKeyState::Up)
         mouseMotion.y -= fInputValue * fTurnSpeed;
+
+      m_pCamera->RotateLocally(xiiAngle::Radian(0.0f), xiiAngle::Radian(mouseMotion.y), xiiAngle::Radian(0.0f));
+      m_pCamera->RotateGlobally(xiiAngle::Radian(0.0f), xiiAngle::Radian(mouseMotion.x), xiiAngle::Radian(0.0f));
     }
 
     // Apply translation
@@ -133,6 +141,8 @@ public:
         cameraMotion.y += fInputValue;
       if (xiiInputManager::GetInputActionState("Main", "MoveNegY", &fInputValue) != xiiKeyState::Up)
         cameraMotion.y -= fInputValue;
+
+      m_pCamera->MoveLocally(cameraMotion.y, cameraMotion.x, 0.0f);
     }
 
     // Reload resources if modified
@@ -348,7 +358,7 @@ public:
   {
     if (action == xiiDirectoryWatcherAction::Modified && type == xiiDirectoryWatcherType::File)
     {
-      xiiLog::Info("The file {0} was modified.", sFilename);
+      xiiLog::Info("File modified: '{0}'.", sFilename);
       m_bFileModified = true;
     }
   }

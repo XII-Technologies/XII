@@ -1202,6 +1202,10 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
     {
       xiiGALTextureViewCreationDescription viewDescription;
       viewDescription.m_hTexture                  = hTexture;
+      viewDescription.m_ViewType                  = xiiGALTextureViewType::ShaderResource;
+      viewDescription.m_uiMostDetailedMip         = 0U;
+      viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
+      viewDescription.m_uiMipLevelCount           = description.m_uiMipLevels;
       viewDescription.m_uiArrayOrDepthSlicesCount = description.m_uiArraySizeOrDepth;
       pTexture->m_hDefaultTextureView             = CreateTextureView(viewDescription);
     }
@@ -1211,7 +1215,10 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
     {
       xiiGALTextureViewCreationDescription viewDescription;
       viewDescription.m_hTexture                  = hTexture;
+      viewDescription.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
       viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
+      viewDescription.m_uiMostDetailedMip         = 0U;
+      viewDescription.m_uiMipLevelCount           = description.m_uiMipLevels;
       viewDescription.m_uiArrayOrDepthSlicesCount = description.m_uiArraySizeOrDepth;
 
       pTexture->m_hDefaultRenderTargetView = CreateTextureView(viewDescription);

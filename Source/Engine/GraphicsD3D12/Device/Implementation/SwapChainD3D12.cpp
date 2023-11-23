@@ -185,7 +185,7 @@ void xiiGALSwapChainD3D12::Present(xiiGALDevice* pDevice)
     pDeviceD3D12->GetImmediateContext()->TransitionResourceStates(1u, &transitionDesc);
   }
 
-  xiiUInt32 uiSyncInterval = 0U;
+  xiiUInt32 uiSyncInterval = 1U;
   switch (m_PresentMode)
   {
     case xiiGALPresentMode::Immediate:
@@ -195,7 +195,6 @@ void xiiGALSwapChainD3D12::Present(xiiGALDevice* pDevice)
       uiSyncInterval = 1U;
       break;
   }
-
   m_pSwapChain->Present(uiSyncInterval);
 }
 
