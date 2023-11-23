@@ -131,7 +131,7 @@ void xiiQtDataWidget::on_ButtonRefresh_clicked()
   LabelImage->setText("Waiting for data transfer...");
 
   xiiTelemetryMessage msg;
-  msg.SetMessageID('DTRA', 'REQ');
+  msg.SetMessageID('DTRA', ' REQ');
   msg.GetWriter() << it.Key();
   xiiTelemetry::SendToServer(msg);
 }

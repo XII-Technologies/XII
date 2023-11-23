@@ -31,9 +31,6 @@ void xiiRecentFilesList::Insert(xiiStringView sFile, xiiInt32 iContainerWindow)
 
 void xiiRecentFilesList::Save(xiiStringView sFile)
 {
-  if (m_Files.IsEmpty())
-    return;
-
   xiiDeferredFileWriter File;
   File.SetOutput(sFile);
 

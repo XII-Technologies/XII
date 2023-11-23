@@ -28,7 +28,7 @@ xiiEventSubscriptionID xiiEventBase<EventData, MutexType, EventType>::AddEventHa
 
   if constexpr (std::is_same_v<MutexType, xiiNoMutex>)
   {
-    if (EventType == xiiEventType::Default)
+    if constexpr (EventType == xiiEventType::Default)
     {
       XII_ASSERT_DEV(m_uiRecursionDepth == 0, "Can't add or remove event handlers while broadcasting (without a mutex). Either enable the use of a mutex on this event, or switch to xiiCopyOnBroadcastEvent if this should be allowed. Since this event does not have a mutex, this error can also happen due to multi-threaded access.");
     }

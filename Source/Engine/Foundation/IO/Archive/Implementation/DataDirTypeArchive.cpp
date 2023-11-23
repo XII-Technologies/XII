@@ -188,13 +188,15 @@ EndLoop:
   if (!bSupported)
     return XII_FAILURE;
 
+#if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
   xiiFileStats stats;
   if (xiiOSFile::GetFileStats(sArchivePath, stats).Failed())
     return XII_FAILURE;
 
-  XII_LOG_BLOCK("xiiArchiveDataDir", sDirectory);
-
   m_LastModificationTime = stats.m_LastModificationTime;
+#endif
+
+  XII_LOG_BLOCK("xiiArchiveDataDir", sDirectory);
 
   XII_SUCCEED_OR_RETURN(m_ArchiveReader.OpenArchive(sArchivePath));
 

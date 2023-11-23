@@ -14,6 +14,8 @@
 #  include <android/log.h>
 #endif
 
+#include <stdarg.h>
+
 xiiLogMsgType::Enum      xiiLog::s_DefaultLogLevel     = xiiLogMsgType::All;
 xiiLog::PrintFunction    xiiLog::s_CustomPrintFunction = nullptr;
 xiiAtomicInteger32       xiiGlobalLog::s_uiMessageCount[xiiLogMsgType::ENUM_COUNT];

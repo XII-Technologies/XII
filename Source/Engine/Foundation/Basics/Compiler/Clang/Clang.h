@@ -49,4 +49,12 @@
 #    define XII_COMPILE_FOR_DEBUG XII_ON
 #  endif
 
+#  define XII_WARNING_PUSH()            _Pragma("clang diagnostic push")
+#  define XII_WARNING_POP()             _Pragma("clang diagnostic pop")
+#  define XII_WARNING_DISABLE_CLANG(_x) _Pragma(XII_STRINGIZE(clang diagnostic ignored _x))
+
+#else
+
+#  define XII_WARNING_DISABLE_CLANG(_x)
+
 #endif

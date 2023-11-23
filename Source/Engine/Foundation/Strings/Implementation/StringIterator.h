@@ -8,7 +8,7 @@ struct xiiStringIterator
 {
   using iterator_category = std::bidirectional_iterator_tag;
   using value_type        = xiiUInt32;
-  using difference_type   = ptrdiff_t;
+  using difference_type   = std::ptrdiff_t;
   using pointer           = const char*;
   using reference         = xiiUInt32;
 
@@ -163,7 +163,7 @@ struct xiiStringReverseIterator
 {
   using iterator_category = std::bidirectional_iterator_tag;
   using value_type        = xiiUInt32;
-  using difference_type   = ptrdiff_t;
+  using difference_type   = std::ptrdiff_t;
   using pointer           = const char*;
   using reference         = xiiUInt32;
 

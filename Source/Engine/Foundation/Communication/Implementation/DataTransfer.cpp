@@ -148,7 +148,7 @@ void xiiDataTransfer::TelemetryMessage(void* pPassThrough)
 
   while (xiiTelemetry::RetrieveMessage('DTRA', Msg) == XII_SUCCESS)
   {
-    if (Msg.GetMessageID() == 'REQ')
+    if (Msg.GetMessageID() == ' REQ')
     {
       xiiStringBuilder sName;
       Msg.GetReader() >> sName;

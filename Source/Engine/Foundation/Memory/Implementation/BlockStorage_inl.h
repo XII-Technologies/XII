@@ -249,7 +249,7 @@ XII_FORCE_INLINE void xiiBlockStorage<T, BlockSize, StorageType>::Delete(T* pObj
   xiiUInt32 uiIndex = xiiInvalidIndex;
   for (xiiUInt32 uiBlockIndex = 0; uiBlockIndex < m_Blocks.GetCount(); ++uiBlockIndex)
   {
-    ptrdiff_t diff = pObject - m_Blocks[uiBlockIndex].m_pData;
+    std::ptrdiff_t diff = pObject - m_Blocks[uiBlockIndex].m_pData;
     if (diff >= 0 && diff < xiiDataBlock<T, BlockSize>::CAPACITY)
     {
       uiIndex = uiBlockIndex * xiiDataBlock<T, BlockSize>::CAPACITY + (xiiInt32)diff;

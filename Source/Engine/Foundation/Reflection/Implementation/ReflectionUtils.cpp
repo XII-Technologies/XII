@@ -991,7 +991,7 @@ bool xiiReflectionUtils::EnumerationToString(const xiiRTTI* pEnumerationRtti, xi
   }
   else
   {
-    XII_ASSERT_DEV(false, "The RTTI class '{0}' is not an enum or bitflags class", pEnumerationRtti->GetTypeName());
+    XII_REPORT_FAILURE("The RTTI class '{0}' is not an enum or bitflags class.", pEnumerationRtti->GetTypeName());
     return false;
   }
 }
@@ -1064,7 +1064,7 @@ bool xiiReflectionUtils::StringToEnumeration(const xiiRTTI* pEnumerationRtti, xi
   }
   else
   {
-    XII_ASSERT_DEV(false, "The RTTI class '{0}' is not an enum or bitflags class", pEnumerationRtti->GetTypeName());
+    XII_REPORT_FAILURE("The RTTI class '{0}' is not an enum or bitflags class.", pEnumerationRtti->GetTypeName());
     return false;
   }
 }
@@ -1079,7 +1079,7 @@ xiiInt64 xiiReflectionUtils::DefaultEnumerationValue(const xiiRTTI* pEnumeration
   }
   else
   {
-    XII_ASSERT_DEV(false, "The RTTI class '{0}' is not an enum or bitflags class", pEnumerationRtti->GetTypeName());
+    XII_REPORT_FAILURE("The RTTI class '{0}' is not an enum or bitflags class.", pEnumerationRtti->GetTypeName());
     return 0;
   }
 }
@@ -1121,7 +1121,7 @@ xiiInt64 xiiReflectionUtils::MakeEnumerationValid(const xiiRTTI* pEnumerationRtt
   }
   else
   {
-    XII_ASSERT_DEV(false, "The RTTI class '{0}' is not an enum or bitflags class", pEnumerationRtti->GetTypeName());
+    XII_REPORT_FAILURE("The RTTI class '{0}' is not an enum or bitflags class.", pEnumerationRtti->GetTypeName());
     return 0;
   }
 }
@@ -1576,7 +1576,6 @@ xiiVariant xiiReflectionUtils::GetDefaultVariantFromType(xiiVariant::Type::Enum 
       XII_REPORT_FAILURE("Invalid case statement");
       return xiiVariant();
   }
-  return xiiVariant();
 }
 
 xiiVariant xiiReflectionUtils::GetDefaultValue(const xiiAbstractProperty* pProperty, xiiVariant index)
@@ -1710,7 +1709,6 @@ xiiVariant xiiReflectionUtils::GetDefaultVariantFromType(const xiiRTTI* pRtti)
     default:
       return GetDefaultVariantFromType(type);
   }
-  return xiiVariant();
 }
 
 void xiiReflectionUtils::SetAllMemberPropertiesToDefault(const xiiRTTI* pRtti, void* pObject)

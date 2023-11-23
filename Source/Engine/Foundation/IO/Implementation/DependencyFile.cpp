@@ -168,7 +168,7 @@ xiiResult xiiDependencyFile::RetrieveFileTimeStamp(xiiStringView sFile, xiiTimes
 #else
 
   out_Result.SetInt64(0, xiiSIUnitOfTime::Second);
-  xiiLog::Warning("Trying to retrieve a file time stamp on a platform that does not support it (file: '{0}')", xiiArgSensitive(szFile, "File"));
+  xiiLog::Warning("Trying to retrieve a file time stamp on a platform that does not support it (file: '{0}')", xiiArgSensitive(sFile, "File"));
 
 #endif
 

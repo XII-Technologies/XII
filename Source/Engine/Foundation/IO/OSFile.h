@@ -217,7 +217,7 @@ public:
   /// such behavior individually.
   static const xiiString GetCurrentWorkingDirectory(); // [tested]
 
-  /// \brief If szPath is a relative path, this function prepends GetCurrentWorkingDirectory().
+  /// \brief If sPath is a relative path, this function prepends GetCurrentWorkingDirectory().
   ///
   /// In either case, MakeCleanPath() is used before the string is returned.
   static const xiiString MakePathAbsoluteWithCWD(xiiStringView sPath); // [tested]
@@ -228,6 +228,12 @@ public:
   /// \brief Checks whether the given file exists.
   static bool ExistsDirectory(xiiStringView sDirectory); // [tested]
 
+  /// \brief If the given file already exists, determines a file path that doesn't exist yet.
+  ///
+  /// If the original file already exists, sSuffix is appended and then a number starting at 1.
+  /// Loops until it finds a filename that is not yet taken.
+  static void FindFreeFilename(xiiStringBuilder& inout_sPath, xiiStringView sSuffix = "-");
+
   /// \brief Deletes the given file. Returns XII_SUCCESS, if the file was deleted or did not exist in the first place. Returns XII_FAILURE
   static xiiResult DeleteFile(xiiStringView sFile); // [tested]
 
@@ -235,7 +241,7 @@ public:
   /// be created.
   static xiiResult CreateDirectoryStructure(xiiStringView sDirectory); // [tested]
 
-  /// \brief Renames / Moves an existing directory. The file / directory at szFrom must exist. The parent directory of szTo must exist.
+  /// \brief Renames / Moves an existing directory. The file / directory at sFrom must exist. The parent directory of sTo must exist.
   /// Returns XII_FAILURE if the move failed.
   static xiiResult MoveFileOrDirectory(xiiStringView sFrom, xiiStringView sTo);
 
@@ -258,12 +264,12 @@ public:
   /// \brief Returns the xiiFileStats for all files and folders in the given folder
   static void GatherAllItemsInFolder(xiiDynamicArray<xiiFileStats>& out_itemList, xiiStringView sFolder, xiiBitflags<xiiFileSystemIteratorFlags> flags = xiiFileSystemIteratorFlags::Default);
 
-  /// \brief Copies \a szSourceFolder to \a szDestinationFolder. Overwrites existing files.
+  /// \brief Copies \a sSourceFolder to \a sDestinationFolder. Overwrites existing files.
   ///
   /// If \a out_FilesCopied is provided, the destination path of every successfully copied file is appended to it.
   static xiiResult CopyFolder(xiiStringView sSourceFolder, xiiStringView sDestinationFolder, xiiDynamicArray<xiiString>* out_pFilesCopied = nullptr);
 
-  /// \brief Deletes all files recursively in \a szFolder.
+  /// \brief Deletes all files recursively in \a sFolder.
   ///
   /// \note The current implementation does not remove the (empty) folders themselves.
   static xiiResult DeleteFolder(xiiStringView sFolder);
@@ -279,7 +285,7 @@ public:
   /// On Windows this is the '%appdata%' directory.
   /// On Posix systems this is the '~' (home) directory.
   ///
-  /// If szSubFolder is specified, it will be appended to the result.
+  /// If sSubFolder is specified, it will be appended to the result.
   static xiiString GetUserDataFolder(xiiStringView sSubFolder = {});
 
   /// \brief Returns the folder into which temp data may be written.
@@ -287,7 +293,7 @@ public:
   /// On Windows this is the '%localappdata%/Temp' directory.
   /// On Posix systems this is the '~/.cache' directory.
   ///
-  /// If szSubFolder is specified, it will be appended to the result.
+  /// If sSubFolder is specified, it will be appended to the result.
   static xiiString GetTempDataFolder(xiiStringView sSubFolder = {});
 
   /// \brief Returns the folder into which the user may want to store documents.
