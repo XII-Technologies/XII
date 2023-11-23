@@ -71,7 +71,7 @@
 #  define XII_WARNING_PUSH()           __pragma(warning(push))
 #  define XII_WARNING_POP()            __pragma(warning(pop))
 #  define XII_WARNING_DISABLE_MSVC(_x) __pragma(warning(disable \
-                                                       : _x))
+                                                        : _x))
 
 #else
 

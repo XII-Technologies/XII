@@ -1,8 +1,8 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
-#include <time.h>
 #include <sys/time.h>
+#include <time.h>
 
 const xiiTimestamp xiiTimestamp::CurrentTimestamp()
 {
