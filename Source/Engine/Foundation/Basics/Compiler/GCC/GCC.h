@@ -46,4 +46,12 @@
 #    define XII_COMPILE_FOR_DEBUG XII_ON
 #  endif
 
+#  define XII_WARNING_PUSH()          _Pragma("GCC diagnostic push")
+#  define XII_WARNING_POP()           _Pragma("GCC diagnostic pop")
+#  define XII_WARNING_DISABLE_GCC(_x) _Pragma(XII_STRINGIZE(GCC diagnostic ignored _x))
+
+#else
+
+#  define XII_WARNING_DISABLE_GCC(_x)
+
 #endif

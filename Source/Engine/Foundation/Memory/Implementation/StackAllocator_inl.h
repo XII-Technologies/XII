@@ -67,11 +67,11 @@ void xiiStackAllocator<TrackingFlags>::Reset()
   m_PtrToDestructDataIndexTable.Clear();
 
   this->m_allocator.Reset();
-  if ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
+  if constexpr ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
   {
     xiiMemoryTracker::RemoveAllAllocations(this->m_Id);
   }
-  else if ((TrackingFlags & xiiMemoryTrackingFlags::RegisterAllocator) != 0)
+  else if constexpr ((TrackingFlags & xiiMemoryTrackingFlags::RegisterAllocator) != 0)
   {
     xiiAllocatorBase::Stats stats;
     this->m_allocator.FillStats(stats);

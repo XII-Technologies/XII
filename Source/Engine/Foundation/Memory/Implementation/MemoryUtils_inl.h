@@ -206,7 +206,7 @@ XII_ALWAYS_INLINE xiiInt32 xiiMemoryUtils::RawByteCompare(const void* a, const v
 }
 
 template <typename T>
-XII_ALWAYS_INLINE T* xiiMemoryUtils::AddByteOffset(T* pPtr, ptrdiff_t iOffset)
+XII_ALWAYS_INLINE T* xiiMemoryUtils::AddByteOffset(T* pPtr, std::ptrdiff_t iOffset)
 {
   return reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(pPtr) + iOffset);
 }

@@ -36,7 +36,7 @@ void xiiProcessingStreamSpawnerZeroInitialized::InitializeElements(xiiUInt64 uiS
 
   for (xiiUInt64 i = uiStartIndex; i < uiStartIndex + uiNumElements; ++i)
   {
-    xiiMemoryUtils::ZeroFill<xiiUInt8>(static_cast<xiiUInt8*>(xiiMemoryUtils::AddByteOffset(m_pStream->GetWritableData(), static_cast<ptrdiff_t>(i * uiElementStride))), static_cast<size_t>(uiElementSize));
+    xiiMemoryUtils::ZeroFill<xiiUInt8>(static_cast<xiiUInt8*>(xiiMemoryUtils::AddByteOffset(m_pStream->GetWritableData(), static_cast<std::ptrdiff_t>(i * uiElementStride))), static_cast<size_t>(uiElementSize));
   }
 }
 

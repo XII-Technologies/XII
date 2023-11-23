@@ -219,7 +219,7 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
 
   Node* pNode = m_pRoot;
 
-  while (pNode->m_pLink[0] != &m_NilNode)
+  while ((const void*)pNode->m_pLink[0] != (const void*)&m_NilNode)
     pNode = pNode->m_pLink[0];
 
   return pNode;
@@ -233,7 +233,7 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
 
   Node* pNode = m_pRoot;
 
-  while (pNode->m_pLink[1] != &m_NilNode)
+  while ((const void*)pNode->m_pLink[1] != (const void*)&m_NilNode)
     pNode = pNode->m_pLink[1];
 
   return pNode;
@@ -245,7 +245,7 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
 {
   Node* pNode = m_pRoot;
 
-  while (pNode != &m_NilNode)
+  while ((const void*)pNode != (const void*)&m_NilNode)
   {
     const xiiInt32 dir  = (xiiInt32)m_Comparer.Less(pNode->m_Key, key);
     const xiiInt32 dir2 = (xiiInt32)m_Comparer.Less(key, pNode->m_Key);
@@ -256,7 +256,7 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
     pNode = pNode->m_pLink[dir];
   }
 
-  if (pNode == &m_NilNode)
+  if ((const void*)pNode == (const void*)&m_NilNode)
     return nullptr;
 
   return pNode;
@@ -356,7 +356,7 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
   Node* pNode        = m_pRoot;
   Node* pNodeSmaller = nullptr;
 
-  while (pNode != &m_NilNode)
+  while ((const void*)pNode != (const void*)&m_NilNode)
   {
     const xiiInt32 dir  = (xiiInt32)m_Comparer.Less(pNode->m_Key, key);
     const xiiInt32 dir2 = (xiiInt32)m_Comparer.Less(key, pNode->m_Key);
@@ -394,7 +394,7 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
   Node* pNode        = m_pRoot;
   Node* pNodeSmaller = nullptr;
 
-  while (pNode != &m_NilNode)
+  while ((const void*)pNode != (const void*)&m_NilNode)
   {
     const xiiInt32 dir  = (xiiInt32)m_Comparer.Less(pNode->m_Key, key);
     const xiiInt32 dir2 = (xiiInt32)m_Comparer.Less(key, pNode->m_Key);

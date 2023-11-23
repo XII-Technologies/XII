@@ -280,6 +280,30 @@ bool xiiOSFile::ExistsDirectory(xiiStringView sDirectory)
   return bRes;
 }
 
+void xiiOSFile::FindFreeFilename(xiiStringBuilder& inout_sPath, xiiStringView sSuffix)
+{
+  XII_ASSERT_DEV(!inout_sPath.IsEmpty() && inout_sPath.IsAbsolutePath(), "Invalid input path.");
+
+  if (!xiiOSFile::ExistsFile(inout_sPath))
+    return;
+
+  const xiiString sName = inout_sPath.GetFileName();
+
+  xiiStringBuilder sNewName;
+
+  for (xiiUInt32 i = 1; i < 100000; ++i)
+  {
+    sNewName.Format("{}{}{}", sName, sSuffix, i);
+
+    inout_sPath.ChangeFileName(sNewName);
+
+    if (!xiiOSFile::ExistsFile(inout_sPath))
+      return;
+  }
+
+  XII_REPORT_FAILURE("Something went wrong.");
+}
+
 xiiResult xiiOSFile::DeleteFile(xiiStringView sFile)
 {
   const xiiTime t0 = xiiTime::Now();

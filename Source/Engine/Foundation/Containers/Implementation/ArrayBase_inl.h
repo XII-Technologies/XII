@@ -58,6 +58,27 @@ XII_ALWAYS_INLINE xiiArrayBase<T, Derived>::operator xiiArrayPtr<T>()
 }
 
 template <typename T, typename Derived>
+bool xiiArrayBase<T, Derived>::operator==(const xiiArrayBase<T, Derived>& rhs) const
+{
+  if (m_uiCount != rhs.GetCount())
+    return false;
+
+  return xiiMemoryUtils::IsEqual(static_cast<const Derived*>(this)->GetElementsPtr(), rhs.GetData(), m_uiCount);
+}
+
+template <typename T, typename Derived>
+XII_ALWAYS_INLINE bool xiiArrayBase<T, Derived>::operator!=(const xiiArrayBase<T, Derived>& rhs) const
+{
+  return !(*this == rhs);
+}
+
+template <typename T, typename Derived>
+XII_ALWAYS_INLINE bool xiiArrayBase<T, Derived>::operator<(const xiiArrayBase<T, Derived>& rhs) const
+{
+  return GetArrayPtr() < rhs.GetArrayPtr();
+}
+
+template <typename T, typename Derived>
 bool xiiArrayBase<T, Derived>::operator==(const xiiArrayPtr<const T>& rhs) const
 {
   if (m_uiCount != rhs.GetCount())

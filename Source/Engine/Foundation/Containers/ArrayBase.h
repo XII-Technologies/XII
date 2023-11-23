@@ -30,6 +30,15 @@ public:
   operator xiiArrayPtr<T>(); // [tested]
 
   /// \brief Compares this array to another contiguous array type.
+  bool operator==(const xiiArrayBase<T, Derived>& rhs) const; // [tested]
+
+  /// \brief Compares this array to another contiguous array type.
+  bool operator!=(const xiiArrayBase<T, Derived>& rhs) const; // [tested]
+
+  /// \brief Compares this array to another contiguous array type.
+  bool operator<(const xiiArrayBase<T, Derived>& rhs) const; // [tested]
+
+  /// \brief Compares this array to another contiguous array type.
   bool operator==(const xiiArrayPtr<const T>& rhs) const; // [tested]
 
   /// \brief Compares this array to another contiguous array type.

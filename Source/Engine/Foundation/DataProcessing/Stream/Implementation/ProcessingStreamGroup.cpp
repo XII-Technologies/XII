@@ -226,8 +226,8 @@ void xiiProcessingStreamGroup::RunPendingDeletions()
     {
       const xiiUInt64 uiStreamElementStride = pStream->GetElementStride();
       const xiiUInt64 uiStreamElementSize   = pStream->GetElementSize();
-      const void*     pSourceData           = xiiMemoryUtils::AddByteOffset(pStream->GetData(), static_cast<ptrdiff_t>(uiLastActiveElementIndex * uiStreamElementStride));
-      void*           pTargetData           = xiiMemoryUtils::AddByteOffset(pStream->GetWritableData(), static_cast<ptrdiff_t>(uiElementToRemove * uiStreamElementStride));
+      const void*     pSourceData           = xiiMemoryUtils::AddByteOffset(pStream->GetData(), static_cast<std::ptrdiff_t>(uiLastActiveElementIndex * uiStreamElementStride));
+      void*           pTargetData           = xiiMemoryUtils::AddByteOffset(pStream->GetWritableData(), static_cast<std::ptrdiff_t>(uiElementToRemove * uiStreamElementStride));
 
       xiiMemoryUtils::Copy<xiiUInt8>(static_cast<xiiUInt8*>(pTargetData), static_cast<const xiiUInt8*>(pSourceData), static_cast<size_t>(uiStreamElementSize));
     }

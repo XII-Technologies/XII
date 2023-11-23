@@ -55,10 +55,8 @@ xiiResult xiiSemaphore::Open(xiiStringView sSharedName)
 {
   XII_ASSERT_DEV(m_hSemaphore == nullptr, "Semaphore can't be recreated.");
 
-  LPSECURITY_ATTRIBUTES secAttr        = nullptr; // default
-  const DWORD           flags          = 0;       // reserved but unused
-  const DWORD           access         = SYNCHRONIZE /* needed for WaitForSingleObject */ | SEMAPHORE_MODIFY_STATE /* needed for ReleaseSemaphore */;
-  const BOOL            inheriteHandle = FALSE;
+  const DWORD access         = SYNCHRONIZE /* needed for WaitForSingleObject */ | SEMAPHORE_MODIFY_STATE /* needed for ReleaseSemaphore */;
+  const BOOL  inheriteHandle = FALSE;
 
   XII_ASSERT_DEV(!sSharedName.IsEmpty(), "Name of semaphore to open mustn't be empty.");
 

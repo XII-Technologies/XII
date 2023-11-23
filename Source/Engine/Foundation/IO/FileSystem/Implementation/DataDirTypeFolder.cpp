@@ -210,7 +210,11 @@ namespace xiiDataDirectory
     if (!xiiPathUtils::IsAbsolutePath(sPath))
       return XII_FAILURE;
 
+#if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
     return xiiOSFile::GetFileStats(sPath, out_Stats);
+#else
+    return XII_FAILURE;
+#endif
   }
 
   xiiResult FolderType::InternalInitializeDataDirectory(xiiStringView sDirectory)

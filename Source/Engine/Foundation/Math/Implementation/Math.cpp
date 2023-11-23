@@ -129,7 +129,6 @@ xiiUInt32 xiiMath::SafeMultiply32(xiiUInt32 a, xiiUInt32 b, xiiUInt32 c, xiiUInt
 
   XII_REPORT_FAILURE("Safe multiplication failed: {0} * {1} * {2} * {3} exceeds UInt32 range.", a, b, c, d);
   std::terminate();
-  return 0;
 }
 
 xiiResult xiiMath::TryMultiply64(xiiUInt64& out_uiResult, xiiUInt64 a, xiiUInt64 b, xiiUInt64 c, xiiUInt64 d)
@@ -198,7 +197,6 @@ xiiUInt64 xiiMath::SafeMultiply64(xiiUInt64 a, xiiUInt64 b, xiiUInt64 c, xiiUInt
 
   XII_REPORT_FAILURE("Safe multiplication failed: {0} * {1} * {2} * {3} exceeds xiiUInt64 range.", a, b, c, d);
   std::terminate();
-  return 0;
 }
 
 #if XII_ENABLED(XII_PLATFORM_32BIT)
@@ -212,7 +210,6 @@ size_t xiiMath::SafeConvertToSizeT(xiiUInt64 uiValue)
 
   XII_REPORT_FAILURE("Given value ({}) can't be converted to size_t because it is too big.", uiValue);
   std::terminate();
-  return 0;
 }
 #endif
 

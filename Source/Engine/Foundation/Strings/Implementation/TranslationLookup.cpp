@@ -63,6 +63,9 @@ xiiStringView xiiTranslationLookup::Translate(xiiStringView sString, xiiUInt64 u
       return sResult;
   }
 
+  if (usage != xiiTranslationUsage::Default)
+    return {};
+
   return sString;
 }
 
@@ -244,6 +247,9 @@ xiiStringView xiiTranslatorLogMissing::Translate(xiiStringView sString, xiiUInt6
 
 xiiStringView xiiTranslatorMakeMoreReadable::Translate(xiiStringView sString, xiiUInt64 uiStringHash, xiiTranslationUsage usage)
 {
+  if (usage != xiiTranslationUsage::Default)
+    return {};
+
   xiiStringView sResult = xiiTranslatorStorage::Translate(sString, uiStringHash, usage);
 
   if (!sResult.IsEmpty())
