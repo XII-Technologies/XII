@@ -28,6 +28,9 @@
 
 #include <Diligent/Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
 
+#include <dxgi1_3.h>
+#include <dxgidebug.h>
+
 /// Reroutes Diligent Logs To XII.
 void xiiLogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity, const Diligent::Char* Message, const Diligent::Char* Function, const Diligent::Char* File, xiiInt32 Line)
 {
@@ -304,6 +307,19 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
 
 void xiiGALDeviceD3D12::ReportLiveGPUObjects()
 {
+  IDXGIDebug1* dxgiDebug = nullptr;
+  HRESULT      hResult   = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
+  if (SUCCEEDED(hResult))
+  {
+    OutputDebugStringW(L" +++++ Live D3D12 Objects: +++++\n");
+
+    // Prints to OutputDebugString
+    dxgiDebug->ReportLiveObjects(DXGI_DEBUG_ALL, DXGI_DEBUG_RLO_ALL);
+
+    OutputDebugStringW(L" ----- Live D3D12 Objects: -----\n");
+
+    dxgiDebug->Release();
+  }
 }
 
 void xiiGALDeviceD3D12::FlushPendingObjects()
