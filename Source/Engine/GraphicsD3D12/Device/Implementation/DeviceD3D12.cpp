@@ -56,11 +56,15 @@ xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllo
   return XII_NEW(pAllocator, xiiGALDeviceD3D12, description);
 }
 
+xiiUniquePtr<xiiAllocatorDiligent> g_pAllocatorDiligent;
+
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D12, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
+  g_pAllocatorDiligent = XII_DEFAULT_NEW(xiiAllocatorDiligent, "D3D12 Memory Allocator");
+
   const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D12_SM60", .m_sShaderCompiler = "xiiShaderCompiler" };
 
   xiiGALDeviceFactory::RegisterImplementation("D3D12", &CreateD3D12Device, implementation);
@@ -69,6 +73,8 @@ ON_CORESYSTEMS_STARTUP
 ON_CORESYSTEMS_SHUTDOWN
 {
   xiiGALDeviceFactory::UnregisterImplementation("D3D12");
+
+  g_pAllocatorDiligent.Clear();
 }
 
 XII_END_SUBSYSTEM_DECLARATION;
@@ -181,10 +187,6 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     return XII_SUCCESS;
   };
 
-
-  xiiHybridArray<Diligent::IDeviceContext*, 1U> deviceContexts;
-  xiiUInt32                                     uiImmediateContextCount = 0U;
-
 #if ENGINE_DLL
   auto GetEngineFactoryD3D12 = Diligent::LoadGraphicsEngineD3D12();
 #endif
@@ -202,7 +204,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
 
   Diligent::EngineD3D12CreateInfo d3d12CreateInfo;
   d3d12CreateInfo.GraphicsAPIVersion = {12, 0};
-  d3d12CreateInfo.pRawMemAllocator   = &m_AllocatorDiligent;
+  d3d12CreateInfo.pRawMemAllocator   = g_pAllocatorDiligent.Borrow();
   d3d12CreateInfo.EnableValidation   = m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled;
 
   d3d12CreateInfo.Features.SeparablePrograms                 = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_SeparablePrograms);
@@ -254,7 +256,9 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   {
     xiiUInt32 uiAdapterID = xiiInvalidIndex;
 
-    XII_SUCCEED_OR_RETURN_LOG(FindAdapter(pFactoryD3D12, d3d12CreateInfo.GraphicsAPIVersion, m_AdapterAttribs, uiAdapterID));
+    Diligent::GraphicsAdapterInfo adapterInfo;
+
+    XII_SUCCEED_OR_RETURN_LOG(FindAdapter(pFactoryD3D12, d3d12CreateInfo.GraphicsAPIVersion, adapterInfo, uiAdapterID));
 
     d3d12CreateInfo.AdapterId = uiAdapterID;
   }
@@ -272,7 +276,8 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     pFactoryD3D12->EnumerateDisplayModes(d3d12CreateInfo.GraphicsAPIVersion, d3d12CreateInfo.AdapterId, 0, Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB, uiDisplayModeCount, m_DisplayModes.GetData());
   }
 
-  uiImmediateContextCount = xiiMath::Max(1U, d3d12CreateInfo.NumImmediateContexts);
+  xiiHybridArray<Diligent::IDeviceContext*, 1U> deviceContexts;
+  xiiUInt32                                     uiImmediateContextCount = xiiMath::Max(1U, d3d12CreateInfo.NumImmediateContexts);
   deviceContexts.SetCount(uiImmediateContextCount + d3d12CreateInfo.NumDeferredContexts);
   pFactoryD3D12->CreateDeviceAndContextsD3D12(d3d12CreateInfo, &m_pDevice, deviceContexts.GetData());
 
@@ -282,10 +287,9 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     return XII_FAILURE;
   }
 
-  m_uiImmediateContextsCount = uiImmediateContextCount;
   m_pDeviceContexts.SetCount(deviceContexts.GetCount());
   for (xiiUInt32 i = 0; i < deviceContexts.GetCount(); ++i)
-    m_pDeviceContexts[i].Attach(deviceContexts[i]);
+    m_pDeviceContexts[i] = deviceContexts[i];
 
   FillFormatLookupTable();
 
@@ -308,11 +312,11 @@ void xiiGALDeviceD3D12::FlushPendingObjects()
 
 xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
 {
-  m_pDefaultPass = nullptr;
+  m_pDefaultPass.Clear();
 
   if (!m_pDeviceContexts.IsEmpty())
   {
-    for (xiiUInt32 uiContext = 0; uiContext < m_uiImmediateContextsCount; ++uiContext)
+    for (xiiUInt32 uiContext = 0; uiContext < m_pDeviceContexts.GetCount(); ++uiContext)
     {
       m_pDeviceContexts[uiContext]->Flush();
       m_pDeviceContexts[uiContext]->FinishFrame();
@@ -320,7 +324,6 @@ xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
 
       XII_GAL_DILIGENT_REF_RELEASE(m_pDeviceContexts[uiContext]);
     }
-
     m_pDeviceContexts.Clear();
   }
 

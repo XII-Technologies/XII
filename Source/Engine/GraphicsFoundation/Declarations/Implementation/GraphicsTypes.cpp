@@ -103,7 +103,6 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALResourceUsage, 1)
   XII_ENUM_CONSTANT(xiiGALResourceUsage::Immutable),
-  XII_ENUM_CONSTANT(xiiGALResourceUsage::Default),
   XII_ENUM_CONSTANT(xiiGALResourceUsage::Dynamic),
   XII_ENUM_CONSTANT(xiiGALResourceUsage::Staging),
   XII_ENUM_CONSTANT(xiiGALResourceUsage::Unified),

@@ -16,7 +16,7 @@ public:
   xiiAllocatorDiligent(const char* szName) :
     m_Allocator(szName, xiiAlignedAllocatorWrapper::GetAllocator()) {}
 
-  virtual ~xiiAllocatorDiligent() = default;
+  ~xiiAllocatorDiligent() = default;
 
   virtual void* Allocate(size_t Size, const Diligent::Char* dbgDescription, const char* dbgFileName, const Diligent::Int32 dbgLineNumber) override { return m_Allocator.Allocate(Size, 16U); }
 
@@ -125,11 +125,7 @@ private:
   Diligent::RefCntAutoPtr<Diligent::IEngineFactory>                  m_pEngineFactory;
   Diligent::RefCntAutoPtr<Diligent::IRenderDevice>                   m_pDevice;
   xiiDynamicArray<Diligent::RefCntAutoPtr<Diligent::IDeviceContext>> m_pDeviceContexts;
-  xiiUInt32                                                          m_uiImmediateContextsCount = 0U;
-  Diligent::GraphicsAdapterInfo                                      m_AdapterAttribs;
   xiiDynamicArray<Diligent::DisplayModeAttribs>                      m_DisplayModes;
-
-  xiiAllocatorDiligent m_AllocatorDiligent{"D3D12 Memory Allocation"};
 
   xiiUniquePtr<xiiGALPassD3D12> m_pDefaultPass;
 

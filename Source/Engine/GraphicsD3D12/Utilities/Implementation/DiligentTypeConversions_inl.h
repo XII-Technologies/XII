@@ -1520,7 +1520,7 @@ XII_ALWAYS_INLINE Diligent::SWAP_CHAIN_USAGE_FLAGS xiiDiligentTypeConversions::G
   if (e.IsSet(xiiGALSwapChainUsageFlags::CopySource))
     swapChainUsageFlags |= Diligent::SWAP_CHAIN_USAGE_COPY_SOURCE;
 
-  return Diligent::SWAP_CHAIN_USAGE_FLAGS();
+  return swapChainUsageFlags;
 }
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALBindFlags> xiiDiligentTypeConversions::GetGALBindFlags(Diligent::BIND_FLAGS e)

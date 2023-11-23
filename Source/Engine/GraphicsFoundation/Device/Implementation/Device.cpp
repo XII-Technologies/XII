@@ -1042,7 +1042,7 @@ xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescr
     xiiUInt32 uiMaxDimension = 0;
     if (description.Is1D())
       uiMaxDimension = description.m_Size.width;
-    else if (description.Is3D())
+    else if (description.Is2D())
       uiMaxDimension = xiiMath::Max(description.m_Size.width, description.m_Size.height);
     else if (description.Is3D())
       uiMaxDimension = xiiMath::Max(xiiMath::Max(description.m_Size.width, description.m_Size.height), description.m_uiArraySizeOrDepth);
@@ -2425,27 +2425,27 @@ const xiiGALTextureFormatDescription& xiiGALDevice::GetTextureFormatProperties(x
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA32UInt,     4, 4, xiiGALTextureFormatComponentType::UnsignedInteger,  false, 1, 1);
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA32SInt,     4, 4, xiiGALTextureFormatComponentType::SignedInteger,    false, 1, 1);
 
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32Typeless,  4, 3, xiiGALTextureFormatComponentType::Undefined,        true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32Float,     4, 3, xiiGALTextureFormatComponentType::Float,            false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32UInt,      4, 3, xiiGALTextureFormatComponentType::UnsignedInteger,  false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32SInt,      4, 3, xiiGALTextureFormatComponentType::SignedInteger,    false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32Typeless, 4, 3, xiiGALTextureFormatComponentType::Undefined,        true,  1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32Float,    4, 3, xiiGALTextureFormatComponentType::Float,            false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32UInt,     4, 3, xiiGALTextureFormatComponentType::UnsignedInteger,  false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32SInt,     4, 3, xiiGALTextureFormatComponentType::SignedInteger,    false, 1, 1);
 
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16Typeless,     2, 4, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16Float,        2, 4, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16UNormalized,  2, 4, xiiGALTextureFormatComponentType::UnsignedNormalized, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16UInt,         2, 4, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16SNormalized,  2, 4, xiiGALTextureFormatComponentType::SignedNormalized,   false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16SInt,         2, 4, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16Typeless,    2, 4, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16Float,       2, 4, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16UNormalized, 2, 4, xiiGALTextureFormatComponentType::UnsignedNormalized, false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16UInt,        2, 4, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16SNormalized, 2, 4, xiiGALTextureFormatComponentType::SignedNormalized,   false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16SInt,        2, 4, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
 
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG32Typeless, 4, 2, xiiGALTextureFormatComponentType::Undefined,        true,  1, 1);
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG32Float,    4, 2, xiiGALTextureFormatComponentType::Float,            false, 1, 1);
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG32UInt,     4, 2, xiiGALTextureFormatComponentType::UnsignedInteger,  false, 1, 1);
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG32SInt,     4, 2, xiiGALTextureFormatComponentType::SignedInteger,    false, 1, 1);
 
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32G8X24Typeless,       4, 2, xiiGALTextureFormatComponentType::DepthStencil, true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D32FloatS8X24UInt,      4, 2, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32FloatX8X24Typeless,  4, 2, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::X32TypelessG8X24UInt,   4, 2, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32G8X24Typeless,      4, 2, xiiGALTextureFormatComponentType::DepthStencil, true,  1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D32FloatS8X24UInt,     4, 2, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32FloatX8X24Typeless, 4, 2, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::X32TypelessG8X24UInt,  4, 2, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
 
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB10A2Typeless,    4, 1, xiiGALTextureFormatComponentType::Compound, true,  1, 1);
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB10A2UNormalized, 4, 1, xiiGALTextureFormatComponentType::Compound, false, 1, 1);
@@ -2459,12 +2459,18 @@ const xiiGALTextureFormatDescription& xiiGALDevice::GetTextureFormatProperties(x
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8SNormalized,     1, 4, xiiGALTextureFormatComponentType::SignedNormalized,       false, 1, 1);
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8SInt,            1, 4, xiiGALTextureFormatComponentType::SignedInteger,          false, 1, 1);
 
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16Typeless,     2, 2, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16Float,        2, 2, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16UNormalized,  2, 2, xiiGALTextureFormatComponentType::UnsignedNormalized, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16UInt,         2, 2, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16SNormalized,  2, 2, xiiGALTextureFormatComponentType::SignedNormalized,   false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16SInt,         2, 2, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16Typeless,    2, 2, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16Float,       2, 2, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16UNormalized, 2, 2, xiiGALTextureFormatComponentType::UnsignedNormalized, false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16UInt,        2, 2, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16SNormalized, 2, 2, xiiGALTextureFormatComponentType::SignedNormalized,   false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16SInt,        2, 2, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
+
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32Typeless,     4, 2, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D32Float,        4, 2, xiiGALTextureFormatComponentType::Depth,              false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32Float,        4, 2, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32UInt,         4, 2, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32SInt,         4, 2, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
 
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R24G8Typeless,            4, 1, xiiGALTextureFormatComponentType::DepthStencil, true,  1, 1);
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D24UNormalizedS8UInt,     4, 1, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);

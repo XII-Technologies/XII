@@ -19,14 +19,14 @@ function(xii_add_renderers TARGET_NAME)
     )
   endif()
 
-  if (XII_BUILD_VULKAN)
-    target_link_libraries(${TARGET_NAME}
-      PRIVATE
-      GraphicsVulkan
-    )
-  endif()
+  # if (XII_BUILD_VULKAN)
+  #   target_link_libraries(${TARGET_NAME}
+  #     PRIVATE
+  #     GraphicsVulkan
+  #   )
+  # endif()
 
-  add_dependencies(${TARGET_NAME}
-    ShaderCompiler
-  )
+  # add_dependencies(${TARGET_NAME}
+  #   ShaderCompiler
+  # )
 endfunction()
