@@ -27,7 +27,7 @@ public:
   float GetFadeOutEnd() const;
 
 protected:
-  void CreateSamplerState();
+  void CreateSampler();
 
   xiiRenderPipelineNodeInputPin  m_PinDepthInput;
   xiiRenderPipelineNodeOutputPin m_PinOutput;
@@ -49,7 +49,7 @@ protected:
 
   xiiTexture2DResourceHandle m_hNoiseTexture;
 
-  xiiGALSamplerStateHandle m_hSSAOSamplerState;
+  xiiGALSamplerHandle m_hSSAOSampler;
 
   xiiShaderResourceHandle m_hDownscaleShader;
   xiiShaderResourceHandle m_hSSAOShader;

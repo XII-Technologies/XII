@@ -84,7 +84,7 @@ xiiSpriteComponent::~xiiSpriteComponent() = default;
 
 xiiResult xiiSpriteComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg)
 {
-  ref_bounds = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), m_fSize * 0.5f);
+  ref_bounds = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::ZeroVector(), m_fSize * 0.5f);
   return XII_SUCCESS;
 }
 

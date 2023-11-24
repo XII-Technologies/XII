@@ -132,7 +132,7 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
 
   if ((!m_InStart.IsConnected() && pState->m_uiState == 0) || m_InStart.IsTriggered(ref_graph))
   {
-    pState->m_PlaybackTime = xiiTime::MakeZero();
+    pState->m_PlaybackTime = xiiTime::Zero();
     pState->m_uiState      = 1;
   }
 
@@ -190,13 +190,13 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       }
 
       tCurDuration = pAnimClip->GetDescriptor().GetDuration();
-      XII_ASSERT_DEBUG(tCurDuration >= xiiTime::MakeFromMilliseconds(5), "Too short clip");
+      XII_ASSERT_DEBUG(tCurDuration >= xiiTime::Milliseconds(5), "Too short clip");
 
       if (pState->m_PlaybackTime >= tCurDuration)
       {
         // TODO: sample anim events of previous clip
         m_OutOnMiddleStarted.SetTriggered(ref_graph);
-        tPrevSamplePos = xiiTime::MakeZero();
+        tPrevSamplePos = xiiTime::Zero();
         pState->m_PlaybackTime -= tCurDuration;
         pState->m_uiState = 2;
 
@@ -235,12 +235,12 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       }
 
       tCurDuration = pAnimClip->GetDescriptor().GetDuration();
-      XII_ASSERT_DEBUG(tCurDuration >= xiiTime::MakeFromMilliseconds(5), "Too short clip");
+      XII_ASSERT_DEBUG(tCurDuration >= xiiTime::Milliseconds(5), "Too short clip");
 
       if (pState->m_PlaybackTime >= tCurDuration)
       {
         // TODO: sample anim events of previous clip
-        tPrevSamplePos = xiiTime::MakeZero();
+        tPrevSamplePos = xiiTime::Zero();
         pState->m_PlaybackTime -= tCurDuration;
 
         if (bLoop)
@@ -286,7 +286,7 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       }
 
       tCurDuration = pAnimClip->GetDescriptor().GetDuration();
-      XII_ASSERT_DEBUG(tCurDuration >= xiiTime::MakeFromMilliseconds(5), "Too short clip");
+      XII_ASSERT_DEBUG(tCurDuration >= xiiTime::Milliseconds(5), "Too short clip");
 
       if (pState->m_PlaybackTime >= tCurDuration)
       {

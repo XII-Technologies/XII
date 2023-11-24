@@ -29,7 +29,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSampleBlendSpace2DAnimNode, 1, xiiRTTIDefaul
       XII_MEMBER_PROPERTY("Loop", m_bLoop)->AddAttributes(new xiiDefaultValueAttribute(true)),
       XII_MEMBER_PROPERTY("PlaybackSpeed", m_fPlaybackSpeed)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, {})),
       XII_MEMBER_PROPERTY("ApplyRootMotion", m_bApplyRootMotion),
-      XII_MEMBER_PROPERTY("InputResponse", m_InputResponse)->AddAttributes(new xiiDefaultValueAttribute(xiiTime::MakeFromMilliseconds(100))),
+      XII_MEMBER_PROPERTY("InputResponse", m_InputResponse)->AddAttributes(new xiiDefaultValueAttribute(xiiTime::Milliseconds(100))),
     XII_ACCESSOR_PROPERTY("CenterClip", GetCenterClipFile, SetCenterClipFile)->AddAttributes(new xiiDynamicStringEnumAttribute("AnimationClipMappingEnum")),
       XII_ARRAY_MEMBER_PROPERTY("Clips", m_Clips),
 
@@ -153,7 +153,7 @@ void xiiSampleBlendSpace2DAnimNode::Step(xiiAnimController& ref_controller, xiiA
 
   if ((!m_InStart.IsConnected() && !pState->m_bPlaying) || m_InStart.IsTriggered(ref_graph))
   {
-    pState->m_CenterPlaybackTime    = xiiTime::MakeZero();
+    pState->m_CenterPlaybackTime    = xiiTime::Zero();
     pState->m_fOtherPlaybackPosNorm = 0.0f;
     pState->m_bPlaying              = true;
 
@@ -299,12 +299,12 @@ void xiiSampleBlendSpace2DAnimNode::PlayClips(xiiAnimController& ref_controller,
   const bool  bLoop  = m_InLoop.GetBool(ref_graph, m_bLoop);
   const float fSpeed = static_cast<float>(m_InSpeed.GetNumber(ref_graph, m_fPlaybackSpeed));
 
-  xiiTime tAvgDuration = xiiTime::MakeZero();
+  xiiTime tAvgDuration = xiiTime::Zero();
 
   xiiHybridArray<xiiAnimPoseGeneratorCommandSampleTrack*, 8> pSampleTrack;
   pSampleTrack.SetCountUninitialized(clips.GetCount());
 
-  xiiVec3   vRootMotion   = xiiVec3::MakeZero();
+  xiiVec3   vRootMotion   = xiiVec3::ZeroVector();
   xiiUInt32 uiNumAvgClips = 0;
 
   for (xiiUInt32 i = 0; i < clips.GetCount(); ++i)
@@ -337,7 +337,7 @@ void xiiSampleBlendSpace2DAnimNode::PlayClips(xiiAnimController& ref_controller,
     tAvgDuration = tAvgDuration / uiNumAvgClips;
   }
 
-  tAvgDuration = xiiMath::Max(tAvgDuration, xiiTime::MakeFromMilliseconds(16));
+  tAvgDuration = xiiMath::Max(tAvgDuration, xiiTime::Milliseconds(16));
 
   const xiiTime fPrevCenterPlaybackPos = pState->m_CenterPlaybackTime;
   const float   fPrevPlaybackPosNorm   = pState->m_fOtherPlaybackPosNorm;

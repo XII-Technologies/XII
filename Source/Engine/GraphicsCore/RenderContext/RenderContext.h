@@ -155,7 +155,7 @@ public:
   /// Binds a read+write texture or buffer
   void BindUAV(const xiiTempHashedString& sSlotName, xiiGALUnorderedAccessViewHandle hUnorderedAccessViewHandle);
 
-  void BindSamplerState(const xiiTempHashedString& sSlotName, xiiGALSamplerStateHandle hSamplerSate);
+  void BindSampler(const xiiTempHashedString& sSlotName, xiiGALSamplerHandle hSamplerSate);
 
   void BindBuffer(const xiiTempHashedString& sSlotName, xiiGALResourceViewHandle hResourceView);
 
@@ -260,7 +260,7 @@ public:
   }
 
   // Default sampler state
-  static xiiGALSamplerStateHandle GetDefaultSamplerState(xiiBitflags<xiiDefaultSamplerFlags> flags);
+  static xiiGALSamplerHandle GetDefaultSampler(xiiBitflags<xiiDefaultSamplerFlags> flags);
 
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, RendererContext);
@@ -295,7 +295,7 @@ private:
   xiiHashTable<xiiUInt64, xiiGALResourceViewHandle>        m_BoundTextures3D;
   xiiHashTable<xiiUInt64, xiiGALResourceViewHandle>        m_BoundTexturesCube;
   xiiHashTable<xiiUInt64, xiiGALUnorderedAccessViewHandle> m_BoundUAVs;
-  xiiHashTable<xiiUInt64, xiiGALSamplerStateHandle>        m_BoundSamplers;
+  xiiHashTable<xiiUInt64, xiiGALSamplerHandle>             m_BoundSamplers;
   xiiHashTable<xiiUInt64, xiiGALResourceViewHandle>        m_BoundBuffer;
 
   struct BoundConstantBuffer
@@ -348,7 +348,7 @@ private:
   static xiiIdTable<xiiConstantBufferStorageId, xiiConstantBufferStorageBase*> s_ConstantBufferStorageTable;
   static xiiMap<xiiUInt32, xiiDynamicArray<xiiConstantBufferStorageBase*>>     s_FreeConstantBufferStorage;
 
-  static xiiGALSamplerStateHandle s_hDefaultSamplerStates[4];
+  static xiiGALSamplerHandle s_hDefaultSamplers[4];
 
 private: // Per Renderer States
   friend RenderingScope;

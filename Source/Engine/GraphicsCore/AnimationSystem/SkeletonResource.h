@@ -34,7 +34,7 @@ struct XII_GRAPHICSCORE_DLL xiiSkeletonResourceDescriptor
 
   xiiUInt64 GetHeapMemoryUsage() const;
 
-  xiiTransform m_RootTransform = xiiTransform::MakeIdentity();
+  xiiTransform m_RootTransform = xiiTransform::IdentityTransform();
   xiiSkeleton  m_Skeleton;
   float        m_fMaxImpulse = xiiMath::HighValue<float>();
 

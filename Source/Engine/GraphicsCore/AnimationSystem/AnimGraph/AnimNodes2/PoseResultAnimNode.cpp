@@ -10,7 +10,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPoseResultAnimNode, 1, xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("FadeDuration", m_FadeDuration)->AddAttributes(new xiiDefaultValueAttribute(xiiTime::MakeFromMilliseconds(200)), new xiiClampValueAttribute(xiiTime::MakeZero(), xiiTime::MakeFromSeconds(10))),
+    XII_MEMBER_PROPERTY("FadeDuration", m_FadeDuration)->AddAttributes(new xiiDefaultValueAttribute(xiiTime::Milliseconds(200)), new xiiClampValueAttribute(xiiTime::Zero(), xiiTime::Seconds(10))),
     XII_MEMBER_PROPERTY("InPose", m_InPose)->AddAttributes(new xiiHiddenAttribute),
     XII_MEMBER_PROPERTY("InTargetWeight", m_InTargetWeight)->AddAttributes(new xiiHiddenAttribute),
     XII_MEMBER_PROPERTY("InFadeDuration", m_InFadeDuration)->AddAttributes(new xiiHiddenAttribute),
@@ -109,8 +109,8 @@ void xiiPoseResultAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGraph
   {
     pInstance->m_fStartWeight = fCurrentWeight;
     pInstance->m_fEndWeight   = fNewTargetWeight;
-    pInstance->m_PlayTime     = xiiTime::MakeZero();
-    pInstance->m_EndTime      = xiiTime::MakeFromSeconds(m_InFadeDuration.GetNumber(ref_graph, m_FadeDuration.GetSeconds()));
+    pInstance->m_PlayTime     = xiiTime::Zero();
+    pInstance->m_EndTime      = xiiTime::Seconds(m_InFadeDuration.GetNumber(ref_graph, m_FadeDuration.GetSeconds()));
   }
 
   m_OutCurrentWeight.SetNumber(ref_graph, fCurrentWeight);

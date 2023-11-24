@@ -87,11 +87,11 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
 }
 
 xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(
-  xiiUInt32                   uiWidth,
-  xiiUInt32                   uiHeight,
-  xiiGALResourceFormat::Enum  format,
-  xiiGALMSAASampleCount::Enum sampleCount,
-  xiiUInt32                   uiSliceColunt)
+  xiiUInt32                    uiWidth,
+  xiiUInt32                    uiHeight,
+  xiiEnum<xiiGALTextureFormat> format,
+  xiiGALMSAASampleCount::Enum  sampleCount,
+  xiiUInt32                    uiSliceColunt)
 {
   xiiGALTextureCreationDescription TextureDesc;
   TextureDesc.m_bCreateRenderTarget      = true;

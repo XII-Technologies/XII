@@ -55,7 +55,7 @@ xiiDynamicArray<xiiUInt8, xiiAlignedAllocatorWrapper>& xiiMeshBufferResourceDesc
   return m_IndexBufferData;
 }
 
-xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiGALVertexAttributeSemantic::Enum semantic, xiiGALResourceFormat::Enum format)
+xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiGALVertexAttributeSemantic::Enum semantic, xiiEnum<xiiGALTextureFormat> format)
 {
   XII_ASSERT_DEV(m_VertexStreamData.IsEmpty(), "This function can only be called before 'AllocateStreams' is called");
 
@@ -423,10 +423,10 @@ xiiResult xiiMeshBufferResourceDescriptor::RecomputeNormals()
   if (m_Topology != xiiGALPrimitiveTopology::Triangles)
     return XII_FAILURE; // normals not needed
 
-  const xiiUInt32            uiVertexSize  = m_uiVertexSize;
-  const xiiUInt8*            pPositions    = nullptr;
-  xiiUInt8*                  pNormals      = nullptr;
-  xiiGALResourceFormat::Enum normalsFormat = xiiGALResourceFormat::XYZFloat;
+  const xiiUInt32              uiVertexSize  = m_uiVertexSize;
+  const xiiUInt8*              pPositions    = nullptr;
+  xiiUInt8*                    pNormals      = nullptr;
+  xiiEnum<xiiGALTextureFormat> normalsFormat = xiiGALResourceFormat::XYZFloat;
 
   for (xiiUInt32 i = 0; i < m_VertexDeclaration.m_VertexStreams.GetCount(); ++i)
   {

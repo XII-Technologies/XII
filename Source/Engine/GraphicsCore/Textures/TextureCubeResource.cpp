@@ -4,6 +4,7 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
@@ -21,7 +22,7 @@ xiiTextureCubeResource::xiiTextureCubeResource() :
   m_uiLoadedTextures = 0;
   m_uiMemoryGPU[0]   = 0;
   m_uiMemoryGPU[1]   = 0;
-  m_Format           = xiiGALResourceFormat::Invalid;
+  m_Format           = xiiGALTextureFormat::Unknown;
   m_uiWidthAndHeight = 0;
 }
 
@@ -48,10 +49,10 @@ xiiResourceLoadDesc xiiTextureCubeResource::UnloadData(Unload WhatToUnload)
 
   if (WhatToUnload == Unload::AllQualityLevels)
   {
-    if (!m_hSamplerState.IsInvalidated())
+    if (!m_hSampler.IsInvalidated())
     {
-      xiiGALDevice::GetDefaultDevice()->DestroySamplerState(m_hSamplerState);
-      m_hSamplerState.Invalidate();
+      xiiGALDevice::GetDefaultDevice()->DestroySampler(m_hSampler);
+      m_hSampler.Invalidate();
     }
   }
 
@@ -105,24 +106,35 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
   m_uiWidthAndHeight = pImage->GetWidth(uiHighestMipLevel);
 
   xiiGALTextureCreationDescription texDesc;
-  texDesc.m_Format          = m_Format;
-  texDesc.m_uiWidth         = m_uiWidthAndHeight;
-  texDesc.m_uiHeight        = m_uiWidthAndHeight;
-  texDesc.m_uiDepth         = pImage->GetDepth(uiHighestMipLevel);
-  texDesc.m_uiMipLevelCount = uiNumMipLevels;
-  texDesc.m_uiArraySize     = pImage->GetNumArrayIndices();
+  texDesc.m_Format      = m_Format;
+  texDesc.m_Size.width  = m_uiWidthAndHeight;
+  texDesc.m_Size.height = m_uiWidthAndHeight;
+  texDesc.m_uiMipLevels = uiNumMipLevels;
 
-  if (texDesc.m_uiDepth > 1)
-    texDesc.m_Type = xiiGALTextureType::Texture3D;
+  xiiUInt32 uiDepth = pImage->GetDepth(uiHighestMipLevel);
+  if (uiDepth > 1)
+  {
+    texDesc.m_Type               = xiiGALResourceDimension::Texture3D;
+    texDesc.m_uiArraySizeOrDepth = uiDepth;
+  }
+  else
+  {
+    texDesc.m_uiArraySizeOrDepth = pImage->GetNumArrayIndices();
+    texDesc.m_Type               = (texDesc.m_uiArraySizeOrDepth > 1) ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
 
-  if (pImage->GetNumFaces() == 6)
-    texDesc.m_Type = xiiGALTextureType::TextureCube;
+    if (pImage->GetNumFaces() == 6)
+      texDesc.m_Type = xiiGALResourceDimension::TextureCube;
+  }
 
   XII_ASSERT_DEV(pImage->GetNumFaces() == 1 || pImage->GetNumFaces() == 6, "Invalid number of image faces (resource: '{0}')", GetResourceID());
 
   m_uiMemoryGPU[m_uiLoadedTextures] = 0;
 
-  xiiHybridArray<xiiGALSystemMemoryDescription, 32> InitData;
+  xiiHybridArray<xiiGALMappedTextureSubresource, 32> InitData;
+
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
+  const auto& formatProperties = pDevice->GetTextureFormatProperties(m_Format);
 
   for (xiiUInt32 array_index = 0; array_index < pImage->GetNumArrayIndices(); ++array_index)
   {
@@ -130,7 +142,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
     {
       for (xiiUInt32 mip = uiHighestMipLevel; mip < pImage->GetNumMipLevels(); ++mip)
       {
-        xiiGALSystemMemoryDescription& id = InitData.ExpandAndGetRef();
+        xiiGALMappedTextureSubresource& id = InitData.ExpandAndGetRef();
 
         id.m_pData = pImage->GetPixelPointer<xiiUInt8>(mip, face, array_index);
 
@@ -138,29 +150,29 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
 
         if (xiiImageFormat::GetType(pImage->GetImageFormat()) == xiiImageFormatType::BLOCK_COMPRESSED)
         {
-          const xiiUInt32 uiMemPitchFactor = xiiGALResourceFormat::GetBitsPerElement(m_Format) * 4 / 8;
+          const xiiUInt32 uiMemPitchFactor = formatProperties.m_uiComponentSize * 4;
 
-          id.m_uiRowPitch = xiiMath::Max<xiiUInt32>(4, pImage->GetWidth(mip)) * uiMemPitchFactor;
+          id.m_uiStride = xiiMath::Max<xiiUInt32>(4, pImage->GetWidth(mip)) * uiMemPitchFactor;
         }
         else
         {
-          id.m_uiRowPitch = static_cast<xiiUInt32>(pImage->GetRowPitch(mip));
+          id.m_uiStride = static_cast<xiiUInt32>(pImage->GetRowPitch(mip));
         }
 
-        id.m_uiSlicePitch = static_cast<xiiUInt32>(pImage->GetDepthPitch(mip));
+        id.m_uiDepthStride = static_cast<xiiUInt32>(pImage->GetDepthPitch(mip));
 
-        m_uiMemoryGPU[m_uiLoadedTextures] += id.m_uiSlicePitch;
+        m_uiMemoryGPU[m_uiLoadedTextures] += id.m_uiDepthStride;
       }
     }
   }
 
-  const xiiArrayPtr<xiiGALSystemMemoryDescription> InitDataPtr(InitData);
+  const xiiArrayPtr<xiiGALMappedTextureSubresource> InitDataPtr(InitData);
 
   xiiTextureCubeResourceDescriptor td;
   td.m_DescGAL                = texDesc;
-  td.m_SamplerDesc.m_AddressU = texFormat.m_AddressModeU;
-  td.m_SamplerDesc.m_AddressV = texFormat.m_AddressModeV;
-  td.m_SamplerDesc.m_AddressW = texFormat.m_AddressModeW;
+  td.m_SamplerDesc.m_AddressU = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeU);
+  td.m_SamplerDesc.m_AddressV = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeV);
+  td.m_SamplerDesc.m_AddressW = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeW);
   td.m_InitialContent         = InitDataPtr;
 
   xiiTextureUtils::ConfigureSampler(static_cast<xiiTextureFilterSetting::Enum>(texFormat.m_TextureFilter.GetValue()), td.m_SamplerDesc);
@@ -198,29 +210,30 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTextureCubeResource, xiiTextureCubeResource
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  XII_ASSERT_DEV(descriptor.m_DescGAL.m_uiWidth == descriptor.m_DescGAL.m_uiHeight, "Cubemap width and height must be identical");
+  XII_ASSERT_DEV(descriptor.m_DescGAL.m_Size.width == descriptor.m_DescGAL.m_Size.height, "Cubemap width and height must be identical");
 
   m_Format           = descriptor.m_DescGAL.m_Format;
-  m_uiWidthAndHeight = descriptor.m_DescGAL.m_uiWidth;
+  m_uiWidthAndHeight = descriptor.m_DescGAL.m_Size.width;
 
-  m_hGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, descriptor.m_InitialContent);
+  xiiGALTextureData textureData;
+  textureData.m_SubResources        = descriptor.m_InitialContent;
+  descriptor.m_DescGAL.m_sName      = GetResourceDescription();
+  m_hGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, &textureData);
+
   XII_ASSERT_DEV(!m_hGALTexture[m_uiLoadedTextures].IsInvalidated(), "Texture Data could not be uploaded to the GPU");
 
-  pDevice->GetTexture(m_hGALTexture[m_uiLoadedTextures])->SetDebugName(GetResourceDescription());
-
-  if (!m_hSamplerState.IsInvalidated())
+  if (!m_hSampler.IsInvalidated())
   {
-    pDevice->DestroySamplerState(m_hSamplerState);
+    pDevice->DestroySampler(m_hSampler);
   }
 
-  m_hSamplerState = pDevice->CreateSamplerState(descriptor.m_SamplerDesc);
-  XII_ASSERT_DEV(!m_hSamplerState.IsInvalidated(), "Sampler state error");
+  m_hSampler = pDevice->CreateSampler(descriptor.m_SamplerDesc);
+
+  XII_ASSERT_DEV(!m_hSampler.IsInvalidated(), "Sampler error");
 
   ++m_uiLoadedTextures;
 
   return ret;
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_TextureCubeResource);

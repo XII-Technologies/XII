@@ -23,10 +23,10 @@ public:
 
   xiiConstantBufferStorageHandle m_hConstantBuffer;
 
-  xiiGALSamplerStateHandle m_hShadowSampler;
+  xiiGALSamplerHandle m_hShadowSampler;
 
   xiiDecalAtlasResourceHandle m_hDecalAtlas;
-  xiiGALSamplerStateHandle    m_hDecalAtlasSampler;
+  xiiGALSamplerHandle         m_hDecalAtlasSampler;
 
   void BindResources(xiiRenderContext* pRenderContext);
 };

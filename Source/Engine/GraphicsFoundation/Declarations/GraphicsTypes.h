@@ -633,7 +633,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureAddressMode
   {
     Unknown = -1, ///< Unknown texture address mode.
     Wrap,         ///< Tile the texture at every integer junction.
-    Mirror,       ///< Flip the texture at every integer junction.s
+    Mirror,       ///< Flip the texture at every integer junctions.
     Clamp,        ///< Texture coordinates outside the range [0.0, 1.0] are set to the texture color at 0.0 or 1.0 respectively.
     Border,       ///< Texture coordinates outside the range [0.0, 1.0] are set to the border color.
     MirrorOnce,   ///< Similar to Mirror and Clamp. This takes the absolute value of the texture coordinate (thus mirroring around 0), then clamps to the the maximum value.

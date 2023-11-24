@@ -75,8 +75,8 @@ protected:
   // State
   xiiMeshResourceHandle m_hMesh;
 
-  xiiVec3 m_vLastOwnerPosition  = xiiVec3::MakeZero();
-  xiiVec3 m_vLastTargetPosition = xiiVec3::MakeZero();
+  xiiVec3 m_vLastOwnerPosition  = xiiVec3::ZeroVector();
+  xiiVec3 m_vLastTargetPosition = xiiVec3::ZeroVector();
 
   void CreateMeshes();
   void BuildMeshResourceFromGeometry(xiiGeometry& Geometry, xiiMeshResourceDescriptor& MeshDesc) const;

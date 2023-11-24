@@ -15,7 +15,7 @@ struct XII_GRAPHICSCORE_DLL xiiVertexStreamInfo : public xiiHashableStruct<xiiVe
 
   xiiGALVertexAttributeSemantic::Enum m_Semantic;
   xiiUInt8                            m_uiVertexBufferSlot = 0;
-  xiiGALResourceFormat::Enum          m_Format;
+  xiiEnum<xiiGALTextureFormat>        m_Format;
   xiiUInt16                           m_uiOffset;      ///< at which byte offset the first element starts
   xiiUInt16                           m_uiElementSize; ///< the number of bytes for this element type (depends on the format); this is not the stride between elements!
 };
@@ -38,7 +38,7 @@ public:
   void Clear();
 
   /// \brief Use this function to add vertex streams to the mesh buffer. The return value is the index of the just added stream.
-  xiiUInt32 AddStream(xiiGALVertexAttributeSemantic::Enum semantic, xiiGALResourceFormat::Enum format);
+  xiiUInt32 AddStream(xiiGALVertexAttributeSemantic::Enum semantic, xiiEnum<xiiGALTextureFormat> format);
 
   /// \brief Adds common vertex streams to the mesh buffer.
   ///

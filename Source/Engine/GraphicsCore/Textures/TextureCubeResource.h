@@ -1,12 +1,12 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/IO/MemoryStream.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
-#include <GraphicsFoundation/Descriptors/Descriptors.h>
-#include <GraphicsFoundation/GraphicsFoundationDLL.h>
+#include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <Texture/Image/Image.h>
 
 using xiiTextureCubeResourceHandle = xiiTypedResourceHandle<class xiiTextureCubeResource>;
@@ -21,8 +21,8 @@ struct xiiTextureCubeResourceDescriptor
   }
 
   /// Describes the texture format, etc.
-  xiiGALTextureCreationDescription      m_DescGAL;
-  xiiGALSamplerStateCreationDescription m_SamplerDesc;
+  xiiGALTextureCreationDescription m_DescGAL;
+  xiiGALSamplerCreationDescription m_SamplerDesc;
 
   /// How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
   xiiUInt8 m_uiQualityLevelsDiscardable;
@@ -32,7 +32,7 @@ struct xiiTextureCubeResourceDescriptor
 
   /// One memory desc per (array * faces * mipmap) (in that order) (array is outer loop, mipmap is inner loop). Can be empty to not
   /// initialize data.
-  xiiArrayPtr<xiiGALSystemMemoryDescription> m_InitialContent;
+  xiiArrayPtr<xiiGALTextureSubResourceData> m_InitialContent;
 };
 
 class XII_GRAPHICSCORE_DLL xiiTextureCubeResource : public xiiResource
@@ -44,11 +44,11 @@ class XII_GRAPHICSCORE_DLL xiiTextureCubeResource : public xiiResource
 public:
   xiiTextureCubeResource();
 
-  XII_ALWAYS_INLINE xiiGALResourceFormat::Enum GetFormat() const { return m_Format; }
-  XII_ALWAYS_INLINE xiiUInt32                  GetWidthAndHeight() const { return m_uiWidthAndHeight; }
+  XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> GetFormat() const { return m_Format; }
+  XII_ALWAYS_INLINE xiiUInt32                    GetWidthAndHeight() const { return m_uiWidthAndHeight; }
 
-  const xiiGALTextureHandle&      GetGALTexture() const { return m_hGALTexture[m_uiLoadedTextures - 1]; }
-  const xiiGALSamplerStateHandle& GetGALSamplerState() const { return m_hSamplerState; }
+  const xiiGALTextureHandle& GetGALTexture() const { return m_hGALTexture[m_uiLoadedTextures - 1]; }
+  const xiiGALSamplerHandle& GetGALSampler() const { return m_hSampler; }
 
 protected:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;
@@ -59,8 +59,8 @@ protected:
   xiiGALTextureHandle m_hGALTexture[2];
   xiiUInt32           m_uiMemoryGPU[2];
 
-  xiiGALResourceFormat::Enum m_Format;
-  xiiUInt32                  m_uiWidthAndHeight;
+  xiiEnum<xiiGALTextureFormat> m_Format;
+  xiiUInt32                    m_uiWidthAndHeight;
 
-  xiiGALSamplerStateHandle m_hSamplerState;
+  xiiGALSamplerHandle m_hSampler;
 };

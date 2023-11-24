@@ -54,10 +54,10 @@ xiiAOPass::xiiAOPass() :
 
 xiiAOPass::~xiiAOPass()
 {
-  if (!m_hSSAOSamplerState.IsInvalidated())
+  if (!m_hSSAOSampler.IsInvalidated())
   {
-    xiiGALDevice::GetDefaultDevice()->DestroySamplerState(m_hSSAOSamplerState);
-    m_hSSAOSamplerState.Invalidate();
+    xiiGALDevice::GetDefaultDevice()->DestroySampler(m_hSSAOSampler);
+    m_hSSAOSampler.Invalidate();
   }
 
   xiiRenderContext::DeleteConstantBufferStorage(m_hDownscaleConstantBuffer);
@@ -175,7 +175,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
 
   // Mip map passes
   {
-    CreateSamplerState();
+    CreateSampler();
 
     for (xiiUInt32 i = 0; i < uiNumMips; ++i)
     {
@@ -208,7 +208,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       renderViewContext.m_pRenderContext->BindShader(m_hDownscaleShader);
 
       renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", hInputView);
-      renderViewContext.m_pRenderContext->BindSamplerState("DepthSampler", m_hSSAOSamplerState);
+      renderViewContext.m_pRenderContext->BindSampler("DepthSampler", m_hSSAOSampler);
 
       renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::Triangles, 1);
 
@@ -246,7 +246,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
 
     renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", pDevice->GetDefaultResourceView(pDepthInput->m_TextureHandle));
     renderViewContext.m_pRenderContext->BindTexture2D("LowResDepthTexture", pDevice->GetDefaultResourceView(hzbTexture));
-    renderViewContext.m_pRenderContext->BindSamplerState("DepthSampler", m_hSSAOSamplerState);
+    renderViewContext.m_pRenderContext->BindSampler("DepthSampler", m_hSSAOSampler);
 
     renderViewContext.m_pRenderContext->BindTexture2D("NoiseTexture", m_hNoiseTexture, xiiResourceAcquireMode::BlockTillLoaded);
 
@@ -350,10 +350,10 @@ void xiiAOPass::SetFadeOutEnd(float fEnd)
 
   m_fFadeOutEnd = xiiMath::Max(fEnd, m_fFadeOutStart);
 
-  if (!m_hSSAOSamplerState.IsInvalidated())
+  if (!m_hSSAOSampler.IsInvalidated())
   {
-    xiiGALDevice::GetDefaultDevice()->DestroySamplerState(m_hSSAOSamplerState);
-    m_hSSAOSamplerState.Invalidate();
+    xiiGALDevice::GetDefaultDevice()->DestroySampler(m_hSSAOSampler);
+    m_hSSAOSampler.Invalidate();
   }
 }
 
@@ -362,11 +362,11 @@ float xiiAOPass::GetFadeOutEnd() const
   return m_fFadeOutEnd;
 }
 
-void xiiAOPass::CreateSamplerState()
+void xiiAOPass::CreateSampler()
 {
-  if (m_hSSAOSamplerState.IsInvalidated())
+  if (m_hSSAOSampler.IsInvalidated())
   {
-    xiiGALSamplerStateCreationDescription desc;
+    xiiGALSamplerCreationDescription desc;
     desc.m_MinFilter   = xiiGALTextureFilterMode::Point;
     desc.m_MagFilter   = xiiGALTextureFilterMode::Point;
     desc.m_MipFilter   = xiiGALTextureFilterMode::Point;
@@ -375,7 +375,7 @@ void xiiAOPass::CreateSamplerState()
     desc.m_AddressW    = xiiImageAddressMode::ClampBorder;
     desc.m_BorderColor = xiiColor::White * m_fFadeOutEnd;
 
-    m_hSSAOSamplerState = xiiGALDevice::GetDefaultDevice()->CreateSamplerState(desc);
+    m_hSSAOSampler = xiiGALDevice::GetDefaultDevice()->CreateSampler(desc);
   }
 }
 

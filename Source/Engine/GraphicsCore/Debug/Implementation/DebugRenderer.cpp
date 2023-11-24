@@ -471,7 +471,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 // static
-void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
+void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
 {
   if (lines.IsEmpty())
     return;
@@ -517,7 +517,7 @@ void xiiDebugRenderer::Draw2DLines(const xiiDebugRendererContext& context, xiiAr
 }
 
 // static
-void xiiDebugRenderer::DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
+void xiiDebugRenderer::DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
 {
   if (fLineLength <= 0.0f)
     return;
@@ -550,7 +550,7 @@ void xiiDebugRenderer::DrawLineBox(const xiiDebugRendererContext& context, const
 
   auto& boxData = data.m_lineBoxes.ExpandAndGetRef();
 
-  xiiTransform boxTransform(box.GetCenter(), xiiQuat::MakeIdentity(), box.GetHalfExtents());
+  xiiTransform boxTransform(box.GetCenter(), xiiQuat::IdentityQuaternion(), box.GetHalfExtents());
 
   boxData.m_transform = transform * boxTransform;
   boxData.m_color     = color;
@@ -601,7 +601,7 @@ void xiiDebugRenderer::DrawLineBoxCorners(const xiiDebugRendererContext& context
 }
 
 // static
-void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
+void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
 {
   enum
   {
@@ -639,7 +639,7 @@ void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, co
 }
 
 
-void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
+void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
 {
   enum
   {
@@ -811,7 +811,7 @@ void xiiDebugRenderer::DrawSolidBox(const xiiDebugRendererContext& context, cons
 
   auto& boxData = data.m_solidBoxes.ExpandAndGetRef();
 
-  xiiTransform boxTransform(box.GetCenter(), xiiQuat::MakeIdentity(), box.GetHalfExtents());
+  xiiTransform boxTransform(box.GetCenter(), xiiQuat::IdentityQuaternion(), box.GetHalfExtents());
 
   boxData.m_transform = transform * boxTransform;
   boxData.m_color     = color;
@@ -1261,7 +1261,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         }
         else
         {
-          xiiDebugRenderer::DrawCross(context, xiiVec3::MakeZero(), item.m_fSize, item.m_Color, item.m_Transform);
+          xiiDebugRenderer::DrawCross(context, xiiVec3::ZeroVector(), item.m_fSize, item.m_Color, item.m_Transform);
 
           ++i;
         }
@@ -1282,7 +1282,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         }
         else
         {
-          xiiDebugRenderer::DrawLineSphere(context, xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), item.m_fRadius), item.m_Color, item.m_Transform);
+          xiiDebugRenderer::DrawLineSphere(context, xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::ZeroVector(), item.m_fRadius), item.m_Color, item.m_Transform);
 
           ++i;
         }
@@ -1821,15 +1821,15 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiScriptExtensionClass_Debug, xiiNoBase, 1, xii
     XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentCross, In, "World", In, "Position", In, "Size", In, "Color", In, "Transform", In, "Duration")->AddAttributes(
       new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(0.1f)),
       new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),
-      new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(1)))),
+      new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
     XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineBox, In, "World", In, "Position", In, "HalfExtents", In, "Color", In, "Transform", In, "Duration")->AddAttributes(
       new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(xiiVec3(1))),
       new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),
-      new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(1)))),
+      new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
     XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineSphere, In, "World", In, "Position", In, "Radius", In, "Color", In, "Transform", In, "Duration")->AddAttributes(
       new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(1.0f)),
       new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),
-      new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(1)))),
+      new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
   }
   XII_END_FUNCTIONS;
   XII_BEGIN_ATTRIBUTES

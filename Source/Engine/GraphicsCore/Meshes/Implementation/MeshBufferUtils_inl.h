@@ -1,12 +1,12 @@
 
 // static
-XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiMeshNormalPrecision::ToResourceFormatNormal(Enum value)
+XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshNormalPrecision::ToResourceFormatNormal(Enum value)
 {
   return value == _10Bit ? xiiGALResourceFormat::RGB10A2UIntNormalized : (value == _16Bit ? xiiGALResourceFormat::RGBAUShortNormalized : xiiGALResourceFormat::XYZFloat);
 }
 
 // static
-XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiMeshNormalPrecision::ToResourceFormatTangent(Enum value)
+XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshNormalPrecision::ToResourceFormatTangent(Enum value)
 {
   return value == _10Bit ? xiiGALResourceFormat::RGB10A2UIntNormalized : (value == _16Bit ? xiiGALResourceFormat::RGBAUShortNormalized : xiiGALResourceFormat::XYZWFloat);
 }
@@ -14,7 +14,7 @@ XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiMeshNormalPrecision::ToResourceF
 //////////////////////////////////////////////////////////////////////////
 
 // static
-XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiMeshTexCoordPrecision::ToResourceFormat(Enum value)
+XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshTexCoordPrecision::ToResourceFormat(Enum value)
 {
   return value == _16Bit ? xiiGALResourceFormat::UVHalf : xiiGALResourceFormat::UVFloat;
 }
@@ -22,7 +22,7 @@ XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiMeshTexCoordPrecision::ToResourc
 //////////////////////////////////////////////////////////////////////////
 
 // static
-XII_ALWAYS_INLINE xiiGALResourceFormat::Enum xiiMeshBoneWeigthPrecision::ToResourceFormat(Enum value)
+XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshBoneWeigthPrecision::ToResourceFormat(Enum value)
 {
   switch (value)
   {
@@ -67,14 +67,14 @@ XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeBoneWeights(const xiiVec4&
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeNormal(const xiiVec3& vNormal, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeNormal(const xiiVec3& vNormal, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALTextureFormat> destFormat)
 {
   // we store normals in unsigned formats thus we need to map from -1..1 to 0..1 here
   return EncodeFromVec3(vNormal * 0.5f + xiiVec3(0.5f), dest, destFormat);
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTangent(const xiiVec3& vTangent, float fTangentSign, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTangent(const xiiVec3& vTangent, float fTangentSign, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALTextureFormat> destFormat)
 {
   // make sure biTangentSign is either -1 or 1
   fTangentSign = (fTangentSign < 0.0f) ? -1.0f : 1.0f;
@@ -84,13 +84,13 @@ XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTangent(const xiiVec3& vTa
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTexCoord(const xiiVec2& vTexCoord, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeTexCoord(const xiiVec2& vTexCoord, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALTextureFormat> destFormat)
 {
   return EncodeFromVec2(vTexCoord, dest, destFormat);
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeBoneWeights(const xiiVec4& vWeights, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::EncodeBoneWeights(const xiiVec4& vWeights, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALTextureFormat> destFormat)
 {
   return EncodeFromVec4(vWeights, dest, destFormat);
 }
@@ -114,7 +114,7 @@ XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTexCoord(xiiArrayPtr<const
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeNormal(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec3& ref_vDestNormal)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeNormal(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, xiiVec3& ref_vDestNormal)
 {
   xiiVec3 tempNormal;
   XII_SUCCEED_OR_RETURN(DecodeToVec3(source, sourceFormat, tempNormal));
@@ -123,7 +123,7 @@ XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeNormal(xiiArrayPtr<const x
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTangent(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec3& ref_vDestTangent, float& ref_fDestBiTangentSign)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTangent(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, xiiVec3& ref_vDestTangent, float& ref_fDestBiTangentSign)
 {
   xiiVec4 tempTangent;
   XII_SUCCEED_OR_RETURN(DecodeToVec4(source, sourceFormat, tempTangent));
@@ -133,7 +133,7 @@ XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTangent(xiiArrayPtr<const 
 }
 
 // static
-XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTexCoord(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec2& ref_vDestTexCoord)
+XII_ALWAYS_INLINE xiiResult xiiMeshBufferUtils::DecodeTexCoord(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, xiiVec2& ref_vDestTexCoord)
 {
   return DecodeToVec2(source, sourceFormat, ref_vDestTexCoord);
 }

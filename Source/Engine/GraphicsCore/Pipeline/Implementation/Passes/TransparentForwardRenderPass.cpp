@@ -23,10 +23,10 @@ xiiTransparentForwardRenderPass::xiiTransparentForwardRenderPass(const char* szN
 
 xiiTransparentForwardRenderPass::~xiiTransparentForwardRenderPass()
 {
-  if (!m_hSceneColorSamplerState.IsInvalidated())
+  if (!m_hSceneColorSampler.IsInvalidated())
   {
-    xiiGALDevice::GetDefaultDevice()->DestroySamplerState(m_hSceneColorSamplerState);
-    m_hSceneColorSamplerState.Invalidate();
+    xiiGALDevice::GetDefaultDevice()->DestroySampler(m_hSceneColorSampler);
+    m_hSceneColorSampler.Invalidate();
   }
 }
 
@@ -40,7 +40,7 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext&       
     return;
   }
 
-  CreateSamplerState();
+  CreateSampler();
 
   xiiUInt32 uiWidth  = pColorInput->m_Desc.m_uiWidth;
   xiiUInt32 uiHeight = pColorInput->m_Desc.m_uiHeight;
@@ -63,7 +63,7 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext&       
 
   xiiGALResourceViewHandle colorResourceViewHandle = pDevice->GetDefaultResourceView(hSceneColor);
   renderViewContext.m_pRenderContext->BindTexture2D("SceneColor", colorResourceViewHandle);
-  renderViewContext.m_pRenderContext->BindSamplerState("SceneColorSampler", m_hSceneColorSamplerState);
+  renderViewContext.m_pRenderContext->BindSampler("SceneColorSampler", m_hSceneColorSampler);
 
   RenderObjects(renderViewContext);
 
@@ -111,11 +111,11 @@ void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(
   renderViewContext.m_pRenderContext->GetCommandEncoder()->ResolveTexture(hSceneColorTexture, subresource, hCurrentColorTexture, subresource);
 }
 
-void xiiTransparentForwardRenderPass::CreateSamplerState()
+void xiiTransparentForwardRenderPass::CreateSampler()
 {
-  if (m_hSceneColorSamplerState.IsInvalidated())
+  if (m_hSceneColorSampler.IsInvalidated())
   {
-    xiiGALSamplerStateCreationDescription desc;
+    xiiGALSamplerCreationDescription desc;
     desc.m_MinFilter = xiiGALTextureFilterMode::Linear;
     desc.m_MagFilter = xiiGALTextureFilterMode::Linear;
     desc.m_MipFilter = xiiGALTextureFilterMode::Linear;
@@ -123,7 +123,7 @@ void xiiTransparentForwardRenderPass::CreateSamplerState()
     desc.m_AddressV  = xiiImageAddressMode::Mirror;
     desc.m_AddressW  = xiiImageAddressMode::Mirror;
 
-    m_hSceneColorSamplerState = xiiGALDevice::GetDefaultDevice()->CreateSamplerState(desc);
+    m_hSceneColorSampler = xiiGALDevice::GetDefaultDevice()->CreateSampler(desc);
   }
 }
 

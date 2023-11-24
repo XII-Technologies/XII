@@ -186,7 +186,7 @@ xiiResult xiiLensFlareComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds
   }
   else
   {
-    ref_bounds = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), m_fOcclusionSampleRadius);
+    ref_bounds = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::ZeroVector(), m_fOcclusionSampleRadius);
   }
   return XII_SUCCESS;
 }
@@ -269,7 +269,7 @@ void xiiLensFlareComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
   float fFade = 1.0f;
   if (auto pDirectionalLight = xiiDynamicCast<const xiiDirectionalLightComponent*>(pLightComponent))
   {
-    xiiTransform localOffset = xiiTransform::MakeIdentity();
+    xiiTransform localOffset = xiiTransform::IdentityTransform();
     localOffset.m_vPosition  = xiiVec3(pCamera->GetFarPlane() * -0.999, 0, 0);
 
     globalTransform = xiiTransform::MakeGlobalTransform(globalTransform, localOffset);

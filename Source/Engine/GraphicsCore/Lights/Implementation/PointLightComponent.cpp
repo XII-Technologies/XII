@@ -44,7 +44,7 @@ xiiResult xiiPointLightComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bound
 {
   m_fEffectiveRange = CalculateEffectiveRange(m_fRange, m_fIntensity);
 
-  ref_bounds = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), m_fEffectiveRange);
+  ref_bounds = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::ZeroVector(), m_fEffectiveRange);
   return XII_SUCCESS;
 }
 

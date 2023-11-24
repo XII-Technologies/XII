@@ -44,7 +44,7 @@ void xiiAnimController::Update(xiiTime diff, xiiGameObject* pTarget)
 
   m_CurrentLocalTransformOutputs.Clear();
 
-  m_vRootMotion   = xiiVec3::MakeZero();
+  m_vRootMotion   = xiiVec3::ZeroVector();
   m_RootRotationX = {};
   m_RootRotationY = {};
   m_RootRotationZ = {};
@@ -265,7 +265,7 @@ void xiiAnimController::GenerateLocalResultProcessors(const xiiSkeletonResource*
 
   // model space to output
   {
-    xiiVec3  rootMotion = xiiVec3::MakeZero();
+    xiiVec3  rootMotion = xiiVec3::ZeroVector();
     xiiAngle rootRotationX;
     xiiAngle rootRotationY;
     xiiAngle rootRotationZ;

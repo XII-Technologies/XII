@@ -300,7 +300,7 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& ref_m
   auto                 pManager = static_cast<const xiiBakedProbesComponentManager*>(GetOwningManager());
 
   auto addProbeRenderData = [&](const xiiVec3& vPosition, xiiCompressedSkyVisibility skyVisibility, xiiRenderData::Caching::Enum caching) {
-    xiiTransform transform = xiiTransform::MakeIdentity();
+    xiiTransform transform = xiiTransform::IdentityTransform();
     transform.m_vPosition  = vPosition;
 
     xiiColor encodedSkyVisibility = xiiColor::Black;

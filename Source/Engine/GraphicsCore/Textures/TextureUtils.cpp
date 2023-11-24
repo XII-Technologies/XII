@@ -3,296 +3,295 @@
 #include <Foundation/Reflection/ReflectionUtils.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
 
 bool xiiTextureUtils::s_bForceFullQualityAlways = false;
 
-xiiGALResourceFormat::Enum xiiTextureUtils::ImageFormatToGalFormat(xiiImageFormat::Enum format, bool bSRGB)
+xiiEnum<xiiGALTextureFormat> xiiTextureUtils::ImageFormatToGalFormat(xiiEnum<xiiImageFormat> format, bool bSRGB)
 {
   switch (format)
   {
     case xiiImageFormat::R8G8B8A8_UNORM:
       if (bSRGB)
-        return xiiGALResourceFormat::RGBAUByteNormalizedsRGB;
+        return xiiGALTextureFormat::RGBA8UNormalizedSRGB;
       else
-        return xiiGALResourceFormat::RGBAUByteNormalized;
+        return xiiGALTextureFormat::RGBA8UNormalized;
 
       // case xiiImageFormat::R8G8B8A8_TYPELESS:
     case xiiImageFormat::R8G8B8A8_UNORM_SRGB:
-      return xiiGALResourceFormat::RGBAUByteNormalizedsRGB;
+      return xiiGALTextureFormat::RGBA8UNormalizedSRGB;
 
     case xiiImageFormat::R8G8B8A8_UINT:
-      return xiiGALResourceFormat::RGBAUInt;
+      return xiiGALTextureFormat::RGBA8UInt;
 
     case xiiImageFormat::R8G8B8A8_SNORM:
-      return xiiGALResourceFormat::RGBAByteNormalized;
+      return xiiGALTextureFormat::RGBA8SNormalized;
 
     case xiiImageFormat::R8G8B8A8_SINT:
-      return xiiGALResourceFormat::RGBAInt;
+      return xiiGALTextureFormat::RGBA8SInt;
 
     case xiiImageFormat::B8G8R8A8_UNORM:
       if (bSRGB)
-        return xiiGALResourceFormat::BGRAUByteNormalizedsRGB;
+        return xiiGALTextureFormat::BGRA8UNormalizedSRGB;
       else
-        return xiiGALResourceFormat::BGRAUByteNormalized;
+        return xiiGALTextureFormat::BGRA8UNormalized;
 
     case xiiImageFormat::B8G8R8X8_UNORM:
       if (bSRGB)
-        return xiiGALResourceFormat::BGRAUByteNormalizedsRGB;
+        return xiiGALTextureFormat::BGRX8UNormalizedSRGB;
       else
-        return xiiGALResourceFormat::BGRAUByteNormalized;
+        return xiiGALTextureFormat::BGRX8UNormalized;
 
       // case xiiImageFormat::B8G8R8A8_TYPELESS:
     case xiiImageFormat::B8G8R8A8_UNORM_SRGB:
-      return xiiGALResourceFormat::BGRAUByteNormalizedsRGB;
+      return xiiGALTextureFormat::BGRA8UNormalizedSRGB;
 
       // case xiiImageFormat::B8G8R8X8_TYPELESS:
     case xiiImageFormat::B8G8R8X8_UNORM_SRGB:
-      return xiiGALResourceFormat::BGRAUByteNormalizedsRGB;
+      return xiiGALTextureFormat::BGRX8UNormalizedSRGB;
 
       // case xiiImageFormat::B8G8R8_UNORM:
 
       // case xiiImageFormat::BC1_TYPELESS:
     case xiiImageFormat::BC1_UNORM:
       if (bSRGB)
-        return xiiGALResourceFormat::BC1sRGB;
+        return xiiGALTextureFormat::BC1UNormalizedSRGB;
       else
-        return xiiGALResourceFormat::BC1;
+        return xiiGALTextureFormat::BC1UNormalized;
 
     case xiiImageFormat::BC1_UNORM_SRGB:
-      return xiiGALResourceFormat::BC1sRGB;
+      return xiiGALTextureFormat::BC1UNormalizedSRGB;
 
       // case xiiImageFormat::BC2_TYPELESS:
     case xiiImageFormat::BC2_UNORM:
       if (bSRGB)
-        return xiiGALResourceFormat::BC2sRGB;
+        return xiiGALTextureFormat::BC2UNormalizedSRGB;
       else
-        return xiiGALResourceFormat::BC2;
+        return xiiGALTextureFormat::BC2UNormalized;
 
     case xiiImageFormat::BC2_UNORM_SRGB:
-      return xiiGALResourceFormat::BC2sRGB;
+      return xiiGALTextureFormat::BC2UNormalizedSRGB;
 
       // case xiiImageFormat::BC3_TYPELESS:
     case xiiImageFormat::BC3_UNORM:
       if (bSRGB)
-        return xiiGALResourceFormat::BC3sRGB;
+        return xiiGALTextureFormat::BC3UNormalizedSRGB;
       else
-        return xiiGALResourceFormat::BC3;
+        return xiiGALTextureFormat::BC3UNormalized;
 
     case xiiImageFormat::BC3_UNORM_SRGB:
-      return xiiGALResourceFormat::BC3sRGB;
+      return xiiGALTextureFormat::BC3UNormalizedSRGB;
 
       // case xiiImageFormat::BC4_TYPELESS:
     case xiiImageFormat::BC4_UNORM:
-      return xiiGALResourceFormat::BC4UNormalized;
+      return xiiGALTextureFormat::BC4UNormalized;
 
     case xiiImageFormat::BC4_SNORM:
-      return xiiGALResourceFormat::BC4Normalized;
+      return xiiGALTextureFormat::BC4SNormalized;
 
       // case xiiImageFormat::BC5_TYPELESS:
     case xiiImageFormat::BC5_UNORM:
-      return xiiGALResourceFormat::BC5UNormalized;
+      return xiiGALTextureFormat::BC5UNormalized;
 
     case xiiImageFormat::BC5_SNORM:
-      return xiiGALResourceFormat::BC5Normalized;
+      return xiiGALTextureFormat::BC5SNormalized;
 
       // case xiiImageFormat::BC6H_TYPELESS:
     case xiiImageFormat::BC6H_UF16:
-      return xiiGALResourceFormat::BC6UFloat;
+      return xiiGALTextureFormat::BC6HUF16;
 
     case xiiImageFormat::BC6H_SF16:
-      return xiiGALResourceFormat::BC6Float;
+      return xiiGALTextureFormat::BC6HSF16;
 
       // case xiiImageFormat::BC7_TYPELESS:
     case xiiImageFormat::BC7_UNORM:
       if (bSRGB)
-        return xiiGALResourceFormat::BC7UNormalizedsRGB;
+        return xiiGALTextureFormat::BC7UNormalizedSRGB;
       else
-        return xiiGALResourceFormat::BC7UNormalized;
+        return xiiGALTextureFormat::BC7UNormalized;
 
     case xiiImageFormat::BC7_UNORM_SRGB:
-      return xiiGALResourceFormat::BC7UNormalizedsRGB;
+      return xiiGALTextureFormat::BC7UNormalizedSRGB;
 
     case xiiImageFormat::B5G6R5_UNORM:
-      return xiiGALResourceFormat::B5G6R5UNormalized; /// \todo Not supported by some GPUs ?
+      return xiiGALTextureFormat::B5G6R5UNormalized; /// \todo Not supported by some GPUs ?
 
     case xiiImageFormat::R16_FLOAT:
-      return xiiGALResourceFormat::RHalf;
+      return xiiGALTextureFormat::R16Float;
 
     case xiiImageFormat::R32_FLOAT:
-      return xiiGALResourceFormat::RFloat;
+      return xiiGALTextureFormat::R32Float;
 
     case xiiImageFormat::R16G16_FLOAT:
-      return xiiGALResourceFormat::RGHalf;
+      return xiiGALTextureFormat::RG16Float;
 
     case xiiImageFormat::R32G32_FLOAT:
-      return xiiGALResourceFormat::RGFloat;
+      return xiiGALTextureFormat::RG32Float;
 
     case xiiImageFormat::R32G32B32_FLOAT:
-      return xiiGALResourceFormat::RGBFloat;
+      return xiiGALTextureFormat::RGB32Float;
 
     case xiiImageFormat::R16G16B16A16_FLOAT:
-      return xiiGALResourceFormat::RGBAHalf;
+      return xiiGALTextureFormat::RGBA16Float;
 
     case xiiImageFormat::R32G32B32A32_FLOAT:
-      return xiiGALResourceFormat::RGBAFloat;
+      return xiiGALTextureFormat::RGBA32Float;
 
     case xiiImageFormat::R16G16B16A16_UNORM:
-      return xiiGALResourceFormat::RGBAUShortNormalized;
+      return xiiGALTextureFormat::RGBA16UNormalized;
 
     case xiiImageFormat::R8_UNORM:
-      return xiiGALResourceFormat::RUByteNormalized;
+      return xiiGALTextureFormat::R8UNormalized;
 
     case xiiImageFormat::R8G8_UNORM:
-      return xiiGALResourceFormat::RGUByteNormalized;
+      return xiiGALTextureFormat::RG8UNormalized;
 
     case xiiImageFormat::R16G16_UNORM:
-      return xiiGALResourceFormat::RGUShortNormalized;
+      return xiiGALTextureFormat::RG16UNormalized;
 
     case xiiImageFormat::R11G11B10_FLOAT:
-      return xiiGALResourceFormat::RG11B10Float;
+      return xiiGALTextureFormat::RG11B10Float;
 
-    default:
-      XII_ASSERT_NOT_IMPLEMENTED;
-      break;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  return xiiGALResourceFormat::Invalid;
+  return xiiGALTextureFormat::Unknown;
 }
 
-xiiImageFormat::Enum xiiTextureUtils::GalFormatToImageFormat(xiiGALResourceFormat::Enum format)
+xiiEnum<xiiImageFormat> xiiTextureUtils::GalFormatToImageFormat(xiiEnum<xiiGALTextureFormat> format)
 {
   switch (format)
   {
-    case xiiGALResourceFormat::RGBAFloat:
+    case xiiGALTextureFormat::RGBA32Float:
       return xiiImageFormat::R32G32B32A32_FLOAT;
-    case xiiGALResourceFormat::RGBAUInt:
+    case xiiGALTextureFormat::RGBA32UInt:
       return xiiImageFormat::R32G32B32A32_UINT;
-    case xiiGALResourceFormat::RGBAInt:
+    case xiiGALTextureFormat::RGBA32SInt:
       return xiiImageFormat::R32G32B32A32_SINT;
-    case xiiGALResourceFormat::RGBFloat:
+    case xiiGALTextureFormat::RGB32Float:
       return xiiImageFormat::R32G32B32_FLOAT;
-    case xiiGALResourceFormat::RGBUInt:
+    case xiiGALTextureFormat::RGB32UInt:
       return xiiImageFormat::R32G32B32_UINT;
-    case xiiGALResourceFormat::RGBInt:
+    case xiiGALTextureFormat::RGB32SInt:
       return xiiImageFormat::R32G32B32_SINT;
-    case xiiGALResourceFormat::B5G6R5UNormalized:
+    case xiiGALTextureFormat::B5G6R5UNormalized:
       return xiiImageFormat::B5G6R5_UNORM;
-    case xiiGALResourceFormat::BGRAUByteNormalized:
+    case xiiGALTextureFormat::BGRA8UNormalized:
       return xiiImageFormat::B8G8R8A8_UNORM;
-    case xiiGALResourceFormat::BGRAUByteNormalizedsRGB:
+    case xiiGALTextureFormat::BGRA8UNormalizedSRGB:
       return xiiImageFormat::B8G8R8A8_UNORM_SRGB;
-    case xiiGALResourceFormat::RGBAHalf:
+    case xiiGALTextureFormat::RGBA16Float:
       return xiiImageFormat::R16G16B16A16_FLOAT;
-    case xiiGALResourceFormat::RGBAUShort:
+    case xiiGALTextureFormat::RGBA16UInt:
       return xiiImageFormat::R16G16B16A16_UINT;
-    case xiiGALResourceFormat::RGBAUShortNormalized:
+    case xiiGALTextureFormat::RGBA16UNormalized:
       return xiiImageFormat::R16G16B16A16_UNORM;
-    case xiiGALResourceFormat::RGBAShort:
+    case xiiGALTextureFormat::RGBA16SInt:
       return xiiImageFormat::R16G16B16A16_SINT;
-    case xiiGALResourceFormat::RGBAShortNormalized:
+    case xiiGALTextureFormat::RGBA16SNormalized:
       return xiiImageFormat::R16G16B16A16_SNORM;
-    case xiiGALResourceFormat::RGFloat:
+    case xiiGALTextureFormat::RG32Float:
       return xiiImageFormat::R32G32_FLOAT;
-    case xiiGALResourceFormat::RGUInt:
+    case xiiGALTextureFormat::RG32UInt:
       return xiiImageFormat::R32G32_UINT;
-    case xiiGALResourceFormat::RGInt:
+    case xiiGALTextureFormat::RG32SInt:
       return xiiImageFormat::R32G32_SINT;
-    case xiiGALResourceFormat::RG11B10Float:
+    case xiiGALTextureFormat::RG11B10Float:
       return xiiImageFormat::R11G11B10_FLOAT;
-    case xiiGALResourceFormat::RGBAUByteNormalized:
+    case xiiGALTextureFormat::RGBA8UNormalized:
       return xiiImageFormat::R8G8B8A8_UNORM;
-    case xiiGALResourceFormat::RGBAUByteNormalizedsRGB:
+    case xiiGALTextureFormat::RGBA8UNormalizedSRGB:
       return xiiImageFormat::R8G8B8A8_UNORM_SRGB;
-    case xiiGALResourceFormat::RGBAUByte:
+    case xiiGALTextureFormat::RGBA8UInt:
       return xiiImageFormat::R8G8B8A8_UINT;
-    case xiiGALResourceFormat::RGBAByteNormalized:
+    case xiiGALTextureFormat::RGBA8SNormalized:
       return xiiImageFormat::R8G8B8A8_SNORM;
-    case xiiGALResourceFormat::RGBAByte:
+    case xiiGALTextureFormat::RGBA8SInt:
       return xiiImageFormat::R8G8B8A8_SINT;
-    case xiiGALResourceFormat::RGHalf:
+    case xiiGALTextureFormat::RG16Float:
       return xiiImageFormat::R16G16_FLOAT;
-    case xiiGALResourceFormat::RGUShort:
+    case xiiGALTextureFormat::RG16UInt:
       return xiiImageFormat::R16G16_UINT;
-    case xiiGALResourceFormat::RGUShortNormalized:
+    case xiiGALTextureFormat::RG16UNormalized:
       return xiiImageFormat::R16G16_UNORM;
-    case xiiGALResourceFormat::RGShort:
+    case xiiGALTextureFormat::RG16SInt:
       return xiiImageFormat::R16G16_SINT;
-    case xiiGALResourceFormat::RGShortNormalized:
+    case xiiGALTextureFormat::RG16SNormalized:
       return xiiImageFormat::R16G16_SNORM;
-    case xiiGALResourceFormat::RGUByte:
+    case xiiGALTextureFormat::RG8UInt:
       return xiiImageFormat::R8G8_UINT;
-    case xiiGALResourceFormat::RGUByteNormalized:
+    case xiiGALTextureFormat::RG8UNormalized:
       return xiiImageFormat::R8G8_UNORM;
-    case xiiGALResourceFormat::RGByte:
+    case xiiGALTextureFormat::RG8SInt:
       return xiiImageFormat::R8G8_SINT;
-    case xiiGALResourceFormat::RGByteNormalized:
+    case xiiGALTextureFormat::RG8SNormalized:
       return xiiImageFormat::R8G8_SNORM;
-    case xiiGALResourceFormat::DFloat:
+    case xiiGALTextureFormat::D32Float:
+      return xiiImageFormat::D32_FLOAT;
+    case xiiGALTextureFormat::R32Float:
       return xiiImageFormat::R32_FLOAT;
-    case xiiGALResourceFormat::RFloat:
-      return xiiImageFormat::R32_FLOAT;
-    case xiiGALResourceFormat::RUInt:
+    case xiiGALTextureFormat::R32UInt:
       return xiiImageFormat::R32_UINT;
-    case xiiGALResourceFormat::RInt:
+    case xiiGALTextureFormat::R32SInt:
       return xiiImageFormat::R32_SINT;
-    case xiiGALResourceFormat::RHalf:
+    case xiiGALTextureFormat::R16Float:
       return xiiImageFormat::R16_FLOAT;
-    case xiiGALResourceFormat::RUShort:
+    case xiiGALTextureFormat::R16UInt:
       return xiiImageFormat::R16_UINT;
-    case xiiGALResourceFormat::RUShortNormalized:
+    case xiiGALTextureFormat::R16UNormalized:
       return xiiImageFormat::R16_UNORM;
-    case xiiGALResourceFormat::RShort:
+    case xiiGALTextureFormat::R16SInt:
       return xiiImageFormat::R16_SINT;
-    case xiiGALResourceFormat::RShortNormalized:
+    case xiiGALTextureFormat::R16SNormalized:
       return xiiImageFormat::R16_SNORM;
-    case xiiGALResourceFormat::RUByte:
+    case xiiGALTextureFormat::R8UInt:
       return xiiImageFormat::R8_UINT;
-    case xiiGALResourceFormat::RUByteNormalized:
+    case xiiGALTextureFormat::R8UNormalized:
       return xiiImageFormat::R8_UNORM;
-    case xiiGALResourceFormat::RByte:
+    case xiiGALTextureFormat::R8SInt:
       return xiiImageFormat::R8_SINT;
-    case xiiGALResourceFormat::RByteNormalized:
+    case xiiGALTextureFormat::R8SNormalized:
       return xiiImageFormat::R8_SNORM;
-    case xiiGALResourceFormat::AUByteNormalized:
+    case xiiGALTextureFormat::A8UNormalized:
       return xiiImageFormat::R8_UNORM;
-    case xiiGALResourceFormat::D16:
-      return xiiImageFormat::R16_UINT;
-    case xiiGALResourceFormat::BC1:
+    case xiiGALTextureFormat::D16UNormalized:
+      return xiiImageFormat::D16_UNORM;
+    case xiiGALTextureFormat::BC1UNormalized:
       return xiiImageFormat::BC1_UNORM;
-    case xiiGALResourceFormat::BC1sRGB:
+    case xiiGALTextureFormat::BC1UNormalizedSRGB:
       return xiiImageFormat::BC1_UNORM_SRGB;
-    case xiiGALResourceFormat::BC2:
+    case xiiGALTextureFormat::BC2UNormalized:
       return xiiImageFormat::BC2_UNORM;
-    case xiiGALResourceFormat::BC2sRGB:
+    case xiiGALTextureFormat::BC2UNormalizedSRGB:
       return xiiImageFormat::BC2_UNORM_SRGB;
-    case xiiGALResourceFormat::BC3:
+    case xiiGALTextureFormat::BC3UNormalized:
       return xiiImageFormat::BC3_UNORM;
-    case xiiGALResourceFormat::BC3sRGB:
+    case xiiGALTextureFormat::BC3UNormalizedSRGB:
       return xiiImageFormat::BC3_UNORM_SRGB;
-    case xiiGALResourceFormat::BC4UNormalized:
+    case xiiGALTextureFormat::BC4UNormalized:
       return xiiImageFormat::BC4_UNORM;
-    case xiiGALResourceFormat::BC4Normalized:
+    case xiiGALTextureFormat::BC4SNormalized:
       return xiiImageFormat::BC4_SNORM;
-    case xiiGALResourceFormat::BC5UNormalized:
+    case xiiGALTextureFormat::BC5UNormalized:
       return xiiImageFormat::BC5_UNORM;
-    case xiiGALResourceFormat::BC5Normalized:
+    case xiiGALTextureFormat::BC5SNormalized:
       return xiiImageFormat::BC5_SNORM;
-    case xiiGALResourceFormat::BC6UFloat:
+    case xiiGALTextureFormat::BC6HUF16:
       return xiiImageFormat::BC6H_UF16;
-    case xiiGALResourceFormat::BC6Float:
+    case xiiGALTextureFormat::BC6HSF16:
       return xiiImageFormat::BC6H_SF16;
-    case xiiGALResourceFormat::BC7UNormalized:
+    case xiiGALTextureFormat::BC7UNormalized:
       return xiiImageFormat::BC7_UNORM;
-    case xiiGALResourceFormat::BC7UNormalizedsRGB:
+    case xiiGALTextureFormat::BC7UNormalizedSRGB:
       return xiiImageFormat::BC7_UNORM_SRGB;
-    case xiiGALResourceFormat::RGB10A2UInt:
-    case xiiGALResourceFormat::RGB10A2UIntNormalized:
-    case xiiGALResourceFormat::D24S8:
+    case xiiGALTextureFormat::RGB10A2UInt:
+    case xiiGALTextureFormat::RGB10A2UNormalized:
+    case xiiGALTextureFormat::D24UNormalizedS8UInt:
     default:
     {
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
       xiiStringBuilder sFormat;
-      XII_ASSERT_DEBUG(xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceFormat>(), format, sFormat, xiiReflectionUtils::EnumConversionMode::ValueNameOnly), "Cannot convert GAL format '{}' to string", format);
+      XII_ASSERT_DEBUG(xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureFormat>(), format, sFormat, xiiReflectionUtils::EnumConversionMode::ValueNameOnly), "Cannot convert GAL format '{}' to string", format);
       XII_ASSERT_DEBUG(false, "The GL format: '{}' does not have a matching image format.", sFormat);
 #endif
     }
@@ -300,9 +299,9 @@ xiiImageFormat::Enum xiiTextureUtils::GalFormatToImageFormat(xiiGALResourceForma
   return xiiImageFormat::UNKNOWN;
 }
 
-xiiImageFormat::Enum xiiTextureUtils::GalFormatToImageFormat(xiiGALResourceFormat::Enum format, bool bRemoveSRGB)
+xiiEnum<xiiImageFormat> xiiTextureUtils::GalFormatToImageFormat(xiiEnum<xiiGALTextureFormat> format, bool bRemoveSRGB)
 {
-  xiiImageFormat::Enum imageFormat = GalFormatToImageFormat(format);
+  xiiEnum<xiiImageFormat> imageFormat = GalFormatToImageFormat(format);
   if (bRemoveSRGB)
   {
     imageFormat = xiiImageFormat::AsLinear(imageFormat);
@@ -310,45 +309,49 @@ xiiImageFormat::Enum xiiTextureUtils::GalFormatToImageFormat(xiiGALResourceForma
   return imageFormat;
 }
 
-void xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::Enum filter, xiiGALSamplerStateCreationDescription& out_sampler)
+void xiiTextureUtils::ConfigureSampler(xiiEnum<xiiTextureFilterSetting> filter, xiiGALSamplerCreationDescription& out_sampler)
 {
-  const xiiTextureFilterSetting::Enum thisFilter = xiiRenderContext::GetDefaultInstance()->GetSpecificTextureFilter(filter);
+  const xiiEnum<xiiTextureFilterSetting> thisFilter = xiiRenderContext::GetDefaultInstance()->GetSpecificTextureFilter(filter);
 
-  out_sampler.m_MinFilter       = xiiGALTextureFilterMode::Linear;
-  out_sampler.m_MagFilter       = xiiGALTextureFilterMode::Linear;
-  out_sampler.m_MipFilter       = xiiGALTextureFilterMode::Linear;
+  out_sampler.m_MinFilter       = xiiGALFilterType::Linear;
+  out_sampler.m_MagFilter       = xiiGALFilterType::Linear;
+  out_sampler.m_MipFilter       = xiiGALFilterType::Linear;
   out_sampler.m_uiMaxAnisotropy = 1;
 
   switch (thisFilter)
   {
     case xiiTextureFilterSetting::FixedNearest:
-      out_sampler.m_MinFilter = xiiGALTextureFilterMode::Point;
-      out_sampler.m_MagFilter = xiiGALTextureFilterMode::Point;
-      out_sampler.m_MipFilter = xiiGALTextureFilterMode::Point;
+      out_sampler.m_MinFilter = xiiGALFilterType::Point;
+      out_sampler.m_MagFilter = xiiGALFilterType::Point;
+      out_sampler.m_MipFilter = xiiGALFilterType::Point;
       break;
     case xiiTextureFilterSetting::FixedBilinear:
-      out_sampler.m_MipFilter = xiiGALTextureFilterMode::Point;
+      out_sampler.m_MipFilter = xiiGALFilterType::Point;
       break;
     case xiiTextureFilterSetting::FixedTrilinear:
       break;
     case xiiTextureFilterSetting::FixedAnisotropic2x:
-      out_sampler.m_MinFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_sampler.m_MagFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
+      out_sampler.m_MagFilter       = xiiGALFilterType::Anisotropic;
+      out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
       out_sampler.m_uiMaxAnisotropy = 2;
       break;
     case xiiTextureFilterSetting::FixedAnisotropic4x:
-      out_sampler.m_MinFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_sampler.m_MagFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
+      out_sampler.m_MagFilter       = xiiGALFilterType::Anisotropic;
+      out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
       out_sampler.m_uiMaxAnisotropy = 4;
       break;
     case xiiTextureFilterSetting::FixedAnisotropic8x:
-      out_sampler.m_MinFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_sampler.m_MagFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
+      out_sampler.m_MagFilter       = xiiGALFilterType::Anisotropic;
+      out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
       out_sampler.m_uiMaxAnisotropy = 8;
       break;
     case xiiTextureFilterSetting::FixedAnisotropic16x:
-      out_sampler.m_MinFilter       = xiiGALTextureFilterMode::Anisotropic;
-      out_sampler.m_MagFilter       = xiiGALTextureFilterMode::Anisotropic;
+      out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
+      out_sampler.m_MagFilter       = xiiGALFilterType::Anisotropic;
+      out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
       out_sampler.m_uiMaxAnisotropy = 16;
       break;
     default:
@@ -356,6 +359,20 @@ void xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::Enum filter, xii
   }
 }
 
-
+xiiEnum<xiiGALTextureAddressMode> xiiTextureUtils::GALTextureAddressMode(xiiEnum<xiiImageAddressMode> mode)
+{
+  switch (mode)
+  {
+    case xiiImageAddressMode::Repeat:
+      return xiiGALTextureAddressMode::Wrap;
+    case xiiImageAddressMode::Clamp:
+      return xiiGALTextureAddressMode::Clamp;
+    case xiiImageAddressMode::ClampBorder:
+      return xiiGALTextureAddressMode::Border;
+    case xiiImageAddressMode::Mirror:
+      return xiiGALTextureAddressMode::Mirror;
+  }
+  return xiiEnum<xiiGALTextureAddressMode>();
+}
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Textures_TextureUtils);

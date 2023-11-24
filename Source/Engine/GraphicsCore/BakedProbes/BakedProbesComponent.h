@@ -70,7 +70,7 @@ private:
   bool    m_bShowDebugOverlay = false;
   bool    m_bShowDebugProbes  = false;
   bool    m_bUseTestPosition  = false;
-  xiiVec3 m_vTestPosition     = xiiVec3::MakeZero();
+  xiiVec3 m_vTestPosition     = xiiVec3::ZeroVector();
 
   struct RenderDebugViewTask;
   xiiSharedPtr<RenderDebugViewTask> m_pRenderDebugViewTask;

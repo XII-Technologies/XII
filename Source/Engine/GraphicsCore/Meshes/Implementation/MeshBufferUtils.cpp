@@ -54,7 +54,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 // static
-xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat)
+xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALTextureFormat> destFormat)
 {
   XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALResourceFormat::GetBitsPerElement(destFormat) / 8, "Destination buffer is too small");
 
@@ -72,7 +72,7 @@ xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<x
 }
 
 // static
-xiiResult xiiMeshBufferUtils::EncodeFromVec2(const xiiVec2& vSource, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat)
+xiiResult xiiMeshBufferUtils::EncodeFromVec2(const xiiVec2& vSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALTextureFormat> destFormat)
 {
   XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALResourceFormat::GetBitsPerElement(destFormat) / 8, "Destination buffer is too small");
 
@@ -92,7 +92,7 @@ xiiResult xiiMeshBufferUtils::EncodeFromVec2(const xiiVec2& vSource, xiiArrayPtr
 }
 
 // static
-xiiResult xiiMeshBufferUtils::EncodeFromVec3(const xiiVec3& vSource, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat)
+xiiResult xiiMeshBufferUtils::EncodeFromVec3(const xiiVec3& vSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALTextureFormat> destFormat)
 {
   XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALResourceFormat::GetBitsPerElement(destFormat) / 8, "Destination buffer is too small");
 
@@ -141,7 +141,7 @@ xiiResult xiiMeshBufferUtils::EncodeFromVec3(const xiiVec3& vSource, xiiArrayPtr
 }
 
 // static
-xiiResult xiiMeshBufferUtils::EncodeFromVec4(const xiiVec4& vSource, xiiArrayPtr<xiiUInt8> dest, xiiGALResourceFormat::Enum destFormat)
+xiiResult xiiMeshBufferUtils::EncodeFromVec4(const xiiVec4& vSource, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALTextureFormat> destFormat)
 {
   XII_ASSERT_DEBUG(dest.GetCount() >= xiiGALResourceFormat::GetBitsPerElement(destFormat) / 8, "Destination buffer is too small");
 
@@ -196,7 +196,7 @@ xiiResult xiiMeshBufferUtils::EncodeFromVec4(const xiiVec4& vSource, xiiArrayPtr
 }
 
 // static
-xiiResult xiiMeshBufferUtils::DecodeToFloat(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, float& ref_fDest)
+xiiResult xiiMeshBufferUtils::DecodeToFloat(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, float& ref_fDest)
 {
   XII_ASSERT_DEBUG(source.GetCount() >= xiiGALResourceFormat::GetBitsPerElement(sourceFormat) / 8, "Source buffer is too small");
 
@@ -214,7 +214,7 @@ xiiResult xiiMeshBufferUtils::DecodeToFloat(xiiArrayPtr<const xiiUInt8> source, 
 }
 
 // static
-xiiResult xiiMeshBufferUtils::DecodeToVec2(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec2& ref_vDest)
+xiiResult xiiMeshBufferUtils::DecodeToVec2(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, xiiVec2& ref_vDest)
 {
   XII_ASSERT_DEBUG(source.GetCount() >= xiiGALResourceFormat::GetBitsPerElement(sourceFormat) / 8, "Source buffer is too small");
 
@@ -232,7 +232,7 @@ xiiResult xiiMeshBufferUtils::DecodeToVec2(xiiArrayPtr<const xiiUInt8> source, x
 }
 
 // static
-xiiResult xiiMeshBufferUtils::DecodeToVec3(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec3& ref_vDest)
+xiiResult xiiMeshBufferUtils::DecodeToVec3(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, xiiVec3& ref_vDest)
 {
   XII_ASSERT_DEBUG(source.GetCount() >= xiiGALResourceFormat::GetBitsPerElement(sourceFormat) / 8, "Source buffer is too small");
 
@@ -277,7 +277,7 @@ xiiResult xiiMeshBufferUtils::DecodeToVec3(xiiArrayPtr<const xiiUInt8> source, x
 }
 
 // static
-xiiResult xiiMeshBufferUtils::DecodeToVec4(xiiArrayPtr<const xiiUInt8> source, xiiGALResourceFormat::Enum sourceFormat, xiiVec4& ref_vDest)
+xiiResult xiiMeshBufferUtils::DecodeToVec4(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, xiiVec4& ref_vDest)
 {
   XII_ASSERT_DEBUG(source.GetCount() >= xiiGALResourceFormat::GetBitsPerElement(sourceFormat) / 8, "Source buffer is too small");
 
@@ -365,14 +365,14 @@ xiiResult xiiMeshBufferUtils::GetPositionStream(const xiiMeshBufferResourceDescr
 }
 
 // static
-xiiResult xiiMeshBufferUtils::GetPositionAndNormalStream(const xiiMeshBufferResourceDescriptor& meshBufferDesc, const xiiVec3*& out_pPositions, const xiiUInt8*& out_pNormals, xiiGALResourceFormat::Enum& out_normalFormat, xiiUInt32& out_uiElementStride)
+xiiResult xiiMeshBufferUtils::GetPositionAndNormalStream(const xiiMeshBufferResourceDescriptor& meshBufferDesc, const xiiVec3*& out_pPositions, const xiiUInt8*& out_pNormals, xiiEnum<xiiGALTextureFormat>& out_normalFormat, xiiUInt32& out_uiElementStride)
 {
   const xiiVertexDeclarationInfo& vdi            = meshBufferDesc.GetVertexDeclaration();
   const xiiUInt8*                 pRawVertexData = meshBufferDesc.GetVertexBufferData().GetPtr();
 
-  const xiiVec3*             pPositions   = nullptr;
-  const xiiUInt8*            pNormals     = nullptr;
-  xiiGALResourceFormat::Enum normalFormat = xiiGALResourceFormat::Invalid;
+  const xiiVec3*               pPositions   = nullptr;
+  const xiiUInt8*              pNormals     = nullptr;
+  xiiEnum<xiiGALTextureFormat> normalFormat = xiiGALTextureFormat::Unknown;
 
   for (xiiUInt32 vs = 0; vs < vdi.m_VertexStreams.GetCount(); ++vs)
   {

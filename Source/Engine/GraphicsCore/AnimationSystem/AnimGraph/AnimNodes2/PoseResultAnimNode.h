@@ -24,7 +24,7 @@ public:
   ~xiiPoseResultAnimNode();
 
 private:
-  xiiTime m_FadeDuration = xiiTime::MakeFromMilliseconds(200); // [ property ]
+  xiiTime m_FadeDuration = xiiTime::Milliseconds(200); // [ property ]
 
   xiiAnimGraphLocalPoseInputPin   m_InPose;           // [ property ]
   xiiAnimGraphNumberInputPin      m_InTargetWeight;   // [ property ]

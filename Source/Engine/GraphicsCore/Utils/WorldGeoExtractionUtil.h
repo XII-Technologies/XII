@@ -1,11 +1,12 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <Core/World/Declarations.h>
 #include <Foundation/Communication/Message.h>
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Types/TagSet.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 
 class xiiWorld;
 using xiiCpuMeshResourceHandle = xiiTypedResourceHandle<class xiiCpuMeshResource>;

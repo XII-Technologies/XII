@@ -63,7 +63,7 @@ bool xiiSourcePass::GetRenderTargetDescriptions(
   // Color
   if (m_Format == xiiSourceFormat::Color4Channel8BitNormalized || m_Format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
   {
-    xiiGALResourceFormat::Enum preferredFormat = xiiGALResourceFormat::Invalid;
+    xiiEnum<xiiGALTextureFormat> preferredFormat = xiiGALTextureFormat::Unknown;
     if (const xiiGALTexture* pTexture = pDevice->GetTexture(renderTargets.m_hRTs[0]))
     {
       auto rendertargetDesc = pTexture->GetDescription();

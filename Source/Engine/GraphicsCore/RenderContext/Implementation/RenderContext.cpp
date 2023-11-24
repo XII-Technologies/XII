@@ -25,7 +25,7 @@ xiiMutex                                                              xiiRenderC
 xiiIdTable<xiiConstantBufferStorageId, xiiConstantBufferStorageBase*> xiiRenderContext::s_ConstantBufferStorageTable;
 xiiMap<xiiUInt32, xiiDynamicArray<xiiConstantBufferStorageBase*>>     xiiRenderContext::s_FreeConstantBufferStorage;
 
-xiiGALSamplerStateHandle xiiRenderContext::s_hDefaultSamplerStates[4];
+xiiGALSamplerHandle xiiRenderContext::s_hDefaultSamplers[4];
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RendererContext)
@@ -241,7 +241,7 @@ void xiiRenderContext::BindTexture2D(const xiiTempHashedString& sSlotName, const
   {
     xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, acquireMode);
     BindTexture2D(sSlotName, xiiGALDevice::GetDefaultDevice()->GetDefaultResourceView(pTexture->GetGALTexture()));
-    BindSamplerState(sSlotName, pTexture->GetGALSamplerState());
+    BindSampler(sSlotName, pTexture->GetGALSampler());
   }
   else
   {
@@ -255,7 +255,7 @@ void xiiRenderContext::BindTexture3D(const xiiTempHashedString& sSlotName, const
   {
     xiiResourceLock<xiiTexture3DResource> pTexture(hTexture, acquireMode);
     BindTexture3D(sSlotName, xiiGALDevice::GetDefaultDevice()->GetDefaultResourceView(pTexture->GetGALTexture()));
-    BindSamplerState(sSlotName, pTexture->GetGALSamplerState());
+    BindSampler(sSlotName, pTexture->GetGALSampler());
   }
   else
   {
@@ -269,7 +269,7 @@ void xiiRenderContext::BindTextureCube(const xiiTempHashedString& sSlotName, con
   {
     xiiResourceLock<xiiTextureCubeResource> pTexture(hTexture, acquireMode);
     BindTextureCube(sSlotName, xiiGALDevice::GetDefaultDevice()->GetDefaultResourceView(pTexture->GetGALTexture()));
-    BindSamplerState(sSlotName, pTexture->GetGALSamplerState());
+    BindSampler(sSlotName, pTexture->GetGALSampler());
   }
   else
   {
@@ -350,20 +350,20 @@ void xiiRenderContext::BindUAV(const xiiTempHashedString& sSlotName, xiiGALUnord
 }
 
 
-void xiiRenderContext::BindSamplerState(const xiiTempHashedString& sSlotName, xiiGALSamplerStateHandle hSamplerSate)
+void xiiRenderContext::BindSampler(const xiiTempHashedString& sSlotName, xiiGALSamplerHandle hSamplerSate)
 {
   XII_ASSERT_DEBUG(sSlotName != "LinearSampler", "'LinearSampler' is a resevered sampler name and must not be set manually.");
   XII_ASSERT_DEBUG(sSlotName != "LinearClampSampler", "'LinearClampSampler' is a resevered sampler name and must not be set manually.");
   XII_ASSERT_DEBUG(sSlotName != "PointSampler", "'PointSampler' is a resevered sampler name and must not be set manually.");
   XII_ASSERT_DEBUG(sSlotName != "PointClampSampler", "'PointClampSampler' is a resevered sampler name and must not be set manually.");
 
-  xiiGALSamplerStateHandle* pOldSamplerState = nullptr;
-  if (m_BoundSamplers.TryGetValue(sSlotName.GetHash(), pOldSamplerState))
+  xiiGALSamplerHandle* pOldSampler = nullptr;
+  if (m_BoundSamplers.TryGetValue(sSlotName.GetHash(), pOldSampler))
   {
-    if (*pOldSamplerState == hSamplerSate)
+    if (*pOldSampler == hSamplerSate)
       return;
 
-    *pOldSamplerState = hSamplerSate;
+    *pOldSampler = hSamplerSate;
   }
   else
   {
@@ -768,10 +768,10 @@ void xiiRenderContext::ResetContextState()
   m_BoundBuffer.Clear();
 
   m_BoundSamplers.Clear();
-  m_BoundSamplers.Insert(xiiHashingUtils::StringHash("LinearSampler"), GetDefaultSamplerState(xiiDefaultSamplerFlags::LinearFiltering));
-  m_BoundSamplers.Insert(xiiHashingUtils::StringHash("LinearClampSampler"), GetDefaultSamplerState(xiiDefaultSamplerFlags::LinearFiltering | xiiDefaultSamplerFlags::Clamp));
-  m_BoundSamplers.Insert(xiiHashingUtils::StringHash("PointSampler"), GetDefaultSamplerState(xiiDefaultSamplerFlags::PointFiltering));
-  m_BoundSamplers.Insert(xiiHashingUtils::StringHash("PointClampSampler"), GetDefaultSamplerState(xiiDefaultSamplerFlags::PointFiltering | xiiDefaultSamplerFlags::Clamp));
+  m_BoundSamplers.Insert(xiiHashingUtils::StringHash("LinearSampler"), GetDefaultSampler(xiiDefaultSamplerFlags::LinearFiltering));
+  m_BoundSamplers.Insert(xiiHashingUtils::StringHash("LinearClampSampler"), GetDefaultSampler(xiiDefaultSamplerFlags::LinearFiltering | xiiDefaultSamplerFlags::Clamp));
+  m_BoundSamplers.Insert(xiiHashingUtils::StringHash("PointSampler"), GetDefaultSampler(xiiDefaultSamplerFlags::PointFiltering));
+  m_BoundSamplers.Insert(xiiHashingUtils::StringHash("PointClampSampler"), GetDefaultSampler(xiiDefaultSamplerFlags::PointFiltering | xiiDefaultSamplerFlags::Clamp));
 
   m_BoundUAVs.Clear();
   m_BoundConstantBuffers.Clear();
@@ -851,14 +851,14 @@ bool xiiRenderContext::TryGetConstantBufferStorage(xiiConstantBufferStorageHandl
 }
 
 // static
-xiiGALSamplerStateHandle xiiRenderContext::GetDefaultSamplerState(xiiBitflags<xiiDefaultSamplerFlags> flags)
+xiiGALSamplerHandle xiiRenderContext::GetDefaultSampler(xiiBitflags<xiiDefaultSamplerFlags> flags)
 {
-  xiiUInt32 uiSamplerStateIndex = flags.GetValue();
-  XII_ASSERT_DEV(uiSamplerStateIndex < XII_ARRAY_SIZE(s_hDefaultSamplerStates), "");
+  xiiUInt32 uiSamplerIndex = flags.GetValue();
+  XII_ASSERT_DEV(uiSamplerIndex < XII_ARRAY_SIZE(s_hDefaultSamplers), "");
 
-  if (s_hDefaultSamplerStates[uiSamplerStateIndex].IsInvalidated())
+  if (s_hDefaultSamplers[uiSamplerIndex].IsInvalidated())
   {
-    xiiGALSamplerStateCreationDescription desc;
+    xiiGALSamplerCreationDescription desc;
     desc.m_MinFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALTextureFilterMode::Linear : xiiGALTextureFilterMode::Point;
     desc.m_MagFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALTextureFilterMode::Linear : xiiGALTextureFilterMode::Point;
     desc.m_MipFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALTextureFilterMode::Linear : xiiGALTextureFilterMode::Point;
@@ -867,10 +867,10 @@ xiiGALSamplerStateHandle xiiRenderContext::GetDefaultSamplerState(xiiBitflags<xi
     desc.m_AddressV = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiImageAddressMode::Clamp : xiiImageAddressMode::Repeat;
     desc.m_AddressW = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiImageAddressMode::Clamp : xiiImageAddressMode::Repeat;
 
-    s_hDefaultSamplerStates[uiSamplerStateIndex] = xiiGALDevice::GetDefaultDevice()->CreateSamplerState(desc);
+    s_hDefaultSamplers[uiSamplerIndex] = xiiGALDevice::GetDefaultDevice()->CreateSampler(desc);
   }
 
-  return s_hDefaultSamplerStates[uiSamplerStateIndex];
+  return s_hDefaultSamplers[uiSamplerIndex];
 }
 
 // private functions
@@ -941,12 +941,12 @@ void xiiRenderContext::OnEngineShutdown()
   s_Instances.Clear();
 
   // Cleanup sampler states
-  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(s_hDefaultSamplerStates); ++i)
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(s_hDefaultSamplers); ++i)
   {
-    if (!s_hDefaultSamplerStates[i].IsInvalidated())
+    if (!s_hDefaultSamplers[i].IsInvalidated())
     {
-      xiiGALDevice::GetDefaultDevice()->DestroySamplerState(s_hDefaultSamplerStates[i]);
-      s_hDefaultSamplerStates[i].Invalidate();
+      xiiGALDevice::GetDefaultDevice()->DestroySampler(s_hDefaultSamplers[i]);
+      s_hDefaultSamplers[i].Invalidate();
     }
   }
 
@@ -1279,13 +1279,13 @@ void xiiRenderContext::ApplySamplerBindings(xiiGALShaderStage::Enum stage, const
 
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
 
-    xiiGALSamplerStateHandle hSamplerState;
-    if (!m_BoundSamplers.TryGetValue(uiResourceHash, hSamplerState))
+    xiiGALSamplerHandle hSampler;
+    if (!m_BoundSamplers.TryGetValue(uiResourceHash, hSampler))
     {
-      hSamplerState = GetDefaultSamplerState(xiiDefaultSamplerFlags::LinearFiltering); // Bind a default state to avoid DX11 errors.
+      hSampler = GetDefaultSampler(xiiDefaultSamplerFlags::LinearFiltering); // Bind a default state to avoid DX11 errors.
     }
 
-    m_pGALCommandEncoder->SetSamplerState(stage, binding.m_iSlot, hSamplerState);
+    m_pGALCommandEncoder->SetSampler(stage, binding.m_iSlot, hSampler);
   }
 }
 

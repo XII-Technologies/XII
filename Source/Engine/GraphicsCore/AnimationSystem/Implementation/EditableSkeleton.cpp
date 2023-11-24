@@ -50,7 +50,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeletonJoint, 2, xiiRTTIDefaultAllo
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("Name", GetName, SetName)->AddAttributes(new xiiReadOnlyAttribute()),
-    XII_MEMBER_PROPERTY("Transform", m_LocalTransform)->AddFlags(xiiPropertyFlags::Hidden)->AddAttributes(new xiiDefaultValueAttribute(xiiTransform::MakeIdentity())),
+    XII_MEMBER_PROPERTY("Transform", m_LocalTransform)->AddFlags(xiiPropertyFlags::Hidden)->AddAttributes(new xiiDefaultValueAttribute(xiiTransform::IdentityTransform())),
     XII_MEMBER_PROPERTY_READ_ONLY("GizmoOffsetTranslationRO", m_vGizmoOffsetPositionRO)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY_READ_ONLY("GizmoOffsetRotationRO", m_qGizmoOffsetRotationRO)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("LocalRotation", m_qLocalJointRotation),
@@ -222,7 +222,7 @@ void xiiEditableSkeleton::FillResourceDescriptor(xiiSkeletonResourceDescriptor& 
   {
     const xiiUInt16 idx = sb.AddJoint(pJoint->GetName(), pJoint->m_LocalTransform);
 
-    CreateJointsRecursive(sb, ref_desc, nullptr, pJoint, idx, xiiQuat::MakeIdentity(), ref_desc.m_RootTransform.GetAsMat4());
+    CreateJointsRecursive(sb, ref_desc, nullptr, pJoint, idx, xiiQuat::IdentityQuaternion(), ref_desc.m_RootTransform.GetAsMat4());
   }
 
   sb.BuildSkeleton(ref_desc.m_Skeleton);

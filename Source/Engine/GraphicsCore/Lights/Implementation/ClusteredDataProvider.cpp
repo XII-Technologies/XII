@@ -69,19 +69,19 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
   m_hConstantBuffer = xiiRenderContext::CreateConstantBufferStorage<xiiClusteredDataConstants>();
 
   {
-    xiiGALSamplerStateCreationDescription desc;
+    xiiGALSamplerCreationDescription desc;
     desc.m_AddressU          = xiiImageAddressMode::Clamp;
     desc.m_AddressV          = xiiImageAddressMode::Clamp;
     desc.m_AddressW          = xiiImageAddressMode::Clamp;
     desc.m_SampleCompareFunc = xiiGALCompareFunc::Less;
 
-    m_hShadowSampler = pDevice->CreateSamplerState(desc);
+    m_hShadowSampler = pDevice->CreateSampler(desc);
   }
 
   m_hDecalAtlas = xiiDecalAtlasResource::GetDecalAtlasResource();
 
   {
-    xiiGALSamplerStateCreationDescription desc;
+    xiiGALSamplerCreationDescription desc;
     desc.m_AddressU = xiiImageAddressMode::Clamp;
     desc.m_AddressV = xiiImageAddressMode::Clamp;
     desc.m_AddressW = xiiImageAddressMode::Clamp;
@@ -89,7 +89,7 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
     xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::DefaultQuality, desc);
     desc.m_uiMaxAnisotropy = xiiMath::Min(desc.m_uiMaxAnisotropy, 4u);
 
-    m_hDecalAtlasSampler = pDevice->CreateSamplerState(desc);
+    m_hDecalAtlasSampler = pDevice->CreateSampler(desc);
   }
 }
 
@@ -102,8 +102,8 @@ xiiClusteredDataGPU::~xiiClusteredDataGPU()
   pDevice->DestroyBuffer(m_hReflectionProbeDataBuffer);
   pDevice->DestroyBuffer(m_hClusterDataBuffer);
   pDevice->DestroyBuffer(m_hClusterItemBuffer);
-  pDevice->DestroySamplerState(m_hShadowSampler);
-  pDevice->DestroySamplerState(m_hDecalAtlasSampler);
+  pDevice->DestroySampler(m_hShadowSampler);
+  pDevice->DestroySampler(m_hDecalAtlasSampler);
 
   xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBuffer);
 }
@@ -126,13 +126,13 @@ void xiiClusteredDataGPU::BindResources(xiiRenderContext* pRenderContext)
 
   pRenderContext->BindBuffer("shadowDataBuffer", hShadowDataBufferView);
   pRenderContext->BindTexture2D("ShadowAtlasTexture", hShadowAtlasTextureView);
-  pRenderContext->BindSamplerState("ShadowSampler", m_hShadowSampler);
+  pRenderContext->BindSampler("ShadowSampler", m_hShadowSampler);
 
   xiiResourceLock<xiiDecalAtlasResource> pDecalAtlas(m_hDecalAtlas, xiiResourceAcquireMode::AllowLoadingFallback);
   pRenderContext->BindTexture2D("DecalAtlasBaseColorTexture", pDecalAtlas->GetBaseColorTexture());
   pRenderContext->BindTexture2D("DecalAtlasNormalTexture", pDecalAtlas->GetNormalTexture());
   pRenderContext->BindTexture2D("DecalAtlasORMTexture", pDecalAtlas->GetORMTexture());
-  pRenderContext->BindSamplerState("DecalAtlasSampler", m_hDecalAtlasSampler);
+  pRenderContext->BindSampler("DecalAtlasSampler", m_hDecalAtlasSampler);
 
   pRenderContext->BindTextureCube("ReflectionSpecularTexture", hReflectionSpecularTextureView);
   pRenderContext->BindTexture2D("SkyIrradianceTexture", hSkyIrradianceTextureView);

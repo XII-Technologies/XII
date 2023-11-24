@@ -13,12 +13,11 @@
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgExtractGeometry);
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsgExtractGeometry, 1, xiiRTTIDefaultAllocator<xiiMsgExtractGeometry>)
 {
-  /// \todo Add exclude from script attribute.
-  // XII_BEGIN_ATTRIBUTES
-  // {
-  //   new xiiExcludeFromScript()
-  // }
-  // XII_END_ATTRIBUTES;
+  XII_BEGIN_ATTRIBUTES
+  {
+    new xiiExcludeFromScript()
+  }
+  XII_END_ATTRIBUTES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on

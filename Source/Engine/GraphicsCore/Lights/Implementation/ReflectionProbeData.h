@@ -36,7 +36,7 @@ struct XII_GRAPHICSCORE_DLL xiiReflectionProbeDesc
   float   m_fSaturation    = 1.0f;
   float   m_fNearPlane     = 0.0f;
   float   m_fFarPlane      = 100.0f;
-  xiiVec3 m_vCaptureOffset = xiiVec3::MakeZero();
+  xiiVec3 m_vCaptureOffset = xiiVec3::ZeroVector();
 };
 
 using xiiReflectionProbeId = xiiGenericId<24, 8>;

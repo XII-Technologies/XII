@@ -49,7 +49,7 @@ public:
 
   xiiUInt64 GetCategorySortingKey(Category category, const xiiCamera& camera) const;
 
-  xiiTransform         m_GlobalTransform = xiiTransform::MakeIdentity();
+  xiiTransform         m_GlobalTransform = xiiTransform::IdentityTransform();
   xiiBoundingBoxSphere m_GlobalBounds;
 
   xiiUInt32 m_uiBatchId           = 0; ///< BatchId is used to group render data in batches.

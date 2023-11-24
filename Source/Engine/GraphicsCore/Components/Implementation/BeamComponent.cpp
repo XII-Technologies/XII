@@ -114,7 +114,7 @@ xiiResult xiiBeamComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, boo
     const xiiVec3 currentTargetPosition      = pTargetObject->GetGlobalPosition();
     const xiiVec3 targetPositionInOwnerSpace = GetOwner()->GetGlobalTransform().GetInverse().TransformPosition(currentTargetPosition);
 
-    xiiVec3 pts[] = {xiiVec3::MakeZero(), targetPositionInOwnerSpace};
+    xiiVec3 pts[] = {xiiVec3::ZeroVector(), targetPositionInOwnerSpace};
 
     xiiBoundingBox box        = xiiBoundingBox::MakeFromPoints(pts, 2);
     const float    fHalfWidth = m_fWidth * 0.5f;
@@ -280,8 +280,8 @@ void xiiBeamComponent::CreateMeshes()
 
     // Quad 1
     {
-      xiiUInt32 index0 = g.AddVertex(xiiVec3::MakeZero() + crossVector1, xiiVec3::MakeAxisX(), xiiVec2(0, 0), xiiColor::White);
-      xiiUInt32 index1 = g.AddVertex(xiiVec3::MakeZero() + crossVector4, xiiVec3::MakeAxisX(), xiiVec2(0, 1), xiiColor::White);
+      xiiUInt32 index0 = g.AddVertex(xiiVec3::ZeroVector() + crossVector1, xiiVec3::MakeAxisX(), xiiVec2(0, 0), xiiColor::White);
+      xiiUInt32 index1 = g.AddVertex(xiiVec3::ZeroVector() + crossVector4, xiiVec3::MakeAxisX(), xiiVec2(0, 1), xiiColor::White);
       xiiUInt32 index2 = g.AddVertex(targetPositionInOwnerSpace + crossVector1, xiiVec3::MakeAxisX(), xiiVec2(fDistance * m_fUVUnitsPerWorldUnit, 0), xiiColor::White);
       xiiUInt32 index3 = g.AddVertex(targetPositionInOwnerSpace + crossVector4, xiiVec3::MakeAxisX(), xiiVec2(fDistance * m_fUVUnitsPerWorldUnit, 1), xiiColor::White);
 
@@ -292,8 +292,8 @@ void xiiBeamComponent::CreateMeshes()
 
     // Quad 2
     {
-      xiiUInt32 index0 = g.AddVertex(xiiVec3::MakeZero() + crossVector2, xiiVec3::MakeAxisX(), xiiVec2(0, 0), xiiColor::White);
-      xiiUInt32 index1 = g.AddVertex(xiiVec3::MakeZero() + crossVector3, xiiVec3::MakeAxisX(), xiiVec2(0, 1), xiiColor::White);
+      xiiUInt32 index0 = g.AddVertex(xiiVec3::ZeroVector() + crossVector2, xiiVec3::MakeAxisX(), xiiVec2(0, 0), xiiColor::White);
+      xiiUInt32 index1 = g.AddVertex(xiiVec3::ZeroVector() + crossVector3, xiiVec3::MakeAxisX(), xiiVec2(0, 1), xiiColor::White);
       xiiUInt32 index2 = g.AddVertex(targetPositionInOwnerSpace + crossVector2, xiiVec3::MakeAxisX(), xiiVec2(fDistance * m_fUVUnitsPerWorldUnit, 0), xiiColor::White);
       xiiUInt32 index3 = g.AddVertex(targetPositionInOwnerSpace + crossVector3, xiiVec3::MakeAxisX(), xiiVec2(fDistance * m_fUVUnitsPerWorldUnit, 1), xiiColor::White);
 

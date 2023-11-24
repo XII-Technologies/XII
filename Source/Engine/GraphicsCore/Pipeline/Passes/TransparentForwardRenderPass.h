@@ -18,9 +18,9 @@ protected:
   virtual void RenderObjects(const xiiRenderViewContext& renderViewContext) override;
 
   void UpdateSceneColorTexture(const xiiRenderViewContext& renderViewContext, xiiGALTextureHandle hSceneColorTexture, xiiGALTextureHandle hCurrentColorTexture);
-  void CreateSamplerState();
+  void CreateSampler();
 
   xiiRenderPipelineNodeInputPin m_PinResolvedDepth;
 
-  xiiGALSamplerStateHandle m_hSceneColorSamplerState;
+  xiiGALSamplerHandle m_hSceneColorSampler;
 };

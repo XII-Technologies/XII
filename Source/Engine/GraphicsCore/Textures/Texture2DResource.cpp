@@ -54,10 +54,10 @@ xiiResourceLoadDesc xiiTexture2DResource::UnloadData(Unload WhatToUnload)
 
   if (WhatToUnload == Unload::AllQualityLevels)
   {
-    if (!m_hSamplerState.IsInvalidated())
+    if (!m_hSampler.IsInvalidated())
     {
-      xiiGALDevice::GetDefaultDevice()->DestroySamplerState(m_hSamplerState);
-      m_hSamplerState.Invalidate();
+      xiiGALDevice::GetDefaultDevice()->DestroySampler(m_hSampler);
+      m_hSampler.Invalidate();
     }
   }
 
@@ -72,7 +72,7 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
 {
   const xiiUInt32 uiHighestMipLevel = pImage->GetNumMipLevels() - uiNumMipLevels;
 
-  const xiiGALResourceFormat::Enum format = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
+  const xiiEnum<xiiGALTextureFormat> format = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
 
   ref_td.m_DescGAL.m_Format          = format;
   ref_td.m_DescGAL.m_uiWidth         = pImage->GetWidth(uiHighestMipLevel);
@@ -258,13 +258,13 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture2DResource, xiiTexture2DResourceDesc
 
   pDevice->GetTexture(m_hGALTexture[m_uiLoadedTextures])->SetDebugName(GetResourceDescription());
 
-  if (!m_hSamplerState.IsInvalidated())
+  if (!m_hSampler.IsInvalidated())
   {
-    pDevice->DestroySamplerState(m_hSamplerState);
+    pDevice->DestroySampler(m_hSampler);
   }
 
-  m_hSamplerState = pDevice->CreateSamplerState(descriptor.m_SamplerDesc);
-  XII_ASSERT_DEV(!m_hSamplerState.IsInvalidated(), "Sampler state error");
+  m_hSampler = pDevice->CreateSampler(descriptor.m_SamplerDesc);
+  XII_ASSERT_DEV(!m_hSampler.IsInvalidated(), "Sampler state error");
 
   ++m_uiLoadedTextures;
 
@@ -329,13 +329,13 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderToTexture2DResource, xiiRenderToTextu
 
   pDevice->GetTexture(m_hGALTexture[m_uiLoadedTextures])->SetDebugName(GetResourceDescription());
 
-  if (!m_hSamplerState.IsInvalidated())
+  if (!m_hSampler.IsInvalidated())
   {
-    pDevice->DestroySamplerState(m_hSamplerState);
+    pDevice->DestroySampler(m_hSampler);
   }
 
-  m_hSamplerState = pDevice->CreateSamplerState(descriptor.m_SamplerDesc);
-  XII_ASSERT_DEV(!m_hSamplerState.IsInvalidated(), "Sampler state error");
+  m_hSampler = pDevice->CreateSampler(descriptor.m_SamplerDesc);
+  XII_ASSERT_DEV(!m_hSampler.IsInvalidated(), "Sampler state error");
 
   ++m_uiLoadedTextures;
 
@@ -357,10 +357,10 @@ xiiResourceLoadDesc xiiRenderToTexture2DResource::UnloadData(Unload WhatToUnload
 
   m_uiLoadedTextures = 0;
 
-  if (!m_hSamplerState.IsInvalidated())
+  if (!m_hSampler.IsInvalidated())
   {
-    xiiGALDevice::GetDefaultDevice()->DestroySamplerState(m_hSamplerState);
-    m_hSamplerState.Invalidate();
+    xiiGALDevice::GetDefaultDevice()->DestroySampler(m_hSampler);
+    m_hSampler.Invalidate();
   }
 
   xiiResourceLoadDesc res;
@@ -453,7 +453,7 @@ xiiResourceLoadDesc xiiRenderToTexture2DResource::UpdateContent(xiiStreamReader*
       }
     }
 
-    td.m_Format   = static_cast<xiiGALResourceFormat::Enum>(texFormat.m_GalRenderTargetFormat);
+    td.m_Format   = static_cast<xiiEnum<xiiGALTextureFormat>>(texFormat.m_GalRenderTargetFormat);
     td.m_uiWidth  = texFormat.m_iRenderTargetResolutionX;
     td.m_uiHeight = texFormat.m_iRenderTargetResolutionY;
 

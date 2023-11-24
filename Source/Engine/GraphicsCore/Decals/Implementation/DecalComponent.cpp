@@ -233,7 +233,7 @@ xiiResult xiiDecalComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& 
 
 void xiiDecalComponent::SetExtents(const xiiVec3& value)
 {
-  m_vExtents = value.CompMax(xiiVec3::MakeZero());
+  m_vExtents = value.CompMax(xiiVec3::ZeroVector());
 
   TriggerLocalBoundsUpdate();
 }
@@ -533,7 +533,7 @@ void xiiDecalComponent::OnSimulationStarted()
 
   if (m_FadeOutDelay.m_Value.GetSeconds() > 0.0 || m_FadeOutDuration.GetSeconds() > 0.0)
   {
-    const xiiTime tFadeOutDelay = xiiTime::MakeFromSeconds(pWorld->GetRandomNumberGenerator().DoubleVariance(m_FadeOutDelay.m_Value.GetSeconds(), m_FadeOutDelay.m_fVariance));
+    const xiiTime tFadeOutDelay = xiiTime::Seconds(pWorld->GetRandomNumberGenerator().DoubleVariance(m_FadeOutDelay.m_Value.GetSeconds(), m_FadeOutDelay.m_fVariance));
     m_StartFadeOutTime          = pWorld->GetClock().GetAccumulatedTime() + tFadeOutDelay;
 
     if (m_OnFinishedAction != xiiOnComponentFinishedAction::None)

@@ -129,7 +129,7 @@ private:
   xiiRenderPipelineResourceHandle    m_hCachedRenderPipeline;
 
   float   m_fAperture             = 1.0f;
-  xiiTime m_ShutterTime           = xiiTime::MakeFromSeconds(1.0f);
+  xiiTime m_ShutterTime           = xiiTime::Seconds(1.0f);
   float   m_fISO                  = 100.0f;
   float   m_fExposureCompensation = 0.0f;
 

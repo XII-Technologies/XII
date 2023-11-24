@@ -33,7 +33,7 @@ struct xiiAnimGraphPinDataLocalTransforms
   xiiAnimPoseGeneratorCommandID         m_CommandID;
   const xiiAnimGraphPinDataBoneWeights* m_pWeights       = nullptr;
   float                                 m_fOverallWeight = 1.0f;
-  xiiVec3                               m_vRootMotion    = xiiVec3::MakeZero();
+  xiiVec3                               m_vRootMotion    = xiiVec3::ZeroVector();
   bool                                  m_bUseRootMotion = false;
 };
 
@@ -41,7 +41,7 @@ struct xiiAnimGraphPinDataModelTransforms
 {
   xiiUInt16                     m_uiOwnIndex = 0xFFFF;
   xiiAnimPoseGeneratorCommandID m_CommandID;
-  xiiVec3                       m_vRootMotion = xiiVec3::MakeZero();
+  xiiVec3                       m_vRootMotion = xiiVec3::ZeroVector();
   xiiAngle                      m_RootRotationX;
   xiiAngle                      m_RootRotationY;
   xiiAngle                      m_RootRotationZ;
@@ -93,7 +93,7 @@ private:
   xiiSkeletonResourceHandle           m_hSkeleton;
   xiiAnimGraphPinDataModelTransforms* m_pCurrentModelTransforms = nullptr;
 
-  xiiVec3  m_vRootMotion = xiiVec3::MakeZero();
+  xiiVec3  m_vRootMotion = xiiVec3::ZeroVector();
   xiiAngle m_RootRotationX;
   xiiAngle m_RootRotationY;
   xiiAngle m_RootRotationZ;

@@ -57,7 +57,7 @@ xiiResult xiiRootRotationAnimNode::DeserializeNode(xiiStreamReader& stream)
 
 void xiiRootRotationAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGraphInstance& ref_graph, xiiTime tDiff, const xiiSkeletonResource* pSkeleton, xiiGameObject* pTarget) const
 {
-  xiiVec3  vRootMotion = xiiVec3::MakeZero();
+  xiiVec3  vRootMotion = xiiVec3::ZeroVector();
   xiiAngle rootRotationX;
   xiiAngle rootRotationY;
   xiiAngle rootRotationZ;

@@ -12,7 +12,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSwitchPoseAnimNode, 1, xiiRTTIDefaultAllocat
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("TransitionDuration", m_TransitionDuration)->AddAttributes(new xiiDefaultValueAttribute(xiiTime::MakeFromMilliseconds(200))),
+    XII_MEMBER_PROPERTY("TransitionDuration", m_TransitionDuration)->AddAttributes(new xiiDefaultValueAttribute(xiiTime::Milliseconds(200))),
     XII_MEMBER_PROPERTY("InIndex", m_InIndex)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("PosesCount", m_uiPosesCount)->AddAttributes(new xiiNoTemporaryTransactionsAttribute(), new xiiDynamicPinAttribute(), new xiiDefaultValueAttribute(2)),
     XII_ARRAY_MEMBER_PROPERTY("InPoses", m_InPoses)->AddAttributes(new xiiHiddenAttribute(), new xiiDynamicPinAttribute("PosesCount")),
@@ -108,7 +108,7 @@ void xiiSwitchPoseAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGraph
   {
     pInstance->m_iTransitionFromIndex = pInstance->m_iTransitionToIndex;
     pInstance->m_iTransitionToIndex   = iDstIdx;
-    pInstance->m_TransitionTime       = xiiTime::MakeZero();
+    pInstance->m_TransitionTime       = xiiTime::Zero();
   }
 
   if (pInstance->m_TransitionTime >= m_TransitionDuration)

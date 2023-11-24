@@ -1,10 +1,10 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
-#include <GraphicsFoundation/GraphicsFoundationDLL.h>
 #include <Texture/Image/Image.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
