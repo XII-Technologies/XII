@@ -36,19 +36,10 @@ public:
     xiiHybridArray<EnumValue, 16> m_Values;
   };
 
-  static void ParseMaterialParameterSection(
-    xiiStreamReader&                         inout_stream,
-    xiiHybridArray<ParameterDefinition, 16>& out_parameter,
-    xiiHybridArray<EnumDefinition, 4>&       out_enumDefinitions);
+  static void ParseMaterialParameterSection(xiiStreamReader& inout_stream, xiiHybridArray<ParameterDefinition, 16>& out_parameter, xiiHybridArray<EnumDefinition, 4>& out_enumDefinitions);
 
-  static void ParsePermutationSection(
-    xiiStreamReader&                       inout_stream,
-    xiiHybridArray<xiiHashedString, 16>&   out_permVars,
-    xiiHybridArray<xiiPermutationVar, 16>& out_fixedPermVars);
-  static void ParsePermutationSection(
-    xiiStringView                          sPermutationSection,
-    xiiHybridArray<xiiHashedString, 16>&   out_permVars,
-    xiiHybridArray<xiiPermutationVar, 16>& out_fixedPermVars);
+  static void ParsePermutationSection(xiiStreamReader& inout_stream, xiiHybridArray<xiiHashedString, 16>& out_permVars, xiiHybridArray<xiiPermutationVar, 16>& out_fixedPermVars);
+  static void ParsePermutationSection(xiiStringView sPermutationSection, xiiHybridArray<xiiHashedString, 16>& out_permVars, xiiHybridArray<xiiPermutationVar, 16>& out_fixedPermVars);
 
   static void ParsePermutationVarConfig(xiiStringView sPermutationVarConfig, xiiVariant& out_defaultValue, EnumDefinition& out_enumDefinition);
 };

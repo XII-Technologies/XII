@@ -208,6 +208,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderStage
   /// \brief Returns a the stage flag for a given stage index.
   static xiiGALShaderStage::Enum GetStageFlag(xiiUInt32 uiIndex);
 
+  static const char* Names[ENUM_COUNT];
+
   // Note: Changes to this enumeration flag requires updating code paths.
 };
 

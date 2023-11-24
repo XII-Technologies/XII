@@ -532,6 +532,4 @@ void xiiShaderParser::ParsePermutationVarConfig(xiiStringView s, xiiVariant& out
   }
 }
 
-
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_ShaderCompiler_Implementation_ShaderParser);

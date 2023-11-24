@@ -7,7 +7,6 @@ void xiiPermutationGenerator::Clear()
   m_Permutations.Clear();
 }
 
-
 void xiiPermutationGenerator::RemovePermutations(const xiiHashedString& sPermVarName)
 {
   m_Permutations.Remove(sPermVarName);

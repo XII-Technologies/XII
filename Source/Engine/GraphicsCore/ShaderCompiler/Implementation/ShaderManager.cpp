@@ -25,14 +25,14 @@ namespace
   static xiiHashTable<xiiHashedString, PermutationVarConfig*>      s_PermutationVarConfigs;
   static xiiMutex                                                  s_PermutationVarConfigsMutex;
 
-  const PermutationVarConfig* FindConfig(const char* szName, const xiiTempHashedString& sHashedName)
+  const PermutationVarConfig* FindConfig(xiiStringView sName, const xiiTempHashedString& sHashedName)
   {
     XII_LOCK(s_PermutationVarConfigsMutex);
 
     PermutationVarConfig* pConfig = nullptr;
     if (!s_PermutationVarConfigs.TryGetValue(sHashedName, pConfig))
     {
-      xiiShaderManager::ReloadPermutationVarConfig(szName, sHashedName);
+      xiiShaderManager::ReloadPermutationVarConfig(sName, sHashedName);
       s_PermutationVarConfigs.TryGetValue(sHashedName, pConfig);
     }
 
@@ -110,19 +110,19 @@ namespace
 
 //////////////////////////////////////////////////////////////////////////
 
-void xiiShaderManager::Configure(const char* szActivePlatform, bool bEnableRuntimeCompilation, const char* szShaderCacheDirectory, const char* szPermVarSubDirectory)
+void xiiShaderManager::Configure(xiiStringView sActivePlatform, bool bEnableRuntimeCompilation, xiiStringView sShaderCacheDirectory, xiiStringView sPermVarSubDirectory)
 {
-  s_sShaderCacheDirectory = szShaderCacheDirectory;
-  s_sPermVarSubDir        = szPermVarSubDirectory;
+  s_sShaderCacheDirectory = sShaderCacheDirectory;
+  s_sPermVarSubDir        = sPermVarSubDirectory;
 
-  xiiStringBuilder s = szActivePlatform;
+  xiiStringBuilder s = sActivePlatform;
   s.ToUpper();
 
   s_bEnableRuntimeCompilation = bEnableRuntimeCompilation;
   s_sPlatform                 = s;
 }
 
-void xiiShaderManager::ReloadPermutationVarConfig(const char* szName, const xiiTempHashedString& sHashedName)
+void xiiShaderManager::ReloadPermutationVarConfig(xiiStringView sName, const xiiTempHashedString& sHashedName)
 {
   // clear earlier data
   {
@@ -132,7 +132,7 @@ void xiiShaderManager::ReloadPermutationVarConfig(const char* szName, const xiiT
   }
 
   xiiStringBuilder sPath;
-  sPath.Format("{0}/{1}.xiiPermVar", s_sPermVarSubDir, szName);
+  sPath.Format("{0}/{1}.xiiPermVar", s_sPermVarSubDir, sName);
 
   xiiStringBuilder sTemp = s_sPlatform;
   sTemp.Append(" 1");
@@ -145,7 +145,7 @@ void xiiShaderManager::ReloadPermutationVarConfig(const char* szName, const xiiT
 
   if (pp.Process(sPath, sTemp, false).Failed())
   {
-    xiiLog::Error("Could not read shader permutation variable '{0}' from file '{1}'", szName, sPath);
+    xiiLog::Error("Could not read shader permutation variable '{0}' from file '{1}'.", sName, sPath);
   }
 
   xiiVariant                      defaultValue;
@@ -157,7 +157,7 @@ void xiiShaderManager::ReloadPermutationVarConfig(const char* szName, const xiiT
     XII_LOCK(s_PermutationVarConfigsMutex);
 
     auto pConfig = &s_PermutationVarConfigsStorage.ExpandAndGetRef();
-    pConfig->m_sName.Assign(szName);
+    pConfig->m_sName.Assign(sName);
     pConfig->m_DefaultValue = defaultValue;
     pConfig->m_EnumValues   = enumDef.m_Values;
 
@@ -165,12 +165,12 @@ void xiiShaderManager::ReloadPermutationVarConfig(const char* szName, const xiiT
   }
 }
 
-bool xiiShaderManager::IsPermutationValueAllowed(const char* szName, const xiiTempHashedString& sHashedName, const xiiTempHashedString& sValue, xiiHashedString& out_sName, xiiHashedString& out_sValue)
+bool xiiShaderManager::IsPermutationValueAllowed(xiiStringView sName, const xiiTempHashedString& sHashedName, const xiiTempHashedString& sValue, xiiHashedString& out_sName, xiiHashedString& out_sValue)
 {
-  const PermutationVarConfig* pConfig = FindConfig(szName, sHashedName);
+  const PermutationVarConfig* pConfig = FindConfig(sName, sHashedName);
   if (pConfig == nullptr)
   {
-    xiiLog::Error("Permutation variable '{0}' does not exist", szName);
+    xiiLog::Error("Permutation variable '{0}' does not exist", sName);
     return false;
   }
 
@@ -183,12 +183,12 @@ bool xiiShaderManager::IsPermutationValueAllowed(const char* szName, const xiiTe
       return false;
     }
 
-    xiiLog::Debug("Invalid Shader Permutation: '{0}' cannot be set to value '{1}' -> reloading config for variable", szName, sValue.GetHash());
-    ReloadPermutationVarConfig(szName, sHashedName);
+    xiiLog::Debug("Invalid Shader Permutation: '{0}' cannot be set to value '{1}' -> reloading config for variable", sName, sValue.GetHash());
+    ReloadPermutationVarConfig(sName, sHashedName);
 
     if (!IsValueAllowed(*pConfig, sValue, out_sValue))
     {
-      xiiLog::Error("Invalid Shader Permutation: '{0}' cannot be set to value '{1}'", szName, sValue.GetHash());
+      xiiLog::Error("Invalid Shader Permutation: '{0}' cannot be set to value '{1}'", sName, sValue.GetHash());
       return false;
     }
   }
@@ -326,9 +326,7 @@ xiiUInt32 xiiShaderManager::FilterPermutationVars(xiiArrayPtr<const xiiHashedStr
   return xiiShaderHelper::CalculateHash(out_FilteredPermutationVariables);
 }
 
-
-
-xiiShaderPermutationResourceHandle xiiShaderManager::PreloadSinglePermutationInternal(const char* szResourceId, xiiUInt64 uiResourceIdHash, xiiUInt32 uiPermutationHash, xiiArrayPtr<xiiPermutationVar> filteredPermutationVariables)
+xiiShaderPermutationResourceHandle xiiShaderManager::PreloadSinglePermutationInternal(xiiStringView sResourceId, xiiUInt64 uiResourceIdHash, xiiUInt32 uiPermutationHash, xiiArrayPtr<xiiPermutationVar> filteredPermutationVariables)
 {
   const xiiUInt64 uiPermutationKey = (xiiUInt64)xiiHashingUtils::StringHashTo32(uiResourceIdHash) << 32 | uiPermutationHash;
 
@@ -337,7 +335,7 @@ xiiShaderPermutationResourceHandle xiiShaderManager::PreloadSinglePermutationInt
   {
     xiiStringBuilder sShaderFile = GetCacheDirectory();
     sShaderFile.AppendPath(GetActivePlatform().GetData());
-    sShaderFile.AppendPath(szResourceId);
+    sShaderFile.AppendPath(sResourceId);
     sShaderFile.ChangeFileExtension("");
     if (sShaderFile.EndsWith("."))
       sShaderFile.Shrink(0, 1);

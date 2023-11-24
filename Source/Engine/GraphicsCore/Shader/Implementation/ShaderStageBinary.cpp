@@ -351,7 +351,7 @@ xiiResult xiiShaderStageBinary::WriteStageBinary(xiiLogInterface* pLog) const
 // static
 xiiShaderStageBinary* xiiShaderStageBinary::LoadStageBinary(xiiGALShaderStage::Enum Stage, xiiUInt32 uiHash)
 {
-  auto itStage = s_ShaderStageBinaries[Stage].Find(uiHash);
+  auto itStage = s_ShaderStageBinaries[xiiGALShaderStage::GetStageIndex(Stage)].Find(uiHash);
 
   if (!itStage.IsValid())
   {
@@ -400,7 +400,5 @@ void xiiShaderStageBinary::OnEngineShutdown()
     s_ShaderStageBinaries[stage].Clear();
   }
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Shader_Implementation_ShaderStageBinary);

@@ -80,11 +80,20 @@ namespace xiiShaderHelper
     out_sections.AddSection("[RENDERSTATE]");
     out_sections.AddSection("[SHADER]");
     out_sections.AddSection("[VERTEXSHADER]");
+    out_sections.AddSection("[PIXELSHADER]");
+    out_sections.AddSection("[GEOMETRYSHADER]");
     out_sections.AddSection("[HULLSHADER]");
     out_sections.AddSection("[DOMAINSHADER]");
-    out_sections.AddSection("[GEOMETRYSHADER]");
-    out_sections.AddSection("[PIXELSHADER]");
     out_sections.AddSection("[COMPUTESHADER]");
+    out_sections.AddSection("[AMPLIFICATIONSHADER]");
+    out_sections.AddSection("[MESHSHADER]");
+    out_sections.AddSection("[RAYGENERATIONSHADER]");
+    out_sections.AddSection("[RAYMISSSHADER]");
+    out_sections.AddSection("[RAYCLOSESTHITSHADER]");
+    out_sections.AddSection("[RAYANYHITSHADER]");
+    out_sections.AddSection("[RAYINTERSECTIONSHADER]");
+    out_sections.AddSection("[CALLABLESHADER]");
+    out_sections.AddSection("[TILESHADER]");
     out_sections.AddSection("[TEMPLATE_VARS]");
 
     out_sections.Process(szContent);

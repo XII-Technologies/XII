@@ -13,10 +13,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 namespace
 {
-  static bool PlatformEnabled(const xiiString& sPlatforms, const char* szPlatform)
+  static bool PlatformEnabled(const xiiString& sPlatforms, xiiStringView sPlatform)
   {
     xiiStringBuilder sTemp;
-    sTemp = szPlatform;
+    sTemp = sPlatform;
 
     sTemp.Prepend("!");
 
@@ -24,14 +24,14 @@ namespace
     if (sPlatforms.FindWholeWord_NoCase(sTemp, xiiStringUtils::IsIdentifierDelimiter_C_Code) != nullptr)
       return false;
 
-    sTemp = szPlatform;
+    sTemp = sPlatform;
 
     // if it contains 'platform'
     if (sPlatforms.FindWholeWord_NoCase(sTemp, xiiStringUtils::IsIdentifierDelimiter_C_Code) != nullptr)
       return true;
 
     // do not enable this when ALL is specified
-    if (xiiStringUtils::IsEqual(szPlatform, "DEBUG"))
+    if (sPlatform == "DEBUG")
       return false;
 
     // if it contains 'ALL'
@@ -41,7 +41,7 @@ namespace
     return false;
   }
 
-  static void GenerateDefines(const char* szPlatform, const xiiArrayPtr<xiiPermutationVar>& permutationVars, xiiHybridArray<xiiString, 32>& out_defines)
+  static void GenerateDefines(xiiStringView sPlatform, const xiiArrayPtr<xiiPermutationVar>& permutationVars, xiiHybridArray<xiiString, 32>& out_defines)
   {
     xiiStringBuilder sTemp;
 
@@ -50,7 +50,7 @@ namespace
       out_defines.PushBack("TRUE 1");
       out_defines.PushBack("FALSE 0");
 
-      sTemp = szPlatform;
+      sTemp = sPlatform;
       sTemp.ToUpper();
 
       out_defines.PushBack(sTemp);
@@ -58,8 +58,8 @@ namespace
 
     for (const xiiPermutationVar& var : permutationVars)
     {
-      const char* szValue   = var.m_sValue;
-      const bool  isBoolVar = xiiStringUtils::IsEqual(szValue, "TRUE") || xiiStringUtils::IsEqual(szValue, "FALSE");
+      xiiStringView sValue    = var.m_sValue;
+      const bool    isBoolVar = sValue == "TRUE" || sValue == "FALSE";
 
       if (isBoolVar)
       {
@@ -68,29 +68,45 @@ namespace
       }
       else
       {
-        const char* szName     = var.m_sName;
-        auto        enumValues = xiiShaderManager::GetPermutationEnumValues(var.m_sName);
+        xiiStringView sName      = var.m_sName;
+        auto          enumValues = xiiShaderManager::GetPermutationEnumValues(var.m_sName);
 
         for (const auto& ev : enumValues)
         {
-          sTemp.Format("{1} {2}", szName, ev.m_sValueName, ev.m_iValueValue);
+          sTemp.Format("{1} {2}", sName, ev.m_sValueName, ev.m_iValueValue);
           out_defines.PushBack(sTemp);
         }
 
-        if (xiiStringUtils::StartsWith(szValue, szName))
+        if (sValue == sName)
         {
-          sTemp.Set(szName, " ", szValue);
+          sTemp.Set(sName, " ", sValue);
         }
         else
         {
-          sTemp.Set(szName, " ", szName, "_", szValue);
+          sTemp.Set(sName, " ", sName, "_", sValue);
         }
         out_defines.PushBack(sTemp);
       }
     }
   }
 
-  static const char* s_szStageDefines[xiiGALShaderStage::ENUM_COUNT] = {"VERTEX_SHADER", "HULL_SHADER", "DOMAIN_SHADER", "GEOMETRY_SHADER", "PIXEL_SHADER", "COMPUTE_SHADER"};
+  static const char* s_szStageDefines[xiiGALShaderStage::ENUM_COUNT] = {
+    "VERTEX_SHADER",
+    "PIXEL_SHADER",
+    "GEOMETRY_SHADER",
+    "HULL_SHADER",
+    "DOMAIN_SHADER",
+    "COMPUTE_SHADER",
+    "AMPLIFICATION_SHADER",
+    "MESH_SHADER",
+    "RAY_GENERATION_SHADER",
+    "RAY_MISS_SHADER",
+    "RAY_CLOSESTHIT_SHADER",
+    "RAY_ANY_HIT_SHADER",
+    "RAY_INTERSECTION_SHADER",
+    "CALLABLE_SHADER",
+    "TILE_SHADER",
+  };
 } // namespace
 
 xiiResult xiiShaderCompiler::FileOpen(xiiStringView sAbsoluteFile, xiiDynamicArray<xiiUInt8>& FileContent, xiiTimestamp& out_FileModification)
@@ -212,7 +228,7 @@ xiiResult xiiShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringView 
   xiiUInt32     uiFirstShaderLine = 0;
   xiiStringView sShaderSource     = Sections.GetSectionContent(xiiShaderHelper::xiiShaderSections::SHADER, uiFirstShaderLine);
 
-  for (xiiUInt32 stage = xiiGALShaderStage::VertexShader; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
   {
     xiiStringView sStageSource = Sections.GetSectionContent(xiiShaderHelper::xiiShaderSections::VERTEXSHADER + stage, uiFirstLine);
 
@@ -240,25 +256,83 @@ xiiResult xiiShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringView 
   xiiStringBuilder tmp = sFile;
   tmp.MakeCleanPath();
 
-  m_StageSourceFile[xiiGALShaderStage::VertexShader] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::VertexShader].ChangeFileExtension("vs");
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("vs");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Pixel)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("ps");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Geometry)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("gs");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Hull)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("hs");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Domain)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("ds");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Compute)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("cs");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Amplification)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("as");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Mesh)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("ms");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayGeneration)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("rg");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayMiss)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("rms");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayClosestHit)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("rchs");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayAnyHit)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("rahs");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayIntersection)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("ris");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Callable)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("cas");
+  }
+  {
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Tile)];
+    sSourceFile       = tmp;
+    sSourceFile.ChangeFileExtension("ts");
+  }
 
-  m_StageSourceFile[xiiGALShaderStage::HullShader] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::HullShader].ChangeFileExtension("hs");
-
-  m_StageSourceFile[xiiGALShaderStage::DomainShader] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::DomainShader].ChangeFileExtension("ds");
-
-  m_StageSourceFile[xiiGALShaderStage::GeometryShader] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::GeometryShader].ChangeFileExtension("gs");
-
-  m_StageSourceFile[xiiGALShaderStage::PixelShader] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::PixelShader].ChangeFileExtension("ps");
-
-  m_StageSourceFile[xiiGALShaderStage::ComputeShader] = tmp;
-  m_StageSourceFile[xiiGALShaderStage::ComputeShader].ChangeFileExtension("cs");
-
-  // try out every compiler that we can find
+  // Try out every compiler that we can find
   xiiResult result = XII_SUCCESS;
   xiiRTTI::ForEachDerivedType<xiiShaderProgramCompiler>(
     [&](const xiiRTTI* pRtti) {
@@ -354,9 +428,9 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
       }
     }
 
-    for (xiiUInt32 stage = xiiGALShaderStage::VertexShader; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+    for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
     {
-      spd.m_StageBinary[stage].m_Stage        = (xiiGALShaderStage::Enum)stage;
+      spd.m_StageBinary[stage].m_Stage        = xiiGALShaderStage::GetStageFlag(stage);
       spd.m_StageBinary[stage].m_uiSourceHash = 0;
 
       if (m_ShaderData.m_ShaderStageSource[stage].IsEmpty())
@@ -377,7 +451,8 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
           bFoundUndefinedVars = true;
 
           xiiLog::Error("Undefined variable is evaluated: '{0}' (File: '{1}', Line: {2}", e.m_pToken->m_DataView, e.m_pToken->m_File, e.m_pToken->m_uiLine);
-        } });
+        }
+      });
 
       XII_SUCCEED_OR_RETURN(pp.AddCustomDefine(s_szStageDefines[stage]));
       for (auto& define : defines)
@@ -404,7 +479,7 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
 
       if (spd.m_StageBinary[stage].m_uiSourceHash != 0)
       {
-        xiiShaderStageBinary* pBinary = xiiShaderStageBinary::LoadStageBinary((xiiGALShaderStage::Enum)stage, spd.m_StageBinary[stage].m_uiSourceHash);
+        xiiShaderStageBinary* pBinary = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderStage::GetStageFlag(stage), spd.m_StageBinary[stage].m_uiSourceHash);
 
         if (pBinary)
         {
@@ -415,7 +490,7 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
     }
 
     // copy the source hashes
-    for (xiiUInt32 stage = xiiGALShaderStage::VertexShader; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+    for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
     {
       shaderPermutationBinary.m_uiShaderStageHashes[stage] = spd.m_StageBinary[stage].m_uiSourceHash;
     }
@@ -428,7 +503,7 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
       return XII_FAILURE;
     }
 
-    for (xiiUInt32 stage = xiiGALShaderStage::VertexShader; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+    for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
     {
       if (spd.m_StageBinary[stage].m_uiSourceHash != 0 && spd.m_bWriteToDisk[stage])
       {
@@ -476,10 +551,9 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
   return XII_SUCCESS;
 }
 
-
 void xiiShaderCompiler::WriteFailedShaderSource(xiiShaderProgramCompiler::xiiShaderProgramData& spd, xiiLogInterface* pLog)
 {
-  for (xiiUInt32 stage = xiiGALShaderStage::VertexShader; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
   {
     if (spd.m_StageBinary[stage].m_uiSourceHash != 0 && spd.m_bWriteToDisk[stage])
     {

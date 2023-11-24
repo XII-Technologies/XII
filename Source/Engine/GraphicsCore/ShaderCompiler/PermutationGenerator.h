@@ -9,8 +9,7 @@
 /// \brief A helper class to iterate over all possible permutations.
 ///
 /// Just add all permutation variables and their possible values.
-/// Then the number of possible permutations and each permutation
-/// can be queried.
+/// Then the number of possible permutations and each permutation can be queried.
 class XII_GRAPHICSCORE_DLL xiiPermutationGenerator
 {
 public:
