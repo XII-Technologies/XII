@@ -350,6 +350,21 @@ public:
   /// \brief This returns true if there is a set default device.
   static bool HasDefaultDevice();
 
+  /// \brief This returns the default buffer view of a created buffer.
+  ///
+  /// \remarks The buffer must be created with the xiiGALBindFlags::ShaderResource.
+  xiiGALBufferViewHandle GetDefaultResourceView(xiiGALBufferHandle hBuffer) const;
+
+  /// \brief This returns the default texture view of a created texture.
+  ///
+  /// \remarks The texture must be created with the xiiGALBindFlags::ShaderResource.
+  xiiGALTextureViewHandle GetDefaultResourceView(xiiGALTextureHandle hTexture) const;
+
+  /// \brief This returns the default render target view of a created texture.
+  ///
+  /// \remarks The texture must be created with the xiiGALBindFlags::RenderTarget.
+  xiiGALTextureViewHandle GetDefaultRenderTargetView(xiiGALTextureHandle hTexture) const;
+
 protected:
   xiiGALDevice(const xiiGALDeviceCreationDescription& creationDescription);
 

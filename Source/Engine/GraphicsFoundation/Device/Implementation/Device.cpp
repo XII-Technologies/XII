@@ -2580,6 +2580,33 @@ const xiiGALSparseTextureProperties xiiGALDevice::GetSparseTextureProperties(xii
   return xiiGALSparseTextureProperties();
 }
 
+xiiGALBufferViewHandle xiiGALDevice::GetDefaultResourceView(xiiGALBufferHandle hBuffer) const
+{
+  if (const xiiGALBuffer* pBuffer = GetBuffer(hBuffer))
+  {
+    return pBuffer->m_hDefaultBufferView;
+  }
+  return xiiGALBufferViewHandle();
+}
+
+xiiGALTextureViewHandle xiiGALDevice::GetDefaultResourceView(xiiGALTextureHandle hTexture) const
+{
+  if (const xiiGALTexture* pTexture = GetTexture(hTexture))
+  {
+    return pTexture->m_hDefaultTextureView;
+  }
+  return xiiGALTextureViewHandle();
+}
+
+xiiGALTextureViewHandle xiiGALDevice::GetDefaultRenderTargetView(xiiGALTextureHandle hTexture) const
+{
+  if (const xiiGALTexture* pTexture = GetTexture(hTexture))
+  {
+    return pTexture->m_hDefaultRenderTargetView;
+  }
+  return xiiGALTextureViewHandle();
+}
+
 void xiiGALDevice::DestroyDeadObjects()
 {
   // Can't use range based for here since new objects might be added during iteration
