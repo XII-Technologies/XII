@@ -26,7 +26,12 @@
  */
 
 #include <Windows.h>
-#include <crtdbg.h>
+
+#define XII_ENABLE_CRT_DEBUG 0
+
+#if XII_ENABLE_CRT_DEBUG
+#    include <crtdbg.h>
+#endif
 
 BOOL APIENTRY DllMain(HANDLE hModule,
                       DWORD  ul_reason_for_call,
@@ -35,8 +40,10 @@ BOOL APIENTRY DllMain(HANDLE hModule,
     switch (ul_reason_for_call)
     {
         case DLL_PROCESS_ATTACH:
-#if defined(_DEBUG) || defined(DEBUG)
+#if XII_ENABLE_CRT_DEBUG
+#    if defined(_DEBUG) || defined(DEBUG)
             _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#    endif
 #endif
             break;
 
