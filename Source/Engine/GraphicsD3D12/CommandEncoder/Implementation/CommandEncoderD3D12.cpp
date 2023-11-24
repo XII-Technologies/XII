@@ -68,7 +68,7 @@ xiiGALCommandEncoderD3D12::xiiGALCommandEncoderD3D12(xiiGALDeviceD3D12& deviceD3
 xiiGALCommandEncoderD3D12::~xiiGALCommandEncoderD3D12()
 {
   m_uiSynchronizationFenceCompletedValue = 0U;
-  XII_GAL_DILIGENT_REF_RELEASE(m_pSynchronizationFence);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pSynchronizationFence);
 }
 
 void xiiGALCommandEncoderD3D12::SetShaderPlatform(xiiGALShader* pShader)

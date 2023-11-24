@@ -28,8 +28,8 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
   xiiBitflags<xiiGALShaderStage> shaderStages = GetShaderStages(m_Description.m_ShaderStage);
 
   // Extract meta data and shader byte code.
-  xiiArrayPtr<const xiiUInt8>                  pByteCodes[xiiGALShaderStage::ENUM_COUNT];
-  xiiUInt32                                    uiBindingCount = 0U;
+  xiiArrayPtr<const xiiUInt8> pByteCodes[xiiGALShaderStage::ENUM_COUNT];
+  xiiUInt32                   uiBindingCount = 0U;
 
   for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
   {
@@ -72,13 +72,13 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
 
   for (xiiUInt32 uiShaderStage = 0; uiShaderStage < xiiGALShaderStage::ENUM_COUNT; ++uiShaderStage)
   {
-    const auto& shaderResourceBinding = m_ShaderResourceBindings[uiShaderStage];
+    const auto&     shaderResourceBinding        = m_ShaderResourceBindings[uiShaderStage];
     const xiiUInt32 uiShaderResourceBindingCount = shaderResourceBinding.GetCount();
 
     for (xiiUInt32 uiBindingIndex = 0; uiBindingIndex < uiShaderResourceBindingCount; ++uiBindingIndex)
     {
-      const xiiGALShaderResourceBinding&    resourceBinding     = shaderResourceBinding[uiBindingIndex];
-      Diligent::PipelineResourceDesc& resourceDescription = resources[uiBindingIndex];
+      const xiiGALShaderResourceBinding& resourceBinding     = shaderResourceBinding[uiBindingIndex];
+      Diligent::PipelineResourceDesc&    resourceDescription = resources[uiBindingIndex];
 
       resourceDescription.Name         = resourceBinding.m_sName.GetView().GetStartPointer();
       resourceDescription.ShaderStages = xiiDiligentTypeConversions::GetShaderTypeFlags(xiiGALShaderStage::GetStageFlag(uiBindingIndex));
@@ -146,7 +146,7 @@ xiiResult xiiGALShaderD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 
   for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
   {
-    XII_GAL_DILIGENT_REF_RELEASE(m_pShaderStages[i]);
+    XII_GAL_DILIGENT_PTR_RELEASE(m_pShaderStages[i]);
   }
 
   for (xiiUInt32 i = 0; i < m_PipelineResourceSignatures.GetCount(); ++i)

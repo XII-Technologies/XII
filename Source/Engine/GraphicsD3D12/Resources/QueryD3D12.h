@@ -26,7 +26,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IQuery> m_pQuery;
+  Diligent::IQuery* m_pQuery = nullptr;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/QueryD3D12_inl.h>

@@ -32,7 +32,7 @@ xiiResult xiiGALBufferViewD3D12::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALBufferViewD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_REF_RELEASE(m_pBufferView);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pBufferView);
 
   return XII_SUCCESS;
 }

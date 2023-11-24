@@ -31,7 +31,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::ICommandQueue> m_pCommandQueue;
+  Diligent::ICommandQueue* m_pCommandQueue = nullptr;
 };
 
 #include <GraphicsD3D12/CommandEncoder/Implementation/CommandQueueD3D12_inl.h>

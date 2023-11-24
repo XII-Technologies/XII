@@ -25,7 +25,7 @@ xiiResult xiiGALQueryD3D12::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALQueryD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_REF_RELEASE(m_pQuery);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pQuery);
 
   return XII_SUCCESS;
 }

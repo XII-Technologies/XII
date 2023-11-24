@@ -32,7 +32,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::ITopLevelAS> m_pTopLevelAS;
+  Diligent::ITopLevelAS* m_pTopLevelAS = nullptr;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/TopLevelASD3D12_inl.h>

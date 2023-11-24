@@ -22,7 +22,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IFramebuffer> m_pFramebuffer;
+  Diligent::IFramebuffer* m_pFramebuffer = nullptr;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/FramebufferD3D12_inl.h>

@@ -46,7 +46,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IShader>                m_pShaderStages[xiiGALShaderStage::ENUM_COUNT];
+  Diligent::IShader*                                        m_pShaderStages[xiiGALShaderStage::ENUM_COUNT] = {};
   xiiHybridArray<Diligent::IPipelineResourceSignature*, 3U> m_PipelineResourceSignatures;
 
   xiiHybridArray<xiiGALVertexInputLayout, 8U>  m_VertexInputLayouts;

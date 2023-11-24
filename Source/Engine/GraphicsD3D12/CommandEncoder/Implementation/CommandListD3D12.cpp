@@ -21,7 +21,7 @@ xiiResult xiiGALCommandListD3D12::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALCommandListD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_REF_RELEASE(m_pCommandList);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pCommandList);
 
   return XII_SUCCESS;
 }

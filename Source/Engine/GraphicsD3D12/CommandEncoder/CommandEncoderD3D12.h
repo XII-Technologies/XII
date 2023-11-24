@@ -110,7 +110,7 @@ private:
 
   struct ShaderResourceViewDesc
   {
-    XII_DECLARE_POD_TYPE(); 
+    XII_DECLARE_POD_TYPE();
 
     enum Enum : xiiUInt8
     {
@@ -205,8 +205,8 @@ private:
   xiiGAL::ModifiedRange m_BoundSamplersRange[xiiGALShaderStage::ENUM_COUNT];
 
   // Synchronization fences.
-  Diligent::RefCntAutoPtr<Diligent::IFence> m_pSynchronizationFence;
-  xiiUInt64                                 m_uiSynchronizationFenceCompletedValue = 0u;
+  Diligent::IFence* m_pSynchronizationFence                = nullptr;
+  xiiUInt64         m_uiSynchronizationFenceCompletedValue = 0u;
 };
 
 #include <GraphicsD3D12/CommandEncoder/Implementation/CommandEncoderD3D12_inl.h>

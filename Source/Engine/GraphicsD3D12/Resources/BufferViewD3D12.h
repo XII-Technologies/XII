@@ -22,7 +22,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IBufferView> m_pBufferView;
+  Diligent::IBufferView* m_pBufferView = nullptr;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/BufferViewD3D12_inl.h>

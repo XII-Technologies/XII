@@ -22,7 +22,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IRenderPass> m_pRenderPass;
+  Diligent::IRenderPass* m_pRenderPass = nullptr;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/RenderPassD3D12_inl.h>

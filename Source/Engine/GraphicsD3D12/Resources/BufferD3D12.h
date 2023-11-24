@@ -38,7 +38,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IBuffer> m_pBuffer;
+  Diligent::IBuffer* m_pBuffer = nullptr;
 
   Diligent::VALUE_TYPE m_IndexFormat = {}; // Strictly index buffers.
 };

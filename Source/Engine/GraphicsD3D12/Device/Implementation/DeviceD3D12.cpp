@@ -77,8 +77,7 @@ ON_CORESYSTEMS_SHUTDOWN
 {
   xiiGALDeviceFactory::UnregisterImplementation("D3D12");
 
-  // Clearing the allocator causes the memory tracker to have invalid name for the allocator.
-  // g_pAllocatorDiligent.Clear();
+  g_pAllocatorDiligent.Clear();
 }
 
 XII_END_SUBSYSTEM_DECLARATION;
@@ -339,13 +338,13 @@ xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
       m_pDeviceContexts[uiContext]->FinishFrame();
       m_pDeviceContexts[uiContext]->InvalidateState();
 
-      XII_GAL_DILIGENT_REF_RELEASE(m_pDeviceContexts[uiContext]);
+      XII_GAL_DILIGENT_PTR_RELEASE(m_pDeviceContexts[uiContext]);
     }
     m_pDeviceContexts.Clear();
   }
 
-  XII_GAL_DILIGENT_REF_RELEASE(m_pDevice);
-  XII_GAL_DILIGENT_REF_RELEASE(m_pEngineFactory);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pDevice);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pEngineFactory);
 
   ReportLiveGPUObjects();
 

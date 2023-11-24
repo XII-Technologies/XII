@@ -41,7 +41,7 @@ xiiResult xiiGALTextureViewD3D12::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALTextureViewD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_REF_RELEASE(m_pTextureView);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pTextureView);
 
   return XII_SUCCESS;
 }

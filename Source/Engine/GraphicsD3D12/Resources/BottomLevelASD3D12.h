@@ -34,7 +34,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IBottomLevelAS> m_pBottomLevelAS;
+  Diligent::IBottomLevelAS* m_pBottomLevelAS = nullptr;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/BottomLevelASD3D12_inl.h>

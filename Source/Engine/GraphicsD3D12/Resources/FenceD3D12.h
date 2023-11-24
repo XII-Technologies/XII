@@ -28,7 +28,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IFence> m_pFence;
+  Diligent::IFence* m_pFence = nullptr;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/FenceD3D12_inl.h>

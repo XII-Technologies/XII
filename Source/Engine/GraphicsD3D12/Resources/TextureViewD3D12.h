@@ -22,7 +22,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pTextureView;
+  Diligent::ITextureView* m_pTextureView = nullptr;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/TextureViewD3D12_inl.h>

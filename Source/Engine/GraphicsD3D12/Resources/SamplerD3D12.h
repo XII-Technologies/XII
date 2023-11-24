@@ -22,7 +22,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::ISampler> m_pSampler;
+  Diligent::ISampler* m_pSampler = nullptr;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/SamplerD3D12_inl.h>

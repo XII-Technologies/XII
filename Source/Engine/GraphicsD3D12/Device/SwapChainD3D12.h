@@ -47,8 +47,8 @@ protected:
     xiiGALTextureHandle     m_hRenderTargetHandle;
   };
 
-  Diligent::RefCntAutoPtr<Diligent::ISwapChain> m_pSwapChain;
-  xiiHybridArray<RenderTargetInfo, 2U>          m_BackbufferTextures;
+  Diligent::ISwapChain*                m_pSwapChain = nullptr;
+  xiiHybridArray<RenderTargetInfo, 2U> m_BackbufferTextures;
 };
 
 #include <GraphicsD3D12/Device/Implementation/SwapChainD3D12_inl.h>

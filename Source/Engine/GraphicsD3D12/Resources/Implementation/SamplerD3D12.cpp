@@ -54,7 +54,7 @@ xiiResult xiiGALSamplerD3D12::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALSamplerD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_REF_RELEASE(m_pSampler);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pSampler);
 
   return XII_FAILURE;
 }

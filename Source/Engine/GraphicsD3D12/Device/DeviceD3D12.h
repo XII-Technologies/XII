@@ -122,10 +122,10 @@ protected:
 private:
   xiiGALFormatLookupTableD3D12 m_FormatLookupTable;
 
-  Diligent::RefCntAutoPtr<Diligent::IEngineFactory>                  m_pEngineFactory;
-  Diligent::RefCntAutoPtr<Diligent::IRenderDevice>                   m_pDevice;
-  xiiDynamicArray<Diligent::RefCntAutoPtr<Diligent::IDeviceContext>> m_pDeviceContexts;
-  xiiDynamicArray<Diligent::DisplayModeAttribs>                      m_DisplayModes;
+  Diligent::IEngineFactory*                     m_pEngineFactory = nullptr;
+  Diligent::IRenderDevice*                      m_pDevice        = nullptr;
+  xiiDynamicArray<Diligent::IDeviceContext*>    m_pDeviceContexts;
+  xiiDynamicArray<Diligent::DisplayModeAttribs> m_DisplayModes;
 
   xiiUniquePtr<xiiGALPassD3D12> m_pDefaultPass;
 

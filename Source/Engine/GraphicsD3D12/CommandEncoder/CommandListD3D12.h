@@ -22,7 +22,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::ICommandList> m_pCommandList;
+  Diligent::ICommandList* m_pCommandList = nullptr;
 };
 
 #include <GraphicsD3D12/CommandEncoder/Implementation/CommandListD3D12_inl.h>

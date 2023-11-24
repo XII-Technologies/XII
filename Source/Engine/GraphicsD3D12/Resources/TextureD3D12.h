@@ -30,7 +30,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::ITexture> m_pTexture;
+  Diligent::ITexture* m_pTexture = nullptr;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/TextureD3D12_inl.h>

@@ -28,7 +28,7 @@ xiiResult xiiGALTopLevelASD3D12::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALTopLevelASD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_REF_RELEASE(m_pTopLevelAS);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pTopLevelAS);
 
   return XII_SUCCESS;
 }
