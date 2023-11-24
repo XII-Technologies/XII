@@ -118,7 +118,7 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
       destBox.m_vMin.SetZero();
       destBox.m_vMax = xiiVec3U32(task->m_uiWidth, task->m_uiHeight, 1);
 
-      xiiGALSystemMemoryDescription sourceData;
+      xiiGALTextureSubResourceData sourceData;
       sourceData.m_pData      = task->m_PixelData.GetData();
       sourceData.m_uiRowPitch = task->m_uiWidth * sizeof(xiiColorGammaUB);
 
@@ -142,8 +142,8 @@ void xiiBakedProbesComponentManager::CreateDebugResources()
     if (!hMeshBuffer.IsValid())
     {
       xiiMeshBufferResourceDescriptor desc;
-      desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALResourceFormat::XYZFloat);
-      desc.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiGALResourceFormat::XYZFloat);
+      desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALTextureFormat::XYZFloat);
+      desc.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiGALTextureFormat::XYZFloat);
       desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::Triangles);
 
       hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szBufferResourceName, std::move(desc), szBufferResourceName);
@@ -451,7 +451,7 @@ void xiiBakedProbesComponent::RenderDebugOverlay()
     xiiGALTextureCreationDescription desc;
     desc.m_uiWidth                     = uiWidth;
     desc.m_uiHeight                    = uiHeight;
-    desc.m_Format                      = xiiGALResourceFormat::RGBAUByteNormalizedsRGB;
+    desc.m_Format                      = xiiGALTextureFormat::RGBAUByteNormalizedsRGB;
     desc.m_ResourceAccess.m_bImmutable = false;
 
     m_hDebugViewTexture = pDevice->CreateTexture(desc);

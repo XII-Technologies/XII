@@ -304,7 +304,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
     desc.m_uiHeight                    = s_uiReflectionCubeMapSize;
     desc.m_uiMipLevelCount             = GetMipLevels();
     desc.m_uiArraySize                 = 1;
-    desc.m_Format                      = xiiGALResourceFormat::RGBAHalf;
+    desc.m_Format                      = xiiGALTextureFormat::RGBAHalf;
     desc.m_Type                        = xiiGALTextureType::TextureCube;
     desc.m_bCreateRenderTarget         = true;
     desc.m_bAllowUAV                   = true;
@@ -329,8 +329,8 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
     if (!hMeshBuffer.IsValid())
     {
       xiiMeshBufferResourceDescriptor desc;
-      desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALResourceFormat::XYZFloat);
-      desc.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiGALResourceFormat::XYZFloat);
+      desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALTextureFormat::XYZFloat);
+      desc.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiGALTextureFormat::XYZFloat);
       desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::Triangles);
 
       hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szBufferResourceName, std::move(desc), szBufferResourceName);
@@ -406,7 +406,7 @@ void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
     xiiGALTextureCreationDescription desc;
     desc.m_uiWidth             = 6;
     desc.m_uiHeight            = 64;
-    desc.m_Format              = xiiGALResourceFormat::RGBAHalf;
+    desc.m_Format              = xiiGALTextureFormat::RGBAHalf;
     desc.m_Type                = xiiGALTextureType::Texture2D;
     desc.m_bCreateRenderTarget = true;
     desc.m_bAllowUAV           = true;

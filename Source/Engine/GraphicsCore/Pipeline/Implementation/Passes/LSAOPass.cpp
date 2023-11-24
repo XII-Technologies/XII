@@ -108,7 +108,7 @@ bool xiiLSAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArra
 
   // Output format matches input format but is f16.
   outputs[m_PinOutput.m_uiOutputIndex]          = *inputs[m_PinDepthInput.m_uiInputIndex];
-  outputs[m_PinOutput.m_uiOutputIndex].m_Format = xiiGALResourceFormat::RGHalf;
+  outputs[m_PinOutput.m_uiOutputIndex].m_Format = xiiGALTextureFormat::RGHalf;
 
   return true;
 }
@@ -418,7 +418,7 @@ void xiiLSAOPass::SetupLineSweepData(const xiiVec3I32& imageResolution)
 
       xiiGALUnorderedAccessViewCreationDescription uavDesc;
       uavDesc.m_hBuffer            = m_hLineSweepOutputBuffer;
-      uavDesc.m_OverrideViewFormat = xiiGALResourceFormat::RUInt;
+      uavDesc.m_OverrideViewFormat = xiiGALTextureFormat::RUInt;
       uavDesc.m_uiFirstElement     = 0;
       uavDesc.m_uiNumElements      = imageResolution.z * totalNumberOfSamples / 2;
       uavDesc.m_bRawView           = false;
@@ -427,7 +427,7 @@ void xiiLSAOPass::SetupLineSweepData(const xiiVec3I32& imageResolution)
 
       xiiGALResourceViewCreationDescription srvDesc;
       srvDesc.m_hBuffer            = m_hLineSweepOutputBuffer;
-      srvDesc.m_OverrideViewFormat = xiiGALResourceFormat::RUInt;
+      srvDesc.m_OverrideViewFormat = xiiGALTextureFormat::RUInt;
       srvDesc.m_uiFirstElement     = 0;
       srvDesc.m_uiNumElements      = imageResolution.z * totalNumberOfSamples / 2;
       srvDesc.m_bRawView           = false;

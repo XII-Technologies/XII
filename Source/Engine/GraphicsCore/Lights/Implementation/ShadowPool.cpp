@@ -257,7 +257,7 @@ struct xiiShadowPool::Data
     if (m_hShadowAtlasTexture.IsInvalidated())
     {
       xiiGALTextureCreationDescription desc;
-      desc.SetAsRenderTarget(s_uiShadowAtlasTextureWidth, s_uiShadowAtlasTextureHeight, xiiGALResourceFormat::D16);
+      desc.SetAsRenderTarget(s_uiShadowAtlasTextureWidth, s_uiShadowAtlasTextureHeight, xiiGALTextureFormat::D16);
 
       m_hShadowAtlasTexture = xiiGALDevice::GetDefaultDevice()->CreateTexture(desc);
     }

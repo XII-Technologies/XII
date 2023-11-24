@@ -176,7 +176,7 @@ void xiiDecalAtlasResource::CreateLayerTexture(const xiiImage& img, bool bSRGB, 
   td.m_SamplerDesc.m_AddressW = xiiImageAddressMode::Clamp;
 
   xiiUInt32                                         uiMemory;
-  xiiHybridArray<xiiGALSystemMemoryDescription, 32> initData;
+  xiiHybridArray<xiiGALTextureSubResourceData, 32> initData;
   xiiTexture2DResource::FillOutDescriptor(td, &img, bSRGB, img.GetNumMipLevels(), uiMemory, initData);
   xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::HighQuality, td.m_SamplerDesc);
 

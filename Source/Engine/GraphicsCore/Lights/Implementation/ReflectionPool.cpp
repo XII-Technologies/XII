@@ -318,7 +318,7 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
         xiiBoundingBoxu32 destBox;
         destBox.m_vMin.Set(0, i, 0);
         destBox.m_vMax.Set(6, i + 1, 1);
-        xiiGALSystemMemoryDescription memDesc;
+        xiiGALTextureSubResourceData memDesc;
         memDesc.m_pData      = &skyIrradianceStorage[i].m_Values[0];
         memDesc.m_uiRowPitch = sizeof(xiiAmbientCube<xiiColorLinear16f>);
         pGALCommandEncoder->UpdateTexture(s_pData->m_hSkyIrradianceTexture, xiiGALTextureSubresource(), destBox, memDesc);

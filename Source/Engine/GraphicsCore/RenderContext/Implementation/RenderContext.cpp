@@ -131,7 +131,7 @@ xiiGALRenderCommandEncoder* xiiRenderContext::BeginRendering(xiiGALPass* pGALPas
 {
   xiiGALMSAASampleCount::Enum msaaSampleCount = xiiGALMSAASampleCount::None;
 
-  xiiGALRenderTargetViewHandle hRTV;
+  xiiGALTextureViewHandle hRTV;
   if (renderingSetup.m_RenderTargetSetup.GetRenderTargetCount() > 0)
   {
     hRTV = renderingSetup.m_RenderTargetSetup.GetRenderTarget(0);

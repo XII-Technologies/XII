@@ -1667,7 +1667,7 @@ void xiiDebugRenderer::OnEngineStartup()
     geom.AddLineBox(xiiVec3(2.0f));
 
     xiiMeshBufferResourceDescriptor desc;
-    desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALResourceFormat::XYZFloat);
+    desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALTextureFormat::XYZFloat);
     desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::Lines);
 
     s_hLineBoxMeshBuffer = xiiResourceManager::CreateResource<xiiMeshBufferResource>("DebugLineBox", std::move(desc), "Mesh for Rendering Debug Line Boxes");
@@ -1678,7 +1678,7 @@ void xiiDebugRenderer::OnEngineStartup()
     geom.AddBox(xiiVec3(2.0f), false);
 
     xiiMeshBufferResourceDescriptor desc;
-    desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALResourceFormat::XYZFloat);
+    desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALTextureFormat::XYZFloat);
     desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::Triangles);
 
     s_hSolidBoxMeshBuffer = xiiResourceManager::CreateResource<xiiMeshBufferResource>("DebugSolidBox", std::move(desc), "Mesh for Rendering Debug Solid Boxes");
@@ -1691,7 +1691,7 @@ void xiiDebugRenderer::OnEngineStartup()
     {
       xiiVertexStreamInfo& si = s_VertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALVertexAttributeSemantic::Position;
-      si.m_Format             = xiiGALResourceFormat::XYZFloat;
+      si.m_Format             = xiiGALTextureFormat::XYZFloat;
       si.m_uiOffset           = 0;
       si.m_uiElementSize      = 12;
     }
@@ -1699,7 +1699,7 @@ void xiiDebugRenderer::OnEngineStartup()
     {
       xiiVertexStreamInfo& si = s_VertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALVertexAttributeSemantic::Color0;
-      si.m_Format             = xiiGALResourceFormat::RGBAUByteNormalized;
+      si.m_Format             = xiiGALTextureFormat::RGBAUByteNormalized;
       si.m_uiOffset           = 12;
       si.m_uiElementSize      = 4;
     }
@@ -1712,7 +1712,7 @@ void xiiDebugRenderer::OnEngineStartup()
     {
       xiiVertexStreamInfo& si = s_TexVertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALVertexAttributeSemantic::Position;
-      si.m_Format             = xiiGALResourceFormat::XYZFloat;
+      si.m_Format             = xiiGALTextureFormat::XYZFloat;
       si.m_uiOffset           = 0;
       si.m_uiElementSize      = 12;
     }
@@ -1720,7 +1720,7 @@ void xiiDebugRenderer::OnEngineStartup()
     {
       xiiVertexStreamInfo& si = s_TexVertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALVertexAttributeSemantic::Color0;
-      si.m_Format             = xiiGALResourceFormat::RGBAUByteNormalized;
+      si.m_Format             = xiiGALTextureFormat::RGBAUByteNormalized;
       si.m_uiOffset           = 12;
       si.m_uiElementSize      = 4;
     }
@@ -1728,7 +1728,7 @@ void xiiDebugRenderer::OnEngineStartup()
     {
       xiiVertexStreamInfo& si = s_TexVertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALVertexAttributeSemantic::TexCoord0;
-      si.m_Format             = xiiGALResourceFormat::XYFloat;
+      si.m_Format             = xiiGALTextureFormat::XYFloat;
       si.m_uiOffset           = 16;
       si.m_uiElementSize      = 8;
     }
@@ -1736,7 +1736,7 @@ void xiiDebugRenderer::OnEngineStartup()
     {
       xiiVertexStreamInfo& si = s_TexVertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALVertexAttributeSemantic::TexCoord1; // padding
-      si.m_Format             = xiiGALResourceFormat::XYFloat;
+      si.m_Format             = xiiGALTextureFormat::XYFloat;
       si.m_uiOffset           = 24;
       si.m_uiElementSize      = 8;
     }
@@ -1746,7 +1746,7 @@ void xiiDebugRenderer::OnEngineStartup()
     xiiImage debugFontImage;
     xiiGraphicsUtils::CreateSimpleASCIIFontTexture(debugFontImage);
 
-    xiiGALSystemMemoryDescription memoryDesc;
+    xiiGALTextureSubResourceData memoryDesc;
     memoryDesc.m_pData        = debugFontImage.GetPixelPointer<xiiUInt8>();
     memoryDesc.m_uiRowPitch   = static_cast<xiiUInt32>(debugFontImage.GetRowPitch());
     memoryDesc.m_uiSlicePitch = static_cast<xiiUInt32>(debugFontImage.GetDepthPitch());
@@ -1754,7 +1754,7 @@ void xiiDebugRenderer::OnEngineStartup()
     xiiTexture2DResourceDescriptor desc;
     desc.m_DescGAL.m_uiWidth  = debugFontImage.GetWidth();
     desc.m_DescGAL.m_uiHeight = debugFontImage.GetHeight();
-    desc.m_DescGAL.m_Format   = xiiGALResourceFormat::RGBAUByteNormalized;
+    desc.m_DescGAL.m_Format   = xiiGALTextureFormat::RGBAUByteNormalized;
     desc.m_InitialContent     = xiiMakeArrayPtr(&memoryDesc, 1);
 
     s_hDebugFontTexture = xiiResourceManager::CreateResource<xiiTexture2DResource>("DebugFontTexture", std::move(desc));

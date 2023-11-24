@@ -44,7 +44,7 @@ bool xiiMsaaResolvePass::GetRenderTargetDescriptions(const xiiView& view, const 
       return false;
     }
 
-    m_bIsDepth        = xiiGALResourceFormat::IsDepthFormat(pInput->m_Format);
+    m_bIsDepth        = xiiGALTextureFormat::IsDepthFormat(pInput->m_Format);
     m_MsaaSampleCount = pInput->m_SampleCount;
 
     xiiGALTextureCreationDescription desc = *pInput;

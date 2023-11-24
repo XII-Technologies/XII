@@ -84,7 +84,7 @@ bool xiiAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayP
     }
 
     xiiGALTextureCreationDescription desc = *pDepthInput;
-    desc.m_Format                         = xiiGALResourceFormat::RGHalf;
+    desc.m_Format                         = xiiGALTextureFormat::RGHalf;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }
@@ -124,7 +124,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   xiiGALTextureHandle                             hzbTexture;
   xiiHybridArray<xiiVec2, 8>                      hzbSizes;
   xiiHybridArray<xiiGALResourceViewHandle, 8>     hzbResourceViews;
-  xiiHybridArray<xiiGALRenderTargetViewHandle, 8> hzbRenderTargetViews;
+  xiiHybridArray<xiiGALTextureViewHandle, 8> hzbRenderTargetViews;
 
   xiiGALTextureHandle tempSSAOTexture;
 
@@ -135,7 +135,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       desc.m_uiHeight                 = uiHzbHeight / 2;
       desc.m_uiMipLevelCount          = 3;
       desc.m_Type                     = xiiGALTextureType::Texture2D;
-      desc.m_Format                   = xiiGALResourceFormat::RHalf;
+      desc.m_Format                   = xiiGALTextureFormat::RHalf;
       desc.m_bCreateRenderTarget      = true;
       desc.m_bAllowShaderResourceView = true;
       desc.m_uiArraySize              = pOutput->m_Desc.m_uiArraySize;
@@ -170,7 +170,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       }
     }
 
-    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALResourceFormat::RGHalf, xiiGALMSAASampleCount::None, pOutput->m_Desc.m_uiArraySize);
+    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RGHalf, xiiGALMSAASampleCount::None, pOutput->m_Desc.m_uiArraySize);
   }
 
   // Mip map passes
@@ -193,7 +193,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
         pixelSize  = xiiVec2(1.0f).CompDiv(hzbSizes[i - 1]);
       }
 
-      xiiGALRenderTargetViewHandle hOutputView = hzbRenderTargetViews[i];
+      xiiGALTextureViewHandle hOutputView = hzbRenderTargetViews[i];
       xiiVec2                      targetSize  = hzbSizes[i];
 
       xiiGALRenderingSetup renderingSetup;

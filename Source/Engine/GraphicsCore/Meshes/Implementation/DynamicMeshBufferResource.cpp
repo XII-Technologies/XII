@@ -84,25 +84,25 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
   {
     xiiVertexStreamInfo si;
     si.m_uiOffset      = 0;
-    si.m_Format        = xiiGALResourceFormat::XYZFloat;
+    si.m_Format        = xiiGALTextureFormat::XYZFloat;
     si.m_Semantic      = xiiGALVertexAttributeSemantic::Position;
     si.m_uiElementSize = sizeof(xiiVec3);
     m_VertexDeclaration.m_VertexStreams.PushBack(si);
 
     si.m_uiOffset += si.m_uiElementSize;
-    si.m_Format        = xiiGALResourceFormat::XYFloat;
+    si.m_Format        = xiiGALTextureFormat::XYFloat;
     si.m_Semantic      = xiiGALVertexAttributeSemantic::TexCoord0;
     si.m_uiElementSize = sizeof(xiiVec2);
     m_VertexDeclaration.m_VertexStreams.PushBack(si);
 
     si.m_uiOffset += si.m_uiElementSize;
-    si.m_Format        = xiiGALResourceFormat::XYZFloat;
+    si.m_Format        = xiiGALTextureFormat::XYZFloat;
     si.m_Semantic      = xiiGALVertexAttributeSemantic::Normal;
     si.m_uiElementSize = sizeof(xiiVec3);
     m_VertexDeclaration.m_VertexStreams.PushBack(si);
 
     si.m_uiOffset += si.m_uiElementSize;
-    si.m_Format        = xiiGALResourceFormat::XYZWFloat;
+    si.m_Format        = xiiGALTextureFormat::XYZWFloat;
     si.m_Semantic      = xiiGALVertexAttributeSemantic::Tangent;
     si.m_uiElementSize = sizeof(xiiVec4);
     m_VertexDeclaration.m_VertexStreams.PushBack(si);
@@ -111,7 +111,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     {
       si.m_uiVertexBufferSlot = 1; // separate buffer
       si.m_uiOffset           = 0;
-      si.m_Format             = xiiGALResourceFormat::RGBAUByteNormalized;
+      si.m_Format             = xiiGALTextureFormat::RGBAUByteNormalized;
       si.m_Semantic           = xiiGALVertexAttributeSemantic::Color0;
       si.m_uiElementSize      = sizeof(xiiColorLinearUB);
       m_VertexDeclaration.m_VertexStreams.PushBack(si);

@@ -1319,11 +1319,11 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
       nd.m_Shape = xiiDGMLGraph::NodeShape::RoundedRectangle;
 
       xiiStringBuilder sFormat;
-      if (!xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceFormat>(), pCon->m_Desc.m_Format, sFormat, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+      if (!xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureFormat>(), pCon->m_Desc.m_Format, sFormat, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
       {
         sFormat.Format("Unknown Format {}", (int)pCon->m_Desc.m_Format);
       }
-      sTmp.Format("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_iTargetTextureIndex != -1 ? "RenderTarget" : "PoolTexture", i, pCon->m_Desc.m_uiWidth, pCon->m_Desc.m_uiHeight, pCon->m_Desc.m_uiArraySize, (int)pCon->m_Desc.m_SampleCount, xiiGALResourceFormat::IsDepthFormat(pCon->m_Desc.m_Format) ? "Depth" : "Color", sFormat);
+      sTmp.Format("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_iTargetTextureIndex != -1 ? "RenderTarget" : "PoolTexture", i, pCon->m_Desc.m_uiWidth, pCon->m_Desc.m_uiHeight, pCon->m_Desc.m_uiArraySize, (int)pCon->m_Desc.m_SampleCount, xiiGALTextureFormat::IsDepthFormat(pCon->m_Desc.m_Format) ? "Depth" : "Color", sFormat);
       xiiUInt32 uiTextureNode = ref_graph.AddNode(sTmp, &nd);
 
       xiiUInt32 uiOutputNode = *nodeMap.GetValue(pCon->m_pOutput->m_pParent);
@@ -1435,7 +1435,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       xiiGALTextureCreationDescription desc;
       desc.m_uiWidth                     = uiImgWidth;
       desc.m_uiHeight                    = uiImgHeight;
-      desc.m_Format                      = xiiGALResourceFormat::RGBAUByteNormalized;
+      desc.m_Format                      = xiiGALTextureFormat::RGBAUByteNormalized;
       desc.m_ResourceAccess.m_bImmutable = false;
 
       m_hOcclusionDebugViewTexture = pDevice->CreateTexture(desc);
@@ -1450,7 +1450,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       destBox.m_vMin.SetZero();
       destBox.m_vMax = xiiVec3U32(uiImgWidth, uiImgHeight, 1);
 
-      xiiGALSystemMemoryDescription sourceData;
+      xiiGALTextureSubResourceData sourceData;
       sourceData.m_pData      = fb.GetData();
       sourceData.m_uiRowPitch = uiImgWidth * sizeof(xiiColorLinearUB);
 
@@ -1467,9 +1467,9 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
     xiiTexture2DResourceDescriptor d;
     d.m_DescGAL.m_uiWidth  = rasterizer.GetResolutionX();
     d.m_DescGAL.m_uiHeight = rasterizer.GetResolutionY();
-    d.m_DescGAL.m_Format   = xiiGALResourceFormat::RGBAByteNormalized;
+    d.m_DescGAL.m_Format   = xiiGALTextureFormat::RGBAByteNormalized;
 
-    xiiGALSystemMemoryDescription content[1];
+    xiiGALTextureSubResourceData content[1];
     content[0].m_pData        = fb.GetData();
     content[0].m_uiRowPitch   = sizeof(xiiColorLinearUB) * d.m_DescGAL.m_uiWidth;
     content[0].m_uiSlicePitch = content[0].m_uiRowPitch * d.m_DescGAL.m_uiHeight;

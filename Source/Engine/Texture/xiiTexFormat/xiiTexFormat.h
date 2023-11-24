@@ -26,7 +26,7 @@ struct XII_TEXTURE_DLL xiiTexFormat
   float m_fResolutionScale = 1.0f;
 
   // version 5
-  int m_GalRenderTargetFormat = 0;
+  xiiInt32 m_GalRenderTargetFormat = 0;
 
   void WriteTextureHeader(xiiStreamWriter& ref_stream) const;
   void WriteRenderTargetHeader(xiiStreamWriter& ref_stream) const;

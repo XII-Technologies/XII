@@ -48,7 +48,7 @@ void xiiSkyBoxComponent::Initialize()
     geom.AddRectXY(xiiVec2(2.0f));
 
     xiiMeshBufferResourceDescriptor desc;
-    desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALResourceFormat::XYZFloat);
+    desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALTextureFormat::XYZFloat);
     desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::Triangles);
 
     hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szBufferResourceName, std::move(desc), szBufferResourceName);

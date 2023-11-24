@@ -432,8 +432,8 @@ void xiiRopeRenderComponent::GenerateRenderMesh(xiiUInt32 uiNumRopePieces)
 
   auto& meshBufferDesc = desc.MeshBufferDesc();
   meshBufferDesc.AddCommonStreams();
-  meshBufferDesc.AddStream(xiiGALVertexAttributeSemantic::BoneIndices0, xiiGALResourceFormat::RGBAUByte);
-  meshBufferDesc.AddStream(xiiGALVertexAttributeSemantic::BoneWeights0, xiiGALResourceFormat::RGBAUByteNormalized);
+  meshBufferDesc.AddStream(xiiGALVertexAttributeSemantic::BoneIndices0, xiiGALTextureFormat::RGBAUByte);
+  meshBufferDesc.AddStream(xiiGALVertexAttributeSemantic::BoneWeights0, xiiGALTextureFormat::RGBAUByteNormalized);
   meshBufferDesc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::Triangles);
 
   desc.AddSubMesh(meshBufferDesc.GetPrimitiveCount(), 0, 0);

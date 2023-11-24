@@ -29,7 +29,7 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
     desc.m_uiWidth                     = s_uiReflectionCubeMapSize;
     desc.m_uiHeight                    = s_uiReflectionCubeMapSize;
     desc.m_uiMipLevelCount             = GetMipLevels();
-    desc.m_Format                      = xiiGALResourceFormat::RGBAHalf;
+    desc.m_Format                      = xiiGALTextureFormat::RGBAHalf;
     desc.m_Type                        = xiiGALTextureType::TextureCube;
     desc.m_bCreateRenderTarget         = true;
     desc.m_bAllowDynamicMipGeneration  = true;

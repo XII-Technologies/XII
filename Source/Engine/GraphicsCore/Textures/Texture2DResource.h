@@ -2,13 +2,15 @@
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
+#include <Foundation/IO/MemoryStream.h>
+
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
-#include <Foundation/IO/MemoryStream.h>
+
+#include <GraphicsFoundation/Declarations/Descriptors.h>
+
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
-#include <GraphicsFoundation/Descriptors/Descriptors.h>
-#include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 class xiiImage;
 
@@ -29,7 +31,7 @@ struct XII_GRAPHICSCORE_DLL xiiTexture2DResourceDescriptor
 
   /// One memory desc per (array * faces * mipmap) (in that order) (array is outer loop, mipmap is inner loop). Can be empty to not
   /// initialize data.
-  xiiArrayPtr<xiiGALSystemMemoryDescription> m_InitialContent;
+  xiiArrayPtr<xiiGALTextureSubResourceData> m_InitialContent;
 };
 
 class XII_GRAPHICSCORE_DLL xiiTexture2DResource : public xiiResource
@@ -47,7 +49,7 @@ public:
   XII_ALWAYS_INLINE xiiUInt32                    GetHeight() const { return m_uiHeight; }
   XII_ALWAYS_INLINE xiiEnum<xiiGALResourceDimension> GetType() const { return m_Type; }
 
-  static void FillOutDescriptor(xiiTexture2DResourceDescriptor& ref_td, const xiiImage* pImage, bool bSRGB, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALSystemMemoryDescription, 32>& ref_initData);
+  static void FillOutDescriptor(xiiTexture2DResourceDescriptor& ref_td, const xiiImage* pImage, bool bSRGB, xiiUInt32 uiNumMipLevels, xiiUInt32& out_uiMemoryUsed, xiiHybridArray<xiiGALTextureSubResourceData, 32>& ref_initData);
 
   const xiiGALTextureHandle& GetGALTexture() const { return m_hGALTexture[m_uiLoadedTextures - 1]; }
   const xiiGALSamplerHandle& GetGALSampler() const { return m_hSampler; }
@@ -63,7 +65,7 @@ protected:
   xiiGALTextureHandle m_hGALTexture[2];
   xiiUInt32           m_uiMemoryGPU[2] = {0, 0};
 
-  xiiEnum<xiiGALResourceDimension> m_Type     = xiiGALTextureType::Invalid;
+  xiiEnum<xiiGALResourceDimension> m_Type     = xiiGALResourceDimension::Undefined;
   xiiEnum<xiiGALTextureFormat>     m_Format   = xiiGALTextureFormat::Unknown;
   xiiUInt32                        m_uiWidth  = 0;
   xiiUInt32                        m_uiHeight = 0;
@@ -77,12 +79,12 @@ using xiiRenderToTexture2DResourceHandle = xiiTypedResourceHandle<class xiiRende
 
 struct XII_GRAPHICSCORE_DLL xiiRenderToTexture2DResourceDescriptor
 {
-  xiiUInt32                                  m_uiWidth  = 0;
-  xiiUInt32                                  m_uiHeight = 0;
-  xiiEnum<xiiGALMSAASampleCount>             m_SampleCount;
-  xiiEnum<xiiGALResourceFormat>              m_Format;
-  xiiGALSamplerCreationDescription           m_SamplerDesc;
-  xiiArrayPtr<xiiGALSystemMemoryDescription> m_InitialContent;
+  xiiUInt32                                 m_uiWidth       = 0;
+  xiiUInt32                                 m_uiHeight      = 0;
+  xiiUInt32                                 m_uiSampleCount = 0;
+  xiiEnum<xiiGALTextureFormat>              m_Format;
+  xiiGALSamplerCreationDescription          m_SamplerDesc;
+  xiiArrayPtr<xiiGALTextureSubResourceData> m_InitialContent;
 };
 
 class XII_GRAPHICSCORE_DLL xiiRenderToTexture2DResource : public xiiTexture2DResource
@@ -93,7 +95,7 @@ class XII_GRAPHICSCORE_DLL xiiRenderToTexture2DResource : public xiiTexture2DRes
   XII_RESOURCE_DECLARE_CREATEABLE(xiiRenderToTexture2DResource, xiiRenderToTexture2DResourceDescriptor);
 
 public:
-  xiiGALRenderTargetViewHandle          GetRenderTargetView() const;
+  xiiGALTextureViewHandle               GetRenderTargetView() const;
   void                                  AddRenderView(xiiViewHandle hView);
   void                                  RemoveRenderView(xiiViewHandle hView);
   const xiiDynamicArray<xiiViewHandle>& GetAllRenderViews() const;
@@ -104,6 +106,6 @@ private:
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
 protected:
-  // other views that use this texture as their target
+  // Other views that use this texture as their target
   xiiDynamicArray<xiiViewHandle> m_RenderViews;
 };
