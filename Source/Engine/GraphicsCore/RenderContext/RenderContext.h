@@ -4,6 +4,14 @@
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Strings/String.h>
+
+#include <GraphicsFoundation/CommandEncoder/ComputeCommandEncoder.h>
+#include <GraphicsFoundation/CommandEncoder/GraphicsCommandEncoder.h>
+#include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Device/Pass.h>
+#include <GraphicsFoundation/Shader/Shader.h>
+#include <GraphicsFoundation/Shader/ShaderUtils.h>
+
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
 #include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
@@ -13,12 +21,6 @@
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
-#include <GraphicsFoundation/CommandEncoder/ComputeCommandEncoder.h>
-#include <GraphicsFoundation/CommandEncoder/GraphicsCommandEncoder.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Device/Pass.h>
-#include <GraphicsFoundation/Shader/Shader.h>
-#include <GraphicsFoundation/Shader/ShaderUtils.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/GlobalConstants.h>
 

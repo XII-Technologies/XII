@@ -1,9 +1,10 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/World/Declarations.h>
 #include <Foundation/Reflection/Reflection.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsFoundation/Descriptors/Descriptors.h>
+#include <GraphicsFoundation/Declarations/Descriptors.h>
 
 class xiiCamera;
 class xiiExtractedRenderData;

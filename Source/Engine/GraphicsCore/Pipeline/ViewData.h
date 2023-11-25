@@ -43,12 +43,7 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
   ///
   /// fScreenPosX and fScreenPosY are expected to be in [0; 1] range (normalized pixel coordinates).
   /// If no ray can be computed, XII_FAILURE is returned.
-  xiiResult ComputePickingRay(
-    float        fScreenPosX,
-    float        fScreenPosY,
-    xiiVec3&     out_vRayStartPos,
-    xiiVec3&     out_vRayDir,
-    xiiCameraEye eye = xiiCameraEye::Left) const
+  xiiResult ComputePickingRay(float fScreenPosX, float fScreenPosY, xiiVec3& out_vRayStartPos, xiiVec3& out_vRayDir, xiiCameraEye eye = xiiCameraEye::Left) const
   {
     xiiVec3 vScreenPos;
     vScreenPos.x = fScreenPosX;

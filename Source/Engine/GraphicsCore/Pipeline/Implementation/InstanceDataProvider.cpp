@@ -1,9 +1,11 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <GraphicsFoundation/Profiling/Profiling.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
+
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/Pipeline/InstanceDataProvider.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
 
 #include <Shaders/Common/ObjectConstants.h>
 
@@ -52,10 +54,9 @@ void xiiInstanceData::UpdateInstanceData(xiiRenderContext* pRenderContext, xiiUI
 
   xiiUInt32              uiDestOffset = m_uiBufferOffset * sizeof(xiiPerInstanceData);
   auto                   pSourceData  = m_PerInstanceData.GetArrayPtr().GetSubArray(m_uiBufferOffset, uiCount);
-  xiiGALUpdateMode::Enum updateMode   = (m_uiBufferOffset == 0) ? xiiGALUpdateMode::Discard : xiiGALUpdateMode::NoOverwrite;
+  xiiBitflags<xiiGALMapFlags> mapFlags     = (m_uiBufferOffset == 0) ? xiiGALMapFlags::Discard : xiiGALMapFlags::NoOverWrite;
 
-  pGALCommandEncoder->UpdateBuffer(m_hInstanceDataBuffer, uiDestOffset, pSourceData.ToByteArray(), updateMode);
-
+  pGALCommandEncoder->UpdateBuffer(m_hInstanceDataBuffer, uiDestOffset, pSourceData.ToByteArray(), mapFlags);
 
   xiiObjectConstants* pConstants = pRenderContext->GetConstantBufferData<xiiObjectConstants>(m_hConstantBuffer);
   pConstants->InstanceDataOffset = m_uiBufferOffset;
@@ -71,8 +72,8 @@ void xiiInstanceData::CreateBuffer(xiiUInt32 uiSize)
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALBufferCreationDescription desc;
-  desc.m_uiStructSize                = sizeof(xiiPerInstanceData);
-  desc.m_uiTotalSize                 = desc.m_uiStructSize * uiSize;
+  desc.m_BindFlags                   = xiiGALBindFlags::UnorderedAccess;
+  desc.m_uiSize                      = sizeof(xiiPerInstanceData) * uiSize;
   desc.m_BufferType                  = xiiGALBufferType::Generic;
   desc.m_bUseAsStructuredBuffer      = true;
   desc.m_bAllowShaderResourceView    = true;
