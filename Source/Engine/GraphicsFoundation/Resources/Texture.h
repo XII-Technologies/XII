@@ -78,7 +78,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureSubResourceData : public xiiHasha
   XII_DECLARE_POD_TYPE();
 
   xiiGALBufferHandle m_hSourceBuffer;            ///< Handle to the GPU buffer that contains the sub-resource data. If provided, the pData member must be nullptr.
-  const void*        m_pData          = nullptr; ///< Pointer to the sub-resource data in GPU memory. If provided, the hSourceBuffer member must be invalidated.
+  void*              m_pData          = nullptr; ///< Pointer to the sub-resource data in GPU memory. If provided, the hSourceBuffer member must be invalidated.
   xiiUInt64          m_uiSourceOffset = 0U;      ///< When updating data from the buffer (hSourceOffset is not invalidated), the offset from the beginning of the buffer to the data.
   xiiUInt64          m_uiStride       = 0U;      ///< For 2D and 3D textures, the row stride in bytes.
   xiiUInt64          m_uiDepthStride  = 0U;      ///< For 3D textures, the depth slice stride in bytes.

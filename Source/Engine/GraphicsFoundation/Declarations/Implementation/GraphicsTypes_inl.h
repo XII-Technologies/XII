@@ -244,7 +244,7 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALPrimitiveTopology::VerticesPerPrimitive(xiiEnu
     case xiiGALPrimitiveTopology::ControlPointPatchList32:
       return 1024;
 
-    XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return 0;
 }

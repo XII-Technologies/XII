@@ -297,7 +297,7 @@ void xiiGALCommandEncoderD3D12::CopyTextureRegionPlatform(xiiGALTexture* pDestin
   m_pContext->CopyTexture(copyTextureDescription);
 }
 
-void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALMappedTextureSubresource& sourceData)
+void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
 {
   auto pDestinationTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDestination);
 
@@ -459,7 +459,7 @@ xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel)
   return xiiMath::Max(1u, uiSize);
 }
 
-void xiiGALCommandEncoderD3D12::CopyTextureReadbackResultPlatform(xiiGALTexture* pTexture, xiiGALTexture* pStagingTexture, xiiArrayPtr<xiiGALTextureMipLevelData> mipLevelData, xiiArrayPtr<xiiGALMappedTextureSubresource> targetData)
+void xiiGALCommandEncoderD3D12::CopyTextureReadbackResultPlatform(xiiGALTexture* pTexture, xiiGALTexture* pStagingTexture, xiiArrayPtr<xiiGALTextureMipLevelData> mipLevelData, xiiArrayPtr<xiiGALTextureSubResourceData> targetData)
 {
   auto pTextureD3D12        = static_cast<xiiGALTextureD3D12*>(pTexture);
   auto pStagingTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pStagingTexture);
@@ -471,8 +471,8 @@ void xiiGALCommandEncoderD3D12::CopyTextureReadbackResultPlatform(xiiGALTexture*
   const xiiUInt32 uiSubResources = mipLevelData.GetCount();
   for (xiiUInt32 i = 0; i < uiSubResources; ++i)
   {
-    const xiiGALTextureMipLevelData&      subResourceData = mipLevelData[i];
-    const xiiGALMappedTextureSubresource& textureData     = targetData[i];
+    const xiiGALTextureMipLevelData&    subResourceData = mipLevelData[i];
+    const xiiGALTextureSubResourceData& textureData     = targetData[i];
 
     Diligent::MappedTextureSubresource mappedSubResource = {};
     m_pContext->MapTextureSubresource(pTextureD3D12->GetTexture(), subResourceData.m_uiMipLevel, subResourceData.m_uiArraySlice, Diligent::MAP_READ, Diligent::MAP_FLAG_DO_NOT_WAIT, nullptr, mappedSubResource);
