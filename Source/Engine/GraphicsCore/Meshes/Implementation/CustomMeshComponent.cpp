@@ -214,7 +214,7 @@ void xiiCustomMeshComponent::OnActivated()
     geo.TriangulatePolygons();
     geo.ComputeTangents();
 
-    auto hMesh = CreateMeshResource(xiiGALPrimitiveTopology::Triangles, geo.GetVertices().GetCount(), geo.GetPolygons().GetCount(), xiiGALIndexType::UInt);
+    auto hMesh = CreateMeshResource(xiiGALPrimitiveTopology::TriangleList, geo.GetVertices().GetCount(), geo.GetPolygons().GetCount(), xiiGALIndexType::UInt);
 
     xiiResourceLock<xiiDynamicMeshBufferResource> pMesh(hMesh, xiiResourceAcquireMode::BlockTillLoaded);
 

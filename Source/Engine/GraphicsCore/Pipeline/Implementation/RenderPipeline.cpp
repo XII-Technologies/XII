@@ -1000,7 +1000,7 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 
   xiiFrustum     limitedFrustum                               = frustum;
   const xiiPlane farPlane                                     = limitedFrustum.GetPlane(xiiFrustum::PlaneType::FarPlane);
-  limitedFrustum.AccessPlane(xiiFrustum::PlaneType::FarPlane) = xiiPlane::MakeFromNormalAndPoint(farPlane.m_vNormal, view.GetCullingCamera()->GetCenterPosition() + farPlane.m_vNormal * cvar_SpatialCullingOcclusionFarPlane.GetValue()); // only use occluders closer than this
+  limitedFrustum.AccessPlane(xiiFrustum::PlaneType::FarPlane) = xiiPlane(farPlane.m_vNormal, view.GetCullingCamera()->GetCenterPosition() + farPlane.m_vNormal * cvar_SpatialCullingOcclusionFarPlane.GetValue()); // only use occluders closer than this
 
   xiiRasterizerView* pRasterizer = PrepareOcclusionCulling(limitedFrustum, view);
   XII_SCOPE_EXIT(g_pRasterizerViewPool->ReturnRasterizerView(pRasterizer));
@@ -1014,9 +1014,11 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
     auto IsOccluded = [=](const xiiSimdBBox& aabb) {
       // grow the bbox by some percent to counter the lower precision of the occlusion buffer
 
-      const xiiSimdVec4f c     = aabb.GetCenter();
-      const xiiSimdVec4f e     = aabb.GetHalfExtents();
-      const xiiSimdBBox  aabb2 = xiiSimdBBox::MakeFromCenterAndHalfExtents(c, e.CompMul(xiiSimdVec4f(1.0f + cvar_SpatialCullingOcclusionBoundsInlation)));
+      const xiiSimdVec4f c = aabb.GetCenter();
+      const xiiSimdVec4f e = aabb.GetHalfExtents();
+
+      xiiSimdBBox aabb2;
+      aabb2.SetCenterAndHalfExtents(c, e.CompMul(xiiSimdVec4f(1.0f + cvar_SpatialCullingOcclusionBoundsInlation)));
 
       return !pRasterizer->IsVisible(aabb2);
     };
@@ -1153,10 +1155,8 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   else
     pRenderContext->SetShaderPermutationVariable(sCameraMode, sPerspective);
 
-  if (xiiGALDevice::GetDefaultDevice()->GetCapabilities().m_bVertexShaderRenderTargetArrayIndex)
-    pRenderContext->SetShaderPermutationVariable(sVSRTAI, sTrue);
-  else
-    pRenderContext->SetShaderPermutationVariable(sVSRTAI, sFalse);
+  // \todo Check vertex shader render target array index.
+  pRenderContext->SetShaderPermutationVariable(sVSRTAI, sTrue);
 
   pRenderContext->SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
 
@@ -1323,7 +1323,7 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
       {
         sFormat.Format("Unknown Format {}", (int)pCon->m_Desc.m_Format);
       }
-      sTmp.Format("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_iTargetTextureIndex != -1 ? "RenderTarget" : "PoolTexture", i, pCon->m_Desc.m_uiWidth, pCon->m_Desc.m_uiHeight, pCon->m_Desc.m_uiArraySize, (int)pCon->m_Desc.m_SampleCount, xiiGALTextureFormat::IsDepthFormat(pCon->m_Desc.m_Format) ? "Depth" : "Color", sFormat);
+      sTmp.Format("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_iTargetTextureIndex != -1 ? "RenderTarget" : "PoolTexture", i, pCon->m_Desc.m_Size.width, pCon->m_Desc.m_Size.height, pCon->m_Desc.m_uiArraySizeOrDepth, pCon->m_Desc.m_uiSampleCount, xiiGALTextureFormat::IsDepthFormat(pCon->m_Desc.m_Format) ? "Depth" : "Color", sFormat);
       xiiUInt32 uiTextureNode = ref_graph.AddNode(sTmp, &nd);
 
       xiiUInt32 uiOutputNode = *nodeMap.GetValue(pCon->m_pOutput->m_pParent);
@@ -1421,8 +1421,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
     {
       const xiiGALTexture* pTexture = pDevice->GetTexture(m_hOcclusionDebugViewTexture);
 
-      if (pTexture->GetDescription().m_uiWidth != uiImgWidth ||
-          pTexture->GetDescription().m_uiHeight != uiImgHeight)
+      if (pTexture->GetDescription().m_Size.width != uiImgWidth || pTexture->GetDescription().m_Size.height != uiImgHeight)
       {
         pDevice->DestroyTexture(m_hOcclusionDebugViewTexture);
         m_hOcclusionDebugViewTexture.Invalidate();
@@ -1433,10 +1432,11 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
     if (m_hOcclusionDebugViewTexture.IsInvalidated())
     {
       xiiGALTextureCreationDescription desc;
-      desc.m_uiWidth                     = uiImgWidth;
-      desc.m_uiHeight                    = uiImgHeight;
-      desc.m_Format                      = xiiGALTextureFormat::RGBAUByteNormalized;
-      desc.m_ResourceAccess.m_bImmutable = false;
+      desc.m_Size.width     = uiImgWidth;
+      desc.m_Size.height    = uiImgHeight;
+      desc.m_Format         = xiiGALTextureFormat::RGBA8UNormalized;
+      desc.m_Usage          = xiiGALResourceUsage::Default;
+      desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
 
       m_hOcclusionDebugViewTexture = pDevice->CreateTexture(desc);
     }
@@ -1451,10 +1451,10 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       destBox.m_vMax = xiiVec3U32(uiImgWidth, uiImgHeight, 1);
 
       xiiGALTextureSubResourceData sourceData;
-      sourceData.m_pData      = fb.GetData();
-      sourceData.m_uiRowPitch = uiImgWidth * sizeof(xiiColorLinearUB);
+      sourceData.m_pData    = fb.GetData();
+      sourceData.m_uiStride = uiImgWidth * sizeof(xiiColorLinearUB);
 
-      pCommandEncoder->UpdateTexture(m_hOcclusionDebugViewTexture, xiiGALTextureSubresource(), destBox, sourceData);
+      pCommandEncoder->UpdateTexture(m_hOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
 
       pGALPass->EndCompute(pCommandEncoder);
       pDevice->EndPass(pGALPass);
@@ -1465,15 +1465,15 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
   else
   {
     xiiTexture2DResourceDescriptor d;
-    d.m_DescGAL.m_uiWidth  = rasterizer.GetResolutionX();
-    d.m_DescGAL.m_uiHeight = rasterizer.GetResolutionY();
-    d.m_DescGAL.m_Format   = xiiGALTextureFormat::RGBAByteNormalized;
+    d.m_DescGAL.m_Size.width  = rasterizer.GetResolutionX();
+    d.m_DescGAL.m_Size.height = rasterizer.GetResolutionY();
+    d.m_DescGAL.m_Format      = xiiGALTextureFormat::RGBA8SNormalized;
 
     xiiGALTextureSubResourceData content[1];
-    content[0].m_pData        = fb.GetData();
-    content[0].m_uiRowPitch   = sizeof(xiiColorLinearUB) * d.m_DescGAL.m_uiWidth;
-    content[0].m_uiSlicePitch = content[0].m_uiRowPitch * d.m_DescGAL.m_uiHeight;
-    d.m_InitialContent        = content;
+    content[0].m_pData         = fb.GetData();
+    content[0].m_uiStride      = sizeof(xiiColorLinearUB) * d.m_DescGAL.m_Size.width;
+    content[0].m_uiDepthStride = content[0].m_uiStride * d.m_DescGAL.m_Size.height;
+    d.m_InitialContent         = content;
 
     static xiiAtomicInteger32 name = 0;
     name.Increment();

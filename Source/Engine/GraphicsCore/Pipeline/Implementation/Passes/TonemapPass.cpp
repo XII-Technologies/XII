@@ -159,7 +159,7 @@ void xiiTonemapPass::Execute(const xiiRenderViewContext& renderViewContext, cons
 
   renderViewContext.m_pRenderContext->BindShader(m_hShader);
   renderViewContext.m_pRenderContext->BindConstantBuffer("xiiTonemapConstants", m_hConstantBuffer);
-  renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, 1);
+  renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
   renderViewContext.m_pRenderContext->BindTexture2D("VignettingTexture", m_hVignettingTexture, xiiResourceAcquireMode::BlockTillLoaded);
   renderViewContext.m_pRenderContext->BindTexture2D("NoiseTexture", m_hNoiseTexture, xiiResourceAcquireMode::BlockTillLoaded);
   renderViewContext.m_pRenderContext->BindTexture2D("SceneColorTexture", pDevice->GetDefaultResourceView(pColorInput->m_TextureHandle));

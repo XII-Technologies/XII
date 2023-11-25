@@ -5,7 +5,6 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
 #include <Foundation/IO/TypeVersionContext.h>
-#include <GraphicsFoundation/Resources/RenderTargetView.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
@@ -38,15 +37,15 @@ bool xiiAntialiasingPass::GetRenderTargetDescriptions(const xiiView& view, const
   auto pInput = inputs[m_PinInput.m_uiInputIndex];
   if (pInput != nullptr)
   {
-    if (pInput->m_SampleCount == xiiGALMSAASampleCount::TwoSamples)
+    if (pInput->m_uiSampleCount == xiiGALSampleCount::TwoSamples)
     {
       m_sMsaaSampleCount.Assign("MSAA_SAMPLES_TWO");
     }
-    else if (pInput->m_SampleCount == xiiGALMSAASampleCount::FourSamples)
+    else if (pInput->m_uiSampleCount == xiiGALSampleCount::FourSamples)
     {
       m_sMsaaSampleCount.Assign("MSAA_SAMPLES_FOUR");
     }
-    else if (pInput->m_SampleCount == xiiGALMSAASampleCount::EightSamples)
+    else if (pInput->m_uiSampleCount == xiiGALSampleCount::EightSamples)
     {
       m_sMsaaSampleCount.Assign("MSAA_SAMPLES_EIGHT");
     }
@@ -57,7 +56,7 @@ bool xiiAntialiasingPass::GetRenderTargetDescriptions(const xiiView& view, const
     }
 
     xiiGALTextureCreationDescription desc = *pInput;
-    desc.m_SampleCount                    = xiiGALMSAASampleCount::None;
+    desc.m_uiSampleCount = xiiGALSampleCount::OneSample;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }
@@ -92,7 +91,7 @@ void xiiAntialiasingPass::Execute(const xiiRenderViewContext& renderViewContext,
 
   renderViewContext.m_pRenderContext->BindShader(m_hShader);
 
-  renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, 1);
+  renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
   renderViewContext.m_pRenderContext->BindTexture2D("ColorTexture", pDevice->GetDefaultResourceView(pInput->m_TextureHandle));
 
   renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();

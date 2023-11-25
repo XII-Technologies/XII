@@ -9,7 +9,7 @@ using xiiDynamicMeshBufferResourceHandle = xiiTypedResourceHandle<class xiiDynam
 
 struct xiiDynamicMeshBufferResourceDescriptor
 {
-  xiiGALPrimitiveTopology::Enum m_Topology        = xiiGALPrimitiveTopology::Triangles;
+  xiiGALPrimitiveTopology::Enum m_Topology        = xiiGALPrimitiveTopology::TriangleList;
   xiiGALIndexType::Enum         m_IndexType       = xiiGALIndexType::UInt;
   xiiUInt32                     m_uiMaxPrimitives = 0;
   xiiUInt32                     m_uiMaxVertices   = 0;

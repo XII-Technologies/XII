@@ -87,7 +87,7 @@ void xiiBlurPass::Execute(const xiiRenderViewContext& renderViewContext, const x
 
     // Bind shader and inputs
     renderViewContext.m_pRenderContext->BindShader(m_hShader);
-    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, 1);
+    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
     renderViewContext.m_pRenderContext->BindTexture2D("Input", hResourceView);
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiBlurConstants", m_hBlurCB);
 

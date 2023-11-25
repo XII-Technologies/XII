@@ -54,7 +54,7 @@ void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewCon
   {
     pContext->GetCommandEncoder()->UpdateBuffer(hLensFlareData, 0, m_LensFlareData.GetByteArrayPtr());
 
-    pContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, m_LensFlareData.GetCount() * 2);
+    pContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, m_LensFlareData.GetCount() * 2);
     pContext->DrawMeshBuffer().IgnoreResult();
   }
 }

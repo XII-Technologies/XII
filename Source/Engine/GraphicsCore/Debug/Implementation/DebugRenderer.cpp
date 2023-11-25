@@ -1428,7 +1428,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         XII_ASSERT_DEV(uiNumTriangleVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
         pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Triangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumTriangleVerticesInBatch).ToByteArray());
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles3D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::Triangles, uiNumTriangleVerticesInBatch / 3);
+        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles3D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumTriangleVerticesInBatch / 3);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1461,7 +1461,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
           XII_ASSERT_DEV(uiNumVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
           pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::TexTriangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumVerticesInBatch).ToByteArray());
 
-          renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles3D], xiiGALBufferHandle(), &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::Triangles, uiNumVerticesInBatch / 3);
+          renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles3D], xiiGALBufferHandle(), &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumVerticesInBatch / 3);
 
           renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1568,7 +1568,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
         pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Triangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray());
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles2D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::Triangles, uiNum2DVerticesInBatch / 3);
+        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles2D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1601,7 +1601,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
           XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
           pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::TexTriangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray());
 
-          renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles2D], xiiGALBufferHandle(), &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::Triangles, uiNum2DVerticesInBatch / 3);
+          renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles2D], xiiGALBufferHandle(), &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
 
           renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1649,7 +1649,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         const xiiUInt32 uiNumGlyphsInBatch = xiiMath::Min<xiiUInt32>(uiNumGlyphs, GLYPHS_PER_BATCH);
         pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray());
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, uiNumGlyphsInBatch * 2);
+        renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, uiNumGlyphsInBatch * 2);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1679,7 +1679,7 @@ void xiiDebugRenderer::OnEngineStartup()
 
     xiiMeshBufferResourceDescriptor desc;
     desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALTextureFormat::XYZFloat);
-    desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::Triangles);
+    desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
     s_hSolidBoxMeshBuffer = xiiResourceManager::CreateResource<xiiMeshBufferResource>("DebugSolidBox", std::move(desc), "Mesh for Rendering Debug Solid Boxes");
   }

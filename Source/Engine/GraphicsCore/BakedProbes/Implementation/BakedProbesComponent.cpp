@@ -144,7 +144,7 @@ void xiiBakedProbesComponentManager::CreateDebugResources()
       xiiMeshBufferResourceDescriptor desc;
       desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALTextureFormat::XYZFloat);
       desc.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiGALTextureFormat::XYZFloat);
-      desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::Triangles);
+      desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
       hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szBufferResourceName, std::move(desc), szBufferResourceName);
     }

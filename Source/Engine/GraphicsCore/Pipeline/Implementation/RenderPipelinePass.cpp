@@ -94,6 +94,4 @@ void xiiRenderPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& r
   }
 }
 
-
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipelinePass);

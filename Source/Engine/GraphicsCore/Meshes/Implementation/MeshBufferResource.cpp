@@ -15,7 +15,7 @@ XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiMeshBufferResource);
 
 xiiMeshBufferResourceDescriptor::xiiMeshBufferResourceDescriptor()
 {
-  m_Topology      = xiiGALPrimitiveTopology::Triangles;
+  m_Topology      = xiiGALPrimitiveTopology::TriangleList;
   m_uiVertexSize  = 0;
   m_uiVertexCount = 0;
 }
@@ -24,7 +24,7 @@ xiiMeshBufferResourceDescriptor::~xiiMeshBufferResourceDescriptor() = default;
 
 void xiiMeshBufferResourceDescriptor::Clear()
 {
-  m_Topology             = xiiGALPrimitiveTopology::Triangles;
+  m_Topology             = xiiGALPrimitiveTopology::TriangleList;
   m_uiVertexSize         = 0;
   m_uiVertexCount        = 0;
   m_InputLayout.m_uiHash = 0;
@@ -146,7 +146,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       Indices.PushBack(geom.GetLines()[p].m_uiEndVertex);
     }
   }
-  else if (topology == xiiGALPrimitiveTopology::Triangles)
+  else if (topology == xiiGALPrimitiveTopology::TriangleList)
   {
     Indices.Reserve(geom.GetPolygons().GetCount() * 6);
 
@@ -307,7 +307,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       SetPointIndices(t, Indices[t]);
     }
   }
-  else if (topology == xiiGALPrimitiveTopology::Triangles)
+  else if (topology == xiiGALPrimitiveTopology::TriangleList)
   {
     for (xiiUInt32 t = 0; t < Indices.GetCount(); t += 3)
     {
@@ -359,7 +359,7 @@ void xiiMeshBufferResourceDescriptor::SetLineIndices(xiiUInt32 uiLine, xiiUInt32
 
 void xiiMeshBufferResourceDescriptor::SetTriangleIndices(xiiUInt32 uiTriangle, xiiUInt32 uiVertex0, xiiUInt32 uiVertex1, xiiUInt32 uiVertex2)
 {
-  XII_ASSERT_DEBUG(m_Topology == xiiGALPrimitiveTopology::Triangles, "Wrong topology");
+  XII_ASSERT_DEBUG(m_Topology == xiiGALPrimitiveTopology::TriangleList, "Wrong topology");
 
   if (Uses32BitIndices())
   {
@@ -420,7 +420,7 @@ xiiBoundingBoxSphere xiiMeshBufferResourceDescriptor::ComputeBounds() const
 
 xiiResult xiiMeshBufferResourceDescriptor::RecomputeNormals()
 {
-  if (m_Topology != xiiGALPrimitiveTopology::Triangles)
+  if (m_Topology != xiiGALPrimitiveTopology::TriangleList)
     return XII_FAILURE; // normals not needed
 
   const xiiUInt32              uiVertexSize  = m_uiVertexSize;

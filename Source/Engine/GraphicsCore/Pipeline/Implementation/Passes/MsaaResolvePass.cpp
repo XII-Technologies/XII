@@ -85,7 +85,7 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
     globals.NumMsaaSamples = m_MsaaSampleCount;
 
     renderViewContext.m_pRenderContext->BindShader(m_hDepthResolveShader);
-    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, 1);
+    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
     renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", pDevice->GetDefaultResourceView(pInput->m_TextureHandle));
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();

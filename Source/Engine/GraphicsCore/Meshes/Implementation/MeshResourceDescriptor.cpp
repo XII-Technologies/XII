@@ -411,7 +411,7 @@ xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& inout_stream)
       xiiUInt32 uiStreamCount = 0;
       chunk >> uiStreamCount;
 
-      xiiUInt8 uiTopology = xiiGALPrimitiveTopology::Triangles;
+      xiiUInt8 uiTopology = xiiGALPrimitiveTopology::TriangleList;
       if (ci.m_uiChunkVersion >= 3)
       {
         chunk >> uiTopology;

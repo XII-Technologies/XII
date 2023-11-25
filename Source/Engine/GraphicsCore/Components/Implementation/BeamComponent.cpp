@@ -316,7 +316,7 @@ void xiiBeamComponent::BuildMeshResourceFromGeometry(xiiGeometry& Geometry, xiiM
   auto& MeshBufferDesc = MeshDesc.MeshBufferDesc();
 
   MeshBufferDesc.AddCommonStreams();
-  MeshBufferDesc.AllocateStreamsFromGeometry(Geometry, xiiGALPrimitiveTopology::Triangles);
+  MeshBufferDesc.AllocateStreamsFromGeometry(Geometry, xiiGALPrimitiveTopology::TriangleList);
 
   MeshDesc.AddSubMesh(MeshBufferDesc.GetPrimitiveCount(), 0, 0);
 

@@ -51,6 +51,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderingSetup
   bool                    m_bClearStencil           = false;
   bool                    m_bDiscardColor           = false;
   bool                    m_bDiscardDepth           = false;
+  xiiColor                m_ClearColor              = xiiColor::Black;
 };
 
 #include <GraphicsFoundation/Resources/Implementation/RenderTargetSetup_inl.h>

@@ -7,6 +7,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiLSAODepthCompareFunction, 1)
@@ -43,13 +44,13 @@ namespace
     XII_ASSERT_DEV(iBase < 61, "Don't have prime number for this base.");
 
     // Halton sequence with reverse permutation
-    const int p   = primes[iBase];
-    float     h   = 0.0f;
-    float     f   = 1.0f / static_cast<float>(p);
-    float     fct = f;
+    const xiiInt32 p   = primes[iBase];
+    float          h   = 0.0f;
+    float          f   = 1.0f / static_cast<float>(p);
+    float          fct = f;
     while (j > 0)
     {
-      int i = j % p;
+      xiiInt32 i = j % p;
       h += (i == 0 ? i : p - i) * fct;
       j /= p;
       fct *= f;
@@ -60,7 +61,6 @@ namespace
 
 xiiLSAOPass::xiiLSAOPass() :
   xiiRenderPipelinePass("LSAOPass", true)
-
 {
   {
     // Load shader.
@@ -95,12 +95,12 @@ bool xiiLSAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArra
     xiiLog::Error("No depth input connected to ssao pass!");
     return false;
   }
-  if (!inputs[m_PinDepthInput.m_uiInputIndex]->m_bAllowShaderResourceView)
+  if (!inputs[m_PinDepthInput.m_uiInputIndex]->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
   {
-    xiiLog::Error("All ssao pass inputs must allow shader resource view.");
+    xiiLog::Error("All ssao pass inputs must be bound with xiiGALBindFlags::ShaderResource.");
     return false;
   }
-  if (inputs[m_PinDepthInput.m_uiInputIndex]->m_SampleCount != xiiGALMSAASampleCount::None)
+  if (inputs[m_PinDepthInput.m_uiInputIndex]->m_uiSampleCount != 1)
   {
     xiiLog::Error("'{0}' input must be resolved", GetName());
     return false;
@@ -108,7 +108,7 @@ bool xiiLSAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArra
 
   // Output format matches input format but is f16.
   outputs[m_PinOutput.m_uiOutputIndex]          = *inputs[m_PinDepthInput.m_uiInputIndex];
-  outputs[m_PinOutput.m_uiOutputIndex].m_Format = xiiGALTextureFormat::RGHalf;
+  outputs[m_PinOutput.m_uiOutputIndex].m_Format = xiiGALTextureFormat::RG16Float;
 
   return true;
 }
@@ -117,7 +117,7 @@ void xiiLSAOPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePass
 {
   // Todo: Support half resolution.
   const xiiGALTextureCreationDescription& desc = inputs[m_PinDepthInput.m_uiInputIndex]->m_Desc;
-  SetupLineSweepData(xiiVec3I32(desc.m_uiWidth, desc.m_uiHeight, desc.m_uiArraySize));
+  SetupLineSweepData(xiiVec3I32(desc.m_Size.width, desc.m_Size.height, desc.m_uiArraySizeOrDepth));
 }
 
 void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
@@ -132,7 +132,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
   if (m_bSweepDataDirty)
   {
     const xiiGALTextureCreationDescription& desc = inputs[m_PinDepthInput.m_uiInputIndex]->m_Desc;
-    SetupLineSweepData(xiiVec3I32(desc.m_uiWidth, desc.m_uiHeight, desc.m_uiArraySize));
+    SetupLineSweepData(xiiVec3I32(desc.m_Size.width, desc.m_Size.height, desc.m_uiArraySizeOrDepth));
   }
   if (outputs[m_PinOutput.m_uiOutputIndex] == nullptr)
     return;
@@ -146,9 +146,8 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
   if (m_bDistributedGathering)
   {
     xiiGALTextureCreationDescription tempTextureDesc = outputs[m_PinOutput.m_uiOutputIndex]->m_Desc;
-    tempTextureDesc.m_bAllowShaderResourceView       = true;
-    tempTextureDesc.m_bCreateRenderTarget            = true;
-    tempTexture                                      = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(tempTextureDesc);
+    tempTextureDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
+    tempTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(tempTextureDesc);
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(tempTexture));
   }
   else
@@ -164,7 +163,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
     renderViewContext.m_pRenderContext->BindTexture2D("DepthBuffer", pDevice->GetDefaultResourceView(inputs[m_PinDepthInput.m_uiInputIndex]->m_TextureHandle));
     renderViewContext.m_pRenderContext->BindShader(m_hShaderLineSweep);
     renderViewContext.m_pRenderContext->BindBuffer("LineInstructions", m_hLineSweepInfoSRV);
-    renderViewContext.m_pRenderContext->BindUAV("LineSweepOutputBuffer", m_hLineSweepOutputUAV);
+    renderViewContext.m_pRenderContext->BindBufferUAV("LineSweepOutputBuffer", m_hLineSweepOutputUAV);
 
     const xiiUInt32 dispatchSize        = m_uiNumSweepLines / SSAO_LINESWEEP_THREAD_GROUP + (m_uiNumSweepLines % SSAO_LINESWEEP_THREAD_GROUP != 0 ? 1 : 0);
     const xiiUInt32 uiRenderedInstances = renderViewContext.m_pCamera->IsStereoscopic() ? 2 : 1;
@@ -199,7 +198,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
     renderViewContext.m_pRenderContext->BindShader(m_hShaderGather);
     renderViewContext.m_pRenderContext->BindBuffer("LineInstructions", m_hLineSweepInfoSRV);
     renderViewContext.m_pRenderContext->BindBuffer("LineSweepOutputBuffer", m_hLineSweepOutputSRV);
-    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, 1);
+    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
     renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
   }
 
@@ -230,7 +229,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
     renderViewContext.m_pRenderContext->BindShader(m_hShaderAverage);
     renderViewContext.m_pRenderContext->BindTexture2D("SSAOGatherOutput", pDevice->GetDefaultResourceView(tempTexture));
 
-    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, 1);
+    renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
     renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
     // Give back temp texture.
@@ -321,11 +320,11 @@ void xiiLSAOPass::DestroyLineSweepData()
   xiiGALDevice* device = xiiGALDevice::GetDefaultDevice();
 
   if (!m_hLineSweepOutputUAV.IsInvalidated())
-    device->DestroyUnorderedAccessView(m_hLineSweepOutputUAV);
+    device->DestroyBufferView(m_hLineSweepOutputUAV);
   m_hLineSweepOutputUAV.Invalidate();
 
   if (!m_hLineSweepOutputSRV.IsInvalidated())
-    device->DestroyResourceView(m_hLineSweepOutputSRV);
+    device->DestroyBufferView(m_hLineSweepOutputSRV);
   m_hLineSweepOutputSRV.Invalidate();
 
   if (!m_hLineSweepOutputBuffer.IsInvalidated())
@@ -403,52 +402,42 @@ void xiiLSAOPass::SetupLineSweepData(const xiiVec3I32& imageResolution)
     // DX11 allows only float and int for writing RWBuffer, so we need to do manual packing.
     {
       xiiGALBufferCreationDescription bufferDesc;
-      bufferDesc.m_uiStructSize                = 4;
-      bufferDesc.m_uiTotalSize                 = imageResolution.z * 2 * totalNumberOfSamples;
-      bufferDesc.m_BufferType                  = xiiGALBufferType::Generic;
-      bufferDesc.m_bUseForIndirectArguments    = false;
-      bufferDesc.m_bUseAsStructuredBuffer      = false;
-      bufferDesc.m_bAllowRawViews              = false;
-      bufferDesc.m_bAllowShaderResourceView    = true;
-      bufferDesc.m_bAllowUAV                   = true;
-      bufferDesc.m_ResourceAccess.m_bReadBack  = false;
-      bufferDesc.m_ResourceAccess.m_bImmutable = false;
+      bufferDesc.m_uiSize = imageResolution.z * 2 * totalNumberOfSamples;
+      bufferDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
+      bufferDesc.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Write);
 
       m_hLineSweepOutputBuffer = device->CreateBuffer(bufferDesc);
 
-      xiiGALUnorderedAccessViewCreationDescription uavDesc;
-      uavDesc.m_hBuffer            = m_hLineSweepOutputBuffer;
-      uavDesc.m_OverrideViewFormat = xiiGALTextureFormat::RUInt;
-      uavDesc.m_uiFirstElement     = 0;
-      uavDesc.m_uiNumElements      = imageResolution.z * totalNumberOfSamples / 2;
-      uavDesc.m_bRawView           = false;
-      uavDesc.m_bAppend            = false;
-      m_hLineSweepOutputUAV        = device->CreateUnorderedAccessView(uavDesc);
+      xiiGALBufferViewCreationDescription uavDesc;
+      uavDesc.m_ViewType     = xiiGALBufferViewType::UnorderedAccess;
+      uavDesc.m_hBuffer      = m_hLineSweepOutputBuffer;
+      uavDesc.m_Format       = xiiGALBufferFormat{.m_ValueType = xiiGALValueType::UInt32, .m_uiComponents = 1, .m_bIsNormalized = false};
+      uavDesc.m_uiByteOffset = 0;
+      uavDesc.m_uiByteWidth  = imageResolution.z * totalNumberOfSamples / 2;
+      m_hLineSweepOutputUAV  = device->CreateBufferView(uavDesc);
 
-      xiiGALResourceViewCreationDescription srvDesc;
-      srvDesc.m_hBuffer            = m_hLineSweepOutputBuffer;
-      srvDesc.m_OverrideViewFormat = xiiGALTextureFormat::RUInt;
-      srvDesc.m_uiFirstElement     = 0;
-      srvDesc.m_uiNumElements      = imageResolution.z * totalNumberOfSamples / 2;
-      srvDesc.m_bRawView           = false;
-      m_hLineSweepOutputSRV        = device->CreateResourceView(srvDesc);
+      xiiGALBufferViewCreationDescription srvDesc;
+      srvDesc.m_hBuffer      = m_hLineSweepOutputBuffer;
+      uavDesc.m_Format       = xiiGALBufferFormat{.m_ValueType = xiiGALValueType::UInt32, .m_uiComponents = 1, .m_bIsNormalized = false};
+      srvDesc.m_uiByteOffset = 0;
+      srvDesc.m_uiByteWidth  = imageResolution.z * totalNumberOfSamples / 2;
+      m_hLineSweepOutputSRV  = device->CreateBufferView(srvDesc);
     }
 
     // Structured buffer per line.
     {
       xiiGALBufferCreationDescription bufferDesc;
-      bufferDesc.m_uiStructSize                = sizeof(LineInstruction);
-      bufferDesc.m_uiTotalSize                 = sizeof(LineInstruction) * m_uiNumSweepLines;
-      bufferDesc.m_BufferType                  = xiiGALBufferType::Generic;
-      bufferDesc.m_bUseForIndirectArguments    = false;
-      bufferDesc.m_bUseAsStructuredBuffer      = true;
-      bufferDesc.m_bAllowRawViews              = false;
-      bufferDesc.m_bAllowShaderResourceView    = true;
-      bufferDesc.m_bAllowUAV                   = false;
-      bufferDesc.m_ResourceAccess.m_bReadBack  = false;
-      bufferDesc.m_ResourceAccess.m_bImmutable = true;
+      bufferDesc.m_uiSize        = sizeof(LineInstruction) * m_uiNumSweepLines;
+      bufferDesc.m_Mode          = xiiGALBufferMode::Structured;
+      bufferDesc.m_ResourceUsage = xiiGALResourceUsage::Immutable;
+      bufferDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
-      m_hLineInfoBuffer = device->CreateBuffer(bufferDesc, xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(lineInstructions.GetData()), lineInstructions.GetCount() * sizeof(LineInstruction)));
+      auto pInitialData = xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(lineInstructions.GetData()), lineInstructions.GetCount() * sizeof(LineInstruction));
+
+      xiiGALBufferData initData;
+      initData.m_pData      = pInitialData.GetPtr();
+      initData.m_uiDataSize = pInitialData.GetCount();
+      m_hLineInfoBuffer     = device->CreateBuffer(bufferDesc, &initData);
 
       m_hLineSweepInfoSRV = device->GetDefaultResourceView(m_hLineInfoBuffer);
     }
@@ -564,7 +553,5 @@ void xiiLSAOPass::AddLinesForDirection(const xiiVec3I32& imageResolution, const 
   }
 #endif
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_LSAOPass);

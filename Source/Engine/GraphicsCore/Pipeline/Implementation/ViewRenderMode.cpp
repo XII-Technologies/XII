@@ -140,6 +140,4 @@ void xiiViewRenderMode::GetDebugText(Enum renderMode, xiiStringBuilder& out_sDeb
   }
 }
 
-
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_ViewRenderMode);

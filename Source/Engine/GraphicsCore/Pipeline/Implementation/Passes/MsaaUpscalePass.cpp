@@ -79,7 +79,7 @@ void xiiMsaaUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
   auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
   renderViewContext.m_pRenderContext->BindShader(m_hShader);
-  renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, 1);
+  renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
   renderViewContext.m_pRenderContext->BindTexture2D("ColorTexture", pDevice->GetDefaultResourceView(pInput->m_TextureHandle));
 
   renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();

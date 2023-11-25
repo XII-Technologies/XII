@@ -61,7 +61,7 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
   {
     pContext->GetCommandEncoder()->UpdateBuffer(hSpriteData, 0, m_SpriteData.GetByteArrayPtr());
 
-    pContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::Triangles, m_SpriteData.GetCount() * 2);
+    pContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, m_SpriteData.GetCount() * 2);
     pContext->DrawMeshBuffer().IgnoreResult();
   }
 }

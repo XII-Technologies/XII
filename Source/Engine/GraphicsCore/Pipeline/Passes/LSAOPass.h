@@ -70,7 +70,6 @@ protected:
   void DestroyLineSweepData();
   void SetupLineSweepData(const xiiVec3I32& imageResolution);
 
-
   void AddLinesForDirection(const xiiVec3I32& imageResolution, const xiiVec2I32& sampleDir, xiiUInt32 lineIndex, xiiDynamicArray<LineInstruction>& outinLineInstructions, xiiUInt32& outinTotalNumberOfSamples);
 
   xiiRenderPipelineNodeInputPin  m_PinDepthInput;
@@ -82,13 +81,13 @@ protected:
   bool m_bConstantsDirty = true;
 
   /// Output of the line sweep pass.
-  xiiGALBufferHandle              m_hLineSweepOutputBuffer;
-  xiiGALUnorderedAccessViewHandle m_hLineSweepOutputUAV;
-  xiiGALResourceViewHandle        m_hLineSweepOutputSRV;
+  xiiGALBufferHandle     m_hLineSweepOutputBuffer;
+  xiiGALBufferViewHandle m_hLineSweepOutputUAV;
+  xiiGALBufferViewHandle m_hLineSweepOutputSRV;
 
   /// Structured buffer containing instructions for every single line to trace.
-  xiiGALBufferHandle       m_hLineInfoBuffer;
-  xiiGALResourceViewHandle m_hLineSweepInfoSRV;
+  xiiGALBufferHandle     m_hLineInfoBuffer;
+  xiiGALBufferViewHandle m_hLineSweepInfoSRV;
 
   /// Total number of lines to be traced.
   xiiUInt32 m_uiNumSweepLines = 0;

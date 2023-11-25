@@ -36,9 +36,9 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
 {
   XII_LOCK(m_Lock);
 
-  if (!textureDesc.m_bCreateRenderTarget)
+  if (!textureDesc.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
   {
-    xiiLog::Error("Texture description for render target usage has not set bCreateRenderTarget!");
+    xiiLog::Error("Texture description for render target needs to be created with xiiGALBindFlags::RenderTarget!");
     return xiiGALTextureHandle();
   }
 
@@ -86,22 +86,16 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
   return hNewTexture;
 }
 
-xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(
-  xiiUInt32                    uiWidth,
-  xiiUInt32                    uiHeight,
-  xiiEnum<xiiGALTextureFormat> format,
-  xiiGALMSAASampleCount::Enum  sampleCount,
-  xiiUInt32                    uiSliceColunt)
+xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALSampleCount> sampleCount, xiiUInt32 uiSliceColunt)
 {
   xiiGALTextureCreationDescription TextureDesc;
-  TextureDesc.m_bCreateRenderTarget      = true;
-  TextureDesc.m_bAllowShaderResourceView = true;
-  TextureDesc.m_Format                   = format;
-  TextureDesc.m_Type                     = xiiGALTextureType::Texture2D;
-  TextureDesc.m_uiWidth                  = uiWidth;
-  TextureDesc.m_uiHeight                 = uiHeight;
-  TextureDesc.m_SampleCount              = sampleCount;
-  TextureDesc.m_uiArraySize              = uiSliceColunt;
+  TextureDesc.m_Format             = format;
+  TextureDesc.m_Size.width         = uiWidth;
+  TextureDesc.m_Size.height        = uiHeight;
+  TextureDesc.m_uiSampleCount      = sampleCount;
+  TextureDesc.m_uiArraySizeOrDepth = uiSliceColunt;
+  TextureDesc.m_Type               = TextureDesc.m_uiSampleCount > 1 ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
+  TextureDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
 
   return GetRenderTarget(TextureDesc);
 }

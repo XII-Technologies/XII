@@ -43,5 +43,4 @@ xiiUInt64 xiiRenderSortingFunctions::BackToFrontThenByRenderData(const xiiRender
   return uiSortingKey;
 }
 
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_SortingFunctions);

@@ -123,8 +123,8 @@ public:
   ///          The function calls AddRef() for the created interface, so it must be released by a call to ReleaseRef() when it is no longer needed.
   xiiGALBufferViewHandle CreateBufferView(xiiGALBufferViewCreationDescription& description);
 
-  /// \brief This destroys the buffer with the given handle.
-  void DestroyBufferView(xiiGALBufferHandle hBufferView);
+  /// \brief This destroys the buffer view with the given handle.
+  void DestroyBufferView(xiiGALBufferViewHandle hBufferView);
 
 
   /// \brief This creates a new texture object.

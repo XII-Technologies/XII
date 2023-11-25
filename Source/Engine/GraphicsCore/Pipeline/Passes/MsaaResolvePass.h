@@ -20,6 +20,6 @@ protected:
   xiiRenderPipelineNodeOutputPin m_PinOutput;
 
   bool                        m_bIsDepth        = false;
-  xiiGALMSAASampleCount::Enum m_MsaaSampleCount = xiiGALMSAASampleCount::None;
+  xiiEnum<xiiGALSampleCount> m_MsaaSampleCount = xiiGALSampleCount::OneSample;
   xiiShaderResourceHandle     m_hDepthResolveShader;
 };

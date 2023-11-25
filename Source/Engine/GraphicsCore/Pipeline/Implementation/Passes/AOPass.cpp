@@ -6,7 +6,9 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsCore/Textures/TextureUtils.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/DownscaleDepthConstants.h>
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/SSAOConstants.h>
@@ -71,20 +73,20 @@ bool xiiAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayP
 {
   if (auto pDepthInput = inputs[m_PinDepthInput.m_uiInputIndex])
   {
-    if (!pDepthInput->m_bAllowShaderResourceView)
+    if (!pDepthInput->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
     {
       xiiLog::Error("'{0}' input must allow shader resource view.", GetName());
       return false;
     }
 
-    if (pDepthInput->m_SampleCount != xiiGALMSAASampleCount::None)
+    if (pDepthInput->m_uiSampleCount != xiiGALSampleCount::OneSample)
     {
       xiiLog::Error("'{0}' input must be resolved", GetName());
       return false;
     }
 
     xiiGALTextureCreationDescription desc = *pDepthInput;
-    desc.m_Format                         = xiiGALTextureFormat::RGHalf;
+    desc.m_Format                         = xiiGALTextureFormat::RG16Float;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }
@@ -110,8 +112,8 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   xiiGALPass*   pGALPass = pDevice->BeginPass(GetName());
   XII_SCOPE_EXIT(pDevice->EndPass(pGALPass));
 
-  xiiUInt32 uiWidth  = pDepthInput->m_Desc.m_uiWidth;
-  xiiUInt32 uiHeight = pDepthInput->m_Desc.m_uiHeight;
+  xiiUInt32 uiWidth  = pDepthInput->m_Desc.m_Size.width;
+  xiiUInt32 uiHeight = pDepthInput->m_Desc.m_Size.height;
 
   xiiUInt32 uiNumMips   = 3;
   xiiUInt32 uiHzbWidth  = xiiMath::RoundUp(uiWidth, 1u << uiNumMips);
@@ -121,24 +123,23 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   float fHzbScaleY = (float)uiHeight / uiHzbHeight;
 
   // Find temp targets
-  xiiGALTextureHandle                         hzbTexture;
-  xiiHybridArray<xiiVec2, 8>                  hzbSizes;
-  xiiHybridArray<xiiGALResourceViewHandle, 8> hzbResourceViews;
-  xiiHybridArray<xiiGALTextureViewHandle, 8>  hzbRenderTargetViews;
+  xiiGALTextureHandle                        hzbTexture;
+  xiiHybridArray<xiiVec2, 8>                 hzbSizes;
+  xiiHybridArray<xiiGALTextureViewHandle, 8>       hzbResourceViews;
+  xiiHybridArray<xiiGALTextureViewHandle, 8> hzbRenderTargetViews;
 
   xiiGALTextureHandle tempSSAOTexture;
 
   {
     {
       xiiGALTextureCreationDescription desc;
-      desc.m_uiWidth                  = uiHzbWidth / 2;
-      desc.m_uiHeight                 = uiHzbHeight / 2;
-      desc.m_uiMipLevelCount          = 3;
-      desc.m_Type                     = xiiGALTextureType::Texture2D;
-      desc.m_Format                   = xiiGALTextureFormat::RHalf;
-      desc.m_bCreateRenderTarget      = true;
-      desc.m_bAllowShaderResourceView = true;
-      desc.m_uiArraySize              = pOutput->m_Desc.m_uiArraySize;
+      desc.m_Size.width  = uiHzbWidth / 2;
+      desc.m_Size.height = uiHzbHeight / 2;
+      desc.m_uiMipLevels = 3;
+      desc.m_Type        = xiiGALResourceDimension::Texture2D;
+      desc.m_Format      = xiiGALTextureFormat::R16Float;
+      desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
+      desc.m_uiArraySizeOrDepth = pOutput->m_Desc.m_uiArraySizeOrDepth;
 
       hzbTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
     }
@@ -151,26 +152,27 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       hzbSizes.PushBack(xiiVec2((float)uiHzbWidth, (float)uiHzbHeight));
 
       {
-        xiiGALResourceViewCreationDescription desc;
+        xiiGALTextureViewCreationDescription desc;
         desc.m_hTexture               = hzbTexture;
-        desc.m_uiMostDetailedMipLevel = i;
-        desc.m_uiMipLevelsToUse       = 1;
-        desc.m_uiArraySize            = pOutput->m_Desc.m_uiArraySize;
+        desc.m_uiMostDetailedMip = i;
+        desc.m_uiMipLevelCount       = 1;
+        desc.m_uiArrayOrDepthSlicesCount           = pOutput->m_Desc.m_uiArraySizeOrDepth;
 
-        hzbResourceViews.PushBack(pDevice->CreateResourceView(desc));
+        hzbResourceViews.PushBack(pDevice->CreateTextureView(desc));
       }
 
       {
-        xiiGALRenderTargetViewCreationDescription desc;
+        xiiGALTextureViewCreationDescription desc;
         desc.m_hTexture     = hzbTexture;
-        desc.m_uiMipLevel   = i;
-        desc.m_uiSliceCount = pOutput->m_Desc.m_uiArraySize;
+        desc.m_uiMostDetailedMip   = i;
+        desc.m_uiMipLevelCount   = 1;
+        desc.m_uiArrayOrDepthSlicesCount = pOutput->m_Desc.m_uiArraySizeOrDepth;
 
-        hzbRenderTargetViews.PushBack(pDevice->CreateRenderTargetView(desc));
+        hzbRenderTargetViews.PushBack(pDevice->CreateTextureView(desc));
       }
     }
 
-    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RGHalf, xiiGALMSAASampleCount::None, pOutput->m_Desc.m_uiArraySize);
+    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG16Float, xiiGALSampleCount::OneSample, pOutput->m_Desc.m_uiArraySizeOrDepth);
   }
 
   // Mip map passes
@@ -179,7 +181,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
 
     for (xiiUInt32 i = 0; i < uiNumMips; ++i)
     {
-      xiiGALResourceViewHandle hInputView;
+      xiiGALTextureViewHandle hInputView;
       xiiVec2                  pixelSize;
 
       if (i == 0)
@@ -210,7 +212,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", hInputView);
       renderViewContext.m_pRenderContext->BindSampler("DepthSampler", m_hSSAOSampler);
 
-      renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::Triangles, 1);
+      renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, 1);
 
       renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -250,7 +252,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
 
     renderViewContext.m_pRenderContext->BindTexture2D("NoiseTexture", m_hNoiseTexture, xiiResourceAcquireMode::BlockTillLoaded);
 
-    renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::Triangles, 1);
+    renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, 1);
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
   }
@@ -266,7 +268,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
 
     renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", pDevice->GetDefaultResourceView(tempSSAOTexture));
 
-    renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::Triangles, 1);
+    renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, 1);
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
   }
@@ -367,12 +369,12 @@ void xiiAOPass::CreateSampler()
   if (m_hSSAOSampler.IsInvalidated())
   {
     xiiGALSamplerCreationDescription desc;
-    desc.m_MinFilter   = xiiGALTextureFilterMode::Point;
-    desc.m_MagFilter   = xiiGALTextureFilterMode::Point;
-    desc.m_MipFilter   = xiiGALTextureFilterMode::Point;
-    desc.m_AddressU    = xiiImageAddressMode::ClampBorder;
-    desc.m_AddressV    = xiiImageAddressMode::ClampBorder;
-    desc.m_AddressW    = xiiImageAddressMode::ClampBorder;
+    desc.m_MinFilter   = xiiGALFilterType::Point;
+    desc.m_MagFilter   = xiiGALFilterType::Point;
+    desc.m_MipFilter   = xiiGALFilterType::Point;
+    desc.m_AddressU    = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
+    desc.m_AddressV    = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
+    desc.m_AddressW    = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
     desc.m_BorderColor = xiiColor::White * m_fFadeOutEnd;
 
     m_hSSAOSampler = xiiGALDevice::GetDefaultDevice()->CreateSampler(desc);

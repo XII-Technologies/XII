@@ -965,7 +965,7 @@ xiiGALBufferViewHandle xiiGALDevice::CreateBufferView(xiiGALBufferViewCreationDe
   return xiiGALBufferViewHandle();
 }
 
-void xiiGALDevice::DestroyBufferView(xiiGALBufferHandle hBufferView)
+void xiiGALDevice::DestroyBufferView(xiiGALBufferViewHandle hBufferView)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 

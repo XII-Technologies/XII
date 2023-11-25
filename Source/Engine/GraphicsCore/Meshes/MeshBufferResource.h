@@ -51,11 +51,11 @@ public:
 
   /// \brief After all streams are added, call this to allocate the data for the streams. If uiNumPrimitives is 0, the mesh buffer will not
   /// use indexed rendering.
-  void AllocateStreams(xiiUInt32 uiNumVertices, xiiGALPrimitiveTopology::Enum topology = xiiGALPrimitiveTopology::Triangles, xiiUInt32 uiNumPrimitives = 0, bool bZeroFill = false);
+  void AllocateStreams(xiiUInt32 uiNumVertices, xiiGALPrimitiveTopology::Enum topology = xiiGALPrimitiveTopology::TriangleList, xiiUInt32 uiNumPrimitives = 0, bool bZeroFill = false);
 
   /// \brief Creates streams and fills them with data from the xiiGeometry. Only the geometry matching the given topology is used.
   ///  Streams that do not match any of the data inside the xiiGeometry directly are skipped.
-  void AllocateStreamsFromGeometry(const xiiGeometry& geom, xiiGALPrimitiveTopology::Enum topology = xiiGALPrimitiveTopology::Triangles);
+  void AllocateStreamsFromGeometry(const xiiGeometry& geom, xiiGALPrimitiveTopology::Enum topology = xiiGALPrimitiveTopology::TriangleList);
 
   /// \brief Gives read access to the allocated vertex data
   xiiArrayPtr<const xiiUInt8> GetVertexBufferData() const;

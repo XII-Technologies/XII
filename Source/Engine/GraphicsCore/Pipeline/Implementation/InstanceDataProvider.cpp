@@ -52,8 +52,8 @@ void xiiInstanceData::UpdateInstanceData(xiiRenderContext* pRenderContext, xiiUI
 
   xiiGALCommandEncoder* pGALCommandEncoder = pRenderContext->GetCommandEncoder();
 
-  xiiUInt32              uiDestOffset = m_uiBufferOffset * sizeof(xiiPerInstanceData);
-  auto                   pSourceData  = m_PerInstanceData.GetArrayPtr().GetSubArray(m_uiBufferOffset, uiCount);
+  xiiUInt32                   uiDestOffset = m_uiBufferOffset * sizeof(xiiPerInstanceData);
+  auto                        pSourceData  = m_PerInstanceData.GetArrayPtr().GetSubArray(m_uiBufferOffset, uiCount);
   xiiBitflags<xiiGALMapFlags> mapFlags     = (m_uiBufferOffset == 0) ? xiiGALMapFlags::Discard : xiiGALMapFlags::NoOverWrite;
 
   pGALCommandEncoder->UpdateBuffer(m_hInstanceDataBuffer, uiDestOffset, pSourceData.ToByteArray(), mapFlags);
@@ -72,12 +72,9 @@ void xiiInstanceData::CreateBuffer(xiiUInt32 uiSize)
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALBufferCreationDescription desc;
-  desc.m_BindFlags                   = xiiGALBindFlags::UnorderedAccess;
-  desc.m_uiSize                      = sizeof(xiiPerInstanceData) * uiSize;
-  desc.m_BufferType                  = xiiGALBufferType::Generic;
-  desc.m_bUseAsStructuredBuffer      = true;
-  desc.m_bAllowShaderResourceView    = true;
-  desc.m_ResourceAccess.m_bImmutable = false;
+  desc.m_BindFlags = xiiGALBindFlags::ShaderResource;
+  desc.m_Mode      = xiiGALBufferMode::Structured;
+  desc.m_uiSize    = sizeof(xiiPerInstanceData) * uiSize;
 
   m_hInstanceDataBuffer = pDevice->CreateBuffer(desc);
 }
@@ -104,7 +101,5 @@ void* xiiInstanceDataProvider::UpdateData(const xiiRenderViewContext& renderView
 
   return &m_Data;
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_InstanceDataProvider);
