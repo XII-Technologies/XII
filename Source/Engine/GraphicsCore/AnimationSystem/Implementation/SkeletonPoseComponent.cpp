@@ -125,22 +125,22 @@ void xiiSkeletonPoseComponent::OnSimulationStarted()
   ResendPose();
 }
 
-void xiiSkeletonPoseComponent::SetSkeletonFile(const char* szFile)
+void xiiSkeletonPoseComponent::SetSkeletonFile(xiiStringView sFile)
 {
   xiiSkeletonResourceHandle hResource;
 
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
+  if (!sFile.IsEmpty())
   {
-    hResource = xiiResourceManager::LoadResource<xiiSkeletonResource>(szFile);
+    hResource = xiiResourceManager::LoadResource<xiiSkeletonResource>(sFile);
   }
 
   SetSkeleton(hResource);
 }
 
-const char* xiiSkeletonPoseComponent::GetSkeletonFile() const
+xiiStringView xiiSkeletonPoseComponent::GetSkeletonFile() const
 {
   if (!m_hSkeleton.IsValid())
-    return "";
+    return {};
 
   return m_hSkeleton.GetResourceID();
 }
@@ -169,18 +169,18 @@ void xiiSkeletonPoseComponent::ResendPose()
   static_cast<xiiSkeletonPoseComponentManager*>(GetOwningManager())->EnqueueUpdate(GetHandle());
 }
 
-const xiiRangeView<const char*, xiiUInt32> xiiSkeletonPoseComponent::GetBones() const
+const xiiRangeView<xiiStringView, xiiUInt32> xiiSkeletonPoseComponent::GetBones() const
 {
-  return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; },
+  return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
                                               [this]() -> xiiUInt32 { return m_Bones.GetCount(); },
                                               [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                              [this](const xiiUInt32& uiIt) -> const char* { return m_Bones.GetKey(uiIt).GetString().GetData(); });
+                                              [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Bones.GetKey(uiIt).GetString().GetView(); });
 }
 
-void xiiSkeletonPoseComponent::SetBone(const char* szKey, const xiiVariant& value)
+void xiiSkeletonPoseComponent::SetBone(xiiStringView sKey, const xiiVariant& value)
 {
   xiiHashedString hs;
-  hs.Assign(szKey);
+  hs.Assign(sKey);
 
   if (value.GetReflectedType() == xiiGetStaticRTTI<xiiExposedBone>())
   {
@@ -188,34 +188,36 @@ void xiiSkeletonPoseComponent::SetBone(const char* szKey, const xiiVariant& valu
   }
 
   // TODO
-  // if (IsActiveAndInitialized())
-  //{
-  //  // only add to update list, if not yet activated,
-  //  // since OnActivate will do the instantiation anyway
-  //  GetWorld()->GetComponentManager<xiiPrefabReferenceComponentManager>()->AddToUpdateList(this);
-  //}
+  #if 0
+  if (IsActiveAndInitialized())
+  {
+    // only add to update list, if not yet activated, since OnActivate will do the instantiation anyway
+    GetWorld()->GetComponentManager<xiiPrefabReferenceComponentManager>()->AddToUpdateList(this);
+  }
+  #endif
   ResendPose();
 }
 
-void xiiSkeletonPoseComponent::RemoveBone(const char* szKey)
+void xiiSkeletonPoseComponent::RemoveBone(xiiStringView sKey)
 {
-  if (m_Bones.RemoveAndCopy(xiiTempHashedString(szKey)))
+  if (m_Bones.RemoveAndCopy(xiiTempHashedString(sKey)))
   {
     // TODO
-    // if (IsActiveAndInitialized())
-    //{
-    //  // only add to update list, if not yet activated,
-    //  // since OnActivate will do the instantiation anyway
-    //  GetWorld()->GetComponentManager<xiiPrefabReferenceComponentManager>()->AddToUpdateList(this);
-    //}
+    #if 0
+    if (IsActiveAndInitialized())
+    {
+      // only add to update list, if not yet activated, since OnActivate will do the instantiation anyway
+      GetWorld()->GetComponentManager<xiiPrefabReferenceComponentManager>()->AddToUpdateList(this);
+    }
+    #endif
 
     ResendPose();
   }
 }
 
-bool xiiSkeletonPoseComponent::GetBone(const char* szKey, xiiVariant& out_value) const
+bool xiiSkeletonPoseComponent::GetBone(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Bones.Find(szKey);
+  xiiUInt32 it = m_Bones.Find(sKey);
 
   if (it == xiiInvalidIndex)
     return false;
@@ -309,9 +311,9 @@ void xiiSkeletonPoseComponent::SendCustomPose()
     const xiiUInt32 idx1 = uiBone % 4;
 
     ozz::math::SoaQuaternion& q          = ozzLocalTransforms[idx0].rotation;
-    reinterpret_cast<float*>(&q.x)[idx1] = boneRot.x;
-    reinterpret_cast<float*>(&q.y)[idx1] = boneRot.y;
-    reinterpret_cast<float*>(&q.z)[idx1] = boneRot.z;
+    reinterpret_cast<float*>(&q.x)[idx1] = boneRot.v.x;
+    reinterpret_cast<float*>(&q.y)[idx1] = boneRot.v.y;
+    reinterpret_cast<float*>(&q.z)[idx1] = boneRot.v.z;
     reinterpret_cast<float*>(&q.w)[idx1] = boneRot.w;
   }
 

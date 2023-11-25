@@ -243,6 +243,4 @@ void xiiBoolToNumberAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGra
   m_OutNumber.SetNumber(ref_graph, m_InValue.GetBool(ref_graph) ? m_fTrueValue : m_fFalseValue);
 }
 
-
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_AnimGraph_AnimNodes_MathAnimNodes);

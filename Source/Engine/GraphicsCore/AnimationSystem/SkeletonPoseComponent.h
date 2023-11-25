@@ -67,8 +67,8 @@ public:
   xiiSkeletonPoseComponent();
   ~xiiSkeletonPoseComponent();
 
-  void        SetSkeletonFile(const char* szFile); // [ property ]
-  const char* GetSkeletonFile() const;             // [ property ]
+  void          SetSkeletonFile(xiiStringView sFile); // [ property ]
+  xiiStringView GetSkeletonFile() const;              // [ property ]
 
   void                             SetSkeleton(const xiiSkeletonResourceHandle& hResource);
   const xiiSkeletonResourceHandle& GetSkeleton() const { return m_hSkeleton; }
@@ -78,10 +78,10 @@ public:
 
   void ResendPose();
 
-  const xiiRangeView<const char*, xiiUInt32> GetBones() const;                                        // [ property ] (exposed bones)
-  void                                       SetBone(const char* szKey, const xiiVariant& value);     // [ property ] (exposed bones)
-  void                                       RemoveBone(const char* szKey);                           // [ property ] (exposed bones)
-  bool                                       GetBone(const char* szKey, xiiVariant& out_value) const; // [ property ] (exposed bones)
+  const xiiRangeView<xiiStringView, xiiUInt32> GetBones() const;                                         // [ property ] (exposed bones)
+  void                                         SetBone(xiiStringView sKey, const xiiVariant& value);     // [ property ] (exposed bones)
+  void                                         RemoveBone(xiiStringView sKey);                           // [ property ] (exposed bones)
+  bool                                         GetBone(xiiStringView sKey, xiiVariant& out_value) const; // [ property ] (exposed bones)
 
 protected:
   void Update();

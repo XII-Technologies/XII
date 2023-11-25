@@ -160,9 +160,9 @@ static void BuildRawOzzSkeleton(const xiiSkeleton& skeleton, xiiUInt16 uiExpecte
     dstJoint.transform.translation.x = srcTransform.m_vPosition.x;
     dstJoint.transform.translation.y = srcTransform.m_vPosition.y;
     dstJoint.transform.translation.z = srcTransform.m_vPosition.z;
-    dstJoint.transform.rotation.x    = srcTransform.m_qRotation.x;
-    dstJoint.transform.rotation.y    = srcTransform.m_qRotation.y;
-    dstJoint.transform.rotation.z    = srcTransform.m_qRotation.z;
+    dstJoint.transform.rotation.x    = srcTransform.m_qRotation.v.x;
+    dstJoint.transform.rotation.y    = srcTransform.m_qRotation.v.y;
+    dstJoint.transform.rotation.z    = srcTransform.m_qRotation.v.z;
     dstJoint.transform.rotation.w    = srcTransform.m_qRotation.w;
     dstJoint.transform.scale.x       = srcTransform.m_vScale.x;
     dstJoint.transform.scale.y       = srcTransform.m_vScale.y;
@@ -208,12 +208,12 @@ xiiUInt64 xiiSkeleton::GetHeapMemoryUsage() const
 
 xiiAngle xiiSkeletonJoint::GetTwistLimitLow() const
 {
-  return xiiMath::Max(xiiAngle::MakeFromDegree(-179), m_TwistLimitCenterAngle - m_TwistLimitHalfAngle);
+  return xiiMath::Max(xiiAngle::Degree(-179), m_TwistLimitCenterAngle - m_TwistLimitHalfAngle);
 }
 
 xiiAngle xiiSkeletonJoint::GetTwistLimitHigh() const
 {
-  return xiiMath::Min(xiiAngle::MakeFromDegree(179), m_TwistLimitCenterAngle + m_TwistLimitHalfAngle);
+  return xiiMath::Min(xiiAngle::Degree(179), m_TwistLimitCenterAngle + m_TwistLimitHalfAngle);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_Implementation_Skeleton);

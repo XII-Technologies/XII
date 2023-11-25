@@ -23,10 +23,10 @@ xiiResult xiiOzzArchiveData::FetchRegularFile(const char* szFile)
 
 xiiResult xiiOzzArchiveData::FetchEmbeddedArchive(xiiStreamReader& inout_stream)
 {
-  char szTag[8] = "";
+  char szTag[9] = "";
 
-  inout_stream.ReadBytes(szTag, 8);
-  szTag[7] = '\0';
+  inout_stream.ReadBytes(szTag, 9);
+  szTag[8] = '\0';
 
   if (!xiiStringUtils::IsEqual(szTag, "xiiOzzAr"))
     return XII_FAILURE;
@@ -48,9 +48,9 @@ xiiResult xiiOzzArchiveData::FetchEmbeddedArchive(xiiStreamReader& inout_stream)
 
 xiiResult xiiOzzArchiveData::StoreEmbeddedArchive(xiiStreamWriter& inout_stream) const
 {
-  const char szTag[8] = "xiiOzzAr";
+  const char szTag[9] = "xiiOzzAr";
 
-  XII_SUCCEED_OR_RETURN(inout_stream.WriteBytes(szTag, 8));
+  XII_SUCCEED_OR_RETURN(inout_stream.WriteBytes(szTag, 9));
 
   inout_stream.WriteVersion(1);
 
@@ -207,6 +207,5 @@ XII_GRAPHICSCORE_DLL void xiiOzzUtils::CopySkeleton(ozz::animation::Skeleton* pD
     ozzArchive >> *pDst;
   }
 }
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_Implementation_OzzUtils);

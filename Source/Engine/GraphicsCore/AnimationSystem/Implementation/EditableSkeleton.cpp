@@ -56,10 +56,10 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeletonJoint, 2, xiiRTTIDefaultAllo
     XII_MEMBER_PROPERTY("LocalRotation", m_qLocalJointRotation),
     XII_ENUM_MEMBER_PROPERTY("JointType", xiiSkeletonJointType, m_JointType),
     XII_MEMBER_PROPERTY("Stiffness", m_fStiffness)->AddAttributes(new xiiDefaultValueAttribute(10.0f)),
-    XII_MEMBER_PROPERTY("SwingLimitY", m_SwingLimitY)->AddAttributes(new xiiClampValueAttribute(xiiAngle(), xiiAngle::MakeFromDegree(170)), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(30))),
-    XII_MEMBER_PROPERTY("SwingLimitZ", m_SwingLimitZ)->AddAttributes(new xiiClampValueAttribute(xiiAngle(), xiiAngle::MakeFromDegree(170)), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(30))),
-    XII_MEMBER_PROPERTY("TwistLimitHalfAngle", m_TwistLimitHalfAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::MakeFromDegree(10), xiiAngle::MakeFromDegree(170)), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(30))),
-    XII_MEMBER_PROPERTY("TwistLimitCenterAngle", m_TwistLimitCenterAngle)->AddAttributes(new xiiClampValueAttribute(-xiiAngle::MakeFromDegree(170), xiiAngle::MakeFromDegree(170))),
+    XII_MEMBER_PROPERTY("SwingLimitY", m_SwingLimitY)->AddAttributes(new xiiClampValueAttribute(xiiAngle(), xiiAngle::Degree(170)), new xiiDefaultValueAttribute(xiiAngle::Degree(30))),
+    XII_MEMBER_PROPERTY("SwingLimitZ", m_SwingLimitZ)->AddAttributes(new xiiClampValueAttribute(xiiAngle(), xiiAngle::Degree(170)), new xiiDefaultValueAttribute(xiiAngle::Degree(30))),
+    XII_MEMBER_PROPERTY("TwistLimitHalfAngle", m_TwistLimitHalfAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::Degree(10), xiiAngle::Degree(170)), new xiiDefaultValueAttribute(xiiAngle::Degree(30))),
+    XII_MEMBER_PROPERTY("TwistLimitCenterAngle", m_TwistLimitCenterAngle)->AddAttributes(new xiiClampValueAttribute(-xiiAngle::Degree(170), xiiAngle::Degree(170))),
 
     XII_MEMBER_PROPERTY("OverrideSurface", m_bOverrideSurface),
     XII_MEMBER_PROPERTY("Surface", m_sSurfaceOverride)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
@@ -83,7 +83,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeleton, 1, xiiRTTIDefaultAllocator
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("File", m_sSourceFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", xiiFileBrowserAttribute::MeshesWithAnimations)),
+    XII_MEMBER_PROPERTY("File", m_sSourceFile)->AddAttributes(new xiiFileBrowserAttribute("Select Mesh", xiiFileBrowserAttribute::SkeletalMeshes)),
     XII_ENUM_MEMBER_PROPERTY("RightDir", xiiBasisAxis, m_RightDir)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveX)),
     XII_ENUM_MEMBER_PROPERTY("UpDir", xiiBasisAxis, m_UpDir)->AddAttributes(new xiiDefaultValueAttribute((int)xiiBasisAxis::PositiveY)),
     XII_MEMBER_PROPERTY("FlipForwardDir", m_bFlipForwardDir),
@@ -235,9 +235,9 @@ static void BuildOzzRawSkeleton(const xiiEditableSkeletonJoint& srcJoint, ozz::a
   ref_dstJoint.transform.translation.x = srcJoint.m_LocalTransform.m_vPosition.x;
   ref_dstJoint.transform.translation.y = srcJoint.m_LocalTransform.m_vPosition.y;
   ref_dstJoint.transform.translation.z = srcJoint.m_LocalTransform.m_vPosition.z;
-  ref_dstJoint.transform.rotation.x    = srcJoint.m_LocalTransform.m_qRotation.x;
-  ref_dstJoint.transform.rotation.y    = srcJoint.m_LocalTransform.m_qRotation.y;
-  ref_dstJoint.transform.rotation.z    = srcJoint.m_LocalTransform.m_qRotation.z;
+  ref_dstJoint.transform.rotation.x    = srcJoint.m_LocalTransform.m_qRotation.v.x;
+  ref_dstJoint.transform.rotation.y    = srcJoint.m_LocalTransform.m_qRotation.v.y;
+  ref_dstJoint.transform.rotation.z    = srcJoint.m_LocalTransform.m_qRotation.v.z;
   ref_dstJoint.transform.rotation.w    = srcJoint.m_LocalTransform.m_qRotation.w;
   ref_dstJoint.transform.scale.x       = srcJoint.m_LocalTransform.m_vScale.x;
   ref_dstJoint.transform.scale.y       = srcJoint.m_LocalTransform.m_vScale.y;
