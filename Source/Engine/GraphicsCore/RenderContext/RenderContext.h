@@ -78,7 +78,7 @@ public:
     }
 
     XII_ALWAYS_INLINE T* operator->() { return m_pGALCommandEncoder; }
-    XII_ALWAYS_INLINE    operator const T*() { return m_pGALCommandEncoder; }
+    XII_ALWAYS_INLINE operator const T*() { return m_pGALCommandEncoder; }
 
   private:
     friend class xiiRenderContext;
@@ -303,22 +303,14 @@ private:
       Texture
     };
 
-    Enum m_Type = Invalid;
-
+    Enum                    m_Type = Invalid;
     xiiGALBufferViewHandle  m_hBufferView;
     xiiGALTextureViewHandle m_hTextureView;
-
-    xiiGALBuffer*  m_pBuffer  = nullptr;
-    xiiGALTexture* m_pTexture = nullptr;
   };
 
-  xiiHashTable<xiiUInt64, xiiGALTextureViewHandle> m_BoundTextures2D;
-  xiiHashTable<xiiUInt64, xiiGALTextureViewHandle> m_BoundTextures3D;
-  xiiHashTable<xiiUInt64, xiiGALTextureViewHandle> m_BoundTexturesCube;
-  xiiHashTable<xiiUInt64, xiiGALBufferViewHandle>  m_BoundBuffer;
-  xiiHashTable<xiiUInt64, xiiGALTextureViewHandle> m_BoundTextureUAVs;
-  xiiHashTable<xiiUInt64, xiiGALBufferViewHandle>  m_BoundBufferUAVs;
-  xiiHashTable<xiiUInt64, xiiGALSamplerHandle>     m_BoundSamplers;
+  xiiHashTable<xiiUInt64, ResourceBinding>     m_BoundResources;
+  xiiHashTable<xiiUInt64, ResourceBinding>     m_BoundUAVs;
+  xiiHashTable<xiiUInt64, xiiGALSamplerHandle> m_BoundSamplers;
 
   struct BoundConstantBuffer
   {
@@ -390,8 +382,7 @@ private: // Per Renderer States
   xiiShaderPermutationResource* ApplyShaderState();
   xiiMaterialResource*          ApplyMaterialState();
   void                          ApplyConstantBufferBindings(const xiiShaderStageBinary* pBinary);
-  void                          ApplyTextureBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary);
-  void                          ApplyUAVBindings(const xiiShaderStageBinary* pBinary);
+  void                          ApplyResourceViewBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary, xiiEnum<xiiGALShaderResourceType> type);
+  void                          ApplyUnorderedAccessViewBindings(const xiiShaderStageBinary* pBinary);
   void                          ApplySamplerBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary);
-  void                          ApplyBufferBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary);
 };

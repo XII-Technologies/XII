@@ -285,17 +285,17 @@ void xiiRenderContext::BindTextureCube(const xiiTempHashedString& sSlotName, con
 
 void xiiRenderContext::BindTexture2D(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hResourceView)
 {
-  xiiGALTextureViewHandle* pOldResourceView = nullptr;
-  if (m_BoundTextures2D.TryGetValue(sSlotName.GetHash(), pOldResourceView))
+  ResourceBinding* pOldResourceBinding = nullptr;
+  if (m_BoundResources.TryGetValue(sSlotName.GetHash(), pOldResourceBinding))
   {
-    if (*pOldResourceView == hResourceView)
+    if (pOldResourceBinding->m_Type == ResourceBinding::Texture && pOldResourceBinding->m_hTextureView == hResourceView)
       return;
 
-    *pOldResourceView = hResourceView;
+    *pOldResourceBinding = ResourceBinding{.m_Type = ResourceBinding::Texture, .m_hBufferView = xiiGALBufferViewHandle(), .m_hTextureView = hResourceView};
   }
   else
   {
-    m_BoundTextures2D.Insert(sSlotName.GetHash(), hResourceView);
+    m_BoundResources.Insert(sSlotName.GetHash(), ResourceBinding{.m_Type = ResourceBinding::Texture, .m_hBufferView = xiiGALBufferViewHandle(), .m_hTextureView = hResourceView});
   }
 
   m_StateFlags.Add(xiiRenderContextFlags::TextureBindingChanged);
@@ -303,17 +303,17 @@ void xiiRenderContext::BindTexture2D(const xiiTempHashedString& sSlotName, xiiGA
 
 void xiiRenderContext::BindTexture3D(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hResourceView)
 {
-  xiiGALTextureViewHandle* pOldResourceView = nullptr;
-  if (m_BoundTextures3D.TryGetValue(sSlotName.GetHash(), pOldResourceView))
+  ResourceBinding* pOldResourceBinding = nullptr;
+  if (m_BoundResources.TryGetValue(sSlotName.GetHash(), pOldResourceBinding))
   {
-    if (*pOldResourceView == hResourceView)
+    if (pOldResourceBinding->m_Type == ResourceBinding::Texture && pOldResourceBinding->m_hTextureView == hResourceView)
       return;
 
-    *pOldResourceView = hResourceView;
+    *pOldResourceBinding = ResourceBinding{.m_Type = ResourceBinding::Texture, .m_hBufferView = xiiGALBufferViewHandle(), .m_hTextureView = hResourceView};
   }
   else
   {
-    m_BoundTextures3D.Insert(sSlotName.GetHash(), hResourceView);
+    m_BoundResources.Insert(sSlotName.GetHash(), ResourceBinding{.m_Type = ResourceBinding::Texture, .m_hBufferView = xiiGALBufferViewHandle(), .m_hTextureView = hResourceView});
   }
 
   m_StateFlags.Add(xiiRenderContextFlags::TextureBindingChanged);
@@ -321,17 +321,17 @@ void xiiRenderContext::BindTexture3D(const xiiTempHashedString& sSlotName, xiiGA
 
 void xiiRenderContext::BindTextureCube(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hResourceView)
 {
-  xiiGALTextureViewHandle* pOldResourceView = nullptr;
-  if (m_BoundTexturesCube.TryGetValue(sSlotName.GetHash(), pOldResourceView))
+  ResourceBinding* pOldResourceBinding = nullptr;
+  if (m_BoundResources.TryGetValue(sSlotName.GetHash(), pOldResourceBinding))
   {
-    if (*pOldResourceView == hResourceView)
+    if (pOldResourceBinding->m_Type == ResourceBinding::Texture && pOldResourceBinding->m_hTextureView == hResourceView)
       return;
 
-    *pOldResourceView = hResourceView;
+    *pOldResourceBinding = ResourceBinding{.m_Type = ResourceBinding::Texture, .m_hBufferView = xiiGALBufferViewHandle(), .m_hTextureView = hResourceView};
   }
   else
   {
-    m_BoundTexturesCube.Insert(sSlotName.GetHash(), hResourceView);
+    m_BoundResources.Insert(sSlotName.GetHash(), ResourceBinding{.m_Type = ResourceBinding::Texture, .m_hBufferView = xiiGALBufferViewHandle(), .m_hTextureView = hResourceView});
   }
 
   m_StateFlags.Add(xiiRenderContextFlags::TextureBindingChanged);
@@ -339,17 +339,17 @@ void xiiRenderContext::BindTextureCube(const xiiTempHashedString& sSlotName, xii
 
 void xiiRenderContext::BindBufferUAV(const xiiTempHashedString& sSlotName, xiiGALBufferViewHandle hUnorderedAccessView)
 {
-  xiiGALBufferViewHandle* pOldResourceView = nullptr;
-  if (m_BoundBufferUAVs.TryGetValue(sSlotName.GetHash(), pOldResourceView))
+  ResourceBinding* pOldResourceBinding = nullptr;
+  if (m_BoundResources.TryGetValue(sSlotName.GetHash(), pOldResourceBinding))
   {
-    if (*pOldResourceView == hUnorderedAccessView)
+    if (pOldResourceBinding->m_Type == ResourceBinding::Buffer && pOldResourceBinding->m_hBufferView == hUnorderedAccessView)
       return;
 
-    *pOldResourceView = hUnorderedAccessView;
+    *pOldResourceBinding = ResourceBinding{.m_Type = ResourceBinding::Buffer, .m_hBufferView = hUnorderedAccessView, .m_hTextureView = xiiGALTextureViewHandle()};
   }
   else
   {
-    m_BoundBufferUAVs.Insert(sSlotName.GetHash(), hUnorderedAccessView);
+    m_BoundResources.Insert(sSlotName.GetHash(), ResourceBinding{.m_Type = ResourceBinding::Buffer, .m_hBufferView = hUnorderedAccessView, .m_hTextureView = xiiGALTextureViewHandle()});
   }
 
   m_StateFlags.Add(xiiRenderContextFlags::UAVBindingChanged);
@@ -357,17 +357,17 @@ void xiiRenderContext::BindBufferUAV(const xiiTempHashedString& sSlotName, xiiGA
 
 void xiiRenderContext::BindTextureUAV(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hUnorderedAccessView)
 {
-  xiiGALTextureViewHandle* pOldResourceView = nullptr;
-  if (m_BoundTextureUAVs.TryGetValue(sSlotName.GetHash(), pOldResourceView))
+  ResourceBinding* pOldResourceBinding = nullptr;
+  if (m_BoundResources.TryGetValue(sSlotName.GetHash(), pOldResourceBinding))
   {
-    if (*pOldResourceView == hUnorderedAccessView)
+    if (pOldResourceBinding->m_Type == ResourceBinding::Texture && pOldResourceBinding->m_hTextureView == hUnorderedAccessView)
       return;
 
-    *pOldResourceView = hUnorderedAccessView;
+    *pOldResourceBinding = ResourceBinding{.m_Type = ResourceBinding::Texture, .m_hBufferView = xiiGALBufferViewHandle(), .m_hTextureView = hUnorderedAccessView};
   }
   else
   {
-    m_BoundTextureUAVs.Insert(sSlotName.GetHash(), hUnorderedAccessView);
+    m_BoundResources.Insert(sSlotName.GetHash(), ResourceBinding{.m_Type = ResourceBinding::Texture, .m_hBufferView = xiiGALBufferViewHandle(), .m_hTextureView = hUnorderedAccessView});
   }
 
   m_StateFlags.Add(xiiRenderContextFlags::UAVBindingChanged);
@@ -399,17 +399,17 @@ void xiiRenderContext::BindSampler(const xiiTempHashedString& sSlotName, xiiGALS
 
 void xiiRenderContext::BindBuffer(const xiiTempHashedString& sSlotName, xiiGALBufferViewHandle hResourceView)
 {
-  xiiGALBufferViewHandle* pOldResourceView = nullptr;
-  if (m_BoundBuffer.TryGetValue(sSlotName.GetHash(), pOldResourceView))
+  ResourceBinding* pOldResourceBinding = nullptr;
+  if (m_BoundResources.TryGetValue(sSlotName.GetHash(), pOldResourceBinding))
   {
-    if (*pOldResourceView == hResourceView)
+    if (pOldResourceBinding->m_Type == ResourceBinding::Buffer && pOldResourceBinding->m_hBufferView == hResourceView)
       return;
 
-    *pOldResourceView = hResourceView;
+    *pOldResourceBinding = ResourceBinding{.m_Type = ResourceBinding::Buffer, .m_hBufferView = hResourceView, .m_hTextureView = xiiGALTextureViewHandle()};
   }
   else
   {
-    m_BoundBuffer.Insert(sSlotName.GetHash(), hResourceView);
+    m_BoundResources.Insert(sSlotName.GetHash(), ResourceBinding{.m_Type = ResourceBinding::Buffer, .m_hBufferView = hResourceView, .m_hTextureView = xiiGALTextureViewHandle()});
   }
 
   m_StateFlags.Add(xiiRenderContextFlags::BufferBindingChanged);
@@ -675,11 +675,11 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       // RWTextures/UAV are usually only supported in compute and pixel shader.
       if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::Compute))
       {
-        ApplyUAVBindings(pBin);
+        ApplyUnorderedAccessViewBindings(pBin);
       }
       if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::Pixel))
       {
-        ApplyUAVBindings(pBin);
+        ApplyUnorderedAccessViewBindings(pBin);
       }
 
       m_StateFlags.Remove(xiiRenderContextFlags::UAVBindingChanged);
@@ -696,7 +696,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       {
         if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::GetStageFlag(stage)))
         {
-          ApplyTextureBindings(xiiGALShaderStage::GetStageFlag(stage), pBin);
+          ApplyResourceViewBindings(xiiGALShaderStage::GetStageFlag(stage), pBin, xiiGALShaderResourceType::TextureSRV);
         }
       }
 
@@ -732,7 +732,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       {
         if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::GetStageFlag(stage)))
         {
-          ApplyBufferBindings(xiiGALShaderStage::GetStageFlag(stage), pBin);
+          ApplyResourceViewBindings(xiiGALShaderStage::GetStageFlag(stage), pBin, xiiGALShaderResourceType::BufferSRV);
         }
       }
 
@@ -825,10 +825,7 @@ void xiiRenderContext::ResetContextState()
   m_Topology                   = xiiGALPrimitiveTopology::Undefined;
   m_uiMeshBufferPrimitiveCount = 0;
 
-  m_BoundTextures2D.Clear();
-  m_BoundTextures3D.Clear();
-  m_BoundTexturesCube.Clear();
-  m_BoundBuffer.Clear();
+  m_BoundResources.Clear();
 
   m_BoundSamplers.Clear();
   m_BoundSamplers.Insert(xiiHashingUtils::StringHash("LinearSampler"), GetDefaultSampler(xiiDefaultSamplerFlags::LinearFiltering));
@@ -836,8 +833,8 @@ void xiiRenderContext::ResetContextState()
   m_BoundSamplers.Insert(xiiHashingUtils::StringHash("PointSampler"), GetDefaultSampler(xiiDefaultSamplerFlags::PointFiltering));
   m_BoundSamplers.Insert(xiiHashingUtils::StringHash("PointClampSampler"), GetDefaultSampler(xiiDefaultSamplerFlags::PointFiltering | xiiDefaultSamplerFlags::Clamp));
 
-  m_BoundBufferUAVs.Clear();
-  m_BoundTextureUAVs.Clear();
+  m_BoundUAVs.Clear();
+
   m_BoundConstantBuffers.Clear();
 }
 
@@ -1288,46 +1285,45 @@ void xiiRenderContext::ApplyConstantBufferBindings(const xiiShaderStageBinary* p
   }
 }
 
-void xiiRenderContext::ApplyTextureBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary)
+void xiiRenderContext::ApplyResourceViewBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary, xiiEnum<xiiGALShaderResourceType> type)
 {
+  XII_ASSERT_DEV(type == xiiGALShaderResourceType::BufferSRV || type == xiiGALShaderResourceType::TextureSRV, "");
+
   for (const auto& binding : pBinary->m_ShaderResourceBindings)
   {
-    const xiiUInt64         uiResourceHash = binding.m_sName.GetHash();
-    xiiGALTextureViewHandle hResourceView;
+    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+    ResourceBinding resourceBinding;
 
-    if (binding.m_Type == xiiGALShaderResourceType::TextureSRV)
+    if (binding.m_Type == xiiGALShaderResourceType::BufferSRV && binding.m_Type == type)
     {
-      m_BoundTextures2D.TryGetValue(uiResourceHash, hResourceView);
-      m_pGALCommandEncoder->SetTextureView(stage, binding.m_iSlot, hResourceView);
+      m_BoundResources.TryGetValue(uiResourceHash, resourceBinding);
+      m_pGALCommandEncoder->SetBufferView(stage, binding.m_iSlot, resourceBinding.m_hBufferView);
     }
-
-    if (binding.m_Type == xiiGALShaderResourceType::Texture3D)
+    else if (binding.m_Type == xiiGALShaderResourceType::TextureSRV && binding.m_Type == type)
     {
-      m_BoundTextures3D.TryGetValue(uiResourceHash, hResourceView);
-      m_pGALCommandEncoder->SetResourceView(stage, binding.m_iSlot, hResourceView);
-    }
-
-    if (binding.m_Type >= xiiGALShaderResourceType::TextureCube && binding.m_Type <= xiiGALShaderResourceType::TextureCubeArray)
-    {
-      m_BoundTexturesCube.TryGetValue(uiResourceHash, hResourceView);
-      m_pGALCommandEncoder->SetResourceView(stage, binding.m_iSlot, hResourceView);
+      m_BoundResources.TryGetValue(uiResourceHash, resourceBinding);
+      m_pGALCommandEncoder->SetTextureView(stage, binding.m_iSlot, resourceBinding.m_hTextureView);
     }
   }
 }
 
-void xiiRenderContext::ApplyUAVBindings(const xiiShaderStageBinary* pBinary)
+void xiiRenderContext::ApplyUnorderedAccessViewBindings(const xiiShaderStageBinary* pBinary)
 {
   for (const auto& binding : pBinary->m_ShaderResourceBindings)
   {
-    if (binding.m_Type != xiiShaderResourceType::UAV)
-      continue;
-
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
+    ResourceBinding resourceBinding;
 
-    xiiGALUnorderedAccessViewHandle hResourceView;
-    m_BoundUAVs.TryGetValue(uiResourceHash, hResourceView);
-
-    m_pGALCommandEncoder->SetUnorderedAccessView(binding.m_iSlot, hResourceView);
+    if (binding.m_Type == xiiGALShaderResourceType::BufferUAV)
+    {
+      m_BoundUAVs.TryGetValue(uiResourceHash, resourceBinding);
+      m_pGALCommandEncoder->SetUnorderedAccessBufferView(binding.m_iSlot, resourceBinding.m_hBufferView);
+    }
+    else if (binding.m_Type == xiiGALShaderResourceType::TextureUAV)
+    {
+      m_BoundUAVs.TryGetValue(uiResourceHash, resourceBinding);
+      m_pGALCommandEncoder->SetUnorderedAccessTextureView(binding.m_iSlot, resourceBinding.m_hTextureView);
+    }
   }
 }
 
@@ -1335,7 +1331,7 @@ void xiiRenderContext::ApplySamplerBindings(xiiBitflags<xiiGALShaderStage> stage
 {
   for (const auto& binding : pBinary->m_ShaderResourceBindings)
   {
-    if (binding.m_Type != xiiShaderResourceType::Sampler)
+    if (binding.m_Type != xiiGALShaderResourceType::Sampler)
       continue;
 
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
@@ -1350,26 +1346,10 @@ void xiiRenderContext::ApplySamplerBindings(xiiBitflags<xiiGALShaderStage> stage
   }
 }
 
-void xiiRenderContext::ApplyBufferBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary)
-{
-  for (const auto& binding : pBinary->m_ShaderResourceBindings)
-  {
-    if (binding.m_Type != xiiShaderResourceType::GenericBuffer)
-      continue;
-
-    const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
-
-    xiiGALResourceViewHandle hResourceView;
-    m_BoundBuffer.TryGetValue(uiResourceHash, hResourceView);
-
-    m_pGALCommandEncoder->SetResourceView(stage, binding.m_iSlot, hResourceView);
-  }
-}
-
 void xiiRenderContext::SetDefaultTextureFilter(xiiTextureFilterSetting::Enum filter)
 {
-  XII_ASSERT_DEBUG(
-    filter >= xiiTextureFilterSetting::FixedBilinear && filter <= xiiTextureFilterSetting::FixedAnisotropic16x, "Invalid default texture filter");
+  XII_ASSERT_DEBUG(filter >= xiiTextureFilterSetting::FixedBilinear && filter <= xiiTextureFilterSetting::FixedAnisotropic16x, "Invalid default texture filter");
+
   filter = xiiMath::Clamp(filter, xiiTextureFilterSetting::FixedBilinear, xiiTextureFilterSetting::FixedAnisotropic16x);
 
   if (m_DefaultTextureFilter == filter)
