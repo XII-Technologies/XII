@@ -63,6 +63,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderPrimitiveType
 
     Default = Unknown
   };
+
+  static xiiUInt32 GetPrimitiveTypeSize(xiiEnum<xiiGALShaderPrimitiveType> type);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderPrimitiveType);
@@ -113,7 +115,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableDescription : public xiiHa
 };
 
 /// \brief This describes a shader constant buffer.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderBufferDescription : public xiiHashableStruct<xiiGALShaderBufferDescription>
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderBufferDescription
 {
   xiiString                                        m_sName;       ///< The variable name.
   xiiUInt32                                        m_uiSize = 0U; ///< The size of the buffer in bytes.
@@ -123,11 +125,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderBufferDescription : public xiiHash
 /// \brief This describes a shader resource binding.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceBinding
 {
-  xiiHashedString                                  m_sName;       ///< The shader resource name.
-  xiiEnum<xiiGALShaderResourceType>                m_Type;        ///< The shader resource type. The default is xiiGALShaderResourceType::Unknown.
-  xiiUInt32                                        m_uiSlot = 0U; ///< The shader resource binding slot.
-  xiiUInt32                                        m_uiSize = 0U; ///< The size of the buffer in bytes.
-  xiiDynamicArray<xiiGALShaderVariableDescription> m_Variables;   ///< An array of member variables.
+  XII_DECLARE_MEM_RELOCATABLE_TYPE();
+
+  xiiHashedString                                  m_sName;                    ///< The shader resource name.
+  xiiEnum<xiiGALShaderResourceType>                m_Type;                     ///< The shader resource type. The default is xiiGALShaderResourceType::Unknown.
+  xiiUInt32                                        m_uiSlot = xiiInvalidIndex; ///< The shader resource binding slot.
+  xiiUInt32                                        m_uiSize = 0U;              ///< The size of the buffer in bytes.
+  xiiDynamicArray<xiiGALShaderVariableDescription> m_Variables;                ///< An array of member variables.
 };
 
 /// \brief This describes the shader creation description.
