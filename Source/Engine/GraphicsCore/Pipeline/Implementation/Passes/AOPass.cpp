@@ -121,10 +121,10 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   float fHzbScaleY = (float)uiHeight / uiHzbHeight;
 
   // Find temp targets
-  xiiGALTextureHandle                             hzbTexture;
-  xiiHybridArray<xiiVec2, 8>                      hzbSizes;
-  xiiHybridArray<xiiGALResourceViewHandle, 8>     hzbResourceViews;
-  xiiHybridArray<xiiGALTextureViewHandle, 8> hzbRenderTargetViews;
+  xiiGALTextureHandle                         hzbTexture;
+  xiiHybridArray<xiiVec2, 8>                  hzbSizes;
+  xiiHybridArray<xiiGALResourceViewHandle, 8> hzbResourceViews;
+  xiiHybridArray<xiiGALTextureViewHandle, 8>  hzbRenderTargetViews;
 
   xiiGALTextureHandle tempSSAOTexture;
 
@@ -194,7 +194,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       }
 
       xiiGALTextureViewHandle hOutputView = hzbRenderTargetViews[i];
-      xiiVec2                      targetSize  = hzbSizes[i];
+      xiiVec2                 targetSize  = hzbSizes[i];
 
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hOutputView);

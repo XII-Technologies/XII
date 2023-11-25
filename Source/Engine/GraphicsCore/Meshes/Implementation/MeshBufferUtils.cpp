@@ -334,8 +334,8 @@ xiiResult xiiMeshBufferUtils::DecodeToVec4(xiiArrayPtr<const xiiUInt8> source, x
 // static
 xiiResult xiiMeshBufferUtils::GetPositionStream(const xiiMeshBufferResourceDescriptor& meshBufferDesc, const xiiVec3*& out_pPositions, xiiUInt32& out_uiElementStride)
 {
-  const xiiVertexDeclarationInfo& vdi            = meshBufferDesc.GetVertexDeclaration();
-  const xiiUInt8*                 pRawVertexData = meshBufferDesc.GetVertexBufferData().GetPtr();
+  const xiiInputLayoutInfo& vdi            = meshBufferDesc.GetInputLayout();
+  const xiiUInt8*           pRawVertexData = meshBufferDesc.GetVertexBufferData().GetPtr();
 
   const xiiVec3* pPositions = nullptr;
 
@@ -367,8 +367,8 @@ xiiResult xiiMeshBufferUtils::GetPositionStream(const xiiMeshBufferResourceDescr
 // static
 xiiResult xiiMeshBufferUtils::GetPositionAndNormalStream(const xiiMeshBufferResourceDescriptor& meshBufferDesc, const xiiVec3*& out_pPositions, const xiiUInt8*& out_pNormals, xiiEnum<xiiGALTextureFormat>& out_normalFormat, xiiUInt32& out_uiElementStride)
 {
-  const xiiVertexDeclarationInfo& vdi            = meshBufferDesc.GetVertexDeclaration();
-  const xiiUInt8*                 pRawVertexData = meshBufferDesc.GetVertexBufferData().GetPtr();
+  const xiiInputLayoutInfo& vdi            = meshBufferDesc.GetInputLayout();
+  const xiiUInt8*           pRawVertexData = meshBufferDesc.GetVertexBufferData().GetPtr();
 
   const xiiVec3*               pPositions   = nullptr;
   const xiiUInt8*              pNormals     = nullptr;

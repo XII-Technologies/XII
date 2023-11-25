@@ -212,8 +212,8 @@ namespace
 
   static xiiMeshBufferResourceHandle s_hLineBoxMeshBuffer;
   static xiiMeshBufferResourceHandle s_hSolidBoxMeshBuffer;
-  static xiiVertexDeclarationInfo    s_VertexDeclarationInfo;
-  static xiiVertexDeclarationInfo    s_TexVertexDeclarationInfo;
+  static xiiInputLayoutInfo          s_InputLayoutInfo;
+  static xiiInputLayoutInfo          s_TexInputLayoutInfo;
   static xiiTexture2DResourceHandle  s_hDebugFontTexture;
 
   static xiiShaderResourceHandle s_hDebugGeometryShader;
@@ -1428,7 +1428,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         XII_ASSERT_DEV(uiNumTriangleVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
         pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Triangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumTriangleVerticesInBatch).ToByteArray());
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles3D], xiiGALBufferHandle(), &s_VertexDeclarationInfo, xiiGALPrimitiveTopology::Triangles, uiNumTriangleVerticesInBatch / 3);
+        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles3D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::Triangles, uiNumTriangleVerticesInBatch / 3);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1461,7 +1461,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
           XII_ASSERT_DEV(uiNumVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
           pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::TexTriangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumVerticesInBatch).ToByteArray());
 
-          renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles3D], xiiGALBufferHandle(), &s_TexVertexDeclarationInfo, xiiGALPrimitiveTopology::Triangles, uiNumVerticesInBatch / 3);
+          renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles3D], xiiGALBufferHandle(), &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::Triangles, uiNumVerticesInBatch / 3);
 
           renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1489,7 +1489,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
         pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Lines], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines], xiiGALBufferHandle(), &s_VertexDeclarationInfo, xiiGALPrimitiveTopology::Lines, uiNumLineVerticesInBatch / 2);
+        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::Lines, uiNumLineVerticesInBatch / 2);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1516,7 +1516,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
         pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Lines2D], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines2D], xiiGALBufferHandle(), &s_VertexDeclarationInfo, xiiGALPrimitiveTopology::Lines, uiNumLineVerticesInBatch / 2);
+        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines2D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::Lines, uiNumLineVerticesInBatch / 2);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1568,7 +1568,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
         pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Triangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray());
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles2D], xiiGALBufferHandle(), &s_VertexDeclarationInfo, xiiGALPrimitiveTopology::Triangles, uiNum2DVerticesInBatch / 3);
+        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles2D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::Triangles, uiNum2DVerticesInBatch / 3);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1601,7 +1601,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
           XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
           pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::TexTriangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray());
 
-          renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles2D], xiiGALBufferHandle(), &s_TexVertexDeclarationInfo, xiiGALPrimitiveTopology::Triangles, uiNum2DVerticesInBatch / 3);
+          renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles2D], xiiGALBufferHandle(), &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::Triangles, uiNum2DVerticesInBatch / 3);
 
           renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1686,10 +1686,10 @@ void xiiDebugRenderer::OnEngineStartup()
 
   {
     // reset, if already used before
-    s_VertexDeclarationInfo.m_VertexStreams.Clear();
+    s_InputLayoutInfo.m_VertexStreams.Clear();
 
     {
-      xiiVertexStreamInfo& si = s_VertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
+      xiiVertexStreamInfo& si = s_InputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALVertexAttributeSemantic::Position;
       si.m_Format             = xiiGALTextureFormat::XYZFloat;
       si.m_uiOffset           = 0;
@@ -1697,7 +1697,7 @@ void xiiDebugRenderer::OnEngineStartup()
     }
 
     {
-      xiiVertexStreamInfo& si = s_VertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
+      xiiVertexStreamInfo& si = s_InputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALVertexAttributeSemantic::Color0;
       si.m_Format             = xiiGALTextureFormat::RGBAUByteNormalized;
       si.m_uiOffset           = 12;
@@ -1707,10 +1707,10 @@ void xiiDebugRenderer::OnEngineStartup()
 
   {
     // reset, if already used before
-    s_TexVertexDeclarationInfo.m_VertexStreams.Clear();
+    s_TexInputLayoutInfo.m_VertexStreams.Clear();
 
     {
-      xiiVertexStreamInfo& si = s_TexVertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
+      xiiVertexStreamInfo& si = s_TexInputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALVertexAttributeSemantic::Position;
       si.m_Format             = xiiGALTextureFormat::XYZFloat;
       si.m_uiOffset           = 0;
@@ -1718,7 +1718,7 @@ void xiiDebugRenderer::OnEngineStartup()
     }
 
     {
-      xiiVertexStreamInfo& si = s_TexVertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
+      xiiVertexStreamInfo& si = s_TexInputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALVertexAttributeSemantic::Color0;
       si.m_Format             = xiiGALTextureFormat::RGBAUByteNormalized;
       si.m_uiOffset           = 12;
@@ -1726,7 +1726,7 @@ void xiiDebugRenderer::OnEngineStartup()
     }
 
     {
-      xiiVertexStreamInfo& si = s_TexVertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
+      xiiVertexStreamInfo& si = s_TexInputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALVertexAttributeSemantic::TexCoord0;
       si.m_Format             = xiiGALTextureFormat::XYFloat;
       si.m_uiOffset           = 16;
@@ -1734,7 +1734,7 @@ void xiiDebugRenderer::OnEngineStartup()
     }
 
     {
-      xiiVertexStreamInfo& si = s_TexVertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
+      xiiVertexStreamInfo& si = s_TexInputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALVertexAttributeSemantic::TexCoord1; // padding
       si.m_Format             = xiiGALTextureFormat::XYFloat;
       si.m_uiOffset           = 24;

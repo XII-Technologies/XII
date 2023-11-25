@@ -172,9 +172,9 @@ void xiiSkeletonPoseComponent::ResendPose()
 const xiiRangeView<xiiStringView, xiiUInt32> xiiSkeletonPoseComponent::GetBones() const
 {
   return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
-                                              [this]() -> xiiUInt32 { return m_Bones.GetCount(); },
-                                              [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                              [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Bones.GetKey(uiIt).GetString().GetView(); });
+                                                [this]() -> xiiUInt32 { return m_Bones.GetCount(); },
+                                                [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Bones.GetKey(uiIt).GetString().GetView(); });
 }
 
 void xiiSkeletonPoseComponent::SetBone(xiiStringView sKey, const xiiVariant& value)
@@ -187,14 +187,14 @@ void xiiSkeletonPoseComponent::SetBone(xiiStringView sKey, const xiiVariant& val
     m_Bones[hs] = *reinterpret_cast<const xiiExposedBone*>(value.GetData());
   }
 
-  // TODO
-  #if 0
+// TODO
+#if 0
   if (IsActiveAndInitialized())
   {
     // only add to update list, if not yet activated, since OnActivate will do the instantiation anyway
     GetWorld()->GetComponentManager<xiiPrefabReferenceComponentManager>()->AddToUpdateList(this);
   }
-  #endif
+#endif
   ResendPose();
 }
 
@@ -202,14 +202,14 @@ void xiiSkeletonPoseComponent::RemoveBone(xiiStringView sKey)
 {
   if (m_Bones.RemoveAndCopy(xiiTempHashedString(sKey)))
   {
-    // TODO
-    #if 0
+// TODO
+#if 0
     if (IsActiveAndInitialized())
     {
       // only add to update list, if not yet activated, since OnActivate will do the instantiation anyway
       GetWorld()->GetComponentManager<xiiPrefabReferenceComponentManager>()->AddToUpdateList(this);
     }
-    #endif
+#endif
 
     ResendPose();
   }

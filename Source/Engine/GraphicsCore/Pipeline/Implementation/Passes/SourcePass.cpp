@@ -229,7 +229,7 @@ public:
     if (formatProperty == nullptr)
       return;
 
-    auto                          formatName = formatProperty->m_Value.Get<xiiString>();
+    auto                         formatName = formatProperty->m_Value.Get<xiiString>();
     xiiEnum<xiiGALTextureFormat> oldFormat;
     xiiReflectionUtils::StringToEnumeration<xiiGALTextureFormat>(formatName.GetData(), oldFormat);
 

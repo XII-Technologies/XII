@@ -24,11 +24,11 @@ xiiMeshBufferResourceDescriptor::~xiiMeshBufferResourceDescriptor() = default;
 
 void xiiMeshBufferResourceDescriptor::Clear()
 {
-  m_Topology                   = xiiGALPrimitiveTopology::Triangles;
-  m_uiVertexSize               = 0;
-  m_uiVertexCount              = 0;
-  m_VertexDeclaration.m_uiHash = 0;
-  m_VertexDeclaration.m_VertexStreams.Clear();
+  m_Topology             = xiiGALPrimitiveTopology::Triangles;
+  m_uiVertexSize         = 0;
+  m_uiVertexCount        = 0;
+  m_InputLayout.m_uiHash = 0;
+  m_InputLayout.m_VertexStreams.Clear();
   m_VertexStreamData.Clear();
   m_IndexBufferData.Clear();
 }
@@ -59,9 +59,9 @@ xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiGALVertexAttributeSemant
 {
   XII_ASSERT_DEV(m_VertexStreamData.IsEmpty(), "This function can only be called before 'AllocateStreams' is called");
 
-  for (xiiUInt32 i = 0; i < m_VertexDeclaration.m_VertexStreams.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < m_InputLayout.m_VertexStreams.GetCount(); ++i)
   {
-    XII_ASSERT_DEV(m_VertexDeclaration.m_VertexStreams[i].m_Semantic != semantic, "The given semantic {0} is already used by a previous stream", semantic);
+    XII_ASSERT_DEV(m_InputLayout.m_VertexStreams[i].m_Semantic != semantic, "The given semantic {0} is already used by a previous stream", semantic);
   }
 
   xiiVertexStreamInfo si;
@@ -74,12 +74,12 @@ xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiGALVertexAttributeSemant
 
   XII_ASSERT_DEV(si.m_uiElementSize > 0, "Invalid Element Size. Format not supported?");
 
-  if (!m_VertexDeclaration.m_VertexStreams.IsEmpty())
-    si.m_uiOffset = m_VertexDeclaration.m_VertexStreams.PeekBack().m_uiOffset + m_VertexDeclaration.m_VertexStreams.PeekBack().m_uiElementSize;
+  if (!m_InputLayout.m_VertexStreams.IsEmpty())
+    si.m_uiOffset = m_InputLayout.m_VertexStreams.PeekBack().m_uiOffset + m_InputLayout.m_VertexStreams.PeekBack().m_uiElementSize;
 
-  m_VertexDeclaration.m_VertexStreams.PushBack(si);
+  m_InputLayout.m_VertexStreams.PushBack(si);
 
-  return m_VertexDeclaration.m_VertexStreams.GetCount() - 1;
+  return m_InputLayout.m_VertexStreams.GetCount() - 1;
 }
 
 void xiiMeshBufferResourceDescriptor::AddCommonStreams()
@@ -92,7 +92,7 @@ void xiiMeshBufferResourceDescriptor::AddCommonStreams()
 
 void xiiMeshBufferResourceDescriptor::AllocateStreams(xiiUInt32 uiNumVertices, xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiNumPrimitives, bool bZeroFill /*= false*/)
 {
-  XII_ASSERT_DEV(!m_VertexDeclaration.m_VertexStreams.IsEmpty(), "You have to add streams via 'AddStream' before calling this function");
+  XII_ASSERT_DEV(!m_InputLayout.m_VertexStreams.IsEmpty(), "You have to add streams via 'AddStream' before calling this function");
 
   m_Topology                         = topology;
   m_uiVertexCount                    = uiNumVertices;
@@ -163,9 +163,9 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
   AllocateStreams(geom.GetVertices().GetCount(), topology, Indices.GetCount() / (topology + 1));
 
   // Fill vertex buffer.
-  for (xiiUInt32 s = 0; s < m_VertexDeclaration.m_VertexStreams.GetCount(); ++s)
+  for (xiiUInt32 s = 0; s < m_InputLayout.m_VertexStreams.GetCount(); ++s)
   {
-    const xiiVertexStreamInfo& si = m_VertexDeclaration.m_VertexStreams[s];
+    const xiiVertexStreamInfo& si = m_InputLayout.m_VertexStreams[s];
     switch (si.m_Semantic)
     {
       case xiiGALVertexAttributeSemantic::Position:
@@ -398,13 +398,13 @@ xiiBoundingBoxSphere xiiMeshBufferResourceDescriptor::ComputeBounds() const
 {
   xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
 
-  for (xiiUInt32 i = 0; i < m_VertexDeclaration.m_VertexStreams.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < m_InputLayout.m_VertexStreams.GetCount(); ++i)
   {
-    if (m_VertexDeclaration.m_VertexStreams[i].m_Semantic == xiiGALVertexAttributeSemantic::Position)
+    if (m_InputLayout.m_VertexStreams[i].m_Semantic == xiiGALVertexAttributeSemantic::Position)
     {
-      XII_ASSERT_DEBUG(m_VertexDeclaration.m_VertexStreams[i].m_Format == xiiGALTextureFormat::XYZFloat, "Position format is not usable");
+      XII_ASSERT_DEBUG(m_InputLayout.m_VertexStreams[i].m_Format == xiiGALTextureFormat::XYZFloat, "Position format is not usable");
 
-      const xiiUInt32 offset = m_VertexDeclaration.m_VertexStreams[i].m_uiOffset;
+      const xiiUInt32 offset = m_InputLayout.m_VertexStreams[i].m_uiOffset;
 
       if (!m_VertexStreamData.IsEmpty() && m_uiVertexCount > 0)
       {
@@ -428,16 +428,16 @@ xiiResult xiiMeshBufferResourceDescriptor::RecomputeNormals()
   xiiUInt8*                    pNormals      = nullptr;
   xiiEnum<xiiGALTextureFormat> normalsFormat = xiiGALTextureFormat::XYZFloat;
 
-  for (xiiUInt32 i = 0; i < m_VertexDeclaration.m_VertexStreams.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < m_InputLayout.m_VertexStreams.GetCount(); ++i)
   {
-    if (m_VertexDeclaration.m_VertexStreams[i].m_Semantic == xiiGALVertexAttributeSemantic::Position && m_VertexDeclaration.m_VertexStreams[i].m_Format == xiiGALTextureFormat::XYZFloat)
+    if (m_InputLayout.m_VertexStreams[i].m_Semantic == xiiGALVertexAttributeSemantic::Position && m_InputLayout.m_VertexStreams[i].m_Format == xiiGALTextureFormat::XYZFloat)
     {
       pPositions = GetVertexData(i, 0).GetPtr();
     }
 
-    if (m_VertexDeclaration.m_VertexStreams[i].m_Semantic == xiiGALVertexAttributeSemantic::Normal)
+    if (m_InputLayout.m_VertexStreams[i].m_Semantic == xiiGALVertexAttributeSemantic::Normal)
     {
-      normalsFormat = m_VertexDeclaration.m_VertexStreams[i].m_Format;
+      normalsFormat = m_InputLayout.m_VertexStreams[i].m_Format;
       pNormals      = GetVertexData(i, 0).GetPtr();
     }
   }
@@ -555,8 +555,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
   XII_ASSERT_DEBUG(m_hVertexBuffer.IsInvalidated(), "Implementation error");
   XII_ASSERT_DEBUG(m_hIndexBuffer.IsInvalidated(), "Implementation error");
 
-  m_VertexDeclaration = descriptor.GetVertexDeclaration();
-  m_VertexDeclaration.ComputeHash();
+  m_InputLayout = descriptor.GetInputLayout();
+  m_InputLayout.ComputeHash();
 
   m_uiPrimitiveCount = descriptor.GetPrimitiveCount();
   m_Topology         = descriptor.GetTopology();
@@ -596,7 +596,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
   return res;
 }
 
-void xiiVertexDeclarationInfo::ComputeHash()
+void xiiInputLayoutInfo::ComputeHash()
 {
   m_uiHash = 0;
 

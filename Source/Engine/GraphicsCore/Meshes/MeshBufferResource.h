@@ -20,7 +20,7 @@ struct XII_GRAPHICSCORE_DLL xiiVertexStreamInfo : public xiiHashableStruct<xiiVe
   xiiUInt16                           m_uiElementSize; ///< the number of bytes for this element type (depends on the format); this is not the stride between elements!
 };
 
-struct XII_GRAPHICSCORE_DLL xiiVertexDeclarationInfo
+struct XII_GRAPHICSCORE_DLL xiiInputLayoutInfo
 {
   void ComputeHash();
 
@@ -77,14 +77,14 @@ public:
   template <typename TYPE>
   void SetVertexData(xiiUInt32 uiStream, xiiUInt32 uiVertexIndex, const TYPE& data)
   {
-    reinterpret_cast<TYPE&>(m_VertexStreamData[m_uiVertexSize * uiVertexIndex + m_VertexDeclaration.m_VertexStreams[uiStream].m_uiOffset]) = data;
+    reinterpret_cast<TYPE&>(m_VertexStreamData[m_uiVertexSize * uiVertexIndex + m_InputLayout.m_VertexStreams[uiStream].m_uiOffset]) = data;
   }
 
   /// \brief Slow, but convenient method to access one piece of vertex data at a time into the stream buffer.
   ///
   /// uiStream is the index of the data stream to write to.
   /// uiVertexIndex is the index of the vertex for which to write the data.
-  xiiArrayPtr<xiiUInt8> GetVertexData(xiiUInt32 uiStream, xiiUInt32 uiVertexIndex) { return m_VertexStreamData.GetArrayPtr().GetSubArray(m_uiVertexSize * uiVertexIndex + m_VertexDeclaration.m_VertexStreams[uiStream].m_uiOffset); }
+  xiiArrayPtr<xiiUInt8> GetVertexData(xiiUInt32 uiStream, xiiUInt32 uiVertexIndex) { return m_VertexStreamData.GetArrayPtr().GetSubArray(m_uiVertexSize * uiVertexIndex + m_InputLayout.m_VertexStreams[uiStream].m_uiOffset); }
 
   /// \brief Writes the vertex index for the given point into the index buffer.
   void SetPointIndices(xiiUInt32 uiPoint, xiiUInt32 uiVertex0);
@@ -96,7 +96,7 @@ public:
   void SetTriangleIndices(xiiUInt32 uiTriangle, xiiUInt32 uiVertex0, xiiUInt32 uiVertex1, xiiUInt32 uiVertex2);
 
   /// \brief Allows to read the stream info of the descriptor, which is filled out by AddStream()
-  const xiiVertexDeclarationInfo& GetVertexDeclaration() const { return m_VertexDeclaration; }
+  const xiiInputLayoutInfo& GetInputLayout() const { return m_InputLayout; }
 
   /// \brief Returns the byte size of all the data for one vertex.
   xiiUInt32 GetVertexDataSize() const { return m_uiVertexSize; }
@@ -125,7 +125,7 @@ private:
   xiiGALPrimitiveTopology::Enum                         m_Topology;
   xiiUInt32                                             m_uiVertexSize;
   xiiUInt32                                             m_uiVertexCount;
-  xiiVertexDeclarationInfo                              m_VertexDeclaration;
+  xiiInputLayoutInfo                                    m_InputLayout;
   xiiDynamicArray<xiiUInt8, xiiAlignedAllocatorWrapper> m_VertexStreamData;
   xiiDynamicArray<xiiUInt8, xiiAlignedAllocatorWrapper> m_IndexBufferData;
 };
@@ -153,7 +153,7 @@ public:
   XII_ALWAYS_INLINE xiiGALPrimitiveTopology::Enum GetTopology() const { return m_Topology; }
 
   /// \brief Returns the vertex declaration used by this mesh buffer.
-  const xiiVertexDeclarationInfo& GetVertexDeclaration() const { return m_VertexDeclaration; }
+  const xiiInputLayoutInfo& GetInputLayout() const { return m_InputLayout; }
 
   /// \brief Returns the bounds of the mesh
   const xiiBoundingBoxSphere& GetBounds() const { return m_Bounds; }
@@ -164,7 +164,7 @@ private:
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
   xiiBoundingBoxSphere          m_Bounds;
-  xiiVertexDeclarationInfo      m_VertexDeclaration;
+  xiiInputLayoutInfo            m_InputLayout;
   xiiUInt32                     m_uiPrimitiveCount = 0;
   xiiGALBufferHandle            m_hVertexBuffer;
   xiiGALBufferHandle            m_hIndexBuffer;

@@ -119,7 +119,7 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
       destBox.m_vMax = xiiVec3U32(task->m_uiWidth, task->m_uiHeight, 1);
 
       xiiGALTextureSubResourceData sourceData;
-      sourceData.m_pData      = task->m_PixelData.GetData();
+      sourceData.m_pData    = task->m_PixelData.GetData();
       sourceData.m_uiStride = task->m_uiWidth * sizeof(xiiColorGammaUB);
 
       pCommandEncoder->UpdateTexture(pComponent->m_hDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);

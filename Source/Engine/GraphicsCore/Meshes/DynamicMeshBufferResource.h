@@ -97,7 +97,7 @@ public:
     return m_ColorData;
   }
 
-  const xiiVertexDeclarationInfo& GetVertexDeclaration() const { return m_VertexDeclaration; }
+  const xiiInputLayoutInfo& GetInputLayout() const { return m_InputLayout; }
 
   /// \brief Uploads the current vertex and index data to the GPU.
   ///
@@ -125,7 +125,7 @@ private:
   xiiGALBufferHandle                     m_hColorBuffer;
   xiiDynamicMeshBufferResourceDescriptor m_Descriptor;
 
-  xiiVertexDeclarationInfo                                          m_VertexDeclaration;
+  xiiInputLayoutInfo                                                m_InputLayout;
   xiiDynamicArray<xiiDynamicMeshVertex, xiiAlignedAllocatorWrapper> m_VertexData;
   xiiDynamicArray<xiiUInt16, xiiAlignedAllocatorWrapper>            m_Index16Data;
   xiiDynamicArray<xiiUInt32, xiiAlignedAllocatorWrapper>            m_Index32Data;

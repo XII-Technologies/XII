@@ -180,14 +180,14 @@ void xiiMeshResourceDescriptor::Save(xiiStreamWriter& inout_stream)
     chunk << (m_MeshBufferDescriptor.HasIndexBuffer() && m_MeshBufferDescriptor.Uses32BitIndices());
 
     // Number of vertex streams
-    chunk << m_MeshBufferDescriptor.GetVertexDeclaration().m_VertexStreams.GetCount();
+    chunk << m_MeshBufferDescriptor.GetInputLayout().m_VertexStreams.GetCount();
 
     // Version 3: Topology
     chunk << (xiiUInt8)m_MeshBufferDescriptor.GetTopology();
 
-    for (xiiUInt32 idx = 0; idx < m_MeshBufferDescriptor.GetVertexDeclaration().m_VertexStreams.GetCount(); ++idx)
+    for (xiiUInt32 idx = 0; idx < m_MeshBufferDescriptor.GetInputLayout().m_VertexStreams.GetCount(); ++idx)
     {
-      const auto& vs = m_MeshBufferDescriptor.GetVertexDeclaration().m_VertexStreams[idx];
+      const auto& vs = m_MeshBufferDescriptor.GetInputLayout().m_VertexStreams[idx];
 
       chunk << idx; // Vertex stream index
       chunk << (xiiInt32)vs.m_Format;
