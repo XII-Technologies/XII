@@ -8,23 +8,35 @@
 /// \brief This describes the command encoder state.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandEncoderState
 {
+  struct ResourceBinding
+  {
+    XII_DECLARE_POD_TYPE();
+
+    enum Enum : xiiUInt8
+    {
+      Invalid,
+      Buffer,
+      Texture
+    };
+
+    Enum m_Type = Invalid;
+
+    xiiGALBufferViewHandle  m_hBufferView;
+    xiiGALTextureViewHandle m_hTextureView;
+
+    xiiGALBuffer*  m_pBuffer  = nullptr;
+    xiiGALTexture* m_pTexture = nullptr;
+  };
+
   virtual void InvalidateState();
 
   xiiGALShaderHandle m_hShader;
 
   xiiGALBufferHandle m_hConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT];
 
-  xiiHybridArray<xiiGALBufferViewHandle, 16U>  m_hBufferViews[xiiGALShaderStage::ENUM_COUNT];
-  xiiHybridArray<xiiGALTextureViewHandle, 16U> m_hTextureViews[xiiGALShaderStage::ENUM_COUNT];
+  xiiHybridArray<ResourceBinding, 16U> m_hResourceViews[xiiGALShaderStage::ENUM_COUNT];
 
-  xiiHybridArray<const xiiGALBuffer*, 16U>  m_pResourcesForBufferViews[xiiGALShaderStage::ENUM_COUNT];
-  xiiHybridArray<const xiiGALTexture*, 16U> m_pResourcesForTextureViews[xiiGALShaderStage::ENUM_COUNT];
-
-  xiiHybridArray<xiiGALBufferViewHandle, 16U>  m_hUnorderedAccessBufferViews;
-  xiiHybridArray<xiiGALTextureViewHandle, 16U> m_hUnorderedAccessTextureViews;
-
-  xiiHybridArray<const xiiGALBuffer*, 16U>  m_pResourcesForUnorderedAccessBufferViews;
-  xiiHybridArray<const xiiGALTexture*, 16U> m_pResourcesForUnorderedAccessTextureViews;
+  xiiHybridArray<ResourceBinding, 16U> m_hUnorderedAccessViews;
 
   xiiGALSamplerHandle m_hSamplers[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT];
 };

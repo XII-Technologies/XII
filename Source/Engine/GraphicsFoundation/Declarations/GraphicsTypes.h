@@ -731,6 +731,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
 
     Default = Undefined
   };
+
+  static xiiUInt32 VerticesPerPrimitive(xiiEnum<xiiGALPrimitiveTopology> e);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPrimitiveTopology);

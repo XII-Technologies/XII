@@ -155,3 +155,96 @@ XII_FORCE_INLINE bool xiiGALFilterType::IsAnisotropicFilter(xiiEnum<xiiGALFilter
 {
   return e == Anisotropic || e == ComparisonAnisotropic || e == MinimumAnisotropic || e == MaximumAnisotropic;
 }
+
+// static
+XII_ALWAYS_INLINE xiiUInt32 xiiGALPrimitiveTopology::VerticesPerPrimitive(xiiEnum<xiiGALPrimitiveTopology> e)
+{
+  switch (e)
+  {
+    case xiiGALPrimitiveTopology::TriangleList:
+      return 3;
+    case xiiGALPrimitiveTopology::TriangleStrip:
+      return 3;
+    case xiiGALPrimitiveTopology::PointList:
+      return 1;
+    case xiiGALPrimitiveTopology::LineList:
+      return 2;
+    case xiiGALPrimitiveTopology::LineStrip:
+      return 2;
+    case xiiGALPrimitiveTopology::TriangleListAdjacent:
+      return 6;
+    case xiiGALPrimitiveTopology::TrangleStripAdjacent:
+      return 6;
+    case xiiGALPrimitiveTopology::LineListAdjacent:
+      return 4;
+    case xiiGALPrimitiveTopology::LineStripAdjacent:
+      return 4;
+    case xiiGALPrimitiveTopology::ControlPointPatchList1:
+      return 1;
+    case xiiGALPrimitiveTopology::ControlPointPatchList2:
+      return 4;
+    case xiiGALPrimitiveTopology::ControlPointPatchList3:
+      return 9;
+    case xiiGALPrimitiveTopology::ControlPointPatchList4:
+      return 16;
+    case xiiGALPrimitiveTopology::ControlPointPatchList5:
+      return 25;
+    case xiiGALPrimitiveTopology::ControlPointPatchList6:
+      return 36;
+    case xiiGALPrimitiveTopology::ControlPointPatchList7:
+      return 49;
+    case xiiGALPrimitiveTopology::ControlPointPatchList8:
+      return 64;
+    case xiiGALPrimitiveTopology::ControlPointPatchList9:
+      return 81;
+    case xiiGALPrimitiveTopology::ControlPointPatchList10:
+      return 100;
+    case xiiGALPrimitiveTopology::ControlPointPatchList11:
+      return 121;
+    case xiiGALPrimitiveTopology::ControlPointPatchList12:
+      return 144;
+    case xiiGALPrimitiveTopology::ControlPointPatchList13:
+      return 169;
+    case xiiGALPrimitiveTopology::ControlPointPatchList14:
+      return 196;
+    case xiiGALPrimitiveTopology::ControlPointPatchList15:
+      return 225;
+    case xiiGALPrimitiveTopology::ControlPointPatchList16:
+      return 256;
+    case xiiGALPrimitiveTopology::ControlPointPatchList17:
+      return 289;
+    case xiiGALPrimitiveTopology::ControlPointPatchList18:
+      return 324;
+    case xiiGALPrimitiveTopology::ControlPointPatchList19:
+      return 361;
+    case xiiGALPrimitiveTopology::ControlPointPatchList20:
+      return 400;
+    case xiiGALPrimitiveTopology::ControlPointPatchList21:
+      return 441;
+    case xiiGALPrimitiveTopology::ControlPointPatchList22:
+      return 484;
+    case xiiGALPrimitiveTopology::ControlPointPatchList23:
+      return 529;
+    case xiiGALPrimitiveTopology::ControlPointPatchList24:
+      return 576;
+    case xiiGALPrimitiveTopology::ControlPointPatchList25:
+      return 625;
+    case xiiGALPrimitiveTopology::ControlPointPatchList26:
+      return 676;
+    case xiiGALPrimitiveTopology::ControlPointPatchList27:
+      return 729;
+    case xiiGALPrimitiveTopology::ControlPointPatchList28:
+      return 784;
+    case xiiGALPrimitiveTopology::ControlPointPatchList29:
+      return 841;
+    case xiiGALPrimitiveTopology::ControlPointPatchList30:
+      return 900;
+    case xiiGALPrimitiveTopology::ControlPointPatchList31:
+      return 961;
+    case xiiGALPrimitiveTopology::ControlPointPatchList32:
+      return 1024;
+
+    XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return 0;
+}

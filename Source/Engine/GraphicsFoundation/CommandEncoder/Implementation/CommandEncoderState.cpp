@@ -13,18 +13,10 @@ void xiiGALCommandEncoderState::InvalidateState()
 
   for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
   {
-    m_hBufferViews[i].Clear();
-    m_pResourcesForBufferViews[i].Clear();
-
-    m_hTextureViews[i].Clear();
-    m_pResourcesForTextureViews[i].Clear();
+    m_hResourceViews[i].Clear();
   }
 
-  m_hUnorderedAccessBufferViews.Clear();
-  m_pResourcesForUnorderedAccessBufferViews.Clear();
-
-  m_hUnorderedAccessTextureViews.Clear();
-  m_pResourcesForUnorderedAccessTextureViews.Clear();
+  m_hUnorderedAccessViews.Clear();
 
   for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
   {

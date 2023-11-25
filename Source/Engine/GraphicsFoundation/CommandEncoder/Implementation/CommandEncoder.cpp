@@ -86,8 +86,8 @@ void xiiGALCommandEncoder::SetBufferView(xiiBitflags<xiiGALShaderStage> stage, x
 
   /// \todo Check if the device supports the stage / the slot index
 
-  auto& boundBufferViews = m_State.m_hBufferViews[xiiGALShaderStage::GetStageIndex(stage)];
-  if (uiSlot < boundBufferViews.GetCount() && boundBufferViews[uiSlot] == hBufferView)
+  auto& boundResourceViews = m_State.m_hResourceViews[xiiGALShaderStage::GetStageIndex(stage)];
+  if (uiSlot < boundResourceViews.GetCount() && boundResourceViews[uiSlot].m_Type == xiiGALCommandEncoderState::ResourceBinding::Buffer && boundResourceViews[uiSlot].m_hBufferView == hBufferView)
   {
     CountRedundantStateChange();
     return;
@@ -104,12 +104,12 @@ void xiiGALCommandEncoder::SetBufferView(xiiBitflags<xiiGALShaderStage> stage, x
 
   m_CommonImpl.SetBufferViewPlatform(stage, uiSlot, pBufferView);
 
-  boundBufferViews.EnsureCount(uiSlot + 1);
-  boundBufferViews[uiSlot] = hBufferView;
-
-  auto& boundResources = m_State.m_pResourcesForBufferViews[xiiGALShaderStage::GetStageIndex(stage)];
-  boundResources.EnsureCount(uiSlot + 1);
-  boundResources[uiSlot] = pBufferView != nullptr ? pBufferView->GetBuffer() : nullptr;
+  boundResourceViews.EnsureCount(uiSlot + 1);
+  boundResourceViews[uiSlot] = {
+    .m_Type        = xiiGALCommandEncoderState::ResourceBinding::Buffer,
+    .m_hBufferView = hBufferView,
+    .m_pBuffer     = pBufferView != nullptr ? pBufferView->GetBuffer() : nullptr,
+  };
 
   CountStateChange();
 }
@@ -120,8 +120,8 @@ void xiiGALCommandEncoder::SetTextureView(xiiBitflags<xiiGALShaderStage> stage, 
 
   /// \todo Check if the device supports the stage / the slot index
 
-  auto& boundTextureViews = m_State.m_hTextureViews[xiiGALShaderStage::GetStageIndex(stage)];
-  if (uiSlot < boundTextureViews.GetCount() && boundTextureViews[uiSlot] == hTextureView)
+  auto& boundResourceViews = m_State.m_hResourceViews[xiiGALShaderStage::GetStageIndex(stage)];
+  if (uiSlot < boundResourceViews.GetCount() && boundResourceViews[uiSlot].m_Type == xiiGALCommandEncoderState::ResourceBinding::Texture && boundResourceViews[uiSlot].m_hTextureView == hTextureView)
   {
     CountRedundantStateChange();
     return;
@@ -138,12 +138,12 @@ void xiiGALCommandEncoder::SetTextureView(xiiBitflags<xiiGALShaderStage> stage, 
 
   m_CommonImpl.SetTextureViewPlatform(stage, uiSlot, pTextureView);
 
-  boundTextureViews.EnsureCount(uiSlot + 1);
-  boundTextureViews[uiSlot] = hTextureView;
-
-  auto& boundResources = m_State.m_pResourcesForTextureViews[xiiGALShaderStage::GetStageIndex(stage)];
-  boundResources.EnsureCount(uiSlot + 1);
-  boundResources[uiSlot] = pTextureView != nullptr ? pTextureView->GetTexture() : nullptr;
+  boundResourceViews.EnsureCount(uiSlot + 1);
+  boundResourceViews[uiSlot] = {
+    .m_Type         = xiiGALCommandEncoderState::ResourceBinding::Texture,
+    .m_hTextureView = hTextureView,
+    .m_pTexture     = pTextureView != nullptr ? pTextureView->GetTexture() : nullptr,
+  };
 
   CountStateChange();
 }
@@ -154,7 +154,7 @@ void xiiGALCommandEncoder::SetUnorderedAccessBufferView(xiiUInt32 uiSlot, xiiGAL
 
   /// \todo Check if the device supports the stage / the slot index
 
-  if (uiSlot < m_State.m_hUnorderedAccessBufferViews.GetCount() && m_State.m_hUnorderedAccessBufferViews[uiSlot] == hUnorderedAccessBufferView)
+  if (uiSlot < m_State.m_hUnorderedAccessViews.GetCount() && m_State.m_hUnorderedAccessViews[uiSlot].m_Type == xiiGALCommandEncoderState::ResourceBinding::Buffer && m_State.m_hUnorderedAccessViews[uiSlot].m_hBufferView == hUnorderedAccessBufferView)
   {
     CountRedundantStateChange();
     return;
@@ -171,11 +171,14 @@ void xiiGALCommandEncoder::SetUnorderedAccessBufferView(xiiUInt32 uiSlot, xiiGAL
 
   m_CommonImpl.SetUnorderedAccessBufferViewPlatform(uiSlot, pUnorderedAccessBufferView);
 
-  m_State.m_hUnorderedAccessBufferViews.EnsureCount(uiSlot + 1);
-  m_State.m_hUnorderedAccessBufferViews[uiSlot] = hUnorderedAccessBufferView;
-
-  m_State.m_pResourcesForUnorderedAccessBufferViews.EnsureCount(uiSlot + 1);
-  m_State.m_pResourcesForUnorderedAccessBufferViews[uiSlot] = pUnorderedAccessBufferView != nullptr ? pUnorderedAccessBufferView->GetBuffer() : nullptr;
+  m_State.m_hUnorderedAccessViews.EnsureCount(uiSlot + 1);
+  m_State.m_hUnorderedAccessViews[uiSlot] = {
+    .m_Type         = xiiGALCommandEncoderState::ResourceBinding::Buffer,
+    .m_hBufferView  = hUnorderedAccessBufferView,
+    .m_hTextureView = xiiGALTextureViewHandle(),
+    .m_pBuffer      = pUnorderedAccessBufferView != nullptr ? pUnorderedAccessBufferView->GetBuffer() : nullptr,
+    .m_pTexture     = nullptr,
+  };
 
   CountStateChange();
 }
@@ -186,7 +189,7 @@ void xiiGALCommandEncoder::SetUnorderedAccessTextureView(xiiUInt32 uiSlot, xiiGA
 
   /// \todo Check if the device supports the stage / the slot index
 
-  if (uiSlot < m_State.m_hUnorderedAccessTextureViews.GetCount() && m_State.m_hUnorderedAccessTextureViews[uiSlot] == hUnorderedAccessTextureView)
+  if (uiSlot < m_State.m_hUnorderedAccessViews.GetCount() && m_State.m_hUnorderedAccessViews[uiSlot].m_Type == xiiGALCommandEncoderState::ResourceBinding::Texture && m_State.m_hUnorderedAccessViews[uiSlot].m_hTextureView == hUnorderedAccessTextureView)
   {
     CountRedundantStateChange();
     return;
@@ -203,11 +206,14 @@ void xiiGALCommandEncoder::SetUnorderedAccessTextureView(xiiUInt32 uiSlot, xiiGA
 
   m_CommonImpl.SetUnorderedAccessTextureViewPlatform(uiSlot, pUnorderedAccessTextureView);
 
-  m_State.m_hUnorderedAccessTextureViews.EnsureCount(uiSlot + 1);
-  m_State.m_hUnorderedAccessTextureViews[uiSlot] = hUnorderedAccessTextureView;
-
-  m_State.m_pResourcesForUnorderedAccessTextureViews.EnsureCount(uiSlot + 1);
-  m_State.m_pResourcesForUnorderedAccessTextureViews[uiSlot] = pUnorderedAccessTextureView != nullptr ? pUnorderedAccessTextureView->GetTexture() : nullptr;
+  m_State.m_hUnorderedAccessViews.EnsureCount(uiSlot + 1);
+  m_State.m_hUnorderedAccessViews[uiSlot] = {
+    .m_Type         = xiiGALCommandEncoderState::ResourceBinding::Texture,
+    .m_hBufferView  = xiiGALBufferViewHandle(),
+    .m_hTextureView = hUnorderedAccessTextureView,
+    .m_pBuffer      = nullptr,
+    .m_pTexture     = pUnorderedAccessTextureView != nullptr ? pUnorderedAccessTextureView->GetTexture() : nullptr,
+  };
 
   CountStateChange();
 }
@@ -218,14 +224,16 @@ bool xiiGALCommandEncoder::UnsetBufferView(xiiGALBuffer* pBuffer)
 
   for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
   {
-    for (xiiUInt32 uiSlot = 0; uiSlot < m_State.m_pResourcesForBufferViews[stage].GetCount(); ++uiSlot)
+    for (xiiUInt32 uiSlot = 0; uiSlot < m_State.m_hResourceViews[stage].GetCount(); ++uiSlot)
     {
-      if (m_State.m_pResourcesForBufferViews[stage][uiSlot] == pBuffer)
+      if (m_State.m_hResourceViews[stage][uiSlot].m_pBuffer == pBuffer)
       {
-        m_CommonImpl.SetBufferViewPlatform((xiiGALShaderStage::Enum)stage, uiSlot, nullptr);
+        XII_ASSERT_DEV(m_State.m_hResourceViews[stage][uiSlot].m_Type == xiiGALCommandEncoderState::ResourceBinding::Buffer, "");
 
-        m_State.m_hBufferViews[stage][uiSlot].Invalidate();
-        m_State.m_pResourcesForBufferViews[stage][uiSlot] = nullptr;
+        m_CommonImpl.SetBufferViewPlatform(xiiGALShaderStage::GetStageFlag(stage), uiSlot, nullptr);
+
+        m_State.m_hResourceViews[stage][uiSlot].m_hBufferView.Invalidate();
+        m_State.m_hResourceViews[stage][uiSlot].m_pBuffer = nullptr;
 
         bResult = true;
       }
@@ -241,14 +249,16 @@ bool xiiGALCommandEncoder::UnsetTextureView(xiiGALTexture* pTexture)
 
   for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
   {
-    for (xiiUInt32 uiSlot = 0; uiSlot < m_State.m_pResourcesForTextureViews[stage].GetCount(); ++uiSlot)
+    for (xiiUInt32 uiSlot = 0; uiSlot < m_State.m_hResourceViews[stage].GetCount(); ++uiSlot)
     {
-      if (m_State.m_pResourcesForTextureViews[stage][uiSlot] == pTexture)
+      if (m_State.m_hResourceViews[stage][uiSlot].m_pTexture == pTexture)
       {
-        m_CommonImpl.SetTextureViewPlatform((xiiGALShaderStage::Enum)stage, uiSlot, nullptr);
+        XII_ASSERT_DEV(m_State.m_hResourceViews[stage][uiSlot].m_Type == xiiGALCommandEncoderState::ResourceBinding::Texture, "");
 
-        m_State.m_hTextureViews[stage][uiSlot].Invalidate();
-        m_State.m_pResourcesForTextureViews[stage][uiSlot] = nullptr;
+        m_CommonImpl.SetTextureViewPlatform(xiiGALShaderStage::GetStageFlag(stage), uiSlot, nullptr);
+
+        m_State.m_hResourceViews[stage][uiSlot].m_hTextureView.Invalidate();
+        m_State.m_hResourceViews[stage][uiSlot].m_pTexture = nullptr;
 
         bResult = true;
       }
@@ -262,14 +272,16 @@ bool xiiGALCommandEncoder::UnsetUnorderedAccessBufferView(xiiGALBuffer* pBuffer)
 {
   bool bResult = false;
 
-  for (xiiUInt32 uiSlot = 0; uiSlot < m_State.m_pResourcesForUnorderedAccessBufferViews.GetCount(); ++uiSlot)
+  for (xiiUInt32 uiSlot = 0; uiSlot < m_State.m_hUnorderedAccessViews.GetCount(); ++uiSlot)
   {
-    if (m_State.m_pResourcesForUnorderedAccessBufferViews[uiSlot] == pBuffer)
+    if (m_State.m_hUnorderedAccessViews[uiSlot].m_pBuffer == pBuffer)
     {
+      XII_ASSERT_DEV(m_State.m_hUnorderedAccessViews[uiSlot].m_Type == xiiGALCommandEncoderState::ResourceBinding::Texture, "");
+
       m_CommonImpl.SetUnorderedAccessBufferViewPlatform(uiSlot, nullptr);
 
-      m_State.m_hUnorderedAccessBufferViews[uiSlot].Invalidate();
-      m_State.m_pResourcesForUnorderedAccessBufferViews[uiSlot] = nullptr;
+      m_State.m_hUnorderedAccessViews[uiSlot].m_hBufferView.Invalidate();
+      m_State.m_hUnorderedAccessViews[uiSlot].m_pBuffer = nullptr;
 
       bResult = true;
     }
@@ -282,14 +294,16 @@ bool xiiGALCommandEncoder::UnsetUnorderedAccessTextureView(xiiGALTexture* pTextu
 {
   bool bResult = false;
 
-  for (xiiUInt32 uiSlot = 0; uiSlot < m_State.m_pResourcesForUnorderedAccessTextureViews.GetCount(); ++uiSlot)
+  for (xiiUInt32 uiSlot = 0; uiSlot < m_State.m_hUnorderedAccessViews.GetCount(); ++uiSlot)
   {
-    if (m_State.m_pResourcesForUnorderedAccessTextureViews[uiSlot] == pTexture)
+    if (m_State.m_hUnorderedAccessViews[uiSlot].m_pTexture == pTexture)
     {
+      XII_ASSERT_DEV(m_State.m_hUnorderedAccessViews[uiSlot].m_Type == xiiGALCommandEncoderState::ResourceBinding::Texture, "");
+
       m_CommonImpl.SetUnorderedAccessTextureViewPlatform(uiSlot, nullptr);
 
-      m_State.m_hUnorderedAccessTextureViews[uiSlot].Invalidate();
-      m_State.m_pResourcesForUnorderedAccessTextureViews[uiSlot] = nullptr;
+      m_State.m_hUnorderedAccessViews[uiSlot].m_hTextureView.Invalidate();
+      m_State.m_hUnorderedAccessViews[uiSlot].m_pTexture = nullptr;
 
       bResult = true;
     }
