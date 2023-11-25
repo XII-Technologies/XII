@@ -10,17 +10,17 @@ namespace xiiShaderHelper
   public:
     void Clear();
 
-    void AddSection(const char* szName);
+    void AddSection(xiiStringView sName);
 
-    void Process(const char* szText);
+    void Process(xiiStringView sText);
 
     xiiStringView GetSectionContent(xiiUInt32 uiSection, xiiUInt32& out_uiFirstLine) const;
 
   private:
     struct xiiTextSection
     {
-      xiiTextSection(const char* szName) :
-        m_sName(szName)
+      xiiTextSection(xiiStringView sName) :
+        m_sName(sName)
 
       {
       }
@@ -71,7 +71,7 @@ namespace xiiShaderHelper
     };
   };
 
-  XII_GRAPHICSCORE_DLL void GetShaderSections(const char* szContent, xiiTextSectionizer& out_sections);
+  XII_GRAPHICSCORE_DLL void GetShaderSections(xiiStringView sContent, xiiTextSectionizer& out_sections);
 
   xiiUInt32 CalculateHash(const xiiArrayPtr<xiiPermutationVar>& vars);
 } // namespace xiiShaderHelper

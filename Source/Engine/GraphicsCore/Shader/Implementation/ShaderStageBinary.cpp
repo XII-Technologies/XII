@@ -144,8 +144,8 @@ xiiResult xiiShaderConstantBufferLayout::Read(xiiStreamReader& inout_stream)
 
 xiiShaderResourceBinding::xiiShaderResourceBinding()
 {
-  m_Type    = xiiShaderResourceType::Unknown;
-  m_iSlot   = -1;
+  m_Type    = xiiGALShaderResourceType::Unknown;
+  m_iSlot   = xiiInvalidIndex;
   m_pLayout = nullptr;
 }
 
@@ -191,7 +191,7 @@ xiiResult xiiShaderStageBinary::Write(xiiStreamWriter& inout_stream) const
   if (inout_stream.WriteDWordValue(&m_uiSourceHash).Failed())
     return XII_FAILURE;
 
-  const xiiUInt8 uiStage = (xiiUInt8)m_Stage;
+  const xiiUInt8 uiStage = (xiiUInt8)xiiGALShaderStage::GetStageIndex(m_Stage);
 
   if (inout_stream.WriteBytes(&uiStage, sizeof(xiiUInt8)).Failed())
     return XII_FAILURE;
@@ -211,9 +211,9 @@ xiiResult xiiShaderStageBinary::Write(xiiStreamWriter& inout_stream) const
   {
     inout_stream << r.m_sName.GetData();
     inout_stream << r.m_iSlot;
-    inout_stream << (xiiUInt8)r.m_Type;
+    inout_stream << (xiiUInt8)r.m_Type.GetValue();
 
-    if (r.m_Type == xiiShaderResourceType::ConstantBuffer)
+    if (r.m_Type == xiiGALShaderResourceType::ConstantBuffer)
     {
       XII_SUCCEED_OR_RETURN(r.m_pLayout->Write(inout_stream));
     }
@@ -241,7 +241,7 @@ xiiResult xiiShaderStageBinary::Read(xiiStreamReader& inout_stream)
   if (inout_stream.ReadBytes(&uiStage, sizeof(xiiUInt8)) != sizeof(xiiUInt8))
     return XII_FAILURE;
 
-  m_Stage = (xiiGALShaderStage::Enum)uiStage;
+  m_Stage = xiiGALShaderStage::GetStageFlag(uiStage);
 
   xiiUInt32 uiByteCodeSize = 0;
 
@@ -253,7 +253,6 @@ xiiResult xiiShaderStageBinary::Read(xiiStreamReader& inout_stream)
   if (!m_ByteCode.IsEmpty() && inout_stream.ReadBytes(&m_ByteCode[0], uiByteCodeSize) != uiByteCodeSize)
     return XII_FAILURE;
 
-  if (uiVersion >= xiiShaderStageBinary::Version2)
   {
     xiiUInt16 uiResources = 0;
     inout_stream >> uiResources;
@@ -270,9 +269,9 @@ xiiResult xiiShaderStageBinary::Read(xiiStreamReader& inout_stream)
 
       xiiUInt8 uiType = 0;
       inout_stream >> uiType;
-      r.m_Type = (xiiShaderResourceType::Enum)uiType;
+      r.m_Type = (xiiGALShaderResourceType::Enum)uiType;
 
-      if (r.m_Type == xiiShaderResourceType::ConstantBuffer && uiVersion >= xiiShaderStageBinary::Version4)
+      if (r.m_Type == xiiGALShaderResourceType::ConstantBuffer)
       {
         auto pLayout = XII_DEFAULT_NEW(xiiShaderConstantBufferLayout);
         XII_SUCCEED_OR_RETURN(pLayout->Read(inout_stream));
@@ -282,7 +281,6 @@ xiiResult xiiShaderStageBinary::Read(xiiStreamReader& inout_stream)
     }
   }
 
-  if (uiVersion >= xiiShaderStageBinary::Version5)
   {
     inout_stream >> m_bWasCompiledWithDebug;
   }
@@ -330,7 +328,7 @@ xiiResult xiiShaderStageBinary::WriteStageBinary(xiiLogInterface* pLog) const
   xiiStringBuilder sShaderStageFile = xiiShaderManager::GetCacheDirectory();
 
   sShaderStageFile.AppendPath(xiiShaderManager::GetActivePlatform().GetData());
-  sShaderStageFile.AppendFormat("/{0}_{1}.xiiShaderStage", xiiGALShaderStage::Names[m_Stage], xiiArgU(m_uiSourceHash, 8, true, 16, true));
+  sShaderStageFile.AppendFormat("/{0}_{1}.xiiShaderStage", xiiGALShaderStage::Names[xiiGALShaderStage::GetStageIndex(m_Stage)], xiiArgU(m_uiSourceHash, 8, true, 16, true));
 
   xiiFileWriter StageFileOut;
   if (StageFileOut.Open(sShaderStageFile.GetData()).Failed())
@@ -349,7 +347,7 @@ xiiResult xiiShaderStageBinary::WriteStageBinary(xiiLogInterface* pLog) const
 }
 
 // static
-xiiShaderStageBinary* xiiShaderStageBinary::LoadStageBinary(xiiGALShaderStage::Enum Stage, xiiUInt32 uiHash)
+xiiShaderStageBinary* xiiShaderStageBinary::LoadStageBinary(xiiBitflags<xiiGALShaderStage> Stage, xiiUInt32 uiHash)
 {
   auto itStage = s_ShaderStageBinaries[xiiGALShaderStage::GetStageIndex(Stage)].Find(uiHash);
 
@@ -358,7 +356,7 @@ xiiShaderStageBinary* xiiShaderStageBinary::LoadStageBinary(xiiGALShaderStage::E
     xiiStringBuilder sShaderStageFile = xiiShaderManager::GetCacheDirectory();
 
     sShaderStageFile.AppendPath(xiiShaderManager::GetActivePlatform().GetData());
-    sShaderStageFile.AppendFormat("/{0}_{1}.xiiShaderStage", xiiGALShaderStage::Names[Stage], xiiArgU(uiHash, 8, true, 16, true));
+    sShaderStageFile.AppendFormat("/{0}_{1}.xiiShaderStage", xiiGALShaderStage::Names[xiiGALShaderStage::GetStageIndex(Stage)], xiiArgU(uiHash, 8, true, 16, true));
 
     xiiFileReader StageFileIn;
     if (StageFileIn.Open(sShaderStageFile.GetData()).Failed())
@@ -374,7 +372,7 @@ xiiShaderStageBinary* xiiShaderStageBinary::LoadStageBinary(xiiGALShaderStage::E
       return nullptr;
     }
 
-    itStage = xiiShaderStageBinary::s_ShaderStageBinaries[Stage].Insert(uiHash, shaderStageBinary);
+    itStage = xiiShaderStageBinary::s_ShaderStageBinaries[xiiGALShaderStage::GetStageIndex(Stage)].Insert(uiHash, shaderStageBinary);
   }
 
   if (!itStage.IsValid())

@@ -3,7 +3,9 @@
 #include <Foundation/IO/DependencyFile.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Shader/ShaderStageBinary.h>
-#include <GraphicsFoundation/Descriptors/Descriptors.h>
+#include <GraphicsFoundation/States/BlendState.h>
+#include <GraphicsFoundation/States/DepthStencilState.h>
+#include <GraphicsFoundation/States/RasterizerState.h>
 
 struct XII_GRAPHICSCORE_DLL xiiShaderStateResourceDescriptor
 {
@@ -11,7 +13,7 @@ struct XII_GRAPHICSCORE_DLL xiiShaderStateResourceDescriptor
   xiiGALDepthStencilStateCreationDescription m_DepthStencilDesc;
   xiiGALRasterizerStateCreationDescription   m_RasterizerDesc;
 
-  xiiResult Parse(const char* szSource);
+  xiiResult Parse(xiiStringView sSource);
   void      Load(xiiStreamReader& inout_stream);
   void      Save(xiiStreamWriter& inout_stream) const;
 

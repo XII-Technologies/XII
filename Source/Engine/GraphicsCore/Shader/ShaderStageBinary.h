@@ -1,12 +1,13 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/IO/Stream.h>
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Types/Enum.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsFoundation/Descriptors/Descriptors.h>
+#include <GraphicsFoundation/Declarations/Descriptors.h>
 
 class XII_GRAPHICSCORE_DLL xiiShaderConstantBufferLayout : public xiiRefCounted
 {
@@ -39,6 +40,7 @@ public:
         Transform,
         Bool,
         Struct,
+
         ENUM_COUNT
       };
     };
@@ -82,7 +84,7 @@ struct XII_GRAPHICSCORE_DLL xiiShaderResourceBinding
   xiiShaderResourceBinding();
   ~xiiShaderResourceBinding();
 
-  xiiShaderResourceType::Enum                        m_Type;
+  xiiEnum<xiiGALShaderResourceType>                  m_Type;
   xiiInt32                                           m_iSlot;
   xiiHashedString                                    m_sName;
   xiiScopedRefPointer<xiiShaderConstantBufferLayout> m_pLayout;
@@ -94,11 +96,6 @@ public:
   enum Version
   {
     Version0,
-    Version1,
-    Version2,
-    Version3, // Added Material Parameters
-    Version4, // Constant buffer layouts
-    Version5, // Debug flag
 
     ENUM_COUNT,
     VersionCurrent = ENUM_COUNT - 1
@@ -125,14 +122,14 @@ private:
   friend class xiiShaderPermutationResourceLoader;
 
   xiiUInt32                                   m_uiSourceHash = 0;
-  xiiGALShaderStage::Enum                     m_Stage        = xiiGALShaderStage::ENUM_COUNT;
+  xiiBitflags<xiiGALShaderStage>              m_Stage        = xiiGALShaderStage::ENUM_COUNT;
   xiiDynamicArray<xiiUInt8>                   m_ByteCode;
   xiiScopedRefPointer<xiiGALShaderByteCode>   m_GALByteCode;
   xiiHybridArray<xiiShaderResourceBinding, 8> m_ShaderResourceBindings;
   bool                                        m_bWasCompiledWithDebug = false;
 
   xiiResult                    WriteStageBinary(xiiLogInterface* pLog) const;
-  static xiiShaderStageBinary* LoadStageBinary(xiiGALShaderStage::Enum Stage, xiiUInt32 uiHash);
+  static xiiShaderStageBinary* LoadStageBinary(xiiBitflags<xiiGALShaderStage> Stage, xiiUInt32 uiHash);
 
   static void OnEngineShutdown();
 

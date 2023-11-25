@@ -3,14 +3,17 @@
 #include <GraphicsCore/Shader/ConstantBufferStorage.h>
 #include <GraphicsFoundation/CommandEncoder/CommandEncoder.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 
 xiiConstantBufferStorageBase::xiiConstantBufferStorageBase(xiiUInt32 uiSizeInBytes)
-
 {
   m_Data = xiiMakeArrayPtr(static_cast<xiiUInt8*>(xiiFoundation::GetAlignedAllocator()->Allocate(uiSizeInBytes, 16)), uiSizeInBytes);
   xiiMemoryUtils::ZeroFill(m_Data.GetPtr(), m_Data.GetCount());
 
-  m_hGALConstantBuffer = xiiGALDevice::GetDefaultDevice()->CreateConstantBuffer(uiSizeInBytes);
+  xiiGALBufferCreationDescription desc;
+  desc.m_uiSize = uiSizeInBytes;
+  desc.m_BindFlags.Add(xiiGALBindFlags::UniformBuffer);
+  m_hGALConstantBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
 }
 
 xiiConstantBufferStorageBase::~xiiConstantBufferStorageBase()
@@ -46,7 +49,5 @@ void xiiConstantBufferStorageBase::UploadData(xiiGALCommandEncoder* pCommandEnco
     m_uiLastHash = uiNewHash;
   }
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Shader_Implementation_ConstantBufferStorage);

@@ -7,10 +7,6 @@ struct xiiShaderPermutationBinaryVersion
   enum Enum : xiiUInt32
   {
     Version1 = 1,
-    Version2 = 2,
-    Version3 = 3,
-    Version4 = 4,
-    Version5 = 5,
 
     // Increase this version number to trigger shader recompilation
 
@@ -76,7 +72,6 @@ xiiResult xiiShaderPermutationBinary::Read(xiiStreamReader& inout_stream, bool& 
 
   m_StateDescriptor.Load(inout_stream);
 
-  if (uiVersion >= xiiShaderPermutationBinaryVersion::Version2)
   {
     xiiUInt32 uiPermutationCount;
     inout_stream >> uiPermutationCount;
@@ -97,7 +92,5 @@ xiiResult xiiShaderPermutationBinary::Read(xiiStreamReader& inout_stream, bool& 
 
   return XII_SUCCESS;
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Shader_Implementation_ShaderPermutationBinary);

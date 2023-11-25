@@ -100,9 +100,9 @@ public:
 
   XII_ALWAYS_INLINE xiiShaderBool() = default;
 
-  XII_ALWAYS_INLINE xiiShaderBool(bool b) { m_uiData = b ? 0xFFFFFFFF : 0; }
+  XII_ALWAYS_INLINE xiiShaderBool(bool b) { m_uiData = b ? 0xFFFFFFFFU : 0U; }
 
-  XII_ALWAYS_INLINE void operator=(bool b) { m_uiData = b ? 0xFFFFFFFF : 0; }
+  XII_ALWAYS_INLINE void operator=(bool b) { m_uiData = b ? 0xFFFFFFFFU : 0U; }
 
 private:
   xiiUInt32 m_uiData;

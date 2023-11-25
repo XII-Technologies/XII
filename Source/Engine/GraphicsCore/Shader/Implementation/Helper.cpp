@@ -4,21 +4,20 @@
 
 namespace xiiShaderHelper
 {
-
   void xiiTextSectionizer::Clear()
   {
     m_Sections.Clear();
     m_sText.Clear();
   }
 
-  void xiiTextSectionizer::AddSection(const char* szName) { m_Sections.PushBack(xiiTextSection(szName)); }
+  void xiiTextSectionizer::AddSection(xiiStringView sName) { m_Sections.PushBack(xiiTextSection(sName)); }
 
-  void xiiTextSectionizer::Process(const char* szText)
+  void xiiTextSectionizer::Process(xiiStringView sText)
   {
     for (xiiUInt32 i = 0; i < m_Sections.GetCount(); ++i)
       m_Sections[i].Reset();
 
-    m_sText = szText;
+    m_sText = sText;
 
 
     for (xiiUInt32 s = 0; s < m_Sections.GetCount(); ++s)
@@ -69,7 +68,7 @@ namespace xiiShaderHelper
     return m_Sections[uiSection].m_Content;
   }
 
-  void GetShaderSections(const char* szContent, xiiTextSectionizer& out_sections)
+  void GetShaderSections(xiiStringView sContent, xiiTextSectionizer& out_sections)
   {
     out_sections.Clear();
 
@@ -96,7 +95,7 @@ namespace xiiShaderHelper
     out_sections.AddSection("[TILESHADER]");
     out_sections.AddSection("[TEMPLATE_VARS]");
 
-    out_sections.Process(szContent);
+    out_sections.Process(sContent);
   }
 
   xiiUInt32 CalculateHash(const xiiArrayPtr<xiiPermutationVar>& vars)
