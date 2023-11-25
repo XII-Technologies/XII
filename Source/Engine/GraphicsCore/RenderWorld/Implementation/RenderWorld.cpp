@@ -552,7 +552,7 @@ void xiiRenderWorld::Render(xiiRenderContext* pRenderContext)
   {
     // Executed via WriteRenderPipelineDgml console command.
     s_bWriteRenderPipelineDgml = false;
-    const xiiDateTime dt       = xiiDateTime::MakeFromTimestamp(xiiTimestamp::CurrentTimestamp());
+    const xiiDateTime dt       = xiiDateTime(xiiTimestamp::CurrentTimestamp());
     for (xiiUInt32 i = 0; i < filteredRenderPipelines.GetCount(); ++i)
     {
       auto&            pRenderPipeline = filteredRenderPipelines[i];

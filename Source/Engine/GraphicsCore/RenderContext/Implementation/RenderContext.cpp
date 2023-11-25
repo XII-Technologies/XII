@@ -2,6 +2,14 @@
 
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
+
+#include <GraphicsFoundation/CommandEncoder/CommandEncoder.h>
+#include <GraphicsFoundation/Resources/BufferView.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Resources/TextureView.h>
+#include <GraphicsFoundation/Shader/InputLayout.h>
+
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
@@ -12,14 +20,12 @@
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
-#include <GraphicsFoundation/CommandEncoder/CommandEncoder.h>
-#include <GraphicsFoundation/Resources/RenderTargetView.h>
-#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsCore/Textures/TextureUtils.h>
 
 xiiRenderContext*                    xiiRenderContext::s_pDefaultInstance = nullptr;
 xiiHybridArray<xiiRenderContext*, 4> xiiRenderContext::s_Instances;
 
-xiiMap<xiiRenderContext::ShaderVertexDecl, xiiGALVertexDeclarationHandle> xiiRenderContext::s_GALVertexDeclarations;
+xiiMap<xiiRenderContext::ShaderVertexDecl, xiiGALInputLayoutHandle> xiiRenderContext::s_GALInputLayouts;
 
 xiiMutex                                                              xiiRenderContext::s_ConstantBufferStorageMutex;
 xiiIdTable<xiiConstantBufferStorageId, xiiConstantBufferStorageBase*> xiiRenderContext::s_ConstantBufferStorageTable;
@@ -45,12 +51,12 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RendererContext)
 
   ON_HIGHLEVELSYSTEMS_STARTUP
   {
-    xiiShaderUtils::g_RequestBuiltinShaderCallback = xiiMakeDelegate(xiiRenderContext::LoadBuiltinShader);
+    xiiShaderUtilities::g_RequestBuiltinShaderCallback = xiiMakeDelegate(xiiRenderContext::LoadBuiltinShader);
   }
 
   ON_HIGHLEVELSYSTEMS_SHUTDOWN
   {
-    xiiShaderUtils::g_RequestBuiltinShaderCallback = {};
+    xiiShaderUtilities::g_RequestBuiltinShaderCallback = {};
     xiiRenderContext::OnEngineShutdown();
   }
 
@@ -99,7 +105,7 @@ xiiRenderContext::xiiRenderContext()
   s_Instances.PushBack(this);
 
   m_StateFlags                 = xiiRenderContextFlags::AllStatesInvalid;
-  m_Topology                   = xiiGALPrimitiveTopology::ENUM_COUNT; // Set to something invalid
+  m_Topology                   = xiiGALPrimitiveTopology::Undefined;
   m_uiMeshBufferPrimitiveCount = 0;
   m_DefaultTextureFilter       = xiiTextureFilterSetting::FixedAnisotropic4x;
   m_bAllowAsyncShaderLoading   = false;
@@ -127,9 +133,9 @@ xiiRenderContext::Statistics xiiRenderContext::GetAndResetStatistics()
   return ret;
 }
 
-xiiGALRenderCommandEncoder* xiiRenderContext::BeginRendering(xiiGALPass* pGALPass, const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, const char* szName, bool bStereoSupport)
+xiiGALGraphicsCommandEncoder* xiiRenderContext::BeginRendering(xiiGALPass* pGALPass, const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName, bool bStereoSupport)
 {
-  xiiGALMSAASampleCount::Enum msaaSampleCount = xiiGALMSAASampleCount::None;
+  xiiUInt32 msaaSampleCount = 1;
 
   xiiGALTextureViewHandle hRTV;
   if (renderingSetup.m_RenderTargetSetup.GetRenderTargetCount() > 0)
@@ -141,12 +147,12 @@ xiiGALRenderCommandEncoder* xiiRenderContext::BeginRendering(xiiGALPass* pGALPas
     hRTV = renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget();
   }
 
-  if (const xiiGALRenderTargetView* pRTV = xiiGALDevice::GetDefaultDevice()->GetRenderTargetView(hRTV))
+  if (const xiiGALTextureView* pRTV = xiiGALDevice::GetDefaultDevice()->GetTextureView(hRTV))
   {
-    msaaSampleCount = pRTV->GetTexture()->GetDescription().m_SampleCount;
+    msaaSampleCount = pRTV->GetTexture()->GetDescription().m_uiSampleCount;
   }
 
-  if (msaaSampleCount != xiiGALMSAASampleCount::None)
+  if (msaaSampleCount > 1)
   {
     SetShaderPermutationVariable("MSAA", "TRUE");
   }
@@ -159,7 +165,7 @@ xiiGALRenderCommandEncoder* xiiRenderContext::BeginRendering(xiiGALPass* pGALPas
   gc.ViewportSize   = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
   gc.NumMsaaSamples = msaaSampleCount;
 
-  auto pGALCommandEncoder = pGALPass->BeginRendering(renderingSetup, szName);
+  auto pGALCommandEncoder = pGALPass->BeginRendering(renderingSetup, sName);
 
   pGALCommandEncoder->SetViewport(viewport);
 
@@ -173,7 +179,7 @@ xiiGALRenderCommandEncoder* xiiRenderContext::BeginRendering(xiiGALPass* pGALPas
 
 void xiiRenderContext::EndRendering()
 {
-  m_pGALPass->EndRendering(GetRenderCommandEncoder());
+  m_pGALPass->EndRendering(GetGraphicsCommandEncoder());
 
   m_pGALPass           = nullptr;
   m_pGALCommandEncoder = nullptr;
@@ -185,9 +191,9 @@ void xiiRenderContext::EndRendering()
   //ResetContextState();
 }
 
-xiiGALComputeCommandEncoder* xiiRenderContext::BeginCompute(xiiGALPass* pGALPass, const char* szName /*= ""*/)
+xiiGALComputeCommandEncoder* xiiRenderContext::BeginCompute(xiiGALPass* pGALPass, xiiStringView sName /*= {}*/)
 {
-  auto pGALCommandEncoder = pGALPass->BeginCompute(szName);
+  auto pGALCommandEncoder = pGALPass->BeginCompute(sName);
 
   m_pGALPass           = pGALPass;
   m_pGALCommandEncoder = pGALCommandEncoder;
@@ -207,15 +213,15 @@ void xiiRenderContext::EndCompute()
   //ResetContextState();
 }
 
-void xiiRenderContext::SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sTempValue)
+void xiiRenderContext::SetShaderPermutationVariable(xiiStringView sName, const xiiTempHashedString& sTempValue)
 {
-  xiiTempHashedString sHashedName(szName);
+  xiiTempHashedString sHashedName(sName);
 
-  xiiHashedString sName;
+  xiiHashedString sNameHash;
   xiiHashedString sValue;
-  if (xiiShaderManager::IsPermutationValueAllowed(szName, sHashedName, sTempValue, sName, sValue))
+  if (xiiShaderManager::IsPermutationValueAllowed(sNameHash, sHashedName, sTempValue, sNameHash, sValue))
   {
-    SetShaderPermutationVariableInternal(sName, sValue);
+    SetShaderPermutationVariableInternal(sNameHash, sValue);
   }
 }
 
@@ -245,7 +251,7 @@ void xiiRenderContext::BindTexture2D(const xiiTempHashedString& sSlotName, const
   }
   else
   {
-    BindTexture2D(sSlotName, xiiGALResourceViewHandle());
+    BindTexture2D(sSlotName, xiiGALTextureViewHandle());
   }
 }
 
@@ -259,7 +265,7 @@ void xiiRenderContext::BindTexture3D(const xiiTempHashedString& sSlotName, const
   }
   else
   {
-    BindTexture3D(sSlotName, xiiGALResourceViewHandle());
+    BindTexture3D(sSlotName, xiiGALTextureViewHandle());
   }
 }
 
@@ -273,13 +279,13 @@ void xiiRenderContext::BindTextureCube(const xiiTempHashedString& sSlotName, con
   }
   else
   {
-    BindTextureCube(sSlotName, xiiGALResourceViewHandle());
+    BindTextureCube(sSlotName, xiiGALTextureViewHandle());
   }
 }
 
-void xiiRenderContext::BindTexture2D(const xiiTempHashedString& sSlotName, xiiGALResourceViewHandle hResourceView)
+void xiiRenderContext::BindTexture2D(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hResourceView)
 {
-  xiiGALResourceViewHandle* pOldResourceView = nullptr;
+  xiiGALTextureViewHandle* pOldResourceView = nullptr;
   if (m_BoundTextures2D.TryGetValue(sSlotName.GetHash(), pOldResourceView))
   {
     if (*pOldResourceView == hResourceView)
@@ -295,9 +301,9 @@ void xiiRenderContext::BindTexture2D(const xiiTempHashedString& sSlotName, xiiGA
   m_StateFlags.Add(xiiRenderContextFlags::TextureBindingChanged);
 }
 
-void xiiRenderContext::BindTexture3D(const xiiTempHashedString& sSlotName, xiiGALResourceViewHandle hResourceView)
+void xiiRenderContext::BindTexture3D(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hResourceView)
 {
-  xiiGALResourceViewHandle* pOldResourceView = nullptr;
+  xiiGALTextureViewHandle* pOldResourceView = nullptr;
   if (m_BoundTextures3D.TryGetValue(sSlotName.GetHash(), pOldResourceView))
   {
     if (*pOldResourceView == hResourceView)
@@ -313,9 +319,9 @@ void xiiRenderContext::BindTexture3D(const xiiTempHashedString& sSlotName, xiiGA
   m_StateFlags.Add(xiiRenderContextFlags::TextureBindingChanged);
 }
 
-void xiiRenderContext::BindTextureCube(const xiiTempHashedString& sSlotName, xiiGALResourceViewHandle hResourceView)
+void xiiRenderContext::BindTextureCube(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hResourceView)
 {
-  xiiGALResourceViewHandle* pOldResourceView = nullptr;
+  xiiGALTextureViewHandle* pOldResourceView = nullptr;
   if (m_BoundTexturesCube.TryGetValue(sSlotName.GetHash(), pOldResourceView))
   {
     if (*pOldResourceView == hResourceView)
@@ -331,10 +337,10 @@ void xiiRenderContext::BindTextureCube(const xiiTempHashedString& sSlotName, xii
   m_StateFlags.Add(xiiRenderContextFlags::TextureBindingChanged);
 }
 
-void xiiRenderContext::BindUAV(const xiiTempHashedString& sSlotName, xiiGALUnorderedAccessViewHandle hUnorderedAccessView)
+void xiiRenderContext::BindBufferUAV(const xiiTempHashedString& sSlotName, xiiGALBufferViewHandle hUnorderedAccessView)
 {
-  xiiGALUnorderedAccessViewHandle* pOldResourceView = nullptr;
-  if (m_BoundUAVs.TryGetValue(sSlotName.GetHash(), pOldResourceView))
+  xiiGALBufferViewHandle* pOldResourceView = nullptr;
+  if (m_BoundBufferUAVs.TryGetValue(sSlotName.GetHash(), pOldResourceView))
   {
     if (*pOldResourceView == hUnorderedAccessView)
       return;
@@ -343,7 +349,25 @@ void xiiRenderContext::BindUAV(const xiiTempHashedString& sSlotName, xiiGALUnord
   }
   else
   {
-    m_BoundUAVs.Insert(sSlotName.GetHash(), hUnorderedAccessView);
+    m_BoundBufferUAVs.Insert(sSlotName.GetHash(), hUnorderedAccessView);
+  }
+
+  m_StateFlags.Add(xiiRenderContextFlags::UAVBindingChanged);
+}
+
+void xiiRenderContext::BindTextureUAV(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hUnorderedAccessView)
+{
+  xiiGALTextureViewHandle* pOldResourceView = nullptr;
+  if (m_BoundTextureUAVs.TryGetValue(sSlotName.GetHash(), pOldResourceView))
+  {
+    if (*pOldResourceView == hUnorderedAccessView)
+      return;
+
+    *pOldResourceView = hUnorderedAccessView;
+  }
+  else
+  {
+    m_BoundTextureUAVs.Insert(sSlotName.GetHash(), hUnorderedAccessView);
   }
 
   m_StateFlags.Add(xiiRenderContextFlags::UAVBindingChanged);
@@ -373,9 +397,9 @@ void xiiRenderContext::BindSampler(const xiiTempHashedString& sSlotName, xiiGALS
   m_StateFlags.Add(xiiRenderContextFlags::SamplerBindingChanged);
 }
 
-void xiiRenderContext::BindBuffer(const xiiTempHashedString& sSlotName, xiiGALResourceViewHandle hResourceView)
+void xiiRenderContext::BindBuffer(const xiiTempHashedString& sSlotName, xiiGALBufferViewHandle hResourceView)
 {
-  xiiGALResourceViewHandle* pOldResourceView = nullptr;
+  xiiGALBufferViewHandle* pOldResourceView = nullptr;
   if (m_BoundBuffer.TryGetValue(sSlotName.GetHash(), pOldResourceView))
   {
     if (*pOldResourceView == hResourceView)
@@ -440,28 +464,26 @@ void xiiRenderContext::BindShader(const xiiShaderResourceHandle& hShader, xiiBit
 void xiiRenderContext::BindMeshBuffer(const xiiMeshBufferResourceHandle& hMeshBuffer)
 {
   xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(hMeshBuffer, xiiResourceAcquireMode::AllowLoadingFallback);
-  BindMeshBuffer(pMeshBuffer->GetVertexBuffer(), pMeshBuffer->GetIndexBuffer(), &(pMeshBuffer->GetVertexDeclaration()), pMeshBuffer->GetTopology(),
-                 pMeshBuffer->GetPrimitiveCount());
+  BindMeshBuffer(pMeshBuffer->GetVertexBuffer(), pMeshBuffer->GetIndexBuffer(), &(pMeshBuffer->GetInputLayout()), pMeshBuffer->GetTopology(), pMeshBuffer->GetPrimitiveCount());
 }
 
-void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBufferHandle hIndexBuffer, const xiiVertexDeclarationInfo* pVertexDeclarationInfo, xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiPrimitiveCount, xiiGALBufferHandle hVertexBuffer2, xiiGALBufferHandle hVertexBuffer3, xiiGALBufferHandle hVertexBuffer4)
+void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBufferHandle hIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiPrimitiveCount, xiiGALBufferHandle hVertexBuffer2, xiiGALBufferHandle hVertexBuffer3, xiiGALBufferHandle hVertexBuffer4)
 {
-  if (m_hVertexBuffers[0] == hVertexBuffer && m_hVertexBuffers[1] == hVertexBuffer2 && m_hVertexBuffers[2] == hVertexBuffer3 && m_hVertexBuffers[3] == hVertexBuffer4 && m_hIndexBuffer == hIndexBuffer && m_pVertexDeclarationInfo == pVertexDeclarationInfo && m_Topology == topology && m_uiMeshBufferPrimitiveCount == uiPrimitiveCount)
+  if (m_hVertexBuffers[0] == hVertexBuffer && m_hVertexBuffers[1] == hVertexBuffer2 && m_hVertexBuffers[2] == hVertexBuffer3 && m_hVertexBuffers[3] == hVertexBuffer4 && m_hIndexBuffer == hIndexBuffer && m_pInputLayoutInfo == pInputLayoutInfo && m_Topology == topology && m_uiMeshBufferPrimitiveCount == uiPrimitiveCount)
   {
     return;
   }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  if (pVertexDeclarationInfo)
+  if (pInputLayoutInfo)
   {
-    for (xiiUInt32 i1 = 0; i1 < pVertexDeclarationInfo->m_VertexStreams.GetCount(); ++i1)
+    for (xiiUInt32 i1 = 0; i1 < pInputLayoutInfo->m_VertexStreams.GetCount(); ++i1)
     {
-      for (xiiUInt32 i2 = 0; i2 < pVertexDeclarationInfo->m_VertexStreams.GetCount(); ++i2)
+      for (xiiUInt32 i2 = 0; i2 < pInputLayoutInfo->m_VertexStreams.GetCount(); ++i2)
       {
         if (i1 != i2)
         {
-          XII_ASSERT_DEBUG(pVertexDeclarationInfo->m_VertexStreams[i1].m_Semantic != pVertexDeclarationInfo->m_VertexStreams[i2].m_Semantic,
-                           "Same semantic cannot be used twice in the same vertex declaration");
+          XII_ASSERT_DEBUG(pInputLayoutInfo->m_VertexStreams[i1].m_Semantic != pInputLayoutInfo->m_VertexStreams[i2].m_Semantic, "Same semantic cannot be used twice in the same vertex declaration");
         }
       }
     }
@@ -473,7 +495,48 @@ void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBu
     m_Topology = topology;
 
     xiiTempHashedString sTopologies[xiiGALPrimitiveTopology::ENUM_COUNT] = {
-      xiiTempHashedString("TOPOLOGY_POINTS"), xiiTempHashedString("TOPOLOGY_LINES"), xiiTempHashedString("TOPOLOGY_TRIANGLES")};
+      xiiTempHashedString("TRIANGLE_LIST"),
+      xiiTempHashedString("TRIANGLE_STRIP"),
+      xiiTempHashedString("POINT_LIST"),
+      xiiTempHashedString("LINE_LIST"),
+      xiiTempHashedString("LINE_STRIP"),
+      xiiTempHashedString("TRIANGLE_LIST_ADJACENT"),
+      xiiTempHashedString("TRANGLE_STRIP_ADJACENT"),
+      xiiTempHashedString("LINE_LIST_ADJACENT"),
+      xiiTempHashedString("LINE_STRIP_ADJACENT"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_1"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_2"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_3"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_4"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_5"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_6"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_7"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_8"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_9"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_10"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_11"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_12"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_13"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_14"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_15"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_16"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_17"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_18"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_19"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_20"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_21"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_22"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_23"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_24"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_25"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_26"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_27"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_28"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_29"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_30"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_31"),
+      xiiTempHashedString("CONTROL_POINT_PATCH_LIST_32"),
+    };
 
     SetShaderPermutationVariable("TOPOLOGY", sTopologies[m_Topology]);
   }
@@ -483,7 +546,7 @@ void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBu
   m_hVertexBuffers[2]          = hVertexBuffer3;
   m_hVertexBuffers[3]          = hVertexBuffer4;
   m_hIndexBuffer               = hIndexBuffer;
-  m_pVertexDeclarationInfo     = pVertexDeclarationInfo;
+  m_pInputLayoutInfo           = pInputLayoutInfo;
   m_uiMeshBufferPrimitiveCount = uiPrimitiveCount;
 
   m_StateFlags.Add(xiiRenderContextFlags::MeshBufferBindingChanged);
@@ -492,7 +555,7 @@ void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBu
 void xiiRenderContext::BindMeshBuffer(const xiiDynamicMeshBufferResourceHandle& hDynamicMeshBuffer)
 {
   xiiResourceLock<xiiDynamicMeshBufferResource> pMeshBuffer(hDynamicMeshBuffer, xiiResourceAcquireMode::AllowLoadingFallback);
-  BindMeshBuffer(pMeshBuffer->GetVertexBuffer(), pMeshBuffer->GetIndexBuffer(), &(pMeshBuffer->GetVertexDeclaration()), pMeshBuffer->GetDescriptor().m_Topology, pMeshBuffer->GetDescriptor().m_uiMaxPrimitives, pMeshBuffer->GetColorBuffer());
+  BindMeshBuffer(pMeshBuffer->GetVertexBuffer(), pMeshBuffer->GetIndexBuffer(), &(pMeshBuffer->GetInputLayout()), pMeshBuffer->GetDescriptor().m_Topology, pMeshBuffer->GetDescriptor().m_uiMaxPrimitives, pMeshBuffer->GetColorBuffer());
 }
 
 xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32 uiFirstPrimitive, xiiUInt32 uiInstanceCount)
@@ -508,7 +571,7 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
   uiPrimitiveCount = xiiMath::Min(uiPrimitiveCount, m_uiMeshBufferPrimitiveCount - uiFirstPrimitive);
   XII_ASSERT_DEV(uiPrimitiveCount > 0, "Invalid primitive range: number of primitives can't be zero.");
 
-  auto pCommandEncoder = GetRenderCommandEncoder();
+  auto pCommandEncoder = GetGraphicsCommandEncoder();
 
   const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pCommandEncoder->GetPrimitiveTopology());
 
@@ -576,7 +639,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
   xiiShaderPermutationResource* pShaderPermutation = nullptr;
   XII_SCOPE_EXIT(if (pShaderPermutation != nullptr) { xiiResourceManager::EndAcquireResource(pShaderPermutation); });
 
-  bool bRebuildVertexDeclaration = m_StateFlags.IsAnySet(xiiRenderContextFlags::ShaderStateChanged | xiiRenderContextFlags::MeshBufferBindingChanged);
+  bool bRebuildInputLayout = m_StateFlags.IsAnySet(xiiRenderContextFlags::ShaderStateChanged | xiiRenderContextFlags::MeshBufferBindingChanged);
 
   if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::ShaderStateChanged))
   {
@@ -610,11 +673,11 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       }
 
       // RWTextures/UAV are usually only supported in compute and pixel shader.
-      if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::ComputeShader))
+      if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::Compute))
       {
         ApplyUAVBindings(pBin);
       }
-      if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::PixelShader))
+      if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::Pixel))
       {
         ApplyUAVBindings(pBin);
       }
@@ -631,9 +694,9 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
       for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
       {
-        if (auto pBin = pShaderPermutation->GetShaderStageBinary((xiiGALShaderStage::Enum)stage))
+        if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::GetStageFlag(stage)))
         {
-          ApplyTextureBindings((xiiGALShaderStage::Enum)stage, pBin);
+          ApplyTextureBindings(xiiGALShaderStage::GetStageFlag(stage), pBin);
         }
       }
 
@@ -649,9 +712,9 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
       for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
       {
-        if (auto pBin = pShaderPermutation->GetShaderStageBinary((xiiGALShaderStage::Enum)stage))
+        if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::GetStageFlag(stage)))
         {
-          ApplySamplerBindings((xiiGALShaderStage::Enum)stage, pBin);
+          ApplySamplerBindings(xiiGALShaderStage::GetStageFlag(stage), pBin);
         }
       }
 
@@ -667,9 +730,9 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
       for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
       {
-        if (auto pBin = pShaderPermutation->GetShaderStageBinary((xiiGALShaderStage::Enum)stage))
+        if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::GetStageFlag(stage)))
         {
-          ApplyBufferBindings((xiiGALShaderStage::Enum)stage, pBin);
+          ApplyBufferBindings(xiiGALShaderStage::GetStageFlag(stage), pBin);
         }
       }
 
@@ -693,7 +756,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
       for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
       {
-        if (auto pBin = pShaderPermutation->GetShaderStageBinary((xiiGALShaderStage::Enum)stage))
+        if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::GetStageFlag(stage)))
         {
           ApplyConstantBufferBindings(pBin);
         }
@@ -703,12 +766,12 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     }
   }
 
-  if ((bForce || bRebuildVertexDeclaration) && !m_bCompute)
+  if ((bForce || bRebuildInputLayout) && !m_bCompute)
   {
     if (m_hActiveGALShader.IsInvalidated())
       return XII_FAILURE;
 
-    auto pCommandEncoder = GetRenderCommandEncoder();
+    auto pCommandEncoder = GetGraphicsCommandEncoder();
 
     if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::MeshBufferBindingChanged))
     {
@@ -720,18 +783,18 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       }
 
       if (!m_hIndexBuffer.IsInvalidated())
-        pCommandEncoder->SetIndexBuffer(m_hIndexBuffer);
+        pCommandEncoder->SetIndexBuffer(m_hIndexBuffer, 0);
     }
 
-    xiiGALVertexDeclarationHandle hVertexDeclaration;
-    if (m_pVertexDeclarationInfo != nullptr && BuildVertexDeclaration(m_hActiveGALShader, *m_pVertexDeclarationInfo, hVertexDeclaration).Failed())
+    xiiGALInputLayoutHandle hInputLayout;
+    if (m_pInputLayoutInfo != nullptr && BuildInputLayout(m_hActiveGALShader, *m_pInputLayoutInfo, hInputLayout).Failed())
       return XII_FAILURE;
 
     // If there is a vertex buffer we need a valid vertex declaration as well.
-    if ((!m_hVertexBuffers[0].IsInvalidated() || !m_hVertexBuffers[1].IsInvalidated() || !m_hVertexBuffers[2].IsInvalidated() || !m_hVertexBuffers[3].IsInvalidated()) && hVertexDeclaration.IsInvalidated())
+    if ((!m_hVertexBuffers[0].IsInvalidated() || !m_hVertexBuffers[1].IsInvalidated() || !m_hVertexBuffers[2].IsInvalidated() || !m_hVertexBuffers[3].IsInvalidated()) && hInputLayout.IsInvalidated())
       return XII_FAILURE;
 
-    pCommandEncoder->SetVertexDeclaration(hVertexDeclaration);
+    pCommandEncoder->SetInputLayout(hInputLayout);
 
     m_StateFlags.Remove(xiiRenderContextFlags::MeshBufferBindingChanged);
   }
@@ -758,8 +821,8 @@ void xiiRenderContext::ResetContextState()
   }
 
   m_hIndexBuffer.Invalidate();
-  m_pVertexDeclarationInfo     = nullptr;
-  m_Topology                   = xiiGALPrimitiveTopology::ENUM_COUNT; // Set to something invalid
+  m_pInputLayoutInfo           = nullptr;
+  m_Topology                   = xiiGALPrimitiveTopology::Undefined;
   m_uiMeshBufferPrimitiveCount = 0;
 
   m_BoundTextures2D.Clear();
@@ -773,7 +836,8 @@ void xiiRenderContext::ResetContextState()
   m_BoundSamplers.Insert(xiiHashingUtils::StringHash("PointSampler"), GetDefaultSampler(xiiDefaultSamplerFlags::PointFiltering));
   m_BoundSamplers.Insert(xiiHashingUtils::StringHash("PointClampSampler"), GetDefaultSampler(xiiDefaultSamplerFlags::PointFiltering | xiiDefaultSamplerFlags::Clamp));
 
-  m_BoundUAVs.Clear();
+  m_BoundBufferUAVs.Clear();
+  m_BoundTextureUAVs.Clear();
   m_BoundConstantBuffers.Clear();
 }
 
@@ -859,13 +923,13 @@ xiiGALSamplerHandle xiiRenderContext::GetDefaultSampler(xiiBitflags<xiiDefaultSa
   if (s_hDefaultSamplers[uiSamplerIndex].IsInvalidated())
   {
     xiiGALSamplerCreationDescription desc;
-    desc.m_MinFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALTextureFilterMode::Linear : xiiGALTextureFilterMode::Point;
-    desc.m_MagFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALTextureFilterMode::Linear : xiiGALTextureFilterMode::Point;
-    desc.m_MipFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALTextureFilterMode::Linear : xiiGALTextureFilterMode::Point;
+    desc.m_MinFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALFilterType::Linear : xiiGALFilterType::Point;
+    desc.m_MagFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALFilterType::Linear : xiiGALFilterType::Point;
+    desc.m_MipFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALFilterType::Linear : xiiGALFilterType::Point;
 
-    desc.m_AddressU = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiImageAddressMode::Clamp : xiiImageAddressMode::Repeat;
-    desc.m_AddressV = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiImageAddressMode::Clamp : xiiImageAddressMode::Repeat;
-    desc.m_AddressW = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiImageAddressMode::Clamp : xiiImageAddressMode::Repeat;
+    desc.m_AddressU = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp) : xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Repeat);
+    desc.m_AddressV = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp) : xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Repeat);
+    desc.m_AddressW = flags.IsSet(xiiDefaultSamplerFlags::Clamp) ? xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp) : xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Repeat);
 
     s_hDefaultSamplers[uiSamplerIndex] = xiiGALDevice::GetDefaultDevice()->CreateSampler(desc);
   }
@@ -877,22 +941,22 @@ xiiGALSamplerHandle xiiRenderContext::GetDefaultSampler(xiiBitflags<xiiDefaultSa
 //////////////////////////////////////////////////////////////////////////
 
 // static
-void xiiRenderContext::LoadBuiltinShader(xiiShaderUtils::xiiBuiltinShaderType type, xiiShaderUtils::xiiBuiltinShader& out_shader)
+void xiiRenderContext::LoadBuiltinShader(xiiShaderUtilities::xiiBuiltinShaderType type, xiiShaderUtilities::xiiBuiltinShader& out_shader)
 {
   xiiShaderResourceHandle hActiveShader;
   bool                    bStereo = false;
   switch (type)
   {
-    case xiiShaderUtils::xiiBuiltinShaderType::CopyImageArray:
+    case xiiShaderUtilities::xiiBuiltinShaderType::CopyImageArray:
       bStereo = true;
       [[fallthrough]];
-    case xiiShaderUtils::xiiBuiltinShaderType::CopyImage:
+    case xiiShaderUtilities::xiiBuiltinShaderType::CopyImage:
       hActiveShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/Copy.xiiShader");
       break;
-    case xiiShaderUtils::xiiBuiltinShaderType::DownscaleImageArray:
+    case xiiShaderUtilities::xiiBuiltinShaderType::DownscaleImageArray:
       bStereo = true;
       [[fallthrough]];
-    case xiiShaderUtils::xiiBuiltinShaderType::DownscaleImage:
+    case xiiShaderUtilities::xiiBuiltinShaderType::DownscaleImage:
       hActiveShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Pipeline/Downscale.xiiShader");
       break;
   }
@@ -908,11 +972,9 @@ void xiiRenderContext::LoadBuiltinShader(xiiShaderUtils::xiiBuiltinShaderType ty
   static xiiHashedString                         sStereo      = xiiMakeHashedString("CAMERA_MODE_STEREO");
 
   permutationVariables.Insert(sCameraMode, bStereo ? sStereo : sPerspective);
-  if (xiiGALDevice::GetDefaultDevice()->GetCapabilities().m_bVertexShaderRenderTargetArrayIndex)
-    permutationVariables.Insert(sVSRTAI, sTrue);
-  else
-    permutationVariables.Insert(sVSRTAI, sFalse);
 
+  /// \todo Check vertex shader render target array index.
+  permutationVariables.Insert(sVSRTAI, sTrue);
 
   xiiShaderPermutationResourceHandle hActiveShaderPermutation = xiiShaderManager::PreloadSinglePermutation(hActiveShader, permutationVariables, false);
 
@@ -952,12 +1014,12 @@ void xiiRenderContext::OnEngineShutdown()
 
   // Cleanup vertex declarations
   {
-    for (auto it = s_GALVertexDeclarations.GetIterator(); it.IsValid(); ++it)
+    for (auto it = s_GALInputLayouts.GetIterator(); it.IsValid(); ++it)
     {
-      xiiGALDevice::GetDefaultDevice()->DestroyVertexDeclaration(it.Value());
+      xiiGALDevice::GetDefaultDevice()->DestroyInputLayout(it.Value());
     }
 
-    s_GALVertexDeclarations.Clear();
+    s_GALInputLayouts.Clear();
   }
 
   // Cleanup constant buffer storage
@@ -984,22 +1046,22 @@ void xiiRenderContext::OnEngineShutdown()
 }
 
 // static
-xiiResult xiiRenderContext::BuildVertexDeclaration(xiiGALShaderHandle hShader, const xiiVertexDeclarationInfo& decl, xiiGALVertexDeclarationHandle& out_Declaration)
+xiiResult xiiRenderContext::BuildInputLayout(xiiGALShaderHandle hShader, const xiiInputLayoutInfo& decl, xiiGALInputLayoutHandle& out_Declaration)
 {
   ShaderVertexDecl svd;
-  svd.m_hShader                 = hShader;
-  svd.m_uiVertexDeclarationHash = decl.m_uiHash;
+  svd.m_hShader           = hShader;
+  svd.m_uiInputLayoutHash = decl.m_uiHash;
 
   bool bExisted = false;
-  auto it       = s_GALVertexDeclarations.FindOrAdd(svd, &bExisted);
+  auto it       = s_GALInputLayouts.FindOrAdd(svd, &bExisted);
 
   if (!bExisted)
   {
     const xiiGALShader* pShader = xiiGALDevice::GetDefaultDevice()->GetShader(hShader);
 
-    auto pBytecode = pShader->GetDescription().m_ByteCodes[xiiGALShaderStage::VertexShader];
+    auto pBytecode = pShader->GetDescription().m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)];
 
-    xiiGALVertexDeclarationCreationDescription vd;
+    xiiGALInputLayoutCreationDescription vd;
     vd.m_hShader = hShader;
 
     for (xiiUInt32 slot = 0; slot < decl.m_VertexStreams.GetCount(); ++slot)
@@ -1007,16 +1069,17 @@ xiiResult xiiRenderContext::BuildVertexDeclaration(xiiGALShaderHandle hShader, c
       auto& stream = decl.m_VertexStreams[slot];
 
       // stream.m_Format
-      xiiGALVertexAttribute gal;
-      gal.m_bInstanceData      = false;
-      gal.m_eFormat            = stream.m_Format;
-      gal.m_eSemantic          = stream.m_Semantic;
-      gal.m_uiOffset           = stream.m_uiOffset;
-      gal.m_uiVertexBufferSlot = stream.m_uiVertexBufferSlot;
-      vd.m_VertexAttributes.PushBack(gal);
+      xiiGALLayoutElement gal;
+      gal.m_Format                 = stream.m_Format;
+      gal.m_Semantic               = stream.m_Semantic;
+      gal.m_uiRelativeOffset       = stream.m_uiOffset;
+      gal.m_uiBufferSlot           = stream.m_uiVertexBufferSlot;
+      gal.m_Frequency              = xiiGALInputElementFrequency::PerVertex;
+      gal.m_uiInstanceDataStepRate = 0;
+      vd.m_LayoutElements.PushBack(gal);
     }
 
-    out_Declaration = xiiGALDevice::GetDefaultDevice()->CreateVertexDeclaration(vd);
+    out_Declaration = xiiGALDevice::GetDefaultDevice()->CreateInputLayout(vd);
 
     if (out_Declaration.IsInvalidated())
     {
@@ -1115,7 +1178,7 @@ xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
   // Set render state from shader
   if (!m_bCompute)
   {
-    auto pCommandEncoder = GetRenderCommandEncoder();
+    auto pCommandEncoder = GetGraphicsCommandEncoder();
 
     if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoBlendState))
       pCommandEncoder->SetBlendState(pShaderPermutation->GetBlendState());
@@ -1187,7 +1250,7 @@ void xiiRenderContext::ApplyConstantBufferBindings(const xiiShaderStageBinary* p
 {
   for (const auto& binding : pBinary->m_ShaderResourceBindings)
   {
-    if (binding.m_Type != xiiShaderResourceType::ConstantBuffer)
+    if (binding.m_Type != xiiGALShaderResourceType::ConstantBuffer)
       continue;
 
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
@@ -1225,28 +1288,26 @@ void xiiRenderContext::ApplyConstantBufferBindings(const xiiShaderStageBinary* p
   }
 }
 
-void xiiRenderContext::ApplyTextureBindings(xiiGALShaderStage::Enum stage, const xiiShaderStageBinary* pBinary)
+void xiiRenderContext::ApplyTextureBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary)
 {
   for (const auto& binding : pBinary->m_ShaderResourceBindings)
   {
-    // we currently only support 2D and cube textures
+    const xiiUInt64         uiResourceHash = binding.m_sName.GetHash();
+    xiiGALTextureViewHandle hResourceView;
 
-    const xiiUInt64          uiResourceHash = binding.m_sName.GetHash();
-    xiiGALResourceViewHandle hResourceView;
-
-    if (binding.m_Type >= xiiShaderResourceType::Texture2D && binding.m_Type <= xiiShaderResourceType::Texture2DMSArray)
+    if (binding.m_Type == xiiGALShaderResourceType::TextureSRV)
     {
       m_BoundTextures2D.TryGetValue(uiResourceHash, hResourceView);
-      m_pGALCommandEncoder->SetResourceView(stage, binding.m_iSlot, hResourceView);
+      m_pGALCommandEncoder->SetTextureView(stage, binding.m_iSlot, hResourceView);
     }
 
-    if (binding.m_Type == xiiShaderResourceType::Texture3D)
+    if (binding.m_Type == xiiGALShaderResourceType::Texture3D)
     {
       m_BoundTextures3D.TryGetValue(uiResourceHash, hResourceView);
       m_pGALCommandEncoder->SetResourceView(stage, binding.m_iSlot, hResourceView);
     }
 
-    if (binding.m_Type >= xiiShaderResourceType::TextureCube && binding.m_Type <= xiiShaderResourceType::TextureCubeArray)
+    if (binding.m_Type >= xiiGALShaderResourceType::TextureCube && binding.m_Type <= xiiGALShaderResourceType::TextureCubeArray)
     {
       m_BoundTexturesCube.TryGetValue(uiResourceHash, hResourceView);
       m_pGALCommandEncoder->SetResourceView(stage, binding.m_iSlot, hResourceView);
@@ -1270,7 +1331,7 @@ void xiiRenderContext::ApplyUAVBindings(const xiiShaderStageBinary* pBinary)
   }
 }
 
-void xiiRenderContext::ApplySamplerBindings(xiiGALShaderStage::Enum stage, const xiiShaderStageBinary* pBinary)
+void xiiRenderContext::ApplySamplerBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary)
 {
   for (const auto& binding : pBinary->m_ShaderResourceBindings)
   {
@@ -1289,7 +1350,7 @@ void xiiRenderContext::ApplySamplerBindings(xiiGALShaderStage::Enum stage, const
   }
 }
 
-void xiiRenderContext::ApplyBufferBindings(xiiGALShaderStage::Enum stage, const xiiShaderStageBinary* pBinary)
+void xiiRenderContext::ApplyBufferBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary)
 {
   for (const auto& binding : pBinary->m_ShaderResourceBindings)
   {

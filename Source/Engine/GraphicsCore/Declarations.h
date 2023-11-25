@@ -6,7 +6,7 @@
 #include <Foundation/Strings/HashedString.h>
 
 class xiiShaderStageBinary;
-struct xiiVertexDeclarationInfo;
+struct xiiInputLayoutInfo;
 
 using xiiTexture2DResourceHandle         = xiiTypedResourceHandle<class xiiTexture2DResource>;
 using xiiRenderToTexture2DResourceHandle = xiiTypedResourceHandle<class xiiRenderToTexture2DResource>;

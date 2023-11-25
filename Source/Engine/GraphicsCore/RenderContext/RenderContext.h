@@ -14,7 +14,7 @@
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsFoundation/CommandEncoder/ComputeCommandEncoder.h>
-#include <GraphicsFoundation/CommandEncoder/RenderCommandEncoder.h>
+#include <GraphicsFoundation/CommandEncoder/GraphicsCommandEncoder.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/Pass.h>
 #include <GraphicsFoundation/Shader/Shader.h>
@@ -54,10 +54,10 @@ public:
 
   Statistics GetAndResetStatistics();
 
-  xiiGALRenderCommandEncoder* BeginRendering(xiiGALPass* pGALPass, const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, const char* szName = "", bool bStereoRendering = false);
-  void                        EndRendering();
+  xiiGALGraphicsCommandEncoder* BeginRendering(xiiGALPass* pGALPass, const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName = {}, bool bStereoRendering = false);
+  void                          EndRendering();
 
-  xiiGALComputeCommandEncoder* BeginCompute(xiiGALPass* pGALPass, const char* szName = "");
+  xiiGALComputeCommandEncoder* BeginCompute(xiiGALPass* pGALPass, xiiStringView sName = {});
   void                         EndCompute();
 
   // Helper class to automatically end rendering or compute on scope exit
@@ -93,28 +93,28 @@ public:
     T*                m_pGALCommandEncoder;
   };
 
-  using RenderingScope = CommandEncoderScope<xiiGALRenderCommandEncoder>;
-  XII_ALWAYS_INLINE static RenderingScope BeginRenderingScope(xiiGALPass* pGALPass, const xiiRenderViewContext& viewContext, const xiiGALRenderingSetup& renderingSetup, const char* szName = "", bool bStereoRendering = false)
+  using RenderingScope = CommandEncoderScope<xiiGALGraphicsCommandEncoder>;
+  XII_ALWAYS_INLINE static RenderingScope BeginRenderingScope(xiiGALPass* pGALPass, const xiiRenderViewContext& viewContext, const xiiGALRenderingSetup& renderingSetup, xiiStringView sName = {}, bool bStereoRendering = false)
   {
-    return RenderingScope(*viewContext.m_pRenderContext, nullptr, viewContext.m_pRenderContext->BeginRendering(pGALPass, renderingSetup, viewContext.m_pViewData->m_ViewPortRect, szName, bStereoRendering));
+    return RenderingScope(*viewContext.m_pRenderContext, nullptr, viewContext.m_pRenderContext->BeginRendering(pGALPass, renderingSetup, viewContext.m_pViewData->m_ViewPortRect, sName, bStereoRendering));
   }
 
-  XII_ALWAYS_INLINE static RenderingScope BeginPassAndRenderingScope(const xiiRenderViewContext& viewContext, const xiiGALRenderingSetup& renderingSetup, const char* szName, bool bStereoRendering = false)
+  XII_ALWAYS_INLINE static RenderingScope BeginPassAndRenderingScope(const xiiRenderViewContext& viewContext, const xiiGALRenderingSetup& renderingSetup, xiiStringView sName, bool bStereoRendering = false)
   {
-    xiiGALPass* pGALPass = xiiGALDevice::GetDefaultDevice()->BeginPass(szName);
+    xiiGALPass* pGALPass = xiiGALDevice::GetDefaultDevice()->BeginPass(sName);
 
     return RenderingScope(*viewContext.m_pRenderContext, pGALPass, viewContext.m_pRenderContext->BeginRendering(pGALPass, renderingSetup, viewContext.m_pViewData->m_ViewPortRect, "", bStereoRendering));
   }
 
   using ComputeScope = CommandEncoderScope<xiiGALComputeCommandEncoder>;
-  XII_ALWAYS_INLINE static ComputeScope BeginComputeScope(xiiGALPass* pGALPass, const xiiRenderViewContext& viewContext, const char* szName = "")
+  XII_ALWAYS_INLINE static ComputeScope BeginComputeScope(xiiGALPass* pGALPass, const xiiRenderViewContext& viewContext, xiiStringView sName = {})
   {
-    return ComputeScope(*viewContext.m_pRenderContext, nullptr, viewContext.m_pRenderContext->BeginCompute(pGALPass, szName));
+    return ComputeScope(*viewContext.m_pRenderContext, nullptr, viewContext.m_pRenderContext->BeginCompute(pGALPass, sName));
   }
 
-  XII_ALWAYS_INLINE static ComputeScope BeginPassAndComputeScope(const xiiRenderViewContext& viewContext, const char* szName)
+  XII_ALWAYS_INLINE static ComputeScope BeginPassAndComputeScope(const xiiRenderViewContext& viewContext, xiiStringView sName)
   {
-    xiiGALPass* pGALPass = xiiGALDevice::GetDefaultDevice()->BeginPass(szName);
+    xiiGALPass* pGALPass = xiiGALDevice::GetDefaultDevice()->BeginPass(sName);
 
     return ComputeScope(*viewContext.m_pRenderContext, pGALPass, viewContext.m_pRenderContext->BeginCompute(pGALPass));
   }
@@ -125,10 +125,10 @@ public:
     return m_pGALCommandEncoder;
   }
 
-  XII_ALWAYS_INLINE xiiGALRenderCommandEncoder* GetRenderCommandEncoder()
+  XII_ALWAYS_INLINE xiiGALGraphicsCommandEncoder* GetGraphicsCommandEncoder()
   {
     XII_ASSERT_DEBUG(m_pGALCommandEncoder != nullptr && !m_bCompute, "BeginRendering has not been called");
-    return static_cast<xiiGALRenderCommandEncoder*>(m_pGALCommandEncoder);
+    return static_cast<xiiGALGraphicsCommandEncoder*>(m_pGALCommandEncoder);
   }
 
   XII_ALWAYS_INLINE xiiGALComputeCommandEncoder* GetComputeCommandEncoder()
@@ -139,7 +139,7 @@ public:
 
 
   // Member Functions
-  void SetShaderPermutationVariable(const char* szName, const xiiTempHashedString& sValue);
+  void SetShaderPermutationVariable(xiiStringView sName, const xiiTempHashedString& sValue);
   void SetShaderPermutationVariable(const xiiHashedString& sName, const xiiHashedString& sValue);
 
   void BindMaterial(const xiiMaterialResourceHandle& hMaterial);
@@ -148,16 +148,17 @@ public:
   void BindTexture3D(const xiiTempHashedString& sSlotName, const xiiTexture3DResourceHandle& hTexture, xiiResourceAcquireMode acquireMode = xiiResourceAcquireMode::AllowLoadingFallback);
   void BindTextureCube(const xiiTempHashedString& sSlotName, const xiiTextureCubeResourceHandle& hTexture, xiiResourceAcquireMode acquireMode = xiiResourceAcquireMode::AllowLoadingFallback);
 
-  void BindTexture2D(const xiiTempHashedString& sSlotName, xiiGALResourceViewHandle hResourceView);
-  void BindTexture3D(const xiiTempHashedString& sSlotName, xiiGALResourceViewHandle hResourceView);
-  void BindTextureCube(const xiiTempHashedString& sSlotName, xiiGALResourceViewHandle hResourceView);
+  void BindTexture2D(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hResourceView);
+  void BindTexture3D(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hResourceView);
+  void BindTextureCube(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hResourceView);
 
   /// Binds a read+write texture or buffer
-  void BindUAV(const xiiTempHashedString& sSlotName, xiiGALUnorderedAccessViewHandle hUnorderedAccessViewHandle);
+  void BindBufferUAV(const xiiTempHashedString& sSlotName, xiiGALBufferViewHandle hUnorderedAccessViewHandle);
+  void BindTextureUAV(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hUnorderedAccessViewHandle);
 
   void BindSampler(const xiiTempHashedString& sSlotName, xiiGALSamplerHandle hSamplerSate);
 
-  void BindBuffer(const xiiTempHashedString& sSlotName, xiiGALResourceViewHandle hResourceView);
+  void BindBuffer(const xiiTempHashedString& sSlotName, xiiGALBufferViewHandle hResourceView);
 
   void BindConstantBuffer(const xiiTempHashedString& sSlotName, xiiGALBufferHandle hConstantBuffer);
   void BindConstantBuffer(const xiiTempHashedString& sSlotName, xiiConstantBufferStorageHandle hConstantBufferStorage);
@@ -169,7 +170,7 @@ public:
 
   void                   BindMeshBuffer(const xiiDynamicMeshBufferResourceHandle& hDynamicMeshBuffer);
   void                   BindMeshBuffer(const xiiMeshBufferResourceHandle& hMeshBuffer);
-  void                   BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBufferHandle hIndexBuffer, const xiiVertexDeclarationInfo* pVertexDeclarationInfo, xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiPrimitiveCount, xiiGALBufferHandle hVertexBuffer2 = {}, xiiGALBufferHandle hVertexBuffer3 = {}, xiiGALBufferHandle hVertexBuffer4 = {});
+  void                   BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBufferHandle hIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiPrimitiveCount, xiiGALBufferHandle hVertexBuffer2 = {}, xiiGALBufferHandle hVertexBuffer3 = {}, xiiGALBufferHandle hVertexBuffer4 = {});
   XII_ALWAYS_INLINE void BindNullMeshBuffer(xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiPrimitiveCount)
   {
     BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, topology, uiPrimitiveCount);
@@ -265,7 +266,7 @@ public:
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, RendererContext);
 
-  static void LoadBuiltinShader(xiiShaderUtils::xiiBuiltinShaderType type, xiiShaderUtils::xiiBuiltinShader& out_shader);
+  static void LoadBuiltinShader(xiiShaderUtilities::xiiBuiltinShaderType type, xiiShaderUtilities::xiiBuiltinShader& out_shader);
   static void OnEngineShutdown();
 
 private:
@@ -284,19 +285,40 @@ private:
 
   xiiGALBufferHandle               m_hVertexBuffers[4];
   xiiGALBufferHandle               m_hIndexBuffer;
-  const xiiVertexDeclarationInfo*  m_pVertexDeclarationInfo;
+  const xiiInputLayoutInfo*        m_pInputLayoutInfo;
   xiiGALPrimitiveTopology::Enum    m_Topology;
   xiiUInt32                        m_uiMeshBufferPrimitiveCount;
   xiiEnum<xiiTextureFilterSetting> m_DefaultTextureFilter;
   bool                             m_bAllowAsyncShaderLoading;
   bool                             m_bStereoRendering = false;
 
-  xiiHashTable<xiiUInt64, xiiGALResourceViewHandle>        m_BoundTextures2D;
-  xiiHashTable<xiiUInt64, xiiGALResourceViewHandle>        m_BoundTextures3D;
-  xiiHashTable<xiiUInt64, xiiGALResourceViewHandle>        m_BoundTexturesCube;
-  xiiHashTable<xiiUInt64, xiiGALUnorderedAccessViewHandle> m_BoundUAVs;
-  xiiHashTable<xiiUInt64, xiiGALSamplerHandle>             m_BoundSamplers;
-  xiiHashTable<xiiUInt64, xiiGALResourceViewHandle>        m_BoundBuffer;
+  struct ResourceBinding
+  {
+    XII_DECLARE_POD_TYPE();
+
+    enum Enum : xiiUInt8
+    {
+      Invalid,
+      Buffer,
+      Texture
+    };
+
+    Enum m_Type = Invalid;
+
+    xiiGALBufferViewHandle  m_hBufferView;
+    xiiGALTextureViewHandle m_hTextureView;
+
+    xiiGALBuffer*  m_pBuffer  = nullptr;
+    xiiGALTexture* m_pTexture = nullptr;
+  };
+
+  xiiHashTable<xiiUInt64, xiiGALTextureViewHandle> m_BoundTextures2D;
+  xiiHashTable<xiiUInt64, xiiGALTextureViewHandle> m_BoundTextures3D;
+  xiiHashTable<xiiUInt64, xiiGALTextureViewHandle> m_BoundTexturesCube;
+  xiiHashTable<xiiUInt64, xiiGALBufferViewHandle>  m_BoundBuffer;
+  xiiHashTable<xiiUInt64, xiiGALTextureViewHandle> m_BoundTextureUAVs;
+  xiiHashTable<xiiUInt64, xiiGALBufferViewHandle>  m_BoundBufferUAVs;
+  xiiHashTable<xiiUInt64, xiiGALSamplerHandle>     m_BoundSamplers;
 
   struct BoundConstantBuffer
   {
@@ -323,7 +345,7 @@ private:
   struct ShaderVertexDecl
   {
     xiiGALShaderHandle m_hShader;
-    xiiUInt32          m_uiVertexDeclarationHash;
+    xiiUInt32          m_uiInputLayoutHash;
 
     XII_FORCE_INLINE bool operator<(const ShaderVertexDecl& rhs) const
     {
@@ -331,18 +353,18 @@ private:
         return true;
       if (rhs.m_hShader < m_hShader)
         return false;
-      return m_uiVertexDeclarationHash < rhs.m_uiVertexDeclarationHash;
+      return m_uiInputLayoutHash < rhs.m_uiInputLayoutHash;
     }
 
     XII_FORCE_INLINE bool operator==(const ShaderVertexDecl& rhs) const
     {
-      return (m_hShader == rhs.m_hShader && m_uiVertexDeclarationHash == rhs.m_uiVertexDeclarationHash);
+      return (m_hShader == rhs.m_hShader && m_uiInputLayoutHash == rhs.m_uiInputLayoutHash);
     }
   };
 
-  static xiiResult BuildVertexDeclaration(xiiGALShaderHandle hShader, const xiiVertexDeclarationInfo& decl, xiiGALVertexDeclarationHandle& out_Declaration);
+  static xiiResult BuildInputLayout(xiiGALShaderHandle hShader, const xiiInputLayoutInfo& decl, xiiGALInputLayoutHandle& out_Declaration);
 
-  static xiiMap<ShaderVertexDecl, xiiGALVertexDeclarationHandle> s_GALVertexDeclarations;
+  static xiiMap<ShaderVertexDecl, xiiGALInputLayoutHandle> s_GALInputLayouts;
 
   static xiiMutex                                                              s_ConstantBufferStorageMutex;
   static xiiIdTable<xiiConstantBufferStorageId, xiiConstantBufferStorageBase*> s_ConstantBufferStorageTable;
@@ -353,7 +375,7 @@ private:
 private: // Per Renderer States
   friend RenderingScope;
   friend ComputeScope;
-  XII_ALWAYS_INLINE void EndCommandEncoder(xiiGALRenderCommandEncoder*) { EndRendering(); }
+  XII_ALWAYS_INLINE void EndCommandEncoder(xiiGALGraphicsCommandEncoder*) { EndRendering(); }
   XII_ALWAYS_INLINE void EndCommandEncoder(xiiGALComputeCommandEncoder*) { EndCompute(); }
 
   xiiGALPass*           m_pGALPass           = nullptr;
@@ -368,8 +390,8 @@ private: // Per Renderer States
   xiiShaderPermutationResource* ApplyShaderState();
   xiiMaterialResource*          ApplyMaterialState();
   void                          ApplyConstantBufferBindings(const xiiShaderStageBinary* pBinary);
-  void                          ApplyTextureBindings(xiiGALShaderStage::Enum stage, const xiiShaderStageBinary* pBinary);
+  void                          ApplyTextureBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary);
   void                          ApplyUAVBindings(const xiiShaderStageBinary* pBinary);
-  void                          ApplySamplerBindings(xiiGALShaderStage::Enum stage, const xiiShaderStageBinary* pBinary);
-  void                          ApplyBufferBindings(xiiGALShaderStage::Enum stage, const xiiShaderStageBinary* pBinary);
+  void                          ApplySamplerBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary);
+  void                          ApplyBufferBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary);
 };
