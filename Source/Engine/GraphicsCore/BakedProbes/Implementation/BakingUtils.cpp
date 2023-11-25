@@ -10,7 +10,7 @@ xiiVec3 xiiBakingUtils::FibonacciSphere(xiiUInt32 uiSampleIndex, xiiUInt32 uiNum
   float y = ((uiSampleIndex * offset) - 1) + (offset / 2);
   float r = xiiMath::Sqrt(1 - y * y);
 
-  xiiAngle phi = xiiAngle::MakeFromRadian(((uiSampleIndex + 1) % uiNumSamples) * increment);
+  xiiAngle phi = xiiAngle::Radian(((uiSampleIndex + 1) % uiNumSamples) * increment);
 
   float x = xiiMath::Cos(phi) * r;
   float z = xiiMath::Sin(phi) * r;
@@ -45,6 +45,5 @@ void xiiBakingUtils::DecompressSkyVisibility(xiiCompressedSkyVisibility compress
     uiOffset += s_BitsPerDir[i];
   }
 }
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_BakedProbes_Implementation_BakingUtils);

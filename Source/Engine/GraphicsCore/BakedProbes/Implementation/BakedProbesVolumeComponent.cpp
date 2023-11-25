@@ -76,7 +76,7 @@ void xiiBakedProbesVolumeComponent::DeserializeComponent(xiiWorldReader& inout_s
 
 void xiiBakedProbesVolumeComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg) const
 {
-  ref_msg.AddBounds(xiiBoundingBoxSphere::MakeFromBox(xiiBoundingBox::MakeFromMinMax(-m_vExtents * 0.5f, m_vExtents * 0.5f)), xiiInvalidSpatialDataCategory);
+  ref_msg.AddBounds(xiiBoundingBoxSphere(xiiBoundingBox(-m_vExtents * 0.5f, m_vExtents * 0.5f)), xiiInvalidSpatialDataCategory);
 }
 
 

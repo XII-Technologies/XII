@@ -51,7 +51,7 @@ struct xiiBakedProbesComponent::RenderDebugViewTask : public xiiTask
   xiiBakingInterface* m_pBakingInterface = nullptr;
 
   const xiiWorld*                  m_pWorld                = nullptr;
-  xiiMat4                          m_InverseViewProjection = xiiMat4::MakeIdentity();
+  xiiMat4                          m_InverseViewProjection = xiiMat4::IdentityMatrix();
   xiiUInt32                        m_uiWidth               = 0;
   xiiUInt32                        m_uiHeight              = 0;
   xiiDynamicArray<xiiColorGammaUB> m_PixelData;
@@ -120,9 +120,9 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
 
       xiiGALTextureSubResourceData sourceData;
       sourceData.m_pData      = task->m_PixelData.GetData();
-      sourceData.m_uiRowPitch = task->m_uiWidth * sizeof(xiiColorGammaUB);
+      sourceData.m_uiStride = task->m_uiWidth * sizeof(xiiColorGammaUB);
 
-      pCommandEncoder->UpdateTexture(pComponent->m_hDebugViewTexture, xiiGALTextureSubresource(), destBox, sourceData);
+      pCommandEncoder->UpdateTexture(pComponent->m_hDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
 
       pGALPass->EndCompute(pCommandEncoder);
       pGALDevice->EndPass(pGALPass);
