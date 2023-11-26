@@ -90,7 +90,7 @@ void xiiMeshBufferResourceDescriptor::AddCommonStreams()
   AddStream(xiiGALInputLayoutSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::Default));
 }
 
-void xiiMeshBufferResourceDescriptor::AllocateStreams(xiiUInt32 uiNumVertices, xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiNumPrimitives, bool bZeroFill /*= false*/)
+void xiiMeshBufferResourceDescriptor::AllocateStreams(xiiUInt32 uiNumVertices, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiNumPrimitives, bool bZeroFill /*= false*/)
 {
   XII_ASSERT_DEV(!m_InputLayout.m_VertexStreams.IsEmpty(), "You have to add streams via 'AddStream' before calling this function");
 
@@ -125,9 +125,11 @@ void xiiMeshBufferResourceDescriptor::AllocateStreams(xiiUInt32 uiNumVertices, x
   }
 }
 
-void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeometry& geom, xiiGALPrimitiveTopology::Enum topology)
+void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeometry& geom, xiiEnum<xiiGALPrimitiveTopology> topology)
 {
   xiiLogBlock _("Allocate Streams From Geometry");
+
+  XII_ASSERT_DEV(topology == xiiGALPrimitiveTopology::PointList || topology == xiiGALPrimitiveTopology::LineList || topology == xiiGALPrimitiveTopology::TriangleList, "Only three pimitive types are currently supported");
 
   // Index Buffer Generation
   xiiDynamicArray<xiiUInt32> Indices;
@@ -160,6 +162,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       }
     }
   }
+
   AllocateStreams(geom.GetVertices().GetCount(), topology, Indices.GetCount() / (topology + 1));
 
   // Fill vertex buffer.

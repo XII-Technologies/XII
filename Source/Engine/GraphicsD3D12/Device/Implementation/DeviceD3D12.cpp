@@ -997,19 +997,19 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
       mode.m_ShadingRate |= xiiGALShadingRate::_4X4;
 
     if (refMode.SampleBits & Diligent::SAMPLE_COUNT_1)
-      mode.m_SampleBits |= xiiGALSampleCount::OneSample;
+      mode.m_SampleBits = xiiGALSampleCount::OneSample;
     if (refMode.SampleBits & Diligent::SAMPLE_COUNT_2)
-      mode.m_SampleBits |= xiiGALSampleCount::TwoSamples;
+      mode.m_SampleBits = xiiGALSampleCount::TwoSamples;
     if (refMode.SampleBits & Diligent::SAMPLE_COUNT_4)
-      mode.m_SampleBits |= xiiGALSampleCount::FourSamples;
+      mode.m_SampleBits = xiiGALSampleCount::FourSamples;
     if (refMode.SampleBits & Diligent::SAMPLE_COUNT_8)
-      mode.m_SampleBits |= xiiGALSampleCount::EightSamples;
+      mode.m_SampleBits = xiiGALSampleCount::EightSamples;
     if (refMode.SampleBits & Diligent::SAMPLE_COUNT_16)
-      mode.m_SampleBits |= xiiGALSampleCount::SixteenSamples;
+      mode.m_SampleBits = xiiGALSampleCount::SixteenSamples;
     if (refMode.SampleBits & Diligent::SAMPLE_COUNT_32)
-      mode.m_SampleBits |= xiiGALSampleCount::ThirtyTwoSamples;
+      mode.m_SampleBits = xiiGALSampleCount::ThirtyTwoSamples;
     if (refMode.SampleBits & Diligent::SAMPLE_COUNT_64)
-      mode.m_SampleBits |= xiiGALSampleCount::SixtyFourSamples;
+      mode.m_SampleBits = xiiGALSampleCount::SixtyFourSamples;
   }
 
   // Compute shader properties

@@ -266,7 +266,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateMode : public xiiHashableStru
   XII_DECLARE_POD_TYPE();
 
   xiiBitflags<xiiGALShadingRate> m_ShadingRate = xiiGALShadingRate::_1X1; ///< The supported shading rate.
-  xiiBitflags<xiiGALSampleCount> m_SampleBits  = xiiGALSampleCount::None; ///< The combination of supported sample counts.
+  xiiEnum<xiiGALSampleCount>     m_SampleBits  = xiiGALSampleCount::None; ///< The combination of supported sample counts.
 };
 
 /// \brief This describes the shading rate properties.

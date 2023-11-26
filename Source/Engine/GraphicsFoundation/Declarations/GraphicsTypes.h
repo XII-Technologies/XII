@@ -685,10 +685,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
   enum Enum : StorageType
   {
     Undefined = -1,          ///< Undefined topology.
-    TriangleList,            ///< Interpret the vertex data as a list of triangles.
-    TriangleStrip,           ///< Interpret the vertex data as a triangle strip.
     PointList,               ///< Interpret the vertex data as a list of points.
     LineList,                ///< Interpret the vertex data as a list of lines.
+    TriangleList,            ///< Interpret the vertex data as a list of triangles.
+    TriangleStrip,           ///< Interpret the vertex data as a triangle strip.
     LineStrip,               ///< Interpret the vertex data as a line strip.
     TriangleListAdjacent,    ///< Interpret the vertex data as a list of triangles with adjacency data.
     TrangleStripAdjacent,    ///< Interpret the vertex data as a triangle strip with adjacency data.
@@ -1195,20 +1195,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleCount
 
     Default = None
   };
-
-  struct Bits
-  {
-    StorageType OneSample : 1;
-    StorageType TwoSamples : 1;
-    StorageType FourSamples : 1;
-    StorageType EightSamples : 1;
-    StorageType SixteenSamples : 1;
-    StorageType ThirtyTwoSamples : 1;
-    StorageType SixtyFourSamples : 1;
-  };
 };
-
-XII_DECLARE_FLAGS_OPERATORS(xiiGALSampleCount);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSampleCount);
 

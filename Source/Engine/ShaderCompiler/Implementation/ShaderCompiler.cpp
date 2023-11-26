@@ -1,3 +1,5 @@
+#include <ShaderCompiler/ShaderCompilerPCH.h>
+
 #include <ShaderCompiler/ShaderCompiler.h>
 
 #include <Foundation/Configuration/Startup.h>
@@ -32,8 +34,8 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(ShaderCompiler, ShaderCompilerPlugin)
 
   ON_CORESYSTEMS_STARTUP
   {
-    DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(s_pDxcUtils.RawDblPtr()));
-    DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(s_pDxcCompiler.RawDblPtr()));
+    DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(s_pDxcUtils.Put()));
+    DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(s_pDxcCompiler.Put()));
   }
 
   ON_CORESYSTEMS_SHUTDOWN

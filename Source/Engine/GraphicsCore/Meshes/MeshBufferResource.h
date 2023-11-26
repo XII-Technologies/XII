@@ -51,11 +51,11 @@ public:
 
   /// \brief After all streams are added, call this to allocate the data for the streams. If uiNumPrimitives is 0, the mesh buffer will not
   /// use indexed rendering.
-  void AllocateStreams(xiiUInt32 uiNumVertices, xiiGALPrimitiveTopology::Enum topology = xiiGALPrimitiveTopology::TriangleList, xiiUInt32 uiNumPrimitives = 0, bool bZeroFill = false);
+  void AllocateStreams(xiiUInt32 uiNumVertices, xiiEnum<xiiGALPrimitiveTopology> topology = xiiGALPrimitiveTopology::TriangleList, xiiUInt32 uiNumPrimitives = 0, bool bZeroFill = false);
 
   /// \brief Creates streams and fills them with data from the xiiGeometry. Only the geometry matching the given topology is used.
   ///  Streams that do not match any of the data inside the xiiGeometry directly are skipped.
-  void AllocateStreamsFromGeometry(const xiiGeometry& geom, xiiGALPrimitiveTopology::Enum topology = xiiGALPrimitiveTopology::TriangleList);
+  void AllocateStreamsFromGeometry(const xiiGeometry& geom, xiiEnum<xiiGALPrimitiveTopology> topology = xiiGALPrimitiveTopology::TriangleList);
 
   /// \brief Gives read access to the allocated vertex data
   xiiArrayPtr<const xiiUInt8> GetVertexBufferData() const;
@@ -117,12 +117,12 @@ public:
   xiiBoundingBoxSphere ComputeBounds() const;
 
   /// \brief Returns the primitive topology
-  xiiGALPrimitiveTopology::Enum GetTopology() const { return m_Topology; }
+  xiiEnum<xiiGALPrimitiveTopology> GetTopology() const { return m_Topology; }
 
   xiiResult RecomputeNormals();
 
 private:
-  xiiGALPrimitiveTopology::Enum                         m_Topology;
+  xiiEnum<xiiGALPrimitiveTopology>                         m_Topology;
   xiiUInt32                                             m_uiVertexSize;
   xiiUInt32                                             m_uiVertexCount;
   xiiInputLayoutInfo                                    m_InputLayout;
@@ -150,7 +150,7 @@ public:
 
   XII_ALWAYS_INLINE xiiGALBufferHandle GetIndexBuffer() const { return m_hIndexBuffer; }
 
-  XII_ALWAYS_INLINE xiiGALPrimitiveTopology::Enum GetTopology() const { return m_Topology; }
+  XII_ALWAYS_INLINE xiiEnum<xiiGALPrimitiveTopology> GetTopology() const { return m_Topology; }
 
   /// \brief Returns the vertex declaration used by this mesh buffer.
   const xiiInputLayoutInfo& GetInputLayout() const { return m_InputLayout; }
@@ -168,5 +168,5 @@ private:
   xiiUInt32                     m_uiPrimitiveCount = 0;
   xiiGALBufferHandle            m_hVertexBuffer;
   xiiGALBufferHandle            m_hIndexBuffer;
-  xiiGALPrimitiveTopology::Enum m_Topology = xiiGALPrimitiveTopology::Enum::Default;
+  xiiEnum<xiiGALPrimitiveTopology> m_Topology = xiiGALPrimitiveTopology::Default;
 };
