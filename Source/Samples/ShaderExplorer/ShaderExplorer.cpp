@@ -19,6 +19,12 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
+#include <GraphicsFoundation/Shader/InputLayout.h>
+
+#include <GraphicsCore/Meshes/MeshBufferResource.h>
+#include <GraphicsCore/RenderContext/RenderContext.h>
+#include <GraphicsCore/ShaderCompiler/ShaderManager.h>
+#include <GraphicsCore/Textures/Texture2DResource.h>
 
 static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
@@ -309,6 +315,14 @@ public:
       xiiGALDeviceCreationDescription DeviceInit;
       DeviceInit.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
 
+      xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
+      xiiStringView sShaderModel     = {};
+      xiiStringView sShaderCompiler  = {};
+      xiiGALDeviceFactory::GetShaderModelAndCompiler(sGraphicsAPIName, sShaderModel, sShaderCompiler);
+
+      xiiShaderManager::Configure(sShaderModel, true);
+      XII_VERIFY(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found", sShaderCompiler);
+
       m_pDevice = xiiGALDeviceFactory::CreateDevice(szDefaultGraphicsAPI, xiiFoundation::GetDefaultAllocator(), DeviceInit);
       XII_ASSERT_DEV(m_pDevice != nullptr, "Device implemention for '{}' not found", szDefaultGraphicsAPI);
       XII_VERIFY(m_pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
@@ -352,6 +366,40 @@ public:
         pSwapChain->Resize(m_pDevice, currentSize).IgnoreResult();
       }
     }
+  }
+
+  void CreateScreenQuad()
+  {
+    xiiGeometry             geom;
+    xiiGeometry::GeoOptions opt;
+    opt.m_Color = xiiColor::Black;
+    geom.AddRectXY(xiiVec2(2, 2), 1, 1, opt);
+
+    xiiMeshBufferResourceDescriptor desc;
+    desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
+
+    desc.AllocateStreams(geom.GetVertices().GetCount(), xiiGALPrimitiveTopology::TriangleList, geom.GetPolygons().GetCount() * 2);
+
+    for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
+    {
+      desc.SetVertexData<xiiVec3>(0, v, geom.GetVertices()[v].m_vPosition);
+    }
+
+    xiiUInt32 t = 0;
+    for (xiiUInt32 p = 0; p < geom.GetPolygons().GetCount(); ++p)
+    {
+      for (xiiUInt32 v = 0; v < geom.GetPolygons()[p].m_Vertices.GetCount() - 2; ++v)
+      {
+        desc.SetTriangleIndices(t, geom.GetPolygons()[p].m_Vertices[0], geom.GetPolygons()[p].m_Vertices[v + 1], geom.GetPolygons()[p].m_Vertices[v + 2]);
+
+        ++t;
+      }
+    }
+
+    m_hQuadMeshBuffer = xiiResourceManager::GetExistingResource<xiiMeshBufferResource>("{E692442B-9E15-46C5-8A00-1B07C02BF8F7}");
+
+    if (!m_hQuadMeshBuffer.IsValid())
+      m_hQuadMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>("{E692442B-9E15-46C5-8A00-1B07C02BF8F7}", std::move(desc));
   }
 
   void OnFileChanged(xiiStringView sFilename, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type)
@@ -402,6 +450,10 @@ private:
   xiiGALDevice* m_pDevice = nullptr;
 
   xiiGALSwapChainHandle m_hSwapChain;
+  xiiGALTextureHandle   m_hDepthStencilTexture;
+
+  xiiMaterialResourceHandle   m_hMaterial;
+  xiiMeshBufferResourceHandle m_hQuadMeshBuffer;
 
   xiiUniquePtr<xiiCamera>           m_pCamera;
   xiiUniquePtr<xiiDirectoryWatcher> m_pDirectoryWatcher;
