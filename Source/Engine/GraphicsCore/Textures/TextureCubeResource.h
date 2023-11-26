@@ -7,8 +7,8 @@
 #include <Foundation/IO/MemoryStream.h>
 #include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <Texture/Image/Image.h>
 
 using xiiTextureCubeResourceHandle = xiiTypedResourceHandle<class xiiTextureCubeResource>;

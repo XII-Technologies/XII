@@ -2,13 +2,13 @@
 
 #include <Foundation/Math/Float16.h>
 #include <Foundation/Types/ScopeExit.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsCore/Components/SpriteComponent.h>
 #include <GraphicsCore/Components/SpriteRenderer.h>
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Shader/ShaderUtils.h>
 
 #include <Shaders/Materials/SpriteData.h>
@@ -72,7 +72,7 @@ xiiGALBufferHandle xiiSpriteRenderer::CreateSpriteDataBuffer(xiiUInt32 uiBufferS
   xiiGALBufferCreationDescription desc;
   desc.m_uiSize = sizeof(xiiPerSpriteData) * uiBufferSize;
   desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
-  desc.m_Mode                        = xiiGALBufferMode::Structured;
+  desc.m_Mode = xiiGALBufferMode::Structured;
 
   return xiiGPUResourcePool::GetDefaultInstance()->GetBuffer(desc);
 }

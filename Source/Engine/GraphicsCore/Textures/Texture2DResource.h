@@ -8,8 +8,8 @@
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 
 #include <GraphicsFoundation/Declarations/Descriptors.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
