@@ -55,7 +55,7 @@ xiiDynamicArray<xiiUInt8, xiiAlignedAllocatorWrapper>& xiiMeshBufferResourceDesc
   return m_IndexBufferData;
 }
 
-xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiGALVertexAttributeSemantic::Enum semantic, xiiEnum<xiiGALTextureFormat> format)
+xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiEnum<xiiGALInputLayoutSemantic> semantic, xiiEnum<xiiGALTextureFormat> format)
 {
   XII_ASSERT_DEV(m_VertexStreamData.IsEmpty(), "This function can only be called before 'AllocateStreams' is called");
 

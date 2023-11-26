@@ -48,7 +48,7 @@ bool xiiBlurPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArra
   // Color
   if (inputs[m_PinInput.m_uiInputIndex])
   {
-    if (!inputs[m_PinInput.m_uiInputIndex]->m_bAllowShaderResourceView)
+    if (!inputs[m_PinInput.m_uiInputIndex]->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
     {
       xiiLog::Error("Blur pass input must allow shader resoure view.");
       return false;
@@ -81,9 +81,9 @@ void xiiBlurPass::Execute(const xiiRenderViewContext& renderViewContext, const x
     auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, renderingSetup, GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
     // Setup input view and sampler
-    xiiGALResourceViewCreationDescription rvcd;
-    rvcd.m_hTexture                        = inputs[m_PinInput.m_uiInputIndex]->m_TextureHandle;
-    xiiGALResourceViewHandle hResourceView = xiiGALDevice::GetDefaultDevice()->CreateResourceView(rvcd);
+    xiiGALTextureViewCreationDescription rvcd;
+    rvcd.m_hTexture                       = inputs[m_PinInput.m_uiInputIndex]->m_TextureHandle;
+    xiiGALTextureViewHandle hResourceView = xiiGALDevice::GetDefaultDevice()->CreateTextureView(rvcd);
 
     // Bind shader and inputs
     renderViewContext.m_pRenderContext->BindShader(m_hShader);
@@ -123,7 +123,5 @@ xiiInt32 xiiBlurPass::GetRadius() const
 {
   return m_iRadius;
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_BlurPass);

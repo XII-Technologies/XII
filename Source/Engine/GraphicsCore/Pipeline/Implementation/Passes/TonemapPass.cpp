@@ -7,7 +7,7 @@
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 
-#include <GraphicsFoundation/Resources/RenderTargetView.h>
+
 #include <GraphicsFoundation/Resources/Texture.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/TonemapConstants.h>
@@ -72,14 +72,21 @@ bool xiiTonemapPass::GetRenderTargetDescriptions(const xiiView& view, const xiiA
     if (const xiiGALTexture* pTexture = pDevice->GetTexture(renderTargets.m_hRTs[0]))
     {
       const xiiGALTextureCreationDescription& desc = pTexture->GetDescription();
-      // if (desc.m_uiWidth != pColorInput->m_uiWidth || desc.m_uiHeight != pColorInput->m_uiHeight)
-      //{
-      //  xiiLog::Error("Render target sizes don't match");
-      //  return false;
-      //}
+#if 0
+      if (desc.m_uiWidth != pColorInput->m_uiWidth || desc.m_uiHeight != pColorInput->m_uiHeight)
+      {
+        xiiLog::Error("Render target sizes don't match");
+        return false;
+      }
+#endif
 
-      outputs[m_PinOutput.m_uiOutputIndex].SetAsRenderTarget(pColorInput->m_uiWidth, pColorInput->m_uiHeight, desc.m_Format);
-      outputs[m_PinOutput.m_uiOutputIndex].m_uiArraySize = pColorInput->m_uiArraySize;
+      outputs[m_PinOutput.m_uiOutputIndex].m_Size               = pColorInput->m_Size;
+      outputs[m_PinOutput.m_uiOutputIndex].m_uiArraySizeOrDepth = pColorInput->m_uiArraySizeOrDepth;
+      outputs[m_PinOutput.m_uiOutputIndex].m_uiMipLevels        = 1;
+      outputs[m_PinOutput.m_uiOutputIndex].m_uiSampleCount      = 1;
+      outputs[m_PinOutput.m_uiOutputIndex].m_Format             = desc.m_Format;
+      outputs[m_PinOutput.m_uiOutputIndex].m_Usage              = xiiGALResourceUsage::Immutable;
+      outputs[m_PinOutput.m_uiOutputIndex].m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
     }
     else
     {
@@ -150,8 +157,8 @@ void xiiTonemapPass::Execute(const xiiRenderViewContext& renderViewContext, cons
     constants->ContrastParams = xiiVec4(a, b, m, 0.0f);
   }
 
-  xiiGALResourceViewHandle hBloomTextureView;
-  auto                     pBloomInput = inputs[m_PinBloomInput.m_uiInputIndex];
+  xiiGALTextureViewHandle hBloomTextureView;
+  auto                    pBloomInput = inputs[m_PinBloomInput.m_uiInputIndex];
   if (pBloomInput != nullptr)
   {
     hBloomTextureView = pDevice->GetDefaultResourceView(pBloomInput->m_TextureHandle);

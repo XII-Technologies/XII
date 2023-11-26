@@ -40,7 +40,7 @@ xiiSourcePass::xiiSourcePass(const char* szName) :
   xiiRenderPipelinePass(szName, true)
 {
   m_Format     = xiiSourceFormat::Default;
-  m_MsaaMode   = xiiGALMSAASampleCount::None;
+  m_MsaaMode   = xiiGALSampleCount::OneSample;
   m_bClear     = true;
   m_ClearColor = xiiColor::Black;
 }
@@ -73,27 +73,27 @@ bool xiiSourcePass::GetRenderTargetDescriptions(
 
     switch (preferredFormat)
     {
-      case xiiGALTextureFormat::RGBAUByteNormalized:
-      case xiiGALTextureFormat::RGBAUByteNormalizedsRGB:
+      case xiiGALTextureFormat::RGBA8UNormalized:
+      case xiiGALTextureFormat::RGBA8UNormalizedSRGB:
       default:
         if (m_Format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
         {
-          desc.m_Format = xiiGALTextureFormat::RGBAUByteNormalizedsRGB;
+          desc.m_Format = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
         }
         else
         {
-          desc.m_Format = xiiGALTextureFormat::RGBAUByteNormalized;
+          desc.m_Format = xiiGALTextureFormat::RGBA8UNormalized;
         }
         break;
-      case xiiGALTextureFormat::BGRAUByteNormalized:
-      case xiiGALTextureFormat::BGRAUByteNormalizedsRGB:
+      case xiiGALTextureFormat::BGRA8UNormalized:
+      case xiiGALTextureFormat::BGRA8UNormalizedSRGB:
         if (m_Format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
         {
-          desc.m_Format = xiiGALTextureFormat::BGRAUByteNormalizedsRGB;
+          desc.m_Format = xiiGALTextureFormat::BGRA8UNormalizedSRGB;
         }
         else
         {
-          desc.m_Format = xiiGALTextureFormat::BGRAUByteNormalized;
+          desc.m_Format = xiiGALTextureFormat::BGRA8UNormalized;
         }
         break;
     }
@@ -103,33 +103,33 @@ bool xiiSourcePass::GetRenderTargetDescriptions(
     switch (m_Format)
     {
       case xiiSourceFormat::Color4Channel16BitFloat:
-        desc.m_Format = xiiGALTextureFormat::RGBAHalf;
+        desc.m_Format = xiiGALTextureFormat::RGBA16Float;
         break;
       case xiiSourceFormat::Color4Channel32BitFloat:
-        desc.m_Format = xiiGALTextureFormat::RGBAFloat;
+        desc.m_Format = xiiGALTextureFormat::RGBA32Float;
         break;
       case xiiSourceFormat::Color3Channel11_11_10BitFloat:
         desc.m_Format = xiiGALTextureFormat::RG11B10Float;
         break;
       case xiiSourceFormat::Depth16Bit:
-        desc.m_Format = xiiGALTextureFormat::D16;
+        desc.m_Format = xiiGALTextureFormat::D16UNormalized;
         break;
       case xiiSourceFormat::Depth24BitStencil8Bit:
-        desc.m_Format = xiiGALTextureFormat::D24S8;
+        desc.m_Format = xiiGALTextureFormat::D24UNormalizedS8UInt;
         break;
       case xiiSourceFormat::Depth32BitFloat:
-        desc.m_Format = xiiGALTextureFormat::DFloat;
+        desc.m_Format = xiiGALTextureFormat::D32Float;
         break;
       default:
         XII_ASSERT_NOT_IMPLEMENTED
     }
   }
 
-  desc.m_uiWidth             = uiWidth;
-  desc.m_uiHeight            = uiHeight;
-  desc.m_SampleCount         = m_MsaaMode;
-  desc.m_bCreateRenderTarget = true;
-  desc.m_uiArraySize         = view.GetCamera()->IsStereoscopic() ? 2 : 1;
+  desc.m_Size.width         = uiWidth;
+  desc.m_Size.height        = uiHeight;
+  desc.m_uiSampleCount      = m_MsaaMode;
+  desc.m_uiArraySizeOrDepth = view.GetCamera()->IsStereoscopic() ? 2 : 1;
+  desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
 
   outputs[m_PinOutput.m_uiOutputIndex] = desc;
 
@@ -237,30 +237,30 @@ public:
 
     switch (oldFormat)
     {
-      case xiiGALTextureFormat::RGBAHalf:
+      case xiiGALTextureFormat::RGBA16Float:
         newFormat = xiiSourceFormat::Color4Channel16BitFloat;
         break;
-      case xiiGALTextureFormat::RGBAFloat:
+      case xiiGALTextureFormat::RGBA32Float:
         newFormat = xiiSourceFormat::Color4Channel32BitFloat;
         break;
       case xiiGALTextureFormat::RG11B10Float:
         newFormat = xiiSourceFormat::Color3Channel11_11_10BitFloat;
         break;
-      case xiiGALTextureFormat::D16:
+      case xiiGALTextureFormat::D16UNormalized:
         newFormat = xiiSourceFormat::Depth16Bit;
         break;
-      case xiiGALTextureFormat::D24S8:
+      case xiiGALTextureFormat::D24UNormalizedS8UInt:
         newFormat = xiiSourceFormat::Depth24BitStencil8Bit;
         break;
-      case xiiGALTextureFormat::DFloat:
+      case xiiGALTextureFormat::D32Float:
         newFormat = xiiSourceFormat::Depth32BitFloat;
         break;
-      case xiiGALTextureFormat::RGBAUByteNormalized:
-      case xiiGALTextureFormat::BGRAUByteNormalized:
+      case xiiGALTextureFormat::RGBA8UNormalized:
+      case xiiGALTextureFormat::BGRA8UNormalized:
         newFormat = xiiSourceFormat::Color4Channel8BitNormalized;
         break;
-      case xiiGALTextureFormat::RGBAUByteNormalizedsRGB:
-      case xiiGALTextureFormat::BGRAUByteNormalizedsRGB:
+      case xiiGALTextureFormat::RGBA8UNormalizedSRGB:
+      case xiiGALTextureFormat::BGRA8UNormalizedSRGB:
         newFormat = xiiSourceFormat::Color4Channel8BitNormalized_sRGB;
         break;
       default:

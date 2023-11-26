@@ -39,8 +39,8 @@ public:
 protected:
   xiiRenderPipelineNodeOutputPin m_PinOutput;
 
-  xiiEnum<xiiSourceFormat>       m_Format;
+  xiiEnum<xiiSourceFormat>   m_Format;
   xiiEnum<xiiGALSampleCount> m_MsaaMode = xiiGALSampleCount::OneSample;
-  xiiColor                       m_ClearColor;
-  bool                           m_bClear;
+  xiiColor                   m_ClearColor;
+  bool                       m_bClear;
 };

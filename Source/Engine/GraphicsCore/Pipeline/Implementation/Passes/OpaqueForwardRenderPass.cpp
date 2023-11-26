@@ -4,7 +4,7 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
-#include <GraphicsFoundation/Resources/RenderTargetView.h>
+
 #include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
@@ -38,8 +38,7 @@ bool xiiOpaqueForwardRenderPass::GetRenderTargetDescriptions(const xiiView& view
 
   if (inputs[m_PinSSAO.m_uiInputIndex])
   {
-    if (inputs[m_PinSSAO.m_uiInputIndex]->m_uiWidth != inputs[m_PinColor.m_uiInputIndex]->m_uiWidth ||
-        inputs[m_PinSSAO.m_uiInputIndex]->m_uiHeight != inputs[m_PinColor.m_uiInputIndex]->m_uiHeight)
+    if (inputs[m_PinSSAO.m_uiInputIndex]->m_Size.width != inputs[m_PinColor.m_uiInputIndex]->m_Size.width || inputs[m_PinSSAO.m_uiInputIndex]->m_Size.height != inputs[m_PinColor.m_uiInputIndex]->m_Size.height)
     {
       xiiLog::Warning("Expected same resolution for SSAO and color input to pass '{0}'!", GetName());
     }
@@ -64,7 +63,7 @@ void xiiOpaqueForwardRenderPass::SetupResources(xiiGALPass* pGALPass, const xiiR
   {
     if (inputs[m_PinSSAO.m_uiInputIndex])
     {
-      xiiGALResourceViewHandle ssaoResourceViewHandle = pDevice->GetDefaultResourceView(inputs[m_PinSSAO.m_uiInputIndex]->m_TextureHandle);
+      xiiGALTextureViewHandle ssaoResourceViewHandle = pDevice->GetDefaultResourceView(inputs[m_PinSSAO.m_uiInputIndex]->m_TextureHandle);
       renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", ssaoResourceViewHandle);
     }
     else
@@ -93,7 +92,5 @@ void xiiOpaqueForwardRenderPass::RenderObjects(const xiiRenderViewContext& rende
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaque);
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMasked);
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_OpaqueForwardRenderPass);

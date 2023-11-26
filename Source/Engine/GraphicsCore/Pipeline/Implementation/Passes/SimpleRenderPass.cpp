@@ -5,7 +5,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
-#include <GraphicsFoundation/Resources/RenderTargetView.h>
+
 #include <GraphicsFoundation/Resources/Texture.h>
 
 #include <GraphicsCore/Debug/DebugRenderer.h>
@@ -50,12 +50,9 @@ bool xiiSimpleRenderPass::GetRenderTargetDescriptions(
     const xiiGALTexture* pTexture = pDevice->GetTexture(renderTargets.m_hRTs[0]);
     if (pTexture)
     {
-      outputs[m_PinColor.m_uiOutputIndex]                               = pTexture->GetDescription();
-      outputs[m_PinColor.m_uiOutputIndex].m_bCreateRenderTarget         = true;
-      outputs[m_PinColor.m_uiOutputIndex].m_bAllowShaderResourceView    = true;
-      outputs[m_PinColor.m_uiOutputIndex].m_ResourceAccess.m_bReadBack  = false;
-      outputs[m_PinColor.m_uiOutputIndex].m_ResourceAccess.m_bImmutable = true;
-      outputs[m_PinColor.m_uiOutputIndex].m_pExisitingNativeObject      = nullptr;
+      outputs[m_PinColor.m_uiOutputIndex] = pTexture->GetDescription();
+      outputs[m_PinColor.m_uiOutputIndex].m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
+      outputs[m_PinColor.m_uiOutputIndex].m_Usage = xiiGALResourceUsage::Immutable;
     }
   }
 
@@ -144,7 +141,5 @@ void xiiSimpleRenderPass::SetMessage(const char* szMessage)
 {
   m_sMessage = szMessage;
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_SimpleRenderPass);

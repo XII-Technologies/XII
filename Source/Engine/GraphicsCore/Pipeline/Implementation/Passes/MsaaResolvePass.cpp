@@ -4,7 +4,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
-#include <GraphicsFoundation/Resources/RenderTargetView.h>
+
 #include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
@@ -38,7 +38,7 @@ bool xiiMsaaResolvePass::GetRenderTargetDescriptions(const xiiView& view, const 
   auto pInput = inputs[m_PinInput.m_uiInputIndex];
   if (pInput != nullptr)
   {
-    if (pInput->m_SampleCount == xiiGALMSAASampleCount::None)
+    if (pInput->m_SampleCount == xiiGALSampleCount::OneSample)
     {
       xiiLog::Error("Input is not a valid msaa target");
       return false;
@@ -48,7 +48,7 @@ bool xiiMsaaResolvePass::GetRenderTargetDescriptions(const xiiView& view, const 
     m_MsaaSampleCount = pInput->m_SampleCount;
 
     xiiGALTextureCreationDescription desc = *pInput;
-    desc.m_SampleCount                    = xiiGALMSAASampleCount::None;
+    desc.m_SampleCount                    = xiiGALSampleCount::OneSample;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }

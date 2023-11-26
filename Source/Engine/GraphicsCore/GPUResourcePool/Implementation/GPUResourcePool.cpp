@@ -70,8 +70,7 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
 
   if (hNewTexture.IsInvalidated())
   {
-    xiiLog::Error("GPU resource pool couldn't create new texture for given desc (size: {0} x {1}, format: {2})", textureDesc.m_uiWidth,
-                  textureDesc.m_uiHeight, textureDesc.m_Format);
+    xiiLog::Error("GPU resource pool couldn't create new texture for given desc (size: {0} x {1}, format: {2})", textureDesc.m_Size.width, textureDesc.m_Size.height, textureDesc.m_Format);
     return xiiGALTextureHandle();
   }
 
@@ -95,7 +94,12 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUI
   TextureDesc.m_uiSampleCount      = sampleCount;
   TextureDesc.m_uiArraySizeOrDepth = uiSliceColunt;
   TextureDesc.m_Type               = TextureDesc.m_uiSampleCount > 1 ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
-  TextureDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
+  TextureDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
+
+  if (xiiGALTextureFormat::IsDepthFormat(format))
+    TextureDesc.m_BindFlags.Add(xiiGALBindFlags::DepthStencil);
+  else
+    TextureDesc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
 
   return GetRenderTarget(TextureDesc);
 }
@@ -163,7 +167,7 @@ xiiGALBufferHandle xiiGPUResourcePool::GetBuffer(const xiiGALBufferCreationDescr
 
   if (hNewBuffer.IsInvalidated())
   {
-    xiiLog::Error("GPU resource pool couldn't create new buffer for given desc (size: {0})", bufferDesc.m_uiTotalSize);
+    xiiLog::Error("GPU resource pool couldn't create new buffer for given desc (size: {0})", bufferDesc.m_uiSize);
     return xiiGALBufferHandle();
   }
 

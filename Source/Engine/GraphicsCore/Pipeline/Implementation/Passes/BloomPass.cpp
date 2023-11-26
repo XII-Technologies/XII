@@ -53,7 +53,7 @@ bool xiiBloomPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArr
   // Color
   if (inputs[m_PinInput.m_uiInputIndex])
   {
-    if (!inputs[m_PinInput.m_uiInputIndex]->m_bAllowShaderResourceView)
+    if (!inputs[m_PinInput.m_uiInputIndex]->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
     {
       xiiLog::Error("'{0}' input must allow shader resource view.", GetName());
       return false;
@@ -61,8 +61,8 @@ bool xiiBloomPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArr
 
     // Output is half-res
     xiiGALTextureCreationDescription desc = *inputs[m_PinInput.m_uiInputIndex];
-    desc.m_uiWidth                        = desc.m_uiWidth / 2;
-    desc.m_uiHeight                       = desc.m_uiHeight / 2;
+    desc.m_Size.width                     = desc.m_Size.width / 2;
+    desc.m_Size.height                    = desc.m_Size.height / 2;
     desc.m_Format                         = xiiGALTextureFormat::RG11B10Float;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
@@ -89,8 +89,8 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
   xiiGALPass*   pGALPass = pDevice->BeginPass(GetName());
   XII_SCOPE_EXIT(pDevice->EndPass(pGALPass));
 
-  xiiUInt32 uiWidth        = pColorInput->m_Desc.m_uiWidth;
-  xiiUInt32 uiHeight       = pColorInput->m_Desc.m_uiHeight;
+  xiiUInt32 uiWidth        = pColorInput->m_Desc.m_Size.width;
+  xiiUInt32 uiHeight       = pColorInput->m_Desc.m_Size.height;
   bool      bFastDownscale = xiiMath::IsEven(uiWidth) && xiiMath::IsEven(uiHeight);
 
   const float     fMaxRes         = (float)xiiMath::Max(uiWidth, uiHeight);
@@ -109,14 +109,14 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
     uiWidth  = xiiMath::Max(uiWidth / 2, 1u);
     uiHeight = xiiMath::Max(uiHeight / 2, 1u);
     targetSizes.PushBack(xiiVec2((float)uiWidth, (float)uiHeight));
-    auto uiSliceCount = pColorOutput->m_Desc.m_uiArraySize;
+    auto uiSliceCount = pColorOutput->m_Desc.m_uiArraySizeOrDepth;
 
-    tempDownscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG11B10Float, xiiGALMSAASampleCount::None, uiSliceCount));
+    tempDownscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG11B10Float, xiiGALSampleCount::OneSample, uiSliceCount));
 
     // biggest upscale target is the output and lowest is not needed
     if (i > 0 && i < uiNumBlurPasses - 1)
     {
-      tempUpscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG11B10Float, xiiGALMSAASampleCount::None, uiSliceCount));
+      tempUpscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG11B10Float, xiiGALSampleCount::OneSample, uiSliceCount));
     }
     else
     {

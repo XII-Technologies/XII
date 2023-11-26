@@ -9,7 +9,7 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
-#include <GraphicsFoundation/Resources/RenderTargetView.h>
+
 #include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off

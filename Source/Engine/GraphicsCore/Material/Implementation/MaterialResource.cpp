@@ -891,7 +891,7 @@ void xiiMaterialResource::UpdateConstantBuffer(xiiShaderPermutationResource* pSh
     return;
 
   xiiTempHashedString             sConstantBufferName("xiiMaterialConstants");
-  const xiiShaderResourceBinding* pBinding = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::PixelShader)->GetShaderResourceBinding(sConstantBufferName);
+  const xiiShaderResourceBinding* pBinding = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::Pixel)->GetShaderResourceBinding(sConstantBufferName);
   if (pBinding == nullptr)
   {
     pBinding = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::Vertex)->GetShaderResourceBinding(sConstantBufferName);

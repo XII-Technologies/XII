@@ -84,26 +84,26 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
   {
     xiiVertexStreamInfo si;
     si.m_uiOffset      = 0;
-    si.m_Format        = xiiGALTextureFormat::XYZFloat;
-    si.m_Semantic      = xiiGALVertexAttributeSemantic::Position;
+    si.m_Format        = xiiGALTextureFormat::RGB32Float;
+    si.m_Semantic      = xiiGALInputLayoutSemantic::Position;
     si.m_uiElementSize = sizeof(xiiVec3);
     m_InputLayout.m_VertexStreams.PushBack(si);
 
     si.m_uiOffset += si.m_uiElementSize;
-    si.m_Format        = xiiGALTextureFormat::XYFloat;
-    si.m_Semantic      = xiiGALVertexAttributeSemantic::TexCoord0;
+    si.m_Format        = xiiGALTextureFormat::RG32Float;
+    si.m_Semantic      = xiiGALInputLayoutSemantic::TexCoord0;
     si.m_uiElementSize = sizeof(xiiVec2);
     m_InputLayout.m_VertexStreams.PushBack(si);
 
     si.m_uiOffset += si.m_uiElementSize;
-    si.m_Format        = xiiGALTextureFormat::XYZFloat;
-    si.m_Semantic      = xiiGALVertexAttributeSemantic::Normal;
+    si.m_Format        = xiiGALTextureFormat::RGB32Float;
+    si.m_Semantic      = xiiGALInputLayoutSemantic::Normal;
     si.m_uiElementSize = sizeof(xiiVec3);
     m_InputLayout.m_VertexStreams.PushBack(si);
 
     si.m_uiOffset += si.m_uiElementSize;
-    si.m_Format        = xiiGALTextureFormat::XYZWFloat;
-    si.m_Semantic      = xiiGALVertexAttributeSemantic::Tangent;
+    si.m_Format        = xiiGALTextureFormat::RGBA32Float;
+    si.m_Semantic      = xiiGALInputLayoutSemantic::Tangent;
     si.m_uiElementSize = sizeof(xiiVec4);
     m_InputLayout.m_VertexStreams.PushBack(si);
 
@@ -111,8 +111,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     {
       si.m_uiVertexBufferSlot = 1; // separate buffer
       si.m_uiOffset           = 0;
-      si.m_Format             = xiiGALTextureFormat::RGBAUByteNormalized;
-      si.m_Semantic           = xiiGALVertexAttributeSemantic::Color0;
+      si.m_Format             = xiiGALTextureFormat::RGBA8UNormalized;
+      si.m_Semantic           = xiiGALInputLayoutSemantic::Color0;
       si.m_uiElementSize      = sizeof(xiiColorLinearUB);
       m_InputLayout.m_VertexStreams.PushBack(si);
     }
@@ -122,40 +122,55 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  m_hVertexBuffer = pDevice->CreateVertexBuffer(sizeof(xiiDynamicMeshVertex), m_Descriptor.m_uiMaxVertices /* no initial data -> mutable */);
+  {
+    xiiGALBufferCreationDescription desc;
+    desc.m_uiSize = sizeof(xiiDynamicMeshVertex) * m_Descriptor.m_uiMaxVertices;
+    desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
+    m_hVertexBuffer = pDevice->CreateBuffer(desc);
+  }
 
-  xiiStringBuilder sName;
-  sName.Format("{0} - Dynamic Vertex Buffer", GetResourceDescription());
-  pDevice->GetBuffer(m_hVertexBuffer)->SetDebugName(sName);
+  // xiiStringBuilder sName;
+  // sName.Format("{0} - Dynamic Vertex Buffer", GetResourceDescription());
+  // pDevice->GetBuffer(m_hVertexBuffer)->SetDebugName(sName);
 
   const xiiUInt32 uiMaxIndices = xiiGALPrimitiveTopology::VerticesPerPrimitive(m_Descriptor.m_Topology) * m_Descriptor.m_uiMaxPrimitives;
 
   if (m_Descriptor.m_bColorStream)
   {
     m_ColorData.SetCountUninitialized(uiMaxIndices);
-    m_hColorBuffer = pDevice->CreateVertexBuffer(sizeof(xiiColorLinearUB), m_Descriptor.m_uiMaxVertices /* no initial data -> mutable */);
 
-    sName.Format("{0} - Dynamic Color Buffer", GetResourceDescription());
-    pDevice->GetBuffer(m_hColorBuffer)->SetDebugName(sName);
+    xiiGALBufferCreationDescription desc;
+    desc.m_uiSize = sizeof(xiiColorLinearUB) * m_Descriptor.m_uiMaxVertices;
+    desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
+    m_hColorBuffer = pDevice->CreateBuffer(desc);
+
+    // sName.Format("{0} - Dynamic Color Buffer", GetResourceDescription());
+    // pDevice->GetBuffer(m_hColorBuffer)->SetDebugName(sName);
   }
 
-  if (m_Descriptor.m_IndexType == xiiGALIndexType::UInt)
+  if (m_Descriptor.m_IndexType == xiiGALValueType::UInt32)
   {
     m_Index32Data.SetCountUninitialized(uiMaxIndices);
 
-    m_hIndexBuffer = pDevice->CreateIndexBuffer(xiiGALIndexType::UInt, uiMaxIndices /* no initial data -> mutable */);
+    xiiGALBufferCreationDescription desc;
+    desc.m_uiSize = xiiGALValueType::UInt32 * uiMaxIndices;
+    desc.m_BindFlags.Add(xiiGALBindFlags::IndexBuffer);
+    m_hIndexBuffer = pDevice->CreateBuffer(desc);
 
-    sName.Format("{0} - Dynamic Index32 Buffer", GetResourceDescription());
-    pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
+    // sName.Format("{0} - Dynamic Index32 Buffer", GetResourceDescription());
+    // pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
   }
-  else if (m_Descriptor.m_IndexType == xiiGALIndexType::UShort)
+  else if (m_Descriptor.m_IndexType == xiiGALValueType::UInt16)
   {
     m_Index16Data.SetCountUninitialized(uiMaxIndices);
 
-    m_hIndexBuffer = pDevice->CreateIndexBuffer(xiiGALIndexType::UShort, uiMaxIndices /* no initial data -> mutable */);
+    xiiGALBufferCreationDescription desc;
+    desc.m_uiSize = xiiGALValueType::UInt16 * uiMaxIndices;
+    desc.m_BindFlags.Add(xiiGALBindFlags::IndexBuffer);
+    m_hIndexBuffer = pDevice->CreateBuffer(desc);
 
-    sName.Format("{0} - Dynamic Index16 Buffer", GetResourceDescription());
-    pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
+    // sName.Format("{0} - Dynamic Index16 Buffer", GetResourceDescription());
+    // pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
   }
 
   // we only know the memory usage here, so we write it back to the internal variable directly and then read it in UpdateMemoryUsage() again
@@ -169,7 +184,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
   return res;
 }
 
-void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandEncoder* pGALCommandEncoder, xiiUInt32 uiFirstVertex, xiiUInt32 uiNumVertices, xiiUInt32 uiFirstIndex, xiiUInt32 uiNumIndices, xiiGALUpdateMode::Enum mode /*= xiiGALUpdateMode::Discard*/)
+void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandEncoder* pGALCommandEncoder, xiiUInt32 uiFirstVertex, xiiUInt32 uiNumVertices, xiiUInt32 uiFirstIndex, xiiUInt32 uiNumIndices, xiiBitflags<xiiGALMapFlags> mapFlags /*= xiiGALMapFlags::Discard*/)
 {
   if (m_bAccessedVB && uiNumVertices > 0)
   {
@@ -180,7 +195,7 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandEncoder* pGALCom
 
     m_bAccessedVB = false;
 
-    pGALCommandEncoder->UpdateBuffer(m_hVertexBuffer, sizeof(xiiDynamicMeshVertex) * uiFirstVertex, m_VertexData.GetArrayPtr().GetSubArray(uiFirstVertex, uiNumVertices).ToByteArray(), mode);
+    pGALCommandEncoder->UpdateBuffer(m_hVertexBuffer, sizeof(xiiDynamicMeshVertex) * uiFirstVertex, m_VertexData.GetArrayPtr().GetSubArray(uiFirstVertex, uiNumVertices).ToByteArray(), mapFlags);
   }
 
   if (m_bAccessedCB && uiNumVertices > 0)
@@ -192,7 +207,7 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandEncoder* pGALCom
 
     m_bAccessedCB = false;
 
-    pGALCommandEncoder->UpdateBuffer(m_hColorBuffer, sizeof(xiiColorLinearUB) * uiFirstVertex, m_ColorData.GetArrayPtr().GetSubArray(uiFirstVertex, uiNumVertices).ToByteArray(), mode);
+    pGALCommandEncoder->UpdateBuffer(m_hColorBuffer, sizeof(xiiColorLinearUB) * uiFirstVertex, m_ColorData.GetArrayPtr().GetSubArray(uiFirstVertex, uiNumVertices).ToByteArray(), mapFlags);
   }
 
   if (m_bAccessedIB && uiNumIndices > 0 && !m_hIndexBuffer.IsInvalidated())
@@ -208,7 +223,7 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandEncoder* pGALCom
 
       XII_ASSERT_DEV(uiNumIndices <= m_Index16Data.GetCount(), "Can't upload {} indices, the buffer was allocated to hold a maximum of {} indices.", uiNumIndices, m_Index16Data.GetCount());
 
-      pGALCommandEncoder->UpdateBuffer(m_hIndexBuffer, sizeof(xiiUInt16) * uiFirstIndex, m_Index16Data.GetArrayPtr().GetSubArray(uiFirstIndex, uiNumIndices).ToByteArray(), mode);
+      pGALCommandEncoder->UpdateBuffer(m_hIndexBuffer, sizeof(xiiUInt16) * uiFirstIndex, m_Index16Data.GetArrayPtr().GetSubArray(uiFirstIndex, uiNumIndices).ToByteArray(), mapFlags);
     }
     else if (!m_Index32Data.IsEmpty())
     {
@@ -219,7 +234,7 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandEncoder* pGALCom
 
       XII_ASSERT_DEV(uiNumIndices <= m_Index32Data.GetCount(), "Can't upload {} indices, the buffer was allocated to hold a maximum of {} indices.", uiNumIndices, m_Index32Data.GetCount());
 
-      pGALCommandEncoder->UpdateBuffer(m_hIndexBuffer, sizeof(xiiUInt32) * uiFirstIndex, m_Index32Data.GetArrayPtr().GetSubArray(uiFirstIndex, uiNumIndices).ToByteArray(), mode);
+      pGALCommandEncoder->UpdateBuffer(m_hIndexBuffer, sizeof(xiiUInt32) * uiFirstIndex, m_Index32Data.GetArrayPtr().GetSubArray(uiFirstIndex, uiNumIndices).ToByteArray(), mapFlags);
     }
   }
 }

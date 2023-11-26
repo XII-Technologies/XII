@@ -4,7 +4,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
-#include <GraphicsFoundation/Resources/RenderTargetView.h>
+
 #include <GraphicsFoundation/Resources/Texture.h>
 
 #include <Core/Graphics/Camera.h>
@@ -40,7 +40,7 @@ bool xiiStereoTestPass::GetRenderTargetDescriptions(const xiiView& view, const x
   if (pInput != nullptr)
   {
     xiiGALTextureCreationDescription desc = *pInput;
-    desc.m_SampleCount                    = xiiGALMSAASampleCount::None;
+    desc.m_uiSampleCount                  = xiiGALSampleCount::OneSample;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }

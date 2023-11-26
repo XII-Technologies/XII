@@ -55,12 +55,13 @@ bool xiiReflectionFilterPass::GetRenderTargetDescriptions(const xiiView& view, c
 {
   {
     xiiGALTextureCreationDescription desc;
-    desc.m_uiWidth                                 = xiiReflectionPool::GetReflectionCubeMapSize();
-    desc.m_uiHeight                                = desc.m_uiWidth;
-    desc.m_Format                                  = xiiGALTextureFormat::RGBAHalf;
-    desc.m_Type                                    = xiiGALTextureType::TextureCube;
-    desc.m_bAllowUAV                               = true;
-    desc.m_uiMipLevelCount                         = xiiMath::Log2i(desc.m_uiWidth) - 1;
+    desc.m_Size.width  = xiiReflectionPool::GetReflectionCubeMapSize();
+    desc.m_Size.height = desc.m_Size.width;
+    desc.m_Format      = xiiGALTextureFormat::RGBA16Float;
+    desc.m_Type        = xiiGALResourceDimension::TextureCubeArray;
+    desc.m_uiMipLevels = xiiMath::Log2i(desc.m_Size.width) - 1;
+    desc.m_BindFlags.Add(xiiGALBindFlags::UnorderedAccess);
+
     outputs[m_PinFilteredSpecular.m_uiOutputIndex] = desc;
   }
 
@@ -88,7 +89,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
     pDevice->EndPass(pGALPass);
     renderViewContext.m_pRenderContext->SetAllowAsyncShaderLoading(bAllowAsyncShaderLoading));
 
-  if (pInputCubemap->GetDescription().m_bAllowDynamicMipGeneration)
+  if (pInputCubemap->GetDescription().m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
   {
     auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(pGALPass, renderViewContext, xiiGALRenderingSetup(), "MipMaps");
     pCommandEncoder->GenerateMipMaps(pDevice->GetDefaultResourceView(m_hInputCubemap));
@@ -98,10 +99,10 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
     auto pFilteredSpecularOutput = outputs[m_PinFilteredSpecular.m_uiOutputIndex];
     if (pFilteredSpecularOutput != nullptr && !pFilteredSpecularOutput->m_TextureHandle.IsInvalidated())
     {
-      xiiUInt32 uiNumMipMaps = pFilteredSpecularOutput->m_Desc.m_uiMipLevelCount;
+      xiiUInt32 uiNumMipMaps = pFilteredSpecularOutput->m_Desc.m_uiMipLevels;
 
-      xiiUInt32 uiWidth  = pFilteredSpecularOutput->m_Desc.m_uiWidth;
-      xiiUInt32 uiHeight = pFilteredSpecularOutput->m_Desc.m_uiHeight;
+      xiiUInt32 uiWidth  = pFilteredSpecularOutput->m_Desc.m_Size.width;
+      xiiUInt32 uiHeight = pFilteredSpecularOutput->m_Desc.m_Size.height;
 
       auto pCommandEncoder = xiiRenderContext::BeginComputeScope(pGALPass, renderViewContext, "ReflectionFilter");
       renderViewContext.m_pRenderContext->BindTextureCube("InputCubemap", pDevice->GetDefaultResourceView(m_hInputCubemap));
@@ -110,16 +111,16 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
 
       for (xiiUInt32 uiMipMapIndex = 0; uiMipMapIndex < uiNumMipMaps; ++uiMipMapIndex)
       {
-        xiiGALUnorderedAccessViewHandle hFilterOutput;
+        xiiGALTextureViewHandle hFilterOutput;
         {
-          xiiGALUnorderedAccessViewCreationDescription desc;
-          desc.m_hTexture          = pFilteredSpecularOutput->m_TextureHandle;
-          desc.m_uiMipLevelToUse   = uiMipMapIndex;
-          desc.m_uiFirstArraySlice = m_uiSpecularOutputIndex * 6;
-          desc.m_uiArraySize       = 6;
-          hFilterOutput            = pDevice->CreateUnorderedAccessView(desc);
+          xiiGALTextureViewCreationDescription desc;
+          desc.m_hTexture                  = pFilteredSpecularOutput->m_TextureHandle;
+          desc.m_uiMostDetailedMip         = uiMipMapIndex;
+          desc.m_uiFirstArrayOrDepthSlice  = m_uiSpecularOutputIndex * 6;
+          desc.m_uiArrayOrDepthSlicesCount = 6;
+          hFilterOutput                    = pDevice->CreateTextureView(desc);
         }
-        renderViewContext.m_pRenderContext->BindUAV("ReflectionOutput", hFilterOutput);
+        renderViewContext.m_pRenderContext->BindTextureUAV("ReflectionOutput", hFilterOutput);
         UpdateFilteredSpecularConstantBuffer(uiMipMapIndex, uiNumMipMaps);
 
         constexpr xiiUInt32 uiThreadsX  = 8;
@@ -140,14 +141,14 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
   {
     auto pCommandEncoder = xiiRenderContext::BeginComputeScope(pGALPass, renderViewContext, "Irradiance");
 
-    xiiGALUnorderedAccessViewHandle hIrradianceOutput;
+    xiiGALTextureViewHandle hIrradianceOutput;
     {
-      xiiGALUnorderedAccessViewCreationDescription desc;
+      xiiGALTextureViewCreationDescription desc;
       desc.m_hTexture = pIrradianceOutput->m_TextureHandle;
 
-      hIrradianceOutput = pDevice->CreateUnorderedAccessView(desc);
+      hIrradianceOutput = pDevice->CreateTextureView(desc);
     }
-    renderViewContext.m_pRenderContext->BindUAV("IrradianceOutput", hIrradianceOutput);
+    renderViewContext.m_pRenderContext->BindTextureUAV("IrradianceOutput", hIrradianceOutput);
 
     renderViewContext.m_pRenderContext->BindTextureCube("InputCubemap", pDevice->GetDefaultResourceView(m_hInputCubemap));
 
@@ -190,7 +191,7 @@ xiiUInt32 xiiReflectionFilterPass::GetInputCubemap() const
 
 void xiiReflectionFilterPass::SetInputCubemap(xiiUInt32 uiCubemapHandle)
 {
-  m_hInputCubemap = xiiGALTextureHandle(xiiGAL::xii18_14Id(uiCubemapHandle));
+  m_hInputCubemap = xiiGALTextureHandle(xiiGAL::xii24_8Id(uiCubemapHandle));
 }
 
 void xiiReflectionFilterPass::UpdateFilteredSpecularConstantBuffer(xiiUInt32 uiMipMapIndex, xiiUInt32 uiNumMipMaps)
@@ -209,6 +210,5 @@ void xiiReflectionFilterPass::UpdateIrradianceConstantBuffer()
   constants->Saturation  = m_fSaturation;
   constants->OutputIndex = m_uiIrradianceOutputIndex;
 }
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_ReflectionFilterPass);

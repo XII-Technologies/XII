@@ -3,6 +3,7 @@
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
 #include <GraphicsCore/Pipeline/Passes/TransparentForwardRenderPass.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
+#include <GraphicsCore/Textures/TextureUtils.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentForwardRenderPass, 1, xiiRTTIDefaultAllocator<xiiTransparentForwardRenderPass>)
@@ -42,13 +43,14 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext&       
 
   CreateSampler();
 
-  xiiUInt32 uiWidth  = pColorInput->m_Desc.m_uiWidth;
-  xiiUInt32 uiHeight = pColorInput->m_Desc.m_uiHeight;
-
   xiiGALTextureCreationDescription desc;
-  desc.SetAsRenderTarget(uiWidth, uiHeight, pColorInput->m_Desc.m_Format);
-  desc.m_uiArraySize     = pColorInput->m_Desc.m_uiArraySize;
-  desc.m_uiMipLevelCount = 1;
+  desc.m_Size               = pColorInput->m_Desc.m_Size;
+  desc.m_uiArraySizeOrDepth = pColorInput->m_Desc.m_uiArraySizeOrDepth;
+  desc.m_uiMipLevels        = 1;
+  desc.m_uiSampleCount      = 1;
+  desc.m_Format             = pColorInput->m_Desc.m_Format;
+  desc.m_Usage              = xiiGALResourceUsage::Immutable;
+  desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
 
   xiiGALTextureHandle hSceneColor = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
 
@@ -61,7 +63,7 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext&       
 
   UpdateSceneColorTexture(renderViewContext, hSceneColor, pColorInput->m_TextureHandle);
 
-  xiiGALResourceViewHandle colorResourceViewHandle = pDevice->GetDefaultResourceView(hSceneColor);
+  xiiGALTextureViewHandle colorResourceViewHandle = pDevice->GetDefaultResourceView(hSceneColor);
   renderViewContext.m_pRenderContext->BindTexture2D("SceneColor", colorResourceViewHandle);
   renderViewContext.m_pRenderContext->BindSampler("SceneColorSampler", m_hSceneColorSampler);
 
@@ -81,7 +83,7 @@ void xiiTransparentForwardRenderPass::SetupResources(xiiGALPass* pGALPass, const
 
   if (inputs[m_PinResolvedDepth.m_uiInputIndex])
   {
-    xiiGALResourceViewHandle depthResourceViewHandle = pDevice->GetDefaultResourceView(inputs[m_PinResolvedDepth.m_uiInputIndex]->m_TextureHandle);
+    xiiGALTextureViewHandle depthResourceViewHandle = pDevice->GetDefaultResourceView(inputs[m_PinResolvedDepth.m_uiInputIndex]->m_TextureHandle);
     renderViewContext.m_pRenderContext->BindTexture2D("SceneDepth", depthResourceViewHandle);
   }
 }
@@ -99,12 +101,9 @@ void xiiTransparentForwardRenderPass::RenderObjects(const xiiRenderViewContext& 
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitScreenFX);
 }
 
-void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(
-  const xiiRenderViewContext& renderViewContext,
-  xiiGALTextureHandle         hSceneColorTexture,
-  xiiGALTextureHandle         hCurrentColorTexture)
+void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(const xiiRenderViewContext& renderViewContext, xiiGALTextureHandle hSceneColorTexture, xiiGALTextureHandle hCurrentColorTexture)
 {
-  xiiGALTextureSubresource subresource;
+  xiiGALTextureMipLevelData subresource;
   subresource.m_uiMipLevel   = 0;
   subresource.m_uiArraySlice = 0;
 
@@ -116,17 +115,15 @@ void xiiTransparentForwardRenderPass::CreateSampler()
   if (m_hSceneColorSampler.IsInvalidated())
   {
     xiiGALSamplerCreationDescription desc;
-    desc.m_MinFilter = xiiGALTextureFilterMode::Linear;
-    desc.m_MagFilter = xiiGALTextureFilterMode::Linear;
-    desc.m_MipFilter = xiiGALTextureFilterMode::Linear;
-    desc.m_AddressU  = xiiImageAddressMode::Clamp;
-    desc.m_AddressV  = xiiImageAddressMode::Mirror;
-    desc.m_AddressW  = xiiImageAddressMode::Mirror;
+    desc.m_MinFilter = xiiGALFilterType::Linear;
+    desc.m_MagFilter = xiiGALFilterType::Linear;
+    desc.m_MipFilter = xiiGALFilterType::Linear;
+    desc.m_AddressU  = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    desc.m_AddressV  = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Mirror);
+    desc.m_AddressW  = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Mirror);
 
     m_hSceneColorSampler = xiiGALDevice::GetDefaultDevice()->CreateSampler(desc);
   }
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_TransparentForwardRenderPass);

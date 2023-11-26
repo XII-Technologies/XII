@@ -59,7 +59,7 @@ bool xiiSeparatedBilateralBlurPass::GetRenderTargetDescriptions(const xiiView& v
     xiiLog::Error("No blur target connected to bilateral blur pass!");
     return false;
   }
-  if (!inputs[m_PinBlurSourceInput.m_uiInputIndex]->m_bAllowShaderResourceView)
+  if (!inputs[m_PinBlurSourceInput.m_uiInputIndex]->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
   {
     xiiLog::Error("All bilateral blur pass inputs must allow shader resoure view.");
     return false;
@@ -71,12 +71,12 @@ bool xiiSeparatedBilateralBlurPass::GetRenderTargetDescriptions(const xiiView& v
     xiiLog::Error("No depth connected to bilateral blur pass!");
     return false;
   }
-  if (!inputs[m_PinDepthInput.m_uiInputIndex]->m_bAllowShaderResourceView)
+  if (!inputs[m_PinDepthInput.m_uiInputIndex]->m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
   {
     xiiLog::Error("All bilateral blur pass inputs must allow shader resoure view.");
     return false;
   }
-  if (inputs[m_PinBlurSourceInput.m_uiInputIndex]->m_uiWidth != inputs[m_PinDepthInput.m_uiInputIndex]->m_uiWidth || inputs[m_PinBlurSourceInput.m_uiInputIndex]->m_uiHeight != inputs[m_PinDepthInput.m_uiInputIndex]->m_uiHeight)
+  if (inputs[m_PinBlurSourceInput.m_uiInputIndex]->m_Size.width != inputs[m_PinDepthInput.m_uiInputIndex]->m_Size.width || inputs[m_PinBlurSourceInput.m_uiInputIndex]->m_Size.height != inputs[m_PinDepthInput.m_uiInputIndex]->m_Size.height)
   {
     xiiLog::Error("Blur target and depth buffer for bilateral blur pass need to have the same dimensions.");
     return false;
@@ -98,19 +98,18 @@ void xiiSeparatedBilateralBlurPass::Execute(const xiiRenderViewContext& renderVi
     XII_SCOPE_EXIT(pDevice->EndPass(pGALPass));
 
     // Setup input view and sampler
-    xiiGALResourceViewCreationDescription rvcd;
-    rvcd.m_hTexture                               = inputs[m_PinBlurSourceInput.m_uiInputIndex]->m_TextureHandle;
-    xiiGALResourceViewHandle hBlurSourceInputView = xiiGALDevice::GetDefaultDevice()->CreateResourceView(rvcd);
-    rvcd.m_hTexture                               = inputs[m_PinDepthInput.m_uiInputIndex]->m_TextureHandle;
-    xiiGALResourceViewHandle hDepthInputView      = xiiGALDevice::GetDefaultDevice()->CreateResourceView(rvcd);
+    xiiGALTextureViewCreationDescription rvcd;
+    rvcd.m_hTexture                              = inputs[m_PinBlurSourceInput.m_uiInputIndex]->m_TextureHandle;
+    xiiGALTextureViewHandle hBlurSourceInputView = xiiGALDevice::GetDefaultDevice()->CreateTextureView(rvcd);
+    rvcd.m_hTexture                              = inputs[m_PinDepthInput.m_uiInputIndex]->m_TextureHandle;
+    xiiGALTextureViewHandle hDepthInputView      = xiiGALDevice::GetDefaultDevice()->CreateTextureView(rvcd);
 
     // Get temp texture for horizontal target / vertical source.
     xiiGALTextureCreationDescription tempTextureDesc = outputs[m_PinBlurSourceInput.m_uiInputIndex]->m_Desc;
-    tempTextureDesc.m_bAllowShaderResourceView       = true;
-    tempTextureDesc.m_bCreateRenderTarget            = true;
-    xiiGALTextureHandle tempTexture                  = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(tempTextureDesc);
-    rvcd.m_hTexture                                  = tempTexture;
-    xiiGALResourceViewHandle hTempTextureRView       = xiiGALDevice::GetDefaultDevice()->CreateResourceView(rvcd);
+    tempTextureDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
+    xiiGALTextureHandle tempTexture           = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(tempTextureDesc);
+    rvcd.m_hTexture                           = tempTexture;
+    xiiGALTextureViewHandle hTempTextureRView = xiiGALDevice::GetDefaultDevice()->CreateTextureView(rvcd);
 
     xiiGALRenderingSetup renderingSetup;
 

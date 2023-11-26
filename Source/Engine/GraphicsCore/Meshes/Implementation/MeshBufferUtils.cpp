@@ -35,7 +35,7 @@ namespace
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshNormalPrecision, 1)
-  XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_10Bit),
+  XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_8Bit),
   XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_16Bit),
   XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_32Bit),
 XII_END_STATIC_REFLECTED_ENUM;
@@ -60,10 +60,10 @@ xiiResult xiiMeshBufferUtils::EncodeFromFloat(const float fSource, xiiArrayPtr<x
 
   switch (destFormat)
   {
-    case xiiGALTextureFormat::RFloat:
+    case xiiGALTextureFormat::R32Float:
       *reinterpret_cast<float*>(dest.GetPtr()) = fSource;
       return XII_SUCCESS;
-    case xiiGALTextureFormat::RHalf:
+    case xiiGALTextureFormat::R16Float:
       *reinterpret_cast<xiiFloat16*>(dest.GetPtr()) = fSource;
       return XII_SUCCESS;
     default:
@@ -78,11 +78,11 @@ xiiResult xiiMeshBufferUtils::EncodeFromVec2(const xiiVec2& vSource, xiiArrayPtr
 
   switch (destFormat)
   {
-    case xiiGALTextureFormat::RGFloat:
+    case xiiGALTextureFormat::RG32Float:
       *reinterpret_cast<xiiVec2*>(dest.GetPtr()) = vSource;
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGHalf:
+    case xiiGALTextureFormat::RG16Float:
       *reinterpret_cast<xiiFloat16Vec2*>(dest.GetPtr()) = vSource;
       return XII_SUCCESS;
 
@@ -98,38 +98,38 @@ xiiResult xiiMeshBufferUtils::EncodeFromVec3(const xiiVec3& vSource, xiiArrayPtr
 
   switch (destFormat)
   {
-    case xiiGALTextureFormat::RGBFloat:
+    case xiiGALTextureFormat::RGB32Float:
       *reinterpret_cast<xiiVec3*>(dest.GetPtr()) = vSource;
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAUShortNormalized:
+    case xiiGALTextureFormat::RGBA16UNormalized:
       reinterpret_cast<xiiUInt16*>(dest.GetPtr())[0] = xiiMath::ColorFloatToShort(vSource.x);
       reinterpret_cast<xiiUInt16*>(dest.GetPtr())[1] = xiiMath::ColorFloatToShort(vSource.y);
       reinterpret_cast<xiiUInt16*>(dest.GetPtr())[2] = xiiMath::ColorFloatToShort(vSource.z);
       reinterpret_cast<xiiUInt16*>(dest.GetPtr())[3] = 0;
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAShortNormalized:
+    case xiiGALTextureFormat::RGBA16SNormalized:
       reinterpret_cast<xiiInt16*>(dest.GetPtr())[0] = xiiMath::ColorFloatToSignedShort(vSource.x);
       reinterpret_cast<xiiInt16*>(dest.GetPtr())[1] = xiiMath::ColorFloatToSignedShort(vSource.y);
       reinterpret_cast<xiiInt16*>(dest.GetPtr())[2] = xiiMath::ColorFloatToSignedShort(vSource.z);
       reinterpret_cast<xiiInt16*>(dest.GetPtr())[3] = 0;
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGB10A2UIntNormalized:
+    case xiiGALTextureFormat::RGB10A2UNormalized:
       *reinterpret_cast<xiiUInt32*>(dest.GetPtr()) = ColorFloatToUNorm<10>(vSource.x);
       *reinterpret_cast<xiiUInt32*>(dest.GetPtr()) |= ColorFloatToUNorm<10>(vSource.y) << 10;
       *reinterpret_cast<xiiUInt32*>(dest.GetPtr()) |= ColorFloatToUNorm<10>(vSource.z) << 20;
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAUByteNormalized:
+    case xiiGALTextureFormat::RGBA8UNormalized:
       dest.GetPtr()[0] = xiiMath::ColorFloatToByte(vSource.x);
       dest.GetPtr()[1] = xiiMath::ColorFloatToByte(vSource.y);
       dest.GetPtr()[2] = xiiMath::ColorFloatToByte(vSource.z);
       dest.GetPtr()[3] = 0;
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAByteNormalized:
+    case xiiGALTextureFormat::RGBA8SNormalized:
       dest.GetPtr()[0] = xiiMath::ColorFloatToSignedByte(vSource.x);
       dest.GetPtr()[1] = xiiMath::ColorFloatToSignedByte(vSource.y);
       dest.GetPtr()[2] = xiiMath::ColorFloatToSignedByte(vSource.z);
@@ -147,43 +147,43 @@ xiiResult xiiMeshBufferUtils::EncodeFromVec4(const xiiVec4& vSource, xiiArrayPtr
 
   switch (destFormat)
   {
-    case xiiGALTextureFormat::RGBAFloat:
+    case xiiGALTextureFormat::RGBA32Float:
       *reinterpret_cast<xiiVec4*>(dest.GetPtr()) = vSource;
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAHalf:
+    case xiiGALTextureFormat::RGBA16Float:
       *reinterpret_cast<xiiFloat16Vec4*>(dest.GetPtr()) = vSource;
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAUShortNormalized:
+    case xiiGALTextureFormat::RGBA16UNormalized:
       reinterpret_cast<xiiUInt16*>(dest.GetPtr())[0] = xiiMath::ColorFloatToShort(vSource.x);
       reinterpret_cast<xiiUInt16*>(dest.GetPtr())[1] = xiiMath::ColorFloatToShort(vSource.y);
       reinterpret_cast<xiiUInt16*>(dest.GetPtr())[2] = xiiMath::ColorFloatToShort(vSource.z);
       reinterpret_cast<xiiUInt16*>(dest.GetPtr())[3] = xiiMath::ColorFloatToShort(vSource.w);
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAShortNormalized:
+    case xiiGALTextureFormat::RGBA16SNormalized:
       reinterpret_cast<xiiInt16*>(dest.GetPtr())[0] = xiiMath::ColorFloatToSignedShort(vSource.x);
       reinterpret_cast<xiiInt16*>(dest.GetPtr())[1] = xiiMath::ColorFloatToSignedShort(vSource.y);
       reinterpret_cast<xiiInt16*>(dest.GetPtr())[2] = xiiMath::ColorFloatToSignedShort(vSource.z);
       reinterpret_cast<xiiInt16*>(dest.GetPtr())[3] = xiiMath::ColorFloatToSignedShort(vSource.w);
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGB10A2UIntNormalized:
+    case xiiGALTextureFormat::RGB10A2UNormalized:
       *reinterpret_cast<xiiUInt32*>(dest.GetPtr()) = ColorFloatToUNorm<10>(vSource.x);
       *reinterpret_cast<xiiUInt32*>(dest.GetPtr()) |= ColorFloatToUNorm<10>(vSource.y) << 10;
       *reinterpret_cast<xiiUInt32*>(dest.GetPtr()) |= ColorFloatToUNorm<10>(vSource.z) << 20;
       *reinterpret_cast<xiiUInt32*>(dest.GetPtr()) |= ColorFloatToUNorm<2>(vSource.w) << 30;
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAUByteNormalized:
+    case xiiGALTextureFormat::RGBA8UNormalized:
       dest.GetPtr()[0] = xiiMath::ColorFloatToByte(vSource.x);
       dest.GetPtr()[1] = xiiMath::ColorFloatToByte(vSource.y);
       dest.GetPtr()[2] = xiiMath::ColorFloatToByte(vSource.z);
       dest.GetPtr()[3] = xiiMath::ColorFloatToByte(vSource.w);
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAByteNormalized:
+    case xiiGALTextureFormat::RGBA8SNormalized:
       dest.GetPtr()[0] = xiiMath::ColorFloatToSignedByte(vSource.x);
       dest.GetPtr()[1] = xiiMath::ColorFloatToSignedByte(vSource.y);
       dest.GetPtr()[2] = xiiMath::ColorFloatToSignedByte(vSource.z);
@@ -202,10 +202,10 @@ xiiResult xiiMeshBufferUtils::DecodeToFloat(xiiArrayPtr<const xiiUInt8> source, 
 
   switch (sourceFormat)
   {
-    case xiiGALTextureFormat::RFloat:
+    case xiiGALTextureFormat::R32Float:
       ref_fDest = *reinterpret_cast<const float*>(source.GetPtr());
       return XII_SUCCESS;
-    case xiiGALTextureFormat::RHalf:
+    case xiiGALTextureFormat::R16Float:
       ref_fDest = *reinterpret_cast<const xiiFloat16*>(source.GetPtr());
       return XII_SUCCESS;
     default:
@@ -220,10 +220,10 @@ xiiResult xiiMeshBufferUtils::DecodeToVec2(xiiArrayPtr<const xiiUInt8> source, x
 
   switch (sourceFormat)
   {
-    case xiiGALTextureFormat::RGFloat:
+    case xiiGALTextureFormat::RG32Float:
       ref_vDest = *reinterpret_cast<const xiiVec2*>(source.GetPtr());
       return XII_SUCCESS;
-    case xiiGALTextureFormat::RGHalf:
+    case xiiGALTextureFormat::RG16Float:
       ref_vDest = *reinterpret_cast<const xiiFloat16Vec2*>(source.GetPtr());
       return XII_SUCCESS;
     default:
@@ -238,35 +238,35 @@ xiiResult xiiMeshBufferUtils::DecodeToVec3(xiiArrayPtr<const xiiUInt8> source, x
 
   switch (sourceFormat)
   {
-    case xiiGALTextureFormat::RGBFloat:
+    case xiiGALTextureFormat::RGB32Float:
       ref_vDest = *reinterpret_cast<const xiiVec3*>(source.GetPtr());
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAUShortNormalized:
+    case xiiGALTextureFormat::RGBA16UNormalized:
       ref_vDest.x = xiiMath::ColorShortToFloat(reinterpret_cast<const xiiUInt16*>(source.GetPtr())[0]);
       ref_vDest.y = xiiMath::ColorShortToFloat(reinterpret_cast<const xiiUInt16*>(source.GetPtr())[1]);
       ref_vDest.z = xiiMath::ColorShortToFloat(reinterpret_cast<const xiiUInt16*>(source.GetPtr())[2]);
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAShortNormalized:
+    case xiiGALTextureFormat::RGBA16SNormalized:
       ref_vDest.x = xiiMath::ColorSignedShortToFloat(reinterpret_cast<const xiiInt16*>(source.GetPtr())[0]);
       ref_vDest.y = xiiMath::ColorSignedShortToFloat(reinterpret_cast<const xiiInt16*>(source.GetPtr())[1]);
       ref_vDest.z = xiiMath::ColorSignedShortToFloat(reinterpret_cast<const xiiInt16*>(source.GetPtr())[2]);
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGB10A2UIntNormalized:
+    case xiiGALTextureFormat::RGB10A2UNormalized:
       ref_vDest.x = ColorUNormToFloat<10>(*reinterpret_cast<const xiiUInt32*>(source.GetPtr()));
       ref_vDest.y = ColorUNormToFloat<10>(*reinterpret_cast<const xiiUInt32*>(source.GetPtr()) >> 10);
       ref_vDest.z = ColorUNormToFloat<10>(*reinterpret_cast<const xiiUInt32*>(source.GetPtr()) >> 20);
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAUByteNormalized:
+    case xiiGALTextureFormat::RGBA8UNormalized:
       ref_vDest.x = xiiMath::ColorByteToFloat(source.GetPtr()[0]);
       ref_vDest.y = xiiMath::ColorByteToFloat(source.GetPtr()[1]);
       ref_vDest.z = xiiMath::ColorByteToFloat(source.GetPtr()[2]);
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAByteNormalized:
+    case xiiGALTextureFormat::RGBA8SNormalized:
       ref_vDest.x = xiiMath::ColorSignedByteToFloat(source.GetPtr()[0]);
       ref_vDest.y = xiiMath::ColorSignedByteToFloat(source.GetPtr()[1]);
       ref_vDest.z = xiiMath::ColorSignedByteToFloat(source.GetPtr()[2]);
@@ -283,43 +283,43 @@ xiiResult xiiMeshBufferUtils::DecodeToVec4(xiiArrayPtr<const xiiUInt8> source, x
 
   switch (sourceFormat)
   {
-    case xiiGALTextureFormat::RGBAFloat:
+    case xiiGALTextureFormat::RGBA32Float:
       ref_vDest = *reinterpret_cast<const xiiVec4*>(source.GetPtr());
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAHalf:
+    case xiiGALTextureFormat::RGBA16Float:
       ref_vDest = *reinterpret_cast<const xiiFloat16Vec4*>(source.GetPtr());
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAUShortNormalized:
+    case xiiGALTextureFormat::RGBA16UNormalized:
       ref_vDest.x = xiiMath::ColorShortToFloat(reinterpret_cast<const xiiUInt16*>(source.GetPtr())[0]);
       ref_vDest.y = xiiMath::ColorShortToFloat(reinterpret_cast<const xiiUInt16*>(source.GetPtr())[1]);
       ref_vDest.z = xiiMath::ColorShortToFloat(reinterpret_cast<const xiiUInt16*>(source.GetPtr())[2]);
       ref_vDest.w = xiiMath::ColorShortToFloat(reinterpret_cast<const xiiUInt16*>(source.GetPtr())[3]);
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAShortNormalized:
+    case xiiGALTextureFormat::RGBA16SNormalized:
       ref_vDest.x = xiiMath::ColorSignedShortToFloat(reinterpret_cast<const xiiInt16*>(source.GetPtr())[0]);
       ref_vDest.y = xiiMath::ColorSignedShortToFloat(reinterpret_cast<const xiiInt16*>(source.GetPtr())[1]);
       ref_vDest.z = xiiMath::ColorSignedShortToFloat(reinterpret_cast<const xiiInt16*>(source.GetPtr())[2]);
       ref_vDest.w = xiiMath::ColorSignedShortToFloat(reinterpret_cast<const xiiInt16*>(source.GetPtr())[3]);
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGB10A2UIntNormalized:
+    case xiiGALTextureFormat::RGB10A2UNormalized:
       ref_vDest.x = ColorUNormToFloat<10>(*reinterpret_cast<const xiiUInt32*>(source.GetPtr()));
       ref_vDest.y = ColorUNormToFloat<10>(*reinterpret_cast<const xiiUInt32*>(source.GetPtr()) >> 10);
       ref_vDest.z = ColorUNormToFloat<10>(*reinterpret_cast<const xiiUInt32*>(source.GetPtr()) >> 20);
       ref_vDest.w = ColorUNormToFloat<2>(*reinterpret_cast<const xiiUInt32*>(source.GetPtr()) >> 30);
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAUByteNormalized:
+    case xiiGALTextureFormat::RGBA8UNormalized:
       ref_vDest.x = xiiMath::ColorByteToFloat(source.GetPtr()[0]);
       ref_vDest.y = xiiMath::ColorByteToFloat(source.GetPtr()[1]);
       ref_vDest.z = xiiMath::ColorByteToFloat(source.GetPtr()[2]);
       ref_vDest.w = xiiMath::ColorByteToFloat(source.GetPtr()[3]);
       return XII_SUCCESS;
 
-    case xiiGALTextureFormat::RGBAByteNormalized:
+    case xiiGALTextureFormat::RGBA8SNormalized:
       ref_vDest.x = xiiMath::ColorSignedByteToFloat(source.GetPtr()[0]);
       ref_vDest.y = xiiMath::ColorSignedByteToFloat(source.GetPtr()[1]);
       ref_vDest.z = xiiMath::ColorSignedByteToFloat(source.GetPtr()[2]);
@@ -341,9 +341,9 @@ xiiResult xiiMeshBufferUtils::GetPositionStream(const xiiMeshBufferResourceDescr
 
   for (xiiUInt32 vs = 0; vs < vdi.m_VertexStreams.GetCount(); ++vs)
   {
-    if (vdi.m_VertexStreams[vs].m_Semantic == xiiGALVertexAttributeSemantic::Position)
+    if (vdi.m_VertexStreams[vs].m_Semantic == xiiGALInputLayoutSemantic::Position)
     {
-      if (vdi.m_VertexStreams[vs].m_Format != xiiGALTextureFormat::RGBFloat)
+      if (vdi.m_VertexStreams[vs].m_Format != xiiGALTextureFormat::RGB32Float)
       {
         xiiLog::Error("Unsupported vertex position format {0}", (int)vdi.m_VertexStreams[vs].m_Format);
         return XII_FAILURE; // other position formats are not supported
@@ -376,9 +376,9 @@ xiiResult xiiMeshBufferUtils::GetPositionAndNormalStream(const xiiMeshBufferReso
 
   for (xiiUInt32 vs = 0; vs < vdi.m_VertexStreams.GetCount(); ++vs)
   {
-    if (vdi.m_VertexStreams[vs].m_Semantic == xiiGALVertexAttributeSemantic::Position)
+    if (vdi.m_VertexStreams[vs].m_Semantic == xiiGALInputLayoutSemantic::Position)
     {
-      if (vdi.m_VertexStreams[vs].m_Format != xiiGALTextureFormat::RGBFloat)
+      if (vdi.m_VertexStreams[vs].m_Format != xiiGALTextureFormat::RGB32Float)
       {
         xiiLog::Error("Unsupported vertex position format {0}", (int)vdi.m_VertexStreams[vs].m_Format);
         return XII_FAILURE; // other position formats are not supported
@@ -386,7 +386,7 @@ xiiResult xiiMeshBufferUtils::GetPositionAndNormalStream(const xiiMeshBufferReso
 
       pPositions = reinterpret_cast<const xiiVec3*>(pRawVertexData + vdi.m_VertexStreams[vs].m_uiOffset);
     }
-    else if (vdi.m_VertexStreams[vs].m_Semantic == xiiGALVertexAttributeSemantic::Normal)
+    else if (vdi.m_VertexStreams[vs].m_Semantic == xiiGALInputLayoutSemantic::Normal)
     {
       pNormals     = pRawVertexData + vdi.m_VertexStreams[vs].m_uiOffset;
       normalFormat = vdi.m_VertexStreams[vs].m_Format;
@@ -413,6 +413,5 @@ xiiResult xiiMeshBufferUtils::GetPositionAndNormalStream(const xiiMeshBufferReso
   out_uiElementStride = meshBufferDesc.GetVertexDataSize();
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_MeshBufferUtils);

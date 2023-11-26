@@ -39,7 +39,7 @@ public:
   /// \brief Creates a new dynamic mesh buffer.
   ///
   /// The new buffer can hold the given number of vertices and indices (either 16 bit or 32 bit).
-  xiiDynamicMeshBufferResourceHandle CreateMeshResource(xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiMaxVertices, xiiUInt32 uiMaxPrimitives, xiiGALIndexType::Enum indexType);
+  xiiDynamicMeshBufferResourceHandle CreateMeshResource(xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiMaxVertices, xiiUInt32 uiMaxPrimitives, xiiGALValueType::Enum indexType);
 
   /// \brief Returns the currently set mesh resource.
   xiiDynamicMeshBufferResourceHandle GetMeshResource() const { return m_hDynamicMesh; }

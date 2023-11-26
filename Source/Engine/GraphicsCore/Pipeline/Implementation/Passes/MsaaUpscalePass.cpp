@@ -5,7 +5,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
-#include <GraphicsFoundation/Resources/RenderTargetView.h>
+
 #include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
@@ -15,7 +15,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsaaUpscalePass, 2, xiiRTTIDefaultAllocator<
   {
     XII_MEMBER_PROPERTY("Input", m_PinInput),
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
-    XII_ENUM_MEMBER_PROPERTY("MSAA_Mode", xiiGALMSAASampleCount, m_MsaaMode)
+    XII_ENUM_MEMBER_PROPERTY("MSAA_Mode", xiiGALSampleCount, m_MsaaMode)
   }
   XII_END_PROPERTIES;
 }
@@ -24,7 +24,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiMsaaUpscalePass::xiiMsaaUpscalePass() :
   xiiRenderPipelinePass("MsaaUpscalePass")
-
 {
   {
     // Load shader.
@@ -40,14 +39,14 @@ bool xiiMsaaUpscalePass::GetRenderTargetDescriptions(const xiiView& view, const 
   auto pInput = inputs[m_PinInput.m_uiInputIndex];
   if (pInput != nullptr)
   {
-    if (pInput->m_SampleCount != xiiGALMSAASampleCount::None)
+    if (pInput->m_uiSampleCount != xiiGALSampleCount::OneSample)
     {
       xiiLog::Error("Input must not be a msaa target");
       return false;
     }
 
     xiiGALTextureCreationDescription desc = *pInput;
-    desc.m_SampleCount                    = m_MsaaMode;
+    desc.m_uiSampleCount                  = m_MsaaMode;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }

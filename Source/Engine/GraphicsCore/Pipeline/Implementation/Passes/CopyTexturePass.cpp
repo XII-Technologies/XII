@@ -1,11 +1,10 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <GraphicsFoundation/Resources/Texture.h>
+
 #include <GraphicsCore/Pipeline/Passes/CopyTexturePass.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
-
-#include <GraphicsFoundation/Resources/RenderTargetView.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCopyTexturePass, 1, xiiRTTIDefaultAllocator<xiiCopyTexturePass>)
@@ -77,7 +76,5 @@ void xiiCopyTexturePass::Execute(const xiiRenderViewContext& renderViewContext, 
     pCommandEncoder->CopyTexture(pOutput->m_TextureHandle, pInput->m_TextureHandle);
   }
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_CopyTexturePass);

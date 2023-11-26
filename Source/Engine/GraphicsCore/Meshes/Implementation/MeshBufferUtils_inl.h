@@ -2,13 +2,13 @@
 // static
 XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshNormalPrecision::ToResourceFormatNormal(Enum value)
 {
-  return value == _10Bit ? xiiGALTextureFormat::RGB10A2UIntNormalized : (value == _16Bit ? xiiGALTextureFormat::RGBAUShortNormalized : xiiGALTextureFormat::XYZFloat);
+  return value == _8Bit ? xiiGALTextureFormat::RGBA8UNormalized : (value == _16Bit ? xiiGALTextureFormat::RGBA16UNormalized : xiiGALTextureFormat::RGB32Float);
 }
 
 // static
 XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshNormalPrecision::ToResourceFormatTangent(Enum value)
 {
-  return value == _10Bit ? xiiGALTextureFormat::RGB10A2UIntNormalized : (value == _16Bit ? xiiGALTextureFormat::RGBAUShortNormalized : xiiGALTextureFormat::XYZWFloat);
+  return value == _8Bit ? xiiGALTextureFormat::RGBA8UNormalized : (value == _16Bit ? xiiGALTextureFormat::RGBA16UNormalized : xiiGALTextureFormat::RGB32Float);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -16,7 +16,7 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshNormalPrecision::ToResourc
 // static
 XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshTexCoordPrecision::ToResourceFormat(Enum value)
 {
-  return value == _16Bit ? xiiGALTextureFormat::UVHalf : xiiGALTextureFormat::UVFloat;
+  return value == _16Bit ? xiiGALTextureFormat::RG16Float : xiiGALTextureFormat::RG32Float;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -27,17 +27,18 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshBoneWeigthPrecision::ToRes
   switch (value)
   {
     case _8Bit:
-      return xiiGALTextureFormat::RGBAUByteNormalized;
+      return xiiGALTextureFormat::RGBA8UNormalized;
     case _10Bit:
-      return xiiGALTextureFormat::RGB10A2UIntNormalized;
+      return xiiGALTextureFormat::RGB10A2UNormalized;
     case _16Bit:
-      return xiiGALTextureFormat::RGBAUShortNormalized;
+      return xiiGALTextureFormat::RGBA16UNormalized;
     case _32Bit:
-      return xiiGALTextureFormat::RGBAFloat;
+      return xiiGALTextureFormat::RGBA32Float;
+
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  return xiiGALTextureFormat::RGBAUByteNormalized;
+  return xiiGALTextureFormat::RGBA8UNormalized;
 }
 
 //////////////////////////////////////////////////////////////////////////

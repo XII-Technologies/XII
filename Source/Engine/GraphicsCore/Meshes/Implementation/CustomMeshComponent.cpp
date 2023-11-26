@@ -43,7 +43,7 @@ xiiAtomicInteger32 s_iCustomMeshResources;
 
 xiiCustomMeshComponent::xiiCustomMeshComponent()
 {
-  m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
+  m_Bounds.SetInvalid();
 }
 
 xiiCustomMeshComponent::~xiiCustomMeshComponent() = default;
@@ -85,7 +85,7 @@ xiiResult xiiCustomMeshComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bound
   return XII_FAILURE;
 }
 
-xiiDynamicMeshBufferResourceHandle xiiCustomMeshComponent::CreateMeshResource(xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiMaxVertices, xiiUInt32 uiMaxPrimitives, xiiGALIndexType::Enum indexType)
+xiiDynamicMeshBufferResourceHandle xiiCustomMeshComponent::CreateMeshResource(xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiMaxVertices, xiiUInt32 uiMaxPrimitives, xiiGALValueType::Enum indexType)
 {
   xiiDynamicMeshBufferResourceDescriptor desc;
   desc.m_Topology        = topology;
@@ -214,7 +214,7 @@ void xiiCustomMeshComponent::OnActivated()
     geo.TriangulatePolygons();
     geo.ComputeTangents();
 
-    auto hMesh = CreateMeshResource(xiiGALPrimitiveTopology::TriangleList, geo.GetVertices().GetCount(), geo.GetPolygons().GetCount(), xiiGALIndexType::UInt);
+    auto hMesh = CreateMeshResource(xiiGALPrimitiveTopology::TriangleList, geo.GetVertices().GetCount(), geo.GetPolygons().GetCount(), xiiGALValueType::UInt32);
 
     xiiResourceLock<xiiDynamicMeshBufferResource> pMesh(hMesh, xiiResourceAcquireMode::BlockTillLoaded);
 
@@ -240,7 +240,7 @@ void xiiCustomMeshComponent::OnActivated()
       ind[i * 3 + 2] = geo.GetPolygons()[i].m_Vertices[2];
     }
 
-    SetBounds(xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::ZeroVector(), 1.5f));
+    SetBounds(xiiBoundingSphere(xiiVec3::ZeroVector(), 1.5f));
   }
 }
 
@@ -359,6 +359,5 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
     renderViewContext.m_pRenderContext->DrawMeshBuffer(pRenderData->m_uiNumPrimitives, pRenderData->m_uiFirstPrimitive).IgnoreResult();
   }
 }
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_CustomMeshComponent);

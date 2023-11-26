@@ -9,11 +9,11 @@ using xiiDynamicMeshBufferResourceHandle = xiiTypedResourceHandle<class xiiDynam
 
 struct xiiDynamicMeshBufferResourceDescriptor
 {
-  xiiGALPrimitiveTopology::Enum m_Topology        = xiiGALPrimitiveTopology::TriangleList;
-  xiiGALIndexType::Enum         m_IndexType       = xiiGALIndexType::UInt;
-  xiiUInt32                     m_uiMaxPrimitives = 0;
-  xiiUInt32                     m_uiMaxVertices   = 0;
-  bool                          m_bColorStream    = false;
+  xiiEnum<xiiGALPrimitiveTopology> m_Topology        = xiiGALPrimitiveTopology::TriangleList;
+  xiiEnum<xiiGALValueType>         m_IndexType       = xiiGALValueType::UInt32;
+  xiiUInt32                        m_uiMaxPrimitives = 0;
+  xiiUInt32                        m_uiMaxVertices   = 0;
+  bool                             m_bColorStream    = false;
 };
 
 struct XII_GRAPHICSCORE_DLL xiiDynamicMeshVertex
@@ -109,7 +109,7 @@ public:
   /// This function can be used to only upload a subset of the modified data.
   ///
   /// Note that this function doesn't do anything, if the vertex or index data wasn't recently accessed through AccessVertexData(), AccessIndex16Data() or AccessIndex32Data(). So if you want to upload multiple pieces of the data to the GPU, you have to call these functions in between to flag the uploaded data as out-of-date.
-  void UpdateGpuBuffer(xiiGALCommandEncoder* pGALCommandEncoder, xiiUInt32 uiFirstVertex = 0, xiiUInt32 uiNumVertices = xiiMath::MaxValue<xiiUInt32>(), xiiUInt32 uiFirstIndex = 0, xiiUInt32 uiNumIndices = xiiMath::MaxValue<xiiUInt32>(), xiiGALUpdateMode::Enum mode = xiiGALUpdateMode::Discard);
+  void UpdateGpuBuffer(xiiGALCommandEncoder* pGALCommandEncoder, xiiUInt32 uiFirstVertex = 0, xiiUInt32 uiNumVertices = xiiMath::MaxValue<xiiUInt32>(), xiiUInt32 uiFirstIndex = 0, xiiUInt32 uiNumIndices = xiiMath::MaxValue<xiiUInt32>(), xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard);
 
 private:
   virtual xiiResourceLoadDesc UnloadData(Unload WhatToUnload) override;

@@ -4,7 +4,7 @@
 #include <Foundation/Math/BoundingBoxSphere.h>
 #include <Foundation/Memory/AllocatorWrapper.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsFoundation/Descriptors/Descriptors.h>
+#include <GraphicsFoundation/Shader/InputLayout.h>
 
 using xiiMeshBufferResourceHandle = xiiTypedResourceHandle<class xiiMeshBufferResource>;
 class xiiGeometry;
@@ -13,11 +13,11 @@ struct XII_GRAPHICSCORE_DLL xiiVertexStreamInfo : public xiiHashableStruct<xiiVe
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiGALVertexAttributeSemantic::Enum m_Semantic;
-  xiiUInt8                            m_uiVertexBufferSlot = 0;
-  xiiEnum<xiiGALTextureFormat>        m_Format;
-  xiiUInt16                           m_uiOffset;      ///< at which byte offset the first element starts
-  xiiUInt16                           m_uiElementSize; ///< the number of bytes for this element type (depends on the format); this is not the stride between elements!
+  xiiEnum<xiiGALInputLayoutSemantic> m_Semantic;
+  xiiUInt8                           m_uiVertexBufferSlot = 0;
+  xiiEnum<xiiGALTextureFormat>       m_Format;
+  xiiUInt16                          m_uiOffset;      ///< at which byte offset the first element starts
+  xiiUInt16                          m_uiElementSize; ///< the number of bytes for this element type (depends on the format); this is not the stride between elements!
 };
 
 struct XII_GRAPHICSCORE_DLL xiiInputLayoutInfo
@@ -38,7 +38,7 @@ public:
   void Clear();
 
   /// \brief Use this function to add vertex streams to the mesh buffer. The return value is the index of the just added stream.
-  xiiUInt32 AddStream(xiiGALVertexAttributeSemantic::Enum semantic, xiiEnum<xiiGALTextureFormat> format);
+  xiiUInt32 AddStream(xiiEnum<xiiGALInputLayoutSemantic> semantic, xiiEnum<xiiGALTextureFormat> format);
 
   /// \brief Adds common vertex streams to the mesh buffer.
   ///

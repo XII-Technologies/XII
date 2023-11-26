@@ -125,7 +125,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   // Find temp targets
   xiiGALTextureHandle                        hzbTexture;
   xiiHybridArray<xiiVec2, 8>                 hzbSizes;
-  xiiHybridArray<xiiGALTextureViewHandle, 8>       hzbResourceViews;
+  xiiHybridArray<xiiGALTextureViewHandle, 8> hzbResourceViews;
   xiiHybridArray<xiiGALTextureViewHandle, 8> hzbRenderTargetViews;
 
   xiiGALTextureHandle tempSSAOTexture;
@@ -153,19 +153,19 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
 
       {
         xiiGALTextureViewCreationDescription desc;
-        desc.m_hTexture               = hzbTexture;
-        desc.m_uiMostDetailedMip = i;
-        desc.m_uiMipLevelCount       = 1;
-        desc.m_uiArrayOrDepthSlicesCount           = pOutput->m_Desc.m_uiArraySizeOrDepth;
+        desc.m_hTexture                  = hzbTexture;
+        desc.m_uiMostDetailedMip         = i;
+        desc.m_uiMipLevelCount           = 1;
+        desc.m_uiArrayOrDepthSlicesCount = pOutput->m_Desc.m_uiArraySizeOrDepth;
 
         hzbResourceViews.PushBack(pDevice->CreateTextureView(desc));
       }
 
       {
         xiiGALTextureViewCreationDescription desc;
-        desc.m_hTexture     = hzbTexture;
-        desc.m_uiMostDetailedMip   = i;
-        desc.m_uiMipLevelCount   = 1;
+        desc.m_hTexture                  = hzbTexture;
+        desc.m_uiMostDetailedMip         = i;
+        desc.m_uiMipLevelCount           = 1;
         desc.m_uiArrayOrDepthSlicesCount = pOutput->m_Desc.m_uiArraySizeOrDepth;
 
         hzbRenderTargetViews.PushBack(pDevice->CreateTextureView(desc));
@@ -182,7 +182,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
     for (xiiUInt32 i = 0; i < uiNumMips; ++i)
     {
       xiiGALTextureViewHandle hInputView;
-      xiiVec2                  pixelSize;
+      xiiVec2                 pixelSize;
 
       if (i == 0)
       {

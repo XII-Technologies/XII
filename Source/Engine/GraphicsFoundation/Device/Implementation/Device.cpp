@@ -2607,6 +2607,30 @@ xiiGALTextureViewHandle xiiGALDevice::GetDefaultRenderTargetView(xiiGALTextureHa
   return xiiGALTextureViewHandle();
 }
 
+xiiUInt64 xiiGALDevice::GetMemoryConsumptionForTexture(const xiiGALTextureCreationDescription& desc) const
+{
+  auto& formatProperties = GetTextureFormatProperties(desc.m_Format);
+
+  // This generic implementation is only an approximation, but it can be overridden by specific devices
+  // to give an accurate memory consumption figure.
+  xiiUInt64 uiMemory = xiiUInt64(desc.m_Size.width) * xiiUInt64(desc.m_Size.height) * xiiUInt64(desc.m_uiArraySizeOrDepth);
+  uiMemory *= formatProperties.m_uiComponentSize;
+  uiMemory *= desc.m_uiSampleCount;
+
+  // Also account for mip maps
+  if (desc.m_uiMipLevels > 1)
+  {
+    uiMemory += static_cast<xiiUInt64>((1.0 / 3.0) * uiMemory);
+  }
+
+  return uiMemory;
+}
+
+xiiUInt64 xiiGALDevice::GetMemoryConsumptionForBuffer(const xiiGALBufferCreationDescription& desc) const
+{
+  return desc.m_uiSize;
+}
+
 void xiiGALDevice::DestroyDeadObjects()
 {
   // Can't use range based for here since new objects might be added during iteration

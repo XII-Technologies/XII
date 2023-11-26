@@ -3,7 +3,7 @@
 #include <GraphicsCore/Pipeline/Passes/TargetPass.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/RenderTargetView.h>
+
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTargetPass, 1, xiiRTTIDefaultAllocator<xiiTargetPass>)

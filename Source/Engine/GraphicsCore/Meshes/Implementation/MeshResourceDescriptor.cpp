@@ -12,12 +12,12 @@
 
 xiiMeshResourceDescriptor::xiiMeshResourceDescriptor()
 {
-  m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
+  m_Bounds.SetInvalid();
 }
 
 void xiiMeshResourceDescriptor::Clear()
 {
-  m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
+  m_Bounds.SetInvalid();
   m_hMeshBuffer.Invalidate();
   m_Materials.Clear();
   m_MeshBufferDescriptor.Clear();
@@ -84,7 +84,7 @@ void xiiMeshResourceDescriptor::AddSubMesh(xiiUInt32 uiPrimitiveCount, xiiUInt32
   p.m_uiFirstPrimitive = uiFirstPrimitive;
   p.m_uiPrimitiveCount = uiPrimitiveCount;
   p.m_uiMaterialIndex  = uiMaterialIndex;
-  p.m_Bounds           = xiiBoundingBoxSphere::MakeInvalid();
+  p.m_Bounds.SetInvalid();
 
   m_SubMeshes.PushBack(p);
 }
@@ -381,7 +381,7 @@ xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& inout_stream)
         chunk >> m_SubMeshes[idx].m_uiPrimitiveCount;
 
         /// \todo load from file
-        m_SubMeshes[idx].m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
+        m_SubMeshes[idx].m_Bounds.SetInvalid();
       }
     }
 
@@ -433,16 +433,16 @@ xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& inout_stream)
 
         if (uiVersion < 7)
         {
-          // xiiGALVertexAttributeSemantic got new elements inserted
+          // xiiGALInputLayoutSemantic got new elements inserted
           // need to adjust old file formats accordingly
 
-          if (iSemantic >= xiiGALVertexAttributeSemantic::Color2) // should be xiiGALVertexAttributeSemantic::TexCoord0 instead
+          if (iSemantic >= xiiGALInputLayoutSemantic::Color2) // should be xiiGALInputLayoutSemantic::TexCoord0 instead
           {
             iSemantic += 6;
           }
         }
 
-        m_MeshBufferDescriptor.AddStream((xiiGALVertexAttributeSemantic::Enum)iSemantic, (xiiEnum<xiiGALTextureFormat>)iFormat);
+        m_MeshBufferDescriptor.AddStream((xiiGALInputLayoutSemantic::Enum)iSemantic, (xiiGALTextureFormat::Enum)iFormat);
       }
 
       m_MeshBufferDescriptor.AllocateStreams(uiVertexCount, (xiiGALPrimitiveTopology::Enum)uiTopology, uiPrimitiveCount);

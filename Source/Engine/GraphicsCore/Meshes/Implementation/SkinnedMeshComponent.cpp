@@ -45,13 +45,14 @@ void xiiSkinningState::TransformsChanged()
       return;
 
     xiiGALBufferCreationDescription BufferDesc;
-    BufferDesc.m_uiStructSize                = sizeof(xiiShaderTransform);
-    BufferDesc.m_uiTotalSize                 = BufferDesc.m_uiStructSize * m_Transforms.GetCount();
-    BufferDesc.m_bUseAsStructuredBuffer      = true;
-    BufferDesc.m_bAllowShaderResourceView    = true;
-    BufferDesc.m_ResourceAccess.m_bImmutable = false;
+    BufferDesc.m_uiSize = sizeof(xiiShaderTransform) * m_Transforms.GetCount();
+    BufferDesc.m_Mode   = xiiGALBufferMode::Structured;
+    BufferDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
-    m_hGpuBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(BufferDesc, m_Transforms.GetArrayPtr().ToByteArray());
+    xiiGALBufferData initData;
+    initData.m_pData      = m_Transforms.GetData();
+    initData.m_uiDataSize = m_Transforms.GetArrayPtr().ToByteArray().GetCount();
+    m_hGpuBuffer          = xiiGALDevice::GetDefaultDevice()->CreateBuffer(BufferDesc, &initData);
 
     m_bTransformsUpdated[0] = std::make_shared<bool>(true);
     m_bTransformsUpdated[1] = std::make_shared<bool>(true);

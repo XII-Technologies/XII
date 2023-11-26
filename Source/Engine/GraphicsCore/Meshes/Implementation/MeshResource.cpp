@@ -16,7 +16,7 @@ xiiUInt32 xiiMeshResource::s_uiMeshBufferNameSuffix = 0;
 xiiMeshResource::xiiMeshResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)
 {
-  m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
+  m_Bounds.SetInvalid();
 }
 
 xiiResourceLoadDesc xiiMeshResource::UnloadData(Unload WhatToUnload)

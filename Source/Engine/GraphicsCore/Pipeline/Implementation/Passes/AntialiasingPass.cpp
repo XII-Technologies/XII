@@ -56,7 +56,7 @@ bool xiiAntialiasingPass::GetRenderTargetDescriptions(const xiiView& view, const
     }
 
     xiiGALTextureCreationDescription desc = *pInput;
-    desc.m_uiSampleCount = xiiGALSampleCount::OneSample;
+    desc.m_uiSampleCount                  = xiiGALSampleCount::OneSample;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }

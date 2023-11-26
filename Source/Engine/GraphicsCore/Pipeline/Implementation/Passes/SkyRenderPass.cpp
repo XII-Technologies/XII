@@ -17,6 +17,4 @@ void xiiSkyRenderPass::RenderObjects(const xiiRenderViewContext& renderViewConte
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Sky);
 }
 
-
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_SkyRenderPass);

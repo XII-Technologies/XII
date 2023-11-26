@@ -365,6 +365,12 @@ public:
   /// \remarks The texture must be created with the xiiGALBindFlags::RenderTarget.
   xiiGALTextureViewHandle GetDefaultRenderTargetView(xiiGALTextureHandle hTexture) const;
 
+  /// \brief Returns the calculated memory consumption for texture.
+  virtual xiiUInt64 GetMemoryConsumptionForTexture(const xiiGALTextureCreationDescription& description) const;
+
+  /// \brief Returns the calculated memory consumption for buffer.
+  virtual xiiUInt64 GetMemoryConsumptionForBuffer(const xiiGALBufferCreationDescription& description) const;
+
 protected:
   xiiGALDevice(const xiiGALDeviceCreationDescription& creationDescription);
 
