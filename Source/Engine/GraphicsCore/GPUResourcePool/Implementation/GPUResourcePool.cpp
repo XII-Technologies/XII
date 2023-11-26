@@ -331,7 +331,7 @@ void xiiGPUResourcePool::UpdateMemoryStats() const
 
 void xiiGPUResourcePool::GALDeviceEventHandler(const xiiGALDeviceEvent& e)
 {
-  if (e.m_Type == xiiGALDeviceEvent::AfterEndFrame)
+  if (e.m_Type == xiiGALDeviceEventType::AfterEndFrame)
   {
     ++m_uiFramesSinceLastGC;
     if (m_uiFramesSinceLastGC >= m_uiFramesThresholdSinceLastGC)

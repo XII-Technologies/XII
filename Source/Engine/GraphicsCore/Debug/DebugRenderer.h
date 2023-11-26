@@ -5,7 +5,7 @@
 #include <GraphicsCore/Debug/DebugRendererContext.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsFoundation/Descriptors/Descriptors.h>
+#include <GraphicsFoundation/Declarations/Descriptors.h>
 
 template <typename Type>
 class xiiRectTemplate;
@@ -155,7 +155,7 @@ public:
   static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 vScale = xiiVec2(1, 1));
 
   /// \brief Renders a textured 2D rectangle in screen-space for one frame.
-  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiGALResourceViewHandle hResourceView, xiiVec2 vScale = xiiVec2(1, 1));
+  static void Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiGALTextureViewHandle hResourceView, xiiVec2 vScale = xiiVec2(1, 1));
 
   /// \brief Displays a string in screen-space for one frame.
   ///
@@ -199,10 +199,10 @@ public:
   /// The rotation goes around the given \a rotationAxis.
   /// An angle of zero is pointing into forwardAxis direction.
   /// Both angles may be negative.
-  static void DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::MakeAxisX(), xiiVec3 vRotationAxis = xiiVec3::MakeAxisZ());
+  static void DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::UnitXAxis(), xiiVec3 vRotationAxis = xiiVec3::UnitZAxis());
 
   /// \brief Renders a cone with the tip at the center position, opening up with the given angle.
-  static void DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::MakeAxisX());
+  static void DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::UnitXAxis());
 
   /// \brief Renders a bent cone with the tip at the center position, pointing into the +X direction opening up with halfAngle1 and halfAngle2 along the Y and Z axis.
   ///

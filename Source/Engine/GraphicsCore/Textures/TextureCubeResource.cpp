@@ -4,8 +4,6 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsFoundation/Resources/Sampler.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 

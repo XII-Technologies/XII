@@ -325,7 +325,7 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& ref_m
   if (m_bUseTestPosition)
   {
     xiiBakedProbesWorldModule::ProbeIndexData indexData;
-    if (pModule->GetProbeIndexData(m_vTestPosition, xiiVec3::MakeAxisZ(), indexData).Failed())
+    if (pModule->GetProbeIndexData(m_vTestPosition, xiiVec3::UnitZAxis(), indexData).Failed())
       return;
 
     if (true)

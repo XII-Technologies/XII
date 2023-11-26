@@ -45,8 +45,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiDecalComponent, 8, xiiComponentMode::Static)
     XII_ACCESSOR_PROPERTY("SortOrder", GetSortOrder, SetSortOrder)->AddAttributes(new xiiClampValueAttribute(-64.0f, 64.0f)),
     XII_ACCESSOR_PROPERTY("WrapAround", GetWrapAround, SetWrapAround),
     XII_ACCESSOR_PROPERTY("MapNormalToGeometry", GetMapNormalToGeometry, SetMapNormalToGeometry)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_ACCESSOR_PROPERTY("InnerFadeAngle", GetInnerFadeAngle, SetInnerFadeAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(89.0f)), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(50.0f))),
-    XII_ACCESSOR_PROPERTY("OuterFadeAngle", GetOuterFadeAngle, SetOuterFadeAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(89.0f)), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(80.0f))),
+    XII_ACCESSOR_PROPERTY("InnerFadeAngle", GetInnerFadeAngle, SetInnerFadeAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::Degree(0.0f), xiiAngle::Degree(89.0f)), new xiiDefaultValueAttribute(xiiAngle::Degree(50.0f))),
+    XII_ACCESSOR_PROPERTY("OuterFadeAngle", GetOuterFadeAngle, SetOuterFadeAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::Degree(0.0f), xiiAngle::Degree(89.0f)), new xiiDefaultValueAttribute(xiiAngle::Degree(80.0f))),
     XII_MEMBER_PROPERTY("FadeOutDelay", m_FadeOutDelay),
     XII_MEMBER_PROPERTY("FadeOutDuration", m_FadeOutDuration),
     XII_ENUM_MEMBER_PROPERTY("OnFinishedAction", xiiOnComponentFinishedAction, m_OnFinishedAction),
@@ -227,7 +227,7 @@ xiiResult xiiDecalComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& 
   const xiiQuat axisRotation = xiiBasisAxis::GetBasisRotation_PosX(m_ProjectionAxis);
   xiiVec3       vHalfExtents = (axisRotation * vAspectCorrection).Abs().CompMul(m_vExtents * 0.5f);
 
-  bounds = xiiBoundingBoxSphere::MakeFromBox(xiiBoundingBox::MakeFromMinMax(-vHalfExtents, vHalfExtents));
+  bounds = xiiBoundingBoxSphere(xiiBoundingBox(-vHalfExtents, vHalfExtents));
   return XII_SUCCESS;
 }
 
@@ -275,7 +275,7 @@ xiiColor xiiDecalComponent::GetEmissiveColor() const
 
 void xiiDecalComponent::SetInnerFadeAngle(xiiAngle spotAngle)
 {
-  m_InnerFadeAngle = xiiMath::Clamp(spotAngle, xiiAngle::MakeFromDegree(0.0f), m_OuterFadeAngle);
+  m_InnerFadeAngle = xiiMath::Clamp(spotAngle, xiiAngle::Degree(0.0f), m_OuterFadeAngle);
 }
 
 xiiAngle xiiDecalComponent::GetInnerFadeAngle() const
@@ -285,7 +285,7 @@ xiiAngle xiiDecalComponent::GetInnerFadeAngle() const
 
 void xiiDecalComponent::SetOuterFadeAngle(xiiAngle spotAngle)
 {
-  m_OuterFadeAngle = xiiMath::Clamp(spotAngle, m_InnerFadeAngle, xiiAngle::MakeFromDegree(90.0f));
+  m_OuterFadeAngle = xiiMath::Clamp(spotAngle, m_InnerFadeAngle, xiiAngle::Degree(90.0f));
 }
 
 xiiAngle xiiDecalComponent::GetOuterFadeAngle() const
@@ -389,7 +389,7 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) con
   if (finalColor.a <= 0.0f)
     return;
 
-  const bool  bNoFade          = m_InnerFadeAngle == xiiAngle::MakeFromRadian(0.0f) && m_OuterFadeAngle == xiiAngle::MakeFromRadian(0.0f);
+  const bool  bNoFade          = m_InnerFadeAngle == xiiAngle::Radian(0.0f) && m_OuterFadeAngle == xiiAngle::Radian(0.0f);
   const float fCosInner        = xiiMath::Cos(m_InnerFadeAngle);
   const float fCosOuter        = xiiMath::Cos(m_OuterFadeAngle);
   const float fFadeParamScale  = bNoFade ? 0.0f : (1.0f / xiiMath::Max(0.001f, (fCosInner - fCosOuter)));
@@ -458,12 +458,12 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) con
   pRenderData->m_uiFlags         = uiDecalFlags;
   pRenderData->m_uiFlags |= (m_bWrapAround ? DECAL_WRAP_AROUND : 0);
   pRenderData->m_uiFlags |= (m_bMapNormalToGeometry ? DECAL_MAP_NORMAL_TO_GEOMETRY : 0);
-  pRenderData->m_uiAngleFadeParams = xiiShaderUtils::Float2ToRG16F(xiiVec2(fFadeParamScale, fFadeParamOffset));
+  pRenderData->m_uiAngleFadeParams = xiiShaderUtilities::Float2ToRG16F(xiiVec2(fFadeParamScale, fFadeParamOffset));
   pRenderData->m_BaseColor         = finalColor;
   pRenderData->m_EmissiveColor     = m_EmissiveColor;
-  xiiShaderUtils::Float4ToRGBA16F(baseAtlasScaleOffset, pRenderData->m_uiBaseColorAtlasScale, pRenderData->m_uiBaseColorAtlasOffset);
-  xiiShaderUtils::Float4ToRGBA16F(normalAtlasScaleOffset, pRenderData->m_uiNormalAtlasScale, pRenderData->m_uiNormalAtlasOffset);
-  xiiShaderUtils::Float4ToRGBA16F(ormAtlasScaleOffset, pRenderData->m_uiORMAtlasScale, pRenderData->m_uiORMAtlasOffset);
+  xiiShaderUtilities::Float4ToRGBA16F(baseAtlasScaleOffset, pRenderData->m_uiBaseColorAtlasScale, pRenderData->m_uiBaseColorAtlasOffset);
+  xiiShaderUtilities::Float4ToRGBA16F(normalAtlasScaleOffset, pRenderData->m_uiNormalAtlasScale, pRenderData->m_uiNormalAtlasOffset);
+  xiiShaderUtilities::Float4ToRGBA16F(ormAtlasScaleOffset, pRenderData->m_uiORMAtlasScale, pRenderData->m_uiORMAtlasOffset);
 
   xiiRenderData::Caching::Enum caching = (m_FadeOutDelay.m_Value.GetSeconds() > 0.0 || m_FadeOutDuration.GetSeconds() > 0.0) ? xiiRenderData::Caching::Never : xiiRenderData::Caching::IfStatic;
   msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::Decal, caching);
@@ -529,7 +529,7 @@ void xiiDecalComponent::OnSimulationStarted()
   xiiWorld* pWorld = GetWorld();
 
   // no fade out -> fade out pretty late
-  m_StartFadeOutTime = xiiTime::MakeFromHours(24.0 * 365.0 * 100.0); // 100 years should be enough for everybody (ignoring leap years)
+  m_StartFadeOutTime = xiiTime::Hours(24.0 * 365.0 * 100.0); // 100 years should be enough for everybody (ignoring leap years)
 
   if (m_FadeOutDelay.m_Value.GetSeconds() > 0.0 || m_FadeOutDuration.GetSeconds() > 0.0)
   {

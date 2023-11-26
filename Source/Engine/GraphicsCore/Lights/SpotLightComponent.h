@@ -70,8 +70,8 @@ protected:
   float m_fRange          = 0.0f;
   float m_fEffectiveRange = 0.0f;
 
-  xiiAngle m_InnerSpotAngle = xiiAngle::MakeFromDegree(15.0f);
-  xiiAngle m_OuterSpotAngle = xiiAngle::MakeFromDegree(30.0f);
+  xiiAngle m_InnerSpotAngle = xiiAngle::Degree(15.0f);
+  xiiAngle m_OuterSpotAngle = xiiAngle::Degree(30.0f);
 
   xiiTexture2DResourceHandle m_hProjectedTexture;
 };

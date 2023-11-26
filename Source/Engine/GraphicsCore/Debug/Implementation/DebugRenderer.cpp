@@ -523,9 +523,9 @@ void xiiDebugRenderer::DrawCross(const xiiDebugRendererContext& context, const x
     return;
 
   const float   fHalfLineLength = fLineLength * 0.5f;
-  const xiiVec3 xAxis           = xiiVec3::MakeAxisX() * fHalfLineLength;
-  const xiiVec3 yAxis           = xiiVec3::MakeAxisY() * fHalfLineLength;
-  const xiiVec3 zAxis           = xiiVec3::MakeAxisZ() * fHalfLineLength;
+  const xiiVec3 xAxis           = xiiVec3::UnitXAxis() * fHalfLineLength;
+  const xiiVec3 yAxis           = xiiVec3::UnitYAxis() * fHalfLineLength;
+  const xiiVec3 zAxis           = xiiVec3::UnitZAxis() * fHalfLineLength;
 
   XII_LOCK(s_Mutex);
 
@@ -610,7 +610,7 @@ void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, co
 
   const xiiVec3  vCenter   = sphere.m_vCenter;
   const float    fRadius   = sphere.m_fRadius;
-  const xiiAngle stepAngle = xiiAngle::MakeFromDegree(360.0f / NUM_SEGMENTS);
+  const xiiAngle stepAngle = xiiAngle::Degree(360.0f / NUM_SEGMENTS);
 
   XII_LOCK(s_Mutex);
 
@@ -648,7 +648,7 @@ void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, 
     NUM_LINES         = NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + 4,
   };
 
-  const xiiAngle stepAngle = xiiAngle::MakeFromDegree(360.0f / NUM_SEGMENTS);
+  const xiiAngle stepAngle = xiiAngle::Degree(360.0f / NUM_SEGMENTS);
 
   Line lines[NUM_LINES];
 
@@ -998,7 +998,7 @@ void xiiDebugRenderer::AddPersistentLineBox(const xiiDebugRendererContext& conte
   item.m_Timeout   = data.m_Now + duration;
 }
 
-void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/, xiiVec3 vRotationAxis /*= xiiVec3::MakeAxisZ()*/)
+void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::UnitXAxis()*/, xiiVec3 vRotationAxis /*= xiiVec3::UnitZAxis()*/)
 {
   xiiHybridArray<Triangle, 64> tris;
   xiiHybridArray<Line, 64>     lines;
@@ -1007,10 +1007,10 @@ void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngl
   endAngle.NormalizeRange();
 
   if (startAngle > endAngle)
-    startAngle -= xiiAngle::MakeFromDegree(360);
+    startAngle -= xiiAngle::Degree(360);
 
   const xiiAngle  range         = endAngle - startAngle;
-  const xiiUInt32 uiTesselation = xiiMath::Max(1u, (xiiUInt32)(range / xiiAngle::MakeFromDegree(5)));
+  const xiiUInt32 uiTesselation = xiiMath::Max(1u, (xiiUInt32)(range / xiiAngle::Degree(5)));
   const xiiAngle  step          = range / (float)uiTesselation;
 
   xiiQuat qStart = xiiQuat::MakeFromAxisAndAngle(vRotationAxis, startAngle);
@@ -1061,21 +1061,21 @@ void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngl
   DrawLines(context, lines, lineColor, transform);
 }
 
-void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/)
+void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::UnitXAxis()*/)
 {
   xiiHybridArray<Triangle, 64> trisInside;
   xiiHybridArray<Triangle, 64> trisOutside;
 
-  halfAngle = xiiMath::Clamp(halfAngle, xiiAngle(), xiiAngle::MakeFromDegree(180));
+  halfAngle = xiiMath::Clamp(halfAngle, xiiAngle(), xiiAngle::Degree(180));
 
-  const xiiAngle  refAngle      = halfAngle <= xiiAngle::MakeFromDegree(90) ? halfAngle : xiiAngle::MakeFromDegree(180) - halfAngle;
-  const xiiUInt32 uiTesselation = xiiMath::Max(8u, (xiiUInt32)(refAngle / xiiAngle::MakeFromDegree(2)));
+  const xiiAngle  refAngle      = halfAngle <= xiiAngle::Degree(90) ? halfAngle : xiiAngle::Degree(180) - halfAngle;
+  const xiiUInt32 uiTesselation = xiiMath::Max(8u, (xiiUInt32)(refAngle / xiiAngle::Degree(2)));
 
   const xiiVec3 tangentAxis = vForwardAxis.GetOrthogonalVector().GetNormalized();
 
   xiiQuat tilt = xiiQuat::MakeFromAxisAndAngle(tangentAxis, halfAngle);
 
-  xiiQuat step = xiiQuat::MakeFromAxisAndAngle(vForwardAxis, xiiAngle::MakeFromDegree(360) / (float)uiTesselation);
+  xiiQuat step = xiiQuat::MakeFromAxisAndAngle(vForwardAxis, xiiAngle::Degree(360) / (float)uiTesselation);
 
   xiiVec3 vCurDir = tilt * vForwardAxis;
 
@@ -1125,7 +1125,7 @@ void xiiDebugRenderer::DrawLimitCone(const xiiDebugRendererContext& context, xii
     for (xiiUInt32 i = 0; i <= NUM_LINES; i++)
     {
       const float   angle = 2 * xiiMath::Pi<float>() / NUM_LINES * i;
-      const float   c = xiiMath::Cos(xiiAngle::MakeFromRadian(angle)), s = xiiMath::Sin(xiiAngle::MakeFromRadian(angle));
+      const float   c = xiiMath::Cos(xiiAngle::Radian(angle)), s = xiiMath::Sin(xiiAngle::Radian(angle));
       const xiiVec3 rv(0, -tanQSwingZ * s, tanQSwingY * c);
       const float   rv2 = rv.GetLengthSquared();
       const float   r   = (1 / (1 + rv2));
@@ -1170,7 +1170,7 @@ void xiiDebugRenderer::DrawCylinder(const xiiDebugRendererContext& context, floa
   xiiHybridArray<Line, NUM_SEGMENTS * 3>         lines;
   xiiHybridArray<Triangle, NUM_SEGMENTS * 2 * 2> tris;
 
-  const xiiAngle step  = xiiAngle::MakeFromDegree(360) / NUM_SEGMENTS;
+  const xiiAngle step  = xiiAngle::Degree(360) / NUM_SEGMENTS;
   xiiAngle       angle = {};
 
   xiiVec3 vCurCircle(0, 1 /*xiiMath::Cos(angle)*/, 0 /*xiiMath::Sin(angle)*/);

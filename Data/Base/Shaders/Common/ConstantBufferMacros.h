@@ -65,7 +65,7 @@ float3x3 TransformToRotation(Transform t)
 // C++
 
 #  include <Foundation/Basics/Platform/Common.h>
-#  include <RendererCore/Shader/Types.h>
+#  include <GraphicsCore/Shader/Types.h>
 
 #  define XII_SHADER_STRUCT alignas(16)
 #  define CONSTANT_BUFFER(Name, Slot) struct alignas(16) Name

@@ -93,9 +93,9 @@ void xiiLensFlareRenderer::FillLensFlareData(const xiiRenderDataBatch& batch) co
     LensFlareData.OcclusionRadius     = pRenderData->m_fOcclusionSampleRadius;
     LensFlareData.OcclusionSpread     = pRenderData->m_fOcclusionSampleSpread;
     LensFlareData.DepthOffset         = pRenderData->m_fOcclusionDepthOffset;
-    LensFlareData.AspectRatioAndShift = xiiShaderUtils::Float2ToRG16F(xiiVec2(pRenderData->m_fAspectRatio, pRenderData->m_fShiftToCenter));
-    LensFlareData.ColorRG             = xiiShaderUtils::PackFloat16intoUint(pRenderData->m_Color.x, pRenderData->m_Color.y);
-    LensFlareData.ColorBA             = xiiShaderUtils::PackFloat16intoUint(pRenderData->m_Color.z, pRenderData->m_Color.w);
+    LensFlareData.AspectRatioAndShift = xiiShaderUtilities::Float2ToRG16F(xiiVec2(pRenderData->m_fAspectRatio, pRenderData->m_fShiftToCenter));
+    LensFlareData.ColorRG             = xiiShaderUtilities::PackFloat16intoUint(pRenderData->m_Color.x, pRenderData->m_Color.y);
+    LensFlareData.ColorBA             = xiiShaderUtilities::PackFloat16intoUint(pRenderData->m_Color.z, pRenderData->m_Color.w);
     LensFlareData.Flags               = (pRenderData->m_bInverseTonemap ? LENS_FLARE_INVERSE_TONEMAP : 0) |
       (pRenderData->m_bGreyscaleTexture ? LENS_FLARE_GREYSCALE_TEXTURE : 0) |
       (pRenderData->m_bApplyFog ? LENS_FLARE_APPLY_FOG : 0);

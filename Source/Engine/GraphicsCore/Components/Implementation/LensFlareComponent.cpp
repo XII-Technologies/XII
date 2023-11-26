@@ -285,7 +285,7 @@ void xiiLensFlareComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
   }
   else if (auto pSpotLight = xiiDynamicCast<const xiiSpotLightComponent*>(pLightComponent))
   {
-    const xiiVec3 lightDir  = globalTransform.TransformDirection(xiiVec3::MakeAxisX());
+    const xiiVec3 lightDir  = globalTransform.TransformDirection(xiiVec3::UnitXAxis());
     const xiiVec3 cameraDir = (pCamera->GetCenterPosition() - globalTransform.m_vPosition).GetNormalized();
 
     const float cosAngle  = lightDir.Dot(cameraDir);

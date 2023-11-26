@@ -11,8 +11,6 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsFoundation/Resources/Sampler.h>
-#include <GraphicsFoundation/Resources/Texture.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
 // clang-format off

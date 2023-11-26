@@ -21,8 +21,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiSpotLightComponent, 2, xiiComponentMode::Static)
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("Range", GetRange, SetRange)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant()), new xiiDefaultValueAttribute(0.0f), new xiiSuffixAttribute(" m"), new xiiMinValueTextAttribute("Auto")),
-    XII_ACCESSOR_PROPERTY("InnerSpotAngle", GetInnerSpotAngle, SetInnerSpotAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(179.0f)), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(15.0f))),
-    XII_ACCESSOR_PROPERTY("OuterSpotAngle", GetOuterSpotAngle, SetOuterSpotAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(179.0f)), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(30.0f))),
+    XII_ACCESSOR_PROPERTY("InnerSpotAngle", GetInnerSpotAngle, SetInnerSpotAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::Degree(0.0f), xiiAngle::Degree(179.0f)), new xiiDefaultValueAttribute(xiiAngle::Degree(15.0f))),
+    XII_ACCESSOR_PROPERTY("OuterSpotAngle", GetOuterSpotAngle, SetOuterSpotAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::Degree(0.0f), xiiAngle::Degree(179.0f)), new xiiDefaultValueAttribute(xiiAngle::Degree(30.0f))),
     //XII_ACCESSOR_PROPERTY("ProjectedTexture", GetProjectedTextureFile, SetProjectedTextureFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Texture_2D")),
   }
   XII_END_PROPERTIES;
@@ -77,7 +77,7 @@ float xiiSpotLightComponent::GetEffectiveRange() const
 
 void xiiSpotLightComponent::SetInnerSpotAngle(xiiAngle spotAngle)
 {
-  m_InnerSpotAngle = xiiMath::Clamp(spotAngle, xiiAngle::MakeFromDegree(0.0f), m_OuterSpotAngle);
+  m_InnerSpotAngle = xiiMath::Clamp(spotAngle, xiiAngle::Degree(0.0f), m_OuterSpotAngle);
 
   InvalidateCachedRenderData();
 }
@@ -89,7 +89,7 @@ xiiAngle xiiSpotLightComponent::GetInnerSpotAngle() const
 
 void xiiSpotLightComponent::SetOuterSpotAngle(xiiAngle spotAngle)
 {
-  m_OuterSpotAngle = xiiMath::Clamp(spotAngle, m_InnerSpotAngle, xiiAngle::MakeFromDegree(179.0f));
+  m_OuterSpotAngle = xiiMath::Clamp(spotAngle, m_InnerSpotAngle, xiiAngle::Degree(179.0f));
 
   TriggerLocalBoundsUpdate();
 }
@@ -206,7 +206,7 @@ xiiBoundingSphere xiiSpotLightComponent::CalculateBoundingSphere(const xiiTransf
   xiiVec3           position   = t.m_vPosition;
   xiiVec3           forwardDir = t.m_qRotation * xiiVec3(1.0f, 0.0f, 0.0f);
 
-  if (halfAngle > xiiAngle::MakeFromDegree(45.0f))
+  if (halfAngle > xiiAngle::Degree(45.0f))
   {
     res.m_vCenter = position + xiiMath::Cos(halfAngle) * fRange * forwardDir;
     res.m_fRadius = xiiMath::Sin(halfAngle) * fRange;

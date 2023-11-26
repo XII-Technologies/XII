@@ -1,5 +1,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <GraphicsFoundation/Profiling/Profiling.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/Sampler.h>
+
 #include <GraphicsCore/Decals/DecalAtlasResource.h>
 #include <GraphicsCore/Lights/ClusteredDataExtractor.h>
 #include <GraphicsCore/Lights/ClusteredDataProvider.h>
@@ -9,7 +13,6 @@
 #include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsFoundation/Profiling/Profiling.h>
 
 xiiClusteredDataGPU::xiiClusteredDataGPU()
 {
@@ -73,7 +76,7 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
     desc.m_AddressU          = xiiImageAddressMode::Clamp;
     desc.m_AddressV          = xiiImageAddressMode::Clamp;
     desc.m_AddressW          = xiiImageAddressMode::Clamp;
-    desc.m_SampleCompareFunc = xiiGALCompareFunc::Less;
+    desc.m_ComparisonFunction = xiiGALComparisonFunction::Less;
 
     m_hShadowSampler = pDevice->CreateSampler(desc);
   }
@@ -153,7 +156,7 @@ xiiClusteredDataProvider::~xiiClusteredDataProvider() = default;
 
 void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
 {
-  xiiGALCommandEncoder* pGALCommandEncoder = renderViewContext.m_pRenderContext->GetRenderCommandEncoder();
+  xiiGALCommandEncoder* pGALCommandEncoder = renderViewContext.m_pRenderContext->GetGraphicsCommandEncoder();
 
   XII_PROFILE_AND_MARKER(pGALCommandEncoder, "Update Clustered Data");
 
@@ -188,8 +191,7 @@ void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderVie
     // Update Constants
     const xiiRectFloat& viewport = renderViewContext.m_pViewData->m_ViewPortRect;
 
-    xiiClusteredDataConstants* pConstants =
-      renderViewContext.m_pRenderContext->GetConstantBufferData<xiiClusteredDataConstants>(m_Data.m_hConstantBuffer);
+    xiiClusteredDataConstants* pConstants = renderViewContext.m_pRenderContext->GetConstantBufferData<xiiClusteredDataConstants>(m_Data.m_hConstantBuffer);
     pConstants->DepthSliceScale = s_fDepthSliceScale;
     pConstants->DepthSliceBias  = s_fDepthSliceBias;
     pConstants->InvTileSize     = xiiVec2(NUM_CLUSTERS_X / viewport.width, NUM_CLUSTERS_Y / viewport.height);

@@ -154,19 +154,19 @@ void xiiRopeRenderComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
 
       auto& x        = lines.ExpandAndGetRef();
       x.m_start      = pos;
-      x.m_end        = x.m_start + skinningMat.TransformDirection(xiiVec3::MakeAxisX());
+      x.m_end        = x.m_start + skinningMat.TransformDirection(xiiVec3::UnitXAxis());
       x.m_startColor = xiiColor::Red;
       x.m_endColor   = xiiColor::Red;
 
       auto& y        = lines.ExpandAndGetRef();
       y.m_start      = pos;
-      y.m_end        = y.m_start + skinningMat.TransformDirection(xiiVec3::MakeAxisY() * 2.0f);
+      y.m_end        = y.m_start + skinningMat.TransformDirection(xiiVec3::UnitYAxis() * 2.0f);
       y.m_startColor = xiiColor::Green;
       y.m_endColor   = xiiColor::Green;
 
       auto& z        = lines.ExpandAndGetRef();
       z.m_start      = pos;
-      z.m_end        = z.m_start + skinningMat.TransformDirection(xiiVec3::MakeAxisZ() * 2.0f);
+      z.m_end        = z.m_start + skinningMat.TransformDirection(xiiVec3::UnitZAxis() * 2.0f);
       z.m_startColor = xiiColor::Blue;
       z.m_endColor   = xiiColor::Blue;
     }
@@ -307,7 +307,7 @@ void xiiRopeRenderComponent::GenerateRenderMesh(xiiUInt32 uiNumRopePieces)
 
   xiiGeometry geom;
 
-  const xiiAngle fDegStep = xiiAngle::MakeFromDegree(360.0f / m_uiDetail);
+  const xiiAngle fDegStep = xiiAngle::Degree(360.0f / m_uiDetail);
   const float    fVStep   = 1.0f / m_uiDetail;
 
   auto addCap = [&](float x, const xiiVec3& vNormal, xiiUInt16 uiBoneIndex, bool bFlipWinding) {
@@ -315,7 +315,7 @@ void xiiRopeRenderComponent::GenerateRenderMesh(xiiUInt32 uiNumRopePieces)
 
     xiiUInt32 centerIndex = geom.AddVertex(xiiVec3(x, 0, 0), vNormal, xiiVec2(0.5f, 0.5f), xiiColor::White, boneIndices);
 
-    xiiAngle deg = xiiAngle::MakeFromRadian(0);
+    xiiAngle deg = xiiAngle::Radian(0);
     for (xiiUInt32 s = 0; s < m_uiDetail; ++s)
     {
       const float fY = xiiMath::Cos(deg);
@@ -338,7 +338,7 @@ void xiiRopeRenderComponent::GenerateRenderMesh(xiiUInt32 uiNumRopePieces)
   };
 
   auto addPiece = [&](float x, const xiiVec4U16& vBoneIndices, const xiiColorLinearUB& boneWeights, bool bCreatePolygons) {
-    xiiAngle deg = xiiAngle::MakeFromRadian(0);
+    xiiAngle deg = xiiAngle::Radian(0);
     float    fU  = x * m_fUScale;
     float    fV  = 0;
 

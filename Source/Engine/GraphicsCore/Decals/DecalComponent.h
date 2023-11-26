@@ -135,8 +135,8 @@ protected:
   float                                     m_fSizeVariance        = 0;
   xiiColorGammaUB                           m_Color                = xiiColor::White;
   xiiColor                                  m_EmissiveColor        = xiiColor::Black;
-  xiiAngle                                  m_InnerFadeAngle       = xiiAngle::MakeFromDegree(50.0f);
-  xiiAngle                                  m_OuterFadeAngle       = xiiAngle::MakeFromDegree(80.0f);
+  xiiAngle                                  m_InnerFadeAngle       = xiiAngle::Degree(50.0f);
+  xiiAngle                                  m_OuterFadeAngle       = xiiAngle::Degree(80.0f);
   float                                     m_fSortOrder           = 0;
   bool                                      m_bWrapAround          = false;
   bool                                      m_bMapNormalToGeometry = false;

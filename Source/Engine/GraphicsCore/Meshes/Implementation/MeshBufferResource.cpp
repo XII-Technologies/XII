@@ -487,7 +487,7 @@ xiiResult xiiMeshBufferResourceDescriptor::RecomputeNormals()
   for (xiiUInt32 i = 0; i < newNormals.GetCount(); ++i)
   {
     // normalize the new normal
-    if (newNormals[i].NormalizeIfNotZero(xiiVec3::MakeAxisX()).Failed())
+    if (newNormals[i].NormalizeIfNotZero(xiiVec3::UnitXAxis()).Failed())
       res = XII_FAILURE;
 
     // then encode it in the target format precision and write it back to the buffer

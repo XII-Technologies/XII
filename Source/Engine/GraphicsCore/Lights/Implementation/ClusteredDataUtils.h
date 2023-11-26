@@ -195,7 +195,7 @@ namespace
   {
     FillLightData(ref_perLightData, pSpotLightRenderData, LIGHT_TYPE_SPOT);
 
-    ref_perLightData.direction       = xiiShaderUtils::Float3ToRGB10(pSpotLightRenderData->m_GlobalTransform.m_qRotation * xiiVec3(-1, 0, 0));
+    ref_perLightData.direction       = xiiShaderUtilities::Float3ToRGB10(pSpotLightRenderData->m_GlobalTransform.m_qRotation * xiiVec3(-1, 0, 0));
     ref_perLightData.position        = pSpotLightRenderData->m_GlobalTransform.m_vPosition;
     ref_perLightData.invSqrAttRadius = 1.0f / (pSpotLightRenderData->m_fRange * pSpotLightRenderData->m_fRange);
 
@@ -203,14 +203,14 @@ namespace
     const float fCosOuter        = xiiMath::Cos(pSpotLightRenderData->m_OuterSpotAngle * 0.5f);
     const float fSpotParamScale  = 1.0f / xiiMath::Max(0.001f, (fCosInner - fCosOuter));
     const float fSpotParamOffset = -fCosOuter * fSpotParamScale;
-    ref_perLightData.spotParams  = xiiShaderUtils::Float2ToRG16F(xiiVec2(fSpotParamScale, fSpotParamOffset));
+    ref_perLightData.spotParams  = xiiShaderUtilities::Float2ToRG16F(xiiVec2(fSpotParamScale, fSpotParamOffset));
   }
 
   void FillDirLightData(xiiPerLightData& ref_perLightData, const xiiDirectionalLightRenderData* pDirLightRenderData)
   {
     FillLightData(ref_perLightData, pDirLightRenderData, LIGHT_TYPE_DIR);
 
-    ref_perLightData.direction = xiiShaderUtils::Float3ToRGB10(pDirLightRenderData->m_GlobalTransform.m_qRotation * xiiVec3(-1, 0, 0));
+    ref_perLightData.direction = xiiShaderUtilities::Float3ToRGB10(pDirLightRenderData->m_GlobalTransform.m_qRotation * xiiVec3(-1, 0, 0));
   }
 
   void FillDecalData(xiiPerDecalData& ref_perDecalData, const xiiDecalRenderData* pDecalRenderData)
@@ -232,8 +232,8 @@ namespace
     ref_perDecalData.decalFlags           = pDecalRenderData->m_uiFlags;
     ref_perDecalData.angleFadeParams      = pDecalRenderData->m_uiAngleFadeParams;
     ref_perDecalData.baseColor            = *reinterpret_cast<const xiiUInt32*>(&pDecalRenderData->m_BaseColor.r);
-    ref_perDecalData.emissiveColorRG      = xiiShaderUtils::PackFloat16intoUint(pDecalRenderData->m_EmissiveColor.r, pDecalRenderData->m_EmissiveColor.g);
-    ref_perDecalData.emissiveColorBA      = xiiShaderUtils::PackFloat16intoUint(pDecalRenderData->m_EmissiveColor.b, pDecalRenderData->m_EmissiveColor.a);
+    ref_perDecalData.emissiveColorRG      = xiiShaderUtilities::PackFloat16intoUint(pDecalRenderData->m_EmissiveColor.r, pDecalRenderData->m_EmissiveColor.g);
+    ref_perDecalData.emissiveColorBA      = xiiShaderUtilities::PackFloat16intoUint(pDecalRenderData->m_EmissiveColor.b, pDecalRenderData->m_EmissiveColor.a);
     ref_perDecalData.baseColorAtlasScale  = pDecalRenderData->m_uiBaseColorAtlasScale;
     ref_perDecalData.baseColorAtlasOffset = pDecalRenderData->m_uiBaseColorAtlasOffset;
     ref_perDecalData.normalAtlasScale     = pDecalRenderData->m_uiNormalAtlasScale;
