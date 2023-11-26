@@ -7,6 +7,9 @@
 template <typename T>
 struct xiiComPtr;
 
+struct IDxcUtils;
+struct IDxcCompiler3;
+
 struct SpvReflectDescriptorBinding;
 
 class xiiShaderCompilerProgram;
@@ -14,13 +17,20 @@ class xiiShaderCompilerProgram;
 class XII_SHADERCOMPILER_DLL xiiShaderCompilerVulkan
 {
 public:
-  xiiResult CompileShader(const char* szFile, const char* szSource, bool bDebug, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode);
+  xiiShaderCompilerVulkan(IDxcUtils* pDxcUtils, IDxcCompiler3* pDxcCompiler) :
+    m_pDxcUtils(pDxcUtils), m_pDxcCompiler(pDxcCompiler)
+  {}
+
+  xiiResult CompileShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode);
 
 private:
   friend xiiShaderCompilerProgram;
 
-  xiiResult                      ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage, xiiMap<const char*, xiiGALVertexAttributeSemantic::Enum, CompareConstChar>& vertexInputMapping);
-  xiiShaderConstantBufferLayout* ReflectConstantBufferLayout(xiiShaderStageBinary& pStageBinary, const char* szName, const SpvReflectDescriptorBinding& constantBufferReflection);
+  IDxcUtils*     m_pDxcUtils    = nullptr;
+  IDxcCompiler3* m_pDxcCompiler = nullptr;
+
+  xiiResult                      ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderStage> Stage, xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>>& vertexInputMapping);
+  xiiShaderConstantBufferLayout* ReflectConstantBufferLayout(xiiShaderStageBinary& pStageBinary, xiiStringView sName, const SpvReflectDescriptorBinding& constantBufferReflection);
   xiiResult                      FillResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const SpvReflectDescriptorBinding& info);
   xiiResult                      FillSRVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const SpvReflectDescriptorBinding& info);
   xiiResult                      FillUAVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const SpvReflectDescriptorBinding& info);

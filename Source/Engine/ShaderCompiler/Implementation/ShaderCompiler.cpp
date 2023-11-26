@@ -1,14 +1,11 @@
 #include <ShaderCompiler/ShaderCompiler.h>
 
+#include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Strings/StringConversion.h>
 
 #include <ShaderCompiler/ShaderMetadata.h>
-
-#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
-#  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D11.h>
-#endif
 
 #if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D12.h>
@@ -18,371 +15,324 @@
 #  include <ShaderCompiler/Implementation/Vulkan/ShaderCompilerVulkan.h>
 #endif
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#  include <d3dcompiler.h>
+#endif
+#include <Diligent/ThirdParty/DirectXShaderCompiler/dxc/dxcapi.h>
+
+xiiComPtr<IDxcUtils>     s_pDxcUtils;
+xiiComPtr<IDxcCompiler3> s_pDxcCompiler;
+
 // clang-format off
+XII_BEGIN_SUBSYSTEM_DECLARATION(ShaderCompiler, ShaderCompilerPlugin)
+
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation"
+  END_SUBSYSTEM_DEPENDENCIES
+
+  ON_CORESYSTEMS_STARTUP
+  {
+    DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(s_pDxcUtils.RawDblPtr()));
+    DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(s_pDxcCompiler.RawDblPtr()));
+  }
+
+  ON_CORESYSTEMS_SHUTDOWN
+  {
+    s_pDxcUtils = {};
+    s_pDxcCompiler = {};
+  }
+
+XII_END_SUBSYSTEM_DECLARATION;
+
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiShaderCompilerProgram, 1, xiiRTTIDefaultAllocator<xiiShaderCompilerProgram>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 ////////// Utility Functions //////////
 
-const char* xiiShaderCompilerProgram::GetProfileName(const char* szPlatform, xiiGALShaderStage::Enum Stage)
+xiiStringView xiiShaderCompilerProgram::GetProfileName(xiiStringView sPlatform, xiiBitflags<xiiGALShaderStage> Stage)
 {
-  xiiStringBuilder sPlatformStripped = szPlatform;
+  xiiStringBuilder sPlatformStripped = sPlatform;
   sPlatformStripped.ReplaceFirst("D3D_", "");
   sPlatformStripped.ReplaceFirst("VK_", "");
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM40_93"))
   {
-    switch (Stage)
-    {
-      case xiiGALShaderStage::VertexShader:
-        return "vs_4_0_level_9_3";
-      case xiiGALShaderStage::PixelShader:
-        return "ps_4_0_level_9_3";
-
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
+    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+      return "vs_4_0_level_9_3";
+    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+      return "ps_4_0_level_9_3";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM40"))
   {
-    switch (Stage)
-    {
-      case xiiGALShaderStage::VertexShader:
-        return "vs_4_0";
-      case xiiGALShaderStage::GeometryShader:
-        return "gs_4_0";
-      case xiiGALShaderStage::PixelShader:
-        return "ps_4_0";
-      case xiiGALShaderStage::ComputeShader:
-        return "cs_4_0";
-
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
+    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+      return "vs_4_0";
+    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+      return "gs_4_0";
+    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+      return "ps_4_0";
+    if (Stage.IsSet(xiiGALShaderStage::Compute))
+      return "cs_4_0";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM41"))
   {
-    switch (Stage)
-    {
-      case xiiGALShaderStage::GeometryShader:
-        return "gs_4_0";
-      case xiiGALShaderStage::VertexShader:
-        return "vs_4_1";
-      case xiiGALShaderStage::PixelShader:
-        return "ps_4_1";
-      case xiiGALShaderStage::ComputeShader:
-        return "cs_4_1";
-
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
+    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+      return "gs_4_0";
+    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+      return "vs_4_1";
+    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+      return "ps_4_1";
+    if (Stage.IsSet(xiiGALShaderStage::Compute))
+      return "cs_4_1";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM50"))
   {
-    switch (Stage)
-    {
-      case xiiGALShaderStage::VertexShader:
-        return "vs_5_0";
-      case xiiGALShaderStage::HullShader:
-        return "hs_5_0";
-      case xiiGALShaderStage::DomainShader:
-        return "ds_5_0";
-      case xiiGALShaderStage::GeometryShader:
-        return "gs_5_0";
-      case xiiGALShaderStage::PixelShader:
-        return "ps_5_0";
-      case xiiGALShaderStage::ComputeShader:
-        return "cs_5_0";
-
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
+    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+      return "vs_5_0";
+    if (Stage.IsSet(xiiGALShaderStage::Hull))
+      return "hs_5_0";
+    if (Stage.IsSet(xiiGALShaderStage::Domain))
+      return "ds_5_0";
+    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+      return "gs_5_0";
+    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+      return "ps_5_0";
+    if (Stage.IsSet(xiiGALShaderStage::Compute))
+      return "cs_5_0";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM51"))
   {
-    switch (Stage)
-    {
-      case xiiGALShaderStage::VertexShader:
-        return "vs_5_1";
-      case xiiGALShaderStage::HullShader:
-        return "hs_5_1";
-      case xiiGALShaderStage::DomainShader:
-        return "ds_5_1";
-      case xiiGALShaderStage::GeometryShader:
-        return "gs_5_1";
-      case xiiGALShaderStage::PixelShader:
-        return "ps_5_1";
-      case xiiGALShaderStage::ComputeShader:
-        return "cs_5_1";
 
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
+    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+      return "vs_5_1";
+    if (Stage.IsSet(xiiGALShaderStage::Hull))
+      return "hs_5_1";
+    if (Stage.IsSet(xiiGALShaderStage::Domain))
+      return "ds_5_1";
+    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+      return "gs_5_1";
+    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+      return "ps_5_1";
+    if (Stage.IsSet(xiiGALShaderStage::Compute))
+      return "cs_5_1";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM60"))
   {
-    switch (Stage)
-    {
-      case xiiGALShaderStage::VertexShader:
-        return "vs_6_0";
-      case xiiGALShaderStage::HullShader:
-        return "hs_6_0";
-      case xiiGALShaderStage::DomainShader:
-        return "ds_6_0";
-      case xiiGALShaderStage::GeometryShader:
-        return "gs_6_0";
-      case xiiGALShaderStage::PixelShader:
-        return "ps_6_0";
-      case xiiGALShaderStage::ComputeShader:
-        return "cs_6_0";
 
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
+    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+      return "vs_6_0";
+    if (Stage.IsSet(xiiGALShaderStage::Hull))
+      return "hs_6_0";
+    if (Stage.IsSet(xiiGALShaderStage::Domain))
+      return "ds_6_0";
+    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+      return "gs_6_0";
+    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+      return "ps_6_0";
+    if (Stage.IsSet(xiiGALShaderStage::Compute))
+      return "cs_6_0";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM61"))
   {
-    switch (Stage)
-    {
-      case xiiGALShaderStage::VertexShader:
-        return "vs_6_1";
-      case xiiGALShaderStage::HullShader:
-        return "hs_6_1";
-      case xiiGALShaderStage::DomainShader:
-        return "ds_6_1";
-      case xiiGALShaderStage::GeometryShader:
-        return "gs_6_1";
-      case xiiGALShaderStage::PixelShader:
-        return "ps_6_1";
-      case xiiGALShaderStage::ComputeShader:
-        return "cs_6_1";
 
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
+    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+      return "vs_6_1";
+    if (Stage.IsSet(xiiGALShaderStage::Hull))
+      return "hs_6_1";
+    if (Stage.IsSet(xiiGALShaderStage::Domain))
+      return "ds_6_1";
+    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+      return "gs_6_1";
+    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+      return "ps_6_1";
+    if (Stage.IsSet(xiiGALShaderStage::Compute))
+      return "cs_6_1";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM62"))
   {
-    switch (Stage)
-    {
-      case xiiGALShaderStage::VertexShader:
-        return "vs_6_2";
-      case xiiGALShaderStage::HullShader:
-        return "hs_6_2";
-      case xiiGALShaderStage::DomainShader:
-        return "ds_6_2";
-      case xiiGALShaderStage::GeometryShader:
-        return "gs_6_2";
-      case xiiGALShaderStage::PixelShader:
-        return "ps_6_2";
-      case xiiGALShaderStage::ComputeShader:
-        return "cs_6_2";
 
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
+    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+      return "vs_6_2";
+    if (Stage.IsSet(xiiGALShaderStage::Hull))
+      return "hs_6_2";
+    if (Stage.IsSet(xiiGALShaderStage::Domain))
+      return "ds_6_2";
+    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+      return "gs_6_2";
+    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+      return "ps_6_2";
+    if (Stage.IsSet(xiiGALShaderStage::Compute))
+      return "cs_6_2";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM63"))
   {
-    switch (Stage)
-    {
-      case xiiGALShaderStage::VertexShader:
-        return "vs_6_3";
-      case xiiGALShaderStage::HullShader:
-        return "hs_6_3";
-      case xiiGALShaderStage::DomainShader:
-        return "ds_6_3";
-      case xiiGALShaderStage::GeometryShader:
-        return "gs_6_3";
-      case xiiGALShaderStage::PixelShader:
-        return "ps_6_3";
-      case xiiGALShaderStage::ComputeShader:
-        return "cs_6_3";
 
-      case xiiGALShaderStage::RayGenShader:
-      case xiiGALShaderStage::RayMissShader:
-      case xiiGALShaderStage::RayAnyHitShader:
-      case xiiGALShaderStage::RayClosestHitShader:
-      case xiiGALShaderStage::RayIntersectionShader:
-      case xiiGALShaderStage::CallableShader:
-        return "lib_6_3";
+    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+      return "vs_6_3";
+    if (Stage.IsSet(xiiGALShaderStage::Hull))
+      return "hs_6_3";
+    if (Stage.IsSet(xiiGALShaderStage::Domain))
+      return "ds_6_3";
+    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+      return "gs_6_3";
+    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+      return "ps_6_3";
+    if (Stage.IsSet(xiiGALShaderStage::Compute))
+      return "cs_6_3";
 
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
+    if (Stage.IsAnySet(xiiGALShaderStage::RayGeneration | xiiGALShaderStage::RayMiss | xiiGALShaderStage::RayAnyHit | xiiGALShaderStage::RayClosestHit | xiiGALShaderStage::RayIntersection | xiiGALShaderStage::Callable))
+      return "lib_6_3";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM64"))
   {
-    switch (Stage)
-    {
-      case xiiGALShaderStage::VertexShader:
-        return "vs_6_4";
-      case xiiGALShaderStage::HullShader:
-        return "hs_6_4";
-      case xiiGALShaderStage::DomainShader:
-        return "ds_6_4";
-      case xiiGALShaderStage::GeometryShader:
-        return "gs_6_4";
-      case xiiGALShaderStage::PixelShader:
-        return "ps_6_4";
-      case xiiGALShaderStage::ComputeShader:
-        return "cs_6_4";
 
-      case xiiGALShaderStage::RayGenShader:
-      case xiiGALShaderStage::RayMissShader:
-      case xiiGALShaderStage::RayAnyHitShader:
-      case xiiGALShaderStage::RayClosestHitShader:
-      case xiiGALShaderStage::RayIntersectionShader:
-      case xiiGALShaderStage::CallableShader:
-        return "lib_6_4";
+    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+      return "vs_6_4";
+    if (Stage.IsSet(xiiGALShaderStage::Hull))
+      return "hs_6_4";
+    if (Stage.IsSet(xiiGALShaderStage::Domain))
+      return "ds_6_4";
+    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+      return "gs_6_4";
+    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+      return "ps_6_4";
+    if (Stage.IsSet(xiiGALShaderStage::Compute))
+      return "cs_6_4";
 
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
+    if (Stage.IsAnySet(xiiGALShaderStage::RayGeneration | xiiGALShaderStage::RayMiss | xiiGALShaderStage::RayAnyHit | xiiGALShaderStage::RayClosestHit | xiiGALShaderStage::RayIntersection | xiiGALShaderStage::Callable))
+      return "lib_6_4";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM65"))
   {
-    switch (Stage)
-    {
-      case xiiGALShaderStage::VertexShader:
-        return "vs_6_5";
-      case xiiGALShaderStage::HullShader:
-        return "hs_6_5";
-      case xiiGALShaderStage::DomainShader:
-        return "ds_6_5";
-      case xiiGALShaderStage::GeometryShader:
-        return "gs_6_5";
-      case xiiGALShaderStage::PixelShader:
-        return "ps_6_5";
-      case xiiGALShaderStage::ComputeShader:
-        return "cs_6_5";
 
-      case xiiGALShaderStage::RayGenShader:
-      case xiiGALShaderStage::RayMissShader:
-      case xiiGALShaderStage::RayAnyHitShader:
-      case xiiGALShaderStage::RayClosestHitShader:
-      case xiiGALShaderStage::RayIntersectionShader:
-      case xiiGALShaderStage::CallableShader:
-        return "lib_6_5";
+    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+      return "vs_6_5";
+    if (Stage.IsSet(xiiGALShaderStage::Hull))
+      return "hs_6_5";
+    if (Stage.IsSet(xiiGALShaderStage::Domain))
+      return "ds_6_5";
+    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+      return "gs_6_5";
+    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+      return "ps_6_5";
+    if (Stage.IsSet(xiiGALShaderStage::Compute))
+      return "cs_6_5";
 
-      case xiiGALShaderStage::AmplificationShader:
-        return "as_6_5";
+    if (Stage.IsAnySet(xiiGALShaderStage::RayGeneration | xiiGALShaderStage::RayMiss | xiiGALShaderStage::RayAnyHit | xiiGALShaderStage::RayClosestHit | xiiGALShaderStage::RayIntersection | xiiGALShaderStage::Callable))
+      return "lib_6_5";
 
-      case xiiGALShaderStage::MeshShader:
-        return "ms_6_5";
+    if (Stage.IsSet(xiiGALShaderStage::Amplification))
+      return "as_6_5";
 
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
+    if (Stage.IsSet(xiiGALShaderStage::Mesh))
+      return "ms_6_5";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM66"))
   {
-    switch (Stage)
-    {
-      case xiiGALShaderStage::VertexShader:
-        return "vs_6_6";
-      case xiiGALShaderStage::HullShader:
-        return "hs_6_6";
-      case xiiGALShaderStage::DomainShader:
-        return "ds_6_6";
-      case xiiGALShaderStage::GeometryShader:
-        return "gs_6_6";
-      case xiiGALShaderStage::PixelShader:
-        return "ps_6_6";
-      case xiiGALShaderStage::ComputeShader:
-        return "cs_6_6";
 
-      case xiiGALShaderStage::RayGenShader:
-      case xiiGALShaderStage::RayMissShader:
-      case xiiGALShaderStage::RayAnyHitShader:
-      case xiiGALShaderStage::RayClosestHitShader:
-      case xiiGALShaderStage::RayIntersectionShader:
-      case xiiGALShaderStage::CallableShader:
-        return "lib_6_6";
+    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+      return "vs_6_6";
+    if (Stage.IsSet(xiiGALShaderStage::Hull))
+      return "hs_6_6";
+    if (Stage.IsSet(xiiGALShaderStage::Domain))
+      return "ds_6_6";
+    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+      return "gs_6_6";
+    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+      return "ps_6_6";
+    if (Stage.IsSet(xiiGALShaderStage::Compute))
+      return "cs_6_6";
 
-      case xiiGALShaderStage::AmplificationShader:
-        return "as_6_6";
+    if (Stage.IsAnySet(xiiGALShaderStage::RayGeneration | xiiGALShaderStage::RayMiss | xiiGALShaderStage::RayAnyHit | xiiGALShaderStage::RayClosestHit | xiiGALShaderStage::RayIntersection | xiiGALShaderStage::Callable))
+      return "lib_6_6";
 
-      case xiiGALShaderStage::MeshShader:
-        return "ms_6_6";
+    if (Stage.IsSet(xiiGALShaderStage::Amplification))
+      return "as_6_6";
 
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
+    if (Stage.IsSet(xiiGALShaderStage::Mesh))
+      return "ms_6_6";
   }
 
-  XII_REPORT_FAILURE("Unknown (or unsupported) Platform '{0}' or Stage {1}", szPlatform, Stage);
-  return "";
+  XII_REPORT_FAILURE("Unknown (or unsupported) Platform '{0}' or Stage {1}", sPlatform, Stage.GetValue());
+
+  return {};
 }
 
-xiiGraphicsDeviceType::Enum xiiShaderCompilerProgram::GetProfileNameDeviceType(const char* szPlatform, const char* szProfileName)
+xiiEnum<xiiGALGraphicsDeviceType> xiiShaderCompilerProgram::GetProfileNameDeviceType(xiiStringView sPlatform, xiiStringView sProfileName)
 {
-  xiiStringBuilder sPlatform = szPlatform;
-  xiiStringBuilder sProfile  = szProfileName;
+  xiiStringBuilder sPlatform0 = sPlatform;
+  xiiStringBuilder sProfile   = sProfileName;
 
-  if (sPlatform.FindSubString("D3D_") != nullptr)
+  if (sPlatform0.FindSubString("D3D_") != nullptr)
   {
     if (sProfile.FindSubString("s_6") != nullptr || sProfile.FindSubString("s_5_1") != nullptr)
     {
-      return xiiGraphicsDeviceType::D3D12;
-    }
-    else
-    {
-      return xiiGraphicsDeviceType::D3D11;
+      return xiiGALGraphicsDeviceType::Direct3D12;
     }
   }
 
-  if (sPlatform.FindSubString("VK_") != nullptr)
+  if (sPlatform0.FindSubString("VK_") != nullptr)
   {
-    return xiiGraphicsDeviceType::Vulkan;
+    return xiiGALGraphicsDeviceType::Vulkan;
   }
 
   XII_ASSERT_NOT_IMPLEMENTED;
 
-  return xiiGraphicsDeviceType::Undefined;
+  return xiiGALGraphicsDeviceType::Undefined;
 }
 
-xiiResult xiiShaderCompilerProgram::Initialize(const char* szPlatformName)
+xiiResult xiiShaderCompilerProgram::Initialize(xiiStringView sPlatformName)
 {
-  if (m_VertexInputMapping.IsEmpty())
+  if (m_InputLayoutMapping.IsEmpty())
   {
-    m_VertexInputMapping["POSITION"]  = xiiGALVertexAttributeSemantic::Position;
-    m_VertexInputMapping["POSITION0"] = xiiGALVertexAttributeSemantic::Position;
+    m_InputLayoutMapping["POSITION"]  = xiiGALInputLayoutSemantic::Position;
+    m_InputLayoutMapping["POSITION0"] = xiiGALInputLayoutSemantic::Position;
 
-    m_VertexInputMapping["TANGENT"]  = xiiGALVertexAttributeSemantic::Tangent;
-    m_VertexInputMapping["TANGENT0"] = xiiGALVertexAttributeSemantic::Tangent;
+    m_InputLayoutMapping["TANGENT"]  = xiiGALInputLayoutSemantic::Tangent;
+    m_InputLayoutMapping["TANGENT0"] = xiiGALInputLayoutSemantic::Tangent;
 
-    m_VertexInputMapping["NORMAL"]  = xiiGALVertexAttributeSemantic::Normal;
-    m_VertexInputMapping["NORMAL0"] = xiiGALVertexAttributeSemantic::Normal;
+    m_InputLayoutMapping["NORMAL"]  = xiiGALInputLayoutSemantic::Normal;
+    m_InputLayoutMapping["NORMAL0"] = xiiGALInputLayoutSemantic::Normal;
 
-    m_VertexInputMapping["COLOR0"] = xiiGALVertexAttributeSemantic::Color0;
-    m_VertexInputMapping["COLOR1"] = xiiGALVertexAttributeSemantic::Color1;
-    m_VertexInputMapping["COLOR2"] = xiiGALVertexAttributeSemantic::Color2;
-    m_VertexInputMapping["COLOR3"] = xiiGALVertexAttributeSemantic::Color3;
-    m_VertexInputMapping["COLOR4"] = xiiGALVertexAttributeSemantic::Color4;
-    m_VertexInputMapping["COLOR5"] = xiiGALVertexAttributeSemantic::Color5;
-    m_VertexInputMapping["COLOR6"] = xiiGALVertexAttributeSemantic::Color6;
-    m_VertexInputMapping["COLOR7"] = xiiGALVertexAttributeSemantic::Color7;
+    m_InputLayoutMapping["COLOR0"] = xiiGALInputLayoutSemantic::Color0;
+    m_InputLayoutMapping["COLOR1"] = xiiGALInputLayoutSemantic::Color1;
+    m_InputLayoutMapping["COLOR2"] = xiiGALInputLayoutSemantic::Color2;
+    m_InputLayoutMapping["COLOR3"] = xiiGALInputLayoutSemantic::Color3;
+    m_InputLayoutMapping["COLOR4"] = xiiGALInputLayoutSemantic::Color4;
+    m_InputLayoutMapping["COLOR5"] = xiiGALInputLayoutSemantic::Color5;
+    m_InputLayoutMapping["COLOR6"] = xiiGALInputLayoutSemantic::Color6;
+    m_InputLayoutMapping["COLOR7"] = xiiGALInputLayoutSemantic::Color7;
 
-    m_VertexInputMapping["TEXCOORD0"] = xiiGALVertexAttributeSemantic::TexCoord0;
-    m_VertexInputMapping["TEXCOORD1"] = xiiGALVertexAttributeSemantic::TexCoord1;
-    m_VertexInputMapping["TEXCOORD2"] = xiiGALVertexAttributeSemantic::TexCoord2;
-    m_VertexInputMapping["TEXCOORD3"] = xiiGALVertexAttributeSemantic::TexCoord3;
-    m_VertexInputMapping["TEXCOORD4"] = xiiGALVertexAttributeSemantic::TexCoord4;
-    m_VertexInputMapping["TEXCOORD5"] = xiiGALVertexAttributeSemantic::TexCoord5;
-    m_VertexInputMapping["TEXCOORD6"] = xiiGALVertexAttributeSemantic::TexCoord6;
-    m_VertexInputMapping["TEXCOORD7"] = xiiGALVertexAttributeSemantic::TexCoord7;
-    m_VertexInputMapping["TEXCOORD8"] = xiiGALVertexAttributeSemantic::TexCoord8;
-    m_VertexInputMapping["TEXCOORD9"] = xiiGALVertexAttributeSemantic::TexCoord9;
+    m_InputLayoutMapping["TEXCOORD0"] = xiiGALInputLayoutSemantic::TexCoord0;
+    m_InputLayoutMapping["TEXCOORD1"] = xiiGALInputLayoutSemantic::TexCoord1;
+    m_InputLayoutMapping["TEXCOORD2"] = xiiGALInputLayoutSemantic::TexCoord2;
+    m_InputLayoutMapping["TEXCOORD3"] = xiiGALInputLayoutSemantic::TexCoord3;
+    m_InputLayoutMapping["TEXCOORD4"] = xiiGALInputLayoutSemantic::TexCoord4;
+    m_InputLayoutMapping["TEXCOORD5"] = xiiGALInputLayoutSemantic::TexCoord5;
+    m_InputLayoutMapping["TEXCOORD6"] = xiiGALInputLayoutSemantic::TexCoord6;
+    m_InputLayoutMapping["TEXCOORD7"] = xiiGALInputLayoutSemantic::TexCoord7;
+    m_InputLayoutMapping["TEXCOORD8"] = xiiGALInputLayoutSemantic::TexCoord8;
+    m_InputLayoutMapping["TEXCOORD9"] = xiiGALInputLayoutSemantic::TexCoord9;
 
-    m_VertexInputMapping["BITANGENT"]  = xiiGALVertexAttributeSemantic::BiTangent;
-    m_VertexInputMapping["BITANGENT0"] = xiiGALVertexAttributeSemantic::BiTangent;
+    m_InputLayoutMapping["BITANGENT"]  = xiiGALInputLayoutSemantic::BiTangent;
+    m_InputLayoutMapping["BITANGENT0"] = xiiGALInputLayoutSemantic::BiTangent;
 
-    m_VertexInputMapping["BONEINDICES0"] = xiiGALVertexAttributeSemantic::BoneIndices0;
-    m_VertexInputMapping["BONEINDICES1"] = xiiGALVertexAttributeSemantic::BoneIndices1;
+    m_InputLayoutMapping["BONEINDICES0"] = xiiGALInputLayoutSemantic::BoneIndices0;
+    m_InputLayoutMapping["BONEINDICES1"] = xiiGALInputLayoutSemantic::BoneIndices1;
 
-    m_VertexInputMapping["BONEWEIGHTS0"] = xiiGALVertexAttributeSemantic::BoneWeights0;
-    m_VertexInputMapping["BONEWEIGHTS1"] = xiiGALVertexAttributeSemantic::BoneWeights1;
+    m_InputLayoutMapping["BONEWEIGHTS0"] = xiiGALInputLayoutSemantic::BoneWeights0;
+    m_InputLayoutMapping["BONEWEIGHTS1"] = xiiGALInputLayoutSemantic::BoneWeights1;
   }
 
   return XII_SUCCESS;
@@ -390,47 +340,34 @@ xiiResult xiiShaderCompilerProgram::Initialize(const char* szPlatformName)
 
 xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xiiLogInterface* pLog)
 {
-  XII_SUCCEED_OR_RETURN(Initialize(inout_Data.m_szPlatform));
+  XII_SUCCEED_OR_RETURN(Initialize(inout_Data.m_sPlatform));
 
   for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
   {
+    xiiBitflags<xiiGALShaderStage> stageFlag = xiiGALShaderStage::GetStageFlag(stage);
+
     if (!inout_Data.m_StageBinary[stage].GetByteCode().IsEmpty())
     {
       xiiLog::Debug("Shader for stage '{}' is already compiled.", xiiGALShaderStage::Names[stage]);
       continue;
     }
 
-    const char*     szShaderSource = inout_Data.m_szShaderSource[stage];
-    const xiiUInt32 uiLength       = xiiStringUtils::GetStringElementCount(szShaderSource);
+    xiiStringView   sShaderSource = inout_Data.m_sShaderSource[stage];
+    const xiiUInt32 uiLength      = sShaderSource.GetElementCount();
 
-    if (uiLength > 0 && xiiStringUtils::FindSubString(szShaderSource, "main") != nullptr)
+    if (uiLength > 0 && sShaderSource.FindSubString("main") != nullptr)
     {
-      xiiGraphicsDeviceType::Enum device = GetProfileNameDeviceType(inout_Data.m_szPlatform, GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage));
+      xiiEnum<xiiGALGraphicsDeviceType> device = GetProfileNameDeviceType(inout_Data.m_sPlatform, GetProfileName(inout_Data.m_sPlatform, stageFlag));
 
       switch (device)
       {
-#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
-        case xiiGraphicsDeviceType::D3D11:
-        {
-          xiiShaderCompilerD3D11 shaderCompilerD3D11;
-          if (shaderCompilerD3D11.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
-          {
-            XII_SUCCEED_OR_RETURN(shaderCompilerD3D11.ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage, m_VertexInputMapping));
-          }
-          else
-          {
-            return XII_FAILURE;
-          }
-        }
-        break;
-#endif
 #if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
-        case xiiGraphicsDeviceType::D3D12:
+        case xiiGALGraphicsDeviceType::Direct3D12:
         {
-          xiiShaderCompilerD3D12 shaderCompilerD3D12;
-          if (shaderCompilerD3D12.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
+          xiiShaderCompilerD3D12 shaderCompilerD3D12(s_pDxcUtils.RawPtr(), s_pDxcCompiler.RawPtr());
+          if (shaderCompilerD3D12.CompileShader(inout_Data.m_sSourceFile, sShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_sPlatform, stageFlag), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
           {
-            XII_SUCCEED_OR_RETURN(shaderCompilerD3D12.ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage, m_VertexInputMapping));
+            XII_SUCCEED_OR_RETURN(shaderCompilerD3D12.ReflectShaderStage(inout_Data, stageFlag, m_InputLayoutMapping));
           }
           else
           {
@@ -440,12 +377,12 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         break;
 #endif
 #if BUILDSYSTEM_ENABLE_VULKAN_SUPPORT && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
-        case xiiGraphicsDeviceType::Vulkan:
+        case xiiGALGraphicsDeviceType::Vulkan:
         {
-          xiiShaderCompilerVulkan shaderCompilerVulkan;
-          if (shaderCompilerVulkan.CompileShader(inout_Data.m_szSourceFile, szShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_szPlatform, (xiiGALShaderStage::Enum)stage), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
+          xiiShaderCompilerVulkan shaderCompilerVulkan(s_pDxcUtils.RawPtr(), s_pDxcCompiler.RawPtr());
+          if (shaderCompilerVulkan.CompileShader(inout_Data.m_sSourceFile, sShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_sPlatform, stageFlag), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
           {
-            XII_SUCCEED_OR_RETURN(shaderCompilerVulkan.ReflectShaderStage(inout_Data, (xiiGALShaderStage::Enum)stage, m_VertexInputMapping));
+            XII_SUCCEED_OR_RETURN(shaderCompilerVulkan.ReflectShaderStage(inout_Data, stageFlag, m_InputLayoutMapping));
           }
           else
           {
@@ -454,7 +391,6 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         }
         break;
 #endif
-
           XII_DEFAULT_CASE_NOT_IMPLEMENTED;
       }
     }

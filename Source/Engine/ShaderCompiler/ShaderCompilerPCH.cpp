@@ -6,8 +6,6 @@ XII_STATICLINK_LIBRARY(ShaderCompiler)
     return;
 
   XII_STATICLINK_REFERENCE(ShaderCompiler_Implementation_ShaderCompiler);
-  XII_STATICLINK_REFERENCE(ShaderCompiler_Implementation_ShaderMetadata);
-  XII_STATICLINK_REFERENCE(ShaderCompiler_Implementation_D3D_Implementation_ShaderCompilerD3D11);
   XII_STATICLINK_REFERENCE(ShaderCompiler_Implementation_D3D_Implementation_ShaderCompilerD3D12);
   XII_STATICLINK_REFERENCE(ShaderCompiler_Implementation_Vulkan_Implementation_ShaderCompilerVulkan);
 }

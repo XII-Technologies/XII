@@ -7,6 +7,9 @@
 template <typename T>
 struct xiiComPtr;
 
+struct IDxcUtils;
+struct IDxcCompiler3;
+
 struct _D3D12_SHADER_INPUT_BIND_DESC;
 typedef struct _D3D12_SHADER_INPUT_BIND_DESC D3D12_SHADER_INPUT_BIND_DESC;
 
@@ -18,13 +21,20 @@ class xiiShaderCompilerProgram;
 class XII_SHADERCOMPILER_DLL xiiShaderCompilerD3D12
 {
 public:
-  xiiResult CompileShader(const char* szFile, const char* szSource, bool bDebug, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode);
+  xiiShaderCompilerD3D12(IDxcUtils* pDxcUtils, IDxcCompiler3* pDxcCompiler) :
+    m_pDxcUtils(pDxcUtils), m_pDxcCompiler(pDxcCompiler)
+  {}
+
+  xiiResult CompileShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode);
 
 private:
   friend xiiShaderCompilerProgram;
 
-  xiiResult                      ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage, xiiMap<const char*, xiiGALVertexAttributeSemantic::Enum, CompareConstChar>& vertexInputMapping);
-  xiiShaderConstantBufferLayout* ReflectConstantBufferLayout(xiiShaderStageBinary& pStageBinary, const char* szName, ID3D12ShaderReflectionConstantBuffer* pConstantBufferReflection);
+  IDxcUtils*     m_pDxcUtils    = nullptr;
+  IDxcCompiler3* m_pDxcCompiler = nullptr;
+
+  xiiResult                      ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderStage> Stage, xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>>& vertexInputMapping);
+  xiiShaderConstantBufferLayout* ReflectConstantBufferLayout(xiiShaderStageBinary& pStageBinary, xiiStringView sName, ID3D12ShaderReflectionConstantBuffer* pConstantBufferReflection);
   xiiResult                      FillResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, xiiComPtr<ID3D12ShaderReflection>& pReflector, const D3D12_SHADER_INPUT_BIND_DESC& info);
   xiiResult                      FillSRVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const D3D12_SHADER_INPUT_BIND_DESC& info);
   xiiResult                      FillUAVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const D3D12_SHADER_INPUT_BIND_DESC& info);

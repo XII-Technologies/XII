@@ -16,41 +16,23 @@
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #    include <d3dcompiler.h>
 #  endif
+#  include <Diligent/ThirdParty/DirectXShaderCompiler/dxc/dxcapi.h>
 
-#  include <ShaderCompiler/ThirdParty/dxcapi.h>
+xiiEnum<xiiGALTextureFormat> GetXIIFormatVulkan(SpvReflectFormat format);
 
-xiiComPtr<IDxcUtils>     s_pDxcUtilsVulkan;
-xiiComPtr<IDxcCompiler3> s_pDxcCompilerVulkan;
-
-xiiGALResourceFormat::Enum GetXIIFormat(SpvReflectFormat format);
-
-xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char* szSource, bool bDebug, const char* szProfile, const char* szEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
+xiiResult xiiShaderCompilerVulkan::CompileShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
 {
-  auto InitializeCompiler = [this](xiiComPtr<IDxcUtils>& pDxcUtils, xiiComPtr<IDxcCompiler3>& pDxcCompiler) -> xiiResult {
-    if (pDxcUtils != nullptr)
-      return XII_SUCCESS;
-
-    DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(pDxcUtils.RawDblPtr()));
-    DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(pDxcCompiler.RawDblPtr()));
-
-    XII_ASSERT_DEV(pDxcUtils != nullptr, "Failed to load DXC Utils.");
-    XII_ASSERT_DEV(pDxcCompiler != nullptr, "Failed to load DXC Compiler.");
-    return XII_SUCCESS;
-  };
-
-  XII_SUCCEED_OR_RETURN(InitializeCompiler(s_pDxcUtilsVulkan, s_pDxcCompilerVulkan));
-
   out_ByteCode.Clear();
 
-  const char*      szCompileSource = szSource;
+  xiiStringView    sCompileSource = sSource;
   xiiStringBuilder sDebugSource;
 
   xiiDynamicArray<xiiStringWChar> args;
-  args.PushBack(xiiStringWChar(szFile));
+  args.PushBack(xiiStringWChar(sFile));
   args.PushBack(L"-E");
-  args.PushBack(xiiStringWChar(szEntryPoint));
+  args.PushBack(xiiStringWChar(sEntryPoint));
   args.PushBack(L"-T");
-  args.PushBack(xiiStringWChar(szProfile));
+  args.PushBack(xiiStringWChar(sProfile));
   args.PushBack(L"-spirv");
   args.PushBack(L"-fspv-reflect");
   args.PushBack(L"-Zpc"); // Matrices in column-major order
@@ -60,9 +42,9 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
   if (bDebug)
   {
     // In debug mode we need to remove '#line' as any shader debugger won't work with them.
-    sDebugSource = szSource;
+    sDebugSource = sSource;
     sDebugSource.ReplaceAll("#line ", "//line ");
-    szCompileSource = sDebugSource;
+    sCompileSource = sDebugSource;
 
     args.PushBack(L"-Zi"); // Enable debug information.
     args.PushBack(L"-Od"); // Disable optimization
@@ -80,7 +62,7 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
   }
 
   xiiComPtr<IDxcBlobEncoding> pSource;
-  s_pDxcUtilsVulkan->CreateBlob(szCompileSource, (xiiUInt32)strlen(szCompileSource), DXC_CP_UTF8, pSource.RawDblPtr());
+  m_pDxcUtils->CreateBlob(sCompileSource.GetStartPointer(), sCompileSource.GetElementCount(), DXC_CP_UTF8, pSource.RawDblPtr());
 
   DxcBuffer Source;
   Source.Ptr      = pSource->GetBufferPointer();
@@ -88,7 +70,7 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
   Source.Encoding = DXC_CP_UTF8;
 
   xiiComPtr<IDxcResult> pCompileResult;
-  s_pDxcCompilerVulkan->Compile(&Source, pszArgs.GetData(), pszArgs.GetCount(), nullptr, IID_PPV_ARGS(pCompileResult.RawDblPtr()));
+  m_pDxcCompiler->Compile(&Source, pszArgs.GetData(), pszArgs.GetCount(), nullptr, IID_PPV_ARGS(pCompileResult.RawDblPtr()));
 
   xiiComPtr<IDxcBlobUtf8> pCompileError;
   pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pCompileError.RawDblPtr()), nullptr);
@@ -130,11 +112,11 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(const char* szFile, const char*
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiGALShaderStage::Enum Stage, xiiMap<const char*, xiiGALVertexAttributeSemantic::Enum, CompareConstChar>& vertexInputMapping)
+xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderStage> Stage, xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>>& vertexInputMapping)
 {
-  XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_szSourceFile);
+  XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_sSourceFile);
 
-  auto& byteCode = inout_Data.m_StageBinary[Stage].GetByteCode();
+  auto& byteCode = inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)].GetByteCode();
 
   SpvReflectShaderModule reflectShaderModule = {};
   if (spvReflectCreateShaderModule(byteCode.GetCount(), byteCode.GetData(), &reflectShaderModule) != SPV_REFLECT_RESULT_SUCCESS)
@@ -145,8 +127,8 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
 
   XII_SCOPE_EXIT(spvReflectDestroyShaderModule(&reflectShaderModule));
 
-  xiiHybridArray<xiiShaderVertexInputAttribute, 8> vertexInputAttributes;
-  if (Stage == xiiGALShaderStage::VertexShader)
+  xiiHybridArray<xiiGALVertexInputLayout, 8> vertexInputLayouts;
+  if (Stage.IsSet(xiiGALShaderStage::Vertex))
   {
     xiiUInt32 uiNumInputVariables = 0;
     if (spvReflectEnumerateInputVariables(&reflectShaderModule, &uiNumInputVariables, nullptr) != SPV_REFLECT_RESULT_SUCCESS)
@@ -164,28 +146,30 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
       return XII_FAILURE;
     }
 
-    vertexInputAttributes.Reserve(inputVariables.GetCount());
+    vertexInputLayouts.Reserve(inputVariables.GetCount());
 
     for (xiiUInt32 i = 0; i < inputVariables.GetCount(); ++i)
     {
       SpvReflectInterfaceVariable* pInputVariable = inputVariables[i];
 
       xiiStringBuilder sSemanticName = pInputVariable->semantic;
+      sSemanticName.AppendFormat("{}", pInputVariable->location);
+
       if (!sSemanticName.StartsWith_NoCase("SV_"))
       {
-        xiiShaderVertexInputAttribute& attribute = vertexInputAttributes.ExpandAndGetRef();
-        attribute.m_uiSemanticIndex              = static_cast<xiiUInt8>(pInputVariable->location);
+        xiiGALVertexInputLayout& attribute = vertexInputLayouts.ExpandAndGetRef();
+        attribute.m_uiSemanticIndex        = pInputVariable->location;
 
-        xiiGALVertexAttributeSemantic::Enum* pVAS = vertexInputMapping.GetValue(sSemanticName);
-        XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {0} in file {1}", sSemanticName, inout_Data.m_szSourceFile);
+        xiiEnum<xiiGALInputLayoutSemantic>* pVAS = vertexInputMapping.GetValue(sSemanticName);
+        XII_ASSERT_DEV(pVAS != nullptr, "Unknown vertex input semantic found: {0} in file {1}", sSemanticName, inout_Data.m_sSourceFile);
 
         if (pVAS != nullptr)
-          attribute.m_eSemantic = *pVAS;
+          attribute.m_Semantic = *pVAS;
         else
           xiiLog::Dev("Unknown vertex input semantic found: {}", pInputVariable->semantic);
 
-        attribute.m_eFormat = GetXIIFormat(pInputVariable->format);
-        XII_ASSERT_DEV(attribute.m_eFormat != xiiGALResourceFormat::Invalid, "Unknown vertex input format found: {}", pInputVariable->format);
+        attribute.m_Format = GetXIIFormatVulkan(pInputVariable->format);
+        XII_ASSERT_DEV(attribute.m_Format != xiiGALTextureFormat::Unknown, "Unknown vertex input format found: {}", pInputVariable->format);
       }
     }
   }
@@ -208,10 +192,6 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
       return XII_FAILURE;
     }
 
-    xiiMap<xiiUInt32, xiiUInt32> descriptorToXIIBinding;
-    xiiUInt32                    uiVirtualResourceView = 0;
-    xiiUInt32                    uiVirtualSampler      = 0;
-
     for (xiiUInt32 i = 0; i < uiNumDescriptorBindings; ++i)
     {
       auto& descriptorBinding = *descriptorBindings[i];
@@ -219,35 +199,21 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
       xiiLog::Info("Bound Resource: '{}' at slot {} (Count: {})", descriptorBinding.name, descriptorBinding.binding, descriptorBinding.count);
 
       xiiShaderResourceBinding shaderResourceBinding;
-      shaderResourceBinding.m_Type  = xiiShaderResourceType::Unknown;
+      shaderResourceBinding.m_Type  = xiiGALShaderResourceType::Unknown;
       shaderResourceBinding.m_iSlot = descriptorBinding.binding;
       shaderResourceBinding.m_sName.Assign(descriptorBinding.name);
 
-      if (FillResourceBinding(inout_Data.m_StageBinary[Stage], shaderResourceBinding, descriptorBinding).Failed())
+      if (FillResourceBinding(inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)], shaderResourceBinding, descriptorBinding).Failed())
         continue;
 
-      // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the D3D11-based high level render interface.
-      if (descriptorBinding.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV)
-      {
-        shaderResourceBinding.m_iSlot = uiVirtualResourceView;
-        uiVirtualResourceView++;
-      }
+      XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown, "FillResourceBinding should have failed.");
 
-      if (descriptorBinding.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER)
-      {
-        shaderResourceBinding.m_iSlot = uiVirtualSampler;
-        uiVirtualSampler++;
-      }
-
-      XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiShaderResourceType::Unknown, "FillResourceBinding should have failed.");
-
-      descriptorToXIIBinding[i] = inout_Data.m_StageBinary[Stage].GetShaderResourceBindings().GetCount();
-      inout_Data.m_StageBinary[Stage].AddShaderResourceBinding(shaderResourceBinding);
+      inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)].AddShaderResourceBinding(shaderResourceBinding);
     }
 
     // Write Bindings
     {
-      xiiArrayPtr<const xiiShaderResourceBinding> xiiBindings = inout_Data.m_StageBinary[Stage].GetShaderResourceBindings();
+      xiiArrayPtr<const xiiShaderResourceBinding> xiiBindings = inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)].GetShaderResourceBindings();
 
       // Modify meta data
       xiiDefaultMemoryStreamStorage storage;
@@ -255,9 +221,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
 
       const xiiUInt32 uiCount = xiiBindings.GetCount();
 
-      // Only a single descriptor set is currently supported.
-      xiiHybridArray<xiiShaderDescriptorSetLayout, 3> sets;
-      xiiShaderDescriptorSetLayout&                   set = sets.ExpandAndGetRef();
+      xiiHybridArray<xiiGALShaderResourceBinding, 16U> shaderResourceBinding;
 
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
@@ -266,62 +230,15 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
         auto& spirvInfo = *descriptorBindings[i];
         XII_ASSERT_DEV(spirvInfo.set == 0, "Only a single descriptor set is currently supported.");
 
-        xiiShaderDescriptorSetLayoutBinding& binding = set.Bindings.ExpandAndGetRef();
-        binding.m_sName                              = info.m_sName;
-        binding.m_uiBinding                          = static_cast<xiiUInt8>(spirvInfo.binding);
-        binding.m_uiVirtualBinding                   = xiiBindings[descriptorToXIIBinding[i]].m_iSlot;
-        binding.m_xiiType                            = xiiBindings[descriptorToXIIBinding[i]].m_Type;
-
-        switch (spirvInfo.descriptor_type)
-        {
-          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLER:
-          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::Sampler;
-            break;
-
-          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ConstantBuffer;
-            break;
-
-          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE:
-          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-            binding.m_Type = (spirvInfo.image.dim == SpvDim::SpvDimBuffer) ? xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewBuffer : xiiShaderDescriptorSetLayoutBinding::UnorderedAccessViewTexture;
-            break;
-
-          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer;
-            break;
-
-          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
-          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-            binding.m_Type = (spirvInfo.image.dim == SpvDim::SpvDimBuffer) ? xiiShaderDescriptorSetLayoutBinding::ResourceViewBuffer : xiiShaderDescriptorSetLayoutBinding::ResourceViewTexture;
-            break;
-
-          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::InputAttachment;
-            break;
-
-          case SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
-            binding.m_Type = xiiShaderDescriptorSetLayoutBinding::AccelerationStructure;
-            break;
-
-            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-        }
-
-        binding.m_uiDescriptorType  = static_cast<xiiUInt32>(spirvInfo.descriptor_type);
-        binding.m_uiDescriptorCount = 1;
-        for (xiiUInt32 uiDim = 0; uiDim < spirvInfo.array.dims_count; ++uiDim)
-        {
-          binding.m_uiDescriptorCount *= spirvInfo.array.dims[uiDim];
-        }
-
-        binding.m_uiWordOffset = spirvInfo.word_offset.binding;
-        binding.m_uiArraySize  = spirvInfo.count;
+        xiiGALShaderResourceBinding& binding = shaderResourceBinding.ExpandAndGetRef();
+        binding.m_sName                      = info.m_sName;
+        binding.m_sName                      = info.m_sName;
+        binding.m_Type                       = xiiBindings[i].m_Type;
+        binding.m_uiSlot                     = xiiBindings[i].m_iSlot;
+        binding.m_uiArraySize                = spirvInfo.count;
       }
 
-      set.Bindings.Sort([](const xiiShaderDescriptorSetLayoutBinding& lhs, const xiiShaderDescriptorSetLayoutBinding& rhs) { return lhs.m_uiBinding < rhs.m_uiBinding; });
-
-      xiiShaderMetaData::Write(stream, byteCode, sets, vertexInputAttributes);
+      xiiShaderMetaData::Write(stream, byteCode, shaderResourceBinding, vertexInputLayouts);
 
       // Replaced compiled Spirv code with custom xiiShaderMetaData format.
       xiiUInt64 uiBytesLeft    = storage.GetStorageSize64();
@@ -341,9 +258,9 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
   return XII_SUCCESS;
 }
 
-xiiShaderConstantBufferLayout* xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiShaderStageBinary& pStageBinary, const char* szName, const SpvReflectDescriptorBinding& constantBufferReflection)
+xiiShaderConstantBufferLayout* xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiShaderStageBinary& pStageBinary, xiiStringView sName, const SpvReflectDescriptorBinding& constantBufferReflection)
 {
-  XII_LOG_BLOCK("Constant Buffer Layout", szName);
+  XII_LOG_BLOCK("Constant Buffer Layout", sName);
 
   const auto& block = constantBufferReflection.block;
 
@@ -539,14 +456,14 @@ xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiShaderStageBinary& sha
 {
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
   {
-    binding.m_Type = xiiShaderResourceType::AccelerationStructure;
+    binding.m_Type = xiiGALShaderResourceType::AccelerationStructure;
 
     return XII_SUCCESS;
   }
 
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
   {
-    binding.m_Type = xiiShaderResourceType::InputAttachment;
+    binding.m_Type = xiiGALShaderResourceType::InputAttachment;
 
     return XII_SUCCESS;
   }
@@ -563,7 +480,7 @@ xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiShaderStageBinary& sha
 
   if (info.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_CBV)
   {
-    binding.m_Type    = xiiShaderResourceType::ConstantBuffer;
+    binding.m_Type    = xiiGALShaderResourceType::ConstantBuffer;
     binding.m_pLayout = ReflectConstantBufferLayout(shaderBinary, info.name, info);
 
     return XII_SUCCESS;
@@ -571,7 +488,7 @@ xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiShaderStageBinary& sha
 
   if (info.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER)
   {
-    binding.m_Type = xiiShaderResourceType::Sampler;
+    binding.m_Type = xiiGALShaderResourceType::Sampler;
 
     return XII_SUCCESS;
   }
@@ -587,7 +504,7 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
   {
     if (info.type_description->op == SpvOp::SpvOpTypeStruct)
     {
-      binding.m_Type = xiiShaderResourceType::GenericBuffer;
+      binding.m_Type = xiiGALShaderResourceType::BufferSRV;
       return XII_SUCCESS;
     }
   }
@@ -602,12 +519,12 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
         {
           if (info.image.arrayed > 0)
           {
-            binding.m_Type = xiiShaderResourceType::Texture1DArray;
+            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
             return XII_SUCCESS;
           }
           else
           {
-            binding.m_Type = xiiShaderResourceType::Texture1D;
+            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
             return XII_SUCCESS;
           }
         }
@@ -620,12 +537,12 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
         {
           if (info.image.arrayed > 0)
           {
-            binding.m_Type = xiiShaderResourceType::Texture2DArray;
+            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
             return XII_SUCCESS;
           }
           else
           {
-            binding.m_Type = xiiShaderResourceType::Texture2D;
+            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
             return XII_SUCCESS;
           }
         }
@@ -633,12 +550,12 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
         {
           if (info.image.arrayed > 0)
           {
-            binding.m_Type = xiiShaderResourceType::Texture2DMSArray;
+            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
             return XII_SUCCESS;
           }
           else
           {
-            binding.m_Type = xiiShaderResourceType::Texture2DMS;
+            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
             return XII_SUCCESS;
           }
         }
@@ -649,7 +566,7 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
       {
         if (info.image.ms == 0 && info.image.arrayed == 0)
         {
-          binding.m_Type = xiiShaderResourceType::Texture3D;
+          binding.m_Type = xiiGALShaderResourceType::TextureSRV;
           return XII_SUCCESS;
         }
       }
@@ -661,12 +578,12 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
         {
           if (info.image.arrayed == 0)
           {
-            binding.m_Type = xiiShaderResourceType::TextureCube;
+            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
             return XII_SUCCESS;
           }
           else
           {
-            binding.m_Type = xiiShaderResourceType::TextureCubeArray;
+            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
             return XII_SUCCESS;
           }
         }
@@ -674,7 +591,7 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
       break;
 
       case SpvDim::SpvDimBuffer:
-        binding.m_Type = xiiShaderResourceType::GenericBuffer;
+        binding.m_Type = xiiGALShaderResourceType::BufferSRV;
         return XII_SUCCESS;
 
       case SpvDim::SpvDimRect:
@@ -707,7 +624,7 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
   {
     if (info.image.dim == SpvDim::SpvDimBuffer)
     {
-      binding.m_Type = xiiShaderResourceType::GenericBuffer;
+      binding.m_Type = xiiGALShaderResourceType::BufferSRV;
       return XII_SUCCESS;
     }
 
@@ -723,7 +640,7 @@ xiiResult xiiShaderCompilerVulkan::FillUAVResourceBinding(xiiShaderStageBinary& 
 {
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
   {
-    binding.m_Type = xiiShaderResourceType::UAV;
+    binding.m_Type = xiiGALShaderResourceType::TextureUAV;
     return XII_SUCCESS;
   }
 
@@ -731,7 +648,7 @@ xiiResult xiiShaderCompilerVulkan::FillUAVResourceBinding(xiiShaderStageBinary& 
   {
     if (info.image.dim == SpvDim::SpvDimBuffer)
     {
-      binding.m_Type = xiiShaderResourceType::UAV;
+      binding.m_Type = xiiGALShaderResourceType::BufferUAV;
       return XII_SUCCESS;
     }
 
@@ -743,37 +660,37 @@ xiiResult xiiShaderCompilerVulkan::FillUAVResourceBinding(xiiShaderStageBinary& 
   return XII_FAILURE;
 }
 
-xiiGALResourceFormat::Enum GetXIIFormat(SpvReflectFormat format)
+xiiEnum<xiiGALTextureFormat> GetXIIFormatVulkan(SpvReflectFormat format)
 {
   switch (format)
   {
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32_UINT:
-      return xiiGALResourceFormat::RUInt;
+      return xiiGALTextureFormat::R32UInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32_SINT:
-      return xiiGALResourceFormat::RInt;
+      return xiiGALTextureFormat::R32SInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32_SFLOAT:
-      return xiiGALResourceFormat::RFloat;
+      return xiiGALTextureFormat::R32Float;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32_UINT:
-      return xiiGALResourceFormat::RGUInt;
+      return xiiGALTextureFormat::RG32UInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32_SINT:
-      return xiiGALResourceFormat::RGInt;
+      return xiiGALTextureFormat::RG32SInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32_SFLOAT:
-      return xiiGALResourceFormat::RGFloat;
+      return xiiGALTextureFormat::RG32Float;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32_UINT:
-      return xiiGALResourceFormat::RGBUInt;
+      return xiiGALTextureFormat::RGB32UInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32_SINT:
-      return xiiGALResourceFormat::RGBInt;
+      return xiiGALTextureFormat::RGB32SInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32_SFLOAT:
-      return xiiGALResourceFormat::RGBFloat;
+      return xiiGALTextureFormat::RGB32Float;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32A32_UINT:
-      return xiiGALResourceFormat::RGBAUInt;
+      return xiiGALTextureFormat::RGBA32UInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32A32_SINT:
-      return xiiGALResourceFormat::RGBAInt;
+      return xiiGALTextureFormat::RGBA32SInt;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_R32G32B32A32_SFLOAT:
-      return xiiGALResourceFormat::RGBAFloat;
+      return xiiGALTextureFormat::RGBA32Float;
     case SpvReflectFormat::SPV_REFLECT_FORMAT_UNDEFINED:
     default:
-      return xiiGALResourceFormat::Invalid;
+      return xiiGALTextureFormat::Unknown;
   }
 }
 

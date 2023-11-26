@@ -1,7 +1,9 @@
 #pragma once
 
-#include <GraphicsCore/ShaderCompiler/ShaderCompiler.h>
 #include <ShaderCompiler/ShaderCompilerDLL.h>
+
+#include <GraphicsCore/ShaderCompiler/ShaderCompiler.h>
+#include <GraphicsFoundation/Shader/InputLayout.h>
 
 class XII_SHADERCOMPILER_DLL xiiShaderCompilerProgram : public xiiShaderProgramCompiler
 {
@@ -39,12 +41,12 @@ public:
 
   virtual xiiResult Compile(xiiShaderProgramData& inout_Data, xiiLogInterface* pLog) override;
 
-  const char* GetProfileName(const char* szPlatform, xiiGALShaderStage::Enum Stage);
+  xiiStringView GetProfileName(xiiStringView sPlatform, xiiBitflags<xiiGALShaderStage> Stage);
 
-  xiiGraphicsDeviceType::Enum GetProfileNameDeviceType(const char* szPlatform, const char* szProfileName);
+  xiiEnum<xiiGALGraphicsDeviceType> GetProfileNameDeviceType(xiiStringView sPlatform, xiiStringView sProfileName);
 
 private:
-  xiiResult Initialize(const char* szPlatformName);
+  xiiResult Initialize(xiiStringView sPlatformName);
 
-  xiiMap<const char*, xiiGALVertexAttributeSemantic::Enum, CompareConstChar> m_VertexInputMapping;
+  xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>> m_InputLayoutMapping;
 };

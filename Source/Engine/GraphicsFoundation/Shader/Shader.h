@@ -127,11 +127,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceBinding
 {
   XII_DECLARE_MEM_RELOCATABLE_TYPE();
 
-  xiiHashedString                                  m_sName;                    ///< The shader resource name.
-  xiiEnum<xiiGALShaderResourceType>                m_Type;                     ///< The shader resource type. The default is xiiGALShaderResourceType::Unknown.
-  xiiUInt32                                        m_uiSlot = xiiInvalidIndex; ///< The shader resource binding slot.
-  xiiUInt32                                        m_uiSize = 0U;              ///< The size of the buffer in bytes.
-  xiiDynamicArray<xiiGALShaderVariableDescription> m_Variables;                ///< An array of member variables.
+  xiiHashedString                                  m_sName;                         ///< The shader resource name.
+  xiiEnum<xiiGALShaderResourceType>                m_Type;                          ///< The shader resource type. The default is xiiGALShaderResourceType::Unknown.
+  xiiUInt32                                        m_uiSlot      = xiiInvalidIndex; ///< The shader resource binding slot.
+  xiiUInt32                                        m_uiArraySize = 1U;              ///< The number of contiguous resources for resource arrays. The default is 1.
+  xiiDynamicArray<xiiGALShaderVariableDescription> m_Variables;                     ///< An array of member variables.
 };
 
 /// \brief This describes the shader creation description.
