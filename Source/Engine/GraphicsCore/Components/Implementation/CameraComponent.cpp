@@ -348,7 +348,8 @@ void xiiCameraComponent::ShowStats(xiiView* pView)
     xiiMat4 projectionMatrix     = pView->GetProjectionMatrix(xiiCameraEye::Left); // todo: Stereo support
     xiiMat4 viewProjectionMatrix = projectionMatrix * viewMatrix;
 
-    xiiFrustum frustum = xiiFrustum::MakeFromMVP(viewProjectionMatrix);
+    xiiFrustum frustum;
+    frustum.SetFrustum(viewProjectionMatrix);
 
     // TODO: limit far plane to 10 meters
 

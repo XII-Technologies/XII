@@ -217,7 +217,7 @@ void xiiSkeletonPoseComponent::RemoveBone(xiiStringView sKey)
 
 bool xiiSkeletonPoseComponent::GetBone(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Bones.Find(sKey);
+  xiiUInt32 it = m_Bones.Find(xiiTempHashedString(sKey));
 
   if (it == xiiInvalidIndex)
     return false;

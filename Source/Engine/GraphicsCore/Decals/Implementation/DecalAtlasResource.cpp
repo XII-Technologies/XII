@@ -171,9 +171,9 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDecalAtlasResource, xiiDecalAtlasResourceDe
 void xiiDecalAtlasResource::CreateLayerTexture(const xiiImage& img, bool bSRGB, xiiTexture2DResourceHandle& out_hTexture)
 {
   xiiTexture2DResourceDescriptor td;
-  td.m_SamplerDesc.m_AddressU = xiiImageAddressMode::Clamp;
-  td.m_SamplerDesc.m_AddressV = xiiImageAddressMode::Clamp;
-  td.m_SamplerDesc.m_AddressW = xiiImageAddressMode::Clamp;
+  td.m_SamplerDesc.m_AddressU = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+  td.m_SamplerDesc.m_AddressV = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+  td.m_SamplerDesc.m_AddressW = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
 
   xiiUInt32                                        uiMemory;
   xiiHybridArray<xiiGALTextureSubResourceData, 32> initData;

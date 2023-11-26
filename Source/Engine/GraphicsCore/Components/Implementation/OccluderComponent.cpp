@@ -56,9 +56,9 @@ void xiiOccluderComponent::SetExtents(const xiiVec3& vExtents)
 void xiiOccluderComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)
 {
   if (GetOwner()->IsStatic())
-    msg.AddBounds(xiiBoundingBoxSphere::MakeFromBox(xiiBoundingBox::MakeFromMinMax(-m_vExtents * 0.5f, m_vExtents * 0.5f)), xiiDefaultSpatialDataCategories::OcclusionStatic);
+    msg.AddBounds(xiiBoundingBoxSphere(xiiBoundingBox(-m_vExtents * 0.5f, m_vExtents * 0.5f)), xiiDefaultSpatialDataCategories::OcclusionStatic);
   else
-    msg.AddBounds(xiiBoundingBoxSphere::MakeFromBox(xiiBoundingBox::MakeFromMinMax(-m_vExtents * 0.5f, m_vExtents * 0.5f)), xiiDefaultSpatialDataCategories::OcclusionDynamic);
+    msg.AddBounds(xiiBoundingBoxSphere(xiiBoundingBox(-m_vExtents * 0.5f, m_vExtents * 0.5f)), xiiDefaultSpatialDataCategories::OcclusionDynamic);
 }
 
 void xiiOccluderComponent::OnMsgExtractOccluderData(xiiMsgExtractOccluderData& msg) const
@@ -102,6 +102,5 @@ void xiiOccluderComponent::OnDeactivated()
 {
   m_pOccluderObject.Clear();
 }
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Implementation_OccluderComponent);

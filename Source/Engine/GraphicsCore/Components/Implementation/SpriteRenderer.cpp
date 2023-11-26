@@ -2,6 +2,7 @@
 
 #include <Foundation/Math/Float16.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsCore/Components/SpriteComponent.h>
 #include <GraphicsCore/Components/SpriteRenderer.h>
 #include <GraphicsCore/GPUResourcePool/GPUResourcePool.h>
@@ -69,12 +70,9 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
 xiiGALBufferHandle xiiSpriteRenderer::CreateSpriteDataBuffer(xiiUInt32 uiBufferSize) const
 {
   xiiGALBufferCreationDescription desc;
-  desc.m_uiStructSize                = sizeof(xiiPerSpriteData);
-  desc.m_uiTotalSize                 = desc.m_uiStructSize * uiBufferSize;
-  desc.m_BufferType                  = xiiGALBufferType::Generic;
-  desc.m_bUseAsStructuredBuffer      = true;
-  desc.m_bAllowShaderResourceView    = true;
-  desc.m_ResourceAccess.m_bImmutable = false;
+  desc.m_uiSize = sizeof(xiiPerSpriteData) * uiBufferSize;
+  desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
+  desc.m_Mode                        = xiiGALBufferMode::Structured;
 
   return xiiGPUResourcePool::GetDefaultInstance()->GetBuffer(desc);
 }

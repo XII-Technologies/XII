@@ -2,8 +2,6 @@
 
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
-#include <GraphicsCore/Lights/ClusteredDataProvider.h>
-#include <GraphicsCore/Lights/SimplifiedDataProvider.h>
 #include <GraphicsCore/Pipeline/Passes/ForwardRenderPass.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
@@ -149,6 +147,7 @@ void xiiForwardRenderPass::SetupPermutationVars(const xiiRenderViewContext& rend
 
 void xiiForwardRenderPass::SetupLighting(const xiiRenderViewContext& renderViewContext)
 {
+#if 0
   // Setup clustered data
   if (m_ShadingQuality == xiiForwardRenderShadingQuality::Normal)
   {
@@ -162,6 +161,7 @@ void xiiForwardRenderPass::SetupLighting(const xiiRenderViewContext& renderViewC
     pSimplifiedData->BindResources(renderViewContext.m_pRenderContext);
     // todo
   }
+#endif
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_ForwardRenderPass);

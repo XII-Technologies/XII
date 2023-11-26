@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/Shader/Shader.h>
+#include <GraphicsFoundation/Shader/ShaderUtils.h>
 
 // clang-format off
 
@@ -55,6 +56,8 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShaderVariableClassType, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
+
+xiiDelegate<void(xiiShaderUtilities::xiiBuiltinShaderType type, xiiShaderUtilities::xiiBuiltinShader& out_shader)> xiiShaderUtilities::g_RequestBuiltinShaderCallback;
 
 xiiGALShader::xiiGALShader(const xiiGALShaderCreationDescription& creationDescription) :
   xiiGALResource<xiiGALShaderCreationDescription>(creationDescription)

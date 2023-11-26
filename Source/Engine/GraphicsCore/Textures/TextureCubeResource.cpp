@@ -128,7 +128,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
 
   m_uiMemoryGPU[m_uiLoadedTextures] = 0;
 
-  xiiHybridArray<xiiGALMappedTextureSubresource, 32> InitData;
+  xiiHybridArray<xiiGALTextureSubResourceData, 32> InitData;
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -140,7 +140,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
     {
       for (xiiUInt32 mip = uiHighestMipLevel; mip < pImage->GetNumMipLevels(); ++mip)
       {
-        xiiGALMappedTextureSubresource& id = InitData.ExpandAndGetRef();
+        xiiGALTextureSubResourceData& id = InitData.ExpandAndGetRef();
 
         id.m_pData = pImage->GetPixelPointer<xiiUInt8>(mip, face, array_index);
 
@@ -164,7 +164,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
     }
   }
 
-  const xiiArrayPtr<xiiGALMappedTextureSubresource> InitDataPtr(InitData);
+  const xiiArrayPtr<xiiGALTextureSubResourceData> InitDataPtr(InitData);
 
   xiiTextureCubeResourceDescriptor td;
   td.m_DescGAL                = texDesc;

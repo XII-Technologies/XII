@@ -54,7 +54,7 @@ xiiResult xiiRenderTargetActivatorComponent::GetLocalBounds(xiiBoundingBoxSphere
 {
   if (m_hRenderTarget.IsValid())
   {
-    ref_bounds = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::ZeroVector(), 0.1f);
+    ref_bounds = xiiBoundingSphere(xiiVec3::ZeroVector(), 0.1f);
     return XII_SUCCESS;
   }
 
@@ -105,7 +105,5 @@ const char* xiiRenderTargetActivatorComponent::GetRenderTargetFile() const
 
   return m_hRenderTarget.GetResourceID();
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Implementation_RenderTargetActivatorComponent);

@@ -43,7 +43,8 @@ void xiiRenderComponent::OnDeactivated()
 
 void xiiRenderComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)
 {
-  xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
+  xiiBoundingBoxSphere bounds;
+  bounds.SetInvalid();
 
   bool bAlwaysVisible = false;
 

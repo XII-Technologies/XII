@@ -12,6 +12,8 @@
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -108,14 +110,14 @@ namespace
 
   struct PerContextData
   {
-    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                      m_lineVertices;
-    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                      m_triangleVertices;
-    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                      m_triangle2DVertices;
-    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                      m_line2DVertices;
-    xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                     m_lineBoxes;
-    xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                     m_solidBoxes;
-    xiiMap<xiiGALResourceViewHandle, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_texTriangle2DVertices;
-    xiiMap<xiiGALResourceViewHandle, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_texTriangle3DVertices;
+    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                     m_lineVertices;
+    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                     m_triangleVertices;
+    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                     m_triangle2DVertices;
+    xiiDynamicArray<Vertex, xiiAlignedAllocatorWrapper>                                     m_line2DVertices;
+    xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                    m_lineBoxes;
+    xiiDynamicArray<BoxData, xiiAlignedAllocatorWrapper>                                    m_solidBoxes;
+    xiiMap<xiiGALTextureViewHandle, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_texTriangle2DVertices;
+    xiiMap<xiiGALTextureViewHandle, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_texTriangle3DVertices;
 
     xiiDynamicArray<InfoTextData>                          m_infoTextData[(int)xiiDebugTextPlacement::ENUM_COUNT];
     xiiDynamicArray<TextLineData2D>                        m_textLines2D;
@@ -236,12 +238,9 @@ namespace
     if (s_hDataBuffer[bufferType].IsInvalidated())
     {
       xiiGALBufferCreationDescription desc;
-      desc.m_uiStructSize                = uiStructSize;
-      desc.m_uiTotalSize                 = DEBUG_BUFFER_SIZE;
-      desc.m_BufferType                  = xiiGALBufferType::Generic;
-      desc.m_bUseAsStructuredBuffer      = true;
-      desc.m_bAllowShaderResourceView    = true;
-      desc.m_ResourceAccess.m_bImmutable = false;
+      desc.m_uiSize = DEBUG_BUFFER_SIZE;
+      desc.m_Mode   = xiiGALBufferMode::Structured;
+      desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
       s_hDataBuffer[bufferType] = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
     }
@@ -252,10 +251,8 @@ namespace
     if (s_hDataBuffer[bufferType].IsInvalidated())
     {
       xiiGALBufferCreationDescription desc;
-      desc.m_uiStructSize                = uiVertexSize;
-      desc.m_uiTotalSize                 = DEBUG_BUFFER_SIZE;
-      desc.m_BufferType                  = xiiGALBufferType::VertexBuffer;
-      desc.m_ResourceAccess.m_bImmutable = false;
+      desc.m_uiSize = DEBUG_BUFFER_SIZE;
+      desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
 
       s_hDataBuffer[bufferType] = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
     }
@@ -603,14 +600,11 @@ void xiiDebugRenderer::DrawLineBoxCorners(const xiiDebugRendererContext& context
 // static
 void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
 {
-  enum
-  {
-    NUM_SEGMENTS = 32
-  };
+  static constexpr xiiUInt32 NUM_SEGMENTS = 32;
 
   const xiiVec3  vCenter   = sphere.m_vCenter;
   const float    fRadius   = sphere.m_fRadius;
-  const xiiAngle stepAngle = xiiAngle::Degree(360.0f / NUM_SEGMENTS);
+  const xiiAngle stepAngle = xiiAngle::Degree(360.0f / (float)NUM_SEGMENTS);
 
   XII_LOCK(s_Mutex);
 
@@ -641,12 +635,9 @@ void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, co
 
 void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
 {
-  enum
-  {
-    NUM_SEGMENTS      = 32,
-    NUM_HALF_SEGMENTS = 16,
-    NUM_LINES         = NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + 4,
-  };
+  static constexpr xiiUInt32 NUM_SEGMENTS      = 32;
+  static constexpr xiiUInt32 NUM_HALF_SEGMENTS = 16;
+  static constexpr xiiUInt32 NUM_LINES         = NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + 4;
 
   const xiiAngle stepAngle = xiiAngle::Degree(360.0f / NUM_SEGMENTS);
 
@@ -896,7 +887,7 @@ void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, c
   Draw2DRectangle(context, rectInPixel, fDepth, color, xiiGALDevice::GetDefaultDevice()->GetDefaultResourceView(pTexture->GetGALTexture()), vScale);
 }
 
-void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiGALResourceViewHandle hResourceView, xiiVec2 vScale)
+void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiGALTextureViewHandle hResourceView, xiiVec2 vScale)
 {
   TexVertex vertices[6];
 
@@ -1013,9 +1004,11 @@ void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngl
   const xiiUInt32 uiTesselation = xiiMath::Max(1u, (xiiUInt32)(range / xiiAngle::Degree(5)));
   const xiiAngle  step          = range / (float)uiTesselation;
 
-  xiiQuat qStart = xiiQuat::MakeFromAxisAndAngle(vRotationAxis, startAngle);
+  xiiQuat qStart;
+  qStart.SetFromAxisAndAngle(vRotationAxis, startAngle);
 
-  xiiQuat qStep = xiiQuat::MakeFromAxisAndAngle(vRotationAxis, step);
+  xiiQuat qStep;
+  qStep.SetFromAxisAndAngle(vRotationAxis, step);
 
   xiiVec3 vCurDir = qStart * vForwardAxis;
 
@@ -1073,9 +1066,11 @@ void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, x
 
   const xiiVec3 tangentAxis = vForwardAxis.GetOrthogonalVector().GetNormalized();
 
-  xiiQuat tilt = xiiQuat::MakeFromAxisAndAngle(tangentAxis, halfAngle);
+  xiiQuat tilt;
+  tilt.SetFromAxisAndAngle(tangentAxis, halfAngle);
 
-  xiiQuat step = xiiQuat::MakeFromAxisAndAngle(vForwardAxis, xiiAngle::Degree(360) / (float)uiTesselation);
+  xiiQuat step;
+  step.SetFromAxisAndAngle(vForwardAxis, xiiAngle::Degree(360) / (float)uiTesselation);
 
   xiiVec3 vCurDir = tilt * vForwardAxis;
 
@@ -1118,8 +1113,8 @@ void xiiDebugRenderer::DrawLimitCone(const xiiDebugRendererContext& context, xii
   {
     float scale = 1.0f;
 
-    const float tanQSwingZ = xiiMath::Tan(halfAngle1 / 4);
-    const float tanQSwingY = xiiMath::Tan(halfAngle2 / 4);
+    const float tanQSwingZ = xiiMath::Tan(halfAngle1 / 4.0f);
+    const float tanQSwingY = xiiMath::Tan(halfAngle2 / 4.0f);
 
     xiiVec3 prev(0);
     for (xiiUInt32 i = 0; i <= NUM_LINES; i++)
@@ -1170,7 +1165,7 @@ void xiiDebugRenderer::DrawCylinder(const xiiDebugRendererContext& context, floa
   xiiHybridArray<Line, NUM_SEGMENTS * 3>         lines;
   xiiHybridArray<Triangle, NUM_SEGMENTS * 2 * 2> tris;
 
-  const xiiAngle step  = xiiAngle::Degree(360) / NUM_SEGMENTS;
+  const xiiAngle step  = xiiAngle::Degree(360) / (float)NUM_SEGMENTS;
   xiiAngle       angle = {};
 
   xiiVec3 vCurCircle(0, 1 /*xiiMath::Cos(angle)*/, 0 /*xiiMath::Sin(angle)*/);
@@ -1282,7 +1277,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         }
         else
         {
-          xiiDebugRenderer::DrawLineSphere(context, xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::ZeroVector(), item.m_fRadius), item.m_Color, item.m_Transform);
+          xiiDebugRenderer::DrawLineSphere(context, xiiBoundingSphere(xiiVec3::ZeroVector(), item.m_fRadius), item.m_Color, item.m_Transform);
 
           ++i;
         }
@@ -1303,7 +1298,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         }
         else
         {
-          xiiDebugRenderer::DrawLineBox(context, xiiBoundingBox::MakeFromMinMax(-item.m_vHalfSize, item.m_vHalfSize), item.m_Color, item.m_Transform);
+          xiiDebugRenderer::DrawLineBox(context, xiiBoundingBox(-item.m_vHalfSize, item.m_vHalfSize), item.m_Color, item.m_Transform);
 
           ++i;
         }
@@ -1489,7 +1484,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
         pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Lines], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::Lines, uiNumLineVerticesInBatch / 2);
+        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1516,7 +1511,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
         pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Lines2D], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
 
-        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines2D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::Lines, uiNumLineVerticesInBatch / 2);
+        renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines2D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
@@ -1667,8 +1662,8 @@ void xiiDebugRenderer::OnEngineStartup()
     geom.AddLineBox(xiiVec3(2.0f));
 
     xiiMeshBufferResourceDescriptor desc;
-    desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALTextureFormat::XYZFloat);
-    desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::Lines);
+    desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
+    desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::LineList);
 
     s_hLineBoxMeshBuffer = xiiResourceManager::CreateResource<xiiMeshBufferResource>("DebugLineBox", std::move(desc), "Mesh for Rendering Debug Line Boxes");
   }
@@ -1678,7 +1673,7 @@ void xiiDebugRenderer::OnEngineStartup()
     geom.AddBox(xiiVec3(2.0f), false);
 
     xiiMeshBufferResourceDescriptor desc;
-    desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALTextureFormat::XYZFloat);
+    desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
     desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
     s_hSolidBoxMeshBuffer = xiiResourceManager::CreateResource<xiiMeshBufferResource>("DebugSolidBox", std::move(desc), "Mesh for Rendering Debug Solid Boxes");
@@ -1690,16 +1685,16 @@ void xiiDebugRenderer::OnEngineStartup()
 
     {
       xiiVertexStreamInfo& si = s_InputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALVertexAttributeSemantic::Position;
-      si.m_Format             = xiiGALTextureFormat::XYZFloat;
+      si.m_Semantic           = xiiGALInputLayoutSemantic::Position;
+      si.m_Format             = xiiGALTextureFormat::RGB32Float;
       si.m_uiOffset           = 0;
       si.m_uiElementSize      = 12;
     }
 
     {
       xiiVertexStreamInfo& si = s_InputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALVertexAttributeSemantic::Color0;
-      si.m_Format             = xiiGALTextureFormat::RGBAUByteNormalized;
+      si.m_Semantic           = xiiGALInputLayoutSemantic::Color0;
+      si.m_Format             = xiiGALTextureFormat::RGBA8UNormalized;
       si.m_uiOffset           = 12;
       si.m_uiElementSize      = 4;
     }
@@ -1711,32 +1706,32 @@ void xiiDebugRenderer::OnEngineStartup()
 
     {
       xiiVertexStreamInfo& si = s_TexInputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALVertexAttributeSemantic::Position;
-      si.m_Format             = xiiGALTextureFormat::XYZFloat;
+      si.m_Semantic           = xiiGALInputLayoutSemantic::Position;
+      si.m_Format             = xiiGALTextureFormat::RGB32Float;
       si.m_uiOffset           = 0;
       si.m_uiElementSize      = 12;
     }
 
     {
       xiiVertexStreamInfo& si = s_TexInputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALVertexAttributeSemantic::Color0;
-      si.m_Format             = xiiGALTextureFormat::RGBAUByteNormalized;
+      si.m_Semantic           = xiiGALInputLayoutSemantic::Color0;
+      si.m_Format             = xiiGALTextureFormat::RGBA8UNormalized;
       si.m_uiOffset           = 12;
       si.m_uiElementSize      = 4;
     }
 
     {
       xiiVertexStreamInfo& si = s_TexInputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALVertexAttributeSemantic::TexCoord0;
-      si.m_Format             = xiiGALTextureFormat::XYFloat;
+      si.m_Semantic           = xiiGALInputLayoutSemantic::TexCoord0;
+      si.m_Format             = xiiGALTextureFormat::RG32Float;
       si.m_uiOffset           = 16;
       si.m_uiElementSize      = 8;
     }
 
     {
       xiiVertexStreamInfo& si = s_TexInputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALVertexAttributeSemantic::TexCoord1; // padding
-      si.m_Format             = xiiGALTextureFormat::XYFloat;
+      si.m_Semantic           = xiiGALInputLayoutSemantic::TexCoord1; // padding
+      si.m_Format             = xiiGALTextureFormat::RG32Float;
       si.m_uiOffset           = 24;
       si.m_uiElementSize      = 8;
     }
@@ -1747,15 +1742,15 @@ void xiiDebugRenderer::OnEngineStartup()
     xiiGraphicsUtils::CreateSimpleASCIIFontTexture(debugFontImage);
 
     xiiGALTextureSubResourceData memoryDesc;
-    memoryDesc.m_pData        = debugFontImage.GetPixelPointer<xiiUInt8>();
-    memoryDesc.m_uiRowPitch   = static_cast<xiiUInt32>(debugFontImage.GetRowPitch());
-    memoryDesc.m_uiSlicePitch = static_cast<xiiUInt32>(debugFontImage.GetDepthPitch());
+    memoryDesc.m_pData         = debugFontImage.GetPixelPointer<xiiUInt8>();
+    memoryDesc.m_uiStride      = static_cast<xiiUInt32>(debugFontImage.GetRowPitch());
+    memoryDesc.m_uiDepthStride = static_cast<xiiUInt32>(debugFontImage.GetDepthPitch());
 
     xiiTexture2DResourceDescriptor desc;
-    desc.m_DescGAL.m_uiWidth  = debugFontImage.GetWidth();
-    desc.m_DescGAL.m_uiHeight = debugFontImage.GetHeight();
-    desc.m_DescGAL.m_Format   = xiiGALTextureFormat::RGBAUByteNormalized;
-    desc.m_InitialContent     = xiiMakeArrayPtr(&memoryDesc, 1);
+    desc.m_DescGAL.m_Size.width  = debugFontImage.GetWidth();
+    desc.m_DescGAL.m_Size.height = debugFontImage.GetHeight();
+    desc.m_DescGAL.m_Format      = xiiGALTextureFormat::RGBA8UNormalized;
+    desc.m_InitialContent        = xiiMakeArrayPtr(&memoryDesc, 1);
 
     s_hDebugFontTexture = xiiResourceManager::CreateResource<xiiTexture2DResource>("DebugFontTexture", std::move(desc));
   }
@@ -1850,19 +1845,23 @@ void xiiScriptExtensionClass_Debug::DrawCross(const xiiWorld* pWorld, const xiiV
 // static
 void xiiScriptExtensionClass_Debug::DrawLineBox(const xiiWorld* pWorld, const xiiVec3& vPosition, const xiiVec3& vHalfExtents, const xiiColor& color, const xiiTransform& transform)
 {
-  xiiDebugRenderer::DrawLineBox(pWorld, xiiBoundingBox::MakeFromCenterAndHalfExtents(vPosition, vHalfExtents), color, transform);
+  xiiBoundingBox bbox;
+  bbox.SetCenterAndHalfExtents(vPosition, vHalfExtents);
+  xiiDebugRenderer::DrawLineBox(pWorld, bbox, color, transform);
 }
 
 // static
 void xiiScriptExtensionClass_Debug::DrawLineSphere(const xiiWorld* pWorld, const xiiVec3& vPosition, float fRadius, const xiiColor& color, const xiiTransform& transform)
 {
-  xiiDebugRenderer::DrawLineSphere(pWorld, xiiBoundingSphere::MakeFromCenterAndRadius(vPosition, fRadius), color, transform);
+  xiiDebugRenderer::DrawLineSphere(pWorld, xiiBoundingSphere(vPosition, fRadius), color, transform);
 }
 
 // static
 void xiiScriptExtensionClass_Debug::DrawSolidBox(const xiiWorld* pWorld, const xiiVec3& vPosition, const xiiVec3& vHalfExtents, const xiiColor& color, const xiiTransform& transform)
 {
-  xiiDebugRenderer::DrawSolidBox(pWorld, xiiBoundingBox::MakeFromCenterAndHalfExtents(vPosition, vHalfExtents), color, transform);
+  xiiBoundingBox bbox;
+  bbox.SetCenterAndHalfExtents(vPosition, vHalfExtents);
+  xiiDebugRenderer::DrawSolidBox(pWorld, bbox, color, transform);
 }
 
 // static

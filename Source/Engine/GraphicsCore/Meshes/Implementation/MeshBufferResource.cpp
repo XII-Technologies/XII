@@ -84,10 +84,10 @@ xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiEnum<xiiGALInputLayoutSe
 
 void xiiMeshBufferResourceDescriptor::AddCommonStreams()
 {
-  AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALTextureFormat::XYZFloat);
-  AddStream(xiiGALVertexAttributeSemantic::TexCoord0, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::Default));
-  AddStream(xiiGALVertexAttributeSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::Default));
-  AddStream(xiiGALVertexAttributeSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::Default));
+  AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
+  AddStream(xiiGALInputLayoutSemantic::TexCoord0, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::Default));
+  AddStream(xiiGALInputLayoutSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::Default));
+  AddStream(xiiGALInputLayoutSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::Default));
 }
 
 void xiiMeshBufferResourceDescriptor::AllocateStreams(xiiUInt32 uiNumVertices, xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiNumPrimitives, bool bZeroFill /*= false*/)
@@ -132,11 +132,11 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
   // Index Buffer Generation
   xiiDynamicArray<xiiUInt32> Indices;
 
-  if (topology == xiiGALPrimitiveTopology::Points)
+  if (topology == xiiGALPrimitiveTopology::PointList)
   {
     // Leaving indices empty disables indexed rendering.
   }
-  else if (topology == xiiGALPrimitiveTopology::Lines)
+  else if (topology == xiiGALPrimitiveTopology::LineList)
   {
     Indices.Reserve(geom.GetLines().GetCount() * 2);
 
@@ -168,9 +168,9 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
     const xiiVertexStreamInfo& si = m_InputLayout.m_VertexStreams[s];
     switch (si.m_Semantic)
     {
-      case xiiGALVertexAttributeSemantic::Position:
+      case xiiGALInputLayoutSemantic::Position:
       {
-        if (si.m_Format == xiiGALTextureFormat::XYZFloat)
+        if (si.m_Format == xiiGALTextureFormat::RGB32Float)
         {
           for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
           {
@@ -184,7 +184,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       }
       break;
 
-      case xiiGALVertexAttributeSemantic::Normal:
+      case xiiGALInputLayoutSemantic::Normal:
       {
         for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
         {
@@ -197,7 +197,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       }
       break;
 
-      case xiiGALVertexAttributeSemantic::Tangent:
+      case xiiGALInputLayoutSemantic::Tangent:
       {
         for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
         {
@@ -210,10 +210,10 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       }
       break;
 
-      case xiiGALVertexAttributeSemantic::Color0:
-      case xiiGALVertexAttributeSemantic::Color1:
+      case xiiGALInputLayoutSemantic::Color0:
+      case xiiGALInputLayoutSemantic::Color1:
       {
-        if (si.m_Format == xiiGALTextureFormat::RGBAUByteNormalized)
+        if (si.m_Format == xiiGALTextureFormat::RGBA8UNormalized)
         {
           for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
           {
@@ -227,8 +227,8 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       }
       break;
 
-      case xiiGALVertexAttributeSemantic::TexCoord0:
-      case xiiGALVertexAttributeSemantic::TexCoord1:
+      case xiiGALInputLayoutSemantic::TexCoord0:
+      case xiiGALInputLayoutSemantic::TexCoord1:
       {
         for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
         {
@@ -241,11 +241,11 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       }
       break;
 
-      case xiiGALVertexAttributeSemantic::BoneIndices0:
+      case xiiGALInputLayoutSemantic::BoneIndices0:
       {
         // if a bone index array is available, move the custom index into it
 
-        if (si.m_Format == xiiGALTextureFormat::RGBAUByte)
+        if (si.m_Format == xiiGALTextureFormat::RGBA8UInt)
         {
           for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
           {
@@ -254,7 +254,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
             SetVertexData<xiiVec4U8>(s, v, storage);
           }
         }
-        else if (si.m_Format == xiiGALTextureFormat::RGBAUShort)
+        else if (si.m_Format == xiiGALTextureFormat::RGBA16UInt)
         {
           for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
           {
@@ -264,11 +264,11 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       }
       break;
 
-      case xiiGALVertexAttributeSemantic::BoneWeights0:
+      case xiiGALInputLayoutSemantic::BoneWeights0:
       {
         // if a bone weight array is available, set it to fully use the first bone
 
-        if (si.m_Format == xiiGALTextureFormat::RGBAUByteNormalized)
+        if (si.m_Format == xiiGALTextureFormat::RGBA8UNormalized)
         {
           for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
           {
@@ -276,7 +276,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
           }
         }
 
-        if (si.m_Format == xiiGALTextureFormat::XYZWFloat)
+        if (si.m_Format == xiiGALTextureFormat::RGBA32Float)
         {
           for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
           {
@@ -286,8 +286,8 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       }
       break;
 
-      case xiiGALVertexAttributeSemantic::BoneIndices1:
-      case xiiGALVertexAttributeSemantic::BoneWeights1:
+      case xiiGALInputLayoutSemantic::BoneIndices1:
+      case xiiGALInputLayoutSemantic::BoneWeights1:
         // Don't error out for these semantics as they may be used by the user (e.g. breakable mesh construction)
         break;
 
@@ -300,7 +300,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
   }
 
   // Fill index buffer.
-  if (topology == xiiGALPrimitiveTopology::Points)
+  if (topology == xiiGALPrimitiveTopology::PointList)
   {
     for (xiiUInt32 t = 0; t < Indices.GetCount(); t += 1)
     {
@@ -314,7 +314,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
       SetTriangleIndices(t / 3, Indices[t], Indices[t + 1], Indices[t + 2]);
     }
   }
-  else if (topology == xiiGALPrimitiveTopology::Lines)
+  else if (topology == xiiGALPrimitiveTopology::LineList)
   {
     for (xiiUInt32 t = 0; t < Indices.GetCount(); t += 2)
     {
@@ -325,7 +325,7 @@ void xiiMeshBufferResourceDescriptor::AllocateStreamsFromGeometry(const xiiGeome
 
 void xiiMeshBufferResourceDescriptor::SetPointIndices(xiiUInt32 uiPoint, xiiUInt32 uiVertex0)
 {
-  XII_ASSERT_DEBUG(m_Topology == xiiGALPrimitiveTopology::Points, "Wrong topology");
+  XII_ASSERT_DEBUG(m_Topology == xiiGALPrimitiveTopology::PointList, "Wrong topology");
 
   if (Uses32BitIndices())
   {
@@ -341,7 +341,7 @@ void xiiMeshBufferResourceDescriptor::SetPointIndices(xiiUInt32 uiPoint, xiiUInt
 
 void xiiMeshBufferResourceDescriptor::SetLineIndices(xiiUInt32 uiLine, xiiUInt32 uiVertex0, xiiUInt32 uiVertex1)
 {
-  XII_ASSERT_DEBUG(m_Topology == xiiGALPrimitiveTopology::Lines, "Wrong topology");
+  XII_ASSERT_DEBUG(m_Topology == xiiGALPrimitiveTopology::LineList, "Wrong topology");
 
   if (Uses32BitIndices())
   {
@@ -396,19 +396,20 @@ xiiUInt32 xiiMeshBufferResourceDescriptor::GetPrimitiveCount() const
 
 xiiBoundingBoxSphere xiiMeshBufferResourceDescriptor::ComputeBounds() const
 {
-  xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
+  xiiBoundingBoxSphere bounds;
+  bounds.SetInvalid();
 
   for (xiiUInt32 i = 0; i < m_InputLayout.m_VertexStreams.GetCount(); ++i)
   {
-    if (m_InputLayout.m_VertexStreams[i].m_Semantic == xiiGALVertexAttributeSemantic::Position)
+    if (m_InputLayout.m_VertexStreams[i].m_Semantic == xiiGALInputLayoutSemantic::Position)
     {
-      XII_ASSERT_DEBUG(m_InputLayout.m_VertexStreams[i].m_Format == xiiGALTextureFormat::XYZFloat, "Position format is not usable");
+      XII_ASSERT_DEBUG(m_InputLayout.m_VertexStreams[i].m_Format == xiiGALTextureFormat::RGB32Float, "Position format is not usable");
 
       const xiiUInt32 offset = m_InputLayout.m_VertexStreams[i].m_uiOffset;
 
       if (!m_VertexStreamData.IsEmpty() && m_uiVertexCount > 0)
       {
-        bounds = xiiBoundingBoxSphere::MakeFromPoints(reinterpret_cast<const xiiVec3*>(&m_VertexStreamData[offset]), m_uiVertexCount, m_uiVertexSize);
+        bounds.SetFromPoints(reinterpret_cast<const xiiVec3*>(&m_VertexStreamData[offset]), m_uiVertexCount, m_uiVertexSize);
       }
 
       return bounds;
@@ -426,16 +427,16 @@ xiiResult xiiMeshBufferResourceDescriptor::RecomputeNormals()
   const xiiUInt32              uiVertexSize  = m_uiVertexSize;
   const xiiUInt8*              pPositions    = nullptr;
   xiiUInt8*                    pNormals      = nullptr;
-  xiiEnum<xiiGALTextureFormat> normalsFormat = xiiGALTextureFormat::XYZFloat;
+  xiiEnum<xiiGALTextureFormat> normalsFormat = xiiGALTextureFormat::RGB32Float;
 
   for (xiiUInt32 i = 0; i < m_InputLayout.m_VertexStreams.GetCount(); ++i)
   {
-    if (m_InputLayout.m_VertexStreams[i].m_Semantic == xiiGALVertexAttributeSemantic::Position && m_InputLayout.m_VertexStreams[i].m_Format == xiiGALTextureFormat::XYZFloat)
+    if (m_InputLayout.m_VertexStreams[i].m_Semantic == xiiGALInputLayoutSemantic::Position && m_InputLayout.m_VertexStreams[i].m_Format == xiiGALTextureFormat::RGB32Float)
     {
       pPositions = GetVertexData(i, 0).GetPtr();
     }
 
-    if (m_InputLayout.m_VertexStreams[i].m_Semantic == xiiGALVertexAttributeSemantic::Normal)
+    if (m_InputLayout.m_VertexStreams[i].m_Semantic == xiiGALInputLayoutSemantic::Normal)
     {
       normalsFormat = m_InputLayout.m_VertexStreams[i].m_Format;
       pNormals      = GetVertexData(i, 0).GetPtr();
@@ -563,18 +564,36 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  m_hVertexBuffer = pDevice->CreateVertexBuffer(descriptor.GetVertexDataSize(), descriptor.GetVertexCount(), descriptor.GetVertexBufferData().GetArrayPtr());
+  {
+    xiiGALBufferCreationDescription desc;
+    desc.m_uiSize = descriptor.GetVertexDataSize() * descriptor.GetVertexCount();
+    desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
 
-  xiiStringBuilder sName;
-  sName.Format("{0} Vertex Buffer", GetResourceDescription());
-  pDevice->GetBuffer(m_hVertexBuffer)->SetDebugName(sName);
+    xiiGALBufferData initData;
+    initData.m_pData      = descriptor.GetVertexBufferData().GetData();
+    initData.m_uiDataSize = descriptor.GetVertexBufferData().GetArrayPtr().GetCount();
+    m_hVertexBuffer       = pDevice->CreateBuffer(desc, &initData);
+  }
+
+  // xiiStringBuilder sName;
+  // sName.Format("{0} Vertex Buffer", GetResourceDescription());
+  // pDevice->GetBuffer(m_hVertexBuffer)->SetDebugName(sName);
 
   if (descriptor.HasIndexBuffer())
   {
-    m_hIndexBuffer = pDevice->CreateIndexBuffer(descriptor.Uses32BitIndices() ? xiiGALIndexType::UInt : xiiGALIndexType::UShort, m_uiPrimitiveCount * xiiGALPrimitiveTopology::VerticesPerPrimitive(m_Topology), descriptor.GetIndexBufferData());
+    xiiGALBufferCreationDescription desc;
+    desc.m_uiSize = xiiGALValueType::GetSize(descriptor.Uses32BitIndices() ? xiiGALValueType::UInt32 : xiiGALValueType::UInt16) * m_uiPrimitiveCount * xiiGALPrimitiveTopology::VerticesPerPrimitive(m_Topology);
+    desc.m_BindFlags.Add(xiiGALBindFlags::IndexBuffer);
 
-    sName.Format("{0} Index Buffer", GetResourceDescription());
-    pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
+    xiiGALBufferData initData;
+    initData.m_pData      = descriptor.GetIndexBufferData().GetData();
+    initData.m_uiDataSize = descriptor.GetIndexBufferData().GetCount();
+    m_hVertexBuffer       = pDevice->CreateBuffer(desc, &initData);
+
+    m_hIndexBuffer = pDevice->CreateBuffer(desc, &initData);
+
+    // sName.Format("{0} Index Buffer", GetResourceDescription());
+    // pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
 
     // we only know the memory usage here, so we write it back to the internal variable directly and then read it in UpdateMemoryUsage() again
     ModifyMemoryUsage().m_uiMemoryGPU = descriptor.GetVertexBufferData().GetCount() + descriptor.GetIndexBufferData().GetCount();

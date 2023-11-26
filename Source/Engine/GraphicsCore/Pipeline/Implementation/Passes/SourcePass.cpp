@@ -14,7 +14,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSourcePass, 3, xiiRTTIDefaultAllocator<xiiSo
   {
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
     XII_ENUM_MEMBER_PROPERTY("Format", xiiSourceFormat, m_Format),
-    XII_ENUM_MEMBER_PROPERTY("MSAA_Mode", xiiGALMSAASampleCount, m_MsaaMode),
+    XII_ENUM_MEMBER_PROPERTY("MSAA_Mode", xiiGALSampleCount, m_MsaaMode),
     XII_MEMBER_PROPERTY("ClearColor", m_ClearColor)->AddAttributes(new xiiExposeColorAlphaAttribute()),
     XII_MEMBER_PROPERTY("Clear", m_bClear),
   }

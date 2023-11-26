@@ -6,6 +6,7 @@
 #include <GraphicsCore/Pipeline/RenderData.h>
 #include <GraphicsCore/Pipeline/RenderDataBatch.h>
 #include <GraphicsCore/Pipeline/RenderPipelineNode.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 struct xiiGALTextureCreationDescription;
 class xiiStreamWriter;

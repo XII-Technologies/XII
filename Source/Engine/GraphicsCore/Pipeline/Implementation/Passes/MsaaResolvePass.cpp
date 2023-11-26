@@ -38,17 +38,17 @@ bool xiiMsaaResolvePass::GetRenderTargetDescriptions(const xiiView& view, const 
   auto pInput = inputs[m_PinInput.m_uiInputIndex];
   if (pInput != nullptr)
   {
-    if (pInput->m_SampleCount == xiiGALSampleCount::OneSample)
+    if (pInput->m_uiSampleCount == xiiGALSampleCount::OneSample)
     {
       xiiLog::Error("Input is not a valid msaa target");
       return false;
     }
 
     m_bIsDepth        = xiiGALTextureFormat::IsDepthFormat(pInput->m_Format);
-    m_MsaaSampleCount = pInput->m_SampleCount;
+    m_MsaaSampleCount = (xiiGALSampleCount::Enum)pInput->m_uiSampleCount;
 
     xiiGALTextureCreationDescription desc = *pInput;
-    desc.m_SampleCount                    = xiiGALSampleCount::OneSample;
+    desc.m_uiSampleCount                  = xiiGALSampleCount::OneSample;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }
@@ -94,7 +94,7 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
   {
     auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, xiiGALRenderingSetup(), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
-    xiiGALTextureSubresource subresource;
+    xiiGALTextureMipLevelData subresource;
     subresource.m_uiMipLevel   = 0;
     subresource.m_uiArraySlice = 0;
 
@@ -107,7 +107,5 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
     }
   }
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_MsaaResolvePass);
