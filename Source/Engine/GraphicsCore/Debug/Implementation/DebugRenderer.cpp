@@ -1747,6 +1747,7 @@ void xiiDebugRenderer::OnEngineStartup()
     memoryDesc.m_uiDepthStride = static_cast<xiiUInt32>(debugFontImage.GetDepthPitch());
 
     xiiTexture2DResourceDescriptor desc;
+    desc.m_DescGAL.m_Type        = xiiGALResourceDimension::Texture2D;
     desc.m_DescGAL.m_Size.width  = debugFontImage.GetWidth();
     desc.m_DescGAL.m_Size.height = debugFontImage.GetHeight();
     desc.m_DescGAL.m_Format      = xiiGALTextureFormat::RGBA8UNormalized;
