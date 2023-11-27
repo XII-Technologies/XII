@@ -219,7 +219,7 @@ void xiiRenderContext::SetShaderPermutationVariable(xiiStringView sName, const x
 
   xiiHashedString sNameHash;
   xiiHashedString sValue;
-  if (xiiShaderManager::IsPermutationValueAllowed(sNameHash, sHashedName, sTempValue, sNameHash, sValue))
+  if (xiiShaderManager::IsPermutationValueAllowed(sName, sHashedName, sTempValue, sNameHash, sValue))
   {
     SetShaderPermutationVariableInternal(sNameHash, sValue);
   }

@@ -591,7 +591,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
     xiiGALBufferData initData;
     initData.m_pData      = descriptor.GetIndexBufferData().GetData();
     initData.m_uiDataSize = descriptor.GetIndexBufferData().GetCount();
-    m_hIndexBuffer = pDevice->CreateBuffer(desc, &initData);
+    m_hIndexBuffer        = pDevice->CreateBuffer(desc, &initData);
 
     // sName.Format("{0} Index Buffer", GetResourceDescription());
     // pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);

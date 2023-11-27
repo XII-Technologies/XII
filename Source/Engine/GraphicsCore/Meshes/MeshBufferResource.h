@@ -122,7 +122,7 @@ public:
   xiiResult RecomputeNormals();
 
 private:
-  xiiEnum<xiiGALPrimitiveTopology>                         m_Topology;
+  xiiEnum<xiiGALPrimitiveTopology>                      m_Topology;
   xiiUInt32                                             m_uiVertexSize;
   xiiUInt32                                             m_uiVertexCount;
   xiiInputLayoutInfo                                    m_InputLayout;
@@ -163,10 +163,10 @@ private:
   virtual xiiResourceLoadDesc UpdateContent(xiiStreamReader* Stream) override;
   virtual void                UpdateMemoryUsage(MemoryUsage& out_NewMemoryUsage) override;
 
-  xiiBoundingBoxSphere          m_Bounds;
-  xiiInputLayoutInfo            m_InputLayout;
-  xiiUInt32                     m_uiPrimitiveCount = 0;
-  xiiGALBufferHandle            m_hVertexBuffer;
-  xiiGALBufferHandle            m_hIndexBuffer;
+  xiiBoundingBoxSphere             m_Bounds;
+  xiiInputLayoutInfo               m_InputLayout;
+  xiiUInt32                        m_uiPrimitiveCount = 0;
+  xiiGALBufferHandle               m_hVertexBuffer;
+  xiiGALBufferHandle               m_hIndexBuffer;
   xiiEnum<xiiGALPrimitiveTopology> m_Topology = xiiGALPrimitiveTopology::Default;
 };
