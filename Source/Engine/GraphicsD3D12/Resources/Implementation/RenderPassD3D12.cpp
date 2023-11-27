@@ -154,13 +154,23 @@ xiiResult xiiGALRenderPassD3D12::InitPlatform(xiiGALDevice* pDevice)
 
   for (xiiUInt32 i = 0; i < uiSubpassDependencyCount; ++i)
   {
+    /// \todo GraphicsD3D12: Update dependency description with pipeline stage and access flags.
     const auto& xiiDependency = m_Description.m_Dependencies[i];
     auto&       dependency    = dependencies[i];
 
-    /// \todo GraphicsD3D12: Update dependency description with pipeline stage and access flags.
+    const bool bHasDepthAttachment = !m_Description.m_SubPasses[i].m_DepthStencilAttachment.IsEmpty();
+    const bool bHasColorAttachment = !m_Description.m_SubPasses[i].m_RenderTargetAttachments.IsEmpty();
 
-    dependency.SrcSubpass = xiiDependency.m_uiSourceSubPass;
-    dependency.DstSubpass = xiiDependency.m_uiDestinationSubPass;
+    dependency.SrcSubpass   = xiiDependency.m_uiSourceSubPass;
+    dependency.DstSubpass   = xiiDependency.m_uiDestinationSubPass;
+    dependency.SrcStageMask = Diligent::PIPELINE_STAGE_FLAG_RENDER_TARGET | Diligent::PIPELINE_STAGE_FLAG_EARLY_FRAGMENT_TESTS;
+    dependency.DstStageMask = Diligent::PIPELINE_STAGE_FLAG_RENDER_TARGET | Diligent::PIPELINE_STAGE_FLAG_EARLY_FRAGMENT_TESTS;
+
+    if (bHasColorAttachment)
+      dependency.DstAccessMask |= Diligent::ACCESS_FLAG_RENDER_TARGET_WRITE;
+
+    if (bHasDepthAttachment)
+      dependency.DstAccessMask |= Diligent::ACCESS_FLAG_DEPTH_STENCIL_WRITE;
   }
   renderPassDescription.DependencyCount = uiSubpassDependencyCount;
   renderPassDescription.pDependencies   = dependencies.GetData();

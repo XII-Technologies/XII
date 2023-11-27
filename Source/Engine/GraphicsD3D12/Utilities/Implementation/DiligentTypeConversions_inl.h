@@ -349,7 +349,7 @@ XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentTypeConversions::GetResour
   if (e.IsSet(xiiGALResourceStateFlags::ShadingRate))
     resourceState |= Diligent::RESOURCE_STATE_SHADING_RATE;
 
-  return Diligent::RESOURCE_STATE_UNKNOWN;
+  return resourceState;
 }
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiDiligentTypeConversions::GetResourceState(Diligent::RESOURCE_STATE e)
@@ -1250,7 +1250,7 @@ XII_ALWAYS_INLINE Diligent::SHADER_TYPE xiiDiligentTypeConversions::GetShaderTyp
   if (e.IsSet(xiiGALShaderStage::Tile))
     shaderTypeFlags |= Diligent::SHADER_TYPE_TILE;
 
-  return Diligent::SHADER_TYPE_UNKNOWN;
+  return shaderTypeFlags;
 }
 
 XII_ALWAYS_INLINE Diligent::INPUT_ELEMENT_FREQUENCY xiiDiligentTypeConversions::GetElementFrequency(xiiEnum<xiiGALInputElementFrequency> e)

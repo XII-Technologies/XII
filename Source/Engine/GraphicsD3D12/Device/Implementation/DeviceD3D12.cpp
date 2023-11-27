@@ -65,7 +65,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D12, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
-  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D12_SM60", .m_sShaderCompiler = "xiiShaderCompiler" };
+  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D_SM60", .m_sShaderCompiler = "xiiShaderCompiler" };
 
   xiiGALDeviceFactory::RegisterImplementation("D3D12", &CreateD3D12Device, implementation);
 }
