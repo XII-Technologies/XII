@@ -274,20 +274,15 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     pFactoryD3D12->EnumerateDisplayModes(d3d12CreateInfo.GraphicsAPIVersion, d3d12CreateInfo.AdapterId, 0, Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB, uiDisplayModeCount, m_DisplayModes.GetData());
   }
 
-  xiiHybridArray<Diligent::IDeviceContext*, 1U> deviceContexts;
-  xiiUInt32                                     uiImmediateContextCount = xiiMath::Max(1U, d3d12CreateInfo.NumImmediateContexts);
-  deviceContexts.SetCount(uiImmediateContextCount + d3d12CreateInfo.NumDeferredContexts);
-  pFactoryD3D12->CreateDeviceAndContextsD3D12(d3d12CreateInfo, &m_pDevice, deviceContexts.GetData());
+  xiiUInt32 uiImmediateContextCount = xiiMath::Max(1U, d3d12CreateInfo.NumImmediateContexts);
+  m_pDeviceContexts.SetCount(uiImmediateContextCount + d3d12CreateInfo.NumDeferredContexts);
+  pFactoryD3D12->CreateDeviceAndContextsD3D12(d3d12CreateInfo, &m_pDevice, m_pDeviceContexts.GetData());
 
   if (m_pDevice == nullptr)
   {
     xiiLog::Error("Unable to load Diligent Engine in Direct3D12 mode. The API may not be available, or required features may not be supported by this GPU/Driver/OS version.");
     return XII_FAILURE;
   }
-
-  m_pDeviceContexts.SetCount(deviceContexts.GetCount());
-  for (xiiUInt32 i = 0; i < deviceContexts.GetCount(); ++i)
-    m_pDeviceContexts[i] = deviceContexts[i];
 
   FillFormatLookupTable();
 
