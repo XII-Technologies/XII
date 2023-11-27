@@ -21,6 +21,7 @@
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
 
+#include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/ShaderCompiler/ShaderManager.h>
@@ -164,9 +165,50 @@ public:
 
     // Perform rendering
     {
+      // Before starting to render in a frame call this function
       m_pDevice->BeginFrame();
 
+      m_pDevice->BeginPipeline("ShaderExplorer", m_hSwapChain);
+
+      xiiGALPass* pGALPass = m_pDevice->BeginPass("xiiShaderExplorerMainPass");
+
+      // Must always retrieve the current swapchain render target
+      const xiiGALSwapChain*  pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
+      xiiGALTextureViewHandle hBBRTV            = m_pDevice->GetDefaultRenderTargetView(pPrimarySwapChain->GetRenderTargets().m_hRTs[0]);
+      xiiGALTextureViewHandle hBBDSV            = m_pDevice->GetDefaultRenderTargetView(m_hDepthStencilTexture);
+
+      xiiGALRenderingSetup renderingSetup;
+      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hBBRTV).SetDepthStencilTarget(hBBDSV);
+      renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
+      renderingSetup.m_bClearDepth             = true;
+      renderingSetup.m_bClearStencil           = true;
+
+      xiiGALGraphicsCommandEncoder* pCommandEncoder = xiiRenderContext::GetDefaultInstance()->BeginRendering(pGALPass, renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight));
+
+      auto& gc = xiiRenderContext::GetDefaultInstance()->WriteGlobalConstants();
+      xiiMemoryUtils::ZeroFill(&gc, 1);
+
+      gc.WorldToCameraMatrix[0] = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
+      gc.WorldToCameraMatrix[1] = m_pCamera->GetViewMatrix(xiiCameraEye::Right);
+      gc.CameraToWorldMatrix[0] = gc.WorldToCameraMatrix[0].GetInverse();
+      gc.CameraToWorldMatrix[1] = gc.WorldToCameraMatrix[1].GetInverse();
+      gc.ViewportSize           = xiiVec4((float)g_uiWindowWidth, (float)g_uiWindowHeight, 1.0f / (float)g_uiWindowWidth, 1.0f / (float)g_uiWindowHeight);
+      // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
+      gc.GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
+      gc.WorldTime  = gc.GlobalTime;
+
+      xiiRenderContext::GetDefaultInstance()->BindMaterial(m_hMaterial);
+      xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(m_hQuadMeshBuffer);
+      xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer().IgnoreResult();
+      xiiRenderContext::GetDefaultInstance()->EndRendering();
+
+      m_pDevice->EndPass(pGALPass);
+
+      m_pDevice->EndPipeline(m_hSwapChain);
+
       m_pDevice->EndFrame();
+
+      xiiRenderContext::GetDefaultInstance()->ResetContextState();
     }
 
     // Make sure telemetry is sent out regularly.
@@ -334,6 +376,14 @@ public:
     xiiStartup::StartupHighLevelSystems();
 
     UpdateSwapChain();
+
+    // Setup Shaders and Materials
+    {
+      m_hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("Materials/screen.xiiMaterial");
+
+      // Create the mesh that we use for rendering
+      CreateScreenQuad();
+    }
   }
 
   void UpdateSwapChain()
@@ -365,6 +415,27 @@ public:
       {
         pSwapChain->Resize(m_pDevice, currentSize).IgnoreResult();
       }
+    }
+
+    // Do not destroy the texture if the swapchain is minimized
+    if (!m_hSwapChain.IsInvalidated() && !m_hDepthStencilTexture.IsInvalidated() && m_pWindow->GetClientAreaSize().HasNonZeroArea())
+    {
+      m_pDevice->DestroyTexture(m_hDepthStencilTexture);
+
+      m_hDepthStencilTexture.Invalidate();
+    }
+
+    // Create depth texture
+    if (m_pWindow->GetClientAreaSize().HasNonZeroArea())
+    {
+      xiiGALTextureCreationDescription texDesc;
+      texDesc.m_Type        = xiiGALResourceDimension::Texture2D;
+      texDesc.m_Size.width  = g_uiWindowWidth;
+      texDesc.m_Size.height = g_uiWindowHeight;
+      texDesc.m_Format      = xiiGALTextureFormat::D24UNormalizedS8UInt;
+      texDesc.m_BindFlags.Add(xiiGALBindFlags::DepthStencil);
+
+      m_hDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
     }
   }
 
@@ -415,6 +486,11 @@ public:
   {
     m_pDirectoryWatcher->CloseDirectory();
 
+    m_pDevice->DestroyTexture(m_hDepthStencilTexture);
+    m_hDepthStencilTexture.Invalidate();
+
+    m_hMaterial.Invalidate();
+    m_hQuadMeshBuffer.Invalidate();
     m_pDevice->DestroySwapChain(m_hSwapChain);
     m_hSwapChain.Invalidate();
 
