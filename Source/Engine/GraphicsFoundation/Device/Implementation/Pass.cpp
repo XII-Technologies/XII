@@ -254,7 +254,7 @@ void xiiGALPass::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderi
     }
   }
 
-  XII_ASSERT_DEV(!frameBufferInfo.hRenderPass.IsInvalidated(), "Framebuffer handle is invalidated!");
+  XII_ASSERT_DEV(!frameBufferInfo.hRenderPass.IsInvalidated(), "Render Pass handle is invalidated!");
   XII_ASSERT_DEV(!frameBufferInfo.hFrameBuffer.IsInvalidated(), "Framebuffer handle is invalidated!");
 
   out_pRenderPass  = m_Device.GetRenderPass(frameBufferInfo.hRenderPass);

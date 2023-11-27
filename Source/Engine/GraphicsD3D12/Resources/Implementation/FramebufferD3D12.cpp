@@ -32,9 +32,8 @@ xiiResult xiiGALFramebufferD3D12::InitPlatform(xiiGALDevice* pDevice)
   for (xiiUInt32 i = 0; i < uiAttachmentViewCount; ++i)
   {
     const auto& xiiAttachmentView = m_Description.m_Attachments[i];
-    auto        attachmentView    = attachmentViews[i];
 
-    attachmentView = static_cast<xiiGALTextureViewD3D12*>(pDeviceD3D12->GetTextureView(xiiAttachmentView))->GetTextureView();
+    attachmentViews[i] = static_cast<xiiGALTextureViewD3D12*>(pDeviceD3D12->GetTextureView(xiiAttachmentView))->GetTextureView();
   }
   framebufferDescription.AttachmentCount = uiAttachmentViewCount;
   framebufferDescription.ppAttachments   = attachmentViews.GetData();
@@ -42,7 +41,7 @@ xiiResult xiiGALFramebufferD3D12::InitPlatform(xiiGALDevice* pDevice)
   pDeviceD3D12->GetDevice()->CreateFramebuffer(framebufferDescription, &m_pFramebuffer);
 
   // Resolve frame buffer size if none was provided in the creation description.
-  if (!m_Description.m_FramebufferSize.HasNonZeroArea())
+  if (m_pFramebuffer && !m_Description.m_FramebufferSize.HasNonZeroArea())
   {
     const auto& description = m_pFramebuffer->GetDesc();
 

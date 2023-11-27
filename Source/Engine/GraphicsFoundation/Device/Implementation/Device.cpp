@@ -1203,6 +1203,7 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
       xiiGALTextureViewCreationDescription viewDescription;
       viewDescription.m_hTexture                  = hTexture;
       viewDescription.m_ViewType                  = xiiGALTextureViewType::ShaderResource;
+      viewDescription.m_Format                    = description.m_Format;
       viewDescription.m_uiMostDetailedMip         = 0U;
       viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
       viewDescription.m_uiMipLevelCount           = description.m_uiMipLevels;
@@ -1216,6 +1217,7 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
       xiiGALTextureViewCreationDescription viewDescription;
       viewDescription.m_hTexture                  = hTexture;
       viewDescription.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
+      viewDescription.m_Format                    = description.m_Format;
       viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
       viewDescription.m_uiMostDetailedMip         = 0U;
       viewDescription.m_uiMipLevelCount           = description.m_uiMipLevels;
