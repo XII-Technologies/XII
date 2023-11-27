@@ -317,7 +317,6 @@ void xiiGALCommandEncoder::BeginQuery(xiiGALQueryHandle hQuery)
   AssertRenderingThread();
 
   auto pQuery = m_Device.GetQuery(hQuery);
-  XII_ASSERT_DEV(!pQuery->m_bStarted, "Attempting to begin query '{0}' twice. A query must be ended before it can be begun again.", pQuery->GetDescription().m_sName);
 
   m_CommonImpl.BeginQueryPlatform(pQuery);
 }
@@ -327,7 +326,6 @@ void xiiGALCommandEncoder::EndQuery(xiiGALQueryHandle hQuery)
   AssertRenderingThread();
 
   auto pQuery = m_Device.GetQuery(hQuery);
-  XII_ASSERT_DEV(pQuery->m_bStarted, "Attempting to end query '{0}' that has not been begun.", pQuery->GetDescription().m_sName);
 
   m_CommonImpl.EndQueryPlatform(pQuery);
 }

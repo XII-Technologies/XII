@@ -835,7 +835,7 @@ xiiGALBufferHandle xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreati
 
     // Create default resource view.
 
-    if (!description.m_BindFlags.IsAnySet(xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::ShaderResource))
+    if (description.m_BindFlags.IsNoFlagSet())
     {
       xiiGALBufferViewCreationDescription viewDescription;
       viewDescription.m_hBuffer      = hBuffer;
@@ -1805,18 +1805,18 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
     const auto& formatProperties = GetTextureFormatProperties(attachment.m_Format);
     if (formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil)
     {
-      XII_VERIFY_RENDER_PASS(attachment.m_InitialStateFlags.IsStrictlyAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::InputAttachment | xiiGALResourceStateFlags::Undefined) && (bIsVulkanDevice && attachment.m_InitialStateFlags.IsSet(xiiGALResourceStateFlags::Common)),
+      XII_VERIFY_RENDER_PASS(attachment.m_InitialStateFlags.IsStrictlyAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::InputAttachment | xiiGALResourceStateFlags::Undefined) || (bIsVulkanDevice && attachment.m_InitialStateFlags.IsSet(xiiGALResourceStateFlags::Common)),
                              "The initial state of the depth-stencil attachment {0} is invalid.", uiAttachmentIndex);
 
-      XII_VERIFY_RENDER_PASS(attachment.m_FinalStateFlags.IsStrictlyAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::InputAttachment) && (bIsVulkanDevice && attachment.m_FinalStateFlags.IsSet(xiiGALResourceStateFlags::Common)),
+      XII_VERIFY_RENDER_PASS(attachment.m_FinalStateFlags.IsStrictlyAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::InputAttachment) || (bIsVulkanDevice && attachment.m_FinalStateFlags.IsSet(xiiGALResourceStateFlags::Common)),
                              "The final state of the depth-stencil attachment {0} is invalid.", uiAttachmentIndex);
     }
     else
     {
-      XII_VERIFY_RENDER_PASS(attachment.m_InitialStateFlags.IsStrictlyAnySet(xiiGALResourceStateFlags::RenderTarget | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::InputAttachment | xiiGALResourceStateFlags::Present | xiiGALResourceStateFlags::ShadingRate | xiiGALResourceStateFlags::Undefined) && (bIsVulkanDevice && attachment.m_InitialStateFlags.IsSet(xiiGALResourceStateFlags::Common)),
+      XII_VERIFY_RENDER_PASS(attachment.m_InitialStateFlags.IsStrictlyAnySet(xiiGALResourceStateFlags::RenderTarget | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::InputAttachment | xiiGALResourceStateFlags::Present | xiiGALResourceStateFlags::ShadingRate | xiiGALResourceStateFlags::Undefined) || (bIsVulkanDevice && attachment.m_InitialStateFlags.IsSet(xiiGALResourceStateFlags::Common)),
                              "The initial state of the color attachment {0} is invalid.", uiAttachmentIndex);
 
-      XII_VERIFY_RENDER_PASS(attachment.m_FinalStateFlags.IsStrictlyAnySet(xiiGALResourceStateFlags::RenderTarget | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::InputAttachment | xiiGALResourceStateFlags::Present | xiiGALResourceStateFlags::ShadingRate) && (bIsVulkanDevice && attachment.m_FinalStateFlags.IsSet(xiiGALResourceStateFlags::Common)),
+      XII_VERIFY_RENDER_PASS(attachment.m_FinalStateFlags.IsStrictlyAnySet(xiiGALResourceStateFlags::RenderTarget | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::InputAttachment | xiiGALResourceStateFlags::Present | xiiGALResourceStateFlags::ShadingRate) || (bIsVulkanDevice && attachment.m_FinalStateFlags.IsSet(xiiGALResourceStateFlags::Common)),
                              "The final state of the color attachment {0} is invalid.", uiAttachmentIndex);
     }
   }
