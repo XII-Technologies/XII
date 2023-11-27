@@ -7,6 +7,7 @@
 
 #include <GraphicsD3D12/CommandEncoder/CommandEncoderD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
+#include <GraphicsD3D12/Device/DiligentCore.h>
 #include <GraphicsD3D12/Device/PassD3D12.h>
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/Resources/BottomLevelASD3D12.h>
@@ -59,15 +60,11 @@ xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllo
   return XII_NEW(pAllocator, xiiGALDeviceD3D12, description);
 }
 
-xiiUniquePtr<xiiAllocatorDiligent> g_pAllocatorDiligent;
-
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D12, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
-  g_pAllocatorDiligent = XII_DEFAULT_NEW(xiiAllocatorDiligent, "D3D12 Memory Allocator");
-
   const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D12_SM60", .m_sShaderCompiler = "xiiShaderCompiler" };
 
   xiiGALDeviceFactory::RegisterImplementation("D3D12", &CreateD3D12Device, implementation);
@@ -76,8 +73,6 @@ ON_CORESYSTEMS_STARTUP
 ON_CORESYSTEMS_SHUTDOWN
 {
   xiiGALDeviceFactory::UnregisterImplementation("D3D12");
-
-  g_pAllocatorDiligent.Clear();
 }
 
 XII_END_SUBSYSTEM_DECLARATION;
@@ -207,7 +202,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
 
   Diligent::EngineD3D12CreateInfo d3d12CreateInfo;
   d3d12CreateInfo.GraphicsAPIVersion = {12, 0};
-  d3d12CreateInfo.pRawMemAllocator   = g_pAllocatorDiligent.Borrow();
+  d3d12CreateInfo.pRawMemAllocator   = xiiDiligentCore::GetDiligentMemoryAllocator();
   d3d12CreateInfo.EnableValidation   = m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled;
 
   d3d12CreateInfo.Features.SeparablePrograms                 = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_SeparablePrograms);

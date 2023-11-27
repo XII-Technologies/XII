@@ -10,21 +10,6 @@
 using xiiGALFormatLookupEntryD3D12 = xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, (Diligent::TEXTURE_FORMAT)0U>;
 using xiiGALFormatLookupTableD3D12 = xiiGALFormatLookupTable<xiiGALFormatLookupEntryD3D12>;
 
-struct xiiAllocatorDiligent final : public Diligent::IMemoryAllocator
-{
-public:
-  xiiAllocatorDiligent(const char* szName) :
-    m_Allocator(szName, xiiAlignedAllocatorWrapper::GetAllocator()) {}
-
-  ~xiiAllocatorDiligent() = default;
-
-  virtual void* Allocate(size_t Size, const Diligent::Char* dbgDescription, const char* dbgFileName, const Diligent::Int32 dbgLineNumber) override { return m_Allocator.Allocate(Size, 16U); }
-
-  virtual void Free(void* Ptr) override { return m_Allocator.Deallocate(Ptr); }
-
-  xiiProxyAllocator m_Allocator;
-};
-
 class XII_GRAPHICSD3D12_DLL xiiGALDeviceD3D12 final : public xiiGALDevice
 {
 private:
