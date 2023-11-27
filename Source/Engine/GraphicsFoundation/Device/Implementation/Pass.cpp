@@ -46,7 +46,7 @@ xiiGALGraphicsCommandEncoder* xiiGALPass::BeginRendering(const xiiGALRenderingSe
 
 void xiiGALPass::EndRendering(xiiGALGraphicsCommandEncoder* pCommandEncoder)
 {
-  XII_ASSERT_DEV(m_CurrentCommandEncoderType == xiiGALCommandEncoderType::Invalid, "BeginRendering has not been called.");
+  XII_ASSERT_DEV(m_CurrentCommandEncoderType == xiiGALCommandEncoderType::Graphics, "BeginRendering has not been called.");
 
   m_CurrentCommandEncoderType = xiiGALCommandEncoderType::Invalid;
 
@@ -80,7 +80,7 @@ xiiGALComputeCommandEncoder* xiiGALPass::BeginCompute(xiiStringView sName)
 
 void xiiGALPass::EndCompute(xiiGALComputeCommandEncoder* pCommandEncoder)
 {
-  XII_ASSERT_DEV(m_CurrentCommandEncoderType == xiiGALCommandEncoderType::Invalid, "BeginCompute has not been called.");
+  XII_ASSERT_DEV(m_CurrentCommandEncoderType == xiiGALCommandEncoderType::Compute, "BeginCompute has not been called.");
 
   m_CurrentCommandEncoderType = xiiGALCommandEncoderType::Invalid;
 
