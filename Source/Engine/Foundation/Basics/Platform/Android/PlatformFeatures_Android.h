@@ -1,8 +1,12 @@
 #pragma once
 
-/// If set to 1, the POSIX file implementation will be used. Otherwise a platform specific implementation must be available.
+/// If set to one, the POSIX file implementation will be used. Otherwise a platform specific implementation must be available.
 #undef XII_USE_POSIX_FILE_API
 #define XII_USE_POSIX_FILE_API XII_ON
+
+/// If set to one Linux posix extensions such as pipe2, dup3, etc are used.
+#undef XII_USE_LINUX_POSIX_EXTENSIONS
+#define XII_USE_LINUX_POSIX_EXTENSIONS XII_ON
 
 /// Iterating through the file system is not supported
 #undef XII_SUPPORTS_FILE_ITERATORS

@@ -20,9 +20,9 @@
 
 
 // All the supported Platforms
-#define XII_PLATFORM_WINDOWS         XII_OFF // enabled for all Windows platforms, both UWP and desktop
-#define XII_PLATFORM_WINDOWS_UWP     XII_OFF // enabled for UWP apps, together with XII_PLATFORM_WINDOWS
-#define XII_PLATFORM_WINDOWS_DESKTOP XII_OFF // enabled for desktop apps, together with XII_PLATFORM_WINDOWS
+#define XII_PLATFORM_WINDOWS         XII_OFF // Enabled for all Windows platforms, both UWP and desktop.
+#define XII_PLATFORM_WINDOWS_UWP     XII_OFF // Enabled for UWP apps, together with XII_PLATFORM_WINDOWS.
+#define XII_PLATFORM_WINDOWS_DESKTOP XII_OFF // Enabled for desktop apps, together with XII_PLATFORM_WINDOWS.
 #define XII_PLATFORM_OSX             XII_OFF
 #define XII_PLATFORM_LINUX           XII_OFF
 #define XII_PLATFORM_IOS             XII_OFF
@@ -42,8 +42,8 @@
 
 // Different Compilers
 #define XII_COMPILER_MSVC       XII_OFF
-#define XII_COMPILER_MSVC_CLANG XII_OFF // Clang front-end with MSVC CodeGen
-#define XII_COMPILER_MSVC_PURE  XII_OFF // MSVC front-end and CodeGen, no mixed compilers
+#define XII_COMPILER_MSVC_CLANG XII_OFF // Clang front-end with MSVC CodeGen.
+#define XII_COMPILER_MSVC_PURE  XII_OFF // MSVC front-end and CodeGen, no mixed compilers.
 #define XII_COMPILER_CLANG      XII_OFF
 #define XII_COMPILER_GCC        XII_OFF
 
@@ -54,6 +54,7 @@
 
 // Platform Features
 #define XII_USE_POSIX_FILE_API                XII_OFF
+#define XII_USE_LINUX_POSIX_EXTENSIONS        XII_OFF // Linux specific posix extensions like pipe2, dup3, etc.
 #define XII_SUPPORTS_FILE_ITERATORS           XII_OFF
 #define XII_SUPPORTS_FILE_STATS               XII_OFF
 #define XII_SUPPORTS_DIRECTORY_WATCHER        XII_OFF
