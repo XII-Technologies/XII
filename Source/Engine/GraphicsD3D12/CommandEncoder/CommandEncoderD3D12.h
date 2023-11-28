@@ -6,6 +6,7 @@
 #include <Foundation/Algorithm/HashingUtils.h>
 
 #include <GraphicsFoundation/CommandEncoder/CommandEncoderPlatformInterface.h>
+#include <GraphicsFoundation/Resources/RenderTargetSetup.h>
 
 class XII_GRAPHICSD3D12_DLL xiiGALCommandEncoderD3D12 final : public xiiGALCommandEncoderCommonPlatformInterface, public xiiGALCommandEncoderGraphicsPlatformInterface, public xiiGALCommandEncoderComputePlatformInterface
 {
@@ -97,7 +98,7 @@ public:
   virtual void DispatchIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) override;
 
   // xiiGALCommandEncoderGraphicsPlatformInterface
-  void BeginRendering(xiiGALRenderPassD3D12* pRenderPassD3D12, xiiGALFramebufferD3D12* pFramebufferD3D12);
+  void BeginRendering(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPassD3D12* pRenderPassD3D12, xiiGALFramebufferD3D12* pFramebufferD3D12);
   void EndRendering();
 
   // xiiGALCommandEncoderComputePlatformInterface
@@ -137,8 +138,8 @@ private:
   {
     XII_DECLARE_POD_TYPE();
 
-    Diligent::IPipelineState*         m_pPipelineState;
-    Diligent::IShaderResourceBinding* m_pShaderResourceBinding;
+    Diligent::IPipelineState*         m_pPipelineState         = nullptr;
+    Diligent::IShaderResourceBinding* m_pShaderResourceBinding = nullptr;
   };
 
   void FlushDeferredStateChanges();
@@ -154,8 +155,9 @@ private:
   Diligent::IDeviceContext* m_pContext = nullptr;
 
   // Render Pass and Framebuffer
-  xiiGALRenderPassD3D12*  m_pRenderPass  = nullptr;
-  xiiGALFramebufferD3D12* m_pFramebuffer = nullptr;
+  xiiGALRenderPassD3D12*  m_pRenderPass    = nullptr;
+  xiiGALFramebufferD3D12* m_pFramebuffer   = nullptr;
+  xiiGALRenderingSetup    m_RenderingSetup = {};
 
   // Pipeline state description
   xiiEnum<xiiGALPrimitiveTopology> m_PrimitiveTopology;

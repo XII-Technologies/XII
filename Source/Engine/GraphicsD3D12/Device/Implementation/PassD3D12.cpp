@@ -24,12 +24,12 @@ xiiGALPassD3D12::xiiGALPassD3D12(xiiGALDevice& device) :
 
 xiiGALPassD3D12::~xiiGALPassD3D12() = default;
 
-xiiGALGraphicsCommandEncoder* xiiGALPassD3D12::BeginRenderingPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiStringView sName /* = {} */)
+xiiGALGraphicsCommandEncoder* xiiGALPassD3D12::BeginRenderingPlatform(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiStringView sName /* = {} */)
 {
   auto pRenderPassD3D12  = static_cast<xiiGALRenderPassD3D12*>(pRenderPass);
   auto pFramebufferD3D12 = static_cast<xiiGALFramebufferD3D12*>(pFramebuffer);
 
-  m_pCommandEncoderImpl->BeginRendering(pRenderPassD3D12, pFramebufferD3D12);
+  m_pCommandEncoderImpl->BeginRendering(renderingSetup, pRenderPassD3D12, pFramebufferD3D12);
 
   return m_pGraphicsCommandEncoder.Borrow();
 }

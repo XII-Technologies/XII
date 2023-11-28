@@ -58,11 +58,11 @@ xiiGALGraphicsCommandEncoder* xiiGALPass::BeginRendering(const xiiGALRenderingSe
 
   xiiGALRenderPass*  pRenderPass  = nullptr;
   xiiGALFramebuffer* pFramebuffer = nullptr;
-  GetRenderPassAndFramebuffer(renderingSetup, pRenderPass, pFramebuffer);
+  GetRenderPassAndFramebuffer(renderingSetup, &pRenderPass, &pFramebuffer);
 
   m_CurrentCommandEncoderType = xiiGALCommandEncoderType::Graphics;
 
-  xiiGALGraphicsCommandEncoder* pCommandEncoder = BeginRenderingPlatform(pRenderPass, pFramebuffer, sName);
+  xiiGALGraphicsCommandEncoder* pCommandEncoder = BeginRenderingPlatform(renderingSetup, pRenderPass, pFramebuffer, sName);
 
   if (!sName.IsEmpty())
   {
@@ -124,7 +124,7 @@ void xiiGALPass::EndCompute(xiiGALComputeCommandEncoder* pCommandEncoder)
   EndComputePlatform(pCommandEncoder);
 }
 
-void xiiGALPass::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPass* out_pRenderPass, xiiGALFramebuffer* out_pFramebuffer)
+void xiiGALPass::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPass** out_pRenderPass, xiiGALFramebuffer** out_pFramebuffer)
 {
   RenderPassFrameBufferInfo frameBufferInfo;
   if (!m_FramebufferCache.TryGetValue(renderingSetup, frameBufferInfo))
@@ -289,8 +289,8 @@ void xiiGALPass::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderi
   XII_ASSERT_DEV(!frameBufferInfo.hRenderPass.IsInvalidated(), "Render Pass handle is invalidated!");
   XII_ASSERT_DEV(!frameBufferInfo.hFrameBuffer.IsInvalidated(), "Framebuffer handle is invalidated!");
 
-  out_pRenderPass  = m_Device.GetRenderPass(frameBufferInfo.hRenderPass);
-  out_pFramebuffer = m_Device.GetFramebuffer(frameBufferInfo.hFrameBuffer);
+  *out_pRenderPass  = m_Device.GetRenderPass(frameBufferInfo.hRenderPass);
+  *out_pFramebuffer = m_Device.GetFramebuffer(frameBufferInfo.hFrameBuffer);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

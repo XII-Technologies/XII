@@ -816,18 +816,20 @@ void xiiGALCommandEncoderD3D12::DispatchIndirectPlatform(xiiGALBuffer* pIndirect
   m_pContext->DispatchComputeIndirect(DispatchAttribs);
 }
 
-void xiiGALCommandEncoderD3D12::BeginRendering(xiiGALRenderPassD3D12* pRenderPassD3D12, xiiGALFramebufferD3D12* pFramebufferD3D12)
+void xiiGALCommandEncoderD3D12::BeginRendering(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPassD3D12* pRenderPassD3D12, xiiGALFramebufferD3D12* pFramebufferD3D12)
 {
-  m_pRenderPass  = pRenderPassD3D12;
-  m_pFramebuffer = pFramebufferD3D12;
+  m_pRenderPass    = pRenderPassD3D12;
+  m_pFramebuffer   = pFramebufferD3D12;
+  m_RenderingSetup = renderingSetup;
 }
 
 void xiiGALCommandEncoderD3D12::EndRendering()
 {
   EndRenderPass();
 
-  m_pRenderPass  = nullptr;
-  m_pFramebuffer = nullptr;
+  m_pRenderPass    = nullptr;
+  m_pFramebuffer   = nullptr;
+  m_RenderingSetup = {};
 }
 
 void xiiGALCommandEncoderD3D12::BeginCompute()
@@ -937,14 +939,14 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
     const xiiUInt32 uiNumSlots  = m_BoundVertexBuffersRange.GetCount();
 
     // Diligent will handle unsetting null buffers with the SET_VERTEX_BUFFERS_FLAG_RESET flag.
-    m_pContext->SetVertexBuffers(uiStartSlot, uiNumSlots, m_pBoundVertexBuffers + uiStartSlot, m_VertexBufferOffsets + uiStartSlot, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
+    m_pContext->SetVertexBuffers(uiStartSlot, uiNumSlots, m_pBoundVertexBuffers + uiStartSlot, m_VertexBufferOffsets + uiStartSlot, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
 
     m_BoundVertexBuffersRange.Reset();
   }
 
   if (!m_bIsComputeRequested && m_bIndexBufferModified)
   {
-    m_pContext->SetIndexBuffer(m_pIndexBuffer, m_uiIndexBufferByteOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
+    m_pContext->SetIndexBuffer(m_pIndexBuffer, m_uiIndexBufferByteOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
     m_bIndexBufferModified = false;
   }
@@ -1139,14 +1141,48 @@ void xiiGALCommandEncoderD3D12::BeginRenderPass()
 {
   XII_ASSERT_DEV(!m_bIsComputeRequested, "Cannot begin render pass while compute pipeline is active!");
 
+  xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> clearValues;
+  {
+    const bool     bHasDepthAttachment    = !m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+    const xiiUInt8 uiColorAttachmentCount = m_RenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+
+    if (bHasDepthAttachment)
+    {
+      const xiiGALTextureViewD3D12* pRenderTargetViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(m_GALDeviceD3D12.GetTextureView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
+
+      xiiGALTextureHandle       hTexture      = pRenderTargetViewD3D12->GetDescription().m_hTexture;
+      const xiiGALTextureD3D12* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(m_GALDeviceD3D12.GetTexture(hTexture));
+
+      const xiiGALTextureCreationDescription& textureDescription = pTextureD3D12->GetDescription();
+      const auto&                             formatInfo         = m_GALDeviceD3D12.GetFormatLookupTable().GetFormatInfo(textureDescription.m_Format);
+
+      Diligent::OptimizedClearValue& depthClear = clearValues.ExpandAndGetRef();
+      depthClear.SetDepthStencil(formatInfo.m_eDepthStencilType, 1.0f, 0);
+    }
+
+    for (xiiUInt8 i = 0; i < uiColorAttachmentCount; ++i)
+    {
+      const xiiGALTextureViewD3D12* pRenderTargetViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(m_GALDeviceD3D12.GetTextureView(m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(i)));
+
+      xiiGALTextureHandle       hTexture      = pRenderTargetViewD3D12->GetDescription().m_hTexture;
+      const xiiGALTextureD3D12* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(m_GALDeviceD3D12.GetTexture(hTexture));
+
+      const xiiGALTextureCreationDescription& textureDescription = pTextureD3D12->GetDescription();
+      const auto&                             formatInfo         = m_GALDeviceD3D12.GetFormatLookupTable().GetFormatInfo(textureDescription.m_Format);
+
+      Diligent::OptimizedClearValue& colorClear = clearValues.ExpandAndGetRef();
+      colorClear.SetColor(formatInfo.m_eRenderTarget, m_RenderingSetup.m_ClearColor.GetData());
+    }
+  }
+
   if (!m_bRenderPassActive)
   {
     Diligent::BeginRenderPassAttribs renderPassBeginDescription;
     renderPassBeginDescription.pRenderPass         = m_pRenderPass->GetRenderPass();
     renderPassBeginDescription.pFramebuffer        = m_pFramebuffer->GetFramebuffer();
     renderPassBeginDescription.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
-
-    /// \todo Add render target optimized clear values.
+    renderPassBeginDescription.pClearValues        = clearValues.GetData();
+    renderPassBeginDescription.ClearValueCount     = clearValues.GetCount();
 
     m_pContext->BeginRenderPass(renderPassBeginDescription);
 

@@ -53,7 +53,7 @@ public:
 #endif
 
 protected:
-  virtual xiiGALGraphicsCommandEncoder* BeginRenderingPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiStringView sName = {}) = 0;
+  virtual xiiGALGraphicsCommandEncoder* BeginRenderingPlatform(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiStringView sName = {}) = 0;
   virtual void                          EndRenderingPlatform(xiiGALGraphicsCommandEncoder* pCommandEncoder)                                              = 0;
 
   virtual xiiGALComputeCommandEncoder* BeginComputePlatform(xiiStringView sName = {})                   = 0;
@@ -87,7 +87,7 @@ protected:
 
   xiiEventSubscriptionID m_DeviceEventID;
 
-  void GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPass* out_pRenderPass, xiiGALFramebuffer* out_pFramebuffer);
+  void GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPass** out_pRenderPass, xiiGALFramebuffer** out_pFramebuffer);
 
   xiiGALDevice& m_Device;
 
