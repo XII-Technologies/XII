@@ -5,9 +5,10 @@
 #endif
 
 #include "Platforms.h"
+
 #include "ConstantBufferMacros.h"
 
 CONSTANT_BUFFER(xiiSimplifiedDataConstants, 3)
 {
-  UINT1(SkyIrradianceIndex);  
+  UINT1(SkyIrradianceIndex);
 };

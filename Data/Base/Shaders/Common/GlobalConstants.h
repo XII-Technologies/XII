@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Platforms.h"
+
 #include "ConstantBufferMacros.h"
 
 #define MIN_PERCEPTUAL_ROUGHNESS 0.045

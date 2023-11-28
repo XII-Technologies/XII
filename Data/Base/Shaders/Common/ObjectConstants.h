@@ -1,7 +1,8 @@
 #pragma once
 
-#include "ConstantBufferMacros.h"
 #include "Platforms.h"
+
+#include "ConstantBufferMacros.h"
 
 struct XII_SHADER_STRUCT xiiPerInstanceData
 {

@@ -433,7 +433,7 @@ xiiGALDepthStencilStateHandle xiiGALDevice::CreateDepthStencilState(const xiiGAL
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
-  XII_VERIFY_DEPTH_STENCIL_STATE(!description.m_bDepthEnable && description.m_ComparisonDepthFunction == xiiGALComparisonFunction::Unknown, "The depth comparison function must not be xiiGALComparisonFunction::Unknown when depth is enabled.");
+  XII_VERIFY_DEPTH_STENCIL_STATE(!(description.m_bDepthEnable && description.m_ComparisonDepthFunction == xiiGALComparisonFunction::Unknown), "The depth comparison function must not be xiiGALComparisonFunction::Unknown when depth is enabled.");
 
   if (description.m_bStencilEnable)
   {

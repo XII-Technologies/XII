@@ -7,6 +7,7 @@
 #endif
 
 #include "Platforms.h"
+
 #include "ConstantBufferMacros.h"
 
 #define LIGHT_TYPE_POINT 0

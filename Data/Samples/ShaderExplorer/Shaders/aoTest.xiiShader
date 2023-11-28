@@ -4,7 +4,7 @@ ALL
 [PERMUTATIONS]
 
 [RENDERSTATE]
-DepthTest = false
+DepthEnable = false
 CullMode = CullMode_None
 
 [VERTEXSHADER]
