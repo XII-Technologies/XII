@@ -1438,8 +1438,6 @@ XII_ALWAYS_INLINE bool xiiDiligentTypeConversions::GetFormatNormalized(Diligent:
     case Diligent::TEX_FORMAT_BC4_SNORM:
     case Diligent::TEX_FORMAT_BC5_SNORM:
       return true;
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return false;
 }

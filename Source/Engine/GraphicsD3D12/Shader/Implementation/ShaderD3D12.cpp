@@ -70,6 +70,7 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
   xiiHybridArray<Diligent::PipelineResourceDesc, 2U> resources;
   resources.SetCount(uiBindingCount);
 
+  xiiUInt32 uiCurrentPipelineResourceSignature = 0;
   for (xiiUInt32 uiShaderStage = 0; uiShaderStage < xiiGALShaderStage::ENUM_COUNT; ++uiShaderStage)
   {
     const auto&     shaderResourceBinding        = m_ShaderResourceBindings[uiShaderStage];
@@ -81,7 +82,7 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
       Diligent::PipelineResourceDesc&    resourceDescription = resources[uiBindingIndex];
 
       resourceDescription.Name         = resourceBinding.m_sName.GetView().GetStartPointer();
-      resourceDescription.ShaderStages = xiiDiligentTypeConversions::GetShaderTypeFlags(xiiGALShaderStage::GetStageFlag(uiBindingIndex));
+      resourceDescription.ShaderStages = xiiDiligentTypeConversions::GetShaderTypeFlags(xiiGALShaderStage::GetStageFlag(uiShaderStage));
       resourceDescription.ArraySize    = resourceBinding.m_Variables.IsEmpty() ? 1U : resourceBinding.m_Variables.GetCount();
 
       switch (resourceBinding.m_Type)
@@ -122,7 +123,11 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
   pipelineResourceSignatureDescription.Resources    = resources.GetData();
   pipelineResourceSignatureDescription.NumResources = resources.GetCount();
 
-  pDeviceD3D12->GetDevice()->CreatePipelineResourceSignature(pipelineResourceSignatureDescription, &m_PipelineResourceSignatures.ExpandAndGetRef());
+  Diligent::IPipelineResourceSignature* pResourceSignature = nullptr;
+  pDeviceD3D12->GetDevice()->CreatePipelineResourceSignature(pipelineResourceSignatureDescription, &pResourceSignature);
+  m_PipelineResourceSignatures.EnsureCount(uiCurrentPipelineResourceSignature + 1);
+  m_PipelineResourceSignatures[uiCurrentPipelineResourceSignature] = pResourceSignature;
+  ++uiCurrentPipelineResourceSignature;
 
   for (xiiUInt32 i = 0; i < m_PipelineResourceSignatures.GetCount(); ++i)
   {
@@ -130,10 +135,6 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
     {
       xiiLog::Error("Failed to create pipeline resource signature ({0}) for shader '{1}'.", i, m_Description.m_sName);
       return XII_FAILURE;
-    }
-    else
-    {
-      m_PipelineResourceSignatures[i]->AddRef();
     }
   }
 

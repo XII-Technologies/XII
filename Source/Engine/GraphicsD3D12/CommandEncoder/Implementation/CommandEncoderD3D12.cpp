@@ -862,9 +862,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 
           XII_ASSERT_DEV(pipelineInfo.m_pPipelineState != nullptr, "Failed to create new Compute pipeline state object.");
 
-          pipelineInfo.m_pPipelineState->AddRef();
-
-          pipelineInfo.m_pPipelineState->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
+          m_pCurrentShader->GetResourceSignatures()[0]->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
 
           m_CachedComputePipelineStates.Insert(computePipelineStateDescription, pipelineInfo);
         }
@@ -920,9 +918,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 
           XII_ASSERT_DEV(pipelineInfo.m_pPipelineState != nullptr, "Failed to create new Graphics pipeline state object.");
 
-          pipelineInfo.m_pPipelineState->AddRef();
-
-          pipelineInfo.m_pPipelineState->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
+          m_pCurrentShader->GetResourceSignatures()[0]->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
 
           m_CachedGraphicsPipelineStates.Insert(graphicsPipelineStateDescription, pipelineInfo);
         }

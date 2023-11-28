@@ -53,7 +53,7 @@ public:
     if (uiResourceVariableCount == 0)
       return;
 
-    variableDescriptions.Reserve(uiResourceVariableCount);
+    variableDescriptions.SetCount(uiResourceVariableCount);
 
     for (xiiUInt32 i = 0; i < uiResourceVariableCount; ++i)
     {
@@ -154,7 +154,7 @@ public:
     xiiUInt32 uiBindingCount = 0;
     stream >> uiBindingCount;
 
-    out_shaderResourceBinding.Reserve(uiBindingCount);
+    out_shaderResourceBinding.SetCount(uiBindingCount);
 
     for (xiiUInt32 i = 0; i < uiBindingCount; ++i)
     {
@@ -173,7 +173,7 @@ public:
       xiiUInt32 uiResourceVariableCount = 0;
       stream >> uiResourceVariableCount;
 
-      resourceBinding.m_Variables.Reserve(uiResourceVariableCount);
+      resourceBinding.m_Variables.SetCount(uiResourceVariableCount);
 
       for (xiiUInt32 j = 0; j < uiResourceVariableCount; ++j)
       {
@@ -203,7 +203,7 @@ public:
 
     for (xiiUInt32 i = 0; i < uiVertexInputLayoutCount; ++i)
     {
-      xiiGALVertexInputLayout& vertexInputLayout = out_vertexInputLayout[i];
+      xiiGALVertexInputLayout& vertexInputLayout = out_vertexInputLayout.ExpandAndGetRef();
 
       stream >> vertexInputLayout.m_Semantic;
       stream >> vertexInputLayout.m_uiSemanticIndex;

@@ -233,6 +233,11 @@ public:
 
     xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
 
+    xiiFileSystem::AddDataDirectory("", "", ":", xiiFileSystem::AllowWrites).IgnoreResult();
+    xiiFileSystem::AddDataDirectory(">appdir/", "AppBin", "bin", xiiFileSystem::AllowWrites).IgnoreResult();                               // writing to the binary directory
+    xiiFileSystem::AddDataDirectory(">appdir/", "ShaderCache", "shadercache", xiiFileSystem::AllowWrites).IgnoreResult();                  // for shader files
+    xiiFileSystem::AddDataDirectory(">user/XII/Projects/ShaderExplorer", "AppData", "appdata", xiiFileSystem::AllowWrites).IgnoreResult(); // app user data
+
     xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").IgnoreResult();
     xiiFileSystem::AddDataDirectory(">project/", "Project", "project", xiiFileSystem::AllowWrites).IgnoreResult();
 
