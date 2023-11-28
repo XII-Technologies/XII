@@ -18,9 +18,39 @@ xiiVec3U32 GetMipLevelSize(xiiUInt32 uiMipLevelSize, const xiiGALTextureCreation
 xiiGALPass::xiiGALPass(xiiGALDevice& device) :
   m_Device(device)
 {
+  m_DeviceEventID = m_Device.m_Events.AddEventHandler([=](const xiiGALDeviceEvent& e) -> void {
+    switch (e.m_Type)
+    {
+      case xiiGALDeviceEventType::BeforeShutdown:
+      {
+        for (auto& framebuffer : m_FramebufferCache)
+        {
+          m_Device.DestroyFramebuffer(framebuffer.Value().hFrameBuffer);
+
+          framebuffer.Value().hFrameBuffer.Invalidate();
+        }
+
+        for (auto& renderPass : m_RenderPassCache)
+        {
+          m_Device.DestroyRenderPass(renderPass.Value());
+
+          renderPass.Value().Invalidate();
+        }
+
+        m_FramebufferCache.Clear();
+        m_RenderPassCache.Clear();
+      }
+      break;
+      default:
+        break;
+    }
+  });
 }
 
-xiiGALPass::~xiiGALPass() = default;
+xiiGALPass::~xiiGALPass()
+{
+  m_Device.m_Events.RemoveEventHandler(m_DeviceEventID);
+}
 
 xiiGALGraphicsCommandEncoder* xiiGALPass::BeginRendering(const xiiGALRenderingSetup& renderingSetup, xiiStringView sName /* = {} */)
 {
@@ -251,6 +281,8 @@ void xiiGALPass::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderi
 
       frameBufferInfo.hRenderPass  = hRenderPass;
       frameBufferInfo.hFrameBuffer = m_Device.CreateFramebuffer(frameBufferDescription);
+
+      XII_VERIFY(!m_FramebufferCache.Insert(renderingSetup, frameBufferInfo), "Overwrote existing frame buffer, this is unexpected behaviour.");
     }
   }
 

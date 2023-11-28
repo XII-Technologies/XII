@@ -85,6 +85,8 @@ protected:
     static bool      Equal(const xiiGALRenderingSetup& a, const xiiGALRenderingSetup& b);
   };
 
+  xiiEventSubscriptionID m_DeviceEventID;
+
   void GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPass* out_pRenderPass, xiiGALFramebuffer* out_pFramebuffer);
 
   xiiGALDevice& m_Device;
