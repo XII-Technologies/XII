@@ -153,7 +153,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     m_Index32Data.SetCountUninitialized(uiMaxIndices);
 
     xiiGALBufferCreationDescription desc;
-    desc.m_uiSize = xiiGALValueType::GetSize(xiiGALValueType::UInt32) * uiMaxIndices;
+    desc.m_uiElementByteStride = xiiGALValueType::GetSize(xiiGALValueType::UInt32);
+    desc.m_uiSize              = desc.m_uiElementByteStride * uiMaxIndices;
     desc.m_BindFlags.Add(xiiGALBindFlags::IndexBuffer);
     m_hIndexBuffer = pDevice->CreateBuffer(desc);
 
@@ -165,7 +166,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     m_Index16Data.SetCountUninitialized(uiMaxIndices);
 
     xiiGALBufferCreationDescription desc;
-    desc.m_uiSize = xiiGALValueType::GetSize(xiiGALValueType::UInt16) * uiMaxIndices;
+    desc.m_uiElementByteStride = xiiGALValueType::GetSize(xiiGALValueType::UInt16);
+    desc.m_uiSize              = desc.m_uiElementByteStride * uiMaxIndices;
     desc.m_BindFlags.Add(xiiGALBindFlags::IndexBuffer);
     m_hIndexBuffer = pDevice->CreateBuffer(desc);
 
