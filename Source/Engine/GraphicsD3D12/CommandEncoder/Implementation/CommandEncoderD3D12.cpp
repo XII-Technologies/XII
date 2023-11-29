@@ -69,6 +69,20 @@ xiiGALCommandEncoderD3D12::~xiiGALCommandEncoderD3D12()
 {
   m_uiSynchronizationFenceCompletedValue = 0U;
   XII_GAL_DILIGENT_PTR_RELEASE(m_pSynchronizationFence);
+
+  for (auto& pPipelineState : m_CachedComputePipelineStates)
+  {
+    XII_GAL_DILIGENT_PTR_RELEASE(pPipelineState.Value().m_pShaderResourceBinding);
+    XII_GAL_DILIGENT_PTR_RELEASE(pPipelineState.Value().m_pPipelineState);
+  }
+  m_CachedComputePipelineStates.Clear();
+
+  for (auto& pPipelineState : m_CachedGraphicsPipelineStates)
+  {
+    XII_GAL_DILIGENT_PTR_RELEASE(pPipelineState.Value().m_pShaderResourceBinding);
+    XII_GAL_DILIGENT_PTR_RELEASE(pPipelineState.Value().m_pPipelineState);
+  }
+  m_CachedGraphicsPipelineStates.Clear();
 }
 
 void xiiGALCommandEncoderD3D12::SetShaderPlatform(xiiGALShader* pShader)
