@@ -569,7 +569,9 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
 
   {
     xiiGALBufferCreationDescription desc;
-    desc.m_uiSize = descriptor.GetVertexDataSize() * descriptor.GetVertexCount();
+    desc.m_uiElementByteStride = descriptor.GetVertexDataSize();
+    desc.m_uiSize              = desc.m_uiElementByteStride * descriptor.GetVertexCount();
+    desc.m_ResourceUsage       = xiiGALResourceUsage::Immutable;
     desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
 
     xiiGALBufferData initData;
@@ -587,6 +589,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
     xiiGALBufferCreationDescription desc;
     desc.m_uiElementByteStride = xiiGALValueType::GetSize(descriptor.Uses32BitIndices() ? xiiGALValueType::UInt32 : xiiGALValueType::UInt16);
     desc.m_uiSize              = desc.m_uiElementByteStride * m_uiPrimitiveCount * xiiGALPrimitiveTopology::VerticesPerPrimitive(m_Topology);
+    desc.m_ResourceUsage       = xiiGALResourceUsage::Immutable;
     desc.m_BindFlags.Add(xiiGALBindFlags::IndexBuffer);
 
     xiiGALBufferData initData;

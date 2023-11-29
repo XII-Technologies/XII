@@ -251,7 +251,8 @@ namespace
     if (s_hDataBuffer[bufferType].IsInvalidated())
     {
       xiiGALBufferCreationDescription desc;
-      desc.m_uiSize = DEBUG_BUFFER_SIZE;
+      desc.m_uiElementByteStride = uiVertexSize;
+      desc.m_uiSize              = DEBUG_BUFFER_SIZE;
       desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
 
       s_hDataBuffer[bufferType] = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);

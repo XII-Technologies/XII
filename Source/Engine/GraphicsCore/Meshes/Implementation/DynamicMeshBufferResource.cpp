@@ -124,7 +124,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
 
   {
     xiiGALBufferCreationDescription desc;
-    desc.m_uiSize = sizeof(xiiDynamicMeshVertex) * m_Descriptor.m_uiMaxVertices;
+    desc.m_uiElementByteStride = sizeof(xiiDynamicMeshVertex);
+    desc.m_uiSize              = desc.m_uiElementByteStride * m_Descriptor.m_uiMaxVertices;
     desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
     m_hVertexBuffer = pDevice->CreateBuffer(desc);
   }
@@ -140,7 +141,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     m_ColorData.SetCountUninitialized(uiMaxIndices);
 
     xiiGALBufferCreationDescription desc;
-    desc.m_uiSize = sizeof(xiiColorLinearUB) * m_Descriptor.m_uiMaxVertices;
+    desc.m_uiElementByteStride = sizeof(xiiColorLinearUB);
+    desc.m_uiSize              = desc.m_uiElementByteStride * m_Descriptor.m_uiMaxVertices;
     desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
     m_hColorBuffer = pDevice->CreateBuffer(desc);
 

@@ -697,7 +697,7 @@ void xiiGALCommandEncoderD3D12::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffe
 void xiiGALCommandEncoderD3D12::SetVertexBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pVertexBuffer)
 {
   auto            pVertexBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pVertexBuffer);
-  const xiiUInt64 uiStride           = pVertexBufferD3D12 != nullptr ? pVertexBufferD3D12->GetDescription().m_uiSize : 0U;
+  const xiiUInt64 uiStride           = pVertexBufferD3D12 != nullptr ? pVertexBufferD3D12->GetDescription().m_uiElementByteStride : 0U;
 
   if (m_pBoundVertexBuffers[uiSlot] != pVertexBufferD3D12->GetBuffer())
   {
