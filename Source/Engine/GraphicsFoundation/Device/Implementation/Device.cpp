@@ -1211,12 +1211,16 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
       pTexture->m_hDefaultTextureView             = CreateTextureView(viewDescription);
     }
 
-    // Create default render target view.
-    if (description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
+    // Create default render target or depth stencil view.
+    if (description.m_BindFlags.IsAnySet(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil))
     {
+      auto& formatProperties = GetTextureFormatProperties(description.m_Format);
+
+      xiiEnum<xiiGALTextureViewType> viewType = formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget;
+
       xiiGALTextureViewCreationDescription viewDescription;
       viewDescription.m_hTexture                  = hTexture;
-      viewDescription.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
+      viewDescription.m_ViewType                  = viewType;
       viewDescription.m_Format                    = description.m_Format;
       viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
       viewDescription.m_uiMostDetailedMip         = 0U;
