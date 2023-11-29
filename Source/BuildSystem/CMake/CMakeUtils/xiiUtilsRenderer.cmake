@@ -26,7 +26,7 @@ function(xii_add_renderers TARGET_NAME)
   #   )
   # endif()
 
-  # add_dependencies(${TARGET_NAME}
-  #   ShaderCompiler
-  # )
+  add_dependencies(${TARGET_NAME}
+    ShaderCompiler
+  )
 endfunction()
