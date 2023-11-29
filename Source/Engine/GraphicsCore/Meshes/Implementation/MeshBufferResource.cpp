@@ -585,7 +585,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
   if (descriptor.HasIndexBuffer())
   {
     xiiGALBufferCreationDescription desc;
-    desc.m_uiSize = xiiGALValueType::GetSize(descriptor.Uses32BitIndices() ? xiiGALValueType::UInt32 : xiiGALValueType::UInt16) * m_uiPrimitiveCount * xiiGALPrimitiveTopology::VerticesPerPrimitive(m_Topology);
+    desc.m_uiElementByteStride = xiiGALValueType::GetSize(descriptor.Uses32BitIndices() ? xiiGALValueType::UInt32 : xiiGALValueType::UInt16);
+    desc.m_uiSize              = desc.m_uiElementByteStride * m_uiPrimitiveCount * xiiGALPrimitiveTopology::VerticesPerPrimitive(m_Topology);
     desc.m_BindFlags.Add(xiiGALBindFlags::IndexBuffer);
 
     xiiGALBufferData initData;
