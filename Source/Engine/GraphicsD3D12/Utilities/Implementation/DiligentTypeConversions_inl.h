@@ -1258,7 +1258,7 @@ XII_ALWAYS_INLINE Diligent::INPUT_ELEMENT_FREQUENCY xiiDiligentTypeConversions::
   switch (e)
   {
     case xiiGALInputElementFrequency::PerVertex:
-      return Diligent::INPUT_ELEMENT_FREQUENCY_UNDEFINED;
+      return Diligent::INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
     case xiiGALInputElementFrequency::PerInstance:
       return Diligent::INPUT_ELEMENT_FREQUENCY_PER_INSTANCE;
 
