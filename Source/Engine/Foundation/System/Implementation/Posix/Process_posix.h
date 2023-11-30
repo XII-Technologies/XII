@@ -168,7 +168,7 @@ struct xiiProcessImpl
 
   static void* StreamWatcherThread(void* context)
   {
-    xiiProcessImpl* self = rexiiInt32erpret_cast<xiiProcessImpl*>(context);
+    xiiProcessImpl* self = reinterpret_cast<xiiProcessImpl*>(context);
     char            buffer[4096];
 
     xiiHybridArray<struct pollfd, 3> pollfds;
@@ -684,7 +684,7 @@ xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::MakeZero()*/)
       {
         return XII_FAILURE;
       }
-      xiiThreadUtils::Sleep(xiiMath::Min(xiiTime::MakeFromMilliseconds(100.0), timeout - timeSpent));
+      xiiThreadUtils::Sleep(xiiMath::Min(xiiTime::Milliseconds(100.0), timeout - timeSpent));
     }
   }
 
