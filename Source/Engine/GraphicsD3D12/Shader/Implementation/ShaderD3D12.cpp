@@ -145,6 +145,12 @@ xiiResult xiiGALShaderD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 {
   // xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 
+  ShaderEvent e;
+  e.m_Type    = ShaderEvent::BeforeDeletion;
+  e.m_pShader = this;
+
+  m_Events.Broadcast(e);
+
   for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
   {
     XII_GAL_DILIGENT_PTR_RELEASE(m_pShaderStages[i]);

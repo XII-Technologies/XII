@@ -83,6 +83,59 @@ void xiiGALCommandEncoderD3D12::SetShaderPlatform(xiiGALShader* pShader)
 
     m_bPipelineStateModified = true;
   }
+
+  if (pShaderD3D12 != nullptr && !m_CachedShaderEventIDs.Contains(pShaderD3D12))
+  {
+    m_CachedShaderEventIDs.Insert(pShaderD3D12, pShaderD3D12->m_Events.AddEventHandler([=](const xiiGALShaderD3D12::ShaderEvent& e) {
+      switch (e.m_Type)
+      {
+        case xiiGALShaderD3D12::ShaderEvent::BeforeDeletion:
+        {
+          {
+            for (auto iterator = m_CachedComputePipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
+            {
+              if (iterator.Value().m_pShader == e.m_pShader)
+              {
+                PipelineStateInfo pipelineInfo;
+                XII_VERIFY(m_CachedComputePipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached compute pipeline state object.");
+
+                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
+                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
+
+                iterator = m_CachedComputePipelineStates.GetIterator();
+              }
+              else
+              {
+                ++iterator;
+              }
+            }
+          }
+          {
+            for (auto iterator = m_CachedGraphicsPipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
+            {
+              if (iterator.Value().m_pShader == e.m_pShader)
+              {
+                PipelineStateInfo pipelineInfo;
+                XII_VERIFY(m_CachedGraphicsPipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached graphics pipeline state object.");
+
+                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
+                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
+
+                iterator = m_CachedGraphicsPipelineStates.GetIterator();
+              }
+            }
+          }
+
+          xiiEventSubscriptionID id;
+          m_CachedShaderEventIDs.Remove(e.m_pShader, &id);
+          e.m_pShader->m_Events.RemoveEventHandler(id);
+        }
+        break;
+        default:
+          break;
+      }
+    }));
+  }
 }
 
 void xiiGALCommandEncoderD3D12::SetConstantBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pBuffer)
@@ -849,7 +902,6 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 {
   if (m_bPipelineStateModified)
   {
-    PipelineStateInfo pipelineInfo;
     {
       if (m_bIsComputeRequested)
       {
@@ -860,6 +912,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
         computePipelineStateDescription.ppResourceSignatures    = m_pCurrentShader->GetResourceSignatures().GetPtr();
         computePipelineStateDescription.ResourceSignaturesCount = m_pCurrentShader->GetResourceSignatures().GetCount();
 
+        PipelineStateInfo pipelineInfo;
         if (!m_CachedComputePipelineStates.TryGetValue(computePipelineStateDescription, pipelineInfo))
         {
           m_GALDeviceD3D12.GetDevice()->CreatePipelineState(computePipelineStateDescription, &pipelineInfo.m_pPipelineState);
@@ -868,11 +921,18 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 
           m_pCurrentShader->GetResourceSignatures()[0]->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
 
-          m_CachedComputePipelineStates.Insert(computePipelineStateDescription, pipelineInfo);
+          pipelineInfo.m_pShader = m_pCurrentShader;
+
+          XII_VERIFY(!m_CachedComputePipelineStates.Insert(computePipelineStateDescription, pipelineInfo), "Erased existing compute pipeline state object, this is unexpected.");
         }
+
+        m_pCurrentPipelineState         = pipelineInfo.m_pPipelineState;
+        m_pCurrentShaderResourceBinding = pipelineInfo.m_pShaderResourceBinding;
       }
       else
       {
+        // PipelineStateInfo pipelineInfo = {};
+
         Diligent::GraphicsPipelineStateCreateInfo graphicsPipelineStateDescription;
         graphicsPipelineStateDescription.PSODesc.PipelineType    = Diligent::PIPELINE_TYPE_GRAPHICS;
         graphicsPipelineStateDescription.Flags                   = Diligent::PSO_CREATE_FLAG_NONE;
@@ -916,6 +976,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
           graphicsPipelineDescription.InputLayout = *m_pInputLayout->GetLayout();
         }
 
+        PipelineStateInfo pipelineInfo = {};
         if (!m_CachedGraphicsPipelineStates.TryGetValue(graphicsPipelineStateDescription, pipelineInfo))
         {
           m_GALDeviceD3D12.GetDevice()->CreatePipelineState(graphicsPipelineStateDescription, &pipelineInfo.m_pPipelineState);
@@ -924,15 +985,21 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 
           m_pCurrentShader->GetResourceSignatures()[0]->CreateShaderResourceBinding(&pipelineInfo.m_pShaderResourceBinding, true);
 
-          m_CachedGraphicsPipelineStates.Insert(graphicsPipelineStateDescription, pipelineInfo);
+          pipelineInfo.m_pShader = m_pCurrentShader;
+
+          // Hashing the input layout will cause problems with hash deduction, due to the nature of its lifetime.
+          graphicsPipelineDescription.InputLayout = {};
+
+          XII_VERIFY(!m_CachedGraphicsPipelineStates.Insert(graphicsPipelineStateDescription, pipelineInfo), "Erased existing graphics pipeline state object, this is unexpected.");
         }
+
+        m_pCurrentPipelineState         = pipelineInfo.m_pPipelineState;
+        m_pCurrentShaderResourceBinding = pipelineInfo.m_pShaderResourceBinding;
       }
     }
 
-    m_bPipelineStateModified        = false;
-    m_bDescriptorsModified          = true; // Changes to pipeline state always require that the descriptor set be rebound.
-    m_pCurrentPipelineState         = pipelineInfo.m_pPipelineState;
-    m_pCurrentShaderResourceBinding = pipelineInfo.m_pShaderResourceBinding;
+    m_bPipelineStateModified = false;
+    m_bDescriptorsModified   = true; // Changes to pipeline state always require that the descriptor set be rebound.
   }
 
   if (!m_bIsComputeRequested && m_BoundVertexBuffersRange.IsValid())
@@ -1278,7 +1345,16 @@ xiiUInt32 xiiGALCommandEncoderD3D12::ResourceCacheHash::Hash(const Diligent::Gra
 
   for (xiiUInt32 i = 0; i < desc.GraphicsPipeline.InputLayout.NumElements; ++i)
   {
-    writer << (desc.GraphicsPipeline.InputLayout.LayoutElements + i);
+    writer << (desc.GraphicsPipeline.InputLayout.LayoutElements + i)->InputIndex;
+    writer << (desc.GraphicsPipeline.InputLayout.LayoutElements + i)->BufferSlot;
+    writer << (desc.GraphicsPipeline.InputLayout.LayoutElements + i)->NumComponents;
+    writer << (xiiUInt8)(desc.GraphicsPipeline.InputLayout.LayoutElements + i)->ValueType;
+    writer << (desc.GraphicsPipeline.InputLayout.LayoutElements + i)->IsNormalized;
+    writer << (desc.GraphicsPipeline.InputLayout.LayoutElements + i)->IsNormalized;
+    writer << (desc.GraphicsPipeline.InputLayout.LayoutElements + i)->RelativeOffset;
+    writer << (desc.GraphicsPipeline.InputLayout.LayoutElements + i)->Stride;
+    writer << (xiiUInt8)(desc.GraphicsPipeline.InputLayout.LayoutElements + i)->Frequency;
+    writer << (desc.GraphicsPipeline.InputLayout.LayoutElements + i)->InstanceDataStepRate;
   }
 
   writer << desc.GraphicsPipeline.PrimitiveTopology;

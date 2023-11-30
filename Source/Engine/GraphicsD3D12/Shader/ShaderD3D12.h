@@ -33,6 +33,22 @@ public:
   xiiArrayPtr<xiiGALVertexInputLayout>               GetInputLayouts();
   xiiArrayPtr<xiiGALShaderResourceBinding>           GetShaderResourceBinding(xiiBitflags<xiiGALShaderStage> e);
 
+public:
+  struct ShaderEvent
+  {
+    XII_DECLARE_POD_TYPE();
+
+    enum Type
+    {
+      BeforeDeletion = 0
+    };
+
+    xiiGALShaderD3D12* m_pShader = nullptr;
+    Type               m_Type    = Type::BeforeDeletion;
+  };
+
+  xiiCopyOnBroadcastEvent<const ShaderEvent&> m_Events;
+
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;

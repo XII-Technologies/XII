@@ -138,6 +138,7 @@ private:
   {
     XII_DECLARE_POD_TYPE();
 
+    xiiGALShaderD3D12*                m_pShader                = nullptr;
     Diligent::IPipelineState*         m_pPipelineState         = nullptr;
     Diligent::IShaderResourceBinding* m_pShaderResourceBinding = nullptr;
   };
@@ -168,6 +169,7 @@ private:
 
   xiiHashTable<Diligent::GraphicsPipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash> m_CachedGraphicsPipelineStates;
   xiiHashTable<Diligent::ComputePipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash>  m_CachedComputePipelineStates;
+  xiiHashTable<xiiGALShaderD3D12*, xiiEventSubscriptionID>                                      m_CachedShaderEventIDs;
 
   Diligent::IPipelineState*         m_pCurrentPipelineState         = nullptr;
   Diligent::IShaderResourceBinding* m_pCurrentShaderResourceBinding = nullptr;
@@ -178,7 +180,6 @@ private:
   bool m_bDescriptorsModified   = false;
   bool m_bRenderPassActive      = false;
   bool m_bIsComputeRequested    = false;
-  bool m_bClearSubmitted        = false;
 
   // Shader
 
