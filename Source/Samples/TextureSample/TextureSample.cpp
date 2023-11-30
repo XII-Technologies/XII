@@ -3,12 +3,14 @@
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/DirectoryWatcher.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
+#include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Logging/ConsoleWriter.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Logging/VisualStudioWriter.h>
 #include <Foundation/Time/Clock.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <Texture/Image/ImageConversion.h>
 
 #include <Core/Graphics/Camera.h>
 #include <Core/Graphics/Geometry.h>
@@ -26,15 +28,19 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/ShaderCompiler/ShaderManager.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsCore/Textures/TextureLoader.h>
+
+// Constant buffer definition is shared between shader code and C++
+#include <GraphicsCore/../../../Data/Samples/TextureSample/Shaders/SampleConstantBuffer.h>
 
 static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
 static bool      g_bWindowResized = false;
 
-class xiiShaderExplorer : public xiiWindow
+class xiiTextureSample : public xiiWindow
 {
 public:
-  xiiShaderExplorer() :
+  xiiTextureSample() :
     xiiWindow()
   {
     m_bCloseRequested = false;
@@ -55,14 +61,24 @@ public:
   bool m_bCloseRequested;
 };
 
+class CustomTextureResourceLoader : public xiiTextureResourceLoader
+{
+public:
+  virtual xiiResourceLoadData OpenDataStream(const xiiResource* pResource) override;
+};
+
+const xiiInt32 g_iMaxHalfExtent         = 20;
+const bool     g_bForceImmediateLoading = false;
+const bool     g_bPreloadAllTextures    = false;
+
 // A simple application that creates a window.
-class xiiShaderExplorerApp : public xiiApplication
+class xiiTextureSampleApp : public xiiApplication
 {
 public:
   using SUPER = xiiApplication;
 
-  xiiShaderExplorerApp() :
-    xiiApplication("Shader Explorer")
+  xiiTextureSampleApp() :
+    xiiApplication("Texture Sample")
   {
   }
 
@@ -93,21 +109,16 @@ public:
       m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::ClipToPosition);
 
       float       fInputValue = 0.0f;
-      const float fMouseSpeed = 0.01f;
+      const float fMouseSpeed = 0.5f;
 
-      xiiVec3 mouseMotion(0.0f);
-
-      if (xiiInputManager::GetInputActionState("Main", "LookPosX", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.x += fInputValue * fMouseSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "LookNegX", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.x -= fInputValue * fMouseSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "LookPosY", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.y -= fInputValue * fMouseSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "LookNegY", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.y += fInputValue * fMouseSpeed;
-
-      m_pCamera->RotateLocally(xiiAngle::Radian(0.0f), xiiAngle::Radian(mouseMotion.y), xiiAngle::Radian(0.0f));
-      m_pCamera->RotateGlobally(xiiAngle::Radian(0.0f), xiiAngle::Radian(mouseMotion.x), xiiAngle::Radian(0.0f));
+      if (xiiInputManager::GetInputActionState("Main", "MovePosX", &fInputValue) != xiiKeyState::Up)
+        m_vCameraPosition.x -= fInputValue * fMouseSpeed;
+      if (xiiInputManager::GetInputActionState("Main", "MoveNegX", &fInputValue) != xiiKeyState::Up)
+        m_vCameraPosition.x += fInputValue * fMouseSpeed;
+      if (xiiInputManager::GetInputActionState("Main", "MovePosY", &fInputValue) != xiiKeyState::Up)
+        m_vCameraPosition.y += fInputValue * fMouseSpeed;
+      if (xiiInputManager::GetInputActionState("Main", "MoveNegY", &fInputValue) != xiiKeyState::Up)
+        m_vCameraPosition.y -= fInputValue * fMouseSpeed;
     }
     else
     {
@@ -115,47 +126,10 @@ public:
       m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::NoClip);
     }
 
-    // Turn camera with arrow keys
-    {
-      float       fInputValue = 0.0f;
-      const float fTurnSpeed  = 1.0f;
-
-      xiiVec3 mouseMotion(0.0f);
-
-      if (xiiInputManager::GetInputActionState("Main", "TurnPosX", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.x += fInputValue * fTurnSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "TurnNegX", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.x -= fInputValue * fTurnSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "TurnPosY", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.y += fInputValue * fTurnSpeed;
-      if (xiiInputManager::GetInputActionState("Main", "TurnNegY", &fInputValue) != xiiKeyState::Up)
-        mouseMotion.y -= fInputValue * fTurnSpeed;
-
-      m_pCamera->RotateLocally(xiiAngle::Radian(0.0f), xiiAngle::Radian(mouseMotion.y), xiiAngle::Radian(0.0f));
-      m_pCamera->RotateGlobally(xiiAngle::Radian(0.0f), xiiAngle::Radian(mouseMotion.x), xiiAngle::Radian(0.0f));
-    }
-
-    // Apply translation
-    {
-      float   fInputValue = 0.0f;
-      xiiVec3 cameraMotion(0.0f);
-
-      if (xiiInputManager::GetInputActionState("Main", "MovePosX", &fInputValue) != xiiKeyState::Up)
-        cameraMotion.x += fInputValue;
-      if (xiiInputManager::GetInputActionState("Main", "MoveNegX", &fInputValue) != xiiKeyState::Up)
-        cameraMotion.x -= fInputValue;
-      if (xiiInputManager::GetInputActionState("Main", "MovePosY", &fInputValue) != xiiKeyState::Up)
-        cameraMotion.y += fInputValue;
-      if (xiiInputManager::GetInputActionState("Main", "MoveNegY", &fInputValue) != xiiKeyState::Up)
-        cameraMotion.y -= fInputValue;
-
-      m_pCamera->MoveLocally(cameraMotion.y, cameraMotion.x, 0.0f);
-    }
-
     // Reload resources if modified
     {
       m_bFileModified = false;
-      m_pDirectoryWatcher->EnumerateChanges(xiiMakeDelegate(&xiiShaderExplorerApp::OnFileChanged, this));
+      m_pDirectoryWatcher->EnumerateChanges(xiiMakeDelegate(&xiiTextureSampleApp::OnFileChanged, this));
 
       if (m_bFileModified)
       {
@@ -168,9 +142,9 @@ public:
       // Before starting to render in a frame call this function
       m_pDevice->BeginFrame();
 
-      m_pDevice->BeginPipeline("ShaderExplorer", m_hSwapChain);
+      m_pDevice->BeginPipeline("TextureSample", m_hSwapChain);
 
-      xiiGALPass* pGALPass = m_pDevice->BeginPass("xiiShaderExplorerMainPass");
+      xiiGALPass* pGALPass = m_pDevice->BeginPass("xiiTextureSampleMainPass");
 
       // Must always retrieve the current swapchain render target
       const xiiGALSwapChain*  pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
@@ -181,25 +155,55 @@ public:
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hBBRTV).SetDepthStencilTarget(hBBDSV);
       renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
       renderingSetup.m_bClearDepth             = true;
-      renderingSetup.m_bClearStencil           = true;
 
       xiiGALGraphicsCommandEncoder* pCommandEncoder = xiiRenderContext::GetDefaultInstance()->BeginRendering(pGALPass, renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight));
 
-      auto& gc = xiiRenderContext::GetDefaultInstance()->WriteGlobalConstants();
-      xiiMemoryUtils::ZeroFill(&gc, 1);
+      xiiMat4 Proj = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_vCameraPosition.x + -(float)g_uiWindowWidth * 0.5f, m_vCameraPosition.x + (float)g_uiWindowWidth * 0.5f, m_vCameraPosition.y + -(float)g_uiWindowHeight * 0.5f, m_vCameraPosition.y + (float)g_uiWindowHeight * 0.5f, -1.0f, 1.0f);
 
-      gc.WorldToCameraMatrix[0] = m_pCamera->GetViewMatrix(xiiCameraEye::Left);
-      gc.WorldToCameraMatrix[1] = m_pCamera->GetViewMatrix(xiiCameraEye::Right);
-      gc.CameraToWorldMatrix[0] = gc.WorldToCameraMatrix[0].GetInverse();
-      gc.CameraToWorldMatrix[1] = gc.WorldToCameraMatrix[1].GetInverse();
-      gc.ViewportSize           = xiiVec4((float)g_uiWindowWidth, (float)g_uiWindowHeight, 1.0f / (float)g_uiWindowWidth, 1.0f / (float)g_uiWindowHeight);
-      // Wrap around to prevent floating point issues. Wrap around is dividable by all whole numbers up to 11.
-      gc.GlobalTime = (float)xiiMath::Mod(xiiClock::GetGlobalClock()->GetAccumulatedTime().GetSeconds(), 20790.0);
-      gc.WorldTime  = gc.GlobalTime;
-
+      xiiRenderContext::GetDefaultInstance()->BindConstantBuffer(XII_STRINGIZE(xiiTextureSampleConstants), m_hSampleConstants);
       xiiRenderContext::GetDefaultInstance()->BindMaterial(m_hMaterial);
-      xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(m_hQuadMeshBuffer);
-      xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer().IgnoreResult();
+
+      xiiMat4 mTransform = xiiMat4::IdentityMatrix();
+
+      xiiInt32 iLeftBound  = (xiiInt32)xiiMath::Floor((m_vCameraPosition.x - g_uiWindowWidth * 0.5f) / 100.0f);
+      xiiInt32 iLowerBound = (xiiInt32)xiiMath::Floor((m_vCameraPosition.y - g_uiWindowHeight * 0.5f) / 100.0f);
+      xiiInt32 iRightBound = (xiiInt32)xiiMath::Ceil((m_vCameraPosition.x + g_uiWindowWidth * 0.5f) / 100.0f) + 1;
+      xiiInt32 iUpperBound = (xiiInt32)xiiMath::Ceil((m_vCameraPosition.y + g_uiWindowHeight * 0.5f) / 100.0f) + 1;
+
+      iLeftBound  = xiiMath::Max(iLeftBound, -g_iMaxHalfExtent);
+      iRightBound = xiiMath::Min(iRightBound, g_iMaxHalfExtent);
+      iLowerBound = xiiMath::Max(iLowerBound, -g_iMaxHalfExtent);
+      iUpperBound = xiiMath::Min(iUpperBound, g_iMaxHalfExtent);
+
+      xiiStringBuilder sResourceName;
+
+      for (xiiInt32 y = iLowerBound; y < iUpperBound; ++y)
+      {
+        for (xiiInt32 x = iLeftBound; x < iRightBound; ++x)
+        {
+          mTransform.SetTranslationVector(xiiVec3((float)x * 100.0f, (float)y * 100.0f, 0));
+
+          // Update the constant buffer
+          {
+            xiiTextureSampleConstants& cb = m_pSampleConstantBuffer->GetDataForWriting();
+            cb.ModelMatrix                = mTransform;
+            cb.ViewProjectionMatrix       = Proj;
+          }
+
+          sResourceName.Printf("Loaded_%+03i_%+03i_D", x, y);
+
+          xiiTexture2DResourceHandle hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(sResourceName);
+
+          // force immediate loading
+          if (g_bForceImmediateLoading)
+            xiiResourceLock<xiiTexture2DResource> l(hTexture, xiiResourceAcquireMode::BlockTillLoaded);
+
+          xiiRenderContext::GetDefaultInstance()->BindTexture2D("DiffuseTexture", hTexture);
+          xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(m_hQuadMeshBuffer);
+          xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer().IgnoreResult();
+        }
+      }
+
       xiiRenderContext::GetDefaultInstance()->EndRendering();
 
       m_pDevice->EndPass(pGALPass);
@@ -225,16 +229,24 @@ public:
 
   virtual void AfterCoreSystemsStartup() override
   {
-    xiiStringBuilder sProjectDir = ">sdk/Data/Samples/ShaderExplorer";
+    xiiStringBuilder sProjectDir = ">sdk/Data/Samples/TextureSample";
     xiiStringBuilder sProjectDirResolved;
     xiiFileSystem::ResolveSpecialDirectory(sProjectDir, sProjectDirResolved).IgnoreResult();
 
     xiiFileSystem::SetSpecialDirectory("project", sProjectDirResolved);
 
+    // setup the 'asset management system'
+    {
+      // which redirection table to search
+      xiiDataDirectory::FolderType::s_sRedirectionFile = "AssetCache/LookupTable.xiiAsset";
+      // which platform assets to use
+      xiiDataDirectory::FolderType::s_sRedirectionPrefix = "AssetCache/PC/";
+    }
+
     xiiFileSystem::AddDataDirectory("", "", ":", xiiFileSystem::AllowWrites).IgnoreResult();
-    xiiFileSystem::AddDataDirectory(">appdir/", "AppBin", "bin", xiiFileSystem::AllowWrites).IgnoreResult();                               // writing to the binary directory
-    xiiFileSystem::AddDataDirectory(">appdir/", "ShaderCache", "shadercache", xiiFileSystem::AllowWrites).IgnoreResult();                  // for shader files
-    xiiFileSystem::AddDataDirectory(">user/XII/Projects/ShaderExplorer", "AppData", "appdata", xiiFileSystem::AllowWrites).IgnoreResult(); // app user data
+    xiiFileSystem::AddDataDirectory(">appdir/", "AppBin", "bin", xiiFileSystem::AllowWrites).IgnoreResult();                              // writing to the binary directory
+    xiiFileSystem::AddDataDirectory(">appdir/", "ShaderCache", "shadercache", xiiFileSystem::AllowWrites).IgnoreResult();                 // for shader files
+    xiiFileSystem::AddDataDirectory(">user/XII/Projects/TextureSample", "AppData", "appdata", xiiFileSystem::AllowWrites).IgnoreResult(); // app user data
 
     xiiFileSystem::AddDataDirectory(">sdk/Data/Base", "Base", "base").IgnoreResult();
     xiiFileSystem::AddDataDirectory(">project/", "Project", "project", xiiFileSystem::AllowWrites).IgnoreResult();
@@ -243,7 +255,7 @@ public:
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT) && XII_DISABLED(XII_PLATFORM_ANDROID)
-    xiiTelemetry::SetServerName("Shader Explorer");
+    xiiTelemetry::SetServerName("Texture Sample");
 
     // Activate xiiTelemetry such that the inspector plugin can use the network connection.
     xiiTelemetry::CreateServer();
@@ -254,8 +266,6 @@ public:
     xiiPlugin::LoadPlugin("xiiInspectorPlugin").IgnoreResult();
 #endif
 
-    m_pCamera = XII_DEFAULT_NEW(xiiCamera);
-    m_pCamera->LookAt(xiiVec3(3, 3, 1.5), xiiVec3(0, 0, 0), xiiVec3(0, 1, 0));
     m_pDirectoryWatcher = XII_DEFAULT_NEW(xiiDirectoryWatcher);
 
     XII_VERIFY(m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded(), "Failed to watch project directory.");
@@ -276,70 +286,30 @@ public:
       cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyEscape;
       xiiInputManager::SetInputActionConfig("Main", "CloseApp", cfg, true);
 
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "LookPosX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMovePosX;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "LookPosX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "LookNegX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMoveNegX;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "LookNegX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "LookPosY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMovePosY;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "LookPosY", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "LookNegY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMoveNegY;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "LookNegY", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "TurnPosX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyRight;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "TurnPosX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "TurnNegX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyLeft;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "TurnNegX", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "TurnPosY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyDown;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "TurnPosY", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "TurnNegY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyUp;
-      cfg.m_bApplyTimeScaling    = true;
-      xiiInputManager::SetInputActionConfig("Main", "TurnNegY", cfg, true);
-
-      cfg                        = xiiInputManager::GetInputActionConfig("Main", "Look");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseButton0;
-      cfg.m_bApplyTimeScaling    = false;
-      xiiInputManager::SetInputActionConfig("Main", "Look", cfg, true);
-
       cfg                        = xiiInputManager::GetInputActionConfig("Main", "MovePosX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyD;
-      cfg.m_bApplyTimeScaling    = true;
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMovePosX;
+      cfg.m_bApplyTimeScaling    = false;
       xiiInputManager::SetInputActionConfig("Main", "MovePosX", cfg, true);
 
       cfg                        = xiiInputManager::GetInputActionConfig("Main", "MoveNegX");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyA;
-      cfg.m_bApplyTimeScaling    = true;
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMoveNegX;
+      cfg.m_bApplyTimeScaling    = false;
       xiiInputManager::SetInputActionConfig("Main", "MoveNegX", cfg, true);
 
       cfg                        = xiiInputManager::GetInputActionConfig("Main", "MovePosY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyW;
-      cfg.m_bApplyTimeScaling    = true;
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMovePosY;
+      cfg.m_bApplyTimeScaling    = false;
       xiiInputManager::SetInputActionConfig("Main", "MovePosY", cfg, true);
 
       cfg                        = xiiInputManager::GetInputActionConfig("Main", "MoveNegY");
-      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_KeyS;
-      cfg.m_bApplyTimeScaling    = true;
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseMoveNegY;
+      cfg.m_bApplyTimeScaling    = false;
       xiiInputManager::SetInputActionConfig("Main", "MoveNegY", cfg, true);
+
+      cfg                        = xiiInputManager::GetInputActionConfig("Main", "MouseDown");
+      cfg.m_sInputSlotTrigger[0] = xiiInputSlot_MouseButton0;
+      cfg.m_bApplyTimeScaling    = false;
+      xiiInputManager::SetInputActionConfig("Main", "MouseDown", cfg, true);
     }
 
     // Create a window for rendering
@@ -351,7 +321,7 @@ public:
       WindowCreationDesc.m_bShowMouseCursor  = true;
       WindowCreationDesc.m_bClipMouseCursor  = false;
       WindowCreationDesc.m_WindowMode        = xiiWindowMode::WindowResizable;
-      m_pWindow                              = XII_DEFAULT_NEW(xiiShaderExplorer);
+      m_pWindow                              = XII_DEFAULT_NEW(xiiTextureSample);
       m_pWindow->Initialize(WindowCreationDesc).IgnoreResult();
     }
 
@@ -382,10 +352,52 @@ public:
 
     // Setup Shaders and Materials
     {
-      m_hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("Materials/screen.xiiMaterial");
+      // The shader (referenced by the material) also defines the render pipeline state, such as backface-culling and depth-testing
+
+      m_hMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("Materials/Texture.xiiMaterial");
 
       // Create the mesh that we use for rendering
-      CreateScreenQuad();
+      CreateSquareMesh();
+    }
+
+    // Setup default resources
+    {
+      xiiTexture2DResourceHandle hFallback = xiiResourceManager::LoadResource<xiiTexture2DResource>("Textures/Reference_D.dds");
+      xiiTexture2DResourceHandle hMissing  = xiiResourceManager::LoadResource<xiiTexture2DResource>("Textures/MissingTexture_D.dds");
+
+      xiiResourceManager::SetResourceTypeLoadingFallback<xiiTexture2DResource>(hFallback);
+      xiiResourceManager::SetResourceTypeMissingFallback<xiiTexture2DResource>(hMissing);
+
+      // Redirect all texture load operations through our custom loader, so that we can duplicate the single source texture
+      // that we have as often as we like (to waste memory)
+      xiiResourceManager::SetResourceTypeLoader<xiiTexture2DResource>(&m_TextureResourceLoader);
+    }
+
+    // Setup constant buffer that this sample uses
+    {
+      m_hSampleConstants = xiiRenderContext::CreateConstantBufferStorage(m_pSampleConstantBuffer);
+    }
+
+    // Pre-allocate all textures
+    {
+      // We only do this to be able to see the unloaded resources in the xiiInspector
+      // This does NOT preload the resources
+
+      xiiStringBuilder sResourceName;
+      for (xiiInt32 y = -g_iMaxHalfExtent; y < g_iMaxHalfExtent; ++y)
+      {
+        for (xiiInt32 x = -g_iMaxHalfExtent; x < g_iMaxHalfExtent; ++x)
+        {
+          sResourceName.Printf("Loaded_%+03i_%+03i_D", x, y);
+
+          xiiTexture2DResourceHandle hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(sResourceName);
+
+          if (g_bPreloadAllTextures)
+          {
+            xiiResourceManager::PreloadResource(hTexture);
+          }
+        }
+      }
     }
   }
 
@@ -442,21 +454,38 @@ public:
     }
   }
 
-  void CreateScreenQuad()
+  void CreateSquareMesh()
   {
+    struct Vertex
+    {
+      xiiVec3 Position;
+      xiiVec2 TexCoord0;
+    };
+
     xiiGeometry             geom;
     xiiGeometry::GeoOptions opt;
     opt.m_Color = xiiColor::Black;
-    geom.AddRectXY(xiiVec2(2, 2), 1, 1, opt);
+    geom.AddRectXY(xiiVec2(100, 100), 1, 1, opt);
+
+    xiiDynamicArray<Vertex>    Vertices;
+    xiiDynamicArray<xiiUInt16> Indices;
+
+    Vertices.Reserve(geom.GetVertices().GetCount());
+    Indices.Reserve(geom.GetPolygons().GetCount() * 6);
 
     xiiMeshBufferResourceDescriptor desc;
     desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
+    desc.AddStream(xiiGALInputLayoutSemantic::TexCoord0, xiiGALTextureFormat::RG32Float);
 
     desc.AllocateStreams(geom.GetVertices().GetCount(), xiiGALPrimitiveTopology::TriangleList, geom.GetPolygons().GetCount() * 2);
 
     for (xiiUInt32 v = 0; v < geom.GetVertices().GetCount(); ++v)
     {
+      xiiVec2 tc(geom.GetVertices()[v].m_vPosition.x / 100.0f, geom.GetVertices()[v].m_vPosition.y / -100.0f);
+      tc += xiiVec2(0.5f);
+
       desc.SetVertexData<xiiVec3>(0, v, geom.GetVertices()[v].m_vPosition);
+      desc.SetVertexData<xiiVec2>(1, v, tc);
     }
 
     xiiUInt32 t = 0;
@@ -509,7 +538,6 @@ public:
     m_pWindow->Destroy().IgnoreResult();
     XII_DEFAULT_DELETE(m_pWindow);
 
-    m_pCamera.Clear();
     m_pDirectoryWatcher.Clear();
   }
 
@@ -524,7 +552,7 @@ public:
   }
 
 private:
-  xiiShaderExplorer* m_pWindow = nullptr;
+  xiiTextureSample* m_pWindow = nullptr;
 
   xiiGALDevice* m_pDevice = nullptr;
 
@@ -534,10 +562,73 @@ private:
   xiiMaterialResourceHandle   m_hMaterial;
   xiiMeshBufferResourceHandle m_hQuadMeshBuffer;
 
-  xiiUniquePtr<xiiCamera>           m_pCamera;
-  xiiUniquePtr<xiiDirectoryWatcher> m_pDirectoryWatcher;
+  xiiVec2 m_vCameraPosition = xiiVec2::ZeroVector();
 
-  bool m_bFileModified = false;
+  xiiUniquePtr<xiiDirectoryWatcher> m_pDirectoryWatcher;
+  bool                              m_bFileModified = false;
+
+  CustomTextureResourceLoader                          m_TextureResourceLoader;
+  xiiConstantBufferStorageHandle                       m_hSampleConstants;
+  xiiConstantBufferStorage<xiiTextureSampleConstants>* m_pSampleConstantBuffer;
 };
 
-XII_CONSOLEAPP_ENTRY_POINT(xiiShaderExplorerApp);
+xiiResourceLoadData CustomTextureResourceLoader::OpenDataStream(const xiiResource* pResource)
+{
+  xiiString sFileToLoad = pResource->GetResourceID();
+
+  if (sFileToLoad.StartsWith("Loaded"))
+  {
+    sFileToLoad = "Textures/Loaded_D.dds"; // redirect all "Loaded_XYZ" files to the same source file
+  }
+
+  // the entire rest is copied from xiiTextureResourceLoader
+
+  LoadedData* pData = XII_DEFAULT_NEW(LoadedData);
+
+  xiiResourceLoadData res;
+
+#if XII_ENABLED(XII_SUPPORTS_FILE_STATS)
+  {
+    xiiFileReader File;
+    if (File.Open(sFileToLoad).Failed())
+      return res;
+
+    xiiFileStats stat;
+    if (xiiOSFile::GetFileStats(File.GetFilePathAbsolute(), stat).Succeeded())
+    {
+      res.m_LoadedFileModificationDate = stat.m_LastModificationTime;
+    }
+  }
+#endif
+
+
+  if (pData->m_Image.LoadFrom(sFileToLoad).Failed())
+    return res;
+
+  if (pData->m_Image.GetImageFormat() == xiiImageFormat::B8G8R8_UNORM)
+  {
+    xiiImageConversion::Convert(pData->m_Image, pData->m_Image, xiiImageFormat::B8G8R8A8_UNORM).IgnoreResult();
+  }
+
+  xiiMemoryStreamWriter w(&pData->m_Storage);
+
+  xiiImage* pImage = &pData->m_Image;
+  w.WriteBytes(&pImage, sizeof(xiiImage*)).IgnoreResult();
+
+  /// This is a hack to get the SRGB information for the texture
+
+  const xiiStringBuilder sName = xiiPathUtils::GetFileName(sFileToLoad);
+
+  bool bIsFallback = false;
+  bool bSRGB       = (sName.EndsWith_NoCase("_D") || sName.EndsWith_NoCase("_SRGB") || sName.EndsWith_NoCase("_diff"));
+
+  w << bIsFallback;
+  w << bSRGB;
+
+  res.m_pDataStream       = &pData->m_Reader;
+  res.m_pCustomLoaderData = pData;
+
+  return res;
+}
+
+XII_CONSOLEAPP_ENTRY_POINT(xiiTextureSampleApp);
