@@ -9,6 +9,11 @@ XII_ALWAYS_INLINE Diligent::IEngineFactory* xiiGALDeviceD3D12::GetFactory()
   return m_pEngineFactory;
 }
 
+XII_ALWAYS_INLINE xiiGALPassD3D12* xiiGALDeviceD3D12::GetDefaultPass()
+{
+  return m_pDefaultPass.Borrow();
+}
+
 XII_ALWAYS_INLINE Diligent::IDeviceContext* xiiGALDeviceD3D12::GetImmediateContext()
 {
   return m_pDeviceContexts[0];

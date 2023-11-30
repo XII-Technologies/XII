@@ -44,6 +44,8 @@ public:
   xiiGALComputeCommandEncoder* BeginCompute(xiiStringView sName = {});
   void                         EndCompute(xiiGALComputeCommandEncoder* pCommandEncoder);
 
+  void ReleaseCachedRenderPassesAndFramebuffers();
+
 #if 0 // Not yet implemented.
   xiiGALGraphicsCommandEncoder* BeginMesh(xiiStringView sName = {});
   void                          EndMesh(xiiGALGraphicsCommandEncoder* pCommandEncoder);
@@ -54,7 +56,7 @@ public:
 
 protected:
   virtual xiiGALGraphicsCommandEncoder* BeginRenderingPlatform(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiStringView sName = {}) = 0;
-  virtual void                          EndRenderingPlatform(xiiGALGraphicsCommandEncoder* pCommandEncoder)                                              = 0;
+  virtual void                          EndRenderingPlatform(xiiGALGraphicsCommandEncoder* pCommandEncoder)                                                                                          = 0;
 
   virtual xiiGALComputeCommandEncoder* BeginComputePlatform(xiiStringView sName = {})                   = 0;
   virtual void                         EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder) = 0;

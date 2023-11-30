@@ -124,6 +124,24 @@ void xiiGALPass::EndCompute(xiiGALComputeCommandEncoder* pCommandEncoder)
   EndComputePlatform(pCommandEncoder);
 }
 
+void xiiGALPass::ReleaseCachedRenderPassesAndFramebuffers()
+{
+  for (auto& framebuffer : m_FramebufferCache)
+  {
+    m_Device.DestroyFramebuffer(framebuffer.Value().hFrameBuffer);
+    framebuffer.Value().hFrameBuffer.Invalidate();
+  }
+
+  for (auto& renderPass : m_RenderPassCache)
+  {
+    m_Device.DestroyRenderPass(renderPass.Value());
+    renderPass.Value().Invalidate();
+  }
+
+  m_FramebufferCache.Clear();
+  m_RenderPassCache.Clear();
+}
+
 void xiiGALPass::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPass** out_pRenderPass, xiiGALFramebuffer** out_pFramebuffer)
 {
   RenderPassFrameBufferInfo frameBufferInfo;

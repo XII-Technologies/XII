@@ -27,6 +27,8 @@ public:
   Diligent::IDeviceContext* GetImmediateContext();
   Diligent::IEngineFactory* GetFactory();
 
+  xiiGALPassD3D12* GetDefaultPass();
+
   const xiiGALFormatLookupTableD3D12& GetFormatLookupTable() const;
 
   void ReportLiveGPUObjects();
