@@ -207,8 +207,6 @@ public:
       m_pDevice->EndPipeline(m_hSwapChain);
 
       m_pDevice->EndFrame();
-
-      xiiRenderContext::GetDefaultInstance()->ResetContextState();
     }
 
     // Make sure telemetry is sent out regularly.

@@ -296,6 +296,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
 
 void xiiGALDeviceD3D12::ReportLiveGPUObjects()
 {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   IDXGIDebug1* dxgiDebug = nullptr;
   HRESULT      hResult   = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
   if (SUCCEEDED(hResult))
@@ -309,6 +310,7 @@ void xiiGALDeviceD3D12::ReportLiveGPUObjects()
 
     dxgiDebug->Release();
   }
+#endif
 }
 
 void xiiGALDeviceD3D12::FlushPendingObjects()
