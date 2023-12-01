@@ -44,7 +44,7 @@ public:
     };
 
     xiiGALShaderVulkan* m_pShader = nullptr;
-    Type               m_Type    = Type::BeforeDeletion;
+    Type                m_Type    = Type::BeforeDeletion;
   };
 
   xiiCopyOnBroadcastEvent<const ShaderEvent&> m_Events;

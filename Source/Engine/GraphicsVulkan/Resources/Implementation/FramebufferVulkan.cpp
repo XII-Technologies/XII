@@ -3,8 +3,8 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/FramebufferVulkan.h>
 #include <GraphicsVulkan/Resources/RenderPassVulkan.h>
-#include <GraphicsVulkan/Resources/TextureVulkan.h>
 #include <GraphicsVulkan/Resources/TextureViewVulkan.h>
+#include <GraphicsVulkan/Resources/TextureVulkan.h>
 
 xiiGALFramebufferVulkan::xiiGALFramebufferVulkan(const xiiGALFramebufferCreationDescription& creationDescription) :
   xiiGALFramebuffer(creationDescription)

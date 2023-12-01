@@ -138,7 +138,7 @@ private:
   {
     XII_DECLARE_POD_TYPE();
 
-    xiiGALShaderVulkan*                m_pShader                = nullptr;
+    xiiGALShaderVulkan*               m_pShader                = nullptr;
     Diligent::IPipelineState*         m_pPipelineState         = nullptr;
     Diligent::IShaderResourceBinding* m_pShaderResourceBinding = nullptr;
   };
@@ -150,7 +150,7 @@ private:
   void BeginRenderPass();
   void EndRenderPass();
 
-  xiiGALDeviceVulkan&    m_GALDeviceVulkan;
+  xiiGALDeviceVulkan&   m_GALDeviceVulkan;
   xiiGALCommandEncoder* m_pOwner = nullptr;
 
   Diligent::IDeviceContext* m_pContext = nullptr;
@@ -158,18 +158,18 @@ private:
   // Render Pass and Framebuffer
   xiiGALRenderPassVulkan*  m_pRenderPass    = nullptr;
   xiiGALFramebufferVulkan* m_pFramebuffer   = nullptr;
-  xiiGALRenderingSetup    m_RenderingSetup = {};
+  xiiGALRenderingSetup     m_RenderingSetup = {};
 
   // Pipeline state description
   xiiEnum<xiiGALPrimitiveTopology> m_PrimitiveTopology;
-  xiiGALInputLayoutVulkan*          m_pInputLayout       = nullptr;
-  xiiGALBlendStateVulkan*           m_pBlendState        = nullptr;
-  xiiGALDepthStencilStateVulkan*    m_pDepthStencilState = nullptr;
-  xiiGALRasterizerStateVulkan*      m_pRasterizerState   = nullptr;
+  xiiGALInputLayoutVulkan*         m_pInputLayout       = nullptr;
+  xiiGALBlendStateVulkan*          m_pBlendState        = nullptr;
+  xiiGALDepthStencilStateVulkan*   m_pDepthStencilState = nullptr;
+  xiiGALRasterizerStateVulkan*     m_pRasterizerState   = nullptr;
 
   xiiHashTable<Diligent::GraphicsPipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash> m_CachedGraphicsPipelineStates;
   xiiHashTable<Diligent::ComputePipelineStateCreateInfo, PipelineStateInfo, ResourceCacheHash>  m_CachedComputePipelineStates;
-  xiiHashTable<xiiGALShaderVulkan*, xiiEventSubscriptionID>                                      m_CachedShaderEventIDs;
+  xiiHashTable<xiiGALShaderVulkan*, xiiEventSubscriptionID>                                     m_CachedShaderEventIDs;
 
   Diligent::IPipelineState*         m_pCurrentPipelineState         = nullptr;
   Diligent::IShaderResourceBinding* m_pCurrentShaderResourceBinding = nullptr;

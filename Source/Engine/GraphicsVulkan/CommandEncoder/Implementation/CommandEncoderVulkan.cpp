@@ -2,15 +2,15 @@
 
 #include <GraphicsVulkan/CommandEncoder/CommandEncoderVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Resources/BufferVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
+#include <GraphicsVulkan/Resources/BufferVulkan.h>
 #include <GraphicsVulkan/Resources/FenceVulkan.h>
 #include <GraphicsVulkan/Resources/FramebufferVulkan.h>
 #include <GraphicsVulkan/Resources/QueryVulkan.h>
 #include <GraphicsVulkan/Resources/RenderPassVulkan.h>
 #include <GraphicsVulkan/Resources/SamplerVulkan.h>
-#include <GraphicsVulkan/Resources/TextureVulkan.h>
 #include <GraphicsVulkan/Resources/TextureViewVulkan.h>
+#include <GraphicsVulkan/Resources/TextureVulkan.h>
 #include <GraphicsVulkan/Shader/InputLayoutVulkan.h>
 #include <GraphicsVulkan/Shader/ShaderVulkan.h>
 #include <GraphicsVulkan/States/BlendStateVulkan.h>
@@ -163,7 +163,7 @@ void xiiGALCommandEncoderVulkan::SetSamplerPlatform(xiiBitflags<xiiGALShaderStag
 
 void xiiGALCommandEncoderVulkan::SetBufferViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALBufferView* pBufferView)
 {
-  auto            pBufferViewVulkan         = static_cast<xiiGALBufferViewVulkan*>(pBufferView);
+  auto            pBufferViewVulkan        = static_cast<xiiGALBufferViewVulkan*>(pBufferView);
   const xiiUInt32 uiStage                  = xiiGALShaderStage::GetStageIndex(stage);
   auto&           boundShaderResourceViews = m_pBoundShaderResourceViews[uiStage];
 
@@ -177,7 +177,7 @@ void xiiGALCommandEncoderVulkan::SetBufferViewPlatform(xiiBitflags<xiiGALShaderS
 
 void xiiGALCommandEncoderVulkan::SetTextureViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALTextureView* pTextureView)
 {
-  auto            pTextureViewVulkan        = static_cast<xiiGALTextureViewVulkan*>(pTextureView);
+  auto            pTextureViewVulkan       = static_cast<xiiGALTextureViewVulkan*>(pTextureView);
   const xiiUInt32 uiStage                  = xiiGALShaderStage::GetStageIndex(stage);
   auto&           boundShaderResourceViews = m_pBoundShaderResourceViews[uiStage];
 
@@ -270,7 +270,7 @@ void xiiGALCommandEncoderVulkan::UpdateBufferPlatform(xiiGALBuffer* pDestination
   XII_CHECK_ALIGNMENT_16(sourceData.GetPtr());
 
   auto        pDestinationBufferVulkan = static_cast<xiiGALBufferVulkan*>(pDestination);
-  const auto& bufferDescription       = pDestinationBufferVulkan->GetDescription();
+  const auto& bufferDescription        = pDestinationBufferVulkan->GetDescription();
 
   if (bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
   {
@@ -750,7 +750,7 @@ void xiiGALCommandEncoderVulkan::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuff
 void xiiGALCommandEncoderVulkan::SetVertexBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pVertexBuffer)
 {
   auto            pVertexBufferVulkan = static_cast<xiiGALBufferVulkan*>(pVertexBuffer);
-  const xiiUInt64 uiStride           = pVertexBufferVulkan != nullptr ? pVertexBufferVulkan->GetDescription().m_uiElementByteStride : 0U;
+  const xiiUInt64 uiStride            = pVertexBufferVulkan != nullptr ? pVertexBufferVulkan->GetDescription().m_uiElementByteStride : 0U;
 
   if (m_pBoundVertexBuffers[uiSlot] != pVertexBufferVulkan->GetBuffer())
   {
@@ -1238,7 +1238,7 @@ void xiiGALCommandEncoderVulkan::BeginRenderPass()
       {
         const xiiGALTextureViewVulkan* pRenderTargetViewVulkan = static_cast<xiiGALTextureViewVulkan*>(m_GALDeviceVulkan.GetTextureView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
 
-        xiiGALTextureHandle       hTexture      = pRenderTargetViewVulkan->GetDescription().m_hTexture;
+        xiiGALTextureHandle        hTexture       = pRenderTargetViewVulkan->GetDescription().m_hTexture;
         const xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(m_GALDeviceVulkan.GetTexture(hTexture));
 
         const xiiGALTextureCreationDescription& textureDescription = pTextureVulkan->GetDescription();
@@ -1252,7 +1252,7 @@ void xiiGALCommandEncoderVulkan::BeginRenderPass()
       {
         const xiiGALTextureViewVulkan* pRenderTargetViewVulkan = static_cast<xiiGALTextureViewVulkan*>(m_GALDeviceVulkan.GetTextureView(m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(i)));
 
-        xiiGALTextureHandle       hTexture      = pRenderTargetViewVulkan->GetDescription().m_hTexture;
+        xiiGALTextureHandle        hTexture       = pRenderTargetViewVulkan->GetDescription().m_hTexture;
         const xiiGALTextureVulkan* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(m_GALDeviceVulkan.GetTexture(hTexture));
 
         const xiiGALTextureCreationDescription& textureDescription = pTextureVulkan->GetDescription();

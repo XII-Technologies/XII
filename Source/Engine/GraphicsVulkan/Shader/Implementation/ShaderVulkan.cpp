@@ -70,7 +70,7 @@ xiiResult xiiGALShaderVulkan::InitPlatform(xiiGALDevice* pDevice)
   xiiHybridArray<Diligent::PipelineResourceDesc, 2U> resources;
   resources.SetCount(uiBindingCount);
 
-  xiiUInt32 uiCurrentResourceIndex = 0;
+  xiiUInt32 uiCurrentResourceIndex             = 0;
   xiiUInt32 uiCurrentPipelineResourceSignature = 0;
   for (xiiUInt32 uiShaderStage = 0; uiShaderStage < xiiGALShaderStage::ENUM_COUNT; ++uiShaderStage)
   {
