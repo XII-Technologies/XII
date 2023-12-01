@@ -70,20 +70,18 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
   xiiHybridArray<Diligent::PipelineResourceDesc, 2U> resources;
   resources.SetCount(uiBindingCount);
 
+  xiiUInt32 uiCurrentResourceIndex = 0;
   xiiUInt32 uiCurrentPipelineResourceSignature = 0;
   for (xiiUInt32 uiShaderStage = 0; uiShaderStage < xiiGALShaderStage::ENUM_COUNT; ++uiShaderStage)
   {
-    const auto&     shaderResourceBinding        = m_ShaderResourceBindings[uiShaderStage];
-    const xiiUInt32 uiShaderResourceBindingCount = shaderResourceBinding.GetCount();
-
-    for (xiiUInt32 uiBindingIndex = 0; uiBindingIndex < uiShaderResourceBindingCount; ++uiBindingIndex)
+    for (xiiUInt32 uiBindingIndex = 0; uiBindingIndex < m_ShaderResourceBindings[uiShaderStage].GetCount(); ++uiBindingIndex)
     {
-      const xiiGALShaderResourceBinding& resourceBinding     = shaderResourceBinding[uiBindingIndex];
-      Diligent::PipelineResourceDesc&    resourceDescription = resources[uiBindingIndex];
+      const xiiGALShaderResourceBinding& resourceBinding     = m_ShaderResourceBindings[uiShaderStage][uiBindingIndex];
+      Diligent::PipelineResourceDesc&    resourceDescription = resources[uiCurrentResourceIndex];
 
       resourceDescription.Name         = resourceBinding.m_sName.GetView().GetStartPointer();
       resourceDescription.ShaderStages = xiiDiligentTypeConversions::GetShaderTypeFlags(xiiGALShaderStage::GetStageFlag(uiShaderStage));
-      resourceDescription.ArraySize    = resourceBinding.m_Variables.IsEmpty() ? 1U : resourceBinding.m_Variables.GetCount();
+      resourceDescription.ArraySize    = resourceBinding.m_uiArraySize;
 
       switch (resourceBinding.m_Type)
       {
@@ -117,6 +115,8 @@ xiiResult xiiGALShaderD3D12::InitPlatform(xiiGALDevice* pDevice)
 
       resourceDescription.VarType = Diligent::SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE; // Variables are always mutable for now.
       resourceDescription.Flags   = Diligent::PIPELINE_RESOURCE_FLAG_NONE;           // Not yet assessed.
+
+      ++uiCurrentResourceIndex;
     }
   }
 

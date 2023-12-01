@@ -169,7 +169,7 @@ void xiiGALCommandEncoderD3D12::SetBufferViewPlatform(xiiBitflags<xiiGALShaderSt
 
   boundShaderResourceViews.EnsureCount(uiSlot + 1);
 
-  boundShaderResourceViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::BufferView, pBufferViewD3D12->GetBufferView(), nullptr};
+  boundShaderResourceViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::BufferView, pBufferViewD3D12 != nullptr ? pBufferViewD3D12->GetBufferView() : nullptr, nullptr};
   m_bDescriptorsModified           = true;
 
   m_BoundShaderResourceViewsRange[uiStage].SetToIncludeValue(uiSlot);
@@ -183,7 +183,7 @@ void xiiGALCommandEncoderD3D12::SetTextureViewPlatform(xiiBitflags<xiiGALShaderS
 
   boundShaderResourceViews.EnsureCount(uiSlot + 1);
 
-  boundShaderResourceViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::TextureView, nullptr, pTextureViewD3D12->GetTextureView()};
+  boundShaderResourceViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::TextureView, nullptr, pTextureViewD3D12 != nullptr ? pTextureViewD3D12->GetTextureView() : nullptr};
   m_bDescriptorsModified           = true;
 
   m_BoundShaderResourceViewsRange[uiStage].SetToIncludeValue(uiSlot);
@@ -195,7 +195,7 @@ void xiiGALCommandEncoderD3D12::SetUnorderedAccessBufferViewPlatform(xiiUInt32 u
 
   m_pBoundUnorderedAccessViews.EnsureCount(uiSlot + 1);
 
-  m_pBoundUnorderedAccessViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::BufferView, pUnorderedAccessBufferViewD3D12->GetBufferView(), nullptr};
+  m_pBoundUnorderedAccessViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::BufferView, pUnorderedAccessBufferViewD3D12 != nullptr ? pUnorderedAccessBufferViewD3D12->GetBufferView() : nullptr, nullptr};
   m_bDescriptorsModified               = true;
 
   m_BoundUnorderedAccessViewsRange.SetToIncludeValue(uiSlot);
@@ -207,7 +207,7 @@ void xiiGALCommandEncoderD3D12::SetUnorderedAccessTextureViewPlatform(xiiUInt32 
 
   m_pBoundUnorderedAccessViews.EnsureCount(uiSlot + 1);
 
-  m_pBoundUnorderedAccessViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::TextureView, nullptr, pUnorderedAccessTextureViewD3D12->GetTextureView()};
+  m_pBoundUnorderedAccessViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::TextureView, nullptr, pUnorderedAccessTextureViewD3D12 != nullptr ? pUnorderedAccessTextureViewD3D12->GetTextureView() : nullptr};
   m_bDescriptorsModified               = true;
 
   m_BoundUnorderedAccessViewsRange.SetToIncludeValue(uiSlot);
