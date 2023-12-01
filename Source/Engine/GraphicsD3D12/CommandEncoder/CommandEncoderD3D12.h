@@ -196,7 +196,7 @@ private:
   Diligent::Uint64 m_VertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 
   Diligent::IBuffer*    m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[XII_GAL_MAX_CONSTANT_BUFFER_COUNT];
+  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[xiiGALShaderStage::ENUM_COUNT];
 
   xiiHybridArray<ShaderResourceViewDesc, 16U> m_pBoundShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
   xiiGAL::ModifiedRange                       m_BoundShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];

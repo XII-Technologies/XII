@@ -873,9 +873,10 @@ void xiiGALCommandEncoderD3D12::DispatchIndirectPlatform(xiiGALBuffer* pIndirect
 
 void xiiGALCommandEncoderD3D12::BeginRendering(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPassD3D12* pRenderPassD3D12, xiiGALFramebufferD3D12* pFramebufferD3D12)
 {
-  m_pRenderPass    = pRenderPassD3D12;
-  m_pFramebuffer   = pFramebufferD3D12;
-  m_RenderingSetup = renderingSetup;
+  m_pRenderPass            = pRenderPassD3D12;
+  m_pFramebuffer           = pFramebufferD3D12;
+  m_RenderingSetup         = renderingSetup;
+  m_bPipelineStateModified = true;
 }
 
 void xiiGALCommandEncoderD3D12::EndRendering()
@@ -958,27 +959,28 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
         if (m_pRasterizerState)
           graphicsPipelineDescription.RasterizerDesc = *m_pRasterizerState->GetRasterizerState();
 
-        if (m_pInputLayout)
-        {
-          auto layoutElements = m_pInputLayout->GetElements();
-
-          // Assign an appropriate vertex buffer stride if XII_GAL_LAYOUT_ELEMENT_AUTO_STRIDE is used in the input layout.
-          for (xiiUInt32 i = 0; i < layoutElements.GetCount(); ++i)
-          {
-            auto& element = layoutElements[i];
-
-            if (m_BoundVertexBuffersRange.HasIncludeValue(element.BufferSlot) && element.Stride == XII_GAL_LAYOUT_ELEMENT_AUTO_STRIDE)
-            {
-              element.Stride = m_VertexBufferStrides[element.BufferSlot];
-            }
-          }
-
-          graphicsPipelineDescription.InputLayout = *m_pInputLayout->GetLayout();
-        }
-
         PipelineStateInfo pipelineInfo = {};
         if (!m_CachedGraphicsPipelineStates.TryGetValue(graphicsPipelineStateDescription, pipelineInfo))
         {
+          // Hashing the input layout will cause problems with hash deduction, due to the nature of its lifetime.
+          if (m_pInputLayout)
+          {
+            auto layoutElements = m_pInputLayout->GetElements();
+
+            // Assign an appropriate vertex buffer stride if XII_GAL_LAYOUT_ELEMENT_AUTO_STRIDE is used in the input layout.
+            for (xiiUInt32 i = 0; i < layoutElements.GetCount(); ++i)
+            {
+              auto& element = layoutElements[i];
+
+              if (m_BoundVertexBuffersRange.HasIncludeValue(element.BufferSlot) && element.Stride == XII_GAL_LAYOUT_ELEMENT_AUTO_STRIDE)
+              {
+                element.Stride = m_VertexBufferStrides[element.BufferSlot];
+              }
+            }
+
+            graphicsPipelineDescription.InputLayout = *m_pInputLayout->GetLayout();
+          }
+
           m_GALDeviceD3D12.GetDevice()->CreatePipelineState(graphicsPipelineStateDescription, &pipelineInfo.m_pPipelineState);
 
           XII_ASSERT_DEV(pipelineInfo.m_pPipelineState != nullptr, "Failed to create new Graphics pipeline state object.");
@@ -987,7 +989,6 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 
           pipelineInfo.m_pShader = m_pCurrentShader;
 
-          // Hashing the input layout will cause problems with hash deduction, due to the nature of its lifetime.
           graphicsPipelineDescription.InputLayout = {};
 
           XII_VERIFY(!m_CachedGraphicsPipelineStates.Insert(graphicsPipelineStateDescription, pipelineInfo), "Erased existing graphics pipeline state object, this is unexpected.");
@@ -1040,7 +1041,14 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
             auto pConstantBuffer = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
             if (pConstantBuffer)
             {
-              pConstantBuffer->Set(m_pBoundConstantBuffers[binding.m_uiSlot], Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+              if (m_BoundConstantBuffersRange[uiShaderStage].HasIncludeValue(binding.m_uiSlot))
+              {
+                pConstantBuffer->Set(m_pBoundConstantBuffers[binding.m_uiSlot], Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+              }
+              else
+              {
+                pConstantBuffer->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+              }
             }
             else
             {
@@ -1149,7 +1157,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
             auto pSampler = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
             if (pSampler)
             {
-              if (!m_pBoundSamplers[uiShaderStage] && m_BoundSamplersRange[uiShaderStage].HasIncludeValue(binding.m_uiSlot))
+              if (m_BoundSamplersRange[uiShaderStage].HasIncludeValue(binding.m_uiSlot))
               {
                 auto resourceView = m_pBoundSamplers[binding.m_uiSlot];
 
@@ -1162,7 +1170,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
             }
             else
             {
-              xiiLog::Error("UAV Texture view pointer for '{}' returned null.", binding.m_sName);
+              xiiLog::Error("Sampler pointer for '{}' returned null.", binding.m_sName);
             }
           }
           break;
@@ -1180,13 +1188,20 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
             XII_DEFAULT_CASE_NOT_IMPLEMENTED;
         }
       }
+
+      // These are deactivated for now, perhaps they will need to be reset every time a flush is called.
+      // m_BoundConstantBuffersRange[uiShaderStage].Reset();
+      // m_BoundShaderResourceViewsRange[uiShaderStage].Reset();
+      // m_BoundSamplersRange[uiShaderStage].Reset();
     }
+    // m_BoundVertexBuffersRange.Reset();
+    // m_BoundUnorderedAccessViewsRange.Reset();
 
     m_bDescriptorsModified = false;
   }
 
   m_pContext->SetPipelineState(m_pCurrentPipelineState);
-  m_pContext->CommitShaderResources(m_pCurrentShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  m_pContext->CommitShaderResources(m_pCurrentShaderResourceBinding, m_bRenderPassActive ? Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY : Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 void xiiGALCommandEncoderD3D12::FlushPipelineStateCache()
@@ -1212,42 +1227,42 @@ void xiiGALCommandEncoderD3D12::BeginRenderPass()
 {
   XII_ASSERT_DEV(!m_bIsComputeRequested, "Cannot begin render pass while compute pipeline is active!");
 
-  xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> clearValues;
-  {
-    const bool     bHasDepthAttachment    = !m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
-    const xiiUInt8 uiColorAttachmentCount = m_RenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
-
-    if (bHasDepthAttachment)
-    {
-      const xiiGALTextureViewD3D12* pRenderTargetViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(m_GALDeviceD3D12.GetTextureView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
-
-      xiiGALTextureHandle       hTexture      = pRenderTargetViewD3D12->GetDescription().m_hTexture;
-      const xiiGALTextureD3D12* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(m_GALDeviceD3D12.GetTexture(hTexture));
-
-      const xiiGALTextureCreationDescription& textureDescription = pTextureD3D12->GetDescription();
-      const auto&                             formatInfo         = m_GALDeviceD3D12.GetFormatLookupTable().GetFormatInfo(textureDescription.m_Format);
-
-      Diligent::OptimizedClearValue& depthClear = clearValues.ExpandAndGetRef();
-      depthClear.SetDepthStencil(formatInfo.m_eDepthStencilType, 1.0f, 0);
-    }
-
-    for (xiiUInt8 i = 0; i < uiColorAttachmentCount; ++i)
-    {
-      const xiiGALTextureViewD3D12* pRenderTargetViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(m_GALDeviceD3D12.GetTextureView(m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(i)));
-
-      xiiGALTextureHandle       hTexture      = pRenderTargetViewD3D12->GetDescription().m_hTexture;
-      const xiiGALTextureD3D12* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(m_GALDeviceD3D12.GetTexture(hTexture));
-
-      const xiiGALTextureCreationDescription& textureDescription = pTextureD3D12->GetDescription();
-      const auto&                             formatInfo         = m_GALDeviceD3D12.GetFormatLookupTable().GetFormatInfo(textureDescription.m_Format);
-
-      Diligent::OptimizedClearValue& colorClear = clearValues.ExpandAndGetRef();
-      colorClear.SetColor(formatInfo.m_eRenderTarget, m_RenderingSetup.m_ClearColor.GetData());
-    }
-  }
-
   if (!m_bRenderPassActive)
   {
+    xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> clearValues;
+    {
+      const bool     bHasDepthAttachment    = !m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+      const xiiUInt8 uiColorAttachmentCount = m_RenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+
+      if (bHasDepthAttachment)
+      {
+        const xiiGALTextureViewD3D12* pRenderTargetViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(m_GALDeviceD3D12.GetTextureView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
+
+        xiiGALTextureHandle       hTexture      = pRenderTargetViewD3D12->GetDescription().m_hTexture;
+        const xiiGALTextureD3D12* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(m_GALDeviceD3D12.GetTexture(hTexture));
+
+        const xiiGALTextureCreationDescription& textureDescription = pTextureD3D12->GetDescription();
+        const auto&                             formatInfo         = m_GALDeviceD3D12.GetFormatLookupTable().GetFormatInfo(textureDescription.m_Format);
+
+        Diligent::OptimizedClearValue& depthClear = clearValues.ExpandAndGetRef();
+        depthClear.SetDepthStencil(formatInfo.m_eDepthStencilType, 1.0f, 0);
+      }
+
+      for (xiiUInt8 i = 0; i < uiColorAttachmentCount; ++i)
+      {
+        const xiiGALTextureViewD3D12* pRenderTargetViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(m_GALDeviceD3D12.GetTextureView(m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(i)));
+
+        xiiGALTextureHandle       hTexture      = pRenderTargetViewD3D12->GetDescription().m_hTexture;
+        const xiiGALTextureD3D12* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(m_GALDeviceD3D12.GetTexture(hTexture));
+
+        const xiiGALTextureCreationDescription& textureDescription = pTextureD3D12->GetDescription();
+        const auto&                             formatInfo         = m_GALDeviceD3D12.GetFormatLookupTable().GetFormatInfo(textureDescription.m_Format);
+
+        Diligent::OptimizedClearValue& colorClear = clearValues.ExpandAndGetRef();
+        colorClear.SetColor(formatInfo.m_eRenderTarget, m_RenderingSetup.m_ClearColor.GetData());
+      }
+    }
+
     Diligent::BeginRenderPassAttribs renderPassBeginDescription;
     renderPassBeginDescription.pRenderPass         = m_pRenderPass->GetRenderPass();
     renderPassBeginDescription.pFramebuffer        = m_pFramebuffer->GetFramebuffer();
