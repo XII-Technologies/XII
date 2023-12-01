@@ -77,6 +77,7 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
   ref_td.m_DescGAL.m_Size.width  = pImage->GetWidth(uiHighestMipLevel);
   ref_td.m_DescGAL.m_Size.height = pImage->GetHeight(uiHighestMipLevel);
   ref_td.m_DescGAL.m_uiMipLevels = uiNumMipLevels;
+  ref_td.m_DescGAL.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
   xiiUInt32 uiDepth = pImage->GetDepth(uiHighestMipLevel);
   if (uiDepth > 1)

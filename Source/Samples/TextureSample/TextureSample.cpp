@@ -103,7 +103,7 @@ public:
     xiiInputManager::Update(xiiClock::GetGlobalClock()->GetTimeDiff());
 
     // Engage mouse look
-    if (xiiInputManager::GetInputActionState("Main", "Look") == xiiKeyState::Down)
+    if (xiiInputManager::GetInputActionState("Main", "MouseDown") == xiiKeyState::Down)
     {
       m_pWindow->GetInputDevice()->SetShowMouseCursor(false);
       m_pWindow->GetInputDevice()->SetClipMouseCursor(xiiMouseCursorClipMode::ClipToPosition);
