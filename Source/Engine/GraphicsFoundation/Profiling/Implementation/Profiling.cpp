@@ -145,12 +145,12 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsFoundation, GPUProfilingSystem)
 
   ON_HIGHLEVELSYSTEMS_STARTUP
   {
-    GPUProfilingSystem::OnEngineStartup();
+    // GPUProfilingSystem::OnEngineStartup();
   }
 
   ON_HIGHLEVELSYSTEMS_SHUTDOWN
   {
-    GPUProfilingSystem::OnEngineShutdown();
+    // GPUProfilingSystem::OnEngineShutdown();
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
@@ -176,17 +176,23 @@ GPUTimingScope* xiiProfilingScopeAndMarker::Start(xiiGALCommandEncoder* pCommand
 {
   pCommandEncoder->PushMarker(sName);
 
+#  if 0
   auto& timingScope = GPUProfilingSystem::AllocateScope();
 
   pCommandEncoder->EndQuery(timingScope.m_BeginTimestamp);
   xiiStringUtils::Copy(timingScope.m_szName, XII_ARRAY_SIZE(timingScope.m_szName), sName.GetStartPointer(), sName.GetEndPointer());
 
   return &timingScope;
+#  else
+  return nullptr;
+#  endif
 }
 
 void xiiProfilingScopeAndMarker::Stop(xiiGALCommandEncoder* pCommandEncoder, GPUTimingScope*& ref_pTimingScope)
 {
   pCommandEncoder->PopMarker();
+
+#  if 0
   pCommandEncoder->EndQuery(ref_pTimingScope->m_EndTimestamp);
 
   auto durationQuery = std::move(GPUProfilingSystem::s_TimingScopes.PeekBack());
@@ -195,6 +201,7 @@ void xiiProfilingScopeAndMarker::Stop(xiiGALCommandEncoder* pCommandEncoder, GPU
   GPUProfilingSystem::s_PendingScopes.Insert(std::move(durationQuery), 0);
 
   ref_pTimingScope = nullptr;
+#  endif
 }
 
 #endif
