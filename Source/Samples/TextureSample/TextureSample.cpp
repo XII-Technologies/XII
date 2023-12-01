@@ -317,7 +317,7 @@ public:
       xiiWindowCreationDesc WindowCreationDesc;
       WindowCreationDesc.m_Resolution.width  = g_uiWindowWidth;
       WindowCreationDesc.m_Resolution.height = g_uiWindowHeight;
-      WindowCreationDesc.m_Title             = "Shader Explorer";
+      WindowCreationDesc.m_Title             = "Texture Sample";
       WindowCreationDesc.m_bShowMouseCursor  = true;
       WindowCreationDesc.m_bClipMouseCursor  = false;
       WindowCreationDesc.m_WindowMode        = xiiWindowMode::WindowResizable;

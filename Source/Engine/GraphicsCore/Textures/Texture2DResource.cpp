@@ -105,10 +105,6 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
 
   ref_initData.Clear();
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
-  const auto& formatProperties = pDevice->GetTextureFormatProperties(format);
-
   for (xiiUInt32 array_index = 0; array_index < pImage->GetNumArrayIndices(); ++array_index)
   {
     for (xiiUInt32 face = 0; face < pImage->GetNumFaces(); ++face)
@@ -121,7 +117,7 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
 
         if (xiiImageFormat::GetType(pImage->GetImageFormat()) == xiiImageFormatType::BLOCK_COMPRESSED)
         {
-          const xiiUInt32 uiMemPitchFactor = formatProperties.m_uiComponentSize * 4;
+          const xiiUInt32 uiMemPitchFactor = xiiGALTextureFormat::GetBitsPerElement(format) * 4 / 8;
 
           id.m_uiStride = xiiMath::RoundUp(pImage->GetWidth(mip), 4) * uiMemPitchFactor;
         }

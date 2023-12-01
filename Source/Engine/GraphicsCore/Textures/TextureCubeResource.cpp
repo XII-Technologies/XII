@@ -130,10 +130,6 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
 
   xiiHybridArray<xiiGALTextureSubResourceData, 32> InitData;
 
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
-  const auto& formatProperties = pDevice->GetTextureFormatProperties(m_Format);
-
   for (xiiUInt32 array_index = 0; array_index < pImage->GetNumArrayIndices(); ++array_index)
   {
     for (xiiUInt32 face = 0; face < pImage->GetNumFaces(); ++face)
@@ -148,7 +144,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
 
         if (xiiImageFormat::GetType(pImage->GetImageFormat()) == xiiImageFormatType::BLOCK_COMPRESSED)
         {
-          const xiiUInt32 uiMemPitchFactor = formatProperties.m_uiComponentSize * 4;
+          const xiiUInt32 uiMemPitchFactor = xiiGALTextureFormat::GetBitsPerElement(m_Format) * 4 / 8;
 
           id.m_uiStride = xiiMath::Max<xiiUInt32>(4, pImage->GetWidth(mip)) * uiMemPitchFactor;
         }

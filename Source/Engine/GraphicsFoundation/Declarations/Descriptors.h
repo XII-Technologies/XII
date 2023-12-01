@@ -368,6 +368,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormatDescription : public xiiHas
   bool                                      m_bIsTypeless      = false;                                       ///< Indicates whether the format is a typeless format.
   xiiUInt8                                  m_uiBlockWidth     = 0U;                                          ///< For block-compressed formats, the compression block width.
   xiiUInt8                                  m_uiBlockHeight    = 0U;                                          ///< For block-compressed formats, the compression block height.
+
+  /// \brief For non-compressed formats, returns the texel size. For block-compressed formats, returns the block size.
+  xiiUInt32 GetElementSize() const;
 };
 
 #include <GraphicsFoundation/Declarations/Implementation/Descriptors_inl.h>
