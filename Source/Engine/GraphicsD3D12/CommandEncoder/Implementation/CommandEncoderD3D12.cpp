@@ -1149,8 +1149,10 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
             auto pSampler = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
             if (pSampler)
             {
-              if (m_BoundUnorderedAccessViewsRange.HasIncludeValue(binding.m_uiSlot))
+              if (!m_pBoundSamplers[uiShaderStage] && m_BoundSamplersRange[uiShaderStage].HasIncludeValue(binding.m_uiSlot))
               {
+                auto resourceView = m_pBoundSamplers[binding.m_uiSlot];
+
                 pSampler->Set(m_pBoundSamplers[uiShaderStage][binding.m_uiSlot], Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
               }
               else
