@@ -72,9 +72,10 @@ void xiiInstanceData::CreateBuffer(xiiUInt32 uiSize)
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALBufferCreationDescription desc;
-  desc.m_BindFlags = xiiGALBindFlags::ShaderResource;
-  desc.m_Mode      = xiiGALBufferMode::Structured;
-  desc.m_uiSize    = sizeof(xiiPerInstanceData) * uiSize;
+  desc.m_Mode                = xiiGALBufferMode::Structured;
+  desc.m_uiElementByteStride = sizeof(xiiPerInstanceData);
+  desc.m_uiSize              = desc.m_uiElementByteStride * uiSize;
+  desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
 
   m_hInstanceDataBuffer = pDevice->CreateBuffer(desc);
 }

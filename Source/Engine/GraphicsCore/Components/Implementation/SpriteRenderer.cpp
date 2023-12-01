@@ -70,7 +70,8 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
 xiiGALBufferHandle xiiSpriteRenderer::CreateSpriteDataBuffer(xiiUInt32 uiBufferSize) const
 {
   xiiGALBufferCreationDescription desc;
-  desc.m_uiSize = sizeof(xiiPerSpriteData) * uiBufferSize;
+  desc.m_uiElementByteStride = sizeof(xiiPerSpriteData);
+  desc.m_uiSize              = desc.m_uiElementByteStride * uiBufferSize;
   desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
   desc.m_Mode = xiiGALBufferMode::Structured;
 
@@ -105,7 +106,5 @@ void xiiSpriteRenderer::FillSpriteData(const xiiRenderDataBatch& batch) const
     spriteData.Reserved           = 0;
   }
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Implementation_SpriteRenderer);

@@ -402,7 +402,8 @@ void xiiLSAOPass::SetupLineSweepData(const xiiVec3I32& imageResolution)
     // DX11 allows only float and int for writing RWBuffer, so we need to do manual packing.
     {
       xiiGALBufferCreationDescription bufferDesc;
-      bufferDesc.m_uiSize = imageResolution.z * 2 * totalNumberOfSamples;
+      bufferDesc.m_uiElementByteStride = 4;
+      bufferDesc.m_uiSize              = imageResolution.z * 2 * totalNumberOfSamples;
       bufferDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
       bufferDesc.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Write);
 
@@ -427,9 +428,10 @@ void xiiLSAOPass::SetupLineSweepData(const xiiVec3I32& imageResolution)
     // Structured buffer per line.
     {
       xiiGALBufferCreationDescription bufferDesc;
-      bufferDesc.m_uiSize        = sizeof(LineInstruction) * m_uiNumSweepLines;
-      bufferDesc.m_Mode          = xiiGALBufferMode::Structured;
-      bufferDesc.m_ResourceUsage = xiiGALResourceUsage::Immutable;
+      bufferDesc.m_uiElementByteStride = sizeof(LineInstruction);
+      bufferDesc.m_uiSize              = bufferDesc.m_uiElementByteStride * m_uiNumSweepLines;
+      bufferDesc.m_Mode                = xiiGALBufferMode::Structured;
+      bufferDesc.m_ResourceUsage       = xiiGALResourceUsage::Immutable;
       bufferDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
       auto pInitialData = xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(lineInstructions.GetData()), lineInstructions.GetCount() * sizeof(LineInstruction));

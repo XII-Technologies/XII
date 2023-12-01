@@ -238,8 +238,9 @@ namespace
     if (s_hDataBuffer[bufferType].IsInvalidated())
     {
       xiiGALBufferCreationDescription desc;
-      desc.m_uiSize = DEBUG_BUFFER_SIZE;
-      desc.m_Mode   = xiiGALBufferMode::Structured;
+      desc.m_uiElementByteStride = uiStructSize;
+      desc.m_uiSize              = DEBUG_BUFFER_SIZE;
+      desc.m_Mode                = xiiGALBufferMode::Structured;
       desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
       s_hDataBuffer[bufferType] = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
