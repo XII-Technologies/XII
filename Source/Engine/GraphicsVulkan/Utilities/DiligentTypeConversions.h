@@ -10,6 +10,7 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
+#include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
@@ -42,6 +43,7 @@ public:
 
   static Diligent::RESOURCE_DIMENSION GetResourceDimension(xiiEnum<xiiGALResourceDimension> e);
   static Diligent::TEXTURE_FORMAT     GetTextureFormat(xiiEnum<xiiGALTextureFormat> e);
+  static xiiEnum<xiiGALTextureFormat> GetGALTextureFormat(Diligent::TEXTURE_FORMAT e);
   static Diligent::MISC_TEXTURE_FLAGS GetMiscTextureFlags(xiiBitflags<xiiGALMiscTextureFlags> e);
 
   static Diligent::FENCE_TYPE GetFenceType(xiiEnum<xiiGALFenceType> e);
@@ -66,6 +68,35 @@ public:
   static Diligent::RAYTRACING_BUILD_AS_FLAGS GetRayTracingBuildASFlags(xiiBitflags<xiiGALRayTracingBuildASFlags> e);
   static Diligent::HIT_GROUP_BINDING_MODE    GetHitGroupBindingMode(xiiEnum<xiiGALHitGroupBindingMode> e);
   static xiiEnum<xiiGALHitGroupBindingMode>  GetGALHitGroupBindingMode(Diligent::HIT_GROUP_BINDING_MODE e);
+
+  static Diligent::ADAPTER_TYPE           GetAdapterType(xiiEnum<xiiGALDeviceAdapterType> e);
+  static xiiEnum<xiiGALDeviceAdapterType> GetGALAdapterType(Diligent::ADAPTER_TYPE e);
+  static Diligent::DEVICE_FEATURE_STATE   GetDeviceFeatureState(xiiEnum<xiiGALDeviceFeatureState> e);
+  static Diligent::VALIDATION_LEVEL       GetDeviceValidationLevel(xiiEnum<xiiGALDeviceValidationLevel> e);
+
+  static Diligent::SHADER_TYPE GetShaderTypeFlags(xiiBitflags<xiiGALShaderStage> e);
+
+  static Diligent::INPUT_ELEMENT_FREQUENCY GetElementFrequency(xiiEnum<xiiGALInputElementFrequency> e);
+
+  static Diligent::VALUE_TYPE GetDiligentValueType(Diligent::TEXTURE_FORMAT e);
+  static bool                 GetFormatNormalized(Diligent::TEXTURE_FORMAT e);
+
+  static Diligent::SCALING_MODE      GetScalingMode(xiiEnum<xiiGALScalingMode> e);
+  static Diligent::SCANLINE_ORDER    GetScanLineOrder(xiiEnum<xiiGALScanLineOrder> e);
+  static Diligent::SURFACE_TRANSFORM GetSurfaceTransform(xiiEnum<xiiGALSurfaceTransform> e);
+
+  static Diligent::SWAP_CHAIN_USAGE_FLAGS GetSwapChainUsageFlags(xiiBitflags<xiiGALSwapChainUsageFlags> e);
+
+  static xiiBitflags<xiiGALBindFlags>        GetGALBindFlags(Diligent::BIND_FLAGS e);
+  static xiiEnum<xiiGALResourceUsage>        GetGALUsage(Diligent::USAGE e);
+  static xiiBitflags<xiiGALCPUAccessFlag>    GetGALCPUAccessFlags(Diligent::CPU_ACCESS_FLAGS e);
+  static xiiBitflags<xiiGALMiscTextureFlags> GetGALMiscTextureFlags(Diligent::MISC_TEXTURE_FLAGS e);
+
+  static Diligent::MAP_FLAGS GetMapFlags(xiiBitflags<xiiGALMapFlags> e);
+
+  static Diligent::PRIMITIVE_TOPOLOGY GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e);
+
+  static xiiEnum<xiiGALDeviceFeatureState> GetGALDeviceFeatureState(Diligent::DEVICE_FEATURE_STATE e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/DiligentTypeConversions_inl.h>

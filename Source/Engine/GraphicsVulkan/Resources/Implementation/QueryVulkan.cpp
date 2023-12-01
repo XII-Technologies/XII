@@ -25,7 +25,7 @@ xiiResult xiiGALQueryVulkan::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALQueryVulkan::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_REF_RELEASE(m_pQuery);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pQuery);
 
   return XII_SUCCESS;
 }

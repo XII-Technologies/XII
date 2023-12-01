@@ -7,7 +7,7 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALFramebufferVulkan final : public xiiGALFramebuffer
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::IFramebuffer* GetFramebuffer() const;
+  Diligent::IFramebuffer* GetFramebuffer() const;
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -22,7 +22,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IFramebuffer> m_pFramebuffer;
+  Diligent::IFramebuffer* m_pFramebuffer = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/FramebufferVulkan_inl.h>

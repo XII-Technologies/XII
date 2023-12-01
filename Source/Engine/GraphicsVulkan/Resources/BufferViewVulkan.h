@@ -7,7 +7,7 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALBufferViewVulkan final : public xiiGALBufferView
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::IBufferView* GetBufferView() const;
+  Diligent::IBufferView* GetBufferView() const;
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -22,7 +22,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IBufferView> m_pBufferView;
+  Diligent::IBufferView* m_pBufferView = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/BufferViewVulkan_inl.h>

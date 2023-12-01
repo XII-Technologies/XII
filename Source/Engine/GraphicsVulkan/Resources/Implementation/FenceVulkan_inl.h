@@ -14,7 +14,7 @@ XII_ALWAYS_INLINE void xiiGALFenceVulkan::Wait(xiiUInt64 uiValue)
   m_pFence->Wait(uiValue);
 }
 
-XII_ALWAYS_INLINE const Diligent::IFence* xiiGALFenceVulkan::GetFence() const
+XII_ALWAYS_INLINE Diligent::IFence* xiiGALFenceVulkan::GetFence() const
 {
   return m_pFence;
 }

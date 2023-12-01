@@ -188,7 +188,12 @@ namespace Diligent
   class DurationQueryHelper;
 } // namespace Diligent
 
+class xiiGALCommandEncoderVulkan;
+class xiiGALCommandListVulkan;
+class xiiGALCommandQueueVulkan;
 class xiiGALDeviceVulkan;
+class xiiGALPassVulkan;
+class xiiGALSwapChainVulkan;
 class xiiGALBottomLevelASVulkan;
 class xiiGALBufferVulkan;
 class xiiGALBufferViewVulkan;
@@ -200,6 +205,8 @@ class xiiGALSamplerVulkan;
 class xiiGALTextureVulkan;
 class xiiGALTextureViewVulkan;
 class xiiGALTopLevelASVulkan;
+class xiiGALInputLayoutVulkan;
+class xiiGALShaderVulkan;
 class xiiGALBlendStateVulkan;
 class xiiGALDepthStencilStateVulkan;
 class xiiGALRasterizerStateVulkan;

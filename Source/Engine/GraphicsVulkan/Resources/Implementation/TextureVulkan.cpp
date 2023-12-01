@@ -14,6 +14,13 @@ xiiResult xiiGALTextureVulkan::InitPlatform(xiiGALDevice* pDevice, const xiiGALT
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
 
+  if (m_Description.m_pExisitingNativeObject != nullptr)
+  {
+    m_pTexture = static_cast<Diligent::ITexture*>(m_Description.m_pExisitingNativeObject);
+
+    return XII_SUCCESS;
+  }
+
   Diligent::TextureDesc textureDescription;
   textureDescription.Name                 = m_Description.m_sName.GetStartPointer();
   textureDescription.Type                 = xiiDiligentTypeConversions::GetResourceDimension(m_Description.m_Type);
@@ -68,7 +75,11 @@ xiiResult xiiGALTextureVulkan::InitPlatform(xiiGALDevice* pDevice, const xiiGALT
 
 xiiResult xiiGALTextureVulkan::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_REF_RELEASE(m_pTexture);
+  // Prevent releasing native objects.
+  if (m_Description.m_pExisitingNativeObject == nullptr)
+  {
+    XII_GAL_DILIGENT_PTR_RELEASE(m_pTexture);
+  }
 
   return XII_SUCCESS;
 }

@@ -5,7 +5,12 @@ XII_STATICLINK_LIBRARY(GraphicsVulkan)
   if (bReturn)
     return;
 
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_CommandEncoder_Implementation_CommandEncoderVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_CommandEncoder_Implementation_CommandListVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_CommandEncoder_Implementation_CommandQueueVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_Device_Implementation_DeviceVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Device_Implementation_PassVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Device_Implementation_SwapChainVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_BottomLevelASVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_BufferVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_BufferViewVulkan);
@@ -17,6 +22,8 @@ XII_STATICLINK_LIBRARY(GraphicsVulkan)
   XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_TextureVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_TextureViewVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_Resources_Implementation_TopLevelASVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Shader_Implementation_InputLayoutVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_Shader_Implementation_ShaderVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_BlendStateVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_DepthStencilStateVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_PipelineStateVulkan);

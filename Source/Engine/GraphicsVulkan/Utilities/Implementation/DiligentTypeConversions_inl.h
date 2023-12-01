@@ -349,7 +349,7 @@ XII_ALWAYS_INLINE Diligent::RESOURCE_STATE xiiDiligentTypeConversions::GetResour
   if (e.IsSet(xiiGALResourceStateFlags::ShadingRate))
     resourceState |= Diligent::RESOURCE_STATE_SHADING_RATE;
 
-  return Diligent::RESOURCE_STATE_UNKNOWN;
+  return resourceState;
 }
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiDiligentTypeConversions::GetResourceState(Diligent::RESOURCE_STATE e)
@@ -645,6 +645,216 @@ XII_ALWAYS_INLINE Diligent::TEXTURE_FORMAT xiiDiligentTypeConversions::GetTextur
   return Diligent::TEX_FORMAT_UNKNOWN;
 }
 
+XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiDiligentTypeConversions::GetGALTextureFormat(Diligent::TEXTURE_FORMAT e)
+{
+  switch (e)
+  {
+    case Diligent::TEX_FORMAT_UNKNOWN:
+      return xiiGALTextureFormat::Unknown;
+    case Diligent::TEX_FORMAT_RGBA32_TYPELESS:
+      return xiiGALTextureFormat::RGBA32Typeless;
+    case Diligent::TEX_FORMAT_RGBA32_FLOAT:
+      return xiiGALTextureFormat::RGBA32Float;
+    case Diligent::TEX_FORMAT_RGBA32_UINT:
+      return xiiGALTextureFormat::RGBA32UInt;
+    case Diligent::TEX_FORMAT_RGBA32_SINT:
+      return xiiGALTextureFormat::RGBA32SInt;
+    case Diligent::TEX_FORMAT_RGB32_TYPELESS:
+      return xiiGALTextureFormat::RGB32Typeless;
+    case Diligent::TEX_FORMAT_RGB32_FLOAT:
+      return xiiGALTextureFormat::RGB32Float;
+    case Diligent::TEX_FORMAT_RGB32_UINT:
+      return xiiGALTextureFormat::RGB32UInt;
+    case Diligent::TEX_FORMAT_RGB32_SINT:
+      return xiiGALTextureFormat::RGB32SInt;
+    case Diligent::TEX_FORMAT_RGBA16_TYPELESS:
+      return xiiGALTextureFormat::RGBA16Typeless;
+    case Diligent::TEX_FORMAT_RGBA16_FLOAT:
+      return xiiGALTextureFormat::RGBA16Float;
+    case Diligent::TEX_FORMAT_RGBA16_UNORM:
+      return xiiGALTextureFormat::RGBA16UNormalized;
+    case Diligent::TEX_FORMAT_RGBA16_UINT:
+      return xiiGALTextureFormat::RGBA16UInt;
+    case Diligent::TEX_FORMAT_RGBA16_SNORM:
+      return xiiGALTextureFormat::RGBA16SNormalized;
+    case Diligent::TEX_FORMAT_RGBA16_SINT:
+      return xiiGALTextureFormat::RGBA16SInt;
+    case Diligent::TEX_FORMAT_RG32_TYPELESS:
+      return xiiGALTextureFormat::RG32Typeless;
+    case Diligent::TEX_FORMAT_RG32_FLOAT:
+      return xiiGALTextureFormat::RG32Float;
+    case Diligent::TEX_FORMAT_RG32_UINT:
+      return xiiGALTextureFormat::RG32UInt;
+    case Diligent::TEX_FORMAT_RG32_SINT:
+      return xiiGALTextureFormat::RG32SInt;
+    case Diligent::TEX_FORMAT_R32G8X24_TYPELESS:
+      return xiiGALTextureFormat::R32G8X24Typeless;
+    case Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT:
+      return xiiGALTextureFormat::D32FloatS8X24UInt;
+    case Diligent::TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS:
+      return xiiGALTextureFormat::R32FloatX8X24Typeless;
+    case Diligent::TEX_FORMAT_X32_TYPELESS_G8X24_UINT:
+      return xiiGALTextureFormat::X32TypelessG8X24UInt;
+    case Diligent::TEX_FORMAT_RGB10A2_TYPELESS:
+      return xiiGALTextureFormat::RGB10A2Typeless;
+    case Diligent::TEX_FORMAT_RGB10A2_UNORM:
+      return xiiGALTextureFormat::RGB10A2UNormalized;
+    case Diligent::TEX_FORMAT_RGB10A2_UINT:
+      return xiiGALTextureFormat::RGB10A2UInt;
+    case Diligent::TEX_FORMAT_R11G11B10_FLOAT:
+      return xiiGALTextureFormat::RG11B10Float;
+    case Diligent::TEX_FORMAT_RGBA8_TYPELESS:
+      return xiiGALTextureFormat::RGBA8Typeless;
+    case Diligent::TEX_FORMAT_RGBA8_UNORM:
+      return xiiGALTextureFormat::RGBA8UNormalized;
+    case Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB:
+      return xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+    case Diligent::TEX_FORMAT_RGBA8_UINT:
+      return xiiGALTextureFormat::RGBA8UInt;
+    case Diligent::TEX_FORMAT_RGBA8_SNORM:
+      return xiiGALTextureFormat::RGBA8SNormalized;
+    case Diligent::TEX_FORMAT_RGBA8_SINT:
+      return xiiGALTextureFormat::RGBA8SInt;
+    case Diligent::TEX_FORMAT_RG16_TYPELESS:
+      return xiiGALTextureFormat::RG16Typeless;
+    case Diligent::TEX_FORMAT_RG16_FLOAT:
+      return xiiGALTextureFormat::RG16Float;
+    case Diligent::TEX_FORMAT_RG16_UNORM:
+      return xiiGALTextureFormat::RG16UNormalized;
+    case Diligent::TEX_FORMAT_RG16_UINT:
+      return xiiGALTextureFormat::RG16UInt;
+    case Diligent::TEX_FORMAT_RG16_SNORM:
+      return xiiGALTextureFormat::RG16SNormalized;
+    case Diligent::TEX_FORMAT_RG16_SINT:
+      return xiiGALTextureFormat::RG16SInt;
+    case Diligent::TEX_FORMAT_R32_TYPELESS:
+      return xiiGALTextureFormat::R32Typeless;
+    case Diligent::TEX_FORMAT_D32_FLOAT:
+      return xiiGALTextureFormat::D32Float;
+    case Diligent::TEX_FORMAT_R32_FLOAT:
+      return xiiGALTextureFormat::R32Float;
+    case Diligent::TEX_FORMAT_R32_UINT:
+      return xiiGALTextureFormat::R32UInt;
+    case Diligent::TEX_FORMAT_R32_SINT:
+      return xiiGALTextureFormat::R32SInt;
+    case Diligent::TEX_FORMAT_R24G8_TYPELESS:
+      return xiiGALTextureFormat::R24G8Typeless;
+    case Diligent::TEX_FORMAT_D24_UNORM_S8_UINT:
+      return xiiGALTextureFormat::D24UNormalizedS8UInt;
+    case Diligent::TEX_FORMAT_R24_UNORM_X8_TYPELESS:
+      return xiiGALTextureFormat::R24UNormalizedX8Typeless;
+    case Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT:
+      return xiiGALTextureFormat::X24TypelessG8UInt;
+    case Diligent::TEX_FORMAT_RG8_TYPELESS:
+      return xiiGALTextureFormat::RG8Typeless;
+    case Diligent::TEX_FORMAT_RG8_UNORM:
+      return xiiGALTextureFormat::RG8UNormalized;
+    case Diligent::TEX_FORMAT_RG8_UINT:
+      return xiiGALTextureFormat::RG8UInt;
+    case Diligent::TEX_FORMAT_RG8_SNORM:
+      return xiiGALTextureFormat::RG8SNormalized;
+    case Diligent::TEX_FORMAT_RG8_SINT:
+      return xiiGALTextureFormat::RG8SInt;
+    case Diligent::TEX_FORMAT_R16_TYPELESS:
+      return xiiGALTextureFormat::R16Typeless;
+    case Diligent::TEX_FORMAT_R16_FLOAT:
+      return xiiGALTextureFormat::R16Float;
+    case Diligent::TEX_FORMAT_D16_UNORM:
+      return xiiGALTextureFormat::D16UNormalized;
+    case Diligent::TEX_FORMAT_R16_UNORM:
+      return xiiGALTextureFormat::R16UNormalized;
+    case Diligent::TEX_FORMAT_R16_UINT:
+      return xiiGALTextureFormat::R16UInt;
+    case Diligent::TEX_FORMAT_R16_SNORM:
+      return xiiGALTextureFormat::R16SNormalized;
+    case Diligent::TEX_FORMAT_R16_SINT:
+      return xiiGALTextureFormat::R16SInt;
+    case Diligent::TEX_FORMAT_R8_TYPELESS:
+      return xiiGALTextureFormat::R8Typeless;
+    case Diligent::TEX_FORMAT_R8_UNORM:
+      return xiiGALTextureFormat::R8UNormalized;
+    case Diligent::TEX_FORMAT_R8_UINT:
+      return xiiGALTextureFormat::R8UInt;
+    case Diligent::TEX_FORMAT_R8_SNORM:
+      return xiiGALTextureFormat::R8SNormalized;
+    case Diligent::TEX_FORMAT_R8_SINT:
+      return xiiGALTextureFormat::R8SInt;
+    case Diligent::TEX_FORMAT_A8_UNORM:
+      return xiiGALTextureFormat::A8UNormalized;
+    case Diligent::TEX_FORMAT_R1_UNORM:
+      return xiiGALTextureFormat::R1UNormalized;
+    case Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP:
+      return xiiGALTextureFormat::RGB9E5SharedExponent;
+    case Diligent::TEX_FORMAT_RG8_B8G8_UNORM:
+      return xiiGALTextureFormat::RG8BG8UNormalized;
+    case Diligent::TEX_FORMAT_G8R8_G8B8_UNORM:
+      return xiiGALTextureFormat::GR8GB8UNormalized;
+    case Diligent::TEX_FORMAT_BC1_TYPELESS:
+      return xiiGALTextureFormat::BC1Typeless;
+    case Diligent::TEX_FORMAT_BC1_UNORM:
+      return xiiGALTextureFormat::BC1UNormalized;
+    case Diligent::TEX_FORMAT_BC1_UNORM_SRGB:
+      return xiiGALTextureFormat::BC1UNormalizedSRGB;
+    case Diligent::TEX_FORMAT_BC2_TYPELESS:
+      return xiiGALTextureFormat::BC2Typeless;
+    case Diligent::TEX_FORMAT_BC2_UNORM:
+      return xiiGALTextureFormat::BC2UNormalized;
+    case Diligent::TEX_FORMAT_BC2_UNORM_SRGB:
+      return xiiGALTextureFormat::BC2UNormalizedSRGB;
+    case Diligent::TEX_FORMAT_BC3_TYPELESS:
+      return xiiGALTextureFormat::BC3Typeless;
+    case Diligent::TEX_FORMAT_BC3_UNORM:
+      return xiiGALTextureFormat::BC3UNormalized;
+    case Diligent::TEX_FORMAT_BC3_UNORM_SRGB:
+      return xiiGALTextureFormat::BC3UNormalizedSRGB;
+    case Diligent::TEX_FORMAT_BC4_TYPELESS:
+      return xiiGALTextureFormat::BC4Typeless;
+    case Diligent::TEX_FORMAT_BC4_UNORM:
+      return xiiGALTextureFormat::BC4UNormalized;
+    case Diligent::TEX_FORMAT_BC4_SNORM:
+      return xiiGALTextureFormat::BC4SNormalized;
+    case Diligent::TEX_FORMAT_BC5_TYPELESS:
+      return xiiGALTextureFormat::BC5Typeless;
+    case Diligent::TEX_FORMAT_BC5_UNORM:
+      return xiiGALTextureFormat::BC5UNormalized;
+    case Diligent::TEX_FORMAT_BC5_SNORM:
+      return xiiGALTextureFormat::BC5SNormalized;
+    case Diligent::TEX_FORMAT_B5G6R5_UNORM:
+      return xiiGALTextureFormat::B5G6R5UNormalized;
+    case Diligent::TEX_FORMAT_B5G5R5A1_UNORM:
+      return xiiGALTextureFormat::B5G5R5A1UNormalized;
+    case Diligent::TEX_FORMAT_BGRA8_UNORM:
+      return xiiGALTextureFormat::BGRA8UNormalized;
+    case Diligent::TEX_FORMAT_BGRX8_UNORM:
+      return xiiGALTextureFormat::BGRX8UNormalized;
+    case Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
+      return xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized;
+    case Diligent::TEX_FORMAT_BGRA8_TYPELESS:
+      return xiiGALTextureFormat::BGRA8Typeless;
+    case Diligent::TEX_FORMAT_BGRA8_UNORM_SRGB:
+      return xiiGALTextureFormat::BGRA8UNormalizedSRGB;
+    case Diligent::TEX_FORMAT_BGRX8_TYPELESS:
+      return xiiGALTextureFormat::BGRX8Typeless;
+    case Diligent::TEX_FORMAT_BGRX8_UNORM_SRGB:
+      return xiiGALTextureFormat::BGRX8UNormalizedSRGB;
+    case Diligent::TEX_FORMAT_BC6H_TYPELESS:
+      return xiiGALTextureFormat::BC6HTypeless;
+    case Diligent::TEX_FORMAT_BC6H_UF16:
+      return xiiGALTextureFormat::BC6HUF16;
+    case Diligent::TEX_FORMAT_BC6H_SF16:
+      return xiiGALTextureFormat::BC6HSF16;
+    case Diligent::TEX_FORMAT_BC7_TYPELESS:
+      return xiiGALTextureFormat::BC7Typeless;
+    case Diligent::TEX_FORMAT_BC7_UNORM:
+      return xiiGALTextureFormat::BC7UNormalized;
+    case Diligent::TEX_FORMAT_BC7_UNORM_SRGB:
+      return xiiGALTextureFormat::BC7UNormalizedSRGB;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiGALTextureFormat::Unknown;
+}
+
 XII_ALWAYS_INLINE Diligent::MISC_TEXTURE_FLAGS xiiDiligentTypeConversions::GetMiscTextureFlags(xiiBitflags<xiiGALMiscTextureFlags> e)
 {
   if (e.IsNoFlagSet())
@@ -932,4 +1142,597 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALHitGroupBindingMode> xiiDiligentTypeConversions:
   }
 
   return xiiEnum<xiiGALHitGroupBindingMode>();
+}
+
+XII_ALWAYS_INLINE Diligent::ADAPTER_TYPE xiiDiligentTypeConversions::GetAdapterType(xiiEnum<xiiGALDeviceAdapterType> e)
+{
+  switch (e)
+  {
+    case xiiGALDeviceAdapterType::Unknown:
+      return Diligent::ADAPTER_TYPE_UNKNOWN;
+    case xiiGALDeviceAdapterType::Software:
+      return Diligent::ADAPTER_TYPE_SOFTWARE;
+    case xiiGALDeviceAdapterType::Integrated:
+      return Diligent::ADAPTER_TYPE_INTEGRATED;
+    case xiiGALDeviceAdapterType::Discrete:
+      return Diligent::ADAPTER_TYPE_DISCRETE;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::ADAPTER_TYPE_UNKNOWN;
+}
+
+XII_ALWAYS_INLINE xiiEnum<xiiGALDeviceAdapterType> xiiDiligentTypeConversions::GetGALAdapterType(Diligent::ADAPTER_TYPE e)
+{
+  switch (e)
+  {
+    case Diligent::ADAPTER_TYPE_UNKNOWN:
+      return xiiGALDeviceAdapterType::Unknown;
+    case Diligent::ADAPTER_TYPE_SOFTWARE:
+      return xiiGALDeviceAdapterType::Software;
+    case Diligent::ADAPTER_TYPE_INTEGRATED:
+      return xiiGALDeviceAdapterType::Integrated;
+    case Diligent::ADAPTER_TYPE_DISCRETE:
+      return xiiGALDeviceAdapterType::Discrete;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiEnum<xiiGALDeviceAdapterType>();
+}
+
+XII_ALWAYS_INLINE Diligent::DEVICE_FEATURE_STATE xiiDiligentTypeConversions::GetDeviceFeatureState(xiiEnum<xiiGALDeviceFeatureState> e)
+{
+  switch (e)
+  {
+    case xiiGALDeviceFeatureState::Disabled:
+      return Diligent::DEVICE_FEATURE_STATE_DISABLED;
+    case xiiGALDeviceFeatureState::Enabled:
+      return Diligent::DEVICE_FEATURE_STATE_ENABLED;
+    case xiiGALDeviceFeatureState::Optional:
+      return Diligent::DEVICE_FEATURE_STATE_OPTIONAL;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::DEVICE_FEATURE_STATE_DISABLED;
+}
+
+XII_ALWAYS_INLINE Diligent::VALIDATION_LEVEL xiiDiligentTypeConversions::GetDeviceValidationLevel(xiiEnum<xiiGALDeviceValidationLevel> e)
+{
+  switch (e)
+  {
+    case xiiGALDeviceValidationLevel::Disabled:
+      return Diligent::VALIDATION_LEVEL_DISABLED;
+    case xiiGALDeviceValidationLevel::Standard:
+      return Diligent::VALIDATION_LEVEL_1;
+    case xiiGALDeviceValidationLevel::All:
+      return Diligent::VALIDATION_LEVEL_2;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::VALIDATION_LEVEL_DISABLED;
+}
+
+XII_ALWAYS_INLINE Diligent::SHADER_TYPE xiiDiligentTypeConversions::GetShaderTypeFlags(xiiBitflags<xiiGALShaderStage> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::SHADER_TYPE_UNKNOWN;
+
+  Diligent::SHADER_TYPE shaderTypeFlags = {};
+
+  if (e.IsSet(xiiGALShaderStage::Vertex))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_VERTEX;
+  if (e.IsSet(xiiGALShaderStage::Pixel))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_PIXEL;
+  if (e.IsSet(xiiGALShaderStage::Geometry))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_GEOMETRY;
+  if (e.IsSet(xiiGALShaderStage::Hull))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_HULL;
+  if (e.IsSet(xiiGALShaderStage::Domain))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_DOMAIN;
+  if (e.IsSet(xiiGALShaderStage::Compute))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_COMPUTE;
+  if (e.IsSet(xiiGALShaderStage::Amplification))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_AMPLIFICATION;
+  if (e.IsSet(xiiGALShaderStage::Mesh))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_MESH;
+  if (e.IsSet(xiiGALShaderStage::RayGeneration))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_RAY_GEN;
+  if (e.IsSet(xiiGALShaderStage::RayMiss))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_RAY_MISS;
+  if (e.IsSet(xiiGALShaderStage::RayClosestHit))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_RAY_CLOSEST_HIT;
+  if (e.IsSet(xiiGALShaderStage::RayAnyHit))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_RAY_ANY_HIT;
+  if (e.IsSet(xiiGALShaderStage::RayIntersection))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_RAY_INTERSECTION;
+  if (e.IsSet(xiiGALShaderStage::Callable))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_CALLABLE;
+  if (e.IsSet(xiiGALShaderStage::Tile))
+    shaderTypeFlags |= Diligent::SHADER_TYPE_TILE;
+
+  return shaderTypeFlags;
+}
+
+XII_ALWAYS_INLINE Diligent::INPUT_ELEMENT_FREQUENCY xiiDiligentTypeConversions::GetElementFrequency(xiiEnum<xiiGALInputElementFrequency> e)
+{
+  switch (e)
+  {
+    case xiiGALInputElementFrequency::PerVertex:
+      return Diligent::INPUT_ELEMENT_FREQUENCY_PER_VERTEX;
+    case xiiGALInputElementFrequency::PerInstance:
+      return Diligent::INPUT_ELEMENT_FREQUENCY_PER_INSTANCE;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::INPUT_ELEMENT_FREQUENCY_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiDiligentTypeConversions::GetDiligentValueType(Diligent::TEXTURE_FORMAT e)
+{
+  switch (e)
+  {
+    case Diligent::TEX_FORMAT_RGBA32_FLOAT:
+    case Diligent::TEX_FORMAT_RGB32_FLOAT:
+    case Diligent::TEX_FORMAT_RG32_FLOAT:
+    case Diligent::TEX_FORMAT_D32_FLOAT:
+    case Diligent::TEX_FORMAT_R32_FLOAT:
+    case Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT:
+    case Diligent::TEX_FORMAT_R11G11B10_FLOAT:
+      return Diligent::VT_FLOAT32;
+
+    // case Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP:
+    case Diligent::TEX_FORMAT_RGBA16_FLOAT:
+    case Diligent::TEX_FORMAT_RG16_FLOAT:
+    case Diligent::TEX_FORMAT_R16_FLOAT:
+      return Diligent::VT_FLOAT16;
+
+    case Diligent::TEX_FORMAT_RGBA32_UINT:
+    case Diligent::TEX_FORMAT_RGB32_UINT:
+    case Diligent::TEX_FORMAT_RG32_UINT:
+    case Diligent::TEX_FORMAT_RGB10A2_UNORM:
+    case Diligent::TEX_FORMAT_RGB10A2_UINT:
+    case Diligent::TEX_FORMAT_R32_UINT:
+    case Diligent::TEX_FORMAT_D24_UNORM_S8_UINT:
+      // case Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
+      return Diligent::VT_UINT32;
+
+    case Diligent::TEX_FORMAT_RGBA16_UNORM:
+    case Diligent::TEX_FORMAT_RGBA16_UINT:
+    case Diligent::TEX_FORMAT_RG16_UNORM:
+    case Diligent::TEX_FORMAT_RG16_UINT:
+    case Diligent::TEX_FORMAT_D16_UNORM:
+    case Diligent::TEX_FORMAT_R16_UNORM:
+    case Diligent::TEX_FORMAT_R16_UINT:
+    case Diligent::TEX_FORMAT_BC2_UNORM:
+    case Diligent::TEX_FORMAT_BC2_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_BC3_UNORM:
+    case Diligent::TEX_FORMAT_BC3_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_BC5_UNORM:
+    case Diligent::TEX_FORMAT_BC5_SNORM:
+    case Diligent::TEX_FORMAT_BC6H_UF16:
+    case Diligent::TEX_FORMAT_BC6H_SF16:
+    case Diligent::TEX_FORMAT_BC7_UNORM:
+    case Diligent::TEX_FORMAT_BC7_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_B5G6R5_UNORM:
+    case Diligent::TEX_FORMAT_B5G5R5A1_UNORM:
+      return Diligent::VT_UINT16;
+
+    case Diligent::TEX_FORMAT_RGBA8_UNORM:
+    case Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_RGBA8_UINT:
+    case Diligent::TEX_FORMAT_RG8_UNORM:
+    case Diligent::TEX_FORMAT_RG8_UINT:
+    case Diligent::TEX_FORMAT_R8_UNORM:
+    case Diligent::TEX_FORMAT_R8_UINT:
+    case Diligent::TEX_FORMAT_A8_UNORM:
+    case Diligent::TEX_FORMAT_R1_UNORM:
+    case Diligent::TEX_FORMAT_BC1_UNORM:
+    case Diligent::TEX_FORMAT_BC1_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_BC4_UNORM:
+    case Diligent::TEX_FORMAT_BC4_SNORM:
+    case Diligent::TEX_FORMAT_RG8_B8G8_UNORM:
+    case Diligent::TEX_FORMAT_G8R8_G8B8_UNORM:
+      return Diligent::VT_UINT8;
+
+    case Diligent::TEX_FORMAT_RGBA32_SINT:
+    case Diligent::TEX_FORMAT_RGB32_SINT:
+    case Diligent::TEX_FORMAT_RG32_SINT:
+    case Diligent::TEX_FORMAT_R32_SINT:
+      return Diligent::VT_INT32;
+
+    case Diligent::TEX_FORMAT_RGBA16_SNORM:
+    case Diligent::TEX_FORMAT_RGBA16_SINT:
+    case Diligent::TEX_FORMAT_RG16_SNORM:
+    case Diligent::TEX_FORMAT_RG16_SINT:
+    case Diligent::TEX_FORMAT_R16_SNORM:
+    case Diligent::TEX_FORMAT_R16_SINT:
+      return Diligent::VT_INT16;
+
+    case Diligent::TEX_FORMAT_RGBA8_SNORM:
+    case Diligent::TEX_FORMAT_RGBA8_SINT:
+    case Diligent::TEX_FORMAT_RG8_SNORM:
+    case Diligent::TEX_FORMAT_RG8_SINT:
+    case Diligent::TEX_FORMAT_R8_SNORM:
+    case Diligent::TEX_FORMAT_R8_SINT:
+    case Diligent::TEX_FORMAT_BGRA8_UNORM:
+    case Diligent::TEX_FORMAT_BGRX8_UNORM:
+    case Diligent::TEX_FORMAT_BGRA8_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_BGRX8_UNORM_SRGB:
+      return Diligent::VT_INT8;
+
+    case Diligent::TEX_FORMAT_UNKNOWN:
+    case Diligent::TEX_FORMAT_RGBA32_TYPELESS:
+    case Diligent::TEX_FORMAT_RGB32_TYPELESS:
+    case Diligent::TEX_FORMAT_RGBA16_TYPELESS:
+    case Diligent::TEX_FORMAT_RG32_TYPELESS:
+    case Diligent::TEX_FORMAT_R32G8X24_TYPELESS:
+    case Diligent::TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS:
+    case Diligent::TEX_FORMAT_X32_TYPELESS_G8X24_UINT:
+    case Diligent::TEX_FORMAT_RGB10A2_TYPELESS:
+    case Diligent::TEX_FORMAT_RGBA8_TYPELESS:
+    case Diligent::TEX_FORMAT_RG16_TYPELESS:
+    case Diligent::TEX_FORMAT_R24G8_TYPELESS:
+    case Diligent::TEX_FORMAT_R32_TYPELESS:
+    case Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT:
+    case Diligent::TEX_FORMAT_R24_UNORM_X8_TYPELESS:
+    case Diligent::TEX_FORMAT_RG8_TYPELESS:
+    case Diligent::TEX_FORMAT_R16_TYPELESS:
+    case Diligent::TEX_FORMAT_R8_TYPELESS:
+    case Diligent::TEX_FORMAT_BC1_TYPELESS:
+    case Diligent::TEX_FORMAT_BC2_TYPELESS:
+    case Diligent::TEX_FORMAT_BC3_TYPELESS:
+    case Diligent::TEX_FORMAT_BC4_TYPELESS:
+    case Diligent::TEX_FORMAT_BC5_TYPELESS:
+    case Diligent::TEX_FORMAT_BGRA8_TYPELESS:
+    case Diligent::TEX_FORMAT_BGRX8_TYPELESS:
+    case Diligent::TEX_FORMAT_BC6H_TYPELESS:
+    case Diligent::TEX_FORMAT_BC7_TYPELESS:
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::VT_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE bool xiiDiligentTypeConversions::GetFormatNormalized(Diligent::TEXTURE_FORMAT e)
+{
+  switch (e)
+  {
+    case Diligent::TEX_FORMAT_RGBA16_UNORM:
+    case Diligent::TEX_FORMAT_RGBA16_SNORM:
+    case Diligent::TEX_FORMAT_RGB10A2_UNORM:
+    case Diligent::TEX_FORMAT_RGBA8_UNORM:
+    case Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_RG16_UNORM:
+    case Diligent::TEX_FORMAT_RGBA8_SNORM:
+    case Diligent::TEX_FORMAT_D24_UNORM_S8_UINT:
+    case Diligent::TEX_FORMAT_R24_UNORM_X8_TYPELESS:
+    case Diligent::TEX_FORMAT_RG8_UNORM:
+    case Diligent::TEX_FORMAT_D16_UNORM:
+    case Diligent::TEX_FORMAT_R16_UNORM:
+    case Diligent::TEX_FORMAT_R8_UNORM:
+    case Diligent::TEX_FORMAT_A8_UNORM:
+    case Diligent::TEX_FORMAT_R1_UNORM:
+    case Diligent::TEX_FORMAT_RG8_B8G8_UNORM:
+    case Diligent::TEX_FORMAT_G8R8_G8B8_UNORM:
+    case Diligent::TEX_FORMAT_BC1_UNORM:
+    case Diligent::TEX_FORMAT_BC1_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_BC2_UNORM:
+    case Diligent::TEX_FORMAT_BC2_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_BC3_UNORM:
+    case Diligent::TEX_FORMAT_BC3_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_BC4_UNORM:
+    case Diligent::TEX_FORMAT_BC5_UNORM:
+    case Diligent::TEX_FORMAT_B5G6R5_UNORM:
+    case Diligent::TEX_FORMAT_B5G5R5A1_UNORM:
+    case Diligent::TEX_FORMAT_BGRA8_UNORM:
+    case Diligent::TEX_FORMAT_BGRX8_UNORM:
+    case Diligent::TEX_FORMAT_BGRA8_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_BGRX8_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM:
+    case Diligent::TEX_FORMAT_BC7_UNORM:
+    case Diligent::TEX_FORMAT_BC7_UNORM_SRGB:
+    case Diligent::TEX_FORMAT_RG16_SNORM:
+    case Diligent::TEX_FORMAT_RG8_SNORM:
+    case Diligent::TEX_FORMAT_R16_SNORM:
+    case Diligent::TEX_FORMAT_R8_SNORM:
+    case Diligent::TEX_FORMAT_BC4_SNORM:
+    case Diligent::TEX_FORMAT_BC5_SNORM:
+      return true;
+  }
+  return false;
+}
+
+XII_ALWAYS_INLINE Diligent::SCALING_MODE xiiDiligentTypeConversions::GetScalingMode(xiiEnum<xiiGALScalingMode> e)
+{
+  switch (e)
+  {
+    case xiiGALScalingMode::Unspecified:
+      return Diligent::SCALING_MODE_UNSPECIFIED;
+    case xiiGALScalingMode::Centered:
+      return Diligent::SCALING_MODE_CENTERED;
+    case xiiGALScalingMode::Stretched:
+      return Diligent::SCALING_MODE_STRETCHED;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::SCALING_MODE_UNSPECIFIED;
+}
+
+XII_ALWAYS_INLINE Diligent::SCANLINE_ORDER xiiDiligentTypeConversions::GetScanLineOrder(xiiEnum<xiiGALScanLineOrder> e)
+{
+  switch (e)
+  {
+    case xiiGALScanLineOrder::Unspecified:
+      return Diligent::SCANLINE_ORDER_UNSPECIFIED;
+    case xiiGALScanLineOrder::Progressive:
+      return Diligent::SCANLINE_ORDER_PROGRESSIVE;
+    case xiiGALScanLineOrder::UpperFieldFirst:
+      return Diligent::SCANLINE_ORDER_UPPER_FIELD_FIRST;
+    case xiiGALScanLineOrder::LowerFieldFirst:
+      return Diligent::SCANLINE_ORDER_LOWER_FIELD_FIRST;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::SCANLINE_ORDER_UNSPECIFIED;
+}
+
+XII_ALWAYS_INLINE Diligent::SURFACE_TRANSFORM xiiDiligentTypeConversions::GetSurfaceTransform(xiiEnum<xiiGALSurfaceTransform> e)
+{
+  switch (e)
+  {
+    case xiiGALSurfaceTransform::Optimal:
+      return Diligent::SURFACE_TRANSFORM_OPTIMAL;
+    case xiiGALSurfaceTransform::Identity:
+      return Diligent::SURFACE_TRANSFORM_IDENTITY;
+    case xiiGALSurfaceTransform::Rotate90:
+      return Diligent::SURFACE_TRANSFORM_ROTATE_90;
+    case xiiGALSurfaceTransform::Rotate180:
+      return Diligent::SURFACE_TRANSFORM_ROTATE_180;
+    case xiiGALSurfaceTransform::Rotate270:
+      return Diligent::SURFACE_TRANSFORM_ROTATE_270;
+    case xiiGALSurfaceTransform::HorizontalMirror:
+      return Diligent::SURFACE_TRANSFORM_HORIZONTAL_MIRROR;
+    case xiiGALSurfaceTransform::HorizontalMirrorRotate90:
+      return Diligent::SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90;
+    case xiiGALSurfaceTransform::HorizontalMirrorRotate180:
+      return Diligent::SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180;
+    case xiiGALSurfaceTransform::HorizontalMirrorRotate270:
+      return Diligent::SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270;
+  }
+  return Diligent::SURFACE_TRANSFORM_OPTIMAL;
+}
+
+XII_ALWAYS_INLINE Diligent::SWAP_CHAIN_USAGE_FLAGS xiiDiligentTypeConversions::GetSwapChainUsageFlags(xiiBitflags<xiiGALSwapChainUsageFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::SWAP_CHAIN_USAGE_NONE;
+
+  Diligent::SWAP_CHAIN_USAGE_FLAGS swapChainUsageFlags = {};
+
+  if (e.IsSet(xiiGALSwapChainUsageFlags::RenderTarget))
+    swapChainUsageFlags |= Diligent::SWAP_CHAIN_USAGE_RENDER_TARGET;
+  if (e.IsSet(xiiGALSwapChainUsageFlags::ShaderResource))
+    swapChainUsageFlags |= Diligent::SWAP_CHAIN_USAGE_SHADER_RESOURCE;
+  if (e.IsSet(xiiGALSwapChainUsageFlags::InputAttachment))
+    swapChainUsageFlags |= Diligent::SWAP_CHAIN_USAGE_INPUT_ATTACHMENT;
+  if (e.IsSet(xiiGALSwapChainUsageFlags::CopySource))
+    swapChainUsageFlags |= Diligent::SWAP_CHAIN_USAGE_COPY_SOURCE;
+
+  return swapChainUsageFlags;
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALBindFlags> xiiDiligentTypeConversions::GetGALBindFlags(Diligent::BIND_FLAGS e)
+{
+  if (e == Diligent::BIND_NONE)
+    return xiiBitflags<xiiGALBindFlags>();
+
+  xiiBitflags<xiiGALBindFlags> bindFlags;
+
+  if (e & Diligent::BIND_VERTEX_BUFFER)
+    bindFlags |= xiiGALBindFlags::VertexBuffer;
+  if (e & Diligent::BIND_INDEX_BUFFER)
+    bindFlags |= xiiGALBindFlags::IndexBuffer;
+  if (e & Diligent::BIND_UNIFORM_BUFFER)
+    bindFlags |= xiiGALBindFlags::UniformBuffer;
+  if (e & Diligent::BIND_SHADER_RESOURCE)
+    bindFlags |= xiiGALBindFlags::ShaderResource;
+  if (e & Diligent::BIND_STREAM_OUTPUT)
+    bindFlags |= xiiGALBindFlags::StreamOutput;
+  if (e & Diligent::BIND_RENDER_TARGET)
+    bindFlags |= xiiGALBindFlags::RenderTarget;
+  if (e & Diligent::BIND_DEPTH_STENCIL)
+    bindFlags |= xiiGALBindFlags::DepthStencil;
+  if (e & Diligent::BIND_UNORDERED_ACCESS)
+    bindFlags |= xiiGALBindFlags::UnorderedAccess;
+  if (e & Diligent::BIND_INDIRECT_DRAW_ARGS)
+    bindFlags |= xiiGALBindFlags::IndirectDrawArguments;
+  if (e & Diligent::BIND_INPUT_ATTACHMENT)
+    bindFlags |= xiiGALBindFlags::InputAttachment;
+  if (e & Diligent::BIND_RAY_TRACING)
+    bindFlags |= xiiGALBindFlags::RayTracing;
+  if (e & Diligent::BIND_SHADING_RATE)
+    bindFlags |= xiiGALBindFlags::ShadingRate;
+
+  return bindFlags;
+}
+
+XII_ALWAYS_INLINE xiiEnum<xiiGALResourceUsage> xiiDiligentTypeConversions::GetGALUsage(Diligent::USAGE e)
+{
+  switch (e)
+  {
+    case Diligent::USAGE_IMMUTABLE:
+      return xiiGALResourceUsage::Immutable;
+    case Diligent::USAGE_DEFAULT:
+      return xiiGALResourceUsage::Default;
+    case Diligent::USAGE_DYNAMIC:
+      return xiiGALResourceUsage::Dynamic;
+    case Diligent::USAGE_STAGING:
+      return xiiGALResourceUsage::Staging;
+    case Diligent::USAGE_UNIFIED:
+      return xiiGALResourceUsage::Unified;
+    case Diligent::USAGE_SPARSE:
+      return xiiGALResourceUsage::Sparse;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiEnum<xiiGALResourceUsage>();
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALCPUAccessFlag> xiiDiligentTypeConversions::GetGALCPUAccessFlags(Diligent::CPU_ACCESS_FLAGS e)
+{
+  if (e == Diligent::CPU_ACCESS_NONE)
+    return xiiBitflags<xiiGALCPUAccessFlag>();
+
+  xiiBitflags<xiiGALCPUAccessFlag> cpuAccessFlags;
+
+  if (e & Diligent::CPU_ACCESS_READ)
+    cpuAccessFlags |= xiiGALCPUAccessFlag::Read;
+  if (e & Diligent::CPU_ACCESS_WRITE)
+    cpuAccessFlags |= xiiGALCPUAccessFlag::Write;
+
+  return cpuAccessFlags;
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALMiscTextureFlags> xiiDiligentTypeConversions::GetGALMiscTextureFlags(Diligent::MISC_TEXTURE_FLAGS e)
+{
+  if (e == Diligent::MISC_TEXTURE_FLAG_NONE)
+    return xiiBitflags<xiiGALMiscTextureFlags>();
+
+  xiiBitflags<xiiGALMiscTextureFlags> miscTextureFlags;
+
+  if (e & Diligent::MISC_TEXTURE_FLAG_MEMORYLESS)
+    miscTextureFlags |= xiiGALMiscTextureFlags::Memoryless;
+  if (e & Diligent::MISC_TEXTURE_FLAG_GENERATE_MIPS)
+    miscTextureFlags |= xiiGALMiscTextureFlags::GenerateMips;
+  if (e & Diligent::MISC_TEXTURE_FLAG_SPARSE_ALIASING)
+    miscTextureFlags |= xiiGALMiscTextureFlags::SparseAlias;
+  if (e & Diligent::MISC_TEXTURE_FLAG_SUBSAMPLED)
+    miscTextureFlags |= xiiGALMiscTextureFlags::Subsampled;
+
+  return miscTextureFlags;
+}
+
+XII_ALWAYS_INLINE Diligent::MAP_FLAGS xiiDiligentTypeConversions::GetMapFlags(xiiBitflags<xiiGALMapFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::MAP_FLAG_NONE;
+
+  Diligent::MAP_FLAGS mapFlags = {};
+
+  if (e.IsSet(xiiGALMapFlags::DoNotWait))
+    mapFlags |= Diligent::MAP_FLAG_DO_NOT_WAIT;
+  if (e.IsSet(xiiGALMapFlags::Discard))
+    mapFlags |= Diligent::MAP_FLAG_DISCARD;
+  if (e.IsSet(xiiGALMapFlags::NoOverWrite))
+    mapFlags |= Diligent::MAP_FLAG_NO_OVERWRITE;
+
+  return mapFlags;
+}
+
+XII_ALWAYS_INLINE Diligent::PRIMITIVE_TOPOLOGY xiiDiligentTypeConversions::GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e)
+{
+  switch (e)
+  {
+    case xiiGALPrimitiveTopology::Undefined:
+      return Diligent::PRIMITIVE_TOPOLOGY_UNDEFINED;
+    case xiiGALPrimitiveTopology::TriangleList:
+      return Diligent::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    case xiiGALPrimitiveTopology::TriangleStrip:
+      return Diligent::PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    case xiiGALPrimitiveTopology::PointList:
+      return Diligent::PRIMITIVE_TOPOLOGY_POINT_LIST;
+    case xiiGALPrimitiveTopology::LineList:
+      return Diligent::PRIMITIVE_TOPOLOGY_LINE_LIST;
+    case xiiGALPrimitiveTopology::LineStrip:
+      return Diligent::PRIMITIVE_TOPOLOGY_LINE_STRIP;
+    case xiiGALPrimitiveTopology::TriangleListAdjacent:
+      return Diligent::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_ADJ;
+    case xiiGALPrimitiveTopology::TrangleStripAdjacent:
+      return Diligent::PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_ADJ;
+    case xiiGALPrimitiveTopology::LineListAdjacent:
+      return Diligent::PRIMITIVE_TOPOLOGY_LINE_LIST_ADJ;
+    case xiiGALPrimitiveTopology::LineStripAdjacent:
+      return Diligent::PRIMITIVE_TOPOLOGY_LINE_STRIP_ADJ;
+    case xiiGALPrimitiveTopology::ControlPointPatchList1:
+      return Diligent::PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList2:
+      return Diligent::PRIMITIVE_TOPOLOGY_2_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList3:
+      return Diligent::PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList4:
+      return Diligent::PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList5:
+      return Diligent::PRIMITIVE_TOPOLOGY_5_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList6:
+      return Diligent::PRIMITIVE_TOPOLOGY_6_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList7:
+      return Diligent::PRIMITIVE_TOPOLOGY_7_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList8:
+      return Diligent::PRIMITIVE_TOPOLOGY_8_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList9:
+      return Diligent::PRIMITIVE_TOPOLOGY_9_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList10:
+      return Diligent::PRIMITIVE_TOPOLOGY_10_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList11:
+      return Diligent::PRIMITIVE_TOPOLOGY_11_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList12:
+      return Diligent::PRIMITIVE_TOPOLOGY_12_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList13:
+      return Diligent::PRIMITIVE_TOPOLOGY_13_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList14:
+      return Diligent::PRIMITIVE_TOPOLOGY_14_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList15:
+      return Diligent::PRIMITIVE_TOPOLOGY_15_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList16:
+      return Diligent::PRIMITIVE_TOPOLOGY_16_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList17:
+      return Diligent::PRIMITIVE_TOPOLOGY_17_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList18:
+      return Diligent::PRIMITIVE_TOPOLOGY_18_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList19:
+      return Diligent::PRIMITIVE_TOPOLOGY_19_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList20:
+      return Diligent::PRIMITIVE_TOPOLOGY_20_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList21:
+      return Diligent::PRIMITIVE_TOPOLOGY_21_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList22:
+      return Diligent::PRIMITIVE_TOPOLOGY_22_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList23:
+      return Diligent::PRIMITIVE_TOPOLOGY_23_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList24:
+      return Diligent::PRIMITIVE_TOPOLOGY_24_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList25:
+      return Diligent::PRIMITIVE_TOPOLOGY_25_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList26:
+      return Diligent::PRIMITIVE_TOPOLOGY_26_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList27:
+      return Diligent::PRIMITIVE_TOPOLOGY_27_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList28:
+      return Diligent::PRIMITIVE_TOPOLOGY_28_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList29:
+      return Diligent::PRIMITIVE_TOPOLOGY_29_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList30:
+      return Diligent::PRIMITIVE_TOPOLOGY_30_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList31:
+      return Diligent::PRIMITIVE_TOPOLOGY_31_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList32:
+      return Diligent::PRIMITIVE_TOPOLOGY_32_CONTROL_POINT_PATCHLIST;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::PRIMITIVE_TOPOLOGY_UNDEFINED;
+}
+
+XII_ALWAYS_INLINE xiiEnum<xiiGALDeviceFeatureState> xiiDiligentTypeConversions::GetGALDeviceFeatureState(Diligent::DEVICE_FEATURE_STATE e)
+{
+  switch (e)
+  {
+    case Diligent::DEVICE_FEATURE_STATE_DISABLED:
+      return xiiGALDeviceFeatureState::Disabled;
+    case Diligent::DEVICE_FEATURE_STATE_ENABLED:
+      return xiiGALDeviceFeatureState::Enabled;
+    case Diligent::DEVICE_FEATURE_STATE_OPTIONAL:
+      return xiiGALDeviceFeatureState::Optional;
+  }
+  return xiiEnum<xiiGALDeviceFeatureState>();
 }

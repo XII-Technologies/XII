@@ -1,8 +1,8 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Resources/TextureViewVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
+#include <GraphicsVulkan/Resources/TextureViewVulkan.h>
 
 xiiGALTextureViewVulkan::xiiGALTextureViewVulkan(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
   xiiGALTextureView(pTexture, creationDescription)
@@ -32,7 +32,7 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform(xiiGALDevice* pDevice)
   viewDescription.Swizzle.B       = xiiDiligentTypeConversions::GetComponentSwizzle(m_Description.m_ComponentSwizzle.m_B);
   viewDescription.Swizzle.A       = xiiDiligentTypeConversions::GetComponentSwizzle(m_Description.m_ComponentSwizzle.m_A);
 
-  Diligent::ITexture* pTextureVulkan = const_cast<Diligent::ITexture*>(static_cast<xiiGALTextureVulkan*>(m_pTexture)->GetTexture());
+  Diligent::ITexture* pTextureVulkan = static_cast<xiiGALTextureVulkan*>(m_pTexture)->GetTexture();
 
   pTextureVulkan->CreateView(viewDescription, &m_pTextureView);
 
@@ -41,7 +41,7 @@ xiiResult xiiGALTextureViewVulkan::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALTextureViewVulkan::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_REF_RELEASE(m_pTextureView);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pTextureView);
 
   return XII_SUCCESS;
 }

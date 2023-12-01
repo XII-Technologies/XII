@@ -28,6 +28,10 @@ xiiResult xiiGALBufferVulkan::InitPlatform(xiiGALDevice* pDevice, const xiiGALBu
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
     bufferDescription.Size = xiiMemoryUtils::AlignSize(m_Description.m_uiSize, 64ULL);
 
+  // Set the index format for index buffers.
+  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::IndexBuffer))
+    m_IndexFormat = m_Description.m_uiElementByteStride == 2U ? Diligent::VT_UINT16 : Diligent::VT_UINT32;
+
   if (pInitialData != nullptr)
   {
     Diligent::BufferData initialData = {};
@@ -46,7 +50,7 @@ xiiResult xiiGALBufferVulkan::InitPlatform(xiiGALDevice* pDevice, const xiiGALBu
 
 xiiResult xiiGALBufferVulkan::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_REF_RELEASE(m_pBuffer);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pBuffer);
 
   return XII_SUCCESS;
 }

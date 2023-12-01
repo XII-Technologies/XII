@@ -3,6 +3,7 @@
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
 #include <Foundation/Basics/Platform/Win/MinWindows.h>
+#include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/ResourceFormats.h>
 
@@ -25,7 +26,8 @@ public:
   Diligent::IRenderDevice*  GetDevice();
   Diligent::IDeviceContext* GetImmediateContext();
   Diligent::IEngineFactory* GetFactory();
-  xiiInt32                  GetValidationLevel() const;
+
+  xiiGALPassVulkan* GetDefaultPass();
 
   const xiiGALFormatLookupTableVulkan& GetFormatLookupTable() const;
 
@@ -38,14 +40,17 @@ protected:
   virtual xiiResult InitializePlatform() override;
   virtual xiiResult ShutdownPlatform() override;
 
-  virtual void BeginPipelinePlatform(xiiStringView Name, xiiGALSwapChain* pSwapChain) override;
+  virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override;
 
-  virtual xiiGALPass* BeginPassPlatform(xiiStringView Name) override;
+  virtual xiiGALPass* BeginPassPlatform(xiiStringView sName) override;
   virtual void        EndPassPlatform(xiiGALPass* pPass) override;
 
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame) override;
   virtual void EndFramePlatform() override;
+
+  virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override;
+  virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override;
@@ -62,13 +67,13 @@ protected:
   virtual xiiGALBuffer* CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr) override;
   virtual void          DestroyBufferPlatform(xiiGALBuffer* pBuffer) override;
 
-  virtual xiiGALBufferView* CreateBufferViewPlatform(const xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description) override;
+  virtual xiiGALBufferView* CreateBufferViewPlatform(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description) override;
   virtual void              DestroyBufferViewPlatform(xiiGALBufferView* pBufferView) override;
 
   virtual xiiGALTexture* CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) override;
   virtual void           DestroyTexturePlatform(xiiGALTexture* pTexture) override;
 
-  virtual xiiGALTextureView* CreateTextureViewPlatform(const xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description) override;
+  virtual xiiGALTextureView* CreateTextureViewPlatform(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description) override;
   virtual void               DestroyTextureViewPlatform(xiiGALTextureView* pTextureView) override;
 
   virtual xiiGALSampler* CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) override;
@@ -99,20 +104,21 @@ protected:
 
   virtual void FillCapabilitiesPlatform() override;
 
+  void FillFormatLookupTable();
+
 private:
   xiiGALFormatLookupTableVulkan m_FormatLookupTable;
 
-  Diligent::RefCntAutoPtr<Diligent::IEngineFactory>                  m_pEngineFactory;
-  Diligent::RefCntAutoPtr<Diligent::IRenderDevice>                   m_pDevice;
-  xiiDynamicArray<Diligent::RefCntAutoPtr<Diligent::IDeviceContext>> m_pDeviceContexts;
-  xiiUInt32                                                          m_uiNumImmediateContexts = 0;
-  Diligent::GraphicsAdapterInfo                                      m_AdapterAttribs;
-  xiiDynamicArray<Diligent::DisplayModeAttribs>                      m_DisplayModes;
+  Diligent::IEngineFactory*                     m_pEngineFactory = nullptr;
+  Diligent::IRenderDevice*                      m_pDevice        = nullptr;
+  xiiDynamicArray<Diligent::IDeviceContext*>    m_pDeviceContexts;
+  xiiDynamicArray<Diligent::DisplayModeAttribs> m_DisplayModes;
 
-  xiiInt32               m_iValidationLevel = -1;
-  xiiUInt32              m_uiAdapterId      = Diligent::DEFAULT_ADAPTER_ID;
-  Diligent::ADAPTER_TYPE m_AdapterType      = Diligent::ADAPTER_TYPE_UNKNOWN;
-  xiiString              m_sAdapterDetailsString;
+  xiiUniquePtr<xiiGALPassVulkan> m_pDefaultPass;
+
+  struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
+  struct GPUTimingScope* m_pPipelineTimingScope = nullptr;
+  struct GPUTimingScope* m_pPassTimingScope     = nullptr;
 };
 
 #include <GraphicsVulkan/Device/Implementation/DeviceVulkan_inl.h>

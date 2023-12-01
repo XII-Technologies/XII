@@ -4,10 +4,10 @@
 
 #include <GraphicsFoundation/States/BlendState.h>
 
-class XII_GRAPHICSVULKAN_DLL xiiGALBlendStateVulkan : public xiiGALBlendState
+class XII_GRAPHICSVULKAN_DLL xiiGALBlendStateVulkan final : public xiiGALBlendState
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::BlendStateDesc* GetBlendState() const;
+  const Diligent::BlendStateDesc* GetBlendState() const;
 
 protected:
   friend class xiiGALDeviceVulkan;

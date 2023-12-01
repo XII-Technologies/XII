@@ -4,10 +4,10 @@
 
 #include <GraphicsFoundation/States/RasterizerState.h>
 
-class XII_GRAPHICSVULKAN_DLL xiiGALRasterizerStateVulkan : public xiiGALRasterizerState
+class XII_GRAPHICSVULKAN_DLL xiiGALRasterizerStateVulkan final : public xiiGALRasterizerState
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::RasterizerStateDesc* GetRasterizerState() const;
+  const Diligent::RasterizerStateDesc* GetRasterizerState() const;
 
 protected:
   friend class xiiGALDeviceVulkan;

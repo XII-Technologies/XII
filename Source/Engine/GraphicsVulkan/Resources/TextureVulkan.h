@@ -15,7 +15,7 @@ public:
 
   virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override;
 
-  XII_ALWAYS_INLINE const Diligent::ITexture* GetTexture() const;
+  Diligent::ITexture* GetTexture() const;
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -30,7 +30,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::ITexture> m_pTexture;
+  Diligent::ITexture* m_pTexture = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/TextureVulkan_inl.h>

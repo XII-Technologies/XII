@@ -13,7 +13,7 @@ public:
 
   virtual void Wait(xiiUInt64 uiValue) override;
 
-  XII_ALWAYS_INLINE const Diligent::IFence* GetFence() const;
+  Diligent::IFence* GetFence() const;
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -28,7 +28,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IFence> m_pFence;
+  Diligent::IFence* m_pFence = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/FenceVulkan_inl.h>

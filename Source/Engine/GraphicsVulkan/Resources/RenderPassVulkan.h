@@ -7,7 +7,7 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALRenderPassVulkan final : public xiiGALRenderPass
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::IRenderPass* GetRenderPass() const;
+  Diligent::IRenderPass* GetRenderPass() const;
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -22,7 +22,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IRenderPass> m_pRenderPass;
+  Diligent::IRenderPass* m_pRenderPass = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/RenderPassVulkan_inl.h>

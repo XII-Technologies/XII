@@ -1,5 +1,5 @@
 
-XII_ALWAYS_INLINE const Diligent::IFramebuffer* xiiGALFramebufferVulkan::GetFramebuffer() const
+XII_ALWAYS_INLINE Diligent::IFramebuffer* xiiGALFramebufferVulkan::GetFramebuffer() const
 {
   return m_pFramebuffer;
 }

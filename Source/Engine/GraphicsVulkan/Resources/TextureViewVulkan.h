@@ -7,7 +7,7 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALTextureViewVulkan final : public xiiGALTextureView
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::ITextureView* GetTextureView() const;
+  Diligent::ITextureView* GetTextureView() const;
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -22,7 +22,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::ITextureView> m_pTextureView;
+  Diligent::ITextureView* m_pTextureView = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/TextureViewVulkan_inl.h>

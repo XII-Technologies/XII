@@ -21,7 +21,9 @@ public:
 
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override;
 
-  XII_ALWAYS_INLINE const Diligent::IBuffer* GetBuffer() const;
+  Diligent::IBuffer* GetBuffer() const;
+
+  Diligent::VALUE_TYPE GetIndexFormat() const;
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -36,7 +38,9 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IBuffer> m_pBuffer;
+  Diligent::IBuffer* m_pBuffer = nullptr;
+
+  Diligent::VALUE_TYPE m_IndexFormat = {}; // Strictly index buffers.
 };
 
 #include <GraphicsVulkan/Resources/Implementation/BufferVulkan_inl.h>

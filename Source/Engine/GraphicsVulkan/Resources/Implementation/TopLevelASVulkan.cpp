@@ -28,7 +28,7 @@ xiiResult xiiGALTopLevelASVulkan::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALTopLevelASVulkan::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_REF_RELEASE(m_pTopLevelAS);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pTopLevelAS);
 
   return XII_SUCCESS;
 }

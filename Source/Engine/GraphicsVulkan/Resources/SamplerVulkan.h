@@ -7,7 +7,7 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALSamplerVulkan final : public xiiGALSampler
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::ISampler* GetSampler() const;
+  Diligent::ISampler* GetSampler() const;
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -22,7 +22,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::ISampler> m_pSampler;
+  Diligent::ISampler* m_pSampler = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/SamplerVulkan_inl.h>

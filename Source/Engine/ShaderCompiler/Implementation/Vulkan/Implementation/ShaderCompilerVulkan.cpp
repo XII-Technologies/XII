@@ -153,7 +153,6 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
       SpvReflectInterfaceVariable* pInputVariable = inputVariables[i];
 
       xiiStringBuilder sSemanticName = pInputVariable->semantic;
-      sSemanticName.AppendFormat("{}", pInputVariable->location);
 
       if (!sSemanticName.StartsWith_NoCase("SV_"))
       {

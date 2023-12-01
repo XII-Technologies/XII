@@ -338,8 +338,8 @@ public:
       xiiShaderManager::Configure(sShaderModel, true);
       XII_VERIFY(xiiPlugin::LoadPlugin(sShaderCompiler).Succeeded(), "Shader compiler '{}' plugin not found", sShaderCompiler);
 
-      m_pDevice = xiiGALDeviceFactory::CreateDevice(szDefaultGraphicsAPI, xiiFoundation::GetDefaultAllocator(), DeviceInit);
-      XII_ASSERT_DEV(m_pDevice != nullptr, "Device implemention for '{}' not found", szDefaultGraphicsAPI);
+      m_pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), DeviceInit);
+      XII_ASSERT_DEV(m_pDevice != nullptr, "Device implemention for '{}' not found", sGraphicsAPIName);
       XII_VERIFY(m_pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
 
       xiiGALDevice::SetDefaultDevice(m_pDevice);

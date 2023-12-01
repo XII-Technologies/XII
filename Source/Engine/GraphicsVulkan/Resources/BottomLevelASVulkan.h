@@ -19,7 +19,7 @@ public:
 
   virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override;
 
-  XII_ALWAYS_INLINE const Diligent::IBottomLevelAS* GetBottomLevelAS() const;
+  Diligent::IBottomLevelAS* GetBottomLevelAS() const;
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -34,7 +34,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IBottomLevelAS> m_pBottomLevelAS;
+  Diligent::IBottomLevelAS* m_pBottomLevelAS = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/BottomLevelASVulkan_inl.h>

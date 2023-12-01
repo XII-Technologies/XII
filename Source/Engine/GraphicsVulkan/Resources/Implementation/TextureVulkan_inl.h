@@ -32,7 +32,7 @@ XII_ALWAYS_INLINE const xiiGALSparseTextureProperties& xiiGALTextureVulkan::GetS
   return temporary;
 }
 
-XII_ALWAYS_INLINE const Diligent::ITexture* xiiGALTextureVulkan::GetTexture() const
+XII_ALWAYS_INLINE Diligent::ITexture* xiiGALTextureVulkan::GetTexture() const
 {
   return m_pTexture;
 }

@@ -51,7 +51,12 @@ XII_ALWAYS_INLINE xiiGALSparseBufferProperties xiiGALBufferVulkan::GetSparseProp
   return xiiGALSparseBufferProperties();
 }
 
-XII_ALWAYS_INLINE const Diligent::IBuffer* xiiGALBufferVulkan::GetBuffer() const
+XII_ALWAYS_INLINE Diligent::IBuffer* xiiGALBufferVulkan::GetBuffer() const
 {
   return m_pBuffer;
+}
+
+XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiGALBufferVulkan::GetIndexFormat() const
+{
+  return m_IndexFormat;
 }

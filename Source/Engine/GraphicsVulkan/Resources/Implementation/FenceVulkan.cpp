@@ -25,7 +25,7 @@ xiiResult xiiGALFenceVulkan::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALFenceVulkan::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_REF_RELEASE(m_pFence);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pFence);
 
   return XII_SUCCESS;
 }

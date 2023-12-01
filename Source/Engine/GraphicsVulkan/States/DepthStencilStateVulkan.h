@@ -4,10 +4,10 @@
 
 #include <GraphicsFoundation/States/DepthStencilState.h>
 
-class XII_GRAPHICSVULKAN_DLL xiiGALDepthStencilStateVulkan : public xiiGALDepthStencilState
+class XII_GRAPHICSVULKAN_DLL xiiGALDepthStencilStateVulkan final : public xiiGALDepthStencilState
 {
 public:
-  XII_ALWAYS_INLINE const Diligent::DepthStencilStateDesc* GetDepthStencilState() const;
+  const Diligent::DepthStencilStateDesc* GetDepthStencilState() const;
 
 protected:
   friend class xiiGALDeviceVulkan;

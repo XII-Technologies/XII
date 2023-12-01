@@ -96,7 +96,7 @@ XII_ALWAYS_INLINE void xiiGALQueryVulkan::Invalidate()
   m_pQuery->Invalidate();
 }
 
-XII_ALWAYS_INLINE const Diligent::IQuery* xiiGALQueryVulkan::GetQuery() const
+XII_ALWAYS_INLINE Diligent::IQuery* xiiGALQueryVulkan::GetQuery() const
 {
   return m_pQuery;
 }

@@ -11,7 +11,7 @@ public:
 
   virtual void Invalidate() override;
 
-  XII_ALWAYS_INLINE const Diligent::IQuery* GetQuery() const;
+  Diligent::IQuery* GetQuery() const;
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -26,7 +26,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
 
 protected:
-  Diligent::RefCntAutoPtr<Diligent::IQuery> m_pQuery;
+  Diligent::IQuery* m_pQuery = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/QueryVulkan_inl.h>

@@ -1,8 +1,8 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
+#include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 
 xiiGALBufferViewVulkan::xiiGALBufferViewVulkan(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
   xiiGALBufferView(pBuffer, creationDescription)
@@ -23,7 +23,7 @@ xiiResult xiiGALBufferViewVulkan::InitPlatform(xiiGALDevice* pDevice)
   viewDescription.ByteOffset           = m_Description.m_uiByteOffset;
   viewDescription.ByteWidth            = m_Description.m_uiByteWidth;
 
-  Diligent::IBuffer* pBufferVulkan = const_cast<Diligent::IBuffer*>(static_cast<xiiGALBufferVulkan*>(m_pBuffer)->GetBuffer());
+  Diligent::IBuffer* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(m_pBuffer)->GetBuffer();
 
   pBufferVulkan->CreateView(viewDescription, &m_pBufferView);
 
@@ -32,7 +32,7 @@ xiiResult xiiGALBufferViewVulkan::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALBufferViewVulkan::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_REF_RELEASE(m_pBufferView);
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pBufferView);
 
   return XII_SUCCESS;
 }
