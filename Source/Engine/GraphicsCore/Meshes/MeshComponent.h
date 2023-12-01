@@ -1,0 +1,21 @@
+#pragma once
+
+#include <GraphicsCore/Meshes/MeshComponentBase.h>
+
+struct xiiMsgExtractGeometry;
+using xiiMeshComponentManager = xiiComponentManager<class xiiMeshComponent, xiiBlockStorageType::Compact>;
+
+class XII_GRAPHICSCORE_DLL xiiMeshComponent : public xiiMeshComponentBase
+{
+  XII_DECLARE_COMPONENT_TYPE(xiiMeshComponent, xiiMeshComponentBase, xiiMeshComponentManager);
+
+  //////////////////////////////////////////////////////////////////////////
+  // xiiMeshComponent
+
+public:
+  xiiMeshComponent();
+  ~xiiMeshComponent();
+
+  /// \brief Extracts the render geometry for export etc.
+  void OnMsgExtractGeometry(xiiMsgExtractGeometry& ref_msg) const; // [ msg handler ]
+};

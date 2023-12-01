@@ -144,6 +144,14 @@ public:
     return (m_Value & rhs.m_Value) != 0;
   }
 
+  /// \brief Returns whether there are strictly any of the given flags set.
+  XII_ALWAYS_INLINE bool IsStrictlyAnySet(const xiiBitflags<T>& rhs) const
+  {
+    /// \test Not yet tested.
+
+    return (m_Value & ~rhs.m_Value) == 0;
+  }
+
   /// \brief Sets the given flag.
   XII_ALWAYS_INLINE void Add(const xiiBitflags<T>& rhs) // [tested]
   {
@@ -347,6 +355,14 @@ public:
   XII_ALWAYS_INLINE bool IsAnySet(const xiiTypelessBitflags<StorageType>& rhs) const // [tested]
   {
     return (m_Value & rhs.m_Value) != 0;
+  }
+
+  /// \brief Returns whether there are strictly any of the given flags set.
+  XII_ALWAYS_INLINE bool IsStrictlyAnySet(const xiiBitflags<T>& rhs) const
+  {
+    /// \test Not yet tested.
+
+    return (m_Value & ~rhs.m_Value) == 0;
   }
 
   /// \brief Sets the given flag.

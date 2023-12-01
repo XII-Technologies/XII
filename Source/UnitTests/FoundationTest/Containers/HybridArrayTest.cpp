@@ -1,4 +1,3 @@
-#include "Foundation/Types/Types.h"
 #include <FoundationTest/FoundationTestPCH.h>
 
 #include <Foundation/Containers/HybridArray.h>

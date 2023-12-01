@@ -906,7 +906,7 @@ void xiiProfilingSystem::SetThreadName(xiiStringView sThreadName) {}
 
 void xiiProfilingSystem::RemoveThread() {}
 
-void xiiProfilingSystem::InitializeGPUData(xiiUInt32 gpuCount) {}
+void xiiProfilingSystem::InitializeGPUData(xiiUInt32 uiGpuCount) {}
 
 void xiiProfilingSystem::AddGPUScope(xiiStringView sName, xiiTime beginTime, xiiTime endTime, xiiUInt32 gpuIndex) {}
 

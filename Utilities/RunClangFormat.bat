@@ -8,4 +8,5 @@
 %~dp0..\Source\EnginePlugins ^
 %~dp0..\Source\Samples ^
 %~dp0..\Source\Tools ^
-%~dp0..\Source\UnitTests
+%~dp0..\Source\UnitTests ^
+%~dp0..\Source\Data\Base\Shaders

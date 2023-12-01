@@ -1,0 +1,124 @@
+#pragma once
+
+#include <GraphicsVulkan/GraphicsVulkanDLL.h>
+
+#include <Foundation/Basics/Platform/Win/MinWindows.h>
+#include <Foundation/Types/UniquePtr.h>
+#include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/ResourceFormats.h>
+
+using xiiGALFormatLookupEntryVulkan = xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, (Diligent::TEXTURE_FORMAT)0U>;
+using xiiGALFormatLookupTableVulkan = xiiGALFormatLookupTable<xiiGALFormatLookupEntryVulkan>;
+
+class XII_GRAPHICSVULKAN_DLL xiiGALDeviceVulkan final : public xiiGALDevice
+{
+private:
+  friend xiiInternal::NewInstance<xiiGALDevice> CreateVulkanDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
+
+  xiiGALDeviceVulkan(const xiiGALDeviceCreationDescription& description);
+
+public:
+  ~xiiGALDeviceVulkan();
+
+public:
+  // Internal objects retrieval.
+
+  Diligent::IRenderDevice*  GetDevice();
+  Diligent::IDeviceContext* GetImmediateContext();
+  Diligent::IEngineFactory* GetFactory();
+
+  xiiGALPassVulkan* GetDefaultPass();
+
+  const xiiGALFormatLookupTableVulkan& GetFormatLookupTable() const;
+
+  void ReportLiveGPUObjects();
+
+  void FlushPendingObjects();
+
+  // These functions are implemented by a graphics API implementation.
+protected:
+  virtual xiiResult InitializePlatform() override;
+  virtual xiiResult ShutdownPlatform() override;
+
+  virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override;
+  virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override;
+
+  virtual xiiGALPass* BeginPassPlatform(xiiStringView sName) override;
+  virtual void        EndPassPlatform(xiiGALPass* pPass) override;
+
+  virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame) override;
+  virtual void EndFramePlatform() override;
+
+  virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override;
+  virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override;
+
+  virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override;
+  virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override;
+
+  virtual xiiGALDepthStencilState* CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description) override;
+  virtual void                     DestroyDepthStencilStatePlatform(xiiGALDepthStencilState* pDepthStencilState) override;
+
+  virtual xiiGALRasterizerState* CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description) override;
+  virtual void                   DestroyRasterizerStatePlatform(xiiGALRasterizerState* pRasterizerState) override;
+
+  virtual xiiGALShader* CreateShaderPlatform(const xiiGALShaderCreationDescription& description) override;
+  virtual void          DestroyShaderPlatform(xiiGALShader* pShader) override;
+
+  virtual xiiGALBuffer* CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr) override;
+  virtual void          DestroyBufferPlatform(xiiGALBuffer* pBuffer) override;
+
+  virtual xiiGALBufferView* CreateBufferViewPlatform(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description) override;
+  virtual void              DestroyBufferViewPlatform(xiiGALBufferView* pBufferView) override;
+
+  virtual xiiGALTexture* CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) override;
+  virtual void           DestroyTexturePlatform(xiiGALTexture* pTexture) override;
+
+  virtual xiiGALTextureView* CreateTextureViewPlatform(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description) override;
+  virtual void               DestroyTextureViewPlatform(xiiGALTextureView* pTextureView) override;
+
+  virtual xiiGALSampler* CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) override;
+  virtual void           DestroySamplerPlatform(xiiGALSampler* pSampler) override;
+
+  virtual xiiGALInputLayout* CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description) override;
+  virtual void               DestroyInputLayoutPlatform(xiiGALInputLayout* pInputLayout) override;
+
+  virtual xiiGALQuery* CreateQueryPlatform(const xiiGALQueryCreationDescription& description) override;
+  virtual void         DestroyQueryPlatform(xiiGALQuery* pQuery) override;
+
+  virtual xiiGALFence* CreateFencePlatform(const xiiGALFenceCreationDescription& description) override;
+  virtual void         DestroyFencePlatform(xiiGALFence* pFence) override;
+
+  virtual xiiGALRenderPass* CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description) override;
+  virtual void              DestroyRenderPassPlatform(xiiGALRenderPass* pRenderPass) override;
+
+  virtual xiiGALFramebuffer* CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description) override;
+  virtual void               DestroyFramebufferPlatform(xiiGALFramebuffer* pFramebuffer) override;
+
+  virtual xiiGALBottomLevelAS* CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description) override;
+  virtual void                 DestroyBottomLevelASPlatform(xiiGALBottomLevelAS* pBottomLevelAS) override;
+
+  virtual xiiGALTopLevelAS* CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description) override;
+  virtual void              DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS) override;
+
+  virtual void WaitIdlePlatform() override;
+
+  virtual void FillCapabilitiesPlatform() override;
+
+  void FillFormatLookupTable();
+
+private:
+  xiiGALFormatLookupTableVulkan m_FormatLookupTable;
+
+  Diligent::IEngineFactory*                     m_pEngineFactory = nullptr;
+  Diligent::IRenderDevice*                      m_pDevice        = nullptr;
+  xiiDynamicArray<Diligent::IDeviceContext*>    m_pDeviceContexts;
+  xiiDynamicArray<Diligent::DisplayModeAttribs> m_DisplayModes;
+
+  xiiUniquePtr<xiiGALPassVulkan> m_pDefaultPass;
+
+  struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
+  struct GPUTimingScope* m_pPipelineTimingScope = nullptr;
+  struct GPUTimingScope* m_pPassTimingScope     = nullptr;
+};
+
+#include <GraphicsVulkan/Device/Implementation/DeviceVulkan_inl.h>

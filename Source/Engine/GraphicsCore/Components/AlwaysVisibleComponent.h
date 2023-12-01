@@ -1,0 +1,24 @@
+#pragma once
+
+#include <GraphicsCore/Components/RenderComponent.h>
+
+using xiiAlwaysVisibleComponentManager = xiiComponentManager<class xiiAlwaysVisibleComponent, xiiBlockStorageType::Compact>;
+
+/// \brief Attaching this component to a game object makes the renderer consider it always visible, ie. disables culling
+class XII_GRAPHICSCORE_DLL xiiAlwaysVisibleComponent : public xiiRenderComponent
+{
+  XII_DECLARE_COMPONENT_TYPE(xiiAlwaysVisibleComponent, xiiRenderComponent, xiiAlwaysVisibleComponentManager);
+
+  //////////////////////////////////////////////////////////////////////////
+  // xiiRenderComponent
+
+public:
+  virtual xiiResult GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, bool& ref_bAlwaysVisible, xiiMsgUpdateLocalBounds& ref_msg) override;
+
+  //////////////////////////////////////////////////////////////////////////
+  // xiiAlwaysVisibleComponent
+
+public:
+  xiiAlwaysVisibleComponent();
+  ~xiiAlwaysVisibleComponent();
+};

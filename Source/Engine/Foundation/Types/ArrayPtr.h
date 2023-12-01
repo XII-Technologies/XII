@@ -11,7 +11,7 @@
 
 /// \brief Value used by containers for indices to indicate an invalid index.
 #ifndef xiiInvalidIndex
-#  define xiiInvalidIndex 0xFFFFFFFF
+#  define xiiInvalidIndex 0xFFFFFFFFU
 #endif
 
 namespace xiiArrayPtrDetail
