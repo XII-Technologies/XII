@@ -25,6 +25,9 @@ public:
   /// \brief Initializes the vector with x,y,z,w
   xiiVec4Template(Type inX, Type inY, Type inZ, Type inW); // [tested]
 
+  /// \brief Initializes the vector from a vec3 and a float.
+  xiiVec4Template(xiiVec3Template<Type> xyz, Type w);
+
   /// \brief Initializes all 4 components with xyzw
   explicit xiiVec4Template(Type inV); // [tested]
   // no copy-constructor and operator= since the default-generated ones will be faster

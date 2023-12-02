@@ -69,7 +69,7 @@ inline bool xiiTransformTemplate<Type>::IsEqual(const xiiTransformTemplate<Type>
 template <typename Type>
 inline void xiiTransformTemplate<Type>::SetLocalTransform(const xiiTransformTemplate<Type>& globalTransformParent, const xiiTransformTemplate<Type>& globalTransformChild)
 {
-  const auto invRot   = -globalTransformParent.m_qRotation;
+  const auto invRot   = globalTransformParent.m_qRotation.GetInverse();
   const auto invScale = xiiVec3Template<Type>(1).CompDiv(globalTransformParent.m_vScale);
 
   m_vPosition = (invRot * (globalTransformChild.m_vPosition - globalTransformParent.m_vPosition)).CompMul(invScale);
@@ -211,7 +211,7 @@ XII_ALWAYS_INLINE void xiiTransformTemplate<Type>::Invert()
 template <typename Type>
 inline const xiiTransformTemplate<Type> xiiTransformTemplate<Type>::GetInverse() const
 {
-  const auto invRot   = -m_qRotation;
+  const auto invRot   = m_qRotation.GetInverse();
   const auto invScale = xiiVec3Template<Type>(1).CompDiv(m_vScale);
   const auto invPos   = invRot * (invScale.CompMul(-m_vPosition));
 

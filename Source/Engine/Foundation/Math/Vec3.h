@@ -20,26 +20,26 @@ public:
   // *** Constructors ***
 public:
   /// \brief default-constructed vector is uninitialized (for speed)
-  xiiVec3Template(); // [tested]
+  xiiVec3Template<Type>(); // [tested]
 
   /// \brief Initializes the vector with x,y,z
-  xiiVec3Template(Type inX, Type inY, Type inZ); // [tested]
+  xiiVec3Template<Type>(Type inX, Type inY, Type inZ); // [tested]
 
   /// \brief Initializes all 3 components with xyz
-  explicit xiiVec3Template(Type inV); // [tested]
+  explicit xiiVec3Template<Type>(Type inV); // [tested]
   // no copy-constructor and operator= since the default-generated ones will be faster
 
   /// \brief Returns a vector with all components set to zero.
-  static xiiVec3Template<Type> ZeroVector() { return xiiVec3Template(0); } // [tested]
+  static xiiVec3Template<Type> ZeroVector() { return xiiVec3Template<Type>(0); } // [tested]
   /// \brief Returns a vector with all components set to one.
-  static xiiVec3Template<Type> OneVector() { return xiiVec3Template(1); }
+  static xiiVec3Template<Type> OneVector() { return xiiVec3Template<Type>(1); }
 
   /// \brief Returns a vector initialized to the x unit vector (1, 0, 0).
-  static const xiiVec3Template<Type> UnitXAxis() { return xiiVec3Template(1, 0, 0); }
+  static const xiiVec3Template<Type> UnitXAxis() { return xiiVec3Template<Type>(1, 0, 0); }
   /// \brief Returns a vector initialized to the y unit vector (0, 1, 0).
-  static const xiiVec3Template<Type> UnitYAxis() { return xiiVec3Template(0, 1, 0); }
+  static const xiiVec3Template<Type> UnitYAxis() { return xiiVec3Template<Type>(0, 1, 0); }
   /// \brief Returns a vector initialized to the z unit vector (0, 0, 1).
-  static const xiiVec3Template<Type> UnitZAxis() { return xiiVec3Template(0, 0, 1); }
+  static const xiiVec3Template<Type> UnitZAxis() { return xiiVec3Template<Type>(0, 0, 1); }
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
@@ -109,7 +109,7 @@ public:
 
   /// \brief Tries to normalize this vector. If the vector is too close to zero, XII_FAILURE is returned and the vector is set to the given
   /// fallback value.
-  xiiResult NormalizeIfNotZero(const xiiVec3Template<Type>& vFallback = xiiVec3Template(1, 0, 0), Type fEpsilon = xiiMath::SmallEpsilon<Type>()); // [tested]
+  xiiResult NormalizeIfNotZero(const xiiVec3Template<Type>& vFallback = xiiVec3Template<Type>(1, 0, 0), Type fEpsilon = xiiMath::SmallEpsilon<Type>()); // [tested]
 
   /// \brief Returns, whether this vector is (0, 0, 0).
   bool IsZero() const; // [tested]

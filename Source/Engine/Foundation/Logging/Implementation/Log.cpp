@@ -281,13 +281,13 @@ void xiiLog::OsMessageBox(const xiiFormatString& text)
   xiiStringBuilder display = text.GetText(tmp);
   display.Trim(" \n\r\t");
 
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   const char* title = "";
   if (xiiApplication::GetApplicationInstance())
   {
     title = xiiApplication::GetApplicationInstance()->GetApplicationName();
   }
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   MessageBoxW(nullptr, xiiStringWChar(display).GetData(), xiiStringWChar(title), MB_OK);
 #else
   xiiLog::Print(display);

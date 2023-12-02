@@ -641,7 +641,7 @@ void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, 
   static constexpr xiiUInt32 NUM_HALF_SEGMENTS = 16;
   static constexpr xiiUInt32 NUM_LINES         = NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + 4;
 
-  const xiiAngle stepAngle = xiiAngle::Degree(360.0f / NUM_SEGMENTS);
+  const xiiAngle stepAngle = xiiAngle::Degree(360.0f / (float)NUM_SEGMENTS);
 
   Line lines[NUM_LINES];
 

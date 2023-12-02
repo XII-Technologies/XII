@@ -64,6 +64,9 @@ function(xii_set_build_flags_msvc TARGET_NAME)
   if((CMAKE_SIZEOF_VOID_P EQUAL 4) AND XII_CMAKE_ARCHITECTURE_X86)
     # Enable SSE2 (incompatible with /fp:except)
     target_compile_options(${TARGET_NAME} PRIVATE "/arch:SSE2")
+  else()
+    # Enable AVX2
+    target_compile_options(${TARGET_NAME} PRIVATE "/arch:AVX2")
   endif()
 
   # /Zo: Improved debugging of optimized code
@@ -257,7 +260,7 @@ function(xii_set_build_flags_gcc TARGET_NAME)
   target_compile_options(${TARGET_NAME} PRIVATE -Wno-multichar)
 
   if(NOT(CMAKE_CURRENT_SOURCE_DIR MATCHES "Source/ThirdParty"))
-    # Warning / Error settings for xii code
+    # Warning / Error settings for XII code
     # attributes = error if a attribute is placed incorrectly (e.g. XII_FOUNDATION_DLL)
     # unused-result = error if [[nodiscard]] return value is not handeled (xiiResult)
     target_compile_options(${TARGET_NAME} PRIVATE -Werror=attributes -Werror=unused-result -Wno-ignored-attributes -Werror=return-type)
