@@ -164,6 +164,7 @@ XII_ALWAYS_INLINE Diligent::CULL_MODE xiiDiligentTypeConversions::GetCullMode(xi
     case xiiGALCullMode::Front:
       return Diligent::CULL_MODE_NONE;
     case xiiGALCullMode::Back:
+      return Diligent::CULL_MODE_BACK;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }

@@ -348,7 +348,11 @@ function(xii_glob_source_files ROOT_DIR RESULT_ALL_SOURCES)
     "${ROOT_DIR}/*.s"
     "${ROOT_DIR}/*.cmake"
     "${ROOT_DIR}/*.natvis"
-    "${ROOT_DIR}/CMakeLists.txt"
+    "${ROOT_DIR}/*.txt"
+    "${ROOT_DIR}/*.ddl"
+    "${ROOT_DIR}/*.xiiPermVar"
+    "${ROOT_DIR}/*.xiiShader"
+    "${ROOT_DIR}/*.xiiShaderTemplate"
   )
 
   set(${RESULT_ALL_SOURCES} ${RELEVANT_FILES} PARENT_SCOPE)
