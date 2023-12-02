@@ -260,9 +260,9 @@ public:
 
     XII_VERIFY(m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded(), "Failed to watch project directory.");
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
     constexpr const char* szDefaultGraphicsAPI = "D3D12";
-#elif XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
+#elif BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
     constexpr const char* szDefaultGraphicsAPI = "Vulkan";
 #else
 #  error Graphics API not implemented on platform.
