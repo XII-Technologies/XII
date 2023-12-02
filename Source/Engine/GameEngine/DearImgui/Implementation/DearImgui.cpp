@@ -92,15 +92,15 @@ void xiiImgui::Startup(xiiImguiConfigFontCallback configFontCallback)
   if (!hFont.IsValid())
   {
     xiiGALTextureSubResourceData memoryDesc;
-    memoryDesc.m_pData        = pixels;
-    memoryDesc.m_uiStride   = width * 4;
+    memoryDesc.m_pData         = pixels;
+    memoryDesc.m_uiStride      = width * 4;
     memoryDesc.m_uiDepthStride = width * height * 4;
 
     xiiTexture2DResourceDescriptor desc;
     desc.m_DescGAL.m_Size.width  = width;
     desc.m_DescGAL.m_Size.height = height;
-    desc.m_DescGAL.m_Format   = xiiGALTextureFormat::RGBA8UNormalized;
-    desc.m_InitialContent     = xiiMakeArrayPtr(&memoryDesc, 1);
+    desc.m_DescGAL.m_Format      = xiiGALTextureFormat::RGBA8UNormalized;
+    desc.m_InitialContent        = xiiMakeArrayPtr(&memoryDesc, 1);
 
     hFont = xiiResourceManager::GetOrCreateResource<xiiTexture2DResource>("ImguiFont", std::move(desc));
   }

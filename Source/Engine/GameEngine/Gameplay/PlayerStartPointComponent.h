@@ -36,10 +36,10 @@ public:
   void                           SetPlayerPrefab(const xiiPrefabResourceHandle& hPrefab); // [ property ]
   const xiiPrefabResourceHandle& GetPlayerPrefab() const;                                 // [ property ]
 
-  const xiiRangeView<xiiStringView, xiiUInt32> GetParameters() const;                                        // [ property ] (exposed parameter)
-  void                                       SetParameter(xiiStringView sKey, const xiiVariant& value);     // [ property ] (exposed parameter)
-  void                                       RemoveParameter(xiiStringView sKey);                           // [ property ] (exposed parameter)
-  bool                                       GetParameter(xiiStringView sKey, xiiVariant& out_value) const; // [ property ] (exposed parameter)
+  const xiiRangeView<xiiStringView, xiiUInt32> GetParameters() const;                                         // [ property ] (exposed parameter)
+  void                                         SetParameter(xiiStringView sKey, const xiiVariant& value);     // [ property ] (exposed parameter)
+  void                                         RemoveParameter(xiiStringView sKey);                           // [ property ] (exposed parameter)
+  bool                                         GetParameter(xiiStringView sKey, xiiVariant& out_value) const; // [ property ] (exposed parameter)
 
   xiiArrayMap<xiiHashedString, xiiVariant> m_Parameters;
 

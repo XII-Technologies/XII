@@ -6,11 +6,11 @@
 
 #  include <Core/ResourceManager/ResourceHandle.h>
 #  include <Foundation/Math/Rect.h>
-#  include <Imgui/imgui.h>
 #  include <GraphicsCore/Meshes/MeshBufferResource.h>
 #  include <GraphicsCore/Pipeline/Extractor.h>
 #  include <GraphicsCore/Pipeline/RenderData.h>
 #  include <GraphicsCore/Pipeline/Renderer.h>
+#  include <Imgui/imgui.h>
 
 class xiiRenderDataBatch;
 using xiiShaderResourceHandle = xiiTypedResourceHandle<class xiiShaderResource>;
@@ -80,10 +80,10 @@ protected:
   static const xiiUInt32 s_uiVertexBufferSize = 10000;
   static const xiiUInt32 s_uiIndexBufferSize  = s_uiVertexBufferSize * 2;
 
-  xiiShaderResourceHandle  m_hShader;
-  xiiGALBufferHandle       m_hVertexBuffer;
-  xiiGALBufferHandle       m_hIndexBuffer;
-  xiiInputLayoutInfo m_InputLayoutInfo;
+  xiiShaderResourceHandle m_hShader;
+  xiiGALBufferHandle      m_hVertexBuffer;
+  xiiGALBufferHandle      m_hIndexBuffer;
+  xiiInputLayoutInfo      m_InputLayoutInfo;
 };
 
 #endif

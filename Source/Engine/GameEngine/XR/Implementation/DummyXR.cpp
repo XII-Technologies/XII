@@ -11,6 +11,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 XII_IMPLEMENT_SINGLETON(xiiDummyXR);
 
@@ -80,11 +81,11 @@ xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiEnum<xiiGALSam
   // Create dummy swap chain
   {
     xiiGALTextureCreationDescription textureDesc;
-    textureDesc.m_Size = m_Info.m_vEyeRenderTargetSize;
+    textureDesc.m_Size               = m_Info.m_vEyeRenderTargetSize;
     textureDesc.m_uiArraySizeOrDepth = 2;
-    textureDesc.m_uiMipLevels = 1;
-    textureDesc.m_uiSampleCount = msaaCount;
-    textureDesc.m_Usage = xiiGALResourceUsage::Immutable;
+    textureDesc.m_uiMipLevels        = 1;
+    textureDesc.m_uiSampleCount      = msaaCount;
+    textureDesc.m_Usage              = xiiGALResourceUsage::Immutable;
     textureDesc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource);
 
     m_hColorRT = pDevice->CreateTexture(textureDesc);

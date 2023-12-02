@@ -27,9 +27,9 @@ public:
 
   // Exposed Parameters
   const xiiRangeView<xiiStringView, xiiUInt32> GetParameters() const;
-  void                                       SetParameter(xiiStringView sKey, const xiiVariant& value);
-  void                                       RemoveParameter(xiiStringView sKey);
-  bool                                       GetParameter(xiiStringView sKey, xiiVariant& out_value) const;
+  void                                         SetParameter(xiiStringView sKey, const xiiVariant& value);
+  void                                         RemoveParameter(xiiStringView sKey);
+  bool                                         GetParameter(xiiStringView sKey, xiiVariant& out_value) const;
 
 private:
   xiiArrayMap<xiiHashedString, xiiVariant> m_Parameters;

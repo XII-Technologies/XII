@@ -5,7 +5,6 @@
 #  include <Foundation/IO/TypeVersionContext.h>
 #  include <GameEngine/DearImgui/DearImgui.h>
 #  include <GameEngine/DearImgui/DearImguiRenderer.h>
-#  include <Imgui/imgui_internal.h>
 #  include <GraphicsCore/Pipeline/ExtractedRenderData.h>
 #  include <GraphicsCore/Pipeline/View.h>
 #  include <GraphicsCore/RenderContext/RenderContext.h>
@@ -14,6 +13,7 @@
 #  include <GraphicsFoundation/Device/Device.h>
 #  include <GraphicsFoundation/Resources/Buffer.h>
 #  include <GraphicsFoundation/Shader/InputLayout.h>
+#  include <Imgui/imgui_internal.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiImguiRenderData, 1, xiiRTTINoAllocator)
@@ -172,7 +172,7 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, co
   if (xiiImgui::GetSingleton() == nullptr)
     return;
 
-  xiiRenderContext*           pRenderContext  = renderContext.m_pRenderContext;
+  xiiRenderContext*             pRenderContext  = renderContext.m_pRenderContext;
   xiiGALGraphicsCommandEncoder* pCommandEncoder = pRenderContext->GetGraphicsCommandEncoder();
 
   pRenderContext->BindShader(m_hShader);
@@ -222,8 +222,8 @@ void xiiImguiRenderer::SetupRenderer()
   // Create the vertex buffer
   {
     xiiGALBufferCreationDescription desc;
-    desc.m_uiElementByteStride                = sizeof(xiiImguiVertex);
-    desc.m_uiSize                 = s_uiVertexBufferSize * desc.m_uiElementByteStride;
+    desc.m_uiElementByteStride = sizeof(xiiImguiVertex);
+    desc.m_uiSize              = s_uiVertexBufferSize * desc.m_uiElementByteStride;
     desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
 
     m_hVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
@@ -232,8 +232,8 @@ void xiiImguiRenderer::SetupRenderer()
   // Create the index buffer
   {
     xiiGALBufferCreationDescription desc;
-    desc.m_uiElementByteStride= sizeof(ImDrawIdx);
-    desc.m_uiSize                 = s_uiIndexBufferSize * desc.m_uiElementByteStride;
+    desc.m_uiElementByteStride = sizeof(ImDrawIdx);
+    desc.m_uiSize              = s_uiIndexBufferSize * desc.m_uiElementByteStride;
     desc.m_BindFlags.Add(xiiGALBindFlags::IndexBuffer);
 
     m_hIndexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);

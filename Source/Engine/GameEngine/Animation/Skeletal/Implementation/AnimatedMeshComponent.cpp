@@ -82,7 +82,7 @@ void xiiAnimatedMeshComponent::OnDeactivated()
 
 void xiiAnimatedMeshComponent::InitializeAnimationPose()
 {
-  m_MaxBounds .SetInvalid();
+  m_MaxBounds.SetInvalid();
 
   if (!m_hMesh.IsValid())
     return;

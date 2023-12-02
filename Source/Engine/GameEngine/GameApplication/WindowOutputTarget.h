@@ -2,9 +2,9 @@
 
 #include <GameEngine/GameEngineDLL.h>
 
+#include <Core/GameApplication/WindowOutputTargetBase.h>
 #include <Foundation/Math/Size.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
-#include <Core/GameApplication/WindowOutputTargetBase.h>
 
 /// \brief Creates a swapchain and keeps it up to date with the window.
 ///

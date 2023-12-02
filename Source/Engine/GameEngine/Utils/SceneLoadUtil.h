@@ -5,8 +5,8 @@
 #include <Core/ResourceManager/ResourceHandle.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
-#include <Foundation/Utilities/Progress.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <Foundation/Utilities/Progress.h>
 
 using xiiCollectionResourceHandle = xiiTypedResourceHandle<class xiiCollectionResource>;
 

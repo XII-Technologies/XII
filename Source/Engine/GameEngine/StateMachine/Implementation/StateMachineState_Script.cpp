@@ -242,9 +242,9 @@ const char* xiiStateMachineState_Script::GetScriptClassFile() const
 const xiiRangeView<xiiStringView, xiiUInt32> xiiStateMachineState_Script::GetParameters() const
 {
   return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; },
-                                              [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
-                                              [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
-                                              [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString().GetView(); });
+                                                [this]() -> xiiUInt32 { return m_Parameters.GetCount(); },
+                                                [](xiiUInt32& ref_uiIt) { ++ref_uiIt; },
+                                                [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString().GetView(); });
 }
 
 void xiiStateMachineState_Script::SetParameter(xiiStringView sKey, const xiiVariant& value)
@@ -268,7 +268,7 @@ void xiiStateMachineState_Script::RemoveParameter(xiiStringView sKey)
 
 bool xiiStateMachineState_Script::GetParameter(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Parameters.Find(sKey);
+  xiiUInt32 it = m_Parameters.Find(xiiTempHashedString(sKey));
 
   if (it == xiiInvalidIndex)
     return false;

@@ -276,15 +276,15 @@ void xiiSpawnComponent::OnTriggered(xiiMsgComponentInternalTrigger& msg)
   }
 }
 
-const xiiRangeView<const char*, xiiUInt32> xiiSpawnComponent::GetParameters() const
+const xiiRangeView<xiiStringView, xiiUInt32> xiiSpawnComponent::GetParameters() const
 {
-  return xiiRangeView<const char*, xiiUInt32>([]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Parameters.GetCount(); }, [](xiiUInt32& ref_uiIt) { ++ref_uiIt; }, [this](const xiiUInt32& uiIt) -> const char* { return m_Parameters.GetKey(uiIt).GetString().GetData(); });
+  return xiiRangeView<xiiStringView, xiiUInt32>([]() -> xiiUInt32 { return 0; }, [this]() -> xiiUInt32 { return m_Parameters.GetCount(); }, [](xiiUInt32& ref_uiIt) { ++ref_uiIt; }, [this](const xiiUInt32& uiIt) -> xiiStringView { return m_Parameters.GetKey(uiIt).GetString().GetView(); });
 }
 
-void xiiSpawnComponent::SetParameter(const char* szKey, const xiiVariant& value)
+void xiiSpawnComponent::SetParameter(xiiStringView sKey, const xiiVariant& value)
 {
   xiiHashedString hs;
-  hs.Assign(szKey);
+  hs.Assign(sKey);
 
   auto it = m_Parameters.Find(hs);
   if (it != xiiInvalidIndex && m_Parameters.GetValue(it) == value)
@@ -293,14 +293,14 @@ void xiiSpawnComponent::SetParameter(const char* szKey, const xiiVariant& value)
   m_Parameters[hs] = value;
 }
 
-void xiiSpawnComponent::RemoveParameter(const char* szKey)
+void xiiSpawnComponent::RemoveParameter(xiiStringView sKey)
 {
-  m_Parameters.RemoveAndCopy(xiiTempHashedString(szKey));
+  m_Parameters.RemoveAndCopy(xiiTempHashedString(sKey));
 }
 
-bool xiiSpawnComponent::GetParameter(const char* szKey, xiiVariant& out_value) const
+bool xiiSpawnComponent::GetParameter(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Parameters.Find(szKey);
+  xiiUInt32 it = m_Parameters.Find(xiiTempHashedString(sKey));
 
   if (it == xiiInvalidIndex)
     return false;
@@ -334,7 +334,5 @@ public:
 };
 
 xiiSpawnComponentPatch_1_2 g_xiiSpawnComponentPatch_1_2;
-
-
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_Gameplay_Implementation_SpawnComponent);

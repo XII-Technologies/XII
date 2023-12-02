@@ -247,7 +247,7 @@ void xiiSpawnBoxComponent::Spawn(xiiUInt32 uiCount)
     if (m_MaxRotationZ.GetRadian() > 0)
     {
       const xiiAngle rotationAngle = xiiAngle::Radian((float)GetWorld()->GetRandomNumberGenerator().DoubleMinMax(-m_MaxRotationZ.GetRadian(), +m_MaxRotationZ.GetRadian()));
-      xiiQuat  qRot;
+      xiiQuat        qRot;
       qRot.SetFromAxisAndAngle(xiiVec3(0, 0, 1), rotationAngle);
 
       tLocal.m_qRotation = qRot;
@@ -256,7 +256,7 @@ void xiiSpawnBoxComponent::Spawn(xiiUInt32 uiCount)
     if (m_MaxTiltZ.GetRadian() > 0)
     {
       const xiiAngle tiltTurnAngle = xiiAngle::Radian((float)GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, xiiMath::Pi<double>() * 2.0));
-      xiiQuat  qTiltTurn;
+      xiiQuat        qTiltTurn;
       qTiltTurn.SetFromAxisAndAngle(xiiVec3(0, 0, 1), tiltTurnAngle);
 
       const xiiVec3 vTiltAxis = qTiltTurn * xiiVec3(1, 0, 0);

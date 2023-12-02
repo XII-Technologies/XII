@@ -145,8 +145,8 @@ void xiiGameApplication::Init_SetupDefaultResources()
   {
     xiiResourceManager::AllowResourceTypeAcquireDuringUpdateContent<xiiMeshResource, xiiMeshBufferResource>();
 
-    xiiMeshResourceHandle hMissingMesh = xiiResourceManager::LoadResource<xiiMeshResource>("Meshes/MissingMesh.xiiMesh");
-    xiiResourceManager::SetResourceTypeMissingFallback<xiiMeshResource>(hMissingMesh);
+    // xiiMeshResourceHandle hMissingMesh = xiiResourceManager::LoadResource<xiiMeshResource>("Meshes/MissingMesh.xiiMesh");
+    // xiiResourceManager::SetResourceTypeMissingFallback<xiiMeshResource>(hMissingMesh);
   }
 
   // Prefabs

@@ -155,7 +155,7 @@ xiiUniquePtr<xiiActor> xiiGameState::CreateXRActor()
 
   xiiView* pView = nullptr;
   XII_VERIFY(xiiRenderWorld::TryGetView(m_hMainView, pView), "");
-  xiiUniquePtr<xiiActor> pXRActor = pXRInterface->CreateActor(pView, 1, std::move(pMainWindow), std::move(pOutput));
+  xiiUniquePtr<xiiActor> pXRActor = pXRInterface->CreateActor(pView, xiiGALSampleCount::OneSample, std::move(pMainWindow), std::move(pOutput));
   return std::move(pXRActor);
 }
 
@@ -365,8 +365,8 @@ xiiUniquePtr<xiiWindowOutputTargetGAL> xiiGameState::CreateMainOutputTarget(xiiW
   });
 
   xiiGALSwapChainCreationDescription desc;
-  desc.m_pWindow           = pMainWindow;
-  desc.m_ColorBufferFormat  = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+  desc.m_pWindow               = pMainWindow;
+  desc.m_ColorBufferFormat     = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
   desc.m_Usage                 = xiiGALSwapChainUsageFlags::RenderTarget;
   desc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
   desc.m_uiBufferCount         = 2U;

@@ -168,8 +168,8 @@ void xiiFollowPathComponent::Update(bool bForce)
 
       xiiQuat rot;
       rot.SetFromAxisAndAngle(vTarget, deltaAngle);
-      vUp         = rot * vUp;
-      vRight      = rot * vRight;
+      vUp    = rot * vUp;
+      vRight = rot * vRight;
     }
   }
 

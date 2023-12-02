@@ -131,8 +131,8 @@ public:
   void SetSendEntryChangedMessage(bool bSend); // [ property ]
   bool GetSendEntryChangedMessage() const;     // [ property ]
 
-  void        SetBlackboardName(xiiStringView sName); // [ property ]
-  xiiStringView GetBlackboardName() const;             // [ property ]
+  void          SetBlackboardName(xiiStringView sName); // [ property ]
+  xiiStringView GetBlackboardName() const;              // [ property ]
 
 private:
   xiiUInt32                 Entries_GetCount() const;

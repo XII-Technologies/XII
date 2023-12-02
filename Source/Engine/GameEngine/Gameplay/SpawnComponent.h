@@ -99,10 +99,10 @@ public:
   /// The spawned object's orientation may deviate by this amount around the X axis. 180° is completely random orientation.
   xiiAngle m_MaxDeviation; // [ property ]
 
-  const xiiRangeView<const char*, xiiUInt32> GetParameters() const;                                        // [ property ] (exposed parameter)
-  void                                       SetParameter(const char* szKey, const xiiVariant& value);     // [ property ] (exposed parameter)
-  void                                       RemoveParameter(const char* szKey);                           // [ property ] (exposed parameter)
-  bool                                       GetParameter(const char* szKey, xiiVariant& out_value) const; // [ property ] (exposed parameter)
+  const xiiRangeView<xiiStringView, xiiUInt32> GetParameters() const;                                         // [ property ] (exposed parameter)
+  void                                         SetParameter(xiiStringView sKey, const xiiVariant& value);     // [ property ] (exposed parameter)
+  void                                         RemoveParameter(xiiStringView sKey);                           // [ property ] (exposed parameter)
+  bool                                         GetParameter(xiiStringView sKey, xiiVariant& out_value) const; // [ property ] (exposed parameter)
 
   xiiArrayMap<xiiHashedString, xiiVariant> m_Parameters;
 
