@@ -77,7 +77,7 @@ namespace
           out_defines.PushBack(sTemp);
         }
 
-        if (sValue == sName)
+        if (sValue.StartsWith(sName))
         {
           sTemp.Set(sName, " ", sValue);
         }

@@ -121,7 +121,10 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
     texDesc.m_Type               = (texDesc.m_uiArraySizeOrDepth > 1) ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
 
     if (pImage->GetNumFaces() == 6)
-      texDesc.m_Type = xiiGALResourceDimension::TextureCube;
+    {
+      texDesc.m_Type               = xiiGALResourceDimension::TextureCube;
+      texDesc.m_uiArraySizeOrDepth = 6;
+    }
   }
 
   XII_ASSERT_DEV(pImage->GetNumFaces() == 1 || pImage->GetNumFaces() == 6, "Invalid number of image faces (resource: '{0}')", GetResourceID());
