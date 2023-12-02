@@ -36,7 +36,7 @@ Usage of this tool:
 
 Call this tool with the path to the root folder of some library as the sole command line argument:
 
-StaticLinkUtil.exe "C:\XII-Engine\Source\Engine\Foundation"
+StaticLinkUtil.exe "C:\XII\Source\Engine\Foundation"
 
 Note: Do not add a trailing slash after the path.
 
@@ -723,7 +723,7 @@ public:
           // part such that it will reference all the other files
           if (sFileContent.FindSubString("XII_STATICLINK_LIBRARY"))
           {
-            xiiLog::Info("Found macro 'XII_STATICLINK_LIBRARY' in file '{0}'.", &sFile[m_sSearchDir.GetElementCount() + 1]);
+            xiiLog::Info("Found macro 'XII_STATICLINK_LIBRARY' in file '{0}'.", &sFile.GetData()[m_sSearchDir.GetElementCount() + 1]);
 
             if (!m_sRefPointGroupFile.IsEmpty())
               xiiLog::Error("The macro 'XII_STATICLINK_LIBRARY' was already found in file '{0}' before. You cannot have this macro twice in the same library!", m_sRefPointGroupFile);

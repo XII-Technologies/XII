@@ -194,13 +194,13 @@ XII_CREATE_SIMPLE_TEST(Math, Quaternion)
     XII_TEST_BOOL(q.IsValid(0.001f));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator- / Invert")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetInverse / Invert")
   {
     xiiQuatT q, q1;
     q.SetFromAxisAndAngle(xiiVec3T(0, 0, 1), xiiAngle::Degree(90));
     q1.SetFromAxisAndAngle(xiiVec3T(0, 0, 1), xiiAngle::Degree(-90));
 
-    xiiQuatT q2 = -q;
+    xiiQuatT q2 = q.GetInverse();
     XII_TEST_BOOL(q1.IsEqualRotation(q2, 0.0001f));
 
     xiiQuatT q3 = q;

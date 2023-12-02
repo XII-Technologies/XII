@@ -111,16 +111,15 @@ public:
 
   /// \brief Inverts the rotation, so instead of rotating N degrees around an axis, the quaternion will rotate -N degrees around its axis.
   ///
-  /// This modifies the quaternion in place. If you want to get the inverse as a copy, use the negation operator (-).
+  /// This modifies the quaternion in place. If you want to get the inverse as a copy, use GetInverse().
   void Invert();
 
-  // *** Operators ***
-public:
-  /// \brief Returns a Quaternion that represents the negative / inverted rotation.
-  const xiiQuatTemplate operator-() const; // [tested]
+  /// \brief Returns a quaternion that represents the negative / inverted rotation. E.g. the one that would rotate back to identity.
+  const xiiQuatTemplate<Type> GetInverse() const; // [tested]
 
-  // *** Common Quaternion operations ***
-public:
+  /// \brief Returns the Quaternion with all 4 components negated. This is not the same as the inverted rotation!
+  const xiiQuatTemplate<Type> GetNegated() const;
+
   /// \brief Returns the dot-product of the two quaternions (commutative, order does not matter).
   Type Dot(const xiiQuatTemplate& rhs) const; // [tested]
 

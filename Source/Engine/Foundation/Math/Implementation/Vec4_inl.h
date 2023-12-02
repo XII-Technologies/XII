@@ -79,6 +79,12 @@ XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type inX, Type inY, Typ
 }
 
 template <typename Type>
+XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(xiiVec3Template<Type> xyz, Type w) :
+  x(xyz.x), y(xyz.y), z(xyz.z), w(w)
+{
+}
+
+template <typename Type>
 XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type inV) :
   x(inV), y(inV), z(inV), w(inV)
 {

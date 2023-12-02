@@ -30,7 +30,7 @@ namespace
 
 
 xiiTokenizer::xiiTokenizer(xiiAllocatorBase* pAllocator) :
-  m_Data(pAllocator != nullptr ? pAllocator : &s_ClassAllocator), m_Tokens(pAllocator != nullptr ? pAllocator : &s_ClassAllocator)
+  m_Tokens(pAllocator != nullptr ? pAllocator : &s_ClassAllocator), m_Data(pAllocator != nullptr ? pAllocator : &s_ClassAllocator)
 {
 }
 

@@ -418,6 +418,7 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
           tmpPath.AppendPath(event->name);
 
           const char* type = "file";
+          XII_IGNORE_UNUSED(type);
           if (IsDirectory(event->mask))
           {
             type = "folder";

@@ -76,9 +76,11 @@ namespace
   {                                                                                                                  \
     DEFINE_TARGET_REGISTER();                                                                                        \
     DEFINE_OP_REGISTER(a);                                                                                           \
-    xiiUInt32                      bRaw;                                                                             \
+    xiiUInt32 bRaw;                                                                                                  \
+    XII_IGNORE_UNUSED(bRaw);                                                                                         \
     xiiExpression::Register        bConstant;                                                                        \
     const xiiExpression::Register* b;                                                                                \
+    XII_IGNORE_UNUSED(b);                                                                                            \
     if constexpr (RightIsConstant)                                                                                   \
     {                                                                                                                \
       bRaw      = *pByteCode;                                                                                        \
