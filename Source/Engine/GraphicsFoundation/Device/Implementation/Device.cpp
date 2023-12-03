@@ -2620,7 +2620,7 @@ xiiUInt64 xiiGALDevice::GetMemoryConsumptionForTexture(const xiiGALTextureCreati
   // This generic implementation is only an approximation, but it can be overridden by specific devices
   // to give an accurate memory consumption figure.
   xiiUInt64 uiMemory = xiiUInt64(desc.m_Size.width) * xiiUInt64(desc.m_Size.height) * xiiUInt64(desc.m_uiArraySizeOrDepth);
-  uiMemory *= formatProperties.m_uiComponentSize;
+  uiMemory *= formatProperties.GetElementSize();
   uiMemory *= desc.m_uiSampleCount;
 
   // Also account for mip maps

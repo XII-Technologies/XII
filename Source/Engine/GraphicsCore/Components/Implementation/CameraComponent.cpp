@@ -8,7 +8,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 
 
 xiiCameraComponentManager::xiiCameraComponentManager(xiiWorld* pWorld) :

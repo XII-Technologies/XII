@@ -26,8 +26,8 @@ XII_APPLICATION_ENTRY_POINT(xiiPlayerApplication);
 xiiCommandLineOptionString opt_Project("_Player", "-project", "Path to the project folder.\nUsually an absolute path, though relative paths will work for projects that are located inside the XII SDK directory.", "");
 xiiCommandLineOptionString opt_Scene("_Player", "-scene", "Path to a scene file.\nUsually given relative to the corresponding project data directory where it resides, but can also be given as an absolute path.", "");
 
-xiiPlayerApplication::xiiPlayerApplication()
-  : xiiGameApplication("xiiPlayer") // we don't have a fixed project path in this app, so we need to pass that in a bit later
+xiiPlayerApplication::xiiPlayerApplication() :
+  xiiGameApplication("xiiPlayer") // we don't have a fixed project path in this app, so we need to pass that in a bit later
 {
 }
 

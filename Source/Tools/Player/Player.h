@@ -10,9 +10,9 @@ public:
   xiiPlayerApplication();
 
 protected:
-  virtual void Run_InputUpdate() override;
+  virtual void      Run_InputUpdate() override;
   virtual xiiResult BeforeCoreSystemsStartup() override;
-  virtual void AfterCoreSystemsStartup() override;
+  virtual void      AfterCoreSystemsStartup() override;
 
 private:
   void DetermineProjectPath();
