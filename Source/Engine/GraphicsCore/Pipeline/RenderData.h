@@ -38,7 +38,7 @@ public:
   /// \brief This function generates a 64bit sorting key for the given render data. Data with lower sorting key is rendered first.
   using SortingKeyFunc = xiiUInt64 (*)(const xiiRenderData*, const xiiCamera&);
 
-  static Category RegisterCategory(const char* szCategoryName, SortingKeyFunc sortingKeyFunc);
+  static Category RegisterCategory(xiiStringView sCategoryName, SortingKeyFunc sortingKeyFunc);
   static Category FindCategory(xiiTempHashedString sCategoryName);
 
   static void GetAllCategoryNames(xiiDynamicArray<xiiHashedString>& out_categoryNames);

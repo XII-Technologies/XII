@@ -80,7 +80,7 @@ public:
     }
 
     XII_ALWAYS_INLINE T* operator->() { return m_pGALCommandEncoder; }
-    XII_ALWAYS_INLINE    operator const T*() { return m_pGALCommandEncoder; }
+    XII_ALWAYS_INLINE operator const T*() { return m_pGALCommandEncoder; }
 
   private:
     friend class xiiRenderContext;
@@ -91,8 +91,8 @@ public:
     }
 
     xiiRenderContext& m_RenderContext;
-    xiiGALPass*       m_pGALPass;
-    T*                m_pGALCommandEncoder;
+    xiiGALPass*       m_pGALPass           = nullptr;
+    T*                m_pGALCommandEncoder = nullptr;
   };
 
   using RenderingScope = CommandEncoderScope<xiiGALGraphicsCommandEncoder>;
@@ -172,8 +172,8 @@ public:
 
   void                   BindMeshBuffer(const xiiDynamicMeshBufferResourceHandle& hDynamicMeshBuffer);
   void                   BindMeshBuffer(const xiiMeshBufferResourceHandle& hMeshBuffer);
-  void                   BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBufferHandle hIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiPrimitiveCount, xiiGALBufferHandle hVertexBuffer2 = {}, xiiGALBufferHandle hVertexBuffer3 = {}, xiiGALBufferHandle hVertexBuffer4 = {});
-  XII_ALWAYS_INLINE void BindNullMeshBuffer(xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiPrimitiveCount)
+  void                   BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBufferHandle hIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount, xiiGALBufferHandle hVertexBuffer2 = {}, xiiGALBufferHandle hVertexBuffer3 = {}, xiiGALBufferHandle hVertexBuffer4 = {});
+  XII_ALWAYS_INLINE void BindNullMeshBuffer(xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount)
   {
     BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, topology, uiPrimitiveCount);
   }
@@ -193,17 +193,17 @@ public:
   /// The built in default is Anisotropic 4x.
   /// If the default setting is changed, already loaded textures might not adjust.
   /// Nearest filtering is not allowed as a default filter.
-  void SetDefaultTextureFilter(xiiTextureFilterSetting::Enum filter);
+  void SetDefaultTextureFilter(xiiEnum<xiiTextureFilterSetting> filter);
 
   /// \brief Returns the texture filter mode that is used by default for textures.
-  xiiTextureFilterSetting::Enum GetDefaultTextureFilter() const { return m_DefaultTextureFilter; }
+  xiiEnum<xiiTextureFilterSetting> GetDefaultTextureFilter() const { return m_DefaultTextureFilter; }
 
   /// \brief Returns the 'fixed' texture filter setting that the combination of default texture filter and given \a configuration defines.
   ///
   /// If \a configuration is set to a fixed filter, that setting is returned.
   /// If it is one of LowestQuality to HighestQuality, the adjusted default filter is returned.
   /// When the default filter is used (with adjustments), the allowed range is Bilinear to Aniso16x, the Nearest filter is never used.
-  xiiTextureFilterSetting::Enum GetSpecificTextureFilter(xiiTextureFilterSetting::Enum configuration) const;
+  xiiEnum<xiiTextureFilterSetting> GetSpecificTextureFilter(xiiEnum<xiiTextureFilterSetting> configuration) const;
 
   /// \brief Set async shader loading. During runtime all shaders should be preloaded so this is off by default.
   void SetAllowAsyncShaderLoading(bool bAllow);
@@ -287,8 +287,8 @@ private:
 
   xiiGALBufferHandle               m_hVertexBuffers[4];
   xiiGALBufferHandle               m_hIndexBuffer;
-  const xiiInputLayoutInfo*        m_pInputLayoutInfo;
-  xiiGALPrimitiveTopology::Enum    m_Topology;
+  const xiiInputLayoutInfo*        m_pInputLayoutInfo = nullptr;
+  xiiEnum<xiiGALPrimitiveTopology> m_Topology;
   xiiUInt32                        m_uiMeshBufferPrimitiveCount;
   xiiEnum<xiiTextureFilterSetting> m_DefaultTextureFilter;
   bool                             m_bAllowAsyncShaderLoading;
@@ -369,6 +369,7 @@ private:
 private: // Per Renderer States
   friend RenderingScope;
   friend ComputeScope;
+
   XII_ALWAYS_INLINE void EndCommandEncoder(xiiGALGraphicsCommandEncoder*) { EndRendering(); }
   XII_ALWAYS_INLINE void EndCommandEncoder(xiiGALComputeCommandEncoder*) { EndCompute(); }
 

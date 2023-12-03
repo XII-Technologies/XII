@@ -65,19 +65,19 @@ xiiDynamicArray<xiiUniquePtr<xiiRenderer>> xiiRenderData::s_RendererInstances;
 bool                                       xiiRenderData::s_bRendererInstancesDirty = false;
 
 // static
-xiiRenderData::Category xiiRenderData::RegisterCategory(const char* szCategoryName, SortingKeyFunc sortingKeyFunc)
+xiiRenderData::Category xiiRenderData::RegisterCategory(xiiStringView sCategoryName, SortingKeyFunc sortingKeyFunc)
 {
-  xiiHashedString sCategoryName;
-  sCategoryName.Assign(szCategoryName);
+  xiiHashedString sCategoryNameHash;
+  sCategoryNameHash.Assign(sCategoryName);
 
-  Category oldCategory = FindCategory(sCategoryName);
+  Category oldCategory = FindCategory(sCategoryNameHash);
   if (oldCategory != xiiInvalidRenderDataCategory)
     return oldCategory;
 
   Category newCategory = Category(static_cast<xiiUInt16>(s_CategoryData.GetCount()));
 
   auto& data            = s_CategoryData.ExpandAndGetRef();
-  data.m_sName          = sCategoryName;
+  data.m_sName          = sCategoryNameHash;
   data.m_sortingKeyFunc = sortingKeyFunc;
 
   return newCategory;
@@ -125,8 +125,7 @@ void xiiRenderData::UpdateRendererTypes()
 {
   s_RendererTypes.Clear();
 
-  xiiRTTI::ForEachDerivedType<xiiRenderer>([](const xiiRTTI* pRtti) { s_RendererTypes.PushBack(pRtti); },
-                                           xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
+  xiiRTTI::ForEachDerivedType<xiiRenderer>([](const xiiRTTI* pRtti) { s_RendererTypes.PushBack(pRtti); }, xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
 
   s_bRendererInstancesDirty = true;
 }
@@ -138,8 +137,7 @@ void xiiRenderData::CreateRendererInstances()
 
   for (auto pRendererType : s_RendererTypes)
   {
-    XII_ASSERT_DEV(pRendererType->IsDerivedFrom(xiiGetStaticRTTI<xiiRenderer>()), "Renderer type '{}' must be derived from xiiRenderer",
-                   pRendererType->GetTypeName());
+    XII_ASSERT_DEV(pRendererType->IsDerivedFrom(xiiGetStaticRTTI<xiiRenderer>()), "Renderer type '{}' must be derived from xiiRenderer", pRendererType->GetTypeName());
 
     auto pRenderer = pRendererType->GetAllocator()->Allocate<xiiRenderer>();
 
@@ -196,10 +194,7 @@ xiiRenderData::Category xiiDefaultRenderDataCategories::GUI               = xiiR
 
 //////////////////////////////////////////////////////////////////////////
 
-void xiiMsgExtractRenderData::AddRenderData(
-  const xiiRenderData*         pRenderData,
-  xiiRenderData::Category      category,
-  xiiRenderData::Caching::Enum cachingBehavior)
+void xiiMsgExtractRenderData::AddRenderData(const xiiRenderData* pRenderData, xiiRenderData::Category category, xiiRenderData::Caching::Enum cachingBehavior)
 {
   auto& cached         = m_ExtractedRenderData.ExpandAndGetRef();
   cached.m_pRenderData = pRenderData;

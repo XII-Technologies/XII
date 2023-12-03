@@ -9,7 +9,7 @@ private:
   {
     XII_DECLARE_POD_TYPE();
 
-    const xiiRenderData* m_pRenderData;
+    const xiiRenderData* m_pRenderData = nullptr;
     xiiUInt64            m_uiSortingKey;
   };
 
@@ -40,8 +40,8 @@ public:
     Iterator(const SortableRenderData* pStart, const SortableRenderData* pEnd, Filter filter);
 
     Filter                    m_Filter;
-    const SortableRenderData* m_pCurrent;
-    const SortableRenderData* m_pEnd;
+    const SortableRenderData* m_pCurrent = nullptr;
+    const SortableRenderData* m_pEnd     = nullptr;
   };
 
   xiiUInt32 GetCount() const;

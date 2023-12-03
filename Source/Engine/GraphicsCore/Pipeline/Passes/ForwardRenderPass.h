@@ -24,7 +24,7 @@ class XII_GRAPHICSCORE_DLL xiiForwardRenderPass : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiForwardRenderPass, xiiRenderPipelinePass);
 
 public:
-  xiiForwardRenderPass(const char* szName = "ForwardRenderPass");
+  xiiForwardRenderPass(xiiStringView sName = "ForwardRenderPass");
   ~xiiForwardRenderPass();
 
   virtual bool      GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
@@ -35,7 +35,6 @@ public:
 protected:
   virtual void SetupResources(xiiGALPass* pGALPass, const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs);
   virtual void SetupPermutationVars(const xiiRenderViewContext& renderViewContext);
-  virtual void SetupLighting(const xiiRenderViewContext& renderViewContext);
 
   virtual void RenderObjects(const xiiRenderViewContext& renderViewContext) = 0;
 

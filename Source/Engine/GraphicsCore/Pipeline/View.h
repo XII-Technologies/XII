@@ -118,17 +118,17 @@ public:
   /// \brief Returns the frustum that should be used for determine visible objects for this view.
   void ComputeCullingFrustum(xiiFrustum& out_frustum) const;
 
-  void SetShaderPermutationVariable(const char* szName, const char* szValue);
+  void SetShaderPermutationVariable(xiiStringView sName, xiiStringView sValue);
 
-  void SetRenderPassProperty(const char* szPassName, const char* szPropertyName, const xiiVariant& value);
-  void SetExtractorProperty(const char* szPassName, const char* szPropertyName, const xiiVariant& value);
+  void SetRenderPassProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
+  void SetExtractorProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
 
   void ResetRenderPassProperties();
   void ResetExtractorProperties();
 
-  void       SetRenderPassReadBackProperty(const char* szPassName, const char* szPropertyName, const xiiVariant& value);
-  xiiVariant GetRenderPassReadBackProperty(const char* szPassName, const char* szPropertyName);
-  bool       IsRenderPassReadBackPropertyExisting(const char* szPassName, const char* szPropertyName) const;
+  void       SetRenderPassReadBackProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
+  xiiVariant GetRenderPassReadBackProperty(xiiStringView sPassName, xiiStringView sPropertyName);
+  bool       IsRenderPassReadBackPropertyExisting(xiiStringView sPassName, xiiStringView sPropertyName) const;
 
   /// \brief Pushes the view and camera data into the extracted data of the pipeline.
   ///
@@ -194,8 +194,8 @@ private:
     bool       m_bIsDirty;
   };
 
-  void SetProperty(xiiMap<xiiString, PropertyValue>& map, const char* szPassName, const char* szPropertyName, const xiiVariant& value);
-  void SetReadBackProperty(xiiMap<xiiString, PropertyValue>& map, const char* szPassName, const char* szPropertyName, const xiiVariant& value);
+  void SetProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
+  void SetReadBackProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value);
 
   void ReadBackPassProperties();
 
@@ -204,7 +204,7 @@ private:
   void ApplyRenderPassProperties();
   void ApplyExtractorProperties();
 
-  void ApplyProperty(xiiReflectedClass* pObject, PropertyValue& data, const char* szTypeName);
+  void ApplyProperty(xiiReflectedClass* pObject, PropertyValue& data, xiiStringView sTypeName);
 
   xiiMap<xiiString, PropertyValue> m_PassProperties;
   xiiMap<xiiString, PropertyValue> m_PassReadBackProperties;

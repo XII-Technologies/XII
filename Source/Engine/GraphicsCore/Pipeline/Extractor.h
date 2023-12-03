@@ -11,14 +11,14 @@ class XII_GRAPHICSCORE_DLL xiiExtractor : public xiiReflectedClass
   XII_DISALLOW_COPY_AND_ASSIGN(xiiExtractor);
 
 public:
-  xiiExtractor(const char* szName);
+  xiiExtractor(xiiStringView sName);
   virtual ~xiiExtractor();
 
   /// \brief Sets the name of the extractor.
-  void SetName(const char* szName);
+  void SetName(xiiStringView sName);
 
   /// \brief returns the name of the extractor.
-  const char* GetName() const;
+  xiiStringView GetName() const;
 
   virtual void Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData);
 
@@ -56,7 +56,7 @@ class XII_GRAPHICSCORE_DLL xiiVisibleObjectsExtractor : public xiiExtractor
   XII_ADD_DYNAMIC_REFLECTION(xiiVisibleObjectsExtractor, xiiExtractor);
 
 public:
-  xiiVisibleObjectsExtractor(const char* szName = "VisibleObjectsExtractor");
+  xiiVisibleObjectsExtractor(xiiStringView sName = "VisibleObjectsExtractor");
   ~xiiVisibleObjectsExtractor();
 
   virtual void      Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;
@@ -69,7 +69,7 @@ class XII_GRAPHICSCORE_DLL xiiSelectedObjectsExtractorBase : public xiiExtractor
   XII_ADD_DYNAMIC_REFLECTION(xiiSelectedObjectsExtractorBase, xiiExtractor);
 
 public:
-  xiiSelectedObjectsExtractorBase(const char* szName = "SelectedObjectsExtractor");
+  xiiSelectedObjectsExtractorBase(xiiStringView sName = "SelectedObjectsExtractor");
   ~xiiSelectedObjectsExtractorBase();
 
   virtual void                                 Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;
@@ -112,7 +112,7 @@ class XII_GRAPHICSCORE_DLL xiiSelectedObjectsExtractor : public xiiSelectedObjec
   XII_ADD_DYNAMIC_REFLECTION(xiiSelectedObjectsExtractor, xiiSelectedObjectsExtractorBase);
 
 public:
-  xiiSelectedObjectsExtractor(const char* szName = "ExplicitlySelectedObjectsExtractor");
+  xiiSelectedObjectsExtractor(xiiStringView sName = "ExplicitlySelectedObjectsExtractor");
   ~xiiSelectedObjectsExtractor();
 
   virtual const xiiDeque<xiiGameObjectHandle>* GetSelection() override;

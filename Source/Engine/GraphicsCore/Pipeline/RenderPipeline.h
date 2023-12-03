@@ -36,7 +36,7 @@ public:
   xiiRenderPipelinePass* GetPassByName(const xiiStringView& sPassName);
   xiiHashedString        GetViewName() const;
 
-  bool Connect(xiiRenderPipelinePass* pOutputNode, const char* szOutputPinName, xiiRenderPipelinePass* pInputNode, const char* szInputPinName);
+  bool Connect(xiiRenderPipelinePass* pOutputNode, xiiStringView sOutputPinName, xiiRenderPipelinePass* pInputNode, xiiStringView sInputPinName);
   bool Connect(xiiRenderPipelinePass* pOutputNode, xiiHashedString sOutputPinName, xiiRenderPipelinePass* pInputNode, xiiHashedString sInputPinName);
   bool Disconnect(xiiRenderPipelinePass* pOutputNode, xiiHashedString sOutputPinName, xiiRenderPipelinePass* pInputNode, xiiHashedString sInputPinName);
 
@@ -56,9 +56,7 @@ public:
   }
 
   const xiiExtractedRenderData& GetRenderData() const;
-  xiiRenderDataBatchList        GetRenderDataBatchesWithCategory(
-           xiiRenderData::Category    category,
-           xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter()) const;
+  xiiRenderDataBatchList        GetRenderDataBatchesWithCategory(xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter()) const;
 
   /// \brief Creates a DGML graph of all passes and textures. Can be used to verify that no accidental temp textures are created due to poorly constructed pipelines or errors in code.
   void CreateDgmlGraph(xiiDGMLGraph& ref_graph);

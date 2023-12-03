@@ -1,10 +1,11 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Foundation/Math/Mat4.h>
 #include <Foundation/Strings/String.h>
 #include <Foundation/Types/RefCounted.h>
 #include <Foundation/Types/SharedPtr.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Rasterizer/Thirdparty/Occluder.h>
 
 class xiiGeometry;

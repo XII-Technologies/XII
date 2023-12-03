@@ -324,6 +324,9 @@ public:
   /// \brief This retrieves the device properties. See xiiGraphicsDeviceAdapterDescription.
   const xiiGALGraphicsDeviceAdapterDescription& GetGraphicsDeviceAdapterProperties() const;
 
+  /// \brief This retrieves the device graphics API type. See xiiGALGraphicsDeviceType.
+  xiiEnum<xiiGALGraphicsDeviceType> GetGraphicsDeviceType() const;
+
   /// \brief This returns the basic texture information for a particular format.
   ///
   /// \param format - The texture format for which to provide the information.
@@ -451,6 +454,8 @@ protected:
   xiiDynamicArray<DeadObject, xiiLocalAllocatorWrapper> m_DeadObjects;
 
   xiiGALGraphicsDeviceAdapterDescription m_AdapterDescription;
+
+  xiiEnum<xiiGALGraphicsDeviceType> m_Type;
 
   // Deactivate Doxygen document generation for the following block. (API abstraction only)
   /// \cond

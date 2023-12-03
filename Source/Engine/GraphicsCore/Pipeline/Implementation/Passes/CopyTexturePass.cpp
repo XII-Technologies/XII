@@ -26,10 +26,7 @@ xiiCopyTexturePass::xiiCopyTexturePass() :
 
 xiiCopyTexturePass::~xiiCopyTexturePass() = default;
 
-bool xiiCopyTexturePass::GetRenderTargetDescriptions(
-  const xiiView&                                             view,
-  const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs,
-  xiiArrayPtr<xiiGALTextureCreationDescription>              outputs)
+bool xiiCopyTexturePass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
   const xiiGALTextureCreationDescription* pInput = inputs[m_PinInput.m_uiInputIndex];
 

@@ -83,10 +83,10 @@ xiiHashedString xiiRenderPipelineNode::GetPinName(const xiiRenderPipelineNodePin
   return xiiHashedString();
 }
 
-const xiiRenderPipelineNodePin* xiiRenderPipelineNode::GetPinByName(const char* szName) const
+const xiiRenderPipelineNodePin* xiiRenderPipelineNode::GetPinByName(xiiStringView sName) const
 {
   xiiHashedString sHashedName;
-  sHashedName.Assign(szName);
+  sHashedName.Assign(sName);
   return GetPinByName(sHashedName);
 }
 
@@ -100,6 +100,5 @@ const xiiRenderPipelineNodePin* xiiRenderPipelineNode::GetPinByName(xiiHashedStr
 
   return nullptr;
 }
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_RenderPipelineNode);

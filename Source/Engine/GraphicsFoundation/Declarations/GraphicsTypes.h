@@ -727,6 +727,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
   };
 
   static xiiUInt32 VerticesPerPrimitive(xiiEnum<xiiGALPrimitiveTopology> e);
+
+  static const char* Names[ENUM_COUNT];
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPrimitiveTopology);

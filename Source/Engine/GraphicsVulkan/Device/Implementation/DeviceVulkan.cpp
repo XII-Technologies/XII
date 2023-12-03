@@ -747,6 +747,8 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
 
 void xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 {
+  m_Type = xiiGALGraphicsDeviceType::Vulkan;
+
   const Diligent::GraphicsAdapterInfo& adapterInformation = m_pDevice->GetAdapterInfo();
 
   m_AdapterDescription.m_sAdapterName = adapterInformation.Description;

@@ -772,6 +772,8 @@ void xiiGALDeviceD3D12::WaitIdlePlatform()
 
 void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 {
+  m_Type = xiiGALGraphicsDeviceType::Direct3D12;
+
   const Diligent::GraphicsAdapterInfo& adapterInformation = m_pDevice->GetAdapterInfo();
 
   m_AdapterDescription.m_sAdapterName = adapterInformation.Description;
