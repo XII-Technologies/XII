@@ -15,7 +15,7 @@ class xiiFormatString;
 class xiiFrustum;
 struct xiiRenderViewContext;
 
-/// \brief Horizontal alignment of debug text
+/// \brief Horizontal alignment of debug text.
 struct xiiDebugTextHAlign
 {
   using StorageType = xiiUInt8;
@@ -32,7 +32,7 @@ struct xiiDebugTextHAlign
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDebugTextHAlign);
 
-/// \brief Vertical alignment of debug text
+/// \brief Vertical alignment of debug text.
 struct xiiDebugTextVAlign
 {
   using StorageType = xiiUInt8;
@@ -49,7 +49,7 @@ struct xiiDebugTextVAlign
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDebugTextVAlign);
 
-/// \brief Screen placement of debug text
+/// \brief Screen placement of debug text.
 struct xiiDebugTextPlacement
 {
   using StorageType = xiiUInt8;
@@ -74,9 +74,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDebugTextPlacement);
 /// \brief Draws simple shapes into the scene or view.
 ///
 /// Shapes can be rendered for a single frame, or 'persistent' for a certain duration.
-/// The 'context' specifies whether shapes are generally visible in a scene, from all views,
-/// or specific to a single view. See the xiiDebugRendererContext constructors for what can be implicitly
-/// used as a context.
+/// The 'context' specifies whether shapes are generally visible in a scene, from all views, or specific to a single view. See the xiiDebugRendererContext constructors for what can be implicitly used as a context.
 class XII_GRAPHICSCORE_DLL xiiDebugRenderer
 {
 public:
