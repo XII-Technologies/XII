@@ -31,10 +31,7 @@ xiiSimpleRenderPass::xiiSimpleRenderPass(const char* szName) :
 
 xiiSimpleRenderPass::~xiiSimpleRenderPass() = default;
 
-bool xiiSimpleRenderPass::GetRenderTargetDescriptions(
-  const xiiView&                                             view,
-  const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs,
-  xiiArrayPtr<xiiGALTextureCreationDescription>              outputs)
+bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
   xiiGALDevice*              pDevice       = xiiGALDevice::GetDefaultDevice();
   const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();

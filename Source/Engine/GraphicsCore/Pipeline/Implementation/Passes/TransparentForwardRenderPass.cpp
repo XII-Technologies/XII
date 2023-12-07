@@ -57,7 +57,6 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   SetupResources(pGALPass, renderViewContext, inputs, outputs);
   SetupPermutationVars(renderViewContext);
-  SetupLighting(renderViewContext);
 
   UpdateSceneColorTexture(renderViewContext, hSceneColor, pColorInput->m_TextureHandle);
 
