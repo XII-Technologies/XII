@@ -50,13 +50,13 @@ namespace xiiInternal
 
 struct xiiRenderViewContext
 {
-  const xiiCamera*   m_pCamera;
-  const xiiCamera*   m_pLodCamera;
-  const xiiViewData* m_pViewData;
-  xiiRenderContext*  m_pRenderContext;
+  const xiiCamera*   m_pCamera        = nullptr;
+  const xiiCamera*   m_pLodCamera     = nullptr;
+  const xiiViewData* m_pViewData      = nullptr;
+  xiiRenderContext*  m_pRenderContext = nullptr;
 
-  const xiiDebugRendererContext* m_pWorldDebugContext;
-  const xiiDebugRendererContext* m_pViewDebugContext;
+  const xiiDebugRendererContext* m_pWorldDebugContext = nullptr;
+  const xiiDebugRendererContext* m_pViewDebugContext  = nullptr;
 };
 
 using xiiViewId = xiiGenericId<24, 8>;

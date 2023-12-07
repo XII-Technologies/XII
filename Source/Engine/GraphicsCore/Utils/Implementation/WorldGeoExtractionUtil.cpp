@@ -63,14 +63,14 @@ void xiiWorldGeoExtractionUtil::ExtractWorldGeometry(MeshObjectList& ref_objects
   }
 }
 
-void xiiWorldGeoExtractionUtil::WriteWorldGeometryToOBJ(const char* szFile, const MeshObjectList& objects, const xiiMat3& mTransform)
+void xiiWorldGeoExtractionUtil::WriteWorldGeometryToOBJ(xiiStringView sFile, const MeshObjectList& objects, const xiiMat3& mTransform)
 {
-  XII_LOG_BLOCK("Write World Geometry to OBJ", szFile);
+  XII_LOG_BLOCK("Write World Geometry to OBJ", sFile);
 
   xiiFileWriter file;
-  if (file.Open(szFile).Failed())
+  if (file.Open(sFile).Failed())
   {
-    xiiLog::Error("Failed to open file for writing: '{0}'", szFile);
+    xiiLog::Error("Failed to open file for writing: '{0}'", sFile);
     return;
   }
 

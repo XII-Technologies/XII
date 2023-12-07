@@ -46,7 +46,7 @@ public:
   static void ExtractWorldGeometry(MeshObjectList& ref_objects, const xiiWorld& world, ExtractionMode mode, const xiiDeque<xiiGameObjectHandle>& selection);
 
   /// \brief Writes the given geometry in .obj format to file
-  static void WriteWorldGeometryToOBJ(const char* szFile, const MeshObjectList& objects, const xiiMat3& mTransform);
+  static void WriteWorldGeometryToOBJ(xiiStringView sFile, const MeshObjectList& objects, const xiiMat3& mTransform);
 };
 
 /// \brief Sent by xiiWorldGeoExtractionUtil to gather geometry information about objects in a world

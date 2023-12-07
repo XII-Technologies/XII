@@ -17,8 +17,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentForwardRenderPass, 1, xiiRTTIDefa
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiTransparentForwardRenderPass::xiiTransparentForwardRenderPass(const char* szName) :
-  xiiForwardRenderPass(szName)
+xiiTransparentForwardRenderPass::xiiTransparentForwardRenderPass(xiiStringView sName) :
+  xiiForwardRenderPass(sName)
 {
 }
 
@@ -31,9 +31,7 @@ xiiTransparentForwardRenderPass::~xiiTransparentForwardRenderPass()
   }
 }
 
-void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext&                               renderViewContext,
-                                              const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs,
-                                              const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
   auto pColorInput = inputs[m_PinColor.m_uiInputIndex];
   if (pColorInput == nullptr)
@@ -59,7 +57,6 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext&       
 
   SetupResources(pGALPass, renderViewContext, inputs, outputs);
   SetupPermutationVars(renderViewContext);
-  SetupLighting(renderViewContext);
 
   UpdateSceneColorTexture(renderViewContext, hSceneColor, pColorInput->m_TextureHandle);
 

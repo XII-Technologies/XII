@@ -37,7 +37,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiAOPass::xiiAOPass() :
   xiiRenderPipelinePass("AOPass", true)
-
 {
   m_hNoiseTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>("Textures/SSAONoise.dds");
 

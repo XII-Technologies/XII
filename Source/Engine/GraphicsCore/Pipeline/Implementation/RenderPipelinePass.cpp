@@ -27,26 +27,25 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiRenderPipelinePass, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiRenderPipelinePass::xiiRenderPipelinePass(const char* szName, bool bIsStereoAware) :
+xiiRenderPipelinePass::xiiRenderPipelinePass(xiiStringView sName, bool bIsStereoAware) :
   m_bIsStereoAware(bIsStereoAware)
-
 {
-  m_sName.Assign(szName);
+  m_sName.Assign(sName);
 }
 
 xiiRenderPipelinePass::~xiiRenderPipelinePass() = default;
 
-void xiiRenderPipelinePass::SetName(const char* szName)
+void xiiRenderPipelinePass::SetName(xiiStringView sName)
 {
-  if (!xiiStringUtils::IsNullOrEmpty(szName))
+  if (!sName.IsEmpty())
   {
-    m_sName.Assign(szName);
+    m_sName.Assign(sName);
   }
 }
 
-const char* xiiRenderPipelinePass::GetName() const
+xiiStringView xiiRenderPipelinePass::GetName() const
 {
-  return m_sName.GetData();
+  return m_sName.GetView();
 }
 
 void xiiRenderPipelinePass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) {}

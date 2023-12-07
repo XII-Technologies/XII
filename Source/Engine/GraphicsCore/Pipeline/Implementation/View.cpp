@@ -174,18 +174,18 @@ void xiiView::ComputeCullingFrustum(xiiFrustum& out_frustum) const
   out_frustum.SetFrustum(projectionMatrix * viewMatrix);
 }
 
-void xiiView::SetShaderPermutationVariable(const char* szName, const char* szValue)
+void xiiView::SetShaderPermutationVariable(xiiStringView sName, xiiStringView sValue)
 {
-  xiiHashedString sName;
-  sName.Assign(szName);
+  xiiHashedString sNameHash;
+  sNameHash.Assign(sName);
 
   for (auto& var : m_PermutationVars)
   {
-    if (var.m_sName == sName)
+    if (var.m_sName == sNameHash)
     {
-      if (var.m_sValue != szValue)
+      if (var.m_sValue.GetView() != sValue)
       {
-        var.m_sValue.Assign(szValue);
+        var.m_sValue.Assign(sValue);
         m_bPermutationVarsDirty = true;
       }
       return;
@@ -193,19 +193,19 @@ void xiiView::SetShaderPermutationVariable(const char* szName, const char* szVal
   }
 
   auto& var   = m_PermutationVars.ExpandAndGetRef();
-  var.m_sName = sName;
-  var.m_sValue.Assign(szValue);
+  var.m_sName = sNameHash;
+  var.m_sValue.Assign(sValue);
   m_bPermutationVarsDirty = true;
 }
 
-void xiiView::SetRenderPassProperty(const char* szPassName, const char* szPropertyName, const xiiVariant& value)
+void xiiView::SetRenderPassProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value)
 {
-  SetProperty(m_PassProperties, szPassName, szPropertyName, value);
+  SetProperty(m_PassProperties, sPassName, sPropertyName, value);
 }
 
-void xiiView::SetExtractorProperty(const char* szPassName, const char* szPropertyName, const xiiVariant& value)
+void xiiView::SetExtractorProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value)
 {
-  SetProperty(m_ExtractorProperties, szPassName, szPropertyName, value);
+  SetProperty(m_ExtractorProperties, sPassName, sPropertyName, value);
 }
 
 void xiiView::ResetRenderPassProperties()
@@ -234,14 +234,14 @@ void xiiView::ResetExtractorProperties()
   }
 }
 
-void xiiView::SetRenderPassReadBackProperty(const char* szPassName, const char* szPropertyName, const xiiVariant& value)
+void xiiView::SetRenderPassReadBackProperty(xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value)
 {
-  SetReadBackProperty(m_PassReadBackProperties, szPassName, szPropertyName, value);
+  SetReadBackProperty(m_PassReadBackProperties, sPassName, sPropertyName, value);
 }
 
-xiiVariant xiiView::GetRenderPassReadBackProperty(const char* szPassName, const char* szPropertyName)
+xiiVariant xiiView::GetRenderPassReadBackProperty(xiiStringView sPassName, xiiStringView sPropertyName)
 {
-  xiiStringBuilder sKey(szPassName, "::", szPropertyName);
+  xiiStringBuilder sKey(sPassName, "::", sPropertyName);
 
   auto it = m_PassReadBackProperties.Find(sKey);
   if (it.IsValid())
@@ -249,14 +249,14 @@ xiiVariant xiiView::GetRenderPassReadBackProperty(const char* szPassName, const 
     return it.Value().m_CurrentValue;
   }
 
-  xiiLog::Warning("Unknown read-back property '{0}::{1}'", szPassName, szPropertyName);
+  xiiLog::Warning("Unknown read-back property '{0}::{1}'", sPassName, sPropertyName);
   return xiiVariant();
 }
 
 
-bool xiiView::IsRenderPassReadBackPropertyExisting(const char* szPassName, const char* szPropertyName) const
+bool xiiView::IsRenderPassReadBackPropertyExisting(xiiStringView sPassName, xiiStringView sPropertyName) const
 {
-  xiiStringBuilder sKey(szPassName, "::", szPropertyName);
+  xiiStringBuilder sKey(sPassName, "::", sPropertyName);
 
   auto it = m_PassReadBackProperties.Find(sKey);
   return it.IsValid();
@@ -350,17 +350,17 @@ void xiiView::ApplyPermutationVars()
   m_bPermutationVarsDirty              = false;
 }
 
-void xiiView::SetProperty(xiiMap<xiiString, PropertyValue>& map, const char* szPassName, const char* szPropertyName, const xiiVariant& value)
+void xiiView::SetProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value)
 {
-  xiiStringBuilder sKey(szPassName, "::", szPropertyName);
+  xiiStringBuilder sKey(sPassName, "::", sPropertyName);
 
   bool  bExisted = false;
   auto& prop     = map.FindOrAdd(sKey, &bExisted).Value();
 
   if (!bExisted)
   {
-    prop.m_sObjectName   = szPassName;
-    prop.m_sPropertyName = szPropertyName;
+    prop.m_sObjectName   = sPassName;
+    prop.m_sPropertyName = sPropertyName;
     prop.m_bIsValid      = true;
   }
 
@@ -369,17 +369,17 @@ void xiiView::SetProperty(xiiMap<xiiString, PropertyValue>& map, const char* szP
 }
 
 
-void xiiView::SetReadBackProperty(xiiMap<xiiString, PropertyValue>& map, const char* szPassName, const char* szPropertyName, const xiiVariant& value)
+void xiiView::SetReadBackProperty(xiiMap<xiiString, PropertyValue>& map, xiiStringView sPassName, xiiStringView sPropertyName, const xiiVariant& value)
 {
-  xiiStringBuilder sKey(szPassName, "::", szPropertyName);
+  xiiStringBuilder sKey(sPassName, "::", sPropertyName);
 
   bool  bExisted = false;
   auto& prop     = map.FindOrAdd(sKey, &bExisted).Value();
 
   if (!bExisted)
   {
-    prop.m_sObjectName   = szPassName;
-    prop.m_sPropertyName = szPropertyName;
+    prop.m_sObjectName   = sPassName;
+    prop.m_sPropertyName = sPropertyName;
     prop.m_bIsValid      = true;
   }
 
@@ -463,12 +463,12 @@ void xiiView::ApplyExtractorProperties()
   }
 }
 
-void xiiView::ApplyProperty(xiiReflectedClass* pObject, PropertyValue& data, const char* szTypeName)
+void xiiView::ApplyProperty(xiiReflectedClass* pObject, PropertyValue& data, xiiStringView sTypeName)
 {
   const xiiAbstractProperty* pAbstractProperty = pObject->GetDynamicRTTI()->FindPropertyByName(data.m_sPropertyName);
   if (pAbstractProperty == nullptr)
   {
-    xiiLog::Error("The {0} '{1}' does not have a property called '{2}', it cannot be applied.", szTypeName, data.m_sObjectName, data.m_sPropertyName);
+    xiiLog::Error("The {0} '{1}' does not have a property called '{2}', it cannot be applied.", sTypeName, data.m_sObjectName, data.m_sPropertyName);
 
     data.m_bIsValid = false;
     return;
@@ -476,7 +476,7 @@ void xiiView::ApplyProperty(xiiReflectedClass* pObject, PropertyValue& data, con
 
   if (pAbstractProperty->GetCategory() != xiiPropertyCategory::Member)
   {
-    xiiLog::Error("The {0} property '{1}::{2}' is not a member property, it cannot be applied.", szTypeName, data.m_sObjectName, data.m_sPropertyName);
+    xiiLog::Error("The {0} property '{1}::{2}' is not a member property, it cannot be applied.", sTypeName, data.m_sObjectName, data.m_sPropertyName);
 
     data.m_bIsValid = false;
     return;

@@ -102,32 +102,32 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExtractor, 1, xiiRTTINoAllocator)
     XII_END_ATTRIBUTES;
   }
 XII_END_DYNAMIC_REFLECTED_TYPE;
-// clang-format om
+// clang-format on
 
-xiiExtractor::xiiExtractor(const char* szName)
+xiiExtractor::xiiExtractor(xiiStringView sName)
 {
   m_bActive = true;
-  m_sName.Assign(szName);
+  m_sName.Assign(sName);
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  m_uiNumCachedRenderData = 0;
+  m_uiNumCachedRenderData   = 0;
   m_uiNumUncachedRenderData = 0;
 #endif
 }
 
 xiiExtractor::~xiiExtractor() = default;
 
-void xiiExtractor::SetName(const char* szName)
+void xiiExtractor::SetName(xiiStringView sName)
 {
-  if (!xiiStringUtils::IsNullOrEmpty(szName))
+  if (!sName.IsEmpty())
   {
-    m_sName.Assign(szName);
+    m_sName.Assign(sName);
   }
 }
 
-const char* xiiExtractor::GetName() const
+xiiStringView xiiExtractor::GetName() const
 {
-  return m_sName.GetData();
+  return m_sName.GetView();
 }
 
 bool xiiExtractor::FilterByViewTags(const xiiView& view, const xiiGameObject* pObject) const
@@ -183,7 +183,7 @@ void xiiExtractor::ExtractRenderData(const xiiView& view, const xiiGameObject* p
 
     xiiUInt32 uiCacheIndex = 0;
 
-    auto components = pObject->GetComponents();
+    auto            components      = pObject->GetComponents();
     const xiiUInt32 uiNumComponents = components.GetCount();
     for (xiiUInt32 uiComponentIndex = 0; uiComponentIndex < uiNumComponents; ++uiComponentIndex)
     {
@@ -223,11 +223,11 @@ void xiiExtractor::ExtractRenderData(const xiiView& view, const xiiGameObject* p
 
           for (xiiUInt32 uiPartIndex = 0; uiPartIndex < msg.m_ExtractedRenderData.GetCount(); ++uiPartIndex)
           {
-            auto& newCacheEntry = newCacheEntries.ExpandAndGetRef();
-            newCacheEntry.m_pRenderData = msg.m_ExtractedRenderData[uiPartIndex].m_pRenderData;
-            newCacheEntry.m_uiCategory = msg.m_ExtractedRenderData[uiPartIndex].m_uiCategory;
+            auto& newCacheEntry              = newCacheEntries.ExpandAndGetRef();
+            newCacheEntry.m_pRenderData      = msg.m_ExtractedRenderData[uiPartIndex].m_pRenderData;
+            newCacheEntry.m_uiCategory       = msg.m_ExtractedRenderData[uiPartIndex].m_uiCategory;
             newCacheEntry.m_uiComponentIndex = static_cast<xiiUInt16>(uiComponentIndex);
-            newCacheEntry.m_uiPartIndex = static_cast<xiiUInt16>(uiPartIndex);
+            newCacheEntry.m_uiPartIndex      = static_cast<xiiUInt16>(uiPartIndex);
           }
 
           xiiRenderWorld::CacheRenderData(view, pObject->GetHandle(), pComponent->GetHandle(), uiComponentVersion, newCacheEntries);
@@ -241,8 +241,8 @@ void xiiExtractor::ExtractRenderData(const xiiView& view, const xiiGameObject* p
 
         // Create a dummy cache entry so we don't call send message next time
         xiiInternal::RenderDataCacheEntry dummyEntry;
-        dummyEntry.m_pRenderData = nullptr;
-        dummyEntry.m_uiCategory = xiiInvalidRenderDataCategory.m_uiValue;
+        dummyEntry.m_pRenderData      = nullptr;
+        dummyEntry.m_uiCategory       = xiiInvalidRenderDataCategory.m_uiValue;
         dummyEntry.m_uiComponentIndex = static_cast<xiiUInt16>(uiComponentIndex);
 
         xiiRenderWorld::CacheRenderData(view, pObject->GetHandle(), pComponent->GetHandle(), uiComponentVersion, xiiMakeArrayPtr(&dummyEntry, 1));
@@ -262,8 +262,7 @@ void xiiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const xiiG
 {
 }
 
-void xiiExtractor::PostSortAndBatch(
-  const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
+void xiiExtractor::PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
 {
 }
 
@@ -291,15 +290,14 @@ xiiResult xiiExtractor::Deserialize(xiiStreamReader& inout_stream)
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisibleObjectsExtractor, 1, xiiRTTIDefaultAllocator<xiiVisibleObjectsExtractor>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiVisibleObjectsExtractor::xiiVisibleObjectsExtractor(const char* szName)
-  : xiiExtractor(szName)
+xiiVisibleObjectsExtractor::xiiVisibleObjectsExtractor(xiiStringView sName) :
+  xiiExtractor(sName)
 {
 }
 
 xiiVisibleObjectsExtractor::~xiiVisibleObjectsExtractor() = default;
 
-void xiiVisibleObjectsExtractor::Extract(
-  const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
+void xiiVisibleObjectsExtractor::Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
 {
   xiiMsgExtractRenderData msg;
   msg.m_pView = &view;
@@ -309,7 +307,7 @@ void xiiVisibleObjectsExtractor::Extract(
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   VisualizeSpatialData(view);
 
-  m_uiNumCachedRenderData = 0;
+  m_uiNumCachedRenderData   = 0;
   m_uiNumUncachedRenderData = 0;
 #endif
 
@@ -320,9 +318,7 @@ void xiiVisibleObjectsExtractor::Extract(
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
     if (cvar_SpatialVisBounds || cvar_SpatialVisLocalBBox || cvar_SpatialVisData)
     {
-      if ((cvar_SpatialVisDataOnlyObject.GetValue().IsEmpty() ||
-            pObject->GetName().FindSubString_NoCase(cvar_SpatialVisDataOnlyObject.GetValue()) != nullptr) &&
-          !cvar_SpatialVisDataOnlySelected)
+      if ((cvar_SpatialVisDataOnlyObject.GetValue().IsEmpty() || pObject->GetName().FindSubString_NoCase(cvar_SpatialVisDataOnlyObject.GetValue()) != nullptr) && !cvar_SpatialVisDataOnlySelected)
       {
         VisualizeObject(view, pObject);
       }
@@ -369,23 +365,21 @@ xiiResult xiiVisibleObjectsExtractor::Deserialize(xiiStreamReader& inout_stream)
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSelectedObjectsExtractorBase, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiSelectedObjectsExtractorBase::xiiSelectedObjectsExtractorBase(const char* szName)
-  : xiiExtractor(szName)
-  , m_OverrideCategory(xiiDefaultRenderDataCategories::Selection)
+xiiSelectedObjectsExtractorBase::xiiSelectedObjectsExtractorBase(xiiStringView sName) :
+  xiiExtractor(sName), m_OverrideCategory(xiiDefaultRenderDataCategories::Selection)
 {
 }
 
 xiiSelectedObjectsExtractorBase::~xiiSelectedObjectsExtractorBase() = default;
 
-void xiiSelectedObjectsExtractorBase::Extract(
-  const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
+void xiiSelectedObjectsExtractorBase::Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
 {
   const xiiDeque<xiiGameObjectHandle>* pSelection = GetSelection();
   if (pSelection == nullptr)
     return;
 
   xiiMsgExtractRenderData msg;
-  msg.m_pView = &view;
+  msg.m_pView            = &view;
   msg.m_OverrideCategory = m_OverrideCategory;
 
   XII_LOCK(view.GetWorld()->GetReadMarker());
@@ -440,7 +434,9 @@ void xiiSelectedObjectsContext::RemoveDeadObjects(const xiiWorld& world)
       m_Objects.RemoveAtAndSwap(i);
     }
     else
+    {
       ++i;
+    }
   }
 }
 
@@ -468,8 +464,8 @@ void xiiSelectedObjectsContext::AddObjectAndChildren(const xiiWorld& world, cons
   }
 }
 
-xiiSelectedObjectsExtractor::xiiSelectedObjectsExtractor(const char* szName /*= "ExplicitlySelectedObjectsExtractor"*/) :
-  xiiSelectedObjectsExtractorBase(szName)
+xiiSelectedObjectsExtractor::xiiSelectedObjectsExtractor(xiiStringView sName /*= "ExplicitlySelectedObjectsExtractor"*/) :
+  xiiSelectedObjectsExtractorBase(sName)
 {
 }
 

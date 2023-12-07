@@ -62,7 +62,7 @@ public:
   void InitializePins();
 
   xiiHashedString                                          GetPinName(const xiiRenderPipelineNodePin* pPin) const;
-  const xiiRenderPipelineNodePin*                          GetPinByName(const char* szName) const;
+  const xiiRenderPipelineNodePin*                          GetPinByName(xiiStringView sName) const;
   const xiiRenderPipelineNodePin*                          GetPinByName(xiiHashedString sName) const;
   const xiiArrayPtr<const xiiRenderPipelineNodePin* const> GetInputPins() const { return m_InputPins; }
   const xiiArrayPtr<const xiiRenderPipelineNodePin* const> GetOutputPins() const { return m_OutputPins; }

@@ -39,7 +39,7 @@ struct xiiRenderWorldRenderEvent
 class XII_GRAPHICSCORE_DLL xiiRenderWorld
 {
 public:
-  static xiiViewHandle CreateView(const char* szName, xiiView*& out_pView);
+  static xiiViewHandle CreateView(xiiStringView sName, xiiView*& out_pView);
   static void          DeleteView(const xiiViewHandle& hView);
 
   static bool     TryGetView(const xiiViewHandle& hView, xiiView*& out_pView);
@@ -98,8 +98,8 @@ public:
   static void                BeginModifyCameraConfigs();
   static void                EndModifyCameraConfigs();
   static void                ClearCameraConfigs();
-  static void                SetCameraConfig(const char* szName, const CameraConfig& config);
-  static const CameraConfig* FindCameraConfig(const char* szName);
+  static void                SetCameraConfig(xiiStringView sName, const CameraConfig& config);
+  static const CameraConfig* FindCameraConfig(xiiStringView sName);
 
   static xiiEvent<void*> s_CameraConfigsModifiedEvent;
 

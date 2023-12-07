@@ -119,7 +119,7 @@ namespace
     xiiMap<xiiGALTextureViewHandle, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_texTriangle2DVertices;
     xiiMap<xiiGALTextureViewHandle, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_texTriangle3DVertices;
 
-    xiiDynamicArray<InfoTextData>                          m_infoTextData[(int)xiiDebugTextPlacement::ENUM_COUNT];
+    xiiDynamicArray<InfoTextData>                          m_infoTextData[(xiiInt32)xiiDebugTextPlacement::ENUM_COUNT];
     xiiDynamicArray<TextLineData2D>                        m_textLines2D;
     xiiDynamicArray<TextLineData3D>                        m_textLines3D;
     xiiDynamicArray<GlyphData, xiiAlignedAllocatorWrapper> m_glyphs;
@@ -938,7 +938,7 @@ void xiiDebugRenderer::DrawInfoText(const xiiDebugRendererContext& context, xiiD
 
   xiiStringBuilder tmp;
 
-  auto& e   = data.m_infoTextData[(int)placement].ExpandAndGetRef();
+  auto& e   = data.m_infoTextData[(xiiInt32)placement].ExpandAndGetRef();
   e.m_group = sGroupName;
   e.m_text  = text.GetText(tmp);
   e.m_color = color;
@@ -1322,36 +1322,39 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
 
   // draw info text
   {
-    static_assert((int)xiiDebugTextPlacement::ENUM_COUNT == 6);
+    static_assert((xiiInt32)xiiDebugTextPlacement::ENUM_COUNT == 6);
 
-    xiiDebugTextHAlign::Enum ha[(int)xiiDebugTextPlacement::ENUM_COUNT] = {
+    xiiDebugTextHAlign::Enum ha[(xiiInt32)xiiDebugTextPlacement::ENUM_COUNT] = {
       xiiDebugTextHAlign::Left,
       xiiDebugTextHAlign::Center,
       xiiDebugTextHAlign::Right,
       xiiDebugTextHAlign::Left,
       xiiDebugTextHAlign::Center,
-      xiiDebugTextHAlign::Right};
+      xiiDebugTextHAlign::Right,
+    };
 
-    xiiDebugTextVAlign::Enum va[(int)xiiDebugTextPlacement::ENUM_COUNT] = {
+    xiiDebugTextVAlign::Enum va[(xiiInt32)xiiDebugTextPlacement::ENUM_COUNT] = {
       xiiDebugTextVAlign::Top,
       xiiDebugTextVAlign::Top,
       xiiDebugTextVAlign::Top,
       xiiDebugTextVAlign::Bottom,
       xiiDebugTextVAlign::Bottom,
-      xiiDebugTextVAlign::Bottom};
+      xiiDebugTextVAlign::Bottom,
+    };
 
-    int offs[(int)xiiDebugTextPlacement::ENUM_COUNT] = {20, 20, 20, -20, -20, -20};
+    xiiInt32 offs[(xiiInt32)xiiDebugTextPlacement::ENUM_COUNT] = {20, 20, 20, -20, -20, -20};
 
     xiiInt32 resX = (xiiInt32)renderViewContext.m_pViewData->m_ViewPortRect.width;
     xiiInt32 resY = (xiiInt32)renderViewContext.m_pViewData->m_ViewPortRect.height;
 
-    xiiVec2I32 anchor[(int)xiiDebugTextPlacement::ENUM_COUNT] = {
+    xiiVec2I32 anchor[(xiiInt32)xiiDebugTextPlacement::ENUM_COUNT] = {
       xiiVec2I32(10, 10),
       xiiVec2I32(resX / 2, 10),
       xiiVec2I32(resX - 10, 10),
       xiiVec2I32(10, resY - 10),
       xiiVec2I32(resX / 2, resY - 10),
-      xiiVec2I32(resX - 10, resY - 10)};
+      xiiVec2I32(resX - 10, resY - 10),
+    };
 
     for (xiiUInt32 corner = 0; corner < (xiiUInt32)xiiDebugTextPlacement::ENUM_COUNT; ++corner)
     {

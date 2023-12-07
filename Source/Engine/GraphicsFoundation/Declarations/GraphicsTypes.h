@@ -242,8 +242,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBindFlags
     RayTracing            = XII_BIT(10), ///< A buffer may be used as a scratch buffer or as the source of primitive data for acceleration structure building.
     ShadingRate           = XII_BIT(11), ///< A texture may be used as shading rate texture.
 
-    ENUM_COUNT = 13U,
-
     Default = None
   };
 
@@ -308,8 +306,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCPUAccessFlag
     Read  = XII_BIT(0), ///< A resource should be mapped for reading.
     Write = XII_BIT(1), ///< A resource should be mapped for writing.
 
-    ENUM_COUNT = 3U,
-
     Default = None
   };
 
@@ -361,8 +357,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMapFlags
                               ///< This flag is only compatible with xiiGALMapType::Write.
     NoOverWrite = XII_BIT(2), ///< The system will not synchronize pending operations before mapping the buffer.
                               ///< It is the responsibility of the application to ensure that the buffer contents is not overwritten while it is in use by the GPU.
-
-    ENUM_COUNT = 4U,
 
     Default = None
   };
@@ -733,6 +727,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
   };
 
   static xiiUInt32 VerticesPerPrimitive(xiiEnum<xiiGALPrimitiveTopology> e);
+
+  static const char* Names[ENUM_COUNT];
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPrimitiveTopology);
@@ -749,8 +745,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMemoryProperties
                                ///< that CPU writes are automatically available to the GPU and vice versa.
                                ///< If memory is not coherent, it must be explicitly flushed after
                                ///< being modified by the CPU, or invalidated before being read by the CPU.
-
-    ENUM_COUNT = 2U,
 
     Default = Unknown
   };
@@ -839,8 +833,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainUsageFlags
     InputAttachment = XII_BIT(2), ///< The swap chain images can be used as input attachments.
     CopySource      = XII_BIT(3), ///< The swap chain images can be used as the source of a copy operation.
 
-    ENUM_COUNT = 5U,
-
     Default = None
   };
 
@@ -924,8 +916,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALWaveFeature
     Clustered       = XII_BIT(6), ///<
     Quad            = XII_BIT(7), ///<
 
-    ENUM_COUNT = 9,
-
     Default = Unknown
   };
 
@@ -960,8 +950,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingCapabilityFlags
     InlineRayTracing   = XII_BIT(1), ///< The device supports inline ray tracing in graphics or compute shaders.
     IndirectRayTracing = XII_BIT(2), ///< The device supports indirect ray tracing commands.
 
-    ENUM_COUNT,
-
     Default = None
   };
 
@@ -991,8 +979,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALValidationFlags
                                         ///<
                                         ///< \note This option is currently supported by Vulkan backend only.
 
-    ENUM_COUNT,
-
     Default = None
   };
 
@@ -1018,8 +1004,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueType
     Compute       = XII_BIT(1) | Transfer, ///< Command queue that supports compute, ray tracing and transfer commands.
     Graphics      = XII_BIT(2) | Compute,  ///< Command queue that supports graphics, compute, ray tracing and transfer commands.
     SparseBinding = XII_BIT(3),            ///< Command queue that supports sparse binding commands.
-
-    ENUM_COUNT = 5U,
 
     PrimaryType = Transfer | Compute | Graphics, ///< Mask to extract primary command queue type.
 
@@ -1075,8 +1059,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCombiner
     CombinerMax      = XII_BIT(3), ///< Returns the maximum shading rate value.
     CombinerSum      = XII_BIT(4), ///< Returns the sum of the shading rates.
     CombinerMul      = XII_BIT(5), ///< Returns the product of the shading rates
-
-    ENUM_COUNT = 6U,
 
     Default = PassThrough
   };
@@ -1152,8 +1134,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRate
     _4X2 = ((xiiGALShadingRateAxis::X4 << XII_GAL_SHADING_RATE_X_SHIFT) | xiiGALShadingRateAxis::X2), ///< Specifies 1/4 horizontal and 1/2 vertical rate.
     _4X4 = ((xiiGALShadingRateAxis::X4 << XII_GAL_SHADING_RATE_X_SHIFT) | xiiGALShadingRateAxis::X4), ///< Specifies 1/4 horizontal and 1/4 vertical shading rate.
 
-    ENUM_COUNT = 9U,
-
     Default = _1X1
   };
 
@@ -1191,9 +1171,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleCount
     ThirtyTwoSamples = 32U, ///< Thirty-two samples.
     SixtyFourSamples = 64U, ///< Sixty-four samples.
 
-    ENUM_COUNT = 8U,
-
-    Default = None
+    Default = OneSample
   };
 };
 
@@ -1224,8 +1202,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCapabilityFlags
                                                      ///< If supported, rendering to the subsampled render targets may be more optimal.
                                                      ///<
                                                      ///< \note Both non-subsampled and subsampled modes may be supported by a device.
-
-    ENUM_COUNT = 14U,
 
     Default = None
   };
@@ -1286,8 +1262,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDrawCommandCapabilityFlags
     NativeMultiDrawIndirect   = XII_BIT(4), ///< Indicates that device natively supports indirect draw commands with draw count greater than 1. When this flag is not set, the commands will be emulated on the host, which will produce correct results, but will be slower.
     DrawIndirectCounterBuffer = XII_BIT(5), ///< Indicates that indirect and indexed indirect draw commands may take non-null counter buffer. If this flag is not set, the number of draw commands must be specified through the command attributes.
 
-    ENUM_COUNT = 6U,
-
     Default = None
   };
 
@@ -1331,8 +1305,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceCapabilityFlags
     BufferStandardBlock      = XII_BIT(15), ///< Indicates that sparse buffers use the standard block, see SparseResourceProperties::StandardBlockSize.
     NonResidentSafe          = XII_BIT(16), ///< Reads or writes from unbound memory must not cause device removal.
     MixedResourceTypeSupport = XII_BIT(17), ///< Indicates that single device memory object can be used to bind memory for different resource types.
-
-    ENUM_COUNT = 18U,
 
     Default = None
   };
@@ -1408,8 +1380,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceDimensionCapabilityFlags
     TextureCube      = XII_BIT(xiiGALResourceDimension::TextureCube),      ///< Indicates if the device supports cube textures for a particular texture format.
     TextureCubeArray = XII_BIT(xiiGALResourceDimension::TextureCubeArray), ///< Indicates if the device supports cube texture arrays for a particular texture format.
 
-    ENUM_COUNT = 9U,
-
     Default = None
   };
 
@@ -1441,8 +1411,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureFlags
     SingleMipTail        = XII_BIT(0), ///< Specifies that the texture uses a single mip tail region for all array layers.
     AlignedMipSize       = XII_BIT(1), ///< Specifies that the first mip level whose dimensions are not integer multiples of the corresponding dimensions of the sparse texture tile begins the mip tail region.
     NonStandardBlockSize = XII_BIT(2), ///< Specifies that the texture uses non-standard sparse texture tile dimensions, and the TileSize values do not match the standard sparse texture tile dimensions.
-
-    ENUM_COUNT = 4U,
 
     Default = None
   };
@@ -1489,8 +1457,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceStateFlags
     RayTracing         = XII_BIT(19), ///< The resource is used as a top-level AS shader resource in a trace rays operation.
     Common             = XII_BIT(20), ///< The resource state is used for read operations, but access to the resource may be slower compared to the specialized state. A transition to the common state is always a pipeline stall and can often induce a cache flush and render target decompress operation.
     ShadingRate        = XII_BIT(21), ///< The resource is used as the source when variable shading rate rendering.
-
-    ENUM_COUNT = 23U,
 
     GenericRead = VertexBuffer | ConstantBuffer | IndexBuffer | ShaderResource | IndirectArgument | CopySource,
 

@@ -37,7 +37,6 @@ xiiCVarFloat cvar_SpatialCullingOcclusionBoundsInlation("Spatial.Occlusion.Bound
 xiiCVarFloat cvar_SpatialCullingOcclusionFarPlane("Spatial.Occlusion.FarPlane", 50.0f, xiiCVarFlags::Default, "Far plane distance for finding occluders.");
 
 xiiRenderPipeline::xiiRenderPipeline()
-
 {
   m_CurrentExtractThread  = (xiiThreadID)0;
   m_CurrentRenderThread   = (xiiThreadID)0;
@@ -134,13 +133,13 @@ xiiHashedString xiiRenderPipeline::GetViewName() const
   return m_sName;
 }
 
-bool xiiRenderPipeline::Connect(xiiRenderPipelinePass* pOutputNode, const char* szOutputPinName, xiiRenderPipelinePass* pInputNode, const char* szInputPinName)
+bool xiiRenderPipeline::Connect(xiiRenderPipelinePass* pOutputNode, xiiStringView sOutputPinName, xiiRenderPipelinePass* pInputNode, xiiStringView sInputPinName)
 {
-  xiiHashedString sOutputPinName;
-  sOutputPinName.Assign(szOutputPinName);
-  xiiHashedString sInputPinName;
-  sInputPinName.Assign(szInputPinName);
-  return Connect(pOutputNode, sOutputPinName, pInputNode, sInputPinName);
+  xiiHashedString sOutputPinNameHash;
+  sOutputPinNameHash.Assign(sOutputPinName);
+  xiiHashedString sInputPinNameHash;
+  sInputPinNameHash.Assign(sInputPinName);
+  return Connect(pOutputNode, sOutputPinNameHash, pInputNode, sInputPinNameHash);
 }
 
 bool xiiRenderPipeline::Connect(xiiRenderPipelinePass* pOutputNode, xiiHashedString sOutputPinName, xiiRenderPipelinePass* pInputNode, xiiHashedString sInputPinName)
@@ -335,8 +334,7 @@ bool xiiRenderPipeline::SortPasses()
   // Find all source passes from which we can start the output description propagation.
   for (auto& pPass : m_Passes)
   {
-    // if (std::all_of(cbegin(it.Value().m_Inputs), cend(it.Value().m_Inputs), [](xiiRenderPipelinePassConnection* pConn){return pConn ==
-    // nullptr; }))
+    // if (std::all_of(cbegin(it.Value().m_Inputs), cend(it.Value().m_Inputs), [](xiiRenderPipelinePassConnection* pConn){return pConn == nullptr; }))
     if (AreInputDescriptionsAvailable(pPass.Borrow(), done))
     {
       usable.PushBack(pPass.Borrow());
@@ -485,8 +483,8 @@ bool xiiRenderPipeline::InitRenderTargetDescriptions(const xiiView& view)
         {
           if (data.m_Inputs[pPin->m_uiInputIndex] == nullptr)
           {
-            // xiiLog::Error("The pass of type '{0}' has a pass through pin '{1}' that has an output but no input!",
-            // pPass->GetDynamicRTTI()->GetTypeName(), pPass->GetPinName(pPin));  return false;
+            // xiiLog::Error("The pass of type '{0}' has a pass through pin '{1}' that has an output but no input!", pPass->GetDynamicRTTI()->GetTypeName(), pPass->GetPinName(pPin));
+            // return false;
           }
           else if (data.m_Outputs[pPin->m_uiOutputIndex]->m_Desc.CalculateHash() != data.m_Inputs[pPin->m_uiInputIndex]->m_Desc.CalculateHash())
           {
@@ -597,7 +595,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
     }
   }
 
-  // Stupid loop to gather all TextureUsageData indices that are not view render target textures.
+  // Inconvenient loop to gather all TextureUsageData indices that are not view render target textures.
   for (xiiUInt32 i = 0; i < m_TextureUsage.GetCount(); i++)
   {
     TextureUsageData& data = m_TextureUsage[i];
@@ -1101,7 +1099,7 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   const xiiViewData* pViewData  = &data.GetViewData();
 
   auto& gc = pRenderContext->WriteGlobalConstants();
-  for (int i = 0; i < 2; ++i)
+  for (xiiInt32 i = 0; i < 2; ++i)
   {
     gc.CameraToScreenMatrix[i] = pViewData->m_ProjectionMatrix[i];
     gc.ScreenToCameraMatrix[i] = pViewData->m_InverseProjectionMatrix[i];
@@ -1273,8 +1271,6 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
     xiiRenderWorld::s_RenderEvent.Broadcast(renderEvent);
   }
 
-  pRenderContext->ResetContextState();
-
   data.Clear();
 
   m_CurrentRenderThread = (xiiThreadID)0;
@@ -1299,7 +1295,7 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
   for (xiiUInt32 p = 0; p < m_Passes.GetCount(); ++p)
   {
     const auto& pPass = m_Passes[p];
-    sTmp.Format("#{}: {}", p, xiiStringUtils::IsNullOrEmpty(pPass->GetName()) ? pPass->GetDynamicRTTI()->GetTypeName() : pPass->GetName());
+    sTmp.Format("#{}: {}", p, pPass->GetName().IsEmpty() ? pPass->GetDynamicRTTI()->GetTypeName() : pPass->GetName());
 
     xiiDGMLGraph::NodeDesc nd;
     nd.m_Color            = xiiColor::Gray;
@@ -1409,8 +1405,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
 
   xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel1, 0.0f, xiiColor::MediumPurple);
 
-  // TODO: it would be better to update a single texture every frame, however since this is a render pass,
-  // we currently can't create nested passes
+  // TODO: it would be better to update a single texture every frame, however since this is a render pass, we currently can't create nested passes
   // so either this has to be done elsewhere, or nested passes have to be allowed
   if (false)
   {

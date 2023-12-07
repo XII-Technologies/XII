@@ -4,7 +4,6 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsFoundation/Device/Device.h>
 
-
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTargetPass, 1, xiiRTTIDefaultAllocator<xiiTargetPass>)
 {
@@ -25,8 +24,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTargetPass, 1, xiiRTTIDefaultAllocator<xiiTa
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiTargetPass::xiiTargetPass(const char* szName) :
-  xiiRenderPipelinePass(szName, true)
+xiiTargetPass::xiiTargetPass(xiiStringView sName) :
+  xiiRenderPipelinePass(sName, true)
 {
 }
 
@@ -79,11 +78,11 @@ bool xiiTargetPass::GetRenderTargetDescriptions(const xiiView& view, const xiiAr
 
 void xiiTargetPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) {}
 
-bool xiiTargetPass::VerifyInput(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, const char* szPinName)
+bool xiiTargetPass::VerifyInput(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiStringView sPinName)
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  const xiiRenderPipelineNodePin* pPin = GetPinByName(szPinName);
+  const xiiRenderPipelineNodePin* pPin = GetPinByName(sPinName);
   if (inputs[pPin->m_uiInputIndex])
   {
     const xiiGALTextureHandle* pHandle = GetTextureHandle(view.GetActiveRenderTargets(), pPin);
@@ -101,7 +100,5 @@ bool xiiTargetPass::VerifyInput(const xiiView& view, const xiiArrayPtr<xiiGALTex
 
   return true;
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_TargetPass);

@@ -2,7 +2,7 @@
 
 #include <Core/World/World.h>
 #include <GraphicsCore/Components/RenderComponent.h>
-#include <GraphicsCore/Textures/Texture2DResource.h>
+#include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 
 struct xiiMsgExtractRenderData;
 

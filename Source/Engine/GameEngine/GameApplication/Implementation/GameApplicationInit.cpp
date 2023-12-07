@@ -22,6 +22,7 @@
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Shader/ShaderPermutationResource.h>
 #include <GraphicsCore/ShaderCompiler/ShaderManager.h>
+#include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
@@ -152,8 +153,7 @@ void xiiGameApplication::Init_SetupDefaultResources()
   // Prefabs
   {
     // xiiPrefabResourceDescriptor emptyPrefab;
-    // xiiPrefabResourceHandle hMissingPrefab = xiiResourceManager::CreateResource<xiiPrefabResource>("MissingPrefabResource", emptyPrefab,
-    // "MissingPrefabResource");
+    // xiiPrefabResourceHandle hMissingPrefab = xiiResourceManager::CreateResource<xiiPrefabResource>("MissingPrefabResource", emptyPrefab, "MissingPrefabResource");
 
     xiiPrefabResourceHandle hMissingPrefab = xiiResourceManager::LoadResource<xiiPrefabResource>("Prefabs/MissingPrefab.xiiObjectGraph");
     xiiResourceManager::SetResourceTypeMissingFallback<xiiPrefabResource>(hMissingPrefab);

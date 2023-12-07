@@ -11,15 +11,14 @@
 struct xiiGALTextureCreationDescription;
 class xiiStreamWriter;
 
-/// \brief Passed to xiiRenderPipelinePass::InitRenderPipelinePass to inform about
-/// existing connections on each input / output pin index.
+/// \brief Passed to xiiRenderPipelinePass::InitRenderPipelinePass to inform about existing connections on each input / output pin index.
 struct xiiRenderPipelinePassConnection
 {
   xiiRenderPipelinePassConnection() { m_pOutput = nullptr; }
 
   xiiGALTextureCreationDescription                   m_Desc;
   xiiGALTextureHandle                                m_TextureHandle;
-  const xiiRenderPipelineNodePin*                    m_pOutput; ///< The output pin that this connection spawns from.
+  const xiiRenderPipelineNodePin*                    m_pOutput = nullptr; ///< The output pin that this connection spawns from.
   xiiHybridArray<const xiiRenderPipelineNodePin*, 4> m_Inputs;  ///< The various input pins this connection is connected to.
 };
 
@@ -29,14 +28,14 @@ class XII_GRAPHICSCORE_DLL xiiRenderPipelinePass : public xiiRenderPipelineNode
   XII_DISALLOW_COPY_AND_ASSIGN(xiiRenderPipelinePass);
 
 public:
-  xiiRenderPipelinePass(const char* szName, bool bIsStereoAware = false);
+  xiiRenderPipelinePass(xiiStringView sName, bool bIsStereoAware = false);
   ~xiiRenderPipelinePass();
 
   /// \brief Sets the name of the pass.
-  void SetName(const char* szName);
+  void SetName(xiiStringView sName);
 
   /// \brief returns the name of the pass.
-  const char* GetName() const;
+  xiiStringView GetName() const;
 
   /// \brief True if the render pipeline pass can handle stereo cameras correctly.
   bool IsStereoAware() const { return m_bIsStereoAware; }

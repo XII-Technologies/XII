@@ -142,6 +142,7 @@ XII_STATICLINK_LIBRARY(GraphicsCore)
   XII_STATICLINK_REFERENCE(GraphicsCore_Shader_Implementation_ShaderResource);
   XII_STATICLINK_REFERENCE(GraphicsCore_Shader_Implementation_ShaderStageBinary);
   XII_STATICLINK_REFERENCE(GraphicsCore_Shader_Implementation_ShaderStateDescriptor);
+  XII_STATICLINK_REFERENCE(GraphicsCore_Textures_RenderToTexture2DResource);
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_Texture2DResource);
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_Texture3DResource);
   XII_STATICLINK_REFERENCE(GraphicsCore_Textures_TextureCubeResource);

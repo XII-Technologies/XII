@@ -28,8 +28,8 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiForwardRenderShadingQuality, 1)
 XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
-xiiForwardRenderPass::xiiForwardRenderPass(const char* szName) :
-  xiiRenderPipelinePass(szName, true), m_ShadingQuality(xiiForwardRenderShadingQuality::Normal)
+xiiForwardRenderPass::xiiForwardRenderPass(xiiStringView sName) :
+  xiiRenderPipelinePass(sName, true), m_ShadingQuality(xiiForwardRenderShadingQuality::Normal)
 {
 }
 
@@ -70,7 +70,6 @@ void xiiForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext
 
   SetupResources(pGALPass, renderViewContext, inputs, outputs);
   SetupPermutationVars(renderViewContext);
-  SetupLighting(renderViewContext);
 
   RenderObjects(renderViewContext);
 
@@ -143,25 +142,6 @@ void xiiForwardRenderPass::SetupPermutationVars(const xiiRenderViewContext& rend
   {
     XII_REPORT_FAILURE("Unknown shading quality setting.");
   }
-}
-
-void xiiForwardRenderPass::SetupLighting(const xiiRenderViewContext& renderViewContext)
-{
-#if 0
-  // Setup clustered data
-  if (m_ShadingQuality == xiiForwardRenderShadingQuality::Normal)
-  {
-    auto pClusteredData = GetPipeline()->GetFrameDataProvider<xiiClusteredDataProvider>()->GetData(renderViewContext);
-    pClusteredData->BindResources(renderViewContext.m_pRenderContext);
-  }
-  // Or other light properties.
-  else
-  {
-    auto pSimplifiedData = GetPipeline()->GetFrameDataProvider<xiiSimplifiedDataProvider>()->GetData(renderViewContext);
-    pSimplifiedData->BindResources(renderViewContext.m_pRenderContext);
-    // todo
-  }
-#endif
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_ForwardRenderPass);

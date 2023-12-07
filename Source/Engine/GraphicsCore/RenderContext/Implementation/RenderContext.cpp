@@ -463,7 +463,7 @@ void xiiRenderContext::BindMeshBuffer(const xiiMeshBufferResourceHandle& hMeshBu
   BindMeshBuffer(pMeshBuffer->GetVertexBuffer(), pMeshBuffer->GetIndexBuffer(), &(pMeshBuffer->GetInputLayout()), pMeshBuffer->GetTopology(), pMeshBuffer->GetPrimitiveCount());
 }
 
-void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBufferHandle hIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiGALPrimitiveTopology::Enum topology, xiiUInt32 uiPrimitiveCount, xiiGALBufferHandle hVertexBuffer2, xiiGALBufferHandle hVertexBuffer3, xiiGALBufferHandle hVertexBuffer4)
+void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBufferHandle hIndexBuffer, const xiiInputLayoutInfo* pInputLayoutInfo, xiiEnum<xiiGALPrimitiveTopology> topology, xiiUInt32 uiPrimitiveCount, xiiGALBufferHandle hVertexBuffer2, xiiGALBufferHandle hVertexBuffer3, xiiGALBufferHandle hVertexBuffer4)
 {
   if (m_hVertexBuffers[0] == hVertexBuffer && m_hVertexBuffers[1] == hVertexBuffer2 && m_hVertexBuffers[2] == hVertexBuffer3 && m_hVertexBuffers[3] == hVertexBuffer4 && m_hIndexBuffer == hIndexBuffer && m_pInputLayoutInfo == pInputLayoutInfo && m_Topology == topology && m_uiMeshBufferPrimitiveCount == uiPrimitiveCount)
   {
@@ -479,7 +479,7 @@ void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBu
       {
         if (i1 != i2)
         {
-          XII_ASSERT_DEBUG(pInputLayoutInfo->m_VertexStreams[i1].m_Semantic != pInputLayoutInfo->m_VertexStreams[i2].m_Semantic, "Same semantic cannot be used twice in the same vertex declaration");
+          XII_ASSERT_DEBUG(pInputLayoutInfo->m_VertexStreams[i1].m_Semantic != pInputLayoutInfo->m_VertexStreams[i2].m_Semantic, "Same semantic cannot be used twice in the same input layout");
         }
       }
     }
@@ -786,7 +786,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
     if (m_pInputLayoutInfo != nullptr && BuildInputLayout(m_hActiveGALShader, *m_pInputLayoutInfo, hInputLayout).Failed())
       return XII_FAILURE;
 
-    // If there is a vertex buffer we need a valid vertex declaration as well.
+    // If there is a vertex buffer we need a valid input layout as well.
     if ((!m_hVertexBuffers[0].IsInvalidated() || !m_hVertexBuffers[1].IsInvalidated() || !m_hVertexBuffers[2].IsInvalidated() || !m_hVertexBuffers[3].IsInvalidated()) && hInputLayout.IsInvalidated())
       return XII_FAILURE;
 
@@ -1005,7 +1005,7 @@ void xiiRenderContext::OnEngineShutdown()
     }
   }
 
-  // Cleanup vertex declarations
+  // Cleanup input layouts
   {
     for (auto it = s_GALInputLayouts.GetIterator(); it.IsValid(); ++it)
     {
@@ -1090,7 +1090,7 @@ xiiResult xiiRenderContext::BuildInputLayout(xiiGALShaderHandle hShader, const x
       available, it will work.
       */
 
-      xiiLog::Warning("Failed to create vertex declaration");
+      xiiLog::Warning("Failed to create input layout.");
       return XII_FAILURE;
     }
 
@@ -1143,8 +1143,7 @@ xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
 {
   m_hActiveGALShader.Invalidate();
 
-  m_StateFlags.Add(xiiRenderContextFlags::TextureBindingChanged | xiiRenderContextFlags::SamplerBindingChanged |
-                   xiiRenderContextFlags::BufferBindingChanged | xiiRenderContextFlags::ConstantBufferBindingChanged);
+  m_StateFlags.Add(xiiRenderContextFlags::TextureBindingChanged | xiiRenderContextFlags::SamplerBindingChanged | xiiRenderContextFlags::BufferBindingChanged | xiiRenderContextFlags::ConstantBufferBindingChanged);
 
   if (!m_hActiveShader.IsValid())
     return nullptr;
@@ -1342,11 +1341,11 @@ void xiiRenderContext::ApplySamplerBindings(xiiBitflags<xiiGALShaderStage> stage
   }
 }
 
-void xiiRenderContext::SetDefaultTextureFilter(xiiTextureFilterSetting::Enum filter)
+void xiiRenderContext::SetDefaultTextureFilter(xiiEnum<xiiTextureFilterSetting> filter)
 {
   XII_ASSERT_DEBUG(filter >= xiiTextureFilterSetting::FixedBilinear && filter <= xiiTextureFilterSetting::FixedAnisotropic16x, "Invalid default texture filter");
 
-  filter = xiiMath::Clamp(filter, xiiTextureFilterSetting::FixedBilinear, xiiTextureFilterSetting::FixedAnisotropic16x);
+  filter = xiiMath::Clamp((xiiTextureFilterSetting::Enum)filter, xiiTextureFilterSetting::FixedBilinear, xiiTextureFilterSetting::FixedAnisotropic16x);
 
   if (m_DefaultTextureFilter == filter)
     return;
@@ -1354,12 +1353,12 @@ void xiiRenderContext::SetDefaultTextureFilter(xiiTextureFilterSetting::Enum fil
   m_DefaultTextureFilter = filter;
 }
 
-xiiTextureFilterSetting::Enum xiiRenderContext::GetSpecificTextureFilter(xiiTextureFilterSetting::Enum configuration) const
+xiiEnum<xiiTextureFilterSetting> xiiRenderContext::GetSpecificTextureFilter(xiiEnum<xiiTextureFilterSetting> configuration) const
 {
   if (configuration >= xiiTextureFilterSetting::FixedNearest && configuration <= xiiTextureFilterSetting::FixedAnisotropic16x)
     return configuration;
 
-  int iFilter = m_DefaultTextureFilter;
+  xiiInt32 iFilter = m_DefaultTextureFilter;
 
   switch (configuration)
   {
@@ -1379,7 +1378,7 @@ xiiTextureFilterSetting::Enum xiiRenderContext::GetSpecificTextureFilter(xiiText
       break;
   }
 
-  iFilter = xiiMath::Clamp<int>(iFilter, xiiTextureFilterSetting::FixedBilinear, xiiTextureFilterSetting::FixedAnisotropic16x);
+  iFilter = xiiMath::Clamp<xiiInt32>(iFilter, xiiTextureFilterSetting::FixedBilinear, xiiTextureFilterSetting::FixedAnisotropic16x);
 
   return (xiiTextureFilterSetting::Enum)iFilter;
 }

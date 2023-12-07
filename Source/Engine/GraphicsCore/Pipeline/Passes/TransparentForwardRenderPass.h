@@ -8,7 +8,7 @@ class XII_GRAPHICSCORE_DLL xiiTransparentForwardRenderPass : public xiiForwardRe
   XII_ADD_DYNAMIC_REFLECTION(xiiTransparentForwardRenderPass, xiiForwardRenderPass);
 
 public:
-  xiiTransparentForwardRenderPass(const char* szName = "TransparentForwardRenderPass");
+  xiiTransparentForwardRenderPass(xiiStringView sName = "TransparentForwardRenderPass");
   ~xiiTransparentForwardRenderPass();
 
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;

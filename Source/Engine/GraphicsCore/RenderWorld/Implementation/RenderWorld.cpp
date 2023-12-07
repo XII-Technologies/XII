@@ -13,8 +13,8 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 
-xiiCVarBool cvar_RenderingMultithreading("Rendering.Multithreading", true, xiiCVarFlags::Default, "Enables multi-threaded update and rendering");
-xiiCVarBool cvar_RenderingCachingStaticObjects("Rendering.Caching.StaticObjects", true, xiiCVarFlags::Default, "Enables render data caching of static objects");
+xiiCVarBool cvar_RenderingMultithreading("Rendering.Multithreading", true, xiiCVarFlags::Default, "Enables multi-threaded update and rendering.");
+xiiCVarBool cvar_RenderingCachingStaticObjects("Rendering.Caching.StaticObjects", true, xiiCVarFlags::Default, "Enables render data caching of static objects.");
 
 xiiEvent<xiiView*, xiiMutex> xiiRenderWorld::s_ViewCreatedEvent;
 xiiEvent<xiiView*, xiiMutex> xiiRenderWorld::s_ViewDeletedEvent;
@@ -49,24 +49,21 @@ namespace
   {
     XII_DECLARE_POD_TYPE();
 
-    xiiRenderPipeline* m_pPipeline;
+    xiiRenderPipeline* m_pPipeline = nullptr;
     xiiViewHandle      m_hView;
   };
 
   static xiiMutex                           s_PipelinesToRebuildMutex;
   static xiiDynamicArray<PipelineToRebuild> s_PipelinesToRebuild;
 
-  static xiiProxyAllocator* s_pCacheAllocator;
+  static xiiProxyAllocator* s_pCacheAllocator = nullptr;
 
   static xiiMutex s_CachedRenderDataMutex;
   using CachedRenderDataPerComponent = xiiHybridArray<const xiiRenderData*, 4>;
   static xiiHashTable<xiiComponentHandle, CachedRenderDataPerComponent> s_CachedRenderData;
   static xiiDynamicArray<const xiiRenderData*>                          s_DeletedRenderData;
 
-  enum
-  {
-    MaxNumNewCacheEntries = 32
-  };
+  static constexpr xiiUInt32 MaxNumNewCacheEntries = 32U;
 
   static bool                       s_bWriteRenderPipelineDgml = false;
   static xiiConsoleFunction<void()> s_ConFunc_WriteRenderPipelineDgml("WriteRenderPipelineDgml", "()", []() { s_bWriteRenderPipelineDgml = true; });
@@ -142,7 +139,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RenderWorld)
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
-xiiViewHandle xiiRenderWorld::CreateView(const char* szName, xiiView*& out_pView)
+xiiViewHandle xiiRenderWorld::CreateView(xiiStringView sName, xiiView*& out_pView)
 {
   xiiView* pView = XII_DEFAULT_NEW(xiiView);
 
@@ -151,7 +148,7 @@ xiiViewHandle xiiRenderWorld::CreateView(const char* szName, xiiView*& out_pView
     pView->m_InternalId = s_Views.Insert(pView);
   }
 
-  pView->SetName(szName);
+  pView->SetName(sName);
   pView->InitializePins();
 
   pView->m_pRenderDataCache = XII_NEW(s_pCacheAllocator, xiiInternal::RenderDataCache, s_pCacheAllocator);
@@ -837,15 +834,15 @@ void xiiRenderWorld::ClearCameraConfigs()
   s_CameraConfigs.Clear();
 }
 
-void xiiRenderWorld::SetCameraConfig(const char* szName, const CameraConfig& config)
+void xiiRenderWorld::SetCameraConfig(xiiStringView sName, const CameraConfig& config)
 {
   XII_ASSERT_DEBUG(s_bModifyingCameraConfigs, "You have to call xiiRenderWorld::BeginModifyCameraConfigs first");
-  s_CameraConfigs[szName] = config;
+  s_CameraConfigs[sName] = config;
 }
 
-const xiiRenderWorld::CameraConfig* xiiRenderWorld::FindCameraConfig(const char* szName)
+const xiiRenderWorld::CameraConfig* xiiRenderWorld::FindCameraConfig(xiiStringView sName)
 {
-  auto it = s_CameraConfigs.Find(szName);
+  auto it = s_CameraConfigs.Find(sName);
 
   if (!it.IsValid())
     return nullptr;

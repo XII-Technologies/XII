@@ -1,10 +1,11 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Math/Transform.h>
 #include <Foundation/Threading/Mutex.h>
 #include <Foundation/Types/ArrayPtr.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 
 class Rasterizer;
 class xiiRasterizerObject;

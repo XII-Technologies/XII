@@ -50,8 +50,7 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
     vScreenPos.y = 1.0f - fScreenPosY;
     vScreenPos.z = 0.0f;
 
-    return xiiGraphicsUtils::ConvertScreenPosToWorldPos(
-      m_InverseViewProjectionMatrix[static_cast<int>(eye)], 0, 0, 1, 1, vScreenPos, out_vRayStartPos, &out_vRayDir);
+    return xiiGraphicsUtils::ConvertScreenPosToWorldPos(m_InverseViewProjectionMatrix[static_cast<int>(eye)], 0, 0, 1, 1, vScreenPos, out_vRayStartPos, &out_vRayDir);
   }
 
   xiiResult ComputeScreenSpacePos(const xiiVec3& vPoint, xiiVec3& out_vScreenPos, xiiCameraEye eye = xiiCameraEye::Left) const

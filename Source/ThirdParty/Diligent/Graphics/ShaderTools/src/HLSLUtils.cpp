@@ -36,10 +36,12 @@ namespace Diligent
 {
 
 // clang-format off
+#if 0 // XII-Disabled we do not use the Diligent shader tools.
 static constexpr char g_HLSLDefinitions[] =
 {
 #include "HLSLDefinitions_inc.fxh"
 };
+#endif
 // clang-format on
 
 
@@ -48,7 +50,9 @@ String BuildHLSLSourceString(const ShaderCreateInfo& ShaderCI,
 {
     String HLSLSource;
 
+#if 0 // XII-Disabled we do not use the Diligent shader tools.
     HLSLSource.append(g_HLSLDefinitions);
+#endif
     AppendShaderTypeDefinitions(HLSLSource, ShaderCI.Desc.ShaderType);
 
     if (ExtraDefinitions != nullptr)
