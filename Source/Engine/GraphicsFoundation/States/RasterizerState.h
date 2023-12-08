@@ -53,7 +53,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALCullMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCullMode);
 
-/// \brief This describes the rasterize state creation description.
+/// \brief This describes the rasterizer state creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerStateCreationDescription : public xiiHashableStruct<xiiGALRasterizerStateCreationDescription>
 {
   XII_DECLARE_POD_TYPE();

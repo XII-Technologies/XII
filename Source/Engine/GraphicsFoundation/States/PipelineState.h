@@ -63,6 +63,29 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALPipelineShadingRateFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPipelineShadingRateFlags);
 
+/// \brief This describes the shader variable property flags.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineType
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Graphics,   ///< Graphics pipeline.
+    Compute,    ///< Compute pipeline.
+    Mesh,       ///< Mesh pipeline.
+    RayTracing, ///< Ray tracing pipeline.
+    Tile,       ///< Tile pipeline.
+
+    ENUM_COUNT,
+
+    Invalid = 0xFF,
+
+    Default = Graphics
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPipelineType);
+
 /// \brief This describes the sample information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleDescription : public xiiHashableStruct<xiiGALSampleDescription>
 {
@@ -77,7 +100,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariableDescription : publ
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiString                                 m_sName;                                                   ///< The shader variable name.
+  xiiStringView                             m_sName;                                                   ///< The shader variable name.
   xiiBitflags<xiiGALShaderStage>            m_ShaderStages = xiiGALShaderStage::Unknown;               ///< The shader stages this resources variable applies to. If more than one shader stage is specified, the variable will be shared between these stages. Shader stages used by different variables with the same name must not overlap.
   xiiEnum<xiiGALShaderResourceVariableType> m_Type         = xiiGALShaderResourceVariableType::Static; ///< The shader variable type.
   xiiBitflags<xiiGALShaderVariableFlags>    m_Flags        = xiiGALShaderVariableFlags::None;          ///< The shader variable flags.
@@ -102,37 +125,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineDescription : public xii
   xiiGALRenderPassHandle                      m_hRenderPass;                                                   ///< Handle to the render pass object.
 };
 
-/// \brief This describes the ray tracing general shader group information.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingGeneralShaderGroupDescription : public xiiHashableStruct<xiiGALRayTracingGeneralShaderGroupDescription>
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiString          m_sName;   ///< Unique group name.
-  xiiGALShaderHandle m_hShader; ///< Handle to the shader. The shader type must be of RayGeneration, RayMiss, or Callable.
-};
-
-/// \brief This describes the ray tracing triangle hit shader group information.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingTriangleHitShaderGroupDescription : public xiiHashableStruct<xiiGALRayTracingTriangleHitShaderGroupDescription>
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiString          m_sName;             ///< Unique group name.
-  xiiGALShaderHandle m_hClosestHitShader; ///< Handle to the closest hit shader.
-  xiiGALShaderHandle m_hAnyHitShader;     ///< Handle to the any hit shader. This is optional.
-};
-
-/// \brief This describes the ray tracing procedural hit shader group information.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProceduralHitShaderGroupDescription : public xiiHashableStruct<xiiGALRayTracingProceduralHitShaderGroupDescription>
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiString          m_sName;               ///< Unique group name.
-  xiiGALShaderHandle m_hIntersectionShader; ///< Handle to the closest hit shader.
-  xiiGALShaderHandle m_hClosestHitShader;   ///< Handle to the closest hit shader. This is optional.
-  xiiGALShaderHandle m_hAnyHitShader;       ///< Handle to the any hit shader. This is optional.
-};
-
-/// \brief This describes the ray tracing procedural hit shader group information.
+/// \brief This describes the ray tracing pipeline information.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription : public xiiHashableStruct<xiiGALRayTracingPipelineDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -141,27 +134,45 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription : public x
   xiiUInt8  m_uiMaxRecursionDepth = 0U; ///< Number of recursive calls of TraceRay() in HLSL. Zero means no tracing of rays at all, only ray-gen shader will be executed. See Device MaxRayTracingRecursionDepth.
 };
 
-/// \brief This describes the shader variable property flags.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineType
+/// \brief This describes the tile pipeline information.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALTilePipelineDescription : public xiiHashableStruct<xiiGALTilePipelineDescription>
 {
-  using StorageType = xiiUInt8;
-
-  enum Enum : StorageType
-  {
-    Graphics,
-    Compute,
-    Mesh,
-    RayTracing,
-    Tile,
-
-    ENUM_COUNT,
-
-    Invalid = 0xFF,
-
-    Default = Graphics
-  };
+  xiiEnum<xiiGALSampleCount>                                                   m_SampleCount = xiiGALSampleCount::OneSample; ///< The number of samples in the render targets.
+  xiiStaticArray<xiiEnum<xiiGALTextureFormat>, XII_GAL_MAX_RENDERTARGET_COUNT> m_RenderTargetFormats;                        ///< The render target formats.
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPipelineType);
+/// \brief This describes the pipeline state creation description.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStateCreationDescription : public xiiHashableStruct<xiiGALPipelineStateCreationDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiStringView                       m_sName;                                       ///< Resource name. The default is an empty string view.
+  xiiEnum<xiiGALPipelineType>         m_PipelineType = xiiGALPipelineType::Graphics; ///< The pipeline type. The default is xiiGALPipelineType::Graphics.
+  xiiGALShaderHandle                  m_hShader;                                     ///< The shader that contains the valid shader code for the specified pipeline type.
+  xiiGALGraphicsPipelineDescription   m_GraphicsPipeline;                            ///< The graphics pipeline description, see xiiGALGraphicsPipelineDescription.
+  xiiGALRayTracingPipelineDescription m_RayTracingPipeline;                          ///< The ray tracing pipeline description, see xiiGALRayTracingPipelineDescription.
+  xiiGALTilePipelineDescription       m_TilePipeline;                                ///< The tile pipeline description, see xiiGALTilePipelineDescription.
+  xiiUInt32                           m_uiNodeMask             = 0x0;                ///< Node mask.
+  xiiUInt64                           m_uiImmediateContextMask = XII_BIT(0);         ///< Defines which immediate contexts are allowed to execute commands that use this texture. The default is the main immediate context.
+                                                                                     ///< Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
+};
+
+/// \brief Interface that defines methods to manipulate a pipeline state object.
+class XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineState : public xiiGALObject<xiiGALPipelineStateCreationDescription>
+{
+public:
+protected:
+  friend class xiiGALDevice;
+
+  xiiGALPipelineState(const xiiGALPipelineStateCreationDescription& creationDescription);
+
+  virtual ~xiiGALPipelineState();
+
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPipelineState);
 
 #include <GraphicsFoundation/States/Implementation/PipelineState_inl.h>
