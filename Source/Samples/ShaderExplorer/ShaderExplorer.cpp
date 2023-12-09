@@ -265,7 +265,7 @@ public:
 #elif BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
     constexpr const char* szDefaultGraphicsAPI = "Vulkan";
 #else
-#  error Graphics API not implemented on platform.
+    constexpr const char* szDefaultGraphicsAPI = "Null";
 #endif
 
     // Register Input

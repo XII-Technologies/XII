@@ -49,7 +49,7 @@ xiiResult xiiGALSamplerD3D12::InitPlatform(xiiGALDevice* pDevice)
 
   pDeviceD3D12->GetDevice()->CreateSampler(samplerDescription, &m_pSampler);
 
-  return m_pSampler == nullptr ? XII_FAILURE : XII_SUCCESS;
+  return m_pSampler != nullptr ? XII_SUCCESS : XII_FAILURE;
 }
 
 xiiResult xiiGALSamplerD3D12::DeInitPlatform(xiiGALDevice* pDevice)

@@ -34,7 +34,7 @@ constexpr const char* szDefaultGraphicsAPI = "D3D12";
 #elif BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
 constexpr const char* szDefaultGraphicsAPI = "Vulkan";
 #else
-#  error Graphics API not implemented on platform.
+constexpr const char* szDefaultGraphicsAPI = "Null";
 #endif
 
 xiiCommandLineOptionString opt_Renderer("app", "-renderer", "The renderer implementation to use.", szDefaultGraphicsAPI);
