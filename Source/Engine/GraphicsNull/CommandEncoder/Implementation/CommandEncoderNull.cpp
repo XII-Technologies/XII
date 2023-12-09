@@ -48,27 +48,27 @@ void xiiGALCommandEncoderNull::SetBufferViewPlatform(xiiBitflags<xiiGALShaderSta
 
 void xiiGALCommandEncoderNull::SetTextureViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALTextureView* pTextureView)
 {
-  auto pTextureViewNull = static_cast<xiiGALTextureViewNull*>(pTextureView);
+  // auto pTextureViewNull = static_cast<xiiGALTextureViewNull*>(pTextureView);
 }
 
 void xiiGALCommandEncoderNull::SetUnorderedAccessBufferViewPlatform(xiiUInt32 uiSlot, xiiGALBufferView* pUnorderedAccessBufferView)
 {
-  auto pUnorderedAccessBufferViewNull = static_cast<xiiGALBufferViewNull*>(pUnorderedAccessBufferView);
+  // auto pUnorderedAccessBufferViewNull = static_cast<xiiGALBufferViewNull*>(pUnorderedAccessBufferView);
 }
 
 void xiiGALCommandEncoderNull::SetUnorderedAccessTextureViewPlatform(xiiUInt32 uiSlot, xiiGALTextureView* pUnorderedAccessTextureView)
 {
-  auto pUnorderedAccessTextureViewNull = static_cast<xiiGALTextureViewNull*>(pUnorderedAccessTextureView);
+  // auto pUnorderedAccessTextureViewNull = static_cast<xiiGALTextureViewNull*>(pUnorderedAccessTextureView);
 }
 
 void xiiGALCommandEncoderNull::BeginQueryPlatform(xiiGALQuery* pQuery)
 {
-  auto pQueryNull = static_cast<xiiGALQueryNull*>(pQuery);
+  // auto pQueryNull = static_cast<xiiGALQueryNull*>(pQuery);
 }
 
 void xiiGALCommandEncoderNull::EndQueryPlatform(xiiGALQuery* pQuery)
 {
-  auto pQueryNull = static_cast<xiiGALQueryNull*>(pQuery);
+  // auto pQueryNull = static_cast<xiiGALQueryNull*>(pQuery);
 }
 
 void xiiGALCommandEncoderNull::ClearUnorderedAccessViewPlatform(xiiGALBufferView* pBufferView, xiiVec4 vClearValues)
@@ -89,14 +89,14 @@ void xiiGALCommandEncoderNull::ClearUnorderedAccessViewPlatform(xiiGALTextureVie
 
 void xiiGALCommandEncoderNull::CopyBufferPlatform(xiiGALBuffer* pDestination, xiiGALBuffer* pSource)
 {
-  auto pSourceBufferNull      = static_cast<xiiGALBufferNull*>(pSource);
-  auto pDestinationBufferNull = static_cast<xiiGALBufferNull*>(pDestination);
+  // auto pSourceBufferNull      = static_cast<xiiGALBufferNull*>(pSource);
+  // auto pDestinationBufferNull = static_cast<xiiGALBufferNull*>(pDestination);
 }
 
 void xiiGALCommandEncoderNull::CopyBufferRegionPlatform(xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, xiiGALBuffer* pSource, xiiUInt32 uiSourceOffset, xiiUInt32 uiByteCount)
 {
-  auto pSourceBufferNull      = static_cast<xiiGALBufferNull*>(pSource);
-  auto pDestinationBufferNull = static_cast<xiiGALBufferNull*>(pDestination);
+  // auto pSourceBufferNull      = static_cast<xiiGALBufferNull*>(pSource);
+  // auto pDestinationBufferNull = static_cast<xiiGALBufferNull*>(pDestination);
 }
 
 void xiiGALCommandEncoderNull::UpdateBufferPlatform(xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
@@ -114,14 +114,14 @@ void xiiGALCommandEncoderNull::UpdateBufferPlatform(xiiGALBuffer* pDestination, 
 
 void xiiGALCommandEncoderNull::CopyTexturePlatform(xiiGALTexture* pDestination, xiiGALTexture* pSource)
 {
-  auto pSourceTexture      = static_cast<xiiGALTextureNull*>(pSource);
-  auto pDestinationTexture = static_cast<xiiGALTextureNull*>(pDestination);
+  // auto pSourceTexture      = static_cast<xiiGALTextureNull*>(pSource);
+  // auto pDestinationTexture = static_cast<xiiGALTextureNull*>(pDestination);
 }
 
 void xiiGALCommandEncoderNull::CopyTextureRegionPlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxu32& box)
 {
-  auto pSourceTextureNull      = static_cast<xiiGALTextureNull*>(pSource);
-  auto pDestinationTextureNull = static_cast<xiiGALTextureNull*>(pDestination);
+  // auto pSourceTextureNull      = static_cast<xiiGALTextureNull*>(pSource);
+  // auto pDestinationTextureNull = static_cast<xiiGALTextureNull*>(pDestination);
 }
 
 void xiiGALCommandEncoderNull::UpdateTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
@@ -162,29 +162,20 @@ void xiiGALCommandEncoderNull::UpdateTexturePlatform(xiiGALTexture* pDestination
 
 void xiiGALCommandEncoderNull::ResolveTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource)
 {
-  auto pSourceTextureNull      = static_cast<xiiGALTextureNull*>(pSource);
-  auto pDestinationTextureNull = static_cast<xiiGALTextureNull*>(pDestination);
+  // auto pSourceTextureNull      = static_cast<xiiGALTextureNull*>(pSource);
+  // auto pDestinationTextureNull = static_cast<xiiGALTextureNull*>(pDestination);
 }
 
 void xiiGALCommandEncoderNull::ReadbackTexturePlatform(xiiGALTexture* pTexture, xiiGALTexture* pStagingTexture)
 {
-  auto pTextureNull        = static_cast<xiiGALTextureNull*>(pTexture);
-  auto pStagingTextureNull = static_cast<xiiGALTextureNull*>(pTexture);
-}
-
-xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel)
-{
-  for (xiiUInt32 i = 0; i < uiMipLevel; i++)
-  {
-    uiSize = uiSize / 2;
-  }
-  return xiiMath::Max(1u, uiSize);
+  // auto pTextureNull        = static_cast<xiiGALTextureNull*>(pTexture);
+  // auto pStagingTextureNull = static_cast<xiiGALTextureNull*>(pTexture);
 }
 
 void xiiGALCommandEncoderNull::CopyTextureReadbackResultPlatform(xiiGALTexture* pTexture, xiiGALTexture* pStagingTexture, xiiArrayPtr<xiiGALTextureMipLevelData> mipLevelData, xiiArrayPtr<xiiGALTextureSubResourceData> targetData)
 {
-  auto pTextureNull        = static_cast<xiiGALTextureNull*>(pTexture);
-  auto pStagingTextureNull = static_cast<xiiGALTextureNull*>(pStagingTexture);
+  // auto pTextureNull        = static_cast<xiiGALTextureNull*>(pTexture);
+  // auto pStagingTextureNull = static_cast<xiiGALTextureNull*>(pStagingTexture);
 
   XII_ASSERT_DEV(mipLevelData.GetCount() == targetData.GetCount(), "Source and target arrays must be of the same size.");
 }
@@ -211,12 +202,12 @@ void xiiGALCommandEncoderNull::InsertEventMarkerPlatform(xiiStringView sMarker, 
 
 void xiiGALCommandEncoderNull::ClearRenderTargetPlatform(xiiGALTextureView* pTextureView, const xiiColor& clearColor)
 {
-  auto pTextureViewNull = static_cast<xiiGALTextureViewNull*>(pTextureView);
+  // auto pTextureViewNull = static_cast<xiiGALTextureViewNull*>(pTextureView);
 }
 
 void xiiGALCommandEncoderNull::ClearDepthStencilPlatform(xiiGALTextureView* pTextureView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
-  auto pTextureViewNull = static_cast<xiiGALTextureViewNull*>(pTextureView);
+  // auto pTextureViewNull = static_cast<xiiGALTextureViewNull*>(pTextureView);
 }
 
 void xiiGALCommandEncoderNull::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -245,18 +236,17 @@ void xiiGALCommandEncoderNull::DrawInstancedIndirectPlatform(xiiGALBuffer* pIndi
 
 void xiiGALCommandEncoderNull::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)
 {
-  auto pIndexBufferNull = static_cast<xiiGALBufferNull*>(pIndexBuffer);
+  // auto pIndexBufferNull = static_cast<xiiGALBufferNull*>(pIndexBuffer);
 }
 
 void xiiGALCommandEncoderNull::SetVertexBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pVertexBuffer)
 {
-  auto            pVertexBufferNull = static_cast<xiiGALBufferNull*>(pVertexBuffer);
-  const xiiUInt64 uiStride          = pVertexBufferNull != nullptr ? pVertexBufferNull->GetDescription().m_uiElementByteStride : 0U;
+  // auto pVertexBufferNull = static_cast<xiiGALBufferNull*>(pVertexBuffer);
 }
 
 void xiiGALCommandEncoderNull::SetInputLayoutPlatform(xiiGALInputLayout* pInputLayout)
 {
-  auto pInputLayoutNull = static_cast<xiiGALInputLayoutNull*>(pInputLayout);
+  // auto pInputLayoutNull = static_cast<xiiGALInputLayoutNull*>(pInputLayout);
 }
 
 void xiiGALCommandEncoderNull::SetPrimitiveTopologyPlatform(xiiEnum<xiiGALPrimitiveTopology> topology)
@@ -265,17 +255,17 @@ void xiiGALCommandEncoderNull::SetPrimitiveTopologyPlatform(xiiEnum<xiiGALPrimit
 
 void xiiGALCommandEncoderNull::SetBlendStatePlatform(xiiGALBlendState* pBlendState, const xiiColor& blendFactor, xiiUInt32 uiSampleMask)
 {
-  auto pBlendStateNull = static_cast<xiiGALBlendStateNull*>(pBlendState);
+  // auto pBlendStateNull = static_cast<xiiGALBlendStateNull*>(pBlendState);
 }
 
 void xiiGALCommandEncoderNull::SetDepthStencilStatePlatform(xiiGALDepthStencilState* pDepthStencilState, xiiUInt8 uiStencilRefValue)
 {
-  auto pDepthStencilStateNull = static_cast<xiiGALDepthStencilStateNull*>(pDepthStencilState);
+  // auto pDepthStencilStateNull = static_cast<xiiGALDepthStencilStateNull*>(pDepthStencilState);
 }
 
 void xiiGALCommandEncoderNull::SetRasterizerStatePlatform(xiiGALRasterizerState* pRasterizerState)
 {
-  auto pRasterizerStateNull = static_cast<xiiGALRasterizerStateNull*>(pRasterizerState);
+  // auto pRasterizerStateNull = static_cast<xiiGALRasterizerStateNull*>(pRasterizerState);
 }
 
 void xiiGALCommandEncoderNull::SetViewportPlatform(const xiiRectFloat& rect, float fMinDepth, float fMaxDepth)
