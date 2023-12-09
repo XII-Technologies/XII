@@ -9,16 +9,16 @@ TOPOLOGY
 
 [RENDERSTATE]
 
-BlendingEnabled0 = false
-DestBlend0 = Blend_InvSrcAlpha
-SourceBlend0 = Blend_SrcAlpha
-DestBlendAlpha0 = Blend_InvSrcAlpha
+BlendEnable0 = false
+DestinationBlend0 = BlendFactor_InverseSourceAlpha
+SourceBlend0 = BlendFactor_SourceAlpha
+DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 
-DepthTest = true
+DepthEnable = true
 #if PRE_TRANSFORMED_VERTICES
-  DepthWrite = false
+  DepthWriteEnable = false
 #else
-  DepthWrite = true
+  DepthWriteEnable = true
 #endif
 
 [VERTEXSHADER]
