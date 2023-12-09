@@ -48,7 +48,7 @@ void xiiGALCommandEncoderNull::SetBufferViewPlatform(xiiBitflags<xiiGALShaderSta
 
 void xiiGALCommandEncoderNull::SetTextureViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALTextureView* pTextureView)
 {
-  auto            pTextureViewNull         = static_cast<xiiGALTextureViewNull*>(pTextureView);
+  auto pTextureViewNull = static_cast<xiiGALTextureViewNull*>(pTextureView);
 }
 
 void xiiGALCommandEncoderNull::SetUnorderedAccessBufferViewPlatform(xiiUInt32 uiSlot, xiiGALBufferView* pUnorderedAccessBufferView)

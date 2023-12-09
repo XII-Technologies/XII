@@ -14,7 +14,7 @@ xiiResult xiiGALBufferNull::InitPlatform(xiiGALDevice* pDevice, const xiiGALBuff
 {
   // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
 
-  return  XII_SUCCESS;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALBufferNull::DeInitPlatform(xiiGALDevice* pDevice)

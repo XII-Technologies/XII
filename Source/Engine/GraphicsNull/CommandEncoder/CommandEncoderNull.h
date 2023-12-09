@@ -109,7 +109,7 @@ public:
 private:
   friend class xiiGALPassNull;
 
-  xiiGALDeviceNull&    m_GALDeviceNull;
+  xiiGALDeviceNull&     m_GALDeviceNull;
   xiiGALCommandEncoder* m_pOwner = nullptr;
 };
 

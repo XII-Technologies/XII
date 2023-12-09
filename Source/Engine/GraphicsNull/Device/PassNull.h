@@ -24,7 +24,7 @@ protected:
 
 private:
   xiiUniquePtr<xiiGALCommandEncoderGraphicsState> m_pCommandEncoderState;
-  xiiUniquePtr<xiiGALCommandEncoderNull>         m_pCommandEncoderImpl;
+  xiiUniquePtr<xiiGALCommandEncoderNull>          m_pCommandEncoderImpl;
 
   xiiUniquePtr<xiiGALGraphicsCommandEncoder> m_pGraphicsCommandEncoder;
   xiiUniquePtr<xiiGALComputeCommandEncoder>  m_pComputeCommandEncoder;
