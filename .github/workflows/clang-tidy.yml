@@ -52,7 +52,8 @@ jobs:
           {
             Write-Host "ClangTidy suggested changes. ClangTidy check failed! See artifact 'clangTidy.patch' for suggested changes. Apply patch with: git apply clangTidy.patch"
 
-            git diff | Out-File -Encoding utf8 -FilePath "${env:GITHUB_WORKSPACE}/clangTidy.patch"
+            # Ensure to convert to linux line endings as required for a correct patch file.
+            ((git diff) -join "`n") + "`n" | Out-File -Encoding utf8 -FilePath "${env:GITHUB_WORKSPACE}/clangTidy.patch" -NoNewLine
 
             echo "push=true" >> ${env:GITHUB_OUTPUT}
           }
