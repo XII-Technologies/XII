@@ -15,7 +15,7 @@ jobs:
         id: lint_files
         shell: pwsh
         run: |
-          echo "push=false" >> $GITHUB_OUTPUT
+          echo "push=false" >> ${env:GITHUB_OUTPUT}
 
           git fetch origin "${env:GITHUB_BASE_REF}:refs/remotes/origin/${env:GITHUB_BASE_REF}"
           git fetch origin "${env:GITHUB_HEAD_REF}:refs/remotes/origin/${env:GITHUB_HEAD_REF}"
@@ -54,7 +54,7 @@ jobs:
 
             git diff | Out-File -Encoding utf8 -FilePath "${env:GITHUB_WORKSPACE}/clangTidy.patch"
 
-            echo "push=true" >> $GITHUB_OUTPUT
+            echo "push=true" >> ${env:GITHUB_OUTPUT}
           }
           else
           {
