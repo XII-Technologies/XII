@@ -18,9 +18,11 @@
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
 
 #include <Diligent/Graphics/GraphicsEngineVulkan/interface/BufferViewVk.h>
+#include <Diligent/Graphics/GraphicsEngineVulkan/interface/BufferVk.h>
 #include <Diligent/Graphics/GraphicsEngineVulkan/interface/DeviceContextVk.h>
 #include <Diligent/Graphics/GraphicsEngineVulkan/interface/RenderDeviceVk.h>
 #include <Diligent/Graphics/GraphicsEngineVulkan/interface/TextureViewVk.h>
+#include <Diligent/Graphics/GraphicsEngineVulkan/interface/TextureVk.h>
 
 #include <GraphicsVulkan/Utilities/DiligentTypeConversions.h>
 
@@ -91,38 +93,30 @@ void xiiGALCommandEncoderVulkan::SetShaderPlatform(xiiGALShader* pShader)
       {
         case xiiGALShaderVulkan::ShaderEvent::BeforeDeletion:
         {
+          for (auto iterator = m_CachedComputePipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
           {
-            for (auto iterator = m_CachedComputePipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
+            if (iterator.Value().m_pShader == e.m_pShader)
             {
-              if (iterator.Value().m_pShader == e.m_pShader)
-              {
-                PipelineStateInfo pipelineInfo;
-                XII_VERIFY(m_CachedComputePipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached compute pipeline state object.");
+              PipelineStateInfo pipelineInfo;
+              XII_VERIFY(m_CachedComputePipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached compute pipeline state object.");
 
-                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
-                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
+              XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
+              XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
 
-                iterator = m_CachedComputePipelineStates.GetIterator();
-              }
-              else
-              {
-                ++iterator;
-              }
+              iterator = m_CachedComputePipelineStates.GetIterator();
             }
           }
+          for (auto iterator = m_CachedGraphicsPipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
           {
-            for (auto iterator = m_CachedGraphicsPipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
+            if (iterator.Value().m_pShader == e.m_pShader)
             {
-              if (iterator.Value().m_pShader == e.m_pShader)
-              {
-                PipelineStateInfo pipelineInfo;
-                XII_VERIFY(m_CachedGraphicsPipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached graphics pipeline state object.");
+              PipelineStateInfo pipelineInfo;
+              XII_VERIFY(m_CachedGraphicsPipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached graphics pipeline state object.");
 
-                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
-                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
+              XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
+              XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
 
-                iterator = m_CachedGraphicsPipelineStates.GetIterator();
-              }
+              iterator = m_CachedGraphicsPipelineStates.GetIterator();
             }
           }
 
@@ -227,26 +221,67 @@ void xiiGALCommandEncoderVulkan::EndQueryPlatform(xiiGALQuery* pQuery)
   m_pContext->EndQuery(pQueryVulkan->GetQuery());
 }
 
-/// \todo GraphicsVulkan: Implement Unordered Access View Clear.
-
 void xiiGALCommandEncoderVulkan::ClearUnorderedAccessViewPlatform(xiiGALBufferView* pBufferView, xiiVec4 vClearValues)
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  auto pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pBufferView->GetBuffer());
+
+  Diligent::RefCntAutoPtr<Diligent::IDeviceContextVk> pContextVk;
+  m_pContext->QueryInterface(Diligent::IID_DeviceContextVk, reinterpret_cast<Diligent::IObject**>((Diligent::IDeviceContextVk**)&pContextVk));
+  XII_ASSERT_DEV(pContextVk != nullptr, "Failed to retrieve the Vulkan context.");
+
+  Diligent::RefCntAutoPtr<Diligent::IBufferVk> pBufferVk;
+  pBufferVulkan->GetBuffer()->QueryInterface(Diligent::IID_BufferVk, reinterpret_cast<Diligent::IObject**>((Diligent::IBufferVk**)&pBufferVk));
+  XII_ASSERT_DEV(pBufferVk != nullptr, "Failed to retrieve the Vulkan buffer.");
+
+  xiiUInt32* pData = (xiiUInt32*)&vClearValues;
+  vkCmdFillBuffer(pContextVk->GetVkCommandBuffer(), pBufferVk->GetVkBuffer(), 0, VK_WHOLE_SIZE, *pData);
 }
 
 void xiiGALCommandEncoderVulkan::ClearUnorderedAccessViewPlatform(xiiGALTextureView* pTextureView, xiiVec4 vClearValues)
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  auto pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTextureView->GetTexture());
+
+  Diligent::RefCntAutoPtr<Diligent::IDeviceContextVk> pContextVk;
+  m_pContext->QueryInterface(Diligent::IID_DeviceContextVk, reinterpret_cast<Diligent::IObject**>((Diligent::IDeviceContextVk**)&pContextVk));
+  XII_ASSERT_DEV(pContextVk != nullptr, "Failed to retrieve the Vulkan context.");
+
+  Diligent::RefCntAutoPtr<Diligent::ITextureVk> pTextureVk;
+  pTextureVulkan->GetTexture()->QueryInterface(Diligent::IID_TextureVk, reinterpret_cast<Diligent::IObject**>((Diligent::ITextureVk**)&pTextureVk));
+  XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture.");
+
+  const VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, reinterpret_cast<const VkClearColorValue*>(vClearValues.GetData()), 1, &subresourceRange);
 }
 
 void xiiGALCommandEncoderVulkan::ClearUnorderedAccessViewPlatform(xiiGALBufferView* pBufferView, xiiVec4U32 vClearValues)
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  auto pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pBufferView->GetBuffer());
+
+  Diligent::RefCntAutoPtr<Diligent::IDeviceContextVk> pContextVk;
+  m_pContext->QueryInterface(Diligent::IID_DeviceContextVk, reinterpret_cast<Diligent::IObject**>((Diligent::IDeviceContextVk**)&pContextVk));
+  XII_ASSERT_DEV(pContextVk != nullptr, "Failed to retrieve the Vulkan context.");
+
+  Diligent::RefCntAutoPtr<Diligent::IBufferVk> pBufferVk;
+  pBufferVulkan->GetBuffer()->QueryInterface(Diligent::IID_BufferVk, reinterpret_cast<Diligent::IObject**>((Diligent::IBufferVk**)&pBufferVk));
+  XII_ASSERT_DEV(pBufferVk != nullptr, "Failed to retrieve the Vulkan buffer.");
+
+  vkCmdFillBuffer(pContextVk->GetVkCommandBuffer(), pBufferVk->GetVkBuffer(), 0, VK_WHOLE_SIZE, vClearValues.x);
 }
 
 void xiiGALCommandEncoderVulkan::ClearUnorderedAccessViewPlatform(xiiGALTextureView* pTextureView, xiiVec4U32 vClearValues)
 {
-  XII_ASSERT_NOT_IMPLEMENTED;
+  auto pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTextureView->GetTexture());
+
+  Diligent::RefCntAutoPtr<Diligent::IDeviceContextVk> pContextVk;
+  m_pContext->QueryInterface(Diligent::IID_DeviceContextVk, reinterpret_cast<Diligent::IObject**>((Diligent::IDeviceContextVk**)&pContextVk));
+  XII_ASSERT_DEV(pContextVk != nullptr, "Failed to retrieve the Vulkan context.");
+
+  Diligent::RefCntAutoPtr<Diligent::ITextureVk> pTextureVk;
+  pTextureVulkan->GetTexture()->QueryInterface(Diligent::IID_TextureVk, reinterpret_cast<Diligent::IObject**>((Diligent::ITextureVk**)&pTextureVk));
+  XII_ASSERT_DEV(pTextureVk != nullptr, "Failed to retrieve the Vulkan texture.");
+
+  const VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+  vkCmdClearColorImage(pContextVk->GetVkCommandBuffer(), pTextureVk->GetVkImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, reinterpret_cast<const VkClearColorValue*>(vClearValues.GetData()), 1, &subresourceRange);
 }
 
 void xiiGALCommandEncoderVulkan::CopyBufferPlatform(xiiGALBuffer* pDestination, xiiGALBuffer* pSource)

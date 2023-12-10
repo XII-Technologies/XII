@@ -37,72 +37,72 @@ public:
 
   // These functions are implemented by a graphics API implementation.
 protected:
-  virtual xiiResult InitializePlatform() override;
-  virtual xiiResult ShutdownPlatform() override;
+  virtual xiiResult InitializePlatform() override final;
+  virtual xiiResult ShutdownPlatform() override final;
 
-  virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override;
-  virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override;
+  virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override final;
+  virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override final;
 
-  virtual xiiGALPass* BeginPassPlatform(xiiStringView sName) override;
-  virtual void        EndPassPlatform(xiiGALPass* pPass) override;
+  virtual xiiGALPass* BeginPassPlatform(xiiStringView sName) override final;
+  virtual void        EndPassPlatform(xiiGALPass* pPass) override final;
 
-  virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame) override;
-  virtual void EndFramePlatform() override;
+  virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame) override final;
+  virtual void EndFramePlatform() override final;
 
-  virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override;
-  virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override;
+  virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
+  virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
 
-  virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override;
-  virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override;
+  virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
+  virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;
 
-  virtual xiiGALDepthStencilState* CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description) override;
-  virtual void                     DestroyDepthStencilStatePlatform(xiiGALDepthStencilState* pDepthStencilState) override;
+  virtual xiiGALDepthStencilState* CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description) override final;
+  virtual void                     DestroyDepthStencilStatePlatform(xiiGALDepthStencilState* pDepthStencilState) override final;
 
-  virtual xiiGALRasterizerState* CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description) override;
-  virtual void                   DestroyRasterizerStatePlatform(xiiGALRasterizerState* pRasterizerState) override;
+  virtual xiiGALRasterizerState* CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description) override final;
+  virtual void                   DestroyRasterizerStatePlatform(xiiGALRasterizerState* pRasterizerState) override final;
 
-  virtual xiiGALShader* CreateShaderPlatform(const xiiGALShaderCreationDescription& description) override;
-  virtual void          DestroyShaderPlatform(xiiGALShader* pShader) override;
+  virtual xiiGALShader* CreateShaderPlatform(const xiiGALShaderCreationDescription& description) override final;
+  virtual void          DestroyShaderPlatform(xiiGALShader* pShader) override final;
 
-  virtual xiiGALBuffer* CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr) override;
-  virtual void          DestroyBufferPlatform(xiiGALBuffer* pBuffer) override;
+  virtual xiiGALBuffer* CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData = nullptr) override final;
+  virtual void          DestroyBufferPlatform(xiiGALBuffer* pBuffer) override final;
 
-  virtual xiiGALBufferView* CreateBufferViewPlatform(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description) override;
-  virtual void              DestroyBufferViewPlatform(xiiGALBufferView* pBufferView) override;
+  virtual xiiGALBufferView* CreateBufferViewPlatform(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description) override final;
+  virtual void              DestroyBufferViewPlatform(xiiGALBufferView* pBufferView) override final;
 
-  virtual xiiGALTexture* CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) override;
-  virtual void           DestroyTexturePlatform(xiiGALTexture* pTexture) override;
+  virtual xiiGALTexture* CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData = nullptr) override final;
+  virtual void           DestroyTexturePlatform(xiiGALTexture* pTexture) override final;
 
-  virtual xiiGALTextureView* CreateTextureViewPlatform(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description) override;
-  virtual void               DestroyTextureViewPlatform(xiiGALTextureView* pTextureView) override;
+  virtual xiiGALTextureView* CreateTextureViewPlatform(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description) override final;
+  virtual void               DestroyTextureViewPlatform(xiiGALTextureView* pTextureView) override final;
 
-  virtual xiiGALSampler* CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) override;
-  virtual void           DestroySamplerPlatform(xiiGALSampler* pSampler) override;
+  virtual xiiGALSampler* CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description) override final;
+  virtual void           DestroySamplerPlatform(xiiGALSampler* pSampler) override final;
 
-  virtual xiiGALInputLayout* CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description) override;
-  virtual void               DestroyInputLayoutPlatform(xiiGALInputLayout* pInputLayout) override;
+  virtual xiiGALInputLayout* CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description) override final;
+  virtual void               DestroyInputLayoutPlatform(xiiGALInputLayout* pInputLayout) override final;
 
-  virtual xiiGALQuery* CreateQueryPlatform(const xiiGALQueryCreationDescription& description) override;
-  virtual void         DestroyQueryPlatform(xiiGALQuery* pQuery) override;
+  virtual xiiGALQuery* CreateQueryPlatform(const xiiGALQueryCreationDescription& description) override final;
+  virtual void         DestroyQueryPlatform(xiiGALQuery* pQuery) override final;
 
-  virtual xiiGALFence* CreateFencePlatform(const xiiGALFenceCreationDescription& description) override;
-  virtual void         DestroyFencePlatform(xiiGALFence* pFence) override;
+  virtual xiiGALFence* CreateFencePlatform(const xiiGALFenceCreationDescription& description) override final;
+  virtual void         DestroyFencePlatform(xiiGALFence* pFence) override final;
 
-  virtual xiiGALRenderPass* CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description) override;
-  virtual void              DestroyRenderPassPlatform(xiiGALRenderPass* pRenderPass) override;
+  virtual xiiGALRenderPass* CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description) override final;
+  virtual void              DestroyRenderPassPlatform(xiiGALRenderPass* pRenderPass) override final;
 
-  virtual xiiGALFramebuffer* CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description) override;
-  virtual void               DestroyFramebufferPlatform(xiiGALFramebuffer* pFramebuffer) override;
+  virtual xiiGALFramebuffer* CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description) override final;
+  virtual void               DestroyFramebufferPlatform(xiiGALFramebuffer* pFramebuffer) override final;
 
-  virtual xiiGALBottomLevelAS* CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description) override;
-  virtual void                 DestroyBottomLevelASPlatform(xiiGALBottomLevelAS* pBottomLevelAS) override;
+  virtual xiiGALBottomLevelAS* CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description) override final;
+  virtual void                 DestroyBottomLevelASPlatform(xiiGALBottomLevelAS* pBottomLevelAS) override final;
 
-  virtual xiiGALTopLevelAS* CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description) override;
-  virtual void              DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS) override;
+  virtual xiiGALTopLevelAS* CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description) override final;
+  virtual void              DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS) override final;
 
-  virtual void WaitIdlePlatform() override;
+  virtual void WaitIdlePlatform() override final;
 
-  virtual void FillCapabilitiesPlatform() override;
+  virtual void FillCapabilitiesPlatform() override final;
 
   void FillFormatLookupTable();
 

@@ -9,10 +9,10 @@ class XII_GRAPHICSVULKAN_DLL xiiGALShaderVulkan final : public xiiGALShader
 {
 public:
   /// \brief This returns the total number of shader resources.
-  virtual xiiUInt32 GetResourceCount() const override;
+  virtual xiiUInt32 GetResourceCount() const override final;
 
   /// \brief This returns a pointer to the array of shader resources.
-  virtual void GetResourceDescription(xiiUInt32 uiIndex, xiiGALShaderResourceDescription& out_ResourceDescription) const override;
+  virtual void GetResourceDescription(xiiUInt32 uiIndex, xiiGALShaderResourceDescription& out_ResourceDescription) const override final;
 
   Diligent::IShader* GetVertexShader() const;
   Diligent::IShader* GetPixelShader() const;

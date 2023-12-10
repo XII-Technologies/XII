@@ -7,11 +7,11 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALFenceVulkan final : public xiiGALFence
 {
 public:
-  virtual xiiUInt64 GetCompletedValue() override;
+  virtual xiiUInt64 GetCompletedValue() override final;
 
-  virtual void Signal(xiiUInt64 uiValue) override;
+  virtual void Signal(xiiUInt64 uiValue) override final;
 
-  virtual void Wait(xiiUInt64 uiValue) override;
+  virtual void Wait(xiiUInt64 uiValue) override final;
 
   Diligent::IFence* GetFence() const;
 
@@ -23,9 +23,9 @@ protected:
 
   virtual ~xiiGALFenceVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
   Diligent::IFence* m_pFence = nullptr;

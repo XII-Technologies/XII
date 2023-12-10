@@ -91,38 +91,30 @@ void xiiGALCommandEncoderD3D12::SetShaderPlatform(xiiGALShader* pShader)
       {
         case xiiGALShaderD3D12::ShaderEvent::BeforeDeletion:
         {
+          for (auto iterator = m_CachedComputePipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
           {
-            for (auto iterator = m_CachedComputePipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
+            if (iterator.Value().m_pShader == e.m_pShader)
             {
-              if (iterator.Value().m_pShader == e.m_pShader)
-              {
-                PipelineStateInfo pipelineInfo;
-                XII_VERIFY(m_CachedComputePipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached compute pipeline state object.");
+              PipelineStateInfo pipelineInfo;
+              XII_VERIFY(m_CachedComputePipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached compute pipeline state object.");
 
-                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
-                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
+              XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
+              XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
 
-                iterator = m_CachedComputePipelineStates.GetIterator();
-              }
-              else
-              {
-                ++iterator;
-              }
+              iterator = m_CachedComputePipelineStates.GetIterator();
             }
           }
+          for (auto iterator = m_CachedGraphicsPipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
           {
-            for (auto iterator = m_CachedGraphicsPipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
+            if (iterator.Value().m_pShader == e.m_pShader)
             {
-              if (iterator.Value().m_pShader == e.m_pShader)
-              {
-                PipelineStateInfo pipelineInfo;
-                XII_VERIFY(m_CachedGraphicsPipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached graphics pipeline state object.");
+              PipelineStateInfo pipelineInfo;
+              XII_VERIFY(m_CachedGraphicsPipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached graphics pipeline state object.");
 
-                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
-                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
+              XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
+              XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
 
-                iterator = m_CachedGraphicsPipelineStates.GetIterator();
-              }
+              iterator = m_CachedGraphicsPipelineStates.GetIterator();
             }
           }
 

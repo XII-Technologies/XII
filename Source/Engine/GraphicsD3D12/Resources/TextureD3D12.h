@@ -7,13 +7,13 @@
 class XII_GRAPHICSD3D12_DLL xiiGALTextureD3D12 final : public xiiGALTexture
 {
 public:
-  virtual xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType) override;
+  virtual xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType) override final;
 
-  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override;
+  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
 
-  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override;
+  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
 
-  virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override;
+  virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final;
 
   Diligent::ITexture* GetTexture() const;
 
@@ -25,9 +25,9 @@ protected:
 
   virtual ~xiiGALTextureD3D12();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALTextureData* pInitialData) override;
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALTextureData* pInitialData) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
   Diligent::ITexture* m_pTexture = nullptr;
