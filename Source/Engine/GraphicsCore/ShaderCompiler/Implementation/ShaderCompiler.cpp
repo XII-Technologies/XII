@@ -410,7 +410,8 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
           bFoundUndefinedVars = true;
 
           xiiLog::Error("Undefined variable is evaluated: '{0}' (File: '{1}', Line: {2}", e.m_pToken->m_DataView, e.m_pToken->m_File, e.m_pToken->m_uiLine);
-        } });
+        }
+      });
 
       xiiStringBuilder sOutput;
       if (pp.Process("ShaderRenderState", sOutput, false).Failed() || bFoundUndefinedVars)

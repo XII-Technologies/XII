@@ -15,7 +15,7 @@ jobs:
         id: lint_files
         shell: pwsh
         run: |
-          echo "push=false" >> $GITHUB_OUTPUT
+          echo "push=false" >> ${env:GITHUB_OUTPUT}
 
           git fetch origin "${env:GITHUB_BASE_REF}:refs/remotes/origin/${env:GITHUB_BASE_REF}"
           git fetch origin "${env:GITHUB_HEAD_REF}:refs/remotes/origin/${env:GITHUB_HEAD_REF}"
@@ -52,9 +52,10 @@ jobs:
           {
             Write-Host "ClangTidy suggested changes. ClangTidy check failed! See artifact 'clangTidy.patch' for suggested changes. Apply patch with: git apply clangTidy.patch"
 
-            git diff | Out-File -Encoding utf8 -FilePath "${env:GITHUB_WORKSPACE}/clangTidy.patch"
+            # Ensure to convert to linux line endings as required for a correct patch file.
+            ((git diff) -join "`n") + "`n" | Out-File -Encoding utf8 -FilePath "${env:GITHUB_WORKSPACE}/clangTidy.patch" -NoNewLine
 
-            echo "push=true" >> $GITHUB_OUTPUT
+            echo "push=true" >> ${env:GITHUB_OUTPUT}
           }
           else
           {

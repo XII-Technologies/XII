@@ -12,6 +12,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceType
   enum Enum : StorageType
   {
     Undefined = -1, ///< Undefined graphics device type.
+    Null,           ///< Quasi implementation of a graphics device.
     OpenGLES,       ///< OpenGL ES graphics device.
     OpenGL,         ///< OpenGL graphics device.
     Direct3D11,     ///< Direct3D 11 graphics device.

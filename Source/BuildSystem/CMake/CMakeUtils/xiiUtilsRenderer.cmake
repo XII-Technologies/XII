@@ -12,6 +12,11 @@ endmacro()
 # #####################################
 
 function(xii_add_renderers TARGET_NAME)
+  target_link_libraries(${TARGET_NAME}
+    PRIVATE
+    GraphicsNull
+  )
+
   if (XII_BUILD_D3D12)
     target_link_libraries(${TARGET_NAME}
       PRIVATE

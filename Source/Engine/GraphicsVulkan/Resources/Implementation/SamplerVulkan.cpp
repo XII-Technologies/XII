@@ -49,7 +49,7 @@ xiiResult xiiGALSamplerVulkan::InitPlatform(xiiGALDevice* pDevice)
 
   pDeviceVulkan->GetDevice()->CreateSampler(samplerDescription, &m_pSampler);
 
-  return m_pSampler == nullptr ? XII_FAILURE : XII_SUCCESS;
+  return m_pSampler != nullptr ? XII_SUCCESS : XII_FAILURE;
 }
 
 xiiResult xiiGALSamplerVulkan::DeInitPlatform(xiiGALDevice* pDevice)
