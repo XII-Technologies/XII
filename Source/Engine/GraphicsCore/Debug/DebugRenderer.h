@@ -214,6 +214,9 @@ public:
   /// If the start and end radius are different, a cone or arrow can be created.
   static void DrawCylinder(const xiiDebugRendererContext& context, float fRadiusStart, float fRadiusEnd, float fLength, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, bool bCapStart = false, bool bCapEnd = false);
 
+  /// \brief Renders a line arrow.
+  static void DrawArrow(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::UnitXAxis());
+
 private:
   friend class xiiSimpleRenderPass;
 
