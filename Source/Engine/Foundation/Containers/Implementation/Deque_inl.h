@@ -126,12 +126,6 @@ bool xiiDequeBase<T, Construct>::operator==(const xiiDequeBase<T, Construct>& rh
 }
 
 template <typename T, bool Construct>
-bool xiiDequeBase<T, Construct>::operator!=(const xiiDequeBase<T, Construct>& rhs) const
-{
-  return !operator==(rhs);
-}
-
-template <typename T, bool Construct>
 void xiiDequeBase<T, Construct>::Clear()
 {
   if (Construct)

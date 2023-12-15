@@ -49,8 +49,7 @@ public:
   using PointerType = T*;
 
   /// \brief Initializes the xiiArrayPtr to be empty.
-  XII_ALWAYS_INLINE xiiArrayPtr() // [tested]
-    :
+  XII_ALWAYS_INLINE xiiArrayPtr() : // [tested]
     m_pPtr(nullptr), m_uiCount(0u)
   {
   }
@@ -63,8 +62,7 @@ public:
   }
 
   /// \brief Initializes the xiiArrayPtr with the given pointer and number of elements. No memory is allocated or copied.
-  inline xiiArrayPtr(T* pPtr, xiiUInt32 uiCount) // [tested]
-    :
+  inline xiiArrayPtr(T* pPtr, xiiUInt32 uiCount) : // [tested]
     m_pPtr(pPtr), m_uiCount(uiCount)
   {
     // If any of the arguments is invalid, we invalidate ourself.
@@ -77,16 +75,14 @@ public:
 
   /// \brief Initializes the xiiArrayPtr to encapsulate the given array.
   template <size_t N>
-  XII_ALWAYS_INLINE xiiArrayPtr(T (&staticArray)[N]) // [tested]
-    :
+  XII_ALWAYS_INLINE xiiArrayPtr(T (&staticArray)[N]) : // [tested]
     m_pPtr(staticArray), m_uiCount(static_cast<xiiUInt32>(N))
   {
   }
 
   /// \brief Initializes the xiiArrayPtr to be a copy of \a other. No memory is allocated or copied.
   template <typename U>
-  XII_ALWAYS_INLINE xiiArrayPtr(const xiiArrayPtr<U>& other) // [tested]
-    :
+  XII_ALWAYS_INLINE xiiArrayPtr(const xiiArrayPtr<U>& other) : // [tested]
     m_pPtr(other.m_pPtr), m_uiCount(other.m_uiCount)
   {
   }
@@ -210,12 +206,6 @@ public:
       return true;
 
     return xiiMemoryUtils::IsEqual(static_cast<const ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), GetCount());
-  }
-
-  /// \brief Compares the two arrays for inequality.
-  XII_ALWAYS_INLINE bool operator!=(const xiiArrayPtr<const T>& other) const // [tested]
-  {
-    return !(*this == other);
   }
 
   /// \brief Compares the two arrays for less.

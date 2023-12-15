@@ -20,9 +20,3 @@ XII_ALWAYS_INLINE bool operator==(const xiiSizeTemplate<Type>& v1, const xiiSize
 {
   return v1.height == v2.height && v1.width == v2.width;
 }
-
-template <typename Type>
-XII_ALWAYS_INLINE bool operator!=(const xiiSizeTemplate<Type>& v1, const xiiSizeTemplate<Type>& v2)
-{
-  return v1.height != v2.height || v1.width != v2.width;
-}

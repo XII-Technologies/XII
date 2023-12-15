@@ -158,9 +158,4 @@ public:
 template <typename Type>
 bool operator==(const xiiBoundingBoxTemplate<Type>& lhs, const xiiBoundingBoxTemplate<Type>& rhs); // [tested]
 
-/// \brief Checks whether this box and the other are not identical.
-template <typename Type>
-bool operator!=(const xiiBoundingBoxTemplate<Type>& lhs, const xiiBoundingBoxTemplate<Type>& rhs); // [tested]
-
-
 #include <Foundation/Math/Implementation/BoundingBox_inl.h>

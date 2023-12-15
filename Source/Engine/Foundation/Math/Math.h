@@ -322,14 +322,20 @@ namespace xiiMath
   template <typename Type>
   [[nodiscard]] Type SmoothStep(Type value, Type edge1, Type edge2); // [tested]
 
-  /// \brief Returns true, if there exists some x with base^x == value
+  /// \brief Returns true, if there exists some x with base^x == value.
   [[nodiscard]] XII_FOUNDATION_DLL bool IsPowerOf(xiiInt32 value, xiiInt32 iBase); // [tested]
 
-  /// \brief Returns true, if there exists some x with 2^x == value
+  /// \brief Returns true, if there exists some x with 2^x == value.
   [[nodiscard]] constexpr bool IsPowerOf2(xiiInt32 value); // [tested]
 
-  /// \brief Returns true, if there exists some x with 2^x == value
+  /// \brief Returns true, if there exists some x with 2^x == value.
   [[nodiscard]] constexpr bool IsPowerOf2(xiiUInt32 value); // [tested]
+
+  /// \brief Returns true, if there exists some x with 2^x == value.
+  [[nodiscard]] constexpr bool IsPowerOf2(xiiInt64 value); // [tested]
+
+  /// \brief Returns true, if there exists some x with 2^x == value.
+  [[nodiscard]] constexpr bool IsPowerOf2(xiiUInt64 value); // [tested]
 
   /// \brief Returns the next power-of-two that is <= value
   [[nodiscard]] XII_FOUNDATION_DLL xiiUInt32 PowerOfTwo_Floor(xiiUInt32 value); // [tested]

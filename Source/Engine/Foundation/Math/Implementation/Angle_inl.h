@@ -140,12 +140,6 @@ constexpr XII_ALWAYS_INLINE bool xiiAngleTemplate<Type>::operator==(const xiiAng
 }
 
 template <typename Type>
-constexpr XII_ALWAYS_INLINE bool xiiAngleTemplate<Type>::operator!=(const xiiAngleTemplate& r) const
-{
-  return m_fRadian != r.m_fRadian;
-}
-
-template <typename Type>
 constexpr XII_ALWAYS_INLINE bool xiiAngleTemplate<Type>::operator<(const xiiAngleTemplate& r) const
 {
   return m_fRadian < r.m_fRadian;

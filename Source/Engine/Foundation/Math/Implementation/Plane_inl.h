@@ -195,12 +195,6 @@ XII_ALWAYS_INLINE bool operator==(const xiiPlaneTemplate<Type>& lhs, const xiiPl
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE bool operator!=(const xiiPlaneTemplate<Type>& lhs, const xiiPlaneTemplate<Type>& rhs)
-{
-  return !lhs.IsIdentical(rhs);
-}
-
-template <typename Type>
 bool xiiPlaneTemplate<Type>::FlipIfNecessary(const xiiVec3Template<Type>& vPoint, bool bPlaneShouldFacePoint)
 {
   if ((GetPointPosition(vPoint) == xiiPositionOnPlane::Front) != bPlaneShouldFacePoint)

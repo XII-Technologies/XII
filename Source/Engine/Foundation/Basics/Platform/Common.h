@@ -1,8 +1,8 @@
 #pragma once
 
 // On MSVC 2008 in 64 Bit <cmath> generates a lot of warnings (actually it is math.h, which is included by cmath)
-#define XII_MSVC_WARNING_NUMBER 4985
-#include <Foundation/Basics/Compiler/MSVC/DisableWarning_MSVC.h>
+XII_WARNING_PUSH()
+XII_WARNING_DISABLE_MSVC(4985)
 
 // Include std header
 #include <cmath>
@@ -13,7 +13,7 @@
 #include <cwctype>
 #include <new>
 
-#include <Foundation/Basics/Compiler/MSVC/RestoreWarning_MSVC.h>
+XII_WARNING_POP()
 
 // Redefine NULL to nullptr
 #undef NULL

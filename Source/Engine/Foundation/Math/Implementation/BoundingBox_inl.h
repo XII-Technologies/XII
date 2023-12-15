@@ -238,12 +238,6 @@ XII_ALWAYS_INLINE bool operator==(const xiiBoundingBoxTemplate<Type>& lhs, const
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE bool operator!=(const xiiBoundingBoxTemplate<Type>& lhs, const xiiBoundingBoxTemplate<Type>& rhs)
-{
-  return !lhs.IsIdentical(rhs);
-}
-
-template <typename Type>
 XII_FORCE_INLINE void xiiBoundingBoxTemplate<Type>::Translate(const xiiVec3Template<Type>& vDiff)
 {
   m_vMin += vDiff;

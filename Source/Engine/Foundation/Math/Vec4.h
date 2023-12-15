@@ -198,9 +198,6 @@ const xiiVec4Template<Type> operator/(const xiiVec4Template<Type>& v, Type f); /
 template <typename Type>
 bool operator==(const xiiVec4Template<Type>& v1, const xiiVec4Template<Type>& v2); // [tested]
 
-template <typename Type>
-bool operator!=(const xiiVec4Template<Type>& v1, const xiiVec4Template<Type>& v2); // [tested]
-
 /// \brief Strict weak ordering. Useful for sorting vertices into a map.
 template <typename Type>
 bool operator<(const xiiVec4Template<Type>& v1, const xiiVec4Template<Type>& v2); // [tested]

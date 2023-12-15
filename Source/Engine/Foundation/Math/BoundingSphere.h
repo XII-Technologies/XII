@@ -148,9 +148,4 @@ public:
 template <typename Type>
 bool operator==(const xiiBoundingSphereTemplate<Type>& lhs, const xiiBoundingSphereTemplate<Type>& rhs); // [tested]
 
-/// \brief Checks whether this sphere and the other are not identical.
-template <typename Type>
-bool operator!=(const xiiBoundingSphereTemplate<Type>& lhs, const xiiBoundingSphereTemplate<Type>& rhs); // [tested]
-
-
 #include <Foundation/Math/Implementation/BoundingSphere_inl.h>

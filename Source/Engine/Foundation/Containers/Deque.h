@@ -179,9 +179,6 @@ public:
   /// \brief Comparison operator
   bool operator==(const xiiDequeBase<T, Construct>& rhs) const; // [tested]
 
-  /// \brief Comparison operator
-  bool operator!=(const xiiDequeBase<T, Construct>& rhs) const; // [tested]
-
   /// \brief Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const; // [tested]
 

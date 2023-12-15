@@ -194,8 +194,4 @@ public:
 template <typename Type>
 bool operator==(const xiiPlaneTemplate<Type>& lhs, const xiiPlaneTemplate<Type>& rhs); // [tested]
 
-/// \brief Checks whether this plane and the other are not identical.
-template <typename Type>
-bool operator!=(const xiiPlaneTemplate<Type>& lhs, const xiiPlaneTemplate<Type>& rhs); // [tested]
-
 #include <Foundation/Math/Implementation/Plane_inl.h>

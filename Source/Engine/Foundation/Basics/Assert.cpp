@@ -42,7 +42,7 @@ bool xiiDefaultAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, const c
     tm*    ptm     = gmtime(&timeUTC);
 
     char szTimeStr[256] = {0};
-    sprintf(szTimeStr, "UTC: %s", asctime(ptm));
+    xiiStringUtils::snprintf(szTimeStr, 256, "UTC: %s", asctime(ptm));
     fputs(szTimeStr, assertLogFP);
 
     fputs(szTemp, assertLogFP);

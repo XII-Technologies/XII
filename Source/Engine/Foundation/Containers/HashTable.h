@@ -7,10 +7,8 @@
 /// \brief Implementation of a hashtable which stores key/value pairs.
 ///
 /// The hashtable maps keys to values by using the hash of the key as an index into the table.
-/// This implementation uses linear-probing to resolve hash collisions which means all key/value pairs are stored
-/// in a linear array.
-/// All insertion/erasure/lookup functions take O(1) time if the table does not need to be expanded,
-/// which happens when the load gets greater than 60%.
+/// This implementation uses linear-probing to resolve hash collisions which means all key/value pairs are stored in a linear array.
+/// All insertion/erasure/lookup functions take O(1) time if the table does not need to be expanded, which happens when the load gets greater than 60%.
 /// The hash function can be customized by providing a Hasher helper class like xiiHashHelper.
 
 /// \see xiiHashHelper
@@ -34,9 +32,6 @@ public:
 
     /// \brief Checks whether the two iterators point to the same element.
     bool operator==(const typename xiiHashTableBase<KeyType, ValueType, Hasher>::ConstIterator& rhs) const;
-
-    /// \brief Checks whether the two iterators point to the same element.
-    bool operator!=(const typename xiiHashTableBase<KeyType, ValueType, Hasher>::ConstIterator& rhs) const;
 
     /// \brief Returns the 'key' of the element that this iterator points to.
     const KeyType& Key() const; // [tested]
@@ -114,11 +109,7 @@ public:
   /// \brief Compares this table to another table.
   bool operator==(const xiiHashTableBase<KeyType, ValueType, Hasher>& rhs) const; // [tested]
 
-  /// \brief Compares this table to another table.
-  bool operator!=(const xiiHashTableBase<KeyType, ValueType, Hasher>& rhs) const; // [tested]
-
-  /// \brief Expands the hashtable by over-allocating the internal storage so that the load factor is lower or equal to 60% when inserting the given
-  /// number of entries.
+  /// \brief Expands the hashtable by over-allocating the internal storage so that the load factor is lower or equal to 60% when inserting the given number of entries.
   void Reserve(xiiUInt32 uiCapacity); // [tested]
 
   /// \brief Tries to compact the hashtable to avoid wasting memory.

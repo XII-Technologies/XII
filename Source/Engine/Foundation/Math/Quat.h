@@ -143,7 +143,4 @@ const xiiQuatTemplate<Type> operator*(const xiiQuatTemplate<Type>& q1, const xii
 template <typename Type>
 bool operator==(const xiiQuatTemplate<Type>& q1, const xiiQuatTemplate<Type>& q2); // [tested]
 
-template <typename Type>
-bool operator!=(const xiiQuatTemplate<Type>& q1, const xiiQuatTemplate<Type>& q2); // [tested]
-
 #include <Foundation/Math/Implementation/Quat_inl.h>

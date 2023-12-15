@@ -382,7 +382,7 @@ xiiStringView xiiOSFile::GetApplicationDirectory()
       CFIndex length  = CFStringGetLength(bundlePath);
       CFIndex maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1;
 
-      xiiArrayPtr<char> temp = XII_DEFAULT_NEW_ARRAY(char, maxSize);
+      xiiArrayPtr<char> temp = XII_DEFAULT_NEW_ARRAY(char, static_cast<xiiUInt32>(maxSize));
 
       if (CFStringGetCString(bundlePath, temp.GetPtr(), maxSize, kCFStringEncodingUTF8))
       {

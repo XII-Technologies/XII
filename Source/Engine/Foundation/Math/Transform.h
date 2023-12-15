@@ -133,7 +133,4 @@ const xiiTransformTemplate<Type> operator*(const xiiTransformTemplate<Type>& t1,
 template <typename Type>
 bool operator==(const xiiTransformTemplate<Type>& t1, const xiiTransformTemplate<Type>& t2); // [tested]
 
-template <typename Type>
-bool operator!=(const xiiTransformTemplate<Type>& t1, const xiiTransformTemplate<Type>& t2); // [tested]
-
 #include <Foundation/Math/Implementation/Transform_inl.h>
