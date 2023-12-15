@@ -1221,6 +1221,29 @@ void xiiDebugRenderer::DrawCylinder(const xiiDebugRendererContext& context, floa
   DrawLines(context, lines, lineColor, transform);
 }
 
+void xiiDebugRenderer::DrawArrow(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiVec3 vForwardAxis)
+{
+  vForwardAxis.Normalize();
+  const xiiVec3 right     = vForwardAxis.GetOrthogonalVector();
+  const xiiVec3 up        = vForwardAxis.CrossRH(right);
+  const xiiVec3 endPoint  = vForwardAxis * fSize;
+  const xiiVec3 endPoint2 = vForwardAxis * fSize * 0.9f;
+  const float   tipSize   = fSize * 0.1f;
+
+  Line lines[9];
+  lines[0] = Line(xiiVec3::ZeroVector(), endPoint);
+  lines[1] = Line(endPoint, endPoint2 + right * tipSize);
+  lines[2] = Line(endPoint, endPoint2 + up * tipSize);
+  lines[3] = Line(endPoint, endPoint2 - right * tipSize);
+  lines[4] = Line(endPoint, endPoint2 - up * tipSize);
+  lines[5] = Line(lines[1].m_end, lines[2].m_end);
+  lines[6] = Line(lines[2].m_end, lines[3].m_end);
+  lines[7] = Line(lines[3].m_end, lines[4].m_end);
+  lines[8] = Line(lines[4].m_end, lines[1].m_end);
+
+  DrawLines(context, lines, color, transform);
+}
+
 // static
 void xiiDebugRenderer::Render(const xiiRenderViewContext& renderViewContext)
 {

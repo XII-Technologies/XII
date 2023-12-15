@@ -2,8 +2,10 @@
 
 #include <GameEngine/GameEngineDLL.h>
 
-#include <Core/World/Component.h>
 #include <Core/World/World.h>
+
+struct xiiMsgUpdateLocalBounds;
+struct xiiMsgExtractRenderData;
 
 struct XII_GAMEENGINE_DLL xiiGrabbableItemGrabPoint
 {
@@ -45,11 +47,12 @@ public:
   xiiGrabbableItemComponent();
   ~xiiGrabbableItemComponent();
 
-  xiiUInt32                 GrabPoints_GetCount() const;                                             // [ property ]
-  xiiGrabbableItemGrabPoint GrabPoints_GetValue(xiiUInt32 uiIndex) const;                            // [ property ]
-  void                      GrabPoints_SetValue(xiiUInt32 uiIndex, xiiGrabbableItemGrabPoint value); // [ property ]
-  void                      GrabPoints_Insert(xiiUInt32 uiIndex, xiiGrabbableItemGrabPoint value);   // [ property ]
-  void                      GrabPoints_Remove(xiiUInt32 uiIndex);                                    // [ property ]
+  void SetDebugShowPoints(bool bShow); // [ property ]
+  bool GetDebugShowPoints() const;     // [ property ]
 
-  xiiDynamicArray<xiiGrabbableItemGrabPoint> m_GrabPoints;
+  xiiDynamicArray<xiiGrabbableItemGrabPoint> m_GrabPoints; // [ property ]
+
+protected:
+  void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) const;
+  void OnExtractRenderData(xiiMsgExtractRenderData& msg) const;
 };

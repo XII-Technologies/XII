@@ -1,8 +1,20 @@
 #include <GameEngine/GameEnginePCH.h>
 
+#include <Core/Messages/UpdateLocalBoundsMessage.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GameEngine/Gameplay/GrabbableItemComponent.h>
+#include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Pipeline/RenderData.h>
+#include <GraphicsCore/Pipeline/View.h>
+
+struct GICFlags
+{
+  enum Enum
+  {
+    DebugShowPoints = 0,
+  };
+};
 
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGrabbableItemGrabPoint, xiiNoBase, 1, xiiRTTIDefaultAllocator<xiiGrabbableItemGrabPoint>)
@@ -27,9 +39,16 @@ XII_BEGIN_COMPONENT_TYPE(xiiGrabbableItemComponent, 1, xiiComponentMode::Static)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ARRAY_ACCESSOR_PROPERTY("GrabPoints", GrabPoints_GetCount, GrabPoints_GetValue, GrabPoints_SetValue, GrabPoints_Insert, GrabPoints_Remove),
+    XII_ACCESSOR_PROPERTY("DebugShowPoints", GetDebugShowPoints, SetDebugShowPoints),
+    XII_ARRAY_MEMBER_PROPERTY("GrabPoints", m_GrabPoints),
   }
   XII_END_PROPERTIES;
+  XII_BEGIN_MESSAGEHANDLERS
+  {
+    XII_MESSAGE_HANDLER(xiiMsgUpdateLocalBounds, OnUpdateLocalBounds),
+    XII_MESSAGE_HANDLER(xiiMsgExtractRenderData, OnExtractRenderData),
+  }
+  XII_END_MESSAGEHANDLERS;
   XII_BEGIN_ATTRIBUTES
   {
     new xiiCategoryAttribute("Input"),
@@ -41,31 +60,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGrabbableItemComponent::xiiGrabbableItemComponent()  = default;
 xiiGrabbableItemComponent::~xiiGrabbableItemComponent() = default;
-
-xiiUInt32 xiiGrabbableItemComponent::GrabPoints_GetCount() const
-{
-  return m_GrabPoints.GetCount();
-}
-
-xiiGrabbableItemGrabPoint xiiGrabbableItemComponent::GrabPoints_GetValue(xiiUInt32 uiIndex) const
-{
-  return m_GrabPoints[uiIndex];
-}
-
-void xiiGrabbableItemComponent::GrabPoints_SetValue(xiiUInt32 uiIndex, xiiGrabbableItemGrabPoint value)
-{
-  m_GrabPoints[uiIndex] = value;
-}
-
-void xiiGrabbableItemComponent::GrabPoints_Insert(xiiUInt32 uiIndex, xiiGrabbableItemGrabPoint value)
-{
-  m_GrabPoints.Insert(value, uiIndex);
-}
-
-void xiiGrabbableItemComponent::GrabPoints_Remove(xiiUInt32 uiIndex)
-{
-  m_GrabPoints.RemoveAtAndCopy(uiIndex);
-}
 
 void xiiGrabbableItemComponent::SerializeComponent(xiiWorldWriter& inout_stream) const
 {
@@ -97,5 +91,53 @@ void xiiGrabbableItemComponent::DeserializeComponent(xiiWorldReader& inout_strea
   }
 }
 
+void xiiGrabbableItemComponent::SetDebugShowPoints(bool bShow)
+{
+  SetUserFlag(GICFlags::DebugShowPoints, bShow);
+
+  if (IsActiveAndInitialized())
+  {
+    GetOwner()->UpdateLocalBounds();
+  }
+}
+
+bool xiiGrabbableItemComponent::GetDebugShowPoints() const
+{
+  return GetUserFlag(GICFlags::DebugShowPoints);
+}
+
+void xiiGrabbableItemComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) const
+{
+  if (GetDebugShowPoints())
+  {
+    msg.AddBounds(xiiBoundingSphere(xiiVec3::ZeroVector(), 1.0f), xiiDefaultSpatialDataCategories::RenderDynamic);
+  }
+}
+
+void xiiGrabbableItemComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg) const
+{
+  if (!GetDebugShowPoints() || m_GrabPoints.IsEmpty())
+    return;
+
+  if (msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::MainView &&
+      msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::EditorView)
+    return;
+
+  // Don't extract render data for selection.
+  if (msg.m_OverrideCategory != xiiInvalidRenderDataCategory)
+    return;
+
+  const xiiTransform globalTransform = GetOwner()->GetGlobalTransform();
+
+  for (auto& grabPoint : m_GrabPoints)
+  {
+    xiiTransform grabPointTransform;
+    grabPointTransform.SetGlobalTransform(globalTransform, xiiTransform(grabPoint.m_vLocalPosition, grabPoint.m_qLocalRotation));
+
+    xiiDebugRenderer::DrawArrow(GetWorld(), 0.75f, xiiColorScheme::LightUI(xiiColorScheme::Red), grabPointTransform, xiiVec3::UnitXAxis());
+    xiiDebugRenderer::DrawArrow(GetWorld(), 0.3f, xiiColorScheme::LightUI(xiiColorScheme::Green), grabPointTransform, xiiVec3::UnitYAxis());
+    xiiDebugRenderer::DrawArrow(GetWorld(), 0.3f, xiiColorScheme::LightUI(xiiColorScheme::Blue), grabPointTransform, xiiVec3::UnitZAxis());
+  }
+}
 
 XII_STATICLINK_FILE(GameEngine, GameEngine_Gameplay_Implementation_GrabbableItemComponent);
