@@ -58,8 +58,6 @@ public:
 
   bool operator==(const O* rhs) const { return m_pObject == rhs; }
 
-  bool operator!=(const O* rhs) const { return m_pObject != rhs; }
-
   bool operator!() const { return m_pObject == nullptr; }
 
   operator bool() const { return m_pObject != nullptr; }

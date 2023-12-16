@@ -197,7 +197,20 @@ public:
   }
 
   /// \brief Compares the two arrays for equality.
+  template <typename = typename std::enable_if<std::is_const<T>::value == false>>
   inline bool operator==(const xiiArrayPtr<const T>& other) const // [tested]
+  {
+    if (GetCount() != other.GetCount())
+      return false;
+
+    if (GetPtr() == other.GetPtr())
+      return true;
+
+    return xiiMemoryUtils::IsEqual(static_cast<const ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), GetCount());
+  }
+
+  /// \brief Compares the two arrays for equality.
+  inline bool operator==(const xiiArrayPtr<T>& other) const // [tested]
   {
     if (GetCount() != other.GetCount())
       return false;

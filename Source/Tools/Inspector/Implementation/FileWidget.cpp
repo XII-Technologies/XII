@@ -44,7 +44,7 @@ void xiiQtFileWidget::ResetStats()
     Headers.append(" Thread ");
     Headers.append(" File ");
 
-    Table->setColumnCount(Headers.size());
+    Table->setColumnCount(static_cast<xiiInt32>(Headers.size()));
     Table->setHorizontalHeaderLabels(Headers);
     Table->horizontalHeader()->show();
   }
@@ -346,7 +346,7 @@ void xiiQtFileWidget::UpdateTable()
     Headers.append(" Thread ");
     Headers.append(" File ");
 
-    Table->setColumnCount(Headers.size());
+    Table->setColumnCount(static_cast<xiiInt32>(Headers.size()));
     Table->setHorizontalHeaderLabels(Headers);
     Table->horizontalHeader()->show();
   }

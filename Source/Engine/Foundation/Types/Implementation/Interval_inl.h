@@ -56,9 +56,3 @@ bool xiiInterval<Type>::operator==(const xiiInterval<Type>& rhs) const
 {
   return m_StartValue == rhs.m_StartValue && m_EndValue == rhs.m_EndValue;
 }
-
-template <class Type>
-bool xiiInterval<Type>::operator!=(const xiiInterval<Type>& rhs) const
-{
-  return !operator==(rhs);
-}

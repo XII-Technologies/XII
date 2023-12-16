@@ -72,14 +72,12 @@ public:
 
   /// \brief Comparison operators
   XII_ALWAYS_INLINE bool operator==(const SelfType& rhs) const { return m_Value == rhs.m_Value; }
-  XII_ALWAYS_INLINE bool operator!=(const SelfType& rhs) const { return m_Value != rhs.m_Value; }
   XII_ALWAYS_INLINE bool operator>(const SelfType& rhs) const { return m_Value > rhs.m_Value; }
   XII_ALWAYS_INLINE bool operator<(const SelfType& rhs) const { return m_Value < rhs.m_Value; }
   XII_ALWAYS_INLINE bool operator>=(const SelfType& rhs) const { return m_Value >= rhs.m_Value; }
   XII_ALWAYS_INLINE bool operator<=(const SelfType& rhs) const { return m_Value <= rhs.m_Value; }
 
   XII_ALWAYS_INLINE bool operator==(typename Derived::Enum value) const { return m_Value == value; }
-  XII_ALWAYS_INLINE bool operator!=(typename Derived::Enum value) const { return m_Value != value; }
   XII_ALWAYS_INLINE bool operator>(typename Derived::Enum value) const { return m_Value > value; }
   XII_ALWAYS_INLINE bool operator<(typename Derived::Enum value) const { return m_Value < value; }
   XII_ALWAYS_INLINE bool operator>=(typename Derived::Enum value) const { return m_Value >= value; }

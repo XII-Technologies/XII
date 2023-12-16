@@ -38,7 +38,6 @@ public:
   Type GetSeparation() const;
 
   bool operator==(const xiiInterval<Type>& rhs) const;
-  bool operator!=(const xiiInterval<Type>& rhs) const;
 
   Type m_StartValue = Type();
   Type m_EndValue   = Type();

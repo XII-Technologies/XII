@@ -194,8 +194,8 @@ XII_CREATE_SIMPLE_TEST(Strings, FormatString)
     TestFormat(xiiFmt("{}", xiiTime()), "0ns");
     TestFormat(xiiFmt("{}", xiiTime::Nanoseconds(999)), "999ns");
     TestFormat(xiiFmt("{}", xiiTime::Nanoseconds(999.1)), "999.1ns");
-    TestFormat(xiiFmt("{}", xiiTime::Microseconds(999)), reinterpret_cast<const char*>(u8"999\u00B5s"));     // Utf-8 encoding for the microsecond sign
-    TestFormat(xiiFmt("{}", xiiTime::Microseconds(999.2)), reinterpret_cast<const char*>(u8"999.2\u00B5s")); // Utf-8 encoding for the microsecond sign
+    TestFormat(xiiFmt("{}", xiiTime::Microseconds(999)), (const char*)u8"999\u00B5s");     // Utf-8 encoding for the microsecond sign
+    TestFormat(xiiFmt("{}", xiiTime::Microseconds(999.2)), (const char*)u8"999.2\u00B5s"); // Utf-8 encoding for the microsecond sign
     TestFormat(xiiFmt("{}", xiiTime::Milliseconds(-999)), "-999ms");
     TestFormat(xiiFmt("{}", xiiTime::Milliseconds(-999.3)), "-999.3ms");
     TestFormat(xiiFmt("{}", xiiTime::Seconds(59)), "59sec");

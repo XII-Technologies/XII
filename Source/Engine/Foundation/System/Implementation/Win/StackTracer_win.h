@@ -7,12 +7,12 @@
 #include <Foundation/FoundationInternal.h>
 XII_FOUNDATION_INTERNAL_HEADER
 
-#define XII_MSVC_WARNING_NUMBER 4091
-#include <Foundation/Basics/Compiler/MSVC/DisableWarning_MSVC.h>
+XII_WARNING_PUSH()
+XII_WARNING_DISABLE_MSVC(4091)
 
 #include <DbgHelp.h>
 
-#include <Foundation/Basics/Compiler/MSVC/RestoreWarning_MSVC.h>
+XII_WARNING_POP()
 
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Logging/Log.h>
@@ -215,7 +215,7 @@ void xiiStackTracer::OnPluginEvent(const xiiPluginEvent& e)
       FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, err, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), (LPTSTR)&lpMsgBuf, 0, nullptr);
 
       char errStr[1024];
-      sprintf_s(errStr, "StackTracer could not get module info for '%s'. Error-Code %u (\"%s\")\n", e.m_sPluginBinary.GetData(tmp), err, static_cast<char*>(lpMsgBuf));
+      xiiStringUtils::snprintf(errStr, 1024, "StackTracer could not get module info for '%s'. Error-Code %u (\"%s\")\n", e.m_sPluginBinary.GetData(tmp), err, static_cast<char*>(lpMsgBuf));
       xiiLog::Print(errStr);
 
       LocalFree(lpMsgBuf);

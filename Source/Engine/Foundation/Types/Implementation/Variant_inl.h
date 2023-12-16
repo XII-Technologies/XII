@@ -1,6 +1,6 @@
 
-#define XII_MSVC_WARNING_NUMBER 4702 // Unreachable code for some reason
-#include <Foundation/Basics/Compiler/MSVC/DisableWarning_MSVC.h>
+XII_WARNING_PUSH()
+XII_WARNING_DISABLE_MSVC(4702) // Unreachable code for some reason
 
 XII_ALWAYS_INLINE xiiVariant::xiiVariant()
 {
@@ -8,7 +8,7 @@ XII_ALWAYS_INLINE xiiVariant::xiiVariant()
   m_bIsShared = false;
 }
 
-#include <Foundation/Basics/Compiler/MSVC/RestoreWarning_MSVC.h>
+XII_WARNING_POP()
 
 XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVariant& other)
 {
@@ -266,11 +266,6 @@ XII_ALWAYS_INLINE void xiiVariant::operator=(const T& value)
   *this = xiiVariant(value);
 }
 
-XII_ALWAYS_INLINE bool xiiVariant::operator!=(const xiiVariant& other) const
-{
-  return !(*this == other);
-}
-
 template <typename T>
 XII_FORCE_INLINE bool xiiVariant::operator==(const T& other) const
 {
@@ -311,12 +306,6 @@ XII_FORCE_INLINE bool xiiVariant::operator==(const T& other) const
   using StorageType = typename TypeDeduction<T>::StorageType;
   XII_ASSERT_DEV(IsA<StorageType>(), "Stored type '{0}' does not match comparison type '{1}'", m_uiType, TypeDeduction<T>::value);
   return Cast<StorageType>() == other;
-}
-
-template <typename T>
-XII_ALWAYS_INLINE bool xiiVariant::operator!=(const T& other) const
-{
-  return !(*this == other);
 }
 
 XII_ALWAYS_INLINE bool xiiVariant::IsValid() const

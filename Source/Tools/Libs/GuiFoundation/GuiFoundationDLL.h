@@ -7,7 +7,6 @@
 #include <QColor>
 #include <QDataStream>
 #include <QMetaType>
-#include <ToolsFoundation/ToolsFoundationDLL.h>
 
 // Configure the DLL Import/Export Define
 #if XII_ENABLED(XII_COMPILE_ENGINE_AS_DLL)
@@ -22,7 +21,6 @@
 
 class QWidget;
 class QObject;
-
 
 Q_DECLARE_METATYPE(xiiUuid);
 
@@ -62,7 +60,7 @@ XII_ALWAYS_INLINE xiiColorGammaUB qtToXIIColor(const QColor& c)
 XII_ALWAYS_INLINE xiiString qtToXIIString(const QString& sString)
 {
   QByteArray data = sString.toUtf8();
-  return xiiString(xiiStringView(data.data(), data.size()));
+  return xiiString(xiiStringView(data.data(), static_cast<xiiUInt32>(data.size())));
 }
 
 XII_ALWAYS_INLINE QString xiiMakeQString(xiiStringView sString)
@@ -78,7 +76,6 @@ void operator>>(QDataStream& inout_stream, T*& rhs)
   inout_stream.readRawData((char*)&p, len);
   rhs = (T*)p;
 }
-
 
 template <typename T>
 void operator<<(QDataStream& inout_stream, T* rhs)

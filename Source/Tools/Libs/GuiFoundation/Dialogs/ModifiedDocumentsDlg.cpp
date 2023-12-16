@@ -21,7 +21,7 @@ xiiQtModifiedDocumentsDlg::xiiQtModifiedDocumentsDlg(QWidget* pParent, const xii
   Headers.append(" Document ");
   Headers.append("");
 
-  TableDocuments->setColumnCount(Headers.size());
+  TableDocuments->setColumnCount(static_cast<xiiInt32>(Headers.size()));
 
   TableDocuments->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
   TableDocuments->setSelectionMode(QAbstractItemView::SelectionMode::SingleSelection);

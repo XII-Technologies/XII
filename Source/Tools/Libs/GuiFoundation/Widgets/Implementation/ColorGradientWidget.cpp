@@ -370,7 +370,7 @@ void xiiQtColorGradientWidget::PaintCoordinateLines(QPainter& p)
     lines.push_back(QLine(QPoint(xPos, area.top()), QPoint(xPos, area.top() + iLineHeight)));
     lines.push_back(QLine(QPoint(xPos, area.bottom()), QPoint(xPos, area.bottom() - iLineHeight)));
   }
-  p.drawLines(lines.data(), lines.size());
+  p.drawLines(lines.data(), static_cast<xiiInt32>(lines.size()));
   p.restore();
 }
 

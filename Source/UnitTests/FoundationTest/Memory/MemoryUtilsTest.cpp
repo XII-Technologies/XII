@@ -164,10 +164,10 @@ XII_CREATE_SIMPLE_TEST(Memory, MemoryUtils)
 
     if (xiiConstructTest::s_dtorList.GetCount() == 4)
     {
-      XII_TEST_BOOL(xiiConstructTest::s_dtorList[0] == &pTest[3]);
-      XII_TEST_BOOL(xiiConstructTest::s_dtorList[1] == &pTest[2]);
-      XII_TEST_BOOL(xiiConstructTest::s_dtorList[2] == &pTest[1]);
-      XII_TEST_BOOL(xiiConstructTest::s_dtorList[3] == &pTest[0]);
+      XII_TEST_BOOL(xiiConstructTest::s_dtorList[0] == &pTest[0]);
+      XII_TEST_BOOL(xiiConstructTest::s_dtorList[1] == &pTest[1]);
+      XII_TEST_BOOL(xiiConstructTest::s_dtorList[2] == &pTest[2]);
+      XII_TEST_BOOL(xiiConstructTest::s_dtorList[3] == &pTest[3]);
       XII_TEST_INT(pTest[4].m_iData, 0);
     }
   }

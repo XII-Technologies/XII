@@ -54,8 +54,6 @@ struct xiiConstructionCounter
 
   bool operator==(const xiiConstructionCounter& cc) const { return m_iData == cc.m_iData; }
 
-  bool operator!=(const xiiConstructionCounter& cc) const { return m_iData != cc.m_iData; }
-
   bool operator<(const xiiConstructionCounter& rhs) const { return m_iData < rhs.m_iData; }
 
   /// Checks whether n constructions have been done since the last check.

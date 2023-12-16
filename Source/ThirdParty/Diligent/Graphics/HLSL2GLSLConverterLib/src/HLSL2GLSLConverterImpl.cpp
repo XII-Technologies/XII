@@ -372,11 +372,12 @@ namespace Diligent
 
 using namespace Parsing;
 
+#if __has_include("GLSLDefinitions_inc.h")
 static const Char* g_GLSLDefinitions =
     {
-#include "GLSLDefinitions_inc.h"
+#    include "GLSLDefinitions_inc.h"
 };
-
+#endif
 
 const HLSL2GLSLConverterImpl& HLSL2GLSLConverterImpl::GetInstance()
 {
@@ -4642,8 +4643,10 @@ String HLSL2GLSLConverterImpl::ConversionStream::Convert(const Char* EntryPoint,
         m_Objects.clear();
     }
 
+#if __has_include("GLSLDefinitions_inc.h")
     if (IncludeDefintions)
         GLSLSource.insert(0, g_GLSLDefinitions);
+#endif
 
     return GLSLSource;
 }

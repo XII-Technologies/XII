@@ -52,7 +52,7 @@ void xiiQtPluginsWidget::UpdatePlugins()
   Headers.append(" Reloadable ");
   Headers.append(" Dependencies ");
 
-  TablePlugins->setColumnCount(Headers.size());
+  TablePlugins->setColumnCount(static_cast<xiiInt32>(Headers.size()));
 
   TablePlugins->setHorizontalHeaderLabels(Headers);
 

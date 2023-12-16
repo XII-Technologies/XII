@@ -138,12 +138,6 @@ XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator==(const xiiUniquePtr<T>& rhs) c
 }
 
 template <typename T>
-XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator!=(const xiiUniquePtr<T>& rhs) const
-{
-  return m_pInstance != rhs.m_pInstance;
-}
-
-template <typename T>
 XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator<(const xiiUniquePtr<T>& rhs) const
 {
   return m_pInstance < rhs.m_pInstance;
@@ -171,12 +165,6 @@ template <typename T>
 XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator==(std::nullptr_t) const
 {
   return m_pInstance == nullptr;
-}
-
-template <typename T>
-XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator!=(std::nullptr_t) const
-{
-  return m_pInstance != nullptr;
 }
 
 template <typename T>
@@ -219,18 +207,6 @@ XII_ALWAYS_INLINE bool operator==(const xiiUniquePtr<T>& lhs, T* rhs)
 }
 
 template <typename T>
-XII_ALWAYS_INLINE bool operator!=(const xiiUniquePtr<T>& lhs, const T* rhs)
-{
-  return lhs.Borrow() != rhs;
-}
-
-template <typename T>
-XII_ALWAYS_INLINE bool operator!=(const xiiUniquePtr<T>& lhs, T* rhs)
-{
-  return lhs.Borrow() != rhs;
-}
-
-template <typename T>
 XII_ALWAYS_INLINE bool operator==(const T* lhs, const xiiUniquePtr<T>& rhs)
 {
   return lhs == rhs.Borrow();
@@ -240,16 +216,4 @@ template <typename T>
 XII_ALWAYS_INLINE bool operator==(T* lhs, const xiiUniquePtr<T>& rhs)
 {
   return lhs == rhs.Borrow();
-}
-
-template <typename T>
-XII_ALWAYS_INLINE bool operator!=(const T* lhs, const xiiUniquePtr<T>& rhs)
-{
-  return lhs != rhs.Borrow();
-}
-
-template <typename T>
-XII_ALWAYS_INLINE bool operator!=(T* lhs, const xiiUniquePtr<T>& rhs)
-{
-  return lhs != rhs.Borrow();
 }

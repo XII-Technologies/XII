@@ -337,11 +337,17 @@ namespace xiiMath
   /// \brief Returns true, if there exists some x with 2^x == value.
   [[nodiscard]] constexpr bool IsPowerOf2(xiiUInt64 value); // [tested]
 
-  /// \brief Returns the next power-of-two that is <= value
+  /// \brief Returns the next power-of-two that is <= value.
   [[nodiscard]] XII_FOUNDATION_DLL xiiUInt32 PowerOfTwo_Floor(xiiUInt32 value); // [tested]
 
-  /// \brief Returns the next power-of-two that is >= value
+  /// \brief Returns the next power-of-two that is <= value.
+  [[nodiscard]] XII_FOUNDATION_DLL xiiUInt64 PowerOfTwo_Floor(xiiUInt64 value); // [tested]
+
+  /// \brief Returns the next power-of-two that is >= value.
   [[nodiscard]] XII_FOUNDATION_DLL xiiUInt32 PowerOfTwo_Ceil(xiiUInt32 value); // [tested]
+
+  /// \brief Returns the next power-of-two that is >= value.
+  [[nodiscard]] XII_FOUNDATION_DLL xiiUInt64 PowerOfTwo_Ceil(xiiUInt64 value); // [tested]
 
   /// \brief Returns the greatest common divisor.
   [[nodiscard]] XII_FOUNDATION_DLL xiiUInt32 GreatestCommonDivisor(xiiUInt32 a, xiiUInt32 b); // [tested]

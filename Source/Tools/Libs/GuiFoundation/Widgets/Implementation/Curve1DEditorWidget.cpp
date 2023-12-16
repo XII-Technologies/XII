@@ -1276,7 +1276,7 @@ void xiiQtCurve1DEditorWidget::on_LinePosition_editingFinished()
   {
     const auto& cp = m_Curves.m_Curves[cpSel.m_uiCurve]->m_ControlPoints[cpSel.m_uiPoint];
 
-    xiiInt32 iTick = m_Curves.TickFromTime(xiiTime::Seconds(value));
+    xiiInt64 iTick = m_Curves.TickFromTime(xiiTime::Seconds(value));
     if (cp.m_iTick != iTick)
       Q_EMIT CpMovedEvent(cpSel.m_uiCurve, cpSel.m_uiPoint, iTick, cp.m_fValue);
   }

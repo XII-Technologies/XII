@@ -20,13 +20,13 @@ public:
   // *** Constructors ***
 public:
   /// \brief default-constructed vector is uninitialized (for speed)
-  xiiVec3Template<Type>(); // [tested]
+  xiiVec3Template(); // [tested]
 
   /// \brief Initializes the vector with x,y,z
-  xiiVec3Template<Type>(Type inX, Type inY, Type inZ); // [tested]
+  xiiVec3Template(Type inX, Type inY, Type inZ); // [tested]
 
   /// \brief Initializes all 3 components with xyz
-  explicit xiiVec3Template<Type>(Type inV); // [tested]
+  explicit xiiVec3Template(Type inV); // [tested]
   // no copy-constructor and operator= since the default-generated ones will be faster
 
   /// \brief Returns a vector with all components set to zero.

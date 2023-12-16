@@ -114,8 +114,13 @@ XII_CREATE_SIMPLE_TEST(Basics, Delegate)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Complex Class")
   {
+    XII_WARNING_PUSH()
+    XII_WARNING_DISABLE_GCC("-Wfree-nonheap-object")
+
     ComplexClass* c = new ComplexClass();
     delete c;
+
+    XII_WARNING_POP()
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Const Method")

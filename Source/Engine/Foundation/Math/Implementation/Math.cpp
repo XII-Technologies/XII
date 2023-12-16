@@ -31,6 +31,11 @@ bool xiiMath::IsPowerOf(xiiInt32 value, xiiInt32 iBase)
 
 xiiUInt32 xiiMath::PowerOfTwo_Floor(xiiUInt32 uiNpot)
 {
+  return static_cast<xiiUInt32>(PowerOfTwo_Floor(static_cast<xiiUInt64>(uiNpot)));
+}
+
+xiiUInt64 xiiMath::PowerOfTwo_Floor(xiiUInt64 uiNpot)
+{
   if (IsPowerOf2(uiNpot))
     return (uiNpot);
 
@@ -46,6 +51,11 @@ xiiUInt32 xiiMath::PowerOfTwo_Floor(xiiUInt32 uiNpot)
 }
 
 xiiUInt32 xiiMath::PowerOfTwo_Ceil(xiiUInt32 uiNpot)
+{
+  return static_cast<xiiUInt32>(PowerOfTwo_Ceil(static_cast<xiiUInt64>(uiNpot)));
+}
+
+xiiUInt64 xiiMath::PowerOfTwo_Ceil(xiiUInt64 uiNpot)
 {
   if (IsPowerOf2(uiNpot))
     return (uiNpot);
@@ -64,7 +74,6 @@ xiiUInt32 xiiMath::PowerOfTwo_Ceil(xiiUInt32 uiNpot)
 
   return (1u);
 }
-
 
 xiiUInt32 xiiMath::GreatestCommonDivisor(xiiUInt32 a, xiiUInt32 b)
 {

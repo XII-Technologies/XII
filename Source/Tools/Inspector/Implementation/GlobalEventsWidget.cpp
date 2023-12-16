@@ -34,7 +34,7 @@ void xiiQtGlobalEventsWidget::ResetStats()
     Headers.append(" # Handlers ");
     Headers.append(" # Handlers Once ");
 
-    TableEvents->setColumnCount(Headers.size());
+    TableEvents->setColumnCount(static_cast<xiiInt32>(Headers.size()));
 
     TableEvents->setHorizontalHeaderLabels(Headers);
     TableEvents->horizontalHeader()->show();
@@ -98,7 +98,7 @@ void xiiQtGlobalEventsWidget::UpdateTable(bool bRecreate)
     Headers.append(" # Handlers ");
     Headers.append(" # Handlers Once ");
 
-    TableEvents->setColumnCount(Headers.size());
+    TableEvents->setColumnCount(static_cast<xiiInt32>(Headers.size()));
 
     TableEvents->setHorizontalHeaderLabels(Headers);
     TableEvents->horizontalHeader()->show();

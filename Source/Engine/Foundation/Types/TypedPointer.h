@@ -25,8 +25,4 @@ struct xiiTypedPointer
   {
     return m_pObject == rhs.m_pObject;
   }
-  bool operator!=(const xiiTypedPointer& rhs) const
-  {
-    return m_pObject != rhs.m_pObject;
-  }
 };

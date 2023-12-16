@@ -79,8 +79,7 @@ inline const char* xiiStringBase<Derived>::FindLastSubString(xiiStringView sStri
   if (szStartSearchAt == nullptr)
     szStartSearchAt = InternalGetDataEnd();
 
-  XII_ASSERT_DEV((szStartSearchAt >= InternalGetData()) && (szStartSearchAt <= InternalGetDataEnd()),
-                 "The given pointer to start searching at is not inside this strings valid range.");
+  XII_ASSERT_DEV((szStartSearchAt >= InternalGetData()) && (szStartSearchAt <= InternalGetDataEnd()), "The given pointer to start searching at is not inside this strings valid range.");
 
   return xiiStringUtils::FindLastSubString(InternalGetData(), sStringToFind.GetStartPointer(), szStartSearchAt, InternalGetDataEnd(), sStringToFind.GetEndPointer());
 }
@@ -202,24 +201,6 @@ template <typename DerivedLhs>
 XII_ALWAYS_INLINE bool operator==(const xiiStringBase<DerivedLhs>& lhs, const char* rhs) // [tested]
 {
   return lhs.IsEqual(rhs);
-}
-
-template <typename DerivedLhs, typename DerivedRhs>
-XII_ALWAYS_INLINE bool operator!=(const xiiStringBase<DerivedLhs>& lhs, const xiiStringBase<DerivedRhs>& rhs) // [tested]
-{
-  return !lhs.IsEqual(rhs);
-}
-
-template <typename DerivedRhs>
-XII_ALWAYS_INLINE bool operator!=(const char* lhs, const xiiStringBase<DerivedRhs>& rhs) // [tested]
-{
-  return !rhs.IsEqual(lhs);
-}
-
-template <typename DerivedLhs>
-XII_ALWAYS_INLINE bool operator!=(const xiiStringBase<DerivedLhs>& lhs, const char* rhs) // [tested]
-{
-  return !lhs.IsEqual(rhs);
 }
 
 template <typename DerivedLhs, typename DerivedRhs>

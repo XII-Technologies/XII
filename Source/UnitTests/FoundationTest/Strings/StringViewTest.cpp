@@ -270,7 +270,7 @@ XII_CREATE_SIMPLE_TEST(Strings, StringView)
 
     XII_TEST_BOOL(it.GetStartPointer() == &s.GetData()[5]);
     XII_TEST_BOOL(it.GetEndPointer() == &s.GetData()[9]);
-    XII_TEST_STRING(it.GetData(tmp), reinterpret_cast<const char*>(u8"öü"));
+    XII_TEST_STRING(it.GetData(tmp), (const char*)u8"öü");
     XII_TEST_BOOL(it.IsValid());
 
     it.Shrink(1, 1);

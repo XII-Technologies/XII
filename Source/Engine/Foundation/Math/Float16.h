@@ -31,6 +31,9 @@ public:
   /// \brief Returns true, if both values are identical.
   bool operator==(const xiiFloat16& c2) { return m_uiData == c2.m_uiData; } // [tested]
 
+  /// \brief Returns true, if both values are not identical.
+  bool operator!=(const xiiFloat16& c2) { return m_uiData != c2.m_uiData; } // [tested]
+
 private:
   /// Raw 16 float data.
   xiiUInt16 m_uiData;

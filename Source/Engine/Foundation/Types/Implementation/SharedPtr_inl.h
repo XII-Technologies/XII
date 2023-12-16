@@ -213,12 +213,6 @@ XII_ALWAYS_INLINE bool xiiSharedPtr<T>::operator==(const xiiSharedPtr<T>& rhs) c
 }
 
 template <typename T>
-XII_ALWAYS_INLINE bool xiiSharedPtr<T>::operator!=(const xiiSharedPtr<T>& rhs) const
-{
-  return m_pInstance != rhs.m_pInstance;
-}
-
-template <typename T>
 XII_ALWAYS_INLINE bool xiiSharedPtr<T>::operator<(const xiiSharedPtr<T>& rhs) const
 {
   return m_pInstance < rhs.m_pInstance;
@@ -246,12 +240,6 @@ template <typename T>
 XII_ALWAYS_INLINE bool xiiSharedPtr<T>::operator==(std::nullptr_t) const
 {
   return m_pInstance == nullptr;
-}
-
-template <typename T>
-XII_ALWAYS_INLINE bool xiiSharedPtr<T>::operator!=(std::nullptr_t) const
-{
-  return m_pInstance != nullptr;
 }
 
 template <typename T>
