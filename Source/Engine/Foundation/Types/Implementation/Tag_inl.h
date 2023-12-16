@@ -7,11 +7,6 @@ bool xiiTag::operator==(const xiiTag& rhs) const
   return m_sTagString == rhs.m_sTagString;
 }
 
-bool xiiTag::operator!=(const xiiTag& rhs) const
-{
-  return m_sTagString != rhs.m_sTagString;
-}
-
 bool xiiTag::operator<(const xiiTag& rhs) const
 {
   return m_sTagString < rhs.m_sTagString;

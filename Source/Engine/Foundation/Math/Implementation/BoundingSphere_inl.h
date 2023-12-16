@@ -106,12 +106,6 @@ XII_ALWAYS_INLINE bool operator==(const xiiBoundingSphereTemplate<Type>& lhs, co
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE bool operator!=(const xiiBoundingSphereTemplate<Type>& lhs, const xiiBoundingSphereTemplate<Type>& rhs)
-{
-  return !lhs.IsIdentical(rhs);
-}
-
-template <typename Type>
 XII_ALWAYS_INLINE void xiiBoundingSphereTemplate<Type>::Translate(const xiiVec3Template<Type>& vTranslation)
 {
   m_vCenter += vTranslation;

@@ -49,9 +49,10 @@ public:
   using PointerType = T*;
 
   /// \brief Initializes the xiiArrayPtr to be empty.
-  XII_ALWAYS_INLINE xiiArrayPtr() // [tested]
-    :
-    m_pPtr(nullptr), m_uiCount(0u)
+  XII_ALWAYS_INLINE xiiArrayPtr() :
+    // [tested]
+    m_pPtr(nullptr),
+    m_uiCount(0u)
   {
   }
 
@@ -63,9 +64,10 @@ public:
   }
 
   /// \brief Initializes the xiiArrayPtr with the given pointer and number of elements. No memory is allocated or copied.
-  inline xiiArrayPtr(T* pPtr, xiiUInt32 uiCount) // [tested]
-    :
-    m_pPtr(pPtr), m_uiCount(uiCount)
+  inline xiiArrayPtr(T* pPtr, xiiUInt32 uiCount) :
+    // [tested]
+    m_pPtr(pPtr),
+    m_uiCount(uiCount)
   {
     // If any of the arguments is invalid, we invalidate ourself.
     if (m_pPtr == nullptr || m_uiCount == 0)
@@ -77,17 +79,19 @@ public:
 
   /// \brief Initializes the xiiArrayPtr to encapsulate the given array.
   template <size_t N>
-  XII_ALWAYS_INLINE xiiArrayPtr(T (&staticArray)[N]) // [tested]
-    :
-    m_pPtr(staticArray), m_uiCount(static_cast<xiiUInt32>(N))
+  XII_ALWAYS_INLINE xiiArrayPtr(T (&staticArray)[N]) :
+    // [tested]
+    m_pPtr(staticArray),
+    m_uiCount(static_cast<xiiUInt32>(N))
   {
   }
 
   /// \brief Initializes the xiiArrayPtr to be a copy of \a other. No memory is allocated or copied.
   template <typename U>
-  XII_ALWAYS_INLINE xiiArrayPtr(const xiiArrayPtr<U>& other) // [tested]
-    :
-    m_pPtr(other.m_pPtr), m_uiCount(other.m_uiCount)
+  XII_ALWAYS_INLINE xiiArrayPtr(const xiiArrayPtr<U>& other) :
+    // [tested]
+    m_pPtr(other.m_pPtr),
+    m_uiCount(other.m_uiCount)
   {
   }
 
@@ -201,6 +205,7 @@ public:
   }
 
   /// \brief Compares the two arrays for equality.
+  template <typename = typename std::enable_if<std::is_const<T>::value == false>>
   inline bool operator==(const xiiArrayPtr<const T>& other) const // [tested]
   {
     if (GetCount() != other.GetCount())
@@ -212,10 +217,16 @@ public:
     return xiiMemoryUtils::IsEqual(static_cast<const ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), GetCount());
   }
 
-  /// \brief Compares the two arrays for inequality.
-  XII_ALWAYS_INLINE bool operator!=(const xiiArrayPtr<const T>& other) const // [tested]
+  /// \brief Compares the two arrays for equality.
+  inline bool operator==(const xiiArrayPtr<T>& other) const // [tested]
   {
-    return !(*this == other);
+    if (GetCount() != other.GetCount())
+      return false;
+
+    if (GetPtr() == other.GetPtr())
+      return true;
+
+    return xiiMemoryUtils::IsEqual(static_cast<const ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), GetCount());
   }
 
   /// \brief Compares the two arrays for less.

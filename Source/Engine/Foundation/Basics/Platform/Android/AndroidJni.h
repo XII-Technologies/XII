@@ -166,22 +166,6 @@ public:
   /// \endcode
   inline bool operator==(const xiiJniObject& other) const;
 
-  /// \brief Compares if the two objects reference different Java objects.
-  /// \param other The object to compare to.
-  ///
-  /// This method returns true if two xiiJniObjects reference different Java objects.
-  ///
-  /// In order to compare the objects using \c Object.equals, use the following code instead:
-  ///
-  /// \code
-  ///   xiiJniObject o1, o2;
-  ///   if(!o1.Call<bool>("equals", o2))
-  ///   {
-  ///      // ...
-  ///   }
-  /// \endcode
-  inline bool operator!=(const xiiJniObject& other) const;
-
   /// \brief Returns true if the object is null.
   bool IsNull() const { return m_object == nullptr; }
 

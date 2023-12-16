@@ -47,12 +47,6 @@ XII_FORCE_INLINE bool xiiHashTableBase<K, V, H>::ConstIterator::operator==(const
 }
 
 template <typename K, typename V, typename H>
-XII_ALWAYS_INLINE bool xiiHashTableBase<K, V, H>::ConstIterator::operator!=(const typename xiiHashTableBase<K, V, H>::ConstIterator& rhs) const
-{
-  return !(*this == rhs);
-}
-
-template <typename K, typename V, typename H>
 XII_ALWAYS_INLINE const K& xiiHashTableBase<K, V, H>::ConstIterator::Key() const
 {
   return m_pHashTable->m_pEntries[m_uiCurrentIndex].key;
@@ -254,12 +248,6 @@ bool xiiHashTableBase<K, V, H>::operator==(const xiiHashTableBase<K, V, H>& rhs)
   }
 
   return true;
-}
-
-template <typename K, typename V, typename H>
-XII_ALWAYS_INLINE bool xiiHashTableBase<K, V, H>::operator!=(const xiiHashTableBase<K, V, H>& rhs) const
-{
-  return !(*this == rhs);
 }
 
 template <typename K, typename V, typename H>

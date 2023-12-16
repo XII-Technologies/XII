@@ -101,7 +101,7 @@ void xiiQtDataWidget::ProcessTelemetry(void* pUnuseed)
         while (true)
         {
           xiiUInt8        uiTemp[1024];
-          const xiiUInt32 uiRead = msg.GetReader().ReadBytes(uiTemp, 1024);
+          const xiiUInt64 uiRead = msg.GetReader().ReadBytes(uiTemp, 1024);
 
           if (uiRead == 0)
             break;

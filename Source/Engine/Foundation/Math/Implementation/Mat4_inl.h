@@ -579,12 +579,6 @@ XII_ALWAYS_INLINE bool operator==(const xiiMat4Template<Type>& lhs, const xiiMat
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE bool operator!=(const xiiMat4Template<Type>& lhs, const xiiMat4Template<Type>& rhs)
-{
-  return !lhs.IsIdentical(rhs);
-}
-
-template <typename Type>
 bool xiiMat4Template<Type>::IsZero(Type fEpsilon) const
 {
   XII_NAN_ASSERT(this);

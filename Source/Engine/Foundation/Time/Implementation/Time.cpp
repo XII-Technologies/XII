@@ -27,6 +27,4 @@ XII_END_SUBSYSTEM_DECLARATION;
 #  error "Time functions are not implemented on current platform"
 #endif
 
-
-
 XII_STATICLINK_FILE(Foundation, Foundation_Time_Implementation_Time);

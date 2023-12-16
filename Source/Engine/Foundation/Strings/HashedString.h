@@ -94,15 +94,9 @@ public:
   /// different, this comparison function will not report they are the same.
   bool operator==(const xiiHashedString& rhs) const; // [tested]
 
-  /// \brief \see operator==
-  bool operator!=(const xiiHashedString& rhs) const; // [tested]
-
   /// \brief Compares this string object to a xiiTempHashedString object. This should be used whenever some object needs to be found
   /// and the string to compare against is not yet a xiiHashedString object.
   bool operator==(const xiiTempHashedString& rhs) const; // [tested]
-
-  /// \brief \see operator==
-  bool operator!=(const xiiTempHashedString& rhs) const; // [tested]
 
   /// \brief This operator allows sorting objects by hash value, not by alphabetical order.
   bool operator<(const xiiHashedString& rhs) const; // [tested]
@@ -165,9 +159,8 @@ public:
   template <size_t N>
   xiiTempHashedString(char (&string)[N]) = delete;
 
-  /// \brief Creates a xiiTempHashedString object from the given string. Computes the hash of the given string during runtime, which might
-  /// be slow.
-  xiiTempHashedString(xiiStringView sString); // [tested]
+  /// \brief Creates a xiiTempHashedString object from the given string. Computes the hash of the given string during runtime, which might be slow.
+  explicit xiiTempHashedString(xiiStringView sString); // [tested]
 
   /// \brief Copies the hash from rhs.
   xiiTempHashedString(const xiiTempHashedString& rhs); // [tested]
@@ -195,9 +188,6 @@ public:
 
   /// \brief Compares the two objects by their hash value. Might report incorrect equality, if two strings have the same hash value.
   bool operator==(const xiiTempHashedString& rhs) const; // [tested]
-
-  /// \brief \see operator==
-  bool operator!=(const xiiTempHashedString& rhs) const; // [tested]
 
   /// \brief This operator allows soring objects by hash value, not by alphabetical order.
   bool operator<(const xiiTempHashedString& rhs) const; // [tested]

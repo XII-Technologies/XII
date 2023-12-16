@@ -411,8 +411,8 @@ void xiiRTTI::AssignPlugin(xiiStringView sPluginName)
 
 // Warning C4505: 'IsValidIdentifierName': unreferenced function with internal linkage has been removed
 // This happens in Release builds, because the function is only used in a debug assert
-#define XII_MSVC_WARNING_NUMBER 4505
-#include <Foundation/Basics/Compiler/MSVC/DisableWarning_MSVC.h>
+XII_WARNING_PUSH()
+XII_WARNING_DISABLE_MSVC(4505)
 
 static bool IsValidIdentifierName(xiiStringView sIdentifier)
 {
@@ -446,7 +446,7 @@ static bool IsValidIdentifierName(xiiStringView sIdentifier)
   return true;
 }
 
-#include <Foundation/Basics/Compiler/MSVC/RestoreWarning_MSVC.h>
+XII_WARNING_POP()
 
 void xiiRTTI::SanityCheckType(xiiRTTI* pType)
 {

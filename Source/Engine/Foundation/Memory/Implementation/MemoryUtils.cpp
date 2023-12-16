@@ -96,8 +96,7 @@ void xiiMemoryUtils::ReserveLower4GBAddressSpace()
   // Print diagnostics showing how many allocations we had to make in
   // order to reserve all of low memory, typically less than 200.
   char buffer[1000];
-  sprintf_s(buffer, "Reserved %1.3f MB (%u vallocs, %u heap allocs) of low-memory.\n", uiTotalReservation / (1024 * 1024.0), (xiiUInt32)uiNumVAllocs,
-            (xiiUInt32)uiNumHeapAllocs);
+  xiiStringUtils::snprintf(buffer, 1000, "Reserved %1.3f MB (%u vallocs, %u heap allocs) of low-memory.\n", uiTotalReservation / (1024 * 1024.0), (xiiUInt32)uiNumVAllocs, (xiiUInt32)uiNumHeapAllocs);
   OutputDebugStringA(buffer);
 #endif
 }

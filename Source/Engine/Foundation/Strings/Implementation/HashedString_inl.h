@@ -87,19 +87,9 @@ inline bool xiiHashedString::operator==(const xiiHashedString& rhs) const
   return m_Data == rhs.m_Data;
 }
 
-inline bool xiiHashedString::operator!=(const xiiHashedString& rhs) const
-{
-  return !(*this == rhs);
-}
-
 inline bool xiiHashedString::operator==(const xiiTempHashedString& rhs) const
 {
   return m_Data.Key() == rhs.m_uiHash;
-}
-
-inline bool xiiHashedString::operator!=(const xiiTempHashedString& rhs) const
-{
-  return !(*this == rhs);
 }
 
 inline bool xiiHashedString::operator<(const xiiHashedString& rhs) const
@@ -193,11 +183,6 @@ XII_ALWAYS_INLINE void xiiTempHashedString::operator=(const xiiHashedString& rhs
 XII_ALWAYS_INLINE bool xiiTempHashedString::operator==(const xiiTempHashedString& rhs) const
 {
   return m_uiHash == rhs.m_uiHash;
-}
-
-XII_ALWAYS_INLINE bool xiiTempHashedString::operator!=(const xiiTempHashedString& rhs) const
-{
-  return !(m_uiHash == rhs.m_uiHash);
 }
 
 XII_ALWAYS_INLINE bool xiiTempHashedString::operator<(const xiiTempHashedString& rhs) const

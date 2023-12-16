@@ -89,7 +89,6 @@ public:
 
   /// \brief Compares the shared ptr against another shared ptr.
   bool operator==(const xiiSharedPtr<T>& rhs) const;
-  bool operator!=(const xiiSharedPtr<T>& rhs) const;
   bool operator<(const xiiSharedPtr<T>& rhs) const;
   bool operator<=(const xiiSharedPtr<T>& rhs) const;
   bool operator>(const xiiSharedPtr<T>& rhs) const;
@@ -97,7 +96,6 @@ public:
 
   /// \brief Compares the shared ptr against nullptr.
   bool operator==(std::nullptr_t) const;
-  bool operator!=(std::nullptr_t) const;
   bool operator<(std::nullptr_t) const;
   bool operator<=(std::nullptr_t) const;
   bool operator>(std::nullptr_t) const;

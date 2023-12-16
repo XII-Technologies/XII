@@ -40,9 +40,6 @@ struct xiiStringIterator
   /// \brief Checks whether the two iterators point to the same element.
   XII_ALWAYS_INLINE bool operator==(const xiiStringIterator& it2) const { return (m_pCurPtr == it2.m_pCurPtr); } // [tested]
 
-  /// \brief Checks whether the two iterators point to the same element.
-  XII_ALWAYS_INLINE bool operator!=(const xiiStringIterator& it2) const { return (m_pCurPtr != it2.m_pCurPtr); } // [tested]
-
   /// \brief Advances the iterated to the next character, same as operator++, but returns how many bytes were consumed in the source string.
   XII_ALWAYS_INLINE xiiUInt32 Advance()
   {
@@ -203,9 +200,6 @@ struct xiiStringReverseIterator
 
   /// \brief Checks whether the two iterators point to the same element.
   XII_ALWAYS_INLINE bool operator==(const xiiStringReverseIterator& it2) const { return (m_pCurPtr == it2.m_pCurPtr); } // [tested]
-
-  /// \brief Checks whether the two iterators point to the same element.
-  XII_ALWAYS_INLINE bool operator!=(const xiiStringReverseIterator& it2) const { return (m_pCurPtr != it2.m_pCurPtr); } // [tested]
 
   /// \brief Move to the next Utf8 character
   XII_FORCE_INLINE xiiStringReverseIterator& operator++() // [tested]

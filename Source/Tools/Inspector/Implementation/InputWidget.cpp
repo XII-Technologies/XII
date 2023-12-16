@@ -42,7 +42,7 @@ void xiiQtInputWidget::ClearSlots()
     Headers.append(" Dead Zone ");
     Headers.append(" Flags (Binary) ");
 
-    TableInputSlots->setColumnCount(Headers.size());
+    TableInputSlots->setColumnCount(static_cast<xiiInt32>(Headers.size()));
 
     TableInputSlots->setHorizontalHeaderLabels(Headers);
     TableInputSlots->horizontalHeader()->show();
@@ -64,7 +64,7 @@ void xiiQtInputWidget::ClearActions()
     for (xiiInt32 slot = 0; slot < xiiInputActionConfig::MaxInputSlotAlternatives; ++slot)
       Headers.append(QString(" Slot %1 ").arg(slot + 1));
 
-    TableInputActions->setColumnCount(Headers.size());
+    TableInputActions->setColumnCount(static_cast<xiiInt32>(Headers.size()));
 
     TableInputActions->setHorizontalHeaderLabels(Headers);
     TableInputActions->horizontalHeader()->show();
@@ -169,7 +169,7 @@ void xiiQtInputWidget::UpdateSlotTable(bool bRecreate)
     Headers.append(" Dead Zone ");
     Headers.append(" Flags (Binary) ");
 
-    TableInputSlots->setColumnCount(Headers.size());
+    TableInputSlots->setColumnCount(static_cast<xiiInt32>(Headers.size()));
 
     TableInputSlots->setHorizontalHeaderLabels(Headers);
     TableInputSlots->horizontalHeader()->show();
@@ -310,7 +310,7 @@ void xiiQtInputWidget::UpdateActionTable(bool bRecreate)
     for (xiiInt32 slot = 0; slot < xiiInputActionConfig::MaxInputSlotAlternatives; ++slot)
       Headers.append(QString(" Slot %1 ").arg(slot + 1));
 
-    TableInputActions->setColumnCount(Headers.size());
+    TableInputActions->setColumnCount(static_cast<xiiInt32>(Headers.size()));
 
     TableInputActions->setHorizontalHeaderLabels(Headers);
     TableInputActions->horizontalHeader()->show();

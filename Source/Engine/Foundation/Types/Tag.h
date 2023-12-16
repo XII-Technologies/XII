@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <Foundation/Strings/HashedString.h>
@@ -18,8 +17,6 @@ public:
   XII_ALWAYS_INLINE xiiTag();
 
   XII_ALWAYS_INLINE bool operator==(const xiiTag& rhs) const; // [tested]
-
-  XII_ALWAYS_INLINE bool operator!=(const xiiTag& rhs) const; // [tested]
 
   XII_ALWAYS_INLINE bool operator<(const xiiTag& rhs) const;
 

@@ -246,8 +246,4 @@ const xiiMat4Template<Type> operator-(const xiiMat4Template<Type>& m1, const xii
 template <typename Type>
 bool operator==(const xiiMat4Template<Type>& lhs, const xiiMat4Template<Type>& rhs); // [tested]
 
-/// \brief Comparison Operator !=
-template <typename Type>
-bool operator!=(const xiiMat4Template<Type>& lhs, const xiiMat4Template<Type>& rhs); // [tested]
-
 #include <Foundation/Math/Implementation/Mat4_inl.h>

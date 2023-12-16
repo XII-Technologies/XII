@@ -26,9 +26,6 @@ public:
   /// \brief Compares two ring-buffers for equality.
   bool operator==(const xiiStaticRingBuffer<T, Capacity>& rhs) const; // [tested]
 
-  /// \brief Compares two ring-buffers for inequality.
-  bool operator!=(const xiiStaticRingBuffer<T, Capacity>& rhs) const; // [tested]
-
   /// \brief Appends an element at the end of the ring-buffer. Asserts that CanAppend() is true.
   void PushBack(const T& element); // [tested]
 

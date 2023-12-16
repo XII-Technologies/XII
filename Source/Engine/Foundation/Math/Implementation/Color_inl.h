@@ -196,11 +196,6 @@ XII_ALWAYS_INLINE bool operator==(const xiiColor& c1, const xiiColor& c2)
   return c1.IsIdenticalRGBA(c2);
 }
 
-XII_ALWAYS_INLINE bool operator!=(const xiiColor& c1, const xiiColor& c2)
-{
-  return !c1.IsIdenticalRGBA(c2);
-}
-
 XII_FORCE_INLINE bool operator<(const xiiColor& c1, const xiiColor& c2)
 {
   if (c1.r < c2.r)

@@ -22,12 +22,6 @@ XII_ALWAYS_INLINE bool xiiRectTemplate<Type>::operator==(const xiiRectTemplate<T
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE bool xiiRectTemplate<Type>::operator!=(const xiiRectTemplate<Type>& rhs) const
-{
-  return !(*this == rhs);
-}
-
-template <typename Type>
 XII_ALWAYS_INLINE bool xiiRectTemplate<Type>::HasNonZeroArea() const
 {
   return (width > 0) && (height > 0);

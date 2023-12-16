@@ -21,17 +21,9 @@ XII_ALWAYS_INLINE bool xiiIdTableBase<IdType, ValueType>::ConstIterator::IsValid
 }
 
 template <typename IdType, typename ValueType>
-XII_FORCE_INLINE bool xiiIdTableBase<IdType, ValueType>::ConstIterator::operator==(
-  const typename xiiIdTableBase<IdType, ValueType>::ConstIterator& it2) const
+XII_FORCE_INLINE bool xiiIdTableBase<IdType, ValueType>::ConstIterator::operator==(const typename xiiIdTableBase<IdType, ValueType>::ConstIterator& it2) const
 {
   return m_IdTable.m_pEntries == it2.m_IdTable.m_pEntries && m_CurrentIndex == it2.m_CurrentIndex;
-}
-
-template <typename IdType, typename ValueType>
-XII_ALWAYS_INLINE bool xiiIdTableBase<IdType, ValueType>::ConstIterator::operator!=(
-  const typename xiiIdTableBase<IdType, ValueType>::ConstIterator& it2) const
-{
-  return !(*this == it2);
 }
 
 template <typename IdType, typename ValueType>

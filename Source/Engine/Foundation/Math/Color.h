@@ -401,9 +401,6 @@ const xiiColor operator*(const xiiMat4& lhs, const xiiColor& rhs); // [tested]
 /// \brief Returns true, if both colors are identical in all components.
 bool operator==(const xiiColor& c1, const xiiColor& c2); // [tested]
 
-/// \brief Returns true, if both colors are not identical in all components.
-bool operator!=(const xiiColor& c1, const xiiColor& c2); // [tested]
-
 /// \brief Strict weak ordering. Useful for sorting colors into a map.
 bool operator<(const xiiColor& c1, const xiiColor& c2); // [tested]
 

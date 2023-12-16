@@ -71,7 +71,6 @@ public:
 
   /// \brief Compares the unique ptr against another unique ptr.
   bool operator==(const xiiUniquePtr<T>& rhs) const;
-  bool operator!=(const xiiUniquePtr<T>& rhs) const;
   bool operator<(const xiiUniquePtr<T>& rhs) const;
   bool operator<=(const xiiUniquePtr<T>& rhs) const;
   bool operator>(const xiiUniquePtr<T>& rhs) const;
@@ -79,7 +78,6 @@ public:
 
   /// \brief Compares the unique ptr against nullptr.
   bool operator==(std::nullptr_t) const;
-  bool operator!=(std::nullptr_t) const;
   bool operator<(std::nullptr_t) const;
   bool operator<=(std::nullptr_t) const;
   bool operator>(std::nullptr_t) const;

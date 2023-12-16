@@ -31,10 +31,6 @@ struct xiiTypedObject
   {
     return m_pObject == rhs.m_pObject;
   }
-  bool operator!=(const xiiTypedObject& rhs) const
-  {
-    return m_pObject != rhs.m_pObject;
-  }
 };
 
 /// \brief xiiVariant is a class that can store different types of variables, which is useful in situations where it is not clear up front,
@@ -169,16 +165,9 @@ public:
   /// that can either both be converted to double (\see CanConvertTo()) or whose types are equal.
   bool operator==(const xiiVariant& other) const; // [tested]
 
-  /// \brief Same as operator== (with a twist!)
-  bool operator!=(const xiiVariant& other) const; // [tested]
-
   /// \brief See non-templated operator==
   template <typename T>
   bool operator==(const T& other) const; // [tested]
-
-  /// \brief See non-templated operator!=
-  template <typename T>
-  bool operator!=(const T& other) const; // [tested]
 
   /// \brief Returns whether this variant stores any other type than 'Invalid'.
   bool IsValid() const; // [tested]

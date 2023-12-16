@@ -298,12 +298,6 @@ bool xiiArrayMapBase<KEY, VALUE>::operator==(const xiiArrayMapBase<KEY, VALUE>& 
   return m_Data == rhs.m_Data;
 }
 
-template <typename KEY, typename VALUE>
-XII_ALWAYS_INLINE bool xiiArrayMapBase<KEY, VALUE>::operator!=(const xiiArrayMapBase<KEY, VALUE>& rhs) const
-{
-  return !(*this == rhs);
-}
-
 template <typename KEY, typename VALUE, typename A>
 xiiArrayMap<KEY, VALUE, A>::xiiArrayMap() :
   xiiArrayMapBase<KEY, VALUE>(A::GetAllocator())

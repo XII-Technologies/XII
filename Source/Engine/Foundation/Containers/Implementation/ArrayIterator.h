@@ -48,7 +48,6 @@ public:
   }
 
   XII_ALWAYS_INLINE bool operator==(const const_iterator_base& rhs) const { return m_pArray == rhs.m_pArray && m_uiIndex == rhs.m_uiIndex; }
-  XII_ALWAYS_INLINE bool operator!=(const const_iterator_base& rhs) const { return !(*this == rhs); }
 
   XII_ALWAYS_INLINE std::ptrdiff_t operator-(const const_iterator_base& rhs) const { return m_uiIndex - rhs.m_uiIndex; }
 
@@ -186,7 +185,6 @@ public:
   }
 
   XII_ALWAYS_INLINE bool operator==(const const_reverse_pointer_iterator& rhs) const { return m_pPtr == rhs.m_pPtr; }
-  XII_ALWAYS_INLINE bool operator!=(const const_reverse_pointer_iterator& rhs) const { return m_pPtr != rhs.m_pPtr; }
 
   XII_ALWAYS_INLINE std::ptrdiff_t operator-(const const_reverse_pointer_iterator& rhs) const { return rhs.m_pPtr - m_pPtr; }
 

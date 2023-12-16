@@ -43,10 +43,6 @@ struct XII_FOUNDATION_DLL xiiVarianceTypeFloat : public xiiVarianceTypeBaseFloat
   {
     return m_fVariance == rhs.m_fVariance && m_Value == rhs.m_Value;
   }
-  bool operator!=(const xiiVarianceTypeFloat& rhs) const
-  {
-    return !(*this == rhs);
-  }
   float m_Value = 0;
 };
 
@@ -60,10 +56,6 @@ struct XII_FOUNDATION_DLL xiiVarianceTypeDouble : public xiiVarianceTypeBaseDoub
   bool operator==(const xiiVarianceTypeDouble& rhs) const
   {
     return m_fVariance == rhs.m_fVariance && m_Value == rhs.m_Value;
-  }
-  bool operator!=(const xiiVarianceTypeDouble& rhs) const
-  {
-    return !(*this == rhs);
   }
   double m_Value = 0;
 };
@@ -79,10 +71,6 @@ struct XII_FOUNDATION_DLL xiiVarianceTypeTime : public xiiVarianceTypeBaseDouble
   {
     return m_fVariance == rhs.m_fVariance && m_Value == rhs.m_Value;
   }
-  bool operator!=(const xiiVarianceTypeTime& rhs) const
-  {
-    return !(*this == rhs);
-  }
   xiiTime m_Value;
 };
 
@@ -97,10 +85,6 @@ struct XII_FOUNDATION_DLL xiiVarianceTypeAngle : public xiiVarianceTypeBaseFloat
   {
     return m_fVariance == rhs.m_fVariance && m_Value == rhs.m_Value;
   }
-  bool operator!=(const xiiVarianceTypeAngle& rhs) const
-  {
-    return !(*this == rhs);
-  }
   xiiAngle m_Value;
 };
 
@@ -114,10 +98,6 @@ struct XII_FOUNDATION_DLL xiiVarianceTypeAngled : public xiiVarianceTypeBaseDoub
   bool operator==(const xiiVarianceTypeAngled& rhs) const
   {
     return m_fVariance == rhs.m_fVariance && m_Value == rhs.m_Value;
-  }
-  bool operator!=(const xiiVarianceTypeAngled& rhs) const
-  {
-    return !(*this == rhs);
   }
   xiiAngled m_Value;
 };

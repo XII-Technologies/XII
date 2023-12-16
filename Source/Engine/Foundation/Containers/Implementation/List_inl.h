@@ -325,12 +325,6 @@ bool xiiListBase<T>::operator==(const xiiListBase<T>& rhs) const
   return true;
 }
 
-template <typename T>
-bool xiiListBase<T>::operator!=(const xiiListBase<T>& rhs) const
-{
-  return !operator==(rhs);
-}
-
 template <typename T, typename A>
 xiiList<T, A>::xiiList() :
   xiiListBase<T>(A::GetAllocator())

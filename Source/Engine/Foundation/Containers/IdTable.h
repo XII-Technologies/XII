@@ -30,9 +30,6 @@ public:
     /// \brief Checks whether the two iterators point to the same element.
     bool operator==(const typename xiiIdTableBase<IdType, ValueType>::ConstIterator& it2) const;
 
-    /// \brief Checks whether the two iterators point to the same element.
-    bool operator!=(const typename xiiIdTableBase<IdType, ValueType>::ConstIterator& it2) const;
-
     /// \brief Returns the 'id' of the element that this iterator points to.
     IdType Id() const; // [tested]
 

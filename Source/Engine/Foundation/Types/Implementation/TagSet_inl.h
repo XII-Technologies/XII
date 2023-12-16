@@ -228,12 +228,6 @@ bool xiiTagSetTemplate<BlockStorageAllocator>::operator==(const xiiTagSetTemplat
 }
 
 template <typename BlockStorageAllocator>
-bool xiiTagSetTemplate<BlockStorageAllocator>::operator!=(const xiiTagSetTemplate& other) const
-{
-  return !(*this == other);
-}
-
-template <typename BlockStorageAllocator>
 void xiiTagSetTemplate<BlockStorageAllocator>::Set(const xiiTag& tag)
 {
   XII_ASSERT_DEV(tag.IsValid(), "Only valid tags can be set in a tag set!");

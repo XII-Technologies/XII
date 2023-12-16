@@ -214,10 +214,6 @@ const xiiVec2Template<Type> operator/(const xiiVec2Template<Type>& v, Type f); /
 template <typename Type>
 bool operator==(const xiiVec2Template<Type>& v1, const xiiVec2Template<Type>& v2); // [tested]
 
-/// \brief Returns true, if both vectors are not identical.
-template <typename Type>
-bool operator!=(const xiiVec2Template<Type>& v1, const xiiVec2Template<Type>& v2); // [tested]
-
 /// \brief Strict weak ordering. Useful for sorting vertices into a map.
 template <typename Type>
 bool operator<(const xiiVec2Template<Type>& v1, const xiiVec2Template<Type>& v2);

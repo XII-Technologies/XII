@@ -108,7 +108,6 @@ public:
   constexpr bool operator>(const xiiTime& rhs) const { return m_fTime > rhs.m_fTime; }
   constexpr bool operator>=(const xiiTime& rhs) const { return m_fTime >= rhs.m_fTime; }
   constexpr bool operator==(const xiiTime& rhs) const { return m_fTime == rhs.m_fTime; }
-  constexpr bool operator!=(const xiiTime& rhs) const { return m_fTime != rhs.m_fTime; }
 
 private:
   /// \brief For internal use only.

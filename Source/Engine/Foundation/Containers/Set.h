@@ -52,9 +52,6 @@ public:
     /// \brief Checks whether the two iterators point to the same element.
     XII_ALWAYS_INLINE bool operator==(const typename xiiSetBase<KeyType, Comparer>::Iterator& it2) const { return (m_pElement == it2.m_pElement); }
 
-    /// \brief Checks whether the two iterators point to the same element.
-    XII_ALWAYS_INLINE bool operator!=(const typename xiiSetBase<KeyType, Comparer>::Iterator& it2) const { return (m_pElement != it2.m_pElement); }
-
     /// \brief Returns the 'key' of the element that this iterator points to.
     XII_FORCE_INLINE const KeyType& Key() const
     {
@@ -163,9 +160,6 @@ public:
 
   /// \brief Comparison operator
   bool operator==(const xiiSetBase<KeyType, Comparer>& rhs) const; // [tested]
-
-  /// \brief Comparison operator
-  bool operator!=(const xiiSetBase<KeyType, Comparer>& rhs) const; // [tested]
 
   /// \brief Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const { return m_Elements.GetHeapMemoryUsage(); } // [tested]

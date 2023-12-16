@@ -53,7 +53,7 @@ void xiiQtSubsystemsWidget::UpdateSubSystems()
   Headers.append(" Startup Done ");
   Headers.append(" Dependencies ");
 
-  TableSubsystems->setColumnCount(Headers.size());
+  TableSubsystems->setColumnCount(static_cast<xiiInt32>(Headers.size()));
 
   TableSubsystems->setHorizontalHeaderLabels(Headers);
 

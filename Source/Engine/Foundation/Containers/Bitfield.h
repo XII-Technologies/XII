@@ -185,9 +185,6 @@ private:
   template <typename U>
   friend bool operator==(xiiStaticBitfield<U> lhs, xiiStaticBitfield<U> rhs);
 
-  template <typename U>
-  friend bool operator!=(xiiStaticBitfield<U> lhs, xiiStaticBitfield<U> rhs);
-
   StorageType m_Storage = 0;
 };
 
@@ -213,12 +210,6 @@ template <typename T>
 inline bool operator==(xiiStaticBitfield<T> lhs, xiiStaticBitfield<T> rhs)
 {
   return lhs.m_Storage == rhs.m_Storage;
-}
-
-template <typename T>
-inline bool operator!=(xiiStaticBitfield<T> lhs, xiiStaticBitfield<T> rhs)
-{
-  return lhs.m_Storage != rhs.m_Storage;
 }
 
 using xiiStaticBitfield8  = xiiStaticBitfield<xiiUInt8>;
