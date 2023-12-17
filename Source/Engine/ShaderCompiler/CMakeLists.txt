@@ -28,6 +28,10 @@ if (XII_BUILD_D3D12)
               "\"$<TARGET_FILE_DIR:${PROJECT_NAME}>\""
     )
   endif()
+
+  target_link_libraries(${PROJECT_NAME} PRIVATE
+    dxcompiler
+  )
 endif()
 
 if (XII_BUILD_VULKAN)
