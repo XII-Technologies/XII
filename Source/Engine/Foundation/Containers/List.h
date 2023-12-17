@@ -47,9 +47,6 @@ private:
     /// \brief Equality comparison operator.
     bool operator==(typename xiiListBase<T>::ConstIterator it2) const { return (m_pElement == it2.m_pElement); } // [tested]
 
-    /// \brief Inequality comparison operator.
-    bool operator!=(typename xiiListBase<T>::ConstIterator it2) const { return (m_pElement != it2.m_pElement); } // [tested]
-
     /// \brief Grants access to the node-data.
     const T& operator*() const { return (m_pElement->m_Data); } // [tested]
 
@@ -207,9 +204,6 @@ public:
 
   /// \brief Comparison operator
   bool operator==(const xiiListBase<T>& rhs) const; // [tested]
-
-  /// \brief Comparison operator
-  bool operator!=(const xiiListBase<T>& rhs) const; // [tested]
 
   /// \brief Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const { return m_Elements.GetHeapMemoryUsage(); } // [tested]

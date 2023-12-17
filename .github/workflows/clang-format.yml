@@ -15,7 +15,7 @@ jobs:
         id: format_files
         shell: pwsh
         run: |
-          echo "push=false" >> $GITHUB_OUTPUT
+          echo "push=false" >> ${env:GITHUB_OUTPUT}
 
           git fetch origin "${env:GITHUB_BASE_REF}:refs/remotes/origin/${env:GITHUB_BASE_REF}"
           git fetch origin "${env:GITHUB_HEAD_REF}:refs/remotes/origin/${env:GITHUB_HEAD_REF}"
@@ -30,18 +30,18 @@ jobs:
 
           echo "Running ClangFormat"
 
-          # run it once to detect whether there are any changes
+          # Run once to detect whether there are any changes
           $clangDiff = $codeDiff | python "${env:GITHUB_WORKSPACE}/Utilities/ClangFormatDiff.py" -style file -p1 -binary "${env:GITHUB_WORKSPACE}/Utilities/Ubuntu/clang-format" -iregex ".*\.(cpp|h|inl)"
 
           if($clangDiff.Length -gt 0)
           {
-            # run it a second time, and let it modify the files itself, because applying the patch appears to be impossible
+            # Run a second time, and let it modify the files itself, because applying the patch appears to be impossible
             $codeDiff | python "${env:GITHUB_WORKSPACE}/Utilities/ClangFormatDiff.py" -style file -p1 -i -binary "${env:GITHUB_WORKSPACE}/Utilities/Ubuntu/clang-format"
 
-            #Convert to linux line ending as required for a correct patch file
+            # Convert to linux line ending as required for a correct patch file
             $clangDiff = $clangDiff -join "`n"
 
-            #Write out patch file
+            # Write out patch file
             $Utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $False
             [System.IO.File]::WriteAllText("${env:GITHUB_WORKSPACE}/clangFormat.patch", "$clangDiff`n", $Utf8NoBomEncoding)
 
@@ -56,9 +56,9 @@ jobs:
             git add `*.inl | Out-Null
             git add `*.cpp | Out-Null
 
-            git commit -m "Applied code formatting rules"
+            git commit -m "Apply Code Format Rules."
 
-            echo "push=true" >> $GITHUB_OUTPUT
+            echo "push=true" >> ${env:GITHUB_OUTPUT}
           }
           else
           {

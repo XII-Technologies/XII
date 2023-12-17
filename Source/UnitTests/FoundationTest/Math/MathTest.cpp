@@ -622,27 +622,27 @@ XII_CREATE_SIMPLE_TEST(Math, General)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "PowerOf2_Floor")
   {
-    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(64), 64);
-    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(33), 32);
-    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(4), 4);
-    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(5), 4);
-    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(1), 1);
-    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(0x80000000), 0x80000000);
-    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(0x80000001), 0x80000000);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(64U), 64U);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(33U), 32U);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(4U), 4U);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(5U), 4U);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(1U), 1U);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(0x80000000U), 0x80000000U);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(0x80000001U), 0x80000000U);
     // strange case...
-    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(0), 1);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(0U), 1);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "PowerOf2_Ceil")
   {
-    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(64), 64);
-    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(33), 64);
-    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(4), 4);
-    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(5), 8);
-    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(1), 1);
-    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(0), 1);
-    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(0x7FFFFFFF), 0x80000000);
-    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(0x80000000), 0x80000000);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(64U), 64U);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(33U), 64U);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(4U), 4U);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(5U), 8U);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(1U), 1U);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(0U), 1U);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(0x7FFFFFFFU), 0x80000000U);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Ceil(0x80000000U), 0x80000000U);
     // anything above 0x80000000 is undefined behavior due to how left-shift works
   }
 

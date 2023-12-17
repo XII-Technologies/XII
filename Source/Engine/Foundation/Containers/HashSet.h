@@ -28,9 +28,6 @@ public:
     /// \brief Checks whether the two iterators point to the same element.
     bool operator==(const typename xiiHashSetBase<KeyType, Hasher>::ConstIterator& rhs) const;
 
-    /// \brief Checks whether the two iterators point to the same element.
-    bool operator!=(const typename xiiHashSetBase<KeyType, Hasher>::ConstIterator& rhs) const;
-
     /// \brief Returns the 'key' of the element that this iterator points to.
     const KeyType& Key() const; // [tested]
 
@@ -77,9 +74,6 @@ protected:
 public:
   /// \brief Compares this table to another table.
   bool operator==(const xiiHashSetBase<KeyType, Hasher>& rhs) const; // [tested]
-
-  /// \brief Compares this table to another table.
-  bool operator!=(const xiiHashSetBase<KeyType, Hasher>& rhs) const; // [tested]
 
   /// \brief Expands the hashset by over-allocating the internal storage so that the load factor is lower or equal to 60% when inserting the
   /// given number of entries.

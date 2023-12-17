@@ -106,13 +106,7 @@ public:
   }
 
   /// \brief Comparison operator.
-  XII_ALWAYS_INLINE bool operator!=(const StorageType rhs) const { return m_Value != rhs; }
-
-  /// \brief Comparison operator.
   XII_ALWAYS_INLINE bool operator==(const xiiBitflags<T>& rhs) const { return m_Value == rhs.m_Value; }
-
-  /// \brief Comparison operator.
-  XII_ALWAYS_INLINE bool operator!=(const xiiBitflags<T>& rhs) const { return m_Value != rhs.m_Value; }
 
   /// \brief Clears all flags
   XII_ALWAYS_INLINE void Clear() // [tested]
@@ -332,9 +326,7 @@ public:
   }
 
   XII_ALWAYS_INLINE bool operator==(const StorageType rhs) const { return m_Value == rhs; }                               // [tested]
-  XII_ALWAYS_INLINE bool operator!=(const StorageType rhs) const { return m_Value != rhs; }                               // [tested]
   XII_ALWAYS_INLINE bool operator==(const xiiTypelessBitflags<StorageType>& rhs) const { return m_Value == rhs.m_Value; } // [tested]
-  XII_ALWAYS_INLINE bool operator!=(const xiiTypelessBitflags<StorageType>& rhs) const { return m_Value != rhs.m_Value; } // [tested]
 
   /// \brief Clears all flags
   XII_ALWAYS_INLINE void Clear() { m_Value = 0; } // [tested]

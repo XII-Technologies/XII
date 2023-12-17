@@ -197,12 +197,6 @@ XII_ALWAYS_INLINE bool operator==(const xiiTransformTemplate<Type>& t1, const xi
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE bool operator!=(const xiiTransformTemplate<Type>& t1, const xiiTransformTemplate<Type>& t2)
-{
-  return !t1.IsIdentical(t2);
-}
-
-template <typename Type>
 XII_ALWAYS_INLINE void xiiTransformTemplate<Type>::Invert()
 {
   (*this) = GetInverse();

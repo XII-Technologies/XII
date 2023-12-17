@@ -57,6 +57,7 @@ xiiStringView xiiShaderCompilerProgram::GetProfileName(xiiStringView sPlatform, 
   xiiStringBuilder sPlatformStripped = sPlatform;
   sPlatformStripped.ReplaceFirst("D3D_", "");
   sPlatformStripped.ReplaceFirst("VK_", "");
+  sPlatformStripped.ReplaceFirst("NULL_", "");
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM40_93"))
   {
@@ -276,6 +277,11 @@ xiiEnum<xiiGALGraphicsDeviceType> xiiShaderCompilerProgram::GetProfileNameDevice
   xiiStringBuilder sPlatform0 = sPlatform;
   xiiStringBuilder sProfile   = sProfileName;
 
+  if (sPlatform0 == "NULL_SM60")
+  {
+    return xiiGALGraphicsDeviceType::Null;
+  }
+
   if (sPlatform0.FindSubString("D3D_") != nullptr)
   {
     if (sProfile.FindSubString("s_6") != nullptr || sProfile.FindSubString("s_5_1") != nullptr)
@@ -363,6 +369,18 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
 
       switch (device)
       {
+        case xiiGALGraphicsDeviceType::Null:
+        {
+          xiiStringView sData = "XII Null Shader.";
+
+          inout_Data.m_StageBinary[stage].GetByteCode().PushBackRange(xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(sData.GetStartPointer()), sData.GetElementCount()));
+
+          xiiShaderResourceBinding shaderResourceBinding;
+          inout_Data.m_StageBinary[stage].AddShaderResourceBinding(shaderResourceBinding);
+
+          return XII_SUCCESS;
+        }
+
 #if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
         case xiiGALGraphicsDeviceType::Direct3D12:
         {

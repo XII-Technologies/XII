@@ -71,8 +71,6 @@ public:
 public:
   bool operator==(const xiiRectTemplate<Type>& rhs) const;
 
-  bool operator!=(const xiiRectTemplate<Type>& rhs) const;
-
   /// \brief Sets the rect to invalid values.
   ///
   /// IsValid() will return false afterwards.

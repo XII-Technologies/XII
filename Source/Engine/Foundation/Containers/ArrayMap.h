@@ -129,9 +129,6 @@ public:
   /// \brief Compares the two containers for equality.
   bool operator==(const xiiArrayMapBase<KEY, VALUE>& rhs) const; // [tested]
 
-  /// \brief Compares the two containers for equality.
-  bool operator!=(const xiiArrayMapBase<KEY, VALUE>& rhs) const; // [tested]
-
   /// \brief Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const { return m_Data.GetHeapMemoryUsage(); } // [tested]
 

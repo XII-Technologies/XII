@@ -24,8 +24,8 @@ using THREADNAME_INFO = struct tagTHREADNAME_INFO
 };
 #pragma pack(pop)
 
-#define XII_MSVC_WARNING_NUMBER 6312
-#include <Foundation/Basics/Compiler/MSVC/DisableWarning_MSVC.h>
+XII_WARNING_PUSH()
+XII_WARNING_DISABLE_MSVC(6312)
 
 #if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
 
@@ -105,7 +105,7 @@ void SetThreadName(HANDLE hThread, LPCSTR pThreadName)
 #endif
 }
 
-#include <Foundation/Basics/Compiler/MSVC/RestoreWarning_MSVC.h>
+XII_WARNING_POP()
 
 /// \endcond
 

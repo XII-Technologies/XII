@@ -141,10 +141,3 @@ XII_FORCE_INLINE bool operator==(const xiiBoundingBoxSphereTemplate<Type>& lhs, 
 {
   return lhs.m_vCenter == rhs.m_vCenter && lhs.m_vBoxHalfExtends == rhs.m_vBoxHalfExtends && lhs.m_fSphereRadius == rhs.m_fSphereRadius;
 }
-
-/// \brief Checks whether this box and the other are not identical.
-template <typename Type>
-XII_ALWAYS_INLINE bool operator!=(const xiiBoundingBoxSphereTemplate<Type>& lhs, const xiiBoundingBoxSphereTemplate<Type>& rhs)
-{
-  return !(lhs == rhs);
-}

@@ -47,7 +47,6 @@ public:
     XII_ALWAYS_INLINE ValueType operator*() const { return Value(); }
     XII_ALWAYS_INLINE void      operator++() { Next(); }
     XII_FORCE_INLINE bool       operator==(const typename xiiRangeView<ValueType, IteratorType>::ConstIterator& it2) const;
-    XII_FORCE_INLINE bool       operator!=(const typename xiiRangeView<ValueType, IteratorType>::ConstIterator& it2) const;
 
   protected:
     XII_FORCE_INLINE explicit ConstIterator(const xiiRangeView<ValueType, IteratorType>* view, IteratorType pos);

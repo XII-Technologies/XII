@@ -41,10 +41,10 @@ void xiiStackTracer::ResolveStackTrace(const xiiArrayPtr<void*>& trace, PrintFun
   {
     for (xiiUInt32 i = 0; i < trace.GetCount(); i++)
     {
-      xiiInt32 iLen = xiiMath::Min(strlen(ppSymbols[i]), (size_t)XII_ARRAY_SIZE(szBuffer) - 2);
-      memcpy(szBuffer, ppSymbols[i], iLen);
-      szBuffer[iLen]     = '\n';
-      szBuffer[iLen + 1] = '\0';
+      size_t uiLen = xiiMath::Min(strlen(ppSymbols[i]), static_cast<size_t>(XII_ARRAY_SIZE(szBuffer)) - 2);
+      memcpy(szBuffer, ppSymbols[i], uiLen);
+      szBuffer[uiLen]     = '\n';
+      szBuffer[uiLen + 1] = '\0';
 
       printFunc(szBuffer);
     }

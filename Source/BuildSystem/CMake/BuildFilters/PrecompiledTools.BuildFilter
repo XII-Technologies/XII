@@ -1,16 +1,18 @@
 set_property(GLOBAL PROPERTY XII_BUILD_FILTER_PrecompiledTools
-    ArchiveTool
-    enet
-    Texture
-    Core
     Foundation
-    EditorPluginFileserve
+    Core
+    enet
+    GraphicsFoundation
+    GraphicsCore
+    GraphicsNull
+    GraphicsD3D12
+    GraphicsVulkan
+    ShaderCompiler
+    Texture
     GameEngine
     GuiFoundation
-    RendererCore
-    RendererDX11
-    RendererFoundation
-    ShaderCompiler
+    ArchiveTool
+    EditorPluginFileserve
     ToolsFoundation
     Fileserve
     FileservePlugin

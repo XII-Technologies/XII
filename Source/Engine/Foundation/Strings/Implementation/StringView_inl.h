@@ -178,11 +178,6 @@ XII_ALWAYS_INLINE bool operator==(xiiStringView lhs, xiiStringView rhs)
   return lhs.IsEqual(rhs);
 }
 
-XII_ALWAYS_INLINE bool operator!=(xiiStringView lhs, xiiStringView rhs)
-{
-  return !lhs.IsEqual(rhs);
-}
-
 XII_ALWAYS_INLINE bool operator<(xiiStringView lhs, xiiStringView rhs)
 {
   return lhs.Compare(rhs) < 0;

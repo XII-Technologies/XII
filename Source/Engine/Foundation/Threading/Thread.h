@@ -10,8 +10,8 @@
 // Warning: 'this' used in member initialization list (is fine here since it is just stored and not
 // accessed in the constructor (so no operations on a not completely initialized object happen)
 
-#define XII_MSVC_WARNING_NUMBER 4355
-#include <Foundation/Basics/Compiler/MSVC/DisableWarning_MSVC.h>
+XII_WARNING_PUSH()
+XII_WARNING_DISABLE_MSVC(4355)
 
 #ifndef XII_THREAD_CLASS_ENTRY_POINT
 #  error "Definition for xiiThreadClassEntryPoint is missing on this platform!"
@@ -79,4 +79,4 @@ private:
   friend xiiUInt32 RunThread(xiiThread* pThread);
 };
 
-#include <Foundation/Basics/Compiler/MSVC/RestoreWarning_MSVC.h>
+XII_WARNING_POP()

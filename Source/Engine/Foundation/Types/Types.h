@@ -61,7 +61,6 @@ public:
 
   void operator=(xiiResultEnum rhs) { m_E = rhs; }
   bool operator==(xiiResultEnum cmp) const { return m_E == cmp; }
-  bool operator!=(xiiResultEnum cmp) const { return m_E != cmp; }
 
   [[nodiscard]] XII_ALWAYS_INLINE bool Succeeded() const { return m_E == XII_SUCCESS; }
   [[nodiscard]] XII_ALWAYS_INLINE bool Failed() const { return m_E == XII_FAILURE; }

@@ -3,8 +3,7 @@
 
 #include <Foundation/Basics.h>
 
-/// \brief This class encapsulates a blob's storage and it's size. It is recommended to use this class instead of directly working on the void* of the
-/// blob.
+/// \brief This class encapsulates a blob's storage and it's size. It is recommended to use this class instead of directly working on the void* of the blob.
 ///
 /// No data is deallocated at destruction, the xiiBlobPtr only allows for easier access.
 template <typename T>
@@ -154,12 +153,6 @@ public:
       return true;
 
     return xiiMemoryUtils::IsEqual(static_cast<const ValueType*>(GetPtr()), static_cast<const ValueType*>(other.GetPtr()), static_cast<size_t>(GetCount()));
-  }
-
-  /// \brief Compares the two arrays for inequality.
-  XII_ALWAYS_INLINE bool operator!=(const xiiBlobPtr<const T>& other) const // [tested]
-  {
-    return !(*this == other);
   }
 
   /// \brief Copies the data from \a other into this array. The arrays must have the exact same size.
@@ -362,5 +355,5 @@ public:
 
 private:
   void*     m_pStorage = nullptr;
-  xiiUInt64 m_uiSize   = 0;
+  xiiUInt64 m_uiSize   = 0U;
 };

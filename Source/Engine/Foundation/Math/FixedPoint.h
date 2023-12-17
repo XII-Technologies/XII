@@ -55,9 +55,6 @@ public:
   /// \brief 'Equality' comparison.
   bool operator==(const xiiFixedPoint<DecimalBits>& rhs) const { return m_iValue == rhs.m_iValue; } // [tested]
 
-  /// \brief 'Inequality' comparison.
-  bool operator!=(const xiiFixedPoint<DecimalBits>& rhs) const { return m_iValue != rhs.m_iValue; } // [tested]
-
   /// \brief 'Less than' comparison.
   bool operator<(const xiiFixedPoint<DecimalBits>& rhs) const { return m_iValue < rhs.m_iValue; } // [tested]
 

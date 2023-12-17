@@ -2,8 +2,12 @@
 
 #include <Foundation/Types/Id.h>
 
-#define XII_MSVC_WARNING_NUMBER 4463
-#include <Foundation/Basics/Compiler/MSVC/DisableWarning_MSVC.h>
+XII_WARNING_PUSH()
+XII_WARNING_DISABLE_MSVC(4463)
+XII_WARNING_DISABLE_MSVC(4068)
+XII_WARNING_DISABLE_GCC("-Wbitfield-constant-conversion")
+XII_WARNING_DISABLE_GCC("-Woverflow")
+XII_WARNING_DISABLE_CLANG("-Wbitfield-constant-conversion")
 
 struct TestId
 {
@@ -32,10 +36,6 @@ struct TestId
 };
 
 using LargeTestId = xiiGenericId<32, 10>;
-
-XII_WARNING_PUSH();
-XII_WARNING_DISABLE_MSVC(4068);
-XII_WARNING_DISABLE_GCC("-Wbitfield-constant-conversion");
 
 XII_CREATE_SIMPLE_TEST(Basics, Id)
 {

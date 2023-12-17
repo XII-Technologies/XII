@@ -31,7 +31,7 @@ void xiiQtReflectionWidget::ResetStats()
     Headers.append(" Size (Bytes) ");
     Headers.append(" Plugin ");
 
-    TypeTree->setColumnCount(Headers.size());
+    TypeTree->setColumnCount(static_cast<xiiInt32>(Headers.size()));
     TypeTree->setHeaderLabels(Headers);
     TypeTree->header()->show();
   }

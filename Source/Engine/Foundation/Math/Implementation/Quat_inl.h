@@ -435,12 +435,6 @@ XII_ALWAYS_INLINE bool operator==(const xiiQuatTemplate<Type>& q1, const xiiQuat
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE bool operator!=(const xiiQuatTemplate<Type>& q1, const xiiQuatTemplate<Type>& q2)
-{
-  return !(q1 == q2);
-}
-
-template <typename Type>
 void xiiQuatTemplate<Type>::GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiAngleTemplate<Type>& out_y, xiiAngleTemplate<Type>& out_z) const
 {
   // Taken from https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles

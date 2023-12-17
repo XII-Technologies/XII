@@ -26,9 +26,6 @@ public:
   /// \brief Equality operator
   bool operator==(const xiiRational& other) const;
 
-  /// \brief Inequality operator
-  bool operator!=(const xiiRational& other) const;
-
   /// \brief Returns the numerator of the rational number
   xiiUInt32 GetNumerator() const;
 

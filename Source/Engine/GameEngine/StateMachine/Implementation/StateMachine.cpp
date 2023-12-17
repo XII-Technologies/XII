@@ -344,6 +344,9 @@ xiiStateMachineInstance::~xiiStateMachineInstance()
 
 xiiResult xiiStateMachineInstance::SetState(xiiStateMachineState* pState)
 {
+  if (m_pCurrentState == pState)
+    return XII_SUCCESS;
+
   if (pState != nullptr && m_pDescription != nullptr)
   {
     return SetState(pState->GetNameHashed());

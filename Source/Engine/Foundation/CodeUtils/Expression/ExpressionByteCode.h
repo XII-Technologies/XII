@@ -184,7 +184,6 @@ public:
   ~xiiExpressionByteCode();
 
   bool operator==(const xiiExpressionByteCode& other) const;
-  bool operator!=(const xiiExpressionByteCode& other) const { return !(*this == other); }
 
   void Clear();
   bool IsEmpty() const { return m_ByteCode.IsEmpty(); }

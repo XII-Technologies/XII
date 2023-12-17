@@ -121,10 +121,6 @@ public:
   {
     return m_pTaskGroup == other.m_pTaskGroup && m_uiGroupCounter == other.m_uiGroupCounter;
   }
-  XII_ALWAYS_INLINE bool operator!=(const xiiTaskGroupID& other) const
-  {
-    return m_pTaskGroup != other.m_pTaskGroup || m_uiGroupCounter != other.m_uiGroupCounter;
-  }
   XII_ALWAYS_INLINE bool operator<(const xiiTaskGroupID& other) const
   {
     return m_pTaskGroup < other.m_pTaskGroup || (m_pTaskGroup == other.m_pTaskGroup && m_uiGroupCounter < other.m_uiGroupCounter);

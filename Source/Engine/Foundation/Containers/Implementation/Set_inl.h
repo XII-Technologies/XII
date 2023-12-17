@@ -727,12 +727,6 @@ bool xiiSetBase<KeyType, Comparer>::operator==(const xiiSetBase<KeyType, Compare
   return true;
 }
 
-template <typename KeyType, typename Comparer>
-bool xiiSetBase<KeyType, Comparer>::operator!=(const xiiSetBase<KeyType, Comparer>& rhs) const
-{
-  return !operator==(rhs);
-}
-
 #undef STACK_SIZE
 
 

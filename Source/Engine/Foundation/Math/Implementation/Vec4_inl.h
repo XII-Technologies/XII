@@ -446,12 +446,6 @@ XII_ALWAYS_INLINE bool operator==(const xiiVec4Template<Type>& v1, const xiiVec4
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE bool operator!=(const xiiVec4Template<Type>& v1, const xiiVec4Template<Type>& v2)
-{
-  return !v1.IsIdentical(v2);
-}
-
-template <typename Type>
 XII_FORCE_INLINE bool operator<(const xiiVec4Template<Type>& v1, const xiiVec4Template<Type>& v2)
 {
   XII_NAN_ASSERT(&v1);

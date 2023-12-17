@@ -116,11 +116,6 @@ bool xiiJniObject::operator==(const xiiJniObject& other) const
   return xiiJniAttachment::GetEnv()->IsSameObject(m_object, other.m_object) == JNI_TRUE;
 }
 
-bool xiiJniObject::operator!=(const xiiJniObject& other) const
-{
-  return !operator==(other);
-}
-
 // Template specializations to dispatch to the correct JNI method for each C++ type.
 template <typename T, bool unused = false>
 struct xiiJniTraits

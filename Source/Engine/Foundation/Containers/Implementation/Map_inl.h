@@ -808,12 +808,6 @@ bool xiiMapBase<KeyType, ValueType, Comparer>::operator==(const xiiMapBase<KeyTy
   return true;
 }
 
-template <typename KeyType, typename ValueType, typename Comparer>
-bool xiiMapBase<KeyType, ValueType, Comparer>::operator!=(const xiiMapBase<KeyType, ValueType, Comparer>& rhs) const
-{
-  return !operator==(rhs);
-}
-
 #undef STACK_SIZE
 
 

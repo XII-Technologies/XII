@@ -215,7 +215,7 @@ namespace
   void VM_MovX_C_4(const ByteCodeType*& pByteCode, ExecutionContext& context)
   {
     XII_WARNING_PUSH()
-    XII_WARNING_DISABLE_MSVC(4189);
+    XII_WARNING_DISABLE_MSVC(4189)
 
     DEFINE_TARGET_REGISTER();
     DEFINE_CONSTANT(a);
@@ -225,7 +225,7 @@ namespace
       ++r;
     }
 
-    XII_WARNING_POP();
+    XII_WARNING_POP()
   }
 
   template <typename ValueType, typename StreamType>
@@ -431,7 +431,7 @@ namespace
   void VM_Call(const ByteCodeType*& pByteCode, ExecutionContext& context)
   {
     XII_WARNING_PUSH()
-    XII_WARNING_DISABLE_MSVC(4189);
+    XII_WARNING_DISABLE_MSVC(4189)
 
     xiiUInt32 uiFunctionIndex = xiiExpressionByteCode::GetRegisterIndex(pByteCode);
     auto&     function        = *context.m_Functions[uiFunctionIndex];
@@ -451,7 +451,7 @@ namespace
 
     function.m_Func(inputs, output, *context.m_pGlobalData);
 
-    XII_WARNING_POP();
+    XII_WARNING_POP()
   }
 
   static constexpr OpFunc s_Simd4Funcs[] = {

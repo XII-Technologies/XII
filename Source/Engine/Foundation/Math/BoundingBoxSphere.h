@@ -78,9 +78,4 @@ public:
 template <typename Type>
 bool operator==(const xiiBoundingBoxSphereTemplate<Type>& lhs, const xiiBoundingBoxSphereTemplate<Type>& rhs); // [tested]
 
-/// \brief Checks whether this bounds and the other are not identical.
-template <typename Type>
-bool operator!=(const xiiBoundingBoxSphereTemplate<Type>& lhs, const xiiBoundingBoxSphereTemplate<Type>& rhs); // [tested]
-
-
 #include <Foundation/Math/Implementation/BoundingBoxSphere_inl.h>

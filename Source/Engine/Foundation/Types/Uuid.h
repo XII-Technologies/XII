@@ -25,9 +25,6 @@ public:
   /// \brief Comparison operator. [tested]
   XII_ALWAYS_INLINE bool operator==(const xiiUuid& other) const;
 
-  /// \brief Comparison operator. [tested]
-  XII_ALWAYS_INLINE bool operator!=(const xiiUuid& other) const;
-
   /// \brief Comparison operator.
   XII_ALWAYS_INLINE bool operator<(const xiiUuid& other) const;
 

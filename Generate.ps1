@@ -78,7 +78,7 @@ elseif ($Target -eq "Uwp64vs2022") {
     $CMAKE_ARGS += "x64"
     $CMAKE_ARGS += "-B"
     $CMAKE_ARGS += "$PSScriptRoot\Workspace\vs2022x64uwp"
-    $CMAKE_ARGS += "-DCMAKE_TOOLCHAIN_FILE=$PSScriptRoot\Code\BuildSystem\CMake\toolchain-winstore.cmake"
+    $CMAKE_ARGS += "-DCMAKE_TOOLCHAIN_FILE=$PSScriptRoot\Source\BuildSystem\CMake\toolchain-winstore.cmake"
 
     $CMAKE_ARGS += "-DXII_ENABLE_QT_SUPPORT:BOOL=OFF"
     $CMAKE_ARGS += "-DXII_BUILD_FILTER='UwpProjects'"

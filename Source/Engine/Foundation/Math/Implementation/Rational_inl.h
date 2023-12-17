@@ -19,11 +19,6 @@ XII_ALWAYS_INLINE bool xiiRational::operator==(const xiiRational& other) const
   return m_uiNumerator == other.m_uiNumerator && m_uiDenominator == other.m_uiDenominator;
 }
 
-XII_ALWAYS_INLINE bool xiiRational::operator!=(const xiiRational& other) const
-{
-  return m_uiNumerator != other.m_uiNumerator || m_uiDenominator != other.m_uiDenominator;
-}
-
 XII_ALWAYS_INLINE xiiUInt32 xiiRational::GetNumerator() const
 {
   return m_uiNumerator;

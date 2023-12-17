@@ -65,20 +65,19 @@ public:
   /// \brief Equality check with epsilon that uses normalized angles. Will recognize 720 degree == 0 degree.
   bool IsEqualNormalized(xiiAngleTemplate<Type> rhs, xiiAngleTemplate<Type> epsilon) const; // [tested]
 
-  // unary operators
+  // Unary Operators
   constexpr xiiAngleTemplate<Type> operator-() const; // [tested]
 
-  // arithmetic operators
+  // Arithmetic Operators
   constexpr xiiAngleTemplate<Type> operator+(xiiAngleTemplate<Type> r) const; // [tested]
   constexpr xiiAngleTemplate<Type> operator-(xiiAngleTemplate<Type> r) const; // [tested]
 
-  // compound assignment operators
+  // Compound Assignment Operators
   void operator+=(xiiAngleTemplate<Type> r); // [tested]
   void operator-=(xiiAngleTemplate<Type> r); // [tested]
 
-  // comparison
+  // Comparison
   constexpr bool operator==(const xiiAngleTemplate<Type>& r) const; // [tested]
-  constexpr bool operator!=(const xiiAngleTemplate<Type>& r) const; // [tested]
 
   // At least the < operator is implement to make clamping etc. work
   constexpr bool operator<(const xiiAngleTemplate<Type>& r) const;

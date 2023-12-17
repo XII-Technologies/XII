@@ -13,7 +13,6 @@
   XII_ALWAYS_INLINE name() { m_Data = INVALID_INSTANCE_INDEX; }                                            \
   XII_ALWAYS_INLINE explicit name(StorageType internalData) { m_Data = internalData; }                     \
   XII_ALWAYS_INLINE bool operator==(const name other) const { return m_Data == other.m_Data; }             \
-  XII_ALWAYS_INLINE bool operator!=(const name other) const { return m_Data != other.m_Data; }             \
   XII_ALWAYS_INLINE bool operator<(const name other) const { return m_Data < other.m_Data; }               \
   XII_ALWAYS_INLINE void Invalidate() { m_Data = INVALID_INSTANCE_INDEX; }                                 \
   XII_ALWAYS_INLINE bool IsInvalidated() const { return m_Data == INVALID_INSTANCE_INDEX; }                \
@@ -63,7 +62,6 @@ public:                                                                         
   {                                                                                                          \
   }                                                                                                          \
   XII_ALWAYS_INLINE bool   operator==(const name other) const { return m_InternalId == other.m_InternalId; } \
-  XII_ALWAYS_INLINE bool   operator!=(const name other) const { return m_InternalId != other.m_InternalId; } \
   XII_ALWAYS_INLINE bool   operator<(const name other) const { return m_InternalId < other.m_InternalId; }   \
   XII_ALWAYS_INLINE void   Invalidate() { m_InternalId.Invalidate(); }                                       \
   XII_ALWAYS_INLINE bool   IsInvalidated() const { return m_InternalId.IsInvalidated(); }                    \

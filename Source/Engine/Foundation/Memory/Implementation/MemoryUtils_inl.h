@@ -254,15 +254,15 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::Construct(T* pDestination, size_t uiCount
 {
   XII_CHECK_CLASS(T);
 
-#define XII_GCC_WARNING_NAME "-Wstringop-overflow"
-#include <Foundation/Basics/Compiler/GCC/DisableWarning_GCC.h>
+  XII_WARNING_PUSH()
+  XII_WARNING_DISABLE_GCC("-Wstringop-overflow")
 
-  for (size_t i = 0; i < uiCount; i++)
+  for (size_t i = 0; i < uiCount; ++i)
   {
     ::new (pDestination + i) T();
   }
 
-#include <Foundation/Basics/Compiler/GCC/RestoreWarning_GCC.h>
+  XII_WARNING_POP()
 }
 
 template <typename T>
@@ -376,19 +376,14 @@ XII_ALWAYS_INLINE void xiiMemoryUtils::Destruct(T* pDestination, size_t uiCount,
 }
 
 template <typename T>
-XII_ALWAYS_INLINE void xiiMemoryUtils::Destruct(T* pDestination, size_t uiCount, xiiTypeIsClass)
+void xiiMemoryUtils::Destruct(T* pDestination, size_t uiCount, xiiTypeIsClass)
 {
   XII_CHECK_CLASS(T);
 
-#define XII_GCC_WARNING_NAME "-Waggressive-loop-optimizations"
-#include <Foundation/Basics/Compiler/GCC/DisableWarning_GCC.h>
-
-  for (size_t i = uiCount; i > 0; --i)
+  for (size_t i = 0; i < uiCount; ++i)
   {
-    pDestination[i - 1].~T();
+    pDestination[i].~T();
   }
-
-#include <Foundation/Basics/Compiler/GCC/RestoreWarning_GCC.h>
 }
 
 template <typename T>

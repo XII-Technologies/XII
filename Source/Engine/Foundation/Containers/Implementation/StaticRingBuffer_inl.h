@@ -49,12 +49,6 @@ bool xiiStaticRingBuffer<T, C>::operator==(const xiiStaticRingBuffer<T, C>& rhs)
 }
 
 template <typename T, xiiUInt32 C>
-XII_ALWAYS_INLINE bool xiiStaticRingBuffer<T, C>::operator!=(const xiiStaticRingBuffer<T, C>& rhs) const
-{
-  return !(*this == rhs);
-}
-
-template <typename T, xiiUInt32 C>
 void xiiStaticRingBuffer<T, C>::PushBack(const T& element)
 {
   XII_ASSERT_DEV(CanAppend(), "The ring-buffer is full, no elements can be appended before removing one.");
