@@ -2,15 +2,13 @@
 
 #include <Foundation/CodeUtils/Tokenizer.h>
 
+#include <Foundation/CodeUtils/TokenParseUtils.h>
+
 namespace
 {
-  struct ExpectedToken
-  {
-    xiiTokenType::Enum type;
-    xiiStringView      value;
-  };
+  using TokenMatch = xiiTokenParseUtils::TokenMatch;
 
-  void CompareResults(const xiiDynamicArray<ExpectedToken>& expected, xiiTokenizer& inout_tokenizer, bool bIgnoreWhitespace)
+  void CompareResults(const xiiDynamicArray<TokenMatch>& expected, xiiTokenizer& inout_tokenizer, bool bIgnoreWhitespace)
   {
     auto& tokens = inout_tokenizer.GetTokens();
 
@@ -29,12 +27,12 @@ namespace
 
       auto& e = expected[expectedIndex];
 
-      if (!XII_TEST_BOOL_MSG(e.type == token.m_iType, "Token with index %u does not match in type, expected %d actual %d", expectedIndex, e.type, token.m_iType))
+      if (!XII_TEST_BOOL_MSG(e.m_Type == token.m_iType, "Token with index %u does not match in type, expected %d actual %d", expectedIndex, e.m_Type, token.m_iType))
       {
         return;
       }
 
-      if (!XII_TEST_BOOL_MSG(e.value == token.m_DataView, "Token with index %u does not match, expected '%.*s' actual '%.*s'", expectedIndex, e.value.GetElementCount(), e.value.GetStartPointer(), token.m_DataView.GetElementCount(), token.m_DataView.GetStartPointer()))
+      if (!XII_TEST_BOOL_MSG(e.m_sToken == token.m_DataView, "Token with index %u does not match, expected '%.*s' actual '%.*s'", expectedIndex, e.m_sToken.GetElementCount(), e.m_sToken.GetStartPointer(), token.m_DataView.GetElementCount(), token.m_DataView.GetStartPointer()))
       {
         return;
       }
@@ -80,9 +78,11 @@ char c='f';
 const char* bla =  "blup";
 )";
     xiiTokenizer tokenizer(xiiFoundation::GetDefaultAllocator());
-    tokenizer.Tokenize(xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(stringLiteral), xiiStringUtils::GetStringElementCount(stringLiteral)), xiiLog::GetThreadLocalLogSystem());
+    tokenizer.Tokenize(xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(stringLiteral), xiiStringUtils::GetStringElementCount(stringLiteral)), xiiLog::GetThreadLocalLogSystem(), false);
 
-    xiiDynamicArray<ExpectedToken> expectedResult;
+    XII_TEST_BOOL(tokenizer.GetTokenizedData().IsEmpty());
+
+    xiiDynamicArray<TokenMatch> expectedResult;
     expectedResult.PushBack({xiiTokenType::Newline, "\n"});
 
     expectedResult.PushBack({xiiTokenType::Identifier, "float"});
@@ -152,7 +152,7 @@ fuenf
     xiiTokenizer tokenizer(xiiFoundation::GetDefaultAllocator());
     tokenizer.Tokenize(xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(stringLiteral), xiiStringUtils::GetStringElementCount(stringLiteral)), xiiLog::GetThreadLocalLogSystem());
 
-    xiiDynamicArray<ExpectedToken> expectedResult;
+    xiiDynamicArray<TokenMatch> expectedResult;
     expectedResult.PushBack({xiiTokenType::Identifier, "const"});
     expectedResult.PushBack({xiiTokenType::Identifier, "char"});
     expectedResult.PushBack({xiiTokenType::NonIdentifier, "*"});
