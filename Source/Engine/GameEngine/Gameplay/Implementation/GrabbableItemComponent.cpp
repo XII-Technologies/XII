@@ -106,6 +106,13 @@ bool xiiGrabbableItemComponent::GetDebugShowPoints() const
   return GetUserFlag(GICFlags::DebugShowPoints);
 }
 
+void xiiGrabbableItemComponent::DebugDrawGrabPoint(const xiiWorld& world, const xiiTransform& globalGrabPointTransform)
+{
+  xiiDebugRenderer::DrawArrow(&world, 0.75f, xiiColorScheme::LightUI(xiiColorScheme::Red), globalGrabPointTransform, xiiVec3::UnitXAxis());
+  xiiDebugRenderer::DrawArrow(&world, 0.3f, xiiColorScheme::LightUI(xiiColorScheme::Green), globalGrabPointTransform, xiiVec3::UnitYAxis());
+  xiiDebugRenderer::DrawArrow(&world, 0.3f, xiiColorScheme::LightUI(xiiColorScheme::Blue), globalGrabPointTransform, xiiVec3::UnitZAxis());
+}
+
 void xiiGrabbableItemComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) const
 {
   if (GetDebugShowPoints())
@@ -134,9 +141,7 @@ void xiiGrabbableItemComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg
     xiiTransform grabPointTransform;
     grabPointTransform.SetGlobalTransform(globalTransform, xiiTransform(grabPoint.m_vLocalPosition, grabPoint.m_qLocalRotation));
 
-    xiiDebugRenderer::DrawArrow(GetWorld(), 0.75f, xiiColorScheme::LightUI(xiiColorScheme::Red), grabPointTransform, xiiVec3::UnitXAxis());
-    xiiDebugRenderer::DrawArrow(GetWorld(), 0.3f, xiiColorScheme::LightUI(xiiColorScheme::Green), grabPointTransform, xiiVec3::UnitYAxis());
-    xiiDebugRenderer::DrawArrow(GetWorld(), 0.3f, xiiColorScheme::LightUI(xiiColorScheme::Blue), grabPointTransform, xiiVec3::UnitZAxis());
+    DebugDrawGrabPoint(*GetWorld(), grabPointTransform);
   }
 }
 
