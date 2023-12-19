@@ -124,7 +124,7 @@ void xiiTokenizer::Tokenize(xiiArrayPtr<const xiiUInt8> data, xiiLogInterface* p
     m_szTokenStart    = nullptr;
   }
 
-m_sIterator = {};
+  m_sIterator = {};
   if (!data.IsEmpty())
   {
     m_sIterator = xiiStringView((const char*)&data[0], (const char*)&data[0] + data.GetCount());

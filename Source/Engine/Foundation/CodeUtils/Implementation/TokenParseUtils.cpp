@@ -134,10 +134,10 @@ namespace xiiTokenParseUtils
       pAccepted->Clear();
 
     xiiUInt32 uiCurToken = ref_uiCurToken;
-    bool     bAccepted  = true;
+    bool      bAccepted  = true;
     for (xiiUInt32 i = 0; i < matches.GetCount() && bAccepted; ++i)
     {
-      xiiUInt32          uiAcceptedToken = uiCurToken;
+      xiiUInt32         uiAcceptedToken = uiCurToken;
       const TokenMatch& match           = matches[i];
       if (match.m_Type == xiiTokenType::Unknown)
       {
