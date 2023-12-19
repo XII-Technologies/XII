@@ -48,7 +48,7 @@ void xiiTokenizer::NextChar()
     m_uiCurColumn = 0;
   }
 
-  if (!m_sIterator.IsValid())
+  if (!m_sIterator.IsValid() || m_sIterator.IsEmpty())
   {
     m_szNextCharStart = m_sIterator.GetEndPointer();
     m_uiNextChar      = '\0';
@@ -81,8 +81,18 @@ void xiiTokenizer::AddToken()
   m_CurMode = xiiTokenType::Unknown;
 }
 
-void xiiTokenizer::Tokenize(xiiArrayPtr<const xiiUInt8> data, xiiLogInterface* pLog)
+void xiiTokenizer::Tokenize(xiiArrayPtr<const xiiUInt8> data, xiiLogInterface* pLog, bool bCopyData)
 {
+  if (bCopyData)
+  {
+    m_Data = data;
+    data   = m_Data;
+  }
+  else
+  {
+    m_Data.Clear();
+  }
+
   if (data.GetCount() >= 3)
   {
     const char* dataStart = reinterpret_cast<const char*>(data.GetPtr());
@@ -96,13 +106,6 @@ void xiiTokenizer::Tokenize(xiiArrayPtr<const xiiUInt8> data, xiiLogInterface* p
       data = xiiArrayPtr<const xiiUInt8>((const xiiUInt8*)dataStart, data.GetCount() - 3);
     }
   }
-
-  m_Data.Clear();
-  m_Data.Reserve(m_Data.GetCount() + 1);
-  m_Data = data;
-
-  if (m_Data.IsEmpty() || m_Data[m_Data.GetCount() - 1] != 0)
-    m_Data.PushBack('\0'); // make sure the string is zero terminated
 
   m_Tokens.Clear();
   m_pLog = pLog;
@@ -121,9 +124,13 @@ void xiiTokenizer::Tokenize(xiiArrayPtr<const xiiUInt8> data, xiiLogInterface* p
     m_szTokenStart    = nullptr;
   }
 
-  m_sIterator = xiiStringView((const char*)&m_Data[0], (const char*)&m_Data[0] + m_Data.GetCount() - 1);
+  m_sIterator = {};
+  if (!data.IsEmpty())
+  {
+    m_sIterator = xiiStringView((const char*)&data[0], (const char*)&data[0] + data.GetCount());
+  }
 
-  if (!m_sIterator.IsValid())
+  if (!m_sIterator.IsValid() || m_sIterator.IsEmpty())
   {
     xiiToken t;
     t.m_uiLine = 1;
@@ -137,7 +144,7 @@ void xiiTokenizer::Tokenize(xiiArrayPtr<const xiiUInt8> data, xiiLogInterface* p
 
   m_szTokenStart = m_szCurCharStart;
 
-  while (m_szTokenStart != nullptr && *m_szTokenStart != '\0')
+  while (m_szTokenStart != nullptr && m_szTokenStart != m_sIterator.GetEndPointer())
   {
     switch (m_CurMode)
     {
@@ -579,7 +586,18 @@ void xiiTokenizer::HandleNonIdentifier()
   AddToken();
 }
 
-void xiiTokenizer::GetAllLines(xiiHybridArray<const xiiToken*, 32>& ref_tokens) const
+void xiiTokenizer::GetAllTokens(xiiDynamicArray<const xiiToken*>& ref_tokens) const
+{
+  ref_tokens.Clear();
+  ref_tokens.Reserve(m_Tokens.GetCount());
+
+  for (const xiiToken& curToken : m_Tokens)
+  {
+    ref_tokens.PushBack(&curToken);
+  }
+}
+
+void xiiTokenizer::GetAllLines(xiiDynamicArray<const xiiToken*>& ref_tokens) const
 {
   ref_tokens.Clear();
   ref_tokens.Reserve(m_Tokens.GetCount());

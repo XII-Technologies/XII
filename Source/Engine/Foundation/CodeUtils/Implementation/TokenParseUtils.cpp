@@ -128,6 +128,42 @@ namespace xiiTokenParseUtils
     return false;
   }
 
+  bool Accept(const TokenStream& tokens, xiiUInt32& ref_uiCurToken, xiiArrayPtr<const TokenMatch> matches, xiiDynamicArray<xiiUInt32>* pAccepted)
+  {
+    if (pAccepted)
+      pAccepted->Clear();
+
+    xiiUInt32 uiCurToken = ref_uiCurToken;
+    bool      bAccepted  = true;
+    for (xiiUInt32 i = 0; i < matches.GetCount() && bAccepted; ++i)
+    {
+      xiiUInt32         uiAcceptedToken = uiCurToken;
+      const TokenMatch& match           = matches[i];
+      if (match.m_Type == xiiTokenType::Unknown)
+      {
+        bAccepted = Accept(tokens, uiCurToken, match.m_sToken, &uiAcceptedToken);
+      }
+      else
+      {
+        bAccepted = Accept(tokens, uiCurToken, match.m_Type, &uiAcceptedToken);
+      }
+
+      if (pAccepted && bAccepted)
+        pAccepted->PushBack(uiAcceptedToken);
+    }
+
+    if (bAccepted)
+    {
+      ref_uiCurToken = uiCurToken;
+    }
+    else
+    {
+      if (pAccepted)
+        pAccepted->Clear();
+    }
+    return bAccepted;
+  }
+
   void CombineRelevantTokensToString(const TokenStream& tokens, xiiUInt32 uiCurToken, xiiStringBuilder& ref_sResult)
   {
     ref_sResult.Clear();
@@ -143,7 +179,7 @@ namespace xiiTokenParseUtils
     }
   }
 
-  void CreateCleanTokenStream(const TokenStream& tokens, xiiUInt32 uiCurToken, TokenStream& ref_destination, bool bKeepComments)
+  void CreateCleanTokenStream(const TokenStream& tokens, xiiUInt32 uiCurToken, TokenStream& ref_destination)
   {
     SkipWhitespace(tokens, uiCurToken);
 
@@ -170,7 +206,7 @@ namespace xiiTokenParseUtils
 
     if (bRemoveRedundantWhitespace)
     {
-      CreateCleanTokenStream(tokens0, uiCurToken, Tokens, bKeepComments);
+      CreateCleanTokenStream(tokens0, uiCurToken, Tokens);
       uiCurToken = 0;
     }
     else

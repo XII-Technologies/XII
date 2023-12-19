@@ -85,8 +85,10 @@ public:
 
   ~xiiTokenizer();
 
-  /// \brief Clears any previous result and creates a new token stream for the given array.
-  void Tokenize(xiiArrayPtr<const xiiUInt8> data, xiiLogInterface* pLog);
+  /// \param data The string data to be tokenized.
+  /// \param pLog A log interface that will receive any tokenization errors.
+  /// \param bCopyData If set, 'data' will be copied into a member variable and tokenization is run on the copy, allowing for the original data storage to be deallocated after this call. If false, tokenization will reference 'data' directly and thus, 'data' must outlive this instance.
+  void Tokenize(xiiArrayPtr<const xiiUInt8> data, xiiLogInterface* pLog, bool bCopyData = true);
 
   /// \brief Gives read access to the token stream.
   const xiiDeque<xiiToken>& GetTokens() const { return m_Tokens; }
@@ -94,8 +96,11 @@ public:
   /// \brief Gives read and write access to the token stream.
   xiiDeque<xiiToken>& GetTokens() { return m_Tokens; }
 
+  /// \brief Returns an array with a copy of all tokens. Use this when using xiiTokenParseUtils.
+  void GetAllTokens(xiiDynamicArray<const xiiToken*>& ref_tokens) const;
+
   /// \brief Returns an array of all tokens. New line tokens are ignored.
-  void GetAllLines(xiiHybridArray<const xiiToken*, 32>& ref_tokens) const;
+  void GetAllLines(xiiDynamicArray<const xiiToken*>& ref_tokens) const;
 
   /// \brief Returns an array of tokens that represent the next line in the file.
   ///
@@ -111,8 +116,8 @@ public:
 
   xiiResult GetNextLine(xiiUInt32& ref_uiFirstToken, xiiHybridArray<xiiToken*, 32>& ref_tokens);
 
-  /// \brief Returns the internal copy of the tokenized data
-  const xiiDynamicArray<xiiUInt8>& GetTokenizedData() const { return m_Data; }
+  /// \brief Returns the internal copy of the tokenized data. This will be empty if Tokenize was called with 'bCopyData' equals 'false'.
+  const xiiArrayPtr<const xiiUInt8> GetTokenizedData() const { return m_Data; }
 
   /// \brief Enables treating lines that start with # character as line comments
   ///
