@@ -55,4 +55,11 @@ void xiiGALPassD3D12::EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEn
   m_pCommandEncoderImpl->EndCompute();
 }
 
+void xiiGALPassD3D12::Reset()
+{
+  m_pCommandEncoderImpl->Reset();
+  m_pGraphicsCommandEncoder->InvalidateState();
+  m_pComputeCommandEncoder->InvalidateState();
+}
+
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Device_Implementation_PassD3D12);
