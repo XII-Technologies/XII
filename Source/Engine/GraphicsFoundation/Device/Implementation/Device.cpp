@@ -835,10 +835,11 @@ xiiGALBufferHandle xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreati
 
     // Create default resource view.
 
-    if (description.m_BindFlags.IsNoFlagSet())
+    if (description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
     {
       xiiGALBufferViewCreationDescription viewDescription;
       viewDescription.m_hBuffer      = hBuffer;
+      viewDescription.m_ViewType     = xiiGALBufferViewType::ShaderResource;
       viewDescription.m_uiByteOffset = 0U;
       viewDescription.m_uiByteWidth  = (description.m_uiElementByteStride != 0U) ? (description.m_uiSize / description.m_uiElementByteStride) : description.m_uiSize;
 
@@ -907,7 +908,7 @@ xiiGALBufferViewHandle xiiGALDevice::CreateBufferView(xiiGALBufferViewCreationDe
       XII_VERIFY_BUFFER_VIEW((description.m_uiByteWidth % bufferDescription.m_uiElementByteStride) == 0U, "The buffer view byte width ({0}) is not a multiple of the element byte stride ({1}).", description.m_uiByteWidth, bufferDescription.m_uiElementByteStride);
     }
 
-    XII_VERIFY_BUFFER_VIEW(bufferDescription.m_Mode != xiiGALBufferMode::Formatted && description.m_Format.m_ValueType != xiiGALValueType::Undefined, "The format must be specified when creating a view of a formatted buffer.");
+    XII_VERIFY_BUFFER_VIEW(!(bufferDescription.m_Mode == xiiGALBufferMode::Formatted && description.m_Format.m_ValueType == xiiGALValueType::Undefined), "The format must be specified when creating a view of a formatted buffer.");
 
     if (bufferDescription.m_Mode == xiiGALBufferMode::Formatted || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && description.m_Format.m_ValueType != xiiGALValueType::Undefined))
     {
@@ -2590,6 +2591,8 @@ xiiGALBufferViewHandle xiiGALDevice::GetDefaultResourceView(xiiGALBufferHandle h
 {
   if (const xiiGALBuffer* pBuffer = GetBuffer(hBuffer))
   {
+    XII_ASSERT_DEV(!pBuffer->m_hDefaultBufferView.IsInvalidated(), "Buffer default handle is invalid.");
+
     return pBuffer->m_hDefaultBufferView;
   }
   return xiiGALBufferViewHandle();
@@ -2599,6 +2602,8 @@ xiiGALTextureViewHandle xiiGALDevice::GetDefaultResourceView(xiiGALTextureHandle
 {
   if (const xiiGALTexture* pTexture = GetTexture(hTexture))
   {
+    XII_ASSERT_DEV(!pTexture->m_hDefaultTextureView.IsInvalidated(), "Texture default handle is invalid.");
+
     return pTexture->m_hDefaultTextureView;
   }
   return xiiGALTextureViewHandle();
@@ -2608,6 +2613,8 @@ xiiGALTextureViewHandle xiiGALDevice::GetDefaultRenderTargetView(xiiGALTextureHa
 {
   if (const xiiGALTexture* pTexture = GetTexture(hTexture))
   {
+    XII_ASSERT_DEV(!pTexture->m_hDefaultRenderTargetView.IsInvalidated(), "Texture default render target handle is invalid.");
+
     return pTexture->m_hDefaultRenderTargetView;
   }
   return xiiGALTextureViewHandle();
