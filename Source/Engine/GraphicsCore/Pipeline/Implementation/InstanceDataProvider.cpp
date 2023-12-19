@@ -10,7 +10,6 @@
 #include <Shaders/Common/ObjectConstants.h>
 
 xiiInstanceData::xiiInstanceData(xiiUInt32 uiMaxInstanceCount /*= 1024*/)
-
 {
   CreateBuffer(uiMaxInstanceCount);
 

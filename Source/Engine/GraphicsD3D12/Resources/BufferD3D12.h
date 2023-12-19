@@ -7,19 +7,19 @@
 class XII_GRAPHICSD3D12_DLL xiiGALBufferD3D12 final : public xiiGALBuffer
 {
 public:
-  virtual xiiGALBufferViewHandle GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType) override;
+  virtual xiiGALBufferViewHandle GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType) override final;
 
-  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override;
+  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
 
-  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override;
+  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
 
-  virtual xiiGALMemoryProperties GetMemoryProperties() const override;
+  virtual xiiGALMemoryProperties GetMemoryProperties() const override final;
 
-  virtual void FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override;
+  virtual void FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
 
-  virtual void InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override;
+  virtual void InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;
 
-  virtual xiiGALSparseBufferProperties GetSparseProperties() const override;
+  virtual xiiGALSparseBufferProperties GetSparseProperties() const override final;
 
   Diligent::IBuffer* GetBuffer() const;
 
@@ -33,9 +33,9 @@ protected:
 
   virtual ~xiiGALBufferD3D12();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALBufferData* pInitialData) override;
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALBufferData* pInitialData) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
   Diligent::IBuffer* m_pBuffer = nullptr;

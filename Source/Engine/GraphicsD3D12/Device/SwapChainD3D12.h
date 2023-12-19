@@ -7,17 +7,17 @@
 class XII_GRAPHICSD3D12_DLL xiiGALSwapChainD3D12 final : public xiiGALSwapChain
 {
 public:
-  virtual void AcquireNextRenderTarget(xiiGALDevice* pDevice) override;
+  virtual void AcquireNextRenderTarget(xiiGALDevice* pDevice) override final;
 
-  virtual void Present(xiiGALDevice* pDevice) override;
+  virtual void Present(xiiGALDevice* pDevice) override final;
 
-  virtual xiiResult Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override;
+  virtual xiiResult Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override final;
 
-  virtual void SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode) override;
+  virtual void SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode) override final;
 
-  virtual void SetWindowedMode() override;
+  virtual void SetWindowedMode() override final;
 
-  virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) override;
+  virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) override final;
 
   Diligent::ISwapChain* GetSwapChain() const;
 

@@ -342,6 +342,9 @@ void xiiGALDeviceVulkan::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
   {
     pSwapChain->Present(this);
   }
+
+  // Invalidate frame pointers.
+  m_pDefaultPass->Reset();
 }
 
 xiiGALPass* xiiGALDeviceVulkan::BeginPassPlatform(xiiStringView sName)

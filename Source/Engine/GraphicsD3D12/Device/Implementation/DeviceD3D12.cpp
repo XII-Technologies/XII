@@ -367,6 +367,9 @@ void xiiGALDeviceD3D12::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
   {
     pSwapChain->Present(this);
   }
+
+  // Invalidate frame pointers.
+  m_pDefaultPass->Reset();
 }
 
 xiiGALPass* xiiGALDeviceD3D12::BeginPassPlatform(xiiStringView sName)

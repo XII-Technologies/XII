@@ -55,4 +55,11 @@ void xiiGALPassVulkan::EndComputePlatform(xiiGALComputeCommandEncoder* pCommandE
   m_pCommandEncoderImpl->EndCompute();
 }
 
+void xiiGALPassVulkan::Reset()
+{
+  m_pCommandEncoderImpl->Reset();
+  m_pGraphicsCommandEncoder->InvalidateState();
+  m_pComputeCommandEncoder->InvalidateState();
+}
+
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Device_Implementation_PassVulkan);

@@ -336,7 +336,7 @@ void xiiRenderContext::BindTextureCube(const xiiTempHashedString& sSlotName, xii
 void xiiRenderContext::BindBufferUAV(const xiiTempHashedString& sSlotName, xiiGALBufferViewHandle hUnorderedAccessView)
 {
   ResourceBinding* pOldResourceBinding = nullptr;
-  if (m_BoundResources.TryGetValue(sSlotName.GetHash(), pOldResourceBinding))
+  if (m_BoundUAVs.TryGetValue(sSlotName.GetHash(), pOldResourceBinding))
   {
     if (pOldResourceBinding->m_Type == ResourceBinding::Buffer && pOldResourceBinding->m_hBufferView == hUnorderedAccessView)
       return;
@@ -345,7 +345,7 @@ void xiiRenderContext::BindBufferUAV(const xiiTempHashedString& sSlotName, xiiGA
   }
   else
   {
-    m_BoundResources.Insert(sSlotName.GetHash(), ResourceBinding{.m_Type = ResourceBinding::Buffer, .m_hBufferView = hUnorderedAccessView, .m_hTextureView = xiiGALTextureViewHandle()});
+    m_BoundUAVs.Insert(sSlotName.GetHash(), ResourceBinding{.m_Type = ResourceBinding::Buffer, .m_hBufferView = hUnorderedAccessView, .m_hTextureView = xiiGALTextureViewHandle()});
   }
 
   m_StateFlags.Add(xiiRenderContextFlags::UAVBindingChanged);
@@ -354,7 +354,7 @@ void xiiRenderContext::BindBufferUAV(const xiiTempHashedString& sSlotName, xiiGA
 void xiiRenderContext::BindTextureUAV(const xiiTempHashedString& sSlotName, xiiGALTextureViewHandle hUnorderedAccessView)
 {
   ResourceBinding* pOldResourceBinding = nullptr;
-  if (m_BoundResources.TryGetValue(sSlotName.GetHash(), pOldResourceBinding))
+  if (m_BoundUAVs.TryGetValue(sSlotName.GetHash(), pOldResourceBinding))
   {
     if (pOldResourceBinding->m_Type == ResourceBinding::Texture && pOldResourceBinding->m_hTextureView == hUnorderedAccessView)
       return;
@@ -363,7 +363,7 @@ void xiiRenderContext::BindTextureUAV(const xiiTempHashedString& sSlotName, xiiG
   }
   else
   {
-    m_BoundResources.Insert(sSlotName.GetHash(), ResourceBinding{.m_Type = ResourceBinding::Texture, .m_hBufferView = xiiGALBufferViewHandle(), .m_hTextureView = hUnorderedAccessView});
+    m_BoundUAVs.Insert(sSlotName.GetHash(), ResourceBinding{.m_Type = ResourceBinding::Texture, .m_hBufferView = xiiGALBufferViewHandle(), .m_hTextureView = hUnorderedAccessView});
   }
 
   m_StateFlags.Add(xiiRenderContextFlags::UAVBindingChanged);

@@ -17,9 +17,9 @@ protected:
 
   virtual ~xiiGALTextureViewVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
   Diligent::ITextureView* m_pTextureView = nullptr;

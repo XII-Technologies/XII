@@ -91,38 +91,30 @@ void xiiGALCommandEncoderD3D12::SetShaderPlatform(xiiGALShader* pShader)
       {
         case xiiGALShaderD3D12::ShaderEvent::BeforeDeletion:
         {
+          for (auto iterator = m_CachedComputePipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
           {
-            for (auto iterator = m_CachedComputePipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
+            if (iterator.Value().m_pShader == e.m_pShader)
             {
-              if (iterator.Value().m_pShader == e.m_pShader)
-              {
-                PipelineStateInfo pipelineInfo;
-                XII_VERIFY(m_CachedComputePipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached compute pipeline state object.");
+              PipelineStateInfo pipelineInfo;
+              XII_VERIFY(m_CachedComputePipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached compute pipeline state object.");
 
-                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
-                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
+              XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
+              XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
 
-                iterator = m_CachedComputePipelineStates.GetIterator();
-              }
-              else
-              {
-                ++iterator;
-              }
+              iterator = m_CachedComputePipelineStates.GetIterator();
             }
           }
+          for (auto iterator = m_CachedGraphicsPipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
           {
-            for (auto iterator = m_CachedGraphicsPipelineStates.GetIterator(); iterator.IsValid(); ++iterator)
+            if (iterator.Value().m_pShader == e.m_pShader)
             {
-              if (iterator.Value().m_pShader == e.m_pShader)
-              {
-                PipelineStateInfo pipelineInfo;
-                XII_VERIFY(m_CachedGraphicsPipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached graphics pipeline state object.");
+              PipelineStateInfo pipelineInfo;
+              XII_VERIFY(m_CachedGraphicsPipelineStates.Remove(iterator.Key(), &pipelineInfo), "Failed to remove cached graphics pipeline state object.");
 
-                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
-                XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
+              XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pShaderResourceBinding);
+              XII_GAL_DILIGENT_PTR_RELEASE(pipelineInfo.m_pPipelineState);
 
-                iterator = m_CachedGraphicsPipelineStates.GetIterator();
-              }
+              iterator = m_CachedGraphicsPipelineStates.GetIterator();
             }
           }
 
@@ -144,11 +136,6 @@ void xiiGALCommandEncoderD3D12::SetConstantBufferPlatform(xiiUInt32 uiSlot, xiiG
 
   m_pBoundConstantBuffers[uiSlot] = pBufferD3D12->GetBuffer();
   m_bDescriptorsModified          = true;
-
-  for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
-  {
-    m_BoundConstantBuffersRange[stage].SetToIncludeValue(uiSlot);
-  }
 }
 
 void xiiGALCommandEncoderD3D12::SetSamplerPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALSampler* pSampler)
@@ -157,8 +144,6 @@ void xiiGALCommandEncoderD3D12::SetSamplerPlatform(xiiBitflags<xiiGALShaderStage
 
   m_pBoundSamplers[xiiGALShaderStage::GetStageIndex(stage)][uiSlot] = pSamplerD3D12->GetSampler();
   m_bDescriptorsModified                                            = true;
-
-  m_BoundSamplersRange[xiiGALShaderStage::GetStageIndex(stage)].SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderD3D12::SetBufferViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALBufferView* pBufferView)
@@ -171,8 +156,6 @@ void xiiGALCommandEncoderD3D12::SetBufferViewPlatform(xiiBitflags<xiiGALShaderSt
 
   boundShaderResourceViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::BufferView, pBufferViewD3D12 != nullptr ? pBufferViewD3D12->GetBufferView() : nullptr, nullptr};
   m_bDescriptorsModified           = true;
-
-  m_BoundShaderResourceViewsRange[uiStage].SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderD3D12::SetTextureViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALTextureView* pTextureView)
@@ -185,8 +168,6 @@ void xiiGALCommandEncoderD3D12::SetTextureViewPlatform(xiiBitflags<xiiGALShaderS
 
   boundShaderResourceViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::TextureView, nullptr, pTextureViewD3D12 != nullptr ? pTextureViewD3D12->GetTextureView() : nullptr};
   m_bDescriptorsModified           = true;
-
-  m_BoundShaderResourceViewsRange[uiStage].SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderD3D12::SetUnorderedAccessBufferViewPlatform(xiiUInt32 uiSlot, xiiGALBufferView* pUnorderedAccessBufferView)
@@ -197,8 +178,6 @@ void xiiGALCommandEncoderD3D12::SetUnorderedAccessBufferViewPlatform(xiiUInt32 u
 
   m_pBoundUnorderedAccessViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::BufferView, pUnorderedAccessBufferViewD3D12 != nullptr ? pUnorderedAccessBufferViewD3D12->GetBufferView() : nullptr, nullptr};
   m_bDescriptorsModified               = true;
-
-  m_BoundUnorderedAccessViewsRange.SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderD3D12::SetUnorderedAccessTextureViewPlatform(xiiUInt32 uiSlot, xiiGALTextureView* pUnorderedAccessTextureView)
@@ -209,8 +188,6 @@ void xiiGALCommandEncoderD3D12::SetUnorderedAccessTextureViewPlatform(xiiUInt32 
 
   m_pBoundUnorderedAccessViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::TextureView, nullptr, pUnorderedAccessTextureViewD3D12 != nullptr ? pUnorderedAccessTextureViewD3D12->GetTextureView() : nullptr};
   m_bDescriptorsModified               = true;
-
-  m_BoundUnorderedAccessViewsRange.SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderD3D12::BeginQueryPlatform(xiiGALQuery* pQuery)
@@ -271,6 +248,8 @@ void xiiGALCommandEncoderD3D12::UpdateBufferPlatform(xiiGALBuffer* pDestination,
 
   auto        pDestinationBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pDestination);
   const auto& bufferDescription       = pDestinationBufferD3D12->GetDescription();
+
+  EndRenderPass();
 
   if (bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
   {
@@ -582,6 +561,8 @@ void xiiGALCommandEncoderD3D12::GenerateMipMapsPlatform(xiiGALTextureView* pText
 
 void xiiGALCommandEncoderD3D12::FlushPlatform()
 {
+  EndRenderPass();
+
   FlushDeferredStateChanges();
 
   m_pContext->Flush();
@@ -736,12 +717,13 @@ void xiiGALCommandEncoderD3D12::DrawInstancedIndirectPlatform(xiiGALBuffer* pInd
 
 void xiiGALCommandEncoderD3D12::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)
 {
-  auto pIndexBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pIndexBuffer);
+  auto pIndexBufferD3D12 = pIndexBuffer != nullptr ? static_cast<xiiGALBufferD3D12*>(pIndexBuffer)->GetBuffer() : nullptr;
+  auto indexFormat       = pIndexBuffer != nullptr ? static_cast<xiiGALBufferD3D12*>(pIndexBuffer)->GetIndexFormat() : Diligent::VT_UNDEFINED;
 
-  if (m_pIndexBuffer != pIndexBufferD3D12->GetBuffer())
+  if (m_pIndexBuffer != pIndexBufferD3D12)
   {
-    m_pIndexBuffer            = pIndexBufferD3D12->GetBuffer();
-    m_IndexFormat             = pIndexBufferD3D12->GetIndexFormat();
+    m_pIndexBuffer            = pIndexBufferD3D12;
+    m_IndexFormat             = indexFormat;
     m_uiIndexBufferByteOffset = uiByteOffset;
     m_bIndexBufferModified    = true;
   }
@@ -749,12 +731,12 @@ void xiiGALCommandEncoderD3D12::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffe
 
 void xiiGALCommandEncoderD3D12::SetVertexBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pVertexBuffer)
 {
-  auto            pVertexBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pVertexBuffer);
-  const xiiUInt64 uiStride           = pVertexBufferD3D12 != nullptr ? pVertexBufferD3D12->GetDescription().m_uiElementByteStride : 0U;
+  auto            pVertexBufferD3D12 = pVertexBuffer != nullptr ? static_cast<xiiGALBufferD3D12*>(pVertexBuffer)->GetBuffer() : nullptr;
+  const xiiUInt64 uiStride           = pVertexBuffer != nullptr ? pVertexBuffer->GetDescription().m_uiElementByteStride : 0U;
 
-  if (m_pBoundVertexBuffers[uiSlot] != pVertexBufferD3D12->GetBuffer())
+  if (m_pBoundVertexBuffers[uiSlot] != pVertexBufferD3D12)
   {
-    m_pBoundVertexBuffers[uiSlot] = pVertexBufferD3D12->GetBuffer();
+    m_pBoundVertexBuffers[uiSlot] = pVertexBufferD3D12;
 
     m_BoundVertexBuffersRange.SetToIncludeValue(uiSlot);
 
@@ -899,6 +881,47 @@ void xiiGALCommandEncoderD3D12::EndCompute()
   m_bIsComputeRequested = false;
 }
 
+void xiiGALCommandEncoderD3D12::Reset()
+{
+  XII_ASSERT_DEV(!m_bRenderPassActive, "Render pass is still active!");
+
+  m_pRenderPass    = nullptr;
+  m_pFramebuffer   = nullptr;
+  m_RenderingSetup = {};
+
+  m_PrimitiveTopology  = xiiGALPrimitiveTopology::Undefined;
+  m_pCurrentShader     = nullptr;
+  m_pInputLayout       = nullptr;
+  m_pBlendState        = nullptr;
+  m_pDepthStencilState = nullptr;
+  m_pRasterizerState   = nullptr;
+
+  m_pCurrentPipelineState         = nullptr;
+  m_pCurrentShaderResourceBinding = nullptr;
+
+  m_bPipelineStateModified = true;
+  m_bIndexBufferModified   = true;
+  m_bDescriptorsModified   = true;
+
+  m_IndexFormat             = Diligent::VT_UNDEFINED;
+  m_uiIndexBufferByteOffset = 0U;
+  m_pIndexBuffer            = nullptr;
+
+  xiiMemoryUtils::ZeroFillArray(m_pBoundVertexBuffers);
+  xiiMemoryUtils::ZeroFillArray(m_VertexBufferStrides);
+  xiiMemoryUtils::ZeroFillArray(m_VertexBufferOffsets);
+  m_BoundVertexBuffersRange.Reset();
+
+  xiiMemoryUtils::ZeroFillArray(m_pBoundConstantBuffers);
+
+  for (auto& pResourceViews : m_pBoundShaderResourceViews)
+    pResourceViews.Clear();
+
+  m_pBoundUnorderedAccessViews.Clear();
+
+  xiiMemoryUtils::ZeroFill(&m_pBoundSamplers[0][0], xiiGALShaderStage::ENUM_COUNT * XII_GAL_MAX_SAMPLER_COUNT);
+}
+
 void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 {
   if (m_bPipelineStateModified)
@@ -932,8 +955,6 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
       }
       else
       {
-        // PipelineStateInfo pipelineInfo = {};
-
         Diligent::GraphicsPipelineStateCreateInfo graphicsPipelineStateDescription;
         graphicsPipelineStateDescription.PSODesc.PipelineType    = Diligent::PIPELINE_TYPE_GRAPHICS;
         graphicsPipelineStateDescription.Flags                   = Diligent::PSO_CREATE_FLAG_NONE;
@@ -1041,14 +1062,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
             auto pConstantBuffer = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
             if (pConstantBuffer)
             {
-              if (m_BoundConstantBuffersRange[uiShaderStage].HasIncludeValue(binding.m_uiSlot))
-              {
-                pConstantBuffer->Set(m_pBoundConstantBuffers[binding.m_uiSlot], Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
-              }
-              else
-              {
-                pConstantBuffer->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
-              }
+              pConstantBuffer->Set(m_pBoundConstantBuffers[binding.m_uiSlot], Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else
             {
@@ -1059,22 +1073,15 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
           case xiiGALShaderResourceType::TextureSRV:
           {
             auto pTextureSRV = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
-            if (pTextureSRV)
+            if (pTextureSRV && !m_pBoundShaderResourceViews[uiShaderStage].IsEmpty() && m_pBoundShaderResourceViews[uiShaderStage].GetCount() > binding.m_uiSlot)
             {
-              if (!m_pBoundShaderResourceViews[uiShaderStage].IsEmpty() && m_pBoundShaderResourceViews[uiShaderStage].GetCount() > binding.m_uiSlot && m_BoundShaderResourceViewsRange[uiShaderStage].HasIncludeValue(binding.m_uiSlot))
-              {
-                auto resourceView = m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot];
+              auto resourceView = m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot];
 
-                XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::TextureView, "Expected a bound texture SRV.");
+              XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::TextureView, "Expected a bound texture SRV.");
 
-                pTextureSRV->Set(m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot].m_pTextureView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
-              }
-              else
-              {
-                pTextureSRV->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
-              }
+              pTextureSRV->Set(m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot].m_pTextureView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
-            else
+            else if (!pTextureSRV)
             {
               xiiLog::Error("SRV Texture view pointer for '{}' returned null.", binding.m_sName);
             }
@@ -1083,22 +1090,15 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
           case xiiGALShaderResourceType::BufferSRV:
           {
             auto pBufferSRV = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
-            if (pBufferSRV)
+            if (pBufferSRV && !m_pBoundShaderResourceViews[uiShaderStage].IsEmpty() && m_pBoundShaderResourceViews[uiShaderStage].GetCount() > binding.m_uiSlot)
             {
-              if (!m_pBoundShaderResourceViews[uiShaderStage].IsEmpty() && m_pBoundShaderResourceViews[uiShaderStage].GetCount() > binding.m_uiSlot && m_BoundShaderResourceViewsRange[uiShaderStage].HasIncludeValue(binding.m_uiSlot))
-              {
-                auto resourceView = m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot];
+              auto resourceView = m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot];
 
-                XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::BufferView, "Expected a bound buffer SRV.");
+              XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::BufferView, "Expected a bound buffer SRV.");
 
-                pBufferSRV->Set(m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot].m_pBufferView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
-              }
-              else
-              {
-                pBufferSRV->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
-              }
+              pBufferSRV->Set(m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot].m_pBufferView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
-            else
+            else if (!pBufferSRV)
             {
               xiiLog::Error("SRV Buffer view pointer for '{}' returned null.", binding.m_sName);
             }
@@ -1107,22 +1107,15 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
           case xiiGALShaderResourceType::TextureUAV:
           {
             auto pTextureUAV = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
-            if (pTextureUAV)
+            if (pTextureUAV && !m_pBoundUnorderedAccessViews.IsEmpty() && m_pBoundUnorderedAccessViews.GetCount() > binding.m_uiSlot)
             {
-              if (!m_pBoundUnorderedAccessViews.IsEmpty() && m_pBoundUnorderedAccessViews.GetCount() > binding.m_uiSlot && m_BoundUnorderedAccessViewsRange.HasIncludeValue(binding.m_uiSlot))
-              {
-                auto resourceView = m_pBoundUnorderedAccessViews[binding.m_uiSlot];
+              auto resourceView = m_pBoundUnorderedAccessViews[binding.m_uiSlot];
 
-                XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::TextureView, "Expected a bound texture UAV.");
+              XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::TextureView, "Expected a bound texture UAV.");
 
-                pTextureUAV->Set(m_pBoundUnorderedAccessViews[binding.m_uiSlot].m_pTextureView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
-              }
-              else
-              {
-                pTextureUAV->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
-              }
+              pTextureUAV->Set(m_pBoundUnorderedAccessViews[binding.m_uiSlot].m_pTextureView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
-            else
+            else if (!pTextureUAV)
             {
               xiiLog::Error("UAV Texture view pointer for '{}' returned null.", binding.m_sName);
             }
@@ -1131,22 +1124,15 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
           case xiiGALShaderResourceType::BufferUAV:
           {
             auto pBufferUAV = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
-            if (pBufferUAV)
+            if (pBufferUAV && !m_pBoundUnorderedAccessViews.IsEmpty() && m_pBoundUnorderedAccessViews.GetCount() > binding.m_uiSlot)
             {
-              if (!m_pBoundUnorderedAccessViews.IsEmpty() && m_pBoundUnorderedAccessViews.GetCount() > binding.m_uiSlot && m_BoundUnorderedAccessViewsRange.HasIncludeValue(binding.m_uiSlot))
-              {
-                auto resourceView = m_pBoundUnorderedAccessViews[binding.m_uiSlot];
+              auto resourceView = m_pBoundUnorderedAccessViews[binding.m_uiSlot];
 
-                XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::BufferView, "Expected a bound buffer UAV.");
+              XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::BufferView, "Expected a bound buffer UAV.");
 
-                pBufferUAV->Set(m_pBoundUnorderedAccessViews[binding.m_uiSlot].m_pBufferView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
-              }
-              else
-              {
-                pBufferUAV->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
-              }
+              pBufferUAV->Set(m_pBoundUnorderedAccessViews[binding.m_uiSlot].m_pBufferView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
-            else
+            else if (!pBufferUAV)
             {
               xiiLog::Error("UAV Buffer view pointer for '{}' returned null.", binding.m_sName);
             }
@@ -1157,16 +1143,9 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
             auto pSampler = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
             if (pSampler)
             {
-              if (m_BoundSamplersRange[uiShaderStage].HasIncludeValue(binding.m_uiSlot))
-              {
-                auto resourceView = m_pBoundSamplers[binding.m_uiSlot];
+              auto resourceView = m_pBoundSamplers[binding.m_uiSlot];
 
-                pSampler->Set(m_pBoundSamplers[uiShaderStage][binding.m_uiSlot], Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
-              }
-              else
-              {
-                pSampler->Set(nullptr, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
-              }
+              pSampler->Set(m_pBoundSamplers[uiShaderStage][binding.m_uiSlot], Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else
             {
@@ -1188,14 +1167,8 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
             XII_DEFAULT_CASE_NOT_IMPLEMENTED;
         }
       }
-
-      // These are deactivated for now, perhaps they will need to be reset every time a flush is called.
-      // m_BoundConstantBuffersRange[uiShaderStage].Reset();
-      // m_BoundShaderResourceViewsRange[uiShaderStage].Reset();
-      // m_BoundSamplersRange[uiShaderStage].Reset();
     }
-    // m_BoundVertexBuffersRange.Reset();
-    // m_BoundUnorderedAccessViewsRange.Reset();
+    m_BoundVertexBuffersRange.Reset();
 
     m_bDescriptorsModified = false;
   }

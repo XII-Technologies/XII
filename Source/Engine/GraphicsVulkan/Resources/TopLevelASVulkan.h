@@ -7,15 +7,15 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALTopLevelASVulkan final : public xiiGALTopLevelAS
 {
 public:
-  virtual xiiGALTopLevelASInstanceDescription GetInstanceDescription(xiiStringView sName) const override;
+  virtual xiiGALTopLevelASInstanceDescription GetInstanceDescription(xiiStringView sName) const override final;
 
-  virtual xiiGALTopLevelASBuildDescription GetBuildDescription() const override;
+  virtual xiiGALTopLevelASBuildDescription GetBuildDescription() const override final;
 
-  virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const override;
+  virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const override final;
 
-  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override;
+  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
 
-  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override;
+  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
 
   Diligent::ITopLevelAS* GetTopLevelAS() const;
 
@@ -27,9 +27,9 @@ protected:
 
   virtual ~xiiGALTopLevelASVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
   Diligent::ITopLevelAS* m_pTopLevelAS = nullptr;

@@ -16,11 +16,13 @@ protected:
   xiiGALPassD3D12(xiiGALDevice& device);
   virtual ~xiiGALPassD3D12();
 
-  virtual xiiGALGraphicsCommandEncoder* BeginRenderingPlatform(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiStringView sName = {}) override;
-  virtual void                          EndRenderingPlatform(xiiGALGraphicsCommandEncoder* pCommandEncoder) override;
+  virtual xiiGALGraphicsCommandEncoder* BeginRenderingPlatform(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiStringView sName = {}) override final;
+  virtual void                          EndRenderingPlatform(xiiGALGraphicsCommandEncoder* pCommandEncoder) override final;
 
-  virtual xiiGALComputeCommandEncoder* BeginComputePlatform(xiiStringView sName = {}) override;
-  virtual void                         EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder) override;
+  virtual xiiGALComputeCommandEncoder* BeginComputePlatform(xiiStringView sName = {}) override final;
+  virtual void                         EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder) override final;
+
+  void Reset();
 
 private:
   xiiUniquePtr<xiiGALCommandEncoderGraphicsState> m_pCommandEncoderState;

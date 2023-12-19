@@ -38,8 +38,10 @@ xiiResult xiiGALInputLayoutD3D12::InitPlatform(xiiGALDevice* pDevice)
     {
       if (vertexInputLayouts[i].m_Semantic == sematic)
       {
-        XII_ASSERT_DEV(vertexInputLayouts[i].m_Format == format, "Found matching sematic {} but format differs: {} : {}", sematic, format, vertexInputLayouts[i].m_Format);
-
+        if (vertexInputLayouts[i].m_Format != format)
+        {
+          xiiLog::Warning("Found matching sematic {} with differing formats: {} : {}.", sematic, format, vertexInputLayouts[i].m_Format);
+        }
         xiiUInt32 uiLocation = vertexInputLayouts[i].m_uiSemanticIndex;
         vertexInputLayouts.RemoveAtAndSwap(i);
         return uiLocation;

@@ -7,17 +7,17 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALBottomLevelASVulkan final : public xiiGALBottomLevelAS
 {
 public:
-  virtual xiiUInt32 GetGeometryDescriptionIndex(xiiStringView sName) const override;
+  virtual xiiUInt32 GetGeometryDescriptionIndex(xiiStringView sName) const override final;
 
-  virtual xiiUInt32 GetGeometryIndex(xiiStringView sName) const override;
+  virtual xiiUInt32 GetGeometryIndex(xiiStringView sName) const override final;
 
-  virtual xiiUInt32 GetActualGeometryCount() const override;
+  virtual xiiUInt32 GetActualGeometryCount() const override final;
 
-  virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const override;
+  virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const override final;
 
-  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override;
+  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
 
-  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override;
+  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
 
   Diligent::IBottomLevelAS* GetBottomLevelAS() const;
 
@@ -29,9 +29,9 @@ protected:
 
   virtual ~xiiGALBottomLevelASVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
   Diligent::IBottomLevelAS* m_pBottomLevelAS = nullptr;

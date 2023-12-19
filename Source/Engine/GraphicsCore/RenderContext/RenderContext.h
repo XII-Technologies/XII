@@ -80,7 +80,7 @@ public:
     }
 
     XII_ALWAYS_INLINE T* operator->() { return m_pGALCommandEncoder; }
-    XII_ALWAYS_INLINE operator const T*() { return m_pGALCommandEncoder; }
+    XII_ALWAYS_INLINE    operator const T*() { return m_pGALCommandEncoder; }
 
   private:
     friend class xiiRenderContext;

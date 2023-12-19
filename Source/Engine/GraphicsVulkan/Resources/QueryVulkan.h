@@ -7,9 +7,9 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALQueryVulkan final : public xiiGALQuery
 {
 public:
-  virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate = true) override;
+  virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate = true) override final;
 
-  virtual void Invalidate() override;
+  virtual void Invalidate() override final;
 
   Diligent::IQuery* GetQuery() const;
 
@@ -21,9 +21,9 @@ protected:
 
   virtual ~xiiGALQueryVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override;
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
   Diligent::IQuery* m_pQuery = nullptr;

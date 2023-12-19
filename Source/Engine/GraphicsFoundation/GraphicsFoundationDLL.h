@@ -101,4 +101,5 @@ class xiiGALShaderByteCode;
 class xiiGALShaderResourceVariable;
 class xiiGALBlendState;
 class xiiGALDepthStencilState;
+class xiiGALPipelineState;
 class xiiGALRasterizerState;
