@@ -138,11 +138,6 @@ void xiiGALCommandEncoderVulkan::SetConstantBufferPlatform(xiiUInt32 uiSlot, xii
 
   m_pBoundConstantBuffers[uiSlot] = pBufferVulkan->GetBuffer();
   m_bDescriptorsModified          = true;
-
-  for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
-  {
-    m_BoundConstantBuffersRange[stage].SetToIncludeValue(uiSlot);
-  }
 }
 
 void xiiGALCommandEncoderVulkan::SetSamplerPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALSampler* pSampler)
@@ -151,8 +146,6 @@ void xiiGALCommandEncoderVulkan::SetSamplerPlatform(xiiBitflags<xiiGALShaderStag
 
   m_pBoundSamplers[xiiGALShaderStage::GetStageIndex(stage)][uiSlot] = pSamplerVulkan->GetSampler();
   m_bDescriptorsModified                                            = true;
-
-  m_BoundSamplersRange[xiiGALShaderStage::GetStageIndex(stage)].SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderVulkan::SetBufferViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALBufferView* pBufferView)
@@ -165,8 +158,6 @@ void xiiGALCommandEncoderVulkan::SetBufferViewPlatform(xiiBitflags<xiiGALShaderS
 
   boundShaderResourceViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::BufferView, pBufferViewVulkan != nullptr ? pBufferViewVulkan->GetBufferView() : nullptr, nullptr};
   m_bDescriptorsModified           = true;
-
-  m_BoundShaderResourceViewsRange[uiStage].SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderVulkan::SetTextureViewPlatform(xiiBitflags<xiiGALShaderStage> stage, xiiUInt32 uiSlot, xiiGALTextureView* pTextureView)
@@ -179,8 +170,6 @@ void xiiGALCommandEncoderVulkan::SetTextureViewPlatform(xiiBitflags<xiiGALShader
 
   boundShaderResourceViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::TextureView, nullptr, pTextureViewVulkan != nullptr ? pTextureViewVulkan->GetTextureView() : nullptr};
   m_bDescriptorsModified           = true;
-
-  m_BoundShaderResourceViewsRange[uiStage].SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderVulkan::SetUnorderedAccessBufferViewPlatform(xiiUInt32 uiSlot, xiiGALBufferView* pUnorderedAccessBufferView)
@@ -191,8 +180,6 @@ void xiiGALCommandEncoderVulkan::SetUnorderedAccessBufferViewPlatform(xiiUInt32 
 
   m_pBoundUnorderedAccessViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::BufferView, pUnorderedAccessBufferViewVulkan != nullptr ? pUnorderedAccessBufferViewVulkan->GetBufferView() : nullptr, nullptr};
   m_bDescriptorsModified               = true;
-
-  m_BoundUnorderedAccessViewsRange.SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderVulkan::SetUnorderedAccessTextureViewPlatform(xiiUInt32 uiSlot, xiiGALTextureView* pUnorderedAccessTextureView)
@@ -203,8 +190,6 @@ void xiiGALCommandEncoderVulkan::SetUnorderedAccessTextureViewPlatform(xiiUInt32
 
   m_pBoundUnorderedAccessViews[uiSlot] = ShaderResourceViewDesc{ShaderResourceViewDesc::TextureView, nullptr, pUnorderedAccessTextureViewVulkan != nullptr ? pUnorderedAccessTextureViewVulkan->GetTextureView() : nullptr};
   m_bDescriptorsModified               = true;
-
-  m_BoundUnorderedAccessViewsRange.SetToIncludeValue(uiSlot);
 }
 
 void xiiGALCommandEncoderVulkan::BeginQueryPlatform(xiiGALQuery* pQuery)
@@ -775,12 +760,13 @@ void xiiGALCommandEncoderVulkan::DrawInstancedIndirectPlatform(xiiGALBuffer* pIn
 
 void xiiGALCommandEncoderVulkan::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)
 {
-  auto pIndexBufferVulkan = static_cast<xiiGALBufferVulkan*>(pIndexBuffer);
+  auto pIndexBufferVulkan = pIndexBuffer != nullptr ? static_cast<xiiGALBufferVulkan*>(pIndexBuffer)->GetBuffer() : nullptr;
+  auto indexFormat        = pIndexBuffer != nullptr ? static_cast<xiiGALBufferVulkan*>(pIndexBuffer)->GetIndexFormat() : Diligent::VT_UNDEFINED;
 
-  if (m_pIndexBuffer != pIndexBufferVulkan->GetBuffer())
+  if (m_pIndexBuffer != pIndexBufferVulkan)
   {
-    m_pIndexBuffer            = pIndexBufferVulkan->GetBuffer();
-    m_IndexFormat             = pIndexBufferVulkan->GetIndexFormat();
+    m_pIndexBuffer            = pIndexBufferVulkan;
+    m_IndexFormat             = indexFormat;
     m_uiIndexBufferByteOffset = uiByteOffset;
     m_bIndexBufferModified    = true;
   }
@@ -788,12 +774,12 @@ void xiiGALCommandEncoderVulkan::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuff
 
 void xiiGALCommandEncoderVulkan::SetVertexBufferPlatform(xiiUInt32 uiSlot, xiiGALBuffer* pVertexBuffer)
 {
-  auto            pVertexBufferVulkan = static_cast<xiiGALBufferVulkan*>(pVertexBuffer);
-  const xiiUInt64 uiStride            = pVertexBufferVulkan != nullptr ? pVertexBufferVulkan->GetDescription().m_uiElementByteStride : 0U;
+  auto            pVertexBufferVulkan = pVertexBuffer != nullptr ? static_cast<xiiGALBufferVulkan*>(pVertexBuffer)->GetBuffer() : nullptr;
+  const xiiUInt64 uiStride            = pVertexBuffer != nullptr ? pVertexBuffer->GetDescription().m_uiElementByteStride : 0U;
 
-  if (m_pBoundVertexBuffers[uiSlot] != pVertexBufferVulkan->GetBuffer())
+  if (m_pBoundVertexBuffers[uiSlot] != pVertexBufferVulkan)
   {
-    m_pBoundVertexBuffers[uiSlot] = pVertexBufferVulkan->GetBuffer();
+    m_pBoundVertexBuffers[uiSlot] = pVertexBufferVulkan;
 
     m_BoundVertexBuffersRange.SetToIncludeValue(uiSlot);
 
@@ -938,6 +924,47 @@ void xiiGALCommandEncoderVulkan::EndCompute()
   m_bIsComputeRequested = false;
 }
 
+void xiiGALCommandEncoderVulkan::Reset()
+{
+  XII_ASSERT_DEV(!m_bRenderPassActive, "Render pass is still active!");
+
+  m_pRenderPass    = nullptr;
+  m_pFramebuffer   = nullptr;
+  m_RenderingSetup = {};
+
+  m_PrimitiveTopology  = xiiGALPrimitiveTopology::Undefined;
+  m_pCurrentShader     = nullptr;
+  m_pInputLayout       = nullptr;
+  m_pBlendState        = nullptr;
+  m_pDepthStencilState = nullptr;
+  m_pRasterizerState   = nullptr;
+
+  m_pCurrentPipelineState         = nullptr;
+  m_pCurrentShaderResourceBinding = nullptr;
+
+  m_bPipelineStateModified = true;
+  m_bIndexBufferModified   = true;
+  m_bDescriptorsModified   = true;
+
+  m_IndexFormat             = Diligent::VT_UNDEFINED;
+  m_uiIndexBufferByteOffset = 0U;
+  m_pIndexBuffer            = nullptr;
+
+  xiiMemoryUtils::ZeroFillArray(m_pBoundVertexBuffers);
+  xiiMemoryUtils::ZeroFillArray(m_VertexBufferStrides);
+  xiiMemoryUtils::ZeroFillArray(m_VertexBufferOffsets);
+  m_BoundVertexBuffersRange.Reset();
+
+  xiiMemoryUtils::ZeroFillArray(m_pBoundConstantBuffers);
+
+  for (auto& pResourceViews : m_pBoundShaderResourceViews)
+    pResourceViews.Clear();
+
+  m_pBoundUnorderedAccessViews.Clear();
+
+  xiiMemoryUtils::ZeroFill(&m_pBoundSamplers[0][0], xiiGALShaderStage::ENUM_COUNT * XII_GAL_MAX_SAMPLER_COUNT);
+}
+
 void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
 {
   if (m_bPipelineStateModified)
@@ -1076,11 +1103,11 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
           case xiiGALShaderResourceType::ConstantBuffer:
           {
             auto pConstantBuffer = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
-            if (pConstantBuffer && m_BoundConstantBuffersRange[uiShaderStage].HasIncludeValue(binding.m_uiSlot))
+            if (pConstantBuffer)
             {
               pConstantBuffer->Set(m_pBoundConstantBuffers[binding.m_uiSlot], Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
-            else if (!pConstantBuffer)
+            else
             {
               xiiLog::Error("Constant buffer pointer for '{}' returned null.", binding.m_sName);
             }
@@ -1089,7 +1116,7 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
           case xiiGALShaderResourceType::TextureSRV:
           {
             auto pTextureSRV = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
-            if (pTextureSRV && !m_pBoundShaderResourceViews[uiShaderStage].IsEmpty() && m_pBoundShaderResourceViews[uiShaderStage].GetCount() > binding.m_uiSlot && m_BoundShaderResourceViewsRange[uiShaderStage].HasIncludeValue(binding.m_uiSlot))
+            if (pTextureSRV && !m_pBoundShaderResourceViews[uiShaderStage].IsEmpty() && m_pBoundShaderResourceViews[uiShaderStage].GetCount() > binding.m_uiSlot)
             {
               auto resourceView = m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot];
 
@@ -1106,7 +1133,7 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
           case xiiGALShaderResourceType::BufferSRV:
           {
             auto pBufferSRV = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
-            if (pBufferSRV && !m_pBoundShaderResourceViews[uiShaderStage].IsEmpty() && m_pBoundShaderResourceViews[uiShaderStage].GetCount() > binding.m_uiSlot && m_BoundShaderResourceViewsRange[uiShaderStage].HasIncludeValue(binding.m_uiSlot))
+            if (pBufferSRV && !m_pBoundShaderResourceViews[uiShaderStage].IsEmpty() && m_pBoundShaderResourceViews[uiShaderStage].GetCount() > binding.m_uiSlot)
             {
               auto resourceView = m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot];
 
@@ -1123,7 +1150,7 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
           case xiiGALShaderResourceType::TextureUAV:
           {
             auto pTextureUAV = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
-            if (pTextureUAV && !m_pBoundUnorderedAccessViews.IsEmpty() && m_pBoundUnorderedAccessViews.GetCount() > binding.m_uiSlot && m_BoundUnorderedAccessViewsRange.HasIncludeValue(binding.m_uiSlot))
+            if (pTextureUAV && !m_pBoundUnorderedAccessViews.IsEmpty() && m_pBoundUnorderedAccessViews.GetCount() > binding.m_uiSlot)
             {
               auto resourceView = m_pBoundUnorderedAccessViews[binding.m_uiSlot];
 
@@ -1140,7 +1167,7 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
           case xiiGALShaderResourceType::BufferUAV:
           {
             auto pBufferUAV = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
-            if (pBufferUAV && !m_pBoundUnorderedAccessViews.IsEmpty() && m_pBoundUnorderedAccessViews.GetCount() > binding.m_uiSlot && m_BoundUnorderedAccessViewsRange.HasIncludeValue(binding.m_uiSlot))
+            if (pBufferUAV && !m_pBoundUnorderedAccessViews.IsEmpty() && m_pBoundUnorderedAccessViews.GetCount() > binding.m_uiSlot)
             {
               auto resourceView = m_pBoundUnorderedAccessViews[binding.m_uiSlot];
 
@@ -1157,13 +1184,13 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
           case xiiGALShaderResourceType::Sampler:
           {
             auto pSampler = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
-            if (pSampler && m_BoundSamplersRange[uiShaderStage].HasIncludeValue(binding.m_uiSlot))
+            if (pSampler)
             {
               auto resourceView = m_pBoundSamplers[binding.m_uiSlot];
 
               pSampler->Set(m_pBoundSamplers[uiShaderStage][binding.m_uiSlot], Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
-            else if (!pSampler)
+            else
             {
               xiiLog::Error("Sampler pointer for '{}' returned null.", binding.m_sName);
             }
@@ -1183,13 +1210,8 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
             XII_DEFAULT_CASE_NOT_IMPLEMENTED;
         }
       }
-
-      m_BoundConstantBuffersRange[uiShaderStage].Reset();
-      m_BoundShaderResourceViewsRange[uiShaderStage].Reset();
-      m_BoundSamplersRange[uiShaderStage].Reset();
     }
     m_BoundVertexBuffersRange.Reset();
-    m_BoundUnorderedAccessViewsRange.Reset();
 
     m_bDescriptorsModified = false;
   }

@@ -106,6 +106,8 @@ public:
   void BeginCompute();
   void EndCompute();
 
+  void Reset();
+
 private:
   friend class xiiGALPassVulkan;
 
@@ -162,6 +164,7 @@ private:
 
   // Pipeline state description
   xiiEnum<xiiGALPrimitiveTopology> m_PrimitiveTopology;
+  xiiGALShaderVulkan*              m_pCurrentShader     = nullptr;
   xiiGALInputLayoutVulkan*         m_pInputLayout       = nullptr;
   xiiGALBlendStateVulkan*          m_pBlendState        = nullptr;
   xiiGALDepthStencilStateVulkan*   m_pDepthStencilState = nullptr;
@@ -181,10 +184,6 @@ private:
   bool m_bRenderPassActive      = false;
   bool m_bIsComputeRequested    = false;
 
-  // Shader
-
-  xiiGALShaderVulkan* m_pCurrentShader = nullptr;
-
   // Bound objects for deferred state flushes.
   Diligent::VALUE_TYPE  m_IndexFormat                                          = {};
   xiiUInt64             m_uiIndexBufferByteOffset                              = 0U;
@@ -195,17 +194,10 @@ private:
   xiiUInt32        m_VertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
   Diligent::Uint64 m_VertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 
-  Diligent::IBuffer*    m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[xiiGALShaderStage::ENUM_COUNT];
-
+  Diligent::IBuffer*                          m_pBoundConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
   xiiHybridArray<ShaderResourceViewDesc, 16U> m_pBoundShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
-  xiiGAL::ModifiedRange                       m_BoundShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];
-
   xiiHybridArray<ShaderResourceViewDesc, 16U> m_pBoundUnorderedAccessViews;
-  xiiGAL::ModifiedRange                       m_BoundUnorderedAccessViewsRange;
-
-  Diligent::ISampler*   m_pBoundSamplers[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundSamplersRange[xiiGALShaderStage::ENUM_COUNT];
+  Diligent::ISampler*                         m_pBoundSamplers[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
 
   // Synchronization fences.
   Diligent::IFence* m_pSynchronizationFence                = nullptr;

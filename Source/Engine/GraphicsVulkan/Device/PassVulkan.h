@@ -22,6 +22,8 @@ protected:
   virtual xiiGALComputeCommandEncoder* BeginComputePlatform(xiiStringView sName = {}) override final;
   virtual void                         EndComputePlatform(xiiGALComputeCommandEncoder* pCommandEncoder) override final;
 
+  void Reset();
+
 private:
   xiiUniquePtr<xiiGALCommandEncoderGraphicsState> m_pCommandEncoderState;
   xiiUniquePtr<xiiGALCommandEncoderVulkan>        m_pCommandEncoderImpl;
