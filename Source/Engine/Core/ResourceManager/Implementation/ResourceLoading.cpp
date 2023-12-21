@@ -294,8 +294,7 @@ bool xiiResourceManager::ReloadResource(xiiResource* pResource, bool bForce)
       // that means some task is already working on loading it
       // therefore we should not touch it (especially unload it), it might end up in an inconsistent state
 
-      xiiLog::Dev(
-        "Resource '{0}' is not being reloaded, because it is currently being loaded", xiiArgSensitive(pResource->GetResourceID(), "ResourceID"));
+      xiiLog::Dev("Resource '{0}' is not being reloaded, because it is currently being loaded", xiiArgSensitive(pResource->GetResourceID(), "ResourceID"));
       return false;
     }
   }
@@ -308,13 +307,11 @@ bool xiiResourceManager::ReloadResource(xiiResource* pResource, bool bForce)
 
     if (pResource->GetLoadingState() == xiiResourceState::LoadedResourceMissing)
     {
-      xiiLog::Dev("Resource '{0}' is missing and will be tried to be reloaded ('{1}')", xiiArgSensitive(pResource->GetResourceID(), "ResourceID"),
-                  xiiArgSensitive(pResource->GetResourceDescription(), "ResourceDesc"));
+      xiiLog::Dev("Resource '{0}' is missing and will be tried to be reloaded ('{1}')", xiiArgSensitive(pResource->GetResourceID(), "ResourceID"), xiiArgSensitive(pResource->GetResourceDescription(), "ResourceDesc"));
     }
     else
     {
-      xiiLog::Dev("Resource '{0}' is outdated and will be reloaded ('{1}')", xiiArgSensitive(pResource->GetResourceID(), "ResourceID"),
-                  xiiArgSensitive(pResource->GetResourceDescription(), "ResourceDesc"));
+      xiiLog::Dev("Resource '{0}' is outdated and will be reloaded ('{1}')", xiiArgSensitive(pResource->GetResourceID(), "ResourceID"), xiiArgSensitive(pResource->GetResourceDescription(), "ResourceDesc"));
     }
   }
 
@@ -323,8 +320,7 @@ bool xiiResourceManager::ReloadResource(xiiResource* pResource, bool bForce)
     // make sure existing data is purged
     pResource->CallUnloadData(xiiResource::Unload::AllQualityLevels);
 
-    XII_ASSERT_DEV(pResource->GetLoadingState() <= xiiResourceState::LoadedResourceMissing, "Resource '{0}' should be in an unloaded state now.",
-                   pResource->GetResourceID());
+    XII_ASSERT_DEV(pResource->GetLoadingState() <= xiiResourceState::LoadedResourceMissing, "Resource '{0}' should be in an unloaded state now.", pResource->GetResourceID());
   }
   else
   {
@@ -409,8 +405,7 @@ void xiiResourceManager::EnsureResourceLoadingState(xiiResource* pResourceToLoad
   const xiiRTTI* pOwnRtti = pResourceToLoad->GetDynamicRTTI();
 
   // help loading until the requested resource is available
-  while ((xiiInt32)pResourceToLoad->GetLoadingState() < (xiiInt32)RequestedState &&
-         (pResourceToLoad->GetLoadingState() != xiiResourceState::LoadedResourceMissing))
+  while ((xiiInt32)pResourceToLoad->GetLoadingState() < (xiiInt32)RequestedState && (pResourceToLoad->GetLoadingState() != xiiResourceState::LoadedResourceMissing))
   {
     xiiTaskGroupID tgid;
 
@@ -440,12 +435,10 @@ void xiiResourceManager::EnsureResourceLoadingState(xiiResource* pResourceToLoad
     {
       // do not use xiiThreadUtils::YieldTimeSlice here, otherwise the thread is not tagged as 'blocked' in the TaskSystem
       xiiTaskSystem::WaitForCondition([=]() -> bool {
-        return (xiiInt32)pResourceToLoad->GetLoadingState() >= (xiiInt32)RequestedState ||
-          (pResourceToLoad->GetLoadingState() == xiiResourceState::LoadedResourceMissing);
+        return (xiiInt32)pResourceToLoad->GetLoadingState() >= (xiiInt32)RequestedState || (pResourceToLoad->GetLoadingState() == xiiResourceState::LoadedResourceMissing);
       });
     }
   }
 }
-
 
 XII_STATICLINK_FILE(Core, Core_ResourceManager_Implementation_ResourceLoading);
