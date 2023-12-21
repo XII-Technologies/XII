@@ -4,8 +4,8 @@
 #include <EditorPluginAssets/MeshAsset/MeshAsset.h>
 #include <EditorPluginAssets/Util/MeshImportUtils.h>
 #include <Foundation/Utilities/Progress.h>
-#include <ModelImporter2/ModelImporter.h>
 #include <GraphicsCore/Meshes/MeshResourceDescriptor.h>
+#include <ModelImporter2/ModelImporter.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetDocument, 12, xiiRTTINoAllocator)

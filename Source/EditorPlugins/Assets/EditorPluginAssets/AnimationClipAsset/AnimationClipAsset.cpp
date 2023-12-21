@@ -2,9 +2,9 @@
 
 #include <EditorPluginAssets/AnimationClipAsset/AnimationClipAsset.h>
 #include <Foundation/Utilities/Progress.h>
+#include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <ModelImporter2/ModelImporter.h>
-#include <GraphicsCore/AnimationSystem/AnimationClipResource.h>
 #include <ToolsFoundation/Object/ObjectCommandAccessor.h>
 
 //////////////////////////////////////////////////////////////////////////

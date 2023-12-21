@@ -6,8 +6,8 @@
 #include <EditorPluginAssets/Util/MeshImportUtils.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
 #include <Foundation/Utilities/Progress.h>
-#include <ModelImporter2/Importer/Importer.h>
 #include <GraphicsCore/Meshes/MeshResourceDescriptor.h>
+#include <ModelImporter2/Importer/Importer.h>
 
 namespace xiiMeshImportUtils
 {

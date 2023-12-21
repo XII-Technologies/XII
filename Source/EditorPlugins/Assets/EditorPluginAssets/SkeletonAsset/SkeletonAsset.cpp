@@ -3,9 +3,9 @@
 #include <EditorFramework/GUI/ExposedParameters.h>
 #include <EditorPluginAssets/SkeletonAsset/SkeletonAsset.h>
 #include <Foundation/Utilities/Progress.h>
+#include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <ModelImporter2/ModelImporter.h>
-#include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 
 //////////////////////////////////////////////////////////////////////////
 

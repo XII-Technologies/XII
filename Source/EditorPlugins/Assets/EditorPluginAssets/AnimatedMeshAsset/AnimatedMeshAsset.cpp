@@ -3,8 +3,8 @@
 #include <EditorPluginAssets/AnimatedMeshAsset/AnimatedMeshAsset.h>
 #include <EditorPluginAssets/Util/MeshImportUtils.h>
 #include <Foundation/Utilities/Progress.h>
-#include <ModelImporter2/ModelImporter.h>
 #include <GraphicsCore/Meshes/MeshResourceDescriptor.h>
+#include <ModelImporter2/ModelImporter.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAnimatedMeshAssetDocument, 8, xiiRTTINoAllocator)

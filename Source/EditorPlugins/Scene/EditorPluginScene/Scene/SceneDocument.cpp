@@ -14,9 +14,9 @@
 #include <EditorPluginScene/Scene/SceneDocument.h>
 #include <Foundation/Serialization/DdlSerializer.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
+#include <GraphicsCore/Components/CameraComponent.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <QClipboard>
-#include <GraphicsCore/Components/CameraComponent.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/Object/ObjectDirectAccessor.h>
 #include <ToolsFoundation/Serialization/DocumentObjectConverter.h>

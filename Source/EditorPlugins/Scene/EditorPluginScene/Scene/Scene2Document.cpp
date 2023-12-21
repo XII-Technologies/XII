@@ -7,9 +7,9 @@
 #include <EditorPluginScene/Scene/LayerDocument.h>
 #include <EditorPluginScene/Scene/Scene2Document.h>
 #include <Foundation/IO/OSFile.h>
+#include <GraphicsCore/AnimationSystem/SkeletonPoseComponent.h>
 #include <GuiFoundation/PropertyGrid/ManipulatorManager.h>
 #include <GuiFoundation/PropertyGrid/VisualizerManager.h>
-#include <GraphicsCore/AnimationSystem/SkeletonPoseComponent.h>
 #include <ToolsFoundation/Command/TreeCommands.h>
 #include <ToolsFoundation/Object/ObjectCommandAccessor.h>
 

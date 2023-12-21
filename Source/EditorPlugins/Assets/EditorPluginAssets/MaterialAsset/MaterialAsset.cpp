@@ -5,11 +5,11 @@
 #include <EditorPluginAssets/MaterialAsset/ShaderTypeRegistry.h>
 #include <EditorPluginAssets/VisualShader/VsCodeGenerator.h>
 #include <Foundation/CodeUtils/Preprocessor.h>
+#include <GraphicsCore/Material/MaterialResource.h>
+#include <GraphicsCore/Shader/Implementation/Helper.h>
 #include <GuiFoundation/NodeEditor/NodeScene.moc.h>
 #include <GuiFoundation/PropertyGrid/DefaultState.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
-#include <GraphicsCore/Material/MaterialResource.h>
-#include <GraphicsCore/Shader/Implementation/Helper.h>
 #include <ToolsFoundation/Document/PrefabCache.h>
 #include <ToolsFoundation/Document/PrefabUtils.h>
 

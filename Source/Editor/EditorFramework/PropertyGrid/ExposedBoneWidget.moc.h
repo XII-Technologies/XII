@@ -1,9 +1,9 @@
 #pragma once
 
 #include <Foundation/Basics.h>
+#include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
 #include <GuiFoundation/PropertyGrid/PropertyBaseWidget.moc.h>
 #include <GuiFoundation/Widgets/DoubleSpinBox.moc.h>
-#include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
 
 class QSlider;
 
