@@ -312,7 +312,7 @@ namespace
 
     xiiSimdVec4i maxClusterIndex = xiiSimdVec4i(NUM_CLUSTERS_X, NUM_CLUSTERS_Y, NUM_CLUSTERS_X, NUM_CLUSTERS_Y);
     minXY_maxXY                  = minXY_maxXY.CompMin(maxClusterIndex - xiiSimdVec4i(1));
-    minXY_maxXY                  = minXY_maxXY.CompMax(xiiSimdVec4i::MakeZero());
+    minXY_maxXY                  = minXY_maxXY.CompMax(xiiSimdVec4i::ZeroVector());
 
     xiiUInt32 xMin = minXY_maxXY.x();
     xiiUInt32 yMin = minXY_maxXY.w();
@@ -423,17 +423,18 @@ namespace
     xiiSimdMat4f worldToDecal = decalToWorld.GetInverse();
 
     xiiVec3 corners[8];
-    xiiBoundingBox::MakeFromMinMax(xiiVec3(-1), xiiVec3(1)).GetCorners(corners);
+    xiiBoundingBox(xiiVec3(-1), xiiVec3(1)).GetCorners(corners);
 
-    xiiSimdMat4f decalToScreen     = mViewProjectionMatrix * decalToWorld;
-    xiiSimdBBox  screenSpaceBounds = xiiSimdBBox::MakeInvalid();
-    bool         bInsideBox        = false;
+    xiiSimdMat4f decalToScreen = mViewProjectionMatrix * decalToWorld;
+    bool         bInsideBox    = false;
+    xiiSimdBBox  screenSpaceBounds;
+    screenSpaceBounds.SetInvalid();
     for (xiiUInt32 i = 0; i < 8; ++i)
     {
       xiiSimdVec4f corner            = xiiSimdConversion::ToVec3(corners[i]);
       xiiSimdVec4f screenSpaceCorner = decalToScreen.TransformPosition(corner);
       xiiSimdFloat depth             = screenSpaceCorner.w();
-      bInsideBox |= depth < xiiSimdFloat::MakeZero();
+      bInsideBox |= depth < xiiSimdFloat::Zero();
 
       screenSpaceCorner /= depth;
       screenSpaceCorner = screenSpaceCorner.GetCombined<xiiSwizzle::XYZW>(xiiSimdVec4f(depth));

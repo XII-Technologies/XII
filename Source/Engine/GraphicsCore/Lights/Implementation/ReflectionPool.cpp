@@ -319,9 +319,9 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
         destBox.m_vMin.Set(0, i, 0);
         destBox.m_vMax.Set(6, i + 1, 1);
         xiiGALTextureSubResourceData memDesc;
-        memDesc.m_pData      = &skyIrradianceStorage[i].m_Values[0];
-        memDesc.m_uiRowPitch = sizeof(xiiAmbientCube<xiiColorLinear16f>);
-        pGALCommandEncoder->UpdateTexture(s_pData->m_hSkyIrradianceTexture, xiiGALTextureSubresource(), destBox, memDesc);
+        memDesc.m_pData    = &skyIrradianceStorage[i].m_Values[0];
+        memDesc.m_uiStride = sizeof(xiiAmbientCube<xiiColorLinear16f>);
+        pGALCommandEncoder->UpdateTexture(s_pData->m_hSkyIrradianceTexture, xiiGALTextureMipLevelData(), destBox, memDesc);
 
         uiSkyIrradianceChanged &= ~XII_BIT(i);
 
@@ -344,18 +344,22 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
       {
         for (xiiUInt32 uiFaceIndex = 0; uiFaceIndex < 6; ++uiFaceIndex)
         {
-          xiiGALRenderingSetup                      renderingSetup;
-          xiiGALRenderTargetViewCreationDescription desc;
-          desc.m_hTexture     = atlas;
-          desc.m_uiMipLevel   = uiMipMapIndex;
-          desc.m_uiFirstSlice = uiFaceIndex;
-          desc.m_uiSliceCount = 1;
-          renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->CreateRenderTargetView(desc));
+          xiiGALTextureViewCreationDescription desc;
+          desc.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
+          desc.m_hTexture                  = atlas;
+          desc.m_uiMostDetailedMip         = uiMipMapIndex;
+          desc.m_uiFirstArrayOrDepthSlice  = uiFaceIndex;
+          desc.m_uiArrayOrDepthSlicesCount = 1;
+
+          xiiGALTextureViewHandle hRenderTarget = pDevice->CreateTextureView(desc);
+
+          xiiGALRenderingSetup renderingSetup;
+          renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hRenderTarget);
           renderingSetup.m_ClearColor              = xiiColor(0, 0, 0, 1);
           renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
 
           auto pGALCommandEncoder = pGALPass->BeginRendering(renderingSetup, "ClearSkySpecular");
-          pGALCommandEncoder->Clear(xiiColor::Black);
+          pGALCommandEncoder->ClearRenderTarget(hRenderTarget, xiiColor::Black);
           pGALPass->EndRendering(pGALCommandEncoder);
         }
       }
@@ -364,6 +368,5 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
 
   pDevice->EndPass(pGALPass);
 }
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ReflectionPool);

@@ -15,6 +15,7 @@
 #include <GraphicsFoundation/CommandEncoder/GraphicsCommandEncoder.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/Pass.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/LightData.h>
@@ -257,7 +258,16 @@ struct xiiShadowPool::Data
     if (m_hShadowAtlasTexture.IsInvalidated())
     {
       xiiGALTextureCreationDescription desc;
-      desc.SetAsRenderTarget(s_uiShadowAtlasTextureWidth, s_uiShadowAtlasTextureHeight, xiiGALTextureFormat::D16);
+      desc.m_sName              = "Shadow Atlas Texture";
+      desc.m_Type               = xiiGALResourceDimension::Texture2D;
+      desc.m_Format             = xiiGALTextureFormat::D16UNormalized;
+      desc.m_Size.width         = s_uiShadowAtlasTextureWidth;
+      desc.m_Size.height        = s_uiShadowAtlasTextureHeight;
+      desc.m_uiArraySizeOrDepth = 1;
+      desc.m_uiMipLevels        = 1;
+      desc.m_uiSampleCount      = xiiGALSampleCount::OneSample;
+      desc.m_Usage              = xiiGALResourceUsage::Immutable;
+      desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil);
 
       m_hShadowAtlasTexture = xiiGALDevice::GetDefaultDevice()->CreateTexture(desc);
     }
@@ -268,12 +278,10 @@ struct xiiShadowPool::Data
     if (m_hShadowDataBuffer.IsInvalidated())
     {
       xiiGALBufferCreationDescription desc;
-      desc.m_uiStructSize                = sizeof(xiiVec4);
-      desc.m_uiTotalSize                 = desc.m_uiStructSize * MAX_SHADOW_DATA;
-      desc.m_BufferType                  = xiiGALBufferType::Generic;
-      desc.m_bUseAsStructuredBuffer      = true;
-      desc.m_bAllowShaderResourceView    = true;
-      desc.m_ResourceAccess.m_bImmutable = false;
+      desc.m_uiElementByteStride = sizeof(xiiVec4);
+      desc.m_uiSize              = desc.m_uiElementByteStride * MAX_SHADOW_DATA;
+      desc.m_Mode                = xiiGALBufferMode::Structured;
+      desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
       m_hShadowDataBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
     }

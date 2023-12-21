@@ -300,22 +300,17 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
     xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
     xiiGALTextureCreationDescription desc;
-    desc.m_uiWidth                     = s_uiReflectionCubeMapSize;
-    desc.m_uiHeight                    = s_uiReflectionCubeMapSize;
-    desc.m_uiMipLevelCount             = GetMipLevels();
-    desc.m_uiArraySize                 = 1;
-    desc.m_Format                      = xiiGALTextureFormat::RGBAHalf;
-    desc.m_Type                        = xiiGALTextureType::TextureCube;
-    desc.m_bCreateRenderTarget         = true;
-    desc.m_bAllowUAV                   = true;
-    desc.m_ResourceAccess.m_bReadBack  = true;
-    desc.m_ResourceAccess.m_bImmutable = false;
+    desc.m_sName              = "Reflection Fallback Specular Texture";
+    desc.m_Type               = xiiGALResourceDimension::TextureCube;
+    desc.m_Format             = xiiGALTextureFormat::RGBA16Float;
+    desc.m_uiArraySizeOrDepth = 6;
+    desc.m_uiMipLevels        = GetMipLevels();
+    desc.m_Size.width         = s_uiReflectionCubeMapSize;
+    desc.m_Size.height        = s_uiReflectionCubeMapSize;
+    desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess);
+    desc.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Read);
 
     m_hFallbackReflectionSpecularTexture = pDevice->CreateTexture(desc);
-    if (!m_hFallbackReflectionSpecularTexture.IsInvalidated())
-    {
-      pDevice->GetTexture(m_hFallbackReflectionSpecularTexture)->SetDebugName("Reflection Fallback Specular Texture");
-    }
   }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -329,8 +324,8 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
     if (!hMeshBuffer.IsValid())
     {
       xiiMeshBufferResourceDescriptor desc;
-      desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALTextureFormat::XYZFloat);
-      desc.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiGALTextureFormat::XYZFloat);
+      desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
+      desc.AddStream(xiiGALInputLayoutSemantic::Normal, xiiGALTextureFormat::RGB32Float);
       desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
       hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szBufferResourceName, std::move(desc), szBufferResourceName);
@@ -404,15 +399,14 @@ void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
     xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
     xiiGALTextureCreationDescription desc;
-    desc.m_uiWidth             = 6;
-    desc.m_uiHeight            = 64;
-    desc.m_Format              = xiiGALTextureFormat::RGBAHalf;
-    desc.m_Type                = xiiGALTextureType::Texture2D;
-    desc.m_bCreateRenderTarget = true;
-    desc.m_bAllowUAV           = true;
+    desc.m_sName       = "Sky Irradiance Texture";
+    desc.m_Type        = xiiGALResourceDimension::Texture2D;
+    desc.m_Size.width  = 6;
+    desc.m_Size.height = 64;
+    desc.m_Format      = xiiGALTextureFormat::RGBA16Float;
+    desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess);
 
     m_hSkyIrradianceTexture = pDevice->CreateTexture(desc);
-    pDevice->GetTexture(m_hSkyIrradianceTexture)->SetDebugName("Sky Irradiance Texture");
   }
 }
 

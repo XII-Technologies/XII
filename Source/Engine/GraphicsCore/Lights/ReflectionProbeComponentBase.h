@@ -22,13 +22,13 @@ public:
   void                            SetReflectionProbeMode(xiiEnum<xiiReflectionProbeMode> mode); // [ property ]
   xiiEnum<xiiReflectionProbeMode> GetReflectionProbeMode() const;                               // [ property ]
 
-  const xiiTagSet& GetIncludeTags() const;              // [ property ]
-  void             InsertIncludeTag(const char* szTag); // [ property ]
-  void             RemoveIncludeTag(const char* szTag); // [ property ]
+  const xiiTagSet& GetIncludeTags() const;               // [ property ]
+  void             InsertIncludeTag(xiiStringView sTag); // [ property ]
+  void             RemoveIncludeTag(xiiStringView sTag); // [ property ]
 
-  const xiiTagSet& GetExcludeTags() const;              // [ property ]
-  void             InsertExcludeTag(const char* szTag); // [ property ]
-  void             RemoveExcludeTag(const char* szTag); // [ property ]
+  const xiiTagSet& GetExcludeTags() const;               // [ property ]
+  void             InsertExcludeTag(xiiStringView sTag); // [ property ]
+  void             RemoveExcludeTag(xiiStringView sTag); // [ property ]
 
   float GetNearPlane() const { return m_Desc.m_fNearPlane; } // [ property ]
   void  SetNearPlane(float fNearPlane);                      // [ property ]

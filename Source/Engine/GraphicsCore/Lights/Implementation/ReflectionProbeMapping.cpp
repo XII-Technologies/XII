@@ -14,21 +14,21 @@ xiiReflectionProbeMapping::xiiReflectionProbeMapping(xiiUInt32 uiAtlasSize) :
   m_AddProbes.Reserve(m_uiAtlasSize);
 
   XII_ASSERT_DEV(m_hReflectionSpecularTexture.IsInvalidated(), "World data already created.");
-  xiiGALDevice*                    pDevice = xiiGALDevice::GetDefaultDevice();
+
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
   xiiGALTextureCreationDescription desc;
-  desc.m_uiWidth                     = s_uiReflectionCubeMapSize;
-  desc.m_uiHeight                    = s_uiReflectionCubeMapSize;
-  desc.m_uiMipLevelCount             = GetMipLevels();
-  desc.m_uiArraySize                 = s_uiNumReflectionProbeCubeMaps;
-  desc.m_Format                      = xiiGALTextureFormat::RGBAHalf;
-  desc.m_Type                        = xiiGALTextureType::TextureCube;
-  desc.m_bCreateRenderTarget         = true;
-  desc.m_bAllowUAV                   = true;
-  desc.m_ResourceAccess.m_bReadBack  = true;
-  desc.m_ResourceAccess.m_bImmutable = false;
+  desc.m_sName              = "Reflection Specular Texture";
+  desc.m_Type               = xiiGALResourceDimension::TextureCube;
+  desc.m_Format             = xiiGALTextureFormat::RGBA16Float;
+  desc.m_Size.width         = s_uiReflectionCubeMapSize;
+  desc.m_Size.height        = s_uiReflectionCubeMapSize;
+  desc.m_uiMipLevels        = GetMipLevels();
+  desc.m_uiArraySizeOrDepth = s_uiNumReflectionProbeCubeMaps * 6;
+  desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess);
+  desc.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Read);
 
   m_hReflectionSpecularTexture = pDevice->CreateTexture(desc);
-  pDevice->GetTexture(m_hReflectionSpecularTexture)->SetDebugName("Reflection Specular Texture");
 }
 
 xiiReflectionProbeMapping::~xiiReflectionProbeMapping()

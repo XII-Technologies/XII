@@ -67,15 +67,15 @@ const xiiTagSet& xiiReflectionProbeComponentBase::GetIncludeTags() const
   return m_Desc.m_IncludeTags;
 }
 
-void xiiReflectionProbeComponentBase::InsertIncludeTag(const char* szTag)
+void xiiReflectionProbeComponentBase::InsertIncludeTag(xiiStringView sTag)
 {
-  m_Desc.m_IncludeTags.SetByName(szTag);
+  m_Desc.m_IncludeTags.SetByName(sTag);
   m_bStatesDirty = true;
 }
 
-void xiiReflectionProbeComponentBase::RemoveIncludeTag(const char* szTag)
+void xiiReflectionProbeComponentBase::RemoveIncludeTag(xiiStringView sTag)
 {
-  m_Desc.m_IncludeTags.RemoveByName(szTag);
+  m_Desc.m_IncludeTags.RemoveByName(sTag);
   m_bStatesDirty = true;
 }
 
@@ -85,15 +85,15 @@ const xiiTagSet& xiiReflectionProbeComponentBase::GetExcludeTags() const
   return m_Desc.m_ExcludeTags;
 }
 
-void xiiReflectionProbeComponentBase::InsertExcludeTag(const char* szTag)
+void xiiReflectionProbeComponentBase::InsertExcludeTag(xiiStringView sTag)
 {
-  m_Desc.m_ExcludeTags.SetByName(szTag);
+  m_Desc.m_ExcludeTags.SetByName(sTag);
   m_bStatesDirty = true;
 }
 
-void xiiReflectionProbeComponentBase::RemoveExcludeTag(const char* szTag)
+void xiiReflectionProbeComponentBase::RemoveExcludeTag(xiiStringView sTag)
 {
-  m_Desc.m_ExcludeTags.RemoveByName(szTag);
+  m_Desc.m_ExcludeTags.RemoveByName(sTag);
   m_bStatesDirty = true;
 }
 

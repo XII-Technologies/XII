@@ -116,15 +116,15 @@ const xiiTagSet& xiiSkyLightComponent::GetIncludeTags() const
   return m_Desc.m_IncludeTags;
 }
 
-void xiiSkyLightComponent::InsertIncludeTag(const char* szTag)
+void xiiSkyLightComponent::InsertIncludeTag(xiiStringView sTag)
 {
-  m_Desc.m_IncludeTags.SetByName(szTag);
+  m_Desc.m_IncludeTags.SetByName(sTag);
   m_bStatesDirty = true;
 }
 
-void xiiSkyLightComponent::RemoveIncludeTag(const char* szTag)
+void xiiSkyLightComponent::RemoveIncludeTag(xiiStringView sTag)
 {
-  m_Desc.m_IncludeTags.RemoveByName(szTag);
+  m_Desc.m_IncludeTags.RemoveByName(sTag);
   m_bStatesDirty = true;
 }
 
@@ -133,15 +133,15 @@ const xiiTagSet& xiiSkyLightComponent::GetExcludeTags() const
   return m_Desc.m_ExcludeTags;
 }
 
-void xiiSkyLightComponent::InsertExcludeTag(const char* szTag)
+void xiiSkyLightComponent::InsertExcludeTag(xiiStringView sTag)
 {
-  m_Desc.m_ExcludeTags.SetByName(szTag);
+  m_Desc.m_ExcludeTags.SetByName(sTag);
   m_bStatesDirty = true;
 }
 
-void xiiSkyLightComponent::RemoveExcludeTag(const char* szTag)
+void xiiSkyLightComponent::RemoveExcludeTag(xiiStringView sTag)
 {
-  m_Desc.m_ExcludeTags.RemoveByName(szTag);
+  m_Desc.m_ExcludeTags.RemoveByName(sTag);
   m_bStatesDirty = true;
 }
 
@@ -168,20 +168,20 @@ bool xiiSkyLightComponent::GetShowMipMaps() const
 }
 
 
-void xiiSkyLightComponent::SetCubeMapFile(const char* szFile)
+void xiiSkyLightComponent::SetCubeMapFile(xiiStringView sFile)
 {
   xiiTextureCubeResourceHandle hCubeMap;
-  if (!xiiStringUtils::IsNullOrEmpty(szFile))
+  if (!sFile.IsEmpty())
   {
-    hCubeMap = xiiResourceManager::LoadResource<xiiTextureCubeResource>(szFile);
+    hCubeMap = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sFile);
   }
   m_hCubeMap     = hCubeMap;
   m_bStatesDirty = true;
 }
 
-const char* xiiSkyLightComponent::GetCubeMapFile() const
+xiiStringView xiiSkyLightComponent::GetCubeMapFile() const
 {
-  return m_hCubeMap.IsValid() ? m_hCubeMap.GetResourceID().GetData() : "";
+  return m_hCubeMap.IsValid() ? m_hCubeMap.GetResourceID().GetData() : xiiStringView();
 }
 
 void xiiSkyLightComponent::SetNearPlane(float fNearPlane)

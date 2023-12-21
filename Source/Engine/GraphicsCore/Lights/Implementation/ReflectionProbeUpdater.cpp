@@ -13,8 +13,6 @@
 xiiCVarInt cvar_RenderingReflectionPoolMaxRenderViews("Rendering.ReflectionPool.MaxRenderViews", 1, xiiCVarFlags::Default, "The maximum number of render views for reflection probes each frame");
 xiiCVarInt cvar_RenderingReflectionPoolMaxFilterViews("Rendering.ReflectionPool.MaxFilterViews", 1, xiiCVarFlags::Default, "The maximum number of filter views for reflection probes each frame");
 
-
-
 //////////////////////////////////////////////////////////////////////////
 /// ProbeUpdateInfo
 
@@ -26,27 +24,27 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
 
   {
     xiiGALTextureCreationDescription desc;
-    desc.m_uiWidth                     = s_uiReflectionCubeMapSize;
-    desc.m_uiHeight                    = s_uiReflectionCubeMapSize;
-    desc.m_uiMipLevelCount             = GetMipLevels();
-    desc.m_Format                      = xiiGALTextureFormat::RGBAHalf;
-    desc.m_Type                        = xiiGALTextureType::TextureCube;
-    desc.m_bCreateRenderTarget         = true;
-    desc.m_bAllowDynamicMipGeneration  = true;
-    desc.m_ResourceAccess.m_bReadBack  = true;
-    desc.m_ResourceAccess.m_bImmutable = false;
+    desc.m_sName              = "Reflection Cubemap";
+    desc.m_Type               = xiiGALResourceDimension::TextureCube;
+    desc.m_Format             = xiiGALTextureFormat::RGBA16Float;
+    desc.m_Size.width         = s_uiReflectionCubeMapSize;
+    desc.m_Size.height        = s_uiReflectionCubeMapSize;
+    desc.m_uiMipLevels        = GetMipLevels();
+    desc.m_uiArraySizeOrDepth = 6;
+    desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
+    desc.m_MiscFlags.Add(xiiGALMiscTextureFlags::GenerateMips);
+    desc.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Read);
 
     m_hCubemap = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
-    pDevice->GetTexture(m_hCubemap)->SetDebugName("Reflection Cubemap");
   }
 
-  xiiStringBuilder sName;
+  // xiiStringBuilder sName;
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hCubemapProxies); ++i)
   {
     m_hCubemapProxies[i] = xiiGALDevice::GetDefaultDevice()->CreateProxyTexture(m_hCubemap, i);
 
-    sName.Format("Reflection Cubemap Proxy {}", i);
-    pDevice->GetTexture(m_hCubemapProxies[i])->SetDebugName(sName);
+    // sName.Format("Reflection Cubemap Proxy {}", i);
+    // pDevice->GetTexture(m_hCubemapProxies[i])->SetDebugName(sName);
   }
 }
 

@@ -45,13 +45,13 @@ public:
   void  SetSaturation(float fSaturation); // [ property ]
   float GetSaturation() const;            // [ property ]
 
-  const xiiTagSet& GetIncludeTags() const;              // [ property ]
-  void             InsertIncludeTag(const char* szTag); // [ property ]
-  void             RemoveIncludeTag(const char* szTag); // [ property ]
+  const xiiTagSet& GetIncludeTags() const;               // [ property ]
+  void             InsertIncludeTag(xiiStringView sTag); // [ property ]
+  void             RemoveIncludeTag(xiiStringView sTag); // [ property ]
 
-  const xiiTagSet& GetExcludeTags() const;              // [ property ]
-  void             InsertExcludeTag(const char* szTag); // [ property ]
-  void             RemoveExcludeTag(const char* szTag); // [ property ]
+  const xiiTagSet& GetExcludeTags() const;               // [ property ]
+  void             InsertExcludeTag(xiiStringView sTag); // [ property ]
+  void             RemoveExcludeTag(xiiStringView sTag); // [ property ]
 
   void SetShowDebugInfo(bool bShowDebugInfo); // [ property ]
   bool GetShowDebugInfo() const;              // [ property ]
@@ -59,8 +59,8 @@ public:
   void SetShowMipMaps(bool bShowMipMaps); // [ property ]
   bool GetShowMipMaps() const;            // [ property ]
 
-  void                         SetCubeMapFile(const char* szFile); // [ property ]
-  const char*                  GetCubeMapFile() const;             // [ property ]
+  void                         SetCubeMapFile(xiiStringView sFile); // [ property ]
+  xiiStringView                GetCubeMapFile() const;              // [ property ]
   xiiTextureCubeResourceHandle GetCubeMap() const
   {
     return m_hCubeMap;

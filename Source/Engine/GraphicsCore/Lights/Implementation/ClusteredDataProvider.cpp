@@ -20,50 +20,40 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
 
   {
     xiiGALBufferCreationDescription desc;
+    desc.m_Mode = xiiGALBufferMode::Structured;
+    desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
     {
-      desc.m_uiStructSize                = sizeof(xiiPerLightData);
-      desc.m_uiTotalSize                 = desc.m_uiStructSize * xiiClusteredDataCPU::MAX_LIGHT_DATA;
-      desc.m_BufferType                  = xiiGALBufferType::Generic;
-      desc.m_bUseAsStructuredBuffer      = true;
-      desc.m_bAllowShaderResourceView    = true;
-      desc.m_ResourceAccess.m_bImmutable = false;
+      desc.m_uiElementByteStride = sizeof(xiiPerLightData);
+      desc.m_uiSize              = desc.m_uiElementByteStride * xiiClusteredDataCPU::MAX_LIGHT_DATA;
 
       m_hLightDataBuffer = pDevice->CreateBuffer(desc);
     }
 
     {
-      desc.m_uiStructSize                = sizeof(xiiPerDecalData);
-      desc.m_uiTotalSize                 = desc.m_uiStructSize * xiiClusteredDataCPU::MAX_DECAL_DATA;
-      desc.m_BufferType                  = xiiGALBufferType::Generic;
-      desc.m_bUseAsStructuredBuffer      = true;
-      desc.m_bAllowShaderResourceView    = true;
-      desc.m_ResourceAccess.m_bImmutable = false;
+      desc.m_uiElementByteStride = sizeof(xiiPerDecalData);
+      desc.m_uiSize              = desc.m_uiElementByteStride * xiiClusteredDataCPU::MAX_DECAL_DATA;
 
       m_hDecalDataBuffer = pDevice->CreateBuffer(desc);
     }
 
     {
-      desc.m_uiStructSize                = sizeof(xiiPerReflectionProbeData);
-      desc.m_uiTotalSize                 = desc.m_uiStructSize * xiiClusteredDataCPU::MAX_REFLECTION_PROBE_DATA;
-      desc.m_BufferType                  = xiiGALBufferType::Generic;
-      desc.m_bUseAsStructuredBuffer      = true;
-      desc.m_bAllowShaderResourceView    = true;
-      desc.m_ResourceAccess.m_bImmutable = false;
+      desc.m_uiElementByteStride = sizeof(xiiPerReflectionProbeData);
+      desc.m_uiSize              = desc.m_uiElementByteStride * xiiClusteredDataCPU::MAX_REFLECTION_PROBE_DATA;
 
       m_hReflectionProbeDataBuffer = pDevice->CreateBuffer(desc);
     }
 
     {
-      desc.m_uiStructSize = sizeof(xiiPerClusterData);
-      desc.m_uiTotalSize  = desc.m_uiStructSize * NUM_CLUSTERS;
+      desc.m_uiElementByteStride = sizeof(xiiPerClusterData);
+      desc.m_uiSize              = desc.m_uiElementByteStride * NUM_CLUSTERS;
 
       m_hClusterDataBuffer = pDevice->CreateBuffer(desc);
     }
 
     {
-      desc.m_uiStructSize = sizeof(xiiUInt32);
-      desc.m_uiTotalSize  = desc.m_uiStructSize * xiiClusteredDataCPU::MAX_ITEMS_PER_CLUSTER * NUM_CLUSTERS;
+      desc.m_uiElementByteStride = sizeof(xiiUInt32);
+      desc.m_uiSize              = desc.m_uiSize * xiiClusteredDataCPU::MAX_ITEMS_PER_CLUSTER * NUM_CLUSTERS;
 
       m_hClusterItemBuffer = pDevice->CreateBuffer(desc);
     }
@@ -73,9 +63,9 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
 
   {
     xiiGALSamplerCreationDescription desc;
-    desc.m_AddressU           = xiiImageAddressMode::Clamp;
-    desc.m_AddressV           = xiiImageAddressMode::Clamp;
-    desc.m_AddressW           = xiiImageAddressMode::Clamp;
+    desc.m_AddressU           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    desc.m_AddressV           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    desc.m_AddressW           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
     desc.m_ComparisonFunction = xiiGALComparisonFunction::Less;
 
     m_hShadowSampler = pDevice->CreateSampler(desc);
@@ -85,9 +75,9 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
 
   {
     xiiGALSamplerCreationDescription desc;
-    desc.m_AddressU = xiiImageAddressMode::Clamp;
-    desc.m_AddressV = xiiImageAddressMode::Clamp;
-    desc.m_AddressW = xiiImageAddressMode::Clamp;
+    desc.m_AddressU = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    desc.m_AddressV = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    desc.m_AddressW = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
 
     xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::DefaultQuality, desc);
     desc.m_uiMaxAnisotropy = xiiMath::Min(desc.m_uiMaxAnisotropy, 4u);
@@ -210,7 +200,5 @@ void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderVie
 
   return &m_Data;
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ClusteredDataProvider);
