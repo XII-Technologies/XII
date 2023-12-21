@@ -1,13 +1,4 @@
 
-XII_ALWAYS_INLINE xiiGALTextureViewHandle xiiGALTextureD3D12::GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType)
-{
-  /// \todo GraphicsD3D12: Not yet implemented.
-
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return xiiGALTextureViewHandle();
-}
-
 XII_ALWAYS_INLINE void xiiGALTextureD3D12::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
 {
   Diligent::RESOURCE_STATE requestedStates = xiiDiligentTypeConversions::GetResourceState(stateFlags);

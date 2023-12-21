@@ -7,8 +7,6 @@
 class XII_GRAPHICSD3D12_DLL xiiGALTextureD3D12 final : public xiiGALTexture
 {
 public:
-  virtual xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType) override final;
-
   virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
 
   virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;

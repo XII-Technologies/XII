@@ -1,9 +1,4 @@
 
-XII_ALWAYS_INLINE xiiGALBufferViewHandle xiiGALBufferNull::GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType)
-{
-  return xiiGALBufferViewHandle();
-}
-
 XII_ALWAYS_INLINE void xiiGALBufferNull::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
 {
 }

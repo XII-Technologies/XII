@@ -1,13 +1,4 @@
 
-XII_ALWAYS_INLINE xiiGALTextureViewHandle xiiGALTextureVulkan::GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType)
-{
-  /// \todo GraphicsVulkan: Not yet implemented.
-
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return xiiGALTextureViewHandle();
-}
-
 XII_ALWAYS_INLINE void xiiGALTextureVulkan::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
 {
   Diligent::RESOURCE_STATE requestedStates = xiiDiligentTypeConversions::GetResourceState(stateFlags);

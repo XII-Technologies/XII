@@ -1,13 +1,4 @@
 
-XII_ALWAYS_INLINE xiiGALBufferViewHandle xiiGALBufferVulkan::GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType)
-{
-  /// \todo GraphicsVulkan: Not yet implemented.
-
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return xiiGALBufferViewHandle();
-}
-
 XII_ALWAYS_INLINE void xiiGALBufferVulkan::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
 {
   Diligent::RESOURCE_STATE requestedStates = xiiDiligentTypeConversions::GetResourceState(stateFlags);

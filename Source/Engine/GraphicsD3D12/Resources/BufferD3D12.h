@@ -7,8 +7,6 @@
 class XII_GRAPHICSD3D12_DLL xiiGALBufferD3D12 final : public xiiGALBuffer
 {
 public:
-  virtual xiiGALBufferViewHandle GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType) override final;
-
   virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
 
   virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;

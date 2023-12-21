@@ -10,6 +10,7 @@
 #include <GraphicsFoundation/Resources/BufferView.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
+#include <GraphicsFoundation/Resources/ProxyTexture.h>
 #include <GraphicsFoundation/Resources/Query.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
@@ -2414,6 +2415,92 @@ void xiiGALDevice::WaitIdle()
 {
   WaitIdlePlatform();
 }
+
+#define XII_VERIFY_PROXY_TEXTURE(expression, ...) \
+  do                                              \
+  {                                               \
+    if (!(expression))                            \
+    {                                             \
+      xiiLog::Error(__VA_ARGS__);                 \
+      return xiiGALTextureHandle();               \
+    }                                             \
+  } while (false);
+
+xiiGALTextureHandle xiiGALDevice::CreateProxyTexture(xiiGALTextureHandle hParentTexture, xiiUInt32 uiSlice)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALTexture* pParentTexture = nullptr;
+  if (!hParentTexture.IsInvalidated())
+  {
+    pParentTexture = Get<TextureTable, xiiGALTexture>(hParentTexture, m_Textures);
+  }
+
+  XII_VERIFY_PROXY_TEXTURE(pParentTexture != nullptr, "No valid texture handle given for proxy texture creation!");
+
+  const auto& parentDescription = pParentTexture->GetDescription();
+  XII_VERIFY_PROXY_TEXTURE(parentDescription.IsArray(), "Proxy textures can only be created for array texture types.");
+
+  xiiGALProxyTexture* pProxyTexture = XII_NEW(&m_Allocator, xiiGALProxyTexture, *pParentTexture);
+  xiiGALTextureHandle hProxyTexture(m_Textures.Insert(pProxyTexture));
+
+  const auto& description = pProxyTexture->GetDescription();
+
+  // Create default resource view.
+  if (description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+  {
+    xiiGALTextureViewCreationDescription viewDescription;
+    viewDescription.m_hTexture                  = hProxyTexture;
+    viewDescription.m_ViewType                  = xiiGALTextureViewType::ShaderResource;
+    viewDescription.m_Format                    = description.m_Format;
+    viewDescription.m_uiMostDetailedMip         = 0U;
+    viewDescription.m_uiFirstArrayOrDepthSlice  = uiSlice;
+    viewDescription.m_uiMipLevelCount           = description.m_uiMipLevels;
+    viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
+    pProxyTexture->m_hDefaultTextureView        = CreateTextureView(viewDescription);
+  }
+
+  // Create default render target or depth stencil view.
+  if (description.m_BindFlags.IsAnySet(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil))
+  {
+    auto& formatProperties = GetTextureFormatProperties(description.m_Format);
+
+    xiiEnum<xiiGALTextureViewType> viewType = formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget;
+
+    xiiGALTextureViewCreationDescription viewDescription;
+    viewDescription.m_hTexture                  = hProxyTexture;
+    viewDescription.m_ViewType                  = viewType;
+    viewDescription.m_Format                    = description.m_Format;
+    viewDescription.m_uiFirstArrayOrDepthSlice  = uiSlice;
+    viewDescription.m_uiMostDetailedMip         = 0U;
+    viewDescription.m_uiMipLevelCount           = description.m_uiMipLevels;
+    viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
+
+    pProxyTexture->m_hDefaultRenderTargetView = CreateTextureView(viewDescription);
+  }
+
+  return hProxyTexture;
+}
+
+void xiiGALDevice::DestroyProxyTexture(xiiGALTextureHandle hProxyTexture)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALTexture* pTexture = nullptr;
+
+  if (m_Textures.TryGetValue(hProxyTexture, pTexture))
+  {
+    XII_ASSERT_DEV(pTexture->GetDescription().m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Proxy), "The given texture is not a proxy texture.");
+
+    AddDeadObject(GALObjectType::Texture, hProxyTexture);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyProxyTexture called on an invalid handle (double free?).");
+  }
+}
+
+#undef XII_VERIFY_PROXY_TEXTURE
 
 const xiiGALTextureFormatDescription& xiiGALDevice::GetTextureFormatProperties(xiiEnum<xiiGALTextureFormat> format) const
 {
