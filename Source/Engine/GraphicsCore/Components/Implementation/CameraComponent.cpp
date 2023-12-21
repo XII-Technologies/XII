@@ -10,7 +10,6 @@
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 
-
 xiiCameraComponentManager::xiiCameraComponentManager(xiiWorld* pWorld) :
   xiiComponentManager<xiiCameraComponent, xiiBlockStorageType::Compact>(pWorld)
 {

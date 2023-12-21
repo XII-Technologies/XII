@@ -233,26 +233,4 @@ void xiiSpriteComponent::OnMsgSetColor(xiiMsgSetColor& ref_msg)
   ref_msg.ModifyColor(m_Color);
 }
 
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-#include <Foundation/Serialization/GraphPatch.h>
-#include <Foundation/Serialization/AbstractObjectGraph.h>
-
-class xiiSpriteComponentPatch_1_2 : public xiiGraphPatch
-{
-public:
-  xiiSpriteComponentPatch_1_2() :
-    xiiGraphPatch("xiiSpriteComponent", 2)
-  {
-  }
-
-  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override { pNode->RenameProperty("Max Screen Size", "MaxScreenSize"); }
-};
-
-xiiSpriteComponentPatch_1_2 g_xiiSpriteComponentPatch_1_2;
-
-
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Components_Implementation_SpriteComponent);
