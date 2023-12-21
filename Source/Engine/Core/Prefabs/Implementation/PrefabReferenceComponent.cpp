@@ -399,7 +399,7 @@ void xiiPrefabReferenceComponent::SetParameter(xiiStringView sKey, const xiiVari
 
 void xiiPrefabReferenceComponent::RemoveParameter(xiiStringView sKey)
 {
-  if (m_Parameters.RemoveAndCopy(xiiTempHashedString(sKey)))
+  if (m_Parameters.RemoveAndCopy(sKey))
   {
     if (IsActiveAndInitialized())
     {
@@ -412,7 +412,7 @@ void xiiPrefabReferenceComponent::RemoveParameter(xiiStringView sKey)
 
 bool xiiPrefabReferenceComponent::GetParameter(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Parameters.Find(xiiTempHashedString(sKey));
+  xiiUInt32 it = m_Parameters.Find(sKey);
 
   if (it == xiiInvalidIndex)
     return false;

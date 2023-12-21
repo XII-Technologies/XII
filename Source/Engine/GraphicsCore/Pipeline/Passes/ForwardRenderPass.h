@@ -35,6 +35,7 @@ public:
 protected:
   virtual void SetupResources(xiiGALPass* pGALPass, const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs);
   virtual void SetupPermutationVars(const xiiRenderViewContext& renderViewContext);
+  void         SetupLighting(const xiiRenderViewContext& renderViewContext);
 
   virtual void RenderObjects(const xiiRenderViewContext& renderViewContext) = 0;
 

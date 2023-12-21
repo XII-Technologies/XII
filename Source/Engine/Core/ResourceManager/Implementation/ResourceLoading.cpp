@@ -328,7 +328,7 @@ bool xiiResourceManager::ReloadResource(xiiResource* pResource, bool bForce)
   }
   else
   {
-    s_pState->m_ResourcesToUnloadOnMainThread.Insert(xiiTempHashedString(pResource->GetResourceID().GetData()), pResource->GetDynamicRTTI());
+    s_pState->m_ResourcesToUnloadOnMainThread.Insert(xiiTempHashedString(pResource->GetResourceID().GetView()), pResource->GetDynamicRTTI());
   }
 
   if (bAllowPreloading)
