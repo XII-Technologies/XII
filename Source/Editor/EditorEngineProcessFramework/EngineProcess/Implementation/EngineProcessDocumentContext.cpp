@@ -10,7 +10,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
-#include <GraphicsFoundation/CommandEncoder/RenderCommandEncoder.h>
+#include <GraphicsFoundation/CommandEncoder/GraphicsCommandEncoder.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/Pass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
@@ -67,7 +67,8 @@ void xiiEngineProcessDocumentContext::DestroyDocumentContext(xiiUuid guid)
 
 xiiBoundingBoxSphere xiiEngineProcessDocumentContext::GetWorldBounds(xiiWorld* pWorld)
 {
-  xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
+  xiiBoundingBoxSphere bounds;
+  bounds.SetInvalid();
 
   {
     XII_LOCK(pWorld->GetReadMarker());
@@ -87,7 +88,7 @@ xiiBoundingBoxSphere xiiEngineProcessDocumentContext::GetWorldBounds(xiiWorld* p
   }
 
   if (!bounds.IsValid())
-    bounds = xiiBoundingBoxSphere::MakeFromCenterExtents(xiiVec3::MakeZero(), xiiVec3(1, 1, 1), 2);
+    bounds = xiiBoundingBoxSphere(xiiVec3::ZeroVector(), xiiVec3(1, 1, 1), 2);
 
   return bounds;
 }
@@ -452,14 +453,14 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
         auto pGALCommandEncoder = pGALPass->BeginRendering(xiiGALRenderingSetup());
         XII_SCOPE_EXIT(pGALPass->EndRendering(pGALCommandEncoder));
 
-        pGALCommandEncoder->ReadbackTexture(m_hThumbnailColorRT);
-        const xiiGALTexture*                pThumbnailColor = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hThumbnailColorRT);
-        const xiiEnum<xiiGALResourceFormat> format          = pThumbnailColor->GetDescription().m_Format;
+        pGALCommandEncoder->ReadbackTexture(m_hThumbnailColorRT, m_hThumbnailColorRTStaging);
+        const xiiGALTexture*               pThumbnailColor = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hThumbnailColorRT);
+        const xiiEnum<xiiGALTextureFormat> format          = pThumbnailColor->GetDescription().m_Format;
 
-        xiiGALSystemMemoryDescription MemDesc;
+        xiiGALTextureSubResourceData MemDesc;
         {
-          MemDesc.m_uiRowPitch   = 4 * m_uiThumbnailWidth;
-          MemDesc.m_uiSlicePitch = 4 * m_uiThumbnailWidth * m_uiThumbnailHeight;
+          MemDesc.m_uiStride      = 4 * m_uiThumbnailWidth;
+          MemDesc.m_uiDepthStride = 4 * m_uiThumbnailWidth * m_uiThumbnailHeight;
         }
 
         xiiImageHeader header;
@@ -471,12 +472,12 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
         XII_ASSERT_DEV(static_cast<xiiUInt64>(m_uiThumbnailWidth) * static_cast<xiiUInt64>(m_uiThumbnailHeight) * 4 == header.ComputeDataSize(), "Thumbnail xiiImage has different size than data buffer!");
 
         MemDesc.m_pData = image.GetPixelPointer<xiiUInt8>();
-        xiiArrayPtr<xiiGALSystemMemoryDescription> SysMemDescs(&MemDesc, 1);
+        xiiArrayPtr<xiiGALTextureSubResourceData> SysMemDescs(&MemDesc, 1);
 
-        xiiGALTextureSubresource              sourceSubResource;
-        xiiArrayPtr<xiiGALTextureSubresource> sourceSubResources(&sourceSubResource, 1);
+        xiiGALTextureMipLevelData              sourceSubResource;
+        xiiArrayPtr<xiiGALTextureMipLevelData> sourceSubResources(&sourceSubResource, 1);
 
-        pGALCommandEncoder->CopyTextureReadbackResult(m_hThumbnailColorRT, sourceSubResources, SysMemDescs);
+        pGALCommandEncoder->CopyTextureReadbackResult(m_hThumbnailColorRT, m_hThumbnailColorRTStaging, sourceSubResources, SysMemDescs);
 
         xiiImage  imageSwap;
         xiiImage* pImage     = &image;
@@ -486,7 +487,6 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
           xiiImageUtils::Scale(*pImage, *pImageSwap, pImage->GetWidth() / 2, pImage->GetHeight() / 2).IgnoreResult();
           xiiMath::Swap(pImage, pImageSwap);
         }
-
 
         ret.m_ThumbnailData.SetCountUninitialized((m_uiThumbnailWidth / ThumbnailSuperscaleFactor) * (m_uiThumbnailHeight / ThumbnailSuperscaleFactor) * 4);
         xiiMemoryUtils::Copy(ret.m_ThumbnailData.GetData(), pImage->GetPixelPointer<xiiUInt8>(), ret.m_ThumbnailData.GetCount());
@@ -531,20 +531,24 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
 
   // Create render target for picking
   xiiGALTextureCreationDescription tcd;
-  tcd.m_bAllowDynamicMipGeneration = false;
-  tcd.m_bAllowShaderResourceView   = false;
-  tcd.m_bAllowUAV                  = false;
-  tcd.m_bCreateRenderTarget        = true;
-  tcd.m_Format                     = xiiGALResourceFormat::RGBAUByteNormalizedsRGB;
-  tcd.m_ResourceAccess.m_bReadBack = true;
-  tcd.m_Type                       = xiiGALTextureType::Texture2D;
-  tcd.m_uiWidth                    = m_uiThumbnailWidth;
-  tcd.m_uiHeight                   = m_uiThumbnailHeight;
+  tcd.m_Type        = xiiGALResourceDimension::Texture2D;
+  tcd.m_Format      = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+  tcd.m_Size.width  = m_uiThumbnailWidth;
+  tcd.m_Size.height = m_uiThumbnailHeight;
+  tcd.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
 
   m_hThumbnailColorRT = pDevice->CreateTexture(tcd);
 
-  tcd.m_Format                     = xiiGALResourceFormat::DFloat;
-  tcd.m_ResourceAccess.m_bReadBack = false;
+  tcd.m_BindFlags = {};
+  tcd.m_Usage     = xiiGALResourceUsage::Staging;
+  tcd.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Read);
+
+  m_hThumbnailColorRTStaging = pDevice->CreateTexture(tcd);
+
+  tcd.m_Format         = xiiGALTextureFormat::D32Float;
+  tcd.m_Usage          = xiiGALResourceUsage::Immutable;
+  tcd.m_CPUAccessFlags = {};
+  tcd.m_BindFlags.Add(xiiGALBindFlags::DepthStencil);
 
   m_hThumbnailDepthRT = pDevice->CreateTexture(tcd);
 
@@ -585,6 +589,12 @@ void xiiEngineProcessDocumentContext::DestroyThumbnailViewContext()
 
   DestroyViewContext(m_pThumbnailViewContext);
   m_pThumbnailViewContext = nullptr;
+
+  if (!m_hThumbnailColorRTStaging.IsInvalidated())
+  {
+    pDevice->DestroyTexture(m_hThumbnailColorRTStaging);
+    m_hThumbnailColorRTStaging.Invalidate();
+  }
 
   if (!m_hThumbnailColorRT.IsInvalidated())
   {

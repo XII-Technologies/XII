@@ -257,10 +257,11 @@ void xiiEngineViewLightSettings::UpdateForEngine(xiiWorld* pWorld)
     }
   }
 
-  const bool bNeedGameObject = m_bDirectionalLight | m_bSkyLight;
+  const bool bNeedGameObject = m_bDirectionalLight || m_bSkyLight;
   if (xiiGameObject* pParent = SyncGameObject(m_pWorld, m_hGameObject, bNeedGameObject))
   {
-    xiiQuat rot = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 1.0f, 0.0f), m_DirectionalLightAngle + xiiAngle::MakeFromDegree(90.0));
+    xiiQuat rot;
+    rot.SetFromAxisAndAngle(xiiVec3(0.0f, 1.0f, 0.0f), m_DirectionalLightAngle + xiiAngle::Degree(90.0));
     pParent->SetLocalRotation(rot);
 
     if (xiiDirectionalLightComponent* pDirLight = SyncComponent<xiiDirectionalLightComponent>(m_pWorld, pParent, m_hDirLight, m_bDirectionalLight))

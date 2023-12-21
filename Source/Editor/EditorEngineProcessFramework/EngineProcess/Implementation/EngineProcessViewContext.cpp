@@ -131,12 +131,17 @@ void xiiEngineProcessViewContext::HandleWindowUpdate(xiiWindowHandle hWnd, xiiUI
         OnSwapChainChanged(hSwapChain, size);
       });
 
-      xiiGALWindowSwapChainCreationDescription desc;
-      desc.m_pWindow           = pWindowPlugin->m_pWindow.Borrow();
-      desc.m_BackBufferFormat  = xiiGALResourceFormat::RGBAUByteNormalizedsRGB;
-      desc.m_bAllowScreenshots = true;
+      xiiGALSwapChainCreationDescription swapChainDesc;
+      swapChainDesc.m_pWindow               = pWindowPlugin->m_pWindow.Borrow();
+      swapChainDesc.m_Resolution            = pWindowPlugin->m_pWindow->GetClientAreaSize();
+      swapChainDesc.m_ColorBufferFormat     = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+      swapChainDesc.m_Usage                 = xiiGALSwapChainUsageFlags::RenderTarget;
+      swapChainDesc.m_PreTransform          = xiiGALSurfaceTransform::Optimal;
+      swapChainDesc.m_uiBufferCount         = 2U;
+      swapChainDesc.m_fDefaultDepthValue    = 1.0f;
+      swapChainDesc.m_uiDefaultStencilValue = 0U;
 
-      pOutput->CreateSwapchain(desc);
+      pOutput->CreateSwapchain(swapChainDesc);
 
       pWindowPlugin->m_pWindowOutputTarget = std::move(pOutput);
     }

@@ -173,9 +173,8 @@ protected:
 private:
   enum Constants
   {
-    ThumbnailSuperscaleFactor =
-      2,                                 ///< Thumbnail render target size is multiplied by this and then the final image is downscaled again. Needs to be power-of-two.
-    ThumbnailConvergenceFramesTarget = 4 ///< Due to multi-threaded rendering, this must be at least 4
+    ThumbnailSuperscaleFactor        = 2, ///< Thumbnail render target size is multiplied by this and then the final image is downscaled again. Needs to be power-of-two.
+    ThumbnailConvergenceFramesTarget = 4  ///< Due to multi-threaded rendering, this must be at least 4
   };
 
   xiiUInt8                     m_uiThumbnailConvergenceFrames = 0;
@@ -184,6 +183,7 @@ private:
   xiiEngineProcessViewContext* m_pThumbnailViewContext        = nullptr;
   xiiGALRenderTargets          m_ThumbnailRenderTargets;
   xiiGALTextureHandle          m_hThumbnailColorRT;
+  xiiGALTextureHandle          m_hThumbnailColorRTStaging;
   xiiGALTextureHandle          m_hThumbnailDepthRT;
   bool                         m_bWorldSimStateBeforeThumbnail = false;
   xiiString                    m_sDocumentType;
