@@ -18,7 +18,7 @@ public:
   virtual xiiString GetWindowIcon() const override;
   virtual xiiString GetDisplayNameShort() const override;
 
-  virtual const char* GetWindowLayoutGroupName() const override { return "Settings"; }
+  virtual xiiStringView GetWindowLayoutGroupName() const override { return "Settings"; }
 
 protected Q_SLOTS:
   void on_OpenScene_clicked();

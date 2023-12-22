@@ -50,7 +50,7 @@ xiiQtLogPanel::~xiiQtLogPanel()
   xiiQtUiServices::GetSingleton()->s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtLogPanel::UiServiceEventHandler, this));
 }
 
-void xiiQtLogPanel::OnNewWarningsOrErrors(const char* szText, bool bError)
+void xiiQtLogPanel::OnNewWarningsOrErrors(xiiStringView sText, bool bError)
 {
   m_uiKnownNumWarnings = EditorLog->GetLog()->GetNumSeriousWarnings() + EditorLog->GetLog()->GetNumWarnings() + EngineLog->GetLog()->GetNumSeriousWarnings() + EngineLog->GetLog()->GetNumWarnings();
   m_uiKnownNumErrors   = EditorLog->GetLog()->GetNumErrors() + EngineLog->GetLog()->GetNumErrors();
@@ -93,9 +93,9 @@ void xiiQtLogPanel::OnNewWarningsOrErrors(const char* szText, bool bError)
 
   xiiQtUiServices::GetSingleton()->ShowAllDocumentsPermanentStatusBarMessage(tmp, type);
 
-  if (!xiiStringUtils::IsNullOrEmpty(szText))
+  if (!sText.IsEmpty())
   {
-    xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("{}: {}", bError ? "Error" : "Warning", szText), xiiTime::Seconds(10));
+    xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("{}: {}", bError ? "Error" : "Warning", sText), xiiTime::Seconds(10));
   }
 }
 

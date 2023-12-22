@@ -25,10 +25,10 @@ protected:
 
 private Q_SLOTS:
   void UpdateUI();
-  void BoolChanged(const char* szCVar, bool newValue);
-  void FloatChanged(const char* szCVar, float newValue);
-  void IntChanged(const char* szCVar, int newValue);
-  void StringChanged(const char* szCVar, const char* newValue);
+  void BoolChanged(xiiStringView sCVar, bool newValue);
+  void FloatChanged(xiiStringView sCVar, float newValue);
+  void IntChanged(xiiStringView sCVar, int newValue);
+  void StringChanged(xiiStringView sCVar, xiiStringView sNewValue);
 
 private:
   void EngineProcessMsgHandler(const xiiEditorEngineProcessConnection::Event& e);

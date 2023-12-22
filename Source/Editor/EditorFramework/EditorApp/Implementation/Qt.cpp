@@ -52,9 +52,6 @@ void xiiQtEditorApp::SetStyleSheet()
 
   QApplication::setStyle(QStyleFactory::create("fusion"));
 
-  QBrush NoRoleBrush(QColor(0, 0, 0), Qt::NoBrush);
-  palette.setBrush(QPalette::NoRole, NoRoleBrush);
-
   palette.setColor(QPalette::WindowText, QColor(200, 200, 200, 255));
   palette.setColor(QPalette::Button, QColor(0, 0, 0, 255));      // buttons, toolbuttons, dashboard background
   palette.setColor(QPalette::Light, QColor(60, 60, 60, 255));    // lines between tabs, inactive tab gradient

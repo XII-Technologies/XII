@@ -25,7 +25,7 @@ protected:
   virtual void ToolsProjectEventHandler(const xiiToolsProjectEvent& e) override;
 
 private Q_SLOTS:
-  void OnNewWarningsOrErrors(const char* szText, bool bError);
+  void OnNewWarningsOrErrors(xiiStringView sText, bool bError);
 
 private:
   void LogWriter(const xiiLoggingEventData& e);

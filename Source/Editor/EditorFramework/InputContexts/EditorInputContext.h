@@ -98,7 +98,7 @@ protected:
   virtual xiiEditorInput DoWheelEvent(QWheelEvent* e) { return xiiEditorInput::MayBeHandledByOthers; }
 
 private:
-  static xiiEditorInputContext* s_pActiveInputContext = nullptr;
+  static xiiEditorInputContext* s_pActiveInputContext;
 
   xiiQtEngineDocumentWindow* m_pOwnerWindow = nullptr;
   xiiQtEngineViewWidget*     m_pOwnerView   = nullptr;

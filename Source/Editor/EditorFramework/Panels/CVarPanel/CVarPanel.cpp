@@ -158,34 +158,34 @@ void xiiQtCVarPanel::UpdateUI()
   m_bRebuildUI     = false;
 }
 
-void xiiQtCVarPanel::BoolChanged(const char* szCVar, bool newValue)
+void xiiQtCVarPanel::BoolChanged(xiiStringView sCVar, bool newValue)
 {
   xiiChangeCVarMsgToEngine msg;
-  msg.m_sCVarName = szCVar;
+  msg.m_sCVarName = sCVar;
   msg.m_NewValue  = newValue;
   xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
 }
 
-void xiiQtCVarPanel::FloatChanged(const char* szCVar, float newValue)
+void xiiQtCVarPanel::FloatChanged(xiiStringView sCVar, float newValue)
 {
   xiiChangeCVarMsgToEngine msg;
-  msg.m_sCVarName = szCVar;
+  msg.m_sCVarName = sCVar;
   msg.m_NewValue  = newValue;
   xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
 }
 
-void xiiQtCVarPanel::IntChanged(const char* szCVar, int newValue)
+void xiiQtCVarPanel::IntChanged(xiiStringView sCVar, int newValue)
 {
   xiiChangeCVarMsgToEngine msg;
-  msg.m_sCVarName = szCVar;
+  msg.m_sCVarName = sCVar;
   msg.m_NewValue  = newValue;
   xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
 }
 
-void xiiQtCVarPanel::StringChanged(const char* szCVar, const char* newValue)
+void xiiQtCVarPanel::StringChanged(xiiStringView sCVar, xiiStringView sNewValue)
 {
   xiiChangeCVarMsgToEngine msg;
-  msg.m_sCVarName = szCVar;
-  msg.m_NewValue  = newValue;
+  msg.m_sCVarName = sCVar;
+  msg.m_NewValue  = sNewValue;
   xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
 }
