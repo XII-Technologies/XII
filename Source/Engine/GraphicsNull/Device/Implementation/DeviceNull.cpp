@@ -501,10 +501,130 @@ void xiiGALDeviceNull::WaitIdlePlatform()
 
 void xiiGALDeviceNull::FillCapabilitiesPlatform()
 {
-  m_Type                                                          = xiiGALGraphicsDeviceType::Null;
-  m_AdapterDescription.m_Type                                     = xiiGALDeviceAdapterType::Software;
-  m_AdapterDescription.m_sAdapterName                             = "XII Null Graphics Adapter";
+  m_Type = xiiGALGraphicsDeviceType::Null;
+
+  m_AdapterDescription.m_sAdapterName = "XII Null Graphics Adapter";
+  m_AdapterDescription.m_Type         = xiiGALDeviceAdapterType::Software;
+  m_AdapterDescription.m_Vendor       = xiiGALGraphicsAdapterVendor::Unknown;
+
+  m_AdapterDescription.m_uiVendorID         = 12;
+  m_AdapterDescription.m_uiDeviceID         = 22;
+  m_AdapterDescription.m_uiVideoOutputCount = 0;
+
+  // Memory properties
+
+  m_AdapterDescription.m_MemoryProperties.m_uiLocalMemory               = 8423211008;
+  m_AdapterDescription.m_MemoryProperties.m_uiHostVisibleMemory         = 17001539584;
+  m_AdapterDescription.m_MemoryProperties.m_uiUnifiedMemory             = 0;
+  m_AdapterDescription.m_MemoryProperties.m_uiMaxMemoryAllocation       = 0;
+  m_AdapterDescription.m_MemoryProperties.m_UnifiedMemoryCPUAccessFlags = xiiGALCPUAccessFlag::None;
+  m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags  = xiiGALBindFlags::None;
+
+  // Raytracing properties
+
+  m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth        = 31;
+  m_AdapterDescription.m_RayTracingProperties.m_uiMaxRayGenThreads         = 1073741824;
+  m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS      = 16777216;
+  m_AdapterDescription.m_RayTracingProperties.m_uiMaxPrimitivesPerBLAS     = 536870912;
+  m_AdapterDescription.m_RayTracingProperties.m_uiMaxGeometriesPerBLAS     = 16777216;
+  m_AdapterDescription.m_RayTracingProperties.m_uiVertexBufferAlignment    = 1;
+  m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment     = 1;
+  m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment = 16;
+  m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment       = 8;
+  m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment   = 256;
+  m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = 16;
+  m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleSize    = 32;
+  m_AdapterDescription.m_RayTracingProperties.m_uiMaxShaderRecordStride    = 4096;
+  m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupBaseAlignment = 64;
+  m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags            = xiiGALRayTracingCapabilityFlags::StandaloneShaders | xiiGALRayTracingCapabilityFlags::InlineRayTracing | xiiGALRayTracingCapabilityFlags::IndirectRayTracing;
+
+  // Wave operation properties
+
+  m_AdapterDescription.m_WaveOperationProperties.m_uiMinSize             = 32;
+  m_AdapterDescription.m_WaveOperationProperties.m_uiMaxSize             = 32;
+  m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures          = xiiGALWaveFeature::Basic | xiiGALWaveFeature::Vote | xiiGALWaveFeature::Arithmetic | xiiGALWaveFeature::BallOut | xiiGALWaveFeature::Quad;
+  m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages = xiiGALShaderStage::Pixel | xiiGALShaderStage::Compute | xiiGALShaderStage::Amplification | xiiGALShaderStage::Mesh;
+
+  // Buffer properties
+
+  m_AdapterDescription.m_BufferProperties.m_uiConstantBufferAlignment         = 256;
+  m_AdapterDescription.m_BufferProperties.m_uiStructuredBufferOffsetAlignment = 16;
+
+  // Texture properties
+
+  m_AdapterDescription.m_TextureProperties.m_uiMaxTexture1DDimension     = 16384;
+  m_AdapterDescription.m_TextureProperties.m_uiMaxTexture1DArraySlices   = 2048;
+  m_AdapterDescription.m_TextureProperties.m_uiMaxTexture2DDimension     = 16384;
+  m_AdapterDescription.m_TextureProperties.m_uiMaxTexture2DArraySlices   = 2048;
+  m_AdapterDescription.m_TextureProperties.m_uiMaxTexture3DDimension     = 2048;
+  m_AdapterDescription.m_TextureProperties.m_uiMaxTextureCubeDimension   = 16384;
+  m_AdapterDescription.m_TextureProperties.m_bTexture2DMSSupported       = true;
+  m_AdapterDescription.m_TextureProperties.m_bTexture2DMSArraySupported  = true;
+  m_AdapterDescription.m_TextureProperties.m_bTextureViewSupported       = true;
+  m_AdapterDescription.m_TextureProperties.m_bCubeMapArraysSupported     = true;
+  m_AdapterDescription.m_TextureProperties.m_bTextureView2DOn3DSupported = true;
+
+  // Sampler properties
+
+  m_AdapterDescription.m_SamplerProperties.m_bBorderSamplingModeSupported   = true;
+  m_AdapterDescription.m_SamplerProperties.m_bAnisotropicFilteringSupported = true;
+  m_AdapterDescription.m_SamplerProperties.m_bLODBiasSupported              = true;
+
+  // Mesh shader properties
+
+  m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountX     = 65536;
+  m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountY     = 65536;
+  m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountZ     = 65536;
+  m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupTotalCount = 4194304;
+
+  // Shading rate properties
+
+  // Null graphics device does not handle shading rates yet.
+
+  // Compute shader properties
+
+  m_AdapterDescription.m_ComputeShaderProperties.m_uiSharedMemorySize          = 32768;
+  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupInvocations = 1024;
+  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupSizeX       = 1024;
+  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupSizeY       = 1024;
+  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupSizeZ       = 64;
+  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupCountX      = 65535;
+  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupCountY      = 65535;
+  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupCountZ      = 65535;
+
+  // Draw command properties
+
+  m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags        = xiiGALDrawCommandCapabilityFlags::DrawIndirect | xiiGALDrawCommandCapabilityFlags::DrawIndirectFirstInstance | xiiGALDrawCommandCapabilityFlags::NativeMultiDrawIndirect | xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer;
+  m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue        = 4294967295;
+  m_AdapterDescription.m_DrawCommandProperties.m_uiMaxDrawIndirectCount = 4294967295;
+
+  // Sparse resource properties
+
+  // Null graphics device does not handle sparse resources yet.
+
+  // Device features support.
+
+  m_AdapterDescription.m_Features.m_SeparablePrograms             = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_WireframeFill                 = xiiGALDeviceFeatureState::Enabled;
   m_AdapterDescription.m_Features.m_MultithreadedResourceCreation = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_ComputeShaders                = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_GeometryShaders               = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_Tessellation                  = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_MeshShaders                   = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_RayTracing                    = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_OcclusionQueries              = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_BinaryOcclusionQueries        = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_TimestampQueries              = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_PipelineStatisticsQueries     = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_DurationQueries               = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_DepthBiasClamp                = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_DepthClamp                    = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_IndependentBlend              = xiiGALDeviceFeatureState::Enabled;
+  m_AdapterDescription.m_Features.m_NativeFence                   = xiiGALDeviceFeatureState::Enabled;
+
+  // Command queue properties
+
+  // Null graphics device does not handle command queues yet.
 }
 
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_Device_Implementation_DeviceNull);
