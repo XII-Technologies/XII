@@ -93,6 +93,6 @@ function(xii_link_target_assimp TARGET_NAME)
 
   xii_requires_assimp()
 
-  target_link_libraries(${TARGET_NAME} PRIVATE assimp)
+  target_link_libraries(${TARGET_NAME} PRIVATE AssImp)
 
 endfunction()
