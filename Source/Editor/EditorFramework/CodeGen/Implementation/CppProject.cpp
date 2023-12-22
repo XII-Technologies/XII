@@ -450,10 +450,10 @@ void xiiCppProject::UpdatePluginConfig(const xiiCppSettings& cfg)
 
   xiiStringBuilder txt;
   bundles.m_Plugins.Remove(sPluginName);
-  xiiPluginBundle& plugin       = bundles.m_Plugins[sPluginName];
-  plugin.m_bLoadCopy            = true;
-  plugin.m_bSelected            = true;
-  plugin.m_bMissing             = true;
+  xiiPluginBundle& plugin = bundles.m_Plugins[sPluginName];
+  plugin.m_bLoadCopy      = true;
+  plugin.m_bSelected      = true;
+  plugin.m_bMissing       = true;
   plugin.m_LastModificationTime.Invalidate();
   plugin.m_ExclusiveFeatures.PushBack("ProjectPlugin");
   txt.Set("'", cfg.m_sPluginName, "' project plugin");

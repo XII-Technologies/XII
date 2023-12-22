@@ -1,6 +1,5 @@
 #pragma once
 
-#include <Foundation/Basics.h>
 #include <GraphicsCore/AnimationSystem/EditableSkeleton.h>
 #include <GuiFoundation/PropertyGrid/PropertyBaseWidget.moc.h>
 #include <GuiFoundation/Widgets/DoubleSpinBox.moc.h>
@@ -27,5 +26,5 @@ protected:
 
   bool                m_bTemporaryCommand = false;
   QHBoxLayout*        m_pLayout           = nullptr;
-  xiiQtDoubleSpinBox* m_pRotWidget[3];
+  xiiQtDoubleSpinBox* m_pRotWidget[3]     = {};
 };

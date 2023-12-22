@@ -42,7 +42,6 @@ xiiVisualizerAdapterRegistry::~xiiVisualizerAdapterRegistry()
   }
 }
 
-
 void xiiVisualizerAdapterRegistry::CreateAdapters(const xiiDocument* pDocument, const xiiDocumentObject* pObject)
 {
   const auto& attributes = pObject->GetTypeAccessor().GetType()->GetAttributes();

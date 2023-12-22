@@ -226,7 +226,7 @@ public:
 
   /// \brief Similar to DetermineNodeName() but prefers to return the last cached value from scene meta data. This is more efficient, but may give an
   /// outdated result.
-  void QueryCachedNodeName(const xiiDocumentObject* pObject,xiiStringBuilder&        out_sResult,xiiUuid*                 out_pPrefabGuid = nullptr,QIcon*                   out_pIcon       = nullptr) const;
+  void QueryCachedNodeName(const xiiDocumentObject* pObject, xiiStringBuilder& out_sResult, xiiUuid* out_pPrefabGuid = nullptr, QIcon* out_pIcon = nullptr) const;
 
   /// \brief Creates a full "path" to a scene object for display in UIs. No guarantee for uniqueness.
   void GenerateFullDisplayName(const xiiDocumentObject* pRoot, xiiStringBuilder& out_sFullPath) const;

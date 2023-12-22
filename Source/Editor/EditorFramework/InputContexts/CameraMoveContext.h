@@ -2,6 +2,7 @@
 
 #include <EditorFramework/InputContexts/EditorInputContext.h>
 #include <Foundation/Time/Time.h>
+
 #include <QPoint>
 
 class xiiCamera;
@@ -53,7 +54,7 @@ private:
   float m_fSlideForwardsDistance;
   bool  m_bOpenMenuOnMouseUp;
 
-  xiiCamera* m_pCamera;
+  xiiCamera* m_pCamera = nullptr;
 
   bool m_bRun                  = false;
   bool m_bSlowDown             = false;

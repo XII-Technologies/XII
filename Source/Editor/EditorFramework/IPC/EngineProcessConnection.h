@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <EditorFramework/IPC/EditorProcessCommunicationChannel.h>
 #include <Foundation/Application/Config/PluginConfig.h>
 #include <Foundation/Communication/Event.h>
@@ -50,11 +51,7 @@ public:
   /// /brief Same as WaitForMessage but the message must be to a specific document. Therefore,
   ///        pMessageType must be derived from xiiEditorEngineDocumentMsg and the function will only return if the received
   ///        message matches both type, document and is accepted by pCallback.
-  xiiResult WaitForDocumentMessage(
-    const xiiUuid&                                          assetGuid,
-    const xiiRTTI*                                          pMessageType,
-    xiiTime                                                 timeout,
-    xiiProcessCommunicationChannel::WaitForMessageCallback* pCallback = nullptr);
+  xiiResult WaitForDocumentMessage(const xiiUuid& assetGuid, const xiiRTTI* pMessageType, xiiTime timeout, xiiProcessCommunicationChannel::WaitForMessageCallback* pCallback = nullptr);
 
   bool IsEngineSetup() const { return m_bClientIsConfigured; }
 
@@ -74,14 +71,8 @@ public:
       ProcessRestarted,
     };
 
-    Event()
-    {
-      m_Type = Type::Invalid;
-      m_pMsg = nullptr;
-    }
-
-    Type                     m_Type;
-    const xiiProcessMessage* m_pMsg;
+    Type                     m_Type = Type::Invalid;
+    const xiiProcessMessage* m_pMsg = nullptr;
   };
 
   static xiiEvent<const Event&> s_Events;
@@ -120,5 +111,5 @@ private:
   xiiEditorEngineConnection(xiiDocument* pDocument) { m_pDocument = pDocument; }
   ~xiiEditorEngineConnection() = default;
 
-  xiiDocument* m_pDocument;
+  xiiDocument* m_pDocument = nullptr;
 };

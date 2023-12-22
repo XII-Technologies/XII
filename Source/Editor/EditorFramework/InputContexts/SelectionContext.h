@@ -47,7 +47,7 @@ protected:
   void SendMarqueeMsg(QMouseEvent* e, xiiUInt8 uiWhatToDo);
 
   xiiDelegate<void(const xiiDocumentObject*)> m_PickObjectOverride;
-  const xiiCamera*                            m_pCamera;
+  const xiiCamera*                            m_pCamera = nullptr;
   xiiVec2I32                                  m_vViewport;
   xiiEngineGizmoHandle                        m_hMarqueeGizmo;
   xiiVec3                                     m_vMarqueeStartPos;

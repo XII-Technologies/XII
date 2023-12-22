@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <Foundation/Math/Rect.h>
 #include <Foundation/Reflection/Reflection.h>
 
@@ -97,10 +98,10 @@ protected:
   virtual xiiEditorInput DoWheelEvent(QWheelEvent* e) { return xiiEditorInput::MayBeHandledByOthers; }
 
 private:
-  static xiiEditorInputContext* s_pActiveInputContext;
+  static xiiEditorInputContext* s_pActiveInputContext = nullptr;
 
-  xiiQtEngineDocumentWindow* m_pOwnerWindow;
-  xiiQtEngineViewWidget*     m_pOwnerView;
+  xiiQtEngineDocumentWindow* m_pOwnerWindow = nullptr;
+  xiiQtEngineViewWidget*     m_pOwnerView   = nullptr;
   bool                       m_bDisableShortcuts;
   bool                       m_bJustWrappedMouse;
   MouseMode                  m_MouseMode;

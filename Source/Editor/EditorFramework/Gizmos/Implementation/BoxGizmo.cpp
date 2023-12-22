@@ -22,7 +22,7 @@ xiiBoxGizmo::xiiBoxGizmo()
   }
 
   SetVisible(false);
-  SetTransformation(xiiTransform::MakeIdentity());
+  SetTransformation(xiiTransform::IdentityTransform());
 }
 
 void xiiBoxGizmo::OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)
@@ -50,24 +50,24 @@ void xiiBoxGizmo::OnVisibleChanged(bool bVisible)
 void xiiBoxGizmo::OnTransformationChanged(const xiiTransform& transform)
 {
   xiiMat4 scale, rot;
-  scale = xiiMat4::MakeScaling(m_vSize);
+  scale.SetScalingMatrix(m_vSize);
   scale = transform.GetAsMat4() * scale;
 
   m_hCorners.SetTransformation(scale);
 
-  rot = xiiMat4::MakeRotationX(xiiAngle::Degree(90));
+  rot.SetRotationMatrixX(xiiAngle::Degree(90));
   m_Edges[0].SetTransformation(scale * rot);
 
-  rot = xiiMat4::MakeRotationY(xiiAngle::Degree(90));
+  rot.SetRotationMatrixY(xiiAngle::Degree(90));
   m_Faces[0].SetTransformation(scale * rot);
 
   rot.SetIdentity();
   m_Edges[1].SetTransformation(scale * rot);
 
-  rot = xiiMat4::MakeRotationX(xiiAngle::Degree(90));
+  rot.SetRotationMatrixX(xiiAngle::Degree(90));
   m_Faces[1].SetTransformation(scale * rot);
 
-  rot = xiiMat4::MakeRotationZ(xiiAngle::Degree(90));
+  rot.SetRotationMatrixZ(xiiAngle::Degree(90));
   m_Edges[2].SetTransformation(scale * rot);
 
   rot.SetIdentity();

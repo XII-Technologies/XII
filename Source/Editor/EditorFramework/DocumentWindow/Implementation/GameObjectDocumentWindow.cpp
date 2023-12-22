@@ -158,7 +158,7 @@ void xiiQtGameObjectDocumentWindow::HandleFocusOnSelection(const xiiQuerySelecti
 
   // clamp the bbox of the selection to ranges that won't break down due to float precision
   {
-    bbox .SetCenterAndHalfExtents(pMsg->m_vCenter, pMsg->m_vHalfExtents);
+    bbox.SetCenterAndHalfExtents(pMsg->m_vCenter, pMsg->m_vHalfExtents);
     bbox.m_vMin = bbox.m_vMin.CompMax(xiiVec3(-1000.0f));
     bbox.m_vMax = bbox.m_vMax.CompMin(xiiVec3(+1000.0f));
   }

@@ -213,7 +213,7 @@ void xiiSelectionContext::SendMarqueeMsg(QMouseEvent* e, xiiUInt8 uiWhatToDo)
   xiiTransform t;
   t.SetIdentity();
   t.m_vPosition = xiiMath::Lerp(vPosOnNearPlane0, vPosOnNearPlane1, 0.5f);
-  t.m_qRotation = xiiQuat::MakeFromMat3(m_pCamera->GetViewMatrix().GetRotationalPart());
+  t.m_qRotation.SetFromMat3(m_pCamera->GetViewMatrix().GetRotationalPart());
 
   // box coordinates in screen space
   xiiVec3 vBoxPosSS0 = t.m_qRotation * vPosOnNearPlane0;

@@ -14,7 +14,7 @@ xiiSharedPtr<xiiDefaultStateProvider> xiiDynamicDefaultStateProvider::CreateProv
   if (pProp)
   {
     auto* pAttrib = pProp->GetAttributeByType<xiiDynamicDefaultValueAttribute>();
-    if (pAttrib && !xiiStringUtils::IsNullOrEmpty(pAttrib->GetClassProperty()))
+    if (pAttrib && !pAttrib->GetClassProperty().IsEmpty())
     {
       return XII_DEFAULT_NEW(xiiDynamicDefaultStateProvider, pAccessor, pObject, pObject, pObject, pProp, 0);
     }
@@ -55,7 +55,7 @@ xiiDynamicDefaultStateProvider::xiiDynamicDefaultStateProvider(xiiObjectAccessor
   m_pClassSourceProp = m_pRootObject->GetType()->FindPropertyByName(m_pAttrib->GetClassSource());
   XII_ASSERT_DEBUG(m_pClassSourceProp, "The dynamic meta data class source '{0}' does not exist on type '{1}'", m_pAttrib->GetClassSource(), m_pRootObject->GetType()->GetTypeName());
 
-  const bool bHasProperty = !xiiStringUtils::IsNullOrEmpty(m_pAttrib->GetClassProperty());
+  const bool bHasProperty = !m_pAttrib->GetClassProperty().IsEmpty();
   if (!bHasProperty)
   {
     XII_ASSERT_DEBUG(m_pRootProp->GetCategory() == xiiPropertyCategory::Member, "xiiDynamicDefaultValueAttribute must be on a member property if no ClassProperty is given.");
@@ -207,9 +207,8 @@ xiiVariant xiiDynamicDefaultStateProvider::GetDefaultValue(SuperArray superPtr, 
           }
         }
         break;
-        default:
-          XII_ASSERT_NOT_IMPLEMENTED;
-          break;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
       }
     });
 

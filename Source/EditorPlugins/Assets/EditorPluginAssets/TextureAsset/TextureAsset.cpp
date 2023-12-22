@@ -406,7 +406,7 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(const char* s
     file << uiTexFileFormatVersion;
 
     xiiGALTextureFormat::Enum format  = xiiGALTextureFormat::Invalid;
-    bool                       bIsSRGB = false;
+    bool                      bIsSRGB = false;
 
     switch (props->m_RtFormat)
     {

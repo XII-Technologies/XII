@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorFramework/EditTools/GizmoEditTool.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorFramework/EditTools/GizmoEditTool.h>
 #include <EditorFramework/Gizmos/DragToPositionGizmo.h>
 #include <EditorFramework/Gizmos/RotateGizmo.h>
 #include <EditorFramework/Gizmos/ScaleGizmo.h>

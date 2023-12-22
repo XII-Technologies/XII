@@ -30,17 +30,14 @@ xiiQtGameObjectWidget::xiiQtGameObjectWidget(QWidget* pParent, xiiGameObjectDocu
 
   m_pTreeWidget->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
 
-  XII_VERIFY(connect(m_pTreeWidget, SIGNAL(doubleClicked(const QModelIndex&)), this, SLOT(OnItemDoubleClicked(const QModelIndex&))) != nullptr,
-             "signal/slot connection failed");
-  XII_VERIFY(connect(m_pTreeWidget, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(OnRequestContextMenu(QPoint))) != nullptr,
-             "signal/slot connection failed");
+  XII_VERIFY(connect(m_pTreeWidget, SIGNAL(doubleClicked(const QModelIndex&)), this, SLOT(OnItemDoubleClicked(const QModelIndex&))) != nullptr, "signal/slot connection failed");
+  XII_VERIFY(connect(m_pTreeWidget, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(OnRequestContextMenu(QPoint))) != nullptr, "signal/slot connection failed");
 }
 
 xiiQtGameObjectWidget::~xiiQtGameObjectWidget()
 {
   m_pDocument->m_GameObjectEvents.RemoveEventHandler(xiiMakeDelegate(&xiiQtGameObjectWidget::DocumentSceneEventHandler, this));
 }
-
 
 void xiiQtGameObjectWidget::DocumentSceneEventHandler(const xiiGameObjectEvent& e)
 {
@@ -80,14 +77,9 @@ void xiiQtGameObjectWidget::OnFilterTextChanged(const QString& text)
   m_pTreeWidget->GetProxyFilterModel()->SetFilterText(text);
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 
-xiiQtGameObjectPanel::xiiQtGameObjectPanel(
-  QWidget*                                pParent,
-  xiiGameObjectDocument*                  pDocument,
-  const char*                             szContextMenuMapping,
-  std::unique_ptr<xiiQtDocumentTreeModel> pCustomModel) :
+xiiQtGameObjectPanel::xiiQtGameObjectPanel(QWidget* pParent, xiiGameObjectDocument* pDocument, const char* szContextMenuMapping, std::unique_ptr<xiiQtDocumentTreeModel> pCustomModel) :
   xiiQtDocumentPanel(pParent, pDocument)
 {
   setObjectName("ScenegraphPanel");

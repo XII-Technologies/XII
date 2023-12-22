@@ -17,7 +17,7 @@ xiiConeLengthGizmo::xiiConeLengthGizmo()
   m_hConeRadius.ConfigureHandle(this, xiiEngineGizmoHandleType::Cone, xiiColorLinearUB(200, 200, 200, 128), xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop); // this gizmo should be rendered very last so it is always on top
 
   SetVisible(false);
-  SetTransformation(xiiTransform::MakeIdentity());
+  SetTransformation(xiiTransform::IdentityTransform());
 }
 
 void xiiConeLengthGizmo::OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)

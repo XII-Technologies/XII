@@ -48,8 +48,8 @@ protected:
   virtual void OnVisibleChanged(bool bVisible)                        = 0;
   virtual void OnTransformationChanged(const xiiTransform& transform) = 0;
 
-  const xiiCamera* m_pCamera;
-  xiiGizmoHandle*  m_pInteractionGizmoHandle;
+  const xiiCamera* m_pCamera                 = nullptr;
+  xiiGizmoHandle*  m_pInteractionGizmoHandle = nullptr;
   xiiVec3          m_vInteractionPivot;
   xiiVec2I32       m_vViewport;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/GUI/ExposedParameters.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GuiFoundation/PropertyGrid/PropertyBaseWidget.moc.h>

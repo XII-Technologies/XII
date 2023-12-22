@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorEngineProcessFramework/IPC/ProcessCommunicationChannel.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorEngineProcessFramework/IPC/ProcessCommunicationChannel.h>
 
 template <typename T>
 class QList;

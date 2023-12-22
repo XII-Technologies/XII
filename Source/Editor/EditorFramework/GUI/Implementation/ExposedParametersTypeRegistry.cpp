@@ -53,7 +53,6 @@ xiiExposedParametersTypeRegistry::xiiExposedParametersTypeRegistry() :
   xiiPhantomRttiManager::s_Events.AddEventHandler(xiiMakeDelegate(&xiiExposedParametersTypeRegistry::PhantomTypeRegistryEventHandler, this));
 }
 
-
 xiiExposedParametersTypeRegistry::~xiiExposedParametersTypeRegistry()
 {
   xiiAssetCurator::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiExposedParametersTypeRegistry::AssetCuratorEventHandler, this));

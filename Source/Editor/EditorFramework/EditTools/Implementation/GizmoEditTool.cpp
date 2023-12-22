@@ -34,8 +34,7 @@ void xiiGameObjectGizmoEditTool::OnConfigured()
   {
     if (xiiQtGameObjectViewWidget* pViewWidget = qobject_cast<xiiQtGameObjectViewWidget*>(pView))
     {
-      pViewWidget->m_pOrthoGizmoContext->m_GizmoEvents.AddEventHandler(
-        xiiMakeDelegate(&xiiGameObjectGizmoEditTool::TransformationGizmoEventHandler, this));
+      pViewWidget->m_pOrthoGizmoContext->m_GizmoEvents.AddEventHandler(xiiMakeDelegate(&xiiGameObjectGizmoEditTool::TransformationGizmoEventHandler, this));
     }
   }
 }
@@ -75,8 +74,7 @@ void xiiGameObjectGizmoEditTool::UpdateGizmoTransformation()
     const xiiTransform tGlobal = GetDocument()->GetGlobalTransform(LatestSelection);
 
     /// \todo Pivot point
-    const xiiVec3 vPivotPoint =
-      tGlobal.m_qRotation * xiiVec3::MakeZero(); // LatestSelection->GetEditorTypeAccessor().GetValue("Pivot").ConvertTo<xiiVec3>();
+    const xiiVec3 vPivotPoint = tGlobal.m_qRotation * xiiVec3::ZeroVector(); // LatestSelection->GetEditorTypeAccessor().GetValue("Pivot").ConvertTo<xiiVec3>();
 
     xiiTransform mt;
     mt.SetIdentity();
@@ -102,11 +100,9 @@ void xiiGameObjectGizmoEditTool::DocumentWindowEventHandler(const xiiQtDocumentW
     GetDocument()->m_GameObjectEvents.RemoveEventHandler(xiiMakeDelegate(&xiiGameObjectGizmoEditTool::GameObjectEventHandler, this));
     GetDocument()->GetCommandHistory()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiGameObjectGizmoEditTool::CommandHistoryEventHandler, this));
     GetDocument()->GetSelectionManager()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiGameObjectGizmoEditTool::SelectionManagerEventHandler, this));
-    xiiManipulatorManager::GetSingleton()->m_Events.RemoveEventHandler(
-      xiiMakeDelegate(&xiiGameObjectGizmoEditTool::ManipulatorManagerEventHandler, this));
+    xiiManipulatorManager::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiGameObjectGizmoEditTool::ManipulatorManagerEventHandler, this));
     GetWindow()->m_EngineWindowEvent.RemoveEventHandler(xiiMakeDelegate(&xiiGameObjectGizmoEditTool::EngineWindowEventHandler, this));
-    GetDocument()->GetObjectManager()->m_StructureEvents.RemoveEventHandler(
-      xiiMakeDelegate(&xiiGameObjectGizmoEditTool::ObjectStructureEventHandler, this));
+    GetDocument()->GetObjectManager()->m_StructureEvents.RemoveEventHandler(xiiMakeDelegate(&xiiGameObjectGizmoEditTool::ObjectStructureEventHandler, this));
   }
 }
 
@@ -172,8 +168,7 @@ void xiiGameObjectGizmoEditTool::ManipulatorManagerEventHandler(const xiiManipul
     return;
 
   // make sure the gizmo is deactivated when a manipulator becomes active
-  if (e.m_pDocument == GetDocument() && e.m_pManipulator != nullptr && e.m_pSelection != nullptr && !e.m_pSelection->IsEmpty() &&
-      !e.m_bHideManipulators)
+  if (e.m_pDocument == GetDocument() && e.m_pManipulator != nullptr && e.m_pSelection != nullptr && !e.m_pSelection->IsEmpty() && !e.m_bHideManipulators)
   {
     GetDocument()->SetActiveEditTool(nullptr);
   }
@@ -186,8 +181,7 @@ void xiiGameObjectGizmoEditTool::EngineWindowEventHandler(const xiiEngineWindowE
     switch (e.m_Type)
     {
       case xiiEngineWindowEvent::Type::ViewCreated:
-        pViewWidget->m_pOrthoGizmoContext->m_GizmoEvents.AddEventHandler(
-          xiiMakeDelegate(&xiiGameObjectGizmoEditTool::TransformationGizmoEventHandler, this));
+        pViewWidget->m_pOrthoGizmoContext->m_GizmoEvents.AddEventHandler(xiiMakeDelegate(&xiiGameObjectGizmoEditTool::TransformationGizmoEventHandler, this));
         break;
 
       default:

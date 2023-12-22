@@ -27,19 +27,15 @@ xiiQtGameObjectReferencePropertyWidget::xiiQtGameObjectReferencePropertyWidget()
   m_pButton->setCursor(Qt::WhatsThisCursor);
 
   XII_VERIFY(connect(m_pButton, SIGNAL(clicked()), this, SLOT(on_PickObject_clicked())) != nullptr, "signal/slot connection failed");
-  XII_VERIFY(
-    connect(m_pButton, &QWidget::customContextMenuRequested, this, &xiiQtGameObjectReferencePropertyWidget::on_customContextMenuRequested) != nullptr,
-    "signal/slot connection failed");
+  XII_VERIFY(connect(m_pButton, &QWidget::customContextMenuRequested, this, &xiiQtGameObjectReferencePropertyWidget::on_customContextMenuRequested) != nullptr, "signal/slot connection failed");
 
   m_pLayout->addWidget(m_pWidget);
   m_pLayout->addWidget(m_pButton);
 }
 
-
 void xiiQtGameObjectReferencePropertyWidget::OnInit()
 {
-  XII_ASSERT_DEV(m_pProp->GetAttributeByType<xiiGameObjectReferenceAttribute>() != nullptr,
-                 "xiiQtGameObjectReferencePropertyWidget was created without a xiiGameObjectReferenceAttribute!");
+  XII_ASSERT_DEV(m_pProp->GetAttributeByType<xiiGameObjectReferenceAttribute>() != nullptr, "xiiQtGameObjectReferencePropertyWidget was created without a xiiGameObjectReferenceAttribute!");
 }
 
 void xiiQtGameObjectReferencePropertyWidget::InternalSetValue(const xiiVariant& value)
@@ -62,15 +58,11 @@ void xiiQtGameObjectReferencePropertyWidget::FillContextMenu(QMenu& menu)
   if (!menu.isEmpty())
     menu.addSeparator();
 
-  menu.setDefaultAction(
-    menu.addAction(QIcon(":/GuiFoundation/Icons/Cursor.svg"), QLatin1String("Pick Object"), this, SLOT(on_PickObject_clicked())));
-  QAction* pCopyAction =
-    menu.addAction(QIcon(QLatin1String(":/GuiFoundation/Icons/Copy.svg")), QLatin1String("Copy Object Reference"), this, SLOT(OnCopyReference()));
+  menu.setDefaultAction(menu.addAction(QIcon(":/GuiFoundation/Icons/Cursor.svg"), QLatin1String("Pick Object"), this, SLOT(on_PickObject_clicked())));
+  QAction* pCopyAction = menu.addAction(QIcon(QLatin1String(":/GuiFoundation/Icons/Copy.svg")), QLatin1String("Copy Object Reference"), this, SLOT(OnCopyReference()));
   menu.addAction(QIcon(":/GuiFoundation/Icons/Paste.svg"), QLatin1String("Paste Object Reference"), this, SLOT(OnPasteReference()));
-  QAction* pSelectAction =
-    menu.addAction(QIcon(":/GuiFoundation/Icons/Go.svg"), QLatin1String("Select Referenced Object"), this, SLOT(OnSelectReferencedObject()));
-  QAction* pClearAction =
-    menu.addAction(QIcon(":/GuiFoundation/Icons/Delete.svg"), QLatin1String("Clear Reference"), this, SLOT(OnClearReference()));
+  QAction* pSelectAction = menu.addAction(QIcon(":/GuiFoundation/Icons/Go.svg"), QLatin1String("Select Referenced Object"), this, SLOT(OnSelectReferencedObject()));
+  QAction* pClearAction  = menu.addAction(QIcon(":/GuiFoundation/Icons/Delete.svg"), QLatin1String("Clear Reference"), this, SLOT(OnClearReference()));
   XII_IGNORE_UNUSED(pClearAction);
 
   pCopyAction->setEnabled(!m_sInternalValue.isEmpty());
@@ -196,7 +188,6 @@ void xiiQtGameObjectReferencePropertyWidget::on_PickObject_clicked()
     }
   }
 
-
   m_pGrid->GetDocument()->GetSelectionManager()->m_Events.AddEventHandler(dele);
 }
 
@@ -229,10 +220,8 @@ void xiiQtGameObjectReferencePropertyWidget::OnCopyReference()
   QClipboard* clipboard = QApplication::clipboard();
   clipboard->setText(m_sInternalValue);
 
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(
-    xiiFmt("Copied Object Reference: {}", m_sInternalValue.toUtf8().data()), xiiTime::Seconds(5));
+  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Object Reference: {}", m_sInternalValue.toUtf8().data()), xiiTime::Seconds(5));
 }
-
 
 void xiiQtGameObjectReferencePropertyWidget::OnClearReference()
 {

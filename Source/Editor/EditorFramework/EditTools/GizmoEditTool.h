@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorFramework/EditTools/EditTool.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorFramework/EditTools/EditTool.h>
 
 struct xiiEngineWindowEvent;
 struct xiiGameObjectEvent;

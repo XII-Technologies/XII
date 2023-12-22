@@ -7,19 +7,12 @@
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 #include <GuiFoundation/Widgets/GroupBoxBase.moc.h>
 
-xiiExposedParameterCommandAccessor::xiiExposedParameterCommandAccessor(
-  xiiObjectAccessorBase*     pSource,
-  const xiiAbstractProperty* pParameterProp,
-  const xiiAbstractProperty* pParameterSourceProp) :
+xiiExposedParameterCommandAccessor::xiiExposedParameterCommandAccessor(xiiObjectAccessorBase* pSource, const xiiAbstractProperty* pParameterProp, const xiiAbstractProperty* pParameterSourceProp) :
   xiiObjectProxyAccessor(pSource), m_pParameterProp(pParameterProp), m_pParameterSourceProp(pParameterSourceProp)
 {
 }
 
-xiiStatus xiiExposedParameterCommandAccessor::GetValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  xiiVariant&                out_value,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiExposedParameterCommandAccessor::GetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant& out_value, xiiVariant index /*= xiiVariant()*/)
 {
   if (IsExposedProperty(pObject, pProp))
     pProp = m_pParameterProp;
@@ -54,11 +47,7 @@ xiiStatus xiiExposedParameterCommandAccessor::GetValue(
   return res;
 }
 
-xiiStatus xiiExposedParameterCommandAccessor::SetValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  const xiiVariant&          newValue,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiExposedParameterCommandAccessor::SetValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, const xiiVariant& newValue, xiiVariant index /*= xiiVariant()*/)
 {
   if (IsExposedProperty(pObject, pProp))
     pProp = m_pParameterProp;
@@ -73,10 +62,7 @@ xiiStatus xiiExposedParameterCommandAccessor::SetValue(
   return res;
 }
 
-xiiStatus xiiExposedParameterCommandAccessor::RemoveValue(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProp,
-  xiiVariant                 index /*= xiiVariant()*/)
+xiiStatus xiiExposedParameterCommandAccessor::RemoveValue(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiVariant index /*= xiiVariant()*/)
 {
   xiiStatus res = xiiObjectProxyAccessor::RemoveValue(pObject, pProp, index);
   if (res.Failed() && m_pParameterProp == pProp && index.IsA<xiiString>())
@@ -102,10 +88,7 @@ xiiStatus xiiExposedParameterCommandAccessor::GetCount(const xiiDocumentObject* 
   return xiiObjectProxyAccessor::GetCount(pObject, pProp, out_iCount);
 }
 
-xiiStatus xiiExposedParameterCommandAccessor::GetKeys(
-  const xiiDocumentObject*     pObject,
-  const xiiAbstractProperty*   pProp,
-  xiiDynamicArray<xiiVariant>& out_keys)
+xiiStatus xiiExposedParameterCommandAccessor::GetKeys(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiDynamicArray<xiiVariant>& out_keys)
 {
   if (m_pParameterProp == pProp)
   {
@@ -131,10 +114,7 @@ xiiStatus xiiExposedParameterCommandAccessor::GetKeys(
   return xiiObjectProxyAccessor::GetKeys(pObject, pProp, out_keys);
 }
 
-xiiStatus xiiExposedParameterCommandAccessor::GetValues(
-  const xiiDocumentObject*     pObject,
-  const xiiAbstractProperty*   pProp,
-  xiiDynamicArray<xiiVariant>& out_values)
+xiiStatus xiiExposedParameterCommandAccessor::GetValues(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProp, xiiDynamicArray<xiiVariant>& out_values)
 {
   if (m_pParameterProp == pProp)
   {
@@ -149,7 +129,6 @@ xiiStatus xiiExposedParameterCommandAccessor::GetValues(
   }
   return xiiObjectProxyAccessor::GetValues(pObject, pProp, out_values);
 }
-
 
 const xiiExposedParameters* xiiExposedParameterCommandAccessor::GetExposedParams(const xiiDocumentObject* pObject)
 {
@@ -168,7 +147,6 @@ const xiiExposedParameters* xiiExposedParameterCommandAccessor::GetExposedParams
   return nullptr;
 }
 
-
 const xiiExposedParameter* xiiExposedParameterCommandAccessor::GetExposedParam(const xiiDocumentObject* pObject, const char* szParamName)
 {
   if (const xiiExposedParameters* pParams = GetExposedParams(pObject))
@@ -177,7 +155,6 @@ const xiiExposedParameter* xiiExposedParameterCommandAccessor::GetExposedParam(c
   }
   return nullptr;
 }
-
 
 const xiiRTTI* xiiExposedParameterCommandAccessor::GetExposedParamsType(const xiiDocumentObject* pObject)
 {
@@ -298,8 +275,7 @@ void xiiQtExposedParametersPropertyWidget::OnInit()
   XII_ASSERT_DEV(pAttrib, "xiiQtExposedParametersPropertyWidget was created for a property that does not have the xiiExposedParametersAttribute.");
   m_sExposedParamProperty                         = pAttrib->GetParametersSource();
   const xiiAbstractProperty* pParameterSourceProp = m_pType->FindPropertyByName(m_sExposedParamProperty);
-  XII_ASSERT_DEV(
-    pParameterSourceProp, "The exposed parameter source '{0}' does not exist on type '{1}'", m_sExposedParamProperty, m_pType->GetTypeName());
+  XII_ASSERT_DEV(pParameterSourceProp, "The exposed parameter source '{0}' does not exist on type '{1}'", m_sExposedParamProperty, m_pType->GetTypeName());
   m_pSourceObjectAccessor = m_pObjectAccessor;
   m_pProxy                = XII_DEFAULT_NEW(xiiExposedParameterCommandAccessor, m_pSourceObjectAccessor, m_pProp, pParameterSourceProp);
   m_pObjectAccessor       = m_pProxy.Borrow();
@@ -318,8 +294,7 @@ void xiiQtExposedParametersPropertyWidget::OnInit()
     QMenu* pFixMeMenu = new QMenu(m_pFixMeButton);
     {
       m_pRemoveUnusedAction = pFixMeMenu->addAction(QStringLiteral("Remove unused keys"));
-      m_pRemoveUnusedAction->setToolTip(
-        QStringLiteral("The map contains keys that are no longer used by the asset's exposed parameters and thus can be removed."));
+      m_pRemoveUnusedAction->setToolTip(QStringLiteral("The map contains keys that are no longer used by the asset's exposed parameters and thus can be removed."));
       connect(m_pRemoveUnusedAction, &QAction::triggered, this, [this](bool bChecked) { RemoveUnusedKeys(false); });
     }
     {
@@ -337,7 +312,6 @@ xiiQtPropertyWidget* xiiQtExposedParametersPropertyWidget::CreateWidget(xiiUInt3
 {
   return new xiiQtExposedParameterPropertyWidget();
 }
-
 
 void xiiQtExposedParametersPropertyWidget::UpdateElement(xiiUInt32 index)
 {

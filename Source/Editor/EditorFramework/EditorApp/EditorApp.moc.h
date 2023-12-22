@@ -293,7 +293,7 @@ private:
   QApplication*                     m_pQtApplication = nullptr;
   xiiLongOpControllerManager        m_LongOpControllerManager;
   xiiEditorEngineProcessConnection* m_pEngineViewProcess = nullptr;
-  QTimer*                           m_pTimer = nullptr;
+  QTimer*                           m_pTimer             = nullptr;
 
   QSplashScreen* m_pSplashScreen = nullptr;
 

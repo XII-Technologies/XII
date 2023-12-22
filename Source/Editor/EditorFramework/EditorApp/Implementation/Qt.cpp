@@ -56,57 +56,34 @@ void xiiQtEditorApp::SetStyleSheet()
   palette.setBrush(QPalette::NoRole, NoRoleBrush);
 
   palette.setColor(QPalette::WindowText, QColor(200, 200, 200, 255));
-  palette.setColor(QPalette::Button, QColor(0, 0, 0, 255)); // buttons, toolbuttons, dashboard background
-  palette.setColor(QPalette::Light, QColor(60, 60, 60, 255)); // lines between tabs, inactive tab gradient
-  palette.setColor(QPalette::Midlight, QColor(59, 59, 59, 255));
-  palette.setColor(QPalette::Dark, QColor(45, 45, 45, 255)); // line below active window highlight
-  palette.setColor(QPalette::Mid, QColor(45, 45, 45, 255)); // color of the box around component properties (collapsible group box)
-  palette.setColor(QPalette::Text, QColor(200, 200, 200, 255)); // scene graph, values in spin boxes, checkmarks
+  palette.setColor(QPalette::Button, QColor(0, 0, 0, 255));      // buttons, toolbuttons, dashboard background
+  palette.setColor(QPalette::Light, QColor(60, 60, 60, 255));    // lines between tabs, inactive tab gradient
+  palette.setColor(QPalette::Midlight, QColor(59, 59, 59, 255)); // unused ?
+  palette.setColor(QPalette::Dark, QColor(45, 45, 45, 255));     // line below active window highlight
+  palette.setColor(QPalette::Mid, QColor(45, 45, 45, 255));      // color of the box around component properties (collapsible group box)
+  palette.setColor(QPalette::Text, QColor(200, 200, 200, 255));  // scene graph, values in spin boxes, checkmarks
   palette.setColor(QPalette::BrightText, QColor(37, 37, 37, 255));
-  palette.setColor(QPalette::ButtonText, QColor(200, 200, 200, 255));
-  palette.setColor(QPalette::Base, QColor(20, 20, 20, 255));
-  palette.setColor(QPalette::AlternateBase, QColor(20, 20, 20, 255));
-  palette.setColor(QPalette::Window, QColor(30, 30, 30, 255));
-  palette.setColor(QPalette::Shadow, QColor(0, 0, 0, 255));
-  palette.setColor(QPalette::Highlight, QColor(103, 141, 178, 255));
-  palette.setColor(QPalette::HighlightedText, QColor(255, 255, 255, 255));
-  palette.setColor(QPalette::Link, QColor(0, 0, 238, 255));
-  palette.setColor(QPalette::LinkVisited, QColor(82, 24, 139, 255));
+  palette.setColor(QPalette::ButtonText, QColor(200, 200, 200, 255));      // // menus, comboboxes, headers
+  palette.setColor(QPalette::Base, QColor(20, 20, 20, 255));               // background inside complex windows (scenegraph)
+  palette.setColor(QPalette::AlternateBase, QColor(20, 20, 20, 255));      // second base color, mainly used for alternate row colors
+  palette.setColor(QPalette::Window, QColor(30, 30, 30, 255));             // window borders, toolbars
+  palette.setColor(QPalette::Shadow, QColor(0, 0, 0, 255));                // background color for arrays in property grids
+  palette.setColor(QPalette::Highlight, QColor(103, 141, 178, 255));       // selected items
+  palette.setColor(QPalette::HighlightedText, QColor(255, 255, 255, 255)); // text of selected items
+  palette.setColor(QPalette::Link, QColor(0, 0, 238, 255));                // manipulator links in property grid
+  palette.setColor(QPalette::LinkVisited, QColor(82, 24, 139, 255));       // manipulator links in property grid when active
   QBrush NoRoleBrush(QColor(0, 0, 0, 255), Qt::NoBrush);
   palette.setBrush(QPalette::NoRole, NoRoleBrush);
-  palette.setColor(QPalette::ToolTipBase, QColor(255, 255, 220, 255));
-  palette.setColor(QPalette::ToolTipText, QColor(0, 0, 0, 255));
-  palette.setColor(QPalette::PlaceholderText, QColor(200, 200, 200, 255).darker());
+  palette.setColor(QPalette::ToolTipBase, QColor(255, 255, 220, 255));              // unused / not working ?
+  palette.setColor(QPalette::ToolTipText, QColor(0, 0, 0, 255));                    // unused / not working ?
+  palette.setColor(QPalette::PlaceholderText, QColor(200, 200, 200, 255).darker()); // text in search fields
 
   palette.setColor(QPalette::Disabled, QPalette::WindowText, QColor(128, 128, 128, 255)); // labels, tabs, property grid
   palette.setColor(QPalette::Disabled, QPalette::Button, QColor(40, 40, 40, 255));
   palette.setColor(QPalette::Disabled, QPalette::Text, QColor(105, 105, 105, 255));
-  palette.setColor(QPalette::Disabled, QPalette::BrightText, QColor(255, 255, 255, 255));
+  palette.setColor(QPalette::Disabled, QPalette::BrightText, QColor(255, 255, 255, 255)); // unused ?
   palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(128, 128, 128, 255));
   palette.setColor(QPalette::Disabled, QPalette::Highlight, QColor(86, 117, 148, 255));
-
-  palette.setColor(QPalette::ButtonText, QColor(204, 204, 204));           // menus, comboboxes, headers
-  palette.setColor(QPalette::Base, QColor(24, 24, 24));                    // background inside complex windows (scenegraph)
-  palette.setColor(QPalette::Window, QColor(42, 42, 42));                  // window borders, toolbars
-  palette.setColor(QPalette::Shadow, QColor(70, 70, 70));                  // background color for arrays in property grids
-  palette.setColor(QPalette::Highlight, xiiToQtColor(highlightColor));     // selected items
-  palette.setColor(QPalette::HighlightedText, QColor(0, 0, 0));            // text of selected items
-  palette.setColor(QPalette::Link, QColor(104, 205, 254));                 // manipulator links in property grid
-  palette.setColor(QPalette::LinkVisited, xiiToQtColor(linkVisitedColor)); // manipulator links in property grid when active
-  palette.setColor(QPalette::AlternateBase, QColor(49, 49, 49));           // second base color, mainly used for alternate row colors
-  palette.setColor(QPalette::PlaceholderText, QColor(142, 142, 142));      // text in search fields
-
-  palette.setColor(QPalette::Midlight, QColor(58, 58, 58));       // unused ?
-  palette.setColor(QPalette::BrightText, QColor(221, 221, 221));  // unused ?
-  palette.setColor(QPalette::ToolTipBase, QColor(52, 52, 52));    // unused / not working ?
-  palette.setColor(QPalette::ToolTipText, QColor(221, 221, 221)); // unused / not working ?
-
-  palette.setColor(QPalette::Disabled, QPalette::Window, QColor(25, 25, 25));
-  palette.setColor(QPalette::Disabled, QPalette::WindowText, QColor(128, 128, 128));
-  palette.setColor(QPalette::Disabled, QPalette::Button, QColor(35, 35, 35));
-  palette.setColor(QPalette::Disabled, QPalette::Text, QColor(105, 105, 105));
-  palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(128, 128, 128));
-  palette.setColor(QPalette::Disabled, QPalette::Highlight, xiiToQtColor(highlightColorDisabled));
 
   if (false)
   {

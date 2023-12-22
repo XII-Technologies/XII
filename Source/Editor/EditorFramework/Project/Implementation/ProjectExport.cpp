@@ -1,3 +1,5 @@
+#include <EditorFramework/EditorFrameworkPCH.h>
+
 #include <Core/Configuration/PlatformProfile.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>

@@ -12,7 +12,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGameObjectContextDocument, 2, xiiRTTINoAlloc
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGameObjectContextDocument::xiiGameObjectContextDocument(xiiStringView               sDocumentPath,xiiDocumentObjectManager*   pObjectManager,xiiAssetDocEngineConnection engineConnectionType) :xiiGameObjectDocument(sDocumentPath, pObjectManager, engineConnectionType)
+xiiGameObjectContextDocument::xiiGameObjectContextDocument(xiiStringView sDocumentPath, xiiDocumentObjectManager* pObjectManager, xiiAssetDocEngineConnection engineConnectionType) :
+  xiiGameObjectDocument(sDocumentPath, pObjectManager, engineConnectionType)
 {
 }
 

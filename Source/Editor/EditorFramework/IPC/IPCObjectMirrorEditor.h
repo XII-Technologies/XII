@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <ToolsFoundation/Object/DocumentObjectMirror.h>
 
@@ -21,5 +22,5 @@ public:
 private:
   void SendOp(xiiObjectChange& change);
 
-  xiiEditorEngineConnection* m_pIPC;
+  xiiEditorEngineConnection* m_pIPC = nullptr;
 };

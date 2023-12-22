@@ -26,8 +26,7 @@ xiiQtAssetPropertyWidget::xiiQtAssetPropertyWidget() :
   setFocusProxy(m_pWidget);
 
   XII_VERIFY(connect(m_pWidget, SIGNAL(editingFinished()), this, SLOT(on_TextFinished_triggered())) != nullptr, "signal/slot connection failed");
-  XII_VERIFY(connect(m_pWidget, SIGNAL(textChanged(const QString&)), this, SLOT(on_TextChanged_triggered(const QString&))) != nullptr,
-             "signal/slot connection failed");
+  XII_VERIFY(connect(m_pWidget, SIGNAL(textChanged(const QString&)), this, SLOT(on_TextChanged_triggered(const QString&))) != nullptr, "signal/slot connection failed");
 
   m_pButton = new QToolButton(this);
   m_pButton->setText(QStringLiteral("... "));
@@ -44,8 +43,7 @@ xiiQtAssetPropertyWidget::xiiQtAssetPropertyWidget() :
   m_pLayout->addWidget(m_pButton);
 
   XII_VERIFY(connect(xiiQtImageCache::GetSingleton(), &xiiQtImageCache::ImageLoaded, this, &xiiQtAssetPropertyWidget::ThumbnailLoaded) != nullptr, "signal/slot connection failed");
-  XII_VERIFY(
-    connect(xiiQtImageCache::GetSingleton(), &xiiQtImageCache::ImageInvalidated, this, &xiiQtAssetPropertyWidget::ThumbnailInvalidated) != nullptr, "signal/slot connection failed");
+  XII_VERIFY(connect(xiiQtImageCache::GetSingleton(), &xiiQtImageCache::ImageInvalidated, this, &xiiQtAssetPropertyWidget::ThumbnailInvalidated) != nullptr, "signal/slot connection failed");
 }
 
 bool xiiQtAssetPropertyWidget::IsValidAssetType(const char* szAssetReference) const
@@ -77,12 +75,12 @@ bool xiiQtAssetPropertyWidget::IsValidAssetType(const char* szAssetReference) co
 
   const xiiAssetBrowserAttribute* pAssetAttribute = m_pProp->GetAttributeByType<xiiAssetBrowserAttribute>();
 
-  if (xiiStringUtils::IsEqual(pAssetAttribute->GetTypeFilter(), ";;")) // empty type list -> allows everything
+  if (pAssetAttribute->GetTypeFilter() == ";;") // empty type list -> allows everything
     return true;
 
   xiiStringBuilder sTypeFilter(";", pAsset->m_Data.m_sSubAssetsDocumentTypeName, ";");
 
-  if (xiiStringUtils::FindSubString_NoCase(pAssetAttribute->GetTypeFilter(), sTypeFilter) != nullptr)
+  if (pAssetAttribute->GetTypeFilter().FindSubString_NoCase(sTypeFilter) != nullptr)
     return true;
 
   if (const xiiDocumentTypeDescriptor* pDesc = xiiDocumentManager::GetDescriptorForDocumentType(pAsset->m_Data.m_sSubAssetsDocumentTypeName))
@@ -91,7 +89,7 @@ bool xiiQtAssetPropertyWidget::IsValidAssetType(const char* szAssetReference) co
     {
       sTypeFilter.Set(";", comp, ";");
 
-      if (xiiStringUtils::FindSubString_NoCase(pAssetAttribute->GetTypeFilter(), sTypeFilter) != nullptr)
+      if (pAssetAttribute->GetTypeFilter().FindSubString_NoCase(sTypeFilter) != nullptr)
         return true;
     }
   }
@@ -120,8 +118,7 @@ void xiiQtAssetPropertyWidget::UpdateThumbnail(const xiiUuid& guid, const char* 
     xiiStringBuilder                sTypeFilter     = pAssetAttribute->GetTypeFilter();
     sTypeFilter.Trim(" ;");
 
-    pThumbnailPixmap = xiiQtImageCache::GetSingleton()->QueryPixmapForType(
-      sTypeFilter, szThumbnailPath, QModelIndex(), QVariant(uiUserData1), QVariant(uiUserData2), &m_uiThumbnailID);
+    pThumbnailPixmap = xiiQtImageCache::GetSingleton()->QueryPixmapForType(sTypeFilter, szThumbnailPath, QModelIndex(), QVariant(uiUserData1), QVariant(uiUserData2), &m_uiThumbnailID);
   }
 
   if (pThumbnailPixmap)
@@ -258,7 +255,6 @@ void xiiQtAssetPropertyWidget::on_TextFinished_triggered()
 
   BroadcastValueChanged(sText.GetData());
 }
-
 
 void xiiQtAssetPropertyWidget::on_TextChanged_triggered(const QString& value)
 {
@@ -439,15 +435,11 @@ void xiiQtAssetPropertyWidget::OnCreateNewAsset()
     }
   }
 
-
   xiiStringBuilder sOutput = sPath;
   {
 
     QString sStartDir = sOutput.GetFileDirectory().GetData(tmp);
-    sOutput           = QFileDialog::getSaveFileName(
-                QApplication::activeWindow(), "Create Asset", sStartDir, sFilter.GetData(), &sSelectedFilter, QFileDialog::Option::DontResolveSymlinks)
-                .toUtf8()
-                .data();
+    sOutput           = QFileDialog::getSaveFileName(QApplication::activeWindow(), "Create Asset", sStartDir, sFilter.GetData(), &sSelectedFilter, QFileDialog::Option::DontResolveSymlinks).toUtf8().data();
 
     if (sOutput.IsEmpty())
       return;
@@ -463,8 +455,7 @@ void xiiQtAssetPropertyWidget::OnCreateNewAsset()
     {
       xiiDocument* pDoc = nullptr;
 
-      const xiiStatus res = ttu.pAssetMan->CreateDocument(
-        ttu.pDocType->m_sDocumentTypeName, sOutput, pDoc, xiiDocumentFlags::RequestWindow | xiiDocumentFlags::AddToRecentFilesList);
+      const xiiStatus res = ttu.pAssetMan->CreateDocument(ttu.pDocType->m_sDocumentTypeName, sOutput, pDoc, xiiDocumentFlags::RequestWindow | xiiDocumentFlags::AddToRecentFilesList);
 
       xiiQtUiServices::GetSingleton()->MessageBoxStatus(res, "Creating the document failed.");
 

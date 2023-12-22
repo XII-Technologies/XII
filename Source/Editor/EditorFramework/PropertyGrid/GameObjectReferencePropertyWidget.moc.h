@@ -3,6 +3,7 @@
 #include <EditorFramework/EditorFrameworkDLL.h>
 
 #include <GuiFoundation/PropertyGrid/Implementation/PropertyWidget.moc.h>
+
 #include <QLineEdit>
 #include <QModelIndex>
 

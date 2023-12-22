@@ -7,7 +7,6 @@
 
 xiiQtCuratorControl::xiiQtCuratorControl(QWidget* pParent) :
   QWidget(pParent)
-
 {
   QHBoxLayout* pLayout = new QHBoxLayout();
   setLayout(pLayout);

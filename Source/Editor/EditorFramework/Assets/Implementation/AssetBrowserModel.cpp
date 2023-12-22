@@ -114,8 +114,8 @@ xiiQtAssetBrowserModel::xiiQtAssetBrowserModel(QObject* pParent, xiiQtAssetFilte
   resetModel();
   SetIconMode(true);
 
-  XII_VERIFY(connect(xiiQtImageCache::GetSingleton(), &xiiQtImageCache::ImageLoaded, this, &xiiQtAssetBrowserModel::ThumbnailLoaded) != nullptr,"signal/slot connection failed");
-  XII_VERIFY(connect(xiiQtImageCache::GetSingleton(), &xiiQtImageCache::ImageInvalidated, this, &xiiQtAssetBrowserModel::ThumbnailInvalidated) != nullptr,"signal/slot connection failed");
+  XII_VERIFY(connect(xiiQtImageCache::GetSingleton(), &xiiQtImageCache::ImageLoaded, this, &xiiQtAssetBrowserModel::ThumbnailLoaded) != nullptr, "signal/slot connection failed");
+  XII_VERIFY(connect(xiiQtImageCache::GetSingleton(), &xiiQtImageCache::ImageInvalidated, this, &xiiQtAssetBrowserModel::ThumbnailInvalidated) != nullptr, "signal/slot connection failed");
 
   xiiFileSystemModel::GetSingleton()->m_FileChangedEvents.AddEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserModel::FileSystemFileEventHandler, this));
   xiiFileSystemModel::GetSingleton()->m_FolderChangedEvents.AddEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserModel::FileSystemFolderEventHandler, this));

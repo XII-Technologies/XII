@@ -32,7 +32,7 @@ protected:
   xiiUInt32 m_uiLUTSize = 0;
   xiiString m_sTitle    = "<UNTITLED>";
 
-  xiiVec3 m_vDomainMin = xiiVec3::MakeZero();
+  xiiVec3 m_vDomainMin = xiiVec3::ZeroVector();
   xiiVec3 m_vDomainMax = xiiVec3(1.0f);
 
   xiiDynamicArray<xiiVec3> m_LUTValues;

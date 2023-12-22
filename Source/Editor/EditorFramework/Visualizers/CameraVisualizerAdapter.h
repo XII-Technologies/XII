@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorFramework/Visualizers/VisualizerAdapter.h>
 
 class xiiCameraVisualizerAdapter : public xiiVisualizerAdapter

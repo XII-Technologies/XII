@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/Gizmos/NonUniformBoxGizmo.h>
 #include <EditorFramework/Manipulators/ManipulatorAdapter.h>
 

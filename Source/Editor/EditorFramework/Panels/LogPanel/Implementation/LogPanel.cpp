@@ -3,7 +3,6 @@
 #include <EditorFramework/Panels/LogPanel/LogPanel.moc.h>
 #include <GuiFoundation/Models/LogModel.moc.h>
 
-
 XII_IMPLEMENT_SINGLETON(xiiQtLogPanel);
 
 xiiQtLogPanel::xiiQtLogPanel() :
@@ -53,9 +52,8 @@ xiiQtLogPanel::~xiiQtLogPanel()
 
 void xiiQtLogPanel::OnNewWarningsOrErrors(const char* szText, bool bError)
 {
-  m_uiKnownNumWarnings = EditorLog->GetLog()->GetNumSeriousWarnings() + EditorLog->GetLog()->GetNumWarnings() +
-    EngineLog->GetLog()->GetNumSeriousWarnings() + EngineLog->GetLog()->GetNumWarnings();
-  m_uiKnownNumErrors = EditorLog->GetLog()->GetNumErrors() + EngineLog->GetLog()->GetNumErrors();
+  m_uiKnownNumWarnings = EditorLog->GetLog()->GetNumSeriousWarnings() + EditorLog->GetLog()->GetNumWarnings() + EngineLog->GetLog()->GetNumSeriousWarnings() + EngineLog->GetLog()->GetNumWarnings();
+  m_uiKnownNumErrors   = EditorLog->GetLog()->GetNumErrors() + EngineLog->GetLog()->GetNumErrors();
 
   xiiQtUiServices::Event::TextType type = xiiQtUiServices::Event::Info;
 
@@ -97,8 +95,7 @@ void xiiQtLogPanel::OnNewWarningsOrErrors(const char* szText, bool bError)
 
   if (!xiiStringUtils::IsNullOrEmpty(szText))
   {
-    xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(
-      xiiFmt("{}: {}", bError ? "Error" : "Warning", szText), xiiTime::Seconds(10));
+    xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("{}: {}", bError ? "Error" : "Warning", szText), xiiTime::Seconds(10));
   }
 }
 

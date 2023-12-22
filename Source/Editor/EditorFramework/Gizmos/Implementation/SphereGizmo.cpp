@@ -20,7 +20,7 @@ xiiSphereGizmo::xiiSphereGizmo()
   m_hOuterSphere.ConfigureHandle(this, xiiEngineGizmoHandleType::Sphere, xiiColorLinearUB(200, 200, 200, 128), xiiGizmoFlags::Pickable);
 
   SetVisible(false);
-  SetTransformation(xiiTransform::MakeIdentity());
+  SetTransformation(xiiTransform::IdentityTransform());
 }
 
 void xiiSphereGizmo::OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)

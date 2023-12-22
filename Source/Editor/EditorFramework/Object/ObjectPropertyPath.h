@@ -43,9 +43,5 @@ public:
   static const xiiDocumentObject* FindParentNodeComponent(const xiiDocumentObject* pObject);
 
 private:
-  static xiiStatus PrependProperty(
-    const xiiDocumentObject*   pObject,
-    const xiiAbstractProperty* pProperty,
-    xiiVariant                 index,
-    xiiStringBuilder&          out_sPropertyPath);
+  static xiiStatus PrependProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProperty, xiiVariant index, xiiStringBuilder& out_sPropertyPath);
 };

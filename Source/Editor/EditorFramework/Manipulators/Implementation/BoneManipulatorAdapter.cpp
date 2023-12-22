@@ -300,5 +300,5 @@ xiiMat4 xiiBoneManipulatorAdapter::ComputeParentTransform(xiiUInt32 uiBone) cons
     }
   }
 
-  return xiiMat4::MakeIdentity();
+  return xiiMat4::IdentityMatrix();
 }

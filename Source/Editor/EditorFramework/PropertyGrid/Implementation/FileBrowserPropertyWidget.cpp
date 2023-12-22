@@ -6,7 +6,6 @@
 #include <EditorFramework/PropertyGrid/QtFileLineEdit.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 
-
 xiiQtFilePropertyWidget::xiiQtFilePropertyWidget() :
   xiiQtStandardPropertyWidget()
 {
@@ -111,7 +110,6 @@ void xiiQtFilePropertyWidget::OnOpenExplorer()
 
   xiiQtUiServices::OpenInExplorer(sPath, true);
 }
-
 
 void xiiQtFilePropertyWidget::OnCustomAction()
 {

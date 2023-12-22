@@ -4,8 +4,9 @@
 #include <Foundation/Serialization/ReflectionSerializer.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
-#include <QBoxLayout>
 #include <ToolsFoundation/Object/ObjectAccessorBase.h>
+
+#include <QBoxLayout>
 
 xiiQtExposedBoneWidget::xiiQtExposedBoneWidget()
 {
@@ -72,7 +73,7 @@ void xiiQtExposedBoneWidget::SlotValueChanged()
     xiiAngle y = xiiAngle::Degree(m_pRotWidget[1]->value());
     xiiAngle z = xiiAngle::Degree(m_pRotWidget[2]->value());
 
-    pCopy->m_Transform.m_qRotation = xiiQuat::MakeFromEulerAngles(x, y, z);
+    pCopy->m_Transform.m_qRotation.SetFromEulerAngles(x, y, z);
   }
 
   xiiVariant newValue;

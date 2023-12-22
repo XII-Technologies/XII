@@ -1,8 +1,8 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/IPC/EngineProcessConnection.h>
-#include <Foundation/Basics.h>
 #include <Foundation/Containers/Map.h>
 #include <GuiFoundation/DockPanels/ApplicationPanel.moc.h>
 #include <GuiFoundation/Widgets/CVarWidget.moc.h>

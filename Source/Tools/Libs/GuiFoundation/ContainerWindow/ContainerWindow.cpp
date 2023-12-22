@@ -60,7 +60,7 @@ xiiQtContainerWindow::xiiQtContainerWindow()
 
   s_pContainerWindow = this;
 
-  setObjectName("XII Editor");
+  setObjectName("xiiEditor");
   setWindowIcon(QIcon(QStringLiteral(":/GuiFoundation/XII-Logo.svg")));
 
   xiiQtDocumentWindow::s_Events.AddEventHandler(xiiMakeDelegate(&xiiQtContainerWindow::DocumentWindowEventHandler, this));
@@ -419,7 +419,6 @@ void xiiQtContainerWindow::AddDocumentWindow(xiiQtDocumentWindow* pDocWindow)
   connect(dock, &ads::CDockWidget::closed, this, &xiiQtContainerWindow::SlotDocumentTabCloseRequested);
   connect(dock->tabWidget(), &QWidget::customContextMenuRequested, this, &xiiQtContainerWindow::SlotTabsContextMenuRequested);
   connect(dock, &ads::CDockWidget::topLevelChanged, this, &xiiQtContainerWindow::SlotDockWidgetFloatingChanged);
-
 
   pDocWindow->m_pContainerWindow = this;
 

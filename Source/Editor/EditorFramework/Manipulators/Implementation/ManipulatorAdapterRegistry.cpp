@@ -34,8 +34,7 @@ xiiManipulatorAdapterRegistry::xiiManipulatorAdapterRegistry() :
 
 xiiManipulatorAdapterRegistry::~xiiManipulatorAdapterRegistry()
 {
-  xiiManipulatorManager::GetSingleton()->m_Events.RemoveEventHandler(
-    xiiMakeDelegate(&xiiManipulatorAdapterRegistry::ManipulatorManagerEventHandler, this));
+  xiiManipulatorManager::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiManipulatorAdapterRegistry::ManipulatorManagerEventHandler, this));
 
   for (auto it = m_DocumentAdapters.GetIterator(); it.IsValid(); ++it)
   {

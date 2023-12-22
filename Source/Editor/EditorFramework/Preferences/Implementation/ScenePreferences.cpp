@@ -25,7 +25,6 @@ void xiiScenePreferencesUser::SetCameraSpeed(xiiInt32 value)
 {
   m_iCameraSpeed = xiiMath::Clamp(value, 0, 24);
 
-  // Kiff, inform the men!
   TriggerPreferencesChangedEvent();
 }
 

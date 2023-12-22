@@ -18,10 +18,8 @@ xiiQtGameObjectAdapter::xiiQtGameObjectAdapter(xiiDocumentObjectManager* pObject
   if (!m_pGameObjectMetaData)
     m_pGameObjectMetaData = m_pGameObjectDocument->m_GameObjectMetaData.Borrow();
 
-  m_GameObjectMetaDataSubscription = m_pGameObjectMetaData->m_DataModifiedEvent.AddEventHandler(
-    xiiMakeDelegate(&xiiQtGameObjectAdapter::GameObjectMetaDataEventHandler, this));
-  m_DocumentObjectMetaDataSubscription = m_pObjectMetaData->m_DataModifiedEvent.AddEventHandler(
-    xiiMakeDelegate(&xiiQtGameObjectAdapter::DocumentObjectMetaDataEventHandler, this));
+  m_GameObjectMetaDataSubscription     = m_pGameObjectMetaData->m_DataModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtGameObjectAdapter::GameObjectMetaDataEventHandler, this));
+  m_DocumentObjectMetaDataSubscription = m_pObjectMetaData->m_DataModifiedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtGameObjectAdapter::DocumentObjectMetaDataEventHandler, this));
 }
 
 xiiQtGameObjectAdapter::~xiiQtGameObjectAdapter()

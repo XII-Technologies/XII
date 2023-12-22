@@ -5,8 +5,9 @@
 #include <EditorFramework/GUI/RawDocumentTreeModel.moc.h>
 #include <GuiFoundation/Widgets/ItemView.moc.h>
 #include <QSortFilterProxyModel>
-#include <QTreeView>
 #include <ToolsFoundation/Selection/SelectionManager.h>
+
+#include <QTreeView>
 #include <memory>
 
 class xiiQtTreeSearchFilterModel;

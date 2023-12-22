@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <Foundation/Reflection/Reflection.h>
 
 class xiiDocument;
@@ -88,8 +89,6 @@ private:
 
   void Load();
   void Save() const;
-
-
 
 private:
   Domain             m_Domain;

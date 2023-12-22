@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <Foundation/Types/Variant.h>
 #include <ToolsFoundation/Document/Document.h>
 #include <ToolsFoundation/Object/ObjectMetaData.h>
@@ -45,6 +46,6 @@ protected:
   virtual void UpdateGizmoTransform() = 0;
 
   bool                          m_bVisualizerIsVisible;
-  const xiiVisualizerAttribute* m_pVisualizerAttr;
-  const xiiDocumentObject*      m_pObject;
+  const xiiVisualizerAttribute* m_pVisualizerAttr = nullptr;
+  const xiiDocumentObject*      m_pObject         = nullptr;
 };

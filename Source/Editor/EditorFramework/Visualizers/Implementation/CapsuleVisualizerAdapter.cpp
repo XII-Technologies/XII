@@ -79,7 +79,7 @@ void xiiCapsuleVisualizerAdapter::Update()
 
 void xiiCapsuleVisualizerAdapter::UpdateGizmoTransform()
 {
-  xiiVec3 vOffset = xiiVec3::MakeZero();
+  xiiVec3 vOffset = xiiVec3::ZeroVector();
 
   if (m_Anchor.IsSet(xiiVisualizerAnchor::PosX))
     vOffset.x -= m_fRadius;

@@ -12,10 +12,8 @@ xiiQtDocumentTreeModelAdapter::xiiQtDocumentTreeModelAdapter(const xiiDocumentOb
   if (!m_sChildProperty.IsEmpty())
   {
     auto pProp = pType->FindPropertyByName(m_sChildProperty);
-    XII_ASSERT_DEV(pProp != nullptr && (pProp->GetCategory() == xiiPropertyCategory::Array || pProp->GetCategory() == xiiPropertyCategory::Set),
-                   "The visualized object property tree must either be a set or array!");
-    XII_ASSERT_DEV(!pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer) || pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner),
-                   "The visualized object must have ownership of the property objects!");
+    XII_ASSERT_DEV(pProp != nullptr && (pProp->GetCategory() == xiiPropertyCategory::Array || pProp->GetCategory() == xiiPropertyCategory::Set), "The visualized object property tree must either be a set or array!");
+    XII_ASSERT_DEV(!pProp->GetFlags().IsSet(xiiPropertyFlags::Pointer) || pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner), "The visualized object must have ownership of the property objects!");
   }
 }
 
@@ -23,7 +21,6 @@ const xiiRTTI* xiiQtDocumentTreeModelAdapter::GetType() const
 {
   return m_pType;
 }
-
 
 const xiiString& xiiQtDocumentTreeModelAdapter::GetChildProperty() const
 {
@@ -44,7 +41,6 @@ Qt::ItemFlags xiiQtDocumentTreeModelAdapter::flags(const xiiDocumentObject* pObj
 
   return Qt::ItemFlag::NoItemFlags;
 }
-
 
 xiiQtDummyAdapter::xiiQtDummyAdapter(const xiiDocumentObjectManager* pTree, const xiiRTTI* pType, const char* szChildProperty) :
   xiiQtDocumentTreeModelAdapter(pTree, pType, szChildProperty)
@@ -111,11 +107,7 @@ void xiiQtNamedAdapter::TreePropertyEventHandler(const xiiDocumentObjectProperty
   }
 }
 
-xiiQtNameableAdapter::xiiQtNameableAdapter(
-  const xiiDocumentObjectManager* pTree,
-  const xiiRTTI*                  pType,
-  const char*                     szChildProperty,
-  const char*                     szNameProperty) :
+xiiQtNameableAdapter::xiiQtNameableAdapter(const xiiDocumentObjectManager* pTree, const xiiRTTI* pType, const char* szChildProperty, const char* szNameProperty) :
   xiiQtNamedAdapter(pTree, pType, szChildProperty, szNameProperty)
 {
 }
@@ -178,7 +170,8 @@ void xiiQtDocumentTreeModel::AddAdapter(xiiQtDocumentTreeModelAdapter* pAdapter)
     auto index = ComputeModelIndex(pObject);
     if (!index.isValid())
       return;
-    dataChanged(index, index, roles); });
+    dataChanged(index, index, roles);
+  });
   m_Adapters.Insert(pAdapter->GetType(), pAdapter);
   beginResetModel();
   endResetModel();
@@ -349,7 +342,6 @@ QModelIndex xiiQtDocumentTreeModel::ComputeModelIndex(const xiiDocumentObject* p
   return index(ComputeIndex(pObject), 0, ComputeParent(pObject));
 }
 
-
 void xiiQtDocumentTreeModel::SetAllowDragDrop(bool bAllow)
 {
   m_bAllowDragDrop = bAllow;
@@ -441,7 +433,6 @@ Qt::ItemFlags xiiQtDocumentTreeModel::flags(const QModelIndex& index) const
 
   return Qt::ItemFlag::NoItemFlags;
 }
-
 
 bool xiiQtDocumentTreeModel::canDropMimeData(const QMimeData* pData, Qt::DropAction action, int iRow, int iColumn, const QModelIndex& parent) const
 {

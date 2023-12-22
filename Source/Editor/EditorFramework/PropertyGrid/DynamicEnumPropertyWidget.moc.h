@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <GuiFoundation/PropertyGrid/Implementation/PropertyWidget.moc.h>
 
 class QHBoxLayout;
@@ -24,6 +25,6 @@ protected:
   virtual void InternalSetValue(const xiiVariant& value) override;
 
 protected:
-  QComboBox*   m_pWidget;
-  QHBoxLayout* m_pLayout;
+  QComboBox*   m_pWidget = nullptr;
+  QHBoxLayout* m_pLayout = nullptr;
 };

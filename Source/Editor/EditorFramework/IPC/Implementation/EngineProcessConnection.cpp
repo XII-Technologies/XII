@@ -9,7 +9,6 @@
 #include <GuiFoundation/UIServices/QtWaitForOperationDlg.moc.h>
 #include <ToolsFoundation/Application/ApplicationServices.h>
 
-
 XII_IMPLEMENT_SINGLETON(xiiEditorEngineProcessConnection);
 
 xiiEvent<const xiiEditorEngineProcessConnection::Event&> xiiEditorEngineProcessConnection::s_Events;
@@ -120,12 +119,6 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
   {
     xiiStringBuilder sWndCfgPath = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
     sWndCfgPath.AppendPath("RuntimeConfigs/Window.ddl");
-
-#if XII_ENABLED(XII_MIGRATE_RUNTIMECONFIGS)
-    xiiStringBuilder sWndCfgPathOld = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
-    sWndCfgPathOld.AppendPath("Window.ddl");
-    sWndCfgPath = xiiFileSystem::MigrateFileLocation(sWndCfgPathOld, sWndCfgPath);
-#endif
 
     if (xiiFileSystem::ExistsFile(sWndCfgPath))
     {
@@ -240,7 +233,6 @@ bool xiiEditorEngineProcessConnection::ConnectToRemoteProcess()
 
   return iRet == QDialog::Accepted;
 }
-
 
 void xiiEditorEngineProcessConnection::ShutdownRemoteProcess()
 {

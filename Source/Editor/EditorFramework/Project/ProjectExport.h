@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <Foundation/Containers/Set.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/IO/Stream.h>

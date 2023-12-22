@@ -2,8 +2,9 @@
 
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorFramework/Gizmos/GizmoBase.h>
-#include <QPoint>
 #include <ToolsFoundation/ToolsFoundationDLL.h>
+
+#include <QPoint>
 
 class XII_EDITORFRAMEWORK_DLL xiiNonUniformBoxGizmo : public xiiGizmo
 {

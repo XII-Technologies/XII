@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/Gizmos/ClickGizmo.h>
 #include <EditorFramework/Gizmos/RotateGizmo.h>
 #include <EditorFramework/Gizmos/ScaleGizmo.h>
@@ -42,7 +43,7 @@ protected:
   xiiVariantArray                 m_Keys;
   xiiDynamicArray<xiiExposedBone> m_Bones;
   xiiDeque<ElementGizmo>          m_Gizmos;
-  xiiTransform                    m_RootTransform = xiiTransform::MakeIdentity();
+  xiiTransform                    m_RootTransform = xiiTransform::IdentityTransform();
 
   void    RetrieveBones();
   void    ConfigureGizmos();

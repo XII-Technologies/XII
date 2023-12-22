@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/InputContexts/EditorInputContext.h>
 
 class xiiCamera;
@@ -58,8 +59,8 @@ private:
     Pan,
   };
 
-  Mode       m_Mode = Mode::Off;
-  xiiCamera* m_pCamera;
+  Mode       m_Mode    = Mode::Off;
+  xiiCamera* m_pCamera = nullptr;
 
   xiiBoundingBox m_Volume;
 

@@ -49,7 +49,7 @@ void xiiTextureCubeContext::OnInitialize()
   m_hPreviewMeshResource = xiiResourceManager::GetExistingResource<xiiMeshResource>(szMeshName);
   m_hMaterial            = xiiResourceManager::GetExistingResource<xiiMaterialResource>(sMaterialResource);
 
-  m_hTexture                               = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sTextureGuid);
+  m_hTexture                              = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sTextureGuid);
   xiiGALTextureFormat::Enum textureFormat = xiiGALTextureFormat::Invalid;
   {
     xiiResourceLock<xiiTextureCubeResource> pTexture(m_hTexture, xiiResourceAcquireMode::PointerOnly);

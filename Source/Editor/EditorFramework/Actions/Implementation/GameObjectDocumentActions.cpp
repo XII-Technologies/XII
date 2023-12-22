@@ -119,7 +119,8 @@ void xiiGameObjectDocumentActions::MapToolbarActions(xiiStringView sMapping)
   }
 }
 
-xiiGameObjectDocumentAction::xiiGameObjectDocumentAction(const xiiActionContext&                 context,const char*                             szName,xiiGameObjectDocumentAction::ActionType type,float                                   fSimSpeed) :xiiButtonAction(context, szName, false, "")
+xiiGameObjectDocumentAction::xiiGameObjectDocumentAction(const xiiActionContext& context, const char* szName, xiiGameObjectDocumentAction::ActionType type, float fSimSpeed) :
+  xiiButtonAction(context, szName, false, "")
 {
   m_Type = type;
   // TODO const cast

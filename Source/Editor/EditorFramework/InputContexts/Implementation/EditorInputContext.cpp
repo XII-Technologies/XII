@@ -23,7 +23,6 @@ xiiEditorInputContext::~xiiEditorInputContext()
     SetActiveInputContext(nullptr);
 }
 
-
 void xiiEditorInputContext::FocusLost(bool bCancel)
 {
   DoFocusLost(bCancel);
@@ -48,7 +47,6 @@ xiiEditorInput xiiEditorInputContext::DoKeyPressEvent(QKeyEvent* e)
 
   return xiiEditorInput::MayBeHandledByOthers;
 }
-
 
 xiiEditorInput xiiEditorInputContext::MouseMoveEvent(QMouseEvent* e)
 {

@@ -45,7 +45,7 @@ void xiiTextureCubeViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
   if (hResource.IsValid())
   {
     xiiResourceLock<xiiTextureCubeResource> pResource(hResource, xiiResourceAcquireMode::AllowLoadingFallback);
-    xiiGALTextureFormat::Enum              format           = pResource->GetFormat();
+    xiiGALTextureFormat::Enum               format           = pResource->GetFormat();
     xiiUInt32                               uiWidthAndHeight = pResource->GetWidthAndHeight();
 
     xiiStringBuilder sText;

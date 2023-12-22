@@ -1,9 +1,9 @@
 #pragma once
 
-#include <EditorFramework/Assets/AssetBrowserModel.moc.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorFramework/Assets/AssetBrowserModel.moc.h>
 #include <EditorFramework/ui_AssetCuratorPanel.h>
-#include <Foundation/Basics.h>
 #include <GuiFoundation/DockPanels/ApplicationPanel.moc.h>
 
 class xiiQtCuratorControl;
@@ -45,7 +45,7 @@ private:
   void LogWriter(const xiiLoggingEventData& e);
   void UpdateIssueInfo();
 
-  xiiQtAssetBrowserModel*  m_pModel;
-  xiiQtAssetCuratorFilter* m_pFilter;
+  xiiQtAssetBrowserModel*  m_pModel  = nullptr;
+  xiiQtAssetCuratorFilter* m_pFilter = nullptr;
   QPersistentModelIndex    m_SelectedIndex;
 };

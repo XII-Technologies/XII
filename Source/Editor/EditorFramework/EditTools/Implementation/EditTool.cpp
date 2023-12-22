@@ -8,10 +8,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGameObjectEditTool::xiiGameObjectEditTool() = default;
 
-void xiiGameObjectEditTool::ConfigureTool(
-  xiiGameObjectDocument*         pDocument,
-  xiiQtGameObjectDocumentWindow* pWindow,
-  xiiGameObjectGizmoInterface*   pInterface)
+void xiiGameObjectEditTool::ConfigureTool(xiiGameObjectDocument* pDocument, xiiQtGameObjectDocumentWindow* pWindow, xiiGameObjectGizmoInterface* pInterface)
 {
   m_pDocument  = pDocument;
   m_pWindow    = pWindow;

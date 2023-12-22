@@ -19,7 +19,7 @@ public:
   ~xiiQtGameObjectViewWidget();
 
   xiiOrthoGizmoContext* m_pOrthoGizmoContext = nullptr;
-  xiiSelectionContext*  m_pSelectionContext = nullptr;
+  xiiSelectionContext*  m_pSelectionContext  = nullptr;
   xiiCameraMoveContext* m_pCameraMoveContext = nullptr;
 
   virtual void SyncToEngine() override;

@@ -25,7 +25,6 @@ xiiUuid xiiGameObjectContextPreferencesUser::GetContextDocument() const
   return m_ContextDocument;
 }
 
-
 void xiiGameObjectContextPreferencesUser::SetContextDocument(xiiUuid val)
 {
   m_ContextDocument = val;

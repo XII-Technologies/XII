@@ -24,8 +24,7 @@ bool xiiQtAssetCuratorFilter::IsAssetFiltered(xiiStringView sDataDirParentRelati
   if (!pInfo->m_bMainAsset)
     return true;
 
-  if (pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingTransformDependency && pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::CircularDependency &&
-      pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingThumbnailDependency && pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::TransformError)
+  if (pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingTransformDependency && pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::CircularDependency && pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::MissingThumbnailDependency && pInfo->m_pAssetInfo->m_TransformState != xiiAssetInfo::TransformError)
   {
     return true;
   }
@@ -77,9 +76,7 @@ xiiQtAssetCuratorPanel::xiiQtAssetCuratorPanel() :
 
   ListAssets->setModel(m_pModel);
   ListAssets->setContextMenuPolicy(Qt::ContextMenuPolicy::CustomContextMenu);
-  XII_VERIFY(
-    connect(ListAssets->selectionModel(), &QItemSelectionModel::selectionChanged, this, &xiiQtAssetCuratorPanel::OnAssetSelectionChanged) != nullptr,
-    "signal/slot connection failed");
+  XII_VERIFY(connect(ListAssets->selectionModel(), &QItemSelectionModel::selectionChanged, this, &xiiQtAssetCuratorPanel::OnAssetSelectionChanged) != nullptr, "signal/slot connection failed");
   XII_VERIFY(connect(m_pModel, &QAbstractItemModel::dataChanged, this,
                      [this](const QModelIndex& topLeft, const QModelIndex& bottomRight, const QVector<int>& roles) {
                        if (m_SelectedIndex.isValid() && topLeft.row() <= m_SelectedIndex.row() && m_SelectedIndex.row() <= bottomRight.row())

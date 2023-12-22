@@ -58,7 +58,7 @@ public:
   void UpdateCameraInterpolation();
 
   /// \brief The view's camera will be interpolated to the given coordinates
-  void InterpolateCameraTo(const xiiVec3& vPosition,const xiiVec3& vDirection,float          fFovOrDim,const xiiVec3* pNewUpDirection = nullptr,bool           bImmediate      = false);
+  void InterpolateCameraTo(const xiiVec3& vPosition, const xiiVec3& vDirection, float fFovOrDim, const xiiVec3* pNewUpDirection = nullptr, bool bImmediate = false);
 
   /// \brief If disabled, no picking takes place in this view.
   ///
@@ -156,7 +156,7 @@ protected:
   xiiTime m_LastCameraUpdate;
 
   QHBoxLayout* m_pRestartButtonLayout = nullptr;
-  QPushButton* m_pRestartButton = nullptr;
+  QPushButton* m_pRestartButton       = nullptr;
 
   mutable xiiObjectPickingResult m_LastPickingResult;
 
@@ -177,5 +177,5 @@ public:
 
 private:
   xiiQtEngineViewWidget* m_pViewWidget = nullptr;
-  QVBoxLayout*           m_pLayout = nullptr;
+  QVBoxLayout*           m_pLayout     = nullptr;
 };

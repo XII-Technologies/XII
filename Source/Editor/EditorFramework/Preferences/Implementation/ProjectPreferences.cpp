@@ -22,7 +22,6 @@ xiiProjectPreferencesUser::xiiProjectPreferencesUser() :
 {
 }
 
-
 void xiiQtEditorApp::LoadProjectPreferences()
 {
   XII_PROFILE_SCOPE("LoadProjectPreferences");

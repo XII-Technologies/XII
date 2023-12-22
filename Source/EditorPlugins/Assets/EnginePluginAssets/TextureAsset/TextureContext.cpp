@@ -19,7 +19,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 static void CreatePreviewRect(xiiGeometry& ref_geom)
 {
-  const xiiMat4  mTransform = xiiMat4::MakeIdentity();
+  const xiiMat4  mTransform = xiiMat4::IdentityMatrix();
   const xiiVec2  size(1.0f);
   const xiiColor color = xiiColor::White;
 
@@ -65,7 +65,7 @@ void xiiTextureContext::OnInitialize()
 
   m_hMaterial = xiiResourceManager::GetExistingResource<xiiMaterialResource>(sMaterialResource);
 
-  m_hTexture                               = xiiResourceManager::LoadResource<xiiTexture2DResource>(sTextureGuid);
+  m_hTexture                              = xiiResourceManager::LoadResource<xiiTexture2DResource>(sTextureGuid);
   xiiGALTextureFormat::Enum textureFormat = xiiGALTextureFormat::Invalid;
   {
     xiiResourceLock<xiiTexture2DResource> pTexture(m_hTexture, xiiResourceAcquireMode::PointerOnly);

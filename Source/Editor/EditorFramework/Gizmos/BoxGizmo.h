@@ -2,8 +2,9 @@
 
 #include <EditorEngineProcessFramework/Gizmos/GizmoHandle.h>
 #include <EditorFramework/Gizmos/GizmoBase.h>
-#include <QPoint>
 #include <ToolsFoundation/ToolsFoundationDLL.h>
+
+#include <QPoint>
 
 class XII_EDITORFRAMEWORK_DLL xiiBoxGizmo : public xiiGizmo
 {
@@ -26,7 +27,6 @@ protected:
   virtual void OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView) override;
   virtual void OnVisibleChanged(bool bVisible) override;
   virtual void OnTransformationChanged(const xiiTransform& transform) override;
-
 
 private:
   xiiTime m_LastInteraction;

@@ -71,10 +71,7 @@ xiiStatus xiiObjectPropertyPath::CreatePath(const xiiObjectPropertyPathContext& 
   return xiiStatus(XII_SUCCESS);
 }
 
-xiiStatus xiiObjectPropertyPath::CreatePropertyPath(
-  const xiiObjectPropertyPathContext& context,
-  const xiiPropertyReference&         prop,
-  xiiStringBuilder&                   out_sPropertyPath)
+xiiStatus xiiObjectPropertyPath::CreatePropertyPath(const xiiObjectPropertyPathContext& context, const xiiPropertyReference& prop, xiiStringBuilder& out_sPropertyPath)
 {
   XII_ASSERT_DEV(context.m_pAccessor && context.m_pContextObject && !context.m_sRootProperty.IsEmpty(), "All context fields must be valid.");
   const xiiDocumentObject* pObject = context.m_pAccessor->GetObjectManager()->GetObject(prop.m_Object);
@@ -186,10 +183,7 @@ xiiStatus xiiObjectPropertyPath::ResolvePath(const xiiObjectPropertyPathContext&
   return lastError;
 }
 
-xiiStatus xiiObjectPropertyPath::ResolvePropertyPath(
-  const xiiObjectPropertyPathContext& context,
-  const char*                         szPropertyPath,
-  xiiPropertyReference&               out_key)
+xiiStatus xiiObjectPropertyPath::ResolvePropertyPath(const xiiObjectPropertyPathContext& context, const char* szPropertyPath, xiiPropertyReference& out_key)
 {
   XII_ASSERT_DEV(context.m_pAccessor && context.m_pContextObject && szPropertyPath != nullptr, "All context fields must be valid.");
   const xiiDocumentObject*         pObject = context.m_pContextObject;
@@ -227,8 +221,7 @@ xiiStatus xiiObjectPropertyPath::ResolvePropertyPath(
     if (const xiiExposedParametersAttribute* pAttrib = pProperty->GetAttributeByType<xiiExposedParametersAttribute>())
     {
       const xiiAbstractProperty* pParameterSourceProp = pObject->GetType()->FindPropertyByName(pAttrib->GetParametersSource());
-      XII_ASSERT_DEV(pParameterSourceProp, "The exposed parameter source '{0}' does not exist on type '{1}'", pAttrib->GetParametersSource(),
-                     pObject->GetType()->GetTypeName());
+      XII_ASSERT_DEV(pParameterSourceProp, "The exposed parameter source '{0}' does not exist on type '{1}'", pAttrib->GetParametersSource(), pObject->GetType()->GetTypeName());
       xiiExposedParameterCommandAccessor proxy(context.m_pAccessor, pProperty, pParameterSourceProp);
       res = proxy.GetValue(pObject, pProperty, value, index);
     }
@@ -256,19 +249,14 @@ xiiStatus xiiObjectPropertyPath::ResolvePropertyPath(
       }
       else
       {
-        return xiiStatus(xiiFmt("Property '{0}' of type '{1}' is not an object and can't be traversed further.", pProperty->GetPropertyName(),
-                                pProperty->GetSpecificType()->GetTypeName()));
+        return xiiStatus(xiiFmt("Property '{0}' of type '{1}' is not an object and can't be traversed further.", pProperty->GetPropertyName(), pProperty->GetSpecificType()->GetTypeName()));
       }
     }
   }
   return xiiStatus(XII_FAILURE);
 }
 
-xiiStatus xiiObjectPropertyPath::PrependProperty(
-  const xiiDocumentObject*   pObject,
-  const xiiAbstractProperty* pProperty,
-  xiiVariant                 index,
-  xiiStringBuilder&          out_sPropertyPath)
+xiiStatus xiiObjectPropertyPath::PrependProperty(const xiiDocumentObject* pObject, const xiiAbstractProperty* pProperty, xiiVariant index, xiiStringBuilder& out_sPropertyPath)
 {
   switch (pProperty->GetCategory())
   {
@@ -291,8 +279,7 @@ xiiStatus xiiObjectPropertyPath::PrependProperty(
       return xiiStatus(XII_SUCCESS);
     }
     default:
-      return xiiStatus(xiiFmt(
-        "The property '{0}' of category '{1}' which is not supported in property paths", pProperty->GetPropertyName(), pProperty->GetCategory()));
+      return xiiStatus(xiiFmt("The property '{0}' of category '{1}' which is not supported in property paths", pProperty->GetPropertyName(), pProperty->GetCategory()));
   }
 }
 

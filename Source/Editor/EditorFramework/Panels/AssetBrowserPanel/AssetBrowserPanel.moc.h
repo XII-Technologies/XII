@@ -1,8 +1,8 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/ui_AssetBrowserPanel.h>
-#include <Foundation/Basics.h>
 #include <GuiFoundation/DockPanels/ApplicationPanel.moc.h>
 
 class QStatusBar;
@@ -33,6 +33,6 @@ private:
   void ProjectEvents(const xiiToolsProjectEvent& e);
 
   xiiUuid              m_LastSelected;
-  QStatusBar*          m_pStatusBar;
-  xiiQtCuratorControl* m_pCuratorControl;
+  QStatusBar*          m_pStatusBar      = nullptr;
+  xiiQtCuratorControl* m_pCuratorControl = nullptr;
 };

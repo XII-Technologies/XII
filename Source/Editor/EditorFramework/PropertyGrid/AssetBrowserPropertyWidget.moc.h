@@ -1,11 +1,12 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/PropertyGrid/QtAssetLineEdit.moc.h>
 #include <GuiFoundation/PropertyGrid/Implementation/PropertyWidget.moc.h>
+
 #include <QLineEdit>
 #include <QModelIndex>
-
 
 /// *** Asset Browser ***
 
@@ -44,9 +45,9 @@ protected:
   void UpdateThumbnail(const xiiUuid& guid, const char* szThumbnailPath);
 
   QPalette            m_Pal;
-  QHBoxLayout*        m_pLayout;
-  xiiQtAssetLineEdit* m_pWidget;
-  QToolButton*        m_pButton;
+  QHBoxLayout*        m_pLayout = nullptr;
+  xiiQtAssetLineEdit* m_pWidget = nullptr;
+  QToolButton*        m_pButton = nullptr;
   xiiUInt32           m_uiThumbnailID;
   xiiUuid             m_AssetGuid;
 };

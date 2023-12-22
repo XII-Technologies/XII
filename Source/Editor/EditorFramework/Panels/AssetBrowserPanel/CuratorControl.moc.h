@@ -1,7 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
-#include <Foundation/Basics.h>
+
 #include <QWidget>
 
 struct xiiAssetCuratorEvent;

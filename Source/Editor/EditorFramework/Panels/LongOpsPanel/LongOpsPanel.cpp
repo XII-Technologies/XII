@@ -5,7 +5,6 @@
 #include <EditorFramework/Panels/LongOpsPanel/LongOpsPanel.moc.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 
-
 XII_IMPLEMENT_SINGLETON(xiiQtLongOpsPanel);
 
 constexpr int COL_DOCUMENT  = 0;

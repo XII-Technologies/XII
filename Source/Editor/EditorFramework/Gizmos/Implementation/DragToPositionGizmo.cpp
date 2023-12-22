@@ -32,7 +32,7 @@ xiiDragToPositionGizmo::xiiDragToPositionGizmo()
   m_hAlignNZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowNZ.obj");
 
   SetVisible(false);
-  SetTransformation(xiiTransform::MakeIdentity());
+  SetTransformation(xiiTransform::IdentityTransform());
 }
 
 void xiiDragToPositionGizmo::UpdateStatusBarText(xiiQtEngineDocumentWindow* pWindow)
@@ -245,11 +245,11 @@ xiiEditorInput xiiDragToPositionGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
     if (alignAxis.GetAngleBetween(res.m_vPickedNormal) > xiiAngle::Degree(179))
     {
-      rot = xiiQuat::MakeFromAxisAndAngle(m_qStartOrientation * orthoAxis, xiiAngle::Degree(180));
+      rot.SetFromAxisAndAngle(m_qStartOrientation * orthoAxis, xiiAngle::Degree(180));
     }
     else
     {
-      rot = xiiQuat::MakeShortestRotation(alignAxis, res.m_vPickedNormal);
+      rot.SetShortestRotation(alignAxis, res.m_vPickedNormal);
     }
   }
 

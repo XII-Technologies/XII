@@ -40,9 +40,7 @@ void xiiQtDocumentTreeView::Initialize(xiiDocument* pDocument, std::unique_ptr<x
   setEditTriggers(QAbstractItemView::EditTrigger::EditKeyPressed);
   setUniformRowHeights(true);
 
-  XII_VERIFY(connect(selectionModel(), SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)), this,
-                     SLOT(on_selectionChanged_triggered(const QItemSelection&, const QItemSelection&))) != nullptr,
-             "signal/slot connection failed");
+  XII_VERIFY(connect(selectionModel(), SIGNAL(selectionChanged(const QItemSelection&, const QItemSelection&)), this, SLOT(on_selectionChanged_triggered(const QItemSelection&, const QItemSelection&))) != nullptr, "signal/slot connection failed");
   m_pSelectionManager->m_Events.AddEventHandler(xiiMakeDelegate(&xiiQtDocumentTreeView::SelectionEventHandler, this));
 
   xiiSelectionManagerEvent e;

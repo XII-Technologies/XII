@@ -16,7 +16,7 @@ xiiSceneViewContext::xiiSceneViewContext(xiiSceneContext* pSceneContext) :
 
   // Start with something valid.
   m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovX, 45.0f, 0.1f, 1000.0f);
-  m_Camera.LookAt(xiiVec3(1, 1, 1), xiiVec3::MakeZero(), xiiVec3(0.0f, 0.0f, 1.0f));
+  m_Camera.LookAt(xiiVec3(1, 1, 1), xiiVec3::ZeroVector(), xiiVec3(0.0f, 0.0f, 1.0f));
 
   m_CullingCamera = m_Camera;
 }
@@ -45,7 +45,7 @@ void xiiSceneViewContext::HandleViewMessage(const xiiEditorEngineViewMsg* pMsg)
       {
         if (xiiSoundInterface* pSoundInterface = xiiSingletonRegistry::GetSingletonInstance<xiiSoundInterface>())
         {
-          pSoundInterface->SetListener(-1, pMsg2->m_vPosition, pMsg2->m_vDirForwards, pMsg2->m_vDirUp, xiiVec3::MakeZero());
+          pSoundInterface->SetListener(-1, pMsg2->m_vPosition, pMsg2->m_vDirForwards, pMsg2->m_vDirUp, xiiVec3::ZeroVector());
         }
       }
     }

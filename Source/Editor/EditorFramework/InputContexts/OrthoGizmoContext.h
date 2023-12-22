@@ -2,6 +2,7 @@
 
 #include <EditorFramework/Gizmos/GizmoBase.h>
 #include <EditorFramework/InputContexts/EditorInputContext.h>
+
 #include <QPoint>
 
 class QWidget;
@@ -45,6 +46,6 @@ private:
   float            m_fScalingResult;
   float            m_fUnsnappedScalingResult;
   bool             m_bCanInteract;
-  const xiiCamera* m_pCamera;
+  const xiiCamera* m_pCamera = nullptr;
   xiiVec2I32       m_vViewport;
 };

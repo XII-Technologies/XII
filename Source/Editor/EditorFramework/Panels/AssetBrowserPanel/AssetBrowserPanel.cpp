@@ -28,12 +28,9 @@ xiiQtAssetBrowserPanel::xiiQtAssetBrowserPanel() :
   setIcon(xiiQtUiServices::GetCachedIconResource(":/EditorFramework/Icons/Asset.svg"));
   setWindowTitle(xiiMakeQString(xiiTranslate("Panel.AssetBrowser")));
 
-  XII_VERIFY(connect(AssetBrowserWidget, &xiiQtAssetBrowserWidget::ItemChosen, this, &xiiQtAssetBrowserPanel::SlotAssetChosen) != nullptr,
-             "signal/slot connection failed");
-  XII_VERIFY(connect(AssetBrowserWidget, &xiiQtAssetBrowserWidget::ItemSelected, this, &xiiQtAssetBrowserPanel::SlotAssetSelected) != nullptr,
-             "signal/slot connection failed");
-  XII_VERIFY(connect(AssetBrowserWidget, &xiiQtAssetBrowserWidget::ItemCleared, this, &xiiQtAssetBrowserPanel::SlotAssetCleared) != nullptr,
-             "signal/slot connection failed");
+  XII_VERIFY(connect(AssetBrowserWidget, &xiiQtAssetBrowserWidget::ItemChosen, this, &xiiQtAssetBrowserPanel::SlotAssetChosen) != nullptr, "signal/slot connection failed");
+  XII_VERIFY(connect(AssetBrowserWidget, &xiiQtAssetBrowserWidget::ItemSelected, this, &xiiQtAssetBrowserPanel::SlotAssetSelected) != nullptr, "signal/slot connection failed");
+  XII_VERIFY(connect(AssetBrowserWidget, &xiiQtAssetBrowserWidget::ItemCleared, this, &xiiQtAssetBrowserPanel::SlotAssetCleared) != nullptr, "signal/slot connection failed");
 
   AssetBrowserWidget->RestoreState("AssetBrowserPanel2");
 }
@@ -62,5 +59,5 @@ void xiiQtAssetBrowserPanel::SlotAssetSelected(xiiUuid guid, QString sAssetPathR
 
 void xiiQtAssetBrowserPanel::SlotAssetCleared()
 {
-  m_LastSelected = xiiUuid::MakeInvalid();
+  m_LastSelected.SetInvalid();
 }

@@ -52,8 +52,7 @@ void xiiManipulatorAdapter::DocumentObjectPropertyEventHandler(const xiiDocument
   {
     if (e.m_pObject == m_pObject)
     {
-      if (e.m_sProperty == m_pManipulatorAttr->m_sProperty1 || e.m_sProperty == m_pManipulatorAttr->m_sProperty2 || e.m_sProperty == m_pManipulatorAttr->m_sProperty3 || e.m_sProperty == m_pManipulatorAttr->m_sProperty4 || e.m_sProperty == m_pManipulatorAttr->m_sProperty5 ||
-          e.m_sProperty == m_pManipulatorAttr->m_sProperty6)
+      if (e.m_sProperty == m_pManipulatorAttr->m_sProperty1 || e.m_sProperty == m_pManipulatorAttr->m_sProperty2 || e.m_sProperty == m_pManipulatorAttr->m_sProperty3 || e.m_sProperty == m_pManipulatorAttr->m_sProperty4 || e.m_sProperty == m_pManipulatorAttr->m_sProperty5 || e.m_sProperty == m_pManipulatorAttr->m_sProperty6)
       {
         Update();
       }
@@ -81,7 +80,7 @@ void xiiManipulatorAdapter::DocumentObjectMetaDataEventHandler(const xiiObjectMe
 
 xiiTransform xiiManipulatorAdapter::GetOffsetTransform() const
 {
-  return xiiTransform::MakeIdentity();
+  return xiiTransform::IdentityTransform();
 }
 
 xiiTransform xiiManipulatorAdapter::GetObjectTransform() const
@@ -91,7 +90,8 @@ xiiTransform xiiManipulatorAdapter::GetObjectTransform() const
 
   const xiiTransform offset = GetOffsetTransform();
 
-  xiiTransform tGlobal = xiiTransform::MakeGlobalTransform(tObj, offset);
+  xiiTransform tGlobal;
+  tGlobal.SetGlobalTransform(tObj, offset);
 
   return tGlobal;
 }

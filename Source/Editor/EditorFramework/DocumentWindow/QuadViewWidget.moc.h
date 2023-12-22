@@ -37,7 +37,7 @@ protected:
 
 private:
   xiiAssetDocument*          m_pDocument = nullptr;
-  xiiQtEngineDocumentWindow* m_pWindow = nullptr;
+  xiiQtEngineDocumentWindow* m_pWindow   = nullptr;
   ViewFactory                m_ViewFactory;
   xiiString                  m_sViewToolBarMapping;
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/Manipulators/ManipulatorAdapter.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <ToolsFoundation/Factory/RttiMappedObjectFactory.h>

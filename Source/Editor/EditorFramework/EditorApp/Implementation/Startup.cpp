@@ -120,7 +120,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, EditorFrameworkMain)
     xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiDirectionVisualizerAttribute>(), [](const xiiRTTI* pRtti)->xiiVisualizerAdapter* { return XII_DEFAULT_NEW(xiiDirectionVisualizerAdapter); });
     xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiConeVisualizerAttribute>(), [](const xiiRTTI* pRtti)->xiiVisualizerAdapter* { return XII_DEFAULT_NEW(xiiConeVisualizerAdapter); });
     xiiVisualizerAdapterRegistry::GetSingleton()->m_Factory.RegisterCreator(xiiGetStaticRTTI<xiiCameraVisualizerAttribute>(), [](const xiiRTTI* pRtti)->xiiVisualizerAdapter* { return XII_DEFAULT_NEW(xiiCameraVisualizerAdapter); });
-
   }
 
   ON_CORESYSTEMS_SHUTDOWN
@@ -443,7 +442,6 @@ void xiiQtEditorApp::ShutdownEditor()
     }
   }
 
-
   QCoreApplication::sendPostedEvents();
   qApp->processEvents();
 
@@ -475,8 +473,6 @@ void xiiQtEditorApp::ShutdownEditor()
   XII_DEFAULT_DELETE(m_pQtProgressbar);
   XII_DEFAULT_DELETE(m_pProgressbar);
 }
-
-
 
 void xiiQtEditorApp::CreatePanels()
 {
@@ -523,20 +519,22 @@ void xiiQtEditorApp::SetupAndShowSplashScreen()
   if (!bShowSplashScreen)
     return;
 
-  // QSvgRenderer svgRenderer(QString(":/Splash/Splash/splash.svg"));
+// QSvgRenderer svgRenderer(QString(":/Splash/Splash/splash.svg"));
 
-  // const qreal PixelRatio = qApp->primaryScreen()->devicePixelRatio();
+// const qreal PixelRatio = qApp->primaryScreen()->devicePixelRatio();
 
-  //// TODO: When migrating to Qt 5.15 or newer this should have a fixed square size and
-  //// let the aspect ratio mode of the svg renderer handle the difference
-  // QPixmap splashPixmap(QSize(187, 256) * PixelRatio);
-  // splashPixmap.fill(Qt::transparent);
-  //{
-  //   QPainter painter;
-  //   painter.begin(&splashPixmap);
-  //   svgRenderer.render(&painter);
-  //   painter.end();
-  // }
+// TODO: When migrating to Qt 5.15 or newer this should have a fixed square size and
+// let the aspect ratio mode of the svg renderer handle the difference
+#if 0
+  QPixmap splashPixmap(QSize(187, 256) * PixelRatio);
+  splashPixmap.fill(Qt::transparent);
+  {
+    QPainter painter;
+    painter.begin(&splashPixmap);
+    svgRenderer.render(&painter);
+    painter.end();
+  }
+#endif
 
   QPixmap splashPixmap(QString(":/Splash/Splash/splash.png"));
 

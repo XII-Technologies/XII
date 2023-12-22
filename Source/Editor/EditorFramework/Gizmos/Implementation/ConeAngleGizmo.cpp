@@ -18,7 +18,7 @@ xiiConeAngleGizmo::xiiConeAngleGizmo()
   m_hConeAngle.ConfigureHandle(this, xiiEngineGizmoHandleType::Cone, xiiColorLinearUB(200, 200, 0, 128), xiiGizmoFlags::Pickable);
 
   SetVisible(false);
-  SetTransformation(xiiTransform::MakeIdentity());
+  SetTransformation(xiiTransform::IdentityTransform());
 }
 
 void xiiConeAngleGizmo::OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)

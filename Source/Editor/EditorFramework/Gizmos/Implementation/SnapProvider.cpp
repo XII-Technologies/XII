@@ -157,7 +157,7 @@ void xiiSnapProvider::SnapRotation(xiiAngle& ref_rotation)
 {
   if (s_RotationSnapValue.GetRadian() != 0.0f)
   {
-    ref_rotation = xiiAngle::MakeFromRadian(xiiMath::RoundToMultiple(ref_rotation.GetRadian(), s_RotationSnapValue.GetRadian()));
+    ref_rotation = xiiAngle::Radian(xiiMath::RoundToMultiple(ref_rotation.GetRadian(), s_RotationSnapValue.GetRadian()));
   }
 }
 

@@ -44,8 +44,6 @@ void xiiVisualizerAdapter::SetVisualizer(const xiiVisualizerAttribute* pAttribut
   Update();
 }
 
-
-
 void xiiVisualizerAdapter::DocumentObjectPropertyEventHandler(const xiiDocumentObjectPropertyEvent& e)
 {
   if (e.m_EventType == xiiDocumentObjectPropertyEvent::Type::PropertySet)

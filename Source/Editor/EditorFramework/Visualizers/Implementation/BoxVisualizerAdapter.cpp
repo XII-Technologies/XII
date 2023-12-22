@@ -74,7 +74,7 @@ void xiiBoxVisualizerAdapter::UpdateGizmoTransform()
   t.m_vPosition = m_vPositionOffset;
   t.m_qRotation = m_qRotation;
 
-  xiiVec3 vOffset = xiiVec3::MakeZero();
+  xiiVec3 vOffset = xiiVec3::ZeroVector();
 
   if (m_Anchor.IsSet(xiiVisualizerAnchor::PosX))
     vOffset.x -= t.m_vScale.x * 0.5f;

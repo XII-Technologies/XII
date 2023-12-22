@@ -79,7 +79,7 @@ private:
   xiiUInt64                             m_uiAssetHash = 0;
   xiiUInt64                             m_uiThumbHash = 0;
   xiiDataDirPath                        m_AssetPath;
-  xiiEditorProcessCommunicationChannel* m_pIPC = nullptr;
+  xiiEditorProcessCommunicationChannel* m_pIPC                    = nullptr;
   bool                                  m_bProcessShouldBeRunning = false;
   bool                                  m_bProcessCrashed         = false;
   bool                                  m_bWaiting                = false;

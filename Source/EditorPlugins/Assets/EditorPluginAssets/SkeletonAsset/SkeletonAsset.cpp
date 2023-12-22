@@ -406,7 +406,7 @@ const xiiEditableSkeleton* xiiSkeletonAssetDocument::MergeWithNewSkeleton(xiiEdi
 
     for (xiiEditableSkeletonJoint* pChild : newSkeleton.m_Children)
     {
-      TraverseJoints(TraverseJoints, pChild, CalculateTransformationMatrix(pOldSkeleton), xiiTransform::MakeIdentity());
+      TraverseJoints(TraverseJoints, pChild, CalculateTransformationMatrix(pOldSkeleton), xiiTransform::IdentityTransform());
     }
   }
 

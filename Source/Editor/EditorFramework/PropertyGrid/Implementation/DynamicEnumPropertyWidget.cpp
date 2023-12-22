@@ -19,8 +19,7 @@ xiiQtDynamicEnumPropertyWidget::xiiQtDynamicEnumPropertyWidget() :
 
 void xiiQtDynamicEnumPropertyWidget::OnInit()
 {
-  XII_ASSERT_DEV(
-    m_pProp->GetAttributeByType<xiiDynamicEnumAttribute>() != nullptr, "xiiQtDynamicEnumPropertyWidget was created without a xiiDynamicEnumAttribute!");
+  XII_ASSERT_DEV(m_pProp->GetAttributeByType<xiiDynamicEnumAttribute>() != nullptr, "xiiQtDynamicEnumPropertyWidget was created without a xiiDynamicEnumAttribute!");
 
   const xiiDynamicEnumAttribute* pAttr = m_pProp->GetAttributeByType<xiiDynamicEnumAttribute>();
 

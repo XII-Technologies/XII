@@ -1,8 +1,8 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/ui_LongOpsPanel.h>
-#include <Foundation/Basics.h>
 #include <GuiFoundation/DockPanels/ApplicationPanel.moc.h>
 
 #include <QTimer>
@@ -29,7 +29,6 @@ private:
   bool                             m_bRebuildTable       = true;
   bool                             m_bUpdateTable        = false;
   xiiHashTable<xiiUuid, xiiUInt32> m_LongOpGuidToRow;
-
 
 private Q_SLOTS:
   void StartUpdateTimer();

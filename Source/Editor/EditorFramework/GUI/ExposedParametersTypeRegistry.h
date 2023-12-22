@@ -31,9 +31,7 @@ private:
 
   struct ParamData
   {
-    ParamData()
-
-      = default;
+    ParamData() = default;
 
     xiiUuid        m_SubAssetGuid;
     bool           m_bUpToDate = true;

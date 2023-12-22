@@ -34,7 +34,7 @@ xiiNonUniformBoxGizmo::xiiNonUniformBoxGizmo()
   }
 
   SetVisible(false);
-  SetTransformation(xiiTransform::MakeIdentity());
+  SetTransformation(xiiTransform::IdentityTransform());
 }
 
 void xiiNonUniformBoxGizmo::OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)
@@ -60,7 +60,7 @@ void xiiNonUniformBoxGizmo::OnVisibleChanged(bool bVisible)
 void xiiNonUniformBoxGizmo::OnTransformationChanged(const xiiTransform& transform)
 {
   xiiMat4 scale, rot;
-  scale = xiiMat4::MakeScaling(m_vNegSize + m_vPosSize);
+  scale.SetScalingMatrix(m_vNegSize + m_vPosSize);
 
   const xiiVec3 center = xiiMath::Lerp(-m_vNegSize, m_vPosSize, 0.5f);
 

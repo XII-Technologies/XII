@@ -16,8 +16,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiExposedParameter, xiiNoBase, 2, xiiRTTIDefaul
 }
 XII_END_STATIC_REFLECTED_TYPE;
 
-xiiExposedParameter::xiiExposedParameter()
-= default;
+xiiExposedParameter::xiiExposedParameter() = default;
 
 xiiExposedParameter::~xiiExposedParameter()
 {
@@ -50,7 +49,6 @@ xiiExposedParameters::~xiiExposedParameters()
 
 const xiiExposedParameter* xiiExposedParameters::Find(const char* szParamName) const
 {
-  const xiiExposedParameter* const* pParam =
-    std::find_if(cbegin(m_Parameters), cend(m_Parameters), [szParamName](const xiiExposedParameter* pParam) { return pParam->m_sName == szParamName; });
+  const xiiExposedParameter* const* pParam = std::find_if(cbegin(m_Parameters), cend(m_Parameters), [szParamName](const xiiExposedParameter* pParam) { return pParam->m_sName == szParamName; });
   return pParam != cend(m_Parameters) ? *pParam : nullptr;
 }

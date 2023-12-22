@@ -116,13 +116,12 @@ void xiiLongOpsAdapter::PhantomTypeRegistryEventHandler(const xiiPhantomRttiMana
 
 void xiiLongOpsAdapter::CheckAllTypes()
 {
-  xiiRTTI::ForEachType(
-    [&](const xiiRTTI* pRtti) {
-      if (pRtti->GetAttributeByType<xiiLongOpAttribute>() != nullptr)
-      {
-        m_TypesWithLongOps.Insert(pRtti);
-      }
-    });
+  xiiRTTI::ForEachType([&](const xiiRTTI* pRtti) {
+    if (pRtti->GetAttributeByType<xiiLongOpAttribute>() != nullptr)
+    {
+      m_TypesWithLongOps.Insert(pRtti);
+    }
+  });
 }
 
 void xiiLongOpsAdapter::ObjectAdded(const xiiDocumentObject* pObject)

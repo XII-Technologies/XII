@@ -17,7 +17,7 @@ xiiDrawBoxGizmo::xiiDrawBoxGizmo()
   m_hBox.ConfigureHandle(this, xiiEngineGizmoHandleType::LineBox, xiiColorLinearUB(255, 100, 0), xiiGizmoFlags::ShowInOrtho);
 
   SetVisible(false);
-  SetTransformation(xiiTransform::MakeIdentity());
+  SetTransformation(xiiTransform::IdentityTransform());
 }
 
 xiiDrawBoxGizmo::~xiiDrawBoxGizmo() = default;

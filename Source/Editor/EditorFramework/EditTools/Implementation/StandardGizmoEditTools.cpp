@@ -41,8 +41,7 @@ void xiiTranslateGizmoEditTool::OnConfigured()
 
   m_TranslateGizmo.SetOwner(GetWindow(), nullptr);
 
-  xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetDocument())
-    ->m_ChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiTranslateGizmoEditTool::OnPreferenceChange, this));
+  xiiPreferences::QueryPreferences<xiiScenePreferencesUser>(GetDocument())->m_ChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiTranslateGizmoEditTool::OnPreferenceChange, this));
 }
 
 void xiiTranslateGizmoEditTool::ApplyGizmoVisibleState(bool visible)
@@ -62,8 +61,7 @@ void xiiTranslateGizmoEditTool::TransformationGizmoEventHandlerImpl(const xiiGiz
   {
     case xiiGizmoEvent::Type::BeginInteractions:
     {
-      const bool bDuplicate =
-        QApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier) && GetGizmoInterface()->CanDuplicateSelection();
+      const bool bDuplicate = QApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier) && GetGizmoInterface()->CanDuplicateSelection();
 
       // duplicate the object when shift is held while dragging the item
       if (bDuplicate && (e.m_pGizmo == &m_TranslateGizmo || e.m_pGizmo->GetDynamicRTTI()->IsDerivedFrom<xiiOrthoGizmoContext>()))
@@ -262,8 +260,7 @@ void xiiRotateGizmoEditTool::TransformationGizmoEventHandlerImpl(const xiiGizmoE
   {
     case xiiGizmoEvent::Type::BeginInteractions:
     {
-      const bool bDuplicate =
-        QApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier) && GetGizmoInterface()->CanDuplicateSelection();
+      const bool bDuplicate = QApplication::keyboardModifiers().testFlag(Qt::KeyboardModifier::ShiftModifier) && GetGizmoInterface()->CanDuplicateSelection();
 
       // duplicate the object when shift is held while dragging the item
       if (e.m_pGizmo == &m_RotateGizmo && bDuplicate)

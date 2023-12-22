@@ -45,7 +45,7 @@ void xiiTextureViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
   if (hResource.IsValid())
   {
     xiiResourceLock<xiiTexture2DResource> pResource(hResource, xiiResourceAcquireMode::AllowLoadingFallback);
-    xiiGALTextureFormat::Enum            format   = pResource->GetFormat();
+    xiiGALTextureFormat::Enum             format   = pResource->GetFormat();
     xiiUInt32                             uiWidth  = pResource->GetWidth();
     xiiUInt32                             uiHeight = pResource->GetHeight();
 

@@ -6,12 +6,7 @@
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/System/Process.h>
 
-xiiResult xiiEditorProcessCommunicationChannel::StartClientProcess(
-  const char*        szProcess,
-  const QStringList& args,
-  bool               bRemote,
-  const xiiRTTI*     pFirstAllowedMessageType,
-  xiiUInt32          uiMemSize)
+xiiResult xiiEditorProcessCommunicationChannel::StartClientProcess(const char* szProcess, const QStringList& args, bool bRemote, const xiiRTTI* pFirstAllowedMessageType, xiiUInt32 uiMemSize)
 {
   XII_LOG_BLOCK("xiiProcessCommunicationChannel::StartClientProcess");
 

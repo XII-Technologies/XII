@@ -17,7 +17,6 @@ xiiOrthoGizmoContext::xiiOrthoGizmoContext(xiiQtEngineDocumentWindow* pOwnerWind
   SetOwner(pOwnerWindow, pOwnerView);
 }
 
-
 void xiiOrthoGizmoContext::FocusLost(bool bCancel)
 {
   xiiGizmoEvent e;
@@ -25,7 +24,6 @@ void xiiOrthoGizmoContext::FocusLost(bool bCancel)
   e.m_Type   = bCancel ? xiiGizmoEvent::Type::CancelInteractions : xiiGizmoEvent::Type::EndInteractions;
 
   m_GizmoEvents.Broadcast(e);
-
 
   m_bCanInteract = false;
   SetActiveInputContext(nullptr);
@@ -108,7 +106,7 @@ xiiEditorInput xiiOrthoGizmoContext::DoMouseMoveEvent(QMouseEvent* e)
     if (!e->modifiers().testFlag(Qt::AltModifier))
       xiiSnapProvider::SnapRotation(snappedRotation);
 
-    m_qRotationResult = xiiQuat::MakeFromAxisAndAngle(m_pCamera->GetDirForwards(), snappedRotation);
+    m_qRotationResult.SetFromAxisAndAngle(m_pCamera->GetDirForwards(), snappedRotation);
 
     {
       m_fScaleMouseMove += diff.x;
@@ -145,7 +143,7 @@ xiiEditorInput xiiOrthoGizmoContext::DoMouseMoveEvent(QMouseEvent* e)
     m_vTranslationResult.SetZero();
     m_vUnsnappedTranslationResult.SetZero();
     m_qRotationResult.SetIdentity();
-    m_UnsnappedRotationResult = xiiAngle::MakeFromRadian(0.0f);
+    m_UnsnappedRotationResult = xiiAngle::Radian(0.0f);
     m_fScalingResult          = 1.0f;
     m_fUnsnappedScalingResult = 1.0f;
     m_fScaleMouseMove         = 0.0f;

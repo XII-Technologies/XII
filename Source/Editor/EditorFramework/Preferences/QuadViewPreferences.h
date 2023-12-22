@@ -5,9 +5,9 @@
 
 struct XII_EDITORFRAMEWORK_DLL xiiEngineViewPreferences
 {
-  xiiVec3                       m_vCamPos         = xiiVec3::MakeZero();
-  xiiVec3                       m_vCamDir         = xiiVec3::MakeAxisX();
-  xiiVec3                       m_vCamUp          = xiiVec3::MakeAxisZ();
+  xiiVec3                       m_vCamPos         = xiiVec3::ZeroVector();
+  xiiVec3                       m_vCamDir         = xiiVec3::UnitXAxis();
+  xiiVec3                       m_vCamUp          = xiiVec3::UnitZAxis();
   xiiSceneViewPerspective::Enum m_PerspectiveMode = xiiSceneViewPerspective::Perspective;
   xiiViewRenderMode::Enum       m_RenderMode      = xiiViewRenderMode::Default;
   float                         m_fFov            = 70.0f;
