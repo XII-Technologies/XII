@@ -244,9 +244,10 @@ public:
         {
           xiiActionContext context;
           xiiActionManager::ExecuteAction("Engine", "Editor.SaveProfiling", context).IgnoreResult();
-          }
+        }
 
-        QApplication::quit(); });
+        QApplication::quit();
+      });
 
       const xiiInt32 iReturnCode = xiiQtEditorApp::GetSingleton()->RunEditor();
       if (iReturnCode != 0)
@@ -288,7 +289,7 @@ public:
   }
 
 private:
-  xiiQtEditorApp*                         m_pEditorApp;
+  xiiQtEditorApp*                         m_pEditorApp = nullptr;
   xiiEngineProcessCommunicationChannel    m_IPC;
   xiiUniquePtr<xiiEditorEngineProcessApp> m_pEditorEngineProcessAppDummy;
 };

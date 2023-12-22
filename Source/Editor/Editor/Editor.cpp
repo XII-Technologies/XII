@@ -64,7 +64,7 @@ public:
   }
 
 private:
-  xiiQtEditorApp* m_pEditorApp;
+  xiiQtEditorApp* m_pEditorApp = nullptr;
 };
 
 XII_APPLICATION_ENTRY_POINT(xiiEditorApplication);

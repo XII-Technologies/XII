@@ -22,11 +22,3 @@ add_dependencies(${PROJECT_NAME}
   EditorPluginAssets
   TexConv
 )
-
-if (XII_BUILD_FMOD)
-	add_dependencies(${PROJECT_NAME} EditorPluginFmod FmodPlugin)
-endif()
-
-if (XII_BUILD_PHYSX)
-	add_dependencies(${PROJECT_NAME} EditorPluginPhysX PhysXPlugin)
-endif()
