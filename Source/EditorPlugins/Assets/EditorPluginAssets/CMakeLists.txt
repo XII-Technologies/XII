@@ -26,6 +26,6 @@ xii_link_target_assimp(${PROJECT_NAME})
 add_dependencies(${PROJECT_NAME} EnginePluginAssets)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/Assets.xiiPluginBundle" $<TARGET_FILE_DIR:${PROJECT_NAME}>
-		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	  )
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/Assets.xiiPluginBundle" $<TARGET_FILE_DIR:${PROJECT_NAME}>
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)

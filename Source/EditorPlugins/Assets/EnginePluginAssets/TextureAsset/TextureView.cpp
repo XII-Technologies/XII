@@ -5,7 +5,6 @@
 
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/RendererReflection.h>
 
 xiiTextureViewContext::xiiTextureViewContext(xiiTextureContext* pContext) :
   xiiEngineProcessViewContext(pContext)

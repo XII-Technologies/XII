@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 #include <SharedPluginScene/SharedPluginSceneDLL.h>
+
+#include <EditorEngineProcessFramework/EngineProcess/EngineProcessMessages.h>
 
 class XII_SHAREDPLUGINSCENE_DLL xiiExposedSceneProperty : public xiiReflectedClass
 {

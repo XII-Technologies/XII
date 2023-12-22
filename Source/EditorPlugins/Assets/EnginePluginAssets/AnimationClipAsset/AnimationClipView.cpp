@@ -21,7 +21,6 @@ bool xiiAnimationClipViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphe
   return !FocusCameraOnObject(m_Camera, bounds, 45.0f, -xiiVec3(5, -2, 3));
 }
 
-
 xiiViewHandle xiiAnimationClipViewContext::CreateView()
 {
   xiiView* pView = nullptr;

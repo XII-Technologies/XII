@@ -41,7 +41,7 @@ protected:
   void MarqueePickObjects(const xiiViewMarqueePickingMsgToEngine* pMsg);
 
 private:
-  xiiSceneContext* m_pSceneContext;
+  xiiSceneContext* m_pSceneContext = nullptr;
 
   bool m_bUpdatePickingData;
 

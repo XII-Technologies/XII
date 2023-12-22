@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EnginePluginAssets/EnginePluginAssetsDLL.h>
+
+#include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Meshes/MeshBufferResource.h>
 #include <GraphicsCore/Meshes/MeshResource.h>

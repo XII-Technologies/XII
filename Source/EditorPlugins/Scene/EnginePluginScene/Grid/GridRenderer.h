@@ -70,7 +70,7 @@ protected:
 
   xiiShaderResourceHandle                                         m_hShader;
   xiiGALBufferHandle                                              m_hVertexBuffer;
-  xiiVertexDeclarationInfo                                        m_VertexDeclarationInfo;
+  xiiInputLayoutInfo                                              m_InputLayoutInfo;
   mutable xiiDynamicArray<GridVertex, xiiAlignedAllocatorWrapper> m_Vertices;
 
 private:

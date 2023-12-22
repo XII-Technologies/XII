@@ -66,7 +66,7 @@ void xiiTextureContext::OnInitialize()
   m_hMaterial = xiiResourceManager::GetExistingResource<xiiMaterialResource>(sMaterialResource);
 
   m_hTexture                              = xiiResourceManager::LoadResource<xiiTexture2DResource>(sTextureGuid);
-  xiiGALTextureFormat::Enum textureFormat = xiiGALTextureFormat::Invalid;
+  xiiGALTextureFormat::Enum textureFormat = xiiGALTextureFormat::Unknown;
   {
     xiiResourceLock<xiiTexture2DResource> pTexture(m_hTexture, xiiResourceAcquireMode::PointerOnly);
 
@@ -122,7 +122,7 @@ void xiiTextureContext::OnInitialize()
 
     auto& param = md.m_Parameters.ExpandAndGetRef();
     param.m_Name.Assign("IsLinear");
-    param.m_Value = textureFormat != xiiGALTextureFormat::Invalid ? !xiiGALTextureFormat::IsSrgb(textureFormat) : false;
+    param.m_Value = textureFormat != xiiGALTextureFormat::Unknown ? !xiiGALTextureFormat::IsSrgb(textureFormat) : false;
 
     m_hMaterial = xiiResourceManager::GetOrCreateResource<xiiMaterialResource>(sMaterialResource, std::move(md));
   }
@@ -135,8 +135,8 @@ void xiiTextureContext::OnInitialize()
     xiiGameObject*    pObj;
 
     obj.m_sName.Assign("TexturePreview");
-    obj.m_LocalRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
-    m_hPreviewObject    = m_pWorld->CreateObject(obj, pObj);
+    obj.m_LocalRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
+    m_hPreviewObject = m_pWorld->CreateObject(obj, pObj);
 
     xiiMeshComponent* pMesh;
     m_hPreviewMesh2D = xiiMeshComponent::CreateComponent(pObj, pMesh);
@@ -160,7 +160,7 @@ void xiiTextureContext::OnResourceEvent(const xiiResourceEvent& e)
   if (e.m_Type == xiiResourceEvent::Type::ResourceContentUpdated)
   {
     const xiiTexture2DResource* pTexture = static_cast<const xiiTexture2DResource*>(e.m_pResource);
-    if (pTexture->GetFormat() != xiiGALTextureFormat::Invalid)
+    if (pTexture->GetFormat() != xiiGALTextureFormat::Unknown)
     {
       xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::BlockTillLoaded);
       pMaterial->SetParameter("IsLinear", !xiiGALTextureFormat::IsSrgb(pTexture->GetFormat()));

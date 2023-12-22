@@ -55,13 +55,13 @@ void xiiMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 
     auto& bufferDesc = xiiGALDevice::GetDefaultDevice()->GetBuffer(pMeshBuffer->GetVertexBuffer())->GetDescription();
 
-    xiiUInt32             uiNumVertices  = bufferDesc.m_uiTotalSize / bufferDesc.m_uiStructSize;
+    xiiUInt32             uiNumVertices  = bufferDesc.m_uiSize / bufferDesc.m_uiElementByteStride;
     xiiUInt32             uiNumTriangles = pMeshBuffer->GetPrimitiveCount();
     const xiiBoundingBox& bbox           = pMeshBuffer->GetBounds().GetBox();
 
     xiiUInt32 uiNumUVs    = 0;
     xiiUInt32 uiNumColors = 0;
-    for (auto& vertexStream : pMeshBuffer->GetVertexDeclaration().m_VertexStreams)
+    for (auto& vertexStream : pMeshBuffer->GetInputLayout().m_VertexStreams)
     {
       if (vertexStream.m_Semantic >= xiiGALInputLayoutSemantic::TexCoord0 && vertexStream.m_Semantic <= xiiGALInputLayoutSemantic::TexCoord9)
       {
@@ -78,9 +78,8 @@ void xiiMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
     sText.AppendFormat("Vertices: \t{}\t\n", uiNumVertices);
     sText.AppendFormat("UV Channels: \t{}\t\n", uiNumUVs);
     sText.AppendFormat("Color Channels: \t{}\t\n", uiNumColors);
-    sText.AppendFormat("Bytes Per Vertex: \t{}\t\n", bufferDesc.m_uiStructSize);
-    sText.AppendFormat("Bounding Box: \twidth={0}, depth={1}, height={2}\t", xiiArgF(bbox.GetHalfExtents().x * 2, 2),
-                       xiiArgF(bbox.GetHalfExtents().y * 2, 2), xiiArgF(bbox.GetHalfExtents().z * 2, 2));
+    sText.AppendFormat("Bytes Per Vertex: \t{}\t\n", bufferDesc.m_uiElementByteStride);
+    sText.AppendFormat("Bounding Box: \twidth={0}, depth={1}, height={2}\t", xiiArgF(bbox.GetHalfExtents().x * 2, 2), xiiArgF(bbox.GetHalfExtents().y * 2, 2), xiiArgF(bbox.GetHalfExtents().z * 2, 2));
 
     xiiDebugRenderer::DrawInfoText(m_hView, xiiDebugTextPlacement::BottomLeft, "AssetStats", sText);
   }

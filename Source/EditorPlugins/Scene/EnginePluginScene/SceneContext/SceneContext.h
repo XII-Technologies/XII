@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EnginePluginScene/EnginePluginSceneDLL.h>
+
+#include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <SharedPluginScene/Common/Messages.h>
 

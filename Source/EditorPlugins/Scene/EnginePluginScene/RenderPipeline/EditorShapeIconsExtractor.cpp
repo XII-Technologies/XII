@@ -32,10 +32,7 @@ xiiEditorShapeIconsExtractor::xiiEditorShapeIconsExtractor(const char* szName) :
 
 xiiEditorShapeIconsExtractor::~xiiEditorShapeIconsExtractor() = default;
 
-void xiiEditorShapeIconsExtractor::Extract(
-  const xiiView&                               view,
-  const xiiDynamicArray<const xiiGameObject*>& visibleObjects,
-  xiiExtractedRenderData&                      ref_extractedRenderData)
+void xiiEditorShapeIconsExtractor::Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
 {
   XII_LOCK(view.GetWorld()->GetReadMarker());
 

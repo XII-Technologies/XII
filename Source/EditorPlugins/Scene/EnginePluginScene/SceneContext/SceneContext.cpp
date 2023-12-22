@@ -55,7 +55,8 @@ void xiiSceneContext::DrawSelectionBounds(const xiiViewHandle& hView)
 
   for (const auto& obj : m_Selection)
   {
-    xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
+    xiiBoundingBoxSphere bounds;
+    bounds.SetInvalid();
 
     xiiGameObject* pObj;
     if (!m_pWorld->TryGetObject(obj, pObj))
@@ -370,7 +371,7 @@ void xiiSceneContext::HandleGridSettingsMsg(const xiiGridSettingsMsgToEngine* pM
       mRot.SetColumn(0, pMsg->m_vGridTangent1);
       mRot.SetColumn(1, pMsg->m_vGridTangent2);
       mRot.SetColumn(2, pMsg->m_vGridTangent1.CrossRH(pMsg->m_vGridTangent2));
-      m_GridTransform.m_qRotation = xiiQuat::MakeFromMat3(mRot);
+      m_GridTransform.m_qRotation.SetFromMat3(mRot);
     }
   }
 }
@@ -409,7 +410,8 @@ void xiiSceneContext::QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pMsg)
   if (m_Selection.IsEmpty())
     return;
 
-  xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
+  xiiBoundingBoxSphere bounds;
+  bounds.SetInvalid();
 
   {
     XII_LOCK(m_pWorld->GetWriteMarker());
@@ -432,7 +434,7 @@ void xiiSceneContext::QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pMsg)
         if (!m_pWorld->TryGetObject(obj, pObj))
           continue;
 
-        bounds.ExpandToInclude(xiiBoundingBoxSphere::MakeFromCenterExtents(pObj->GetGlobalPosition(), xiiVec3(0.0f), 0.0f));
+        bounds.ExpandToInclude(xiiBoundingBoxSphere(pObj->GetGlobalPosition(), xiiVec3(0.0f), 0.0f));
       }
     }
   }
@@ -715,7 +717,8 @@ void xiiSceneContext::HandleGameModeMsg(const xiiGameModeMsgToEngine* pMsg)
 
     if (pMsg->m_bUseStartPosition)
     {
-      xiiQuat qRot = xiiQuat::MakeShortestRotation(xiiVec3(1, 0, 0), pMsg->m_vStartDirection);
+      xiiQuat qRot;
+      qRot.SetShortestRotation(xiiVec3(1, 0, 0), pMsg->m_vStartDirection);
 
       xiiTransform tStart(pMsg->m_vStartPosition, qRot);
 
@@ -1040,7 +1043,7 @@ void xiiSceneContext::AddAmbientLight(bool bSetEditorTag, bool bForce)
     xiiGameObjectDesc obj;
     obj.m_sName.Assign("Ambient Light");
 
-    obj.m_LocalRotation = xiiQuat::MakeFromEulerAngles(xiiAngle::Degree(-14.510815f), xiiAngle::Degree(43.07951f), xiiAngle::Degree(93.223808f));
+    obj.m_LocalRotation.SetFromEulerAngles(xiiAngle::Degree(-14.510815f), xiiAngle::Degree(43.07951f), xiiAngle::Degree(93.223808f));
 
     if (bSetEditorTag)
     {

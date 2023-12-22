@@ -24,7 +24,6 @@ bool xiiSkeletonViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSphere& b
   return !FocusCameraOnObject(m_Camera, bounds, 45.0f, -xiiVec3(5, -2, 3));
 }
 
-
 void xiiSkeletonViewContext::Redraw(bool bRenderEditorGizmos)
 {
   xiiView* pView = nullptr;
@@ -86,8 +85,7 @@ void xiiSkeletonViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
     xiiStringBuilder sText;
     sText.AppendFormat("Joints: {}\n", uiNumJoints);
 
-    xiiDebugRenderer::Draw2DText(m_hView, sText, xiiVec2I32(10, viewHeight - 10), xiiColor::White, 16, xiiDebugTextHAlign::Left,
-                                 xiiDebugTextVAlign::Bottom);
+    xiiDebugRenderer::Draw2DText(m_hView, sText, xiiVec2I32(10, viewHeight - 10), xiiColor::White, 16, xiiDebugTextHAlign::Left, xiiDebugTextVAlign::Bottom);
   }
 }
 

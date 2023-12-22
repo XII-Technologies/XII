@@ -8,7 +8,6 @@
 
 #include <EnginePluginScene/EnginePluginSceneDLL.h>
 
-
 #include <Foundation/Strings/StringBuilder.h>
 
 #include <Core/WorldSerializer/WorldReader.h>

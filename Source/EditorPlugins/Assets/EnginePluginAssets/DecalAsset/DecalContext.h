@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EnginePluginAssets/EnginePluginAssetsDLL.h>
+
+#include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 
 class XII_ENGINEPLUGINASSETS_DLL xiiDecalContext : public xiiEngineProcessDocumentContext

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <EditorEngineProcessFramework/EngineProcess/EngineProcessViewContext.h>
 
@@ -13,5 +13,5 @@ public:
 protected:
   virtual xiiViewHandle CreateView() override;
 
-  xiiDecalContext* m_pDecalContext;
+  xiiDecalContext* m_pDecalContext = nullptr;
 };

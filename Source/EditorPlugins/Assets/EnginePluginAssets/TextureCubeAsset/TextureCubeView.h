@@ -14,5 +14,5 @@ protected:
   virtual xiiViewHandle CreateView() override;
   virtual void          SetCamera(const xiiViewRedrawMsgToEngine* pMsg) override;
 
-  xiiTextureCubeContext* m_pTextureContext;
+  xiiTextureCubeContext* m_pTextureContext = nullptr;
 };

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <EnginePluginAssets/EnginePluginAssetsDLL.h>
+
+#include <EditorEngineProcessFramework/EngineProcess/EngineProcessDocumentContext.h>
 #include <GraphicsCore/Declarations.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 
@@ -31,6 +32,6 @@ protected:
 private:
   void QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pMsg);
 
-  xiiGameObject*        m_pAnimatedMeshObject;
+  xiiGameObject*        m_pAnimatedMeshObject = nullptr;
   xiiMeshResourceHandle m_hAnimatedMesh;
 };

@@ -13,10 +13,3 @@ target_link_libraries(${PROJECT_NAME}
   GameEngine
   SharedPluginScene
 )
-
-if (XII_BUILD_EMBREE)
-  target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-    BakingPlugin
-  )
-endif()

@@ -89,16 +89,16 @@ void xiiMaterialContext::OnInitialize()
         xiiGeometry geom;
 
         xiiGeometry::GeoOptions opt;
-        opt.m_Color     = xiiColor::Red;
-        opt.m_Transform = xiiMat4::MakeRotationZ(xiiAngle::Degree(90));
+        opt.m_Color = xiiColor::Red;
+        opt.m_Transform.SetRotationMatrixZ(xiiAngle::Degree(90));
         geom.AddSphere(0.1f, 64, 64, opt);
         geom.ComputeTangents();
 
         xiiMeshBufferResourceDescriptor desc;
         desc.AddCommonStreams();
         desc.AddStream(xiiGALInputLayoutSemantic::TexCoord1, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::Default));
-        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBAUByteNormalized);
-        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALTextureFormat::RGBAUByteNormalized);
+        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBA8UNormalized);
+        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALTextureFormat::RGBA8UNormalized);
         desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
         hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szMeshBufferName, std::move(desc), szMeshBufferName);
@@ -142,8 +142,8 @@ void xiiMaterialContext::OnInitialize()
         xiiMeshBufferResourceDescriptor desc;
         desc.AddCommonStreams();
         desc.AddStream(xiiGALInputLayoutSemantic::TexCoord1, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::Default));
-        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBAUByteNormalized);
-        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALTextureFormat::RGBAUByteNormalized);
+        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBA8UNormalized);
+        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALTextureFormat::RGBA8UNormalized);
         desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
         hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szMeshBufferName, std::move(desc), szMeshBufferName);
@@ -179,16 +179,16 @@ void xiiMaterialContext::OnInitialize()
         xiiGeometry geom;
 
         xiiGeometry::GeoOptions opt;
-        opt.m_Color     = xiiColor::Red;
-        opt.m_Transform = xiiMat4::MakeRotationZ(xiiAngle::Degree(-90));
+        opt.m_Color = xiiColor::Red;
+        opt.m_Transform.SetRotationMatrixZ(xiiAngle::Degree(-90));
         geom.AddRectXY(xiiVec2(0.2f), 64, 64, opt);
         geom.ComputeTangents();
 
         xiiMeshBufferResourceDescriptor desc;
         desc.AddCommonStreams();
         desc.AddStream(xiiGALInputLayoutSemantic::TexCoord1, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::Default));
-        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBAUByteNormalized);
-        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALTextureFormat::RGBAUByteNormalized);
+        desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBA8UNormalized);
+        desc.AddStream(xiiGALInputLayoutSemantic::Color1, xiiGALTextureFormat::RGBA8UNormalized);
         desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
         hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szMeshBufferName, std::move(desc), szMeshBufferName);
@@ -216,7 +216,7 @@ void xiiMaterialContext::OnInitialize()
   XII_LOCK(pWorld->GetWriteMarker());
 
   xiiGameObjectDesc obj;
-  xiiGameObject*    pObj;
+  xiiGameObject*    pObj = nullptr;
 
   // Preview Mesh
   {

@@ -4,6 +4,7 @@
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/Shader/ShaderResource.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGridRenderData, 1, xiiRTTINoAllocator)
@@ -57,28 +58,29 @@ void xiiGridRenderer::CreateVertexBuffer()
   // Create the vertex buffer
   {
     xiiGALBufferCreationDescription desc;
-    desc.m_uiStructSize                = sizeof(GridVertex);
-    desc.m_uiTotalSize                 = s_uiBufferSize;
-    desc.m_BufferType                  = xiiGALBufferType::VertexBuffer;
-    desc.m_ResourceAccess.m_bImmutable = false;
+    desc.m_uiElementByteStride = sizeof(GridVertex);
+    desc.m_uiSize              = s_uiBufferSize;
+    desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+    desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
 
     m_hVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
   }
 
-  // Setup the vertex declaration
+  // Setup the input layout
   {
     {
-      xiiVertexStreamInfo& si = m_VertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
+      xiiVertexStreamInfo& si = m_InputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALInputLayoutSemantic::Position;
-      si.m_Format             = xiiGALTextureFormat::XYZFloat;
+      si.m_Format             = xiiGALTextureFormat::RGB32Float;
       si.m_uiOffset           = 0;
       si.m_uiElementSize      = 12;
     }
 
     {
-      xiiVertexStreamInfo& si = m_VertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
+      xiiVertexStreamInfo& si = m_InputLayoutInfo.m_VertexStreams.ExpandAndGetRef();
       si.m_Semantic           = xiiGALInputLayoutSemantic::Color0;
-      si.m_Format             = xiiGALTextureFormat::RGBAUByteNormalized;
+      si.m_Format             = xiiGALTextureFormat::RGBA8UNormalized;
       si.m_uiOffset           = 12;
       si.m_uiElementSize      = 4;
     }
@@ -193,7 +195,7 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
       pRenderContext->GetCommandEncoder()->UpdateBuffer(m_hVertexBuffer, 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
 
-      pRenderContext->BindMeshBuffer(m_hVertexBuffer, xiiGALBufferHandle(), &m_VertexDeclarationInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
+      pRenderContext->BindMeshBuffer(m_hVertexBuffer, xiiGALBufferHandle(), &m_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
       pRenderContext->DrawMeshBuffer().IgnoreResult();
 
       uiNumLineVertices -= uiNumLineVerticesInBatch;
@@ -231,9 +233,9 @@ void xiiEditorGridExtractor::Extract(const xiiView& view, const xiiDynamicArray<
   float            fDensity = m_pSceneContext->GetGridDensity();
 
   xiiGridRenderData* pRenderData = xiiCreateRenderDataForThisFrame<xiiGridRenderData>(nullptr);
-  pRenderData->m_GlobalBounds    = xiiBoundingBoxSphere::MakeInvalid();
   pRenderData->m_bOrthoMode      = cam->IsOrthographic();
   pRenderData->m_bGlobal         = m_pSceneContext->IsGridInGlobalSpace();
+  pRenderData->m_GlobalBounds.SetInvalid();
 
   if (cam->IsOrthographic())
   {
@@ -251,7 +253,7 @@ void xiiEditorGridExtractor::Extract(const xiiView& view, const xiiDynamicArray<
     mRot.SetColumn(0, cam->GetCenterDirRight());
     mRot.SetColumn(1, cam->GetCenterDirUp());
     mRot.SetColumn(2, cam->GetCenterDirForwards());
-    pRenderData->m_GlobalTransform.m_qRotation = xiiQuat::MakeFromMat3(mRot);
+    pRenderData->m_GlobalTransform.m_qRotation.SetFromMat3(mRot);
 
     const xiiVec3 vBottomLeft = cam->GetCenterPosition() - cam->GetCenterDirRight() * fDimX - cam->GetCenterDirUp() * fDimY;
     const xiiVec3 vTopRight   = cam->GetCenterPosition() + cam->GetCenterDirRight() * fDimX + cam->GetCenterDirUp() * fDimY;
@@ -265,7 +267,6 @@ void xiiEditorGridExtractor::Extract(const xiiView& view, const xiiDynamicArray<
 
     const float fFirstDist2 = plane2.GetDistanceTo(vBottomLeft) - fDensity;
     const float fLastDist2  = plane2.GetDistanceTo(vTopRight) + fDensity;
-
 
     xiiVec3& val = pRenderData->m_GlobalTransform.m_vPosition;
     val.x        = xiiMath::RoundToMultiple(val.x, pRenderData->m_fDensity);
@@ -302,7 +303,6 @@ xiiResult xiiEditorGridExtractor::Serialize(xiiStreamWriter& inout_stream) const
   XII_SUCCEED_OR_RETURN(SUPER::Serialize(inout_stream));
   return XII_SUCCESS;
 }
-
 
 xiiResult xiiEditorGridExtractor::Deserialize(xiiStreamReader& inout_stream)
 {

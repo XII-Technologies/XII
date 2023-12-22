@@ -6,6 +6,7 @@
 #include <GraphicsCore/Debug/DebugRenderer.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
+#include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 
 // clang-format off
@@ -38,10 +39,7 @@ const xiiDeque<xiiGameObjectHandle>* xiiEditorSelectedObjectsExtractor::GetSelec
   return &m_pSceneContext->GetSelectionWithChildren();
 }
 
-void xiiEditorSelectedObjectsExtractor::Extract(
-  const xiiView&                               view,
-  const xiiDynamicArray<const xiiGameObject*>& visibleObjects,
-  xiiExtractedRenderData&                      ref_extractedRenderData)
+void xiiEditorSelectedObjectsExtractor::Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
 {
   const bool bShowCameraOverlays = view.GetCameraUsageHint() == xiiCameraUsageHint::EditorView;
 
@@ -114,7 +112,7 @@ void xiiEditorSelectedObjectsExtractor::CreateRenderTargetTexture(const xiiView&
     const xiiUInt32 uiWidth = 256;
 
     xiiRenderToTexture2DResourceDescriptor d;
-    d.m_Format   = xiiGALTextureFormat::RGBAUByteNormalizedsRGB;
+    d.m_Format   = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
     d.m_uiWidth  = uiWidth;
     d.m_uiHeight = (xiiUInt32)(uiWidth * fAspect);
 
@@ -174,7 +172,6 @@ void xiiEditorSelectedObjectsExtractor::UpdateRenderTargetCamera(const xiiCamera
     default:
       break;
   }
-
 
   xiiView* pRenderTargetView = nullptr;
   if (!xiiRenderWorld::TryGetView(m_hRenderTargetView, pRenderTargetView))

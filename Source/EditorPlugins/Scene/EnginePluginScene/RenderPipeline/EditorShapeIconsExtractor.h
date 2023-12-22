@@ -13,10 +13,7 @@ public:
   xiiEditorShapeIconsExtractor(const char* szName = "EditorShapeIconsExtractor");
   ~xiiEditorShapeIconsExtractor();
 
-  virtual void Extract(
-    const xiiView&                               view,
-    const xiiDynamicArray<const xiiGameObject*>& visibleObjects,
-    xiiExtractedRenderData&                      ref_extractedRenderData) override;
+  virtual void      Extract(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData) override;
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const override;
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream) override;
 
@@ -36,9 +33,9 @@ private:
   struct ShapeIconInfo
   {
     xiiTexture2DResourceHandle                     m_hTexture;
-    const xiiTypedMemberProperty<xiiColor>*        m_pColorProperty;
-    const xiiTypedMemberProperty<xiiColorGammaUB>* m_pColorGammaProperty;
-    xiiColor                                       m_FallbackColor = xiiColor::White;
+    const xiiTypedMemberProperty<xiiColor>*        m_pColorProperty      = nullptr;
+    const xiiTypedMemberProperty<xiiColorGammaUB>* m_pColorGammaProperty = nullptr;
+    xiiColor                                       m_FallbackColor       = xiiColor::White;
   };
 
   xiiHashTable<const xiiRTTI*, ShapeIconInfo> m_ShapeIconInfos;

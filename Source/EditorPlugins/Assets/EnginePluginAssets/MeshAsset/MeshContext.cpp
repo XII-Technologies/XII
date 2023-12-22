@@ -128,7 +128,8 @@ void xiiMeshContext::QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pMsg)
   if (m_pMeshObject == nullptr)
     return;
 
-  xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
+  xiiBoundingBoxSphere bounds;
+  bounds.SetInvalid();
 
   {
     XII_LOCK(m_pWorld->GetWriteMarker());

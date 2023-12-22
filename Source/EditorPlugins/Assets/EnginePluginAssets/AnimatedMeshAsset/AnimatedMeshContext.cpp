@@ -110,13 +110,13 @@ bool xiiAnimatedMeshContext::UpdateThumbnailViewContext(xiiEngineProcessViewCont
   return pAnimatedMeshViewContext->UpdateThumbnailCamera(bounds);
 }
 
-
 void xiiAnimatedMeshContext::QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pMsg)
 {
   if (m_pAnimatedMeshObject == nullptr)
     return;
 
-  xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
+  xiiBoundingBoxSphere bounds;
+  bounds.SetInvalid();
 
   {
     XII_LOCK(m_pWorld->GetWriteMarker());

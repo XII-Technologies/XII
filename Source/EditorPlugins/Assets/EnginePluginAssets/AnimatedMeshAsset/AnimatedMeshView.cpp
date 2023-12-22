@@ -23,7 +23,6 @@ bool xiiAnimatedMeshViewContext::UpdateThumbnailCamera(const xiiBoundingBoxSpher
   return !FocusCameraOnObject(m_Camera, bounds, 45.0f, -xiiVec3(5, -2, 3));
 }
 
-
 xiiViewHandle xiiAnimatedMeshViewContext::CreateView()
 {
   xiiView* pView = nullptr;
@@ -55,13 +54,13 @@ void xiiAnimatedMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
 
     auto& bufferDesc = xiiGALDevice::GetDefaultDevice()->GetBuffer(pAnimatedMeshBuffer->GetVertexBuffer())->GetDescription();
 
-    xiiUInt32             uiNumVertices  = bufferDesc.m_uiTotalSize / bufferDesc.m_uiStructSize;
+    xiiUInt32             uiNumVertices  = bufferDesc.m_uiSize / bufferDesc.m_uiElementByteStride;
     xiiUInt32             uiNumTriangles = pAnimatedMeshBuffer->GetPrimitiveCount();
     const xiiBoundingBox& bbox           = pAnimatedMeshBuffer->GetBounds().GetBox();
 
     xiiUInt32 uiNumUVs    = 0;
     xiiUInt32 uiNumColors = 0;
-    for (auto& vertexStream : pAnimatedMeshBuffer->GetVertexDeclaration().m_VertexStreams)
+    for (auto& vertexStream : pAnimatedMeshBuffer->GetInputLayout().m_VertexStreams)
     {
       if (vertexStream.m_Semantic >= xiiGALInputLayoutSemantic::TexCoord0 && vertexStream.m_Semantic <= xiiGALInputLayoutSemantic::TexCoord9)
       {
@@ -79,9 +78,8 @@ void xiiAnimatedMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
     sText.AppendFormat("Vertices: \t{}\n", uiNumVertices);
     sText.AppendFormat("UV Channels: \t{}\n", uiNumUVs);
     sText.AppendFormat("Color Channels: \t{}\n", uiNumColors);
-    sText.AppendFormat("Bytes Per Vertex: \t{}\n", bufferDesc.m_uiStructSize);
-    sText.AppendFormat("Bounding Box: \twidth={0}, depth={1}, height={2}", xiiArgF(bbox.GetHalfExtents().x * 2, 2),
-                       xiiArgF(bbox.GetHalfExtents().y * 2, 2), xiiArgF(bbox.GetHalfExtents().z * 2, 2));
+    sText.AppendFormat("Bytes Per Vertex: \t{}\n", bufferDesc.m_uiElementByteStride);
+    sText.AppendFormat("Bounding Box: \twidth={0}, depth={1}, height={2}", xiiArgF(bbox.GetHalfExtents().x * 2, 2), xiiArgF(bbox.GetHalfExtents().y * 2, 2), xiiArgF(bbox.GetHalfExtents().z * 2, 2));
 
     xiiDebugRenderer::DrawInfoText(m_hView, xiiDebugTextPlacement::BottomLeft, "AssetStats", sText);
   }
