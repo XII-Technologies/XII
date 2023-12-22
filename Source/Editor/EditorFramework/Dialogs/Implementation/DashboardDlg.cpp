@@ -264,32 +264,32 @@ void xiiQtDashboardDlg::on_SamplesList_itemDoubleClicked(QListWidgetItem* pItem)
 
 void xiiQtDashboardDlg::on_OpenDocs_clicked()
 {
-  QDesktopServices::openUrl(QUrl("https://xiiengine.net"));
+  QDesktopServices::openUrl(QUrl("https://xiitechnologies.com"));
 }
 
 void xiiQtDashboardDlg::on_OpenApiDocs_clicked()
 {
-  QDesktopServices::openUrl(QUrl("https://xiiengine.github.io/api-docs/"));
+  QDesktopServices::openUrl(QUrl("https://xii-technologies.github.io/APIDocumentation/"));
 }
 
 void xiiQtDashboardDlg::on_GitHubDiscussions_clicked()
 {
-  QDesktopServices::openUrl(QUrl("https://github.com/xiiEngine/xiiEngine/discussions"));
+  QDesktopServices::openUrl(QUrl("https://github.com/XII-Technologies/XII/discussions"));
 }
 
 void xiiQtDashboardDlg::on_ReportProblem_clicked()
 {
-  QDesktopServices::openUrl(QUrl("https://github.com/xiiEngine/xiiEngine/issues"));
+  QDesktopServices::openUrl(QUrl("https://github.com/XII-Technologies/XII/issues"));
 }
 
 void xiiQtDashboardDlg::on_OpenDiscord_clicked()
 {
-  QDesktopServices::openUrl(QUrl("https://discord.gg/rfJewc5khZ"));
+  QDesktopServices::openUrl(QUrl("https://discord.gg/qvfdhRQpHB"));
 }
 
 void xiiQtDashboardDlg::on_OpenTwitter_clicked()
 {
-  QDesktopServices::openUrl(QUrl("https://twitter.com/xiiEngineProject"));
+  QDesktopServices::openUrl(QUrl("https://twitter.com/XII"));
 }
 
 bool xiiQtDashboardDlg::eventFilter(QObject* obj, QEvent* e)

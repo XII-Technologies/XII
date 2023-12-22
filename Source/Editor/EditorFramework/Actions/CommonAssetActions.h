@@ -1,9 +1,10 @@
 #pragma once
 
-#include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
-#include <GuiFoundation/Action/BaseActions.h>
+
 #include <GuiFoundation/GuiFoundationDLL.h>
+#include <EditorFramework/Assets/AssetDocument.h>
+#include <GuiFoundation/Action/BaseActions.h>
 
 class xiiAssetDocument;
 

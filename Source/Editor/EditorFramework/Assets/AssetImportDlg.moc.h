@@ -1,8 +1,10 @@
 #pragma once
 
-#include <EditorFramework/Assets/AssetDocumentGenerator.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorFramework/Assets/AssetDocumentGenerator.h>
 #include <EditorFramework/ui_AssetImportDlg.h>
+
 #include <QDialog>
 
 class xiiQtAssetImportDlg : public QDialog, public Ui_AssetImportDlg

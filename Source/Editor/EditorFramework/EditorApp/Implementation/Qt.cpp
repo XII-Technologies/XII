@@ -55,12 +55,36 @@ void xiiQtEditorApp::SetStyleSheet()
   QBrush NoRoleBrush(QColor(0, 0, 0), Qt::NoBrush);
   palette.setBrush(QPalette::NoRole, NoRoleBrush);
 
-  palette.setColor(QPalette::WindowText, QColor(255, 255, 255));           // labels, tabs, property grid
-  palette.setColor(QPalette::Button, QColor(51, 51, 51));                  // buttons, toolbuttons, dashboard background
-  palette.setColor(QPalette::Light, QColor(81, 58, 47));                   // lines between tabs, inactive tab gradient
-  palette.setColor(QPalette::Dark, QColor(0, 0, 0));                       // line below active window highlight
-  palette.setColor(QPalette::Mid, QColor(90, 90, 90));                     // color of the box around component properties (collapsible group box)
-  palette.setColor(QPalette::Text, QColor(204, 204, 204));                 // scene graph, values in spin boxes, checkmarks
+  palette.setColor(QPalette::WindowText, QColor(200, 200, 200, 255));
+  palette.setColor(QPalette::Button, QColor(0, 0, 0, 255)); // buttons, toolbuttons, dashboard background
+  palette.setColor(QPalette::Light, QColor(60, 60, 60, 255)); // lines between tabs, inactive tab gradient
+  palette.setColor(QPalette::Midlight, QColor(59, 59, 59, 255));
+  palette.setColor(QPalette::Dark, QColor(45, 45, 45, 255)); // line below active window highlight
+  palette.setColor(QPalette::Mid, QColor(45, 45, 45, 255)); // color of the box around component properties (collapsible group box)
+  palette.setColor(QPalette::Text, QColor(200, 200, 200, 255)); // scene graph, values in spin boxes, checkmarks
+  palette.setColor(QPalette::BrightText, QColor(37, 37, 37, 255));
+  palette.setColor(QPalette::ButtonText, QColor(200, 200, 200, 255));
+  palette.setColor(QPalette::Base, QColor(20, 20, 20, 255));
+  palette.setColor(QPalette::AlternateBase, QColor(20, 20, 20, 255));
+  palette.setColor(QPalette::Window, QColor(30, 30, 30, 255));
+  palette.setColor(QPalette::Shadow, QColor(0, 0, 0, 255));
+  palette.setColor(QPalette::Highlight, QColor(103, 141, 178, 255));
+  palette.setColor(QPalette::HighlightedText, QColor(255, 255, 255, 255));
+  palette.setColor(QPalette::Link, QColor(0, 0, 238, 255));
+  palette.setColor(QPalette::LinkVisited, QColor(82, 24, 139, 255));
+  QBrush NoRoleBrush(QColor(0, 0, 0, 255), Qt::NoBrush);
+  palette.setBrush(QPalette::NoRole, NoRoleBrush);
+  palette.setColor(QPalette::ToolTipBase, QColor(255, 255, 220, 255));
+  palette.setColor(QPalette::ToolTipText, QColor(0, 0, 0, 255));
+  palette.setColor(QPalette::PlaceholderText, QColor(200, 200, 200, 255).darker());
+
+  palette.setColor(QPalette::Disabled, QPalette::WindowText, QColor(128, 128, 128, 255)); // labels, tabs, property grid
+  palette.setColor(QPalette::Disabled, QPalette::Button, QColor(40, 40, 40, 255));
+  palette.setColor(QPalette::Disabled, QPalette::Text, QColor(105, 105, 105, 255));
+  palette.setColor(QPalette::Disabled, QPalette::BrightText, QColor(255, 255, 255, 255));
+  palette.setColor(QPalette::Disabled, QPalette::ButtonText, QColor(128, 128, 128, 255));
+  palette.setColor(QPalette::Disabled, QPalette::Highlight, QColor(86, 117, 148, 255));
+
   palette.setColor(QPalette::ButtonText, QColor(204, 204, 204));           // menus, comboboxes, headers
   palette.setColor(QPalette::Base, QColor(24, 24, 24));                    // background inside complex windows (scenegraph)
   palette.setColor(QPalette::Window, QColor(42, 42, 42));                  // window borders, toolbars

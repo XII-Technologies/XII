@@ -1,7 +1,8 @@
 #pragma once
 
+#include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
-#include <Foundation/Basics.h>
 #include <Foundation/Types/UniquePtr.h>
 
 class xiiOrbitCameraContext;

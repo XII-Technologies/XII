@@ -45,7 +45,7 @@ xiiResult xiiEditorProcessCommunicationChannel::StartClientProcess(
     if (m_pChannel->GetConnectionState() == xiiIpcChannel::ConnectionState::Connecting)
       break;
 
-    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
   }
   if (m_pChannel->GetConnectionState() != xiiIpcChannel::ConnectionState::Connecting)
   {

@@ -3,6 +3,7 @@
 #include <EditorFramework/EditorFrameworkDLL.h>
 #include <EditorFramework/ui_DataDirsDlg.h>
 #include <Foundation/Application/Config/FileSystemConfig.h>
+
 #include <QDialog>
 
 class XII_EDITORFRAMEWORK_DLL xiiQtDataDirsDlg : public QDialog, public Ui_xiiQtDataDirsDlg

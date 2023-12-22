@@ -23,7 +23,6 @@ xiiQtOrbitCamViewWidget::xiiQtOrbitCamViewWidget(xiiQtEngineDocumentWindow* pOwn
 
 xiiQtOrbitCamViewWidget::~xiiQtOrbitCamViewWidget() = default;
 
-
 void xiiQtOrbitCamViewWidget::ConfigureFixed(const xiiVec3& vCenterPos, const xiiVec3& vHalfBoxSize, const xiiVec3& vCamPosition)
 {
   m_pOrbitCameraContext->SetDefaultCameraFixed(vCamPosition);

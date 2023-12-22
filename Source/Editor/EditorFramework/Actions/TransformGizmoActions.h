@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <GuiFoundation/Action/BaseActions.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 
@@ -80,7 +81,7 @@ public:
 private:
   void UpdateState();
 
-  xiiGameObjectDocument* m_pGameObjectDocument;
+  xiiGameObjectDocument* m_pGameObjectDocument = nullptr;
   ActionType             m_Type;
 };
 
@@ -112,6 +113,6 @@ public:
   virtual void Execute(const xiiVariant& value) override;
 
 private:
-  const xiiGameObjectDocument* m_pSceneDocument;
+  const xiiGameObjectDocument* m_pSceneDocument = nullptr;
   ActionType                   m_Type;
 };

@@ -12,9 +12,9 @@
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Strings/String.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
-#include <QFileDialog>
 #include <ToolsFoundation/Utilities/PathPatternFilter.h>
 
+#include <QFileDialog>
 
 bool xiiQtExportProjectDlg::s_bTransformAll = true;
 

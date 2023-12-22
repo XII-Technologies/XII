@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorFramework/Document/GameObjectDocument.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorFramework/Document/GameObjectDocument.h>
 
 struct XII_EDITORFRAMEWORK_DLL xiiGameObjectContextEvent
 {

@@ -132,9 +132,11 @@ void xiiAssetProcessor::StopProcessTask(bool bForce)
       }
       break;
       case ProcessTaskState::Stopping:
+      {
         if (!bForce)
           return;
-        break;
+      }
+      break;
       default:
       case ProcessTaskState::Stopped:
         return;
@@ -175,7 +177,7 @@ void xiiAssetProcessor::Run()
         m_ProcessRunning[i] = m_ProcessTasks[i].BeginExecute();
       }
     }
-    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
+    xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
   }
 
   while (true)
@@ -195,7 +197,7 @@ void xiiAssetProcessor::Run()
     }
 
     if (bAnyRunning)
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
+      xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
     else
       break;
   }
@@ -382,7 +384,6 @@ bool xiiProcessTask::GetNextAssetToProcess(xiiUuid& out_guid, xiiDataDirPath& ou
 
   return false;
 }
-
 
 void xiiProcessTask::OnProcessCrashed()
 {

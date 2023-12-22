@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <GuiFoundation/Action/BaseActions.h>
 #include <ToolsFoundation/Project/ToolsProject.h>
 

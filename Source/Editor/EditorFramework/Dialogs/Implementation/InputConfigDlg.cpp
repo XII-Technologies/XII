@@ -13,12 +13,6 @@ void UpdateInputDynamicEnumValues()
   xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
   sPath.AppendPath("RuntimeConfigs/InputConfig.ddl");
 
-#if XII_ENABLED(XII_MIGRATE_RUNTIMECONFIGS)
-  xiiStringBuilder sOldPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-  sOldPath.AppendPath("InputConfig.ddl");
-  sPath = xiiFileSystem::MigrateFileLocation(sOldPath, sPath);
-#endif
-
   xiiFileReader file;
   if (file.Open(sPath).Failed())
     return;
@@ -122,16 +116,14 @@ void xiiQtInputConfigDlg::on_ButtonRemove_clicked()
 
   if (TreeActions->indexOfTopLevelItem(pItem) >= 0)
   {
-    if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion(
-          "Do you really want to remove the entire Input Set?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::No)
+    if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion("Do you really want to remove the entire Input Set?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::No)
       return;
 
     m_InputSetToItem.Remove(pItem->text(0).toUtf8().data());
   }
   else
   {
-    if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion(
-          "Do you really want to remove this action?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::No)
+    if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion("Do you really want to remove this action?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::No)
       return;
   }
 
@@ -172,12 +164,6 @@ void xiiQtInputConfigDlg::LoadActions()
 
   xiiStringBuilder sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
   sPath.AppendPath("RuntimeConfigs/InputConfig.ddl");
-
-#if XII_ENABLED(XII_MIGRATE_RUNTIMECONFIGS)
-  xiiStringBuilder sOldPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-  sOldPath.AppendPath("InputConfig.ddl");
-  sPath = xiiFileSystem::MigrateFileLocation(sOldPath, sPath);
-#endif
 
   xiiFileReader file;
   if (file.Open(sPath).Failed())
@@ -230,7 +216,6 @@ void xiiQtInputConfigDlg::FillList()
     QTreeWidgetItem* pParentItem = m_InputSetToItem[action.m_sInputSet];
 
     CreateActionItem(pParentItem, action);
-
 
     pParentItem->setExpanded(true);
   }

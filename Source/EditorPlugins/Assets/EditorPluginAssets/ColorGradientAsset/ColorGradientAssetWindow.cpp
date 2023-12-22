@@ -106,7 +106,7 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientColorCpAdded(double posX, 
 
   xiiAddObjectCommand cmdAdd;
   cmdAdd.m_Parent          = pDoc->GetPropertyObject()->GetGuid();
-  cmdAdd.m_NewObjectGuid   = xiiUuid::MakeUuid();
+  cmdAdd.m_NewObjectGuid   = xiiUuid::CreateUuid();
   cmdAdd.m_sParentProperty = "ColorCPs";
   cmdAdd.m_pType           = xiiGetStaticRTTI<xiiColorControlPoint>();
   cmdAdd.m_Index           = -1;
@@ -117,7 +117,7 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientColorCpAdded(double posX, 
   cmdSet.m_Object = cmdAdd.m_NewObjectGuid;
 
   cmdSet.m_sProperty = "Tick";
-  cmdSet.m_NewValue  = pDoc->GetProperties()->TickFromTime(xiiTime::MakeFromSeconds(posX));
+  cmdSet.m_NewValue  = pDoc->GetProperties()->TickFromTime(xiiTime::Seconds(posX));
   history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Red";
@@ -145,7 +145,7 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientAlphaCpAdded(double posX, 
 
   xiiAddObjectCommand cmdAdd;
   cmdAdd.m_Parent          = pDoc->GetPropertyObject()->GetGuid();
-  cmdAdd.m_NewObjectGuid   = xiiUuid::MakeUuid();
+  cmdAdd.m_NewObjectGuid   = xiiUuid::CreateUuid();
   cmdAdd.m_sParentProperty = "AlphaCPs";
   cmdAdd.m_pType           = xiiGetStaticRTTI<xiiAlphaControlPoint>();
   cmdAdd.m_Index           = -1;
@@ -156,7 +156,7 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientAlphaCpAdded(double posX, 
   cmdSet.m_Object = cmdAdd.m_NewObjectGuid;
 
   cmdSet.m_sProperty = "Tick";
-  cmdSet.m_NewValue  = pDoc->GetProperties()->TickFromTime(xiiTime::MakeFromSeconds(posX));
+  cmdSet.m_NewValue  = pDoc->GetProperties()->TickFromTime(xiiTime::Seconds(posX));
   history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Alpha";
@@ -176,7 +176,7 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientIntensityCpAdded(double po
 
   xiiAddObjectCommand cmdAdd;
   cmdAdd.m_Parent          = pDoc->GetPropertyObject()->GetGuid();
-  cmdAdd.m_NewObjectGuid   = xiiUuid::MakeUuid();
+  cmdAdd.m_NewObjectGuid   = xiiUuid::CreateUuid();
   cmdAdd.m_sParentProperty = "IntensityCPs";
   cmdAdd.m_pType           = xiiGetStaticRTTI<xiiIntensityControlPoint>();
   cmdAdd.m_Index           = -1;
@@ -187,7 +187,7 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientIntensityCpAdded(double po
   cmdSet.m_Object = cmdAdd.m_NewObjectGuid;
 
   cmdSet.m_sProperty = "Tick";
-  cmdSet.m_NewValue  = pDoc->GetProperties()->TickFromTime(xiiTime::MakeFromSeconds(posX));
+  cmdSet.m_NewValue  = pDoc->GetProperties()->TickFromTime(xiiTime::Seconds(posX));
   history->AddCommand(cmdSet).AssertSuccess();
 
   cmdSet.m_sProperty = "Intensity";
@@ -212,7 +212,7 @@ void xiiQtColorGradientAssetDocumentWindow::MoveCP(xiiInt32 idx, double newPosX,
   cmdSet.m_Object = objGuid.Get<xiiUuid>();
 
   cmdSet.m_sProperty = "Tick";
-  cmdSet.m_NewValue  = pDoc->GetProperties()->TickFromTime(xiiTime::MakeFromSeconds(newPosX));
+  cmdSet.m_NewValue  = pDoc->GetProperties()->TickFromTime(xiiTime::Seconds(newPosX));
   history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();

@@ -7,7 +7,6 @@
 #include <Foundation/IO/OpenDdlReader.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
 
-
 const xiiPlatformProfile* xiiAssetCurator::GetDevelopmentAssetProfile() const
 {
   return m_AssetProfiles[0];
@@ -153,7 +152,7 @@ xiiResult xiiAssetCurator::SaveAssetProfiles()
     ddl.BeginObject("Config", pCfg->m_sName);
 
     // make sure to create the same GUID every time, otherwise the serialized file changes all the time
-    const xiiUuid guid = xiiUuid::MakeStableUuidFromString(pCfg->GetConfigName());
+    const xiiUuid guid = xiiUuid::StableUuidForString(pCfg->GetConfigName());
 
     xiiReflectionSerializer::WriteObjectToDDL(ddl, pCfg->GetDynamicRTTI(), pCfg, guid);
 

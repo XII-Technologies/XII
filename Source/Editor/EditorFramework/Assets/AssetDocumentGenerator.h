@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <Foundation/Reflection/Reflection.h>
 #include <Foundation/Types/Status.h>
 

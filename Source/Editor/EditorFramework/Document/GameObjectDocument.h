@@ -1,7 +1,9 @@
 #pragma once
+
+#include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
-#include <EditorFramework/EditorFrameworkDLL.h>
 #include <Foundation/SimdMath/SimdTransform.h>
 #include <ToolsFoundation/Document/Document.h>
 #include <ToolsFoundation/Object/DocumentObjectManager.h>
@@ -85,7 +87,7 @@ public:
 
 struct XII_EDITORFRAMEWORK_DLL xiiSelectedGameObject
 {
-  const xiiDocumentObject* m_pObject;
+  const xiiDocumentObject* m_pObject = nullptr;
   xiiVec3                  m_vLocalScaling;
   float                    m_fLocalUniformScaling;
   xiiTransform             m_GlobalTransform;
@@ -98,7 +100,6 @@ class XII_EDITORFRAMEWORK_DLL xiiGameObjectDocument : public xiiAssetDocument
 public:
   xiiGameObjectDocument(xiiStringView sDocumentPath, xiiDocumentObjectManager* pObjectManager, xiiAssetDocEngineConnection engineConnectionType = xiiAssetDocEngineConnection::FullObjectMirroring);
   ~xiiGameObjectDocument();
-
 
   virtual xiiEditorInputContext* GetEditorInputContextOverride() override;
 
@@ -225,11 +226,7 @@ public:
 
   /// \brief Similar to DetermineNodeName() but prefers to return the last cached value from scene meta data. This is more efficient, but may give an
   /// outdated result.
-  void QueryCachedNodeName(
-    const xiiDocumentObject* pObject,
-    xiiStringBuilder&        out_sResult,
-    xiiUuid*                 out_pPrefabGuid = nullptr,
-    QIcon*                   out_pIcon       = nullptr) const;
+  void QueryCachedNodeName(const xiiDocumentObject* pObject,xiiStringBuilder&        out_sResult,xiiUuid*                 out_pPrefabGuid = nullptr,QIcon*                   out_pIcon       = nullptr) const;
 
   /// \brief Creates a full "path" to a scene object for display in UIs. No guarantee for uniqueness.
   void GenerateFullDisplayName(const xiiDocumentObject* pRoot, xiiStringBuilder& out_sFullPath) const;

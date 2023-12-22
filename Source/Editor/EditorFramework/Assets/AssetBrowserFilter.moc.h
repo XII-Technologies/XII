@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorFramework/Assets/AssetBrowserModel.moc.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorFramework/Assets/AssetBrowserModel.moc.h>
 #include <ToolsFoundation/Utilities/SearchPatternFilter.h>
 
 class XII_EDITORFRAMEWORK_DLL xiiQtAssetBrowserFilter : public xiiQtAssetFilter

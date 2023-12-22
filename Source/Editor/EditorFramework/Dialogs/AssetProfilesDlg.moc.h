@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/ui_AssetProfilesDlg.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Strings/String.h>
@@ -56,6 +57,6 @@ private:
   void    ObjectToNative(xiiUuid objectGuid, xiiPlatformProfile* pProfile);
   void    SelectionEventHandler(const xiiSelectionManagerEvent& e);
 
-  xiiAssetProfilesDocument* m_pDocument;
+  xiiAssetProfilesDocument* m_pDocument = nullptr;
   xiiMap<xiiUuid, Binding>  m_ProfileBindings;
 };

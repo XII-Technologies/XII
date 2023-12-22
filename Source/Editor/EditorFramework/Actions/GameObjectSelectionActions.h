@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <GuiFoundation/Action/BaseActions.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 
@@ -52,6 +53,6 @@ private:
 
   void UpdateEnableState();
 
-  xiiGameObjectDocument* m_pSceneDocument;
+  xiiGameObjectDocument* m_pSceneDocument = nullptr;
   ActionType             m_Type;
 };

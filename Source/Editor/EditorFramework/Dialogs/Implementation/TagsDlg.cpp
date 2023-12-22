@@ -80,16 +80,14 @@ void xiiQtTagsDlg::on_ButtonRemove_clicked()
 
   if (TreeTags->indexOfTopLevelItem(pItem) >= 0)
   {
-    if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion(
-          "Do you really want to remove the entire Tag Category?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::No)
+    if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion("Do you really want to remove the entire Tag Category?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::No)
       return;
 
     m_CategoryToItem.Remove(pItem->text(0).toUtf8().data());
   }
   else
   {
-    if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion(
-          "Do you really want to remove this Tag?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::No)
+    if (xiiQtUiServices::GetSingleton()->MessageBoxQuestion("Do you really want to remove this Tag?", QMessageBox::Yes | QMessageBox::No, QMessageBox::No) == QMessageBox::No)
       return;
   }
 

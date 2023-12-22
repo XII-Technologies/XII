@@ -32,17 +32,13 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiEvent<const xiiGameObjectDocumentEvent&> xiiGameObjectDocument::s_GameObjectDocumentEvents;
 
-xiiGameObjectDocument::xiiGameObjectDocument(
-  xiiStringView               sDocumentPath,
-  xiiDocumentObjectManager*   pObjectManager,
-  xiiAssetDocEngineConnection engineConnectionType) :
+xiiGameObjectDocument::xiiGameObjectDocument(xiiStringView sDocumentPath, xiiDocumentObjectManager* pObjectManager, xiiAssetDocEngineConnection engineConnectionType) :
   xiiAssetDocument(sDocumentPath, pObjectManager, engineConnectionType)
 {
   using Meta           = xiiObjectMetaData<xiiUuid, xiiGameObjectMetaData>;
   m_GameObjectMetaData = XII_DEFAULT_NEW(Meta);
 
-  XII_ASSERT_DEV(engineConnectionType == xiiAssetDocEngineConnection::FullObjectMirroring,
-                 "xiiGameObjectDocument only supports full mirroring engine connection types. The parameter only exists for interface compatibility.");
+  XII_ASSERT_DEV(engineConnectionType == xiiAssetDocEngineConnection::FullObjectMirroring, "xiiGameObjectDocument only supports full mirroring engine connection types. The parameter only exists for interface compatibility.");
 
   m_CurrentMode.m_bRenderSelectionOverlay = true;
   m_CurrentMode.m_bRenderShapeIcons       = true;
@@ -274,7 +270,7 @@ void xiiGameObjectDocument::DetermineNodeName(const xiiDocumentObject* pObject, 
     {
       bHasIcon = true;
 
-      xiiColor color = xiiColor::MakeZero();
+      xiiColor color = xiiColor::ZeroColor();
 
       if (auto pCatAttr = pChild->GetTypeAccessor().GetType()->GetAttributeByType<xiiCategoryAttribute>())
       {
@@ -312,8 +308,7 @@ void xiiGameObjectDocument::DetermineNodeName(const xiiDocumentObject* pObject, 
     {
       // search for string properties that also have an asset browser property -> they reference an asset, so this is most likely the most
       // relevant property
-      if (
-        (pProperty->GetSpecificType() == xiiGetStaticRTTI<const char*>() || pProperty->GetSpecificType() == xiiGetStaticRTTI<xiiString>()) && pProperty->GetAttributeByType<xiiAssetBrowserAttribute>() != nullptr)
+      if ((pProperty->GetSpecificType() == xiiGetStaticRTTI<const char*>() || pProperty->GetSpecificType() == xiiGetStaticRTTI<xiiString>()) && pProperty->GetAttributeByType<xiiAssetBrowserAttribute>() != nullptr)
       {
         xiiStringBuilder sValue;
         if (pProperty->GetCategory() == xiiPropertyCategory::Member)
@@ -363,11 +358,7 @@ void xiiGameObjectDocument::DetermineNodeName(const xiiDocumentObject* pObject, 
 }
 
 
-void xiiGameObjectDocument::QueryCachedNodeName(
-  const xiiDocumentObject* pObject,
-  xiiStringBuilder&        out_sResult,
-  xiiUuid*                 out_pPrefabGuid,
-  QIcon*                   out_pIcon /*= nullptr*/) const
+void xiiGameObjectDocument::QueryCachedNodeName(const xiiDocumentObject* pObject, xiiStringBuilder& out_sResult, xiiUuid* out_pPrefabGuid, QIcon* out_pIcon /*= nullptr*/) const
 {
   auto          pMetaScene = m_GameObjectMetaData->BeginReadMetaData(pObject->GetGuid());
   auto          pMetaDoc   = m_DocumentObjectMetaData->BeginReadMetaData(pObject->GetGuid());
@@ -404,7 +395,6 @@ void xiiGameObjectDocument::QueryCachedNodeName(
       *out_pIcon = icon;
   }
 }
-
 
 void xiiGameObjectDocument::GenerateFullDisplayName(const xiiDocumentObject* pRoot, xiiStringBuilder& out_sFullPath) const
 {
@@ -456,7 +446,7 @@ void xiiGameObjectDocument::SetGlobalTransform(const xiiDocumentObject* pObject,
 
     xiiSimdTransform tParent = m_GlobalTransforms[pParent];
 
-    tLocal = xiiSimdTransform::MakeLocalTransform(tParent, simdT);
+    tLocal.SetLocalTransform(tParent, simdT);
   }
   else
   {
@@ -669,7 +659,6 @@ void xiiGameObjectDocument::SnapCameraToObject()
   ctxt.m_pLastHoveredViewWidget->InterpolateCameraTo(trans.m_vPosition, vForward, pCamera->GetFovOrDim(), &vUp);
 }
 
-
 void xiiGameObjectDocument::MoveCameraHere()
 {
   const auto& ctxt = xiiQtEngineViewWidget::GetInteractionContext();
@@ -752,7 +741,7 @@ xiiStatus xiiGameObjectDocument::CreateGameObjectHere()
 
   if (true)
   {
-    cmdAdd.m_NewObjectGuid = xiiUuid::MakeUuid();
+    cmdAdd.m_NewObjectGuid = xiiUuid::CreateUuid();
     NewNode                = cmdAdd.m_NewObjectGuid;
 
     auto res = history->AddCommand(cmdAdd);
@@ -834,7 +823,6 @@ void xiiGameObjectDocument::SetRenderSelectionOverlay(bool b)
   ShowDocumentStatus(xiiFmt("Selection Overlay: {}", m_CurrentMode.m_bRenderSelectionOverlay ? "ON" : "OFF"));
 }
 
-
 void xiiGameObjectDocument::SetRenderVisualizers(bool b)
 {
   if (m_CurrentMode.m_bRenderVisualizers == b)
@@ -914,6 +902,7 @@ void xiiGameObjectDocument::ObjectStructureEventHandler(const xiiDocumentObjectS
       case xiiDocumentObjectStructureEvent::Type::AfterObjectMoved2:
       case xiiDocumentObjectStructureEvent::Type::AfterObjectAdded:
       case xiiDocumentObjectStructureEvent::Type::AfterObjectRemoved:
+      {
         if (e.m_sParentProperty == "Components")
         {
           if (e.m_pPreviousParent != nullptr)
@@ -930,14 +919,14 @@ void xiiGameObjectDocument::ObjectStructureEventHandler(const xiiDocumentObjectS
             m_GameObjectMetaData->EndModifyMetaData(xiiGameObjectMetaData::CachedName);
           }
         }
-        break;
+      }
+      break;
 
       default:
         break;
     }
   }
 }
-
 
 void xiiGameObjectDocument::ObjectEventHandler(const xiiDocumentObjectEvent& e)
 {
@@ -966,7 +955,6 @@ void xiiGameObjectDocument::ObjectEventHandler(const xiiDocumentObjectEvent& e)
       break;
   }
 }
-
 
 void xiiGameObjectDocument::SelectionManagerEventHandler(const xiiSelectionManagerEvent& e)
 {
@@ -1031,14 +1019,15 @@ xiiTransform xiiGameObjectDocument::ComputeGlobalTransform(const xiiDocumentObje
 {
   if (pObject == nullptr || pObject->GetTypeAccessor().GetType() != xiiGetStaticRTTI<xiiGameObject>())
   {
-    m_GlobalTransforms[pObject] = xiiSimdTransform::MakeIdentity();
-    return xiiTransform::MakeIdentity();
+    m_GlobalTransforms[pObject] = xiiSimdTransform::IdentityTransform();
+    return xiiTransform::IdentityTransform();
   }
 
   const xiiSimdTransform tParent = xiiSimdConversion::ToTransform(ComputeGlobalTransform(pObject->GetParent()));
   const xiiSimdTransform tLocal  = QueryLocalTransformSimd(pObject);
 
-  xiiSimdTransform tGlobal = xiiSimdTransform::MakeGlobalTransform(tParent, tLocal);
+  xiiSimdTransform tGlobal;
+  tGlobal.SetGlobalTransform(tParent, tLocal);
 
   m_GlobalTransforms[pObject] = tGlobal;
 

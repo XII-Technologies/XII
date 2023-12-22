@@ -8,7 +8,6 @@
 #include <Foundation/IO/OSFile.h>
 #include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
-
 xiiFileNameValidator::xiiFileNameValidator(QObject* pParent, xiiStringView sParentFolder, xiiStringView sCurrentName) :
   QValidator(pParent), m_sParentFolder(sParentFolder), m_sCurrentName(sCurrentName)
 {
@@ -35,7 +34,6 @@ QValidator::State xiiFileNameValidator::validate(QString& ref_sInput, int& ref_i
   return QValidator::State::Acceptable;
 }
 
-
 xiiFolderNameDelegate::xiiFolderNameDelegate(QObject* pParent /*= nullptr*/) :
   QItemDelegate(pParent)
 {
@@ -56,8 +54,6 @@ void xiiFolderNameDelegate::setModelData(QWidget* pEditor, QAbstractItemModel* p
   QLineEdit* pLineEdit = qobject_cast<QLineEdit*>(pEditor);
   emit       editingFinished(sOldName, pLineEdit->text());
 }
-
-
 
 eqQtAssetBrowserFolderView::eqQtAssetBrowserFolderView(QWidget* pParent) :
   QTreeWidget(pParent)
@@ -89,13 +85,11 @@ eqQtAssetBrowserFolderView::~eqQtAssetBrowserFolderView()
   xiiFileSystemModel::GetSingleton()->m_FolderChangedEvents.RemoveEventHandler(xiiMakeDelegate(&eqQtAssetBrowserFolderView::FileSystemModelFolderEventHandler, this));
 }
 
-
 void eqQtAssetBrowserFolderView::SetFilter(xiiQtAssetBrowserFilter* pFilter)
 {
   m_pFilter = pFilter;
   XII_VERIFY(connect(m_pFilter, SIGNAL(PathFilterChanged()), this, SLOT(OnPathFilterChanged())) != nullptr, "signal/slot connection failed");
 }
-
 
 void eqQtAssetBrowserFolderView::SetDialogMode(bool bDialogMode)
 {
@@ -288,7 +282,6 @@ void eqQtAssetBrowserFolderView::dropEvent(QDropEvent* e)
     return;
   }
 
-
   QMessageBox::StandardButton choice = xiiQtUiServices::MessageBoxQuestion(xiiFmt("Do you want to move {} files / folders into '{}'?", files.GetCount(), sTargetFolder), QMessageBox::StandardButton::Cancel | QMessageBox::StandardButton::Yes, QMessageBox::StandardButton::Yes);
   if (choice == QMessageBox::StandardButton::Cancel)
     return;
@@ -325,14 +318,12 @@ void eqQtAssetBrowserFolderView::dropEvent(QDropEvent* e)
   }
 }
 
-
 QStringList eqQtAssetBrowserFolderView::mimeTypes() const
 {
   QStringList types;
   types << "application/xiiEditor.files";
   return types;
 }
-
 
 Qt::DropActions eqQtAssetBrowserFolderView::supportedDropActions() const
 {
@@ -607,7 +598,6 @@ void eqQtAssetBrowserFolderView::RemoveDirectoryTreeItem(xiiStringView sCurPath,
     delete pTreeItem;
   }
 }
-
 
 QTreeWidgetItem* eqQtAssetBrowserFolderView::FindDirectoryTreeItem(xiiStringView sCurPath, QTreeWidgetItem* pParent, xiiStringView sCurPathToItem)
 {

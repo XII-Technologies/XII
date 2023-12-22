@@ -1,7 +1,9 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/ui_ExportProjectDlg.h>
+
 #include <QDialog>
 
 class xiiQtExportProjectDlg : public QDialog, public Ui_ExportProjectDlg

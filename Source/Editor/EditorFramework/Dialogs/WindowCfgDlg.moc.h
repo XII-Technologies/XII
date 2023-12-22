@@ -1,9 +1,11 @@
 #pragma once
 
-#include <Core/System/Window.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <Core/System/Window.h>
 #include <EditorFramework/ui_WindowCfgDlg.h>
 #include <Foundation/Application/Config/FileSystemConfig.h>
+
 #include <QDialog>
 
 class XII_EDITORFRAMEWORK_DLL xiiQtWindowCfgDlg : public QDialog, public Ui_xiiQtWindowCfgDlg

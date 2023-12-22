@@ -1,8 +1,10 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/ui_PreferencesDlg.h>
 #include <Foundation/Strings/String.h>
+
 #include <QDialog>
 
 class xiiPreferencesDocument;
@@ -21,7 +23,6 @@ public:
   xiiUuid NativeToObject(xiiPreferences* pPreferences);
   void    ObjectToNative(xiiUuid objectGuid, const xiiDocument* pPrefDocument);
 
-
 private Q_SLOTS:
   void on_ButtonOk_clicked();
   void on_ButtonCancel_clicked() { reject(); }
@@ -32,6 +33,6 @@ private:
   void PropertyChangedEventHandler(const xiiDocumentObjectPropertyEvent& e);
   void ApplyAllChanges();
 
-  xiiPreferencesDocument*             m_pDocument;
+  xiiPreferencesDocument*             m_pDocument = nullptr;
   xiiMap<xiiUuid, const xiiDocument*> m_DocumentBinding;
 };

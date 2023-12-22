@@ -19,15 +19,9 @@ void xiiQtEditorApp::GuiCreateOrOpenDocument(bool bCreate)
   xiiString sFile;
 
   if (bCreate)
-    sFile = QFileDialog::getSaveFileName(QApplication::activeWindow(), QLatin1String("Create Document"), sDir,
-                                         QString::fromUtf8(sAllFilters.GetData()), &sSelectedExt, QFileDialog::Option::DontResolveSymlinks)
-              .toUtf8()
-              .data();
+    sFile = QFileDialog::getSaveFileName(QApplication::activeWindow(), QLatin1String("Create Document"), sDir, QString::fromUtf8(sAllFilters.GetData()), &sSelectedExt, QFileDialog::Option::DontResolveSymlinks).toUtf8().data();
   else
-    sFile = QFileDialog::getOpenFileName(QApplication::activeWindow(), QLatin1String("Open Document"), sDir, QString::fromUtf8(sAllFilters.GetData()),
-                                         &sSelectedExt, QFileDialog::Option::DontResolveSymlinks)
-              .toUtf8()
-              .data();
+    sFile = QFileDialog::getOpenFileName(QApplication::activeWindow(), QLatin1String("Open Document"), sDir, QString::fromUtf8(sAllFilters.GetData()), &sSelectedExt, QFileDialog::Option::DontResolveSymlinks).toUtf8().data();
 
   if (sFile.IsEmpty())
     return;
@@ -55,7 +49,6 @@ void xiiQtEditorApp::GuiOpenDocument()
 {
   GuiCreateOrOpenDocument(false);
 }
-
 
 xiiString xiiQtEditorApp::BuildDocumentTypeFileFilter(bool bForCreation)
 {
@@ -93,7 +86,6 @@ xiiString xiiQtEditorApp::BuildDocumentTypeFileFilter(bool bForCreation)
 
   return sAllFilters;
 }
-
 
 void xiiQtEditorApp::DocumentWindowEventHandler(const xiiQtDocumentWindowEvent& e)
 {

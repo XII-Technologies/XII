@@ -150,7 +150,7 @@ xiiQuat xiiTransformManipulatorAdapter::GetRotation()
     return pObjectAccessor->Get<xiiQuat>(m_pObject, GetProperty(pAttr->GetRotateProperty()));
   }
 
-  return xiiQuat::MakeIdentity();
+  return xiiQuat::IdentityQuaternion();
 }
 
 xiiVec3 xiiTransformManipulatorAdapter::GetScale()

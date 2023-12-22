@@ -313,7 +313,7 @@ void xiiSceneAction::Execute(const xiiVariant& value)
         else
         {
           auto tNow  = xiiTimestamp::CurrentTimestamp();
-          auto tComp = stat.m_LastModificationTime + xiiTime::MakeFromHours(24) * 7;
+          auto tComp = stat.m_LastModificationTime + xiiTime::Hours(24) * 7;
 
           if (tComp.GetInt64(xiiSIUnitOfTime::Second) < tNow.GetInt64(xiiSIUnitOfTime::Second))
           {

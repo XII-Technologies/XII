@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <ToolsFoundation/Document/Document.h>
 
 class XII_EDITORFRAMEWORK_DLL xiiAssetDocumentInfo final : public xiiDocumentInfo
@@ -24,10 +25,9 @@ public:
 
   xiiSet<xiiString> m_Outputs; ///< Additional output this asset produces besides the default one. These are tags like VISUAL_SHADER that are resolved
                                ///< by the xiiAssetDocumentManager into paths.
-  xiiHashedString m_sAssetsDocumentTypeName;
-  xiiDynamicArray<xiiReflectedClass*>
-    m_MetaInfo; ///< Holds arbitrary objects that store meta-data for the asset document. Mainly used for exposed parameters, but can be any reflected
-                ///< type. This array takes ownership of all objects and deallocates them on shutdown.
+  xiiHashedString                     m_sAssetsDocumentTypeName;
+  xiiDynamicArray<xiiReflectedClass*> m_MetaInfo; ///< Holds arbitrary objects that store meta-data for the asset document. Mainly used for exposed parameters, but can be any reflected
+                                                  ///< type. This array takes ownership of all objects and deallocates them on shutdown.
 
   const char* GetAssetsDocumentTypeName() const;
   void        SetAssetsDocumentTypeName(const char* szSz);

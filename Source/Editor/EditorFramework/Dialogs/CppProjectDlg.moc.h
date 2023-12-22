@@ -5,6 +5,7 @@
 #include <EditorFramework/CodeGen/CppSettings.h>
 #include <EditorFramework/ui_CppProjectDlg.h>
 #include <Foundation/Strings/String.h>
+
 #include <QDialog>
 
 class XII_EDITORFRAMEWORK_DLL xiiQtCppProjectDlg : public QDialog, public Ui_xiiQtCppProjectDlg

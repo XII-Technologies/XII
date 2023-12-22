@@ -9,7 +9,7 @@ class xiiColorControlPoint : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiColorControlPoint, xiiReflectedClass);
 
 public:
-  xiiTime GetTickAsTime() const { return xiiTime::MakeFromSeconds(m_iTick / 4800.0); }
+  xiiTime GetTickAsTime() const { return xiiTime::Seconds(m_iTick / 4800.0); }
   void    SetTickFromTime(xiiTime time, xiiInt64 iFps);
 
   // double m_fPositionX;
@@ -24,7 +24,7 @@ class xiiAlphaControlPoint : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiAlphaControlPoint, xiiReflectedClass);
 
 public:
-  xiiTime GetTickAsTime() const { return xiiTime::MakeFromSeconds(m_iTick / 4800.0); }
+  xiiTime GetTickAsTime() const { return xiiTime::Seconds(m_iTick / 4800.0); }
   void    SetTickFromTime(xiiTime time, xiiInt64 iFps);
 
   // double m_fPositionX;
@@ -37,7 +37,7 @@ class xiiIntensityControlPoint : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiIntensityControlPoint, xiiReflectedClass);
 
 public:
-  xiiTime GetTickAsTime() const { return xiiTime::MakeFromSeconds(m_iTick / 4800.0); }
+  xiiTime GetTickAsTime() const { return xiiTime::Seconds(m_iTick / 4800.0); }
   void    SetTickFromTime(xiiTime time, xiiInt64 iFps);
 
   // double m_fPositionX;

@@ -9,7 +9,6 @@ xiiDragDropHandler* xiiDragDropHandler::s_pActiveDnD = nullptr;
 
 xiiDragDropHandler::xiiDragDropHandler() = default;
 
-
 xiiDragDropHandler* xiiDragDropHandler::FindDragDropHandler(const xiiDragDropInfo* pInfo)
 {
   float               fBestValue = 0.0f;

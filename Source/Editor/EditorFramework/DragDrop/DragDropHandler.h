@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <Foundation/Reflection/Reflection.h>
 
 class xiiDragDropInfo;
@@ -37,7 +38,6 @@ public:
 
 public:
   xiiDragDropHandler();
-
 
 protected:
   /// \brief Used to ask a handler whether it knows how to handle a certain drag & drop situation.

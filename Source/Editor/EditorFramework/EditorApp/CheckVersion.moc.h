@@ -5,6 +5,7 @@
 #include <Foundation/Strings/String.h>
 
 #include <Foundation/Types/UniquePtr.h>
+
 #include <QObject>
 #include <QProcess>
 

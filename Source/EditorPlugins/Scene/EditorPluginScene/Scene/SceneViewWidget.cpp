@@ -126,7 +126,7 @@ void xiiQtSceneViewWidget::dragMoveEvent(QDragMoveEvent* e)
 {
   const xiiTime tNow = xiiTime::Now();
 
-  if (tNow - m_LastDragMoveEvent < xiiTime::MakeFromSeconds(1.0 / 25.0))
+  if (tNow - m_LastDragMoveEvent < xiiTime::Seconds(1.0 / 25.0))
     return;
 
   m_LastDragMoveEvent = tNow;

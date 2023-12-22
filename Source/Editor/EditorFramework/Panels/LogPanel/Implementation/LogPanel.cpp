@@ -98,7 +98,7 @@ void xiiQtLogPanel::OnNewWarningsOrErrors(const char* szText, bool bError)
   if (!xiiStringUtils::IsNullOrEmpty(szText))
   {
     xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(
-      xiiFmt("{}: {}", bError ? "Error" : "Warning", szText), xiiTime::MakeFromSeconds(10));
+      xiiFmt("{}: {}", bError ? "Error" : "Warning", szText), xiiTime::Seconds(10));
   }
 }
 
@@ -130,7 +130,7 @@ void xiiQtLogPanel::LogWriter(const xiiLoggingEventData& e)
 
   if (msg.m_sTag == "EditorStatus")
   {
-    xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt(msg.m_sMsg), xiiTime::MakeFromSeconds(5));
+    xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt(msg.m_sMsg), xiiTime::Seconds(5));
   }
 }
 

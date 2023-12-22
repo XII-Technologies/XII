@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <EditorFramework/IPC/IPCObjectMirrorEditor.h>
 #include <GuiFoundation/DocumentWindow/DocumentWindow.moc.h>
@@ -15,7 +16,6 @@ class xiiEditorEngineDocumentMsg;
 struct xiiObjectPickingResult;
 struct xiiEngineViewConfig;
 struct xiiCommonAssetUiState;
-
 
 struct XII_EDITORFRAMEWORK_DLL xiiEngineWindowEvent
 {

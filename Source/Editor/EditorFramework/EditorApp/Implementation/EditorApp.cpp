@@ -9,8 +9,9 @@
 #include <Foundation/IO/OpenDdlWriter.h>
 #include <GuiFoundation/UIServices/DynamicStringEnum.h>
 #include <GuiFoundation/UIServices/QtProgressbar.h>
-#include <QFileDialog>
 #include <ToolsFoundation/Application/ApplicationServices.h>
+
+#include <QFileDialog>
 
 XII_IMPLEMENT_SINGLETON(xiiQtEditorApp);
 
@@ -90,8 +91,7 @@ void xiiQtEditorApp::SlotVersionCheckCompleted(bool bNewVersionReleased, bool bF
 
   if (m_pVersionChecker->IsLatestNewer())
   {
-    xiiQtUiServices::GetSingleton()->ShowGlobalStatusBarMessage(
-      xiiFmt("New version '{}' available, please update.", m_pVersionChecker->GetKnownLatestVersion()));
+    xiiQtUiServices::GetSingleton()->ShowGlobalStatusBarMessage(xiiFmt("New version '{}' available, please update.", m_pVersionChecker->GetKnownLatestVersion()));
   }
 }
 

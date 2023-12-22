@@ -96,7 +96,7 @@ void xiiQtVersionChecker::Initialize()
 
   m_sKnownLatestVersion = pLatest->GetPrimitivesString()[0];
 
-  const xiiTimestamp nextCheck = fs.m_LastModificationTime + xiiTime::MakeFromHours(24);
+  const xiiTimestamp nextCheck = fs.m_LastModificationTime + xiiTime::Hours(24);
 
   if (nextCheck.Compare(xiiTimestamp::CurrentTimestamp(), xiiTimestamp::CompareMode::Newer))
   {

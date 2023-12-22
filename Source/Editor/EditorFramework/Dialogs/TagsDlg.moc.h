@@ -1,11 +1,13 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/ui_TagsDlg.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Strings/String.h>
-#include <QDialog>
 #include <ToolsFoundation/Settings/ToolsTagRegistry.h>
+
+#include <QDialog>
 
 class XII_EDITORFRAMEWORK_DLL xiiQtTagsDlg : public QDialog, public Ui_xiiQtTagsDlg
 {

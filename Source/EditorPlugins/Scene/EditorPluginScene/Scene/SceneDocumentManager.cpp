@@ -167,13 +167,13 @@ void xiiSceneDocumentManager::SetupDefaultScene(xiiDocument* pDocument)
   auto history = pDocument->GetCommandHistory();
   history->StartTransaction("Initial Scene Setup");
 
-  const xiiUuid skyObjectGuid   = xiiUuid::MakeUuid();
-  const xiiUuid lightObjectGuid = xiiUuid::MakeUuid();
-  const xiiUuid meshObjectGuid  = xiiUuid::MakeUuid();
+  const xiiUuid skyObjectGuid   = xiiUuid::CreateUuid();
+  const xiiUuid lightObjectGuid = xiiUuid::CreateUuid();
+  const xiiUuid meshObjectGuid  = xiiUuid::CreateUuid();
 
   // Thumbnail Camera
   {
-    const xiiUuid objectGuid = xiiUuid::MakeUuid();
+    const xiiUuid objectGuid = xiiUuid::CreateUuid();
 
     xiiAddObjectCommand cmd;
     cmd.m_Index = -1;

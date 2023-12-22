@@ -4,7 +4,6 @@
 #include <EditorFramework/DragDrop/AssetDragDropHandler.h>
 #include <EditorFramework/DragDrop/DragDropInfo.h>
 
-
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAssetDragDropHandler, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 

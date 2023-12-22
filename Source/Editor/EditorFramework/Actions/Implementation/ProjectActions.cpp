@@ -85,13 +85,9 @@ void xiiProjectActions::RegisterActions()
   s_hCatFileSpecial  = XII_REGISTER_CATEGORY("G.File.Special");
   s_hCatAssetDoc     = XII_REGISTER_CATEGORY("G.AssetDoc");
 
-
-  s_hOpenDashboard = XII_REGISTER_ACTION_1("Editor.OpenDashboard", xiiActionScope::Global, "Editor", "Ctrl+Shift+D", xiiProjectAction, xiiProjectAction::ButtonType::OpenDashboard);
-
-  s_hCreateProject = XII_REGISTER_ACTION_1("Project.Create", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::CreateProject);
-
-  s_hOpenProject = XII_REGISTER_ACTION_1("Project.Open", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::OpenProject);
-
+  s_hOpenDashboard  = XII_REGISTER_ACTION_1("Editor.OpenDashboard", xiiActionScope::Global, "Editor", "Ctrl+Shift+D", xiiProjectAction, xiiProjectAction::ButtonType::OpenDashboard);
+  s_hCreateProject  = XII_REGISTER_ACTION_1("Project.Create", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::CreateProject);
+  s_hOpenProject    = XII_REGISTER_ACTION_1("Project.Open", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::OpenProject);
   s_hRecentProjects = XII_REGISTER_DYNAMIC_MENU("Project.RecentProjects.Menu", xiiRecentProjectsMenuAction, "");
   s_hCloseProject   = XII_REGISTER_ACTION_1("Project.Close", xiiActionScope::Global, "Project", "", xiiProjectAction, xiiProjectAction::ButtonType::CloseProject);
 
@@ -138,8 +134,6 @@ void xiiProjectActions::RegisterActions()
   s_hLaunchInspector = XII_REGISTER_ACTION_1("Editor.LaunchInspector", xiiActionScope::Global, "Engine", "", xiiProjectAction, xiiProjectAction::ButtonType::LaunchInspector);
   s_hSaveProfiling   = XII_REGISTER_ACTION_1("Editor.SaveProfiling", xiiActionScope::Global, "Engine", "Ctrl+Alt+P", xiiProjectAction, xiiProjectAction::ButtonType::SaveProfiling);
   s_hOpenVsCode      = XII_REGISTER_ACTION_1("Editor.OpenVsCode", xiiActionScope::Global, "Project", "Ctrl+Alt+O", xiiProjectAction, xiiProjectAction::ButtonType::OpenVsCode);
-
-
 
   s_hDocsAndCommunity = XII_REGISTER_ACTION_1("Editor.DocsAndCommunity", xiiActionScope::Global, "Editor", "", xiiProjectAction, xiiProjectAction::ButtonType::ShowDocsAndCommunity);
 }
@@ -493,8 +487,7 @@ xiiProjectAction::xiiProjectAction(const xiiActionContext& context, const char* 
     xiiToolsProject::s_Events.AddEventHandler(xiiMakeDelegate(&xiiProjectAction::ProjectEventHandler, this));
   }
 
-  if (m_ButtonType == ButtonType::OpenCppProject ||
-      m_ButtonType == ButtonType::CompileCppProject)
+  if (m_ButtonType == ButtonType::OpenCppProject || m_ButtonType == ButtonType::CompileCppProject)
   {
     SetEnabled(xiiCppProject::ExistsProjectCMakeListsTxt());
 
@@ -526,8 +519,7 @@ xiiProjectAction::~xiiProjectAction()
     xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiProjectAction::ProjectEventHandler, this));
   }
 
-  if (m_ButtonType == ButtonType::OpenCppProject ||
-      m_ButtonType == ButtonType::CompileCppProject)
+  if (m_ButtonType == ButtonType::OpenCppProject || m_ButtonType == ButtonType::CompileCppProject)
   {
     xiiCppProject::s_ChangeEvents.RemoveEventHandler(xiiMakeDelegate(&xiiProjectAction::CppEventHandler, this));
   }
@@ -535,8 +527,7 @@ xiiProjectAction::~xiiProjectAction()
 
 void xiiProjectAction::ProjectEventHandler(const xiiToolsProjectEvent& e)
 {
-  if (m_ButtonType == ButtonType::OpenCppProject ||
-      m_ButtonType == ButtonType::CompileCppProject)
+  if (m_ButtonType == ButtonType::OpenCppProject || m_ButtonType == ButtonType::CompileCppProject)
   {
     SetEnabled(xiiCppProject::ExistsProjectCMakeListsTxt());
   }
@@ -548,8 +539,7 @@ void xiiProjectAction::ProjectEventHandler(const xiiToolsProjectEvent& e)
 
 void xiiProjectAction::CppEventHandler(const xiiCppSettings& e)
 {
-  if (m_ButtonType == ButtonType::OpenCppProject ||
-      m_ButtonType == ButtonType::CompileCppProject)
+  if (m_ButtonType == ButtonType::OpenCppProject || m_ButtonType == ButtonType::CompileCppProject)
   {
     SetEnabled(xiiCppProject::ExistsProjectCMakeListsTxt());
   }
@@ -686,7 +676,7 @@ void xiiProjectAction::Execute(const xiiVariant& value)
 
     case xiiProjectAction::ButtonType::ReloadResources:
     {
-      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Reloading Resources...", xiiTime::MakeFromSeconds(5));
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Reloading Resources...", xiiTime::Seconds(5));
 
       xiiSimpleConfigMsgToEngine msg;
       msg.m_sWhatToDo = "ReloadResources";
@@ -715,7 +705,7 @@ void xiiProjectAction::Execute(const xiiVariant& value)
 
     case xiiProjectAction::ButtonType::LaunchFileserve:
     {
-      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Launching FileServe...", xiiTime::MakeFromSeconds(5));
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Launching FileServe...", xiiTime::Seconds(5));
 
       xiiQtLaunchFileserveDlg dlg(nullptr);
       dlg.exec();
@@ -724,7 +714,7 @@ void xiiProjectAction::Execute(const xiiVariant& value)
 
     case xiiProjectAction::ButtonType::LaunchInspector:
     {
-      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Launching xiiInspector...", xiiTime::MakeFromSeconds(5));
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Launching xiiInspector...", xiiTime::Seconds(5));
 
       xiiQtEditorApp::GetSingleton()->RunInspector();
     }
@@ -759,7 +749,7 @@ void xiiProjectAction::Execute(const xiiVariant& value)
         };
         xiiProcessCommunicationChannel::WaitForMessageCallback cb = callback;
 
-        if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForMessage(xiiGetStaticRTTI<xiiSaveProfilingResponseToEditor>(), xiiTime::MakeFromSeconds(15), &cb).Failed())
+        if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForMessage(xiiGetStaticRTTI<xiiSaveProfilingResponseToEditor>(), xiiTime::Seconds(15), &cb).Failed())
         {
           xiiLog::Error("Timeout while waiting for engine process to create profiling capture. Captures will not be merged.");
           return;
@@ -772,13 +762,13 @@ void xiiProjectAction::Execute(const xiiVariant& value)
       }
 
       xiiStringBuilder  sMergedFile;
-      const xiiDateTime dt = xiiDateTime::MakeFromTimestamp(xiiTimestamp::CurrentTimestamp());
+      const xiiDateTime dt = xiiDateTime(xiiTimestamp::CurrentTimestamp());
       sMergedFile.AppendFormat(":appdata/profiling_{0}-{1}-{2}_{3}-{4}-{5}-{6}.json", dt.GetYear(), xiiArgU(dt.GetMonth(), 2, true), xiiArgU(dt.GetDay(), 2, true), xiiArgU(dt.GetHour(), 2, true), xiiArgU(dt.GetMinute(), 2, true), xiiArgU(dt.GetSecond(), 2, true), xiiArgU(dt.GetMicroseconds() / 1000, 3, true));
 
       xiiStringBuilder sAbsPath;
       if (xiiProfilingUtils::MergeProfilingCaptures(sEngineProfilingFile, szEditorProfilingFile, sMergedFile).Succeeded() && xiiFileSystem::ResolvePath(sMergedFile, &sAbsPath, nullptr).Succeeded())
       {
-        xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Merged profiling capture saved to '{0}'.", sAbsPath), xiiTime::MakeFromSeconds(5.0));
+        xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Merged profiling capture saved to '{0}'.", sAbsPath), xiiTime::Seconds(5.0));
       }
     }
     break;

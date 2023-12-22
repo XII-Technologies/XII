@@ -103,7 +103,7 @@ xiiTime xiiPropertyAnimAssetDocument::GetAnimationDurationTime() const
 {
   const xiiInt64 ticks = GetAnimationDurationTicks();
 
-  return xiiTime::MakeFromSeconds(ticks / 4800.0);
+  return xiiTime::Seconds(ticks / 4800.0);
 }
 
 void xiiPropertyAnimAssetDocument::AdjustDuration()

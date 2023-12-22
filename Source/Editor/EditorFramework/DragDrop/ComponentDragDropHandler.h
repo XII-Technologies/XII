@@ -26,7 +26,7 @@ protected:
 
   void CancelTemporaryCommands();
 
-  xiiDocument*                m_pDocument;
+  xiiDocument*                m_pDocument = nullptr;
   xiiHybridArray<xiiUuid, 16> m_DraggedObjects;
 
   virtual void OnDragBegin(const xiiDragDropInfo* pInfo) override;
@@ -39,5 +39,5 @@ protected:
 
   virtual float CanHandle(const xiiDragDropInfo* pInfo) const override;
 
-  xiiVec3 m_vAlignAxisWithNormal = xiiVec3::MakeZero();
+  xiiVec3 m_vAlignAxisWithNormal = xiiVec3::ZeroVector();
 };

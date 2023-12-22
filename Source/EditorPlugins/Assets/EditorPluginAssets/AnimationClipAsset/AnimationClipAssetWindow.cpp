@@ -69,7 +69,7 @@ xiiQtAnimationClipAssetDocumentWindow::xiiQtAnimationClipAssetDocumentWindow(xii
   // Time Scrubber
   {
     m_pTimeScrubber = new xiiQtTimeScrubberWidget(pContainer);
-    m_pTimeScrubber->SetDuration(xiiTime::MakeFromSeconds(1));
+    m_pTimeScrubber->SetDuration(xiiTime::Seconds(1));
 
     pContainer->GetLayout()->addWidget(m_pTimeScrubber);
 
@@ -238,7 +238,7 @@ void xiiQtAnimationClipAssetDocumentWindow::ProcessMessageEventHandler(const xii
   {
     if (pMsg->m_sName == "ClipDuration")
     {
-      const xiiTime newDuration = xiiTime::MakeFromSeconds(pMsg->m_fPayload);
+      const xiiTime newDuration = xiiTime::Seconds(pMsg->m_fPayload);
 
       if (m_ClipDuration != newDuration)
       {
@@ -260,7 +260,7 @@ void xiiQtAnimationClipAssetDocumentWindow::CommonAssetUiEventHandler(const xiiC
 
   if (e.m_State == xiiCommonAssetUiState::Restart)
   {
-    m_PlaybackPosition = xiiTime::MakeFromSeconds(-1);
+    m_PlaybackPosition = xiiTime::Seconds(-1);
   }
 }
 
@@ -269,7 +269,7 @@ void xiiQtAnimationClipAssetDocumentWindow::OnScrubberPosChangedEvent(xiiUInt64 
   if (m_pTimeScrubber == nullptr || m_ClipDuration.IsZeroOrNegative())
     return;
 
-  m_PlaybackPosition = xiiTime::MakeFromSeconds(uiNewScrubberTickPos / 4800.0);
+  m_PlaybackPosition = xiiTime::Seconds(uiNewScrubberTickPos / 4800.0);
 }
 
 void xiiQtAnimationClipAssetDocumentWindow::onEventTrackInsertCpAt(xiiInt64 tickX, QString value)

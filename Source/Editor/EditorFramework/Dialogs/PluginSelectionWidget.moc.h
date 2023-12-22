@@ -4,6 +4,7 @@
 
 #include <EditorFramework/ui_PluginSelectionWidget.h>
 #include <Foundation/Strings/String.h>
+
 #include <QWidget>
 
 struct xiiPluginBundleSet;

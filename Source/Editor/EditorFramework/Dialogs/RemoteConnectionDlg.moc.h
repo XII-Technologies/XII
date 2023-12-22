@@ -1,8 +1,10 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/ui_RemoteConnectionDlg.h>
 #include <Foundation/Strings/String.h>
+
 #include <QDialog>
 
 class XII_EDITORFRAMEWORK_DLL xiiQtRemoteConnectionDlg : public QDialog, public Ui_xiiQtRemoteConnectionDlg

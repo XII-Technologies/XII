@@ -1,5 +1,7 @@
 #pragma once
 
+#include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
 #include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorFramework/Preferences/EditorPreferences.h>

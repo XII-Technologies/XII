@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <Foundation/Reflection/Reflection.h>
 
 class QMimeData;
@@ -19,7 +20,7 @@ class XII_EDITORFRAMEWORK_DLL xiiDragDropInfo : public xiiReflectedClass
 public:
   xiiDragDropInfo();
 
-  const QMimeData* m_pMimeData;
+  const QMimeData* m_pMimeData = nullptr;
 
   /// A string identifying into what context the object is dropped, e.g. "viewport" or "scenetree" etc.
   xiiString m_sTargetContext;

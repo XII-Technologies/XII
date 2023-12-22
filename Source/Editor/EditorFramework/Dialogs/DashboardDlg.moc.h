@@ -4,6 +4,7 @@
 
 #include <EditorFramework/ui_DashboardDlg.h>
 #include <Foundation/Strings/String.h>
+
 #include <QDialog>
 
 class XII_EDITORFRAMEWORK_DLL xiiQtDashboardDlg : public QDialog, public Ui_xiiQtDashboardDlg

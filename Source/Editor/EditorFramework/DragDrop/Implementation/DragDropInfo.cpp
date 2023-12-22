@@ -15,7 +15,6 @@ xiiDragDropInfo::xiiDragDropInfo()
   m_bCtrlKeyDown                  = false;
 }
 
-
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDragDropConfig, 1, xiiRTTIDefaultAllocator<xiiDragDropConfig>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 

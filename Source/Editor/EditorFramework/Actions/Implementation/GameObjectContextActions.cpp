@@ -16,12 +16,9 @@ xiiActionDescriptorHandle xiiGameObjectContextActions::s_hClearContextObject;
 void xiiGameObjectContextActions::RegisterActions()
 {
   s_hCategory           = XII_REGISTER_CATEGORY("GameObjectContextCategory");
-  s_hPickContextScene   = XII_REGISTER_ACTION_1("GameObjectContext.PickContextScene", xiiActionScope::Window, "Game Object Context", "",
-                                              xiiGameObjectContextAction, xiiGameObjectContextAction::ActionType::PickContextScene);
-  s_hPickContextObject  = XII_REGISTER_ACTION_1("GameObjectContext.PickContextObject", xiiActionScope::Window, "Game Object Context", "",
-                                               xiiGameObjectContextAction, xiiGameObjectContextAction::ActionType::PickContextObject);
-  s_hClearContextObject = XII_REGISTER_ACTION_1("GameObjectContext.ClearContextObject", xiiActionScope::Window, "Game Object Context", "",
-                                                xiiGameObjectContextAction, xiiGameObjectContextAction::ActionType::ClearContextObject);
+  s_hPickContextScene   = XII_REGISTER_ACTION_1("GameObjectContext.PickContextScene", xiiActionScope::Window, "Game Object Context", "", xiiGameObjectContextAction, xiiGameObjectContextAction::ActionType::PickContextScene);
+  s_hPickContextObject  = XII_REGISTER_ACTION_1("GameObjectContext.PickContextObject", xiiActionScope::Window, "Game Object Context", "", xiiGameObjectContextAction, xiiGameObjectContextAction::ActionType::PickContextObject);
+  s_hClearContextObject = XII_REGISTER_ACTION_1("GameObjectContext.ClearContextObject", xiiActionScope::Window, "Game Object Context", "", xiiGameObjectContextAction, xiiGameObjectContextAction::ActionType::ClearContextObject);
 }
 
 
@@ -112,13 +109,13 @@ void xiiGameObjectContextAction::Execute(const xiiVariant& value)
           pDocument->SetContext(document, selection[0]->GetGuid()).LogFailure();
         }
       }
-    }
       return;
+    }
     case ActionType::ClearContextObject:
     {
       pDocument->SetContext(document, xiiUuid()).LogFailure();
-    }
       return;
+    }
   }
 }
 
@@ -139,6 +136,7 @@ void xiiGameObjectContextAction::Update()
       bool        bIsSingleGameObject = selection.GetCount() == 1 && selection[0]->GetType() == xiiGetStaticRTTI<xiiGameObject>();
       SetEnabled(bIsSingleGameObject);
     }
+    break;
 
     default:
       break;

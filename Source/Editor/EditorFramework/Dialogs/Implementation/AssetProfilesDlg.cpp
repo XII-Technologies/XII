@@ -141,7 +141,7 @@ xiiUuid xiiQtAssetProfilesDlg::NativeToObject(xiiPlatformProfile* pProfile)
   xiiRttiConverterContext context;
   xiiRttiConverterWriter  conv(&graph, &context, true, true);
 
-  const xiiUuid guid = xiiUuid::MakeUuid();
+  const xiiUuid guid = xiiUuid::CreateUuid();
   context.RegisterObject(guid, pType, pProfile);
   xiiAbstractObjectNode* pNode = conv.AddObjectToGraph(pType, pProfile, "root");
 

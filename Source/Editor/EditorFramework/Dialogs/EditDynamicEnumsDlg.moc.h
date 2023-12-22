@@ -4,6 +4,7 @@
 
 #include <EditorFramework/ui_EditDynamicEnumsDlg.h>
 #include <Foundation/Strings/String.h>
+
 #include <QDialog>
 
 class xiiDynamicStringEnum;

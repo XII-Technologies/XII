@@ -141,7 +141,7 @@ void xiiSceneDocument::GroupSelection()
 
   pHistory->StartTransaction("Group Selection");
 
-  xiiUuid groupObj = xiiUuid::MakeUuid();
+  xiiUuid groupObj = xiiUuid::CreateUuid();
 
   xiiAddObjectCommand cmdAdd;
   cmdAdd.m_NewObjectGuid   = groupObj;
@@ -382,7 +382,7 @@ void xiiSceneDocument::CopyReference()
 
   QApplication::clipboard()->setText(sGuid.GetData());
 
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Object Reference: {}", sGuid), xiiTime::MakeFromSeconds(5));
+  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Object Reference: {}", sGuid), xiiTime::Seconds(5));
 }
 
 xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPickedPosition)
@@ -402,7 +402,7 @@ xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPick
 
   if (Sel.IsEmpty() || !bAttachToParent)
   {
-    cmdAdd.m_NewObjectGuid = xiiUuid::MakeUuid();
+    cmdAdd.m_NewObjectGuid = xiiUuid::CreateUuid();
     NewNode                = cmdAdd.m_NewObjectGuid;
 
     auto res = history->AddCommand(cmdAdd);
@@ -414,7 +414,7 @@ xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPick
   }
   else
   {
-    cmdAdd.m_NewObjectGuid = xiiUuid::MakeUuid();
+    cmdAdd.m_NewObjectGuid = xiiUuid::CreateUuid();
     NewNode                = cmdAdd.m_NewObjectGuid;
 
     cmdAdd.m_Parent = Sel[0]->GetGuid();
@@ -626,7 +626,7 @@ xiiStatus xiiSceneDocument::CreatePrefabDocumentFromSelection(xiiStringView sFil
     {
       const xiiRTTI* pRtti = xiiGetStaticRTTI<xiiGameObject>();
 
-      xiiAbstractObjectNode* pRoot = ref_graph.AddNode(xiiUuid::MakeUuid(), pRtti->GetTypeName(), pRtti->GetTypeVersion());
+      xiiAbstractObjectNode* pRoot = ref_graph.AddNode(xiiUuid::CreateUuid(), pRtti->GetTypeName(), pRtti->GetTypeVersion());
       pRoot->AddProperty("Name", "<Prefab-Root>");
       pRoot->AddProperty("Children", varChildren);
 
@@ -1557,7 +1557,7 @@ void xiiSceneDocument::ExportSceneGeometry(const char* szFile, bool bOnlySelecti
 
   SendMessageToEngine(&msg);
 
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Geometry exported to '{0}'", szFile), xiiTime::MakeFromSeconds(5.0f));
+  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Geometry exported to '{0}'", szFile), xiiTime::Seconds(5.0f));
 }
 
 void xiiSceneDocument::HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg)

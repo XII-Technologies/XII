@@ -1,8 +1,8 @@
 #pragma once
 
-#include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
-#include <Foundation/Basics.h>
+
+#include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 
 class xiiViewMarqueePickingResultMsgToEditor;
 class xiiQtGameObjectDocumentWindow;
@@ -18,9 +18,9 @@ public:
   xiiQtGameObjectViewWidget(QWidget* pParent, xiiQtGameObjectDocumentWindow* pOwnerWindow, xiiEngineViewConfig* pViewConfig);
   ~xiiQtGameObjectViewWidget();
 
-  xiiOrthoGizmoContext* m_pOrthoGizmoContext;
-  xiiSelectionContext*  m_pSelectionContext;
-  xiiCameraMoveContext* m_pCameraMoveContext;
+  xiiOrthoGizmoContext* m_pOrthoGizmoContext = nullptr;
+  xiiSelectionContext*  m_pSelectionContext = nullptr;
+  xiiCameraMoveContext* m_pCameraMoveContext = nullptr;
 
   virtual void SyncToEngine() override;
 

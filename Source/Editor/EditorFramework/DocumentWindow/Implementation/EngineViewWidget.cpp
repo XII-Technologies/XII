@@ -62,7 +62,6 @@ xiiQtEngineViewWidget::xiiQtEngineViewWidget(QWidget* pParent, xiiQtEngineDocume
     ShowRestartButton(true);
 }
 
-
 xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
 {
   xiiEditorEngineProcessConnection::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtEngineViewWidget::EngineViewProcessEventHandler, this));
@@ -81,7 +80,7 @@ xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
       };
       xiiProcessCommunicationChannel::WaitForMessageCallback cb = callback;
 
-      if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForMessage(xiiGetStaticRTTI<xiiViewDestroyedResponseMsgToEditor>(), xiiTime::MakeFromSeconds(5), &cb).Failed())
+      if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForMessage(xiiGetStaticRTTI<xiiViewDestroyedResponseMsgToEditor>(), xiiTime::Seconds(5), &cb).Failed())
       {
         xiiLog::Error("Timeout while waiting for engine process to destroy view.");
       }
@@ -158,8 +157,8 @@ void xiiQtEngineViewWidget::UpdateCameraInterpolation()
   const float fLerpValue = xiiMath::Sin(xiiAngle::Degree(90.0f * m_fCameraLerp));
 
   xiiQuat qRot, qRotFinal;
-  qRot      = xiiQuat::MakeShortestRotation(m_vCameraStartDirection, m_vCameraTargetDirection);
-  qRotFinal = xiiQuat::MakeSlerp(xiiQuat::MakeIdentity(), qRot, fLerpValue);
+  qRot.SetShortestRotation(m_vCameraStartDirection, m_vCameraTargetDirection);
+  qRotFinal.SetSlerp(xiiQuat::IdentityQuaternion(), qRot, fLerpValue);
 
   const xiiVec3 vNewDirection = qRotFinal * m_vCameraStartDirection;
   const xiiVec3 vNewPosition  = xiiMath::Lerp(m_vCameraStartPosition, m_vCameraTargetPosition, fLerpValue);
@@ -205,7 +204,7 @@ void xiiQtEngineViewWidget::InterpolateCameraTo(const xiiVec3& vPosition, const 
   if (bImmediate)
   {
     // make sure the next camera update interpolates all the way
-    m_LastCameraUpdate -= xiiTime::MakeFromSeconds(10);
+    m_LastCameraUpdate -= xiiTime::Seconds(10);
     m_fCameraLerp = 0.9f;
   }
 }
@@ -232,7 +231,6 @@ void xiiQtEngineViewWidget::OpenContextMenu(QPoint globalPos)
   OnOpenContextMenu(globalPos);
 }
 
-
 const xiiObjectPickingResult& xiiQtEngineViewWidget::PickObject(xiiUInt16 uiScreenPosX, xiiUInt16 uiScreenPosY) const
 {
   if (!xiiEditorEngineProcessConnection::GetSingleton()->IsEngineSetup())
@@ -251,7 +249,6 @@ const xiiObjectPickingResult& xiiQtEngineViewWidget::PickObject(xiiUInt16 uiScre
 
   return m_LastPickingResult;
 }
-
 
 xiiResult xiiQtEngineViewWidget::PickPlane(xiiUInt16 uiScreenPosX, xiiUInt16 uiScreenPosY, const xiiPlane& plane, xiiVec3& out_vPosition) const
 {
@@ -300,11 +297,11 @@ xiiPlane xiiQtEngineViewWidget::GetFallbackPickingPlane(xiiVec3 vPointOnPlane) c
 {
   if (m_pViewConfig->m_Camera.IsPerspective())
   {
-    return xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, 0, 1), vPointOnPlane);
+    return xiiPlane(xiiVec3(0, 0, 1), vPointOnPlane);
   }
   else
   {
-    return xiiPlane::MakeFromNormalAndPoint(-m_pViewConfig->m_Camera.GetCenterDirForwards(), vPointOnPlane);
+    return xiiPlane(-m_pViewConfig->m_Camera.GetCenterDirForwards(), vPointOnPlane);
   }
 }
 
@@ -608,7 +605,6 @@ void xiiQtEngineViewWidget::dropEvent(QDropEvent* e)
   m_bInDragAndDropOperation = false;
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 // xiiQtEngineViewWidget protected functions
 ////////////////////////////////////////////////////////////////////////
@@ -682,7 +678,6 @@ void xiiQtEngineViewWidget::SlotRestartEngineProcess()
 {
   xiiEditorEngineProcessConnection::GetSingleton()->RestartProcess().IgnoreResult();
 }
-
 
 ////////////////////////////////////////////////////////////////////////
 // xiiQtViewWidgetContainer

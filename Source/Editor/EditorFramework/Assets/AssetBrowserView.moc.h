@@ -1,9 +1,11 @@
 #pragma once
 
-#include <EditorFramework/Assets/AssetBrowserFolderView.moc.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorFramework/Assets/AssetBrowserFolderView.moc.h>
 #include <GuiFoundation/UIServices/ImageCache.moc.h>
 #include <GuiFoundation/Widgets/ItemView.moc.h>
+
 #include <QItemDelegate>
 #include <QListView>
 
@@ -29,7 +31,7 @@ protected:
 
 private:
   bool                   m_bDialogMode;
-  xiiQtIconViewDelegate* m_pDelegate;
+  xiiQtIconViewDelegate* m_pDelegate = nullptr;
   xiiInt32               m_iIconSizePercentage;
 };
 
@@ -73,5 +75,5 @@ private:
 
   bool                   m_bDrawTransformState;
   xiiInt32               m_iIconSizePercentage;
-  xiiQtAssetBrowserView* m_pView;
+  xiiQtAssetBrowserView* m_pView = nullptr;
 };

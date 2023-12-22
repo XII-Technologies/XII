@@ -1,8 +1,9 @@
 #pragma once
 
+#include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/Assets/AssetDocumentInfo.h>
 #include <EditorFramework/Assets/Declarations.h>
-#include <EditorFramework/EditorFrameworkDLL.h>
 #include <Foundation/Types/Status.h>
 #include <ToolsFoundation/Document/DocumentManager.h>
 

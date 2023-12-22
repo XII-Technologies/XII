@@ -143,7 +143,7 @@ void xiiDuplicateObjectsCommand::CreateOneDuplicate(xiiAbstractObjectGraph& grap
   xiiSceneDocument* pDocument = static_cast<xiiSceneDocument*>(GetDocument());
 
   // Remap
-  const xiiUuid seed = xiiUuid::MakeUuid();
+  const xiiUuid seed = xiiUuid::CreateUuid();
   graph.ReMapNodeGuids(seed);
 
   xiiDocumentObjectConverterReader reader(&graph, pDocument->GetObjectManager(), xiiDocumentObjectConverterReader::Mode::CreateOnly);

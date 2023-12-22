@@ -86,7 +86,7 @@ xiiUuid xiiQtPreferencesDlg::NativeToObject(xiiPreferences* pPreferences)
   xiiRttiConverterContext context;
   xiiRttiConverterWriter  conv(&graph, &context, true, true);
 
-  const xiiUuid guid = xiiUuid::MakeUuid();
+  const xiiUuid guid = xiiUuid::CreateUuid();
   context.RegisterObject(guid, pType, pPreferences);
   xiiAbstractObjectNode* pNode = conv.AddObjectToGraph(pType, pPreferences, "root");
 
@@ -95,8 +95,7 @@ xiiUuid xiiQtPreferencesDlg::NativeToObject(xiiPreferences* pPreferences)
   xiiDocumentObject* pObject = m_pDocument->GetObjectManager()->CreateObject(pType);
   m_pDocument->GetObjectManager()->AddObject(pObject, pRoot, "Children", -1);
 
-  xiiDocumentObjectConverterReader objectConverter(
-    &graph, m_pDocument->GetObjectManager(), xiiDocumentObjectConverterReader::Mode::CreateAndAddToDocument);
+  xiiDocumentObjectConverterReader objectConverter(&graph, m_pDocument->GetObjectManager(), xiiDocumentObjectConverterReader::Mode::CreateAndAddToDocument);
   objectConverter.ApplyPropertiesToObject(pNode, pObject);
 
   return pObject->GetGuid();
@@ -127,13 +126,11 @@ void xiiQtPreferencesDlg::ObjectToNative(xiiUuid objectGuid, const xiiDocument* 
   pPreferences->TriggerPreferencesChangedEvent();
 }
 
-
 void xiiQtPreferencesDlg::on_ButtonOk_clicked()
 {
   ApplyAllChanges();
   accept();
 }
-
 
 void xiiQtPreferencesDlg::RegisterAllPreferenceTypes()
 {
@@ -147,7 +144,6 @@ void xiiQtPreferencesDlg::RegisterAllPreferenceTypes()
     pManager->m_KnownTypes.PushBack(pref->GetDynamicRTTI());
   }
 }
-
 
 void xiiQtPreferencesDlg::AllPreferencesToObject()
 {

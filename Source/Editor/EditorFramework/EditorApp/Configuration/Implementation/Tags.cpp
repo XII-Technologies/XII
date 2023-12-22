@@ -36,13 +36,6 @@ void xiiQtEditorApp::ReadTagRegistry()
   sPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
   sPath.AppendPath("RuntimeConfigs/Tags.ddl");
 
-#if XII_ENABLED(XII_MIGRATE_RUNTIMECONFIGS)
-  xiiStringBuilder sOldPath;
-  sOldPath = xiiToolsProject::GetSingleton()->GetProjectDirectory();
-  sOldPath.AppendPath("Tags.ddl");
-  sPath = xiiFileSystem::MigrateFileLocation(sOldPath, sPath);
-#endif
-
   xiiFileReader file;
   if (file.Open(sPath).Failed())
   {
@@ -62,7 +55,6 @@ void xiiQtEditorApp::ReadTagRegistry()
       xiiLog::Error("{0}", res.m_sMessage);
     }
   }
-
 
   // TODO: Add default tags
   xiiToolsTag tag;

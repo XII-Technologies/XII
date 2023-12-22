@@ -230,7 +230,7 @@ void xiiQtGameObjectReferencePropertyWidget::OnCopyReference()
   clipboard->setText(m_sInternalValue);
 
   xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(
-    xiiFmt("Copied Object Reference: {}", m_sInternalValue.toUtf8().data()), xiiTime::MakeFromSeconds(5));
+    xiiFmt("Copied Object Reference: {}", m_sInternalValue.toUtf8().data()), xiiTime::Seconds(5));
 }
 
 

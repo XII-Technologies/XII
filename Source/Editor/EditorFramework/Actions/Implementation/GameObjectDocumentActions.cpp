@@ -26,44 +26,27 @@ xiiActionDescriptorHandle xiiGameObjectDocumentActions::s_hPickTransparent;
 void xiiGameObjectDocumentActions::RegisterActions()
 {
   s_hGameObjectCategory     = XII_REGISTER_CATEGORY("GameObjectCategory");
-  s_hRenderSelectionOverlay = XII_REGISTER_ACTION_1("Scene.Render.SelectionOverlay", xiiActionScope::Document, "Scene", "S", xiiGameObjectDocumentAction,
-                                                    xiiGameObjectDocumentAction::ActionType::RenderSelectionOverlay);
-  s_hRenderVisualizers      = XII_REGISTER_ACTION_1("Scene.Render.Visualizers", xiiActionScope::Document, "Scene", "V", xiiGameObjectDocumentAction,
-                                               xiiGameObjectDocumentAction::ActionType::RenderVisualizers);
-  s_hRenderShapeIcons       = XII_REGISTER_ACTION_1("Scene.Render.ShapeIcons", xiiActionScope::Document, "Scene", "I", xiiGameObjectDocumentAction,
-                                              xiiGameObjectDocumentAction::ActionType::RenderShapeIcons);
-  s_hRenderGrid             = XII_REGISTER_ACTION_1(
-    "Scene.Render.Grid", xiiActionScope::Document, "Scene", "G", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::RenderGrid);
-  s_hAddAmbientLight = XII_REGISTER_ACTION_1("Scene.Render.AddAmbient", xiiActionScope::Document, "Scene", "", xiiGameObjectDocumentAction,
-                                             xiiGameObjectDocumentAction::ActionType::AddAmbientLight);
+  s_hRenderSelectionOverlay = XII_REGISTER_ACTION_1("Scene.Render.SelectionOverlay", xiiActionScope::Document, "Scene", "S", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::RenderSelectionOverlay);
+  s_hRenderVisualizers      = XII_REGISTER_ACTION_1("Scene.Render.Visualizers", xiiActionScope::Document, "Scene", "V", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::RenderVisualizers);
+  s_hRenderShapeIcons       = XII_REGISTER_ACTION_1("Scene.Render.ShapeIcons", xiiActionScope::Document, "Scene", "I", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::RenderShapeIcons);
+  s_hRenderGrid             = XII_REGISTER_ACTION_1("Scene.Render.Grid", xiiActionScope::Document, "Scene", "G", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::RenderGrid);
+  s_hAddAmbientLight        = XII_REGISTER_ACTION_1("Scene.Render.AddAmbient", xiiActionScope::Document, "Scene", "", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::AddAmbientLight);
 
   s_hSimulationSpeedMenu = XII_REGISTER_MENU_WITH_ICON("Scene.Simulation.Speed.Menu", "");
-  s_hSimulationSpeed[0]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.01", xiiActionScope::Document, "Simulation - Speed", "",
-                                                xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 0.1f);
-  s_hSimulationSpeed[1]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.025", xiiActionScope::Document, "Simulation - Speed", "",
-                                                xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 0.25f);
-  s_hSimulationSpeed[2]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.05", xiiActionScope::Document, "Simulation - Speed", "",
-                                                xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 0.5f);
-  s_hSimulationSpeed[3]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.1", xiiActionScope::Document, "Simulation - Speed", "",
-                                                xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 1.0f);
-  s_hSimulationSpeed[4]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.15", xiiActionScope::Document, "Simulation - Speed", "",
-                                                xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 1.5f);
-  s_hSimulationSpeed[5]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.2", xiiActionScope::Document, "Simulation - Speed", "",
-                                                xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 2.0f);
-  s_hSimulationSpeed[6]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.3", xiiActionScope::Document, "Simulation - Speed", "",
-                                                xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 3.0f);
-  s_hSimulationSpeed[7]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.4", xiiActionScope::Document, "Simulation - Speed", "",
-                                                xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 4.0f);
-  s_hSimulationSpeed[8]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.5", xiiActionScope::Document, "Simulation - Speed", "",
-                                                xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 5.0f);
-  s_hSimulationSpeed[9]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.10", xiiActionScope::Document, "Simulation - Speed", "",
-                                                xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 10.0f);
+  s_hSimulationSpeed[0]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.01", xiiActionScope::Document, "Simulation - Speed", "", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 0.1f);
+  s_hSimulationSpeed[1]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.025", xiiActionScope::Document, "Simulation - Speed", "", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 0.25f);
+  s_hSimulationSpeed[2]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.05", xiiActionScope::Document, "Simulation - Speed", "", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 0.5f);
+  s_hSimulationSpeed[3]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.1", xiiActionScope::Document, "Simulation - Speed", "", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 1.0f);
+  s_hSimulationSpeed[4]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.15", xiiActionScope::Document, "Simulation - Speed", "", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 1.5f);
+  s_hSimulationSpeed[5]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.2", xiiActionScope::Document, "Simulation - Speed", "", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 2.0f);
+  s_hSimulationSpeed[6]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.3", xiiActionScope::Document, "Simulation - Speed", "", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 3.0f);
+  s_hSimulationSpeed[7]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.4", xiiActionScope::Document, "Simulation - Speed", "", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 4.0f);
+  s_hSimulationSpeed[8]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.5", xiiActionScope::Document, "Simulation - Speed", "", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 5.0f);
+  s_hSimulationSpeed[9]  = XII_REGISTER_ACTION_2("Scene.Simulation.Speed.10", xiiActionScope::Document, "Simulation - Speed", "", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::SimulationSpeed, 10.0f);
 
-  s_hCameraSpeed = XII_REGISTER_ACTION_1(
-    "Scene.Camera.Speed", xiiActionScope::Document, "Camera", "", xiiCameraSpeedSliderAction, xiiCameraSpeedSliderAction::ActionType::CameraSpeed);
+  s_hCameraSpeed = XII_REGISTER_ACTION_1("Scene.Camera.Speed", xiiActionScope::Document, "Camera", "", xiiCameraSpeedSliderAction, xiiCameraSpeedSliderAction::ActionType::CameraSpeed);
 
-  s_hPickTransparent = XII_REGISTER_ACTION_1("Scene.Render.PickTransparent", xiiActionScope::Document, "Scene", "U", xiiGameObjectDocumentAction,
-                                             xiiGameObjectDocumentAction::ActionType::PickTransparent);
+  s_hPickTransparent = XII_REGISTER_ACTION_1("Scene.Render.PickTransparent", xiiActionScope::Document, "Scene", "U", xiiGameObjectDocumentAction, xiiGameObjectDocumentAction::ActionType::PickTransparent);
 }
 
 void xiiGameObjectDocumentActions::UnregisterActions()
@@ -136,12 +119,7 @@ void xiiGameObjectDocumentActions::MapToolbarActions(xiiStringView sMapping)
   }
 }
 
-xiiGameObjectDocumentAction::xiiGameObjectDocumentAction(
-  const xiiActionContext&                 context,
-  const char*                             szName,
-  xiiGameObjectDocumentAction::ActionType type,
-  float                                   fSimSpeed) :
-  xiiButtonAction(context, szName, false, "")
+xiiGameObjectDocumentAction::xiiGameObjectDocumentAction(const xiiActionContext&                 context,const char*                             szName,xiiGameObjectDocumentAction::ActionType type,float                                   fSimSpeed) :xiiButtonAction(context, szName, false, "")
 {
   m_Type = type;
   // TODO const cast

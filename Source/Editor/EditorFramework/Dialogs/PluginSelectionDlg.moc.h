@@ -4,6 +4,7 @@
 
 #include <EditorFramework/EditorApp/Configuration/Plugins.h>
 #include <EditorFramework/ui_PluginSelectionDlg.h>
+
 #include <QDialog>
 
 class XII_EDITORFRAMEWORK_DLL xiiQtPluginSelectionDlg : public QDialog, public Ui_PluginSelectionDlg

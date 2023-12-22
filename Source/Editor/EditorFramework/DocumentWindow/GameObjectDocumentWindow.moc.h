@@ -1,6 +1,8 @@
 #pragma once
-#include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
+
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorFramework/DocumentWindow/EngineDocumentWindow.moc.h>
 
 class xiiGameObjectDocument;
 class xiiWorldSettingsMsgToEngine;

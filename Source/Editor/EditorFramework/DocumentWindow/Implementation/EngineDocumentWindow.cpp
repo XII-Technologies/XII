@@ -24,7 +24,6 @@ xiiQtEngineDocumentWindow::~xiiQtEngineDocumentWindow()
   DestroyAllViews();
 }
 
-
 xiiEditorEngineConnection* xiiQtEngineDocumentWindow::GetEditorEngineConnection() const
 {
   return GetDocument()->GetEditorEngineConnection();
@@ -42,7 +41,6 @@ const xiiObjectPickingResult& xiiQtEngineDocumentWindow::PickObject(xiiUInt16 ui
 
   return s_DummyResult;
 }
-
 
 xiiAssetDocument* xiiQtEngineDocumentWindow::GetDocument() const
 {

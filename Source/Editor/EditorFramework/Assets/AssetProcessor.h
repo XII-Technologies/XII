@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/IPC/EditorProcessCommunicationChannel.h>
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Logging/Log.h>
@@ -10,6 +11,7 @@
 #include <Foundation/Threading/Thread.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <ToolsFoundation/FileSystem/DataDirPath.h>
+
 #include <atomic>
 
 struct xiiAssetCuratorEvent;
@@ -46,7 +48,6 @@ public:
   {
   }
 
-
   virtual xiiUInt32 Run() override;
 };
 
@@ -78,7 +79,7 @@ private:
   xiiUInt64                             m_uiAssetHash = 0;
   xiiUInt64                             m_uiThumbHash = 0;
   xiiDataDirPath                        m_AssetPath;
-  xiiEditorProcessCommunicationChannel* m_pIPC;
+  xiiEditorProcessCommunicationChannel* m_pIPC = nullptr;
   bool                                  m_bProcessShouldBeRunning = false;
   bool                                  m_bProcessCrashed         = false;
   bool                                  m_bWaiting                = false;

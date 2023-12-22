@@ -1,7 +1,8 @@
 #pragma once
 
-#include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
+
+#include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
 #include <GuiFoundation/Action/BaseActions.h>
 
 /// \brief Actions for configuring the engine view light settings.

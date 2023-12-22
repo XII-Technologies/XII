@@ -114,10 +114,8 @@ xiiQtAssetBrowserModel::xiiQtAssetBrowserModel(QObject* pParent, xiiQtAssetFilte
   resetModel();
   SetIconMode(true);
 
-  XII_VERIFY(connect(xiiQtImageCache::GetSingleton(), &xiiQtImageCache::ImageLoaded, this, &xiiQtAssetBrowserModel::ThumbnailLoaded) != nullptr,
-             "signal/slot connection failed");
-  XII_VERIFY(connect(xiiQtImageCache::GetSingleton(), &xiiQtImageCache::ImageInvalidated, this, &xiiQtAssetBrowserModel::ThumbnailInvalidated) != nullptr,
-             "signal/slot connection failed");
+  XII_VERIFY(connect(xiiQtImageCache::GetSingleton(), &xiiQtImageCache::ImageLoaded, this, &xiiQtAssetBrowserModel::ThumbnailLoaded) != nullptr,"signal/slot connection failed");
+  XII_VERIFY(connect(xiiQtImageCache::GetSingleton(), &xiiQtImageCache::ImageInvalidated, this, &xiiQtAssetBrowserModel::ThumbnailInvalidated) != nullptr,"signal/slot connection failed");
 
   xiiFileSystemModel::GetSingleton()->m_FileChangedEvents.AddEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserModel::FileSystemFileEventHandler, this));
   xiiFileSystemModel::GetSingleton()->m_FolderChangedEvents.AddEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserModel::FileSystemFolderEventHandler, this));
@@ -154,7 +152,6 @@ void xiiQtAssetBrowserModel::AssetCuratorEventHandler(const xiiAssetCuratorEvent
   }
 }
 
-
 xiiInt32 xiiQtAssetBrowserModel::FindAssetIndex(const xiiUuid& assetGuid) const
 {
   if (!m_DisplayedEntries.Contains(assetGuid))
@@ -170,7 +167,6 @@ xiiInt32 xiiQtAssetBrowserModel::FindAssetIndex(const xiiUuid& assetGuid) const
 
   return -1;
 }
-
 
 xiiInt32 xiiQtAssetBrowserModel::FindIndex(xiiStringView sAbsPath) const
 {
@@ -581,8 +577,7 @@ QVariant xiiQtAssetBrowserModel::data(const QModelIndex& index, int iRole) const
           xiiUInt64 uiUserData1, uiUserData2;
           AssetGuid.GetValues(uiUserData1, uiUserData2);
 
-          const QPixmap* pThumbnailPixmap = xiiQtImageCache::GetSingleton()->QueryPixmapForType(pSubAsset->m_Data.m_sSubAssetsDocumentTypeName,
-                                                                                                sThumbnailPath, index, QVariant(uiUserData1), QVariant(uiUserData2), &entry.m_uiThumbnailID);
+          const QPixmap* pThumbnailPixmap = xiiQtImageCache::GetSingleton()->QueryPixmapForType(pSubAsset->m_Data.m_sSubAssetsDocumentTypeName, sThumbnailPath, index, QVariant(uiUserData1), QVariant(uiUserData2), &entry.m_uiThumbnailID);
 
           return *pThumbnailPixmap;
         }
@@ -804,7 +799,7 @@ void xiiQtAssetBrowserModel::HandleFile(const xiiFileChangedEvent& e)
       return;
     case xiiFileChangedEvent::Type::DocumentLinked:
     {
-      ve.m_Guid = xiiUuid::MakeInvalid();
+      ve.m_Guid.SetInvalid();
       HandleEntry(ve, AssetOp::Remove);
       ve.m_Guid = e.m_Status.m_DocumentID;
       HandleEntry(ve, AssetOp::Add);
@@ -814,7 +809,7 @@ void xiiQtAssetBrowserModel::HandleFile(const xiiFileChangedEvent& e)
     {
       ve.m_Guid = e.m_Status.m_DocumentID;
       HandleEntry(ve, AssetOp::Remove);
-      ve.m_Guid = xiiUuid::MakeInvalid();
+      ve.m_Guid.SetInvalid();
       HandleEntry(ve, AssetOp::Add);
       return;
     }

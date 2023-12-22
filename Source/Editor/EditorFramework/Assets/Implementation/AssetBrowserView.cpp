@@ -5,7 +5,6 @@
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <GuiFoundation/UIServices/UIServices.moc.h>
 
-
 xiiQtAssetBrowserView::xiiQtAssetBrowserView(QWidget* pParent) :
   xiiQtItemView<QListView>(pParent)
 {
@@ -70,7 +69,6 @@ xiiInt32 xiiQtAssetBrowserView::GetIconScale() const
 {
   return m_iIconSizePercentage;
 }
-
 
 void xiiQtAssetBrowserView::wheelEvent(QWheelEvent* pEvent)
 {

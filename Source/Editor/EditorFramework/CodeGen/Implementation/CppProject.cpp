@@ -145,7 +145,7 @@ xiiResult xiiCppProject::PopulateWithDefaultSources(const xiiCppSettings& cfg)
   const xiiStringBuilder sTargetDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
 
   xiiStringBuilder sSourceDir = xiiApplicationServices::GetSingleton()->GetApplicationDataFolder();
-  sSourceDir.AppendPath("CppProject");
+  sSourceDir.AppendPath("SourceTemplate");
 
   xiiDynamicArray<xiiFileStats> items;
   xiiOSFile::GatherAllItemsInFolder(items, sSourceDir, xiiFileSystemIteratorFlags::ReportFilesRecursive);
@@ -158,7 +158,7 @@ xiiResult xiiCppProject::PopulateWithDefaultSources(const xiiCppSettings& cfg)
 
   xiiHybridArray<FileToCopy, 32> filesCopied;
 
-  // gather files
+  // Gather files
   {
     for (const auto& item : items)
     {
@@ -168,7 +168,7 @@ xiiResult xiiCppProject::PopulateWithDefaultSources(const xiiCppSettings& cfg)
       dstPath = srcPath;
       dstPath.MakeRelativeTo(sSourceDir).IgnoreResult();
 
-      dstPath.ReplaceAll("CppProject", sProjectName);
+      dstPath.ReplaceAll("SourceTemplate", sProjectName);
       dstPath.Prepend(sTargetDir, "/");
       dstPath.MakeCleanPath();
 
@@ -215,8 +215,8 @@ xiiResult xiiCppProject::PopulateWithDefaultSources(const xiiCppSettings& cfg)
         content.ReadAll(file);
       }
 
-      content.ReplaceAll("CppProject", sProjectName);
-      content.ReplaceAll("CPPPROJECT", sProjectNameUpper);
+      content.ReplaceAll("SourceTemplate", sProjectName);
+      content.ReplaceAll("SOURCETEMPLATE", sProjectNameUpper);
 
       {
         xiiFileWriter file;
@@ -454,7 +454,7 @@ void xiiCppProject::UpdatePluginConfig(const xiiCppSettings& cfg)
   plugin.m_bLoadCopy            = true;
   plugin.m_bSelected            = true;
   plugin.m_bMissing             = true;
-  plugin.m_LastModificationTime = xiiTimestamp::MakeInvalid();
+  plugin.m_LastModificationTime.Invalidate();
   plugin.m_ExclusiveFeatures.PushBack("ProjectPlugin");
   txt.Set("'", cfg.m_sPluginName, "' project plugin");
   plugin.m_sDisplayName = txt;

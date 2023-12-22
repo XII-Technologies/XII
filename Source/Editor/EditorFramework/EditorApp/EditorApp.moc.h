@@ -1,8 +1,9 @@
 #pragma once
 
+#include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorEngineProcessFramework/LongOps/LongOpControllerManager.h>
 #include <EditorFramework/EditorApp/Configuration/Plugins.h>
-#include <EditorFramework/EditorFrameworkDLL.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <Foundation/Application/Config/FileSystemConfig.h>
 #include <Foundation/Application/Config/PluginConfig.h>
@@ -14,9 +15,10 @@
 #include <Foundation/Types/Bitflags.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GuiFoundation/ContainerWindow/ContainerWindow.moc.h>
-#include <QApplication>
 #include <ToolsFoundation/Project/ToolsProject.h>
 #include <ToolsFoundation/Utilities/RecentFilesList.h>
+
+#include <QApplication>
 
 class QMainWindow;
 class QWidget;
@@ -290,7 +292,7 @@ private:
   int                               m_iArgc          = 0;
   QApplication*                     m_pQtApplication = nullptr;
   xiiLongOpControllerManager        m_LongOpControllerManager;
-  xiiEditorEngineProcessConnection* m_pEngineViewProcess;
+  xiiEditorEngineProcessConnection* m_pEngineViewProcess = nullptr;
   QTimer*                           m_pTimer = nullptr;
 
   QSplashScreen* m_pSplashScreen = nullptr;

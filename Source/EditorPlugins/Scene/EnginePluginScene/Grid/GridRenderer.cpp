@@ -257,8 +257,8 @@ void xiiEditorGridExtractor::Extract(const xiiView& view, const xiiDynamicArray<
     const xiiVec3 vTopRight   = cam->GetCenterPosition() + cam->GetCenterDirRight() * fDimX + cam->GetCenterDirUp() * fDimY;
 
     xiiPlane plane1, plane2;
-    plane1 = xiiPlane::MakeFromNormalAndPoint(cam->GetCenterDirRight(), xiiVec3(0));
-    plane2 = xiiPlane::MakeFromNormalAndPoint(cam->GetCenterDirUp(), xiiVec3(0));
+    plane1 = xiiPlane(cam->GetCenterDirRight(), xiiVec3(0));
+    plane2 = xiiPlane(cam->GetCenterDirUp(), xiiVec3(0));
 
     const float fFirstDist1 = plane1.GetDistanceTo(vBottomLeft) - fDensity;
     const float fLastDist1  = plane1.GetDistanceTo(vTopRight) + fDensity;

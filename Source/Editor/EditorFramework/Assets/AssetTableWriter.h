@@ -7,7 +7,6 @@
 #include <Foundation/Configuration/Singleton.h>
 #include <Foundation/Threading/TaskSystem.h>
 
-
 struct xiiAssetCuratorEvent;
 class xiiTask;
 struct xiiAssetInfo;

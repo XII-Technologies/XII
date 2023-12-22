@@ -3,12 +3,10 @@
 #include <EditorFramework/Assets/AssetBrowserFilter.moc.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 
-
 xiiQtAssetBrowserFilter::xiiQtAssetBrowserFilter(QObject* pParent) :
   xiiQtAssetFilter(pParent)
 {
 }
-
 
 void xiiQtAssetBrowserFilter::Reset()
 {
@@ -21,7 +19,6 @@ void xiiQtAssetBrowserFilter::Reset()
   SetTypeFilter("");
   SetPathFilter("");
 }
-
 
 void xiiQtAssetBrowserFilter::UpdateImportExtensions(const xiiSet<xiiString>& extensions)
 {
@@ -40,7 +37,6 @@ void xiiQtAssetBrowserFilter::SetShowItemsInSubFolders(bool bShow)
 
   Q_EMIT FilterChanged();
 }
-
 
 void xiiQtAssetBrowserFilter::SetShowFiles(bool bShow)
 {

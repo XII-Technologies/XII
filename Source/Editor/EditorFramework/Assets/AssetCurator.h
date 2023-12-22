@@ -1,10 +1,11 @@
 #pragma once
 
+#include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <Core/Configuration/PlatformProfile.h>
 #include <EditorFramework/Assets/AssetDocumentInfo.h>
 #include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorFramework/Assets/Declarations.h>
-#include <EditorFramework/EditorFrameworkDLL.h>
 #include <Foundation/Algorithm/HashHelperString.h>
 #include <Foundation/Application/Config/FileSystemConfig.h>
 #include <Foundation/Configuration/Singleton.h>

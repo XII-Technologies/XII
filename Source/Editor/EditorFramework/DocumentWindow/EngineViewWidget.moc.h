@@ -1,11 +1,13 @@
 #pragma once
 
+#include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <Core/Graphics/Camera.h>
 #include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
-#include <EditorFramework/EditorFrameworkDLL.h>
 #include <EditorFramework/IPC/EngineProcessConnection.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Math/Size.h>
+
 #include <QWidget>
 
 class xiiQtEngineDocumentWindow;
@@ -56,12 +58,7 @@ public:
   void UpdateCameraInterpolation();
 
   /// \brief The view's camera will be interpolated to the given coordinates
-  void InterpolateCameraTo(
-    const xiiVec3& vPosition,
-    const xiiVec3& vDirection,
-    float          fFovOrDim,
-    const xiiVec3* pNewUpDirection = nullptr,
-    bool           bImmediate      = false);
+  void InterpolateCameraTo(const xiiVec3& vPosition,const xiiVec3& vDirection,float          fFovOrDim,const xiiVec3* pNewUpDirection = nullptr,bool           bImmediate      = false);
 
   /// \brief If disabled, no picking takes place in this view.
   ///
@@ -143,7 +140,7 @@ protected:
   bool                       m_bPickTransparent = true;
   bool                       m_bInDragAndDropOperation;
   xiiUInt32                  m_uiViewID;
-  xiiQtEngineDocumentWindow* m_pDocumentWindow;
+  xiiQtEngineDocumentWindow* m_pDocumentWindow = nullptr;
 
   static xiiUInt32 s_uiNextViewID;
 
@@ -158,8 +155,8 @@ protected:
   xiiVec3 m_vCameraUp;
   xiiTime m_LastCameraUpdate;
 
-  QHBoxLayout* m_pRestartButtonLayout;
-  QPushButton* m_pRestartButton;
+  QHBoxLayout* m_pRestartButtonLayout = nullptr;
+  QPushButton* m_pRestartButton = nullptr;
 
   mutable xiiObjectPickingResult m_LastPickingResult;
 
@@ -179,6 +176,6 @@ public:
   QVBoxLayout*           GetLayout() const { return m_pLayout; }
 
 private:
-  xiiQtEngineViewWidget* m_pViewWidget;
-  QVBoxLayout*           m_pLayout;
+  xiiQtEngineViewWidget* m_pViewWidget = nullptr;
+  QVBoxLayout*           m_pLayout = nullptr;
 };

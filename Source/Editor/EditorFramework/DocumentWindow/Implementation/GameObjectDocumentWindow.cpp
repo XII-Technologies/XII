@@ -158,7 +158,7 @@ void xiiQtGameObjectDocumentWindow::HandleFocusOnSelection(const xiiQuerySelecti
 
   // clamp the bbox of the selection to ranges that won't break down due to float precision
   {
-    bbox        = xiiBoundingBox::MakeFromCenterAndHalfExtents(pMsg->m_vCenter, pMsg->m_vHalfExtents);
+    bbox .SetCenterAndHalfExtents(pMsg->m_vCenter, pMsg->m_vHalfExtents);
     bbox.m_vMin = bbox.m_vMin.CompMax(xiiVec3(-1000.0f));
     bbox.m_vMax = bbox.m_vMax.CompMin(xiiVec3(+1000.0f));
   }
@@ -173,7 +173,7 @@ void xiiQtGameObjectDocumentWindow::HandleFocusOnSelection(const xiiQuerySelecti
 
     {
       xiiPlane p;
-      p = xiiPlane::MakeFromNormalAndPoint(vNewCameraDirection, vNewCameraPosition);
+      p = xiiPlane(vNewCameraDirection, vNewCameraPosition);
 
       // at some distance the floating point precision gets so crappy that the camera movement breaks
       // therefore we clamp it to a 'reasonable' distance here
@@ -190,8 +190,8 @@ void xiiQtGameObjectDocumentWindow::HandleFocusOnSelection(const xiiQuerySelecti
 
       const float fRadius = bbox.GetBoundingSphere().m_fRadius * 1.5f;
 
-      const float dist1    = fRadius / xiiMath::Sin(fovX * 0.75);
-      const float dist2    = fRadius / xiiMath::Sin(fovY * 0.75);
+      const float dist1    = fRadius / xiiMath::Sin(fovX * 0.75f);
+      const float dist2    = fRadius / xiiMath::Sin(fovY * 0.75f);
       const float distBest = xiiMath::Max(dist1, dist2);
 
       vNewCameraPosition = vPivotPoint - vNewCameraDirection * xiiMath::Max(fMinDistance, distBest);

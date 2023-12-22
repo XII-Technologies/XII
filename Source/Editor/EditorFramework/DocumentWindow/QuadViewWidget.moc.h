@@ -1,9 +1,10 @@
 #pragma once
 
-#include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
 #include <EditorFramework/EditorFrameworkDLL.h>
-#include <Foundation/Basics.h>
+
+#include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
 #include <Foundation/Strings/String.h>
+
 #include <QWidget>
 
 class xiiAssetDocument;
@@ -35,8 +36,8 @@ protected:
   void CreateViews(bool bQuad);
 
 private:
-  xiiAssetDocument*          m_pDocument;
-  xiiQtEngineDocumentWindow* m_pWindow;
+  xiiAssetDocument*          m_pDocument = nullptr;
+  xiiQtEngineDocumentWindow* m_pWindow = nullptr;
   ViewFactory                m_ViewFactory;
   xiiString                  m_sViewToolBarMapping;
 

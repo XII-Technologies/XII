@@ -1,8 +1,9 @@
 #pragma once
 
+#include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/Assets/AssetDocumentInfo.h>
 #include <EditorFramework/Assets/Declarations.h>
-#include <EditorFramework/EditorFrameworkDLL.h>
 #include <EditorFramework/IPC/IPCObjectMirrorEditor.h>
 #include <ToolsFoundation/Document/Document.h>
 #include <ToolsFoundation/Object/DocumentObjectManager.h>
@@ -284,7 +285,7 @@ protected:
   EngineStatus                m_EngineStatus;
   xiiAssetDocEngineConnection m_EngineConnectionType = xiiAssetDocEngineConnection::None;
 
-  xiiEditorEngineConnection* m_pEngineConnection;
+  xiiEditorEngineConnection* m_pEngineConnection = nullptr;
 
   mutable xiiHashTable<xiiUuid, xiiEditorEngineSyncObject*> m_AllSyncObjects;
   mutable xiiDeque<xiiEditorEngineSyncObject*>              m_SyncObjects;

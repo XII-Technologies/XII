@@ -1,6 +1,7 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <GuiFoundation/Action/BaseActions.h>
 #include <GuiFoundation/GuiFoundationDLL.h>
 
@@ -58,7 +59,7 @@ private:
   void OnPreferenceChange(xiiPreferences* pref);
 
   float                  m_fSimSpeed;
-  xiiGameObjectDocument* m_pGameObjectDocument;
+  xiiGameObjectDocument* m_pGameObjectDocument = nullptr;
   ActionType             m_Type;
 };
 
@@ -82,6 +83,6 @@ private:
   void OnPreferenceChange(xiiPreferences* pref);
   void UpdateState();
 
-  xiiGameObjectDocument* m_pGameObjectDocument;
+  xiiGameObjectDocument* m_pGameObjectDocument = nullptr;
   ActionType             m_Type;
 };

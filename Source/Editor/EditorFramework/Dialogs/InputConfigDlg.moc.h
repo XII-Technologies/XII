@@ -1,10 +1,12 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <EditorFramework/ui_InputConfigDlg.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Containers/Set.h>
 #include <GameEngine/Configuration/InputConfig.h>
+
 #include <QDialog>
 
 class QTreeWidgetItem;

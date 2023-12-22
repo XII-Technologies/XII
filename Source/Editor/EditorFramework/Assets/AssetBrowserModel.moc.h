@@ -1,12 +1,14 @@
 #pragma once
 
 #include <EditorFramework/EditorFrameworkDLL.h>
+
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/Set.h>
 #include <Foundation/Types/Uuid.h>
+#include <ToolsFoundation/FileSystem/FileSystemModel.h>
+
 #include <QAbstractItemModel>
 #include <QFileIconProvider>
-#include <ToolsFoundation/FileSystem/FileSystemModel.h>
 
 struct xiiAssetInfo;
 struct xiiAssetCuratorEvent;

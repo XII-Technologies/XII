@@ -50,8 +50,6 @@ xiiQtAssetBrowserWidget::xiiQtAssetBrowserWidget(QWidget* pParent) :
     ToolBarLayout->insertWidget(0, m_pToolbar);
   }
 
-
-
   XII_VERIFY(connect(m_pFilter, SIGNAL(TextFilterChanged()), this, SLOT(OnTextFilterChanged())) != nullptr, "signal/slot connection failed");
   XII_VERIFY(connect(m_pFilter, SIGNAL(TypeFilterChanged()), this, SLOT(OnTypeFilterChanged())) != nullptr, "signal/slot connection failed");
   XII_VERIFY(connect(m_pFilter, SIGNAL(PathFilterChanged()), this, SLOT(OnPathFilterChanged())) != nullptr, "signal/slot connection failed");
@@ -72,7 +70,6 @@ xiiQtAssetBrowserWidget::~xiiQtAssetBrowserWidget()
 {
   xiiToolsProject::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserWidget::ProjectEventHandler, this));
   xiiAssetCurator::GetSingleton()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtAssetBrowserWidget::AssetCuratorEventHandler, this));
-
 
   ListAssets->setModel(nullptr);
 }
@@ -245,7 +242,6 @@ void xiiQtAssetBrowserWidget::AddAssetCreatorMenu(QMenu* pMenu, bool useSelected
   }
 }
 
-
 void xiiQtAssetBrowserWidget::AddImportedViaMenu(QMenu* pMenu)
 {
   QModelIndexList selection = ListAssets->selectionModel()->selectedIndexes();
@@ -340,7 +336,7 @@ void xiiQtAssetBrowserWidget::on_ListAssets_doubleClicked(const QModelIndex& ind
   }
   else if (itemType.IsSet(xiiAssetBrowserItemFlags::File))
   {
-    Q_EMIT ItemChosen(xiiUuid::MakeInvalid(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString(), itemType.GetValue());
+    Q_EMIT ItemChosen(xiiUuid(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::RelativePath).toString(), m_pModel->data(index, xiiQtAssetBrowserModel::UserRoles::AbsolutePath).toString(), itemType.GetValue());
 
     // xiiQtUiServices::OpenFileInDefaultProgram(qtToXIIString(sAbsPath));
   }
@@ -765,7 +761,6 @@ void xiiQtAssetBrowserWidget::on_ListAssets_customContextMenuRequested(const QPo
   pSortAction->setCheckable(true);
   pSortAction->setChecked(m_pFilter->GetSortByRecentUse());
 
-
   if (m_Mode == Mode::Browser && ListAssets->selectionModel()->hasSelection())
   {
     QModelIndexList selection   = ListAssets->selectionModel()->selectedIndexes();
@@ -826,7 +821,6 @@ void xiiQtAssetBrowserWidget::OnListOpenAssetDocument()
   }
 }
 
-
 void xiiQtAssetBrowserWidget::OnTransform()
 {
   QModelIndexList selection = ListAssets->selectionModel()->selectedRows();
@@ -876,7 +870,7 @@ void xiiQtAssetBrowserWidget::OnListCopyAssetGuid()
   mimeData->setText(xiiConversionUtils::ToString(guid, tmp).GetData());
   clipboard->setMimeData(mimeData);
 
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied asset GUID: {}", tmp), xiiTime::MakeFromSeconds(5));
+  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied asset GUID: {}", tmp), xiiTime::Seconds(5));
 }
 
 void xiiQtAssetBrowserWidget::OnFilterToThisPath()
@@ -916,7 +910,6 @@ void xiiQtAssetBrowserWidget::OnSelectionTimer()
   }
 }
 
-
 void xiiQtAssetBrowserWidget::OnAssetSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected)
 {
   if (!ListAssets->selectionModel()->hasSelection())
@@ -951,12 +944,10 @@ void xiiQtAssetBrowserWidget::OnAssetSelectionCurrentChanged(const QModelIndex& 
   }
 }
 
-
 void xiiQtAssetBrowserWidget::OnModelReset()
 {
   Q_EMIT ItemCleared();
 }
-
 
 void xiiQtAssetBrowserWidget::NewAsset()
 {
@@ -1034,7 +1025,6 @@ void xiiQtAssetBrowserWidget::NewAsset()
     ListAssets->edit(idx);
   }
 }
-
 
 void xiiQtAssetBrowserWidget::OnFileEditingFinished(const QString& sAbsPath, const QString& sNewName, bool bIsAsset)
 {
@@ -1114,7 +1104,6 @@ void xiiQtAssetBrowserWidget::ImportSelection()
     Q_EMIT m_pModel->dataChanged(id, id);
   }
 }
-
 
 void xiiQtAssetBrowserWidget::OnOpenImportReferenceAsset()
 {
