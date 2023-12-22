@@ -6,7 +6,6 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiVisualScriptComponentDragDropHandler, 1, xiiRTTIDefaultAllocator<xiiVisualScriptComponentDragDropHandler>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-
 float xiiVisualScriptComponentDragDropHandler::CanHandle(const xiiDragDropInfo* pInfo) const
 {
   if (xiiComponentDragDropHandler::CanHandle(pInfo) == 0.0f)
@@ -37,8 +36,7 @@ void xiiVisualScriptComponentDragDropHandler::OnDragBegin(const xiiDragDropInfo*
     }
     else
     {
-      CreateDropObject(pInfo->m_vDropPosition, szComponentType, szPropertyName, GetAssetGuidString(pInfo), pInfo->m_TargetObject,
-                       pInfo->m_iTargetObjectInsertChildIndex);
+      CreateDropObject(pInfo->m_vDropPosition, szComponentType, szPropertyName, GetAssetGuidString(pInfo), pInfo->m_TargetObject, pInfo->m_iTargetObjectInsertChildIndex);
     }
   }
 

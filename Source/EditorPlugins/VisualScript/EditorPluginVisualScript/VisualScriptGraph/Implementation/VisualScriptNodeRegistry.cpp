@@ -1354,7 +1354,7 @@ void xiiVisualScriptNodeRegistry::CreateCoroutineNodeType(const xiiRTTI* pRtti)
   const xiiScriptableFunctionAttribute* pScriptableFuncAttribute = nullptr;
   for (auto pFunc : pRtti->GetFunctions())
   {
-    if (xiiStringUtils::IsEqual(pFunc->GetPropertyName(), "Start"))
+    if (pFunc->GetPropertyName() == "Start")
     {
       if (auto pAttr = pFunc->GetAttributeByType<xiiScriptableFunctionAttribute>())
       {
@@ -1430,9 +1430,7 @@ void xiiVisualScriptNodeRegistry::CreateCoroutineNodeType(const xiiRTTI* pRtti)
 
 void xiiVisualScriptNodeRegistry::CreateMessageNodeTypes(const xiiRTTI* pRtti)
 {
-  if (pRtti == xiiGetStaticRTTI<xiiMessage>() ||
-      pRtti == xiiGetStaticRTTI<xiiEventMessage>() ||
-      pRtti->GetTypeFlags().IsSet(xiiTypeFlags::Abstract))
+  if (pRtti == xiiGetStaticRTTI<xiiMessage>() || pRtti == xiiGetStaticRTTI<xiiEventMessage>() || pRtti->GetTypeFlags().IsSet(xiiTypeFlags::Abstract))
     return;
 
   // Message Handler

@@ -15,7 +15,7 @@ public:
   xiiQtVisualScriptWindow(xiiDocument* pDocument);
   ~xiiQtVisualScriptWindow();
 
-  virtual const char* GetWindowLayoutGroupName() const override { return "VisualScriptGraph"; }
+  virtual xiiStringView GetWindowLayoutGroupName() const override { return "VisualScriptGraph"; }
 
 private Q_SLOTS:
 

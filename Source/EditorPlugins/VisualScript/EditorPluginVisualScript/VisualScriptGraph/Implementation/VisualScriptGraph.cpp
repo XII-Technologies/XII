@@ -63,20 +63,16 @@ bool xiiVisualScriptPin::CanConvertTo(const xiiVisualScriptPin& targetPin, bool 
   const xiiRTTI* pSourceDataType = m_pDataType;
   const xiiRTTI* pTargetDataType = targetPin.GetDataType();
 
-  if (xiiVisualScriptDataType::IsPointer(sourceScriptDataType) &&
-      targetScriptDataType == xiiVisualScriptDataType::AnyPointer)
+  if (xiiVisualScriptDataType::IsPointer(sourceScriptDataType) && targetScriptDataType == xiiVisualScriptDataType::AnyPointer)
     return true;
 
-  if (sourceScriptDataType == xiiVisualScriptDataType::TypedPointer && pSourceDataType != nullptr &&
-      targetScriptDataType == xiiVisualScriptDataType::TypedPointer && pTargetDataType != nullptr)
+  if (sourceScriptDataType == xiiVisualScriptDataType::TypedPointer && pSourceDataType != nullptr && targetScriptDataType == xiiVisualScriptDataType::TypedPointer && pTargetDataType != nullptr)
     return pSourceDataType->IsDerivedFrom(pTargetDataType);
 
-  if (sourceScriptDataType == xiiVisualScriptDataType::EnumValue && pSourceDataType != nullptr &&
-      targetScriptDataType == xiiVisualScriptDataType::EnumValue && pTargetDataType != nullptr)
+  if (sourceScriptDataType == xiiVisualScriptDataType::EnumValue && pSourceDataType != nullptr && targetScriptDataType == xiiVisualScriptDataType::EnumValue && pTargetDataType != nullptr)
     return pSourceDataType == pTargetDataType;
 
-  if (sourceScriptDataType == xiiVisualScriptDataType::Any ||
-      targetScriptDataType == xiiVisualScriptDataType::Any)
+  if (sourceScriptDataType == xiiVisualScriptDataType::Any || targetScriptDataType == xiiVisualScriptDataType::Any)
     return true;
 
   return xiiVisualScriptDataType::CanConvertTo(sourceScriptDataType, targetScriptDataType);
@@ -261,8 +257,7 @@ xiiStringView xiiVisualScriptNodeManager::GetNiceTypeName(const xiiDocumentObjec
 {
   xiiStringView sTypeName = pObject->GetType()->GetTypeName();
 
-  while (sTypeName.TrimWordStart(xiiVisualScriptNodeRegistry::s_szTypeNamePrefix) ||
-         sTypeName.TrimWordStart("Builtin_"))
+  while (sTypeName.TrimWordStart(xiiVisualScriptNodeRegistry::s_szTypeNamePrefix) || sTypeName.TrimWordStart("Builtin_"))
   {
   }
 

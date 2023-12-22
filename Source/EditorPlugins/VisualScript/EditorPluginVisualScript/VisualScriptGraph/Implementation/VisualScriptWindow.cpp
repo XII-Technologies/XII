@@ -8,11 +8,9 @@
 #include <GuiFoundation/NodeEditor/NodeView.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 
-
 xiiQtVisualScriptWindow::xiiQtVisualScriptWindow(xiiDocument* pDocument) :
   xiiQtDocumentWindow(pDocument)
 {
-
   // Menu Bar
   {
     xiiQtMenuBarActionMapView* pMenuBar = static_cast<xiiQtMenuBarActionMapView*>(menuBar());
@@ -65,8 +63,7 @@ xiiQtVisualScriptWindow::~xiiQtVisualScriptWindow()
 {
   if (GetDocument() != nullptr)
   {
-    GetDocument()->GetSelectionManager()->m_Events.RemoveEventHandler(
-      xiiMakeDelegate(&xiiQtVisualScriptWindow::SelectionEventHandler, this));
+    GetDocument()->GetSelectionManager()->m_Events.RemoveEventHandler(xiiMakeDelegate(&xiiQtVisualScriptWindow::SelectionEventHandler, this));
   }
 }
 
@@ -75,16 +72,15 @@ void xiiQtVisualScriptWindow::SelectionEventHandler(const xiiSelectionManagerEve
   if (GetDocument()->GetSelectionManager()->IsSelectionEmpty())
   {
     // delayed execution
-    QTimer::singleShot(1,
-                       [this]() {
-                         auto pDocument         = GetDocument();
-                         auto pSelectionManager = pDocument->GetSelectionManager();
+    QTimer::singleShot(1, [this]() {
+      auto pDocument         = GetDocument();
+      auto pSelectionManager = pDocument->GetSelectionManager();
 
-                         // Check again if the selection is empty. This could have changed due to the delayed execution.
-                         if (pSelectionManager->IsSelectionEmpty())
-                         {
-                           pSelectionManager->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
-                         }
-                       });
+      // Check again if the selection is empty. This could have changed due to the delayed execution.
+      if (pSelectionManager->IsSelectionEmpty())
+      {
+        pSelectionManager->SetSelection(pDocument->GetObjectManager()->GetRootObject()->GetChildren()[0]);
+      }
+    });
   }
 }
