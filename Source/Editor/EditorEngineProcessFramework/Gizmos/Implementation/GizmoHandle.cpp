@@ -63,7 +63,8 @@ void xiiGizmoHandle::SetTransformation(const xiiTransform& m)
 
 void xiiGizmoHandle::SetTransformation(const xiiMat4& m)
 {
-  xiiTransform t = xiiTransform::MakeFromMat4(m);
+  xiiTransform t;
+  t.SetFromMat4(m);
   SetTransformation(t);
 }
 
@@ -73,9 +74,9 @@ static xiiMeshBufferResourceHandle CreateMeshBufferResource(xiiGeometry& inout_g
   inout_geom.ComputeSmoothVertexNormals();
 
   xiiMeshBufferResourceDescriptor desc;
-  desc.AddStream(xiiGALVertexAttributeSemantic::Position, xiiGALResourceFormat::XYZFloat);
-  desc.AddStream(xiiGALVertexAttributeSemantic::Color0, xiiGALResourceFormat::RGBAUByteNormalized);
-  desc.AddStream(xiiGALVertexAttributeSemantic::Normal, xiiGALResourceFormat::XYZFloat);
+  desc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
+  desc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBA8UNormalized);
+  desc.AddStream(xiiGALInputLayoutSemantic::Normal, xiiGALTextureFormat::RGB32Float);
   desc.AllocateStreamsFromGeometry(inout_geom, topology);
   desc.ComputeBounds();
 
@@ -95,7 +96,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferArrow()
   const float fLength    = 1.0f;
 
   xiiGeometry::GeoOptions opt;
-  opt.m_Transform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(90));
+  opt.m_Transform.SetRotationMatrixY(xiiAngle::Degree(90));
 
   xiiGeometry geom;
   geom.AddCylinderOnePiece(fThickness, fThickness, fLength * 0.5f, fLength * 0.5f, 16, opt);
@@ -103,7 +104,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferArrow()
   opt.m_Transform.SetTranslationVector(xiiVec3(fLength * 0.5f, 0, 0));
   geom.AddCone(fThickness * 3.0f, fThickness * 6.0f, true, 16, opt);
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Arrow", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Arrow", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferPiston()
@@ -119,7 +120,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferPiston()
   const float fLength    = 1.0f;
 
   xiiGeometry::GeoOptions opt;
-  opt.m_Transform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(90));
+  opt.m_Transform.SetRotationMatrixY(xiiAngle::Degree(90));
 
   xiiGeometry geom;
   geom.AddCylinderOnePiece(fThickness, fThickness, fLength * 0.5f, fLength * 0.5f, 16, opt);
@@ -127,7 +128,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferPiston()
   opt.m_Transform.SetTranslationVector(xiiVec3(fLength * 0.5f, 0, 0));
   geom.AddBox(xiiVec3(fThickness * 5.0f), false, opt);
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Piston", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Piston", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferHalfPiston()
@@ -143,7 +144,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferHalfPiston()
   const float fLength    = 1.0f;
 
   xiiGeometry::GeoOptions opt;
-  opt.m_Transform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(90));
+  opt.m_Transform.SetRotationMatrixY(xiiAngle::Degree(90));
   opt.m_Transform.SetTranslationVector(xiiVec3(fLength * 0.5f, 0, 0));
 
   xiiGeometry geom;
@@ -152,7 +153,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferHalfPiston()
   opt.m_Transform.SetTranslationVector(xiiVec3(fLength, 0, 0));
   geom.AddBox(xiiVec3(fThickness * 5.0f), false, opt);
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_HalfPiston", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_HalfPiston", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferRect()
@@ -170,7 +171,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferRect()
   xiiGeometry geom;
   geom.AddRectXY(xiiVec2(fLength));
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Rect", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Rect", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferLineRect()
@@ -199,7 +200,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferLineRect()
   geom.AddLine(2, 3);
   geom.AddLine(3, 0);
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_LineRect", xiiGALPrimitiveTopology::Lines);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_LineRect", xiiGALPrimitiveTopology::LineList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferRing()
@@ -220,7 +221,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferRing()
   xiiGeometry geom;
   geom.AddTorus(fInnerRadius, fOuterRadius, 32, 8, false);
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Ring", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Ring", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferBox()
@@ -235,7 +236,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferBox()
   xiiGeometry geom;
   geom.AddBox(xiiVec3(1.0f), false);
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Box", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Box", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferLineBox()
@@ -250,7 +251,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferLineBox()
   xiiGeometry geom;
   geom.AddLineBox(xiiVec3(1.0f));
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_LineBox", xiiGALPrimitiveTopology::Lines);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_LineBox", xiiGALPrimitiveTopology::LineList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferSphere()
@@ -265,7 +266,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferSphere()
   xiiGeometry geom;
   geom.AddGeodesicSphere(1.0f, 2);
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Sphere", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Sphere", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferCylinderZ()
@@ -280,7 +281,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferCylinderZ()
   xiiGeometry geom;
   geom.AddCylinderOnePiece(1.0f, 1.0f, 0.5f, 0.5f, 16);
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_CylinderZ", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_CylinderZ", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferHalfSphereZ()
@@ -295,7 +296,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferHalfSphereZ()
   xiiGeometry geom;
   geom.AddHalfSphere(1.0f, 16, 8, false);
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_HalfSphereZ", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_HalfSphereZ", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferBoxFaces()
@@ -309,15 +310,15 @@ static xiiMeshBufferResourceHandle CreateMeshBufferBoxFaces()
 
   xiiGeometry             geom;
   xiiGeometry::GeoOptions opt;
-  opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0, 0, 0.5f));
+  opt.m_Transform.SetTranslationMatrix(xiiVec3(0, 0, 0.5f));
 
   geom.AddRectXY(xiiVec2(0.5f), 1, 1, opt);
 
-  opt.m_Transform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(180.0));
+  opt.m_Transform.SetRotationMatrixY(xiiAngle::Degree(180.0f));
   opt.m_Transform.SetTranslationVector(xiiVec3(0, 0, -0.5f));
   geom.AddRectXY(xiiVec2(0.5f), 1, 1, opt);
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_BoxFaces", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_BoxFaces", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferBoxEdges()
@@ -336,17 +337,17 @@ static xiiMeshBufferResourceHandle CreateMeshBufferBoxEdges()
 
   for (xiiUInt32 i = 0; i < 4; ++i)
   {
-    rot = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(90.0f * i));
+    rot.SetRotationMatrixY(xiiAngle::Degree(90.0f * i));
 
-    opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0.5f - 0.125f, 0, 0.5f));
+    opt.m_Transform.SetTranslationMatrix(xiiVec3(0.5f - 0.125f, 0, 0.5f));
     opt.m_Transform = rot * opt.m_Transform;
     geom.AddRectXY(xiiVec2(0.25f, 0.5f), 1, 1, opt);
 
-    opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(-0.5f + 0.125f, 0, 0.5f));
+    opt.m_Transform.SetTranslationMatrix(xiiVec3(-0.5f + 0.125f, 0, 0.5f));
     geom.AddRectXY(xiiVec2(0.25f, 0.5f), 1, 1, opt);
   }
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_BoxEdges", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_BoxEdges", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferBoxCorners()
@@ -360,35 +361,35 @@ static xiiMeshBufferResourceHandle CreateMeshBufferBoxCorners()
 
   xiiMat4 rot[6];
   rot[0].SetIdentity();
-  rot[1] = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(90));
-  rot[2] = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(180));
-  rot[3] = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(270));
-  rot[4] = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(90));
-  rot[5] = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(-90));
+  rot[1].SetRotationMatrixX(xiiAngle::Degree(90));
+  rot[2].SetRotationMatrixX(xiiAngle::Degree(180));
+  rot[3].SetRotationMatrixX(xiiAngle::Degree(270));
+  rot[4].SetRotationMatrixY(xiiAngle::Degree(90));
+  rot[5].SetRotationMatrixY(xiiAngle::Degree(-90));
 
   xiiGeometry             geom;
   xiiGeometry::GeoOptions opt;
 
   for (xiiUInt32 i = 0; i < 6; ++i)
   {
-    opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0.5f - 0.125f, 0.5f - 0.125f, 0.5f));
+    opt.m_Transform.SetTranslationMatrix(xiiVec3(0.5f - 0.125f, 0.5f - 0.125f, 0.5f));
     opt.m_Transform = rot[i] * opt.m_Transform;
     geom.AddRectXY(xiiVec2(0.25f, 0.25f), 1, 1, opt);
 
-    opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(0.5f - 0.125f, -0.5f + 0.125f, 0.5f));
+    opt.m_Transform.SetTranslationMatrix(xiiVec3(0.5f - 0.125f, -0.5f + 0.125f, 0.5f));
     opt.m_Transform = rot[i] * opt.m_Transform;
     geom.AddRectXY(xiiVec2(0.25f, 0.25f), 1, 1, opt);
 
-    opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(-0.5f + 0.125f, 0.5f - 0.125f, 0.5f));
+    opt.m_Transform.SetTranslationMatrix(xiiVec3(-0.5f + 0.125f, 0.5f - 0.125f, 0.5f));
     opt.m_Transform = rot[i] * opt.m_Transform;
     geom.AddRectXY(xiiVec2(0.25f, 0.25f), 1, 1, opt);
 
-    opt.m_Transform = xiiMat4::MakeTranslation(xiiVec3(-0.5f + 0.125f, -0.5f + 0.125f, 0.5f));
+    opt.m_Transform.SetTranslationMatrix(xiiVec3(-0.5f + 0.125f, -0.5f + 0.125f, 0.5f));
     opt.m_Transform = rot[i] * opt.m_Transform;
     geom.AddRectXY(xiiVec2(0.25f, 0.25f), 1, 1, opt);
   }
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_BoxCorners", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_BoxCorners", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferCone()
@@ -401,13 +402,13 @@ static xiiMeshBufferResourceHandle CreateMeshBufferCone()
     return hMesh;
 
   xiiGeometry::GeoOptions opt;
-  opt.m_Transform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(270.0f));
+  opt.m_Transform.SetRotationMatrixY(xiiAngle::Degree(270.0f));
   opt.m_Transform.SetTranslationVector(xiiVec3(1.0f, 0, 0));
 
   xiiGeometry geom;
   geom.AddCone(1.0f, 1.0f, false, 16, opt);
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Cone", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Cone", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferFrustum()
@@ -436,7 +437,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferFrustum()
   geom.AddLine(0, 3);
   geom.AddLine(0, 4);
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Frustum", xiiGALPrimitiveTopology::Lines);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_Frustum", xiiGALPrimitiveTopology::LineList);
 }
 
 static xiiMeshBufferResourceHandle CreateMeshBufferFromFile(const char* szFile)
@@ -457,7 +458,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferFromFile(const char* szFile)
   xiiGeometry geom;
   for (xiiUInt32 v = 0; v < obj.m_Positions.GetCount(); ++v)
   {
-    geom.AddVertex(obj.m_Positions[v], xiiVec3::MakeZero(), xiiVec2::MakeZero(), xiiColor::White);
+    geom.AddVertex(obj.m_Positions[v], xiiVec3::ZeroVector(), xiiVec2::ZeroVector(), xiiColor::White);
   }
 
   xiiStaticArray<xiiUInt32, 3> triangle;
@@ -471,7 +472,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferFromFile(const char* szFile)
     geom.AddPolygon(triangle, false);
   }
 
-  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_FromFile", xiiGALPrimitiveTopology::Triangles);
+  return CreateMeshBufferResource(geom, szResourceName, "GizmoHandle_FromFile", xiiGALPrimitiveTopology::TriangleList);
 }
 
 static xiiMeshResourceHandle CreateMeshResource(const char* szMeshResourceName, xiiMeshBufferResourceHandle hMeshBuffer, const char* szMaterial)

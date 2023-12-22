@@ -193,7 +193,7 @@ xiiEditorInput xiiRotateGizmo::DoMouseMoveEvent(QMouseEvent* e)
   m_vLastMousePos = UpdateMouseMode(e);
 
   const float dv = m_vScreenTangent.Dot(vDiff);
-  m_Rotation += xiiAngle::MakeFromDegree(dv);
+  m_Rotation += xiiAngle::Degree(dv);
 
   xiiAngle rot = m_Rotation;
 

@@ -69,16 +69,16 @@ void xiiGridRenderer::CreateVertexBuffer()
   {
     {
       xiiVertexStreamInfo& si = m_VertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALVertexAttributeSemantic::Position;
-      si.m_Format             = xiiGALResourceFormat::XYZFloat;
+      si.m_Semantic           = xiiGALInputLayoutSemantic::Position;
+      si.m_Format             = xiiGALTextureFormat::XYZFloat;
       si.m_uiOffset           = 0;
       si.m_uiElementSize      = 12;
     }
 
     {
       xiiVertexStreamInfo& si = m_VertexDeclarationInfo.m_VertexStreams.ExpandAndGetRef();
-      si.m_Semantic           = xiiGALVertexAttributeSemantic::Color0;
-      si.m_Format             = xiiGALResourceFormat::RGBAUByteNormalized;
+      si.m_Semantic           = xiiGALInputLayoutSemantic::Color0;
+      si.m_Format             = xiiGALTextureFormat::RGBAUByteNormalized;
       si.m_uiOffset           = 12;
       si.m_uiElementSize      = 4;
     }
@@ -193,7 +193,7 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
       pRenderContext->GetCommandEncoder()->UpdateBuffer(m_hVertexBuffer, 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
 
-      pRenderContext->BindMeshBuffer(m_hVertexBuffer, xiiGALBufferHandle(), &m_VertexDeclarationInfo, xiiGALPrimitiveTopology::Lines, uiNumLineVerticesInBatch / 2);
+      pRenderContext->BindMeshBuffer(m_hVertexBuffer, xiiGALBufferHandle(), &m_VertexDeclarationInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
       pRenderContext->DrawMeshBuffer().IgnoreResult();
 
       uiNumLineVertices -= uiNumLineVerticesInBatch;

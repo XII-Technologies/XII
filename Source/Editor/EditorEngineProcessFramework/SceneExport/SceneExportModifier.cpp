@@ -71,14 +71,16 @@ void xiiSceneExportModifier::CleanUpWorld(xiiWorld& ref_world)
   // Don't do this (for now), as we would also delete objects that are referenced by other components,
   // and currently we can't know which ones are important to keep.
 
-  // for (auto it = world.GetObjects(); it.IsValid(); it.Next())
-  //{
-  //   // only visit objects without parents, those are the root objects
-  //   if (it->GetParent() != nullptr)
-  //     continue;
+#if 0
+  for (auto it = ref_world.GetObjects(); it.IsValid(); it.Next())
+  {
+    // only visit objects without parents, those are the root objects
+    if (it->GetParent() != nullptr)
+      continue;
 
-  //  VisitObject(world, it);
-  //}
+    VisitObject(ref_world, it);
+  }
+#endif
 
   const bool bSim = ref_world.GetWorldSimulationEnabled();
   ref_world.SetWorldSimulationEnabled(false);

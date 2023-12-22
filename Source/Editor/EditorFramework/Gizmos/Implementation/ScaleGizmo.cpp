@@ -219,11 +219,11 @@ void xiiManipulatorScaleGizmo::OnTransformationChanged(const xiiTransform& trans
 
   m_hAxisX.SetTransformation(transform * t);
 
-  t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(90));
+  t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
   t.m_vPosition = xiiVec3(0, fOffset, 0);
   m_hAxisY.SetTransformation(transform * t);
 
-  t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(-90));
+  t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(-90));
   t.m_vPosition = xiiVec3(0, 0, fOffset);
   m_hAxisZ.SetTransformation(transform * t);
 

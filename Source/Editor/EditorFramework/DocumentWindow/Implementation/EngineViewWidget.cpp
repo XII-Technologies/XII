@@ -155,7 +155,7 @@ void xiiQtEngineViewWidget::UpdateCameraInterpolation()
 
   xiiCamera& cam = m_pViewConfig->m_Camera;
 
-  const float fLerpValue = xiiMath::Sin(xiiAngle::MakeFromDegree(90.0f * m_fCameraLerp));
+  const float fLerpValue = xiiMath::Sin(xiiAngle::Degree(90.0f * m_fCameraLerp));
 
   xiiQuat qRot, qRotFinal;
   qRot      = xiiQuat::MakeShortestRotation(m_vCameraStartDirection, m_vCameraTargetDirection);

@@ -63,8 +63,8 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   m_uiWindowHeight                 = (xiiUInt32)viewPortRect.height;
 
   const xiiGALTexture* pDepthTexture = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hPickingDepthRT);
-  XII_ASSERT_DEV(m_uiWindowWidth == pDepthTexture->GetDescription().m_uiWidth, "");
-  XII_ASSERT_DEV(m_uiWindowHeight == pDepthTexture->GetDescription().m_uiHeight, "");
+  XII_ASSERT_DEV(m_uiWindowWidth == pDepthTexture->GetDescription().m_Size.width, "");
+  XII_ASSERT_DEV(m_uiWindowHeight == pDepthTexture->GetDescription().m_Size.height, "");
 
   xiiGALRenderingSetup renderingSetup;
   renderingSetup.m_RenderTargetSetup       = m_RenderTargetSetup;
@@ -138,8 +138,8 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   // download the picking information from the GPU
   if (m_uiWindowWidth != 0 && m_uiWindowHeight != 0)
   {
-    pCommandEncoder->ReadbackTexture(GetPickingDepthRT());
-    pCommandEncoder->ReadbackTexture(GetPickingIdRT());
+    pCommandEncoder->ReadbackTexture(GetPickingDepthRT(), m_hPickingDepthRTStaging);
+    pCommandEncoder->ReadbackTexture(GetPickingIdRT(), m_hPickingIdRTStaging);
 
     xiiMat4 mProj;
     renderViewContext.m_pCamera->GetProjectionMatrix((float)m_uiWindowWidth / m_uiWindowHeight, mProj);
@@ -157,20 +157,20 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
 
     m_mPickingInverseViewProjectionMatrix = inv;
 
-    xiiGALSystemMemoryDescription MemDesc;
-    MemDesc.m_uiRowPitch   = 4 * m_uiWindowWidth;
-    MemDesc.m_uiSlicePitch = 4 * m_uiWindowWidth * m_uiWindowHeight;
-    xiiArrayPtr<xiiGALSystemMemoryDescription> SysMemDescs(&MemDesc, 1);
+    xiiGALTextureSubResourceData MemDesc;
+    MemDesc.m_uiStride      = 4 * m_uiWindowWidth;
+    MemDesc.m_uiDepthStride = 4 * m_uiWindowWidth * m_uiWindowHeight;
+    xiiArrayPtr<xiiGALTextureSubResourceData> SysMemDescs(&MemDesc, 1);
 
-    xiiGALTextureSubresource              sourceSubResource;
-    xiiArrayPtr<xiiGALTextureSubresource> sourceSubResources(&sourceSubResource, 1);
+    xiiGALTextureMipLevelData              sourceSubResource;
+    xiiArrayPtr<xiiGALTextureMipLevelData> sourceSubResources(&sourceSubResource, 1);
 
     {
       m_PickingResultsDepth.Clear();
       m_PickingResultsDepth.SetCountUninitialized(m_uiWindowWidth * m_uiWindowHeight);
 
       MemDesc.m_pData = m_PickingResultsDepth.GetData();
-      pCommandEncoder->CopyTextureReadbackResult(GetPickingDepthRT(), sourceSubResources, SysMemDescs);
+      pCommandEncoder->CopyTextureReadbackResult(GetPickingDepthRT(), m_hPickingDepthRTStaging, sourceSubResources, SysMemDescs);
     }
 
     {
@@ -178,7 +178,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
       m_PickingResultsID.SetCountUninitialized(m_uiWindowWidth * m_uiWindowHeight);
 
       MemDesc.m_pData = m_PickingResultsID.GetData();
-      pCommandEncoder->CopyTextureReadbackResult(GetPickingIdRT(), sourceSubResources, SysMemDescs);
+      pCommandEncoder->CopyTextureReadbackResult(GetPickingIdRT(), m_hPickingIdRTStaging, sourceSubResources, SysMemDescs);
     }
   }
 }
@@ -195,22 +195,26 @@ void xiiPickingRenderPass::CreateTarget()
 
   // Create render target for picking
   xiiGALTextureCreationDescription tcd;
-  tcd.m_bAllowDynamicMipGeneration = false;
-  tcd.m_bAllowShaderResourceView   = false;
-  tcd.m_bAllowUAV                  = false;
-  tcd.m_bCreateRenderTarget        = true;
-  tcd.m_Format                     = xiiGALResourceFormat::RGBAUByteNormalized;
-  tcd.m_ResourceAccess.m_bReadBack = true;
-  tcd.m_Type                       = xiiGALTextureType::Texture2D;
-  tcd.m_uiWidth                    = (xiiUInt32)m_TargetRect.width;
-  tcd.m_uiHeight                   = (xiiUInt32)m_TargetRect.height;
+  tcd.m_Type        = xiiGALResourceDimension::Texture2D;
+  tcd.m_Format      = xiiGALTextureFormat::RGBA8UNormalized;
+  tcd.m_Size.width  = (xiiUInt32)m_TargetRect.width;
+  tcd.m_Size.height = (xiiUInt32)m_TargetRect.height;
+  tcd.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
 
   m_hPickingIdRT = pDevice->CreateTexture(tcd);
 
-  tcd.m_Format                     = xiiGALResourceFormat::DFloat;
-  tcd.m_ResourceAccess.m_bReadBack = true;
+  tcd.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Read);
+
+  m_hPickingIdRTStaging = pDevice->CreateTexture(tcd);
+
+  tcd.m_Format         = xiiGALTextureFormat::D32Float;
+  tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::None;
 
   m_hPickingDepthRT = pDevice->CreateTexture(tcd);
+
+  tcd.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Read);
+
+  m_hPickingDepthRTStaging = pDevice->CreateTexture(tcd);
 
   m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(m_hPickingIdRT)).SetDepthStencilTarget(pDevice->GetDefaultRenderTargetView(m_hPickingDepthRT));
 }

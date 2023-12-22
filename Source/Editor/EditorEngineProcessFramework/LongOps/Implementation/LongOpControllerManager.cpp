@@ -119,7 +119,7 @@ void xiiLongOpControllerManager::RegisterLongOp(const xiiUuid& documentGuid, con
   auto& opInfo           = *opInfoPtr;
   opInfo.m_DocumentGuid  = documentGuid;
   opInfo.m_ComponentGuid = componentGuid;
-  opInfo.m_OperationGuid = xiiUuid::MakeUuid();
+  opInfo.m_OperationGuid = xiiUuid::CreateUuid();
 
   opInfo.m_pProxyOp = pRtti->GetAllocator()->Allocate<xiiLongOpProxy>();
   opInfo.m_pProxyOp->InitializeRegistered(documentGuid, componentGuid);
@@ -205,7 +205,7 @@ void xiiLongOpControllerManager::CancelAndRemoveAllOpsForDocument(const xiiUuid&
 
     if (bOperationsStillActive)
     {
-      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
+      xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
     }
   }
 }
@@ -241,50 +241,51 @@ void xiiLongOpControllerManager::BroadcastProgress(ProxyOpInfo& opInfo)
   m_Events.Broadcast(e);
 }
 
+#if 0
+void xiiLongOpManager::AddLongOperation(xiiUniquePtr<xiiLongOp>&& pOperation, const xiiUuid& documentGuid)
+{
+  XII_LOCK(m_Mutex);
 
-// void xiiLongOpManager::AddLongOperation(xiiUniquePtr<xiiLongOp>&& pOperation, const xiiUuid& documentGuid)
-//{
-//  XII_LOCK(m_Mutex);
-//
-//  auto& opInfoPtr = m_Operations.ExpandAndGetRef();
-//  opInfoPtr = XII_DEFAULT_NEW(LongOpInfo);
-//
-//  auto& opInfo = *opInfoPtr;
-//  opInfo.m_pOperation = std::move(pOperation);
-//  opInfo.m_OperationGuid.CreateNewUuid();
-//  opInfo.m_DocumentGuid = documentGuid;
-//  opInfo.m_StartOrDuration = xiiTime::Now();
-//  opInfo.m_Progress.m_pUserData = opInfo.m_pOperation.Borrow();
-//  opInfo.m_Progress.m_Events.AddEventHandler(
-//    xiiMakeDelegate(&xiiLongOpManager::ProgressBarEventHandler, this), opInfo.m_ProgressSubscription);
-//
-//  xiiLongOp* pNewOp = opInfo.m_pOperation.Borrow();
-//
-//  if (m_Mode == Mode::Processor || xiiDynamicCast<xiiLongOpProxy*>(pNewOp) != nullptr)
-//  {
-//    xiiStringBuilder replType;
-//
-//    xiiLongOpReplicationMsg msg;
-//
-//    xiiMemoryStreamContainerWrapperStorage<xiiDataBuffer> storage(&msg.m_ReplicationData);
-//    xiiMemoryStreamWriter writer(&storage);
-//
-//    pNewOp->GetReplicationInfo(replType, writer);
-//
-//    msg.m_sReplicationType = replType;
-//    msg.m_DocumentGuid = opInfo.m_DocumentGuid;
-//    msg.m_OperationGuid = opInfo.m_OperationGuid;
-//    msg.m_sDisplayName = pNewOp->GetDisplayName();
-//
-//    m_pCommunicationChannel->SendMessage(&msg);
-//  }
-//
-//  LaunchWorkerOperation(opInfo);
-//
-//  {
-//    xiiLongOpManagerEvent e;
-//    e.m_Type = xiiLongOpManagerEvent::Type::OpAdded;
-//    e.m_uiOperationIndex = m_Operations.GetCount() - 1;
-//    m_Events.Broadcast(e);
-//  }
-//}
+  auto& opInfoPtr = m_Operations.ExpandAndGetRef();
+  opInfoPtr       = XII_DEFAULT_NEW(LongOpInfo);
+
+  auto& opInfo        = *opInfoPtr;
+  opInfo.m_pOperation = std::move(pOperation);
+  opInfo.m_OperationGuid.CreateNewUuid();
+  opInfo.m_DocumentGuid         = documentGuid;
+  opInfo.m_StartOrDuration      = xiiTime::Now();
+  opInfo.m_Progress.m_pUserData = opInfo.m_pOperation.Borrow();
+  opInfo.m_Progress.m_Events.AddEventHandler(
+    xiiMakeDelegate(&xiiLongOpManager::ProgressBarEventHandler, this), opInfo.m_ProgressSubscription);
+
+  xiiLongOp* pNewOp = opInfo.m_pOperation.Borrow();
+
+  if (m_Mode == Mode::Processor || xiiDynamicCast<xiiLongOpProxy*>(pNewOp) != nullptr)
+  {
+    xiiStringBuilder replType;
+
+    xiiLongOpReplicationMsg msg;
+
+    xiiMemoryStreamContainerWrapperStorage<xiiDataBuffer> storage(&msg.m_ReplicationData);
+    xiiMemoryStreamWriter                                 writer(&storage);
+
+    pNewOp->GetReplicationInfo(replType, writer);
+
+    msg.m_sReplicationType = replType;
+    msg.m_DocumentGuid     = opInfo.m_DocumentGuid;
+    msg.m_OperationGuid    = opInfo.m_OperationGuid;
+    msg.m_sDisplayName     = pNewOp->GetDisplayName();
+
+    m_pCommunicationChannel->SendMessage(&msg);
+  }
+
+  LaunchWorkerOperation(opInfo);
+
+  {
+    xiiLongOpManagerEvent e;
+    e.m_Type             = xiiLongOpManagerEvent::Type::OpAdded;
+    e.m_uiOperationIndex = m_Operations.GetCount() - 1;
+    m_Events.Broadcast(e);
+  }
+}
+#endif

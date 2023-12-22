@@ -111,7 +111,7 @@ void xiiCameraVisualizerAdapter::Update()
     }
 
     {
-      const float fAngleScale    = xiiMath::Tan(xiiAngle::MakeFromDegree(fFOV) * 0.5f);
+      const float fAngleScale    = xiiMath::Tan(xiiAngle::Degree(fFOV) * 0.5f);
       const float fFrustumScale  = xiiMath::Min(fFarPlane, 10.0f);
       const float fFarPlaneScale = xiiMath::Min(fFarPlane, 9.0f);
       ;
@@ -123,11 +123,11 @@ void xiiCameraVisualizerAdapter::Update()
       m_LocalTransformFrustum.m_vScale.Set(fFrustumScale, fAngleScale * fFrustumScale, fAngleScale * fFrustumScale);
       m_LocalTransformFrustum.m_vPosition.Set(0, 0, 0);
 
-      m_LocalTransformNearPlane.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90));
+      m_LocalTransformNearPlane.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
       m_LocalTransformNearPlane.m_vScale.Set(fAngleScale * fNearPlane, fAngleScale * fNearPlane, 1);
       m_LocalTransformNearPlane.m_vPosition.Set(fNearPlane, 0, 0);
 
-      m_LocalTransformFarPlane.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90));
+      m_LocalTransformFarPlane.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
       m_LocalTransformFarPlane.m_vScale.Set(fAngleScale * fFarPlaneScale, fAngleScale * fFarPlaneScale, 1);
       m_LocalTransformFarPlane.m_vPosition.Set(fFarPlaneScale, 0, 0);
     }

@@ -110,7 +110,7 @@ private:
   float     m_fSkyLightIntensity = 1.0f;
 
   bool     m_bDirectionalLight          = true;
-  xiiAngle m_DirectionalLightAngle      = xiiAngle::MakeFromDegree(30.0f);
+  xiiAngle m_DirectionalLightAngle      = xiiAngle::Degree(30.0f);
   bool     m_bDirectionalLightShadows   = false;
   float    m_fDirectionalLightIntensity = 10.0f;
 

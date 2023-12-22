@@ -47,7 +47,7 @@ public:
   float     m_fRadius   = 0.5f;
   float     m_fRadius2  = 0.5f;
   float     m_fHeight   = 1.0f;
-  xiiAngle  m_Angle     = xiiAngle::MakeFromDegree(360.0f);
+  xiiAngle  m_Angle     = xiiAngle::Degree(360.0f);
   xiiUInt16 m_uiDetail  = 0;
   xiiUInt16 m_uiDetail2 = 0;
   bool      m_bCap      = true;

@@ -122,7 +122,7 @@ xiiEditorInput xiiConeLengthGizmo::DoMouseMoveEvent(QMouseEvent* e)
   m_vLastMousePos = UpdateMouseMode(e);
 
   const float    fSpeed = 0.02f;
-  const xiiAngle aSpeed = xiiAngle::MakeFromDegree(1.0f);
+  const xiiAngle aSpeed = xiiAngle::Degree(1.0f);
 
   if (m_ManipulateMode == ManipulateMode::Radius)
   {

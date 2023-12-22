@@ -225,8 +225,8 @@ void xiiSceneDocument::DuplicateSpecial()
   cmd.m_bGroupDuplicates         = dlg.s_bGroupCopies;
   cmd.m_iRevolveAxis             = dlg.s_iRevolveAxis;
   cmd.m_fRevolveRadius           = dlg.s_fRevolveRadius;
-  cmd.m_RevolveStartAngle        = xiiAngle::MakeFromDegree(dlg.s_iRevolveStartAngle);
-  cmd.m_RevolveAngleStep         = xiiAngle::MakeFromDegree(dlg.s_iRevolveAngleStep);
+  cmd.m_RevolveStartAngle        = xiiAngle::Degree(dlg.s_iRevolveStartAngle);
+  cmd.m_RevolveAngleStep         = xiiAngle::Degree(dlg.s_iRevolveAngleStep);
 
   auto history = GetCommandHistory();
 

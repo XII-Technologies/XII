@@ -440,7 +440,7 @@ void xiiPropertyAnimAssetDocument::ApplyAnimation(const xiiPropertyReference& ke
           bIsRotation         = true;
           const double fValue = pTrack->m_FloatCurve.Evaluate(m_uiScrubberTickPos);
 
-          euler[(xiiUInt32)pTrack->m_Target - xiiPropertyAnimTarget::RotationX] = xiiAngle::MakeFromDegree(fValue);
+          euler[(xiiUInt32)pTrack->m_Target - xiiPropertyAnimTarget::RotationX] = xiiAngle::Degree(fValue);
         }
       }
       break;

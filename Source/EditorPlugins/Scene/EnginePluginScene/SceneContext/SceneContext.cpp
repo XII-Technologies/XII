@@ -1040,7 +1040,7 @@ void xiiSceneContext::AddAmbientLight(bool bSetEditorTag, bool bForce)
     xiiGameObjectDesc obj;
     obj.m_sName.Assign("Ambient Light");
 
-    obj.m_LocalRotation = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(-14.510815f), xiiAngle::MakeFromDegree(43.07951f), xiiAngle::MakeFromDegree(93.223808f));
+    obj.m_LocalRotation = xiiQuat::MakeFromEulerAngles(xiiAngle::Degree(-14.510815f), xiiAngle::Degree(43.07951f), xiiAngle::Degree(93.223808f));
 
     if (bSetEditorTag)
     {

@@ -63,11 +63,11 @@ void xiiMeshViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
     xiiUInt32 uiNumColors = 0;
     for (auto& vertexStream : pMeshBuffer->GetVertexDeclaration().m_VertexStreams)
     {
-      if (vertexStream.m_Semantic >= xiiGALVertexAttributeSemantic::TexCoord0 && vertexStream.m_Semantic <= xiiGALVertexAttributeSemantic::TexCoord9)
+      if (vertexStream.m_Semantic >= xiiGALInputLayoutSemantic::TexCoord0 && vertexStream.m_Semantic <= xiiGALInputLayoutSemantic::TexCoord9)
       {
         ++uiNumUVs;
       }
-      else if (vertexStream.m_Semantic >= xiiGALVertexAttributeSemantic::Color0 && vertexStream.m_Semantic <= xiiGALVertexAttributeSemantic::Color7)
+      else if (vertexStream.m_Semantic >= xiiGALInputLayoutSemantic::Color0 && vertexStream.m_Semantic <= xiiGALInputLayoutSemantic::Color7)
       {
         ++uiNumColors;
       }

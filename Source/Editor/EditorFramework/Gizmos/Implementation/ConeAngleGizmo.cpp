@@ -9,7 +9,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiConeAngleGizmo::xiiConeAngleGizmo()
 {
-  m_Angle       = xiiAngle::MakeFromDegree(1.0f);
+  m_Angle       = xiiAngle::Degree(1.0f);
   m_fAngleScale = 1.0f;
   m_fRadius     = 1.0f;
 
@@ -123,13 +123,13 @@ xiiEditorInput xiiConeAngleGizmo::DoMouseMoveEvent(QMouseEvent* e)
   m_vLastMousePos = UpdateMouseMode(e);
 
   const float    fSpeed = 0.02f;
-  const xiiAngle aSpeed = xiiAngle::MakeFromDegree(1.0f);
+  const xiiAngle aSpeed = xiiAngle::Degree(1.0f);
 
   {
     m_Angle += vDiff.x * aSpeed;
     m_Angle -= vDiff.y * aSpeed;
 
-    m_Angle = xiiMath::Clamp(m_Angle, xiiAngle(), xiiAngle::MakeFromDegree(179.0f));
+    m_Angle = xiiMath::Clamp(m_Angle, xiiAngle(), xiiAngle::Degree(179.0f));
 
     m_fAngleScale = xiiMath::Tan(m_Angle * 0.5f);
   }

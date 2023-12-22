@@ -100,7 +100,7 @@ xiiEditorInput xiiOrthoGizmoContext::DoMouseMoveEvent(QMouseEvent* e)
 
     m_vTranslationDiff = m_vTranslationResult - vLastTranslationResult;
 
-    m_UnsnappedRotationResult += xiiAngle::MakeFromDegree(-diff.x);
+    m_UnsnappedRotationResult += xiiAngle::Degree(-diff.x);
 
     xiiAngle snappedRotation = m_UnsnappedRotationResult;
 

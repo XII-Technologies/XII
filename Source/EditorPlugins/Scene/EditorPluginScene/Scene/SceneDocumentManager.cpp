@@ -297,7 +297,7 @@ void xiiSceneDocumentManager::SetupDefaultScene(xiiDocument* pDocument)
     }
 
     {
-      xiiQuat qRot = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(0), xiiAngle::MakeFromDegree(55), xiiAngle::MakeFromDegree(90));
+      xiiQuat qRot = xiiQuat::MakeFromEulerAngles(xiiAngle::Degree(0), xiiAngle::Degree(55), xiiAngle::Degree(90));
 
       xiiSetObjectPropertyCommand propCmd;
       propCmd.m_Object    = cmd.m_NewObjectGuid;

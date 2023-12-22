@@ -16,7 +16,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiEditorEngineSyncObject::xiiEditorEngineSyncObject()
 {
-  m_SyncObjectGuid = xiiUuid::MakeUuid();
+  m_SyncObjectGuid = xiiUuid::CreateUuid();
   m_bModified      = true;
 }
 

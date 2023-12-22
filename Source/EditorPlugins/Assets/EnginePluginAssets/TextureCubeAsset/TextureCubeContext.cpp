@@ -50,7 +50,7 @@ void xiiTextureCubeContext::OnInitialize()
   m_hMaterial            = xiiResourceManager::GetExistingResource<xiiMaterialResource>(sMaterialResource);
 
   m_hTexture                               = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sTextureGuid);
-  xiiGALResourceFormat::Enum textureFormat = xiiGALResourceFormat::Invalid;
+  xiiGALTextureFormat::Enum textureFormat = xiiGALTextureFormat::Invalid;
   {
     xiiResourceLock<xiiTextureCubeResource> pTexture(m_hTexture, xiiResourceAcquireMode::PointerOnly);
 
@@ -74,7 +74,7 @@ void xiiTextureCubeContext::OnInitialize()
 
       xiiMeshBufferResourceDescriptor desc;
       desc.AddCommonStreams();
-      desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::Triangles);
+      desc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
 
       hMeshBuffer = xiiResourceManager::GetOrCreateResource<xiiMeshBufferResource>(szMeshBufferName, std::move(desc), szMeshBufferName);
     }
@@ -103,7 +103,7 @@ void xiiTextureCubeContext::OnInitialize()
 
     auto& param = md.m_Parameters.ExpandAndGetRef();
     param.m_Name.Assign("IsLinear");
-    param.m_Value = textureFormat != xiiGALResourceFormat::Invalid ? !xiiGALResourceFormat::IsSrgb(textureFormat) : false;
+    param.m_Value = textureFormat != xiiGALTextureFormat::Invalid ? !xiiGALTextureFormat::IsSrgb(textureFormat) : false;
 
     m_hMaterial = xiiResourceManager::GetOrCreateResource<xiiMaterialResource>(sMaterialResource, std::move(md));
   }
@@ -116,7 +116,7 @@ void xiiTextureCubeContext::OnInitialize()
     xiiGameObject*    pObj;
 
     obj.m_sName.Assign("TextureCubePreview");
-    obj.m_LocalRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(90));
+    obj.m_LocalRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
     m_hPreviewObject    = m_pWorld->CreateObject(obj, pObj);
 
     xiiMeshComponent* pMesh;
@@ -141,10 +141,10 @@ void xiiTextureCubeContext::OnResourceEvent(const xiiResourceEvent& e)
   if (e.m_Type == xiiResourceEvent::Type::ResourceContentUpdated)
   {
     const xiiTextureCubeResource* pTexture = static_cast<const xiiTextureCubeResource*>(e.m_pResource);
-    if (pTexture->GetFormat() != xiiGALResourceFormat::Invalid)
+    if (pTexture->GetFormat() != xiiGALTextureFormat::Invalid)
     {
       xiiResourceLock<xiiMaterialResource> pMaterial(m_hMaterial, xiiResourceAcquireMode::BlockTillLoaded);
-      pMaterial->SetParameter("IsLinear", !xiiGALResourceFormat::IsSrgb(pTexture->GetFormat()));
+      pMaterial->SetParameter("IsLinear", !xiiGALTextureFormat::IsSrgb(pTexture->GetFormat()));
     }
   }
 }

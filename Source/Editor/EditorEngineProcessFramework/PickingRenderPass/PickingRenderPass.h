@@ -16,9 +16,7 @@ public:
   xiiGALTextureHandle GetPickingDepthRT() const;
 
   virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
-  virtual void InitRenderPipelinePass(
-    const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs,
-    const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
+  virtual void InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;
 
   virtual void ReadBackProperties(xiiView* pView) override;
@@ -46,14 +44,15 @@ private:
   xiiRectFloat m_TargetRect;
 
   xiiGALTextureHandle     m_hPickingIdRT;
+  xiiGALTextureHandle     m_hPickingIdRTStaging;
   xiiGALTextureHandle     m_hPickingDepthRT;
+  xiiGALTextureHandle     m_hPickingDepthRTStaging;
   xiiGALRenderTargetSetup m_RenderTargetSetup;
 
   xiiHashSet<xiiGameObjectHandle> m_SelectionSet;
 
-
   /// we need this matrix to compute the world space position of picked pixels
-  xiiMat4 m_mPickingInverseViewProjectionMatrix = xiiMat4::MakeZero();
+  xiiMat4 m_mPickingInverseViewProjectionMatrix = xiiMat4::ZeroMatrix();
 
   /// stores the 2D depth buffer image (32 Bit depth precision), to compute pixel positions from
   xiiDynamicArray<float> m_PickingResultsDepth;

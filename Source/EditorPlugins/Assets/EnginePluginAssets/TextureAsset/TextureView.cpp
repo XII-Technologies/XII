@@ -45,12 +45,12 @@ void xiiTextureViewContext::SetCamera(const xiiViewRedrawMsgToEngine* pMsg)
   if (hResource.IsValid())
   {
     xiiResourceLock<xiiTexture2DResource> pResource(hResource, xiiResourceAcquireMode::AllowLoadingFallback);
-    xiiGALResourceFormat::Enum            format   = pResource->GetFormat();
+    xiiGALTextureFormat::Enum            format   = pResource->GetFormat();
     xiiUInt32                             uiWidth  = pResource->GetWidth();
     xiiUInt32                             uiHeight = pResource->GetHeight();
 
     xiiStringBuilder sText;
-    if (!xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALResourceFormat>(), format, sText, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
+    if (!xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureFormat>(), format, sText, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
     {
       sText = "Unknown format";
     }

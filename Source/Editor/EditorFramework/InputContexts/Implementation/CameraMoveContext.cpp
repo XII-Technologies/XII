@@ -148,13 +148,13 @@ void xiiCameraMoveContext::UpdateContext()
   if (m_bMoveDown)
     m_pCamera->MoveGlobally(0, 0, -1 * fSpeedFactor);
   if (m_bRotateLeft)
-    m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromDegree(-fRotateHorizontal));
+    m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(0), xiiAngle::Degree(-fRotateHorizontal));
   if (m_bRotateRight)
-    m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromDegree(fRotateHorizontal));
+    m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(0), xiiAngle::Degree(fRotateHorizontal));
   if (m_bRotateUp)
-    m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromDegree(fRotateVertical), xiiAngle::MakeFromRadian(0));
+    m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0), xiiAngle::Degree(fRotateVertical), xiiAngle::MakeFromRadian(0));
   if (m_bRotateDown)
-    m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromDegree(-fRotateVertical), xiiAngle::MakeFromRadian(0));
+    m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0), xiiAngle::Degree(-fRotateVertical), xiiAngle::MakeFromRadian(0));
 
   if (m_bMoveForwardsInPlane)
   {

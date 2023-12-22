@@ -27,7 +27,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshAssetProperties, 3, xiiRTTIDefaultAlloca
     XII_MEMBER_PROPERTY("Detail2", m_uiDetail2)->AddAttributes(new xiiDefaultValueAttribute(0), new xiiClampValueAttribute(0, 128)),
     XII_MEMBER_PROPERTY("Cap", m_bCap)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("Cap2", m_bCap2)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_MEMBER_PROPERTY("Angle", m_Angle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(360.0f)), new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(360.0f))),
+    XII_MEMBER_PROPERTY("Angle", m_Angle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::Degree(360.0f)), new xiiClampValueAttribute(xiiAngle::Degree(0.0f), xiiAngle::Degree(360.0f))),
     XII_ARRAY_MEMBER_PROPERTY("Materials", m_Slots)->AddAttributes(new xiiContainerAttribute(false, true, true)),
   }
   XII_END_PROPERTIES;
@@ -213,7 +213,7 @@ public:
       if (pProp->m_Value.IsA<float>())
       {
         const float valFloat = pProp->m_Value.Get<float>();
-        pProp->m_Value       = xiiAngle::MakeFromDegree(valFloat);
+        pProp->m_Value       = xiiAngle::Degree(valFloat);
       }
     }
   }

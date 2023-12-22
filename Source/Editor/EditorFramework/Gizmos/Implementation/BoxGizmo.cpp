@@ -55,19 +55,19 @@ void xiiBoxGizmo::OnTransformationChanged(const xiiTransform& transform)
 
   m_hCorners.SetTransformation(scale);
 
-  rot = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(90));
+  rot = xiiMat4::MakeRotationX(xiiAngle::Degree(90));
   m_Edges[0].SetTransformation(scale * rot);
 
-  rot = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(90));
+  rot = xiiMat4::MakeRotationY(xiiAngle::Degree(90));
   m_Faces[0].SetTransformation(scale * rot);
 
   rot.SetIdentity();
   m_Edges[1].SetTransformation(scale * rot);
 
-  rot = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(90));
+  rot = xiiMat4::MakeRotationX(xiiAngle::Degree(90));
   m_Faces[1].SetTransformation(scale * rot);
 
-  rot = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(90));
+  rot = xiiMat4::MakeRotationZ(xiiAngle::Degree(90));
   m_Edges[2].SetTransformation(scale * rot);
 
   rot.SetIdentity();

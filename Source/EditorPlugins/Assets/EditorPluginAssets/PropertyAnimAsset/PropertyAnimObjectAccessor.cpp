@@ -123,7 +123,7 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetValue(
                                          m_pDocument->InsertCurveCpAt(trackGuid, 0, oldValue);
                                        });
         const auto* pTrack   = m_pDocument->GetTrack(track);
-        oldEuler[c]          = xiiAngle::MakeFromDegree(pTrack->m_FloatCurve.Evaluate(m_pDocument->GetScrubberPosition()));
+        oldEuler[c]          = xiiAngle::Degree(pTrack->m_FloatCurve.Evaluate(m_pDocument->GetScrubberPosition()));
       }
 
       for (xiiUInt32 c = 0; c < 3; c++)
@@ -132,8 +132,8 @@ xiiStatus xiiPropertyAnimObjectAccessor::SetValue(
         float fDiff   = (newEuler[c] - oldEuler[c]).GetDegree();
         float iRounds = xiiMath::RoundToMultiple(fDiff, 360.0f);
         fDiff -= iRounds;
-        newEuler[c] = oldEuler[c] + xiiAngle::MakeFromDegree(fDiff);
-        if (oldEuler[c].IsEqualSimple(newEuler[c], xiiAngle::MakeFromDegree(0.01f)))
+        newEuler[c] = oldEuler[c] + xiiAngle::Degree(fDiff);
+        if (oldEuler[c].IsEqualSimple(newEuler[c], xiiAngle::Degree(0.01f)))
           continue;
 
         XII_SUCCEED_OR_RETURN(SetCurveCp(pObject, pProp, index, static_cast<xiiPropertyAnimTarget::Enum>((int)xiiPropertyAnimTarget::RotationX + c),

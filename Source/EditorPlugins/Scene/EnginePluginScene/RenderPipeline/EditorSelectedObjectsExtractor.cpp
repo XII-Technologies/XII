@@ -114,7 +114,7 @@ void xiiEditorSelectedObjectsExtractor::CreateRenderTargetTexture(const xiiView&
     const xiiUInt32 uiWidth = 256;
 
     xiiRenderToTexture2DResourceDescriptor d;
-    d.m_Format   = xiiGALResourceFormat::RGBAUByteNormalizedsRGB;
+    d.m_Format   = xiiGALTextureFormat::RGBAUByteNormalizedsRGB;
     d.m_uiWidth  = uiWidth;
     d.m_uiHeight = (xiiUInt32)(uiWidth * fAspect);
 

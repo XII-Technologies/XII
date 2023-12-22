@@ -233,7 +233,7 @@ bool xiiEngineProcessViewContext::FocusCameraOnObject(xiiCamera& inout_camera, c
   xiiVec3 vCameraPos = inout_camera.GetCenterPosition();
   xiiVec3 vCenterPos = objectBounds.GetSphere().m_vCenter;
 
-  const float fDist = xiiMath::Max(0.1f, objectBounds.GetSphere().m_fRadius) / xiiMath::Sin(xiiAngle::MakeFromDegree(fFov / 2));
+  const float fDist = xiiMath::Max(0.1f, objectBounds.GetSphere().m_fRadius) / xiiMath::Sin(xiiAngle::Degree(fFov / 2));
   vDir.Normalize();
   xiiVec3 vNewCameraPos = vCenterPos - vDir * fDist;
   if (!vNewCameraPos.IsEqual(vCameraPos, 0.01f))
