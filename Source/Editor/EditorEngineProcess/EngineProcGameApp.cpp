@@ -244,13 +244,12 @@ void xiiEngineProcessGameApplication::SendReflectionInformation()
     return;
 
   xiiSet<const xiiRTTI*> types;
-  xiiRTTI::ForEachType(
-    [&](const xiiRTTI* pRtti) {
-      if (pRtti->GetTypeFlags().IsSet(xiiTypeFlags::StandardType) == false)
-      {
-        types.Insert(pRtti);
-      }
-    });
+  xiiRTTI::ForEachType([&](const xiiRTTI* pRtti) {
+    if (pRtti->GetTypeFlags().IsSet(xiiTypeFlags::StandardType) == false)
+    {
+      types.Insert(pRtti);
+    }
+  });
 
   xiiDynamicArray<const xiiRTTI*> sortedTypes;
   xiiReflectionUtils::CreateDependencySortedTypeArray(types, sortedTypes).AssertSuccess("Sorting failed");
@@ -414,6 +413,10 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       {
         *static_cast<xiiCVarFloat*>(pCVar) = pMsg3->m_NewValue.ConvertTo<float>();
       }
+      else if (pCVar->GetType() == xiiCVarType::Double && pMsg3->m_NewValue.CanConvertTo<double>())
+      {
+        *static_cast<xiiCVarDouble*>(pCVar) = pMsg3->m_NewValue.ConvertTo<double>();
+      }
       else if (pCVar->GetType() == xiiCVarType::Bool && pMsg3->m_NewValue.CanConvertTo<bool>())
       {
         *static_cast<xiiCVarBool*>(pCVar) = pMsg3->m_NewValue.ConvertTo<bool>();
@@ -508,45 +511,44 @@ xiiEngineProcessDocumentContext* xiiEngineProcessGameApplication::CreateDocument
 
   if (pDocumentContext == nullptr)
   {
-    xiiRTTI::ForEachDerivedType<xiiEngineProcessDocumentContext>(
-      [&](const xiiRTTI* pRtti) {
-        auto* pProp = pRtti->FindPropertyByName("DocumentType");
-        if (pProp && pProp->GetCategory() == xiiPropertyCategory::Constant)
-        {
-          const xiiStringBuilder sDocTypes(";", static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant().ConvertTo<xiiString>(), ";");
-          const xiiStringBuilder sRequestedType(";", pMsg->m_sDocumentType, ";");
+    xiiRTTI::ForEachDerivedType<xiiEngineProcessDocumentContext>([&](const xiiRTTI* pRtti) {
+      auto* pProp = pRtti->FindPropertyByName("DocumentType");
+      if (pProp && pProp->GetCategory() == xiiPropertyCategory::Constant)
+      {
+        const xiiStringBuilder sDocTypes(";", static_cast<const xiiAbstractConstantProperty*>(pProp)->GetConstant().ConvertTo<xiiString>(), ";");
+        const xiiStringBuilder sRequestedType(";", pMsg->m_sDocumentType, ";");
 
-          if (sDocTypes.FindSubString(sRequestedType) != nullptr)
+        if (sDocTypes.FindSubString(sRequestedType) != nullptr)
+        {
+          xiiLog::Dev("Created Context of type '{0}' for '{1}'", pRtti->GetTypeName(), pMsg->m_sDocumentType);
+          for (auto pFunc : pRtti->GetFunctions())
           {
-            xiiLog::Dev("Created Context of type '{0}' for '{1}'", pRtti->GetTypeName(), pMsg->m_sDocumentType);
-            for (auto pFunc : pRtti->GetFunctions())
+            if (pFunc->GetPropertyName() == "AllocateContext")
             {
-              if (pFunc->GetPropertyName() == "AllocateContext")
+              xiiVariant                    res;
+              xiiHybridArray<xiiVariant, 1> params;
+              params.PushBack(pMsg);
+              pFunc->Execute(nullptr, params, res);
+              if (res.IsA<xiiEngineProcessDocumentContext*>())
               {
-                xiiVariant                    res;
-                xiiHybridArray<xiiVariant, 1> params;
-                params.PushBack(pMsg);
-                pFunc->Execute(nullptr, params, res);
-                if (res.IsA<xiiEngineProcessDocumentContext*>())
-                {
-                  pDocumentContext = res.Get<xiiEngineProcessDocumentContext*>();
-                }
-                else
-                {
-                  xiiLog::Error("Failed to call custom allocator '{}::{}'.", pRtti->GetTypeName(), pFunc->GetPropertyName());
-                }
+                pDocumentContext = res.Get<xiiEngineProcessDocumentContext*>();
+              }
+              else
+              {
+                xiiLog::Error("Failed to call custom allocator '{}::{}'.", pRtti->GetTypeName(), pFunc->GetPropertyName());
               }
             }
-
-            if (!pDocumentContext)
-            {
-              pDocumentContext = pRtti->GetAllocator()->Allocate<xiiEngineProcessDocumentContext>();
-            }
-
-            xiiEngineProcessDocumentContext::AddDocumentContext(pMsg->m_DocumentGuid, pMsg->m_DocumentMetaData, pDocumentContext, &m_IPC, pMsg->m_sDocumentType);
           }
+
+          if (!pDocumentContext)
+          {
+            pDocumentContext = pRtti->GetAllocator()->Allocate<xiiEngineProcessDocumentContext>();
+          }
+
+          xiiEngineProcessDocumentContext::AddDocumentContext(pMsg->m_DocumentGuid, pMsg->m_DocumentMetaData, pDocumentContext, &m_IPC, pMsg->m_sDocumentType);
         }
-      });
+      }
+    });
   }
   else
   {
@@ -702,6 +704,9 @@ void xiiEngineProcessGameApplication::TransmitCVar(const xiiCVar* pCVar)
       break;
     case xiiCVarType::Float:
       msg.m_Value = ((xiiCVarFloat*)pCVar)->GetValue();
+      break;
+    case xiiCVarType::Double:
+      msg.m_Value = ((xiiCVarDouble*)pCVar)->GetValue();
       break;
     case xiiCVarType::Bool:
       msg.m_Value = ((xiiCVarBool*)pCVar)->GetValue();

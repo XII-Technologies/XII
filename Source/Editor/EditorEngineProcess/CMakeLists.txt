@@ -32,22 +32,4 @@ if (XII_CMAKE_PLATFORM_WINDOWS_UWP)
     InspectorPlugin
   )
 
-  if (XII_BUILD_FMOD)
-
-    target_link_libraries(${PROJECT_NAME}
-      PRIVATE
-      FmodPlugin
-    )
-
-  endif()
-
-  if (XII_BUILD_PHYSX)
-
-    target_link_libraries(${PROJECT_NAME}
-      PRIVATE
-      PhysXPlugin
-      PhysXCooking
-    )
-
-  endif()
 endif()
