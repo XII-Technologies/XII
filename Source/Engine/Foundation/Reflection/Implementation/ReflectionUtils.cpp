@@ -285,8 +285,7 @@ namespace
     xiiVariantToProperty(const xiiVariant& value, const xiiAbstractProperty* pProp)
     {
       m_ptr = value.Get<xiiTypedPointer>();
-      XII_ASSERT_DEBUG(!m_ptr.m_pType || m_ptr.m_pType->IsDerivedFrom(pProp->GetSpecificType()),
-                       "Pointer of type '{0}' does not derive from '{}'", m_ptr.m_pType->GetTypeName(), pProp->GetSpecificType()->GetTypeName());
+      XII_ASSERT_DEBUG(!m_ptr.m_pType || m_ptr.m_pType->IsDerivedFrom(pProp->GetSpecificType()), "Pointer of type '{0}' does not derive from '{}'", m_ptr.m_pType->GetTypeName(), pProp->GetSpecificType()->GetTypeName());
     }
 
     operator const void*()
