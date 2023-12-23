@@ -14,7 +14,7 @@ public:
   xiiQtColorGradientAssetDocumentWindow(xiiDocument* pDocument);
   ~xiiQtColorGradientAssetDocumentWindow();
 
-  virtual const char* GetWindowLayoutGroupName() const override { return "ColorGradientAsset"; }
+  virtual xiiStringView GetWindowLayoutGroupName() const override { return "ColorGradientAsset"; }
 
 private Q_SLOTS:
   void onGradientColorCpAdded(double posX, const xiiColorGammaUB& color);

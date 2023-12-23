@@ -405,17 +405,17 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(const char* s
     const xiiUInt8 uiTexFileFormatVersion = 5;
     file << uiTexFileFormatVersion;
 
-    xiiGALTextureFormat::Enum format  = xiiGALTextureFormat::Invalid;
+    xiiGALTextureFormat::Enum format  = xiiGALTextureFormat::Unknown;
     bool                      bIsSRGB = false;
 
     switch (props->m_RtFormat)
     {
       case xiiRenderTargetFormat::RGBA8:
-        format = xiiGALTextureFormat::RGBAUByteNormalized;
+        format = xiiGALTextureFormat::RGBA8UNormalized;
         break;
 
       case xiiRenderTargetFormat::RGBA8sRgb:
-        format  = xiiGALTextureFormat::RGBAUByteNormalizedsRGB;
+        format  = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
         bIsSRGB = true;
         break;
 
@@ -424,7 +424,7 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(const char* s
         break;
 
       case xiiRenderTargetFormat::RGBA16:
-        format = xiiGALTextureFormat::RGBAHalf;
+        format = xiiGALTextureFormat::RGBA16Float;
         break;
     }
 
@@ -470,8 +470,8 @@ xiiTransformStatus xiiTextureAssetDocument::InternalTransformAsset(const char* s
         resX = -1;
         resY = 2;
         break;
-      default:
-        XII_ASSERT_NOT_IMPLEMENTED;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
 
     file << resX;

@@ -14,7 +14,7 @@ public:
   xiiQtCurve1DAssetDocumentWindow(xiiDocument* pDocument);
   ~xiiQtCurve1DAssetDocumentWindow();
 
-  virtual const char* GetWindowLayoutGroupName() const override { return "Curve1DAsset"; }
+  virtual xiiStringView GetWindowLayoutGroupName() const override { return "Curve1DAsset"; }
 
 private Q_SLOTS:
   void onInsertCpAt(xiiUInt32 uiCurveIdx, xiiInt64 tickX, double newPosY);

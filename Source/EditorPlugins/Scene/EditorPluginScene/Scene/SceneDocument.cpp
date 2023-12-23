@@ -276,7 +276,7 @@ void xiiSceneDocument::SnapObjectToCamera()
   mRot.SetColumn(0, camera.GetCenterDirForwards());
   mRot.SetColumn(1, camera.GetCenterDirRight());
   mRot.SetColumn(2, camera.GetCenterDirUp());
-  transform.m_qRotation = xiiQuat::MakeFromMat3(mRot);
+  transform.m_qRotation.SetFromMat3(mRot);
 
   auto* pHistory = GetCommandHistory();
 
@@ -1236,7 +1236,7 @@ xiiResult xiiSceneDocument::CreateLevelCamera(xiiUInt8 uiSlot)
   mRot.SetColumn(1, vUp.CrossRH(vDir).GetNormalized());
   mRot.SetColumn(2, vUp);
   xiiQuat qRot;
-  qRot = xiiQuat::MakeFromMat3(mRot);
+  qRot.SetFromMat3(mRot);
   qRot.Normalize();
 
   SetGlobalTransform(pAccessor->GetObject(camObjGuid), xiiTransform(vPos, qRot), TransformationChanges::Translation | TransformationChanges::Rotation);

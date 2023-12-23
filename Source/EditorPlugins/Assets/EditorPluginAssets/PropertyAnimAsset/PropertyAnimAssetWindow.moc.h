@@ -58,7 +58,7 @@ public:
   xiiQtPropertyAnimAssetDocumentWindow(xiiPropertyAnimAssetDocument* pDocument);
   ~xiiQtPropertyAnimAssetDocumentWindow();
 
-  virtual const char* GetWindowLayoutGroupName() const override { return "PropertyAnimAsset"; }
+  virtual xiiStringView GetWindowLayoutGroupName() const override { return "PropertyAnimAsset"; }
 
 public Q_SLOTS:
   void ToggleViews(QWidget* pView);

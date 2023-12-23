@@ -460,7 +460,7 @@ void xiiPropertyAnimAssetDocument::ApplyAnimation(const xiiPropertyReference& ke
   if (bIsRotation)
   {
     xiiQuat qRotation;
-    qRotation = xiiQuat::MakeFromEulerAngles(euler[0], euler[1], euler[2]);
+    qRotation.SetFromEulerAngles(euler[0], euler[1], euler[2]);
     animValue = qRotation;
   }
 

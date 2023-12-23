@@ -21,7 +21,7 @@ public:
   ~xiiQtAnimatedMeshAssetDocumentWindow();
 
   xiiAnimatedMeshAssetDocument* GetMeshDocument();
-  virtual const char*           GetWindowLayoutGroupName() const override { return "AnimatedMeshAsset"; }
+  virtual xiiStringView         GetWindowLayoutGroupName() const override { return "AnimatedMeshAsset"; }
 
 protected:
   virtual void InternalRedraw() override;

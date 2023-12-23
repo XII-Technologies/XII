@@ -16,7 +16,7 @@ class xiiQtDecalAssetDocumentWindow : public xiiQtEngineDocumentWindow
 public:
   xiiQtDecalAssetDocumentWindow(xiiDecalAssetDocument* pDocument);
 
-  virtual const char* GetWindowLayoutGroupName() const override { return "DecalAsset"; }
+  virtual xiiStringView GetWindowLayoutGroupName() const override { return "DecalAsset"; }
 
 private:
   virtual void InternalRedraw() override;

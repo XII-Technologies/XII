@@ -23,15 +23,15 @@ namespace
   {
     xiiStringBuilder sDefine;
 
-    const char* szName = pProp->GetPropertyName();
+    xiiStringView sName = pProp->GetPropertyName();
     if (pProp->GetSpecificType()->GetVariantType() == xiiVariantType::Bool)
     {
-      sDefine.Set(szName, " ", pObject->GetTypeAccessor().GetValue(szName).Get<bool>() ? "TRUE" : "FALSE");
+      sDefine.Set(sName, " ", pObject->GetTypeAccessor().GetValue(sName).Get<bool>() ? "TRUE" : "FALSE");
       return inout_pp.AddCustomDefine(sDefine);
     }
     else if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
     {
-      xiiInt64 iValue = pObject->GetTypeAccessor().GetValue(szName).ConvertTo<xiiInt64>();
+      xiiInt64 iValue = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiInt64>();
 
       xiiHybridArray<xiiReflectionUtils::EnumKeyValuePair, 16> enumValues;
       xiiReflectionUtils::GetEnumKeysAndValues(pProp->GetSpecificType(), enumValues, xiiReflectionUtils::EnumConversionMode::ValueNameOnly);
@@ -42,7 +42,7 @@ namespace
 
         if (enumValue.m_iValue == iValue)
         {
-          sDefine.Set(szName, " ", enumValue.m_sKey);
+          sDefine.Set(sName, " ", enumValue.m_sKey);
           XII_SUCCEED_OR_RETURN(inout_pp.AddCustomDefine(sDefine));
         }
       }
@@ -88,7 +88,7 @@ namespace
       for (auto& pProp : properties)
       {
         const xiiCategoryAttribute* pCategory = pProp->GetAttributeByType<xiiCategoryAttribute>();
-        if (pCategory == nullptr || xiiStringUtils::IsEqual(pCategory->GetCategory(), "Permutation") == false)
+        if (pCategory == nullptr || pCategory->GetCategory() != "Permutation")
           continue;
 
         XII_SUCCEED_OR_RETURN(AddDefines(pp, pShaderPropertyObject, pProp));
@@ -391,7 +391,7 @@ void xiiMaterialAssetProperties::CreateProperties(const char* szShaderPath)
     cmd.m_sParentProperty = "ShaderProperties";
     cmd.m_Parent          = m_pDocument->GetPropertyObject()->GetGuid();
     cmd.m_NewObjectGuid   = cmd.m_Parent;
-    cmd.m_NewObjectGuid.CombineWithSeed(xiiUuid::MakeStableUuidFromString("ShaderProperties"));
+    cmd.m_NewObjectGuid.CombineWithSeed(xiiUuid::StableUuidForString("ShaderProperties"));
 
     auto res = pHistory->AddCommand(cmd);
     XII_ASSERT_DEV(res.m_Result.Succeeded(), "Addition of new properties should never fail.");
@@ -1017,19 +1017,19 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
         if (pCategory == nullptr)
           continue;
 
-        if (xiiStringUtils::IsEqual(pCategory->GetCategory(), "Texture 2D"))
+        if (pCategory->GetCategory() == "Texture 2D")
         {
           Textures2D.PushBack(pProp);
         }
-        else if (xiiStringUtils::IsEqual(pCategory->GetCategory(), "Texture Cube"))
+        else if (pCategory->GetCategory() == "Texture Cube")
         {
           TexturesCube.PushBack(pProp);
         }
-        else if (xiiStringUtils::IsEqual(pCategory->GetCategory(), "Permutation"))
+        else if (pCategory->GetCategory() == "Permutation")
         {
           Permutations.PushBack(pProp);
         }
-        else if (xiiStringUtils::IsEqual(pCategory->GetCategory(), "Constant"))
+        else if (pCategory->GetCategory() == "Constant")
         {
           Constants.PushBack(pProp);
         }
@@ -1047,21 +1047,21 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
 
       for (auto pProp : Permutations)
       {
-        const char* szName = pProp->GetPropertyName();
+        xiiStringView sName = pProp->GetPropertyName();
         if (pProp->GetSpecificType()->GetVariantType() == xiiVariantType::Bool)
         {
-          sValue = pObject->GetTypeAccessor().GetValue(szName).Get<bool>() ? "TRUE" : "FALSE";
+          sValue = pObject->GetTypeAccessor().GetValue(sName).Get<bool>() ? "TRUE" : "FALSE";
         }
         else if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::IsEnum | xiiPropertyFlags::Bitflags))
         {
-          xiiReflectionUtils::EnumerationToString(pProp->GetSpecificType(), pObject->GetTypeAccessor().GetValue(szName).ConvertTo<xiiInt64>(), sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly);
+          xiiReflectionUtils::EnumerationToString(pProp->GetSpecificType(), pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiInt64>(), sValue, xiiReflectionUtils::EnumConversionMode::ValueNameOnly);
         }
         else
         {
           XII_REPORT_FAILURE("Invalid shader permutation property type '{0}'", pProp->GetSpecificType()->GetTypeName());
         }
 
-        stream << szName;
+        stream << sName;
         stream << sValue;
       }
     }
@@ -1073,10 +1073,10 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
 
       for (auto pProp : Textures2D)
       {
-        const char* szName = pProp->GetPropertyName();
-        sValue             = pObject->GetTypeAccessor().GetValue(szName).ConvertTo<xiiString>();
+        xiiStringView sName = pProp->GetPropertyName();
+        sValue              = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiString>();
 
-        stream << szName;
+        stream << sName;
         stream << sValue;
       }
     }
@@ -1088,10 +1088,10 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
 
       for (auto pProp : TexturesCube)
       {
-        const char* szName = pProp->GetPropertyName();
-        sValue             = pObject->GetTypeAccessor().GetValue(szName).ConvertTo<xiiString>();
+        xiiStringView sName = pProp->GetPropertyName();
+        sValue              = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiString>();
 
-        stream << szName;
+        stream << sName;
         stream << sValue;
       }
     }
@@ -1103,10 +1103,10 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
 
       for (auto pProp : Constants)
       {
-        const char* szName = pProp->GetPropertyName();
-        xiiVariant  value  = pObject->GetTypeAccessor().GetValue(szName);
+        xiiStringView sName = pProp->GetPropertyName();
+        xiiVariant    value = pObject->GetTypeAccessor().GetValue(sName);
 
-        stream << szName;
+        stream << sName;
         stream << value;
       }
     }
@@ -1135,8 +1135,8 @@ xiiStatus xiiMaterialAssetDocument::WriteMaterialAsset(xiiStreamWriter& inout_st
         // embed 2D texture data
         for (auto prop : Textures2D)
         {
-          const char* szName = prop->GetPropertyName();
-          sValue             = pObject->GetTypeAccessor().GetValue(szName).ConvertTo<xiiString>();
+          xiiStringView sName = prop->GetPropertyName();
+          sValue              = pObject->GetTypeAccessor().GetValue(sName).ConvertTo<xiiString>();
 
           if (sValue.IsEmpty())
             continue;

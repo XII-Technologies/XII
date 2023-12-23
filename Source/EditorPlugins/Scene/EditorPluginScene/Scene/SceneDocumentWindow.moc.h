@@ -38,7 +38,7 @@ public:
 
   xiiSceneDocument* GetSceneDocument() const;
 
-  virtual void CreateImageCapture(const char* szOutputPath) override;
+  virtual void CreateImageCapture(xiiStringView sOutputPath) override;
 
 public Q_SLOTS:
   void ToggleViews(QWidget* pView);
@@ -72,5 +72,5 @@ public:
   xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument);
   ~xiiQtSceneDocumentWindow();
 
-  virtual const char* GetWindowLayoutGroupName() const override { return "Scene"; }
+  virtual xiiStringView GetWindowLayoutGroupName() const override { return "Scene"; }
 };

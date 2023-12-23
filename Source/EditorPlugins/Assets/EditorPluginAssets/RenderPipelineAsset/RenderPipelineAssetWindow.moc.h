@@ -15,7 +15,7 @@ public:
   xiiQtRenderPipelineAssetDocumentWindow(xiiDocument* pDocument);
   ~xiiQtRenderPipelineAssetDocumentWindow();
 
-  virtual const char* GetWindowLayoutGroupName() const override { return "RenderPipelineAsset"; }
+  virtual xiiStringView GetWindowLayoutGroupName() const override { return "RenderPipelineAsset"; }
 
 private Q_SLOTS:
 

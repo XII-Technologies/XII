@@ -42,7 +42,7 @@ void xiiRenderPipelineNodeManager::InternalCreatePins(const xiiDocumentObject* p
     else
     {
       xiiColorScheme::Enum color = xiiColorScheme::Gray;
-      if (xiiStringUtils::IsEqual(pProp->GetPropertyName(), "DepthStencil"))
+      if (pProp->GetPropertyName() == "DepthStencil")
         color = xiiColorScheme::Pink;
 
       pinColor = xiiColorScheme::DarkUI(color);

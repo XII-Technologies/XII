@@ -12,5 +12,5 @@ public:
   xiiQtCollectionAssetDocumentWindow(xiiDocument* pDocument);
   ~xiiQtCollectionAssetDocumentWindow();
 
-  virtual const char* GetWindowLayoutGroupName() const override { return "CollectionAsset"; }
+  virtual xiiStringView GetWindowLayoutGroupName() const override { return "CollectionAsset"; }
 };

@@ -305,11 +305,11 @@ xiiPlane xiiQtEngineViewWidget::GetFallbackPickingPlane(xiiVec3 vPointOnPlane) c
   }
 }
 
-void xiiQtEngineViewWidget::TakeScreenshot(const char* szOutputPath) const
+void xiiQtEngineViewWidget::TakeScreenshot(xiiStringView sOutputPath) const
 {
   xiiViewScreenshotMsgToEngine msg;
   msg.m_uiViewID    = GetViewID();
-  msg.m_sOutputFile = szOutputPath;
+  msg.m_sOutputFile = sOutputPath;
   m_pDocumentWindow->GetDocument()->SendMessageToEngine(&msg);
 }
 

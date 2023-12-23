@@ -21,7 +21,7 @@ public:
   ~xiiQtAnimationClipAssetDocumentWindow();
 
   xiiAnimationClipAssetDocument* GetAnimationClipDocument();
-  virtual const char*            GetWindowLayoutGroupName() const override { return "AnimationClipAsset"; }
+  virtual xiiStringView          GetWindowLayoutGroupName() const override { return "AnimationClipAsset"; }
 
 protected:
   virtual void InternalRedraw() override;

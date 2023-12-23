@@ -193,10 +193,10 @@ void xiiMeshAssetDocument::CreateMeshFromGeom(xiiMeshAssetProperties* pProp, xii
   // the the procedurally generated geometry we can always use fixed, low precision data, because we know that the geometry isn't detailed enough to run into problems
   // and then we can unclutter the UI a little by not showing those options at all
   auto& mbd = desc.MeshBufferDesc();
-  mbd.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::XYZFloat);
+  mbd.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
   mbd.AddStream(xiiGALInputLayoutSemantic::TexCoord0, xiiMeshTexCoordPrecision::ToResourceFormat(xiiMeshTexCoordPrecision::_16Bit /*pProp->m_TexCoordPrecision*/));
-  mbd.AddStream(xiiGALInputLayoutSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_10Bit /*pProp->m_NormalPrecision*/));
-  mbd.AddStream(xiiGALInputLayoutSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::_10Bit /*pProp->m_NormalPrecision*/));
+  mbd.AddStream(xiiGALInputLayoutSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_8Bit /*pProp->m_NormalPrecision*/));
+  mbd.AddStream(xiiGALInputLayoutSemantic::Tangent, xiiMeshNormalPrecision::ToResourceFormatTangent(xiiMeshNormalPrecision::_8Bit /*pProp->m_NormalPrecision*/));
 
   mbd.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
   desc.AddSubMesh(mbd.GetPrimitiveCount(), 0, 0);

@@ -104,7 +104,7 @@ public:
   /// This is useful for unit tests, to guarantee a specific output size, to be able to do image comparisons.
   static xiiSizeU32 s_FixedResolution;
 
-  void TakeScreenshot(const char* szOutputPath) const;
+  void TakeScreenshot(xiiStringView sOutputPath) const;
 
 protected:
   /// \brief Used to deactivate shortcuts

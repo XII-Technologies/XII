@@ -27,7 +27,7 @@ public:
   ~xiiQtMaterialAssetDocumentWindow();
 
   xiiMaterialAssetDocument* GetMaterialDocument();
-  virtual const char*       GetWindowLayoutGroupName() const override { return "MaterialAsset"; }
+  virtual xiiStringView     GetWindowLayoutGroupName() const override { return "MaterialAsset"; }
 
 protected:
   virtual void InternalRedraw() override;

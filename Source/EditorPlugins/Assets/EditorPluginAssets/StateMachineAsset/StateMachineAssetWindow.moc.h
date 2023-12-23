@@ -15,7 +15,7 @@ public:
   xiiQtStateMachineAssetDocumentWindow(xiiDocument* pDocument);
   ~xiiQtStateMachineAssetDocumentWindow();
 
-  virtual const char* GetWindowLayoutGroupName() const override { return "StateMachineAsset"; }
+  virtual xiiStringView GetWindowLayoutGroupName() const override { return "StateMachineAsset"; }
 
 private Q_SLOTS:
 

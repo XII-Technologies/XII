@@ -12,7 +12,7 @@ public:
   xiiQtBlackboardTemplateAssetDocumentWindow(xiiDocument* pDocument);
   ~xiiQtBlackboardTemplateAssetDocumentWindow();
 
-  virtual const char* GetWindowLayoutGroupName() const override { return "BlackboardTemplateAsset"; }
+  virtual xiiStringView GetWindowLayoutGroupName() const override { return "BlackboardTemplateAsset"; }
 
 private:
   void UpdatePreview();

@@ -11,5 +11,5 @@ class xiiQtSurfaceAssetDocumentWindow : public xiiQtDocumentWindow
 public:
   xiiQtSurfaceAssetDocumentWindow(xiiDocument* pDocument);
 
-  virtual const char* GetWindowLayoutGroupName() const override { return "SurfaceAsset"; }
+  virtual xiiStringView GetWindowLayoutGroupName() const override { return "SurfaceAsset"; }
 };

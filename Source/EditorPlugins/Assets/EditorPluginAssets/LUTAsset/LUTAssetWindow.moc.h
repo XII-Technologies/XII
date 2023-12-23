@@ -16,7 +16,7 @@ class xiiQtLUTAssetDocumentWindow : public xiiQtDocumentWindow
 public:
   xiiQtLUTAssetDocumentWindow(xiiLUTAssetDocument* pDocument);
 
-  virtual const char* GetWindowLayoutGroupName() const override { return "LUTAsset"; }
+  virtual xiiStringView GetWindowLayoutGroupName() const override { return "LUTAsset"; }
 };
 
 class xiiLUTAssetActions

@@ -519,12 +519,6 @@ QStringList xiiSceneAction::GetPlayerCommandLine(xiiStringBuilder& out_sSingleLi
   xiiStringBuilder sWndCfgPath = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
   sWndCfgPath.AppendPath("RuntimeConfigs/Window.ddl");
 
-#if XII_ENABLED(XII_MIGRATE_RUNTIMECONFIGS)
-  xiiStringBuilder sWndCfgPathOld = xiiApplicationServices::GetSingleton()->GetProjectPreferencesFolder();
-  sWndCfgPathOld.AppendPath("Window.ddl");
-  sWndCfgPath = xiiFileSystem::MigrateFileLocation(sWndCfgPathOld, sWndCfgPath);
-#endif
-
   if (xiiOSFile::ExistsFile(sWndCfgPath))
   {
     arguments << "-wnd";

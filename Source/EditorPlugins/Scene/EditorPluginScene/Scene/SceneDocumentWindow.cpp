@@ -23,8 +23,7 @@ xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) 
   };
   m_pQuadViewWidget = new xiiQtQuadViewWidget(pDocument, this, ViewFactory, "EditorPluginScene_ViewToolBar");
 
-  pDocument->SetEditToolConfigDelegate(
-    [this](xiiGameObjectEditTool* pTool) { pTool->ConfigureTool(static_cast<xiiGameObjectDocument*>(GetDocument()), this, this); });
+  pDocument->SetEditToolConfigDelegate([this](xiiGameObjectEditTool* pTool) { pTool->ConfigureTool(static_cast<xiiGameObjectDocument*>(GetDocument()), this, this); });
 
   setCentralWidget(m_pQuadViewWidget);
 
@@ -109,9 +108,9 @@ xiiSceneDocument* xiiQtSceneDocumentWindowBase::GetSceneDocument() const
   return static_cast<xiiSceneDocument*>(GetDocument());
 }
 
-void xiiQtSceneDocumentWindowBase::CreateImageCapture(const char* szOutputPath)
+void xiiQtSceneDocumentWindowBase::CreateImageCapture(xiiStringView sOutputPath)
 {
-  m_pQuadViewWidget->GetActiveMainViews()[0]->GetViewWidget()->TakeScreenshot(szOutputPath);
+  m_pQuadViewWidget->GetActiveMainViews()[0]->GetViewWidget()->TakeScreenshot(sOutputPath);
 }
 
 void xiiQtSceneDocumentWindowBase::ToggleViews(QWidget* pView)
@@ -287,10 +286,7 @@ void xiiQtSceneDocumentWindowBase::SendRedrawMsg()
   }
 }
 
-void xiiQtSceneDocumentWindowBase::ExtendPropertyGridContextMenu(
-  QMenu&                                         menu,
-  const xiiHybridArray<xiiPropertySelection, 8>& items,
-  const xiiAbstractProperty*                     pProp)
+void xiiQtSceneDocumentWindowBase::ExtendPropertyGridContextMenu(QMenu& menu, const xiiHybridArray<xiiPropertySelection, 8>& items, const xiiAbstractProperty* pProp)
 {
   if (!GetSceneDocument()->IsPrefab())
     return;
@@ -310,7 +306,7 @@ void xiiQtSceneDocumentWindowBase::ExtendPropertyGridContextMenu(
       while (true)
       {
         bool bOk = false;
-        QString name = QInputDialog::getText(this, "Parameter Name", "Name:", QLineEdit::Normal, pProp->GetPropertyName(), &bOk);
+        QString name = QInputDialog::getText(this, "Parameter Name", "Name:", QLineEdit::Normal, xiiMakeQString( pProp->GetPropertyName()), &bOk);
 
         if (!bOk)
           return;
