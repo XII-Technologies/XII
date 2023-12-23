@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{5189305147899033520,5264929536831011917}}
-		u4 %Hash{9938847988959464258}
+		u4 %Hash{16927263929438082729}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps
@@ -154,7 +154,7 @@ o
 		b %Active{1}
 		Uuid %Color{u4{9541787054948599565,14706781911270167656}}
 		Uuid %DepthStencil{u4{12305940303967484016,16148320438985113692}}
-		s %Name{"EditorRenderPass"}
+		s %Name{""}
 		Vec2 %Node::Pos{f{0xB4E390C4,0x10CB59C3}}
 		Uuid %SSAO{u4{10014464533277532545,18010022855292060175}}
 		s %ShadingQuality{"xiiForwardRenderShadingQuality::Normal"}
@@ -170,9 +170,9 @@ o
 	{
 		b %Active{1}
 		Uuid %Input{u4{1693719222467801280,16253266015374940668}}
-		s %MSAA_Mode{"xiiGALMSAASampleCount::FourSamples"}
+		s %MSAA_Mode{"xiiGALSampleCount::FourSamples"}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x0B0A2544,0xD909C8C2}}
+		Vec2 %Node::Pos{f{0xCD3CF043,0x6E07C7C2}}
 		Uuid %Output{u4{12549809385479936141,9318708163534302915}}
 	}
 }
@@ -255,8 +255,8 @@ o
 		Uuid %Color{u4{8636865610212998896,9717409422292610101}}
 		Uuid %DepthStencil{u4{16636081782414471294,6584189353919992959}}
 		Color %HighlightColor{f{0xB933793F,0xA2500D3F,0xC0451F3C,0x0000803F}}
-		s %Name{"EditorSelectionPass"}
-		Vec2 %Node::Pos{f{0xBEF69744,0x72C7C1C2}}
+		s %Name{""}
+		Vec2 %Node::Pos{f{0xDD0F8144,0xDEC9C2C2}}
 		f %OverlayOpacity{0}
 	}
 }
@@ -269,7 +269,7 @@ o
 	{
 		b %Active{1}
 		Uuid %DepthStencil{u4{3259784978119279725,4438148732971347066}}
-		s %Name{"DepthPrePass"}
+		s %Name{""}
 		Vec2 %Node::Pos{f{0x7DEADFC4,0xBEDE41C3}}
 	}
 }
@@ -316,7 +316,7 @@ o
 		Uuid %Color7{u4{9031175148332770523,6595992340210126230}}
 		Uuid %DepthStencil{u4{15193297583014511214,14441702725461986901}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x1157D244,0xCD98BCC2}}
+		Vec2 %Node::Pos{f{0x1C30BB44,0xFBF0BEC2}}
 	}
 }
 o
@@ -343,8 +343,8 @@ o
 		Uuid %Color{u4{16461922476494379228,9203882442273724047}}
 		Uuid %DepthStencil{u4{14781329720410134245,9401591029305841606}}
 		s %Message{""}
-		s %Name{"SimplePass"}
-		Vec2 %Node::Pos{f{0xB7F66944,0x4099C3C2}}
+		s %Name{""}
+		Vec2 %Node::Pos{f{0xF5283C44,0xAC9BC4C2}}
 	}
 }
 o
@@ -377,17 +377,17 @@ o
 {
 	Uuid %id{u4{57808724729679253,5212296071092730789}}
 	s %t{"xiiSourcePass"}
-	u3 %v{2}
+	u3 %v{1}
 	p
 	{
 		b %Active{1}
 		b %Clear{1}
 		Color %ClearColor{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
-		s %Format{"xiiGALResourceFormat::D24S8"}
-		s %MSAA_Mode{"xiiGALMSAASampleCount::FourSamples"}
-		s %Name{"DepthStencil"}
+		s %Format{"xiiGALTextureFormat::D24UNormalizedS8UInt"}
+		s %Name{""}
 		Vec2 %Node::Pos{f{0xB434FAC4,0xACF141C3}}
 		Uuid %Output{u4{1500338303832159158,6081944764471030876}}
+		s %SampleCount{"xiiGALSampleCount::FourSamples"}
 	}
 }
 o
@@ -407,7 +407,7 @@ o
 		f %LUT2Strength{0}
 		Color %MoodColor{f{0x0000803F,0x71A5C03E,0,0x0000803F}}
 		f %MoodStrength{0}
-		s %Name{"TonemapPass"}
+		s %Name{""}
 		Vec2 %Node::Pos{f{0x44570743,0x0ACAC7C2}}
 		Uuid %Output{u4{6946315863658569953,11259191255110231988}}
 		f %Saturation{0x0000803F}
@@ -438,7 +438,7 @@ o
 		u3 %MarqueeActionID{0}
 		Vec2 %MarqueePickPos0{f{0,0}}
 		Vec2 %MarqueePickPos1{f{0,0}}
-		s %Name{"EditorPickingPass"}
+		s %Name{""}
 		Vec2 %Node::Pos{f{0x5F798A41,0x0D5A2CC4}}
 		b %PickSelected{0}
 		b %PickTransparent{0}
@@ -493,7 +493,7 @@ o
 		b %Active{1}
 		Uuid %Input{u4{263117537611855489,226335217516353902}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x3DC7B744,0xFE6EC0C2}}
+		Vec2 %Node::Pos{f{0x5CE0A044,0x6A71C1C2}}
 		Uuid %Output{u4{9648075072256611633,12146613130991592161}}
 	}
 }
@@ -513,7 +513,7 @@ o
 		f %Intensity{0x3333333F}
 		f %MaxScreenSpaceRadius{0x0000803F}
 		f %MipLevelScale{0x00002041}
-		s %Name{"AOPass"}
+		s %Name{""}
 		Vec2 %Node::Pos{f{0x1362A9C4,0xFDD2BEC2}}
 		Uuid %Output{u4{11814339491125807832,1747476320831084194}}
 		f %PositionBias{0x0000A040}
@@ -648,7 +648,7 @@ o
 		b %Active{1}
 		Uuid %Input{u4{17410692423974672385,12969018351325055647}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0xE021C2C4,0x3C5C4BC2}}
+		Vec2 %Node::Pos{f{0xE021C2C4,0x8F5247C2}}
 		Uuid %Output{u4{11416726115319276326,18041643960643222238}}
 	}
 }
@@ -676,17 +676,17 @@ o
 {
 	Uuid %id{u4{5529270605818373765,5672990100648195579}}
 	s %t{"xiiSourcePass"}
-	u3 %v{2}
+	u3 %v{1}
 	p
 	{
 		b %Active{1}
 		b %Clear{1}
 		Color %ClearColor{f{0x7DD3AD3C,0x7DD3AD3C,0x7DD3AD3C,0x0000803F}}
-		s %Format{"xiiGALResourceFormat::RGBAHalf"}
-		s %MSAA_Mode{"xiiGALMSAASampleCount::FourSamples"}
-		s %Name{"ColorSource"}
+		s %Format{"xiiGALTextureFormat::RGBA16Float"}
+		s %Name{""}
 		Vec2 %Node::Pos{f{0x403DA1C4,0x67047BC3}}
 		Uuid %Output{u4{7053429786865683355,12290627144904873763}}
+		s %SampleCount{"xiiGALSampleCount::OneSample"}
 	}
 }
 o
@@ -710,7 +710,7 @@ o
 	p
 	{
 		b %Active{1}
-		s %Name{"EditorSelectedObjectsExtractor"}
+		s %Name{""}
 		Vec2 %Node::Pos{f{0x6FB48941,0x375B4BC4}}
 		Uuid %SceneContext{u4{0,0}}
 	}
@@ -723,7 +723,7 @@ o
 	p
 	{
 		b %Active{1}
-		s %Name{"EditorGridExtractor"}
+		s %Name{""}
 		Vec2 %Node::Pos{f{0xD5E88941,0xC9CD3CC4}}
 		Uuid %SceneContext{u4{0,0}}
 	}
@@ -737,7 +737,7 @@ o
 	{
 		b %Active{1}
 		f %MaxScreenSize{0x00008042}
-		s %Name{"EditorShapeIconsExtractor"}
+		s %Name{""}
 		Vec2 %Node::Pos{f{0x914D8541,0x7F5458C4}}
 		Uuid %SceneContext{u4{0,0}}
 		f %Size{0x0000803F}
@@ -1107,6 +1107,7 @@ o
 	{
 		VarArray %Attributes{}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::Class|xiiPropertyFlags::Pointer|xiiPropertyFlags::Phantom"}
 		s %Name{"SceneContext"}
 		s %Type{"xiiSceneContext"}
@@ -1197,6 +1198,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiAntialiasingPass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{2095558529357776083,3563582284431343824}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiGALSampleCount"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -1322,6 +1340,23 @@ o
 }
 o
 {
+	Uuid %id{u4{4268181440798495434,6372798152565164206}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiGALTextureFormat"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{15845862608344352168,6544202322464535354}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -1334,7 +1369,7 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiSourcePass"}
-		u3 %TypeVersion{2}
+		u3 %TypeVersion{1}
 	}
 }
 o
@@ -1368,6 +1403,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiSimpleRenderPass"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{17581347059612463460,8107622960634571062}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiPropertyAttribute"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiColorAttribute"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -1415,6 +1467,7 @@ o
 	u3 %v{1}
 	p
 	{
+		Invalid %Max{}
 		f %Min{0}
 	}
 }
@@ -1432,6 +1485,23 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiRenderPipelineNode"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
+	Uuid %id{u4{1565470976993369393,8780643841697316981}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiPropertyAttribute"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiHiddenAttribute"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -1515,6 +1585,7 @@ o
 	{
 		VarArray %Attributes{}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::Class|xiiPropertyFlags::Pointer|xiiPropertyFlags::Phantom"}
 		s %Name{"SceneContext"}
 		s %Type{"xiiSceneContext"}
@@ -1634,6 +1705,23 @@ o
 }
 o
 {
+	Uuid %id{u4{8425327503915406266,13353872395401440826}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiPropertyAttribute"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{5724961861093658296,13734711264724056973}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -1656,6 +1744,7 @@ o
 	u3 %v{1}
 	p
 	{
+		Invalid %Max{}
 		f %Min{0}
 	}
 }
@@ -1707,6 +1796,7 @@ o
 			Uuid{u4{8480257563214850294,10674731311585601239}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"MaxScreenSize"}
 		s %Type{"float"}
@@ -1758,23 +1848,6 @@ o
 }
 o
 {
-	Uuid %id{u4{9829981565878393430,16210413098011528930}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiEnumBase"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiGALMSAASampleCount"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
 	Uuid %id{u4{11771330628984215838,16210734031930489017}}
 	s %t{"xiiReflectedPropertyDescriptor"}
 	u3 %v{2}
@@ -1787,6 +1860,7 @@ o
 			Uuid{u4{5618205069557779387,16091396862146951476}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"Size"}
 		s %Type{"float"}
@@ -1801,6 +1875,7 @@ o
 	{
 		VarArray %Attributes{}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::Class|xiiPropertyFlags::Pointer|xiiPropertyFlags::Phantom"}
 		s %Name{"SceneContext"}
 		s %Type{"xiiSceneContext"}
@@ -1825,23 +1900,6 @@ o
 			Uuid{u4{17391439106277028023,16219254537003418570}}
 		}
 		s %TypeName{"xiiEditorShapeIconsExtractor"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
-	Uuid %id{u4{7129784665431737229,16926704141589228320}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiEnumBase"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiGALResourceFormat"}
 		u3 %TypeVersion{1}
 	}
 }
