@@ -60,7 +60,6 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderToTexture2DResource, xiiRenderToTextu
   descGAL.m_uiMipLevels        = 1;
   descGAL.m_uiSampleCount      = descriptor.m_SampleCount;
   descGAL.m_Format             = m_Format;
-  descGAL.m_Usage              = xiiGALResourceUsage::Immutable;
   descGAL.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
 
   xiiGALTextureData textureData;
