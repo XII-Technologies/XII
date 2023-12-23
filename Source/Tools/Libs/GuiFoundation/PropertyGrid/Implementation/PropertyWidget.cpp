@@ -544,6 +544,35 @@ xiiQtPropertyEditorIntSpinboxWidget::xiiQtPropertyEditorIntSpinboxWidget(xiiInt8
   }
 }
 
+xiiQtPropertyEditorIntSpinboxWidget::xiiQtPropertyEditorIntSpinboxWidget(xiiInt8 iNumComponents, xiiInt64 iMinValue, xiiInt64 iMaxValue) :
+  xiiQtStandardPropertyWidget()
+{
+  m_iNumComponents = iNumComponents;
+
+  m_pLayout = new QHBoxLayout(this);
+  m_pLayout->setContentsMargins(0, 0, 0, 0);
+  setLayout(m_pLayout);
+
+  QSizePolicy policy = sizePolicy();
+  policy.setHorizontalStretch(2);
+
+  for (xiiInt32 c = 0; c < m_iNumComponents; ++c)
+  {
+    m_pWidget[c] = new xiiQtDoubleSpinBox(this, true);
+    m_pWidget[c]->installEventFilter(this);
+    m_pWidget[c]->setMinimum(iMinValue);
+    m_pWidget[c]->setMaximum(iMaxValue);
+    m_pWidget[c]->setSingleStep(1);
+    m_pWidget[c]->setAccelerated(true);
+
+    m_pWidget[c]->setSizePolicy(policy);
+
+    m_pLayout->addWidget(m_pWidget[c]);
+
+    connect(m_pWidget[c], SIGNAL(editingFinished()), this, SLOT(on_EditingFinished_triggered()));
+    connect(m_pWidget[c], SIGNAL(valueChanged(double)), this, SLOT(SlotValueChanged()));
+  }
+}
 
 xiiQtPropertyEditorIntSpinboxWidget::~xiiQtPropertyEditorIntSpinboxWidget() = default;
 

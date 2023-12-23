@@ -127,6 +127,7 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorIntSpinboxWidget : public xiiQtSt
 
 public:
   xiiQtPropertyEditorIntSpinboxWidget(xiiInt8 iNumComponents, xiiInt32 iMinValue, xiiInt32 iMaxValue);
+  xiiQtPropertyEditorIntSpinboxWidget(xiiInt8 iNumComponents, xiiInt64 iMinValue, xiiInt64 iMaxValue);
   ~xiiQtPropertyEditorIntSpinboxWidget();
 
 private Q_SLOTS:
