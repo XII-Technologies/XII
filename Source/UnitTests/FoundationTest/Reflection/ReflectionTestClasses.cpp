@@ -93,6 +93,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTestClass2, 22, xiiTestClass2Allocator)
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("Text", GetText, SetText)->AddAttributes(new xiiDefaultValueAttribute("Legen")),
+    XII_ACCESSOR_PROPERTY("Text2", GetText2, SetText2)->AddAttributes(new xiiDefaultValueAttribute("Legen2")),
     XII_MEMBER_PROPERTY("Time", m_Time),
     XII_ENUM_MEMBER_PROPERTY("Enum", xiiExampleEnum, m_enumClass),
     XII_BITFLAGS_MEMBER_PROPERTY("Bitflags", xiiExampleBitflags, m_bitflagsClass),

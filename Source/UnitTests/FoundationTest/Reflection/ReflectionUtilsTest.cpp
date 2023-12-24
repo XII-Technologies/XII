@@ -78,6 +78,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Utils)
 
     xiiTestClass2 c2;
     c2.SetText("Hallo");
+    c2.SetText2("Hallo2");
     c2.m_MyVector.Set(14, 16, 18);
     c2.m_Struct.m_fFloat1 = 128;
     c2.m_Struct.m_UInt8   = 234;
@@ -104,6 +105,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Utils)
     xiiReflectionSerializer::ReadObjectPropertiesFromDDL(FileIn, *c2.GetDynamicRTTI(), &c2);
 
     XII_TEST_STRING(c2.GetText(), "Hallo");
+    XII_TEST_STRING(c2.GetText2(), "Hallo2");
     XII_TEST_VEC3(c2.m_MyVector, xiiVec3(3, 4, 5), 0.0f);
     XII_TEST_FLOAT(c2.m_Time.GetSeconds(), 91.0f, 0.0f);
     XII_TEST_FLOAT(c2.m_Color.r, 0.1f, 0.0f);
@@ -154,6 +156,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Utils)
     xiiTestClass2& c2 = *((xiiTestClass2*)pObject);
 
     XII_TEST_STRING(c2.GetText(), "Hallo");
+    XII_TEST_STRING(c2.GetText2(), "Hallo2");
     XII_TEST_VEC3(c2.m_MyVector, xiiVec3(3, 4, 5), 0.0f);
     XII_TEST_FLOAT(c2.m_Time.GetSeconds(), 91.0f, 0.0f);
     XII_TEST_FLOAT(c2.m_Color.r, 0.1f, 0.0f);

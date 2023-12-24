@@ -218,12 +218,19 @@ class xiiTestClass2 : public xiiTestClass1
   XII_ADD_DYNAMIC_REFLECTION(xiiTestClass2, xiiTestClass1);
 
 public:
-  xiiTestClass2() { m_sText = "Legen"; }
+  xiiTestClass2()
+  {
+    m_sText  = "Legen";
+    m_sText2 = "Legen2";
+  }
 
-  bool operator==(const xiiTestClass2& rhs) const { return m_Time == rhs.m_Time && m_enumClass == rhs.m_enumClass && m_bitflagsClass == rhs.m_bitflagsClass && m_array == rhs.m_array && m_Variant == rhs.m_Variant && m_sText == rhs.m_sText; }
+  bool operator==(const xiiTestClass2& rhs) const { return m_Time == rhs.m_Time && m_enumClass == rhs.m_enumClass && m_bitflagsClass == rhs.m_bitflagsClass && m_array == rhs.m_array && m_Variant == rhs.m_Variant && m_sText == rhs.m_sText && m_sText2 == rhs.m_sText2; }
 
   xiiStringView GetText() const { return m_sText; }
   void          SetText(xiiStringView sSz) { m_sText = sSz; }
+
+  const char* GetText2() const { return m_sText2; }
+  void        SetText2(const char* szSz) { m_sText2 = szSz; }
 
   xiiTime                         m_Time;
   xiiEnum<xiiExampleEnum>         m_enumClass;
@@ -233,6 +240,7 @@ public:
 
 private:
   xiiString m_sText;
+  xiiString m_sText2;
 };
 
 
