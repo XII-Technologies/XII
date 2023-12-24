@@ -139,9 +139,7 @@ struct ComputeHashFunc
   template <typename T>
   XII_FORCE_INLINE xiiUInt64 operator()(const xiiVariant& v, const void* pData, xiiUInt64 uiSeed)
   {
-    XII_CHECK_AT_COMPILETIME_MSG(sizeof(typename xiiVariant::TypeDeduction<T>::StorageType) <= sizeof(float) * 4 &&
-                                   !xiiVariant::TypeDeduction<T>::forceSharing,
-                                 "This type requires special handling! Add a specialization below.");
+    XII_CHECK_AT_COMPILETIME_MSG(sizeof(typename xiiVariant::TypeDeduction<T>::StorageType) <= sizeof(float) * 4 && !xiiVariant::TypeDeduction<T>::forceSharing, "This type requires special handling! Add a specialization below.");
     return xiiHashingUtils::xxHash64(pData, sizeof(T), uiSeed);
   }
 };
