@@ -85,7 +85,6 @@ bool xiiTonemapPass::GetRenderTargetDescriptions(const xiiView& view, const xiiA
       outputs[m_PinOutput.m_uiOutputIndex].m_uiMipLevels        = 1;
       outputs[m_PinOutput.m_uiOutputIndex].m_uiSampleCount      = 1;
       outputs[m_PinOutput.m_uiOutputIndex].m_Format             = desc.m_Format;
-      outputs[m_PinOutput.m_uiOutputIndex].m_Usage              = xiiGALResourceUsage::Immutable;
       outputs[m_PinOutput.m_uiOutputIndex].m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
     }
     else

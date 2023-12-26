@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{9340082855766888863,4792825339744186213}}
-		u4 %Hash{9947731282016302855}
+		u4 %Hash{7133811938518948712}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -95,7 +95,7 @@ o
 	{
 		b %Active{1}
 		Uuid %DepthStencil{u4{14034198369995003864,10700101904229972968}}
-		s %Name{""}
+		s %Name{"DepthPrePass"}
 		Vec2 %Node::Pos{f{0xC14DB643,0x283FF443}}
 	}
 }
@@ -165,7 +165,7 @@ o
 		Uuid %Color7{u4{5004863338951224826,5537335954945371348}}
 		Uuid %DepthStencil{u4{9963617456588679781,1563984026728741796}}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0x0DD7D844,0x4D3DE943}}
+		Vec2 %Node::Pos{f{0xBAE9BD44,0xEED5E843}}
 	}
 }
 o
@@ -210,7 +210,7 @@ o
 		f %LUT2Strength{0}
 		Color %MoodColor{f{0x0000803F,0x71A5C03E,0,0x0000803F}}
 		f %MoodStrength{0}
-		s %Name{"Output"}
+		s %Name{"TonemapPass"}
 		Vec2 %Node::Pos{f{0xE1639F44,0x8B51E943}}
 		Uuid %Output{u4{7642371703623570691,6852461079880770907}}
 		f %Saturation{0x0000803F}
@@ -254,7 +254,7 @@ o
 		b %Clear{1}
 		Color %ClearColor{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
 		s %Format{"xiiGALTextureFormat::D24UNormalizedS8UInt"}
-		s %Name{"\f"}
+		s %Name{"DepthStencil"}
 		Vec2 %Node::Pos{f{0xBC773C43,0x1C8EF443}}
 		Uuid %Output{u4{9559375821426009877,9124962636108765151}}
 		s %SampleCount{"xiiGALSampleCount::FourSamples"}
@@ -310,7 +310,7 @@ o
 		b %Clear{1}
 		Color %ClearColor{f{0xC11AE13E,0x79C4F23B,0xF3A5CB3E,0x0000803F}}
 		s %Format{"xiiGALTextureFormat::RGBA16Float"}
-		s %Name{""}
+		s %Name{"ColorSource"}
 		Vec2 %Node::Pos{f{0x7D3EE443,0x7E0FC143}}
 		Uuid %Output{u4{12443079280382946204,2690749705785395176}}
 		s %SampleCount{"xiiGALSampleCount::OneSample"}

@@ -2,9 +2,9 @@
 
 // clang-format off
 
-// rasterizer state
+// Rasterizer State
 #if defined(RENDER_PASS) && (RENDER_PASS == RENDER_PASS_WIREFRAME || RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME)
-  WireFrame = true
+  FillMode = FillMode_Wireframe
 #endif
 
 #if TWO_SIDED == TRUE
@@ -16,10 +16,10 @@
 #endif
 
 
-// depth stencil state
-DepthTest = true
-DepthWrite = true
-DepthTestFunc = CompareFunc_LessEqual
+// Depth-Stencil State
+DepthEnable = true
+DepthWriteEnable = true
+ComparisonDepthFunction = ComparisonFunction_LessEqual
 
 #if defined(BLEND_MODE) && (BLEND_MODE == BLEND_MODE_OPAQUE || BLEND_MODE == BLEND_MODE_MASKED)
 
@@ -27,55 +27,55 @@ DepthTestFunc = CompareFunc_LessEqual
 
     #if defined(FORWARD_PASS_WRITE_DEPTH)
       #if FORWARD_PASS_WRITE_DEPTH == FALSE
-        DepthWrite = false
-        DepthTestFunc = CompareFunc_Equal
+        DepthWriteEnable = false
+        ComparisonDepthFunction = ComparisonFunction_Equal
       #endif
     #endif
 
   #endif
 
 #else
-  DepthWrite = false
+  DepthWriteEnable = false
 #endif
 
 
-// blend state
+// Blend State
 #if defined(BLEND_MODE)
 
   #if BLEND_MODE == BLEND_MODE_TRANSPARENT
-    BlendingEnabled0 = true
-    BlendOp0 = BlendOp_Add
-    DestBlend0 = Blend_InvSrcAlpha
-    SourceBlend0 = Blend_SrcAlpha
-    DestBlendAlpha0 = Blend_InvSrcAlpha
+    BlendEnable0 = true
+    BlendOperation0 = BlendOperation_Add
+    SourceBlend0 = BlendFactor_SourceAlpha
+    DestinationBlend0 = BlendFactor_InverseSourceAlpha
+    DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 
   #elif BLEND_MODE == BLEND_MODE_ADDITIVE
-    BlendingEnabled0 = true
-    BlendOp0 = BlendOp_Add
-    DestBlend0 = Blend_One
-    SourceBlend0 = Blend_SrcAlpha
-    DestBlendAlpha0 = Blend_One
-    SourceBlendAlpha0 = Blend_Zero
+    BlendEnable0 = true
+    BlendOperation0 = BlendOperation_Add
+    SourceBlend0 = BlendFactor_SourceAlpha
+    DestinationBlend0 = BlendFactor_One
+    SourceBlendAlpha0 = BlendFactor_Zero
+    DestinationBlendAlpha0 = BlendFactor_One
 
   #elif BLEND_MODE == BLEND_MODE_MODULATE
-    BlendingEnabled0 = true
-    BlendOp0 = BlendOp_Add
-    DestBlend0 = Blend_SrcColor
-    SourceBlend0 = Blend_Zero
-    DestBlendAlpha0 = Blend_One
-    SourceBlendAlpha0 = Blend_Zero
+    BlendEnable0 = true
+    BlendOperation0 = BlendOperation_Add
+    SourceBlend0 = BlendFactor_Zero
+    DestinationBlend0 = BlendFactor_SourceColor
+    SourceBlendAlpha0 = BlendFactor_Zero
+    DestinationBlendAlpha0 = BlendFactor_One
   #endif
 
 #endif
 
-#if (RENDER_PASS == RENDER_PASS_EDITOR 				/* disable blending for all editor debug render modes*/\
-	|| RENDER_PASS == RENDER_PASS_PICKING 			/* for transparent objects to be pickable*/\
+#if (RENDER_PASS == RENDER_PASS_EDITOR 				    /* disable blending for all editor debug render modes*/\
+	|| RENDER_PASS == RENDER_PASS_PICKING 			    /* for transparent objects to be pickable*/\
 	|| RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME /* for transparent objects to be pickable*/\
-	|| RENDER_PASS == RENDER_PASS_DEPTH_ONLY 		/* for transparent objects to have a selection outline */\
-	) 
-	
-  BlendingEnabled0 = false
-  DepthWrite = true
+	|| RENDER_PASS == RENDER_PASS_DEPTH_ONLY 		    /* for transparent objects to have a selection outline */\
+	)
+
+  BlendEnable0 = false
+  DepthWriteEnable = true
 #endif
 
-  // clang-format on
+// clang-format on

@@ -307,7 +307,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
     desc.m_uiMipLevels        = GetMipLevels();
     desc.m_Size.width         = s_uiReflectionCubeMapSize;
     desc.m_Size.height        = s_uiReflectionCubeMapSize;
-    desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess);
+    desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource);
     desc.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Read);
 
     m_hFallbackReflectionSpecularTexture = pDevice->CreateTexture(desc);
@@ -404,7 +404,7 @@ void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
     desc.m_Size.width  = 6;
     desc.m_Size.height = 64;
     desc.m_Format      = xiiGALTextureFormat::RGBA16Float;
-    desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess);
+    desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource);
 
     m_hSkyIrradianceTexture = pDevice->CreateTexture(desc);
   }

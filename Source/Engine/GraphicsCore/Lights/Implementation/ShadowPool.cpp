@@ -266,7 +266,6 @@ struct xiiShadowPool::Data
       desc.m_uiArraySizeOrDepth = 1;
       desc.m_uiMipLevels        = 1;
       desc.m_uiSampleCount      = xiiGALSampleCount::OneSample;
-      desc.m_Usage              = xiiGALResourceUsage::Immutable;
       desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::DepthStencil);
 
       m_hShadowAtlasTexture = xiiGALDevice::GetDefaultDevice()->CreateTexture(desc);

@@ -199,20 +199,26 @@ void xiiPickingRenderPass::CreateTarget()
   tcd.m_Format      = xiiGALTextureFormat::RGBA8UNormalized;
   tcd.m_Size.width  = (xiiUInt32)m_TargetRect.width;
   tcd.m_Size.height = (xiiUInt32)m_TargetRect.height;
-  tcd.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
+  tcd.m_BindFlags   = xiiGALBindFlags::RenderTarget;
 
   m_hPickingIdRT = pDevice->CreateTexture(tcd);
 
-  tcd.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Read);
+  tcd.m_Usage          = xiiGALResourceUsage::Staging;
+  tcd.m_BindFlags      = xiiGALBindFlags::None;
+  tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
 
   m_hPickingIdRTStaging = pDevice->CreateTexture(tcd);
 
   tcd.m_Format         = xiiGALTextureFormat::D32Float;
+  tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil;
   tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::None;
+  tcd.m_Usage          = xiiGALResourceUsage::Default;
 
   m_hPickingDepthRT = pDevice->CreateTexture(tcd);
 
-  tcd.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Read);
+  tcd.m_Usage          = xiiGALResourceUsage::Staging;
+  tcd.m_BindFlags      = xiiGALBindFlags::None;
+  tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
 
   m_hPickingDepthRTStaging = pDevice->CreateTexture(tcd);
 

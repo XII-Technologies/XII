@@ -27,10 +27,7 @@ xiiDepthOnlyPass::xiiDepthOnlyPass(const char* szName) :
 
 xiiDepthOnlyPass::~xiiDepthOnlyPass() = default;
 
-bool xiiDepthOnlyPass::GetRenderTargetDescriptions(
-  const xiiView&                                             view,
-  const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs,
-  xiiArrayPtr<xiiGALTextureCreationDescription>              outputs)
+bool xiiDepthOnlyPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
   // DepthStencil
   if (inputs[m_PinDepthStencil.m_uiInputIndex])

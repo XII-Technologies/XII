@@ -49,7 +49,6 @@ bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const
     {
       outputs[m_PinColor.m_uiOutputIndex] = pTexture->GetDescription();
       outputs[m_PinColor.m_uiOutputIndex].m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
-      outputs[m_PinColor.m_uiOutputIndex].m_Usage = xiiGALResourceUsage::Immutable;
     }
   }
 

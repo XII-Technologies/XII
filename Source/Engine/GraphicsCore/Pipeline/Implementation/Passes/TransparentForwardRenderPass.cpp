@@ -42,12 +42,12 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
   CreateSampler();
 
   xiiGALTextureCreationDescription desc;
+  desc.m_Type               = xiiGALResourceDimension::Texture2D;
   desc.m_Size               = pColorInput->m_Desc.m_Size;
   desc.m_uiArraySizeOrDepth = pColorInput->m_Desc.m_uiArraySizeOrDepth;
   desc.m_uiMipLevels        = 1;
   desc.m_uiSampleCount      = 1;
   desc.m_Format             = pColorInput->m_Desc.m_Format;
-  desc.m_Usage              = xiiGALResourceUsage::Immutable;
   desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
 
   xiiGALTextureHandle hSceneColor = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);

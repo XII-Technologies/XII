@@ -1252,7 +1252,8 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
   const auto& textureDescription = pTexture->GetDescription();
 
   XII_VERIFY_TEXTURE_VIEW(description.m_ViewType > xiiGALTextureViewType::Undefined && description.m_ViewType < xiiGALTextureViewType::ENUN_COUNT, "The texture view type is invalid.");
-  XII_VERIFY_TEXTURE_VIEW(description.m_uiMostDetailedMip < description.m_uiMipLevelCount, "The most detailed mip ({0}) is out of range. The texture has only {1} mip level (s).", description.m_uiMostDetailedMip, description.m_uiMipLevelCount);
+  XII_VERIFY_TEXTURE_VIEW(description.m_uiMostDetailedMip < textureDescription.m_uiMipLevels, "The most detailed mip ({0}) is out of range. The texture has only {1} mip level (s).", description.m_uiMostDetailedMip, textureDescription.m_uiMipLevels);
+  XII_VERIFY_TEXTURE_VIEW((description.m_uiMostDetailedMip + description.m_uiMipLevelCount) <= textureDescription.m_uiMipLevels, "The most detailed mip ({0}) and the number of mip levels in the view ({1}) is out of range. The texture has only {2} mip level (s).", description.m_uiMostDetailedMip, description.m_uiMipLevelCount, textureDescription.m_uiMipLevels);
 
   if (textureDescription.IsArray())
   {

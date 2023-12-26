@@ -53,7 +53,7 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
 
     {
       desc.m_uiElementByteStride = sizeof(xiiUInt32);
-      desc.m_uiSize              = desc.m_uiSize * xiiClusteredDataCPU::MAX_ITEMS_PER_CLUSTER * NUM_CLUSTERS;
+      desc.m_uiSize              = desc.m_uiElementByteStride * xiiClusteredDataCPU::MAX_ITEMS_PER_CLUSTER * NUM_CLUSTERS;
 
       m_hClusterItemBuffer = pDevice->CreateBuffer(desc);
     }

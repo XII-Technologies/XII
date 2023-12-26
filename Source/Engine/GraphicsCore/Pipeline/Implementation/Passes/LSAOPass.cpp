@@ -402,10 +402,10 @@ void xiiLSAOPass::SetupLineSweepData(const xiiVec3I32& imageResolution)
     // DX11 allows only float and int for writing RWBuffer, so we need to do manual packing.
     {
       xiiGALBufferCreationDescription bufferDesc;
+      bufferDesc.m_Mode                = xiiGALBufferMode::Formatted;
       bufferDesc.m_uiElementByteStride = 4;
       bufferDesc.m_uiSize              = imageResolution.z * 2 * totalNumberOfSamples;
       bufferDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
-      bufferDesc.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Write);
 
       m_hLineSweepOutputBuffer = device->CreateBuffer(bufferDesc);
 

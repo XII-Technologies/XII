@@ -431,18 +431,18 @@ void xiiGALCommandEncoderD3D12::ResolveTexturePlatform(xiiGALTexture* pDestinati
 
   const auto& sourceTextureDescription = pSourceTextureD3D12->GetDescription();
 
-  Diligent::ResolveTextureSubresourceAttribs ResolveTexAttribs;
-  ResolveTexAttribs.Format = xiiDiligentTypeConversions::GetTextureFormat(sourceTextureDescription.m_Format);
+  Diligent::ResolveTextureSubresourceAttribs resolveTextureDescription;
+  resolveTextureDescription.Format = xiiDiligentTypeConversions::GetTextureFormat(sourceTextureDescription.m_Format);
 
-  ResolveTexAttribs.SrcMipLevel              = sourceSubResource.m_uiMipLevel;
-  ResolveTexAttribs.SrcSlice                 = sourceSubResource.m_uiArraySlice;
-  ResolveTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  resolveTextureDescription.SrcMipLevel              = sourceSubResource.m_uiMipLevel;
+  resolveTextureDescription.SrcSlice                 = sourceSubResource.m_uiArraySlice;
+  resolveTextureDescription.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
-  ResolveTexAttribs.DstMipLevel              = destinationSubResource.m_uiMipLevel;
-  ResolveTexAttribs.DstSlice                 = destinationSubResource.m_uiArraySlice;
-  ResolveTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  resolveTextureDescription.DstMipLevel              = destinationSubResource.m_uiMipLevel;
+  resolveTextureDescription.DstSlice                 = destinationSubResource.m_uiArraySlice;
+  resolveTextureDescription.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
-  m_pContext->ResolveTextureSubresource(pSourceTextureD3D12->GetTexture(), pDestinationTextureD3D12->GetTexture(), ResolveTexAttribs);
+  m_pContext->ResolveTextureSubresource(pSourceTextureD3D12->GetTexture(), pDestinationTextureD3D12->GetTexture(), resolveTextureDescription);
 }
 
 void xiiGALCommandEncoderD3D12::ReadbackTexturePlatform(xiiGALTexture* pTexture, xiiGALTexture* pStagingTexture)
