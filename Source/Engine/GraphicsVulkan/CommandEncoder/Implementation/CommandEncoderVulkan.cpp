@@ -401,13 +401,12 @@ void xiiGALCommandEncoderVulkan::UpdateTexturePlatform(xiiGALTexture* pDestinati
   xiiUInt32 uiDepth  = xiiMath::Max(destinationBox.m_vMax.z - destinationBox.m_vMin.z, 1U);
 
   const auto& textureDescription = pDestinationTextureVulkan->GetDescription();
-  const auto& formatProperties   = m_GALDeviceVulkan.GetTextureFormatProperties(textureDescription.m_Format);
 
   switch (textureDescription.m_Usage)
   {
     case xiiGALResourceUsage::Default:
     {
-      xiiUInt32 uiRowPitch   = uiWidth * formatProperties.m_uiComponentSize;
+      xiiUInt32 uiRowPitch   = uiWidth * xiiGALTextureFormat::GetBitsPerElement(textureDescription.m_Format) / 8;
       xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
 
       XII_ASSERT_DEV(sourceData.m_uiStride == uiRowPitch, "Invalid row pitch. Expected {0} got {1}.", uiRowPitch, sourceData.m_uiStride);
@@ -431,7 +430,7 @@ void xiiGALCommandEncoderVulkan::UpdateTexturePlatform(xiiGALTexture* pDestinati
     break;
     case xiiGALResourceUsage::Dynamic:
     {
-      xiiUInt32 uiRowPitch   = uiWidth * formatProperties.m_uiComponentSize;
+      xiiUInt32 uiRowPitch   = uiWidth * xiiGALTextureFormat::GetBitsPerElement(textureDescription.m_Format) / 8;
       xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
 
       XII_ASSERT_DEV(sourceData.m_uiStride == uiRowPitch, "Invalid row pitch. Expected {0} got {1}.", uiRowPitch, sourceData.m_uiStride);
@@ -586,12 +585,10 @@ void xiiGALCommandEncoderVulkan::CopyTextureReadbackResultPlatform(xiiGALTexture
 
     if (mappedSubResource.pData)
     {
-      const xiiGALTextureFormatDescription& formatProperties = m_GALDeviceVulkan.GetTextureFormatProperties(textureDescription.m_Format);
-
       /// \todo Support depth pitch.
       if (mappedSubResource.Stride == textureData.m_uiStride)
       {
-        const xiiUInt32 uiMemorySize = formatProperties.m_uiComponentSize * GetMipSize(textureDescription.m_Size.width, subResourceData.m_uiMipLevel) * GetMipSize(textureDescription.m_Size.width, subResourceData.m_uiMipLevel);
+        const xiiUInt32 uiMemorySize = xiiGALTextureFormat::GetBitsPerElement(pTextureVulkan->GetDescription().m_Format) * GetMipSize(pTextureVulkan->GetDescription().m_Size.width, subResourceData.m_uiMipLevel) * GetMipSize(pTextureVulkan->GetDescription().m_Size.height, subResourceData.m_uiMipLevel) / 8;
 
         memcpy(textureData.m_pData, mappedSubResource.pData, uiMemorySize);
       }
@@ -606,7 +603,7 @@ void xiiGALCommandEncoderVulkan::CopyTextureReadbackResultPlatform(xiiGALTexture
           const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.pData, y * mappedSubResource.Stride);
           void*       pDestination = xiiMemoryUtils::AddByteOffset(textureData.m_pData, y * textureData.m_uiStride);
 
-          memcpy(pDestination, pSource, formatProperties.m_uiComponentSize * GetMipSize(textureDescription.m_Size.width, subResourceData.m_uiMipLevel));
+          memcpy(pDestination, pSource, xiiGALTextureFormat::GetBitsPerElement(pTextureVulkan->GetDescription().m_Format) * GetMipSize(pTextureVulkan->GetDescription().m_Size.width, subResourceData.m_uiMipLevel) / 8);
         }
       }
 

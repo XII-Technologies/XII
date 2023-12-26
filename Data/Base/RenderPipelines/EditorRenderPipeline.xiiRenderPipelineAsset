@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{5189305147899033520,5264929536831011917}}
-		u4 %Hash{8771314541960957111}
+		u4 %Hash{10915628779472140178}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps
@@ -686,7 +686,7 @@ o
 		s %Name{"ColorSource"}
 		Vec2 %Node::Pos{f{0x403DA1C4,0x67047BC3}}
 		Uuid %Output{u4{7053429786865683355,12290627144904873763}}
-		s %SampleCount{"xiiGALSampleCount::OneSample"}
+		s %SampleCount{"xiiGALSampleCount::FourSamples"}
 	}
 }
 o

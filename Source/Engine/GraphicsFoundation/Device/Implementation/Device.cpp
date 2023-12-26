@@ -588,7 +588,7 @@ xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescript
 
   for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderStage::ENUM_COUNT; ++uiStage)
   {
-    if (description.HasByteCodeForStage((xiiGALShaderStage::Enum)uiStage))
+    if (description.HasByteCodeForStage(xiiGALShaderStage::GetStageFlag(uiStage)))
     {
       bHasByteCodes = true;
       break;
@@ -2392,7 +2392,8 @@ xiiGALTextureHandle xiiGALDevice::CreateProxyTexture(xiiGALTextureHandle hParent
   XII_VERIFY_PROXY_TEXTURE(pParentTexture != nullptr, "No valid texture handle given for proxy texture creation!");
 
   const auto& parentDescription = pParentTexture->GetDescription();
-  XII_VERIFY_PROXY_TEXTURE(parentDescription.IsArray(), "Proxy textures can only be created for array texture types.");
+  XII_VERIFY_PROXY_TEXTURE(!parentDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Proxy), "A proxy texture of another proxy texture cannot be creaeted.");
+  XII_VERIFY_PROXY_TEXTURE(parentDescription.m_Type == xiiGALResourceDimension::Texture2DArray || parentDescription.m_Type == xiiGALResourceDimension::TextureCube, "Proxy textures can only be created for array texture types.");
 
   xiiGALProxyTexture* pProxyTexture = XII_NEW(&m_Allocator, xiiGALProxyTexture, *pParentTexture);
   xiiGALTextureHandle hProxyTexture(m_Textures.Insert(pProxyTexture));
@@ -2403,12 +2404,12 @@ xiiGALTextureHandle xiiGALDevice::CreateProxyTexture(xiiGALTextureHandle hParent
   if (description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
   {
     xiiGALTextureViewCreationDescription viewDescription;
-    viewDescription.m_hTexture                  = hProxyTexture;
+    viewDescription.m_hTexture                  = hParentTexture;
     viewDescription.m_ViewType                  = xiiGALTextureViewType::ShaderResource;
     viewDescription.m_Format                    = description.m_Format;
     viewDescription.m_uiMostDetailedMip         = 0U;
     viewDescription.m_uiFirstArrayOrDepthSlice  = uiSlice;
-    viewDescription.m_uiMipLevelCount           = description.m_uiMipLevels;
+    viewDescription.m_uiMipLevelCount           = 0U;
     viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
     pProxyTexture->m_hDefaultTextureView        = CreateTextureView(viewDescription);
   }
@@ -2421,12 +2422,12 @@ xiiGALTextureHandle xiiGALDevice::CreateProxyTexture(xiiGALTextureHandle hParent
     xiiEnum<xiiGALTextureViewType> viewType = formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget;
 
     xiiGALTextureViewCreationDescription viewDescription;
-    viewDescription.m_hTexture                  = hProxyTexture;
+    viewDescription.m_hTexture                  = hParentTexture;
     viewDescription.m_ViewType                  = viewType;
     viewDescription.m_Format                    = description.m_Format;
-    viewDescription.m_uiFirstArrayOrDepthSlice  = uiSlice;
     viewDescription.m_uiMostDetailedMip         = 0U;
-    viewDescription.m_uiMipLevelCount           = description.m_uiMipLevels;
+    viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
+    viewDescription.m_uiMipLevelCount           = 0U;
     viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
 
     pProxyTexture->m_hDefaultRenderTargetView = CreateTextureView(viewDescription);

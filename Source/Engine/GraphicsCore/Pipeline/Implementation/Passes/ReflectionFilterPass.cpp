@@ -85,8 +85,10 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
 
   xiiGALPass* pGALPass = pDevice->BeginPass(GetName());
   XII_SCOPE_EXIT(
-    pDevice->EndPass(pGALPass);
-    renderViewContext.m_pRenderContext->SetAllowAsyncShaderLoading(bAllowAsyncShaderLoading));
+    {
+      pDevice->EndPass(pGALPass);
+      renderViewContext.m_pRenderContext->SetAllowAsyncShaderLoading(bAllowAsyncShaderLoading);
+    });
 
   if (pInputCubemap->GetDescription().m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
   {
@@ -113,6 +115,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
         xiiGALTextureViewHandle hFilterOutput;
         {
           xiiGALTextureViewCreationDescription desc;
+          desc.m_ViewType                  = xiiGALTextureViewType::UnorderedAccess;
           desc.m_hTexture                  = pFilteredSpecularOutput->m_TextureHandle;
           desc.m_uiMostDetailedMip         = uiMipMapIndex;
           desc.m_uiFirstArrayOrDepthSlice  = m_uiSpecularOutputIndex * 6;
@@ -143,7 +146,12 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
     xiiGALTextureViewHandle hIrradianceOutput;
     {
       xiiGALTextureViewCreationDescription desc;
-      desc.m_hTexture = pIrradianceOutput->m_TextureHandle;
+      desc.m_ViewType                  = xiiGALTextureViewType::UnorderedAccess;
+      desc.m_hTexture                  = pIrradianceOutput->m_TextureHandle;
+      desc.m_uiFirstArrayOrDepthSlice  = 0U;
+      desc.m_uiMostDetailedMip         = 0U;
+      desc.m_uiMipLevelCount           = 0U;
+      desc.m_uiArrayOrDepthSlicesCount = 1U;
 
       hIrradianceOutput = pDevice->CreateTextureView(desc);
     }

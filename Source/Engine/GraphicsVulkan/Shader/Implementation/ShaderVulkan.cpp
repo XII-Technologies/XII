@@ -7,13 +7,6 @@
 
 #include <ShaderCompiler/ShaderMetadata.h>
 
-xiiBitflags<xiiGALShaderStage> GetShaderStages(xiiBitflags<xiiGALShaderStage> e)
-{
-  if (e.IsNoFlagSet())
-    return xiiGALShaderStage::AllGraphics | xiiGALShaderStage::AllMesh | xiiGALShaderStage::AllRayTracing;
-  return e;
-}
-
 xiiGALShaderVulkan::xiiGALShaderVulkan(const xiiGALShaderCreationDescription& creationDescription) :
   xiiGALShader(creationDescription)
 {
@@ -25,15 +18,13 @@ xiiResult xiiGALShaderVulkan::InitPlatform(xiiGALDevice* pDevice)
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
 
-  xiiBitflags<xiiGALShaderStage> shaderStages = GetShaderStages(m_Description.m_ShaderStage);
-
   // Extract meta data and shader byte code.
   xiiArrayPtr<const xiiUInt8> pByteCodes[xiiGALShaderStage::ENUM_COUNT];
   xiiUInt32                   uiBindingCount = 0U;
 
   for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
   {
-    if (!m_Description.HasByteCodeForStage(xiiGALShaderStage::GetStageFlag(i)) || !shaderStages.IsSet(xiiGALShaderStage::GetStageFlag(i)))
+    if (!m_Description.HasByteCodeForStage(xiiGALShaderStage::GetStageFlag(i)))
       continue;
 
     xiiArrayPtr<const xiiUInt8> metaData(reinterpret_cast<const xiiUInt8*>(m_Description.m_ByteCodes[i]->GetByteCode()), m_Description.m_ByteCodes[i]->GetSize());
