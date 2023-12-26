@@ -143,6 +143,14 @@ const xiiExposedParameters* xiiExposedParameterCommandAccessor::GetExposedParams
         return asset->m_pAssetInfo->m_Info->GetMetaInfo<xiiExposedParameters>();
       }
     }
+    else if (value.IsA<xiiStringView>())
+    {
+      const auto& sValue = value.Get<xiiStringView>();
+      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
+      {
+        return asset->m_pAssetInfo->m_Info->GetMetaInfo<xiiExposedParameters>();
+      }
+    }
   }
   return nullptr;
 }
@@ -165,6 +173,14 @@ const xiiRTTI* xiiExposedParameterCommandAccessor::GetExposedParamsType(const xi
     {
       const auto& sValue = value.Get<xiiString>();
       if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue.GetData()))
+      {
+        return xiiExposedParametersTypeRegistry::GetSingleton()->GetExposedParametersType(sValue);
+      }
+    }
+    else if (value.IsA<xiiStringView>())
+    {
+      const auto& sValue = value.Get<xiiStringView>();
+      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
       {
         return xiiExposedParametersTypeRegistry::GetSingleton()->GetExposedParametersType(sValue);
       }

@@ -91,7 +91,6 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
         case xiiPropertyCategory::Enum::Set:
         case xiiPropertyCategory::Enum::Map:
         {
-
           xiiStatus res = xiiStatus(XII_SUCCESS);
           if (!m_Items[0].m_Index.IsValid())
           {
@@ -294,8 +293,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
       mimeData->setText(m_pProp->GetPropertyName().GetData(tmp));
       clipboard->setMimeData(mimeData);
 
-      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(
-        xiiFmt("Copied Property Name: {}", m_pProp->GetPropertyName()), xiiTime::Seconds(5));
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Property Name: {}", m_pProp->GetPropertyName()), xiiTime::Seconds(5));
     };
 
     QAction* pAction = m.addAction("Copy Internal Property Name:");
@@ -738,8 +736,7 @@ void xiiQtPropertyPointerWidget::StructureEventHandler(const xiiDocumentObjectSt
       if (!e.m_sParentProperty.IsEqual(m_pProp->GetPropertyName()))
         return;
 
-      if (std::none_of(cbegin(m_Items), cend(m_Items),
-                       [&](const xiiPropertySelection& sel) { return e.m_pNewParent == sel.m_pObject || e.m_pPreviousParent == sel.m_pObject; }))
+      if (std::none_of(cbegin(m_Items), cend(m_Items), [&](const xiiPropertySelection& sel) { return e.m_pNewParent == sel.m_pObject || e.m_pPreviousParent == sel.m_pObject; }))
         return;
 
       SetSelection(m_Items);

@@ -240,6 +240,14 @@ const xiiReflectedClass* xiiDynamicDefaultStateProvider::GetMetaInfo(xiiObjectAc
         return asset->m_pAssetInfo->m_Info->GetMetaInfo(m_pClassType);
       }
     }
+    else if (value.IsA<xiiStringView>())
+    {
+      const auto& sValue = value.Get<xiiStringView>();
+      if (const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sValue))
+      {
+        return asset->m_pAssetInfo->m_Info->GetMetaInfo(m_pClassType);
+      }
+    }
   }
 
   return nullptr;

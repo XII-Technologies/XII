@@ -22,7 +22,7 @@ public:
   ~xiiExposedParametersTypeRegistry();
   /// \brief Returns null if the curator can find the asset or if the asset
   /// does not have any xiiExposedParameters meta data.
-  const xiiRTTI* GetExposedParametersType(const char* szResource);
+  const xiiRTTI* GetExposedParametersType(xiiStringView sResource);
   /// \brief All exposed parameter types derive from this.
   const xiiRTTI* GetExposedParametersBaseType() const { return m_pBaseType; }
 

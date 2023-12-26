@@ -59,12 +59,12 @@ xiiExposedParametersTypeRegistry::~xiiExposedParametersTypeRegistry()
   xiiPhantomRttiManager::s_Events.RemoveEventHandler(xiiMakeDelegate(&xiiExposedParametersTypeRegistry::PhantomTypeRegistryEventHandler, this));
 }
 
-const xiiRTTI* xiiExposedParametersTypeRegistry::GetExposedParametersType(const char* szResource)
+const xiiRTTI* xiiExposedParametersTypeRegistry::GetExposedParametersType(xiiStringView sResource)
 {
-  if (xiiStringUtils::IsNullOrEmpty(szResource))
+  if (sResource.IsEmpty())
     return nullptr;
 
-  const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(szResource);
+  const auto asset = xiiAssetCurator::GetSingleton()->FindSubAsset(sResource);
   if (!asset)
     return nullptr;
 

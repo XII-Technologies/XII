@@ -992,12 +992,14 @@ void xiiQtPropertyEditorLineEditWidget::InternalSetValue(const xiiVariant& value
 
 void xiiQtPropertyEditorLineEditWidget::on_TextChanged_triggered(const QString& value)
 {
-  BroadcastValueChanged(xiiVariant(value.toUtf8().data()).ConvertTo(m_OriginalType));
+  xiiVariant v(value.toUtf8().data());
+  BroadcastValueChanged(m_OriginalType != xiiVariantType::StringView ? v.ConvertTo(m_OriginalType) : v);
 }
 
 void xiiQtPropertyEditorLineEditWidget::on_TextFinished_triggered()
 {
-  BroadcastValueChanged(xiiVariant(m_pWidget->text().toUtf8().data()).ConvertTo(m_OriginalType));
+  xiiVariant v(m_pWidget->text().toUtf8().data());
+  BroadcastValueChanged(m_OriginalType != xiiVariantType::StringView ? v.ConvertTo(m_OriginalType) : v);
 }
 
 

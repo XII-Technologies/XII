@@ -713,6 +713,12 @@ void xiiReflectionUtils::SetMemberPropertyValue(const xiiAbstractMemberProperty*
       xiiReflectionUtils::StringToEnumeration(pProp->GetSpecificType(), value.Get<xiiString>(), iValue);
       pEnumerationProp->SetValue(pObject, iValue);
     }
+    else if (value.IsA<xiiStringView>())
+    {
+      xiiInt64 iValue;
+      xiiReflectionUtils::StringToEnumeration(pProp->GetSpecificType(), value.Get<xiiStringView>(), iValue);
+      pEnumerationProp->SetValue(pObject, iValue);
+    }
     else
     {
       pEnumerationProp->SetValue(pObject, value.ConvertTo<xiiInt64>());

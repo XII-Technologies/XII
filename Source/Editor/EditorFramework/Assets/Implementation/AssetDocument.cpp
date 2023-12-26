@@ -262,6 +262,17 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
               if (depFlags.IsSet(xiiDependencyFlags::Package))
                 pInfo->m_PackageDependencies.Insert(value.Get<xiiString>());
             }
+            else if (value.IsA<xiiStringView>())
+            {
+              if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                pInfo->m_TransformDependencies.Insert(value.Get<xiiStringView>());
+
+              if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                pInfo->m_ThumbnailDependencies.Insert(value.Get<xiiStringView>());
+
+              if (depFlags.IsSet(xiiDependencyFlags::Package))
+                pInfo->m_PackageDependencies.Insert(value.Get<xiiStringView>());
+            }
           }
         }
         break;

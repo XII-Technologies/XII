@@ -329,8 +329,8 @@ struct CompareFunc
     m_bResult = m_pThis->Cast<T>() == m_pOther->Cast<T>();
   }
 
-  const xiiVariant* m_pThis;
-  const xiiVariant* m_pOther;
+  const xiiVariant* m_pThis  = nullptr;
+  const xiiVariant* m_pOther = nullptr;
   bool              m_bResult;
 };
 
@@ -382,7 +382,7 @@ struct IndexFunc
     m_Result = Impl<T>(xiiTraitInt<xiiVariant::TypeDeduction<T>::hasReflectedMembers>());
   }
 
-  const xiiVariant* m_pThis;
+  const xiiVariant* m_pThis = nullptr;
   xiiVariant        m_Result;
   xiiUInt32         m_uiIndex;
 };
@@ -419,9 +419,9 @@ struct KeyFunc
     m_Result = Impl<T>(xiiTraitInt<xiiVariant::TypeDeduction<T>::hasReflectedMembers>());
   }
 
-  const xiiVariant* m_pThis;
+  const xiiVariant* m_pThis = nullptr;
   xiiVariant        m_Result;
-  const char*       m_szKey;
+  const char*       m_szKey = nullptr;
 };
 
 struct ConvertFunc
@@ -442,7 +442,7 @@ struct ConvertFunc
     }
   }
 
-  const xiiVariant* m_pThis;
+  const xiiVariant* m_pThis = nullptr;
   xiiVariant        m_Result;
   bool              m_bSuccessful;
 };
@@ -467,9 +467,9 @@ bool xiiVariant::operator==(const xiiVariant& other) const
   }
   else if (IsString() && other.IsString())
   {
-    const xiiStringView a = IsA<xiiStringView>() ? Get<xiiStringView>() : xiiStringView(Get<xiiString>().GetData());
-    const xiiStringView b = other.IsA<xiiStringView>() ? other.Get<xiiStringView>() : xiiStringView(other.Get<xiiString>().GetData());
-    return a.IsEqual(b);
+    const xiiStringView a = IsA<xiiStringView>() ? Get<xiiStringView>() : Get<xiiString>().GetView();
+    const xiiStringView b = other.IsA<xiiStringView>() ? other.Get<xiiStringView>() : other.Get<xiiString>().GetView();
+    return a == b;
   }
   else if (IsHashedString() && other.IsHashedString())
   {
