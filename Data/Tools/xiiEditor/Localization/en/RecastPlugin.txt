@@ -1,0 +1,15 @@
+# Asset Types
+
+# UI
+
+NavMesh.Generate;Generate NavMesh
+
+# Component Types
+
+xiiRcAgentComponent;Recast Agent
+xiiRcNavMeshComponent;Recast Navmesh;;https://xiiengine.net/pages/docs/ai/RecastPlugin/recast-navmesh-component.html
+xiiRcMarkPoiVisibleComponent;Recast Mark POI Visible
+
+# Properties
+
+NavMeshConfig;Navmesh Config

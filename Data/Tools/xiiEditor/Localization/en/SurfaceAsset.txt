@@ -1,0 +1,14 @@
+# Asset Types
+
+Surface;Surface
+
+# Component Types
+
+# Properties
+
+xiiSurfaceResourceSlot;Surface Slot
+
+xiiSurfaceInteraction;Surface Interaction
+
+xiiSurfaceInteractionAlignment::IncidentDirection;Incoming Direction
+xiiSurfaceInteractionAlignment::ReverseIncidentDirection;Reverse Incoming Direction

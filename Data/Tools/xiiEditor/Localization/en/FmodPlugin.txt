@@ -1,0 +1,17 @@
+# Asset Types
+
+Sound Bank;Fmod Sound Bank
+Sound Event;Fmod Sound Event
+
+# Component Types
+
+xiiFmodEventComponent;Fmod Sound Event;;https://xiiengine.net/pages/docs/sound/fmod-event-component.html
+xiiFmodListenerComponent;Fmod Listener;;https://xiiengine.net/pages/docs/sound/fmod-listener-component.html
+
+# UI
+
+Fmod.Settings.Project;Fmod Project Settings...
+Fmod.Mute;Mute Sounds
+Fmod.MasterVolume;Volume
+
+# Properties

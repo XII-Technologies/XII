@@ -1,0 +1,12 @@
+# Asset Types
+
+# Component Types
+
+xiiAiNavMeshPathTestComponent;Navmesh Path Test;;https://xiiengine.net/pages/docs/ai/AiPlugin/navmesh-path-test-component.html
+
+# UI
+
+Ai.Settings.Project;Ai Project Settings...
+
+# Enums
+
