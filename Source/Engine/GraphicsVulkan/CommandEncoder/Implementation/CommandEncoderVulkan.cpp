@@ -496,7 +496,7 @@ void xiiGALCommandEncoderVulkan::ReadbackTexturePlatform(xiiGALTexture* pTexture
   const auto& textureDescription = pTextureVulkan->GetDescription();
 
   // MSAA textures (e.g. backbuffers) need to be converted to non MSAA versions
-  const bool bMSAASourceTexture = textureDescription.m_uiSampleCount != 0U;
+  const bool bMSAASourceTexture = textureDescription.m_uiSampleCount > 1;
 
   if (bMSAASourceTexture)
   {
@@ -552,7 +552,7 @@ void xiiGALCommandEncoderVulkan::CopyTextureReadbackResultPlatform(xiiGALTexture
     const xiiGALTextureSubResourceData& textureData     = targetData[i];
 
     Diligent::MappedTextureSubresource mappedSubResource = {};
-    m_pContext->MapTextureSubresource(pTextureVulkan->GetTexture(), subResourceData.m_uiMipLevel, subResourceData.m_uiArraySlice, Diligent::MAP_READ, Diligent::MAP_FLAG_DO_NOT_WAIT, nullptr, mappedSubResource);
+    m_pContext->MapTextureSubresource(pStagingTextureVulkan->GetTexture(), subResourceData.m_uiMipLevel, subResourceData.m_uiArraySlice, Diligent::MAP_READ, Diligent::MAP_FLAG_DO_NOT_WAIT, nullptr, mappedSubResource);
 
     xiiUInt64 uiWaitValue = ++m_uiSynchronizationFenceCompletedValue;
 
@@ -586,7 +586,7 @@ void xiiGALCommandEncoderVulkan::CopyTextureReadbackResultPlatform(xiiGALTexture
         }
       }
 
-      m_pContext->UnmapTextureSubresource(pTextureVulkan->GetTexture(), subResourceData.m_uiMipLevel, subResourceData.m_uiArraySlice);
+      m_pContext->UnmapTextureSubresource(pStagingTextureVulkan->GetTexture(), subResourceData.m_uiMipLevel, subResourceData.m_uiArraySlice);
     }
     else
     {
