@@ -208,6 +208,8 @@ void xiiGALCommandEncoderVulkan::EndQueryPlatform(xiiGALQuery* pQuery)
 
 void xiiGALCommandEncoderVulkan::ClearUnorderedAccessViewPlatform(xiiGALBufferView* pBufferView, xiiVec4 vClearValues)
 {
+  EndRenderPass();
+
   auto pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pBufferView->GetBuffer());
 
   Diligent::RefCntAutoPtr<Diligent::IDeviceContextVk> pContextVk;
@@ -224,6 +226,8 @@ void xiiGALCommandEncoderVulkan::ClearUnorderedAccessViewPlatform(xiiGALBufferVi
 
 void xiiGALCommandEncoderVulkan::ClearUnorderedAccessViewPlatform(xiiGALTextureView* pTextureView, xiiVec4 vClearValues)
 {
+  EndRenderPass();
+
   auto pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTextureView->GetTexture());
 
   Diligent::RefCntAutoPtr<Diligent::IDeviceContextVk> pContextVk;
@@ -240,6 +244,8 @@ void xiiGALCommandEncoderVulkan::ClearUnorderedAccessViewPlatform(xiiGALTextureV
 
 void xiiGALCommandEncoderVulkan::ClearUnorderedAccessViewPlatform(xiiGALBufferView* pBufferView, xiiVec4U32 vClearValues)
 {
+  EndRenderPass();
+
   auto pBufferVulkan = static_cast<xiiGALBufferVulkan*>(pBufferView->GetBuffer());
 
   Diligent::RefCntAutoPtr<Diligent::IDeviceContextVk> pContextVk;
@@ -255,6 +261,8 @@ void xiiGALCommandEncoderVulkan::ClearUnorderedAccessViewPlatform(xiiGALBufferVi
 
 void xiiGALCommandEncoderVulkan::ClearUnorderedAccessViewPlatform(xiiGALTextureView* pTextureView, xiiVec4U32 vClearValues)
 {
+  EndRenderPass();
+
   auto pTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTextureView->GetTexture());
 
   Diligent::RefCntAutoPtr<Diligent::IDeviceContextVk> pContextVk;
@@ -271,6 +279,8 @@ void xiiGALCommandEncoderVulkan::ClearUnorderedAccessViewPlatform(xiiGALTextureV
 
 void xiiGALCommandEncoderVulkan::CopyBufferPlatform(xiiGALBuffer* pDestination, xiiGALBuffer* pSource)
 {
+  EndRenderPass();
+
   auto pSourceBufferVulkan      = static_cast<xiiGALBufferVulkan*>(pSource);
   auto pDestinationBufferVulkan = static_cast<xiiGALBufferVulkan*>(pDestination);
 
@@ -279,6 +289,8 @@ void xiiGALCommandEncoderVulkan::CopyBufferPlatform(xiiGALBuffer* pDestination, 
 
 void xiiGALCommandEncoderVulkan::CopyBufferRegionPlatform(xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, xiiGALBuffer* pSource, xiiUInt32 uiSourceOffset, xiiUInt32 uiByteCount)
 {
+  EndRenderPass();
+
   auto pSourceBufferVulkan      = static_cast<xiiGALBufferVulkan*>(pSource);
   auto pDestinationBufferVulkan = static_cast<xiiGALBufferVulkan*>(pDestination);
 
@@ -287,12 +299,12 @@ void xiiGALCommandEncoderVulkan::CopyBufferRegionPlatform(xiiGALBuffer* pDestina
 
 void xiiGALCommandEncoderVulkan::UpdateBufferPlatform(xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
 {
+  EndRenderPass();
+
   XII_CHECK_ALIGNMENT_16(sourceData.GetPtr());
 
   auto        pDestinationBufferVulkan = static_cast<xiiGALBufferVulkan*>(pDestination);
   const auto& bufferDescription        = pDestinationBufferVulkan->GetDescription();
-
-  EndRenderPass();
 
   if (bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
   {
@@ -330,6 +342,8 @@ void xiiGALCommandEncoderVulkan::UpdateBufferPlatform(xiiGALBuffer* pDestination
 
 void xiiGALCommandEncoderVulkan::CopyTexturePlatform(xiiGALTexture* pDestination, xiiGALTexture* pSource)
 {
+  EndRenderPass();
+
   auto pSourceTexture      = static_cast<xiiGALTextureVulkan*>(pSource);
   auto pDestinationTexture = static_cast<xiiGALTextureVulkan*>(pDestination);
 
@@ -344,6 +358,8 @@ void xiiGALCommandEncoderVulkan::CopyTexturePlatform(xiiGALTexture* pDestination
 
 void xiiGALCommandEncoderVulkan::CopyTextureRegionPlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxu32& box)
 {
+  EndRenderPass();
+
   auto pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSource);
   auto pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestination);
 
@@ -376,6 +392,8 @@ void xiiGALCommandEncoderVulkan::CopyTextureRegionPlatform(xiiGALTexture* pDesti
 
 void xiiGALCommandEncoderVulkan::UpdateTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
 {
+  EndRenderPass();
+
   auto pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestination);
 
   xiiUInt32 uiWidth  = xiiMath::Max(destinationBox.m_vMax.x - destinationBox.m_vMin.x, 1U);
@@ -469,6 +487,8 @@ void xiiGALCommandEncoderVulkan::UpdateTexturePlatform(xiiGALTexture* pDestinati
 
 void xiiGALCommandEncoderVulkan::ResolveTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource)
 {
+  EndRenderPass();
+
   auto pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSource);
   auto pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestination);
 
@@ -490,6 +510,8 @@ void xiiGALCommandEncoderVulkan::ResolveTexturePlatform(xiiGALTexture* pDestinat
 
 void xiiGALCommandEncoderVulkan::ReadbackTexturePlatform(xiiGALTexture* pTexture, xiiGALTexture* pStagingTexture)
 {
+  EndRenderPass();
+
   auto pTextureVulkan        = static_cast<xiiGALTextureVulkan*>(pTexture);
   auto pStagingTextureVulkan = static_cast<xiiGALTextureVulkan*>(pTexture);
 
@@ -538,6 +560,8 @@ xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel)
 
 void xiiGALCommandEncoderVulkan::CopyTextureReadbackResultPlatform(xiiGALTexture* pTexture, xiiGALTexture* pStagingTexture, xiiArrayPtr<xiiGALTextureMipLevelData> mipLevelData, xiiArrayPtr<xiiGALTextureSubResourceData> targetData)
 {
+  EndRenderPass();
+
   auto pTextureVulkan        = static_cast<xiiGALTextureVulkan*>(pTexture);
   auto pStagingTextureVulkan = static_cast<xiiGALTextureVulkan*>(pStagingTexture);
 
@@ -597,7 +621,7 @@ void xiiGALCommandEncoderVulkan::CopyTextureReadbackResultPlatform(xiiGALTexture
 
 void xiiGALCommandEncoderVulkan::GenerateMipMapsPlatform(xiiGALTextureView* pTextureView)
 {
-  /// \todo End render pass.
+  EndRenderPass();
 
   m_pContext->GenerateMips(static_cast<xiiGALTextureViewVulkan*>(pTextureView)->GetTextureView());
 }
@@ -628,6 +652,8 @@ void xiiGALCommandEncoderVulkan::InsertEventMarkerPlatform(xiiStringView sMarker
 
 void xiiGALCommandEncoderVulkan::ClearRenderTargetPlatform(xiiGALTextureView* pTextureView, const xiiColor& clearColor)
 {
+  EndRenderPass();
+
   auto pTextureViewVulkan = static_cast<xiiGALTextureViewVulkan*>(pTextureView);
 
   m_pContext->ClearRenderTarget(pTextureViewVulkan->GetTextureView(), clearColor.GetData(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
@@ -635,6 +661,8 @@ void xiiGALCommandEncoderVulkan::ClearRenderTargetPlatform(xiiGALTextureView* pT
 
 void xiiGALCommandEncoderVulkan::ClearDepthStencilPlatform(xiiGALTextureView* pTextureView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
+  EndRenderPass();
+
   auto pTextureViewVulkan = static_cast<xiiGALTextureViewVulkan*>(pTextureView);
 
   Diligent::CLEAR_DEPTH_STENCIL_FLAGS clearFlags = {};
