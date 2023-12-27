@@ -4,51 +4,36 @@
 
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
-/// \brief Base GAL object interface.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALResourceBase : public xiiRefCounted
+/// \brief Base Graphics Abstraction Layer Object.
+class XII_GRAPHICSFOUNDATION_DLL xiiGALResourceBase : public xiiReflectedClass, xiiRefCounted
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALResourceBase, xiiReflectedClass);
+
 public:
-  virtual const xiiGALResourceBase* GetParentResource() const { return this; }
+  /// \brief Returns the xiiGALResourceBase pointer to this resource.
+  XII_NODISCARD virtual xiiGALResourceBase* GetParentResource();
+
+  /// \brief Returns the xiiGALDevice that created this resource.
+  ///
+  /// \note This does **not** increase the ref count on the device.
+  XII_NODISCARD xiiGALDevice* GetDevice() const;
+
+  /// \brief Returns the debug name of this resource.
+  XII_NODISCARD xiiStringView GetDebugName() const;
+
+  /// \brief Sets the debug name for this resource.
+  virtual void SetDebugName(xiiStringView sDebugName);
 
 protected:
+  xiiGALResourceBase(xiiGALDevice* pDevice, xiiStringView sDebugName = {});
+
   friend class xiiGALDevice;
 
-  inline ~xiiGALResourceBase()
-  {
-    XII_ASSERT_DEV(m_hDefaultBufferView.IsInvalidated(), "");
-    XII_ASSERT_DEV(m_hDefaultTextureView.IsInvalidated(), "");
-    XII_ASSERT_DEV(m_hDefaultRenderTargetView.IsInvalidated(), "");
-
-    XII_ASSERT_DEV(m_BufferViews.IsEmpty(), "There are resident buffer views remaining.");
-    XII_ASSERT_DEV(m_TextureViews.IsEmpty(), "There are resident texture views remaining.");
-  }
-
-  xiiHashTable<xiiUInt32, xiiGALBufferViewHandle>  m_BufferViews;
-  xiiHashTable<xiiUInt32, xiiGALTextureViewHandle> m_TextureViews;
-
-  xiiGALBufferViewHandle  m_hDefaultBufferView;
-  xiiGALTextureViewHandle m_hDefaultTextureView;
-  xiiGALTextureViewHandle m_hDefaultRenderTargetView;
+  xiiGALDevice* m_pDevice = nullptr;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   mutable xiiHashedString m_sDebugName;
 #endif
-};
-
-/// \brief Base class for GAL resources, stores a creation description of the object and also allows for reference counting.
-template <typename CreationDescription>
-class xiiGALResource : public xiiGALResourceBase
-{
-public:
-  XII_ALWAYS_INLINE xiiGALResource(const CreationDescription& description) :
-    m_Description(description)
-  {
-  }
-
-  XII_ALWAYS_INLINE const CreationDescription& GetDescription() const { return m_Description; }
-
-protected:
-  CreationDescription m_Description;
 };
 
 #include <GraphicsFoundation/Resources/Implementation/Resource_inl.h>

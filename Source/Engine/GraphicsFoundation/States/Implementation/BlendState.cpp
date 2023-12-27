@@ -71,9 +71,9 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
-xiiGALBlendState::xiiGALBlendState(const xiiGALBlendStateCreationDescription& creationDescription) :
-  xiiGALObject<xiiGALBlendStateCreationDescription>(creationDescription)
-{
+xiiGALBlendState::xiiGALBlendState(xiiGALDevice* pDevice, const xiiGALBlendStateCreationDescription& creationDescription) :
+    xiiGALResourceBase(pDevice),
+  {
 }
 
 xiiGALBlendState::~xiiGALBlendState() = default;

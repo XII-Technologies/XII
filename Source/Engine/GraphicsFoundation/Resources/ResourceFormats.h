@@ -40,7 +40,7 @@ public:
   NativeFormatType m_eResourceViewType;
 };
 
-/// \brief Reusable table class to store lookup information (from xiiGALTextureFormat to the various formats for texture/buffer storage, views)
+/// \brief Reusable table class to store lookup information (from xiiGALTextureFormat to the various formats for texture/buffer storage, views).
 template <typename FormatClass>
 class xiiGALFormatLookupTable
 {

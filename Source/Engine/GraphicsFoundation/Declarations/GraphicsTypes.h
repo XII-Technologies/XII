@@ -1515,22 +1515,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPresentMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPresentMode);
 
-/// \brief Base class for GAL objects, stores a creation description of the object and also allows for reference counting.
-template <typename CreationDescription>
-class xiiGALObject : public xiiRefCounted
-{
-public:
-  xiiGALObject(const CreationDescription& description) :
-    m_Description(description)
-  {
-  }
-
-  XII_ALWAYS_INLINE const CreationDescription& GetDescription() const { return m_Description; }
-
-protected:
-  CreationDescription m_Description;
-};
-
 namespace xiiGAL
 {
   using xii16_16Id = xiiGenericId<16, 16>;
