@@ -78,4 +78,4 @@ ComparisonDepthFunction = ComparisonFunction_LessEqual
   DepthWriteEnable = true
 #endif
 
-// clang-format on
+  // clang-format on
