@@ -134,12 +134,12 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   {
     {
       xiiGALTextureCreationDescription desc;
-      desc.m_Size.width  = uiHzbWidth / 2;
-      desc.m_Size.height = uiHzbHeight / 2;
-      desc.m_uiMipLevels = 3;
-      desc.m_Type        = xiiGALResourceDimension::Texture2DArray;
-      desc.m_Format      = xiiGALTextureFormat::R16Float;
-      desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
+      desc.m_Size.width         = uiHzbWidth / 2;
+      desc.m_Size.height        = uiHzbHeight / 2;
+      desc.m_uiMipLevels        = 3;
+      desc.m_Type               = xiiGALResourceDimension::Texture2DArray;
+      desc.m_Format             = xiiGALTextureFormat::R16Float;
+      desc.m_BindFlags          = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
       desc.m_uiArraySizeOrDepth = pOutput->m_Desc.m_uiArraySizeOrDepth;
 
       hzbTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);

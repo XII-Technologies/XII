@@ -80,6 +80,7 @@ bool xiiTonemapPass::GetRenderTargetDescriptions(const xiiView& view, const xiiA
       }
 #endif
 
+      outputs[m_PinOutput.m_uiOutputIndex].m_Type               = xiiGALResourceDimension::Texture2D;
       outputs[m_PinOutput.m_uiOutputIndex].m_Size               = pColorInput->m_Size;
       outputs[m_PinOutput.m_uiOutputIndex].m_uiArraySizeOrDepth = pColorInput->m_uiArraySizeOrDepth;
       outputs[m_PinOutput.m_uiOutputIndex].m_uiMipLevels        = 1;

@@ -199,7 +199,7 @@ void xiiPickingRenderPass::CreateTarget()
   tcd.m_Format      = xiiGALTextureFormat::RGBA8UNormalized;
   tcd.m_Size.width  = (xiiUInt32)m_TargetRect.width;
   tcd.m_Size.height = (xiiUInt32)m_TargetRect.height;
-  tcd.m_BindFlags   = xiiGALBindFlags::RenderTarget;
+  tcd.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
 
   m_hPickingIdRT = pDevice->CreateTexture(tcd);
 
@@ -210,7 +210,7 @@ void xiiPickingRenderPass::CreateTarget()
   m_hPickingIdRTStaging = pDevice->CreateTexture(tcd);
 
   tcd.m_Format         = xiiGALTextureFormat::D32Float;
-  tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil;
+  tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
   tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::None;
   tcd.m_Usage          = xiiGALResourceUsage::Default;
 

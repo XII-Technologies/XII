@@ -1187,7 +1187,7 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
       viewDescription.m_Format                    = description.m_Format;
       viewDescription.m_uiMostDetailedMip         = 0U;
       viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
-      viewDescription.m_uiMipLevelCount           = description.m_uiMipLevels;
+      viewDescription.m_uiMipLevelCount           = 0U;
       viewDescription.m_uiArrayOrDepthSlicesCount = description.m_uiArraySizeOrDepth;
       pTexture->m_hDefaultTextureView             = CreateTextureView(viewDescription);
     }
@@ -1205,7 +1205,7 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
       viewDescription.m_Format                    = description.m_Format;
       viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
       viewDescription.m_uiMostDetailedMip         = 0U;
-      viewDescription.m_uiMipLevelCount           = description.m_uiMipLevels;
+      viewDescription.m_uiMipLevelCount           = 0U;
       viewDescription.m_uiArrayOrDepthSlicesCount = description.m_uiArraySizeOrDepth;
 
       pTexture->m_hDefaultRenderTargetView = CreateTextureView(viewDescription);
@@ -1258,9 +1258,9 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
   if (textureDescription.IsArray())
   {
     XII_VERIFY_TEXTURE_VIEW(description.m_uiFirstArrayOrDepthSlice < textureDescription.m_uiArraySizeOrDepth, "The first array slice ({0}) is out of range. The texture has only ({1}) slice (s)", description.m_uiFirstArrayOrDepthSlice, textureDescription.m_uiArraySizeOrDepth);
-    XII_VERIFY_TEXTURE_VIEW(description.m_uiFirstArrayOrDepthSlice + description.m_uiArrayOrDepthSlicesCount <= textureDescription.m_uiArraySizeOrDepth, "The first array slice ({0}) and the number of array slice (s) ({1}) are out of range. The texture has only ({2}) slice (s)", description.m_uiFirstArrayOrDepthSlice, description.m_uiArrayOrDepthSlicesCount, textureDescription.m_uiArraySizeOrDepth);
+    XII_VERIFY_TEXTURE_VIEW((description.m_uiFirstArrayOrDepthSlice + description.m_uiArrayOrDepthSlicesCount) <= textureDescription.m_uiArraySizeOrDepth, "The first array slice ({0}) and the number of array slice (s) ({1}) are out of range. The texture has only ({2}) slice (s)", description.m_uiFirstArrayOrDepthSlice, description.m_uiArrayOrDepthSlicesCount, textureDescription.m_uiArraySizeOrDepth);
   }
-  else if (textureDescription.Is3D())
+  else if (!textureDescription.Is3D())
   {
     XII_VERIFY_TEXTURE_VIEW(description.m_uiFirstArrayOrDepthSlice == 0U, "For non-array texture, the First Array or Depth Slice must be zero.");
   }
@@ -2406,12 +2406,14 @@ xiiGALTextureHandle xiiGALDevice::CreateProxyTexture(xiiGALTextureHandle hParent
     xiiGALTextureViewCreationDescription viewDescription;
     viewDescription.m_hTexture                  = hParentTexture;
     viewDescription.m_ViewType                  = xiiGALTextureViewType::ShaderResource;
+    viewDescription.m_ResourceDimension         = xiiGALResourceDimension::Texture2D;
     viewDescription.m_Format                    = description.m_Format;
     viewDescription.m_uiMostDetailedMip         = 0U;
     viewDescription.m_uiFirstArrayOrDepthSlice  = uiSlice;
     viewDescription.m_uiMipLevelCount           = 0U;
     viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
-    pProxyTexture->m_hDefaultTextureView        = CreateTextureView(viewDescription);
+
+    pProxyTexture->m_hDefaultTextureView = CreateTextureView(viewDescription);
   }
 
   // Create default render target or depth stencil view.
@@ -2424,9 +2426,10 @@ xiiGALTextureHandle xiiGALDevice::CreateProxyTexture(xiiGALTextureHandle hParent
     xiiGALTextureViewCreationDescription viewDescription;
     viewDescription.m_hTexture                  = hParentTexture;
     viewDescription.m_ViewType                  = viewType;
+    viewDescription.m_ResourceDimension         = xiiGALResourceDimension::Texture2D;
     viewDescription.m_Format                    = description.m_Format;
     viewDescription.m_uiMostDetailedMip         = 0U;
-    viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
+    viewDescription.m_uiFirstArrayOrDepthSlice  = uiSlice;
     viewDescription.m_uiMipLevelCount           = 0U;
     viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
 

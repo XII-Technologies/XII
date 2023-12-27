@@ -19,14 +19,14 @@ xiiReflectionProbeMapping::xiiReflectionProbeMapping(xiiUInt32 uiAtlasSize) :
 
   xiiGALTextureCreationDescription desc;
   desc.m_sName              = "Reflection Specular Texture";
-  desc.m_Type               = xiiGALResourceDimension::TextureCube;
+  desc.m_Type               = xiiGALResourceDimension::TextureCubeArray;
   desc.m_Format             = xiiGALTextureFormat::RGBA16Float;
   desc.m_Size.width         = s_uiReflectionCubeMapSize;
   desc.m_Size.height        = s_uiReflectionCubeMapSize;
   desc.m_uiMipLevels        = GetMipLevels();
   desc.m_uiArraySizeOrDepth = s_uiNumReflectionProbeCubeMaps * 6;
-  desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess);
-  desc.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Read);
+  desc.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+  desc.m_CPUAccessFlags     = xiiGALCPUAccessFlag::Read;
 
   m_hReflectionSpecularTexture = pDevice->CreateTexture(desc);
 }

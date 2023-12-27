@@ -307,9 +307,7 @@ class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiExportDocumentMsgToEngine : public
   XII_ADD_DYNAMIC_REFLECTION(xiiExportDocumentMsgToEngine, xiiEditorEngineDocumentMsg);
 
 public:
-  xiiExportDocumentMsgToEngine()
-
-    = default;
+  xiiExportDocumentMsgToEngine() = default;
 
   xiiString m_sOutputFile;
   xiiUInt64 m_uiAssetHash = 0;

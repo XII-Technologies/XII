@@ -535,7 +535,7 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
   tcd.m_Format      = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
   tcd.m_Size.width  = m_uiThumbnailWidth;
   tcd.m_Size.height = m_uiThumbnailHeight;
-  tcd.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
+  tcd.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource);
 
   m_hThumbnailColorRT = pDevice->CreateTexture(tcd);
 
@@ -547,7 +547,7 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
 
   tcd.m_Format         = xiiGALTextureFormat::D32Float;
   tcd.m_CPUAccessFlags = {};
-  tcd.m_BindFlags.Add(xiiGALBindFlags::DepthStencil);
+  tcd.m_BindFlags.Add(xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource);
 
   m_hThumbnailDepthRT = pDevice->CreateTexture(tcd);
 

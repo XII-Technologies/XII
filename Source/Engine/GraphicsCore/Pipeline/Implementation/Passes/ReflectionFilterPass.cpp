@@ -59,7 +59,7 @@ bool xiiReflectionFilterPass::GetRenderTargetDescriptions(const xiiView& view, c
     desc.m_Format      = xiiGALTextureFormat::RGBA16Float;
     desc.m_Type        = xiiGALResourceDimension::TextureCubeArray;
     desc.m_uiMipLevels = xiiMath::Log2i(desc.m_Size.width) - 1;
-    desc.m_BindFlags.Add(xiiGALBindFlags::UnorderedAccess);
+    desc.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
 
     outputs[m_PinFilteredSpecular.m_uiOutputIndex] = desc;
   }

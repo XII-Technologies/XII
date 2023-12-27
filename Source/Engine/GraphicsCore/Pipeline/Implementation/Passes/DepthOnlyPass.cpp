@@ -64,6 +64,4 @@ void xiiDepthOnlyPass::Execute(const xiiRenderViewContext& renderViewContext, co
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMasked);
 }
 
-
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_DepthOnlyPass);

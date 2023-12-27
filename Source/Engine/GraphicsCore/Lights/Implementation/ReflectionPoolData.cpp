@@ -348,8 +348,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
   {
     const xiiUInt32 uiMipLevelCount = GetMipLevels();
 
-    xiiMaterialResourceHandle hDebugMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(
-      "{ 6f8067d0-ece8-44e1-af46-79b49266de41 }"); // ReflectionProbeVisualization.xiiMaterialAsset
+    xiiMaterialResourceHandle            hDebugMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("{ 6f8067d0-ece8-44e1-af46-79b49266de41 }"); // ReflectionProbeVisualization.xiiMaterialAsset
     xiiResourceLock<xiiMaterialResource> pMaterial(hDebugMaterial, xiiResourceAcquireMode::BlockTillLoaded);
     if (pMaterial->GetLoadingState() != xiiResourceState::Loaded)
       return;
@@ -401,9 +400,9 @@ void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
     xiiGALTextureCreationDescription desc;
     desc.m_sName       = "Sky Irradiance Texture";
     desc.m_Type        = xiiGALResourceDimension::Texture2D;
+    desc.m_Format      = xiiGALTextureFormat::RGBA16Float;
     desc.m_Size.width  = 6;
     desc.m_Size.height = 64;
-    desc.m_Format      = xiiGALTextureFormat::RGBA16Float;
     desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource);
 
     m_hSkyIrradianceTexture = pDevice->CreateTexture(desc);

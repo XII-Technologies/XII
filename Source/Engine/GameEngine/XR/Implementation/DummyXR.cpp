@@ -81,11 +81,12 @@ xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiEnum<xiiGALSam
   // Create dummy swap chain
   {
     xiiGALTextureCreationDescription textureDesc;
+    textureDesc.m_Type               = xiiGALResourceDimension::Texture2D;
     textureDesc.m_Size               = m_Info.m_vEyeRenderTargetSize;
     textureDesc.m_uiArraySizeOrDepth = 2;
     textureDesc.m_uiMipLevels        = 1;
     textureDesc.m_uiSampleCount      = msaaCount;
-    textureDesc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource);
+    textureDesc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource);
 
     m_hColorRT = pDevice->CreateTexture(textureDesc);
 

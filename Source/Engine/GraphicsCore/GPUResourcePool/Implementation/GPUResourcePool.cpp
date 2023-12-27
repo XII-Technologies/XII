@@ -94,7 +94,7 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUI
   TextureDesc.m_uiSampleCount      = sampleCount;
   TextureDesc.m_uiArraySizeOrDepth = uiSliceColunt;
   TextureDesc.m_Type               = (bIsArray || TextureDesc.m_uiSampleCount > 1) ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
-  TextureDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
+  TextureDesc.m_BindFlags          = xiiGALBindFlags::ShaderResource;
 
   if (xiiGALTextureFormat::IsDepthFormat(format))
     TextureDesc.m_BindFlags.Add(xiiGALBindFlags::DepthStencil);

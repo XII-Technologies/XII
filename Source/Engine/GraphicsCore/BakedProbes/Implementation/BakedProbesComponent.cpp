@@ -449,9 +449,11 @@ void xiiBakedProbesComponent::RenderDebugOverlay()
     }
 
     xiiGALTextureCreationDescription desc;
+    desc.m_Type        = xiiGALResourceDimension::Texture2D;
     desc.m_Size.width  = uiWidth;
     desc.m_Size.height = uiHeight;
     desc.m_Format      = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+    desc.m_BindFlags   = xiiGALBindFlags::ShaderResource;
 
     m_hDebugViewTexture = pDevice->CreateTexture(desc);
   }

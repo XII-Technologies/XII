@@ -31,9 +31,8 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
     desc.m_Size.height        = s_uiReflectionCubeMapSize;
     desc.m_uiMipLevels        = GetMipLevels();
     desc.m_uiArraySizeOrDepth = 6;
-    desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
-    desc.m_MiscFlags.Add(xiiGALMiscTextureFlags::GenerateMips);
-    desc.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Read);
+    desc.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+    desc.m_MiscFlags          = xiiGALMiscTextureFlags::GenerateMips;
 
     m_hCubemap = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
   }
