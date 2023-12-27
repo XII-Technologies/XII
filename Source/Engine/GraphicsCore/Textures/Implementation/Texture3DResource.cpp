@@ -252,8 +252,8 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture3DResource, xiiTexture3DResourceDesc
   m_uiDepth  = descriptor.m_DescGAL.m_uiArraySizeOrDepth;
 
   xiiGALTextureData textureData;
-  textureData.m_SubResources        = descriptor.m_InitialContent;
-  descriptor.m_DescGAL.m_sName      = GetResourceDescription();
+  textureData.m_SubResources   = descriptor.m_InitialContent;
+  descriptor.m_DescGAL.m_sName = GetResourceDescription();
   descriptor.m_DescGAL.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
   m_hGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, &textureData);
 

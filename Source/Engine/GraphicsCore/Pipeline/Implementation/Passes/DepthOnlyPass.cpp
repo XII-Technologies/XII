@@ -27,10 +27,7 @@ xiiDepthOnlyPass::xiiDepthOnlyPass(const char* szName) :
 
 xiiDepthOnlyPass::~xiiDepthOnlyPass() = default;
 
-bool xiiDepthOnlyPass::GetRenderTargetDescriptions(
-  const xiiView&                                             view,
-  const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs,
-  xiiArrayPtr<xiiGALTextureCreationDescription>              outputs)
+bool xiiDepthOnlyPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
   // DepthStencil
   if (inputs[m_PinDepthStencil.m_uiInputIndex])
@@ -66,7 +63,5 @@ void xiiDepthOnlyPass::Execute(const xiiRenderViewContext& renderViewContext, co
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaque);
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMasked);
 }
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_DepthOnlyPass);

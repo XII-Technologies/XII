@@ -124,8 +124,11 @@ void xiiQtPropertyEditorTagSetWidget::InternalUpdateValue()
     XII_ASSERT_DEV(status.m_Result.Succeeded(), "Failed to get tag keys!");
     for (const xiiVariant& key : currentSetValues)
     {
-      XII_ASSERT_DEV(key.GetType() == xiiVariantType::String, "Tags are supposed to be of type string!");
-      tags[key.Get<xiiString>()]++;
+      XII_ASSERT_DEV(key.GetType() == xiiVariantType::String || key.GetType() == xiiVariantType::StringView, "Tags are supposed to be of type string or string view!");
+      if (key.IsA<xiiStringView>())
+        tags[key.Get<xiiStringView>()]++;
+      else
+        tags[key.Get<xiiString>()]++;
     }
   }
 

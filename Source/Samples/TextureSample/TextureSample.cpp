@@ -417,7 +417,6 @@ public:
       swapChainDesc.m_uiBufferCount         = 2U;
       swapChainDesc.m_fDefaultDepthValue    = 1.0f;
       swapChainDesc.m_uiDefaultStencilValue = 0U;
-      swapChainDesc.m_bIsPrimary            = true;
 
       m_hSwapChain = m_pDevice->CreateSwapChain(swapChainDesc);
     }

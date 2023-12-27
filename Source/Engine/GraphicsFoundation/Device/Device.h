@@ -266,6 +266,16 @@ public:
   ///          the contexts using xiiGALCommandEncoder::Flush() if it needs to make sure all recorded commands are complete when the method returns.
   void WaitIdle();
 
+  /// \brief This creates a texture to a given array slice in a texture array.
+  ///
+  /// \note The parent texture must be an array type.
+  ///
+  /// \return The handle to the created proxy texture object. This function calls AddRef() on both the parent and proxy object, so that the new object will have one reference, and the parent texture reference incremented.
+  xiiGALTextureHandle CreateProxyTexture(xiiGALTextureHandle hParentTexture, xiiUInt32 uiSlice);
+
+  /// \brief This destroys the proxy texture object with the given handle.
+  void DestroyProxyTexture(xiiGALTextureHandle hProxyTexture);
+
 public:
   /// \brief Registers event handlers.
   xiiEvent<const xiiGALDeviceEvent&> m_Events;

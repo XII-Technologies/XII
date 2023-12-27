@@ -20,9 +20,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiOpaqueForwardRenderPass, 1, xiiRTTIDefaultAl
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiOpaqueForwardRenderPass::xiiOpaqueForwardRenderPass(const char* szName) :
-  xiiForwardRenderPass(szName)
-
+xiiOpaqueForwardRenderPass::xiiOpaqueForwardRenderPass(xiiStringView sName) :
+  xiiForwardRenderPass(sName)
 {
   m_hWhiteTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>("White.color");
 }

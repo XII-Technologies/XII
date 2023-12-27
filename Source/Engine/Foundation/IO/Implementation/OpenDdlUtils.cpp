@@ -2099,7 +2099,7 @@ void xiiOpenDdlUtils::StoreVariant(xiiOpenDdlWriter& ref_writer, const xiiVarian
       return;
 
     case xiiVariant::Type::StringView:
-      xiiOpenDdlUtils::StoreString(ref_writer, value.Get<xiiString>(), sName, bGlobalName);
+      xiiOpenDdlUtils::StoreString(ref_writer, value.Get<xiiStringView>(), sName, bGlobalName);
       return;
 
     case xiiVariant::Type::Color:

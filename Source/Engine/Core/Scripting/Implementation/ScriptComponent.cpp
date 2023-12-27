@@ -197,7 +197,7 @@ void xiiScriptComponent::SetParameter(xiiStringView sKey, const xiiVariant& valu
 
 void xiiScriptComponent::RemoveParameter(xiiStringView sKey)
 {
-  if (m_Parameters.RemoveAndCopy(xiiTempHashedString(sKey)))
+  if (m_Parameters.RemoveAndCopy(sKey))
   {
     if (IsInitialized() && m_hScriptClass.IsValid())
     {
@@ -208,7 +208,7 @@ void xiiScriptComponent::RemoveParameter(xiiStringView sKey)
 
 bool xiiScriptComponent::GetParameter(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Parameters.Find(xiiTempHashedString(sKey));
+  xiiUInt32 it = m_Parameters.Find(sKey);
 
   if (it == xiiInvalidIndex)
     return false;

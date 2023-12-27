@@ -47,6 +47,7 @@ xiiResult xiiGALFramebufferD3D12::InitPlatform(xiiGALDevice* pDevice)
 
     m_Description.m_FramebufferSize.width  = description.Width;
     m_Description.m_FramebufferSize.height = description.Height;
+    m_Description.m_uiArraySliceCount      = description.NumArraySlices;
   }
 
   return (m_pFramebuffer != nullptr) ? XII_SUCCESS : XII_FAILURE;

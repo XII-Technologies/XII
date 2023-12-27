@@ -36,9 +36,9 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
 {
   XII_LOCK(m_Lock);
 
-  if (!textureDesc.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
+  if (!textureDesc.m_BindFlags.IsAnySet(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil))
   {
-    xiiLog::Error("Texture description for render target needs to be created with xiiGALBindFlags::RenderTarget!");
+    xiiLog::Error("Texture description for render target or depth stencil needs to be created with xiiGALBindFlags::RenderTarget or xiiGALBindFlags::DepthStencil!");
     return xiiGALTextureHandle();
   }
 
@@ -85,7 +85,7 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
   return hNewTexture;
 }
 
-xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALSampleCount> sampleCount, xiiUInt32 uiSliceColunt)
+xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALSampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray)
 {
   xiiGALTextureCreationDescription TextureDesc;
   TextureDesc.m_Format             = format;
@@ -93,8 +93,8 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUI
   TextureDesc.m_Size.height        = uiHeight;
   TextureDesc.m_uiSampleCount      = sampleCount;
   TextureDesc.m_uiArraySizeOrDepth = uiSliceColunt;
-  TextureDesc.m_Type               = TextureDesc.m_uiSampleCount > 1 ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
-  TextureDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
+  TextureDesc.m_Type               = (bIsArray || TextureDesc.m_uiSampleCount > 1) ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
+  TextureDesc.m_BindFlags          = xiiGALBindFlags::ShaderResource;
 
   if (xiiGALTextureFormat::IsDepthFormat(format))
     TextureDesc.m_BindFlags.Add(xiiGALBindFlags::DepthStencil);

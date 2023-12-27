@@ -24,6 +24,7 @@ public:
 
   OnSwapChainChanged                 m_OnSwapChainChanged;
   xiiSizeU32                         m_Size = xiiSizeU32(0, 0);
+  xiiEnum<xiiGALPresentMode>         m_PresentMode;
   xiiGALSwapChainCreationDescription m_CurrentDesc;
   xiiGALSwapChainHandle              m_hSwapChain;
 };

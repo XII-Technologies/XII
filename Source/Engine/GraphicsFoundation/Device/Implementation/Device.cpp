@@ -10,6 +10,7 @@
 #include <GraphicsFoundation/Resources/BufferView.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
+#include <GraphicsFoundation/Resources/ProxyTexture.h>
 #include <GraphicsFoundation/Resources/Query.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
@@ -329,15 +330,12 @@ void xiiGALDevice::DestroySwapChain(xiiGALSwapChainHandle hSwapChain)
   }
 }
 
-#define XII_VERIFY_BLEND_STATE(expression, ...) \
-  do                                            \
-  {                                             \
-    if (!(expression))                          \
-    {                                           \
-      xiiLog::Error(__VA_ARGS__);               \
-      return xiiGALBlendStateHandle();          \
-    }                                           \
-  } while (false);
+#define XII_VERIFY_BLEND_STATE(expression, ...)             \
+  do                                                        \
+  {                                                         \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);              \
+    if (!(expression)) { return xiiGALBlendStateHandle(); } \
+  } while (false)
 
 xiiGALBlendStateHandle xiiGALDevice::CreateBlendState(const xiiGALBlendStateCreationDescription& description)
 {
@@ -419,15 +417,12 @@ void xiiGALDevice::DestroyBlendState(xiiGALBlendStateHandle hBlendState)
 
 #undef XII_VERIFY_BLEND_STATE
 
-#define XII_VERIFY_DEPTH_STENCIL_STATE(expression, ...) \
-  do                                                    \
-  {                                                     \
-    if (!(expression))                                  \
-    {                                                   \
-      xiiLog::Error(__VA_ARGS__);                       \
-      return xiiGALDepthStencilStateHandle();           \
-    }                                                   \
-  } while (false);
+#define XII_VERIFY_DEPTH_STENCIL_STATE(expression, ...)            \
+  do                                                               \
+  {                                                                \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);                     \
+    if (!(expression)) { return xiiGALDepthStencilStateHandle(); } \
+  } while (false)
 
 xiiGALDepthStencilStateHandle xiiGALDevice::CreateDepthStencilState(const xiiGALDepthStencilStateCreationDescription& description)
 {
@@ -506,15 +501,12 @@ void xiiGALDevice::DestroyDepthStencilState(xiiGALDepthStencilStateHandle hDepth
 
 #undef XII_VERIFY_DEPTH_STENCIL_STATE
 
-#define XII_VERIFY_RASTERIZER_STATE(expression, ...) \
-  do                                                 \
-  {                                                  \
-    if (!(expression))                               \
-    {                                                \
-      xiiLog::Error(__VA_ARGS__);                    \
-      return xiiGALRasterizerStateHandle();          \
-    }                                                \
-  } while (false);
+#define XII_VERIFY_RASTERIZER_STATE(expression, ...)             \
+  do                                                             \
+  {                                                              \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);                   \
+    if (!(expression)) { return xiiGALRasterizerStateHandle(); } \
+  } while (false)
 
 xiiGALRasterizerStateHandle xiiGALDevice::CreateRasterizerState(const xiiGALRasterizerStateCreationDescription& description)
 {
@@ -581,15 +573,12 @@ void xiiGALDevice::DestroyRasterizerState(xiiGALRasterizerStateHandle hRasterize
 
 #undef XII_VERIFY_RASTERIZER_STATE
 
-#define XII_VERIFY_SHADER(expression, ...) \
-  do                                       \
-  {                                        \
-    if (!(expression))                     \
-    {                                      \
-      xiiLog::Error(__VA_ARGS__);          \
-      return xiiGALShaderHandle();         \
-    }                                      \
-  } while (false);
+#define XII_VERIFY_SHADER(expression, ...)              \
+  do                                                    \
+  {                                                     \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);          \
+    if (!(expression)) { return xiiGALShaderHandle(); } \
+  } while (false)
 
 xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescription& description)
 {
@@ -599,7 +588,7 @@ xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescript
 
   for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderStage::ENUM_COUNT; ++uiStage)
   {
-    if (description.HasByteCodeForStage((xiiGALShaderStage::Enum)uiStage))
+    if (description.HasByteCodeForStage(xiiGALShaderStage::GetStageFlag(uiStage)))
     {
       bHasByteCodes = true;
       break;
@@ -671,15 +660,12 @@ void xiiGALDevice::DestroyShader(xiiGALShaderHandle hShader)
 
 #undef XII_VERIFY_SHADER
 
-#define XII_VERIFY_BUFFER(expression, ...) \
-  do                                       \
-  {                                        \
-    if (!(expression))                     \
-    {                                      \
-      xiiLog::Error(__VA_ARGS__);          \
-      return xiiGALBufferHandle();         \
-    }                                      \
-  } while (false);
+#define XII_VERIFY_BUFFER(expression, ...)              \
+  do                                                    \
+  {                                                     \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);          \
+    if (!(expression)) { return xiiGALBufferHandle(); } \
+  } while (false)
 
 xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData /* = nullptr*/)
 {
@@ -840,8 +826,8 @@ xiiGALBufferHandle xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreati
       xiiGALBufferViewCreationDescription viewDescription;
       viewDescription.m_hBuffer      = hBuffer;
       viewDescription.m_ViewType     = xiiGALBufferViewType::ShaderResource;
-      viewDescription.m_uiByteOffset = 0U;
-      viewDescription.m_uiByteWidth  = (description.m_uiElementByteStride != 0U) ? (description.m_uiSize / description.m_uiElementByteStride) : description.m_uiSize;
+      viewDescription.m_uiByteOffset = 0;
+      viewDescription.m_uiByteWidth  = 0;
 
       pBuffer->m_hDefaultBufferView = CreateBufferView(viewDescription);
     }
@@ -870,15 +856,12 @@ void xiiGALDevice::DestroyBuffer(xiiGALBufferHandle hBuffer)
 
 #undef XII_VERIFY_BUFFER
 
-#define XII_VERIFY_BUFFER_VIEW(expression, ...) \
-  do                                            \
-  {                                             \
-    if (!(expression))                          \
-    {                                           \
-      xiiLog::Error(__VA_ARGS__);               \
-      return xiiGALBufferViewHandle();          \
-    }                                           \
-  } while (false);
+#define XII_VERIFY_BUFFER_VIEW(expression, ...)             \
+  do                                                        \
+  {                                                         \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);              \
+    if (!(expression)) { return xiiGALBufferViewHandle(); } \
+  } while (false)
 
 xiiGALBufferViewHandle xiiGALDevice::CreateBufferView(xiiGALBufferViewCreationDescription& description)
 {
@@ -984,15 +967,12 @@ void xiiGALDevice::DestroyBufferView(xiiGALBufferViewHandle hBufferView)
 
 #undef XII_VERIFY_BUFFER_VIEW
 
-#define XII_VERIFY_TEXTURE(expression, ...) \
-  do                                        \
-  {                                         \
-    if (!(expression))                      \
-    {                                       \
-      xiiLog::Error(__VA_ARGS__);           \
-      return xiiGALTextureHandle();         \
-    }                                       \
-  } while (false);
+#define XII_VERIFY_TEXTURE(expression, ...)              \
+  do                                                     \
+  {                                                      \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);           \
+    if (!(expression)) { return xiiGALTextureHandle(); } \
+  } while (false)
 
 xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData /* = nullptr*/)
 {
@@ -1072,7 +1052,7 @@ xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescr
   if (description.m_Usage == xiiGALResourceUsage::Staging)
   {
     XII_VERIFY_TEXTURE(description.m_BindFlags.IsNoFlagSet(), "Staging textures cannot be bound to any GPU pipeline stage.");
-    XII_VERIFY_TEXTURE(description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips), "Mipmaps cannot be automatically generated for staging textures.");
+    XII_VERIFY_TEXTURE(!description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips), "Mipmaps cannot be automatically generated for staging textures.");
     XII_VERIFY_TEXTURE(description.m_CPUAccessFlags.IsAnyFlagSet(), "Staging textures must specify the CPU access flags.");
     XII_VERIFY_TEXTURE(description.m_CPUAccessFlags.IsStrictlyAnySet(xiiGALCPUAccessFlag::Read) || description.m_CPUAccessFlags.IsStrictlyAnySet(xiiGALCPUAccessFlag::Write), "Staging textures must use exactly one of xiiGALCPUAccessFlags::Read or xiiGALCPUAccessFlags::Write.");
   }
@@ -1207,7 +1187,7 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
       viewDescription.m_Format                    = description.m_Format;
       viewDescription.m_uiMostDetailedMip         = 0U;
       viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
-      viewDescription.m_uiMipLevelCount           = description.m_uiMipLevels;
+      viewDescription.m_uiMipLevelCount           = 0U;
       viewDescription.m_uiArrayOrDepthSlicesCount = description.m_uiArraySizeOrDepth;
       pTexture->m_hDefaultTextureView             = CreateTextureView(viewDescription);
     }
@@ -1225,7 +1205,7 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
       viewDescription.m_Format                    = description.m_Format;
       viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
       viewDescription.m_uiMostDetailedMip         = 0U;
-      viewDescription.m_uiMipLevelCount           = description.m_uiMipLevels;
+      viewDescription.m_uiMipLevelCount           = 0U;
       viewDescription.m_uiArrayOrDepthSlicesCount = description.m_uiArraySizeOrDepth;
 
       pTexture->m_hDefaultRenderTargetView = CreateTextureView(viewDescription);
@@ -1254,15 +1234,12 @@ void xiiGALDevice::DestroyTexture(xiiGALTextureHandle hTexture)
 
 #undef XII_VERIFY_TEXTURE
 
-#define XII_VERIFY_TEXTURE_VIEW(expression, ...) \
-  do                                             \
-  {                                              \
-    if (!(expression))                           \
-    {                                            \
-      xiiLog::Error(__VA_ARGS__);                \
-      return xiiGALTextureViewHandle();          \
-    }                                            \
-  } while (false);
+#define XII_VERIFY_TEXTURE_VIEW(expression, ...)             \
+  do                                                         \
+  {                                                          \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);               \
+    if (!(expression)) { return xiiGALTextureViewHandle(); } \
+  } while (false)
 
 xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreationDescription& description)
 {
@@ -1275,14 +1252,15 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
   const auto& textureDescription = pTexture->GetDescription();
 
   XII_VERIFY_TEXTURE_VIEW(description.m_ViewType > xiiGALTextureViewType::Undefined && description.m_ViewType < xiiGALTextureViewType::ENUN_COUNT, "The texture view type is invalid.");
-  XII_VERIFY_TEXTURE_VIEW(description.m_uiMostDetailedMip < description.m_uiMipLevelCount, "The most detailed mip ({0}) is out of range. The texture has only {1} mip level (s).", description.m_uiMostDetailedMip, description.m_uiMipLevelCount);
+  XII_VERIFY_TEXTURE_VIEW(description.m_uiMostDetailedMip < textureDescription.m_uiMipLevels, "The most detailed mip ({0}) is out of range. The texture has only {1} mip level (s).", description.m_uiMostDetailedMip, textureDescription.m_uiMipLevels);
+  XII_VERIFY_TEXTURE_VIEW((description.m_uiMostDetailedMip + description.m_uiMipLevelCount) <= textureDescription.m_uiMipLevels, "The most detailed mip ({0}) and the number of mip levels in the view ({1}) is out of range. The texture has only {2} mip level (s).", description.m_uiMostDetailedMip, description.m_uiMipLevelCount, textureDescription.m_uiMipLevels);
 
   if (textureDescription.IsArray())
   {
     XII_VERIFY_TEXTURE_VIEW(description.m_uiFirstArrayOrDepthSlice < textureDescription.m_uiArraySizeOrDepth, "The first array slice ({0}) is out of range. The texture has only ({1}) slice (s)", description.m_uiFirstArrayOrDepthSlice, textureDescription.m_uiArraySizeOrDepth);
-    XII_VERIFY_TEXTURE_VIEW(description.m_uiFirstArrayOrDepthSlice + description.m_uiArrayOrDepthSlicesCount <= textureDescription.m_uiArraySizeOrDepth, "The first array slice ({0}) and the number of array slice (s) ({1}) are out of range. The texture has only ({2}) slice (s)", description.m_uiFirstArrayOrDepthSlice, description.m_uiArrayOrDepthSlicesCount, textureDescription.m_uiArraySizeOrDepth);
+    XII_VERIFY_TEXTURE_VIEW((description.m_uiFirstArrayOrDepthSlice + description.m_uiArrayOrDepthSlicesCount) <= textureDescription.m_uiArraySizeOrDepth, "The first array slice ({0}) and the number of array slice (s) ({1}) are out of range. The texture has only ({2}) slice (s)", description.m_uiFirstArrayOrDepthSlice, description.m_uiArrayOrDepthSlicesCount, textureDescription.m_uiArraySizeOrDepth);
   }
-  else if (textureDescription.Is3D())
+  else if (!textureDescription.Is3D())
   {
     XII_VERIFY_TEXTURE_VIEW(description.m_uiFirstArrayOrDepthSlice == 0U, "For non-array texture, the First Array or Depth Slice must be zero.");
   }
@@ -1504,15 +1482,12 @@ void xiiGALDevice::DestroyTextureView(xiiGALTextureViewHandle hTextureView)
 
 #undef XII_VERIFY_TEXTURE_VIEW
 
-#define XII_VERIFY_SAMPLER(expression, ...) \
-  do                                        \
-  {                                         \
-    if (!(expression))                      \
-    {                                       \
-      xiiLog::Error(__VA_ARGS__);           \
-      return xiiGALSamplerHandle();         \
-    }                                       \
-  } while (false);
+#define XII_VERIFY_SAMPLER(expression, ...)              \
+  do                                                     \
+  {                                                      \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);           \
+    if (!(expression)) { return xiiGALSamplerHandle(); } \
+  } while (false)
 
 xiiGALSamplerHandle xiiGALDevice::CreateSampler(const xiiGALSamplerCreationDescription& description)
 {
@@ -1649,15 +1624,12 @@ void xiiGALDevice::DestroyInputLayout(xiiGALInputLayoutHandle hInputLayout)
   }
 }
 
-#define XII_VERIFY_QUERY(expression, ...) \
-  do                                      \
-  {                                       \
-    if (!(expression))                    \
-    {                                     \
-      xiiLog::Error(__VA_ARGS__);         \
-      return xiiGALQueryHandle();         \
-    }                                     \
-  } while (false);
+#define XII_VERIFY_QUERY(expression, ...)              \
+  do                                                   \
+  {                                                    \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);         \
+    if (!(expression)) { return xiiGALQueryHandle(); } \
+  } while (false)
 
 xiiGALQueryHandle xiiGALDevice::CreateQuery(const xiiGALQueryCreationDescription& description)
 {
@@ -1725,15 +1697,12 @@ void xiiGALDevice::DestroyQuery(xiiGALQueryHandle hQuery)
 
 #undef XII_VERIFY_QUERY
 
-#define XII_VERIFY_FENCE(expression, ...) \
-  do                                      \
-  {                                       \
-    if (!(expression))                    \
-    {                                     \
-      xiiLog::Error(__VA_ARGS__);         \
-      return xiiGALFenceHandle();         \
-    }                                     \
-  } while (false);
+#define XII_VERIFY_FENCE(expression, ...)              \
+  do                                                   \
+  {                                                    \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);         \
+    if (!(expression)) { return xiiGALFenceHandle(); } \
+  } while (false)
 
 xiiGALFenceHandle xiiGALDevice::CreateFence(const xiiGALFenceCreationDescription& description)
 {
@@ -1783,15 +1752,12 @@ void xiiGALDevice::DestroyFence(xiiGALFenceHandle hFence)
 
 #undef XII_VERIFY_FENCE
 
-#define XII_VERIFY_RENDER_PASS(expression, ...) \
-  do                                            \
-  {                                             \
-    if (!(expression))                          \
-    {                                           \
-      xiiLog::Error(__VA_ARGS__);               \
-      return xiiGALRenderPassHandle();          \
-    }                                           \
-  } while (false);
+#define XII_VERIFY_RENDER_PASS(expression, ...)             \
+  do                                                        \
+  {                                                         \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);              \
+    if (!(expression)) { return xiiGALRenderPassHandle(); } \
+  } while (false)
 
 xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCreationDescription& description)
 {
@@ -1966,7 +1932,7 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
           // The tile size is only used for Vulkan shading rate and current hardware only supports aspect ratio of 1.
           /// \todo GraphicsFoundation: Use VkPhysicalDeviceFragmentShadingRatePropertiesKHR::maxFragmentShadingRateAttachmentTexelSizeAspectRatio.
           XII_VERIFY_RENDER_PASS(tileSize.width == tileSize.height, "The sub pass at index {0} uses shading rate attachment with tile width {1} that is not equal to the tile height {2}.", uiSubPassIndex, tileSize.width, tileSize.height);
-          XII_VERIFY_RENDER_PASS(xiiMath::IsPowerOf2(tileSize.width) && xiiMath::IsPowerOf2(tileSize.height), "The sub pass at index {0} uses a shading rate attachment with tile sizes {1}x{2} that are not a power of two.", uiSubPassIndex, tileSize.width, tileSize.height)
+          XII_VERIFY_RENDER_PASS(xiiMath::IsPowerOf2(tileSize.width) && xiiMath::IsPowerOf2(tileSize.height), "The sub pass at index {0} uses a shading rate attachment with tile sizes {1}x{2} that are not a power of two.", uiSubPassIndex, tileSize.width, tileSize.height);
         }
       }
     }
@@ -2020,15 +1986,12 @@ void xiiGALDevice::DestroyRenderPass(xiiGALRenderPassHandle hRenderPass)
 
 #undef XII_VERIFY_RENDER_PASS
 
-#define XII_VERIFY_FRAME_BUFFER(expression, ...) \
-  do                                             \
-  {                                              \
-    if (!(expression))                           \
-    {                                            \
-      xiiLog::Error(__VA_ARGS__);                \
-      return xiiGALFramebufferHandle();          \
-    }                                            \
-  } while (false);
+#define XII_VERIFY_FRAME_BUFFER(expression, ...)             \
+  do                                                         \
+  {                                                          \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);               \
+    if (!(expression)) { return xiiGALFramebufferHandle(); } \
+  } while (false)
 
 xiiGALFramebufferHandle xiiGALDevice::CreateFramebuffer(const xiiGALFramebufferCreationDescription& description)
 {
@@ -2272,15 +2235,12 @@ void xiiGALDevice::DestroyFramebuffer(xiiGALFramebufferHandle hFramebuffer)
 
 #undef XII_VERIFY_FRAME_BUFFER
 
-#define XII_VERIFY_BOTTOM_LEVEL_AS(expression, ...) \
-  do                                                \
-  {                                                 \
-    if (!(expression))                              \
-    {                                               \
-      xiiLog::Error(__VA_ARGS__);                   \
-      return xiiGALBottomLevelASHandle();           \
-    }                                               \
-  } while (false);
+#define XII_VERIFY_BOTTOM_LEVEL_AS(expression, ...)            \
+  do                                                           \
+  {                                                            \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);                 \
+    if (!(expression)) { return xiiGALBottomLevelASHandle(); } \
+  } while (false)
 
 xiiGALBottomLevelASHandle xiiGALDevice::CreateBottomLevelAS(const xiiGALBottomLevelASCreationDescription& description)
 {
@@ -2355,15 +2315,12 @@ void xiiGALDevice::DestroyBottomLevelAS(xiiGALBottomLevelASHandle hBottomLevelAS
 
 #undef XII_VERIFY_BOTTOM_LEVEL_AS
 
-#define XII_VERIFY_TOP_LEVEL_AS(expression, ...) \
-  do                                             \
-  {                                              \
-    if (!(expression))                           \
-    {                                            \
-      xiiLog::Error(__VA_ARGS__);                \
-      return xiiGALTopLevelASHandle();           \
-    }                                            \
-  } while (false);
+#define XII_VERIFY_TOP_LEVEL_AS(expression, ...)            \
+  do                                                        \
+  {                                                         \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);              \
+    if (!(expression)) { return xiiGALTopLevelASHandle(); } \
+  } while (false)
 
 xiiGALTopLevelASHandle xiiGALDevice::CreateTopLevelAS(const xiiGALTopLevelASCreationDescription& description)
 {
@@ -2414,6 +2371,93 @@ void xiiGALDevice::WaitIdle()
 {
   WaitIdlePlatform();
 }
+
+#define XII_VERIFY_PROXY_TEXTURE(expression, ...)        \
+  do                                                     \
+  {                                                      \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);           \
+    if (!(expression)) { return xiiGALTextureHandle(); } \
+  } while (false)
+
+xiiGALTextureHandle xiiGALDevice::CreateProxyTexture(xiiGALTextureHandle hParentTexture, xiiUInt32 uiSlice)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALTexture* pParentTexture = nullptr;
+  if (!hParentTexture.IsInvalidated())
+  {
+    pParentTexture = Get<TextureTable, xiiGALTexture>(hParentTexture, m_Textures);
+  }
+
+  XII_VERIFY_PROXY_TEXTURE(pParentTexture != nullptr, "No valid texture handle given for proxy texture creation!");
+
+  const auto& parentDescription = pParentTexture->GetDescription();
+  XII_VERIFY_PROXY_TEXTURE(!parentDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Proxy), "A proxy texture of another proxy texture cannot be creaeted.");
+  XII_VERIFY_PROXY_TEXTURE(parentDescription.m_Type == xiiGALResourceDimension::Texture2DArray || parentDescription.m_Type == xiiGALResourceDimension::TextureCube, "Proxy textures can only be created for array texture types.");
+
+  xiiGALProxyTexture* pProxyTexture = XII_NEW(&m_Allocator, xiiGALProxyTexture, *pParentTexture);
+  xiiGALTextureHandle hProxyTexture(m_Textures.Insert(pProxyTexture));
+
+  const auto& description = pProxyTexture->GetDescription();
+
+  // Create default resource view.
+  if (description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+  {
+    xiiGALTextureViewCreationDescription viewDescription;
+    viewDescription.m_hTexture                  = hParentTexture;
+    viewDescription.m_ViewType                  = xiiGALTextureViewType::ShaderResource;
+    viewDescription.m_ResourceDimension         = xiiGALResourceDimension::Texture2D;
+    viewDescription.m_Format                    = description.m_Format;
+    viewDescription.m_uiMostDetailedMip         = 0U;
+    viewDescription.m_uiFirstArrayOrDepthSlice  = uiSlice;
+    viewDescription.m_uiMipLevelCount           = 0U;
+    viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
+
+    pProxyTexture->m_hDefaultTextureView = CreateTextureView(viewDescription);
+  }
+
+  // Create default render target or depth stencil view.
+  if (description.m_BindFlags.IsAnySet(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil))
+  {
+    auto& formatProperties = GetTextureFormatProperties(description.m_Format);
+
+    xiiEnum<xiiGALTextureViewType> viewType = formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget;
+
+    xiiGALTextureViewCreationDescription viewDescription;
+    viewDescription.m_hTexture                  = hParentTexture;
+    viewDescription.m_ViewType                  = viewType;
+    viewDescription.m_ResourceDimension         = xiiGALResourceDimension::Texture2D;
+    viewDescription.m_Format                    = description.m_Format;
+    viewDescription.m_uiMostDetailedMip         = 0U;
+    viewDescription.m_uiFirstArrayOrDepthSlice  = uiSlice;
+    viewDescription.m_uiMipLevelCount           = 0U;
+    viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
+
+    pProxyTexture->m_hDefaultRenderTargetView = CreateTextureView(viewDescription);
+  }
+
+  return hProxyTexture;
+}
+
+void xiiGALDevice::DestroyProxyTexture(xiiGALTextureHandle hProxyTexture)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALTexture* pTexture = nullptr;
+
+  if (m_Textures.TryGetValue(hProxyTexture, pTexture))
+  {
+    XII_ASSERT_DEV(pTexture->GetDescription().m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Proxy), "The given texture is not a proxy texture.");
+
+    AddDeadObject(GALObjectType::Texture, hProxyTexture);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyProxyTexture called on an invalid handle (double free?).");
+  }
+}
+
+#undef XII_VERIFY_PROXY_TEXTURE
 
 const xiiGALTextureFormatDescription& xiiGALDevice::GetTextureFormatProperties(xiiEnum<xiiGALTextureFormat> format) const
 {

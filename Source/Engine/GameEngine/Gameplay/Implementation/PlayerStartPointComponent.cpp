@@ -104,12 +104,12 @@ void xiiPlayerStartPointComponent::SetParameter(xiiStringView sKey, const xiiVar
 
 void xiiPlayerStartPointComponent::RemoveParameter(xiiStringView sKey)
 {
-  m_Parameters.RemoveAndCopy(xiiTempHashedString(sKey));
+  m_Parameters.RemoveAndCopy(sKey);
 }
 
 bool xiiPlayerStartPointComponent::GetParameter(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Parameters.Find(xiiTempHashedString(sKey));
+  xiiUInt32 it = m_Parameters.Find(sKey);
 
   if (it == xiiInvalidIndex)
     return false;

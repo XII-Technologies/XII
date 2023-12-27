@@ -63,8 +63,7 @@ xiiResult xiiRenderTargetActivatorComponent::GetLocalBounds(xiiBoundingBoxSphere
 
 void xiiRenderTargetActivatorComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) const
 {
-  // only add render target views from main views
-  // otherwise every shadow casting light source would activate a render target
+  // only add render target views from main views otherwise every shadow casting light source would activate a render target
   if (msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::MainView && msg.m_pView->GetCameraUsageHint() != xiiCameraUsageHint::EditorView)
     return;
 

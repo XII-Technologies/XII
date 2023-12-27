@@ -1,0 +1,53 @@
+# Asset Types
+
+Animation Controller;Animation Controller
+
+# Component Types
+
+xiiAnimationControllerComponent;Animation Controller;;https://xiiengine.net/pages/docs/animation/skeletal-animation/animation-graphs/animation-controller-component.html
+
+# Properties
+
+xiiBoneWeightsAnimNode;Bone Weights
+
+xiiControllerInputAnimNode;Controller Input
+
+xiiCompareNumberAnimNode;Compare Number
+
+xiiLogicNotAnimNode;NOT
+xiiLogicAndAnimNode;AND
+xiiLogicOrAnimNode;OR
+xiiLogicEventAndAnimNode;Event AND
+
+xiiAnimClip2D;Clip 2D
+
+xiiGetBlackboardNumberAnimNode;Blackboard: Get Number
+xiiSetBlackboardNumberAnimNode;Blackboard: Set Number
+xiiCompareBlackboardNumberAnimNode;Blackboard: Check Number
+xiiCheckBlackboardBoolAnimNode;Blackboard: Check Bool
+xiiGetBlackboardBoolAnimNode;Blackboard: Get Bool
+xiiSetBlackboardBoolAnimNode;Blackboard: Set Bool
+xiiOnBlackboardValueChangedAnimNode;Blackboard: On Value Changed
+
+xiiLogInfoAnimNode;Log Info
+xiiLogErrorAnimNode;Log Error
+
+xiiSendEventAnimNode;Send Event
+
+xiiMathExpressionAnimNode;Expression
+
+xiiLerpPosesAnimNode;Lerp Poses
+
+xiiSampleFrameAnimNode;Sample Frame
+xiiSampleAnimClipAnimNode; Sample Clip
+xiiPoseResultAnimNode; Pose Result
+xiiSwitchPoseAnimNode; Switch Pose
+xiiSampleBlendSpace1DAnimNode;Sample BlendSpace 1D
+xiiSampleBlendSpace2DAnimNode;Sample BlendSpace 2D
+xiiSwitchBoneWeightsAnimNode;Bone Weights Switch
+xiiSampleAnimClipSequenceAnimNode;Sample Clip Sequence
+xiiRestPoseAnimNode;Rest Pose
+
+xiiBoolToNumberAnimNode;Bool To Number
+
+xiiRootRotationAnimNode;Root Rotation

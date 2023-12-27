@@ -51,11 +51,12 @@ bool xiiSourcePass::GetRenderTargetDescriptions(const xiiView& view, const xiiAr
 
   xiiGALTextureCreationDescription desc;
   desc.m_Type               = m_SampleCount > xiiGALSampleCount::OneSample ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
+  desc.m_Format             = m_Format;
   desc.m_Size.width         = uiWidth;
   desc.m_Size.height        = uiHeight;
   desc.m_uiSampleCount      = m_SampleCount;
   desc.m_uiArraySizeOrDepth = view.GetCamera()->IsStereoscopic() ? 2 : 1;
-  desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
+  desc.m_BindFlags          = ((!xiiGALTextureFormat::IsDepthFormat(m_Format) ? xiiGALBindFlags::RenderTarget : xiiGALBindFlags::DepthStencil) | xiiGALBindFlags::ShaderResource);
 
   outputs[m_PinOutput.m_uiOutputIndex] = desc;
 

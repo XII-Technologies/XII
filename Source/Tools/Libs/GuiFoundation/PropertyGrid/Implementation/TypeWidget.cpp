@@ -408,8 +408,7 @@ void xiiQtTypeWidget::UpdatePropertyMetaState()
     it.Value().m_pWidget->GetProperty();
     auto itData = PropertyStates.Find(it.Key());
 
-    const bool bReadOnly = (it.Value().m_pWidget->GetProperty()->GetFlags().IsSet(xiiPropertyFlags::ReadOnly)) ||
-      (it.Value().m_pWidget->GetProperty()->GetAttributeByType<xiiReadOnlyAttribute>() != nullptr);
+    const bool                     bReadOnly       = (it.Value().m_pWidget->GetProperty()->GetFlags().IsSet(xiiPropertyFlags::ReadOnly)) || (it.Value().m_pWidget->GetProperty()->GetAttributeByType<xiiReadOnlyAttribute>() != nullptr);
     const bool                     bIsDefaultValue = defaultState.IsDefaultValue(it.Key());
     xiiPropertyUiState::Visibility state           = xiiPropertyUiState::Default;
     if (itData.IsValid())

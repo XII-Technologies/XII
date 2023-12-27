@@ -898,6 +898,16 @@ void xiiAbstractObjectGraph::RemapVariant(xiiVariant& value, const xiiHashTable<
       value = xiiConversionUtils::ToString(*found, tmp).GetData();
     }
   }
+  else if (value.IsA<xiiStringView>() && xiiConversionUtils::IsStringUuid(value.Get<xiiStringView>()))
+  {
+    const xiiUuid guid = xiiConversionUtils::ConvertStringToUuid(value.Get<xiiStringView>());
+
+    // if we find the guid in our map, replace it by the new guid
+    if (auto* found = guidMap.GetValue(guid))
+    {
+      value = xiiConversionUtils::ToString(*found, tmp).GetData();
+    }
+  }
   // Arrays may be of uuids
   else if (value.IsA<xiiVariantArray>())
   {

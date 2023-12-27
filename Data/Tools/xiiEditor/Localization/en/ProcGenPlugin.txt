@@ -1,0 +1,30 @@
+# Asset Types
+
+ProcGen Graph;ProcGen Graph
+
+# Component Types
+
+xiiProcPlacementComponent;Procedural Placement;;http://xiiengine.net/pages/docs/terrain/procedural/procgen-placement-component.html
+xiiProcVertexColorComponent;Procedural Vertex Color;;http://xiiengine.net/pages/docs/terrain/procedural/procgen-vertex-color-component.html
+xiiProcVolumeSphereComponent;Procedural Volume Sphere;;http://xiiengine.net/pages/docs/terrain/procedural/procgen-volume-sphere-component.html
+xiiProcVolumeBoxComponent;Procedural Volume Box;;http://xiiengine.net/pages/docs/terrain/procedural/procgen-volume-box-component.html
+xiiProcVolumeImageComponent;Procedural Volume Image;;http://xiiengine.net/pages/docs/terrain/procedural/procgen-volume-image-component.html
+
+# Enums
+
+xiiProcVertexColorChannelMapping;Vertex Color Channel Mapping
+
+xiiProcVolumeImageMode::ChannelR;Red Channel
+xiiProcVolumeImageMode::ChannelG;Green Channel
+xiiProcVolumeImageMode::ChannelB;Blue Channel
+xiiProcVolumeImageMode::ChannelA;Alpha Channel
+
+# UI
+
+ProcGen.DumpAST;Dump AST
+ProcGen.DumpDisassembly;Dump Disassembly
+
+# Nodes
+
+xiiProcGen_ApplyVolumes::ImageVolumeMode;Mode
+xiiProcGen_ApplyVolumes::RefColor;Reference Color

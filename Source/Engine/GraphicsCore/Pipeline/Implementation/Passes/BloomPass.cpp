@@ -298,6 +298,4 @@ void xiiBloomPass::UpdateConstantBuffer(xiiVec2 pixelSize, const xiiColor& tintC
   constants->TintColor = tintColor;
 }
 
-
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_BloomPass);

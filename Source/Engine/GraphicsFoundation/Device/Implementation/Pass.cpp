@@ -286,6 +286,11 @@ void xiiGALPass::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderi
         xiiGALTexture*                          pDepthTexture      = m_Device.GetTextureView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget())->GetTexture();
         const xiiGALTextureCreationDescription& textureDescription = pDepthTexture->GetDescription();
 
+        xiiVec3U32 size                                 = GetMipLevelSize(m_Device.GetTextureView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget())->GetDescription().m_uiMostDetailedMip, textureDescription);
+        frameBufferDescription.m_FramebufferSize.width  = size.x;
+        frameBufferDescription.m_FramebufferSize.height = size.y;
+        frameBufferDescription.m_uiArraySliceCount      = textureDescription.m_uiArraySizeOrDepth;
+
         frameBufferDescription.m_Attachments.PushBack(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget());
       }
 
@@ -294,7 +299,21 @@ void xiiGALPass::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderi
         xiiGALTexture*                          pColourTexture     = m_Device.GetTextureView(renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i)))->GetTexture();
         const xiiGALTextureCreationDescription& textureDescription = pColourTexture->GetDescription();
 
+        xiiVec3U32 size                                 = GetMipLevelSize(m_Device.GetTextureView(renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i)))->GetDescription().m_uiMostDetailedMip, textureDescription);
+        frameBufferDescription.m_FramebufferSize.width  = size.x;
+        frameBufferDescription.m_FramebufferSize.height = size.y;
+        frameBufferDescription.m_uiArraySliceCount      = textureDescription.m_uiArraySizeOrDepth;
+
         frameBufferDescription.m_Attachments.PushBack(renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i)));
+      }
+
+      // In some places rendering is started with an empty xiiGALRenderTargetSetup just to be able to run GPU commands.
+      // An empty size is invalid in both D3D12 and Vulkan so we just set it so (1, 1).
+      if (xiiVec2U32(frameBufferDescription.m_FramebufferSize.width, frameBufferDescription.m_FramebufferSize.height) == xiiVec2U32(0, 0))
+      {
+        frameBufferDescription.m_FramebufferSize.width  = 1U;
+        frameBufferDescription.m_FramebufferSize.height = 1U;
+        frameBufferDescription.m_uiArraySliceCount      = 1U;
       }
 
       frameBufferInfo.hRenderPass  = hRenderPass;

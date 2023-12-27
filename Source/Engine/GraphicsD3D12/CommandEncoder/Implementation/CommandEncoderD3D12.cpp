@@ -228,6 +228,8 @@ void xiiGALCommandEncoderD3D12::ClearUnorderedAccessViewPlatform(xiiGALTextureVi
 
 void xiiGALCommandEncoderD3D12::CopyBufferPlatform(xiiGALBuffer* pDestination, xiiGALBuffer* pSource)
 {
+  EndRenderPass();
+
   auto pSourceBufferD3D12      = static_cast<xiiGALBufferD3D12*>(pSource);
   auto pDestinationBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pDestination);
 
@@ -236,6 +238,8 @@ void xiiGALCommandEncoderD3D12::CopyBufferPlatform(xiiGALBuffer* pDestination, x
 
 void xiiGALCommandEncoderD3D12::CopyBufferRegionPlatform(xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, xiiGALBuffer* pSource, xiiUInt32 uiSourceOffset, xiiUInt32 uiByteCount)
 {
+  EndRenderPass();
+
   auto pSourceBufferD3D12      = static_cast<xiiGALBufferD3D12*>(pSource);
   auto pDestinationBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pDestination);
 
@@ -244,12 +248,12 @@ void xiiGALCommandEncoderD3D12::CopyBufferRegionPlatform(xiiGALBuffer* pDestinat
 
 void xiiGALCommandEncoderD3D12::UpdateBufferPlatform(xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
 {
+  EndRenderPass();
+
   XII_CHECK_ALIGNMENT_16(sourceData.GetPtr());
 
   auto        pDestinationBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pDestination);
   const auto& bufferDescription       = pDestinationBufferD3D12->GetDescription();
-
-  EndRenderPass();
 
   if (bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
   {
@@ -287,6 +291,8 @@ void xiiGALCommandEncoderD3D12::UpdateBufferPlatform(xiiGALBuffer* pDestination,
 
 void xiiGALCommandEncoderD3D12::CopyTexturePlatform(xiiGALTexture* pDestination, xiiGALTexture* pSource)
 {
+  EndRenderPass();
+
   auto pSourceTexture      = static_cast<xiiGALTextureD3D12*>(pSource);
   auto pDestinationTexture = static_cast<xiiGALTextureD3D12*>(pDestination);
 
@@ -301,6 +307,8 @@ void xiiGALCommandEncoderD3D12::CopyTexturePlatform(xiiGALTexture* pDestination,
 
 void xiiGALCommandEncoderD3D12::CopyTextureRegionPlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxu32& box)
 {
+  EndRenderPass();
+
   auto pSourceTextureD3D12      = static_cast<xiiGALTextureD3D12*>(pSource);
   auto pDestinationTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDestination);
 
@@ -333,6 +341,8 @@ void xiiGALCommandEncoderD3D12::CopyTextureRegionPlatform(xiiGALTexture* pDestin
 
 void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
 {
+  EndRenderPass();
+
   auto pDestinationTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDestination);
 
   xiiUInt32 uiWidth  = xiiMath::Max(destinationBox.m_vMax.x - destinationBox.m_vMin.x, 1U);
@@ -340,13 +350,12 @@ void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestinatio
   xiiUInt32 uiDepth  = xiiMath::Max(destinationBox.m_vMax.z - destinationBox.m_vMin.z, 1U);
 
   const auto& textureDescription = pDestinationTextureD3D12->GetDescription();
-  const auto& formatProperties   = m_GALDeviceD3D12.GetTextureFormatProperties(textureDescription.m_Format);
 
   switch (textureDescription.m_Usage)
   {
     case xiiGALResourceUsage::Default:
     {
-      xiiUInt32 uiRowPitch   = uiWidth * formatProperties.m_uiComponentSize;
+      xiiUInt32 uiRowPitch   = uiWidth * xiiGALTextureFormat::GetBitsPerElement(textureDescription.m_Format) / 8;
       xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
 
       XII_ASSERT_DEV(sourceData.m_uiStride == uiRowPitch, "Invalid row pitch. Expected {0} got {1}.", uiRowPitch, sourceData.m_uiStride);
@@ -370,7 +379,7 @@ void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestinatio
     break;
     case xiiGALResourceUsage::Dynamic:
     {
-      xiiUInt32 uiRowPitch   = uiWidth * formatProperties.m_uiComponentSize;
+      xiiUInt32 uiRowPitch   = uiWidth * xiiGALTextureFormat::GetBitsPerElement(textureDescription.m_Format) / 8;
       xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
 
       XII_ASSERT_DEV(sourceData.m_uiStride == uiRowPitch, "Invalid row pitch. Expected {0} got {1}.", uiRowPitch, sourceData.m_uiStride);
@@ -426,34 +435,38 @@ void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestinatio
 
 void xiiGALCommandEncoderD3D12::ResolveTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource)
 {
+  EndRenderPass();
+
   auto pSourceTextureD3D12      = static_cast<xiiGALTextureD3D12*>(pSource);
   auto pDestinationTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDestination);
 
   const auto& sourceTextureDescription = pSourceTextureD3D12->GetDescription();
 
-  Diligent::ResolveTextureSubresourceAttribs ResolveTexAttribs;
-  ResolveTexAttribs.Format = xiiDiligentTypeConversions::GetTextureFormat(sourceTextureDescription.m_Format);
+  Diligent::ResolveTextureSubresourceAttribs resolveTextureDescription;
+  resolveTextureDescription.Format = xiiDiligentTypeConversions::GetTextureFormat(sourceTextureDescription.m_Format);
 
-  ResolveTexAttribs.SrcMipLevel              = sourceSubResource.m_uiMipLevel;
-  ResolveTexAttribs.SrcSlice                 = sourceSubResource.m_uiArraySlice;
-  ResolveTexAttribs.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  resolveTextureDescription.SrcMipLevel              = sourceSubResource.m_uiMipLevel;
+  resolveTextureDescription.SrcSlice                 = sourceSubResource.m_uiArraySlice;
+  resolveTextureDescription.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
-  ResolveTexAttribs.DstMipLevel              = destinationSubResource.m_uiMipLevel;
-  ResolveTexAttribs.DstSlice                 = destinationSubResource.m_uiArraySlice;
-  ResolveTexAttribs.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  resolveTextureDescription.DstMipLevel              = destinationSubResource.m_uiMipLevel;
+  resolveTextureDescription.DstSlice                 = destinationSubResource.m_uiArraySlice;
+  resolveTextureDescription.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
-  m_pContext->ResolveTextureSubresource(pSourceTextureD3D12->GetTexture(), pDestinationTextureD3D12->GetTexture(), ResolveTexAttribs);
+  m_pContext->ResolveTextureSubresource(pSourceTextureD3D12->GetTexture(), pDestinationTextureD3D12->GetTexture(), resolveTextureDescription);
 }
 
 void xiiGALCommandEncoderD3D12::ReadbackTexturePlatform(xiiGALTexture* pTexture, xiiGALTexture* pStagingTexture)
 {
+  EndRenderPass();
+
   auto pTextureD3D12        = static_cast<xiiGALTextureD3D12*>(pTexture);
   auto pStagingTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pTexture);
 
   const auto& textureDescription = pTextureD3D12->GetDescription();
 
   // MSAA textures (e.g. backbuffers) need to be converted to non MSAA versions
-  const bool bMSAASourceTexture = textureDescription.m_uiSampleCount != 0U;
+  const bool bMSAASourceTexture = textureDescription.m_uiSampleCount > 1;
 
   if (bMSAASourceTexture)
   {
@@ -495,6 +508,8 @@ xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel)
 
 void xiiGALCommandEncoderD3D12::CopyTextureReadbackResultPlatform(xiiGALTexture* pTexture, xiiGALTexture* pStagingTexture, xiiArrayPtr<xiiGALTextureMipLevelData> mipLevelData, xiiArrayPtr<xiiGALTextureSubResourceData> targetData)
 {
+  EndRenderPass();
+
   auto pTextureD3D12        = static_cast<xiiGALTextureD3D12*>(pTexture);
   auto pStagingTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pStagingTexture);
 
@@ -509,7 +524,7 @@ void xiiGALCommandEncoderD3D12::CopyTextureReadbackResultPlatform(xiiGALTexture*
     const xiiGALTextureSubResourceData& textureData     = targetData[i];
 
     Diligent::MappedTextureSubresource mappedSubResource = {};
-    m_pContext->MapTextureSubresource(pTextureD3D12->GetTexture(), subResourceData.m_uiMipLevel, subResourceData.m_uiArraySlice, Diligent::MAP_READ, Diligent::MAP_FLAG_DO_NOT_WAIT, nullptr, mappedSubResource);
+    m_pContext->MapTextureSubresource(pStagingTextureD3D12->GetTexture(), subResourceData.m_uiMipLevel, subResourceData.m_uiArraySlice, Diligent::MAP_READ, Diligent::MAP_FLAG_DO_NOT_WAIT, nullptr, mappedSubResource);
 
     xiiUInt64 uiWaitValue = ++m_uiSynchronizationFenceCompletedValue;
 
@@ -519,12 +534,10 @@ void xiiGALCommandEncoderD3D12::CopyTextureReadbackResultPlatform(xiiGALTexture*
 
     if (mappedSubResource.pData)
     {
-      const xiiGALTextureFormatDescription& formatProperties = m_GALDeviceD3D12.GetTextureFormatProperties(textureDescription.m_Format);
-
       /// \todo Support depth pitch.
       if (mappedSubResource.Stride == textureData.m_uiStride)
       {
-        const xiiUInt32 uiMemorySize = formatProperties.m_uiComponentSize * GetMipSize(textureDescription.m_Size.width, subResourceData.m_uiMipLevel) * GetMipSize(textureDescription.m_Size.width, subResourceData.m_uiMipLevel);
+        const xiiUInt32 uiMemorySize = xiiGALTextureFormat::GetBitsPerElement(pTextureD3D12->GetDescription().m_Format) * GetMipSize(pTextureD3D12->GetDescription().m_Size.width, subResourceData.m_uiMipLevel) * GetMipSize(pTextureD3D12->GetDescription().m_Size.height, subResourceData.m_uiMipLevel) / 8;
 
         memcpy(textureData.m_pData, mappedSubResource.pData, uiMemorySize);
       }
@@ -539,11 +552,11 @@ void xiiGALCommandEncoderD3D12::CopyTextureReadbackResultPlatform(xiiGALTexture*
           const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.pData, y * mappedSubResource.Stride);
           void*       pDestination = xiiMemoryUtils::AddByteOffset(textureData.m_pData, y * textureData.m_uiStride);
 
-          memcpy(pDestination, pSource, formatProperties.m_uiComponentSize * GetMipSize(textureDescription.m_Size.width, subResourceData.m_uiMipLevel));
+          memcpy(pDestination, pSource, xiiGALTextureFormat::GetBitsPerElement(pTextureD3D12->GetDescription().m_Format) * GetMipSize(pTextureD3D12->GetDescription().m_Size.width, subResourceData.m_uiMipLevel) / 8);
         }
       }
 
-      m_pContext->UnmapTextureSubresource(pTextureD3D12->GetTexture(), subResourceData.m_uiMipLevel, subResourceData.m_uiArraySlice);
+      m_pContext->UnmapTextureSubresource(pStagingTextureD3D12->GetTexture(), subResourceData.m_uiMipLevel, subResourceData.m_uiArraySlice);
     }
     else
     {
@@ -554,7 +567,7 @@ void xiiGALCommandEncoderD3D12::CopyTextureReadbackResultPlatform(xiiGALTexture*
 
 void xiiGALCommandEncoderD3D12::GenerateMipMapsPlatform(xiiGALTextureView* pTextureView)
 {
-  /// \todo End render pass.
+  EndRenderPass();
 
   m_pContext->GenerateMips(static_cast<xiiGALTextureViewD3D12*>(pTextureView)->GetTextureView());
 }
@@ -585,6 +598,8 @@ void xiiGALCommandEncoderD3D12::InsertEventMarkerPlatform(xiiStringView sMarker,
 
 void xiiGALCommandEncoderD3D12::ClearRenderTargetPlatform(xiiGALTextureView* pTextureView, const xiiColor& clearColor)
 {
+  EndRenderPass();
+
   auto pTextureViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(pTextureView);
 
   m_pContext->ClearRenderTarget(pTextureViewD3D12->GetTextureView(), clearColor.GetData(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
@@ -592,6 +607,8 @@ void xiiGALCommandEncoderD3D12::ClearRenderTargetPlatform(xiiGALTextureView* pTe
 
 void xiiGALCommandEncoderD3D12::ClearDepthStencilPlatform(xiiGALTextureView* pTextureView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
+  EndRenderPass();
+
   auto pTextureViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(pTextureView);
 
   Diligent::CLEAR_DEPTH_STENCIL_FLAGS clearFlags = {};

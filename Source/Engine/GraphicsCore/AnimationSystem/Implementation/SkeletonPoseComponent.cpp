@@ -200,7 +200,7 @@ void xiiSkeletonPoseComponent::SetBone(xiiStringView sKey, const xiiVariant& val
 
 void xiiSkeletonPoseComponent::RemoveBone(xiiStringView sKey)
 {
-  if (m_Bones.RemoveAndCopy(xiiTempHashedString(sKey)))
+  if (m_Bones.RemoveAndCopy(sKey))
   {
 // TODO
 #if 0
@@ -217,7 +217,7 @@ void xiiSkeletonPoseComponent::RemoveBone(xiiStringView sKey)
 
 bool xiiSkeletonPoseComponent::GetBone(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Bones.Find(xiiTempHashedString(sKey));
+  xiiUInt32 it = m_Bones.Find(sKey);
 
   if (it == xiiInvalidIndex)
     return false;

@@ -35,7 +35,10 @@ void xiiWindowOutputTargetGAL::CreateSwapchain(const xiiGALSwapChainCreationDesc
   if (bSwapChainExisted)
   {
     auto* pSwapchain = pDevice->GetSwapChain(m_hSwapChain);
-    pSwapchain->SetPresentMode(xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate);
+
+    m_PresentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
+    pSwapchain->SetPresentMode(m_PresentMode);
+
     if (bSwapChainExisted && m_OnSwapChainChanged.IsValid())
     {
       // The swapchain may have a different size than the window advertised, e.g. if the window has been resized further in the meantime.
@@ -47,7 +50,8 @@ void xiiWindowOutputTargetGAL::CreateSwapchain(const xiiGALSwapChainCreationDesc
   {
     m_hSwapChain = pDevice->CreateSwapChain(m_CurrentDesc);
 
-    pDevice->GetSwapChain(m_hSwapChain)->SetPresentMode(xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate);
+    m_PresentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
+    pDevice->GetSwapChain(m_hSwapChain)->SetPresentMode(m_PresentMode);
   }
 }
 
@@ -56,9 +60,11 @@ void xiiWindowOutputTargetGAL::Present(bool bEnableVSync)
   // Only re-create the swapchain if somebody is listening to changes.
   if (m_OnSwapChainChanged.IsValid())
   {
+    xiiEnum<xiiGALPresentMode> presentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
+
     // The actual present call is done by setting the swapchain to an xiiView.
     // This call is only used to recreate the swapchain at a safe location.
-    if (m_Size != m_CurrentDesc.m_pWindow->GetClientAreaSize())
+    if (m_Size != m_CurrentDesc.m_pWindow->GetClientAreaSize() || m_PresentMode != presentMode)
     {
       CreateSwapchain(m_CurrentDesc);
     }

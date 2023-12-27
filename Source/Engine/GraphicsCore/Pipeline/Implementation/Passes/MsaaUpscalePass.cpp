@@ -100,26 +100,4 @@ xiiResult xiiMsaaUpscalePass::Deserialize(xiiStreamReader& inout_stream)
   return XII_SUCCESS;
 }
 
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-#include <Foundation/Serialization/AbstractObjectGraph.h>
-#include <Foundation/Serialization/GraphPatch.h>
-
-class xiiMsaaUpscalePassPatch_1_2 : public xiiGraphPatch
-{
-public:
-  xiiMsaaUpscalePassPatch_1_2() :
-    xiiGraphPatch("xiiMsaaUpscalePass", 2)
-  {
-  }
-
-  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override { pNode->RenameProperty("MSAA Mode", "MSAA_Mode"); }
-};
-
-xiiMsaaUpscalePassPatch_1_2 g_xiiMsaaUpscalePassPatch_1_2;
-
-
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_MsaaUpscalePass);

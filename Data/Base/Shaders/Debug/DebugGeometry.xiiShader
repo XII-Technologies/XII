@@ -8,13 +8,13 @@ TOPOLOGY
 
 [RENDERSTATE]
 
-BlendingEnabled0 = true
-DestBlend0 = Blend_InvSrcAlpha
-SourceBlend0 = Blend_SrcAlpha
-DestBlendAlpha0 = Blend_InvSrcAlpha
+BlendEnable0 = true
+DestinationBlend0 = BlendFactor_InverseSourceAlpha
+SourceBlend0 = BlendFactor_SourceAlpha
+DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 
-DepthTest = true
-DepthWrite = true
+DepthEnable = true
+DepthWriteEnable = true
 
 [VERTEXSHADER]
 
@@ -48,7 +48,7 @@ VS_OUT main(VS_IN_POS_ONLY Input)
   #else
     float4x4 worldMatrix = TransformToMatrix(boxData[Input.InstanceID].transform);
   #endif
-  
+
   float4 worldPos = mul(worldMatrix, float4(Input.Position, 1.0f));
 
   VS_OUT RetVal;
@@ -58,7 +58,7 @@ VS_OUT main(VS_IN_POS_ONLY Input)
   #else
     RetVal.Color0 = boxData[Input.InstanceID].color;
   #endif
-  
+
   RetVal.InstanceID = Input.InstanceID;
 
   return RetVal;

@@ -41,58 +41,83 @@ static xiiQtPropertyWidget* StandardTypeCreator(const xiiRTTI* pRtti)
       return new xiiQtPropertyEditorDoubleSpinboxWidget(1);
 
     case xiiVariant::Type::Vector2:
+    case xiiVariant::Type::Vector2d:
       return new xiiQtPropertyEditorDoubleSpinboxWidget(2);
 
     case xiiVariant::Type::Vector3:
+    case xiiVariant::Type::Vector3d:
       return new xiiQtPropertyEditorDoubleSpinboxWidget(3);
 
     case xiiVariant::Type::Vector4:
+    case xiiVariant::Type::Vector4d:
       return new xiiQtPropertyEditorDoubleSpinboxWidget(4);
 
     case xiiVariant::Type::Vector2I:
-      return new xiiQtPropertyEditorIntSpinboxWidget(2, -2147483645, 2147483645);
+      return new xiiQtPropertyEditorIntSpinboxWidget(2, xiiMath::MinValue<xiiInt32>(), xiiMath::MaxValue<xiiInt32>());
 
     case xiiVariant::Type::Vector3I:
-      return new xiiQtPropertyEditorIntSpinboxWidget(3, -2147483645, 2147483645);
+      return new xiiQtPropertyEditorIntSpinboxWidget(3, xiiMath::MinValue<xiiInt32>(), xiiMath::MaxValue<xiiInt32>());
 
     case xiiVariant::Type::Vector4I:
-      return new xiiQtPropertyEditorIntSpinboxWidget(4, -2147483645, 2147483645);
+      return new xiiQtPropertyEditorIntSpinboxWidget(4, xiiMath::MinValue<xiiInt32>(), xiiMath::MaxValue<xiiInt32>());
 
     case xiiVariant::Type::Vector2U:
-      return new xiiQtPropertyEditorIntSpinboxWidget(2, 0, 2147483645);
+      return new xiiQtPropertyEditorIntSpinboxWidget(2, 0LL, xiiMath::MaxValue<xiiUInt32>());
 
     case xiiVariant::Type::Vector3U:
-      return new xiiQtPropertyEditorIntSpinboxWidget(3, 0, 2147483645);
+      return new xiiQtPropertyEditorIntSpinboxWidget(3, 0LL, xiiMath::MaxValue<xiiUInt32>());
 
     case xiiVariant::Type::Vector4U:
-      return new xiiQtPropertyEditorIntSpinboxWidget(4, 0, 2147483645);
+      return new xiiQtPropertyEditorIntSpinboxWidget(4, 0LL, xiiMath::MaxValue<xiiUInt32>());
+
+    case xiiVariant::Type::Vector2I64:
+      return new xiiQtPropertyEditorIntSpinboxWidget(2, xiiMath::MinValue<xiiInt64>(), xiiMath::MaxValue<xiiInt64>());
+
+    case xiiVariant::Type::Vector3I64:
+      return new xiiQtPropertyEditorIntSpinboxWidget(3, xiiMath::MinValue<xiiInt64>(), xiiMath::MaxValue<xiiInt64>());
+
+    case xiiVariant::Type::Vector4I64:
+      return new xiiQtPropertyEditorIntSpinboxWidget(4, xiiMath::MinValue<xiiInt64>(), xiiMath::MaxValue<xiiInt64>());
+
+    case xiiVariant::Type::Vector2U64:
+      return new xiiQtPropertyEditorIntSpinboxWidget(2, 0LL, xiiMath::MaxValue<xiiUInt64>());
+
+    case xiiVariant::Type::Vector3U64:
+      return new xiiQtPropertyEditorIntSpinboxWidget(3, 0LL, xiiMath::MaxValue<xiiUInt64>());
+
+    case xiiVariant::Type::Vector4U64:
+      return new xiiQtPropertyEditorIntSpinboxWidget(4, 0LL, xiiMath::MaxValue<xiiUInt64>());
 
     case xiiVariant::Type::Quaternion:
+    case xiiVariant::Type::Quaterniond:
       return new xiiQtPropertyEditorQuaternionWidget();
 
     case xiiVariant::Type::Int8:
-      return new xiiQtPropertyEditorIntSpinboxWidget(1, -127, 127);
+      return new xiiQtPropertyEditorIntSpinboxWidget(1, xiiMath::MinValue<xiiInt8>(), xiiMath::MaxValue<xiiInt8>());
 
     case xiiVariant::Type::UInt8:
-      return new xiiQtPropertyEditorIntSpinboxWidget(1, 0, 255);
+      return new xiiQtPropertyEditorIntSpinboxWidget(1, 0, xiiMath::MaxValue<xiiInt8>());
 
     case xiiVariant::Type::Int16:
-      return new xiiQtPropertyEditorIntSpinboxWidget(1, -32767, 32767);
+      return new xiiQtPropertyEditorIntSpinboxWidget(1, xiiMath::MinValue<xiiUInt16>(), xiiMath::MaxValue<xiiUInt16>());
 
     case xiiVariant::Type::UInt16:
-      return new xiiQtPropertyEditorIntSpinboxWidget(1, 0, 65535);
+      return new xiiQtPropertyEditorIntSpinboxWidget(1, 0, xiiMath::MaxValue<xiiUInt16>());
 
     case xiiVariant::Type::Int32:
+      return new xiiQtPropertyEditorIntSpinboxWidget(1, xiiMath::MinValue<xiiInt32>(), xiiMath::MaxValue<xiiInt32>());
+
     case xiiVariant::Type::Int64:
-      return new xiiQtPropertyEditorIntSpinboxWidget(1, -2147483645, 2147483645);
+      return new xiiQtPropertyEditorIntSpinboxWidget(1, xiiMath::MinValue<xiiInt64>(), xiiMath::MaxValue<xiiInt64>());
 
     case xiiVariant::Type::UInt32:
+      return new xiiQtPropertyEditorIntSpinboxWidget(1, 0LL, xiiMath::MaxValue<xiiUInt32>());
+
     case xiiVariant::Type::UInt64:
-      return new xiiQtPropertyEditorIntSpinboxWidget(1, 0, 2147483645);
+      return new xiiQtPropertyEditorIntSpinboxWidget(1, 0LL, xiiMath::MaxValue<xiiUInt64>());
 
     case xiiVariant::Type::String:
-      return new xiiQtPropertyEditorLineEditWidget();
-
+    case xiiVariant::Type::StringView:
     case xiiVariant::Type::HashedString:
       return new xiiQtPropertyEditorLineEditWidget();
 
@@ -101,8 +126,8 @@ static xiiQtPropertyWidget* StandardTypeCreator(const xiiRTTI* pRtti)
       return new xiiQtPropertyEditorColorWidget();
 
     case xiiVariant::Type::Angle:
+    case xiiVariant::Type::Angled:
       return new xiiQtPropertyEditorAngleWidget();
-
 
     default:
       XII_REPORT_FAILURE("No default property widget available for type: {0}", pRtti->GetTypeName());
@@ -156,7 +181,14 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, PropertyGrid)
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec2U32>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec3U32>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec4U32>(), StandardTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec2I64>(), StandardTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec3I64>(), StandardTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec4I64>(), StandardTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec2U64>(), StandardTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec3U64>(), StandardTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVec4U64>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiQuat>(), StandardTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiQuatd>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiInt8>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiUInt8>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiInt16>(), StandardTypeCreator);
@@ -167,11 +199,13 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, PropertyGrid)
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiUInt64>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiConstCharPtr>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiString>(), StandardTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiStringView>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiHashedString>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiTime>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiColor>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiColorGammaUB>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiAngle>(), StandardTypeCreator);
+    xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiAngled>(), StandardTypeCreator);
     xiiQtPropertyGridWidget::GetFactory().RegisterCreator(xiiGetStaticRTTI<xiiVariant>(), StandardTypeCreator);
 
     // \todo GUIFoundation: Double precision variants for vectors and angles.
@@ -199,7 +233,14 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, PropertyGrid)
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec2U32>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec3U32>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec4U32>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec2I64>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec3I64>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec4I64>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec2U64>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec3U64>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVec4U64>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiQuat>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiQuatd>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiInt8>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiUInt8>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiInt16>());
@@ -210,11 +251,13 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GuiFoundation, PropertyGrid)
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiUInt64>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiConstCharPtr>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiString>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiStringView>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiHashedString>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiTime>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiColor>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiColorGammaUB>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiAngle>());
+    xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiAngled>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiVariant>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiEnumBase>());
     xiiQtPropertyGridWidget::GetFactory().UnregisterCreator(xiiGetStaticRTTI<xiiBitflagsBase>());

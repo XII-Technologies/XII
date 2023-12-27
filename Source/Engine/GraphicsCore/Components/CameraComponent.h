@@ -1,5 +1,7 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/Graphics/Camera.h>
 #include <Core/World/World.h>
 #include <GraphicsCore/Declarations.h>

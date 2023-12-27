@@ -30,7 +30,7 @@ if (XII_BUILD_D3D12)
   endif()
 
   target_link_libraries(${PROJECT_NAME} PRIVATE
-    dxcompiler
+    dxcompiler.lib
   )
 endif()
 

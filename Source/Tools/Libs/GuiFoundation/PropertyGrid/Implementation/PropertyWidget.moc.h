@@ -127,6 +127,7 @@ class XII_GUIFOUNDATION_DLL xiiQtPropertyEditorIntSpinboxWidget : public xiiQtSt
 
 public:
   xiiQtPropertyEditorIntSpinboxWidget(xiiInt8 iNumComponents, xiiInt32 iMinValue, xiiInt32 iMaxValue);
+  xiiQtPropertyEditorIntSpinboxWidget(xiiInt8 iNumComponents, xiiInt64 iMinValue, xiiInt64 iMaxValue);
   ~xiiQtPropertyEditorIntSpinboxWidget();
 
 private Q_SLOTS:
@@ -189,8 +190,8 @@ protected:
   virtual void InternalSetValue(const xiiVariant& value) override;
 
 protected:
-  QHBoxLayout*            m_pLayout;
-  QLineEdit*              m_pWidget;
+  QHBoxLayout*            m_pLayout = nullptr;
+  QLineEdit*              m_pWidget = nullptr;
   xiiEnum<xiiVariantType> m_OriginalType;
 };
 

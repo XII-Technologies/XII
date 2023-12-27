@@ -8,7 +8,7 @@ class XII_GRAPHICSCORE_DLL xiiOpaqueForwardRenderPass : public xiiForwardRenderP
   XII_ADD_DYNAMIC_REFLECTION(xiiOpaqueForwardRenderPass, xiiForwardRenderPass);
 
 public:
-  xiiOpaqueForwardRenderPass(const char* szName = "OpaqueForwardRenderPass");
+  xiiOpaqueForwardRenderPass(xiiStringView sName = "OpaqueForwardRenderPass");
   ~xiiOpaqueForwardRenderPass();
 
   virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;

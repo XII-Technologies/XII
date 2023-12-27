@@ -250,6 +250,14 @@ class xiiVariantHelper
         bSuccessful = false;
       }
     }
+    else if (value.GetType() == xiiVariant::Type::StringView)
+    {
+      if (xiiConversionUtils::StringToBool(value.Cast<xiiStringView>(), result) == XII_FAILURE)
+      {
+        result      = false;
+        bSuccessful = false;
+      }
+    }
     else
     {
       XII_REPORT_FAILURE("Conversion to bool failed");
@@ -301,6 +309,14 @@ class xiiVariantHelper
         bSuccessful = false;
       }
     }
+    else if (value.GetType() == xiiVariant::Type::StringView)
+    {
+      if (xiiConversionUtils::StringToInt(value.Cast<xiiStringView>(), result) == XII_FAILURE)
+      {
+        result      = 0;
+        bSuccessful = false;
+      }
+    }
     else
     {
       XII_REPORT_FAILURE("Conversion to int failed");
@@ -320,6 +336,19 @@ class xiiVariantHelper
       xiiStringView s   = value.IsA<xiiString>() ? value.Cast<xiiString>().GetView() : value.Cast<xiiHashedString>().GetView();
       xiiInt64      tmp = result;
       if (xiiConversionUtils::StringToInt64(s, tmp) == XII_FAILURE)
+      {
+        result      = 0;
+        bSuccessful = false;
+      }
+      else
+      {
+        result = (xiiUInt32)tmp;
+      }
+    }
+    else if (value.GetType() == xiiVariant::Type::StringView)
+    {
+      xiiInt64 tmp = result;
+      if (xiiConversionUtils::StringToInt64(value.Cast<xiiStringView>(), tmp) == XII_FAILURE)
       {
         result      = 0;
         bSuccessful = false;
@@ -352,6 +381,14 @@ class xiiVariantHelper
         bSuccessful = false;
       }
     }
+    else if (value.GetType() == xiiVariant::Type::StringView)
+    {
+      if (xiiConversionUtils::StringToInt64(value.Cast<xiiStringView>(), result) == XII_FAILURE)
+      {
+        result      = 0;
+        bSuccessful = false;
+      }
+    }
     else
     {
       XII_REPORT_FAILURE("Conversion to int64 failed");
@@ -371,6 +408,19 @@ class xiiVariantHelper
       xiiStringView s   = value.IsA<xiiString>() ? value.Cast<xiiString>().GetView() : value.Cast<xiiHashedString>().GetView();
       xiiInt64      tmp = result;
       if (xiiConversionUtils::StringToInt64(s, tmp) == XII_FAILURE)
+      {
+        result      = 0;
+        bSuccessful = false;
+      }
+      else
+      {
+        result = (xiiUInt64)tmp;
+      }
+    }
+    else if (value.GetType() == xiiVariant::Type::StringView)
+    {
+      xiiInt64 tmp = result;
+      if (xiiConversionUtils::StringToInt64(value.Cast<xiiStringView>(), tmp) == XII_FAILURE)
       {
         result      = 0;
         bSuccessful = false;
@@ -408,6 +458,19 @@ class xiiVariantHelper
         result = (float)tmp;
       }
     }
+    else if (value.GetType() == xiiVariant::Type::StringView)
+    {
+      double tmp = result;
+      if (xiiConversionUtils::StringToFloat(value.Cast<xiiStringView>(), tmp) == XII_FAILURE)
+      {
+        result      = 0.0f;
+        bSuccessful = false;
+      }
+      else
+      {
+        result = (float)tmp;
+      }
+    }
     else
     {
       XII_REPORT_FAILURE("Conversion to float failed");
@@ -426,6 +489,14 @@ class xiiVariantHelper
     {
       xiiStringView s = value.IsA<xiiString>() ? value.Cast<xiiString>().GetView() : value.Cast<xiiHashedString>().GetView();
       if (xiiConversionUtils::StringToFloat(s, result) == XII_FAILURE)
+      {
+        result      = 0.0;
+        bSuccessful = false;
+      }
+    }
+    else if (value.GetType() == xiiVariant::Type::StringView)
+    {
+      if (xiiConversionUtils::StringToFloat(value.Cast<xiiStringView>(), result) == XII_FAILURE)
       {
         result      = 0.0;
         bSuccessful = false;
@@ -458,7 +529,10 @@ class xiiVariantHelper
   {
     bSuccessful = true;
 
-    result = value.IsA<xiiString>() ? value.Get<xiiString>().GetView() : value.Get<xiiHashedString>().GetView();
+    if (value.IsA<xiiStringView>())
+      result = value.Get<xiiStringView>();
+    else
+      result = value.IsA<xiiString>() ? value.Get<xiiString>().GetView() : value.Get<xiiHashedString>().GetView();
   }
 
   static void To(const xiiVariant& value, xiiTypedPointer& result, bool& bSuccessful)
@@ -803,7 +877,7 @@ class xiiVariantHelper
       *m_pResult = xiiConversionUtils::ToString(m_pThis->Cast<T>(), tmp);
     }
 
-    const xiiVariant* m_pThis;
-    xiiString*        m_pResult;
+    const xiiVariant* m_pThis   = nullptr;
+    xiiString*        m_pResult = nullptr;
   };
 };

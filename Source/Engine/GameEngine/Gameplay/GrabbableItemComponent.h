@@ -50,6 +50,8 @@ public:
   void SetDebugShowPoints(bool bShow); // [ property ]
   bool GetDebugShowPoints() const;     // [ property ]
 
+  static void DebugDrawGrabPoint(const xiiWorld& world, const xiiTransform& globalGrabPointTransform);
+
   xiiDynamicArray<xiiGrabbableItemGrabPoint> m_GrabPoints; // [ property ]
 
 protected:

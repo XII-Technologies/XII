@@ -1,9 +1,4 @@
 
-XII_ALWAYS_INLINE xiiGALTextureViewHandle xiiGALTextureNull::GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType)
-{
-  return xiiGALTextureViewHandle();
-}
-
 XII_ALWAYS_INLINE void xiiGALTextureNull::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
 {
 }

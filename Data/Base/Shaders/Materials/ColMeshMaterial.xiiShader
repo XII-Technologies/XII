@@ -28,7 +28,7 @@ VS_OUT main(VS_IN Input)
 
 [GEOMETRYSHADER]
 
-#if TOPOLOGY == TOPOLOGY_TRIANGLES
+#if TOPOLOGY == TOPOLOGY_TRIANGLE_LIST
 
 struct GS_IN
 {
@@ -78,7 +78,7 @@ void main( triangle GS_IN input[3], inout TriangleStream<GS_OUT> outputStream )
 
 [PIXELSHADER]
 
-#if TOPOLOGY == TOPOLOGY_TRIANGLES
+#if TOPOLOGY == TOPOLOGY_TRIANGLE_LIST
   #define USE_NORMAL
 #endif
 
@@ -99,7 +99,7 @@ float edgeFactor()
 
 float3 GetNormal()
 {
-  #if TOPOLOGY == TOPOLOGY_TRIANGLES
+  #if TOPOLOGY == TOPOLOGY_TRIANGLE_LIST
     return G.Input.Normal;
   #else
     return float3(0.0f, 0.0f, 1.0f);

@@ -1,8 +1,9 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/World/Component.h>
 #include <Core/World/World.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Rasterizer/RasterizerObject.h>
 
 struct xiiMsgTransformChanged;

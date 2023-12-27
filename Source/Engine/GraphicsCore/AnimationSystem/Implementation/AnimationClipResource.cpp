@@ -473,7 +473,7 @@ xiiArrayPtr<const xiiAnimationClipResourceDescriptor::KeyframeVec3> xiiAnimation
 //
 //#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
 //
-//  const xiiUInt32 idx = m_JointNameToIndex.Find(xiiTempHashedString("xiiRootMotionTransform"));
+//  const xiiUInt32 idx = m_JointNameToIndex.Find("xiiRootMotionTransform");
 //  XII_ASSERT_DEBUG(idx != xiiInvalidIndex, "Animation Clip has no root motion transforms");
 //
 //  jointIdx = m_JointNameToIndex.GetValue(idx);

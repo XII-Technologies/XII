@@ -26,7 +26,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMiscTextureFlags
                               ///<
                               ///< \note Copy operations are not supported for subsampled textures.
 
-    ENUM_COUNT = 5U,
+    Proxy = XII_BIT(4), ///< The texture will be used as a proxy to an array texture slice. This flag is not meant to be used by any user.
 
     Default = None
   };
@@ -146,7 +146,7 @@ public:
   /// \remarks Default views are only created for structured and raw buffers. As for formatted buffers the view format is unknown at buffer initialization time, no default views are created.
   ///
   /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
-  virtual xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType) = 0;
+  xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);
 
   /// \brief This sets the texture usage state.
   ///

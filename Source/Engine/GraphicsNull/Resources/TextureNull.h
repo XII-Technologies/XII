@@ -7,8 +7,6 @@
 class XII_GRAPHICSNULL_DLL xiiGALTextureNull final : public xiiGALTexture
 {
 public:
-  virtual xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType) override final;
-
   virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
 
   virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;

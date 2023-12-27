@@ -1,0 +1,34 @@
+# Asset Types
+
+StateMachine;State Machine
+
+# Component Types
+
+xiiStateMachineComponent;State Machine;;https://xiiengine.net/pages/docs/custom-code/game-logic/state-machine-component.html
+
+# Properties
+
+xiiComparisonOperator::Equal;==
+xiiComparisonOperator::NotEqual;!=
+xiiComparisonOperator::Less;<
+xiiComparisonOperator::LessEqual;<=
+xiiComparisonOperator::Greater;>
+xiiComparisonOperator::GreaterEqual;>=
+
+xiiStateMachineLogicOperator::And;AND
+xiiStateMachineLogicOperator::Or;OR
+
+xiiStateMachineNode;New State
+xiiStateMachineNodeAny;New Any State
+
+xiiStateMachineTransition_Timeout;Timeout Transition
+xiiStateMachineTransition_Compound;Compound Transition
+xiiStateMachineTransition_BlackboardConditions;Blackboard Conditions
+xiiStateMachineTransition_TransitionEvent;Transition Event
+
+xiiStateMachineState_NestedStateMachine;Nested State Machine
+xiiStateMachineState_Compound;Compound State
+xiiStateMachineState_SendMsg;Send Message
+xiiStateMachineState_SwitchObject;Switch Object
+xiiStateMachineState_Script;Script
+

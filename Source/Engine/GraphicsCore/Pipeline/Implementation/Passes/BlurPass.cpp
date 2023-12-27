@@ -24,7 +24,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiBlurPass::xiiBlurPass() :
   xiiRenderPipelinePass("BlurPass")
-
 {
   {
     // Load shader.

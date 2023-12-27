@@ -39,6 +39,7 @@ xiiArrayPtr<const xiiUInt8> xiiConstantBufferStorageBase::GetRawDataForReading()
 
 void xiiConstantBufferStorageBase::UploadData(xiiGALCommandEncoder* pCommandEncoder)
 {
+#if 0
   if (!m_bHasBeenModified)
     return;
 
@@ -50,6 +51,10 @@ void xiiConstantBufferStorageBase::UploadData(xiiGALCommandEncoder* pCommandEnco
     pCommandEncoder->UpdateBuffer(m_hGALConstantBuffer, 0, m_Data);
     m_uiLastHash = uiNewHash;
   }
+#else
+  m_bHasBeenModified = false;
+  pCommandEncoder->UpdateBuffer(m_hGALConstantBuffer, 0, m_Data);
+#endif
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Shader_Implementation_ConstantBufferStorage);

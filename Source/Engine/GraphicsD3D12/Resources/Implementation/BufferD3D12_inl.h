@@ -1,13 +1,4 @@
 
-XII_ALWAYS_INLINE xiiGALBufferViewHandle xiiGALBufferD3D12::GetDefaultView(xiiEnum<xiiGALBufferViewType> viewType)
-{
-  /// \todo GraphicsD3D12: Not yet implemented.
-
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return xiiGALBufferViewHandle();
-}
-
 XII_ALWAYS_INLINE void xiiGALBufferD3D12::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
 {
   Diligent::RESOURCE_STATE requestedStates = xiiDiligentTypeConversions::GetResourceState(stateFlags);

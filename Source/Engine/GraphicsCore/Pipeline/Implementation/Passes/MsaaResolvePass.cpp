@@ -22,7 +22,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiMsaaResolvePass::xiiMsaaResolvePass() :
   xiiRenderPipelinePass("MsaaResolvePass", true)
-
 {
   {
     // Load shader.

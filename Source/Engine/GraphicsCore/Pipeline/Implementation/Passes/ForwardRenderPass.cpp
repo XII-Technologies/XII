@@ -2,11 +2,12 @@
 
 #include <Foundation/IO/TypeVersionContext.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Lights/ClusteredDataProvider.h>
+#include <GraphicsCore/Lights/SimplifiedDataProvider.h>
 #include <GraphicsCore/Pipeline/Passes/ForwardRenderPass.h>
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
-
 
 #include <GraphicsFoundation/Resources/Texture.h>
 
@@ -70,6 +71,7 @@ void xiiForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext
 
   SetupResources(pGALPass, renderViewContext, inputs, outputs);
   SetupPermutationVars(renderViewContext);
+  SetupLighting(renderViewContext);
 
   RenderObjects(renderViewContext);
 
@@ -141,6 +143,23 @@ void xiiForwardRenderPass::SetupPermutationVars(const xiiRenderViewContext& rend
   else
   {
     XII_REPORT_FAILURE("Unknown shading quality setting.");
+  }
+}
+
+void xiiForwardRenderPass::SetupLighting(const xiiRenderViewContext& renderViewContext)
+{
+  // Setup clustered data
+  if (m_ShadingQuality == xiiForwardRenderShadingQuality::Normal)
+  {
+    auto pClusteredData = GetPipeline()->GetFrameDataProvider<xiiClusteredDataProvider>()->GetData(renderViewContext);
+    pClusteredData->BindResources(renderViewContext.m_pRenderContext);
+  }
+  // Or other light properties.
+  else
+  {
+    auto pSimplifiedData = GetPipeline()->GetFrameDataProvider<xiiSimplifiedDataProvider>()->GetData(renderViewContext);
+    pSimplifiedData->BindResources(renderViewContext.m_pRenderContext);
+    // todo
   }
 }
 

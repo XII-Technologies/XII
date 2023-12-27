@@ -36,7 +36,7 @@ class Static:
         [".inl", ".inl"],
         [".cpp", ".cpp"],
         [".cxx", ".cxx"],
-        
+
         # Build System Files
         [".sh", ".sh"],
         [".txt", ".txt"],
@@ -96,7 +96,7 @@ class Static:
 
         # Fmod Plugin
         [".ezSoundBankAsset", ".xiiSoundBankAsset"],
-        
+
         # ProcGen Plugin
         [".ezProcGenGraphAsset", ".xiiProcGenGraphAsset"],
 
@@ -122,7 +122,16 @@ class Static:
         [".jpg", ".jpg"],
         [".png", ".png"],
         [".svg", ".svg"],
-        [".dds", ".dds"]
+        [".dds", ".dds"],
+        [".pdn", ".pdn"]
+    ]
+
+    xiiExtensionsNoEdit: set = [
+        ".jpg",
+        ".png",
+        ".svg",
+        ".dds",
+        ".pdn"
     ]
 
     xiiEnginePath: pathlib.Path = None
@@ -161,13 +170,13 @@ class Log:
 
     logger = logging.getLogger(__name__)
     logger.addHandler(logging.NullHandler())
-    
+
     @staticmethod
     def Initialize():
         today = datetime.datetime.today()
         date_ = today.strftime("%d-%m-%Y")
         time_ = today.strftime("%H-%M-%S")
-        
+
         fileName = "{0}/Output/Transform/Transform_{1}_{2}.txt".format(str(Static.xiiEnginePath), date_, time_)
         OSFile.CreateFile(fileName)
 
@@ -356,7 +365,7 @@ class OSFile:
     def CopyFileToDirectory(sourceFile: pathlib.Path, destinationFolder: pathlib.Path):
         # Copy File with Metadata
         shutil.copy2(str(sourceFile), str(destinationFolder))\
-        
+
     @staticmethod
     def CreateFile(path: str):
         internalPath: pathlib.Path = pathlib.Path(path)
@@ -424,14 +433,14 @@ class ProjectConverter:
                         filePath = filePath.parent
 
                         finalFileResolve = pathlib.Path(str(filePath) + str("/") + str(fileName))
-                        
+
                         try:
                             os.rename(replaceFile, str(finalFileResolve))
                         except FileNotFoundError:
                             Log.Info("File not found at '{}'".format(replaceFile))
 
 
-            
+
         # Secondly, Get all files of supported XII extentions and perform file resolve
         fileExtensions: list = []
 
@@ -445,16 +454,14 @@ class ProjectConverter:
 
         for path in files:
 
-
             if path in Static.xiiSetStorage:
                 # Path has already been transformed
                 continue
 
-            excludeList = [".png", ".jpg", ".svg"]
             filePath = pathlib.Path(path)
             found = False
-            
-            for e in excludeList:
+
+            for e in Static.xiiExtensionsNoEdit:
                 if filePath.suffix == e:
                     found = True
 
@@ -480,7 +487,7 @@ class ProjectConverter:
 
             except Exception as e:
                 Log.Info("Failed to transform file '{}' due to exception '{}'".format(path, e))
-            
+
             Static.xiiSetStorage.add(path)
 
     @staticmethod
@@ -510,7 +517,7 @@ class ProjectConverter:
             # Replace file extension
             for replaceFile in files:
                 filePath = pathlib.Path(replaceFile)
-                
+
                 if filePath.suffix != ext[1]:
                     fileName = filePath.stem
 
@@ -563,7 +570,7 @@ class ProjectConverter:
 
                 with open(path, "w") as fileHandle:
                     fileHandle.write(fileData)
-            
+
             except Exception as e:
                 Log.Info("Failed to transform file '{}' due to exception '{}'".format(path, e))
 
@@ -573,7 +580,7 @@ class ProjectConverter:
     def ConvertPictures():
         if fileName[0:2] == "ez":
             fileName = "xii" + fileName[2, len(fileName)]
-        
+
         if fileName[0:2] == "EZ":
             fileName = "XII" + fileName[2, len(fileName)]
 
@@ -632,7 +639,7 @@ def main():
         Log.Info("Time Taken {}s".format(round(time.perf_counter() - startTime, 3)))
 
     else:
-        
+
         Static.xiiEnginePath = pathlib.Path(sys.argv[1])
 
         # Log.Initialize()
@@ -641,7 +648,7 @@ def main():
             Log.Error("Specified an invalid Engine Path")
             PrintHelpMessage()
             return
-        
+
         Log.Info("Engine Path {}".format(str(Static.xiiEnginePath)))
 
         # Begin Project Conversion

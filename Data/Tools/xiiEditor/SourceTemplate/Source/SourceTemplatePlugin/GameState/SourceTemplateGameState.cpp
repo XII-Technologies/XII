@@ -5,8 +5,8 @@
 #include <Core/World/World.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Logging/Log.h>
-#include <RendererCore/Debug/DebugRenderer.h>
-#include <RendererCore/Meshes/MeshComponent.h>
+#include <GraphicsCore/Debug/DebugRenderer.h>
+#include <GraphicsCore/Meshes/MeshComponent.h>
 
 #include <SourceTemplatePlugin/GameState/SourceTemplateGameState.h>
 

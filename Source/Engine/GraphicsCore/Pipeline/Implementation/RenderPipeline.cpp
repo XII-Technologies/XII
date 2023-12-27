@@ -548,7 +548,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
     }
   }
 
-  static xiiUInt32 defaultTextureDescHash = xiiGALTextureCreationDescription().CalculateHash();
+  static xiiUInt32 defaultTextureDescHash = xiiGALTextureCreationDescription{.m_Type = xiiGALResourceDimension::Texture2D}.CalculateHash();
   // Set view's render target textures to target pass connections.
   for (xiiUInt32 i = 0; i < m_Passes.GetCount(); i++)
   {
@@ -819,7 +819,7 @@ void xiiRenderPipeline::ClearRenderPassGraphTextures()
     {
       if (pConn)
       {
-        pConn->m_Desc = xiiGALTextureCreationDescription();
+        pConn->m_Desc = xiiGALTextureCreationDescription{.m_Type = xiiGALResourceDimension::Texture2D};
         if (!pConn->m_TextureHandle.IsInvalidated())
         {
           pConn->m_TextureHandle.Invalidate();
@@ -1427,11 +1427,13 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
     if (m_hOcclusionDebugViewTexture.IsInvalidated())
     {
       xiiGALTextureCreationDescription desc;
+      desc.m_Type           = xiiGALResourceDimension::Texture2D;
       desc.m_Size.width     = uiImgWidth;
       desc.m_Size.height    = uiImgHeight;
       desc.m_Format         = xiiGALTextureFormat::RGBA8UNormalized;
       desc.m_Usage          = xiiGALResourceUsage::Default;
       desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+      desc.m_BindFlags      = xiiGALBindFlags::ShaderResource;
 
       m_hOcclusionDebugViewTexture = pDevice->CreateTexture(desc);
     }

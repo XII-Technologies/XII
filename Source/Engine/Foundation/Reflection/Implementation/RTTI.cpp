@@ -450,8 +450,7 @@ XII_WARNING_POP()
 
 void xiiRTTI::SanityCheckType(xiiRTTI* pType)
 {
-  XII_ASSERT_DEV(pType->GetTypeFlags().IsSet(xiiTypeFlags::StandardType) + pType->GetTypeFlags().IsSet(xiiTypeFlags::IsEnum) + pType->GetTypeFlags().IsSet(xiiTypeFlags::Bitflags) + pType->GetTypeFlags().IsSet(xiiTypeFlags::Class) == 1,
-                 "Types are mutually exclusive!");
+  XII_ASSERT_DEV(pType->GetTypeFlags().IsSet(xiiTypeFlags::StandardType) + pType->GetTypeFlags().IsSet(xiiTypeFlags::IsEnum) + pType->GetTypeFlags().IsSet(xiiTypeFlags::Bitflags) + pType->GetTypeFlags().IsSet(xiiTypeFlags::Class) == 1, "Types are mutually exclusive!");
 
   for (auto pProp : pType->m_Properties)
   {
@@ -471,8 +470,7 @@ void xiiRTTI::SanityCheckType(xiiRTTI* pType)
 
     if (pProp->GetCategory() != xiiPropertyCategory::Function)
     {
-      XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) + pProp->GetFlags().IsSet(xiiPropertyFlags::IsEnum) + pProp->GetFlags().IsSet(xiiPropertyFlags::Bitflags) + pProp->GetFlags().IsSet(xiiPropertyFlags::Class) <= 1,
-                     "Types are mutually exclusive!");
+      XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) + pProp->GetFlags().IsSet(xiiPropertyFlags::IsEnum) + pProp->GetFlags().IsSet(xiiPropertyFlags::Bitflags) + pProp->GetFlags().IsSet(xiiPropertyFlags::Class) <= 1, "Types are mutually exclusive!");
     }
 
     switch (pProp->GetCategory())
@@ -484,26 +482,18 @@ void xiiRTTI::SanityCheckType(xiiRTTI* pType)
       break;
       case xiiPropertyCategory::Member:
       {
-        XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) == pSpecificType->GetTypeFlags().IsSet(xiiTypeFlags::StandardType),
-                       "Property-Type missmatch!");
-        XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::IsEnum) == pSpecificType->GetTypeFlags().IsSet(xiiTypeFlags::IsEnum),
-                       "Property-Type missmatch! Use XII_BEGIN_STATIC_REFLECTED_ENUM for type and XII_ENUM_MEMBER_PROPERTY / "
-                       "XII_ENUM_ACCESSOR_PROPERTY for property.");
-        XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::Bitflags) == pSpecificType->GetTypeFlags().IsSet(xiiTypeFlags::Bitflags),
-                       "Property-Type missmatch! Use XII_BEGIN_STATIC_REFLECTED_ENUM for type and XII_BITFLAGS_MEMBER_PROPERTY / "
-                       "XII_BITFLAGS_ACCESSOR_PROPERTY for property.");
-        XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::Class) == pSpecificType->GetTypeFlags().IsSet(xiiTypeFlags::Class),
-                       "If xiiPropertyFlags::Class is set, the property type must be xiiTypeFlags::Class and vise versa.");
+        XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) == pSpecificType->GetTypeFlags().IsSet(xiiTypeFlags::StandardType), "Property-Type missmatch!");
+        XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::IsEnum) == pSpecificType->GetTypeFlags().IsSet(xiiTypeFlags::IsEnum), "Property-Type missmatch! Use XII_BEGIN_STATIC_REFLECTED_ENUM for type and XII_ENUM_MEMBER_PROPERTY / XII_ENUM_ACCESSOR_PROPERTY for property.");
+        XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::Bitflags) == pSpecificType->GetTypeFlags().IsSet(xiiTypeFlags::Bitflags), "Property-Type missmatch! Use XII_BEGIN_STATIC_REFLECTED_ENUM for type and XII_BITFLAGS_MEMBER_PROPERTY / XII_BITFLAGS_ACCESSOR_PROPERTY for property.");
+        XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::Class) == pSpecificType->GetTypeFlags().IsSet(xiiTypeFlags::Class), "If xiiPropertyFlags::Class is set, the property type must be xiiTypeFlags::Class and vise versa.");
       }
       break;
       case xiiPropertyCategory::Array:
       case xiiPropertyCategory::Set:
       case xiiPropertyCategory::Map:
       {
-        XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) == pSpecificType->GetTypeFlags().IsSet(xiiTypeFlags::StandardType),
-                       "Property-Type missmatch!");
-        XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::Class) == pSpecificType->GetTypeFlags().IsSet(xiiTypeFlags::Class),
-                       "If xiiPropertyFlags::Class is set, the property type must be xiiTypeFlags::Class and vise versa.");
+        XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) == pSpecificType->GetTypeFlags().IsSet(xiiTypeFlags::StandardType), "Property-Type missmatch!");
+        XII_ASSERT_DEV(pProp->GetFlags().IsSet(xiiPropertyFlags::Class) == pSpecificType->GetTypeFlags().IsSet(xiiTypeFlags::Class), "If xiiPropertyFlags::Class is set, the property type must be xiiTypeFlags::Class and vise versa.");
       }
       break;
       case xiiPropertyCategory::Function:

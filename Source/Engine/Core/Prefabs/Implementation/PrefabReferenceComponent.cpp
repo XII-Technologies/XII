@@ -155,6 +155,29 @@ void xiiPrefabReferenceComponent::DeserializePrefabParameters(xiiArrayMap<xiiHas
           }
         }
       }
+      else if (value.IsA<xiiStringView>())
+      {
+        // if we find a string parameter, check if it is a 'local game object reference'
+        const xiiStringView& str = value.Get<xiiStringView>();
+        if (str.StartsWith("#!LGOR-"))
+        {
+          // if so, extract the index into the GoReferences array
+          xiiInt32 idx;
+          if (xiiConversionUtils::StringToInt(str.GetStartPointer() + 7, idx).Succeeded())
+          {
+            // now we can lookup the remapped xiiGameObjectHandle from our array
+            const xiiGameObjectHandle hObject = GoReferences[idx];
+
+            // and stringify the handle into a 'global game object reference', ie. one that contains the internal integer data of the handle
+            // a regular runtime world has a reference resolver that is capable to reverse this stringified format to a handle again
+            // which will happen once 'InstantiatePrefab' passes the m_Parameters list to the newly created objects
+            tmp.Format("#!GGOR-{}", hObject.GetInternalID().m_Data);
+
+            // map local game object reference to global game object reference
+            value = tmp.GetData();
+          }
+        }
+      }
 
       out_parameters.Insert(key, value);
     }
@@ -399,7 +422,7 @@ void xiiPrefabReferenceComponent::SetParameter(xiiStringView sKey, const xiiVari
 
 void xiiPrefabReferenceComponent::RemoveParameter(xiiStringView sKey)
 {
-  if (m_Parameters.RemoveAndCopy(xiiTempHashedString(sKey)))
+  if (m_Parameters.RemoveAndCopy(sKey))
   {
     if (IsActiveAndInitialized())
     {
@@ -412,7 +435,7 @@ void xiiPrefabReferenceComponent::RemoveParameter(xiiStringView sKey)
 
 bool xiiPrefabReferenceComponent::GetParameter(xiiStringView sKey, xiiVariant& out_value) const
 {
-  xiiUInt32 it = m_Parameters.Find(xiiTempHashedString(sKey));
+  xiiUInt32 it = m_Parameters.Find(sKey);
 
   if (it == xiiInvalidIndex)
     return false;

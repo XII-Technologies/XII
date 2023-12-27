@@ -247,27 +247,29 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
       const xiiRTTI* pType = xiiRTTI::FindTypeByName("xiiTestClass2");
 
       auto Props = pType->GetProperties();
-      XII_TEST_INT(Props.GetCount(), 6);
+      XII_TEST_INT(Props.GetCount(), 7);
       XII_TEST_STRING(Props[0]->GetPropertyName(), "Text");
-      XII_TEST_STRING(Props[1]->GetPropertyName(), "Time");
-      XII_TEST_STRING(Props[2]->GetPropertyName(), "Enum");
-      XII_TEST_STRING(Props[3]->GetPropertyName(), "Bitflags");
-      XII_TEST_STRING(Props[4]->GetPropertyName(), "Array");
-      XII_TEST_STRING(Props[5]->GetPropertyName(), "Variant");
+      XII_TEST_STRING(Props[1]->GetPropertyName(), "Text2");
+      XII_TEST_STRING(Props[2]->GetPropertyName(), "Time");
+      XII_TEST_STRING(Props[3]->GetPropertyName(), "Enum");
+      XII_TEST_STRING(Props[4]->GetPropertyName(), "Bitflags");
+      XII_TEST_STRING(Props[5]->GetPropertyName(), "Array");
+      XII_TEST_STRING(Props[6]->GetPropertyName(), "Variant");
 
       xiiHybridArray<const xiiAbstractProperty*, 32> AllProps;
       pType->GetAllProperties(AllProps);
 
-      XII_TEST_INT(AllProps.GetCount(), 9);
+      XII_TEST_INT(AllProps.GetCount(), 10);
       XII_TEST_STRING(AllProps[0]->GetPropertyName(), "SubStruct");
       XII_TEST_STRING(AllProps[1]->GetPropertyName(), "Color");
       XII_TEST_STRING(AllProps[2]->GetPropertyName(), "SubVector");
       XII_TEST_STRING(AllProps[3]->GetPropertyName(), "Text");
-      XII_TEST_STRING(AllProps[4]->GetPropertyName(), "Time");
-      XII_TEST_STRING(AllProps[5]->GetPropertyName(), "Enum");
-      XII_TEST_STRING(AllProps[6]->GetPropertyName(), "Bitflags");
-      XII_TEST_STRING(AllProps[7]->GetPropertyName(), "Array");
-      XII_TEST_STRING(AllProps[8]->GetPropertyName(), "Variant");
+      XII_TEST_STRING(AllProps[4]->GetPropertyName(), "Text2");
+      XII_TEST_STRING(AllProps[5]->GetPropertyName(), "Time");
+      XII_TEST_STRING(AllProps[6]->GetPropertyName(), "Enum");
+      XII_TEST_STRING(AllProps[7]->GetPropertyName(), "Bitflags");
+      XII_TEST_STRING(AllProps[8]->GetPropertyName(), "Array");
+      XII_TEST_STRING(AllProps[9]->GetPropertyName(), "Variant");
     }
   }
 
@@ -537,6 +539,12 @@ XII_CREATE_SIMPLE_TEST(Reflection, MemberProperties)
 
     {
       TestMemberProperty<xiiStringView>("Text", &Instance, pRtti, xiiPropertyFlags::StandardType, xiiString("Legen"), xiiString("dary"));
+      const xiiAbstractProperty* pProp = pRtti->FindPropertyByName("SubVector", false);
+      XII_TEST_BOOL(pProp == nullptr);
+    }
+
+    {
+      TestMemberProperty<const char*>("Text2", &Instance, pRtti, xiiPropertyFlags::StandardType | xiiPropertyFlags::Const, xiiString("Legen2"), xiiString("dary2"));
       const xiiAbstractProperty* pProp = pRtti->FindPropertyByName("SubVector", false);
       XII_TEST_BOOL(pProp == nullptr);
     }
