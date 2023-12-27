@@ -26,6 +26,7 @@ protected:
 private Q_SLOTS:
   void UpdateUI();
   void BoolChanged(xiiStringView sCVar, bool newValue);
+  void DoubleChanged(xiiStringView sCVar, double newValue);
   void FloatChanged(xiiStringView sCVar, float newValue);
   void IntChanged(xiiStringView sCVar, int newValue);
   void StringChanged(xiiStringView sCVar, xiiStringView sNewValue);

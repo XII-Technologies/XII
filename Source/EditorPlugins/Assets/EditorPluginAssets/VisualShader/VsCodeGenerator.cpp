@@ -14,6 +14,12 @@ static xiiString ToShaderString(const xiiVariant& value)
     }
     break;
 
+    case xiiVariantType::StringView:
+    {
+      temp = value.Get<xiiStringView>();
+    }
+    break;
+
     case xiiVariantType::Color:
     case xiiVariantType::ColorGamma:
     {

@@ -238,7 +238,7 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
       {
         case xiiPropertyCategory::Member:
         {
-          if (pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) && pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String)
+          if (pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) && (pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String || pProp->GetSpecificType()->GetVariantType() == xiiVariantType::StringView))
           {
             if (bInsidePrefab)
             {
@@ -280,7 +280,7 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
         case xiiPropertyCategory::Array:
         case xiiPropertyCategory::Set:
         {
-          if (pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) && pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String)
+          if (pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) && (pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String || pProp->GetSpecificType()->GetVariantType() == xiiVariantType::StringView))
           {
             const xiiInt32 iCount = pObject->GetTypeAccessor().GetCount(pProp->GetPropertyName());
 
@@ -296,14 +296,29 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
                 {
                   continue;
                 }
-                if (depFlags.IsSet(xiiDependencyFlags::Transform))
-                  pInfo->m_TransformDependencies.Insert(value.Get<xiiString>());
 
-                if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
-                  pInfo->m_ThumbnailDependencies.Insert(value.Get<xiiString>());
+                if (value.IsA<xiiStringView>())
+                {
+                  if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                    pInfo->m_TransformDependencies.Insert(value.Get<xiiStringView>());
 
-                if (depFlags.IsSet(xiiDependencyFlags::Package))
-                  pInfo->m_PackageDependencies.Insert(value.Get<xiiString>());
+                  if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                    pInfo->m_ThumbnailDependencies.Insert(value.Get<xiiStringView>());
+
+                  if (depFlags.IsSet(xiiDependencyFlags::Package))
+                    pInfo->m_PackageDependencies.Insert(value.Get<xiiStringView>());
+                }
+                else
+                {
+                  if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                    pInfo->m_TransformDependencies.Insert(value.Get<xiiString>());
+
+                  if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                    pInfo->m_ThumbnailDependencies.Insert(value.Get<xiiString>());
+
+                  if (depFlags.IsSet(xiiDependencyFlags::Package))
+                    pInfo->m_PackageDependencies.Insert(value.Get<xiiString>());
+                }
               }
             }
             else
@@ -312,14 +327,28 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
               {
                 xiiVariant value = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName(), i);
 
-                if (depFlags.IsSet(xiiDependencyFlags::Transform))
-                  pInfo->m_TransformDependencies.Insert(value.Get<xiiString>());
+                if (value.IsA<xiiStringView>())
+                {
+                  if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                    pInfo->m_TransformDependencies.Insert(value.Get<xiiStringView>());
 
-                if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
-                  pInfo->m_ThumbnailDependencies.Insert(value.Get<xiiString>());
+                  if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                    pInfo->m_ThumbnailDependencies.Insert(value.Get<xiiStringView>());
 
-                if (depFlags.IsSet(xiiDependencyFlags::Package))
-                  pInfo->m_PackageDependencies.Insert(value.Get<xiiString>());
+                  if (depFlags.IsSet(xiiDependencyFlags::Package))
+                    pInfo->m_PackageDependencies.Insert(value.Get<xiiStringView>());
+                }
+                else
+                {
+                  if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                    pInfo->m_TransformDependencies.Insert(value.Get<xiiString>());
+
+                  if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                    pInfo->m_ThumbnailDependencies.Insert(value.Get<xiiString>());
+
+                  if (depFlags.IsSet(xiiDependencyFlags::Package))
+                    pInfo->m_PackageDependencies.Insert(value.Get<xiiString>());
+                }
               }
             }
           }
@@ -328,7 +357,7 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
 
         case xiiPropertyCategory::Map:
           // #TODO Search for exposed params that reference assets.
-          if (pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) && pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String)
+          if (pProp->GetFlags().IsSet(xiiPropertyFlags::StandardType) && (pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String || pProp->GetSpecificType()->GetVariantType() == xiiVariantType::StringView))
           {
             xiiVariant                  value   = pObject->GetTypeAccessor().GetValue(pProp->GetPropertyName());
             const xiiVariantDictionary& varDict = value.Get<xiiVariantDictionary>();
@@ -344,28 +373,56 @@ void xiiAssetDocument::AddReferences(const xiiDocumentObject* pObject, xiiAssetD
                   continue;
                 }
 
-                if (depFlags.IsSet(xiiDependencyFlags::Transform))
-                  pInfo->m_TransformDependencies.Insert(it.Value().Get<xiiString>());
+                if (value.IsA<xiiStringView>())
+                {
+                  if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                    pInfo->m_TransformDependencies.Insert(it.Value().Get<xiiStringView>());
 
-                if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
-                  pInfo->m_ThumbnailDependencies.Insert(it.Value().Get<xiiString>());
+                  if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                    pInfo->m_ThumbnailDependencies.Insert(it.Value().Get<xiiStringView>());
 
-                if (depFlags.IsSet(xiiDependencyFlags::Package))
-                  pInfo->m_PackageDependencies.Insert(it.Value().Get<xiiString>());
+                  if (depFlags.IsSet(xiiDependencyFlags::Package))
+                    pInfo->m_PackageDependencies.Insert(it.Value().Get<xiiStringView>());
+                }
+                else
+                {
+                  if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                    pInfo->m_TransformDependencies.Insert(it.Value().Get<xiiString>());
+
+                  if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                    pInfo->m_ThumbnailDependencies.Insert(it.Value().Get<xiiString>());
+
+                  if (depFlags.IsSet(xiiDependencyFlags::Package))
+                    pInfo->m_PackageDependencies.Insert(it.Value().Get<xiiString>());
+                }
               }
             }
             else
             {
               for (auto it : varDict)
               {
-                if (depFlags.IsSet(xiiDependencyFlags::Transform))
-                  pInfo->m_TransformDependencies.Insert(it.Value().Get<xiiString>());
+                if (value.IsA<xiiStringView>())
+                {
+                  if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                    pInfo->m_TransformDependencies.Insert(it.Value().Get<xiiStringView>());
 
-                if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
-                  pInfo->m_ThumbnailDependencies.Insert(it.Value().Get<xiiString>());
+                  if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                    pInfo->m_ThumbnailDependencies.Insert(it.Value().Get<xiiStringView>());
 
-                if (depFlags.IsSet(xiiDependencyFlags::Package))
-                  pInfo->m_PackageDependencies.Insert(it.Value().Get<xiiString>());
+                  if (depFlags.IsSet(xiiDependencyFlags::Package))
+                    pInfo->m_PackageDependencies.Insert(it.Value().Get<xiiStringView>());
+                }
+                else
+                {
+                  if (depFlags.IsSet(xiiDependencyFlags::Transform))
+                    pInfo->m_TransformDependencies.Insert(it.Value().Get<xiiString>());
+
+                  if (depFlags.IsSet(xiiDependencyFlags::Thumbnail))
+                    pInfo->m_ThumbnailDependencies.Insert(it.Value().Get<xiiString>());
+
+                  if (depFlags.IsSet(xiiDependencyFlags::Package))
+                    pInfo->m_PackageDependencies.Insert(it.Value().Get<xiiString>());
+                }
               }
             }
           }

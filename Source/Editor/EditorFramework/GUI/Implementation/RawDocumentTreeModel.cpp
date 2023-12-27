@@ -56,8 +56,7 @@ QVariant xiiQtDummyAdapter::data(const xiiDocumentObject* pObject, int iRow, int
       case Qt::DisplayRole:
       case Qt::EditRole:
       {
-        xiiStringBuilder tmp;
-        return QString::fromUtf8(pObject->GetTypeAccessor().GetType()->GetTypeName().GetData(tmp));
+        return xiiMakeQString(pObject->GetTypeAccessor().GetType()->GetTypeName());
       }
       break;
     }
@@ -69,7 +68,7 @@ xiiQtNamedAdapter::xiiQtNamedAdapter(const xiiDocumentObjectManager* pTree, cons
   xiiQtDocumentTreeModelAdapter(pTree, pType, szChildProperty), m_sNameProperty(szNameProperty)
 {
   auto pProp = pType->FindPropertyByName(m_sNameProperty);
-  XII_ASSERT_DEV(pProp != nullptr && pProp->GetCategory() == xiiPropertyCategory::Member && pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String, "The name property must be a string member property.");
+  XII_ASSERT_DEV(pProp != nullptr && pProp->GetCategory() == xiiPropertyCategory::Member && (pProp->GetSpecificType()->GetVariantType() == xiiVariantType::String || pProp->GetSpecificType()->GetVariantType() == xiiVariantType::StringView), "The name property must be a string member property.");
 
   m_pTree->m_PropertyEvents.AddEventHandler(xiiMakeDelegate(&xiiQtNamedAdapter::TreePropertyEventHandler, this));
 }
@@ -502,7 +501,6 @@ bool xiiQtDocumentTreeModel::dropMimeData(const QMimeData* pData, Qt::DropAction
 
   return xiiQtDocumentTreeModel::MoveObjects(info);
 }
-
 
 bool xiiQtDocumentTreeModel::MoveObjects(const xiiDragDropInfo& info)
 {
