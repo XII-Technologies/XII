@@ -19,6 +19,11 @@ XII_ALWAYS_INLINE ReturnType* xiiGALDevice::Get(typename IdTableType::TypeOfId h
   return pObject;
 }
 
+XII_ALWAYS_INLINE const xiiGALDeviceCreationDescription& xiiGALDevice::GetDescription() const
+{
+  return m_Description;
+}
+
 inline xiiGALSwapChain* xiiGALDevice::GetSwapChain(xiiGALSwapChainHandle hSwapChain) const
 {
   return Get<SwapChainTable, xiiGALSwapChain>(hSwapChain, m_SwapChains);

@@ -27,11 +27,14 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
-  xiiGALPipelineState::xiiGALPipelineState(const xiiGALPipelineStateCreationDescription& creationDescription) :
-    xiiGALObject<xiiGALPipelineStateCreationDescription>(creationDescription)
-  {
-  }
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineState, 1, xiiRTTIDefaultAllocator<xiiGALPipelineState>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
 
-  xiiGALPipelineState::~xiiGALPipelineState() = default;
+xiiGALPipelineState::xiiGALPipelineState(const xiiGALPipelineStateCreationDescription& creationDescription) :
+  xiiGALDeviceObject(), m_Description(creationDescription)
+{
+}
 
-  XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_PipelineState);
+xiiGALPipelineState::~xiiGALPipelineState() = default;
+
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_PipelineState);

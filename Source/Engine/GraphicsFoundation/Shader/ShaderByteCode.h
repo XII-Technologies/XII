@@ -2,13 +2,17 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Declarations/Object.h>
+
 /// \brief This class wraps shader byte code storage.
 ///
 /// Since byte code can have different requirements for alignment, padding etc. this class manages it.
 /// Also since byte code is shared between multiple shaders (e.g. same vertex shaders for different pixel shaders)
 /// the instances of the byte codes are reference counted.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderByteCode : public xiiRefCounted
+class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderByteCode : public xiiGALObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALShaderByteCode, xiiGALObject);
+
 public:
   xiiGALShaderByteCode();
 
@@ -28,7 +32,5 @@ protected:
 
   xiiDynamicArray<xiiUInt8> m_Source;
 };
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderByteCode);
 
 #include <GraphicsFoundation/Shader/Implementation/ShaderByteCode_inl.h>

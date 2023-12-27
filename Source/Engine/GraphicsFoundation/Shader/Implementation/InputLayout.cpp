@@ -4,11 +4,6 @@
 
 // clang-format off
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALInputLayout, xiiNoBase, 1, xiiRTTINoAllocator)
-{
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALInputElementFrequency, 1)
   XII_ENUM_CONSTANT(xiiGALInputElementFrequency::Undefined),
   XII_ENUM_CONSTANT(xiiGALInputElementFrequency::PerVertex),
@@ -47,10 +42,11 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
-XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Shader_Implementation_InputLayout);
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayout, 1, xiiRTTIDefaultAllocator<xiiGALInputLayout>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALInputLayout::xiiGALInputLayout(const xiiGALInputLayoutCreationDescription& creationDescription) :
-  xiiGALObject<xiiGALInputLayoutCreationDescription>(creationDescription)
+  xiiGALDeviceObject(), m_Description(creationDescription)
 {
 }
 

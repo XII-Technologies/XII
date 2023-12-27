@@ -30,7 +30,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferViewCreationDescription : public x
 /// \brief Interface that defines methods to manipulate a buffer view object.
 ///
 /// \note The buffer view holds strong references to the buffer. The buffer will not be destroyed until all views are released.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALBufferView : public xiiGALResource<xiiGALBufferViewCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALBufferView : public xiiGALResource
 {
 public:
   /// \brief Returns the buffer of which the buffer view is created with.

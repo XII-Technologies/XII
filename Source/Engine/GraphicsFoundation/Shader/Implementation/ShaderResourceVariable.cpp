@@ -42,8 +42,11 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 
 // clang-format on
 
-xiiGALShaderResourceVariable::xiiGALShaderResourceVariable(const xiiGALShaderResourceVariableCreationDescription& creationDescription) :
-  xiiGALObject<xiiGALShaderResourceVariableCreationDescription>(creationDescription)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderResourceVariable, 1, xiiRTTIDefaultAllocator<xiiGALShaderResourceVariable>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
+xiiGALShaderResourceVariable::xiiGALShaderResourceVariable() :
+  xiiGALDeviceObject()
 {
 }
 

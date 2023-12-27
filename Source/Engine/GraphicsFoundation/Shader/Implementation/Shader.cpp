@@ -5,11 +5,6 @@
 
 // clang-format off
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALShader, xiiNoBase, 1, xiiRTTINoAllocator)
-{
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShaderResourceType, 1)
   XII_ENUM_CONSTANT(xiiGALShaderResourceType::Unknown),
   XII_ENUM_CONSTANT(xiiGALShaderResourceType::ConstantBuffer),
@@ -57,14 +52,14 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShader, 1, xiiRTTIDefaultAllocator<xiiGALShader>)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiDelegate<void(xiiShaderUtilities::xiiBuiltinShaderType type, xiiShaderUtilities::xiiBuiltinShader& out_shader)> xiiShaderUtilities::g_RequestBuiltinShaderCallback;
 
 xiiGALShader::xiiGALShader(const xiiGALShaderCreationDescription& creationDescription) :
-  xiiGALResource<xiiGALShaderCreationDescription>(creationDescription)
+  xiiGALDeviceObject(), m_Description(creationDescription)
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  m_sDebugName.Assign(creationDescription.m_sName);
-#endif
 }
 
 xiiGALShader::~xiiGALShader() = default;

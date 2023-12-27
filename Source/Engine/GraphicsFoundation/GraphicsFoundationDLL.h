@@ -78,11 +78,11 @@ class xiiGALComputeCommandEncoder;
 class xiiGALGraphicsCommandEncoder;
 struct xiiGALCommandEncoderState;
 struct xiiGALCommandEncoderGraphicsState;
+class xiiGALObject;
+class xiiGALDeviceObject;
 class xiiGALDevice;
 class xiiGALPass;
 class xiiGALSwapChain;
-class xiiGALResourceBase;
-template <typename CreationDescription>
 class xiiGALResource;
 class xiiGALBottomLevelAS;
 class xiiGALBuffer;

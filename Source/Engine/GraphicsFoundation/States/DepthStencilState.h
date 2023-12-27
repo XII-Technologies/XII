@@ -2,6 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 /// \brief This describes the stencil operation.
@@ -69,9 +70,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilStateCreationDescription : p
 };
 
 /// \brief Interface that defines methods to manipulate a depth stencil state object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilState : public xiiGALObject<xiiGALDepthStencilStateCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilState : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALDepthStencilState, xiiGALDeviceObject);
+
 public:
+  XII_NODISCARD const xiiGALDepthStencilStateCreationDescription& GetDescription() const;
+
 protected:
   friend class xiiGALDevice;
 
@@ -82,8 +87,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALDepthStencilState);
+protected:
+  xiiGALDepthStencilStateCreationDescription m_Description;
+};
 
 #include <GraphicsFoundation/States/Implementation/DepthStencilState_inl.h>

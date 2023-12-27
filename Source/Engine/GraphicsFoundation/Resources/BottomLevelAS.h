@@ -2,7 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Resources/Resource.h>
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
 
 /// \brief This describes the acceleration structure build flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingBuildASFlags
@@ -85,8 +85,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALScratchBufferSizeDescription : public xi
 };
 
 /// \brief Interface that defines methods to manipulate a bottom level acceleration structure (BLAS) object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelAS : public xiiGALResource<xiiGALBottomLevelASCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelAS : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBottomLevelAS, xiiGALDeviceObject);
+
 public:
   /// \brief This returns the geometry description index in the BLAS triangle or axis-aligned bounding box descriptions.
   ///
@@ -137,6 +139,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+
+protected:
+  xiiGALBottomLevelASCreationDescription m_Description;
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBottomLevelAS);

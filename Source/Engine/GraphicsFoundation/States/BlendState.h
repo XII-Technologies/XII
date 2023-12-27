@@ -2,7 +2,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Resources/Resource.h>
+#include <GraphicsFoundation/Declarations/Constants.h>
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
 
 /// \brief This describes the blend factor.
 ///
@@ -173,26 +174,26 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendStateCreationDescription : public x
 };
 
 /// \brief Interface that defines methods to manipulate a blend state object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALBlendState : public xiiGALResourceBase
+class XII_GRAPHICSFOUNDATION_DLL xiiGALBlendState : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBlendState, xiiGALDeviceObject);
+
 public:
   XII_NODISCARD const xiiGALBlendStateCreationDescription& GetDescription() const;
 
 protected:
   friend class xiiGALDevice;
 
-  xiiGALBlendState(xiiGALDevice* pDevice, const xiiGALBlendStateCreationDescription& creationDescription);
+  xiiGALBlendState(const xiiGALBlendStateCreationDescription& creationDescription);
 
   virtual ~xiiGALBlendState();
 
-  virtual xiiResult InitializePlatform() = 0;
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
-  virtual xiiResult DeInitializePlatform() = 0;
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 
 protected:
   xiiGALBlendStateCreationDescription m_Description;
 };
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBlendState);
 
 #include <GraphicsFoundation/States/Implementation/BlendState_inl.h>
