@@ -1457,7 +1457,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       pDevice->EndPass(pGALPass);
     }
 
-    xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, pDevice->GetDefaultResourceView(m_hOcclusionDebugViewTexture), xiiVec2(1, -1));
+    xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, pDevice->GetTexture(m_hOcclusionDebugViewTexture)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiVec2(1, -1));
   }
   else
   {

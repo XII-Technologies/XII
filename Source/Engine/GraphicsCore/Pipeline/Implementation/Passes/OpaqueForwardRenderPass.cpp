@@ -62,7 +62,7 @@ void xiiOpaqueForwardRenderPass::SetupResources(xiiGALPass* pGALPass, const xiiR
   {
     if (inputs[m_PinSSAO.m_uiInputIndex])
     {
-      xiiGALTextureViewHandle ssaoResourceViewHandle = pDevice->GetDefaultResourceView(inputs[m_PinSSAO.m_uiInputIndex]->m_TextureHandle);
+      xiiGALTextureViewHandle ssaoResourceViewHandle = pDevice->GetTexture(inputs[m_PinSSAO.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
       renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", ssaoResourceViewHandle);
     }
     else

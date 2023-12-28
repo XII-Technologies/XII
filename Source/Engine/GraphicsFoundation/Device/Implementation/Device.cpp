@@ -312,6 +312,8 @@ xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const xiiGALSwapChainCreatio
   }
   else
   {
+    pSwapChain->m_pDevice = this;
+
     return xiiGALSwapChainHandle(m_SwapChains.Insert(pSwapChain));
   }
 }
@@ -384,6 +386,8 @@ xiiGALBlendStateHandle xiiGALDevice::CreateBlendState(const xiiGALBlendStateCrea
   if (pBlendState != nullptr)
   {
     XII_ASSERT_DEBUG(pBlendState->GetDescription().CalculateHash() == uiHash, "BlendState hash does not match.");
+
+    pBlendState->m_pDevice = this;
 
     pBlendState->AddRef();
 
@@ -469,6 +473,8 @@ xiiGALDepthStencilStateHandle xiiGALDevice::CreateDepthStencilState(const xiiGAL
   {
     XII_ASSERT_DEBUG(pDepthStencilState->GetDescription().CalculateHash() == uiHash, "DepthStencilState hash does not match.");
 
+    pDepthStencilState->m_pDevice = this;
+
     pDepthStencilState->AddRef();
 
     xiiGALDepthStencilStateHandle hDepthStencilState(m_DepthStencilStates.Insert(pDepthStencilState));
@@ -540,6 +546,8 @@ xiiGALRasterizerStateHandle xiiGALDevice::CreateRasterizerState(const xiiGALRast
   if (pRasterizerState != nullptr)
   {
     XII_ASSERT_DEBUG(pRasterizerState->GetDescription().CalculateHash() == uiHash, "RasterizerState hash does not match.");
+
+    pRasterizerState->m_pDevice = this;
 
     pRasterizerState->AddRef();
 
@@ -640,6 +648,8 @@ xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescript
   }
   else
   {
+    pShader->m_pDevice = this;
+
     return xiiGALShaderHandle(m_Shaders.Insert(pShader));
   }
 }
@@ -819,6 +829,8 @@ xiiGALBufferHandle xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreati
 {
   if (pBuffer != nullptr)
   {
+    pBuffer->m_pDevice = this;
+
     xiiGALBufferHandle hBuffer(m_Buffers.Insert(pBuffer));
 
     pBuffer->CreateDefaultResourceViews(hBuffer);
@@ -928,6 +940,8 @@ xiiGALBufferViewHandle xiiGALDevice::CreateBufferView(xiiGALBufferViewCreationDe
   if (pBufferView != nullptr)
   {
     XII_ASSERT_DEBUG(pBufferView->GetDescription().CalculateHash() == uiHash, "BufferView hash does not match.");
+
+    pBufferView->m_pDevice = this;
 
     pBufferView->AddRef();
 
@@ -1167,6 +1181,8 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
 {
   if (pTexture != nullptr)
   {
+    pTexture->m_pDevice = this;
+
     xiiGALTextureHandle hTexture(m_Textures.Insert(pTexture));
 
     pTexture->CreateDefaultResourceViews(hTexture);
@@ -1335,7 +1351,7 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
     case xiiGALResourceDimension::Texture1D:
     case xiiGALResourceDimension::Texture2D:
     {
-      XII_VERIFY_TEXTURE_VIEW(description.m_uiArrayOrDepthSlicesCount == 1U, "The number of slices in the view ({0}) must be 1 (or 0) for non-array Texture 1D/2D views.", description.m_uiArrayOrDepthSlicesCount);
+      XII_VERIFY_TEXTURE_VIEW(description.m_uiArrayOrDepthSlicesCount <= 1U, "The number of slices in the view ({0}) must be 1 (or 0) for non-array Texture 1D/2D views.", description.m_uiArrayOrDepthSlicesCount);
     }
     break;
     case xiiGALResourceDimension::Texture1DArray:
@@ -1414,6 +1430,8 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
   if (pTextureView != nullptr)
   {
     XII_ASSERT_DEBUG(pTextureView->GetDescription().CalculateHash() == uiHash, "TextureView hash does not match.");
+
+    pTextureView->m_pDevice = this;
 
     pTextureView->AddRef();
 
@@ -1494,6 +1512,8 @@ xiiGALSamplerHandle xiiGALDevice::CreateSampler(const xiiGALSamplerCreationDescr
   {
     XII_ASSERT_DEBUG(pSampler->GetDescription().CalculateHash() == uiHash, "Sampler hash does not match");
 
+    pSampler->m_pDevice = this;
+
     pSampler->AddRef();
 
     xiiGALSamplerHandle hSampler(m_Samplers.Insert(pSampler));
@@ -1554,6 +1574,8 @@ xiiGALInputLayoutHandle xiiGALDevice::CreateInputLayout(const xiiGALInputLayoutC
 
   if (pInputLayout != nullptr)
   {
+    pInputLayout->m_pDevice = this;
+
     pInputLayout->AddRef();
 
     xiiGALInputLayoutHandle hInputLayout(m_InputLayouts.Insert(pInputLayout));
@@ -1637,6 +1659,8 @@ xiiGALQueryHandle xiiGALDevice::CreateQuery(const xiiGALQueryCreationDescription
   }
   else
   {
+    pQuery->m_pDevice = this;
+
     return xiiGALQueryHandle(m_Queries.Insert(pQuery));
   }
 }
@@ -1692,6 +1716,8 @@ xiiGALFenceHandle xiiGALDevice::CreateFence(const xiiGALFenceCreationDescription
   }
   else
   {
+    pFence->m_pDevice = this;
+
     return xiiGALFenceHandle(m_Fences.Insert(pFence));
   }
 }
@@ -1926,6 +1952,8 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
   }
   else
   {
+    pRenderPass->m_pDevice = this;
+
     return xiiGALRenderPassHandle(m_RenderPasses.Insert(pRenderPass));
   }
 }
@@ -2175,6 +2203,8 @@ xiiGALFramebufferHandle xiiGALDevice::CreateFramebuffer(const xiiGALFramebufferC
   }
   else
   {
+    pFramebuffer->m_pDevice = this;
+
     return xiiGALFramebufferHandle(m_Framebuffers.Insert(pFramebuffer));
   }
 }
@@ -2255,6 +2285,8 @@ xiiGALBottomLevelASHandle xiiGALDevice::CreateBottomLevelAS(const xiiGALBottomLe
   }
   else
   {
+    pBottomLevelAS->m_pDevice = this;
+
     return xiiGALBottomLevelASHandle(m_BottomLevelAccelerationStructures.Insert(pBottomLevelAS));
   }
 }
@@ -2307,6 +2339,8 @@ xiiGALTopLevelASHandle xiiGALDevice::CreateTopLevelAS(const xiiGALTopLevelASCrea
   }
   else
   {
+    pTopLevelAS->m_pDevice = this;
+
     return xiiGALTopLevelASHandle(m_TopLevelAccelerationStructures.Insert(pTopLevelAS));
   }
 }

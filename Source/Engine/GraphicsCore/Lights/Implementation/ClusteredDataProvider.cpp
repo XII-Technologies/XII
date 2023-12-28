@@ -105,17 +105,17 @@ void xiiClusteredDataGPU::BindResources(xiiRenderContext* pRenderContext)
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  auto hShadowDataBufferView   = pDevice->GetDefaultResourceView(xiiShadowPool::GetShadowDataBuffer());
-  auto hShadowAtlasTextureView = pDevice->GetDefaultResourceView(xiiShadowPool::GetShadowAtlasTexture());
+  auto hShadowDataBufferView   = pDevice->GetBuffer(xiiShadowPool::GetShadowDataBuffer())->GetDefaultView(xiiGALBufferViewType::ShaderResource);
+  auto hShadowAtlasTextureView = pDevice->GetTexture(xiiShadowPool::GetShadowAtlasTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
-  auto hReflectionSpecularTextureView = pDevice->GetDefaultResourceView(xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint));
-  auto hSkyIrradianceTextureView      = pDevice->GetDefaultResourceView(xiiReflectionPool::GetSkyIrradianceTexture());
+  auto hReflectionSpecularTextureView = pDevice->GetTexture(xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint))->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+  auto hSkyIrradianceTextureView      = pDevice->GetTexture(xiiReflectionPool::GetSkyIrradianceTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
-  pRenderContext->BindBuffer("perLightDataBuffer", pDevice->GetDefaultResourceView(m_hLightDataBuffer));
-  pRenderContext->BindBuffer("perDecalDataBuffer", pDevice->GetDefaultResourceView(m_hDecalDataBuffer));
-  pRenderContext->BindBuffer("perPerReflectionProbeDataBuffer", pDevice->GetDefaultResourceView(m_hReflectionProbeDataBuffer));
-  pRenderContext->BindBuffer("perClusterDataBuffer", pDevice->GetDefaultResourceView(m_hClusterDataBuffer));
-  pRenderContext->BindBuffer("clusterItemBuffer", pDevice->GetDefaultResourceView(m_hClusterItemBuffer));
+  pRenderContext->BindBuffer("perLightDataBuffer", pDevice->GetBuffer(m_hLightDataBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pRenderContext->BindBuffer("perDecalDataBuffer", pDevice->GetBuffer(m_hDecalDataBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pRenderContext->BindBuffer("perPerReflectionProbeDataBuffer", pDevice->GetBuffer(m_hReflectionProbeDataBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pRenderContext->BindBuffer("perClusterDataBuffer", pDevice->GetBuffer(m_hClusterDataBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pRenderContext->BindBuffer("clusterItemBuffer", pDevice->GetBuffer(m_hClusterItemBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
 
   pRenderContext->BindBuffer("shadowDataBuffer", hShadowDataBufferView);
   pRenderContext->BindTexture2D("ShadowAtlasTexture", hShadowAtlasTextureView);

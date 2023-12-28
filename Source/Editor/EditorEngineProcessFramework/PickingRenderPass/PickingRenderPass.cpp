@@ -222,7 +222,7 @@ void xiiPickingRenderPass::CreateTarget()
 
   m_hPickingDepthRTStaging = pDevice->CreateTexture(tcd);
 
-  m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(m_hPickingIdRT)).SetDepthStencilTarget(pDevice->GetDefaultRenderTargetView(m_hPickingDepthRT));
+  m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(m_hPickingIdRT)->GetDefaultView(xiiGALTextureViewType::RenderTarget)).SetDepthStencilTarget(pDevice->GetTexture(m_hPickingDepthRT)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
 }
 
 void xiiPickingRenderPass::DestroyTarget()

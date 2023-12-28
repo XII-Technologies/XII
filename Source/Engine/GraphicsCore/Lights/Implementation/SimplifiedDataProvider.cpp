@@ -24,8 +24,8 @@ void xiiSimplifiedDataGPU::BindResources(xiiRenderContext* pRenderContext)
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  auto hReflectionSpecularTextureView = pDevice->GetDefaultResourceView(xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint));
-  auto hSkyIrradianceTextureView      = pDevice->GetDefaultResourceView(xiiReflectionPool::GetSkyIrradianceTexture());
+  auto hReflectionSpecularTextureView = pDevice->GetTexture(xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint))->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+  auto hSkyIrradianceTextureView      = pDevice->GetTexture(xiiReflectionPool::GetSkyIrradianceTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
   pRenderContext->BindTextureCube("ReflectionSpecularTexture", hReflectionSpecularTextureView);
   pRenderContext->BindTexture2D("SkyIrradianceTexture", hSkyIrradianceTextureView);

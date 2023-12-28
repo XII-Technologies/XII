@@ -985,7 +985,7 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
   xiiGALPass*   pGALPass = pDevice->BeginPass("Shadow Atlas");
 
   xiiGALRenderingSetup renderingSetup;
-  renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetDefaultRenderTargetView(s_pData->m_hShadowAtlasTexture));
+  renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(s_pData->m_hShadowAtlasTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
   renderingSetup.m_bClearDepth = true;
 
   auto pCommandEncoder = pGALPass->BeginRendering(renderingSetup);

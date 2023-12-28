@@ -93,7 +93,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
   if (pInputCubemap->GetDescription().m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
   {
     auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(pGALPass, renderViewContext, xiiGALRenderingSetup(), "MipMaps");
-    pCommandEncoder->GenerateMipMaps(pDevice->GetDefaultResourceView(m_hInputCubemap));
+    pCommandEncoder->GenerateMipMaps(pDevice->GetTexture(m_hInputCubemap)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
   }
 
   {
@@ -106,7 +106,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
       xiiUInt32 uiHeight = pFilteredSpecularOutput->m_Desc.m_Size.height;
 
       auto pCommandEncoder = xiiRenderContext::BeginComputeScope(pGALPass, renderViewContext, "ReflectionFilter");
-      renderViewContext.m_pRenderContext->BindTextureCube("InputCubemap", pDevice->GetDefaultResourceView(m_hInputCubemap));
+      renderViewContext.m_pRenderContext->BindTextureCube("InputCubemap", pDevice->GetTexture(m_hInputCubemap)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
       renderViewContext.m_pRenderContext->BindConstantBuffer("xiiReflectionFilteredSpecularConstants", m_hFilteredSpecularConstantBuffer);
       renderViewContext.m_pRenderContext->BindShader(m_hFilteredSpecularShader);
 
@@ -157,7 +157,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
     }
     renderViewContext.m_pRenderContext->BindTextureUAV("IrradianceOutput", hIrradianceOutput);
 
-    renderViewContext.m_pRenderContext->BindTextureCube("InputCubemap", pDevice->GetDefaultResourceView(m_hInputCubemap));
+    renderViewContext.m_pRenderContext->BindTextureCube("InputCubemap", pDevice->GetTexture(m_hInputCubemap)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 
     UpdateIrradianceConstantBuffer();
 

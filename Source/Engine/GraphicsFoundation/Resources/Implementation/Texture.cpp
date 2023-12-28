@@ -29,6 +29,7 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
 {
   xiiGALTextureViewCreationDescription viewDescription;
   viewDescription.m_hTexture                  = hTexture;
+  viewDescription.m_Format                    = m_Description.m_Format;
   viewDescription.m_uiMostDetailedMip         = 0U;
   viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
   viewDescription.m_uiMipLevelCount           = 0U;

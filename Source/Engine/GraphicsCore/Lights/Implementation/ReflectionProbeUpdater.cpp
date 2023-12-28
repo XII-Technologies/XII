@@ -16,6 +16,8 @@ xiiCVarInt cvar_RenderingReflectionPoolMaxFilterViews("Rendering.ReflectionPool.
 //////////////////////////////////////////////////////////////////////////
 /// ProbeUpdateInfo
 
+#define XII_TODO 0
+
 xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
 {
   m_globalTransform.SetIdentity();
@@ -40,10 +42,12 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
   // xiiStringBuilder sName;
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hCubemapProxies); ++i)
   {
+#if XII_TODO
     m_hCubemapProxies[i] = xiiGALDevice::GetDefaultDevice()->CreateProxyTexture(m_hCubemap, i);
 
-    // sName.Format("Reflection Cubemap Proxy {}", i);
-    // pDevice->GetTexture(m_hCubemapProxies[i])->SetDebugName(sName);
+    sName.Format("Reflection Cubemap Proxy {}", i);
+    pDevice->GetTexture(m_hCubemapProxies[i])->SetDebugName(sName);
+#endif
   }
 }
 
@@ -53,7 +57,9 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::~ProbeUpdateInfo()
   {
     if (!m_hCubemapProxies[i].IsInvalidated())
     {
+#if XII_TODO
       xiiGALDevice::GetDefaultDevice()->DestroyProxyTexture(m_hCubemapProxies[i]);
+#endif
     }
   }
 
@@ -422,7 +428,9 @@ void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& ste
     }
     else
     {
+#if XII_TODO
       renderTargets.m_hRTs[0] = updateInfo.m_hCubemapProxies[uiFaceIndex];
+#endif
     }
     pView->SetRenderTargets(renderTargets);
 

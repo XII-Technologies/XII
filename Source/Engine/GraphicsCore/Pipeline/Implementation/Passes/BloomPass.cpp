@@ -154,13 +154,13 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
       xiiVec2             targetSize = targetSizes[i];
 
       xiiGALRenderingSetup renderingSetup;
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(hOutput));
+      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(hOutput)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
       renderViewContext.m_pRenderContext->BeginRendering(pGALPass, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Downscale", renderViewContext.m_pCamera->IsStereoscopic());
 
       xiiColor tintColor = (i == uiNumBlurPasses - 1) ? xiiColor(m_OuterTintColor) : xiiColor::White;
       UpdateConstantBuffer(xiiVec2(1.0f).CompDiv(targetSize), tintColor);
 
-      renderViewContext.m_pRenderContext->BindTexture2D("ColorTexture", pDevice->GetDefaultResourceView(hInput));
+      renderViewContext.m_pRenderContext->BindTexture2D("ColorTexture", pDevice->GetTexture(hInput)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
       renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
       renderViewContext.m_pRenderContext->EndRendering();
@@ -202,7 +202,7 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
       xiiVec2 targetSize = targetSizes[i];
 
       xiiGALRenderingSetup renderingSetup;
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(hOutput));
+      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(hOutput)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
       renderViewContext.m_pRenderContext->BeginRendering(pGALPass, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Upscale", renderViewContext.m_pCamera->IsStereoscopic());
 
       xiiColor tintColor;
@@ -218,8 +218,8 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
 
       UpdateConstantBuffer(xiiVec2(fBlurRadius).CompDiv(targetSize), tintColor);
 
-      renderViewContext.m_pRenderContext->BindTexture2D("NextColorTexture", pDevice->GetDefaultResourceView(hNextInput));
-      renderViewContext.m_pRenderContext->BindTexture2D("ColorTexture", pDevice->GetDefaultResourceView(hInput));
+      renderViewContext.m_pRenderContext->BindTexture2D("NextColorTexture", pDevice->GetTexture(hNextInput)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+      renderViewContext.m_pRenderContext->BindTexture2D("ColorTexture", pDevice->GetTexture(hInput)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
       renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
       renderViewContext.m_pRenderContext->EndRendering();
@@ -255,7 +255,7 @@ void xiiBloomPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALRenderingSetup renderingSetup;
-  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(pColorOutput->m_TextureHandle));
+  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pColorOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
   renderingSetup.m_ClearColor              = xiiColor::Black;
 

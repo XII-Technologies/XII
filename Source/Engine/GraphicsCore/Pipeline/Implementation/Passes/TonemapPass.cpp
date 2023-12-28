@@ -116,7 +116,7 @@ void xiiTonemapPass::Execute(const xiiRenderViewContext& renderViewContext, cons
 
   // Setup render target
   xiiGALRenderingSetup renderingSetup;
-  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(pColorOutput->m_TextureHandle));
+  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pColorOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
 
   // Bind render target and viewport
   auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, renderingSetup, GetName(), renderViewContext.m_pCamera->IsStereoscopic());
@@ -161,7 +161,7 @@ void xiiTonemapPass::Execute(const xiiRenderViewContext& renderViewContext, cons
   auto                    pBloomInput = inputs[m_PinBloomInput.m_uiInputIndex];
   if (pBloomInput != nullptr)
   {
-    hBloomTextureView = pDevice->GetDefaultResourceView(pBloomInput->m_TextureHandle);
+    hBloomTextureView = pDevice->GetTexture(pBloomInput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
   }
 
   renderViewContext.m_pRenderContext->BindShader(m_hShader);
@@ -169,7 +169,7 @@ void xiiTonemapPass::Execute(const xiiRenderViewContext& renderViewContext, cons
   renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
   renderViewContext.m_pRenderContext->BindTexture2D("VignettingTexture", m_hVignettingTexture, xiiResourceAcquireMode::BlockTillLoaded);
   renderViewContext.m_pRenderContext->BindTexture2D("NoiseTexture", m_hNoiseTexture, xiiResourceAcquireMode::BlockTillLoaded);
-  renderViewContext.m_pRenderContext->BindTexture2D("SceneColorTexture", pDevice->GetDefaultResourceView(pColorInput->m_TextureHandle));
+  renderViewContext.m_pRenderContext->BindTexture2D("SceneColorTexture", pDevice->GetTexture(pColorInput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
   renderViewContext.m_pRenderContext->BindTexture2D("BloomTexture", hBloomTextureView);
   renderViewContext.m_pRenderContext->BindTexture3D("Lut1Texture", luts[0]);
   renderViewContext.m_pRenderContext->BindTexture3D("Lut2Texture", luts[1]);

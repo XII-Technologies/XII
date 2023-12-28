@@ -839,7 +839,7 @@ void xiiDebugRenderer::DrawTexturedTriangles(const xiiDebugRendererContext& cont
     return;
 
   xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, xiiResourceAcquireMode::AllowLoadingFallback);
-  auto                                  hResourceView = xiiGALDevice::GetDefaultDevice()->GetDefaultResourceView(pTexture->GetGALTexture());
+  auto                                  hResourceView = xiiGALDevice::GetDefaultDevice()->GetTexture(pTexture->GetGALTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
   XII_LOCK(s_Mutex);
 
@@ -886,7 +886,7 @@ void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, c
 void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, const xiiTexture2DResourceHandle& hTexture, xiiVec2 vScale)
 {
   xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, xiiResourceAcquireMode::AllowLoadingFallback);
-  Draw2DRectangle(context, rectInPixel, fDepth, color, xiiGALDevice::GetDefaultDevice()->GetDefaultResourceView(pTexture->GetGALTexture()), vScale);
+  Draw2DRectangle(context, rectInPixel, fDepth, color, xiiGALDevice::GetDefaultDevice()->GetTexture(pTexture->GetGALTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource), vScale);
 }
 
 void xiiDebugRenderer::Draw2DRectangle(const xiiDebugRendererContext& context, const xiiRectFloat& rectInPixel, float fDepth, const xiiColor& color, xiiGALTextureViewHandle hResourceView, xiiVec2 vScale)
@@ -1413,7 +1413,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
       CreateDataBuffer(BufferType::SolidBoxes, sizeof(BoxData));
 
       renderViewContext.m_pRenderContext->BindShader(s_hDebugGeometryShader);
-      renderViewContext.m_pRenderContext->BindBuffer("boxData", pDevice->GetDefaultResourceView(s_hDataBuffer[BufferType::SolidBoxes]));
+      renderViewContext.m_pRenderContext->BindBuffer("boxData", pDevice->GetBuffer(s_hDataBuffer[BufferType::SolidBoxes])->GetDefaultView(xiiGALBufferViewType::ShaderResource));
       renderViewContext.m_pRenderContext->BindMeshBuffer(s_hSolidBoxMeshBuffer);
 
       const BoxData* pSolidBoxData = pData->m_solidBoxes.GetData();
@@ -1557,7 +1557,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
       CreateDataBuffer(BufferType::LineBoxes, sizeof(BoxData));
 
       renderViewContext.m_pRenderContext->BindShader(s_hDebugGeometryShader);
-      renderViewContext.m_pRenderContext->BindBuffer("boxData", pDevice->GetDefaultResourceView(s_hDataBuffer[BufferType::LineBoxes]));
+      renderViewContext.m_pRenderContext->BindBuffer("boxData", pDevice->GetBuffer(s_hDataBuffer[BufferType::LineBoxes])->GetDefaultView(xiiGALBufferViewType::ShaderResource));
       renderViewContext.m_pRenderContext->BindMeshBuffer(s_hLineBoxMeshBuffer);
 
       const BoxData* pLineBoxData = pData->m_lineBoxes.GetData();
@@ -1663,7 +1663,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
       CreateDataBuffer(BufferType::Glyphs, sizeof(GlyphData));
 
       renderViewContext.m_pRenderContext->BindShader(s_hDebugTextShader);
-      renderViewContext.m_pRenderContext->BindBuffer("glyphData", pDevice->GetDefaultResourceView(s_hDataBuffer[BufferType::Glyphs]));
+      renderViewContext.m_pRenderContext->BindBuffer("glyphData", pDevice->GetBuffer(s_hDataBuffer[BufferType::Glyphs])->GetDefaultView(xiiGALBufferViewType::ShaderResource));
       renderViewContext.m_pRenderContext->BindTexture2D("FontTexture", s_hDebugFontTexture);
 
       const GlyphData* pGlyphData = pData->m_glyphs.GetData();

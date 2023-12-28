@@ -72,7 +72,7 @@ void xiiBlurPass::Execute(const xiiRenderViewContext& renderViewContext, const x
 
     // Setup render target
     xiiGALRenderingSetup renderingSetup;
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(outputs[m_PinOutput.m_uiOutputIndex]->m_TextureHandle));
+    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(outputs[m_PinOutput.m_uiOutputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
     renderingSetup.m_uiRenderTargetClearMask = xiiInvalidIndex;
     renderingSetup.m_ClearColor              = xiiColor(1.0f, 0.0f, 0.0f);
 

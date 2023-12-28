@@ -60,7 +60,7 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   UpdateSceneColorTexture(renderViewContext, hSceneColor, pColorInput->m_TextureHandle);
 
-  xiiGALTextureViewHandle colorResourceViewHandle = pDevice->GetDefaultResourceView(hSceneColor);
+  xiiGALTextureViewHandle colorResourceViewHandle = pDevice->GetTexture(hSceneColor)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
   renderViewContext.m_pRenderContext->BindTexture2D("SceneColor", colorResourceViewHandle);
   renderViewContext.m_pRenderContext->BindSampler("SceneColorSampler", m_hSceneColorSampler);
 
@@ -80,7 +80,7 @@ void xiiTransparentForwardRenderPass::SetupResources(xiiGALPass* pGALPass, const
 
   if (inputs[m_PinResolvedDepth.m_uiInputIndex])
   {
-    xiiGALTextureViewHandle depthResourceViewHandle = pDevice->GetDefaultResourceView(inputs[m_PinResolvedDepth.m_uiInputIndex]->m_TextureHandle);
+    xiiGALTextureViewHandle depthResourceViewHandle = pDevice->GetTexture(inputs[m_PinResolvedDepth.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
     renderViewContext.m_pRenderContext->BindTexture2D("SceneDepth", depthResourceViewHandle);
   }
 }

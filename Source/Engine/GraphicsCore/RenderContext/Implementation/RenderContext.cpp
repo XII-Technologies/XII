@@ -242,7 +242,7 @@ void xiiRenderContext::BindTexture2D(const xiiTempHashedString& sSlotName, const
   if (hTexture.IsValid())
   {
     xiiResourceLock<xiiTexture2DResource> pTexture(hTexture, acquireMode);
-    BindTexture2D(sSlotName, xiiGALDevice::GetDefaultDevice()->GetDefaultResourceView(pTexture->GetGALTexture()));
+    BindTexture2D(sSlotName, xiiGALDevice::GetDefaultDevice()->GetTexture(pTexture->GetGALTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource));
     BindSampler(sSlotName, pTexture->GetGALSampler());
   }
   else
@@ -256,7 +256,7 @@ void xiiRenderContext::BindTexture3D(const xiiTempHashedString& sSlotName, const
   if (hTexture.IsValid())
   {
     xiiResourceLock<xiiTexture3DResource> pTexture(hTexture, acquireMode);
-    BindTexture3D(sSlotName, xiiGALDevice::GetDefaultDevice()->GetDefaultResourceView(pTexture->GetGALTexture()));
+    BindTexture3D(sSlotName, xiiGALDevice::GetDefaultDevice()->GetTexture(pTexture->GetGALTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource));
     BindSampler(sSlotName, pTexture->GetGALSampler());
   }
   else
@@ -270,7 +270,7 @@ void xiiRenderContext::BindTextureCube(const xiiTempHashedString& sSlotName, con
   if (hTexture.IsValid())
   {
     xiiResourceLock<xiiTextureCubeResource> pTexture(hTexture, acquireMode);
-    BindTextureCube(sSlotName, xiiGALDevice::GetDefaultDevice()->GetDefaultResourceView(pTexture->GetGALTexture()));
+    BindTextureCube(sSlotName, xiiGALDevice::GetDefaultDevice()->GetTexture(pTexture->GetGALTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource));
     BindSampler(sSlotName, pTexture->GetGALSampler());
   }
   else
