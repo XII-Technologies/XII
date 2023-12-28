@@ -75,6 +75,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerState : public xiiGALDeviceObje
   XII_ADD_DYNAMIC_REFLECTION(xiiGALRasterizerState, xiiGALDeviceObject);
 
 public:
+  /// \brief This returns the creation description for this object.
   XII_NODISCARD const xiiGALRasterizerStateCreationDescription& GetDescription() const;
 
 protected:

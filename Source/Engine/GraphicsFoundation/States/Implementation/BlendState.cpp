@@ -66,7 +66,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBlendState, 1, xiiRTTIDefaultAllocator<xiiGALBlendState>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBlendState, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALBlendState::xiiGALBlendState(const xiiGALBlendStateCreationDescription& creationDescription) :

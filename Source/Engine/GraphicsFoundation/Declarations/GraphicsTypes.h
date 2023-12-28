@@ -415,7 +415,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewType
     UnorderedAccess,      ///< A texture view will define an unordered access view that will be used for unordered read or write operations from the shaders.
     ShadingRate,          ///< A texture view will define a variable shading rate view that will be used as the shading rate source for rendering operations.
 
-    ENUN_COUNT,
+    ENUM_COUNT,
 
     Default = Undefined
   };

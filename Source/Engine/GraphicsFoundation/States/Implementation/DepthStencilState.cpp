@@ -18,7 +18,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDepthStencilState, 1, xiiRTTIDefaultAllocator<xiiGALDepthStencilState>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDepthStencilState, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALDepthStencilState::xiiGALDepthStencilState(const xiiGALDepthStencilStateCreationDescription& creationDescription) :

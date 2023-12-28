@@ -2,7 +2,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Resources/Resource.h>
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 /// \brief This describes the sampler flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerFlags
@@ -64,9 +65,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerCreationDescription : public xiiH
 };
 
 /// \brief Interface that defines methods to manipulate a texture sampler object used to perform texture filtering.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALSampler : public xiiGALResource<xiiGALSamplerCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALSampler : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALSampler, xiiGALDeviceObject);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALSamplerCreationDescription& GetDescription() const;
+
 protected:
   friend class xiiGALDevice;
 
@@ -77,8 +83,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSampler);
+protected:
+  xiiGALSamplerCreationDescription m_Description;
+};
 
 #include <GraphicsFoundation/Resources/Implementation/Sampler_inl.h>

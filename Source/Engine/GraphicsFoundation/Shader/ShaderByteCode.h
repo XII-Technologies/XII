@@ -19,13 +19,13 @@ public:
   xiiGALShaderByteCode(const xiiArrayPtr<const xiiUInt8>& pByteCode);
 
   /// \brief This returns a raw pointer to the shader bytecode.
-  XII_ALWAYS_INLINE const void* GetByteCode() const;
+  XII_NODISCARD XII_ALWAYS_INLINE const void* GetByteCode() const;
 
   /// \brief This returns the size of the shader bytecode.
-  XII_ALWAYS_INLINE xiiUInt32 GetSize() const;
+  XII_NODISCARD XII_ALWAYS_INLINE xiiUInt32 GetSize() const;
 
   /// \brief This returns true if the shader bytecode is not empty, else returns false.
-  XII_ALWAYS_INLINE bool IsValid() const;
+  XII_NODISCARD XII_ALWAYS_INLINE bool IsValid() const;
 
 protected:
   void CopyFrom(const xiiArrayPtr<const xiiUInt8>& pByteCode);

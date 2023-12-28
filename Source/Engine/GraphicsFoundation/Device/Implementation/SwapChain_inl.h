@@ -1,4 +1,9 @@
 
+XII_ALWAYS_INLINE const xiiGALSwapChainCreationDescription& xiiGALSwapChain::GetDescription() const
+{
+  return m_Description;
+}
+
 XII_ALWAYS_INLINE void xiiGALSwapChain::SetPresentMode(xiiEnum<xiiGALPresentMode> presentMode)
 {
   if (m_PresentMode != presentMode)

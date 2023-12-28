@@ -2,17 +2,11 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
-// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandQueue, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALCommandQueue, xiiNoBase, 1, xiiRTTINoAllocator)
-{
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
-// clang-format on
-
-xiiGALCommandQueue::xiiGALCommandQueue(const xiiGALCommandQueueCreationDescription& creationDescription) :
-  xiiGALObject<xiiGALCommandQueueCreationDescription>(creationDescription)
+xiiGALCommandQueue::xiiGALCommandQueue() :
+  xiiGALDeviceObject()
 {
 }
 

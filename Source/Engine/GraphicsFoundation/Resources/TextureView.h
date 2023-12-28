@@ -2,6 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief This describes the unordered access view flags.
@@ -114,11 +115,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureViewCreationDescription : public 
 /// \brief Interface that defines methods to manipulate a texture view object.
 ///
 /// \note The texture view holds strong references to the texture. The texture will not be destroyed until all views are released.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALTextureView : public xiiGALResource<xiiGALTextureViewCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALTextureView : public xiiGALResourceView
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureView, xiiGALResourceView);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALTextureViewCreationDescription& GetDescription() const;
+
   /// \brief Returns the texture of which the texture view is created with.
-  XII_ALWAYS_INLINE xiiGALTexture* GetTexture() const { return m_pTexture; }
+  XII_NODISCARD xiiGALTexture* GetTexture() const;
 
 protected:
   friend class xiiGALDevice;
@@ -131,9 +137,10 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 
+protected:
   xiiGALTexture* m_pTexture = nullptr;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureView);
+  xiiGALTextureViewCreationDescription m_Description;
+};
 
 #include <GraphicsFoundation/Resources/Implementation/TextureView_inl.h>

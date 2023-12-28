@@ -19,7 +19,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRasterizerState, 1, xiiRTTIDefaultAllocator<xiiGALRasterizerState>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRasterizerState, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALRasterizerState::xiiGALRasterizerState(const xiiGALRasterizerStateCreationDescription& creationDescription) :

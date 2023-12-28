@@ -14,6 +14,8 @@
 /// Redundant state changes are prevented at the platform independent level in the non-virtual functions.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALDevice : public xiiGALObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALDevice, xiiGALObject);
+
 public:
   /// \brief Initialize device.
   xiiResult Initialize();
@@ -367,21 +369,6 @@ public:
   /// \brief This returns true if there is a set default device.
   XII_NODISCARD static bool HasDefaultDevice();
 
-  /// \brief This returns the default buffer view of a created buffer.
-  ///
-  /// \remarks The buffer must be created with the xiiGALBindFlags::ShaderResource.
-  xiiGALBufferViewHandle GetDefaultResourceView(xiiGALBufferHandle hBuffer) const;
-
-  /// \brief This returns the default texture view of a created texture.
-  ///
-  /// \remarks The texture must be created with the xiiGALBindFlags::ShaderResource.
-  xiiGALTextureViewHandle GetDefaultResourceView(xiiGALTextureHandle hTexture) const;
-
-  /// \brief This returns the default render target view of a created texture.
-  ///
-  /// \remarks The texture must be created with the xiiGALBindFlags::RenderTarget.
-  xiiGALTextureViewHandle GetDefaultRenderTargetView(xiiGALTextureHandle hTexture) const;
-
   /// \brief Returns the calculated memory consumption for texture.
   virtual xiiUInt64 GetMemoryConsumptionForTexture(const xiiGALTextureCreationDescription& description) const;
 
@@ -404,7 +391,7 @@ protected:
 
   void DestroyDeadObjects();
 
-  void DestroyViews(xiiGALResourceBase* pResource);
+  void DestroyViews(xiiGALResource* pResource);
 
   /// \brief Asserts that either this device supports multi-threaded resource creation, or that this function is executed on the main thread.
   void VerifyMultithreadedAccess() const;

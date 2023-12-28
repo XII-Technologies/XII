@@ -2,8 +2,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/Constants.h>
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 /// \brief The maximum number of layout elements.
 #define XII_GAL_MAX_LAYOUT_ELEMENTS 16
@@ -113,6 +113,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayout : public xiiGALDeviceObject
   XII_ADD_DYNAMIC_REFLECTION(xiiGALInputLayout, xiiGALDeviceObject);
 
 public:
+  /// \brief This returns the creation description for this object.
   XII_NODISCARD const xiiGALInputLayoutCreationDescription& GetDescription() const;
 
 protected:

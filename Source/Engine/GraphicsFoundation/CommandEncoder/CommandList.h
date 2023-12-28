@@ -2,22 +2,18 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
-
-/// \brief This describes the command list creation description.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public xiiHashableStruct<xiiGALCommandListCreationDescription>
-{
-  XII_DECLARE_POD_TYPE();
-};
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
 
 /// \brief A command list interface. The command list has no methods. When a command list recording is finished, it is executed by the device context.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandList : public xiiGALObject<xiiGALCommandListCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandList : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandList, xiiGALDeviceObject);
+
 public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALCommandList(const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandList();
 
   virtual ~xiiGALCommandList();
 
@@ -25,7 +21,5 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandList);
 
 #include <GraphicsFoundation/CommandEncoder/Implementation/CommandList_inl.h>

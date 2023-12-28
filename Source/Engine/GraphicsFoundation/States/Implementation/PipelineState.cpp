@@ -27,7 +27,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineState, 1, xiiRTTIDefaultAllocator<xiiGALPipelineState>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineState, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALPipelineState::xiiGALPipelineState(const xiiGALPipelineStateCreationDescription& creationDescription) :

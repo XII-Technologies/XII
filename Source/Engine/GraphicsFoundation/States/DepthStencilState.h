@@ -75,6 +75,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALDepthStencilState : public xiiGALDeviceOb
   XII_ADD_DYNAMIC_REFLECTION(xiiGALDepthStencilState, xiiGALDeviceObject);
 
 public:
+  /// \brief This returns the creation description for this object.
   XII_NODISCARD const xiiGALDepthStencilStateCreationDescription& GetDescription() const;
 
 protected:

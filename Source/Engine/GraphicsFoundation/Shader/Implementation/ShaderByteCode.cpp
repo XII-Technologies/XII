@@ -2,7 +2,7 @@
 
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderByteCode, 1, xiiRTTIDefaultAllocator<xiiGALShaderByteCode>)
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderByteCode, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALShaderByteCode::xiiGALShaderByteCode() = default;

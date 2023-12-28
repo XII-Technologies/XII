@@ -2,17 +2,11 @@
 
 #include <GraphicsFoundation/Device/SwapChain.h>
 
-// clang-format off
-
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALSwapChain, xiiNoBase, 1, xiiRTTINoAllocator)
-{
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
-// clang-format on
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChain, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALSwapChain::xiiGALSwapChain(const xiiGALSwapChainCreationDescription& creationDescription) :
-  xiiGALObject<xiiGALSwapChainCreationDescription>(creationDescription)
+  xiiGALDeviceObject(), m_Description(creationDescription)
 {
 }
 

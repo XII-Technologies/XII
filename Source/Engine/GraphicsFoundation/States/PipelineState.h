@@ -164,6 +164,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineState : public xiiGALDeviceObject
   XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineState, xiiGALDeviceObject);
 
 public:
+  /// \brief This returns the creation description for this object.
   XII_NODISCARD const xiiGALPipelineStateCreationDescription& GetDescription() const;
 
 protected:

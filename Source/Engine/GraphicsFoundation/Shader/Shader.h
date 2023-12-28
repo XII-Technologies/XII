@@ -167,6 +167,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALShader : public xiiGALDeviceObject
   XII_ADD_DYNAMIC_REFLECTION(xiiGALShader, xiiGALDeviceObject);
 
 public:
+  /// \brief This returns the creation description for this object.
   XII_NODISCARD const xiiGALShaderCreationDescription& GetDescription() const;
 
 protected:

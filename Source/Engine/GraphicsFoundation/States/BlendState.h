@@ -179,6 +179,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALBlendState : public xiiGALDeviceObject
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBlendState, xiiGALDeviceObject);
 
 public:
+  /// \brief This returns the creation description for this object.
   XII_NODISCARD const xiiGALBlendStateCreationDescription& GetDescription() const;
 
 protected:

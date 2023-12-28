@@ -60,9 +60,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTopLevelASCreationDescription : public x
 };
 
 /// \brief Interface that defines methods to manipulate a top level acceleration structure (TLAS) object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALTopLevelAS : public xiiGALResource<xiiGALTopLevelASCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALTopLevelAS : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTopLevelAS, xiiGALDeviceObject);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALTopLevelASCreationDescription& GetDescription() const;
+
   /// \brief This returns the instance description that can be used in the shader binding table.
   ///
   /// \param sName - The instance name that is specified in the xiiGALTLASBuildInstanceData.
@@ -70,19 +75,19 @@ public:
   /// \return The top level acceleration structure instance description, see xiiGALTopLevelASInstanceDescription. If the instance does not exist, then the contribution to hit group index and instance index are set to xiiInvalidIndex.
   ///
   /// \note Access to the top level acceleration structure must be externally synchronized.
-  virtual xiiGALTopLevelASInstanceDescription GetInstanceDescription(xiiStringView sName) const = 0;
+  XII_NODISCARD virtual xiiGALTopLevelASInstanceDescription GetInstanceDescription(xiiStringView sName) const = 0;
 
   /// \brief This returns the top level acceleration structure state after the last build or update operation.
   ///
   /// \return The top level acceleration structure build description, see xiiGALTopLevelASBuildDescription.
   ///
   /// \note Access to the top level acceleration structure must be externally synchronized.
-  virtual xiiGALTopLevelASBuildDescription GetBuildDescription() const = 0;
+  XII_NODISCARD virtual xiiGALTopLevelASBuildDescription GetBuildDescription() const = 0;
 
   /// \brief This returns the scratch buffer information for the current acceleration structure.
   ///
   /// \return The scratch buffer size description, see xiiGALScratchBufferSizeDescription.
-  virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const = 0;
+  XII_NODISCARD virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const = 0;
 
   /// \brief Sets the acceleration structure usage state.
   ///
@@ -91,7 +96,7 @@ public:
   virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) = 0;
 
   /// \brief Returns the internal acceleration structure state.
-  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const = 0;
+  XII_NODISCARD virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const = 0;
 
 protected:
   friend class xiiGALDevice;
@@ -103,8 +108,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTopLevelAS);
+protected:
+  xiiGALTopLevelASCreationDescription m_Description;
+};
 
 #include <GraphicsFoundation/Resources/Implementation/TopLevelAS_inl.h>

@@ -4,11 +4,6 @@
 
 // clang-format off
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALRenderPass, xiiNoBase, 1, xiiRTTINoAllocator)
-{
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALAttachmentLoadOperation, 1)
   XII_ENUM_CONSTANT(xiiGALAttachmentLoadOperation::Load),
   XII_ENUM_CONSTANT(xiiGALAttachmentLoadOperation::Clear),
@@ -22,12 +17,12 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRenderPass, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiGALRenderPass::xiiGALRenderPass(const xiiGALRenderPassCreationDescription& creationDescription) :
-  xiiGALResource<xiiGALRenderPassCreationDescription>(creationDescription)
+  xiiGALDeviceObject(), m_Description(creationDescription)
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  m_sDebugName.Assign(creationDescription.m_sName);
-#endif
 }
 
 xiiGALRenderPass::~xiiGALRenderPass() = default;

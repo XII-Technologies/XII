@@ -4,11 +4,6 @@
 
 // clang-format off
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALBottomLevelAS, xiiNoBase, 1, xiiRTTINoAllocator)
-{
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALRayTracingBuildASFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALRayTracingBuildASFlags::AllowUpdate),
@@ -20,12 +15,12 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 
 // clang-format on
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBottomLevelAS, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiGALBottomLevelAS::xiiGALBottomLevelAS(const xiiGALBottomLevelASCreationDescription& creationDescription) :
-  xiiGALResource<xiiGALBottomLevelASCreationDescription>(creationDescription)
+  xiiGALDeviceObject(), m_Description(creationDescription)
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  m_sDebugName.Assign(creationDescription.m_sName);
-#endif
 }
 
 xiiGALBottomLevelAS::~xiiGALBottomLevelAS() = default;
