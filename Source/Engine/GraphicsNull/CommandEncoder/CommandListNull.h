@@ -11,7 +11,7 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListNull(const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListNull();
 
   virtual ~xiiGALCommandListNull();
 

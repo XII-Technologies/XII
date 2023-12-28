@@ -3,8 +3,8 @@
 #include <GraphicsD3D12/CommandEncoder/CommandQueueD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 
-xiiGALCommandQueueD3D12::xiiGALCommandQueueD3D12(const xiiGALCommandQueueCreationDescription& creationDescription) :
-  xiiGALCommandQueue(creationDescription)
+xiiGALCommandQueueD3D12::xiiGALCommandQueueD3D12() :
+  xiiGALCommandQueue()
 {
 }
 

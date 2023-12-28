@@ -3,8 +3,8 @@
 #include <GraphicsD3D12/CommandEncoder/CommandListD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 
-xiiGALCommandListD3D12::xiiGALCommandListD3D12(const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(creationDescription)
+xiiGALCommandListD3D12::xiiGALCommandListD3D12() :
+  xiiGALCommandList()
 {
 }
 

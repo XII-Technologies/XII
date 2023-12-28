@@ -3,8 +3,8 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 
-xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(const xiiGALCommandQueueCreationDescription& creationDescription) :
-  xiiGALCommandQueue(creationDescription)
+xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan() :
+  xiiGALCommandQueue()
 {
 }
 

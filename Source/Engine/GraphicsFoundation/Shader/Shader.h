@@ -170,6 +170,12 @@ public:
   /// \brief This returns the creation description for this object.
   XII_NODISCARD const xiiGALShaderCreationDescription& GetDescription() const;
 
+  /// \brief This returns the total number of shader resources.
+  virtual xiiUInt32 GetResourceCount() const = 0;
+
+  /// \brief This returns a pointer to the array of shader resources.
+  virtual void GetResourceDescription(xiiUInt32 uiIndex, xiiGALShaderResourceDescription& out_ResourceDescription) const = 0;
+
 protected:
   friend class xiiGALDevice;
 

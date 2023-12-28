@@ -22,7 +22,7 @@ protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandQueueD3D12(const xiiGALCommandQueueCreationDescription& creationDescription);
+  xiiGALCommandQueueD3D12();
 
   virtual ~xiiGALCommandQueueD3D12();
 

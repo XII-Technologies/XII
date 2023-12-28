@@ -3,8 +3,8 @@
 #include <GraphicsNull/CommandEncoder/CommandListNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
 
-xiiGALCommandListNull::xiiGALCommandListNull(const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(creationDescription)
+xiiGALCommandListNull::xiiGALCommandListNull() :
+  xiiGALCommandList()
 {
 }
 
