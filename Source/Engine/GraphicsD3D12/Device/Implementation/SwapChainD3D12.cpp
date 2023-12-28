@@ -84,8 +84,7 @@ xiiResult xiiGALSwapChainD3D12::CreateBackBufferInternal(xiiGALDeviceD3D12* pDev
     return XII_FAILURE;
   }
 
-  const Diligent::TextureDesc&     textureDesc = pTexture->GetDesc();
-  const Diligent::TextureViewDesc& rtvDesc     = pRTV->GetDesc();
+  const Diligent::TextureDesc& textureDesc = pTexture->GetDesc();
 
   xiiGALTextureCreationDescription textureDescription;
   textureDescription.m_sName              = textureDesc.Name;
@@ -93,7 +92,7 @@ xiiResult xiiGALSwapChainD3D12::CreateBackBufferInternal(xiiGALDeviceD3D12* pDev
   textureDescription.m_Size.width         = textureDesc.Width;
   textureDescription.m_Size.height        = textureDesc.Height;
   textureDescription.m_uiArraySizeOrDepth = textureDesc.ArraySize;
-  textureDescription.m_Format             = xiiDiligentTypeConversions::GetGALTextureFormat(rtvDesc.Format);
+  textureDescription.m_Format             = xiiDiligentTypeConversions::GetGALTextureFormat(textureDesc.Format);
   textureDescription.m_uiMipLevels        = textureDesc.MipLevels;
   textureDescription.m_uiSampleCount      = textureDesc.SampleCount;
   textureDescription.m_BindFlags          = xiiDiligentTypeConversions::GetGALBindFlags(textureDesc.BindFlags);
