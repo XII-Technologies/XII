@@ -1,5 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
+#include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
@@ -24,8 +25,43 @@ xiiGALTexture::xiiGALTexture(const xiiGALTextureCreationDescription& creationDes
 
 xiiGALTexture::~xiiGALTexture() = default;
 
-void xiiGALTexture::CreateDefaultResourceViews()
+void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
 {
+  xiiGALTextureViewCreationDescription viewDescription;
+  viewDescription.m_hTexture                  = hTexture;
+  viewDescription.m_uiMostDetailedMip         = 0U;
+  viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
+  viewDescription.m_uiMipLevelCount           = 0U;
+  viewDescription.m_uiArrayOrDepthSlicesCount = 0U;
+
+  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+  {
+    viewDescription.m_ViewType                                   = xiiGALTextureViewType::ShaderResource;
+    m_DefaultTextureViews[xiiGALTextureViewType::ShaderResource] = m_pDevice->CreateTextureView(viewDescription);
+  }
+  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
+  {
+    viewDescription.m_ViewType                                 = xiiGALTextureViewType::RenderTarget;
+    m_DefaultTextureViews[xiiGALTextureViewType::RenderTarget] = m_pDevice->CreateTextureView(viewDescription);
+  }
+  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
+  {
+    viewDescription.m_ViewType                                 = xiiGALTextureViewType::DepthStencil;
+    m_DefaultTextureViews[xiiGALTextureViewType::DepthStencil] = m_pDevice->CreateTextureView(viewDescription);
+
+    viewDescription.m_ViewType                                         = xiiGALTextureViewType::ReadOnlyDepthStencil;
+    m_DefaultTextureViews[xiiGALTextureViewType::ReadOnlyDepthStencil] = m_pDevice->CreateTextureView(viewDescription);
+  }
+  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess))
+  {
+    viewDescription.m_ViewType                                    = xiiGALTextureViewType::UnorderedAccess;
+    m_DefaultTextureViews[xiiGALTextureViewType::UnorderedAccess] = m_pDevice->CreateTextureView(viewDescription);
+  }
+  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShadingRate))
+  {
+    viewDescription.m_ViewType                                = xiiGALTextureViewType::ShadingRate;
+    m_DefaultTextureViews[xiiGALTextureViewType::ShadingRate] = m_pDevice->CreateTextureView(viewDescription);
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_Texture);

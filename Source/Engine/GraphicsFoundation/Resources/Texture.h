@@ -147,8 +147,6 @@ public:
   ///
   /// \return The handle to the buffer view.
   ///
-  /// \remarks Default views are only created for structured and raw buffers. As for formatted buffers the view format is unknown at buffer initialization time, no default views are created.
-  ///
   /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
   XII_NODISCARD xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);
 
@@ -179,7 +177,7 @@ protected:
   xiiGALTextureCreationDescription m_Description;
 
 private:
-  void CreateDefaultResourceViews();
+  void CreateDefaultResourceViews(xiiGALTextureHandle hTexture);
 };
 
 #include <GraphicsFoundation/Resources/Implementation/Texture_inl.h>

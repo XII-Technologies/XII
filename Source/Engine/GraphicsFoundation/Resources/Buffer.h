@@ -164,7 +164,7 @@ protected:
   xiiGALBufferCreationDescription m_Description;
 
 private:
-  void CreateDefaultResourceViews();
+  void CreateDefaultResourceViews(xiiGALBufferHandle hBuffer);
 };
 
 #include <GraphicsFoundation/Resources/Implementation/Buffer_inl.h>

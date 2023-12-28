@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 // clang-format off
 
@@ -28,8 +29,26 @@ xiiGALBuffer::xiiGALBuffer(const xiiGALBufferCreationDescription& creationDescri
 
 xiiGALBuffer::~xiiGALBuffer() = default;
 
-void xiiGALBuffer::CreateDefaultResourceViews()
+void xiiGALBuffer::CreateDefaultResourceViews(xiiGALBufferHandle hBuffer)
 {
+  // Cannot create default views for formatted buffers, since the view format is unknown at creation time.
+  if (m_Description.m_Mode == xiiGALBufferMode::Formatted)
+    return;
+
+  xiiGALBufferViewCreationDescription viewDescription;
+  viewDescription.m_hBuffer      = hBuffer;
+  viewDescription.m_ViewType     = xiiGALBufferViewType::ShaderResource;
+  viewDescription.m_uiByteOffset = 0;
+  viewDescription.m_uiByteWidth  = 0;
+
+  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+  {
+    m_DefaultBufferViews[xiiGALBufferViewType::ShaderResource] = m_pDevice->CreateBufferView(viewDescription);
+  }
+  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess))
+  {
+    m_DefaultBufferViews[xiiGALBufferViewType::UnorderedAccess] = m_pDevice->CreateBufferView(viewDescription);
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_Buffer);

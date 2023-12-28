@@ -821,7 +821,7 @@ xiiGALBufferHandle xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreati
   {
     xiiGALBufferHandle hBuffer(m_Buffers.Insert(pBuffer));
 
-    pBuffer->CreateDefaultResourceViews();
+    pBuffer->CreateDefaultResourceViews(hBuffer);
 
     return hBuffer;
   }
@@ -1169,7 +1169,7 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
   {
     xiiGALTextureHandle hTexture(m_Textures.Insert(pTexture));
 
-    pTexture->CreateDefaultResourceViews();
+    pTexture->CreateDefaultResourceViews(hTexture);
 
     return hTexture;
   }
@@ -1214,6 +1214,8 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
   XII_VERIFY_TEXTURE_VIEW(description.m_ViewType > xiiGALTextureViewType::Undefined && description.m_ViewType < xiiGALTextureViewType::ENUM_COUNT, "The texture view type is invalid.");
   XII_VERIFY_TEXTURE_VIEW(description.m_uiMostDetailedMip < textureDescription.m_uiMipLevels, "The most detailed mip ({0}) is out of range. The texture has only {1} mip level (s).", description.m_uiMostDetailedMip, textureDescription.m_uiMipLevels);
   XII_VERIFY_TEXTURE_VIEW((description.m_uiMostDetailedMip + description.m_uiMipLevelCount) <= textureDescription.m_uiMipLevels, "The most detailed mip ({0}) and the number of mip levels in the view ({1}) is out of range. The texture has only {2} mip level (s).", description.m_uiMostDetailedMip, description.m_uiMipLevelCount, textureDescription.m_uiMipLevels);
+
+  /// \todo GraphicsFoundation: Implement default texture view format deduction.
 
   if (textureDescription.IsArray())
   {
