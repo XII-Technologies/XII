@@ -112,7 +112,7 @@ private:
 
     xiiHybridArray<Step, 8> m_UpdateSteps;
 
-    xiiGALTextureHandle m_hCubemap;
+    xiiGALTextureHandle     m_hCubemap;
     xiiGALTextureViewHandle m_hCubemapProxies[6];
   };
 

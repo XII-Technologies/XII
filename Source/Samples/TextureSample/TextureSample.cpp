@@ -328,7 +328,14 @@ public:
     // Create a device
     {
       xiiGALDeviceCreationDescription DeviceInit;
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+      DeviceInit.m_ValidationLevel = xiiGALDeviceValidationLevel::All;
+#elif XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
       DeviceInit.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
+#else
+      DeviceInit.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
+#endif
 
       xiiStringView sGraphicsAPIName = xiiCommandLineUtils::GetGlobalInstance()->GetStringOption("-renderer", 0, szDefaultGraphicsAPI);
       xiiStringView sShaderModel     = {};
