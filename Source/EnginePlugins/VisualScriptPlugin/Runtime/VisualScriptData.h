@@ -48,8 +48,7 @@ struct XII_VISUALSCRIPTPLUGIN_DLL xiiVisualScriptDataDescription : public xiiRef
 
     XII_ALWAYS_INLINE bool IsValid() const
     {
-      return m_uiByteOffset != INVALID_BYTE_OFFSET &&
-        m_uiType != xiiVisualScriptDataType::Invalid;
+      return m_uiByteOffset != INVALID_BYTE_OFFSET && m_uiType != xiiVisualScriptDataType::Invalid;
     }
 
     XII_ALWAYS_INLINE xiiVisualScriptDataType::Enum GetType() const { return static_cast<xiiVisualScriptDataType::Enum>(m_uiType); }
@@ -135,4 +134,4 @@ struct xiiVisualScriptInstanceData
 
 using xiiVisualScriptInstanceDataMapping = xiiRefCountedContainer<xiiHashTable<xiiHashedString, xiiVisualScriptInstanceData>>;
 
-#include <VisualScriptPlugin/Runtime/VisualScriptData_inl.h>
+#include <VisualScriptPlugin/Runtime/Implementation/VisualScriptData_inl.h>
