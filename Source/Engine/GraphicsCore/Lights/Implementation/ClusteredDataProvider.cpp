@@ -108,8 +108,10 @@ void xiiClusteredDataGPU::BindResources(xiiRenderContext* pRenderContext)
   auto hShadowDataBufferView   = pDevice->GetBuffer(xiiShadowPool::GetShadowDataBuffer())->GetDefaultView(xiiGALBufferViewType::ShaderResource);
   auto hShadowAtlasTextureView = pDevice->GetTexture(xiiShadowPool::GetShadowAtlasTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
+#if XII_RENDERER_ENABLE
   auto hReflectionSpecularTextureView = pDevice->GetTexture(xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint))->GetDefaultView(xiiGALTextureViewType::ShaderResource);
   auto hSkyIrradianceTextureView      = pDevice->GetTexture(xiiReflectionPool::GetSkyIrradianceTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+#endif
 
   pRenderContext->BindBuffer("perLightDataBuffer", pDevice->GetBuffer(m_hLightDataBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   pRenderContext->BindBuffer("perDecalDataBuffer", pDevice->GetBuffer(m_hDecalDataBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
@@ -127,8 +129,10 @@ void xiiClusteredDataGPU::BindResources(xiiRenderContext* pRenderContext)
   pRenderContext->BindTexture2D("DecalAtlasORMTexture", pDecalAtlas->GetORMTexture());
   pRenderContext->BindSampler("DecalAtlasSampler", m_hDecalAtlasSampler);
 
+#if XII_RENDERER_ENABLE
   pRenderContext->BindTextureCube("ReflectionSpecularTexture", hReflectionSpecularTextureView);
   pRenderContext->BindTexture2D("SkyIrradianceTexture", hSkyIrradianceTextureView);
+#endif
 
   pRenderContext->BindConstantBuffer("xiiClusteredDataConstants", m_hConstantBuffer);
 }

@@ -13,6 +13,8 @@
 //////////////////////////////////////////////////////////////////////////
 /// xiiReflectionPool::Data
 
+#if XII_RENDERER_ENABLE
+
 xiiReflectionPool::Data* xiiReflectionPool::s_pData;
 
 xiiReflectionPool::Data::Data()
@@ -313,7 +315,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
     m_hFallbackReflectionSpecularTexture = pDevice->CreateTexture(desc);
   }
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+#  if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   if (!m_hDebugSphere.IsValid())
   {
     xiiGeometry geom;
@@ -388,7 +390,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
       }
     }
   }
-#endif
+#  endif
 }
 
 void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
@@ -408,5 +410,7 @@ void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
     m_hSkyIrradianceTexture = pDevice->CreateTexture(desc);
   }
 }
+
+#endif
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ReflectionPoolData);

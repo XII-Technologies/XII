@@ -5,6 +5,8 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
+#if XII_RENDERER_ENABLE
+
 xiiReflectionProbeMapping::xiiReflectionProbeMapping(xiiUInt32 uiAtlasSize) :
   m_uiAtlasSize(uiAtlasSize)
 {
@@ -273,5 +275,7 @@ void xiiReflectionProbeMapping::UnmapProbe(xiiReflectionProbeId id)
     m_Events.Broadcast(e);
   }
 }
+
+#endif
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ReflectionProbeMapping);

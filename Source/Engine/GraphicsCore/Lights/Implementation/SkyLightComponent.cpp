@@ -65,14 +65,18 @@ xiiSkyLightComponent::~xiiSkyLightComponent() = default;
 void xiiSkyLightComponent::OnActivated()
 {
   GetOwner()->EnableStaticTransformChangesNotifications();
+#if XII_RENDERER_ENABLE
   m_Id = xiiReflectionPool::RegisterSkyLight(GetWorld(), m_Desc, this);
+#endif
 
   GetOwner()->UpdateLocalBounds();
 }
 
 void xiiSkyLightComponent::OnDeactivated()
 {
+#if XII_RENDERER_ENABLE
   xiiReflectionPool::DeregisterSkyLight(GetWorld(), m_Id);
+#endif
   m_Id.Invalidate();
 
   GetOwner()->UpdateLocalBounds();
@@ -210,10 +214,14 @@ void xiiSkyLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) 
   if (m_bStatesDirty)
   {
     m_bStatesDirty = false;
+#if XII_RENDERER_ENABLE
     xiiReflectionPool::UpdateSkyLight(GetWorld(), m_Id, m_Desc, this);
+#endif
   }
 
+#if XII_RENDERER_ENABLE
   xiiReflectionPool::ExtractReflectionProbe(this, msg, nullptr, GetWorld(), m_Id, xiiMath::MaxValue<float>());
+#endif
 }
 
 void xiiSkyLightComponent::OnTransformChanged(xiiMsgTransformChanged& msg)

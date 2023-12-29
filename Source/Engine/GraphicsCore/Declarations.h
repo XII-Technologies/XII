@@ -33,3 +33,5 @@ struct XII_GRAPHICSCORE_DLL xiiPermutationVar
     return m_sName == other.m_sName && m_sValue == other.m_sValue;
   }
 };
+
+#define XII_RENDERER_ENABLE 0

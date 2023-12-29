@@ -33,12 +33,16 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, ReflectionPool)
 
   ON_HIGHLEVELSYSTEMS_STARTUP
   {
+  #if XII_RENDERER_ENABLE
     xiiReflectionPool::OnEngineStartup();
+#endif
   }
 
   ON_HIGHLEVELSYSTEMS_SHUTDOWN
   {
+    #if XII_RENDERER_ENABLE
     xiiReflectionPool::OnEngineShutdown();
+  #endif
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
@@ -46,6 +50,8 @@ XII_END_SUBSYSTEM_DECLARATION;
 
 //////////////////////////////////////////////////////////////////////////
 /// xiiReflectionPool
+
+#if XII_RENDERER_ENABLE
 
 xiiReflectionProbeId xiiReflectionPool::RegisterReflectionProbe(const xiiWorld* pWorld, const xiiReflectionProbeDesc& desc, const xiiReflectionProbeComponentBase* pComponent)
 {
@@ -101,7 +107,7 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
     ref_msg.AddRenderData(pRenderData0, xiiDefaultRenderDataCategories::ReflectionProbe, xiiRenderData::Caching::Never);
   }
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+#  if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiUInt32 uiMipLevels = GetMipLevels();
   if (probeData.m_desc.m_bShowDebugInfo && s_pData->m_hDebugMaterial.GetCount() == uiMipLevels * s_uiNumReflectionProbeCubeMaps)
   {
@@ -149,7 +155,7 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
       ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::LitOpaque, xiiRenderData::Caching::Never);
     }
   }
-#endif
+#  endif
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -368,5 +374,7 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
 
   pDevice->EndPass(pGALPass);
 }
+
+#endif
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ReflectionPool);

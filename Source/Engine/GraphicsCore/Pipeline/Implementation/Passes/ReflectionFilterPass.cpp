@@ -54,7 +54,11 @@ bool xiiReflectionFilterPass::GetRenderTargetDescriptions(const xiiView& view, c
 {
   {
     xiiGALTextureCreationDescription desc;
-    desc.m_Size.width  = xiiReflectionPool::GetReflectionCubeMapSize();
+#if XII_RENDERER_ENABLE
+    desc.m_Size.width = xiiReflectionPool::GetReflectionCubeMapSize();
+#else
+    desc.m_Size.width = 128;
+#endif
     desc.m_Size.height = desc.m_Size.width;
     desc.m_Format      = xiiGALTextureFormat::RGBA16Float;
     desc.m_Type        = xiiGALResourceDimension::TextureCubeArray;

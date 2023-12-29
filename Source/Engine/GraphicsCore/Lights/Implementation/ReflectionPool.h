@@ -18,6 +18,8 @@ using xiiReflectionProbeId = xiiGenericId<24, 8>;
 class xiiReflectionProbeComponentBase;
 class xiiSkyLightComponent;
 
+#if XII_RENDERER_ENABLE
+
 class XII_GRAPHICSCORE_DLL xiiReflectionPool
 {
 public:
@@ -52,3 +54,5 @@ private:
   struct Data;
   static Data* s_pData;
 };
+
+#endif

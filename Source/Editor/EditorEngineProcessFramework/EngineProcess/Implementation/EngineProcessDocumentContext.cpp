@@ -547,6 +547,7 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
 
   tcd.m_Format         = xiiGALTextureFormat::D32Float;
   tcd.m_CPUAccessFlags = {};
+  tcd.m_Usage          = xiiGALResourceUsage::Default;
   tcd.m_BindFlags.Add(xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource);
 
   m_hThumbnailDepthRT = pDevice->CreateTexture(tcd);

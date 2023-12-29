@@ -78,13 +78,17 @@ void xiiSphereReflectionProbeComponent::SetSphereProjection(bool bSphereProjecti
 void xiiSphereReflectionProbeComponent::OnActivated()
 {
   GetOwner()->EnableStaticTransformChangesNotifications();
+#if XII_RENDERER_ENABLE
   m_Id = xiiReflectionPool::RegisterReflectionProbe(GetWorld(), m_Desc, this);
+#endif
   GetOwner()->UpdateLocalBounds();
 }
 
 void xiiSphereReflectionProbeComponent::OnDeactivated()
 {
+#if XII_RENDERER_ENABLE
   xiiReflectionPool::DeregisterReflectionProbe(GetWorld(), m_Id);
+#endif
   m_Id.Invalidate();
 
   GetOwner()->UpdateLocalBounds();
@@ -109,9 +113,12 @@ void xiiSphereReflectionProbeComponent::OnMsgExtractRenderData(xiiMsgExtractRend
   if (m_bStatesDirty)
   {
     m_bStatesDirty = false;
+#if XII_RENDERER_ENABLE
     xiiReflectionPool::UpdateReflectionProbe(GetWorld(), m_Id, m_Desc, this);
+#endif
   }
 
+#if XII_RENDERER_ENABLE
   auto pRenderData                = xiiCreateRenderDataForThisFrame<xiiReflectionProbeRenderData>(GetOwner());
   pRenderData->m_GlobalTransform  = GetOwner()->GetGlobalTransform();
   pRenderData->m_vProbePosition   = pRenderData->m_GlobalTransform * m_Desc.m_vCaptureOffset;
@@ -131,6 +138,7 @@ void xiiSphereReflectionProbeComponent::OnMsgExtractRenderData(xiiMsgExtractRend
 
   float fPriority = ComputePriority(msg, pRenderData, fEllipsoidVolume, vScale);
   xiiReflectionPool::ExtractReflectionProbe(this, msg, pRenderData, GetWorld(), m_Id, fPriority);
+#endif
 }
 
 void xiiSphereReflectionProbeComponent::OnTransformChanged(xiiMsgTransformChanged& msg)

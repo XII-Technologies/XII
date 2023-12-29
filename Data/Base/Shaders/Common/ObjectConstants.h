@@ -60,11 +60,11 @@ uint GetNumInstanceVertexColorsHelper(uint accessData)
 uint GetInstanceVertexColorsHelper(uint accessData, uint vertexID, uint colorIndex)
 {
   uint numColorsPerVertex = GetNumInstanceVertexColorsHelper(accessData);
-  uint offset = (accessData & VERTEX_COLOR_ACCESS_OFFSET_MASK) + (vertexID * numColorsPerVertex + colorIndex);
+  uint offset             = (accessData & VERTEX_COLOR_ACCESS_OFFSET_MASK) + (vertexID * numColorsPerVertex + colorIndex);
   return colorIndex < numColorsPerVertex ? perInstanceVertexColors[offset] : 0;
 }
 
-#  define GetNumInstanceVertexColors() GetNumInstanceVertexColorsHelper(GetInstanceData().VertexColorAccessData)
+#  define GetNumInstanceVertexColors()        GetNumInstanceVertexColorsHelper(GetInstanceData().VertexColorAccessData)
 #  define GetInstanceVertexColors(colorIndex) GetInstanceVertexColorsHelper(GetInstanceData().VertexColorAccessData, G.Input.VertexID, colorIndex)
 
 #endif

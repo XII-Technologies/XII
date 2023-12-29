@@ -3,7 +3,8 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Lights/Implementation/ReflectionProbeData.h>
-#include <GraphicsFoundation/GraphicsFoundationDLL.h>
+
+#if XII_RENDERER_ENABLE
 
 /// \brief Event generated on mapping changes.
 /// \sa xiiReflectionProbeMapping::m_Events
@@ -152,3 +153,5 @@ private:
   xiiDynamicArray<xiiInt32>     m_UnusedProbeSlots; // Probe slots are are currently unused in the atlas.
   xiiDynamicArray<SortedProbes> m_AddProbes;        // Probes that should be added to the atlas
 };
+
+#endif

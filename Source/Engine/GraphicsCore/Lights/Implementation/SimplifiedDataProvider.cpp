@@ -24,11 +24,13 @@ void xiiSimplifiedDataGPU::BindResources(xiiRenderContext* pRenderContext)
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
+#if XII_RENDERER_ENABLE
   auto hReflectionSpecularTextureView = pDevice->GetTexture(xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint))->GetDefaultView(xiiGALTextureViewType::ShaderResource);
   auto hSkyIrradianceTextureView      = pDevice->GetTexture(xiiReflectionPool::GetSkyIrradianceTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource);
 
   pRenderContext->BindTextureCube("ReflectionSpecularTexture", hReflectionSpecularTextureView);
   pRenderContext->BindTexture2D("SkyIrradianceTexture", hSkyIrradianceTextureView);
+#endif
 
   pRenderContext->BindConstantBuffer("xiiSimplifiedDataConstants", m_hConstantBuffer);
 }
@@ -58,8 +60,7 @@ void* xiiSimplifiedDataProvider::UpdateData(const xiiRenderViewContext& renderVi
     // Update Constants
     const xiiRectFloat& viewport = renderViewContext.m_pViewData->m_ViewPortRect;
 
-    xiiSimplifiedDataConstants* pConstants =
-      renderViewContext.m_pRenderContext->GetConstantBufferData<xiiSimplifiedDataConstants>(m_Data.m_hConstantBuffer);
+    xiiSimplifiedDataConstants* pConstants = renderViewContext.m_pRenderContext->GetConstantBufferData<xiiSimplifiedDataConstants>(m_Data.m_hConstantBuffer);
 
     pConstants->SkyIrradianceIndex = pData->m_uiSkyIrradianceIndex;
   }
