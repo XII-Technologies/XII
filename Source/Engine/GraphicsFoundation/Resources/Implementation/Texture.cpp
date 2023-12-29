@@ -35,6 +35,36 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
   viewDescription.m_uiMipLevelCount           = 0U;
   viewDescription.m_uiArrayOrDepthSlicesCount = 0U;
 
+  switch (m_Description.m_Type)
+  {
+    case xiiGALResourceDimension::Texture1D:
+      viewDescription.m_ResourceDimension = xiiGALResourceDimension::Texture1D;
+      break;
+
+    case xiiGALResourceDimension::Texture1DArray:
+      viewDescription.m_ResourceDimension = xiiGALResourceDimension::Texture1DArray;
+      break;
+
+    case xiiGALResourceDimension::Texture2D:
+      viewDescription.m_ResourceDimension = xiiGALResourceDimension::Texture2D;
+      break;
+
+    case xiiGALResourceDimension::Texture2DArray:
+      viewDescription.m_ResourceDimension = xiiGALResourceDimension::Texture2DArray;
+      break;
+
+    case xiiGALResourceDimension::Texture3D:
+      viewDescription.m_ResourceDimension = xiiGALResourceDimension::Texture3D;
+      break;
+
+    case xiiGALResourceDimension::TextureCube:
+    case xiiGALResourceDimension::TextureCubeArray:
+      viewDescription.m_ResourceDimension = xiiGALResourceDimension::Texture2DArray;
+      break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
   {
     viewDescription.m_ViewType                                   = xiiGALTextureViewType::ShaderResource;
