@@ -7,8 +7,8 @@ CAMERA_MODE = CAMERA_MODE_PERSPECTIVE
 
 [RENDERSTATE]
 
-DepthTest = false
-DepthWrite = false
+DepthEnable = false
+DepthWriteEnable = false
 CullMode = CullMode_None
 
 [VERTEXSHADER]

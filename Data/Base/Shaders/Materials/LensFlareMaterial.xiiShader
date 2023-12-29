@@ -13,7 +13,7 @@ SHADING_QUALITY = SHADING_QUALITY_NORMAL
 [RENDERSTATE]
 
 WireFrame = false
-DepthTest = false
+DepthEnable = false
 
 BlendingEnabled0 = true
 BlendOp0 = BlendOp_Add

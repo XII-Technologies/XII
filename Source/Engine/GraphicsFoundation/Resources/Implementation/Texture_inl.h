@@ -8,6 +8,8 @@ XII_ALWAYS_INLINE xiiGALTextureViewHandle xiiGALTexture::GetDefaultView(xiiEnum<
 {
   XII_ASSERT_DEV(viewType > xiiGALTextureViewType::Undefined && viewType < xiiGALTextureViewType::ENUM_COUNT, "Invalid view type.");
 
+  XII_ASSERT_DEV(!m_DefaultTextureViews[viewType.GetValue()].IsInvalidated(), "Texture view handle is invalid!");
+
   return m_DefaultTextureViews[viewType.GetValue()];
 }
 

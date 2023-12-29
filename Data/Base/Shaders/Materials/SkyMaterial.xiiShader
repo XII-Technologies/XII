@@ -28,7 +28,7 @@ Color BaseColor @Default(Color(1.0, 1.0, 1.0));
 
 #include <Shaders/Materials/MaterialState.h>
 
-DepthWrite = false
+DepthWriteEnable = false
 
 [SHADER]
 

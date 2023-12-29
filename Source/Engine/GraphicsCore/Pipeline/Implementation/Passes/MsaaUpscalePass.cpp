@@ -68,6 +68,7 @@ void xiiMsaaUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
     return;
   }
 
+#if 0
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Setup render target
@@ -82,6 +83,7 @@ void xiiMsaaUpscalePass::Execute(const xiiRenderViewContext& renderViewContext, 
   renderViewContext.m_pRenderContext->BindTexture2D("ColorTexture", pDevice->GetTexture(pInput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 
   renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+#endif
 }
 
 xiiResult xiiMsaaUpscalePass::Serialize(xiiStreamWriter& inout_stream) const

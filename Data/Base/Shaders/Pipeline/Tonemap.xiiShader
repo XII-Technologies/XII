@@ -9,8 +9,8 @@ LUT_MODE
 
 [RENDERSTATE]
 
-DepthTest = false
-DepthWrite = false
+DepthEnable = false
+DepthWriteEnable = false
 CullMode = CullMode_None
 
 [VERTEXSHADER]

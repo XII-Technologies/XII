@@ -342,8 +342,8 @@ xiiResult xiiShaderStateResourceDescriptor::Parse(xiiStringView sSource)
 
     // xiiGALFillMode
     {
-      StateValuesCullMode["FillMode_Wireframe"] = xiiGALFillMode::Wireframe;
-      StateValuesCullMode["FillMode_Solid"]     = xiiGALFillMode::Solid;
+      StateValuesFillMode["FillMode_Wireframe"] = xiiGALFillMode::Wireframe;
+      StateValuesFillMode["FillMode_Solid"]     = xiiGALFillMode::Solid;
     }
 
     // xiiGALCullMode

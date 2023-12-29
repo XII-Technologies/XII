@@ -105,8 +105,17 @@ void xiiClusteredDataGPU::BindResources(xiiRenderContext* pRenderContext)
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  auto hShadowDataBufferView   = pDevice->GetBuffer(xiiShadowPool::GetShadowDataBuffer())->GetDefaultView(xiiGALBufferViewType::ShaderResource);
-  auto hShadowAtlasTextureView = pDevice->GetTexture(xiiShadowPool::GetShadowAtlasTexture())->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+  auto hShadowDataBufferView = xiiGALBufferViewHandle();
+  if (xiiGALBuffer* pBuffer = pDevice->GetBuffer(xiiShadowPool::GetShadowDataBuffer()))
+  {
+    hShadowDataBufferView = pBuffer->GetDefaultView(xiiGALBufferViewType::ShaderResource);
+  }
+
+  auto hShadowAtlasTextureView = xiiGALTextureViewHandle();
+  if (xiiGALTexture* pTexture = pDevice->GetTexture(xiiShadowPool::GetShadowAtlasTexture()))
+  {
+    hShadowAtlasTextureView = pTexture->GetDefaultView(xiiGALTextureViewType::ShaderResource);
+  }
 
 #if XII_RENDERER_ENABLE
   auto hReflectionSpecularTextureView = pDevice->GetTexture(xiiReflectionPool::GetReflectionSpecularTexture(m_uiSkyIrradianceIndex, m_cameraUsageHint))->GetDefaultView(xiiGALTextureViewType::ShaderResource);

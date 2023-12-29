@@ -18,13 +18,13 @@ GIZMO_FACE_CAMERA
 #endif
 
 #if PREPARE_DEPTH == TRUE
-	DepthTest = true
-	DepthWrite = true
+	DepthEnable = true
+	DepthWriteEnable = true
 	DepthTestFunc = CompareFunc_Greater
 
 #else
-	DepthTest = true
-	DepthWrite = true
+	DepthEnable = true
+	DepthWriteEnable = true
 	DepthTestFunc = CompareFunc_LessEqual
 
 #endif

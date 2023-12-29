@@ -10,8 +10,8 @@ VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX
 
 BlendingEnabled0 = false
 
-DepthTest = true
-DepthWrite = true
+DepthEnable = true
+DepthWriteEnable = true
 
 [SHADER]
 

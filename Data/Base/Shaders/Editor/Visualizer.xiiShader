@@ -7,8 +7,8 @@ RENDER_PASS
 
 [RENDERSTATE]
 
-DepthTest = true
-DepthWrite = true
+DepthEnable = true
+DepthWriteEnable = true
 WireFrame = true
 CullMode = CullMode_None
 DepthTestFunc = CompareFunc_Less

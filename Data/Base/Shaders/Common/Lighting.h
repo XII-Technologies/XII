@@ -22,8 +22,8 @@ SamplerState DecalAtlasSampler;
 #if XII_RENDERER_ENABLED
 TextureCubeArray ReflectionSpecularTexture;
 Texture2D        SkyIrradianceTexture;
-#  define NUM_REFLECTION_MIPS 6
 #endif
+#define NUM_REFLECTION_MIPS 6
 
 Texture2DArray SceneDepth;
 Texture2DArray SceneColor;
@@ -750,6 +750,7 @@ float GetFogAmount(float3 worldPosition)
 float3 ApplyFog(float3 color, float3 worldPosition, float fogAmount)
 {
   float3 fogColor = FogColor.rgb;
+#if XII_RENDERER_ENABLED
   if (FogInvSkyDistance > 0.0)
   {
     float  distance   = 0;
@@ -758,6 +759,7 @@ float3 ApplyFog(float3 color, float3 worldPosition, float fogAmount)
     float  mipLevel   = saturate(1.0 - distance * FogInvSkyDistance) * NUM_REFLECTION_MIPS;
     fogColor *= ReflectionSpecularTexture.SampleLevel(LinearSampler, coord, mipLevel).rgb * 2.0;
   }
+#endif
 
   return lerp(fogColor, color, fogAmount);
 }
