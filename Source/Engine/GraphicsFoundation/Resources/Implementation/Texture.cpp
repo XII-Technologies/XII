@@ -58,8 +58,11 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
       break;
 
     case xiiGALResourceDimension::TextureCube:
+      viewDescription.m_ResourceDimension = xiiGALResourceDimension::TextureCube;
+      break;
+
     case xiiGALResourceDimension::TextureCubeArray:
-      viewDescription.m_ResourceDimension = xiiGALResourceDimension::Texture2DArray;
+      viewDescription.m_ResourceDimension = xiiGALResourceDimension::TextureCubeArray;
       break;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
@@ -72,8 +75,10 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
   }
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
   {
-    viewDescription.m_ViewType                                 = xiiGALTextureViewType::RenderTarget;
-    m_DefaultTextureViews[xiiGALTextureViewType::RenderTarget] = m_pDevice->CreateTextureView(viewDescription);
+    auto rtViewDescription                                     = viewDescription;
+    rtViewDescription.m_ViewType                               = xiiGALTextureViewType::RenderTarget;
+    rtViewDescription.m_ResourceDimension                      = xiiGALResourceDimension::Texture2DArray;
+    m_DefaultTextureViews[xiiGALTextureViewType::RenderTarget] = m_pDevice->CreateTextureView(rtViewDescription);
   }
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
   {

@@ -16,6 +16,7 @@ xiiResult xiiGALBufferViewVulkan::InitPlatform(xiiGALDevice* pDevice)
   // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
 
   Diligent::BufferViewDesc viewDescription;
+  viewDescription.Name                 = m_Description.m_sName.GetStartPointer();
   viewDescription.ViewType             = xiiDiligentTypeConversions::GetBufferViewType(m_Description.m_ViewType);
   viewDescription.Format.IsNormalized  = m_Description.m_Format.m_bIsNormalized;
   viewDescription.Format.NumComponents = m_Description.m_Format.m_uiComponents;

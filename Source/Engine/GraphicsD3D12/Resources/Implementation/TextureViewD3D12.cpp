@@ -16,6 +16,7 @@ xiiResult xiiGALTextureViewD3D12::InitPlatform(xiiGALDevice* pDevice)
   // xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 
   Diligent::TextureViewDesc viewDescription;
+  viewDescription.Name            = m_Description.m_sName.GetStartPointer();
   viewDescription.ViewType        = xiiDiligentTypeConversions::GetTextureViewType(m_Description.m_ViewType);
   viewDescription.TextureDim      = xiiDiligentTypeConversions::GetResourceDimension(m_Description.m_ResourceDimension);
   viewDescription.Format          = xiiDiligentTypeConversions::GetTextureFormat(m_Description.m_Format);

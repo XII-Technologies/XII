@@ -16,6 +16,7 @@ xiiResult xiiGALBufferViewD3D12::InitPlatform(xiiGALDevice* pDevice)
   // xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 
   Diligent::BufferViewDesc viewDescription;
+  viewDescription.Name                 = m_Description.m_sName.GetStartPointer();
   viewDescription.ViewType             = xiiDiligentTypeConversions::GetBufferViewType(m_Description.m_ViewType);
   viewDescription.Format.IsNormalized  = m_Description.m_Format.m_bIsNormalized;
   viewDescription.Format.NumComponents = m_Description.m_Format.m_uiComponents;
