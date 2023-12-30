@@ -27,7 +27,8 @@ void xiiWindowOutputTargetGAL::CreateSwapchain(const xiiGALSwapChainCreationDesc
 {
   m_CurrentDesc = desc;
   // xiiWindowOutputTargetGAL takes over the present mode and keeps it up to date with cvar_AppVSync.
-  m_Size = desc.m_pWindow->GetClientAreaSize();
+  m_Size        = desc.m_pWindow->GetClientAreaSize();
+  m_PresentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -36,8 +37,8 @@ void xiiWindowOutputTargetGAL::CreateSwapchain(const xiiGALSwapChainCreationDesc
   {
     auto* pSwapchain = pDevice->GetSwapChain(m_hSwapChain);
 
-    m_PresentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
     pSwapchain->SetPresentMode(m_PresentMode);
+    pSwapchain->Resize(pDevice, m_Size).IgnoreResult();
 
     if (bSwapChainExisted && m_OnSwapChainChanged.IsValid())
     {
@@ -50,8 +51,12 @@ void xiiWindowOutputTargetGAL::CreateSwapchain(const xiiGALSwapChainCreationDesc
   {
     m_hSwapChain = pDevice->CreateSwapChain(m_CurrentDesc);
 
-    m_PresentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
-    pDevice->GetSwapChain(m_hSwapChain)->SetPresentMode(m_PresentMode);
+    if (xiiGALSwapChain* pSwapChain = pDevice->GetSwapChain(m_hSwapChain))
+    {
+      m_PresentMode = xiiGameApplication::cvar_AppVSync ? xiiGALPresentMode::VSync : xiiGALPresentMode::Immediate;
+
+      pSwapChain->SetPresentMode(m_PresentMode);
+    }
   }
 }
 
