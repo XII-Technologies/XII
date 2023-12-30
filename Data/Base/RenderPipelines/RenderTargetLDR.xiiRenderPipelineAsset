@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{9340082855766888863,4792825339744186213}}
-		u4 %Hash{7133811938518948712}
+		u4 %Hash{2129978498062270278}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -257,7 +257,7 @@ o
 		s %Name{"DepthStencil"}
 		Vec2 %Node::Pos{f{0xBC773C43,0x1C8EF443}}
 		Uuid %Output{u4{9559375821426009877,9124962636108765151}}
-		s %SampleCount{"xiiGALSampleCount::FourSamples"}
+		s %SampleCount{"xiiGALSampleCount::OneSample"}
 	}
 }
 o

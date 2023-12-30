@@ -79,6 +79,4 @@ void xiiStereoTestPass::Execute(const xiiRenderViewContext& renderViewContext, c
   renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 }
 
-
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_StereoTestPass);

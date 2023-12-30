@@ -30,7 +30,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiSeparatedBilateralBlurPass::xiiSeparatedBilateralBlurPass() :
   xiiRenderPipelinePass("SeparatedBilateral")
-
 {
   {
     // Load shader.
@@ -81,7 +80,6 @@ bool xiiSeparatedBilateralBlurPass::GetRenderTargetDescriptions(const xiiView& v
     xiiLog::Error("Blur target and depth buffer for bilateral blur pass need to have the same dimensions.");
     return false;
   }
-
 
   // Output format maches input format.
   outputs[m_PinOutput.m_uiOutputIndex] = *inputs[m_PinBlurSourceInput.m_uiInputIndex];
@@ -202,34 +200,5 @@ float xiiSeparatedBilateralBlurPass::GetSharpness() const
 {
   return m_fSharpness;
 }
-
-
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-#include <Foundation/Serialization/AbstractObjectGraph.h>
-#include <Foundation/Serialization/GraphPatch.h>
-
-class xiiSeparatedBilateralBlurPassPatch_1_2 : public xiiGraphPatch
-{
-public:
-  xiiSeparatedBilateralBlurPassPatch_1_2() :
-    xiiGraphPatch("xiiSeparatedBilateralBlurPass", 2)
-  {
-  }
-
-  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
-  {
-    pNode->RenameProperty("Blur Radius", "BlurRadius");
-    pNode->RenameProperty("Gaussian Standard Deviation", "GaussianSigma");
-    pNode->RenameProperty("Bilateral Sharpness", "Sharpness");
-  }
-};
-
-xiiSeparatedBilateralBlurPassPatch_1_2 g_xiiSeparatedBilateralBlurPassPatch_1_2;
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_SeparatedBilateralBlur);
