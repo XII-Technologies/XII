@@ -100,11 +100,20 @@ void xiiTransparentForwardRenderPass::RenderObjects(const xiiRenderViewContext& 
 
 void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(const xiiRenderViewContext& renderViewContext, xiiGALTextureHandle hSceneColorTexture, xiiGALTextureHandle hCurrentColorTexture)
 {
-  xiiGALTextureMipLevelData subresource;
-  subresource.m_uiMipLevel   = 0;
-  subresource.m_uiArraySlice = 0;
+  const xiiGALTextureCreationDescription& textureDescription = xiiGALDevice::GetDefaultDevice()->GetTexture(hCurrentColorTexture)->GetDescription();
 
-  renderViewContext.m_pRenderContext->GetCommandEncoder()->ResolveTexture(hSceneColorTexture, subresource, hCurrentColorTexture, subresource);
+  if (textureDescription.m_uiSampleCount > xiiGALSampleCount::OneSample)
+  {
+    xiiGALTextureMipLevelData subresource;
+    subresource.m_uiMipLevel   = 0;
+    subresource.m_uiArraySlice = 0;
+
+    renderViewContext.m_pRenderContext->GetCommandEncoder()->ResolveTexture(hSceneColorTexture, subresource, hCurrentColorTexture, subresource);
+  }
+  else
+  {
+    renderViewContext.m_pRenderContext->GetCommandEncoder()->CopyTexture(hSceneColorTexture, hCurrentColorTexture);
+  }
 }
 
 void xiiTransparentForwardRenderPass::CreateSampler()
