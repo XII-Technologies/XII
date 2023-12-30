@@ -548,7 +548,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
     }
   }
 
-  static xiiUInt32 defaultTextureDescHash = xiiGALTextureCreationDescription{.m_Type = xiiGALResourceDimension::Texture2D}.CalculateHash();
+  static xiiUInt32 defaultTextureDescHash = xiiGALTextureCreationDescription{}.CalculateHash();
   // Set view's render target textures to target pass connections.
   for (xiiUInt32 i = 0; i < m_Passes.GetCount(); i++)
   {
