@@ -105,6 +105,7 @@ public:
 
   xiiVec2              GetNodePos(const xiiDocumentObject* pObject) const;
   const xiiConnection& GetConnection(const xiiDocumentObject* pObject) const;
+  const xiiConnection* GetConnectionIfExists(const xiiDocumentObject* pObject) const;
 
   const xiiPin*                                 GetInputPinByName(const xiiDocumentObject* pObject, xiiStringView sName) const;
   const xiiPin*                                 GetOutputPinByName(const xiiDocumentObject* pObject, xiiStringView sName) const;
