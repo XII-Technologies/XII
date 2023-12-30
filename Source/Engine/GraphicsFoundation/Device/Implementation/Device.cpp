@@ -1376,7 +1376,7 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
   if (description.m_Flags.IsSet(xiiGALTextureViewFlags::AllowMipGeneration))
   {
     XII_VERIFY_TEXTURE_VIEW(textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips), "The xiiGALTextureViewFlags::AllowMipGeneration flag can only be set if the texture was created with the xiiGALMiscTextureFlags::GenerateMips flag.");
-    XII_VERIFY_TEXTURE_VIEW(textureDescription.m_Type == xiiGALTextureViewType::ShaderResource, "The xiiGALTextureViewFlags::AllowMipGeneration flag can only used with the xiiGALTextureViewType::ShaderResource view type.");
+    XII_VERIFY_TEXTURE_VIEW(description.m_ViewType == xiiGALTextureViewType::ShaderResource, "The xiiGALTextureViewFlags::AllowMipGeneration flag can only used with the xiiGALTextureViewType::ShaderResource view type.");
   }
 
   if (description.m_ViewType == xiiGALTextureViewType::ShadingRate)
