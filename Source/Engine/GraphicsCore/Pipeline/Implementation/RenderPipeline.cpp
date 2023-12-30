@@ -1153,7 +1153,7 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   else
     pRenderContext->SetShaderPermutationVariable(sCameraMode, sPerspective);
 
-  // \todo Check vertex shader render target array index.
+  /// \todo Check vertex shader render target array index.
   pRenderContext->SetShaderPermutationVariable(sVSRTAI, sTrue);
 
   pRenderContext->SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);

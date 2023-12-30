@@ -415,7 +415,6 @@ xiiResult xiiShaderStateResourceDescriptor::Parse(xiiStringView sSource)
       m_BlendDesc.m_RenderTargets[i].m_BlendOperation        = (xiiGALBlendOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendOperation, InsertNumber("BlendOperation{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_BlendOperation);
       m_BlendDesc.m_RenderTargets[i].m_SourceBlendAlpha      = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("SourceBlendAlpha{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_SourceBlendAlpha);
       m_BlendDesc.m_RenderTargets[i].m_DestinationBlendAlpha = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("DestinationBlendAlpha{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_DestinationBlendAlpha);
-      m_BlendDesc.m_RenderTargets[i].m_DestinationBlendAlpha = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("DestinationBlendAlpha{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_DestinationBlendAlpha);
       m_BlendDesc.m_RenderTargets[i].m_LogicOperationEnable  = (xiiGALLogicOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesLogicOperation, InsertNumber("LogicOperation{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_LogicOperation);
       m_BlendDesc.m_RenderTargets[i].m_ColorMask             = (xiiGALColorMask::Enum)GetIntStateVariable(VariableValues, InsertNumber("ColorMask{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_ColorMask.GetValue());
     }

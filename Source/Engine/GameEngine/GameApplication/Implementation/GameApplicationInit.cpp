@@ -271,9 +271,7 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
 {
   xiiGALDeviceCreationDescription DeviceInit;
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  DeviceInit.m_ValidationLevel = xiiGALDeviceValidationLevel::All;
-#elif XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   DeviceInit.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
 #else
   DeviceInit.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;

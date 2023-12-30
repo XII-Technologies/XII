@@ -11,7 +11,7 @@ XII_IMPLEMENT_SINGLETON(xiiQtSettingsTab);
 
 xiiString xiiQtSettingsTab::GetWindowIcon() const
 {
-  return ""; //:/GuiFoundation/XII-logo.svg";
+  return ""; //:/GuiFoundation/XII-Logo.svg";
 }
 
 xiiString xiiQtSettingsTab::GetDisplayNameShort() const

@@ -12,7 +12,7 @@ VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX
 
 [RENDERSTATE]
 
-BlendingEnabled0 = true
+BlendEnable0 = true
 SourceBlend0 = Blend_SrcAlpha
 DepthEnable = true
 DepthWriteEnable = false
@@ -26,7 +26,7 @@ CullMode = CullMode_None
   DestBlend0 = Blend_InvSrcAlpha
   DestBlendAlpha0 = Blend_InvSrcAlpha
 #elif PARTICLE_RENDER_MODE == PARTICLE_RENDER_MODE_OPAQUE
-  BlendingEnabled0 = false
+  BlendEnable0 = false
   DepthWriteEnable = true
 #elif PARTICLE_RENDER_MODE == PARTICLE_RENDER_MODE_BLENDADD
   SourceBlend0 = Blend_One
@@ -54,7 +54,7 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
 #endif
 
   VS_OUT ret;
-#if defined(VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX) && CAMERA_MODE == CAMERA_MODE_STEREO    
+#if defined(VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX) && CAMERA_MODE == CAMERA_MODE_STEREO
   ret.RenderTargetArrayIndex = InstanceID;
 #endif
 

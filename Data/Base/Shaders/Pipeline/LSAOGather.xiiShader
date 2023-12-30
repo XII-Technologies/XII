@@ -11,7 +11,7 @@ VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX
 [RENDERSTATE]
 
 DepthEnable = false
-DepthTestFunc = CompareFunc_Less
+ComparisonDepthFunction = ComparisonFunction_Less
 DepthWriteEnable = false
 CullMode = CullMode_None
 
@@ -106,7 +106,7 @@ float ComputeSampleWeight(float2 centerPixelPos, float3 centerPos, float3 viewSp
 #else
   float2 normalizedCoords = samplePixelPos / ViewportSize.xy * 2.0f - 1.0f;
   float3 samplePos = FastScreenCoordToViewSpaceLinear(normalizedCoords, sampleLinearDepth);
-  
+
   #if LSAO_DEPTH_COMPARE == LSAO_DEPTH_COMPARE_NORMAL
     return ComputeNormalWeight(viewSpaceNormal, centerPos, samplePos, DepthCutoffDistance);
   #elif LSAO_DEPTH_COMPARE == LSAO_DEPTH_COMPARE_NORMAL_AND_SAMPLE_DISTANCE
@@ -196,7 +196,7 @@ float4 main(PS_IN input) : SV_Target
 
     // Apply weighted with depth filter.
     float2 samplePixelPos = lineOrigin + lineSampleNumberFloor * dir;
-    float weight = ComputeSampleWeight(centerPixelPos, centerPos, viewSpaceNormal, samplePixelPos, sampleDistanceInv);   
+    float weight = ComputeSampleWeight(centerPixelPos, centerPos, viewSpaceNormal, samplePixelPos, sampleDistanceInv);
     // Any conditional here will only make it slower as the number of pixels that would be discarded
     // is generally really small unless your image only contains noise and no structure.
     {
@@ -204,7 +204,7 @@ float4 main(PS_IN input) : SV_Target
       occlusionAccum += sample * weight;
       totalWeight += weight;
     }
-    
+
 #ifdef TWO_SAMPLES_PER_DIR
     // Second sample for better quality.
     samplePixelPos += dir; // = lineOrigin + lineSampleNumberCeil * dir;

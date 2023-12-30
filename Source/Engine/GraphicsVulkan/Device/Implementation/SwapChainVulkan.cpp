@@ -170,20 +170,6 @@ void xiiGALSwapChainVulkan::Present(xiiGALDevice* pDevice)
 
   XII_ASSERT_DEV(m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture() == static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTexture(m_RenderTargets.m_hRTs[0]))->GetTexture(), "Invalid Swapchain texture. Did you forget to call xiiGALSwapChain::AcquireNextRenderTarget?");
 
-  // Ensure that the current Swapchain image is in the PRESENT state.
-
-  if (m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture()->GetState() != Diligent::RESOURCE_STATE_PRESENT)
-  {
-    Diligent::StateTransitionDesc transitionDesc;
-    transitionDesc.pResource      = m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture();
-    transitionDesc.OldState       = m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture()->GetState();
-    transitionDesc.NewState       = Diligent::RESOURCE_STATE_PRESENT;
-    transitionDesc.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
-    transitionDesc.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
-
-    pDeviceVulkan->GetImmediateContext()->TransitionResourceStates(1u, &transitionDesc);
-  }
-
   xiiUInt32 uiSyncInterval = 1U;
   switch (m_PresentMode)
   {

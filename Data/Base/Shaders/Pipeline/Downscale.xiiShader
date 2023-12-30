@@ -9,7 +9,7 @@ CAMERA_MODE = CAMERA_MODE_STEREO
 [RENDERSTATE]
 
 DepthEnable = false
-DepthTestFunc = CompareFunc_Less
+ComparisonDepthFunction = ComparisonFunction_Less
 DepthWriteEnable = false
 CullMode = CullMode_None
 
