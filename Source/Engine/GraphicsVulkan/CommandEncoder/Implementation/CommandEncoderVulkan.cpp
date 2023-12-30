@@ -927,6 +927,8 @@ void xiiGALCommandEncoderVulkan::BeginRendering(const xiiGALRenderingSetup& rend
   m_pFramebuffer           = pFramebufferVulkan;
   m_RenderingSetup         = renderingSetup;
   m_bPipelineStateModified = true;
+
+  BeginRenderPass();
 }
 
 void xiiGALCommandEncoderVulkan::EndRendering()

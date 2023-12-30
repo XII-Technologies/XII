@@ -876,6 +876,8 @@ void xiiGALCommandEncoderD3D12::BeginRendering(const xiiGALRenderingSetup& rende
   m_pFramebuffer           = pFramebufferD3D12;
   m_RenderingSetup         = renderingSetup;
   m_bPipelineStateModified = true;
+
+  BeginRenderPass();
 }
 
 void xiiGALCommandEncoderD3D12::EndRendering()
