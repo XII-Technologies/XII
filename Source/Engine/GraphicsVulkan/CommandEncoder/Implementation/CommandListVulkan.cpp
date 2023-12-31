@@ -3,8 +3,8 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 
-xiiGALCommandListVulkan::xiiGALCommandListVulkan(const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(creationDescription)
+xiiGALCommandListVulkan::xiiGALCommandListVulkan() :
+  xiiGALCommandList()
 {
 }
 

@@ -50,13 +50,16 @@ bool xiiSourcePass::GetRenderTargetDescriptions(const xiiView& view, const xiiAr
   xiiUInt32 uiHeight = static_cast<xiiUInt32>(view.GetViewport().height);
 
   xiiGALTextureCreationDescription desc;
-  desc.m_Type               = m_SampleCount > xiiGALSampleCount::OneSample ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
+  desc.m_Type               = xiiGALResourceDimension::Texture2D;
   desc.m_Format             = m_Format;
   desc.m_Size.width         = uiWidth;
   desc.m_Size.height        = uiHeight;
   desc.m_uiSampleCount      = m_SampleCount;
   desc.m_uiArraySizeOrDepth = view.GetCamera()->IsStereoscopic() ? 2 : 1;
   desc.m_BindFlags          = ((!xiiGALTextureFormat::IsDepthFormat(m_Format) ? xiiGALBindFlags::RenderTarget : xiiGALBindFlags::DepthStencil) | xiiGALBindFlags::ShaderResource);
+
+  if (desc.m_uiArraySizeOrDepth > 1 || desc.m_uiSampleCount > xiiGALSampleCount::OneSample)
+    desc.m_Type = xiiGALResourceDimension::Texture2DArray;
 
   outputs[m_PinOutput.m_uiOutputIndex] = desc;
 
@@ -85,11 +88,11 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
 
   if (xiiGALTextureFormat::IsDepthFormat(pOutput->m_Desc.m_Format))
   {
-    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetDefaultRenderTargetView(pOutput->m_TextureHandle));
+    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
   }
   else
   {
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(pOutput->m_TextureHandle));
+    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   }
 
   auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, renderingSetup, GetName());

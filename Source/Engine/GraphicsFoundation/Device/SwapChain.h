@@ -3,12 +3,18 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/Descriptors.h>
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Resources/RenderTargetSetup.h>
 
 /// \brief Interface that defines methods to manipulate a swap chain object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChain : public xiiGALObject<xiiGALSwapChainCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChain : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALSwapChain, xiiGALDeviceObject);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALSwapChainCreationDescription& GetDescription() const;
+
   /// \brief Acquires the next render target for presenting.
   virtual void AcquireNextRenderTarget(xiiGALDevice* pDevice) = 0;
 
@@ -40,11 +46,11 @@ public:
 
   const xiiGALRenderTargets& GetRenderTargets() const;
 
-  xiiGALTextureHandle GetBackBufferTexture() const;
+  XII_NODISCARD xiiGALTextureHandle GetBackBufferTexture() const;
 
-  xiiSizeU32 GetCurrentSize() const;
+  XII_NODISCARD xiiSizeU32 GetCurrentSize() const;
 
-  xiiEnum<xiiGALPresentMode> GetPresentMode() const;
+  XII_NODISCARD xiiEnum<xiiGALPresentMode> GetPresentMode() const;
 
 protected:
   friend class xiiGALDevice;
@@ -61,8 +67,8 @@ protected:
   xiiGALRenderTargets        m_RenderTargets;
   xiiSizeU32                 m_CurrentSize = {};
   xiiEnum<xiiGALPresentMode> m_PresentMode = xiiGALPresentMode::VSync;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSwapChain);
+  xiiGALSwapChainCreationDescription m_Description;
+};
 
 #include <GraphicsFoundation/Device/Implementation/SwapChain_inl.h>

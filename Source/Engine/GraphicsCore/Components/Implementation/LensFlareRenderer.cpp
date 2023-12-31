@@ -46,7 +46,7 @@ void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewCon
   XII_SCOPE_EXIT(DeleteLensFlareDataBuffer(hLensFlareData));
 
   pContext->BindShader(m_hShader);
-  pContext->BindBuffer("lensFlareData", pDevice->GetDefaultResourceView(hLensFlareData));
+  pContext->BindBuffer("lensFlareData", pDevice->GetBuffer(hLensFlareData)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   pContext->BindTexture2D("LensFlareTexture", pRenderData->m_hTexture);
 
   FillLensFlareData(batch);

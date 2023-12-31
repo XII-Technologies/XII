@@ -8,9 +8,9 @@ VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX
 
 [RENDERSTATE]
 
-DepthTest = true
-DepthWrite = true
-DepthTestFunc = CompareFunc_Always
+DepthEnable = true
+DepthWriteEnable = true
+ComparisonDepthFunction = ComparisonFunction_Always
 CullMode = CullMode_None
 
 [VERTEXSHADER]

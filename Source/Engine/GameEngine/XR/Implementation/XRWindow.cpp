@@ -110,7 +110,7 @@ void xiiWindowOutputTargetXR::RenderCompanionView(bool bThrottleCompanionView)
     const xiiGALSwapChain* pSwapChain             = xiiGALDevice::GetDefaultDevice()->GetSwapChain(m_pCompanionWindowOutputTarget->m_hSwapChain);
     xiiGALTextureHandle    hCompanionRenderTarget = pSwapChain->GetBackBufferTexture();
     const xiiGALTexture*   tex                    = pDevice->GetTexture(hCompanionRenderTarget);
-    auto                   hRenderTargetView      = xiiGALDevice::GetDefaultDevice()->GetDefaultRenderTargetView(hCompanionRenderTarget);
+    auto                   hRenderTargetView      = xiiGALDevice::GetDefaultDevice()->GetTexture(hCompanionRenderTarget)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
     xiiVec2                targetSize             = xiiVec2((float)tex->GetDescription().m_Size.width, (float)tex->GetDescription().m_Size.height);
 
     xiiGALRenderingSetup renderingSetup;
@@ -125,7 +125,7 @@ void xiiWindowOutputTargetXR::RenderCompanionView(bool bThrottleCompanionView)
     auto* constants       = xiiRenderContext::GetConstantBufferData<xiiVRCompanionViewConstants>(m_hCompanionConstantBuffer);
     constants->TargetSize = targetSize;
 
-    xiiGALTextureViewHandle hInputView = pDevice->GetDefaultResourceView(m_hColorRT);
+    xiiGALTextureViewHandle hInputView = pDevice->GetTexture(m_hColorRT)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
     m_pRenderContext->BindTexture2D("VRTexture", hInputView);
     m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 

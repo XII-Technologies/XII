@@ -13,7 +13,7 @@ protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListVulkan(const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListVulkan();
 
   virtual ~xiiGALCommandListVulkan();
 

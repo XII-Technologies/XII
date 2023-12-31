@@ -191,7 +191,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
 
       if (i == 0)
       {
-        hInputView = pDevice->GetDefaultResourceView(pDepthInput->m_TextureHandle);
+        hInputView = pDevice->GetTexture(pDepthInput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
         pixelSize  = xiiVec2(1.0f / uiWidth, 1.0f / uiHeight);
       }
       else
@@ -245,14 +245,14 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   // SSAO pass
   {
     xiiGALRenderingSetup renderingSetup;
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(tempSSAOTexture));
+    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(tempSSAOTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
     auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALPass, renderViewContext, renderingSetup, "SSAO", renderViewContext.m_pCamera->IsStereoscopic());
 
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
     renderViewContext.m_pRenderContext->BindShader(m_hSSAOShader);
 
-    renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", pDevice->GetDefaultResourceView(pDepthInput->m_TextureHandle));
-    renderViewContext.m_pRenderContext->BindTexture2D("LowResDepthTexture", pDevice->GetDefaultResourceView(hzbTexture));
+    renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", pDevice->GetTexture(pDepthInput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
+    renderViewContext.m_pRenderContext->BindTexture2D("LowResDepthTexture", pDevice->GetTexture(hzbTexture)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
     renderViewContext.m_pRenderContext->BindSampler("DepthSampler", m_hSSAOSampler);
 
     renderViewContext.m_pRenderContext->BindTexture2D("NoiseTexture", m_hNoiseTexture, xiiResourceAcquireMode::BlockTillLoaded);
@@ -265,13 +265,13 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   // Blur pass
   {
     xiiGALRenderingSetup renderingSetup;
-    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(pOutput->m_TextureHandle));
+    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
     auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALPass, renderViewContext, renderingSetup, "Blur", renderViewContext.m_pCamera->IsStereoscopic());
 
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
     renderViewContext.m_pRenderContext->BindShader(m_hBlurShader);
 
-    renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", pDevice->GetDefaultResourceView(tempSSAOTexture));
+    renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", pDevice->GetTexture(tempSSAOTexture)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 
     renderViewContext.m_pRenderContext->BindNullMeshBuffer(xiiGALPrimitiveTopology::TriangleList, 1);
 
@@ -301,7 +301,7 @@ void xiiAOPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext, c
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALRenderingSetup renderingSetup;
-  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(pOutput->m_TextureHandle));
+  renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
   renderingSetup.m_ClearColor              = xiiColor::White;
 

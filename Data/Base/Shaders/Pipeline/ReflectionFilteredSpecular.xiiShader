@@ -7,9 +7,9 @@ CAMERA_MODE = CAMERA_MODE_PERSPECTIVE
 
 [RENDERSTATE]
 
-DepthTest = false
-DepthTestFunc = CompareFunc_Less
-DepthWrite = false
+DepthEnable = false
+ComparisonDepthFunction = ComparisonFunction_Less
+DepthWriteEnable = false
 CullMode = CullMode_None
 
 [COMPUTESHADER]
@@ -116,12 +116,12 @@ float4  integrateCubeLDOnly(in float3 V,in float3 N,in float roughness)
       //   - OmegaP: Solid  angle  associated  to a pixel  of the  cubemap
       float  NdotH = saturate(dot(N, H));
       float  LdotH = saturate(dot(L, H));
-      
+
       float  pdf = D_GGX_Divide_Pi(NdotH , roughness) / 4;
       float  omegaS = 1.0 / (sampleCount * pdf);
       float  omegaP = 4.0 * PI / (6.0 * width * width);
       float  mipLevel = 0.5 * log2(omegaS / omegaP);
- 
+
       float4  Li = InputCubemap.SampleLevel(LinearSampler, L, mipLevel);
 
       accBrdf  += Li * NdotL;

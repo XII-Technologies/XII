@@ -2,6 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Shader/ShaderResourceVariable.h>
 
@@ -158,9 +159,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStateCreationDescription : publi
 };
 
 /// \brief Interface that defines methods to manipulate a pipeline state object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineState : public xiiGALObject<xiiGALPipelineStateCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineState : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineState, xiiGALDeviceObject);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALPipelineStateCreationDescription& GetDescription() const;
+
 protected:
   friend class xiiGALDevice;
 
@@ -171,8 +177,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPipelineState);
+protected:
+  xiiGALPipelineStateCreationDescription m_Description;
+};
 
 #include <GraphicsFoundation/States/Implementation/PipelineState_inl.h>

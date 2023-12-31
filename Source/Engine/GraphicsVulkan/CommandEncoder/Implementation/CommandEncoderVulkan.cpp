@@ -870,6 +870,16 @@ void xiiGALCommandEncoderVulkan::SetRasterizerStatePlatform(xiiGALRasterizerStat
   {
     m_pRasterizerState       = pRasterizerStateVulkan;
     m_bPipelineStateModified = true;
+
+    if (m_pRasterizerState != nullptr)
+    {
+      const bool bScissorEnable = m_pRasterizerState->GetDescription().m_bScissorEnable;
+      if (m_bScissorEnabled != bScissorEnable)
+      {
+        m_bScissorEnabled   = bScissorEnable;
+        m_bViewportModified = true;
+      }
+    }
   }
 }
 
@@ -883,7 +893,11 @@ void xiiGALCommandEncoderVulkan::SetViewportPlatform(const xiiRectFloat& rect, f
   viewport.MinDepth = fMinDepth;
   viewport.MaxDepth = fMaxDepth;
 
-  m_pContext->SetViewports(1U, &viewport, static_cast<xiiUInt32>(rect.width), static_cast<xiiUInt32>(rect.height));
+  if (m_Viewport != viewport)
+  {
+    m_Viewport          = viewport;
+    m_bViewportModified = true;
+  }
 }
 
 void xiiGALCommandEncoderVulkan::SetScissorRectPlatform(const xiiRectU32& rect)
@@ -894,7 +908,11 @@ void xiiGALCommandEncoderVulkan::SetScissorRectPlatform(const xiiRectU32& rect)
   scissorRect.right  = rect.x + rect.width;
   scissorRect.bottom = rect.y + rect.height;
 
-  m_pContext->SetScissorRects(1U, &scissorRect, rect.width, rect.height);
+  if (m_ScissorRect != scissorRect)
+  {
+    m_ScissorRect       = scissorRect;
+    m_bViewportModified = true;
+  }
 }
 
 void xiiGALCommandEncoderVulkan::DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
@@ -927,10 +945,24 @@ void xiiGALCommandEncoderVulkan::BeginRendering(const xiiGALRenderingSetup& rend
   m_pFramebuffer           = pFramebufferVulkan;
   m_RenderingSetup         = renderingSetup;
   m_bPipelineStateModified = true;
+
+  const auto& framebufferDescription = pFramebufferVulkan->GetDescription();
+  SetScissorRectPlatform(xiiRectU32(framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height));
+
+  m_bClearSubmitted = !(renderingSetup.m_bClearDepth || renderingSetup.m_bClearStencil || renderingSetup.m_uiRenderTargetClearMask);
+
+  m_bViewportModified = true;
 }
 
 void xiiGALCommandEncoderVulkan::EndRendering()
 {
+  if (!m_bClearSubmitted)
+  {
+    BeginRenderPass();
+
+    m_bClearSubmitted = true;
+  }
+
   EndRenderPass();
 
   m_pRenderPass    = nullptr;
@@ -942,6 +974,7 @@ void xiiGALCommandEncoderVulkan::BeginCompute()
 {
   m_bIsComputeRequested    = true;
   m_bPipelineStateModified = true;
+  m_bClearSubmitted        = true;
 }
 
 void xiiGALCommandEncoderVulkan::EndCompute()
@@ -970,6 +1003,11 @@ void xiiGALCommandEncoderVulkan::Reset()
   m_bPipelineStateModified = true;
   m_bIndexBufferModified   = true;
   m_bDescriptorsModified   = true;
+  m_bViewportModified      = true;
+
+  m_Viewport        = {};
+  m_ScissorRect     = {};
+  m_bScissorEnabled = false;
 
   m_IndexFormat             = Diligent::VT_UNDEFINED;
   m_uiIndexBufferByteOffset = 0U;
@@ -1108,6 +1146,18 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
     m_pContext->SetIndexBuffer(m_pIndexBuffer, m_uiIndexBufferByteOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
     m_bIndexBufferModified = false;
+  }
+
+  if (!m_bIsComputeRequested && m_bViewportModified)
+  {
+    m_pContext->SetViewports(1U, &m_Viewport, static_cast<xiiUInt32>(m_Viewport.Width), static_cast<xiiUInt32>(m_Viewport.Height));
+
+    if (m_bScissorEnabled)
+    {
+      // Diligent will handle setting a viewport scissor.
+      m_pContext->SetScissorRects(1U, &m_ScissorRect, m_ScissorRect.right - m_ScissorRect.left, m_ScissorRect.bottom - m_ScissorRect.top);
+    }
+    m_bViewportModified = false;
   }
 
   if (m_bDescriptorsModified)
@@ -1270,11 +1320,11 @@ void xiiGALCommandEncoderVulkan::BeginRenderPass()
 
   if (!m_bRenderPassActive)
   {
+    const bool     bHasDepthAttachment    = !m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+    const xiiUInt8 uiColorAttachmentCount = m_RenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+
     xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> clearValues;
     {
-      const bool     bHasDepthAttachment    = !m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
-      const xiiUInt8 uiColorAttachmentCount = m_RenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
-
       if (bHasDepthAttachment)
       {
         const xiiGALTextureViewVulkan* pRenderTargetViewVulkan = static_cast<xiiGALTextureViewVulkan*>(m_GALDeviceVulkan.GetTextureView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
@@ -1304,16 +1354,26 @@ void xiiGALCommandEncoderVulkan::BeginRenderPass()
       }
     }
 
-    Diligent::BeginRenderPassAttribs renderPassBeginDescription;
-    renderPassBeginDescription.pRenderPass         = m_pRenderPass->GetRenderPass();
-    renderPassBeginDescription.pFramebuffer        = m_pFramebuffer->GetFramebuffer();
-    renderPassBeginDescription.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
-    renderPassBeginDescription.pClearValues        = clearValues.GetData();
-    renderPassBeginDescription.ClearValueCount     = clearValues.GetCount();
+    if (bHasDepthAttachment || uiColorAttachmentCount > 0)
+    {
+      Diligent::BeginRenderPassAttribs renderPassBeginDescription;
+      renderPassBeginDescription.pRenderPass         = m_pRenderPass->GetRenderPass();
+      renderPassBeginDescription.pFramebuffer        = m_pFramebuffer->GetFramebuffer();
+      renderPassBeginDescription.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+      renderPassBeginDescription.pClearValues        = clearValues.GetData();
+      renderPassBeginDescription.ClearValueCount     = clearValues.GetCount();
 
-    m_pContext->BeginRenderPass(renderPassBeginDescription);
+      m_pContext->BeginRenderPass(renderPassBeginDescription);
 
-    m_bRenderPassActive = true;
+      m_bRenderPassActive = true;
+      m_bClearSubmitted   = true;
+    }
+    else
+    {
+      m_pContext->SetRenderTargets(0, nullptr, nullptr, Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE);
+
+      m_pContext->SetViewports(1U, &m_Viewport, static_cast<xiiUInt32>(m_Viewport.Width), static_cast<xiiUInt32>(m_Viewport.Height));
+    }
   }
 }
 

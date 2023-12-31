@@ -548,7 +548,7 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
     }
   }
 
-  static xiiUInt32 defaultTextureDescHash = xiiGALTextureCreationDescription{.m_Type = xiiGALResourceDimension::Texture2D}.CalculateHash();
+  static xiiUInt32 defaultTextureDescHash = xiiGALTextureCreationDescription{}.CalculateHash();
   // Set view's render target textures to target pass connections.
   for (xiiUInt32 i = 0; i < m_Passes.GetCount(); i++)
   {
@@ -1153,7 +1153,7 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   else
     pRenderContext->SetShaderPermutationVariable(sCameraMode, sPerspective);
 
-  // \todo Check vertex shader render target array index.
+  /// \todo Check vertex shader render target array index.
   pRenderContext->SetShaderPermutationVariable(sVSRTAI, sTrue);
 
   pRenderContext->SetShaderPermutationVariable(sClipSpaceFlipped, xiiClipSpaceYMode::RenderToTextureDefault == xiiClipSpaceYMode::Flipped ? sTrue : sFalse);
@@ -1457,7 +1457,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       pDevice->EndPass(pGALPass);
     }
 
-    xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, pDevice->GetDefaultResourceView(m_hOcclusionDebugViewTexture), xiiVec2(1, -1));
+    xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, pDevice->GetTexture(m_hOcclusionDebugViewTexture)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiVec2(1, -1));
   }
   else
   {

@@ -3,7 +3,8 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <Foundation/Math/Size.h>
-#include <GraphicsFoundation/Resources/Resource.h>
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 /// \brief This describes the frame buffer creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALFramebufferCreationDescription : public xiiHashableStruct<xiiGALFramebufferCreationDescription>
@@ -18,9 +19,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFramebufferCreationDescription : public 
 };
 
 /// \brief Interface that defines methods to manipulate a frame buffer object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALFramebuffer : public xiiGALResource<xiiGALFramebufferCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALFramebuffer : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALFramebuffer, xiiGALDeviceObject);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALFramebufferCreationDescription& GetDescription() const;
+
 protected:
   friend class xiiGALDevice;
 
@@ -31,8 +37,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALFramebuffer);
+protected:
+  xiiGALFramebufferCreationDescription m_Description;
+};
 
 #include <GraphicsFoundation/Resources/Implementation/Framebuffer_inl.h>

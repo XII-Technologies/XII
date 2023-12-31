@@ -2,6 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 /// \brief The maximum number of layout elements.
@@ -107,9 +108,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayoutCreationDescription : public 
 };
 
 /// \brief Interface that defines methods to manipulate an input layout object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayout : public xiiGALObject<xiiGALInputLayoutCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALInputLayout : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALInputLayout, xiiGALDeviceObject);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALInputLayoutCreationDescription& GetDescription() const;
+
 protected:
   friend class xiiGALDevice;
 
@@ -120,8 +126,10 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+
+protected:
+  xiiGALInputLayoutCreationDescription m_Description;
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALInputLayout);
 
 #include <GraphicsFoundation/Shader/Implementation/InputLayout_inl.h>

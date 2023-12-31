@@ -16,7 +16,7 @@ SHADING_MODE = SHADING_MODE_FULLBRIGHT
 [RENDERSTATE]
 
 #include <Shaders/Materials/MaterialState.h>
-WireFrame = false
+FillMode = FillMode_Solid
 
 [SHADER]
 

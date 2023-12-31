@@ -4,11 +4,6 @@
 
 // clang-format off
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALTextureView, xiiNoBase, 1, xiiRTTINoAllocator)
-{
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALUnorderedAccessViewFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::Unspecified),
   XII_BITFLAGS_CONSTANT(xiiGALUnorderedAccessViewFlags::Read),
@@ -31,15 +26,14 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALTextureComponentSwizzle, 1)
   XII_ENUM_CONSTANT(xiiGALTextureComponentSwizzle::A),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureView, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
 xiiGALTextureView::xiiGALTextureView(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
-  xiiGALResource<xiiGALTextureViewCreationDescription>(creationDescription), m_pTexture(pTexture)
+  xiiGALResourceView(), m_Description(creationDescription), m_pTexture(pTexture)
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  m_sDebugName.Assign(creationDescription.m_sName);
-#endif
-
   XII_ASSERT_DEV(m_pTexture != nullptr, "The given texture must not be nullptr.");
 }
 

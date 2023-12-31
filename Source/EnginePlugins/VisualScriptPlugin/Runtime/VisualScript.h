@@ -296,4 +296,4 @@ struct xiiVisualScriptSendMessageMode
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_VISUALSCRIPTPLUGIN_DLL, xiiVisualScriptSendMessageMode);
 
-#include <VisualScriptPlugin/Runtime/VisualScript_inl.h>
+#include <VisualScriptPlugin/Runtime/Implementation/VisualScript_inl.h>

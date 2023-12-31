@@ -3,6 +3,7 @@
 #include <Core/Collection/CollectionResource.h>
 #include <Core/Curves/ColorGradientResource.h>
 #include <Core/Curves/Curve1DResource.h>
+#include <Core/Graphics/Geometry.h>
 #include <Core/Physics/SurfaceResource.h>
 #include <Core/Prefabs/PrefabResource.h>
 #include <Foundation/IO/FileSystem/DataDirTypeFolder.h>
@@ -146,8 +147,37 @@ void xiiGameApplication::Init_SetupDefaultResources()
   {
     xiiResourceManager::AllowResourceTypeAcquireDuringUpdateContent<xiiMeshResource, xiiMeshBufferResource>();
 
-    // xiiMeshResourceHandle hMissingMesh = xiiResourceManager::LoadResource<xiiMeshResource>("Meshes/MissingMesh.xiiMesh");
-    // xiiResourceManager::SetResourceTypeMissingFallback<xiiMeshResource>(hMissingMesh);
+#if 0
+    xiiMeshResourceHandle hMissingMesh = xiiResourceManager::LoadResource<xiiMeshResource>("Meshes/MissingMesh.xiiMesh");
+    xiiResourceManager::SetResourceTypeMissingFallback<xiiMeshResource>(hMissingMesh);
+#else
+    // Create mesh buffer resource
+    xiiGeometry geom;
+    geom.AddBox(xiiVec3::OneVector(), false);
+    geom.ComputeFaceNormals();
+    geom.ComputeSmoothVertexNormals();
+
+    xiiMeshBufferResourceDescriptor meshBufferDesc;
+    meshBufferDesc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
+    meshBufferDesc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBA8UNormalized);
+    meshBufferDesc.AddStream(xiiGALInputLayoutSemantic::Normal, xiiGALTextureFormat::RGB32Float);
+    meshBufferDesc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
+    meshBufferDesc.ComputeBounds();
+
+    xiiMeshBufferResourceHandle hMeshBuffer = xiiResourceManager::CreateResource<xiiMeshBufferResource>("MissingMesh_Box", std::move(meshBufferDesc));
+
+    xiiResourceLock<xiiMeshBufferResource> pMeshBuffer(hMeshBuffer, xiiResourceAcquireMode::BlockTillLoaded);
+
+    // Create mesh resource
+    xiiMeshResourceDescriptor desc;
+    desc.UseExistingMeshBuffer(hMeshBuffer);
+    desc.AddSubMesh(pMeshBuffer->GetPrimitiveCount(), 0, 0);
+    desc.SetMaterial(0, "");
+    desc.ComputeBounds();
+
+    xiiMeshResourceHandle hMissingMesh = xiiResourceManager::GetOrCreateResource<xiiMeshResource>("Meshes/MissingMesh.xiiMesh", std::move(desc), pMeshBuffer->GetResourceDescription());
+    xiiResourceManager::SetResourceTypeMissingFallback<xiiMeshResource>(hMissingMesh);
+#endif
   }
 
   // Prefabs
@@ -243,6 +273,8 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   DeviceInit.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
+#else
+  DeviceInit.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
 #endif
 
   {

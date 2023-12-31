@@ -111,7 +111,7 @@ public:
   xiiVariant(const char* value);
   xiiVariant(const xiiString& value);
   xiiVariant(const xiiUntrackedString& value);
-  xiiVariant(const xiiStringView& value, bool bCopyString = false);
+  xiiVariant(const xiiStringView& value, bool bCopyString = true);
   xiiVariant(const xiiHashedString& value);
   xiiVariant(const xiiTempHashedString& value);
   xiiVariant(const xiiDataBuffer& value);

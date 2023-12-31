@@ -2,7 +2,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Resources/Resource.h>
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 /// \brief This describes the acceleration structure build flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingBuildASFlags
@@ -85,9 +86,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALScratchBufferSizeDescription : public xi
 };
 
 /// \brief Interface that defines methods to manipulate a bottom level acceleration structure (BLAS) object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelAS : public xiiGALResource<xiiGALBottomLevelASCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelAS : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBottomLevelAS, xiiGALDeviceObject);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALBottomLevelASCreationDescription& GetDescription() const;
+
   /// \brief This returns the geometry description index in the BLAS triangle or axis-aligned bounding box descriptions.
   ///
   /// \param sName - The geometry name that is specified in the BLAS triangle or axis-aligned bounding box descriptions.
@@ -95,7 +101,7 @@ public:
   /// \return The geometry the index or xiiInvalidIndex if the geometry does not exist.
   ///
   /// \note Access to the BLAS must be externally synchronized.
-  virtual xiiUInt32 GetGeometryDescriptionIndex(xiiStringView sName) const = 0;
+  XII_NODISCARD virtual xiiUInt32 GetGeometryDescriptionIndex(xiiStringView sName) const = 0;
 
   /// \brief This returns the geometry index that can be used in a shader binding table.
   ///
@@ -104,19 +110,19 @@ public:
   /// \return The geometry index or xiiInvalidIndex if the geometry does not exist.
   ///
   /// \note Access to the BLAS must be externally synchronized.
-  virtual xiiUInt32 GetGeometryIndex(xiiStringView sName) const = 0;
+  XII_NODISCARD virtual xiiUInt32 GetGeometryIndex(xiiStringView sName) const = 0;
 
   /// \brief This returns the geometry count that was used to build the acceleration structure.
   ///
   /// \return The number of geometries that was used to build the acceleration structure.
   ///
   /// \note Access to the BLAS must be externally synchronized.
-  virtual xiiUInt32 GetActualGeometryCount() const = 0;
+  XII_NODISCARD virtual xiiUInt32 GetActualGeometryCount() const = 0;
 
   /// \brief This returns the scratch buffer information for the current acceleration structure.
   ///
   /// \return The scratch buffer size description, see xiiGALScratchBufferSizeDescription.
-  virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const = 0;
+  XII_NODISCARD virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const = 0;
 
   /// \brief Sets the acceleration structure usage state.
   ///
@@ -125,7 +131,7 @@ public:
   virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) = 0;
 
   /// \brief Returns the internal acceleration structure state.
-  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const = 0;
+  XII_NODISCARD virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const = 0;
 
 protected:
   friend class xiiGALDevice;
@@ -137,8 +143,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBottomLevelAS);
+protected:
+  xiiGALBottomLevelASCreationDescription m_Description;
+};
 
 #include <GraphicsFoundation/Resources/Implementation/BottomLevelAS_inl.h>

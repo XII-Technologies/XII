@@ -9,15 +9,15 @@ VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX
 
 [RENDERSTATE]
 
-DepthTest = false
-DepthWrite = false
+DepthEnable = false
+DepthWriteEnable = false
 CullMode = CullMode_None
 
-BlendingEnabled0 = true
-BlendOp0 = BlendOp_Add
-DestBlend0 = Blend_InvSrcAlpha
-SourceBlend0 = Blend_SrcAlpha
-DestBlendAlpha0 = Blend_InvSrcAlpha
+BlendEnable0 = true
+BlendOperation0 = BlendOperation_Add
+DestinationBlend0 = BlendFactor_InverseSourceAlpha
+SourceBlend0 = BlendFactor_SourceAlpha
+DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 
 [VERTEXSHADER]
 

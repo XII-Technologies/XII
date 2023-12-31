@@ -181,8 +181,14 @@ private:
   bool m_bPipelineStateModified = true;
   bool m_bIndexBufferModified   = false;
   bool m_bDescriptorsModified   = false;
+  bool m_bViewportModified      = true;
   bool m_bRenderPassActive      = false;
   bool m_bIsComputeRequested    = false;
+  bool m_bClearSubmitted        = false;
+
+  Diligent::Viewport m_Viewport        = {};
+  Diligent::Rect     m_ScissorRect     = {};
+  bool               m_bScissorEnabled = false;
 
   // Bound objects for deferred state flushes.
   Diligent::VALUE_TYPE  m_IndexFormat                                          = {};

@@ -178,7 +178,7 @@ void xiiRenderPipelineObjectMirrorEditor::ApplyOp(xiiObjectChange& ref_change)
     const xiiDocumentObject* pObject = m_pNodeManager->GetObject(ref_change.m_Change.m_Value.Get<xiiUuid>());
     if (pObject != nullptr && m_pNodeManager->IsConnection(pObject))
     {
-      pConnection = &m_pNodeManager->GetConnection(pObject);
+      pConnection = m_pNodeManager->GetConnectionIfExists(pObject);
     }
   }
   SUPER::ApplyOp(ref_change);

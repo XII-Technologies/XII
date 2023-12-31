@@ -29,7 +29,7 @@ void xiiInstanceData::BindResources(xiiRenderContext* pRenderContext)
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  pRenderContext->BindBuffer("perInstanceData", pDevice->GetDefaultResourceView(m_hInstanceDataBuffer));
+  pRenderContext->BindBuffer("perInstanceData", pDevice->GetBuffer(m_hInstanceDataBuffer)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   pRenderContext->BindConstantBuffer("xiiObjectConstants", m_hConstantBuffer);
 }
 

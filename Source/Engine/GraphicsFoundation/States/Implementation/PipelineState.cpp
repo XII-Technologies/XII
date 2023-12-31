@@ -25,13 +25,16 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALPipelineType, 1)
   XII_ENUM_CONSTANT(xiiGALPipelineType::Invalid),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineState, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
-  xiiGALPipelineState::xiiGALPipelineState(const xiiGALPipelineStateCreationDescription& creationDescription) :
-    xiiGALObject<xiiGALPipelineStateCreationDescription>(creationDescription)
-  {
-  }
+xiiGALPipelineState::xiiGALPipelineState(const xiiGALPipelineStateCreationDescription& creationDescription) :
+  xiiGALDeviceObject(), m_Description(creationDescription)
+{
+}
 
-  xiiGALPipelineState::~xiiGALPipelineState() = default;
+xiiGALPipelineState::~xiiGALPipelineState() = default;
 
-  XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_PipelineState);
+XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_States_Implementation_PipelineState);

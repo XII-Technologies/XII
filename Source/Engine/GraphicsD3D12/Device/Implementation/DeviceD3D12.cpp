@@ -265,7 +265,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     xiiLog::Error("Failed to locate DirectX12 compatible hardware adapters.");
   }
 
-  if (m_Description.m_AdapterType != xiiGALDeviceAdapterType::Software and m_Description.m_uiAdapterID != XII_GAL_DEFAULT_ADAPTER_ID)
+  if (m_Description.m_AdapterType != xiiGALDeviceAdapterType::Software && m_Description.m_uiAdapterID != XII_GAL_DEFAULT_ADAPTER_ID)
   {
     // Display mode enumeration fails with error for software adapter.
     xiiUInt32 uiDisplayModeCount = 0U;

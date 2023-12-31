@@ -3,7 +3,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
 #include <GraphicsCore/Lights/Implementation/ReflectionProbeData.h>
-#include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 /// \brief Event generated on mapping changes.
 /// \sa xiiReflectionProbeMapping::m_Events

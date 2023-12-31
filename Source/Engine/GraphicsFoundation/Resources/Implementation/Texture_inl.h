@@ -1,18 +1,16 @@
 
+XII_ALWAYS_INLINE const xiiGALTextureCreationDescription& xiiGALTexture::GetDescription() const
+{
+  return m_Description;
+}
+
 XII_ALWAYS_INLINE xiiGALTextureViewHandle xiiGALTexture::GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType)
 {
-  switch (viewType)
-  {
-    case xiiGALTextureViewType::ShaderResource:
-      return m_hDefaultTextureView;
+  XII_ASSERT_DEV(viewType > xiiGALTextureViewType::Undefined && viewType < xiiGALTextureViewType::ENUM_COUNT, "Invalid view type.");
 
-    case xiiGALTextureViewType::RenderTarget:
-    case xiiGALTextureViewType::DepthStencil:
-      return m_hDefaultRenderTargetView;
+  XII_ASSERT_DEV(!m_DefaultTextureViews[viewType.GetValue()].IsInvalidated(), "Texture view handle is invalid!");
 
-    default:
-      return xiiGALTextureViewHandle();
-  }
+  return m_DefaultTextureViews[viewType.GetValue()];
 }
 
 XII_FORCE_INLINE bool xiiGALTextureCreationDescription::IsArray() const

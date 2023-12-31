@@ -60,7 +60,7 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   UpdateSceneColorTexture(renderViewContext, hSceneColor, pColorInput->m_TextureHandle);
 
-  xiiGALTextureViewHandle colorResourceViewHandle = pDevice->GetDefaultResourceView(hSceneColor);
+  xiiGALTextureViewHandle colorResourceViewHandle = pDevice->GetTexture(hSceneColor)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
   renderViewContext.m_pRenderContext->BindTexture2D("SceneColor", colorResourceViewHandle);
   renderViewContext.m_pRenderContext->BindSampler("SceneColorSampler", m_hSceneColorSampler);
 
@@ -80,7 +80,7 @@ void xiiTransparentForwardRenderPass::SetupResources(xiiGALPass* pGALPass, const
 
   if (inputs[m_PinResolvedDepth.m_uiInputIndex])
   {
-    xiiGALTextureViewHandle depthResourceViewHandle = pDevice->GetDefaultResourceView(inputs[m_PinResolvedDepth.m_uiInputIndex]->m_TextureHandle);
+    xiiGALTextureViewHandle depthResourceViewHandle = pDevice->GetTexture(inputs[m_PinResolvedDepth.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
     renderViewContext.m_pRenderContext->BindTexture2D("SceneDepth", depthResourceViewHandle);
   }
 }
@@ -100,11 +100,20 @@ void xiiTransparentForwardRenderPass::RenderObjects(const xiiRenderViewContext& 
 
 void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(const xiiRenderViewContext& renderViewContext, xiiGALTextureHandle hSceneColorTexture, xiiGALTextureHandle hCurrentColorTexture)
 {
-  xiiGALTextureMipLevelData subresource;
-  subresource.m_uiMipLevel   = 0;
-  subresource.m_uiArraySlice = 0;
+  const xiiGALTextureCreationDescription& textureDescription = xiiGALDevice::GetDefaultDevice()->GetTexture(hCurrentColorTexture)->GetDescription();
 
-  renderViewContext.m_pRenderContext->GetCommandEncoder()->ResolveTexture(hSceneColorTexture, subresource, hCurrentColorTexture, subresource);
+  if (textureDescription.m_uiSampleCount > xiiGALSampleCount::OneSample)
+  {
+    xiiGALTextureMipLevelData subresource;
+    subresource.m_uiMipLevel   = 0;
+    subresource.m_uiArraySlice = 0;
+
+    renderViewContext.m_pRenderContext->GetCommandEncoder()->ResolveTexture(hSceneColorTexture, subresource, hCurrentColorTexture, subresource);
+  }
+  else
+  {
+    renderViewContext.m_pRenderContext->GetCommandEncoder()->CopyTexture(hSceneColorTexture, hCurrentColorTexture);
+  }
 }
 
 void xiiTransparentForwardRenderPass::CreateSampler()

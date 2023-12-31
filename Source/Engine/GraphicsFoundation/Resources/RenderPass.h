@@ -3,7 +3,8 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <Foundation/Math/Size.h>
-#include <GraphicsFoundation/Resources/Resource.h>
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 /// \brief A special constant used to indicate that the render pass is unused.
 #define XII_GAL_ATTACHMENT_UNUSED 0xFFFFFFFFU
@@ -117,9 +118,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPassCreationDescription : public x
 };
 
 /// \brief Interface that defines methods to manipulate a render pass object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPass : public xiiGALResource<xiiGALRenderPassCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALRenderPass : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALRenderPass, xiiGALDeviceObject);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALRenderPassCreationDescription& GetDescription() const;
+
 protected:
   friend class xiiGALDevice;
 
@@ -130,8 +136,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRenderPass);
+protected:
+  xiiGALRenderPassCreationDescription m_Description;
+};
 
 #include <GraphicsFoundation/Resources/Implementation/RenderPass_inl.h>

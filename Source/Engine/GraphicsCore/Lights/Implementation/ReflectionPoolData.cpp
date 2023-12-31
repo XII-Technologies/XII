@@ -301,7 +301,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
 
     xiiGALTextureCreationDescription desc;
     desc.m_sName              = "Reflection Fallback Specular Texture";
-    desc.m_Type               = xiiGALResourceDimension::TextureCube;
+    desc.m_Type               = xiiGALResourceDimension::TextureCubeArray;
     desc.m_Format             = xiiGALTextureFormat::RGBA16Float;
     desc.m_uiArraySizeOrDepth = 6;
     desc.m_uiMipLevels        = GetMipLevels();

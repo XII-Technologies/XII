@@ -4,25 +4,20 @@
 
 // clang-format off
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALSampler, xiiNoBase, 1, xiiRTTINoAllocator)
-{
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSamplerFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALSamplerFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALSamplerFlags::Subsampled),
   XII_BITFLAGS_CONSTANT(xiiGALSamplerFlags::SubsampledCoarseReconstruction),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSampler, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
 xiiGALSampler::xiiGALSampler(const xiiGALSamplerCreationDescription& creationDescription) :
-  xiiGALResource<xiiGALSamplerCreationDescription>(creationDescription)
+  xiiGALDeviceObject(), m_Description(creationDescription)
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  m_sDebugName.Assign(creationDescription.m_sName);
-#endif
 }
 
 xiiGALSampler::~xiiGALSampler() = default;

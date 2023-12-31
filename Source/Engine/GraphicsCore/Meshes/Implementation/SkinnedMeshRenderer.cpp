@@ -3,6 +3,7 @@
 #include <GraphicsCore/Meshes/SkinnedMeshComponent.h>
 #include <GraphicsCore/Meshes/SkinnedMeshRenderer.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkinnedMeshRenderer, 1, xiiRTTIDefaultAllocator<xiiSkinnedMeshRenderer>)
@@ -46,7 +47,7 @@ void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& rende
       s_uiSkinningBufferUpdates++;
     }
 
-    pContext->BindBuffer("skinningTransforms", pDevice->GetDefaultResourceView(pSkinnedRenderData->m_hSkinningTransforms));
+    pContext->BindBuffer("skinningTransforms", pDevice->GetBuffer(pSkinnedRenderData->m_hSkinningTransforms)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   }
 }
 

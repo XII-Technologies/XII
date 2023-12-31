@@ -12,26 +12,26 @@ VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX
 
 [RENDERSTATE]
 
-BlendingEnabled0 = true
+BlendEnable0 = true
 SourceBlend0 = Blend_SrcAlpha
-DepthTest = true
-DepthWrite = false
+DepthEnable = true
+DepthWriteEnable = false
 CullMode = CullMode_None
 
 #if PARTICLE_RENDER_MODE == PARTICLE_RENDER_MODE_ADDITIVE
-  DestBlend0 = Blend_One
-  DestBlendAlpha0 = Blend_One
-  SourceBlendAlpha0 = Blend_Zero
+  DestinationBlend0 = BlendFactor_One
+  DestinationBlendAlpha0 = BlendFactor_One
+  SourceBlendAlpha0 = BlendFactor_Zero
 #elif PARTICLE_RENDER_MODE == PARTICLE_RENDER_MODE_BLENDED
-  DestBlend0 = Blend_InvSrcAlpha
-  DestBlendAlpha0 = Blend_InvSrcAlpha
+  DestinationBlend0 = BlendFactor_InverseSourceAlpha
+  DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 #elif PARTICLE_RENDER_MODE == PARTICLE_RENDER_MODE_OPAQUE
-  BlendingEnabled0 = false
-  DepthWrite = true
+  BlendEnable0 = false
+  DepthWriteEnable = true
 #elif PARTICLE_RENDER_MODE == PARTICLE_RENDER_MODE_BLENDADD
-  SourceBlend0 = Blend_One
-  DestBlend0 = Blend_InvSrcAlpha
-  DestBlendAlpha0 = Blend_InvSrcAlpha
+  SourceBlend0 = BlendFactor_One
+  DestinationBlend0 = BlendFactor_InverseSourceAlpha
+  DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 #endif
 
 [SHADER]
@@ -54,7 +54,7 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
 #endif
 
   VS_OUT ret;
-#if defined(VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX) && CAMERA_MODE == CAMERA_MODE_STEREO    
+#if defined(VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX) && CAMERA_MODE == CAMERA_MODE_STEREO
   ret.RenderTargetArrayIndex = InstanceID;
 #endif
 

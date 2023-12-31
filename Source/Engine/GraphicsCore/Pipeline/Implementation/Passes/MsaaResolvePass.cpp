@@ -75,7 +75,7 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
   {
     // Setup render target
     xiiGALRenderingSetup renderingSetup;
-    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetDefaultRenderTargetView(pOutput->m_TextureHandle));
+    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
 
     // Bind render target and viewport
     auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
@@ -85,7 +85,7 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
 
     renderViewContext.m_pRenderContext->BindShader(m_hDepthResolveShader);
     renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
-    renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", pDevice->GetDefaultResourceView(pInput->m_TextureHandle));
+    renderViewContext.m_pRenderContext->BindTexture2D("DepthTexture", pDevice->GetTexture(pInput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 
     renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
   }

@@ -83,8 +83,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal(xiiGALDeviceVulkan* pD
     return XII_FAILURE;
   }
 
-  const Diligent::TextureDesc&     textureDesc = pTexture->GetDesc();
-  const Diligent::TextureViewDesc& rtvDesc     = pRTV->GetDesc();
+  const Diligent::TextureDesc& textureDesc = pTexture->GetDesc();
 
   xiiGALTextureCreationDescription textureDescription;
   textureDescription.m_sName              = textureDesc.Name;
@@ -92,7 +91,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal(xiiGALDeviceVulkan* pD
   textureDescription.m_Size.width         = textureDesc.Width;
   textureDescription.m_Size.height        = textureDesc.Height;
   textureDescription.m_uiArraySizeOrDepth = textureDesc.ArraySize;
-  textureDescription.m_Format             = xiiDiligentTypeConversions::GetGALTextureFormat(rtvDesc.Format);
+  textureDescription.m_Format             = xiiDiligentTypeConversions::GetGALTextureFormat(textureDesc.Format);
   textureDescription.m_uiMipLevels        = textureDesc.MipLevels;
   textureDescription.m_uiSampleCount      = textureDesc.SampleCount;
   textureDescription.m_BindFlags          = xiiDiligentTypeConversions::GetGALBindFlags(textureDesc.BindFlags);
@@ -170,20 +169,6 @@ void xiiGALSwapChainVulkan::Present(xiiGALDevice* pDevice)
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
 
   XII_ASSERT_DEV(m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture() == static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTexture(m_RenderTargets.m_hRTs[0]))->GetTexture(), "Invalid Swapchain texture. Did you forget to call xiiGALSwapChain::AcquireNextRenderTarget?");
-
-  // Ensure that the current Swapchain image is in the PRESENT state.
-
-  if (m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture()->GetState() != Diligent::RESOURCE_STATE_PRESENT)
-  {
-    Diligent::StateTransitionDesc transitionDesc;
-    transitionDesc.pResource      = m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture();
-    transitionDesc.OldState       = m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture()->GetState();
-    transitionDesc.NewState       = Diligent::RESOURCE_STATE_PRESENT;
-    transitionDesc.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
-    transitionDesc.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
-
-    pDeviceVulkan->GetImmediateContext()->TransitionResourceStates(1u, &transitionDesc);
-  }
 
   xiiUInt32 uiSyncInterval = 1U;
   switch (m_PresentMode)

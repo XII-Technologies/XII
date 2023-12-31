@@ -37,25 +37,40 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
     m_hCubemap = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
   }
 
-  // xiiStringBuilder sName;
+#if XII_RENDERER_TODO
+  xiiStringBuilder sName;
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hCubemapProxies); ++i)
   {
-    m_hCubemapProxies[i] = xiiGALDevice::GetDefaultDevice()->CreateProxyTexture(m_hCubemap, i);
+    xiiGALTextureViewCreationDescription viewDesc;
+    viewDesc.m_hTexture                  = m_hCubemap;
+    viewDesc.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
+    viewDesc.m_ResourceDimension         = xiiGALResourceDimension::Texture2D;
+    viewDesc.m_uiFirstArrayOrDepthSlice  = i;
+    viewDesc.m_uiArrayOrDepthSlicesCount = 1;
+    viewDesc.m_uiMipLevelCount           = 1;
+    viewDesc.m_uiMostDetailedMip         = 0;
 
-    // sName.Format("Reflection Cubemap Proxy {}", i);
-    // pDevice->GetTexture(m_hCubemapProxies[i])->SetDebugName(sName);
+    m_hCubemapProxies[i] = xiiGALDevice::GetDefaultDevice()->CreateTextureView(viewDesc);
+
+    XII_ASSERT_DEV(!m_hCubemapProxies[i].IsInvalidated(), "");
+
+    sName.Format("Reflection Cubemap View {}", i);
+    pDevice->GetTextureView(m_hCubemapProxies[i])->SetDebugName(sName);
   }
+#endif
 }
 
 xiiReflectionProbeUpdater::ProbeUpdateInfo::~ProbeUpdateInfo()
 {
+#if XII_RENDERER_TODO
   for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hCubemapProxies); ++i)
   {
     if (!m_hCubemapProxies[i].IsInvalidated())
     {
-      xiiGALDevice::GetDefaultDevice()->DestroyProxyTexture(m_hCubemapProxies[i]);
+      xiiGALDevice::GetDefaultDevice()->DestroyTextureView(m_hCubemapProxies[i]);
     }
   }
+#endif
 
   if (!m_hCubemap.IsInvalidated())
   {
@@ -422,7 +437,9 @@ void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& ste
     }
     else
     {
-      renderTargets.m_hRTs[0] = updateInfo.m_hCubemapProxies[uiFaceIndex];
+#if XII_RENDERER_TODO
+      renderTargets.m_hRTs[0] = updateInfo.m_hCubemap;
+#endif
     }
     pView->SetRenderTargets(renderTargets);
 

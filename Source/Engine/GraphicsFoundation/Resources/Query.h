@@ -2,7 +2,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Resources/Resource.h>
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 /// \brief This describes the occlusion query data.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryDataOcclusion : public xiiHashableStruct<xiiGALQueryDataOcclusion>
@@ -71,9 +72,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALQueryCreationDescription : public xiiHas
 };
 
 /// \brief Interface that defines methods to manipulate a query object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALQuery : public xiiGALResource<xiiGALQueryCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALQuery : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALQuery, xiiGALDeviceObject);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALQueryCreationDescription& GetDescription() const;
+
   /// \brief This retrieves the query data.
   ///
   /// \param pData           - The pointer to the query data structure. This must be a pointer to one of Occlusion, BinaryOcclusion, Timestamp, PipelineStatistics, and Duration structures. An application may provide nullptr to only check the query status.
@@ -83,10 +89,10 @@ public:
   /// \return True if the query data is available, false otherwise.
   ///
   /// \note  In Direct3D11 backend timestamp queries will only be available after FinishFrame is called for the frame in which they were collected. If AutoInvalidate is set to true, and the data have been retrieved, an application must not call GetData() until it begins and ends the query again.
-  virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate = true) = 0;
+  XII_NODISCARD virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate = true) = 0;
 
   /// \brief This invalidates the query and releases the associated resources.
-  virtual void Invalidate() = 0;
+  XII_NODISCARD virtual void Invalidate() = 0;
 
 protected:
   friend class xiiGALDevice;
@@ -99,8 +105,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALQuery);
+protected:
+  xiiGALQueryCreationDescription m_Description;
+};
 
 #include <GraphicsFoundation/Resources/Implementation/Query_inl.h>

@@ -2,7 +2,8 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Resources/Resource.h>
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
 /// \brief This describes the shader resource type.
@@ -161,9 +162,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHa
 };
 
 /// \brief Interface that defines methods to manipulate a shader object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALShader : public xiiGALResource<xiiGALShaderCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALShader : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALShader, xiiGALDeviceObject);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALShaderCreationDescription& GetDescription() const;
+
   /// \brief This returns the total number of shader resources.
   virtual xiiUInt32 GetResourceCount() const = 0;
 
@@ -180,8 +186,10 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+
+protected:
+  xiiGALShaderCreationDescription m_Description;
 };
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShader);
 
 #include <GraphicsFoundation/Shader/Implementation/Shader_inl.h>

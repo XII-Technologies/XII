@@ -4,11 +4,6 @@
 
 // clang-format off
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALTopLevelAS, xiiNoBase, 1, xiiRTTINoAllocator)
-{
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALHitGroupBindingMode, 1)
   XII_ENUM_CONSTANT(xiiGALHitGroupBindingMode::PerGeometry),
   XII_ENUM_CONSTANT(xiiGALHitGroupBindingMode::PerInstance),
@@ -16,14 +11,14 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALHitGroupBindingMode, 1)
   XII_ENUM_CONSTANT(xiiGALHitGroupBindingMode::UserDefined),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTopLevelAS, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
 xiiGALTopLevelAS::xiiGALTopLevelAS(const xiiGALTopLevelASCreationDescription& creationDescription) :
-  xiiGALResource<xiiGALTopLevelASCreationDescription>(creationDescription)
+  xiiGALDeviceObject(), m_Description(creationDescription)
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  m_sDebugName.Assign(creationDescription.m_sName);
-#endif
 }
 
 xiiGALTopLevelAS::~xiiGALTopLevelAS() = default;

@@ -149,6 +149,7 @@ void xiiBoxReflectionProbeComponent::OnMsgExtractRenderData(xiiMsgExtractRenderD
   if (m_bStatesDirty)
   {
     m_bStatesDirty = false;
+
     xiiReflectionPool::UpdateReflectionProbe(GetWorld(), m_Id, m_Desc, this);
   }
 
@@ -169,6 +170,7 @@ void xiiBoxReflectionProbeComponent::OnMsgExtractRenderData(xiiMsgExtractRenderD
   const float   fVolume = xiiMath::Abs(vScale.x * vScale.y * vScale.z);
 
   float fPriority = ComputePriority(msg, pRenderData, fVolume, vScale);
+
   xiiReflectionPool::ExtractReflectionProbe(this, msg, pRenderData, GetWorld(), m_Id, fPriority);
 }
 

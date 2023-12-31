@@ -2,53 +2,33 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
-/// \brief Base GAL object interface.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALResourceBase : public xiiRefCounted
+/// \brief Base class for all GAL resources (textures, buffers, etc).
+class XII_GRAPHICSFOUNDATION_DLL xiiGALResource : public xiiGALDeviceObject
 {
-public:
-  virtual const xiiGALResourceBase* GetParentResource() const { return this; }
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALResource, xiiGALDeviceObject);
 
+public:
 protected:
   friend class xiiGALDevice;
-
-  inline ~xiiGALResourceBase()
-  {
-    XII_ASSERT_DEV(m_hDefaultBufferView.IsInvalidated(), "");
-    XII_ASSERT_DEV(m_hDefaultTextureView.IsInvalidated(), "");
-    XII_ASSERT_DEV(m_hDefaultRenderTargetView.IsInvalidated(), "");
-
-    XII_ASSERT_DEV(m_BufferViews.IsEmpty(), "There are resident buffer views remaining.");
-    XII_ASSERT_DEV(m_TextureViews.IsEmpty(), "There are resident texture views remaining.");
-  }
 
   xiiHashTable<xiiUInt32, xiiGALBufferViewHandle>  m_BufferViews;
   xiiHashTable<xiiUInt32, xiiGALTextureViewHandle> m_TextureViews;
 
-  xiiGALBufferViewHandle  m_hDefaultBufferView;
-  xiiGALTextureViewHandle m_hDefaultTextureView;
-  xiiGALTextureViewHandle m_hDefaultRenderTargetView;
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  mutable xiiHashedString m_sDebugName;
-#endif
+  xiiGALBufferViewHandle  m_DefaultBufferViews[xiiGALBufferViewType::ENUM_COUNT];
+  xiiGALTextureViewHandle m_DefaultTextureViews[xiiGALTextureViewType::ENUM_COUNT];
 };
 
-/// \brief Base class for GAL resources, stores a creation description of the object and also allows for reference counting.
-template <typename CreationDescription>
-class xiiGALResource : public xiiGALResourceBase
+/// \brief Base class for all GAL resource views (texture and buffer views).
+class XII_GRAPHICSFOUNDATION_DLL xiiGALResourceView : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALResourceView, xiiGALDeviceObject);
+
 public:
-  XII_ALWAYS_INLINE xiiGALResource(const CreationDescription& description) :
-    m_Description(description)
-  {
-  }
-
-  XII_ALWAYS_INLINE const CreationDescription& GetDescription() const { return m_Description; }
-
 protected:
-  CreationDescription m_Description;
+  friend class xiiGALDevice;
 };
 
 #include <GraphicsFoundation/Resources/Implementation/Resource_inl.h>

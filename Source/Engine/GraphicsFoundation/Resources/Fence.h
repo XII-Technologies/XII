@@ -2,7 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Resources/Resource.h>
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
 
 /// \brief This describes the fence type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALFenceType
@@ -36,13 +36,18 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALFenceCreationDescription : public xiiHas
 /// \remarks When a fence that was previously signaled by IDeviceContext::EnqueueSignal() is destroyed, it may block the GPU until all prior commands have completed execution.
 ///
 /// \remarks In Direct3D12 and Vulkan backends, fence is thread-safe.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALFence : public xiiGALResource<xiiGALFenceCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALFence : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALFence, xiiGALDeviceObject);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALFenceCreationDescription& GetDescription() const;
+
   /// \brief This returns the last completed value signaled by the GPU.
   ///
   /// \remarks In Direct3D11 backend, this method is not thread-safe (even if the fence object is protected by a mutex) and must only be called by the same thread that signals the fence via an enqueue.
-  virtual xiiUInt64 GetCompletedValue() = 0;
+  XII_NODISCARD virtual xiiUInt64 GetCompletedValue() = 0;
 
   /// \brief This sets the fence to the specified value.
   ///
@@ -70,8 +75,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALFence);
+protected:
+  xiiGALFenceCreationDescription m_Description;
+};
 
 #include <GraphicsFoundation/Resources/Implementation/Fence_inl.h>

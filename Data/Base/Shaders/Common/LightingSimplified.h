@@ -35,6 +35,6 @@ AccumulatedLight CalculateLightingSimplified(xiiMaterialData matData)
   // sky light in ambient cube basis
   float3 skyLight = EvaluateAmbientCube(SkyIrradianceTexture, SkyIrradianceIndex, matData.worldNormal).rgb;
   totalLight.diffuseLight += matData.diffuseColor * skyLight * occlusion;
-  
+
   return totalLight;
 }

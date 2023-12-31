@@ -10,7 +10,6 @@
 #include <GraphicsFoundation/Resources/BufferView.h>
 #include <GraphicsFoundation/Resources/Fence.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
-#include <GraphicsFoundation/Resources/ProxyTexture.h>
 #include <GraphicsFoundation/Resources/Query.h>
 #include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
@@ -72,10 +71,13 @@ namespace
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALRasterizerStateHandle) == sizeof(xiiUInt32));
 } // namespace
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDevice, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 xiiGALDevice* xiiGALDevice::s_pDefaultDevice = nullptr;
 
 xiiGALDevice::xiiGALDevice(const xiiGALDeviceCreationDescription& creationDescription) :
-  xiiGALObject<xiiGALDeviceCreationDescription>(creationDescription), m_Allocator("GALDevice", xiiFoundation::GetDefaultAllocator()), m_AllocatorWrapper(&m_Allocator)
+  xiiGALObject(), m_Description(creationDescription), m_Allocator("GALDevice", xiiFoundation::GetDefaultAllocator()), m_AllocatorWrapper(&m_Allocator)
 {
 }
 
@@ -310,6 +312,8 @@ xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const xiiGALSwapChainCreatio
   }
   else
   {
+    pSwapChain->m_pDevice = this;
+
     return xiiGALSwapChainHandle(m_SwapChains.Insert(pSwapChain));
   }
 }
@@ -382,6 +386,8 @@ xiiGALBlendStateHandle xiiGALDevice::CreateBlendState(const xiiGALBlendStateCrea
   if (pBlendState != nullptr)
   {
     XII_ASSERT_DEBUG(pBlendState->GetDescription().CalculateHash() == uiHash, "BlendState hash does not match.");
+
+    pBlendState->m_pDevice = this;
 
     pBlendState->AddRef();
 
@@ -467,6 +473,8 @@ xiiGALDepthStencilStateHandle xiiGALDevice::CreateDepthStencilState(const xiiGAL
   {
     XII_ASSERT_DEBUG(pDepthStencilState->GetDescription().CalculateHash() == uiHash, "DepthStencilState hash does not match.");
 
+    pDepthStencilState->m_pDevice = this;
+
     pDepthStencilState->AddRef();
 
     xiiGALDepthStencilStateHandle hDepthStencilState(m_DepthStencilStates.Insert(pDepthStencilState));
@@ -538,6 +546,8 @@ xiiGALRasterizerStateHandle xiiGALDevice::CreateRasterizerState(const xiiGALRast
   if (pRasterizerState != nullptr)
   {
     XII_ASSERT_DEBUG(pRasterizerState->GetDescription().CalculateHash() == uiHash, "RasterizerState hash does not match.");
+
+    pRasterizerState->m_pDevice = this;
 
     pRasterizerState->AddRef();
 
@@ -638,6 +648,8 @@ xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescript
   }
   else
   {
+    pShader->m_pDevice = this;
+
     return xiiGALShaderHandle(m_Shaders.Insert(pShader));
   }
 }
@@ -817,20 +829,11 @@ xiiGALBufferHandle xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreati
 {
   if (pBuffer != nullptr)
   {
+    pBuffer->m_pDevice = this;
+
     xiiGALBufferHandle hBuffer(m_Buffers.Insert(pBuffer));
 
-    // Create default resource view.
-
-    if (description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
-    {
-      xiiGALBufferViewCreationDescription viewDescription;
-      viewDescription.m_hBuffer      = hBuffer;
-      viewDescription.m_ViewType     = xiiGALBufferViewType::ShaderResource;
-      viewDescription.m_uiByteOffset = 0;
-      viewDescription.m_uiByteWidth  = 0;
-
-      pBuffer->m_hDefaultBufferView = CreateBufferView(viewDescription);
-    }
+    pBuffer->CreateDefaultResourceViews(hBuffer);
 
     return hBuffer;
   }
@@ -937,6 +940,8 @@ xiiGALBufferViewHandle xiiGALDevice::CreateBufferView(xiiGALBufferViewCreationDe
   if (pBufferView != nullptr)
   {
     XII_ASSERT_DEBUG(pBufferView->GetDescription().CalculateHash() == uiHash, "BufferView hash does not match.");
+
+    pBufferView->m_pDevice = this;
 
     pBufferView->AddRef();
 
@@ -1176,40 +1181,11 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
 {
   if (pTexture != nullptr)
   {
+    pTexture->m_pDevice = this;
+
     xiiGALTextureHandle hTexture(m_Textures.Insert(pTexture));
 
-    // Create default resource view.
-    if (description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
-    {
-      xiiGALTextureViewCreationDescription viewDescription;
-      viewDescription.m_hTexture                  = hTexture;
-      viewDescription.m_ViewType                  = xiiGALTextureViewType::ShaderResource;
-      viewDescription.m_Format                    = description.m_Format;
-      viewDescription.m_uiMostDetailedMip         = 0U;
-      viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
-      viewDescription.m_uiMipLevelCount           = 0U;
-      viewDescription.m_uiArrayOrDepthSlicesCount = description.m_uiArraySizeOrDepth;
-      pTexture->m_hDefaultTextureView             = CreateTextureView(viewDescription);
-    }
-
-    // Create default render target or depth stencil view.
-    if (description.m_BindFlags.IsAnySet(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil))
-    {
-      auto& formatProperties = GetTextureFormatProperties(description.m_Format);
-
-      xiiEnum<xiiGALTextureViewType> viewType = formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget;
-
-      xiiGALTextureViewCreationDescription viewDescription;
-      viewDescription.m_hTexture                  = hTexture;
-      viewDescription.m_ViewType                  = viewType;
-      viewDescription.m_Format                    = description.m_Format;
-      viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
-      viewDescription.m_uiMostDetailedMip         = 0U;
-      viewDescription.m_uiMipLevelCount           = 0U;
-      viewDescription.m_uiArrayOrDepthSlicesCount = description.m_uiArraySizeOrDepth;
-
-      pTexture->m_hDefaultRenderTargetView = CreateTextureView(viewDescription);
-    }
+    pTexture->CreateDefaultResourceViews(hTexture);
 
     return hTexture;
   }
@@ -1251,9 +1227,11 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
 
   const auto& textureDescription = pTexture->GetDescription();
 
-  XII_VERIFY_TEXTURE_VIEW(description.m_ViewType > xiiGALTextureViewType::Undefined && description.m_ViewType < xiiGALTextureViewType::ENUN_COUNT, "The texture view type is invalid.");
+  XII_VERIFY_TEXTURE_VIEW(description.m_ViewType > xiiGALTextureViewType::Undefined && description.m_ViewType < xiiGALTextureViewType::ENUM_COUNT, "The texture view type is invalid.");
   XII_VERIFY_TEXTURE_VIEW(description.m_uiMostDetailedMip < textureDescription.m_uiMipLevels, "The most detailed mip ({0}) is out of range. The texture has only {1} mip level (s).", description.m_uiMostDetailedMip, textureDescription.m_uiMipLevels);
   XII_VERIFY_TEXTURE_VIEW((description.m_uiMostDetailedMip + description.m_uiMipLevelCount) <= textureDescription.m_uiMipLevels, "The most detailed mip ({0}) and the number of mip levels in the view ({1}) is out of range. The texture has only {2} mip level (s).", description.m_uiMostDetailedMip, description.m_uiMipLevelCount, textureDescription.m_uiMipLevels);
+
+  /// \todo GraphicsFoundation: Implement default texture view format deduction.
 
   if (textureDescription.IsArray())
   {
@@ -1373,7 +1351,7 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
     case xiiGALResourceDimension::Texture1D:
     case xiiGALResourceDimension::Texture2D:
     {
-      XII_VERIFY_TEXTURE_VIEW(description.m_uiArrayOrDepthSlicesCount == 1U, "The number of slices in the view ({0}) must be 1 (or 0) for non-array Texture 1D/2D views.", description.m_uiArrayOrDepthSlicesCount);
+      XII_VERIFY_TEXTURE_VIEW(description.m_uiArrayOrDepthSlicesCount <= 1U, "The number of slices in the view ({0}) must be 1 (or 0) for non-array Texture 1D/2D views.", description.m_uiArrayOrDepthSlicesCount);
     }
     break;
     case xiiGALResourceDimension::Texture1DArray:
@@ -1398,7 +1376,7 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
   if (description.m_Flags.IsSet(xiiGALTextureViewFlags::AllowMipGeneration))
   {
     XII_VERIFY_TEXTURE_VIEW(textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips), "The xiiGALTextureViewFlags::AllowMipGeneration flag can only be set if the texture was created with the xiiGALMiscTextureFlags::GenerateMips flag.");
-    XII_VERIFY_TEXTURE_VIEW(textureDescription.m_Type == xiiGALTextureViewType::ShaderResource, "The xiiGALTextureViewFlags::AllowMipGeneration flag can only used with the xiiGALTextureViewType::ShaderResource view type.");
+    XII_VERIFY_TEXTURE_VIEW(description.m_ViewType == xiiGALTextureViewType::ShaderResource, "The xiiGALTextureViewFlags::AllowMipGeneration flag can only used with the xiiGALTextureViewType::ShaderResource view type.");
   }
 
   if (description.m_ViewType == xiiGALTextureViewType::ShadingRate)
@@ -1452,6 +1430,8 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
   if (pTextureView != nullptr)
   {
     XII_ASSERT_DEBUG(pTextureView->GetDescription().CalculateHash() == uiHash, "TextureView hash does not match.");
+
+    pTextureView->m_pDevice = this;
 
     pTextureView->AddRef();
 
@@ -1532,6 +1512,8 @@ xiiGALSamplerHandle xiiGALDevice::CreateSampler(const xiiGALSamplerCreationDescr
   {
     XII_ASSERT_DEBUG(pSampler->GetDescription().CalculateHash() == uiHash, "Sampler hash does not match");
 
+    pSampler->m_pDevice = this;
+
     pSampler->AddRef();
 
     xiiGALSamplerHandle hSampler(m_Samplers.Insert(pSampler));
@@ -1592,6 +1574,8 @@ xiiGALInputLayoutHandle xiiGALDevice::CreateInputLayout(const xiiGALInputLayoutC
 
   if (pInputLayout != nullptr)
   {
+    pInputLayout->m_pDevice = this;
+
     pInputLayout->AddRef();
 
     xiiGALInputLayoutHandle hInputLayout(m_InputLayouts.Insert(pInputLayout));
@@ -1675,6 +1659,8 @@ xiiGALQueryHandle xiiGALDevice::CreateQuery(const xiiGALQueryCreationDescription
   }
   else
   {
+    pQuery->m_pDevice = this;
+
     return xiiGALQueryHandle(m_Queries.Insert(pQuery));
   }
 }
@@ -1730,6 +1716,8 @@ xiiGALFenceHandle xiiGALDevice::CreateFence(const xiiGALFenceCreationDescription
   }
   else
   {
+    pFence->m_pDevice = this;
+
     return xiiGALFenceHandle(m_Fences.Insert(pFence));
   }
 }
@@ -1964,6 +1952,8 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
   }
   else
   {
+    pRenderPass->m_pDevice = this;
+
     return xiiGALRenderPassHandle(m_RenderPasses.Insert(pRenderPass));
   }
 }
@@ -2213,6 +2203,8 @@ xiiGALFramebufferHandle xiiGALDevice::CreateFramebuffer(const xiiGALFramebufferC
   }
   else
   {
+    pFramebuffer->m_pDevice = this;
+
     return xiiGALFramebufferHandle(m_Framebuffers.Insert(pFramebuffer));
   }
 }
@@ -2293,6 +2285,8 @@ xiiGALBottomLevelASHandle xiiGALDevice::CreateBottomLevelAS(const xiiGALBottomLe
   }
   else
   {
+    pBottomLevelAS->m_pDevice = this;
+
     return xiiGALBottomLevelASHandle(m_BottomLevelAccelerationStructures.Insert(pBottomLevelAS));
   }
 }
@@ -2345,6 +2339,8 @@ xiiGALTopLevelASHandle xiiGALDevice::CreateTopLevelAS(const xiiGALTopLevelASCrea
   }
   else
   {
+    pTopLevelAS->m_pDevice = this;
+
     return xiiGALTopLevelASHandle(m_TopLevelAccelerationStructures.Insert(pTopLevelAS));
   }
 }
@@ -2371,93 +2367,6 @@ void xiiGALDevice::WaitIdle()
 {
   WaitIdlePlatform();
 }
-
-#define XII_VERIFY_PROXY_TEXTURE(expression, ...)        \
-  do                                                     \
-  {                                                      \
-    XII_ASSERT_DEV((expression), __VA_ARGS__);           \
-    if (!(expression)) { return xiiGALTextureHandle(); } \
-  } while (false)
-
-xiiGALTextureHandle xiiGALDevice::CreateProxyTexture(xiiGALTextureHandle hParentTexture, xiiUInt32 uiSlice)
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  xiiGALTexture* pParentTexture = nullptr;
-  if (!hParentTexture.IsInvalidated())
-  {
-    pParentTexture = Get<TextureTable, xiiGALTexture>(hParentTexture, m_Textures);
-  }
-
-  XII_VERIFY_PROXY_TEXTURE(pParentTexture != nullptr, "No valid texture handle given for proxy texture creation!");
-
-  const auto& parentDescription = pParentTexture->GetDescription();
-  XII_VERIFY_PROXY_TEXTURE(!parentDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Proxy), "A proxy texture of another proxy texture cannot be creaeted.");
-  XII_VERIFY_PROXY_TEXTURE(parentDescription.m_Type == xiiGALResourceDimension::Texture2DArray || parentDescription.m_Type == xiiGALResourceDimension::TextureCube, "Proxy textures can only be created for array texture types.");
-
-  xiiGALProxyTexture* pProxyTexture = XII_NEW(&m_Allocator, xiiGALProxyTexture, *pParentTexture);
-  xiiGALTextureHandle hProxyTexture(m_Textures.Insert(pProxyTexture));
-
-  const auto& description = pProxyTexture->GetDescription();
-
-  // Create default resource view.
-  if (description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
-  {
-    xiiGALTextureViewCreationDescription viewDescription;
-    viewDescription.m_hTexture                  = hParentTexture;
-    viewDescription.m_ViewType                  = xiiGALTextureViewType::ShaderResource;
-    viewDescription.m_ResourceDimension         = xiiGALResourceDimension::Texture2D;
-    viewDescription.m_Format                    = description.m_Format;
-    viewDescription.m_uiMostDetailedMip         = 0U;
-    viewDescription.m_uiFirstArrayOrDepthSlice  = uiSlice;
-    viewDescription.m_uiMipLevelCount           = 0U;
-    viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
-
-    pProxyTexture->m_hDefaultTextureView = CreateTextureView(viewDescription);
-  }
-
-  // Create default render target or depth stencil view.
-  if (description.m_BindFlags.IsAnySet(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil))
-  {
-    auto& formatProperties = GetTextureFormatProperties(description.m_Format);
-
-    xiiEnum<xiiGALTextureViewType> viewType = formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget;
-
-    xiiGALTextureViewCreationDescription viewDescription;
-    viewDescription.m_hTexture                  = hParentTexture;
-    viewDescription.m_ViewType                  = viewType;
-    viewDescription.m_ResourceDimension         = xiiGALResourceDimension::Texture2D;
-    viewDescription.m_Format                    = description.m_Format;
-    viewDescription.m_uiMostDetailedMip         = 0U;
-    viewDescription.m_uiFirstArrayOrDepthSlice  = uiSlice;
-    viewDescription.m_uiMipLevelCount           = 0U;
-    viewDescription.m_uiArrayOrDepthSlicesCount = 1U;
-
-    pProxyTexture->m_hDefaultRenderTargetView = CreateTextureView(viewDescription);
-  }
-
-  return hProxyTexture;
-}
-
-void xiiGALDevice::DestroyProxyTexture(xiiGALTextureHandle hProxyTexture)
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  xiiGALTexture* pTexture = nullptr;
-
-  if (m_Textures.TryGetValue(hProxyTexture, pTexture))
-  {
-    XII_ASSERT_DEV(pTexture->GetDescription().m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Proxy), "The given texture is not a proxy texture.");
-
-    AddDeadObject(GALObjectType::Texture, hProxyTexture);
-  }
-  else
-  {
-    xiiLog::Warning("DestroyProxyTexture called on an invalid handle (double free?).");
-  }
-}
-
-#undef XII_VERIFY_PROXY_TEXTURE
 
 const xiiGALTextureFormatDescription& xiiGALDevice::GetTextureFormatProperties(xiiEnum<xiiGALTextureFormat> format) const
 {
@@ -2629,39 +2538,6 @@ const xiiGALSparseTextureProperties xiiGALDevice::GetSparseTextureProperties(xii
 {
   /// \todo GraphicsFoundation: To be implemented.
   return xiiGALSparseTextureProperties();
-}
-
-xiiGALBufferViewHandle xiiGALDevice::GetDefaultResourceView(xiiGALBufferHandle hBuffer) const
-{
-  if (const xiiGALBuffer* pBuffer = GetBuffer(hBuffer))
-  {
-    XII_ASSERT_DEV(!pBuffer->m_hDefaultBufferView.IsInvalidated(), "Buffer default handle is invalid.");
-
-    return pBuffer->m_hDefaultBufferView;
-  }
-  return xiiGALBufferViewHandle();
-}
-
-xiiGALTextureViewHandle xiiGALDevice::GetDefaultResourceView(xiiGALTextureHandle hTexture) const
-{
-  if (const xiiGALTexture* pTexture = GetTexture(hTexture))
-  {
-    XII_ASSERT_DEV(!pTexture->m_hDefaultTextureView.IsInvalidated(), "Texture default handle is invalid.");
-
-    return pTexture->m_hDefaultTextureView;
-  }
-  return xiiGALTextureViewHandle();
-}
-
-xiiGALTextureViewHandle xiiGALDevice::GetDefaultRenderTargetView(xiiGALTextureHandle hTexture) const
-{
-  if (const xiiGALTexture* pTexture = GetTexture(hTexture))
-  {
-    XII_ASSERT_DEV(!pTexture->m_hDefaultRenderTargetView.IsInvalidated(), "Texture default render target handle is invalid.");
-
-    return pTexture->m_hDefaultRenderTargetView;
-  }
-  return xiiGALTextureViewHandle();
 }
 
 xiiUInt64 xiiGALDevice::GetMemoryConsumptionForTexture(const xiiGALTextureCreationDescription& desc) const
@@ -2898,7 +2774,7 @@ void xiiGALDevice::DestroyDeadObjects()
   m_DeadObjects.Clear();
 }
 
-void xiiGALDevice::DestroyViews(xiiGALResourceBase* pResource)
+void xiiGALDevice::DestroyViews(xiiGALResource* pResource)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
@@ -2907,25 +2783,32 @@ void xiiGALDevice::DestroyViews(xiiGALResourceBase* pResource)
     xiiGALBufferViewHandle hBufferView = it.Value();
     xiiGALBufferView*      pBufferView = m_BufferViews[hBufferView];
 
-    m_BufferViews.Remove(hBufferView);
+    XII_VERIFY(m_BufferViews.Remove(hBufferView), "");
 
     DestroyBufferViewPlatform(pBufferView);
   }
   pResource->m_BufferViews.Clear();
-  pResource->m_hDefaultBufferView.Invalidate();
+
+  for (xiiUInt32 i = 0; i < xiiGALBufferViewType::ENUM_COUNT; ++i)
+  {
+    pResource->m_DefaultBufferViews[i].Invalidate();
+  }
 
   for (auto it = pResource->m_TextureViews.GetIterator(); it.IsValid(); ++it)
   {
     xiiGALTextureViewHandle hTextureView = it.Value();
     xiiGALTextureView*      pTextureView = m_TextureViews[hTextureView];
 
-    m_TextureViews.Remove(hTextureView);
+    XII_VERIFY(m_TextureViews.Remove(hTextureView), "");
 
     DestroyTextureViewPlatform(pTextureView);
   }
   pResource->m_TextureViews.Clear();
-  pResource->m_hDefaultTextureView.Invalidate();
-  pResource->m_hDefaultRenderTargetView.Invalidate();
+
+  for (xiiUInt32 i = 0; i < xiiGALBufferViewType::ENUM_COUNT; ++i)
+  {
+    pResource->m_DefaultTextureViews[i].Invalidate();
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Device_Implementation_Device);

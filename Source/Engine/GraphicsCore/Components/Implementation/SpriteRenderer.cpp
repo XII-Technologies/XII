@@ -50,7 +50,7 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
   XII_SCOPE_EXIT(DeleteSpriteDataBuffer(hSpriteData));
 
   pContext->BindShader(m_hShader);
-  pContext->BindBuffer("spriteData", pDevice->GetDefaultResourceView(hSpriteData));
+  pContext->BindBuffer("spriteData", pDevice->GetBuffer(hSpriteData)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   pContext->BindTexture2D("SpriteTexture", pRenderData->m_hTexture);
 
   pContext->SetShaderPermutationVariable("BLEND_MODE", xiiSpriteBlendMode::GetPermutationValue(pRenderData->m_BlendMode));

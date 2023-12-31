@@ -5,13 +5,13 @@ ALL
 
 [RENDERSTATE]
 
-BlendingEnabled0 = true
-DestBlend0 = Blend_InvSrcAlpha
-SourceBlend0 = Blend_SrcAlpha
-DestBlendAlpha0 = Blend_InvSrcAlpha
-ScissorTest = true
-DepthTest = false
-DepthWrite = false
+BlendEnable0 = true
+DestinationBlend0 = BlendFactor_InverseSourceAlpha
+SourceBlend0 = BlendFactor_SourceAlpha
+DestBlendAlpha0 = BlendFactor_InverseSourceAlpha
+ScissorEnable = true
+DepthEnable = false
+DepthWriteEnable = false
 
 [VERTEXSHADER]
 

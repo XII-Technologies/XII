@@ -8,10 +8,10 @@ VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX
 
 [RENDERSTATE]
 
-BlendingEnabled0 = false
+BlendEnable0 = false
 
-DepthTest = true
-DepthWrite = true
+DepthEnable = true
+DepthWriteEnable = true
 
 [SHADER]
 
@@ -30,7 +30,7 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
 #endif
 
   VS_OUT ret;
-#if defined(VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX) && CAMERA_MODE == CAMERA_MODE_STEREO    
+#if defined(VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX) && CAMERA_MODE == CAMERA_MODE_STEREO
   ret.RenderTargetArrayIndex = InstanceID;
 #endif
 

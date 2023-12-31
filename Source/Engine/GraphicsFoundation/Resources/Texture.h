@@ -2,6 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <Foundation/Math/Size.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 
@@ -25,8 +26,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMiscTextureFlags
     Subsampled  = XII_BIT(3), ///< The texture will be used as an intermediate render target for rendering with texture-based variable rate shading. This requires the xiiGALShadingRateCapabilityFlags::SubSampledRenderTarget capability.
                               ///<
                               ///< \note Copy operations are not supported for subsampled textures.
-
-    Proxy = XII_BIT(4), ///< The texture will be used as a proxy to an array texture slice. This flag is not meant to be used by any user.
 
     Default = None
   };
@@ -134,19 +133,22 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureProperties : public xiiHash
 };
 
 /// \brief Interface that defines methods to manipulate a texture object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALTexture : public xiiGALResource<xiiGALTextureCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALTexture : public xiiGALResource
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTexture, xiiGALResource);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALTextureCreationDescription& GetDescription() const;
+
   /// \brief This returns the handle of the default view.
   ///
   /// \param viewType - The type of the requested view. See xiiGALTextureViewType.
   ///
   /// \return The handle to the buffer view.
   ///
-  /// \remarks Default views are only created for structured and raw buffers. As for formatted buffers the view format is unknown at buffer initialization time, no default views are created.
-  ///
   /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
-  xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);
+  XII_NODISCARD xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);
 
   /// \brief This sets the texture usage state.
   ///
@@ -155,10 +157,10 @@ public:
   virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) = 0;
 
   /// \brief This returns the internal texture state.
-  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const = 0;
+  XII_NODISCARD virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const = 0;
 
   /// \brief This returns the sparse texture properties.
-  virtual const xiiGALSparseTextureProperties& GetSparseProperties() const = 0;
+  XII_NODISCARD virtual const xiiGALSparseTextureProperties& GetSparseProperties() const = 0;
 
 protected:
   friend class xiiGALDevice;
@@ -170,8 +172,12 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALTextureData* pInitialData) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTexture);
+protected:
+  xiiGALTextureCreationDescription m_Description;
+
+private:
+  void CreateDefaultResourceViews(xiiGALTextureHandle hTexture);
+};
 
 #include <GraphicsFoundation/Resources/Implementation/Texture_inl.h>

@@ -2,21 +2,12 @@
 
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 
-// clang-format off
-
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALFramebuffer, xiiNoBase, 1, xiiRTTINoAllocator)
-{
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
-// clang-format on
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFramebuffer, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiGALFramebuffer::xiiGALFramebuffer(const xiiGALFramebufferCreationDescription& creationDescription) :
-  xiiGALResource<xiiGALFramebufferCreationDescription>(creationDescription)
+  xiiGALDeviceObject(), m_Description(creationDescription)
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  m_sDebugName.Assign(creationDescription.m_sName);
-#endif
 }
 
 xiiGALFramebuffer::~xiiGALFramebuffer() = default;

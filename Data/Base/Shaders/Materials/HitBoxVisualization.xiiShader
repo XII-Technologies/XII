@@ -17,7 +17,7 @@ CAMERA_MODE
 
 #include <Shaders/Materials/MaterialState.h>
 
-WireFrame = true
+FillMode = FillMode_Wireframe
 
 [VERTEXSHADER]
 

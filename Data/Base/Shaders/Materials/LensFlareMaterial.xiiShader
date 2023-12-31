@@ -12,15 +12,15 @@ SHADING_QUALITY = SHADING_QUALITY_NORMAL
 
 [RENDERSTATE]
 
-WireFrame = false
-DepthTest = false
+FillMode = FillMode_Solid
+DepthEnable = false
 
-BlendingEnabled0 = true
-BlendOp0 = BlendOp_Add
-DestBlend0 = Blend_One
-SourceBlend0 = Blend_SrcAlpha
-DestBlendAlpha0 = Blend_One
-SourceBlendAlpha0 = Blend_Zero
+BlendEnable0 = true
+BlendOperation0 = BlendOperation_Add
+DestinationBlend0 = BlendFactor_One
+SourceBlend0 = BlendFactor_SourceAlpha
+DestBlendAlpha0 = BlendFactor_One
+SourceBlendAlpha0 = BlendFactor_Zero
 
 [SHADER]
 
@@ -53,7 +53,7 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
   };
 
   VS_OUT Output;
-  #if defined(VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX) && CAMERA_MODE == CAMERA_MODE_STEREO    
+  #if defined(VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX) && CAMERA_MODE == CAMERA_MODE_STEREO
     Output.RenderTargetArrayIndex = InstanceID;
   #else
     Output.InstanceID = InstanceID;
@@ -91,7 +91,7 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
     float fogAmount = GetFogAmount(worldPosition);
     fade *= fogAmount;
   }
-  
+
   if (fade > 0)
   {
     // Fibonacci Spiral, source: https://c-core-games.com/Generator/SpiralPatterns.html?p=F&n=32
@@ -129,10 +129,10 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
       {  0.5323f, -0.8279f },
       {  0.1694f,  0.9856f },
     };
-  
+
     float2 sampleUv = screenPosition.xy + vertexPosition * screenSampleRadius * data.OcclusionSpread;
     sampleUv = sampleUv * float2(0.5, -0.5) + 0.5;
-    
+
     float visibility = 0.0;
     for (int i = 0; i < 32; ++i)
     {
@@ -154,9 +154,9 @@ VS_OUT main(uint VertexID : SV_VertexID, uint InstanceID : SV_InstanceID)
 
   float2 aspectRatioAndShift = RG16FToFloat2(data.AspectRatioAndShift);
   screenSize.y *= aspectRatioAndShift.x;
-    
+
   screenPosition.xy = lerp(screenPosition.xy, 0, aspectRatioAndShift.y);
-  
+
   Output.Position = float4(screenPosition.xy + vertexPosition * screenSize, 0, 1);
   Output.TexCoord0 = texCoords;
   Output.Color0 = RGBA16FToFloat4(data.ColorRG, data.ColorBA);

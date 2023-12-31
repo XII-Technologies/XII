@@ -8,8 +8,6 @@
 #include <GuiFoundation/NodeEditor/NodeView.moc.h>
 #include <GuiFoundation/PropertyGrid/PropertyGridWidget.moc.h>
 
-
-
 xiiQtRenderPipelineAssetDocumentWindow::xiiQtRenderPipelineAssetDocumentWindow(xiiDocument* pDocument) :
   xiiQtDocumentWindow(pDocument)
 {

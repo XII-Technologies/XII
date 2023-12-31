@@ -2,17 +2,13 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
-
-/// \brief This describes the command queue creation description.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueCreationDescription : public xiiHashableStruct<xiiGALCommandQueueCreationDescription>
-{
-  XII_DECLARE_POD_TYPE();
-};
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
 
 /// \brief Interface that defines methods to manipulate a command queue object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueue : public xiiGALObject<xiiGALCommandQueueCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueue : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandQueue, xiiGALDeviceObject);
+
 public:
   /// \brief This returns the value of the internal fence that will be signaled the next time.
   virtual xiiUInt64 GetNextFenceValue() const = 0;
@@ -26,7 +22,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALCommandQueue(const xiiGALCommandQueueCreationDescription& creationDescription);
+  xiiGALCommandQueue();
 
   virtual ~xiiGALCommandQueue();
 
@@ -34,7 +30,5 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
-
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCommandQueue);
 
 #include <GraphicsFoundation/CommandEncoder/Implementation/CommandQueue_inl.h>

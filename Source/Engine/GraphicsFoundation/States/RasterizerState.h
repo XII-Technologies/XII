@@ -2,7 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsFoundation/Declarations/DeviceObject.h>
 
 /// \brief This describes the fill mode.
 ///
@@ -70,9 +70,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerStateCreationDescription : pub
 };
 
 /// \brief Interface that defines methods to manipulate a rasterizer state object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerState : public xiiGALObject<xiiGALRasterizerStateCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerState : public xiiGALDeviceObject
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALRasterizerState, xiiGALDeviceObject);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALRasterizerStateCreationDescription& GetDescription() const;
+
 protected:
   friend class xiiGALDevice;
 
@@ -83,8 +88,9 @@ protected:
   virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALRasterizerState);
+protected:
+  xiiGALRasterizerStateCreationDescription m_Description;
+};
 
 #include <GraphicsFoundation/States/Implementation/RasterizerState_inl.h>

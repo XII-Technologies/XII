@@ -112,6 +112,13 @@ const xiiConnection& xiiDocumentNodeManager::GetConnection(const xiiDocumentObje
   return *it.Value();
 }
 
+const xiiConnection* xiiDocumentNodeManager::GetConnectionIfExists(const xiiDocumentObject* pObject) const
+{
+  XII_ASSERT_DEV(pObject != nullptr, "Invalid input!");
+  auto it = m_ObjectToConnection.Find(pObject->GetGuid());
+  return it.IsValid() ? it.Value().Borrow() : nullptr;
+}
+
 const xiiPin* xiiDocumentNodeManager::GetInputPinByName(const xiiDocumentObject* pObject, xiiStringView sName) const
 {
   XII_ASSERT_DEV(pObject != nullptr, "Invalid input!");

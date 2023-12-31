@@ -4,7 +4,6 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 
-
 #include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
@@ -23,7 +22,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiOpaqueForwardRenderPass::xiiOpaqueForwardRenderPass(xiiStringView sName) :
   xiiForwardRenderPass(sName)
 {
+#if XII_RENDERER_TODO
   m_hWhiteTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>("White.color");
+#endif
 }
 
 xiiOpaqueForwardRenderPass::~xiiOpaqueForwardRenderPass() = default;
@@ -62,12 +63,14 @@ void xiiOpaqueForwardRenderPass::SetupResources(xiiGALPass* pGALPass, const xiiR
   {
     if (inputs[m_PinSSAO.m_uiInputIndex])
     {
-      xiiGALTextureViewHandle ssaoResourceViewHandle = pDevice->GetDefaultResourceView(inputs[m_PinSSAO.m_uiInputIndex]->m_TextureHandle);
+      xiiGALTextureViewHandle ssaoResourceViewHandle = pDevice->GetTexture(inputs[m_PinSSAO.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource);
       renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", ssaoResourceViewHandle);
     }
     else
     {
+#if XII_RENDERER_TODO
       renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", m_hWhiteTexture, xiiResourceAcquireMode::BlockTillLoaded);
+#endif
     }
   }
 }

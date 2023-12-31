@@ -30,7 +30,6 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiSeparatedBilateralBlurPass::xiiSeparatedBilateralBlurPass() :
   xiiRenderPipelinePass("SeparatedBilateral")
-
 {
   {
     // Load shader.
@@ -82,7 +81,6 @@ bool xiiSeparatedBilateralBlurPass::GetRenderTargetDescriptions(const xiiView& v
     return false;
   }
 
-
   // Output format maches input format.
   outputs[m_PinOutput.m_uiOutputIndex] = *inputs[m_PinBlurSourceInput.m_uiInputIndex];
 
@@ -121,7 +119,7 @@ void xiiSeparatedBilateralBlurPass::Execute(const xiiRenderViewContext& renderVi
 
     // Horizontal
     {
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(tempTexture));
+      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(tempTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
       auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(pGALPass, renderViewContext, renderingSetup, "", renderViewContext.m_pCamera->IsStereoscopic());
 
       renderViewContext.m_pRenderContext->SetShaderPermutationVariable("BLUR_DIRECTION", "BLUR_DIRECTION_HORIZONTAL");
@@ -131,7 +129,7 @@ void xiiSeparatedBilateralBlurPass::Execute(const xiiRenderViewContext& renderVi
 
     // Vertical
     {
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetDefaultRenderTargetView(outputs[m_PinOutput.m_uiOutputIndex]->m_TextureHandle));
+      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(outputs[m_PinOutput.m_uiOutputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
       auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(pGALPass, renderViewContext, renderingSetup, "", renderViewContext.m_pCamera->IsStereoscopic());
 
       renderViewContext.m_pRenderContext->SetShaderPermutationVariable("BLUR_DIRECTION", "BLUR_DIRECTION_VERTICAL");
@@ -202,34 +200,5 @@ float xiiSeparatedBilateralBlurPass::GetSharpness() const
 {
   return m_fSharpness;
 }
-
-
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-
-#include <Foundation/Serialization/AbstractObjectGraph.h>
-#include <Foundation/Serialization/GraphPatch.h>
-
-class xiiSeparatedBilateralBlurPassPatch_1_2 : public xiiGraphPatch
-{
-public:
-  xiiSeparatedBilateralBlurPassPatch_1_2() :
-    xiiGraphPatch("xiiSeparatedBilateralBlurPass", 2)
-  {
-  }
-
-  virtual void Patch(xiiGraphPatchContext& ref_context, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectNode* pNode) const override
-  {
-    pNode->RenameProperty("Blur Radius", "BlurRadius");
-    pNode->RenameProperty("Gaussian Standard Deviation", "GaussianSigma");
-    pNode->RenameProperty("Bilateral Sharpness", "Sharpness");
-  }
-};
-
-xiiSeparatedBilateralBlurPassPatch_1_2 g_xiiSeparatedBilateralBlurPassPatch_1_2;
-
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_SeparatedBilateralBlur);

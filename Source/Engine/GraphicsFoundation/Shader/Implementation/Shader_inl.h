@@ -1,4 +1,9 @@
 
+XII_ALWAYS_INLINE const xiiGALShaderCreationDescription& xiiGALShader::GetDescription() const
+{
+  return m_Description;
+}
+
 XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderPrimitiveType::GetPrimitiveTypeSize(xiiEnum<xiiGALShaderPrimitiveType> type)
 {
   switch (type)

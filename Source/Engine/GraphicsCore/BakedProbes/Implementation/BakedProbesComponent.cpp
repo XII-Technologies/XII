@@ -460,7 +460,7 @@ void xiiBakedProbesComponent::RenderDebugOverlay()
 
   xiiRectFloat rectInPixel = xiiRectFloat(10.0f, 10.0f, static_cast<float>(uiWidth), static_cast<float>(uiHeight));
 
-  xiiDebugRenderer::Draw2DRectangle(pView->GetHandle(), rectInPixel, 0.0f, xiiColor::White, pDevice->GetDefaultResourceView(m_hDebugViewTexture));
+  xiiDebugRenderer::Draw2DRectangle(pView->GetHandle(), rectInPixel, 0.0f, xiiColor::White, pDevice->GetTexture(m_hDebugViewTexture)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
 }
 
 void xiiBakedProbesComponent::OnObjectCreated(const xiiAbstractObjectNode& node)

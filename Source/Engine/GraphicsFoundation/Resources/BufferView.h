@@ -2,6 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief This describes the buffer format.
@@ -30,11 +31,16 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBufferViewCreationDescription : public x
 /// \brief Interface that defines methods to manipulate a buffer view object.
 ///
 /// \note The buffer view holds strong references to the buffer. The buffer will not be destroyed until all views are released.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALBufferView : public xiiGALResource<xiiGALBufferViewCreationDescription>
+class XII_GRAPHICSFOUNDATION_DLL xiiGALBufferView : public xiiGALResourceView
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferView, xiiGALResourceView);
+
 public:
+  /// \brief This returns the creation description for this object.
+  XII_NODISCARD const xiiGALBufferViewCreationDescription& GetDescription() const;
+
   /// \brief Returns the buffer of which the buffer view is created with.
-  XII_ALWAYS_INLINE xiiGALBuffer* GetBuffer() const { return m_pBuffer; }
+  XII_NODISCARD xiiGALBuffer* GetBuffer() const;
 
 protected:
   friend class xiiGALDevice;
@@ -47,9 +53,10 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 
+protected:
   xiiGALBuffer* m_pBuffer = nullptr;
-};
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALBufferView);
+  xiiGALBufferViewCreationDescription m_Description;
+};
 
 #include <GraphicsFoundation/Resources/Implementation/BufferView_inl.h>

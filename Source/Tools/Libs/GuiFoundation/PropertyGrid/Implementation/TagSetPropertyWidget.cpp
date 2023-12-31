@@ -49,8 +49,7 @@ void xiiQtPropertyEditorTagSetWidget::SetSelection(const xiiHybridArray<xiiPrope
 
 void xiiQtPropertyEditorTagSetWidget::OnInit()
 {
-  XII_ASSERT_DEV(m_pProp->GetCategory() == xiiPropertyCategory::Set && m_pProp->GetSpecificType() == xiiGetStaticRTTI<xiiConstCharPtr>(),
-                 "xiiQtPropertyEditorTagSetWidget only works with xiiTagSet.");
+  XII_ASSERT_DEV(m_pProp->GetCategory() == xiiPropertyCategory::Set && (m_pProp->GetSpecificType() == xiiGetStaticRTTI<xiiConstCharPtr>() || m_pProp->GetSpecificType() == xiiGetStaticRTTI<xiiStringView>()), "xiiQtPropertyEditorTagSetWidget only works with xiiTagSet.");
 
   // Retrieve tag categories.
   const xiiTagSetWidgetAttribute* pAssetAttribute = m_pProp->GetAttributeByType<xiiTagSetWidgetAttribute>();

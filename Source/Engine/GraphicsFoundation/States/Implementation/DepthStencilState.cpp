@@ -4,11 +4,6 @@
 
 // clang-format off
 
-XII_BEGIN_STATIC_REFLECTED_TYPE(xiiGALDepthStencilState, xiiNoBase, 1, xiiRTTINoAllocator)
-{
-}
-XII_END_STATIC_REFLECTED_TYPE;
-
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALStencilOperation, 1)
   XII_ENUM_CONSTANT(xiiGALStencilOperation::Undefined),
   XII_ENUM_CONSTANT(xiiGALStencilOperation::Keep),
@@ -21,10 +16,13 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALStencilOperation, 1)
   XII_ENUM_CONSTANT(xiiGALStencilOperation::DecrementWrap),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDepthStencilState, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
 xiiGALDepthStencilState::xiiGALDepthStencilState(const xiiGALDepthStencilStateCreationDescription& creationDescription) :
-  xiiGALObject<xiiGALDepthStencilStateCreationDescription>(creationDescription)
+  xiiGALDeviceObject(), m_Description(creationDescription)
 {
 }
 

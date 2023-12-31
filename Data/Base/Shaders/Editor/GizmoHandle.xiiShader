@@ -18,23 +18,23 @@ GIZMO_FACE_CAMERA
 #endif
 
 #if PREPARE_DEPTH == TRUE
-	DepthTest = true
-	DepthWrite = true
-	DepthTestFunc = CompareFunc_Greater
+	DepthEnable = true
+	DepthWriteEnable = true
+	ComparisonDepthFunction = ComparisonFunction_Greater
 
 #else
-	DepthTest = true
-	DepthWrite = true
-	DepthTestFunc = CompareFunc_LessEqual
+	DepthEnable = true
+	DepthWriteEnable = true
+	ComparisonDepthFunction = ComparisonFunction_LessEqual
 
 #endif
 
 #if !PREPARE_DEPTH && RENDER_PASS == RENDER_PASS_FORWARD
-	BlendingEnabled0 = true
-	BlendOp0 = BlendOp_Add
-	DestBlend0 = Blend_InvSrcAlpha
-	SourceBlend0 = Blend_SrcAlpha
-	DestBlendAlpha0 = Blend_InvSrcAlpha
+	BlendEnable0 = true
+	BlendOperation0 = BlendOperation_Add
+	DestinationBlend0 = BlendFactor_InverseSourceAlpha
+	SourceBlend0 = BlendFactor_SourceAlpha
+	DestBlendAlpha0 = BlendFactor_InverseSourceAlpha
 #endif
 
 [MATERIALCONFIG]

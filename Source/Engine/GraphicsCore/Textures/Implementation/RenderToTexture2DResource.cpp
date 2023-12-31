@@ -112,7 +112,7 @@ xiiResourceLoadDesc xiiRenderToTexture2DResource::UnloadData(Unload WhatToUnload
 
 xiiGALTextureViewHandle xiiRenderToTexture2DResource::GetRenderTargetView() const
 {
-  return xiiGALDevice::GetDefaultDevice()->GetDefaultRenderTargetView(m_hGALTexture[0]);
+  return xiiGALDevice::GetDefaultDevice()->GetTexture(m_hGALTexture[0])->GetDefaultView(xiiGALTextureViewType::RenderTarget);
 }
 
 void xiiRenderToTexture2DResource::AddRenderView(xiiViewHandle hView)

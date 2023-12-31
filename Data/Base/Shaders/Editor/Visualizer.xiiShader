@@ -7,11 +7,11 @@ RENDER_PASS
 
 [RENDERSTATE]
 
-DepthTest = true
-DepthWrite = true
-WireFrame = true
+DepthEnable = true
+DepthWriteEnable = true
+FillMode = FillMode_Wireframe
 CullMode = CullMode_None
-DepthTestFunc = CompareFunc_Less
+ComparisonDepthFunction = ComparisonFunction_Less
 
 [MATERIALCONFIG]
 
