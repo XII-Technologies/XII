@@ -6,7 +6,7 @@ ALL
 [RENDERSTATE]
 
 BlendEnable0 = true
-DestBlend0 = BlendFactor_InverseSourceAlpha
+DestinationBlend0 = BlendFactor_InverseSourceAlpha
 SourceBlend0 = BlendFactor_SourceAlpha
 DestBlendAlpha0 = BlendFactor_InverseSourceAlpha
 ScissorEnable = true

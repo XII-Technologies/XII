@@ -22,7 +22,9 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiOpaqueForwardRenderPass::xiiOpaqueForwardRenderPass(xiiStringView sName) :
   xiiForwardRenderPass(sName)
 {
+#if XII_RENDERER_TODO
   m_hWhiteTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>("White.color");
+#endif
 }
 
 xiiOpaqueForwardRenderPass::~xiiOpaqueForwardRenderPass() = default;
@@ -66,7 +68,9 @@ void xiiOpaqueForwardRenderPass::SetupResources(xiiGALPass* pGALPass, const xiiR
     }
     else
     {
+#if XII_RENDERER_TODO
       renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", m_hWhiteTexture, xiiResourceAcquireMode::BlockTillLoaded);
+#endif
     }
   }
 }

@@ -19,10 +19,8 @@ Texture2D    DecalAtlasNormalTexture;
 Texture2D    DecalAtlasORMTexture;
 SamplerState DecalAtlasSampler;
 
-#if XII_RENDERER_ENABLED
 TextureCubeArray ReflectionSpecularTexture;
 Texture2D        SkyIrradianceTexture;
-#endif
 #define NUM_REFLECTION_MIPS 6
 
 Texture2DArray SceneDepth;
@@ -300,8 +298,6 @@ float computeDistanceBaseRoughness(float distIntersectionToShadedPoint, float di
   return lerp(newLinearRoughness, linearRoughness, linearRoughness);
 }
 
-#if XII_RENDERER_ENABLED
-
 float3 ComputeReflection(inout xiiMaterialData matData, float3 viewVector, xiiPerClusterData clusterData)
 {
   uint firstItemIndex = clusterData.offset;
@@ -451,7 +447,6 @@ float3 ComputeReflection(inout xiiMaterialData matData, float3 viewVector, xiiPe
 
   return ref.rgb;
 }
-#endif
 
 AccumulatedLight CalculateLighting(xiiMaterialData matData, xiiPerClusterData clusterData, float3 screenPosition, bool applySSAO)
 {
@@ -545,25 +540,19 @@ AccumulatedLight CalculateLighting(xiiMaterialData matData, xiiPerClusterData cl
     occlusion *= ssao;
   }
 
-#if XII_RENDERER_ENABLED
   // sky light in ambient cube basis
   float3 skyLight = EvaluateAmbientCube(SkyIrradianceTexture, SkyIrradianceIndex, matData.worldNormal).rgb;
   totalLight.diffuseLight += matData.diffuseColor * skyLight * occlusion;
 
   // indirect specular
   totalLight.specularLight += matData.specularColor * ComputeReflection(matData, viewVector, clusterData) * occlusion;
-//totalLight.specularLight += ComputeReflection(matData, viewVector, clusterData);
+  //totalLight.specularLight += ComputeReflection(matData, viewVector, clusterData);
 
-// enable once we have proper sky visibility
-/*#if defined(USE_MATERIAL_SUBSURFACE_COLOR)
+  // enable once we have proper sky visibility
+  /*#if defined(USE_MATERIAL_SUBSURFACE_COLOR)
     skyLight = EvaluateAmbientCube(SkyIrradianceTexture, SkyIrradianceIndex, -matData.worldNormal).rgb;
     totalLight.diffuseLight += matData.subsurfaceColor * skyLight * occlusion;
   #endif*/
-#else
-  totalLight.diffuseLight += matData.diffuseColor * occlusion;
-
-  totalLight.specularLight += matData.specularColor * occlusion;
-#endif
 
   return totalLight;
 }
@@ -750,7 +739,6 @@ float GetFogAmount(float3 worldPosition)
 float3 ApplyFog(float3 color, float3 worldPosition, float fogAmount)
 {
   float3 fogColor = FogColor.rgb;
-#if XII_RENDERER_ENABLED
   if (FogInvSkyDistance > 0.0)
   {
     float  distance   = 0;
@@ -759,7 +747,6 @@ float3 ApplyFog(float3 color, float3 worldPosition, float fogAmount)
     float  mipLevel   = saturate(1.0 - distance * FogInvSkyDistance) * NUM_REFLECTION_MIPS;
     fogColor *= ReflectionSpecularTexture.SampleLevel(LinearSampler, coord, mipLevel).rgb * 2.0;
   }
-#endif
 
   return lerp(fogColor, color, fogAmount);
 }

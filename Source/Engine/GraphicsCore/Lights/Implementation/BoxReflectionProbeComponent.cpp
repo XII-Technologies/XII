@@ -118,17 +118,13 @@ const xiiVec3& xiiBoxReflectionProbeComponent::GetExtents() const
 void xiiBoxReflectionProbeComponent::OnActivated()
 {
   GetOwner()->EnableStaticTransformChangesNotifications();
-#if XII_RENDERER_ENABLE
   m_Id = xiiReflectionPool::RegisterReflectionProbe(GetWorld(), m_Desc, this);
-#endif
   GetOwner()->UpdateLocalBounds();
 }
 
 void xiiBoxReflectionProbeComponent::OnDeactivated()
 {
-#if XII_RENDERER_ENABLE
   xiiReflectionPool::DeregisterReflectionProbe(GetWorld(), m_Id);
-#endif
   m_Id.Invalidate();
 
   GetOwner()->UpdateLocalBounds();
@@ -154,12 +150,9 @@ void xiiBoxReflectionProbeComponent::OnMsgExtractRenderData(xiiMsgExtractRenderD
   {
     m_bStatesDirty = false;
 
-#if XII_RENDERER_ENABLE
     xiiReflectionPool::UpdateReflectionProbe(GetWorld(), m_Id, m_Desc, this);
-#endif
   }
 
-#if XII_RENDERER_ENABLE
   auto pRenderData                = xiiCreateRenderDataForThisFrame<xiiReflectionProbeRenderData>(GetOwner());
   pRenderData->m_GlobalTransform  = GetOwner()->GetGlobalTransform();
   pRenderData->m_vProbePosition   = pRenderData->m_GlobalTransform * m_Desc.m_vCaptureOffset;
@@ -179,7 +172,6 @@ void xiiBoxReflectionProbeComponent::OnMsgExtractRenderData(xiiMsgExtractRenderD
   float fPriority = ComputePriority(msg, pRenderData, fVolume, vScale);
 
   xiiReflectionPool::ExtractReflectionProbe(this, msg, pRenderData, GetWorld(), m_Id, fPriority);
-#endif
 }
 
 void xiiBoxReflectionProbeComponent::OnTransformChanged(xiiMsgTransformChanged& msg)

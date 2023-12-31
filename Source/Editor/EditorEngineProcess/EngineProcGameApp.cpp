@@ -280,8 +280,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
 
   if (const auto* pMsg = xiiDynamicCast<const xiiShutdownProcessMsgToEngine*>(e.m_pMessage))
   {
-    // in non-remote mode, the process needs to be properly killed, to prevent error messages
-    // this is taken care of by the editor process
+    // In non-remote mode, the process needs to be properly killed, to prevent error messages this is taken care of by the editor process.
     if (xiiEditorEngineProcessApp::GetSingleton()->IsRemoteMode())
       RequestQuit();
 
@@ -293,7 +292,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
   {
     if (!m_sProjectDirectory.IsEmpty())
     {
-      // ignore this message, if it is for the same project
+      // Ignore this message, if it is for the same project.
       if (m_sProjectDirectory == pMsg->m_sProjectDir)
         return;
 
@@ -313,13 +312,12 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
 
     if (!pMsg->m_sFileserveAddress.IsEmpty())
     {
-      // we have no link dependency on the fileserve plugin here, it might not be loaded (yet / at all)
-      // but we can pass the address to the command line, then it will pick it up, if necessary
+      // We have no link dependency on the fileserve plugin here, it might not be loaded (yet / at all) but we can pass the address to the command line, then it will pick it up, if necessary.
       xiiCommandLineUtils::GetGlobalInstance()->InjectCustomArgument("-fs_server");
       xiiCommandLineUtils::GetGlobalInstance()->InjectCustomArgument(pMsg->m_sFileserveAddress);
     }
 
-    // now that we know which project to initialize, do the delayed project setup
+    // Now that we know which project to initialize, do the delayed project setup.
     {
       ExecuteInitFunctions();
 
@@ -328,8 +326,7 @@ void xiiEngineProcessGameApplication::EventHandlerIPC(const xiiEngineProcessComm
       xiiRenderContext::GetDefaultInstance()->SetAllowAsyncShaderLoading(true);
     }
 
-    // after the xiiSetupProjectMsgToEngine was processed, all dynamic plugins should be loaded and we can finally send the reflection
-    // information over
+    // After the xiiSetupProjectMsgToEngine was processed, all dynamic plugins should be loaded and we can finally send the reflection information over.
     SendReflectionInformation();
 
     // Project setup, we are now ready to accept document messages.

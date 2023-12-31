@@ -34,4 +34,4 @@ struct XII_GRAPHICSCORE_DLL xiiPermutationVar
   }
 };
 
-#define XII_RENDERER_ENABLE 0
+#define XII_RENDERER_TODO 0

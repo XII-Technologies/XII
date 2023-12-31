@@ -17,8 +17,6 @@ static const xiiUInt32 s_uiReflectionCubeMapSize      = 128;
 static const xiiUInt32 s_uiNumReflectionProbeCubeMaps = 32;
 static const float     s_fDebugSphereRadius           = 0.3f;
 
-#if XII_RENDERER_ENABLE
-
 inline xiiUInt32 GetMipLevels()
 {
   return xiiMath::Log2i(s_uiReflectionCubeMapSize) - 1; // only down to 4x4
@@ -89,5 +87,3 @@ struct xiiReflectionPool::Data
   xiiMeshResourceHandle                                                         m_hDebugSphere;
   xiiHybridArray<xiiMaterialResourceHandle, 6 * s_uiNumReflectionProbeCubeMaps> m_hDebugMaterial;
 };
-
-#endif

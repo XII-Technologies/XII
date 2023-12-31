@@ -52,9 +52,7 @@ void xiiAmbientLightComponent::OnDeactivated()
 {
   GetOwner()->UpdateLocalBounds();
 
-#if XII_RENDERER_ENABLE
   xiiReflectionPool::ResetConstantSkyIrradiance(GetWorld());
-#endif
 }
 
 void xiiAmbientLightComponent::SetTopColor(xiiColorGammaUB color)
@@ -131,7 +129,6 @@ void xiiAmbientLightComponent::DeserializeComponent(xiiWorldReader& inout_stream
 
 void xiiAmbientLightComponent::UpdateSkyIrradiance()
 {
-#if XII_RENDERER_ENABLE
   xiiColor topColor    = xiiColor(m_TopColor) * m_fIntensity;
   xiiColor bottomColor = xiiColor(m_BottomColor) * m_fIntensity;
   xiiColor midColor    = xiiMath::Lerp(bottomColor, topColor, 0.5f);
@@ -145,7 +142,6 @@ void xiiAmbientLightComponent::UpdateSkyIrradiance()
   ambientLightIrradiance.m_Values[xiiAmbientCubeBasis::NegZ] = bottomColor;
 
   xiiReflectionPool::SetConstantSkyIrradiance(GetWorld(), ambientLightIrradiance);
-#endif
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_AmbientLightComponent);

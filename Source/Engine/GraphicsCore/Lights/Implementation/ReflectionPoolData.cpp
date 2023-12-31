@@ -13,8 +13,6 @@
 //////////////////////////////////////////////////////////////////////////
 /// xiiReflectionPool::Data
 
-#if XII_RENDERER_ENABLE
-
 xiiReflectionPool::Data* xiiReflectionPool::s_pData;
 
 xiiReflectionPool::Data::Data()
@@ -303,7 +301,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
 
     xiiGALTextureCreationDescription desc;
     desc.m_sName              = "Reflection Fallback Specular Texture";
-    desc.m_Type               = xiiGALResourceDimension::TextureCube;
+    desc.m_Type               = xiiGALResourceDimension::TextureCubeArray;
     desc.m_Format             = xiiGALTextureFormat::RGBA16Float;
     desc.m_uiArraySizeOrDepth = 6;
     desc.m_uiMipLevels        = GetMipLevels();
@@ -410,7 +408,5 @@ void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
     m_hSkyIrradianceTexture = pDevice->CreateTexture(desc);
   }
 }
-
-#endif
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ReflectionPoolData);

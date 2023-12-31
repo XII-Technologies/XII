@@ -266,7 +266,7 @@ struct xiiShadowPool::Data
       desc.m_uiArraySizeOrDepth = 1;
       desc.m_uiMipLevels        = 1;
       desc.m_uiSampleCount      = xiiGALSampleCount::OneSample;
-      desc.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+      desc.m_BindFlags          = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
 
       m_hShadowAtlasTexture = xiiGALDevice::GetDefaultDevice()->CreateTexture(desc);
     }
@@ -280,7 +280,7 @@ struct xiiShadowPool::Data
       desc.m_uiElementByteStride = sizeof(xiiVec4);
       desc.m_uiSize              = desc.m_uiElementByteStride * MAX_SHADOW_DATA;
       desc.m_Mode                = xiiGALBufferMode::Structured;
-      desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
+      desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
 
       m_hShadowDataBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
     }

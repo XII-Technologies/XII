@@ -9,10 +9,8 @@
 #include <Shaders/Common/AmbientCubeBasis.h>
 #include <Shaders/Common/BRDF.h>
 
-#if XII_RENDERER_ENABLED
 TextureCubeArray ReflectionSpecularTexture;
 Texture2D SkyIrradianceTexture;
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -35,12 +33,8 @@ AccumulatedLight CalculateLightingSimplified(xiiMaterialData matData)
   float occlusion = matData.occlusion;
 
   // sky light in ambient cube basis
-  #if XII_RENDERER_ENABLED
   float3 skyLight = EvaluateAmbientCube(SkyIrradianceTexture, SkyIrradianceIndex, matData.worldNormal).rgb;
   totalLight.diffuseLight += matData.diffuseColor * skyLight * occlusion;
-  #else
-  totalLight.diffuseLight += matData.diffuseColor * occlusion;
-  #endif
 
   return totalLight;
 }

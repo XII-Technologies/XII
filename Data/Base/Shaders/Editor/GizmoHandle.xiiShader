@@ -32,7 +32,7 @@ GIZMO_FACE_CAMERA
 #if !PREPARE_DEPTH && RENDER_PASS == RENDER_PASS_FORWARD
 	BlendEnable0 = true
 	BlendOperation0 = BlendOperation_Add
-	DestBlend0 = BlendFactor_InverseSourceAlpha
+	DestinationBlend0 = BlendFactor_InverseSourceAlpha
 	SourceBlend0 = BlendFactor_SourceAlpha
 	DestBlendAlpha0 = BlendFactor_InverseSourceAlpha
 #endif

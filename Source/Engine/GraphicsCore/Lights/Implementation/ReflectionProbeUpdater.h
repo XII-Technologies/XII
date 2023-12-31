@@ -9,8 +9,6 @@
 
 XII_DECLARE_FLAGS(xiiUInt8, xiiReflectionProbeUpdaterFlags, SkyLight, HasCustomCubeMap);
 
-#if XII_RENDERER_ENABLE
-
 /// \brief Renders reflection probes and stores filtered mipmap chains into an atlas texture as well as computing sky irradiance
 /// Rendering sky irradiance is optional and only done if m_iIrradianceOutputIndex != -1.
 class xiiReflectionProbeUpdater
@@ -134,5 +132,3 @@ private:
   xiiDynamicArray<xiiUniquePtr<ProbeUpdateInfo>> m_DynamicUpdates;
   xiiHybridArray<xiiReflectionProbeRef, 4>       m_FinishedLastFrame;
 };
-
-#endif

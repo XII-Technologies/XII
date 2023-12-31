@@ -9,7 +9,7 @@ RENDER_PASS
 
 DepthEnable = true
 DepthWriteEnable = true
-WireFrame = true
+FillMode = FillMode_Wireframe
 CullMode = CullMode_None
 ComparisonDepthFunction = ComparisonFunction_Less
 

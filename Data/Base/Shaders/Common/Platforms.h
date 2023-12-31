@@ -7,8 +7,6 @@
 #define PLATFORM_D3D12  XII_OFF
 #define PLATFORM_NULL   XII_OFF
 
-#define XII_RENDERER_ENABLED 0
-
 #if defined(D3D_SM51) || defined(D3D_SM60) || defined(D3D_SM61) || defined(D3D_SM61) || defined(D3D_SM63) || defined(D3D_SM64) || defined(D3D_SM65) || defined(D3D_SM66)
 
 #  undef PLATFORM_SHADER
