@@ -40,14 +40,14 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALInputLayoutSemantic, 1)
   XII_ENUM_CONSTANT(xiiGALInputLayoutSemantic::BoneWeights1),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayout, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
-  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayout, 1, xiiRTTINoAllocator)
-  XII_END_DYNAMIC_REFLECTED_TYPE;
-
-  xiiGALInputLayout::xiiGALInputLayout(const xiiGALInputLayoutCreationDescription& creationDescription) :
-    xiiGALDeviceObject(), m_Description(creationDescription)
-  {
+xiiGALInputLayout::xiiGALInputLayout(const xiiGALInputLayoutCreationDescription& creationDescription) :
+  xiiGALDeviceObject(), m_Description(creationDescription)
+{
 }
 
 xiiGALInputLayout::~xiiGALInputLayout() = default;

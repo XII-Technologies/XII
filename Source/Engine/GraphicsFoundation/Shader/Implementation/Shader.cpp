@@ -50,16 +50,16 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALShaderVariableClassType, 1)
   XII_ENUM_CONSTANT(xiiGALShaderVariableClassType::Struct),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShader, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
-  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShader, 1, xiiRTTINoAllocator)
-  XII_END_DYNAMIC_REFLECTED_TYPE;
+xiiDelegate<void(xiiShaderUtilities::xiiBuiltinShaderType type, xiiShaderUtilities::xiiBuiltinShader& out_shader)> xiiShaderUtilities::g_RequestBuiltinShaderCallback;
 
-  xiiDelegate<void(xiiShaderUtilities::xiiBuiltinShaderType type, xiiShaderUtilities::xiiBuiltinShader& out_shader)> xiiShaderUtilities::g_RequestBuiltinShaderCallback;
-
-  xiiGALShader::xiiGALShader(const xiiGALShaderCreationDescription& creationDescription) :
-    xiiGALDeviceObject(), m_Description(creationDescription)
-  {
+xiiGALShader::xiiGALShader(const xiiGALShaderCreationDescription& creationDescription) :
+  xiiGALDeviceObject(), m_Description(creationDescription)
+{
 }
 
 xiiGALShader::~xiiGALShader() = default;

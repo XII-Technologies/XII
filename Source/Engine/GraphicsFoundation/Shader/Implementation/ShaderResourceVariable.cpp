@@ -35,14 +35,14 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSetShaderResourceFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALSetShaderResourceFlags::AllowOverwrite),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderResourceVariable, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
-  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderResourceVariable, 1, xiiRTTINoAllocator)
-  XII_END_DYNAMIC_REFLECTED_TYPE;
-
-  xiiGALShaderResourceVariable::xiiGALShaderResourceVariable() :
-    xiiGALDeviceObject()
-  {
+xiiGALShaderResourceVariable::xiiGALShaderResourceVariable() :
+  xiiGALDeviceObject()
+{
 }
 
 xiiGALShaderResourceVariable::~xiiGALShaderResourceVariable() = default;

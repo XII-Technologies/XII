@@ -16,14 +16,14 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALStencilOperation, 1)
   XII_ENUM_CONSTANT(xiiGALStencilOperation::DecrementWrap),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDepthStencilState, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
-  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDepthStencilState, 1, xiiRTTINoAllocator)
-  XII_END_DYNAMIC_REFLECTED_TYPE;
-
-  xiiGALDepthStencilState::xiiGALDepthStencilState(const xiiGALDepthStencilStateCreationDescription& creationDescription) :
-    xiiGALDeviceObject(), m_Description(creationDescription)
-  {
+xiiGALDepthStencilState::xiiGALDepthStencilState(const xiiGALDepthStencilStateCreationDescription& creationDescription) :
+  xiiGALDeviceObject(), m_Description(creationDescription)
+{
 }
 
 xiiGALDepthStencilState::~xiiGALDepthStencilState() = default;

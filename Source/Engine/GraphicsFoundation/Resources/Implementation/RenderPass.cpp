@@ -15,14 +15,14 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALAttachmentStoreOperation, 1)
   XII_ENUM_CONSTANT(xiiGALAttachmentStoreOperation::Discard),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRenderPass, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
-  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRenderPass, 1, xiiRTTINoAllocator)
-  XII_END_DYNAMIC_REFLECTED_TYPE;
-
-  xiiGALRenderPass::xiiGALRenderPass(const xiiGALRenderPassCreationDescription& creationDescription) :
-    xiiGALDeviceObject(), m_Description(creationDescription)
-  {
+xiiGALRenderPass::xiiGALRenderPass(const xiiGALRenderPassCreationDescription& creationDescription) :
+  xiiGALDeviceObject(), m_Description(creationDescription)
+{
 }
 
 xiiGALRenderPass::~xiiGALRenderPass() = default;

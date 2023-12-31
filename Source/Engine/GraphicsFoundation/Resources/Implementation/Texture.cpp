@@ -13,14 +13,14 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALMiscTextureFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::Subsampled),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTexture, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
-  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTexture, 1, xiiRTTINoAllocator)
-  XII_END_DYNAMIC_REFLECTED_TYPE;
-
-  xiiGALTexture::xiiGALTexture(const xiiGALTextureCreationDescription& creationDescription) :
-    xiiGALResource(), m_Description(creationDescription)
-  {
+xiiGALTexture::xiiGALTexture(const xiiGALTextureCreationDescription& creationDescription) :
+  xiiGALResource(), m_Description(creationDescription)
+{
 }
 
 xiiGALTexture::~xiiGALTexture() = default;

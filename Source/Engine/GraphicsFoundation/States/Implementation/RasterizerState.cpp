@@ -17,14 +17,14 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALCullMode, 1)
   XII_ENUM_CONSTANT(xiiGALCullMode::Back),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRasterizerState, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
-  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRasterizerState, 1, xiiRTTINoAllocator)
-  XII_END_DYNAMIC_REFLECTED_TYPE;
-
-  xiiGALRasterizerState::xiiGALRasterizerState(const xiiGALRasterizerStateCreationDescription& creationDescription) :
-    xiiGALDeviceObject(), m_Description(creationDescription)
-  {
+xiiGALRasterizerState::xiiGALRasterizerState(const xiiGALRasterizerStateCreationDescription& creationDescription) :
+  xiiGALDeviceObject(), m_Description(creationDescription)
+{
 }
 
 xiiGALRasterizerState::~xiiGALRasterizerState() = default;

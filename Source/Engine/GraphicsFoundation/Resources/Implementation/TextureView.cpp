@@ -26,15 +26,15 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALTextureComponentSwizzle, 1)
   XII_ENUM_CONSTANT(xiiGALTextureComponentSwizzle::A),
 XII_END_STATIC_REFLECTED_ENUM;
 
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureView, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+
 // clang-format on
 
-  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureView, 1, xiiRTTINoAllocator)
-  XII_END_DYNAMIC_REFLECTED_TYPE;
-
-  xiiGALTextureView::xiiGALTextureView(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
-    xiiGALResourceView(), m_Description(creationDescription), m_pTexture(pTexture)
-  {
-    XII_ASSERT_DEV(m_pTexture != nullptr, "The given texture must not be nullptr.");
+xiiGALTextureView::xiiGALTextureView(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
+  xiiGALResourceView(), m_Description(creationDescription), m_pTexture(pTexture)
+{
+  XII_ASSERT_DEV(m_pTexture != nullptr, "The given texture must not be nullptr.");
 }
 
 xiiGALTextureView::~xiiGALTextureView() = default;
