@@ -66,12 +66,12 @@ XII_END_STATIC_REFLECTED_ENUM;
 
 // clang-format on
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBlendState, 1, xiiRTTINoAllocator)
-XII_END_DYNAMIC_REFLECTED_TYPE;
+  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBlendState, 1, xiiRTTINoAllocator)
+  XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiGALBlendState::xiiGALBlendState(const xiiGALBlendStateCreationDescription& creationDescription) :
-  xiiGALDeviceObject(), m_Description(creationDescription)
-{
+  xiiGALBlendState::xiiGALBlendState(const xiiGALBlendStateCreationDescription& creationDescription) :
+    xiiGALDeviceObject(), m_Description(creationDescription)
+  {
 }
 
 xiiGALBlendState::~xiiGALBlendState() = default;

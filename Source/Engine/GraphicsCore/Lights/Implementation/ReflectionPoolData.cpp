@@ -313,7 +313,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
     m_hFallbackReflectionSpecularTexture = pDevice->CreateTexture(desc);
   }
 
-#  if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   if (!m_hDebugSphere.IsValid())
   {
     xiiGeometry geom;
@@ -388,7 +388,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
       }
     }
   }
-#  endif
+#endif
 }
 
 void xiiReflectionPool::Data::CreateSkyIrradianceTexture()

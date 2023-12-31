@@ -101,7 +101,7 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
     ref_msg.AddRenderData(pRenderData0, xiiDefaultRenderDataCategories::ReflectionProbe, xiiRenderData::Caching::Never);
   }
 
-#  if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   const xiiUInt32 uiMipLevels = GetMipLevels();
   if (probeData.m_desc.m_bShowDebugInfo && s_pData->m_hDebugMaterial.GetCount() == uiMipLevels * s_uiNumReflectionProbeCubeMaps)
   {
@@ -149,7 +149,7 @@ void xiiReflectionPool::ExtractReflectionProbe(const xiiComponent* pComponent, x
       ref_msg.AddRenderData(pRenderData, xiiDefaultRenderDataCategories::LitOpaque, xiiRenderData::Caching::Never);
     }
   }
-#  endif
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -15,12 +15,12 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 
 // clang-format on
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBottomLevelAS, 1, xiiRTTINoAllocator)
-XII_END_DYNAMIC_REFLECTED_TYPE;
+  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBottomLevelAS, 1, xiiRTTINoAllocator)
+  XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiGALBottomLevelAS::xiiGALBottomLevelAS(const xiiGALBottomLevelASCreationDescription& creationDescription) :
-  xiiGALDeviceObject(), m_Description(creationDescription)
-{
+  xiiGALBottomLevelAS::xiiGALBottomLevelAS(const xiiGALBottomLevelASCreationDescription& creationDescription) :
+    xiiGALDeviceObject(), m_Description(creationDescription)
+  {
 }
 
 xiiGALBottomLevelAS::~xiiGALBottomLevelAS() = default;

@@ -12,12 +12,12 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 
 // clang-format on
 
-XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSampler, 1, xiiRTTINoAllocator)
-XII_END_DYNAMIC_REFLECTED_TYPE;
+  XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSampler, 1, xiiRTTINoAllocator)
+  XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiGALSampler::xiiGALSampler(const xiiGALSamplerCreationDescription& creationDescription) :
-  xiiGALDeviceObject(), m_Description(creationDescription)
-{
+  xiiGALSampler::xiiGALSampler(const xiiGALSamplerCreationDescription& creationDescription) :
+    xiiGALDeviceObject(), m_Description(creationDescription)
+  {
 }
 
 xiiGALSampler::~xiiGALSampler() = default;

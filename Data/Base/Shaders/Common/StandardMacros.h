@@ -13,7 +13,7 @@
 
 /// \brief Turns some piece of code (usually some identifier name) into a string. Even works on macros.
 #  define XII_STRINGIZE(str)      XII_STRINGIZE_HELPER(str)
-#  define XII_STRINGIZE_HELPER(x) #x
+#  define XII_STRINGIZE_HELPER(x) #  x
 
 #endif
 
