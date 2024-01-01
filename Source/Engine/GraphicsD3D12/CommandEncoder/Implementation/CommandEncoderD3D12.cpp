@@ -255,11 +255,6 @@ void xiiGALCommandEncoderD3D12::UpdateBufferPlatform(xiiGALBuffer* pDestination,
   auto        pDestinationBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pDestination);
   const auto& bufferDescription       = pDestinationBufferD3D12->GetDescription();
 
-  if (bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
-  {
-    XII_ASSERT_DEV(uiDestOffset == 0 && sourceData.GetCount() == bufferDescription.m_uiSize, "Uniform (constant) buffers cannot be mapped partially, there are no checks for partial constant buffer updates.");
-  }
-
   switch (bufferDescription.m_ResourceUsage)
   {
     case xiiGALResourceUsage::Default:

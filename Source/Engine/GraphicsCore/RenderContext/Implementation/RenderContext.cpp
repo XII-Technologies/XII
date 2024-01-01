@@ -851,7 +851,7 @@ const xiiGlobalConstants& xiiRenderContext::ReadGlobalConstants() const
 // static
 xiiConstantBufferStorageHandle xiiRenderContext::CreateConstantBufferStorage(xiiUInt32 uiSizeInBytes, xiiConstantBufferStorageBase*& out_pStorage)
 {
-  XII_ASSERT_DEV(xiiMemoryUtils::IsSizeAligned(uiSizeInBytes, 16u), "Storage struct for constant buffer is not aligned to 16 bytes");
+  XII_ASSERT_DEV(xiiMemoryUtils::IsSizeAligned(uiSizeInBytes, 16U), "Storage struct for constant buffer is not aligned to 16 bytes.");
 
   XII_LOCK(s_ConstantBufferStorageMutex);
 

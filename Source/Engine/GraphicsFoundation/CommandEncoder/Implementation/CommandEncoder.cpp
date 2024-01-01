@@ -8,6 +8,13 @@
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/Shader/Shader.h>
 
+#define XII_VERIFY_OPERATION(expression, ...)  \
+  do                                           \
+  {                                            \
+    XII_ASSERT_DEV((expression), __VA_ARGS__); \
+    if (!(expression)) { return; }             \
+  } while (false)
+
 xiiGALCommandEncoder::xiiGALCommandEncoder(xiiGALDevice& device, xiiGALCommandEncoderState& state, xiiGALCommandEncoderCommonPlatformInterface& commonImpl) :
   m_Device(device), m_State(state), m_CommonImpl(commonImpl)
 {
@@ -436,7 +443,15 @@ void xiiGALCommandEncoder::UpdateBuffer(xiiGALBufferHandle hDestination, xiiUInt
 
   if (pDestination != nullptr)
   {
+    const auto& bufferDescription = pDestination->GetDescription();
+
     XII_ASSERT_DEV(pDestination->GetDescription().m_uiSize >= (uiDestinationOffset + sourceData.GetCount()), "Buffer {} is too small (or offset {} too large) for {} bytes.", pDestination->GetDescription().m_uiSize, uiDestinationOffset, sourceData.GetCount());
+
+    if (bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer) && mapFlags.IsSet(xiiGALMapFlags::Discard))
+    {
+      XII_VERIFY_OPERATION(uiDestinationOffset == 0 && sourceData.GetCount() == bufferDescription.m_uiSize, "Uniform (constant) buffers cannot be mapped partially with xiiGALMapFlags::Discard, only the entire buffer can be mapped.");
+    }
+
     m_CommonImpl.UpdateBufferPlatform(pDestination, uiDestinationOffset, sourceData, mapFlags);
   }
   else
@@ -608,5 +623,7 @@ void xiiGALCommandEncoder::InvalidateState()
 {
   m_State.InvalidateState();
 }
+
+#undef XII_VERIFY_OPERATION
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_CommandEncoder_Implementation_CommandEncoder);

@@ -11,11 +11,11 @@ xiiConstantBufferStorageBase::xiiConstantBufferStorageBase(xiiUInt32 uiSizeInByt
   xiiMemoryUtils::ZeroFill(m_Data.GetPtr(), m_Data.GetCount());
 
   xiiGALBufferCreationDescription desc;
-  desc.m_uiSize        = uiSizeInBytes;
-  desc.m_ResourceUsage = xiiGALResourceUsage::Dynamic;
-  desc.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Write);
-  desc.m_BindFlags.Add(xiiGALBindFlags::UniformBuffer);
-  m_hGALConstantBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
+  desc.m_uiSize         = uiSizeInBytes;
+  desc.m_ResourceUsage  = xiiGALResourceUsage::Dynamic;
+  desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
+  desc.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
+  m_hGALConstantBuffer  = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
 }
 
 xiiConstantBufferStorageBase::~xiiConstantBufferStorageBase()

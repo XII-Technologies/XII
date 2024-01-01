@@ -2513,7 +2513,7 @@ const xiiGALTextureFormatDescription& xiiGALDevice::GetTextureFormatProperties(x
 
 #undef FILL_TEXTURE_FORMAT_INFO
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
     for (xiiUInt32 i = xiiGALTextureFormat::Unknown; i < xiiGALTextureFormat::ENUM_COUNT; ++i)
     {
       XII_ASSERT_DEV(formatDescriptions[i].m_Format == static_cast<xiiGALTextureFormat::Enum>(i), "Encountered an uninitialized format.");

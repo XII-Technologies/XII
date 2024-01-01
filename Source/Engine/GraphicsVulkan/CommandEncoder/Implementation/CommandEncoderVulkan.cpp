@@ -306,11 +306,6 @@ void xiiGALCommandEncoderVulkan::UpdateBufferPlatform(xiiGALBuffer* pDestination
   auto        pDestinationBufferVulkan = static_cast<xiiGALBufferVulkan*>(pDestination);
   const auto& bufferDescription        = pDestinationBufferVulkan->GetDescription();
 
-  if (bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
-  {
-    XII_ASSERT_DEV(uiDestOffset == 0 && sourceData.GetCount() == bufferDescription.m_uiSize, "Uniform (constant) buffers cannot be mapped partially, there are no checks for partial constant buffer updates.");
-  }
-
   switch (bufferDescription.m_ResourceUsage)
   {
     case xiiGALResourceUsage::Default:
