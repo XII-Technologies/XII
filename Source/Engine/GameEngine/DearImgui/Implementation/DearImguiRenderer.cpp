@@ -167,17 +167,13 @@ void xiiImguiRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRender
   ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
 }
 
-void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+void xiiImguiRenderer::UpdateBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch)
 {
   if (xiiImgui::GetSingleton() == nullptr)
     return;
 
-  xiiRenderContext*             pRenderContext  = renderContext.m_pRenderContext;
+  xiiRenderContext*             pRenderContext  = renderViewContext.m_pRenderContext;
   xiiGALGraphicsCommandEncoder* pCommandEncoder = pRenderContext->GetGraphicsCommandEncoder();
-
-  pRenderContext->BindShader(m_hShader);
-  const auto&     textures    = xiiImgui::GetSingleton()->m_Textures;
-  const xiiUInt32 numTextures = textures.GetCount();
 
   for (auto it = batch.GetIterator<xiiImguiRenderData>(); it.IsValid(); ++it)
   {
@@ -188,16 +184,34 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, co
 
     pCommandEncoder->UpdateBuffer(m_hVertexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Vertices.GetPtr(), pRenderData->m_Vertices.GetCount()).ToByteArray());
     pCommandEncoder->UpdateBuffer(m_hIndexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Indices.GetPtr(), pRenderData->m_Indices.GetCount()).ToByteArray());
+  }
+}
+
+void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
+{
+  if (xiiImgui::GetSingleton() == nullptr)
+    return;
+
+  xiiRenderContext*             pRenderContext  = renderViewContext.m_pRenderContext;
+  xiiGALGraphicsCommandEncoder* pCommandEncoder = pRenderContext->GetGraphicsCommandEncoder();
+
+  pRenderContext->BindShader(m_hShader);
+  const auto&     textures       = xiiImgui::GetSingleton()->m_Textures;
+  const xiiUInt32 uiTextureCount = textures.GetCount();
+
+  for (auto it = batch.GetIterator<xiiImguiRenderData>(); it.IsValid(); ++it)
+  {
+    const xiiImguiRenderData* pRenderData = it;
 
     pRenderContext->BindMeshBuffer(m_hVertexBuffer, m_hIndexBuffer, &m_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, pRenderData->m_Indices.GetCount() / 3);
 
     xiiUInt32       uiFirstIndex = 0;
-    const xiiUInt32 numBatches   = pRenderData->m_Batches.GetCount();
-    for (xiiUInt32 batchIdx = 0; batchIdx < numBatches; ++batchIdx)
+    const xiiUInt32 uiBatchCount = pRenderData->m_Batches.GetCount();
+    for (xiiUInt32 batchIdx = 0; batchIdx < uiBatchCount; ++batchIdx)
     {
       const xiiImguiBatch& imGuiBatch = pRenderData->m_Batches[batchIdx];
 
-      if (imGuiBatch.m_uiVertexCount > 0 && imGuiBatch.m_uiTextureID < numTextures)
+      if (imGuiBatch.m_uiVertexCount > 0 && imGuiBatch.m_uiTextureID < uiTextureCount)
       {
         pCommandEncoder->SetScissorRect(imGuiBatch.m_ScissorRect);
         pRenderContext->BindTexture2D("BaseTexture", textures[imGuiBatch.m_uiTextureID]);

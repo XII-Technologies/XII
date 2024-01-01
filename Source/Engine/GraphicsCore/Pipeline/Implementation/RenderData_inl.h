@@ -20,7 +20,7 @@ XII_ALWAYS_INLINE bool xiiRenderData::Category::operator!=(const Category& other
 //////////////////////////////////////////////////////////////////////////
 
 // static
-XII_FORCE_INLINE const xiiRenderer* xiiRenderData::GetCategoryRenderer(Category category, const xiiRTTI* pRenderDataType)
+XII_FORCE_INLINE xiiRenderer* xiiRenderData::GetCategoryRenderer(Category category, const xiiRTTI* pRenderDataType)
 {
   if (s_bRendererInstancesDirty)
   {

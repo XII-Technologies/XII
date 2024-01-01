@@ -37,6 +37,51 @@ void xiiMeshRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderD
   ref_categories.PushBack(xiiDefaultRenderDataCategories::GUI);
 }
 
+void xiiMeshRenderer::UpdateBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch)
+{
+  xiiRenderContext* pContext = renderViewContext.m_pRenderContext;
+
+  const xiiMeshRenderData* pRenderData = batch.GetFirstData<xiiMeshRenderData>();
+
+  const xiiMeshResourceHandle&     hMesh                    = pRenderData->m_hMesh;
+  const xiiMaterialResourceHandle& hMaterial                = pRenderData->m_hMaterial;
+  const xiiUInt32                  uiPartIndex              = pRenderData->m_uiSubMeshIndex;
+  const bool                       bHasExplicitInstanceData = pRenderData->IsInstanceOf<xiiInstancedMeshRenderData>();
+
+  xiiResourceLock<xiiMeshResource> pMesh(hMesh, xiiResourceAcquireMode::AllowLoadingFallback);
+
+  // This can happen when the resource has been reloaded and now has fewer submeshes.
+  const auto& subMeshes = pMesh->GetSubMeshes();
+  if (subMeshes.GetCount() <= uiPartIndex)
+  {
+    return;
+  }
+
+  xiiInstanceData* pInstanceData = bHasExplicitInstanceData ? static_cast<const xiiInstancedMeshRenderData*>(pRenderData)->m_pExplicitInstanceData : pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);
+
+  if (!bHasExplicitInstanceData)
+  {
+    xiiUInt32 uiStartIndex = 0;
+    while (uiStartIndex < batch.GetCount())
+    {
+      const xiiUInt32 uiRemainingInstances = batch.GetCount() - uiStartIndex;
+
+      xiiUInt32                       uiInstanceDataOffset = 0;
+      xiiArrayPtr<xiiPerInstanceData> instanceData         = pInstanceData->GetInstanceData(uiRemainingInstances, uiInstanceDataOffset);
+
+      xiiUInt32 uiFilteredCount = 0;
+      FillPerInstanceData(instanceData, batch, uiStartIndex, uiFilteredCount);
+
+      if (uiFilteredCount > 0) // Instance data might be empty if all render data was filtered.
+      {
+        pInstanceData->UpdateInstanceData(pContext, uiFilteredCount);
+      }
+
+      uiStartIndex += instanceData.GetCount();
+    }
+  }
+}
+
 void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   xiiRenderContext* pContext = renderViewContext.m_pRenderContext;
@@ -90,8 +135,6 @@ void xiiMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
 
       if (uiFilteredCount > 0) // Instance data might be empty if all render data was filtered.
       {
-        pInstanceData->UpdateInstanceData(pContext, uiFilteredCount);
-
         const xiiMeshResourceDescriptor::SubMesh& meshPart = subMeshes[uiPartIndex];
 
         if (pContext->DrawMeshBuffer(meshPart.m_uiPrimitiveCount, meshPart.m_uiFirstPrimitive, uiFilteredCount).Failed())

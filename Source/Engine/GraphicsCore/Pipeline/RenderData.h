@@ -43,7 +43,7 @@ public:
 
   static void GetAllCategoryNames(xiiDynamicArray<xiiHashedString>& out_categoryNames);
 
-  static const xiiRenderer* GetCategoryRenderer(Category category, const xiiRTTI* pRenderDataType);
+  static xiiRenderer* GetCategoryRenderer(Category category, const xiiRTTI* pRenderDataType);
 
   static xiiHashedString GetCategoryName(Category category);
 

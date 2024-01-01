@@ -30,6 +30,10 @@ void xiiGizmoRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRender
   inout_categories.PushBack(xiiDefaultRenderDataCategories::SimpleForeground);
 }
 
+void xiiGizmoRenderer::UpdateBatch(const xiiRenderViewContext& renderContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch)
+{
+}
+
 void xiiGizmoRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   bool bOnlyPickable = false;

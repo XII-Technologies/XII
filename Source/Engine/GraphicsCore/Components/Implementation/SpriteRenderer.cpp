@@ -38,6 +38,22 @@ void xiiSpriteRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRende
   ref_categories.PushBack(xiiDefaultRenderDataCategories::Selection);
 }
 
+void xiiSpriteRenderer::UpdateBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch)
+{
+  xiiGALDevice*     pDevice  = xiiGALDevice::GetDefaultDevice();
+  xiiRenderContext* pContext = renderViewContext.m_pRenderContext;
+
+  const xiiUInt32 uiBufferSize = xiiMath::RoundUp(batch.GetCount(), 128u);
+  m_hSpriteData                = CreateSpriteDataBuffer(uiBufferSize);
+
+  FillSpriteData(batch);
+
+  if (m_SpriteData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
+  {
+    pContext->GetCommandEncoder()->UpdateBuffer(m_hSpriteData, 0, m_SpriteData.GetByteArrayPtr());
+  }
+}
+
 void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   xiiGALDevice*     pDevice  = xiiGALDevice::GetDefaultDevice();
@@ -45,23 +61,17 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
 
   const xiiSpriteRenderData* pRenderData = batch.GetFirstData<xiiSpriteRenderData>();
 
-  const xiiUInt32    uiBufferSize = xiiMath::RoundUp(batch.GetCount(), 128u);
-  xiiGALBufferHandle hSpriteData  = CreateSpriteDataBuffer(uiBufferSize);
-  XII_SCOPE_EXIT(DeleteSpriteDataBuffer(hSpriteData));
+  XII_SCOPE_EXIT(DeleteSpriteDataBuffer(m_hSpriteData));
 
   pContext->BindShader(m_hShader);
-  pContext->BindBuffer("spriteData", pDevice->GetBuffer(hSpriteData)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pContext->BindBuffer("spriteData", pDevice->GetBuffer(m_hSpriteData)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   pContext->BindTexture2D("SpriteTexture", pRenderData->m_hTexture);
 
   pContext->SetShaderPermutationVariable("BLEND_MODE", xiiSpriteBlendMode::GetPermutationValue(pRenderData->m_BlendMode));
   pContext->SetShaderPermutationVariable("SHAPE_ICON", pRenderData->m_BlendMode == xiiSpriteBlendMode::ShapeIcon ? xiiMakeHashedString("TRUE") : xiiMakeHashedString("FALSE"));
 
-  FillSpriteData(batch);
-
   if (m_SpriteData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
   {
-    pContext->GetCommandEncoder()->UpdateBuffer(hSpriteData, 0, m_SpriteData.GetByteArrayPtr());
-
     pContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, m_SpriteData.GetCount() * 2);
     pContext->DrawMeshBuffer().IgnoreResult();
   }
@@ -72,8 +82,8 @@ xiiGALBufferHandle xiiSpriteRenderer::CreateSpriteDataBuffer(xiiUInt32 uiBufferS
   xiiGALBufferCreationDescription desc;
   desc.m_uiElementByteStride = sizeof(xiiPerSpriteData);
   desc.m_uiSize              = desc.m_uiElementByteStride * uiBufferSize;
-  desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
-  desc.m_Mode = xiiGALBufferMode::Structured;
+  desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  desc.m_Mode                = xiiGALBufferMode::Structured;
 
   return xiiGPUResourcePool::GetDefaultInstance()->GetBuffer(desc);
 }

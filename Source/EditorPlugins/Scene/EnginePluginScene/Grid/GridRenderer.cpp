@@ -32,7 +32,7 @@ xiiEditorGridExtractor::xiiEditorGridExtractor(const char* szName) :
 
 xiiGridRenderer::xiiGridRenderer()
 {
-  CreateVertexBuffer();
+  SetupResources();
 }
 
 void xiiGridRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const
@@ -45,26 +45,11 @@ void xiiGridRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderD
   ref_categories.PushBack(xiiDefaultRenderDataCategories::SimpleTransparent);
 }
 
-void xiiGridRenderer::CreateVertexBuffer()
+void xiiGridRenderer::SetupResources()
 {
-  if (!m_hVertexBuffer.IsInvalidated())
-    return;
-
-  // load the shader
+  // Load the shader
   {
     m_hShader = xiiResourceManager::LoadResource<xiiShaderResource>("Shaders/Debug/DebugPrimitive.xiiShader");
-  }
-
-  // Create the vertex buffer
-  {
-    xiiGALBufferCreationDescription desc;
-    desc.m_uiElementByteStride = sizeof(GridVertex);
-    desc.m_uiSize              = s_uiBufferSize;
-    desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
-    desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
-    desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
-
-    m_hVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
   }
 
   // Setup the input layout
@@ -85,6 +70,20 @@ void xiiGridRenderer::CreateVertexBuffer()
       si.m_uiElementSize      = 4;
     }
   }
+}
+
+xiiGALBufferHandle xiiGridRenderer::CreateVertexBuffer()
+{
+  xiiGALBufferCreationDescription desc;
+  desc.m_uiElementByteStride = sizeof(GridVertex);
+  desc.m_uiSize              = s_uiBufferSize;
+  desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+  desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+  desc.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
+
+  xiiGALBufferHandle hVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
+
+  return hVertexBuffer;
 }
 
 void xiiGridRenderer::CreateGrid(const xiiGridRenderData& rd) const
@@ -171,8 +170,51 @@ void xiiGridRenderer::CreateGrid(const xiiGridRenderData& rd) const
   }
 }
 
+void xiiGridRenderer::UpdateBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch)
+{
+  m_AvailableVertexBuffers.PushBackRange(m_PendingVertexBuffers.GetArrayPtr());
+  m_PendingVertexBuffers.Clear();
+
+  for (auto it = batch.GetIterator<xiiGridRenderData>(); it.IsValid(); ++it)
+  {
+    CreateGrid(*it);
+
+    if (m_Vertices.IsEmpty())
+      return;
+
+    xiiRenderContext* pRenderContext = renderViewContext.m_pRenderContext;
+
+    xiiUInt32         uiNumLineVertices = m_Vertices.GetCount();
+    const GridVertex* pLineData         = m_Vertices.GetData();
+
+    while (uiNumLineVertices > 0)
+    {
+      if (m_AvailableVertexBuffers.GetCount() > 0)
+      {
+        m_PendingVertexBuffers.PushBack(m_AvailableVertexBuffers.PeekBack());
+        m_AvailableVertexBuffers.PopBack();
+      }
+      else
+      {
+        m_PendingVertexBuffers.PushBack(CreateVertexBuffer());
+      }
+
+      const auto& hVertexBuffer = m_PendingVertexBuffers.PeekBack();
+
+      const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, s_uiLineVerticesPerBatch);
+      XII_ASSERT_DEBUG(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
+
+      pRenderContext->GetCommandEncoder()->UpdateBuffer(hVertexBuffer, 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
+
+      uiNumLineVertices -= uiNumLineVerticesInBatch;
+      pLineData += s_uiLineVerticesPerBatch;
+    }
+  }
+}
+
 void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
+  xiiUInt32 uiVertexBufferIndex = 0;
   for (auto it = batch.GetIterator<xiiGridRenderData>(); it.IsValid(); ++it)
   {
     CreateGrid(*it);
@@ -193,13 +235,17 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
       const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, s_uiLineVerticesPerBatch);
       XII_ASSERT_DEBUG(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
 
-      pRenderContext->GetCommandEncoder()->UpdateBuffer(m_hVertexBuffer, 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
+      const auto& hVertexBuffer = m_PendingVertexBuffers[uiVertexBufferIndex];
 
-      pRenderContext->BindMeshBuffer(m_hVertexBuffer, xiiGALBufferHandle(), &m_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
+      pRenderContext->GetCommandEncoder()->UpdateBuffer(hVertexBuffer, 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
+
+      pRenderContext->BindMeshBuffer(hVertexBuffer, xiiGALBufferHandle(), &m_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
       pRenderContext->DrawMeshBuffer().IgnoreResult();
 
       uiNumLineVertices -= uiNumLineVerticesInBatch;
       pLineData += s_uiLineVerticesPerBatch;
+
+      ++uiVertexBufferIndex;
     }
   }
 }

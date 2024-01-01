@@ -1262,62 +1262,62 @@ void xiiGALCommandEncoderD3D12::BeginRenderPass()
 {
   XII_ASSERT_DEV(!m_bIsComputeRequested, "Cannot begin render pass while compute pipeline is active!");
 
-  if (!m_bRenderPassActive)
+  if (m_bRenderPassActive)
+    return;
+
+  const bool     bHasDepthAttachment    = !m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+  const xiiUInt8 uiColorAttachmentCount = m_RenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+
+  xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> clearValues;
   {
-    const bool     bHasDepthAttachment    = !m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
-    const xiiUInt8 uiColorAttachmentCount = m_RenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
-
-    xiiHybridArray<Diligent::OptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT + 1> clearValues;
+    if (bHasDepthAttachment)
     {
-      if (bHasDepthAttachment)
-      {
-        const xiiGALTextureViewD3D12* pRenderTargetViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(m_GALDeviceD3D12.GetTextureView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
+      const xiiGALTextureViewD3D12* pRenderTargetViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(m_GALDeviceD3D12.GetTextureView(m_RenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget()));
 
-        xiiGALTextureHandle       hTexture      = pRenderTargetViewD3D12->GetDescription().m_hTexture;
-        const xiiGALTextureD3D12* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(m_GALDeviceD3D12.GetTexture(hTexture));
+      xiiGALTextureHandle       hTexture      = pRenderTargetViewD3D12->GetDescription().m_hTexture;
+      const xiiGALTextureD3D12* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(m_GALDeviceD3D12.GetTexture(hTexture));
 
-        const xiiGALTextureCreationDescription& textureDescription = pTextureD3D12->GetDescription();
-        const auto&                             formatInfo         = m_GALDeviceD3D12.GetFormatLookupTable().GetFormatInfo(textureDescription.m_Format);
+      const xiiGALTextureCreationDescription& textureDescription = pTextureD3D12->GetDescription();
+      const auto&                             formatInfo         = m_GALDeviceD3D12.GetFormatLookupTable().GetFormatInfo(textureDescription.m_Format);
 
-        Diligent::OptimizedClearValue& depthClear = clearValues.ExpandAndGetRef();
-        depthClear.SetDepthStencil(formatInfo.m_eDepthStencilType, 1.0f, 0);
-      }
-
-      for (xiiUInt8 i = 0; i < uiColorAttachmentCount; ++i)
-      {
-        const xiiGALTextureViewD3D12* pRenderTargetViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(m_GALDeviceD3D12.GetTextureView(m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(i)));
-
-        xiiGALTextureHandle       hTexture      = pRenderTargetViewD3D12->GetDescription().m_hTexture;
-        const xiiGALTextureD3D12* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(m_GALDeviceD3D12.GetTexture(hTexture));
-
-        const xiiGALTextureCreationDescription& textureDescription = pTextureD3D12->GetDescription();
-        const auto&                             formatInfo         = m_GALDeviceD3D12.GetFormatLookupTable().GetFormatInfo(textureDescription.m_Format);
-
-        Diligent::OptimizedClearValue& colorClear = clearValues.ExpandAndGetRef();
-        colorClear.SetColor(formatInfo.m_eRenderTarget, m_RenderingSetup.m_ClearColor.GetData());
-      }
+      Diligent::OptimizedClearValue& depthClear = clearValues.ExpandAndGetRef();
+      depthClear.SetDepthStencil(formatInfo.m_eDepthStencilType, 1.0f, 0);
     }
 
-    if (bHasDepthAttachment || uiColorAttachmentCount > 0)
+    for (xiiUInt8 i = 0; i < uiColorAttachmentCount; ++i)
     {
-      Diligent::BeginRenderPassAttribs renderPassBeginDescription;
-      renderPassBeginDescription.pRenderPass         = m_pRenderPass->GetRenderPass();
-      renderPassBeginDescription.pFramebuffer        = m_pFramebuffer->GetFramebuffer();
-      renderPassBeginDescription.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
-      renderPassBeginDescription.pClearValues        = clearValues.GetData();
-      renderPassBeginDescription.ClearValueCount     = clearValues.GetCount();
+      const xiiGALTextureViewD3D12* pRenderTargetViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(m_GALDeviceD3D12.GetTextureView(m_RenderingSetup.m_RenderTargetSetup.GetRenderTarget(i)));
 
-      m_pContext->BeginRenderPass(renderPassBeginDescription);
+      xiiGALTextureHandle       hTexture      = pRenderTargetViewD3D12->GetDescription().m_hTexture;
+      const xiiGALTextureD3D12* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(m_GALDeviceD3D12.GetTexture(hTexture));
 
-      m_bRenderPassActive = true;
-      m_bClearSubmitted   = true;
+      const xiiGALTextureCreationDescription& textureDescription = pTextureD3D12->GetDescription();
+      const auto&                             formatInfo         = m_GALDeviceD3D12.GetFormatLookupTable().GetFormatInfo(textureDescription.m_Format);
+
+      Diligent::OptimizedClearValue& colorClear = clearValues.ExpandAndGetRef();
+      colorClear.SetColor(formatInfo.m_eRenderTarget, m_RenderingSetup.m_ClearColor.GetData());
     }
-    else
-    {
-      m_pContext->SetRenderTargets(0, nullptr, nullptr, Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE);
+  }
 
-      m_pContext->SetViewports(1U, &m_Viewport, static_cast<xiiUInt32>(m_Viewport.Width), static_cast<xiiUInt32>(m_Viewport.Height));
-    }
+  if (bHasDepthAttachment || uiColorAttachmentCount > 0)
+  {
+    Diligent::BeginRenderPassAttribs renderPassBeginDescription;
+    renderPassBeginDescription.pRenderPass         = m_pRenderPass->GetRenderPass();
+    renderPassBeginDescription.pFramebuffer        = m_pFramebuffer->GetFramebuffer();
+    renderPassBeginDescription.StateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+    renderPassBeginDescription.pClearValues        = clearValues.GetData();
+    renderPassBeginDescription.ClearValueCount     = clearValues.GetCount();
+
+    m_pContext->BeginRenderPass(renderPassBeginDescription);
+
+    m_bRenderPassActive = true;
+    m_bClearSubmitted   = true;
+  }
+  else
+  {
+    m_pContext->SetRenderTargets(0, nullptr, nullptr, Diligent::RESOURCE_STATE_TRANSITION_MODE_NONE);
+
+    m_pContext->SetViewports(1U, &m_Viewport, static_cast<xiiUInt32>(m_Viewport.Width), static_cast<xiiUInt32>(m_Viewport.Height));
   }
 }
 
