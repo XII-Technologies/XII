@@ -110,7 +110,7 @@ float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint Num
 
 #endif
 
-#if defined(NULL_SM60) || defined(NULL_SM61) || defined(NULL_SM62) || defined(NULL_SM63) || defined(NULL_SM64) || defined(NULL_SM65) || defined(NULL_SM66)
+#if defined(NULL_SM)
 
 #  undef PLATFORM_SHADER
 #  define PLATFORM_SHADER XII_ON
@@ -125,17 +125,17 @@ float xiiEvaluateAttributeAtSample(float Attribute, uint SampleIndex, uint NumMs
 
 float2 xiiEvaluateAttributeAtSample(float2 Attribute, uint SampleIndex, uint NumMsaaSamples)
 {
-  return 0.0f;
+  return float2(0.0f, 0.0f);
 }
 
 float3 xiiEvaluateAttributeAtSample(float3 Attribute, uint SampleIndex, uint NumMsaaSamples)
 {
-  return 0.0f;
+  return float3(0.0f, 0.0f, 0.0f);
 }
 
 float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint NumMsaaSamples)
 {
-  return 0.0f;
+  return float4(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 #endif

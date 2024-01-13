@@ -9,7 +9,7 @@
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #    include <d3dcompiler.h>
 #  endif
-#  include <Diligent/ThirdParty/DirectXShaderCompiler/dxc/dxcapi.h>
+#  include <dxc/dxcapi.h>
 
 XII_DEFINE_AS_POD_TYPE(D3D12_SHADER_INPUT_BIND_DESC);
 

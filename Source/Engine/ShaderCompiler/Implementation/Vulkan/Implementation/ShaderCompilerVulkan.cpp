@@ -16,7 +16,7 @@
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #    include <d3dcompiler.h>
 #  endif
-#  include <Diligent/ThirdParty/DirectXShaderCompiler/dxc/dxcapi.h>
+#  include <dxc/dxcapi.h>
 
 xiiEnum<xiiGALTextureFormat> GetXIIFormatVulkan(SpvReflectFormat format);
 

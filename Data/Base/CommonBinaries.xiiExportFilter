@@ -20,11 +20,11 @@
 /xiiFoundation.dll
 /xiiCore.dll
 /xiiGameEngine.dll
-/xiiRendererCore.dll
-/xiiRendererDX11.dll
-/xiiRendererDiligent.dll
-/xiiRendererFoundation.dll
-/xiiShaderCompilerHLSL.dll
+/xiiGraphicsFoundation.dll
+/xiiGraphicsD3D12.dll
+/xiiGraphicsVulkan.dll
+/xiiGraphicsCore.dll
+/xiiShaderCompiler.dll
 /xiiTexture.dll
 /xiiUtilities.dll
 /Imgui.dll

@@ -284,7 +284,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceUsage
     Dynamic,       ///< A resource that can be read by the GPU and written to, at least once per frame by the CPU.
     Staging,       ///< A resource that facilitates transferring data between the GPU and CPU.
     Unified,       ///< A resource that resides in a unified memory (eg. memory shared between the CPU and GPU), that can be read and written
-                   ///< to by the GPU and can also be directly accessed by the CPU.
+                   ///  to by the GPU and can also be directly accessed by the CPU.
+                   ///  \remarks An application should check if unified memory is available on th edevice by checking the device capabilities.
+                   ///           If there is no unified memory support, an application should choose another usage type (typically xiiGALResourceUsage::Default).
     Sparse,        ///< A resource that can be partially committed to physical memory.
 
     ENUM_COUNT,
