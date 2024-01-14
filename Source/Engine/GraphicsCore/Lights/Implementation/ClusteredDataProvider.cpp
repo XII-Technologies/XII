@@ -20,8 +20,10 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
 
   {
     xiiGALBufferCreationDescription desc;
-    desc.m_Mode = xiiGALBufferMode::Structured;
-    desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
+    desc.m_Mode           = xiiGALBufferMode::Structured;
+    desc.m_BindFlags      = xiiGALBindFlags::ShaderResource;
+    desc.m_ResourceUsage  = xiiGALResourceUsage::Dynamic;
+    desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
 
     {
       desc.m_uiElementByteStride = sizeof(xiiPerLightData);

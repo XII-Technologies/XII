@@ -228,8 +228,6 @@ void xiiGALCommandEncoderD3D12::ClearUnorderedAccessViewPlatform(xiiGALTextureVi
 
 void xiiGALCommandEncoderD3D12::CopyBufferPlatform(xiiGALBuffer* pDestination, xiiGALBuffer* pSource)
 {
-  EndRenderPass();
-
   auto pSourceBufferD3D12      = static_cast<xiiGALBufferD3D12*>(pSource);
   auto pDestinationBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pDestination);
 
@@ -238,8 +236,6 @@ void xiiGALCommandEncoderD3D12::CopyBufferPlatform(xiiGALBuffer* pDestination, x
 
 void xiiGALCommandEncoderD3D12::CopyBufferRegionPlatform(xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, xiiGALBuffer* pSource, xiiUInt32 uiSourceOffset, xiiUInt32 uiByteCount)
 {
-  EndRenderPass();
-
   auto pSourceBufferD3D12      = static_cast<xiiGALBufferD3D12*>(pSource);
   auto pDestinationBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pDestination);
 
@@ -248,8 +244,6 @@ void xiiGALCommandEncoderD3D12::CopyBufferRegionPlatform(xiiGALBuffer* pDestinat
 
 void xiiGALCommandEncoderD3D12::UpdateBufferPlatform(xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
 {
-  EndRenderPass();
-
   XII_CHECK_ALIGNMENT_16(sourceData.GetPtr());
 
   auto        pDestinationBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pDestination);
@@ -259,10 +253,14 @@ void xiiGALCommandEncoderD3D12::UpdateBufferPlatform(xiiGALBuffer* pDestination,
   {
     case xiiGALResourceUsage::Default:
     {
+      EndRenderPass();
+
       m_pContext->UpdateBuffer(pDestinationBufferD3D12->GetBuffer(), uiDestOffset, sourceData.GetCount(), reinterpret_cast<const void*>(sourceData.GetPtr()), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     }
     break;
     case xiiGALResourceUsage::Dynamic:
+    case xiiGALResourceUsage::Staging:
+    case xiiGALResourceUsage::Unified:
     {
       Diligent::PVoid pMapResult = {};
       m_pContext->MapBuffer(pDestinationBufferD3D12->GetBuffer(), Diligent::MAP_WRITE, xiiDiligentTypeConversions::GetMapFlags(mapFlags), reinterpret_cast<Diligent::PVoid&>(pMapResult));
@@ -302,8 +300,6 @@ void xiiGALCommandEncoderD3D12::CopyTexturePlatform(xiiGALTexture* pDestination,
 
 void xiiGALCommandEncoderD3D12::CopyTextureRegionPlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxu32& box)
 {
-  EndRenderPass();
-
   auto pSourceTextureD3D12      = static_cast<xiiGALTextureD3D12*>(pSource);
   auto pDestinationTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDestination);
 
@@ -336,8 +332,6 @@ void xiiGALCommandEncoderD3D12::CopyTextureRegionPlatform(xiiGALTexture* pDestin
 
 void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
 {
-  EndRenderPass();
-
   auto pDestinationTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDestination);
 
   xiiUInt32 uiWidth  = xiiMath::Max(destinationBox.m_vMax.x - destinationBox.m_vMin.x, 1U);
@@ -430,8 +424,6 @@ void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestinatio
 
 void xiiGALCommandEncoderD3D12::ResolveTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource)
 {
-  EndRenderPass();
-
   auto pSourceTextureD3D12      = static_cast<xiiGALTextureD3D12*>(pSource);
   auto pDestinationTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDestination);
 
@@ -503,8 +495,6 @@ xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel)
 
 void xiiGALCommandEncoderD3D12::CopyTextureReadbackResultPlatform(xiiGALTexture* pTexture, xiiGALTexture* pStagingTexture, xiiArrayPtr<xiiGALTextureMipLevelData> mipLevelData, xiiArrayPtr<xiiGALTextureSubResourceData> targetData)
 {
-  EndRenderPass();
-
   auto pTextureD3D12        = static_cast<xiiGALTextureD3D12*>(pTexture);
   auto pStagingTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pStagingTexture);
 
@@ -569,8 +559,6 @@ void xiiGALCommandEncoderD3D12::GenerateMipMapsPlatform(xiiGALTextureView* pText
 
 void xiiGALCommandEncoderD3D12::FlushPlatform()
 {
-  EndRenderPass();
-
   FlushDeferredStateChanges();
 
   m_pContext->Flush();
@@ -593,8 +581,6 @@ void xiiGALCommandEncoderD3D12::InsertEventMarkerPlatform(xiiStringView sMarker,
 
 void xiiGALCommandEncoderD3D12::ClearRenderTargetPlatform(xiiGALTextureView* pTextureView, const xiiColor& clearColor)
 {
-  EndRenderPass();
-
   auto pTextureViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(pTextureView);
 
   m_pContext->ClearRenderTarget(pTextureViewD3D12->GetTextureView(), clearColor.GetData(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
@@ -602,8 +588,6 @@ void xiiGALCommandEncoderD3D12::ClearRenderTargetPlatform(xiiGALTextureView* pTe
 
 void xiiGALCommandEncoderD3D12::ClearDepthStencilPlatform(xiiGALTextureView* pTextureView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
-  EndRenderPass();
-
   auto pTextureViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(pTextureView);
 
   Diligent::CLEAR_DEPTH_STENCIL_FLAGS clearFlags = {};
@@ -974,6 +958,8 @@ void xiiGALCommandEncoderD3D12::Reset()
 
 void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 {
+  EndRenderPass();
+
   if (m_bPipelineStateModified)
   {
     {
@@ -1080,14 +1066,14 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
     const xiiUInt32 uiNumSlots  = m_BoundVertexBuffersRange.GetCount();
 
     // Diligent will handle unsetting null buffers with the SET_VERTEX_BUFFERS_FLAG_RESET flag.
-    m_pContext->SetVertexBuffers(uiStartSlot, uiNumSlots, m_pBoundVertexBuffers + uiStartSlot, m_VertexBufferOffsets + uiStartSlot, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
+    m_pContext->SetVertexBuffers(uiStartSlot, uiNumSlots, m_pBoundVertexBuffers + uiStartSlot, m_VertexBufferOffsets + uiStartSlot, m_bRenderPassActive ? Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY : Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
 
     m_BoundVertexBuffersRange.Reset();
   }
 
   if (!m_bIsComputeRequested && m_bIndexBufferModified)
   {
-    m_pContext->SetIndexBuffer(m_pIndexBuffer, m_uiIndexBufferByteOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    m_pContext->SetIndexBuffer(m_pIndexBuffer, m_uiIndexBufferByteOffset, m_bRenderPassActive ? Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY : Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
     m_bIndexBufferModified = false;
   }

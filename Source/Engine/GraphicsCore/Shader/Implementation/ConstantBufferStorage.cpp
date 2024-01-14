@@ -12,9 +12,9 @@ xiiConstantBufferStorageBase::xiiConstantBufferStorageBase(xiiUInt32 uiSizeInByt
 
   xiiGALBufferCreationDescription desc;
   desc.m_uiSize         = uiSizeInBytes;
+  desc.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   desc.m_ResourceUsage  = xiiGALResourceUsage::Dynamic;
   desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  desc.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
   m_hGALConstantBuffer  = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
 }
 

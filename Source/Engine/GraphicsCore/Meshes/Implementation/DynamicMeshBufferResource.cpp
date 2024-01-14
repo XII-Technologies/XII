@@ -126,7 +126,10 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     xiiGALBufferCreationDescription desc;
     desc.m_uiElementByteStride = sizeof(xiiDynamicMeshVertex);
     desc.m_uiSize              = desc.m_uiElementByteStride * m_Descriptor.m_uiMaxVertices;
-    desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
+    desc.m_BindFlags  =xiiGALBindFlags::VertexBuffer;
+    desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+
     m_hVertexBuffer = pDevice->CreateBuffer(desc);
   }
 
@@ -143,7 +146,10 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     xiiGALBufferCreationDescription desc;
     desc.m_uiElementByteStride = sizeof(xiiColorLinearUB);
     desc.m_uiSize              = desc.m_uiElementByteStride * m_Descriptor.m_uiMaxVertices;
-    desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
+    desc.m_BindFlags = xiiGALBindFlags::VertexBuffer;
+    desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+
     m_hColorBuffer = pDevice->CreateBuffer(desc);
 
     // sName.Format("{0} - Dynamic Color Buffer", GetResourceDescription());
@@ -157,7 +163,10 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     xiiGALBufferCreationDescription desc;
     desc.m_uiElementByteStride = xiiGALValueType::GetSize(xiiGALValueType::UInt32);
     desc.m_uiSize              = desc.m_uiElementByteStride * uiMaxIndices;
-    desc.m_BindFlags.Add(xiiGALBindFlags::IndexBuffer);
+    desc.m_BindFlags = xiiGALBindFlags::IndexBuffer;
+    desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+
     m_hIndexBuffer = pDevice->CreateBuffer(desc);
 
     // sName.Format("{0} - Dynamic Index32 Buffer", GetResourceDescription());
@@ -170,7 +179,10 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     xiiGALBufferCreationDescription desc;
     desc.m_uiElementByteStride = xiiGALValueType::GetSize(xiiGALValueType::UInt16);
     desc.m_uiSize              = desc.m_uiElementByteStride * uiMaxIndices;
-    desc.m_BindFlags.Add(xiiGALBindFlags::IndexBuffer);
+    desc.m_BindFlags = xiiGALBindFlags::IndexBuffer;
+    desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
+
     m_hIndexBuffer = pDevice->CreateBuffer(desc);
 
     // sName.Format("{0} - Dynamic Index16 Buffer", GetResourceDescription());
