@@ -60,20 +60,17 @@ public:
   // xiiRenderer implementation
   virtual void GetSupportedRenderDataTypes(xiiHybridArray<const xiiRTTI*, 8>& ref_types) const override;
   virtual void GetSupportedRenderDataCategories(xiiHybridArray<xiiRenderData::Category, 8>& ref_categories) const override;
-  virtual void UpdateBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) override;
-  virtual void RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
+  virtual void RenderBatch(const xiiRenderViewContext& renderContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const override;
 
 protected:
-  void SetupResources();
-  xiiGALBufferHandle CreateVertexBuffer();
+  void CreateVertexBuffer();
 
   static constexpr xiiUInt32 s_uiBufferSize           = 1024 * 8;
   static constexpr xiiUInt32 s_uiLineVerticesPerBatch = s_uiBufferSize / sizeof(GridVertex);
 
   xiiShaderResourceHandle                                         m_hShader;
+  xiiGALBufferHandle                                              m_hVertexBuffer;
   xiiInputLayoutInfo                                              m_InputLayoutInfo;
-  xiiDynamicArray<xiiGALBufferHandle>                             m_AvailableVertexBuffers;
-  xiiDynamicArray<xiiGALBufferHandle>                             m_PendingVertexBuffers;
   mutable xiiDynamicArray<GridVertex, xiiAlignedAllocatorWrapper> m_Vertices;
 
 private:

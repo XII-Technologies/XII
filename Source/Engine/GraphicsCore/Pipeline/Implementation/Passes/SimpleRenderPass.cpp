@@ -87,12 +87,6 @@ void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext,
 
   auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
-  // Execute update functions
-  UpdateDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleOpaque);
-  UpdateDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleTransparent);
-  UpdateDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
-  UpdateDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::GUI);
-
   // Setup Permutation Vars
   xiiTempHashedString sRenderPass("RENDER_PASS_FORWARD");
   if (renderViewContext.m_pViewData->m_ViewRenderMode != xiiViewRenderMode::None)

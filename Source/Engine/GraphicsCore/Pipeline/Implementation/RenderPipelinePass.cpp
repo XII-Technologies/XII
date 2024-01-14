@@ -71,28 +71,6 @@ xiiResult xiiRenderPipelinePass::Deserialize(xiiStreamReader& inout_stream)
   return XII_SUCCESS;
 }
 
-void xiiRenderPipelinePass::UpdateDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter)
-{
-  XII_PROFILE_AND_MARKER(renderViewContext.m_pRenderContext->GetCommandEncoder(), xiiRenderData::GetCategoryName(category));
-
-  auto            batchList    = m_pPipeline->GetRenderDataBatchesWithCategory(category, filter);
-  const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
-  for (xiiUInt32 i = 0; i < uiBatchCount; ++i)
-  {
-    const xiiRenderDataBatch& batch = batchList.GetBatch(i);
-
-    if (const xiiRenderData* pRenderData = batch.GetFirstData<xiiRenderData>())
-    {
-      const xiiRTTI* pType = pRenderData->GetDynamicRTTI();
-
-      if (xiiRenderer* pRenderer = xiiRenderData::GetCategoryRenderer(category, pType))
-      {
-        pRenderer->UpdateBatch(renderViewContext, this, batch);
-      }
-    }
-  }
-}
-
 void xiiRenderPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter)
 {
   XII_PROFILE_AND_MARKER(renderViewContext.m_pRenderContext->GetCommandEncoder(), xiiRenderData::GetCategoryName(category));

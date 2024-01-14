@@ -34,22 +34,6 @@ void xiiLensFlareRenderer::GetSupportedRenderDataCategories(xiiHybridArray<xiiRe
   ref_categories.PushBack(xiiDefaultRenderDataCategories::LitTransparent);
 }
 
-void xiiLensFlareRenderer::UpdateBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch)
-{
-  xiiGALDevice*     pDevice  = xiiGALDevice::GetDefaultDevice();
-  xiiRenderContext* pContext = renderViewContext.m_pRenderContext;
-
-  const xiiUInt32    uiBufferSize   = xiiMath::RoundUp(batch.GetCount(), 128u);
-  m_hLensFlareData = CreateLensFlareDataBuffer(uiBufferSize);
-
-  FillLensFlareData(batch);
-
-  if (m_LensFlareData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
-  {
-    pContext->GetCommandEncoder()->UpdateBuffer(m_hLensFlareData, 0, m_LensFlareData.GetByteArrayPtr());
-  }
-}
-
 void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   xiiGALDevice*     pDevice  = xiiGALDevice::GetDefaultDevice();
@@ -57,14 +41,20 @@ void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewCon
 
   const xiiLensFlareRenderData* pRenderData = batch.GetFirstData<xiiLensFlareRenderData>();
 
-  XII_SCOPE_EXIT(DeleteLensFlareDataBuffer(m_hLensFlareData));
+  const xiiUInt32    uiBufferSize   = xiiMath::RoundUp(batch.GetCount(), 128u);
+  xiiGALBufferHandle hLensFlareData = CreateLensFlareDataBuffer(uiBufferSize);
+  XII_SCOPE_EXIT(DeleteLensFlareDataBuffer(hLensFlareData));
 
   pContext->BindShader(m_hShader);
-  pContext->BindBuffer("lensFlareData", pDevice->GetBuffer(m_hLensFlareData)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+  pContext->BindBuffer("lensFlareData", pDevice->GetBuffer(hLensFlareData)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   pContext->BindTexture2D("LensFlareTexture", pRenderData->m_hTexture);
+
+  FillLensFlareData(batch);
 
   if (m_LensFlareData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
   {
+    pContext->GetCommandEncoder()->UpdateBuffer(hLensFlareData, 0, m_LensFlareData.GetByteArrayPtr());
+
     pContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, m_LensFlareData.GetCount() * 2);
     pContext->DrawMeshBuffer().IgnoreResult();
   }

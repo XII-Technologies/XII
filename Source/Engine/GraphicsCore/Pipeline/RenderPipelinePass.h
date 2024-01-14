@@ -63,7 +63,6 @@ public:
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const;
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream);
 
-  void UpdateDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter());
   void RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter = xiiRenderDataBatch::Filter());
 
   XII_ALWAYS_INLINE xiiRenderPipeline* GetPipeline() { return m_pPipeline; }

@@ -297,53 +297,13 @@ void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xii
   ref_types.PushBack(xiiGetStaticRTTI<xiiCustomMeshRenderData>());
 }
 
-void xiiCustomMeshRenderer::UpdateBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch)
+void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
   xiiRenderContext*     pRenderContext     = renderViewContext.m_pRenderContext;
   xiiGALCommandEncoder* pGALCommandEncoder = pRenderContext->GetCommandEncoder();
 
   xiiInstanceData* pInstanceData = pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);
-
-  const xiiCustomMeshRenderData* pRenderData1st = batch.GetFirstData<xiiCustomMeshRenderData>();
-
-  for (auto it = batch.GetIterator<xiiCustomMeshRenderData>(0, batch.GetCount()); it.IsValid(); ++it)
-  {
-    const xiiCustomMeshRenderData* pRenderData = it;
-
-    xiiResourceLock<xiiDynamicMeshBufferResource> pBuffer(pRenderData->m_hMesh, xiiResourceAcquireMode::BlockTillLoaded);
-
-    xiiUInt32                       uiInstanceDataOffset = 0;
-    xiiArrayPtr<xiiPerInstanceData> instanceData         = pInstanceData->GetInstanceData(1, uiInstanceDataOffset);
-
-    instanceData[0].GameObjectID  = pRenderData->m_uiUniqueID;
-    instanceData[0].Color         = pRenderData->m_Color;
-    instanceData[0].ObjectToWorld = pRenderData->m_GlobalTransform;
-
-    if (pRenderData->m_uiUniformScale)
-    {
-      instanceData[0].ObjectToWorldNormal = instanceData[0].ObjectToWorld;
-    }
-    else
-    {
-      xiiMat4 objectToWorld = pRenderData->m_GlobalTransform.GetAsMat4();
-
-      xiiMat3 mInverse = objectToWorld.GetRotationalPart();
-      mInverse.Invert(0.0f).IgnoreResult();
-      // we explicitly ignore the return value here (success / failure) because when we have a scale of 0 (which happens temporarily during editing) that would be annoying
-      instanceData[0].ObjectToWorldNormal = mInverse.GetTranspose();
-    }
-
-    pInstanceData->UpdateInstanceData(pRenderContext, 1);
-
-    const auto& desc = pBuffer->GetDescriptor();
-    pBuffer->UpdateGpuBuffer(pGALCommandEncoder);
-  }
-}
-
-void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
-{
-  xiiRenderContext*     pRenderContext     = renderViewContext.m_pRenderContext;
-  xiiGALCommandEncoder* pGALCommandEncoder = pRenderContext->GetCommandEncoder();
+  pInstanceData->BindResources(pRenderContext);
 
   const xiiCustomMeshRenderData* pRenderData1st = batch.GetFirstData<xiiCustomMeshRenderData>();
 
@@ -366,10 +326,37 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
 
     pRenderContext->BindMaterial(pRenderData->m_hMaterial);
 
+    xiiUInt32                       uiInstanceDataOffset = 0;
+    xiiArrayPtr<xiiPerInstanceData> instanceData         = pInstanceData->GetInstanceData(1, uiInstanceDataOffset);
+
+    instanceData[0].GameObjectID  = pRenderData->m_uiUniqueID;
+    instanceData[0].Color         = pRenderData->m_Color;
+    instanceData[0].ObjectToWorld = pRenderData->m_GlobalTransform;
+
+    if (pRenderData->m_uiUniformScale)
+    {
+      instanceData[0].ObjectToWorldNormal = instanceData[0].ObjectToWorld;
+    }
+    else
+    {
+      xiiMat4 objectToWorld = pRenderData->m_GlobalTransform.GetAsMat4();
+
+      xiiMat3 mInverse = objectToWorld.GetRotationalPart();
+      mInverse.Invert(0.0f).IgnoreResult();
+      // we explicitly ignore the return value here (success / failure)
+      // because when we have a scale of 0 (which happens temporarily during editing) that would be annoying
+      instanceData[0].ObjectToWorldNormal = mInverse.GetTranspose();
+    }
+
+    pInstanceData->UpdateInstanceData(pRenderContext, 1);
+
+    const auto& desc = pBuffer->GetDescriptor();
+    pBuffer->UpdateGpuBuffer(pGALCommandEncoder);
+
     // redo this after the primitive count has changed
     pRenderContext->BindMeshBuffer(pRenderData->m_hMesh);
 
-    pRenderContext->DrawMeshBuffer(pRenderData->m_uiNumPrimitives, pRenderData->m_uiFirstPrimitive).IgnoreResult();
+    renderViewContext.m_pRenderContext->DrawMeshBuffer(pRenderData->m_uiNumPrimitives, pRenderData->m_uiFirstPrimitive).IgnoreResult();
   }
 }
 
