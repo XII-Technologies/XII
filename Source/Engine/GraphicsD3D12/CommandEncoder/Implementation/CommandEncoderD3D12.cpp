@@ -1,5 +1,7 @@
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+
 #include <GraphicsD3D12/CommandEncoder/CommandEncoderD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
@@ -344,7 +346,9 @@ void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestinatio
   {
     case xiiGALResourceUsage::Default:
     {
-      xiiUInt32 uiRowPitch   = uiWidth * xiiGALTextureFormat::GetBitsPerElement(textureDescription.m_Format) / 8;
+      EndRenderPass();
+
+      xiiUInt32 uiRowPitch   = uiWidth * xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format).GetElementSize();
       xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
 
       XII_ASSERT_DEV(sourceData.m_uiStride == uiRowPitch, "Invalid row pitch. Expected {0} got {1}.", uiRowPitch, sourceData.m_uiStride);
@@ -368,7 +372,7 @@ void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestinatio
     break;
     case xiiGALResourceUsage::Dynamic:
     {
-      xiiUInt32 uiRowPitch   = uiWidth * xiiGALTextureFormat::GetBitsPerElement(textureDescription.m_Format) / 8;
+      xiiUInt32 uiRowPitch   = uiWidth * xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format).GetElementSize();
       xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
 
       XII_ASSERT_DEV(sourceData.m_uiStride == uiRowPitch, "Invalid row pitch. Expected {0} got {1}.", uiRowPitch, sourceData.m_uiStride);
@@ -501,6 +505,7 @@ void xiiGALCommandEncoderD3D12::CopyTextureReadbackResultPlatform(xiiGALTexture*
   XII_ASSERT_DEV(mipLevelData.GetCount() == targetData.GetCount(), "Source and target arrays must be of the same size.");
 
   const auto& textureDescription = pTextureD3D12->GetDescription();
+  const auto& formatProperties   = xiiGALGraphicsUtilities::GetTextureFormatProperties(pTextureD3D12->GetDescription().m_Format);
 
   const xiiUInt32 uiSubResources = mipLevelData.GetCount();
   for (xiiUInt32 i = 0; i < uiSubResources; ++i)
@@ -522,7 +527,7 @@ void xiiGALCommandEncoderD3D12::CopyTextureReadbackResultPlatform(xiiGALTexture*
       /// \todo Support depth pitch.
       if (mappedSubResource.Stride == textureData.m_uiStride)
       {
-        const xiiUInt32 uiMemorySize = xiiGALTextureFormat::GetBitsPerElement(pTextureD3D12->GetDescription().m_Format) * GetMipSize(pTextureD3D12->GetDescription().m_Size.width, subResourceData.m_uiMipLevel) * GetMipSize(pTextureD3D12->GetDescription().m_Size.height, subResourceData.m_uiMipLevel) / 8;
+        const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * GetMipSize(pTextureD3D12->GetDescription().m_Size.width, subResourceData.m_uiMipLevel) * GetMipSize(pTextureD3D12->GetDescription().m_Size.height, subResourceData.m_uiMipLevel);
 
         memcpy(textureData.m_pData, mappedSubResource.pData, uiMemorySize);
       }
@@ -537,7 +542,7 @@ void xiiGALCommandEncoderD3D12::CopyTextureReadbackResultPlatform(xiiGALTexture*
           const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.pData, y * mappedSubResource.Stride);
           void*       pDestination = xiiMemoryUtils::AddByteOffset(textureData.m_pData, y * textureData.m_uiStride);
 
-          memcpy(pDestination, pSource, xiiGALTextureFormat::GetBitsPerElement(pTextureD3D12->GetDescription().m_Format) * GetMipSize(pTextureD3D12->GetDescription().m_Size.width, subResourceData.m_uiMipLevel) / 8);
+          memcpy(pDestination, pSource, formatProperties.GetElementSize() * GetMipSize(pTextureD3D12->GetDescription().m_Size.width, subResourceData.m_uiMipLevel));
         }
       }
 

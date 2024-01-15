@@ -983,7 +983,7 @@ xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescr
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
-  const auto& formatProperties = GetTextureFormatProperties(description.m_Format);
+  const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(description.m_Format);
 
   // Validate texture description.
 
@@ -1371,7 +1371,7 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
       XII_VERIFY_TEXTURE_VIEW(false, "Unexpected texture dimension.");
   }
 
-  XII_VERIFY_TEXTURE_VIEW(!GetTextureFormatProperties(description.m_Format).m_bIsTypeless, "The texture view format ({0}) cannot be typeless.", description.m_Format.GetValue());
+  XII_VERIFY_TEXTURE_VIEW(!xiiGALGraphicsUtilities::GetTextureFormatProperties(description.m_Format).m_bIsTypeless, "The texture view format ({0}) cannot be typeless.", description.m_Format.GetValue());
 
   if (description.m_Flags.IsSet(xiiGALTextureViewFlags::AllowMipGeneration))
   {
@@ -1763,7 +1763,7 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
     XII_VERIFY_RENDER_PASS(attachment.m_uiSampleCount != 0U, "The sample count of attachment {0} is zero.", uiAttachmentIndex);
     XII_VERIFY_RENDER_PASS(xiiMath::IsPowerOf2(attachment.m_uiSampleCount), "The sample count ({0}) of attachment {1} is not a power of 2.", attachment.m_uiSampleCount, uiAttachmentIndex);
 
-    const auto& formatProperties = GetTextureFormatProperties(attachment.m_Format);
+    const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(attachment.m_Format);
     if (formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil)
     {
       XII_VERIFY_RENDER_PASS(attachment.m_InitialStateFlags.IsStrictlyAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::InputAttachment | xiiGALResourceStateFlags::Undefined) || (bIsVulkanDevice && attachment.m_InitialStateFlags.IsSet(xiiGALResourceStateFlags::Common)),
@@ -1815,7 +1815,7 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
       XII_VERIFY_RENDER_PASS(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::RenderTarget || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::Common), "The attachment with index {0} referenced as an input attachment in sub pass {1} must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::RenderTarget or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::RenderTarget"));
 
       const auto& format             = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
-      const auto& rtFormatProperties = GetTextureFormatProperties(format);
+      const auto& rtFormatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(format);
       XII_VERIFY_RENDER_PASS(rtFormatProperties.m_ComponentType != xiiGALTextureFormatComponentType::Depth && rtFormatProperties.m_ComponentType != xiiGALTextureFormatComponentType::DepthStencil && rtFormatProperties.m_ComponentType != xiiGALTextureFormatComponentType::Compressed, "Attachment with index {0} referenced as a render target attachment in sub pass {1} uses format {2}, which is not a valid render target format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
     }
 
@@ -1848,7 +1848,7 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
         XII_VERIFY_RENDER_PASS(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::DepthRead || attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::DepthWrite || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::Common), "The attachment with index ({0}) of the depth-stencil attachment reference of sub pass {1} must be must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::DepthRead or xiiGALResourceStateFlags::DepthWrite or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::DepthRead or xiiGALResourceStateFlags::DepthWrite"));
 
         const auto& format                = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
-        const auto& depthFormatProperties = GetTextureFormatProperties(format);
+        const auto& depthFormatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(format);
         XII_VERIFY_RENDER_PASS(depthFormatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || depthFormatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil, "Attachment with index {0} referenced as a depth-stencil attachment in sub pass {1} uses format {2}, which is not a valid depth buffer format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
       }
     }
@@ -2018,7 +2018,7 @@ xiiGALFramebufferHandle xiiGALDevice::CreateFramebuffer(const xiiGALFramebufferC
 
     if (textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Memoryless))
     {
-      const bool bHasStencilComponent = GetTextureFormatProperties(attachmentDescription.m_Format).m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil;
+      const bool bHasStencilComponent = xiiGALGraphicsUtilities::GetTextureFormatProperties(attachmentDescription.m_Format).m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil;
 
       XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_LoadOperation != xiiGALAttachmentLoadOperation::Load && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Load), "Memoryless attachment {i} is not compatible with xiiGALAttachmentLoadOperation::Load.", uiAttachmentIndex);
       XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_StencilStoreOperation != xiiGALAttachmentStoreOperation::Store && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentStoreOperation::Store), "Memoryless attachment {i} is not compatible with xiiGALAttachmentStoreOperation::Store.", uiAttachmentIndex);
@@ -2368,181 +2368,9 @@ void xiiGALDevice::WaitIdle()
   WaitIdlePlatform();
 }
 
-const xiiGALTextureFormatDescription& xiiGALDevice::GetTextureFormatProperties(xiiEnum<xiiGALTextureFormat> format) const
-{
-  static xiiGALTextureFormatDescription formatDescriptions[xiiGALTextureFormat::ENUM_COUNT];
-  static bool                           bIsInitialized = false;
-
-  // Note that this implementation is thread safe. Even if multiple threads call the function, the data may be initialized multiple times but the result will be the same.
-  if (!bIsInitialized)
-  {
-#define FILL_TEXTURE_FORMAT_INFO(format, componentSize, componentCount, componentType, isTypeless, blockWidth, blockHeight) \
-  formatDescriptions[format].m_Format           = format;                                                                   \
-  formatDescriptions[format].m_uiComponentSize  = componentSize;                                                            \
-  formatDescriptions[format].m_uiComponentCount = componentCount;                                                           \
-  formatDescriptions[format].m_ComponentType    = componentType;                                                            \
-  formatDescriptions[format].m_bIsTypeless      = isTypeless;                                                               \
-  formatDescriptions[format].m_uiBlockWidth     = blockWidth;                                                               \
-  formatDescriptions[format].m_uiBlockHeight    = blockHeight
-
-    // clang-format off
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA32Typeless, 4, 4, xiiGALTextureFormatComponentType::Undefined,        true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA32Float,    4, 4, xiiGALTextureFormatComponentType::Float,            false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA32UInt,     4, 4, xiiGALTextureFormatComponentType::UnsignedInteger,  false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA32SInt,     4, 4, xiiGALTextureFormatComponentType::SignedInteger,    false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32Typeless, 4, 3, xiiGALTextureFormatComponentType::Undefined,        true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32Float,    4, 3, xiiGALTextureFormatComponentType::Float,            false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32UInt,     4, 3, xiiGALTextureFormatComponentType::UnsignedInteger,  false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32SInt,     4, 3, xiiGALTextureFormatComponentType::SignedInteger,    false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16Typeless,    2, 4, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16Float,       2, 4, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16UNormalized, 2, 4, xiiGALTextureFormatComponentType::UnsignedNormalized, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16UInt,        2, 4, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16SNormalized, 2, 4, xiiGALTextureFormatComponentType::SignedNormalized,   false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16SInt,        2, 4, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG32Typeless, 4, 2, xiiGALTextureFormatComponentType::Undefined,        true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG32Float,    4, 2, xiiGALTextureFormatComponentType::Float,            false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG32UInt,     4, 2, xiiGALTextureFormatComponentType::UnsignedInteger,  false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG32SInt,     4, 2, xiiGALTextureFormatComponentType::SignedInteger,    false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32G8X24Typeless,      4, 2, xiiGALTextureFormatComponentType::DepthStencil, true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D32FloatS8X24UInt,     4, 2, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32FloatX8X24Typeless, 4, 2, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::X32TypelessG8X24UInt,  4, 2, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB10A2Typeless,    4, 1, xiiGALTextureFormatComponentType::Compound, true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB10A2UNormalized, 4, 1, xiiGALTextureFormatComponentType::Compound, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB10A2UInt,        4, 1, xiiGALTextureFormatComponentType::Compound, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG11B10Float,       4, 1, xiiGALTextureFormatComponentType::Compound, false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8Typeless,        1, 4, xiiGALTextureFormatComponentType::Undefined,              true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8UNormalized,     1, 4, xiiGALTextureFormatComponentType::UnsignedNormalized,     false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8UNormalizedSRGB, 1, 4, xiiGALTextureFormatComponentType::UnsignedNormalizedSRGB, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8UInt,            1, 4, xiiGALTextureFormatComponentType::UnsignedInteger,        false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8SNormalized,     1, 4, xiiGALTextureFormatComponentType::SignedNormalized,       false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8SInt,            1, 4, xiiGALTextureFormatComponentType::SignedInteger,          false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16Typeless,    2, 2, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16Float,       2, 2, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16UNormalized, 2, 2, xiiGALTextureFormatComponentType::UnsignedNormalized, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16UInt,        2, 2, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16SNormalized, 2, 2, xiiGALTextureFormatComponentType::SignedNormalized,   false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16SInt,        2, 2, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32Typeless,     4, 2, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D32Float,        4, 2, xiiGALTextureFormatComponentType::Depth,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32Float,        4, 2, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32UInt,         4, 2, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32SInt,         4, 2, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R24G8Typeless,            4, 1, xiiGALTextureFormatComponentType::DepthStencil, true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D24UNormalizedS8UInt,     4, 1, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R24UNormalizedX8Typeless, 4, 1, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::X24TypelessG8UInt,        4, 1, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG8Typeless,    1, 2, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG8UNormalized, 1, 2, xiiGALTextureFormatComponentType::UnsignedNormalized, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG8UInt,        1, 2, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG8SNormalized, 1, 2, xiiGALTextureFormatComponentType::SignedNormalized,   false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG8SInt,        1, 2, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R16Typeless,    2, 1, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R16Float,       2, 1, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D16UNormalized, 2, 1, xiiGALTextureFormatComponentType::Depth,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R16UNormalized, 2, 1, xiiGALTextureFormatComponentType::UnsignedNormalized, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R16UInt,        2, 1, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R16SNormalized, 2, 1, xiiGALTextureFormatComponentType::SignedNormalized,   false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R16SInt,        2, 1, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R8Typeless,    1, 1, xiiGALTextureFormatComponentType::Undefined,           true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R8UNormalized, 1, 1, xiiGALTextureFormatComponentType::UnsignedNormalized,  false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R8UInt,        1, 1, xiiGALTextureFormatComponentType::UnsignedInteger,     false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R8SNormalized, 1, 1, xiiGALTextureFormatComponentType::SignedNormalized,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R8SInt,        1, 1, xiiGALTextureFormatComponentType::SignedInteger,       false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::A8UNormalized, 1, 1, xiiGALTextureFormatComponentType::UnsignedNormalized,  false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R1UNormalized, 1, 1, xiiGALTextureFormatComponentType::UnsignedNormalized,  false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB9E5SharedExponent, 4, 1, xiiGALTextureFormatComponentType::Compound,            false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG8BG8UNormalized,    1, 4, xiiGALTextureFormatComponentType::UnsignedNormalized,  false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::GR8GB8UNormalized,    1, 4, xiiGALTextureFormatComponentType::UnsignedNormalized,  false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC1Typeless,        8, 3, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC1UNormalized,     8, 3, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC1UNormalizedSRGB, 8, 3, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC2Typeless,        16, 4, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC2UNormalized,     16, 4, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC2UNormalizedSRGB, 16, 4, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC3Typeless,        16, 4, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC3UNormalized,     16, 4, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC3UNormalizedSRGB, 16, 4, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC4Typeless,    8, 1, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC4UNormalized, 8, 1, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC4SNormalized, 8, 1, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC5Typeless,    16, 2, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC5UNormalized, 16, 2, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC5SNormalized, 16, 2, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::B5G6R5UNormalized,            2, 1, xiiGALTextureFormatComponentType::Compound,               false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::B5G5R5A1UNormalized,          2, 1, xiiGALTextureFormatComponentType::Compound,               false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BGRA8UNormalized,             1, 4, xiiGALTextureFormatComponentType::UnsignedNormalized,     false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BGRX8UNormalized,             1, 4, xiiGALTextureFormatComponentType::UnsignedNormalized,     false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized, 4, 1, xiiGALTextureFormatComponentType::Compound,               false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BGRA8Typeless,                1, 4, xiiGALTextureFormatComponentType::Undefined,              true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BGRA8UNormalizedSRGB,         1, 4, xiiGALTextureFormatComponentType::UnsignedNormalizedSRGB, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BGRX8Typeless,                1, 4, xiiGALTextureFormatComponentType::Undefined,              true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BGRX8UNormalizedSRGB,         1, 4, xiiGALTextureFormatComponentType::UnsignedNormalizedSRGB, false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC6HTypeless, 16, 3, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC6HUF16,     16, 3, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC6HSF16,     16, 3, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC7Typeless,        16, 4, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC7UNormalized,     16, 4, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC7UNormalizedSRGB, 16, 4, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    // clang-format on
-
-#undef FILL_TEXTURE_FORMAT_INFO
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-    for (xiiUInt32 i = xiiGALTextureFormat::Unknown; i < xiiGALTextureFormat::ENUM_COUNT; ++i)
-    {
-      XII_ASSERT_DEV(formatDescriptions[i].m_Format == static_cast<xiiGALTextureFormat::Enum>(i), "Encountered an uninitialized format.");
-    }
-#endif
-
-    bIsInitialized = true;
-  }
-
-  if (format >= xiiGALTextureFormat::Unknown && format < xiiGALTextureFormat::ENUM_COUNT)
-  {
-    const auto& description = formatDescriptions[format];
-    XII_ASSERT_DEV(description.m_Format == format, "Encountered an unexpected format.");
-    return description;
-  }
-
-  XII_ASSERT_DEV(false, "Texture format {0} is not in the allowed rage [0, {1}].", format.GetValue(), 0, xiiGALTextureFormat::ENUM_COUNT - 1);
-  return formatDescriptions[xiiGALTextureFormat::Unknown];
-}
-
-const xiiGALSparseTextureProperties xiiGALDevice::GetSparseTextureProperties(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount) const
-{
-  /// \todo GraphicsFoundation: To be implemented.
-  return xiiGALSparseTextureProperties();
-}
-
 xiiUInt64 xiiGALDevice::GetMemoryConsumptionForTexture(const xiiGALTextureCreationDescription& desc) const
 {
-  auto& formatProperties = GetTextureFormatProperties(desc.m_Format);
+  auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(desc.m_Format);
 
   // This generic implementation is only an approximation, but it can be overridden by specific devices
   // to give an accurate memory consumption figure.

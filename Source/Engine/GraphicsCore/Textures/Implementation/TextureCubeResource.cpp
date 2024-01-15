@@ -4,6 +4,7 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureCubeResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <Texture/Image/Formats/DdsFileFormat.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
@@ -108,6 +109,8 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
   texDesc.m_Size.width  = m_uiWidthAndHeight;
   texDesc.m_Size.height = m_uiWidthAndHeight;
   texDesc.m_uiMipLevels = uiNumMipLevels;
+  texDesc.m_BindFlags   = xiiGALBindFlags::ShaderResource;
+  texDesc.m_Usage       = xiiGALResourceUsage::Immutable;
 
   xiiUInt32 uiDepth = pImage->GetDepth(uiHighestMipLevel);
   if (uiDepth > 1)
@@ -131,6 +134,8 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
 
   m_uiMemoryGPU[m_uiLoadedTextures] = 0;
 
+  const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(m_Format);
+
   xiiHybridArray<xiiGALTextureSubResourceData, 32> InitData;
 
   for (xiiUInt32 array_index = 0; array_index < pImage->GetNumArrayIndices(); ++array_index)
@@ -147,7 +152,7 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
 
         if (xiiImageFormat::GetType(pImage->GetImageFormat()) == xiiImageFormatType::BLOCK_COMPRESSED)
         {
-          const xiiUInt32 uiMemPitchFactor = xiiGALTextureFormat::GetBitsPerElement(m_Format) * 4 / 8;
+          const xiiUInt32 uiMemPitchFactor = formatProperties.GetElementSize() * 4;
 
           id.m_uiStride = xiiMath::Max<xiiUInt32>(4, pImage->GetWidth(mip)) * uiMemPitchFactor;
         }
@@ -171,7 +176,6 @@ xiiResourceLoadDesc xiiTextureCubeResource::UpdateContent(xiiStreamReader* Strea
   td.m_SamplerDesc.m_AddressV = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeV);
   td.m_SamplerDesc.m_AddressW = xiiTextureUtils::GALTextureAddressMode(texFormat.m_AddressModeW);
   td.m_InitialContent         = InitDataPtr;
-  td.m_DescGAL.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
   xiiTextureUtils::ConfigureSampler(static_cast<xiiTextureFilterSetting::Enum>(texFormat.m_TextureFilter.GetValue()), td.m_SamplerDesc);
 

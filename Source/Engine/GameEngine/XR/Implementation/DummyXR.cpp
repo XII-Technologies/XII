@@ -86,7 +86,7 @@ xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiEnum<xiiGALSam
     textureDesc.m_uiArraySizeOrDepth = 2;
     textureDesc.m_uiMipLevels        = 1;
     textureDesc.m_uiSampleCount      = msaaCount;
-    textureDesc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource);
+    textureDesc.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
 
     m_hColorRT = pDevice->CreateTexture(textureDesc);
 

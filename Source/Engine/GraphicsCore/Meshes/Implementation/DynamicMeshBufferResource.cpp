@@ -126,7 +126,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     xiiGALBufferCreationDescription desc;
     desc.m_uiElementByteStride = sizeof(xiiDynamicMeshVertex);
     desc.m_uiSize              = desc.m_uiElementByteStride * m_Descriptor.m_uiMaxVertices;
-    desc.m_BindFlags  =xiiGALBindFlags::VertexBuffer;
+    desc.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
     desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
     desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
@@ -146,7 +146,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     xiiGALBufferCreationDescription desc;
     desc.m_uiElementByteStride = sizeof(xiiColorLinearUB);
     desc.m_uiSize              = desc.m_uiElementByteStride * m_Descriptor.m_uiMaxVertices;
-    desc.m_BindFlags = xiiGALBindFlags::VertexBuffer;
+    desc.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
     desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
     desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
@@ -163,7 +163,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     xiiGALBufferCreationDescription desc;
     desc.m_uiElementByteStride = xiiGALValueType::GetSize(xiiGALValueType::UInt32);
     desc.m_uiSize              = desc.m_uiElementByteStride * uiMaxIndices;
-    desc.m_BindFlags = xiiGALBindFlags::IndexBuffer;
+    desc.m_BindFlags           = xiiGALBindFlags::IndexBuffer;
     desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
     desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
@@ -179,7 +179,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
     xiiGALBufferCreationDescription desc;
     desc.m_uiElementByteStride = xiiGALValueType::GetSize(xiiGALValueType::UInt16);
     desc.m_uiSize              = desc.m_uiElementByteStride * uiMaxIndices;
-    desc.m_BindFlags = xiiGALBindFlags::IndexBuffer;
+    desc.m_BindFlags           = xiiGALBindFlags::IndexBuffer;
     desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
     desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 

@@ -535,20 +535,20 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
   tcd.m_Format      = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
   tcd.m_Size.width  = m_uiThumbnailWidth;
   tcd.m_Size.height = m_uiThumbnailHeight;
-  tcd.m_BindFlags.Add(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource);
+  tcd.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
 
   m_hThumbnailColorRT = pDevice->CreateTexture(tcd);
 
-  tcd.m_BindFlags = {};
-  tcd.m_Usage     = xiiGALResourceUsage::Staging;
-  tcd.m_CPUAccessFlags.Add(xiiGALCPUAccessFlag::Read);
+  tcd.m_BindFlags      = {};
+  tcd.m_Usage          = xiiGALResourceUsage::Staging;
+  tcd.m_CPUAccessFlags = xiiGALCPUAccessFlag::Read;
 
   m_hThumbnailColorRTStaging = pDevice->CreateTexture(tcd);
 
   tcd.m_Format         = xiiGALTextureFormat::D32Float;
   tcd.m_CPUAccessFlags = {};
   tcd.m_Usage          = xiiGALResourceUsage::Default;
-  tcd.m_BindFlags.Add(xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource);
+  tcd.m_BindFlags      = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
 
   m_hThumbnailDepthRT = pDevice->CreateTexture(tcd);
 

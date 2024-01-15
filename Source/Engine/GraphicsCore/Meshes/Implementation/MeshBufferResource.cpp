@@ -5,6 +5,7 @@
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMeshBufferResource, 1, xiiRTTIDefaultAllocator<xiiMeshBufferResource>)
@@ -69,7 +70,7 @@ xiiUInt32 xiiMeshBufferResourceDescriptor::AddStream(xiiEnum<xiiGALInputLayoutSe
   si.m_Semantic      = semantic;
   si.m_Format        = format;
   si.m_uiOffset      = 0;
-  si.m_uiElementSize = static_cast<xiiUInt16>(xiiGALTextureFormat::GetBitsPerElement(format) / 8);
+  si.m_uiElementSize = static_cast<xiiUInt16>(xiiGALGraphicsUtilities::GetTextureFormatProperties(format).GetElementSize());
   m_uiVertexSize += si.m_uiElementSize;
 
   XII_ASSERT_DEV(si.m_uiElementSize > 0, "Invalid Element Size. Format not supported?");
@@ -572,7 +573,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
     desc.m_uiElementByteStride = descriptor.GetVertexDataSize();
     desc.m_uiSize              = desc.m_uiElementByteStride * descriptor.GetVertexCount();
     desc.m_ResourceUsage       = xiiGALResourceUsage::Immutable;
-    desc.m_BindFlags = xiiGALBindFlags::VertexBuffer;
+    desc.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
 
     xiiGALBufferData initData;
     initData.m_pData      = descriptor.GetVertexBufferData().GetData();
@@ -590,7 +591,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
     desc.m_uiElementByteStride = xiiGALValueType::GetSize(descriptor.Uses32BitIndices() ? xiiGALValueType::UInt32 : xiiGALValueType::UInt16);
     desc.m_uiSize              = desc.m_uiElementByteStride * m_uiPrimitiveCount * xiiGALPrimitiveTopology::VerticesPerPrimitive(m_Topology);
     desc.m_ResourceUsage       = xiiGALResourceUsage::Immutable;
-    desc.m_BindFlags = xiiGALBindFlags::IndexBuffer;
+    desc.m_BindFlags           = xiiGALBindFlags::IndexBuffer;
 
     xiiGALBufferData initData;
     initData.m_pData      = descriptor.GetIndexBufferData().GetData();

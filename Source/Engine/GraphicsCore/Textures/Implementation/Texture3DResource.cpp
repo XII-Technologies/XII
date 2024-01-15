@@ -11,6 +11,7 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
 // clang-format off
@@ -71,7 +72,8 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
 {
   const xiiUInt32 uiHighestMipLevel = pImage->GetNumMipLevels() - uiNumMipLevels;
 
-  const xiiEnum<xiiGALTextureFormat> format = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
+  const xiiEnum<xiiGALTextureFormat> format           = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
+  const auto&                        formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(format);
 
   ref_td.m_DescGAL.m_Format      = format;
   ref_td.m_DescGAL.m_Size.width  = pImage->GetWidth(uiHighestMipLevel);
@@ -107,7 +109,7 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
 
         if (xiiImageFormat::GetType(pImage->GetImageFormat()) == xiiImageFormatType::BLOCK_COMPRESSED)
         {
-          const xiiUInt32 uiMemPitchFactor = xiiGALTextureFormat::GetBitsPerElement(format) * 4 / 8;
+          const xiiUInt32 uiMemPitchFactor = formatProperties.GetElementSize() * 4;
 
           id.m_uiStride = xiiMath::Max<xiiUInt32>(4, pImage->GetWidth(mip)) * uiMemPitchFactor;
         }

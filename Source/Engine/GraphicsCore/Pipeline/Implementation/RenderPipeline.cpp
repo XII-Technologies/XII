@@ -1434,6 +1434,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       desc.m_Usage          = xiiGALResourceUsage::Default;
       desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
       desc.m_BindFlags      = xiiGALBindFlags::ShaderResource;
+      desc.m_Usage          = xiiGALResourceUsage::Immutable;
 
       m_hOcclusionDebugViewTexture = pDevice->CreateTexture(desc);
     }

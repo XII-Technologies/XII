@@ -333,18 +333,6 @@ public:
   /// \brief This retrieves the device graphics API type. See xiiGALGraphicsDeviceType.
   XII_NODISCARD xiiEnum<xiiGALGraphicsDeviceType> GetGraphicsDeviceType() const;
 
-  /// \brief This returns the basic texture information for a particular format.
-  ///
-  /// \param format - The texture format for which to provide the information.
-  ///
-  /// \return A const reference to the xiiGALTextureFormatDescription structure containing the texture format description.
-  ///
-  /// \remarks This method must be externally synchronized.
-  XII_NODISCARD const xiiGALTextureFormatDescription& GetTextureFormatProperties(xiiEnum<xiiGALTextureFormat> format) const;
-
-  /// \brief This returns the sparse texture format information for the given texture format, resource dimension and sample count.
-  XII_NODISCARD const xiiGALSparseTextureProperties GetSparseTextureProperties(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount) const;
-
   /// \brief This returns critical section lock.
   XII_NODISCARD xiiMutex& GetMutex() const;
 

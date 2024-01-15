@@ -95,11 +95,15 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUI
   TextureDesc.m_uiArraySizeOrDepth = uiSliceColunt;
   TextureDesc.m_Type               = (bIsArray || TextureDesc.m_uiSampleCount > 1) ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
   TextureDesc.m_BindFlags          = xiiGALBindFlags::ShaderResource;
+  TextureDesc.m_Usage              = xiiGALResourceUsage::Immutable;
 
   if (xiiGALTextureFormat::IsDepthFormat(format))
     TextureDesc.m_BindFlags.Add(xiiGALBindFlags::DepthStencil);
   else
     TextureDesc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
+
+  if (TextureDesc.m_BindFlags.IsAnySet(xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil))
+    TextureDesc.m_Usage = xiiGALResourceUsage::Default;
 
   return GetRenderTarget(TextureDesc);
 }

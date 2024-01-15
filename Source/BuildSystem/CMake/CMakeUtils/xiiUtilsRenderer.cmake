@@ -12,26 +12,20 @@ endmacro()
 # #####################################
 
 function(xii_add_renderers TARGET_NAME)
-  target_link_libraries(${TARGET_NAME}
-    PRIVATE
+  add_dependencies(${TARGET_NAME}
     GraphicsNull
+    ShaderCompiler
   )
 
   if (XII_BUILD_D3D12)
-    target_link_libraries(${TARGET_NAME}
-      PRIVATE
+    add_dependencies(${TARGET_NAME}
       GraphicsD3D12
     )
   endif()
 
   if (XII_BUILD_VULKAN)
-    target_link_libraries(${TARGET_NAME}
-      PRIVATE
+    add_dependencies(${TARGET_NAME}
       GraphicsVulkan
     )
   endif()
-
-  add_dependencies(${TARGET_NAME}
-    ShaderCompiler
-  )
 endfunction()

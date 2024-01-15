@@ -48,7 +48,7 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
   desc.m_uiMipLevels        = 1;
   desc.m_uiSampleCount      = 1;
   desc.m_Format             = pColorInput->m_Desc.m_Format;
-  desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
+  desc.m_BindFlags          = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
 
   xiiGALTextureHandle hSceneColor = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
 

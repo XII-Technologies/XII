@@ -561,12 +561,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormat
     Default = Unknown
   };
 
-  /// \brief The size in bits per element (usually pixels, except for mesh stream elements) of a single element of the given texture format.
-  static xiiUInt32 GetBitsPerElement(xiiEnum<xiiGALTextureFormat> format);
-
-  /// \brief The number of color channels this format contains.
-  static xiiUInt8 GetChannelCount(xiiEnum<xiiGALTextureFormat> format);
-
   /// \brief Returns whether the given texture format is a depth format.
   static bool IsDepthFormat(xiiEnum<xiiGALTextureFormat> format);
 

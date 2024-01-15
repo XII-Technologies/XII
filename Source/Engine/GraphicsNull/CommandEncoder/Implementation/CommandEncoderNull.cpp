@@ -1,5 +1,6 @@
 #include <GraphicsNull/GraphicsNullPCH.h>
 
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <GraphicsNull/CommandEncoder/CommandEncoderNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/BufferNull.h>
@@ -133,7 +134,7 @@ void xiiGALCommandEncoderNull::UpdateTexturePlatform(xiiGALTexture* pDestination
   xiiUInt32 uiDepth  = xiiMath::Max(destinationBox.m_vMax.z - destinationBox.m_vMin.z, 1U);
 
   const auto& textureDescription = pDestinationTextureNull->GetDescription();
-  const auto& formatProperties   = m_GALDeviceNull.GetTextureFormatProperties(textureDescription.m_Format);
+  const auto& formatProperties   = xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format);
 
   switch (textureDescription.m_Usage)
   {

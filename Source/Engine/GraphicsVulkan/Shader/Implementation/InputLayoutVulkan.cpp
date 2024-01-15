@@ -1,5 +1,6 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Shader/InputLayoutVulkan.h>
 #include <GraphicsVulkan/Shader/ShaderVulkan.h>
@@ -67,7 +68,7 @@ xiiResult xiiGALInputLayoutVulkan::InitPlatform(xiiGALDevice* pDevice)
     }
 
     const auto& diligentFormat   = pDeviceVulkan->GetFormatLookupTable().GetFormatInfo(inputLayout.m_Format).m_eInputLayoutType;
-    const auto& formatProperties = pDeviceVulkan->GetTextureFormatProperties(xiiDiligentTypeConversions::GetGALTextureFormat(diligentFormat));
+    const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(xiiDiligentTypeConversions::GetGALTextureFormat(diligentFormat));
 
     Diligent::LayoutElement& layoutElement = m_InputElements.ExpandAndGetRef();
     layoutElement.BufferSlot               = inputLayout.m_uiBufferSlot;
