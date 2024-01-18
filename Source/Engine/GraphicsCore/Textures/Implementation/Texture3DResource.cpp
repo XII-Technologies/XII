@@ -109,7 +109,7 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
 
         if (xiiImageFormat::GetType(pImage->GetImageFormat()) == xiiImageFormatType::BLOCK_COMPRESSED)
         {
-          const xiiUInt32 uiMemPitchFactor = formatProperties.GetElementSize() * 4;
+          const xiiUInt32 uiMemPitchFactor = formatProperties.GetElementSize() * 2 / 8;
 
           id.m_uiStride = xiiMath::Max<xiiUInt32>(4, pImage->GetWidth(mip)) * uiMemPitchFactor;
         }

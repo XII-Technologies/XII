@@ -118,7 +118,7 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
 
         if (xiiImageFormat::GetType(pImage->GetImageFormat()) == xiiImageFormatType::BLOCK_COMPRESSED)
         {
-          const xiiUInt32 uiMemPitchFactor = formatProperties.GetElementSize() * 4;
+          const xiiUInt32 uiMemPitchFactor = formatProperties.GetElementSize() * 2 / 8;
 
           id.m_uiStride = xiiMath::RoundUp(pImage->GetWidth(mip), 4) * uiMemPitchFactor;
         }
