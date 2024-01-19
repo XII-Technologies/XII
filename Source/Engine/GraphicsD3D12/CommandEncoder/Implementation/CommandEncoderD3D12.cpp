@@ -959,11 +959,12 @@ void xiiGALCommandEncoderD3D12::Reset()
   m_pBoundUnorderedAccessViews.Clear();
 
   xiiMemoryUtils::ZeroFill(&m_pBoundSamplers[0][0], xiiGALShaderStage::ENUM_COUNT * XII_GAL_MAX_SAMPLER_COUNT);
+  FlushPipelineStateCache();
 }
 
 void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 {
-  EndRenderPass();
+  xiiHybridArray<Diligent::StateTransitionDesc, 8U> stateTransitionDescriptions;
 
   if (m_bPipelineStateModified)
   {
@@ -1070,15 +1071,58 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
     const xiiUInt32 uiStartSlot = m_BoundVertexBuffersRange.m_uiMin;
     const xiiUInt32 uiNumSlots  = m_BoundVertexBuffersRange.GetCount();
 
+    for (xiiUInt32 i = uiStartSlot; i < uiNumSlots; ++i)
+    {
+      auto pVertexBuffer = m_pBoundVertexBuffers[i];
+
+      if (pVertexBuffer && (pVertexBuffer->GetState() != Diligent::RESOURCE_STATE_VERTEX_BUFFER))
+      {
+        auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+        transitionDescription.pResource      = pVertexBuffer;
+        transitionDescription.OldState       = pVertexBuffer->GetState();
+        transitionDescription.NewState       = Diligent::RESOURCE_STATE_VERTEX_BUFFER;
+        transitionDescription.Flags = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+        transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+      }
+    }
+
+    if (!stateTransitionDescriptions.IsEmpty())
+    {
+      EndRenderPass();
+
+      m_pContext->TransitionResourceStates(stateTransitionDescriptions.GetCount(), stateTransitionDescriptions.GetData());
+
+      stateTransitionDescriptions.Clear();
+    }
+
     // Diligent will handle unsetting null buffers with the SET_VERTEX_BUFFERS_FLAG_RESET flag.
-    m_pContext->SetVertexBuffers(uiStartSlot, uiNumSlots, m_pBoundVertexBuffers + uiStartSlot, m_VertexBufferOffsets + uiStartSlot, m_bRenderPassActive ? Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY : Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
+    m_pContext->SetVertexBuffers(uiStartSlot, uiNumSlots, m_pBoundVertexBuffers + uiStartSlot, m_VertexBufferOffsets + uiStartSlot, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
 
     m_BoundVertexBuffersRange.Reset();
   }
 
   if (!m_bIsComputeRequested && m_bIndexBufferModified)
   {
-    m_pContext->SetIndexBuffer(m_pIndexBuffer, m_uiIndexBufferByteOffset, m_bRenderPassActive ? Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY : Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    if (m_pIndexBuffer && (m_pIndexBuffer->GetState() != Diligent::RESOURCE_STATE_INDEX_BUFFER))
+    {
+      auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+      transitionDescription.pResource      = m_pIndexBuffer;
+      transitionDescription.OldState       = m_pIndexBuffer->GetState();
+      transitionDescription.NewState       = Diligent::RESOURCE_STATE_INDEX_BUFFER;
+      transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+      transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+    }
+
+    if (!stateTransitionDescriptions.IsEmpty())
+    {
+      EndRenderPass();
+
+      m_pContext->TransitionResourceStates(stateTransitionDescriptions.GetCount(), stateTransitionDescriptions.GetData());
+
+      stateTransitionDescriptions.Clear();
+    }
+
+    m_pContext->SetIndexBuffer(m_pIndexBuffer, m_uiIndexBufferByteOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 
     m_bIndexBufferModified = false;
   }
@@ -1095,7 +1139,8 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
     m_bViewportModified = false;
   }
 
-  if (m_bDescriptorsModified)
+  // The shader resource binding do not get updated as expected.
+  // if (m_bDescriptorsModified)
   {
     // Note that this function does not check if the bindings have been modified.
     for (xiiUInt32 uiShaderStage = 0; uiShaderStage < xiiGALShaderStage::ENUM_COUNT; ++uiShaderStage)
@@ -1115,7 +1160,19 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
             auto pConstantBuffer = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
             if (pConstantBuffer)
             {
-              pConstantBuffer->Set(m_pBoundConstantBuffers[binding.m_uiSlot], Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+              auto pBoundResource = m_pBoundConstantBuffers[binding.m_uiSlot];
+
+              if (pBoundResource->GetState() != Diligent::RESOURCE_STATE_CONSTANT_BUFFER)
+              {
+                auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+                transitionDescription.pResource      = pBoundResource;
+                transitionDescription.OldState       = pBoundResource->GetState();
+                transitionDescription.NewState       = Diligent::RESOURCE_STATE_CONSTANT_BUFFER;
+                transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+                transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+              }
+
+              pConstantBuffer->Set(pBoundResource, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else
             {
@@ -1132,7 +1189,25 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 
               XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::TextureView, "Expected a bound texture SRV.");
 
-              pTextureSRV->Set(m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot].m_pTextureView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+              if (resourceView.m_pTextureView->GetTexture()->GetState() != Diligent::RESOURCE_STATE_SHADER_RESOURCE)
+              {
+                auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+                transitionDescription.pResource      = resourceView.m_pTextureView->GetTexture();
+                transitionDescription.OldState       = resourceView.m_pTextureView->GetTexture()->GetState();
+                transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+                transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+
+                if (xiiGALTextureFormat::IsDepthFormat(xiiDiligentTypeConversions::GetGALTextureFormat(resourceView.m_pTextureView->GetTexture()->GetDesc().Format)))
+                {
+                  transitionDescription.NewState = Diligent::RESOURCE_STATE_SHADER_RESOURCE | Diligent::RESOURCE_STATE_DEPTH_READ;
+                }
+                else
+                {
+                  transitionDescription.NewState = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+                }
+              }
+
+              pTextureSRV->Set(resourceView.m_pTextureView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else if (!pTextureSRV)
             {
@@ -1149,7 +1224,17 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 
               XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::BufferView, "Expected a bound buffer SRV.");
 
-              pBufferSRV->Set(m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot].m_pBufferView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+              if (resourceView.m_pBufferView->GetBuffer()->GetState() != Diligent::RESOURCE_STATE_SHADER_RESOURCE)
+              {
+                auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+                transitionDescription.pResource      = resourceView.m_pBufferView->GetBuffer();
+                transitionDescription.OldState       = resourceView.m_pBufferView->GetBuffer()->GetState();
+                transitionDescription.NewState       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+                transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+                transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+              }
+
+              pBufferSRV->Set(resourceView.m_pBufferView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else if (!pBufferSRV)
             {
@@ -1166,7 +1251,17 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 
               XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::TextureView, "Expected a bound texture UAV.");
 
-              pTextureUAV->Set(m_pBoundUnorderedAccessViews[binding.m_uiSlot].m_pTextureView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+              if (resourceView.m_pTextureView->GetTexture()->GetState() != Diligent::RESOURCE_STATE_UNORDERED_ACCESS)
+              {
+                auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+                transitionDescription.pResource      = resourceView.m_pTextureView->GetTexture();
+                transitionDescription.OldState       = resourceView.m_pTextureView->GetTexture()->GetState();
+                transitionDescription.NewState       = Diligent::RESOURCE_STATE_UNORDERED_ACCESS;
+                transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+                transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+              }
+
+              pTextureUAV->Set(resourceView.m_pTextureView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else if (!pTextureUAV)
             {
@@ -1183,7 +1278,17 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 
               XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::BufferView, "Expected a bound buffer UAV.");
 
-              pBufferUAV->Set(m_pBoundUnorderedAccessViews[binding.m_uiSlot].m_pBufferView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+              if (resourceView.m_pBufferView->GetBuffer()->GetState() != Diligent::RESOURCE_STATE_UNORDERED_ACCESS)
+              {
+                auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+                transitionDescription.pResource      = resourceView.m_pBufferView->GetBuffer();
+                transitionDescription.OldState       = resourceView.m_pBufferView->GetBuffer()->GetState();
+                transitionDescription.NewState       = Diligent::RESOURCE_STATE_UNORDERED_ACCESS;
+                transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+                transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+              }
+
+              pBufferUAV->Set(resourceView.m_pBufferView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else if (!pBufferUAV)
             {
@@ -1196,8 +1301,6 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
             auto pSampler = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
             if (pSampler)
             {
-              auto resourceView = m_pBoundSamplers[binding.m_uiSlot];
-
               pSampler->Set(m_pBoundSamplers[uiShaderStage][binding.m_uiSlot], Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else
@@ -1226,8 +1329,17 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
     m_bDescriptorsModified = false;
   }
 
+  if (!stateTransitionDescriptions.IsEmpty())
+  {
+    EndRenderPass();
+
+    m_pContext->TransitionResourceStates(stateTransitionDescriptions.GetCount(), stateTransitionDescriptions.GetData());
+
+    stateTransitionDescriptions.Clear();
+  }
+
   m_pContext->SetPipelineState(m_pCurrentPipelineState);
-  m_pContext->CommitShaderResources(m_pCurrentShaderResourceBinding, m_bRenderPassActive ? Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY : Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  m_pContext->CommitShaderResources(m_pCurrentShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 }
 
 void xiiGALCommandEncoderD3D12::FlushPipelineStateCache()

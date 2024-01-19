@@ -34,7 +34,7 @@ GIZMO_FACE_CAMERA
 	BlendOperation0 = BlendOperation_Add
 	DestinationBlend0 = BlendFactor_InverseSourceAlpha
 	SourceBlend0 = BlendFactor_SourceAlpha
-	DestBlendAlpha0 = BlendFactor_InverseSourceAlpha
+	DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 #endif
 
 [MATERIALCONFIG]

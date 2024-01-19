@@ -147,20 +147,16 @@ void xiiGameApplication::Init_SetupDefaultResources()
   {
     xiiResourceManager::AllowResourceTypeAcquireDuringUpdateContent<xiiMeshResource, xiiMeshBufferResource>();
 
-#if 0
-    xiiMeshResourceHandle hMissingMesh = xiiResourceManager::LoadResource<xiiMeshResource>("Meshes/MissingMesh.xiiMesh");
-    xiiResourceManager::SetResourceTypeMissingFallback<xiiMeshResource>(hMissingMesh);
-#else
     // Create mesh buffer resource
     xiiGeometry geom;
-    geom.AddBox(xiiVec3::OneVector(), false);
+    geom.AddBox(xiiVec3::OneVector(), true);
+    geom.TriangulatePolygons(4);
+    geom.ComputeTangents();
     geom.ComputeFaceNormals();
     geom.ComputeSmoothVertexNormals();
 
     xiiMeshBufferResourceDescriptor meshBufferDesc;
-    meshBufferDesc.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
-    meshBufferDesc.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBA8UNormalized);
-    meshBufferDesc.AddStream(xiiGALInputLayoutSemantic::Normal, xiiGALTextureFormat::RGB32Float);
+    meshBufferDesc.AddCommonStreams();
     meshBufferDesc.AllocateStreamsFromGeometry(geom, xiiGALPrimitiveTopology::TriangleList);
     meshBufferDesc.ComputeBounds();
 
@@ -177,7 +173,6 @@ void xiiGameApplication::Init_SetupDefaultResources()
 
     xiiMeshResourceHandle hMissingMesh = xiiResourceManager::GetOrCreateResource<xiiMeshResource>("Meshes/MissingMesh.xiiMesh", std::move(desc), pMeshBuffer->GetResourceDescription());
     xiiResourceManager::SetResourceTypeMissingFallback<xiiMeshResource>(hMissingMesh);
-#endif
   }
 
   // Prefabs
