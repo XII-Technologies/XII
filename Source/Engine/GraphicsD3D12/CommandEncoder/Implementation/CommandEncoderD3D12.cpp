@@ -959,7 +959,6 @@ void xiiGALCommandEncoderD3D12::Reset()
   m_pBoundUnorderedAccessViews.Clear();
 
   xiiMemoryUtils::ZeroFill(&m_pBoundSamplers[0][0], xiiGALShaderStage::ENUM_COUNT * XII_GAL_MAX_SAMPLER_COUNT);
-  FlushPipelineStateCache();
 }
 
 void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
@@ -1162,7 +1161,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
             {
               auto pBoundResource = m_pBoundConstantBuffers[binding.m_uiSlot];
 
-              if (pBoundResource->GetState() != Diligent::RESOURCE_STATE_CONSTANT_BUFFER)
+              if (pBoundResource && pBoundResource->GetState() != Diligent::RESOURCE_STATE_CONSTANT_BUFFER)
               {
                 auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
                 transitionDescription.pResource      = pBoundResource;
@@ -1189,7 +1188,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 
               XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::TextureView, "Expected a bound texture SRV.");
 
-              if (resourceView.m_pTextureView->GetTexture()->GetState() != Diligent::RESOURCE_STATE_SHADER_RESOURCE)
+              if (resourceView.m_pTextureView && resourceView.m_pTextureView->GetTexture()->GetState() != Diligent::RESOURCE_STATE_SHADER_RESOURCE)
               {
                 auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
                 transitionDescription.pResource      = resourceView.m_pTextureView->GetTexture();
@@ -1224,7 +1223,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 
               XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::BufferView, "Expected a bound buffer SRV.");
 
-              if (resourceView.m_pBufferView->GetBuffer()->GetState() != Diligent::RESOURCE_STATE_SHADER_RESOURCE)
+              if (resourceView.m_pBufferView && resourceView.m_pBufferView->GetBuffer()->GetState() != Diligent::RESOURCE_STATE_SHADER_RESOURCE)
               {
                 auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
                 transitionDescription.pResource      = resourceView.m_pBufferView->GetBuffer();
@@ -1251,7 +1250,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 
               XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::TextureView, "Expected a bound texture UAV.");
 
-              if (resourceView.m_pTextureView->GetTexture()->GetState() != Diligent::RESOURCE_STATE_UNORDERED_ACCESS)
+              if (resourceView.m_pTextureView && resourceView.m_pTextureView->GetTexture()->GetState() != Diligent::RESOURCE_STATE_UNORDERED_ACCESS)
               {
                 auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
                 transitionDescription.pResource      = resourceView.m_pTextureView->GetTexture();
@@ -1278,7 +1277,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
 
               XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::BufferView, "Expected a bound buffer UAV.");
 
-              if (resourceView.m_pBufferView->GetBuffer()->GetState() != Diligent::RESOURCE_STATE_UNORDERED_ACCESS)
+              if (resourceView.m_pBufferView && resourceView.m_pBufferView->GetBuffer()->GetState() != Diligent::RESOURCE_STATE_UNORDERED_ACCESS)
               {
                 auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
                 transitionDescription.pResource      = resourceView.m_pBufferView->GetBuffer();

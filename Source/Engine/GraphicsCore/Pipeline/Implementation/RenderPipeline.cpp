@@ -1431,7 +1431,6 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       desc.m_Size.width     = uiImgWidth;
       desc.m_Size.height    = uiImgHeight;
       desc.m_Format         = xiiGALTextureFormat::RGBA8UNormalized;
-      desc.m_Usage          = xiiGALResourceUsage::Default;
       desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
       desc.m_BindFlags      = xiiGALBindFlags::ShaderResource;
       desc.m_Usage          = xiiGALResourceUsage::Immutable;

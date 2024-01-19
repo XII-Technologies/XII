@@ -77,6 +77,7 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
   ref_td.m_DescGAL.m_Size.width  = pImage->GetWidth(uiHighestMipLevel);
   ref_td.m_DescGAL.m_Size.height = pImage->GetHeight(uiHighestMipLevel);
   ref_td.m_DescGAL.m_uiMipLevels = uiNumMipLevels;
+  ref_td.m_DescGAL.m_Usage       = xiiGALResourceUsage::Immutable;
   ref_td.m_DescGAL.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
   xiiUInt32 uiDepth = pImage->GetDepth(uiHighestMipLevel);
@@ -106,7 +107,7 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
 
   ref_initData.Clear();
 
-  for (xiiUInt32 array_index = 0; array_index < pImage->GetNumArrayIndices(); ++array_index)
+  for (xiiUInt32 arrayIndex = 0; arrayIndex < pImage->GetNumArrayIndices(); ++arrayIndex)
   {
     for (xiiUInt32 face = 0; face < pImage->GetNumFaces(); ++face)
     {
@@ -114,7 +115,7 @@ void xiiTexture2DResource::FillOutDescriptor(xiiTexture2DResourceDescriptor& ref
       {
         xiiGALTextureSubResourceData& id = ref_initData.ExpandAndGetRef();
 
-        id.m_pData = const_cast<xiiUInt8*>(pImage->GetPixelPointer<xiiUInt8>(mip, face, array_index));
+        id.m_pData = const_cast<xiiUInt8*>(pImage->GetPixelPointer<xiiUInt8>(mip, face, arrayIndex));
 
         if (xiiImageFormat::GetType(pImage->GetImageFormat()) == xiiImageFormatType::BLOCK_COMPRESSED)
         {
