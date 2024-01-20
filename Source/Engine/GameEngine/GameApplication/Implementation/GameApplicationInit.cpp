@@ -264,12 +264,53 @@ xiiStringView xiiGameApplication::GetActiveRenderer()
 
 void xiiGameApplication::Init_SetupGraphicsDevice()
 {
-  xiiGALDeviceCreationDescription DeviceInit;
+  xiiGALDeviceCreationDescription deviceCreationDescription;
+  deviceCreationDescription.m_DeviceFeatures.m_SeparablePrograms                 = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceQueries             = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_WireframeFill                     = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_MultithreadedResourceCreation     = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_ComputeShaders                    = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_GeometryShaders                   = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_Tessellation                      = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_MeshShaders                       = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_RayTracing                        = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_BindlessResources                 = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_OcclusionQueries                  = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_BinaryOcclusionQueries            = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_TimestampQueries                  = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_PipelineStatisticsQueries         = xiiGALDeviceFeatureState::Optional;
+  deviceCreationDescription.m_DeviceFeatures.m_DurationQueries                   = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_DepthBiasClamp                    = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_DepthClamp                        = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_IndependentBlend                  = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_DualSourceBlend                   = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_MultiViewport                     = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_TextureCompressionBC              = xiiGALDeviceFeatureState::Optional;
+  deviceCreationDescription.m_DeviceFeatures.m_VertexPipelineUAVWritesAndAtomics = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_PixelUAVWritesAndAtomics          = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_TextureUAVExtendedFormats         = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_ShaderFloat16                     = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_ResourceBuffer16BitAccess         = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_UniformBuffer16BitAccess          = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_ShaderInputOutput16               = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_ShaderInt8                        = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_ResourceBuffer8BitAccess          = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_UniformBuffer8BitAccess           = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_ShaderResourceRuntimeArray        = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_WaveOp                            = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_InstanceDataStepRate              = xiiGALDeviceFeatureState::Enabled;
+  deviceCreationDescription.m_DeviceFeatures.m_NativeFence                       = xiiGALDeviceFeatureState::Optional;
+  deviceCreationDescription.m_DeviceFeatures.m_TileShaders                       = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_TransferQueueTimestampQueries     = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_VariableRateShading               = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_SparseResources                   = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_SubpassFramebufferFetch           = xiiGALDeviceFeatureState::Disabled;
+  deviceCreationDescription.m_DeviceFeatures.m_TextureComponentSwizzle           = xiiGALDeviceFeatureState::Optional;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  DeviceInit.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
+  deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Standard;
 #else
-  DeviceInit.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
+  deviceCreationDescription.m_ValidationLevel = xiiGALDeviceValidationLevel::Disabled;
 #endif
 
   {
@@ -277,13 +318,13 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
 
     if (s_DefaultDeviceCreator.IsValid())
     {
-      pDevice = s_DefaultDeviceCreator(DeviceInit);
+      pDevice = s_DefaultDeviceCreator(deviceCreationDescription);
     }
     else
     {
       xiiStringView sGraphicsAPIName = GetGraphicsAPINameFromCommandLine();
 
-      pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), DeviceInit);
+      pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
       XII_ASSERT_DEV(pDevice != nullptr, "Device implemention for '{}' not found", sGraphicsAPIName);
     }
 

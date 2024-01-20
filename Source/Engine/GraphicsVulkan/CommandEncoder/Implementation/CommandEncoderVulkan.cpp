@@ -32,10 +32,10 @@ XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt32) == sizeof(xiiGALTextureViewHandle));
 
 namespace
 {
-  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& Stream, const xiiGALTextureViewHandle& Value)
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALTextureViewHandle& Value)
   {
-    Stream << reinterpret_cast<const xiiUInt32&>(Value);
-    return Stream;
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
   }
 
   XII_ALWAYS_INLINE bool operator==(const Diligent::Rect& lhs, const Diligent::Rect& rhs)
@@ -281,8 +281,6 @@ void xiiGALCommandEncoderVulkan::ClearUnorderedAccessViewPlatform(xiiGALTextureV
 
 void xiiGALCommandEncoderVulkan::CopyBufferPlatform(xiiGALBuffer* pDestination, xiiGALBuffer* pSource)
 {
-  EndRenderPass();
-
   auto pSourceBufferVulkan      = static_cast<xiiGALBufferVulkan*>(pSource);
   auto pDestinationBufferVulkan = static_cast<xiiGALBufferVulkan*>(pDestination);
 
@@ -291,8 +289,6 @@ void xiiGALCommandEncoderVulkan::CopyBufferPlatform(xiiGALBuffer* pDestination, 
 
 void xiiGALCommandEncoderVulkan::CopyBufferRegionPlatform(xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, xiiGALBuffer* pSource, xiiUInt32 uiSourceOffset, xiiUInt32 uiByteCount)
 {
-  EndRenderPass();
-
   auto pSourceBufferVulkan      = static_cast<xiiGALBufferVulkan*>(pSource);
   auto pDestinationBufferVulkan = static_cast<xiiGALBufferVulkan*>(pDestination);
 
@@ -301,8 +297,6 @@ void xiiGALCommandEncoderVulkan::CopyBufferRegionPlatform(xiiGALBuffer* pDestina
 
 void xiiGALCommandEncoderVulkan::UpdateBufferPlatform(xiiGALBuffer* pDestination, xiiUInt32 uiDestOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
 {
-  EndRenderPass();
-
   XII_CHECK_ALIGNMENT_16(sourceData.GetPtr());
 
   auto        pDestinationBufferVulkan = static_cast<xiiGALBufferVulkan*>(pDestination);
@@ -312,9 +306,13 @@ void xiiGALCommandEncoderVulkan::UpdateBufferPlatform(xiiGALBuffer* pDestination
   {
     case xiiGALResourceUsage::Default:
     {
+      EndRenderPass();
+
       m_pContext->UpdateBuffer(pDestinationBufferVulkan->GetBuffer(), uiDestOffset, sourceData.GetCount(), reinterpret_cast<const void*>(sourceData.GetPtr()), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     }
     break;
+    case xiiGALResourceUsage::Staging:
+    case xiiGALResourceUsage::Unified:
     case xiiGALResourceUsage::Dynamic:
     {
       Diligent::PVoid pMapResult = {};
@@ -355,8 +353,6 @@ void xiiGALCommandEncoderVulkan::CopyTexturePlatform(xiiGALTexture* pDestination
 
 void xiiGALCommandEncoderVulkan::CopyTextureRegionPlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxu32& box)
 {
-  EndRenderPass();
-
   auto pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSource);
   auto pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestination);
 
@@ -389,8 +385,6 @@ void xiiGALCommandEncoderVulkan::CopyTextureRegionPlatform(xiiGALTexture* pDesti
 
 void xiiGALCommandEncoderVulkan::UpdateTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
 {
-  EndRenderPass();
-
   auto pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestination);
 
   xiiUInt32 uiWidth  = xiiMath::Max(destinationBox.m_vMax.x - destinationBox.m_vMin.x, 1U);
@@ -403,6 +397,8 @@ void xiiGALCommandEncoderVulkan::UpdateTexturePlatform(xiiGALTexture* pDestinati
   {
     case xiiGALResourceUsage::Default:
     {
+      EndRenderPass();
+
       xiiUInt32 uiRowPitch   = uiWidth * xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format).GetElementSize();
       xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
 
@@ -425,6 +421,8 @@ void xiiGALCommandEncoderVulkan::UpdateTexturePlatform(xiiGALTexture* pDestinati
       m_pContext->UpdateTexture(pDestinationTextureVulkan->GetTexture(), destinationSubResource.m_uiMipLevel, destinationSubResource.m_uiArraySlice, subRegion, subResData, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     }
     break;
+    case xiiGALResourceUsage::Staging:
+    case xiiGALResourceUsage::Unified:
     case xiiGALResourceUsage::Dynamic:
     {
       xiiUInt32 uiRowPitch   = uiWidth * xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format).GetElementSize();
@@ -483,8 +481,6 @@ void xiiGALCommandEncoderVulkan::UpdateTexturePlatform(xiiGALTexture* pDestinati
 
 void xiiGALCommandEncoderVulkan::ResolveTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource)
 {
-  EndRenderPass();
-
   auto pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSource);
   auto pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestination);
 
@@ -556,8 +552,6 @@ xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel)
 
 void xiiGALCommandEncoderVulkan::CopyTextureReadbackResultPlatform(xiiGALTexture* pTexture, xiiGALTexture* pStagingTexture, xiiArrayPtr<xiiGALTextureMipLevelData> mipLevelData, xiiArrayPtr<xiiGALTextureSubResourceData> targetData)
 {
-  EndRenderPass();
-
   auto pTextureVulkan        = static_cast<xiiGALTextureVulkan*>(pTexture);
   auto pStagingTextureVulkan = static_cast<xiiGALTextureVulkan*>(pStagingTexture);
 
@@ -623,8 +617,6 @@ void xiiGALCommandEncoderVulkan::GenerateMipMapsPlatform(xiiGALTextureView* pTex
 
 void xiiGALCommandEncoderVulkan::FlushPlatform()
 {
-  EndRenderPass();
-
   FlushDeferredStateChanges();
 
   m_pContext->Flush();
@@ -647,8 +639,6 @@ void xiiGALCommandEncoderVulkan::InsertEventMarkerPlatform(xiiStringView sMarker
 
 void xiiGALCommandEncoderVulkan::ClearRenderTargetPlatform(xiiGALTextureView* pTextureView, const xiiColor& clearColor)
 {
-  EndRenderPass();
-
   auto pTextureViewVulkan = static_cast<xiiGALTextureViewVulkan*>(pTextureView);
 
   m_pContext->ClearRenderTarget(pTextureViewVulkan->GetTextureView(), clearColor.GetData(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
@@ -656,8 +646,6 @@ void xiiGALCommandEncoderVulkan::ClearRenderTargetPlatform(xiiGALTextureView* pT
 
 void xiiGALCommandEncoderVulkan::ClearDepthStencilPlatform(xiiGALTextureView* pTextureView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
-  EndRenderPass();
-
   auto pTextureViewVulkan = static_cast<xiiGALTextureViewVulkan*>(pTextureView);
 
   Diligent::CLEAR_DEPTH_STENCIL_FLAGS clearFlags = {};
@@ -1028,6 +1016,8 @@ void xiiGALCommandEncoderVulkan::Reset()
 
 void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
 {
+  xiiHybridArray<Diligent::StateTransitionDesc, 8U> stateTransitionDescriptions;
+
   if (m_bPipelineStateModified)
   {
     {
@@ -1133,15 +1123,58 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
     const xiiUInt32 uiStartSlot = m_BoundVertexBuffersRange.m_uiMin;
     const xiiUInt32 uiNumSlots  = m_BoundVertexBuffersRange.GetCount();
 
+    for (xiiUInt32 i = uiStartSlot; i < uiNumSlots; ++i)
+    {
+      auto pVertexBuffer = m_pBoundVertexBuffers[i];
+
+      if (pVertexBuffer && (pVertexBuffer->GetState() != Diligent::RESOURCE_STATE_VERTEX_BUFFER))
+      {
+        auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+        transitionDescription.pResource      = pVertexBuffer;
+        transitionDescription.OldState       = pVertexBuffer->GetState();
+        transitionDescription.NewState       = Diligent::RESOURCE_STATE_VERTEX_BUFFER;
+        transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+        transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+      }
+    }
+
+    if (!stateTransitionDescriptions.IsEmpty())
+    {
+      EndRenderPass();
+
+      m_pContext->TransitionResourceStates(stateTransitionDescriptions.GetCount(), stateTransitionDescriptions.GetData());
+
+      stateTransitionDescriptions.Clear();
+    }
+
     // Diligent will handle unsetting null buffers with the SET_VERTEX_BUFFERS_FLAG_RESET flag.
-    m_pContext->SetVertexBuffers(uiStartSlot, uiNumSlots, m_pBoundVertexBuffers + uiStartSlot, m_VertexBufferOffsets + uiStartSlot, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
+    m_pContext->SetVertexBuffers(uiStartSlot, uiNumSlots, m_pBoundVertexBuffers + uiStartSlot, m_VertexBufferOffsets + uiStartSlot, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY, Diligent::SET_VERTEX_BUFFERS_FLAG_RESET);
 
     m_BoundVertexBuffersRange.Reset();
   }
 
   if (!m_bIsComputeRequested && m_bIndexBufferModified)
   {
-    m_pContext->SetIndexBuffer(m_pIndexBuffer, m_uiIndexBufferByteOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    if (m_pIndexBuffer && (m_pIndexBuffer->GetState() != Diligent::RESOURCE_STATE_INDEX_BUFFER))
+    {
+      auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+      transitionDescription.pResource      = m_pIndexBuffer;
+      transitionDescription.OldState       = m_pIndexBuffer->GetState();
+      transitionDescription.NewState       = Diligent::RESOURCE_STATE_INDEX_BUFFER;
+      transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+      transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+    }
+
+    if (!stateTransitionDescriptions.IsEmpty())
+    {
+      EndRenderPass();
+
+      m_pContext->TransitionResourceStates(stateTransitionDescriptions.GetCount(), stateTransitionDescriptions.GetData());
+
+      stateTransitionDescriptions.Clear();
+    }
+
+    m_pContext->SetIndexBuffer(m_pIndexBuffer, m_uiIndexBufferByteOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 
     m_bIndexBufferModified = false;
   }
@@ -1158,6 +1191,7 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
     m_bViewportModified = false;
   }
 
+  // The shader resource binding do not get updated as expected.
   if (m_bDescriptorsModified)
   {
     // Note that this function does not check if the bindings have been modified.
@@ -1178,7 +1212,19 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
             auto pConstantBuffer = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
             if (pConstantBuffer)
             {
-              pConstantBuffer->Set(m_pBoundConstantBuffers[binding.m_uiSlot], Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+              auto pBoundResource = m_pBoundConstantBuffers[binding.m_uiSlot];
+
+              if (pBoundResource && pBoundResource->GetState() != Diligent::RESOURCE_STATE_CONSTANT_BUFFER)
+              {
+                auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+                transitionDescription.pResource      = pBoundResource;
+                transitionDescription.OldState       = pBoundResource->GetState();
+                transitionDescription.NewState       = Diligent::RESOURCE_STATE_CONSTANT_BUFFER;
+                transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+                transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+              }
+
+              pConstantBuffer->Set(pBoundResource, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else
             {
@@ -1195,7 +1241,25 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
 
               XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::TextureView, "Expected a bound texture SRV.");
 
-              pTextureSRV->Set(m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot].m_pTextureView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+              if (resourceView.m_pTextureView && resourceView.m_pTextureView->GetTexture()->GetState() != Diligent::RESOURCE_STATE_SHADER_RESOURCE)
+              {
+                auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+                transitionDescription.pResource      = resourceView.m_pTextureView->GetTexture();
+                transitionDescription.OldState       = resourceView.m_pTextureView->GetTexture()->GetState();
+                transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+                transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+
+                if (xiiGALTextureFormat::IsDepthFormat(xiiDiligentTypeConversions::GetGALTextureFormat(resourceView.m_pTextureView->GetTexture()->GetDesc().Format)))
+                {
+                  transitionDescription.NewState = Diligent::RESOURCE_STATE_DEPTH_READ;
+                }
+                else
+                {
+                  transitionDescription.NewState = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+                }
+              }
+
+              pTextureSRV->Set(resourceView.m_pTextureView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else if (!pTextureSRV)
             {
@@ -1212,7 +1276,17 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
 
               XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::BufferView, "Expected a bound buffer SRV.");
 
-              pBufferSRV->Set(m_pBoundShaderResourceViews[uiShaderStage][binding.m_uiSlot].m_pBufferView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+              if (resourceView.m_pBufferView && resourceView.m_pBufferView->GetBuffer()->GetState() != Diligent::RESOURCE_STATE_SHADER_RESOURCE)
+              {
+                auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+                transitionDescription.pResource      = resourceView.m_pBufferView->GetBuffer();
+                transitionDescription.OldState       = resourceView.m_pBufferView->GetBuffer()->GetState();
+                transitionDescription.NewState       = Diligent::RESOURCE_STATE_SHADER_RESOURCE;
+                transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+                transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+              }
+
+              pBufferSRV->Set(resourceView.m_pBufferView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else if (!pBufferSRV)
             {
@@ -1229,7 +1303,17 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
 
               XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::TextureView, "Expected a bound texture UAV.");
 
-              pTextureUAV->Set(m_pBoundUnorderedAccessViews[binding.m_uiSlot].m_pTextureView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+              if (resourceView.m_pTextureView && resourceView.m_pTextureView->GetTexture()->GetState() != Diligent::RESOURCE_STATE_UNORDERED_ACCESS)
+              {
+                auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+                transitionDescription.pResource      = resourceView.m_pTextureView->GetTexture();
+                transitionDescription.OldState       = resourceView.m_pTextureView->GetTexture()->GetState();
+                transitionDescription.NewState       = Diligent::RESOURCE_STATE_UNORDERED_ACCESS;
+                transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+                transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+              }
+
+              pTextureUAV->Set(resourceView.m_pTextureView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else if (!pTextureUAV)
             {
@@ -1246,7 +1330,17 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
 
               XII_ASSERT_DEV(resourceView.m_Type == ShaderResourceViewDesc::BufferView, "Expected a bound buffer UAV.");
 
-              pBufferUAV->Set(m_pBoundUnorderedAccessViews[binding.m_uiSlot].m_pBufferView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
+              if (resourceView.m_pBufferView && resourceView.m_pBufferView->GetBuffer()->GetState() != Diligent::RESOURCE_STATE_UNORDERED_ACCESS)
+              {
+                auto& transitionDescription          = stateTransitionDescriptions.ExpandAndGetRef();
+                transitionDescription.pResource      = resourceView.m_pBufferView->GetBuffer();
+                transitionDescription.OldState       = resourceView.m_pBufferView->GetBuffer()->GetState();
+                transitionDescription.NewState       = Diligent::RESOURCE_STATE_UNORDERED_ACCESS;
+                transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+                transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
+              }
+
+              pBufferUAV->Set(resourceView.m_pBufferView, Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else if (!pBufferUAV)
             {
@@ -1259,8 +1353,6 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
             auto pSampler = m_pCurrentShaderResourceBinding->GetVariableByName(xiiDiligentTypeConversions::GetShaderTypeFlags(shaderStage), binding.m_sName.GetData());
             if (pSampler)
             {
-              auto resourceView = m_pBoundSamplers[binding.m_uiSlot];
-
               pSampler->Set(m_pBoundSamplers[uiShaderStage][binding.m_uiSlot], Diligent::SET_SHADER_RESOURCE_FLAG_ALLOW_OVERWRITE);
             }
             else
@@ -1289,8 +1381,17 @@ void xiiGALCommandEncoderVulkan::FlushDeferredStateChanges()
     m_bDescriptorsModified = false;
   }
 
+  if (!stateTransitionDescriptions.IsEmpty())
+  {
+    EndRenderPass();
+
+    m_pContext->TransitionResourceStates(stateTransitionDescriptions.GetCount(), stateTransitionDescriptions.GetData());
+
+    stateTransitionDescriptions.Clear();
+  }
+
   m_pContext->SetPipelineState(m_pCurrentPipelineState);
-  m_pContext->CommitShaderResources(m_pCurrentShaderResourceBinding, m_bRenderPassActive ? Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY : Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  m_pContext->CommitShaderResources(m_pCurrentShaderResourceBinding, Diligent::RESOURCE_STATE_TRANSITION_MODE_VERIFY);
 }
 
 void xiiGALCommandEncoderVulkan::FlushPipelineStateCache()

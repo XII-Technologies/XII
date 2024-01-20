@@ -189,8 +189,9 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::x
       xiiLog::Info("Bound Resource: '{}' at slot {} (Count: {})", inputDesc.Name, inputDesc.BindPoint, inputDesc.BindCount);
 
       xiiShaderResourceBinding shaderResourceBinding;
-      shaderResourceBinding.m_Type  = xiiGALShaderResourceType::Unknown;
-      shaderResourceBinding.m_iSlot = inputDesc.BindPoint;
+      shaderResourceBinding.m_Type       = xiiGALShaderResourceType::Unknown;
+      shaderResourceBinding.m_iSlot      = inputDesc.BindPoint;
+      shaderResourceBinding.m_iBindIndex = inputDesc.BindPoint;
       shaderResourceBinding.m_sName.Assign(inputDesc.Name);
 
       if (FillResourceBinding(inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)], shaderResourceBinding, pReflector, inputDesc).Failed())
@@ -222,6 +223,7 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::x
         binding.m_sName                      = info.m_sName;
         binding.m_Type                       = xiiBindings[i].m_Type;
         binding.m_uiSlot                     = xiiBindings[i].m_iSlot;
+        binding.m_uiBindIndex                = xiiBindings[i].m_iBindIndex;
         binding.m_uiArraySize                = resourceInfo.BindCount;
       }
 

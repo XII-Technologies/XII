@@ -54,10 +54,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiStringView xiiShaderCompilerProgram::GetProfileName(xiiStringView sPlatform, xiiBitflags<xiiGALShaderStage> Stage)
 {
+  if (sPlatform == "NULL_SM")
+    return "null_sm";
+
   xiiStringBuilder sPlatformStripped = sPlatform;
   sPlatformStripped.ReplaceFirst("D3D_", "");
   sPlatformStripped.ReplaceFirst("VK_", "");
-  sPlatformStripped.ReplaceFirst("NULL_", "");
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM40_93"))
   {
@@ -277,7 +279,7 @@ xiiEnum<xiiGALGraphicsDeviceType> xiiShaderCompilerProgram::GetProfileNameDevice
   xiiStringBuilder sPlatform0 = sPlatform;
   xiiStringBuilder sProfile   = sProfileName;
 
-  if (sPlatform0 == "NULL_SM60")
+  if (sPlatform0 == "NULL_SM")
   {
     return xiiGALGraphicsDeviceType::Null;
   }

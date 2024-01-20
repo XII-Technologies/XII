@@ -191,6 +191,9 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
       return XII_FAILURE;
     }
 
+    xiiUInt32 uiVirtualResourceView = 0;
+    xiiUInt32 uiVirtualSampler      = 0;
+
     for (xiiUInt32 i = 0; i < uiNumDescriptorBindings; ++i)
     {
       auto& descriptorBinding = *descriptorBindings[i];
@@ -198,12 +201,26 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
       xiiLog::Info("Bound Resource: '{}' at slot {} (Count: {})", descriptorBinding.name, descriptorBinding.binding, descriptorBinding.count);
 
       xiiShaderResourceBinding shaderResourceBinding;
-      shaderResourceBinding.m_Type  = xiiGALShaderResourceType::Unknown;
-      shaderResourceBinding.m_iSlot = descriptorBinding.binding;
+      shaderResourceBinding.m_Type       = xiiGALShaderResourceType::Unknown;
+      shaderResourceBinding.m_iSlot      = descriptorBinding.binding;
+      shaderResourceBinding.m_iBindIndex = descriptorBinding.binding;
       shaderResourceBinding.m_sName.Assign(descriptorBinding.name);
 
       if (FillResourceBinding(inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)], shaderResourceBinding, descriptorBinding).Failed())
         continue;
+
+      // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the D3D-based high level render interface.
+      if (descriptorBinding.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV)
+      {
+        shaderResourceBinding.m_iSlot = uiVirtualResourceView;
+        uiVirtualResourceView++;
+      }
+
+      if (descriptorBinding.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER)
+      {
+        shaderResourceBinding.m_iSlot = uiVirtualSampler;
+        uiVirtualSampler++;
+      }
 
       XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown, "FillResourceBinding should have failed.");
 
@@ -234,8 +251,11 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
         binding.m_sName                      = info.m_sName;
         binding.m_Type                       = xiiBindings[i].m_Type;
         binding.m_uiSlot                     = xiiBindings[i].m_iSlot;
+        binding.m_uiBindIndex                = xiiBindings[i].m_iBindIndex;
         binding.m_uiArraySize                = spirvInfo.count;
       }
+
+      shaderResourceBinding.Sort([](const xiiGALShaderResourceBinding& lhs, const xiiGALShaderResourceBinding& rhs) { return lhs.m_uiSlot < rhs.m_uiSlot; });
 
       xiiShaderMetaData::Write(stream, byteCode, shaderResourceBinding, vertexInputLayouts);
 

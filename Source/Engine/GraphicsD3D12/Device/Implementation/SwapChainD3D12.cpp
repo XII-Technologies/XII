@@ -74,8 +74,7 @@ xiiResult xiiGALSwapChainD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALSwapChainD3D12::CreateBackBufferInternal(xiiGALDeviceD3D12* pDeviceD3D12)
 {
-  Diligent::ITextureView* pRTV     = m_pSwapChain->GetCurrentBackBufferRTV();
-  Diligent::ITexture*     pTexture = pRTV->GetTexture();
+  Diligent::ITextureView* pRTV = m_pSwapChain->GetCurrentBackBufferRTV();
 
   if (pRTV == nullptr)
   {
@@ -84,6 +83,7 @@ xiiResult xiiGALSwapChainD3D12::CreateBackBufferInternal(xiiGALDeviceD3D12* pDev
     return XII_FAILURE;
   }
 
+  Diligent::ITexture*          pTexture    = pRTV->GetTexture();
   const Diligent::TextureDesc& textureDesc = pTexture->GetDesc();
 
   xiiGALTextureCreationDescription textureDescription;

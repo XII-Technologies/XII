@@ -86,6 +86,7 @@ struct XII_GRAPHICSCORE_DLL xiiShaderResourceBinding
 
   xiiEnum<xiiGALShaderResourceType>                  m_Type;
   xiiInt32                                           m_iSlot;
+  xiiInt32                                           m_iBindIndex;
   xiiHashedString                                    m_sName;
   xiiScopedRefPointer<xiiShaderConstantBufferLayout> m_pLayout;
 };

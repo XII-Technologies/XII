@@ -262,7 +262,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   }
   catch (...)
   {
-    xiiLog::Error("Failed to locate DirectX12 compatible hardware adapters.");
+    xiiLog::Error("Failed to locate DirectX 12 compatible hardware adapters.");
   }
 
   if (m_Description.m_AdapterType != xiiGALDeviceAdapterType::Software && m_Description.m_uiAdapterID != XII_GAL_DEFAULT_ADAPTER_ID)
@@ -298,7 +298,7 @@ void xiiGALDeviceD3D12::ReportLiveGPUObjects()
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   IDXGIDebug1* dxgiDebug = nullptr;
-  HRESULT      hResult   = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
+  HRESULT      hResult   = DXGIGetDebugInterface1(0U, IID_PPV_ARGS(&dxgiDebug));
   if (SUCCEEDED(hResult))
   {
     OutputDebugStringW(L" +++++ Live D3D12 Objects: +++++\n");

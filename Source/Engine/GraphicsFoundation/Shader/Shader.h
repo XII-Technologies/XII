@@ -131,6 +131,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceBinding
   xiiHashedString                                  m_sName;                         ///< The shader resource name.
   xiiEnum<xiiGALShaderResourceType>                m_Type;                          ///< The shader resource type. The default is xiiGALShaderResourceType::Unknown.
   xiiUInt32                                        m_uiSlot      = xiiInvalidIndex; ///< The shader resource binding slot.
+  xiiUInt32                                        m_uiBindIndex = xiiInvalidIndex; ///< The shader resource actual binding slot.
   xiiUInt32                                        m_uiArraySize = 1U;              ///< The number of contiguous resources for resource arrays. The default is 1.
   xiiDynamicArray<xiiGALShaderVariableDescription> m_Variables;                     ///< An array of member variables.
 };

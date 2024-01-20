@@ -30,10 +30,10 @@ XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt32) == sizeof(xiiGALTextureViewHandle));
 
 namespace
 {
-  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& Stream, const xiiGALTextureViewHandle& Value)
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALTextureViewHandle& Value)
   {
-    Stream << reinterpret_cast<const xiiUInt32&>(Value);
-    return Stream;
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
   }
 
   XII_ALWAYS_INLINE bool operator==(const Diligent::Rect& lhs, const Diligent::Rect& rhs)
@@ -370,6 +370,8 @@ void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestinatio
       m_pContext->UpdateTexture(pDestinationTextureD3D12->GetTexture(), destinationSubResource.m_uiMipLevel, destinationSubResource.m_uiArraySlice, subRegion, subResData, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
     }
     break;
+    case xiiGALResourceUsage::Staging:
+    case xiiGALResourceUsage::Unified:
     case xiiGALResourceUsage::Dynamic:
     {
       xiiUInt32 uiRowPitch   = uiWidth * xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format).GetElementSize();
@@ -1139,7 +1141,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
   }
 
   // The shader resource binding do not get updated as expected.
-  // if (m_bDescriptorsModified)
+  if (m_bDescriptorsModified)
   {
     // Note that this function does not check if the bindings have been modified.
     for (xiiUInt32 uiShaderStage = 0; uiShaderStage < xiiGALShaderStage::ENUM_COUNT; ++uiShaderStage)

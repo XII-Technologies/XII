@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{15507879570940844990,5062162254587685694}}
-		u4 %Hash{6593423629603909168}
+		u4 %Hash{8093301851911156928}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -286,7 +286,7 @@ o
 		b %Active{1}
 		b %Clear{1}
 		Color %ClearColor{f{0xC7B6543C,0xC7B6543C,0xC7B6543C,0x0000803F}}
-		s %Format{"xiiGALTextureFormat::RGBA8UNormalized"}
+		s %Format{"xiiGALTextureFormat::RGBA8UNormalizedSRGB"}
 		s %Name{"ColorSource"}
 		Vec2 %Node::Pos{f{0x26CE8FC4,0xB8C90BC4}}
 		Uuid %Output{u4{16295825073444485828,4971536062717786227}}

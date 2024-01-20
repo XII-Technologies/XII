@@ -73,8 +73,7 @@ xiiResult xiiGALSwapChainVulkan::DeInitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan)
 {
-  Diligent::ITextureView* pRTV     = m_pSwapChain->GetCurrentBackBufferRTV();
-  Diligent::ITexture*     pTexture = pRTV->GetTexture();
+  Diligent::ITextureView* pRTV = m_pSwapChain->GetCurrentBackBufferRTV();
 
   if (pRTV == nullptr)
   {
@@ -83,6 +82,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal(xiiGALDeviceVulkan* pD
     return XII_FAILURE;
   }
 
+  Diligent::ITexture*          pTexture    = pRTV->GetTexture();
   const Diligent::TextureDesc& textureDesc = pTexture->GetDesc();
 
   xiiGALTextureCreationDescription textureDescription;
