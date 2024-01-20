@@ -1082,7 +1082,7 @@ void xiiGALCommandEncoderD3D12::FlushDeferredStateChanges()
         transitionDescription.pResource      = pVertexBuffer;
         transitionDescription.OldState       = pVertexBuffer->GetState();
         transitionDescription.NewState       = Diligent::RESOURCE_STATE_VERTEX_BUFFER;
-        transitionDescription.Flags = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
+        transitionDescription.Flags          = Diligent::STATE_TRANSITION_FLAG_UPDATE_STATE;
         transitionDescription.TransitionType = Diligent::STATE_TRANSITION_TYPE_IMMEDIATE;
       }
     }
