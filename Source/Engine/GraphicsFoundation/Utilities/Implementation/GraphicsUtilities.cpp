@@ -68,11 +68,11 @@ const xiiGALTextureFormatDescription& xiiGALGraphicsUtilities::GetTextureFormatP
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16SNormalized, 2, 2, xiiGALTextureFormatComponentType::SignedNormalized,   false, 1, 1);
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16SInt,        2, 2, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
 
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32Typeless,     4, 2, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D32Float,        4, 2, xiiGALTextureFormatComponentType::Depth,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32Float,        4, 2, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32UInt,         4, 2, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32SInt,         4, 2, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32Typeless,     4, 1, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D32Float,        4, 1, xiiGALTextureFormatComponentType::Depth,              false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32Float,        4, 1, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32UInt,         4, 1, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
+    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32SInt,         4, 1, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
 
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R24G8Typeless,            4, 1, xiiGALTextureFormatComponentType::DepthStencil, true,  1, 1);
     FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D24UNormalizedS8UInt,     4, 1, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
