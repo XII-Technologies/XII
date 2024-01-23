@@ -1424,6 +1424,142 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALSparseTextureFlags);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSparseTextureFlags);
 
+/// \brief This describes the pipeline stage flags.
+///
+/// These flags mirror [VkPipelineStageFlagBits](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkPipelineStageFlagBits)
+/// enum and only have effect in a Vulkan graphics implementation.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStageFlags
+{
+  using StorageType = xiiUInt32;
+
+  enum Enum : StorageType
+  {
+    Undefined                  = 0U,          ///< Undefined pipeline stage.
+    TopOfPipeline              = XII_BIT(0),  ///< The top of the pipeline.
+    DrawIndirect               = XII_BIT(1),  ///< The stage of the pipeline where Draw/DispatchIndirect data structures are resolved.
+    VertexInput                = XII_BIT(2),  ///< The stage of the pipeline where vertex and index buffers are resolved.
+    VertexShader               = XII_BIT(3),  ///< The Vertex shader stage.
+    HullShader                 = XII_BIT(4),  ///< The Hull shader stage.
+    DomainShader               = XII_BIT(5),  ///< The Domain shader stage.
+    GeometryShader             = XII_BIT(6),  ///< The Geometry shader stage.
+    PixelShader                = XII_BIT(7),  ///< The Pixel shader stage.
+    EarlyFragmentTests         = XII_BIT(8),  ///< The stage of the pipeline where early fragment tests (depth and stencil tests before fragment shading) are performed. This stage also includes subpass load operations for framebuffer attachments with a depth/stencil format.
+    LateFragmentTests          = XII_BIT(9),  ///< The stage of the pipeline where late fragment tests (depth and stencil tests after fragment shading) are performed. This stage also includes subpass store operations for framebuffer attachments with a depth/stencil format.
+    RenderTarget               = XII_BIT(11), ///< The stage of the pipeline after blending where the final color values are output from the pipeline. This stage also includes subpass load and store operations and multisample resolve operations for framebuffer attachments with a color or depth/stencil format.
+    ComputeShader              = XII_BIT(12), ///< The Compute shader stage.
+    Transfer                   = XII_BIT(13), ///< The stage where all copy and outside-of-renderpass resolve and clear operations occur.
+    BottomOfPipeline           = XII_BIT(14), ///< The bottom of the pipeline.
+    Host                       = XII_BIT(15), ///< A pseudo-stage indicating execution on the host of reads/writes of device memory. This stage is not invoked by any commands recorded in a command buffer.
+    ConditionalRendering       = XII_BIT(16), ///< The stage of the pipeline where the predicate of conditional rendering are resolved.
+    ShadingRateTexture         = XII_BIT(17), ///< The stage of the pipeline where the shading rate texture is read to determine the shading rate for portions of a rasterized primitive.
+    RayTracingShader           = XII_BIT(18), ///< The Ray-Tracing shader stage.
+    AccelerationStructureBuild = XII_BIT(19), ///< The Acceleration structure build shader.
+    TaskShader                 = XII_BIT(21), ///< The Task shader stage.
+    MeshShader                 = XII_BIT(22), ///< The Mesh shader stage.
+    FragmentDensityProcess     = XII_BIT(23), ///< The stage of the pipeline where the fragment density map is read to generate the fragment areas.
+    Default                    = 0x80000000U  ///< Default pipeline stage that is determined by the resource state. For example xiiGALResourceStateFlags::RenderTarget corresponds to xiiGALPipelineStageFlags::RenderTarget.
+  };
+
+  struct Bits
+  {
+    StorageType TopOfPipeline : 1;
+    StorageType DrawIndirect : 1;
+    StorageType VertexInput : 1;
+    StorageType VertexShader : 1;
+    StorageType HullShader : 1;
+    StorageType DomainShader : 1;
+    StorageType GeometryShader : 1;
+    StorageType PixelShader : 1;
+    StorageType EarlyFragmentTests : 1;
+    StorageType LateFragmentTests : 1;
+    StorageType RenderTarget : 1;
+    StorageType ComputeShader : 1;
+    StorageType Transfer : 1;
+    StorageType BottomOfPipeline : 1;
+    StorageType Host : 1;
+    StorageType ConditionalRendering : 1;
+    StorageType ShadingRateTexture : 1;
+    StorageType RayTracingShader : 1;
+    StorageType AccelerationStructureBuild : 1;
+    StorageType TaskShader : 1;
+    StorageType MeshShader : 1;
+    StorageType FragmentDensityProcess : 1;
+    StorageType Default : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALPipelineStageFlags);
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALPipelineStageFlags);
+
+/// \brief This describes the access flags.
+///
+/// The flags mirror [VkAccessFlags](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#VkAccessFlags)
+/// enum and only have effect in a Vulkan graphics implementation.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALAccessFlags
+{
+  using StorageType = xiiUInt32;
+
+  enum Enum : StorageType
+  {
+    None                       = 0U,          ///< No pipeline access.
+    IndirectCommandRead        = XII_BIT(0),  ///< Read access to indirect command data read as part of an indirect drawing or dispatch command.
+    IndexRead                  = XII_BIT(1),  ///< Read access to an index buffer as part of an indexed drawing command.
+    VertexRead                 = XII_BIT(2),  ///< Read access to a vertex buffer as part of a drawing command.
+    UniformRead                = XII_BIT(3),  ///< Read access to uniform buffer.
+    InputAttachmentRead        = XII_BIT(4),  ///< Read access to an input attachment within a render pass during fragment shading.
+    ShaderRead                 = XII_BIT(5),  ///< Read access from a shader resource, formatted buffer, unordered access view.
+    ShaderWrite                = XII_BIT(6),  ///< Write access from a shader resource to an unordered access view.
+    RenderTargetRead           = XII_BIT(7),  ///< Read access to a color render target, such as via blending, logic operations, or via certain subpass load operations.
+    RenderTargetWrite          = XII_BIT(8),  ///< Write access to a color render target, resolve, or depth/stencil resolve attachment during a render pass or via certain subpass load and store operations.
+    DepthStencilRead           = XII_BIT(9),  ///< Read access to a depth/stencil buffer, via depth or stencil operations or via certain subpass load operations.
+    DepthStencilWrite          = XII_BIT(10), ///< Write access to a depth/stencil buffer, via depth or stencil operations or via certain subpass load and store operations.
+    CopySource                 = XII_BIT(11), ///< Read access to a texture or buffer in a copy operation.
+    CopyDestination            = XII_BIT(12), ///< Write access to a texture or buffer in a copy operation.
+    HostRead                   = XII_BIT(13), ///< Read access by a host operation. Accesses of this type are not performed through a resource, but directly on memory.
+    HostWrite                  = XII_BIT(14), ///< Write access by a host operation. Accesses of this type are not performed through a resource, but directly on memory.
+    MemoryRead                 = XII_BIT(15), ///< All read accesses. It is always valid in any access mask, and is treated as equivalent to setting Read access flags that are valid where it is used.
+    MemoryWrite                = XII_BIT(16), ///< All write accesses. It is always valid in any access mask, and is treated as equivalent to setting all Write access flags that are valid where it is used.
+    ConditionalRenderingRead   = XII_BIT(17), ///< Read access to a predicate as part of conditional rendering.
+    ShadingRateTextureRead     = XII_BIT(18), ///< Read access to a shading rate texture as part of a drawing command.
+    AccelerationStructureRead  = XII_BIT(19), ///< Read access to an acceleration structure as part of a trace or build command.
+    AccelerationStructureWrite = XII_BIT(20), ///< Write access to an acceleration structure or acceleration structure scratch buffer as part of a build command.
+    FragmentDensityMapRead     = XII_BIT(21), ///< Read access to a fragment density map attachment during dynamic fragment density map operations.
+    Default                    = 0x80000000U  ///< Default access type that is determined by the resource state. For example xiiGALResourceStateFlags::RenderTarget corresponds to xiiGALAccessFlags::RenderTargetWrite.
+  };
+
+  struct Bits
+  {
+    StorageType TopOfPipeline : 1;
+    StorageType DrawIndirect : 1;
+    StorageType VertexInput : 1;
+    StorageType VertexShader : 1;
+    StorageType HullShader : 1;
+    StorageType DomainShader : 1;
+    StorageType GeometryShader : 1;
+    StorageType PixelShader : 1;
+    StorageType EarlyFragmentTests : 1;
+    StorageType LateFragmentTests : 1;
+    StorageType RenderTarget : 1;
+    StorageType ComputeShader : 1;
+    StorageType Transfer : 1;
+    StorageType BottomOfPipeline : 1;
+    StorageType Host : 1;
+    StorageType ConditionalRendering : 1;
+    StorageType ShadingRateTexture : 1;
+    StorageType RayTracingShader : 1;
+    StorageType AccelerationStructureBuild : 1;
+    StorageType TaskShader : 1;
+    StorageType MeshShader : 1;
+    StorageType FragmentDensityProcess : 1;
+    StorageType Default : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALAccessFlags);
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALAccessFlags);
+
 /// \brief This describes the resource usage state.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceStateFlags
 {

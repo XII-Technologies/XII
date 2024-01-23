@@ -104,8 +104,12 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSubPassDependencyDescription : public xi
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32 m_uiSourceSubPass      = 0U; ///< The sub pass index of the first sub pass in the dependency, or XII_GAL_SUBPASS_EXTERNAL.
-  xiiUInt32 m_uiDestinationSubPass = 0U; ///< The sub pass index of the second sub pass in the dependency, or XII_GAL_SUBPASS_EXTERNAL.
+  xiiUInt32                             m_uiSourceSubPass       = 0U;                                  ///< The sub pass index of the first sub pass in the dependency, or XII_GAL_SUBPASS_EXTERNAL. The default is 0.
+  xiiUInt32                             m_uiDestinationSubPass  = 0U;                                  ///< The sub pass index of the second sub pass in the dependency, or XII_GAL_SUBPASS_EXTERNAL. The default is 0.
+  xiiBitflags<xiiGALPipelineStageFlags> m_SourceStageMask       = xiiGALPipelineStageFlags::Undefined; ///< The xiiGALPipelineStageFlags that specifies the source stage flag. The default is xiiGALPipelineStageFlags::Undefined.
+  xiiBitflags<xiiGALPipelineStageFlags> m_DestinationStageMask  = xiiGALPipelineStageFlags::Undefined; ///< The xiiGALPipelineStageFlags that specifies the destination stage flag. The default is xiiGALPipelineStageFlags::Undefined.
+  xiiBitflags<xiiGALAccessFlags>        m_SourceAccessMask      = xiiGALAccessFlags::None;             ///< The xiiGALAccessFlags that specifies the source access flag. The default is xiiGALAccessFlags::None.
+  xiiBitflags<xiiGALAccessFlags>        m_DestinationAccessMask = xiiGALAccessFlags::None;             ///< The xiiGALAccessFlags that specifies the destination access flag. The default is xiiGALAccessFlags::None.
 };
 
 /// \brief This describes the render pass creation description.
