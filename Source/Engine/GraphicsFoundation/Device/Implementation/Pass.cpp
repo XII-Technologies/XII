@@ -263,6 +263,14 @@ void xiiGALPass::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderi
         xiiGALSubPassDependencyDescription& subpassDependency = renderPassDescription.m_Dependencies.ExpandAndGetRef();
         subpassDependency.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
         subpassDependency.m_uiDestinationSubPass              = 0;
+        subpassDependency.m_SourceStageFlags                  = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+        subpassDependency.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+
+        if (!depthAttachmentRefs.IsEmpty())
+          subpassDependency.m_DestinationAccessFlags |= xiiGALAccessFlags::DepthStencilWrite;
+
+        if (!colorAttachmentRefs.IsEmpty())
+          subpassDependency.m_DestinationAccessFlags |= xiiGALAccessFlags::RenderTargetWrite;
       }
 
       hRenderPass = m_Device.CreateRenderPass(renderPassDescription);

@@ -656,7 +656,6 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALPipelineStageFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALPipelineStageFlags::TaskShader),
   XII_BITFLAGS_CONSTANT(xiiGALPipelineStageFlags::MeshShader),
   XII_BITFLAGS_CONSTANT(xiiGALPipelineStageFlags::FragmentDensityProcess),
-  XII_BITFLAGS_CONSTANT(xiiGALPipelineStageFlags::Default),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALAccessFlags, 1)
@@ -683,7 +682,6 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALAccessFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALAccessFlags::AccelerationStructureRead),
   XII_BITFLAGS_CONSTANT(xiiGALAccessFlags::AccelerationStructureWrite),
   XII_BITFLAGS_CONSTANT(xiiGALAccessFlags::FragmentDensityMapRead),
-  XII_BITFLAGS_CONSTANT(xiiGALAccessFlags::Default),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALResourceStateFlags, 1)
