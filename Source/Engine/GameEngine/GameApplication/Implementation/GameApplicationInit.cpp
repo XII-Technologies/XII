@@ -325,7 +325,7 @@ void xiiGameApplication::Init_SetupGraphicsDevice()
       xiiStringView sGraphicsAPIName = GetGraphicsAPINameFromCommandLine();
 
       pDevice = xiiGALDeviceFactory::CreateDevice(sGraphicsAPIName, xiiFoundation::GetDefaultAllocator(), deviceCreationDescription);
-      XII_ASSERT_DEV(pDevice != nullptr, "Device implemention for '{}' not found", sGraphicsAPIName);
+      XII_ASSERT_DEV(pDevice != nullptr, "Device implementation for '{}' not found.", sGraphicsAPIName);
     }
 
     XII_VERIFY(pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
