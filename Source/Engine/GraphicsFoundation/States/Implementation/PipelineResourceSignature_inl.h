@@ -3,4 +3,3 @@ XII_ALWAYS_INLINE const xiiGALPipelineResourceSignatureCreationDescription& xiiG
 {
   return m_Description;
 }
-
