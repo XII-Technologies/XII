@@ -85,6 +85,36 @@ namespace
     ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
     return ref_stream;
   }
+
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALBlendStateHandle& Value)
+  {
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
+  }
+
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRasterizerStateHandle& Value)
+  {
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
+  }
+
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALDepthStencilStateHandle& Value)
+  {
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
+  }
+
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALInputLayoutHandle& Value)
+  {
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
+  }
+
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRenderPassHandle& Value)
+  {
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
+  }
 } // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDevice, 1, xiiRTTINoAllocator)
@@ -103,7 +133,55 @@ struct xiiHashHelper<xiiGALPipelineStateCreationDescription>
     writer << description.m_uiNodeMask;
     writer << description.m_uiImmediateContextMask;
 
-    /// \todo GraphicsFoundation: Add Hash Graphics, Compute and Ray Tracing pipelines.
+    // Graphics pipeline state.
+    switch (description.m_PipelineType)
+    {
+      case xiiGALPipelineType::Graphics:
+      case xiiGALPipelineType::Mesh:
+      {
+        const auto& graphicsPipeline = description.m_GraphicsPipeline;
+
+        writer << graphicsPipeline.m_hBlendState;
+        writer << graphicsPipeline.m_uiSampleMask;
+        writer << graphicsPipeline.m_hRasterizerState;
+        writer << graphicsPipeline.m_hDepthStencilState;
+        writer << graphicsPipeline.m_hInputLayout;
+        writer << graphicsPipeline.m_PrimitiveTopology;
+        writer << graphicsPipeline.m_uiViewportCount;
+        writer << graphicsPipeline.m_uiSubpassIndex;
+        writer << graphicsPipeline.m_ShadingRateFlags;
+        writer << graphicsPipeline.m_bReadOnlyDepthStencil;
+        writer << graphicsPipeline.m_hRenderPass;
+      }
+      break;
+      case xiiGALPipelineType::Compute:
+      {
+      }
+      break;
+      case xiiGALPipelineType::RayTracing:
+      {
+        const auto& rayTracingPipeline = description.m_RayTracingPipeline;
+
+        writer << rayTracingPipeline.m_uiShaderRecordSize;
+        writer << rayTracingPipeline.m_uiMaxRecursionDepth;
+      }
+      break;
+      case xiiGALPipelineType::Tile:
+      {
+        const auto& tilePipeline = description.m_TilePipeline;
+
+        writer << tilePipeline.m_SampleCount;
+        writer << tilePipeline.m_RenderTargetFormats.GetCount();
+
+        for (xiiUInt32 i = 0; i < tilePipeline.m_RenderTargetFormats.GetCount(); ++i)
+        {
+          writer << tilePipeline.m_RenderTargetFormats[i];
+        }
+      }
+      break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
 
     return writer.GetHashValue();
   }

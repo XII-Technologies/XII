@@ -118,7 +118,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineDescription : public xii
   xiiGALDepthStencilStateHandle               m_hDepthStencilState;                                            ///< The handle to depth-stencil state object.
   xiiGALInputLayoutHandle                     m_hInputLayout;                                                  ///< The handle to vertex input layout, ignored in a mesh pipeline.
   xiiEnum<xiiGALPrimitiveTopology>            m_PrimitiveTopology     = xiiGALPrimitiveTopology::TriangleList; ///< The psrimitive topology type, ignored in a mesh pipeline. The default is xiiGALPrimitiveTopology::TriangleList.
-  xiiUInt8                                    m_ViewportCount         = 1U;                                    ///< The number of viewports used by this pipeline. The default is 1.
+  xiiUInt8                                    m_uiViewportCount       = 1U;                                    ///< The number of viewports used by this pipeline. The default is 1.
   xiiUInt8                                    m_uiSubpassIndex        = 0U;                                    ///< The subpass index within the render pass. The default is 0.
   xiiBitflags<xiiGALPipelineShadingRateFlags> m_ShadingRateFlags      = xiiGALPipelineShadingRateFlags::None;  ///< Shading rate flags that specify which type of the shading rate will be used with this pipeline. The default is xiiGALPipelineShadingRateFlags::None.
   bool                                        m_bReadOnlyDepthStencil = false;                                 ///< Indicates that the pipeline will be used with read-only depth-stencil buffer. The default is false.
