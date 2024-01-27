@@ -2,7 +2,9 @@
 
 #include <GraphicsFoundation/Device/Device.h>
 
+#include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/Profiling/Profiling.h>
+
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
@@ -77,10 +79,80 @@ namespace
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALRasterizerStateHandle) == sizeof(xiiUInt32));
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALPipelineResourceSignatureHandle) == sizeof(xiiUInt32));
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALPipelineStateHandle) == sizeof(xiiUInt32));
+
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALShaderHandle& Value)
+  {
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
+  }
 } // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+template <>
+struct xiiHashHelper<xiiGALPipelineStateCreationDescription>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiGALPipelineStateCreationDescription& description)
+  {
+    xiiHashStreamWriter32 writer;
+
+    writer << description.m_sName;
+    writer << description.m_PipelineType;
+    writer << description.m_hShader;
+    writer << description.m_uiNodeMask;
+    writer << description.m_uiImmediateContextMask;
+
+    /// \todo GraphicsFoundation: Add Hash Graphics, Compute and Ray Tracing pipelines.
+
+    return writer.GetHashValue();
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(const xiiGALPipelineStateCreationDescription& a, const xiiGALPipelineStateCreationDescription& b) { return false; }
+};
+
+template <>
+struct xiiHashHelper<xiiGALPipelineResourceSignatureCreationDescription>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiGALPipelineResourceSignatureCreationDescription& description)
+  {
+    xiiHashStreamWriter32 writer;
+
+    writer << description.m_sName;
+    writer << description.m_uiBindingIndex;
+    writer << description.m_bUseCombinedTextureSamplers;
+    writer << description.m_sCombinedSamplerSuffix;
+
+    writer << description.m_Resources.GetCount();
+    for (xiiUInt32 i = 0; i < description.m_Resources.GetCount(); ++i)
+    {
+      const auto& resource = description.m_Resources[i];
+
+      writer << i;
+      writer << resource.m_sName;
+      writer << resource.m_ShaderStages;
+      writer << resource.m_uiArraySize;
+      writer << resource.m_ResourceType;
+      writer << resource.m_ResourceVariableType;
+      writer << resource.m_PipelineResourceFlags;
+    }
+
+    writer << description.m_ImmutableSamplers.GetCount();
+    for (xiiUInt32 i = 0; i < description.m_ImmutableSamplers.GetCount(); ++i)
+    {
+      const auto& sampler = description.m_ImmutableSamplers[i];
+
+      writer << i;
+      writer << sampler.m_SamplerOrTextureName;
+      writer << sampler.m_ShaderStages;
+      writer << sampler.m_SamplerDescription.CalculateHash();
+    }
+
+    return writer.GetHashValue();
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(const xiiGALPipelineResourceSignatureCreationDescription& a, const xiiGALPipelineResourceSignatureCreationDescription& b) { return false; }
+};
 
 xiiGALDevice* xiiGALDevice::s_pDefaultDevice = nullptr;
 

@@ -112,18 +112,18 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineDescription : public xii
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiGALBlendStateHandle                      m_hBlendState;                                                   ///< Handle to blend state description.
-  xiiUInt32                                   m_uiSampleMask = 0xFFFFFFFF;                                     ///< 32-bit sample mask that determines which samples get updated in all the active render targets. A sample mask is always applied; it is independent of whether multisampling is enabled, and does not depend on whether an application uses multisample render targets.
-  xiiGALRasterizerStateHandle                 m_hRasterizerState;                                              ///< Handle to rasterizer state description.
-  xiiGALDepthStencilStateHandle               m_hDepthStencilState;                                            ///< Handle to depth-stencil state description.
-  xiiGALInputLayoutHandle                     m_hInputLayout;                                                  ///< Handle to vertex input layout, ignored in a mesh pipeline.
-  xiiEnum<xiiGALPrimitiveTopology>            m_PrimitiveTopology     = xiiGALPrimitiveTopology::TriangleList; ///< Primitive topology type, ignored in a mesh pipeline.
-  xiiUInt8                                    m_ViewportCount         = 1U;                                    ///< The number of viewports used by this pipeline.
-  xiiUInt8                                    m_uiSubpassIndex        = 0U;                                    ///< The subpass index within the render pass.
-  xiiBitflags<xiiGALPipelineShadingRateFlags> m_ShadingRateFlags      = xiiGALPipelineShadingRateFlags::None;  ///< Shading rate flags that specify which type of the shading rate will be used with this pipeline.
-  bool                                        m_bReadOnlyDepthStencil = false;                                 ///< Indicates that the pipeline will be used with read-only depth-stencil buffer.
+  xiiGALBlendStateHandle                      m_hBlendState;                                                   ///< The handle to the blend state object.
+  xiiUInt32                                   m_uiSampleMask = 0xFFFFFFFF;                                     ///< A 32-bit sample mask that determines which samples get updated in all the active render targets. A sample mask is always applied; it is independent of whether multisampling is enabled, and does not depend on whether an application uses multisample render targets.
+  xiiGALRasterizerStateHandle                 m_hRasterizerState;                                              ///< The handle to rasterizer state object.
+  xiiGALDepthStencilStateHandle               m_hDepthStencilState;                                            ///< The handle to depth-stencil state object.
+  xiiGALInputLayoutHandle                     m_hInputLayout;                                                  ///< The handle to vertex input layout, ignored in a mesh pipeline.
+  xiiEnum<xiiGALPrimitiveTopology>            m_PrimitiveTopology     = xiiGALPrimitiveTopology::TriangleList; ///< The psrimitive topology type, ignored in a mesh pipeline. The default is xiiGALPrimitiveTopology::TriangleList.
+  xiiUInt8                                    m_ViewportCount         = 1U;                                    ///< The number of viewports used by this pipeline. The default is 1.
+  xiiUInt8                                    m_uiSubpassIndex        = 0U;                                    ///< The subpass index within the render pass. The default is 0.
+  xiiBitflags<xiiGALPipelineShadingRateFlags> m_ShadingRateFlags      = xiiGALPipelineShadingRateFlags::None;  ///< Shading rate flags that specify which type of the shading rate will be used with this pipeline. The default is xiiGALPipelineShadingRateFlags::None.
+  bool                                        m_bReadOnlyDepthStencil = false;                                 ///< Indicates that the pipeline will be used with read-only depth-stencil buffer. The default is false.
   xiiGALSampleDescription                     m_SampleDescription;                                             ///< Multi-sampling parameters.
-  xiiGALRenderPassHandle                      m_hRenderPass;                                                   ///< Handle to the render pass object.
+  xiiGALRenderPassHandle                      m_hRenderPass;                                                   ///< The handle to the render pass object.
 };
 
 /// \brief This describes the ray tracing pipeline information.
