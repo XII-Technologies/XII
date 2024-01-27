@@ -29,3 +29,6 @@
 
 /// \brief The bit shift for the shading X-Axis rate.
 #define XII_GAL_SHADING_RATE_X_SHIFT 2
+
+/// \brief The maximum number of resource signatures that one pipeline can use.
+#define XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT 8

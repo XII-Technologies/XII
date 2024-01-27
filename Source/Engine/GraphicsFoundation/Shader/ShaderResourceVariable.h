@@ -11,7 +11,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariableType
 
   enum Enum : StorageType
   {
-    Static = 0U, ///< Shader resource bound to the variable is the same for all SRB instances. It must be set *once* directly through Pipeline State object.
+    Static = 0U, ///< Shader resource bound to the variable is the same for all shader resource binding instances. It must be set *once* directly through pipeline state object.
     Mutable,     ///< Shader resource bound to the variable is specific to the shader resource binding instance. It must be set *once* through the shader resource binding interface. It cannot be set through the pipeline state interface, and cannot be changed once bound.
     Dynamic,     ///< Shader variable binding is dynamic. It can be set multiple times for every instance of shader resource binding. It cannot be set through the pipeline state interface.
 
@@ -34,8 +34,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariableTypeFlags
     Static  = XII_BIT(xiiGALShaderResourceVariableType::Static),  ///< Static variable type flag.
     Mutable = XII_BIT(xiiGALShaderResourceVariableType::Mutable), ///< Mutable variable type flag.
     Dynamic = XII_BIT(xiiGALShaderResourceVariableType::Dynamic), ///< Dynamic variable type flag.
-
-    ENUM_COUNT = 4U,
 
     MutableDynamic = Mutable | Dynamic,          ///< Mutable and dynamic variable type flags.
     All            = Static | Mutable | Dynamic, ///< All variable type flags.
@@ -69,16 +67,17 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceBindFlags
     Mutable = xiiGALShaderResourceVariableTypeFlags::Mutable, ///< Indicates that mutable shader variable bindings are to be updated.
     Dynamic = xiiGALShaderResourceVariableTypeFlags::Dynamic, ///< Indicates that dynamic shader variable bindings are to be updated.
 
-    ENUM_COUNT = 3U,
-
     All = xiiGALShaderResourceVariableTypeFlags::All, ///< Indicates that all shader variable types (static, mutable and dynamic) are to be updated.
                                                       ///<
                                                       ///< \note If none of xiiGALShaderResourceBindFlags::Static, xiiGALShaderResourceBindFlags::Mutable, and xiiGALShaderResourceBindFlags::Dynamic flags are set, all variables are updated as if xiiGALShaderResourceBindFlags::All was set.
-    KeepExisting      = 0x08,                         ///< If this flag is specified, all existing bindings will be preserved and only unresolved ones will be updated. If this flag is not specified, every shader variable will be updated if the mapping contains corresponding resource.
-    VerifyAllResolved = 0x10,                         ///< If this flag is specified, all shader bindings are expected to be resolved after the call. If this is not the case, debug message will be displayed.
-                                                      ///<
-                                                      ///< \note Only these variables are verified that are being updated by setting xiiGALShaderResourceBindFlags::Static, xiiGALShaderResourceBindFlags::Mutable, and xiiGALShaderResourceBindFlags::Dynamic.
-    AllowOverWrite = 0x20,                            ///< Allow overwriting static and mutable variables.
+
+    KeepExisting = 0x08, ///< If this flag is specified, all existing bindings will be preserved and only unresolved ones will be updated. If this flag is not specified, every shader variable will be updated if the mapping contains corresponding resource.
+
+    VerifyAllResolved = 0x10, ///< If this flag is specified, all shader bindings are expected to be resolved after the call. If this is not the case, debug message will be displayed.
+                              ///<
+                              ///< \note Only these variables are verified that are being updated by setting xiiGALShaderResourceBindFlags::Static, xiiGALShaderResourceBindFlags::Mutable, and xiiGALShaderResourceBindFlags::Dynamic.
+
+    AllowOverWrite = 0x20, ///< Allow overwriting static and mutable variables.
 
     Default = Static
   };
@@ -113,10 +112,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSetShaderResourceFlags
                                  ///<
                                  ///< Overwriting static variables does not require synchronization with GPU and does not have effect on shader resource binding objects already created from the pipeline state or resource signature.
                                  ///<
-                                 ///< When overwriting a mutable variable binding in Direct3D12 and Vulkan, an application must ensure that the GPU is not accessing the SRB. This can be achieved using syncrhonization tools such as fences.
+                                 ///< When overwriting a mutable variable binding in Direct3D12 and Vulkan, an application must ensure that the GPU is not accessing the shader resource binding. This can be achieved using syncrhonization tools such as fences.
                                  ///< Synchronization with GPU is not required in Direct3D11, and Metal backends.
-
-    ENUM_COUNT = 2U,
 
     Default = None
   };
@@ -132,9 +129,9 @@ XII_DECLARE_FLAGS_OPERATORS(xiiGALSetShaderResourceFlags);
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSetShaderResourceFlags);
 
 /// \brief Interface that defines methods to manipulate a shader resource variable object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariable : public xiiGALDeviceObject
+class XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariable : public xiiGALObject
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiGALShaderResourceVariable, xiiGALDeviceObject);
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALShaderResourceVariable, xiiGALObject);
 
 public:
   /// \brief This binds a resource to the variable.

@@ -1817,6 +1817,13 @@ class xiiGALDepthStencilStateHandle
   friend class xiiGALDevice;
 };
 
+class xiiGALPipelineResourceSignatureHandle
+{
+  XII_DECLARE_HANDLE_TYPE(xiiGALPipelineResourceSignatureHandle, xiiGAL::xii24_8Id);
+
+  friend class xiiGALDevice;
+};
+
 class xiiGALPipelineStateHandle
 {
   XII_DECLARE_HANDLE_TYPE(xiiGALPipelineStateHandle, xiiGAL::xii24_8Id);

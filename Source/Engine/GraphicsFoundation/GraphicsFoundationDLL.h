@@ -66,6 +66,8 @@ struct xiiGALBlendStateCreationDescription;
 struct xiiGALStencilOperationDescription;
 struct xiiGALDepthStencilStateCreationDescription;
 struct xiiGALRasterizerStateCreationDescription;
+struct xiiGALPipelineStateCreationDescription;
+struct xiiGALPipelineResourceSignatureCreationDescription;
 
 class xiiGALCommandEncoder;
 class xiiGALGraphicsCommandEncoder;
@@ -101,5 +103,6 @@ class xiiGALShaderByteCode;
 class xiiGALShaderResourceVariable;
 class xiiGALBlendState;
 class xiiGALDepthStencilState;
+class xiiGALPipelineResourceSignature;
 class xiiGALPipelineState;
 class xiiGALRasterizerState;

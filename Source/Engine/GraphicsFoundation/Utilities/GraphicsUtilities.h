@@ -4,6 +4,7 @@
 
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
+#include <GraphicsFoundation/States/PipelineResourceSignature.h>
 
 class XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsUtilities
 {
@@ -22,6 +23,9 @@ public:
 
   /// \brief This returns the sparse texture format information for the given texture format, resource dimension and sample count.
   static XII_NODISCARD const xiiGALSparseTextureProperties GetSparseTextureProperties(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount);
+
+  /// \brief This returns the valid pipeline resource flags for a given shader resource type.
+  static XII_NODISCARD xiiBitflags<xiiGALPipelineResourceFlags> GetValidPipelineResourceFlags(xiiEnum<xiiGALShaderResourceType> type);
 };
 
 #include <GraphicsFoundation/Utilities/Implementation/GraphicsUtilities_inl.h>
