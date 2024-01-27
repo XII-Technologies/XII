@@ -194,8 +194,8 @@ class xiiBoundingBoxTemplate;
 using xiiBoundingBox     = xiiBoundingBoxTemplate<float>;
 using xiiBoundingBoxd    = xiiBoundingBoxTemplate<double>;
 using xiiBoundingBoxReal = xiiBoundingBoxTemplate<xiiReal>;
-using xiiBoundingBoxu32  = xiiBoundingBoxTemplate<xiiUInt32>;
-using xiiBoundingBoxu64  = xiiBoundingBoxTemplate<xiiUInt64>;
+using xiiBoundingBoxU32  = xiiBoundingBoxTemplate<xiiUInt32>;
+using xiiBoundingBoxU64  = xiiBoundingBoxTemplate<xiiUInt64>;
 
 template <typename Type>
 class xiiBoundingBoxSphereTemplate;

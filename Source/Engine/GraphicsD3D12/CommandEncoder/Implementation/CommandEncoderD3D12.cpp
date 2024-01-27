@@ -300,7 +300,7 @@ void xiiGALCommandEncoderD3D12::CopyTexturePlatform(xiiGALTexture* pDestination,
   m_pContext->CopyTexture(copyTextureDescription);
 }
 
-void xiiGALCommandEncoderD3D12::CopyTextureRegionPlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxu32& box)
+void xiiGALCommandEncoderD3D12::CopyTextureRegionPlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxU32& box)
 {
   auto pSourceTextureD3D12      = static_cast<xiiGALTextureD3D12*>(pSource);
   auto pDestinationTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDestination);
@@ -332,7 +332,7 @@ void xiiGALCommandEncoderD3D12::CopyTextureRegionPlatform(xiiGALTexture* pDestin
   m_pContext->CopyTexture(copyTextureDescription);
 }
 
-void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
+void xiiGALCommandEncoderD3D12::UpdateTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
 {
   auto pDestinationTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDestination);
 

@@ -50,8 +50,8 @@ public:
   void UpdateBuffer(xiiGALBufferHandle hDestination, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard);
 
   void CopyTexture(xiiGALTextureHandle hDestination, xiiGALTextureHandle hSource);
-  void CopyTextureRegion(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxu32& box);
-  void UpdateTexture(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureSubResourceData& sourceData);
+  void CopyTextureRegion(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxU32& box);
+  void UpdateTexture(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& sourceData);
   void ResolveTexture(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, xiiGALTextureHandle hSource, const xiiGALTextureMipLevelData& sourceSubResource);
   void ReadbackTexture(xiiGALTextureHandle hTexture, xiiGALTextureHandle hStagingTexture);
   void CopyTextureReadbackResult(xiiGALTextureHandle hTexture, xiiGALTextureHandle hStagingTexture, xiiArrayPtr<xiiGALTextureMipLevelData> mipLevelData, xiiArrayPtr<xiiGALTextureSubResourceData> targetData);

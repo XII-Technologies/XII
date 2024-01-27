@@ -351,7 +351,7 @@ void xiiGALCommandEncoderVulkan::CopyTexturePlatform(xiiGALTexture* pDestination
   m_pContext->CopyTexture(copyTextureDescription);
 }
 
-void xiiGALCommandEncoderVulkan::CopyTextureRegionPlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxu32& box)
+void xiiGALCommandEncoderVulkan::CopyTextureRegionPlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxU32& box)
 {
   auto pSourceTextureVulkan      = static_cast<xiiGALTextureVulkan*>(pSource);
   auto pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestination);
@@ -383,7 +383,7 @@ void xiiGALCommandEncoderVulkan::CopyTextureRegionPlatform(xiiGALTexture* pDesti
   m_pContext->CopyTexture(copyTextureDescription);
 }
 
-void xiiGALCommandEncoderVulkan::UpdateTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
+void xiiGALCommandEncoderVulkan::UpdateTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
 {
   auto pDestinationTextureVulkan = static_cast<xiiGALTextureVulkan*>(pDestination);
 

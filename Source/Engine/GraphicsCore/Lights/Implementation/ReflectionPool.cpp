@@ -315,7 +315,7 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
     {
       if ((uiWorldHasSkyLight & XII_BIT(i)) == 0 && (uiSkyIrradianceChanged & XII_BIT(i)) != 0)
       {
-        xiiBoundingBoxu32 destBox;
+        xiiBoundingBoxU32 destBox;
         destBox.m_vMin.Set(0, i, 0);
         destBox.m_vMax.Set(6, i + 1, 1);
         xiiGALTextureSubResourceData memDesc;

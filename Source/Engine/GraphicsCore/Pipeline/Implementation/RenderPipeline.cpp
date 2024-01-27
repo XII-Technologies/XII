@@ -1443,7 +1443,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       xiiGALPass* pGALPass        = pDevice->BeginPass("RasterizerDebugViewUpdate");
       auto        pCommandEncoder = pGALPass->BeginCompute();
 
-      xiiBoundingBoxu32 destBox;
+      xiiBoundingBoxU32 destBox;
       destBox.m_vMin.SetZero();
       destBox.m_vMax = xiiVec3U32(uiImgWidth, uiImgHeight, 1);
 

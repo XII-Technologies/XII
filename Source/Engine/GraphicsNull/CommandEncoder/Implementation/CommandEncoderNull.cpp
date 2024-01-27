@@ -119,13 +119,13 @@ void xiiGALCommandEncoderNull::CopyTexturePlatform(xiiGALTexture* pDestination, 
   // auto pDestinationTexture = static_cast<xiiGALTextureNull*>(pDestination);
 }
 
-void xiiGALCommandEncoderNull::CopyTextureRegionPlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxu32& box)
+void xiiGALCommandEncoderNull::CopyTextureRegionPlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTexture* pSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxU32& box)
 {
   // auto pSourceTextureNull      = static_cast<xiiGALTextureNull*>(pSource);
   // auto pDestinationTextureNull = static_cast<xiiGALTextureNull*>(pDestination);
 }
 
-void xiiGALCommandEncoderNull::UpdateTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
+void xiiGALCommandEncoderNull::UpdateTexturePlatform(xiiGALTexture* pDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
 {
   auto pDestinationTextureNull = static_cast<xiiGALTextureNull*>(pDestination);
 

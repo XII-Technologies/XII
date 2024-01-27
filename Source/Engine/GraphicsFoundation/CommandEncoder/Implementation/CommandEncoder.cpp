@@ -477,7 +477,7 @@ void xiiGALCommandEncoder::CopyTexture(xiiGALTextureHandle hDestination, xiiGALT
   }
 }
 
-void xiiGALCommandEncoder::CopyTextureRegion(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxu32& box)
+void xiiGALCommandEncoder::CopyTextureRegion(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiVec3U32& vDestinationPoint, xiiGALTextureHandle hSource, const xiiGALTextureMipLevelData& sourceSubResource, const xiiBoundingBoxU32& box)
 {
   AssertRenderingThread();
 
@@ -494,7 +494,7 @@ void xiiGALCommandEncoder::CopyTextureRegion(xiiGALTextureHandle hDestination, c
   }
 }
 
-void xiiGALCommandEncoder::UpdateTexture(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxu32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
+void xiiGALCommandEncoder::UpdateTexture(xiiGALTextureHandle hDestination, const xiiGALTextureMipLevelData& destinationSubResource, const xiiBoundingBoxU32& destinationBox, const xiiGALTextureSubResourceData& sourceData)
 {
   AssertRenderingThread();
 
