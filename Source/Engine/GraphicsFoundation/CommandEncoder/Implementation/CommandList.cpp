@@ -51,7 +51,7 @@ void xiiGALCommandList::ClearDepthStencilView(xiiGALTextureViewHandle hDepthSten
 {
 }
 
-#define XII_VERIFY_DRAW(expression, ...)   \
+#define XII_VERIFY_DRAW(expression, ...)       \
   do                                           \
   {                                            \
     XII_ASSERT_DEV((expression), __VA_ARGS__); \
