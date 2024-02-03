@@ -58,7 +58,7 @@ public:
   ///
   /// \param description - The swap chain description. See xiiGALSwapChainCreationDescription.
   ///
-  /// \return The handle to the created swap chain object.
+  /// \return The handle to the created swap chain object. The function calls AddRef(), so that the new object will have one reference.
   XII_NODISCARD xiiGALSwapChainHandle CreateSwapChain(const xiiGALSwapChainCreationDescription& description);
 
   /// \brief This destroys the swap chain with the given handle.
@@ -101,7 +101,7 @@ public:
   ///
   /// \param description - The shader description. See xiiGALShaderCreationDescription.
   ///
-  /// \return The handle to the created shader object.
+  /// \return The handle to the created shader object. The function calls AddRef(), so that the new object will have one reference.
   XII_NODISCARD xiiGALShaderHandle CreateShader(const xiiGALShaderCreationDescription& description);
 
   /// \brief This destroys the shader with the given handle.
@@ -114,7 +114,7 @@ public:
   /// \param pInitialData - The pointer to the xiiGALBufferData structure that describes the initial buffer data or nullptr if no data is provided.
   ///                       Immutable buffers (xiiGALResourceUsage::Immutable) must be initialized during creation.
   ///
-  /// \return The handle to the created buffer object.
+  /// \return The handle to the created buffer object. The function calls AddRef(), so that the new object will have one reference.
   ///
   /// \remarks Size of a uniform buffer (xiiGALBindFlags) must be multiple of 16.\n
   /// Stride of a formatted buffer will be computed automatically from the format if the m_uiElementByteStride member of buffer description is set to default value (0).
@@ -145,7 +145,7 @@ public:
   /// \param pInitialData - The pointer to the xiiGALTextureData structure that describes the initial texture data or nullptr if no data is provided.
   ///                       Immutable textures (xiiGALResourceUsage::Immutable) must be initialized during creation.
   ///
-  /// \return The handle to the created texture object.
+  /// \return The handle to the created texture object. The function calls AddRef(), so that the new object will have one reference.
   ///
   /// \remarks
   /// To create all mip levels, set the description.m_uiMipLevels to zero.\n Multi-sampled resources cannot be initialized with data when they are created. \n
@@ -208,7 +208,7 @@ public:
   ///
   /// \param description - The query description. See xiiGALQueryCreationDescription.
   ///
-  /// \return The handle to the created query object.
+  /// \return The handle to the created query object. The function calls AddRef(), so that the new object will have one reference.
   XII_NODISCARD xiiGALQueryHandle CreateQuery(const xiiGALQueryCreationDescription& description);
 
   /// \brief This destroys the sampler with the given handle.
@@ -219,7 +219,7 @@ public:
   ///
   /// \param description - The fence description. See xiiGALFenceCreationDescription.
   ///
-  /// \return The handle to the created fence object.
+  /// \return The handle to the created fence object. The function calls AddRef(), so that the new object will have one reference.
   XII_NODISCARD xiiGALFenceHandle CreateFence(const xiiGALFenceCreationDescription& description);
 
   /// \brief This destroys the fence with the given handle.
@@ -230,7 +230,7 @@ public:
   ///
   /// \param description - The render pass description. See xiiGALRenderPassCreationDescription.
   ///
-  /// \return The handle to the created render pass object.
+  /// \return The handle to the created render pass object. The function calls AddRef(), so that the new object will have one reference.
   XII_NODISCARD xiiGALRenderPassHandle CreateRenderPass(const xiiGALRenderPassCreationDescription& description);
 
   /// \brief This destroys the render pass with the given handle.
@@ -241,7 +241,7 @@ public:
   ///
   /// \param description - The frame buffer description. See xiiGALFramebufferCreationDescription.
   ///
-  /// \return The handle to the created frame buffer object.
+  /// \return The handle to the created frame buffer object. The function calls AddRef(), so that the new object will have one reference.
   XII_NODISCARD xiiGALFramebufferHandle CreateFramebuffer(const xiiGALFramebufferCreationDescription& description);
 
   /// \brief This destroys the frame buffer with the given handle.
@@ -252,7 +252,7 @@ public:
   ///
   /// \param description - The bottom-level acceleration structure description. See xiiGALBottomLevelASCreationDescription.
   ///
-  /// \return The handle to the created bottom-level acceleration structure object.
+  /// \return The handle to the created bottom-level acceleration structure object. The function calls AddRef(), so that the new object will have one reference.
   XII_NODISCARD xiiGALBottomLevelASHandle CreateBottomLevelAS(const xiiGALBottomLevelASCreationDescription& description);
 
   /// \brief This destroys the bottom-level acceleration structure with the given handle.
@@ -263,7 +263,7 @@ public:
   ///
   /// \param description - The top-level acceleration structure description. See xiiGALTopLevelASCreationDescription.
   ///
-  /// \return The handle to the created top-level acceleration structure object.
+  /// \return The handle to the created top-level acceleration structure object. The function calls AddRef(), so that the new object will have one reference.
   XII_NODISCARD xiiGALTopLevelASHandle CreateTopLevelAS(const xiiGALTopLevelASCreationDescription& description);
 
   /// \brief This destroys the top-level acceleration structure with the given handle.
@@ -274,7 +274,7 @@ public:
   ///
   /// \param description - The pipeline resource signature description. See xiiGALPipelineResourceSignatureCreationDescription.
   ///
-  /// \return The handle to the created pipeline resource signature object.
+  /// \return The handle to the created pipeline resource signature object. The function calls AddRef(), so that the new object will have one reference.
   XII_NODISCARD xiiGALPipelineResourceSignatureHandle CreatePipelineResourceSignature(const xiiGALPipelineResourceSignatureCreationDescription& description);
 
   /// \brief This destroys the pipeline resource signature with the given handle.
@@ -285,7 +285,7 @@ public:
   ///
   /// \param description - The pipeline state description. See xiiGALPipelineStateCreationDescription.
   ///
-  /// \return The handle to the created pipeline state object.
+  /// \return The handle to the created pipeline state object. The function calls AddRef(), so that the new object will have one reference.
   XII_NODISCARD xiiGALPipelineStateHandle CreatePipelineState(const xiiGALPipelineStateCreationDescription& description);
 
   /// \brief This destroys the pipeline state with the given handle.

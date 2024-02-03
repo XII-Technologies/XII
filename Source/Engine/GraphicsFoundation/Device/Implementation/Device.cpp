@@ -472,6 +472,8 @@ xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const xiiGALSwapChainCreatio
   {
     pSwapChain->m_pDevice = this;
 
+    pSwapChain->AddRef();
+
     return xiiGALSwapChainHandle(m_SwapChains.Insert(pSwapChain));
   }
 }
@@ -808,6 +810,8 @@ xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescript
   {
     pShader->m_pDevice = this;
 
+    pShader->AddRef();
+
     return xiiGALShaderHandle(m_Shaders.Insert(pShader));
   }
 }
@@ -979,6 +983,10 @@ xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescript
   }
 
   xiiGALBuffer* pBuffer = CreateBufferPlatform(description, pInitialData);
+
+  pBuffer->m_pDevice = this;
+
+  pBuffer->AddRef();
 
   return FinalizeBufferInternal(description, pBuffer);
 }
