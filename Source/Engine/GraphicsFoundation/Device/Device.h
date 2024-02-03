@@ -367,6 +367,9 @@ public:
   /// \brief This retrieves the device properties. See xiiGraphicsDeviceAdapterDescription.
   XII_NODISCARD const xiiGALGraphicsDeviceAdapterDescription& GetGraphicsDeviceAdapterProperties() const;
 
+  /// \brief This retrieves the device feature states. See xiiGALDeviceFeatures.
+  XII_NODISCARD const xiiGALDeviceFeatures& GetFeatures() const;
+
   /// \brief This retrieves the device graphics API type. See xiiGALGraphicsDeviceType.
   XII_NODISCARD xiiEnum<xiiGALGraphicsDeviceType> GetGraphicsDeviceType() const;
 
