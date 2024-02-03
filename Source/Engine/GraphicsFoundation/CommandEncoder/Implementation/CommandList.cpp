@@ -107,8 +107,8 @@ xiiResult xiiGALCommandList::DispatchIndirect(xiiGALBufferHandle hIndirectArgume
   XII_VERIFY_DISPATCH(m_pDevice->GetPipelineState(m_hPipelineState)->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "Dispatch command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pDevice->GetPipelineState(m_hPipelineState)->GetDebugName());
   XII_VERIFY_DISPATCH(m_hRenderPass.IsInvalidated(), "Dispatch command arguments are invalid. Dispatch command must be performed outside of render pass.");
 
-  #if 0
-  #define CHECK_DISPATCH_COMPUTE_INDIRECT_ATTRIBS(Expr, ...) CHECK_PARAMETER(Expr, "Dispatch compute indirect attribs are invalid: ", __VA_ARGS__)
+#if 0
+#  define CHECK_DISPATCH_COMPUTE_INDIRECT_ATTRIBS(Expr, ...) CHECK_PARAMETER(Expr, "Dispatch compute indirect attribs are invalid: ", __VA_ARGS__)
 
   CHECK_DISPATCH_COMPUTE_INDIRECT_ATTRIBS(pAttribsBuffer != nullptr, "indirect dispatch arguments buffer must not be null.");
   const auto& AttrBuffDesc = pAttribsBuffer->GetDesc();
@@ -118,7 +118,7 @@ xiiResult xiiGALCommandList::DispatchIndirect(xiiGALBufferHandle hIndirectArgume
   CHECK_DISPATCH_COMPUTE_INDIRECT_ATTRIBS(ReqAttrBufSize <= AttrBuffDesc.Size, "invalid DispatchArgsByteOffset (", Attribs.DispatchArgsByteOffset,
                                           ") or indirect dispatch arguments buffer '", AttrBuffDesc.Name, "' size must be at least ", ReqAttrBufSize, " bytes");
 
-  #endif
+#endif
 
   xiiGALBuffer* pIndirectArgumentBuffer = m_pDevice->GetBuffer(hIndirectArgumentBuffer);
 

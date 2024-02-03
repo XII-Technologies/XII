@@ -118,7 +118,7 @@ protected:
   virtual xiiResult DrawInstancedIndirectPlatform(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)        = 0;
 
   virtual xiiResult DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) = 0;
-  virtual xiiResult DispatchIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)                   = 0;
+  virtual xiiResult DispatchIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)            = 0;
 
   virtual void BeginQueryPlatform(xiiGALQueryHandle hQuery) = 0;
   virtual void EndQueryPlatform(xiiGALQueryHandle hQuery)   = 0;
@@ -147,7 +147,7 @@ protected:
   xiiGALPipelineStateHandle m_hPipelineState;
   xiiGALBufferHandle        m_hIndexBuffer;
 
-  xiiGALRenderPassHandle m_hRenderPass;
+  xiiGALRenderPassHandle  m_hRenderPass;
   xiiGALFramebufferHandle m_hFramebuffer;
 
 
@@ -159,9 +159,9 @@ private:
   xiiUInt32 m_uiDrawCalls     = 0U;
   xiiUInt32 m_uiDispatchCalls = 0U;
 
-  #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   xiiUInt32 m_uiDebugGroupCount = 0;
-  #endif
+#endif
 };
 
 #include <GraphicsFoundation/CommandEncoder/Implementation/CommandList_inl.h>
