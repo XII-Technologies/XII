@@ -2,6 +2,7 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/Device.h>
+#include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandList, 1, xiiRTTINoAllocator)
@@ -107,22 +108,17 @@ xiiResult xiiGALCommandList::DispatchIndirect(xiiGALBufferHandle hIndirectArgume
   XII_VERIFY_DISPATCH(m_pDevice->GetPipelineState(m_hPipelineState)->GetDescription().m_PipelineType == xiiGALPipelineType::Compute, "Dispatch command arguments are invalid. Pipeline state {0} is not a compute pipeline.", m_pDevice->GetPipelineState(m_hPipelineState)->GetDebugName());
   XII_VERIFY_DISPATCH(m_hRenderPass.IsInvalidated(), "Dispatch command arguments are invalid. Dispatch command must be performed outside of render pass.");
 
-#if 0
-#  define CHECK_DISPATCH_COMPUTE_INDIRECT_ATTRIBS(Expr, ...) CHECK_PARAMETER(Expr, "Dispatch compute indirect attribs are invalid: ", __VA_ARGS__)
+  XII_VERIFY_DISPATCH(!hIndirectArgumentBuffer.IsInvalidated(), "The indirect arguments buffer is invalidated.");
 
-  CHECK_DISPATCH_COMPUTE_INDIRECT_ATTRIBS(pAttribsBuffer != nullptr, "indirect dispatch arguments buffer must not be null.");
-  const auto& AttrBuffDesc = pAttribsBuffer->GetDesc();
-  CHECK_DISPATCH_COMPUTE_INDIRECT_ATTRIBS((AttrBuffDesc.BindFlags & BIND_INDIRECT_DRAW_ARGS) != 0, "indirect dispatch arguments buffer '",
-                                          AttrBuffDesc.Name, "' was not created with BIND_INDIRECT_DRAW_ARGS flag.");
-  const auto ReqAttrBufSize = sizeof(Uint32) * 3 + Attribs.DispatchArgsByteOffset;
-  CHECK_DISPATCH_COMPUTE_INDIRECT_ATTRIBS(ReqAttrBufSize <= AttrBuffDesc.Size, "invalid DispatchArgsByteOffset (", Attribs.DispatchArgsByteOffset,
-                                          ") or indirect dispatch arguments buffer '", AttrBuffDesc.Name, "' size must be at least ", ReqAttrBufSize, " bytes");
+  xiiGALBuffer* pIndirectArgumentsBuffer = m_pDevice->GetBuffer(hIndirectArgumentBuffer);
+  const auto&   bufferDescription        = pIndirectArgumentsBuffer->GetDescription();
 
-#endif
+  XII_VERIFY_DISPATCH(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentsBuffer->GetDebugName());
 
-  xiiGALBuffer* pIndirectArgumentBuffer = m_pDevice->GetBuffer(hIndirectArgumentBuffer);
+  const xiiUInt32 uiOffset = ((sizeof(xiiUInt32) * 3) + uiArgumentOffsetInBytes);
+  XII_VERIFY_DISPATCH(uiOffset <= bufferDescription.m_uiSize, "The dispatch indirect arguments buffer '{0}' offset in bytes must be at least {1} bytes.", pIndirectArgumentsBuffer->GetDebugName());
 
-  return DispatchIndirectPlatform(pIndirectArgumentBuffer, uiArgumentOffsetInBytes);
+  return DispatchIndirectPlatform(pIndirectArgumentsBuffer, uiArgumentOffsetInBytes);
 }
 
 #undef XII_VERIFY_DISPATCH
