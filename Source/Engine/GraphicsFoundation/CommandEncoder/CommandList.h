@@ -114,19 +114,19 @@ protected:
   virtual void SetViewportsPlatform(xiiArrayPtr<xiiRectFloat> pViewports, float fMinDepth = 0.0f, float fMaxDepth = 1.0f) = 0;
   virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)                                                    = 0;
 
-  virtual void SetIndexBufferPlatform(xiiGALBufferHandle hIndexBuffer, xiiUInt32 uiByteOffset = 0U)                                                 = 0;
-  virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBufferHandle> pVertexBuffers, xiiArrayPtr<xiiUInt32> pByteOffsets) = 0;
+  virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt32 uiByteOffset = 0U)                                                 = 0;
+  virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt32> pByteOffsets) = 0;
 
   virtual void ClearRenderTargetViewPlatform(xiiGALTextureViewHandle hRenderTargetView, const xiiColor& clearColor)                                                       = 0;
   virtual void ClearDepthStencilViewPlatform(xiiGALTextureViewHandle hDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) = 0;
 
-  virtual xiiResult DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)                                                      = 0;
-  virtual xiiResult DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex)                                                 = 0;
-  virtual xiiResult DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex)  = 0;
-  virtual xiiResult DrawIndexedInstancedIndirectPlatform(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes) = 0;
-  virtual xiiResult DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex)       = 0;
-  virtual xiiResult DrawInstancedIndirectPlatform(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)        = 0;
-  virtual xiiResult DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)       = 0;
+  virtual xiiResult DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)                                                     = 0;
+  virtual xiiResult DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex)                                                = 0;
+  virtual xiiResult DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex) = 0;
+  virtual xiiResult DrawIndexedInstancedIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)     = 0;
+  virtual xiiResult DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex)      = 0;
+  virtual xiiResult DrawInstancedIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)            = 0;
+  virtual xiiResult DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)      = 0;
 
   virtual xiiResult DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) = 0;
   virtual xiiResult DispatchIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)            = 0;
@@ -134,17 +134,17 @@ protected:
   virtual void BeginQueryPlatform(xiiGALQueryHandle hQuery) = 0;
   virtual void EndQueryPlatform(xiiGALQueryHandle hQuery)   = 0;
 
-  virtual void UpdateBufferPlatform(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard) = 0;
-  virtual void CopyBufferPlatform(xiiGALBufferHandle hSourceBuffer, xiiGALBufferHandle hDestinationBuffer)                                                                                             = 0;
-  virtual void CopyBufferRegionPlatform(xiiGALBufferHandle hSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBufferHandle hDestinationBuffer, xiiUInt64 uiDestinationOffset)                              = 0;
-  virtual void MapBufferPlatform(xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)                                                 = 0;
-  virtual void UnmapBufferPlatform(xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType)                                                                                                         = 0;
+  virtual void UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard) = 0;
+  virtual void CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)                                                                                                  = 0;
+  virtual void CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset)                                   = 0;
+  virtual void MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)                                                 = 0;
+  virtual void UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)                                                                                                         = 0;
 
-  virtual void UpdateTexturePlatform(xiiGALTextureHandle hTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)                                                                                      = 0;
-  virtual void CopyTexturePlatform(xiiGALTextureHandle hSourceTexture, xiiGALTextureHandle hDestinationTexture)                                                                                                                                                                                         = 0;
-  virtual void CopyTextureRegionPlatform(xiiGALTextureHandle hSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTextureHandle hDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) = 0;
-  virtual void ResolveTextureSubResourcePlatform(xiiGALTextureHandle hSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTextureHandle hDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)                                                            = 0;
-  virtual void GenerateMipsPlatform(xiiGALTextureViewHandle hTextureView)                                                                                                                                                                                                                               = 0;
+  virtual void UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)                                                                                 = 0;
+  virtual void CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)                                                                                                                                                                                         = 0;
+  virtual void CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) = 0;
+  virtual void ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)                                                            = 0;
+  virtual void GenerateMipsPlatform(xiiGALTextureViewHandle hTextureView)                                                                                                                                                                                                                     = 0;
 
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color = xiiColor::Black)  = 0;
   virtual void EndDebugGroupPlatform()                                                                = 0;
