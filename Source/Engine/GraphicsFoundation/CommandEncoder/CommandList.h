@@ -106,7 +106,7 @@ protected:
 
   // These functions need to be implemented by a graphics API abstraction.
 protected:
-  virtual void SetPipelineStatePlatform(xiiGALPipelineStateHandle hPipelineState) = 0;
+  virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) = 0;
 
   virtual void SetStencilRefPlatform(xiiUInt8 uiStencilRef)        = 0;
   virtual void SetBlendFactorPlatform(const xiiColor& blendFactor) = 0;
@@ -117,8 +117,8 @@ protected:
   virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt32 uiByteOffset = 0U)                                                 = 0;
   virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt32> pByteOffsets) = 0;
 
-  virtual void ClearRenderTargetViewPlatform(xiiGALTextureViewHandle hRenderTargetView, const xiiColor& clearColor)                                                       = 0;
-  virtual void ClearDepthStencilViewPlatform(xiiGALTextureViewHandle hDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) = 0;
+  virtual void ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)                                                       = 0;
+  virtual void ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) = 0;
 
   virtual xiiResult DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)                                                     = 0;
   virtual xiiResult DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex)                                                = 0;
@@ -131,8 +131,8 @@ protected:
   virtual xiiResult DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ) = 0;
   virtual xiiResult DispatchIndirectPlatform(xiiGALBuffer* pIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)            = 0;
 
-  virtual void BeginQueryPlatform(xiiGALQueryHandle hQuery) = 0;
-  virtual void EndQueryPlatform(xiiGALQueryHandle hQuery)   = 0;
+  virtual void BeginQueryPlatform(xiiGALQuery* pQuery) = 0;
+  virtual void EndQueryPlatform(xiiGALQuery* pQuery)   = 0;
 
   virtual void UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard) = 0;
   virtual void CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)                                                                                                  = 0;
@@ -144,7 +144,7 @@ protected:
   virtual void CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)                                                                                                                                                                                         = 0;
   virtual void CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) = 0;
   virtual void ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)                                                            = 0;
-  virtual void GenerateMipsPlatform(xiiGALTextureViewHandle hTextureView)                                                                                                                                                                                                                     = 0;
+  virtual void GenerateMipsPlatform(xiiGALTextureView* pTextureView)                                                                                                                                                                                                                          = 0;
 
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color = xiiColor::Black)  = 0;
   virtual void EndDebugGroupPlatform()                                                                = 0;
