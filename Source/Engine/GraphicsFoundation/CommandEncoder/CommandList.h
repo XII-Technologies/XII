@@ -163,7 +163,7 @@ protected:
   xiiGALRenderPassHandle  m_hRenderPass;
   xiiGALFramebufferHandle m_hFramebuffer;
 
-  xiiColor m_BlendFactors = xiiColor::Black;
+  xiiColor  m_BlendFactors = xiiColor::Black;
   xiiUInt32 m_uiStencilRef = 0;
 
   xiiHybridArray<xiiRectFloat, 2U> m_Viewports;

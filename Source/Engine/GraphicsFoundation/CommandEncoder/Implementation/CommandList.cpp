@@ -11,11 +11,11 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandList, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-#define XII_VERIFY_COMMAND_LIST(expression, ...)     \
-  do                                           \
-  {                                            \
-    XII_ASSERT_DEV((expression), __VA_ARGS__); \
-    if (!(expression)) { return; } \
+#define XII_VERIFY_COMMAND_LIST(expression, ...) \
+  do                                             \
+  {                                              \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);   \
+    if (!(expression)) { return; }               \
   } while (false)
 
 xiiGALCommandList::xiiGALCommandList(const xiiGALCommandListCreationDescription& creationDescription) :
@@ -62,7 +62,7 @@ void xiiGALCommandList::SetViewports(xiiArrayPtr<xiiRectFloat> pViewports, float
 
   xiiUInt32 uiViewportCount = xiiMath::Min<xiiUInt32>(XII_GAL_MAX_VIEWPORT_COUNT, pViewports.GetCount());
 
-  // If no viewports are set 
+  // If no viewports are set
 
   m_Viewports.SetCount(uiViewportCount);
   m_Viewports.PushBackRange(pViewports);
