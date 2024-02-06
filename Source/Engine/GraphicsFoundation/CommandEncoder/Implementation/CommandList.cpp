@@ -3,12 +3,20 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/Query.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandList, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
+
+#define XII_VERIFY_COMMAND_LIST(expression, ...)     \
+  do                                           \
+  {                                            \
+    XII_ASSERT_DEV((expression), __VA_ARGS__); \
+    if (!(expression)) { return; } \
+  } while (false)
 
 xiiGALCommandList::xiiGALCommandList(const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALDeviceObject(), m_Description(creationDescription)
@@ -23,14 +31,41 @@ void xiiGALCommandList::SetPipelineState(xiiGALPipelineStateHandle hPipelineStat
 
 void xiiGALCommandList::SetStencilRef(xiiUInt8 uiStencilRef)
 {
+  if (m_uiStencilRef != uiStencilRef)
+  {
+    m_uiStencilRef = uiStencilRef;
+
+    SetStencilRefPlatform(m_uiStencilRef);
+  }
 }
 
 void xiiGALCommandList::SetBlendFactor(const xiiColor& blendFactor)
 {
+  if (blendFactor != m_BlendFactors)
+  {
+    m_BlendFactors = blendFactor;
+
+    SetBlendFactorPlatform(m_BlendFactors);
+  }
 }
 
 void xiiGALCommandList::SetViewports(xiiArrayPtr<xiiRectFloat> pViewports, float fMinDepth, float fMaxDepth)
 {
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetViewports arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+
+  if (pViewports.GetCount() > 1)
+  {
+    XII_VERIFY_COMMAND_LIST(m_pDevice->GetFeatures().m_MultiViewport == xiiGALDeviceFeatureState::Enabled, "SetViewports arguments are invalid. The device does does not have the Multi Viewport feature enabled.");
+  }
+
+  XII_ASSERT_DEV(pViewports.GetCount() < XII_GAL_MAX_VIEWPORT_COUNT, "The number of viewports ({0}) exceeds the maximum viewport count ({1}).", pViewports.GetCount(), XII_GAL_MAX_VIEWPORT_COUNT);
+
+  xiiUInt32 uiViewportCount = xiiMath::Min<xiiUInt32>(XII_GAL_MAX_VIEWPORT_COUNT, pViewports.GetCount());
+
+  // If no viewports are set 
+
+  m_Viewports.SetCount(uiViewportCount);
+  m_Viewports.PushBackRange(pViewports);
 }
 
 void xiiGALCommandList::SetScissorRects(xiiArrayPtr<xiiRectU32> pRects)
@@ -247,13 +282,39 @@ xiiResult xiiGALCommandList::DispatchIndirect(xiiGALBufferHandle hIndirectArgume
 
 #undef XII_VERIFY_DISPATCH
 
+#define XII_VERIFY_QUERY(expression, ...)      \
+  do                                           \
+  {                                            \
+    XII_ASSERT_DEV((expression), __VA_ARGS__); \
+    if (!(expression)) { return; }             \
+  } while (false)
+
 void xiiGALCommandList::BeginQuery(xiiGALQueryHandle hQuery)
 {
+  XII_VERIFY_QUERY(!hQuery.IsInvalidated(), "BeginQuery must not be called on an invalidated query.");
+
+  xiiGALQuery* pQuery           = m_pDevice->GetQuery(hQuery);
+  const auto&  queryDescription = pQuery->GetDescription();
+
+  XII_VERIFY_QUERY(queryDescription.m_Type != xiiGALQueryType::Timestamp, "BeginQuery cannot be called on timestamp queries. Use EndQuery instead to set the timestamp.");
+
+  /// \todo GraphicsFoundation: Assert command queue compatibiliity.
+
+  BeginQueryPlatform(pQuery);
 }
 
 void xiiGALCommandList::EndQuery(xiiGALQueryHandle hQuery)
 {
+  XII_VERIFY_QUERY(!hQuery.IsInvalidated(), "EndQuery must not be called on an invalidated query.");
+
+  /// \todo GraphicsFoundation: Assert command queue compatibiliity.
+
+  xiiGALQuery* pQuery = m_pDevice->GetQuery(hQuery);
+
+  EndQueryPlatform(pQuery);
 }
+
+#undef XII_VERIFY_QUERY
 
 void xiiGALCommandList::BeginDebugGroup(xiiStringView sName, const xiiColor& color)
 {
@@ -334,5 +395,7 @@ void xiiGALCommandList::GenerateMips(xiiGALTextureViewHandle hTextureView)
 void xiiGALCommandList::InvalidateState()
 {
 }
+
+#undef XII_VERIFY_COMMAND_LIST
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_CommandEncoder_Implementation_CommandList);
