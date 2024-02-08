@@ -48,8 +48,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineShadingRateFlags
     PerPrimitive = XII_BIT(0), ///< This indicates that the pipeline state will be used with per draw or per primitive shading rate.
     TextureBased = XII_BIT(1), ///< This indicates that the pipeline state will be used with texture-based shading rate.
 
-    ENUM_COUNT = 3U,
-
     Default = None
   };
 

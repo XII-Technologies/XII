@@ -9,6 +9,40 @@
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
+/// \brief This describes the pipeline state shading rate flags.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALSetVertexBufferFlags
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None  = 0U,         ///< No addditional operations.
+    Reset = XII_BIT(1), ///< Reset the vertex buffers outside the range of the currently set vertex buffers. All buffers previously bound to the pipeline will be unbound.
+
+    Default = None
+  };
+
+  struct Bits
+  {
+    StorageType Reset : 1;
+  };
+};
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALSetVertexBufferFlags);
+
+/// \brief This describes the viewport.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALViewport : public xiiHashableStruct<xiiGALViewport>
+{
+  XII_DECLARE_POD_TYPE();
+
+  float m_fTopLeftX = 0.0f;
+  float m_fTopLeftY = 0.0f;
+  float m_fWidth    = 0.0f;
+  float m_fHeight   = 0.0f;
+  float m_fMinDepth = 0.0f;
+  float m_fMaxDepth = 1.0f;
+};
+
 /// \brief This describes the fence creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public xiiHashableStruct<xiiGALCommandListCreationDescription>
 {
@@ -28,14 +62,14 @@ public:
 
   void SetPipelineState(xiiGALPipelineStateHandle hPipelineState);
 
-  void SetStencilRef(xiiUInt8 uiStencilRef);
+  void SetStencilRef(xiiUInt32 uiStencilRef);
   void SetBlendFactor(const xiiColor& blendFactor);
 
-  void SetViewports(xiiArrayPtr<xiiRectFloat> pViewports, float fMinDepth = 0.0f, float fMaxDepth = 1.0f);
+  void SetViewports(xiiArrayPtr<xiiGALViewport> pViewports);
   void SetScissorRects(xiiArrayPtr<xiiRectU32> pRects);
 
   void SetIndexBuffer(xiiGALBufferHandle hIndexBuffer, xiiUInt32 uiByteOffset = 0U);
-  void SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBufferHandle> pVertexBuffers, xiiArrayPtr<xiiUInt32> pByteOffsets);
+  void SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBufferHandle> pVertexBuffers, xiiArrayPtr<xiiUInt32> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags = xiiGALSetVertexBufferFlags::None);
 
   void ClearRenderTargetView(xiiGALTextureViewHandle hRenderTargetView, const xiiColor& clearColor);
   void ClearDepthStencilView(xiiGALTextureViewHandle hDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear);
@@ -108,14 +142,14 @@ protected:
 protected:
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) = 0;
 
-  virtual void SetStencilRefPlatform(xiiUInt8 uiStencilRef)        = 0;
+  virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef)       = 0;
   virtual void SetBlendFactorPlatform(const xiiColor& blendFactor) = 0;
 
-  virtual void SetViewportsPlatform(xiiArrayPtr<xiiRectFloat> pViewports, float fMinDepth = 0.0f, float fMaxDepth = 1.0f) = 0;
-  virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)                                                    = 0;
+  virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports) = 0;
+  virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)      = 0;
 
-  virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt32 uiByteOffset = 0U)                                                 = 0;
-  virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt32> pByteOffsets) = 0;
+  virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt32 uiByteOffset)                                                                                                     = 0;
+  virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt32> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) = 0;
 
   virtual void ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)                                                       = 0;
   virtual void ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) = 0;
@@ -134,11 +168,11 @@ protected:
   virtual void BeginQueryPlatform(xiiGALQuery* pQuery) = 0;
   virtual void EndQueryPlatform(xiiGALQuery* pQuery)   = 0;
 
-  virtual void UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard) = 0;
-  virtual void CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)                                                                                                  = 0;
-  virtual void CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset)                                   = 0;
-  virtual void MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)                                                 = 0;
-  virtual void UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)                                                                                                         = 0;
+  virtual void UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags) = 0;
+  virtual void CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)                                                                        = 0;
+  virtual void CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset)         = 0;
+  virtual void MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)                       = 0;
+  virtual void UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)                                                                               = 0;
 
   virtual void UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)                                                                                 = 0;
   virtual void CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)                                                                                                                                                                                         = 0;
@@ -146,9 +180,9 @@ protected:
   virtual void ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)                                                            = 0;
   virtual void GenerateMipsPlatform(xiiGALTextureView* pTextureView)                                                                                                                                                                                                                          = 0;
 
-  virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color = xiiColor::Black)  = 0;
-  virtual void EndDebugGroupPlatform()                                                                = 0;
-  virtual void InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color = xiiColor::Black) = 0;
+  virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)  = 0;
+  virtual void EndDebugGroupPlatform()                                              = 0;
+  virtual void InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color) = 0;
 
   virtual void FlushPlatform() = 0;
 
@@ -158,15 +192,20 @@ protected:
   xiiGALCommandListCreationDescription m_Description;
 
   xiiGALPipelineStateHandle m_hPipelineState;
-  xiiGALBufferHandle        m_hIndexBuffer;
+
+  xiiGALBufferHandle m_BoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+
+  xiiGALBufferHandle m_hIndexBuffer;
+  xiiUInt64          m_uiIndexDataOffset = 0ULL;
 
   xiiGALRenderPassHandle  m_hRenderPass;
   xiiGALFramebufferHandle m_hFramebuffer;
 
   xiiColor  m_BlendFactors = xiiColor::Black;
-  xiiUInt32 m_uiStencilRef = 0;
+  xiiUInt32 m_uiStencilRef = 0U;
 
-  xiiHybridArray<xiiRectFloat, 2U> m_Viewports;
+  xiiHybridArray<xiiGALViewport, 2U> m_Viewports;
+  xiiHybridArray<xiiRectU32, 2U>     m_ScissorRects;
 
 private:
   void CountDispatchCall();
