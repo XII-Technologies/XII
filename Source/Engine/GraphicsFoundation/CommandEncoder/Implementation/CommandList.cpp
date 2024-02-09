@@ -158,10 +158,28 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiG
 
 void xiiGALCommandList::ClearRenderTargetView(xiiGALTextureViewHandle hRenderTargetView, const xiiColor& clearColor)
 {
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "ClearRenderTargetView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(!hRenderTargetView.IsInvalidated(), "ClearRenderTargetView arguments are invalid. The texture view handle has been invalidated.");
+
+  xiiGALTextureView* pRenderTargetView = m_pDevice->GetTextureView(hRenderTargetView);
+  const auto&        viewDescription   = pRenderTargetView->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST(viewDescription.m_ViewType == xiiGALTextureViewType::RenderTarget, "The texture view '{0}' was not created with the xiiGALTextureViewType::RenderTarget.", pRenderTargetView->GetDebugName());
+
+  ClearRenderTargetViewPlatform(pRenderTargetView, clearColor);
 }
 
 void xiiGALCommandList::ClearDepthStencilView(xiiGALTextureViewHandle hDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "ClearDepthStencilView arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(!hDepthStencilView.IsInvalidated(), "ClearDepthStencilView arguments are invalid. The texture view handle has been invalidated.");
+
+  xiiGALTextureView* pDepthStencilView = m_pDevice->GetTextureView(hDepthStencilView);
+  const auto&        viewDescription   = pDepthStencilView->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST(viewDescription.m_ViewType == xiiGALTextureViewType::DepthStencil, "The texture view '{0}' was not created with the xiiGALTextureViewType::DepthStencil.", pDepthStencilView->GetDebugName());
+
+  ClearDepthStencilViewPlatform(pDepthStencilView, bClearDepth, bClearStencil, fDepthClear, uiStencilClear);
 }
 
 #define XII_VERIFY_DRAW(expression, ...)       \
@@ -394,18 +412,60 @@ void xiiGALCommandList::InsertDebugLabel(xiiStringView sName, const xiiColor& co
 
 void xiiGALCommandList::Flush()
 {
+  FlushPlatform();
 }
 
-void xiiGALCommandList::UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> sourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
+void xiiGALCommandList::UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
 {
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(!hBuffer.IsInvalidated(), "UpdateBuffer arguments are invalid. The buffer handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "UpdateBuffer command must be used outside of render pass.");
+
+  xiiGALBuffer* pBuffer           = m_pDevice->GetBuffer(hBuffer);
+  const auto&   bufferDescription = pBuffer->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Default || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Sparse, "UpdateBuffer command arguments are invalid. Only xiiGALResourceUsage::Default or xiiGALResourceUsage::Sparse may be updated with this method.");
+  XII_VERIFY_COMMAND_LIST(uiDestinationOffset < bufferDescription.m_uiSize, "UpdateBuffer command arguments are invalid. Unable to update buffer '{0}', the destination offset ({1}) exceeds the buffer size ({2}).", pBuffer->GetDebugName(), uiDestinationOffset, bufferDescription.m_uiSize);
+  XII_VERIFY_COMMAND_LIST((uiDestinationOffset + pSourceData.GetCount()) <= bufferDescription.m_uiSize, "UpdateBuffer command arguments are invalid. Unable to update buffer '{0}', the update region [{1}, {2}) is out of buffer bounds [0, {3}).", pBuffer->GetDebugName(), uiDestinationOffset, uiDestinationOffset + pSourceData.GetCount(), bufferDescription.m_uiSize);
+
+  UpdateBufferPlatform(pBuffer, uiDestinationOffset, pSourceData, mapFlags);
 }
 
 void xiiGALCommandList::CopyBuffer(xiiGALBufferHandle hSourceBuffer, xiiGALBufferHandle hDestinationBuffer)
 {
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(!hSourceBuffer.IsInvalidated(), "CopyBuffer arguments are invalid. The source buffer handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(!hDestinationBuffer.IsInvalidated(), "CopyBuffer arguments are invalid. The destination buffer handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyBuffer command must be used outside of render pass.");
+
+  xiiGALBuffer* pSourceBuffer           = m_pDevice->GetBuffer(hSourceBuffer);
+  const auto&   sourceBufferDescription = pSourceBuffer->GetDescription();
+
+  xiiGALBuffer* pDestinationBuffer           = m_pDevice->GetBuffer(hDestinationBuffer);
+  const auto&   destinationBufferDescription = pDestinationBuffer->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST(sourceBufferDescription.m_uiSize <= destinationBufferDescription.m_uiSize, "CopyBuffer command arguments are invalid. The source buffer bounds exceeds the bounds of the destination buffer.");
+
+  CopyBufferPlatform(pSourceBuffer, pDestinationBuffer);
 }
 
-void xiiGALCommandList::CopyBufferRegion(xiiGALBufferHandle hSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBufferHandle hDestinationBuffer, xiiUInt64 uiDestinationOffset)
+void xiiGALCommandList::CopyBufferRegion(xiiGALBufferHandle hSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBufferHandle hDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
 {
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(!hSourceBuffer.IsInvalidated(), "CopyBufferRegion arguments are invalid. The source buffer handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(!hDestinationBuffer.IsInvalidated(), "CopyBufferRegion arguments are invalid. The destination buffer handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyBufferRegion command must be used outside of render pass.");
+
+  xiiGALBuffer* pSourceBuffer           = m_pDevice->GetBuffer(hSourceBuffer);
+  const auto&   sourceBufferDescription = pSourceBuffer->GetDescription();
+
+  xiiGALBuffer* pDestinationBuffer           = m_pDevice->GetBuffer(hDestinationBuffer);
+  const auto&   destinationBufferDescription = pDestinationBuffer->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST((uiSourceOffset + uiSize) <= sourceBufferDescription.m_uiSize, "CopyBufferRegion command arguments are invalid. Failed to copy buffer '{0}' to '{1}', the destination range [{2}, {3}) is out of buffer bounds [0, {4}).", pSourceBuffer->GetDebugName(), pDestinationBuffer->GetDebugName(), uiSourceOffset, uiSourceOffset + uiSize, sourceBufferDescription.m_uiSize);
+  XII_VERIFY_COMMAND_LIST((uiDestinationOffset + uiSize) <= destinationBufferDescription.m_uiSize, "CopyBufferRegion command arguments are invalid. Failed to copy buffer '{0}' to '{1}', the destination range [{2}, {3}) is out of buffer bounds [0, {4}).", pSourceBuffer->GetDebugName(), pDestinationBuffer->GetDebugName(), uiDestinationOffset, uiDestinationOffset + uiSize, destinationBufferDescription.m_uiSize);
+
+  CopyBufferPlatform(pSourceBuffer, pDestinationBuffer);
 }
 
 void xiiGALCommandList::MapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
