@@ -468,13 +468,88 @@ void xiiGALCommandList::CopyBufferRegion(xiiGALBufferHandle hSourceBuffer, xiiUI
   CopyBufferPlatform(pSourceBuffer, pDestinationBuffer);
 }
 
-void xiiGALCommandList::MapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
+#define XII_VERIFY_BUFFER_MAP(expression, ...) \
+  do                                           \
+  {                                            \
+    XII_ASSERT_DEV((expression), __VA_ARGS__); \
+    if (!(expression)) { return XII_FAILURE; } \
+  } while (false)
+
+xiiResult xiiGALCommandList::MapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
 {
+  XII_VERIFY_BUFFER_MAP(!hBuffer.IsInvalidated(), "MapBuffer arguments are invalid. The buffer handle has been invalidated.");
+
+  xiiGALBuffer* pBuffer           = m_pDevice->GetBuffer(hBuffer);
+  const auto&   bufferDescription = pBuffer->GetDescription();
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiUInt32 uiKey = reinterpret_cast<const xiiUInt32&>(hBuffer);
+  XII_VERIFY_BUFFER_MAP(!m_MappedBuffers.Contains(uiKey), "The buffer '{0}' has already been mapped.");
+  m_MappedBuffers.Insert(uiKey, mapType);
+#endif
+
+  pMappedData = nullptr;
+  switch (mapType)
+  {
+    case xiiGALMapType::Read:
+    {
+      XII_VERIFY_BUFFER_MAP(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified, "Only buffers with xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified can be mapped for reading.");
+      XII_VERIFY_BUFFER_MAP(bufferDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read), "Buffer being mapped for reading was not created with the xiiGALCPUAccessFlag::Read flag.");
+      XII_VERIFY_BUFFER_MAP(!mapFlags.IsSet(xiiGALMapFlags::Discard), "xiiGALMapFlags::Discard is not a valid map flag when mapping a buffer for reading.");
+    }
+    break;
+    case xiiGALMapType::Write:
+    {
+      XII_VERIFY_BUFFER_MAP(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Dynamic || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified, "Only buffers with xiiGALResourceUsage::Dynamic or xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified can be mapped for writing.");
+      XII_VERIFY_BUFFER_MAP(bufferDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write), "Buffer being mapped for reading was not created with the xiiGALCPUAccessFlag::Write flag.");
+    }
+    break;
+    case xiiGALMapType::ReadWrite:
+    {
+      XII_VERIFY_BUFFER_MAP(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Unified, "Only buffers with xiiGALResourceUsage::Staging or xiiGALResourceUsage::Unified can be mapped for reading and writing.");
+      XII_VERIFY_BUFFER_MAP(bufferDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Read), "Buffer being mapped for reading and writing was not created with the xiiGALCPUAccessFlag::Read flag.");
+      XII_VERIFY_BUFFER_MAP(bufferDescription.m_CPUAccessFlags.IsSet(xiiGALCPUAccessFlag::Write), "Buffer being mapped for reading and writing was not created with the xiiGALCPUAccessFlag::Write flag.");
+      XII_VERIFY_BUFFER_MAP(!mapFlags.IsSet(xiiGALMapFlags::Discard), "xiiGALMapFlags::Discard is not a valid map flag when mapping a buffer for reading and writing.");
+    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  if (bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Dynamic)
+  {
+    XII_VERIFY_BUFFER_MAP(mapFlags.IsAnySet(xiiGALMapFlags::Discard | xiiGALMapFlags::NoOverWrite) && mapType == xiiGALMapType::Write, "Dynamic buffers can only be mapped for writing with the xiiGALMapFlags::Discard or xiiGALMapFlags::NoOverWrite flag.");
+    XII_VERIFY_BUFFER_MAP((mapFlags.IsStrictlyAnySet(xiiGALMapFlags::Discard) || mapFlags.IsStrictlyAnySet(xiiGALMapFlags::NoOverWrite)), "Dynamic buffers can only be mapped for writing with the xiiGALMapFlags::Discard or xiiGALMapFlags::NoOverWrite flag.");
+  }
+
+  if (mapFlags.IsSet(xiiGALMapFlags::Discard))
+  {
+    XII_VERIFY_BUFFER_MAP(bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Dynamic || bufferDescription.m_ResourceUsage == xiiGALResourceUsage::Staging, "Only buffers with xiiGALResourceUsage::Dynamic or xiiGALResourceUsage::Staging can be mapped with the xiiGALMapFlags::Discard flag.");
+    XII_VERIFY_BUFFER_MAP(mapType == xiiGALMapType::Write, "xiiGALMapType::Write is only valid when mapping buffer for writing.");
+  }
+
+  return MapBufferPlatform(pBuffer, mapType, mapFlags, pMappedData);
 }
 
-void xiiGALCommandList::UnmapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType)
+xiiResult xiiGALCommandList::UnmapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType)
 {
+  XII_VERIFY_BUFFER_MAP(!hBuffer.IsInvalidated(), "MapBuffer arguments are invalid. The buffer handle has been invalidated.");
+
+  xiiGALBuffer* pBuffer           = m_pDevice->GetBuffer(hBuffer);
+  const auto&   bufferDescription = pBuffer->GetDescription();
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const xiiUInt32 uiKey = reinterpret_cast<const xiiUInt32&>(hBuffer);
+  XII_VERIFY_BUFFER_MAP(m_MappedBuffers.Contains(uiKey), "The buffer '{0}' has not been mapped.", pBuffer->GetDebugName());
+  XII_VERIFY_BUFFER_MAP(*m_MappedBuffers.GetValue(uiKey) == mapType, "The map type ({0}) does not match the map type ({1}) that was used to map the buffer.", mapType, *m_MappedBuffers.GetValue(uiKey));
+
+  m_MappedBuffers.Remove(uiKey);
+#endif
+
+  return UnmapBufferPlatform(pBuffer, mapType);
 }
+
+#undef XII_VERIFY_BUFFER_MAP
 
 void xiiGALCommandList::UpdateTexture(xiiGALTextureHandle hTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
