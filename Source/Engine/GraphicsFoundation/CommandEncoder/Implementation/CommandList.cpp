@@ -19,10 +19,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
   } while (false)
 
 #define XII_VERIFY_COMMAND_LIST_RESULT(expression, ...) \
-  do                                             \
-  {                                              \
-    XII_ASSERT_DEV((expression), __VA_ARGS__);   \
-    if (!(expression)) { return XII_FAILURE; }               \
+  do                                                    \
+  {                                                     \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);          \
+    if (!(expression)) { return XII_FAILURE; }          \
   } while (false)
 
 xiiGALCommandList::xiiGALCommandList(const xiiGALCommandListCreationDescription& creationDescription) :
