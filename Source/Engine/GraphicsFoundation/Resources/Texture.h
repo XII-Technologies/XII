@@ -69,6 +69,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
   bool Is2D() const;
   bool Is3D() const;
   bool IsCube() const;
+  xiiUInt32 GetArraySize() const;
 };
 
 /// \brief This describes the data for one texture sub-resource.

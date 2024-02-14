@@ -417,7 +417,7 @@ void xiiGALCommandList::Flush()
 
 void xiiGALCommandList::UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
   XII_VERIFY_COMMAND_LIST(!hBuffer.IsInvalidated(), "UpdateBuffer arguments are invalid. The buffer handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "UpdateBuffer command must be used outside of render pass.");
 
@@ -433,7 +433,7 @@ void xiiGALCommandList::UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDes
 
 void xiiGALCommandList::CopyBuffer(xiiGALBufferHandle hSourceBuffer, xiiGALBufferHandle hDestinationBuffer)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
   XII_VERIFY_COMMAND_LIST(!hSourceBuffer.IsInvalidated(), "CopyBuffer arguments are invalid. The source buffer handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(!hDestinationBuffer.IsInvalidated(), "CopyBuffer arguments are invalid. The destination buffer handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyBuffer command must be used outside of render pass.");
@@ -451,7 +451,7 @@ void xiiGALCommandList::CopyBuffer(xiiGALBufferHandle hSourceBuffer, xiiGALBuffe
 
 void xiiGALCommandList::CopyBufferRegion(xiiGALBufferHandle hSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBufferHandle hDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
 {
-  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
   XII_VERIFY_COMMAND_LIST(!hSourceBuffer.IsInvalidated(), "CopyBufferRegion arguments are invalid. The source buffer handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(!hDestinationBuffer.IsInvalidated(), "CopyBufferRegion arguments are invalid. The destination buffer handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyBufferRegion command must be used outside of render pass.");
@@ -553,26 +553,130 @@ xiiResult xiiGALCommandList::UnmapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xii
 
 void xiiGALCommandList::UpdateTexture(xiiGALTextureHandle hTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
+  XII_VERIFY_COMMAND_LIST(!hTexture.IsInvalidated(), "UpdateTexture arguments are invalid. The texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "UpdateTexture command must be used outside of render pass.");
+
+  /// \todo GraphicsFoundation: Validate texture update parameters.
+
+  xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
+
+  UpdateTexturePlatform(pTexture, textureMiplevelData, textureBox, subresourceData);
 }
 
 void xiiGALCommandList::CopyTexture(xiiGALTextureHandle hSourceTexture, xiiGALTextureHandle hDestinationTexture)
 {
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
+  XII_VERIFY_COMMAND_LIST(!hSourceTexture.IsInvalidated(), "CopyTexture arguments are invalid. The source texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(!hDestinationTexture.IsInvalidated(), "CopyTexture arguments are invalid. The destination texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyTexture command must be used outside of render pass.");
+
+  /// \todo GraphicsFoundation: Validate texture copy parameters.
+
+  xiiGALTexture* pSourceTexture      = m_pDevice->GetTexture(hSourceTexture);
+  xiiGALTexture* pDestinationTexture = m_pDevice->GetTexture(hDestinationTexture);
+
+  CopyTexturePlatform(pSourceTexture, pDestinationTexture);
 }
 
 void xiiGALCommandList::CopyTextureRegion(xiiGALTextureHandle hSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTextureHandle hDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
 {
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
+  XII_VERIFY_COMMAND_LIST(!hSourceTexture.IsInvalidated(), "CopyTextureRegion arguments are invalid. The source texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(!hDestinationTexture.IsInvalidated(), "CopyTextureRegion arguments are invalid. The destination texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "CopyTextureRegion command must be used outside of render pass.");
+
+  /// \todo GraphicsFoundation: Validate texture copy parameters.
+
+  xiiGALTexture* pSourceTexture      = m_pDevice->GetTexture(hSourceTexture);
+  xiiGALTexture* pDestinationTexture = m_pDevice->GetTexture(hDestinationTexture);
+
+  CopyTextureRegionPlatform(pSourceTexture, sourceMipLevelData, box, pDestinationTexture, destinationMipLevelData, vDestinationPoint);
 }
 
 void xiiGALCommandList::ResolveTextureSubResource(xiiGALTextureHandle hSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTextureHandle hDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
 {
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(!hSourceTexture.IsInvalidated(), "ResolveTextureSubResource arguments are invalid. The source texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(!hDestinationTexture.IsInvalidated(), "ResolveTextureSubResource arguments are invalid. The destination texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "ResolveTextureSubResource command must be used outside of render pass.");
+
+  /// \todo GraphicsFoundation: Validate resolve texture parameters.
+
+  xiiGALTexture* pSourceTexture      = m_pDevice->GetTexture(hSourceTexture);
+  xiiGALTexture* pDestinationTexture = m_pDevice->GetTexture(hDestinationTexture);
+
+  ResolveTextureSubResourcePlatform(pSourceTexture, sourceMipLevelData, pDestinationTexture, destinationMipLevelData);
 }
 
 void xiiGALCommandList::GenerateMips(xiiGALTextureViewHandle hTextureView)
 {
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(!hTextureView.IsInvalidated(), "GenerateMips arguments are invalid. The texture view handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "GenerateMips command must be used outside of render pass.");
+
+  xiiGALTextureView* pTextureView = m_pDevice->GetTextureView(hTextureView);
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  const auto& textureViewDescription = pTextureView->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST(textureViewDescription.m_ViewType == xiiGALTextureViewType::ShaderResource, "GenerateMips arguments are invalid. Texture view '{0}' is not of type xiiGALTextureViewType::ShaderResource.", pTextureView->GetDebugName());
+  XII_VERIFY_COMMAND_LIST(textureViewDescription.m_Flags.IsSet(xiiGALTextureViewFlags::AllowMipGeneration), "GenerateMips arguments are invalid. Texture view '{0}' does not have xiiGALTextureViewFlags::AllowMipGeneration flag.", pTextureView->GetDebugName());
+#endif
+
+  GenerateMipsPlatform(pTextureView);
 }
+
+#define XII_VERIFY_TEXTURE_MAP(expression, ...) \
+  do                                            \
+  {                                             \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);  \
+    if (!(expression)) { return XII_FAILURE; }  \
+  } while (false)
+
+xiiResult xiiGALCommandList::MapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32 textureBox, xiiGALMappedTextureSubresource& mappedData)
+{
+  XII_VERIFY_TEXTURE_MAP(!hTexture.IsInvalidated(), "MapTextureSubresource arguments are invalid. The texture handle has been invalidated.");
+
+  /// \todo GraphicsFoundation: Validate map subresource parameters.
+
+  xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
+
+  return MapTextureSubresourcePlatform(pTexture, textureMipLevelData, mapType, mapFlags, textureBox, mappedData);
+}
+
+xiiResult xiiGALCommandList::UnmapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData)
+{
+  XII_VERIFY_TEXTURE_MAP(!hTexture.IsInvalidated(), "MapTextureSubresource arguments are invalid. The texture handle has been invalidated.");
+
+  xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
+
+  XII_VERIFY_TEXTURE_MAP(textureMipLevelData.m_uiMipLevel < pTexture->GetDescription().m_uiMipLevels, "MapTextureSubresource arguments are invalid. The mip level is out of range.");
+  XII_VERIFY_TEXTURE_MAP(textureMipLevelData.m_uiArraySlice < pTexture->GetDescription().GetArraySize(), "MapTextureSubresource arguments are invalid. The array slice is out of range.");
+
+  return UnmapTextureSubresourcePlatform(pTexture, textureMipLevelData);
+}
+
+#undef XII_VERIFY_TEXTURE_MAP
 
 void xiiGALCommandList::InvalidateState()
 {
+  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "Invalidating the command list is disallowed while a render pass is active. Call EndRenderPass to finish the pass.");
+
+  m_hPipelineState = xiiGALPipelineStateHandle();
+
+  m_hIndexBuffer      = xiiGALBufferHandle();
+  m_uiIndexDataOffset = 0;
+
+  m_uiStencilRef = 0;
+
+  m_BlendFactors = xiiColor::Black;
+
+  m_Viewports.Clear();
+  m_ScissorRects.Clear();
+
+  m_hRenderPass  = xiiGALRenderPassHandle();
+  m_hFramebuffer = xiiGALFramebufferHandle();
 }
 
 #undef XII_VERIFY_COMMAND_LIST

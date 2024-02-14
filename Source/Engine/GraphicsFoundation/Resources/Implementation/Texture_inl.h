@@ -37,3 +37,8 @@ XII_FORCE_INLINE bool xiiGALTextureCreationDescription::IsCube() const
 {
   return m_Type == xiiGALResourceDimension::TextureCube || m_Type == xiiGALResourceDimension::TextureCubeArray;
 };
+
+XII_FORCE_INLINE xiiUInt32 xiiGALTextureCreationDescription::GetArraySize() const
+{
+  return IsArray() ? m_uiArraySizeOrDepth : 1U;
+};
