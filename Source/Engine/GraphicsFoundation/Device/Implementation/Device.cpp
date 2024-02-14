@@ -472,8 +472,6 @@ xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const xiiGALSwapChainCreatio
   {
     pSwapChain->m_pDevice = this;
 
-    pSwapChain->AddRef();
-
     return xiiGALSwapChainHandle(m_SwapChains.Insert(pSwapChain));
   }
 }
@@ -810,8 +808,6 @@ xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescript
   {
     pShader->m_pDevice = this;
 
-    pShader->AddRef();
-
     return xiiGALShaderHandle(m_Shaders.Insert(pShader));
   }
 }
@@ -979,14 +975,12 @@ xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescript
 
   if (bHasInitialData)
   {
-    XII_VERIFY_BUFFER(pInitialData->m_uiDataSize >= description.m_uiSize, "The buffer initial data size ({0}) must be larger than the buffer size ({1]).", pInitialData->m_uiDataSize, description.m_uiSize);
+    XII_VERIFY_BUFFER(pInitialData->m_uiDataSize >= description.m_uiSize, "The buffer initial data size ({0}) must be larger than the buffer size ({1}).", pInitialData->m_uiDataSize, description.m_uiSize);
   }
 
   xiiGALBuffer* pBuffer = CreateBufferPlatform(description, pInitialData);
 
   pBuffer->m_pDevice = this;
-
-  pBuffer->AddRef();
 
   return FinalizeBufferInternal(description, pBuffer);
 }
@@ -1339,6 +1333,8 @@ xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescr
   }
 
   xiiGALTexture* pTexture = CreateTexturePlatform(description, pInitialData);
+
+  pTexture->m_pDevice = this;
 
   return FinalizeTextureInternal(description, pTexture);
 }
