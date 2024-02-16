@@ -80,6 +80,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALInputLayoutSemant
 /// \brief Shader Vertex Input Attributes.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALVertexInputLayout
 {
+  XII_DECLARE_POD_TYPE();
+
   xiiEnum<xiiGALInputLayoutSemantic> m_Semantic        = xiiGALInputLayoutSemantic::Undefined;
   xiiUInt8                           m_uiSemanticIndex = 0U;
   xiiEnum<xiiGALTextureFormat>       m_Format          = xiiGALTextureFormat::RGB32Float;
@@ -130,6 +132,5 @@ protected:
 protected:
   xiiGALInputLayoutCreationDescription m_Description;
 };
-
 
 #include <GraphicsFoundation/Shader/Implementation/InputLayout_inl.h>

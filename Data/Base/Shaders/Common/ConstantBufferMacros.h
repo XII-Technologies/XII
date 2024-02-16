@@ -31,6 +31,7 @@ float3x3 TransformToRotation(Transform t)
 }
 
 #  define CONSTANT_BUFFER(Name, Slot)             cbuffer Name : register(b##Slot)
+#  define CONSTANT_BUFFER_SPACE(Name, Slot, Set)  cbuffer Name : register(b##Slot, space##Set)
 #  define STRUCTURED_BUFFER(Name, Type)           StructuredBuffer<Type> Name
 #  define FLOAT1(Name)                            float Name
 #  define FLOAT2(Name)                            float2 Name
@@ -65,11 +66,14 @@ float3x3 TransformToRotation(Transform t)
 // C++
 
 #  include <Foundation/Basics/Platform/Common.h>
-#  include <GraphicsCore/Shader/Types.h>
+#  include <GraphicsFoundation/Shader/Types.h>
 
 #  define XII_SHADER_STRUCT           alignas(16)
 #  define CONSTANT_BUFFER(Name, Slot) struct alignas(16) Name
+#  define CONSTANT_BUFFER_SPACE(Name, Slot, Set) struct alignas(16) Name
 #  define STRUCTURED_BUFFER(Name, Type)
+#  define BEGIN_PUSH_CONSTANTS(Name) struct XII_SHADER_STRUCT Name
+#  define END_PUSH_CONSTANTS(Name) ;
 #  define FLOAT1(Name)    float Name
 #  define FLOAT2(Name)    xiiVec2 Name
 #  define FLOAT3(Name)    xiiVec3 Name

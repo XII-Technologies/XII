@@ -33,17 +33,17 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderPrimitiveType::GetPrimitiveTypeSize(xiiE
     case xiiGALShaderPrimitiveType::Double:
       return sizeof(double);
     case xiiGALShaderPrimitiveType::Min8Float:
-      return 8;
+      return 8U;
     case xiiGALShaderPrimitiveType::Min10Float:
-      return 10;
+      return 10U;
     case xiiGALShaderPrimitiveType::Min16Float:
-      return 16;
+      return 16U;
     case xiiGALShaderPrimitiveType::Min12Int:
-      return 12;
+      return 12U;
     case xiiGALShaderPrimitiveType::Min16Int:
-      return 16;
+      return 16U;
     case xiiGALShaderPrimitiveType::Min16UInt:
-      return 16;
+      return 16U;
 
     default:
       XII_ASSERT_DEV(false, "The requested type is not a primitive type");

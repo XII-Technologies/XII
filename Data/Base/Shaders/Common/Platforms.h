@@ -15,6 +15,12 @@
 #  undef PLATFORM_D3D12
 #  define PLATFORM_D3D12 XII_ON
 
+// D3D12 does not support push constants, so we just emulate them via a normal constant buffer.
+
+#  define BEGIN_PUSH_CONSTANTS(Name) cbuffer Name
+#  define END_PUSH_CONSTANTS(Name) ;
+#  define GET_PUSH_CONSTANT(Name, Constant) Constant
+
 float xiiEvaluateAttributeAtSample(float Attribute, uint SampleIndex, uint NumMsaaSamples)
 {
   return EvaluateAttributeAtSample(Attribute, SampleIndex);
@@ -40,6 +46,10 @@ float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint Num
 
 #  undef PLATFORM_VULKAN
 #  define PLATFORM_VULKAN XII_ON
+
+#  define BEGIN_PUSH_CONSTANTS(Name) struct XII_SHADER_STRUCT XII_CONCAT(Name, _PushConstants)
+#  define END_PUSH_CONSTANTS(Name) ; [[vk::push_constant]] XII_CONCAT(Name, _PushConstants) Name;
+#  define GET_PUSH_CONSTANT(Name, Constant) Name.Constant
 
 // GetRenderTargetSamplePosition does not have an equivalent function in Vulkan so these values are hard-coded.
 // https://learn.microsoft.com/windows/win32/api/d3d11/ne-d3d11-d3d11_standard_multisample_quality_levels

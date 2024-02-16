@@ -34,4 +34,10 @@
 /// \brief Checks whether x AND y are both defined as XII_ON or XII_OFF. Usually used to check whether configurations overlap, to issue an error.
 #  define XII_IS_NOT_EXCLUSIVE(x, y) ((1 XII_CONCAT(x, =) 1) == (1 XII_CONCAT(y, =) 1))
 
+/// \brief Binds the resource to the given set and slot. Note that this does not produce valid HLSL code, the code will instead be patched by the shader compiler.
+#define BIND_RESOURCE(Slot, Set) : register(XII_CONCAT(x, Slot), XII_CONCAT(space, Set))
+
+/// \brief Binds the resource to the given set. Note that this does not produce valid HLSL code, the code will instead be patched by the shader compiler.
+#define BIND_SET(Set) BIND_RESOURCE(SLOT_AUTO, Set)
+
 #endif

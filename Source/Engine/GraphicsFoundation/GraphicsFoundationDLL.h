@@ -58,7 +58,6 @@ struct xiiGALLayoutElement;
 struct xiiGALInputLayoutCreationDescription;
 struct xiiGALShaderResourceDescription;
 struct xiiGALShaderVariableDescription;
-struct xiiGALShaderBufferDescription;
 struct xiiGALShaderCreationDescription;
 struct xiiGALShaderResourceVariableCreationDescription;
 struct xiiGALRenderTargetBlendDescription;
