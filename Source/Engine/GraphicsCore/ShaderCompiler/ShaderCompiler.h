@@ -4,11 +4,11 @@
 #include <Foundation/Containers/Set.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Reflection/Reflection.h>
-#include <GraphicsCore/ShaderCompiler/Declarations.h>
-#include <GraphicsCore/ShaderCompiler/ShaderParser.h>
 #include <GraphicsCore/Shader/Implementation/Helper.h>
 #include <GraphicsCore/Shader/ShaderPermutationBinary.h>
+#include <GraphicsCore/ShaderCompiler/Declarations.h>
 #include <GraphicsCore/ShaderCompiler/PermutationGenerator.h>
+#include <GraphicsCore/ShaderCompiler/ShaderParser.h>
 
 /// \brief Shader compiler interface.
 /// Custom shader compiles need to derive from this class and implement the pure virtual interface functions. Instances are created via reflection so each implementation must be properly reflected.

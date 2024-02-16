@@ -68,30 +68,30 @@ float3x3 TransformToRotation(Transform t)
 #  include <Foundation/Basics/Platform/Common.h>
 #  include <GraphicsFoundation/Shader/Types.h>
 
-#  define XII_SHADER_STRUCT           alignas(16)
-#  define CONSTANT_BUFFER(Name, Slot) struct alignas(16) Name
+#  define XII_SHADER_STRUCT                      alignas(16)
+#  define CONSTANT_BUFFER(Name, Slot)            struct alignas(16) Name
 #  define CONSTANT_BUFFER_SPACE(Name, Slot, Set) struct alignas(16) Name
 #  define STRUCTURED_BUFFER(Name, Type)
 #  define BEGIN_PUSH_CONSTANTS(Name) struct XII_SHADER_STRUCT Name
-#  define END_PUSH_CONSTANTS(Name) ;
-#  define FLOAT1(Name)    float Name
-#  define FLOAT2(Name)    xiiVec2 Name
-#  define FLOAT3(Name)    xiiVec3 Name
-#  define FLOAT4(Name)    xiiVec4 Name
-#  define INT1(Name)      int Name
-#  define INT2(Name)      xiiVec2I32 Name
-#  define INT3(Name)      xiiVec3I32 Name
-#  define INT4(Name)      xiiVec4I32 Name
-#  define UINT1(Name)     xiiUInt32 Name
-#  define UINT2(Name)     xiiVec2U32 Name
-#  define UINT3(Name)     xiiVec3U32 Name
-#  define UINT4(Name)     xiiVec4U32 Name
-#  define MAT3(Name)      xiiShaderMat3 Name
-#  define MAT4(Name)      xiiMat4 Name
-#  define TRANSFORM(Name) xiiShaderTransform Name
-#  define COLOR4F(Name)   xiiColor Name
-#  define COLOR4UB(Name)  xiiColorGammaUB Name
-#  define BOOL1(Name)     xiiShaderBool Name
+#  define END_PUSH_CONSTANTS(Name)   ;
+#  define FLOAT1(Name)               float Name
+#  define FLOAT2(Name)               xiiVec2 Name
+#  define FLOAT3(Name)               xiiVec3 Name
+#  define FLOAT4(Name)               xiiVec4 Name
+#  define INT1(Name)                 int Name
+#  define INT2(Name)                 xiiVec2I32 Name
+#  define INT3(Name)                 xiiVec3I32 Name
+#  define INT4(Name)                 xiiVec4I32 Name
+#  define UINT1(Name)                xiiUInt32 Name
+#  define UINT2(Name)                xiiVec2U32 Name
+#  define UINT3(Name)                xiiVec3U32 Name
+#  define UINT4(Name)                xiiVec4U32 Name
+#  define MAT3(Name)                 xiiShaderMat3 Name
+#  define MAT4(Name)                 xiiMat4 Name
+#  define TRANSFORM(Name)            xiiShaderTransform Name
+#  define COLOR4F(Name)              xiiColor Name
+#  define COLOR4UB(Name)             xiiColorGammaUB Name
+#  define BOOL1(Name)                xiiShaderBool Name
 #  define PACKEDHALF2(Name1, Name2, CombinedName) \
     xiiFloat16 Name1;                             \
     xiiFloat16 Name2

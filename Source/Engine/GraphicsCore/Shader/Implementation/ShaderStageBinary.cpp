@@ -3,8 +3,8 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
 #include <GraphicsCore/Shader/ShaderStageBinary.h>
-#include <GraphicsFoundation/Shader/Types.h>
 #include <GraphicsCore/ShaderCompiler/ShaderManager.h>
+#include <GraphicsFoundation/Shader/Types.h>
 
 xiiMap<xiiUInt32, xiiShaderStageBinary> xiiShaderStageBinary::s_ShaderStageBinaries[xiiGALShaderStage::ENUM_COUNT];
 
