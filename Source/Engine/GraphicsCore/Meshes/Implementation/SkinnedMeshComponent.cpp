@@ -4,7 +4,7 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Meshes/SkinnedMeshComponent.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsCore/Shader/Types.h>
+#include <GraphicsFoundation/Shader/Types.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 

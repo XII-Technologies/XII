@@ -12,7 +12,9 @@ using namespace xiiTokenParseUtils;
 
 namespace
 {
-  static xiiHashTable<xiiStringView, const xiiRTTI*> s_NameToTypeTable;
+  static xiiHashTable<xiiStringView, const xiiRTTI*>                    s_NameToTypeTable;
+  static xiiHashTable<xiiStringView, xiiEnum<xiiGALShaderResourceType>> s_NameToDescriptorTable;
+  static xiiHashTable<xiiStringView, xiiEnum<xiiGALShaderTextureType>>  s_NameToTextureTable;
 
   void InitializeTables()
   {
@@ -37,14 +39,56 @@ namespace
     s_NameToTypeTable.Insert("Texture2D", xiiGetStaticRTTI<xiiString>());
     s_NameToTypeTable.Insert("Texture3D", xiiGetStaticRTTI<xiiString>());
     s_NameToTypeTable.Insert("TextureCube", xiiGetStaticRTTI<xiiString>());
+
+    s_NameToDescriptorTable.Insert("cbuffer"_xiisv, xiiGALShaderResourceType::ConstantBuffer);
+    s_NameToDescriptorTable.Insert("ConstantBuffer"_xiisv, xiiGALShaderResourceType::ConstantBuffer);
+    s_NameToDescriptorTable.Insert("SamplerState"_xiisv, xiiGALShaderResourceType::Sampler);
+    s_NameToDescriptorTable.Insert("SamplerComparisonState"_xiisv, xiiGALShaderResourceType::Sampler);
+    s_NameToDescriptorTable.Insert("Texture1D"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_NameToDescriptorTable.Insert("Texture1DArray"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_NameToDescriptorTable.Insert("Texture2D"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_NameToDescriptorTable.Insert("Texture2DArray"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_NameToDescriptorTable.Insert("Texture2DMS"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_NameToDescriptorTable.Insert("Texture2DMSArray"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_NameToDescriptorTable.Insert("Texture3D"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_NameToDescriptorTable.Insert("TextureCube"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_NameToDescriptorTable.Insert("TextureCubeArray"_xiisv, xiiGALShaderResourceType::TextureSRV);
+    s_NameToDescriptorTable.Insert("Buffer"_xiisv, xiiGALShaderResourceType::BufferSRV);
+    s_NameToDescriptorTable.Insert("StructuredBuffer"_xiisv, xiiGALShaderResourceType::BufferSRV);
+    s_NameToDescriptorTable.Insert("ByteAddressBuffer"_xiisv, xiiGALShaderResourceType::BufferSRV);
+    s_NameToDescriptorTable.Insert("RWTexture1D"_xiisv, xiiGALShaderResourceType::TextureUAV);
+    s_NameToDescriptorTable.Insert("RWTexture1DArray"_xiisv, xiiGALShaderResourceType::TextureUAV);
+    s_NameToDescriptorTable.Insert("RWTexture2D"_xiisv, xiiGALShaderResourceType::TextureUAV);
+    s_NameToDescriptorTable.Insert("RWTexture2DArray"_xiisv, xiiGALShaderResourceType::TextureUAV);
+    s_NameToDescriptorTable.Insert("RWTexture3D"_xiisv, xiiGALShaderResourceType::TextureUAV);
+    s_NameToDescriptorTable.Insert("RWBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
+    s_NameToDescriptorTable.Insert("RWStructuredBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
+    s_NameToDescriptorTable.Insert("RWByteAddressBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
+    s_NameToDescriptorTable.Insert("AppendStructuredBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
+    s_NameToDescriptorTable.Insert("ConsumeStructuredBuffer"_xiisv, xiiGALShaderResourceType::BufferUAV);
+
+    s_NameToTextureTable.Insert("Texture1D"_xiisv, xiiGALShaderTextureType::Texture1D);
+    s_NameToTextureTable.Insert("Texture1DArray"_xiisv, xiiGALShaderTextureType::Texture1DArray);
+    s_NameToTextureTable.Insert("Texture2D"_xiisv, xiiGALShaderTextureType::Texture2D);
+    s_NameToTextureTable.Insert("Texture2DArray"_xiisv, xiiGALShaderTextureType::Texture2DArray);
+    s_NameToTextureTable.Insert("Texture2DMS"_xiisv, xiiGALShaderTextureType::Texture2DMS);
+    s_NameToTextureTable.Insert("Texture2DMSArray"_xiisv, xiiGALShaderTextureType::Texture2DMSArray);
+    s_NameToTextureTable.Insert("Texture3D"_xiisv, xiiGALShaderTextureType::Texture3D);
+    s_NameToTextureTable.Insert("TextureCube"_xiisv, xiiGALShaderTextureType::TextureCube);
+    s_NameToTextureTable.Insert("TextureCubeArray"_xiisv, xiiGALShaderTextureType::TextureCubeArray);
+    s_NameToTextureTable.Insert("RWTexture1D"_xiisv, xiiGALShaderTextureType::Texture1D);
+    s_NameToTextureTable.Insert("RWTexture1DArray"_xiisv, xiiGALShaderTextureType::Texture1DArray);
+    s_NameToTextureTable.Insert("RWTexture2D"_xiisv, xiiGALShaderTextureType::Texture2D);
+    s_NameToTextureTable.Insert("RWTexture2DArray"_xiisv, xiiGALShaderTextureType::Texture2DArray);
+    s_NameToTextureTable.Insert("RWTexture3D"_xiisv, xiiGALShaderTextureType::Texture3D);
   }
 
-  const xiiRTTI* GetType(const char* szType)
+  const xiiRTTI* GetType(xiiStringView sType)
   {
     InitializeTables();
 
     const xiiRTTI* pType = nullptr;
-    s_NameToTypeTable.TryGetValue(szType, pType);
+    s_NameToTypeTable.TryGetValue(sType, pType);
     return pType;
   }
 
@@ -529,6 +573,223 @@ void xiiShaderParser::ParsePermutationVarConfig(xiiStringView s, xiiVariant& out
   else
   {
     xiiLog::Error("Unknown permutation var type");
+  }
+}
+
+xiiResult ParseResource(const TokenStream& tokens, xiiUInt32& ref_uiCurToken, xiiShaderResourceDefinition& out_resourceDefinition)
+{
+  // Match type
+  xiiUInt32 uiTypeToken = ref_uiCurToken;
+  if (!Accept(tokens, ref_uiCurToken, xiiTokenType::Identifier, &uiTypeToken))
+  {
+    return XII_FAILURE;
+  }
+  if (!s_NameToDescriptorTable.TryGetValue(tokens[uiTypeToken]->m_DataView, out_resourceDefinition.m_ResourceDescription.m_Type))
+    return XII_FAILURE;
+  s_NameToTextureTable.TryGetValue(tokens[uiTypeToken]->m_DataView, out_resourceDefinition.m_ResourceDescription.m_TextureType);
+
+  // Skip optional template
+  TokenMatch                   templatePattern[] = {"<"_xiisv, xiiTokenType::Identifier, ">"_xiisv};
+  xiiHybridArray<xiiUInt32, 8> acceptedTokens;
+  Accept(tokens, ref_uiCurToken, templatePattern, &acceptedTokens);
+
+  // Match name
+  xiiUInt32 uiNameToken = ref_uiCurToken;
+  if (!Accept(tokens, ref_uiCurToken, xiiTokenType::Identifier, &uiNameToken))
+  {
+    return XII_FAILURE;
+  }
+  out_resourceDefinition.m_ResourceDescription.m_sName.Assign(tokens[uiNameToken]->m_DataView);
+  xiiUInt32 uiEndToken = uiNameToken;
+
+  // Match optional array
+  TokenMatch arrayPattern[]    = {"["_xiisv, xiiTokenType::Integer, "]"_xiisv};
+  TokenMatch bindlessPattern[] = {"["_xiisv, "]"_xiisv};
+  if (Accept(tokens, ref_uiCurToken, arrayPattern, &acceptedTokens))
+  {
+    xiiConversionUtils::StringToUInt(tokens[acceptedTokens[1]]->m_DataView, out_resourceDefinition.m_ResourceDescription.m_uiArraySize).AssertSuccess("Tokenizer error");
+    uiEndToken = acceptedTokens.PeekBack();
+  }
+  else if (Accept(tokens, ref_uiCurToken, bindlessPattern, &acceptedTokens))
+  {
+    out_resourceDefinition.m_ResourceDescription.m_uiArraySize = 0;
+    uiEndToken                                                 = acceptedTokens.PeekBack();
+  }
+  out_resourceDefinition.m_sDeclaration = xiiStringView(tokens[uiTypeToken]->m_DataView.GetStartPointer(), tokens[uiEndToken]->m_DataView.GetEndPointer());
+
+  // Match optional register
+  TokenMatch slotPattern[]       = {":"_xiisv, "register"_xiisv, "("_xiisv, xiiTokenType::Identifier, ")"_xiisv};
+  TokenMatch slotAndSetPattern[] = {":"_xiisv, "register"_xiisv, "("_xiisv, xiiTokenType::Identifier, ","_xiisv, xiiTokenType::Identifier, ")"_xiisv};
+  if (Accept(tokens, ref_uiCurToken, slotPattern, &acceptedTokens))
+  {
+    xiiStringView sSlot = tokens[acceptedTokens[3]]->m_DataView;
+    sSlot.Trim("tsubx");
+    if (sSlot.IsEqual_NoCase("AUTO")) // See shader macros in StandardMacros.h
+    {
+      out_resourceDefinition.m_ResourceDescription.m_uiBindIndex = -1;
+    }
+    else
+    {
+      xiiInt32 iSlot;
+      xiiConversionUtils::StringToInt(sSlot, iSlot).AssertSuccess("Failed to parse slot index of shader resource");
+      out_resourceDefinition.m_ResourceDescription.m_uiBindIndex = iSlot;
+    }
+    uiEndToken = acceptedTokens.PeekBack();
+  }
+  else if (Accept(tokens, ref_uiCurToken, slotAndSetPattern, &acceptedTokens))
+  {
+    xiiStringView sSlot = tokens[acceptedTokens[3]]->m_DataView;
+    sSlot.Trim("tsubx");
+    if (sSlot.IsEqual_NoCase("AUTO")) // See shader macros in StandardMacros.h
+    {
+      out_resourceDefinition.m_ResourceDescription.m_uiBindIndex = xiiInvalidIndex;
+    }
+    else
+    {
+      xiiInt32 iSlot;
+      xiiConversionUtils::StringToInt(sSlot, iSlot).AssertSuccess("Failed to parse slot index of shader resource");
+      out_resourceDefinition.m_ResourceDescription.m_uiBindIndex = iSlot;
+    }
+    xiiStringView sSet = tokens[acceptedTokens[5]]->m_DataView;
+    sSet.TrimWordStart("space"_xiisv);
+    xiiInt32 iSet;
+    xiiConversionUtils::StringToInt(sSet, iSet).AssertSuccess("Failed to parse set index of shader resource");
+    out_resourceDefinition.m_ResourceDescription.m_uiDescriptorSet = iSet;
+    uiEndToken                                                     = acceptedTokens.PeekBack();
+  }
+
+  out_resourceDefinition.m_sDeclarationAndRegister = xiiStringView(tokens[uiTypeToken]->m_DataView.GetStartPointer(), tokens[uiEndToken]->m_DataView.GetEndPointer());
+  // Match ; (resource declaration done) or { (constant buffer member declaration starts)
+  if (!Accept(tokens, ref_uiCurToken, ";"_xiisv) && !Accept(tokens, ref_uiCurToken, "{"_xiisv))
+    return XII_FAILURE;
+
+  return XII_SUCCESS;
+}
+
+void xiiShaderParser::ParseShaderResources(xiiStringView sShaderStageSource, xiiDynamicArray<xiiShaderResourceDefinition>& out_resources)
+{
+  if (sShaderStageSource.IsEmpty())
+  {
+    out_resources.Clear();
+    return;
+  }
+
+  InitializeTables();
+
+  xiiTokenizer tokenizer;
+  tokenizer.SetTreatHashSignAsLineComment(true);
+  tokenizer.Tokenize(xiiArrayPtr<const xiiUInt8>((const xiiUInt8*)sShaderStageSource.GetStartPointer(), sShaderStageSource.GetElementCount()), xiiLog::GetThreadLocalLogSystem(), false);
+
+  TokenStream tokens;
+  tokenizer.GetAllLines(tokens);
+
+  xiiUInt32 uiCurToken = 0;
+
+  while (!Accept(tokens, uiCurToken, xiiTokenType::EndOfFile))
+  {
+    xiiShaderResourceDefinition resourceDef;
+    if (ParseResource(tokens, uiCurToken, resourceDef).Succeeded())
+    {
+      out_resources.PushBack(std::move(resourceDef));
+      continue;
+    }
+    ++uiCurToken;
+  }
+}
+
+xiiResult xiiShaderParser::MergeShaderResourceBindings(const xiiShaderProgramData& spd, xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& out_bindings, xiiLogInterface* pLog)
+{
+  xiiUInt32 uiSize = 0;
+  for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  {
+    uiSize += spd.m_Resources[stage].GetCount();
+  }
+
+  out_bindings.Clear();
+  out_bindings.Reserve(uiSize);
+
+  xiiMap<xiiHashedString, const xiiShaderResourceDefinition*> resourceFirstOccurence;
+
+  for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  {
+    for (const xiiShaderResourceDefinition& res : spd.m_Resources[stage])
+    {
+      xiiHashedString sName = res.m_ResourceDescription.m_sName;
+      auto            it    = out_bindings.Find(sName);
+      if (it.IsValid())
+      {
+        xiiGALShaderResourceDescription& current = it.Value();
+        if (current.m_Type != res.m_ResourceDescription.m_Type || current.m_TextureType != res.m_ResourceDescription.m_TextureType || current.m_uiArraySize != res.m_ResourceDescription.m_uiArraySize)
+        {
+          xiiLog::Error(pLog, "A shared shader resource '{}' has a mismatching signatures between stages: '{}' vs '{}'", sName, resourceFirstOccurence.Find(sName).Value()->m_sDeclarationAndRegister, res.m_sDeclarationAndRegister);
+          return XII_FAILURE;
+        }
+
+        current.m_ShaderStages |= xiiGALShaderStage::GetStageFlag(stage);
+      }
+      else
+      {
+        out_bindings.Insert(sName, res.m_ResourceDescription);
+        resourceFirstOccurence.Insert(sName, &res);
+        out_bindings.Find(sName).Value().m_ShaderStages |= xiiGALShaderStage::GetStageFlag(stage);
+      }
+    }
+  }
+  return XII_SUCCESS;
+}
+
+xiiResult xiiShaderParser::SanityCheckShaderResourceBindings(const xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& bindings, xiiLogInterface* pLog)
+{
+  for (auto it : bindings)
+  {
+    if (it.Value().m_uiDescriptorSet == xiiInvalidIndex)
+    {
+      xiiLog::Error(pLog, "Shader resource '{}' does not have a set defined.", it.Key());
+      return XII_FAILURE;
+    }
+    if (it.Value().m_uiDescriptorSet == xiiInvalidIndex)
+    {
+      xiiLog::Error(pLog, "Shader resource '{}' does not have a slot defined.", it.Key());
+      return XII_FAILURE;
+    }
+  }
+  return XII_SUCCESS;
+}
+
+void xiiShaderParser::ApplyShaderResourceBindings(xiiStringView sPlatform, xiiStringView sShaderStageSource, const xiiDynamicArray<xiiShaderResourceDefinition>& resources, const xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& bindings, const CreateResourceDeclaration& createDeclaration, xiiStringBuilder& out_sShaderStageSource)
+{
+  xiiDeque<xiiString>               partStorage;
+  xiiHybridArray<xiiStringView, 16> parts;
+
+  xiiStringBuilder sDeclaration;
+  const char*      szStart = sShaderStageSource.GetStartPointer();
+  for (int i = 0; i < resources.GetCount(); ++i)
+  {
+    parts.PushBack(xiiStringView(szStart, resources[i].m_sDeclarationAndRegister.GetStartPointer()));
+
+    xiiGALShaderResourceDescription* pBinding = nullptr;
+    XII_ASSERT_DEV(bindings.TryGetValue(resources[i].m_ResourceDescription.m_sName, pBinding), "Every resource should be present in the map.");
+    XII_ASSERT_DEV(pBinding->m_uiBindIndex != xiiInvalidIndex && pBinding->m_uiDescriptorSet != xiiInvalidIndex, "Unbound shader resource binding found: '{}', slot: {}, set: {}", pBinding->m_sName, pBinding->m_uiBindIndex, pBinding->m_uiDescriptorSet);
+
+    createDeclaration(sPlatform, resources[i].m_sDeclaration, *pBinding, sDeclaration);
+
+    xiiString& sStorage = partStorage.ExpandAndGetRef();
+    sStorage            = sDeclaration;
+    parts.PushBack(sStorage);
+    szStart = resources[i].m_sDeclarationAndRegister.GetEndPointer();
+  }
+  parts.PushBack(xiiStringView(szStart, sShaderStageSource.GetEndPointer()));
+
+  xiiUInt32 uiSize = 0;
+  for (const xiiStringView& sPart : parts)
+    uiSize += sPart.GetElementCount();
+
+  out_sShaderStageSource.Clear();
+  out_sShaderStageSource.Reserve(uiSize);
+
+  for (const xiiStringView& sPart : parts)
+  {
+    out_sShaderStageSource.Append(sPart);
   }
 }
 

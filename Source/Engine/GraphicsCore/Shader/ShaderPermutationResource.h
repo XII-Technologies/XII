@@ -24,7 +24,7 @@ public:
   xiiShaderPermutationResource();
 
   xiiGALShaderHandle          GetGALShader() const { return m_hShader; }
-  const xiiShaderStageBinary* GetShaderStageBinary(xiiBitflags<xiiGALShaderStage> stage) const { return m_pShaderStageBinaries[xiiGALShaderStage::GetStageIndex(stage)]; }
+  const xiiGALShaderByteCode* GetShaderByteCode(xiiBitflags<xiiGALShaderStage> stage) const { return m_ByteCodes[stage]; }
 
   xiiGALBlendStateHandle        GetBlendState() const { return m_hBlendState; }
   xiiGALDepthStencilStateHandle GetDepthStencilState() const { return m_hDepthStencilState; }
@@ -43,7 +43,7 @@ private:
 private:
   friend class xiiShaderManager;
 
-  xiiShaderStageBinary* m_pShaderStageBinaries[xiiGALShaderStage::ENUM_COUNT];
+  xiiSharedPtr<const xiiGALShaderByteCode> m_ByteCodes[xiiGALShaderStage::ENUM_COUNT];
 
   bool               m_bShaderPermutationValid;
   xiiGALShaderHandle m_hShader;

@@ -20,6 +20,7 @@ struct XII_GRAPHICSCORE_DLL xiiShaderStateResourceDescriptor
   xiiUInt32 CalculateHash() const;
 };
 
+/// \brief Serialized state of a shader permutation used by xiiShaderPermutationResourceLoader to convert into a xiiShaderPermutationResource.
 class XII_GRAPHICSCORE_DLL xiiShaderPermutationBinary
 {
 public:
@@ -28,6 +29,7 @@ public:
   xiiResult Write(xiiStreamWriter& inout_stream);
   xiiResult Read(xiiStreamReader& inout_stream, bool& out_bOldVersion);
 
+  // Actual binary will be loaded from the hash via xiiShaderStageBinary::LoadStageBinary to produce xiiShaderStageBinary
   xiiUInt32 m_uiShaderStageHashes[xiiGALShaderStage::ENUM_COUNT];
 
   xiiDependencyFile m_DependencyFile;
