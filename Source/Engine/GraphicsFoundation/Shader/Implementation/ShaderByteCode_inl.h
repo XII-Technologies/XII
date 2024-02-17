@@ -1,5 +1,5 @@
 
-const void* xiiGALShaderByteCode::GetByteCode() const
+XII_ALWAYS_INLINE const void* xiiGALShaderByteCode::GetByteCode() const
 {
   if (m_ByteCode.IsEmpty())
     return nullptr;
@@ -7,12 +7,12 @@ const void* xiiGALShaderByteCode::GetByteCode() const
   return m_ByteCode.GetData();
 }
 
-xiiUInt32 xiiGALShaderByteCode::GetSize() const
+XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderByteCode::GetSize() const
 {
   return m_ByteCode.GetCount();
 }
 
-bool xiiGALShaderByteCode::IsValid() const
+XII_ALWAYS_INLINE bool xiiGALShaderByteCode::IsValid() const
 {
   return !m_ByteCode.IsEmpty();
 }

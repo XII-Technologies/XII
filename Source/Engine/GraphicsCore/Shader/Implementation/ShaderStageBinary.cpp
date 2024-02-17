@@ -73,63 +73,79 @@ xiiResult xiiShaderStageBinary::Write(xiiStreamWriter& inout_stream) const
 
 xiiResult xiiShaderStageBinary::Read(xiiStreamReader& inout_stream)
 {
+  XII_ASSERT_DEBUG(m_pGALByteCode == nullptr, "Expected an empty bytecode reference.");
+  m_pGALByteCode = XII_DEFAULT_NEW(xiiGALShaderByteCode);
+
   xiiUInt8 uiVersion = 0;
 
   if (inout_stream.ReadBytes(&uiVersion, sizeof(xiiUInt8)) != sizeof(xiiUInt8))
     return XII_FAILURE;
 
-  XII_ASSERT_DEV(uiVersion <= xiiShaderStageBinary::VersionCurrent, "Wrong Version {0}", uiVersion);
-
-  if (inout_stream.ReadDWordValue(&m_uiSourceHash).Failed())
-    return XII_FAILURE;
-
-  xiiUInt8 uiStage = xiiGALShaderStage::ENUM_COUNT;
-
-  if (inout_stream.ReadBytes(&uiStage, sizeof(xiiUInt8)) != sizeof(xiiUInt8))
-    return XII_FAILURE;
-
-  m_Stage = xiiGALShaderStage::GetStageFlag(uiStage);
-
-  xiiUInt32 uiByteCodeSize = 0;
-
-  if (inout_stream.ReadDWordValue(&uiByteCodeSize).Failed())
-    return XII_FAILURE;
-
-  m_ByteCode.SetCountUninitialized(uiByteCodeSize);
-
-  if (!m_ByteCode.IsEmpty() && inout_stream.ReadBytes(&m_ByteCode[0], uiByteCodeSize) != uiByteCodeSize)
-    return XII_FAILURE;
-
+  if (uiVersion < xiiShaderStageBinary::VersionCurrent)
   {
-    xiiUInt16 uiResources = 0;
-    inout_stream >> uiResources;
+    xiiLog::Error("Unsupported shader binary, please recompile the shader.");
+    return XII_FAILURE;
+  }
 
-    m_ShaderResourceBindings.SetCount(uiResources);
+  m_uiSourceHash << m_uiSourceHash;
+
+  // xiiGALShaderByteCode
+  inout_stream >> m_pGALByteCode->m_ShaderStage;
+  inout_stream >> m_pGALByteCode->m_bWasCompiledWithDebug;
+
+  // m_ByteCode
+  {
+    xiiUInt32 uiByteCodeSize = 0U;
+    inout_stream >> uiByteCodeSize;
+
+    m_pGALByteCode->m_ByteCode.SetCountUninitialized(uiByteCodeSize);
+    if (!m_pGALByteCode->m_ByteCode.IsEmpty() && inout_stream.ReadBytes(&m_pGALByteCode->m_ByteCode[0], uiByteCodeSize) != uiByteCodeSize)
+      return XII_FAILURE;
+  }
+
+  // m_ShaderResourceBinding
+  {
+    xiiUInt32 uiResourceCount = 0U;
+    inout_stream >> uiResourceCount;
+
+    m_pGALByteCode->m_ShaderResourceBindings.SetCount(uiResourceCount);
 
     xiiString sTemp;
 
-    for (auto& r : m_ShaderResourceBindings)
+    for (auto& resource : m_pGALByteCode->m_ShaderResourceBindings)
     {
+      inout_stream >> resource.m_Type;
+      inout_stream >> resource.m_TextureType;
+      inout_stream >> resource.m_uiArraySize;
+      inout_stream >> resource.m_uiBindIndex;
+      inout_stream >> resource.m_uiDescriptorSet;
+      inout_stream >> resource.m_ShaderStages;
       inout_stream >> sTemp;
-      r.m_sName.Assign(sTemp.GetData());
-      inout_stream >> r.m_iSlot;
 
-      xiiUInt8 uiType = 0;
-      inout_stream >> uiType;
-      r.m_Type = (xiiGALShaderResourceType::Enum)uiType;
+      resource.m_sName.Assign(sTemp.GetData());
 
-      if (r.m_Type == xiiGALShaderResourceType::ConstantBuffer)
+      bool bHasMembers = false;
+      inout_stream >> bHasMembers;
+
+      if (bHasMembers)
       {
-        auto pLayout = XII_DEFAULT_NEW(xiiShaderConstantBufferLayout);
-        XII_SUCCEED_OR_RETURN(pLayout->Read(inout_stream));
-
-        r.m_pLayout = pLayout;
+        XII_SUCCEED_OR_RETURN(Read(inout_stream, resource.m_Variables));
       }
     }
   }
 
+  // m_VertexInputLayout
   {
-    inout_stream >> m_bWasCompiledWithDebug;
+    xiiUInt32 uiVertexInputLayoutCount = 0;
+    inout_stream >> uiVertexInputLayoutCount;
+    m_pGALByteCode->m_VertexInputLayout.SetCount(uiVertexInputLayoutCount);
+
+    for (auto& input : m_pGALByteCode->m_VertexInputLayout)
+    {
+      inout_stream >> input.m_Semantic;
+      inout_stream >> input.m_uiSemanticIndex;
+      inout_stream >> input.m_Format;
+    }
   }
 
   return XII_SUCCESS;
@@ -137,47 +153,63 @@ xiiResult xiiShaderStageBinary::Read(xiiStreamReader& inout_stream)
 
 xiiResult xiiShaderStageBinary::Write(xiiStreamWriter& inout_stream, const xiiDynamicArray<xiiGALShaderVariableDescription>& layout) const
 {
-  return xiiResult();
+  const xiiUInt32 uiResourceVariableCount = layout.GetCount();
+  inout_stream << uiResourceVariableCount;
+
+  if (layout.IsEmpty())
+    return;
+
+  for (xiiUInt32 i = 0; i < uiResourceVariableCount; ++i)
+  {
+    const xiiGALShaderVariableDescription& variableDescription = layout[i];
+
+    inout_stream << variableDescription.m_Class;
+    inout_stream << variableDescription.m_PrimitiveType;
+    inout_stream << variableDescription.m_uiRowCount;
+    inout_stream << variableDescription.m_uiColumnCount;
+    inout_stream << variableDescription.m_uiOffset;
+    inout_stream << variableDescription.m_uiArraySize;
+    inout_stream << variableDescription.m_sName.GetData();
+
+    Write(inout_stream, variableDescription.m_Members);
+  }
+  return XII_SUCCESS;
 }
 
 xiiResult xiiShaderStageBinary::Read(xiiStreamReader& inout_stream, xiiDynamicArray<xiiGALShaderVariableDescription>& out_layout)
 {
-  return xiiResult();
-}
+  xiiUInt32 uiResourceVariableCount = 0U;
+  inout_stream >> uiResourceVariableCount;
 
+  if (uiResourceVariableCount == 0)
+    return;
 
-xiiDynamicArray<xiiUInt8>& xiiShaderStageBinary::GetByteCode()
-{
-  return m_ByteCode;
-}
+  out_layout.SetCount(uiResourceVariableCount);
 
-void xiiShaderStageBinary::AddShaderResourceBinding(const xiiShaderResourceBinding& binding)
-{
-  m_ShaderResourceBindings.PushBack(binding);
-}
+  xiiString sTemp;
 
-
-xiiArrayPtr<const xiiShaderResourceBinding> xiiShaderStageBinary::GetShaderResourceBindings() const
-{
-  return m_ShaderResourceBindings;
-}
-
-const xiiShaderResourceBinding* xiiShaderStageBinary::GetShaderResourceBinding(const xiiTempHashedString& sName) const
-{
-  for (auto& binding : m_ShaderResourceBindings)
+  for (xiiUInt32 i = 0; i < uiResourceVariableCount; ++i)
   {
-    if (binding.m_sName == sName)
-    {
-      return &binding;
-    }
-  }
+    xiiGALShaderVariableDescription& variableDescription = out_layout[i];
 
-  return nullptr;
+    inout_stream >> variableDescription.m_Class;
+    inout_stream >> variableDescription.m_PrimitiveType;
+    inout_stream >> variableDescription.m_uiRowCount;
+    inout_stream >> variableDescription.m_uiColumnCount;
+    inout_stream >> variableDescription.m_uiOffset;
+    inout_stream >> variableDescription.m_uiArraySize;
+    inout_stream >> sTemp;
+
+    variableDescription.m_sName.Assign(sTemp.GetData());
+
+    Read(inout_stream, variableDescription.m_Members);
+  }
+  return XII_SUCCESS;
 }
 
-xiiShaderConstantBufferLayout* xiiShaderStageBinary::CreateConstantBufferLayout() const
+xiiSharedPtr<const xiiGALShaderByteCode> xiiShaderStageBinary::GetByteCode() const
 {
-  return XII_DEFAULT_NEW(xiiShaderConstantBufferLayout);
+  return m_pGALByteCode;
 }
 
 xiiResult xiiShaderStageBinary::WriteStageBinary(xiiLogInterface* pLog) const
@@ -185,7 +217,7 @@ xiiResult xiiShaderStageBinary::WriteStageBinary(xiiLogInterface* pLog) const
   xiiStringBuilder sShaderStageFile = xiiShaderManager::GetCacheDirectory();
 
   sShaderStageFile.AppendPath(xiiShaderManager::GetActivePlatform().GetData());
-  sShaderStageFile.AppendFormat("/{0}_{1}.xiiShaderStage", xiiGALShaderStage::Names[xiiGALShaderStage::GetStageIndex(m_Stage)], xiiArgU(m_uiSourceHash, 8, true, 16, true));
+  sShaderStageFile.AppendFormat("/{0}_{1}.xiiShaderStage", xiiGALShaderStage::Names[xiiGALShaderStage::GetStageIndex(m_pGALByteCode->m_ShaderStage)], xiiArgU(m_uiSourceHash, 8, true, 16, true));
 
   xiiFileWriter StageFileOut;
   if (StageFileOut.Open(sShaderStageFile.GetData()).Failed())
@@ -232,17 +264,7 @@ xiiShaderStageBinary* xiiShaderStageBinary::LoadStageBinary(xiiBitflags<xiiGALSh
     itStage = xiiShaderStageBinary::s_ShaderStageBinaries[xiiGALShaderStage::GetStageIndex(Stage)].Insert(uiHash, shaderStageBinary);
   }
 
-  if (!itStage.IsValid())
-  {
-    return nullptr;
-  }
-
   xiiShaderStageBinary* pShaderStageBinary = &itStage.Value();
-
-  if (pShaderStageBinary->m_GALByteCode == nullptr && !pShaderStageBinary->m_ByteCode.IsEmpty())
-  {
-    pShaderStageBinary->m_GALByteCode = XII_DEFAULT_NEW(xiiGALShaderByteCode, pShaderStageBinary->m_ByteCode);
-  }
 
   return pShaderStageBinary;
 }

@@ -119,7 +119,7 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderVariableCla
 /// \brief This describes shader resource.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceDescription : public xiiHashableStruct<xiiGALShaderResourceDescription>
 {
-  XII_DECLARE_POD_TYPE();
+  XII_DECLARE_MEM_RELOCATABLE_TYPE();
 
   xiiHashedString                                  m_sName;                                               ///< The shader resource name.
   xiiEnum<xiiGALShaderResourceType>                m_Type            = xiiGALShaderResourceType::Unknown; ///< The shader resource type. The default is xiiGALShaderResourceType::Unknown.

@@ -24,7 +24,7 @@ public:
   xiiShaderStageBinary();
   ~xiiShaderStageBinary();
 
-  xiiSharedPtr<const xiiGALShaderByteCode> GetByteCode();
+  xiiSharedPtr<const xiiGALShaderByteCode> GetByteCode() const;
 
 private:
   friend class xiiRenderContext;
