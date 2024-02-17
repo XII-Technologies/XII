@@ -36,6 +36,10 @@ void xiiGALCommandList::SetPipelineState(xiiGALPipelineStateHandle hPipelineStat
 {
 }
 
+void xiiGALCommandList::SetPipelineResourceSignature(xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature)
+{
+}
+
 void xiiGALCommandList::SetStencilRef(xiiUInt32 uiStencilRef)
 {
   if (m_uiStencilRef != uiStencilRef)
@@ -625,7 +629,8 @@ void xiiGALCommandList::InvalidateState()
 {
   XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "Invalidating the command list is disallowed while a render pass is active. Call EndRenderPass to finish the pass.");
 
-  m_hPipelineState = xiiGALPipelineStateHandle();
+  m_hPipelineState             = xiiGALPipelineStateHandle();
+  m_hPipelineResourceSignature = xiiGALPipelineResourceSignatureHandle();
 
   m_hIndexBuffer      = xiiGALBufferHandle();
   m_uiIndexDataOffset = 0;

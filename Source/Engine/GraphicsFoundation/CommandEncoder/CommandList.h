@@ -62,6 +62,8 @@ public:
 
   void SetPipelineState(xiiGALPipelineStateHandle hPipelineState);
 
+  void SetPipelineResourceSignature(xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature);
+
   void SetStencilRef(xiiUInt32 uiStencilRef);
   void SetBlendFactor(const xiiColor& blendFactor);
 
@@ -144,6 +146,8 @@ protected:
 protected:
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) = 0;
 
+  virtual void SetPipelineResourceSignature(xiiGALPipelineResourceSignature* PipelineResourceSignature) = 0;
+
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef)       = 0;
   virtual void SetBlendFactorPlatform(const xiiColor& blendFactor) = 0;
 
@@ -195,7 +199,8 @@ protected:
 protected:
   xiiGALCommandListCreationDescription m_Description;
 
-  xiiGALPipelineStateHandle m_hPipelineState;
+  xiiGALPipelineStateHandle             m_hPipelineState;
+  xiiGALPipelineResourceSignatureHandle m_hPipelineResourceSignature;
 
   xiiGALBufferHandle m_BoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 
