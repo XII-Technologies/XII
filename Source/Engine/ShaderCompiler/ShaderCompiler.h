@@ -37,6 +37,8 @@ public:
 #endif
   }
 
+  virtual xiiResult ModifyShaderSource(xiiShaderProgramData& inout_data, xiiLogInterface* pLog) override;
+
   virtual xiiResult Compile(xiiShaderProgramData& inout_Data, xiiLogInterface* pLog) override;
 
   xiiStringView GetProfileName(xiiStringView sPlatform, xiiBitflags<xiiGALShaderStage> Stage);

@@ -9,7 +9,6 @@
 
 #  include <ShaderCompiler/Implementation/Vulkan/ShaderCompilerVulkan.h>
 #  include <ShaderCompiler/ShaderCompiler.h>
-#  include <ShaderCompiler/ShaderMetadata.h>
 
 #  include <spirv_reflect.h>
 
@@ -112,11 +111,12 @@ xiiResult xiiShaderCompilerVulkan::CompileShader(xiiStringView sFile, xiiStringV
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderStage> Stage, xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>>& vertexInputMapping)
+xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderStage> Stage, xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>>& vertexInputMapping)
 {
   XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_sSourceFile);
 
-  auto& byteCode = inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)].GetByteCode();
+  xiiGALShaderByteCode* pShader  = inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)];
+  auto&                 byteCode = pShader->m_ByteCode;
 
   SpvReflectShaderModule reflectShaderModule = {};
   if (spvReflectCreateShaderModule(byteCode.GetCount(), byteCode.GetData(), &reflectShaderModule) != SPV_REFLECT_RESULT_SUCCESS)
@@ -191,287 +191,34 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramCompiler::
       return XII_FAILURE;
     }
 
-    xiiUInt32 uiVirtualResourceView = 0;
-    xiiUInt32 uiVirtualSampler      = 0;
-
     for (xiiUInt32 i = 0; i < uiNumDescriptorBindings; ++i)
     {
       auto& descriptorBinding = *descriptorBindings[i];
 
       xiiLog::Info("Bound Resource: '{}' at slot {} (Count: {})", descriptorBinding.name, descriptorBinding.binding, descriptorBinding.count);
 
-      xiiShaderResourceBinding shaderResourceBinding;
-      shaderResourceBinding.m_Type       = xiiGALShaderResourceType::Unknown;
-      shaderResourceBinding.m_iSlot      = descriptorBinding.binding;
-      shaderResourceBinding.m_iBindIndex = descriptorBinding.binding;
+      xiiGALShaderResourceDescription shaderResourceBinding;
+      shaderResourceBinding.m_Type            = xiiGALShaderResourceType::Unknown;
+      shaderResourceBinding.m_TextureType     = xiiGALShaderTextureType::Unknown;
+      shaderResourceBinding.m_uiArraySize     = descriptorBinding.count;
+      shaderResourceBinding.m_uiDescriptorSet = descriptorBinding.set;
+      shaderResourceBinding.m_uiBindIndex     = descriptorBinding.binding;
+      shaderResourceBinding.m_ShaderStages    = Stage;
+      shaderResourceBinding.m_uiTotalSize     = 0U;
       shaderResourceBinding.m_sName.Assign(descriptorBinding.name);
 
-      if (FillResourceBinding(inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)], shaderResourceBinding, descriptorBinding).Failed())
+      if (FillResourceBinding(*inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)], shaderResourceBinding, descriptorBinding).Failed())
         continue;
-
-      // We pretend SRVs and Samplers are mapped per stage and nicely packed so we fit into the D3D-based high level render interface.
-      if (descriptorBinding.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SRV)
-      {
-        shaderResourceBinding.m_iSlot = uiVirtualResourceView;
-        uiVirtualResourceView++;
-      }
-
-      if (descriptorBinding.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER)
-      {
-        shaderResourceBinding.m_iSlot = uiVirtualSampler;
-        uiVirtualSampler++;
-      }
 
       XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown, "FillResourceBinding should have failed.");
 
-      inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)].AddShaderResourceBinding(shaderResourceBinding);
-    }
-
-    // Write Bindings
-    {
-      xiiArrayPtr<const xiiShaderResourceBinding> xiiBindings = inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)].GetShaderResourceBindings();
-
-      // Modify meta data
-      xiiDefaultMemoryStreamStorage storage;
-      xiiMemoryStreamWriter         stream(&storage);
-
-      const xiiUInt32 uiCount = xiiBindings.GetCount();
-
-      xiiHybridArray<xiiGALShaderResourceBinding, 16U> shaderResourceBinding;
-
-      for (xiiUInt32 i = 0; i < uiCount; ++i)
-      {
-        auto& info = xiiBindings[i];
-
-        auto& spirvInfo = *descriptorBindings[i];
-        XII_ASSERT_DEV(spirvInfo.set == 0, "Only a single descriptor set is currently supported.");
-
-        xiiGALShaderResourceBinding& binding = shaderResourceBinding.ExpandAndGetRef();
-        binding.m_sName                      = info.m_sName;
-        binding.m_sName                      = info.m_sName;
-        binding.m_Type                       = xiiBindings[i].m_Type;
-        binding.m_uiSlot                     = xiiBindings[i].m_iSlot;
-        binding.m_uiBindIndex                = xiiBindings[i].m_iBindIndex;
-        binding.m_uiArraySize                = spirvInfo.count;
-      }
-
-      shaderResourceBinding.Sort([](const xiiGALShaderResourceBinding& lhs, const xiiGALShaderResourceBinding& rhs) { return lhs.m_uiSlot < rhs.m_uiSlot; });
-
-      xiiShaderMetaData::Write(stream, byteCode, shaderResourceBinding, vertexInputLayouts);
-
-      // Replaced compiled Spirv code with custom xiiShaderMetaData format.
-      xiiUInt64 uiBytesLeft    = storage.GetStorageSize64();
-      xiiUInt64 uiReadPosition = 0;
-      byteCode.Clear();
-      byteCode.Reserve((xiiUInt32)uiBytesLeft);
-      while (uiBytesLeft > 0)
-      {
-        xiiArrayPtr<const xiiUInt8> data = storage.GetContiguousMemoryRange(uiReadPosition);
-        byteCode.PushBackRange(data);
-        uiReadPosition += data.GetCount();
-        uiBytesLeft -= data.GetCount();
-      }
+      inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)]->m_ShaderResourceBindings.PushBack(shaderResourceBinding);
     }
   }
-
   return XII_SUCCESS;
 }
 
-xiiShaderConstantBufferLayout* xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiShaderStageBinary& pStageBinary, xiiStringView sName, const SpvReflectDescriptorBinding& constantBufferReflection)
-{
-  XII_LOG_BLOCK("Constant Buffer Layout", sName);
-
-  const auto& block = constantBufferReflection.block;
-
-  xiiLog::Debug("Constant Buffer has {} variables, Size is {}", block.member_count, block.padded_size);
-
-  xiiShaderConstantBufferLayout* pLayout = pStageBinary.CreateConstantBufferLayout();
-
-  pLayout->m_uiTotalSize = block.padded_size;
-
-  for (xiiUInt32 var = 0; var < block.member_count; ++var)
-  {
-    const auto& svd = block.members[var];
-
-    xiiShaderConstantBufferLayout::Constant constant;
-    constant.m_sName.Assign(svd.name);
-    constant.m_uiOffset        = svd.offset; // TODO: or svd.absolute_offset ??
-    constant.m_uiArrayElements = 1;
-
-    xiiUInt32 uiFlags = svd.type_description->type_flags;
-
-    if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_ARRAY)
-    {
-      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_ARRAY;
-
-      if (svd.array.dims_count != 1)
-      {
-        xiiLog::Error("Variable '{}': Multi-dimensional arrays are not supported.", constant.m_sName);
-        continue;
-      }
-
-      constant.m_uiArrayElements = svd.array.dims[0];
-    }
-
-    xiiUInt32 uiComponents = 0;
-
-    if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_VECTOR)
-    {
-      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_VECTOR;
-
-      uiComponents = svd.numeric.vector.component_count;
-    }
-
-    if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_BOOL)
-    {
-      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_BOOL;
-
-      // TODO: unfortunately this never seems to be set, 'bool' types are always exposed as 'int'
-      XII_ASSERT_NOT_IMPLEMENTED;
-
-      switch (uiComponents)
-      {
-        case 0:
-        case 1:
-          constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Bool;
-          break;
-
-        default:
-          xiiLog::Error("Variable '{}': Multi-component bools are not supported.", constant.m_sName);
-          continue;
-      }
-    }
-    else if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_INT)
-    {
-      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_INT;
-
-      // TODO: there doesn't seem to be a way to detect 'unsigned' types
-
-      switch (uiComponents)
-      {
-        case 0:
-        case 1:
-          constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Int1;
-          break;
-        case 2:
-          constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Int2;
-          break;
-        case 3:
-          constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Int3;
-          break;
-        case 4:
-          constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Int4;
-          break;
-      }
-    }
-    else if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_FLOAT)
-    {
-      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_FLOAT;
-
-      switch (uiComponents)
-      {
-        case 0:
-        case 1:
-          constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Float1;
-          break;
-        case 2:
-          constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Float2;
-          break;
-        case 3:
-          constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Float3;
-          break;
-        case 4:
-          constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Float4;
-          break;
-      }
-    }
-
-    if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_MATRIX)
-    {
-      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_MATRIX;
-
-      constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Default;
-
-      const xiiUInt32 rows    = svd.type_description->traits.numeric.matrix.row_count;
-      const xiiUInt32 columns = svd.type_description->traits.numeric.matrix.column_count;
-
-      if ((svd.type_description->type_flags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_FLOAT) == 0)
-      {
-        xiiLog::Error("Variable '{}': Only float matrices are supported", constant.m_sName);
-        continue;
-      }
-
-      if (columns == 3 && rows == 3)
-      {
-        constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Mat3x3;
-      }
-      else if (columns == 4 && rows == 4)
-      {
-        constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Mat4x4;
-      }
-      else
-      {
-        xiiLog::Error("Variable '{}': {}x{} matrices are not supported", constant.m_sName, rows, columns);
-        continue;
-      }
-    }
-
-    if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_STRUCT)
-    {
-      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_STRUCT;
-      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_EXTERNAL_BLOCK;
-
-      constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Struct;
-    }
-
-    if (uiFlags != 0)
-    {
-      xiiLog::Error("Variable '{}': Unknown additional type flags '{}'", constant.m_sName, uiFlags);
-    }
-
-    if (constant.m_Type == xiiShaderConstantBufferLayout::Constant::Type::Default)
-    {
-      xiiLog::Error("Variable '{}': Variable type is unknown / not supported", constant.m_sName);
-      continue;
-    }
-
-    const char* typeNames[] = {
-      "Default",
-      "Float1",
-      "Float2",
-      "Float3",
-      "Float4",
-      "Int1",
-      "Int2",
-      "Int3",
-      "Int4",
-      "UInt1",
-      "UInt2",
-      "UInt3",
-      "UInt4",
-      "Mat3x3",
-      "Mat4x4",
-      "Transform",
-      "Bool",
-      "Struct",
-    };
-
-    if (constant.m_uiArrayElements > 1)
-    {
-      xiiLog::Info("{1} {3}[{2}] {0}", constant.m_sName, xiiArgU(constant.m_uiOffset, 3, true), constant.m_uiArrayElements, typeNames[constant.m_Type]);
-    }
-    else
-    {
-      xiiLog::Info("{1} {3} {0}", constant.m_sName, xiiArgU(constant.m_uiOffset, 3, true), constant.m_uiArrayElements, typeNames[constant.m_Type]);
-    }
-
-    pLayout->m_Constants.PushBack(constant);
-  }
-
-  return pLayout;
-}
-
-xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const SpvReflectDescriptorBinding& info)
+xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR)
   {
@@ -499,8 +246,9 @@ xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiShaderStageBinary& sha
 
   if (info.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_CBV)
   {
-    binding.m_Type    = xiiGALShaderResourceType::ConstantBuffer;
-    binding.m_pLayout = ReflectConstantBufferLayout(shaderBinary, info.name, info);
+    binding.m_Type = xiiGALShaderResourceType::ConstantBuffer;
+
+    ReflectConstantBufferLayout(shaderBinary, binding, info);
 
     return XII_SUCCESS;
   }
@@ -517,7 +265,191 @@ xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiShaderStageBinary& sha
   return XII_FAILURE;
 }
 
-xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const SpvReflectDescriptorBinding& info)
+xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteCode& pStageBinary, xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
+{
+  XII_LOG_BLOCK("Constant Buffer Layout", info.name);
+
+  const auto& block = info.block;
+
+  xiiLog::Debug("Constant Buffer has {} variables, Size is {}.", block.member_count, block.padded_size);
+
+  binding.m_uiTotalSize = block.padded_size;
+
+  for (xiiUInt32 uiMember = 0; uiMember < block.member_count; ++uiMember)
+  {
+    const auto&                     memberBlock = block.members[uiMember];
+    xiiGALShaderVariableDescription member      = {};
+
+    member.m_sName.Assign(memberBlock.name);
+    member.m_uiOffset = memberBlock.offset;
+
+    xiiUInt32 uiFlags = memberBlock.type_description->type_flags;
+
+    if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_VOID)
+    {
+      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_VOID;
+
+      member.m_Class         = xiiGALShaderVariableClassType::Unknown;
+      member.m_PrimitiveType = xiiGALShaderPrimitiveType::Void;
+    }
+
+    if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_BOOL)
+    {
+      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_BOOL;
+
+      member.m_Class         = xiiGALShaderVariableClassType::Scalar;
+      member.m_PrimitiveType = xiiGALShaderPrimitiveType::Bool;
+      member.m_uiArraySize   = 1U;
+    }
+
+    if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_INT)
+    {
+      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_INT;
+
+      member.m_Class       = xiiGALShaderVariableClassType::Scalar;
+      member.m_uiArraySize = 1U;
+
+      const bool bIsUnsigned = !memberBlock.type_description->traits.numeric.scalar.signedness;
+      switch (memberBlock.type_description->traits.numeric.scalar.width)
+      {
+        case 64U:
+        {
+          if (bIsUnsigned)
+            member.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt64;
+          else
+            member.m_PrimitiveType = xiiGALShaderPrimitiveType::Int64;
+        }
+        break;
+        case 32U:
+        {
+          if (bIsUnsigned)
+            member.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt32;
+          else
+            member.m_PrimitiveType = xiiGALShaderPrimitiveType::Int32;
+        }
+        break;
+        case 16U:
+        {
+          if (bIsUnsigned)
+            member.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt16;
+          else
+            member.m_PrimitiveType = xiiGALShaderPrimitiveType::Int16;
+        }
+        break;
+        case 8U:
+        {
+          if (bIsUnsigned)
+            member.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt8;
+          else
+            member.m_PrimitiveType = xiiGALShaderPrimitiveType::Int8;
+        }
+        break;
+        default:
+        {
+          XII_ASSERT_NOT_IMPLEMENTED;
+          continue;
+        }
+      }
+    }
+
+    if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_FLOAT)
+    {
+      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_FLOAT;
+
+      member.m_Class       = xiiGALShaderVariableClassType::Scalar;
+      member.m_uiArraySize = 1U;
+
+      switch (memberBlock.type_description->traits.numeric.scalar.width)
+      {
+        case 64U:
+        {
+          member.m_PrimitiveType = xiiGALShaderPrimitiveType::Double;
+        }
+        break;
+        case 32U:
+        {
+          member.m_PrimitiveType = xiiGALShaderPrimitiveType::Float32;
+        }
+        break;
+        case 16U:
+        {
+          member.m_PrimitiveType = xiiGALShaderPrimitiveType::Float16;
+        }
+        break;
+        default:
+        {
+          XII_ASSERT_NOT_IMPLEMENTED;
+          continue;
+        }
+      }
+    }
+
+    if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_VECTOR)
+    {
+      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_VECTOR;
+
+      XII_ASSERT_DEV(member.m_Class != xiiGALShaderVariableClassType::Unknown, "Expected a known shader variable class type.");
+      XII_ASSERT_DEV(member.m_PrimitiveType != xiiGALShaderPrimitiveType::Unknown, "Expected a known shader variable primitive type.");
+
+      member.m_uiColumnCount = memberBlock.type_description->traits.numeric.vector.component_count;
+    }
+
+    if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_MATRIX)
+    {
+      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_MATRIX;
+
+      if (memberBlock.decoration_flags & SpvReflectDecorationFlagBits::SPV_REFLECT_DECORATION_ROW_MAJOR)
+        member.m_Class = xiiGALShaderVariableClassType::MatrixRows;
+      else if (memberBlock.decoration_flags & SpvReflectDecorationFlagBits::SPV_REFLECT_DECORATION_COLUMN_MAJOR)
+        member.m_Class = xiiGALShaderVariableClassType::MatrixColumns;
+
+      XII_ASSERT_DEV(member.m_PrimitiveType != xiiGALShaderPrimitiveType::Unknown, "Expected a known shader variable primitive type.");
+
+      member.m_uiRowCount    = memberBlock.type_description->traits.numeric.matrix.row_count;
+      member.m_uiColumnCount = memberBlock.type_description->traits.numeric.matrix.column_count;
+    }
+
+    if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_STRUCT)
+    {
+      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_STRUCT;
+      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_EXTERNAL_BLOCK;
+
+      member.m_Class = xiiGALShaderVariableClassType::Struct;
+    }
+
+    if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_ARRAY)
+    {
+      uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_ARRAY;
+
+      if (memberBlock.array.dims_count != 1U)
+      {
+        xiiLog::Error("Variable '{}': Multi-dimensional arrays are not supported.", member.m_sName);
+        continue;
+      }
+
+      member.m_uiArraySize = memberBlock.array.dims[0];
+    }
+
+    if (uiFlags != 0)
+    {
+      xiiLog::Error("Variable '{}': Unknown additional type flags '{}'", member.m_sName, uiFlags);
+    }
+
+    if (member.m_Class == xiiGALShaderVariableClassType::Unknown)
+    {
+      xiiLog::Error("Variable '{}': Variable type is unknown / not supported", member.m_sName);
+      continue;
+    }
+
+    /// \todo Shader Compiler: Add member print output.
+
+    binding.m_Variables.PushBack(member);
+  }
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER)
   {
@@ -530,6 +462,8 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
 
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
   {
+    binding.m_Type = xiiGALShaderResourceType::TextureSRV;
+
     switch (info.image.dim)
     {
       case SpvDim::SpvDim1D:
@@ -538,12 +472,12 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
         {
           if (info.image.arrayed > 0)
           {
-            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
+            binding.m_TextureType = xiiGALShaderTextureType::Texture1DArray;
             return XII_SUCCESS;
           }
           else
           {
-            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
+            binding.m_TextureType = xiiGALShaderTextureType::Texture1D;
             return XII_SUCCESS;
           }
         }
@@ -556,12 +490,12 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
         {
           if (info.image.arrayed > 0)
           {
-            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
+            binding.m_TextureType = xiiGALShaderTextureType::Texture2DArray;
             return XII_SUCCESS;
           }
           else
           {
-            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
+            binding.m_TextureType = xiiGALShaderTextureType::Texture2D;
             return XII_SUCCESS;
           }
         }
@@ -569,12 +503,12 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
         {
           if (info.image.arrayed > 0)
           {
-            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
+            binding.m_TextureType = xiiGALShaderTextureType::Texture2DMSArray;
             return XII_SUCCESS;
           }
           else
           {
-            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
+            binding.m_TextureType = xiiGALShaderTextureType::Texture2DMS;
             return XII_SUCCESS;
           }
         }
@@ -585,7 +519,7 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
       {
         if (info.image.ms == 0 && info.image.arrayed == 0)
         {
-          binding.m_Type = xiiGALShaderResourceType::TextureSRV;
+          binding.m_TextureType = xiiGALShaderTextureType::Texture3D;
           return XII_SUCCESS;
         }
       }
@@ -597,12 +531,12 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
         {
           if (info.image.arrayed == 0)
           {
-            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
+            binding.m_TextureType = xiiGALShaderTextureType::TextureCube;
             return XII_SUCCESS;
           }
           else
           {
-            binding.m_Type = xiiGALShaderResourceType::TextureSRV;
+            binding.m_TextureType = xiiGALShaderTextureType::TextureCubeArray;
             return XII_SUCCESS;
           }
         }
@@ -655,7 +589,7 @@ xiiResult xiiShaderCompilerVulkan::FillSRVResourceBinding(xiiShaderStageBinary& 
   return XII_FAILURE;
 }
 
-xiiResult xiiShaderCompilerVulkan::FillUAVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const SpvReflectDescriptorBinding& info)
+xiiResult xiiShaderCompilerVulkan::FillUAVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const SpvReflectDescriptorBinding& info)
 {
   if (info.descriptor_type == SpvReflectDescriptorType::SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_IMAGE)
   {

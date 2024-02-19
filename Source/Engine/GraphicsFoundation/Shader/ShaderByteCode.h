@@ -128,6 +128,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceDescription : public xiiHa
   xiiUInt32                                        m_uiBindIndex     = xiiInvalidIndex;                   ///< The resource binding index in the shader.
   xiiUInt32                                        m_uiDescriptorSet = xiiInvalidIndex;                   ///< The descriptor set to which this resource belongs to.
   xiiBitflags<xiiGALShaderStage>                   m_ShaderStages    = xiiGALShaderStage::Unknown;        ///< The shader stages to which this resource is bound.
+  xiiUInt32                                        m_uiTotalSize     = 0U;                                ///< For a resource with variables, the total size of the resource.
   xiiDynamicArray<xiiGALShaderVariableDescription> m_Variables;                                           ///< An array of member variables for shader constant buffer, or push constants.
 };
 
@@ -140,9 +141,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableDescription : public xiiHa
   xiiEnum<xiiGALShaderVariableClassType>           m_Class         = xiiGALShaderVariableClassType::Unknown; ///< The variable class.
   xiiEnum<xiiGALShaderPrimitiveType>               m_PrimitiveType = xiiGALShaderPrimitiveType::Unknown;     ///< The variable primitive data type..
   xiiUInt8                                         m_uiRowCount    = 0U;                                     ///< For a matrix type, the number of rows.
-  xiiUInt8                                         m_uiColumnCount = 0U;                                     ///< For a matrix type, the number of columns.
-  xiiUInt8                                         m_uiOffset      = 0U;                                     ///< The offset in bytes between the start of the parent structure and this variable.
-  xiiUInt8                                         m_uiArraySize   = 0U;                                     ///< The array size.
+  xiiUInt8                                         m_uiColumnCount = 0U;                                     ///< For a matrix type, the number of columns. For a vector type, the number of components.
+  xiiUInt32                                        m_uiOffset      = 0U;                                     ///< The offset in bytes between the start of the parent structure and this variable.
+  xiiUInt32                                        m_uiArraySize   = 0U;                                     ///< The array size.
   xiiDynamicArray<xiiGALShaderVariableDescription> m_Members;                                                ///< For a structure, an array of member variables.
 };
 
