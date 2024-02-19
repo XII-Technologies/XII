@@ -1,6 +1,6 @@
 #pragma once
 
-#include <GraphicsCore/GraphicsCoreDLL.h>
+#include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <Foundation/Math/Mat3.h>
 #include <Foundation/Math/Transform.h>

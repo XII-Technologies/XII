@@ -4,7 +4,6 @@
 
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D12.h>
 #  include <ShaderCompiler/ShaderCompiler.h>
-#  include <ShaderCompiler/ShaderMetadata.h>
 
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #    include <d3dcompiler.h>
@@ -103,11 +102,12 @@ xiiResult xiiShaderCompilerD3D12::CompileShader(xiiStringView sFile, xiiStringVi
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderStage> Stage, xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>>& vertexInputMapping)
+xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderStage> Stage, xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>>& vertexInputMapping)
 {
   XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_sSourceFile);
 
-  auto& byteCode = inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)].GetByteCode();
+  xiiGALShaderByteCode* pShader  = inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)];
+  auto&                 byteCode = pShader->m_ByteCode;
 
   DxcBuffer ReflectionData;
   ReflectionData.Encoding = DXC_CP_ACP;
@@ -121,8 +121,8 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::x
     return XII_FAILURE;
   }
 
-  D3D12_SHADER_DESC ShaderDesc;
-  if (FAILED(pReflector->GetDesc(&ShaderDesc)))
+  D3D12_SHADER_DESC shaderDescription;
+  if (FAILED(pReflector->GetDesc(&shaderDescription)))
   {
     xiiLog::Error("Failed to extract shader information.");
     return XII_FAILURE;
@@ -132,7 +132,7 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::x
   xiiHybridArray<xiiGALVertexInputLayout, 8> vertexInputLayouts;
   if (Stage.IsSet(xiiGALShaderStage::Vertex))
   {
-    xiiUInt32 uiNumVars = ShaderDesc.InputParameters;
+    xiiUInt32 uiNumVars = shaderDescription.InputParameters;
 
     xiiDynamicArray<D3D12_PARAMETER_DESC*> inputParameters;
     inputParameters.SetCount(uiNumVars);
@@ -172,222 +172,44 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramCompiler::x
 
   // Descriptor Bindings
   {
-    xiiUInt32 uiNumBoundResources = ShaderDesc.BoundResources;
+    xiiUInt32 uiNumBoundResources = shaderDescription.BoundResources;
 
     xiiDynamicArray<D3D12_SHADER_INPUT_BIND_DESC> boundResources;
     boundResources.SetCount(uiNumBoundResources);
 
     for (xiiUInt32 i = 0; i < uiNumBoundResources; ++i)
     {
-      D3D12_SHADER_INPUT_BIND_DESC& inputDesc = boundResources[i];
-      if (FAILED(pReflector->GetResourceBindingDesc(i, &inputDesc)))
+      D3D12_SHADER_INPUT_BIND_DESC& inputDescription = boundResources[i];
+      if (FAILED(pReflector->GetResourceBindingDesc(i, &inputDescription)))
       {
         xiiLog::Error("Failed to retrieve shader input descriptor");
         return XII_FAILURE;
       }
 
-      xiiLog::Info("Bound Resource: '{}' at slot {} (Count: {})", inputDesc.Name, inputDesc.BindPoint, inputDesc.BindCount);
+      xiiLog::Info("Bound Resource: '{}' at slot {} (Count: {})", inputDescription.Name, inputDescription.BindPoint, inputDescription.BindCount);
 
-      xiiShaderResourceBinding shaderResourceBinding;
-      shaderResourceBinding.m_Type       = xiiGALShaderResourceType::Unknown;
-      shaderResourceBinding.m_iSlot      = inputDesc.BindPoint;
-      shaderResourceBinding.m_iBindIndex = inputDesc.BindPoint;
-      shaderResourceBinding.m_sName.Assign(inputDesc.Name);
+      xiiGALShaderResourceDescription shaderResourceBinding = {};
+      shaderResourceBinding.m_Type                          = xiiGALShaderResourceType::Unknown;
+      shaderResourceBinding.m_TextureType                   = xiiGALShaderTextureType::Unknown;
+      shaderResourceBinding.m_uiArraySize                   = inputDescription.BindCount;
+      shaderResourceBinding.m_uiDescriptorSet               = 0;
+      shaderResourceBinding.m_uiBindIndex                   = inputDescription.BindPoint;
+      shaderResourceBinding.m_ShaderStages                  = Stage;
+      shaderResourceBinding.m_sName.Assign(inputDescription.Name);
 
-      if (FillResourceBinding(inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)], shaderResourceBinding, pReflector, inputDesc).Failed())
+      if (FillResourceBinding(*inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)], shaderResourceBinding, pReflector, inputDescription).Failed())
         continue;
 
       XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown, "FillResourceBinding should have failed.");
 
-      inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)].AddShaderResourceBinding(shaderResourceBinding);
-    }
-
-    // Write Bindings
-    {
-      xiiArrayPtr<const xiiShaderResourceBinding> xiiBindings = inout_Data.m_StageBinary[xiiGALShaderStage::GetStageIndex(Stage)].GetShaderResourceBindings();
-
-      // Modify meta data
-      xiiDefaultMemoryStreamStorage storage;
-      xiiMemoryStreamWriter         stream(&storage);
-
-      const xiiUInt32 uiCount = xiiBindings.GetCount();
-
-      xiiHybridArray<xiiGALShaderResourceBinding, 16U> shaderResourceBinding;
-
-      for (xiiUInt32 i = 0; i < uiCount; ++i)
-      {
-        auto& info         = xiiBindings[i];
-        auto& resourceInfo = boundResources[i];
-
-        xiiGALShaderResourceBinding& binding = shaderResourceBinding.ExpandAndGetRef();
-        binding.m_sName                      = info.m_sName;
-        binding.m_Type                       = xiiBindings[i].m_Type;
-        binding.m_uiSlot                     = xiiBindings[i].m_iSlot;
-        binding.m_uiBindIndex                = xiiBindings[i].m_iBindIndex;
-        binding.m_uiArraySize                = resourceInfo.BindCount;
-      }
-
-      xiiShaderMetaData::Write(stream, byteCode, shaderResourceBinding, vertexInputLayouts);
-
-      // Replaced compiled shader code with custom xiiSpirvMetaData format.
-      xiiUInt64 uiBytesLeft    = storage.GetStorageSize64();
-      xiiUInt64 uiReadPosition = 0;
-      byteCode.Clear();
-      byteCode.Reserve((xiiUInt32)uiBytesLeft);
-      while (uiBytesLeft > 0)
-      {
-        xiiArrayPtr<const xiiUInt8> data = storage.GetContiguousMemoryRange(uiReadPosition);
-        byteCode.PushBackRange(data);
-        uiReadPosition += data.GetCount();
-        uiBytesLeft -= data.GetCount();
-      }
+      inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)]->m_ShaderResourceBindings.PushBack(shaderResourceBinding);
     }
   }
 
   return XII_SUCCESS;
 }
 
-xiiShaderConstantBufferLayout* xiiShaderCompilerD3D12::ReflectConstantBufferLayout(xiiShaderStageBinary& pStageBinary, xiiStringView sName, ID3D12ShaderReflectionConstantBuffer* pConstantBufferReflection)
-{
-  XII_LOG_BLOCK("Constant Buffer Layout", sName);
-
-  D3D12_SHADER_BUFFER_DESC ShaderDesc;
-
-  if (FAILED(pConstantBufferReflection->GetDesc(&ShaderDesc)))
-  {
-    xiiLog::Error("Failed to retrieve constant buffer descriptor.");
-    return nullptr;
-  }
-
-  xiiLog::Debug("Constant Buffer has {} variables, Size is {} {}", ShaderDesc.Variables, ShaderDesc.Size, (ShaderDesc.Size > 1 ? "bytes" : "byte"));
-
-  xiiShaderConstantBufferLayout* pCBLayout = pStageBinary.CreateConstantBufferLayout();
-  pCBLayout->m_uiTotalSize                 = ShaderDesc.Size;
-
-  for (xiiUInt32 i = 0; i < ShaderDesc.Variables; ++i)
-  {
-    ID3D12ShaderReflectionVariable* pCBVariable = pConstantBufferReflection->GetVariableByIndex(i);
-
-    D3D12_SHADER_VARIABLE_DESC Desc;
-    if (FAILED(pCBVariable->GetDesc(&Desc)))
-    {
-      xiiLog::Error("Failed to retrieve shader variable descriptor.");
-      return nullptr;
-    }
-
-    ID3D12ShaderReflectionType* pTypeDesc = pCBVariable->GetType();
-
-    D3D12_SHADER_TYPE_DESC TypeDesc;
-    if (FAILED(pTypeDesc->GetDesc(&TypeDesc)))
-    {
-      xiiLog::Info("Failed to retrieve shader variable type descriptor");
-      return nullptr;
-    }
-
-    xiiShaderConstantBufferLayout::Constant constant;
-    constant.m_sName.Assign(Desc.Name);
-    constant.m_uiOffset        = static_cast<xiiUInt16>(Desc.StartOffset);
-    constant.m_uiArrayElements = static_cast<xiiUInt8>(xiiMath::Max(TypeDesc.Elements, 1u));
-
-    if (TypeDesc.Class == D3D_SVC_SCALAR || TypeDesc.Class == D3D_SVC_VECTOR)
-    {
-      switch (TypeDesc.Type)
-      {
-        case D3D_SVT_FLOAT:
-          constant.m_Type = (xiiShaderConstantBufferLayout::Constant::Type::Enum)((xiiInt32)xiiShaderConstantBufferLayout::Constant::Type::Float1 + TypeDesc.Columns - 1);
-          break;
-        case D3D_SVT_INT:
-          constant.m_Type = (xiiShaderConstantBufferLayout::Constant::Type::Enum)((xiiInt32)xiiShaderConstantBufferLayout::Constant::Type::Int1 + TypeDesc.Columns - 1);
-          break;
-        case D3D_SVT_UINT:
-          constant.m_Type = (xiiShaderConstantBufferLayout::Constant::Type::Enum)((xiiInt32)xiiShaderConstantBufferLayout::Constant::Type::UInt1 + TypeDesc.Columns - 1);
-          break;
-        case D3D_SVT_BOOL:
-          if (TypeDesc.Columns == 1)
-          {
-            constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Bool;
-          }
-          break;
-      }
-    }
-
-    if (TypeDesc.Class == D3D_SVC_MATRIX_COLUMNS)
-    {
-      if (TypeDesc.Type != D3D_SVT_FLOAT)
-      {
-        xiiLog::Error("Variable '{0}': Only float matrices are supported", Desc.Name);
-        continue;
-      }
-
-      if (TypeDesc.Columns == 3 && TypeDesc.Rows == 3)
-      {
-        constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Mat3x3;
-      }
-      else if (TypeDesc.Columns == 4 && TypeDesc.Rows == 4)
-      {
-        constant.m_Type = xiiShaderConstantBufferLayout::Constant::Type::Mat4x4;
-      }
-      else
-      {
-        xiiLog::Error("Variable '{0}': {1}x{2} matrices are not supported", Desc.Name, TypeDesc.Rows, TypeDesc.Columns);
-        continue;
-      }
-    }
-
-    if (TypeDesc.Class == D3D_SVC_MATRIX_ROWS)
-    {
-      xiiLog::Error("Variable '{0}': Row-Major matrices are not supported", Desc.Name);
-      continue;
-    }
-
-    if (TypeDesc.Class == D3D_SVC_STRUCT)
-    {
-      continue;
-    }
-
-    if (constant.m_Type == xiiShaderConstantBufferLayout::Constant::Type::Default)
-    {
-      xiiLog::Error("Variable '{0}': Variable type '{1}' is unknown / not supported", Desc.Name, TypeDesc.Class);
-      continue;
-    }
-
-    const char* typeNames[] = {
-      "Default",
-      "Float1",
-      "Float2",
-      "Float3",
-      "Float4",
-      "Int1",
-      "Int2",
-      "Int3",
-      "Int4",
-      "UInt1",
-      "UInt2",
-      "UInt3",
-      "UInt4",
-      "Mat3x3",
-      "Mat4x4",
-      "Transform",
-      "Bool",
-      "Struct",
-    };
-
-    if (constant.m_uiArrayElements > 1)
-    {
-      xiiLog::Info("{1} {3}[{2}] {0}", constant.m_sName, xiiArgU(constant.m_uiOffset, 3, true), constant.m_uiArrayElements, typeNames[constant.m_Type]);
-    }
-    else
-    {
-      xiiLog::Info("{1} {3} {0}", constant.m_sName, xiiArgU(constant.m_uiOffset, 3, true), constant.m_uiArrayElements, typeNames[constant.m_Type]);
-    }
-
-    pCBLayout->m_Constants.PushBack(constant);
-  }
-
-  return pCBLayout;
-}
-
-xiiResult xiiShaderCompilerD3D12::FillResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, xiiComPtr<ID3D12ShaderReflection>& pReflector, const D3D12_SHADER_INPUT_BIND_DESC& info)
+xiiResult xiiShaderCompilerD3D12::FillResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, xiiComPtr<ID3D12ShaderReflection>& pReflector, const D3D12_SHADER_INPUT_BIND_DESC& info)
 {
   // clang-format off
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED
@@ -396,7 +218,6 @@ xiiResult xiiShaderCompilerD3D12::FillResourceBinding(xiiShaderStageBinary& shad
     || info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_BYTEADDRESS)
   // clang-format on
   {
-    // Fill Shader Resource View
     return FillSRVResourceBinding(shaderBinary, binding, info);
   }
 
@@ -415,10 +236,9 @@ xiiResult xiiShaderCompilerD3D12::FillResourceBinding(xiiShaderStageBinary& shad
 
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_CBUFFER)
   {
-    binding.m_Type    = xiiGALShaderResourceType::ConstantBuffer;
-    binding.m_pLayout = ReflectConstantBufferLayout(shaderBinary, info.Name, pReflector->GetConstantBufferByName(info.Name));
+    binding.m_Type = xiiGALShaderResourceType::ConstantBuffer;
 
-    return XII_SUCCESS;
+    return ReflectConstantBufferLayout(shaderBinary, binding, pReflector->GetConstantBufferByName(info.Name));
   }
 
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_SAMPLER)
@@ -440,7 +260,148 @@ xiiResult xiiShaderCompilerD3D12::FillResourceBinding(xiiShaderStageBinary& shad
   return XII_FAILURE;
 }
 
-xiiResult xiiShaderCompilerD3D12::FillSRVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const D3D12_SHADER_INPUT_BIND_DESC& info)
+xiiResult xiiShaderCompilerD3D12::ReflectConstantBufferLayout(xiiGALShaderByteCode& pStageBinary, xiiGALShaderResourceDescription& binding, ID3D12ShaderReflectionConstantBuffer* pConstantBufferReflection)
+{
+  XII_LOG_BLOCK("Constant Buffer Layout", binding.m_sName);
+
+  D3D12_SHADER_BUFFER_DESC shaderDescription;
+
+  if (FAILED(pConstantBufferReflection->GetDesc(&shaderDescription)))
+  {
+    xiiLog::Error("Failed to retrieve constant buffer descriptor.");
+    return XII_FAILURE;
+  }
+
+  xiiLog::Debug("Constant Buffer has {} variables, Size is {} {}.", shaderDescription.Variables, shaderDescription.Size, (shaderDescription.Size > 1 ? "bytes" : "byte"));
+
+  binding.m_uiTotalSize = shaderDescription.Size;
+
+  for (xiiUInt32 i = 0; i < shaderDescription.Variables; ++i)
+  {
+    ID3D12ShaderReflectionVariable* pCBVariable = pConstantBufferReflection->GetVariableByIndex(i);
+
+    D3D12_SHADER_VARIABLE_DESC variableDescription;
+    if (FAILED(pCBVariable->GetDesc(&variableDescription)))
+    {
+      xiiLog::Error("Failed to retrieve shader variable descriptor.");
+      return XII_FAILURE;
+    }
+
+    ID3D12ShaderReflectionType* pTypeDescription = pCBVariable->GetType();
+
+    D3D12_SHADER_TYPE_DESC typeDescription;
+    if (FAILED(pTypeDescription->GetDesc(&typeDescription)))
+    {
+      xiiLog::Info("Failed to retrieve shader variable type descriptor");
+      return XII_FAILURE;
+    }
+
+    xiiGALShaderVariableDescription memberDescription = {};
+    memberDescription.m_uiOffset                      = variableDescription.StartOffset;
+    memberDescription.m_uiArraySize                   = xiiMath::Max(typeDescription.Elements, 1U);
+    memberDescription.m_sName.Assign(variableDescription.Name);
+
+    switch (typeDescription.Class)
+    {
+      case D3D_SVC_SCALAR:
+        memberDescription.m_Class = xiiGALShaderVariableClassType::Scalar;
+        break;
+      case D3D_SVC_VECTOR:
+        memberDescription.m_Class = xiiGALShaderVariableClassType::Array;
+        break;
+      case D3D_SVC_MATRIX_ROWS:
+        memberDescription.m_Class = xiiGALShaderVariableClassType::MatrixRows;
+        break;
+      case D3D_SVC_MATRIX_COLUMNS:
+        memberDescription.m_Class = xiiGALShaderVariableClassType::MatrixColumns;
+        break;
+      case D3D_SVC_STRUCT:
+        memberDescription.m_Class = xiiGALShaderVariableClassType::Struct;
+        break;
+      default:
+        XII_ASSERT_NOT_IMPLEMENTED;
+        continue;
+    }
+
+    switch (typeDescription.Type)
+    {
+      case D3D_SVT_VOID:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Void;
+        break;
+      case D3D_SVT_BOOL:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Bool;
+        break;
+      case D3D_SVT_INT16:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Int16;
+        break;
+      case D3D_SVT_INT:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Int32;
+        break;
+      case D3D_SVT_INT64:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Int64;
+        break;
+      case D3D_SVT_UINT8:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt8;
+        break;
+      case D3D_SVT_UINT16:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt16;
+        break;
+      case D3D_SVT_UINT:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt32;
+        break;
+      case D3D_SVT_UINT64:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt64;
+        break;
+      case D3D_SVT_FLOAT16:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Float16;
+        break;
+      case D3D_SVT_FLOAT:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Float32;
+        break;
+      case D3D_SVT_DOUBLE:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Double;
+        break;
+      case D3D_SVT_MIN8FLOAT:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Min8Float;
+        break;
+      case D3D_SVT_MIN10FLOAT:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Min10Float;
+        break;
+      case D3D_SVT_MIN16FLOAT:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Min16Float;
+        break;
+      case D3D_SVT_MIN12INT:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Min12Int;
+        break;
+      case D3D_SVT_MIN16INT:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Min16Int;
+        break;
+      case D3D_SVT_MIN16UINT:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Min16UInt;
+        break;
+      case D3D_SVT_STRING:
+        memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::String;
+        break;
+      default:
+        XII_ASSERT_NOT_IMPLEMENTED;
+        continue;
+    }
+
+    if (typeDescription.Class == D3D_SVC_MATRIX_COLUMNS || typeDescription.Class == D3D_SVC_MATRIX_ROWS)
+    {
+      memberDescription.m_uiRowCount    = typeDescription.Rows;
+      memberDescription.m_uiColumnCount = typeDescription.Columns;
+    }
+
+    /// \todo ShaderCompiler: Add member print output.
+
+    binding.m_Variables.PushBack(memberDescription);
+  }
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiShaderCompilerD3D12::FillSRVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const D3D12_SHADER_INPUT_BIND_DESC& info)
 {
   if (info.Type == D3D_SIT_STRUCTURED || info.Type == D3D_SIT_BYTEADDRESS || info.Type == D3D_SVT_BUFFER)
   {
@@ -452,17 +413,41 @@ xiiResult xiiShaderCompilerD3D12::FillSRVResourceBinding(xiiShaderStageBinary& s
     switch (info.Dimension)
     {
       case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1D:
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1DARRAY:
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2D:
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DARRAY:
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DMS:
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE3D:
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURECUBE:
-      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURECUBEARRAY:
-        binding.m_Type = xiiGALShaderResourceType::TextureSRV;
+        binding.m_Type        = xiiGALShaderResourceType::TextureSRV;
+        binding.m_TextureType = xiiGALShaderTextureType::Texture1D;
         break;
-
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE1DARRAY:
+        binding.m_Type        = xiiGALShaderResourceType::TextureSRV;
+        binding.m_TextureType = xiiGALShaderTextureType::Texture1DArray;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2D:
+        binding.m_Type        = xiiGALShaderResourceType::TextureSRV;
+        binding.m_TextureType = xiiGALShaderTextureType::Texture2D;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DARRAY:
+        binding.m_Type        = xiiGALShaderResourceType::TextureSRV;
+        binding.m_TextureType = xiiGALShaderTextureType::Texture2DArray;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DMS:
+        binding.m_Type        = xiiGALShaderResourceType::TextureSRV;
+        binding.m_TextureType = xiiGALShaderTextureType::Texture2DMS;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE2DMSARRAY:
+        binding.m_Type        = xiiGALShaderResourceType::TextureSRV;
+        binding.m_TextureType = xiiGALShaderTextureType::Texture2DMSArray;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURE3D:
+        binding.m_Type        = xiiGALShaderResourceType::TextureSRV;
+        binding.m_TextureType = xiiGALShaderTextureType::Texture3D;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURECUBE:
+        binding.m_Type        = xiiGALShaderResourceType::TextureSRV;
+        binding.m_TextureType = xiiGALShaderTextureType::TextureCube;
+        break;
+      case D3D_SRV_DIMENSION::D3D_SRV_DIMENSION_TEXTURECUBEARRAY:
+        binding.m_Type        = xiiGALShaderResourceType::TextureSRV;
+        binding.m_TextureType = xiiGALShaderTextureType::TextureCubeArray;
+        break;
       default:
         XII_ASSERT_NOT_IMPLEMENTED;
         return XII_FAILURE;
@@ -474,7 +459,7 @@ xiiResult xiiShaderCompilerD3D12::FillSRVResourceBinding(xiiShaderStageBinary& s
   return XII_FAILURE;
 }
 
-xiiResult xiiShaderCompilerD3D12::FillUAVResourceBinding(xiiShaderStageBinary& shaderBinary, xiiShaderResourceBinding& binding, const D3D12_SHADER_INPUT_BIND_DESC& info)
+xiiResult xiiShaderCompilerD3D12::FillUAVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const D3D12_SHADER_INPUT_BIND_DESC& info)
 {
   switch (info.Type)
   {
@@ -519,13 +504,13 @@ xiiEnum<xiiGALTextureFormat> GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE forma
     {
       switch (numComponents)
       {
-        case 0b1111:
+        case 0xF:
           return xiiGALTextureFormat::RGBA32UInt;
-        case 0b111:
+        case 0x7:
           return xiiGALTextureFormat::RGB32UInt;
-        case 0b11:
+        case 0x3:
           return xiiGALTextureFormat::RG32UInt;
-        case 0b1:
+        case 0x1:
           return xiiGALTextureFormat::R32UInt;
       }
     }
@@ -534,13 +519,13 @@ xiiEnum<xiiGALTextureFormat> GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE forma
     {
       switch (numComponents)
       {
-        case 0b1111:
+        case 0xF:
           return xiiGALTextureFormat::RGBA32SInt;
-        case 0b111:
+        case 0x7:
           return xiiGALTextureFormat::RGB32SInt;
-        case 0b11:
+        case 0x3:
           return xiiGALTextureFormat::RG32SInt;
-        case 0b1:
+        case 0x1:
           return xiiGALTextureFormat::R32SInt;
       }
     }
@@ -549,13 +534,13 @@ xiiEnum<xiiGALTextureFormat> GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE forma
     {
       switch (numComponents)
       {
-        case 0b1111:
+        case 0xF:
           return xiiGALTextureFormat::RGBA32Float;
-        case 0b111:
+        case 0x7:
           return xiiGALTextureFormat::RGB32Float;
-        case 0b11:
+        case 0x3:
           return xiiGALTextureFormat::RG32Float;
-        case 0b1:
+        case 0x1:
           return xiiGALTextureFormat::R32Float;
       }
     }

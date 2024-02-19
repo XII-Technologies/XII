@@ -7,6 +7,7 @@
 #include <Foundation/IO/Stream.h>
 #include <Foundation/Strings/HashedString.h>
 #include <Foundation/Types/Enum.h>
+#include <Foundation/Types/SharedPtr.h>
 #include <GraphicsFoundation/Shader/Shader.h>
 
 class XII_GRAPHICSCORE_DLL xiiShaderStageBinary

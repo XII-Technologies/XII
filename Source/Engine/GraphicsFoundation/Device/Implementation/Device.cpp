@@ -2542,7 +2542,7 @@ XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipeline
 
   // Ensure that shader stages do not conflict for resources with the same name.
 
-  xiiMap<xiiString, xiiSet<xiiGALShaderStage::StorageType>> usedResourceShaderStages;
+  xiiMap<xiiHashedString, xiiSet<xiiGALShaderStage::StorageType>> usedResourceShaderStages;
   for (xiiUInt32 i = 0; i < description.m_Resources.GetCount(); ++i)
   {
     const auto& resource = description.m_Resources[i];
@@ -2581,7 +2581,7 @@ XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipeline
 
   // Ensure that immutable samplers do not have conflicting shader stages.
 
-  xiiMap<xiiString, xiiSet<xiiGALShaderStage::StorageType>> usedImmutableSamplerShaderStages;
+  xiiMap<xiiHashedString, xiiSet<xiiGALShaderStage::StorageType>> usedImmutableSamplerShaderStages;
   for (xiiUInt32 i = 0; i < description.m_ImmutableSamplers.GetCount(); ++i)
   {
     const auto& samplerDescription = description.m_ImmutableSamplers[i];

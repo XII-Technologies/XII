@@ -197,14 +197,14 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramData& inou
 
       xiiLog::Info("Bound Resource: '{}' at slot {} (Count: {})", descriptorBinding.name, descriptorBinding.binding, descriptorBinding.count);
 
-      xiiGALShaderResourceDescription shaderResourceBinding;
-      shaderResourceBinding.m_Type            = xiiGALShaderResourceType::Unknown;
-      shaderResourceBinding.m_TextureType     = xiiGALShaderTextureType::Unknown;
-      shaderResourceBinding.m_uiArraySize     = descriptorBinding.count;
-      shaderResourceBinding.m_uiDescriptorSet = descriptorBinding.set;
-      shaderResourceBinding.m_uiBindIndex     = descriptorBinding.binding;
-      shaderResourceBinding.m_ShaderStages    = Stage;
-      shaderResourceBinding.m_uiTotalSize     = 0U;
+      xiiGALShaderResourceDescription shaderResourceBinding = {};
+      shaderResourceBinding.m_Type                          = xiiGALShaderResourceType::Unknown;
+      shaderResourceBinding.m_TextureType                   = xiiGALShaderTextureType::Unknown;
+      shaderResourceBinding.m_uiArraySize                   = descriptorBinding.count;
+      shaderResourceBinding.m_uiDescriptorSet               = descriptorBinding.set;
+      shaderResourceBinding.m_uiBindIndex                   = descriptorBinding.binding;
+      shaderResourceBinding.m_ShaderStages                  = Stage;
+      shaderResourceBinding.m_uiTotalSize                   = 0U;
       shaderResourceBinding.m_sName.Assign(descriptorBinding.name);
 
       if (FillResourceBinding(*inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)], shaderResourceBinding, descriptorBinding).Failed())
@@ -248,9 +248,7 @@ xiiResult xiiShaderCompilerVulkan::FillResourceBinding(xiiGALShaderByteCode& sha
   {
     binding.m_Type = xiiGALShaderResourceType::ConstantBuffer;
 
-    ReflectConstantBufferLayout(shaderBinary, binding, info);
-
-    return XII_SUCCESS;
+    return ReflectConstantBufferLayout(shaderBinary, binding, info);
   }
 
   if (info.resource_type == SpvReflectResourceType::SPV_REFLECT_RESOURCE_FLAG_SAMPLER)
@@ -277,11 +275,11 @@ xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteC
 
   for (xiiUInt32 uiMember = 0; uiMember < block.member_count; ++uiMember)
   {
-    const auto&                     memberBlock = block.members[uiMember];
-    xiiGALShaderVariableDescription member      = {};
+    const auto&                     memberBlock       = block.members[uiMember];
+    xiiGALShaderVariableDescription memberDescription = {};
 
-    member.m_sName.Assign(memberBlock.name);
-    member.m_uiOffset = memberBlock.offset;
+    memberDescription.m_sName.Assign(memberBlock.name);
+    memberDescription.m_uiOffset = memberBlock.offset;
 
     xiiUInt32 uiFlags = memberBlock.type_description->type_flags;
 
@@ -289,25 +287,25 @@ xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteC
     {
       uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_VOID;
 
-      member.m_Class         = xiiGALShaderVariableClassType::Unknown;
-      member.m_PrimitiveType = xiiGALShaderPrimitiveType::Void;
+      memberDescription.m_Class         = xiiGALShaderVariableClassType::Unknown;
+      memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Void;
     }
 
     if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_BOOL)
     {
       uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_BOOL;
 
-      member.m_Class         = xiiGALShaderVariableClassType::Scalar;
-      member.m_PrimitiveType = xiiGALShaderPrimitiveType::Bool;
-      member.m_uiArraySize   = 1U;
+      memberDescription.m_Class         = xiiGALShaderVariableClassType::Scalar;
+      memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Bool;
+      memberDescription.m_uiArraySize   = 1U;
     }
 
     if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_INT)
     {
       uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_INT;
 
-      member.m_Class       = xiiGALShaderVariableClassType::Scalar;
-      member.m_uiArraySize = 1U;
+      memberDescription.m_Class       = xiiGALShaderVariableClassType::Scalar;
+      memberDescription.m_uiArraySize = 1U;
 
       const bool bIsUnsigned = !memberBlock.type_description->traits.numeric.scalar.signedness;
       switch (memberBlock.type_description->traits.numeric.scalar.width)
@@ -315,33 +313,33 @@ xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteC
         case 64U:
         {
           if (bIsUnsigned)
-            member.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt64;
+            memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt64;
           else
-            member.m_PrimitiveType = xiiGALShaderPrimitiveType::Int64;
+            memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Int64;
         }
         break;
         case 32U:
         {
           if (bIsUnsigned)
-            member.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt32;
+            memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt32;
           else
-            member.m_PrimitiveType = xiiGALShaderPrimitiveType::Int32;
+            memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Int32;
         }
         break;
         case 16U:
         {
           if (bIsUnsigned)
-            member.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt16;
+            memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt16;
           else
-            member.m_PrimitiveType = xiiGALShaderPrimitiveType::Int16;
+            memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Int16;
         }
         break;
         case 8U:
         {
           if (bIsUnsigned)
-            member.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt8;
+            memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::UInt8;
           else
-            member.m_PrimitiveType = xiiGALShaderPrimitiveType::Int8;
+            memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Int8;
         }
         break;
         default:
@@ -356,24 +354,24 @@ xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteC
     {
       uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_FLOAT;
 
-      member.m_Class       = xiiGALShaderVariableClassType::Scalar;
-      member.m_uiArraySize = 1U;
+      memberDescription.m_Class       = xiiGALShaderVariableClassType::Scalar;
+      memberDescription.m_uiArraySize = 1U;
 
       switch (memberBlock.type_description->traits.numeric.scalar.width)
       {
         case 64U:
         {
-          member.m_PrimitiveType = xiiGALShaderPrimitiveType::Double;
+          memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Double;
         }
         break;
         case 32U:
         {
-          member.m_PrimitiveType = xiiGALShaderPrimitiveType::Float32;
+          memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Float32;
         }
         break;
         case 16U:
         {
-          member.m_PrimitiveType = xiiGALShaderPrimitiveType::Float16;
+          memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Float16;
         }
         break;
         default:
@@ -388,10 +386,11 @@ xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteC
     {
       uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_VECTOR;
 
-      XII_ASSERT_DEV(member.m_Class != xiiGALShaderVariableClassType::Unknown, "Expected a known shader variable class type.");
-      XII_ASSERT_DEV(member.m_PrimitiveType != xiiGALShaderPrimitiveType::Unknown, "Expected a known shader variable primitive type.");
+      memberDescription.m_Class = xiiGALShaderVariableClassType::Array;
 
-      member.m_uiColumnCount = memberBlock.type_description->traits.numeric.vector.component_count;
+      XII_ASSERT_DEV(memberDescription.m_PrimitiveType != xiiGALShaderPrimitiveType::Unknown, "Expected a known shader variable primitive type.");
+
+      memberDescription.m_uiColumnCount = memberBlock.type_description->traits.numeric.vector.component_count;
     }
 
     if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_MATRIX)
@@ -399,14 +398,14 @@ xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteC
       uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_MATRIX;
 
       if (memberBlock.decoration_flags & SpvReflectDecorationFlagBits::SPV_REFLECT_DECORATION_ROW_MAJOR)
-        member.m_Class = xiiGALShaderVariableClassType::MatrixRows;
+        memberDescription.m_Class = xiiGALShaderVariableClassType::MatrixRows;
       else if (memberBlock.decoration_flags & SpvReflectDecorationFlagBits::SPV_REFLECT_DECORATION_COLUMN_MAJOR)
-        member.m_Class = xiiGALShaderVariableClassType::MatrixColumns;
+        memberDescription.m_Class = xiiGALShaderVariableClassType::MatrixColumns;
 
-      XII_ASSERT_DEV(member.m_PrimitiveType != xiiGALShaderPrimitiveType::Unknown, "Expected a known shader variable primitive type.");
+      XII_ASSERT_DEV(memberDescription.m_PrimitiveType != xiiGALShaderPrimitiveType::Unknown, "Expected a known shader variable primitive type.");
 
-      member.m_uiRowCount    = memberBlock.type_description->traits.numeric.matrix.row_count;
-      member.m_uiColumnCount = memberBlock.type_description->traits.numeric.matrix.column_count;
+      memberDescription.m_uiRowCount    = memberBlock.type_description->traits.numeric.matrix.row_count;
+      memberDescription.m_uiColumnCount = memberBlock.type_description->traits.numeric.matrix.column_count;
     }
 
     if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_STRUCT)
@@ -414,7 +413,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteC
       uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_STRUCT;
       uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_EXTERNAL_BLOCK;
 
-      member.m_Class = xiiGALShaderVariableClassType::Struct;
+      memberDescription.m_Class = xiiGALShaderVariableClassType::Struct;
     }
 
     if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_ARRAY)
@@ -423,27 +422,28 @@ xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteC
 
       if (memberBlock.array.dims_count != 1U)
       {
-        xiiLog::Error("Variable '{}': Multi-dimensional arrays are not supported.", member.m_sName);
+        xiiLog::Error("Variable '{}': Multi-dimensional arrays are not supported.", memberDescription.m_sName);
         continue;
       }
 
-      member.m_uiArraySize = memberBlock.array.dims[0];
+      memberDescription.m_Class       = xiiGALShaderVariableClassType::Array;
+      memberDescription.m_uiArraySize = memberBlock.array.dims[0];
     }
 
     if (uiFlags != 0)
     {
-      xiiLog::Error("Variable '{}': Unknown additional type flags '{}'", member.m_sName, uiFlags);
+      xiiLog::Error("Variable '{}': Unknown additional type flags '{}'", memberDescription.m_sName, uiFlags);
     }
 
-    if (member.m_Class == xiiGALShaderVariableClassType::Unknown)
+    if (memberDescription.m_Class == xiiGALShaderVariableClassType::Unknown)
     {
-      xiiLog::Error("Variable '{}': Variable type is unknown / not supported", member.m_sName);
+      xiiLog::Error("Variable '{}': Variable type is unknown / not supported", memberDescription.m_sName);
       continue;
     }
 
-    /// \todo Shader Compiler: Add member print output.
+    /// \todo ShaderCompiler: Add member print output.
 
-    binding.m_Variables.PushBack(member);
+    binding.m_Variables.PushBack(memberDescription);
   }
 
   return XII_SUCCESS;

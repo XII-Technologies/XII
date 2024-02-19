@@ -21,9 +21,6 @@ struct xiiShaderResourceDefinition
 
   /// \brief The extracted reflection of the resource containing type, binding index, sets, etc.
   xiiGALShaderResourceDescription m_ResourceDescription;
-
-  /// \brief The extracted reflection of the constant buffer resource containing type, binding index, sets, etc.
-  xiiGALShaderBufferDescription m_ResourceBufferDescription;
 };
 
 /// \brief Flags that affect the compilation process of a shader
