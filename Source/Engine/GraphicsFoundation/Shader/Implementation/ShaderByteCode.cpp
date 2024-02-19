@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
+#include <GraphicsFoundation/Shader/Types.h>
 
 // clang-format off
 
@@ -66,6 +67,184 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderByteCode, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // clang-format on
+
+void xiiGALShaderVariableDescription::CopyDataFormVariant(xiiUInt8* pDestination, xiiVariant* pValue, const xiiGALShaderVariableDescription& description)
+{
+  xiiResult conversionResult = XII_FAILURE;
+
+  XII_ASSERT_DEV(description.m_Class == xiiGALShaderVariableClassType::Scalar || xiiGALShaderVariableClassType::Array || xiiGALShaderVariableClassType::MatrixColumns || xiiGALShaderVariableClassType::MatrixRows, "");
+  XII_ASSERT_DEV(xiiGALShaderPrimitiveType::IsNumberType(description.m_PrimitiveType), "Only number types are supported.");
+
+  if (pValue != nullptr)
+  {
+    switch (description.m_PrimitiveType)
+    {
+      case xiiGALShaderPrimitiveType::Bool:
+      {
+        *reinterpret_cast<xiiShaderBool*>(pDestination) = pValue->ConvertTo<bool>(&conversionResult);
+      }
+      break;
+      case xiiGALShaderPrimitiveType::Int8:
+      {
+        *reinterpret_cast<xiiInt8*>(pDestination) = pValue->ConvertTo<xiiInt8>(&conversionResult);
+      }
+      break;
+      case xiiGALShaderPrimitiveType::Int16:
+      {
+        *reinterpret_cast<xiiInt16*>(pDestination) = pValue->ConvertTo<xiiInt16>(&conversionResult);
+      }
+      break;
+      case xiiGALShaderPrimitiveType::Int32:
+      {
+        if (description.m_uiColumnCount > 0 && description.m_uiRowCount > 0)
+        {
+          XII_ASSERT_NOT_IMPLEMENTED;
+        }
+        else if (description.m_uiColumnCount == 4)
+        {
+          *reinterpret_cast<xiiVec4I32*>(pDestination) = pValue->Get<xiiVec4I32>();
+        }
+        else if (description.m_uiColumnCount == 3)
+        {
+          *reinterpret_cast<xiiVec3I32*>(pDestination) = pValue->Get<xiiVec3I32>();
+        }
+        else if (description.m_uiColumnCount == 2)
+        {
+          *reinterpret_cast<xiiVec2I32*>(pDestination) = pValue->Get<xiiVec2I32>();
+        }
+        else
+        {
+          *reinterpret_cast<xiiInt32*>(pDestination) = pValue->ConvertTo<xiiInt32>(&conversionResult);
+        }
+      }
+      break;
+      case xiiGALShaderPrimitiveType::Int64:
+      {
+        if (description.m_uiColumnCount > 0 && description.m_uiRowCount > 0)
+        {
+          XII_ASSERT_NOT_IMPLEMENTED;
+        }
+        else if (description.m_uiColumnCount == 4)
+        {
+          *reinterpret_cast<xiiVec4I64*>(pDestination) = pValue->Get<xiiVec4I64>();
+        }
+        else if (description.m_uiColumnCount == 3)
+        {
+          *reinterpret_cast<xiiVec3I64*>(pDestination) = pValue->Get<xiiVec3I64>();
+        }
+        else if (description.m_uiColumnCount == 2)
+        {
+          *reinterpret_cast<xiiVec2I64*>(pDestination) = pValue->Get<xiiVec2I64>();
+        }
+        else
+        {
+          *reinterpret_cast<xiiInt64*>(pDestination) = pValue->ConvertTo<xiiInt64>(&conversionResult);
+        }
+      }
+      break;
+      case xiiGALShaderPrimitiveType::UInt8:
+      {
+        *reinterpret_cast<xiiUInt8*>(pDestination) = pValue->ConvertTo<xiiUInt8>(&conversionResult);
+      }
+      break;
+      case xiiGALShaderPrimitiveType::UInt16:
+      {
+        *reinterpret_cast<xiiUInt16*>(pDestination) = pValue->ConvertTo<xiiUInt16>(&conversionResult);
+      }
+      break;
+      case xiiGALShaderPrimitiveType::UInt32:
+      {
+        if (description.m_uiColumnCount > 0 && description.m_uiRowCount > 0)
+        {
+          XII_ASSERT_NOT_IMPLEMENTED;
+        }
+        else if (description.m_uiColumnCount == 4)
+        {
+          *reinterpret_cast<xiiVec4U32*>(pDestination) = pValue->Get<xiiVec4U32>();
+        }
+        else if (description.m_uiColumnCount == 3)
+        {
+          *reinterpret_cast<xiiVec3U32*>(pDestination) = pValue->Get<xiiVec3U32>();
+        }
+        else if (description.m_uiColumnCount == 2)
+        {
+          *reinterpret_cast<xiiVec2U32*>(pDestination) = pValue->Get<xiiVec2U32>();
+        }
+        else
+        {
+          *reinterpret_cast<xiiUInt32*>(pDestination) = pValue->ConvertTo<xiiUInt32>(&conversionResult);
+        }
+      }
+      break;
+      case xiiGALShaderPrimitiveType::UInt64:
+      {
+        if (description.m_uiColumnCount > 0 && description.m_uiRowCount > 0)
+        {
+          XII_ASSERT_NOT_IMPLEMENTED;
+        }
+        else if (description.m_uiColumnCount == 4)
+        {
+          *reinterpret_cast<xiiVec4U64*>(pDestination) = pValue->Get<xiiVec4U64>();
+        }
+        else if (description.m_uiColumnCount == 3)
+        {
+          *reinterpret_cast<xiiVec3U64*>(pDestination) = pValue->Get<xiiVec3U64>();
+        }
+        else if (description.m_uiColumnCount == 2)
+        {
+          *reinterpret_cast<xiiVec2U64*>(pDestination) = pValue->Get<xiiVec2U64>();
+        }
+        else
+        {
+          *reinterpret_cast<xiiUInt64*>(pDestination) = pValue->ConvertTo<xiiUInt64>(&conversionResult);
+        }
+      }
+      break;
+      case xiiGALShaderPrimitiveType::Float32:
+      {
+        if (description.m_uiRowCount == 4 && description.m_uiColumnCount == 4)
+        {
+          *reinterpret_cast<xiiMat4*>(pDestination) = pValue->Get<xiiMat4>();
+        }
+        else if (description.m_uiRowCount == 3 && description.m_uiColumnCount == 3)
+        {
+          *reinterpret_cast<xiiMat3*>(pDestination) = pValue->Get<xiiMat3>();
+        }
+        else if (description.m_uiRowCount == 0 && description.m_uiColumnCount <= 1)
+        {
+          *reinterpret_cast<float*>(pDestination) = pValue->ConvertTo<float>(&conversionResult);
+        }
+        else
+        {
+          XII_ASSERT_NOT_IMPLEMENTED;
+        }
+      }
+      break;
+      case xiiGALShaderPrimitiveType::Double:
+      {
+        if (description.m_uiRowCount == 4 && description.m_uiColumnCount == 4)
+        {
+          *reinterpret_cast<xiiMat4d*>(pDestination) = pValue->Get<xiiMat4d>();
+        }
+        else if (description.m_uiRowCount == 3 && description.m_uiColumnCount == 3)
+        {
+          *reinterpret_cast<xiiMat3d*>(pDestination) = pValue->Get<xiiMat3d>();
+        }
+        else if (description.m_uiRowCount == 0 && description.m_uiColumnCount <= 1)
+        {
+          *reinterpret_cast<double*>(pDestination) = pValue->ConvertTo<double>(&conversionResult);
+        }
+        else
+        {
+          XII_ASSERT_NOT_IMPLEMENTED;
+        }
+      }
+      break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+  }
+}
 
 xiiGALShaderByteCode::xiiGALShaderByteCode() = default;
 

@@ -890,15 +890,7 @@ void xiiMaterialResource::UpdateConstantBuffer(xiiShaderPermutationResource* pSh
     return;
 
   xiiTempHashedString             sConstantBufferName("xiiMaterialConstants");
-  const xiiShaderResourceBinding* pBinding = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::Pixel)->GetShaderResourceBinding(sConstantBufferName);
-  if (pBinding == nullptr)
-  {
-    pBinding = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::Vertex)->GetShaderResourceBinding(sConstantBufferName);
-  }
-
-  const xiiShaderConstantBufferLayout* pLayout = pBinding != nullptr ? pBinding->m_pLayout : nullptr;
-  if (pLayout == nullptr)
-    return;
+  const xiiGALShaderResourceDescription* pBinding = pShaderPermutation->GetShaderByteCode(xiiGALShaderStage::Pixel)->GetDescription(sConstantBufferName);
 
   auto pCachedValues = GetOrUpdateCachedValues();
 
@@ -906,31 +898,31 @@ void xiiMaterialResource::UpdateConstantBuffer(xiiShaderPermutationResource* pSh
 
   if (m_hConstantBufferStorage.IsInvalidated())
   {
-    m_hConstantBufferStorage = xiiRenderContext::CreateConstantBufferStorage(pLayout->m_uiTotalSize);
+    m_hConstantBufferStorage = xiiRenderContext::CreateConstantBufferStorage(pBinding->m_uiTotalSize);
   }
 
   xiiConstantBufferStorageBase* pStorage = nullptr;
   if (xiiRenderContext::TryGetConstantBufferStorage(m_hConstantBufferStorage, pStorage))
   {
     xiiArrayPtr<xiiUInt8> data = pStorage->GetRawDataForWriting();
-    if (data.GetCount() != pLayout->m_uiTotalSize)
+    if (data.GetCount() != pBinding->m_uiTotalSize)
     {
       xiiRenderContext::DeleteConstantBufferStorage(m_hConstantBufferStorage);
-      m_hConstantBufferStorage = xiiRenderContext::CreateConstantBufferStorage(pLayout->m_uiTotalSize);
+      m_hConstantBufferStorage = xiiRenderContext::CreateConstantBufferStorage(pBinding->m_uiTotalSize);
 
       XII_VERIFY(xiiRenderContext::TryGetConstantBufferStorage(m_hConstantBufferStorage, pStorage), "");
     }
 
-    for (auto& constant : pLayout->m_Constants)
+    for (auto& member : pBinding->m_Variables)
     {
-      if (constant.m_uiOffset + xiiShaderConstantBufferLayout::Constant::s_TypeSize[constant.m_Type.GetValue()] <= data.GetCount())
+      if (member.m_uiOffset + xiiGALShaderPrimitiveType::GetPrimitiveTypeSize(member.m_PrimitiveType) <= data.GetCount())
       {
-        xiiUInt8* pDest = &data[constant.m_uiOffset];
+        xiiUInt8* pDestination = &data[member.m_uiOffset];
 
         xiiVariant* pValue = nullptr;
-        pCachedValues->m_Parameters.TryGetValue(constant.m_sName, pValue);
+        pCachedValues->m_Parameters.TryGetValue(member.m_sName, pValue);
 
-        constant.CopyDataFormVariant(pDest, pValue);
+        xiiGALShaderVariableDescription::CopyDataFormVariant(pDestination, pValue, member);
       }
     }
   }

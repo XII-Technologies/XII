@@ -89,7 +89,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderPrimitiveType
     Default = Unknown
   };
 
+  /// \brief This returns the size of the shader primitive data type.
   static xiiUInt32 GetPrimitiveTypeSize(xiiEnum<xiiGALShaderPrimitiveType> type);
+
+  /// \brief This returns true if the given shader primitive data type is a number representation, else false.
+  static bool IsNumberType(xiiEnum<xiiGALShaderPrimitiveType> type);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderPrimitiveType);
@@ -145,6 +149,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableDescription : public xiiHa
   xiiUInt32                                        m_uiOffset      = 0U;                                     ///< The offset in bytes between the start of the parent structure and this variable.
   xiiUInt32                                        m_uiArraySize   = 0U;                                     ///< The array size.
   xiiDynamicArray<xiiGALShaderVariableDescription> m_Members;                                                ///< For a structure, an array of member variables.
+
+  static void CopyDataFormVariant(xiiUInt8* pDestination, xiiVariant* pValue, const xiiGALShaderVariableDescription& description);
 };
 
 /// \brief This class wraps shader byte code storage.

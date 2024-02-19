@@ -51,6 +51,33 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderPrimitiveType::GetPrimitiveTypeSize(xiiE
   return 0;
 }
 
+XII_ALWAYS_INLINE bool xiiGALShaderPrimitiveType::IsNumberType(xiiEnum<xiiGALShaderPrimitiveType> type)
+{
+  switch (type)
+  {
+    case xiiGALShaderPrimitiveType::Bool:
+    case xiiGALShaderPrimitiveType::Int8:
+    case xiiGALShaderPrimitiveType::Int16:
+    case xiiGALShaderPrimitiveType::Int32:
+    case xiiGALShaderPrimitiveType::Int64:
+    case xiiGALShaderPrimitiveType::UInt8:
+    case xiiGALShaderPrimitiveType::UInt16:
+    case xiiGALShaderPrimitiveType::UInt32:
+    case xiiGALShaderPrimitiveType::UInt64:
+    case xiiGALShaderPrimitiveType::Float16:
+    case xiiGALShaderPrimitiveType::Float32:
+    case xiiGALShaderPrimitiveType::Double:
+    case xiiGALShaderPrimitiveType::Min8Float:
+    case xiiGALShaderPrimitiveType::Min10Float:
+    case xiiGALShaderPrimitiveType::Min16Float:
+    case xiiGALShaderPrimitiveType::Min12Int:
+    case xiiGALShaderPrimitiveType::Min16Int:
+    case xiiGALShaderPrimitiveType::Min16UInt:
+      return true;
+  }
+  return false;
+}
+
 XII_FORCE_INLINE xiiGALShaderCreationDescription::xiiGALShaderCreationDescription() :
   xiiHashableStruct()
 {

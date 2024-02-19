@@ -307,13 +307,18 @@ xiiResult xiiShaderCompilerD3D12::ReflectConstantBufferLayout(xiiGALShaderByteCo
         memberDescription.m_Class = xiiGALShaderVariableClassType::Scalar;
         break;
       case D3D_SVC_VECTOR:
-        memberDescription.m_Class = xiiGALShaderVariableClassType::Array;
+        memberDescription.m_Class         = xiiGALShaderVariableClassType::Array;
+        memberDescription.m_uiColumnCount = typeDescription.Columns;
         break;
       case D3D_SVC_MATRIX_ROWS:
-        memberDescription.m_Class = xiiGALShaderVariableClassType::MatrixRows;
+        memberDescription.m_Class         = xiiGALShaderVariableClassType::MatrixRows;
+        memberDescription.m_uiRowCount    = typeDescription.Rows;
+        memberDescription.m_uiColumnCount = typeDescription.Columns;
         break;
       case D3D_SVC_MATRIX_COLUMNS:
-        memberDescription.m_Class = xiiGALShaderVariableClassType::MatrixColumns;
+        memberDescription.m_Class         = xiiGALShaderVariableClassType::MatrixColumns;
+        memberDescription.m_uiRowCount    = typeDescription.Rows;
+        memberDescription.m_uiColumnCount = typeDescription.Columns;
         break;
       case D3D_SVC_STRUCT:
         memberDescription.m_Class = xiiGALShaderVariableClassType::Struct;
@@ -385,12 +390,6 @@ xiiResult xiiShaderCompilerD3D12::ReflectConstantBufferLayout(xiiGALShaderByteCo
       default:
         XII_ASSERT_NOT_IMPLEMENTED;
         continue;
-    }
-
-    if (typeDescription.Class == D3D_SVC_MATRIX_COLUMNS || typeDescription.Class == D3D_SVC_MATRIX_ROWS)
-    {
-      memberDescription.m_uiRowCount    = typeDescription.Rows;
-      memberDescription.m_uiColumnCount = typeDescription.Columns;
     }
 
     /// \todo ShaderCompiler: Add member print output.

@@ -87,7 +87,7 @@ xiiResult xiiShaderStageBinary::Read(xiiStreamReader& inout_stream)
     return XII_FAILURE;
   }
 
-  m_uiSourceHash << m_uiSourceHash;
+  inout_stream >> m_uiSourceHash;
 
   // xiiGALShaderByteCode
   inout_stream >> m_pGALByteCode->m_ShaderStage;
