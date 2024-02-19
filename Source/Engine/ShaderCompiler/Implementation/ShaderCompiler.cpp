@@ -346,7 +346,7 @@ xiiResult xiiShaderCompilerProgram::Initialize(xiiStringView sPlatformName)
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerProgram::ModifyShaderSource(xiiShaderProgramData & inout_data, xiiLogInterface * pLog)
+xiiResult xiiShaderCompilerProgram::ModifyShaderSource(xiiShaderProgramData& inout_data, xiiLogInterface* pLog)
 {
   return XII_SUCCESS;
 }
