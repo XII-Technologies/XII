@@ -34,9 +34,6 @@ protected:
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override final;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override final;
 
-  virtual xiiGALCommandList* BeginCommandListPlatform(xiiStringView sName, xiiEnum<xiiGALCommandQueueType> queueType) override final;
-  virtual void               EndCommandListPlatform(xiiGALCommandList* pCommandList) override final;
-
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame) override final;
   virtual void EndFramePlatform() override final;
 
@@ -103,12 +100,6 @@ protected:
 
 private:
   xiiUInt64 m_uiFrameNumber = 0U;
-
-  xiiUniquePtr<xiiGALCommandList> m_pDefaultCommandList;
-
-  struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
-  struct GPUTimingScope* m_pPipelineTimingScope = nullptr;
-  struct GPUTimingScope* m_pPassTimingScope     = nullptr;
 };
 
 #include <GraphicsNull/Device/Implementation/DeviceNull_inl.h>

@@ -63,11 +63,6 @@ xiiResult xiiGALDeviceNull::InitializePlatform()
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
-  /// \todo GraphicsNull: Use device creation method to create command list.
-
-  xiiGALCommandListCreationDescription description;
-  m_pDefaultCommandList = XII_NEW(&m_Allocator, xiiGALCommandListNull, description);
-
   return XII_SUCCESS;
 }
 
@@ -82,19 +77,11 @@ void xiiGALDeviceNull::FlushPendingObjects()
 
 xiiResult xiiGALDeviceNull::ShutdownPlatform()
 {
-  m_pDefaultCommandList.Clear();
-
   return XII_SUCCESS;
 }
 
 void xiiGALDeviceNull::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain)
 {
-#if XII_ENABLED(XII_USE_PROFILING)
-  xiiStringBuilder sb;
-  sb.Format("{} - Frame {}", !sName.IsEmpty() ? sName : "Unavailable", m_uiFrameNumber);
-  m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultCommandList.Borrow(), sb);
-#endif
-
   if (pSwapChain)
   {
     pSwapChain->AcquireNextRenderTarget(this);
@@ -103,23 +90,10 @@ void xiiGALDeviceNull::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChai
 
 void xiiGALDeviceNull::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
 {
-#if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultCommandList.Borrow(), m_pPipelineTimingScope);
-#endif
-
   if (pSwapChain)
   {
     pSwapChain->Present(this);
   }
-}
-
-xiiGALCommandList* xiiGALDeviceNull::BeginCommandListPlatform(xiiStringView sName, xiiEnum<xiiGALCommandQueueType> queueType)
-{
-  return m_pDefaultCommandList.Borrow();
-}
-
-void xiiGALDeviceNull::EndCommandListPlatform(xiiGALCommandList* pCommandList)
-{
 }
 
 void xiiGALDeviceNull::BeginFramePlatform(const xiiUInt64 uiRenderFrame)

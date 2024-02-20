@@ -40,13 +40,6 @@ public:
   void EndPipeline(xiiGALSwapChainHandle hSwapChain);
 
 
-  /// \brief Begins a command list scope.
-  XII_NODISCARD xiiGALCommandList* BeginCommandList(xiiStringView sName, xiiEnum<xiiGALCommandQueueType> queueType);
-
-  /// \brief Ends a command list scope.
-  void EndCommandList(xiiGALCommandList* pCommandList);
-
-
   /// \brief Begins a render frame.
   void BeginFrame(const xiiUInt64 uiRenderFrame = 0U);
 
@@ -494,9 +487,6 @@ protected:
 
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) = 0;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain)                        = 0;
-
-  virtual xiiGALCommandList* BeginCommandListPlatform(xiiStringView sName, xiiEnum<xiiGALCommandQueueType> queueType) = 0;
-  virtual void               EndCommandListPlatform(xiiGALCommandList* pCommandList)                                  = 0;
 
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame = 0U) = 0;
   virtual void EndFramePlatform()                                     = 0;

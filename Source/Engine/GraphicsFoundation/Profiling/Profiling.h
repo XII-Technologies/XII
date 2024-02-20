@@ -5,6 +5,7 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
+#if 0
 struct GPUTimingScope;
 
 /// Sets profiling marker and GPU timings for the current scope.
@@ -24,15 +25,16 @@ protected:
   GPUTimingScope*    m_pTimingScope = nullptr;
 };
 
-#if XII_ENABLED(XII_USE_PROFILING) || defined(XII_DOCS)
+#  if XII_ENABLED(XII_USE_PROFILING) || defined(XII_DOCS)
 
 /// \brief Profiles the current scope using the given name and also inserts a marker with the given GALContext.
-#  define XII_PROFILE_AND_MARKER(GALContext, szName) xiiProfilingScopeAndMarker XII_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(GALContext, szName)
+#    define XII_PROFILE_AND_MARKER(GALContext, szName) xiiProfilingScopeAndMarker XII_CONCAT(_xiiProfilingScope, XII_SOURCE_LINE)(GALContext, szName)
 
-#else
+#  else
 
-#  define XII_PROFILE_AND_MARKER(GALContext, szName) /*empty*/
+#    define XII_PROFILE_AND_MARKER(GALContext, szName) /*empty*/
 
+#  endif
 #endif
 
 #include <GraphicsFoundation/Profiling/Implementation/Profiling_inl.h>

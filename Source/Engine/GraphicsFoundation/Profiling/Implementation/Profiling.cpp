@@ -9,6 +9,7 @@
 
 #if XII_ENABLED(XII_USE_PROFILING)
 
+#  if 0
 struct GPUTimingScope
 {
   XII_DECLARE_POD_TYPE();
@@ -56,14 +57,14 @@ public:
 
           if (!endTime.IsZero() && !startTime.IsZero())
           {
-#  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#    if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
             static bool warnOnRingBufferOverun = true;
             if (warnOnRingBufferOverun && endTime < startTime)
             {
               warnOnRingBufferOverun = false;
               xiiLog::Error("Profiling end is before start, the timestamp ring buffer was probably overrun.");
             }
-#  endif
+#    endif
             xiiProfilingSystem::AddGPUScope(timingScope.m_szName, startTime, endTime);
           }
         }
@@ -176,23 +177,23 @@ GPUTimingScope* xiiProfilingScopeAndMarker::Start(xiiGALCommandList* pCommandLis
 {
   pCommandList->BeginDebugGroup(sName);
 
-#  if 0
+#    if 0
   auto& timingScope = GPUProfilingSystem::AllocateScope();
 
   pCommandList->EndQuery(timingScope.m_BeginTimestamp);
   xiiStringUtils::Copy(timingScope.m_szName, XII_ARRAY_SIZE(timingScope.m_szName), sName.GetStartPointer(), sName.GetEndPointer());
 
   return &timingScope;
-#  else
+#    else
   return nullptr;
-#  endif
+#    endif
 }
 
 void xiiProfilingScopeAndMarker::Stop(xiiGALCommandList* pCommandList, GPUTimingScope*& ref_pTimingScope)
 {
   pCommandList->EndDebugGroup();
 
-#  if 0
+#    if 0
   pCommandList->EndQuery(ref_pTimingScope->m_EndTimestamp);
 
   auto durationQuery = std::move(GPUProfilingSystem::s_TimingScopes.PeekBack());
@@ -201,9 +202,10 @@ void xiiProfilingScopeAndMarker::Stop(xiiGALCommandList* pCommandList, GPUTiming
   GPUProfilingSystem::s_PendingScopes.Insert(std::move(durationQuery), 0);
 
   ref_pTimingScope = nullptr;
-#  endif
+#    endif
 }
 
+#  endif
 #endif
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Profiling_Implementation_Profiling);

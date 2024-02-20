@@ -12,14 +12,9 @@ XII_ALWAYS_INLINE void xiiGALSwapChain::SetPresentMode(xiiEnum<xiiGALPresentMode
   }
 }
 
-XII_ALWAYS_INLINE const xiiGALRenderTargets& xiiGALSwapChain::GetRenderTargets() const
-{
-  return m_RenderTargets;
-}
-
 XII_ALWAYS_INLINE xiiGALTextureHandle xiiGALSwapChain::GetBackBufferTexture() const
 {
-  return m_RenderTargets.m_hRTs[0];
+  return m_hBackBufferTexture;
 }
 
 XII_ALWAYS_INLINE xiiSizeU32 xiiGALSwapChain::GetCurrentSize() const

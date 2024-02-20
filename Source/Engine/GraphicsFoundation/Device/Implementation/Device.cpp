@@ -378,20 +378,6 @@ void xiiGALDevice::EndPipeline(xiiGALSwapChainHandle hSwapChain)
   EndPipelinePlatform(pSwapChain);
 }
 
-xiiGALCommandList* xiiGALDevice::BeginCommandList(xiiStringView sName, xiiEnum<xiiGALCommandQueueType> queueType)
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  return BeginCommandListPlatform(sName, queueType);
-}
-
-void xiiGALDevice::EndCommandList(xiiGALCommandList* pCommandList)
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  EndCommandListPlatform(pCommandList);
-}
-
 void xiiGALDevice::BeginFrame(const xiiUInt64 uiRenderFrame)
 {
   {
