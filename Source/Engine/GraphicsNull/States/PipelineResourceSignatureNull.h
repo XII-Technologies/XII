@@ -7,6 +7,8 @@
 class XII_GRAPHICSNULL_DLL xiiGALPipelineResourceSignatureNull final : public xiiGALPipelineResourceSignature
 {
 public:
+  virtual bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const override final;
+
 protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;

@@ -15,7 +15,6 @@
 
 ////////// Forward Declarations //////////
 
-class xiiGALCommandEncoderNull;
 class xiiGALCommandListNull;
 class xiiGALCommandQueueNull;
 class xiiGALDeviceNull;
@@ -34,6 +33,9 @@ class xiiGALTextureViewNull;
 class xiiGALTopLevelASNull;
 class xiiGALInputLayoutNull;
 class xiiGALShaderNull;
+class xiiGALShaderResourceVariableNull;
 class xiiGALBlendStateNull;
 class xiiGALDepthStencilStateNull;
 class xiiGALRasterizerStateNull;
+class xiiGALPipelineResourceSignatureNull;
+class xiiGALPipelineStateNull;

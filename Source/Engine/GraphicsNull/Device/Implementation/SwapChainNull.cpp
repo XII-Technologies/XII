@@ -3,7 +3,6 @@
 #include <Core/System/Window.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <GraphicsNull/Device/DeviceNull.h>
-#include <GraphicsNull/Device/PassNull.h>
 #include <GraphicsNull/Device/SwapChainNull.h>
 #include <GraphicsNull/Resources/TextureNull.h>
 
@@ -97,7 +96,6 @@ xiiResult xiiGALSwapChainNull::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize,
   DestroyBackBufferInternal(pDeviceNull);
 
   // Need to flush dead objects or ResizeBuffers will fail as the backbuffer is still referenced.
-  pDeviceNull->GetDefaultPass()->ReleaseCachedRenderPassesAndFramebuffers();
   pDeviceNull->FlushPendingObjects();
 
   return CreateBackBufferInternal(pDeviceNull);

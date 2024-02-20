@@ -20,7 +20,7 @@ public:
 public:
   // Internal objects retrieval.
 
-  xiiGALPassNull* GetDefaultPass();
+  xiiGALCommandList* GetDefaultCommandList();
 
   void ReportLiveGPUObjects();
 
@@ -34,8 +34,8 @@ protected:
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override final;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override final;
 
-  virtual xiiGALPass* BeginPassPlatform(xiiStringView sName) override final;
-  virtual void        EndPassPlatform(xiiGALPass* pPass) override final;
+  virtual xiiGALCommandList* BeginCommandListPlatform(xiiStringView sName, xiiEnum<xiiGALCommandQueueType> queueType) override final;
+  virtual void               EndCommandListPlatform(xiiGALCommandList* pCommandList) override final;
 
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame) override final;
   virtual void EndFramePlatform() override final;
@@ -91,6 +91,12 @@ protected:
   virtual xiiGALTopLevelAS* CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description) override final;
   virtual void              DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS) override final;
 
+  virtual xiiGALPipelineResourceSignature* CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description) override final;
+  virtual void                             DestroyPipelineResourceSignaturePlatform(xiiGALPipelineResourceSignature* pPipelineResourceSignature)          override final;
+
+  virtual xiiGALPipelineState* CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description) override final;
+  virtual void                 DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState)                      override final;
+
   virtual void WaitIdlePlatform() override final;
 
   virtual void FillCapabilitiesPlatform() override final;
@@ -98,7 +104,7 @@ protected:
 private:
   xiiUInt64 m_uiFrameNumber = 0U;
 
-  xiiUniquePtr<xiiGALPassNull> m_pDefaultPass;
+  xiiUniquePtr<xiiGALCommandList> m_pDefaultCommandList;
 
   struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
   struct GPUTimingScope* m_pPipelineTimingScope = nullptr;

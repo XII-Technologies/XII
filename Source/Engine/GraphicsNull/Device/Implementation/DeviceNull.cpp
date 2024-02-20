@@ -1,13 +1,11 @@
 #include <GraphicsNull/GraphicsNullPCH.h>
 
 #include <Foundation/Configuration/Startup.h>
-#include <GraphicsFoundation/CommandEncoder/GraphicsCommandEncoder.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 
-#include <GraphicsNull/CommandEncoder/CommandEncoderNull.h>
+#include <GraphicsNull/CommandEncoder/CommandListNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
-#include <GraphicsNull/Device/PassNull.h>
 #include <GraphicsNull/Device/SwapChainNull.h>
 #include <GraphicsNull/Resources/BottomLevelASNull.h>
 #include <GraphicsNull/Resources/BufferNull.h>
@@ -25,6 +23,8 @@
 #include <GraphicsNull/States/BlendStateNull.h>
 #include <GraphicsNull/States/DepthStencilStateNull.h>
 #include <GraphicsNull/States/RasterizerStateNull.h>
+#include <GraphicsNull/States/PipelineStateNull.h>
+#include <GraphicsNull/States/PipelineResourceSignatureNull.h>
 
 xiiInternal::NewInstance<xiiGALDevice> CreateNullDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
@@ -63,7 +63,10 @@ xiiResult xiiGALDeviceNull::InitializePlatform()
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
-  m_pDefaultPass = XII_NEW(&m_Allocator, xiiGALPassNull, *this);
+  /// \todo GraphicsNull: Use device creation method to create command list.
+
+  xiiGALCommandListCreationDescription description;
+  m_pDefaultCommandList = XII_NEW(&m_Allocator, xiiGALCommandListNull, description);
 
   return XII_SUCCESS;
 }
@@ -74,12 +77,12 @@ void xiiGALDeviceNull::ReportLiveGPUObjects()
 
 void xiiGALDeviceNull::FlushPendingObjects()
 {
-  DestroyDeadObjects();
+  FlushDestroyedObjects();
 }
 
 xiiResult xiiGALDeviceNull::ShutdownPlatform()
 {
-  m_pDefaultPass.Clear();
+  m_pDefaultCommandList.Clear();
 
   return XII_SUCCESS;
 }
@@ -89,7 +92,7 @@ void xiiGALDeviceNull::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChai
 #if XII_ENABLED(XII_USE_PROFILING)
   xiiStringBuilder sb;
   sb.Format("{} - Frame {}", !sName.IsEmpty() ? sName : "Unavailable", m_uiFrameNumber);
-  m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sb);
+  m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultCommandList.Borrow(), sb);
 #endif
 
   if (pSwapChain)
@@ -101,7 +104,7 @@ void xiiGALDeviceNull::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChai
 void xiiGALDeviceNull::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
 {
 #if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPipelineTimingScope);
+  xiiProfilingScopeAndMarker::Stop(m_pDefaultCommandList.Borrow(), m_pPipelineTimingScope);
 #endif
 
   if (pSwapChain)
@@ -110,22 +113,13 @@ void xiiGALDeviceNull::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
   }
 }
 
-xiiGALPass* xiiGALDeviceNull::BeginPassPlatform(xiiStringView sName)
+xiiGALCommandList* xiiGALDeviceNull::BeginCommandListPlatform(xiiStringView sName, xiiEnum<xiiGALCommandQueueType> queueType)
 {
-#if XII_ENABLED(XII_USE_PROFILING)
-  m_pPassTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sName);
-#endif
-
-  return m_pDefaultPass.Borrow();
+  return m_pDefaultCommandList.Borrow();
 }
 
-void xiiGALDeviceNull::EndPassPlatform(xiiGALPass* pPass)
+void xiiGALDeviceNull::EndCommandListPlatform(xiiGALCommandList* pCommandList)
 {
-  XII_ASSERT_DEV(m_pDefaultPass.Borrow() == pPass, "Invalid pass.");
-
-#if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPassTimingScope);
-#endif
 }
 
 void xiiGALDeviceNull::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
@@ -494,6 +488,48 @@ void xiiGALDeviceNull::DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS)
   XII_DELETE(&m_Allocator, pTopLevelASNull);
 }
 
+xiiGALPipelineResourceSignature* xiiGALDeviceNull::CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description)
+{
+  xiiGALPipelineResourceSignatureNull* pPipelineResourceSignatureNull = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureNull, description);
+
+  if (pPipelineResourceSignatureNull->InitPlatform(this).Succeeded())
+    return pPipelineResourceSignatureNull;
+
+  XII_DELETE(&m_Allocator, pPipelineResourceSignatureNull);
+
+  return pPipelineResourceSignatureNull;
+}
+
+void xiiGALDeviceNull::DestroyPipelineResourceSignaturePlatform(xiiGALPipelineResourceSignature* pPipelineResourceSignature)
+{
+  xiiGALPipelineResourceSignatureNull* pPipelineResourceSignatureNull = static_cast<xiiGALPipelineResourceSignatureNull*>(pPipelineResourceSignature);
+
+  pPipelineResourceSignatureNull->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pPipelineResourceSignatureNull);
+}
+
+xiiGALPipelineState* xiiGALDeviceNull::CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description)
+{
+  xiiGALPipelineStateNull* pPipelineStateNull = XII_NEW(&m_Allocator, xiiGALPipelineStateNull, description);
+
+  if (pPipelineStateNull->InitPlatform(this).Succeeded())
+    return pPipelineStateNull;
+
+  XII_DELETE(&m_Allocator, pPipelineStateNull);
+
+  return pPipelineStateNull;
+}
+
+void xiiGALDeviceNull::DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
+{
+  xiiGALPipelineStateNull* pPipelineStateNull = static_cast<xiiGALPipelineStateNull*>(pPipelineState);
+
+  pPipelineStateNull->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pPipelineStateNull);
+}
+
 void xiiGALDeviceNull::WaitIdlePlatform()
 {
   FlushPendingObjects();
@@ -501,7 +537,7 @@ void xiiGALDeviceNull::WaitIdlePlatform()
 
 void xiiGALDeviceNull::FillCapabilitiesPlatform()
 {
-  m_Type = xiiGALGraphicsDeviceType::Null;
+  m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Null;
 
   m_AdapterDescription.m_sAdapterName = "XII Null Graphics Adapter";
   m_AdapterDescription.m_Type         = xiiGALDeviceAdapterType::Software;

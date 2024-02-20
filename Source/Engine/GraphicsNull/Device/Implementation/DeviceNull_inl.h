@@ -1,5 +1,5 @@
 
-XII_ALWAYS_INLINE xiiGALPassNull* xiiGALDeviceNull::GetDefaultPass()
+XII_ALWAYS_INLINE xiiGALCommandList* xiiGALDeviceNull::GetDefaultCommandList()
 {
-  return m_pDefaultPass.Borrow();
+  return m_pDefaultCommandList.Borrow();
 }

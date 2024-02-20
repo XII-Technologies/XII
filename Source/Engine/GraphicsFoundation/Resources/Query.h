@@ -96,7 +96,7 @@ public:
 
 protected:
   friend class xiiGALDevice;
-  friend class xiiGALCommandEncoder;
+  friend class xiiGALCommandList;
 
   xiiGALQuery(const xiiGALQueryCreationDescription& creationDescription);
 
