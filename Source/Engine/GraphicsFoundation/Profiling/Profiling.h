@@ -11,17 +11,17 @@ struct GPUTimingScope;
 class XII_GRAPHICSFOUNDATION_DLL xiiProfilingScopeAndMarker : public xiiProfilingScope
 {
 public:
-  xiiProfilingScopeAndMarker(xiiGALCommandEncoder* pCommandEncoder, xiiStringView sName);
+  xiiProfilingScopeAndMarker(xiiGALCommandList* pCommandList, xiiStringView sName);
 
   ~xiiProfilingScopeAndMarker();
 
 public:
-  static GPUTimingScope* Start(xiiGALCommandEncoder* pCommandEncoder, xiiStringView sName);
-  static void            Stop(xiiGALCommandEncoder* pCommandEncoder, GPUTimingScope*& ref_pTimingScope);
+  static GPUTimingScope* Start(xiiGALCommandList* pCommandList, xiiStringView sName);
+  static void            Stop(xiiGALCommandList* pCommandList, GPUTimingScope*& ref_pTimingScope);
 
 protected:
-  xiiGALCommandEncoder* m_pCommandEncoder;
-  GPUTimingScope*       m_pTimingScope;
+  xiiGALCommandList* m_pCommandList = nullptr;
+  GPUTimingScope*    m_pTimingScope = nullptr;
 };
 
 #if XII_ENABLED(XII_USE_PROFILING) || defined(XII_DOCS)
