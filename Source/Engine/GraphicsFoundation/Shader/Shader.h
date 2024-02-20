@@ -41,6 +41,9 @@ public:
   /// \brief This returns the creation description for this object.
   XII_NODISCARD const xiiGALShaderCreationDescription& GetDescription() const;
 
+  /// \brief This returns the vertex input layout of the vertex shader.
+  xiiArrayPtr<const xiiGALVertexInputLayout> GetVertexInputLayout() const;
+
 protected:
   friend class xiiGALDevice;
 

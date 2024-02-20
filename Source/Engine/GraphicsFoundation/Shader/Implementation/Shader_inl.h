@@ -4,6 +4,16 @@ XII_ALWAYS_INLINE const xiiGALShaderCreationDescription& xiiGALShader::GetDescri
   return m_Description;
 }
 
+XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALVertexInputLayout> xiiGALShader::GetVertexInputLayout() const
+{
+  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Vertex))
+  {
+    return m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)]->m_VertexInputLayout;
+  }
+
+  return xiiArrayPtr<const xiiGALVertexInputLayout>();
+}
+
 XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderPrimitiveType::GetPrimitiveTypeSize(xiiEnum<xiiGALShaderPrimitiveType> type)
 {
   switch (type)
