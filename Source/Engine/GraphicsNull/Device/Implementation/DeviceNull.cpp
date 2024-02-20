@@ -22,9 +22,9 @@
 #include <GraphicsNull/Shader/ShaderNull.h>
 #include <GraphicsNull/States/BlendStateNull.h>
 #include <GraphicsNull/States/DepthStencilStateNull.h>
-#include <GraphicsNull/States/RasterizerStateNull.h>
-#include <GraphicsNull/States/PipelineStateNull.h>
 #include <GraphicsNull/States/PipelineResourceSignatureNull.h>
+#include <GraphicsNull/States/PipelineStateNull.h>
+#include <GraphicsNull/States/RasterizerStateNull.h>
 
 xiiInternal::NewInstance<xiiGALDevice> CreateNullDevice(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {

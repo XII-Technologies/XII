@@ -92,10 +92,10 @@ protected:
   virtual void              DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS) override final;
 
   virtual xiiGALPipelineResourceSignature* CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description) override final;
-  virtual void                             DestroyPipelineResourceSignaturePlatform(xiiGALPipelineResourceSignature* pPipelineResourceSignature)          override final;
+  virtual void                             DestroyPipelineResourceSignaturePlatform(xiiGALPipelineResourceSignature* pPipelineResourceSignature) override final;
 
   virtual xiiGALPipelineState* CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description) override final;
-  virtual void                 DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState)                      override final;
+  virtual void                 DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
 
   virtual void WaitIdlePlatform() override final;
 
