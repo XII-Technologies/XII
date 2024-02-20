@@ -30,9 +30,9 @@ protected:
 
   virtual ~xiiGALSwapChainD3D12();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
   xiiResult CreateBackBufferInternal(xiiGALDeviceD3D12* pDeviceD3D12);
 

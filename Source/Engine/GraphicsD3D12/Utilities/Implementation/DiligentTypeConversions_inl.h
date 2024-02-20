@@ -1853,3 +1853,31 @@ XII_ALWAYS_INLINE Diligent::ACCESS_FLAGS xiiDiligentTypeConversions::GetAccessFl
 
   return accessFlags;
 }
+
+XII_ALWAYS_INLINE Diligent::SHADER_RESOURCE_TYPE xiiDiligentTypeConversions::GetShaderResourceType(xiiEnum<xiiGALShaderResourceType> e)
+{
+  switch (e)
+  {
+    case xiiGALShaderResourceType::Unknown:
+      return Diligent::SHADER_RESOURCE_TYPE_UNKNOWN ;
+    case xiiGALShaderResourceType::ConstantBuffer:
+      return Diligent::SHADER_RESOURCE_TYPE_CONSTANT_BUFFER;
+    case xiiGALShaderResourceType::TextureSRV:
+      return Diligent::SHADER_RESOURCE_TYPE_TEXTURE_SRV;
+    case xiiGALShaderResourceType::BufferSRV:
+      return Diligent::SHADER_RESOURCE_TYPE_BUFFER_SRV;
+    case xiiGALShaderResourceType::TextureUAV:
+      return Diligent::SHADER_RESOURCE_TYPE_TEXTURE_UAV;
+    case xiiGALShaderResourceType::BufferUAV:
+      return Diligent::SHADER_RESOURCE_TYPE_BUFFER_UAV;
+    case xiiGALShaderResourceType::Sampler:
+      return Diligent::SHADER_RESOURCE_TYPE_SAMPLER;
+    case xiiGALShaderResourceType::InputAttachment:
+      return Diligent::SHADER_RESOURCE_TYPE_INPUT_ATTACHMENT;
+    case xiiGALShaderResourceType::AccelerationStructure:
+      return Diligent::SHADER_RESOURCE_TYPE_ACCEL_STRUCT;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::SHADER_RESOURCE_TYPE_UNKNOWN;
+}

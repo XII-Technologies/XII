@@ -17,9 +17,9 @@ protected:
 
   virtual ~xiiGALRasterizerStateD3D12();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
   Diligent::RasterizerStateDesc m_RasterizerState = {};

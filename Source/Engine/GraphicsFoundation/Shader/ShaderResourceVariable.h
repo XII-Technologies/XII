@@ -183,7 +183,7 @@ public:
   virtual void SetBufferOffset(xiiUInt32 uiOffset, xiiUInt32 uiArrayIndex = 0U) = 0;
 
   /// \brief This returns the shader resource variable type.
-  XII_NODISCARD virtual xiiGALShaderResourceVariableType GetType() const = 0;
+  XII_NODISCARD virtual xiiEnum<xiiGALShaderResourceVariableType> GetType() const = 0;
 
   /// \brief This returns shader resource description.
   virtual void GetResourceDescription(xiiGALShaderResourceDescription& resourceDeccription) = 0;
@@ -194,7 +194,7 @@ public:
   /// \brief This returns a pointer to the resource that is bound to this variable.
   ///
   /// \brief uiArrayIndex The resource array index that can be used to access the variable. This must be 0 for non-array variables.
-  XII_NODISCARD virtual xiiGALResource* Get(xiiUInt32 uiIndex = 0U) const = 0;
+  XII_NODISCARD virtual xiiArrayPtr<xiiGALResource*> Get(xiiUInt32 uiIndex = 0U) const = 0;
 
 protected:
   friend class xiiGALDevice;
@@ -202,10 +202,6 @@ protected:
   xiiGALShaderResourceVariable();
 
   virtual ~xiiGALShaderResourceVariable();
-
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
-
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
 
 #include <GraphicsFoundation/Shader/Implementation/ShaderResourceVariable_inl.h>
