@@ -150,7 +150,7 @@ void xiiGALSwapChainD3D12::AcquireNextRenderTarget(xiiGALDevice* pDevice)
     if (backBufferInfo.m_pTextureView == pCurrentTextureView)
     {
       bBackBufferFound          = true;
-      m_hBackBufferTexture = backBufferInfo.m_hRenderTargetHandle;
+      m_hBackBufferTexture      = backBufferInfo.m_hRenderTargetHandle;
 
       break;
     }
