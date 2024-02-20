@@ -40,11 +40,11 @@ public:
   void EndPipeline(xiiGALSwapChainHandle hSwapChain);
 
 
-  /// \brief Begins a pass scope.
-  XII_NODISCARD xiiGALPass* BeginPass(xiiStringView sName);
+  /// \brief Begins a command list scope.
+  XII_NODISCARD xiiGALCommandList* BeginCommandList(xiiStringView sName, xiiEnum<xiiGALCommandQueueType> queueType);
 
-  /// \brief Ends a pass scope.
-  void EndPass(xiiGALPass* pPass);
+  /// \brief Ends a command list scope.
+  void EndCommandList(xiiGALCommandList* pCommandList);
 
 
   /// \brief Begins a render frame.
@@ -495,8 +495,8 @@ protected:
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) = 0;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain)                        = 0;
 
-  virtual xiiGALPass* BeginPassPlatform(xiiStringView sName) = 0;
-  virtual void        EndPassPlatform(xiiGALPass* pPass)     = 0;
+  virtual xiiGALCommandList* BeginCommandListPlatform(xiiStringView sName, xiiEnum<xiiGALCommandQueueType> queueType) = 0;
+  virtual void               EndCommandListPlatform(xiiGALCommandList* pCommandList)                                  = 0;
 
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame = 0U) = 0;
   virtual void EndFramePlatform()                                     = 0;
@@ -574,7 +574,6 @@ private:
 private:
   bool m_bBeginFrameCalled    = false;
   bool m_bBeginPipelineCalled = false;
-  bool m_bBeginPassCalled     = false;
 };
 
 #include <GraphicsFoundation/Device/Implementation/Device_inl.h>

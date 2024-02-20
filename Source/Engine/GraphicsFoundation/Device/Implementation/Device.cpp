@@ -379,24 +379,18 @@ void xiiGALDevice::EndPipeline(xiiGALSwapChainHandle hSwapChain)
   EndPipelinePlatform(pSwapChain);
 }
 
-xiiGALPass* xiiGALDevice::BeginPass(xiiStringView sName)
+xiiGALCommandList* xiiGALDevice::BeginCommandList(xiiStringView sName, xiiEnum<xiiGALCommandQueueType> queueType)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
-  XII_ASSERT_DEV(!m_bBeginPassCalled, "Nested Passes are not allowed: You must call xiiGALDevice::EndPass before you can call xiiGALDevice::BeginPass again.");
-  m_bBeginPassCalled = true;
-
-  return BeginPassPlatform(sName);
+  return BeginCommandListPlatform(sName, queueType);
 }
 
-void xiiGALDevice::EndPass(xiiGALPass* pPass)
+void xiiGALDevice::EndCommandList(xiiGALCommandList* pCommandList)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
-  XII_ASSERT_DEV(m_bBeginPassCalled, "You must have called xiiGALDevice::BeginPass before you can call xiiGALDevice::EndPass.");
-  m_bBeginPassCalled = false;
-
-  EndPassPlatform(pPass);
+  EndCommandListPlatform(pCommandList);
 }
 
 void xiiGALDevice::BeginFrame(const xiiUInt64 uiRenderFrame)
