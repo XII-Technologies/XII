@@ -70,6 +70,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 void xiiGALShaderVariableDescription::CopyDataFormVariant(xiiUInt8* pDestination, xiiVariant* pValue, const xiiGALShaderVariableDescription& description)
 {
+  /// \todo Perform row-column major conversion on matrices.
+
   xiiResult conversionResult = XII_FAILURE;
 
   XII_ASSERT_DEV(description.m_Class == xiiGALShaderVariableClassType::Scalar || xiiGALShaderVariableClassType::Array || xiiGALShaderVariableClassType::MatrixColumns || xiiGALShaderVariableClassType::MatrixRows, "");

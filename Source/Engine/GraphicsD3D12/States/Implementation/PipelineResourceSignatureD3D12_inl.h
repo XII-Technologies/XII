@@ -5,7 +5,7 @@ XII_ALWAYS_INLINE bool xiiGALPipelineResourceSignatureD3D12::IsCompatibleWith(co
 
   XII_ASSERT_DEV(m_pPipelineResourceSignature != nullptr && pPipelineResourceSignatureD3D12 != nullptr, "");
 
-  return m_pPipelineResourceSignature->IsCompatibleWith(pPipelineResourceSignatureD3D12->GetPipelineResourceSignature());
+  return (m_pPipelineResourceSignature == pPipelineResourceSignatureD3D12->GetPipelineResourceSignature()) || m_pPipelineResourceSignature->IsCompatibleWith(pPipelineResourceSignatureD3D12->GetPipelineResourceSignature());
 }
 
 XII_ALWAYS_INLINE Diligent::IPipelineResourceSignature* xiiGALPipelineResourceSignatureD3D12::GetPipelineResourceSignature() const

@@ -31,8 +31,8 @@ xiiResult xiiGALPipelineResourceSignatureD3D12::InitPlatform(xiiGALDevice* pDevi
     resourceDescription.ShaderStages = xiiDiligentTypeConversions::GetShaderTypeFlags(sourceDescription.m_ShaderStages);
     resourceDescription.ArraySize    = sourceDescription.m_uiArraySize;
     resourceDescription.ResourceType = xiiDiligentTypeConversions::GetShaderResourceType(sourceDescription.m_ResourceType);
-    resourceDescription.VarType      = Diligent::SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE; // Variables are always mutable for now.
-    resourceDescription.Flags        = Diligent::PIPELINE_RESOURCE_FLAG_NONE;           // Not yet assessed.
+    resourceDescription.VarType      = xiiDiligentTypeConversions::GetShaderResourceVariableType(sourceDescription.m_ResourceVariableType);
+    resourceDescription.Flags        = xiiDiligentTypeConversions::GetPipelineResourceFlags(sourceDescription.m_PipelineResourceFlags);
   }
 
   for (xiiUInt32 i = 0; i < m_Description.m_ImmutableSamplers.GetCount(); ++i)

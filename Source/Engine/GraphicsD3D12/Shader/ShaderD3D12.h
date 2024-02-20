@@ -8,12 +8,6 @@
 class XII_GRAPHICSD3D12_DLL xiiGALShaderD3D12 final : public xiiGALShader
 {
 public:
-  /// \brief This returns the total number of shader resources.
-  virtual xiiUInt32 GetResourceCount() const override final;
-
-  /// \brief This returns a pointer to the array of shader resources.
-  virtual void GetResourceDescription(xiiUInt32 uiIndex, xiiGALShaderResourceDescription& out_ResourceDescription) const override final;
-
   Diligent::IShader* GetVertexShader() const;
   Diligent::IShader* GetPixelShader() const;
   Diligent::IShader* GetGeometryShader() const;
@@ -31,8 +25,6 @@ public:
   Diligent::IShader* GetTileShader() const;
 
   xiiArrayPtr<Diligent::IPipelineResourceSignature*> GetResourceSignatures();
-  xiiArrayPtr<xiiGALVertexInputLayout>               GetInputLayouts();
-  xiiArrayPtr<xiiGALShaderResourceBinding>           GetShaderResourceBinding(xiiBitflags<xiiGALShaderStage> e);
 
 public:
   struct ShaderEvent
@@ -65,9 +57,6 @@ protected:
 protected:
   Diligent::IShader*                                        m_pShaderStages[xiiGALShaderStage::ENUM_COUNT] = {};
   xiiHybridArray<Diligent::IPipelineResourceSignature*, 3U> m_PipelineResourceSignatures;
-
-  xiiHybridArray<xiiGALVertexInputLayout, 8U>  m_VertexInputLayouts;
-  xiiDynamicArray<xiiGALShaderResourceBinding> m_ShaderResourceBindings[xiiGALShaderStage::ENUM_COUNT];
 };
 
 #include <GraphicsD3D12/Shader/Implementation/ShaderD3D12_inl.h>

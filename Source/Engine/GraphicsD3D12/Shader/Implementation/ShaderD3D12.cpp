@@ -5,8 +5,6 @@
 
 #include <GraphicsD3D12/Utilities/D3D12TypeConversions.h>
 
-#include <ShaderCompiler/ShaderMetadata.h>
-
 xiiGALShaderD3D12::xiiGALShaderD3D12(const xiiGALShaderCreationDescription& creationDescription) :
   xiiGALShader(creationDescription)
 {
@@ -150,13 +148,6 @@ xiiResult xiiGALShaderD3D12::DeInitPlatform(xiiGALDevice* pDevice)
   for (xiiUInt32 i = 0; i < m_PipelineResourceSignatures.GetCount(); ++i)
   {
     XII_GAL_DILIGENT_PTR_RELEASE(m_PipelineResourceSignatures[i]);
-  }
-
-  m_VertexInputLayouts.Clear();
-
-  for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
-  {
-    m_ShaderResourceBindings[i].Clear();
   }
 
   return XII_SUCCESS;

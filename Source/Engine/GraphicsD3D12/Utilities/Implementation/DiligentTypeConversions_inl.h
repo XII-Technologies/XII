@@ -1882,6 +1882,43 @@ XII_ALWAYS_INLINE Diligent::SHADER_RESOURCE_TYPE xiiDiligentTypeConversions::Get
   return Diligent::SHADER_RESOURCE_TYPE_UNKNOWN;
 }
 
+XII_ALWAYS_INLINE Diligent::SHADER_RESOURCE_VARIABLE_TYPE xiiDiligentTypeConversions::GetShaderResourceVariableType(xiiEnum<xiiGALShaderResourceVariableType> e)
+{
+  switch (e)
+  {
+    case xiiGALShaderResourceVariableType::Static:
+      return Diligent::SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
+    case xiiGALShaderResourceVariableType::Mutable:
+      return Diligent::SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE;
+    case xiiGALShaderResourceVariableType::Dynamic:
+      return Diligent::SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
+}
+
+XII_ALWAYS_INLINE Diligent::PIPELINE_RESOURCE_FLAGS xiiDiligentTypeConversions::GetPipelineResourceFlags(xiiBitflags<xiiGALPipelineResourceFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::PIPELINE_RESOURCE_FLAG_NONE;
+
+  Diligent::PIPELINE_RESOURCE_FLAGS pipelineResourceFlags = {};
+
+  if (e.IsSet(xiiGALPipelineResourceFlags::NoDynamicBuffers))
+    pipelineResourceFlags |= Diligent::PIPELINE_RESOURCE_FLAG_NO_DYNAMIC_BUFFERS;
+  if (e.IsSet(xiiGALPipelineResourceFlags::CombinedSampler))
+    pipelineResourceFlags |= Diligent::PIPELINE_RESOURCE_FLAG_COMBINED_SAMPLER;
+  if (e.IsSet(xiiGALPipelineResourceFlags::Formattedbuffer))
+    pipelineResourceFlags |= Diligent::PIPELINE_RESOURCE_FLAG_FORMATTED_BUFFER;
+  if (e.IsSet(xiiGALPipelineResourceFlags::RuntimeArray))
+    pipelineResourceFlags |= Diligent::PIPELINE_RESOURCE_FLAG_RUNTIME_ARRAY;
+  if (e.IsSet(xiiGALPipelineResourceFlags::GeneralInputAttachment))
+    pipelineResourceFlags |= Diligent::PIPELINE_RESOURCE_FLAG_GENERAL_INPUT_ATTACHMENT;
+
+  return pipelineResourceFlags;
+}
+
 XII_ALWAYS_INLINE Diligent::PIPELINE_SHADING_RATE_FLAGS xiiDiligentTypeConversions::GetPipelineShadingRateFlags(xiiBitflags<xiiGALPipelineShadingRateFlags> e)
 {
   if (e.IsNoFlagSet())

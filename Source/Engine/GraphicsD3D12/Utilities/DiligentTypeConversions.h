@@ -11,10 +11,12 @@
 #include <GraphicsFoundation/Resources/TextureView.h>
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
+#include <GraphicsFoundation/Shader/ShaderResourceVariable.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
 #include <GraphicsFoundation/States/PipelineState.h>
+#include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
 class XII_GRAPHICSD3D12_DLL xiiDiligentTypeConversions
@@ -104,6 +106,8 @@ public:
   static Diligent::ACCESS_FLAGS         GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e);
 
   static Diligent::SHADER_RESOURCE_TYPE GetShaderResourceType(xiiEnum<xiiGALShaderResourceType> e);
+  static Diligent::SHADER_RESOURCE_VARIABLE_TYPE GetShaderResourceVariableType(xiiEnum<xiiGALShaderResourceVariableType> e);
+  static Diligent::PIPELINE_RESOURCE_FLAGS       GetPipelineResourceFlags(xiiBitflags<xiiGALPipelineResourceFlags> e);
 
   static Diligent::PIPELINE_SHADING_RATE_FLAGS GetPipelineShadingRateFlags(xiiBitflags<xiiGALPipelineShadingRateFlags> e);
 };
