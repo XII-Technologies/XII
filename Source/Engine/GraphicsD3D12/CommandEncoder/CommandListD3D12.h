@@ -13,7 +13,7 @@ protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListD3D12();
+  xiiGALCommandListD3D12(const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListD3D12();
 

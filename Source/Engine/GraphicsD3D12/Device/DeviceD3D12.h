@@ -27,8 +27,6 @@ public:
   Diligent::IDeviceContext* GetImmediateContext();
   Diligent::IEngineFactory* GetFactory();
 
-  xiiGALPassD3D12* GetDefaultPass();
-
   const xiiGALFormatLookupTableD3D12& GetFormatLookupTable() const;
 
   void ReportLiveGPUObjects();
@@ -42,9 +40,6 @@ protected:
 
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override final;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override final;
-
-  virtual xiiGALPass* BeginPassPlatform(xiiStringView sName) override final;
-  virtual void        EndPassPlatform(xiiGALPass* pPass) override final;
 
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame) override final;
   virtual void EndFramePlatform() override final;
@@ -100,6 +95,12 @@ protected:
   virtual xiiGALTopLevelAS* CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description) override final;
   virtual void              DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS) override final;
 
+  virtual xiiGALPipelineResourceSignature* CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description) override final;
+  virtual void                             DestroyPipelineResourceSignaturePlatform(xiiGALPipelineResourceSignature* pPipelineResourceSignature) override final;
+
+  virtual xiiGALPipelineState* CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description) override final;
+  virtual void                 DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
+
   virtual void WaitIdlePlatform() override final;
 
   virtual void FillCapabilitiesPlatform() override final;
@@ -113,8 +114,6 @@ private:
   Diligent::IRenderDevice*                      m_pDevice        = nullptr;
   xiiDynamicArray<Diligent::IDeviceContext*>    m_pDeviceContexts;
   xiiDynamicArray<Diligent::DisplayModeAttribs> m_DisplayModes;
-
-  xiiUniquePtr<xiiGALPassD3D12> m_pDefaultPass;
 
   struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
   struct GPUTimingScope* m_pPipelineTimingScope = nullptr;

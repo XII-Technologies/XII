@@ -117,7 +117,7 @@ xiiResult xiiGALSwapChainD3D12::CreateBackBufferInternal(xiiGALDeviceD3D12* pDev
 
   m_BackbufferTextures.PushBack(renderTargetInfo);
 
-  m_RenderTargets.m_hRTs[0] = hBackbufferTexture;
+  m_hBackBufferTexture = hBackbufferTexture;
 
   m_CurrentSize = textureDescription.m_Size;
 
@@ -132,7 +132,7 @@ void xiiGALSwapChainD3D12::DestroyBackBufferInternal(xiiGALDeviceD3D12* pDeviceD
 
     iter.m_hRenderTargetHandle.Invalidate();
   }
-  m_RenderTargets.m_hRTs[0].Invalidate();
+  m_hBackBufferTexture.Invalidate();
   m_BackbufferTextures.Clear();
 }
 
@@ -150,7 +150,7 @@ void xiiGALSwapChainD3D12::AcquireNextRenderTarget(xiiGALDevice* pDevice)
     if (backBufferInfo.m_pTextureView == pCurrentTextureView)
     {
       bBackBufferFound          = true;
-      m_RenderTargets.m_hRTs[0] = backBufferInfo.m_hRenderTargetHandle;
+      m_hBackBufferTexture = backBufferInfo.m_hRenderTargetHandle;
 
       break;
     }
@@ -168,7 +168,7 @@ void xiiGALSwapChainD3D12::Present(xiiGALDevice* pDevice)
 
   xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 
-  XII_ASSERT_DEV(m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture() == static_cast<xiiGALTextureD3D12*>(pDeviceD3D12->GetTexture(m_RenderTargets.m_hRTs[0]))->GetTexture(), "Invalid Swapchain texture. Did you forget to call xiiGALSwapChain::AcquireNextRenderTarget?");
+  XII_ASSERT_DEV(m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture() == static_cast<xiiGALTextureD3D12*>(pDeviceD3D12->GetTexture(m_hBackBufferTexture))->GetTexture(), "Invalid Swapchain texture. Did you forget to call xiiGALSwapChain::AcquireNextRenderTarget?");
 
   xiiUInt32 uiSyncInterval = 1U;
   switch (m_PresentMode)

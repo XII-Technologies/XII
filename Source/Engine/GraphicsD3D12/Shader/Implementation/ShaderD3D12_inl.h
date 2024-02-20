@@ -73,3 +73,13 @@ XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D12::GetTileShader() const
 {
   return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Tile)];
 }
+
+XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALVertexInputLayout> xiiGALShaderD3D12::GetVertexInputLayout() const
+{
+  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Vertex))
+  {
+    return m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)]->m_VertexInputLayout;
+  }
+
+  return xiiArrayPtr<const xiiGALVertexInputLayout>();
+}

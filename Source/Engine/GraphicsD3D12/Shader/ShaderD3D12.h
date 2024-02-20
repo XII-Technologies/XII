@@ -24,6 +24,8 @@ public:
   Diligent::IShader* GetCallableShader() const;
   Diligent::IShader* GetTileShader() const;
 
+  xiiArrayPtr<const xiiGALVertexInputLayout> GetVertexInputLayout() const;
+
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;

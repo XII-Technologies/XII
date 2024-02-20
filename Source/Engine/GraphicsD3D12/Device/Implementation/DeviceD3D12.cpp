@@ -1,14 +1,13 @@
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
 #include <Foundation/Configuration/Startup.h>
-#include <GraphicsFoundation/CommandEncoder/GraphicsCommandEncoder.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 
-#include <GraphicsD3D12/CommandEncoder/CommandEncoderD3D12.h>
+#include <GraphicsD3D12/CommandEncoder/CommandListD3D12.h>
+#include <GraphicsD3D12/CommandEncoder/CommandQueueD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Device/DiligentCore.h>
-#include <GraphicsD3D12/Device/PassD3D12.h>
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/Resources/BottomLevelASD3D12.h>
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
@@ -25,6 +24,8 @@
 #include <GraphicsD3D12/Shader/ShaderD3D12.h>
 #include <GraphicsD3D12/States/BlendStateD3D12.h>
 #include <GraphicsD3D12/States/DepthStencilStateD3D12.h>
+#include <GraphicsD3D12/States/PipelineResourceSignatureD3D12.h>
+#include <GraphicsD3D12/States/PipelineStateD3D12.h>
 #include <GraphicsD3D12/States/RasterizerStateD3D12.h>
 
 #include <Diligent/Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
@@ -289,7 +290,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
-  m_pDefaultPass = XII_NEW(&m_Allocator, xiiGALPassD3D12, *this);
+  // Create command queues.
 
   return XII_SUCCESS;
 }
@@ -315,13 +316,11 @@ void xiiGALDeviceD3D12::ReportLiveGPUObjects()
 
 void xiiGALDeviceD3D12::FlushPendingObjects()
 {
-  DestroyDeadObjects();
+  FlushDestroyedObjects();
 }
 
 xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
 {
-  m_pDefaultPass.Clear();
-
   if (!m_pDeviceContexts.IsEmpty())
   {
     for (xiiUInt32 uiContext = 0; uiContext < m_pDeviceContexts.GetCount(); ++uiContext)
@@ -348,7 +347,7 @@ void xiiGALDeviceD3D12::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapCha
 #if XII_ENABLED(XII_USE_PROFILING)
   xiiStringBuilder sb;
   sb.Format("{} - Frame {}", !sName.IsEmpty() ? sName : "Unavailable", GetImmediateContext()->GetFrameNumber());
-  m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sb);
+  // m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sb);
 #endif
 
   if (pSwapChain)
@@ -360,34 +359,13 @@ void xiiGALDeviceD3D12::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapCha
 void xiiGALDeviceD3D12::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
 {
 #if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPipelineTimingScope);
+  // xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPipelineTimingScope);
 #endif
 
   if (pSwapChain)
   {
     pSwapChain->Present(this);
   }
-
-  // Invalidate frame pointers.
-  m_pDefaultPass->Reset();
-}
-
-xiiGALPass* xiiGALDeviceD3D12::BeginPassPlatform(xiiStringView sName)
-{
-#if XII_ENABLED(XII_USE_PROFILING)
-  m_pPassTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sName);
-#endif
-
-  return m_pDefaultPass.Borrow();
-}
-
-void xiiGALDeviceD3D12::EndPassPlatform(xiiGALPass* pPass)
-{
-  XII_ASSERT_DEV(m_pDefaultPass.Borrow() == pPass, "Invalid pass.");
-
-#if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPassTimingScope);
-#endif
 }
 
 void xiiGALDeviceD3D12::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
@@ -764,6 +742,48 @@ void xiiGALDeviceD3D12::DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS)
   XII_DELETE(&m_Allocator, pTopLevelASD3D12);
 }
 
+xiiGALPipelineResourceSignature* xiiGALDeviceD3D12::CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description)
+{
+  xiiGALPipelineResourceSignatureD3D12* pPipelineResourceSignatureD3D12 = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureD3D12, description);
+
+  if (pPipelineResourceSignatureD3D12->InitPlatform(this).Succeeded())
+    return pPipelineResourceSignatureD3D12;
+
+  XII_DELETE(&m_Allocator, pPipelineResourceSignatureD3D12);
+
+  return pPipelineResourceSignatureD3D12;
+}
+
+void xiiGALDeviceD3D12::DestroyPipelineResourceSignaturePlatform(xiiGALPipelineResourceSignature* pPipelineResourceSignature)
+{
+  xiiGALPipelineResourceSignatureD3D12* pPipelineResourceSignatureD3D12 = static_cast<xiiGALPipelineResourceSignatureD3D12*>(pPipelineResourceSignature);
+
+  pPipelineResourceSignatureD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pPipelineResourceSignatureD3D12);
+}
+
+xiiGALPipelineState* xiiGALDeviceD3D12::CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description)
+{
+  xiiGALPipelineStateD3D12* pPipelineStateD3D12 = XII_NEW(&m_Allocator, xiiGALPipelineStateD3D12, description);
+
+  if (pPipelineStateD3D12->InitPlatform(this).Succeeded())
+    return pPipelineStateD3D12;
+
+  XII_DELETE(&m_Allocator, pPipelineStateD3D12);
+
+  return pPipelineStateD3D12;
+}
+
+void xiiGALDeviceD3D12::DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
+{
+  xiiGALPipelineStateD3D12* pPipelineStateD3D12 = static_cast<xiiGALPipelineStateD3D12*>(pPipelineState);
+
+  pPipelineStateD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pPipelineStateD3D12);
+}
+
 void xiiGALDeviceD3D12::WaitIdlePlatform()
 {
   m_pDevice->IdleGPU();
@@ -775,7 +795,7 @@ void xiiGALDeviceD3D12::WaitIdlePlatform()
 
 void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 {
-  m_Type = xiiGALGraphicsDeviceType::Direct3D12;
+  m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Direct3D12;
 
   const Diligent::GraphicsAdapterInfo& adapterInformation = m_pDevice->GetAdapterInfo();
 
