@@ -1,15 +1,16 @@
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
+#include <Diligent/Graphics/GraphicsEngine/interface/PipelineState.h>
+
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Resources/RenderPassD3D12.h>
 #include <GraphicsD3D12/Shader/InputLayoutD3D12.h>
 #include <GraphicsD3D12/Shader/ShaderD3D12.h>
 #include <GraphicsD3D12/States/BlendStateD3D12.h>
 #include <GraphicsD3D12/States/DepthStencilStateD3D12.h>
+#include <GraphicsD3D12/States/PipelineResourceSignatureD3D12.h>
 #include <GraphicsD3D12/States/PipelineStateD3D12.h>
 #include <GraphicsD3D12/States/RasterizerStateD3D12.h>
-
-#include <Diligent/Graphics/GraphicsEngine/interface/PipelineState.h>
 
 xiiGALPipelineStateD3D12::xiiGALPipelineStateD3D12(const xiiGALPipelineStateCreationDescription& creationDescription) :
   xiiGALPipelineState(creationDescription)
@@ -29,11 +30,14 @@ xiiResult xiiGALPipelineStateD3D12::InitPlatform(xiiGALDevice* pDevice)
     case xiiGALPipelineType::Graphics:
     case xiiGALPipelineType::Mesh:
     {
-      xiiGALRenderPassD3D12*        pRenderPassD3D12        = static_cast<xiiGALRenderPassD3D12*>(pDeviceD3D12->GetRenderPass(m_Description.m_GraphicsPipeline.m_hRenderPass));
-      xiiGALBlendStateD3D12*        pBlendStateD3D12        = static_cast<xiiGALBlendStateD3D12*>(pDeviceD3D12->GetBlendState(m_Description.m_GraphicsPipeline.m_hBlendState));
-      xiiGALInputLayoutD3D12*       pInputLayoutD3D12       = static_cast<xiiGALInputLayoutD3D12*>(pDeviceD3D12->GetInputLayout(m_Description.m_GraphicsPipeline.m_hInputLayout));
-      xiiGALRasterizerStateD3D12*   pRasterizerStateD3D12   = static_cast<xiiGALRasterizerStateD3D12*>(pDeviceD3D12->GetRasterizerState(m_Description.m_GraphicsPipeline.m_hRasterizerState));
-      xiiGALDepthStencilStateD3D12* pDepthStencilStateD3D12 = static_cast<xiiGALDepthStencilStateD3D12*>(pDeviceD3D12->GetDepthStencilState(m_Description.m_GraphicsPipeline.m_hDepthStencilState));
+      xiiGALRenderPassD3D12*                pRenderPassD3D12                = static_cast<xiiGALRenderPassD3D12*>(pDeviceD3D12->GetRenderPass(m_Description.m_GraphicsPipeline.m_hRenderPass));
+      xiiGALBlendStateD3D12*                pBlendStateD3D12                = static_cast<xiiGALBlendStateD3D12*>(pDeviceD3D12->GetBlendState(m_Description.m_GraphicsPipeline.m_hBlendState));
+      xiiGALInputLayoutD3D12*               pInputLayoutD3D12               = static_cast<xiiGALInputLayoutD3D12*>(pDeviceD3D12->GetInputLayout(m_Description.m_GraphicsPipeline.m_hInputLayout));
+      xiiGALRasterizerStateD3D12*           pRasterizerStateD3D12           = static_cast<xiiGALRasterizerStateD3D12*>(pDeviceD3D12->GetRasterizerState(m_Description.m_GraphicsPipeline.m_hRasterizerState));
+      xiiGALDepthStencilStateD3D12*         pDepthStencilStateD3D12         = static_cast<xiiGALDepthStencilStateD3D12*>(pDeviceD3D12->GetDepthStencilState(m_Description.m_GraphicsPipeline.m_hDepthStencilState));
+      xiiGALPipelineResourceSignatureD3D12* pPipelineResourceSignatureD3D12 = static_cast<xiiGALPipelineResourceSignatureD3D12*>(pDeviceD3D12->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature));
+
+      Diligent::IPipelineResourceSignature* ppPipelineSignatures = {pPipelineResourceSignatureD3D12->GetPipelineResourceSignature()};
 
       Diligent::GraphicsPipelineStateCreateInfo graphicsPipelineStateDescription = {};
       graphicsPipelineStateDescription.PSODesc.PipelineType                      = (m_Description.m_PipelineType == xiiGALPipelineType::Graphics) ? Diligent::PIPELINE_TYPE_GRAPHICS : Diligent::PIPELINE_TYPE_MESH;
@@ -45,8 +49,8 @@ xiiResult xiiGALPipelineStateD3D12::InitPlatform(xiiGALDevice* pDevice)
       graphicsPipelineStateDescription.pGS                                       = pShaderD3D12->GetGeometryShader();
       graphicsPipelineStateDescription.pAS                                       = pShaderD3D12->GetAmplificationShader();
       graphicsPipelineStateDescription.pMS                                       = pShaderD3D12->GetMeshShader();
-      graphicsPipelineStateDescription.ppResourceSignatures                      = pShaderD3D12->GetResourceSignatures().GetPtr();
-      graphicsPipelineStateDescription.ResourceSignaturesCount                   = pShaderD3D12->GetResourceSignatures().GetCount();
+      graphicsPipelineStateDescription.ppResourceSignatures                      = &ppPipelineSignatures;
+      graphicsPipelineStateDescription.ResourceSignaturesCount                   = 1U;
 
       const auto& sourceGraphicsPipeline = m_Description.m_GraphicsPipeline;
 
@@ -82,8 +86,8 @@ xiiResult xiiGALPipelineStateD3D12::InitPlatform(xiiGALDevice* pDevice)
     case xiiGALPipelineType::RayTracing:
     {
       Diligent::RayTracingPipelineStateCreateInfo rayTracingPipelineStateDescription = {};
-      rayTracingPipelineStateDescription.PSODesc.PipelineType                           = Diligent::PIPELINE_TYPE_RAY_TRACING;
-      rayTracingPipelineStateDescription.Flags                                          = Diligent::PSO_CREATE_FLAG_NONE;
+      rayTracingPipelineStateDescription.PSODesc.PipelineType                        = Diligent::PIPELINE_TYPE_RAY_TRACING;
+      rayTracingPipelineStateDescription.Flags                                       = Diligent::PSO_CREATE_FLAG_NONE;
 
       /// \todo GraphicsD3D12: Implement ray tracing pipeline creation.
 
@@ -109,7 +113,11 @@ xiiResult xiiGALPipelineStateD3D12::InitPlatform(xiiGALDevice* pDevice)
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  return (m_pPipelineState != nullptr) ? XII_SUCCESS : XII_FAILURE;
+  m_pPipelineState->CreateShaderResourceBinding(&m_pShaderResourceBinding, true);
+
+  XII_ASSERT_DEV(m_pShaderResourceBinding != nullptr, "Failed to create shader resource binding.");
+
+  return (m_pPipelineState != nullptr && m_pShaderResourceBinding != nullptr) ? XII_SUCCESS : XII_FAILURE;
 }
 
 xiiResult xiiGALPipelineStateD3D12::DeInitPlatform(xiiGALDevice* pDevice)

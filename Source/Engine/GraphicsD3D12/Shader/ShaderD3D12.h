@@ -24,24 +24,6 @@ public:
   Diligent::IShader* GetCallableShader() const;
   Diligent::IShader* GetTileShader() const;
 
-  xiiArrayPtr<Diligent::IPipelineResourceSignature*> GetResourceSignatures();
-
-public:
-  struct ShaderEvent
-  {
-    XII_DECLARE_POD_TYPE();
-
-    enum Type
-    {
-      BeforeDeletion = 0
-    };
-
-    xiiGALShaderD3D12* m_pShader = nullptr;
-    Type               m_Type    = Type::BeforeDeletion;
-  };
-
-  xiiCopyOnBroadcastEvent<const ShaderEvent&> m_Events;
-
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
@@ -55,8 +37,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
 
 protected:
-  Diligent::IShader*                                        m_pShaderStages[xiiGALShaderStage::ENUM_COUNT] = {};
-  xiiHybridArray<Diligent::IPipelineResourceSignature*, 3U> m_PipelineResourceSignatures;
+  Diligent::IShader* m_pShaderStages[xiiGALShaderStage::ENUM_COUNT] = {};
 };
 
 #include <GraphicsD3D12/Shader/Implementation/ShaderD3D12_inl.h>

@@ -7,12 +7,15 @@
 namespace Diligent
 {
   struct IPipelineState;
-}
+  struct IShaderResourceBinding;
+} // namespace Diligent
 
 class XII_GRAPHICSD3D12_DLL xiiGALPipelineStateD3D12 final : public xiiGALPipelineState
 {
 public:
   Diligent::IPipelineState* GetPipelineState() const;
+
+  Diligent::IShaderResourceBinding* GetShaderResourceBinding() const;
 
 protected:
   friend class xiiGALDeviceD3D12;
@@ -27,7 +30,8 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
-  Diligent::IPipelineState* m_pPipelineState = nullptr;
+  Diligent::IPipelineState*         m_pPipelineState         = nullptr;
+  Diligent::IShaderResourceBinding* m_pShaderResourceBinding = nullptr;
 };
 
 

@@ -62,8 +62,6 @@ public:
 
   void SetPipelineState(xiiGALPipelineStateHandle hPipelineState);
 
-  void SetPipelineResourceSignature(xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature);
-
   void SetStencilRef(xiiUInt32 uiStencilRef);
   void SetBlendFactor(const xiiColor& blendFactor);
 
@@ -145,8 +143,6 @@ protected:
   // These functions need to be implemented by a graphics API abstraction.
 protected:
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) = 0;
-
-  virtual void SetPipelineResourceSignature(xiiGALPipelineResourceSignature* PipelineResourceSignature) = 0;
 
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef)       = 0;
   virtual void SetBlendFactorPlatform(const xiiColor& blendFactor) = 0;

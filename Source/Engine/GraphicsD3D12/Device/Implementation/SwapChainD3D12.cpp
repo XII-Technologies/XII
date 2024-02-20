@@ -3,7 +3,6 @@
 #include <Core/System/Window.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
-#include <GraphicsD3D12/Device/PassD3D12.h>
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 
@@ -191,7 +190,6 @@ xiiResult xiiGALSwapChainD3D12::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize
   DestroyBackBufferInternal(pDeviceD3D12);
 
   // Need to flush dead objects or ResizeBuffers will fail as the backbuffer is still referenced.
-  pDeviceD3D12->GetDefaultPass()->ReleaseCachedRenderPassesAndFramebuffers();
   pDeviceD3D12->FlushPendingObjects();
 
   m_pSwapChain->Resize(newSize.width, newSize.height, xiiDiligentTypeConversions::GetSurfaceTransform(newTransform));
