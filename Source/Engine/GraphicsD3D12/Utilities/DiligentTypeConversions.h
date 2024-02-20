@@ -14,6 +14,7 @@
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
+#include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
 class XII_GRAPHICSD3D12_DLL xiiDiligentTypeConversions
@@ -103,6 +104,8 @@ public:
   static Diligent::ACCESS_FLAGS         GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e);
 
   static Diligent::SHADER_RESOURCE_TYPE GetShaderResourceType(xiiEnum<xiiGALShaderResourceType> e);
+
+  static Diligent::PIPELINE_SHADING_RATE_FLAGS GetPipelineShadingRateFlags(xiiBitflags<xiiGALPipelineShadingRateFlags> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/DiligentTypeConversions_inl.h>

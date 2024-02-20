@@ -150,7 +150,6 @@ struct xiiHashHelper<xiiGALPipelineStateCreationDescription>
         writer << graphicsPipeline.m_uiViewportCount;
         writer << graphicsPipeline.m_uiSubpassIndex;
         writer << graphicsPipeline.m_ShadingRateFlags;
-        writer << graphicsPipeline.m_bReadOnlyDepthStencil;
         writer << graphicsPipeline.m_hRenderPass;
       }
       break;

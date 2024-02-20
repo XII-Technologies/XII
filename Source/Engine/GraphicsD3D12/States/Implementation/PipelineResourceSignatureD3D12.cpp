@@ -90,7 +90,7 @@ xiiResult xiiGALPipelineResourceSignatureD3D12::DeInitPlatform(xiiGALDevice* pDe
 {
   XII_GAL_DILIGENT_PTR_RELEASE(m_pPipelineResourceSignature);
 
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_States_Implementation_PipelineResourceSignatureD3D12);

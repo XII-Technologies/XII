@@ -18,7 +18,7 @@ xiiResult xiiGALPipelineStateNull::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALPipelineStateNull::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_States_Implementation_PipelineStateNull);

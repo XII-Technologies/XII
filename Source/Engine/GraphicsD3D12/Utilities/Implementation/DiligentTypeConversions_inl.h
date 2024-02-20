@@ -1859,7 +1859,7 @@ XII_ALWAYS_INLINE Diligent::SHADER_RESOURCE_TYPE xiiDiligentTypeConversions::Get
   switch (e)
   {
     case xiiGALShaderResourceType::Unknown:
-      return Diligent::SHADER_RESOURCE_TYPE_UNKNOWN ;
+      return Diligent::SHADER_RESOURCE_TYPE_UNKNOWN;
     case xiiGALShaderResourceType::ConstantBuffer:
       return Diligent::SHADER_RESOURCE_TYPE_CONSTANT_BUFFER;
     case xiiGALShaderResourceType::TextureSRV:
@@ -1880,4 +1880,19 @@ XII_ALWAYS_INLINE Diligent::SHADER_RESOURCE_TYPE xiiDiligentTypeConversions::Get
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return Diligent::SHADER_RESOURCE_TYPE_UNKNOWN;
+}
+
+XII_ALWAYS_INLINE Diligent::PIPELINE_SHADING_RATE_FLAGS xiiDiligentTypeConversions::GetPipelineShadingRateFlags(xiiBitflags<xiiGALPipelineShadingRateFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::PIPELINE_SHADING_RATE_FLAG_NONE;
+
+  Diligent::PIPELINE_SHADING_RATE_FLAGS pipelineShadingRateFlags = {};
+
+  if (e.IsSet(xiiGALPipelineShadingRateFlags::PerPrimitive))
+    pipelineShadingRateFlags |= Diligent::PIPELINE_SHADING_RATE_FLAG_PER_PRIMITIVE;
+  if (e.IsSet(xiiGALPipelineShadingRateFlags::TextureBased))
+    pipelineShadingRateFlags |= Diligent::PIPELINE_SHADING_RATE_FLAG_TEXTURE_BASED;
+
+  return pipelineShadingRateFlags;
 }

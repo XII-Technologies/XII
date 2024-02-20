@@ -28,6 +28,7 @@ public:
   Diligent::IShader* GetRayAnyHitShader() const;
   Diligent::IShader* GetRayIntersectionShader() const;
   Diligent::IShader* GetCallableShader() const;
+  Diligent::IShader* GetTileShader() const;
 
   xiiArrayPtr<Diligent::IPipelineResourceSignature*> GetResourceSignatures();
   xiiArrayPtr<xiiGALVertexInputLayout>               GetInputLayouts();

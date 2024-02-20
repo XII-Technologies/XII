@@ -83,6 +83,11 @@ XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D12::GetCallableShader() cons
   return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Callable)];
 }
 
+XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D12::GetTileShader() const
+{
+  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Tile)];
+}
+
 XII_ALWAYS_INLINE xiiArrayPtr<Diligent::IPipelineResourceSignature*> xiiGALShaderD3D12::GetResourceSignatures()
 {
   return m_PipelineResourceSignatures;

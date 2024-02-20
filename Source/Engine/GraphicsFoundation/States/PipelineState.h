@@ -119,7 +119,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineDescription : public xii
   xiiUInt8                                    m_uiViewportCount       = 1U;                                    ///< The number of viewports used by this pipeline. The default is 1.
   xiiUInt8                                    m_uiSubpassIndex        = 0U;                                    ///< The subpass index within the render pass. The default is 0.
   xiiBitflags<xiiGALPipelineShadingRateFlags> m_ShadingRateFlags      = xiiGALPipelineShadingRateFlags::None;  ///< Shading rate flags that specify which type of the shading rate will be used with this pipeline. The default is xiiGALPipelineShadingRateFlags::None.
-  bool                                        m_bReadOnlyDepthStencil = false;                                 ///< Indicates that the pipeline will be used with read-only depth-stencil buffer. The default is false.
   xiiGALSampleDescription                     m_SampleDescription;                                             ///< Multi-sampling parameters.
   xiiGALRenderPassHandle                      m_hRenderPass;                                                   ///< The handle to the render pass object.
 };
