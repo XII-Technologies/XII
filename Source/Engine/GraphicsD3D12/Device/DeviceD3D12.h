@@ -115,6 +115,12 @@ private:
   xiiDynamicArray<Diligent::IDeviceContext*>    m_pDeviceContexts;
   xiiDynamicArray<Diligent::DisplayModeAttribs> m_DisplayModes;
 
+  // 0 : Graphics Queue
+  // 1 : Compute Queue
+  // 2 : Transfer Queue
+  // 3 : Sparse Queue
+  xiiUniquePtr<xiiGALCommandQueueD3D12> m_CommandQueues[4];
+
   struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
   struct GPUTimingScope* m_pPipelineTimingScope = nullptr;
   struct GPUTimingScope* m_pPassTimingScope     = nullptr;

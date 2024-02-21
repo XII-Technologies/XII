@@ -10,7 +10,6 @@ XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALVertexInputLayout> xiiGALShader::GetVe
   {
     return m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)]->m_VertexInputLayout;
   }
-
   return xiiArrayPtr<const xiiGALVertexInputLayout>();
 }
 
