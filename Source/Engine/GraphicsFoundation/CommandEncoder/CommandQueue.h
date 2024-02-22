@@ -25,10 +25,6 @@ protected:
   xiiGALCommandQueue();
 
   virtual ~xiiGALCommandQueue();
-
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
-
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 };
 
 #include <GraphicsFoundation/CommandEncoder/Implementation/CommandQueue_inl.h>

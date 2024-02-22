@@ -4,13 +4,6 @@
 
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 
-namespace Diligent
-{
-  struct IPipelineResourceSignature;
-  struct PipelineResourceDesc;
-  struct ImmutableSamplerDesc;
-} // namespace Diligent
-
 class XII_GRAPHICSD3D12_DLL xiiGALPipelineResourceSignatureD3D12 final : public xiiGALPipelineResourceSignature
 {
 public:

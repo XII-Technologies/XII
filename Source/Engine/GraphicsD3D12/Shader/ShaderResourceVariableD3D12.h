@@ -4,11 +4,6 @@
 
 #include <GraphicsFoundation/Shader/ShaderResourceVariable.h>
 
-namespace Diligent
-{
-  struct IShaderResourceVariable;
-}
-
 class XII_GRAPHICSD3D12_DLL xiiGALShaderResourceVariableD3D12 final : public xiiGALShaderResourceVariable
 {
 public:

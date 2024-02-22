@@ -24,8 +24,11 @@ public:
   // Internal objects retrieval.
 
   Diligent::IRenderDevice*  GetDevice();
-  Diligent::IDeviceContext* GetImmediateContext();
   Diligent::IEngineFactory* GetFactory();
+  Diligent::IDeviceContext* GetImmediateContext();
+  Diligent::IDeviceContext* GetComputeContext();
+  Diligent::IDeviceContext* GetTransferContext();
+  Diligent::IDeviceContext* GetSparseBindingContext();
 
   const xiiGALFormatLookupTableD3D12& GetFormatLookupTable() const;
 
@@ -105,6 +108,8 @@ protected:
 
   virtual void FillCapabilitiesPlatform() override final;
 
+  void CreateCommandQueues();
+
   void FillFormatLookupTable();
 
 private:
@@ -114,6 +119,8 @@ private:
   Diligent::IRenderDevice*                      m_pDevice        = nullptr;
   xiiDynamicArray<Diligent::IDeviceContext*>    m_pDeviceContexts;
   xiiDynamicArray<Diligent::DisplayModeAttribs> m_DisplayModes;
+
+  xiiHybridArray<Diligent::ImmediateContextCreateInfo, XII_GAL_MAX_ADAPTER_QUEUE_COUNT> m_ContextDescriptions;
 
   // 0 : Graphics Queue
   // 1 : Compute Queue

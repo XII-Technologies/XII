@@ -4,12 +4,6 @@
 
 #include <GraphicsFoundation/States/PipelineState.h>
 
-namespace Diligent
-{
-  struct IPipelineState;
-  struct IShaderResourceBinding;
-} // namespace Diligent
-
 class XII_GRAPHICSD3D12_DLL xiiGALPipelineStateD3D12 final : public xiiGALPipelineState
 {
 public:
