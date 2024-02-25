@@ -65,14 +65,16 @@ public:
   void SetStencilRef(xiiUInt32 uiStencilRef);
   void SetBlendFactor(const xiiColor& blendFactor);
 
-  void SetViewports(xiiArrayPtr<xiiGALViewport> pViewports);
-  void SetScissorRects(xiiArrayPtr<xiiRectU32> pRects);
+  void SetViewports(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight);
+  void SetScissorRects(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight);
 
   void SetIndexBuffer(xiiGALBufferHandle hIndexBuffer, xiiUInt64 uiByteOffset = 0U);
   void SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBufferHandle> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags = xiiGALSetVertexBufferFlags::None);
 
   void ClearRenderTargetView(xiiGALTextureViewHandle hRenderTargetView, const xiiColor& clearColor);
   void ClearDepthStencilView(xiiGALTextureViewHandle hDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear);
+
+  /// \todo GraphicsFoundation: Add unordered access view clear.
 
   // Draw functions.
 
@@ -83,6 +85,8 @@ public:
   xiiResult DrawInstanced(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex);
   xiiResult DrawInstancedIndirect(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes);
   xiiResult DrawMesh(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ);
+
+  /// \todo GraphicsFoundation: Add indirect mesh draw via DrawIndirect().
 
   // Dispatch functions.
 
@@ -147,8 +151,8 @@ protected:
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef)       = 0;
   virtual void SetBlendFactorPlatform(const xiiColor& blendFactor) = 0;
 
-  virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports) = 0;
-  virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects)      = 0;
+  virtual void SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight) = 0;
+  virtual void SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)      = 0;
 
   virtual void SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)                                                                                                     = 0;
   virtual void SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags) = 0;
@@ -198,7 +202,7 @@ protected:
   xiiGALPipelineStateHandle             m_hPipelineState;
   xiiGALPipelineResourceSignatureHandle m_hPipelineResourceSignature;
 
-  xiiGALBufferHandle m_BoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiGALBufferHandle m_VertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
 
   xiiGALBufferHandle m_hIndexBuffer;
   xiiUInt64          m_uiIndexDataOffset = 0ULL;

@@ -35,9 +35,6 @@ protected:
   xiiResult CreateBackBufferInternal(xiiGALDeviceNull* pDeviceNull);
 
   void DestroyBackBufferInternal(xiiGALDeviceNull* pDeviceNull);
-
-protected:
-  xiiGALTextureHandle m_hBackbufferTexture;
 };
 
 #include <GraphicsNull/Device/Implementation/SwapChainNull_inl.h>

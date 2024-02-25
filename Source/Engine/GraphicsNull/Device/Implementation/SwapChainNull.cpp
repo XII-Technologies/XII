@@ -59,10 +59,8 @@ xiiResult xiiGALSwapChainNull::CreateBackBufferInternal(xiiGALDeviceNull* pDevic
 
   textureDescription.m_pExisitingNativeObject = nullptr;
 
-  m_hBackbufferTexture = pDeviceNull->CreateTexture(textureDescription);
-  XII_ASSERT_RELEASE(!m_hBackbufferTexture.IsInvalidated(), "Couldn't create native backbuffer texture object!");
-
-  m_RenderTargets.m_hRTs[0] = m_hBackbufferTexture;
+  m_hBackBufferTexture = pDeviceNull->CreateTexture(textureDescription);
+  XII_ASSERT_RELEASE(!m_hBackBufferTexture.IsInvalidated(), "Couldn't create native backbuffer texture object!");
 
   m_CurrentSize = textureDescription.m_Size;
 
@@ -71,8 +69,8 @@ xiiResult xiiGALSwapChainNull::CreateBackBufferInternal(xiiGALDeviceNull* pDevic
 
 void xiiGALSwapChainNull::DestroyBackBufferInternal(xiiGALDeviceNull* pDeviceNull)
 {
-  pDeviceNull->DestroyTexture(m_hBackbufferTexture);
-  m_hBackbufferTexture.Invalidate();
+  pDeviceNull->DestroyTexture(m_hBackBufferTexture);
+  m_hBackBufferTexture.Invalidate();
 }
 
 void xiiGALSwapChainNull::AcquireNextRenderTarget(xiiGALDevice* pDevice)

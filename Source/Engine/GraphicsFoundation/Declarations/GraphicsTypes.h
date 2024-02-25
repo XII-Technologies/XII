@@ -329,11 +329,11 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALCPUAccessFlag);
 /// It is used to describe a texture or buffer mapping type.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALMapType
 {
-  using StorageType = xiiInt8;
+  using StorageType = xiiUInt8;
 
   enum Enum : StorageType
   {
-    Read = -1, ///< The resource is mapped for reading.
+    Read = 0, ///< The resource is mapped for reading.
     Write,     ///< The resource is mapped for writing.
     ReadWrite, ///< The resource is mapped for reading and writing.
 
@@ -1848,10 +1848,10 @@ namespace xiiGAL
       m_uiMax = 0;
     }
 
-    XII_FORCE_INLINE void SetToIncludeValue(xiiUInt32 value)
+    XII_FORCE_INLINE void SetToIncludeValue(xiiUInt32 uiValue)
     {
-      m_uiMin = xiiMath::Min(m_uiMin, value);
-      m_uiMax = xiiMath::Max(m_uiMax, value);
+      m_uiMin = xiiMath::Min(m_uiMin, uiValue);
+      m_uiMax = xiiMath::Max(m_uiMax, uiValue);
     }
 
     XII_FORCE_INLINE void SetToIncludeRange(xiiUInt32 uiMin, xiiUInt32 uiMax)

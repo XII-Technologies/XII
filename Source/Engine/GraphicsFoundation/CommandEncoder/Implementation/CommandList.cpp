@@ -56,7 +56,7 @@ void xiiGALCommandList::SetBlendFactor(const xiiColor& blendFactor)
   }
 }
 
-void xiiGALCommandList::SetViewports(xiiArrayPtr<xiiGALViewport> pViewports)
+void xiiGALCommandList::SetViewports(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetViewports arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
 
@@ -81,10 +81,10 @@ void xiiGALCommandList::SetViewports(xiiArrayPtr<xiiGALViewport> pViewports)
     XII_VERIFY_COMMAND_LIST(viewport.m_fMaxDepth >= viewport.m_fMinDepth, "SetViewports arguments are invalid. Incorrect viewport depth range [{0}, {1}] for index {2}.", viewport.m_fMinDepth, viewport.m_fMaxDepth, i);
   }
 
-  SetViewportsPlatform(m_Viewports);
+  SetViewportsPlatform(m_Viewports, uiRenderTargetWidth, uiRenderTargetHeight);
 }
 
-void xiiGALCommandList::SetScissorRects(xiiArrayPtr<xiiRectU32> pRects)
+void xiiGALCommandList::SetScissorRects(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
 {
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "SetScissorRects arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
 
@@ -100,7 +100,7 @@ void xiiGALCommandList::SetScissorRects(xiiArrayPtr<xiiRectU32> pRects)
   m_ScissorRects.Clear();
   m_ScissorRects.PushBackRange(pRects);
 
-  SetScissorRectsPlatform(m_ScissorRects);
+  SetScissorRectsPlatform(m_ScissorRects, uiRenderTargetWidth, uiRenderTargetHeight);
 }
 
 void xiiGALCommandList::SetIndexBuffer(xiiGALBufferHandle hIndexBuffer, xiiUInt64 uiByteOffset)
@@ -136,11 +136,11 @@ void xiiGALCommandList::SetVertexBuffers(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiG
     // Reset only the buffer slots that are not being set.
     for (xiiUInt32 i = 0; i < uiStartSlot; ++i)
     {
-      m_BoundVertexBuffers[i] = xiiGALBufferHandle();
+      m_VertexBuffers[i] = xiiGALBufferHandle();
     }
     for (xiiUInt32 i = uiStartSlot + pVertexBuffers.GetCount(); i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
     {
-      m_BoundVertexBuffers[i] = xiiGALBufferHandle();
+      m_VertexBuffers[i] = xiiGALBufferHandle();
     }
   }
 
@@ -397,6 +397,8 @@ void xiiGALCommandList::Flush()
 
 void xiiGALCommandList::UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
 {
+  /// \todo GraphicsFoundation: Check alignment.
+
   XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
   XII_VERIFY_COMMAND_LIST(!hBuffer.IsInvalidated(), "UpdateBuffer arguments are invalid. The buffer handle has been invalidated.");
   XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "UpdateBuffer command must be used outside of render pass.");
