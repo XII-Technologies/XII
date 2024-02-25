@@ -333,7 +333,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMapType
 
   enum Enum : StorageType
   {
-    Read = 0, ///< The resource is mapped for reading.
+    Read = 0,  ///< The resource is mapped for reading.
     Write,     ///< The resource is mapped for writing.
     ReadWrite, ///< The resource is mapped for reading and writing.
 
