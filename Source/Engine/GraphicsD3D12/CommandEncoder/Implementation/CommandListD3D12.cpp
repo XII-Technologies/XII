@@ -421,18 +421,74 @@ void xiiGALCommandListD3D12::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
 
 void xiiGALCommandListD3D12::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
 {
+  auto pSourceTextureD3D12      = static_cast<xiiGALTextureD3D12*>(pSourceTexture);
+  auto pDestinationTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDestinationTexture);
+
+  Diligent::CopyTextureAttribs copyTextureDescription = {};
+  copyTextureDescription.pSrcTexture                  = pSourceTextureD3D12->GetTexture();
+  copyTextureDescription.pDstTexture                  = pDestinationTextureD3D12->GetTexture();
+  copyTextureDescription.SrcTextureTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  copyTextureDescription.DstTextureTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+
+  m_pCommandList->CopyTexture(copyTextureDescription);
 }
 
 void xiiGALCommandListD3D12::CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
 {
+  auto pSourceTextureD3D12      = static_cast<xiiGALTextureD3D12*>(pSourceTexture);
+  auto pDestinationTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDestinationTexture);
+
+  Diligent::Box srcBox = {};
+  srcBox.MinX          = box.m_vMin.x;
+  srcBox.MinY          = box.m_vMin.y;
+  srcBox.MinZ          = box.m_vMin.z;
+  srcBox.MaxX          = box.m_vMax.x;
+  srcBox.MaxY          = box.m_vMax.y;
+  srcBox.MaxZ          = box.m_vMax.z;
+
+  Diligent::CopyTextureAttribs copyTextureDescription = {};
+  copyTextureDescription.pSrcTexture                  = pSourceTextureD3D12->GetTexture();
+  copyTextureDescription.pDstTexture                  = pDestinationTextureD3D12->GetTexture();
+  copyTextureDescription.pSrcBox                      = &srcBox;
+
+  copyTextureDescription.SrcMipLevel              = sourceMipLevelData.m_uiMipLevel;
+  copyTextureDescription.SrcSlice                 = sourceMipLevelData.m_uiArraySlice;
+  copyTextureDescription.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+
+  copyTextureDescription.DstMipLevel              = destinationMipLevelData.m_uiMipLevel;
+  copyTextureDescription.DstSlice                 = destinationMipLevelData.m_uiArraySlice;
+  copyTextureDescription.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  copyTextureDescription.DstX                     = vDestinationPoint.x;
+  copyTextureDescription.DstY                     = vDestinationPoint.y;
+  copyTextureDescription.DstZ                     = vDestinationPoint.z;
+
+  m_pCommandList->CopyTexture(copyTextureDescription);
 }
 
 void xiiGALCommandListD3D12::ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
 {
+  auto pSourceTextureD3D12      = static_cast<xiiGALTextureD3D12*>(pSourceTexture);
+  auto pDestinationTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDestinationTexture);
+
+  const auto& sourceTextureDescription = pSourceTextureD3D12->GetDescription();
+
+  Diligent::ResolveTextureSubresourceAttribs resolveTextureDescription;
+  resolveTextureDescription.Format = xiiDiligentTypeConversions::GetTextureFormat(sourceTextureDescription.m_Format);
+
+  resolveTextureDescription.SrcMipLevel              = sourceMipLevelData.m_uiMipLevel;
+  resolveTextureDescription.SrcSlice                 = sourceMipLevelData.m_uiArraySlice;
+  resolveTextureDescription.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+
+  resolveTextureDescription.DstMipLevel              = destinationMipLevelData.m_uiMipLevel;
+  resolveTextureDescription.DstSlice                 = destinationMipLevelData.m_uiArraySlice;
+  resolveTextureDescription.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 }
 
 void xiiGALCommandListD3D12::GenerateMipsPlatform(xiiGALTextureView* pTextureView)
 {
+  auto* pTextureViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(pTextureView);
+
+  m_pCommandList->GenerateMips(pTextureViewD3D12->GetTextureView());
 }
 
 xiiResult xiiGALCommandListD3D12::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32 textureBox, xiiGALMappedTextureSubresource& mappedData)
@@ -447,18 +503,24 @@ xiiResult xiiGALCommandListD3D12::UnmapTextureSubresourcePlatform(xiiGALTexture*
 
 void xiiGALCommandListD3D12::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
 {
+  xiiStringBuilder sb;
+  m_pCommandList->BeginDebugGroup(sName.GetData(sb), color.GetData());
 }
 
 void xiiGALCommandListD3D12::EndDebugGroupPlatform()
 {
+  m_pCommandList->EndDebugGroup();
 }
 
 void xiiGALCommandListD3D12::InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color)
 {
+  xiiStringBuilder sb;
+  m_pCommandList->InsertDebugLabel(sName.GetData(sb), color.GetData());
 }
 
 void xiiGALCommandListD3D12::FlushPlatform()
 {
+  m_pCommandList->Flush();
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_CommandEncoder_Implementation_CommandListD3D12);
