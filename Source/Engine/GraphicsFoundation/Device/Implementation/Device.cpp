@@ -5,6 +5,8 @@
 #include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/Profiling/Profiling.h>
 
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
@@ -39,6 +41,7 @@ namespace
     enum Enum : xiiUInt8
     {
       SwapChain = 0U,
+      CommandList,
       BottomLevelAS,
       Buffer,
       BufferView,
@@ -468,6 +471,42 @@ void xiiGALDevice::DestroySwapChain(xiiGALSwapChainHandle hSwapChain)
   else
   {
     xiiLog::Warning("DestroySwapChain called on invalid handle (double free?).");
+  }
+}
+
+xiiGALCommandListHandle xiiGALDevice::CreateCommandList(const xiiGALCommandListCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  /// \todo GraphicsFoundation: Add command list description validation.
+
+  xiiGALCommandList* pCommandList = CreateCommandListPlatform(description);
+
+  if (pCommandList == nullptr)
+  {
+    return xiiGALCommandListHandle();
+  }
+  else
+  {
+    pCommandList->m_pDevice = this;
+
+    return xiiGALCommandListHandle(m_CommandLists.Insert(pCommandList));
+  }
+}
+
+void xiiGALDevice::DestroyCommandList(xiiGALCommandListHandle hCommandList)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALCommandList* pCommandList = nullptr;
+
+  if (m_CommandLists.TryGetValue(hCommandList, pCommandList))
+  {
+    AddDestroyedObject(GALObjectType::CommandList, hCommandList);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyCommandList called on invalid handle (double free?).");
   }
 }
 
@@ -2707,6 +2746,20 @@ void xiiGALDevice::FlushDestroyedObjects()
         {
           pSwapChain->DeInitPlatform(this).IgnoreResult();
           XII_DELETE(&m_Allocator, pSwapChain);
+        }
+      }
+      break;
+      case GALObjectType::CommandList:
+      {
+        xiiGALCommandListHandle hCommandList(xiiGAL::xii20_12Id(destroyedObject.m_uiHandle));
+        xiiGALCommandList*      pCommandList = nullptr;
+
+        XII_VERIFY(m_CommandLists.Remove(hCommandList, &pCommandList), "CommandList not found in idTable.");
+
+        if (pCommandList != nullptr)
+        {
+          pCommandList->DeInitPlatform(this).IgnoreResult();
+          XII_DELETE(&m_Allocator, pCommandList);
         }
       }
       break;

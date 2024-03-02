@@ -57,6 +57,18 @@ public:
   /// \brief This destroys the swap chain with the given handle.
   void DestroySwapChain(xiiGALSwapChainHandle hSwapChain);
 
+
+  /// \brief This creates a new command list object.
+  ///
+  /// \param description - The command list description. See xiiGALBlendStateCreationDescription.
+  ///
+  /// \return The handle to the created command list object. The function calls AddRef(), so that the new object will have one reference.
+  XII_NODISCARD xiiGALCommandListHandle CreateCommandList(const xiiGALCommandListCreationDescription& description);
+
+  /// \brief This destroys the command list with the given handle.
+  void DestroyCommandList(xiiGALCommandListHandle hCommandList);
+
+
   /// \brief This creates a new blend state object.
   ///
   /// \param description - The blend state description. See xiiGALBlendStateCreationDescription.
@@ -303,6 +315,9 @@ public:
   /// \brief Retrieves a pointer to the swap chain object with the given handle.
   XII_NODISCARD xiiGALSwapChain* GetSwapChain(xiiGALSwapChainHandle hSwapChain) const;
 
+  /// \brief Retrieves a pointer to the command list object with the given handle.
+  XII_NODISCARD xiiGALCommandList* GetCommandList(xiiGALCommandListHandle hCommandList) const;
+
   /// \brief Retrieves a pointer to the blend state object with the given handle.
   XII_NODISCARD xiiGALBlendState* GetBlendState(xiiGALBlendStateHandle hBlendState) const;
 
@@ -415,6 +430,7 @@ protected:
   mutable xiiMutex m_Mutex;
 
   using SwapChainTable                 = xiiIdTable<xiiGALSwapChainHandle::IdType, xiiGALSwapChain*, xiiLocalAllocatorWrapper>;
+  using CommandListTable               = xiiIdTable<xiiGALCommandListHandle::IdType, xiiGALCommandList*, xiiLocalAllocatorWrapper>;
   using BlendStateTable                = xiiIdTable<xiiGALBlendStateHandle::IdType, xiiGALBlendState*, xiiLocalAllocatorWrapper>;
   using DepthStencilStateTable         = xiiIdTable<xiiGALDepthStencilStateHandle::IdType, xiiGALDepthStencilState*, xiiLocalAllocatorWrapper>;
   using RasterizerStateTable           = xiiIdTable<xiiGALRasterizerStateHandle::IdType, xiiGALRasterizerState*, xiiLocalAllocatorWrapper>;
@@ -435,6 +451,7 @@ protected:
   using PipelineResourceSignatureTable = xiiIdTable<xiiGALPipelineResourceSignatureHandle::IdType, xiiGALPipelineResourceSignature*, xiiLocalAllocatorWrapper>;
 
   SwapChainTable                 m_SwapChains;
+  CommandListTable               m_CommandLists;
   BlendStateTable                m_BlendStates;
   DepthStencilStateTable         m_DepthStencilStates;
   RasterizerStateTable           m_RasterizerStates;
@@ -493,6 +510,9 @@ protected:
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) = 0;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)                          = 0;
+
+  virtual xiiGALCommandList* CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description) = 0;
+  virtual void               DestroyCommandListPlatform(xiiGALCommandList* pCommandList)                        = 0;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) = 0;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState)                         = 0;
