@@ -340,29 +340,8 @@ xiiResult xiiGALCommandListD3D12::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEn
 {
   auto pBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pBuffer);
 
-  Diligent::MAP_TYPE bufferMapType = {};
-  switch (mapType)
-  {
-    case xiiGALMapType::Read:
-      bufferMapType = Diligent::MAP_READ;
-      break;
-    case xiiGALMapType::Write:
-      bufferMapType = Diligent::MAP_WRITE;
-      break;
-    case xiiGALMapType::ReadWrite:
-      bufferMapType = Diligent::MAP_READ_WRITE;
-      break;
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
-
-  Diligent::MAP_FLAGS bufferMapFlags = Diligent::MAP_FLAG_NONE;
-  if (mapFlags.IsSet(xiiGALMapFlags::DoNotWait))
-    bufferMapFlags = Diligent::MAP_FLAG_DO_NOT_WAIT;
-  if (mapFlags.IsSet(xiiGALMapFlags::Discard))
-    bufferMapFlags = Diligent::MAP_FLAG_DISCARD;
-  if (mapFlags.IsSet(xiiGALMapFlags::NoOverWrite))
-    bufferMapFlags = Diligent::MAP_FLAG_NO_OVERWRITE;
+  Diligent::MAP_TYPE  bufferMapType  = xiiDiligentTypeConversions::GetMapType(mapType);
+  Diligent::MAP_FLAGS bufferMapFlags = xiiDiligentTypeConversions::GetMapFlags(mapFlags);
 
   m_pCommandList->MapBuffer(pBufferD3D12->GetBuffer(), bufferMapType, bufferMapFlags, pMappedData);
 
@@ -373,21 +352,7 @@ xiiResult xiiGALCommandListD3D12::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xii
 {
   auto pBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pBuffer);
 
-  Diligent::MAP_TYPE bufferMapType = {};
-  switch (mapType)
-  {
-    case xiiGALMapType::Read:
-      bufferMapType = Diligent::MAP_READ;
-      break;
-    case xiiGALMapType::Write:
-      bufferMapType = Diligent::MAP_WRITE;
-      break;
-    case xiiGALMapType::ReadWrite:
-      bufferMapType = Diligent::MAP_READ_WRITE;
-      break;
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
+  Diligent::MAP_TYPE bufferMapType = xiiDiligentTypeConversions::GetMapType(mapType);
 
   m_pCommandList->UnmapBuffer(pBufferD3D12->GetBuffer(), bufferMapType);
 
@@ -438,18 +403,18 @@ void xiiGALCommandListD3D12::CopyTextureRegionPlatform(xiiGALTexture* pSourceTex
   auto pSourceTextureD3D12      = static_cast<xiiGALTextureD3D12*>(pSourceTexture);
   auto pDestinationTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDestinationTexture);
 
-  Diligent::Box srcBox = {};
-  srcBox.MinX          = box.m_vMin.x;
-  srcBox.MinY          = box.m_vMin.y;
-  srcBox.MinZ          = box.m_vMin.z;
-  srcBox.MaxX          = box.m_vMax.x;
-  srcBox.MaxY          = box.m_vMax.y;
-  srcBox.MaxZ          = box.m_vMax.z;
+  Diligent::Box sourceBox = {};
+  sourceBox.MinX          = box.m_vMin.x;
+  sourceBox.MinY          = box.m_vMin.y;
+  sourceBox.MinZ          = box.m_vMin.z;
+  sourceBox.MaxX          = box.m_vMax.x;
+  sourceBox.MaxY          = box.m_vMax.y;
+  sourceBox.MaxZ          = box.m_vMax.z;
 
   Diligent::CopyTextureAttribs copyTextureDescription = {};
   copyTextureDescription.pSrcTexture                  = pSourceTextureD3D12->GetTexture();
   copyTextureDescription.pDstTexture                  = pDestinationTextureD3D12->GetTexture();
-  copyTextureDescription.pSrcBox                      = &srcBox;
+  copyTextureDescription.pSrcBox                      = &sourceBox;
 
   copyTextureDescription.SrcMipLevel              = sourceMipLevelData.m_uiMipLevel;
   copyTextureDescription.SrcSlice                 = sourceMipLevelData.m_uiArraySlice;
@@ -493,11 +458,35 @@ void xiiGALCommandListD3D12::GenerateMipsPlatform(xiiGALTextureView* pTextureVie
 
 xiiResult xiiGALCommandListD3D12::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32 textureBox, xiiGALMappedTextureSubresource& mappedData)
 {
-  return XII_SUCCESS;
+  auto pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pTexture);
+
+  Diligent::MAP_TYPE  textureMapType  = xiiDiligentTypeConversions::GetMapType(mapType);
+  Diligent::MAP_FLAGS textureMapFlags = xiiDiligentTypeConversions::GetMapFlags(mapFlags);
+
+  Diligent::Box sourceBox = {};
+  sourceBox.MinX          = textureBox.m_vMin.x;
+  sourceBox.MinY          = textureBox.m_vMin.y;
+  sourceBox.MinZ          = textureBox.m_vMin.z;
+  sourceBox.MaxX          = textureBox.m_vMax.x;
+  sourceBox.MaxY          = textureBox.m_vMax.y;
+  sourceBox.MaxZ          = textureBox.m_vMax.z;
+
+  Diligent::MappedTextureSubresource mappedSubResource = {};
+  m_pCommandList->MapTextureSubresource(pTextureD3D12->GetTexture(), textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, textureMapType, textureMapFlags, &sourceBox, mappedSubResource);
+
+  mappedData.m_pData         = mappedSubResource.pData;
+  mappedData.m_uiStride      = mappedSubResource.Stride;
+  mappedData.m_uiDepthStride = mappedSubResource.DepthStride;
+
+  return (mappedData.m_pData != nullptr) ? XII_SUCCESS : XII_FAILURE;
 }
 
 xiiResult xiiGALCommandListD3D12::UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData)
 {
+  auto pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pTexture);
+
+  m_pCommandList->UnmapTextureSubresource(pTextureD3D12->GetTexture(), textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice);
+
   return XII_SUCCESS;
 }
 

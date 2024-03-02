@@ -97,6 +97,7 @@ public:
   static xiiBitflags<xiiGALMiscTextureFlags> GetGALMiscTextureFlags(Diligent::MISC_TEXTURE_FLAGS e);
 
   static Diligent::MAP_FLAGS GetMapFlags(xiiBitflags<xiiGALMapFlags> e);
+  static Diligent::MAP_TYPE  GetMapType(xiiEnum<xiiGALMapType> e);
 
   static Diligent::PRIMITIVE_TOPOLOGY GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e);
 

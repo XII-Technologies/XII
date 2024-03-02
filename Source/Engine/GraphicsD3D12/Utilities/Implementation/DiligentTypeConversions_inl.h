@@ -1630,6 +1630,22 @@ XII_ALWAYS_INLINE Diligent::MAP_FLAGS xiiDiligentTypeConversions::GetMapFlags(xi
   return mapFlags;
 }
 
+XII_ALWAYS_INLINE Diligent::MAP_TYPE xiiDiligentTypeConversions::GetMapType(xiiEnum<xiiGALMapType> e)
+{
+  switch (e)
+  {
+    case xiiGALMapType::Read:
+      return Diligent::MAP_READ;
+    case xiiGALMapType::Write:
+      return Diligent::MAP_WRITE;
+    case xiiGALMapType::ReadWrite:
+      return Diligent::MAP_READ_WRITE;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::MAP_READ;
+}
+
 XII_ALWAYS_INLINE Diligent::PRIMITIVE_TOPOLOGY xiiDiligentTypeConversions::GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e)
 {
   switch (e)
