@@ -159,7 +159,7 @@ void xiiGALCommandListD3D12::ClearDepthStencilViewPlatform(xiiGALTextureView* pD
 
 xiiResult xiiGALCommandListD3D12::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
 {
-  Diligent::DrawAttribs drawDescription;
+  Diligent::DrawAttribs drawDescription = {};
   drawDescription.NumVertices           = uiVertexCount;
   drawDescription.StartVertexLocation   = uiStartVertex;
   drawDescription.NumInstances          = 1U;
@@ -173,7 +173,8 @@ xiiResult xiiGALCommandListD3D12::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt3
 
 xiiResult xiiGALCommandListD3D12::DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex)
 {
-  Diligent::DrawIndexedAttribs drawIndexedDescription;
+  Diligent::DrawIndexedAttribs drawIndexedDescription = {};
+  ;
   drawIndexedDescription.NumIndices            = uiIndexCount;
   drawIndexedDescription.FirstIndexLocation    = uiStartIndex;
   drawIndexedDescription.IndexType             = m_IndexFormat;
@@ -207,17 +208,17 @@ xiiResult xiiGALCommandListD3D12::DrawIndexedInstancedIndirectPlatform(xiiGALBuf
 {
   auto pIndirectArgumentBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pIndirectArgumentBuffer);
 
-  Diligent::DrawIndexedIndirectAttribs drawIndexedInstancedDescription;
-  drawIndexedInstancedDescription.IndexType                        = m_IndexFormat;
-  drawIndexedInstancedDescription.pAttribsBuffer                   = pIndirectArgumentBufferD3D12->GetBuffer();
-  drawIndexedInstancedDescription.DrawArgsOffset                   = uiArgumentOffsetInBytes;
-  drawIndexedInstancedDescription.Flags                            = Diligent::DRAW_FLAG_VERIFY_ALL;
-  drawIndexedInstancedDescription.DrawCount                        = 1U;
-  drawIndexedInstancedDescription.DrawArgsStride                   = sizeof(xiiUInt32) * 5U;
-  drawIndexedInstancedDescription.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
-  drawIndexedInstancedDescription.pCounterBuffer                   = nullptr;
-  drawIndexedInstancedDescription.CounterOffset                    = 0U;
-  drawIndexedInstancedDescription.CounterBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  Diligent::DrawIndexedIndirectAttribs drawIndexedInstancedDescription = {};
+  drawIndexedInstancedDescription.IndexType                            = m_IndexFormat;
+  drawIndexedInstancedDescription.pAttribsBuffer                       = pIndirectArgumentBufferD3D12->GetBuffer();
+  drawIndexedInstancedDescription.DrawArgsOffset                       = uiArgumentOffsetInBytes;
+  drawIndexedInstancedDescription.Flags                                = Diligent::DRAW_FLAG_VERIFY_ALL;
+  drawIndexedInstancedDescription.DrawCount                            = 1U;
+  drawIndexedInstancedDescription.DrawArgsStride                       = sizeof(xiiUInt32) * 5U;
+  drawIndexedInstancedDescription.AttribsBufferStateTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  drawIndexedInstancedDescription.pCounterBuffer                       = nullptr;
+  drawIndexedInstancedDescription.CounterOffset                        = 0U;
+  drawIndexedInstancedDescription.CounterBufferStateTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
 
   m_pCommandList->DrawIndexedIndirect(drawIndexedInstancedDescription);
 
@@ -226,7 +227,7 @@ xiiResult xiiGALCommandListD3D12::DrawIndexedInstancedIndirectPlatform(xiiGALBuf
 
 xiiResult xiiGALCommandListD3D12::DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex)
 {
-  Diligent::DrawAttribs drawInstancedDescription;
+  Diligent::DrawAttribs drawInstancedDescription = {};
   drawInstancedDescription.NumVertices           = uiVertexCountPerInstance;
   drawInstancedDescription.Flags                 = Diligent::DRAW_FLAG_VERIFY_ALL;
   drawInstancedDescription.NumInstances          = uiInstanceCount;
@@ -242,7 +243,7 @@ xiiResult xiiGALCommandListD3D12::DrawInstancedIndirectPlatform(xiiGALBuffer* pI
 {
   auto pIndirectArgumentBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pIndirectArgumentBuffer);
 
-  Diligent::DrawIndirectAttribs drawInstancedIndirectDescription;
+  Diligent::DrawIndirectAttribs drawInstancedIndirectDescription    = {};
   drawInstancedIndirectDescription.pAttribsBuffer                   = pIndirectArgumentBufferD3D12->GetBuffer();
   drawInstancedIndirectDescription.DrawArgsOffset                   = uiArgumentOffsetInBytes;
   drawInstancedIndirectDescription.Flags                            = Diligent::DRAW_FLAG_VERIFY_ALL;
@@ -260,10 +261,10 @@ xiiResult xiiGALCommandListD3D12::DrawInstancedIndirectPlatform(xiiGALBuffer* pI
 
 xiiResult xiiGALCommandListD3D12::DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
 {
-  Diligent::DrawMeshAttribs drawMeshDescription;
-  drawMeshDescription.ThreadGroupCountX = uiThreadGroupCountX;
-  drawMeshDescription.ThreadGroupCountY = uiThreadGroupCountY;
-  drawMeshDescription.ThreadGroupCountZ = uiThreadGroupCountZ;
+  Diligent::DrawMeshAttribs drawMeshDescription = {};
+  drawMeshDescription.ThreadGroupCountX         = uiThreadGroupCountX;
+  drawMeshDescription.ThreadGroupCountY         = uiThreadGroupCountY;
+  drawMeshDescription.ThreadGroupCountZ         = uiThreadGroupCountZ;
 
   m_pCommandList->DrawMesh(drawMeshDescription);
 
@@ -272,10 +273,10 @@ xiiResult xiiGALCommandListD3D12::DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX
 
 xiiResult xiiGALCommandListD3D12::DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
 {
-  Diligent::DispatchComputeAttribs dispatchDescription;
-  dispatchDescription.ThreadGroupCountX = uiThreadGroupCountX;
-  dispatchDescription.ThreadGroupCountY = uiThreadGroupCountY;
-  dispatchDescription.ThreadGroupCountZ = uiThreadGroupCountZ;
+  Diligent::DispatchComputeAttribs dispatchDescription = {};
+  dispatchDescription.ThreadGroupCountX                = uiThreadGroupCountX;
+  dispatchDescription.ThreadGroupCountY                = uiThreadGroupCountY;
+  dispatchDescription.ThreadGroupCountZ                = uiThreadGroupCountZ;
 
   m_pCommandList->DispatchCompute(dispatchDescription);
 
@@ -286,10 +287,10 @@ xiiResult xiiGALCommandListD3D12::DispatchIndirectPlatform(xiiGALBuffer* pIndire
 {
   auto pIndirectArgumentBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pIndirectArgumentBuffer);
 
-  Diligent::DispatchComputeIndirectAttribs DispatchAttribs;
-  DispatchAttribs.pAttribsBuffer                   = pIndirectArgumentBufferD3D12->GetBuffer();
-  DispatchAttribs.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
-  DispatchAttribs.DispatchArgsByteOffset           = uiArgumentOffsetInBytes;
+  Diligent::DispatchComputeIndirectAttribs DispatchAttribs = {};
+  DispatchAttribs.pAttribsBuffer                           = pIndirectArgumentBufferD3D12->GetBuffer();
+  DispatchAttribs.AttribsBufferStateTransitionMode         = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  DispatchAttribs.DispatchArgsByteOffset                   = uiArgumentOffsetInBytes;
 
   m_pCommandList->DispatchComputeIndirect(DispatchAttribs);
 
@@ -395,6 +396,27 @@ xiiResult xiiGALCommandListD3D12::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xii
 
 void xiiGALCommandListD3D12::UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
+  auto        pTextureD3D12      = static_cast<xiiGALTextureD3D12*>(pTexture);
+  const auto& textureDescription = pTextureD3D12->GetDescription();
+
+  xiiUInt32 uiWidth  = xiiMath::Max(textureBox.m_vMax.x - textureBox.m_vMin.x, 1U);
+  xiiUInt32 uiHeight = xiiMath::Max(textureBox.m_vMax.y - textureBox.m_vMin.y, 1U);
+  xiiUInt32 uiDepth  = xiiMath::Max(textureBox.m_vMax.z - textureBox.m_vMin.z, 1U);
+
+  Diligent::Box destinationBox = {};
+  destinationBox.MinX          = textureBox.m_vMin.x;
+  destinationBox.MinY          = textureBox.m_vMin.y;
+  destinationBox.MinZ          = textureBox.m_vMin.z;
+  destinationBox.MaxX          = textureBox.m_vMax.x;
+  destinationBox.MaxY          = textureBox.m_vMax.y;
+  destinationBox.MaxZ          = textureBox.m_vMax.z;
+
+  Diligent::TextureSubResData textureSubresourceData = {};
+  textureSubresourceData.pData                       = subresourceData.m_pData;
+  textureSubresourceData.Stride                      = subresourceData.m_uiStride;
+  textureSubresourceData.DepthStride                 = subresourceData.m_uiDepthStride;
+
+  m_pCommandList->UpdateTexture(pTextureD3D12->GetTexture(), textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, destinationBox, textureSubresourceData, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 }
 
 void xiiGALCommandListD3D12::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
