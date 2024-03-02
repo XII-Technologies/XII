@@ -126,6 +126,27 @@ void xiiGALDeviceNull::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
   XII_DELETE(&m_Allocator, pSwapChainNull);
 }
 
+xiiGALCommandList* xiiGALDeviceNull::CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description)
+{
+  xiiGALCommandListNull* pCommandListNull = XII_NEW(&m_Allocator, xiiGALCommandListNull, description);
+
+  if (pCommandListNull->InitPlatform(this).Succeeded())
+    return pCommandListNull;
+
+  XII_DELETE(&m_Allocator, pCommandListNull);
+
+  return pCommandListNull;
+}
+
+void xiiGALDeviceNull::DestroyCommandListPlatform(xiiGALCommandList* pCommandList)
+{
+  xiiGALCommandListNull* pCommandListNull = static_cast<xiiGALCommandListNull*>(pCommandList);
+
+  pCommandListNull->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pCommandListNull);
+}
+
 xiiGALBlendState* xiiGALDeviceNull::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
 {
   xiiGALBlendStateNull* pBlendStateNull = XII_NEW(&m_Allocator, xiiGALBlendStateNull, description);
