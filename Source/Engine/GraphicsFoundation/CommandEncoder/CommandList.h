@@ -58,6 +58,8 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandList : public xiiGALDeviceObject
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandList, xiiGALDeviceObject);
 
 public:
+  void Execute();
+
   // State functions.
 
   void SetPipelineState(xiiGALPipelineStateHandle hPipelineState);
@@ -146,6 +148,8 @@ protected:
 
   // These functions need to be implemented by a graphics API abstraction.
 protected:
+  virtual void ExecutePlatform() = 0;
+
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) = 0;
 
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef)       = 0;

@@ -33,11 +33,33 @@ xiiGALCommandListD3D12::~xiiGALCommandListD3D12() = default;
 
 xiiResult xiiGALCommandListD3D12::InitPlatform(xiiGALDevice* pDevice)
 {
-  // xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
+  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 
-  XII_ASSERT_NOT_IMPLEMENTED;
+  if (m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics))
+  {
+    m_pCommandList = pDeviceD3D12->GetImmediateContext();
 
-  return m_pCommandList == nullptr ? XII_FAILURE : XII_SUCCESS;
+    xiiLog::Error("Failed to create command list, no graphics command queue found.");
+  }
+  else if (m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Compute))
+  {
+    m_pCommandList = pDeviceD3D12->GetComputeContext();
+
+    xiiLog::Error("Failed to create command list, no compute command queue found.");
+  }
+  else if (m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer))
+  {
+    m_pCommandList = pDeviceD3D12->GetTransferContext();
+
+    xiiLog::Error("Failed to create command list, no transfer command queue found.");
+  }
+  else if (m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::SparseBinding))
+  {
+    m_pCommandList = pDeviceD3D12->GetSparseBindingContext();
+
+    xiiLog::Error("Failed to create command list, no sparse binding command queue found.");
+  }
+  return m_pCommandList != nullptr ? XII_SUCCESS : XII_FAILURE;
 }
 
 xiiResult xiiGALCommandListD3D12::DeInitPlatform(xiiGALDevice* pDevice)
@@ -45,6 +67,11 @@ xiiResult xiiGALCommandListD3D12::DeInitPlatform(xiiGALDevice* pDevice)
   XII_GAL_DILIGENT_PTR_RELEASE(m_pCommandList);
 
   return XII_SUCCESS;
+}
+
+void xiiGALCommandListD3D12::ExecutePlatform()
+{
+  XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 void xiiGALCommandListD3D12::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)

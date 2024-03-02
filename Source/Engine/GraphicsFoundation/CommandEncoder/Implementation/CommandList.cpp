@@ -32,8 +32,25 @@ xiiGALCommandList::xiiGALCommandList(const xiiGALCommandListCreationDescription&
 
 xiiGALCommandList::~xiiGALCommandList() = default;
 
+void xiiGALCommandList::Execute()
+{
+  ExecutePlatform();
+}
+
 void xiiGALCommandList::SetPipelineState(xiiGALPipelineStateHandle hPipelineState)
 {
+  m_hPipelineState = hPipelineState;
+
+  xiiGALPipelineState* pPipelineState = m_pDevice->GetPipelineState(hPipelineState);
+  if (!m_hPipelineResourceSignature.IsInvalidated())
+  {
+    m_hPipelineResourceSignature = xiiGALPipelineResourceSignatureHandle();
+  }
+  if (pPipelineState != nullptr)
+  {
+    m_hPipelineResourceSignature = pPipelineState->GetDescription().m_hPipelineResourceSignature;
+  }
+  SetPipelineStatePlatform(pPipelineState);
 }
 
 void xiiGALCommandList::SetStencilRef(xiiUInt32 uiStencilRef)

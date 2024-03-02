@@ -6,7 +6,9 @@
 
 class XII_GRAPHICSD3D12_DLL xiiGALCommandListD3D12 final : public xiiGALCommandList
 {
-public:
+protected:
+  virtual void ExecutePlatform() override final;
+
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
 
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef) override final;

@@ -423,6 +423,27 @@ void xiiGALDeviceD3D12::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
   XII_DELETE(&m_Allocator, pSwapChainD3D12);
 }
 
+xiiGALCommandList* xiiGALDeviceD3D12::CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description)
+{
+  xiiGALCommandListD3D12* pCommandListD3D12 = XII_NEW(&m_Allocator, xiiGALCommandListD3D12, description);
+
+  if (pCommandListD3D12->InitPlatform(this).Succeeded())
+    return pCommandListD3D12;
+
+  XII_DELETE(&m_Allocator, pCommandListD3D12);
+
+  return pCommandListD3D12;
+}
+
+void xiiGALDeviceD3D12::DestroyCommandListPlatform(xiiGALCommandList* pCommandList)
+{
+  xiiGALCommandListD3D12* pCommandListD3D12 = static_cast<xiiGALCommandListD3D12*>(pCommandList);
+
+  pCommandListD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pCommandListD3D12);
+}
+
 xiiGALBlendState* xiiGALDeviceD3D12::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
 {
   xiiGALBlendStateD3D12* pBlendStateD3D12 = XII_NEW(&m_Allocator, xiiGALBlendStateD3D12, description);
