@@ -3,6 +3,7 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Shader/InputLayoutD3D12.h>
 #include <GraphicsD3D12/Shader/ShaderD3D12.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 #include <GraphicsD3D12/Utilities/D3D12TypeConversions.h>
 
@@ -31,7 +32,7 @@ xiiResult xiiGALInputLayoutD3D12::InitPlatform(xiiGALDevice* pDevice)
     return XII_FAILURE;
   }
 
-  xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputLayouts(pShaderD3D12->GetInputLayouts());
+  xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputLayouts(pShaderD3D12->GetVertexInputLayout());
 
   auto FindLocation = [&](xiiEnum<xiiGALInputLayoutSemantic> sematic, xiiEnum<xiiGALTextureFormat> format) -> xiiUInt32 {
     for (xiiUInt32 i = 0; i < vertexInputLayouts.GetCount(); ++i)
@@ -66,7 +67,7 @@ xiiResult xiiGALInputLayoutD3D12::InitPlatform(xiiGALDevice* pDevice)
     }
 
     const auto& diligentFormat   = pDeviceD3D12->GetFormatLookupTable().GetFormatInfo(inputLayout.m_Format).m_eInputLayoutType;
-    const auto& formatProperties = pDeviceD3D12->GetTextureFormatProperties(xiiDiligentTypeConversions::GetGALTextureFormat(diligentFormat));
+    const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(xiiDiligentTypeConversions::GetGALTextureFormat(diligentFormat));
 
     Diligent::LayoutElement& layoutElement = m_InputElements.ExpandAndGetRef();
     layoutElement.BufferSlot               = inputLayout.m_uiBufferSlot;

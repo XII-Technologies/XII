@@ -4,6 +4,15 @@ XII_ALWAYS_INLINE const xiiGALShaderCreationDescription& xiiGALShader::GetDescri
   return m_Description;
 }
 
+XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALVertexInputLayout> xiiGALShader::GetVertexInputLayout() const
+{
+  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Vertex))
+  {
+    return m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)]->m_VertexInputLayout;
+  }
+  return xiiArrayPtr<const xiiGALVertexInputLayout>();
+}
+
 XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderPrimitiveType::GetPrimitiveTypeSize(xiiEnum<xiiGALShaderPrimitiveType> type)
 {
   switch (type)
@@ -33,22 +42,49 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderPrimitiveType::GetPrimitiveTypeSize(xiiE
     case xiiGALShaderPrimitiveType::Double:
       return sizeof(double);
     case xiiGALShaderPrimitiveType::Min8Float:
-      return 8;
+      return 8U;
     case xiiGALShaderPrimitiveType::Min10Float:
-      return 10;
+      return 10U;
     case xiiGALShaderPrimitiveType::Min16Float:
-      return 16;
+      return 16U;
     case xiiGALShaderPrimitiveType::Min12Int:
-      return 12;
+      return 12U;
     case xiiGALShaderPrimitiveType::Min16Int:
-      return 16;
+      return 16U;
     case xiiGALShaderPrimitiveType::Min16UInt:
-      return 16;
+      return 16U;
 
     default:
       XII_ASSERT_DEV(false, "The requested type is not a primitive type");
   }
   return 0;
+}
+
+XII_ALWAYS_INLINE bool xiiGALShaderPrimitiveType::IsNumberType(xiiEnum<xiiGALShaderPrimitiveType> type)
+{
+  switch (type)
+  {
+    case xiiGALShaderPrimitiveType::Bool:
+    case xiiGALShaderPrimitiveType::Int8:
+    case xiiGALShaderPrimitiveType::Int16:
+    case xiiGALShaderPrimitiveType::Int32:
+    case xiiGALShaderPrimitiveType::Int64:
+    case xiiGALShaderPrimitiveType::UInt8:
+    case xiiGALShaderPrimitiveType::UInt16:
+    case xiiGALShaderPrimitiveType::UInt32:
+    case xiiGALShaderPrimitiveType::UInt64:
+    case xiiGALShaderPrimitiveType::Float16:
+    case xiiGALShaderPrimitiveType::Float32:
+    case xiiGALShaderPrimitiveType::Double:
+    case xiiGALShaderPrimitiveType::Min8Float:
+    case xiiGALShaderPrimitiveType::Min10Float:
+    case xiiGALShaderPrimitiveType::Min16Float:
+    case xiiGALShaderPrimitiveType::Min12Int:
+    case xiiGALShaderPrimitiveType::Min16Int:
+    case xiiGALShaderPrimitiveType::Min16UInt:
+      return true;
+  }
+  return false;
 }
 
 XII_FORCE_INLINE xiiGALShaderCreationDescription::xiiGALShaderCreationDescription() :

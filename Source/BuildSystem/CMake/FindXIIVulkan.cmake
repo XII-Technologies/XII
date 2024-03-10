@@ -84,11 +84,11 @@ if(XIIVULKAN_FOUND)
 
   elseif(XII_CMAKE_PLATFORM_LINUX AND XII_CMAKE_ARCHITECTURE_64BIT)
     add_library(XIIVulkan::Loader SHARED IMPORTED)
-    set_target_properties(XIIVulkan::Loader PROPERTIES IMPORTED_LOCATION "${XII_VULKAN_DIR}/x86_64/lib/libvulkan.so.1.3.216")
+    set_target_properties(XIIVulkan::Loader PROPERTIES IMPORTED_LOCATION "${XII_VULKAN_DIR}/x86_64/lib/libvulkan.so")
     set_target_properties(XIIVulkan::Loader PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${XII_VULKAN_DIR}/x86_64/include")
 
     add_library(XIIVulkan::DXC SHARED IMPORTED)
-    set_target_properties(XIIVulkan::DXC PROPERTIES IMPORTED_LOCATION "${XII_VULKAN_DIR}/x86_64/lib/libdxcompiler.so.3.7")
+    set_target_properties(XIIVulkan::DXC PROPERTIES IMPORTED_LOCATION "${XII_VULKAN_DIR}/x86_64/lib/libdxcompiler.so")
     set_target_properties(XIIVulkan::DXC PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${XII_VULKAN_DIR}/x86_64/include")
   else()
     message(FATAL_ERROR "TODO: Vulkan is not yet supported on this platform and/or architecture.")

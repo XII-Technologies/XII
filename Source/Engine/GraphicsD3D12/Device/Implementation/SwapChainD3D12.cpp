@@ -3,7 +3,6 @@
 #include <Core/System/Window.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
-#include <GraphicsD3D12/Device/PassD3D12.h>
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 
@@ -74,8 +73,7 @@ xiiResult xiiGALSwapChainD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALSwapChainD3D12::CreateBackBufferInternal(xiiGALDeviceD3D12* pDeviceD3D12)
 {
-  Diligent::ITextureView* pRTV     = m_pSwapChain->GetCurrentBackBufferRTV();
-  Diligent::ITexture*     pTexture = pRTV->GetTexture();
+  Diligent::ITextureView* pRTV = m_pSwapChain->GetCurrentBackBufferRTV();
 
   if (pRTV == nullptr)
   {
@@ -84,6 +82,7 @@ xiiResult xiiGALSwapChainD3D12::CreateBackBufferInternal(xiiGALDeviceD3D12* pDev
     return XII_FAILURE;
   }
 
+  Diligent::ITexture*          pTexture    = pRTV->GetTexture();
   const Diligent::TextureDesc& textureDesc = pTexture->GetDesc();
 
   xiiGALTextureCreationDescription textureDescription;
@@ -118,7 +117,7 @@ xiiResult xiiGALSwapChainD3D12::CreateBackBufferInternal(xiiGALDeviceD3D12* pDev
 
   m_BackbufferTextures.PushBack(renderTargetInfo);
 
-  m_RenderTargets.m_hRTs[0] = hBackbufferTexture;
+  m_hBackBufferTexture = hBackbufferTexture;
 
   m_CurrentSize = textureDescription.m_Size;
 
@@ -133,7 +132,7 @@ void xiiGALSwapChainD3D12::DestroyBackBufferInternal(xiiGALDeviceD3D12* pDeviceD
 
     iter.m_hRenderTargetHandle.Invalidate();
   }
-  m_RenderTargets.m_hRTs[0].Invalidate();
+  m_hBackBufferTexture.Invalidate();
   m_BackbufferTextures.Clear();
 }
 
@@ -151,7 +150,7 @@ void xiiGALSwapChainD3D12::AcquireNextRenderTarget(xiiGALDevice* pDevice)
     if (backBufferInfo.m_pTextureView == pCurrentTextureView)
     {
       bBackBufferFound          = true;
-      m_RenderTargets.m_hRTs[0] = backBufferInfo.m_hRenderTargetHandle;
+      m_hBackBufferTexture      = backBufferInfo.m_hRenderTargetHandle;
 
       break;
     }
@@ -169,7 +168,7 @@ void xiiGALSwapChainD3D12::Present(xiiGALDevice* pDevice)
 
   xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 
-  XII_ASSERT_DEV(m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture() == static_cast<xiiGALTextureD3D12*>(pDeviceD3D12->GetTexture(m_RenderTargets.m_hRTs[0]))->GetTexture(), "Invalid Swapchain texture. Did you forget to call xiiGALSwapChain::AcquireNextRenderTarget?");
+  XII_ASSERT_DEV(m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture() == static_cast<xiiGALTextureD3D12*>(pDeviceD3D12->GetTexture(m_hBackBufferTexture))->GetTexture(), "Invalid Swapchain texture. Did you forget to call xiiGALSwapChain::AcquireNextRenderTarget?");
 
   xiiUInt32 uiSyncInterval = 1U;
   switch (m_PresentMode)
@@ -191,7 +190,6 @@ xiiResult xiiGALSwapChainD3D12::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize
   DestroyBackBufferInternal(pDeviceD3D12);
 
   // Need to flush dead objects or ResizeBuffers will fail as the backbuffer is still referenced.
-  pDeviceD3D12->GetDefaultPass()->ReleaseCachedRenderPassesAndFramebuffers();
   pDeviceD3D12->FlushPendingObjects();
 
   m_pSwapChain->Resize(newSize.width, newSize.height, xiiDiligentTypeConversions::GetSurfaceTransform(newTransform));

@@ -3,7 +3,6 @@
 #include <Core/System/Window.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <GraphicsNull/Device/DeviceNull.h>
-#include <GraphicsNull/Device/PassNull.h>
 #include <GraphicsNull/Device/SwapChainNull.h>
 #include <GraphicsNull/Resources/TextureNull.h>
 
@@ -60,10 +59,8 @@ xiiResult xiiGALSwapChainNull::CreateBackBufferInternal(xiiGALDeviceNull* pDevic
 
   textureDescription.m_pExisitingNativeObject = nullptr;
 
-  m_hBackbufferTexture = pDeviceNull->CreateTexture(textureDescription);
-  XII_ASSERT_RELEASE(!m_hBackbufferTexture.IsInvalidated(), "Couldn't create native backbuffer texture object!");
-
-  m_RenderTargets.m_hRTs[0] = m_hBackbufferTexture;
+  m_hBackBufferTexture = pDeviceNull->CreateTexture(textureDescription);
+  XII_ASSERT_RELEASE(!m_hBackBufferTexture.IsInvalidated(), "Couldn't create native backbuffer texture object!");
 
   m_CurrentSize = textureDescription.m_Size;
 
@@ -72,8 +69,8 @@ xiiResult xiiGALSwapChainNull::CreateBackBufferInternal(xiiGALDeviceNull* pDevic
 
 void xiiGALSwapChainNull::DestroyBackBufferInternal(xiiGALDeviceNull* pDeviceNull)
 {
-  pDeviceNull->DestroyTexture(m_hBackbufferTexture);
-  m_hBackbufferTexture.Invalidate();
+  pDeviceNull->DestroyTexture(m_hBackBufferTexture);
+  m_hBackBufferTexture.Invalidate();
 }
 
 void xiiGALSwapChainNull::AcquireNextRenderTarget(xiiGALDevice* pDevice)
@@ -97,7 +94,6 @@ xiiResult xiiGALSwapChainNull::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize,
   DestroyBackBufferInternal(pDeviceNull);
 
   // Need to flush dead objects or ResizeBuffers will fail as the backbuffer is still referenced.
-  pDeviceNull->GetDefaultPass()->ReleaseCachedRenderPassesAndFramebuffers();
   pDeviceNull->FlushPendingObjects();
 
   return CreateBackBufferInternal(pDeviceNull);

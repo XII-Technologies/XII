@@ -2,7 +2,11 @@
 
 #include <GraphicsFoundation/Device/Device.h>
 
+#include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/Profiling/Profiling.h>
+
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Resources/BottomLevelAS.h>
@@ -20,12 +24,16 @@
 #include <GraphicsFoundation/Shader/Shader.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
+#include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 namespace
 {
+  static constexpr xiiUInt32 s_uiMaxResourcesInSignature = XII_BIT(16) - 1U;
+  static constexpr xiiUInt32 s_uiMaxCommandQueues        = 64U;
+
   struct GALObjectType
   {
     using StorageType = xiiUInt8;
@@ -33,6 +41,7 @@ namespace
     enum Enum : xiiUInt8
     {
       SwapChain = 0U,
+      CommandList,
       BottomLevelAS,
       Buffer,
       BufferView,
@@ -48,7 +57,9 @@ namespace
       Shader,
       BlendState,
       DepthStencilState,
-      RasterizerState
+      RasterizerState,
+      PipelineResourceSignature,
+      PipelineState
     };
   };
 
@@ -69,10 +80,159 @@ namespace
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALBlendStateHandle) == sizeof(xiiUInt32));
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALDepthStencilStateHandle) == sizeof(xiiUInt32));
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALRasterizerStateHandle) == sizeof(xiiUInt32));
+  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALPipelineResourceSignatureHandle) == sizeof(xiiUInt32));
+  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALPipelineStateHandle) == sizeof(xiiUInt32));
+
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALShaderHandle& Value)
+  {
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
+  }
+
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALBlendStateHandle& Value)
+  {
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
+  }
+
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRasterizerStateHandle& Value)
+  {
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
+  }
+
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALDepthStencilStateHandle& Value)
+  {
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
+  }
+
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALInputLayoutHandle& Value)
+  {
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
+  }
+
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRenderPassHandle& Value)
+  {
+    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
+    return ref_stream;
+  }
 } // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+template <>
+struct xiiHashHelper<xiiGALPipelineStateCreationDescription>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiGALPipelineStateCreationDescription& description)
+  {
+    xiiHashStreamWriter32 writer;
+
+    writer << description.m_sName;
+    writer << description.m_PipelineType;
+    writer << description.m_hShader;
+    writer << description.m_uiNodeMask;
+    writer << description.m_uiImmediateContextMask;
+
+    // Graphics pipeline state.
+    switch (description.m_PipelineType)
+    {
+      case xiiGALPipelineType::Graphics:
+      case xiiGALPipelineType::Mesh:
+      {
+        const auto& graphicsPipeline = description.m_GraphicsPipeline;
+
+        writer << graphicsPipeline.m_hBlendState;
+        writer << graphicsPipeline.m_uiSampleMask;
+        writer << graphicsPipeline.m_hRasterizerState;
+        writer << graphicsPipeline.m_hDepthStencilState;
+        writer << graphicsPipeline.m_hInputLayout;
+        writer << graphicsPipeline.m_PrimitiveTopology;
+        writer << graphicsPipeline.m_uiViewportCount;
+        writer << graphicsPipeline.m_uiSubpassIndex;
+        writer << graphicsPipeline.m_ShadingRateFlags;
+        writer << graphicsPipeline.m_hRenderPass;
+      }
+      break;
+      case xiiGALPipelineType::Compute:
+      {
+      }
+      break;
+      case xiiGALPipelineType::RayTracing:
+      {
+        const auto& rayTracingPipeline = description.m_RayTracingPipeline;
+
+        writer << rayTracingPipeline.m_uiShaderRecordSize;
+        writer << rayTracingPipeline.m_uiMaxRecursionDepth;
+      }
+      break;
+      case xiiGALPipelineType::Tile:
+      {
+        const auto& tilePipeline = description.m_TilePipeline;
+
+        writer << tilePipeline.m_SampleCount;
+        writer << tilePipeline.m_RenderTargetFormats.GetCount();
+
+        for (xiiUInt32 i = 0; i < tilePipeline.m_RenderTargetFormats.GetCount(); ++i)
+        {
+          writer << tilePipeline.m_RenderTargetFormats[i];
+        }
+      }
+      break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+
+    return writer.GetHashValue();
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(const xiiGALPipelineStateCreationDescription& a, const xiiGALPipelineStateCreationDescription& b) { return false; }
+};
+
+template <>
+struct xiiHashHelper<xiiGALPipelineResourceSignatureCreationDescription>
+{
+  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiGALPipelineResourceSignatureCreationDescription& description)
+  {
+    xiiHashStreamWriter32 writer;
+
+    writer << description.m_sName;
+    writer << description.m_uiBindingIndex;
+    writer << description.m_bUseCombinedTextureSamplers;
+    writer << description.m_sCombinedSamplerSuffix;
+
+    writer << description.m_Resources.GetCount();
+    for (xiiUInt32 i = 0; i < description.m_Resources.GetCount(); ++i)
+    {
+      const auto& resource = description.m_Resources[i];
+
+      writer << i;
+      writer << resource.m_sName;
+      writer << resource.m_ShaderStages;
+      writer << resource.m_uiArraySize;
+      writer << resource.m_ResourceType;
+      writer << resource.m_ResourceVariableType;
+      writer << resource.m_PipelineResourceFlags;
+    }
+
+    writer << description.m_ImmutableSamplers.GetCount();
+    for (xiiUInt32 i = 0; i < description.m_ImmutableSamplers.GetCount(); ++i)
+    {
+      const auto& sampler = description.m_ImmutableSamplers[i];
+
+      writer << i;
+      writer << sampler.m_SamplerOrTextureName;
+      writer << sampler.m_ShaderStages;
+      writer << sampler.m_SamplerDescription.CalculateHash();
+    }
+
+    return writer.GetHashValue();
+  }
+
+  XII_ALWAYS_INLINE static bool Equal(const xiiGALPipelineResourceSignatureCreationDescription& a, const xiiGALPipelineResourceSignatureCreationDescription& b) { return false; }
+};
 
 xiiGALDevice* xiiGALDevice::s_pDefaultDevice = nullptr;
 
@@ -186,7 +346,7 @@ xiiResult xiiGALDevice::Shutdown()
     m_Events.Broadcast(e);
   }
 
-  DestroyDeadObjects();
+  FlushDestroyedObjects();
 
   // Ensure we are not listed as the default device.
   if (xiiGALDevice::HasDefaultDevice() && xiiGALDevice::GetDefaultDevice() == this)
@@ -219,26 +379,6 @@ void xiiGALDevice::EndPipeline(xiiGALSwapChainHandle hSwapChain)
   xiiGALSwapChain* pSwapChain = nullptr;
   m_SwapChains.TryGetValue(hSwapChain, pSwapChain);
   EndPipelinePlatform(pSwapChain);
-}
-
-xiiGALPass* xiiGALDevice::BeginPass(xiiStringView sName)
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  XII_ASSERT_DEV(!m_bBeginPassCalled, "Nested Passes are not allowed: You must call xiiGALDevice::EndPass before you can call xiiGALDevice::BeginPass again.");
-  m_bBeginPassCalled = true;
-
-  return BeginPassPlatform(sName);
-}
-
-void xiiGALDevice::EndPass(xiiGALPass* pPass)
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  XII_ASSERT_DEV(m_bBeginPassCalled, "You must have called xiiGALDevice::BeginPass before you can call xiiGALDevice::EndPass.");
-  m_bBeginPassCalled = false;
-
-  EndPassPlatform(pPass);
 }
 
 void xiiGALDevice::BeginFrame(const xiiUInt64 uiRenderFrame)
@@ -283,7 +423,7 @@ void xiiGALDevice::EndFrame()
 
     XII_ASSERT_DEV(m_bBeginFrameCalled, "You must have called xiiGALDevice::Begin before you can call xiiGALDevice::EndFrame");
 
-    DestroyDeadObjects();
+    FlushDestroyedObjects();
 
     EndFramePlatform();
 
@@ -326,11 +466,47 @@ void xiiGALDevice::DestroySwapChain(xiiGALSwapChainHandle hSwapChain)
 
   if (m_SwapChains.TryGetValue(hSwapChain, pSwapChain))
   {
-    AddDeadObject(GALObjectType::SwapChain, hSwapChain);
+    AddDestroyedObject(GALObjectType::SwapChain, hSwapChain);
   }
   else
   {
     xiiLog::Warning("DestroySwapChain called on invalid handle (double free?).");
+  }
+}
+
+xiiGALCommandListHandle xiiGALDevice::CreateCommandList(const xiiGALCommandListCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  /// \todo GraphicsFoundation: Add command list description validation.
+
+  xiiGALCommandList* pCommandList = CreateCommandListPlatform(description);
+
+  if (pCommandList == nullptr)
+  {
+    return xiiGALCommandListHandle();
+  }
+  else
+  {
+    pCommandList->m_pDevice = this;
+
+    return xiiGALCommandListHandle(m_CommandLists.Insert(pCommandList));
+  }
+}
+
+void xiiGALDevice::DestroyCommandList(xiiGALCommandListHandle hCommandList)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALCommandList* pCommandList = nullptr;
+
+  if (m_CommandLists.TryGetValue(hCommandList, pCommandList))
+  {
+    AddDestroyedObject(GALObjectType::CommandList, hCommandList);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyCommandList called on invalid handle (double free?).");
   }
 }
 
@@ -373,7 +549,7 @@ xiiGALBlendStateHandle xiiGALDevice::CreateBlendState(const xiiGALBlendStateCrea
       xiiGALBlendState* pBlendState = m_BlendStates[hBlendState];
       if (pBlendState->GetRefCount() == 0)
       {
-        ReviveDeadObject(GALObjectType::BlendState, hBlendState);
+        ReviveDestroyedObject(GALObjectType::BlendState, hBlendState);
       }
 
       pBlendState->AddRef();
@@ -412,7 +588,7 @@ void xiiGALDevice::DestroyBlendState(xiiGALBlendStateHandle hBlendState)
 
     if (pBlendState->GetRefCount() == 0)
     {
-      AddDeadObject(GALObjectType::BlendState, hBlendState);
+      AddDestroyedObject(GALObjectType::BlendState, hBlendState);
     }
   }
   else
@@ -459,7 +635,7 @@ xiiGALDepthStencilStateHandle xiiGALDevice::CreateDepthStencilState(const xiiGAL
       xiiGALDepthStencilState* pDepthStencilState = m_DepthStencilStates[hDepthStencilState];
       if (pDepthStencilState->GetRefCount() == 0)
       {
-        ReviveDeadObject(GALObjectType::DepthStencilState, hDepthStencilState);
+        ReviveDestroyedObject(GALObjectType::DepthStencilState, hDepthStencilState);
       }
 
       pDepthStencilState->AddRef();
@@ -498,7 +674,7 @@ void xiiGALDevice::DestroyDepthStencilState(xiiGALDepthStencilStateHandle hDepth
 
     if (pDepthStencilState->GetRefCount() == 0)
     {
-      AddDeadObject(GALObjectType::DepthStencilState, hDepthStencilState);
+      AddDestroyedObject(GALObjectType::DepthStencilState, hDepthStencilState);
     }
   }
   else
@@ -533,7 +709,7 @@ xiiGALRasterizerStateHandle xiiGALDevice::CreateRasterizerState(const xiiGALRast
       xiiGALRasterizerState* pRasterizerState = m_RasterizerStates[hRasterizerState];
       if (pRasterizerState->GetRefCount() == 0)
       {
-        ReviveDeadObject(GALObjectType::RasterizerState, hRasterizerState);
+        ReviveDestroyedObject(GALObjectType::RasterizerState, hRasterizerState);
       }
 
       pRasterizerState->AddRef();
@@ -572,7 +748,7 @@ void xiiGALDevice::DestroyRasterizerState(xiiGALRasterizerStateHandle hRasterize
 
     if (pRasterizerState->GetRefCount() == 0)
     {
-      AddDeadObject(GALObjectType::RasterizerState, hRasterizerState);
+      AddDestroyedObject(GALObjectType::RasterizerState, hRasterizerState);
     }
   }
   else
@@ -662,7 +838,7 @@ void xiiGALDevice::DestroyShader(xiiGALShaderHandle hShader)
 
   if (m_Shaders.TryGetValue(hShader, pShader))
   {
-    AddDeadObject(GALObjectType::Shader, hShader);
+    AddDestroyedObject(GALObjectType::Shader, hShader);
   }
   else
   {
@@ -817,10 +993,12 @@ xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescript
 
   if (bHasInitialData)
   {
-    XII_VERIFY_BUFFER(pInitialData->m_uiDataSize >= description.m_uiSize, "The buffer initial data size ({0}) must be larger than the buffer size ({1]).", pInitialData->m_uiDataSize, description.m_uiSize);
+    XII_VERIFY_BUFFER(pInitialData->m_uiDataSize >= description.m_uiSize, "The buffer initial data size ({0}) must be larger than the buffer size ({1}).", pInitialData->m_uiDataSize, description.m_uiSize);
   }
 
   xiiGALBuffer* pBuffer = CreateBufferPlatform(description, pInitialData);
+
+  pBuffer->m_pDevice = this;
 
   return FinalizeBufferInternal(description, pBuffer);
 }
@@ -849,7 +1027,7 @@ void xiiGALDevice::DestroyBuffer(xiiGALBufferHandle hBuffer)
 
   if (m_Buffers.TryGetValue(hBuffer, pBuffer))
   {
-    AddDeadObject(GALObjectType::Buffer, hBuffer);
+    AddDestroyedObject(GALObjectType::Buffer, hBuffer);
   }
   else
   {
@@ -962,7 +1140,7 @@ void xiiGALDevice::DestroyBufferView(xiiGALBufferViewHandle hBufferView)
 
   if (m_BufferViews.TryGetValue(hBufferView, pBufferView))
   {
-    AddDeadObject(GALObjectType::BufferView, hBufferView);
+    AddDestroyedObject(GALObjectType::BufferView, hBufferView);
   }
   else
   {
@@ -983,7 +1161,7 @@ xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescr
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
-  const auto& formatProperties = GetTextureFormatProperties(description.m_Format);
+  const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(description.m_Format);
 
   // Validate texture description.
 
@@ -1174,6 +1352,8 @@ xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescr
 
   xiiGALTexture* pTexture = CreateTexturePlatform(description, pInitialData);
 
+  pTexture->m_pDevice = this;
+
   return FinalizeTextureInternal(description, pTexture);
 }
 
@@ -1200,7 +1380,7 @@ void xiiGALDevice::DestroyTexture(xiiGALTextureHandle hTexture)
   xiiGALTexture* pTexture = nullptr;
   if (m_Textures.TryGetValue(hTexture, pTexture))
   {
-    AddDeadObject(GALObjectType::Texture, hTexture);
+    AddDestroyedObject(GALObjectType::Texture, hTexture);
   }
   else
   {
@@ -1371,7 +1551,7 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
       XII_VERIFY_TEXTURE_VIEW(false, "Unexpected texture dimension.");
   }
 
-  XII_VERIFY_TEXTURE_VIEW(!GetTextureFormatProperties(description.m_Format).m_bIsTypeless, "The texture view format ({0}) cannot be typeless.", description.m_Format.GetValue());
+  XII_VERIFY_TEXTURE_VIEW(!xiiGALGraphicsUtilities::GetTextureFormatProperties(description.m_Format).m_bIsTypeless, "The texture view format ({0}) cannot be typeless.", description.m_Format.GetValue());
 
   if (description.m_Flags.IsSet(xiiGALTextureViewFlags::AllowMipGeneration))
   {
@@ -1452,7 +1632,7 @@ void xiiGALDevice::DestroyTextureView(xiiGALTextureViewHandle hTextureView)
 
   if (m_TextureViews.TryGetValue(hTextureView, pTextureView))
   {
-    AddDeadObject(GALObjectType::TextureView, hTextureView);
+    AddDestroyedObject(GALObjectType::TextureView, hTextureView);
   }
   else
   {
@@ -1498,7 +1678,7 @@ xiiGALSamplerHandle xiiGALDevice::CreateSampler(const xiiGALSamplerCreationDescr
       xiiGALSampler* pSampler = m_Samplers[hSampler];
       if (pSampler->GetRefCount() == 0)
       {
-        ReviveDeadObject(GALObjectType::Sampler, hSampler);
+        ReviveDestroyedObject(GALObjectType::Sampler, hSampler);
       }
 
       pSampler->AddRef();
@@ -1537,7 +1717,7 @@ void xiiGALDevice::DestroySampler(xiiGALSamplerHandle hSampler)
 
     if (pSampler->GetRefCount() == 0)
     {
-      AddDeadObject(GALObjectType::Sampler, hSampler);
+      AddDestroyedObject(GALObjectType::Sampler, hSampler);
     }
   }
   else
@@ -1562,7 +1742,7 @@ xiiGALInputLayoutHandle xiiGALDevice::CreateInputLayout(const xiiGALInputLayoutC
       xiiGALInputLayout* pInputLayout = m_InputLayouts[hInputLayout];
       if (pInputLayout->GetRefCount() == 0)
       {
-        ReviveDeadObject(GALObjectType::InputLayout, hInputLayout);
+        ReviveDestroyedObject(GALObjectType::InputLayout, hInputLayout);
       }
 
       pInputLayout->AddRef();
@@ -1599,7 +1779,7 @@ void xiiGALDevice::DestroyInputLayout(xiiGALInputLayoutHandle hInputLayout)
 
     if (pInputLayout->GetRefCount() == 0)
     {
-      AddDeadObject(GALObjectType::InputLayout, hInputLayout);
+      AddDestroyedObject(GALObjectType::InputLayout, hInputLayout);
     }
   }
   else
@@ -1673,7 +1853,7 @@ void xiiGALDevice::DestroyQuery(xiiGALQueryHandle hQuery)
 
   if (m_Queries.TryGetValue(hQuery, pQuery))
   {
-    AddDeadObject(GALObjectType::Query, hQuery);
+    AddDestroyedObject(GALObjectType::Query, hQuery);
   }
   else
   {
@@ -1730,7 +1910,7 @@ void xiiGALDevice::DestroyFence(xiiGALFenceHandle hFence)
 
   if (m_Fences.TryGetValue(hFence, pFence))
   {
-    AddDeadObject(GALObjectType::Fence, hFence);
+    AddDestroyedObject(GALObjectType::Fence, hFence);
   }
   else
   {
@@ -1763,7 +1943,7 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
     XII_VERIFY_RENDER_PASS(attachment.m_uiSampleCount != 0U, "The sample count of attachment {0} is zero.", uiAttachmentIndex);
     XII_VERIFY_RENDER_PASS(xiiMath::IsPowerOf2(attachment.m_uiSampleCount), "The sample count ({0}) of attachment {1} is not a power of 2.", attachment.m_uiSampleCount, uiAttachmentIndex);
 
-    const auto& formatProperties = GetTextureFormatProperties(attachment.m_Format);
+    const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(attachment.m_Format);
     if (formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil)
     {
       XII_VERIFY_RENDER_PASS(attachment.m_InitialStateFlags.IsStrictlyAnySet(xiiGALResourceStateFlags::DepthWrite | xiiGALResourceStateFlags::DepthRead | xiiGALResourceStateFlags::UnorderedAccess | xiiGALResourceStateFlags::ShaderResource | xiiGALResourceStateFlags::ResolveDestination | xiiGALResourceStateFlags::ResolveSource | xiiGALResourceStateFlags::CopyDestination | xiiGALResourceStateFlags::CopySource | xiiGALResourceStateFlags::InputAttachment | xiiGALResourceStateFlags::Undefined) || (bIsVulkanDevice && attachment.m_InitialStateFlags.IsSet(xiiGALResourceStateFlags::Common)),
@@ -1815,7 +1995,7 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
       XII_VERIFY_RENDER_PASS(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::RenderTarget || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::Common), "The attachment with index {0} referenced as an input attachment in sub pass {1} must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::RenderTarget or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::RenderTarget"));
 
       const auto& format             = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
-      const auto& rtFormatProperties = GetTextureFormatProperties(format);
+      const auto& rtFormatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(format);
       XII_VERIFY_RENDER_PASS(rtFormatProperties.m_ComponentType != xiiGALTextureFormatComponentType::Depth && rtFormatProperties.m_ComponentType != xiiGALTextureFormatComponentType::DepthStencil && rtFormatProperties.m_ComponentType != xiiGALTextureFormatComponentType::Compressed, "Attachment with index {0} referenced as a render target attachment in sub pass {1} uses format {2}, which is not a valid render target format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
     }
 
@@ -1848,7 +2028,7 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
         XII_VERIFY_RENDER_PASS(attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::DepthRead || attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::DepthWrite || (bIsVulkanDevice && attachmentReference.m_ResourceStateFlags == xiiGALResourceStateFlags::Common), "The attachment with index ({0}) of the depth-stencil attachment reference of sub pass {1} must be must be in {2} state.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, (bIsVulkanDevice ? "xiiGALResourceStateFlags::DepthRead or xiiGALResourceStateFlags::DepthWrite or xiiGALResourceStateFlags::Common" : "xiiGALResourceStateFlags::DepthRead or xiiGALResourceStateFlags::DepthWrite"));
 
         const auto& format                = description.m_Attachments[attachmentReference.m_uiAttachmentIndex].m_Format;
-        const auto& depthFormatProperties = GetTextureFormatProperties(format);
+        const auto& depthFormatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(format);
         XII_VERIFY_RENDER_PASS(depthFormatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Depth || depthFormatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil, "Attachment with index {0} referenced as a depth-stencil attachment in sub pass {1} uses format {2}, which is not a valid depth buffer format.", attachmentReference.m_uiAttachmentIndex, uiSubPassIndex, format.GetValue());
       }
     }
@@ -1966,7 +2146,7 @@ void xiiGALDevice::DestroyRenderPass(xiiGALRenderPassHandle hRenderPass)
 
   if (m_RenderPasses.TryGetValue(hRenderPass, pRenderPass))
   {
-    AddDeadObject(GALObjectType::RenderPass, hRenderPass);
+    AddDestroyedObject(GALObjectType::RenderPass, hRenderPass);
   }
   else
   {
@@ -2018,7 +2198,7 @@ xiiGALFramebufferHandle xiiGALDevice::CreateFramebuffer(const xiiGALFramebufferC
 
     if (textureDescription.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::Memoryless))
     {
-      const bool bHasStencilComponent = GetTextureFormatProperties(attachmentDescription.m_Format).m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil;
+      const bool bHasStencilComponent = xiiGALGraphicsUtilities::GetTextureFormatProperties(attachmentDescription.m_Format).m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil;
 
       XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_LoadOperation != xiiGALAttachmentLoadOperation::Load && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Load), "Memoryless attachment {i} is not compatible with xiiGALAttachmentLoadOperation::Load.", uiAttachmentIndex);
       XII_VERIFY_FRAME_BUFFER(attachmentDescription.m_StencilStoreOperation != xiiGALAttachmentStoreOperation::Store && !(bHasStencilComponent && attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentStoreOperation::Store), "Memoryless attachment {i} is not compatible with xiiGALAttachmentStoreOperation::Store.", uiAttachmentIndex);
@@ -2217,7 +2397,7 @@ void xiiGALDevice::DestroyFramebuffer(xiiGALFramebufferHandle hFramebuffer)
 
   if (m_Framebuffers.TryGetValue(hFramebuffer, pFramebuffer))
   {
-    AddDeadObject(GALObjectType::Framebuffer, hFramebuffer);
+    AddDestroyedObject(GALObjectType::Framebuffer, hFramebuffer);
   }
   else
   {
@@ -2299,7 +2479,7 @@ void xiiGALDevice::DestroyBottomLevelAS(xiiGALBottomLevelASHandle hBottomLevelAS
 
   if (m_BottomLevelAccelerationStructures.TryGetValue(hBottomLevelAS, pBottomLevelAS))
   {
-    AddDeadObject(GALObjectType::BottomLevelAS, hBottomLevelAS);
+    AddDestroyedObject(GALObjectType::BottomLevelAS, hBottomLevelAS);
   }
   else
   {
@@ -2353,7 +2533,7 @@ void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
 
   if (m_TopLevelAccelerationStructures.TryGetValue(hTopLevelAS, pTopLevelAS))
   {
-    AddDeadObject(GALObjectType::TopLevelAS, hTopLevelAS);
+    AddDestroyedObject(GALObjectType::TopLevelAS, hTopLevelAS);
   }
   else
   {
@@ -2363,189 +2543,171 @@ void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
 
 #undef XII_VERIFY_TOP_LEVEL_AS
 
+#define XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(expression, ...)            \
+  do                                                                       \
+  {                                                                        \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);                             \
+    if (!(expression)) { return xiiGALPipelineResourceSignatureHandle(); } \
+  } while (false)
+
+XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipelineResourceSignature(const xiiGALPipelineResourceSignatureCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(description.m_uiBindingIndex < XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT, "The pipeline resource signature binding index ({0}) exceeds the maximum allowed value ({1}).", description.m_uiBindingIndex, XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT - 1);
+  XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(description.m_uiBindingIndex <= s_uiMaxResourcesInSignature, "The pipeline resource signature resource count ({0}) exceeds the maximum allowed value ({1}).", description.m_Resources.GetCount(), s_uiMaxResourcesInSignature);
+  XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(description.m_bUseCombinedTextureSamplers && !description.m_sCombinedSamplerSuffix.IsEmpty(), "The pipeline resource signature is set to use combined texture sampplers, but the combined texture sampler is empty.");
+
+  // Ensure that shader stages do not conflict for resources with the same name.
+
+  xiiMap<xiiHashedString, xiiSet<xiiGALShaderStage::StorageType>> usedResourceShaderStages;
+  for (xiiUInt32 i = 0; i < description.m_Resources.GetCount(); ++i)
+  {
+    const auto& resource = description.m_Resources[i];
+
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!resource.m_sName.IsEmpty(), "The pipeline resource at index '{0}' requires a non-empty name.", i);
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!resource.m_ShaderStages.IsNoFlagSet(), "The pipeline resource at index '{0}' requires a valid shader stage, and must not be xiiGALShaderStage::Unknown.", i);
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_uiArraySize > 0U, "The pipeline resource at index '{0}' requires a non-zero array size.", i);
+
+    xiiSet<xiiGALShaderStage::StorageType> shaderStageSet;
+    if (usedResourceShaderStages.TryGetValue(resource.m_sName, shaderStageSet))
+    {
+      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!shaderStageSet.Contains(resource.m_ShaderStages.GetValue()), "Multiple resources with name '{}' found with overlapping shader stages. There may be resources with the same name in different shader stages, but the stages must not overlap.");
+    }
+    else
+    {
+      xiiSet<xiiGALShaderStage::StorageType> set;
+      set.Insert(resource.m_ShaderStages.GetValue());
+
+      usedResourceShaderStages.Insert(resource.m_sName, set);
+    }
+
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray == xiiGALDeviceFeatureState::Disabled), "The pipeline resource at index '{0}' specifies the xiiGALPipelineResourceFlags::RuntimeArray flag, which requires the shader resource runtime array device feature.", i);
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_ResourceVariableType == xiiGALShaderResourceType::AccelerationStructure && m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Disabled), "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::AccelerationStructure type, which requires ray tracing device feature.", i);
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_ResourceVariableType == xiiGALShaderResourceType::InputAttachment && resource.m_ShaderStages != xiiGALShaderStage::Pixel), "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::InputAttachment type, but its only supported in the pixel shader stage.", i);
+
+    xiiBitflags<xiiGALPipelineResourceFlags> allowedResourceFlags = xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resource.m_ResourceType);
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_PipelineResourceFlags.IsStrictlyAnySet(allowedResourceFlags), "The pipeline resource at index '{0}' contains flags that are not allowed for the shader resource type.", i);
+
+    if (m_Description.m_GraphicsDeviceType == xiiGALGraphicsDeviceType::Direct3D12 || m_Description.m_GraphicsDeviceType == xiiGALGraphicsDeviceType::Direct3D11 || m_Description.m_GraphicsDeviceType == xiiGALGraphicsDeviceType::Metal)
+    {
+      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::CombinedSampler) && !description.m_bUseCombinedTextureSamplers), "The pipeline resource at index '{0}' specifies the xiiGALPipelineResourceFlags::CombinedSampler flag, but combined sampler usage is disabled. In Direct3D and Metal graphics implementations, the xiiGALPipelineResourceFlags::CombinedSampler flag may only be used when combined sampler usage is enabled.", i);
+    }
+
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::GeneralInputAttachment) && m_Description.m_GraphicsDeviceType != xiiGALGraphicsDeviceType::Vulkan), "The pipeline resource at index '{0}' specifies the xiiGALPipelineResourceFlags::GeneralInputAttachment flag, which is only valid on a Vulkan graphics implementation.", i);
+  }
+
+  // Ensure that immutable samplers do not have conflicting shader stages.
+
+  xiiMap<xiiHashedString, xiiSet<xiiGALShaderStage::StorageType>> usedImmutableSamplerShaderStages;
+  for (xiiUInt32 i = 0; i < description.m_ImmutableSamplers.GetCount(); ++i)
+  {
+    const auto& samplerDescription = description.m_ImmutableSamplers[i];
+
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!samplerDescription.m_SamplerOrTextureName.IsEmpty(), "The immutable sampler at index '{0}' requires a non-empty name.", i);
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!samplerDescription.m_ShaderStages.IsNoFlagSet(), "The immutable sampler at index '{0}' requires a valid shader stage, and must not be xiiGALShaderStage::Unknown.", i);
+
+    xiiSet<xiiGALShaderStage::StorageType> shaderStageSet;
+    if (usedImmutableSamplerShaderStages.TryGetValue(samplerDescription.m_SamplerOrTextureName, shaderStageSet))
+    {
+      XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!shaderStageSet.Contains(samplerDescription.m_ShaderStages.GetValue()), "Multiple immutable samplers with name '{}' found with overlapping shader stages. There may be immutable samplers with the same name in different shader stages, but the stages must not overlap.");
+    }
+    else
+    {
+      xiiSet<xiiGALShaderStage::StorageType> set;
+      set.Insert(samplerDescription.m_ShaderStages.GetValue());
+
+      usedImmutableSamplerShaderStages.Insert(samplerDescription.m_SamplerOrTextureName, set);
+    }
+  }
+
+  /// \todo GraphicsFoundation: Verify combined texture samplers, all samplers should be assigned to textures when combined texture samplers are used, all immutable samplers should be assigned to textures or samplers when combined texture samplers are used.
+
+  xiiGALPipelineResourceSignature* pPipelineResourceSignature = CreatePipelineResourceSignaturePlatform(description);
+
+  if (pPipelineResourceSignature == nullptr)
+  {
+    return xiiGALPipelineResourceSignatureHandle();
+  }
+  else
+  {
+    pPipelineResourceSignature->m_pDevice = this;
+
+    return xiiGALPipelineResourceSignatureHandle(m_PipelineResourceSignatures.Insert(pPipelineResourceSignature));
+  }
+}
+
+void xiiGALDevice::DestroyPipelineResourceSignature(xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALPipelineResourceSignature* pPipelineResourceSignature = nullptr;
+
+  if (m_PipelineResourceSignatures.TryGetValue(hPipelineResourceSignature, pPipelineResourceSignature))
+  {
+    AddDestroyedObject(GALObjectType::PipelineResourceSignature, hPipelineResourceSignature);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyPipelineResourceSignature called on an invalid handle (double free?).");
+  }
+}
+
+#undef XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE
+
+#define XII_VERIFY_PIPELINE_STATE(expression, ...)             \
+  do                                                           \
+  {                                                            \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);                 \
+    if (!(expression)) { return xiiGALPipelineStateHandle(); } \
+  } while (false)
+
+XII_NODISCARD xiiGALPipelineStateHandle xiiGALDevice::CreatePipelineState(const xiiGALPipelineStateCreationDescription& description)
+{
+  /// \todo GraphicsFoundation: Verify pipeline state description.
+
+  xiiGALPipelineState* pPipelineState = CreatePipelineStatePlatform(description);
+
+  if (pPipelineState == nullptr)
+  {
+    return xiiGALPipelineStateHandle();
+  }
+  else
+  {
+    pPipelineState->m_pDevice = this;
+
+    return xiiGALPipelineStateHandle(m_PipelineStates.Insert(pPipelineState));
+  }
+}
+
+void xiiGALDevice::DestroyPipelineState(xiiGALPipelineStateHandle hPipelineState)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALPipelineState* pPipelineState = nullptr;
+
+  if (m_PipelineStates.TryGetValue(hPipelineState, pPipelineState))
+  {
+    AddDestroyedObject(GALObjectType::PipelineState, hPipelineState);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyPipelineState called on an invalid handle (double free?).");
+  }
+}
+
+#undef XII_VERIFY_PIPELINE_STATE
+
 void xiiGALDevice::WaitIdle()
 {
   WaitIdlePlatform();
 }
 
-const xiiGALTextureFormatDescription& xiiGALDevice::GetTextureFormatProperties(xiiEnum<xiiGALTextureFormat> format) const
-{
-  static xiiGALTextureFormatDescription formatDescriptions[xiiGALTextureFormat::ENUM_COUNT];
-  static bool                           bIsInitialized = false;
-
-  // Note that this implementation is thread safe. Even if multiple threads call the function, the data may be initialized multiple times but the result will be the same.
-  if (!bIsInitialized)
-  {
-#define FILL_TEXTURE_FORMAT_INFO(format, componentSize, componentCount, componentType, isTypeless, blockWidth, blockHeight) \
-  formatDescriptions[format].m_Format           = format;                                                                   \
-  formatDescriptions[format].m_uiComponentSize  = componentSize;                                                            \
-  formatDescriptions[format].m_uiComponentCount = componentCount;                                                           \
-  formatDescriptions[format].m_ComponentType    = componentType;                                                            \
-  formatDescriptions[format].m_bIsTypeless      = isTypeless;                                                               \
-  formatDescriptions[format].m_uiBlockWidth     = blockWidth;                                                               \
-  formatDescriptions[format].m_uiBlockHeight    = blockHeight
-
-    // clang-format off
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA32Typeless, 4, 4, xiiGALTextureFormatComponentType::Undefined,        true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA32Float,    4, 4, xiiGALTextureFormatComponentType::Float,            false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA32UInt,     4, 4, xiiGALTextureFormatComponentType::UnsignedInteger,  false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA32SInt,     4, 4, xiiGALTextureFormatComponentType::SignedInteger,    false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32Typeless, 4, 3, xiiGALTextureFormatComponentType::Undefined,        true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32Float,    4, 3, xiiGALTextureFormatComponentType::Float,            false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32UInt,     4, 3, xiiGALTextureFormatComponentType::UnsignedInteger,  false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB32SInt,     4, 3, xiiGALTextureFormatComponentType::SignedInteger,    false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16Typeless,    2, 4, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16Float,       2, 4, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16UNormalized, 2, 4, xiiGALTextureFormatComponentType::UnsignedNormalized, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16UInt,        2, 4, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16SNormalized, 2, 4, xiiGALTextureFormatComponentType::SignedNormalized,   false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA16SInt,        2, 4, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG32Typeless, 4, 2, xiiGALTextureFormatComponentType::Undefined,        true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG32Float,    4, 2, xiiGALTextureFormatComponentType::Float,            false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG32UInt,     4, 2, xiiGALTextureFormatComponentType::UnsignedInteger,  false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG32SInt,     4, 2, xiiGALTextureFormatComponentType::SignedInteger,    false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32G8X24Typeless,      4, 2, xiiGALTextureFormatComponentType::DepthStencil, true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D32FloatS8X24UInt,     4, 2, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32FloatX8X24Typeless, 4, 2, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::X32TypelessG8X24UInt,  4, 2, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB10A2Typeless,    4, 1, xiiGALTextureFormatComponentType::Compound, true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB10A2UNormalized, 4, 1, xiiGALTextureFormatComponentType::Compound, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB10A2UInt,        4, 1, xiiGALTextureFormatComponentType::Compound, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG11B10Float,       4, 1, xiiGALTextureFormatComponentType::Compound, false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8Typeless,        1, 4, xiiGALTextureFormatComponentType::Undefined,              true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8UNormalized,     1, 4, xiiGALTextureFormatComponentType::UnsignedNormalized,     false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8UNormalizedSRGB, 1, 4, xiiGALTextureFormatComponentType::UnsignedNormalizedSRGB, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8UInt,            1, 4, xiiGALTextureFormatComponentType::UnsignedInteger,        false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8SNormalized,     1, 4, xiiGALTextureFormatComponentType::SignedNormalized,       false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGBA8SInt,            1, 4, xiiGALTextureFormatComponentType::SignedInteger,          false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16Typeless,    2, 2, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16Float,       2, 2, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16UNormalized, 2, 2, xiiGALTextureFormatComponentType::UnsignedNormalized, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16UInt,        2, 2, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16SNormalized, 2, 2, xiiGALTextureFormatComponentType::SignedNormalized,   false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG16SInt,        2, 2, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32Typeless,     4, 2, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D32Float,        4, 2, xiiGALTextureFormatComponentType::Depth,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32Float,        4, 2, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32UInt,         4, 2, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R32SInt,         4, 2, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R24G8Typeless,            4, 1, xiiGALTextureFormatComponentType::DepthStencil, true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D24UNormalizedS8UInt,     4, 1, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R24UNormalizedX8Typeless, 4, 1, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::X24TypelessG8UInt,        4, 1, xiiGALTextureFormatComponentType::DepthStencil, false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG8Typeless,    1, 2, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG8UNormalized, 1, 2, xiiGALTextureFormatComponentType::UnsignedNormalized, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG8UInt,        1, 2, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG8SNormalized, 1, 2, xiiGALTextureFormatComponentType::SignedNormalized,   false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG8SInt,        1, 2, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R16Typeless,    2, 1, xiiGALTextureFormatComponentType::Undefined,          true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R16Float,       2, 1, xiiGALTextureFormatComponentType::Float,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::D16UNormalized, 2, 1, xiiGALTextureFormatComponentType::Depth,              false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R16UNormalized, 2, 1, xiiGALTextureFormatComponentType::UnsignedNormalized, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R16UInt,        2, 1, xiiGALTextureFormatComponentType::UnsignedInteger,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R16SNormalized, 2, 1, xiiGALTextureFormatComponentType::SignedNormalized,   false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R16SInt,        2, 1, xiiGALTextureFormatComponentType::SignedInteger,      false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R8Typeless,    1, 1, xiiGALTextureFormatComponentType::Undefined,           true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R8UNormalized, 1, 1, xiiGALTextureFormatComponentType::UnsignedNormalized,  false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R8UInt,        1, 1, xiiGALTextureFormatComponentType::UnsignedInteger,     false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R8SNormalized, 1, 1, xiiGALTextureFormatComponentType::SignedNormalized,    false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R8SInt,        1, 1, xiiGALTextureFormatComponentType::SignedInteger,       false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::A8UNormalized, 1, 1, xiiGALTextureFormatComponentType::UnsignedNormalized,  false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R1UNormalized, 1, 1, xiiGALTextureFormatComponentType::UnsignedNormalized,  false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RGB9E5SharedExponent, 4, 1, xiiGALTextureFormatComponentType::Compound,            false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::RG8BG8UNormalized,    1, 4, xiiGALTextureFormatComponentType::UnsignedNormalized,  false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::GR8GB8UNormalized,    1, 4, xiiGALTextureFormatComponentType::UnsignedNormalized,  false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC1Typeless,        8, 3, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC1UNormalized,     8, 3, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC1UNormalizedSRGB, 8, 3, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC2Typeless,        16, 4, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC2UNormalized,     16, 4, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC2UNormalizedSRGB, 16, 4, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC3Typeless,        16, 4, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC3UNormalized,     16, 4, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC3UNormalizedSRGB, 16, 4, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC4Typeless,    8, 1, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC4UNormalized, 8, 1, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC4SNormalized, 8, 1, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC5Typeless,    16, 2, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC5UNormalized, 16, 2, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC5SNormalized, 16, 2, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::B5G6R5UNormalized,            2, 1, xiiGALTextureFormatComponentType::Compound,               false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::B5G5R5A1UNormalized,          2, 1, xiiGALTextureFormatComponentType::Compound,               false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BGRA8UNormalized,             1, 4, xiiGALTextureFormatComponentType::UnsignedNormalized,     false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BGRX8UNormalized,             1, 4, xiiGALTextureFormatComponentType::UnsignedNormalized,     false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized, 4, 1, xiiGALTextureFormatComponentType::Compound,               false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BGRA8Typeless,                1, 4, xiiGALTextureFormatComponentType::Undefined,              true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BGRA8UNormalizedSRGB,         1, 4, xiiGALTextureFormatComponentType::UnsignedNormalizedSRGB, false, 1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BGRX8Typeless,                1, 4, xiiGALTextureFormatComponentType::Undefined,              true,  1, 1);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BGRX8UNormalizedSRGB,         1, 4, xiiGALTextureFormatComponentType::UnsignedNormalizedSRGB, false, 1, 1);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC6HTypeless, 16, 3, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC6HUF16,     16, 3, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC6HSF16,     16, 3, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC7Typeless,        16, 4, xiiGALTextureFormatComponentType::Compressed,  true,  4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC7UNormalized,     16, 4, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-    FILL_TEXTURE_FORMAT_INFO(xiiGALTextureFormat::BC7UNormalizedSRGB, 16, 4, xiiGALTextureFormatComponentType::Compressed,  false, 4, 4);
-
-    // clang-format on
-
-#undef FILL_TEXTURE_FORMAT_INFO
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-    for (xiiUInt32 i = xiiGALTextureFormat::Unknown; i < xiiGALTextureFormat::ENUM_COUNT; ++i)
-    {
-      XII_ASSERT_DEV(formatDescriptions[i].m_Format == static_cast<xiiGALTextureFormat::Enum>(i), "Encountered an uninitialized format.");
-    }
-#endif
-
-    bIsInitialized = true;
-  }
-
-  if (format >= xiiGALTextureFormat::Unknown && format < xiiGALTextureFormat::ENUM_COUNT)
-  {
-    const auto& description = formatDescriptions[format];
-    XII_ASSERT_DEV(description.m_Format == format, "Encountered an unexpected format.");
-    return description;
-  }
-
-  XII_ASSERT_DEV(false, "Texture format {0} is not in the allowed rage [0, {1}].", format.GetValue(), 0, xiiGALTextureFormat::ENUM_COUNT - 1);
-  return formatDescriptions[xiiGALTextureFormat::Unknown];
-}
-
-const xiiGALSparseTextureProperties xiiGALDevice::GetSparseTextureProperties(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount) const
-{
-  /// \todo GraphicsFoundation: To be implemented.
-  return xiiGALSparseTextureProperties();
-}
-
 xiiUInt64 xiiGALDevice::GetMemoryConsumptionForTexture(const xiiGALTextureCreationDescription& desc) const
 {
-  auto& formatProperties = GetTextureFormatProperties(desc.m_Format);
+  auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(desc.m_Format);
 
-  // This generic implementation is only an approximation, but it can be overridden by specific devices
-  // to give an accurate memory consumption figure.
+  // This generic implementation is only an approximation, but it can be overridden by specific devices to give an accurate memory consumption figure.
   xiiUInt64 uiMemory = xiiUInt64(desc.m_Size.width) * xiiUInt64(desc.m_Size.height) * xiiUInt64(desc.m_uiArraySizeOrDepth);
   uiMemory *= formatProperties.GetElementSize();
   uiMemory *= desc.m_uiSampleCount;
@@ -2564,18 +2726,18 @@ xiiUInt64 xiiGALDevice::GetMemoryConsumptionForBuffer(const xiiGALBufferCreation
   return desc.m_uiSize;
 }
 
-void xiiGALDevice::DestroyDeadObjects()
+void xiiGALDevice::FlushDestroyedObjects()
 {
   // Can't use range based for here since new objects might be added during iteration
-  for (xiiUInt32 i = 0; i < m_DeadObjects.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < m_DestroyedObjects.GetCount(); ++i)
   {
-    const auto& deadObject = m_DeadObjects[i];
+    const auto& destroyedObject = m_DestroyedObjects[i];
 
-    switch (deadObject.m_uiType)
+    switch (destroyedObject.m_uiType)
     {
       case GALObjectType::SwapChain:
       {
-        xiiGALSwapChainHandle hSwapChain(xiiGAL::xii16_16Id(deadObject.m_uiHandle));
+        xiiGALSwapChainHandle hSwapChain(xiiGAL::xii16_16Id(destroyedObject.m_uiHandle));
         xiiGALSwapChain*      pSwapChain = nullptr;
 
         XII_VERIFY(m_SwapChains.Remove(hSwapChain, &pSwapChain), "SwapChain not found in idTable.");
@@ -2587,9 +2749,23 @@ void xiiGALDevice::DestroyDeadObjects()
         }
       }
       break;
+      case GALObjectType::CommandList:
+      {
+        xiiGALCommandListHandle hCommandList(xiiGAL::xii20_12Id(destroyedObject.m_uiHandle));
+        xiiGALCommandList*      pCommandList = nullptr;
+
+        XII_VERIFY(m_CommandLists.Remove(hCommandList, &pCommandList), "CommandList not found in idTable.");
+
+        if (pCommandList != nullptr)
+        {
+          pCommandList->DeInitPlatform(this).IgnoreResult();
+          XII_DELETE(&m_Allocator, pCommandList);
+        }
+      }
+      break;
       case GALObjectType::BottomLevelAS:
       {
-        xiiGALBottomLevelASHandle hBottomLevelAS(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALBottomLevelASHandle hBottomLevelAS(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALBottomLevelAS*      pBottomLevelAS = nullptr;
 
         XII_VERIFY(m_BottomLevelAccelerationStructures.Remove(hBottomLevelAS, &pBottomLevelAS), "BottomLevelAS not found in idTable.");
@@ -2599,7 +2775,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::Buffer:
       {
-        xiiGALBufferHandle hBuffer(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALBufferHandle hBuffer(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALBuffer*      pBuffer = nullptr;
 
         XII_VERIFY(m_Buffers.Remove(hBuffer, &pBuffer), "Buffer not found in idTable.");
@@ -2610,7 +2786,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::BufferView:
       {
-        xiiGALBufferViewHandle hBufferView(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALBufferViewHandle hBufferView(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALBufferView*      pBufferView = nullptr;
 
         m_BufferViews.Remove(hBufferView, &pBufferView);
@@ -2626,7 +2802,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::Fence:
       {
-        xiiGALFenceHandle hFence(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALFenceHandle hFence(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALFence*      pFence = nullptr;
 
         XII_VERIFY(m_Fences.Remove(hFence, &pFence), "Fence not found in idTable.");
@@ -2636,7 +2812,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::Framebuffer:
       {
-        xiiGALFramebufferHandle hFramebuffer(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALFramebufferHandle hFramebuffer(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALFramebuffer*      pFramebuffer = nullptr;
 
         XII_VERIFY(m_Framebuffers.Remove(hFramebuffer, &pFramebuffer), "Framebuffer not found in idTable.");
@@ -2646,7 +2822,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::Query:
       {
-        xiiGALQueryHandle hQuery(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALQueryHandle hQuery(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALQuery*      pQuery = nullptr;
 
         XII_VERIFY(m_Queries.Remove(hQuery, &pQuery), "Query not found in idTable.");
@@ -2656,7 +2832,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::RenderPass:
       {
-        xiiGALRenderPassHandle hRenderPass(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALRenderPassHandle hRenderPass(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALRenderPass*      pRenderPass = nullptr;
 
         XII_VERIFY(m_RenderPasses.Remove(hRenderPass, &pRenderPass), "RenderPass not found in idTable.");
@@ -2666,7 +2842,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::Sampler:
       {
-        xiiGALSamplerHandle hSampler(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALSamplerHandle hSampler(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALSampler*      pSampler = nullptr;
 
         XII_VERIFY(m_Samplers.Remove(hSampler, &pSampler), "Sampler not found in idTable.");
@@ -2677,7 +2853,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::Texture:
       {
-        xiiGALTextureHandle hTexture(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALTextureHandle hTexture(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALTexture*      pTexture = nullptr;
 
         XII_VERIFY(m_Textures.Remove(hTexture, &pTexture), "Texture not found in idTable.");
@@ -2688,7 +2864,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::TextureView:
       {
-        xiiGALTextureViewHandle hTextureView(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALTextureViewHandle hTextureView(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALTextureView*      pTextureView = nullptr;
 
         m_TextureViews.Remove(hTextureView, &pTextureView);
@@ -2704,7 +2880,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::TopLevelAS:
       {
-        xiiGALTopLevelASHandle hTopLevelAS(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALTopLevelASHandle hTopLevelAS(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALTopLevelAS*      pTopLevelAS = nullptr;
 
         XII_VERIFY(m_TopLevelAccelerationStructures.Remove(hTopLevelAS, &pTopLevelAS), "TopLevelAS not found in idTable.");
@@ -2714,7 +2890,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::InputLayout:
       {
-        xiiGALInputLayoutHandle hInputLayout(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALInputLayoutHandle hInputLayout(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALInputLayout*      pInputLayout = nullptr;
 
         XII_VERIFY(m_InputLayouts.Remove(hInputLayout, &pInputLayout), "InputLayout not found in idTable.");
@@ -2725,7 +2901,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::Shader:
       {
-        xiiGALShaderHandle hShader(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALShaderHandle hShader(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALShader*      pShader = nullptr;
 
         XII_VERIFY(m_Shaders.Remove(hShader, &pShader), "Shader not found in idTable.");
@@ -2735,7 +2911,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::BlendState:
       {
-        xiiGALBlendStateHandle hBlendState(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALBlendStateHandle hBlendState(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALBlendState*      pBlendState = nullptr;
 
         XII_VERIFY(m_BlendStates.Remove(hBlendState, &pBlendState), "BlendState not found in idTable.");
@@ -2746,7 +2922,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::DepthStencilState:
       {
-        xiiGALDepthStencilStateHandle hDepthStencilState(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALDepthStencilStateHandle hDepthStencilState(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALDepthStencilState*      pDepthStencilState = nullptr;
 
         XII_VERIFY(m_DepthStencilStates.Remove(hDepthStencilState, &pDepthStencilState), "DepthStencilState not found in idTable.");
@@ -2757,7 +2933,7 @@ void xiiGALDevice::DestroyDeadObjects()
       break;
       case GALObjectType::RasterizerState:
       {
-        xiiGALRasterizerStateHandle hRasterizerState(xiiGAL::xii24_8Id(deadObject.m_uiHandle));
+        xiiGALRasterizerStateHandle hRasterizerState(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
         xiiGALRasterizerState*      pRasterizerState = nullptr;
 
         XII_VERIFY(m_RasterizerStates.Remove(hRasterizerState, &pRasterizerState), "RasterizerState not found in idTable.");
@@ -2766,12 +2942,32 @@ void xiiGALDevice::DestroyDeadObjects()
         DestroyRasterizerStatePlatform(pRasterizerState);
       }
       break;
+      case GALObjectType::PipelineResourceSignature:
+      {
+        xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALPipelineResourceSignature*      pPipelineResourceSignature = nullptr;
+
+        XII_VERIFY(m_PipelineResourceSignatures.Remove(hPipelineResourceSignature, &pPipelineResourceSignature), "PipelineResourceSignature not found in idTable.");
+
+        DestroyPipelineResourceSignaturePlatform(pPipelineResourceSignature);
+      }
+      break;
+      case GALObjectType::PipelineState:
+      {
+        xiiGALPipelineStateHandle hPipelineState(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALPipelineState*      pPipelineState = nullptr;
+
+        XII_VERIFY(m_PipelineStates.Remove(hPipelineState, &pPipelineState), "PipelineState not found in idTable.");
+
+        DestroyPipelineStatePlatform(pPipelineState);
+      }
+      break;
 
         XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
   }
 
-  m_DeadObjects.Clear();
+  m_DestroyedObjects.Clear();
 }
 
 void xiiGALDevice::DestroyViews(xiiGALResource* pResource)

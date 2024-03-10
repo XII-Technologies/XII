@@ -70,9 +70,7 @@ inline xiiStringUtf8::xiiStringUtf8(const wchar_t* pWChar, xiiAllocatorBase* pAl
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
 
-inline xiiStringUtf8::xiiStringUtf8(
-  const Microsoft::WRL::Wrappers::HString& hstring,
-  xiiAllocatorBase*                        pAllocator /*= xiiFoundation::GetDefaultAllocator()*/) :
+inline xiiStringUtf8::xiiStringUtf8(const Microsoft::WRL::Wrappers::HString& hstring, xiiAllocatorBase* pAllocator /*= xiiFoundation::GetDefaultAllocator()*/) :
   m_Data(pAllocator)
 {
   *this = hstring;

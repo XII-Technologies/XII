@@ -21,17 +21,17 @@ function(xii_link_target_d3d12 TARGET_NAME)
   xii_requires_d3d12()
 
   get_property(XII_D3D12_LIBRARY GLOBAL PROPERTY XII_D3D12_LIBRARY)
-    # Execute find_package once
-    if(NOT XII_D3D12_LIBRARY)
-      find_package(DirectX12 REQUIRED)
-      if(DirectX12_FOUND)
-        set_property(GLOBAL PROPERTY XII_D3D12_LIBRARY ${DirectX12_LIBRARY})
-        set_property(GLOBAL PROPERTY XII_D3D12_LIBRARIES ${DirectX12_D3D12_LIBRARIES})
-      endif()
+  # Execute find_package once
+  if(NOT XII_D3D12_LIBRARY)
+    find_package(DirectX12 REQUIRED)
+    if(DirectX12_FOUND)
+      set_property(GLOBAL PROPERTY XII_D3D12_LIBRARY ${DirectX12_LIBRARY})
+      set_property(GLOBAL PROPERTY XII_D3D12_LIBRARIES ${DirectX12_D3D12_LIBRARIES})
     endif()
+  endif()
 
-    get_property(XII_D3D12_LIBRARY GLOBAL PROPERTY XII_D3D12_LIBRARY)
-    get_property(XII_D3D12_LIBRARIES GLOBAL PROPERTY XII_D3D12_LIBRARIES)
+  get_property(XII_D3D12_LIBRARY GLOBAL PROPERTY XII_D3D12_LIBRARY)
+  get_property(XII_D3D12_LIBRARIES GLOBAL PROPERTY XII_D3D12_LIBRARIES)
 
   target_link_libraries(${TARGET_NAME}
     PRIVATE
@@ -51,7 +51,7 @@ function(xii_link_target_d3d12 TARGET_NAME)
         set(D3D12_COPY_DLLS_BIT "x86")
     endif()
   endif()
-    
+
   # ARM dll is not provide in the windows SDK.
   if(NOT XII_CMAKE_ARCHITECTURE_ARM)
     if(${XII_D3D12_LIBRARY} MATCHES "/10/")
@@ -60,6 +60,7 @@ function(xii_link_target_d3d12 TARGET_NAME)
     endif()
   endif()
 
+  # Copy the DirectX Shader Compiler DLL.
   if(${D3D12_COPY_DLLS_WINSDKVERSION})
     add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
       COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -69,7 +70,14 @@ function(xii_link_target_d3d12 TARGET_NAME)
     )
   endif()
 
-  # Note that this function does not copy the DXIL dll to the build output. For now this is only handled
-  # in the ShaderCompiler library. See its CMakeLists.
+  # Copy the DXIL (signer) dll.
+  if(${D3D12_COPY_DLLS_WINSDKVERSION})
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "%ProgramFiles(x86)%/Windows Kits/${D3D12_COPY_DLLS_WINSDKVERSION}/Redist/D3D/${D3D12_COPY_DLLS_BIT}/dxil.dll"
+      $<TARGET_FILE_DIR:${TARGET_NAME}>
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+  endif()
 
 endfunction()

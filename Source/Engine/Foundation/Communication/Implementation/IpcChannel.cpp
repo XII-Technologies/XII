@@ -23,8 +23,6 @@ xiiIpcChannel::xiiIpcChannel(xiiStringView sAddress, Mode::Enum mode) :
 
 xiiIpcChannel::~xiiIpcChannel()
 {
-
-
   m_pOwner->RemoveChannel(this);
 }
 
@@ -88,17 +86,16 @@ bool xiiIpcChannel::Send(xiiArrayPtr<const xiiUInt8> data)
   }
   if (IsConnected())
   {
+    XII_LOCK(m_pOwner->m_TasksMutex);
+
+    if (!m_pOwner->m_SendQueue.Contains(this))
+      m_pOwner->m_SendQueue.PushBack(this);
+
     if (NeedWakeup())
     {
-      XII_LOCK(m_pOwner->m_TasksMutex);
-
-      if (!m_pOwner->m_SendQueue.Contains(this))
-        m_pOwner->m_SendQueue.PushBack(this);
-
       m_pOwner->WakeUp();
-
-      return true;
     }
+    return true;
   }
   return false;
 }

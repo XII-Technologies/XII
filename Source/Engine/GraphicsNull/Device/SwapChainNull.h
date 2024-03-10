@@ -28,16 +28,13 @@ protected:
 
   virtual ~xiiGALSwapChainNull();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
   xiiResult CreateBackBufferInternal(xiiGALDeviceNull* pDeviceNull);
 
   void DestroyBackBufferInternal(xiiGALDeviceNull* pDeviceNull);
-
-protected:
-  xiiGALTextureHandle m_hBackbufferTexture;
 };
 
 #include <GraphicsNull/Device/Implementation/SwapChainNull_inl.h>

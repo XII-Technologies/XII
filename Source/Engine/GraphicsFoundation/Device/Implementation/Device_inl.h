@@ -29,6 +29,11 @@ inline xiiGALSwapChain* xiiGALDevice::GetSwapChain(xiiGALSwapChainHandle hSwapCh
   return Get<SwapChainTable, xiiGALSwapChain>(hSwapChain, m_SwapChains);
 }
 
+inline xiiGALCommandList* xiiGALDevice::GetCommandList(xiiGALCommandListHandle hCommandList) const
+{
+  return Get<CommandListTable, xiiGALCommandList>(hCommandList, m_CommandLists);
+}
+
 inline xiiGALBlendState* xiiGALDevice::GetBlendState(xiiGALBlendStateHandle hBlendState) const
 {
   return Get<BlendStateTable, xiiGALBlendState>(hBlendState, m_BlendStates);
@@ -109,14 +114,29 @@ inline xiiGALTopLevelAS* xiiGALDevice::GetTopLevelAS(xiiGALTopLevelASHandle hTop
   return Get<TopLevelASTable, xiiGALTopLevelAS>(hTopLevelAS, m_TopLevelAccelerationStructures);
 }
 
+inline xiiGALPipelineResourceSignature* xiiGALDevice::GetPipelineResourceSignature(xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature) const
+{
+  return Get<PipelineResourceSignatureTable, xiiGALPipelineResourceSignature>(hPipelineResourceSignature, m_PipelineResourceSignatures);
+}
+
+inline xiiGALPipelineState* xiiGALDevice::GetPipelineState(xiiGALPipelineStateHandle hPipelineState) const
+{
+  return Get<PipelineStateTable, xiiGALPipelineState>(hPipelineState, m_PipelineStates);
+}
+
 XII_ALWAYS_INLINE const xiiGALGraphicsDeviceAdapterDescription& xiiGALDevice::GetGraphicsDeviceAdapterProperties() const
 {
   return m_AdapterDescription;
 }
 
+XII_ALWAYS_INLINE const xiiGALDeviceFeatures& xiiGALDevice::GetFeatures() const
+{
+  return m_AdapterDescription.m_Features;
+}
+
 XII_ALWAYS_INLINE xiiEnum<xiiGALGraphicsDeviceType> xiiGALDevice::GetGraphicsDeviceType() const
 {
-  return m_Type;
+  return m_Description.m_GraphicsDeviceType;
 }
 
 // static
@@ -140,25 +160,25 @@ XII_ALWAYS_INLINE bool xiiGALDevice::HasDefaultDevice()
 }
 
 template <typename HandleType>
-XII_FORCE_INLINE void xiiGALDevice::AddDeadObject(xiiUInt32 uiType, HandleType handle)
+XII_FORCE_INLINE void xiiGALDevice::AddDestroyedObject(xiiUInt32 uiType, HandleType handle)
 {
-  auto& deadObject      = m_DeadObjects.ExpandAndGetRef();
-  deadObject.m_uiType   = uiType;
-  deadObject.m_uiHandle = handle.GetInternalID().m_Data;
+  auto& destroyedObject      = m_DestroyedObjects.ExpandAndGetRef();
+  destroyedObject.m_uiType   = uiType;
+  destroyedObject.m_uiHandle = handle.GetInternalID().m_Data;
 }
 
 template <typename HandleType>
-void xiiGALDevice::ReviveDeadObject(xiiUInt32 uiType, HandleType handle)
+void xiiGALDevice::ReviveDestroyedObject(xiiUInt32 uiType, HandleType handle)
 {
   xiiUInt32 uiHandle = handle.GetInternalID().m_Data;
 
-  for (xiiUInt32 i = 0; i < m_DeadObjects.GetCount(); ++i)
+  for (xiiUInt32 i = 0; i < m_DestroyedObjects.GetCount(); ++i)
   {
-    const auto& deadObject = m_DeadObjects[i];
+    const auto& destroyedObject = m_DestroyedObjects[i];
 
-    if (deadObject.m_uiType == uiType && deadObject.m_uiHandle == uiHandle)
+    if (destroyedObject.m_uiType == uiType && destroyedObject.m_uiHandle == uiHandle)
     {
-      m_DeadObjects.RemoveAtAndCopy(i);
+      m_DestroyedObjects.RemoveAtAndCopy(i);
       return;
     }
   }

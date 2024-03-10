@@ -224,7 +224,9 @@ void xiiImguiRenderer::SetupRenderer()
     xiiGALBufferCreationDescription desc;
     desc.m_uiElementByteStride = sizeof(xiiImguiVertex);
     desc.m_uiSize              = s_uiVertexBufferSize * desc.m_uiElementByteStride;
-    desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
+    desc.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
+    desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
     m_hVertexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
   }
@@ -234,7 +236,9 @@ void xiiImguiRenderer::SetupRenderer()
     xiiGALBufferCreationDescription desc;
     desc.m_uiElementByteStride = sizeof(ImDrawIdx);
     desc.m_uiSize              = s_uiIndexBufferSize * desc.m_uiElementByteStride;
-    desc.m_BindFlags.Add(xiiGALBindFlags::IndexBuffer);
+    desc.m_BindFlags           = xiiGALBindFlags::IndexBuffer;
+    desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
     m_hIndexBuffer = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
   }

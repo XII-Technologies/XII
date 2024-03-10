@@ -1431,9 +1431,9 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       desc.m_Size.width     = uiImgWidth;
       desc.m_Size.height    = uiImgHeight;
       desc.m_Format         = xiiGALTextureFormat::RGBA8UNormalized;
-      desc.m_Usage          = xiiGALResourceUsage::Default;
       desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
       desc.m_BindFlags      = xiiGALBindFlags::ShaderResource;
+      desc.m_Usage          = xiiGALResourceUsage::Immutable;
 
       m_hOcclusionDebugViewTexture = pDevice->CreateTexture(desc);
     }
@@ -1443,7 +1443,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       xiiGALPass* pGALPass        = pDevice->BeginPass("RasterizerDebugViewUpdate");
       auto        pCommandEncoder = pGALPass->BeginCompute();
 
-      xiiBoundingBoxu32 destBox;
+      xiiBoundingBoxU32 destBox;
       destBox.m_vMin.SetZero();
       destBox.m_vMax = xiiVec3U32(uiImgWidth, uiImgHeight, 1);
 

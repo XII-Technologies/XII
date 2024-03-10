@@ -405,7 +405,9 @@ void xiiLSAOPass::SetupLineSweepData(const xiiVec3I32& imageResolution)
       bufferDesc.m_Mode                = xiiGALBufferMode::Formatted;
       bufferDesc.m_uiElementByteStride = 4;
       bufferDesc.m_uiSize              = imageResolution.z * 2 * totalNumberOfSamples;
-      bufferDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess);
+      bufferDesc.m_BindFlags           = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+      bufferDesc.m_ResourceUsage       = xiiGALResourceUsage::Default;
+      bufferDesc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::None;
 
       m_hLineSweepOutputBuffer = device->CreateBuffer(bufferDesc);
 
@@ -431,8 +433,8 @@ void xiiLSAOPass::SetupLineSweepData(const xiiVec3I32& imageResolution)
       bufferDesc.m_uiElementByteStride = sizeof(LineInstruction);
       bufferDesc.m_uiSize              = bufferDesc.m_uiElementByteStride * m_uiNumSweepLines;
       bufferDesc.m_Mode                = xiiGALBufferMode::Structured;
+      bufferDesc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
       bufferDesc.m_ResourceUsage       = xiiGALResourceUsage::Immutable;
-      bufferDesc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
       auto pInitialData = xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(lineInstructions.GetData()), lineInstructions.GetCount() * sizeof(LineInstruction));
 

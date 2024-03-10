@@ -3,8 +3,6 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Shader/ShaderNull.h>
 
-#include <ShaderCompiler/ShaderMetadata.h>
-
 xiiGALShaderNull::xiiGALShaderNull(const xiiGALShaderCreationDescription& creationDescription) :
   xiiGALShader(creationDescription)
 {

@@ -20,8 +20,6 @@ public:
 public:
   // Internal objects retrieval.
 
-  xiiGALPassNull* GetDefaultPass();
-
   void ReportLiveGPUObjects();
 
   void FlushPendingObjects();
@@ -34,14 +32,14 @@ protected:
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override final;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override final;
 
-  virtual xiiGALPass* BeginPassPlatform(xiiStringView sName) override final;
-  virtual void        EndPassPlatform(xiiGALPass* pPass) override final;
-
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame) override final;
   virtual void EndFramePlatform() override final;
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
+
+  virtual xiiGALCommandList* CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description) override final;
+  virtual void               DestroyCommandListPlatform(xiiGALCommandList* pCommandList) override final;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;
@@ -91,18 +89,18 @@ protected:
   virtual xiiGALTopLevelAS* CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description) override final;
   virtual void              DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS) override final;
 
+  virtual xiiGALPipelineResourceSignature* CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description) override final;
+  virtual void                             DestroyPipelineResourceSignaturePlatform(xiiGALPipelineResourceSignature* pPipelineResourceSignature) override final;
+
+  virtual xiiGALPipelineState* CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description) override final;
+  virtual void                 DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
+
   virtual void WaitIdlePlatform() override final;
 
   virtual void FillCapabilitiesPlatform() override final;
 
 private:
   xiiUInt64 m_uiFrameNumber = 0U;
-
-  xiiUniquePtr<xiiGALPassNull> m_pDefaultPass;
-
-  struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
-  struct GPUTimingScope* m_pPipelineTimingScope = nullptr;
-  struct GPUTimingScope* m_pPassTimingScope     = nullptr;
 };
 
 #include <GraphicsNull/Device/Implementation/DeviceNull_inl.h>

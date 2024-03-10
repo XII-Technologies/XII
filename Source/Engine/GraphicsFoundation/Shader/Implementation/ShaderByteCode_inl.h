@@ -1,18 +1,30 @@
 
-const void* xiiGALShaderByteCode::GetByteCode() const
+XII_ALWAYS_INLINE const void* xiiGALShaderByteCode::GetByteCode() const
 {
-  if (m_Source.IsEmpty())
+  if (m_ByteCode.IsEmpty())
     return nullptr;
 
-  return m_Source.GetData();
+  return m_ByteCode.GetData();
 }
 
-xiiUInt32 xiiGALShaderByteCode::GetSize() const
+XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderByteCode::GetSize() const
 {
-  return m_Source.GetCount();
+  return m_ByteCode.GetCount();
 }
 
-bool xiiGALShaderByteCode::IsValid() const
+XII_ALWAYS_INLINE bool xiiGALShaderByteCode::IsValid() const
 {
-  return !m_Source.IsEmpty();
+  return !m_ByteCode.IsEmpty();
+}
+
+XII_ALWAYS_INLINE const xiiGALShaderResourceDescription* xiiGALShaderByteCode::GetDescription(const xiiTempHashedString& sName) const
+{
+  for (const auto& binding : m_ShaderResourceBindings)
+  {
+    if (binding.m_sName == sName)
+    {
+      return &binding;
+    }
+  }
+  return nullptr;
 }

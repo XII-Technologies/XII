@@ -1,7 +1,7 @@
 #pragma once
 
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
-#include <GraphicsCore/Shader/Types.h>
+#include <GraphicsFoundation/Shader/Types.h>
 #include <memory>
 
 class xiiShaderTransform;

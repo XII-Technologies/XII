@@ -115,18 +115,6 @@ XII_ALWAYS_INLINE xiiGALShaderStage::Enum xiiGALShaderStage::GetStageFlag(xiiUIn
 }
 
 // static
-XII_ALWAYS_INLINE xiiUInt32 xiiGALTextureFormat::GetBitsPerElement(xiiEnum<xiiGALTextureFormat> format)
-{
-  return s_BitsPerElement[format];
-}
-
-// static
-XII_ALWAYS_INLINE xiiUInt8 xiiGALTextureFormat::GetChannelCount(xiiEnum<xiiGALTextureFormat> format)
-{
-  return s_ChannelCount[format];
-}
-
-// static
 XII_FORCE_INLINE bool xiiGALTextureFormat::IsDepthFormat(xiiEnum<xiiGALTextureFormat> format)
 {
   return format == D16UNormalized || format == D24UNormalizedS8UInt || format == D32Float || format == D32FloatS8X24UInt;

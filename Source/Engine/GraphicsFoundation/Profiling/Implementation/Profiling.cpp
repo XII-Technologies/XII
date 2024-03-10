@@ -2,13 +2,14 @@
 
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Profiling/Profiling.h>
-#include <GraphicsFoundation/CommandEncoder/CommandEncoder.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 #include <GraphicsFoundation/Resources/Query.h>
 
 #if XII_ENABLED(XII_USE_PROFILING)
 
+#  if 0
 struct GPUTimingScope
 {
   XII_DECLARE_POD_TYPE();
@@ -56,14 +57,14 @@ public:
 
           if (!endTime.IsZero() && !startTime.IsZero())
           {
-#  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#    if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
             static bool warnOnRingBufferOverun = true;
             if (warnOnRingBufferOverun && endTime < startTime)
             {
               warnOnRingBufferOverun = false;
               xiiLog::Error("Profiling end is before start, the timestamp ring buffer was probably overrun.");
             }
-#  endif
+#    endif
             xiiProfilingSystem::AddGPUScope(timingScope.m_szName, startTime, endTime);
           }
         }
@@ -161,39 +162,39 @@ xiiDynamicArray<GPUTimingScope, xiiStaticAllocatorWrapper> GPUProfilingSystem::s
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiProfilingScopeAndMarker::xiiProfilingScopeAndMarker(xiiGALCommandEncoder* pCommandEncoder, xiiStringView sName) :
-  xiiProfilingScope(sName, {}, xiiTime::Zero()), m_pCommandEncoder(pCommandEncoder)
+xiiProfilingScopeAndMarker::xiiProfilingScopeAndMarker(xiiGALCommandList* pCommandList, xiiStringView sName) :
+  xiiProfilingScope(sName, {}, xiiTime::Zero()), m_pCommandList(pCommandList)
 {
-  m_pTimingScope = Start(pCommandEncoder, sName);
+  m_pTimingScope = Start(pCommandList, sName);
 }
 
 xiiProfilingScopeAndMarker::~xiiProfilingScopeAndMarker()
 {
-  Stop(m_pCommandEncoder, m_pTimingScope);
+  Stop(m_pCommandList, m_pTimingScope);
 }
 
-GPUTimingScope* xiiProfilingScopeAndMarker::Start(xiiGALCommandEncoder* pCommandEncoder, xiiStringView sName)
+GPUTimingScope* xiiProfilingScopeAndMarker::Start(xiiGALCommandList* pCommandList, xiiStringView sName)
 {
-  pCommandEncoder->PushMarker(sName);
+  pCommandList->BeginDebugGroup(sName);
 
-#  if 0
+#    if 0
   auto& timingScope = GPUProfilingSystem::AllocateScope();
 
-  pCommandEncoder->EndQuery(timingScope.m_BeginTimestamp);
+  pCommandList->EndQuery(timingScope.m_BeginTimestamp);
   xiiStringUtils::Copy(timingScope.m_szName, XII_ARRAY_SIZE(timingScope.m_szName), sName.GetStartPointer(), sName.GetEndPointer());
 
   return &timingScope;
-#  else
+#    else
   return nullptr;
-#  endif
+#    endif
 }
 
-void xiiProfilingScopeAndMarker::Stop(xiiGALCommandEncoder* pCommandEncoder, GPUTimingScope*& ref_pTimingScope)
+void xiiProfilingScopeAndMarker::Stop(xiiGALCommandList* pCommandList, GPUTimingScope*& ref_pTimingScope)
 {
-  pCommandEncoder->PopMarker();
+  pCommandList->EndDebugGroup();
 
-#  if 0
-  pCommandEncoder->EndQuery(ref_pTimingScope->m_EndTimestamp);
+#    if 0
+  pCommandList->EndQuery(ref_pTimingScope->m_EndTimestamp);
 
   auto durationQuery = std::move(GPUProfilingSystem::s_TimingScopes.PeekBack());
   GPUProfilingSystem::s_TimingScopes.PopBack();
@@ -201,9 +202,10 @@ void xiiProfilingScopeAndMarker::Stop(xiiGALCommandEncoder* pCommandEncoder, GPU
   GPUProfilingSystem::s_PendingScopes.Insert(std::move(durationQuery), 0);
 
   ref_pTimingScope = nullptr;
-#  endif
+#    endif
 }
 
+#  endif
 #endif
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Profiling_Implementation_Profiling);

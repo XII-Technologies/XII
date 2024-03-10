@@ -75,6 +75,8 @@ void xiiInstanceData::CreateBuffer(xiiUInt32 uiSize)
   desc.m_uiElementByteStride = sizeof(xiiPerInstanceData);
   desc.m_uiSize              = desc.m_uiElementByteStride * uiSize;
   desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+  desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+  desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
   m_hInstanceDataBuffer = pDevice->CreateBuffer(desc);
 }

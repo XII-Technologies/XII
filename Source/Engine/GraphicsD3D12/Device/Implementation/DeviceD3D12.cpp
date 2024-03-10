@@ -1,14 +1,13 @@
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
 #include <Foundation/Configuration/Startup.h>
-#include <GraphicsFoundation/CommandEncoder/GraphicsCommandEncoder.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 
-#include <GraphicsD3D12/CommandEncoder/CommandEncoderD3D12.h>
+#include <GraphicsD3D12/CommandEncoder/CommandListD3D12.h>
+#include <GraphicsD3D12/CommandEncoder/CommandQueueD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Device/DiligentCore.h>
-#include <GraphicsD3D12/Device/PassD3D12.h>
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/Resources/BottomLevelASD3D12.h>
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
@@ -25,6 +24,8 @@
 #include <GraphicsD3D12/Shader/ShaderD3D12.h>
 #include <GraphicsD3D12/States/BlendStateD3D12.h>
 #include <GraphicsD3D12/States/DepthStencilStateD3D12.h>
+#include <GraphicsD3D12/States/PipelineResourceSignatureD3D12.h>
+#include <GraphicsD3D12/States/PipelineStateD3D12.h>
 #include <GraphicsD3D12/States/RasterizerStateD3D12.h>
 
 #include <Diligent/Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
@@ -159,13 +160,13 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
         }
         else if (AdapterType == xiiDiligentTypeConversions::GetAdapterType(m_Description.m_AdapterType))
         {
-          // Select adapter with more memory.
+          // Select adapter with more memory and the most amount of queues.
           const Diligent::AdapterMemoryInfo& newAdapterMemory     = adapterInfo.Memory;
           const xiiUInt64                    uiNewTotalMemory     = newAdapterMemory.LocalMemory + newAdapterMemory.HostVisibleMemory + newAdapterMemory.UnifiedMemory;
           const Diligent::AdapterMemoryInfo& currentAdapterMemory = graphicsAdapters[uiAdapterID].Memory;
           const xiiUInt64                    uiCurrentTotalMemory = currentAdapterMemory.LocalMemory + currentAdapterMemory.HostVisibleMemory + currentAdapterMemory.UnifiedMemory;
 
-          if (uiNewTotalMemory > uiCurrentTotalMemory)
+          if (uiNewTotalMemory > uiCurrentTotalMemory && AdapterInfo.NumQueues >= graphicsAdapters[uiAdapterID].NumQueues)
           {
             uiAdapterID = i;
           }
@@ -252,17 +253,15 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
 
   try
   {
-    xiiUInt32 uiAdapterID = xiiInvalidIndex;
-
     Diligent::GraphicsAdapterInfo adapterInfo;
 
-    XII_SUCCEED_OR_RETURN_LOG(FindAdapter(pFactoryD3D12, d3d12CreateInfo.GraphicsAPIVersion, adapterInfo, uiAdapterID));
+    XII_SUCCEED_OR_RETURN_LOG(FindAdapter(pFactoryD3D12, d3d12CreateInfo.GraphicsAPIVersion, adapterInfo, m_Description.m_uiAdapterID));
 
-    d3d12CreateInfo.AdapterId = uiAdapterID;
+    d3d12CreateInfo.AdapterId = m_Description.m_uiAdapterID;
   }
   catch (...)
   {
-    xiiLog::Error("Failed to locate DirectX12 compatible hardware adapters.");
+    xiiLog::Error("Failed to locate DirectX 12 compatible hardware adapters.");
   }
 
   if (m_Description.m_AdapterType != xiiGALDeviceAdapterType::Software && m_Description.m_uiAdapterID != XII_GAL_DEFAULT_ADAPTER_ID)
@@ -274,8 +273,13 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     pFactoryD3D12->EnumerateDisplayModes(d3d12CreateInfo.GraphicsAPIVersion, d3d12CreateInfo.AdapterId, 0, Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB, uiDisplayModeCount, m_DisplayModes.GetData());
   }
 
+  CreateCommandQueues();
+
+  d3d12CreateInfo.pImmediateContextInfo = m_ContextDescriptions.GetData();
+  d3d12CreateInfo.NumImmediateContexts  = m_ContextDescriptions.GetCount();
+
   xiiUInt32 uiImmediateContextCount = xiiMath::Max(1U, d3d12CreateInfo.NumImmediateContexts);
-  m_pDeviceContexts.SetCount(uiImmediateContextCount + d3d12CreateInfo.NumDeferredContexts);
+  m_pDeviceContexts.SetCount(uiImmediateContextCount);
   pFactoryD3D12->CreateDeviceAndContextsD3D12(d3d12CreateInfo, &m_pDevice, m_pDeviceContexts.GetData());
 
   if (m_pDevice == nullptr)
@@ -289,7 +293,16 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
-  m_pDefaultPass = XII_NEW(&m_Allocator, xiiGALPassD3D12, *this);
+  m_CommandQueues[0] = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, *this, GetImmediateContext());
+
+  if (auto pContext = GetComputeContext())
+    m_CommandQueues[1] = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, *this, pContext);
+
+  if (auto pContext = GetTransferContext())
+    m_CommandQueues[2] = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, *this, pContext);
+
+  if (auto pContext = GetSparseBindingContext())
+    m_CommandQueues[3] = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, *this, pContext);
 
   return XII_SUCCESS;
 }
@@ -298,7 +311,7 @@ void xiiGALDeviceD3D12::ReportLiveGPUObjects()
 {
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   IDXGIDebug1* dxgiDebug = nullptr;
-  HRESULT      hResult   = DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug));
+  HRESULT      hResult   = DXGIGetDebugInterface1(0U, IID_PPV_ARGS(&dxgiDebug));
   if (SUCCEEDED(hResult))
   {
     OutputDebugStringW(L" +++++ Live D3D12 Objects: +++++\n");
@@ -315,12 +328,15 @@ void xiiGALDeviceD3D12::ReportLiveGPUObjects()
 
 void xiiGALDeviceD3D12::FlushPendingObjects()
 {
-  DestroyDeadObjects();
+  FlushDestroyedObjects();
 }
 
 xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
 {
-  m_pDefaultPass.Clear();
+  for (xiiUInt8 i = 0; i < XII_ARRAY_SIZE(m_CommandQueues); ++i)
+  {
+    m_CommandQueues[i].Clear();
+  }
 
   if (!m_pDeviceContexts.IsEmpty())
   {
@@ -348,7 +364,7 @@ void xiiGALDeviceD3D12::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapCha
 #if XII_ENABLED(XII_USE_PROFILING)
   xiiStringBuilder sb;
   sb.Format("{} - Frame {}", !sName.IsEmpty() ? sName : "Unavailable", GetImmediateContext()->GetFrameNumber());
-  m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sb);
+  // m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sb);
 #endif
 
   if (pSwapChain)
@@ -360,34 +376,13 @@ void xiiGALDeviceD3D12::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapCha
 void xiiGALDeviceD3D12::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
 {
 #if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPipelineTimingScope);
+  // xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPipelineTimingScope);
 #endif
 
   if (pSwapChain)
   {
     pSwapChain->Present(this);
   }
-
-  // Invalidate frame pointers.
-  m_pDefaultPass->Reset();
-}
-
-xiiGALPass* xiiGALDeviceD3D12::BeginPassPlatform(xiiStringView sName)
-{
-#if XII_ENABLED(XII_USE_PROFILING)
-  m_pPassTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sName);
-#endif
-
-  return m_pDefaultPass.Borrow();
-}
-
-void xiiGALDeviceD3D12::EndPassPlatform(xiiGALPass* pPass)
-{
-  XII_ASSERT_DEV(m_pDefaultPass.Borrow() == pPass, "Invalid pass.");
-
-#if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPassTimingScope);
-#endif
 }
 
 void xiiGALDeviceD3D12::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
@@ -426,6 +421,27 @@ void xiiGALDeviceD3D12::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
   pSwapChainD3D12->DeInitPlatform(this).IgnoreResult();
 
   XII_DELETE(&m_Allocator, pSwapChainD3D12);
+}
+
+xiiGALCommandList* xiiGALDeviceD3D12::CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description)
+{
+  xiiGALCommandListD3D12* pCommandListD3D12 = XII_NEW(&m_Allocator, xiiGALCommandListD3D12, description);
+
+  if (pCommandListD3D12->InitPlatform(this).Succeeded())
+    return pCommandListD3D12;
+
+  XII_DELETE(&m_Allocator, pCommandListD3D12);
+
+  return pCommandListD3D12;
+}
+
+void xiiGALDeviceD3D12::DestroyCommandListPlatform(xiiGALCommandList* pCommandList)
+{
+  xiiGALCommandListD3D12* pCommandListD3D12 = static_cast<xiiGALCommandListD3D12*>(pCommandList);
+
+  pCommandListD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pCommandListD3D12);
 }
 
 xiiGALBlendState* xiiGALDeviceD3D12::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
@@ -764,6 +780,48 @@ void xiiGALDeviceD3D12::DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS)
   XII_DELETE(&m_Allocator, pTopLevelASD3D12);
 }
 
+xiiGALPipelineResourceSignature* xiiGALDeviceD3D12::CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description)
+{
+  xiiGALPipelineResourceSignatureD3D12* pPipelineResourceSignatureD3D12 = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureD3D12, description);
+
+  if (pPipelineResourceSignatureD3D12->InitPlatform(this).Succeeded())
+    return pPipelineResourceSignatureD3D12;
+
+  XII_DELETE(&m_Allocator, pPipelineResourceSignatureD3D12);
+
+  return pPipelineResourceSignatureD3D12;
+}
+
+void xiiGALDeviceD3D12::DestroyPipelineResourceSignaturePlatform(xiiGALPipelineResourceSignature* pPipelineResourceSignature)
+{
+  xiiGALPipelineResourceSignatureD3D12* pPipelineResourceSignatureD3D12 = static_cast<xiiGALPipelineResourceSignatureD3D12*>(pPipelineResourceSignature);
+
+  pPipelineResourceSignatureD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pPipelineResourceSignatureD3D12);
+}
+
+xiiGALPipelineState* xiiGALDeviceD3D12::CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description)
+{
+  xiiGALPipelineStateD3D12* pPipelineStateD3D12 = XII_NEW(&m_Allocator, xiiGALPipelineStateD3D12, description);
+
+  if (pPipelineStateD3D12->InitPlatform(this).Succeeded())
+    return pPipelineStateD3D12;
+
+  XII_DELETE(&m_Allocator, pPipelineStateD3D12);
+
+  return pPipelineStateD3D12;
+}
+
+void xiiGALDeviceD3D12::DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
+{
+  xiiGALPipelineStateD3D12* pPipelineStateD3D12 = static_cast<xiiGALPipelineStateD3D12*>(pPipelineState);
+
+  pPipelineStateD3D12->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pPipelineStateD3D12);
+}
+
 void xiiGALDeviceD3D12::WaitIdlePlatform()
 {
   m_pDevice->IdleGPU();
@@ -775,7 +833,7 @@ void xiiGALDeviceD3D12::WaitIdlePlatform()
 
 void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 {
-  m_Type = xiiGALGraphicsDeviceType::Direct3D12;
+  m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Direct3D12;
 
   const Diligent::GraphicsAdapterInfo& adapterInformation = m_pDevice->GetAdapterInfo();
 
@@ -1166,6 +1224,46 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
     queue.m_MaxDeviceContexts      = refQueue.MaxDeviceContexts;
     queue.m_TextureCopyGranularity = refQueue.TextureCopyGranularity;
   }
+}
+
+void xiiGALDeviceD3D12::CreateCommandQueues()
+{
+  m_ContextDescriptions.Clear();
+
+  auto AddContext = [&](Diligent::COMMAND_QUEUE_TYPE queueType, const char* szName, xiiUInt32 uiAdapterId) {
+    constexpr auto uiQueueMask = Diligent::COMMAND_QUEUE_TYPE_PRIMARY_MASK;
+
+    auto* pQueues = m_pDevice->GetAdapterInfo().Queues;
+
+    xiiUInt32 queueCountPerContext[XII_GAL_MAX_ADAPTER_QUEUE_COUNT] = {};
+
+    for (xiiUInt32 i = 0, uiCount = m_pDevice->GetAdapterInfo().NumQueues; i < uiCount; ++i)
+    {
+      auto& currentQueue = pQueues[i];
+
+      if (queueCountPerContext[i] >= currentQueue.MaxDeviceContexts)
+        continue;
+
+      if ((currentQueue.QueueType & uiQueueMask) == queueType)
+      {
+        queueCountPerContext[i] += 1;
+
+        Diligent::ImmediateContextCreateInfo contextDescription = {};
+        contextDescription.QueueId                              = static_cast<xiiUInt8>(i);
+        contextDescription.Name                                 = szName;
+        contextDescription.Priority                             = Diligent::QUEUE_PRIORITY_MEDIUM;
+
+        m_ContextDescriptions.PushBack(contextDescription);
+        return true;
+      }
+    }
+    return false;
+  };
+
+  AddContext(Diligent::COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics Command Queue", m_Description.m_uiAdapterID);
+  AddContext(Diligent::COMMAND_QUEUE_TYPE_TRANSFER, "Transfer Command Queue", m_Description.m_uiAdapterID);
+  AddContext(Diligent::COMMAND_QUEUE_TYPE_COMPUTE, "Compute Command Queue", m_Description.m_uiAdapterID);
+  AddContext(Diligent::COMMAND_QUEUE_TYPE_SPARSE_BINDING, "Sparse Bindingn Command Queue", m_Description.m_uiAdapterID);
 }
 
 void xiiGALDeviceD3D12::FillFormatLookupTable()

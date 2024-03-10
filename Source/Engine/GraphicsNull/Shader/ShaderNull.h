@@ -8,12 +8,6 @@
 class XII_GRAPHICSNULL_DLL xiiGALShaderNull final : public xiiGALShader
 {
 public:
-  /// \brief This returns the total number of shader resources.
-  virtual xiiUInt32 GetResourceCount() const override final;
-
-  /// \brief This returns a pointer to the array of shader resources.
-  virtual void GetResourceDescription(xiiUInt32 uiIndex, xiiGALShaderResourceDescription& out_ResourceDescription) const override final;
-
 protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
@@ -22,9 +16,9 @@ protected:
 
   virtual ~xiiGALShaderNull();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 };
 
 #include <GraphicsNull/Shader/Implementation/ShaderNull_inl.h>

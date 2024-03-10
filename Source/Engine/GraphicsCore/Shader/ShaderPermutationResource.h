@@ -1,9 +1,10 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Core/ResourceManager/Resource.h>
 #include <Core/ResourceManager/ResourceTypeLoader.h>
 #include <Foundation/Time/Timestamp.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
 #include <GraphicsCore/Shader/ShaderPermutationBinary.h>
 #include <GraphicsCore/ShaderCompiler/PermutationGenerator.h>
 
@@ -24,7 +25,9 @@ public:
   xiiShaderPermutationResource();
 
   xiiGALShaderHandle          GetGALShader() const { return m_hShader; }
-  const xiiShaderStageBinary* GetShaderStageBinary(xiiBitflags<xiiGALShaderStage> stage) const { return m_pShaderStageBinaries[xiiGALShaderStage::GetStageIndex(stage)]; }
+  const xiiGALShaderByteCode* GetShaderByteCode(xiiBitflags<xiiGALShaderStage> stage) const { return m_ByteCodes[xiiGALShaderStage::GetStageIndex(stage)]; }
+
+  xiiGALPipelineResourceSignatureHandle GetPipelineResourceSignature() const { return m_hPipelineResourceSignature; }
 
   xiiGALBlendStateHandle        GetBlendState() const { return m_hBlendState; }
   xiiGALDepthStencilStateHandle GetDepthStencilState() const { return m_hDepthStencilState; }
@@ -43,10 +46,12 @@ private:
 private:
   friend class xiiShaderManager;
 
-  xiiShaderStageBinary* m_pShaderStageBinaries[xiiGALShaderStage::ENUM_COUNT];
+  xiiSharedPtr<const xiiGALShaderByteCode> m_ByteCodes[xiiGALShaderStage::ENUM_COUNT];
 
   bool               m_bShaderPermutationValid;
   xiiGALShaderHandle m_hShader;
+
+  xiiGALPipelineResourceSignatureHandle m_hPipelineResourceSignature;
 
   xiiGALBlendStateHandle        m_hBlendState;
   xiiGALDepthStencilStateHandle m_hDepthStencilState;

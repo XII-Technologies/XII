@@ -21,7 +21,6 @@ namespace xiiShaderHelper
     {
       xiiTextSection(xiiStringView sName) :
         m_sName(sName)
-
       {
       }
 

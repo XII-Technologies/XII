@@ -1737,3 +1737,119 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALDeviceFeatureState> xiiDiligentTypeConversions::
   }
   return xiiEnum<xiiGALDeviceFeatureState>();
 }
+
+XII_ALWAYS_INLINE Diligent::PIPELINE_STAGE_FLAGS xiiDiligentTypeConversions::GetPipelineStageFlags(xiiBitflags<xiiGALPipelineStageFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::PIPELINE_STAGE_FLAG_UNDEFINED;
+
+  if (e == xiiGALPipelineStageFlags::Default)
+    return Diligent::PIPELINE_STAGE_FLAG_DEFAULT;
+
+  Diligent::PIPELINE_STAGE_FLAGS pipelineStageFlags = {};
+
+  if (e.IsSet(xiiGALPipelineStageFlags::TopOfPipeline))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_TOP_OF_PIPE;
+  if (e.IsSet(xiiGALPipelineStageFlags::DrawIndirect))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_DRAW_INDIRECT;
+  if (e.IsSet(xiiGALPipelineStageFlags::VertexInput))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_VERTEX_INPUT;
+  if (e.IsSet(xiiGALPipelineStageFlags::VertexShader))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_VERTEX_SHADER;
+  if (e.IsSet(xiiGALPipelineStageFlags::HullShader))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_HULL_SHADER;
+  if (e.IsSet(xiiGALPipelineStageFlags::DomainShader))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_DOMAIN_SHADER;
+  if (e.IsSet(xiiGALPipelineStageFlags::GeometryShader))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_GEOMETRY_SHADER;
+  if (e.IsSet(xiiGALPipelineStageFlags::PixelShader))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_PIXEL_SHADER;
+  if (e.IsSet(xiiGALPipelineStageFlags::EarlyFragmentTests))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_EARLY_FRAGMENT_TESTS;
+  if (e.IsSet(xiiGALPipelineStageFlags::LateFragmentTests))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_LATE_FRAGMENT_TESTS;
+  if (e.IsSet(xiiGALPipelineStageFlags::RenderTarget))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_RENDER_TARGET;
+  if (e.IsSet(xiiGALPipelineStageFlags::ComputeShader))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_COMPUTE_SHADER;
+  if (e.IsSet(xiiGALPipelineStageFlags::Transfer))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_TRANSFER;
+  if (e.IsSet(xiiGALPipelineStageFlags::BottomOfPipeline))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_BOTTOM_OF_PIPE;
+  if (e.IsSet(xiiGALPipelineStageFlags::Host))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_HOST;
+  if (e.IsSet(xiiGALPipelineStageFlags::ConditionalRendering))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_CONDITIONAL_RENDERING;
+  if (e.IsSet(xiiGALPipelineStageFlags::ShadingRateTexture))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_SHADING_RATE_TEXTURE;
+  if (e.IsSet(xiiGALPipelineStageFlags::RayTracingShader))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_RAY_TRACING_SHADER;
+  if (e.IsSet(xiiGALPipelineStageFlags::AccelerationStructureBuild))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_ACCELERATION_STRUCTURE_BUILD;
+  if (e.IsSet(xiiGALPipelineStageFlags::TaskShader))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_TASK_SHADER;
+  if (e.IsSet(xiiGALPipelineStageFlags::MeshShader))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_MESH_SHADER;
+  if (e.IsSet(xiiGALPipelineStageFlags::FragmentDensityProcess))
+    pipelineStageFlags |= Diligent::PIPELINE_STAGE_FLAG_FRAGMENT_DENSITY_PROCESS;
+
+  return pipelineStageFlags;
+}
+
+XII_ALWAYS_INLINE Diligent::ACCESS_FLAGS xiiDiligentTypeConversions::GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::ACCESS_FLAG_NONE;
+
+  if (e == xiiGALAccessFlags::Default)
+    return Diligent::ACCESS_FLAG_DEFAULT;
+
+  Diligent::ACCESS_FLAGS accessFlags = {};
+
+  if (e.IsSet(xiiGALAccessFlags::IndirectCommandRead))
+    accessFlags |= Diligent::ACCESS_FLAG_INDIRECT_COMMAND_READ;
+  if (e.IsSet(xiiGALAccessFlags::IndexRead))
+    accessFlags |= Diligent::ACCESS_FLAG_INDEX_READ;
+  if (e.IsSet(xiiGALAccessFlags::VertexRead))
+    accessFlags |= Diligent::ACCESS_FLAG_VERTEX_READ;
+  if (e.IsSet(xiiGALAccessFlags::UniformRead))
+    accessFlags |= Diligent::ACCESS_FLAG_UNIFORM_READ;
+  if (e.IsSet(xiiGALAccessFlags::InputAttachmentRead))
+    accessFlags |= Diligent::ACCESS_FLAG_INPUT_ATTACHMENT_READ;
+  if (e.IsSet(xiiGALAccessFlags::ShaderRead))
+    accessFlags |= Diligent::ACCESS_FLAG_SHADER_READ;
+  if (e.IsSet(xiiGALAccessFlags::ShaderWrite))
+    accessFlags |= Diligent::ACCESS_FLAG_SHADER_WRITE;
+  if (e.IsSet(xiiGALAccessFlags::RenderTargetRead))
+    accessFlags |= Diligent::ACCESS_FLAG_RENDER_TARGET_READ;
+  if (e.IsSet(xiiGALAccessFlags::RenderTargetWrite))
+    accessFlags |= Diligent::ACCESS_FLAG_RENDER_TARGET_WRITE;
+  if (e.IsSet(xiiGALAccessFlags::DepthStencilRead))
+    accessFlags |= Diligent::ACCESS_FLAG_DEPTH_STENCIL_READ;
+  if (e.IsSet(xiiGALAccessFlags::DepthStencilWrite))
+    accessFlags |= Diligent::ACCESS_FLAG_DEPTH_STENCIL_WRITE;
+  if (e.IsSet(xiiGALAccessFlags::CopySource))
+    accessFlags |= Diligent::ACCESS_FLAG_COPY_SRC;
+  if (e.IsSet(xiiGALAccessFlags::CopyDestination))
+    accessFlags |= Diligent::ACCESS_FLAG_COPY_DST;
+  if (e.IsSet(xiiGALAccessFlags::HostRead))
+    accessFlags |= Diligent::ACCESS_FLAG_HOST_READ;
+  if (e.IsSet(xiiGALAccessFlags::HostWrite))
+    accessFlags |= Diligent::ACCESS_FLAG_HOST_WRITE;
+  if (e.IsSet(xiiGALAccessFlags::MemoryRead))
+    accessFlags |= Diligent::ACCESS_FLAG_MEMORY_READ;
+  if (e.IsSet(xiiGALAccessFlags::MemoryWrite))
+    accessFlags |= Diligent::ACCESS_FLAG_MEMORY_WRITE;
+  if (e.IsSet(xiiGALAccessFlags::ConditionalRenderingRead))
+    accessFlags |= Diligent::ACCESS_FLAG_CONDITIONAL_RENDERING_READ;
+  if (e.IsSet(xiiGALAccessFlags::ShadingRateTextureRead))
+    accessFlags |= Diligent::ACCESS_FLAG_SHADING_RATE_TEXTURE_READ;
+  if (e.IsSet(xiiGALAccessFlags::AccelerationStructureRead))
+    accessFlags |= Diligent::ACCESS_FLAG_ACCELERATION_STRUCTURE_READ;
+  if (e.IsSet(xiiGALAccessFlags::AccelerationStructureWrite))
+    accessFlags |= Diligent::ACCESS_FLAG_ACCELERATION_STRUCTURE_WRITE;
+  if (e.IsSet(xiiGALAccessFlags::FragmentDensityMapRead))
+    accessFlags |= Diligent::ACCESS_FLAG_FRAGMENT_DENSITY_MAP_READ;
+
+  return accessFlags;
+}

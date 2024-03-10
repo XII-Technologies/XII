@@ -2,8 +2,10 @@
 
 #include <GraphicsFoundation/Resources/BufferView.h>
 
+// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferView, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 xiiGALBufferView::xiiGALBufferView(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
   xiiGALResourceView(), m_Description(creationDescription), m_pBuffer(pBuffer)

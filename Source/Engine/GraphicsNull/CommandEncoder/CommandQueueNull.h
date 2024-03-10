@@ -23,10 +23,6 @@ protected:
   xiiGALCommandQueueNull();
 
   virtual ~xiiGALCommandQueueNull();
-
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
-
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 };
 
 #include <GraphicsNull/CommandEncoder/Implementation/CommandQueueNull_inl.h>

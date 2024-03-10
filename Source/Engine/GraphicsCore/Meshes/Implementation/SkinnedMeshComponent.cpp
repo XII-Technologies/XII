@@ -4,9 +4,9 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GraphicsCore/Meshes/SkinnedMeshComponent.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsCore/Shader/Types.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Shader/Types.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkinnedMeshRenderData, 1, xiiRTTIDefaultAllocator<xiiSkinnedMeshRenderData>)
@@ -49,7 +49,9 @@ void xiiSkinningState::TransformsChanged()
     bufferDescription.m_uiElementByteStride = sizeof(xiiShaderTransform);
     bufferDescription.m_uiSize              = bufferDescription.m_uiElementByteStride * m_Transforms.GetCount();
     bufferDescription.m_Mode                = xiiGALBufferMode::Structured;
-    bufferDescription.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
+    bufferDescription.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+    bufferDescription.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+    bufferDescription.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
     xiiGALBufferData initData;
     initData.m_pData      = m_Transforms.GetData();

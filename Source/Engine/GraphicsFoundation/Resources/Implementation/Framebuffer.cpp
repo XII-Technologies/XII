@@ -2,8 +2,10 @@
 
 #include <GraphicsFoundation/Resources/Framebuffer.h>
 
+// clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFramebuffer, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 xiiGALFramebuffer::xiiGALFramebuffer(const xiiGALFramebufferCreationDescription& creationDescription) :
   xiiGALDeviceObject(), m_Description(creationDescription)

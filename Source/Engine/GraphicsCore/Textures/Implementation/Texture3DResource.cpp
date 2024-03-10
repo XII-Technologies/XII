@@ -11,6 +11,7 @@
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <Texture/xiiTexFormat/xiiTexFormat.h>
 
 // clang-format off
@@ -71,12 +72,14 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
 {
   const xiiUInt32 uiHighestMipLevel = pImage->GetNumMipLevels() - uiNumMipLevels;
 
-  const xiiEnum<xiiGALTextureFormat> format = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
+  const xiiEnum<xiiGALTextureFormat> format           = xiiTextureUtils::ImageFormatToGalFormat(pImage->GetImageFormat(), bSRGB);
+  const auto&                        formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(format);
 
   ref_td.m_DescGAL.m_Format      = format;
   ref_td.m_DescGAL.m_Size.width  = pImage->GetWidth(uiHighestMipLevel);
   ref_td.m_DescGAL.m_Size.height = pImage->GetHeight(uiHighestMipLevel);
   ref_td.m_DescGAL.m_uiMipLevels = uiNumMipLevels;
+  ref_td.m_DescGAL.m_Usage       = xiiGALResourceUsage::Immutable;
   ref_td.m_DescGAL.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
   xiiUInt32 uiDepth = pImage->GetDepth(uiHighestMipLevel);
@@ -107,7 +110,7 @@ void xiiTexture3DResource::FillOutDescriptor(xiiTexture3DResourceDescriptor& ref
 
         if (xiiImageFormat::GetType(pImage->GetImageFormat()) == xiiImageFormatType::BLOCK_COMPRESSED)
         {
-          const xiiUInt32 uiMemPitchFactor = xiiGALTextureFormat::GetBitsPerElement(format) * 4 / 8;
+          const xiiUInt32 uiMemPitchFactor = formatProperties.GetElementSize() * 2 / 8;
 
           id.m_uiStride = xiiMath::Max<xiiUInt32>(4, pImage->GetWidth(mip)) * uiMemPitchFactor;
         }
@@ -163,10 +166,9 @@ xiiResourceLoadDesc xiiTexture3DResource::UpdateContent(xiiStreamReader* Stream)
 
   {
 
-    const xiiUInt32 uiNumMipmapsLowRes =
-      xiiTextureUtils::s_bForceFullQualityAlways ? pImage->GetNumMipLevels() : xiiMath::Min(pImage->GetNumMipLevels(), 6U);
-    xiiUInt32 uiUploadNumMipLevels = 0;
-    bool      bCouldLoadMore       = false;
+    const xiiUInt32 uiNumMipmapsLowRes   = xiiTextureUtils::s_bForceFullQualityAlways ? pImage->GetNumMipLevels() : xiiMath::Min(pImage->GetNumMipLevels(), 6U);
+    xiiUInt32       uiUploadNumMipLevels = 0;
+    bool            bCouldLoadMore       = false;
 
     if (bIsFallback)
     {
@@ -252,9 +254,9 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture3DResource, xiiTexture3DResourceDesc
   m_uiDepth  = descriptor.m_DescGAL.m_uiArraySizeOrDepth;
 
   xiiGALTextureData textureData;
-  textureData.m_SubResources   = descriptor.m_InitialContent;
-  descriptor.m_DescGAL.m_sName = GetResourceDescription();
   descriptor.m_DescGAL.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
+  textureData.m_SubResources        = descriptor.m_InitialContent;
+  descriptor.m_DescGAL.m_sName      = GetResourceDescription();
   m_hGALTexture[m_uiLoadedTextures] = pDevice->CreateTexture(descriptor.m_DescGAL, &textureData);
 
   XII_ASSERT_DEV(!m_hGALTexture[m_uiLoadedTextures].IsInvalidated(), "Texture Data could not be uploaded to the GPU");

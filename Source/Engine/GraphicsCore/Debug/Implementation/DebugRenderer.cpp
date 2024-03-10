@@ -241,7 +241,9 @@ namespace
       desc.m_uiElementByteStride = uiStructSize;
       desc.m_uiSize              = DEBUG_BUFFER_SIZE;
       desc.m_Mode                = xiiGALBufferMode::Structured;
-      desc.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
+      desc.m_BindFlags           = xiiGALBindFlags::ShaderResource;
+      desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+      desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
       s_hDataBuffer[bufferType] = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
     }
@@ -254,7 +256,9 @@ namespace
       xiiGALBufferCreationDescription desc;
       desc.m_uiElementByteStride = uiVertexSize;
       desc.m_uiSize              = DEBUG_BUFFER_SIZE;
-      desc.m_BindFlags.Add(xiiGALBindFlags::VertexBuffer);
+      desc.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
+      desc.m_ResourceUsage       = xiiGALResourceUsage::Dynamic;
+      desc.m_CPUAccessFlags      = xiiGALCPUAccessFlag::Write;
 
       s_hDataBuffer[bufferType] = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
     }
@@ -1822,38 +1826,19 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiScriptExtensionClass_Debug, xiiNoBase, 1, xii
 {
   XII_BEGIN_FUNCTIONS
   {
-    XII_SCRIPT_FUNCTION_PROPERTY(DrawCross, In, "World", In, "Position", In, "Size", In, "Color", In, "Transform")->AddAttributes(
-      new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(0.1f)),
-      new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute())),
-    XII_SCRIPT_FUNCTION_PROPERTY(DrawLineBox, In, "World", In, "Position", In, "HalfExtents", In, "Color", In, "Transform")->AddAttributes(
-      new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(xiiVec3(1))),
-      new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute())),
-    XII_SCRIPT_FUNCTION_PROPERTY(DrawLineSphere, In, "World", In, "Position", In, "Radius", In, "Color", In, "Transform")->AddAttributes(
-      new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(1.0f)),
-      new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute())),
+    XII_SCRIPT_FUNCTION_PROPERTY(DrawCross, In, "World", In, "Position", In, "Size", In, "Color", In, "Transform")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(0.1f)),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute())),
+    XII_SCRIPT_FUNCTION_PROPERTY(DrawLineBox, In, "World", In, "Position", In, "HalfExtents", In, "Color", In, "Transform")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(xiiVec3(1))),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute())),
+    XII_SCRIPT_FUNCTION_PROPERTY(DrawLineSphere, In, "World", In, "Position", In, "Radius", In, "Color", In, "Transform")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(1.0f)),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute())),
 
-    XII_SCRIPT_FUNCTION_PROPERTY(DrawSolidBox, In, "World", In, "Position", In, "HalfExtents", In, "Color", In, "Transform")->AddAttributes(
-      new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(xiiVec3(1))),
-      new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute())),
+    XII_SCRIPT_FUNCTION_PROPERTY(DrawSolidBox, In, "World", In, "Position", In, "HalfExtents", In, "Color", In, "Transform")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(xiiVec3(1))),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute())),
     
-    XII_SCRIPT_FUNCTION_PROPERTY(Draw2DText, In, "World", In, "Text", In, "Position", In, "Color", In, "SizeInPixel", In, "HAlign")->AddAttributes(
-      new xiiFunctionArgumentAttributes(4, new xiiDefaultValueAttribute(16))),
-    XII_SCRIPT_FUNCTION_PROPERTY(Draw3DText, In, "World", In, "Text", In, "Position", In, "Color", In, "SizeInPixel")->AddAttributes(
-      new xiiFunctionArgumentAttributes(4, new xiiDefaultValueAttribute(16))),
+    XII_SCRIPT_FUNCTION_PROPERTY(Draw2DText, In, "World", In, "Text", In, "Position", In, "Color", In, "SizeInPixel", In, "HAlign")->AddAttributes(new xiiFunctionArgumentAttributes(4, new xiiDefaultValueAttribute(16))),
+    XII_SCRIPT_FUNCTION_PROPERTY(Draw3DText, In, "World", In, "Text", In, "Position", In, "Color", In, "SizeInPixel")->AddAttributes(new xiiFunctionArgumentAttributes(4, new xiiDefaultValueAttribute(16))),
     XII_SCRIPT_FUNCTION_PROPERTY(DrawInfoText, In, "World", In, "Text", In, "Placement", In, "Group", In, "Color"),
 
-    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentCross, In, "World", In, "Position", In, "Size", In, "Color", In, "Transform", In, "Duration")->AddAttributes(
-      new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(0.1f)),
-      new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),
-      new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
-    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineBox, In, "World", In, "Position", In, "HalfExtents", In, "Color", In, "Transform", In, "Duration")->AddAttributes(
-      new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(xiiVec3(1))),
-      new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),
-      new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
-    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineSphere, In, "World", In, "Position", In, "Radius", In, "Color", In, "Transform", In, "Duration")->AddAttributes(
-      new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(1.0f)),
-      new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),
-      new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
+    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentCross, In, "World", In, "Position", In, "Size", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(0.1f)),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
+    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineBox, In, "World", In, "Position", In, "HalfExtents", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(xiiVec3(1))),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
+    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineSphere, In, "World", In, "Position", In, "Radius", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(1.0f)),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
   }
   XII_END_FUNCTIONS;
   XII_BEGIN_ATTRIBUTES

@@ -2,12 +2,21 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
+#include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Strings/HashedString.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/Object.h>
+
+template <>
+struct xiiHashHelper<xiiGALPipelineStateCreationDescription>;
+using PipelineStateHashHelper = xiiHashHelper<xiiGALPipelineStateCreationDescription>;
+
+template <>
+struct xiiHashHelper<xiiGALPipelineResourceSignatureCreationDescription>;
+using PipelineResourceSignatureHashHelper = xiiHashHelper<xiiGALPipelineResourceSignatureCreationDescription>;
 
 /// \brief The xiiRenderDevice class is the primary interface for interactions with rendering APIs.
 /// It contains a set of (non-virtual) functions to set state, create resources etc. which rely on API specific implementations provided by protected virtual functions.
@@ -31,13 +40,6 @@ public:
   void EndPipeline(xiiGALSwapChainHandle hSwapChain);
 
 
-  /// \brief Begins a pass scope.
-  XII_NODISCARD xiiGALPass* BeginPass(xiiStringView sName);
-
-  /// \brief Ends a pass scope.
-  void EndPass(xiiGALPass* pPass);
-
-
   /// \brief Begins a render frame.
   void BeginFrame(const xiiUInt64 uiRenderFrame = 0U);
 
@@ -54,6 +56,18 @@ public:
 
   /// \brief This destroys the swap chain with the given handle.
   void DestroySwapChain(xiiGALSwapChainHandle hSwapChain);
+
+
+  /// \brief This creates a new command list object.
+  ///
+  /// \param description - The command list description. See xiiGALBlendStateCreationDescription.
+  ///
+  /// \return The handle to the created command list object. The function calls AddRef(), so that the new object will have one reference.
+  XII_NODISCARD xiiGALCommandListHandle CreateCommandList(const xiiGALCommandListCreationDescription& description);
+
+  /// \brief This destroys the command list with the given handle.
+  void DestroyCommandList(xiiGALCommandListHandle hCommandList);
+
 
   /// \brief This creates a new blend state object.
   ///
@@ -261,12 +275,34 @@ public:
   void DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS);
 
 
+  /// \brief This creates a new pipeline resource signature object.
+  ///
+  /// \param description - The pipeline resource signature description. See xiiGALPipelineResourceSignatureCreationDescription.
+  ///
+  /// \return The handle to the created pipeline resource signature object. The function calls AddRef(), so that the new object will have one reference.
+  XII_NODISCARD xiiGALPipelineResourceSignatureHandle CreatePipelineResourceSignature(const xiiGALPipelineResourceSignatureCreationDescription& description);
+
+  /// \brief This destroys the pipeline resource signature with the given handle.
+  void DestroyPipelineResourceSignature(xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature);
+
+
+  /// \brief This creates a new pipeline state object.
+  ///
+  /// \param description - The pipeline state description. See xiiGALPipelineStateCreationDescription.
+  ///
+  /// \return The handle to the created pipeline state object. The function calls AddRef(), so that the new object will have one reference.
+  XII_NODISCARD xiiGALPipelineStateHandle CreatePipelineState(const xiiGALPipelineStateCreationDescription& description);
+
+  /// \brief This destroys the pipeline state with the given handle.
+  void DestroyPipelineState(xiiGALPipelineStateHandle hPipelineState);
+
+
   /// \brief Waits until all outstanding operations on the GPU are complete and destroys any pending resources and GPU objects.
   ///
   /// \note The method blocks the execution of the calling thread until the GPU is idle.
   ///
   /// \remarks The method does not flush immediate contexts, so it will only wait for commands that have been previously submitted for execution. An application should explicitly flush
-  ///          the contexts using xiiGALCommandEncoder::Flush() if it needs to make sure all recorded commands are complete when the method returns.
+  ///          the contexts using xiiGALCommandList::Flush() if it needs to make sure all recorded commands are complete when the method returns.
   void WaitIdle();
 
 public:
@@ -278,6 +314,9 @@ public:
 
   /// \brief Retrieves a pointer to the swap chain object with the given handle.
   XII_NODISCARD xiiGALSwapChain* GetSwapChain(xiiGALSwapChainHandle hSwapChain) const;
+
+  /// \brief Retrieves a pointer to the command list object with the given handle.
+  XII_NODISCARD xiiGALCommandList* GetCommandList(xiiGALCommandListHandle hCommandList) const;
 
   /// \brief Retrieves a pointer to the blend state object with the given handle.
   XII_NODISCARD xiiGALBlendState* GetBlendState(xiiGALBlendStateHandle hBlendState) const;
@@ -327,23 +366,20 @@ public:
   /// \brief Retrieves a pointer to the top-level acceleration structure object with the given handle.
   XII_NODISCARD xiiGALTopLevelAS* GetTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS) const;
 
+  /// \brief Retrieves a pointer to the pipeline resource signature object with the given handle.
+  XII_NODISCARD xiiGALPipelineResourceSignature* GetPipelineResourceSignature(xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature) const;
+
+  /// \brief Retrieves a pointer to the pipeline state object with the given handle.
+  XII_NODISCARD xiiGALPipelineState* GetPipelineState(xiiGALPipelineStateHandle hPipelineState) const;
+
   /// \brief This retrieves the device properties. See xiiGraphicsDeviceAdapterDescription.
   XII_NODISCARD const xiiGALGraphicsDeviceAdapterDescription& GetGraphicsDeviceAdapterProperties() const;
 
+  /// \brief This retrieves the device feature states. See xiiGALDeviceFeatures.
+  XII_NODISCARD const xiiGALDeviceFeatures& GetFeatures() const;
+
   /// \brief This retrieves the device graphics API type. See xiiGALGraphicsDeviceType.
   XII_NODISCARD xiiEnum<xiiGALGraphicsDeviceType> GetGraphicsDeviceType() const;
-
-  /// \brief This returns the basic texture information for a particular format.
-  ///
-  /// \param format - The texture format for which to provide the information.
-  ///
-  /// \return A const reference to the xiiGALTextureFormatDescription structure containing the texture format description.
-  ///
-  /// \remarks This method must be externally synchronized.
-  XII_NODISCARD const xiiGALTextureFormatDescription& GetTextureFormatProperties(xiiEnum<xiiGALTextureFormat> format) const;
-
-  /// \brief This returns the sparse texture format information for the given texture format, resource dimension and sample count.
-  XII_NODISCARD const xiiGALSparseTextureProperties GetSparseTextureProperties(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount) const;
 
   /// \brief This returns critical section lock.
   XII_NODISCARD xiiMutex& GetMutex() const;
@@ -374,12 +410,12 @@ protected:
   ReturnType* Get(typename IdTableType::TypeOfId hHandle, const IdTableType& IdTable) const;
 
   template <typename HandleType>
-  void AddDeadObject(xiiUInt32 uiType, HandleType handle);
+  void AddDestroyedObject(xiiUInt32 uiType, HandleType handle);
 
   template <typename HandleType>
-  void ReviveDeadObject(xiiUInt32 uiType, HandleType handle);
+  void ReviveDestroyedObject(xiiUInt32 uiType, HandleType handle);
 
-  void DestroyDeadObjects();
+  void FlushDestroyedObjects();
 
   void DestroyViews(xiiGALResource* pResource);
 
@@ -393,50 +429,58 @@ protected:
 
   mutable xiiMutex m_Mutex;
 
-  using SwapChainTable         = xiiIdTable<xiiGALSwapChainHandle::IdType, xiiGALSwapChain*, xiiLocalAllocatorWrapper>;
-  using BlendStateTable        = xiiIdTable<xiiGALBlendStateHandle::IdType, xiiGALBlendState*, xiiLocalAllocatorWrapper>;
-  using DepthStencilStateTable = xiiIdTable<xiiGALDepthStencilStateHandle::IdType, xiiGALDepthStencilState*, xiiLocalAllocatorWrapper>;
-  using RasterizerStateTable   = xiiIdTable<xiiGALRasterizerStateHandle::IdType, xiiGALRasterizerState*, xiiLocalAllocatorWrapper>;
-  using ShaderTable            = xiiIdTable<xiiGALShaderHandle::IdType, xiiGALShader*, xiiLocalAllocatorWrapper>;
-  using BufferTable            = xiiIdTable<xiiGALBufferHandle::IdType, xiiGALBuffer*, xiiLocalAllocatorWrapper>;
-  using TextureTable           = xiiIdTable<xiiGALTextureHandle::IdType, xiiGALTexture*, xiiLocalAllocatorWrapper>;
-  using BufferViewTable        = xiiIdTable<xiiGALBufferViewHandle::IdType, xiiGALBufferView*, xiiLocalAllocatorWrapper>;
-  using TextureViewTable       = xiiIdTable<xiiGALTextureViewHandle::IdType, xiiGALTextureView*, xiiLocalAllocatorWrapper>;
-  using SamplerTable           = xiiIdTable<xiiGALSamplerHandle::IdType, xiiGALSampler*, xiiLocalAllocatorWrapper>;
-  using InputLayoutTable       = xiiIdTable<xiiGALInputLayoutHandle::IdType, xiiGALInputLayout*, xiiLocalAllocatorWrapper>;
-  using QueryTable             = xiiIdTable<xiiGALQueryHandle::IdType, xiiGALQuery*, xiiLocalAllocatorWrapper>;
-  using FenceTable             = xiiIdTable<xiiGALFenceHandle::IdType, xiiGALFence*, xiiLocalAllocatorWrapper>;
-  using RenderPassTable        = xiiIdTable<xiiGALRenderPassHandle::IdType, xiiGALRenderPass*, xiiLocalAllocatorWrapper>;
-  using FramebufferTable       = xiiIdTable<xiiGALFramebufferHandle::IdType, xiiGALFramebuffer*, xiiLocalAllocatorWrapper>;
-  using BottomLevelASTable     = xiiIdTable<xiiGALBottomLevelASHandle::IdType, xiiGALBottomLevelAS*, xiiLocalAllocatorWrapper>;
-  using TopLevelASTable        = xiiIdTable<xiiGALTopLevelASHandle::IdType, xiiGALTopLevelAS*, xiiLocalAllocatorWrapper>;
+  using SwapChainTable                 = xiiIdTable<xiiGALSwapChainHandle::IdType, xiiGALSwapChain*, xiiLocalAllocatorWrapper>;
+  using CommandListTable               = xiiIdTable<xiiGALCommandListHandle::IdType, xiiGALCommandList*, xiiLocalAllocatorWrapper>;
+  using BlendStateTable                = xiiIdTable<xiiGALBlendStateHandle::IdType, xiiGALBlendState*, xiiLocalAllocatorWrapper>;
+  using DepthStencilStateTable         = xiiIdTable<xiiGALDepthStencilStateHandle::IdType, xiiGALDepthStencilState*, xiiLocalAllocatorWrapper>;
+  using RasterizerStateTable           = xiiIdTable<xiiGALRasterizerStateHandle::IdType, xiiGALRasterizerState*, xiiLocalAllocatorWrapper>;
+  using ShaderTable                    = xiiIdTable<xiiGALShaderHandle::IdType, xiiGALShader*, xiiLocalAllocatorWrapper>;
+  using BufferTable                    = xiiIdTable<xiiGALBufferHandle::IdType, xiiGALBuffer*, xiiLocalAllocatorWrapper>;
+  using TextureTable                   = xiiIdTable<xiiGALTextureHandle::IdType, xiiGALTexture*, xiiLocalAllocatorWrapper>;
+  using BufferViewTable                = xiiIdTable<xiiGALBufferViewHandle::IdType, xiiGALBufferView*, xiiLocalAllocatorWrapper>;
+  using TextureViewTable               = xiiIdTable<xiiGALTextureViewHandle::IdType, xiiGALTextureView*, xiiLocalAllocatorWrapper>;
+  using SamplerTable                   = xiiIdTable<xiiGALSamplerHandle::IdType, xiiGALSampler*, xiiLocalAllocatorWrapper>;
+  using InputLayoutTable               = xiiIdTable<xiiGALInputLayoutHandle::IdType, xiiGALInputLayout*, xiiLocalAllocatorWrapper>;
+  using QueryTable                     = xiiIdTable<xiiGALQueryHandle::IdType, xiiGALQuery*, xiiLocalAllocatorWrapper>;
+  using FenceTable                     = xiiIdTable<xiiGALFenceHandle::IdType, xiiGALFence*, xiiLocalAllocatorWrapper>;
+  using RenderPassTable                = xiiIdTable<xiiGALRenderPassHandle::IdType, xiiGALRenderPass*, xiiLocalAllocatorWrapper>;
+  using FramebufferTable               = xiiIdTable<xiiGALFramebufferHandle::IdType, xiiGALFramebuffer*, xiiLocalAllocatorWrapper>;
+  using BottomLevelASTable             = xiiIdTable<xiiGALBottomLevelASHandle::IdType, xiiGALBottomLevelAS*, xiiLocalAllocatorWrapper>;
+  using TopLevelASTable                = xiiIdTable<xiiGALTopLevelASHandle::IdType, xiiGALTopLevelAS*, xiiLocalAllocatorWrapper>;
+  using PipelineStateTable             = xiiIdTable<xiiGALPipelineStateHandle::IdType, xiiGALPipelineState*, xiiLocalAllocatorWrapper>;
+  using PipelineResourceSignatureTable = xiiIdTable<xiiGALPipelineResourceSignatureHandle::IdType, xiiGALPipelineResourceSignature*, xiiLocalAllocatorWrapper>;
 
-  SwapChainTable         m_SwapChains;
-  BlendStateTable        m_BlendStates;
-  DepthStencilStateTable m_DepthStencilStates;
-  RasterizerStateTable   m_RasterizerStates;
-  ShaderTable            m_Shaders;
-  BufferTable            m_Buffers;
-  TextureTable           m_Textures;
-  BufferViewTable        m_BufferViews;
-  TextureViewTable       m_TextureViews;
-  SamplerTable           m_Samplers;
-  InputLayoutTable       m_InputLayouts;
-  QueryTable             m_Queries;
-  FenceTable             m_Fences;
-  RenderPassTable        m_RenderPasses;
-  FramebufferTable       m_Framebuffers;
-  BottomLevelASTable     m_BottomLevelAccelerationStructures;
-  TopLevelASTable        m_TopLevelAccelerationStructures;
+  SwapChainTable                 m_SwapChains;
+  CommandListTable               m_CommandLists;
+  BlendStateTable                m_BlendStates;
+  DepthStencilStateTable         m_DepthStencilStates;
+  RasterizerStateTable           m_RasterizerStates;
+  ShaderTable                    m_Shaders;
+  BufferTable                    m_Buffers;
+  TextureTable                   m_Textures;
+  BufferViewTable                m_BufferViews;
+  TextureViewTable               m_TextureViews;
+  SamplerTable                   m_Samplers;
+  InputLayoutTable               m_InputLayouts;
+  QueryTable                     m_Queries;
+  FenceTable                     m_Fences;
+  RenderPassTable                m_RenderPasses;
+  FramebufferTable               m_Framebuffers;
+  BottomLevelASTable             m_BottomLevelAccelerationStructures;
+  TopLevelASTable                m_TopLevelAccelerationStructures;
+  PipelineStateTable             m_PipelineStates;
+  PipelineResourceSignatureTable m_PipelineResourceSignatures;
 
   // Deduplication Contexts: Hash tables used to prevent state object duplication.
-  xiiHashTable<xiiUInt32, xiiGALBlendStateHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>        m_BlendStateTable;
-  xiiHashTable<xiiUInt32, xiiGALDepthStencilStateHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper> m_DepthStencilStateTable;
-  xiiHashTable<xiiUInt32, xiiGALRasterizerStateHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>   m_RasterizerStateTable;
-  xiiHashTable<xiiUInt32, xiiGALSamplerHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>           m_SamplerTable;
-  xiiHashTable<xiiUInt32, xiiGALInputLayoutHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>       m_InputLayoutTable;
+  xiiHashTable<xiiUInt32, xiiGALBlendStateHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>                           m_BlendStateTable;
+  xiiHashTable<xiiUInt32, xiiGALDepthStencilStateHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>                    m_DepthStencilStateTable;
+  xiiHashTable<xiiUInt32, xiiGALRasterizerStateHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>                      m_RasterizerStateTable;
+  xiiHashTable<xiiUInt32, xiiGALSamplerHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>                              m_SamplerTable;
+  xiiHashTable<xiiUInt32, xiiGALInputLayoutHandle, xiiHashHelper<xiiUInt32>, xiiLocalAllocatorWrapper>                          m_InputLayoutTable;
+  xiiHashTable<xiiUInt32, xiiGALPipelineStateHandle, PipelineStateHashHelper, xiiLocalAllocatorWrapper>                         m_PipelineStateTable;
+  xiiHashTable<xiiUInt32, xiiGALPipelineResourceSignatureHandle, PipelineResourceSignatureHashHelper, xiiLocalAllocatorWrapper> m_PipelineResourceSignatureTable;
 
-  struct DeadObject
+  struct DestroyedObject
   {
     XII_DECLARE_POD_TYPE();
 
@@ -444,11 +488,10 @@ protected:
     xiiUInt32 m_uiHandle;
   };
 
-  xiiDynamicArray<DeadObject, xiiLocalAllocatorWrapper> m_DeadObjects;
+  xiiDynamicArray<DestroyedObject, xiiLocalAllocatorWrapper> m_DestroyedObjects;
 
   xiiGALGraphicsDeviceAdapterDescription m_AdapterDescription;
 
-  xiiEnum<xiiGALGraphicsDeviceType> m_Type;
   // Deactivate Doxygen document generation for the following block. (API abstraction only)
   /// \cond
 
@@ -462,14 +505,14 @@ protected:
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) = 0;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain)                        = 0;
 
-  virtual xiiGALPass* BeginPassPlatform(xiiStringView sName) = 0;
-  virtual void        EndPassPlatform(xiiGALPass* pPass)     = 0;
-
   virtual void BeginFramePlatform(const xiiUInt64 uiRenderFrame = 0U) = 0;
   virtual void EndFramePlatform()                                     = 0;
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) = 0;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)                          = 0;
+
+  virtual xiiGALCommandList* CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description) = 0;
+  virtual void               DestroyCommandListPlatform(xiiGALCommandList* pCommandList)                        = 0;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) = 0;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState)                         = 0;
@@ -519,6 +562,12 @@ protected:
   virtual xiiGALTopLevelAS* CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description) = 0;
   virtual void              DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS)                         = 0;
 
+  virtual xiiGALPipelineResourceSignature* CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description) = 0;
+  virtual void                             DestroyPipelineResourceSignaturePlatform(xiiGALPipelineResourceSignature* pPipelineResourceSignature)          = 0;
+
+  virtual xiiGALPipelineState* CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description) = 0;
+  virtual void                 DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState)                      = 0;
+
   virtual void WaitIdlePlatform() = 0;
 
   virtual void FillCapabilitiesPlatform() = 0;
@@ -535,7 +584,6 @@ private:
 private:
   bool m_bBeginFrameCalled    = false;
   bool m_bBeginPipelineCalled = false;
-  bool m_bBeginPassCalled     = false;
 };
 
 #include <GraphicsFoundation/Device/Implementation/Device_inl.h>

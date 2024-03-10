@@ -97,6 +97,9 @@ public:
   static Diligent::PRIMITIVE_TOPOLOGY GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e);
 
   static xiiEnum<xiiGALDeviceFeatureState> GetGALDeviceFeatureState(Diligent::DEVICE_FEATURE_STATE e);
+
+  static Diligent::PIPELINE_STAGE_FLAGS GetPipelineStageFlags(xiiBitflags<xiiGALPipelineStageFlags> e);
+  static Diligent::ACCESS_FLAGS         GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/DiligentTypeConversions_inl.h>

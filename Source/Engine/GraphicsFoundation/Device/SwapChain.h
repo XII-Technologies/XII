@@ -4,7 +4,6 @@
 
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
-#include <GraphicsFoundation/Resources/RenderTargetSetup.h>
 
 /// \brief Interface that defines methods to manipulate a swap chain object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChain : public xiiGALDeviceObject
@@ -44,8 +43,6 @@ public:
 
   void SetPresentMode(xiiEnum<xiiGALPresentMode> presentMode);
 
-  const xiiGALRenderTargets& GetRenderTargets() const;
-
   XII_NODISCARD xiiGALTextureHandle GetBackBufferTexture() const;
 
   XII_NODISCARD xiiSizeU32 GetCurrentSize() const;
@@ -64,7 +61,7 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 
-  xiiGALRenderTargets        m_RenderTargets;
+  xiiGALTextureHandle        m_hBackBufferTexture;
   xiiSizeU32                 m_CurrentSize = {};
   xiiEnum<xiiGALPresentMode> m_PresentMode = xiiGALPresentMode::VSync;
 

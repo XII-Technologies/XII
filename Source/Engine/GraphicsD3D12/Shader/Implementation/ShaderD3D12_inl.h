@@ -1,18 +1,4 @@
 
-/// \todo GraphicsD3D12: Implement Shader Object overrides.
-
-XII_FORCE_INLINE xiiUInt32 xiiGALShaderD3D12::GetResourceCount() const
-{
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return xiiInvalidIndex;
-}
-
-XII_FORCE_INLINE void xiiGALShaderD3D12::GetResourceDescription(xiiUInt32 uiIndex, xiiGALShaderResourceDescription& out_ResourceDescription) const
-{
-  XII_ASSERT_NOT_IMPLEMENTED;
-}
-
 XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D12::GetVertexShader() const
 {
   return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)];
@@ -83,17 +69,7 @@ XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D12::GetCallableShader() cons
   return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Callable)];
 }
 
-XII_ALWAYS_INLINE xiiArrayPtr<Diligent::IPipelineResourceSignature*> xiiGALShaderD3D12::GetResourceSignatures()
+XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D12::GetTileShader() const
 {
-  return m_PipelineResourceSignatures;
-}
-
-XII_ALWAYS_INLINE xiiArrayPtr<xiiGALVertexInputLayout> xiiGALShaderD3D12::GetInputLayouts()
-{
-  return m_VertexInputLayouts;
-}
-
-XII_ALWAYS_INLINE xiiArrayPtr<xiiGALShaderResourceBinding> xiiGALShaderD3D12::GetShaderResourceBinding(xiiBitflags<xiiGALShaderStage> e)
-{
-  return m_ShaderResourceBindings[xiiGALShaderStage::GetStageIndex(e)];
+  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Tile)];
 }

@@ -366,7 +366,7 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
 
     XII_LOG_BLOCK(pLog, "Platform", Platforms[p]);
 
-    xiiShaderProgramCompiler::xiiShaderProgramData spd;
+    xiiShaderProgramData spd;
     spd.m_sSourceFile = sFile;
     spd.m_sPlatform   = Platforms[p];
 
@@ -429,10 +429,10 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
       }
     }
 
+    // Shader Preprocessing
     for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
     {
-      spd.m_StageBinary[stage].m_Stage        = xiiGALShaderStage::GetStageFlag(stage);
-      spd.m_StageBinary[stage].m_uiSourceHash = 0;
+      spd.m_uiSourceHash[stage] = 0;
 
       if (m_ShaderData.m_ShaderStageSource[stage].IsEmpty())
         continue;
@@ -461,7 +461,6 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
         XII_SUCCEED_OR_RETURN(pp.AddCustomDefine(define));
       }
 
-      xiiUInt32 uiSourceStringLen = 0;
       if (pp.Process(m_StageSourceFile[stage], sProcessed[stage], true, true, true).Failed() || bFoundUndefinedVars)
       {
         sProcessed[stage].Clear();
@@ -473,19 +472,37 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
       else
       {
         spd.m_sShaderSource[stage] = sProcessed[stage];
-        uiSourceStringLen          = sProcessed[stage].GetElementCount();
       }
+    }
 
-      spd.m_StageBinary[stage].m_uiSourceHash = xiiHashingUtils::xxHash32(spd.m_sShaderSource[stage].GetStartPointer(), uiSourceStringLen);
+    // Let the shader compiler make any modifications to the source code before we hash and compile the shader.
+    if (pCompiler->ModifyShaderSource(spd, pLog).Failed())
+    {
+      WriteFailedShaderSource(spd, pLog);
+      return XII_FAILURE;
+    }
 
-      if (spd.m_StageBinary[stage].m_uiSourceHash != 0)
+    // Load shader cache
+    for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+    {
+      xiiUInt32 uiSourceStringLen = spd.m_sShaderSource[stage].GetElementCount();
+      spd.m_uiSourceHash[stage]   = uiSourceStringLen == 0 ? 0u : xiiHashingUtils::xxHash32(spd.m_sShaderSource[stage].GetData(), uiSourceStringLen);
+
+      if (spd.m_uiSourceHash[stage] != 0)
       {
-        xiiShaderStageBinary* pBinary = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderStage::GetStageFlag(stage), spd.m_StageBinary[stage].m_uiSourceHash);
+        xiiShaderStageBinary* pBinary = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderStage::GetStageFlag(stage), spd.m_uiSourceHash[stage]);
 
         if (pBinary)
         {
-          spd.m_StageBinary[stage]  = *pBinary;
-          spd.m_bWriteToDisk[stage] = pBinary->GetByteCode().IsEmpty();
+          spd.m_ByteCode[stage]     = pBinary->m_pGALByteCode;
+          spd.m_bWriteToDisk[stage] = false;
+        }
+        else
+        {
+          // Can't find shader with given hash on disk, create a new xiiGALShaderByteCode and let the compiler build it.
+          spd.m_ByteCode[stage]                          = XII_DEFAULT_NEW(xiiGALShaderByteCode);
+          spd.m_ByteCode[stage]->m_ShaderStage           = xiiGALShaderStage::GetStageFlag(stage);
+          spd.m_ByteCode[stage]->m_bWasCompiledWithDebug = spd.m_Flags.IsSet(xiiShaderCompilerFlags::Debug);
         }
       }
     }
@@ -493,7 +510,7 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
     // copy the source hashes
     for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
     {
-      shaderPermutationBinary.m_uiShaderStageHashes[stage] = spd.m_StageBinary[stage].m_uiSourceHash;
+      shaderPermutationBinary.m_uiShaderStageHashes[stage] = spd.m_uiSourceHash[stage];
     }
 
     // if compilation failed, the stage binary for the source hash will simply not exist and therefore cannot be loaded
@@ -506,15 +523,18 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
 
     for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
     {
-      if (spd.m_StageBinary[stage].m_uiSourceHash != 0 && spd.m_bWriteToDisk[stage])
+      if (spd.m_uiSourceHash[stage] != 0 && spd.m_bWriteToDisk[stage])
       {
-        spd.m_StageBinary[stage].m_bWasCompiledWithDebug = spd.m_Flags.IsSet(xiiShaderCompilerFlags::Debug);
+        xiiShaderStageBinary bin;
+        bin.m_uiSourceHash = spd.m_uiSourceHash[stage];
+        bin.m_pGALByteCode = spd.m_ByteCode[stage];
 
-        if (spd.m_StageBinary[stage].WriteStageBinary(pLog).Failed())
+        if (bin.WriteStageBinary(pLog).Failed())
         {
           xiiLog::Error(pLog, "Writing stage {0} binary failed", stage);
           return XII_FAILURE;
         }
+        xiiShaderStageBinary::s_ShaderStageBinaries[stage].Insert(bin.m_uiSourceHash, bin);
       }
     }
 
@@ -552,21 +572,21 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
   return XII_SUCCESS;
 }
 
-void xiiShaderCompiler::WriteFailedShaderSource(xiiShaderProgramCompiler::xiiShaderProgramData& spd, xiiLogInterface* pLog)
+void xiiShaderCompiler::WriteFailedShaderSource(xiiShaderProgramData& spd, xiiLogInterface* pLog)
 {
   for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
   {
-    if (spd.m_StageBinary[stage].m_uiSourceHash != 0 && spd.m_bWriteToDisk[stage])
+    if (spd.m_uiSourceHash[stage] != 0 && spd.m_bWriteToDisk[stage])
     {
       xiiStringBuilder sShaderStageFile = xiiShaderManager::GetCacheDirectory();
 
       sShaderStageFile.AppendPath(xiiShaderManager::GetActivePlatform());
-      sShaderStageFile.AppendFormat("/_Failed_{0}_{1}.xiiShaderSource", xiiGALShaderStage::Names[stage], xiiArgU(spd.m_StageBinary[stage].m_uiSourceHash, 8, true, 16, true));
+      sShaderStageFile.AppendFormat("/_Failed_{0}_{1}.xiiShaderSource", xiiGALShaderStage::Names[stage], xiiArgU(spd.m_uiSourceHash[stage], 8, true, 16, true));
 
       xiiFileWriter StageFileOut;
       if (StageFileOut.Open(sShaderStageFile).Succeeded())
       {
-        StageFileOut.WriteBytes(spd.m_sShaderSource[stage].GetStartPointer(), spd.m_sShaderSource[stage].GetElementCount()).AssertSuccess();
+        StageFileOut.WriteBytes(spd.m_sShaderSource[stage].GetData(), spd.m_sShaderSource[stage].GetElementCount()).AssertSuccess();
         xiiLog::Info(pLog, "Failed shader source written to '{0}'", sShaderStageFile);
       }
     }

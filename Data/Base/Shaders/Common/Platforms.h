@@ -15,6 +15,12 @@
 #  undef PLATFORM_D3D12
 #  define PLATFORM_D3D12 XII_ON
 
+// D3D12 does not support push constants, so we just emulate them via a normal constant buffer.
+
+#  define BEGIN_PUSH_CONSTANTS(Name)        cbuffer Name
+#  define END_PUSH_CONSTANTS(Name)          ;
+#  define GET_PUSH_CONSTANT(Name, Constant) Constant
+
 float xiiEvaluateAttributeAtSample(float Attribute, uint SampleIndex, uint NumMsaaSamples)
 {
   return EvaluateAttributeAtSample(Attribute, SampleIndex);
@@ -40,6 +46,12 @@ float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint Num
 
 #  undef PLATFORM_VULKAN
 #  define PLATFORM_VULKAN XII_ON
+
+#  define BEGIN_PUSH_CONSTANTS(Name) struct XII_SHADER_STRUCT XII_CONCAT(Name, _PushConstants)
+#  define END_PUSH_CONSTANTS(Name) \
+    ;                              \
+    [[vk::push_constant]] XII_CONCAT(Name, _PushConstants) Name;
+#  define GET_PUSH_CONSTANT(Name, Constant) Name.Constant
 
 // GetRenderTargetSamplePosition does not have an equivalent function in Vulkan so these values are hard-coded.
 // https://learn.microsoft.com/windows/win32/api/d3d11/ne-d3d11-d3d11_standard_multisample_quality_levels
@@ -110,7 +122,7 @@ float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint Num
 
 #endif
 
-#if defined(NULL_SM60) || defined(NULL_SM61) || defined(NULL_SM62) || defined(NULL_SM63) || defined(NULL_SM64) || defined(NULL_SM65) || defined(NULL_SM66)
+#if defined(NULL_SM)
 
 #  undef PLATFORM_SHADER
 #  define PLATFORM_SHADER XII_ON
@@ -125,17 +137,17 @@ float xiiEvaluateAttributeAtSample(float Attribute, uint SampleIndex, uint NumMs
 
 float2 xiiEvaluateAttributeAtSample(float2 Attribute, uint SampleIndex, uint NumMsaaSamples)
 {
-  return 0.0f;
+  return float2(0.0f, 0.0f);
 }
 
 float3 xiiEvaluateAttributeAtSample(float3 Attribute, uint SampleIndex, uint NumMsaaSamples)
 {
-  return 0.0f;
+  return float3(0.0f, 0.0f, 0.0f);
 }
 
 float4 xiiEvaluateAttributeAtSample(float4 Attribute, uint SampleIndex, uint NumMsaaSamples)
 {
-  return 0.0f;
+  return float4(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
 #endif

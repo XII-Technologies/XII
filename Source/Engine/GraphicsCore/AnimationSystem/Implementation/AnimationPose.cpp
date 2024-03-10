@@ -2,7 +2,7 @@
 
 #include <GraphicsCore/AnimationSystem/AnimationPose.h>
 #include <GraphicsCore/AnimationSystem/Skeleton.h>
-#include <GraphicsCore/Shader/Types.h>
+#include <GraphicsFoundation/Shader/Types.h>
 
 // clang-format off
 XII_IMPLEMENT_MESSAGE_TYPE(xiiMsgAnimationPosePreparing);

@@ -12,14 +12,7 @@ class XII_SHADERCOMPILER_DLL xiiShaderCompilerProgram : public xiiShaderProgramC
 public:
   virtual void GetSupportedPlatforms(xiiHybridArray<xiiString, 4>& Platforms) override
   {
-    Platforms.PushBack("NULL_SM51");
-    Platforms.PushBack("NULL_SM60"); /// Wave intrinsics, 64-bit integers
-    Platforms.PushBack("NULL_SM61"); /// SV_ViewID, SV_Barycentrics
-    Platforms.PushBack("NULL_SM62"); /// 16-bit types, Denorm mode
-    Platforms.PushBack("NULL_SM63"); /// Hardware accelerated ray tracing
-    Platforms.PushBack("NULL_SM64"); /// Shader integer dot product, SV_ShadingRate
-    Platforms.PushBack("NULL_SM65"); /// DXR1.1 (KHR ray tracing), Mesh and Amplification shaders, additional Wave intrinsics (Partial Support is available)
-    Platforms.PushBack("NULL_SM66"); /// VK_NV_compute_shader_derivatives, VK_KHR_shader_atomic_int64 (Partial Support is available)
+    Platforms.PushBack("NULL_SM");
 
 #if BUILDSYSTEM_ENABLE_D3D12_SUPPORT && XII_ENABLED(XII_PLATFORM_WINDOWS)
     Platforms.PushBack("D3D_SM51");
@@ -43,6 +36,8 @@ public:
     Platforms.PushBack("VK_SM66"); /// VK_NV_compute_shader_derivatives, VK_KHR_shader_atomic_int64 (Partial Support is available)
 #endif
   }
+
+  virtual xiiResult ModifyShaderSource(xiiShaderProgramData& inout_data, xiiLogInterface* pLog) override;
 
   virtual xiiResult Compile(xiiShaderProgramData& inout_Data, xiiLogInterface* pLog) override;
 

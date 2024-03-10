@@ -21,6 +21,7 @@
 ////////// Forward Declarations //////////
 
 struct xiiGALSwapChainCreationDescription;
+struct xiiGALCommandListCreationDescription;
 struct xiiGALBLASTriangleDescription;
 struct xiiGALBLASBoundingBoxDescription;
 struct xiiGALBottomLevelASCreationDescription;
@@ -58,30 +59,20 @@ struct xiiGALLayoutElement;
 struct xiiGALInputLayoutCreationDescription;
 struct xiiGALShaderResourceDescription;
 struct xiiGALShaderVariableDescription;
-struct xiiGALShaderBufferDescription;
 struct xiiGALShaderCreationDescription;
-struct xiiGALShaderResourceVariableCreationDescription;
 struct xiiGALRenderTargetBlendDescription;
 struct xiiGALBlendStateCreationDescription;
 struct xiiGALStencilOperationDescription;
 struct xiiGALDepthStencilStateCreationDescription;
 struct xiiGALRasterizerStateCreationDescription;
+struct xiiGALPipelineStateCreationDescription;
+struct xiiGALPipelineResourceSignatureCreationDescription;
 
-class xiiGALCommandEncoder;
-class xiiGALGraphicsCommandEncoder;
-class xiiGALCommandEncoderCommonPlatformInterface;
-class xiiGALCommandEncoderGraphicsPlatformInterface;
-class xiiGALCommandEncoderComputePlatformInterface;
 class xiiGALCommandList;
 class xiiGALCommandQueue;
-class xiiGALComputeCommandEncoder;
-class xiiGALGraphicsCommandEncoder;
-struct xiiGALCommandEncoderState;
-struct xiiGALCommandEncoderGraphicsState;
 class xiiGALObject;
 class xiiGALDeviceObject;
 class xiiGALDevice;
-class xiiGALPass;
 class xiiGALSwapChain;
 class xiiGALResource;
 class xiiGALBottomLevelAS;
@@ -101,5 +92,6 @@ class xiiGALShaderByteCode;
 class xiiGALShaderResourceVariable;
 class xiiGALBlendState;
 class xiiGALDepthStencilState;
+class xiiGALPipelineResourceSignature;
 class xiiGALPipelineState;
 class xiiGALRasterizerState;

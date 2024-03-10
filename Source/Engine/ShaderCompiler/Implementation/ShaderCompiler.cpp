@@ -7,8 +7,6 @@
 #include <Foundation/Memory/MemoryUtils.h>
 #include <Foundation/Strings/StringConversion.h>
 
-#include <ShaderCompiler/ShaderMetadata.h>
-
 #if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 #  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D12.h>
 #endif
@@ -54,10 +52,12 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiStringView xiiShaderCompilerProgram::GetProfileName(xiiStringView sPlatform, xiiBitflags<xiiGALShaderStage> Stage)
 {
+  if (sPlatform == "NULL_SM")
+    return "null_sm";
+
   xiiStringBuilder sPlatformStripped = sPlatform;
   sPlatformStripped.ReplaceFirst("D3D_", "");
   sPlatformStripped.ReplaceFirst("VK_", "");
-  sPlatformStripped.ReplaceFirst("NULL_", "");
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM40_93"))
   {
@@ -277,7 +277,7 @@ xiiEnum<xiiGALGraphicsDeviceType> xiiShaderCompilerProgram::GetProfileNameDevice
   xiiStringBuilder sPlatform0 = sPlatform;
   xiiStringBuilder sProfile   = sProfileName;
 
-  if (sPlatform0 == "NULL_SM60")
+  if (sPlatform0 == "NULL_SM")
   {
     return xiiGALGraphicsDeviceType::Null;
   }
@@ -346,6 +346,11 @@ xiiResult xiiShaderCompilerProgram::Initialize(xiiStringView sPlatformName)
   return XII_SUCCESS;
 }
 
+xiiResult xiiShaderCompilerProgram::ModifyShaderSource(xiiShaderProgramData& inout_data, xiiLogInterface* pLog)
+{
+  return XII_SUCCESS;
+}
+
 xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xiiLogInterface* pLog)
 {
   XII_SUCCEED_OR_RETURN(Initialize(inout_Data.m_sPlatform));
@@ -354,38 +359,33 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
   {
     xiiBitflags<xiiGALShaderStage> stageFlag = xiiGALShaderStage::GetStageFlag(stage);
 
-    if (!inout_Data.m_StageBinary[stage].GetByteCode().IsEmpty())
+    if (inout_Data.m_uiSourceHash[stage] == 0)
+      continue;
+
+    if (!inout_Data.m_bWriteToDisk[stage] == false)
     {
       xiiLog::Debug("Shader for stage '{}' is already compiled.", xiiGALShaderStage::Names[stage]);
       continue;
     }
 
-    xiiStringView   sShaderSource = inout_Data.m_sShaderSource[stage];
-    const xiiUInt32 uiLength      = sShaderSource.GetElementCount();
+    const xiiStringBuilder sShaderSource = inout_Data.m_sShaderSource[stage];
 
-    if (uiLength > 0 && sShaderSource.FindSubString("main") != nullptr)
+    if (!sShaderSource.IsEmpty() && sShaderSource.FindSubString("main") != nullptr)
     {
+      const xiiStringBuilder sSourceFile = inout_Data.m_sSourceFile;
+
       xiiEnum<xiiGALGraphicsDeviceType> device = GetProfileNameDeviceType(inout_Data.m_sPlatform, GetProfileName(inout_Data.m_sPlatform, stageFlag));
 
       switch (device)
       {
         case xiiGALGraphicsDeviceType::Null:
-        {
-          xiiStringView sData = "XII Null Shader.";
-
-          inout_Data.m_StageBinary[stage].GetByteCode().PushBackRange(xiiMakeArrayPtr(reinterpret_cast<const xiiUInt8*>(sData.GetStartPointer()), sData.GetElementCount()));
-
-          xiiShaderResourceBinding shaderResourceBinding;
-          inout_Data.m_StageBinary[stage].AddShaderResourceBinding(shaderResourceBinding);
-
           return XII_SUCCESS;
-        }
 
 #if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
         case xiiGALGraphicsDeviceType::Direct3D12:
         {
           xiiShaderCompilerD3D12 shaderCompilerD3D12(s_pDxcUtils.RawPtr(), s_pDxcCompiler.RawPtr());
-          if (shaderCompilerD3D12.CompileShader(inout_Data.m_sSourceFile, sShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_sPlatform, stageFlag), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
+          if (shaderCompilerD3D12.CompileShader(inout_Data.m_sSourceFile, sShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_sPlatform, stageFlag), "main", inout_Data.m_ByteCode[stage]->m_ByteCode).Succeeded())
           {
             XII_SUCCEED_OR_RETURN(shaderCompilerD3D12.ReflectShaderStage(inout_Data, stageFlag, m_InputLayoutMapping));
           }
@@ -400,7 +400,7 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         case xiiGALGraphicsDeviceType::Vulkan:
         {
           xiiShaderCompilerVulkan shaderCompilerVulkan(s_pDxcUtils.RawPtr(), s_pDxcCompiler.RawPtr());
-          if (shaderCompilerVulkan.CompileShader(inout_Data.m_sSourceFile, sShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_sPlatform, stageFlag), "main", inout_Data.m_StageBinary[stage].GetByteCode()).Succeeded())
+          if (shaderCompilerVulkan.CompileShader(inout_Data.m_sSourceFile, sShaderSource, inout_Data.m_Flags.IsSet(xiiShaderCompilerFlags::Debug), GetProfileName(inout_Data.m_sPlatform, stageFlag), "main", inout_Data.m_ByteCode[stage]->m_ByteCode).Succeeded())
           {
             XII_SUCCEED_OR_RETURN(shaderCompilerVulkan.ReflectShaderStage(inout_Data, stageFlag, m_InputLayoutMapping));
           }
@@ -411,10 +411,10 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
         }
         break;
 #endif
+
           XII_DEFAULT_CASE_NOT_IMPLEMENTED;
       }
     }
   }
-
   return XII_SUCCESS;
 }

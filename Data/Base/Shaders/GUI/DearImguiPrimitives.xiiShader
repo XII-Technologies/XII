@@ -8,7 +8,7 @@ ALL
 BlendEnable0 = true
 DestinationBlend0 = BlendFactor_InverseSourceAlpha
 SourceBlend0 = BlendFactor_SourceAlpha
-DestBlendAlpha0 = BlendFactor_InverseSourceAlpha
+DestinationBlendAlpha0 = BlendFactor_InverseSourceAlpha
 ScissorEnable = true
 DepthEnable = false
 DepthWriteEnable = false

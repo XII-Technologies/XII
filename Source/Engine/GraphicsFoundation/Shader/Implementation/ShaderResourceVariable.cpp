@@ -41,7 +41,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALShaderResourceVariable::xiiGALShaderResourceVariable() :
-  xiiGALDeviceObject()
+  xiiGALObject()
 {
 }
 

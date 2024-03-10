@@ -15,9 +15,9 @@ protected:
 
   virtual ~xiiGALDepthStencilStateNull();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 };
 
 #include <GraphicsNull/States/Implementation/DepthStencilStateNull_inl.h>

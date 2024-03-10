@@ -19,7 +19,7 @@ BlendEnable0 = true
 BlendOperation0 = BlendOperation_Add
 DestinationBlend0 = BlendFactor_One
 SourceBlend0 = BlendFactor_SourceAlpha
-DestBlendAlpha0 = BlendFactor_One
+DestinationBlendAlpha0 = BlendFactor_One
 SourceBlendAlpha0 = BlendFactor_Zero
 
 [SHADER]

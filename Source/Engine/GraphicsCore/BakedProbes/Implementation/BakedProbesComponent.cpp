@@ -114,7 +114,7 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
       xiiGALPass*   pGALPass        = pGALDevice->BeginPass("BakingDebugViewUpdate");
       auto          pCommandEncoder = pGALPass->BeginCompute();
 
-      xiiBoundingBoxu32 destBox;
+      xiiBoundingBoxU32 destBox;
       destBox.m_vMin.SetZero();
       destBox.m_vMax = xiiVec3U32(task->m_uiWidth, task->m_uiHeight, 1);
 
@@ -454,6 +454,7 @@ void xiiBakedProbesComponent::RenderDebugOverlay()
     desc.m_Size.height = uiHeight;
     desc.m_Format      = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
     desc.m_BindFlags   = xiiGALBindFlags::ShaderResource;
+    desc.m_Usage       = xiiGALResourceUsage::Immutable;
 
     m_hDebugViewTexture = pDevice->CreateTexture(desc);
   }
