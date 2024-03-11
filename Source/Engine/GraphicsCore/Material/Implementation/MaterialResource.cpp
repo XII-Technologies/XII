@@ -889,7 +889,7 @@ void xiiMaterialResource::UpdateConstantBuffer(xiiShaderPermutationResource* pSh
   if (pShaderPermutation == nullptr)
     return;
 
-  xiiTempHashedString             sConstantBufferName("xiiMaterialConstants");
+  xiiTempHashedString                    sConstantBufferName("xiiMaterialConstants");
   const xiiGALShaderResourceDescription* pBinding = pShaderPermutation->GetShaderByteCode(xiiGALShaderStage::Pixel)->GetDescription(sConstantBufferName);
 
   auto pCachedValues = GetOrUpdateCachedValues();

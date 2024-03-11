@@ -11,8 +11,12 @@
 #include <GraphicsFoundation/Resources/TextureView.h>
 #include <GraphicsFoundation/Resources/TopLevelAS.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
+#include <GraphicsFoundation/Shader/ShaderByteCode.h>
+#include <GraphicsFoundation/Shader/ShaderResourceVariable.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
+#include <GraphicsFoundation/States/PipelineResourceSignature.h>
+#include <GraphicsFoundation/States/PipelineState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
 
 class XII_GRAPHICSVULKAN_DLL xiiDiligentTypeConversions
@@ -93,6 +97,7 @@ public:
   static xiiBitflags<xiiGALMiscTextureFlags> GetGALMiscTextureFlags(Diligent::MISC_TEXTURE_FLAGS e);
 
   static Diligent::MAP_FLAGS GetMapFlags(xiiBitflags<xiiGALMapFlags> e);
+  static Diligent::MAP_TYPE  GetMapType(xiiEnum<xiiGALMapType> e);
 
   static Diligent::PRIMITIVE_TOPOLOGY GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e);
 
@@ -100,6 +105,12 @@ public:
 
   static Diligent::PIPELINE_STAGE_FLAGS GetPipelineStageFlags(xiiBitflags<xiiGALPipelineStageFlags> e);
   static Diligent::ACCESS_FLAGS         GetAccessFlags(xiiBitflags<xiiGALAccessFlags> e);
+
+  static Diligent::SHADER_RESOURCE_TYPE          GetShaderResourceType(xiiEnum<xiiGALShaderResourceType> e);
+  static Diligent::SHADER_RESOURCE_VARIABLE_TYPE GetShaderResourceVariableType(xiiEnum<xiiGALShaderResourceVariableType> e);
+  static Diligent::PIPELINE_RESOURCE_FLAGS       GetPipelineResourceFlags(xiiBitflags<xiiGALPipelineResourceFlags> e);
+
+  static Diligent::PIPELINE_SHADING_RATE_FLAGS GetPipelineShadingRateFlags(xiiBitflags<xiiGALPipelineShadingRateFlags> e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/DiligentTypeConversions_inl.h>

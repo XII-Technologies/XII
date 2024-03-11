@@ -1630,6 +1630,22 @@ XII_ALWAYS_INLINE Diligent::MAP_FLAGS xiiDiligentTypeConversions::GetMapFlags(xi
   return mapFlags;
 }
 
+XII_ALWAYS_INLINE Diligent::MAP_TYPE xiiDiligentTypeConversions::GetMapType(xiiEnum<xiiGALMapType> e)
+{
+  switch (e)
+  {
+    case xiiGALMapType::Read:
+      return Diligent::MAP_READ;
+    case xiiGALMapType::Write:
+      return Diligent::MAP_WRITE;
+    case xiiGALMapType::ReadWrite:
+      return Diligent::MAP_READ_WRITE;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::MAP_READ;
+}
+
 XII_ALWAYS_INLINE Diligent::PRIMITIVE_TOPOLOGY xiiDiligentTypeConversions::GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e)
 {
   switch (e)
@@ -1852,4 +1868,84 @@ XII_ALWAYS_INLINE Diligent::ACCESS_FLAGS xiiDiligentTypeConversions::GetAccessFl
     accessFlags |= Diligent::ACCESS_FLAG_FRAGMENT_DENSITY_MAP_READ;
 
   return accessFlags;
+}
+
+XII_ALWAYS_INLINE Diligent::SHADER_RESOURCE_TYPE xiiDiligentTypeConversions::GetShaderResourceType(xiiEnum<xiiGALShaderResourceType> e)
+{
+  switch (e)
+  {
+    case xiiGALShaderResourceType::Unknown:
+      return Diligent::SHADER_RESOURCE_TYPE_UNKNOWN;
+    case xiiGALShaderResourceType::ConstantBuffer:
+      return Diligent::SHADER_RESOURCE_TYPE_CONSTANT_BUFFER;
+    case xiiGALShaderResourceType::TextureSRV:
+      return Diligent::SHADER_RESOURCE_TYPE_TEXTURE_SRV;
+    case xiiGALShaderResourceType::BufferSRV:
+      return Diligent::SHADER_RESOURCE_TYPE_BUFFER_SRV;
+    case xiiGALShaderResourceType::TextureUAV:
+      return Diligent::SHADER_RESOURCE_TYPE_TEXTURE_UAV;
+    case xiiGALShaderResourceType::BufferUAV:
+      return Diligent::SHADER_RESOURCE_TYPE_BUFFER_UAV;
+    case xiiGALShaderResourceType::Sampler:
+      return Diligent::SHADER_RESOURCE_TYPE_SAMPLER;
+    case xiiGALShaderResourceType::InputAttachment:
+      return Diligent::SHADER_RESOURCE_TYPE_INPUT_ATTACHMENT;
+    case xiiGALShaderResourceType::AccelerationStructure:
+      return Diligent::SHADER_RESOURCE_TYPE_ACCEL_STRUCT;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::SHADER_RESOURCE_TYPE_UNKNOWN;
+}
+
+XII_ALWAYS_INLINE Diligent::SHADER_RESOURCE_VARIABLE_TYPE xiiDiligentTypeConversions::GetShaderResourceVariableType(xiiEnum<xiiGALShaderResourceVariableType> e)
+{
+  switch (e)
+  {
+    case xiiGALShaderResourceVariableType::Static:
+      return Diligent::SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
+    case xiiGALShaderResourceVariableType::Mutable:
+      return Diligent::SHADER_RESOURCE_VARIABLE_TYPE_MUTABLE;
+    case xiiGALShaderResourceVariableType::Dynamic:
+      return Diligent::SHADER_RESOURCE_VARIABLE_TYPE_DYNAMIC;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return Diligent::SHADER_RESOURCE_VARIABLE_TYPE_STATIC;
+}
+
+XII_ALWAYS_INLINE Diligent::PIPELINE_RESOURCE_FLAGS xiiDiligentTypeConversions::GetPipelineResourceFlags(xiiBitflags<xiiGALPipelineResourceFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::PIPELINE_RESOURCE_FLAG_NONE;
+
+  Diligent::PIPELINE_RESOURCE_FLAGS pipelineResourceFlags = {};
+
+  if (e.IsSet(xiiGALPipelineResourceFlags::NoDynamicBuffers))
+    pipelineResourceFlags |= Diligent::PIPELINE_RESOURCE_FLAG_NO_DYNAMIC_BUFFERS;
+  if (e.IsSet(xiiGALPipelineResourceFlags::CombinedSampler))
+    pipelineResourceFlags |= Diligent::PIPELINE_RESOURCE_FLAG_COMBINED_SAMPLER;
+  if (e.IsSet(xiiGALPipelineResourceFlags::Formattedbuffer))
+    pipelineResourceFlags |= Diligent::PIPELINE_RESOURCE_FLAG_FORMATTED_BUFFER;
+  if (e.IsSet(xiiGALPipelineResourceFlags::RuntimeArray))
+    pipelineResourceFlags |= Diligent::PIPELINE_RESOURCE_FLAG_RUNTIME_ARRAY;
+  if (e.IsSet(xiiGALPipelineResourceFlags::GeneralInputAttachment))
+    pipelineResourceFlags |= Diligent::PIPELINE_RESOURCE_FLAG_GENERAL_INPUT_ATTACHMENT;
+
+  return pipelineResourceFlags;
+}
+
+XII_ALWAYS_INLINE Diligent::PIPELINE_SHADING_RATE_FLAGS xiiDiligentTypeConversions::GetPipelineShadingRateFlags(xiiBitflags<xiiGALPipelineShadingRateFlags> e)
+{
+  if (e.IsNoFlagSet())
+    return Diligent::PIPELINE_SHADING_RATE_FLAG_NONE;
+
+  Diligent::PIPELINE_SHADING_RATE_FLAGS pipelineShadingRateFlags = {};
+
+  if (e.IsSet(xiiGALPipelineShadingRateFlags::PerPrimitive))
+    pipelineShadingRateFlags |= Diligent::PIPELINE_SHADING_RATE_FLAG_PER_PRIMITIVE;
+  if (e.IsSet(xiiGALPipelineShadingRateFlags::TextureBased))
+    pipelineShadingRateFlags |= Diligent::PIPELINE_SHADING_RATE_FLAG_TEXTURE_BASED;
+
+  return pipelineShadingRateFlags;
 }

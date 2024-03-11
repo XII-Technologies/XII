@@ -32,7 +32,7 @@ xiiResult xiiGALInputLayoutVulkan::InitPlatform(xiiGALDevice* pDevice)
     return XII_FAILURE;
   }
 
-  xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputLayouts(pShaderVulkan->GetInputLayouts());
+  xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputLayouts(pShaderVulkan->GetVertexInputLayout());
 
   auto FindLocation = [&](xiiEnum<xiiGALInputLayoutSemantic> sematic, xiiEnum<xiiGALTextureFormat> format) -> xiiUInt32 {
     for (xiiUInt32 i = 0; i < vertexInputLayouts.GetCount(); ++i)
@@ -43,7 +43,6 @@ xiiResult xiiGALInputLayoutVulkan::InitPlatform(xiiGALDevice* pDevice)
         {
           xiiLog::Warning("Found matching sematic {} with differing formats: {} : {}.", sematic, format, vertexInputLayouts[i].m_Format);
         }
-
         xiiUInt32 uiLocation = vertexInputLayouts[i].m_uiSemanticIndex;
         vertexInputLayouts.RemoveAtAndSwap(i);
         return uiLocation;

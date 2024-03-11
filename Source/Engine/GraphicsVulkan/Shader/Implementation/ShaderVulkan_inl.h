@@ -1,18 +1,4 @@
 
-/// \todo GraphicsVulkan: Implement Shader Object overrides.
-
-XII_FORCE_INLINE xiiUInt32 xiiGALShaderVulkan::GetResourceCount() const
-{
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return xiiInvalidIndex;
-}
-
-XII_FORCE_INLINE void xiiGALShaderVulkan::GetResourceDescription(xiiUInt32 uiIndex, xiiGALShaderResourceDescription& out_ResourceDescription) const
-{
-  XII_ASSERT_NOT_IMPLEMENTED;
-}
-
 XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderVulkan::GetVertexShader() const
 {
   return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)];
@@ -83,17 +69,7 @@ XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderVulkan::GetCallableShader() con
   return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Callable)];
 }
 
-XII_ALWAYS_INLINE xiiArrayPtr<Diligent::IPipelineResourceSignature*> xiiGALShaderVulkan::GetResourceSignatures()
+XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderVulkan::GetTileShader() const
 {
-  return m_PipelineResourceSignatures;
-}
-
-XII_ALWAYS_INLINE xiiArrayPtr<xiiGALVertexInputLayout> xiiGALShaderVulkan::GetInputLayouts()
-{
-  return m_VertexInputLayouts;
-}
-
-XII_ALWAYS_INLINE xiiArrayPtr<xiiGALShaderResourceBinding> xiiGALShaderVulkan::GetShaderResourceBinding(xiiBitflags<xiiGALShaderStage> e)
-{
-  return m_ShaderResourceBindings[xiiGALShaderStage::GetStageIndex(e)];
+  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Tile)];
 }

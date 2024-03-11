@@ -3,27 +3,25 @@
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 
-xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan() :
-  xiiGALCommandQueue()
+#include <Diligent/Graphics/GraphicsEngine/interface/Fence.h>
+
+xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan& deviceVulkan, Diligent::IDeviceContext* pDeviceContext) :
+  xiiGALCommandQueue(), m_DeviceVulkan(deviceVulkan), m_pContext(pDeviceContext)
 {
+  {
+    Diligent::FenceDesc fenceDescription = {};
+    fenceDescription.Name                = m_pContext->GetDesc().Name;
+    fenceDescription.Type                = Diligent::FENCE_TYPE_GENERAL;
+
+    m_DeviceVulkan.GetDevice()->CreateFence(fenceDescription, &m_pFence);
+
+    m_uiCompletedFenceValue = 0;
+  }
 }
 
-xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan() = default;
-
-xiiResult xiiGALCommandQueueVulkan::InitPlatform(xiiGALDevice* pDevice)
+xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan()
 {
-  // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
-
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return m_pCommandQueue == nullptr ? XII_FAILURE : XII_SUCCESS;
-}
-
-xiiResult xiiGALCommandQueueVulkan::DeInitPlatform(xiiGALDevice* pDevice)
-{
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pCommandQueue);
-
-  return XII_SUCCESS;
+  XII_GAL_DILIGENT_PTR_RELEASE(m_pFence);
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_CommandEncoder_Implementation_CommandQueueVulkan);

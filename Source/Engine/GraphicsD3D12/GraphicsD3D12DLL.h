@@ -188,7 +188,6 @@ namespace Diligent
   class DurationQueryHelper;
 } // namespace Diligent
 
-class xiiGALCommandEncoderD3D12;
 class xiiGALCommandListD3D12;
 class xiiGALCommandQueueD3D12;
 class xiiGALDeviceD3D12;

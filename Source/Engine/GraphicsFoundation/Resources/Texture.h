@@ -64,11 +64,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
                                                                                                  ///< Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
   void* m_pExisitingNativeObject = nullptr;                                                      ///< Can be used to encapsulate existing native textures in objects usable by the GAL
 
-  bool IsArray() const;
-  bool Is1D() const;
-  bool Is2D() const;
-  bool Is3D() const;
-  bool IsCube() const;
+  bool      IsArray() const;
+  bool      Is1D() const;
+  bool      Is2D() const;
+  bool      Is3D() const;
+  bool      IsCube() const;
   xiiUInt32 GetArraySize() const;
 };
 

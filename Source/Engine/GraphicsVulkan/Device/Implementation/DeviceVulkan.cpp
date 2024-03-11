@@ -1,14 +1,13 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <Foundation/Configuration/Startup.h>
-#include <GraphicsFoundation/CommandEncoder/GraphicsCommandEncoder.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
 
-#include <GraphicsVulkan/CommandEncoder/CommandEncoderVulkan.h>
+#include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
+#include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Device/DiligentCore.h>
-#include <GraphicsVulkan/Device/PassVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
@@ -25,6 +24,8 @@
 #include <GraphicsVulkan/Shader/ShaderVulkan.h>
 #include <GraphicsVulkan/States/BlendStateVulkan.h>
 #include <GraphicsVulkan/States/DepthStencilStateVulkan.h>
+#include <GraphicsVulkan/States/PipelineResourceSignatureVulkan.h>
+#include <GraphicsVulkan/States/PipelineStateVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
 
 #include <Diligent/Graphics/GraphicsEngineVulkan/interface/EngineFactoryVk.h>
@@ -156,13 +157,13 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
         }
         else if (AdapterType == xiiDiligentTypeConversions::GetAdapterType(m_Description.m_AdapterType))
         {
-          // Select adapter with more memory.
+          // Select adapter with more memory and the most amount of queues.
           const Diligent::AdapterMemoryInfo& newAdapterMemory     = adapterInfo.Memory;
           const xiiUInt64                    uiNewTotalMemory     = newAdapterMemory.LocalMemory + newAdapterMemory.HostVisibleMemory + newAdapterMemory.UnifiedMemory;
           const Diligent::AdapterMemoryInfo& currentAdapterMemory = graphicsAdapters[uiAdapterID].Memory;
           const xiiUInt64                    uiCurrentTotalMemory = currentAdapterMemory.LocalMemory + currentAdapterMemory.HostVisibleMemory + currentAdapterMemory.UnifiedMemory;
 
-          if (uiNewTotalMemory > uiCurrentTotalMemory)
+          if (uiNewTotalMemory > uiCurrentTotalMemory && AdapterInfo.NumQueues >= graphicsAdapters[uiAdapterID].NumQueues)
           {
             uiAdapterID = i;
           }
@@ -264,8 +265,13 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
 
   vkCreateInfo.AdapterId = uiAdapterID;
 
+  CreateCommandQueues();
+
+  vkCreateInfo.pImmediateContextInfo = m_ContextDescriptions.GetData();
+  vkCreateInfo.NumImmediateContexts  = m_ContextDescriptions.GetCount();
+
   xiiUInt32 uiImmediateContextCount = xiiMath::Max(1U, vkCreateInfo.NumImmediateContexts);
-  m_pDeviceContexts.SetCount(uiImmediateContextCount + vkCreateInfo.NumDeferredContexts);
+  m_pDeviceContexts.SetCount(uiImmediateContextCount);
   pFactoryVulkan->CreateDeviceAndContextsVk(vkCreateInfo, &m_pDevice, m_pDeviceContexts.GetData());
 
   if (m_pDevice == nullptr)
@@ -279,7 +285,16 @@ xiiResult xiiGALDeviceVulkan::InitializePlatform()
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
-  m_pDefaultPass = XII_NEW(&m_Allocator, xiiGALPassVulkan, *this);
+  m_CommandQueues[0] = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, *this, GetImmediateContext());
+
+  if (auto pContext = GetComputeContext())
+    m_CommandQueues[1] = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, *this, pContext);
+
+  if (auto pContext = GetTransferContext())
+    m_CommandQueues[2] = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, *this, pContext);
+
+  if (auto pContext = GetSparseBindingContext())
+    m_CommandQueues[3] = XII_NEW(&m_Allocator, xiiGALCommandQueueVulkan, *this, pContext);
 
   return XII_SUCCESS;
 }
@@ -290,12 +305,15 @@ void xiiGALDeviceVulkan::ReportLiveGPUObjects()
 
 void xiiGALDeviceVulkan::FlushPendingObjects()
 {
-  DestroyDeadObjects();
+  FlushDestroyedObjects();
 }
 
 xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
 {
-  m_pDefaultPass.Clear();
+  for (xiiUInt8 i = 0; i < XII_ARRAY_SIZE(m_CommandQueues); ++i)
+  {
+    m_CommandQueues[i].Clear();
+  }
 
   if (!m_pDeviceContexts.IsEmpty())
   {
@@ -323,7 +341,7 @@ void xiiGALDeviceVulkan::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapCh
 #if XII_ENABLED(XII_USE_PROFILING)
   xiiStringBuilder sb;
   sb.Format("{} - Frame {}", !sName.IsEmpty() ? sName : "Unavailable", GetImmediateContext()->GetFrameNumber());
-  m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sb);
+  // m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sb);
 #endif
 
   if (pSwapChain)
@@ -335,34 +353,13 @@ void xiiGALDeviceVulkan::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapCh
 void xiiGALDeviceVulkan::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
 {
 #if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPipelineTimingScope);
+  // xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPipelineTimingScope);
 #endif
 
   if (pSwapChain)
   {
     pSwapChain->Present(this);
   }
-
-  // Invalidate frame pointers.
-  m_pDefaultPass->Reset();
-}
-
-xiiGALPass* xiiGALDeviceVulkan::BeginPassPlatform(xiiStringView sName)
-{
-#if XII_ENABLED(XII_USE_PROFILING)
-  m_pPassTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sName);
-#endif
-
-  return m_pDefaultPass.Borrow();
-}
-
-void xiiGALDeviceVulkan::EndPassPlatform(xiiGALPass* pPass)
-{
-  XII_ASSERT_DEV(m_pDefaultPass.Borrow() == pPass, "Invalid pass.");
-
-#if XII_ENABLED(XII_USE_PROFILING)
-  xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPassTimingScope);
-#endif
 }
 
 void xiiGALDeviceVulkan::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
@@ -401,6 +398,27 @@ void xiiGALDeviceVulkan::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
   pSwapChainVulkan->DeInitPlatform(this).IgnoreResult();
 
   XII_DELETE(&m_Allocator, pSwapChainVulkan);
+}
+
+xiiGALCommandList* xiiGALDeviceVulkan::CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description)
+{
+  xiiGALCommandListVulkan* pCommandListVulkan = XII_NEW(&m_Allocator, xiiGALCommandListVulkan, description);
+
+  if (pCommandListVulkan->InitPlatform(this).Succeeded())
+    return pCommandListVulkan;
+
+  XII_DELETE(&m_Allocator, pCommandListVulkan);
+
+  return pCommandListVulkan;
+}
+
+void xiiGALDeviceVulkan::DestroyCommandListPlatform(xiiGALCommandList* pCommandList)
+{
+  xiiGALCommandListVulkan* pCommandListVulkan = static_cast<xiiGALCommandListVulkan*>(pCommandList);
+
+  pCommandListVulkan->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pCommandListVulkan);
 }
 
 xiiGALBlendState* xiiGALDeviceVulkan::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
@@ -739,6 +757,48 @@ void xiiGALDeviceVulkan::DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS
   XII_DELETE(&m_Allocator, pTopLevelASVulkan);
 }
 
+xiiGALPipelineResourceSignature* xiiGALDeviceVulkan::CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description)
+{
+  xiiGALPipelineResourceSignatureVulkan* pPipelineResourceSignatureVulkan = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureVulkan, description);
+
+  if (pPipelineResourceSignatureVulkan->InitPlatform(this).Succeeded())
+    return pPipelineResourceSignatureVulkan;
+
+  XII_DELETE(&m_Allocator, pPipelineResourceSignatureVulkan);
+
+  return pPipelineResourceSignatureVulkan;
+}
+
+void xiiGALDeviceVulkan::DestroyPipelineResourceSignaturePlatform(xiiGALPipelineResourceSignature* pPipelineResourceSignature)
+{
+  xiiGALPipelineResourceSignatureVulkan* pPipelineResourceSignatureVulkan = static_cast<xiiGALPipelineResourceSignatureVulkan*>(pPipelineResourceSignature);
+
+  pPipelineResourceSignatureVulkan->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pPipelineResourceSignatureVulkan);
+}
+
+xiiGALPipelineState* xiiGALDeviceVulkan::CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description)
+{
+  xiiGALPipelineStateVulkan* pPipelineStateVulkan = XII_NEW(&m_Allocator, xiiGALPipelineStateVulkan, description);
+
+  if (pPipelineStateVulkan->InitPlatform(this).Succeeded())
+    return pPipelineStateVulkan;
+
+  XII_DELETE(&m_Allocator, pPipelineStateVulkan);
+
+  return pPipelineStateVulkan;
+}
+
+void xiiGALDeviceVulkan::DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
+{
+  xiiGALPipelineStateVulkan* pPipelineStateVulkan = static_cast<xiiGALPipelineStateVulkan*>(pPipelineState);
+
+  pPipelineStateVulkan->DeInitPlatform(this).IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pPipelineStateVulkan);
+}
+
 void xiiGALDeviceVulkan::WaitIdlePlatform()
 {
   m_pDevice->IdleGPU();
@@ -750,7 +810,7 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
 
 void xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 {
-  m_Type = xiiGALGraphicsDeviceType::Vulkan;
+  m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Vulkan;
 
   const Diligent::GraphicsAdapterInfo& adapterInformation = m_pDevice->GetAdapterInfo();
 
@@ -1141,6 +1201,46 @@ void xiiGALDeviceVulkan::FillCapabilitiesPlatform()
     queue.m_MaxDeviceContexts      = refQueue.MaxDeviceContexts;
     queue.m_TextureCopyGranularity = refQueue.TextureCopyGranularity;
   }
+}
+
+void xiiGALDeviceVulkan::CreateCommandQueues()
+{
+  m_ContextDescriptions.Clear();
+
+  auto AddContext = [&](Diligent::COMMAND_QUEUE_TYPE queueType, const char* szName, xiiUInt32 uiAdapterId) {
+    constexpr auto uiQueueMask = Diligent::COMMAND_QUEUE_TYPE_PRIMARY_MASK;
+
+    auto* pQueues = m_pDevice->GetAdapterInfo().Queues;
+
+    xiiUInt32 queueCountPerContext[XII_GAL_MAX_ADAPTER_QUEUE_COUNT] = {};
+
+    for (xiiUInt32 i = 0, uiCount = m_pDevice->GetAdapterInfo().NumQueues; i < uiCount; ++i)
+    {
+      auto& currentQueue = pQueues[i];
+
+      if (queueCountPerContext[i] >= currentQueue.MaxDeviceContexts)
+        continue;
+
+      if ((currentQueue.QueueType & uiQueueMask) == queueType)
+      {
+        queueCountPerContext[i] += 1;
+
+        Diligent::ImmediateContextCreateInfo contextDescription = {};
+        contextDescription.QueueId                              = static_cast<xiiUInt8>(i);
+        contextDescription.Name                                 = szName;
+        contextDescription.Priority                             = Diligent::QUEUE_PRIORITY_MEDIUM;
+
+        m_ContextDescriptions.PushBack(contextDescription);
+        return true;
+      }
+    }
+    return false;
+  };
+
+  AddContext(Diligent::COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics Command Queue", m_Description.m_uiAdapterID);
+  AddContext(Diligent::COMMAND_QUEUE_TYPE_TRANSFER, "Transfer Command Queue", m_Description.m_uiAdapterID);
+  AddContext(Diligent::COMMAND_QUEUE_TYPE_COMPUTE, "Compute Command Queue", m_Description.m_uiAdapterID);
+  AddContext(Diligent::COMMAND_QUEUE_TYPE_SPARSE_BINDING, "Sparse Bindingn Command Queue", m_Description.m_uiAdapterID);
 }
 
 void xiiGALDeviceVulkan::FillFormatLookupTable()
