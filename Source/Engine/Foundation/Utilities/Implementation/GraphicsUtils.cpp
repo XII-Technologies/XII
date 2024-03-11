@@ -54,16 +54,7 @@ xiiResult xiiGraphicsUtils::ConvertWorldPosToScreenPos(const xiiMat4d& mModelVie
   return XII_SUCCESS;
 }
 
-xiiResult xiiGraphicsUtils::ConvertScreenPosToWorldPos(
-  const xiiMat4&               mInverseModelViewProjection,
-  const xiiUInt32              uiViewportX,
-  const xiiUInt32              uiViewportY,
-  const xiiUInt32              uiViewportWidth,
-  const xiiUInt32              uiViewportHeight,
-  const xiiVec3&               vScreenPos,
-  xiiVec3&                     out_vPoint,
-  xiiVec3*                     out_pDirection,
-  xiiClipSpaceDepthRange::Enum depthRange)
+xiiResult xiiGraphicsUtils::ConvertScreenPosToWorldPos(const xiiMat4& mInverseModelViewProjection, const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, const xiiVec3& vScreenPos, xiiVec3& out_vPoint, xiiVec3* out_pDirection, xiiClipSpaceDepthRange::Enum depthRange)
 {
   xiiVec3 vClipSpace = vScreenPos;
 
@@ -104,16 +95,7 @@ xiiResult xiiGraphicsUtils::ConvertScreenPosToWorldPos(
   return XII_SUCCESS;
 }
 
-xiiResult xiiGraphicsUtils::ConvertScreenPosToWorldPos(
-  const xiiMat4d&              mInverseModelViewProjection,
-  const xiiUInt32              uiViewportX,
-  const xiiUInt32              uiViewportY,
-  const xiiUInt32              uiViewportWidth,
-  const xiiUInt32              uiViewportHeight,
-  const xiiVec3d&              vScreenPos,
-  xiiVec3d&                    out_vPoint,
-  xiiVec3d*                    out_pDirection,
-  xiiClipSpaceDepthRange::Enum depthRange)
+xiiResult xiiGraphicsUtils::ConvertScreenPosToWorldPos(const xiiMat4d& mInverseModelViewProjection, const xiiUInt32 uiViewportX, const xiiUInt32 uiViewportY, const xiiUInt32 uiViewportWidth, const xiiUInt32 uiViewportHeight, const xiiVec3d& vScreenPos, xiiVec3d& out_vPoint, xiiVec3d* out_pDirection, xiiClipSpaceDepthRange::Enum depthRange)
 {
   xiiVec3d vClipSpace = vScreenPos;
 

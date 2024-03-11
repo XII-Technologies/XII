@@ -30,9 +30,9 @@ protected:
 
   virtual ~xiiGALSwapChainVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
   xiiResult CreateBackBufferInternal(xiiGALDeviceVulkan* pDeviceVulkan);
 

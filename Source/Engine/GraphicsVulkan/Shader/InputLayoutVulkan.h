@@ -19,9 +19,9 @@ protected:
 
   virtual ~xiiGALInputLayoutVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
   Diligent::InputLayoutDesc                   m_InputLayout = {};

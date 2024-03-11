@@ -3,7 +3,6 @@
 #include <Core/System/Window.h>
 #include <Foundation/Profiling/Profiling.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Device/PassVulkan.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
@@ -117,7 +116,7 @@ xiiResult xiiGALSwapChainVulkan::CreateBackBufferInternal(xiiGALDeviceVulkan* pD
 
   m_BackbufferTextures.PushBack(renderTargetInfo);
 
-  m_RenderTargets.m_hRTs[0] = hBackbufferTexture;
+  m_hBackBufferTexture = hBackbufferTexture;
 
   m_CurrentSize = textureDescription.m_Size;
 
@@ -132,7 +131,7 @@ void xiiGALSwapChainVulkan::DestroyBackBufferInternal(xiiGALDeviceVulkan* pDevic
 
     iter.m_hRenderTargetHandle.Invalidate();
   }
-  m_RenderTargets.m_hRTs[0].Invalidate();
+  m_hBackBufferTexture.Invalidate();
   m_BackbufferTextures.Clear();
 }
 
@@ -149,8 +148,8 @@ void xiiGALSwapChainVulkan::AcquireNextRenderTarget(xiiGALDevice* pDevice)
   {
     if (backBufferInfo.m_pTextureView == pCurrentTextureView)
     {
-      bBackBufferFound          = true;
-      m_RenderTargets.m_hRTs[0] = backBufferInfo.m_hRenderTargetHandle;
+      bBackBufferFound     = true;
+      m_hBackBufferTexture = backBufferInfo.m_hRenderTargetHandle;
 
       break;
     }
@@ -168,7 +167,7 @@ void xiiGALSwapChainVulkan::Present(xiiGALDevice* pDevice)
 
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
 
-  XII_ASSERT_DEV(m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture() == static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTexture(m_RenderTargets.m_hRTs[0]))->GetTexture(), "Invalid Swapchain texture. Did you forget to call xiiGALSwapChain::AcquireNextRenderTarget?");
+  XII_ASSERT_DEV(m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture() == static_cast<xiiGALTextureVulkan*>(pDeviceVulkan->GetTexture(m_hBackBufferTexture))->GetTexture(), "Invalid Swapchain texture. Did you forget to call xiiGALSwapChain::AcquireNextRenderTarget?");
 
   xiiUInt32 uiSyncInterval = 1U;
   switch (m_PresentMode)
@@ -190,7 +189,6 @@ xiiResult xiiGALSwapChainVulkan::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSiz
   DestroyBackBufferInternal(pDeviceVulkan);
 
   // Need to flush dead objects or ResizeBuffers will fail as the backbuffer is still referenced.
-  pDeviceVulkan->GetDefaultPass()->ReleaseCachedRenderPassesAndFramebuffers();
   pDeviceVulkan->FlushPendingObjects();
 
   m_pSwapChain->Resize(newSize.width, newSize.height, xiiDiligentTypeConversions::GetSurfaceTransform(newTransform));

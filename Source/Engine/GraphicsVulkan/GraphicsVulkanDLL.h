@@ -188,7 +188,6 @@ namespace Diligent
   class DurationQueryHelper;
 } // namespace Diligent
 
-class xiiGALCommandEncoderVulkan;
 class xiiGALCommandListVulkan;
 class xiiGALCommandQueueVulkan;
 class xiiGALDeviceVulkan;

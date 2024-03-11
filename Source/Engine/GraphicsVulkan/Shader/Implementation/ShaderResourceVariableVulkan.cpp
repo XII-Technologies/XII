@@ -2,6 +2,8 @@
 
 #include <GraphicsVulkan/Shader/ShaderResourceVariableVulkan.h>
 
+#include <Diligent/Graphics/GraphicsEngine/interface/ShaderResourceVariable.h>
+
 xiiGALShaderResourceVariableVulkan::xiiGALShaderResourceVariableVulkan() :
   xiiGALShaderResourceVariable()
 {
@@ -9,18 +11,39 @@ xiiGALShaderResourceVariableVulkan::xiiGALShaderResourceVariableVulkan() :
 
 xiiGALShaderResourceVariableVulkan::~xiiGALShaderResourceVariableVulkan() = default;
 
-xiiResult xiiGALShaderResourceVariableVulkan::InitPlatform(xiiGALDevice* pDevice)
+void xiiGALShaderResourceVariableVulkan::Set(xiiGALResource* pResource, xiiBitflags<xiiGALSetShaderResourceFlags> flags)
 {
-  // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
-
-  return XII_SUCCESS;
 }
 
-xiiResult xiiGALShaderResourceVariableVulkan::DeInitPlatform(xiiGALDevice* pDevice)
+void xiiGALShaderResourceVariableVulkan::SetArray(xiiArrayPtr<xiiGALResource* const> ppResources, xiiBitflags<xiiGALSetShaderResourceFlags> flags)
 {
-  // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
+}
 
-  return XII_SUCCESS;
+void xiiGALShaderResourceVariableVulkan::SetBufferRange(xiiGALResource* pResource, xiiUInt64 uiOffset, xiiUInt64 uiSize, xiiUInt32 uiArrayIndex, xiiBitflags<xiiGALSetShaderResourceFlags> flags)
+{
+}
+
+void xiiGALShaderResourceVariableVulkan::SetBufferOffset(xiiUInt32 uiOffset, xiiUInt32 uiArrayIndex)
+{
+}
+
+xiiEnum<xiiGALShaderResourceVariableType> xiiGALShaderResourceVariableVulkan::GetType() const
+{
+  return xiiEnum<xiiGALShaderResourceVariableType>();
+}
+
+void xiiGALShaderResourceVariableVulkan::GetResourceDescription(xiiGALShaderResourceDescription& resourceDeccription)
+{
+}
+
+xiiUInt32 xiiGALShaderResourceVariableVulkan::GetIndex() const
+{
+  return xiiUInt32();
+}
+
+xiiArrayPtr<xiiGALResource*> xiiGALShaderResourceVariableVulkan::Get(xiiUInt32 uiIndex) const
+{
+  return xiiArrayPtr<xiiGALResource*>();
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Shader_Implementation_ShaderResourceVariableVulkan);
