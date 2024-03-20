@@ -14,7 +14,7 @@ target_link_libraries(${PROJECT_NAME}
 
 target_include_directories(${PROJECT_NAME}
   PRIVATE
-  "${CMAKE_SOURCE_DIR}/Source/ThirdParty/Diligent/ThirdParty/DirectXShaderCompiler"
+  "${CMAKE_SOURCE_DIR}/Source/ThirdParty/DirectXShaderCompiler"
 )
 
 if (XII_BUILD_D3D12)

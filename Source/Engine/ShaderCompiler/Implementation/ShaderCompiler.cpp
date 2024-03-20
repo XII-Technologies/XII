@@ -18,7 +18,7 @@
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <d3dcompiler.h>
 #endif
-#include <Diligent/ThirdParty/DirectXShaderCompiler/dxc/dxcapi.h>
+#  include <dxc/dxcapi.h>
 
 xiiComPtr<IDxcUtils>     s_pDxcUtils;
 xiiComPtr<IDxcCompiler3> s_pDxcCompiler;
