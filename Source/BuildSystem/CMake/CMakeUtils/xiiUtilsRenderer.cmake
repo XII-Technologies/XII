@@ -18,14 +18,18 @@ function(xii_add_renderers TARGET_NAME)
   )
 
   if (XII_BUILD_D3D12)
-    add_dependencies(${TARGET_NAME}
-      GraphicsD3D12
-    )
+    if(TARGET GraphicsD3D12)
+      add_dependencies(${TARGET_NAME}
+        GraphicsD3D12
+      )
+    endif()
   endif()
 
   if (XII_BUILD_VULKAN)
-    add_dependencies(${TARGET_NAME}
-      GraphicsVulkan
-    )
+    if(TARGET GraphicsVulkan)
+      add_dependencies(${TARGET_NAME}
+        GraphicsVulkan
+      )
+    endif()
   endif()
 endfunction()
