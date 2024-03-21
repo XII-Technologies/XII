@@ -14,12 +14,16 @@ endif()
 
 xii_enable_strict_warnings(${PROJECT_NAME})
 
+if (XII_CMAKE_COMPILER_CLANG)
+  set_source_files_properties(ThirdParty/xxHash/xxHash.c PROPERTIES COMPILE_FLAGS "-Wno-unused-function")
+endif()
+
 if (XII_CMAKE_PLATFORM_LINUX)
   CHECK_INCLUDE_FILE_CXX("uuid/uuid.h" UUID_HEADER)
   if (NOT UUID_HEADER)
     message(FATAL_ERROR "Missing uuid/uuid.h. Have you installed the uuid-dev package?")
   endif()
-  
+
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
     uuid
@@ -35,12 +39,10 @@ if (CURRENT_OSX_VERSION)
 
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
-
     ${CORESERVICES_LIBRARY}
     ${COREFOUNDATION_LIBRARY}
   )
 endif()
-
 
 if (XII_3RDPARTY_ENET_SUPPORT)
   target_link_libraries(${PROJECT_NAME}
@@ -53,5 +55,24 @@ if (XII_3RDPARTY_ZSTD_SUPPORT)
   target_link_libraries(${PROJECT_NAME}
     PUBLIC
     zstd
+  )
+endif()
+
+if (XII_3RDPARTY_ZLIB_SUPPORT)
+  # ZLIB is required to read the apk on Android.
+  target_link_libraries(${PROJECT_NAME}
+    PUBLIC
+    zlib
+  )
+endif()
+
+if(XII_3RDPARTY_TRACELOGGING_LTTNG_SUPPORT)
+  target_link_libraries(${PROJECT_NAME} PRIVATE tracelogging)
+endif()
+
+if (XII_3RDPARTY_TRACELOGGING_LTTNG_SUPPORT)
+  target_link_libraries(${PROJECT_NAME}
+    PRIVATE
+    tracelogging
   )
 endif()
