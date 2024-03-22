@@ -260,21 +260,16 @@ void xiiOSFile::InternalSetFilePosition(xiiInt64 iDistance, xiiFileSeekMode::Enu
 #endif
 }
 
-bool xiiOSFile::InternalExistsFile(xiiStringView sFile)
-{
-  FILE* pFile = fopen(xiiString(sFile), "r");
-
-  if (pFile == nullptr)
-    return false;
-
-  fclose(pFile);
-  return true;
-}
-
 // this might not be defined on Windows
 #ifndef S_ISDIR
 #  define S_ISDIR(m) (((m)&S_IFMT) == S_IFDIR)
 #endif
+
+bool xiiOSFile::InternalExistsFile(xiiStringView sFile)
+{
+  struct stat sb;
+  return (stat(xiiString(sFile), &sb) == 0 && !S_ISDIR(sb.st_mode));
+}
 
 bool xiiOSFile::InternalExistsDirectory(xiiStringView sDirectory)
 {

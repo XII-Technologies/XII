@@ -3,7 +3,11 @@
 
 /// \file
 
-/// \brief Concatenates two strings, even when the strings are macros themselves
+/// \brief Used to pass a token through without modification.
+/// Useful to separate tokens that have no whitespace in between and thus would otherwise form one string.
+#define XII_PP_IDENTITY(x) x
+
+/// \brief Concatenates two strings, even when the strings are macros themselves.
 #define XII_CONCAT(x, y)         XII_CONCAT_HELPER(x, y)
 #define XII_CONCAT_HELPER(x, y)  XII_CONCAT_HELPER2(x, y)
 #define XII_CONCAT_HELPER2(x, y) x##y
@@ -12,7 +16,7 @@
 #define XII_STRINGIZE(str)      XII_STRINGIZE_HELPER(str)
 #define XII_STRINGIZE_HELPER(x) #x
 
-/// \brief Concatenates two strings, even when the strings are macros themselves
+/// \brief Concatenates two strings, even when the strings are macros themselves.
 #define XII_PP_CONCAT(x, y) XII_CONCAT_HELPER(x, y)
 
 /// \brief Turns some piece of code (usually some identifier name) into a string. Even works on macros.

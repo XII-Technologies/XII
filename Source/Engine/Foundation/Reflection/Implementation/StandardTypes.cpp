@@ -64,6 +64,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTime, xiiNoBase, 1, xiiRTTINoAllocator)
     XII_SCRIPT_FUNCTION_PROPERTY(Minutes, In, "Minutes")->AddFlags(xiiPropertyFlags::Const),
     XII_SCRIPT_FUNCTION_PROPERTY(Hours, In, "Hours")->AddFlags(xiiPropertyFlags::Const),
     XII_SCRIPT_FUNCTION_PROPERTY(Zero)->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(AsFloatInSeconds),
   }
   XII_END_FUNCTIONS;
 }
@@ -514,6 +515,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTransform, xiiNoBase, 1, xiiRTTINoAllocator)
   {
     XII_CONSTRUCTOR_PROPERTY(xiiVec3, xiiQuat),
     XII_CONSTRUCTOR_PROPERTY(xiiVec3, xiiQuat, xiiVec3),
+    XII_SCRIPT_FUNCTION_PROPERTY(TransformPosition, In, "Position"),
+    XII_SCRIPT_FUNCTION_PROPERTY(TransformDirection, In, "Direction"),
   }
   XII_END_FUNCTIONS;
 }
@@ -532,6 +535,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTransformd, xiiNoBase, 1, xiiRTTINoAllocator)
   {
     XII_CONSTRUCTOR_PROPERTY(xiiVec3d, xiiQuatd),
     XII_CONSTRUCTOR_PROPERTY(xiiVec3d, xiiQuatd, xiiVec3d),
+    XII_SCRIPT_FUNCTION_PROPERTY(TransformPosition, In, "Position"),
+    XII_SCRIPT_FUNCTION_PROPERTY(TransformDirection, In, "Direction"),
   }
   XII_END_FUNCTIONS;
 }
@@ -582,6 +587,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAngle, xiiNoBase, 1, xiiRTTINoAllocator)
   {
     XII_FUNCTION_PROPERTY(Degree),
     XII_FUNCTION_PROPERTY(Radian),
+    XII_FUNCTION_PROPERTY(GetNormalizedRange),
   }
   XII_END_FUNCTIONS;
 }
@@ -593,6 +599,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiAngled, xiiNoBase, 1, xiiRTTINoAllocator)
   {
     XII_FUNCTION_PROPERTY(Degree),
     XII_FUNCTION_PROPERTY(Radian),
+    XII_FUNCTION_PROPERTY(GetNormalizedRange),
   }
   XII_END_FUNCTIONS;
 }

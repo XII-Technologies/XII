@@ -184,7 +184,7 @@ private:
   xiiStreamReader*             m_pInput;
   xiiDynamicArray<xiiUInt8>    m_Cache;
 
-  static const xiiUInt32 s_uiMaxIdentifierLength = 64;
+  static constexpr xiiUInt32 s_uiMaxIdentifierLength = 64;
 
   xiiUInt8                  m_uiCurByte;
   xiiUInt8                  m_uiNextByte;

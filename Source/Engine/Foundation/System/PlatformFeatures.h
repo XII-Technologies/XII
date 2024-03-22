@@ -1,8 +1,1 @@
 #pragma once
-
-#undef XII_SUPPORTS_SDL
-#ifdef BUILDSYSTEM_ENABLE_SDL_SUPPORT
-#  define XII_SUPPORTS_SDL XII_ON
-#else
-#  define XII_SUPPORTS_SDL XII_OFF
-#endif

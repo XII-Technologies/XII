@@ -92,16 +92,6 @@ namespace
   };
 
   template <>
-  XII_ALWAYS_INLINE void GetTypeFromVariantTypeFunc::operator()<xiiVariantArray>()
-  {
-    m_pType = nullptr;
-  }
-  template <>
-  XII_ALWAYS_INLINE void GetTypeFromVariantTypeFunc::operator()<xiiVariantDictionary>()
-  {
-    m_pType = nullptr;
-  }
-  template <>
   XII_ALWAYS_INLINE void GetTypeFromVariantTypeFunc::operator()<xiiTypedPointer>()
   {
     m_pType = nullptr;

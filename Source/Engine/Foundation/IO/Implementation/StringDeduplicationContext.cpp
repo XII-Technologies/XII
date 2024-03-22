@@ -2,7 +2,7 @@
 
 #include <Foundation/IO/StringDeduplicationContext.h>
 
-static const xiiTypeVersion s_uiStringDeduplicationVersion = 1;
+static constexpr xiiTypeVersion s_uiStringDeduplicationVersion = 1;
 
 XII_IMPLEMENT_SERIALIZATION_CONTEXT(xiiStringDeduplicationWriteContext)
 

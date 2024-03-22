@@ -4,7 +4,7 @@
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Reflection/Reflection.h>
 
-static const xiiTypeVersion s_uiTypeVersionContextVersion = 1;
+static constexpr xiiTypeVersion s_uiTypeVersionContextVersion = 1;
 
 XII_IMPLEMENT_SERIALIZATION_CONTEXT(xiiTypeVersionWriteContext)
 

@@ -66,7 +66,10 @@ namespace
   using xiiFileSystemMirrorType = xiiFileSystemMirror<bool>;
 } // namespace
 
+#  ifndef _XII_DEFINED_POLLFD_POD
+#    define _XII_DEFINED_POLLFD_POD
 XII_DEFINE_AS_POD_TYPE(struct pollfd);
+#  endif
 
 struct xiiDirectoryWatcherImpl
 {
@@ -343,15 +346,15 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
       else
       {
         xiiStringBuilder dirPath;
-        mirror->Enumerate(moveFrom.path, [&](const char* path, typename xiiFileSystemMirrorType::Type type) {
+        mirror->Enumerate(moveFrom.path, [&](xiiStringView sPath, typename xiiFileSystemMirrorType::Type type) {
                 if (type == xiiFileSystemMirrorType::Type::File)
                 {
-                  func(path, xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::File);
+                  func(sPath, xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::File);
                 }
                 else
                 {
-                  func(path, xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::Directory);
-                  dirPath = path;
+                  func(sPath, xiiDirectoryWatcherAction::Removed, xiiDirectoryWatcherType::Directory);
+                  dirPath = sPath;
                   EnsureTrailingSlash(dirPath);
                   auto it = m_pImpl->m_pathToWd.Find(dirPath);
                   if (it.IsValid())
@@ -362,6 +365,7 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
                     m_pImpl->m_pathToWd.Remove(it);
                   }
                 }
+                //
               })
           .AssertSuccess();
         mirror->RemoveDirectory(moveFrom.path).AssertSuccess();
