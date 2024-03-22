@@ -12,7 +12,7 @@ XII_IMPLEMENT_SINGLETON(xiiMessageLoop);
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
 #  include <Foundation/Communication/Implementation/Linux/MessageLoop_linux.h>
 #else
-#  include <Foundation/Communication/Implementation/Mobile/MessageLoop_mobile.h>
+#  include <Foundation/Communication/Implementation/Mobile/MessageLoop_null.h>
 #endif
 
 // clang-format off
@@ -30,7 +30,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, MessageLoop)
     #elif XII_ENABLED(XII_PLATFORM_LINUX)
       XII_DEFAULT_NEW(xiiMessageLoop_linux);
     #else
-      XII_DEFAULT_NEW(xiiMessageLoop_mobile);
+      XII_DEFAULT_NEW(xiiMessageLoop_null);
     #endif
   }
 

@@ -19,8 +19,8 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    xiiIpcChannel* pChannel;
-    IOContext*     pContext;
+    xiiIpcChannel* pChannel = nullptr;
+    IOContext*     pContext = nullptr;
     DWORD          uiBytesTransfered;
     DWORD          uiError;
   };

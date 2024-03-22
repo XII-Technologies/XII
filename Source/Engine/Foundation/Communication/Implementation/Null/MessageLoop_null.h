@@ -5,11 +5,11 @@
 #  include <Foundation/Basics.h>
 #  include <Foundation/Communication/Implementation/MessageLoop.h>
 
-class XII_FOUNDATION_DLL xiiMessageLoop_mobile : public xiiMessageLoop
+class XII_FOUNDATION_DLL xiiMessageLoop_null : public xiiMessageLoop
 {
 public:
-  xiiMessageLoop_mobile();
-  ~xiiMessageLoop_mobile();
+  xiiMessageLoop_null();
+  ~xiiMessageLoop_null();
 
 protected:
   virtual void WakeUp() override;
