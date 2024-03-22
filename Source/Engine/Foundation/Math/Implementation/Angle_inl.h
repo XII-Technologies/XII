@@ -57,13 +57,16 @@ constexpr XII_ALWAYS_INLINE Type xiiAngleTemplate<Type>::GetRadian() const
 template <typename Type>
 void xiiAngleTemplate<Type>::NormalizeRange()
 {
-  const Type fTwoPi = static_cast<Type>(2.0) * xiiAngleTemplate<Type>::Pi();
+  const Type fTwoPi    = static_cast<Type>(2.0f) * xiiAngleTemplate<Type>::Pi();
+  const Type fTwoPiTen = static_cast<Type>(10.0f) * xiiAngleTemplate<Type>::Pi();
 
-  const Type fTwoPiTen = static_cast<Type>(10.0) * xiiAngleTemplate<Type>::Pi();
-
-  if (m_fRadian > fTwoPiTen || m_fRadian < -fTwoPiTen)
+  if constexpr (std::is_same_v<Type, float>)
   {
-    m_fRadian = sizeof(m_fRadian > 4) ? fmod(m_fRadian, fTwoPi) : fmodf(m_fRadian, fTwoPi);
+    m_fRadian = fmodf(m_fRadian, fTwoPi);
+  }
+  else
+  {
+    m_fRadian = fmod(m_fRadian, fTwoPi);
   }
 
   while (m_fRadian >= fTwoPi)

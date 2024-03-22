@@ -65,7 +65,6 @@
 #define XII_SUPPORTS_CASE_INSENSITIVE_PATHS   XII_OFF
 #define XII_SUPPORTS_CRASH_DUMPS              XII_OFF
 #define XII_SUPPORTS_LONG_PATHS               XII_OFF
-#define XII_SUPPORTS_SDL                      XII_OFF
 
 // Allocators
 #define XII_USE_ALLOCATION_TRACKING      XII_OFF

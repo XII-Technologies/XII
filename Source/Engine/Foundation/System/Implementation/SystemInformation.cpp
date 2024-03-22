@@ -31,9 +31,9 @@ namespace cpu_x86
   {
     __cpuidex(pOut, eax, ecx);
   }
-  static __int64 xgetbv(unsigned int x)
+  static __int64 xgetbv(unsigned int uiIndex)
   {
-    return _xgetbv(x);
+    return _xgetbv(uiIndex);
   }
 
   static bool detect_OS_x64()
@@ -65,17 +65,17 @@ namespace cpu_x86
 
 #    include <cpuid.h>
 
-  static void cpuid(int32_t out[4], int32_t eax, int32_t ecx)
+  static void cpuid(int32_t pOut[4], int32_t eax, int32_t ecx)
   {
-    __cpuid_count(eax, ecx, out[0], out[1], out[2], out[3]);
+    __cpuid_count(eax, ecx, pOut[0], pOut[1], pOut[2], pOut[3]);
   }
 
-  static uint64_t xgetbv(unsigned int index)
+  static uint64_t xgetbv(unsigned int uiIndex)
   {
     uint32_t eax, edx;
     __asm__ __volatile__("xgetbv"
                          : "=a"(eax), "=d"(edx)
-                         : "c"(index));
+                         : "c"(uiIndex));
     return ((uint64_t)edx << 32) | eax;
   }
 #    define _XCR_XFEATURE_ENABLED_MASK 0
