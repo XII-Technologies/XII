@@ -169,7 +169,7 @@ protected:
   void      ClearDataChunks();
   xiiUInt8* AllocateBytes(xiiUInt32 uiNumBytes);
 
-  static const xiiUInt32 s_uiChunkSize = 1000 * 4; // 4 KiB
+  static constexpr xiiUInt32 s_uiChunkSize = 1000 * 4; // 4 KiB
 
   xiiHybridArray<xiiUInt8*, 16> m_DataChunks;
   xiiUInt8*                     m_pCurrentChunk;

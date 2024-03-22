@@ -355,7 +355,7 @@ private:
 
   xiiScriptStates m_States;
 
-  static const xiiInt32 s_iParamOffset = 1; // should be one, to start counting at 0, instead of 1
+  static constexpr xiiInt32 s_iParamOffset = 1; // should be one, to start counting at 0, instead of 1
 };
 
 #  include <Core/Scripting/LuaWrapper/LuaWrapper.inl>

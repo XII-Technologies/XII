@@ -278,9 +278,9 @@ private: // *** Macro Definition ***
 
   xiiMap<xiiString256, MacroDefinition> m_Macros;
 
-  static const xiiInt32 s_iMacroParameter0 = xiiTokenType::ENUM_COUNT + 2;
-  static xiiString      s_ParamNames[32];
-  xiiToken              m_ParameterTokens[32];
+  static constexpr xiiInt32 s_iMacroParameter0 = xiiTokenType::ENUM_COUNT + 2;
+  static xiiString          s_ParamNames[32];
+  xiiToken                  m_ParameterTokens[32];
 
 private: // *** #if condition parsing ***
   xiiResult EvaluateCondition(const xiiTokenParseUtils::TokenStream& Tokens, xiiUInt32& uiCurToken, xiiInt64& iResult);

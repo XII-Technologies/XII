@@ -68,7 +68,7 @@ void xiiResourceManager::SetupWorkerTasks()
     xiiStringBuilder s;
 
     {
-      static const xiiUInt32 InitialDataLoadTasks = 4;
+      static constexpr xiiUInt32 InitialDataLoadTasks = 4;
 
       for (xiiUInt32 i = 0; i < InitialDataLoadTasks; ++i)
       {
@@ -80,7 +80,7 @@ void xiiResourceManager::SetupWorkerTasks()
     }
 
     {
-      static const xiiUInt32 InitialUpdateContentTasks = 16;
+      static constexpr xiiUInt32 InitialUpdateContentTasks = 16;
 
       for (xiiUInt32 i = 0; i < InitialUpdateContentTasks; ++i)
       {

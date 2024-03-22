@@ -53,6 +53,9 @@ function(xii_set_build_flags_msvc TARGET_NAME)
   # Force the compiler to interpret code as utf8.
   target_compile_options(${TARGET_NAME} PRIVATE "/utf-8")
 
+  # Set the __cplusplus preprocessor macro to something useful.
+	target_compile_options(${TARGET_NAME} PRIVATE "/Zc:__cplusplus")
+
   # Set high warning level
   # target_compile_options(${TARGET_NAME} PRIVATE "/W4") # It is a lot of work to fix all warnings in XII
 

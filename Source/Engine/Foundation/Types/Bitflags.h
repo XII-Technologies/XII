@@ -106,7 +106,10 @@ public:
   }
 
   /// \brief Comparison operator.
-  XII_ALWAYS_INLINE bool operator==(const xiiBitflags<T>& rhs) const { return m_Value == rhs.m_Value; }
+  XII_ALWAYS_INLINE bool operator==(const xiiBitflags<T>& rhs) const
+  {
+    return m_Value == rhs.m_Value;
+  }
 
   /// \brief Clears all flags
   XII_ALWAYS_INLINE void Clear() // [tested]
@@ -266,8 +269,8 @@ private:
 #define XII_DECLARE_FLAGS_WITH_DEFAULT(InternalStorageType, BitflagsTypeName, DefaultValue, ...) \
   struct BitflagsTypeName                                                                        \
   {                                                                                              \
-    static const xiiUInt32 Count = XII_VA_NUM_ARGS(__VA_ARGS__);                                 \
-    using StorageType            = InternalStorageType;                                          \
+    static constexpr xiiUInt32 Count = XII_VA_NUM_ARGS(__VA_ARGS__);                             \
+    using StorageType                = InternalStorageType;                                      \
     enum Enum                                                                                    \
     {                                                                                            \
       XII_EXPAND_ARGS_WITH_INDEX(XII_DECLARE_FLAGS_ENUM, ##__VA_ARGS__) Default = DefaultValue   \
