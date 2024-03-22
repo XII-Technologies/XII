@@ -268,6 +268,10 @@ Only concrete and clocks.\n\
 
     XII_TEST_BOOL(xiiOSFile::ExistsFile(sOutputFile.GetData()) == false);
     XII_TEST_BOOL(xiiOSFile::ExistsFile(sOutputFile2.GetData()) == false);
+
+    xiiStringBuilder sOutputFolder = xiiTestFramework::GetInstance()->GetAbsOutputPath();
+    // We should not report folders as files.
+    XII_TEST_BOOL(xiiOSFile::ExistsFile(sOutputFolder) == false);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ExistsDirectory")
