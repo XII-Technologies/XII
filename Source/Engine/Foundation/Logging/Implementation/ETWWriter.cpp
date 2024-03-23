@@ -2,16 +2,21 @@
 
 #include <Foundation/Logging/ETWWriter.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
-#  include <Foundation/Logging/Implementation/Win/ETWProvider_win.h>
+#if XII_ENABLED(XII_PLATFORM_WINDOWS) || (XII_ENABLED(XII_PLATFORM_LINUX) && defined(BUILDSYSTEM_ENABLE_TRACELOGGING_LTTNG_SUPPORT))
+
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#    include <Foundation/Basics/Platform/Win/IncludeWindows.h>
+#    include <Foundation/Logging/Implementation/Win/ETWProvider_win.h>
+#  else
+#    include <Foundation/Logging/Implementation/Win/ETWProvider_linux.h>
+#  endif
 
 void xiiLogWriter::ETW::LogMessageHandler(const xiiLoggingEventData& eventData)
 {
   if (eventData.m_EventType == xiiLogMsgType::Flush)
     return;
 
-  xiiETWProvider::GetInstance().LogMessge(eventData.m_EventType, eventData.m_uiIndentation, eventData.m_sText);
+  xiiETWProvider::GetInstance().LogMessage(eventData.m_EventType, eventData.m_uiIndentation, eventData.m_sText);
 }
 
 void xiiLogWriter::ETW::LogMessage(xiiLogMsgType::Enum eventType, xiiUInt8 uiIndentation, xiiStringView sText)
@@ -19,7 +24,7 @@ void xiiLogWriter::ETW::LogMessage(xiiLogMsgType::Enum eventType, xiiUInt8 uiInd
   if (eventType == xiiLogMsgType::Flush)
     return;
 
-  xiiETWProvider::GetInstance().LogMessge(eventType, uiIndentation, sText);
+  xiiETWProvider::GetInstance().LogMessage(eventType, uiIndentation, sText);
 }
 
 #else

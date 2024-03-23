@@ -25,6 +25,9 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, MessageLoop)
 
   ON_CORESYSTEMS_STARTUP
   {
+    if (xiiStartup::HasApplicationTag("NoMessageLoop"))
+      return;
+
     #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
       XII_DEFAULT_NEW(xiiMessageLoop_win);
     #elif XII_ENABLED(XII_PLATFORM_LINUX)

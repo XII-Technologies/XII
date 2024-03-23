@@ -31,6 +31,9 @@ public:
   /// \brief Initializes x and y with zero, width and height with the given values.
   xiiRectTemplate(Type width, Type height);
 
+  /// \brief Initializes x and y from pos, width and height from vSize.
+  xiiRectTemplate<Type>(const xiiVec2Template<Type>& vTopLeftPosition, const xiiVec2Template<Type>& vSize);
+
   /// The smaller value along x.
   Type Left() const { return x; }
 
@@ -55,6 +58,21 @@ public:
   /// The larger value along y. Same as Bottom().
   Type GetY2() const { return y + height; }
 
+  /// \brief Returns the x,y position as an xiiVec2.
+  xiiVec2Template<Type> GetPosition() const { return xiiVec2Template<Type>(x, y); }
+
+  /// \brief Returns the top left corner. Same as GetPosition().
+  xiiVec2Template<Type> GetTopLeft() const { return xiiVec2Template<Type>(x, y); }
+
+  /// \brief Returns the top right corner.
+  xiiVec2Template<Type> GetTopRight() const { return xiiVec2Template<Type>(x + width, y); }
+
+  /// \brief Returns the bottom left corner.
+  xiiVec2Template<Type> GetBottomLeft() const { return xiiVec2Template<Type>(x, y + height); }
+
+  /// \brief Returns the bottom right corner. Same as GetPosition() + GetExtents().
+  xiiVec2Template<Type> GetBottomRight() const { return xiiVec2Template<Type>(x + width, y + height); }
+
   /// \brief Returns the center point of the rectangle.
   xiiVec2Template<Type> GetCenter() const { return xiiVec2Template<Type>(x + width / 2, y + height / 2); }
 
@@ -69,7 +87,7 @@ public:
 
   // *** Common Functions ***
 public:
-  bool operator==(const xiiRectTemplate<Type>& rhs) const;
+  [[nodiscard]] bool operator==(const xiiRectTemplate<Type>& rhs) const;
 
   /// \brief Sets the rect to invalid values.
   ///
@@ -78,17 +96,19 @@ public:
   void SetInvalid();
 
   /// \brief Checks whether the position and size contain valid values.
-  bool IsValid() const;
+  [[nodiscard]] bool IsValid() const;
 
   /// \brief Returns true if the area of the rectangle is non zero
-  bool HasNonZeroArea() const;
+  [[nodiscard]] bool HasNonZeroArea() const;
 
   /// \brief Returns true if the rectangle contains the provided point
-  bool Contains(const xiiVec2Template<Type>& vPoint) const;
+  [[nodiscard]] bool Contains(const xiiVec2Template<Type>& vPoint) const;
+
+  [[nodiscard]] bool Contains(const xiiRectTemplate<Type>& r) const;
 
   /// \brief Returns true if the rectangle overlaps the provided rectangle.
   /// Also returns true if the rectangles are contained within each other completely(no intersecting edges).
-  bool Overlaps(const xiiRectTemplate<Type>& other) const;
+  [[nodiscard]] bool Overlaps(const xiiRectTemplate<Type>& other) const;
 
   /// \brief Extends this rectangle so that the provided rectangle is completely contained within it.
   void ExpandToInclude(const xiiRectTemplate<Type>& other);
@@ -102,6 +122,16 @@ public:
   /// \brief The given point is clamped to the area of the rect, i.e. it will be either inside the rect or on its edge and it will have the closest
   /// possible distance to the original point.
   const xiiVec2Template<Type> GetClampedPoint(const xiiVec2Template<Type>& vPoint) const;
+
+  /// \brief Clamps the given rect to the area of this rect and returns it.
+  ///
+  /// If the input rect is entirely outside this rect, the result will be reduced to a point or a line closest to the input rect.
+  [[nodiscard]] const xiiRectTemplate<Type> GetClampedRect(const xiiRectTemplate<Type>& r) const
+  {
+    const xiiVec2Template<Type> vNewTL   = GetClampedPoint(r.GetTopLeft());
+    const xiiVec2Template<Type> vNewSize = GetClampedPoint(r.GetBottomRight()) - vNewTL;
+    return xiiRectTemplate<Type>(vNewTL, vNewSize);
+  }
 
   void SetIntersection(const xiiRectTemplate<Type>& r0, const xiiRectTemplate<Type>& r1);
 

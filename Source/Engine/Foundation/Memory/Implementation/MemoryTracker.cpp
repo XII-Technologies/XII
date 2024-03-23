@@ -326,7 +326,6 @@ const xiiMemoryTracker::AllocationInfo& xiiMemoryTracker::GetAllocationInfo(xiiA
   return invalidInfo;
 }
 
-
 struct LeakInfo
 {
   XII_DECLARE_POD_TYPE();
@@ -339,10 +338,11 @@ struct LeakInfo
 };
 
 // static
-void xiiMemoryTracker::DumpMemoryLeaks()
+xiiUInt32 xiiMemoryTracker::PrintMemoryLeaks(PrintFunc printFunc)
 {
   if (s_pTrackerData == nullptr) // If both tracking and tracing is disabled there is no tracker data.
-    return;
+    return 0;
+
   XII_LOCK(*s_pTrackerData);
 
   static xiiHashTable<const void*, LeakInfo, xiiHashHelper<const void*>, TrackerDataAllocatorWrapper> leakTable;
@@ -387,7 +387,7 @@ void xiiMemoryTracker::DumpMemoryLeaks()
   }
 
   // Dump leaks.
-  xiiUInt64 uiNumLeaks = 0;
+  xiiUInt32 uiNumLeaks = 0;
 
   for (auto it = leakTable.GetIterator(); it.IsValid(); ++it)
   {
@@ -398,9 +398,9 @@ void xiiMemoryTracker::DumpMemoryLeaks()
     {
       if (uiNumLeaks == 0)
       {
-        xiiLog::Print("\n\n--------------------------------------------------------------------\n"
-                      "Memory Leak Report:"
-                      "\n--------------------------------------------------------------------\n\n");
+        printFunc("\n\n--------------------------------------------------------------------\n"
+                  "Memory Leak Report:"
+                  "\n--------------------------------------------------------------------\n\n");
       }
 
       const AllocatorData&             data = s_pTrackerData->m_AllocatorData[leak.m_AllocatorId];
@@ -415,12 +415,26 @@ void xiiMemoryTracker::DumpMemoryLeaks()
 
   if (uiNumLeaks > 0)
   {
-    xiiLog::Printf("\n--------------------------------------------------------------------\n"
-                   "Found %llu root memory leak(s)."
-                   "\n--------------------------------------------------------------------\n\n",
-                   uiNumLeaks);
+    char tmp[1024];
+    xiiStringUtils::snprintf(tmp, 1024, "\n--------------------------------------------------------------------\n"
+                                        "Found %u root memory leak(s)."
+                                        "\n--------------------------------------------------------------------\n\n",
+                             uiNumLeaks);
 
-    XII_REPORT_FAILURE("Found {0} root memory leak(s).", uiNumLeaks);
+    printFunc(tmp);
+  }
+
+  return uiNumLeaks;
+}
+
+// static
+void xiiMemoryTracker::DumpMemoryLeaks()
+{
+  const xiiUInt32 uiNumLeaks = PrintMemoryLeaks(xiiLog::Print);
+
+  if (uiNumLeaks > 0)
+  {
+    XII_REPORT_FAILURE("Found {0} root memory leak(s). See console output for details.", uiNumLeaks);
   }
 }
 

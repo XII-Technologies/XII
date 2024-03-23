@@ -5,7 +5,7 @@
 #include <Foundation/Math/Vec3.h>
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomPointInSphere(xiiRandom& ref_rng)
+XII_IMPLEMENT_IF_FLOAT_TYPE xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomPointInSphere(xiiRandom& ref_rng)
 {
   double px, py, pz;
   double len = 0.0;
@@ -23,7 +23,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomPointInSphere(xiiRandom
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDirection(xiiRandom& ref_rng)
+XII_IMPLEMENT_IF_FLOAT_TYPE xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDirection(xiiRandom& ref_rng)
 {
   xiiVec3Template<Type> vec = CreateRandomPointInSphere(ref_rng);
   vec.Normalize();
@@ -31,7 +31,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDirection(xiiRandom& re
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationX(xiiRandom& ref_rng, const xiiAngle& maxDeviation)
+XII_IMPLEMENT_IF_FLOAT_TYPE xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationX(xiiRandom& ref_rng, const xiiAngle& maxDeviation)
 {
   const double twoPi = 2.0 * xiiMath::Pi<double>();
 
@@ -47,7 +47,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationX(xiiRandom& r
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationX(xiiRandom& ref_rng, const xiiAngled& maxDeviation)
+XII_IMPLEMENT_IF_FLOAT_TYPE xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationX(xiiRandom& ref_rng, const xiiAngled& maxDeviation)
 {
   const double twoPi = 2.0 * xiiMath::Pi<double>();
 
@@ -63,7 +63,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationX(xiiRandom& r
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationY(xiiRandom& ref_rng, const xiiAngle& maxDeviation)
+XII_IMPLEMENT_IF_FLOAT_TYPE xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationY(xiiRandom& ref_rng, const xiiAngle& maxDeviation)
 {
   xiiVec3Template<Type> vec = CreateRandomDeviationX(ref_rng, maxDeviation);
   xiiMath::Swap(vec.x, vec.y);
@@ -71,7 +71,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationY(xiiRandom& r
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationY(xiiRandom& ref_rng, const xiiAngled& maxDeviation)
+XII_IMPLEMENT_IF_FLOAT_TYPE xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationY(xiiRandom& ref_rng, const xiiAngled& maxDeviation)
 {
   xiiVec3Template<Type> vec = CreateRandomDeviationX(ref_rng, maxDeviation);
   xiiMath::Swap(vec.x, vec.y);
@@ -79,7 +79,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationY(xiiRandom& r
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationZ(xiiRandom& ref_rng, const xiiAngle& maxDeviation)
+XII_IMPLEMENT_IF_FLOAT_TYPE xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationZ(xiiRandom& ref_rng, const xiiAngle& maxDeviation)
 {
   xiiVec3Template<Type> vec = CreateRandomDeviationX(ref_rng, maxDeviation);
   xiiMath::Swap(vec.x, vec.z);
@@ -87,7 +87,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationZ(xiiRandom& r
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationZ(xiiRandom& ref_rng, const xiiAngled& maxDeviation)
+XII_IMPLEMENT_IF_FLOAT_TYPE xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationZ(xiiRandom& ref_rng, const xiiAngled& maxDeviation)
 {
   xiiVec3Template<Type> vec = CreateRandomDeviationX(ref_rng, maxDeviation);
   xiiMath::Swap(vec.x, vec.z);
@@ -95,7 +95,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviationZ(xiiRandom& r
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviation(xiiRandom& ref_rng, const xiiAngle& maxDeviation, const xiiVec3Template<Type>& vNormal)
+XII_IMPLEMENT_IF_FLOAT_TYPE xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviation(xiiRandom& ref_rng, const xiiAngle& maxDeviation, const xiiVec3Template<Type>& vNormal)
 {
   // If you need to do this very often:
   // *** Pre-compute this once: ***
@@ -113,7 +113,7 @@ xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviation(xiiRandom& re
 }
 
 template <typename Type>
-xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviation(xiiRandom& ref_rng, const xiiAngled& maxDeviation, const xiiVec3Template<Type>& vNormal)
+XII_IMPLEMENT_IF_FLOAT_TYPE xiiVec3Template<Type> xiiVec3Template<Type>::CreateRandomDeviation(xiiRandom& ref_rng, const xiiAngled& maxDeviation, const xiiVec3Template<Type>& vNormal)
 {
   // If you need to do this very often:
   // *** Pre-compute this once: ***

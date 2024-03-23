@@ -107,7 +107,18 @@ public:
   static xiiAllocatorId                 GetAllocatorParentId(xiiAllocatorId allocatorId);
   static const AllocationInfo&          GetAllocationInfo(xiiAllocatorId allocatorId, const void* pPtr);
 
-  static void DumpMemoryLeaks();
-
   static Iterator GetIterator();
+
+  /// \brief Callback for printing strings.
+  using PrintFunc = void (*)(const char* szLine);
+
+  /// \brief Reports back information about all currently known root memory leaks.
+  ///
+  /// Returns the number of found memory leaks.
+  static xiiUInt32 PrintMemoryLeaks(PrintFunc printFunc);
+
+  /// \brief Prints the known memory leaks to xiiLog and triggers an assert if there are any.
+  ///
+  /// This is useful to call at the end of an application, to get a debug breakpoint in case of memory leaks.
+  static void DumpMemoryLeaks();
 };

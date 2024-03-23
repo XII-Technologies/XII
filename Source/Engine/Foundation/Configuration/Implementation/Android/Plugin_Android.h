@@ -5,6 +5,12 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 using xiiPluginModule = void*;
 
+bool xiiPlugin::PlatformNeedsPluginCopy()
+{
+  XII_ASSERT_NOT_IMPLEMENTED;
+  return false;
+}
+
 void xiiPlugin::GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& sOriginalFile, xiiStringBuilder& sCopiedFile, xiiUInt8 uiFileCopyNumber)
 {
   XII_ASSERT_NOT_IMPLEMENTED;

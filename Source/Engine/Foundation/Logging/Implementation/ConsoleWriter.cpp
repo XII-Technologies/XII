@@ -118,5 +118,4 @@ void xiiLogWriter::Console::SetTimestampMode(xiiLog::TimestampMode mode)
 #  undef printf
 #endif
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_ConsoleWriter);

@@ -61,8 +61,7 @@ bool xiiMessageLoop_linux::WaitForMessages(xiiInt32 iTimeout, xiiIpcChannel* pFi
       return true;
     }
 
-    xiiUInt32 numEvents = m_pollInfos.GetCount();
-    for (xiiUInt32 i = 1; i < numEvents;)
+    for (xiiUInt32 i = 1; i < m_waitInfos.GetCount();)
     {
       WaitInfo&      waitInfo = m_waitInfos[i];
       struct pollfd& pollInfo = m_pollInfos[i];
@@ -74,13 +73,11 @@ bool xiiMessageLoop_linux::WaitForMessages(xiiInt32 iTimeout, xiiIpcChannel* pFi
             waitInfo.m_pChannel->AcceptIncomingConnection();
             m_pollInfos.RemoveAtAndSwap(i);
             m_waitInfos.RemoveAtAndSwap(i);
-            numEvents--;
             continue;
           case WaitType::Connect:
             waitInfo.m_pChannel->ProcessConnectSuccessfull();
             m_pollInfos.RemoveAtAndSwap(i);
             m_waitInfos.RemoveAtAndSwap(i);
-            numEvents--;
             continue;
           case WaitType::IncomingMessage:
             waitInfo.m_pChannel->ProcessIncomingPackages();
@@ -89,7 +86,6 @@ bool xiiMessageLoop_linux::WaitForMessages(xiiInt32 iTimeout, xiiIpcChannel* pFi
             waitInfo.m_pChannel->InternalSend();
             m_pollInfos.RemoveAtAndSwap(i);
             m_waitInfos.RemoveAtAndSwap(i);
-            numEvents--;
             continue;
         }
         pollInfo.revents = 0;
@@ -107,7 +103,6 @@ bool xiiMessageLoop_linux::WaitForMessages(xiiInt32 iTimeout, xiiIpcChannel* pFi
 
 void xiiMessageLoop_linux::RegisterWait(xiiPipeChannel_linux* pChannel, WaitType type, xiiInt32 fd)
 {
-  xiiLog::Debug("[IPC]xiiMessageLoop_linux::RegisterWait({}}", (xiiInt32)type);
   short int waitFlags = 0;
   switch (type)
   {
@@ -141,19 +136,17 @@ void xiiMessageLoop_linux::RemovePendingWaits(xiiPipeChannel_linux* pChannel)
   XII_SCOPE_EXIT(m_numPendingPollModifications.Decrement());
   WakeUp();
   {
-    xiiLock   lock{m_pollMutex};
-    xiiUInt32 waitCount = m_pollInfos.GetCount();
-    for (xiiUInt32 i = 0; i < waitCount;)
+    xiiLock lock{m_pollMutex};
+    for (xiiUInt32 i = 0; i < m_pollInfos.GetCount();)
     {
       if (m_waitInfos[i].m_pChannel == pChannel)
       {
         m_waitInfos.RemoveAtAndSwap(i);
         m_pollInfos.RemoveAtAndSwap(i);
-        waitCount--;
       }
       else
       {
-        i++;
+        ++i;
       }
     }
   }
@@ -166,6 +159,5 @@ void xiiMessageLoop_linux::WakeUp()
 }
 
 #endif
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_Linux_MessageLoop_linux);

@@ -434,4 +434,14 @@ xiiColor xiiColor::ZeroColor()
   return xiiColor(0.0f, 0.0f, 0.0f, 0.0f);
 }
 
+xiiUInt32 xiiColor::ToRGBA8() const
+{
+  return xiiColorLinearUB(*this).ToRGBA8();
+}
+
+xiiUInt32 xiiColor::ToABGR8() const
+{
+  return xiiColorLinearUB(*this).ToABGR8();
+}
+
 XII_STATICLINK_FILE(Foundation, Foundation_Math_Implementation_Color);

@@ -44,13 +44,13 @@ XII_ALWAYS_INLINE void xiiVec2Template<Type>::SetZero()
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE Type xiiVec2Template<Type>::GetLength() const
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec2Template<Type>::GetLength() const
 {
   return (xiiMath::Sqrt(GetLengthSquared()));
 }
 
 template <typename Type>
-xiiResult xiiVec2Template<Type>::SetLength(Type fNewLength, Type fEpsilon /* = xiiMath::DefaultEpsilon<Type>() */)
+XII_IMPLEMENT_IF_FLOAT_TYPE xiiResult xiiVec2Template<Type>::SetLength(Type fNewLength, Type fEpsilon /* = xiiMath::DefaultEpsilon<Type>() */)
 {
   if (NormalizeIfNotZero(xiiVec2Template<Type>::ZeroVector(), fEpsilon) == XII_FAILURE)
     return XII_FAILURE;
@@ -66,7 +66,7 @@ XII_ALWAYS_INLINE Type xiiVec2Template<Type>::GetLengthSquared() const
 }
 
 template <typename Type>
-XII_FORCE_INLINE Type xiiVec2Template<Type>::GetLengthAndNormalize()
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_FORCE_INLINE Type xiiVec2Template<Type>::GetLengthAndNormalize()
 {
   const Type fLength = GetLength();
   *this /= fLength;
@@ -74,7 +74,7 @@ XII_FORCE_INLINE Type xiiVec2Template<Type>::GetLengthAndNormalize()
 }
 
 template <typename Type>
-XII_FORCE_INLINE const xiiVec2Template<Type> xiiVec2Template<Type>::GetNormalized() const
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_FORCE_INLINE const xiiVec2Template<Type> xiiVec2Template<Type>::GetNormalized() const
 {
   const Type fLen = GetLength();
 
@@ -83,13 +83,13 @@ XII_FORCE_INLINE const xiiVec2Template<Type> xiiVec2Template<Type>::GetNormalize
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE void xiiVec2Template<Type>::Normalize()
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE void xiiVec2Template<Type>::Normalize()
 {
   *this /= GetLength();
 }
 
 template <typename Type>
-inline xiiResult xiiVec2Template<Type>::NormalizeIfNotZero(const xiiVec2Template<Type>& vFallback, Type fEpsilon)
+XII_IMPLEMENT_IF_FLOAT_TYPE inline xiiResult xiiVec2Template<Type>::NormalizeIfNotZero(const xiiVec2Template<Type>& vFallback, Type fEpsilon)
 {
   XII_NAN_ASSERT(&vFallback);
 
@@ -109,7 +109,7 @@ inline xiiResult xiiVec2Template<Type>::NormalizeIfNotZero(const xiiVec2Template
   length is between a lower and upper limit.
 */
 template <typename Type>
-inline bool xiiVec2Template<Type>::IsNormalized(Type fEpsilon /* = xiiMath::HugeEpsilon<Type>() */) const
+XII_IMPLEMENT_IF_FLOAT_TYPE inline bool xiiVec2Template<Type>::IsNormalized(Type fEpsilon /* = xiiMath::HugeEpsilon<Type>() */) const
 {
   const Type t = GetLengthSquared();
   return xiiMath::IsEqual(t, (Type)(1), fEpsilon);
@@ -152,7 +152,7 @@ inline bool xiiVec2Template<Type>::IsValid() const
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE Type xiiVec2Template<Type>::Distance(const xiiVec2Template<Type>& vPoint) const
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec2Template<Type>::Distance(const xiiVec2Template<Type>& vPoint) const
 {
   return (xiiMath::Sqrt(DistanceSquared(vPoint)));
 }
@@ -204,16 +204,24 @@ XII_FORCE_INLINE void xiiVec2Template<Type>::operator*=(Type f)
 template <typename Type>
 XII_FORCE_INLINE void xiiVec2Template<Type>::operator/=(Type f)
 {
-  const Type f_inv = xiiMath::Invert(f);
+  if constexpr (std::is_floating_point_v<Type>)
+  {
+    const Type fInverse = xiiMath::Invert(f);
 
-  x *= f_inv;
-  y *= f_inv;
+    x *= fInverse;
+    y *= fInverse;
+  }
+  else
+  {
+    x /= f;
+    y /= f;
+  }
 
   XII_NAN_ASSERT(this);
 }
 
 template <typename Type>
-inline void xiiVec2Template<Type>::MakeOrthogonalTo(const xiiVec2Template<Type>& vNormal)
+XII_IMPLEMENT_IF_FLOAT_TYPE inline void xiiVec2Template<Type>::MakeOrthogonalTo(const xiiVec2Template<Type>& vNormal)
 {
   XII_ASSERT_DEBUG(vNormal.IsNormalized(), "The normal must be normalized.");
 
@@ -231,7 +239,7 @@ XII_FORCE_INLINE const xiiVec2Template<Type> xiiVec2Template<Type>::GetOrthogona
 }
 
 template <typename Type>
-inline const xiiVec2Template<Type> xiiVec2Template<Type>::GetReflectedVector(const xiiVec2Template<Type>& vNormal) const
+XII_IMPLEMENT_IF_FLOAT_TYPE inline const xiiVec2Template<Type> xiiVec2Template<Type>::GetReflectedVector(const xiiVec2Template<Type>& vNormal) const
 {
   XII_ASSERT_DEBUG(vNormal.IsNormalized(), "vNormal must be normalized.");
 
@@ -349,9 +357,16 @@ XII_FORCE_INLINE const xiiVec2Template<Type> operator/(const xiiVec2Template<Typ
 {
   XII_NAN_ASSERT(&v);
 
-  // Multiplication is much faster than division.
-  const Type f_inv = xiiMath::Invert(f);
-  return xiiVec2Template<Type>(v.x * f_inv, v.y * f_inv);
+  if constexpr (std::is_floating_point_v<Type>)
+  {
+    // Multiplication is much faster than division.
+    const Type f_inv = xiiMath::Invert(f);
+    return xiiVec2Template<Type>(v.x * f_inv, v.y * f_inv);
+  }
+  else
+  {
+    return xiiVec2Template<Type>(v.x / f, v.y / f);
+  }
 }
 
 template <typename Type>

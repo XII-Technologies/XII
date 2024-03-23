@@ -20,6 +20,9 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(Foundation, TaskSystem)
 
   ON_CORESYSTEMS_STARTUP
   {
+    if (xiiStartup::HasApplicationTag("NoTaskSystem"))
+      return;
+
     xiiTaskSystem::Startup();
   }
 
@@ -45,6 +48,9 @@ void xiiTaskSystem::Startup()
 
 void xiiTaskSystem::Shutdown()
 {
+  if (s_pThreadState == nullptr)
+    return;
+
   StopWorkerThreads();
 
   s_pState.Clear();

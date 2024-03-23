@@ -772,4 +772,26 @@ XII_CREATE_SIMPLE_TEST(Strings, StringView)
     p = "/noroot/bla";
     XII_TEST_BOOL(p.GetRootedPathRootName() == "");
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetSubString")
+  {
+    xiiStringView s = (const char*)u8"Пожалуйста, дай мне очень длинные Unicode-стринги!";
+
+    XII_TEST_BOOL(s.GetElementCount() > xiiStringUtils::GetCharacterCount(s.GetStartPointer(), s.GetEndPointer()));
+
+    xiiStringView w1 = s.GetSubString(0, 10);
+    xiiStringView w2 = s.GetSubString(12, 3);
+    xiiStringView w3 = s.GetSubString(20, 5);
+    xiiStringView w4 = s.GetSubString(34, 15);
+    xiiStringView w5 = s.GetSubString(34, 20);
+    xiiStringView w6 = s.GetSubString(100, 10);
+
+    XII_TEST_BOOL(w1 == xiiStringView((const char*)u8"Пожалуйста"));
+    XII_TEST_BOOL(w2 == xiiStringView((const char*)u8"дай"));
+    XII_TEST_BOOL(w3 == xiiStringView((const char*)u8"очень"));
+    XII_TEST_BOOL(w4 == xiiStringView((const char*)u8"Unicode-стринги"));
+    XII_TEST_BOOL(w5 == xiiStringView((const char*)u8"Unicode-стринги!"));
+    XII_TEST_BOOL(!w6.IsValid());
+    XII_TEST_BOOL(w6 == xiiStringView(""));
+  }
 }

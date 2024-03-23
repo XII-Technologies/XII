@@ -7,8 +7,14 @@ XII_FOUNDATION_INTERNAL_HEADER
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Strings/StringBuilder.h>
+#include <Foundation/System/Process.h>
 
 using xiiPluginModule = void*;
+
+bool xiiPlugin::PlatformNeedsPluginCopy()
+{
+  return false;
+}
 
 void xiiPlugin::GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& sOriginalFile, xiiStringBuilder& sCopiedFile, xiiUInt8 uiFileCopyNumber)
 {

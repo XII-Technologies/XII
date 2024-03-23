@@ -82,6 +82,8 @@ namespace xiiMath
   template <typename Type>
   constexpr Type Invert(Type f)
   {
+    static_assert(std::is_floating_point_v<Type>);
+
     return ((Type)1) / f;
   }
 

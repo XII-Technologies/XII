@@ -6,7 +6,7 @@ macro(xii_include_xiiExport)
   # Create a modified version of the xiiExport.cmake file,
   # where the absolute paths to the original locations are replaced
   # with the absolute paths to this installation
-  set(EXP_FILE "${XII_OUTPUT_DIRECTORY_DLL}/xiiExport.cmake")
+  xii_get_export_location(EXP_FILE)
   set(IMP_FILE "${CMAKE_BINARY_DIR}/xiiExport.cmake")
   set(EXPINFO_FILE "${XII_OUTPUT_DIRECTORY_DLL}/xiiExportInfo.cmake")
 

@@ -69,13 +69,10 @@ private:
   {
     XII_DECLARE_POD_TYPE();
 
-    enum
-    {
-      NUM_BLOCKS    = 16,
-      SIZE_IN_BYTES = BlockSizeInByte * NUM_BLOCKS
-    };
+    static constexpr xiiUInt32 NUM_BLOCKS    = 16U;
+    static constexpr xiiUInt32 SIZE_IN_BYTES = BlockSizeInByte * NUM_BLOCKS;
 
-    void* m_pBasePtr;
+    void* m_pBasePtr = nullptr;
 
     xiiUInt32 m_uiUsedBlocks;
   };

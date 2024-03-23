@@ -10,6 +10,9 @@
 #  define XII_NAN_ASSERT(obj)
 #endif
 
+#define XII_DECLARE_IF_FLOAT_TYPE   template <typename = typename std::enable_if<std::is_floating_point_v<Type> == true>>
+#define XII_IMPLEMENT_IF_FLOAT_TYPE template <typename ENABLE_IF_FLOAT>
+
 /// \brief Simple helper union to store ints and floats to modify their bit patterns.
 union xiiIntFloatUnion
 {
@@ -233,6 +236,19 @@ class xiiColorLinearUB;
 class xiiColorGammaUB;
 
 class xiiRandom;
+
+template <typename Type>
+class xiiRectTemplate;
+
+using xiiRectU32    = xiiRectTemplate<xiiUInt32>;
+using xiiRectU16    = xiiRectTemplate<xiiUInt16>;
+using xiiRectI32    = xiiRectTemplate<xiiInt32>;
+using xiiRectI16    = xiiRectTemplate<xiiInt16>;
+using xiiRectFloat  = xiiRectTemplate<float>;
+using xiiRectDouble = xiiRectTemplate<double>;
+using xiiRectReal   = xiiRectTemplate<xiiReal>;
+
+class xiiFrustum;
 
 
 /// \brief An enum that allows to select on of the six main axis (positive / negative)

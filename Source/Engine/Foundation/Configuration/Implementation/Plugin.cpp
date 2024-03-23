@@ -168,6 +168,7 @@ static xiiResult UnloadPluginInternal(xiiStringView sPluginFile)
   }
 
   // delete the plugin copy that we had loaded
+  if (xiiPlugin::PlatformNeedsPluginCopy())
   {
     xiiStringBuilder sOriginalFile, sCopiedFile;
     xiiPlugin::GetPluginPaths(sPluginFile, sOriginalFile, sCopiedFile, g_LoadedModules[sPluginFile].m_uiFileNumber);
@@ -202,7 +203,7 @@ static xiiResult LoadPluginInternal(xiiStringView sPluginFile, xiiBitflags<xiiPl
     return XII_FAILURE;
   }
 
-  if (flags.IsSet(xiiPluginLoadFlags::LoadCopy))
+  if (xiiPlugin::PlatformNeedsPluginCopy() && flags.IsSet(xiiPluginLoadFlags::LoadCopy))
   {
     // create a copy of the original plugin file
     const xiiUInt8 uiMaxParallelInstances = static_cast<xiiUInt8>(s_uiMaxParallelInstances);

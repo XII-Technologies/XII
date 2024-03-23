@@ -97,14 +97,14 @@ public:
     return s_pAlignedAllocator;
   }
 
+  /// \brief Returns the allocator that is used by global data and static members before the default allocator is created.
+  static xiiAllocatorBase* GetStaticAllocator();
+
 private:
   friend class xiiStartup;
   friend struct xiiStaticAllocatorWrapper;
 
   static void Initialize();
-
-  /// \brief Returns the allocator that is used by global data and static members before the default allocator is created.
-  static xiiAllocatorBase* GetStaticAllocator();
 
   static bool s_bIsInitialized;
 };

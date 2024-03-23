@@ -10,6 +10,10 @@ XII_ALWAYS_INLINE xiiVariant::xiiVariant()
 
 XII_WARNING_POP()
 
+XII_WARNING_PUSH()
+XII_WARNING_DISABLE_CLANG("-Wunused-local-typedef")
+XII_WARNING_DISABLE_GCC("-Wunused-local-typedef")
+
 XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVariant& other)
 {
   CopyFrom(other);
@@ -713,3 +717,5 @@ struct xiiHashHelper<xiiVariant>
     return a.GetType() == b.GetType() && a == b;
   }
 };
+
+XII_WARNING_POP()
