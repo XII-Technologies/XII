@@ -16,6 +16,15 @@ XII_ALWAYS_INLINE xiiRectTemplate<Type>::xiiRectTemplate(Type width, Type height
 }
 
 template <typename Type>
+XII_ALWAYS_INLINE xiiRectTemplate<Type>::xiiRectTemplate(const xiiVec2Template<Type>& vTopLeftPosition, const xiiVec2Template<Type>& vSize)
+{
+  x      = vTopLeftPosition.x;
+  y      = vTopLeftPosition.y;
+  width  = vSize.x;
+  height = vSize.y;
+}
+
+template <typename Type>
 XII_ALWAYS_INLINE bool xiiRectTemplate<Type>::operator==(const xiiRectTemplate<Type>& rhs) const
 {
   return x == rhs.x && y == rhs.y && width == rhs.width && height == rhs.height;
@@ -37,6 +46,12 @@ XII_ALWAYS_INLINE bool xiiRectTemplate<Type>::Contains(const xiiVec2Template<Typ
   }
 
   return false;
+}
+
+template <typename Type>
+XII_ALWAYS_INLINE bool xiiRectTemplate<Type>::Contains(const xiiRectTemplate<Type>& r) const
+{
+  return r.x >= x && r.y >= y && r.Right() <= Right() && r.Bottom() <= Bottom();
 }
 
 template <typename Type>
