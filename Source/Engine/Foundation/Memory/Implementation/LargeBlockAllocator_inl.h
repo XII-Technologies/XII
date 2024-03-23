@@ -192,6 +192,7 @@ void xiiLargeBlockAllocator<BlockSize>::Deallocate(void* ptr)
     }
   }
 
+  XII_IGNORE_UNUSED(bFound);
   XII_ASSERT_DEV(bFound, "'{0}' was not allocated with this allocator", xiiArgP(ptr));
 
   SuperBlock& superBlock = m_SuperBlocks[uiSuperBlockIndex];
