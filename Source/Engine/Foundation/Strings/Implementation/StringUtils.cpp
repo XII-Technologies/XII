@@ -205,7 +205,7 @@ xiiUInt32 xiiStringUtils::ToUpperString(char* pString, const char* pStringEnd)
   char*       pWriteStart = pString;
   const char* pReadStart  = pString;
 
-  while (pReadStart < pStringEnd && *pReadStart != '\0')
+  while ((pReadStart < pStringEnd) && (*pReadStart != '\0'))
   {
     const xiiUInt32 uiChar      = xiiUnicodeUtils::DecodeUtf8ToUtf32(pReadStart);
     const xiiUInt32 uiCharUpper = xiiStringUtils::ToUpperChar(uiChar);
@@ -223,7 +223,7 @@ xiiUInt32 xiiStringUtils::ToLowerString(char* pString, const char* pStringEnd)
   char*       pWriteStart = pString;
   const char* pReadStart  = pString;
 
-  while (pReadStart < pStringEnd && *pReadStart != '\0')
+  while ((pReadStart < pStringEnd) && (*pReadStart != '\0'))
   {
     const xiiUInt32 uiChar      = xiiUnicodeUtils::DecodeUtf8ToUtf32(pReadStart);
     const xiiUInt32 uiCharUpper = xiiStringUtils::ToLowerChar(uiChar);
@@ -265,7 +265,7 @@ xiiInt32 xiiStringUtils::Compare(const char* pString1, const char* pString2, con
 {
   XII_STRINGCOMPARE_HANDLE_NULL_PTRS(pString1, pString2, 0, -1, 1, pString1End, pString2End);
 
-  while ((*pString1 != '\0') && (*pString2 != '\0') && (pString1 < pString1End) && (pString2 < pString2End))
+  while ((pString1 < pString1End) && (pString2 < pString2End) && (*pString1 != '\0') && (*pString2 != '\0'))
   {
     if (*pString1 != *pString2)
       return ToSignedInt(*pString1) - ToSignedInt(*pString2);
@@ -302,7 +302,7 @@ xiiInt32 xiiStringUtils::CompareN(
 
   XII_STRINGCOMPARE_HANDLE_NULL_PTRS(pString1, pString2, 0, -1, 1, pString1End, pString2End);
 
-  while ((*pString1 != '\0') && (*pString2 != '\0') && (uiCharsToCompare > 0) && (pString1 < pString1End) && (pString2 < pString2End))
+  while ((uiCharsToCompare > 0) && (pString1 < pString1End) && (pString2 < pString2End) && (*pString1 != '\0') && (*pString2 != '\0'))
   {
     if (*pString1 != *pString2)
       return ToSignedInt(*pString1) - ToSignedInt(*pString2);
@@ -337,7 +337,7 @@ xiiInt32 xiiStringUtils::Compare_NoCase(const char* pString1, const char* pStrin
 {
   XII_STRINGCOMPARE_HANDLE_NULL_PTRS(pString1, pString2, 0, -1, 1, pString1End, pString2End);
 
-  while ((*pString1 != '\0') && (*pString2 != '\0') && (pString1 < pString1End) && (pString2 < pString2End))
+  while ((pString1 < pString1End) && (pString2 < pString2End) && (*pString1 != '\0') && (*pString2 != '\0'))
   {
     // utf8::next will already advance the iterators
     const xiiUInt32 uiChar1 = xiiUnicodeUtils::DecodeUtf8ToUtf32(pString1);
@@ -379,7 +379,7 @@ xiiInt32 xiiStringUtils::CompareN_NoCase(
 
   XII_STRINGCOMPARE_HANDLE_NULL_PTRS(pString1, pString2, 0, -1, 1, pString1End, pString2End);
 
-  while ((*pString1 != '\0') && (*pString2 != '\0') && (uiCharsToCompare > 0) && (pString1 < pString1End) && (pString2 < pString2End))
+  while ((uiCharsToCompare > 0) && (pString1 < pString1End) && (pString2 < pString2End) && (*pString1 != '\0') && (*pString2 != '\0'))
   {
     // utf8::next will already advance the iterators
     const xiiUInt32 uiChar1 = xiiUnicodeUtils::DecodeUtf8ToUtf32(pString1);
@@ -494,7 +494,7 @@ xiiUInt32 xiiStringUtils::CopyN(char* szDest, xiiUInt32 uiDstSize, const char* s
       szLastCharacterPos = szDest;
 
       // if we successfully copied enough characters, the only thing left is to terminate the string
-      if (iCharsCopied == (xiiInt32)uiCharsToCopy)
+      if (iCharsCopied == (int)uiCharsToCopy)
         break;
     }
 
@@ -520,7 +520,7 @@ bool xiiStringUtils::StartsWith(const char* szString, const char* szStartsWith, 
   if (IsNullOrEmpty(szString, pStringEnd))
     return false;
 
-  while ((*szString != '\0') && (szString < pStringEnd))
+  while ((szString < pStringEnd) && (*szString != '\0'))
   {
     // if we have reached the end of the StartsWith string, the other string DOES start with it
     if (*szStartsWith == '\0' || szStartsWith == szStartsWithEnd)
@@ -544,7 +544,7 @@ bool xiiStringUtils::StartsWith_NoCase(const char* szString, const char* szStart
   if (IsNullOrEmpty(szString, pStringEnd))
     return false;
 
-  while ((*szString != '\0') && (szString < pStringEnd))
+  while ((szString < pStringEnd) && (*szString != '\0'))
   {
     // if we have reached the end of the StartsWith string, the other string DOES start with it
     if (*szStartsWith == '\0' || szStartsWith == szStartsWithEnd)
@@ -637,7 +637,7 @@ const char* xiiStringUtils::FindSubString_NoCase(const char* szSource, const cha
 
   const char* pCurPos = &szSource[0];
 
-  while ((*pCurPos != '\0') && (pCurPos < pSourceEnd))
+  while ((pCurPos < pSourceEnd) && (*pCurPos != '\0'))
   {
     if (xiiStringUtils::StartsWith_NoCase(pCurPos, szStringToFind, pSourceEnd, szStringToFindEnd))
       return pCurPos;
@@ -703,7 +703,7 @@ const char* xiiStringUtils::FindWholeWord(const char* szString, const char* szSe
   const char* pPrevPos = nullptr;
   const char* pCurPos  = szString;
 
-  while ((*pCurPos != '\0') && (pCurPos < pStringEnd))
+  while ((pCurPos < pStringEnd) && (*pCurPos != '\0'))
   {
     if (StartsWith(pCurPos, szSearchFor, pStringEnd)) // yay, we found a substring, now make sure it is a 'whole word'
     {
@@ -737,7 +737,7 @@ const char* xiiStringUtils::FindWholeWord_NoCase(
   const char* pPrevPos = nullptr;
   const char* pCurPos  = szString;
 
-  while ((*pCurPos != '\0') && (pCurPos < pStringEnd))
+  while ((pCurPos < pStringEnd) && (*pCurPos != '\0'))
   {
     if (StartsWith_NoCase(pCurPos, szSearchFor, pStringEnd)) // yay, we found a substring, now make sure it is a 'whole word'
     {
@@ -933,7 +933,7 @@ bool xiiStringUtils::IsValidIdentifierName(const char* pString, const char* pStr
   if ((cur >= '0') && (cur <= '9'))
     return false;
 
-  while (*pString != '\0' && pString < pStringEnd)
+  while ((pString < pStringEnd) && (*pString != '\0'))
   {
     cur = xiiUnicodeUtils::DecodeUtf8ToUtf32(pString);
 
