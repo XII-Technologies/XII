@@ -133,7 +133,7 @@ inline void xiiVec4Template<Type>::SetZero()
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE Type xiiVec4Template<Type>::GetLength() const
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec4Template<Type>::GetLength() const
 {
   return (xiiMath::Sqrt(GetLengthSquared()));
 }
@@ -147,7 +147,7 @@ XII_FORCE_INLINE Type xiiVec4Template<Type>::GetLengthSquared() const
 }
 
 template <typename Type>
-XII_FORCE_INLINE Type xiiVec4Template<Type>::GetLengthAndNormalize()
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_FORCE_INLINE Type xiiVec4Template<Type>::GetLengthAndNormalize()
 {
   const Type fLength = GetLength();
   *this /= fLength;
@@ -155,7 +155,7 @@ XII_FORCE_INLINE Type xiiVec4Template<Type>::GetLengthAndNormalize()
 }
 
 template <typename Type>
-XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec4Template<Type>::GetNormalized() const
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec4Template<Type>::GetNormalized() const
 {
   const Type fLen = GetLength();
 
@@ -164,13 +164,13 @@ XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec4Template<Type>::GetNormalize
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE void xiiVec4Template<Type>::Normalize()
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE void xiiVec4Template<Type>::Normalize()
 {
   *this /= GetLength();
 }
 
 template <typename Type>
-inline xiiResult xiiVec4Template<Type>::NormalizeIfNotZero(const xiiVec4Template<Type>& vFallback, Type fEpsilon)
+XII_IMPLEMENT_IF_FLOAT_TYPE inline xiiResult xiiVec4Template<Type>::NormalizeIfNotZero(const xiiVec4Template<Type>& vFallback, Type fEpsilon)
 {
   XII_NAN_ASSERT(&vFallback);
 
@@ -190,7 +190,7 @@ inline xiiResult xiiVec4Template<Type>::NormalizeIfNotZero(const xiiVec4Template
   length is between a lower and upper limit.
 */
 template <typename Type>
-inline bool xiiVec4Template<Type>::IsNormalized(Type fEpsilon /* = xiiMath::HugeEpsilon<Type>() */) const
+XII_IMPLEMENT_IF_FLOAT_TYPE inline bool xiiVec4Template<Type>::IsNormalized(Type fEpsilon /* = xiiMath::HugeEpsilon<Type>() */) const
 {
   const Type t = GetLengthSquared();
   return xiiMath::IsEqual(t, (Type)1, fEpsilon);
@@ -243,7 +243,7 @@ inline bool xiiVec4Template<Type>::IsValid() const
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE Type xiiVec4Template<Type>::Distance(const xiiVec4Template<Type>& vPoint) const
+XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec4Template<Type>::Distance(const xiiVec4Template<Type>& vPoint) const
 {
   return (xiiMath::Sqrt(DistanceSquared(vPoint)));
 }
@@ -301,12 +301,22 @@ XII_FORCE_INLINE void xiiVec4Template<Type>::operator*=(Type f)
 template <typename Type>
 XII_FORCE_INLINE void xiiVec4Template<Type>::operator/=(Type f)
 {
-  const Type f_inv = xiiMath::Invert(f);
+  if constexpr (std::is_floating_point_v<Type>)
+  {
+    const Type fInverse = xiiMath::Invert(f);
 
-  x *= f_inv;
-  y *= f_inv;
-  z *= f_inv;
-  w *= f_inv;
+    x *= fInverse;
+    y *= fInverse;
+    z *= fInverse;
+    w *= fInverse;
+  }
+  else
+  {
+    x /= f;
+    y /= f;
+    z /= f;
+    w /= f;
+  }
 
   XII_NAN_ASSERT(this);
 }
@@ -416,9 +426,16 @@ XII_FORCE_INLINE const xiiVec4Template<Type> operator/(const xiiVec4Template<Typ
 {
   XII_NAN_ASSERT(&v);
 
-  // Multiplication is much faster than division
-  const Type f_inv = xiiMath::Invert(f);
-  return xiiVec4Template<Type>(v.x * f_inv, v.y * f_inv, v.z * f_inv, v.w * f_inv);
+  if constexpr (std::is_floating_point_v<Type>)
+  {
+    // Multiplication is much faster than division
+    const Type fInverse = xiiMath::Invert(f);
+    return xiiVec4Template<Type>(v.x * fInverse, v.y * fInverse, v.z * fInverse, v.w * fInverse);
+  }
+  else
+  {
+    return xiiVec4Template<Type>(v.x / f, v.y / f, v.z / f, v.w / f);
+  }
 }
 
 template <typename Type>

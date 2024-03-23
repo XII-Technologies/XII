@@ -136,7 +136,7 @@ void xiiMessageLoop_linux::RemovePendingWaits(xiiPipeChannel_linux* pChannel)
   XII_SCOPE_EXIT(m_numPendingPollModifications.Decrement());
   WakeUp();
   {
-    xiiLock   lock{m_pollMutex};
+    xiiLock lock{m_pollMutex};
     for (xiiUInt32 i = 0; i < m_pollInfos.GetCount();)
     {
       if (m_waitInfos[i].m_pChannel == pChannel)

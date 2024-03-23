@@ -10,6 +10,9 @@
 #  define XII_NAN_ASSERT(obj)
 #endif
 
+#define XII_DECLARE_IF_FLOAT_TYPE   template <typename = typename std::enable_if<std::is_floating_point_v<Type> == true>>
+#define XII_IMPLEMENT_IF_FLOAT_TYPE template <typename ENABLE_IF_FLOAT>
+
 /// \brief Simple helper union to store ints and floats to modify their bit patterns.
 union xiiIntFloatUnion
 {

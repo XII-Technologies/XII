@@ -3,11 +3,11 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 #include <dlfcn.h>
 
-#include <Foundation/System/Process.h>
 #include <Foundation/Configuration/Plugin.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Strings/StringBuilder.h>
+#include <Foundation/System/Process.h>
 
 using xiiPluginModule = void*;
 

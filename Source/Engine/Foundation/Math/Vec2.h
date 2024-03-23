@@ -26,13 +26,13 @@ public:
   // *** Constructors ***
 public:
   /// \brief default-constructed vector is uninitialized (for speed)
-  xiiVec2Template(); // [tested]
+  xiiVec2Template<Type>(); // [tested]
 
   /// \brief Initializes the vector with x,y
-  xiiVec2Template(Type inX, Type inY); // [tested]
+  xiiVec2Template<Type>(Type inX, Type inY); // [tested]
 
   /// \brief Initializes all components with xy
-  explicit xiiVec2Template(Type inV); // [tested]
+  explicit xiiVec2Template<Type>(Type inV); // [tested]
 
   // no copy-constructor and operator= since the default-generated ones will be faster
 
@@ -75,11 +75,11 @@ public:
   // *** Functions dealing with length ***
 public:
   /// \brief Returns the length of the vector.
-  Type GetLength() const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE Type GetLength() const; // [tested]
 
   /// \brief Tries to rescale the vector to the given length. If the vector is too close to zero, XII_FAILURE is returned and the vector is
   /// set to zero.
-  xiiResult SetLength(Type fNewLength, Type fEpsilon = xiiMath::DefaultEpsilon<Type>()); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE xiiResult SetLength(Type fNewLength, Type fEpsilon = xiiMath::DefaultEpsilon<Type>()); // [tested]
 
   /// \brief Returns the squared length. Faster, since no square-root is taken. Useful, if one only wants to compare the lengths of two
   /// vectors.
@@ -87,17 +87,17 @@ public:
 
   /// \brief Normalizes this vector and returns its previous length in one operation. More efficient than calling GetLength and then
   /// Normalize.
-  Type GetLengthAndNormalize(); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE Type GetLengthAndNormalize(); // [tested]
 
   /// \brief Returns a normalized version of this vector, leaves the vector itself unchanged.
-  const xiiVec2Template<Type> GetNormalized() const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE const xiiVec2Template<Type> GetNormalized() const; // [tested]
 
   /// \brief Normalizes this vector.
-  void Normalize(); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE void Normalize(); // [tested]
 
   /// \brief Tries to normalize this vector. If the vector is too close to zero, XII_FAILURE is returned and the vector is set to the given
   /// fallback value.
-  xiiResult NormalizeIfNotZero(const xiiVec2Template<Type>& vFallback = xiiVec2Template<Type>(1, 0), Type fEpsilon = xiiMath::DefaultEpsilon<Type>()); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE xiiResult NormalizeIfNotZero(const xiiVec2Template<Type>& vFallback = xiiVec2Template<Type>(1, 0), Type fEpsilon = xiiMath::DefaultEpsilon<Type>()); // [tested]
 
   /// \brief Returns, whether this vector is (0, 0).
   bool IsZero() const; // [tested]
@@ -106,7 +106,7 @@ public:
   bool IsZero(Type fEpsilon) const; // [tested]
 
   /// \brief Returns, whether the squared length of this vector is between 0.999f and 1.001f.
-  bool IsNormalized(Type fEpsilon = xiiMath::HugeEpsilon<Type>()) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE bool IsNormalized(Type fEpsilon = xiiMath::HugeEpsilon<Type>()) const; // [tested]
 
   /// \brief Returns true, if any of x or y is NaN
   bool IsNaN() const; // [tested]
@@ -115,7 +115,7 @@ public:
   bool IsValid() const; // [tested]
 
   /// \brief Returns the distance between two 2D Vectors.
-  Type Distance(const xiiVec2Template<Type>& vPoint) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE Type Distance(const xiiVec2Template<Type>& vPoint) const; // [tested]
 
   /// \brief Returns the squared distance between two 2D Vectors. Faster, since no square-root is taken. Useful, if one only wants to compare the distance of two
   /// vectors regardless of the magnitude.
@@ -179,13 +179,13 @@ public:
   ///
   /// \note This function may fail, e.g. create a vector that is zero, if the given normal is parallel to the vector itself.
   ///       If you need to handle such cases, you should manually check afterwards, whether the result is zero, or cannot be normalized.
-  void MakeOrthogonalTo(const xiiVec2Template<Type>& vNormal); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE void MakeOrthogonalTo(const xiiVec2Template<Type>& vNormal); // [tested]
 
   /// \brief Returns some arbitrary vector orthogonal to this one. The vector is NOT normalized.
   const xiiVec2Template<Type> GetOrthogonalVector() const; // [tested]
 
   /// \brief Returns this vector reflected at vNormal.
-  const xiiVec2Template<Type> GetReflectedVector(const xiiVec2Template<Type>& vNormal) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE const xiiVec2Template<Type> GetReflectedVector(const xiiVec2Template<Type>& vNormal) const; // [tested]
 };
 
 // *** Operators ***

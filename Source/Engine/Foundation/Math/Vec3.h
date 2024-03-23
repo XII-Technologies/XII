@@ -20,13 +20,13 @@ public:
   // *** Constructors ***
 public:
   /// \brief default-constructed vector is uninitialized (for speed)
-  xiiVec3Template(); // [tested]
+  xiiVec3Template<Type>(); // [tested]
 
   /// \brief Initializes the vector with x,y,z
-  xiiVec3Template(Type inX, Type inY, Type inZ); // [tested]
+  xiiVec3Template<Type>(Type inX, Type inY, Type inZ); // [tested]
 
   /// \brief Initializes all 3 components with xyz
-  explicit xiiVec3Template(Type inV); // [tested]
+  explicit xiiVec3Template<Type>(Type inV); // [tested]
   // no copy-constructor and operator= since the default-generated ones will be faster
 
   /// \brief Returns a vector with all components set to zero.
@@ -83,11 +83,11 @@ public:
   // *** Functions dealing with length ***
 public:
   /// \brief Returns the length of the vector.
-  Type GetLength() const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE Type GetLength() const; // [tested]
 
   /// \brief Tries to rescale the vector to the given length. If the vector is too close to zero, XII_FAILURE is returned and the vector is
   /// set to zero.
-  xiiResult SetLength(Type fNewLength, Type fEpsilon = xiiMath::DefaultEpsilon<Type>()); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE xiiResult SetLength(Type fNewLength, Type fEpsilon = xiiMath::DefaultEpsilon<Type>()); // [tested]
 
   /// \brief Returns the squared length. Faster, since no square-root is taken. Useful, if one only wants to compare the lengths of two
   /// vectors.
@@ -99,17 +99,17 @@ public:
 
   /// \brief Normalizes this vector and returns its previous length in one operation. More efficient than calling GetLength and then
   /// Normalize.
-  Type GetLengthAndNormalize(); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE Type GetLengthAndNormalize(); // [tested]
 
   /// \brief Returns a normalized version of this vector, leaves the vector itself unchanged.
-  const xiiVec3Template<Type> GetNormalized() const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE const xiiVec3Template<Type> GetNormalized() const; // [tested]
 
   /// \brief Normalizes this vector.
-  void Normalize(); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE void Normalize(); // [tested]
 
   /// \brief Tries to normalize this vector. If the vector is too close to zero, XII_FAILURE is returned and the vector is set to the given
   /// fallback value.
-  xiiResult NormalizeIfNotZero(const xiiVec3Template<Type>& vFallback = xiiVec3Template<Type>(1, 0, 0), Type fEpsilon = xiiMath::SmallEpsilon<Type>()); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE xiiResult NormalizeIfNotZero(const xiiVec3Template<Type>& vFallback = xiiVec3Template<Type>(1, 0, 0), Type fEpsilon = xiiMath::SmallEpsilon<Type>()); // [tested]
 
   /// \brief Returns, whether this vector is (0, 0, 0).
   bool IsZero() const; // [tested]
@@ -118,7 +118,7 @@ public:
   bool IsZero(Type fEpsilon) const; // [tested]
 
   /// \brief Returns, whether the squared length of this vector is between 0.999f and 1.001f.
-  bool IsNormalized(Type fEpsilon = xiiMath::HugeEpsilon<Type>()) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE bool IsNormalized(Type fEpsilon = xiiMath::HugeEpsilon<Type>()) const; // [tested]
 
   /// \brief Returns true, if any of x, y or z is NaN
   bool IsNaN() const; // [tested]
@@ -127,7 +127,7 @@ public:
   bool IsValid() const; // [tested]
 
   /// \brief Returns the distance between two 3D Vectors.
-  Type Distance(const xiiVec3Template<Type>& vPoint) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE Type Distance(const xiiVec3Template<Type>& vPoint) const; // [tested]
 
   /// \brief Returns the squared distance between two 3D Vectors. Faster, since no square-root is taken. Useful, if one only wants to compare the distance of two
   /// vectors regardless of the magnitude.
@@ -198,62 +198,62 @@ public:
   // *** Other common operations ***
 public:
   /// \brief Calculates the normal of the triangle defined by the three vertices. Vertices are assumed to be ordered counter-clockwise.
-  xiiResult CalculateNormal(const xiiVec3Template<Type>& v1, const xiiVec3Template<Type>& v2, const xiiVec3Template<Type>& v3); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE xiiResult CalculateNormal(const xiiVec3Template<Type>& v1, const xiiVec3Template<Type>& v2, const xiiVec3Template<Type>& v3); // [tested]
 
   /// \brief Modifies this direction vector to be orthogonal to the given (normalized) direction vector. The result is NOT normalized.
   ///
   /// \note This function may fail, e.g. create a vector that is zero, if the given normal is parallel to the vector itself.
   ///       If you need to handle such cases, you should manually check afterwards, whether the result is zero, or cannot be normalized.
-  void MakeOrthogonalTo(const xiiVec3Template<Type>& vNormal); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE void MakeOrthogonalTo(const xiiVec3Template<Type>& vNormal); // [tested]
 
   /// \brief Returns some arbitrary vector orthogonal to this one. The vector is NOT normalized.
-  const xiiVec3Template<Type> GetOrthogonalVector() const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE const xiiVec3Template<Type> GetOrthogonalVector() const; // [tested]
 
   /// \brief Returns this vector reflected at vNormal.
-  const xiiVec3Template<Type> GetReflectedVector(const xiiVec3Template<Type>& vNormal) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE const xiiVec3Template<Type> GetReflectedVector(const xiiVec3Template<Type>& vNormal) const; // [tested]
 
   /// \brief Returns this vector, refracted at vNormal, using the refraction index of the current medium and the medium it enters.
-  const xiiVec3Template<Type> GetRefractedVector(const xiiVec3Template<Type>& vNormal, Type fRefIndex1, Type fRefIndex2) const;
+  XII_DECLARE_IF_FLOAT_TYPE const xiiVec3Template<Type> GetRefractedVector(const xiiVec3Template<Type>& vNormal, Type fRefIndex1, Type fRefIndex2) const;
 
   /// \brief Sets the vector to a random point inside a unit sphere (radius 1).
-  static xiiVec3Template<Type> CreateRandomPointInSphere(xiiRandom& ref_rng); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE static xiiVec3Template<Type> CreateRandomPointInSphere(xiiRandom& ref_rng); // [tested]
 
   /// \brief Creates a random direction vector. The vector is normalized.
-  static xiiVec3Template<Type> CreateRandomDirection(xiiRandom& ref_rng); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE static xiiVec3Template<Type> CreateRandomDirection(xiiRandom& ref_rng); // [tested]
 
   /// \brief Creates a random vector around the x axis with a maximum deviation angle of \a maxDeviation. The vector is normalized.
   /// The deviation angle must be larger than zero.
-  static xiiVec3Template<Type> CreateRandomDeviationX(xiiRandom& ref_rng, const xiiAngle& maxDeviation); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE static xiiVec3Template<Type> CreateRandomDeviationX(xiiRandom& ref_rng, const xiiAngle& maxDeviation); // [tested]
 
   /// \brief Creates a random vector around the x axis with a maximum deviation angle of \a maxDeviation. The vector is normalized.
   /// The deviation angle must be larger than zero.
-  static xiiVec3Template<Type> CreateRandomDeviationX(xiiRandom& ref_rng, const xiiAngled& maxDeviation); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE static xiiVec3Template<Type> CreateRandomDeviationX(xiiRandom& ref_rng, const xiiAngled& maxDeviation); // [tested]
 
   /// \brief Creates a random vector around the y axis with a maximum deviation angle of \a maxDeviation. The vector is normalized.
   /// The deviation angle must be larger than zero.
-  static xiiVec3Template<Type> CreateRandomDeviationY(xiiRandom& ref_rng, const xiiAngle& maxDeviation); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE static xiiVec3Template<Type> CreateRandomDeviationY(xiiRandom& ref_rng, const xiiAngle& maxDeviation); // [tested]
 
   /// \brief Creates a random vector around the y axis with a maximum deviation angle of \a maxDeviation. The vector is normalized.
   /// The deviation angle must be larger than zero.
-  static xiiVec3Template<Type> CreateRandomDeviationY(xiiRandom& ref_rng, const xiiAngled& maxDeviation); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE static xiiVec3Template<Type> CreateRandomDeviationY(xiiRandom& ref_rng, const xiiAngled& maxDeviation); // [tested]
 
   /// \brief Creates a random vector around the z axis with a maximum deviation angle of \a maxDeviation. The vector is normalized.
   /// The deviation angle must be larger than zero.
-  static xiiVec3Template<Type> CreateRandomDeviationZ(xiiRandom& ref_rng, const xiiAngle& maxDeviation); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE static xiiVec3Template<Type> CreateRandomDeviationZ(xiiRandom& ref_rng, const xiiAngle& maxDeviation); // [tested]
 
   /// \brief Creates a random vector around the z axis with a maximum deviation angle of \a maxDeviation. The vector is normalized.
   /// The deviation angle must be larger than zero.
-  static xiiVec3Template<Type> CreateRandomDeviationZ(xiiRandom& ref_rng, const xiiAngled& maxDeviation); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE static xiiVec3Template<Type> CreateRandomDeviationZ(xiiRandom& ref_rng, const xiiAngled& maxDeviation); // [tested]
 
   /// \brief Creates a random vector around the given normal with a maximum deviation.
   /// \note If you are going to do this many times with the same axis, rather than calling this function, instead manually
   /// do what this function does (see inline code) and only compute the quaternion once.
-  static xiiVec3Template<Type> CreateRandomDeviation(xiiRandom& ref_rng, const xiiAngle& maxDeviation, const xiiVec3Template<Type>& vNormal); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE static xiiVec3Template<Type> CreateRandomDeviation(xiiRandom& ref_rng, const xiiAngle& maxDeviation, const xiiVec3Template<Type>& vNormal); // [tested]
 
   /// \brief Creates a random vector around the given normal with a maximum deviation.
   /// \note If you are going to do this many times with the same axis, rather than calling this function, instead manually
   /// do what this function does (see inline code) and only compute the quaternion once.
-  static xiiVec3Template<Type> CreateRandomDeviation(xiiRandom& ref_rng, const xiiAngled& maxDeviation, const xiiVec3Template<Type>& vNormal); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE static xiiVec3Template<Type> CreateRandomDeviation(xiiRandom& ref_rng, const xiiAngled& maxDeviation, const xiiVec3Template<Type>& vNormal); // [tested]
 };
 
 // *** Operators ***
