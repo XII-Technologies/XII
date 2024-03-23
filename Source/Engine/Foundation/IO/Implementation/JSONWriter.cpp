@@ -614,6 +614,19 @@ void xiiJSONWriter::WriteVariant(const xiiVariant& value)
       EndArray();
     }
       return;
+    case xiiVariant::Type::VariantDictionary:
+    {
+      BeginObject();
+
+      const auto& dictionary = value.Get<xiiVariantDictionary>();
+
+      for (auto& element : dictionary)
+      {
+        AddVariableVariant(element.Key(), element.Value());
+      }
+      EndObject();
+    }
+      return;
 
     default:
       break;
