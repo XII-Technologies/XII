@@ -11,12 +11,12 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
     xiiFrustum f;
 
     xiiPlane p[6];
-    p[0].SetFromNormalAndPoint(xiiVec3(1, 0, 0), xiiVec3(1, 2, 3));
-    p[1].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
-    p[2].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
-    p[3].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
-    p[4].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
-    p[5].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
+    p[xiiFrustum::PlaneType::LeftPlane].SetFromNormalAndPoint(xiiVec3(-1, 0, 0), xiiVec3(-2, 0, 0));
+    p[xiiFrustum::PlaneType::RightPlane].SetFromNormalAndPoint(xiiVec3(+1, 0, 0), xiiVec3(+2, 0, 0));
+    p[xiiFrustum::PlaneType::BottomPlane].SetFromNormalAndPoint(xiiVec3(0, -1, 0), xiiVec3(0, -2, 0));
+    p[xiiFrustum::PlaneType::TopPlane].SetFromNormalAndPoint(xiiVec3(0, +1, 0), xiiVec3(0, +2, 0));
+    p[xiiFrustum::PlaneType::NearPlane].SetFromNormalAndPoint(xiiVec3(0, 0, -1), xiiVec3(0, 0, 0));
+    p[xiiFrustum::PlaneType::FarPlane].SetFromNormalAndPoint(xiiVec3(0, 0, 1), xiiVec3(0, 0, 100));
 
     f.SetFrustum(p);
 
@@ -29,12 +29,12 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
     xiiFrustum f;
 
     xiiPlane p[6];
-    p[0].SetFromNormalAndPoint(xiiVec3(1, 0, 0), xiiVec3(1, 2, 3));
-    p[1].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
-    p[2].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
-    p[3].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
-    p[4].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
-    p[5].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
+    p[xiiFrustum::PlaneType::LeftPlane].SetFromNormalAndPoint(xiiVec3(-1, 0, 0), xiiVec3(-2, 0, 0));
+    p[xiiFrustum::PlaneType::RightPlane].SetFromNormalAndPoint(xiiVec3(+1, 0, 0), xiiVec3(+2, 0, 0));
+    p[xiiFrustum::PlaneType::BottomPlane].SetFromNormalAndPoint(xiiVec3(0, -1, 0), xiiVec3(0, -2, 0));
+    p[xiiFrustum::PlaneType::TopPlane].SetFromNormalAndPoint(xiiVec3(0, +1, 0), xiiVec3(0, +2, 0));
+    p[xiiFrustum::PlaneType::NearPlane].SetFromNormalAndPoint(xiiVec3(0, 0, -1), xiiVec3(0, 0, 0));
+    p[xiiFrustum::PlaneType::FarPlane].SetFromNormalAndPoint(xiiVec3(0, 0, 1), xiiVec3(0, 0, 100));
 
     f.SetFrustum(p);
 
@@ -56,12 +56,12 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
     xiiFrustum f;
 
     xiiPlane p[6];
-    p[0].SetFromNormalAndPoint(xiiVec3(1, 0, 0), xiiVec3(1, 2, 3));
-    p[1].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
-    p[2].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
-    p[3].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
-    p[4].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
-    p[5].SetFromNormalAndPoint(xiiVec3(0, 1, 0), xiiVec3(2, 3, 4));
+    p[xiiFrustum::PlaneType::LeftPlane].SetFromNormalAndPoint(xiiVec3(-1, 0, 0), xiiVec3(-2, 0, 0));
+    p[xiiFrustum::PlaneType::RightPlane].SetFromNormalAndPoint(xiiVec3(+1, 0, 0), xiiVec3(+2, 0, 0));
+    p[xiiFrustum::PlaneType::BottomPlane].SetFromNormalAndPoint(xiiVec3(0, -1, 0), xiiVec3(0, -2, 0));
+    p[xiiFrustum::PlaneType::TopPlane].SetFromNormalAndPoint(xiiVec3(0, +1, 0), xiiVec3(0, +2, 0));
+    p[xiiFrustum::PlaneType::NearPlane].SetFromNormalAndPoint(xiiVec3(0, 0, -1), xiiVec3(0, 0, 0));
+    p[xiiFrustum::PlaneType::FarPlane].SetFromNormalAndPoint(xiiVec3(0, 0, 1), xiiVec3(0, 0, 100));
 
     f.SetFrustum(p);
 
@@ -246,7 +246,7 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
     for (int f = 0; f < 2; ++f)
     {
       xiiVec3 corner[8];
-      frustum[f].ComputeCornerPoints(corner);
+      frustum[f].ComputeCornerPoints(corner).AssertSuccess();
 
       xiiPositionOnPlane::Enum results[8][6];
 

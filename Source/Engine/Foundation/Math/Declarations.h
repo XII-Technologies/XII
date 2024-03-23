@@ -234,6 +234,8 @@ class xiiColorGammaUB;
 
 class xiiRandom;
 
+class xiiFrustum;
+
 
 /// \brief An enum that allows to select on of the six main axis (positive / negative)
 struct XII_FOUNDATION_DLL xiiBasisAxis

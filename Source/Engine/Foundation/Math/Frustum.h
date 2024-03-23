@@ -13,9 +13,9 @@ struct xiiVolumePosition
   /// \brief Enum that describes where in a volume another object is located.
   enum Enum
   {
-    Outside,      //< means an object is ENTIRELY inside a volume
-    Inside,       //< means an object is outside a volume
-    Intersecting, //< means an object is PARTIALLY inside/outside a volume
+    Outside,      ///< This indicates that an object is ENTIRELY inside a volume.
+    Inside,       ///< This indicates that an object is outside a volume.
+    Intersecting, ///< This indicates that an object is PARTIALLY inside/outside a volume.
   };
 };
 
@@ -100,7 +100,7 @@ public:
   ///
   /// Note: If the frustum contains an infinite far plane, the far plane corners (out_points[4..7])
   /// will be at infinity.
-  void ComputeCornerPoints(xiiVec3 out_pPoints[FrustumCorner::CORNER_COUNT]) const; // [tested]
+  xiiResult ComputeCornerPoints(xiiVec3 out_pPoints[FrustumCorner::CORNER_COUNT]) const; // [tested]
 
   /// \brief Checks whether the given object is inside or outside the frustum.
   ///

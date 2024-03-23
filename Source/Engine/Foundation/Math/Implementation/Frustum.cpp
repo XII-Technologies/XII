@@ -31,6 +31,20 @@ bool xiiFrustum::IsValid() const
       return false;
   }
 
+  xiiVec3 corners[8];
+  if (ComputeCornerPoints(corners).Failed())
+    return false;
+
+  xiiVec3 center = xiiVec3::ZeroVector();
+  for (xiiUInt32 i = 0; i < 8; ++i)
+  {
+    center += corners[i];
+  }
+  center /= 8.0f;
+
+  if (GetObjectPosition(&center, 1) != xiiVolumePosition::Inside)
+    return false;
+
   return true;
 }
 
@@ -43,7 +57,9 @@ void xiiFrustum::SetFrustum(const xiiPlane* pPlanes)
 void xiiFrustum::TransformFrustum(const xiiMat4& mTransform)
 {
   for (xiiUInt32 i = 0; i < PLANE_COUNT; ++i)
+  {
     m_Planes[i].Transform(mTransform);
+  }
 }
 
 xiiVolumePosition::Enum xiiFrustum::GetObjectPosition(const xiiVec3* pVertices, xiiUInt32 uiNumVertices) const
@@ -188,19 +204,19 @@ void xiiFrustum::InvertFrustum()
     m_Planes[i].Flip();
 }
 
-void xiiFrustum::ComputeCornerPoints(xiiVec3 out_pPoints[FrustumCorner::CORNER_COUNT]) const
+xiiResult xiiFrustum::ComputeCornerPoints(xiiVec3 out_pPoints[FrustumCorner::CORNER_COUNT]) const
 {
-  // clang-format off
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[TopPlane], m_Planes[LeftPlane], out_pPoints[FrustumCorner::NearTopLeft]).IgnoreResult();
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[TopPlane], m_Planes[RightPlane], out_pPoints[FrustumCorner::NearTopRight]).IgnoreResult();
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[BottomPlane], m_Planes[LeftPlane], out_pPoints[FrustumCorner::NearBottomLeft]).IgnoreResult();
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[BottomPlane], m_Planes[RightPlane], out_pPoints[FrustumCorner::NearBottomRight]).IgnoreResult();
+  XII_SUCCEED_OR_RETURN(xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[TopPlane], m_Planes[LeftPlane], out_pPoints[FrustumCorner::NearTopLeft]));
+  XII_SUCCEED_OR_RETURN(xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[TopPlane], m_Planes[RightPlane], out_pPoints[FrustumCorner::NearTopRight]));
+  XII_SUCCEED_OR_RETURN(xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[BottomPlane], m_Planes[LeftPlane], out_pPoints[FrustumCorner::NearBottomLeft]));
+  XII_SUCCEED_OR_RETURN(xiiPlane::GetPlanesIntersectionPoint(m_Planes[NearPlane], m_Planes[BottomPlane], m_Planes[RightPlane], out_pPoints[FrustumCorner::NearBottomRight]));
 
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[TopPlane], m_Planes[LeftPlane], out_pPoints[FrustumCorner::FarTopLeft]).IgnoreResult();
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[TopPlane], m_Planes[RightPlane], out_pPoints[FrustumCorner::FarTopRight]).IgnoreResult();
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[BottomPlane], m_Planes[LeftPlane], out_pPoints[FrustumCorner::FarBottomLeft]).IgnoreResult();
-  xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[BottomPlane], m_Planes[RightPlane], out_pPoints[FrustumCorner::FarBottomRight]).IgnoreResult();
-  // clang-format on
+  XII_SUCCEED_OR_RETURN(xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[TopPlane], m_Planes[LeftPlane], out_pPoints[FrustumCorner::FarTopLeft]));
+  XII_SUCCEED_OR_RETURN(xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[TopPlane], m_Planes[RightPlane], out_pPoints[FrustumCorner::FarTopRight]));
+  XII_SUCCEED_OR_RETURN(xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[BottomPlane], m_Planes[LeftPlane], out_pPoints[FrustumCorner::FarBottomLeft]));
+  XII_SUCCEED_OR_RETURN(xiiPlane::GetPlanesIntersectionPoint(m_Planes[FarPlane], m_Planes[BottomPlane], m_Planes[RightPlane], out_pPoints[FrustumCorner::FarBottomRight]));
+
+  return XII_SUCCESS;
 }
 
 void xiiFrustum::SetFrustum(const xiiMat4& mModelViewProjection0, xiiClipSpaceDepthRange::Enum depthRange, xiiHandedness::Enum handedness)
