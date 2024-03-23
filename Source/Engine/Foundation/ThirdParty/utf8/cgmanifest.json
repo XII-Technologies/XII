@@ -6,7 +6,7 @@
         "git": {
           "Name": "utfcpp",
           "repositoryUrl": "https://github.com/nemtrif/utfcpp",
-          "commitHash": "6f0e7c7865208f2a6b882a7e138584beb1b6b2fd"
+          "commitHash": "e39907b381d828918bde57cb5a6c3bca01cf0a0b"
         },
         "version": "3.1.2"
       }
