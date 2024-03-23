@@ -127,6 +127,9 @@ public:
   /// \internal Determines the plugin paths.
   static void GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& ref_sOriginalFile, xiiStringBuilder& ref_sCopiedFile, xiiUInt8 uiFileCopyNumber);
 
+  /// \internal Determines if a plugin copy is required for hot reloading for plugin code.
+  static bool PlatformNeedsPluginCopy();
+
 private:
   xiiPlugin() = delete;
 };

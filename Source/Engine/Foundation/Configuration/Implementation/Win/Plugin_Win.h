@@ -12,6 +12,11 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 using xiiPluginModule = HMODULE;
 
+bool xiiPlugin::PlatformNeedsPluginCopy()
+{
+  return true;
+}
+
 void xiiPlugin::GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& ref_sOriginalFile, xiiStringBuilder& ref_sCopiedFile, xiiUInt8 uiFileCopyNumber)
 {
   ref_sOriginalFile = xiiOSFile::GetApplicationDirectory();
