@@ -137,6 +137,27 @@ xiiStringView xiiStringView::GetShrunk(xiiUInt32 uiShrinkCharsFront, xiiUInt32 u
   return tmp;
 }
 
+xiiStringView xiiStringView::GetSubString(xiiUInt32 uiFirstCharacter, xiiUInt32 uiNumCharacters) const
+{
+  if (!IsValid())
+  {
+    return {};
+  }
+
+  const char* pStart = m_pStart;
+  xiiUnicodeUtils::MoveToNextUtf8(pStart, m_pEnd, uiFirstCharacter);
+
+  if (pStart == m_pEnd)
+  {
+    return {};
+  }
+
+  const char* pEnd = pStart;
+  xiiUnicodeUtils::MoveToNextUtf8(pEnd, m_pEnd, uiNumCharacters);
+
+  return xiiStringView(pStart, pEnd);
+}
+
 void xiiStringView::ChopAwayFirstCharacterUtf8()
 {
   if (IsValid())
