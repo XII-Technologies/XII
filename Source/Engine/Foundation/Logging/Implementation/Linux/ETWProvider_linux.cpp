@@ -1,21 +1,10 @@
 #include <Foundation/FoundationPCH.h>
 
-#include <Foundation/Logging/Implementation/Win/ETWProvider_win.h>
+#include <Foundation/Logging/Implementation/Linux/ETWProvider_linux.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if XII_ENABLED(XII_PLATFORM_LINUX) && defined(BUILDSYSTEM_ENABLE_TRACELOGGING_LTTNG_SUPPORT)
 
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
-#  include <TraceLoggingProvider.h>
-
-// Workaround to support TraceLoggingProvider.h and /utf-8 compiler switch.
-#  undef _TlgPragmaUtf8Begin
-#  undef _TlgPragmaUtf8End
-#  define _TlgPragmaUtf8Begin
-#  define _TlgPragmaUtf8End
-#  undef _tlgPragmaUtf8Begin
-#  undef _tlgPragmaUtf8End
-#  define _tlgPragmaUtf8Begin
-#  define _tlgPragmaUtf8End
+#  include <tracelogging/TraceLoggingProvider.h>
 
 TRACELOGGING_DECLARE_PROVIDER(g_xiiETWLogProvider);
 
@@ -39,7 +28,7 @@ void xiiETWProvider::LogMessage(xiiLogMsgType::Enum eventType, xiiUInt8 uiIndent
 {
   const xiiStringBuilder sTemp = sText;
 
-  TraceLoggingWrite(g_xiiETWLogProvider, "LogMessge", TraceLoggingValue((xiiInt32)eventType, "Type"), TraceLoggingValue(uiIndentation, "Indentation"), TraceLoggingValue(sTemp.GetData(), "Text"));
+  TraceLoggingWrite(g_xiiETWLogProvider, "LogMessage", TraceLoggingValue((int)eventType, "Type"), TraceLoggingValue(uiIndentation, "Indentation"), TraceLoggingValue(sTemp.GetData(), "Text"));
 }
 
 xiiETWProvider& xiiETWProvider::GetInstance()
@@ -49,4 +38,4 @@ xiiETWProvider& xiiETWProvider::GetInstance()
 }
 #endif
 
-XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_Win_ETWProvider_win);
+XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_Linux_ETWProvider_linux);

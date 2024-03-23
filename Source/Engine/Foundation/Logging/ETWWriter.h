@@ -4,7 +4,6 @@
 
 namespace xiiLogWriter
 {
-
   /// \brief A simple log writer that outputs all log messages to the XII ETW provider.
   class XII_FOUNDATION_DLL ETW
   {

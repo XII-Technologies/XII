@@ -2,7 +2,7 @@
 
 #include <Foundation/Basics.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
+#if XII_ENABLED(XII_PLATFORM_LINUX) && defined(BUILDSYSTEM_ENABLE_TRACELOGGING_LTTNG_SUPPORT)
 
 #  include <Foundation/FoundationInternal.h>
 #  include <Foundation/Logging/Log.h>

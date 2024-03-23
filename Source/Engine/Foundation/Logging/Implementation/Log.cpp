@@ -7,8 +7,8 @@
 #include <Foundation/Time/Time.h>
 #include <Foundation/Time/Timestamp.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Logging/Implementation/Win/ETWProvider_win.h>
+#if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
+#  include <Foundation/Logging/ETWWriter.h>
 #endif
 #if XII_ENABLED(XII_PLATFORM_ANDROID)
 #  include <android/log.h>
@@ -26,7 +26,6 @@ static xiiMutex          s_OverrideLogMutex;
 
 /// \brief The log system that messages are sent to when the user specifies no system himself.
 static thread_local xiiLogInterface* s_DefaultLogSystem = nullptr;
-
 
 xiiEventSubscriptionID xiiGlobalLog::AddLogWriter(xiiLoggingEvent::Handler handler)
 {
@@ -110,7 +109,6 @@ xiiLogBlock::xiiLogBlock(xiiStringView sName, xiiStringView sContextInfo)
   m_fSeconds = xiiTime::Now().GetSeconds();
 #endif
 }
-
 
 xiiLogBlock::xiiLogBlock(xiiLogInterface* pInterface, xiiStringView sName, xiiStringView sContextInfo)
 {
@@ -238,8 +236,8 @@ void xiiLog::Print(const char* szText)
 {
   printf("%s", szText);
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  xiiETWProvider::GetInstance().LogMessge(xiiLogMsgType::ErrorMsg, 0, szText);
+#if XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX)
+  xiiLogWriter::ETW::LogMessage(xiiLogMsgType::ErrorMsg, 0, szText);
 #endif
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   OutputDebugStringW(xiiStringWChar(szText).GetData());
@@ -314,8 +312,7 @@ void xiiLog::GenerateFormattedTimestamp(TimestampMode mode, xiiStringBuilder& re
       ref_sTimestampOut.Format("[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::ShowMilliseconds));
       break;
     case TimestampMode::Textual:
-      ref_sTimestampOut.Format(
-        "[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::TextualDate | xiiArgDateTime::ShowMilliseconds | xiiArgDateTime::ShowTimeZone));
+      ref_sTimestampOut.Format("[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::TextualDate | xiiArgDateTime::ShowMilliseconds | xiiArgDateTime::ShowTimeZone));
       break;
     default:
       XII_ASSERT_DEV(false, "Unknown timestamp mode.");
@@ -440,6 +437,5 @@ bool xiiLog::Flush(xiiUInt32 uiNumNewMsgThreshold, xiiTime timeIntervalThreshold
 
   return true;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Logging_Implementation_Log);
