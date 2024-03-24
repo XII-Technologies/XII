@@ -4,10 +4,14 @@
 
 #include <GraphicsFoundation/States/RasterizerState.h>
 
+struct D3D12_RASTERIZER_DESC;
+
 class XII_GRAPHICSD3D12_DLL xiiGALRasterizerStateD3D12 final : public xiiGALRasterizerState
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALRasterizerStateD3D12, xiiGALRasterizerState);
+
 public:
-  const Diligent::RasterizerStateDesc* GetRasterizerState() const;
+  const D3D12_RASTERIZER_DESC* GetRasterizerState() const;
 
 protected:
   friend class xiiGALDeviceD3D12;
@@ -22,7 +26,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
-  Diligent::RasterizerStateDesc m_RasterizerState = {};
+  D3D12_RASTERIZER_DESC m_RasterizerState = {};
 };
 
 #include <GraphicsD3D12/States/Implementation/RasterizerStateD3D12_inl.h>
