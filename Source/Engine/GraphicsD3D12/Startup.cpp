@@ -1,7 +1,6 @@
 #include <GraphicsD3D12/GraphicsD3D12PCH.h>
 
 #include <Foundation/Configuration/Startup.h>
-#include <GraphicsD3D12/Device/DiligentCore.h>
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(xiiGAL, GraphicsD3D12)
@@ -13,12 +12,10 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(xiiGAL, GraphicsD3D12)
 
   ON_CORESYSTEMS_STARTUP
   {
-    xiiDiligentCore::Startup();
   }
 
   ON_CORESYSTEMS_SHUTDOWN
   {
-    xiiDiligentCore::Shutdown();
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
