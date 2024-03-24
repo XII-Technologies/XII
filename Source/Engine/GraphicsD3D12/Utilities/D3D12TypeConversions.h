@@ -2,11 +2,13 @@
 
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
 
 #include <d3d12.h>
+#include <dxgitype.h>
 
 #include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 
@@ -35,6 +37,21 @@ public:
 
   static D3D12_FILL_MODE GetD3D12FillMode(xiiEnum<xiiGALFillMode> e);
   static D3D12_CULL_MODE GetD3D12CullMode(xiiEnum<xiiGALCullMode> e);
+
+  static xiiUInt8 GetColorWriteMask(xiiBitflags<xiiGALColorMask> e);
+
+  static DXGI_FORMAT                  GetD3D12Format(xiiEnum<xiiGALTextureFormat> e);
+  static xiiEnum<xiiGALTextureFormat> GetGALFormat(DXGI_FORMAT e);
+
+  static DXGI_MODE_SCALING            GetD3D12ScalingMode(xiiEnum<xiiGALScalingMode> e);
+  static xiiEnum<xiiGALScalingMode>   GetGALScalingMode(DXGI_MODE_SCALING e);
+  static DXGI_MODE_SCANLINE_ORDER     GetD3D12ScanLineOrder(xiiEnum<xiiGALScanLineOrder> e);
+  static xiiEnum<xiiGALScanLineOrder> GetGALScanLineOrder(DXGI_MODE_SCANLINE_ORDER e);
+
+  static D3D12_FILTER GetD3D12Filter(xiiEnum<xiiGALFilterType> minFilter, xiiEnum<xiiGALFilterType> magFilter, xiiEnum<xiiGALFilterType> mipFilter);
+  static D3D12_TEXTURE_ADDRESS_MODE GetD3D12TextureAddressMode(xiiEnum<xiiGALTextureAddressMode> e);
+
+  static D3D12_QUERY_HEAP_TYPE GetD3D12QueryType(xiiEnum<xiiGALQueryType> e);
 };
 
 #include <GraphicsD3D12/Utilities/Implementation/D3D12TypeConversions_inl.h>
