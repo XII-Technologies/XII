@@ -1,0 +1,28 @@
+#pragma once
+
+#include <GraphicsD3D12/GraphicsD3D12DLL.h>
+
+#include <GraphicsFoundation/Resources/RenderPass.h>
+
+class XII_GRAPHICSD3D12_DLL xiiGALRenderPassD3D12 final : public xiiGALRenderPass
+{
+public:
+  Diligent::IRenderPass* GetRenderPass() const;
+
+protected:
+  friend class xiiGALDeviceD3D12;
+  friend class xiiMemoryUtils;
+
+  xiiGALRenderPassD3D12(const xiiGALRenderPassCreationDescription& creationDescription);
+
+  virtual ~xiiGALRenderPassD3D12();
+
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+
+protected:
+  Diligent::IRenderPass* m_pRenderPass = nullptr;
+};
+
+#include <GraphicsD3D12/Resources/Implementation/RenderPassD3D12_inl.h>
