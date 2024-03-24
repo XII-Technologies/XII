@@ -2,6 +2,11 @@
 
 #include <GraphicsD3D12/States/BlendStateD3D12.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBlendStateD3D12, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALBlendStateD3D12::xiiGALBlendStateD3D12(const xiiGALBlendStateCreationDescription& creationDescription) :
   xiiGALBlendState(creationDescription)
 {
@@ -11,32 +16,25 @@ xiiGALBlendStateD3D12::~xiiGALBlendStateD3D12() = default;
 
 xiiResult xiiGALBlendStateD3D12::InitPlatform(xiiGALDevice* pDevice)
 {
-  m_BlendState.AlphaToCoverageEnable  = m_Description.m_bAlphaToCoverage;
-  m_BlendState.IndependentBlendEnable = m_Description.m_bIndependentBlend;
+  m_BlendState.AlphaToCoverageEnable  = D3D12_BOOL(m_Description.m_bAlphaToCoverage);
+  m_BlendState.IndependentBlendEnable = D3D12_BOOL(m_Description.m_bIndependentBlend);
 
   for (xiiUInt32 uiAttachmentIndex = 0; uiAttachmentIndex < m_Description.m_RenderTargets.GetCount(); ++uiAttachmentIndex)
   {
     auto& rtBlendState      = m_Description.m_RenderTargets[uiAttachmentIndex];
-    auto& rtAttachmentState = m_BlendState.RenderTargets[uiAttachmentIndex];
+    auto& rtAttachmentState = m_BlendState.RenderTarget[uiAttachmentIndex];
 
-    rtAttachmentState.BlendEnable = rtBlendState.m_bBlendEnable;
+    rtAttachmentState.BlendEnable = D3D12_BOOL(rtBlendState.m_bBlendEnable);
 
-    rtAttachmentState.SrcBlend  = xiiDiligentTypeConversions::GetBlendFactor(rtBlendState.m_SourceBlend);
-    rtAttachmentState.DestBlend = xiiDiligentTypeConversions::GetBlendFactor(rtBlendState.m_DestinationBlend);
-    rtAttachmentState.BlendOp   = xiiDiligentTypeConversions::GetBlendOp(rtBlendState.m_BlendOperation);
+    rtAttachmentState.SrcBlend  = xiiD3D12TypeConversions::GetD3D12BlendFactor(rtBlendState.m_SourceBlend);
+    rtAttachmentState.DestBlend = xiiD3D12TypeConversions::GetD3D12BlendFactor(rtBlendState.m_DestinationBlend);
+    rtAttachmentState.BlendOp   = xiiD3D12TypeConversions::GetD3D12BlendOp(rtBlendState.m_BlendOperation);
 
-    rtAttachmentState.SrcBlendAlpha  = xiiDiligentTypeConversions::GetBlendFactor(rtBlendState.m_SourceBlendAlpha);
-    rtAttachmentState.DestBlendAlpha = xiiDiligentTypeConversions::GetBlendFactor(rtBlendState.m_DestinationBlendAlpha);
-    rtAttachmentState.BlendOpAlpha   = xiiDiligentTypeConversions::GetBlendOp(rtBlendState.m_BlendOperationAlpha);
+    rtAttachmentState.SrcBlendAlpha  = xiiD3D12TypeConversions::GetD3D12BlendFactor(rtBlendState.m_SourceBlendAlpha);
+    rtAttachmentState.DestBlendAlpha = xiiD3D12TypeConversions::GetD3D12BlendFactor(rtBlendState.m_DestinationBlendAlpha);
+    rtAttachmentState.BlendOpAlpha   = xiiD3D12TypeConversions::GetD3D12BlendOp(rtBlendState.m_BlendOperationAlpha);
 
-    if (rtBlendState.m_ColorMask.IsSet(xiiGALColorMask::Red))
-      rtAttachmentState.RenderTargetWriteMask |= Diligent::COLOR_MASK_RED;
-    if (rtBlendState.m_ColorMask.IsSet(xiiGALColorMask::Green))
-      rtAttachmentState.RenderTargetWriteMask |= Diligent::COLOR_MASK_GREEN;
-    if (rtBlendState.m_ColorMask.IsSet(xiiGALColorMask::Blue))
-      rtAttachmentState.RenderTargetWriteMask |= Diligent::COLOR_MASK_BLUE;
-    if (rtBlendState.m_ColorMask.IsSet(xiiGALColorMask::Alpha))
-      rtAttachmentState.RenderTargetWriteMask |= Diligent::COLOR_MASK_ALPHA;
+    rtAttachmentState.RenderTargetWriteMask = xiiD3D12TypeConversions::GetColorWriteMask(rtBlendState.m_ColorMask);
   }
 
   return XII_SUCCESS;
