@@ -1,14 +1,20 @@
 
-XII_ALWAYS_INLINE Diligent::IRenderDevice* xiiGALDeviceD3D12::GetDevice()
+XII_ALWAYS_INLINE ID3D12Device* xiiGALDeviceD3D12::GetDeviceD3D12() const
 {
-  return m_pDevice;
+  return m_pDeviceD3D12;
 }
 
-XII_ALWAYS_INLINE Diligent::IEngineFactory* xiiGALDeviceD3D12::GetFactory()
+XII_ALWAYS_INLINE IDXGIAdapter1* xiiGALDeviceD3D12::GetDXGIAdapter() const
 {
-  return m_pEngineFactory;
+  return m_pDXGIAdapter;
 }
 
+XII_ALWAYS_INLINE IDXGIFactory4* xiiGALDeviceD3D12::GetDXGIFactory() const
+{
+  return m_pDXGIFactory;
+}
+
+#if 0
 XII_ALWAYS_INLINE Diligent::IDeviceContext* xiiGALDeviceD3D12::GetImmediateContext()
 {
   return m_pDeviceContexts[0];
@@ -49,6 +55,7 @@ XII_ALWAYS_INLINE Diligent::IDeviceContext* xiiGALDeviceD3D12::GetSparseBindingC
   }
   return nullptr;
 }
+#endif
 
 XII_ALWAYS_INLINE const xiiGALFormatLookupTableD3D12& xiiGALDeviceD3D12::GetFormatLookupTable() const
 {

@@ -6,12 +6,22 @@
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/ResourceFormats.h>
+#include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
 
-using xiiGALFormatLookupEntryD3D12 = xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, (Diligent::TEXTURE_FORMAT)0U>;
+enum D3D_FEATURE_LEVEL;
+
+struct IDXGIAdapter1;
+struct IDXGIFactory2;
+struct IDXGIFactory4;
+struct ID3D12Device;
+
+using xiiGALFormatLookupEntryD3D12 = xiiGALFormatLookupEntry<DXGI_FORMAT, (DXGI_FORMAT)0U>;
 using xiiGALFormatLookupTableD3D12 = xiiGALFormatLookupTable<xiiGALFormatLookupEntryD3D12>;
 
 class XII_GRAPHICSD3D12_DLL xiiGALDeviceD3D12 final : public xiiGALDevice
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALDeviceD3D12, xiiGALDevice);
+
 private:
   friend xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
 
@@ -23,12 +33,14 @@ public:
 public:
   // Internal objects retrieval.
 
-  Diligent::IRenderDevice*  GetDevice();
-  Diligent::IEngineFactory* GetFactory();
-  Diligent::IDeviceContext* GetImmediateContext();
-  Diligent::IDeviceContext* GetComputeContext();
-  Diligent::IDeviceContext* GetTransferContext();
-  Diligent::IDeviceContext* GetSparseBindingContext();
+  ID3D12Device*  GetDeviceD3D12() const;
+  IDXGIAdapter1* GetDXGIAdapter() const;
+  IDXGIFactory4* GetDXGIFactory() const;
+
+  // Diligent::IDeviceContext* GetImmediateContext();
+  // Diligent::IDeviceContext* GetComputeContext();
+  // Diligent::IDeviceContext* GetTransferContext();
+  // Diligent::IDeviceContext* GetSparseBindingContext();
 
   const xiiGALFormatLookupTableD3D12& GetFormatLookupTable() const;
 
@@ -116,24 +128,29 @@ protected:
   void FillFormatLookupTable();
 
 private:
+  void                            GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel);
+  xiiDynamicArray<IDXGIAdapter1*> GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel);
+
+  void EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter1* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALTextureFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes);
+
+private:
   xiiGALFormatLookupTableD3D12 m_FormatLookupTable;
 
-  Diligent::IEngineFactory*                     m_pEngineFactory = nullptr;
-  Diligent::IRenderDevice*                      m_pDevice        = nullptr;
-  xiiDynamicArray<Diligent::IDeviceContext*>    m_pDeviceContexts;
-  xiiDynamicArray<Diligent::DisplayModeAttribs> m_DisplayModes;
+  IDXGIFactory4* m_pDXGIFactory = nullptr;
+  IDXGIAdapter1* m_pDXGIAdapter = nullptr;
+  ID3D12Device*  m_pDeviceD3D12 = nullptr;
 
-  xiiHybridArray<Diligent::ImmediateContextCreateInfo, XII_GAL_MAX_ADAPTER_QUEUE_COUNT> m_ContextDescriptions;
+  xiiUniquePtr<xiiMemoryAllocatorD3D12> m_pAllocatorD3D12;
+
+  xiiDynamicArray<xiiGALDisplayModeDescription> m_DisplayModes;
+
+  xiiUInt64 m_uiFrameCounter = 0U;
 
   // 0 : Graphics Queue
   // 1 : Compute Queue
   // 2 : Transfer Queue
   // 3 : Sparse Queue
   xiiUniquePtr<xiiGALCommandQueueD3D12> m_CommandQueues[4];
-
-  struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
-  struct GPUTimingScope* m_pPipelineTimingScope = nullptr;
-  struct GPUTimingScope* m_pPassTimingScope     = nullptr;
 };
 
 #include <GraphicsD3D12/Device/Implementation/DeviceD3D12_inl.h>

@@ -3,12 +3,13 @@
 #include <Foundation/Configuration/Startup.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Profiling/Profiling.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 #include <GraphicsD3D12/CommandEncoder/CommandListD3D12.h>
 #include <GraphicsD3D12/CommandEncoder/CommandQueueD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
-#include <GraphicsD3D12/Device/DiligentCore.h>
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
+#include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
 #include <GraphicsD3D12/Resources/BottomLevelASD3D12.h>
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
 #include <GraphicsD3D12/Resources/BufferViewD3D12.h>
@@ -28,33 +29,14 @@
 #include <GraphicsD3D12/States/PipelineStateD3D12.h>
 #include <GraphicsD3D12/States/RasterizerStateD3D12.h>
 
-#include <Diligent/Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
-
-#include <dxgi1_3.h>
+#include <dxgi1_4.h>
 #include <dxgidebug.h>
+#include <sdkddkver.h>
 
-/// Reroutes Diligent Logs To XII.
-void xiiLogDiligent(enum Diligent::DEBUG_MESSAGE_SEVERITY Severity, const Diligent::Char* Message, const Diligent::Char* Function, const Diligent::Char* File, xiiInt32 Line)
-{
-  // Format Diligent string as it is in printf format.
-  switch (Severity)
-  {
-    case Diligent::DEBUG_MESSAGE_SEVERITY_INFO:
-      xiiLog::Info("{}", Message);
-      break;
-    case Diligent::DEBUG_MESSAGE_SEVERITY_WARNING:
-      xiiLog::Warning("{}", Message);
-      break;
-    case Diligent::DEBUG_MESSAGE_SEVERITY_ERROR:
-      xiiLog::SeriousWarning("{}", Message);
-      break;
-    case Diligent::DEBUG_MESSAGE_SEVERITY_FATAL_ERROR:
-      xiiLog::Error("{}", Message);
-      break;
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-  }
-}
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDeviceD3D12, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description)
 {
@@ -79,6 +61,13 @@ ON_CORESYSTEMS_SHUTDOWN
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
+#define XII_VERIFY_D3D12(expression, ...)      \
+  do                                           \
+  {                                            \
+    XII_ASSERT_DEV((expression), __VA_ARGS__); \
+    if (!(expression)) { return XII_FAILURE; } \
+  } while (false)
+
 xiiGALDeviceD3D12::xiiGALDeviceD3D12(const xiiGALDeviceCreationDescription& description) :
   xiiGALDevice(description)
 {
@@ -88,221 +77,167 @@ xiiGALDeviceD3D12::~xiiGALDeviceD3D12() = default;
 
 xiiResult xiiGALDeviceD3D12::InitializePlatform()
 {
-  using namespace Diligent;
-
   XII_LOG_BLOCK("xiiGALDeviceD3D12::InitializePlatform");
 
-  auto FindAdapter = [this](Diligent::IEngineFactoryD3D12* pFactory, Diligent::Version apiVersion, Diligent::GraphicsAdapterInfo& adapterInfo, xiiUInt32& out_AdatapterID) -> xiiResult {
-    xiiUInt32 uiAdapterCount = 0U;
-    pFactory->EnumerateAdapters(apiVersion, uiAdapterCount, nullptr);
+  // Load Direct3D 12 dynamic library.
+  XII_SUCCEED_OR_RETURN_LOG(xiiPlugin::LoadPlugin("d3d12.dll"));
 
-    xiiHybridArray<Diligent::GraphicsAdapterInfo, 2U> graphicsAdapters;
-    graphicsAdapters.Reserve(uiAdapterCount);
-
-    if (uiAdapterCount > 0U)
-    {
-      pFactory->EnumerateAdapters(apiVersion, uiAdapterCount, graphicsAdapters.GetData());
-    }
-    else
-    {
-      xiiLog::Error("Failed to find compatible hardware adapters.");
-      return XII_FAILURE;
-    }
-
-    xiiUInt32 uiAdapterID = m_Description.m_uiAdapterID;
-    if (uiAdapterID != XII_GAL_DEFAULT_ADAPTER_ID)
-    {
-      if (uiAdapterID < graphicsAdapters.GetCount())
-      {
-        m_Description.m_AdapterType = xiiDiligentTypeConversions::GetGALAdapterType(graphicsAdapters[uiAdapterID].Type);
-      }
-      else
-      {
-        xiiLog::Error("Adapter ID ('{0}') is invalid. Only {1} compatible adapter (s) present in the system.", uiAdapterID, graphicsAdapters.GetCount());
-
-        uiAdapterID = XII_GAL_DEFAULT_ADAPTER_ID;
-      }
-    }
-
-    if (uiAdapterID == XII_GAL_DEFAULT_ADAPTER_ID && m_Description.m_AdapterType != xiiGALDeviceAdapterType::Unknown)
-    {
-      for (xiiUInt32 i = 0; i < graphicsAdapters.GetCount(); ++i)
-      {
-        if (graphicsAdapters[i].Type == xiiDiligentTypeConversions::GetAdapterType(m_Description.m_AdapterType))
-        {
-          uiAdapterID = i;
-          break;
-        }
-      }
-
-      if (uiAdapterID == XII_GAL_DEFAULT_ADAPTER_ID)
-      {
-        xiiLog::Warning("Unable to find the requested adapter type. Using default adapter.");
-      }
-    }
-
-    if (uiAdapterID == XII_GAL_DEFAULT_ADAPTER_ID)
-    {
-      m_Description.m_AdapterType = xiiGALDeviceAdapterType::Unknown;
-
-      for (xiiUInt32 i = 0; i < graphicsAdapters.GetCount(); ++i)
-      {
-        const Diligent::GraphicsAdapterInfo& AdapterInfo = graphicsAdapters[i];
-        const Diligent::ADAPTER_TYPE         AdapterType = adapterInfo.Type;
-
-        XII_CHECK_AT_COMPILETIME_MSG((Diligent::ADAPTER_TYPE_DISCRETE > Diligent::ADAPTER_TYPE_INTEGRATED && Diligent::ADAPTER_TYPE_INTEGRATED > Diligent::ADAPTER_TYPE_SOFTWARE && Diligent::ADAPTER_TYPE_SOFTWARE > Diligent::ADAPTER_TYPE_UNKNOWN), "xiiGraphicsD3D12: Unexpected ADAPTER_TYPE enum ordering");
-
-        if (AdapterType > xiiDiligentTypeConversions::GetAdapterType(m_Description.m_AdapterType))
-        {
-          // Prefer Discrete over Integrated over Software adapters.
-          m_Description.m_AdapterType = xiiDiligentTypeConversions::GetGALAdapterType(AdapterType);
-          m_Description.m_uiAdapterID = i;
-        }
-        else if (AdapterType == xiiDiligentTypeConversions::GetAdapterType(m_Description.m_AdapterType))
-        {
-          // Select adapter with more memory and the most amount of queues.
-          const Diligent::AdapterMemoryInfo& newAdapterMemory     = adapterInfo.Memory;
-          const xiiUInt64                    uiNewTotalMemory     = newAdapterMemory.LocalMemory + newAdapterMemory.HostVisibleMemory + newAdapterMemory.UnifiedMemory;
-          const Diligent::AdapterMemoryInfo& currentAdapterMemory = graphicsAdapters[uiAdapterID].Memory;
-          const xiiUInt64                    uiCurrentTotalMemory = currentAdapterMemory.LocalMemory + currentAdapterMemory.HostVisibleMemory + currentAdapterMemory.UnifiedMemory;
-
-          if (uiNewTotalMemory > uiCurrentTotalMemory && AdapterInfo.NumQueues >= graphicsAdapters[uiAdapterID].NumQueues)
-          {
-            uiAdapterID = i;
-          }
-        }
-      }
-    }
-
-    if (uiAdapterID != XII_GAL_DEFAULT_ADAPTER_ID)
-    {
-      adapterInfo = graphicsAdapters[uiAdapterID];
-
-      xiiLog::Info("Using Adapter {0}: '{1}'", uiAdapterID, adapterInfo.Description);
-    }
-
-    out_AdatapterID = uiAdapterID;
-
-    return XII_SUCCESS;
-  };
-
-#if ENGINE_DLL
-  auto GetEngineFactoryD3D12 = Diligent::LoadGraphicsEngineD3D12();
-#endif
-
-  auto* pFactoryD3D12 = GetEngineFactoryD3D12();
-  if (pFactoryD3D12->LoadD3D12() != Diligent::True)
+  // Enable the D3D12 debug layer.
+  if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
-    xiiLog::Error("Failed to load Direct3D12 Library.");
-    return XII_FAILURE;
+    ID3D12Debug* pDebugController = nullptr;
+    if (SUCCEEDED(D3D12GetDebugInterface(__uuidof(pDebugController), reinterpret_cast<void**>(static_cast<ID3D12Debug**>(&pDebugController)))))
+    {
+      pDebugController->EnableDebugLayer();
+      if (m_Description.m_ValidationLevel == xiiGALDeviceValidationLevel::All)
+      {
+        ID3D12Debug1* pDebugController1 = nullptr;
+        if (SUCCEEDED(pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController1))))
+        {
+          // pDebugController1->SetEnableSynchronizedCommandQueueValidation(FALSE);
+          pDebugController1->SetEnableGPUBasedValidation(true);
+        }
+        XII_GAL_D3D12_RELEASE(pDebugController1);
+      }
+    }
+    XII_GAL_D3D12_RELEASE(pDebugController);
   }
-  m_pEngineFactory = pFactoryD3D12;
 
-  // Register custom message callback.
-  m_pEngineFactory->SetMessageCallback(xiiLogDiligent);
+  XII_VERIFY_D3D12(SUCCEEDED(CreateDXGIFactory1(__uuidof(m_pDXGIFactory), reinterpret_cast<void**>(static_cast<IDXGIFactory4**>(&m_pDXGIFactory)))), "Failed to create DXGI factory. Error code '{}'.", xiiArgErrorCode(GetLastError()));
 
-  Diligent::EngineD3D12CreateInfo d3d12CreateInfo;
-  d3d12CreateInfo.GraphicsAPIVersion = {12, 0};
-  d3d12CreateInfo.pRawMemAllocator   = xiiDiligentCore::GetDiligentMemoryAllocator();
-  d3d12CreateInfo.EnableValidation   = m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled;
+  // Direct3D12 does not allow feature levels below 11.0 (D3D12CreateDevice fails to create a device).
+  const D3D_FEATURE_LEVEL minFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 
-  d3d12CreateInfo.Features.SeparablePrograms                 = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_SeparablePrograms);
-  d3d12CreateInfo.Features.ShaderResourceQueries             = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ShaderResourceQueries);
-  d3d12CreateInfo.Features.WireframeFill                     = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_WireframeFill);
-  d3d12CreateInfo.Features.MultithreadedResourceCreation     = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_MultithreadedResourceCreation);
-  d3d12CreateInfo.Features.ComputeShaders                    = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ComputeShaders);
-  d3d12CreateInfo.Features.GeometryShaders                   = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_GeometryShaders);
-  d3d12CreateInfo.Features.Tessellation                      = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_Tessellation);
-  d3d12CreateInfo.Features.MeshShaders                       = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_MeshShaders);
-  d3d12CreateInfo.Features.RayTracing                        = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_RayTracing);
-  d3d12CreateInfo.Features.BindlessResources                 = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_BindlessResources);
-  d3d12CreateInfo.Features.OcclusionQueries                  = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_OcclusionQueries);
-  d3d12CreateInfo.Features.BinaryOcclusionQueries            = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_BinaryOcclusionQueries);
-  d3d12CreateInfo.Features.TimestampQueries                  = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_TimestampQueries);
-  d3d12CreateInfo.Features.PipelineStatisticsQueries         = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_PipelineStatisticsQueries);
-  d3d12CreateInfo.Features.DurationQueries                   = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_DurationQueries);
-  d3d12CreateInfo.Features.DepthBiasClamp                    = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_DepthBiasClamp);
-  d3d12CreateInfo.Features.DepthClamp                        = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_DepthClamp);
-  d3d12CreateInfo.Features.IndependentBlend                  = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_IndependentBlend);
-  d3d12CreateInfo.Features.DualSourceBlend                   = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_DualSourceBlend);
-  d3d12CreateInfo.Features.MultiViewport                     = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_MultiViewport);
-  d3d12CreateInfo.Features.TextureCompressionBC              = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_TextureCompressionBC);
-  d3d12CreateInfo.Features.VertexPipelineUAVWritesAndAtomics = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_VertexPipelineUAVWritesAndAtomics);
-  d3d12CreateInfo.Features.PixelUAVWritesAndAtomics          = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_PixelUAVWritesAndAtomics);
-  d3d12CreateInfo.Features.TextureUAVExtendedFormats         = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_TextureUAVExtendedFormats);
-  d3d12CreateInfo.Features.ShaderFloat16                     = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ShaderFloat16);
-  d3d12CreateInfo.Features.ResourceBuffer16BitAccess         = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ResourceBuffer16BitAccess);
-  d3d12CreateInfo.Features.UniformBuffer16BitAccess          = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_UniformBuffer16BitAccess);
-  d3d12CreateInfo.Features.ShaderInputOutput16               = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ShaderInputOutput16);
-  d3d12CreateInfo.Features.ShaderInt8                        = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ShaderInt8);
-  d3d12CreateInfo.Features.ResourceBuffer8BitAccess          = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ResourceBuffer8BitAccess);
-  d3d12CreateInfo.Features.UniformBuffer8BitAccess           = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_UniformBuffer8BitAccess);
-  d3d12CreateInfo.Features.ShaderResourceRuntimeArray        = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_ShaderResourceRuntimeArray);
-  d3d12CreateInfo.Features.WaveOp                            = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_WaveOp);
-  d3d12CreateInfo.Features.InstanceDataStepRate              = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_InstanceDataStepRate);
-  d3d12CreateInfo.Features.NativeFence                       = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_NativeFence);
-  d3d12CreateInfo.Features.TileShaders                       = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_TileShaders);
-  d3d12CreateInfo.Features.TransferQueueTimestampQueries     = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_TransferQueueTimestampQueries);
-  d3d12CreateInfo.Features.VariableRateShading               = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_VariableRateShading);
-  d3d12CreateInfo.Features.SparseResources                   = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_SparseResources);
-  d3d12CreateInfo.Features.SubpassFramebufferFetch           = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_SubpassFramebufferFetch);
-  d3d12CreateInfo.Features.TextureComponentSwizzle           = xiiDiligentTypeConversions::GetDeviceFeatureState(m_Description.m_DeviceFeatures.m_TextureComponentSwizzle);
+  IDXGIAdapter1* pHardwareAdapter = nullptr;
+  if (m_Description.m_uiAdapterID == XII_GAL_DEFAULT_ADAPTER_ID)
+  {
+    /// \todo GraphicsD3D12: Select best adapter ID by default, based on memory size, number of command queues, and prefer Discrete over Integrated over Software adapters.
+    GetHardwareAdapter(m_pDXGIFactory, &pHardwareAdapter, minFeatureLevel);
+    XII_VERIFY_D3D12(pHardwareAdapter != nullptr, "No suitable hardware adapter found.");
+  }
+  else
+  {
+    xiiDynamicArray<IDXGIAdapter1*> compatibleAdapters = GetCompatibleAdapters(minFeatureLevel);
+
+    XII_VERIFY_D3D12(m_Description.m_uiAdapterID < compatibleAdapters.GetCount(), "{0} is not a valid adapter ID. The total number of compatible adapters on this system is {1}.", m_Description.m_uiAdapterID, compatibleAdapters.GetCount());
+
+    pHardwareAdapter = compatibleAdapters[m_Description.m_uiAdapterID];
+    compatibleAdapters.RemoveAtAndSwap(m_Description.m_uiAdapterID);
+
+    XII_GAL_D3D12_RELEASE_ARRAY(compatibleAdapters);
+  }
+  m_pDXGIAdapter = pHardwareAdapter;
+
+  const D3D_FEATURE_LEVEL targetFeatureLevels[]     = {D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
+  const char*             targetFeatureLevelNames[] = {"12.2", "12.1", "12.0", "11.1", "11.0"};
+  xiiUInt32               uiFeatureLevelIndex       = 0U;
+  HRESULT                 hResult;
+
+  for (const auto& featureLevel : targetFeatureLevels)
+  {
+    hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(m_pDeviceD3D12), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&m_pDeviceD3D12)));
+
+    if (SUCCEEDED(hResult))
+    {
+      XII_ASSERT_DEV(m_pDeviceD3D12 != nullptr, "");
+      break;
+    }
+
+    ++uiFeatureLevelIndex;
+  }
+
+  if (FAILED(hResult))
+  {
+    xiiLog::Error("Failed to create D3D12 hardware device. Attempting to create a WARP device.");
+
+    // Try to create a WARP device (a high-performance software device that has the capabilities of a hardware device).
+    XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
+
+    IDXGIAdapter1* pWarpAdapter = nullptr;
+    XII_VERIFY_D3D12(SUCCEEDED(m_pDXGIFactory->EnumWarpAdapter(__uuidof(pWarpAdapter), reinterpret_cast<void**>(static_cast<IDXGIAdapter1**>(&pWarpAdapter)))), "Failed to enumerate WARP adapter. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+    m_pDXGIAdapter = pWarpAdapter;
+
+    uiFeatureLevelIndex = 0U;
+
+    for (const auto& featureLevel : targetFeatureLevels)
+    {
+      hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(m_pDeviceD3D12), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&m_pDeviceD3D12)));
+
+      if (SUCCEEDED(hResult))
+      {
+        XII_ASSERT_DEV(m_pDeviceD3D12 != nullptr, "");
+
+        xiiLog::Info("Initialized D3D12 WARP device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
+        break;
+      }
+
+      ++uiFeatureLevelIndex;
+    }
+
+    XII_VERIFY_D3D12(SUCCEEDED(hResult), "Failed to create D3D12 WARP device.");
+  }
+  else
+  {
+    xiiLog::Info("Initialized D3D12 device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
+  }
+
+  // Create D3D12 Memory Allocator.
+  m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiMemoryAllocatorD3D12, m_pDXGIAdapter, m_pDeviceD3D12);
+
+  EnumerateDisplayModes(targetFeatureLevels[uiFeatureLevelIndex], m_pDXGIAdapter, 0, xiiGALTextureFormat::RGBA8UNormalizedSRGB, m_DisplayModes);
 
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
-    d3d12CreateInfo.SetValidationLevel(xiiDiligentTypeConversions::GetDeviceValidationLevel(m_Description.m_ValidationLevel));
-
-  try
   {
-    Diligent::GraphicsAdapterInfo adapterInfo;
+    ID3D12InfoQueue* pInfoQueue = nullptr;
+    if (SUCCEEDED(m_pDeviceD3D12->QueryInterface(&pInfoQueue)))
+    {
+      // Suppress whole categories of messages
+      // D3D12_MESSAGE_CATEGORY categories[] = {};
 
-    XII_SUCCEED_OR_RETURN_LOG(FindAdapter(pFactoryD3D12, d3d12CreateInfo.GraphicsAPIVersion, adapterInfo, m_Description.m_uiAdapterID));
+      // Suppress messages based on their severity level
+      D3D12_MESSAGE_SEVERITY severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
 
-    d3d12CreateInfo.AdapterId = m_Description.m_uiAdapterID;
+      // Suppress individual messages by their ID
+      D3D12_MESSAGE_ID denyIDs[] =
+        {
+          // D3D12 WARNING: ID3D12CommandList::ClearRenderTargetView: The clear values do not match those passed to resource creation.
+          // The clear operation is typically slower as a result; but will still clear to the desired value.
+          // [ EXECUTION WARNING #820: CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE]
+          D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+
+          // D3D12 WARNING: ID3D12CommandList::ClearDepthStencilView: The clear values do not match those passed to resource creation.
+          // The clear operation is typically slower as a result; but will still clear to the desired value.
+          // [ EXECUTION WARNING #821: CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE]
+          D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE //
+        };
+
+      D3D12_INFO_QUEUE_FILTER queueFilter = {};
+      // queueFilter.DenyList.NumCategories = XII_ARRAY_SIZE(categories);
+      // queueFilter.DenyList.pCategoryList = categories;
+      queueFilter.DenyList.NumSeverities = XII_ARRAY_SIZE(severities);
+      queueFilter.DenyList.pSeverityList = severities;
+      queueFilter.DenyList.NumIDs        = XII_ARRAY_SIZE(denyIDs);
+      queueFilter.DenyList.pIDList       = denyIDs;
+
+      XII_VERIFY(SUCCEEDED(pInfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+      XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true), "Failed to set break on corruption. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+      XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true), "Failed to set break on error. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+#endif
+    }
+    XII_GAL_D3D12_RELEASE(pInfoQueue);
   }
-  catch (...)
-  {
-    xiiLog::Error("Failed to locate DirectX 12 compatible hardware adapters.");
-  }
 
-  if (m_Description.m_AdapterType != xiiGALDeviceAdapterType::Software && m_Description.m_uiAdapterID != XII_GAL_DEFAULT_ADAPTER_ID)
-  {
-    // Display mode enumeration fails with error for software adapter.
-    xiiUInt32 uiDisplayModeCount = 0U;
-    pFactoryD3D12->EnumerateDisplayModes(d3d12CreateInfo.GraphicsAPIVersion, d3d12CreateInfo.AdapterId, 0, Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB, uiDisplayModeCount, nullptr);
-    m_DisplayModes.SetCount(uiDisplayModeCount);
-    pFactoryD3D12->EnumerateDisplayModes(d3d12CreateInfo.GraphicsAPIVersion, d3d12CreateInfo.AdapterId, 0, Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB, uiDisplayModeCount, m_DisplayModes.GetData());
-  }
-
-  CreateCommandQueues();
-
-  d3d12CreateInfo.pImmediateContextInfo = m_ContextDescriptions.GetData();
-  d3d12CreateInfo.NumImmediateContexts  = m_ContextDescriptions.GetCount();
-
-  xiiUInt32 uiImmediateContextCount = xiiMath::Max(1U, d3d12CreateInfo.NumImmediateContexts);
-  m_pDeviceContexts.SetCount(uiImmediateContextCount);
-  pFactoryD3D12->CreateDeviceAndContextsD3D12(d3d12CreateInfo, &m_pDevice, m_pDeviceContexts.GetData());
-
-  if (m_pDevice == nullptr)
-  {
-    xiiLog::Error("Unable to load Diligent Engine in Direct3D12 mode. The API may not be available, or required features may not be supported by this GPU/Driver/OS version.");
-    return XII_FAILURE;
-  }
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+// We can prevent the GPU from overclocking or underclocking to get consistent timings.
+// m_pDeviceD3D12->SetStablePowerState(TRUE);
+#endif
 
   FillFormatLookupTable();
 
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
-
-  m_CommandQueues[0] = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, *this, GetImmediateContext());
-
-  if (auto pContext = GetComputeContext())
-    m_CommandQueues[1] = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, *this, pContext);
-
-  if (auto pContext = GetTransferContext())
-    m_CommandQueues[2] = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, *this, pContext);
-
-  if (auto pContext = GetSparseBindingContext())
-    m_CommandQueues[3] = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, *this, pContext);
 
   return XII_SUCCESS;
 }
@@ -338,21 +273,9 @@ xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
     m_CommandQueues[i].Clear();
   }
 
-  if (!m_pDeviceContexts.IsEmpty())
-  {
-    for (xiiUInt32 uiContext = 0; uiContext < m_pDeviceContexts.GetCount(); ++uiContext)
-    {
-      m_pDeviceContexts[uiContext]->Flush();
-      m_pDeviceContexts[uiContext]->FinishFrame();
-      m_pDeviceContexts[uiContext]->InvalidateState();
-
-      XII_GAL_DILIGENT_PTR_RELEASE(m_pDeviceContexts[uiContext]);
-    }
-    m_pDeviceContexts.Clear();
-  }
-
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pDevice);
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pEngineFactory);
+  XII_GAL_D3D12_RELEASE(m_pDeviceD3D12);
+  XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
+  XII_GAL_D3D12_RELEASE(m_pDXGIFactory);
 
   ReportLiveGPUObjects();
 
@@ -361,12 +284,6 @@ xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
 
 void xiiGALDeviceD3D12::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain)
 {
-#if XII_ENABLED(XII_USE_PROFILING)
-  xiiStringBuilder sb;
-  sb.Format("{} - Frame {}", !sName.IsEmpty() ? sName : "Unavailable", GetImmediateContext()->GetFrameNumber());
-  // m_pPipelineTimingScope = xiiProfilingScopeAndMarker::Start(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), sb);
-#endif
-
   if (pSwapChain)
   {
     pSwapChain->AcquireNextRenderTarget(this);
@@ -375,10 +292,6 @@ void xiiGALDeviceD3D12::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapCha
 
 void xiiGALDeviceD3D12::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
 {
-#if XII_ENABLED(XII_USE_PROFILING)
-  // xiiProfilingScopeAndMarker::Stop(m_pDefaultPass->m_pGraphicsCommandEncoder.Borrow(), m_pPipelineTimingScope);
-#endif
-
   if (pSwapChain)
   {
     pSwapChain->Present(this);
@@ -392,14 +305,8 @@ void xiiGALDeviceD3D12::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 void xiiGALDeviceD3D12::EndFramePlatform()
 {
   // Call FinishFrame() to release references to Swapchain resources
-  {
-    for (auto& pContext : m_pDeviceContexts)
-    {
-      pContext->Flush();
-      pContext->FinishFrame();
-    }
-    m_pDevice->ReleaseStaleResources();
-  }
+
+  ++m_uiFrameCounter;
 }
 
 xiiGALSwapChain* xiiGALDeviceD3D12::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)
@@ -824,410 +731,380 @@ void xiiGALDeviceD3D12::DestroyPipelineStatePlatform(xiiGALPipelineState* pPipel
 
 void xiiGALDeviceD3D12::WaitIdlePlatform()
 {
-  m_pDevice->IdleGPU();
+  ///\todo Idle all command queues.
 
   FlushPendingObjects();
 
-  m_pDevice->ReleaseStaleResources(true);
+  ///\todo Release stale resources.
 }
 
 void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 {
   m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Direct3D12;
 
-  const Diligent::GraphicsAdapterInfo& adapterInformation = m_pDevice->GetAdapterInfo();
+  /// \todo GraphicsD3D12: Assert that structure sizes has not been modified.
 
-  m_AdapterDescription.m_sAdapterName = adapterInformation.Description;
-  m_AdapterDescription.m_Type         = xiiDiligentTypeConversions::GetGALAdapterType(adapterInformation.Type);
-
-  switch (adapterInformation.Vendor)
+  // Set graphics adapter properties.
   {
-    case Diligent::ADAPTER_VENDOR_UNKNOWN:
-      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Unknown;
-      break;
-    case Diligent::ADAPTER_VENDOR_NVIDIA:
-      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Nvidia;
-      break;
-    case Diligent::ADAPTER_VENDOR_AMD:
-      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::AMD;
-      break;
-    case Diligent::ADAPTER_VENDOR_INTEL:
-      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Intel;
-      break;
-    case Diligent::ADAPTER_VENDOR_ARM:
-      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::ARM;
-      break;
-    case Diligent::ADAPTER_VENDOR_QUALCOMM:
-      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Qualcomm;
-      break;
-    case Diligent::ADAPTER_VENDOR_IMGTECH:
-      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::ImaginationTechnologies;
-      break;
-    case Diligent::ADAPTER_VENDOR_MSFT:
-      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Microsoft;
-      break;
-    case Diligent::ADAPTER_VENDOR_APPLE:
-      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Apple;
-      break;
-    case Diligent::ADAPTER_VENDOR_MESA:
-      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Mesa;
-      break;
-    case Diligent::ADAPTER_VENDOR_BROADCOM:
-      m_AdapterDescription.m_Vendor = xiiGALGraphicsAdapterVendor::Broadcom;
-      break;
+    DXGI_ADAPTER_DESC1 dxgiAdapterDescription = {};
+    m_pDXGIAdapter->GetDesc1(&dxgiAdapterDescription);
+    m_AdapterDescription.m_sAdapterName = xiiStringUtf8(dxgiAdapterDescription.Description).GetData();
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    if (dxgiAdapterDescription.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+      m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Software;
+    else if (dxgiAdapterDescription.DedicatedVideoMemory != 0U)
+      m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Discrete;
+    else
+      m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Integrated;
+
+    {
+      D3D12_FEATURE_DATA_ARCHITECTURE dataArchitecture = {};
+      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, &dataArchitecture, sizeof(dataArchitecture))))
+      {
+        if (m_AdapterDescription.m_Type != xiiGALDeviceAdapterType::Software && (dataArchitecture.UMA || dataArchitecture.CacheCoherentUMA))
+          m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Integrated;
+      }
+    }
+
+    m_AdapterDescription.m_Vendor             = xiiGALGraphicsUtilities::GetVendorFromID(dxgiAdapterDescription.VendorId);
+    m_AdapterDescription.m_uiVendorID         = dxgiAdapterDescription.VendorId;
+    m_AdapterDescription.m_uiDeviceID         = dxgiAdapterDescription.DeviceId;
+    m_AdapterDescription.m_uiVideoOutputCount = 0U;
+
+    // Enable features.
+    m_AdapterDescription.m_Features.m_SeparablePrograms             = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_ShaderResourceQueries         = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_WireframeFill                 = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_MultithreadedResourceCreation = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_ComputeShaders                = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_GeometryShaders               = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_Tessellation                  = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_OcclusionQueries              = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_BinaryOcclusionQueries        = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_TimestampQueries              = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_PipelineStatisticsQueries     = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_DurationQueries               = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_DepthBiasClamp                = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_DepthClamp                    = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_IndependentBlend              = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_DualSourceBlend               = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_MultiViewport                 = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_TextureCompressionBC          = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_PixelUAVWritesAndAtomics      = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_TextureUAVExtendedFormats     = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_InstanceDataStepRate          = xiiGALDeviceFeatureState::Enabled;
+    m_AdapterDescription.m_Features.m_TileShaders                   = xiiGALDeviceFeatureState::Disabled;
+    m_AdapterDescription.m_Features.m_SubpassFramebufferFetch       = xiiGALDeviceFeatureState::Disabled;
+    m_AdapterDescription.m_Features.m_TextureComponentSwizzle       = xiiGALDeviceFeatureState::Disabled;
+
+    // Set memory properties.
+    m_AdapterDescription.m_MemoryProperties.m_uiLocalMemory         = dxgiAdapterDescription.DedicatedVideoMemory;
+    m_AdapterDescription.m_MemoryProperties.m_uiHostVisibleMemory   = dxgiAdapterDescription.SharedSystemMemory;
+    m_AdapterDescription.m_MemoryProperties.m_uiUnifiedMemory       = 0U;
+    m_AdapterDescription.m_MemoryProperties.m_uiMaxMemoryAllocation = 0U; // Unable to query.
+
+    // Set draw command properties.
+    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue        = 0U;
+    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxDrawIndirectCount = ~0U;
+    m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags        = xiiGALDrawCommandCapabilityFlags::DrawIndirect | xiiGALDrawCommandCapabilityFlags::DrawIndirectFirstInstance;
+
+    // Set queue information.
+    xiiGALCommandQueueType::Enum queueIndexType[] = {xiiGALCommandQueueType::Graphics, xiiGALCommandQueueType::Compute, xiiGALCommandQueueType::Transfer};
+    for (xiiUInt32 i = 0; i < 3; ++i)
+    {
+      auto& queueProperty                       = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
+      queueProperty.m_Type                      = queueIndexType[i];
+      queueProperty.m_MaxDeviceContexts         = 0xFFU;
+      queueProperty.m_TextureCopyGranularity[0] = 1U;
+      queueProperty.m_TextureCopyGranularity[1] = 1U;
+      queueProperty.m_TextureCopyGranularity[2] = 1U;
+    }
   }
 
-  m_AdapterDescription.m_uiVendorID         = adapterInformation.VendorId;
-  m_AdapterDescription.m_uiDeviceID         = adapterInformation.DeviceId;
-  m_AdapterDescription.m_uiVideoOutputCount = adapterInformation.NumOutputs;
-
-  // Memory properties
-
-  m_AdapterDescription.m_MemoryProperties.m_uiLocalMemory         = adapterInformation.Memory.LocalMemory;
-  m_AdapterDescription.m_MemoryProperties.m_uiHostVisibleMemory   = adapterInformation.Memory.HostVisibleMemory;
-  m_AdapterDescription.m_MemoryProperties.m_uiUnifiedMemory       = adapterInformation.Memory.UnifiedMemory;
-  m_AdapterDescription.m_MemoryProperties.m_uiMaxMemoryAllocation = adapterInformation.Memory.MaxMemoryAllocation;
-
-  if (adapterInformation.Memory.UnifiedMemoryCPUAccess & Diligent::CPU_ACCESS_READ)
-    m_AdapterDescription.m_MemoryProperties.m_UnifiedMemoryCPUAccessFlags |= xiiGALCPUAccessFlag::Read;
-  if (adapterInformation.Memory.UnifiedMemoryCPUAccess & Diligent::CPU_ACCESS_WRITE)
-    m_AdapterDescription.m_MemoryProperties.m_UnifiedMemoryCPUAccessFlags |= xiiGALCPUAccessFlag::Write;
-
-  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_VERTEX_BUFFER)
-    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::VertexBuffer;
-  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_INDEX_BUFFER)
-    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::IndexBuffer;
-  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_UNIFORM_BUFFER)
-    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::UniformBuffer;
-  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_SHADER_RESOURCE)
-    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::ShaderResource;
-  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_STREAM_OUTPUT)
-    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::StreamOutput;
-  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_RENDER_TARGET)
-    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::RenderTarget;
-  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_DEPTH_STENCIL)
-    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::DepthStencil;
-  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_INDIRECT_DRAW_ARGS)
-    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::IndirectDrawArguments;
-  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_INPUT_ATTACHMENT)
-    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::InputAttachment;
-  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_RAY_TRACING)
-    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::RayTracing;
-  if (adapterInformation.Memory.MemorylessTextureBindFlags & Diligent::BIND_SHADING_RATE)
-    m_AdapterDescription.m_MemoryProperties.m_MemorylessTextureBindFlags |= xiiGALBindFlags::ShadingRate;
-
-  // Raytracing properties
-
-  m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth        = adapterInformation.RayTracing.MaxRecursionDepth;
-  m_AdapterDescription.m_RayTracingProperties.m_uiMaxRayGenThreads         = adapterInformation.RayTracing.MaxRayGenThreads;
-  m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS      = adapterInformation.RayTracing.MaxInstancesPerTLAS;
-  m_AdapterDescription.m_RayTracingProperties.m_uiMaxPrimitivesPerBLAS     = adapterInformation.RayTracing.MaxPrimitivesPerBLAS;
-  m_AdapterDescription.m_RayTracingProperties.m_uiMaxGeometriesPerBLAS     = adapterInformation.RayTracing.MaxGeometriesPerBLAS;
-  m_AdapterDescription.m_RayTracingProperties.m_uiVertexBufferAlignment    = adapterInformation.RayTracing.VertexBufferAlignment;
-  m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment     = adapterInformation.RayTracing.IndexBufferAlignment;
-  m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment = adapterInformation.RayTracing.TransformBufferAlignment;
-  m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment       = adapterInformation.RayTracing.BoxBufferAlignment;
-  m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment   = adapterInformation.RayTracing.ScratchBufferAlignment;
-  m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = adapterInformation.RayTracing.InstanceBufferAlignment;
-  m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleSize    = adapterInformation.RayTracing.ShaderGroupHandleSize;
-  m_AdapterDescription.m_RayTracingProperties.m_uiMaxShaderRecordStride    = adapterInformation.RayTracing.MaxShaderRecordStride;
-  m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupBaseAlignment = adapterInformation.RayTracing.ShaderGroupBaseAlignment;
-
-  if (adapterInformation.RayTracing.CapFlags & Diligent::RAY_TRACING_CAP_FLAG_STANDALONE_SHADERS)
-    m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::StandaloneShaders;
-  if (adapterInformation.RayTracing.CapFlags & Diligent::RAY_TRACING_CAP_FLAG_INLINE_RAY_TRACING)
-    m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::InlineRayTracing;
-  if (adapterInformation.RayTracing.CapFlags & Diligent::RAY_TRACING_CAP_FLAG_INDIRECT_RAY_TRACING)
-    m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::IndirectRayTracing;
-
-  // Wave operation properties
-
-  m_AdapterDescription.m_WaveOperationProperties.m_uiMinSize = adapterInformation.WaveOp.MinSize;
-  m_AdapterDescription.m_WaveOperationProperties.m_uiMaxSize = adapterInformation.WaveOp.MaxSize;
-
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_VERTEX)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::Vertex;
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_PIXEL)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::Pixel;
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_GEOMETRY)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::Geometry;
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_HULL)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::Hull;
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_DOMAIN)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::Domain;
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_COMPUTE)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::Compute;
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_AMPLIFICATION)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::Amplification;
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_MESH)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::Mesh;
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_RAY_GEN)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::RayGeneration;
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_RAY_CLOSEST_HIT)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::RayClosestHit;
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_RAY_ANY_HIT)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::RayAnyHit;
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_RAY_INTERSECTION)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::RayIntersection;
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_CALLABLE)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::Callable;
-  if (adapterInformation.WaveOp.SupportedStages & Diligent::SHADER_TYPE_TILE)
-    m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::Tile;
-
-  if (adapterInformation.WaveOp.Features & Diligent::WAVE_FEATURE_BASIC)
-    m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::Basic;
-  if (adapterInformation.WaveOp.Features & Diligent::WAVE_FEATURE_VOTE)
-    m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::Vote;
-  if (adapterInformation.WaveOp.Features & Diligent::WAVE_FEATURE_ARITHMETIC)
-    m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::Arithmetic;
-  if (adapterInformation.WaveOp.Features & Diligent::WAVE_FEATURE_BALLOUT)
-    m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::BallOut;
-  if (adapterInformation.WaveOp.Features & Diligent::WAVE_FEATURE_SHUFFLE)
-    m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::Shuffle;
-  if (adapterInformation.WaveOp.Features & Diligent::WAVE_FEATURE_SHUFFLE_RELATIVE)
-    m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::ShuffleRelative;
-  if (adapterInformation.WaveOp.Features & Diligent::WAVE_FEATURE_CLUSTERED)
-    m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::Clustered;
-  if (adapterInformation.WaveOp.Features & Diligent::WAVE_FEATURE_QUAD)
-    m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures |= xiiGALWaveFeature::Quad;
-
-  // Buffer properties
-
-  m_AdapterDescription.m_BufferProperties.m_uiConstantBufferAlignment         = adapterInformation.Buffer.ConstantBufferOffsetAlignment;
-  m_AdapterDescription.m_BufferProperties.m_uiStructuredBufferOffsetAlignment = adapterInformation.Buffer.StructuredBufferOffsetAlignment;
-
-  // Texture properties
-
-  m_AdapterDescription.m_TextureProperties.m_uiMaxTexture1DDimension     = adapterInformation.Texture.MaxTexture1DDimension;
-  m_AdapterDescription.m_TextureProperties.m_uiMaxTexture1DArraySlices   = adapterInformation.Texture.MaxTexture1DArraySlices;
-  m_AdapterDescription.m_TextureProperties.m_uiMaxTexture2DDimension     = adapterInformation.Texture.MaxTexture2DDimension;
-  m_AdapterDescription.m_TextureProperties.m_uiMaxTexture2DArraySlices   = adapterInformation.Texture.MaxTexture2DArraySlices;
-  m_AdapterDescription.m_TextureProperties.m_uiMaxTexture3DDimension     = adapterInformation.Texture.MaxTexture3DDimension;
-  m_AdapterDescription.m_TextureProperties.m_uiMaxTextureCubeDimension   = adapterInformation.Texture.MaxTextureCubeDimension;
-  m_AdapterDescription.m_TextureProperties.m_bTexture2DMSSupported       = adapterInformation.Texture.Texture2DMSSupported;
-  m_AdapterDescription.m_TextureProperties.m_bTexture2DMSArraySupported  = adapterInformation.Texture.Texture2DMSArraySupported;
-  m_AdapterDescription.m_TextureProperties.m_bTextureViewSupported       = adapterInformation.Texture.TextureViewSupported;
-  m_AdapterDescription.m_TextureProperties.m_bCubeMapArraysSupported     = adapterInformation.Texture.CubemapArraysSupported;
-  m_AdapterDescription.m_TextureProperties.m_bTextureView2DOn3DSupported = adapterInformation.Texture.TextureView2DOn3DSupported;
-
-  // Sampler properties
-
-  m_AdapterDescription.m_SamplerProperties.m_bBorderSamplingModeSupported   = adapterInformation.Sampler.BorderSamplingModeSupported;
-  m_AdapterDescription.m_SamplerProperties.m_bAnisotropicFilteringSupported = adapterInformation.Sampler.AnisotropicFilteringSupported;
-  m_AdapterDescription.m_SamplerProperties.m_bLODBiasSupported              = adapterInformation.Sampler.LODBiasSupported;
-
-  // Mesh shader properties
-
-  m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountX     = adapterInformation.MeshShader.MaxThreadGroupCountX;
-  m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountY     = adapterInformation.MeshShader.MaxThreadGroupCountY;
-  m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountZ     = adapterInformation.MeshShader.MaxThreadGroupCountZ;
-  m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupTotalCount = adapterInformation.MeshShader.MaxThreadGroupTotalCount;
-
-  // Shading rate properties
-
-  for (xiiUInt32 i = 0; i < adapterInformation.ShadingRate.NumShadingRates; ++i)
+  // Enable features and set properties.
   {
-    const auto& refMode = adapterInformation.ShadingRate.ShadingRates[i];
-    auto&       mode    = m_AdapterDescription.m_ShadingRateProperties.m_Mode.ExpandAndGetRef();
+    auto& deviceFeatures = m_AdapterDescription.m_Features;
 
-    if (refMode.Rate & Diligent::SHADING_RATE_1X1)
-      mode.m_ShadingRate |= xiiGALShadingRate::_1X1;
-    if (refMode.Rate & Diligent::SHADING_RATE_1X2)
-      mode.m_ShadingRate |= xiiGALShadingRate::_1X2;
-    if (refMode.Rate & Diligent::SHADING_RATE_1X4)
-      mode.m_ShadingRate |= xiiGALShadingRate::_1X4;
-    if (refMode.Rate & Diligent::SHADING_RATE_2X1)
-      mode.m_ShadingRate |= xiiGALShadingRate::_2X1;
-    if (refMode.Rate & Diligent::SHADING_RATE_2X2)
-      mode.m_ShadingRate |= xiiGALShadingRate::_2X2;
-    if (refMode.Rate & Diligent::SHADING_RATE_2X4)
-      mode.m_ShadingRate |= xiiGALShadingRate::_2X4;
-    if (refMode.Rate & Diligent::SHADING_RATE_4X1)
-      mode.m_ShadingRate |= xiiGALShadingRate::_4X1;
-    if (refMode.Rate & Diligent::SHADING_RATE_4X2)
-      mode.m_ShadingRate |= xiiGALShadingRate::_4X2;
-    if (refMode.Rate & Diligent::SHADING_RATE_4X4)
-      mode.m_ShadingRate |= xiiGALShadingRate::_4X4;
+    // Direct3D12 supports shader model 5.1 on all feature levels (even on 11.0), so bindless resources are always available.
+    // https://docs.microsoft.com/en-us/windows/win32/direct3d12/hardware-feature-levels#feature-level-support
+    deviceFeatures.m_BindlessResources = xiiGALDeviceFeatureState::Enabled;
 
-    if (refMode.SampleBits & Diligent::SAMPLE_COUNT_1)
-      mode.m_SampleBits = xiiGALSampleCount::OneSample;
-    if (refMode.SampleBits & Diligent::SAMPLE_COUNT_2)
-      mode.m_SampleBits = xiiGALSampleCount::TwoSamples;
-    if (refMode.SampleBits & Diligent::SAMPLE_COUNT_4)
-      mode.m_SampleBits = xiiGALSampleCount::FourSamples;
-    if (refMode.SampleBits & Diligent::SAMPLE_COUNT_8)
-      mode.m_SampleBits = xiiGALSampleCount::EightSamples;
-    if (refMode.SampleBits & Diligent::SAMPLE_COUNT_16)
-      mode.m_SampleBits = xiiGALSampleCount::SixteenSamples;
-    if (refMode.SampleBits & Diligent::SAMPLE_COUNT_32)
-      mode.m_SampleBits = xiiGALSampleCount::ThirtyTwoSamples;
-    if (refMode.SampleBits & Diligent::SAMPLE_COUNT_64)
-      mode.m_SampleBits = xiiGALSampleCount::SixtyFourSamples;
+    deviceFeatures.m_VertexPipelineUAVWritesAndAtomics = xiiGALDeviceFeatureState::Enabled;
+    deviceFeatures.m_NativeFence                       = xiiGALDeviceFeatureState::Optional; // This can be disabled.
+    deviceFeatures.m_TextureComponentSwizzle           = xiiGALDeviceFeatureState::Enabled;
+
+    // Check if mesh shader is supported.
+    bool bMeshShadersSupported = false;
+#ifdef D3D12_H_HAS_MESH_SHADER
+    {
+      D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = {static_cast<D3D_SHADER_MODEL>(0x65)};
+      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))))
+      {
+        D3D12_FEATURE_DATA_D3D12_OPTIONS7 featureData = {};
+        bMeshShadersSupported                         = SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &featureData, sizeof(featureData))) && featureData.MeshShaderTier != D3D12_MESH_SHADER_TIER_NOT_SUPPORTED;
+      }
+    }
+#endif
+
+    if (bMeshShadersSupported)
+    {
+      deviceFeatures.m_MeshShaders = xiiGALDeviceFeatureState::Enabled;
+
+      m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountX     = 65536U; // From specification: https://microsoft.github.io/DirectX-Specs/d3d/MeshShader.html#dispatchmesh-api
+      m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountY     = 65536U;
+      m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountZ     = 65536U;
+      m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupTotalCount = XII_BIT(22U);
+    }
+
+    deviceFeatures.m_ShaderResourceRuntimeArray = xiiGALDeviceFeatureState::Enabled;
+
+    {
+      D3D12_FEATURE_DATA_D3D12_OPTIONS featureDataOptions = {};
+      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &featureDataOptions, sizeof(featureDataOptions))))
+      {
+        if (featureDataOptions.MinPrecisionSupport & D3D12_SHADER_MIN_PRECISION_SUPPORT_16_BIT)
+        {
+          deviceFeatures.m_ShaderFloat16 = xiiGALDeviceFeatureState::Enabled;
+        }
+
+        if (featureDataOptions.TiledResourcesTier >= D3D12_TILED_RESOURCES_TIER_1)
+        {
+          deviceFeatures.m_SparseResources = xiiGALDeviceFeatureState::Enabled;
+
+          m_AdapterDescription.m_SparseResourceProperties.m_uiStandardBlockSize = D3D12_TILED_RESOURCE_TILE_SIZE_IN_BYTES;
+
+          D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT featureDataGPUVirtualAddress = {};
+          if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT, &featureDataGPUVirtualAddress, sizeof(featureDataGPUVirtualAddress))))
+          {
+            m_AdapterDescription.m_SparseResourceProperties.m_uiAddressSpaceSize  = XII_BIT(featureDataGPUVirtualAddress.MaxGPUVirtualAddressBitsPerProcess);
+            m_AdapterDescription.m_SparseResourceProperties.m_uiResourceSpaceSize = XII_BIT(featureDataGPUVirtualAddress.MaxGPUVirtualAddressBitsPerResource);
+          }
+          else
+          {
+            m_AdapterDescription.m_SparseResourceProperties.m_uiAddressSpaceSize  = XII_BIT(featureDataOptions.MaxGPUVirtualAddressBitsPerResource);
+            m_AdapterDescription.m_SparseResourceProperties.m_uiResourceSpaceSize = XII_BIT(featureDataOptions.MaxGPUVirtualAddressBitsPerResource);
+          }
+
+          m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags = xiiGALSparseResourceCapabilityFlags::Buffer | xiiGALSparseResourceCapabilityFlags::BufferStandardBlock | xiiGALSparseResourceCapabilityFlags::Texture2D |
+            xiiGALSparseResourceCapabilityFlags::Standard2DTileShape | xiiGALSparseResourceCapabilityFlags::Aliased | xiiGALSparseResourceCapabilityFlags::NonResidentSafe;
+
+          // No 2, 8 or 16 sample multisample antialiasing (MSAA) support. Only 4x is required, except no 128 bpp formats.
+          m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Texture4Samples | xiiGALSparseResourceCapabilityFlags::Standard2DMSTileShape;
+
+          if (featureDataOptions.TiledResourcesTier >= D3D12_TILED_RESOURCES_TIER_2)
+          {
+            m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::ShaderResourceResidency | xiiGALSparseResourceCapabilityFlags::NonResidentStrict;
+          }
+          if (featureDataOptions.TiledResourcesTier >= D3D12_TILED_RESOURCES_TIER_3)
+          {
+            m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Texture3D | xiiGALSparseResourceCapabilityFlags::Standard3DTileShape;
+          }
+#if 0 // We currently do not use NVAPI on Nvidia graphics cards.
+          if (pNVAPI)
+          {
+              m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Texture2DArrayMipTail;
+          }
+#endif
+          if (featureDataOptions.ResourceHeapTier >= D3D12_RESOURCE_HEAP_TIER_2)
+          {
+            m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::MixedResourceTypeSupport;
+          }
+
+          // Some features are not correctly working in software renderer.
+          if (m_AdapterDescription.m_Type == xiiGALDeviceAdapterType::Software)
+          {
+            // Reading from null-mapped tile does not return zero.
+            m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.Remove(xiiGALSparseResourceCapabilityFlags::NonResidentStrict);
+            // CheckAccessFullyMapped() in shader does not work.
+            m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.Remove(xiiGALSparseResourceCapabilityFlags::ShaderResourceResidency);
+            // Mip tails are not supported at all.
+            m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.Remove(xiiGALSparseResourceCapabilityFlags::AlignedMipSize);
+          }
+
+          m_AdapterDescription.m_SparseResourceProperties.m_BindFlags = xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::UniformBuffer |
+            xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments | xiiGALBindFlags::RayTracing;
+
+          for (xiiUInt32 i = 0; i < m_AdapterDescription.m_CommandQueueProperties.GetCount(); ++i)
+            m_AdapterDescription.m_CommandQueueProperties[i].m_Type |= xiiGALCommandQueueType::SparseBinding;
+        }
+      }
+
+      D3D12_FEATURE_DATA_D3D12_OPTIONS1 featureDataOptions1 = {};
+      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &featureDataOptions1, sizeof(featureDataOptions1))))
+      {
+        if (featureDataOptions1.WaveOps != FALSE)
+        {
+          deviceFeatures.m_WaveOp = xiiGALDeviceFeatureState::Enabled;
+
+          m_AdapterDescription.m_WaveOperationProperties.m_uiMinSize             = featureDataOptions1.WaveLaneCountMin;
+          m_AdapterDescription.m_WaveOperationProperties.m_uiMaxSize             = featureDataOptions1.WaveLaneCountMax;
+          m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages = xiiGALShaderStage::Pixel | xiiGALShaderStage::Compute;
+          m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures          = xiiGALWaveFeature::Basic | xiiGALWaveFeature::Vote | xiiGALWaveFeature::Arithmetic | xiiGALWaveFeature::BallOut | xiiGALWaveFeature::Quad;
+          if (bMeshShadersSupported)
+            m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::Amplification | xiiGALShaderStage::Mesh;
+        }
+      }
+
+      D3D12_FEATURE_DATA_D3D12_OPTIONS3 featureDataOptions3 = {};
+      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featureDataOptions3, sizeof(featureDataOptions3))))
+      {
+        if (featureDataOptions3.CopyQueueTimestampQueriesSupported)
+          deviceFeatures.m_TransferQueueTimestampQueries = xiiGALDeviceFeatureState::Enabled;
+      }
+
+      D3D12_FEATURE_DATA_D3D12_OPTIONS4 featureDataOptions4{};
+      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS4, &featureDataOptions4, sizeof(featureDataOptions4))))
+      {
+        if (featureDataOptions4.Native16BitShaderOpsSupported)
+        {
+          deviceFeatures.m_ResourceBuffer16BitAccess = xiiGALDeviceFeatureState::Enabled;
+          deviceFeatures.m_UniformBuffer16BitAccess  = xiiGALDeviceFeatureState::Enabled;
+          deviceFeatures.m_ShaderInputOutput16       = xiiGALDeviceFeatureState::Enabled;
+        }
+      }
+
+      D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureDataOptions5{};
+      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureDataOptions5, sizeof(featureDataOptions5))))
+      {
+        if (featureDataOptions5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0)
+        {
+          deviceFeatures.m_RayTracing = xiiGALDeviceFeatureState::Enabled;
+
+          m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth        = D3D12_RAYTRACING_MAX_DECLARABLE_TRACE_RECURSION_DEPTH;
+          m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleSize    = D3D12_SHADER_IDENTIFIER_SIZE_IN_BYTES;
+          m_AdapterDescription.m_RayTracingProperties.m_uiMaxShaderRecordStride    = D3D12_RAYTRACING_MAX_SHADER_RECORD_STRIDE;
+          m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupBaseAlignment = D3D12_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
+          m_AdapterDescription.m_RayTracingProperties.m_uiMaxRayGenThreads         = D3D12_RAYTRACING_MAX_RAY_GENERATION_SHADER_THREADS;
+          m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS      = D3D12_RAYTRACING_MAX_INSTANCES_PER_TOP_LEVEL_ACCELERATION_STRUCTURE;
+          m_AdapterDescription.m_RayTracingProperties.m_uiMaxPrimitivesPerBLAS     = D3D12_RAYTRACING_MAX_PRIMITIVES_PER_BOTTOM_LEVEL_ACCELERATION_STRUCTURE;
+          m_AdapterDescription.m_RayTracingProperties.m_uiMaxGeometriesPerBLAS     = D3D12_RAYTRACING_MAX_GEOMETRIES_PER_BOTTOM_LEVEL_ACCELERATION_STRUCTURE;
+          m_AdapterDescription.m_RayTracingProperties.m_uiVertexBufferAlignment    = 1U;
+          m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment     = 1U;
+          m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment = D3D12_RAYTRACING_TRANSFORM3X4_BYTE_ALIGNMENT;
+          m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment       = D3D12_RAYTRACING_AABB_BYTE_ALIGNMENT;
+          m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment   = D3D12_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT;
+          m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = D3D12_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT;
+          m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::StandaloneShaders;
+        }
+        if (featureDataOptions5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_1)
+        {
+          m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::InlineRayTracing | xiiGALRayTracingCapabilityFlags::IndirectRayTracing;
+        }
+      }
+
+#ifdef NTDDI_WIN10_19H1 || FORCE_NTDDI_WIN10_19H1
+      D3D12_FEATURE_DATA_D3D12_OPTIONS6 featureDataOptions6{};
+      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &featureDataOptions6, sizeof(featureDataOptions6))))
+      {
+        // https://microsoft.github.io/DirectX-Specs/d3d/VariableRateShading.html#feature-tiering
+        auto& shadingRateProperties = m_AdapterDescription.m_ShadingRateProperties;
+        auto  AddShadingRate        = [&shadingRateProperties](xiiEnum<xiiGALShadingRate> shadingRate, xiiBitflags<xiiGALSampleCount> sampleBits) -> void {
+          XII_ASSERT_DEV(shadingRateProperties.m_Modes.GetCount() < XII_GAL_MAX_SHADING_RATE, "Shading rate properties exeeds the GAL maximum shaing rate count.");
+
+          auto& mode         = shadingRateProperties.m_Modes.ExpandAndGetRef();
+          mode.m_ShadingRate = shadingRate;
+          mode.m_SampleBits  = sampleBits;
+        };
+
+        if (featureDataOptions6.AdditionalShadingRatesSupported != FALSE)
+        {
+          AddShadingRate(xiiGALShadingRate::_4X4, xiiGALSampleCount::OneSample);
+          AddShadingRate(xiiGALShadingRate::_4X2, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples);
+          AddShadingRate(xiiGALShadingRate::_2X4, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples);
+        }
+        if (featureDataOptions6.VariableShadingRateTier >= D3D12_VARIABLE_SHADING_RATE_TIER_1)
+        {
+          deviceFeatures.m_VariableRateShading = xiiGALDeviceFeatureState::Enabled;
+
+          shadingRateProperties.m_Format = xiiGALShadingRateFormat::Palette;
+          shadingRateProperties.m_CombinerFlags |= xiiGALShadingRateCombiner::PassThrough;
+          shadingRateProperties.m_CapabilityFlags |= xiiGALShadingRateCapabilityFlags::PerDraw;
+
+          // 1x1, 1x2, 2x1, 2x2 are always supported
+          AddShadingRate(xiiGALShadingRate::_2X2, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples | xiiGALSampleCount::FourSamples);
+          AddShadingRate(xiiGALShadingRate::_2X1, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples | xiiGALSampleCount::FourSamples);
+          AddShadingRate(xiiGALShadingRate::_1X2, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples | xiiGALSampleCount::FourSamples);
+          AddShadingRate(xiiGALShadingRate::_1X1, xiiGALSampleCount::AllSamples);
+        }
+        if (featureDataOptions6.VariableShadingRateTier >= D3D12_VARIABLE_SHADING_RATE_TIER_2)
+        {
+          shadingRateProperties.m_CapabilityFlags = xiiGALShadingRateCapabilityFlags::PerPrimitive | xiiGALShadingRateCapabilityFlags::TextureBased | xiiGALShadingRateCapabilityFlags::NonSubSampledRenderTarget | xiiGALShadingRateCapabilityFlags::SampleMask |
+            xiiGALShadingRateCapabilityFlags::ShaderSampleMask | xiiGALShadingRateCapabilityFlags::ShadingRateShaderInput;
+
+          shadingRateProperties.m_MinTileSize = xiiSizeU32(featureDataOptions6.ShadingRateImageTileSize, featureDataOptions6.ShadingRateImageTileSize);
+          shadingRateProperties.m_MaxTileSize = xiiSizeU32(featureDataOptions6.ShadingRateImageTileSize, featureDataOptions6.ShadingRateImageTileSize);
+          shadingRateProperties.m_CombinerFlags |= xiiGALShadingRateCombiner::CombinerOverride | xiiGALShadingRateCombiner::CombinerMin | xiiGALShadingRateCombiner::CombinerMax | xiiGALShadingRateCombiner::CombinerSum;
+          shadingRateProperties.m_BindFlags |= xiiGALBindFlags::ShadingRate | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShadingRate;
+          shadingRateProperties.m_TextureAccess = xiiGALShadingRateTextureAccess::OnGPU;
+        }
+        if (featureDataOptions6.PerPrimitiveShadingRateSupportedWithViewportIndexing != FALSE)
+        {
+          shadingRateProperties.m_CapabilityFlags |= xiiGALShadingRateCapabilityFlags::PerPrimitiveWithMultipleViewports;
+        }
+        // Export of depth and stencil is not supported
+        // https://microsoft.github.io/DirectX-Specs/d3d/VariableRateShading.html#export-of-depth-and-stencil
+
+        // Perhaps add support for D3D12_FEATURE_DATA_D3D12_OPTIONS10?
+      }
+#endif // NTDDI_WIN10_19H1
+    }
+
+    // Buffer properties.
+    {
+      m_AdapterDescription.m_BufferProperties.m_uiConstantBufferAlignment         = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
+      m_AdapterDescription.m_BufferProperties.m_uiStructuredBufferOffsetAlignment = D3D12_RAW_UAV_SRV_BYTE_ALIGNMENT;
+    }
   }
 
-  // Compute shader properties
-
-  m_AdapterDescription.m_ComputeShaderProperties.m_uiSharedMemorySize          = adapterInformation.ComputeShader.SharedMemorySize;
-  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupInvocations = adapterInformation.ComputeShader.MaxThreadGroupInvocations;
-  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupSizeX       = adapterInformation.ComputeShader.MaxThreadGroupSizeX;
-  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupSizeY       = adapterInformation.ComputeShader.MaxThreadGroupSizeY;
-  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupSizeZ       = adapterInformation.ComputeShader.MaxThreadGroupSizeZ;
-  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupCountX      = adapterInformation.ComputeShader.MaxThreadGroupCountX;
-  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupCountY      = adapterInformation.ComputeShader.MaxThreadGroupCountY;
-  m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupCountZ      = adapterInformation.ComputeShader.MaxThreadGroupCountZ;
-
-  // Draw command properties
-
-  if (adapterInformation.DrawCommand.CapFlags & Diligent::DRAW_COMMAND_CAP_FLAG_BASE_VERTEX)
-    m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::BaseVertex;
-  if (adapterInformation.DrawCommand.CapFlags & Diligent::DRAW_COMMAND_CAP_FLAG_DRAW_INDIRECT)
-    m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::DrawIndirect;
-  if (adapterInformation.DrawCommand.CapFlags & Diligent::DRAW_COMMAND_CAP_FLAG_DRAW_INDIRECT_FIRST_INSTANCE)
-    m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::DrawIndirectFirstInstance;
-  if (adapterInformation.DrawCommand.CapFlags & Diligent::DRAW_COMMAND_CAP_FLAG_NATIVE_MULTI_DRAW_INDIRECT)
-    m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::NativeMultiDrawIndirect;
-  if (adapterInformation.DrawCommand.CapFlags & Diligent::DRAW_COMMAND_CAP_FLAG_DRAW_INDIRECT_COUNTER_BUFFER)
-    m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer;
-
-  m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue        = adapterInformation.DrawCommand.MaxIndexValue;
-  m_AdapterDescription.m_DrawCommandProperties.m_uiMaxDrawIndirectCount = adapterInformation.DrawCommand.MaxDrawIndirectCount;
-
-  // Sparse resource properties
-
-  m_AdapterDescription.m_SparseResourceProperties.m_uiAddressSpaceSize  = adapterInformation.SparseResources.AddressSpaceSize;
-  m_AdapterDescription.m_SparseResourceProperties.m_uiResourceSpaceSize = adapterInformation.SparseResources.ResourceSpaceSize;
-
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_SHADER_RESOURCE_RESIDENCY)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::ShaderResourceResidency;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_BUFFER)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Buffer;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_TEXTURE_2D)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Texture2D;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_TEXTURE_3D)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Texture3D;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_TEXTURE_2_SAMPLES)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Texture2Samples;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_TEXTURE_4_SAMPLES)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Texture4Samples;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_TEXTURE_8_SAMPLES)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Texture8Samples;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_TEXTURE_16_SAMPLES)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Texture16Samples;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_ALIASED)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Aliased;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_STANDARD_2D_TILE_SHAPE)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Standard2DTileShape;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_STANDARD_2DMS_TILE_SHAPE)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Standard2DMSTileShape;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_ALIGNED_MIP_SIZE)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::AlignedMipSize;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_NON_RESIDENT_STRICT)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::NonResidentStrict;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_TEXTURE_2D_ARRAY_MIP_TAIL)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Texture2DArrayMipTail;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_BUFFER_STANDARD_BLOCK)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::BufferStandardBlock;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_NON_RESIDENT_SAFE)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::NonResidentSafe;
-  if (adapterInformation.SparseResources.CapFlags & Diligent::SPARSE_RESOURCE_CAP_FLAG_MIXED_RESOURCE_TYPE_SUPPORT)
-    m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::MixedResourceTypeSupport;
-
-  m_AdapterDescription.m_SparseResourceProperties.m_uiStandardBlockSize = adapterInformation.SparseResources.StandardBlockSize;
-
-  if (adapterInformation.SparseResources.BufferBindFlags & Diligent::BIND_VERTEX_BUFFER)
-    m_AdapterDescription.m_SparseResourceProperties.m_BindFlags |= xiiGALBindFlags::VertexBuffer;
-  if (adapterInformation.SparseResources.BufferBindFlags & Diligent::BIND_INDEX_BUFFER)
-    m_AdapterDescription.m_SparseResourceProperties.m_BindFlags |= xiiGALBindFlags::IndexBuffer;
-  if (adapterInformation.SparseResources.BufferBindFlags & Diligent::BIND_UNIFORM_BUFFER)
-    m_AdapterDescription.m_SparseResourceProperties.m_BindFlags |= xiiGALBindFlags::UniformBuffer;
-  if (adapterInformation.SparseResources.BufferBindFlags & Diligent::BIND_SHADER_RESOURCE)
-    m_AdapterDescription.m_SparseResourceProperties.m_BindFlags |= xiiGALBindFlags::ShaderResource;
-  if (adapterInformation.SparseResources.BufferBindFlags & Diligent::BIND_STREAM_OUTPUT)
-    m_AdapterDescription.m_SparseResourceProperties.m_BindFlags |= xiiGALBindFlags::StreamOutput;
-  if (adapterInformation.SparseResources.BufferBindFlags & Diligent::BIND_RENDER_TARGET)
-    m_AdapterDescription.m_SparseResourceProperties.m_BindFlags |= xiiGALBindFlags::RenderTarget;
-  if (adapterInformation.SparseResources.BufferBindFlags & Diligent::BIND_DEPTH_STENCIL)
-    m_AdapterDescription.m_SparseResourceProperties.m_BindFlags |= xiiGALBindFlags::DepthStencil;
-  if (adapterInformation.SparseResources.BufferBindFlags & Diligent::BIND_UNORDERED_ACCESS)
-    m_AdapterDescription.m_SparseResourceProperties.m_BindFlags |= xiiGALBindFlags::UnorderedAccess;
-  if (adapterInformation.SparseResources.BufferBindFlags & Diligent::BIND_INDIRECT_DRAW_ARGS)
-    m_AdapterDescription.m_SparseResourceProperties.m_BindFlags |= xiiGALBindFlags::IndirectDrawArguments;
-  if (adapterInformation.SparseResources.BufferBindFlags & Diligent::BIND_INPUT_ATTACHMENT)
-    m_AdapterDescription.m_SparseResourceProperties.m_BindFlags |= xiiGALBindFlags::InputAttachment;
-  if (adapterInformation.SparseResources.BufferBindFlags & Diligent::BIND_RAY_TRACING)
-    m_AdapterDescription.m_SparseResourceProperties.m_BindFlags |= xiiGALBindFlags::RayTracing;
-  if (adapterInformation.SparseResources.BufferBindFlags & Diligent::BIND_SHADING_RATE)
-    m_AdapterDescription.m_SparseResourceProperties.m_BindFlags |= xiiGALBindFlags::ShadingRate;
-
-  // Device features support
-
-  m_AdapterDescription.m_Features.m_SeparablePrograms                 = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.SeparablePrograms);
-  m_AdapterDescription.m_Features.m_ShaderResourceQueries             = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.ShaderResourceQueries);
-  m_AdapterDescription.m_Features.m_WireframeFill                     = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.WireframeFill);
-  m_AdapterDescription.m_Features.m_MultithreadedResourceCreation     = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.MultithreadedResourceCreation);
-  m_AdapterDescription.m_Features.m_ComputeShaders                    = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.ComputeShaders);
-  m_AdapterDescription.m_Features.m_GeometryShaders                   = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.GeometryShaders);
-  m_AdapterDescription.m_Features.m_Tessellation                      = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.Tessellation);
-  m_AdapterDescription.m_Features.m_MeshShaders                       = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.MeshShaders);
-  m_AdapterDescription.m_Features.m_RayTracing                        = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.RayTracing);
-  m_AdapterDescription.m_Features.m_BindlessResources                 = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.BindlessResources);
-  m_AdapterDescription.m_Features.m_OcclusionQueries                  = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.OcclusionQueries);
-  m_AdapterDescription.m_Features.m_BinaryOcclusionQueries            = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.BinaryOcclusionQueries);
-  m_AdapterDescription.m_Features.m_TimestampQueries                  = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.TimestampQueries);
-  m_AdapterDescription.m_Features.m_PipelineStatisticsQueries         = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.PipelineStatisticsQueries);
-  m_AdapterDescription.m_Features.m_DurationQueries                   = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.DurationQueries);
-  m_AdapterDescription.m_Features.m_DepthBiasClamp                    = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.DepthBiasClamp);
-  m_AdapterDescription.m_Features.m_DepthClamp                        = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.DepthClamp);
-  m_AdapterDescription.m_Features.m_IndependentBlend                  = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.IndependentBlend);
-  m_AdapterDescription.m_Features.m_DualSourceBlend                   = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.DualSourceBlend);
-  m_AdapterDescription.m_Features.m_MultiViewport                     = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.MultiViewport);
-  m_AdapterDescription.m_Features.m_TextureCompressionBC              = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.TextureCompressionBC);
-  m_AdapterDescription.m_Features.m_VertexPipelineUAVWritesAndAtomics = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.VertexPipelineUAVWritesAndAtomics);
-  m_AdapterDescription.m_Features.m_PixelUAVWritesAndAtomics          = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.PixelUAVWritesAndAtomics);
-  m_AdapterDescription.m_Features.m_TextureUAVExtendedFormats         = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.TextureUAVExtendedFormats);
-  m_AdapterDescription.m_Features.m_ShaderFloat16                     = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.ShaderFloat16);
-  m_AdapterDescription.m_Features.m_ResourceBuffer16BitAccess         = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.ResourceBuffer16BitAccess);
-  m_AdapterDescription.m_Features.m_UniformBuffer16BitAccess          = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.UniformBuffer16BitAccess);
-  m_AdapterDescription.m_Features.m_ShaderInputOutput16               = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.ShaderInputOutput16);
-  m_AdapterDescription.m_Features.m_ShaderInt8                        = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.ShaderInt8);
-  m_AdapterDescription.m_Features.m_ResourceBuffer8BitAccess          = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.ResourceBuffer8BitAccess);
-  m_AdapterDescription.m_Features.m_UniformBuffer8BitAccess           = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.UniformBuffer8BitAccess);
-  m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray        = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.ShaderResourceRuntimeArray);
-  m_AdapterDescription.m_Features.m_WaveOp                            = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.WaveOp);
-  m_AdapterDescription.m_Features.m_InstanceDataStepRate              = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.InstanceDataStepRate);
-  m_AdapterDescription.m_Features.m_NativeFence                       = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.NativeFence);
-  m_AdapterDescription.m_Features.m_TileShaders                       = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.TileShaders);
-  m_AdapterDescription.m_Features.m_TransferQueueTimestampQueries     = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.TransferQueueTimestampQueries);
-  m_AdapterDescription.m_Features.m_VariableRateShading               = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.VariableRateShading);
-  m_AdapterDescription.m_Features.m_SparseResources                   = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.SparseResources);
-  m_AdapterDescription.m_Features.m_SubpassFramebufferFetch           = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.SubpassFramebufferFetch);
-  m_AdapterDescription.m_Features.m_TextureComponentSwizzle           = xiiDiligentTypeConversions::GetGALDeviceFeatureState(adapterInformation.Features.TextureComponentSwizzle);
-
-  // Command queue properties
-
-  for (xiiUInt32 i = 0; i < adapterInformation.NumQueues; ++i)
+  // Texture properties.
   {
-    const auto& refQueue = adapterInformation.Queues[i];
-    auto&       queue    = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
+    m_AdapterDescription.m_TextureProperties.m_uiMaxTexture1DDimension     = D3D12_REQ_TEXTURE1D_U_DIMENSION;
+    m_AdapterDescription.m_TextureProperties.m_uiMaxTexture1DArraySlices   = D3D12_REQ_TEXTURE1D_ARRAY_AXIS_DIMENSION;
+    m_AdapterDescription.m_TextureProperties.m_uiMaxTexture2DDimension     = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+    m_AdapterDescription.m_TextureProperties.m_uiMaxTexture2DArraySlices   = D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION;
+    m_AdapterDescription.m_TextureProperties.m_uiMaxTexture3DDimension     = D3D12_REQ_TEXTURE3D_U_V_OR_W_DIMENSION;
+    m_AdapterDescription.m_TextureProperties.m_uiMaxTextureCubeDimension   = D3D12_REQ_TEXTURECUBE_DIMENSION;
+    m_AdapterDescription.m_TextureProperties.m_bTexture2DMSSupported       = true;
+    m_AdapterDescription.m_TextureProperties.m_bTexture2DMSArraySupported  = true;
+    m_AdapterDescription.m_TextureProperties.m_bTextureViewSupported       = true;
+    m_AdapterDescription.m_TextureProperties.m_bCubeMapArraysSupported     = true;
+    m_AdapterDescription.m_TextureProperties.m_bTextureView2DOn3DSupported = true;
+  }
 
-    if (refQueue.QueueType & Diligent::COMMAND_QUEUE_TYPE_TRANSFER)
-      queue.m_Type |= xiiGALCommandQueueType::Transfer;
-    if (refQueue.QueueType & Diligent::COMMAND_QUEUE_TYPE_COMPUTE)
-      queue.m_Type |= xiiGALCommandQueueType::Compute;
-    if (refQueue.QueueType & Diligent::COMMAND_QUEUE_TYPE_GRAPHICS)
-      queue.m_Type |= xiiGALCommandQueueType::Graphics;
-    if (refQueue.QueueType & Diligent::COMMAND_QUEUE_TYPE_SPARSE_BINDING)
-      queue.m_Type |= xiiGALCommandQueueType::SparseBinding;
+  // Sampler properties.
+  {
+    m_AdapterDescription.m_SamplerProperties.m_bBorderSamplingModeSupported   = true;
+    m_AdapterDescription.m_SamplerProperties.m_bAnisotropicFilteringSupported = true;
+    m_AdapterDescription.m_SamplerProperties.m_bLODBiasSupported              = true;
+  }
 
-    queue.m_MaxDeviceContexts      = refQueue.MaxDeviceContexts;
-    queue.m_TextureCopyGranularity = refQueue.TextureCopyGranularity;
+  // Compute shader properties.
+  {
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiSharedMemorySize          = 32U << 10U;
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupInvocations = D3D12_CS_THREAD_GROUP_MAX_THREADS_PER_GROUP;
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupSizeX       = D3D12_CS_THREAD_GROUP_MAX_X;
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupSizeY       = D3D12_CS_THREAD_GROUP_MAX_Y;
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupSizeZ       = D3D12_CS_THREAD_GROUP_MAX_Z;
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupCountX      = D3D12_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION;
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupCountY      = D3D12_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION;
+    m_AdapterDescription.m_ComputeShaderProperties.m_uiMaxThreadGroupCountZ      = D3D12_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION;
+  }
+
+  // Draw command properties.
+  {
+#if D3D12_REQ_DRAWINDEXED_INDEX_COUNT_2_TO_EXP >= 32
+    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue = ~0u;
+#else
+    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue = 1u << D3D12_REQ_DRAWINDEXED_INDEX_COUNT_2_TO_EXP;
+#endif
+    m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::BaseVertex | xiiGALDrawCommandCapabilityFlags::NativeMultiDrawIndirect | xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer;
   }
 }
 
 void xiiGALDeviceD3D12::CreateCommandQueues()
 {
+///\todo Create command queues.
+#if 0
   m_ContextDescriptions.Clear();
 
   auto AddContext = [&](Diligent::COMMAND_QUEUE_TYPE queueType, const char* szName, xiiUInt32 uiAdapterId) {
@@ -1264,6 +1141,7 @@ void xiiGALDeviceD3D12::CreateCommandQueues()
   AddContext(Diligent::COMMAND_QUEUE_TYPE_TRANSFER, "Transfer Command Queue", m_Description.m_uiAdapterID);
   AddContext(Diligent::COMMAND_QUEUE_TYPE_COMPUTE, "Compute Command Queue", m_Description.m_uiAdapterID);
   AddContext(Diligent::COMMAND_QUEUE_TYPE_SPARSE_BINDING, "Sparse Bindingn Command Queue", m_Description.m_uiAdapterID);
+#endif
 }
 
 void xiiGALDeviceD3D12::FillFormatLookupTable()
@@ -1271,108 +1149,210 @@ void xiiGALDeviceD3D12::FillFormatLookupTable()
   // The list below is in the same order as the xiiGALTextureFormat enumeration, no format should be missing.
 
   // clang-format off
-
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32Typeless,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA32_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA32_TYPELESS).IL(Diligent::TEX_FORMAT_RGBA32_TYPELESS).RV(Diligent::TEX_FORMAT_RGBA32_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32Float,                  xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA32_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA32_FLOAT).IL(Diligent::TEX_FORMAT_RGBA32_FLOAT).RV(Diligent::TEX_FORMAT_RGBA32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32UInt,                   xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA32_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA32_UINT).IL(Diligent::TEX_FORMAT_RGBA32_UINT).RV(Diligent::TEX_FORMAT_RGBA32_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32SInt,                   xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA32_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA32_SINT).IL(Diligent::TEX_FORMAT_RGBA32_SINT).RV(Diligent::TEX_FORMAT_RGBA32_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32Typeless,                xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB32_TYPELESS).RT(Diligent::TEX_FORMAT_RGB32_TYPELESS).IL(Diligent::TEX_FORMAT_RGB32_TYPELESS).RV(Diligent::TEX_FORMAT_RGB32_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32Float,                   xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB32_TYPELESS).RT(Diligent::TEX_FORMAT_RGB32_FLOAT).IL(Diligent::TEX_FORMAT_RGB32_FLOAT).RV(Diligent::TEX_FORMAT_RGB32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32UInt,                    xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB32_TYPELESS).RT(Diligent::TEX_FORMAT_RGB32_UINT).IL(Diligent::TEX_FORMAT_RGB32_UINT).RV(Diligent::TEX_FORMAT_RGB32_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32SInt,                    xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB32_TYPELESS).RT(Diligent::TEX_FORMAT_RGB32_SINT).IL(Diligent::TEX_FORMAT_RGB32_SINT).RV(Diligent::TEX_FORMAT_RGB32_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16Typeless,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA16_TYPELESS).IL(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RV(Diligent::TEX_FORMAT_RGBA16_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16Float,                  xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA16_FLOAT).IL(Diligent::TEX_FORMAT_RGBA16_FLOAT).RV(Diligent::TEX_FORMAT_RGBA16_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16UNormalized,            xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA16_UNORM).IL(Diligent::TEX_FORMAT_RGBA16_UNORM).RV(Diligent::TEX_FORMAT_RGBA16_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16UInt,                   xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA16_UINT).IL(Diligent::TEX_FORMAT_RGBA16_UINT).RV(Diligent::TEX_FORMAT_RGBA16_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16SNormalized,            xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA16_SNORM).IL(Diligent::TEX_FORMAT_RGBA16_SNORM).RV(Diligent::TEX_FORMAT_RGBA16_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16SInt,                   xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA16_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA16_SINT).IL(Diligent::TEX_FORMAT_RGBA16_SINT).RV(Diligent::TEX_FORMAT_RGBA16_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32Typeless,                 xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG32_TYPELESS).RT(Diligent::TEX_FORMAT_RG32_TYPELESS).IL(Diligent::TEX_FORMAT_RG32_TYPELESS).RV(Diligent::TEX_FORMAT_RG32_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32Float,                    xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG32_TYPELESS).RT(Diligent::TEX_FORMAT_RG32_FLOAT).IL(Diligent::TEX_FORMAT_RG32_FLOAT).RV(Diligent::TEX_FORMAT_RG32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32UInt,                     xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG32_TYPELESS).RT(Diligent::TEX_FORMAT_RG32_UINT).IL(Diligent::TEX_FORMAT_RG32_UINT).RV(Diligent::TEX_FORMAT_RG32_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32SInt,                     xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG32_TYPELESS).RT(Diligent::TEX_FORMAT_RG32_SINT).IL(Diligent::TEX_FORMAT_RG32_SINT).RV(Diligent::TEX_FORMAT_RG32_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32G8X24Typeless,             xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R32G8X24_TYPELESS).RT(Diligent::TEX_FORMAT_R32G8X24_TYPELESS).IL(Diligent::TEX_FORMAT_R32G8X24_TYPELESS).RV(Diligent::TEX_FORMAT_R32G8X24_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D32FloatS8X24UInt,            xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT).D(Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT).DS(Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT).S(Diligent::TEX_FORMAT_D32_FLOAT_S8X24_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32FloatX8X24Typeless,        xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS).RT(Diligent::TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS).IL(Diligent::TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS).RV(Diligent::TEX_FORMAT_R32_FLOAT_X8X24_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::X32TypelessG8X24UInt,         xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X32_TYPELESS_G8X24_UINT).RT(Diligent::TEX_FORMAT_X32_TYPELESS_G8X24_UINT).IL(Diligent::TEX_FORMAT_X32_TYPELESS_G8X24_UINT).RV(Diligent::TEX_FORMAT_X32_TYPELESS_G8X24_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2Typeless,              xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB10A2_TYPELESS).RT(Diligent::TEX_FORMAT_RGB10A2_TYPELESS).IL(Diligent::TEX_FORMAT_RGB10A2_TYPELESS).RV(Diligent::TEX_FORMAT_RGB10A2_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2UNormalized,           xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB10A2_TYPELESS).RT(Diligent::TEX_FORMAT_RGB10A2_UNORM).IL(Diligent::TEX_FORMAT_RGB10A2_UNORM).RV(Diligent::TEX_FORMAT_RGB10A2_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2UInt,                  xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB10A2_TYPELESS).RT(Diligent::TEX_FORMAT_RGB10A2_UINT).IL(Diligent::TEX_FORMAT_RGB10A2_UINT).RV(Diligent::TEX_FORMAT_RGB10A2_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG11B10Float,                 xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R11G11B10_FLOAT).RT(Diligent::TEX_FORMAT_R11G11B10_FLOAT).IL(Diligent::TEX_FORMAT_R11G11B10_FLOAT).RV(Diligent::TEX_FORMAT_R11G11B10_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8Typeless,                xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA8_TYPELESS).IL(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RV(Diligent::TEX_FORMAT_RGBA8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UNormalized,             xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA8_UNORM).IL(Diligent::TEX_FORMAT_RGBA8_UNORM).RV(Diligent::TEX_FORMAT_RGBA8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UNormalizedSRGB,         xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB).IL(Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB).RV(Diligent::TEX_FORMAT_RGBA8_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UInt,                    xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA8_UINT).IL(Diligent::TEX_FORMAT_RGBA8_UINT).RV(Diligent::TEX_FORMAT_RGBA8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8SNormalized,             xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA8_SNORM).IL(Diligent::TEX_FORMAT_RGBA8_SNORM).RV(Diligent::TEX_FORMAT_RGBA8_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8SInt,                    xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGBA8_TYPELESS).RT(Diligent::TEX_FORMAT_RGBA8_SINT).IL(Diligent::TEX_FORMAT_RGBA8_SINT).RV(Diligent::TEX_FORMAT_RGBA8_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16Typeless,                 xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG16_TYPELESS).RT(Diligent::TEX_FORMAT_RG16_TYPELESS).IL(Diligent::TEX_FORMAT_RG16_TYPELESS).RV(Diligent::TEX_FORMAT_RG16_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16Float,                    xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG16_FLOAT).RT(Diligent::TEX_FORMAT_RG16_FLOAT).IL(Diligent::TEX_FORMAT_RG16_FLOAT).RV(Diligent::TEX_FORMAT_RG16_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16UNormalized,              xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG16_TYPELESS).RT(Diligent::TEX_FORMAT_RG16_UNORM).IL(Diligent::TEX_FORMAT_RG16_UNORM).RV(Diligent::TEX_FORMAT_RG16_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16UInt,                     xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG16_TYPELESS).RT(Diligent::TEX_FORMAT_RG16_UINT).IL(Diligent::TEX_FORMAT_RG16_UINT).RV(Diligent::TEX_FORMAT_RG16_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16SNormalized,              xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG16_TYPELESS).RT(Diligent::TEX_FORMAT_RG16_SNORM).IL(Diligent::TEX_FORMAT_RG16_SNORM).RV(Diligent::TEX_FORMAT_RG16_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16SInt,                     xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG16_TYPELESS).RT(Diligent::TEX_FORMAT_RG16_SINT).IL(Diligent::TEX_FORMAT_RG16_SINT).RV(Diligent::TEX_FORMAT_RG16_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32Typeless,                  xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R32_TYPELESS).RT(Diligent::TEX_FORMAT_R32_TYPELESS).IL(Diligent::TEX_FORMAT_R32_TYPELESS).RV(Diligent::TEX_FORMAT_R32_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D32Float,                     xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R32_TYPELESS).D(Diligent::TEX_FORMAT_D32_FLOAT).DS(Diligent::TEX_FORMAT_D32_FLOAT).S(Diligent::TEX_FORMAT_D32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32Float,                     xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R32_TYPELESS).RT(Diligent::TEX_FORMAT_R32_FLOAT).IL(Diligent::TEX_FORMAT_R32_FLOAT).RV(Diligent::TEX_FORMAT_R32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32UInt,                      xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R32_TYPELESS).RT(Diligent::TEX_FORMAT_R32_UINT).IL(Diligent::TEX_FORMAT_R32_UINT).RV(Diligent::TEX_FORMAT_R32_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32SInt,                      xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R32_TYPELESS).RT(Diligent::TEX_FORMAT_R32_SINT).IL(Diligent::TEX_FORMAT_R32_SINT).RV(Diligent::TEX_FORMAT_R32_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R24G8Typeless,                xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R24G8_TYPELESS).RT(Diligent::TEX_FORMAT_R24G8_TYPELESS).IL(Diligent::TEX_FORMAT_R24G8_TYPELESS).RV(Diligent::TEX_FORMAT_R24G8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D24UNormalizedS8UInt,         xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_D24_UNORM_S8_UINT).D(Diligent::TEX_FORMAT_D24_UNORM_S8_UINT).DS(Diligent::TEX_FORMAT_D24_UNORM_S8_UINT).S(Diligent::TEX_FORMAT_D24_UNORM_S8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R24UNormalizedX8Typeless,     xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R24_UNORM_X8_TYPELESS).RT(Diligent::TEX_FORMAT_R24_UNORM_X8_TYPELESS).IL(Diligent::TEX_FORMAT_R24_UNORM_X8_TYPELESS).RV(Diligent::TEX_FORMAT_R24_UNORM_X8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::X24TypelessG8UInt,            xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RT(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).IL(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT).RV(Diligent::TEX_FORMAT_X24_TYPELESS_G8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8Typeless,                  xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG8_TYPELESS).RT(Diligent::TEX_FORMAT_RG8_TYPELESS).IL(Diligent::TEX_FORMAT_RG8_TYPELESS).RV(Diligent::TEX_FORMAT_RG8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8UNormalized,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG8_TYPELESS).RT(Diligent::TEX_FORMAT_RG8_UNORM).IL(Diligent::TEX_FORMAT_RG8_UNORM).RV(Diligent::TEX_FORMAT_RG8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8UInt,                      xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG8_TYPELESS).RT(Diligent::TEX_FORMAT_RG8_UINT).IL(Diligent::TEX_FORMAT_RG8_UINT).RV(Diligent::TEX_FORMAT_RG8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8SNormalized,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG8_TYPELESS).RT(Diligent::TEX_FORMAT_RG8_SNORM).IL(Diligent::TEX_FORMAT_RG8_SNORM).RV(Diligent::TEX_FORMAT_RG8_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8SInt,                      xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG8_TYPELESS).RT(Diligent::TEX_FORMAT_RG8_SINT).IL(Diligent::TEX_FORMAT_RG8_SINT).RV(Diligent::TEX_FORMAT_RG8_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16Typeless,                  xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).RT(Diligent::TEX_FORMAT_R16_TYPELESS).IL(Diligent::TEX_FORMAT_R16_TYPELESS).RV(Diligent::TEX_FORMAT_R16_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16Float,                     xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).RT(Diligent::TEX_FORMAT_R16_FLOAT).IL(Diligent::TEX_FORMAT_R16_FLOAT).RV(Diligent::TEX_FORMAT_R16_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D16UNormalized,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).RT(Diligent::TEX_FORMAT_D16_UNORM).IL(Diligent::TEX_FORMAT_D16_UNORM).RV(Diligent::TEX_FORMAT_D16_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16UNormalized,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).D(Diligent::TEX_FORMAT_R16_UNORM).DS(Diligent::TEX_FORMAT_R16_UNORM).S(Diligent::TEX_FORMAT_R16_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16UInt,                      xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).RT(Diligent::TEX_FORMAT_R16_UINT).IL(Diligent::TEX_FORMAT_R16_UINT).RV(Diligent::TEX_FORMAT_R16_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16SNormalized,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).RT(Diligent::TEX_FORMAT_R16_SNORM).IL(Diligent::TEX_FORMAT_R16_SNORM).RV(Diligent::TEX_FORMAT_R16_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16SInt,                      xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R16_TYPELESS).RT(Diligent::TEX_FORMAT_R16_SINT).IL(Diligent::TEX_FORMAT_R16_SINT).RV(Diligent::TEX_FORMAT_R16_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8Typeless,                   xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R8_TYPELESS).RT(Diligent::TEX_FORMAT_R8_TYPELESS).IL(Diligent::TEX_FORMAT_R8_TYPELESS).RV(Diligent::TEX_FORMAT_R8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8UNormalized,                xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R8_TYPELESS).RT(Diligent::TEX_FORMAT_R8_UNORM).IL(Diligent::TEX_FORMAT_R8_UNORM).RV(Diligent::TEX_FORMAT_R8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8UInt,                       xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R8_TYPELESS).RT(Diligent::TEX_FORMAT_R8_UINT).IL(Diligent::TEX_FORMAT_R8_UINT).RV(Diligent::TEX_FORMAT_R8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8SNormalized,                xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R8_TYPELESS).RT(Diligent::TEX_FORMAT_R8_SNORM).IL(Diligent::TEX_FORMAT_R8_SNORM).RV(Diligent::TEX_FORMAT_R8_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8SInt,                       xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R8_TYPELESS).RT(Diligent::TEX_FORMAT_R8_SINT).IL(Diligent::TEX_FORMAT_R8_SINT).RV(Diligent::TEX_FORMAT_R8_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::A8UNormalized,                xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R8_TYPELESS).RT(Diligent::TEX_FORMAT_A8_UNORM).IL(Diligent::TEX_FORMAT_A8_UNORM).RV(Diligent::TEX_FORMAT_A8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R1UNormalized,                xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R1_UNORM).RT(Diligent::TEX_FORMAT_R1_UNORM).IL(Diligent::TEX_FORMAT_R1_UNORM).RV(Diligent::TEX_FORMAT_R1_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB9E5SharedExponent,         xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP).RT(Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP).IL(Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP).RV(Diligent::TEX_FORMAT_RGB9E5_SHAREDEXP));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8BG8UNormalized,            xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_RG8_B8G8_UNORM).RT(Diligent::TEX_FORMAT_RG8_B8G8_UNORM).IL(Diligent::TEX_FORMAT_RG8_B8G8_UNORM).RV(Diligent::TEX_FORMAT_RG8_B8G8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::GR8GB8UNormalized,            xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_G8R8_G8B8_UNORM).RT(Diligent::TEX_FORMAT_G8R8_G8B8_UNORM).IL(Diligent::TEX_FORMAT_G8R8_G8B8_UNORM).RV(Diligent::TEX_FORMAT_G8R8_G8B8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1Typeless,                  xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC1_TYPELESS).RT(Diligent::TEX_FORMAT_BC1_TYPELESS).IL(Diligent::TEX_FORMAT_BC1_TYPELESS).RV(Diligent::TEX_FORMAT_BC1_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1UNormalized,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC1_TYPELESS).RT(Diligent::TEX_FORMAT_BC1_UNORM).IL(Diligent::TEX_FORMAT_BC1_UNORM).RV(Diligent::TEX_FORMAT_BC1_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1UNormalizedSRGB,           xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC1_TYPELESS).RT(Diligent::TEX_FORMAT_BC1_UNORM_SRGB).IL(Diligent::TEX_FORMAT_BC1_UNORM_SRGB).RV(Diligent::TEX_FORMAT_BC1_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2Typeless,                  xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC2_TYPELESS).RT(Diligent::TEX_FORMAT_BC2_TYPELESS).IL(Diligent::TEX_FORMAT_BC2_TYPELESS).RV(Diligent::TEX_FORMAT_BC2_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2UNormalized,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC2_TYPELESS).RT(Diligent::TEX_FORMAT_BC2_UNORM).IL(Diligent::TEX_FORMAT_BC2_UNORM).RV(Diligent::TEX_FORMAT_BC2_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2UNormalizedSRGB,           xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC2_TYPELESS).RT(Diligent::TEX_FORMAT_BC2_UNORM_SRGB).IL(Diligent::TEX_FORMAT_BC2_UNORM_SRGB).RV(Diligent::TEX_FORMAT_BC2_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3Typeless,                  xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC3_TYPELESS).RT(Diligent::TEX_FORMAT_BC3_TYPELESS).IL(Diligent::TEX_FORMAT_BC3_TYPELESS).RV(Diligent::TEX_FORMAT_BC3_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3UNormalized,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC3_TYPELESS).RT(Diligent::TEX_FORMAT_BC3_UNORM).IL(Diligent::TEX_FORMAT_BC3_UNORM).RV(Diligent::TEX_FORMAT_BC3_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3UNormalizedSRGB,           xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC3_TYPELESS).RT(Diligent::TEX_FORMAT_BC3_UNORM_SRGB).IL(Diligent::TEX_FORMAT_BC3_UNORM_SRGB).RV(Diligent::TEX_FORMAT_BC3_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4Typeless,                  xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC4_TYPELESS).RT(Diligent::TEX_FORMAT_BC4_TYPELESS).IL(Diligent::TEX_FORMAT_BC4_TYPELESS).RV(Diligent::TEX_FORMAT_BC4_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4UNormalized,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC4_TYPELESS).RT(Diligent::TEX_FORMAT_BC4_UNORM).IL(Diligent::TEX_FORMAT_BC4_UNORM).RV(Diligent::TEX_FORMAT_BC4_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4SNormalized,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC4_TYPELESS).RT(Diligent::TEX_FORMAT_BC4_SNORM).IL(Diligent::TEX_FORMAT_BC4_SNORM).RV(Diligent::TEX_FORMAT_BC4_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5Typeless,                  xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC5_TYPELESS).RT(Diligent::TEX_FORMAT_BC5_TYPELESS).IL(Diligent::TEX_FORMAT_BC5_TYPELESS).RV(Diligent::TEX_FORMAT_BC5_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5UNormalized,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC5_TYPELESS).RT(Diligent::TEX_FORMAT_BC5_UNORM).IL(Diligent::TEX_FORMAT_BC5_UNORM).RV(Diligent::TEX_FORMAT_BC5_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5SNormalized,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC5_TYPELESS).RT(Diligent::TEX_FORMAT_BC5_SNORM).IL(Diligent::TEX_FORMAT_BC5_SNORM).RV(Diligent::TEX_FORMAT_BC5_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::B5G6R5UNormalized,            xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_B5G6R5_UNORM).RT(Diligent::TEX_FORMAT_B5G6R5_UNORM).IL(Diligent::TEX_FORMAT_B5G6R5_UNORM).RV(Diligent::TEX_FORMAT_B5G6R5_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::B5G5R5A1UNormalized,          xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_B5G5R5A1_UNORM).RT(Diligent::TEX_FORMAT_B5G5R5A1_UNORM).IL(Diligent::TEX_FORMAT_B5G5R5A1_UNORM).RV(Diligent::TEX_FORMAT_B5G5R5A1_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8UNormalized,             xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BGRA8_TYPELESS).RT(Diligent::TEX_FORMAT_BGRA8_UNORM).IL(Diligent::TEX_FORMAT_BGRA8_UNORM).RV(Diligent::TEX_FORMAT_BGRA8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8UNormalized,             xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BGRX8_TYPELESS).RT(Diligent::TEX_FORMAT_BGRX8_UNORM).IL(Diligent::TEX_FORMAT_BGRX8_UNORM).RV(Diligent::TEX_FORMAT_BGRX8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized, xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).RT(Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).IL(Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).RV(Diligent::TEX_FORMAT_R10G10B10_XR_BIAS_A2_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8Typeless,                xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BGRA8_TYPELESS).RT(Diligent::TEX_FORMAT_BGRA8_TYPELESS).IL(Diligent::TEX_FORMAT_BGRA8_TYPELESS).RV(Diligent::TEX_FORMAT_BGRA8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8UNormalizedSRGB,         xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BGRA8_TYPELESS).RT(Diligent::TEX_FORMAT_BGRA8_UNORM_SRGB).IL(Diligent::TEX_FORMAT_BGRA8_UNORM_SRGB).RV(Diligent::TEX_FORMAT_BGRA8_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8Typeless,                xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BGRX8_TYPELESS).RT(Diligent::TEX_FORMAT_BGRX8_TYPELESS).IL(Diligent::TEX_FORMAT_BGRX8_TYPELESS).RV(Diligent::TEX_FORMAT_BGRX8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8UNormalizedSRGB,         xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BGRX8_TYPELESS).RT(Diligent::TEX_FORMAT_BGRX8_UNORM_SRGB).IL(Diligent::TEX_FORMAT_BGRX8_UNORM_SRGB).RV(Diligent::TEX_FORMAT_BGRX8_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HTypeless,                 xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC6H_TYPELESS).RT(Diligent::TEX_FORMAT_BC6H_TYPELESS).IL(Diligent::TEX_FORMAT_BC6H_TYPELESS).RV(Diligent::TEX_FORMAT_BC6H_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HUF16,                     xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC6H_TYPELESS).RT(Diligent::TEX_FORMAT_BC6H_UF16).IL(Diligent::TEX_FORMAT_BC6H_UF16).RV(Diligent::TEX_FORMAT_BC6H_UF16));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HSF16,                     xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC6H_TYPELESS).RT(Diligent::TEX_FORMAT_BC6H_SF16).IL(Diligent::TEX_FORMAT_BC6H_SF16).RV(Diligent::TEX_FORMAT_BC6H_SF16));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7Typeless,                  xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC7_TYPELESS).RT(Diligent::TEX_FORMAT_BC7_TYPELESS).IL(Diligent::TEX_FORMAT_BC7_TYPELESS).RV(Diligent::TEX_FORMAT_BC7_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7UNormalized,               xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC7_TYPELESS).RT(Diligent::TEX_FORMAT_BC7_UNORM).IL(Diligent::TEX_FORMAT_BC7_UNORM).RV(Diligent::TEX_FORMAT_BC7_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7UNormalizedSRGB,           xiiGALFormatLookupEntryD3D12(Diligent::TEX_FORMAT_BC7_TYPELESS).RT(Diligent::TEX_FORMAT_BC7_UNORM_SRGB).IL(Diligent::TEX_FORMAT_BC7_UNORM_SRGB).RV(Diligent::TEX_FORMAT_BC7_UNORM_SRGB));
-
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32Typeless,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32A32_TYPELESS).RT(DXGI_FORMAT_R32G32B32A32_TYPELESS).IL(DXGI_FORMAT_R32G32B32A32_TYPELESS).RV(DXGI_FORMAT_R32G32B32A32_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32Float,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32A32_TYPELESS).RT(DXGI_FORMAT_R32G32B32A32_FLOAT).IL(DXGI_FORMAT_R32G32B32A32_FLOAT).RV(DXGI_FORMAT_R32G32B32A32_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32UInt,                   xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32A32_TYPELESS).RT(DXGI_FORMAT_R32G32B32A32_UINT).IL(DXGI_FORMAT_R32G32B32A32_UINT).RV(DXGI_FORMAT_R32G32B32A32_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32SInt,                   xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32A32_TYPELESS).RT(DXGI_FORMAT_R32G32B32A32_SINT).IL(DXGI_FORMAT_R32G32B32A32_SINT).RV(DXGI_FORMAT_R32G32B32A32_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32Typeless,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32_TYPELESS).RT(DXGI_FORMAT_R32G32B32_TYPELESS).IL(DXGI_FORMAT_R32G32B32_TYPELESS).RV(DXGI_FORMAT_R32G32B32_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32Float,                   xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32_TYPELESS).RT(DXGI_FORMAT_R32G32B32_FLOAT).IL(DXGI_FORMAT_R32G32B32_FLOAT).RV(DXGI_FORMAT_R32G32B32_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32UInt,                    xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32_TYPELESS).RT(DXGI_FORMAT_R32G32B32_UINT).IL(DXGI_FORMAT_R32G32B32_UINT).RV(DXGI_FORMAT_R32G32B32_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32SInt,                    xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32_TYPELESS).RT(DXGI_FORMAT_R32G32B32_SINT).IL(DXGI_FORMAT_R32G32B32_SINT).RV(DXGI_FORMAT_R32G32B32_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16Typeless,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_TYPELESS).IL(DXGI_FORMAT_R16G16B16A16_TYPELESS).RV(DXGI_FORMAT_R16G16B16A16_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16Float,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_FLOAT).IL(DXGI_FORMAT_R16G16B16A16_FLOAT).RV(DXGI_FORMAT_R16G16B16A16_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16UNormalized,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_UNORM).IL(DXGI_FORMAT_R16G16B16A16_UNORM).RV(DXGI_FORMAT_R16G16B16A16_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16UInt,                   xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_UINT).IL(DXGI_FORMAT_R16G16B16A16_UINT).RV(DXGI_FORMAT_R16G16B16A16_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16SNormalized,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_SNORM).IL(DXGI_FORMAT_R16G16B16A16_SNORM).RV(DXGI_FORMAT_R16G16B16A16_SNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16SInt,                   xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_SINT).IL(DXGI_FORMAT_R16G16B16A16_SINT).RV(DXGI_FORMAT_R16G16B16A16_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32Typeless,                 xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32_TYPELESS).RT(DXGI_FORMAT_R32G32_TYPELESS).IL(DXGI_FORMAT_R32G32_TYPELESS).RV(DXGI_FORMAT_R32G32_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32Float,                    xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32_TYPELESS).RT(DXGI_FORMAT_R32G32_FLOAT).IL(DXGI_FORMAT_R32G32_FLOAT).RV(DXGI_FORMAT_R32G32_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32UInt,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32_TYPELESS).RT(DXGI_FORMAT_R32G32_UINT).IL(DXGI_FORMAT_R32G32_UINT).RV(DXGI_FORMAT_R32G32_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32SInt,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32_TYPELESS).RT(DXGI_FORMAT_R32G32_SINT).IL(DXGI_FORMAT_R32G32_SINT).RV(DXGI_FORMAT_R32G32_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32G8X24Typeless,             xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G8X24_TYPELESS).RT(DXGI_FORMAT_R32G8X24_TYPELESS).IL(DXGI_FORMAT_R32G8X24_TYPELESS).RV(DXGI_FORMAT_R32G8X24_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D32FloatS8X24UInt,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_D32_FLOAT_S8X24_UINT).D(DXGI_FORMAT_D32_FLOAT_S8X24_UINT).DS(DXGI_FORMAT_D32_FLOAT_S8X24_UINT).S(DXGI_FORMAT_D32_FLOAT_S8X24_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32FloatX8X24Typeless,        xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS).RT(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS).IL(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS).RV(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::X32TypelessG8X24UInt,         xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT).RT(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT).IL(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT).RV(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2Typeless,              xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R10G10B10A2_TYPELESS).RT(DXGI_FORMAT_R10G10B10A2_TYPELESS).IL(DXGI_FORMAT_R10G10B10A2_TYPELESS).RV(DXGI_FORMAT_R10G10B10A2_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2UNormalized,           xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R10G10B10A2_TYPELESS).RT(DXGI_FORMAT_R10G10B10A2_UNORM).IL(DXGI_FORMAT_R10G10B10A2_UNORM).RV(DXGI_FORMAT_R10G10B10A2_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2UInt,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R10G10B10A2_TYPELESS).RT(DXGI_FORMAT_R10G10B10A2_UINT).IL(DXGI_FORMAT_R10G10B10A2_UINT).RV(DXGI_FORMAT_R10G10B10A2_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG11B10Float,                 xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R11G11B10_FLOAT).RT(DXGI_FORMAT_R11G11B10_FLOAT).IL(DXGI_FORMAT_R11G11B10_FLOAT).RV(DXGI_FORMAT_R11G11B10_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8Typeless,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_TYPELESS).IL(DXGI_FORMAT_R8G8B8A8_TYPELESS).RV(DXGI_FORMAT_R8G8B8A8_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UNormalized,             xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_UNORM).IL(DXGI_FORMAT_R8G8B8A8_UNORM).RV(DXGI_FORMAT_R8G8B8A8_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UNormalizedSRGB,         xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB).IL(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB).RV(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UInt,                    xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_UINT).IL(DXGI_FORMAT_R8G8B8A8_UINT).RV(DXGI_FORMAT_R8G8B8A8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8SNormalized,             xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_SNORM).IL(DXGI_FORMAT_R8G8B8A8_SNORM).RV(DXGI_FORMAT_R8G8B8A8_SNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8SInt,                    xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_SINT).IL(DXGI_FORMAT_R8G8B8A8_SINT).RV(DXGI_FORMAT_R8G8B8A8_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16Typeless,                 xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_TYPELESS).IL(DXGI_FORMAT_R16G16_TYPELESS).RV(DXGI_FORMAT_R16G16_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16Float,                    xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16_FLOAT).RT(DXGI_FORMAT_R16G16_FLOAT).IL(DXGI_FORMAT_R16G16_FLOAT).RV(DXGI_FORMAT_R16G16_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16UNormalized,              xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_UNORM).IL(DXGI_FORMAT_R16G16_UNORM).RV(DXGI_FORMAT_R16G16_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16UInt,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_UINT).IL(DXGI_FORMAT_R16G16_UINT).RV(DXGI_FORMAT_R16G16_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16SNormalized,              xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_SNORM).IL(DXGI_FORMAT_R16G16_SNORM).RV(DXGI_FORMAT_R16G16_SNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16SInt,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_SINT).IL(DXGI_FORMAT_R16G16_SINT).RV(DXGI_FORMAT_R16G16_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32_TYPELESS).RT(DXGI_FORMAT_R32_TYPELESS).IL(DXGI_FORMAT_R32_TYPELESS).RV(DXGI_FORMAT_R32_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D32Float,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32_TYPELESS).D(DXGI_FORMAT_D32_FLOAT).DS(DXGI_FORMAT_D32_FLOAT).S(DXGI_FORMAT_D32_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32Float,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32_TYPELESS).RT(DXGI_FORMAT_R32_FLOAT).IL(DXGI_FORMAT_R32_FLOAT).RV(DXGI_FORMAT_R32_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32UInt,                      xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32_TYPELESS).RT(DXGI_FORMAT_R32_UINT).IL(DXGI_FORMAT_R32_UINT).RV(DXGI_FORMAT_R32_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32SInt,                      xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32_TYPELESS).RT(DXGI_FORMAT_R32_SINT).IL(DXGI_FORMAT_R32_SINT).RV(DXGI_FORMAT_R32_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R24G8Typeless,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R24G8_TYPELESS).RT(DXGI_FORMAT_R24G8_TYPELESS).IL(DXGI_FORMAT_R24G8_TYPELESS).RV(DXGI_FORMAT_R24G8_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D24UNormalizedS8UInt,         xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_D24_UNORM_S8_UINT).D(DXGI_FORMAT_D24_UNORM_S8_UINT).DS(DXGI_FORMAT_D24_UNORM_S8_UINT).S(DXGI_FORMAT_D24_UNORM_S8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R24UNormalizedX8Typeless,     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).RT(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).IL(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).RV(DXGI_FORMAT_R24_UNORM_X8_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::X24TypelessG8UInt,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_X24_TYPELESS_G8_UINT).RT(DXGI_FORMAT_X24_TYPELESS_G8_UINT).IL(DXGI_FORMAT_X24_TYPELESS_G8_UINT).RV(DXGI_FORMAT_X24_TYPELESS_G8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_TYPELESS).IL(DXGI_FORMAT_R8G8_TYPELESS).RV(DXGI_FORMAT_R8G8_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_UNORM).IL(DXGI_FORMAT_R8G8_UNORM).RV(DXGI_FORMAT_R8G8_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8UInt,                      xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_UINT).IL(DXGI_FORMAT_R8G8_UINT).RV(DXGI_FORMAT_R8G8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8SNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_SNORM).IL(DXGI_FORMAT_R8G8_SNORM).RV(DXGI_FORMAT_R8G8_SNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8SInt,                      xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_SINT).IL(DXGI_FORMAT_R8G8_SINT).RV(DXGI_FORMAT_R8G8_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_TYPELESS).IL(DXGI_FORMAT_R16_TYPELESS).RV(DXGI_FORMAT_R16_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16Float,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_FLOAT).IL(DXGI_FORMAT_R16_FLOAT).RV(DXGI_FORMAT_R16_FLOAT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D16UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_D16_UNORM).IL(DXGI_FORMAT_D16_UNORM).RV(DXGI_FORMAT_D16_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).D(DXGI_FORMAT_R16_UNORM).DS(DXGI_FORMAT_R16_UNORM).S(DXGI_FORMAT_R16_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16UInt,                      xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_UINT).IL(DXGI_FORMAT_R16_UINT).RV(DXGI_FORMAT_R16_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16SNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_SNORM).IL(DXGI_FORMAT_R16_SNORM).RV(DXGI_FORMAT_R16_SNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16SInt,                      xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_SINT).IL(DXGI_FORMAT_R16_SINT).RV(DXGI_FORMAT_R16_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8Typeless,                   xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_TYPELESS).IL(DXGI_FORMAT_R8_TYPELESS).RV(DXGI_FORMAT_R8_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8UNormalized,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_UNORM).IL(DXGI_FORMAT_R8_UNORM).RV(DXGI_FORMAT_R8_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8UInt,                       xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_UINT).IL(DXGI_FORMAT_R8_UINT).RV(DXGI_FORMAT_R8_UINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8SNormalized,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_SNORM).IL(DXGI_FORMAT_R8_SNORM).RV(DXGI_FORMAT_R8_SNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8SInt,                       xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_SINT).IL(DXGI_FORMAT_R8_SINT).RV(DXGI_FORMAT_R8_SINT));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::A8UNormalized,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_A8_UNORM).IL(DXGI_FORMAT_A8_UNORM).RV(DXGI_FORMAT_A8_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R1UNormalized,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R1_UNORM).RT(DXGI_FORMAT_R1_UNORM).IL(DXGI_FORMAT_R1_UNORM).RV(DXGI_FORMAT_R1_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB9E5SharedExponent,         xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R9G9B9E5_SHAREDEXP).RT(DXGI_FORMAT_R9G9B9E5_SHAREDEXP).IL(DXGI_FORMAT_R9G9B9E5_SHAREDEXP).RV(DXGI_FORMAT_R9G9B9E5_SHAREDEXP));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8BG8UNormalized,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8_B8G8_UNORM).RT(DXGI_FORMAT_R8G8_B8G8_UNORM).IL(DXGI_FORMAT_R8G8_B8G8_UNORM).RV(DXGI_FORMAT_R8G8_B8G8_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::GR8GB8UNormalized,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_G8R8_G8B8_UNORM).RT(DXGI_FORMAT_G8R8_G8B8_UNORM).IL(DXGI_FORMAT_G8R8_G8B8_UNORM).RV(DXGI_FORMAT_G8R8_G8B8_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC1_TYPELESS).RT(DXGI_FORMAT_BC1_TYPELESS).IL(DXGI_FORMAT_BC1_TYPELESS).RV(DXGI_FORMAT_BC1_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC1_TYPELESS).RT(DXGI_FORMAT_BC1_UNORM).IL(DXGI_FORMAT_BC1_UNORM).RV(DXGI_FORMAT_BC1_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1UNormalizedSRGB,           xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC1_TYPELESS).RT(DXGI_FORMAT_BC1_UNORM_SRGB).IL(DXGI_FORMAT_BC1_UNORM_SRGB).RV(DXGI_FORMAT_BC1_UNORM_SRGB));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC2_TYPELESS).RT(DXGI_FORMAT_BC2_TYPELESS).IL(DXGI_FORMAT_BC2_TYPELESS).RV(DXGI_FORMAT_BC2_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC2_TYPELESS).RT(DXGI_FORMAT_BC2_UNORM).IL(DXGI_FORMAT_BC2_UNORM).RV(DXGI_FORMAT_BC2_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2UNormalizedSRGB,           xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC2_TYPELESS).RT(DXGI_FORMAT_BC2_UNORM_SRGB).IL(DXGI_FORMAT_BC2_UNORM_SRGB).RV(DXGI_FORMAT_BC2_UNORM_SRGB));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC3_TYPELESS).RT(DXGI_FORMAT_BC3_TYPELESS).IL(DXGI_FORMAT_BC3_TYPELESS).RV(DXGI_FORMAT_BC3_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC3_TYPELESS).RT(DXGI_FORMAT_BC3_UNORM).IL(DXGI_FORMAT_BC3_UNORM).RV(DXGI_FORMAT_BC3_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3UNormalizedSRGB,           xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC3_TYPELESS).RT(DXGI_FORMAT_BC3_UNORM_SRGB).IL(DXGI_FORMAT_BC3_UNORM_SRGB).RV(DXGI_FORMAT_BC3_UNORM_SRGB));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC4_TYPELESS).RT(DXGI_FORMAT_BC4_TYPELESS).IL(DXGI_FORMAT_BC4_TYPELESS).RV(DXGI_FORMAT_BC4_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC4_TYPELESS).RT(DXGI_FORMAT_BC4_UNORM).IL(DXGI_FORMAT_BC4_UNORM).RV(DXGI_FORMAT_BC4_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4SNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC4_TYPELESS).RT(DXGI_FORMAT_BC4_SNORM).IL(DXGI_FORMAT_BC4_SNORM).RV(DXGI_FORMAT_BC4_SNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC5_TYPELESS).RT(DXGI_FORMAT_BC5_TYPELESS).IL(DXGI_FORMAT_BC5_TYPELESS).RV(DXGI_FORMAT_BC5_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC5_TYPELESS).RT(DXGI_FORMAT_BC5_UNORM).IL(DXGI_FORMAT_BC5_UNORM).RV(DXGI_FORMAT_BC5_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5SNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC5_TYPELESS).RT(DXGI_FORMAT_BC5_SNORM).IL(DXGI_FORMAT_BC5_SNORM).RV(DXGI_FORMAT_BC5_SNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::B5G6R5UNormalized,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B5G6R5_UNORM).RT(DXGI_FORMAT_B5G6R5_UNORM).IL(DXGI_FORMAT_B5G6R5_UNORM).RV(DXGI_FORMAT_B5G6R5_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::B5G5R5A1UNormalized,          xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B5G5R5A1_UNORM).RT(DXGI_FORMAT_B5G5R5A1_UNORM).IL(DXGI_FORMAT_B5G5R5A1_UNORM).RV(DXGI_FORMAT_B5G5R5A1_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8UNormalized,             xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B8G8R8A8_TYPELESS).RT(DXGI_FORMAT_B8G8R8A8_UNORM).IL(DXGI_FORMAT_B8G8R8A8_UNORM).RV(DXGI_FORMAT_B8G8R8A8_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8UNormalized,             xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B8G8R8X8_TYPELESS).RT(DXGI_FORMAT_B8G8R8X8_UNORM).IL(DXGI_FORMAT_B8G8R8X8_UNORM).RV(DXGI_FORMAT_B8G8R8X8_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized, xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).RT(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).IL(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).RV(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8Typeless,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B8G8R8A8_TYPELESS).RT(DXGI_FORMAT_B8G8R8A8_TYPELESS).IL(DXGI_FORMAT_B8G8R8A8_TYPELESS).RV(DXGI_FORMAT_B8G8R8A8_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8UNormalizedSRGB,         xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B8G8R8A8_TYPELESS).RT(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB).IL(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB).RV(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8Typeless,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B8G8R8X8_TYPELESS).RT(DXGI_FORMAT_B8G8R8X8_TYPELESS).IL(DXGI_FORMAT_B8G8R8X8_TYPELESS).RV(DXGI_FORMAT_B8G8R8X8_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8UNormalizedSRGB,         xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B8G8R8X8_TYPELESS).RT(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB).IL(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB).RV(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HTypeless,                 xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC6H_TYPELESS).RT(DXGI_FORMAT_BC6H_TYPELESS).IL(DXGI_FORMAT_BC6H_TYPELESS).RV(DXGI_FORMAT_BC6H_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HUF16,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC6H_TYPELESS).RT(DXGI_FORMAT_BC6H_UF16).IL(DXGI_FORMAT_BC6H_UF16).RV(DXGI_FORMAT_BC6H_UF16));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HSF16,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC6H_TYPELESS).RT(DXGI_FORMAT_BC6H_SF16).IL(DXGI_FORMAT_BC6H_SF16).RV(DXGI_FORMAT_BC6H_SF16));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC7_TYPELESS).RT(DXGI_FORMAT_BC7_TYPELESS).IL(DXGI_FORMAT_BC7_TYPELESS).RV(DXGI_FORMAT_BC7_TYPELESS));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC7_TYPELESS).RT(DXGI_FORMAT_BC7_UNORM).IL(DXGI_FORMAT_BC7_UNORM).RV(DXGI_FORMAT_BC7_UNORM));
+  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7UNormalizedSRGB,           xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC7_TYPELESS).RT(DXGI_FORMAT_BC7_UNORM_SRGB).IL(DXGI_FORMAT_BC7_UNORM_SRGB).RV(DXGI_FORMAT_BC7_UNORM_SRGB));
   // clang-format on
+}
+
+void xiiGALDeviceD3D12::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel)
+{
+  IDXGIAdapter1* pDXGIAdapter = nullptr;
+  *ppAdapter                  = nullptr;
+
+  for (xiiUInt32 uiAdapterIndex = 0; pFactory->EnumAdapters1(uiAdapterIndex, &pDXGIAdapter) != DXGI_ERROR_NOT_FOUND; ++uiAdapterIndex)
+  {
+    DXGI_ADAPTER_DESC1 adapterDescription;
+    pDXGIAdapter->GetDesc1(&adapterDescription);
+
+    if (adapterDescription.Flags & DXGI_ADAPTER_FLAG_SOFTWARE)
+    {
+      // Skip software adapters.
+      XII_GAL_D3D12_RELEASE(pDXGIAdapter);
+
+      continue;
+    }
+
+    // Check to see if the adapter supports Direct3D 12, but don't create the actual device yet.
+    if (SUCCEEDED(D3D12CreateDevice(pDXGIAdapter, featureLevel, __uuidof(ID3D12Device), nullptr)))
+    {
+      break;
+    }
+    else
+    {
+      XII_GAL_D3D12_RELEASE(pDXGIAdapter);
+    }
+  }
+
+  *ppAdapter = pDXGIAdapter;
+}
+
+xiiDynamicArray<IDXGIAdapter1*> xiiGALDeviceD3D12::GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel)
+{
+  xiiDynamicArray<IDXGIAdapter1*> DXGIAdapters;
+
+  IDXGIFactory2* pDXGIFactory = nullptr;
+  if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory2), (void**)&pDXGIFactory)))
+  {
+    xiiLog::Error("Failed to create DXGI factory.");
+    return DXGIAdapters;
+  }
+
+  IDXGIAdapter1* pDXGIAdapter = nullptr;
+  for (xiiUInt32 uiAdapterIndex = 0; pDXGIFactory->EnumAdapters1(uiAdapterIndex, &pDXGIAdapter) != DXGI_ERROR_NOT_FOUND; ++uiAdapterIndex)
+  {
+    DXGI_ADAPTER_DESC1 adapterDescription;
+    pDXGIAdapter->GetDesc1(&adapterDescription);
+
+    if (SUCCEEDED(D3D12CreateDevice(pDXGIAdapter, minFeatureLevel, __uuidof(ID3D12Device), nullptr)))
+    {
+      DXGIAdapters.PushBack(pDXGIAdapter);
+    }
+    else
+    {
+      XII_GAL_D3D12_RELEASE(pDXGIAdapter);
+    }
+  }
+
+  return DXGIAdapters;
+}
+
+void xiiGALDeviceD3D12::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter1* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALTextureFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes)
+{
+  auto DXGIAdapters = GetCompatibleAdapters(featureLevel);
+
+  DXGI_FORMAT  dxgiFormat = xiiD3D12TypeConversions::GetD3D12Format(format);
+  IDXGIOutput* pOutput    = nullptr;
+  if (pDXGIAdapter->EnumOutputs(uiOutputID, &pOutput) == DXGI_ERROR_NOT_FOUND)
+  {
+    DXGI_ADAPTER_DESC1 adapterDescription;
+    pDXGIAdapter->GetDesc1(&adapterDescription);
+
+    xiiLog::Error("Failed to enumerate output {0} of adapter {1} ({2}).", uiOutputID, adapterDescription.DeviceId, xiiStringUtf8(adapterDescription.Description).GetData());
+    return;
+  }
+
+  // Retrieve the display mode count.
+  xiiUInt32 uiModeCount = 0;
+  if (SUCCEEDED(pOutput->GetDisplayModeList(dxgiFormat, 0U, &uiModeCount, NULL)))
+  {
+    // Retireve the display mode descriptions.
+    xiiDynamicArray<DXGI_MODE_DESC> dxgiDisplayModes;
+    dxgiDisplayModes.SetCount(uiModeCount);
+
+    if (SUCCEEDED(pOutput->GetDisplayModeList(dxgiFormat, 0U, &uiModeCount, NULL)))
+    {
+      displayModes.Clear();
+      for (xiiUInt32 i = 0; i < uiModeCount; ++i)
+      {
+        const auto& dxgiDisplayMode = dxgiDisplayModes[i];
+        auto&       galDisplayMode  = displayModes.ExpandAndGetRef();
+
+        galDisplayMode.m_Resolution               = xiiSizeU32(dxgiDisplayMode.Width, dxgiDisplayMode.Height);
+        galDisplayMode.m_TextureFormat            = xiiD3D12TypeConversions::GetGALFormat(dxgiDisplayMode.Format);
+        galDisplayMode.m_uiRefreshRateNumerator   = dxgiDisplayMode.RefreshRate.Numerator;
+        galDisplayMode.m_uiRefreshRateDenominator = dxgiDisplayMode.RefreshRate.Denominator;
+        galDisplayMode.m_ScalingMode              = xiiD3D12TypeConversions::GetGALScalingMode(dxgiDisplayMode.Scaling);
+        galDisplayMode.m_ScanLineOrder            = xiiD3D12TypeConversions::GetGALScanLineOrder(dxgiDisplayMode.ScanlineOrdering);
+      }
+    }
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Device_Implementation_DeviceD3D12);
