@@ -1,5 +1,5 @@
 
-XII_ALWAYS_INLINE const Diligent::DepthStencilStateDesc* xiiGALDepthStencilStateVulkan::GetDepthStencilState() const
+XII_ALWAYS_INLINE const vk::PipelineDepthStencilStateCreateInfo* xiiGALDepthStencilStateVulkan::GetDepthStencilState() const
 {
   return &m_DepthStencilState;
 }
