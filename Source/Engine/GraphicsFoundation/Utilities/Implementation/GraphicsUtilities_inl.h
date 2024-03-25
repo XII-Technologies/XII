@@ -1,4 +1,34 @@
 
+XII_ALWAYS_INLINE xiiEnum<xiiGALGraphicsAdapterVendor> xiiGALGraphicsUtilities::GetVendorFromID(xiiUInt32 uiID)
+{
+  switch (uiID)
+  {
+    case 0x01002: // AMD
+      return xiiGALGraphicsAdapterVendor::AMD;
+    case 0x010DE: // NVIDIA
+      return xiiGALGraphicsAdapterVendor::Nvidia;
+    case 0x08086: // Intel
+      return xiiGALGraphicsAdapterVendor::Intel;
+    case 0x013B5: // ARM
+      return xiiGALGraphicsAdapterVendor::ARM;
+    case 0x05143: // Qualcomm
+      return xiiGALGraphicsAdapterVendor::Qualcomm;
+    case 0x01010: // Imagination Technologies
+      return xiiGALGraphicsAdapterVendor::ImaginationTechnologies;
+    case 0x01414: // Microsoft
+      return xiiGALGraphicsAdapterVendor::Microsoft;
+    case 0x0106B: // Apple
+      return xiiGALGraphicsAdapterVendor::Apple;
+    case 0x10005: // Mesa
+      return xiiGALGraphicsAdapterVendor::Mesa;
+    case 0x014E4: // Broadcom
+      return xiiGALGraphicsAdapterVendor::Broadcom;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiGALGraphicsAdapterVendor::Unknown;
+}
+
 XII_ALWAYS_INLINE bool xiiGALGraphicsUtilities::IsIdentityComponentMapping(const xiiGALTextureComponentMapping& mapping)
 {
   return ((mapping.m_R == xiiGALTextureComponentSwizzle::Identity || mapping.m_R == xiiGALTextureComponentSwizzle::R) &&

@@ -9,6 +9,8 @@
 class XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsUtilities
 {
 public:
+  static XII_NODISCARD xiiEnum<xiiGALGraphicsAdapterVendor> GetVendorFromID(xiiUInt32 uiID);
+
   /// \brief Returns true if all components of the xiiGALTextureComponentMapping are xiiGALTextureComponentSwizzle::Identity.
   static XII_NODISCARD bool IsIdentityComponentMapping(const xiiGALTextureComponentMapping& mapping);
 
