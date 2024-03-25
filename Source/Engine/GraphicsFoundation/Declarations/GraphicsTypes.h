@@ -1168,9 +1168,25 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleCount
     ThirtyTwoSamples = 32U, ///< Thirty-two samples.
     SixtyFourSamples = 64U, ///< Sixty-four samples.
 
+    AllSamples = (SixtyFourSamples << 1U) - 1U, ///< All possible samples.
+
     Default = OneSample
   };
+
+  struct Bits
+  {
+    StorageType OneSample : 1;
+    StorageType TwoSamples : 1;
+    StorageType FourSamples : 1;
+    StorageType EightSamples : 1;
+    StorageType SixteenSamples : 1;
+    StorageType ThirtyTwoSamples : 1;
+    StorageType SixtyFourSamples : 1;
+    StorageType AllSamples : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALSampleCount);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSampleCount);
 

@@ -266,13 +266,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateMode : public xiiHashableStru
   XII_DECLARE_POD_TYPE();
 
   xiiBitflags<xiiGALShadingRate> m_ShadingRate = xiiGALShadingRate::_1X1; ///< The supported shading rate.
-  xiiEnum<xiiGALSampleCount>     m_SampleBits  = xiiGALSampleCount::None; ///< The combination of supported sample counts.
+  xiiBitflags<xiiGALSampleCount> m_SampleBits  = xiiGALSampleCount::None; ///< The combination of supported sample counts.
 };
 
 /// \brief This describes the shading rate properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties : public xiiHashableStruct<xiiGALShadingRateProperties>
 {
-  xiiStaticArray<xiiGALShadingRateMode, XII_GAL_MAX_SHADING_RATE> m_Mode;                                                                 ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
+  xiiStaticArray<xiiGALShadingRateMode, XII_GAL_MAX_SHADING_RATE> m_Modes;                                                                ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
   xiiBitflags<xiiGALShadingRateCapabilityFlags>                   m_CapabilityFlags            = xiiGALShadingRateCapabilityFlags::None;  ///< Shading rate capability flags.
   xiiBitflags<xiiGALShadingRateCombiner>                          m_CombinerFlags              = xiiGALShadingRateCombiner::PassThrough;  ///< Combination of all supported shading rate combiners.
   xiiEnum<xiiGALShadingRateFormat>                                m_Format                     = xiiGALShadingRateFormat::Unknown;        ///< Indicates which shading rate texture format is used by this device.
