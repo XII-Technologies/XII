@@ -4,10 +4,18 @@
 
 #include <GraphicsFoundation/States/BlendState.h>
 
+namespace vk
+{
+  struct PipelineColorBlendStateCreateInfo;
+  struct PipelineColorBlendAttachmentState;
+} // namespace vk
+
 class XII_GRAPHICSVULKAN_DLL xiiGALBlendStateVulkan final : public xiiGALBlendState
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBlendStateVulkan, xiiGALBlendState);
+
 public:
-  const Diligent::BlendStateDesc* GetBlendState() const;
+  const vk::PipelineColorBlendStateCreateInfo* GetBlendState() const;
 
 protected:
   friend class xiiGALDeviceVulkan;
@@ -22,7 +30,8 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
-  Diligent::BlendStateDesc m_BlendState = {};
+  vk::PipelineColorBlendStateCreateInfo                                                 m_BlendState = {};
+  xiiStaticArray<vk::PipelineColorBlendAttachmentState, XII_GAL_MAX_RENDERTARGET_COUNT> m_BlendAttachmentState;
 };
 
 #include <GraphicsVulkan/States/Implementation/BlendStateVulkan_inl.h>

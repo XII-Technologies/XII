@@ -5,8 +5,6 @@
 
 #include <Foundation/Basics/Platform/Win/IncludeWindows.h>
 
-#include <d3d12.h>
-
 #include <GraphicsD3D12/MemoryAllocator/MemoryAllocator.h>
 
 #include <GraphicsD3D12/Utilities/D3D12TypeConversions.h>
