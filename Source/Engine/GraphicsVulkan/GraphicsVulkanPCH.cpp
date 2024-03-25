@@ -5,7 +5,6 @@ XII_STATICLINK_LIBRARY(GraphicsVulkan)
   if (bReturn)
     return;
 
-  XII_STATICLINK_REFERENCE(GraphicsVulkan_CommandEncoder_Implementation_CommandEncoderVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_CommandEncoder_Implementation_CommandListVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_CommandEncoder_Implementation_CommandQueueVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_Device_Implementation_DeviceVulkan);
@@ -27,5 +26,6 @@ XII_STATICLINK_LIBRARY(GraphicsVulkan)
   XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_BlendStateVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_DepthStencilStateVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_PipelineStateVulkan);
+  XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_PipelineResourceSignatureVulkan);
   XII_STATICLINK_REFERENCE(GraphicsVulkan_States_Implementation_RasterizerStateVulkan);
 }

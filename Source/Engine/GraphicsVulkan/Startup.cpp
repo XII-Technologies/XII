@@ -1,7 +1,6 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
 #include <Foundation/Configuration/Startup.h>
-#include <GraphicsVulkan/Device/DiligentCore.h>
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(xiiGAL, GraphicsVulkan)
@@ -13,12 +12,10 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(xiiGAL, GraphicsVulkan)
 
   ON_CORESYSTEMS_STARTUP
   {
-    xiiDiligentCore::Startup();
   }
 
   ON_CORESYSTEMS_SHUTDOWN
   {
-    xiiDiligentCore::Shutdown();
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
