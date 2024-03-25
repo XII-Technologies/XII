@@ -6,6 +6,13 @@
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
 
+#include <vulkan/vulkan.hpp>
+
+// Some of the functionality we need has moved from vulkan.hpp to vulkan_format_traits.hpp in later versions of the Vulkan SDK.
+#if __has_include(<vulkan/vulkan_format_traits.hpp>)
+#  include <vulkan/vulkan_format_traits.hpp>
+#endif
+
 XII_DEFINE_AS_POD_TYPE(vk::PresentModeKHR);
 
 class XII_GRAPHICSVULKAN_DLL xiiVulkanTypeConversions
@@ -34,6 +41,8 @@ public:
 
   static vk::PolygonMode      GetVkPolygonMode(xiiEnum<xiiGALFillMode> e);
   static vk::CullModeFlagBits GetVkCullMode(xiiEnum<xiiGALCullMode> e);
+
+  static vk::ColorComponentFlags GetColorWriteMask(xiiBitflags<xiiGALColorMask> e);
 };
 
 #include <GraphicsVulkan/Utilities/Implementation/VulkanTypeConversions_inl.h>

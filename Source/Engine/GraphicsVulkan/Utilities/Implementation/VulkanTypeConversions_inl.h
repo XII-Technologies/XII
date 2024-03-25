@@ -193,3 +193,22 @@ XII_ALWAYS_INLINE vk::CullModeFlagBits xiiVulkanTypeConversions::GetVkCullMode(x
 
   return vk::CullModeFlagBits::eNone;
 }
+
+XII_ALWAYS_INLINE vk::ColorComponentFlags xiiVulkanTypeConversions::GetColorWriteMask(xiiBitflags<xiiGALColorMask> e)
+{
+  if (e.IsNoFlagSet())
+    return vk::ColorComponentFlagBits{};
+
+  vk::ColorComponentFlags colorMask;
+
+  if (e.IsSet(xiiGALColorMask::Red))
+    colorMask |= vk::ColorComponentFlagBits::eR;
+  if (e.IsSet(xiiGALColorMask::Green))
+    colorMask |= vk::ColorComponentFlagBits::eG;
+  if (e.IsSet(xiiGALColorMask::Blue))
+    colorMask |= vk::ColorComponentFlagBits::eB;
+  if (e.IsSet(xiiGALColorMask::Alpha))
+    colorMask |= vk::ColorComponentFlagBits::eA;
+
+  return colorMask;
+}
