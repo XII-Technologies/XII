@@ -63,6 +63,7 @@ xiiResult xiiGALSamplerD3D12::InitPlatform(xiiGALDevice* pDevice)
 xiiResult xiiGALSamplerD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 {
   // Schedule deletion on device.
+  XII_ASSERT_NOT_IMPLEMENTED;
 
   return XII_FAILURE;
 }

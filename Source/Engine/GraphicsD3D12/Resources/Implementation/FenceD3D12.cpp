@@ -4,7 +4,7 @@
 #include <GraphicsD3D12/Resources/FenceD3D12.h>
 
 xiiGALFenceD3D12::xiiGALFenceD3D12(const xiiGALFenceCreationDescription& creationDescription) :
-  xiiGALFence(creationDescription)
+  xiiGALFence(creationDescription), m_pFenceCompleteEvent{CreateEvent(NULL, TRUE, FALSE, NULL)}
 {
 }
 
@@ -14,18 +14,21 @@ xiiResult xiiGALFenceD3D12::InitPlatform(xiiGALDevice* pDevice)
 {
   xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 
-  Diligent::FenceDesc fenceDescription;
-  fenceDescription.Name = m_Description.m_sName.GetStartPointer();
-  fenceDescription.Type = xiiDiligentTypeConversions::GetFenceType(m_Description.m_Type);
+  XII_ASSERT_DEV(m_pFenceCompleteEvent == NULL, "Failed to create fence complete event.");
 
-  pDeviceD3D12->GetDevice()->CreateFence(fenceDescription, &m_pFence);
+  D3D12_FENCE_FLAGS flags = (m_Description.m_Type == xiiGALFenceType::General) ? D3D12_FENCE_FLAG_SHARED : D3D12_FENCE_FLAG_NONE;
+  if (FAILED(pDeviceD3D12->GetDeviceD3D12()->CreateFence(0, flags, IID_PPV_ARGS(&m_pFence))))
+  {
+    return XII_FAILURE;
+  }
 
-  return (m_pFence != nullptr) ? XII_SUCCESS : XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALFenceD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pFence);
+  // Schedule deletion on device.
+  XII_ASSERT_NOT_IMPLEMENTED;
 
   return XII_SUCCESS;
 }

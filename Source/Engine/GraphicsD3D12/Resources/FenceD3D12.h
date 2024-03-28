@@ -4,6 +4,8 @@
 
 #include <GraphicsFoundation/Resources/Fence.h>
 
+struct ID3D12Fence;
+
 class XII_GRAPHICSD3D12_DLL xiiGALFenceD3D12 final : public xiiGALFence
 {
 public:
@@ -13,7 +15,7 @@ public:
 
   virtual void Wait(xiiUInt64 uiValue) override final;
 
-  Diligent::IFence* GetFence() const;
+  ID3D12Fence* GetFence() const;
 
 protected:
   friend class xiiGALDeviceD3D12;
@@ -28,7 +30,9 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
-  Diligent::IFence* m_pFence = nullptr;
+  ID3D12Fence* m_pFence = nullptr;
+
+  const HANDLE m_pFenceCompleteEvent;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/FenceD3D12_inl.h>
