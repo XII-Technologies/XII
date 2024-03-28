@@ -14,6 +14,11 @@ XII_ALWAYS_INLINE IDXGIFactory4* xiiGALDeviceD3D12::GetDXGIFactory() const
   return m_pDXGIFactory;
 }
 
+XII_ALWAYS_INLINE xiiMemoryAllocatorD3D12* xiiGALDeviceD3D12::GetD3D12Allocator() const
+{
+  return m_pAllocatorD3D12.Borrow();
+}
+
 #if 0
 XII_ALWAYS_INLINE Diligent::IDeviceContext* xiiGALDeviceD3D12::GetImmediateContext()
 {

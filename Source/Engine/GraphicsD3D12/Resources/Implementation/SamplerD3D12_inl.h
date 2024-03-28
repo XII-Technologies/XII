@@ -1,5 +1,5 @@
 
-XII_ALWAYS_INLINE Diligent::ISampler* xiiGALSamplerD3D12::GetSampler() const
+XII_ALWAYS_INLINE D3D12_CPU_DESCRIPTOR_HANDLE xiiGALSamplerD3D12::GetCPUDescriptorHandle() const
 {
-  return m_pSampler;
+  return m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 }

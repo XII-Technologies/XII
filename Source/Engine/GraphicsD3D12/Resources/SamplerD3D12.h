@@ -4,10 +4,12 @@
 
 #include <GraphicsFoundation/Resources/Sampler.h>
 
+struct ID3D12DescriptorHeap;
+
 class XII_GRAPHICSD3D12_DLL xiiGALSamplerD3D12 final : public xiiGALSampler
 {
 public:
-  Diligent::ISampler* GetSampler() const;
+  D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle() const;
 
 protected:
   friend class xiiGALDeviceD3D12;
@@ -22,7 +24,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
-  Diligent::ISampler* m_pSampler = nullptr;
+  ID3D12DescriptorHeap* m_pDescriptorHeap = nullptr;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/SamplerD3D12_inl.h>

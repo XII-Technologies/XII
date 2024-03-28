@@ -14,47 +14,55 @@ xiiResult xiiGALSamplerD3D12::InitPlatform(xiiGALDevice* pDevice)
 {
   xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 
-  Diligent::SamplerDesc samplerDescription;
-  samplerDescription.AddressU       = xiiDiligentTypeConversions::GetTextureAddress(m_Description.m_AddressU);
-  samplerDescription.AddressV       = xiiDiligentTypeConversions::GetTextureAddress(m_Description.m_AddressV);
-  samplerDescription.AddressW       = xiiDiligentTypeConversions::GetTextureAddress(m_Description.m_AddressW);
-  samplerDescription.BorderColor[0] = m_Description.m_BorderColor.r;
-  samplerDescription.BorderColor[1] = m_Description.m_BorderColor.g;
-  samplerDescription.BorderColor[2] = m_Description.m_BorderColor.b;
-  samplerDescription.BorderColor[3] = m_Description.m_BorderColor.a;
-  samplerDescription.ComparisonFunc = xiiDiligentTypeConversions::GetComparisonFunc(m_Description.m_ComparisonFunction);
+  D3D12_SAMPLER_DESC samplerDescription = {};
+  samplerDescription.AddressU           = xiiD3D12TypeConversions::GetTextureAddressMode(m_Description.m_AddressU);
+  samplerDescription.AddressV           = xiiD3D12TypeConversions::GetTextureAddressMode(m_Description.m_AddressV);
+  samplerDescription.AddressW           = xiiD3D12TypeConversions::GetTextureAddressMode(m_Description.m_AddressW);
+  samplerDescription.BorderColor[0]     = m_Description.m_BorderColor.r;
+  samplerDescription.BorderColor[1]     = m_Description.m_BorderColor.g;
+  samplerDescription.BorderColor[2]     = m_Description.m_BorderColor.b;
+  samplerDescription.BorderColor[3]     = m_Description.m_BorderColor.a;
+  samplerDescription.ComparisonFunc     = xiiD3D12TypeConversions::GetComparisonFunc(m_Description.m_ComparisonFunction);
+  samplerDescription.MaxAnisotropy      = m_Description.m_uiMaxAnisotropy;
+  samplerDescription.MinLOD             = m_Description.m_fMinLOD;
+  samplerDescription.MaxLOD             = m_Description.m_fMaxLOD;
+  samplerDescription.MipLODBias         = m_Description.m_fMipLODBias;
 
   if (m_Description.m_MagFilter == xiiGALFilterType::Anisotropic || m_Description.m_MinFilter == xiiGALFilterType::Anisotropic || m_Description.m_MipFilter == xiiGALFilterType::Anisotropic)
   {
     if (m_Description.m_ComparisonFunction == xiiGALComparisonFunction::Never)
     {
-      samplerDescription.MinFilter = samplerDescription.MagFilter = samplerDescription.MipFilter = Diligent::FILTER_TYPE_ANISOTROPIC;
+      samplerDescription.Filter = xiiD3D12TypeConversions::GetFilter(xiiGALFilterType::Anisotropic, xiiGALFilterType::Anisotropic, xiiGALFilterType::Anisotropic);
     }
     else
     {
-      samplerDescription.MinFilter = samplerDescription.MagFilter = samplerDescription.MipFilter = Diligent::FILTER_TYPE_COMPARISON_ANISOTROPIC;
+      samplerDescription.Filter = xiiD3D12TypeConversions::GetFilter(xiiGALFilterType::ComparisonAnisotropic, xiiGALFilterType::ComparisonAnisotropic, xiiGALFilterType::ComparisonAnisotropic);
     }
   }
   else
   {
-    samplerDescription.MinFilter = xiiDiligentTypeConversions::GetFilter(m_Description.m_MinFilter);
-    samplerDescription.MagFilter = xiiDiligentTypeConversions::GetFilter(m_Description.m_MagFilter);
-    samplerDescription.MipFilter = xiiDiligentTypeConversions::GetFilter(m_Description.m_MipFilter);
+    samplerDescription.Filter = xiiD3D12TypeConversions::GetFilter(m_Description.m_MinFilter, m_Description.m_MagFilter, m_Description.m_MipFilter);
   }
 
-  samplerDescription.MaxAnisotropy = m_Description.m_uiMaxAnisotropy;
-  samplerDescription.MinLOD        = m_Description.m_fMinLOD;
-  samplerDescription.MaxLOD        = m_Description.m_fMaxLOD;
-  samplerDescription.MipLODBias    = m_Description.m_fMipLODBias;
+  D3D12_DESCRIPTOR_HEAP_DESC samplerHeapDescription = {};
+  samplerHeapDescription.Type                       = D3D12_DESCRIPTOR_HEAP_TYPE_SAMPLER;
+  samplerHeapDescription.NumDescriptors             = 1U;
+  samplerHeapDescription.Flags                      = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-  pDeviceD3D12->GetDevice()->CreateSampler(samplerDescription, &m_pSampler);
+  if (FAILED(pDeviceD3D12->GetDeviceD3D12()->CreateDescriptorHeap(&samplerHeapDescription, IID_PPV_ARGS(&m_pDescriptorHeap))))
+  {
+    xiiLog::Info("Failed to create descriptor heap for sampler {}.", GetDebugName());
+    return XII_FAILURE;
+  }
 
-  return m_pSampler != nullptr ? XII_SUCCESS : XII_FAILURE;
+  pDeviceD3D12->GetDeviceD3D12()->CreateSampler(&samplerDescription, m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALSamplerD3D12::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pSampler);
+  // Schedule deletion on device.
 
   return XII_FAILURE;
 }

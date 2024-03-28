@@ -37,6 +37,8 @@ public:
   IDXGIAdapter1* GetDXGIAdapter() const;
   IDXGIFactory4* GetDXGIFactory() const;
 
+  xiiMemoryAllocatorD3D12* GetD3D12Allocator() const;
+
   // Diligent::IDeviceContext* GetImmediateContext();
   // Diligent::IDeviceContext* GetComputeContext();
   // Diligent::IDeviceContext* GetTransferContext();
