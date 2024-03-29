@@ -30,6 +30,8 @@ xiiResult xiiGALQueryD3D11::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALQueryD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
+  m_DisjointQuery.Clear();
+
   XII_GAL_D3D11_RELEASE_ARRAY(m_pQueryD3D11);
 
   return XII_SUCCESS;
