@@ -16,7 +16,7 @@ xiiResult xiiGALFenceD3D12::InitPlatform(xiiGALDevice* pDevice)
 
   XII_ASSERT_DEV(m_pFenceCompleteEvent == NULL, "Failed to create fence complete event.");
 
-  D3D12_FENCE_FLAGS flags = (m_Description.m_Type == xiiGALFenceType::General) ? D3D12_FENCE_FLAG_SHARED : D3D12_FENCE_FLAG_NONE;
+  D3D12_FENCE_FLAGS flags = D3D12_FENCE_FLAG_NONE;
   if (FAILED(pDeviceD3D12->GetDeviceD3D12()->CreateFence(0, flags, IID_PPV_ARGS(&m_pFence))))
   {
     return XII_FAILURE;
@@ -31,6 +31,15 @@ xiiResult xiiGALFenceD3D12::DeInitPlatform(xiiGALDevice* pDevice)
   XII_ASSERT_NOT_IMPLEMENTED;
 
   return XII_SUCCESS;
+}
+
+void xiiGALFenceD3D12::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pFence != nullptr)
+  {
+    xiiStringBuilder sb;
+    m_pFence->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb));
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Resources_Implementation_FenceD3D12);

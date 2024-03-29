@@ -29,6 +29,8 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
 protected:
   ID3D12Fence* m_pFence = nullptr;
 
