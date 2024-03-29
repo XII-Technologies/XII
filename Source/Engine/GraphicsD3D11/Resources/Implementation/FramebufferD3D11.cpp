@@ -55,7 +55,7 @@ xiiResult xiiGALFramebufferD3D11::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALFramebufferD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pFramebuffer);
+  XII_GAL_D3D11_RELEASE(m_pFramebuffer);
 
   return XII_SUCCESS;
 }

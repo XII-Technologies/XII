@@ -50,7 +50,7 @@ xiiResult xiiGALBufferD3D11::InitPlatform(xiiGALDevice* pDevice, const xiiGALBuf
 
 xiiResult xiiGALBufferD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pBuffer);
+  XII_GAL_D3D11_RELEASE(m_pBuffer);
 
   return XII_SUCCESS;
 }

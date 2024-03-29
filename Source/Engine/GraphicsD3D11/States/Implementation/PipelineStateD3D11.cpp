@@ -125,7 +125,7 @@ xiiResult xiiGALPipelineStateD3D11::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALPipelineStateD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pPipelineState);
+  XII_GAL_D3D11_RELEASE(m_pPipelineState);
 
   return XII_SUCCESS;
 }

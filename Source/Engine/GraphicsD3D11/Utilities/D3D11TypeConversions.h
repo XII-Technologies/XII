@@ -48,7 +48,7 @@ public:
   static DXGI_MODE_SCANLINE_ORDER     GetScanLineOrder(xiiEnum<xiiGALScanLineOrder> e);
   static xiiEnum<xiiGALScanLineOrder> GetGALScanLineOrder(DXGI_MODE_SCANLINE_ORDER e);
 
-  static D3D11_FILTER GetFilter(xiiEnum<xiiGALFilterType> minFilter, xiiEnum<xiiGALFilterType> magFilter, xiiEnum<xiiGALFilterType> mipFilter);
+  static D3D11_FILTER               GetFilter(xiiEnum<xiiGALFilterType> minFilter, xiiEnum<xiiGALFilterType> magFilter, xiiEnum<xiiGALFilterType> mipFilter);
   static D3D11_TEXTURE_ADDRESS_MODE GetTextureAddressMode(xiiEnum<xiiGALTextureAddressMode> e);
 
   static D3D11_QUERY_HEAP_TYPE GetQueryType(xiiEnum<xiiGALQueryType> e);

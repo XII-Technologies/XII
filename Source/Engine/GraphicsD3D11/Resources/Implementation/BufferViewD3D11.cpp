@@ -33,7 +33,7 @@ xiiResult xiiGALBufferViewD3D11::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALBufferViewD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pBufferView);
+  XII_GAL_D3D11_RELEASE(m_pBufferView);
 
   return XII_SUCCESS;
 }

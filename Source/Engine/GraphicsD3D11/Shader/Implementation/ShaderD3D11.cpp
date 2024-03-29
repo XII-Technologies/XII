@@ -46,7 +46,7 @@ xiiResult xiiGALShaderD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 
   for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
   {
-    XII_GAL_DILIGENT_PTR_RELEASE(m_pShaderStages[i]);
+    XII_GAL_D3D11_RELEASE(m_pShaderStages[i]);
   }
   return XII_SUCCESS;
 }

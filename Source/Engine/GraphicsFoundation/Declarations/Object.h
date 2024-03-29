@@ -17,7 +17,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  virtual void SetDebugNamePlatform(xiiStringView sName) {};
+  virtual void SetDebugNamePlatform(xiiStringView sName){};
 
 private:
   mutable xiiHashedString m_sDebugName;

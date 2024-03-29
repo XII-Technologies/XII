@@ -63,7 +63,7 @@ xiiResult xiiGALSwapChainD3D11::DeInitPlatform(xiiGALDevice* pDevice)
     // See: https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Destroying
     m_pSwapChain->SetWindowedMode();
 
-    XII_GAL_DILIGENT_PTR_RELEASE(m_pSwapChain);
+    XII_GAL_D3D11_RELEASE(m_pSwapChain);
 
     m_Description.m_pWindow->RemoveReference();
   }

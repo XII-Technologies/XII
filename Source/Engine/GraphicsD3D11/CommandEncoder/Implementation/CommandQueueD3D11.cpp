@@ -21,7 +21,7 @@ xiiGALCommandQueueD3D11::xiiGALCommandQueueD3D11(xiiGALDeviceD3D11& deviceD3D11,
 
 xiiGALCommandQueueD3D11::~xiiGALCommandQueueD3D11()
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pFence);
+  XII_GAL_D3D11_RELEASE(m_pFence);
 }
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_CommandEncoder_Implementation_CommandQueueD3D11);

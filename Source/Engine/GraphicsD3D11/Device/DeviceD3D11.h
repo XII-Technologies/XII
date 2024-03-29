@@ -139,9 +139,9 @@ private:
 private:
   xiiGALFormatLookupTableD3D11 m_FormatLookupTable;
 
-  IDXGIFactory4* m_pDXGIFactory = nullptr;
-  IDXGIAdapter1* m_pDXGIAdapter = nullptr;
-  ID3D11Device*  m_pDeviceD3D11 = nullptr;
+  IDXGIFactory4*       m_pDXGIFactory   = nullptr;
+  IDXGIAdapter1*       m_pDXGIAdapter   = nullptr;
+  ID3D11Device*        m_pDeviceD3D11   = nullptr;
   ID3D11DeviceContext* m_pDeviceContext = nullptr;
 
   xiiDynamicArray<xiiGALDisplayModeDescription> m_DisplayModes;

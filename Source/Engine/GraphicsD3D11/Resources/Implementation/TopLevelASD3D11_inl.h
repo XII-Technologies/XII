@@ -1,8 +1,6 @@
 
 XII_ALWAYS_INLINE xiiGALTopLevelASInstanceDescription xiiGALTopLevelASD3D11::GetInstanceDescription(xiiStringView sName) const
 {
-  /// \todo GraphicsD3D11: Not yet implemented.
-
   XII_ASSERT_NOT_IMPLEMENTED;
 
   return xiiGALTopLevelASInstanceDescription();
@@ -10,41 +8,23 @@ XII_ALWAYS_INLINE xiiGALTopLevelASInstanceDescription xiiGALTopLevelASD3D11::Get
 
 XII_ALWAYS_INLINE xiiGALTopLevelASBuildDescription xiiGALTopLevelASD3D11::GetBuildDescription() const
 {
-  const Diligent::TLASBuildInfo buildInfo = m_pTopLevelAS->GetBuildInfo();
+  XII_ASSERT_NOT_IMPLEMENTED;
 
-  xiiGALTopLevelASBuildDescription description;
-  description.m_uiInstanceCount                    = buildInfo.InstanceCount;
-  description.m_uiHitGroupStride                   = buildInfo.HitGroupStride;
-  description.m_BindingMode                        = xiiDiligentTypeConversions::GetGALHitGroupBindingMode(buildInfo.BindingMode);
-  description.m_uiFirstContributionToHitGroupIndex = buildInfo.FirstContributionToHitGroupIndex;
-  description.m_uiLastContributionToHitGroupIndex  = buildInfo.LastContributionToHitGroupIndex;
-
-  return description;
+  return xiiGALTopLevelASBuildDescription();
 }
 
 XII_ALWAYS_INLINE xiiGALScratchBufferSizeDescription xiiGALTopLevelASD3D11::GetScratchBufferSizeDescription() const
 {
-  const Diligent::ScratchBufferSizes sizes = m_pTopLevelAS->GetScratchBufferSizes();
+  XII_ASSERT_NOT_IMPLEMENTED;
 
-  return xiiGALScratchBufferSizeDescription{.m_uiBuild = sizes.Build, .m_uiUpdate = sizes.Update};
+  return xiiGALScratchBufferSizeDescription{.m_uiBuild = 0, .m_uiUpdate = 0};
 }
 
 XII_ALWAYS_INLINE void xiiGALTopLevelASD3D11::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
 {
-  Diligent::RESOURCE_STATE requestedStates = xiiDiligentTypeConversions::GetResourceState(stateFlags);
-
-  if (!(m_pTopLevelAS->GetState() & requestedStates))
-  {
-    m_pTopLevelAS->SetState(requestedStates);
-  }
 }
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALTopLevelASD3D11::GetState() const
 {
-  return xiiDiligentTypeConversions::GetResourceState(m_pTopLevelAS->GetState());
-}
-
-XII_ALWAYS_INLINE Diligent::ITopLevelAS* xiiGALTopLevelASD3D11::GetTopLevelAS() const
-{
-  return m_pTopLevelAS;
+  return xiiGALResourceStateFlags::Undefined;
 }

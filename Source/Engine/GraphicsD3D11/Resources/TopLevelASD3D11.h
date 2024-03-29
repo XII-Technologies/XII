@@ -17,8 +17,6 @@ public:
 
   virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
 
-  Diligent::ITopLevelAS* GetTopLevelAS() const;
-
 protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
@@ -32,7 +30,6 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
-  Diligent::ITopLevelAS* m_pTopLevelAS = nullptr;
 };
 
 #include <GraphicsD3D11/Resources/Implementation/TopLevelASD3D11_inl.h>

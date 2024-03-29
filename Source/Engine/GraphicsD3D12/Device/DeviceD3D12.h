@@ -4,9 +4,9 @@
 
 #include <Foundation/Basics/Platform/Win/MinWindows.h>
 #include <Foundation/Types/UniquePtr.h>
+#include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/ResourceFormats.h>
-#include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
 
 enum D3D_FEATURE_LEVEL;
 

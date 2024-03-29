@@ -174,7 +174,7 @@ xiiResult xiiGALRenderPassD3D11::InitPlatform(xiiGALDevice* pDevice)
 
 xiiResult xiiGALRenderPassD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pRenderPass);
+  XII_GAL_D3D11_RELEASE(m_pRenderPass);
 
   return XII_SUCCESS;
 }

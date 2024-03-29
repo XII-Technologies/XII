@@ -88,7 +88,7 @@ xiiResult xiiGALPipelineResourceSignatureD3D11::InitPlatform(xiiGALDevice* pDevi
 
 xiiResult xiiGALPipelineResourceSignatureD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pPipelineResourceSignature);
+  XII_GAL_D3D11_RELEASE(m_pPipelineResourceSignature);
 
   return XII_SUCCESS;
 }
