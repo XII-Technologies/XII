@@ -876,20 +876,21 @@ XII_ALWAYS_INLINE D3D11_TEXTURE_ADDRESS_MODE xiiD3D11TypeConversions::GetTexture
   return D3D11_TEXTURE_ADDRESS_MODE_WRAP;
 }
 
-XII_ALWAYS_INLINE D3D11_QUERY_HEAP_TYPE xiiD3D11TypeConversions::GetQueryType(xiiEnum<xiiGALQueryType> e)
+XII_ALWAYS_INLINE D3D11_QUERY xiiD3D11TypeConversions::GetQueryType(xiiEnum<xiiGALQueryType> e)
 {
   switch (e)
   {
     case xiiGALQueryType::Occlusion:
+      return D3D11_QUERY_OCCLUSION;
     case xiiGALQueryType::BinaryOcclusion:
-      return D3D11_QUERY_HEAP_TYPE_OCCLUSION;
+      return D3D11_QUERY_OCCLUSION_PREDICATE;
     case xiiGALQueryType::Duration:
     case xiiGALQueryType::Timestamp:
-      return D3D11_QUERY_HEAP_TYPE_TIMESTAMP;
+      return D3D11_QUERY_TIMESTAMP;
     case xiiGALQueryType::PipelineStatistics:
-      return D3D11_QUERY_HEAP_TYPE_PIPELINE_STATISTICS;
+      return D3D11_QUERY_PIPELINE_STATISTICS;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-  return D3D11_QUERY_HEAP_TYPE_TIMESTAMP;
+  return D3D11_QUERY_TIMESTAMP;
 }

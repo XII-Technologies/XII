@@ -51,7 +51,7 @@ public:
   static D3D11_FILTER               GetFilter(xiiEnum<xiiGALFilterType> minFilter, xiiEnum<xiiGALFilterType> magFilter, xiiEnum<xiiGALFilterType> mipFilter);
   static D3D11_TEXTURE_ADDRESS_MODE GetTextureAddressMode(xiiEnum<xiiGALTextureAddressMode> e);
 
-  static D3D11_QUERY_HEAP_TYPE GetQueryType(xiiEnum<xiiGALQueryType> e);
+  static D3D11_QUERY GetQueryType(xiiEnum<xiiGALQueryType> e);
 };
 
 #include <GraphicsD3D11/Utilities/Implementation/D3D11TypeConversions_inl.h>

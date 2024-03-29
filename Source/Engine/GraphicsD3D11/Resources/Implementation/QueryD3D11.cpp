@@ -14,18 +14,23 @@ xiiResult xiiGALQueryD3D11::InitPlatform(xiiGALDevice* pDevice)
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
 
-  Diligent::QueryDesc queryDescription;
-  queryDescription.Name = m_Description.m_sName.GetStartPointer();
-  queryDescription.Type = xiiDiligentTypeConversions::GetQueryType(m_Description.m_Type);
+  D3D11_QUERY_DESC    queryDescription = {};
+  queryDescription.Query            = xiiD3D11TypeConversions::GetQueryType(m_Description.m_Type);
 
-  pDeviceD3D11->GetDevice()->CreateQuery(queryDescription, &m_pQuery);
-
-  return (m_pQuery != nullptr) ? XII_SUCCESS : XII_FAILURE;
+  for (xiiUInt32 i = 0; i < (m_Description.m_Type == xiiGALQueryType::Duration ? 2 : 1); ++i)
+  {
+    if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateQuery(&queryDescription, &m_pQueryD3D11[i])))
+    {
+      xiiLog::Error("Failed to create D3D11 query object.");
+      return XII_FAILURE;
+    }
+  }
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALQueryD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  XII_GAL_D3D11_RELEASE(m_pQuery);
+  XII_GAL_D3D11_RELEASE_ARRAY(m_pQueryD3D11);
 
   return XII_SUCCESS;
 }

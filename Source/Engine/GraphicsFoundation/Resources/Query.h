@@ -107,7 +107,16 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 
 protected:
+  enum class QueryState
+  {
+    Inactive,
+    Querying,
+    Ended
+  };
+
   xiiGALQueryCreationDescription m_Description;
+
+  QueryState m_QueryState = QueryState::Inactive;
 };
 
 #include <GraphicsFoundation/Resources/Implementation/Query_inl.h>
