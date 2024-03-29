@@ -21,4 +21,13 @@ xiiGALFence::xiiGALFence(const xiiGALFenceCreationDescription& creationDescripti
 
 xiiGALFence::~xiiGALFence() = default;
 
+void xiiGALFence::UpdateLastCompletedFenceValue(xiiUInt64 uiValue)
+{
+  xiiUInt64 uiLastCompletedValue = m_uiLastCompletedFenceValue;
+  while (m_uiLastCompletedFenceValue.CompareAndSwap(uiLastCompletedValue, xiiMath::Max(uiLastCompletedValue, uiValue)) != uiLastCompletedValue)
+  {
+    // If exchange fails, uiLastCompletedValue will hold the actual value of m_uiLastCompletedFenceValue.
+  }
+}
+
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_Resources_Implementation_Fence);

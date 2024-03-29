@@ -15,7 +15,9 @@ public:
 
   virtual void Wait(xiiUInt64 uiValue) override final;
 
-  ID3D11Fence* GetFence() const;
+  void AddPendingQuery(ID3D11DeviceContext* pContext, ID3D11Query* pQuery, xiiUInt64 uiValue);
+
+  void Wait(xiiUInt64 uiValue, bool bFlushCommands);
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -32,9 +34,21 @@ protected:
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
-  ID3D11Fence* m_pFence = nullptr;
+  struct PendingFenceData
+  {
+    PendingFenceData(ID3D11DeviceContext* pContext, ID3D11Query* pQuery, xiiUInt64 uiValue) :
+      m_pContextD3D11(pContext), m_pQueryD3D11(pQuery), m_uiValue(uiValue)
+    {
+    }
 
-  const HANDLE m_pFenceCompleteEvent;
+    ID3D11DeviceContext* m_pContextD3D11 = nullptr;
+    ID3D11Query*         m_pQueryD3D11   = nullptr;
+    const xiiUInt64      m_uiValue;
+  };
+
+  xiiDeque<PendingFenceData> m_PendingQueries;
+
+  xiiUInt32 m_uiMaxPendingQueries = 0;
 };
 
 #include <GraphicsD3D11/Resources/Implementation/FenceD3D11_inl.h>

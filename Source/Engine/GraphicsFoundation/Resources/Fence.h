@@ -76,8 +76,12 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 
+  void UpdateLastCompletedFenceValue(xiiUInt64 uiValue);
+
 protected:
   xiiGALFenceCreationDescription m_Description;
+
+  xiiAtomicInteger64 m_uiLastCompletedFenceValue;
 };
 
 #include <GraphicsFoundation/Resources/Implementation/Fence_inl.h>
