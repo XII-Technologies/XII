@@ -7,7 +7,7 @@
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
 
-#include <D3D11.h>
+#include <d3d11.h>
 #include <dxgitype.h>
 
 #include <Foundation/Basics/Platform/Win/IncludeWindows.h>

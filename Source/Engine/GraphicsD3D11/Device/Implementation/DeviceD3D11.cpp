@@ -9,7 +9,6 @@
 #include <GraphicsD3D11/CommandEncoder/CommandQueueD3D11.h>
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Device/SwapChainD3D11.h>
-#include <GraphicsD3D11/MemoryAllocator/MemoryAllocatorD3D11.h>
 #include <GraphicsD3D11/Resources/BottomLevelASD3D11.h>
 #include <GraphicsD3D11/Resources/BufferD3D11.h>
 #include <GraphicsD3D11/Resources/BufferViewD3D11.h>
@@ -48,7 +47,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsD3D11, DeviceFactory)
 
 ON_CORESYSTEMS_STARTUP
 {
-  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D_SM60", .m_sShaderCompiler = "xiiShaderCompiler" };
+  const xiiGALDeviceImplementationDescription implementation = {.m_APIType = xiiGALGraphicsDeviceType::Direct3D12, .m_sShaderModel = "D3D_SM50", .m_sShaderCompiler = "xiiShaderCompiler" };
 
   xiiGALDeviceFactory::RegisterImplementation("D3D11", &CreateD3D11Device, implementation);
 }
@@ -79,28 +78,12 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
 {
   XII_LOG_BLOCK("xiiGALDeviceD3D11::InitializePlatform");
 
-  // Load Direct3D 12 dynamic library.
-  XII_SUCCEED_OR_RETURN_LOG(xiiPlugin::LoadPlugin("D3D11.dll"));
-
   // Enable the D3D11 debug layer.
-  if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
+  xiiUInt64 uiCreationFlags = 0U;
+
+  if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled && HasSDKLayers())
   {
-    ID3D11Debug* pDebugController = nullptr;
-    if (SUCCEEDED(D3D11GetDebugInterface(__uuidof(pDebugController), reinterpret_cast<void**>(static_cast<ID3D11Debug**>(&pDebugController)))))
-    {
-      pDebugController->EnableDebugLayer();
-      if (m_Description.m_ValidationLevel == xiiGALDeviceValidationLevel::All)
-      {
-        ID3D11Debug1* pDebugController1 = nullptr;
-        if (SUCCEEDED(pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController1))))
-        {
-          // pDebugController1->SetEnableSynchronizedCommandQueueValidation(FALSE);
-          pDebugController1->SetEnableGPUBasedValidation(true);
-        }
-        XII_GAL_D3D11_RELEASE(pDebugController1);
-      }
-    }
-    XII_GAL_D3D11_RELEASE(pDebugController);
+    uiCreationFlags |= D3D11_CREATE_DEVICE_DEBUG;
   }
 
   XII_VERIFY_D3D11(SUCCEEDED(CreateDXGIFactory1(__uuidof(m_pDXGIFactory), reinterpret_cast<void**>(static_cast<IDXGIFactory4**>(&m_pDXGIFactory)))), "Failed to create DXGI factory. Error code '{}'.", xiiArgErrorCode(GetLastError()));
@@ -128,14 +111,14 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
   }
   m_pDXGIAdapter = pHardwareAdapter;
 
-  const D3D_FEATURE_LEVEL targetFeatureLevels[]     = {D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
-  const char*             targetFeatureLevelNames[] = {"12.2", "12.1", "12.0", "11.1", "11.0"};
+  const D3D_FEATURE_LEVEL targetFeatureLevels[]     = {D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
+  const char*             targetFeatureLevelNames[] = {"11.1", "11.0"};
   xiiUInt32               uiFeatureLevelIndex       = 0U;
   HRESULT                 hResult;
 
   for (const auto& featureLevel : targetFeatureLevels)
   {
-    hResult = D3D11CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(m_pDeviceD3D11), reinterpret_cast<void**>(static_cast<ID3D11Device**>(&m_pDeviceD3D11)));
+    hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_HARDWARE, 0, uiCreationFlags, &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &m_pDeviceContext);
 
     if (SUCCEEDED(hResult))
     {
@@ -161,7 +144,7 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
 
     for (const auto& featureLevel : targetFeatureLevels)
     {
-      hResult = D3D11CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(m_pDeviceD3D11), reinterpret_cast<void**>(static_cast<ID3D11Device**>(&m_pDeviceD3D11)));
+      hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_WARP, 0, uiCreationFlags, &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &m_pDeviceContext);
 
       if (SUCCEEDED(hResult))
       {
@@ -181,9 +164,6 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
     xiiLog::Info("Initialized D3D11 device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
   }
 
-  // Create D3D11 Memory Allocator.
-  m_pAllocatorD3D11 = XII_NEW(&m_Allocator, xiiMemoryAllocatorD3D11, m_pDXGIAdapter, m_pDeviceD3D11);
-
   EnumerateDisplayModes(targetFeatureLevels[uiFeatureLevelIndex], m_pDXGIAdapter, 0, xiiGALTextureFormat::RGBA8UNormalizedSRGB, m_DisplayModes);
 
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
@@ -200,15 +180,10 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
       // Suppress individual messages by their ID
       D3D11_MESSAGE_ID denyIDs[] =
         {
-          // D3D11 WARNING: ID3D11CommandList::ClearRenderTargetView: The clear values do not match those passed to resource creation.
-          // The clear operation is typically slower as a result; but will still clear to the desired value.
-          // [ EXECUTION WARNING #820: CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE]
-          D3D11_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
-
-          // D3D11 WARNING: ID3D11CommandList::ClearDepthStencilView: The clear values do not match those passed to resource creation.
-          // The clear operation is typically slower as a result; but will still clear to the desired value.
-          // [ EXECUTION WARNING #821: CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE]
-          D3D11_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE //
+          // D3D11 WARNING: ID3D11Device::CreateInputLayout: Element in the layout mask was not found in the shader signature.
+          // This mismatch is invalid if the shader actually uses the missing element.
+          // [ EXECUTION WARNING #391: CREATEINPUTLAYOUT_MISSINGELEMENT]
+          D3D11_MESSAGE_ID_CREATEINPUTLAYOUT_MISSINGELEMENT,
         };
 
       D3D11_INFO_QUEUE_FILTER queueFilter = {};
@@ -221,9 +196,13 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
 
       XII_VERIFY(SUCCEEDED(pInfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter. Error code '{}'.", xiiArgErrorCode(GetLastError()));
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-      XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, true), "Failed to set break on corruption. Error code '{}'.", xiiArgErrorCode(GetLastError()));
-      XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, true), "Failed to set break on error. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+      if (IsDebuggerPresent())
+      {
+        XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, TRUE), "Failed to set break on corruption. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+        XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, TRUE), "Failed to set break on error. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+        XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, TRUE), "Failed to set break on warning. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+      }
 #endif
     }
     XII_GAL_D3D11_RELEASE(pInfoQueue);
@@ -757,15 +736,6 @@ void xiiGALDeviceD3D11::FillCapabilitiesPlatform()
     else
       m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Integrated;
 
-    {
-      D3D11_FEATURE_DATA_ARCHITECTURE dataArchitecture = {};
-      if (SUCCEEDED(m_pDeviceD3D11->CheckFeatureSupport(D3D11_FEATURE_ARCHITECTURE, &dataArchitecture, sizeof(dataArchitecture))))
-      {
-        if (m_AdapterDescription.m_Type != xiiGALDeviceAdapterType::Software && (dataArchitecture.UMA || dataArchitecture.CacheCoherentUMA))
-          m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Integrated;
-      }
-    }
-
     m_AdapterDescription.m_Vendor             = xiiGALGraphicsUtilities::GetVendorFromID(dxgiAdapterDescription.VendorId);
     m_AdapterDescription.m_uiVendorID         = dxgiAdapterDescription.VendorId;
     m_AdapterDescription.m_uiDeviceID         = dxgiAdapterDescription.DeviceId;
@@ -809,251 +779,39 @@ void xiiGALDeviceD3D11::FillCapabilitiesPlatform()
     m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags        = xiiGALDrawCommandCapabilityFlags::DrawIndirect | xiiGALDrawCommandCapabilityFlags::DrawIndirectFirstInstance;
 
     // Set queue information.
-    xiiGALCommandQueueType::Enum queueIndexType[] = {xiiGALCommandQueueType::Graphics, xiiGALCommandQueueType::Compute, xiiGALCommandQueueType::Transfer};
-    for (xiiUInt32 i = 0; i < 3; ++i)
     {
       auto& queueProperty                       = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
-      queueProperty.m_Type                      = queueIndexType[i];
-      queueProperty.m_MaxDeviceContexts         = 0xFFU;
+      queueProperty.m_Type                      = xiiGALCommandQueueType::Graphics;
+      queueProperty.m_MaxDeviceContexts         = 1U;
       queueProperty.m_TextureCopyGranularity[0] = 1U;
       queueProperty.m_TextureCopyGranularity[1] = 1U;
       queueProperty.m_TextureCopyGranularity[2] = 1U;
     }
   }
 
-  // Enable features and set properties.
+  // Enable features.
   {
     auto& deviceFeatures = m_AdapterDescription.m_Features;
 
-    // Direct3D12 supports shader model 5.1 on all feature levels (even on 11.0), so bindless resources are always available.
-    // https://docs.microsoft.com/en-us/windows/win32/direct3d12/hardware-feature-levels#feature-level-support
-    deviceFeatures.m_BindlessResources = xiiGALDeviceFeatureState::Enabled;
-
-    deviceFeatures.m_VertexPipelineUAVWritesAndAtomics = xiiGALDeviceFeatureState::Enabled;
-    deviceFeatures.m_NativeFence                       = xiiGALDeviceFeatureState::Optional; // This can be disabled.
-    deviceFeatures.m_TextureComponentSwizzle           = xiiGALDeviceFeatureState::Enabled;
-
-    // Check if mesh shader is supported.
-    bool bMeshShadersSupported = false;
-#ifdef D3D11_H_HAS_MESH_SHADER
     {
-      D3D11_FEATURE_DATA_SHADER_MODEL shaderModel = {static_cast<D3D_SHADER_MODEL>(0x65)};
-      if (SUCCEEDED(m_pDeviceD3D11->CheckFeatureSupport(D3D11_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))))
+      bool bShaderFloat16Supported = false;
+
+      D3D11_FEATURE_DATA_SHADER_MIN_PRECISION_SUPPORT d3d11MinPrecisionSupport = {};
+      if (SUCCEEDED(m_pDeviceD3D11->CheckFeatureSupport(D3D11_FEATURE_SHADER_MIN_PRECISION_SUPPORT, &d3d11MinPrecisionSupport, sizeof(d3d11MinPrecisionSupport))))
       {
-        D3D11_FEATURE_DATA_D3D11_OPTIONS7 featureData = {};
-        bMeshShadersSupported                         = SUCCEEDED(m_pDeviceD3D11->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS7, &featureData, sizeof(featureData))) && featureData.MeshShaderTier != D3D11_MESH_SHADER_TIER_NOT_SUPPORTED;
+        bShaderFloat16Supported = (d3d11MinPrecisionSupport.PixelShaderMinPrecision & D3D11_SHADER_MIN_PRECISION_16_BIT) != 0 && (d3d11MinPrecisionSupport.AllOtherShaderStagesMinPrecision & D3D11_SHADER_MIN_PRECISION_16_BIT) != 0;
       }
+      deviceFeatures.m_ShaderFloat16 = bShaderFloat16Supported ? xiiGALDeviceFeatureState::Enabled : xiiGALDeviceFeatureState::Disabled;
     }
-#endif
+  }
 
-    if (bMeshShadersSupported)
-    {
-      deviceFeatures.m_MeshShaders = xiiGALDeviceFeatureState::Enabled;
-
-      m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountX     = 65536U; // From specification: https://microsoft.github.io/DirectX-Specs/d3d/MeshShader.html#dispatchmesh-api
-      m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountY     = 65536U;
-      m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupCountZ     = 65536U;
-      m_AdapterDescription.m_MeshShaderProperties.m_uiMaxThreadGroupTotalCount = XII_BIT(22U);
-    }
-
-    deviceFeatures.m_ShaderResourceRuntimeArray = xiiGALDeviceFeatureState::Enabled;
-
-    {
-      D3D11_FEATURE_DATA_D3D11_OPTIONS featureDataOptions = {};
-      if (SUCCEEDED(m_pDeviceD3D11->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS, &featureDataOptions, sizeof(featureDataOptions))))
-      {
-        if (featureDataOptions.MinPrecisionSupport & D3D11_SHADER_MIN_PRECISION_SUPPORT_16_BIT)
-        {
-          deviceFeatures.m_ShaderFloat16 = xiiGALDeviceFeatureState::Enabled;
-        }
-
-        if (featureDataOptions.TiledResourcesTier >= D3D11_TILED_RESOURCES_TIER_1)
-        {
-          deviceFeatures.m_SparseResources = xiiGALDeviceFeatureState::Enabled;
-
-          m_AdapterDescription.m_SparseResourceProperties.m_uiStandardBlockSize = D3D11_TILED_RESOURCE_TILE_SIZE_IN_BYTES;
-
-          D3D11_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT featureDataGPUVirtualAddress = {};
-          if (SUCCEEDED(m_pDeviceD3D11->CheckFeatureSupport(D3D11_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT, &featureDataGPUVirtualAddress, sizeof(featureDataGPUVirtualAddress))))
-          {
-            m_AdapterDescription.m_SparseResourceProperties.m_uiAddressSpaceSize  = XII_BIT(featureDataGPUVirtualAddress.MaxGPUVirtualAddressBitsPerProcess);
-            m_AdapterDescription.m_SparseResourceProperties.m_uiResourceSpaceSize = XII_BIT(featureDataGPUVirtualAddress.MaxGPUVirtualAddressBitsPerResource);
-          }
-          else
-          {
-            m_AdapterDescription.m_SparseResourceProperties.m_uiAddressSpaceSize  = XII_BIT(featureDataOptions.MaxGPUVirtualAddressBitsPerResource);
-            m_AdapterDescription.m_SparseResourceProperties.m_uiResourceSpaceSize = XII_BIT(featureDataOptions.MaxGPUVirtualAddressBitsPerResource);
-          }
-
-          m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags = xiiGALSparseResourceCapabilityFlags::Buffer | xiiGALSparseResourceCapabilityFlags::BufferStandardBlock | xiiGALSparseResourceCapabilityFlags::Texture2D |
-            xiiGALSparseResourceCapabilityFlags::Standard2DTileShape | xiiGALSparseResourceCapabilityFlags::Aliased | xiiGALSparseResourceCapabilityFlags::NonResidentSafe;
-
-          // No 2, 8 or 16 sample multisample antialiasing (MSAA) support. Only 4x is required, except no 128 bpp formats.
-          m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Texture4Samples | xiiGALSparseResourceCapabilityFlags::Standard2DMSTileShape;
-
-          if (featureDataOptions.TiledResourcesTier >= D3D11_TILED_RESOURCES_TIER_2)
-          {
-            m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::ShaderResourceResidency | xiiGALSparseResourceCapabilityFlags::NonResidentStrict;
-          }
-          if (featureDataOptions.TiledResourcesTier >= D3D11_TILED_RESOURCES_TIER_3)
-          {
-            m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Texture3D | xiiGALSparseResourceCapabilityFlags::Standard3DTileShape;
-          }
-#if 0 // We currently do not use NVAPI on Nvidia graphics cards.
-          if (pNVAPI)
-          {
-              m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::Texture2DArrayMipTail;
-          }
-#endif
-          if (featureDataOptions.ResourceHeapTier >= D3D11_RESOURCE_HEAP_TIER_2)
-          {
-            m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags |= xiiGALSparseResourceCapabilityFlags::MixedResourceTypeSupport;
-          }
-
-          // Some features are not correctly working in software renderer.
-          if (m_AdapterDescription.m_Type == xiiGALDeviceAdapterType::Software)
-          {
-            // Reading from null-mapped tile does not return zero.
-            m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.Remove(xiiGALSparseResourceCapabilityFlags::NonResidentStrict);
-            // CheckAccessFullyMapped() in shader does not work.
-            m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.Remove(xiiGALSparseResourceCapabilityFlags::ShaderResourceResidency);
-            // Mip tails are not supported at all.
-            m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.Remove(xiiGALSparseResourceCapabilityFlags::AlignedMipSize);
-          }
-
-          m_AdapterDescription.m_SparseResourceProperties.m_BindFlags = xiiGALBindFlags::VertexBuffer | xiiGALBindFlags::IndexBuffer | xiiGALBindFlags::UniformBuffer |
-            xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::IndirectDrawArguments | xiiGALBindFlags::RayTracing;
-
-          for (xiiUInt32 i = 0; i < m_AdapterDescription.m_CommandQueueProperties.GetCount(); ++i)
-            m_AdapterDescription.m_CommandQueueProperties[i].m_Type |= xiiGALCommandQueueType::SparseBinding;
-        }
-      }
-
-      D3D11_FEATURE_DATA_D3D11_OPTIONS1 featureDataOptions1 = {};
-      if (SUCCEEDED(m_pDeviceD3D11->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS1, &featureDataOptions1, sizeof(featureDataOptions1))))
-      {
-        if (featureDataOptions1.WaveOps != FALSE)
-        {
-          deviceFeatures.m_WaveOp = xiiGALDeviceFeatureState::Enabled;
-
-          m_AdapterDescription.m_WaveOperationProperties.m_uiMinSize             = featureDataOptions1.WaveLaneCountMin;
-          m_AdapterDescription.m_WaveOperationProperties.m_uiMaxSize             = featureDataOptions1.WaveLaneCountMax;
-          m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages = xiiGALShaderStage::Pixel | xiiGALShaderStage::Compute;
-          m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures          = xiiGALWaveFeature::Basic | xiiGALWaveFeature::Vote | xiiGALWaveFeature::Arithmetic | xiiGALWaveFeature::BallOut | xiiGALWaveFeature::Quad;
-          if (bMeshShadersSupported)
-            m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages |= xiiGALShaderStage::Amplification | xiiGALShaderStage::Mesh;
-        }
-      }
-
-      D3D11_FEATURE_DATA_D3D11_OPTIONS3 featureDataOptions3 = {};
-      if (SUCCEEDED(m_pDeviceD3D11->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS3, &featureDataOptions3, sizeof(featureDataOptions3))))
-      {
-        if (featureDataOptions3.CopyQueueTimestampQueriesSupported)
-          deviceFeatures.m_TransferQueueTimestampQueries = xiiGALDeviceFeatureState::Enabled;
-      }
-
-      D3D11_FEATURE_DATA_D3D11_OPTIONS4 featureDataOptions4{};
-      if (SUCCEEDED(m_pDeviceD3D11->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS4, &featureDataOptions4, sizeof(featureDataOptions4))))
-      {
-        if (featureDataOptions4.Native16BitShaderOpsSupported)
-        {
-          deviceFeatures.m_ResourceBuffer16BitAccess = xiiGALDeviceFeatureState::Enabled;
-          deviceFeatures.m_UniformBuffer16BitAccess  = xiiGALDeviceFeatureState::Enabled;
-          deviceFeatures.m_ShaderInputOutput16       = xiiGALDeviceFeatureState::Enabled;
-        }
-      }
-
-      D3D11_FEATURE_DATA_D3D11_OPTIONS5 featureDataOptions5{};
-      if (SUCCEEDED(m_pDeviceD3D11->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS5, &featureDataOptions5, sizeof(featureDataOptions5))))
-      {
-        if (featureDataOptions5.RaytracingTier >= D3D11_RAYTRACING_TIER_1_0)
-        {
-          deviceFeatures.m_RayTracing = xiiGALDeviceFeatureState::Enabled;
-
-          m_AdapterDescription.m_RayTracingProperties.m_uiMaxRecursionDepth        = D3D11_RAYTRACING_MAX_DECLARABLE_TRACE_RECURSION_DEPTH;
-          m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupHandleSize    = D3D11_SHADER_IDENTIFIER_SIZE_IN_BYTES;
-          m_AdapterDescription.m_RayTracingProperties.m_uiMaxShaderRecordStride    = D3D11_RAYTRACING_MAX_SHADER_RECORD_STRIDE;
-          m_AdapterDescription.m_RayTracingProperties.m_uiShaderGroupBaseAlignment = D3D11_RAYTRACING_SHADER_TABLE_BYTE_ALIGNMENT;
-          m_AdapterDescription.m_RayTracingProperties.m_uiMaxRayGenThreads         = D3D11_RAYTRACING_MAX_RAY_GENERATION_SHADER_THREADS;
-          m_AdapterDescription.m_RayTracingProperties.m_uiMaxInstancesPerTLAS      = D3D11_RAYTRACING_MAX_INSTANCES_PER_TOP_LEVEL_ACCELERATION_STRUCTURE;
-          m_AdapterDescription.m_RayTracingProperties.m_uiMaxPrimitivesPerBLAS     = D3D11_RAYTRACING_MAX_PRIMITIVES_PER_BOTTOM_LEVEL_ACCELERATION_STRUCTURE;
-          m_AdapterDescription.m_RayTracingProperties.m_uiMaxGeometriesPerBLAS     = D3D11_RAYTRACING_MAX_GEOMETRIES_PER_BOTTOM_LEVEL_ACCELERATION_STRUCTURE;
-          m_AdapterDescription.m_RayTracingProperties.m_uiVertexBufferAlignment    = 1U;
-          m_AdapterDescription.m_RayTracingProperties.m_uiIndexBufferAlignment     = 1U;
-          m_AdapterDescription.m_RayTracingProperties.m_uiTransformBufferAlignment = D3D11_RAYTRACING_TRANSFORM3X4_BYTE_ALIGNMENT;
-          m_AdapterDescription.m_RayTracingProperties.m_uiBoxBufferAlignment       = D3D11_RAYTRACING_AABB_BYTE_ALIGNMENT;
-          m_AdapterDescription.m_RayTracingProperties.m_uiScratchBufferAlignment   = D3D11_RAYTRACING_ACCELERATION_STRUCTURE_BYTE_ALIGNMENT;
-          m_AdapterDescription.m_RayTracingProperties.m_uiInstanceBufferAlignment  = D3D11_RAYTRACING_INSTANCE_DESCS_BYTE_ALIGNMENT;
-          m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::StandaloneShaders;
-        }
-        if (featureDataOptions5.RaytracingTier >= D3D11_RAYTRACING_TIER_1_1)
-        {
-          m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags |= xiiGALRayTracingCapabilityFlags::InlineRayTracing | xiiGALRayTracingCapabilityFlags::IndirectRayTracing;
-        }
-      }
-
-#ifdef NTDDI_WIN10_19H1 || FORCE_NTDDI_WIN10_19H1
-      D3D11_FEATURE_DATA_D3D11_OPTIONS6 featureDataOptions6{};
-      if (SUCCEEDED(m_pDeviceD3D11->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS6, &featureDataOptions6, sizeof(featureDataOptions6))))
-      {
-        // https://microsoft.github.io/DirectX-Specs/d3d/VariableRateShading.html#feature-tiering
-        auto& shadingRateProperties = m_AdapterDescription.m_ShadingRateProperties;
-        auto  AddShadingRate        = [&shadingRateProperties](xiiEnum<xiiGALShadingRate> shadingRate, xiiBitflags<xiiGALSampleCount> sampleBits) -> void {
-          XII_ASSERT_DEV(shadingRateProperties.m_Modes.GetCount() < XII_GAL_MAX_SHADING_RATE, "Shading rate properties exeeds the GAL maximum shaing rate count.");
-
-          auto& mode         = shadingRateProperties.m_Modes.ExpandAndGetRef();
-          mode.m_ShadingRate = shadingRate;
-          mode.m_SampleBits  = sampleBits;
-        };
-
-        if (featureDataOptions6.AdditionalShadingRatesSupported != FALSE)
-        {
-          AddShadingRate(xiiGALShadingRate::_4X4, xiiGALSampleCount::OneSample);
-          AddShadingRate(xiiGALShadingRate::_4X2, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples);
-          AddShadingRate(xiiGALShadingRate::_2X4, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples);
-        }
-        if (featureDataOptions6.VariableShadingRateTier >= D3D11_VARIABLE_SHADING_RATE_TIER_1)
-        {
-          deviceFeatures.m_VariableRateShading = xiiGALDeviceFeatureState::Enabled;
-
-          shadingRateProperties.m_Format = xiiGALShadingRateFormat::Palette;
-          shadingRateProperties.m_CombinerFlags |= xiiGALShadingRateCombiner::PassThrough;
-          shadingRateProperties.m_CapabilityFlags |= xiiGALShadingRateCapabilityFlags::PerDraw;
-
-          // 1x1, 1x2, 2x1, 2x2 are always supported
-          AddShadingRate(xiiGALShadingRate::_2X2, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples | xiiGALSampleCount::FourSamples);
-          AddShadingRate(xiiGALShadingRate::_2X1, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples | xiiGALSampleCount::FourSamples);
-          AddShadingRate(xiiGALShadingRate::_1X2, xiiGALSampleCount::OneSample | xiiGALSampleCount::TwoSamples | xiiGALSampleCount::FourSamples);
-          AddShadingRate(xiiGALShadingRate::_1X1, xiiGALSampleCount::AllSamples);
-        }
-        if (featureDataOptions6.VariableShadingRateTier >= D3D11_VARIABLE_SHADING_RATE_TIER_2)
-        {
-          shadingRateProperties.m_CapabilityFlags = xiiGALShadingRateCapabilityFlags::PerPrimitive | xiiGALShadingRateCapabilityFlags::TextureBased | xiiGALShadingRateCapabilityFlags::NonSubSampledRenderTarget | xiiGALShadingRateCapabilityFlags::SampleMask |
-            xiiGALShadingRateCapabilityFlags::ShaderSampleMask | xiiGALShadingRateCapabilityFlags::ShadingRateShaderInput;
-
-          shadingRateProperties.m_MinTileSize = xiiSizeU32(featureDataOptions6.ShadingRateImageTileSize, featureDataOptions6.ShadingRateImageTileSize);
-          shadingRateProperties.m_MaxTileSize = xiiSizeU32(featureDataOptions6.ShadingRateImageTileSize, featureDataOptions6.ShadingRateImageTileSize);
-          shadingRateProperties.m_CombinerFlags |= xiiGALShadingRateCombiner::CombinerOverride | xiiGALShadingRateCombiner::CombinerMin | xiiGALShadingRateCombiner::CombinerMax | xiiGALShadingRateCombiner::CombinerSum;
-          shadingRateProperties.m_BindFlags |= xiiGALBindFlags::ShadingRate | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShadingRate;
-          shadingRateProperties.m_TextureAccess = xiiGALShadingRateTextureAccess::OnGPU;
-        }
-        if (featureDataOptions6.PerPrimitiveShadingRateSupportedWithViewportIndexing != FALSE)
-        {
-          shadingRateProperties.m_CapabilityFlags |= xiiGALShadingRateCapabilityFlags::PerPrimitiveWithMultipleViewports;
-        }
-        // Export of depth and stencil is not supported
-        // https://microsoft.github.io/DirectX-Specs/d3d/VariableRateShading.html#export-of-depth-and-stencil
-
-        // Perhaps add support for D3D11_FEATURE_DATA_D3D11_OPTIONS10?
-      }
-#endif // NTDDI_WIN10_19H1
-    }
-
-    // Buffer properties.
-    {
-      m_AdapterDescription.m_BufferProperties.m_uiConstantBufferAlignment         = D3D11_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
-      m_AdapterDescription.m_BufferProperties.m_uiStructuredBufferOffsetAlignment = D3D11_RAW_UAV_SRV_BYTE_ALIGNMENT;
-    }
+  // Buffer properties.
+  {
+    // Offsets passed to *SSetConstantBuffers1 are measured in shader constants, which are
+    // 16 bytes (4*32-bit components). Each offset must be a multiple of 16 constants,
+    // i.e. 256 bytes.
+    m_AdapterDescription.m_BufferProperties.m_uiConstantBufferAlignment         = 256U;
+    m_AdapterDescription.m_BufferProperties.m_uiStructuredBufferOffsetAlignment = D3D11_RAW_UAV_SRV_BYTE_ALIGNMENT;
   }
 
   // Texture properties.
@@ -1092,12 +850,56 @@ void xiiGALDeviceD3D11::FillCapabilitiesPlatform()
 
   // Draw command properties.
   {
+    m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags.Add(xiiGALDrawCommandCapabilityFlags::BaseVertex);
+
 #if D3D11_REQ_DRAWINDEXED_INDEX_COUNT_2_TO_EXP >= 32
     m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue = ~0u;
 #else
     m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue = 1u << D3D11_REQ_DRAWINDEXED_INDEX_COUNT_2_TO_EXP;
 #endif
-    m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::BaseVertex | xiiGALDrawCommandCapabilityFlags::NativeMultiDrawIndirect | xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer;
+  }
+
+  // Sparse memory properties.
+  {
+    D3D11_FEATURE_DATA_D3D11_OPTIONS1 d3d11TiledResources{};
+    if (SUCCEEDED(m_pDeviceD3D11->CheckFeatureSupport(D3D11_FEATURE_D3D11_OPTIONS1, &d3d11TiledResources, sizeof(d3d11TiledResources))))
+    {
+      if (d3d11TiledResources.TiledResourcesTier >= D3D11_TILED_RESOURCES_TIER_1)
+      {
+        m_AdapterDescription.m_Features.m_SparseResources = xiiGALDeviceFeatureState::Enabled;
+
+        m_AdapterDescription.m_SparseResourceProperties.m_uiAddressSpaceSize  = xiiUInt64{1} << (sizeof(void*) > 4 ? 40 : 32);
+        m_AdapterDescription.m_SparseResourceProperties.m_uiResourceSpaceSize = xiiMath::MaxValue<xiiUInt32>();
+        m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags     = xiiGALSparseResourceCapabilityFlags::Buffer | xiiGALSparseResourceCapabilityFlags::BufferStandardBlock | xiiGALSparseResourceCapabilityFlags::Texture2D | xiiGALSparseResourceCapabilityFlags::Standard2DTileShape | xiiGALSparseResourceCapabilityFlags::Aliased | xiiGALSparseResourceCapabilityFlags::MixedResourceTypeSupport;
+
+        // No 2, 8 or 16 sample multisample antialiasing (MSAA) support. Only 4x is required, except no 128 bpp formats.
+        m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.Add(xiiGALSparseResourceCapabilityFlags::Texture4Samples | xiiGALSparseResourceCapabilityFlags::Standard2DMSTileShape);
+        m_AdapterDescription.m_SparseResourceProperties.m_BindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess;
+
+#ifdef NTDDI_WIN10 // D3D11_TILED_RESOURCES_TIER_3 is not defined in Win8.1
+        if (d3d11TiledResources.TiledResourcesTier >= D3D11_TILED_RESOURCES_TIER_2)
+        {
+          m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.Add(xiiGALSparseResourceCapabilityFlags::Texture3D | xiiGALSparseResourceCapabilityFlags::Standard3DTileShape);
+        }
+#endif
+
+        // Some features are not correctly working in software renderer.
+        if (m_AdapterDescription.m_Type == xiiGALDeviceAdapterType::Software)
+        {
+          // Reading from null-mapped tile doesn't return zero.
+          m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.Remove(xiiGALSparseResourceCapabilityFlags::NonResidentStrict);
+          // CheckAccessFullyMapped() in shader doesn't work.
+          m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.Remove(xiiGALSparseResourceCapabilityFlags::ShaderResourceResidency);
+          // Mip tails are not supported at all.
+          m_AdapterDescription.m_SparseResourceProperties.m_CapabilityFlags.Remove(xiiGALSparseResourceCapabilityFlags::AlignedMipSize);
+        }
+
+        for (xiiUInt32 i = 0; i < m_AdapterDescription.m_CommandQueueProperties.GetCount(); ++i)
+        {
+          m_AdapterDescription.m_CommandQueueProperties[i].m_Type.Add(xiiGALCommandQueueType::SparseBinding);
+        }
+      }
+    }
   }
 }
 
@@ -1251,6 +1053,28 @@ void xiiGALDeviceD3D11::FillFormatLookupTable()
   // clang-format on
 }
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+
+bool xiiGALDeviceD3D11::HasSDKLayers()
+{
+  HRESULT hResult = D3D11CreateDevice(
+    nullptr,
+    D3D_DRIVER_TYPE_NULL, // There is no need to create a real hardware device.
+    0,
+    D3D11_CREATE_DEVICE_DEBUG, // Check for the SDK layers.
+    nullptr,                   // Any feature level will do.
+    0,
+    D3D11_SDK_VERSION, // Always set this to D3D11_SDK_VERSION for Windows Store apps.
+    nullptr,           // No need to keep the D3D device reference.
+    nullptr,           // No need to know the feature level.
+    nullptr            // No need to keep the D3D device context reference.
+  );
+
+  return SUCCEEDED(hResult);
+}
+
+#endif
+
 void xiiGALDeviceD3D11::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel)
 {
   IDXGIAdapter1* pDXGIAdapter = nullptr;
@@ -1269,8 +1093,8 @@ void xiiGALDeviceD3D11::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter
       continue;
     }
 
-    // Check to see if the adapter supports Direct3D 12, but don't create the actual device yet.
-    if (SUCCEEDED(D3D11CreateDevice(pDXGIAdapter, featureLevel, __uuidof(ID3D11Device), nullptr)))
+    // Check to see if the adapter supports Direct3D 11, but don't create the actual device yet.
+    if (SUCCEEDED(D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_NULL, 0, 0, &featureLevel, 1, D3D11_SDK_VERSION, nullptr, nullptr, nullptr)))
     {
       break;
     }
@@ -1300,7 +1124,7 @@ xiiDynamicArray<IDXGIAdapter1*> xiiGALDeviceD3D11::GetCompatibleAdapters(D3D_FEA
     DXGI_ADAPTER_DESC1 adapterDescription;
     pDXGIAdapter->GetDesc1(&adapterDescription);
 
-    if (SUCCEEDED(D3D11CreateDevice(pDXGIAdapter, minFeatureLevel, __uuidof(ID3D11Device), nullptr)))
+    if (SUCCEEDED(D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_NULL, 0, 0, &minFeatureLevel, 1, D3D11_SDK_VERSION, nullptr, nullptr, nullptr)))
     {
       DXGIAdapters.PushBack(pDXGIAdapter);
     }
@@ -1317,7 +1141,7 @@ void xiiGALDeviceD3D11::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, ID
 {
   auto DXGIAdapters = GetCompatibleAdapters(featureLevel);
 
-  DXGI_FORMAT  dxgiFormat = xiiD3D11TypeConversions::GetD3D11Format(format);
+  DXGI_FORMAT  dxgiFormat = xiiD3D11TypeConversions::GetFormat(format);
   IDXGIOutput* pOutput    = nullptr;
   if (pDXGIAdapter->EnumOutputs(uiOutputID, &pOutput) == DXGI_ERROR_NOT_FOUND)
   {

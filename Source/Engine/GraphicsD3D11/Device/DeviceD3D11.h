@@ -6,7 +6,8 @@
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/ResourceFormats.h>
-#include <GraphicsD3D11/MemoryAllocator/MemoryAllocatorD3D11.h>
+
+#include <dxgiformat.h>
 
 enum D3D_FEATURE_LEVEL;
 
@@ -14,6 +15,7 @@ struct IDXGIAdapter1;
 struct IDXGIFactory2;
 struct IDXGIFactory4;
 struct ID3D11Device;
+struct ID3D11DeviceContext;
 
 using xiiGALFormatLookupEntryD3D11 = xiiGALFormatLookupEntry<DXGI_FORMAT, (DXGI_FORMAT)0U>;
 using xiiGALFormatLookupTableD3D11 = xiiGALFormatLookupTable<xiiGALFormatLookupEntryD3D11>;
@@ -33,16 +35,11 @@ public:
 public:
   // Internal objects retrieval.
 
-  ID3D11Device*  GetDeviceD3D11() const;
+  ID3D11Device*  GetD3D11Device() const;
   IDXGIAdapter1* GetDXGIAdapter() const;
   IDXGIFactory4* GetDXGIFactory() const;
 
-  xiiMemoryAllocatorD3D11* GetD3D11Allocator() const;
-
-  // Diligent::IDeviceContext* GetImmediateContext();
-  // Diligent::IDeviceContext* GetComputeContext();
-  // Diligent::IDeviceContext* GetTransferContext();
-  // Diligent::IDeviceContext* GetSparseBindingContext();
+  ID3D11DeviceContext* GetImmediateContext();
 
   const xiiGALFormatLookupTableD3D11& GetFormatLookupTable() const;
 
@@ -130,6 +127,10 @@ protected:
   void FillFormatLookupTable();
 
 private:
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  bool HasSDKLayers();
+#endif
+
   void                            GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel);
   xiiDynamicArray<IDXGIAdapter1*> GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel);
 
@@ -141,8 +142,7 @@ private:
   IDXGIFactory4* m_pDXGIFactory = nullptr;
   IDXGIAdapter1* m_pDXGIAdapter = nullptr;
   ID3D11Device*  m_pDeviceD3D11 = nullptr;
-
-  xiiUniquePtr<xiiMemoryAllocatorD3D11> m_pAllocatorD3D11;
+  ID3D11DeviceContext* m_pDeviceContext = nullptr;
 
   xiiDynamicArray<xiiGALDisplayModeDescription> m_DisplayModes;
 
