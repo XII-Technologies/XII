@@ -106,6 +106,8 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
 
+  void CheckQueryDataPtr(void* pData, xiiUInt32 uiDataSize);
+
 protected:
   enum class QueryState
   {
