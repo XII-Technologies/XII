@@ -1,7 +1,9 @@
 
 XII_ALWAYS_INLINE xiiUInt64 xiiGALFenceD3D12::GetCompletedValue()
 {
-  return m_pFence->GetCompletedValue();
+  xiiUInt64 uiValue = m_pFence->GetCompletedValue();
+  XII_ASSERT_DEV(uiValue != xiiMath::MaxValue<xiiUInt64>(), "If the device has been removed, the return value will be UINT64_MAX.");
+  return uiValue;
 }
 
 XII_ALWAYS_INLINE void xiiGALFenceD3D12::Signal(xiiUInt64 uiValue)
