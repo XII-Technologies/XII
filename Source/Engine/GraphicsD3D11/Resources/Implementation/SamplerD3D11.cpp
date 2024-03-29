@@ -44,26 +44,18 @@ xiiResult xiiGALSamplerD3D11::InitPlatform(xiiGALDevice* pDevice)
     samplerDescription.Filter = xiiD3D11TypeConversions::GetFilter(m_Description.m_MinFilter, m_Description.m_MagFilter, m_Description.m_MipFilter);
   }
 
-  D3D11_DESCRIPTOR_HEAP_DESC samplerHeapDescription = {};
-  samplerHeapDescription.Type                       = D3D11_DESCRIPTOR_HEAP_TYPE_SAMPLER;
-  samplerHeapDescription.NumDescriptors             = 1U;
-  samplerHeapDescription.Flags                      = D3D11_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-  if (FAILED(pDeviceD3D11->GetDeviceD3D11()->CreateDescriptorHeap(&samplerHeapDescription, IID_PPV_ARGS(&m_pDescriptorHeap))))
+  if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateSamplerState(&samplerDescription, &m_pSampler)))
   {
-    xiiLog::Info("Failed to create descriptor heap for sampler {}.", GetDebugName());
+    xiiLog::Error("Failed to create sampler D3D11 sampler state.");
     return XII_FAILURE;
   }
-
-  pDeviceD3D11->GetDeviceD3D11()->CreateSampler(&samplerDescription, m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
-
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALSamplerD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  // Schedule deletion on device.
-  XII_ASSERT_NOT_IMPLEMENTED;
+  XII_GAL_D3D11_RELEASE(m_pSampler);
 
   return XII_FAILURE;
 }
