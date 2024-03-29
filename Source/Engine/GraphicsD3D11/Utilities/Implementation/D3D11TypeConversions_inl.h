@@ -70,26 +70,26 @@ XII_ALWAYS_INLINE D3D11_COMPARISON_FUNC xiiD3D11TypeConversions::GetComparisonFu
   switch (e)
   {
     case xiiGALComparisonFunction::Never:
-      return D3D11_COMPARISON_FUNC::D3D11_COMPARISON_FUNC_NEVER;
+      return D3D11_COMPARISON_NEVER;
     case xiiGALComparisonFunction::Less:
-      return D3D11_COMPARISON_FUNC::D3D11_COMPARISON_FUNC_LESS;
+      return D3D11_COMPARISON_LESS;
     case xiiGALComparisonFunction::Equal:
-      return D3D11_COMPARISON_FUNC::D3D11_COMPARISON_FUNC_EQUAL;
+      return D3D11_COMPARISON_EQUAL;
     case xiiGALComparisonFunction::LessEqual:
-      return D3D11_COMPARISON_FUNC::D3D11_COMPARISON_FUNC_LESS_EQUAL;
+      return D3D11_COMPARISON_LESS_EQUAL;
     case xiiGALComparisonFunction::Greater:
-      return D3D11_COMPARISON_FUNC::D3D11_COMPARISON_FUNC_GREATER;
+      return D3D11_COMPARISON_GREATER;
     case xiiGALComparisonFunction::NotEqual:
-      return D3D11_COMPARISON_FUNC::D3D11_COMPARISON_FUNC_NOT_EQUAL;
+      return D3D11_COMPARISON_NOT_EQUAL;
     case xiiGALComparisonFunction::GreaterEqual:
-      return D3D11_COMPARISON_FUNC::D3D11_COMPARISON_FUNC_GREATER_EQUAL;
+      return D3D11_COMPARISON_GREATER_EQUAL;
     case xiiGALComparisonFunction::Always:
-      return D3D11_COMPARISON_FUNC::D3D11_COMPARISON_FUNC_ALWAYS;
+      return D3D11_COMPARISON_ALWAYS;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  return D3D11_COMPARISON_FUNC::D3D11_COMPARISON_FUNC_NEVER;
+  return D3D11_COMPARISON_NEVER;
 }
 
 XII_ALWAYS_INLINE D3D11_STENCIL_OP xiiD3D11TypeConversions::GetStencilOp(xiiEnum<xiiGALStencilOperation> e)
@@ -124,14 +124,13 @@ XII_ALWAYS_INLINE D3D11_FILL_MODE xiiD3D11TypeConversions::GetFillMode(xiiEnum<x
   switch (e)
   {
     case xiiGALFillMode::Wireframe:
-      return D3D11_FILL_MODE::D3D11_FILL_MODE_WIREFRAME;
+      return D3D11_FILL_WIREFRAME;
     case xiiGALFillMode::Solid:
-      return D3D11_FILL_MODE::D3D11_FILL_MODE_WIREFRAME;
+      return D3D11_FILL_SOLID;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-
-  return D3D11_FILL_MODE::D3D11_FILL_MODE_WIREFRAME;
+  return D3D11_FILL_WIREFRAME;
 }
 
 XII_ALWAYS_INLINE D3D11_CULL_MODE xiiD3D11TypeConversions::GetCullMode(xiiEnum<xiiGALCullMode> e)
@@ -139,16 +138,16 @@ XII_ALWAYS_INLINE D3D11_CULL_MODE xiiD3D11TypeConversions::GetCullMode(xiiEnum<x
   switch (e)
   {
     case xiiGALCullMode::None:
-      return D3D11_CULL_MODE::D3D11_CULL_MODE_NONE;
+      return D3D11_CULL_NONE;
     case xiiGALCullMode::Front:
-      return D3D11_CULL_MODE::D3D11_CULL_MODE_FRONT;
+      return D3D11_CULL_FRONT;
     case xiiGALCullMode::Back:
-      return D3D11_CULL_MODE::D3D11_CULL_MODE_BACK;
+      return D3D11_CULL_BACK;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  return D3D11_CULL_MODE::D3D11_CULL_MODE_NONE;
+  return D3D11_CULL_NONE;
 }
 
 XII_ALWAYS_INLINE xiiUInt8 xiiD3D11TypeConversions::GetColorWriteMask(xiiBitflags<xiiGALColorMask> e)
@@ -861,19 +860,19 @@ XII_ALWAYS_INLINE D3D11_TEXTURE_ADDRESS_MODE xiiD3D11TypeConversions::GetTexture
   switch (e)
   {
     case xiiGALTextureAddressMode::Wrap:
-      return D3D11_TEXTURE_ADDRESS_MODE_WRAP;
+      return D3D11_TEXTURE_ADDRESS_WRAP;
     case xiiGALTextureAddressMode::Mirror:
-      return D3D11_TEXTURE_ADDRESS_MODE_MIRROR;
+      return D3D11_TEXTURE_ADDRESS_MIRROR;
     case xiiGALTextureAddressMode::Clamp:
-      return D3D11_TEXTURE_ADDRESS_MODE_CLAMP;
+      return D3D11_TEXTURE_ADDRESS_CLAMP;
     case xiiGALTextureAddressMode::Border:
-      return D3D11_TEXTURE_ADDRESS_MODE_BORDER;
+      return D3D11_TEXTURE_ADDRESS_BORDER;
     case xiiGALTextureAddressMode::MirrorOnce:
-      return D3D11_TEXTURE_ADDRESS_MODE_MIRROR_ONCE;
+      return D3D11_TEXTURE_ADDRESS_MIRROR_ONCE;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-  return D3D11_TEXTURE_ADDRESS_MODE_WRAP;
+  return D3D11_TEXTURE_ADDRESS_WRAP;
 }
 
 XII_ALWAYS_INLINE D3D11_QUERY xiiD3D11TypeConversions::GetQueryType(xiiEnum<xiiGALQueryType> e)
@@ -893,4 +892,62 @@ XII_ALWAYS_INLINE D3D11_QUERY xiiD3D11TypeConversions::GetQueryType(xiiEnum<xiiG
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return D3D11_QUERY_TIMESTAMP;
+}
+
+XII_ALWAYS_INLINE xiiUInt32 xiiD3D11TypeConversions::GetBindFlags(xiiBitflags<xiiGALBindFlags> e)
+{
+  XII_ASSERT_DEV(!e.IsNoFlagSet(), "");
+
+  xiiUInt32 uiBindFlags = {};
+
+  if (e.IsSet(xiiGALBindFlags::VertexBuffer))
+    uiBindFlags |= D3D11_BIND_VERTEX_BUFFER;
+  if (e.IsSet(xiiGALBindFlags::IndexBuffer))
+    uiBindFlags |= D3D11_BIND_INDEX_BUFFER;
+  if (e.IsSet(xiiGALBindFlags::UniformBuffer))
+    uiBindFlags |= D3D11_BIND_CONSTANT_BUFFER;
+  if (e.IsSet(xiiGALBindFlags::ShaderResource))
+    uiBindFlags |= D3D11_BIND_SHADER_RESOURCE;
+  if (e.IsSet(xiiGALBindFlags::StreamOutput))
+    uiBindFlags |= D3D11_BIND_STREAM_OUTPUT;
+  if (e.IsSet(xiiGALBindFlags::RenderTarget))
+    uiBindFlags |= D3D11_BIND_RENDER_TARGET;
+  if (e.IsSet(xiiGALBindFlags::DepthStencil))
+    uiBindFlags |= D3D11_BIND_DEPTH_STENCIL;
+  if (e.IsSet(xiiGALBindFlags::UnorderedAccess))
+    uiBindFlags |= D3D11_BIND_UNORDERED_ACCESS;
+
+  return uiBindFlags;
+}
+
+XII_ALWAYS_INLINE xiiUInt32 xiiD3D11TypeConversions::GetCPUAccessFlags(xiiBitflags<xiiGALCPUAccessFlag> e)
+{
+  XII_ASSERT_DEV(!e.IsNoFlagSet(), "");
+
+  xiiUInt32 uiAccessFlags = {};
+
+  if (e.IsSet(xiiGALCPUAccessFlag::Read))
+    uiAccessFlags |= D3D11_CPU_ACCESS_READ;
+  if (e.IsSet(xiiGALCPUAccessFlag::Write))
+    uiAccessFlags |= D3D11_CPU_ACCESS_WRITE;
+
+  return uiAccessFlags;
+}
+
+XII_ALWAYS_INLINE D3D11_USAGE xiiD3D11TypeConversions::GetUsage(xiiEnum<xiiGALResourceUsage> e)
+{
+  switch (e)
+  {
+    case xiiGALResourceUsage::Immutable:
+      return D3D11_USAGE_IMMUTABLE;
+    case xiiGALResourceUsage::Default:
+      return D3D11_USAGE_DEFAULT;
+    case xiiGALResourceUsage::Dynamic:
+      return D3D11_USAGE_DYNAMIC;
+    case xiiGALResourceUsage::Staging:
+      return D3D11_USAGE_STAGING;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return D3D11_USAGE_IMMUTABLE;
 }

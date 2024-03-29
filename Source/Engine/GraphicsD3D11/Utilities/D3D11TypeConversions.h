@@ -52,6 +52,10 @@ public:
   static D3D11_TEXTURE_ADDRESS_MODE GetTextureAddressMode(xiiEnum<xiiGALTextureAddressMode> e);
 
   static D3D11_QUERY GetQueryType(xiiEnum<xiiGALQueryType> e);
+
+  static xiiUInt32 GetBindFlags(xiiBitflags<xiiGALBindFlags> e);
+  static xiiUInt32 GetCPUAccessFlags(xiiBitflags<xiiGALCPUAccessFlag> e);
+  static D3D11_USAGE GetUsage(xiiEnum<xiiGALResourceUsage> e);
 };
 
 #include <GraphicsD3D11/Utilities/Implementation/D3D11TypeConversions_inl.h>

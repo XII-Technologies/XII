@@ -44,7 +44,6 @@ xiiResult xiiGALSamplerD3D11::InitPlatform(xiiGALDevice* pDevice)
     samplerDescription.Filter = xiiD3D11TypeConversions::GetFilter(m_Description.m_MinFilter, m_Description.m_MagFilter, m_Description.m_MipFilter);
   }
 
-
   if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateSamplerState(&samplerDescription, &m_pSampler)))
   {
     xiiLog::Error("Failed to create sampler D3D11 sampler state.");

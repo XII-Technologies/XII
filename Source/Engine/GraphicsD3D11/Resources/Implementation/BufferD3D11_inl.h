@@ -1,17 +1,11 @@
 
 XII_ALWAYS_INLINE void xiiGALBufferD3D11::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
 {
-  Diligent::RESOURCE_STATE requestedStates = xiiDiligentTypeConversions::GetResourceState(stateFlags);
-
-  if (!(m_pBuffer->GetState() & requestedStates))
-  {
-    m_pBuffer->SetState(requestedStates);
-  }
 }
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALBufferD3D11::GetState() const
 {
-  return xiiDiligentTypeConversions::GetResourceState(m_pBuffer->GetState());
+  return xiiGALResourceStateFlags::Undefined;
 }
 
 XII_ALWAYS_INLINE xiiGALMemoryProperties xiiGALBufferD3D11::GetMemoryProperties() const
@@ -25,12 +19,10 @@ XII_ALWAYS_INLINE xiiGALMemoryProperties xiiGALBufferD3D11::GetMemoryProperties(
 
 XII_ALWAYS_INLINE void xiiGALBufferD3D11::FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
 {
-  m_pBuffer->FlushMappedRange(uiStartOffset, uiSize);
 }
 
 XII_ALWAYS_INLINE void xiiGALBufferD3D11::InvalidateMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize)
 {
-  m_pBuffer->InvalidateMappedRange(uiStartOffset, uiSize);
 }
 
 XII_ALWAYS_INLINE xiiGALSparseBufferProperties xiiGALBufferD3D11::GetSparseProperties() const
@@ -42,12 +34,12 @@ XII_ALWAYS_INLINE xiiGALSparseBufferProperties xiiGALBufferD3D11::GetSparsePrope
   return xiiGALSparseBufferProperties();
 }
 
-XII_ALWAYS_INLINE Diligent::IBuffer* xiiGALBufferD3D11::GetBuffer() const
+XII_ALWAYS_INLINE ID3D11Buffer* xiiGALBufferD3D11::GetBuffer() const
 {
   return m_pBuffer;
 }
 
-XII_ALWAYS_INLINE Diligent::VALUE_TYPE xiiGALBufferD3D11::GetIndexFormat() const
+XII_ALWAYS_INLINE xiiEnum<xiiGALValueType> xiiGALBufferD3D11::GetIndexFormat() const
 {
   return m_IndexFormat;
 }

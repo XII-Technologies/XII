@@ -4,6 +4,8 @@
 
 #include <GraphicsFoundation/Resources/Buffer.h>
 
+struct ID3D11Buffer;
+
 class XII_GRAPHICSD3D11_DLL xiiGALBufferD3D11 final : public xiiGALBuffer
 {
 public:
@@ -19,9 +21,9 @@ public:
 
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override final;
 
-  Diligent::IBuffer* GetBuffer() const;
+  ID3D11Buffer* GetBuffer() const;
 
-  Diligent::VALUE_TYPE GetIndexFormat() const;
+  xiiEnum<xiiGALValueType> GetIndexFormat() const;
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -36,9 +38,9 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
-  Diligent::IBuffer* m_pBuffer = nullptr;
+  ID3D11Buffer* m_pBuffer = nullptr;
 
-  Diligent::VALUE_TYPE m_IndexFormat = {}; // Strictly index buffers.
+  xiiEnum<xiiGALValueType> m_IndexFormat = xiiGALValueType::Undefined; // Strictly index buffers.
 };
 
 #include <GraphicsD3D11/Resources/Implementation/BufferD3D11_inl.h>

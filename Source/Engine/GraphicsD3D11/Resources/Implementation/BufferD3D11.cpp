@@ -14,38 +14,78 @@ xiiResult xiiGALBufferD3D11::InitPlatform(xiiGALDevice* pDevice, const xiiGALBuf
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
 
-  Diligent::BufferDesc bufferDescription;
-  bufferDescription.Name                 = m_Description.m_sName.GetStartPointer();
-  bufferDescription.Size                 = m_Description.m_uiSize;
-  bufferDescription.BindFlags            = xiiDiligentTypeConversions::GetBindFlags(m_Description.m_BindFlags);
-  bufferDescription.Usage                = xiiDiligentTypeConversions::GetUsage(m_Description.m_ResourceUsage);
-  bufferDescription.CPUAccessFlags       = xiiDiligentTypeConversions::GetCPUAccessFlags(m_Description.m_CPUAccessFlags);
-  bufferDescription.Mode                 = xiiDiligentTypeConversions::GetBufferMode(m_Description.m_Mode);
-  bufferDescription.ElementByteStride    = m_Description.m_uiElementByteStride;
-  bufferDescription.ImmediateContextMask = m_Description.m_uiImmediateContextMask;
+  if (m_Description.m_ResourceUsage == xiiGALResourceUsage::Unified)
+  {
+    xiiLog::Error("Unified resources are not supported in Direct3D 11.");
+    return XII_FAILURE;
+  }
 
   // If uniform/constant buffer, align size to 64 bytes.
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
-    bufferDescription.Size = xiiMemoryUtils::AlignSize(m_Description.m_uiSize, 64ULL);
+  {
+    // Note that Direct3D11 does not allow partial updates of constant buffers with UpdateSubresource().
+    // Only the entire buffer may be updated.
+    m_Description.m_uiSize = xiiMemoryUtils::AlignSize(m_Description.m_uiSize, 64ULL);
+  }
+
+  D3D11_BUFFER_DESC bufferDescription = {};
+  bufferDescription.BindFlags         = xiiD3D11TypeConversions::GetBindFlags(m_Description.m_BindFlags);
+  bufferDescription.ByteWidth         = m_Description.m_uiSize;
+  bufferDescription.Usage             = xiiD3D11TypeConversions::GetUsage(m_Description.m_ResourceUsage);
+  bufferDescription.CPUAccessFlags    = xiiD3D11TypeConversions::GetCPUAccessFlags(m_Description.m_CPUAccessFlags);
+  bufferDescription.MiscFlags         = 0U;
+
+  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments))
+  {
+    bufferDescription.MiscFlags |= D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
+  }
+  if (m_Description.m_ResourceUsage == xiiGALResourceUsage::Sparse)
+  {
+    bufferDescription.MiscFlags |= D3D11_RESOURCE_MISC_TILED;
+  }
+
+  // Size of each element in the buffer structure (in bytes) when the buffer represents a structured buffer, or
+  // the size of the format that is used for views of the buffer.
+  bufferDescription.StructureByteStride = m_Description.m_uiElementByteStride;
+  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess) || m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
+  {
+    if (m_Description.m_Mode == xiiGALBufferMode::Structured)
+    {
+      bufferDescription.MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+
+      XII_ASSERT_DEV(bufferDescription.StructureByteStride != 0, "StructureByteStride can not be zero for a structured buffer.");
+    }
+    else if (m_Description.m_Mode == xiiGALBufferMode::Formatted)
+    {
+      XII_ASSERT_DEV(bufferDescription.StructureByteStride != 0, "StructureByteStride can not be zero for a formatted buffer.");
+    }
+    else if (m_Description.m_Mode == xiiGALBufferMode::Raw)
+    {
+      bufferDescription.MiscFlags |= D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+
+      XII_ASSERT_DEV(bufferDescription.StructureByteStride != 0, "StructureByteStride can not be zero for a formatted buffer.");
+    }
+    else
+    {
+      XII_ASSERT_DEV(false, "Unexpected buffer mode.");
+    }
+  }
 
   // Set the index format for index buffers.
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::IndexBuffer))
-    m_IndexFormat = m_Description.m_uiElementByteStride == 2U ? Diligent::VT_UINT16 : Diligent::VT_UINT32;
+    m_IndexFormat = m_Description.m_uiElementByteStride == 2U ? xiiGALValueType::UInt16 : xiiGALValueType::UInt32;
 
-  if (pInitialData != nullptr)
+  D3D11_SUBRESOURCE_DATA initialData = {};
+  initialData.pSysMem                = pInitialData ? pInitialData->m_pData : nullptr;
+  initialData.SysMemPitch            = 0U;
+  initialData.SysMemSlicePitch       = 0U;
+
+  if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateBuffer(&bufferDescription, initialData.pSysMem ? &initialData : nullptr, &m_pBuffer)))
   {
-    Diligent::BufferData initialData = {};
-    initialData.pData                = pInitialData->m_pData;
-    initialData.DataSize             = pInitialData->m_uiDataSize;
-
-    pDeviceD3D11->GetDevice()->CreateBuffer(bufferDescription, &initialData, &m_pBuffer);
+    xiiLog::Error("Failed to create D3D11 buffer.");
+    return XII_FAILURE;
   }
-  else
-  {
-    pDeviceD3D11->GetDevice()->CreateBuffer(bufferDescription, nullptr, &m_pBuffer);
-  }
-
-  return (m_pBuffer != nullptr) ? XII_SUCCESS : XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALBufferD3D11::DeInitPlatform(xiiGALDevice* pDevice)
