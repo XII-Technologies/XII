@@ -21,7 +21,6 @@ xiiResult xiiGALFenceD3D12::InitPlatform(xiiGALDevice* pDevice)
   {
     return XII_FAILURE;
   }
-
   return XII_SUCCESS;
 }
 
@@ -30,6 +29,10 @@ xiiResult xiiGALFenceD3D12::DeInitPlatform(xiiGALDevice* pDevice)
   // Schedule deletion on device.
   XII_ASSERT_NOT_IMPLEMENTED;
 
+  if (m_pFenceCompleteEvent != nullptr && m_pFenceCompleteEvent != INVALID_HANDLE_VALUE)
+  {
+    CloseHandle(m_pFenceCompleteEvent);
+  }
   return XII_SUCCESS;
 }
 
