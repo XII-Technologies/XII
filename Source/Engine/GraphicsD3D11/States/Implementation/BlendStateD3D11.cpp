@@ -26,13 +26,13 @@ xiiResult xiiGALBlendStateD3D11::InitPlatform(xiiGALDevice* pDevice)
 
     rtAttachmentState.BlendEnable = D3D11_BOOL(rtBlendState.m_bBlendEnable);
 
-    rtAttachmentState.SrcBlend  = xiiD3D11TypeConversions::GetD3D11BlendFactor(rtBlendState.m_SourceBlend);
-    rtAttachmentState.DestBlend = xiiD3D11TypeConversions::GetD3D11BlendFactor(rtBlendState.m_DestinationBlend);
-    rtAttachmentState.BlendOp   = xiiD3D11TypeConversions::GetD3D11BlendOp(rtBlendState.m_BlendOperation);
+    rtAttachmentState.SrcBlend  = xiiD3D11TypeConversions::GetBlendFactor(rtBlendState.m_SourceBlend);
+    rtAttachmentState.DestBlend = xiiD3D11TypeConversions::GetBlendFactor(rtBlendState.m_DestinationBlend);
+    rtAttachmentState.BlendOp   = xiiD3D11TypeConversions::GetBlendOp(rtBlendState.m_BlendOperation);
 
-    rtAttachmentState.SrcBlendAlpha  = xiiD3D11TypeConversions::GetD3D11BlendFactor(rtBlendState.m_SourceBlendAlpha);
-    rtAttachmentState.DestBlendAlpha = xiiD3D11TypeConversions::GetD3D11BlendFactor(rtBlendState.m_DestinationBlendAlpha);
-    rtAttachmentState.BlendOpAlpha   = xiiD3D11TypeConversions::GetD3D11BlendOp(rtBlendState.m_BlendOperationAlpha);
+    rtAttachmentState.SrcBlendAlpha  = xiiD3D11TypeConversions::GetBlendFactor(rtBlendState.m_SourceBlendAlpha);
+    rtAttachmentState.DestBlendAlpha = xiiD3D11TypeConversions::GetBlendFactor(rtBlendState.m_DestinationBlendAlpha);
+    rtAttachmentState.BlendOpAlpha   = xiiD3D11TypeConversions::GetBlendOp(rtBlendState.m_BlendOperationAlpha);
 
     rtAttachmentState.RenderTargetWriteMask = xiiD3D11TypeConversions::GetColorWriteMask(rtBlendState.m_ColorMask);
   }

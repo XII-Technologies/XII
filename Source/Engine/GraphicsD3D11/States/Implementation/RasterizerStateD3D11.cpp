@@ -18,8 +18,8 @@ xiiGALRasterizerStateD3D11::~xiiGALRasterizerStateD3D11() = default;
 
 xiiResult xiiGALRasterizerStateD3D11::InitPlatform(xiiGALDevice* pDevice)
 {
-  m_RasterizerState.FillMode              = xiiD3D11TypeConversions::GetD3D11FillMode(m_Description.m_FillMode);
-  m_RasterizerState.CullMode              = xiiD3D11TypeConversions::GetD3D11CullMode(m_Description.m_CullMode);
+  m_RasterizerState.FillMode              = xiiD3D11TypeConversions::GetFillMode(m_Description.m_FillMode);
+  m_RasterizerState.CullMode              = xiiD3D11TypeConversions::GetCullMode(m_Description.m_CullMode);
   m_RasterizerState.FrontCounterClockwise = D3D11_BOOL(m_Description.m_bFrontCounterClockwise);
   m_RasterizerState.DepthBias             = m_Description.m_iDepthBias;
   m_RasterizerState.DepthBiasClamp        = m_Description.m_fDepthBiasClamp;
