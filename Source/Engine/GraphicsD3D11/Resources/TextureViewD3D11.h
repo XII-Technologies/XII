@@ -1,0 +1,28 @@
+#pragma once
+
+#include <GraphicsD3D11/GraphicsD3D11DLL.h>
+
+#include <GraphicsFoundation/Resources/TextureView.h>
+
+class XII_GRAPHICSD3D11_DLL xiiGALTextureViewD3D11 final : public xiiGALTextureView
+{
+public:
+  Diligent::ITextureView* GetTextureView() const;
+
+protected:
+  friend class xiiGALDeviceD3D11;
+  friend class xiiMemoryUtils;
+
+  xiiGALTextureViewD3D11(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
+
+  virtual ~xiiGALTextureViewD3D11();
+
+  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+
+  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+
+protected:
+  Diligent::ITextureView* m_pTextureView = nullptr;
+};
+
+#include <GraphicsD3D11/Resources/Implementation/TextureViewD3D11_inl.h>
