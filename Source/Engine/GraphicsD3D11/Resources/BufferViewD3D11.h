@@ -4,10 +4,12 @@
 
 #include <GraphicsFoundation/Resources/BufferView.h>
 
+struct ID3D11View;
+
 class XII_GRAPHICSD3D11_DLL xiiGALBufferViewD3D11 final : public xiiGALBufferView
 {
 public:
-  Diligent::IBufferView* GetBufferView() const;
+  ID3D11View* GetBufferView() const;
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -21,8 +23,11 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
+  HRESULT CreateSRV(ID3D11ShaderResourceView** ppShaderResourceView);
+  HRESULT CreateUAV(ID3D11UnorderedAccessView** ppUnorderedAccessView);
+
 protected:
-  Diligent::IBufferView* m_pBufferView = nullptr;
+  ID3D11View* m_pBufferView = nullptr;
 };
 
 #include <GraphicsD3D11/Resources/Implementation/BufferViewD3D11_inl.h>

@@ -951,3 +951,220 @@ XII_ALWAYS_INLINE D3D11_USAGE xiiD3D11TypeConversions::GetUsage(xiiEnum<xiiGALRe
   }
   return D3D11_USAGE_IMMUTABLE;
 }
+
+XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D11TypeConversions::GetDXGIFormatFromType(xiiEnum<xiiGALValueType> e, xiiUInt32 uiComponentCount, bool bIsNormalized)
+{
+  switch (e)
+  {
+    case xiiGALValueType::Int8:
+    {
+      if (bIsNormalized)
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R8_SNORM;
+          case 2:
+            return DXGI_FORMAT_R8G8_SNORM;
+          case 4:
+            return DXGI_FORMAT_R8G8B8A8_SNORM;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+      else
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R8_SINT;
+          case 2:
+            return DXGI_FORMAT_R8G8_SINT;
+          case 4:
+            return DXGI_FORMAT_R8G8B8A8_SINT;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+    }
+    break;
+    case xiiGALValueType::Int16:
+    {
+      if (bIsNormalized)
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R16_SNORM;
+          case 2:
+            return DXGI_FORMAT_R16G16_SNORM;
+          case 4:
+            return DXGI_FORMAT_R16G16B16A16_SNORM;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+      else
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R16_SINT;
+          case 2:
+            return DXGI_FORMAT_R16G16_SINT;
+          case 4:
+            return DXGI_FORMAT_R16G16B16A16_SINT;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+    }
+    break;
+    case xiiGALValueType::Int32:
+    {
+      XII_ASSERT_DEV(bIsNormalized, "32-bit signed normalized formats are unsupported. Use xiiGALTextureFormat::R32Float instead.");
+
+      switch (uiComponentCount)
+      {
+        case 1:
+          return DXGI_FORMAT_R32_SINT;
+        case 2:
+          return DXGI_FORMAT_R32G32_SINT;
+        case 3:
+          return DXGI_FORMAT_R32G32B32_SINT;
+        case 4:
+          return DXGI_FORMAT_R32G32B32A32_SINT;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+    }
+    break;
+    case xiiGALValueType::UInt8:
+    {
+      if (bIsNormalized)
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R8_UNORM;
+          case 2:
+            return DXGI_FORMAT_R8G8_UNORM;
+          case 4:
+            return DXGI_FORMAT_R8G8B8A8_UNORM;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+      else
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R8_UINT;
+          case 2:
+            return DXGI_FORMAT_R8G8_UINT;
+          case 4:
+            return DXGI_FORMAT_R8G8B8A8_UINT;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+    }
+    break;
+    case xiiGALValueType::UInt16:
+    {
+      if (bIsNormalized)
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R16_UNORM;
+          case 2:
+            return DXGI_FORMAT_R16G16_UNORM;
+          case 4:
+            return DXGI_FORMAT_R16G16B16A16_UNORM;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+      else
+      {
+        switch (uiComponentCount)
+        {
+          case 1:
+            return DXGI_FORMAT_R16_UINT;
+          case 2:
+            return DXGI_FORMAT_R16G16_UINT;
+          case 4:
+            return DXGI_FORMAT_R16G16B16A16_UINT;
+
+            XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+        }
+      }
+    }
+    break;
+    case xiiGALValueType::UInt32:
+    {
+      XII_ASSERT_DEV(bIsNormalized, "32-bit unsigned normalized formats are unsupported. Use xiiGALTextureFormat::R32Float instead.");
+
+      switch (uiComponentCount)
+      {
+        case 1:
+          return DXGI_FORMAT_R32_UINT;
+        case 2:
+          return DXGI_FORMAT_R32G32_UINT;
+        case 3:
+          return DXGI_FORMAT_R32G32B32_UINT;
+        case 4:
+          return DXGI_FORMAT_R32G32B32A32_UINT;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+    }
+    break;
+    case xiiGALValueType::Float16:
+    {
+      XII_ASSERT_DEV(!bIsNormalized, "Floating point formats can not be normalized.");
+
+      switch (uiComponentCount)
+      {
+        case 1:
+          return DXGI_FORMAT_R16_FLOAT;
+        case 2:
+          return DXGI_FORMAT_R16G16_FLOAT;
+        case 4:
+          return DXGI_FORMAT_R16G16B16A16_FLOAT;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+    }
+    break;
+    case xiiGALValueType::Float32:
+    {
+      XII_ASSERT_DEV(!bIsNormalized, "Floating point formats can not be normalized.");
+
+      switch (uiComponentCount)
+      {
+        case 1:
+          return DXGI_FORMAT_R32_FLOAT;
+        case 2:
+          return DXGI_FORMAT_R32G32_FLOAT;
+        case 3:
+          return DXGI_FORMAT_R32G32B32_FLOAT;
+        case 4:
+          return DXGI_FORMAT_R32G32B32A32_FLOAT;
+
+          XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+      }
+    }
+    break;
+    case xiiGALValueType::Float64:
+    {
+      XII_ASSERT_NOT_IMPLEMENTED;
+    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return DXGI_FORMAT_UNKNOWN;
+}

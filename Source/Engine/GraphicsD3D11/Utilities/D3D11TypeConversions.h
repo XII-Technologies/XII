@@ -56,6 +56,8 @@ public:
   static xiiUInt32 GetBindFlags(xiiBitflags<xiiGALBindFlags> e);
   static xiiUInt32 GetCPUAccessFlags(xiiBitflags<xiiGALCPUAccessFlag> e);
   static D3D11_USAGE GetUsage(xiiEnum<xiiGALResourceUsage> e);
+
+  static DXGI_FORMAT GetDXGIFormatFromType(xiiEnum<xiiGALValueType> e, xiiUInt32 uiComponentCount, bool bIsNormalized);
 };
 
 #include <GraphicsD3D11/Utilities/Implementation/D3D11TypeConversions_inl.h>
