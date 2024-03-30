@@ -4,6 +4,8 @@
 #include <GraphicsD3D11/Resources/BufferD3D11.h>
 #include <GraphicsD3D11/Resources/BufferViewD3D11.h>
 
+#include <d3d11_2.h>
+
 xiiGALBufferViewD3D11::xiiGALBufferViewD3D11(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
   xiiGALBufferView(pBuffer, creationDescription)
 {
@@ -126,7 +128,7 @@ HRESULT xiiGALBufferViewD3D11::CreateUAV(ID3D11UnorderedAccessView** ppUnordered
     unorderedAccessViewDescription.Format = xiiD3D11TypeConversions::GetDXGIFormatFromType(m_Description.m_Format.m_ValueType, m_Description.m_Format.m_uiComponents, m_Description.m_Format.m_bIsNormalized);
   }
 
-   xiiUInt32 uiElementByteStride = 0U;
+  xiiUInt32 uiElementByteStride = 0U;
   if ((bufferDescription.m_Mode == xiiGALBufferMode::Formatted) || (bufferDescription.m_Mode == xiiGALBufferMode::Structured) || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format.m_ValueType != xiiGALValueType::Undefined))
   {
     uiElementByteStride = bufferDescription.m_uiElementByteStride;
@@ -147,7 +149,7 @@ HRESULT xiiGALBufferViewD3D11::CreateUAV(ID3D11UnorderedAccessView** ppUnordered
 
   if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format.m_ValueType != xiiGALValueType::Undefined)
   {
-    unorderedAccessViewDescription.Format = DXGI_FORMAT_R32_TYPELESS;
+    unorderedAccessViewDescription.Format       = DXGI_FORMAT_R32_TYPELESS;
     unorderedAccessViewDescription.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
   }
   else
@@ -155,6 +157,23 @@ HRESULT xiiGALBufferViewD3D11::CreateUAV(ID3D11UnorderedAccessView** ppUnordered
     unorderedAccessViewDescription.Buffer.Flags = 0;
   }
   return pDeviceD3D11->GetD3D11Device()->CreateUnorderedAccessView(pBufferD3D11->GetBuffer(), &unorderedAccessViewDescription, ppUnorderedAccessView);
+}
+
+xiiGALSparseBufferProperties xiiGALBufferD3D11::GetSparseProperties() const
+{
+  XII_ASSERT_DEV(m_Description.m_ResourceUsage == xiiGALResourceUsage::Sparse, "xiiGALBuffer::GetSparseProperties() should only be used for sparse buffer.");
+
+  xiiGALDeviceD3D11* pDeviceD3D11   = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  ID3D11Device2*     pDeviceD3D11_2 = static_cast<ID3D11Device2*>(pDeviceD3D11->GetD3D11Device());
+
+  xiiUInt32        uiTileCountForEntireResource      = 0;
+  D3D11_TILE_SHAPE standardTileShapeForNonPackedMips = {};
+  pDeviceD3D11_2->GetResourceTiling(m_pBuffer, &uiTileCountForEntireResource, nullptr, &standardTileShapeForNonPackedMips, nullptr, 0, nullptr);
+
+  XII_ASSERT_DEV(standardTileShapeForNonPackedMips.WidthInTexels == D3D11_2_TILED_RESOURCE_TILE_SIZE_IN_BYTES, "Expected a standard block size.");
+
+  return xiiGALSparseBufferProperties{.m_uiAddressSpaceSize = xiiUInt64{uiTileCountForEntireResource} * standardTileShapeForNonPackedMips.WidthInTexels,
+                                      .m_uiBlockSize        = standardTileShapeForNonPackedMips.WidthInTexels};
 }
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_Resources_Implementation_BufferViewD3D11);

@@ -25,15 +25,6 @@ XII_ALWAYS_INLINE void xiiGALBufferD3D11::InvalidateMappedRange(xiiUInt64 uiStar
 {
 }
 
-XII_ALWAYS_INLINE xiiGALSparseBufferProperties xiiGALBufferD3D11::GetSparseProperties() const
-{
-  /// \todo GraphicsD3D11: Not yet implemented.
-
-  XII_ASSERT_NOT_IMPLEMENTED;
-
-  return xiiGALSparseBufferProperties();
-}
-
 XII_ALWAYS_INLINE ID3D11Buffer* xiiGALBufferD3D11::GetBuffer() const
 {
   return m_pBuffer;
