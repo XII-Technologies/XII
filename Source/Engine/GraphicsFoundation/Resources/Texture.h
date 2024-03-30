@@ -123,12 +123,12 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseTextureProperties : public xiiHash
                                        ///<
                                        ///< \note A single mip tail for a 2D array may exceed the 32-bit limit.
 
-  xiiUInt32                     m_uiFirstMipInTail = 0U; ///< The first mip level in the mip tail that is packed as a whole into one or multiple memory blocks. The default is 0.
-  xiiStaticArray<xiiUInt32, 3U> m_TailSize;              ///< Specifies the dimension of a tile packed into a single memory block.
-  xiiUInt32                     m_uiBlockSize = 0U;      ///< Size of the sparse memory block, in bytes. The default is 0.
-                                                         ///<
-                                                         ///< \remarks The offset in the packed mip tail, memory offset and memory size that are used in sparse memory binding command must be multiples of the block size.
-                                                         ///<          If the xiiGALSparseTextureFlags::NonStandardBlockSize flag is not set in the Flags member, the block size is equal to xiiGALSparseResourceProperties::m_uiStandardBlockSize.
+  xiiUInt32  m_uiFirstMipInTail = 0U; ///< The first mip level in the mip tail that is packed as a whole into one or multiple memory blocks. The default is 0.
+  xiiVec3U32 m_vTileSize;             ///< Specifies the dimension of a tile packed into a single memory block.
+  xiiUInt32  m_uiBlockSize = 0U;      ///< Size of the sparse memory block, in bytes. The default is 0.
+                                      ///<
+                                      ///< \remarks The offset in the packed mip tail, memory offset and memory size that are used in sparse memory binding command must be multiples of the block size.
+                                      ///<          If the xiiGALSparseTextureFlags::NonStandardBlockSize flag is not set in the Flags member, the block size is equal to xiiGALSparseResourceProperties::m_uiStandardBlockSize.
 
   xiiBitflags<xiiGALSparseTextureFlags> m_Flags = xiiGALSparseTextureFlags::None; ///< Flags that describe additional packing modes. The default is None.
 };

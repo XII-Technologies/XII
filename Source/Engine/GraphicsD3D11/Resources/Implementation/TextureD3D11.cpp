@@ -3,6 +3,8 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/TextureD3D11.h>
 
+#include <d3d11_2.h>
+
 xiiGALTextureD3D11::xiiGALTextureD3D11(const xiiGALTextureCreationDescription& creationDescription) :
   xiiGALTexture(creationDescription)
 {
@@ -82,6 +84,31 @@ xiiResult xiiGALTextureD3D11::DeInitPlatform(xiiGALDevice* pDevice)
   }
 
   return XII_SUCCESS;
+}
+
+XII_ALWAYS_INLINE const xiiGALSparseTextureProperties& xiiGALTextureD3D11::GetSparseProperties() const
+{
+  xiiGALDeviceD3D11* pDeviceD3D11   = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  ID3D11Device2*     pDeviceD3D11_2 = static_cast<ID3D11Device2*>(pDeviceD3D11->GetD3D11Device());
+
+  xiiUInt32             uiTileCountForEntireResource      = 0;
+  xiiUInt32             uiSubresourceTilingCount          = 0U;
+  D3D11_TILE_SHAPE      standardTileShapeForNonPackedMips = {};
+  D3D11_PACKED_MIP_DESC packedMipDescription              = {};
+  pDeviceD3D11_2->GetResourceTiling(m_pTexture, &uiTileCountForEntireResource, &packedMipDescription, &standardTileShapeForNonPackedMips, &uiSubresourceTilingCount, 0, nullptr);
+
+  XII_ASSERT_DEV(uiTileCountForEntireResource % m_Description.GetArraySize() == 0, "");
+
+  return xiiGALSparseTextureProperties{
+    .m_uiAddressSpaceSize = xiiUInt64{uiTileCountForEntireResource} * D3D11_2_TILED_RESOURCE_TILE_SIZE_IN_BYTES,
+    .m_uiMipTailOffset    = xiiUInt64{packedMipDescription.StartTileIndexInOverallResource} * D3D11_2_TILED_RESOURCE_TILE_SIZE_IN_BYTES,
+    .m_uiMipTailStride    = m_Description.IsArray() ? (uiTileCountForEntireResource / m_Description.m_uiArraySizeOrDepth) * D3D11_2_TILED_RESOURCE_TILE_SIZE_IN_BYTES : 0,
+    .m_uiMipTailSize      = xiiUInt64{packedMipDescription.NumTilesForPackedMips} * D3D11_2_TILED_RESOURCE_TILE_SIZE_IN_BYTES,
+    .m_uiFirstMipInTail   = packedMipDescription.NumStandardMips,
+    .m_vTileSize          = xiiVec3U32{standardTileShapeForNonPackedMips.WidthInTexels, standardTileShapeForNonPackedMips.HeightInTexels, standardTileShapeForNonPackedMips.DepthInTexels},
+    .m_uiBlockSize        = D3D11_2_TILED_RESOURCE_TILE_SIZE_IN_BYTES,
+    .m_Flags              = xiiGALSparseTextureFlags::None,
+  };
 }
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_Resources_Implementation_TextureD3D11);
