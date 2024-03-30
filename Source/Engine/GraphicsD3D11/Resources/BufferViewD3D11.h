@@ -23,8 +23,8 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
-  HRESULT CreateSRV(ID3D11ShaderResourceView** ppShaderResourceView);
-  HRESULT CreateUAV(ID3D11UnorderedAccessView** ppUnorderedAccessView);
+  xiiResult CreateSRV(ID3D11ShaderResourceView** ppShaderResourceView);
+  xiiResult CreateUAV(ID3D11UnorderedAccessView** ppUnorderedAccessView);
 
 protected:
   ID3D11View* m_pBufferView = nullptr;

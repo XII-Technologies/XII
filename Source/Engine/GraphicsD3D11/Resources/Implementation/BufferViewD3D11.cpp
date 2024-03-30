@@ -23,11 +23,8 @@ xiiResult xiiGALBufferViewD3D11::InitPlatform(xiiGALDevice* pDevice)
     {
       ID3D11ShaderResourceView* pShaderResourceView = nullptr;
 
-      if (FAILED(CreateSRV(&pShaderResourceView)))
-      {
-        xiiLog::Error("Failed to create shader resource view.");
-        return XII_FAILURE;
-      }
+      XII_SUCCEED_OR_RETURN(CreateSRV(&pShaderResourceView));
+
       m_pBufferView = pShaderResourceView;
     }
     break;
@@ -35,11 +32,8 @@ xiiResult xiiGALBufferViewD3D11::InitPlatform(xiiGALDevice* pDevice)
     {
       ID3D11UnorderedAccessView* pUnorderedAccessView = nullptr;
 
-      if (FAILED(CreateUAV(&pUnorderedAccessView)))
-      {
-        xiiLog::Error("Failed to create unordered access view.");
-        return XII_FAILURE;
-      }
+      XII_SUCCEED_OR_RETURN(CreateUAV(&pUnorderedAccessView));
+
       m_pBufferView = pUnorderedAccessView;
     }
     break;
@@ -56,7 +50,7 @@ xiiResult xiiGALBufferViewD3D11::DeInitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-HRESULT xiiGALBufferViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderResourceView)
+xiiResult xiiGALBufferViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderResourceView)
 {
   XII_ASSERT_DEV(m_Description.m_ViewType == xiiGALBufferViewType::ShaderResource, "Incorrect view type, expected shader resource view.");
 
@@ -108,10 +102,16 @@ HRESULT xiiGALBufferViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderReso
       shaderResourceViewDescription.Buffer.NumElements  = static_cast<xiiUInt32>(m_Description.m_uiByteWidth / uiElementByteStride);
     }
   }
-  return pDeviceD3D11->GetD3D11Device()->CreateShaderResourceView(pBufferD3D11->GetBuffer(), &shaderResourceViewDescription, ppShaderResourceView);
+
+  if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateShaderResourceView(pBufferD3D11->GetBuffer(), &shaderResourceViewDescription, ppShaderResourceView)))
+  {
+    xiiLog::Error("Failed to create shader resource view.");
+    return XII_FAILURE;
+  }
+  return XII_SUCCESS;
 }
 
-HRESULT xiiGALBufferViewD3D11::CreateUAV(ID3D11UnorderedAccessView** ppUnorderedAccessView)
+xiiResult xiiGALBufferViewD3D11::CreateUAV(ID3D11UnorderedAccessView** ppUnorderedAccessView)
 {
   XII_ASSERT_DEV(m_Description.m_ViewType == xiiGALBufferViewType::UnorderedAccess, "Incorrect view type, expected an unordered access view.");
 
@@ -156,7 +156,13 @@ HRESULT xiiGALBufferViewD3D11::CreateUAV(ID3D11UnorderedAccessView** ppUnordered
   {
     unorderedAccessViewDescription.Buffer.Flags = 0;
   }
-  return pDeviceD3D11->GetD3D11Device()->CreateUnorderedAccessView(pBufferD3D11->GetBuffer(), &unorderedAccessViewDescription, ppUnorderedAccessView);
+
+  if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateUnorderedAccessView(pBufferD3D11->GetBuffer(), &unorderedAccessViewDescription, ppUnorderedAccessView)))
+  {
+    xiiLog::Error("Failed to create unordered access view.");
+    return XII_FAILURE;
+  }
+  return XII_SUCCESS;
 }
 
 xiiGALSparseBufferProperties xiiGALBufferD3D11::GetSparseProperties() const
