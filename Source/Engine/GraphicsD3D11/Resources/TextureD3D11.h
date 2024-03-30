@@ -5,8 +5,6 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 
 struct ID3D11Resource;
-struct D3D11_TEXTURE2D_DESC;
-struct D3D11_TEXTURE3D_DESC;
 struct D3D11_SUBRESOURCE_DATA;
 
 XII_DEFINE_AS_POD_TYPE(D3D11_SUBRESOURCE_DATA);
@@ -21,7 +19,6 @@ public:
   virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final;
 
   ID3D11Resource* GetTexture() const;
-  ID3D11Resource* GetStagingTexture() const;
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -35,9 +32,15 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
+  xiiResult CreateFromNativeObject(void* pNativeObject);
+  xiiResult CreateTexture1D(ID3D11Texture1D** ppTexture1D, const xiiGALTextureData* pInitialData);
+  xiiResult CreateTexture2D(ID3D11Texture2D** ppTexture2D, const xiiGALTextureData* pInitialData);
+  xiiResult CreateTexture3D(ID3D11Texture3D** ppTexture3D, const xiiGALTextureData* pInitialData);
+
+  static void PrepareInitialData(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData, xiiHybridArray<D3D11_SUBRESOURCE_DATA, 16>& out_InitialData);
+
 protected:
-  ID3D11Resource* m_pTexture        = nullptr;
-  ID3D11Resource* m_pStagingTexture = nullptr;
+  ID3D11Resource* m_pTexture = nullptr;
 };
 
 #include <GraphicsD3D11/Resources/Implementation/TextureD3D11_inl.h>

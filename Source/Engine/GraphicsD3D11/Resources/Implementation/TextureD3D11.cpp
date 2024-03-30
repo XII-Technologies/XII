@@ -16,13 +16,63 @@ xiiResult xiiGALTextureD3D11::InitPlatform(xiiGALDevice* pDevice, const xiiGALTe
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
 
-  if (m_Description.m_pExisitingNativeObject != nullptr)
+  if (m_Description.m_Usage == xiiGALResourceUsage::Immutable && (pInitialData == nullptr || pInitialData->m_SubResources.IsEmpty()))
   {
-    m_pTexture = static_cast<Diligent::ITexture*>(m_Description.m_pExisitingNativeObject);
-
-    return XII_SUCCESS;
+    xiiLog::Error("Immutable textures must be initialized with data at creation time: pInitialData cannot be null.");
+    return XII_FAILURE;
   }
 
+  if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
+  {
+    xiiBitflags<xiiGALBindFlags> allowedBindFlags = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::RenderTarget | xiiGALBindFlags::DepthStencil;
+
+    if (!m_Description.m_BindFlags.IsStrictlyAnySet(allowedBindFlags))
+    {
+      xiiLog::Error("The texture description contains invalid bind flags for sparse textures in Direct3D11.");
+      return XII_FAILURE;
+    }
+  }
+
+  if (m_Description.m_pExisitingNativeObject != nullptr)
+  {
+    return CreateFromNativeObject(m_Description.m_pExisitingNativeObject);
+  }
+
+  switch (m_Description.m_Type)
+  {
+    case xiiGALResourceDimension::Texture1D:
+    case xiiGALResourceDimension::Texture1DArray:
+    {
+      ID3D11Texture1D* pTexture1D = nullptr;
+      XII_SUCCEED_OR_RETURN(CreateTexture1D(&pTexture1D, pInitialData));
+
+      m_pTexture = pTexture1D;
+    }
+    break;
+    case xiiGALResourceDimension::Texture2D:
+    case xiiGALResourceDimension::TextureCube:
+    case xiiGALResourceDimension::Texture2DArray:
+    case xiiGALResourceDimension::TextureCubeArray:
+    {
+      ID3D11Texture2D* pTexture2D = nullptr;
+      XII_SUCCEED_OR_RETURN(CreateTexture2D(&pTexture2D, pInitialData));
+
+      m_pTexture = pTexture2D;
+    }
+    break;
+    case xiiGALResourceDimension::Texture3D:
+    {
+      ID3D11Texture3D* pTexture3D = nullptr;
+      XII_SUCCEED_OR_RETURN(CreateTexture3D(&pTexture3D, pInitialData));
+
+      m_pTexture = pTexture3D;
+    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+#if 0
   Diligent::TextureDesc textureDescription;
   textureDescription.Name                 = m_Description.m_sName.GetStartPointer();
   textureDescription.Type                 = xiiDiligentTypeConversions::GetResourceDimension(m_Description.m_Type);
@@ -71,19 +121,138 @@ xiiResult xiiGALTextureD3D11::InitPlatform(xiiGALDevice* pDevice, const xiiGALTe
   {
     pDeviceD3D11->GetDevice()->CreateTexture(textureDescription, nullptr, &m_pTexture);
   }
-
-  return (m_pTexture != nullptr) ? XII_SUCCESS : XII_FAILURE;
+#endif
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALTextureD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  // Prevent releasing native objects.
-  if (m_Description.m_pExisitingNativeObject == nullptr)
-  {
-    XII_GAL_D3D11_RELEASE(m_pTexture);
-  }
+  XII_GAL_D3D11_RELEASE(m_pTexture);
 
   return XII_SUCCESS;
+}
+
+xiiResult xiiGALTextureD3D11::CreateFromNativeObject(void* pNativeObject)
+{
+  ID3D11Resource* pTextureObject = static_cast<ID3D11Resource*>(pNativeObject);
+
+  if (FAILED(pTextureObject->QueryInterface(__uuidof(ID3D11Resource), (void**)&m_pTexture)))
+  {
+    xiiLog::Error("The interface interface of the corresponding object is not a texture object.");
+    return XII_FAILURE;
+  }
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALTextureD3D11::CreateTexture1D(ID3D11Texture1D** ppTexture1D, const xiiGALTextureData* pInitialData)
+{
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+
+  D3D11_TEXTURE1D_DESC textureDescription = {};
+  textureDescription.Width                = m_Description.m_Size.width;
+  textureDescription.MipLevels            = m_Description.m_uiMipLevels;
+  textureDescription.ArraySize            = m_Description.GetArraySize();
+  textureDescription.Format               = xiiD3D11TypeConversions::GetFormat(m_Description.m_Format);
+  textureDescription.Usage                = xiiD3D11TypeConversions::GetUsage(m_Description.m_Usage);
+  textureDescription.BindFlags            = xiiD3D11TypeConversions::GetBindFlags(m_Description.m_BindFlags);
+  textureDescription.CPUAccessFlags       = xiiD3D11TypeConversions::GetCPUAccessFlags(m_Description.m_CPUAccessFlags);
+  textureDescription.MiscFlags            = xiiD3D11TypeConversions::GetMiscFlags(m_Description.m_MiscFlags);
+
+  xiiHybridArray<D3D11_SUBRESOURCE_DATA, 16U> initialData;
+  PrepareInitialData(m_Description, pInitialData, initialData);
+
+  if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateTexture1D(&textureDescription, !initialData.IsEmpty() ? initialData.GetData() : nullptr, ppTexture1D)))
+  {
+    xiiLog::Error("Failed to create the Direct3D11 Texture1D.");
+    return XII_FAILURE;
+  }
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALTextureD3D11::CreateTexture2D(ID3D11Texture2D** ppTexture2D, const xiiGALTextureData* pInitialData)
+{
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+
+  DXGI_SAMPLE_DESC sampleDescription = {.Count = m_Description.m_uiSampleCount, .Quality = 0U};
+
+  D3D11_TEXTURE2D_DESC textureDescription = {};
+  textureDescription.Width                = m_Description.m_Size.width;
+  textureDescription.Height               = m_Description.m_Size.height;
+  textureDescription.MipLevels            = m_Description.m_uiMipLevels;
+  textureDescription.ArraySize            = m_Description.GetArraySize();
+  textureDescription.Format               = xiiD3D11TypeConversions::GetFormat(m_Description.m_Format);
+  textureDescription.SampleDesc           = sampleDescription;
+  textureDescription.Usage                = xiiD3D11TypeConversions::GetUsage(m_Description.m_Usage);
+  textureDescription.BindFlags            = xiiD3D11TypeConversions::GetBindFlags(m_Description.m_BindFlags);
+  textureDescription.CPUAccessFlags       = xiiD3D11TypeConversions::GetCPUAccessFlags(m_Description.m_CPUAccessFlags);
+  textureDescription.MiscFlags            = xiiD3D11TypeConversions::GetMiscFlags(m_Description.m_MiscFlags);
+
+  if (textureDescription.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
+    textureDescription.BindFlags |= D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+
+  if (m_Description.m_Type == xiiGALResourceDimension::TextureCube || xiiGALResourceDimension::TextureCubeArray)
+    textureDescription.MiscFlags |= D3D11_RESOURCE_MISC_TEXTURECUBE;
+
+  if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
+    textureDescription.MiscFlags |= D3D11_RESOURCE_MISC_TILED;
+
+  xiiHybridArray<D3D11_SUBRESOURCE_DATA, 16U> initialData;
+  PrepareInitialData(m_Description, pInitialData, initialData);
+
+  if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateTexture2D(&textureDescription, !initialData.IsEmpty() ? initialData.GetData() : nullptr, ppTexture2D)))
+  {
+    xiiLog::Error("Failed to create the Direct3D11 Texture2D.");
+    return XII_FAILURE;
+  }
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALTextureD3D11::CreateTexture3D(ID3D11Texture3D** ppTexture3D, const xiiGALTextureData* pInitialData)
+{
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+
+  D3D11_TEXTURE3D_DESC textureDescription = {};
+  textureDescription.Width                = m_Description.m_Size.width;
+  textureDescription.Height               = m_Description.m_Size.height;
+  textureDescription.Depth                = m_Description.GetArraySize();
+  textureDescription.MipLevels            = m_Description.m_uiMipLevels;
+  textureDescription.Format               = xiiD3D11TypeConversions::GetFormat(m_Description.m_Format);
+  textureDescription.Usage                = xiiD3D11TypeConversions::GetUsage(m_Description.m_Usage);
+  textureDescription.BindFlags            = xiiD3D11TypeConversions::GetBindFlags(m_Description.m_BindFlags);
+  textureDescription.CPUAccessFlags       = xiiD3D11TypeConversions::GetCPUAccessFlags(m_Description.m_CPUAccessFlags);
+  textureDescription.MiscFlags            = xiiD3D11TypeConversions::GetMiscFlags(m_Description.m_MiscFlags);
+
+  if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
+    textureDescription.MiscFlags |= D3D11_RESOURCE_MISC_TILED;
+
+  xiiHybridArray<D3D11_SUBRESOURCE_DATA, 16U> initialData;
+  PrepareInitialData(m_Description, pInitialData, initialData);
+
+  if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateTexture3D(&textureDescription, !initialData.IsEmpty() ? initialData.GetData() : nullptr, ppTexture3D)))
+  {
+    xiiLog::Error("Failed to create the Direct3D11 Texture3D.");
+    return XII_FAILURE;
+  }
+  return XII_SUCCESS;
+}
+
+void xiiGALTextureD3D11::PrepareInitialData(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData, xiiHybridArray<D3D11_SUBRESOURCE_DATA, 16>& out_InitialData)
+{
+  if (pInitialData != nullptr && !pInitialData->m_SubResources.IsEmpty())
+  {
+    xiiUInt32 uiInitialDataCount = description.GetArraySize() * description.m_uiMipLevels;
+
+    XII_ASSERT_DEV(uiInitialDataCount == pInitialData->m_SubResources.GetCount(), "The array of initial data values is not equal to the number of mip levels.");
+
+    out_InitialData.SetCountUninitialized(pInitialData->m_SubResources.GetCount());
+
+    for (xiiUInt32 i = 0; i < uiInitialDataCount; ++i)
+    {
+      out_InitialData[i].pSysMem          = pInitialData->m_SubResources[i].m_pData;
+      out_InitialData[i].SysMemPitch      = static_cast<xiiUInt32>(pInitialData->m_SubResources[i].m_uiStride);
+      out_InitialData[i].SysMemSlicePitch = static_cast<xiiUInt32>(pInitialData->m_SubResources[i].m_uiDepthStride);
+    }
+  }
 }
 
 XII_ALWAYS_INLINE const xiiGALSparseTextureProperties& xiiGALTextureD3D11::GetSparseProperties() const

@@ -6,6 +6,7 @@
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 
 #include <d3d11.h>
 #include <dxgitype.h>
@@ -58,6 +59,8 @@ public:
   static D3D11_USAGE GetUsage(xiiEnum<xiiGALResourceUsage> e);
 
   static DXGI_FORMAT GetDXGIFormatFromType(xiiEnum<xiiGALValueType> e, xiiUInt32 uiComponentCount, bool bIsNormalized);
+
+  static xiiUInt32 GetMiscFlags(xiiBitflags<xiiGALMiscTextureFlags> e);
 };
 
 #include <GraphicsD3D11/Utilities/Implementation/D3D11TypeConversions_inl.h>

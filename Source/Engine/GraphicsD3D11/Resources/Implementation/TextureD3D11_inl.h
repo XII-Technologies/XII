@@ -12,8 +12,3 @@ XII_ALWAYS_INLINE ID3D11Resource* xiiGALTextureD3D11::GetTexture() const
 {
   return m_pTexture;
 }
-
-XII_ALWAYS_INLINE ID3D11Resource* xiiGALTextureD3D11::GetStagingTexture() const
-{
-  return m_pStagingTexture;
-}

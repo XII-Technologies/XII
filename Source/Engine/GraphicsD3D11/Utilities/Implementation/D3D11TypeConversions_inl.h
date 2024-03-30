@@ -1168,3 +1168,13 @@ XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D11TypeConversions::GetDXGIFormatFromType(xii
   }
   return DXGI_FORMAT_UNKNOWN;
 }
+
+XII_ALWAYS_INLINE xiiUInt32 xiiD3D11TypeConversions::GetMiscFlags(xiiBitflags<xiiGALMiscTextureFlags> e)
+{
+  xiiUInt32 uiD3D11MiscFlags = 0;
+
+  if (e.IsSet(xiiGALMiscTextureFlags::GenerateMips))
+    uiD3D11MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
+
+  return uiD3D11MiscFlags;
+}
