@@ -1,5 +1,5 @@
 
-XII_ALWAYS_INLINE const D3D11_RASTERIZER_DESC* xiiGALRasterizerStateD3D11::GetRasterizerState() const
+XII_ALWAYS_INLINE ID3D11RasterizerState* xiiGALRasterizerStateD3D11::GetRasterizerState() const
 {
-  return &m_RasterizerState;
+  return m_pRasterizerState;
 }

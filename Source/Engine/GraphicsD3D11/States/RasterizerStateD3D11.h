@@ -4,14 +4,14 @@
 
 #include <GraphicsFoundation/States/RasterizerState.h>
 
-struct D3D11_RASTERIZER_DESC;
+struct ID3D11RasterizerState;
 
 class XII_GRAPHICSD3D11_DLL xiiGALRasterizerStateD3D11 final : public xiiGALRasterizerState
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALRasterizerStateD3D11, xiiGALRasterizerState);
 
 public:
-  const D3D11_RASTERIZER_DESC* GetRasterizerState() const;
+  ID3D11RasterizerState* GetRasterizerState() const;
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -26,7 +26,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
-  D3D11_RASTERIZER_DESC m_RasterizerState = {};
+  ID3D11RasterizerState* m_pRasterizerState = nullptr;
 };
 
 #include <GraphicsD3D11/States/Implementation/RasterizerStateD3D11_inl.h>

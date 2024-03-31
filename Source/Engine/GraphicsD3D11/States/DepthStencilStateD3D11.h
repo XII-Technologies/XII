@@ -4,14 +4,14 @@
 
 #include <GraphicsFoundation/States/DepthStencilState.h>
 
-struct D3D11_DEPTH_STENCIL_DESC;
+struct ID3D11DepthStencilState;
 
 class XII_GRAPHICSD3D11_DLL xiiGALDepthStencilStateD3D11 final : public xiiGALDepthStencilState
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALDepthStencilStateD3D11, xiiGALDepthStencilState);
 
 public:
-  const D3D11_DEPTH_STENCIL_DESC* GetDepthStencilState() const;
+  ID3D11DepthStencilState* GetDepthStencilState() const;
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -26,7 +26,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
-  D3D11_DEPTH_STENCIL_DESC m_DepthStencilState = {};
+  ID3D11DepthStencilState* m_pDepthStencilState = nullptr;
 };
 
 #include <GraphicsD3D11/States/Implementation/DepthStencilStateD3D11_inl.h>

@@ -1,5 +1,6 @@
 #include <GraphicsD3D11/GraphicsD3D11PCH.h>
 
+#include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/States/RasterizerStateD3D11.h>
 
 #include <GraphicsD3D11/Utilities/D3D11TypeConversions.h>
@@ -18,24 +19,34 @@ xiiGALRasterizerStateD3D11::~xiiGALRasterizerStateD3D11() = default;
 
 xiiResult xiiGALRasterizerStateD3D11::InitPlatform(xiiGALDevice* pDevice)
 {
-  m_RasterizerState.FillMode              = xiiD3D11TypeConversions::GetFillMode(m_Description.m_FillMode);
-  m_RasterizerState.CullMode              = xiiD3D11TypeConversions::GetCullMode(m_Description.m_CullMode);
-  m_RasterizerState.FrontCounterClockwise = D3D11_BOOL(m_Description.m_bFrontCounterClockwise);
-  m_RasterizerState.DepthBias             = m_Description.m_iDepthBias;
-  m_RasterizerState.DepthBiasClamp        = m_Description.m_fDepthBiasClamp;
-  m_RasterizerState.SlopeScaledDepthBias  = m_Description.m_fSlopeScaledDepthBias;
-  m_RasterizerState.DepthClipEnable       = D3D11_BOOL(m_Description.m_bDepthClipEnable);
-  m_RasterizerState.AntialiasedLineEnable = D3D11_BOOL(m_Description.m_bAntialiasedLineEnable);
-  m_RasterizerState.MultisampleEnable     = m_Description.m_bAntialiasedLineEnable;
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+
+  D3D11_RASTERIZER_DESC rasterizerDescription = {};
+  rasterizerDescription.FillMode              = xiiD3D11TypeConversions::GetFillMode(m_Description.m_FillMode);
+  rasterizerDescription.CullMode              = xiiD3D11TypeConversions::GetCullMode(m_Description.m_CullMode);
+  rasterizerDescription.FrontCounterClockwise = D3D11_BOOL(m_Description.m_bFrontCounterClockwise);
+  rasterizerDescription.DepthBias             = m_Description.m_iDepthBias;
+  rasterizerDescription.DepthBiasClamp        = m_Description.m_fDepthBiasClamp;
+  rasterizerDescription.SlopeScaledDepthBias  = m_Description.m_fSlopeScaledDepthBias;
+  rasterizerDescription.DepthClipEnable       = D3D11_BOOL(m_Description.m_bDepthClipEnable);
+  rasterizerDescription.AntialiasedLineEnable = D3D11_BOOL(m_Description.m_bAntialiasedLineEnable);
+  rasterizerDescription.MultisampleEnable     = m_Description.m_bAntialiasedLineEnable;
 
   // Not available in the D3D11 API currently.
-  // m_RasterizerState.ScissorEnable = D3D11_BOOL(m_Description.m_bScissorEnable);
+  // rasterizerDescription.ScissorEnable = D3D11_BOOL(m_Description.m_bScissorEnable);
 
+  if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateRasterizerState(&rasterizerDescription, &m_pRasterizerState)))
+  {
+    xiiLog::Error("Failed to create the Direct3D11 rasterizer state.");
+    return XII_FAILURE;
+  }
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALRasterizerStateD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
+  XII_GAL_D3D11_RELEASE(m_pRasterizerState);
+
   return XII_SUCCESS;
 }
 

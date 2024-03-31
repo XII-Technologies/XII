@@ -4,14 +4,14 @@
 
 #include <GraphicsFoundation/States/BlendState.h>
 
-struct D3D11_BLEND_DESC;
+struct ID3D11BlendState;
 
 class XII_GRAPHICSD3D11_DLL xiiGALBlendStateD3D11 final : public xiiGALBlendState
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBlendStateD3D11, xiiGALBlendState);
 
 public:
-  const D3D11_BLEND_DESC* GetBlendState() const;
+  ID3D11BlendState* GetBlendState() const;
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -26,7 +26,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
-  D3D11_BLEND_DESC m_BlendState = {};
+  ID3D11BlendState* m_pBlendState = nullptr;
 };
 
 #include <GraphicsD3D11/States/Implementation/BlendStateD3D11_inl.h>

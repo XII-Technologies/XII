@@ -1,6 +1,8 @@
 #include <GraphicsD3D11/GraphicsD3D11PCH.h>
 
+#include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/States/DepthStencilStateD3D11.h>
+
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDepthStencilStateD3D11, 1, xiiRTTINoAllocator)
@@ -16,29 +18,39 @@ xiiGALDepthStencilStateD3D11::~xiiGALDepthStencilStateD3D11() = default;
 
 xiiResult xiiGALDepthStencilStateD3D11::InitPlatform(xiiGALDevice* pDevice)
 {
-  m_DepthStencilState.DepthEnable    = D3D11_BOOL(m_Description.m_bDepthEnable);
-  m_DepthStencilState.DepthWriteMask = m_Description.m_bDepthWriteEnable ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
-  m_DepthStencilState.DepthFunc      = xiiD3D11TypeConversions::GetComparisonFunc(m_Description.m_ComparisonDepthFunction);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
-  m_DepthStencilState.StencilEnable    = D3D11_BOOL(m_Description.m_bStencilEnable);
-  m_DepthStencilState.StencilReadMask  = m_Description.m_uiStencilReadMask;
-  m_DepthStencilState.StencilWriteMask = m_Description.m_uiStencilWriteMask;
+  D3D11_DEPTH_STENCIL_DESC depthStencilDescription = {};
+  depthStencilDescription.DepthEnable              = D3D11_BOOL(m_Description.m_bDepthEnable);
+  depthStencilDescription.DepthWriteMask           = m_Description.m_bDepthWriteEnable ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
+  depthStencilDescription.DepthFunc                = xiiD3D11TypeConversions::GetComparisonFunc(m_Description.m_ComparisonDepthFunction);
 
-  m_DepthStencilState.FrontFace.StencilFailOp      = xiiD3D11TypeConversions::GetStencilOp(m_Description.m_FrontFace.m_StencilFailOperation);
-  m_DepthStencilState.FrontFace.StencilDepthFailOp = xiiD3D11TypeConversions::GetStencilOp(m_Description.m_FrontFace.m_StencilDepthFailOperation);
-  m_DepthStencilState.FrontFace.StencilPassOp      = xiiD3D11TypeConversions::GetStencilOp(m_Description.m_FrontFace.m_StencilPassOperation);
-  m_DepthStencilState.FrontFace.StencilFunc        = xiiD3D11TypeConversions::GetComparisonFunc(m_Description.m_FrontFace.m_ComparisonFunction);
+  depthStencilDescription.StencilEnable    = D3D11_BOOL(m_Description.m_bStencilEnable);
+  depthStencilDescription.StencilReadMask  = m_Description.m_uiStencilReadMask;
+  depthStencilDescription.StencilWriteMask = m_Description.m_uiStencilWriteMask;
 
-  m_DepthStencilState.BackFace.StencilFailOp      = xiiD3D11TypeConversions::GetStencilOp(m_Description.m_BackFace.m_StencilFailOperation);
-  m_DepthStencilState.BackFace.StencilDepthFailOp = xiiD3D11TypeConversions::GetStencilOp(m_Description.m_BackFace.m_StencilDepthFailOperation);
-  m_DepthStencilState.BackFace.StencilPassOp      = xiiD3D11TypeConversions::GetStencilOp(m_Description.m_BackFace.m_StencilPassOperation);
-  m_DepthStencilState.BackFace.StencilFunc        = xiiD3D11TypeConversions::GetComparisonFunc(m_Description.m_BackFace.m_ComparisonFunction);
+  depthStencilDescription.FrontFace.StencilFailOp      = xiiD3D11TypeConversions::GetStencilOp(m_Description.m_FrontFace.m_StencilFailOperation);
+  depthStencilDescription.FrontFace.StencilDepthFailOp = xiiD3D11TypeConversions::GetStencilOp(m_Description.m_FrontFace.m_StencilDepthFailOperation);
+  depthStencilDescription.FrontFace.StencilPassOp      = xiiD3D11TypeConversions::GetStencilOp(m_Description.m_FrontFace.m_StencilPassOperation);
+  depthStencilDescription.FrontFace.StencilFunc        = xiiD3D11TypeConversions::GetComparisonFunc(m_Description.m_FrontFace.m_ComparisonFunction);
 
+  depthStencilDescription.BackFace.StencilFailOp      = xiiD3D11TypeConversions::GetStencilOp(m_Description.m_BackFace.m_StencilFailOperation);
+  depthStencilDescription.BackFace.StencilDepthFailOp = xiiD3D11TypeConversions::GetStencilOp(m_Description.m_BackFace.m_StencilDepthFailOperation);
+  depthStencilDescription.BackFace.StencilPassOp      = xiiD3D11TypeConversions::GetStencilOp(m_Description.m_BackFace.m_StencilPassOperation);
+  depthStencilDescription.BackFace.StencilFunc        = xiiD3D11TypeConversions::GetComparisonFunc(m_Description.m_BackFace.m_ComparisonFunction);
+
+  if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateDepthStencilState(&depthStencilDescription, &m_pDepthStencilState)))
+  {
+    xiiLog::Error("Failed to create the Direct3D11 depth stencil state.");
+    return XII_FAILURE;
+  }
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALDepthStencilStateD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
+  XII_GAL_D3D11_RELEASE(m_pDepthStencilState);
+
   return XII_SUCCESS;
 }
 
