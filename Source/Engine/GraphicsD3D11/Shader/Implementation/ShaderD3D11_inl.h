@@ -1,75 +1,30 @@
 
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetVertexShader() const
+XII_ALWAYS_INLINE ID3D11VertexShader* xiiGALShaderD3D11::GetVertexShader() const
 {
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)];
+  return m_pVertexShader;
 }
 
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetPixelShader() const
+XII_ALWAYS_INLINE ID3D11HullShader* xiiGALShaderD3D11::GetHullShader() const
 {
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Pixel)];
+  return m_pHullShader;
 }
 
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetGeometryShader() const
+XII_ALWAYS_INLINE ID3D11DomainShader* xiiGALShaderD3D11::GetDomainShader() const
 {
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Geometry)];
+  return m_pDomainShader;
 }
 
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetHullShader() const
+XII_ALWAYS_INLINE ID3D11GeometryShader* xiiGALShaderD3D11::GetGeometryShader() const
 {
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Hull)];
+  return m_pGeometryShader;
 }
 
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetDomainShader() const
+XII_ALWAYS_INLINE ID3D11PixelShader* xiiGALShaderD3D11::GetPixelShader() const
 {
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Domain)];
+  return m_pPixelShader;
 }
 
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetComputeShader() const
+XII_ALWAYS_INLINE ID3D11ComputeShader* xiiGALShaderD3D11::GetComputeShader() const
 {
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Compute)];
-}
-
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetAmplificationShader() const
-{
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Amplification)];
-}
-
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetMeshShader() const
-{
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Mesh)];
-}
-
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetRayGenerationShader() const
-{
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayGeneration)];
-}
-
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetRayMissShader() const
-{
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayMiss)];
-}
-
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetRayClosestHitShader() const
-{
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayClosestHit)];
-}
-
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetRayAnyHitShader() const
-{
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayAnyHit)];
-}
-
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetRayIntersectionShader() const
-{
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayIntersection)];
-}
-
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetCallableShader() const
-{
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Callable)];
-}
-
-XII_ALWAYS_INLINE Diligent::IShader* xiiGALShaderD3D11::GetTileShader() const
-{
-  return m_pShaderStages[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Tile)];
+  return m_pComputeShader;
 }

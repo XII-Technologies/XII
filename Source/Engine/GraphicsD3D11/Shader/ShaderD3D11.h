@@ -5,24 +5,22 @@
 #include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/Shader/Shader.h>
 
+struct ID3D11VertexShader;
+struct ID3D11PixelShader;
+struct ID3D11GeometryShader;
+struct ID3D11HullShader;
+struct ID3D11DomainShader;
+struct ID3D11ComputeShader;
+
 class XII_GRAPHICSD3D11_DLL xiiGALShaderD3D11 final : public xiiGALShader
 {
 public:
-  Diligent::IShader* GetVertexShader() const;
-  Diligent::IShader* GetPixelShader() const;
-  Diligent::IShader* GetGeometryShader() const;
-  Diligent::IShader* GetHullShader() const;
-  Diligent::IShader* GetDomainShader() const;
-  Diligent::IShader* GetComputeShader() const;
-  Diligent::IShader* GetAmplificationShader() const;
-  Diligent::IShader* GetMeshShader() const;
-  Diligent::IShader* GetRayGenerationShader() const;
-  Diligent::IShader* GetRayMissShader() const;
-  Diligent::IShader* GetRayClosestHitShader() const;
-  Diligent::IShader* GetRayAnyHitShader() const;
-  Diligent::IShader* GetRayIntersectionShader() const;
-  Diligent::IShader* GetCallableShader() const;
-  Diligent::IShader* GetTileShader() const;
+  ID3D11VertexShader*   GetVertexShader() const;
+  ID3D11PixelShader*    GetPixelShader() const;
+  ID3D11GeometryShader* GetGeometryShader() const;
+  ID3D11HullShader*     GetHullShader() const;
+  ID3D11DomainShader*   GetDomainShader() const;
+  ID3D11ComputeShader*  GetComputeShader() const;
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -37,7 +35,12 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
 
 protected:
-  Diligent::IShader* m_pShaderStages[xiiGALShaderStage::ENUM_COUNT] = {};
+  ID3D11VertexShader*   m_pVertexShader   = nullptr;
+  ID3D11HullShader*     m_pHullShader     = nullptr;
+  ID3D11DomainShader*   m_pDomainShader   = nullptr;
+  ID3D11GeometryShader* m_pGeometryShader = nullptr;
+  ID3D11PixelShader*    m_pPixelShader    = nullptr;
+  ID3D11ComputeShader*  m_pComputeShader  = nullptr;
 };
 
 #include <GraphicsD3D11/Shader/Implementation/ShaderD3D11_inl.h>

@@ -16,24 +16,68 @@ xiiResult xiiGALShaderD3D11::InitPlatform(xiiGALDevice* pDevice)
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
 
-  for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
+  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Vertex))
   {
-    if (!m_Description.HasByteCodeForStage(xiiGALShaderStage::GetStageFlag(i)))
-      continue;
+    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(m_Description.m_ShaderStage)];
 
-    Diligent::ShaderCreateInfo shaderDescription;
-    shaderDescription.Desc.Name                    = m_Description.m_sName.GetStartPointer();
-    shaderDescription.Desc.ShaderType              = xiiDiligentTypeConversions::GetShaderTypeFlags(xiiGALShaderStage::GetStageFlag(i));
-    shaderDescription.ByteCode                     = m_Description.m_ByteCodes[i]->GetByteCode();
-    shaderDescription.ByteCodeSize                 = m_Description.m_ByteCodes[i]->GetSize();
-    shaderDescription.SourceLanguage               = Diligent::SHADER_SOURCE_LANGUAGE_HLSL;
-    shaderDescription.LoadConstantBufferReflection = false;
-
-    pDeviceD3D11->GetDevice()->CreateShader(shaderDescription, &m_pShaderStages[i]);
-
-    if (m_pShaderStages[i] == nullptr)
+    if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateVertexShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pVertexShader)))
     {
-      xiiLog::Error("Failed to create native shader from bytecode from type: {}.", xiiGALShaderStage::GetStageFlag(i));
+      xiiLog::Error("Failed to create Direct3D11 vertex shader.");
+      return XII_FAILURE;
+    }
+  }
+
+  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Hull))
+  {
+    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(m_Description.m_ShaderStage)];
+
+    if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateHullShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pHullShader)))
+    {
+      xiiLog::Error("Failed to create Direct3D11 hull shader.");
+      return XII_FAILURE;
+    }
+  }
+
+  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Domain))
+  {
+    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(m_Description.m_ShaderStage)];
+
+    if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateDomainShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pDomainShader)))
+    {
+      xiiLog::Error("Failed to create Direct3D11 domain shader.");
+      return XII_FAILURE;
+    }
+  }
+
+  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Geometry))
+  {
+    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(m_Description.m_ShaderStage)];
+
+    if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateGeometryShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pGeometryShader)))
+    {
+      xiiLog::Error("Failed to create Direct3D11 geometry shader.");
+      return XII_FAILURE;
+    }
+  }
+
+  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Pixel))
+  {
+    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(m_Description.m_ShaderStage)];
+
+    if (FAILED(pDeviceD3D11->GetD3D11Device()->CreatePixelShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pPixelShader)))
+    {
+      xiiLog::Error("Failed to create Direct3D11 pixel shader.");
+      return XII_FAILURE;
+    }
+  }
+
+  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Compute))
+  {
+    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(m_Description.m_ShaderStage)];
+
+    if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateComputeShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pComputeShader)))
+    {
+      xiiLog::Error("Failed to create Direct3D11 compute shader.");
       return XII_FAILURE;
     }
   }
@@ -44,10 +88,13 @@ xiiResult xiiGALShaderD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
   // xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
 
-  for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
-  {
-    XII_GAL_D3D11_RELEASE(m_pShaderStages[i]);
-  }
+  XII_GAL_D3D11_RELEASE(m_pHullShader);
+  XII_GAL_D3D11_RELEASE(m_pHullShader);
+  XII_GAL_D3D11_RELEASE(m_pDomainShader);
+  XII_GAL_D3D11_RELEASE(m_pGeometryShader);
+  XII_GAL_D3D11_RELEASE(m_pPixelShader);
+  XII_GAL_D3D11_RELEASE(m_pComputeShader);
+
   return XII_SUCCESS;
 }
 
