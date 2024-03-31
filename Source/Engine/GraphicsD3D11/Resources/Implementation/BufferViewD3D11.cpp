@@ -15,7 +15,7 @@ xiiGALBufferViewD3D11::~xiiGALBufferViewD3D11() = default;
 
 xiiResult xiiGALBufferViewD3D11::InitPlatform(xiiGALDevice* pDevice)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  // xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
 
   switch (m_Description.m_ViewType)
   {
