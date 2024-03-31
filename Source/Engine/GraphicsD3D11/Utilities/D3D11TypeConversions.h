@@ -61,6 +61,8 @@ public:
   static DXGI_FORMAT GetDXGIFormatFromType(xiiEnum<xiiGALValueType> e, xiiUInt32 uiComponentCount, bool bIsNormalized);
 
   static xiiUInt32 GetMiscFlags(xiiBitflags<xiiGALMiscTextureFlags> e);
+
+  static D3D11_INPUT_CLASSIFICATION GetElementFrequency(xiiEnum<xiiGALInputElementFrequency> e);
 };
 
 #include <GraphicsD3D11/Utilities/Implementation/D3D11TypeConversions_inl.h>

@@ -7,11 +7,14 @@
 
 #include <GraphicsD3D11/Utilities/D3D11TypeConversions.h>
 
-static const char* GALSemanticToD3D[] = {"POSITION", "NORMAL", "TANGENT", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR",
-                                         "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "BITANGENT", "BONEINDICES",
-                                         "BONEINDICES", "BONEWEIGHTS", "BONEWEIGHTS"};
+static const char* GALSemanticToD3D11[] = {"POSITION", "NORMAL", "TANGENT", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR", "COLOR",
+                                           "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "BITANGENT", "BONEINDICES",
+                                           "BONEINDICES", "BONEWEIGHTS", "BONEWEIGHTS"};
 
-XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToD3D) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToD3D array size does not match input layout semantic count.");
+XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToD3D) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToD3D11 array size does not match input layout semantic count.");
+
+static UINT GALSemanticToIndexD3D11[] = {0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 1, 0, 1};
+XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToIndexD3D11) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToIndexD3D11 array size does not match vertex attribute semantic count.");
 
 xiiGALInputLayoutD3D11::xiiGALInputLayoutD3D11(const xiiGALInputLayoutCreationDescription& creationDescription) :
   xiiGALInputLayout(creationDescription)
@@ -23,7 +26,6 @@ xiiGALInputLayoutD3D11::~xiiGALInputLayoutD3D11() = default;
 xiiResult xiiGALInputLayoutD3D11::InitPlatform(xiiGALDevice* pDevice)
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
-
   xiiGALShaderD3D11* pShaderD3D11 = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_hShader));
 
   if (pShaderD3D11 == nullptr || !pShaderD3D11->GetDescription().HasByteCodeForStage(xiiGALShaderStage::Vertex))
@@ -51,9 +53,11 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform(xiiGALDevice* pDevice)
     return xiiInvalidIndex;
   };
 
+  xiiHybridArray<D3D11_INPUT_ELEMENT_DESC, 8> inputElementDescriptions;
+
   const xiiUInt32 uiLayoutCount = m_Description.m_LayoutElements.GetCount();
 
-  m_InputElements.Reserve(uiLayoutCount);
+  inputElementDescriptions.SetCountUninitialized(uiLayoutCount);
 
   for (xiiUInt32 uiLayout = 0; uiLayout < uiLayoutCount; ++uiLayout)
   {
@@ -66,22 +70,19 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform(xiiGALDevice* pDevice)
       continue;
     }
 
-    const auto& diligentFormat   = pDeviceD3D11->GetFormatLookupTable().GetFormatInfo(inputLayout.m_Format).m_eInputLayoutType;
-    const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(xiiDiligentTypeConversions::GetGALTextureFormat(diligentFormat));
+    const auto& d3d11Format      = pDeviceD3D11->GetFormatLookupTable().GetFormatInfo(inputLayout.m_Format).m_eInputLayoutType;
+    const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(xiiD3D11TypeConversions::GetGALFormat(d3d11Format));
 
-    Diligent::LayoutElement& layoutElement = m_InputElements.ExpandAndGetRef();
-    layoutElement.BufferSlot               = inputLayout.m_uiBufferSlot;
-    layoutElement.NumComponents            = formatProperties.m_uiComponentCount;
-    layoutElement.ValueType                = xiiDiligentTypeConversions::GetDiligentValueType(diligentFormat);
-    layoutElement.IsNormalized             = xiiDiligentTypeConversions::GetFormatNormalized(diligentFormat);
-    layoutElement.RelativeOffset           = inputLayout.m_uiRelativeOffset;
-    layoutElement.Stride                   = inputLayout.m_uiStride == XII_GAL_LAYOUT_ELEMENT_AUTO_STRIDE ? Diligent::LAYOUT_ELEMENT_AUTO_STRIDE : inputLayout.m_uiStride;
-    layoutElement.Frequency                = xiiDiligentTypeConversions::GetElementFrequency(inputLayout.m_Frequency);
-    layoutElement.InstanceDataStepRate     = inputLayout.m_uiInstanceDataStepRate;
-    layoutElement.HLSLSemantic             = GALSemanticToD3D[inputLayout.m_Semantic];
-    layoutElement.InputIndex               = uiLocation;
+    D3D11_INPUT_ELEMENT_DESC& layoutElement = inputElementDescriptions[uiLayout];
+    layoutElement.SemanticName              = GALSemanticToD3D11[inputLayout.m_Semantic];
+    layoutElement.SemanticIndex             = uiLocation;
+    layoutElement.AlignedByteOffset         = inputLayout.m_uiRelativeOffset;
+    layoutElement.InputSlot                 = inputLayout.m_uiBufferSlot;
+    layoutElement.Format                    = xiiD3D11TypeConversions::GetFormat(inputLayout.m_Format);
+    layoutElement.InputSlotClass            = xiiD3D11TypeConversions::GetElementFrequency(inputLayout.m_Frequency);
+    layoutElement.InstanceDataStepRate      = (inputLayout.m_Frequency == xiiGALInputElementFrequency::PerVertex) ? 0U : inputLayout.m_uiInstanceDataStepRate;
 
-    if (layoutElement.ValueType == Diligent::VT_UNDEFINED)
+    if (layoutElement.Format == xiiGALTextureFormat::Unknown)
     {
       xiiLog::Error("Vertex input layout format {0} of input layout at index {1} is unknown!", inputLayout.m_Format, uiLayout);
       return XII_FAILURE;
@@ -94,15 +95,18 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform(xiiGALDevice* pDevice)
     return XII_FAILURE;
   }
 
-  m_InputLayout.LayoutElements = m_InputElements.GetData();
-  m_InputLayout.NumElements    = m_InputElements.GetCount();
-
+  auto& byteCode = pShaderD3D11->GetDescription().m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)];
+  if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateInputLayout(inputElementDescriptions.GetData(), inputElementDescriptions.GetCount(), byteCode->GetByteCode(), byteCode->GetSize(), &m_pInputLayout)))
+  {
+    xiiLog::Error("Failed to create the Direct3D11 input layout.");
+    return XII_FAILURE;
+  }
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALInputLayoutD3D11::DeInitPlatform(xiiGALDevice* pDevice)
 {
-  m_InputElements.Clear();
+  XII_GAL_D3D11_RELEASE(m_pInputLayout);
 
   return XII_SUCCESS;
 }

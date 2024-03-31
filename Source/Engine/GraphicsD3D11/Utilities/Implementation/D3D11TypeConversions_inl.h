@@ -1178,3 +1178,17 @@ XII_ALWAYS_INLINE xiiUInt32 xiiD3D11TypeConversions::GetMiscFlags(xiiBitflags<xi
 
   return uiD3D11MiscFlags;
 }
+
+XII_ALWAYS_INLINE D3D11_INPUT_CLASSIFICATION xiiD3D11TypeConversions::GetElementFrequency(xiiEnum<xiiGALInputElementFrequency> e)
+{
+  switch (e)
+  {
+    case xiiGALInputElementFrequency::PerVertex:
+      return D3D11_INPUT_PER_VERTEX_DATA;
+    case xiiGALInputElementFrequency::PerInstance:
+      return D3D11_INPUT_PER_INSTANCE_DATA;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return D3D11_INPUT_PER_VERTEX_DATA;
+}

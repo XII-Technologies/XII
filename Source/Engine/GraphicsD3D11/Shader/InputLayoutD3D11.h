@@ -4,12 +4,12 @@
 
 #include <GraphicsFoundation/Shader/InputLayout.h>
 
+struct ID3D11InputLayout;
+
 class XII_GRAPHICSD3D11_DLL xiiGALInputLayoutD3D11 final : public xiiGALInputLayout
 {
 public:
-  const Diligent::InputLayoutDesc* GetLayout() const;
-
-  xiiArrayPtr<Diligent::LayoutElement> GetElements();
+  ID3D11InputLayout* GetInputLayout() const;
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -24,8 +24,7 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
-  Diligent::InputLayoutDesc                   m_InputLayout = {};
-  xiiHybridArray<Diligent::LayoutElement, 8U> m_InputElements;
+  ID3D11InputLayout* m_pInputLayout = {};
 };
 
 #include <GraphicsD3D11/Shader/Implementation/InputLayoutD3D11_inl.h>
