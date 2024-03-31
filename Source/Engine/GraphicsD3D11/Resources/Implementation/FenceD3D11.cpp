@@ -12,14 +12,13 @@ xiiGALFenceD3D11::~xiiGALFenceD3D11() = default;
 
 xiiResult xiiGALFenceD3D11::InitPlatform(xiiGALDevice* pDevice)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  // xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
 
   if (m_Description.m_Type != xiiGALFenceType::CpuWaitOnly)
   {
     xiiLog::Error("Only xiiGALFenceType::CpuWaitOnly is supported in Direct3D11.");
     return XII_FAILURE;
   }
-
   return XII_SUCCESS;
 }
 

@@ -14,7 +14,7 @@ xiiResult xiiGALBottomLevelASD3D11::InitPlatform(xiiGALDevice* pDevice)
 {
   // xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
 
-  XII_ASSERT_NOT_IMPLEMENTED;
+  xiiLog::Error("xiiGALBottomLevelAS resource is unsupported in Direct3D11.");
 
   return XII_FAILURE;
 }
