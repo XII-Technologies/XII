@@ -4,6 +4,10 @@ XII_ALWAYS_INLINE const xiiGALSwapChainCreationDescription& xiiGALSwapChain::Get
   return m_Description;
 }
 
+XII_ALWAYS_INLINE void xiiGALSwapChain::SetMaximumFrameLatency(xiiUInt32 uiMaxLatency)
+{
+}
+
 XII_ALWAYS_INLINE void xiiGALSwapChain::SetPresentMode(xiiEnum<xiiGALPresentMode> presentMode)
 {
   if (m_PresentMode != presentMode)

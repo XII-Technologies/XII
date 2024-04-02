@@ -4,6 +4,8 @@
 
 #include <GraphicsFoundation/Device/SwapChain.h>
 
+struct IDXGISwapChain;
+
 class XII_GRAPHICSD3D11_DLL xiiGALSwapChainD3D11 final : public xiiGALSwapChain
 {
 public:
@@ -19,12 +21,11 @@ public:
 
   virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) override final;
 
-  Diligent::ISwapChain* GetSwapChain() const;
+  IDXGISwapChain* GetSwapChain() const;
 
 protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
-  friend class xiiGALTexture;
 
   xiiGALSwapChainD3D11(const xiiGALSwapChainCreationDescription& creationDescription);
 
@@ -39,16 +40,11 @@ protected:
   void DestroyBackBufferInternal(xiiGALDeviceD3D11* pDeviceD3D11);
 
 protected:
-  struct RenderTargetInfo
-  {
-    XII_DECLARE_POD_TYPE();
+  IDXGISwapChain* m_pSwapChain = nullptr;
 
-    Diligent::ITextureView* m_pTextureView = nullptr;
-    xiiGALTextureHandle     m_hRenderTargetHandle;
-  };
+  xiiGALTextureHandle m_hBackbufferTexture;
 
-  Diligent::ISwapChain*                m_pSwapChain = nullptr;
-  xiiHybridArray<RenderTargetInfo, 2U> m_BackbufferTextures;
+  xiiGALFullScreenModeDescription m_FullScreenMode;
 };
 
 #include <GraphicsD3D11/Device/Implementation/SwapChainD3D11_inl.h>

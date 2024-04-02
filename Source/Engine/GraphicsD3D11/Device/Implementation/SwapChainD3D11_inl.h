@@ -1,6 +1,7 @@
 
 XII_ALWAYS_INLINE void xiiGALSwapChainD3D11::SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode)
 {
+  #if 0
   Diligent::DisplayModeAttribs displayModeAttribs;
   displayModeAttribs.Width                  = displayMode.m_Resolution.width;
   displayModeAttribs.Height                 = displayMode.m_Resolution.height;
@@ -11,19 +12,18 @@ XII_ALWAYS_INLINE void xiiGALSwapChainD3D11::SetFullScreenMode(const xiiGALDispl
   displayModeAttribs.ScanlineOrder          = xiiDiligentTypeConversions::GetScanLineOrder(displayMode.m_ScanLineOrder);
 
   m_pSwapChain->SetFullscreenMode(displayModeAttribs);
+  #endif
 }
 
 XII_ALWAYS_INLINE void xiiGALSwapChainD3D11::SetWindowedMode()
 {
-  m_pSwapChain->SetWindowedMode();
 }
 
 XII_ALWAYS_INLINE void xiiGALSwapChainD3D11::SetMaximumFrameLatency(xiiUInt32 uiMaxLatency)
 {
-  m_pSwapChain->SetMaximumFrameLatency(uiMaxLatency);
 }
 
-XII_ALWAYS_INLINE Diligent::ISwapChain* xiiGALSwapChainD3D11::GetSwapChain() const
+XII_ALWAYS_INLINE IDXGISwapChain* xiiGALSwapChainD3D11::GetSwapChain() const
 {
   return m_pSwapChain;
 }
