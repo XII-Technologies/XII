@@ -35,7 +35,7 @@ xiiResult xiiGALSwapChainD3D11::InitPlatform(xiiGALDevice* pDevice)
   if (!m_Description.m_Resolution.HasNonZeroArea())
   {
     RECT rect;
-    if (m_Description.m_bIsFullScreen)
+    if (m_FullScreenMode.m_bIsFullScreen)
     {
       const HWND hDesktop = GetDesktopWindow();
       GetWindowRect(hDesktop, &rect);
@@ -111,26 +111,61 @@ xiiResult xiiGALSwapChainD3D11::InitPlatform(xiiGALDevice* pDevice)
   // mode (or monitor resolution) will be changed to match the dimensions of the application window.
   swapChainDescription.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
-
-  Diligent::SwapChainDesc swapChainDescription;
-  swapChainDescription.Width               = m_Description.m_Resolution.width;
-  swapChainDescription.Height              = m_Description.m_Resolution.height;
-  swapChainDescription.ColorBufferFormat   = xiiDiligentTypeConversions::GetTextureFormat(m_Description.m_ColorBufferFormat);
-  swapChainDescription.DepthBufferFormat   = Diligent::TEX_FORMAT_UNKNOWN; // Do not create a default depth buffer.
-  swapChainDescription.Usage               = xiiDiligentTypeConversions::GetSwapChainUsageFlags(m_Description.m_Usage);
-  swapChainDescription.PreTransform        = xiiDiligentTypeConversions::GetSurfaceTransform(m_Description.m_PreTransform);
-  swapChainDescription.BufferCount         = m_Description.m_uiBufferCount;
-  swapChainDescription.DefaultDepthValue   = m_Description.m_fDefaultDepthValue;
-  swapChainDescription.DefaultStencilValue = m_Description.m_uiDefaultStencilValue;
-  swapChainDescription.IsPrimary           = m_Description.m_bIsPrimary;
-
-  auto* pFactoryD3D11 = static_cast<Diligent::IEngineFactoryD3D11*>(pDeviceD3D11->GetFactory());
-
-  Diligent::FullScreenModeDesc fullScreenModeDescription;
-  pFactoryD3D11->CreateSwapChainD3D11(pDeviceD3D11->GetDevice(), pDeviceD3D11->GetImmediateContext(), swapChainDescription, fullScreenModeDescription, nativeWindow, &m_pSwapChain);
-
-  if (m_pSwapChain == nullptr)
+  // Create DXGI Factory.
+  IDXGIFactory2* pDXGIFactory = nullptr;
+  if (FAILED(CreateDXGIFactory1(__uuidof(pDXGIFactory), reinterpret_cast<void**>(static_cast<IDXGIFactory2**>(&pDXGIFactory)))))
   {
+    xiiLog::Error("Failed to create DXGI factory.");
+    return XII_FAILURE;
+  }
+
+  IDXGISwapChain1* pSwapChain1 = nullptr;
+
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pSwapChain1); XII_GAL_D3D11_RELEASE(pDXGIFactory););
+
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+  DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullScreenDescription = {};
+
+  fullScreenDescription.Windowed                = D3D11_BOOL(m_FullScreenMode.m_bIsFullScreen);
+  fullScreenDescription.RefreshRate.Numerator   = m_FullScreenMode.m_uiRefreshRateNumerator;
+  fullScreenDescription.RefreshRate.Denominator = m_FullScreenMode.m_uiRefreshRateDenominator;
+  fullScreenDescription.Scaling                 = xiiD3D11TypeConversions::GetScalingMode(m_FullScreenMode.m_ScalingMode);
+  fullScreenDescription.ScanlineOrdering        = xiiD3D11TypeConversions::GetScanLineOrder(m_FullScreenMode.m_ScanLineOrder);
+
+  if (FAILED(pDXGIFactory->CreateSwapChainForHwnd(pDeviceD3D11->GetD3D11Device(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &pSwapChain1)))
+  {
+    xiiLog::Error("Failed to create the DXGI Swap Chain.");
+    return XII_FAILURE;
+  }
+
+  {
+    // This is silly, but IDXGIFactory used for MakeWindowAssociation must be retrieved via
+    // calling IDXGISwapchain::GetParent first, otherwise it won't work
+    // https://www.gamedev.net/forums/topic/634235-dxgidisabling-altenter/?do=findComment&comment=4999990
+    IDXGIFactory1* pFactoryFromSC;
+    if (SUCCEEDED(pSwapChain1->GetParent(__uuidof(pFactoryFromSC), (void**)&pFactoryFromSC)))
+    {
+      // Do not allow the swap chain to handle Alt+Enter.
+      pFactoryFromSC->MakeWindowAssociation(hNativeWindow, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
+    }
+    XII_GAL_D3D11_RELEASE(pFactoryFromSC);
+  }
+#elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
+  if (m_FullScreenMode.m_bIsFullScreen)
+  {
+    xiiLog::Warning("UWP applications do not support full screen mode.");
+  }
+
+  if (FAILED(pDXGIFactory->CreateSwapChainForCoreWindow(pDeviceD3D11->GetD3D11Device(), reinterpret_cast<IUnknown*>(m_Description.m_pWindow->GetNativeWindowHandle()), &swapChainDescription, nullptr, &pSwapChain1)))
+  {
+    xiiLog::Error("Failed to create the DXGI Swap Chain.");
+    return XII_FAILURE;
+  }
+#endif
+
+  if (FAILED(pSwapChain1->QueryInterface(&m_pSwapChain)))
+  {
+    xiiLog::Error("Failed to query the required swap chain interface.");
     return XII_FAILURE;
   }
 
@@ -304,5 +339,27 @@ xiiResult xiiGALSwapChainD3D11::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize
 
   return CreateBackBufferInternal(pDeviceD3D11);
 }
+
+void xiiGALSwapChainD3D11::SetMaximumFrameLatency(xiiUInt32 uiMaxLatency)
+{
+  m_uiMaximumFrameLatency = uiMaxLatency;
+
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+
+  IDXGIDevice1* pDXGIDevice = nullptr;
+  if (SUCCEEDED(pDeviceD3D11->GetD3D11Device()->QueryInterface(__uuidof(pDXGIDevice), reinterpret_cast<void**>(static_cast<IDXGIDevice1**>(&pDXGIDevice)))))
+  {
+    if (FAILED(pDXGIDevice->SetMaximumFrameLatency(m_uiMaximumFrameLatency)))
+    {
+      xiiLog::Error("Failed to set the maximum frame latency for DXGI device.");
+    }
+  }
+  else
+  {
+    xiiLog::Error("Failed to query IDXGIDevice1 interface from Direct3D11 device.");
+  }
+  XII_GAL_D3D11_RELEASE(pDXGIDevice);
+}
+
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_Device_Implementation_SwapChainD3D11);

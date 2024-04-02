@@ -45,6 +45,8 @@ protected:
   xiiGALTextureHandle m_hBackbufferTexture;
 
   xiiGALFullScreenModeDescription m_FullScreenMode;
+
+  xiiUInt32 m_uiMaximumFrameLatency = 0U;
 };
 
 #include <GraphicsD3D11/Device/Implementation/SwapChainD3D11_inl.h>

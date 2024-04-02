@@ -19,10 +19,6 @@ XII_ALWAYS_INLINE void xiiGALSwapChainD3D11::SetWindowedMode()
 {
 }
 
-XII_ALWAYS_INLINE void xiiGALSwapChainD3D11::SetMaximumFrameLatency(xiiUInt32 uiMaxLatency)
-{
-}
-
 XII_ALWAYS_INLINE IDXGISwapChain* xiiGALSwapChainD3D11::GetSwapChain() const
 {
   return m_pSwapChain;
