@@ -1169,7 +1169,7 @@ XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D11TypeConversions::GetDXGIFormatFromType(xii
   return DXGI_FORMAT_UNKNOWN;
 }
 
-XII_ALWAYS_INLINE xiiUInt32 xiiD3D11TypeConversions::GetMiscFlags(xiiBitflags<xiiGALMiscTextureFlags> e)
+XII_ALWAYS_INLINE xiiUInt32 xiiD3D11TypeConversions::GetMiscTextureFlags(xiiBitflags<xiiGALMiscTextureFlags> e)
 {
   xiiUInt32 uiD3D11MiscFlags = 0;
 
@@ -1191,4 +1191,68 @@ XII_ALWAYS_INLINE D3D11_INPUT_CLASSIFICATION xiiD3D11TypeConversions::GetElement
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
   return D3D11_INPUT_PER_VERTEX_DATA;
+}
+
+XII_ALWAYS_INLINE xiiEnum<xiiGALResourceUsage> xiiD3D11TypeConversions::GetGALUsage(D3D11_USAGE e)
+{
+  switch (e)
+  {
+    case D3D11_USAGE_DEFAULT:
+      return xiiGALResourceUsage::Default;
+    case D3D11_USAGE_IMMUTABLE:
+      return xiiGALResourceUsage::Immutable;
+    case D3D11_USAGE_DYNAMIC:
+      return xiiGALResourceUsage::Dynamic;
+    case D3D11_USAGE_STAGING:
+      return xiiGALResourceUsage::Staging;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiEnum<xiiGALResourceUsage>();
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALBindFlags> xiiD3D11TypeConversions::GetGALBindFlags(xiiUInt32 e)
+{
+  xiiBitflags<xiiGALBindFlags> bindFlags;
+
+  if (e & D3D11_BIND_VERTEX_BUFFER)
+    bindFlags |= xiiGALBindFlags::VertexBuffer;
+  if (e & D3D11_BIND_INDEX_BUFFER)
+    bindFlags |= xiiGALBindFlags::IndexBuffer;
+  if (e & D3D11_BIND_CONSTANT_BUFFER)
+    bindFlags |= xiiGALBindFlags::UniformBuffer;
+  if (e & D3D11_BIND_SHADER_RESOURCE)
+    bindFlags |= xiiGALBindFlags::ShaderResource;
+  if (e & D3D11_BIND_STREAM_OUTPUT)
+    bindFlags |= xiiGALBindFlags::StreamOutput;
+  if (e & D3D11_BIND_RENDER_TARGET)
+    bindFlags |= xiiGALBindFlags::RenderTarget;
+  if (e & D3D11_BIND_DEPTH_STENCIL)
+    bindFlags |= xiiGALBindFlags::DepthStencil;
+  if (e & D3D11_BIND_UNORDERED_ACCESS)
+    bindFlags |= xiiGALBindFlags::UnorderedAccess;
+
+  return bindFlags;
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALCPUAccessFlag> xiiD3D11TypeConversions::GetGALCPUAccessFlags(xiiUInt32 e)
+{
+  xiiBitflags<xiiGALCPUAccessFlag> cpuAccessFlags;
+
+  if (e & D3D11_CPU_ACCESS_WRITE)
+    cpuAccessFlags |= xiiGALCPUAccessFlag::Write;
+  if (e & D3D11_CPU_ACCESS_READ)
+    cpuAccessFlags |= xiiGALCPUAccessFlag::Read;
+
+  return cpuAccessFlags;
+}
+
+XII_ALWAYS_INLINE xiiBitflags<xiiGALMiscTextureFlags> xiiD3D11TypeConversions::GetGALMiscTextureFlags(xiiUInt32 e)
+{
+  xiiBitflags<xiiGALMiscTextureFlags> miscTextureFlags;
+
+  if (e & D3D11_RESOURCE_MISC_GENERATE_MIPS)
+    miscTextureFlags |= xiiGALMiscTextureFlags::GenerateMips;
+
+  return miscTextureFlags;
 }

@@ -5,10 +5,14 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Device/SwapChainD3D11.h>
 #include <GraphicsD3D11/Resources/TextureD3D11.h>
+#include <GraphicsD3D11/Resources/TextureViewD3D11.h>
 
 #include <GraphicsD3D11/Utilities/D3D11TypeConversions.h>
 
+#include <Foundation/Basics/Platform/Win/HResultUtils.h>
+
 #include <VersionHelpers.h>
+#include <d3d11_1.h>
 #include <dxgi1_2.h>
 
 xiiGALSwapChainD3D11::xiiGALSwapChainD3D11(const xiiGALSwapChainCreationDescription& creationDescription) :
@@ -28,7 +32,7 @@ xiiResult xiiGALSwapChainD3D11::InitPlatform(xiiGALDevice* pDevice)
   // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
   m_Description.m_pWindow->AddReference();
 
-  return XII_SUCCESS;
+  return CreateBackBufferInternal(pDeviceD3D11);
 }
 
 xiiResult xiiGALSwapChainD3D11::DeInitPlatform(xiiGALDevice* pDevice)
@@ -209,7 +213,7 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
     xiiLog::Error("Failed to query the required swap chain interface.");
     return XII_FAILURE;
   }
-  return CreateBackBufferInternal(pDeviceD3D11);
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALSwapChainD3D11::UpdateSwapChain(bool bCreateNew)
@@ -258,98 +262,96 @@ xiiResult xiiGALSwapChainD3D11::UpdateSwapChain(bool bCreateNew)
       pContextD3D11->Flush();
     }
   }
-  return XII_SUCCESS;
+  return CreateBackBufferInternal(pDeviceD3D11);
 }
 
 xiiResult xiiGALSwapChainD3D11::CreateBackBufferInternal(xiiGALDeviceD3D11* pDeviceD3D11)
 {
-  Diligent::ITexture*          pTexture    = pRTV->GetTexture();
-  const Diligent::TextureDesc& textureDesc = pTexture->GetDesc();
+  DestroyBackBufferInternal(pDeviceD3D11);
+
+  // Retrieve the texture of the swap chain.
+  ID3D11Texture2D* pNativeBackBuffer = nullptr;
+  HRESULT          hResult           = m_pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&pNativeBackBuffer));
+  if (FAILED(hResult))
+  {
+    xiiLog::Error("Failed to access backbuffer texture of swapchain: {0}", xiiHRESULTtoString(hResult));
+
+    XII_GAL_D3D11_RELEASE(m_pSwapChain);
+    return XII_FAILURE;
+  }
+
+  D3D11_TEXTURE2D_DESC d3d11BackbufferTextureDescription;
+  pNativeBackBuffer->GetDesc(&d3d11BackbufferTextureDescription);
 
   xiiGALTextureCreationDescription textureDescription;
-  textureDescription.m_sName              = textureDesc.Name;
-  textureDescription.m_Type               = xiiGALResourceDimension::Texture2D;
-  textureDescription.m_Size.width         = textureDesc.Width;
-  textureDescription.m_Size.height        = textureDesc.Height;
-  textureDescription.m_uiArraySizeOrDepth = textureDesc.ArraySize;
-  textureDescription.m_Format             = xiiDiligentTypeConversions::GetGALTextureFormat(textureDesc.Format);
-  textureDescription.m_uiMipLevels        = textureDesc.MipLevels;
-  textureDescription.m_uiSampleCount      = textureDesc.SampleCount;
-  textureDescription.m_BindFlags          = xiiDiligentTypeConversions::GetGALBindFlags(textureDesc.BindFlags);
-  textureDescription.m_Usage              = xiiDiligentTypeConversions::GetGALUsage(textureDesc.Usage);
-  textureDescription.m_CPUAccessFlags     = xiiDiligentTypeConversions::GetGALCPUAccessFlags(textureDesc.CPUAccessFlags);
-  textureDescription.m_MiscFlags          = xiiDiligentTypeConversions::GetGALMiscTextureFlags(textureDesc.MiscFlags);
+  textureDescription.m_Type                   = d3d11BackbufferTextureDescription.ArraySize > 1 ? xiiGALResourceDimension::Texture2DArray : xiiGALResourceDimension::Texture2D;
+  textureDescription.m_Size.width             = d3d11BackbufferTextureDescription.Width;
+  textureDescription.m_Size.height            = d3d11BackbufferTextureDescription.Height;
+  textureDescription.m_Format                 = xiiD3D11TypeConversions::GetGALFormat(d3d11BackbufferTextureDescription.Format);
+  textureDescription.m_uiArraySizeOrDepth     = d3d11BackbufferTextureDescription.ArraySize;
+  textureDescription.m_uiMipLevels            = d3d11BackbufferTextureDescription.MipLevels;
+  textureDescription.m_uiSampleCount          = d3d11BackbufferTextureDescription.SampleDesc.Count;
+  textureDescription.m_BindFlags              = xiiD3D11TypeConversions::GetGALBindFlags(d3d11BackbufferTextureDescription.BindFlags);
+  textureDescription.m_Usage                  = xiiD3D11TypeConversions::GetGALUsage(d3d11BackbufferTextureDescription.Usage);
+  textureDescription.m_CPUAccessFlags         = xiiD3D11TypeConversions::GetGALCPUAccessFlags(d3d11BackbufferTextureDescription.CPUAccessFlags);
+  textureDescription.m_MiscFlags              = xiiD3D11TypeConversions::GetGALMiscTextureFlags(d3d11BackbufferTextureDescription.MiscFlags);
+  textureDescription.m_pExisitingNativeObject = pNativeBackBuffer;
 
-  textureDescription.m_ClearValue.m_TextureFormat            = xiiDiligentTypeConversions::GetGALTextureFormat(textureDesc.ClearValue.Format);
-  textureDescription.m_ClearValue.m_ClearColor.r             = textureDesc.ClearValue.Color[0];
-  textureDescription.m_ClearValue.m_ClearColor.g             = textureDesc.ClearValue.Color[1];
-  textureDescription.m_ClearValue.m_ClearColor.b             = textureDesc.ClearValue.Color[2];
-  textureDescription.m_ClearValue.m_ClearColor.a             = textureDesc.ClearValue.Color[3];
-  textureDescription.m_ClearValue.m_DepthStencil.m_fDepth    = textureDesc.ClearValue.DepthStencil.Depth;
-  textureDescription.m_ClearValue.m_DepthStencil.m_uiStencil = textureDesc.ClearValue.DepthStencil.Stencil;
-  textureDescription.m_uiImmediateContextMask                = textureDesc.ImmediateContextMask;
+  if (d3d11BackbufferTextureDescription.MiscFlags & D3D11_RESOURCE_MISC_TILED)
+  {
+    XII_ASSERT_DEV(textureDescription.m_Usage == xiiGALResourceUsage::Immutable, "");
 
-  textureDescription.m_pExisitingNativeObject = pTexture;
+    textureDescription.m_Usage = xiiGALResourceUsage::Sparse;
+
+    // In Direct3D11 sparse resources are always aliased.
+    textureDescription.m_MiscFlags.Add(xiiGALMiscTextureFlags::SparseAlias);
+  }
 
   xiiGALTextureHandle hBackbufferTexture = pDeviceD3D11->CreateTexture(textureDescription);
-  XII_ASSERT_RELEASE(!hBackbufferTexture.IsInvalidated(), "Couldn't create native backbuffer texture object!");
-
-  RenderTargetInfo renderTargetInfo{pRTV, hBackbufferTexture};
-
-  m_BackbufferTextures.PushBack(renderTargetInfo);
+  XII_ASSERT_RELEASE(!hBackbufferTexture.IsInvalidated(), "Failed to create native backbuffer texture object!");
 
   m_hBackBufferTexture = hBackbufferTexture;
 
+  // If we sRGB backbuffer was requested, we create a "practical backbuffer".
+  if (textureDescription.m_Format == xiiGALTextureFormat::RGBA8UNormalizedSRGB || textureDescription.m_Format == xiiGALTextureFormat::BGRA8UNormalizedSRGB)
+  {
+    textureDescription.m_pExisitingNativeObject = nullptr;
+
+    m_hActualBackBufferTexture = m_hBackBufferTexture;
+    m_hBackBufferTexture       = pDeviceD3D11->CreateTexture(textureDescription);
+    XII_ASSERT_RELEASE(!hBackbufferTexture.IsInvalidated(), "Failed to create practical backbuffer texture object!");
+  }
+
   m_CurrentSize = textureDescription.m_Size;
+
+  XII_ASSERT_DEV(m_CurrentSize == m_Description.m_Resolution, "");
 
   return XII_SUCCESS;
 }
 
 void xiiGALSwapChainD3D11::DestroyBackBufferInternal(xiiGALDeviceD3D11* pDeviceD3D11)
 {
-  for (auto& iter : m_BackbufferTextures)
-  {
-    pDeviceD3D11->DestroyTexture(iter.m_hRenderTargetHandle);
-
-    iter.m_hRenderTargetHandle.Invalidate();
-  }
+  pDeviceD3D11->DestroyTexture(m_hBackBufferTexture);
   m_hBackBufferTexture.Invalidate();
-  m_BackbufferTextures.Clear();
+
+  if (!m_hActualBackBufferTexture.IsInvalidated())
+  {
+    pDeviceD3D11->DestroyTexture(m_hActualBackBufferTexture);
+    m_hActualBackBufferTexture.Invalidate();
+  }
 }
 
 void xiiGALSwapChainD3D11::AcquireNextRenderTarget(xiiGALDevice* pDevice)
 {
-  XII_PROFILE_SCOPE("AcquireNextRenderTarget");
-
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
-
-  Diligent::ITextureView* pCurrentTextureView = m_pSwapChain->GetCurrentBackBufferRTV();
-
-  bool bBackBufferFound = false;
-  for (auto& backBufferInfo : m_BackbufferTextures)
-  {
-    if (backBufferInfo.m_pTextureView == pCurrentTextureView)
-    {
-      bBackBufferFound     = true;
-      m_hBackBufferTexture = backBufferInfo.m_hRenderTargetHandle;
-
-      break;
-    }
-  }
-
-  if (!bBackBufferFound)
-  {
-    CreateBackBufferInternal(pDeviceD3D11).AssertSuccess();
-  }
 }
 
 void xiiGALSwapChainD3D11::Present(xiiGALDevice* pDevice)
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");
 
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  /// \todo GraphicsD3D11: Copy to the actual backbuffer object.
 
-  XII_ASSERT_DEV(m_pSwapChain->GetCurrentBackBufferRTV()->GetTexture() == static_cast<xiiGALTextureD3D11*>(pDeviceD3D11->GetTexture(m_hBackBufferTexture))->GetTexture(), "Invalid Swapchain texture. Did you forget to call xiiGALSwapChain::AcquireNextRenderTarget?");
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
 
   xiiUInt32 uiSyncInterval = 1U;
   switch (m_PresentMode)
@@ -361,7 +363,29 @@ void xiiGALSwapChainD3D11::Present(xiiGALDevice* pDevice)
       uiSyncInterval = 1U;
       break;
   }
-  m_pSwapChain->Present(uiSyncInterval);
+  m_pSwapChain->Present(uiSyncInterval, 0);
+
+  // We now handle discarding.
+  {
+    ID3D11DeviceContext1* pDeviceContext1 = nullptr;
+    if (FAILED(pDeviceD3D11->GetImmediateContext()->QueryInterface(&pDeviceContext1)))
+    {
+      xiiLog::Error("Failed to query ID3D11DeviceContext1.");
+      return;
+    }
+
+    auto hBackBuffer = m_hBackBufferTexture;
+    if (!hBackBuffer.IsInvalidated())
+    {
+      auto pTextureD3D11     = static_cast<xiiGALTextureD3D11*>(pDeviceD3D11->GetTexture(hBackBuffer));
+      auto pTextureViewD3D11 = static_cast<xiiGALTextureViewD3D11*>(pDeviceD3D11->GetTextureView(pTextureD3D11->GetDefaultView(xiiGALTextureViewType::RenderTarget)));
+
+      if (pTextureViewD3D11)
+      {
+        pDeviceContext1->DiscardView(pTextureViewD3D11->GetTextureView());
+      }
+    }
+  }
 }
 
 xiiResult xiiGALSwapChainD3D11::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)

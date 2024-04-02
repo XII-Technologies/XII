@@ -46,7 +46,7 @@ protected:
 protected:
   IDXGISwapChain* m_pSwapChain = nullptr;
 
-  xiiGALTextureHandle m_hBackbufferTexture;
+  xiiGALTextureHandle m_hActualBackBufferTexture;
 
   xiiGALFullScreenModeDescription m_FullScreenMode;
 
