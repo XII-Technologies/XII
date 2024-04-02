@@ -35,6 +35,10 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
+  xiiResult CreateDXGISwapChain();
+
+  xiiResult UpdateSwapChain(bool bCreateNew);
+
   xiiResult CreateBackBufferInternal(xiiGALDeviceD3D11* pDeviceD3D11);
 
   void DestroyBackBufferInternal(xiiGALDeviceD3D11* pDeviceD3D11);

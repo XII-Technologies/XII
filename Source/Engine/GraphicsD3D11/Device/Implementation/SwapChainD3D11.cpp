@@ -22,6 +22,47 @@ xiiResult xiiGALSwapChainD3D11::InitPlatform(xiiGALDevice* pDevice)
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
 
+  if (CreateDXGISwapChain().Failed())
+    return XII_FAILURE;
+
+  // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
+  m_Description.m_pWindow->AddReference();
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALSwapChainD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+{
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+
+  DestroyBackBufferInternal(pDeviceD3D11);
+
+  if (m_pSwapChain)
+  {
+    // Full screen swap chains must be switched to windowed mode before destruction.
+    // See: https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Destroying
+    BOOL bIsFullScreen = FALSE;
+    if (SUCCEEDED(m_pSwapChain->GetFullscreenState(&bIsFullScreen, nullptr)))
+    {
+      m_pSwapChain->SetFullscreenState(FALSE, nullptr);
+    }
+    else
+    {
+      xiiLog::Error("Failed to query swap chain full screen state.");
+    }
+
+    XII_GAL_D3D11_RELEASE(m_pSwapChain);
+
+    m_Description.m_pWindow->RemoveReference();
+  }
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
+{
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+
   if (m_Description.m_PreTransform != xiiGALSurfaceTransform::Optimal && m_Description.m_PreTransform != xiiGALSurfaceTransform::Identity)
   {
     xiiLog::Warning("The current pre-transform is unsupported by Direct3D swap chains. Use xiiGALSurfaceTransform::Optimal (recommended) or xiiGALSurfaceTransform::Identity.");
@@ -168,52 +209,60 @@ xiiResult xiiGALSwapChainD3D11::InitPlatform(xiiGALDevice* pDevice)
     xiiLog::Error("Failed to query the required swap chain interface.");
     return XII_FAILURE;
   }
-
-  // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
-  m_Description.m_pWindow->AddReference();
-
   return CreateBackBufferInternal(pDeviceD3D11);
 }
 
-xiiResult xiiGALSwapChainD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALSwapChainD3D11::UpdateSwapChain(bool bCreateNew)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
-  DestroyBackBufferInternal(pDeviceD3D11);
+  // When switching to full screen mode, WM_SIZE is send to the window
+  // and Resize() is called before the new swap chain is created
+  if (!m_pSwapChain)
+    return XII_SUCCESS;
 
-  if (m_pSwapChain)
+  if (ID3D11DeviceContext* pContextD3D11 = pDeviceD3D11->GetImmediateContext())
   {
-    // Full screen swap chains must be switched to windowed mode before destruction.
-    // See: https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Destroying
-    BOOL bIsFullScreen = FALSE;
-    if (SUCCEEDED(m_pSwapChain->GetFullscreenState(&bIsFullScreen, nullptr)))
+    DestroyBackBufferInternal(pDeviceD3D11);
+
+    // Need to flush pending deletion or ResizeBuffers will fail as the backbuffer is still referenced.
+    pDeviceD3D11->FlushPendingObjects();
+
+    if (bCreateNew)
     {
-      m_pSwapChain->SetFullscreenState(FALSE, nullptr);
+      XII_GAL_D3D11_RELEASE(m_pSwapChain);
+
+      // Only one flip presentation model swap chain can be associated with an HWND.
+      // We must make sure that the swap chain is actually released by D3D11 before creating a new one.
+      // To force the destruction, we need to ensure no views are bound to pipeline state, and then call Flush
+      // on the immediate context. Destruction must be forced before calling IDXGIFactory2::CreateSwapChainForHwnd(), or
+      // IDXGIFactory2::CreateSwapChainForCoreWindow() again to create a new swap chain.
+      // https://msdn.microsoft.com/en-us/library/windows/desktop/ff476425(v=vs.85).aspx#Defer_Issues_with_Flip
+      pContextD3D11->Flush();
+
+      CreateDXGISwapChain().AssertSuccess();
     }
     else
     {
-      xiiLog::Error("Failed to query swap chain full screen state.");
+      DXGI_SWAP_CHAIN_DESC swapChainDescription;
+      memset(&swapChainDescription, 0, sizeof(swapChainDescription));
+      m_pSwapChain->GetDesc(&swapChainDescription);
+
+      if (FAILED(m_pSwapChain->ResizeBuffers(swapChainDescription.BufferCount, m_Description.m_Resolution.width, m_Description.m_Resolution.height, swapChainDescription.BufferDesc.Format, swapChainDescription.Flags)))
+      {
+        xiiLog::Error("Failed to resize the DXGI swap chain.");
+        return XII_FAILURE;
+      }
+
+      // Call flush to release resources.
+      pContextD3D11->Flush();
     }
-
-    XII_GAL_D3D11_RELEASE(m_pSwapChain);
-
-    m_Description.m_pWindow->RemoveReference();
   }
-
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALSwapChainD3D11::CreateBackBufferInternal(xiiGALDeviceD3D11* pDeviceD3D11)
 {
-  Diligent::ITextureView* pRTV = m_pSwapChain->GetCurrentBackBufferRTV();
-
-  if (pRTV == nullptr)
-  {
-    xiiLog::Error("Couldn't access backbuffer texture of swapchain");
-
-    return XII_FAILURE;
-  }
-
   Diligent::ITexture*          pTexture    = pRTV->GetTexture();
   const Diligent::TextureDesc& textureDesc = pTexture->GetDesc();
 
@@ -327,17 +376,12 @@ xiiResult xiiGALSwapChainD3D11::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize
 
   if (newSize.HasNonZeroArea() && (newSize.width != m_Description.m_Resolution.width || newSize.height != m_Description.m_Resolution.height || m_DesiredSurfaceTransform != newTransform))
   {
-    // Need to flush dead objects or ResizeBuffers will fail as the backbuffer is still referenced.
-    pDeviceD3D11->FlushPendingObjects();
-
-    m_pSwapChain->Resize(newSize.width, newSize.height, xiiDiligentTypeConversions::GetSurfaceTransform(newTransform));
-
-    xiiLog::Info("Resized swapchain to {}x{}.", m_Description.m_Resolution.width, m_Description.m_Resolution.height);
+    if (UpdateSwapChain(false).Succeeded())
+    {
+      xiiLog::Info("Resized swapchain to {}x{}.", m_Description.m_Resolution.width, m_Description.m_Resolution.height);
+    }
   }
-
-  DestroyBackBufferInternal(pDeviceD3D11);
-
-  return CreateBackBufferInternal(pDeviceD3D11);
+  return XII_SUCCESS;
 }
 
 void xiiGALSwapChainD3D11::SetMaximumFrameLatency(xiiUInt32 uiMaxLatency)
@@ -360,6 +404,5 @@ void xiiGALSwapChainD3D11::SetMaximumFrameLatency(xiiUInt32 uiMaxLatency)
   }
   XII_GAL_D3D11_RELEASE(pDXGIDevice);
 }
-
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_Device_Implementation_SwapChainD3D11);

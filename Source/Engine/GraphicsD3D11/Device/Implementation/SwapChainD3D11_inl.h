@@ -1,18 +1,30 @@
 
 XII_ALWAYS_INLINE void xiiGALSwapChainD3D11::SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode)
 {
-  #if 0
-  Diligent::DisplayModeAttribs displayModeAttribs;
-  displayModeAttribs.Width                  = displayMode.m_Resolution.width;
-  displayModeAttribs.Height                 = displayMode.m_Resolution.height;
-  displayModeAttribs.Format                 = xiiDiligentTypeConversions::GetTextureFormat(displayMode.m_TextureFormat);
-  displayModeAttribs.RefreshRateNumerator   = displayMode.m_uiRefreshRateNumerator;
-  displayModeAttribs.RefreshRateDenominator = displayMode.m_uiRefreshRateDenominator;
-  displayModeAttribs.Scaling                = xiiDiligentTypeConversions::GetScalingMode(displayMode.m_ScalingMode);
-  displayModeAttribs.ScanlineOrder          = xiiDiligentTypeConversions::GetScanLineOrder(displayMode.m_ScanLineOrder);
+  if (m_pSwapChain)
+  {
+    // If we are already in fullscreen mode, we need to switch to windowed mode first,
+    // because a swap chain must be in windowed mode when it is released.
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Destroying
+    if (m_FullScreenMode.m_bIsFullScreen)
+    {
+      m_pSwapChain->SetFullscreenState(FALSE, nullptr);
+    }
 
-  m_pSwapChain->SetFullscreenMode(displayModeAttribs);
-  #endif
+    m_FullScreenMode.m_bIsFullScreen            = true;
+    m_FullScreenMode.m_uiRefreshRateNumerator   = displayMode.m_uiRefreshRateNumerator;
+    m_FullScreenMode.m_uiRefreshRateDenominator = displayMode.m_uiRefreshRateDenominator;
+    m_FullScreenMode.m_ScalingMode              = displayMode.m_ScalingMode;
+    m_FullScreenMode.m_ScanLineOrder            = displayMode.m_ScanLineOrder;
+
+    m_Description.m_Resolution = displayMode.m_Resolution;
+    if (displayMode.m_TextureFormat != xiiGALTextureFormat::Unknown)
+    {
+      m_Description.m_ColorBufferFormat = displayMode.m_TextureFormat;
+    }
+
+    UpdateSwapChain(true);
+  }
 }
 
 XII_ALWAYS_INLINE void xiiGALSwapChainD3D11::SetWindowedMode()
