@@ -4,6 +4,8 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 
+struct ID3D11DeviceContext1;
+
 class XII_GRAPHICSD3D11_DLL xiiGALCommandListD3D11 final : public xiiGALCommandList
 {
 protected:
@@ -57,7 +59,7 @@ protected:
 
   virtual void FlushPlatform() override final;
 
-  Diligent::IDeviceContext* GetCommandList() const;
+  ID3D11DeviceContext1* GetCommandList() const;
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -72,15 +74,43 @@ protected:
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
 protected:
-  Diligent::IDeviceContext* m_pCommandList = nullptr;
+  ID3D11DeviceContext1* m_pCommandList = nullptr;
 
-  Diligent::IPipelineState* m_pPipelineState = nullptr;
+  ID3D11Buffer*         m_pCommittedVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT]      = {};
+  xiiUInt32             m_CommittedVertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  xiiUInt32             m_CommittedVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
+  bool                  m_bCommittedVertexBufferUpToDate                                = false;
+  xiiGAL::ModifiedRange m_CommittedVertexBuffersRange;
 
-  Diligent::VALUE_TYPE m_IndexFormat       = {};
-  Diligent::IBuffer*   m_pBoundIndexBuffer = nullptr;
+  ID3D11InputLayout* m_pCommittedInputLayout = nullptr;
 
-  Diligent::IBuffer*    m_pBoundVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundVertexBuffersRange;
+  ID3D11Buffer*            m_pCommittedIndexBuffer           = nullptr;
+  xiiEnum<xiiGALValueType> m_CommittedIndexFormat            = {};
+  xiiEnum<xiiGALValueType> m_CommittedIndexBufferFormat      = xiiGALValueType::Undefined;
+  xiiUInt32                m_uiCommittedIndexDataStartOffset = 0;
+  bool                     m_bCommittedIndexBufferUpToDate   = false;
+
+  D3D11_PRIMITIVE_TOPOLOGY m_CommittedPrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
+
+  ID3D11DeviceChild* m_pBoundShaders[xiiGALShaderStage::ENUM_COUNT] = {};
+
+  ID3D11Buffer*         m_pCommittedConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
+  xiiGAL::ModifiedRange m_CommittedConstantBuffersRange[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pBoundShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
+  xiiHybridArray<const xiiGALResource*, 16>     m_ResourcesForResourceViews[xiiGALShaderStage::ENUM_COUNT];
+  xiiGAL::ModifiedRange                         m_BoundShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiHybridArray<ID3D11UnorderedAccessView*, 16> m_BoundUnoderedAccessViews;
+  xiiHybridArray<const xiiGALResource*, 16>      m_ResourcesForUnorderedAccessViews;
+  xiiGAL::ModifiedRange                          m_BoundUnoderedAccessViewsRange;
+
+  ID3D11SamplerState*   m_pCommittedSamplerStates[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
+  xiiGAL::ModifiedRange m_CommittedSamplerStatesRange[xiiGALShaderStage::ENUM_COUNT];
+
+  ID3D11RenderTargetView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
+  xiiUInt32               m_uiBoundRenderTargetCount                            = 0U;
+  ID3D11DepthStencilView* m_pBoundDepthStencilTarget                            = nullptr;
 };
 
 #include <GraphicsD3D11/CommandEncoder/Implementation/CommandListD3D11_inl.h>
