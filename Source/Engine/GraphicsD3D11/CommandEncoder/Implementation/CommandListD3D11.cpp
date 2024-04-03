@@ -336,7 +336,10 @@ void xiiGALCommandListD3D11::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xii
   auto pSourceBufferD3D11      = static_cast<xiiGALBufferD3D11*>(pSourceBuffer);
   auto pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pDestinationBuffer);
 
-  m_pCommandList->CopyBuffer(pSourceBufferD3D11->GetBuffer(), 0U, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, pDestinationBufferD3D11->GetBuffer(), 0U, pDestinationBuffer->GetDescription().m_uiSize, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  XII_ASSERT_DEV(pSourceBufferD3D11 != nullptr, "Invalid resource.");
+  XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
+
+  m_pCommandList->CopyResource(pDestinationBufferD3D11->GetBuffer(), pSourceBufferD3D11->GetBuffer());
 }
 
 void xiiGALCommandListD3D11::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)
@@ -344,7 +347,18 @@ void xiiGALCommandListD3D11::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffe
   auto pSourceBufferD3D11      = static_cast<xiiGALBufferD3D11*>(pSourceBuffer);
   auto pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pDestinationBuffer);
 
-  m_pCommandList->CopyBuffer(pSourceBufferD3D11->GetBuffer(), uiSourceOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, pDestinationBufferD3D11->GetBuffer(), uiDestinationOffset, uiSize, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  XII_ASSERT_DEV(pSourceBufferD3D11 != nullptr, "Invalid resource.");
+  XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
+
+  D3D11_BOX sourceBox = {};
+  sourceBox.left      = uiSourceOffset;
+  sourceBox.right     = uiSourceOffset + uiSize;
+  sourceBox.top       = 0;
+  sourceBox.bottom    = 1;
+  sourceBox.front     = 0;
+  sourceBox.back      = 1;
+
+  m_pCommandList->CopySubresourceRegion(pDestinationBufferD3D11->GetBuffer(), 0, uiDestinationOffset, 0, 0, pSourceBufferD3D11->GetBuffer(), 0, &sourceBox);
 }
 
 xiiResult xiiGALCommandListD3D11::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
@@ -400,13 +414,10 @@ void xiiGALCommandListD3D11::CopyTexturePlatform(xiiGALTexture* pSourceTexture, 
   auto pSourceTextureD3D11      = static_cast<xiiGALTextureD3D11*>(pSourceTexture);
   auto pDestinationTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pDestinationTexture);
 
-  Diligent::CopyTextureAttribs copyTextureDescription = {};
-  copyTextureDescription.pSrcTexture                  = pSourceTextureD3D11->GetTexture();
-  copyTextureDescription.pDstTexture                  = pDestinationTextureD3D11->GetTexture();
-  copyTextureDescription.SrcTextureTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
-  copyTextureDescription.DstTextureTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  XII_ASSERT_DEV(pSourceTextureD3D11 != nullptr, "Invalid resource.");
+  XII_ASSERT_DEV(pDestinationTextureD3D11 != nullptr, "Invalid resource.");
 
-  m_pCommandList->CopyTexture(copyTextureDescription);
+  m_pCommandList->CopyResource(pDestinationTextureD3D11->GetTexture(), pSourceTextureD3D11->GetTexture());
 }
 
 void xiiGALCommandListD3D11::CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint)
@@ -414,31 +425,21 @@ void xiiGALCommandListD3D11::CopyTextureRegionPlatform(xiiGALTexture* pSourceTex
   auto pSourceTextureD3D11      = static_cast<xiiGALTextureD3D11*>(pSourceTexture);
   auto pDestinationTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pDestinationTexture);
 
-  Diligent::Box sourceBox = {};
-  sourceBox.MinX          = box.m_vMin.x;
-  sourceBox.MinY          = box.m_vMin.y;
-  sourceBox.MinZ          = box.m_vMin.z;
-  sourceBox.MaxX          = box.m_vMax.x;
-  sourceBox.MaxY          = box.m_vMax.y;
-  sourceBox.MaxZ          = box.m_vMax.z;
+  XII_ASSERT_DEV(pSourceTextureD3D11 != nullptr, "Invalid resource.");
+  XII_ASSERT_DEV(pDestinationTextureD3D11 != nullptr, "Invalid resource.");
 
-  Diligent::CopyTextureAttribs copyTextureDescription = {};
-  copyTextureDescription.pSrcTexture                  = pSourceTextureD3D11->GetTexture();
-  copyTextureDescription.pDstTexture                  = pDestinationTextureD3D11->GetTexture();
-  copyTextureDescription.pSrcBox                      = &sourceBox;
+  D3D11_BOX sourceBox = {};
+  sourceBox.left      = box.m_vMin.x;
+  sourceBox.top       = box.m_vMin.y;
+  sourceBox.front     = box.m_vMin.z;
+  sourceBox.right     = box.m_vMax.x;
+  sourceBox.bottom    = box.m_vMax.y;
+  sourceBox.back      = box.m_vMax.z;
 
-  copyTextureDescription.SrcMipLevel              = sourceMipLevelData.m_uiMipLevel;
-  copyTextureDescription.SrcSlice                 = sourceMipLevelData.m_uiArraySlice;
-  copyTextureDescription.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  xiiUInt32 uiSourceSubresource      = D3D11CalcSubresource(sourceMipLevelData.m_uiMipLevel, sourceMipLevelData.m_uiArraySlice, pSourceTextureD3D11->GetDescription().m_uiMipLevels);
+  xiiUInt32 uiDestinationSubresource = D3D11CalcSubresource(destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiArraySlice, pDestinationTextureD3D11->GetDescription().m_uiMipLevels);
 
-  copyTextureDescription.DstMipLevel              = destinationMipLevelData.m_uiMipLevel;
-  copyTextureDescription.DstSlice                 = destinationMipLevelData.m_uiArraySlice;
-  copyTextureDescription.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
-  copyTextureDescription.DstX                     = vDestinationPoint.x;
-  copyTextureDescription.DstY                     = vDestinationPoint.y;
-  copyTextureDescription.DstZ                     = vDestinationPoint.z;
-
-  m_pCommandList->CopyTexture(copyTextureDescription);
+  m_pCommandList->CopySubresourceRegion(pDestinationTextureD3D11->GetTexture(), uiDestinationSubresource, vDestinationPoint.x, vDestinationPoint.y, vDestinationPoint.z, pSourceTextureD3D11->GetTexture(), uiSourceSubresource, &sourceBox);
 }
 
 void xiiGALCommandListD3D11::ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)
@@ -464,7 +465,9 @@ void xiiGALCommandListD3D11::GenerateMipsPlatform(xiiGALTextureView* pTextureVie
 {
   auto* pTextureViewD3D11 = static_cast<xiiGALTextureViewD3D11*>(pTextureView);
 
-  m_pCommandList->GenerateMips(pTextureViewD3D11->GetTextureView());
+  XII_ASSERT_DEV(pTextureViewD3D11 != nullptr, "Invalid resource.");
+
+  m_pCommandList->GenerateMips(static_cast<ID3D11ShaderResourceView*>(pTextureViewD3D11->GetTextureView()));
 }
 
 xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32 textureBox, xiiGALMappedTextureSubresource& mappedData)
