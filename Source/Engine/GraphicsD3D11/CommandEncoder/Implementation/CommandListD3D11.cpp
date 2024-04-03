@@ -24,6 +24,8 @@
 #include <GraphicsD3D11/States/PipelineStateD3D11.h>
 #include <GraphicsD3D11/States/RasterizerStateD3D11.h>
 
+#include <d3d11_1.h>
+
 xiiGALCommandListD3D11::xiiGALCommandListD3D11(const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(creationDescription)
 {
@@ -35,30 +37,8 @@ xiiResult xiiGALCommandListD3D11::InitPlatform(xiiGALDevice* pDevice)
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
 
-  if (m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics))
-  {
-    m_pCommandList = pDeviceD3D11->GetImmediateContext();
+  // m_pCommandList = pDeviceD3D11->GetImmediateContext();
 
-    xiiLog::Error("Failed to create command list, no graphics command queue found.");
-  }
-  else if (m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Compute))
-  {
-    m_pCommandList = pDeviceD3D11->GetComputeContext();
-
-    xiiLog::Error("Failed to create command list, no compute command queue found.");
-  }
-  else if (m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer))
-  {
-    m_pCommandList = pDeviceD3D11->GetTransferContext();
-
-    xiiLog::Error("Failed to create command list, no transfer command queue found.");
-  }
-  else if (m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::SparseBinding))
-  {
-    m_pCommandList = pDeviceD3D11->GetSparseBindingContext();
-
-    xiiLog::Error("Failed to create command list, no sparse binding command queue found.");
-  }
   return m_pCommandList != nullptr ? XII_SUCCESS : XII_FAILURE;
 }
 
@@ -166,20 +146,26 @@ void xiiGALCommandListD3D11::ClearRenderTargetViewPlatform(xiiGALTextureView* pR
 {
   auto pRenderTargetViewD3D11 = static_cast<xiiGALTextureViewD3D11*>(pRenderTargetView);
 
-  m_pCommandList->ClearRenderTarget(pRenderTargetViewD3D11->GetTextureView(), clearColor.GetData(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  XII_ASSERT_DEV(pRenderTargetViewD3D11 != nullptr, "Invalid resource.");
+
+  // The full extent of the resource view is always cleared. Viewport and scissor settings are not applied.
+  m_pCommandList->ClearRenderTargetView(static_cast<ID3D11RenderTargetView*>(pRenderTargetViewD3D11->GetTextureView()), clearColor.GetData());
 }
 
 void xiiGALCommandListD3D11::ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
 {
   auto pDepthStencilViewD3D11 = static_cast<xiiGALTextureViewD3D11*>(pDepthStencilView);
 
-  Diligent::CLEAR_DEPTH_STENCIL_FLAGS clearFlags = Diligent::CLEAR_DEPTH_FLAG_NONE;
-  if (bClearDepth)
-    clearFlags |= Diligent::CLEAR_DEPTH_FLAG;
-  if (bClearStencil)
-    clearFlags |= Diligent::CLEAR_STENCIL_FLAG;
+  XII_ASSERT_DEV(pDepthStencilViewD3D11 != nullptr, "Invalid resource.");
 
-  m_pCommandList->ClearDepthStencil(pDepthStencilViewD3D11->GetTextureView(), clearFlags, fDepthClear, uiStencilClear, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  xiiUInt32 uiClearFlags = 0;
+  if (bClearDepth)
+    uiClearFlags |= D3D11_CLEAR_DEPTH;
+  if (bClearStencil)
+    uiClearFlags |= D3D11_CLEAR_STENCIL;
+
+  // The full extent of the resource view is always cleared. Viewport and scissor settings are not applied.
+  m_pCommandList->ClearDepthStencilView(static_cast<ID3D11DepthStencilView*>(pDepthStencilViewD3D11->GetTextureView()), uiClearFlags, fDepthClear, uiStencilClear)
 }
 
 xiiResult xiiGALCommandListD3D11::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -517,19 +503,33 @@ xiiResult xiiGALCommandListD3D11::UnmapTextureSubresourcePlatform(xiiGALTexture*
 
 void xiiGALCommandListD3D11::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
 {
-  xiiStringBuilder sb;
-  m_pCommandList->BeginDebugGroup(sName.GetData(sb), color.GetData());
+  ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
+  if (SUCCEEDED(m_pCommandList->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
+  {
+    xiiStringBuilder sb;
+    xiiStringWChar   wsMarker(sName.GetData(sb));
+    pAnnotationD3D11->BeginEvent(wsMarker.GetData());
+  }
 }
 
 void xiiGALCommandListD3D11::EndDebugGroupPlatform()
 {
-  m_pCommandList->EndDebugGroup();
+  ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
+  if (SUCCEEDED(m_pCommandList->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
+  {
+    pAnnotationD3D11->EndEvent();
+  }
 }
 
 void xiiGALCommandListD3D11::InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color)
 {
-  xiiStringBuilder sb;
-  m_pCommandList->InsertDebugLabel(sName.GetData(sb), color.GetData());
+  ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
+  if (SUCCEEDED(m_pCommandList->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
+  {
+    xiiStringBuilder sb;
+    xiiStringWChar   wsMarker(sName.GetData(sb));
+    pAnnotationD3D11->SetMarker(wsMarker.GetData());
+  }
 }
 
 void xiiGALCommandListD3D11::FlushPlatform()
