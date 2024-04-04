@@ -69,6 +69,8 @@ public:
   static xiiBitflags<xiiGALBindFlags> GetGALBindFlags(xiiUInt32 e);
   static xiiBitflags<xiiGALCPUAccessFlag> GetGALCPUAccessFlags(xiiUInt32 e);
   static xiiBitflags<xiiGALMiscTextureFlags> GetGALMiscTextureFlags(xiiUInt32 e);
+
+  static void GetMapTypeAndFlags(xiiEnum<xiiGALMapType> type, xiiBitflags<xiiGALMapFlags> flags, D3D11_MAP& out_mapType, xiiUInt32& out_mapFlags);
 };
 
 #include <GraphicsD3D11/Utilities/Implementation/D3D11TypeConversions_inl.h>

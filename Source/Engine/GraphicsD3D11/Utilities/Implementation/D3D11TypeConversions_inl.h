@@ -1256,3 +1256,44 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALMiscTextureFlags> xiiD3D11TypeConversions::G
 
   return miscTextureFlags;
 }
+
+XII_ALWAYS_INLINE void xiiD3D11TypeConversions::GetMapTypeAndFlags(xiiEnum<xiiGALMapType> type, xiiBitflags<xiiGALMapFlags> flags, D3D11_MAP& out_mapType, xiiUInt32& out_mapFlags)
+{
+  out_mapType = static_cast<D3D11_MAP>(0);
+
+  switch (type)
+  {
+    case xiiGALMapType::Read:
+    {
+      out_mapType = D3D11_MAP_READ;
+    }
+    break;
+    case xiiGALMapType::Write:
+    {
+      if (flags.IsSet(xiiGALMapFlags::Discard))
+      {
+        out_mapType = D3D11_MAP_WRITE_DISCARD;
+      }
+      else if (flags.IsSet(xiiGALMapFlags::NoOverWrite))
+      {
+        out_mapType = D3D11_MAP_WRITE_NO_OVERWRITE;
+      }
+      else
+      {
+        out_mapType = D3D11_MAP_WRITE;
+      }
+    }
+    break;
+    case xiiGALMapType::ReadWrite:
+    {
+      out_mapType = D3D11_MAP_READ_WRITE;
+    }
+    break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  out_mapFlags = 0U;
+  if (flags.IsSet(xiiGALMapFlags::DoNotWait))
+    out_mapFlags |= D3D11_MAP_FLAG_DO_NOT_WAIT;
+}

@@ -365,21 +365,31 @@ xiiResult xiiGALCommandListD3D11::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEn
 {
   auto pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
-  Diligent::MAP_TYPE  bufferMapType  = xiiDiligentTypeConversions::GetMapType(mapType);
-  Diligent::MAP_FLAGS bufferMapFlags = xiiDiligentTypeConversions::GetMapFlags(mapFlags);
+  XII_ASSERT_DEV(pBuffer != nullptr, "Invalid resource.");
 
-  m_pCommandList->MapBuffer(pBufferD3D11->GetBuffer(), bufferMapType, bufferMapFlags, pMappedData);
+  D3D11_MAP bufferMapType = static_cast<D3D11_MAP>(0U);
+  xiiUInt32 uiMapFlags    = 0U;
+  xiiD3D11TypeConversions::GetMapTypeAndFlags(mapType, mapFlags, bufferMapType, uiMapFlags);
 
-  return (pMappedData != nullptr) ? XII_SUCCESS : XII_FAILURE;
+  D3D11_MAPPED_SUBRESOURCE mappedSubresource;
+  if (FAILED(m_pCommandList->Map(pBufferD3D11->GetBuffer(), 0U, bufferMapType, uiMapFlags, &mappedSubresource)))
+  {
+    xiiLog::Error("Failed to map buffer '{0}'.", pBufferD3D11->GetDebugName());
+    return XII_FAILURE;
+  }
+
+  pMappedData = mappedSubresource.pData;
+
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALCommandListD3D11::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)
 {
   auto pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
-  Diligent::MAP_TYPE bufferMapType = xiiDiligentTypeConversions::GetMapType(mapType);
+  XII_ASSERT_DEV(pBuffer != nullptr, "");
 
-  m_pCommandList->UnmapBuffer(pBufferD3D11->GetBuffer(), bufferMapType);
+  m_pCommandList->Unmap(pBufferD3D11->GetBuffer(), 0U);
 
   return XII_SUCCESS;
 }
@@ -474,32 +484,43 @@ xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiGALTexture* p
 {
   auto pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
 
-  Diligent::MAP_TYPE  textureMapType  = xiiDiligentTypeConversions::GetMapType(mapType);
-  Diligent::MAP_FLAGS textureMapFlags = xiiDiligentTypeConversions::GetMapFlags(mapFlags);
+  XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
 
-  Diligent::Box sourceBox = {};
-  sourceBox.MinX          = textureBox.m_vMin.x;
-  sourceBox.MinY          = textureBox.m_vMin.y;
-  sourceBox.MinZ          = textureBox.m_vMin.z;
-  sourceBox.MaxX          = textureBox.m_vMax.x;
-  sourceBox.MaxY          = textureBox.m_vMax.y;
-  sourceBox.MaxZ          = textureBox.m_vMax.z;
+  const auto& textureDescription = pTextureD3D11->GetDescription();
+  D3D11_MAP   textureMapType     = static_cast<D3D11_MAP>(0U);
+  xiiUInt32   uiMapFlags         = 0U;
+  xiiD3D11TypeConversions::GetMapTypeAndFlags(mapType, mapFlags, textureMapType, uiMapFlags);
 
-  Diligent::MappedTextureSubresource mappedSubResource = {};
-  m_pCommandList->MapTextureSubresource(pTextureD3D11->GetTexture(), textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, textureMapType, textureMapFlags, &sourceBox, mappedSubResource);
+  xiiUInt32 uiSubresource = D3D11CalcSubresource(textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
 
-  mappedData.m_pData         = mappedSubResource.pData;
-  mappedData.m_uiStride      = mappedSubResource.Stride;
-  mappedData.m_uiDepthStride = mappedSubResource.DepthStride;
+  D3D11_MAPPED_SUBRESOURCE mappedSubresource;
+  if (FAILED(m_pCommandList->Map(pTextureD3D11->GetTexture(), uiSubresource, textureMapType, uiMapFlags, &mappedSubresource)))
+  {
+    // XII_ASSERT_DEV(hResult == DXGI_ERROR_WAS_STILL_DRAWING, "");
 
-  return (mappedData.m_pData != nullptr) ? XII_SUCCESS : XII_FAILURE;
+    xiiLog::Error("Failed to map texture subresource.");
+
+    mappedData = xiiGALMappedTextureSubresource();
+    return XII_FAILURE;
+  }
+
+  mappedData.m_pData         = mappedSubresource.pData;
+  mappedData.m_uiStride      = mappedSubresource.RowPitch;
+  mappedData.m_uiDepthStride = mappedSubresource.DepthPitch;
+
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALCommandListD3D11::UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData)
 {
   auto pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
 
-  m_pCommandList->UnmapTextureSubresource(pTextureD3D11->GetTexture(), textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice);
+  XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
+
+  const auto& textureDescription = pTextureD3D11->GetDescription();
+  xiiUInt32   uiSubresource      = D3D11CalcSubresource(textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
+
+  m_pCommandList->Unmap(pTextureD3D11->GetTexture(), uiSubresource);
 
   return XII_SUCCESS;
 }
