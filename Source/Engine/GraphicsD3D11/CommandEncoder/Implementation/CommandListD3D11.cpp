@@ -2,6 +2,8 @@
 
 #include <Foundation/Memory/MemoryUtils.h>
 
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
+
 #include <GraphicsD3D11/CommandEncoder/CommandListD3D11.h>
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 
@@ -328,7 +330,19 @@ void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt
 
   auto pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
-  m_pCommandList->UpdateBuffer(pDestinationBufferD3D11->GetBuffer(), uiDestinationOffset, pSourceData.GetCount(), pSourceData.GetPtr(), Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
+
+  D3D11_BOX destinationBox = {};
+  destinationBox.left      = uiDestinationOffset;
+  destinationBox.right     = uiDestinationOffset + pSourceData.GetCount();
+  destinationBox.top       = 0U;
+  destinationBox.bottom    = 1U;
+  destinationBox.front     = 0U;
+  destinationBox.back      = 1U;
+
+  D3D11_BOX* pDestinationBox = (uiDestinationOffset == 0 && pSourceData.GetCount() == pDestinationBufferD3D11->GetDescription().m_uiSize) ? nullptr : &destinationBox;
+
+  m_pCommandList->UpdateSubresource(pDestinationBufferD3D11->GetBuffer(), 0U, pDestinationBox, pSourceData.GetPtr(), 0U, 0U);
 }
 
 void xiiGALCommandListD3D11::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
@@ -353,10 +367,10 @@ void xiiGALCommandListD3D11::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffe
   D3D11_BOX sourceBox = {};
   sourceBox.left      = uiSourceOffset;
   sourceBox.right     = uiSourceOffset + uiSize;
-  sourceBox.top       = 0;
-  sourceBox.bottom    = 1;
-  sourceBox.front     = 0;
-  sourceBox.back      = 1;
+  sourceBox.top       = 0U;
+  sourceBox.bottom    = 1U;
+  sourceBox.front     = 0U;
+  sourceBox.back      = 1U;
 
   m_pCommandList->CopySubresourceRegion(pDestinationBufferD3D11->GetBuffer(), 0, uiDestinationOffset, 0, 0, pSourceBufferD3D11->GetBuffer(), 0, &sourceBox);
 }
@@ -387,7 +401,7 @@ xiiResult xiiGALCommandListD3D11::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xii
 {
   auto pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
-  XII_ASSERT_DEV(pBuffer != nullptr, "");
+  XII_ASSERT_DEV(pBuffer != nullptr, "Invalid resource.");
 
   m_pCommandList->Unmap(pBufferD3D11->GetBuffer(), 0U);
 
@@ -396,27 +410,49 @@ xiiResult xiiGALCommandListD3D11::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xii
 
 void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
-  auto        pTextureD3D11      = static_cast<xiiGALTextureD3D11*>(pTexture);
+  auto pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
+
+  XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
+
   const auto& textureDescription = pTextureD3D11->GetDescription();
+
+  XII_ASSERT_DEV(textureDescription.m_Usage == xiiGALResourceUsage::Default || textureDescription.m_Usage == xiiGALResourceUsage::Sparse, "Only xiiGALResourceUsage::Default or xiiGALResourceUsage::Default textures should be updated with this method.");
+
+  if (!subresourceData.m_hSourceBuffer.IsInvalidated())
+  {
+    xiiLog::Error("Direct3D11 does not support texture updates using texture subresource from GPU buffer");
+    return;
+  }
 
   xiiUInt32 uiWidth  = xiiMath::Max(textureBox.m_vMax.x - textureBox.m_vMin.x, 1U);
   xiiUInt32 uiHeight = xiiMath::Max(textureBox.m_vMax.y - textureBox.m_vMin.y, 1U);
   xiiUInt32 uiDepth  = xiiMath::Max(textureBox.m_vMax.z - textureBox.m_vMin.z, 1U);
 
-  Diligent::Box destinationBox = {};
-  destinationBox.MinX          = textureBox.m_vMin.x;
-  destinationBox.MinY          = textureBox.m_vMin.y;
-  destinationBox.MinZ          = textureBox.m_vMin.z;
-  destinationBox.MaxX          = textureBox.m_vMax.x;
-  destinationBox.MaxY          = textureBox.m_vMax.y;
-  destinationBox.MaxZ          = textureBox.m_vMax.z;
+  D3D11_BOX destinationBox = {};
+  destinationBox.left      = textureBox.m_vMin.x;
+  destinationBox.top       = textureBox.m_vMin.y;
+  destinationBox.front     = textureBox.m_vMin.z;
+  destinationBox.right     = textureBox.m_vMax.x;
+  destinationBox.bottom    = textureBox.m_vMax.y;
+  destinationBox.back      = textureBox.m_vMax.z;
 
-  Diligent::TextureSubResData textureSubresourceData = {};
-  textureSubresourceData.pData                       = subresourceData.m_pData;
-  textureSubresourceData.Stride                      = subresourceData.m_uiStride;
-  textureSubresourceData.DepthStride                 = subresourceData.m_uiDepthStride;
+  const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format);
 
-  m_pCommandList->UpdateTexture(pTextureD3D11->GetTexture(), textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, destinationBox, textureSubresourceData, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+  if (formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::Compressed)
+  {
+    // Align update region by the compressed block size.
+    XII_ASSERT_DEV((destinationBox.left % formatProperties.m_uiBlockWidth) == 0, "The update region min X coordinate ({0}) must be a multiple of a compressed block width ({1}).", destinationBox.left, formatProperties.m_uiBlockWidth);
+    XII_ASSERT_DEV((formatProperties.m_uiBlockWidth % (formatProperties.m_uiBlockWidth - 1)) == 0, "The compressed block width ({0}) is expected to be a power of 2.", formatProperties.m_uiBlockWidth);
+    destinationBox.right = (destinationBox.right + formatProperties.m_uiBlockWidth - 1) & ~(formatProperties.m_uiBlockHeight - 1);
+
+    XII_ASSERT_DEV((destinationBox.top % formatProperties.m_uiBlockHeight) == 0, "The update region min X coordinate ({0}) must be a multiple of a compressed block height ({1}).", destinationBox.top, formatProperties.m_uiBlockHeight);
+    XII_ASSERT_DEV((formatProperties.m_uiBlockHeight % (formatProperties.m_uiBlockHeight - 1)) == 0, "The compressed block height ({0}) is expected to be a power of 2.", formatProperties.m_uiBlockHeight);
+    destinationBox.bottom = (destinationBox.bottom + formatProperties.m_uiBlockHeight - 1) & ~(formatProperties.m_uiBlockHeight - 1);
+  }
+
+  xiiUInt32 uiDestinationSubresourceIndex = D3D11CalcSubresource(textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
+
+  m_pCommandList->UpdateSubresource(pTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, &destinationBox, subresourceData.m_pData, subresourceData.m_uiStride, subresourceData.m_uiDepthStride);
 }
 
 void xiiGALCommandListD3D11::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
@@ -457,18 +493,17 @@ void xiiGALCommandListD3D11::ResolveTextureSubResourcePlatform(xiiGALTexture* pS
   auto pSourceTextureD3D11      = static_cast<xiiGALTextureD3D11*>(pSourceTexture);
   auto pDestinationTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pDestinationTexture);
 
-  const auto& sourceTextureDescription = pSourceTextureD3D11->GetDescription();
+  XII_ASSERT_DEV(pSourceTextureD3D11 != nullptr, "Invalid resource.");
+  XII_ASSERT_DEV(pDestinationTextureD3D11 != nullptr, "Invalid resource.");
 
-  Diligent::ResolveTextureSubresourceAttribs resolveTextureDescription;
-  resolveTextureDescription.Format = xiiDiligentTypeConversions::GetTextureFormat(sourceTextureDescription.m_Format);
+  const auto& sourceTextureDescription      = pSourceTextureD3D11->GetDescription();
+  const auto& destinationTextureDescription = pSourceTextureD3D11->GetDescription();
 
-  resolveTextureDescription.SrcMipLevel              = sourceMipLevelData.m_uiMipLevel;
-  resolveTextureDescription.SrcSlice                 = sourceMipLevelData.m_uiArraySlice;
-  resolveTextureDescription.SrcTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  DXGI_FORMAT textureFormat                 = xiiD3D11TypeConversions ::GetFormat(sourceTextureDescription.m_Format);
+  xiiUInt32   uiSourceSubresourceIndex      = D3D11CalcSubresource(sourceMipLevelData.m_uiMipLevel, sourceMipLevelData.m_uiMipLevel, sourceTextureDescription.m_uiMipLevels);
+  xiiUInt32   uiDestinationSubresourceIndex = D3D11CalcSubresource(destinationMipLevelData.m_uiMipLevel, destinationMipLevelData.m_uiMipLevel, destinationTextureDescription.m_uiMipLevels);
 
-  resolveTextureDescription.DstMipLevel              = destinationMipLevelData.m_uiMipLevel;
-  resolveTextureDescription.DstSlice                 = destinationMipLevelData.m_uiArraySlice;
-  resolveTextureDescription.DstTextureTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  m_pCommandList->ResolveSubresource(pDestinationTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, pSourceTextureD3D11->GetTexture(), uiSourceSubresourceIndex, textureFormat);
 }
 
 void xiiGALCommandListD3D11::GenerateMipsPlatform(xiiGALTextureView* pTextureView)
@@ -558,6 +593,8 @@ void xiiGALCommandListD3D11::InsertDebugLabelPlatform(xiiStringView sName, const
 
 void xiiGALCommandListD3D11::FlushPlatform()
 {
+  XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "Flushing commandlist inside an active render pass is not allowed.");
+
   m_pCommandList->Flush();
 }
 
