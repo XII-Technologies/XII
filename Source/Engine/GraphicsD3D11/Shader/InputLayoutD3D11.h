@@ -5,6 +5,9 @@
 #include <GraphicsFoundation/Shader/InputLayout.h>
 
 struct ID3D11InputLayout;
+struct D3D11_INPUT_ELEMENT_DESC;
+
+XII_DEFINE_AS_POD_TYPE(D3D11_INPUT_ELEMENT_DESC);
 
 class XII_GRAPHICSD3D11_DLL xiiGALInputLayoutD3D11 final : public xiiGALInputLayout
 {

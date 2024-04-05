@@ -11,7 +11,7 @@ static const char* GALSemanticToD3D11[] = {"POSITION", "NORMAL", "TANGENT", "COL
                                            "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "TEXCOORD", "BITANGENT", "BONEINDICES",
                                            "BONEINDICES", "BONEWEIGHTS", "BONEWEIGHTS"};
 
-XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToD3D) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToD3D11 array size does not match input layout semantic count.");
+XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToD3D11) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToD3D11 array size does not match input layout semantic count.");
 
 static UINT GALSemanticToIndexD3D11[] = {0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 1, 0, 1};
 XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToIndexD3D11) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToIndexD3D11 array size does not match vertex attribute semantic count.");
@@ -82,7 +82,7 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform(xiiGALDevice* pDevice)
     layoutElement.InputSlotClass            = xiiD3D11TypeConversions::GetElementFrequency(inputLayout.m_Frequency);
     layoutElement.InstanceDataStepRate      = (inputLayout.m_Frequency == xiiGALInputElementFrequency::PerVertex) ? 0U : inputLayout.m_uiInstanceDataStepRate;
 
-    if (layoutElement.Format == xiiGALTextureFormat::Unknown)
+    if (layoutElement.Format == DXGI_FORMAT_UNKNOWN)
     {
       xiiLog::Error("Vertex input layout format {0} of input layout at index {1} is unknown!", inputLayout.m_Format, uiLayout);
       return XII_FAILURE;
