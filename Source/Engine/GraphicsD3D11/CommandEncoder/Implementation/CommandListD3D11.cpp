@@ -167,52 +167,32 @@ void xiiGALCommandListD3D11::ClearDepthStencilViewPlatform(xiiGALTextureView* pD
     uiClearFlags |= D3D11_CLEAR_STENCIL;
 
   // The full extent of the resource view is always cleared. Viewport and scissor settings are not applied.
-  m_pCommandList->ClearDepthStencilView(static_cast<ID3D11DepthStencilView*>(pDepthStencilViewD3D11->GetTextureView()), uiClearFlags, fDepthClear, uiStencilClear)
+  m_pCommandList->ClearDepthStencilView(static_cast<ID3D11DepthStencilView*>(pDepthStencilViewD3D11->GetTextureView()), uiClearFlags, fDepthClear, uiStencilClear);
 }
 
 xiiResult xiiGALCommandListD3D11::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
 {
-  Diligent::DrawAttribs drawDescription = {};
-  drawDescription.NumVertices           = uiVertexCount;
-  drawDescription.StartVertexLocation   = uiStartVertex;
-  drawDescription.NumInstances          = 1U;
-  drawDescription.FirstInstanceLocation = 0U;
-  drawDescription.Flags                 = Diligent::DRAW_FLAG_VERIFY_ALL;
+  XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
-  m_pCommandList->Draw(drawDescription);
+  m_pCommandList->Draw(uiVertexCount, uiStartVertex);
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D11::DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex)
+xiiResult xiiGALCommandListD3D11::DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex)
 {
-  Diligent::DrawIndexedAttribs drawIndexedDescription = {};
-  ;
-  drawIndexedDescription.NumIndices            = uiIndexCount;
-  drawIndexedDescription.FirstIndexLocation    = uiStartIndex;
-  drawIndexedDescription.IndexType             = m_IndexFormat;
-  drawIndexedDescription.BaseVertex            = 0U;
-  drawIndexedDescription.NumInstances          = 1U;
-  drawIndexedDescription.FirstInstanceLocation = 0U;
-  drawIndexedDescription.Flags                 = Diligent::DRAW_FLAG_VERIFY_ALL;
+  XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
-  m_pCommandList->DrawIndexed(drawIndexedDescription);
+  m_pCommandList->DrawIndexed(uiIndexCount, uiStartIndex, uiBaseVertex);
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D11::DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex)
+xiiResult xiiGALCommandListD3D11::DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance)
 {
-  Diligent::DrawIndexedAttribs drawIndexedDescription;
-  drawIndexedDescription.NumIndices            = uiIndexCountPerInstance;
-  drawIndexedDescription.NumInstances          = uiInstanceCount;
-  drawIndexedDescription.IndexType             = m_IndexFormat;
-  drawIndexedDescription.FirstIndexLocation    = uiStartIndex;
-  drawIndexedDescription.BaseVertex            = 0U;
-  drawIndexedDescription.FirstInstanceLocation = 0U;
-  drawIndexedDescription.Flags                 = Diligent::DRAW_FLAG_VERIFY_ALL;
+  XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
-  m_pCommandList->DrawIndexed(drawIndexedDescription);
+  m_pCommandList->DrawIndexedInstanced(uiIndexCountPerInstance, uiInstanceCount, uiStartIndex, uiBaseVertex, uiFirstInstance);
 
   return XII_SUCCESS;
 }
@@ -221,33 +201,20 @@ xiiResult xiiGALCommandListD3D11::DrawIndexedInstancedIndirectPlatform(xiiGALBuf
 {
   auto pIndirectArgumentBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndirectArgumentBuffer);
 
-  Diligent::DrawIndexedIndirectAttribs drawIndexedInstancedDescription = {};
-  drawIndexedInstancedDescription.IndexType                            = m_IndexFormat;
-  drawIndexedInstancedDescription.pAttribsBuffer                       = pIndirectArgumentBufferD3D11->GetBuffer();
-  drawIndexedInstancedDescription.DrawArgsOffset                       = uiArgumentOffsetInBytes;
-  drawIndexedInstancedDescription.Flags                                = Diligent::DRAW_FLAG_VERIFY_ALL;
-  drawIndexedInstancedDescription.DrawCount                            = 1U;
-  drawIndexedInstancedDescription.DrawArgsStride                       = sizeof(xiiUInt32) * 5U;
-  drawIndexedInstancedDescription.AttribsBufferStateTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
-  drawIndexedInstancedDescription.pCounterBuffer                       = nullptr;
-  drawIndexedInstancedDescription.CounterOffset                        = 0U;
-  drawIndexedInstancedDescription.CounterBufferStateTransitionMode     = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  XII_ASSERT_DEV(pIndirectArgumentBufferD3D11 != nullptr, "Invalid resource.");
 
-  m_pCommandList->DrawIndexedIndirect(drawIndexedInstancedDescription);
+  XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
+
+  m_pCommandList->DrawIndexedInstancedIndirect(pIndirectArgumentBufferD3D11->GetBuffer(), uiArgumentOffsetInBytes);
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListD3D11::DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex)
+xiiResult xiiGALCommandListD3D11::DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance)
 {
-  Diligent::DrawAttribs drawInstancedDescription = {};
-  drawInstancedDescription.NumVertices           = uiVertexCountPerInstance;
-  drawInstancedDescription.Flags                 = Diligent::DRAW_FLAG_VERIFY_ALL;
-  drawInstancedDescription.NumInstances          = uiInstanceCount;
-  drawInstancedDescription.FirstInstanceLocation = 0U;
-  drawInstancedDescription.StartVertexLocation   = uiStartVertex;
+  XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
-  m_pCommandList->Draw(drawInstancedDescription);
+  m_pCommandList->DrawInstanced(uiVertexCountPerInstance, uiInstanceCount, uiStartVertex, uiFirstInstance);
 
   return XII_SUCCESS;
 }
@@ -256,42 +223,27 @@ xiiResult xiiGALCommandListD3D11::DrawInstancedIndirectPlatform(xiiGALBuffer* pI
 {
   auto pIndirectArgumentBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndirectArgumentBuffer);
 
-  Diligent::DrawIndirectAttribs drawInstancedIndirectDescription    = {};
-  drawInstancedIndirectDescription.pAttribsBuffer                   = pIndirectArgumentBufferD3D11->GetBuffer();
-  drawInstancedIndirectDescription.DrawArgsOffset                   = uiArgumentOffsetInBytes;
-  drawInstancedIndirectDescription.Flags                            = Diligent::DRAW_FLAG_VERIFY_ALL;
-  drawInstancedIndirectDescription.DrawCount                        = 1U;
-  drawInstancedIndirectDescription.DrawArgsStride                   = sizeof(xiiUInt32) * 4U;
-  drawInstancedIndirectDescription.AttribsBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
-  drawInstancedIndirectDescription.pCounterBuffer                   = nullptr;
-  drawInstancedIndirectDescription.CounterOffset                    = 0U;
-  drawInstancedIndirectDescription.CounterBufferStateTransitionMode = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+  XII_ASSERT_DEV(pIndirectArgumentBufferD3D11 != nullptr, "Invalid resource.");
 
-  m_pCommandList->DrawIndirect(drawInstancedIndirectDescription);
+  XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
+
+  m_pCommandList->DrawInstancedIndirect(pIndirectArgumentBufferD3D11->GetBuffer(), uiArgumentOffsetInBytes);
 
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALCommandListD3D11::DrawMeshPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
 {
-  Diligent::DrawMeshAttribs drawMeshDescription = {};
-  drawMeshDescription.ThreadGroupCountX         = uiThreadGroupCountX;
-  drawMeshDescription.ThreadGroupCountY         = uiThreadGroupCountY;
-  drawMeshDescription.ThreadGroupCountZ         = uiThreadGroupCountZ;
+  XII_REPORT_FAILURE("DrawMesh is not supported in Direct3D 11.");
 
-  m_pCommandList->DrawMesh(drawMeshDescription);
-
-  return XII_SUCCESS;
+  return XII_FAILURE;
 }
 
 xiiResult xiiGALCommandListD3D11::DispatchPlatform(xiiUInt32 uiThreadGroupCountX, xiiUInt32 uiThreadGroupCountY, xiiUInt32 uiThreadGroupCountZ)
 {
-  Diligent::DispatchComputeAttribs dispatchDescription = {};
-  dispatchDescription.ThreadGroupCountX                = uiThreadGroupCountX;
-  dispatchDescription.ThreadGroupCountY                = uiThreadGroupCountY;
-  dispatchDescription.ThreadGroupCountZ                = uiThreadGroupCountZ;
+  XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
 
-  m_pCommandList->DispatchCompute(dispatchDescription);
+  m_pCommandList->Dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
 
   return XII_SUCCESS;
 }
@@ -300,12 +252,11 @@ xiiResult xiiGALCommandListD3D11::DispatchIndirectPlatform(xiiGALBuffer* pIndire
 {
   auto pIndirectArgumentBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndirectArgumentBuffer);
 
-  Diligent::DispatchComputeIndirectAttribs DispatchAttribs = {};
-  DispatchAttribs.pAttribsBuffer                           = pIndirectArgumentBufferD3D11->GetBuffer();
-  DispatchAttribs.AttribsBufferStateTransitionMode         = Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
-  DispatchAttribs.DispatchArgsByteOffset                   = uiArgumentOffsetInBytes;
+  XII_ASSERT_DEV(pIndirectArgumentBufferD3D11 != nullptr, "Invalid resource.");
 
-  m_pCommandList->DispatchComputeIndirect(DispatchAttribs);
+  XII_SUCCEED_OR_RETURN(FlushDeferredStateChanges());
+
+  m_pCommandList->DispatchIndirect(pIndirectArgumentBufferD3D11->GetBuffer(), uiArgumentOffsetInBytes);
 
   return XII_SUCCESS;
 }
@@ -324,7 +275,7 @@ void xiiGALCommandListD3D11::BeginQueryPlatform(xiiGALQuery* pQuery)
   }
   else
   {
-  m_pCommandList->Begin(pQueryD3D11->GetQuery(0));
+    m_pCommandList->Begin(pQueryD3D11->GetQuery(0));
   }
 }
 
@@ -633,6 +584,11 @@ xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> xiiGALCommandListD3D11:
     m_pActiveDisjointQuery->m_bIsEnded = false;
   }
   return m_pActiveDisjointQuery;
+}
+
+xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
+{
+  return XII_SUCCESS;
 }
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_CommandEncoder_Implementation_CommandListD3D11);

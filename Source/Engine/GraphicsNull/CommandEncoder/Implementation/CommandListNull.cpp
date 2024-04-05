@@ -67,12 +67,12 @@ xiiResult xiiGALCommandListNull::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListNull::DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex)
+xiiResult xiiGALCommandListNull::DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex)
 {
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListNull::DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex)
+xiiResult xiiGALCommandListNull::DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance)
 {
   return XII_SUCCESS;
 }
@@ -82,7 +82,7 @@ xiiResult xiiGALCommandListNull::DrawIndexedInstancedIndirectPlatform(xiiGALBuff
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListNull::DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex)
+xiiResult xiiGALCommandListNull::DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance)
 {
   return XII_SUCCESS;
 }

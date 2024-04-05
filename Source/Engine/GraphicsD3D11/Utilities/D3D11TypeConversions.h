@@ -3,11 +3,11 @@
 #include <GraphicsD3D11/GraphicsD3D11DLL.h>
 
 #include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/States/BlendState.h>
 #include <GraphicsFoundation/States/DepthStencilState.h>
 #include <GraphicsFoundation/States/RasterizerState.h>
-#include <GraphicsFoundation/Resources/Texture.h>
-#include <GraphicsFoundation/Shader/InputLayout.h>
 
 #include <d3d11.h>
 #include <dxgitype.h>
@@ -55,8 +55,8 @@ public:
 
   static D3D11_QUERY GetQueryType(xiiEnum<xiiGALQueryType> e);
 
-  static xiiUInt32 GetBindFlags(xiiBitflags<xiiGALBindFlags> e);
-  static xiiUInt32 GetCPUAccessFlags(xiiBitflags<xiiGALCPUAccessFlag> e);
+  static xiiUInt32   GetBindFlags(xiiBitflags<xiiGALBindFlags> e);
+  static xiiUInt32   GetCPUAccessFlags(xiiBitflags<xiiGALCPUAccessFlag> e);
   static D3D11_USAGE GetUsage(xiiEnum<xiiGALResourceUsage> e);
 
   static DXGI_FORMAT GetDXGIFormatFromType(xiiEnum<xiiGALValueType> e, xiiUInt32 uiComponentCount, bool bIsNormalized);
@@ -65,9 +65,9 @@ public:
 
   static D3D11_INPUT_CLASSIFICATION GetElementFrequency(xiiEnum<xiiGALInputElementFrequency> e);
 
-  static xiiEnum<xiiGALResourceUsage> GetGALUsage(D3D11_USAGE e);
-  static xiiBitflags<xiiGALBindFlags> GetGALBindFlags(xiiUInt32 e);
-  static xiiBitflags<xiiGALCPUAccessFlag> GetGALCPUAccessFlags(xiiUInt32 e);
+  static xiiEnum<xiiGALResourceUsage>        GetGALUsage(D3D11_USAGE e);
+  static xiiBitflags<xiiGALBindFlags>        GetGALBindFlags(xiiUInt32 e);
+  static xiiBitflags<xiiGALCPUAccessFlag>    GetGALCPUAccessFlags(xiiUInt32 e);
   static xiiBitflags<xiiGALMiscTextureFlags> GetGALMiscTextureFlags(xiiUInt32 e);
 
   static void GetMapTypeAndFlags(xiiEnum<xiiGALMapType> type, xiiBitflags<xiiGALMapFlags> flags, D3D11_MAP& out_mapType, xiiUInt32& out_mapFlags);

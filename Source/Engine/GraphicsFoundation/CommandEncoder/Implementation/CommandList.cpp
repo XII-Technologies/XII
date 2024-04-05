@@ -218,7 +218,7 @@ xiiResult xiiGALCommandList::Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVert
   return DrawPlatform(uiVertexCount, uiStartVertex);
 }
 
-xiiResult xiiGALCommandList::DrawIndexed(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex)
+xiiResult xiiGALCommandList::DrawIndexed(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex)
 {
   CountDrawCall();
 
@@ -228,10 +228,10 @@ xiiResult xiiGALCommandList::DrawIndexed(xiiUInt32 uiIndexCount, xiiUInt32 uiSta
   XII_VERIFY_COMMAND_LIST_RESULT(!m_hIndexBuffer.IsInvalidated(), "DrawIndexed command argumenst are invalid. No index buffer is bound.");
   XII_VERIFY_COMMAND_LIST_RESULT(uiIndexCount != 0, "DrawIndexed index count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
 
-  return DrawIndexedPlatform(uiIndexCount, uiStartIndex);
+  return DrawIndexedPlatform(uiIndexCount, uiStartIndex, uiBaseVertex);
 }
 
-xiiResult xiiGALCommandList::DrawIndexedInstanced(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex)
+xiiResult xiiGALCommandList::DrawIndexedInstanced(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance)
 {
   CountDrawCall();
 
@@ -242,7 +242,7 @@ xiiResult xiiGALCommandList::DrawIndexedInstanced(xiiUInt32 uiIndexCountPerInsta
   XII_VERIFY_COMMAND_LIST_RESULT(uiIndexCountPerInstance != 0, "DrawIndexedInstanced index count per instance is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
   XII_VERIFY_COMMAND_LIST_RESULT(uiInstanceCount != 0, "DrawIndexedInstanced instance count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
 
-  return DrawIndexedInstancedPlatform(uiIndexCountPerInstance, uiInstanceCount, uiStartIndex);
+  return DrawIndexedInstancedPlatform(uiIndexCountPerInstance, uiInstanceCount, uiStartIndex, uiBaseVertex, uiFirstInstance);
 }
 
 xiiResult xiiGALCommandList::DrawIndexedInstancedIndirect(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
@@ -264,7 +264,7 @@ xiiResult xiiGALCommandList::DrawIndexedInstancedIndirect(xiiGALBufferHandle hIn
   return DrawIndexedInstancedIndirectPlatform(pIndirectArgumentsBuffer, uiArgumentOffsetInBytes);
 }
 
-xiiResult xiiGALCommandList::DrawInstanced(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex)
+xiiResult xiiGALCommandList::DrawInstanced(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance)
 {
   CountDrawCall();
 
@@ -274,7 +274,7 @@ xiiResult xiiGALCommandList::DrawInstanced(xiiUInt32 uiVertexCountPerInstance, x
   XII_VERIFY_COMMAND_LIST_RESULT(uiVertexCountPerInstance != 0, "DrawInstanced vertex count per instance is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
   XII_VERIFY_COMMAND_LIST_RESULT(uiInstanceCount != 0, "DrawInstanced instance count is zero. This is acceptable but the draw command will be ignored, but may be unintentional.");
 
-  return DrawInstancedPlatform(uiVertexCountPerInstance, uiInstanceCount, uiStartVertex);
+  return DrawInstancedPlatform(uiVertexCountPerInstance, uiInstanceCount, uiStartVertex, uiFirstInstance);
 }
 
 xiiResult xiiGALCommandList::DrawInstancedIndirect(xiiGALBufferHandle hIndirectArgumentBuffer, xiiUInt32 uiArgumentOffsetInBytes)
