@@ -337,14 +337,14 @@ void xiiGALCommandListD3D11::CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffe
   XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
 
   D3D11_BOX sourceBox = {};
-  sourceBox.left      = uiSourceOffset;
-  sourceBox.right     = uiSourceOffset + uiSize;
+  sourceBox.left      = static_cast<xiiUInt32>(uiSourceOffset);
+  sourceBox.right     = static_cast<xiiUInt32>(uiSourceOffset + uiSize);
   sourceBox.top       = 0U;
   sourceBox.bottom    = 1U;
   sourceBox.front     = 0U;
   sourceBox.back      = 1U;
 
-  m_pCommandList->CopySubresourceRegion(pDestinationBufferD3D11->GetBuffer(), 0, uiDestinationOffset, 0, 0, pSourceBufferD3D11->GetBuffer(), 0, &sourceBox);
+  m_pCommandList->CopySubresourceRegion(pDestinationBufferD3D11->GetBuffer(), 0, static_cast<xiiUInt32>(uiDestinationOffset), 0, 0, pSourceBufferD3D11->GetBuffer(), 0, &sourceBox);
 }
 
 xiiResult xiiGALCommandListD3D11::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)
@@ -424,7 +424,7 @@ void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
 
   xiiUInt32 uiDestinationSubresourceIndex = D3D11CalcSubresource(textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
 
-  m_pCommandList->UpdateSubresource(pTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, &destinationBox, subresourceData.m_pData, subresourceData.m_uiStride, subresourceData.m_uiDepthStride);
+  m_pCommandList->UpdateSubresource(pTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, &destinationBox, subresourceData.m_pData, static_cast<xiiUInt32>(subresourceData.m_uiStride), static_cast<xiiUInt32>(subresourceData.m_uiDepthStride));
 }
 
 void xiiGALCommandListD3D11::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)
