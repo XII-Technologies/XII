@@ -280,7 +280,7 @@ public:
   /// \param description - The pipeline resource signature description. See xiiGALPipelineResourceSignatureCreationDescription.
   ///
   /// \return The handle to the created pipeline resource signature object. The function calls AddRef(), so that the new object will have one reference.
-  XII_NODISCARD xiiGALPipelineResourceSignatureHandle CreatePipelineResourceSignature(const xiiGALPipelineResourceSignatureCreationDescription& description);
+  XII_NODISCARD xiiGALPipelineResourceSignatureHandle CreatePipelineResourceSignature(xiiGALPipelineResourceSignatureCreationDescription& description);
 
   /// \brief This destroys the pipeline resource signature with the given handle.
   void DestroyPipelineResourceSignature(xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature);

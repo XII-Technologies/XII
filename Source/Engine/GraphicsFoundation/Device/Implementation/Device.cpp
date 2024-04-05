@@ -2550,7 +2550,7 @@ void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
     if (!(expression)) { return xiiGALPipelineResourceSignatureHandle(); } \
   } while (false)
 
-XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipelineResourceSignature(const xiiGALPipelineResourceSignatureCreationDescription& description)
+XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipelineResourceSignature(xiiGALPipelineResourceSignatureCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
@@ -2602,10 +2602,27 @@ XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipeline
   xiiMap<xiiHashedString, xiiSet<xiiGALShaderStage::StorageType>> usedImmutableSamplerShaderStages;
   for (xiiUInt32 i = 0; i < description.m_ImmutableSamplers.GetCount(); ++i)
   {
-    const auto& samplerDescription = description.m_ImmutableSamplers[i];
+    auto& samplerDescription = description.m_ImmutableSamplers[i];
 
     XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!samplerDescription.m_SamplerOrTextureName.IsEmpty(), "The immutable sampler at index '{0}' requires a non-empty name.", i);
     XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!samplerDescription.m_ShaderStages.IsNoFlagSet(), "The immutable sampler at index '{0}' requires a valid shader stage, and must not be xiiGALShaderStage::Unknown.", i);
+
+    // Use anisotropic filtering if any of Anisotropic is set.
+    if (samplerDescription.m_SamplerDescription.m_MagFilter == xiiGALFilterType::Anisotropic || samplerDescription.m_SamplerDescription.m_MinFilter == xiiGALFilterType::Anisotropic || samplerDescription.m_SamplerDescription.m_MipFilter == xiiGALFilterType::Anisotropic)
+    {
+      if (samplerDescription.m_SamplerDescription.m_ComparisonFunction == xiiGALComparisonFunction::Never)
+      {
+        samplerDescription.m_SamplerDescription.m_MinFilter = xiiGALFilterType::Anisotropic;
+        samplerDescription.m_SamplerDescription.m_MagFilter = xiiGALFilterType::Anisotropic;
+        samplerDescription.m_SamplerDescription.m_MipFilter = xiiGALFilterType::Anisotropic;
+      }
+      else
+      {
+        samplerDescription.m_SamplerDescription.m_MinFilter = xiiGALFilterType::ComparisonAnisotropic;
+        samplerDescription.m_SamplerDescription.m_MagFilter = xiiGALFilterType::ComparisonAnisotropic;
+        samplerDescription.m_SamplerDescription.m_MipFilter = xiiGALFilterType::ComparisonAnisotropic;
+      }
+    }
 
     xiiSet<xiiGALShaderStage::StorageType> shaderStageSet;
     if (usedImmutableSamplerShaderStages.TryGetValue(samplerDescription.m_SamplerOrTextureName, shaderStageSet))
