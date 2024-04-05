@@ -8,6 +8,11 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALTextureD3D11::GetS
   return xiiGALResourceStateFlags::Undefined;
 }
 
+XII_ALWAYS_INLINE const xiiGALSparseTextureProperties& xiiGALTextureD3D11::GetSparseProperties() const
+{
+  return m_SparseTextureProperties;
+}
+
 XII_ALWAYS_INLINE ID3D11Resource* xiiGALTextureD3D11::GetTexture() const
 {
   return m_pTexture;

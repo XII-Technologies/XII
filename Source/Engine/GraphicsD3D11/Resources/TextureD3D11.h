@@ -39,8 +39,11 @@ protected:
 
   static void PrepareInitialData(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData, xiiHybridArray<D3D11_SUBRESOURCE_DATA, 16>& out_InitialData);
 
+  void InitializeSparseTextureProperties();
+
 protected:
-  ID3D11Resource* m_pTexture = nullptr;
+  ID3D11Resource*               m_pTexture = nullptr;
+  xiiGALSparseTextureProperties m_SparseTextureProperties;
 };
 
 #include <GraphicsD3D11/Resources/Implementation/TextureD3D11_inl.h>

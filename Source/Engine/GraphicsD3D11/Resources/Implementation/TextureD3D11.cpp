@@ -35,6 +35,8 @@ xiiResult xiiGALTextureD3D11::InitPlatform(xiiGALDevice* pDevice, const xiiGALTe
 
   if (m_Description.m_pExisitingNativeObject != nullptr)
   {
+    InitializeSparseTextureProperties();
+
     return CreateFromNativeObject(m_Description.m_pExisitingNativeObject);
   }
 
@@ -71,6 +73,9 @@ xiiResult xiiGALTextureD3D11::InitPlatform(xiiGALDevice* pDevice, const xiiGALTe
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
+
+  InitializeSparseTextureProperties();
+
   return XII_SUCCESS;
 }
 
@@ -105,7 +110,7 @@ xiiResult xiiGALTextureD3D11::CreateTexture1D(ID3D11Texture1D** ppTexture1D, con
   textureDescription.Usage                = xiiD3D11TypeConversions::GetUsage(m_Description.m_Usage);
   textureDescription.BindFlags            = xiiD3D11TypeConversions::GetBindFlags(m_Description.m_BindFlags);
   textureDescription.CPUAccessFlags       = xiiD3D11TypeConversions::GetCPUAccessFlags(m_Description.m_CPUAccessFlags);
-  textureDescription.MiscFlags            = xiiD3D11TypeConversions::GetMiscFlags(m_Description.m_MiscFlags);
+  textureDescription.MiscFlags            = xiiD3D11TypeConversions::GetMiscTextureFlags(m_Description.m_MiscFlags);
 
   xiiHybridArray<D3D11_SUBRESOURCE_DATA, 16U> initialData;
   PrepareInitialData(m_Description, pInitialData, initialData);
@@ -134,7 +139,7 @@ xiiResult xiiGALTextureD3D11::CreateTexture2D(ID3D11Texture2D** ppTexture2D, con
   textureDescription.Usage                = xiiD3D11TypeConversions::GetUsage(m_Description.m_Usage);
   textureDescription.BindFlags            = xiiD3D11TypeConversions::GetBindFlags(m_Description.m_BindFlags);
   textureDescription.CPUAccessFlags       = xiiD3D11TypeConversions::GetCPUAccessFlags(m_Description.m_CPUAccessFlags);
-  textureDescription.MiscFlags            = xiiD3D11TypeConversions::GetMiscFlags(m_Description.m_MiscFlags);
+  textureDescription.MiscFlags            = xiiD3D11TypeConversions::GetMiscTextureFlags(m_Description.m_MiscFlags);
 
   if (textureDescription.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
     textureDescription.BindFlags |= D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
@@ -169,7 +174,7 @@ xiiResult xiiGALTextureD3D11::CreateTexture3D(ID3D11Texture3D** ppTexture3D, con
   textureDescription.Usage                = xiiD3D11TypeConversions::GetUsage(m_Description.m_Usage);
   textureDescription.BindFlags            = xiiD3D11TypeConversions::GetBindFlags(m_Description.m_BindFlags);
   textureDescription.CPUAccessFlags       = xiiD3D11TypeConversions::GetCPUAccessFlags(m_Description.m_CPUAccessFlags);
-  textureDescription.MiscFlags            = xiiD3D11TypeConversions::GetMiscFlags(m_Description.m_MiscFlags);
+  textureDescription.MiscFlags            = xiiD3D11TypeConversions::GetMiscTextureFlags(m_Description.m_MiscFlags);
 
   if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
     textureDescription.MiscFlags |= D3D11_RESOURCE_MISC_TILED;
@@ -204,8 +209,11 @@ void xiiGALTextureD3D11::PrepareInitialData(const xiiGALTextureCreationDescripti
   }
 }
 
-XII_ALWAYS_INLINE const xiiGALSparseTextureProperties& xiiGALTextureD3D11::GetSparseProperties() const
+void xiiGALTextureD3D11::InitializeSparseTextureProperties()
 {
+  if (m_Description.m_Usage != xiiGALResourceUsage::Sparse)
+    return;
+
   xiiGALDeviceD3D11* pDeviceD3D11   = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
   ID3D11Device2*     pDeviceD3D11_2 = static_cast<ID3D11Device2*>(pDeviceD3D11->GetD3D11Device());
 
@@ -217,7 +225,7 @@ XII_ALWAYS_INLINE const xiiGALSparseTextureProperties& xiiGALTextureD3D11::GetSp
 
   XII_ASSERT_DEV(uiTileCountForEntireResource % m_Description.GetArraySize() == 0, "");
 
-  return xiiGALSparseTextureProperties{
+  m_SparseTextureProperties = xiiGALSparseTextureProperties{
     .m_uiAddressSpaceSize = xiiUInt64{uiTileCountForEntireResource} * D3D11_2_TILED_RESOURCE_TILE_SIZE_IN_BYTES,
     .m_uiMipTailOffset    = xiiUInt64{packedMipDescription.StartTileIndexInOverallResource} * D3D11_2_TILED_RESOURCE_TILE_SIZE_IN_BYTES,
     .m_uiMipTailStride    = m_Description.IsArray() ? (uiTileCountForEntireResource / m_Description.m_uiArraySizeOrDepth) * D3D11_2_TILED_RESOURCE_TILE_SIZE_IN_BYTES : 0,
