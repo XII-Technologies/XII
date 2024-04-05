@@ -23,7 +23,7 @@ XII_ALWAYS_INLINE void xiiGALSwapChainD3D11::SetFullScreenMode(const xiiGALDispl
       m_Description.m_ColorBufferFormat = displayMode.m_TextureFormat;
     }
 
-    UpdateSwapChain(true);
+    UpdateSwapChain(true).AssertSuccess();
   }
 }
 

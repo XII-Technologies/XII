@@ -16,6 +16,9 @@ struct IDXGIFactory2;
 struct IDXGIFactory4;
 struct ID3D11Device;
 struct ID3D11DeviceContext;
+struct DXGI_MODE_DESC;
+
+XII_DEFINE_AS_POD_TYPE(DXGI_MODE_DESC);
 
 using xiiGALFormatLookupEntryD3D11 = xiiGALFormatLookupEntry<DXGI_FORMAT, (DXGI_FORMAT)0U>;
 using xiiGALFormatLookupTableD3D11 = xiiGALFormatLookupTable<xiiGALFormatLookupEntryD3D11>;

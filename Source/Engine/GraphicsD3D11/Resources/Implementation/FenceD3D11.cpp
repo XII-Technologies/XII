@@ -44,7 +44,7 @@ xiiUInt64 xiiGALFenceD3D11::GetCompletedValue()
     BOOL bData;
     if (queryData.m_pContextD3D11->GetData(queryData.m_pQueryD3D11, &bData, sizeof(bData), D3D11_ASYNC_GETDATA_DONOTFLUSH) != S_OK)
     {
-      XII_ASSERT_DEV(bData == true, "");
+      XII_ASSERT_DEV(bData, "");
 
       UpdateLastCompletedFenceValue(queryData.m_uiValue);
 

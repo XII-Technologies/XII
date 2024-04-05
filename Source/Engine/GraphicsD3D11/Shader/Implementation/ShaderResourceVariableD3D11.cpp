@@ -2,8 +2,6 @@
 
 #include <GraphicsD3D11/Shader/ShaderResourceVariableD3D11.h>
 
-#include <Diligent/Graphics/GraphicsEngine/interface/ShaderResourceVariable.h>
-
 xiiGALShaderResourceVariableD3D11::xiiGALShaderResourceVariableD3D11() :
   xiiGALShaderResourceVariable()
 {

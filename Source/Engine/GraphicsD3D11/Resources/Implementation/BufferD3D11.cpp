@@ -30,7 +30,7 @@ xiiResult xiiGALBufferD3D11::InitPlatform(xiiGALDevice* pDevice, const xiiGALBuf
 
   D3D11_BUFFER_DESC bufferDescription = {};
   bufferDescription.BindFlags         = xiiD3D11TypeConversions::GetBindFlags(m_Description.m_BindFlags);
-  bufferDescription.ByteWidth         = m_Description.m_uiSize;
+  bufferDescription.ByteWidth         = static_cast<xiiUInt32>(m_Description.m_uiSize);
   bufferDescription.Usage             = xiiD3D11TypeConversions::GetUsage(m_Description.m_ResourceUsage);
   bufferDescription.CPUAccessFlags    = xiiD3D11TypeConversions::GetCPUAccessFlags(m_Description.m_CPUAccessFlags);
   bufferDescription.MiscFlags         = 0U;

@@ -114,11 +114,11 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
   const D3D_FEATURE_LEVEL targetFeatureLevels[]     = {D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
   const char*             targetFeatureLevelNames[] = {"11.1", "11.0"};
   xiiUInt32               uiFeatureLevelIndex       = 0U;
-  HRESULT                 hResult;
+  HRESULT                 hResult                   = E_FAIL;
 
   for (const auto& featureLevel : targetFeatureLevels)
   {
-    hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_HARDWARE, 0, uiCreationFlags, &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &m_pDeviceContext);
+    hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_HARDWARE, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &m_pDeviceContext);
 
     if (SUCCEEDED(hResult))
     {
@@ -144,7 +144,7 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
 
     for (const auto& featureLevel : targetFeatureLevels)
     {
-      hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_WARP, 0, uiCreationFlags, &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &m_pDeviceContext);
+      hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_WARP, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &m_pDeviceContext);
 
       if (SUCCEEDED(hResult))
       {

@@ -32,7 +32,6 @@ protected:
   virtual ~xiiGALShaderResourceVariableD3D11();
 
 protected:
-  Diligent::IShaderResourceVariable* m_pShaderResourceVariable = nullptr;
 };
 
 #include <GraphicsD3D11/Shader/Implementation/ShaderResourceVariableD3D11_inl.h>
