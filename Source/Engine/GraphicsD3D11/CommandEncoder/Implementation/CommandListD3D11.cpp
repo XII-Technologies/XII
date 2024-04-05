@@ -314,14 +314,35 @@ void xiiGALCommandListD3D11::BeginQueryPlatform(xiiGALQuery* pQuery)
 {
   auto pQueryD3D11 = static_cast<xiiGALQueryD3D11*>(pQuery);
 
-  m_pCommandList->BeginQuery(pQueryD3D11->GetQuery());
+  XII_ASSERT_DEV(pQueryD3D11 != nullptr, "Invalid resource.");
+
+  if (pQueryD3D11->GetDescription().m_Type == xiiGALQueryType::Duration)
+  {
+    pQueryD3D11->SetDisjointQuery(BeginDisjointQuery());
+
+    m_pCommandList->Begin(pQueryD3D11->GetQuery(0));
+  }
+  else
+  {
+  m_pCommandList->Begin(pQueryD3D11->GetQuery(0));
+  }
 }
 
 void xiiGALCommandListD3D11::EndQueryPlatform(xiiGALQuery* pQuery)
 {
   auto pQueryD3D11 = static_cast<xiiGALQueryD3D11*>(pQuery);
 
-  m_pCommandList->EndQuery(pQueryD3D11->GetQuery());
+  XII_ASSERT_DEV(pQueryD3D11 != nullptr, "Invalid resource.");
+
+  xiiEnum<xiiGALQueryType> queryType = pQuery->GetDescription().m_Type;
+
+  XII_ASSERT_DEV(queryType != xiiGALQueryType::Duration || m_pActiveDisjointQuery, "There is no active disjoint query. Did you forget to call BeginQuery for this duration query.");
+
+  if (queryType == xiiGALQueryType::Timestamp)
+  {
+    pQueryD3D11->SetDisjointQuery(BeginDisjointQuery());
+  }
+  m_pCommandList->End(pQueryD3D11->GetQuery(queryType == xiiGALQueryType::Duration ? 1 : 0));
 }
 
 void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
@@ -596,6 +617,22 @@ void xiiGALCommandListD3D11::FlushPlatform()
   XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "Flushing commandlist inside an active render pass is not allowed.");
 
   m_pCommandList->Flush();
+}
+
+xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> xiiGALCommandListD3D11::BeginDisjointQuery()
+{
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+
+  if (!m_pActiveDisjointQuery)
+  {
+    m_pActiveDisjointQuery = m_DisjointQueryPool.GetDisjointQuery(pDeviceD3D11->GetD3D11Device());
+
+    // Disjoint timestamp queries should be only invoked once per frame or less.
+    m_pCommandList->Begin(m_pActiveDisjointQuery->m_pQueryD3D11);
+
+    m_pActiveDisjointQuery->m_bIsEnded = false;
+  }
+  return m_pActiveDisjointQuery;
 }
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_CommandEncoder_Implementation_CommandListD3D11);

@@ -4,6 +4,8 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 
+#include <GraphicsD3D11/Resources/DisjointQueryPool.h>
+
 struct ID3D11DeviceContext1;
 
 class XII_GRAPHICSD3D11_DLL xiiGALCommandListD3D11 final : public xiiGALCommandList
@@ -73,6 +75,9 @@ protected:
 
   virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
 
+  protected:
+  xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> BeginDisjointQuery();
+
 protected:
   ID3D11DeviceContext1* m_pCommandList = nullptr;
 
@@ -111,6 +116,9 @@ protected:
   ID3D11RenderTargetView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
   xiiUInt32               m_uiBoundRenderTargetCount                            = 0U;
   ID3D11DepthStencilView* m_pBoundDepthStencilTarget                            = nullptr;
+
+  xiiDisjointQueryPool m_DisjointQueryPool;
+  xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> m_pActiveDisjointQuery;
 };
 
 #include <GraphicsD3D11/CommandEncoder/Implementation/CommandListD3D11_inl.h>
