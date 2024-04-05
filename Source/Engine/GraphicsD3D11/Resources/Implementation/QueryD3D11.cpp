@@ -17,7 +17,7 @@ xiiResult xiiGALQueryD3D11::InitPlatform(xiiGALDevice* pDevice)
   D3D11_QUERY_DESC queryDescription = {};
   queryDescription.Query            = xiiD3D11TypeConversions::GetQueryType(m_Description.m_Type);
 
-  for (xiiUInt32 i = 0; i < (m_Description.m_Type == xiiGALQueryType::Duration ? 2 : 1); ++i)
+  for (xiiUInt32 i = 0; i < (m_Description.m_Type == xiiGALQueryType::Duration ? 2U : 1U); ++i)
   {
     if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateQuery(&queryDescription, &m_pQueryD3D11[i])))
     {

@@ -9,7 +9,7 @@ struct ID3D11Query;
 class XII_GRAPHICSD3D11_DLL xiiDisjointQueryPool final
 {
 public:
-  struct DisjointQueryWrapper
+  struct DisjointQueryWrapper : public xiiRefCounted
   {
     DisjointQueryWrapper(xiiDisjointQueryPool& pool, ID3D11Query* pQueryD3D11) :
       m_Pool(pool), m_pQueryD3D11(pQueryD3D11)
