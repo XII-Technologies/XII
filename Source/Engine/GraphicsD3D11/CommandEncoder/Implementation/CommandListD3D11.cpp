@@ -137,34 +137,83 @@ void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, 
 {
   auto pIndexBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndexBuffer);
 
-  m_pBoundIndexBuffer = (pIndexBufferD3D11 != nullptr) ? pIndexBufferD3D11->GetBuffer() : nullptr;
-  m_IndexFormat       = (pIndexBufferD3D11 != nullptr) ? pIndexBufferD3D11->GetIndexFormat() : Diligent::VT_UNDEFINED;
+  if (pIndexBufferD3D11 != nullptr)
+  {
+    const auto& indexFormat = pIndexBufferD3D11->GetIndexFormat();
 
-  m_pCommandList->SetIndexBuffer(m_pBoundIndexBuffer, uiByteOffset, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+    DXGI_FORMAT d3d11IndexFormat = DXGI_FORMAT_UNKNOWN;
+    if (indexFormat == xiiGALValueType::UInt32)
+    {
+      d3d11IndexFormat = DXGI_FORMAT_R32_UINT;
+    }
+    else if (indexFormat == xiiGALValueType::UInt16)
+    {
+      d3d11IndexFormat = DXGI_FORMAT_R16_UINT;
+    }
+    else
+    {
+      xiiLog::Error("Unsupported index format, only xiiGALValueType::UInt16 or xiiGALValueType::UInt32 are supported.");
+      return;
+    }
+
+    m_pCommittedIndexBuffer           = pIndexBufferD3D11->GetBuffer();
+    m_CommittedIndexBufferFormat      = indexFormat;
+    m_uiCommittedIndexDataStartOffset = uiByteOffset;
+  }
+  else
+  {
+    m_pCommittedIndexBuffer           = nullptr;
+    m_CommittedIndexBufferFormat      = xiiGALValueType::Undefined;
+    m_uiCommittedIndexDataStartOffset = uiByteOffset;
+  }
+  m_bCommittedIndexBufferUpToDate = false;
 }
 
 void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
 {
+  XII_ASSERT_DEV((uiStartSlot + pVertexBuffers.GetCount()) <= XII_GAL_MAX_VERTEX_BUFFER_COUNT, "The number of vertex buffers to set, exceeds the maximum amount.");
+
   if (flags.IsSet(xiiGALSetVertexBufferFlags::Reset))
   {
-    xiiMemoryUtils::DefaultConstruct(m_pBoundVertexBuffers);
+    m_CommittedVertexBuffersRange.Reset();
 
-    m_BoundVertexBuffersRange.Reset();
+    // Reset only the buffer slots that are not being set.
+    for (xiiUInt32 i = 0; i < uiStartSlot; ++i)
+    {
+      m_pCommittedVertexBuffers[i]      = nullptr;
+      m_CommittedVertexBufferOffsets[i] = 0U;
+      m_CommittedVertexBufferStrides[i] = 0U;
+    }
+    for (xiiUInt32 i = uiStartSlot + pVertexBuffers.GetCount(); i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
+    {
+      m_pCommittedVertexBuffers[i]      = nullptr;
+      m_CommittedVertexBufferOffsets[i] = 0U;
+      m_CommittedVertexBufferStrides[i] = 0U;
+    }
+
+    m_bCommittedVertexBufferUpToDate = false;
   }
-  for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
+
+  for (xiiUInt32 i = uiStartSlot; i, pVertexBuffers.GetCount(); ++i)
   {
-    auto* pVertexBuffersD3D11 = static_cast<xiiGALBufferD3D11*>(pVertexBuffers[i]);
+    auto pVertexBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pVertexBuffers[i]);
 
-    m_pBoundVertexBuffers[i] = (pVertexBuffersD3D11 != nullptr) ? pVertexBuffersD3D11->GetBuffer() : nullptr;
+    ID3D11Buffer* pD3D11VertexBuffer   = pVertexBufferD3D11 ? pVertexBufferD3D11->GetBuffer() : nullptr;
+    xiiUInt32     uiVertexBufferOffset = pByteOffsets[i];
+    xiiUInt32     uiVertexBufferStride = pVertexBufferD3D11 ? pVertexBufferD3D11->GetDescription().m_uiElementByteStride : 0U;
 
-    m_BoundVertexBuffersRange.SetToIncludeValue(i);
+    if (m_pCommittedVertexBuffers[i] != pD3D11VertexBuffer || m_CommittedVertexBufferOffsets[i] != uiVertexBufferOffset || m_CommittedVertexBufferStrides[i] != uiVertexBufferStride)
+    {
+      m_pCommittedVertexBuffers[i]      = pD3D11VertexBuffer;
+      m_CommittedVertexBufferOffsets[i] = uiVertexBufferOffset;
+      m_CommittedVertexBufferStrides[i] = uiVertexBufferStride;
+
+      m_CommittedVertexBuffersRange.SetToIncludeValue(i);
+
+      m_bCommittedVertexBufferUpToDate = false;
+    }
   }
-
-  Diligent::SET_VERTEX_BUFFERS_FLAGS setVertexBufferFlags = Diligent::SET_VERTEX_BUFFERS_FLAG_NONE;
-  if (flags.IsSet(xiiGALSetVertexBufferFlags::Reset))
-    setVertexBufferFlags |= Diligent::SET_VERTEX_BUFFERS_FLAG_RESET;
-
-  m_pCommandList->SetVertexBuffers(uiStartSlot, pVertexBuffers.GetCount(), m_pBoundVertexBuffers + uiStartSlot, pByteOffsets.GetPtr() + uiStartSlot, Diligent::RESOURCE_STATE_TRANSITION_MODE_TRANSITION, setVertexBufferFlags);
+  m_bCommittedVertexBufferUpToDate = true;
 }
 
 void xiiGALCommandListD3D11::ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
