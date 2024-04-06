@@ -66,48 +66,71 @@ void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipe
 
 void xiiGALCommandListD3D11::SetStencilRefPlatform(xiiUInt32 uiStencilRef)
 {
-  m_pCommandList->SetStencilRef(uiStencilRef);
+  ID3D11DepthStencilState* pD3D11DepthStencilState = m_pPipelineState ? m_pPipelineState->GetD3D11DepthStencilState() : nullptr;
+
+  m_pCommandList->OMSetDepthStencilState(pD3D11DepthStencilState, uiStencilRef);
 }
 
 void xiiGALCommandListD3D11::SetBlendFactorPlatform(const xiiColor& blendFactor)
 {
-  m_pCommandList->SetBlendFactors(blendFactor.GetData());
+  xiiUInt32         uiSampleMask     = 0xFFFFFFFFU;
+  ID3D11BlendState* pD3D11BlendState = nullptr;
+
+  if (m_pPipelineState != nullptr)
+  {
+    const auto& description = m_pPipelineState->GetDescription();
+
+    if (description.IsAnyGraphicsPipeline())
+    {
+      uiSampleMask     = description.m_GraphicsPipeline.m_uiSampleMask;
+      pD3D11BlendState = m_pPipelineState->GetD3D11BlendState();
+    }
+  }
+  m_pCommandList->OMSetBlendState(pD3D11BlendState, blendFactor.GetData(), uiSampleMask);
 }
 
 void xiiGALCommandListD3D11::SetViewportsPlatform(xiiArrayPtr<xiiGALViewport> pViewports, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
 {
-  xiiHybridArray<Diligent::Viewport, XII_GAL_MAX_VIEWPORT_COUNT> viewports;
+  XII_CHECK_AT_COMPILETIME_MSG(XII_GAL_MAX_VIEWPORT_COUNT >= D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, "The XII_GAL_MAX_VIEWPORT_COUNT must be greater than (or equal to) D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE.");
 
-  for (xiiUInt32 i = 0; i < pViewports.GetCount(); ++i)
+  XII_ASSERT_DEV(m_Viewports.GetCount() == pViewports.GetCount(), "Unexpected number of viewports.");
+
+  D3D11_VIEWPORT d3d11Viewports[XII_GAL_MAX_VIEWPORT_COUNT];
+
+  for (xiiUInt32 uiViewPortIndex = 0; uiViewPortIndex < pViewports.GetCount(); ++uiViewPortIndex)
   {
-    const auto& sourceView = pViewports[i];
-    auto&       view       = viewports.ExpandAndGetRef();
-
-    view.TopLeftX = sourceView.m_fTopLeftX;
-    view.TopLeftY = sourceView.m_fTopLeftY;
-    view.Width    = sourceView.m_fWidth;
-    view.Height   = sourceView.m_fHeight;
-    view.MinDepth = sourceView.m_fMinDepth;
-    view.MaxDepth = sourceView.m_fMaxDepth;
+    d3d11Viewports[uiViewPortIndex].TopLeftX = pViewports[uiViewPortIndex].m_fTopLeftX;
+    d3d11Viewports[uiViewPortIndex].TopLeftY = pViewports[uiViewPortIndex].m_fTopLeftY;
+    d3d11Viewports[uiViewPortIndex].Width    = pViewports[uiViewPortIndex].m_fWidth;
+    d3d11Viewports[uiViewPortIndex].Height   = pViewports[uiViewPortIndex].m_fHeight;
+    d3d11Viewports[uiViewPortIndex].MinDepth = pViewports[uiViewPortIndex].m_fMinDepth;
+    d3d11Viewports[uiViewPortIndex].MaxDepth = pViewports[uiViewPortIndex].m_fMaxDepth;
   }
-  m_pCommandList->SetViewports(viewports.GetCount(), viewports.GetData(), uiRenderTargetWidth, uiRenderTargetHeight);
+
+  // All viewports must be set atomically as one operation.
+  // Any viewports not defined by the call are disabled.
+  m_pCommandList->RSSetViewports(pViewports.GetCount(), d3d11Viewports);
 }
 
 void xiiGALCommandListD3D11::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRects, xiiUInt32 uiRenderTargetWidth, xiiUInt32 uiRenderTargetHeight)
 {
-  xiiHybridArray<Diligent::Rect, XII_GAL_MAX_VIEWPORT_COUNT> rects;
+  XII_CHECK_AT_COMPILETIME_MSG(XII_GAL_MAX_VIEWPORT_COUNT >= D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE, "The XII_GAL_MAX_VIEWPORT_COUNT must be greater than (or equal to) D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE.");
 
-  for (xiiUInt32 i = 0; i < pRects.GetCount(); ++i)
+  XII_ASSERT_DEV(m_ScissorRects.GetCount() == pRects.GetCount(), "Unexpected number of scissor rects.");
+
+  D3D11_RECT d3d11ScissorRects[XII_GAL_MAX_VIEWPORT_COUNT];
+
+  for (xiiUInt32 uiScissorRectIndex = 0; uiScissorRectIndex < pRects.GetCount(); ++uiScissorRectIndex)
   {
-    const auto& sourceRect = pRects[i];
-    auto&       rect       = rects.ExpandAndGetRef();
-
-    rect.top    = sourceRect.Top();
-    rect.bottom = sourceRect.Bottom();
-    rect.left   = sourceRect.Left();
-    rect.right  = sourceRect.Right();
+    d3d11ScissorRects[uiScissorRectIndex].left   = pRects[uiScissorRectIndex].Left();
+    d3d11ScissorRects[uiScissorRectIndex].top    = pRects[uiScissorRectIndex].Top();
+    d3d11ScissorRects[uiScissorRectIndex].right  = pRects[uiScissorRectIndex].Right();
+    d3d11ScissorRects[uiScissorRectIndex].bottom = pRects[uiScissorRectIndex].Bottom();
   }
-  m_pCommandList->SetScissorRects(rects.GetCount(), rects.GetData(), uiRenderTargetWidth, uiRenderTargetHeight);
+
+  // All scissor rects must be set atomically as one operation.
+  // Any scissor rects not defined by the call are disabled.
+  m_pCommandList->RSSetScissorRects(pRects.GetCount(), d3d11ScissorRects);
 }
 
 void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)

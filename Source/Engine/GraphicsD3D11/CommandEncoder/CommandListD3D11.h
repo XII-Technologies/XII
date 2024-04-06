@@ -83,6 +83,8 @@ protected:
 protected:
   ID3D11DeviceContext1* m_pCommandList = nullptr;
 
+  xiiGALPipelineStateD3D11* m_pPipelineState = nullptr;
+
   ID3D11Buffer*         m_pCommittedVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT]      = {};
   xiiUInt32             m_CommittedVertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
   xiiUInt32             m_CommittedVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};

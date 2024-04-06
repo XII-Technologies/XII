@@ -63,3 +63,6 @@ class xiiGALShaderD3D11;
 class xiiGALBlendStateD3D11;
 class xiiGALDepthStencilStateD3D11;
 class xiiGALRasterizerStateD3D11;
+class xiiGALPipelineStateD3D11;
+class xiiGALPipelineResourceSignatureD3D11;
+class xiiGALShaderResourceVariableD3D11;
