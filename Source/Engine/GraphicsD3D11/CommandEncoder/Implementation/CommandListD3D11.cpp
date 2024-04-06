@@ -158,13 +158,13 @@ void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, 
 
     m_pCommittedIndexBuffer           = pIndexBufferD3D11->GetBuffer();
     m_CommittedIndexBufferFormat      = indexFormat;
-    m_uiCommittedIndexDataStartOffset = uiByteOffset;
+    m_uiCommittedIndexDataStartOffset = static_cast<xiiUInt32>(uiByteOffset);
   }
   else
   {
     m_pCommittedIndexBuffer           = nullptr;
     m_CommittedIndexBufferFormat      = xiiGALValueType::Undefined;
-    m_uiCommittedIndexDataStartOffset = uiByteOffset;
+    m_uiCommittedIndexDataStartOffset = static_cast<xiiUInt32>(uiByteOffset);
   }
   m_bCommittedIndexBufferUpToDate = false;
 }
@@ -199,7 +199,7 @@ void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xii
     auto pVertexBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pVertexBuffers[i]);
 
     ID3D11Buffer* pD3D11VertexBuffer   = pVertexBufferD3D11 ? pVertexBufferD3D11->GetBuffer() : nullptr;
-    xiiUInt32     uiVertexBufferOffset = pByteOffsets[i];
+    xiiUInt32     uiVertexBufferOffset = static_cast<xiiUInt32>(pByteOffsets[i]);
     xiiUInt32     uiVertexBufferStride = pVertexBufferD3D11 ? pVertexBufferD3D11->GetDescription().m_uiElementByteStride : 0U;
 
     if (m_pCommittedVertexBuffers[i] != pD3D11VertexBuffer || m_CommittedVertexBufferOffsets[i] != uiVertexBufferOffset || m_CommittedVertexBufferStrides[i] != uiVertexBufferStride)
