@@ -13,7 +13,7 @@
 
 #include <VersionHelpers.h>
 #include <d3d11_1.h>
-#include <dxgi1_2.h>
+#include <dxgi1_4.h>
 
 xiiGALSwapChainD3D11::xiiGALSwapChainD3D11(const xiiGALSwapChainCreationDescription& creationDescription) :
   xiiGALSwapChain(creationDescription)
@@ -157,21 +157,15 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
   swapChainDescription.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
   // Create DXGI Factory.
-  IDXGIFactory2* pDXGIFactory = nullptr;
-  if (FAILED(CreateDXGIFactory1(__uuidof(pDXGIFactory), reinterpret_cast<void**>(static_cast<IDXGIFactory2**>(&pDXGIFactory)))))
-  {
-    xiiLog::Error("Failed to create DXGI factory.");
-    return XII_FAILURE;
-  }
+  IDXGIFactory4*   pDXGIFactory = pDeviceD3D11->GetDXGIFactory();
+  IDXGISwapChain1* pSwapChain1  = nullptr;
 
-  IDXGISwapChain1* pSwapChain1 = nullptr;
-
-  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pSwapChain1); XII_GAL_D3D11_RELEASE(pDXGIFactory););
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pSwapChain1););
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullScreenDescription = {};
 
-  fullScreenDescription.Windowed                = D3D11_BOOL(m_FullScreenMode.m_bIsFullScreen);
+  fullScreenDescription.Windowed                = D3D11_BOOL(!m_FullScreenMode.m_bIsFullScreen);
   fullScreenDescription.RefreshRate.Numerator   = m_FullScreenMode.m_uiRefreshRateNumerator;
   fullScreenDescription.RefreshRate.Denominator = m_FullScreenMode.m_uiRefreshRateDenominator;
   fullScreenDescription.Scaling                 = xiiD3D11TypeConversions::GetScalingMode(m_FullScreenMode.m_ScalingMode);
