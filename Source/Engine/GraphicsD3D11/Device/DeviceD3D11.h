@@ -15,6 +15,7 @@ struct IDXGIAdapter1;
 struct IDXGIFactory2;
 struct IDXGIFactory4;
 struct ID3D11Device;
+struct ID3D11Debug;
 struct ID3D11DeviceContext;
 struct DXGI_MODE_DESC;
 
@@ -145,6 +146,7 @@ private:
   IDXGIFactory4*       m_pDXGIFactory   = nullptr;
   IDXGIAdapter1*       m_pDXGIAdapter   = nullptr;
   ID3D11Device*        m_pDeviceD3D11   = nullptr;
+  ID3D11Debug*         m_pDebugD3D11    = nullptr;
   ID3D11DeviceContext* m_pDeviceContext = nullptr;
 
   xiiDynamicArray<xiiGALDisplayModeDescription> m_DisplayModes;

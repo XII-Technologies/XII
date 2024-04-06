@@ -88,7 +88,6 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
 
   XII_VERIFY_D3D11(SUCCEEDED(CreateDXGIFactory1(__uuidof(m_pDXGIFactory), reinterpret_cast<void**>(static_cast<IDXGIFactory4**>(&m_pDXGIFactory)))), "Failed to create DXGI factory. Error code '{}'.", xiiArgErrorCode(GetLastError()));
 
-  // Direct3D12 does not allow feature levels below 11.0 (D3D11CreateDevice fails to create a device).
   const D3D_FEATURE_LEVEL minFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 
   IDXGIAdapter1* pHardwareAdapter = nullptr;
@@ -118,7 +117,7 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
 
   for (const auto& featureLevel : targetFeatureLevels)
   {
-    hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_HARDWARE, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &m_pDeviceContext);
+    hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_UNKNOWN, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &m_pDeviceContext);
 
     if (SUCCEEDED(hResult))
     {
@@ -144,7 +143,7 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
 
     for (const auto& featureLevel : targetFeatureLevels)
     {
-      hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_WARP, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &m_pDeviceContext);
+      hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_UNKNOWN, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &m_pDeviceContext);
 
       if (SUCCEEDED(hResult))
       {
@@ -168,50 +167,53 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
 
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
-    ID3D11InfoQueue* pInfoQueue = nullptr;
-    if (SUCCEEDED(m_pDeviceD3D11->QueryInterface(&pInfoQueue)))
+    if (SUCCEEDED(m_pDeviceD3D11->QueryInterface(__uuidof(m_pDebugD3D11), reinterpret_cast<void**>(static_cast<ID3D11Debug**>(&m_pDebugD3D11)))))
     {
-      // Suppress whole categories of messages
-      // D3D11_MESSAGE_CATEGORY categories[] = {};
+      ID3D11InfoQueue* pInfoQueue = nullptr;
+      if (SUCCEEDED(m_pDebugD3D11->QueryInterface(&pInfoQueue)))
+      {
+        // Suppress whole categories of messages
+        // D3D11_MESSAGE_CATEGORY categories[] = {};
 
-      // Suppress messages based on their severity level
-      D3D11_MESSAGE_SEVERITY severities[] = {D3D11_MESSAGE_SEVERITY_INFO};
+        // Suppress messages based on their severity level
+        D3D11_MESSAGE_SEVERITY severities[] = {D3D11_MESSAGE_SEVERITY_INFO};
 
-      // Suppress individual messages by their ID
-      D3D11_MESSAGE_ID denyIDs[] =
-        {
-          // D3D11 WARNING: ID3D11Device::CreateInputLayout: Element in the layout mask was not found in the shader signature.
-          // This mismatch is invalid if the shader actually uses the missing element.
-          // [ EXECUTION WARNING #391: CREATEINPUTLAYOUT_MISSINGELEMENT]
-          D3D11_MESSAGE_ID_CREATEINPUTLAYOUT_MISSINGELEMENT,
-        };
+        // Suppress individual messages by their ID
+        D3D11_MESSAGE_ID denyIDs[] =
+          {
+            // D3D11 WARNING: ID3D11Device::CreateInputLayout: Element in the layout mask was not found in the shader signature.
+            // This mismatch is invalid if the shader actually uses the missing element.
+            // [ EXECUTION WARNING #391: CREATEINPUTLAYOUT_MISSINGELEMENT]
+            D3D11_MESSAGE_ID_CREATEINPUTLAYOUT_MISSINGELEMENT,
+          };
 
-      D3D11_INFO_QUEUE_FILTER queueFilter = {};
-      // queueFilter.DenyList.NumCategories = XII_ARRAY_SIZE(categories);
-      // queueFilter.DenyList.pCategoryList = categories;
-      queueFilter.DenyList.NumSeverities = XII_ARRAY_SIZE(severities);
-      queueFilter.DenyList.pSeverityList = severities;
-      queueFilter.DenyList.NumIDs        = XII_ARRAY_SIZE(denyIDs);
-      queueFilter.DenyList.pIDList       = denyIDs;
+        D3D11_INFO_QUEUE_FILTER queueFilter = {};
+        // queueFilter.DenyList.NumCategories = XII_ARRAY_SIZE(categories);
+        // queueFilter.DenyList.pCategoryList = categories;
+        queueFilter.DenyList.NumSeverities = XII_ARRAY_SIZE(severities);
+        queueFilter.DenyList.pSeverityList = severities;
+        queueFilter.DenyList.NumIDs        = XII_ARRAY_SIZE(denyIDs);
+        queueFilter.DenyList.pIDList       = denyIDs;
 
-      XII_VERIFY(SUCCEEDED(pInfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+      XII_VERIFY(SUCCEEDED(pInfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
       if (IsDebuggerPresent())
       {
-        XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, TRUE), "Failed to set break on corruption. Error code '{}'.", xiiArgErrorCode(GetLastError()));
-        XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, TRUE), "Failed to set break on error. Error code '{}'.", xiiArgErrorCode(GetLastError()));
-        XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, TRUE), "Failed to set break on warning. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+        XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, TRUE)), "Failed to set break on corruption.");
+        XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, TRUE)), "Failed to set break on error.");
+        XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, TRUE)), "Failed to set break on warning.");
       }
 #endif
+      }
+      XII_GAL_D3D11_RELEASE(pInfoQueue);
     }
-    XII_GAL_D3D11_RELEASE(pInfoQueue);
-  }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 // We can prevent the GPU from overclocking or underclocking to get consistent timings.
 // m_pDeviceD3D11->SetStablePowerState(TRUE);
 #endif
+  }
 
   FillFormatLookupTable();
 
@@ -253,6 +255,7 @@ xiiResult xiiGALDeviceD3D11::ShutdownPlatform()
   }
 
   XII_GAL_D3D11_RELEASE(m_pDeviceContext);
+  XII_GAL_D3D11_RELEASE(m_pDebugD3D11);
   XII_GAL_D3D11_RELEASE(m_pDeviceD3D11);
   XII_GAL_D3D11_RELEASE(m_pDXGIAdapter);
   XII_GAL_D3D11_RELEASE(m_pDXGIFactory);
@@ -291,7 +294,7 @@ void xiiGALDeviceD3D11::EndFramePlatform()
 
 xiiGALSwapChain* xiiGALDeviceD3D11::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)
 {
-  xiiGALSwapChainD3D11* pSwapChainD3D11 = XII_NEW(&m_Allocator, xiiGALSwapChainD3D11, description);
+  xiiGALSwapChainD3D11* pSwapChainD3D11 = XII_NEW(&m_Allocator, xiiGALSwapChainD3D11, this, description);
 
   if (pSwapChainD3D11->InitPlatform(this).Succeeded())
     return pSwapChainD3D11;
@@ -781,12 +784,13 @@ void xiiGALDeviceD3D11::FillCapabilitiesPlatform()
 
     // Set queue information.
     {
-      auto& queueProperty                       = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
-      queueProperty.m_Type                      = xiiGALCommandQueueType::Graphics;
-      queueProperty.m_MaxDeviceContexts         = 1U;
-      queueProperty.m_TextureCopyGranularity[0] = 1U;
-      queueProperty.m_TextureCopyGranularity[1] = 1U;
-      queueProperty.m_TextureCopyGranularity[2] = 1U;
+      auto& queueProperty               = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
+      queueProperty.m_Type              = xiiGALCommandQueueType::Graphics;
+      queueProperty.m_MaxDeviceContexts = 1U;
+
+      queueProperty.m_TextureCopyGranularity.PushBack(1U);
+      queueProperty.m_TextureCopyGranularity.PushBack(1U);
+      queueProperty.m_TextureCopyGranularity.PushBack(1U);
     }
   }
 
@@ -1095,7 +1099,7 @@ void xiiGALDeviceD3D11::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter
     }
 
     // Check to see if the adapter supports Direct3D 11, but don't create the actual device yet.
-    if (SUCCEEDED(D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_NULL, 0, 0, &featureLevel, 1, D3D11_SDK_VERSION, nullptr, nullptr, nullptr)))
+    if (SUCCEEDED(D3D11CreateDevice(pDXGIAdapter, D3D_DRIVER_TYPE_UNKNOWN, 0, 0, &featureLevel, 1, D3D11_SDK_VERSION, nullptr, nullptr, nullptr)))
     {
       break;
     }
@@ -1110,22 +1114,17 @@ void xiiGALDeviceD3D11::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter
 
 xiiDynamicArray<IDXGIAdapter1*> xiiGALDeviceD3D11::GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel)
 {
+  XII_ASSERT_DEV(m_pDXGIFactory != nullptr, "The DXGI Factory has not yet been initialized.");
+
   xiiDynamicArray<IDXGIAdapter1*> DXGIAdapters;
 
-  IDXGIFactory2* pDXGIFactory = nullptr;
-  if (FAILED(CreateDXGIFactory1(__uuidof(IDXGIFactory2), (void**)&pDXGIFactory)))
-  {
-    xiiLog::Error("Failed to create DXGI factory.");
-    return DXGIAdapters;
-  }
-
   IDXGIAdapter1* pDXGIAdapter = nullptr;
-  for (xiiUInt32 uiAdapterIndex = 0; pDXGIFactory->EnumAdapters1(uiAdapterIndex, &pDXGIAdapter) != DXGI_ERROR_NOT_FOUND; ++uiAdapterIndex)
+  for (xiiUInt32 uiAdapterIndex = 0; m_pDXGIFactory->EnumAdapters1(uiAdapterIndex, &pDXGIAdapter) != DXGI_ERROR_NOT_FOUND; ++uiAdapterIndex)
   {
     DXGI_ADAPTER_DESC1 adapterDescription;
     pDXGIAdapter->GetDesc1(&adapterDescription);
 
-    if (SUCCEEDED(D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_NULL, 0, 0, &minFeatureLevel, 1, D3D11_SDK_VERSION, nullptr, nullptr, nullptr)))
+    if (SUCCEEDED(D3D11CreateDevice(pDXGIAdapter, D3D_DRIVER_TYPE_UNKNOWN, 0, 0, &minFeatureLevel, 1, D3D11_SDK_VERSION, nullptr, nullptr, nullptr)))
     {
       DXGIAdapters.PushBack(pDXGIAdapter);
     }
