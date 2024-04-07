@@ -144,7 +144,7 @@ xiiResult xiiGALTextureD3D11::CreateTexture2D(ID3D11Texture2D** ppTexture2D, con
   if (textureDescription.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
     textureDescription.BindFlags |= D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
 
-  if (m_Description.m_Type == xiiGALResourceDimension::TextureCube || xiiGALResourceDimension::TextureCubeArray)
+  if (m_Description.m_Type == xiiGALResourceDimension::TextureCube || m_Description.m_Type == xiiGALResourceDimension::TextureCubeArray)
     textureDescription.MiscFlags |= D3D11_RESOURCE_MISC_TEXTURECUBE;
 
   if (m_Description.m_Usage == xiiGALResourceUsage::Sparse)
