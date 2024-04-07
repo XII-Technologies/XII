@@ -16,16 +16,16 @@ XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToD3D11) == xiiGALInputLa
 static UINT GALSemanticToIndexD3D11[] = {0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 1, 0, 1};
 XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToIndexD3D11) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToIndexD3D11 array size does not match vertex attribute semantic count.");
 
-xiiGALInputLayoutD3D11::xiiGALInputLayoutD3D11(const xiiGALInputLayoutCreationDescription& creationDescription) :
-  xiiGALInputLayout(creationDescription)
+xiiGALInputLayoutD3D11::xiiGALInputLayoutD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALInputLayoutCreationDescription& creationDescription) :
+  xiiGALInputLayout(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALInputLayoutD3D11::~xiiGALInputLayoutD3D11() = default;
 
-xiiResult xiiGALInputLayoutD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALInputLayoutD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
   xiiGALShaderD3D11* pShaderD3D11 = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_hShader));
 
   if (pShaderD3D11 == nullptr || !pShaderD3D11->GetDescription().HasByteCodeForStage(xiiGALShaderStage::Vertex))
@@ -104,7 +104,7 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALInputLayoutD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALInputLayoutD3D11::DeInitPlatform()
 {
   XII_GAL_D3D11_RELEASE(m_pInputLayout);
 

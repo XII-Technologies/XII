@@ -180,13 +180,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALPipelineState(const xiiGALPipelineStateCreationDescription& creationDescription);
+  xiiGALPipelineState(xiiGALDevice* pDevice, const xiiGALPipelineStateCreationDescription& creationDescription);
 
   virtual ~xiiGALPipelineState();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALPipelineStateCreationDescription m_Description;

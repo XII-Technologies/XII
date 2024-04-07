@@ -21,13 +21,13 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALTopLevelASNull(const xiiGALTopLevelASCreationDescription& creationDescription);
+  xiiGALTopLevelASNull(xiiGALDeviceNull* pDeviceNull, const xiiGALTopLevelASCreationDescription& creationDescription);
 
   virtual ~xiiGALTopLevelASNull();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 };
 
 #include <GraphicsNull/Resources/Implementation/TopLevelASNull_inl.h>

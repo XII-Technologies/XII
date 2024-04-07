@@ -3,16 +3,16 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/SamplerD3D11.h>
 
-xiiGALSamplerD3D11::xiiGALSamplerD3D11(const xiiGALSamplerCreationDescription& creationDescription) :
-  xiiGALSampler(creationDescription)
+xiiGALSamplerD3D11::xiiGALSamplerD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALSamplerCreationDescription& creationDescription) :
+  xiiGALSampler(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALSamplerD3D11::~xiiGALSamplerD3D11() = default;
 
-xiiResult xiiGALSamplerD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALSamplerD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   D3D11_SAMPLER_DESC samplerDescription = {};
   samplerDescription.AddressU           = xiiD3D11TypeConversions::GetTextureAddressMode(m_Description.m_AddressU);
@@ -52,7 +52,7 @@ xiiResult xiiGALSamplerD3D11::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALSamplerD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALSamplerD3D11::DeInitPlatform()
 {
   XII_GAL_D3D11_RELEASE(m_pSampler);
 

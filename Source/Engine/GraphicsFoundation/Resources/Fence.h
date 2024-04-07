@@ -68,13 +68,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALFence(const xiiGALFenceCreationDescription& creationDescription);
+  xiiGALFence(xiiGALDevice* pDevice, const xiiGALFenceCreationDescription& creationDescription);
 
   virtual ~xiiGALFence();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
   void UpdateLastCompletedFenceValue(xiiUInt64 uiValue);
 

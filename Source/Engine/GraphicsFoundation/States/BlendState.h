@@ -185,13 +185,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALBlendState(const xiiGALBlendStateCreationDescription& creationDescription);
+  xiiGALBlendState(xiiGALDevice* pDevice, const xiiGALBlendStateCreationDescription& creationDescription);
 
   virtual ~xiiGALBlendState();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALBlendStateCreationDescription m_Description;

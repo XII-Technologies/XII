@@ -10,14 +10,14 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRasterizerStateD3D11, 1, xiiRTTINoAllocat
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALRasterizerStateD3D11::xiiGALRasterizerStateD3D11(const xiiGALRasterizerStateCreationDescription& creationDescription) :
-  xiiGALRasterizerState(creationDescription)
+xiiGALRasterizerStateD3D11::xiiGALRasterizerStateD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALRasterizerStateCreationDescription& creationDescription) :
+  xiiGALRasterizerState(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALRasterizerStateD3D11::~xiiGALRasterizerStateD3D11() = default;
 
-xiiResult xiiGALRasterizerStateD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALRasterizerStateD3D11::InitPlatform()
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
@@ -43,7 +43,7 @@ xiiResult xiiGALRasterizerStateD3D11::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALRasterizerStateD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALRasterizerStateD3D11::DeInitPlatform()
 {
   XII_GAL_D3D11_RELEASE(m_pRasterizerState);
 

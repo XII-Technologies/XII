@@ -8,14 +8,14 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBlendStateD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALBlendStateD3D11::xiiGALBlendStateD3D11(const xiiGALBlendStateCreationDescription& creationDescription) :
-  xiiGALBlendState(creationDescription)
+xiiGALBlendStateD3D11::xiiGALBlendStateD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALBlendStateCreationDescription& creationDescription) :
+  xiiGALBlendState(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALBlendStateD3D11::~xiiGALBlendStateD3D11() = default;
 
-xiiResult xiiGALBlendStateD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBlendStateD3D11::InitPlatform()
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
@@ -49,7 +49,7 @@ xiiResult xiiGALBlendStateD3D11::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALBlendStateD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBlendStateD3D11::DeInitPlatform()
 {
   XII_GAL_D3D11_RELEASE(m_pBlendState);
 

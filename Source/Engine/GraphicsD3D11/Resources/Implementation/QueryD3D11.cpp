@@ -3,16 +3,16 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/QueryD3D11.h>
 
-xiiGALQueryD3D11::xiiGALQueryD3D11(const xiiGALQueryCreationDescription& creationDescription) :
-  xiiGALQuery(creationDescription)
+xiiGALQueryD3D11::xiiGALQueryD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALQueryCreationDescription& creationDescription) :
+  xiiGALQuery(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALQueryD3D11::~xiiGALQueryD3D11() = default;
 
-xiiResult xiiGALQueryD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALQueryD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   D3D11_QUERY_DESC queryDescription = {};
   queryDescription.Query            = xiiD3D11TypeConversions::GetQueryType(m_Description.m_Type);
@@ -28,7 +28,7 @@ xiiResult xiiGALQueryD3D11::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALQueryD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALQueryD3D11::DeInitPlatform()
 {
   m_DisjointQuery.Clear();
 

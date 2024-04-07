@@ -11,13 +11,13 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALInputLayoutNull(const xiiGALInputLayoutCreationDescription& creationDescription);
+  xiiGALInputLayoutNull(xiiGALDeviceNull* pDeviceNull, const xiiGALInputLayoutCreationDescription& creationDescription);
 
   virtual ~xiiGALInputLayoutNull();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 };
 
 #include <GraphicsNull/Shader/Implementation/InputLayoutNull_inl.h>

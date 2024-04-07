@@ -3,21 +3,19 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/BottomLevelASNull.h>
 
-xiiGALBottomLevelASNull::xiiGALBottomLevelASNull(const xiiGALBottomLevelASCreationDescription& creationDescription) :
-  xiiGALBottomLevelAS(creationDescription)
+xiiGALBottomLevelASNull::xiiGALBottomLevelASNull(xiiGALDeviceNull* pDeviceNull, const xiiGALBottomLevelASCreationDescription& creationDescription) :
+  xiiGALBottomLevelAS(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALBottomLevelASNull::~xiiGALBottomLevelASNull() = default;
 
-xiiResult xiiGALBottomLevelASNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBottomLevelASNull::InitPlatform()
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALBottomLevelASNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBottomLevelASNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

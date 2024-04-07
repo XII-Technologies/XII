@@ -11,13 +11,13 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALFramebufferNull(const xiiGALFramebufferCreationDescription& creationDescription);
+  xiiGALFramebufferNull(xiiGALDeviceNull* pDeviceNull, const xiiGALFramebufferCreationDescription& creationDescription);
 
   virtual ~xiiGALFramebufferNull();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 };
 
 #include <GraphicsNull/Resources/Implementation/FramebufferNull_inl.h>

@@ -6,17 +6,15 @@
 
 #include <d3d11_2.h>
 
-xiiGALBufferViewD3D11::xiiGALBufferViewD3D11(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
-  xiiGALBufferView(pBuffer, creationDescription)
+xiiGALBufferViewD3D11::xiiGALBufferViewD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
+  xiiGALBufferView(pDeviceD3D11, pBuffer, creationDescription)
 {
 }
 
 xiiGALBufferViewD3D11::~xiiGALBufferViewD3D11() = default;
 
-xiiResult xiiGALBufferViewD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBufferViewD3D11::InitPlatform()
 {
-  // xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
-
   switch (m_Description.m_ViewType)
   {
     case xiiGALBufferViewType::ShaderResource:
@@ -43,7 +41,7 @@ xiiResult xiiGALBufferViewD3D11::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALBufferViewD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBufferViewD3D11::DeInitPlatform()
 {
   XII_GAL_D3D11_RELEASE(m_pBufferView);
 

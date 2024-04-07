@@ -28,23 +28,23 @@
 
 #include <d3d11_1.h>
 
-xiiGALCommandListD3D11::xiiGALCommandListD3D11(const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(creationDescription)
+xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALCommandList(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALCommandListD3D11::~xiiGALCommandListD3D11() = default;
 
-xiiResult xiiGALCommandListD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALCommandListD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   // m_pCommandList = pDeviceD3D11->GetImmediateContext();
 
   return m_pCommandList != nullptr ? XII_SUCCESS : XII_FAILURE;
 }
 
-xiiResult xiiGALCommandListD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALCommandListD3D11::DeInitPlatform()
 {
   return XII_SUCCESS;
 }
@@ -58,10 +58,12 @@ void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipe
 {
   auto pPipelineStateD3D11 = static_cast<xiiGALPipelineStateD3D11*>(pPipelineState);
 
+#if 0
   if (m_pPipelineState == (pPipelineStateD3D11 != nullptr ? pPipelineStateD3D11->GetPipelineState() : nullptr))
     return;
 
   m_pPipelineState = (pPipelineStateD3D11 != nullptr ? pPipelineStateD3D11->GetPipelineState() : nullptr);
+#endif
 }
 
 void xiiGALCommandListD3D11::SetStencilRefPlatform(xiiUInt32 uiStencilRef)

@@ -6,21 +6,19 @@
 #include <GraphicsD3D11/Resources/TextureD3D11.h>
 #include <GraphicsD3D11/Resources/TextureViewD3D11.h>
 
-xiiGALFramebufferD3D11::xiiGALFramebufferD3D11(const xiiGALFramebufferCreationDescription& creationDescription) :
-  xiiGALFramebuffer(creationDescription)
+xiiGALFramebufferD3D11::xiiGALFramebufferD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALFramebufferCreationDescription& creationDescription) :
+  xiiGALFramebuffer(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALFramebufferD3D11::~xiiGALFramebufferD3D11() = default;
 
-xiiResult xiiGALFramebufferD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALFramebufferD3D11::InitPlatform()
 {
-  // xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALFramebufferD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALFramebufferD3D11::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

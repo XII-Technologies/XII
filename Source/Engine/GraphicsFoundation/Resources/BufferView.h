@@ -45,13 +45,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALBufferView(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
+  xiiGALBufferView(xiiGALDevice* pDevice, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
 
   virtual ~xiiGALBufferView();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALBuffer* m_pBuffer = nullptr;

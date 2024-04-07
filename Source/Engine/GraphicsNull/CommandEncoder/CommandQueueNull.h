@@ -20,7 +20,7 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandQueueNull();
+  xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull);
 
   virtual ~xiiGALCommandQueueNull();
 };

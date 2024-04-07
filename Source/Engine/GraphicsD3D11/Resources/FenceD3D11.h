@@ -23,13 +23,13 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALFenceD3D11(const xiiGALFenceCreationDescription& creationDescription);
+  xiiGALFenceD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALFenceCreationDescription& creationDescription);
 
   virtual ~xiiGALFenceD3D11();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 

@@ -136,13 +136,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALBottomLevelAS(const xiiGALBottomLevelASCreationDescription& creationDescription);
+  xiiGALBottomLevelAS(xiiGALDevice* pDevice, const xiiGALBottomLevelASCreationDescription& creationDescription);
 
   virtual ~xiiGALBottomLevelAS();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALBottomLevelASCreationDescription m_Description;

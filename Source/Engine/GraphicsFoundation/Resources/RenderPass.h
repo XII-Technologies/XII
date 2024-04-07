@@ -133,13 +133,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALRenderPass(const xiiGALRenderPassCreationDescription& creationDescription);
+  xiiGALRenderPass(xiiGALDevice* pDevice, const xiiGALRenderPassCreationDescription& creationDescription);
 
   virtual ~xiiGALRenderPass();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALRenderPassCreationDescription m_Description;

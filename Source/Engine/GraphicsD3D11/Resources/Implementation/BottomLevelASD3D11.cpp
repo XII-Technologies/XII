@@ -3,23 +3,21 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/BottomLevelASD3D11.h>
 
-xiiGALBottomLevelASD3D11::xiiGALBottomLevelASD3D11(const xiiGALBottomLevelASCreationDescription& creationDescription) :
-  xiiGALBottomLevelAS(creationDescription)
+xiiGALBottomLevelASD3D11::xiiGALBottomLevelASD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALBottomLevelASCreationDescription& creationDescription) :
+  xiiGALBottomLevelAS(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALBottomLevelASD3D11::~xiiGALBottomLevelASD3D11() = default;
 
-xiiResult xiiGALBottomLevelASD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBottomLevelASD3D11::InitPlatform()
 {
-  // xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
-
   xiiLog::Error("xiiGALBottomLevelAS resource is unsupported in Direct3D11.");
 
   return XII_FAILURE;
 }
 
-xiiResult xiiGALBottomLevelASD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBottomLevelASD3D11::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

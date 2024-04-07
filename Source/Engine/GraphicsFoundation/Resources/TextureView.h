@@ -129,13 +129,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALTextureView(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
+  xiiGALTextureView(xiiGALDevice* pDevice, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
 
   virtual ~xiiGALTextureView();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALTexture* m_pTexture = nullptr;

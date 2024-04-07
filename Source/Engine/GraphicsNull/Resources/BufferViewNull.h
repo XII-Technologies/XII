@@ -11,13 +11,13 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALBufferViewNull(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
+  xiiGALBufferViewNull(xiiGALDeviceNull* pDeviceNull, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription);
 
   virtual ~xiiGALBufferViewNull();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 };
 
 #include <GraphicsNull/Resources/Implementation/BufferViewNull_inl.h>

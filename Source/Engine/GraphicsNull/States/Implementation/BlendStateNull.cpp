@@ -1,20 +1,21 @@
 #include <GraphicsNull/GraphicsNullPCH.h>
 
+#include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/States/BlendStateNull.h>
 
-xiiGALBlendStateNull::xiiGALBlendStateNull(const xiiGALBlendStateCreationDescription& creationDescription) :
-  xiiGALBlendState(creationDescription)
+xiiGALBlendStateNull::xiiGALBlendStateNull(xiiGALDeviceNull* pDeviceNull, const xiiGALBlendStateCreationDescription& creationDescription) :
+  xiiGALBlendState(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALBlendStateNull::~xiiGALBlendStateNull() = default;
 
-xiiResult xiiGALBlendStateNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBlendStateNull::InitPlatform()
 {
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALBlendStateNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBlendStateNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

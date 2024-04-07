@@ -5,17 +5,15 @@
 #include <GraphicsD3D11/Resources/TextureViewD3D11.h>
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
-xiiGALTextureViewD3D11::xiiGALTextureViewD3D11(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
-  xiiGALTextureView(pTexture, creationDescription)
+xiiGALTextureViewD3D11::xiiGALTextureViewD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
+  xiiGALTextureView(pDeviceD3D11, pTexture, creationDescription)
 {
 }
 
 xiiGALTextureViewD3D11::~xiiGALTextureViewD3D11() = default;
 
-xiiResult xiiGALTextureViewD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALTextureViewD3D11::InitPlatform()
 {
-  // xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
-
   switch (m_Description.m_ViewType)
   {
     case xiiGALTextureViewType::ShaderResource:
@@ -67,7 +65,7 @@ xiiResult xiiGALTextureViewD3D11::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALTextureViewD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALTextureViewD3D11::DeInitPlatform()
 {
   XII_GAL_D3D11_RELEASE(m_pTextureView);
 

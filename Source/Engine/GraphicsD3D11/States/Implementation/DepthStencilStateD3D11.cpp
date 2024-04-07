@@ -9,14 +9,14 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDepthStencilStateD3D11, 1, xiiRTTINoAlloc
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALDepthStencilStateD3D11::xiiGALDepthStencilStateD3D11(const xiiGALDepthStencilStateCreationDescription& creationDescription) :
-  xiiGALDepthStencilState(creationDescription)
+xiiGALDepthStencilStateD3D11::xiiGALDepthStencilStateD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
+  xiiGALDepthStencilState(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALDepthStencilStateD3D11::~xiiGALDepthStencilStateD3D11() = default;
 
-xiiResult xiiGALDepthStencilStateD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALDepthStencilStateD3D11::InitPlatform()
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
@@ -47,7 +47,7 @@ xiiResult xiiGALDepthStencilStateD3D11::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALDepthStencilStateD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALDepthStencilStateD3D11::DeInitPlatform()
 {
   XII_GAL_D3D11_RELEASE(m_pDepthStencilState);
 

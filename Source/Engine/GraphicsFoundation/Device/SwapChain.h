@@ -53,13 +53,13 @@ protected:
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
 
-  xiiGALSwapChain(const xiiGALSwapChainCreationDescription& creationDescription);
+  xiiGALSwapChain(xiiGALDevice* pDevice, const xiiGALSwapChainCreationDescription& creationDescription);
 
   virtual ~xiiGALSwapChain();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
   xiiGALTextureHandle        m_hBackBufferTexture;
   xiiSizeU32                 m_CurrentSize = {};

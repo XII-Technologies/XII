@@ -24,13 +24,13 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALTextureD3D11(const xiiGALTextureCreationDescription& creationDescription);
+  xiiGALTextureD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALTextureCreationDescription& creationDescription);
 
   virtual ~xiiGALTextureD3D11();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALTextureData* pInitialData) override final;
+  virtual xiiResult InitPlatform(const xiiGALTextureData* pInitialData) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
   xiiResult CreateFromNativeObject(void* pNativeObject);
   xiiResult CreateTexture1D(ID3D11Texture1D** ppTexture1D, const xiiGALTextureData* pInitialData);

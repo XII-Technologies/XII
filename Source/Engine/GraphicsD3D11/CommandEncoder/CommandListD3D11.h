@@ -67,13 +67,13 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListD3D11(const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListD3D11();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
   xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> BeginDisjointQuery();

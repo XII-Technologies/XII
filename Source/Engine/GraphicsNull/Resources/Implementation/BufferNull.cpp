@@ -3,21 +3,19 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/BufferNull.h>
 
-xiiGALBufferNull::xiiGALBufferNull(const xiiGALBufferCreationDescription& creationDescription) :
-  xiiGALBuffer(creationDescription)
+xiiGALBufferNull::xiiGALBufferNull(xiiGALDeviceNull* pDeviceNull, const xiiGALBufferCreationDescription& creationDescription) :
+  xiiGALBuffer(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALBufferNull::~xiiGALBufferNull() = default;
 
-xiiResult xiiGALBufferNull::InitPlatform(xiiGALDevice* pDevice, const xiiGALBufferData* pInitialData)
+xiiResult xiiGALBufferNull::InitPlatform(const xiiGALBufferData* pInitialData)
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALBufferNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBufferNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

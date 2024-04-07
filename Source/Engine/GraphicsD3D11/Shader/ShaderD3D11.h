@@ -26,13 +26,13 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALShaderD3D11(const xiiGALShaderCreationDescription& creationDescription);
+  xiiGALShaderD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALShaderCreationDescription& creationDescription);
 
   virtual ~xiiGALShaderD3D11();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult InitPlatform();
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice);
+  virtual xiiResult DeInitPlatform();
 
 protected:
   ID3D11VertexShader*   m_pVertexShader   = nullptr;

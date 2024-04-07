@@ -166,13 +166,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALTexture(const xiiGALTextureCreationDescription& creationDescription);
+  xiiGALTexture(xiiGALDevice* pDevice, const xiiGALTextureCreationDescription& creationDescription);
 
   virtual ~xiiGALTexture();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALTextureData* pInitialData) = 0;
+  virtual xiiResult InitPlatform(const xiiGALTextureData* pInitialData) = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALTextureCreationDescription m_Description;

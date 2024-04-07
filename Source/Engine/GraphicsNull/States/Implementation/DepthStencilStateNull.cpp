@@ -1,20 +1,21 @@
 #include <GraphicsNull/GraphicsNullPCH.h>
 
+#include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/States/DepthStencilStateNull.h>
 
-xiiGALDepthStencilStateNull::xiiGALDepthStencilStateNull(const xiiGALDepthStencilStateCreationDescription& creationDescription) :
-  xiiGALDepthStencilState(creationDescription)
+xiiGALDepthStencilStateNull::xiiGALDepthStencilStateNull(xiiGALDeviceNull* pDeviceNull, const xiiGALDepthStencilStateCreationDescription& creationDescription) :
+  xiiGALDepthStencilState(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALDepthStencilStateNull::~xiiGALDepthStencilStateNull() = default;
 
-xiiResult xiiGALDepthStencilStateNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALDepthStencilStateNull::InitPlatform()
 {
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALDepthStencilStateNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALDepthStencilStateNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

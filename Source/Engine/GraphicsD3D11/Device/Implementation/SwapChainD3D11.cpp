@@ -15,16 +15,16 @@
 #include <d3d11_1.h>
 #include <dxgi1_4.h>
 
-xiiGALSwapChainD3D11::xiiGALSwapChainD3D11(const xiiGALSwapChainCreationDescription& creationDescription) :
-  xiiGALSwapChain(creationDescription)
+xiiGALSwapChainD3D11::xiiGALSwapChainD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALSwapChainCreationDescription& creationDescription) :
+  xiiGALSwapChain(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALSwapChainD3D11::~xiiGALSwapChainD3D11() = default;
 
-xiiResult xiiGALSwapChainD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALSwapChainD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   if (CreateDXGISwapChain().Failed())
     return XII_FAILURE;
@@ -35,9 +35,9 @@ xiiResult xiiGALSwapChainD3D11::InitPlatform(xiiGALDevice* pDevice)
   return CreateBackBufferInternal(pDeviceD3D11);
 }
 
-xiiResult xiiGALSwapChainD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALSwapChainD3D11::DeInitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   DestroyBackBufferInternal(pDeviceD3D11);
 

@@ -3,17 +3,15 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/FenceD3D11.h>
 
-xiiGALFenceD3D11::xiiGALFenceD3D11(const xiiGALFenceCreationDescription& creationDescription) :
-  xiiGALFence(creationDescription)
+xiiGALFenceD3D11::xiiGALFenceD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALFenceCreationDescription& creationDescription) :
+  xiiGALFence(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALFenceD3D11::~xiiGALFenceD3D11() = default;
 
-xiiResult xiiGALFenceD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALFenceD3D11::InitPlatform()
 {
-  // xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
-
   if (m_Description.m_Type != xiiGALFenceType::CpuWaitOnly)
   {
     xiiLog::Error("Only xiiGALFenceType::CpuWaitOnly is supported in Direct3D11.");
@@ -22,7 +20,7 @@ xiiResult xiiGALFenceD3D11::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALFenceD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALFenceD3D11::DeInitPlatform()
 {
   if (m_uiMaxPendingQueries < 10)
   {

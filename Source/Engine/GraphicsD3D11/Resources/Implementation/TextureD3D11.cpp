@@ -5,16 +5,16 @@
 
 #include <d3d11_2.h>
 
-xiiGALTextureD3D11::xiiGALTextureD3D11(const xiiGALTextureCreationDescription& creationDescription) :
-  xiiGALTexture(creationDescription)
+xiiGALTextureD3D11::xiiGALTextureD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALTextureCreationDescription& creationDescription) :
+  xiiGALTexture(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALTextureD3D11::~xiiGALTextureD3D11() = default;
 
-xiiResult xiiGALTextureD3D11::InitPlatform(xiiGALDevice* pDevice, const xiiGALTextureData* pInitialData)
+xiiResult xiiGALTextureD3D11::InitPlatform(const xiiGALTextureData* pInitialData)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   if (m_Description.m_Usage == xiiGALResourceUsage::Immutable && (pInitialData == nullptr || pInitialData->m_SubResources.IsEmpty()))
   {
@@ -79,7 +79,7 @@ xiiResult xiiGALTextureD3D11::InitPlatform(xiiGALDevice* pDevice, const xiiGALTe
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALTextureD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALTextureD3D11::DeInitPlatform()
 {
   XII_GAL_D3D11_RELEASE(m_pTexture);
 

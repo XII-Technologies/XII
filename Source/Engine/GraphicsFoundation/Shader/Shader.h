@@ -47,13 +47,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALShader(const xiiGALShaderCreationDescription& creationDescription);
+  xiiGALShader(xiiGALDevice* pDevice, const xiiGALShaderCreationDescription& creationDescription);
 
   virtual ~xiiGALShader();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALShaderCreationDescription m_Description;

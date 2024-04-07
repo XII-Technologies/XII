@@ -11,13 +11,13 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListNull(const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListNull(xiiGALDeviceNull* pDeviceNull, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListNull();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
   virtual void ExecutePlatform() override final;

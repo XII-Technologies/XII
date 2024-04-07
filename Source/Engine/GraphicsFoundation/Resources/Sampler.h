@@ -76,13 +76,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALSampler(const xiiGALSamplerCreationDescription& creationDescription);
+  xiiGALSampler(xiiGALDevice* pDevice, const xiiGALSamplerCreationDescription& creationDescription);
 
   virtual ~xiiGALSampler();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALSamplerCreationDescription m_Description;

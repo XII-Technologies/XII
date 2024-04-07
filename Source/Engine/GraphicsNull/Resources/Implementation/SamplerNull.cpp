@@ -3,23 +3,21 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/SamplerNull.h>
 
-xiiGALSamplerNull::xiiGALSamplerNull(const xiiGALSamplerCreationDescription& creationDescription) :
-  xiiGALSampler(creationDescription)
+xiiGALSamplerNull::xiiGALSamplerNull(xiiGALDeviceNull* pDeviceNull, const xiiGALSamplerCreationDescription& creationDescription) :
+  xiiGALSampler(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALSamplerNull::~xiiGALSamplerNull() = default;
 
-xiiResult xiiGALSamplerNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALSamplerNull::InitPlatform()
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALSamplerNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALSamplerNull::DeInitPlatform()
 {
-  return XII_FAILURE;
+  return XII_SUCCESS;
 }
 
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_Resources_Implementation_SamplerNull);

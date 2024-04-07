@@ -18,6 +18,8 @@ public:
 protected:
   friend class xiiGALDevice;
 
+  xiiGALDeviceObject(xiiGALDevice* pDevice);
+
   xiiGALDevice* m_pDevice = nullptr;
 };
 

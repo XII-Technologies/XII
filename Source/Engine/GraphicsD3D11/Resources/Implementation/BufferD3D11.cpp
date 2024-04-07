@@ -3,16 +3,16 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/BufferD3D11.h>
 
-xiiGALBufferD3D11::xiiGALBufferD3D11(const xiiGALBufferCreationDescription& creationDescription) :
-  xiiGALBuffer(creationDescription)
+xiiGALBufferD3D11::xiiGALBufferD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALBufferCreationDescription& creationDescription) :
+  xiiGALBuffer(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALBufferD3D11::~xiiGALBufferD3D11() = default;
 
-xiiResult xiiGALBufferD3D11::InitPlatform(xiiGALDevice* pDevice, const xiiGALBufferData* pInitialData)
+xiiResult xiiGALBufferD3D11::InitPlatform(const xiiGALBufferData* pInitialData)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   if (m_Description.m_ResourceUsage == xiiGALResourceUsage::Unified)
   {
@@ -88,7 +88,7 @@ xiiResult xiiGALBufferD3D11::InitPlatform(xiiGALDevice* pDevice, const xiiGALBuf
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALBufferD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBufferD3D11::DeInitPlatform()
 {
   XII_GAL_D3D11_RELEASE(m_pBuffer);
 

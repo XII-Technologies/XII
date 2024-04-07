@@ -3,21 +3,19 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/States/PipelineResourceSignatureD3D11.h>
 
-xiiGALPipelineResourceSignatureD3D11::xiiGALPipelineResourceSignatureD3D11(const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
-  xiiGALPipelineResourceSignature(creationDescription)
+xiiGALPipelineResourceSignatureD3D11::xiiGALPipelineResourceSignatureD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
+  xiiGALPipelineResourceSignature(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALPipelineResourceSignatureD3D11::~xiiGALPipelineResourceSignatureD3D11() = default;
 
-xiiResult xiiGALPipelineResourceSignatureD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALPipelineResourceSignatureD3D11::InitPlatform()
 {
-  // xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALPipelineResourceSignatureD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALPipelineResourceSignatureD3D11::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

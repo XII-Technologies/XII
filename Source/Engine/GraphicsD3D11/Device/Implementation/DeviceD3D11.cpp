@@ -296,7 +296,7 @@ xiiGALSwapChain* xiiGALDeviceD3D11::CreateSwapChainPlatform(const xiiGALSwapChai
 {
   xiiGALSwapChainD3D11* pSwapChainD3D11 = XII_NEW(&m_Allocator, xiiGALSwapChainD3D11, this, description);
 
-  if (pSwapChainD3D11->InitPlatform(this).Succeeded())
+  if (pSwapChainD3D11->InitPlatform().Succeeded())
     return pSwapChainD3D11;
 
   XII_DELETE(&m_Allocator, pSwapChainD3D11);
@@ -308,16 +308,16 @@ void xiiGALDeviceD3D11::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
 {
   xiiGALSwapChainD3D11* pSwapChainD3D11 = static_cast<xiiGALSwapChainD3D11*>(pSwapChain);
 
-  pSwapChainD3D11->DeInitPlatform(this).IgnoreResult();
+  pSwapChainD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pSwapChainD3D11);
 }
 
 xiiGALCommandList* xiiGALDeviceD3D11::CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description)
 {
-  xiiGALCommandListD3D11* pCommandListD3D11 = XII_NEW(&m_Allocator, xiiGALCommandListD3D11, description);
+  xiiGALCommandListD3D11* pCommandListD3D11 = XII_NEW(&m_Allocator, xiiGALCommandListD3D11, this, description);
 
-  if (pCommandListD3D11->InitPlatform(this).Succeeded())
+  if (pCommandListD3D11->InitPlatform().Succeeded())
     return pCommandListD3D11;
 
   XII_DELETE(&m_Allocator, pCommandListD3D11);
@@ -329,16 +329,16 @@ void xiiGALDeviceD3D11::DestroyCommandListPlatform(xiiGALCommandList* pCommandLi
 {
   xiiGALCommandListD3D11* pCommandListD3D11 = static_cast<xiiGALCommandListD3D11*>(pCommandList);
 
-  pCommandListD3D11->DeInitPlatform(this).IgnoreResult();
+  pCommandListD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pCommandListD3D11);
 }
 
 xiiGALBlendState* xiiGALDeviceD3D11::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
 {
-  xiiGALBlendStateD3D11* pBlendStateD3D11 = XII_NEW(&m_Allocator, xiiGALBlendStateD3D11, description);
+  xiiGALBlendStateD3D11* pBlendStateD3D11 = XII_NEW(&m_Allocator, xiiGALBlendStateD3D11, this, description);
 
-  if (pBlendStateD3D11->InitPlatform(this).Succeeded())
+  if (pBlendStateD3D11->InitPlatform().Succeeded())
     return pBlendStateD3D11;
 
   XII_DELETE(&m_Allocator, pBlendStateD3D11);
@@ -350,16 +350,16 @@ void xiiGALDeviceD3D11::DestroyBlendStatePlatform(xiiGALBlendState* pBlendState)
 {
   xiiGALBlendStateD3D11* pBlendStateD3D11 = static_cast<xiiGALBlendStateD3D11*>(pBlendState);
 
-  pBlendStateD3D11->DeInitPlatform(this).IgnoreResult();
+  pBlendStateD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pBlendStateD3D11);
 }
 
 xiiGALDepthStencilState* xiiGALDeviceD3D11::CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description)
 {
-  xiiGALDepthStencilStateD3D11* pDepthStencilStateD3D11 = XII_NEW(&m_Allocator, xiiGALDepthStencilStateD3D11, description);
+  xiiGALDepthStencilStateD3D11* pDepthStencilStateD3D11 = XII_NEW(&m_Allocator, xiiGALDepthStencilStateD3D11, this, description);
 
-  if (pDepthStencilStateD3D11->InitPlatform(this).Succeeded())
+  if (pDepthStencilStateD3D11->InitPlatform().Succeeded())
     return pDepthStencilStateD3D11;
 
   XII_DELETE(&m_Allocator, pDepthStencilStateD3D11);
@@ -371,16 +371,16 @@ void xiiGALDeviceD3D11::DestroyDepthStencilStatePlatform(xiiGALDepthStencilState
 {
   xiiGALDepthStencilStateD3D11* pDepthStencilStateD3D11 = static_cast<xiiGALDepthStencilStateD3D11*>(pDepthStencilState);
 
-  pDepthStencilStateD3D11->DeInitPlatform(this).IgnoreResult();
+  pDepthStencilStateD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pDepthStencilStateD3D11);
 }
 
 xiiGALRasterizerState* xiiGALDeviceD3D11::CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description)
 {
-  xiiGALRasterizerStateD3D11* pRasterizerStateD3D11 = XII_NEW(&m_Allocator, xiiGALRasterizerStateD3D11, description);
+  xiiGALRasterizerStateD3D11* pRasterizerStateD3D11 = XII_NEW(&m_Allocator, xiiGALRasterizerStateD3D11, this, description);
 
-  if (pRasterizerStateD3D11->InitPlatform(this).Succeeded())
+  if (pRasterizerStateD3D11->InitPlatform().Succeeded())
     return pRasterizerStateD3D11;
 
   XII_DELETE(&m_Allocator, pRasterizerStateD3D11);
@@ -392,16 +392,16 @@ void xiiGALDeviceD3D11::DestroyRasterizerStatePlatform(xiiGALRasterizerState* pR
 {
   xiiGALRasterizerStateD3D11* pRasterizerStateD3D11 = static_cast<xiiGALRasterizerStateD3D11*>(pRasterizerState);
 
-  pRasterizerStateD3D11->DeInitPlatform(this).IgnoreResult();
+  pRasterizerStateD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pRasterizerStateD3D11);
 }
 
 xiiGALShader* xiiGALDeviceD3D11::CreateShaderPlatform(const xiiGALShaderCreationDescription& description)
 {
-  xiiGALShaderD3D11* pShaderD3D11 = XII_NEW(&m_Allocator, xiiGALShaderD3D11, description);
+  xiiGALShaderD3D11* pShaderD3D11 = XII_NEW(&m_Allocator, xiiGALShaderD3D11, this, description);
 
-  if (pShaderD3D11->InitPlatform(this).Succeeded())
+  if (pShaderD3D11->InitPlatform().Succeeded())
     return pShaderD3D11;
 
   XII_DELETE(&m_Allocator, pShaderD3D11);
@@ -413,16 +413,16 @@ void xiiGALDeviceD3D11::DestroyShaderPlatform(xiiGALShader* pShader)
 {
   xiiGALShaderD3D11* pShaderD3D11 = static_cast<xiiGALShaderD3D11*>(pShader);
 
-  pShaderD3D11->DeInitPlatform(this).IgnoreResult();
+  pShaderD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pShaderD3D11);
 }
 
 xiiGALBuffer* xiiGALDeviceD3D11::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData)
 {
-  xiiGALBufferD3D11* pBufferD3D11 = XII_NEW(&m_Allocator, xiiGALBufferD3D11, description);
+  xiiGALBufferD3D11* pBufferD3D11 = XII_NEW(&m_Allocator, xiiGALBufferD3D11, this, description);
 
-  if (pBufferD3D11->InitPlatform(this, pInitialData).Succeeded())
+  if (pBufferD3D11->InitPlatform(pInitialData).Succeeded())
     return pBufferD3D11;
 
   XII_DELETE(&m_Allocator, pBufferD3D11);
@@ -434,16 +434,16 @@ void xiiGALDeviceD3D11::DestroyBufferPlatform(xiiGALBuffer* pBuffer)
 {
   xiiGALBufferD3D11* pBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
-  pBufferD3D11->DeInitPlatform(this).IgnoreResult();
+  pBufferD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pBufferD3D11);
 }
 
 xiiGALBufferView* xiiGALDeviceD3D11::CreateBufferViewPlatform(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description)
 {
-  xiiGALBufferViewD3D11* pBufferViewD3D11 = XII_NEW(&m_Allocator, xiiGALBufferViewD3D11, pBuffer, description);
+  xiiGALBufferViewD3D11* pBufferViewD3D11 = XII_NEW(&m_Allocator, xiiGALBufferViewD3D11, this, pBuffer, description);
 
-  if (pBufferViewD3D11->InitPlatform(this).Succeeded())
+  if (pBufferViewD3D11->InitPlatform().Succeeded())
     return pBufferViewD3D11;
 
   XII_DELETE(&m_Allocator, pBufferViewD3D11);
@@ -455,16 +455,16 @@ void xiiGALDeviceD3D11::DestroyBufferViewPlatform(xiiGALBufferView* pBufferView)
 {
   xiiGALBufferViewD3D11* pBufferViewD3D11 = static_cast<xiiGALBufferViewD3D11*>(pBufferView);
 
-  pBufferViewD3D11->DeInitPlatform(this).IgnoreResult();
+  pBufferViewD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pBufferViewD3D11);
 }
 
 xiiGALTexture* xiiGALDeviceD3D11::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData)
 {
-  xiiGALTextureD3D11* pTextureD3D11 = XII_NEW(&m_Allocator, xiiGALTextureD3D11, description);
+  xiiGALTextureD3D11* pTextureD3D11 = XII_NEW(&m_Allocator, xiiGALTextureD3D11, this, description);
 
-  if (pTextureD3D11->InitPlatform(this, pInitialData).Succeeded())
+  if (pTextureD3D11->InitPlatform(pInitialData).Succeeded())
     return pTextureD3D11;
 
   XII_DELETE(&m_Allocator, pTextureD3D11);
@@ -476,16 +476,16 @@ void xiiGALDeviceD3D11::DestroyTexturePlatform(xiiGALTexture* pTexture)
 {
   xiiGALTextureD3D11* pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
 
-  pTextureD3D11->DeInitPlatform(this).IgnoreResult();
+  pTextureD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pTextureD3D11);
 }
 
 xiiGALTextureView* xiiGALDeviceD3D11::CreateTextureViewPlatform(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description)
 {
-  xiiGALTextureViewD3D11* pTextureViewD3D11 = XII_NEW(&m_Allocator, xiiGALTextureViewD3D11, pTexture, description);
+  xiiGALTextureViewD3D11* pTextureViewD3D11 = XII_NEW(&m_Allocator, xiiGALTextureViewD3D11, this, pTexture, description);
 
-  if (pTextureViewD3D11->InitPlatform(this).Succeeded())
+  if (pTextureViewD3D11->InitPlatform().Succeeded())
     return pTextureViewD3D11;
 
   XII_DELETE(&m_Allocator, pTextureViewD3D11);
@@ -497,16 +497,16 @@ void xiiGALDeviceD3D11::DestroyTextureViewPlatform(xiiGALTextureView* pTextureVi
 {
   xiiGALTextureViewD3D11* pTextureViewD3D11 = static_cast<xiiGALTextureViewD3D11*>(pTextureView);
 
-  pTextureViewD3D11->DeInitPlatform(this).IgnoreResult();
+  pTextureViewD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pTextureViewD3D11);
 }
 
 xiiGALSampler* xiiGALDeviceD3D11::CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)
 {
-  xiiGALSamplerD3D11* pSamplerD3D11 = XII_NEW(&m_Allocator, xiiGALSamplerD3D11, description);
+  xiiGALSamplerD3D11* pSamplerD3D11 = XII_NEW(&m_Allocator, xiiGALSamplerD3D11, this, description);
 
-  if (pSamplerD3D11->InitPlatform(this).Succeeded())
+  if (pSamplerD3D11->InitPlatform().Succeeded())
     return pSamplerD3D11;
 
   XII_DELETE(&m_Allocator, pSamplerD3D11);
@@ -518,16 +518,16 @@ void xiiGALDeviceD3D11::DestroySamplerPlatform(xiiGALSampler* pSampler)
 {
   xiiGALSamplerD3D11* pSamplerD3D11 = static_cast<xiiGALSamplerD3D11*>(pSampler);
 
-  pSamplerD3D11->DeInitPlatform(this).IgnoreResult();
+  pSamplerD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pSamplerD3D11);
 }
 
 xiiGALInputLayout* xiiGALDeviceD3D11::CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description)
 {
-  xiiGALInputLayoutD3D11* pInputLayoutD3D11 = XII_NEW(&m_Allocator, xiiGALInputLayoutD3D11, description);
+  xiiGALInputLayoutD3D11* pInputLayoutD3D11 = XII_NEW(&m_Allocator, xiiGALInputLayoutD3D11, this, description);
 
-  if (pInputLayoutD3D11->InitPlatform(this).Succeeded())
+  if (pInputLayoutD3D11->InitPlatform().Succeeded())
     return pInputLayoutD3D11;
 
   XII_DELETE(&m_Allocator, pInputLayoutD3D11);
@@ -539,16 +539,16 @@ void xiiGALDeviceD3D11::DestroyInputLayoutPlatform(xiiGALInputLayout* pInputLayo
 {
   xiiGALInputLayoutD3D11* pInputLayoutD3D11 = static_cast<xiiGALInputLayoutD3D11*>(pInputLayout);
 
-  pInputLayoutD3D11->DeInitPlatform(this).IgnoreResult();
+  pInputLayoutD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pInputLayoutD3D11);
 }
 
 xiiGALQuery* xiiGALDeviceD3D11::CreateQueryPlatform(const xiiGALQueryCreationDescription& description)
 {
-  xiiGALQueryD3D11* pQueryD3D11 = XII_NEW(&m_Allocator, xiiGALQueryD3D11, description);
+  xiiGALQueryD3D11* pQueryD3D11 = XII_NEW(&m_Allocator, xiiGALQueryD3D11, this, description);
 
-  if (pQueryD3D11->InitPlatform(this).Succeeded())
+  if (pQueryD3D11->InitPlatform().Succeeded())
     return pQueryD3D11;
 
   XII_DELETE(&m_Allocator, pQueryD3D11);
@@ -560,16 +560,16 @@ void xiiGALDeviceD3D11::DestroyQueryPlatform(xiiGALQuery* pQuery)
 {
   xiiGALQueryD3D11* pQueryD3D11 = static_cast<xiiGALQueryD3D11*>(pQuery);
 
-  pQueryD3D11->DeInitPlatform(this).IgnoreResult();
+  pQueryD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pQueryD3D11);
 }
 
 xiiGALFence* xiiGALDeviceD3D11::CreateFencePlatform(const xiiGALFenceCreationDescription& description)
 {
-  xiiGALFenceD3D11* pFenceD3D11 = XII_NEW(&m_Allocator, xiiGALFenceD3D11, description);
+  xiiGALFenceD3D11* pFenceD3D11 = XII_NEW(&m_Allocator, xiiGALFenceD3D11, this, description);
 
-  if (pFenceD3D11->InitPlatform(this).Succeeded())
+  if (pFenceD3D11->InitPlatform().Succeeded())
     return pFenceD3D11;
 
   XII_DELETE(&m_Allocator, pFenceD3D11);
@@ -581,16 +581,16 @@ void xiiGALDeviceD3D11::DestroyFencePlatform(xiiGALFence* pFence)
 {
   xiiGALFenceD3D11* pFenceD3D11 = static_cast<xiiGALFenceD3D11*>(pFence);
 
-  pFenceD3D11->DeInitPlatform(this).IgnoreResult();
+  pFenceD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pFenceD3D11);
 }
 
 xiiGALRenderPass* xiiGALDeviceD3D11::CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description)
 {
-  xiiGALRenderPassD3D11* pRenderPassD3D11 = XII_NEW(&m_Allocator, xiiGALRenderPassD3D11, description);
+  xiiGALRenderPassD3D11* pRenderPassD3D11 = XII_NEW(&m_Allocator, xiiGALRenderPassD3D11, this, description);
 
-  if (pRenderPassD3D11->InitPlatform(this).Succeeded())
+  if (pRenderPassD3D11->InitPlatform().Succeeded())
     return pRenderPassD3D11;
 
   XII_DELETE(&m_Allocator, pRenderPassD3D11);
@@ -602,16 +602,16 @@ void xiiGALDeviceD3D11::DestroyRenderPassPlatform(xiiGALRenderPass* pRenderPass)
 {
   xiiGALRenderPassD3D11* pRenderPassD3D11 = static_cast<xiiGALRenderPassD3D11*>(pRenderPass);
 
-  pRenderPassD3D11->DeInitPlatform(this).IgnoreResult();
+  pRenderPassD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pRenderPassD3D11);
 }
 
 xiiGALFramebuffer* xiiGALDeviceD3D11::CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description)
 {
-  xiiGALFramebufferD3D11* pFramebufferD3D11 = XII_NEW(&m_Allocator, xiiGALFramebufferD3D11, description);
+  xiiGALFramebufferD3D11* pFramebufferD3D11 = XII_NEW(&m_Allocator, xiiGALFramebufferD3D11, this, description);
 
-  if (pFramebufferD3D11->InitPlatform(this).Succeeded())
+  if (pFramebufferD3D11->InitPlatform().Succeeded())
     return pFramebufferD3D11;
 
   XII_DELETE(&m_Allocator, pFramebufferD3D11);
@@ -623,16 +623,16 @@ void xiiGALDeviceD3D11::DestroyFramebufferPlatform(xiiGALFramebuffer* pFramebuff
 {
   xiiGALFramebufferD3D11* pFramebufferD3D11 = static_cast<xiiGALFramebufferD3D11*>(pFramebuffer);
 
-  pFramebufferD3D11->DeInitPlatform(this).IgnoreResult();
+  pFramebufferD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pFramebufferD3D11);
 }
 
 xiiGALBottomLevelAS* xiiGALDeviceD3D11::CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description)
 {
-  xiiGALBottomLevelASD3D11* pBottomLevelASD3D11 = XII_NEW(&m_Allocator, xiiGALBottomLevelASD3D11, description);
+  xiiGALBottomLevelASD3D11* pBottomLevelASD3D11 = XII_NEW(&m_Allocator, xiiGALBottomLevelASD3D11, this, description);
 
-  if (pBottomLevelASD3D11->InitPlatform(this).Succeeded())
+  if (pBottomLevelASD3D11->InitPlatform().Succeeded())
     return pBottomLevelASD3D11;
 
   XII_DELETE(&m_Allocator, pBottomLevelASD3D11);
@@ -644,16 +644,16 @@ void xiiGALDeviceD3D11::DestroyBottomLevelASPlatform(xiiGALBottomLevelAS* pBotto
 {
   xiiGALBottomLevelASD3D11* pBottomLevelASD3D11 = static_cast<xiiGALBottomLevelASD3D11*>(pBottomLevelAS);
 
-  pBottomLevelASD3D11->DeInitPlatform(this).IgnoreResult();
+  pBottomLevelASD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pBottomLevelASD3D11);
 }
 
 xiiGALTopLevelAS* xiiGALDeviceD3D11::CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description)
 {
-  xiiGALTopLevelASD3D11* pTopLevelASD3D11 = XII_NEW(&m_Allocator, xiiGALTopLevelASD3D11, description);
+  xiiGALTopLevelASD3D11* pTopLevelASD3D11 = XII_NEW(&m_Allocator, xiiGALTopLevelASD3D11, this, description);
 
-  if (pTopLevelASD3D11->InitPlatform(this).Succeeded())
+  if (pTopLevelASD3D11->InitPlatform().Succeeded())
     return pTopLevelASD3D11;
 
   XII_DELETE(&m_Allocator, pTopLevelASD3D11);
@@ -665,16 +665,16 @@ void xiiGALDeviceD3D11::DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS)
 {
   xiiGALTopLevelASD3D11* pTopLevelASD3D11 = static_cast<xiiGALTopLevelASD3D11*>(pTopLevelAS);
 
-  pTopLevelASD3D11->DeInitPlatform(this).IgnoreResult();
+  pTopLevelASD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pTopLevelASD3D11);
 }
 
 xiiGALPipelineResourceSignature* xiiGALDeviceD3D11::CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description)
 {
-  xiiGALPipelineResourceSignatureD3D11* pPipelineResourceSignatureD3D11 = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureD3D11, description);
+  xiiGALPipelineResourceSignatureD3D11* pPipelineResourceSignatureD3D11 = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureD3D11, this, description);
 
-  if (pPipelineResourceSignatureD3D11->InitPlatform(this).Succeeded())
+  if (pPipelineResourceSignatureD3D11->InitPlatform().Succeeded())
     return pPipelineResourceSignatureD3D11;
 
   XII_DELETE(&m_Allocator, pPipelineResourceSignatureD3D11);
@@ -686,16 +686,16 @@ void xiiGALDeviceD3D11::DestroyPipelineResourceSignaturePlatform(xiiGALPipelineR
 {
   xiiGALPipelineResourceSignatureD3D11* pPipelineResourceSignatureD3D11 = static_cast<xiiGALPipelineResourceSignatureD3D11*>(pPipelineResourceSignature);
 
-  pPipelineResourceSignatureD3D11->DeInitPlatform(this).IgnoreResult();
+  pPipelineResourceSignatureD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pPipelineResourceSignatureD3D11);
 }
 
 xiiGALPipelineState* xiiGALDeviceD3D11::CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description)
 {
-  xiiGALPipelineStateD3D11* pPipelineStateD3D11 = XII_NEW(&m_Allocator, xiiGALPipelineStateD3D11, description);
+  xiiGALPipelineStateD3D11* pPipelineStateD3D11 = XII_NEW(&m_Allocator, xiiGALPipelineStateD3D11, this, description);
 
-  if (pPipelineStateD3D11->InitPlatform(this).Succeeded())
+  if (pPipelineStateD3D11->InitPlatform().Succeeded())
     return pPipelineStateD3D11;
 
   XII_DELETE(&m_Allocator, pPipelineStateD3D11);
@@ -707,7 +707,7 @@ void xiiGALDeviceD3D11::DestroyPipelineStatePlatform(xiiGALPipelineState* pPipel
 {
   xiiGALPipelineStateD3D11* pPipelineStateD3D11 = static_cast<xiiGALPipelineStateD3D11*>(pPipelineState);
 
-  pPipelineStateD3D11->DeInitPlatform(this).IgnoreResult();
+  pPipelineStateD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pPipelineStateD3D11);
 }

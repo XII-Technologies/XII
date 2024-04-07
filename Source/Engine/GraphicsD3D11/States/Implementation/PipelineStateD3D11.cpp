@@ -4,16 +4,16 @@
 
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 
-xiiGALPipelineStateD3D11::xiiGALPipelineStateD3D11(const xiiGALPipelineStateCreationDescription& creationDescription) :
-  xiiGALPipelineState(creationDescription)
+xiiGALPipelineStateD3D11::xiiGALPipelineStateD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALPipelineStateCreationDescription& creationDescription) :
+  xiiGALPipelineState(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALPipelineStateD3D11::~xiiGALPipelineStateD3D11() = default;
 
-xiiResult xiiGALPipelineStateD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALPipelineStateD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   xiiGALShaderD3D11* pShaderD3D11 = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_hShader));
   if (pShaderD3D11->GetVertexShader() == nullptr)
@@ -48,7 +48,7 @@ xiiResult xiiGALPipelineStateD3D11::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALPipelineStateD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALPipelineStateD3D11::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

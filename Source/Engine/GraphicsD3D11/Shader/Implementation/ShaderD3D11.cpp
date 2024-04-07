@@ -5,16 +5,16 @@
 
 #include <GraphicsD3D11/Utilities/D3D11TypeConversions.h>
 
-xiiGALShaderD3D11::xiiGALShaderD3D11(const xiiGALShaderCreationDescription& creationDescription) :
-  xiiGALShader(creationDescription)
+xiiGALShaderD3D11::xiiGALShaderD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALShaderCreationDescription& creationDescription) :
+  xiiGALShader(pDeviceD3D11, creationDescription)
 {
 }
 
 xiiGALShaderD3D11::~xiiGALShaderD3D11() = default;
 
-xiiResult xiiGALShaderD3D11::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALShaderD3D11::InitPlatform()
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Vertex))
   {
@@ -84,10 +84,8 @@ xiiResult xiiGALShaderD3D11::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALShaderD3D11::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALShaderD3D11::DeInitPlatform()
 {
-  // xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
-
   XII_GAL_D3D11_RELEASE(m_pHullShader);
   XII_GAL_D3D11_RELEASE(m_pHullShader);
   XII_GAL_D3D11_RELEASE(m_pDomainShader);

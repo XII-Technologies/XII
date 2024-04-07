@@ -30,13 +30,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALFramebuffer(const xiiGALFramebufferCreationDescription& creationDescription);
+  xiiGALFramebuffer(xiiGALDevice* pDevice, const xiiGALFramebufferCreationDescription& creationDescription);
 
   virtual ~xiiGALFramebuffer();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALFramebufferCreationDescription m_Description;

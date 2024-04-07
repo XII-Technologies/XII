@@ -3,8 +3,8 @@
 #include <GraphicsNull/CommandEncoder/CommandQueueNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
 
-xiiGALCommandQueueNull::xiiGALCommandQueueNull() :
-  xiiGALCommandQueue()
+xiiGALCommandQueueNull::xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull) :
+  xiiGALCommandQueue(pDeviceNull)
 {
 }
 

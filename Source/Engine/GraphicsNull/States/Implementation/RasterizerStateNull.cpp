@@ -1,20 +1,21 @@
 #include <GraphicsNull/GraphicsNullPCH.h>
 
+#include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/States/RasterizerStateNull.h>
 
-xiiGALRasterizerStateNull::xiiGALRasterizerStateNull(const xiiGALRasterizerStateCreationDescription& creationDescription) :
-  xiiGALRasterizerState(creationDescription)
+xiiGALRasterizerStateNull::xiiGALRasterizerStateNull(xiiGALDeviceNull* pDeviceNull, const xiiGALRasterizerStateCreationDescription& creationDescription) :
+  xiiGALRasterizerState(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALRasterizerStateNull::~xiiGALRasterizerStateNull() = default;
 
-xiiResult xiiGALRasterizerStateNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALRasterizerStateNull::InitPlatform()
 {
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALRasterizerStateNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALRasterizerStateNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

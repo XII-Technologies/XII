@@ -17,13 +17,13 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALDepthStencilStateD3D11(const xiiGALDepthStencilStateCreationDescription& creationDescription);
+  xiiGALDepthStencilStateD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALDepthStencilStateCreationDescription& creationDescription);
 
   virtual ~xiiGALDepthStencilStateD3D11();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
   ID3D11DepthStencilState* m_pDepthStencilState = nullptr;

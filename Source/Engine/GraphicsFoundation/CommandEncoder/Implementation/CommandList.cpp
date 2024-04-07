@@ -25,8 +25,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
     if (!(expression)) { return XII_FAILURE; }          \
   } while (false)
 
-xiiGALCommandList::xiiGALCommandList(const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALDeviceObject(), m_Description(creationDescription)
+xiiGALCommandList::xiiGALCommandList(xiiGALDevice* pDevice, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
 {
 }
 

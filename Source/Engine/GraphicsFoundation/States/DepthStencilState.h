@@ -81,13 +81,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALDepthStencilState(const xiiGALDepthStencilStateCreationDescription& creationDescription);
+  xiiGALDepthStencilState(xiiGALDevice* pDevice, const xiiGALDepthStencilStateCreationDescription& creationDescription);
 
   virtual ~xiiGALDepthStencilState();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALDepthStencilStateCreationDescription m_Description;

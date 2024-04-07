@@ -6,16 +6,16 @@
 #include <GraphicsNull/Device/SwapChainNull.h>
 #include <GraphicsNull/Resources/TextureNull.h>
 
-xiiGALSwapChainNull::xiiGALSwapChainNull(const xiiGALSwapChainCreationDescription& creationDescription) :
-  xiiGALSwapChain(creationDescription)
+xiiGALSwapChainNull::xiiGALSwapChainNull(xiiGALDeviceNull* pDeviceNull, const xiiGALSwapChainCreationDescription& creationDescription) :
+  xiiGALSwapChain(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALSwapChainNull::~xiiGALSwapChainNull() = default;
 
-xiiResult xiiGALSwapChainNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALSwapChainNull::InitPlatform()
 {
-  xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
+  xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(m_pDevice);
 
   // We have created a surface on a window, the window must not be destroyed while the surface is still alive.
   m_Description.m_pWindow->AddReference();
@@ -23,9 +23,9 @@ xiiResult xiiGALSwapChainNull::InitPlatform(xiiGALDevice* pDevice)
   return CreateBackBufferInternal(pDeviceNull);
 }
 
-xiiResult xiiGALSwapChainNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALSwapChainNull::DeInitPlatform()
 {
-  xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
+  xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(m_pDevice);
 
   DestroyBackBufferInternal(pDeviceNull);
 
@@ -75,16 +75,10 @@ void xiiGALSwapChainNull::DestroyBackBufferInternal(xiiGALDeviceNull* pDeviceNul
 
 void xiiGALSwapChainNull::AcquireNextRenderTarget(xiiGALDevice* pDevice)
 {
-  XII_PROFILE_SCOPE("AcquireNextRenderTarget");
-
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
 }
 
 void xiiGALSwapChainNull::Present(xiiGALDevice* pDevice)
 {
-  XII_PROFILE_SCOPE("PresentRenderTarget");
-
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
 }
 
 xiiResult xiiGALSwapChainNull::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)

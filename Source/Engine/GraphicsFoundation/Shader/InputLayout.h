@@ -121,13 +121,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALInputLayout(const xiiGALInputLayoutCreationDescription& creationDescription);
+  xiiGALInputLayout(xiiGALDevice* pDevice, const xiiGALInputLayoutCreationDescription& creationDescription);
 
   virtual ~xiiGALInputLayout();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALInputLayoutCreationDescription m_Description;

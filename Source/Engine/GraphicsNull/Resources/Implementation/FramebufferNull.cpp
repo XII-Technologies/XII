@@ -6,21 +6,19 @@
 #include <GraphicsNull/Resources/TextureNull.h>
 #include <GraphicsNull/Resources/TextureViewNull.h>
 
-xiiGALFramebufferNull::xiiGALFramebufferNull(const xiiGALFramebufferCreationDescription& creationDescription) :
-  xiiGALFramebuffer(creationDescription)
+xiiGALFramebufferNull::xiiGALFramebufferNull(xiiGALDeviceNull* pDeviceNull, const xiiGALFramebufferCreationDescription& creationDescription) :
+  xiiGALFramebuffer(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALFramebufferNull::~xiiGALFramebufferNull() = default;
 
-xiiResult xiiGALFramebufferNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALFramebufferNull::InitPlatform()
 {
-  xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALFramebufferNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALFramebufferNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

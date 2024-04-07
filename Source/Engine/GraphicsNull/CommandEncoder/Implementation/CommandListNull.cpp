@@ -3,21 +3,19 @@
 #include <GraphicsNull/CommandEncoder/CommandListNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
 
-xiiGALCommandListNull::xiiGALCommandListNull(const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(creationDescription)
+xiiGALCommandListNull::xiiGALCommandListNull(xiiGALDeviceNull* pDeviceNull, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALCommandList(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALCommandListNull::~xiiGALCommandListNull() = default;
 
-xiiResult xiiGALCommandListNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALCommandListNull::InitPlatform()
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALCommandListNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

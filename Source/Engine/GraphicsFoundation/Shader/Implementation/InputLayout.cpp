@@ -45,8 +45,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // clang-format on
 
-xiiGALInputLayout::xiiGALInputLayout(const xiiGALInputLayoutCreationDescription& creationDescription) :
-  xiiGALDeviceObject(), m_Description(creationDescription)
+xiiGALInputLayout::xiiGALInputLayout(xiiGALDevice* pDevice, const xiiGALInputLayoutCreationDescription& creationDescription) :
+  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
 {
 }
 

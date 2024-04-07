@@ -17,13 +17,11 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandQueueD3D11(xiiGALDeviceD3D11& deviceD3D11);
+  xiiGALCommandQueueD3D11(xiiGALDeviceD3D11* pDeviceD3D11);
 
   virtual ~xiiGALCommandQueueD3D11();
 
 protected:
-  xiiGALDeviceD3D11& m_DeviceD3D11;
-
   xiiUInt64 m_uiCompletedFenceValue = 0U;
 };
 

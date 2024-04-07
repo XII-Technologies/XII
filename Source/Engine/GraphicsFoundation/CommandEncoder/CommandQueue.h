@@ -22,7 +22,7 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALCommandQueue();
+  xiiGALCommandQueue(xiiGALDevice* pDevice);
 
   virtual ~xiiGALCommandQueue();
 };

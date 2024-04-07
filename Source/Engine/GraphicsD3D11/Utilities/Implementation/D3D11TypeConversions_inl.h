@@ -896,8 +896,6 @@ XII_ALWAYS_INLINE D3D11_QUERY xiiD3D11TypeConversions::GetQueryType(xiiEnum<xiiG
 
 XII_ALWAYS_INLINE xiiUInt32 xiiD3D11TypeConversions::GetBindFlags(xiiBitflags<xiiGALBindFlags> e)
 {
-  XII_ASSERT_DEV(!e.IsNoFlagSet(), "");
-
   xiiUInt32 uiBindFlags = {};
 
   if (e.IsSet(xiiGALBindFlags::VertexBuffer))
@@ -922,8 +920,6 @@ XII_ALWAYS_INLINE xiiUInt32 xiiD3D11TypeConversions::GetBindFlags(xiiBitflags<xi
 
 XII_ALWAYS_INLINE xiiUInt32 xiiD3D11TypeConversions::GetCPUAccessFlags(xiiBitflags<xiiGALCPUAccessFlag> e)
 {
-  XII_ASSERT_DEV(!e.IsNoFlagSet(), "");
-
   xiiUInt32 uiAccessFlags = {};
 
   if (e.IsSet(xiiGALCPUAccessFlag::Read))
