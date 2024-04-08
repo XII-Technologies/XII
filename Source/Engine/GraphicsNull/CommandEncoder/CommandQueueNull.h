@@ -16,6 +16,8 @@ public:
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
 
+  virtual xiiGALCommandList* BeginCommandList() override final;
+
 protected:
   virtual void SubmitPlatform(xiiGALCommandList* pCommandList) override final;
 

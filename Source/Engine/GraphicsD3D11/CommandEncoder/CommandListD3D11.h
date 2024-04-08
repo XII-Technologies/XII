@@ -62,6 +62,7 @@ protected:
   ID3D11DeviceContext1* GetCommandList() const;
 
 protected:
+  friend class xiiGALCommandQueueD3D11;
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 

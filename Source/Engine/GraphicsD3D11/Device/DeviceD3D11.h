@@ -7,6 +7,8 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/ResourceFormats.h>
 
+#include <GraphicsD3D11/CommandEncoder/CommandQueueD3D11.h>
+
 #include <dxgiformat.h>
 
 enum D3D_FEATURE_LEVEL;
@@ -37,6 +39,14 @@ public:
   ~xiiGALDeviceD3D11();
 
 public:
+  virtual xiiGALCommandQueue* GetGraphicsQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetComputeQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetTransferQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetSparseBindingQueue() const override final;
+
   // Internal objects retrieval.
 
   ID3D11Device*  GetD3D11Device() const;

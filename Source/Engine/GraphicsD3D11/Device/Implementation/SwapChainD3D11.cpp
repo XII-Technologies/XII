@@ -360,13 +360,6 @@ void xiiGALSwapChainD3D11::Present(xiiGALDevice* pDevice)
 
   // We now handle discarding.
   {
-    ID3D11DeviceContext1* pDeviceContext1 = nullptr;
-    if (FAILED(pDeviceD3D11->GetImmediateContext()->QueryInterface(&pDeviceContext1)))
-    {
-      xiiLog::Error("Failed to query ID3D11DeviceContext1.");
-      return;
-    }
-
     auto hBackBuffer = m_hBackBufferTexture;
     if (!hBackBuffer.IsInvalidated())
     {
@@ -375,7 +368,7 @@ void xiiGALSwapChainD3D11::Present(xiiGALDevice* pDevice)
 
       if (pTextureViewD3D11)
       {
-        pDeviceContext1->DiscardView(pTextureViewD3D11->GetTextureView());
+        pDeviceD3D11->GetImmediateContext()->DiscardView(pTextureViewD3D11->GetTextureView());
       }
     }
   }

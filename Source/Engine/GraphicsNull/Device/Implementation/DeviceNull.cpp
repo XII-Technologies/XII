@@ -5,6 +5,7 @@
 #include <GraphicsFoundation/Profiling/Profiling.h>
 
 #include <GraphicsNull/CommandEncoder/CommandListNull.h>
+#include <GraphicsNull/CommandEncoder/CommandQueueNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Device/SwapChainNull.h>
 #include <GraphicsNull/Resources/BottomLevelASNull.h>
@@ -77,6 +78,8 @@ void xiiGALDeviceNull::FlushPendingObjects()
 
 xiiResult xiiGALDeviceNull::ShutdownPlatform()
 {
+  m_pDefaultQueue.Clear();
+
   return XII_SUCCESS;
 }
 
@@ -511,6 +514,9 @@ void xiiGALDeviceNull::WaitIdlePlatform()
 
 void xiiGALDeviceNull::CreateCommandQueuesPlatform()
 {
+  xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = xiiGALCommandQueueType::Graphics};
+
+  m_pDefaultQueue = XII_NEW(&m_Allocator, xiiGALCommandQueueNull, this, queueDescription);
 }
 
 void xiiGALDeviceNull::FillCapabilitiesPlatform()

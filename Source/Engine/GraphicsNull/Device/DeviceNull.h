@@ -7,6 +7,8 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/ResourceFormats.h>
 
+#include <GraphicsNull/CommandEncoder/CommandQueueNull.h>
+
 class XII_GRAPHICSNULL_DLL xiiGALDeviceNull final : public xiiGALDevice
 {
 private:
@@ -18,6 +20,14 @@ public:
   ~xiiGALDeviceNull();
 
 public:
+  virtual xiiGALCommandQueue* GetGraphicsQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetComputeQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetTransferQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetSparseBindingQueue() const override final;
+
   // Internal objects retrieval.
 
   void ReportLiveGPUObjects();
@@ -100,6 +110,8 @@ protected:
 
 private:
   xiiUInt64 m_uiFrameNumber = 0U;
+
+  xiiUniquePtr<xiiGALCommandQueueNull> m_pDefaultQueue;
 };
 
 #include <GraphicsNull/Device/Implementation/DeviceNull_inl.h>

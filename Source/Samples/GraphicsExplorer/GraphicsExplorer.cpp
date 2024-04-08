@@ -20,6 +20,8 @@
 #include <GraphicsFoundation/Device/SwapChain.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
 static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
@@ -130,6 +132,27 @@ xiiApplication::Execution xiiGraphicsExplorerWindowApp::Run()
       cameraMotion.y += fInputValue;
     if (xiiInputManager::GetInputActionState("Main", "MoveNegY", &fInputValue) != xiiKeyState::Up)
       cameraMotion.y -= fInputValue;
+  }
+
+  // Perform rendering.
+  {
+    // Before starting to render in a frame call this function
+    m_pDevice->BeginFrame();
+
+    m_pDevice->BeginPipeline("GraphicsExplorer", m_hSwapChain);
+
+    auto pGraphicsQueue = m_pDevice->GetGraphicsQueue();
+
+    if (auto pCommandList = pGraphicsQueue->BeginCommandList())
+    {
+      xiiLog::Info("Graphics begin");
+
+      pGraphicsQueue->Submit(pCommandList);
+    }
+
+    m_pDevice->EndPipeline(m_hSwapChain);
+
+    m_pDevice->EndFrame();
   }
 
   // Make sure telemetry is sent out regularly.

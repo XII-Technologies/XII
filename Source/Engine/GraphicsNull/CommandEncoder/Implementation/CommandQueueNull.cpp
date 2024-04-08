@@ -10,6 +10,11 @@ xiiGALCommandQueueNull::xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull, co
 
 xiiGALCommandQueueNull::~xiiGALCommandQueueNull() = default;
 
+xiiGALCommandList* xiiGALCommandQueueNull::BeginCommandList()
+{
+  return nullptr;
+}
+
 void xiiGALCommandQueueNull::SubmitPlatform(xiiGALCommandList* pCommandList)
 {
 }

@@ -28,6 +28,8 @@ public:
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() = 0;
 
+  XII_NODISCARD virtual xiiGALCommandList* BeginCommandList() = 0;
+
   virtual void Submit(xiiGALCommandList* pCommandList);
 
 protected:

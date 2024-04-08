@@ -13,6 +13,8 @@ public:
 
   virtual xiiUInt64 WaitForIdle() override final;
 
+  virtual xiiGALCommandList* BeginCommandList() override final;
+
 protected:
   virtual void SubmitPlatform(xiiGALCommandList* pCommandList) override final;
 
@@ -26,6 +28,8 @@ protected:
 
 protected:
   xiiUInt64 m_uiCompletedFenceValue = 0U;
+
+  xiiUniquePtr<xiiGALCommandListD3D11> m_pCommandList;
 };
 
 #include <GraphicsD3D11/CommandEncoder/Implementation/CommandQueueD3D11_inl.h>

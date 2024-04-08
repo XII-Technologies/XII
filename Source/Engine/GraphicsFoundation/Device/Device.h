@@ -301,6 +301,18 @@ public:
   /// \brief Returns the creation description for this device.
   XII_NODISCARD const xiiGALDeviceCreationDescription& GetDescription() const;
 
+  /// \brief Retrieves a pointer to the graphics queue, this is guaranteed to exist, for a successful device initialization.
+  XII_NODISCARD virtual xiiGALCommandQueue* GetGraphicsQueue() const = 0;
+
+  /// \brief Retrieves a pointer to the compute queue if available, null otherwise.
+  XII_NODISCARD virtual xiiGALCommandQueue* GetComputeQueue() const = 0;
+
+  /// \brief Retrieves a pointer to the transfer (copy) queue if available, null otherwise.
+  XII_NODISCARD virtual xiiGALCommandQueue* GetTransferQueue() const = 0;
+
+  /// \brief Retrieves a pointer to the sparse binding queue if available, null otherwise.
+  XII_NODISCARD virtual xiiGALCommandQueue* GetSparseBindingQueue() const = 0;
+
   /// \brief Retrieves a pointer to the swap chain object with the given handle.
   XII_NODISCARD xiiGALSwapChain* GetSwapChain(xiiGALSwapChainHandle hSwapChain) const;
 
