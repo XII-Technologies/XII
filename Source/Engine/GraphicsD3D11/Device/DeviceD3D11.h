@@ -16,7 +16,7 @@ struct IDXGIFactory2;
 struct IDXGIFactory4;
 struct ID3D11Device;
 struct ID3D11Debug;
-struct ID3D11DeviceContext;
+struct ID3D11DeviceContext1;
 struct DXGI_MODE_DESC;
 
 XII_DEFINE_AS_POD_TYPE(DXGI_MODE_DESC);
@@ -43,7 +43,7 @@ public:
   IDXGIAdapter1* GetDXGIAdapter() const;
   IDXGIFactory4* GetDXGIFactory() const;
 
-  ID3D11DeviceContext* GetImmediateContext();
+  ID3D11DeviceContext1* GetImmediateContext();
 
   const xiiGALFormatLookupTableD3D11& GetFormatLookupTable() const;
 
@@ -143,11 +143,11 @@ private:
 private:
   xiiGALFormatLookupTableD3D11 m_FormatLookupTable;
 
-  IDXGIFactory4*       m_pDXGIFactory   = nullptr;
-  IDXGIAdapter1*       m_pDXGIAdapter   = nullptr;
-  ID3D11Device*        m_pDeviceD3D11   = nullptr;
-  ID3D11Debug*         m_pDebugD3D11    = nullptr;
-  ID3D11DeviceContext* m_pDeviceContext = nullptr;
+  IDXGIFactory4*        m_pDXGIFactory   = nullptr;
+  IDXGIAdapter1*        m_pDXGIAdapter   = nullptr;
+  ID3D11Device*         m_pDeviceD3D11   = nullptr;
+  ID3D11Debug*          m_pDebugD3D11    = nullptr;
+  ID3D11DeviceContext1* m_pDeviceContext = nullptr;
 
   xiiDynamicArray<xiiGALDisplayModeDescription> m_DisplayModes;
 

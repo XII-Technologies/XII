@@ -18,8 +18,8 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
-#include <GraphicsFoundation/Shader/InputLayout.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Shader/InputLayout.h>
 
 static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
@@ -379,7 +379,7 @@ void xiiGraphicsExplorerWindowApp::UpdateSwapChain()
     texDesc.m_Size.width  = g_uiWindowWidth;
     texDesc.m_Size.height = g_uiWindowHeight;
     texDesc.m_Format      = xiiGALTextureFormat::D24UNormalizedS8UInt;
-    texDesc.m_BindFlags.Add(xiiGALBindFlags::DepthStencil);
+    texDesc.m_BindFlags   = xiiGALBindFlags::DepthStencil;
 
     m_hDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
   }

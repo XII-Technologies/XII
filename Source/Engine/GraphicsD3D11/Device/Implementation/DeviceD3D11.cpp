@@ -115,9 +115,12 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
   xiiUInt32               uiFeatureLevelIndex       = 0U;
   HRESULT                 hResult                   = E_FAIL;
 
+  ID3D11DeviceContext* pDeviceContext = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pDeviceContext););
+
   for (const auto& featureLevel : targetFeatureLevels)
   {
-    hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_UNKNOWN, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &m_pDeviceContext);
+    hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_UNKNOWN, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &pDeviceContext);
 
     if (SUCCEEDED(hResult))
     {
@@ -143,7 +146,7 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
 
     for (const auto& featureLevel : targetFeatureLevels)
     {
-      hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_UNKNOWN, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &m_pDeviceContext);
+      hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_UNKNOWN, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &pDeviceContext);
 
       if (SUCCEEDED(hResult))
       {
@@ -161,6 +164,12 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
   else
   {
     xiiLog::Info("Initialized D3D11 device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
+  }
+
+  if (FAILED(pDeviceContext->QueryInterface(__uuidof(m_pDeviceContext), reinterpret_cast<void**>(static_cast<ID3D11DeviceContext1**>(&m_pDeviceContext)))))
+  {
+    xiiLog::Error("Failed to retrieve IDeviceContext1 from device context interface.");
+    return XII_FAILURE;
   }
 
   EnumerateDisplayModes(targetFeatureLevels[uiFeatureLevelIndex], m_pDXGIAdapter, 0, xiiGALTextureFormat::RGBA8UNormalizedSRGB, m_DisplayModes);

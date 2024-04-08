@@ -14,7 +14,7 @@ XII_ALWAYS_INLINE IDXGIFactory4* xiiGALDeviceD3D11::GetDXGIFactory() const
   return m_pDXGIFactory;
 }
 
-XII_ALWAYS_INLINE ID3D11DeviceContext* xiiGALDeviceD3D11::GetImmediateContext()
+XII_ALWAYS_INLINE ID3D11DeviceContext1* xiiGALDeviceD3D11::GetImmediateContext()
 {
   return m_pDeviceContext;
 }
