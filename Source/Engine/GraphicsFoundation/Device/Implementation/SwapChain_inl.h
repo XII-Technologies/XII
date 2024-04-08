@@ -23,7 +23,7 @@ XII_ALWAYS_INLINE xiiGALTextureHandle xiiGALSwapChain::GetBackBufferTexture() co
 
 XII_ALWAYS_INLINE xiiSizeU32 xiiGALSwapChain::GetCurrentSize() const
 {
-  return m_CurrentSize;
+  return m_Description.m_Resolution;
 }
 
 XII_ALWAYS_INLINE xiiEnum<xiiGALPresentMode> xiiGALSwapChain::GetPresentMode() const

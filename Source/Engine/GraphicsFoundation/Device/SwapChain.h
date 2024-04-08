@@ -61,8 +61,8 @@ protected:
 
   virtual xiiResult DeInitPlatform() = 0;
 
-  xiiGALTextureHandle        m_hBackBufferTexture;
-  xiiSizeU32                 m_CurrentSize = {};
+  xiiGALTextureHandle m_hBackBufferTexture;
+
   xiiEnum<xiiGALPresentMode> m_PresentMode = xiiGALPresentMode::VSync;
 
   xiiGALSwapChainCreationDescription m_Description;

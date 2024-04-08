@@ -307,18 +307,17 @@ xiiResult xiiGALSwapChainD3D11::CreateBackBufferInternal(xiiGALDeviceD3D11* pDev
   m_hBackBufferTexture = hBackbufferTexture;
 
   // If we sRGB backbuffer was requested, we create a "practical backbuffer".
-  if (textureDescription.m_Format == xiiGALTextureFormat::RGBA8UNormalizedSRGB || textureDescription.m_Format == xiiGALTextureFormat::BGRA8UNormalizedSRGB)
+  if (m_Description.m_ColorBufferFormat == xiiGALTextureFormat::RGBA8UNormalizedSRGB || m_Description.m_ColorBufferFormat == xiiGALTextureFormat::BGRA8UNormalizedSRGB)
   {
     textureDescription.m_pExisitingNativeObject = nullptr;
+    textureDescription.m_Format                 = m_Description.m_ColorBufferFormat;
 
     m_hActualBackBufferTexture = m_hBackBufferTexture;
     m_hBackBufferTexture       = pDeviceD3D11->CreateTexture(textureDescription);
     XII_ASSERT_RELEASE(!hBackbufferTexture.IsInvalidated(), "Failed to create practical backbuffer texture object!");
   }
 
-  m_CurrentSize = textureDescription.m_Size;
-
-  XII_ASSERT_DEV(m_CurrentSize == m_Description.m_Resolution, "");
+  m_Description.m_Resolution = textureDescription.m_Size;
 
   return XII_SUCCESS;
 }
@@ -394,6 +393,8 @@ xiiResult xiiGALSwapChainD3D11::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize
 
   if (newSize.HasNonZeroArea() && (newSize.width != m_Description.m_Resolution.width || newSize.height != m_Description.m_Resolution.height || m_DesiredSurfaceTransform != newTransform))
   {
+    m_Description.m_Resolution = newSize;
+
     if (UpdateSwapChain(false).Succeeded())
     {
       xiiLog::Info("Resized swapchain to {}x{}.", m_Description.m_Resolution.width, m_Description.m_Resolution.height);

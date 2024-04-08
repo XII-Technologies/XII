@@ -35,43 +35,43 @@ xiiResult xiiGALTextureD3D11::InitPlatform(const xiiGALTextureData* pInitialData
 
   if (m_Description.m_pExisitingNativeObject != nullptr)
   {
-    InitializeSparseTextureProperties();
-
-    return CreateFromNativeObject(m_Description.m_pExisitingNativeObject);
+    XII_SUCCEED_OR_RETURN(CreateFromNativeObject(m_Description.m_pExisitingNativeObject));
   }
-
-  switch (m_Description.m_Type)
+  else
   {
-    case xiiGALResourceDimension::Texture1D:
-    case xiiGALResourceDimension::Texture1DArray:
+    switch (m_Description.m_Type)
     {
-      ID3D11Texture1D* pTexture1D = nullptr;
-      XII_SUCCEED_OR_RETURN(CreateTexture1D(&pTexture1D, pInitialData));
+      case xiiGALResourceDimension::Texture1D:
+      case xiiGALResourceDimension::Texture1DArray:
+      {
+        ID3D11Texture1D* pTexture1D = nullptr;
+        XII_SUCCEED_OR_RETURN(CreateTexture1D(&pTexture1D, pInitialData));
 
-      m_pTexture = pTexture1D;
+        m_pTexture = pTexture1D;
+      }
+      break;
+      case xiiGALResourceDimension::Texture2D:
+      case xiiGALResourceDimension::TextureCube:
+      case xiiGALResourceDimension::Texture2DArray:
+      case xiiGALResourceDimension::TextureCubeArray:
+      {
+        ID3D11Texture2D* pTexture2D = nullptr;
+        XII_SUCCEED_OR_RETURN(CreateTexture2D(&pTexture2D, pInitialData));
+
+        m_pTexture = pTexture2D;
+      }
+      break;
+      case xiiGALResourceDimension::Texture3D:
+      {
+        ID3D11Texture3D* pTexture3D = nullptr;
+        XII_SUCCEED_OR_RETURN(CreateTexture3D(&pTexture3D, pInitialData));
+
+        m_pTexture = pTexture3D;
+      }
+      break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
     }
-    break;
-    case xiiGALResourceDimension::Texture2D:
-    case xiiGALResourceDimension::TextureCube:
-    case xiiGALResourceDimension::Texture2DArray:
-    case xiiGALResourceDimension::TextureCubeArray:
-    {
-      ID3D11Texture2D* pTexture2D = nullptr;
-      XII_SUCCEED_OR_RETURN(CreateTexture2D(&pTexture2D, pInitialData));
-
-      m_pTexture = pTexture2D;
-    }
-    break;
-    case xiiGALResourceDimension::Texture3D:
-    {
-      ID3D11Texture3D* pTexture3D = nullptr;
-      XII_SUCCEED_OR_RETURN(CreateTexture3D(&pTexture3D, pInitialData));
-
-      m_pTexture = pTexture3D;
-    }
-    break;
-
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
   InitializeSparseTextureProperties();
@@ -90,11 +90,16 @@ xiiResult xiiGALTextureD3D11::CreateFromNativeObject(void* pNativeObject)
 {
   ID3D11Resource* pTextureObject = static_cast<ID3D11Resource*>(pNativeObject);
 
-  if (FAILED(pTextureObject->QueryInterface(__uuidof(ID3D11Resource), (void**)&m_pTexture)))
+  ID3D11Resource* pD3D11TextureResource = nullptr;
+  if (FAILED(pTextureObject->QueryInterface(__uuidof(ID3D11Resource), (void**)&pD3D11TextureResource)))
   {
     xiiLog::Error("The interface interface of the corresponding object is not a texture object.");
     return XII_FAILURE;
   }
+  XII_GAL_D3D11_RELEASE(pD3D11TextureResource);
+
+  m_pTexture = pTextureObject;
+
   return XII_SUCCESS;
 }
 
