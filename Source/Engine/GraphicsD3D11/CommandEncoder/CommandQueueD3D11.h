@@ -14,10 +14,13 @@ public:
   virtual xiiUInt64 WaitForIdle() override final;
 
 protected:
+  virtual void SubmitPlatform(xiiGALCommandList* pCommandList) override final;
+
+protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandQueueD3D11(xiiGALDeviceD3D11* pDeviceD3D11);
+  xiiGALCommandQueueD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALCommandQueueCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandQueueD3D11();
 

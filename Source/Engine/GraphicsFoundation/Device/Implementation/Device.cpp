@@ -318,6 +318,9 @@ xiiResult xiiGALDevice::Initialize()
     xiiLog::Warning("Selected graphics adapter has no hardware acceleration.");
   }
 
+  // Create command queues.
+  CreateCommandQueuesPlatform();
+
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
   xiiProfilingSystem::InitializeGPUData();

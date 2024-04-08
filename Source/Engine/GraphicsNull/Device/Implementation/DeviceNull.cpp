@@ -509,6 +509,10 @@ void xiiGALDeviceNull::WaitIdlePlatform()
   FlushPendingObjects();
 }
 
+void xiiGALDeviceNull::CreateCommandQueuesPlatform()
+{
+}
+
 void xiiGALDeviceNull::FillCapabilitiesPlatform()
 {
   m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Null;

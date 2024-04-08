@@ -551,6 +551,8 @@ protected:
 
   virtual void WaitIdlePlatform() = 0;
 
+  virtual void CreateCommandQueuesPlatform() = 0;
+
   virtual void FillCapabilitiesPlatform() = 0;
 
   /// \endcond

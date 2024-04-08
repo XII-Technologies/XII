@@ -23,3 +23,22 @@ XII_ALWAYS_INLINE const xiiGALFormatLookupTableD3D11& xiiGALDeviceD3D11::GetForm
 {
   return m_FormatLookupTable;
 }
+
+XII_ALWAYS_INLINE xiiUInt32 xiiGALDeviceD3D11::GetCommandQueueIndex(xiiBitflags<xiiGALCommandQueueType> queueType) const
+{
+  if (queueType.IsSet(xiiGALCommandQueueType::Graphics))
+    return 0U;
+
+  if (queueType.IsSet(xiiGALCommandQueueType::Compute))
+    return 1U;
+
+  if (queueType.IsSet(xiiGALCommandQueueType::Transfer))
+    return 2U;
+
+  if (queueType.IsSet(xiiGALCommandQueueType::SparseBinding))
+    return 3U;
+
+  XII_ASSERT_DEV(false, "Unknown command queue type.");
+
+  return 0U;
+}

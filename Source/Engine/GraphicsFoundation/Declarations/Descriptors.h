@@ -308,9 +308,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceProperties : public xiiHas
 /// \brief This describes the command queue properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHashableStruct<xiiGALCommandQueueProperties>
 {
-  xiiBitflags<xiiGALCommandQueueType> m_Type              = xiiGALCommandQueueType::Unknown; ///< Indicates which type of commands are supported by this queue.
-  xiiUInt32                           m_MaxDeviceContexts = 0U;                              ///< The maximum number of immediate contexts that may be created for this queue.
-  xiiStaticArray<xiiUInt32, 3U>       m_TextureCopyGranularity;                              ///< Defines required texture offset and size alignment for copy operations in transfer queues.
+  xiiBitflags<xiiGALCommandQueueType> m_Type                = xiiGALCommandQueueType::Unknown; ///< Indicates which type of commands are supported by this queue.
+  xiiUInt32                           m_uiMaxDeviceContexts = 0U;                              ///< The maximum number of immediate contexts that may be created for this queue.
+  xiiStaticArray<xiiUInt32, 3U>       m_TextureCopyGranularity;                                ///< Defines required texture offset and size alignment for copy operations in transfer queues.
 };
 
 /// \brief This describes the graphics device adapter properties.

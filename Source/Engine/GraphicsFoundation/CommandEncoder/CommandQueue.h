@@ -3,6 +3,15 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/DeviceObject.h>
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+
+/// \brief This describes the fence creation description.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueCreationDescription : public xiiHashableStruct<xiiGALCommandQueueCreationDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiBitflags<xiiGALCommandQueueType> m_QueueType = xiiGALCommandQueueType::Unknown; ///< The command queue type that this command list uses.
+};
 
 /// \brief Interface that defines methods to manipulate a command queue object.
 class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueue : public xiiGALDeviceObject
@@ -19,12 +28,20 @@ public:
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() = 0;
 
+  virtual void Submit(xiiGALCommandList* pCommandList);
+
+protected:
+  virtual void SubmitPlatform(xiiGALCommandList* pCommandList) = 0;
+
 protected:
   friend class xiiGALDevice;
 
-  xiiGALCommandQueue(xiiGALDevice* pDevice);
+  xiiGALCommandQueue(xiiGALDevice* pDevice, const xiiGALCommandQueueCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandQueue();
+
+protected:
+  xiiGALCommandQueueCreationDescription m_Description;
 };
 
 #include <GraphicsFoundation/CommandEncoder/Implementation/CommandQueue_inl.h>

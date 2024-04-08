@@ -17,10 +17,13 @@ public:
   virtual xiiUInt64 WaitForIdle() override final;
 
 protected:
+  virtual void SubmitPlatform(xiiGALCommandList* pCommandList) override final;
+
+protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull);
+  xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull, const xiiGALCommandQueueCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandQueueNull();
 };

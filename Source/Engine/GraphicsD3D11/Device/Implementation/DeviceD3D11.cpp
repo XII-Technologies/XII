@@ -204,15 +204,15 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
         queueFilter.DenyList.NumIDs        = XII_ARRAY_SIZE(denyIDs);
         queueFilter.DenyList.pIDList       = denyIDs;
 
-      XII_VERIFY(SUCCEEDED(pInfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter.");
+        XII_VERIFY(SUCCEEDED(pInfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-      if (IsDebuggerPresent())
-      {
-        XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, TRUE)), "Failed to set break on corruption.");
-        XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, TRUE)), "Failed to set break on error.");
-        XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, TRUE)), "Failed to set break on warning.");
-      }
+        if (IsDebuggerPresent())
+        {
+          XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_CORRUPTION, TRUE)), "Failed to set break on corruption.");
+          XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_ERROR, TRUE)), "Failed to set break on error.");
+          XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D11_MESSAGE_SEVERITY_WARNING, TRUE)), "Failed to set break on warning.");
+        }
 #endif
       }
       XII_GAL_D3D11_RELEASE(pInfoQueue);
@@ -709,6 +709,41 @@ void xiiGALDeviceD3D11::WaitIdlePlatform()
   ///\todo Release stale resources.
 }
 
+void xiiGALDeviceD3D11::CreateCommandQueuesPlatform()
+{
+  xiiUInt32 queueCountPerContext[XII_GAL_MAX_ADAPTER_QUEUE_COUNT] = {};
+
+  auto AddContext = [&](xiiBitflags<xiiGALCommandQueueType> queueType, xiiStringView sName, xiiUInt32 uiAdapterId) {
+    const auto& queues = m_AdapterDescription.m_CommandQueueProperties;
+
+    for (xiiUInt32 i = 0, uiCount = queues.GetCount(); i < uiCount; ++i)
+    {
+      auto& currentQueue = queues[i];
+
+      if (queueCountPerContext[i] >= currentQueue.m_uiMaxDeviceContexts)
+        continue;
+
+      if ((currentQueue.m_Type & queueType) == queueType)
+      {
+        queueCountPerContext[i] += 1;
+
+        xiiUInt32 uiCommandQueueIndex = GetCommandQueueIndex(queueType);
+
+        xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = queueType};
+        m_CommandQueues[uiCommandQueueIndex]                   = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, queueDescription);
+
+        return true;
+      }
+    }
+    return false;
+  };
+
+  AddContext(xiiGALCommandQueueType::Graphics, "Graphics Command Queue", m_Description.m_uiAdapterID);
+  AddContext(xiiGALCommandQueueType::Transfer, "Transfer Command Queue", m_Description.m_uiAdapterID);
+  AddContext(xiiGALCommandQueueType::Compute, "Compute Command Queue", m_Description.m_uiAdapterID);
+  AddContext(xiiGALCommandQueueType::SparseBinding, "Sparse Bindingn Command Queue", m_Description.m_uiAdapterID);
+}
+
 void xiiGALDeviceD3D11::FillCapabilitiesPlatform()
 {
   m_Description.m_GraphicsDeviceType = xiiGALGraphicsDeviceType::Direct3D12;
@@ -772,9 +807,9 @@ void xiiGALDeviceD3D11::FillCapabilitiesPlatform()
 
     // Set queue information.
     {
-      auto& queueProperty               = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
-      queueProperty.m_Type              = xiiGALCommandQueueType::Graphics;
-      queueProperty.m_MaxDeviceContexts = 1U;
+      auto& queueProperty                 = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
+      queueProperty.m_Type                = xiiGALCommandQueueType::Graphics;
+      queueProperty.m_uiMaxDeviceContexts = 1U;
 
       queueProperty.m_TextureCopyGranularity.PushBack(1U);
       queueProperty.m_TextureCopyGranularity.PushBack(1U);
@@ -894,49 +929,6 @@ void xiiGALDeviceD3D11::FillCapabilitiesPlatform()
       }
     }
   }
-}
-
-void xiiGALDeviceD3D11::CreateCommandQueues()
-{
-///\todo Create command queues.
-#if 0
-  m_ContextDescriptions.Clear();
-
-  auto AddContext = [&](Diligent::COMMAND_QUEUE_TYPE queueType, const char* szName, xiiUInt32 uiAdapterId) {
-    constexpr auto uiQueueMask = Diligent::COMMAND_QUEUE_TYPE_PRIMARY_MASK;
-
-    auto* pQueues = m_pDevice->GetAdapterInfo().Queues;
-
-    xiiUInt32 queueCountPerContext[XII_GAL_MAX_ADAPTER_QUEUE_COUNT] = {};
-
-    for (xiiUInt32 i = 0, uiCount = m_pDevice->GetAdapterInfo().NumQueues; i < uiCount; ++i)
-    {
-      auto& currentQueue = pQueues[i];
-
-      if (queueCountPerContext[i] >= currentQueue.MaxDeviceContexts)
-        continue;
-
-      if ((currentQueue.QueueType & uiQueueMask) == queueType)
-      {
-        queueCountPerContext[i] += 1;
-
-        Diligent::ImmediateContextCreateInfo contextDescription = {};
-        contextDescription.QueueId                              = static_cast<xiiUInt8>(i);
-        contextDescription.Name                                 = szName;
-        contextDescription.Priority                             = Diligent::QUEUE_PRIORITY_MEDIUM;
-
-        m_ContextDescriptions.PushBack(contextDescription);
-        return true;
-      }
-    }
-    return false;
-  };
-
-  AddContext(Diligent::COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics Command Queue", m_Description.m_uiAdapterID);
-  AddContext(Diligent::COMMAND_QUEUE_TYPE_TRANSFER, "Transfer Command Queue", m_Description.m_uiAdapterID);
-  AddContext(Diligent::COMMAND_QUEUE_TYPE_COMPUTE, "Compute Command Queue", m_Description.m_uiAdapterID);
-  AddContext(Diligent::COMMAND_QUEUE_TYPE_SPARSE_BINDING, "Sparse Bindingn Command Queue", m_Description.m_uiAdapterID);
-#endif
 }
 
 void xiiGALDeviceD3D11::FillFormatLookupTable()

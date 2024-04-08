@@ -3,11 +3,15 @@
 #include <GraphicsNull/CommandEncoder/CommandQueueNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
 
-xiiGALCommandQueueNull::xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull) :
-  xiiGALCommandQueue(pDeviceNull)
+xiiGALCommandQueueNull::xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull, const xiiGALCommandQueueCreationDescription& creationDescription) :
+  xiiGALCommandQueue(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALCommandQueueNull::~xiiGALCommandQueueNull() = default;
+
+void xiiGALCommandQueueNull::SubmitPlatform(xiiGALCommandList* pCommandList)
+{
+}
 
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_CommandEncoder_Implementation_CommandQueueNull);

@@ -94,6 +94,8 @@ protected:
 
   virtual void WaitIdlePlatform() override final;
 
+  virtual void CreateCommandQueuesPlatform() override final;
+
   virtual void FillCapabilitiesPlatform() override final;
 
 private:

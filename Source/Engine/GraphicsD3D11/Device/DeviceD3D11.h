@@ -47,6 +47,8 @@ public:
 
   const xiiGALFormatLookupTableD3D11& GetFormatLookupTable() const;
 
+  xiiUInt32 GetCommandQueueIndex(xiiBitflags<xiiGALCommandQueueType> queueType) const;
+
   void ReportLiveGPUObjects();
 
   void FlushPendingObjects();
@@ -121,9 +123,9 @@ protected:
 
   virtual void WaitIdlePlatform() override final;
 
-  virtual void FillCapabilitiesPlatform() override final;
+  virtual void CreateCommandQueuesPlatform() override final;
 
-  void CreateCommandQueues();
+  virtual void FillCapabilitiesPlatform() override final;
 
   void FillFormatLookupTable();
 
