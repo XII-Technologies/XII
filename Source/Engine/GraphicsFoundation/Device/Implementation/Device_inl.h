@@ -29,11 +29,6 @@ inline xiiGALSwapChain* xiiGALDevice::GetSwapChain(xiiGALSwapChainHandle hSwapCh
   return Get<SwapChainTable, xiiGALSwapChain>(hSwapChain, m_SwapChains);
 }
 
-inline xiiGALCommandList* xiiGALDevice::GetCommandList(xiiGALCommandListHandle hCommandList) const
-{
-  return Get<CommandListTable, xiiGALCommandList>(hCommandList, m_CommandLists);
-}
-
 inline xiiGALBlendState* xiiGALDevice::GetBlendState(xiiGALBlendStateHandle hBlendState) const
 {
   return Get<BlendStateTable, xiiGALBlendState>(hBlendState, m_BlendStates);

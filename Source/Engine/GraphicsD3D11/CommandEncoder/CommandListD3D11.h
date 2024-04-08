@@ -11,8 +11,6 @@ struct ID3D11DeviceContext1;
 class XII_GRAPHICSD3D11_DLL xiiGALCommandListD3D11 final : public xiiGALCommandList
 {
 protected:
-  virtual void ExecutePlatform() override final;
-
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
 
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef) override final;
@@ -70,10 +68,6 @@ protected:
   xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListD3D11();
-
-  virtual xiiResult InitPlatform() override final;
-
-  virtual xiiResult DeInitPlatform() override final;
 
 protected:
   xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> BeginDisjointQuery();

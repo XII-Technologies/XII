@@ -29,30 +29,11 @@
 #include <d3d11_1.h>
 
 xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceD3D11, creationDescription)
+  xiiGALCommandList(pDeviceD3D11, creationDescription), m_pCommandList(pDeviceD3D11->GetImmediateContext())
 {
 }
 
 xiiGALCommandListD3D11::~xiiGALCommandListD3D11() = default;
-
-xiiResult xiiGALCommandListD3D11::InitPlatform()
-{
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-
-  // m_pCommandList = pDeviceD3D11->GetImmediateContext();
-
-  return m_pCommandList != nullptr ? XII_SUCCESS : XII_FAILURE;
-}
-
-xiiResult xiiGALCommandListD3D11::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
-void xiiGALCommandListD3D11::ExecutePlatform()
-{
-  XII_ASSERT_NOT_IMPLEMENTED;
-}
 
 void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
 {

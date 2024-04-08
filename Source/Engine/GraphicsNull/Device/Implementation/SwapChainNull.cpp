@@ -62,7 +62,7 @@ xiiResult xiiGALSwapChainNull::CreateBackBufferInternal(xiiGALDeviceNull* pDevic
   m_hBackBufferTexture = pDeviceNull->CreateTexture(textureDescription);
   XII_ASSERT_RELEASE(!m_hBackBufferTexture.IsInvalidated(), "Couldn't create native backbuffer texture object!");
 
-  m_CurrentSize = textureDescription.m_Size;
+  m_Description.m_Resolution = textureDescription.m_Size;
 
   return XII_SUCCESS;
 }

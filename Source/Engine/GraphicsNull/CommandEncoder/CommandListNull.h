@@ -15,13 +15,7 @@ protected:
 
   virtual ~xiiGALCommandListNull();
 
-  virtual xiiResult InitPlatform() override final;
-
-  virtual xiiResult DeInitPlatform() override final;
-
 protected:
-  virtual void ExecutePlatform() override final;
-
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
 
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef) override final;

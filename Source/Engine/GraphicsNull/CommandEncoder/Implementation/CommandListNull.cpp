@@ -10,20 +10,6 @@ xiiGALCommandListNull::xiiGALCommandListNull(xiiGALDeviceNull* pDeviceNull, cons
 
 xiiGALCommandListNull::~xiiGALCommandListNull() = default;
 
-xiiResult xiiGALCommandListNull::InitPlatform()
-{
-  return XII_SUCCESS;
-}
-
-xiiResult xiiGALCommandListNull::DeInitPlatform()
-{
-  return XII_SUCCESS;
-}
-
-void xiiGALCommandListNull::ExecutePlatform()
-{
-}
-
 void xiiGALCommandListNull::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
 {
 }

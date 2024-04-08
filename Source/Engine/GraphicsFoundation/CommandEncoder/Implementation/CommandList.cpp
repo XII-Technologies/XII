@@ -32,11 +32,6 @@ xiiGALCommandList::xiiGALCommandList(xiiGALDevice* pDevice, const xiiGALCommandL
 
 xiiGALCommandList::~xiiGALCommandList() = default;
 
-void xiiGALCommandList::Execute()
-{
-  ExecutePlatform();
-}
-
 void xiiGALCommandList::SetPipelineState(xiiGALPipelineStateHandle hPipelineState)
 {
   m_hPipelineState = hPipelineState;

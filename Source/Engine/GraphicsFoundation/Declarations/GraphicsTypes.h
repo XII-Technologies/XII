@@ -1671,28 +1671,7 @@ namespace xiiGAL
   using xii24_8Id  = xiiGenericId<24, 8>;
 } // namespace xiiGAL
 
-// Command Encoder
-
-class xiiGALCommandListHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALCommandListHandle, xiiGAL::xii20_12Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALCommandQueueHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALCommandQueueHandle, xiiGAL::xii20_12Id);
-
-  friend class xiiGALDevice;
-};
-
-// Device
-
-class xiiGALDeviceHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALDeviceHandle, xiiGAL::xii16_16Id);
-};
+// Swap Chain
 
 class xiiGALSwapChainHandle
 {

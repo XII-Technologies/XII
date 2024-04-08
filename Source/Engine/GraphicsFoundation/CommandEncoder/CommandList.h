@@ -58,8 +58,6 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandList : public xiiGALDeviceObject
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandList, xiiGALDeviceObject);
 
 public:
-  void Execute();
-
   // State functions.
 
   void SetPipelineState(xiiGALPipelineStateHandle hPipelineState);
@@ -139,17 +137,11 @@ protected:
 
   virtual ~xiiGALCommandList();
 
-  virtual xiiResult InitPlatform() = 0;
-
-  virtual xiiResult DeInitPlatform() = 0;
-
   // Deactivate Doxygen document generation for the following block. (API abstraction only)
   /// \cond
 
   // These functions need to be implemented by a graphics API abstraction.
 protected:
-  virtual void ExecutePlatform() = 0;
-
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) = 0;
 
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef)       = 0;
