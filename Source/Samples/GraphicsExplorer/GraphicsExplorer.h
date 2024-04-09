@@ -33,4 +33,7 @@ private:
 
   xiiGALSwapChainHandle m_hSwapChain;
   xiiGALTextureHandle   m_hDepthStencilTexture;
+
+  xiiGALRenderPassHandle  m_hRenderPass;
+  xiiGALFramebufferHandle m_hFrameBuffer;
 };

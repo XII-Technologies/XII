@@ -15,17 +15,28 @@
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Core/System/Window.h>
 
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 #include <GraphicsFoundation/Device/SwapChain.h>
+#include <GraphicsFoundation/Resources/Framebuffer.h>
+#include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
-#include <GraphicsFoundation/CommandEncoder/CommandList.h>
-#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
 static xiiUInt32 g_uiWindowWidth  = 960;
 static xiiUInt32 g_uiWindowHeight = 540;
 static bool      g_bWindowResized = false;
+
+xiiVec3U32 GetMipLevelSize(xiiUInt32 uiMipLevelSize, const xiiGALTextureCreationDescription& textureDescription)
+{
+  xiiVec3U32 size = {textureDescription.m_Size.width, textureDescription.m_Size.height, textureDescription.m_uiArraySizeOrDepth};
+  size.x          = xiiMath::Max(1U, size.x >> uiMipLevelSize);
+  size.y          = xiiMath::Max(1U, size.y >> uiMipLevelSize);
+  size.z          = xiiMath::Max(1U, size.z >> uiMipLevelSize);
+  return size;
+}
 
 class xiiGraphicsExplorerWindow : public xiiWindow
 {
@@ -405,6 +416,92 @@ void xiiGraphicsExplorerWindowApp::UpdateSwapChain()
     texDesc.m_BindFlags   = xiiGALBindFlags::DepthStencil;
 
     m_hDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
+  }
+
+  // Create render pass
+  {
+    if (!m_hRenderPass.IsInvalidated())
+    {
+      m_pDevice->DestroyRenderPass(m_hRenderPass);
+
+      m_hRenderPass.Invalidate();
+    }
+
+    xiiGALRenderPassCreationDescription renderPassDesc;
+    renderPassDesc.m_sName = "xiiGraphicsExplorerMainPass";
+
+    const auto& depthTextureDesc    = m_pDevice->GetTexture(m_hDepthStencilTexture)->GetDescription();
+    auto&       depthAttachmentDesc = renderPassDesc.m_Attachments.ExpandAndGetRef();
+
+    depthAttachmentDesc.m_Format                = depthTextureDesc.m_Format;
+    depthAttachmentDesc.m_uiSampleCount         = static_cast<xiiUInt8>(depthTextureDesc.m_uiSampleCount);
+    depthAttachmentDesc.m_InitialStateFlags     = xiiGALResourceStateFlags::Unknown;
+    depthAttachmentDesc.m_FinalStateFlags       = xiiGALResourceStateFlags::DepthWrite;
+    depthAttachmentDesc.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
+    depthAttachmentDesc.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
+    depthAttachmentDesc.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Clear;
+    depthAttachmentDesc.m_StencilStoreOperation = xiiGALAttachmentStoreOperation::Store;
+
+    const auto& hBackBuffer           = m_pDevice->GetSwapChain(m_hSwapChain)->GetBackBufferTexture();
+    const auto& backBufferTextureDesc = m_pDevice->GetTexture(hBackBuffer)->GetDescription();
+    auto&       colorAttachmentDesc   = renderPassDesc.m_Attachments.ExpandAndGetRef();
+
+    colorAttachmentDesc.m_Format                = backBufferTextureDesc.m_Format;
+    colorAttachmentDesc.m_uiSampleCount         = static_cast<xiiUInt8>(backBufferTextureDesc.m_uiSampleCount);
+    colorAttachmentDesc.m_InitialStateFlags     = xiiGALResourceStateFlags::Unknown;
+    colorAttachmentDesc.m_FinalStateFlags       = xiiGALResourceStateFlags::RenderTarget;
+    colorAttachmentDesc.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
+    colorAttachmentDesc.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
+    colorAttachmentDesc.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Discard;
+    colorAttachmentDesc.m_StencilStoreOperation = xiiGALAttachmentStoreOperation::Discard;
+
+    xiiGALSubPassDescription& subpassDesc = renderPassDesc.m_SubPasses.ExpandAndGetRef();
+    {
+      auto& depthAttachmentRef                = subpassDesc.m_DepthStencilAttachment.ExpandAndGetRef();
+      depthAttachmentRef.m_ResourceStateFlags = xiiGALResourceStateFlags::DepthWrite;
+      depthAttachmentRef.m_uiAttachmentIndex  = 0U;
+
+      auto& colorAttachmentRef                = subpassDesc.m_RenderTargetAttachments.ExpandAndGetRef();
+      colorAttachmentRef.m_ResourceStateFlags = xiiGALResourceStateFlags::RenderTarget;
+      colorAttachmentRef.m_uiAttachmentIndex  = 1U;
+    }
+
+    xiiGALSubPassDependencyDescription& dependencyDesc = renderPassDesc.m_Dependencies.ExpandAndGetRef();
+    dependencyDesc.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
+    dependencyDesc.m_uiDestinationSubPass              = 0U;
+    dependencyDesc.m_SourceStageFlags                  = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+    dependencyDesc.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+    dependencyDesc.m_DestinationAccessFlags            = xiiGALAccessFlags::DepthStencilWrite | xiiGALAccessFlags::RenderTargetWrite;
+
+    m_hRenderPass = m_pDevice->CreateRenderPass(renderPassDesc);
+    XII_ASSERT_DEV(!m_hRenderPass.IsInvalidated(), "Failed to create render pass.");
+  }
+
+  // Create frame buffer
+  {
+    if (!m_hFrameBuffer.IsInvalidated())
+    {
+      m_pDevice->DestroyFramebuffer(m_hFrameBuffer);
+
+      m_hFrameBuffer.Invalidate();
+    }
+
+    const auto& hBackBuffer           = m_pDevice->GetSwapChain(m_hSwapChain)->GetBackBufferTexture();
+    const auto& hBackBufferView       = m_pDevice->GetTexture(hBackBuffer)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+    const auto& hDepthStencilView     = m_pDevice->GetTexture(m_hDepthStencilTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
+    const auto& backBufferTextureDesc = m_pDevice->GetTexture(hBackBuffer)->GetDescription();
+    const auto& backBufferViewDesc    = m_pDevice->GetTextureView(hBackBufferView)->GetDescription();
+
+    xiiVec3U32 vSize = GetMipLevelSize(backBufferViewDesc.m_uiMostDetailedMip, backBufferTextureDesc);
+
+    xiiGALFramebufferCreationDescription framebufferDesc;
+    framebufferDesc.m_hRenderPass       = m_hRenderPass;
+    framebufferDesc.m_FramebufferSize   = {vSize.x, vSize.y};
+    framebufferDesc.m_uiArraySliceCount = backBufferTextureDesc.GetArraySize();
+    framebufferDesc.m_Attachments.PushBack(hDepthStencilView);
+    framebufferDesc.m_Attachments.PushBack(hBackBufferView);
+
+    m_hFrameBuffer = m_pDevice->CreateFramebuffer(framebufferDesc);
   }
 }
 
