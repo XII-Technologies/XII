@@ -6,11 +6,18 @@
 
 #include <GraphicsD3D11/Resources/DisjointQueryPool.h>
 
-struct ID3D11DeviceContext1;
+struct ID3D11DeviceContext;
+struct ID3D11CommandList;
 
 class XII_GRAPHICSD3D11_DLL xiiGALCommandListD3D11 final : public xiiGALCommandList
 {
+public:
+  ID3D11CommandList* GetD3D11CommandList() const;
+
 protected:
+  virtual void EndPlatform() override final;
+  virtual void ResetPlatform() override final;
+
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
 
   virtual void SetStencilRefPlatform(xiiUInt32 uiStencilRef) override final;
@@ -59,8 +66,6 @@ protected:
 
   virtual void FlushPlatform() override final;
 
-  ID3D11DeviceContext1* GetCommandList() const;
-
 protected:
   friend class xiiGALCommandQueueD3D11;
   friend class xiiGALDeviceD3D11;
@@ -76,7 +81,8 @@ protected:
   xiiResult FlushDeferredStateChanges();
 
 protected:
-  ID3D11DeviceContext1* m_pCommandList = nullptr;
+  ID3D11DeviceContext* m_pCommandList = nullptr;
+  ID3D11CommandList* m_pSubmittedCommandList = nullptr;
 
   xiiGALPipelineStateD3D11* m_pPipelineState = nullptr;
 

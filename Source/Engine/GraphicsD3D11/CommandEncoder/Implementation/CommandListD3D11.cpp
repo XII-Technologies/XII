@@ -29,15 +29,43 @@
 #include <d3d11_1.h>
 
 xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceD3D11, creationDescription), m_pCommandList(pDeviceD3D11->GetImmediateContext())
+  xiiGALCommandList(pDeviceD3D11, creationDescription)
 {
+  XII_ASSERT_DEV(SUCCEEDED(pDeviceD3D11->GetD3D11Device()->CreateDeferredContext(0U, &m_pCommandList)), "Failed to create command list for recording commands.");
 }
 
-xiiGALCommandListD3D11::~xiiGALCommandListD3D11() = default;
+xiiGALCommandListD3D11::~xiiGALCommandListD3D11()
+{
+  XII_GAL_D3D11_RELEASE(m_pCommandList);
+}
+
+void xiiGALCommandListD3D11::EndPlatform()
+{
+  XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
+
+  XII_ASSERT_DEV(SUCCEEDED(m_pCommandList->FinishCommandList(0U, &m_pSubmittedCommandList)), "Failed to end command list.");
+
+  m_RecordingState = RecordingState::Ended;
+}
+
+void xiiGALCommandListD3D11::ResetPlatform()
+{
+  if (m_RecordingState == RecordingState::Recording)
+  {
+    XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
+
+    XII_ASSERT_DEV(SUCCEEDED(m_pCommandList->FinishCommandList(0U, &m_pSubmittedCommandList)), "Failed to end command list.");
+  }
+
+  XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
+
+  m_RecordingState = RecordingState::Ended;
+}
 
 void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
 {
   auto pPipelineStateD3D11 = static_cast<xiiGALPipelineStateD3D11*>(pPipelineState);
+
 
 #if 0
   if (m_pPipelineState == (pPipelineStateD3D11 != nullptr ? pPipelineStateD3D11->GetPipelineState() : nullptr))

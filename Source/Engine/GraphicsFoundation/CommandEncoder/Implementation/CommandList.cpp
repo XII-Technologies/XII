@@ -32,6 +32,20 @@ xiiGALCommandList::xiiGALCommandList(xiiGALDevice* pDevice, const xiiGALCommandL
 
 xiiGALCommandList::~xiiGALCommandList() = default;
 
+void xiiGALCommandList::End()
+{
+  XII_ASSERT_DEV(m_RecordingState != RecordingState::Ended, "The command list has ended.");
+
+  EndPlatform();
+}
+
+void xiiGALCommandList::Reset()
+{
+  XII_ASSERT_DEV(m_RecordingState != RecordingState::Recording, "The command list has not begun.");
+
+  ResetPlatform();
+}
+
 void xiiGALCommandList::SetPipelineState(xiiGALPipelineStateHandle hPipelineState)
 {
   m_hPipelineState = hPipelineState;

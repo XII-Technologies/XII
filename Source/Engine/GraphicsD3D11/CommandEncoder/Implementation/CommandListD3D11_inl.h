@@ -1,5 +1,5 @@
 
-XII_ALWAYS_INLINE ID3D11DeviceContext1* xiiGALCommandListD3D11::GetCommandList() const
+XII_ALWAYS_INLINE ID3D11CommandList* xiiGALCommandListD3D11::GetD3D11CommandList() const
 {
-  return m_pCommandList;
+  return m_pSubmittedCommandList;
 }

@@ -10,6 +10,14 @@ xiiGALCommandListNull::xiiGALCommandListNull(xiiGALDeviceNull* pDeviceNull, cons
 
 xiiGALCommandListNull::~xiiGALCommandListNull() = default;
 
+void xiiGALCommandListNull::EndPlatform()
+{
+}
+
+void xiiGALCommandListNull::ResetPlatform()
+{
+}
+
 void xiiGALCommandListNull::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
 {
 }
