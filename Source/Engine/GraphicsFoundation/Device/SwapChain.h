@@ -39,7 +39,7 @@ public:
   /// This value is only relevant for DirectX11 and DirectX12 backends and ignored for others. By default it matches the number of buffers in the swap chain. For example, for a 2-buffer
   /// swap chain, the CPU can enqueue frames 0 and 1, but Present command of frame 2 will block until frame 0 is presented. If in the example above the maximum frame latency is set
   /// to 1, then Present command of frame 1 will block until Present of frame 0 is complete.
-  virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) = 0;
+  virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency);
 
   void SetPresentMode(xiiEnum<xiiGALPresentMode> presentMode);
 
@@ -53,19 +53,21 @@ protected:
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
 
-  xiiGALSwapChain(const xiiGALSwapChainCreationDescription& creationDescription);
+  xiiGALSwapChain(xiiGALDevice* pDevice, const xiiGALSwapChainCreationDescription& creationDescription);
 
   virtual ~xiiGALSwapChain();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
-  xiiGALTextureHandle        m_hBackBufferTexture;
-  xiiSizeU32                 m_CurrentSize = {};
+  xiiGALTextureHandle m_hBackBufferTexture;
+
   xiiEnum<xiiGALPresentMode> m_PresentMode = xiiGALPresentMode::VSync;
 
   xiiGALSwapChainCreationDescription m_Description;
+
+  xiiEnum<xiiGALSurfaceTransform> m_DesiredSurfaceTransform = xiiGALSurfaceTransform::Optimal;
 };
 
 #include <GraphicsFoundation/Device/Implementation/SwapChain_inl.h>

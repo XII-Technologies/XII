@@ -1,6 +1,6 @@
 xii_cmake_init()
 
-xii_requires_one_of(XII_BUILD_D3D12 XII_BUILD_VULKAN)
+xii_requires_one_of(XII_BUILD_D3D11 XII_BUILD_D3D12 XII_BUILD_VULKAN)
 
 # Get the name of this folder as the project name
 get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)

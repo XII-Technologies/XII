@@ -11,13 +11,13 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALRenderPassNull(const xiiGALRenderPassCreationDescription& creationDescription);
+  xiiGALRenderPassNull(xiiGALDeviceNull* pDeviceNull, const xiiGALRenderPassCreationDescription& creationDescription);
 
   virtual ~xiiGALRenderPassNull();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 };
 
 #include <GraphicsNull/Resources/Implementation/RenderPassNull_inl.h>

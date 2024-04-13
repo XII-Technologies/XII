@@ -1168,9 +1168,25 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleCount
     ThirtyTwoSamples = 32U, ///< Thirty-two samples.
     SixtyFourSamples = 64U, ///< Sixty-four samples.
 
+    AllSamples = (SixtyFourSamples << 1U) - 1U, ///< All possible samples.
+
     Default = OneSample
   };
+
+  struct Bits
+  {
+    StorageType OneSample : 1;
+    StorageType TwoSamples : 1;
+    StorageType FourSamples : 1;
+    StorageType EightSamples : 1;
+    StorageType SixteenSamples : 1;
+    StorageType ThirtyTwoSamples : 1;
+    StorageType SixtyFourSamples : 1;
+    StorageType AllSamples : 1;
+  };
 };
+
+XII_DECLARE_FLAGS_OPERATORS(xiiGALSampleCount);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSampleCount);
 
@@ -1655,28 +1671,7 @@ namespace xiiGAL
   using xii24_8Id  = xiiGenericId<24, 8>;
 } // namespace xiiGAL
 
-// Command Encoder
-
-class xiiGALCommandListHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALCommandListHandle, xiiGAL::xii20_12Id);
-
-  friend class xiiGALDevice;
-};
-
-class xiiGALCommandQueueHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALCommandQueueHandle, xiiGAL::xii20_12Id);
-
-  friend class xiiGALDevice;
-};
-
-// Device
-
-class xiiGALDeviceHandle
-{
-  XII_DECLARE_HANDLE_TYPE(xiiGALDeviceHandle, xiiGAL::xii16_16Id);
-};
+// Swap Chain
 
 class xiiGALSwapChainHandle
 {

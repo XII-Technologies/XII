@@ -154,6 +154,18 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStateCreationDescription : publi
   xiiUInt32                             m_uiNodeMask             = 0x0;                ///< Node mask.
   xiiUInt64                             m_uiImmediateContextMask = XII_BIT(0);         ///< Defines which immediate contexts are allowed to execute commands that use this texture. The default is the main immediate context.
                                                                                        ///< Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
+
+  /// \brief Returns true if this pipeline state is a graphics pipeline.
+  bool IsAnyGraphicsPipeline() const;
+
+  /// \brief Returns true if this pipeline state is a compute pipeline.
+  bool IsComputePipeline() const;
+
+  /// \brief Returns true if this pipeline state is a ray tracing pipeline.
+  bool IsRayTracingPipeline() const;
+
+  /// \brief Returns true if this pipeline state is a tile pipeline.
+  bool IsTilePipeline() const;
 };
 
 /// \brief Interface that defines methods to manipulate a pipeline state object.
@@ -168,13 +180,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALPipelineState(const xiiGALPipelineStateCreationDescription& creationDescription);
+  xiiGALPipelineState(xiiGALDevice* pDevice, const xiiGALPipelineStateCreationDescription& creationDescription);
 
   virtual ~xiiGALPipelineState();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALPipelineStateCreationDescription m_Description;

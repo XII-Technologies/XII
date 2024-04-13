@@ -98,13 +98,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALPipelineResourceSignature(const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
+  xiiGALPipelineResourceSignature(xiiGALDevice* pDevice, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription);
 
   virtual ~xiiGALPipelineResourceSignature();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALPipelineResourceSignatureCreationDescription m_Description;

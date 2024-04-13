@@ -17,13 +17,13 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALFenceNull(const xiiGALFenceCreationDescription& creationDescription);
+  xiiGALFenceNull(xiiGALDeviceNull* pDeviceNull, const xiiGALFenceCreationDescription& creationDescription);
 
   virtual ~xiiGALFenceNull();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 };
 
 #include <GraphicsNull/Resources/Implementation/FenceNull_inl.h>

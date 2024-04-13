@@ -3,24 +3,20 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Shader/ShaderNull.h>
 
-xiiGALShaderNull::xiiGALShaderNull(const xiiGALShaderCreationDescription& creationDescription) :
-  xiiGALShader(creationDescription)
+xiiGALShaderNull::xiiGALShaderNull(xiiGALDeviceNull* pDeviceNull, const xiiGALShaderCreationDescription& creationDescription) :
+  xiiGALShader(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALShaderNull::~xiiGALShaderNull() = default;
 
-xiiResult xiiGALShaderNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALShaderNull::InitPlatform()
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALShaderNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALShaderNull::DeInitPlatform()
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 

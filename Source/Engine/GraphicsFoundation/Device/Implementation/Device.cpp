@@ -41,7 +41,6 @@ namespace
     enum Enum : xiiUInt8
     {
       SwapChain = 0U,
-      CommandList,
       BottomLevelAS,
       Buffer,
       BufferView,
@@ -319,6 +318,9 @@ xiiResult xiiGALDevice::Initialize()
     xiiLog::Warning("Selected graphics adapter has no hardware acceleration.");
   }
 
+  // Create command queues.
+  CreateCommandQueuesPlatform();
+
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
   xiiProfilingSystem::InitializeGPUData();
@@ -452,8 +454,6 @@ xiiGALSwapChainHandle xiiGALDevice::CreateSwapChain(const xiiGALSwapChainCreatio
   }
   else
   {
-    pSwapChain->m_pDevice = this;
-
     return xiiGALSwapChainHandle(m_SwapChains.Insert(pSwapChain));
   }
 }
@@ -471,42 +471,6 @@ void xiiGALDevice::DestroySwapChain(xiiGALSwapChainHandle hSwapChain)
   else
   {
     xiiLog::Warning("DestroySwapChain called on invalid handle (double free?).");
-  }
-}
-
-xiiGALCommandListHandle xiiGALDevice::CreateCommandList(const xiiGALCommandListCreationDescription& description)
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  /// \todo GraphicsFoundation: Add command list description validation.
-
-  xiiGALCommandList* pCommandList = CreateCommandListPlatform(description);
-
-  if (pCommandList == nullptr)
-  {
-    return xiiGALCommandListHandle();
-  }
-  else
-  {
-    pCommandList->m_pDevice = this;
-
-    return xiiGALCommandListHandle(m_CommandLists.Insert(pCommandList));
-  }
-}
-
-void xiiGALDevice::DestroyCommandList(xiiGALCommandListHandle hCommandList)
-{
-  XII_GAL_DEVICE_LOCK_AND_CHECK();
-
-  xiiGALCommandList* pCommandList = nullptr;
-
-  if (m_CommandLists.TryGetValue(hCommandList, pCommandList))
-  {
-    AddDestroyedObject(GALObjectType::CommandList, hCommandList);
-  }
-  else
-  {
-    xiiLog::Warning("DestroyCommandList called on invalid handle (double free?).");
   }
 }
 
@@ -562,8 +526,6 @@ xiiGALBlendStateHandle xiiGALDevice::CreateBlendState(const xiiGALBlendStateCrea
   if (pBlendState != nullptr)
   {
     XII_ASSERT_DEBUG(pBlendState->GetDescription().CalculateHash() == uiHash, "BlendState hash does not match.");
-
-    pBlendState->m_pDevice = this;
 
     pBlendState->AddRef();
 
@@ -649,8 +611,6 @@ xiiGALDepthStencilStateHandle xiiGALDevice::CreateDepthStencilState(const xiiGAL
   {
     XII_ASSERT_DEBUG(pDepthStencilState->GetDescription().CalculateHash() == uiHash, "DepthStencilState hash does not match.");
 
-    pDepthStencilState->m_pDevice = this;
-
     pDepthStencilState->AddRef();
 
     xiiGALDepthStencilStateHandle hDepthStencilState(m_DepthStencilStates.Insert(pDepthStencilState));
@@ -722,8 +682,6 @@ xiiGALRasterizerStateHandle xiiGALDevice::CreateRasterizerState(const xiiGALRast
   if (pRasterizerState != nullptr)
   {
     XII_ASSERT_DEBUG(pRasterizerState->GetDescription().CalculateHash() == uiHash, "RasterizerState hash does not match.");
-
-    pRasterizerState->m_pDevice = this;
 
     pRasterizerState->AddRef();
 
@@ -824,8 +782,6 @@ xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescript
   }
   else
   {
-    pShader->m_pDevice = this;
-
     return xiiGALShaderHandle(m_Shaders.Insert(pShader));
   }
 }
@@ -998,8 +954,6 @@ xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescript
 
   xiiGALBuffer* pBuffer = CreateBufferPlatform(description, pInitialData);
 
-  pBuffer->m_pDevice = this;
-
   return FinalizeBufferInternal(description, pBuffer);
 }
 
@@ -1007,8 +961,6 @@ xiiGALBufferHandle xiiGALDevice::FinalizeBufferInternal(const xiiGALBufferCreati
 {
   if (pBuffer != nullptr)
   {
-    pBuffer->m_pDevice = this;
-
     xiiGALBufferHandle hBuffer(m_Buffers.Insert(pBuffer));
 
     pBuffer->CreateDefaultResourceViews(hBuffer);
@@ -1118,8 +1070,6 @@ xiiGALBufferViewHandle xiiGALDevice::CreateBufferView(xiiGALBufferViewCreationDe
   if (pBufferView != nullptr)
   {
     XII_ASSERT_DEBUG(pBufferView->GetDescription().CalculateHash() == uiHash, "BufferView hash does not match.");
-
-    pBufferView->m_pDevice = this;
 
     pBufferView->AddRef();
 
@@ -1352,8 +1302,6 @@ xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescr
 
   xiiGALTexture* pTexture = CreateTexturePlatform(description, pInitialData);
 
-  pTexture->m_pDevice = this;
-
   return FinalizeTextureInternal(description, pTexture);
 }
 
@@ -1361,8 +1309,6 @@ xiiGALTextureHandle xiiGALDevice::FinalizeTextureInternal(const xiiGALTextureCre
 {
   if (pTexture != nullptr)
   {
-    pTexture->m_pDevice = this;
-
     xiiGALTextureHandle hTexture(m_Textures.Insert(pTexture));
 
     pTexture->CreateDefaultResourceViews(hTexture);
@@ -1611,8 +1557,6 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
   {
     XII_ASSERT_DEBUG(pTextureView->GetDescription().CalculateHash() == uiHash, "TextureView hash does not match.");
 
-    pTextureView->m_pDevice = this;
-
     pTextureView->AddRef();
 
     xiiGALTextureViewHandle hTextureView(m_TextureViews.Insert(pTextureView));
@@ -1692,8 +1636,6 @@ xiiGALSamplerHandle xiiGALDevice::CreateSampler(const xiiGALSamplerCreationDescr
   {
     XII_ASSERT_DEBUG(pSampler->GetDescription().CalculateHash() == uiHash, "Sampler hash does not match");
 
-    pSampler->m_pDevice = this;
-
     pSampler->AddRef();
 
     xiiGALSamplerHandle hSampler(m_Samplers.Insert(pSampler));
@@ -1754,8 +1696,6 @@ xiiGALInputLayoutHandle xiiGALDevice::CreateInputLayout(const xiiGALInputLayoutC
 
   if (pInputLayout != nullptr)
   {
-    pInputLayout->m_pDevice = this;
-
     pInputLayout->AddRef();
 
     xiiGALInputLayoutHandle hInputLayout(m_InputLayouts.Insert(pInputLayout));
@@ -1839,8 +1779,6 @@ xiiGALQueryHandle xiiGALDevice::CreateQuery(const xiiGALQueryCreationDescription
   }
   else
   {
-    pQuery->m_pDevice = this;
-
     return xiiGALQueryHandle(m_Queries.Insert(pQuery));
   }
 }
@@ -1896,8 +1834,6 @@ xiiGALFenceHandle xiiGALDevice::CreateFence(const xiiGALFenceCreationDescription
   }
   else
   {
-    pFence->m_pDevice = this;
-
     return xiiGALFenceHandle(m_Fences.Insert(pFence));
   }
 }
@@ -2132,8 +2068,6 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
   }
   else
   {
-    pRenderPass->m_pDevice = this;
-
     return xiiGALRenderPassHandle(m_RenderPasses.Insert(pRenderPass));
   }
 }
@@ -2383,8 +2317,6 @@ xiiGALFramebufferHandle xiiGALDevice::CreateFramebuffer(const xiiGALFramebufferC
   }
   else
   {
-    pFramebuffer->m_pDevice = this;
-
     return xiiGALFramebufferHandle(m_Framebuffers.Insert(pFramebuffer));
   }
 }
@@ -2465,8 +2397,6 @@ xiiGALBottomLevelASHandle xiiGALDevice::CreateBottomLevelAS(const xiiGALBottomLe
   }
   else
   {
-    pBottomLevelAS->m_pDevice = this;
-
     return xiiGALBottomLevelASHandle(m_BottomLevelAccelerationStructures.Insert(pBottomLevelAS));
   }
 }
@@ -2519,8 +2449,6 @@ xiiGALTopLevelASHandle xiiGALDevice::CreateTopLevelAS(const xiiGALTopLevelASCrea
   }
   else
   {
-    pTopLevelAS->m_pDevice = this;
-
     return xiiGALTopLevelASHandle(m_TopLevelAccelerationStructures.Insert(pTopLevelAS));
   }
 }
@@ -2550,7 +2478,7 @@ void xiiGALDevice::DestroyTopLevelAS(xiiGALTopLevelASHandle hTopLevelAS)
     if (!(expression)) { return xiiGALPipelineResourceSignatureHandle(); } \
   } while (false)
 
-XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipelineResourceSignature(const xiiGALPipelineResourceSignatureCreationDescription& description)
+XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipelineResourceSignature(xiiGALPipelineResourceSignatureCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
@@ -2602,10 +2530,27 @@ XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipeline
   xiiMap<xiiHashedString, xiiSet<xiiGALShaderStage::StorageType>> usedImmutableSamplerShaderStages;
   for (xiiUInt32 i = 0; i < description.m_ImmutableSamplers.GetCount(); ++i)
   {
-    const auto& samplerDescription = description.m_ImmutableSamplers[i];
+    auto& samplerDescription = description.m_ImmutableSamplers[i];
 
     XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!samplerDescription.m_SamplerOrTextureName.IsEmpty(), "The immutable sampler at index '{0}' requires a non-empty name.", i);
     XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!samplerDescription.m_ShaderStages.IsNoFlagSet(), "The immutable sampler at index '{0}' requires a valid shader stage, and must not be xiiGALShaderStage::Unknown.", i);
+
+    // Use anisotropic filtering if any of Anisotropic is set.
+    if (samplerDescription.m_SamplerDescription.m_MagFilter == xiiGALFilterType::Anisotropic || samplerDescription.m_SamplerDescription.m_MinFilter == xiiGALFilterType::Anisotropic || samplerDescription.m_SamplerDescription.m_MipFilter == xiiGALFilterType::Anisotropic)
+    {
+      if (samplerDescription.m_SamplerDescription.m_ComparisonFunction == xiiGALComparisonFunction::Never)
+      {
+        samplerDescription.m_SamplerDescription.m_MinFilter = xiiGALFilterType::Anisotropic;
+        samplerDescription.m_SamplerDescription.m_MagFilter = xiiGALFilterType::Anisotropic;
+        samplerDescription.m_SamplerDescription.m_MipFilter = xiiGALFilterType::Anisotropic;
+      }
+      else
+      {
+        samplerDescription.m_SamplerDescription.m_MinFilter = xiiGALFilterType::ComparisonAnisotropic;
+        samplerDescription.m_SamplerDescription.m_MagFilter = xiiGALFilterType::ComparisonAnisotropic;
+        samplerDescription.m_SamplerDescription.m_MipFilter = xiiGALFilterType::ComparisonAnisotropic;
+      }
+    }
 
     xiiSet<xiiGALShaderStage::StorageType> shaderStageSet;
     if (usedImmutableSamplerShaderStages.TryGetValue(samplerDescription.m_SamplerOrTextureName, shaderStageSet))
@@ -2631,8 +2576,6 @@ XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipeline
   }
   else
   {
-    pPipelineResourceSignature->m_pDevice = this;
-
     return xiiGALPipelineResourceSignatureHandle(m_PipelineResourceSignatures.Insert(pPipelineResourceSignature));
   }
 }
@@ -2674,8 +2617,6 @@ XII_NODISCARD xiiGALPipelineStateHandle xiiGALDevice::CreatePipelineState(const 
   }
   else
   {
-    pPipelineState->m_pDevice = this;
-
     return xiiGALPipelineStateHandle(m_PipelineStates.Insert(pPipelineState));
   }
 }
@@ -2742,25 +2683,7 @@ void xiiGALDevice::FlushDestroyedObjects()
 
         XII_VERIFY(m_SwapChains.Remove(hSwapChain, &pSwapChain), "SwapChain not found in idTable.");
 
-        if (pSwapChain != nullptr)
-        {
-          pSwapChain->DeInitPlatform(this).IgnoreResult();
-          XII_DELETE(&m_Allocator, pSwapChain);
-        }
-      }
-      break;
-      case GALObjectType::CommandList:
-      {
-        xiiGALCommandListHandle hCommandList(xiiGAL::xii20_12Id(destroyedObject.m_uiHandle));
-        xiiGALCommandList*      pCommandList = nullptr;
-
-        XII_VERIFY(m_CommandLists.Remove(hCommandList, &pCommandList), "CommandList not found in idTable.");
-
-        if (pCommandList != nullptr)
-        {
-          pCommandList->DeInitPlatform(this).IgnoreResult();
-          XII_DELETE(&m_Allocator, pCommandList);
-        }
+        DestroySwapChainPlatform(pSwapChain);
       }
       break;
       case GALObjectType::BottomLevelAS:

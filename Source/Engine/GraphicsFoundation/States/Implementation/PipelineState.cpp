@@ -30,8 +30,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // clang-format on
 
-xiiGALPipelineState::xiiGALPipelineState(const xiiGALPipelineStateCreationDescription& creationDescription) :
-  xiiGALDeviceObject(), m_Description(creationDescription)
+xiiGALPipelineState::xiiGALPipelineState(xiiGALDevice* pDevice, const xiiGALPipelineStateCreationDescription& creationDescription) :
+  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
 {
 }
 

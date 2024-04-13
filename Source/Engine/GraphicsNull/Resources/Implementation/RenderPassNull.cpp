@@ -3,21 +3,19 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/RenderPassNull.h>
 
-xiiGALRenderPassNull::xiiGALRenderPassNull(const xiiGALRenderPassCreationDescription& creationDescription) :
-  xiiGALRenderPass(creationDescription)
+xiiGALRenderPassNull::xiiGALRenderPassNull(xiiGALDeviceNull* pDeviceNull, const xiiGALRenderPassCreationDescription& creationDescription) :
+  xiiGALRenderPass(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALRenderPassNull::~xiiGALRenderPassNull() = default;
 
-xiiResult xiiGALRenderPassNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALRenderPassNull::InitPlatform()
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALRenderPassNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALRenderPassNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

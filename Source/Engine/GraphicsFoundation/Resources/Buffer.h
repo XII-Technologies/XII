@@ -152,13 +152,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALBuffer(const xiiGALBufferCreationDescription& creationDescription);
+  xiiGALBuffer(xiiGALDevice* pDevice, const xiiGALBufferCreationDescription& creationDescription);
 
   virtual ~xiiGALBuffer();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALBufferData* pInitialData) = 0;
+  virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData) = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALBufferCreationDescription m_Description;

@@ -16,11 +16,16 @@ public:
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
 
+  virtual xiiGALCommandList* BeginCommandList() override final;
+
+protected:
+  virtual void SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) override final;
+
 protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandQueueNull();
+  xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull, const xiiGALCommandQueueCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandQueueNull();
 };

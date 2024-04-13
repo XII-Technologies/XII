@@ -98,16 +98,27 @@ protected:
   friend class xiiGALDevice;
   friend class xiiGALCommandList;
 
-  xiiGALQuery(const xiiGALQueryCreationDescription& creationDescription);
+  xiiGALQuery(xiiGALDevice* pDevice, const xiiGALQueryCreationDescription& creationDescription);
 
   virtual ~xiiGALQuery();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
+
+  void CheckQueryDataPtr(void* pData, xiiUInt32 uiDataSize);
 
 protected:
+  enum class QueryState
+  {
+    Inactive,
+    Querying,
+    Ended
+  };
+
   xiiGALQueryCreationDescription m_Description;
+
+  QueryState m_QueryState = QueryState::Inactive;
 };
 
 #include <GraphicsFoundation/Resources/Implementation/Query_inl.h>

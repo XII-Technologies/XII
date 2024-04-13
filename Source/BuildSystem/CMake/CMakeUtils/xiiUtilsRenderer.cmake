@@ -3,7 +3,7 @@
 # #####################################
 
 macro(xii_requires_renderer)
-  xii_requires_one_of(XII_BUILD_D3D12 XII_BUILD_VULKAN)
+  xii_requires_one_of(XII_BUILD_D3D11 XII_BUILD_D3D12 XII_BUILD_VULKAN)
 endmacro()
 
 # #####################################
@@ -16,6 +16,14 @@ function(xii_add_renderers TARGET_NAME)
     GraphicsNull
     ShaderCompiler
   )
+
+  if (XII_BUILD_D3D12)
+    if(TARGET GraphicsD3D11)
+      add_dependencies(${TARGET_NAME}
+        GraphicsD3D11
+      )
+    endif()
+  endif()
 
   if (XII_BUILD_D3D12)
     if(TARGET GraphicsD3D12)

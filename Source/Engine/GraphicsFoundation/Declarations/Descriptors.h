@@ -101,8 +101,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSwapChainCreationDescription : public xi
   xiiEnum<xiiGALTextureFormat>           m_ColorBufferFormat = xiiGALTextureFormat::RGBA8UNormalizedSRGB; ///< Back buffer format.
   xiiBitflags<xiiGALSwapChainUsageFlags> m_Usage             = xiiGALSwapChainUsageFlags::RenderTarget;   ///< Swap chain usage flags.
   xiiEnum<xiiGALSurfaceTransform>        m_PreTransform      = xiiGALSurfaceTransform::Optimal;           ///< The transform, relative to the presentation engine's natural orientation which is applied to the image prior to presentation.
-                                                                                                          ///<
-                                                                                                          ///< \note When xiiGALSurfaceTransform::Optimal is used, the engine will select the most optimal surface transformation. An application may request a specific transform and the engine will try to use that. If the transform is not available, the engine will select the most optimal transform. After the swap chain has been created, this member will contain the actual transform selected by the engine.
+                                                                                                          ///
+                                                                                                          ///  \note When xiiGALSurfaceTransform::Optimal is used, the engine will select the most optimal surface transformation. An application may request a specific transform and the engine will try to use that. If the transform is not available, the engine will select the most optimal transform. After the swap chain has been created, this member will contain the actual transform selected by the engine.
   xiiUInt32 m_uiBufferCount         = 2U;                                                                 ///< The number of buffers in the swap chain.
   float     m_fDefaultDepthValue    = 1.0f;                                                               ///< Default depth value, which is used as the optimized depth clear value in D3D12.
   xiiUInt8  m_uiDefaultStencilValue = 0U;                                                                 ///< Default stencil value, which is used as the optimized clear value in D3D12.
@@ -266,13 +266,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateMode : public xiiHashableStru
   XII_DECLARE_POD_TYPE();
 
   xiiBitflags<xiiGALShadingRate> m_ShadingRate = xiiGALShadingRate::_1X1; ///< The supported shading rate.
-  xiiEnum<xiiGALSampleCount>     m_SampleBits  = xiiGALSampleCount::None; ///< The combination of supported sample counts.
+  xiiBitflags<xiiGALSampleCount> m_SampleBits  = xiiGALSampleCount::None; ///< The combination of supported sample counts.
 };
 
 /// \brief This describes the shading rate properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateProperties : public xiiHashableStruct<xiiGALShadingRateProperties>
 {
-  xiiStaticArray<xiiGALShadingRateMode, XII_GAL_MAX_SHADING_RATE> m_Mode;                                                                 ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
+  xiiStaticArray<xiiGALShadingRateMode, XII_GAL_MAX_SHADING_RATE> m_Modes;                                                                ///< Contains an array of supported combinations of shading rate and number of samples. The array is sorted in ascending order.
   xiiBitflags<xiiGALShadingRateCapabilityFlags>                   m_CapabilityFlags            = xiiGALShadingRateCapabilityFlags::None;  ///< Shading rate capability flags.
   xiiBitflags<xiiGALShadingRateCombiner>                          m_CombinerFlags              = xiiGALShadingRateCombiner::PassThrough;  ///< Combination of all supported shading rate combiners.
   xiiEnum<xiiGALShadingRateFormat>                                m_Format                     = xiiGALShadingRateFormat::Unknown;        ///< Indicates which shading rate texture format is used by this device.
@@ -308,9 +308,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceProperties : public xiiHas
 /// \brief This describes the command queue properties.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHashableStruct<xiiGALCommandQueueProperties>
 {
-  xiiBitflags<xiiGALCommandQueueType> m_Type              = xiiGALCommandQueueType::Unknown; ///< Indicates which type of commands are supported by this queue.
-  xiiUInt32                           m_MaxDeviceContexts = 0U;                              ///< The maximum number of immediate contexts that may be created for this queue.
-  xiiStaticArray<xiiUInt32, 3U>       m_TextureCopyGranularity;                              ///< Defines required texture offset and size alignment for copy operations in transfer queues.
+  xiiBitflags<xiiGALCommandQueueType> m_Type                = xiiGALCommandQueueType::Unknown; ///< Indicates which type of commands are supported by this queue.
+  xiiUInt32                           m_uiMaxDeviceContexts = 0U;                              ///< The maximum number of immediate contexts that may be created for this queue.
+  xiiStaticArray<xiiUInt32, 3U>       m_TextureCopyGranularity;                                ///< Defines required texture offset and size alignment for copy operations in transfer queues.
 };
 
 /// \brief This describes the graphics device adapter properties.

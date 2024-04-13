@@ -14,6 +14,8 @@ public:
 protected:
   friend class xiiGALDevice;
 
+  xiiGALResource(xiiGALDevice* pDevice);
+
   xiiHashTable<xiiUInt32, xiiGALBufferViewHandle>  m_BufferViews;
   xiiHashTable<xiiUInt32, xiiGALTextureViewHandle> m_TextureViews;
 
@@ -29,6 +31,8 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALResourceView : public xiiGALDeviceObject
 public:
 protected:
   friend class xiiGALDevice;
+
+  xiiGALResourceView(xiiGALDevice* pDevice);
 };
 
 #include <GraphicsFoundation/Resources/Implementation/Resource_inl.h>

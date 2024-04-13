@@ -1,22 +1,21 @@
 #include <GraphicsNull/GraphicsNullPCH.h>
 
+#include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/States/PipelineStateNull.h>
 
-xiiGALPipelineStateNull::xiiGALPipelineStateNull(const xiiGALPipelineStateCreationDescription& creationDescription) :
-  xiiGALPipelineState(creationDescription)
+xiiGALPipelineStateNull::xiiGALPipelineStateNull(xiiGALDeviceNull* pDeviceNull, const xiiGALPipelineStateCreationDescription& creationDescription) :
+  xiiGALPipelineState(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALPipelineStateNull::~xiiGALPipelineStateNull() = default;
 
-xiiResult xiiGALPipelineStateNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALPipelineStateNull::InitPlatform()
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALPipelineStateNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALPipelineStateNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

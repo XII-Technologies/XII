@@ -1,22 +1,21 @@
 #include <GraphicsNull/GraphicsNullPCH.h>
 
+#include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/States/PipelineResourceSignatureNull.h>
 
-xiiGALPipelineResourceSignatureNull::xiiGALPipelineResourceSignatureNull(const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
-  xiiGALPipelineResourceSignature(creationDescription)
+xiiGALPipelineResourceSignatureNull::xiiGALPipelineResourceSignatureNull(xiiGALDeviceNull* pDeviceNull, const xiiGALPipelineResourceSignatureCreationDescription& creationDescription) :
+  xiiGALPipelineResourceSignature(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALPipelineResourceSignatureNull::~xiiGALPipelineResourceSignatureNull() = default;
 
-xiiResult xiiGALPipelineResourceSignatureNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALPipelineResourceSignatureNull::InitPlatform()
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALPipelineResourceSignatureNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALPipelineResourceSignatureNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

@@ -11,13 +11,13 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALSamplerNull(const xiiGALSamplerCreationDescription& creationDescription);
+  xiiGALSamplerNull(xiiGALDeviceNull* pDeviceNull, const xiiGALSamplerCreationDescription& creationDescription);
 
   virtual ~xiiGALSamplerNull();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 };
 
 #include <GraphicsNull/Resources/Implementation/SamplerNull_inl.h>

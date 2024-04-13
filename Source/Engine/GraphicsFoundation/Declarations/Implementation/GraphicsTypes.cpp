@@ -533,16 +533,17 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShadingRate, 1)
   XII_BITFLAGS_CONSTANT(xiiGALShadingRate::_4X4),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
-XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALSampleCount, 1)
-  XII_ENUM_CONSTANT(xiiGALSampleCount::None),
-  XII_ENUM_CONSTANT(xiiGALSampleCount::OneSample),
-  XII_ENUM_CONSTANT(xiiGALSampleCount::TwoSamples),
-  XII_ENUM_CONSTANT(xiiGALSampleCount::FourSamples),
-  XII_ENUM_CONSTANT(xiiGALSampleCount::EightSamples),
-  XII_ENUM_CONSTANT(xiiGALSampleCount::SixteenSamples),
-  XII_ENUM_CONSTANT(xiiGALSampleCount::ThirtyTwoSamples),
-  XII_ENUM_CONSTANT(xiiGALSampleCount::SixtyFourSamples),
-XII_END_STATIC_REFLECTED_ENUM;
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSampleCount, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALSampleCount::None),
+  XII_BITFLAGS_CONSTANT(xiiGALSampleCount::OneSample),
+  XII_BITFLAGS_CONSTANT(xiiGALSampleCount::TwoSamples),
+  XII_BITFLAGS_CONSTANT(xiiGALSampleCount::FourSamples),
+  XII_BITFLAGS_CONSTANT(xiiGALSampleCount::EightSamples),
+  XII_BITFLAGS_CONSTANT(xiiGALSampleCount::SixteenSamples),
+  XII_BITFLAGS_CONSTANT(xiiGALSampleCount::ThirtyTwoSamples),
+  XII_BITFLAGS_CONSTANT(xiiGALSampleCount::SixtyFourSamples),
+  XII_BITFLAGS_CONSTANT(xiiGALSampleCount::AllSamples),
+XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShadingRateCapabilityFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALShadingRateCapabilityFlags::None),

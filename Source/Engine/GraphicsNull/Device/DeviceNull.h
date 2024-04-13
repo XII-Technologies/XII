@@ -7,6 +7,8 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/ResourceFormats.h>
 
+#include <GraphicsNull/CommandEncoder/CommandQueueNull.h>
+
 class XII_GRAPHICSNULL_DLL xiiGALDeviceNull final : public xiiGALDevice
 {
 private:
@@ -18,6 +20,14 @@ public:
   ~xiiGALDeviceNull();
 
 public:
+  virtual xiiGALCommandQueue* GetGraphicsQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetComputeQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetTransferQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetSparseBindingQueue() const override final;
+
   // Internal objects retrieval.
 
   void ReportLiveGPUObjects();
@@ -37,9 +47,6 @@ protected:
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
-
-  virtual xiiGALCommandList* CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description) override final;
-  virtual void               DestroyCommandListPlatform(xiiGALCommandList* pCommandList) override final;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;
@@ -97,10 +104,14 @@ protected:
 
   virtual void WaitIdlePlatform() override final;
 
+  virtual void CreateCommandQueuesPlatform() override final;
+
   virtual void FillCapabilitiesPlatform() override final;
 
 private:
   xiiUInt64 m_uiFrameNumber = 0U;
+
+  xiiUniquePtr<xiiGALCommandQueueNull> m_pDefaultQueue;
 };
 
 #include <GraphicsNull/Device/Implementation/DeviceNull_inl.h>

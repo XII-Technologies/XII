@@ -3,21 +3,19 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/QueryNull.h>
 
-xiiGALQueryNull::xiiGALQueryNull(const xiiGALQueryCreationDescription& creationDescription) :
-  xiiGALQuery(creationDescription)
+xiiGALQueryNull::xiiGALQueryNull(xiiGALDeviceNull* pDeviceNull, const xiiGALQueryCreationDescription& creationDescription) :
+  xiiGALQuery(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALQueryNull::~xiiGALQueryNull() = default;
 
-xiiResult xiiGALQueryNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALQueryNull::InitPlatform()
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALQueryNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALQueryNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

@@ -11,13 +11,13 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALTextureViewNull(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
+  xiiGALTextureViewNull(xiiGALDeviceNull* pDeviceNull, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription);
 
   virtual ~xiiGALTextureViewNull();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 };
 
 #include <GraphicsNull/Resources/Implementation/TextureViewNull_inl.h>

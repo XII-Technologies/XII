@@ -20,8 +20,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // clang-format on
 
-xiiGALRenderPass::xiiGALRenderPass(const xiiGALRenderPassCreationDescription& creationDescription) :
-  xiiGALDeviceObject(), m_Description(creationDescription)
+xiiGALRenderPass::xiiGALRenderPass(xiiGALDevice* pDevice, const xiiGALRenderPassCreationDescription& creationDescription) :
+  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
 {
 }
 

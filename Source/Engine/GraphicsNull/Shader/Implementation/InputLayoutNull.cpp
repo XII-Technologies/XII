@@ -4,21 +4,19 @@
 #include <GraphicsNull/Shader/InputLayoutNull.h>
 #include <GraphicsNull/Shader/ShaderNull.h>
 
-xiiGALInputLayoutNull::xiiGALInputLayoutNull(const xiiGALInputLayoutCreationDescription& creationDescription) :
-  xiiGALInputLayout(creationDescription)
+xiiGALInputLayoutNull::xiiGALInputLayoutNull(xiiGALDeviceNull* pDeviceNull, const xiiGALInputLayoutCreationDescription& creationDescription) :
+  xiiGALInputLayout(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALInputLayoutNull::~xiiGALInputLayoutNull() = default;
 
-xiiResult xiiGALInputLayoutNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALInputLayoutNull::InitPlatform()
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALInputLayoutNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALInputLayoutNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

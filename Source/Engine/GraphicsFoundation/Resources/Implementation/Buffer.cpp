@@ -22,8 +22,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // clang-format on
 
-xiiGALBuffer::xiiGALBuffer(const xiiGALBufferCreationDescription& creationDescription) :
-  xiiGALResource(), m_Description(creationDescription)
+xiiGALBuffer::xiiGALBuffer(xiiGALDevice* pDevice, const xiiGALBufferCreationDescription& creationDescription) :
+  xiiGALResource(pDevice), m_Description(creationDescription)
 {
 }
 

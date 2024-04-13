@@ -18,8 +18,8 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 // clang-format on
 
-xiiGALTexture::xiiGALTexture(const xiiGALTextureCreationDescription& creationDescription) :
-  xiiGALResource(), m_Description(creationDescription)
+xiiGALTexture::xiiGALTexture(xiiGALDevice* pDevice, const xiiGALTextureCreationDescription& creationDescription) :
+  xiiGALResource(pDevice), m_Description(creationDescription)
 {
 }
 

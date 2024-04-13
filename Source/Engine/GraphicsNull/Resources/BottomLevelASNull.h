@@ -23,13 +23,13 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALBottomLevelASNull(const xiiGALBottomLevelASCreationDescription& creationDescription);
+  xiiGALBottomLevelASNull(xiiGALDeviceNull* pDeviceNull, const xiiGALBottomLevelASCreationDescription& creationDescription);
 
   virtual ~xiiGALBottomLevelASNull();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 };
 
 #include <GraphicsNull/Resources/Implementation/BottomLevelASNull_inl.h>

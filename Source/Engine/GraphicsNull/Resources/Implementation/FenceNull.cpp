@@ -3,21 +3,19 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/FenceNull.h>
 
-xiiGALFenceNull::xiiGALFenceNull(const xiiGALFenceCreationDescription& creationDescription) :
-  xiiGALFence(creationDescription)
+xiiGALFenceNull::xiiGALFenceNull(xiiGALDeviceNull* pDeviceNull, const xiiGALFenceCreationDescription& creationDescription) :
+  xiiGALFence(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALFenceNull::~xiiGALFenceNull() = default;
 
-xiiResult xiiGALFenceNull::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALFenceNull::InitPlatform()
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALFenceNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALFenceNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

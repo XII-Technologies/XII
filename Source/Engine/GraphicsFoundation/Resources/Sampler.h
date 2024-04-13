@@ -52,10 +52,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSamplerCreationDescription : public xiiH
   xiiEnum<xiiGALTextureAddressMode> m_AddressW           = xiiGALTextureAddressMode::Clamp; ///< Texture address mode for W coordinate. The default is Clamp.
   xiiBitflags<xiiGALSamplerFlags>   m_Flags              = xiiGALSamplerFlags::None;        ///< Sampler flags.
   bool                              m_bUnormalizedCoords = false;                           ///< Indicates whether to use unnormalized texture coordinates.
-                                                                                            ///< \remarks When set to true, the range of the image coordinates used to lookup the texel is in the range of 0 to the image size in each dimension.
-                                                                                            ///<          When set to False, the range of image coordinates is 0.0 to 1.0.
-                                                                                            ///<
-                                                                                            ///<          Unnormalized coordinates are only supported in Vulkan and Metal.
+                                                                                            ///  \remarks When set to true, the range of the image coordinates used to lookup the texel is in the range of 0 to the image size in each dimension.
+                                                                                            ///           When set to False, the range of image coordinates is 0.0 to 1.0.
+                                                                                            ///
+                                                                                            ///           Unnormalized coordinates are only supported in Vulkan and Metal.
   float                             m_fMipLODBias        = 0.0f;                            ///< Offset from the calculated mipmap level. The default is 0;
   xiiUInt32                         m_uiMaxAnisotropy    = 0U;                              ///< Maximum anisotropy level for the anisotropic filter. The default is 0.
   xiiEnum<xiiGALComparisonFunction> m_ComparisonFunction = xiiGALComparisonFunction::Never; ///< A function that compares sampled data against existing sampled data when comparisons filter used. The default is Never.
@@ -76,13 +76,13 @@ public:
 protected:
   friend class xiiGALDevice;
 
-  xiiGALSampler(const xiiGALSamplerCreationDescription& creationDescription);
+  xiiGALSampler(xiiGALDevice* pDevice, const xiiGALSamplerCreationDescription& creationDescription);
 
   virtual ~xiiGALSampler();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult InitPlatform() = 0;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) = 0;
+  virtual xiiResult DeInitPlatform() = 0;
 
 protected:
   xiiGALSamplerCreationDescription m_Description;

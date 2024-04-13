@@ -3,21 +3,19 @@
 #include <GraphicsNull/Device/DeviceNull.h>
 #include <GraphicsNull/Resources/TextureNull.h>
 
-xiiGALTextureNull::xiiGALTextureNull(const xiiGALTextureCreationDescription& creationDescription) :
-  xiiGALTexture(creationDescription)
+xiiGALTextureNull::xiiGALTextureNull(xiiGALDeviceNull* pDeviceNull, const xiiGALTextureCreationDescription& creationDescription) :
+  xiiGALTexture(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALTextureNull::~xiiGALTextureNull() = default;
 
-xiiResult xiiGALTextureNull::InitPlatform(xiiGALDevice* pDevice, const xiiGALTextureData* pInitialData)
+xiiResult xiiGALTextureNull::InitPlatform(const xiiGALTextureData* pInitialData)
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALTextureNull::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALTextureNull::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

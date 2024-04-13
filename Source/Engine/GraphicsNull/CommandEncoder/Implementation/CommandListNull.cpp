@@ -3,26 +3,22 @@
 #include <GraphicsNull/CommandEncoder/CommandListNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
 
-xiiGALCommandListNull::xiiGALCommandListNull(const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(creationDescription)
+xiiGALCommandListNull::xiiGALCommandListNull(xiiGALDeviceNull* pDeviceNull, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALCommandList(pDeviceNull, creationDescription)
 {
 }
 
 xiiGALCommandListNull::~xiiGALCommandListNull() = default;
 
-xiiResult xiiGALCommandListNull::InitPlatform(xiiGALDevice* pDevice)
+void xiiGALCommandListNull::BeginPlatform()
 {
-  // xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
-
-  return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListNull::DeInitPlatform(xiiGALDevice* pDevice)
+void xiiGALCommandListNull::EndPlatform()
 {
-  return XII_SUCCESS;
 }
 
-void xiiGALCommandListNull::ExecutePlatform()
+void xiiGALCommandListNull::ResetPlatform()
 {
 }
 
@@ -62,17 +58,29 @@ void xiiGALCommandListNull::ClearDepthStencilViewPlatform(xiiGALTextureView* pDe
 {
 }
 
+void xiiGALCommandListNull::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
+{
+}
+
+void xiiGALCommandListNull::NextSubpassPlatform()
+{
+}
+
+void xiiGALCommandListNull::EndRenderPassPlatform()
+{
+}
+
 xiiResult xiiGALCommandListNull::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
 {
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListNull::DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex)
+xiiResult xiiGALCommandListNull::DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex)
 {
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListNull::DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex)
+xiiResult xiiGALCommandListNull::DrawIndexedInstancedPlatform(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance)
 {
   return XII_SUCCESS;
 }
@@ -82,7 +90,7 @@ xiiResult xiiGALCommandListNull::DrawIndexedInstancedIndirectPlatform(xiiGALBuff
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALCommandListNull::DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex)
+xiiResult xiiGALCommandListNull::DrawInstancedPlatform(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance)
 {
   return XII_SUCCESS;
 }
