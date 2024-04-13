@@ -174,7 +174,7 @@ xiiResult xiiGALTextureViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderR
 
   if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateShaderResourceView(pTextureD3D11->GetTexture(), &viewDescription, ppShaderResourceView)))
   {
-    xiiLog::Error("Failed to create the Direct3D11 Texture2D.");
+    xiiLog::Error("Failed to create the Direct3D11 shader resource view.");
     return XII_FAILURE;
   }
   return XII_SUCCESS;
@@ -263,7 +263,7 @@ xiiResult xiiGALTextureViewD3D11::CreateRTV(ID3D11RenderTargetView** ppRenderTar
 
   if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateRenderTargetView(pTextureD3D11->GetTexture(), &viewDescription, ppRenderTargetView)))
   {
-    xiiLog::Error("Failed to create the Direct3D11 Texture2D.");
+    xiiLog::Error("Failed to create the Direct3D11 render target view.");
     return XII_FAILURE;
   }
   return XII_SUCCESS;
@@ -361,7 +361,7 @@ xiiResult xiiGALTextureViewD3D11::CreateDSV(ID3D11DepthStencilView** ppDepthSten
 
   if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateDepthStencilView(pTextureD3D11->GetTexture(), &viewDescription, ppDepthStencilView)))
   {
-    xiiLog::Error("Failed to create the Direct3D11 Texture2D.");
+    xiiLog::Error("Failed to create the Direct3D11 depth stencil view.");
     return XII_FAILURE;
   }
   return XII_SUCCESS;
@@ -439,7 +439,7 @@ xiiResult xiiGALTextureViewD3D11::CreateUAV(ID3D11UnorderedAccessView** ppUnorde
 
   if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateUnorderedAccessView(pTextureD3D11->GetTexture(), &viewDescription, ppUnorderedAccessView)))
   {
-    xiiLog::Error("Failed to create the Direct3D11 Texture2D.");
+    xiiLog::Error("Failed to create the Direct3D11 unordered access view.");
     return XII_FAILURE;
   }
   return XII_SUCCESS;

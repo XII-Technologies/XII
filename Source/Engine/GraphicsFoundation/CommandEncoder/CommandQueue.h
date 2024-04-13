@@ -30,10 +30,10 @@ public:
 
   XII_NODISCARD virtual xiiGALCommandList* BeginCommandList() = 0;
 
-  virtual void Submit(xiiGALCommandList* pCommandList);
+  virtual void Submit(xiiGALCommandList* pCommandList, bool bReset = true);
 
 protected:
-  virtual void SubmitPlatform(xiiGALCommandList* pCommandList) = 0;
+  virtual void SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) = 0;
 
 protected:
   friend class xiiGALDevice;

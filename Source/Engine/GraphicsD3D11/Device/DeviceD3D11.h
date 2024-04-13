@@ -63,6 +63,8 @@ public:
 
   void FlushPendingObjects();
 
+  void ResetCommandQueuesSwapChainReferences();
+
   // These functions are implemented by a graphics API implementation.
 protected:
   virtual xiiResult InitializePlatform() override final;

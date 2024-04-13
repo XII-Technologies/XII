@@ -86,7 +86,7 @@ protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALCommandQueueD3D11* pCommandQueueD3D11, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListD3D11();
 
@@ -96,6 +96,8 @@ protected:
   xiiResult FlushDeferredStateChanges();
 
 protected:
+  xiiGALCommandQueueD3D11* m_pCommandQueueD3D11 = nullptr;
+
   ID3D11DeviceContext* m_pCommandList          = nullptr;
   ID3D11CommandList*   m_pSubmittedCommandList = nullptr;
 

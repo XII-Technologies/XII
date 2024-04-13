@@ -19,7 +19,7 @@ public:
   virtual xiiGALCommandList* BeginCommandList() override final;
 
 protected:
-  virtual void SubmitPlatform(xiiGALCommandList* pCommandList) override final;
+  virtual void SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) override final;
 
 protected:
   friend class xiiGALDeviceNull;

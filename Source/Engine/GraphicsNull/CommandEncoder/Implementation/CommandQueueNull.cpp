@@ -15,7 +15,7 @@ xiiGALCommandList* xiiGALCommandQueueNull::BeginCommandList()
   return nullptr;
 }
 
-void xiiGALCommandQueueNull::SubmitPlatform(xiiGALCommandList* pCommandList)
+void xiiGALCommandQueueNull::SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset)
 {
 }
 

@@ -28,8 +28,8 @@
 
 #include <d3d11_1.h>
 
-xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceD3D11, creationDescription)
+xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALCommandQueueD3D11* pCommandQueueD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALCommandList(pDeviceD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11)
 {
   XII_ASSERT_DEV(SUCCEEDED(pDeviceD3D11->GetD3D11Device()->CreateDeferredContext(0U, &m_pCommandList)), "Failed to create command list for recording commands.");
 }
@@ -68,6 +68,8 @@ void xiiGALCommandListD3D11::ResetPlatform()
   }
 
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
+
+  m_pCommandQueueD3D11->RemoveSwapChainCommandListReference(this);
 
   m_RecordingState = RecordingState::Reset;
 }
@@ -279,6 +281,8 @@ void xiiGALCommandListD3D11::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPa
 
   // Set the active render targes.
   CommitRenderTargets();
+
+  m_pCommandQueueD3D11->AddSwapChainCommandListReference(this);
 }
 
 void xiiGALCommandListD3D11::NextSubpassPlatform()

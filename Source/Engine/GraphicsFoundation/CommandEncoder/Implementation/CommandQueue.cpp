@@ -15,14 +15,14 @@ xiiGALCommandQueue::xiiGALCommandQueue(xiiGALDevice* pDevice, const xiiGALComman
 
 xiiGALCommandQueue::~xiiGALCommandQueue() = default;
 
-void xiiGALCommandQueue::Submit(xiiGALCommandList* pCommandList)
+void xiiGALCommandQueue::Submit(xiiGALCommandList* pCommandList, bool bReset)
 {
   if (pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
   {
     pCommandList->End();
   }
 
-  SubmitPlatform(pCommandList);
+  SubmitPlatform(pCommandList, bReset);
 }
 
 XII_STATICLINK_FILE(GraphicsFoundation, GraphicsFoundation_CommandEncoder_Implementation_CommandQueue);

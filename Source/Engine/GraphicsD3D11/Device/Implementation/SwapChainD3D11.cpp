@@ -223,6 +223,9 @@ xiiResult xiiGALSwapChainD3D11::UpdateSwapChain(bool bCreateNew)
 
   if (ID3D11DeviceContext* pContextD3D11 = pDeviceD3D11->GetImmediateContext())
   {
+    // Reset command list swapchain references or ResizeBuffers will fail as the backbuffer is still referenced.
+    pDeviceD3D11->ResetCommandQueuesSwapChainReferences();
+
     DestroyBackBufferInternal(pDeviceD3D11);
 
     // Need to flush pending deletion or ResizeBuffers will fail as the backbuffer is still referenced.

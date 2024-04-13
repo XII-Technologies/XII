@@ -256,6 +256,17 @@ void xiiGALDeviceD3D11::FlushPendingObjects()
   FlushDestroyedObjects();
 }
 
+void xiiGALDeviceD3D11::ResetCommandQueuesSwapChainReferences()
+{
+  for (auto& queue : m_CommandQueues)
+  {
+    if (queue != nullptr)
+    {
+      queue->ReleaseSwapChainCommanListReferences();
+    }
+  }
+}
+
 xiiResult xiiGALDeviceD3D11::ShutdownPlatform()
 {
   for (xiiUInt8 i = 0; i < XII_ARRAY_SIZE(m_CommandQueues); ++i)

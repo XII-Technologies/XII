@@ -15,8 +15,12 @@ public:
 
   virtual xiiGALCommandList* BeginCommandList() override final;
 
+  void AddSwapChainCommandListReference(xiiGALCommandListD3D11* pCommandListD3D11);
+  void RemoveSwapChainCommandListReference(xiiGALCommandListD3D11* pCommandListD3D11);
+  void ReleaseSwapChainCommanListReferences();
+
 protected:
-  virtual void SubmitPlatform(xiiGALCommandList* pCommandList) override final;
+  virtual void SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) override final;
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -29,7 +33,8 @@ protected:
 protected:
   xiiUInt64 m_uiCompletedFenceValue = 0U;
 
-  xiiUniquePtr<xiiGALCommandListD3D11> m_pCommandList;
+  xiiDeque<xiiGALCommandList*>             m_CommandLists;
+  xiiDynamicArray<xiiGALCommandListD3D11*> m_SwapChainCommandListReferences;
 };
 
 #include <GraphicsD3D11/CommandEncoder/Implementation/CommandQueueD3D11_inl.h>
