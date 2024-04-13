@@ -36,6 +36,7 @@ xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, 
 
 xiiGALCommandListD3D11::~xiiGALCommandListD3D11()
 {
+  XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
   XII_GAL_D3D11_RELEASE(m_pCommandList);
 }
 
@@ -59,7 +60,12 @@ void xiiGALCommandListD3D11::EndPlatform()
 
 void xiiGALCommandListD3D11::ResetPlatform()
 {
-  XII_ASSERT_DEV(SUCCEEDED(m_pCommandList->FinishCommandList(0U, &m_pSubmittedCommandList)), "Failed to end command list.");
+  XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
+
+  if (m_RecordingState == RecordingState::Recording)
+  {
+    XII_ASSERT_DEV(SUCCEEDED(m_pCommandList->FinishCommandList(0U, &m_pSubmittedCommandList)), "Failed to end command list for reset.");
+  }
 
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
 

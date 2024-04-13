@@ -13,6 +13,7 @@ xiiGALCommandQueueD3D11::xiiGALCommandQueueD3D11(xiiGALDeviceD3D11* pDeviceD3D11
 
 xiiGALCommandQueueD3D11::~xiiGALCommandQueueD3D11()
 {
+  m_pCommandList.Clear();
 }
 
 xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
