@@ -287,6 +287,7 @@ void xiiGALCommandListD3D11::NextSubpassPlatform()
 
 void xiiGALCommandListD3D11::EndRenderPassPlatform()
 {
+  ResetRenderTargets();
 }
 
 xiiResult xiiGALCommandListD3D11::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -828,6 +829,8 @@ void xiiGALCommandListD3D11::ResetRenderTargets()
 
   m_pCommittedDepthStencilTarget = nullptr;
   m_uiBoundRenderTargetCount     = 0U;
+
+  m_pCommandList->OMSetRenderTargets(0, nullptr, nullptr);
 }
 
 bool xiiGALCommandListD3D11::UnsetResourceViews(const xiiGALResource* pResource)
