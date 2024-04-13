@@ -12,9 +12,11 @@ struct ID3D11CommandList;
 class XII_GRAPHICSD3D11_DLL xiiGALCommandListD3D11 final : public xiiGALCommandList
 {
 public:
-  ID3D11CommandList* GetD3D11CommandList() const;
+  ID3D11CommandList*   GetD3D11CommandList() const;
+  ID3D11DeviceContext* GetD3D11DeferredContext() const;
 
 protected:
+  virtual void BeginPlatform() override final;
   virtual void EndPlatform() override final;
   virtual void ResetPlatform() override final;
 
@@ -31,6 +33,10 @@ protected:
 
   virtual void ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor) override final;
   virtual void ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) override final;
+
+  virtual void BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues) override final;
+  virtual void NextSubpassPlatform() override final;
+  virtual void EndRenderPassPlatform() override final;
 
   virtual xiiResult DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex) override final;
   virtual xiiResult DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex) override final;
@@ -66,6 +72,15 @@ protected:
 
   virtual void FlushPlatform() override final;
 
+  void InvalidateCachedState();
+  void InvalidateResources();
+
+  void CommitRenderTargets();
+  void ResetRenderTargets();
+
+  bool UnsetResourceViews(const xiiGALResource* pResource);
+  bool UnsetUnorderedAccessViews(const xiiGALResource* pResource);
+
 protected:
   friend class xiiGALCommandQueueD3D11;
   friend class xiiGALDeviceD3D11;
@@ -81,8 +96,8 @@ protected:
   xiiResult FlushDeferredStateChanges();
 
 protected:
-  ID3D11DeviceContext* m_pCommandList = nullptr;
-  ID3D11CommandList* m_pSubmittedCommandList = nullptr;
+  ID3D11DeviceContext* m_pCommandList          = nullptr;
+  ID3D11CommandList*   m_pSubmittedCommandList = nullptr;
 
   xiiGALPipelineStateD3D11* m_pPipelineState = nullptr;
 
@@ -95,32 +110,35 @@ protected:
   ID3D11InputLayout* m_pCommittedInputLayout = nullptr;
 
   ID3D11Buffer*            m_pCommittedIndexBuffer           = nullptr;
-  xiiEnum<xiiGALValueType> m_CommittedIndexFormat            = {};
   xiiEnum<xiiGALValueType> m_CommittedIndexBufferFormat      = xiiGALValueType::Undefined;
   xiiUInt32                m_uiCommittedIndexDataStartOffset = 0;
   bool                     m_bCommittedIndexBufferUpToDate   = false;
 
   D3D11_PRIMITIVE_TOPOLOGY m_CommittedPrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
-  ID3D11DeviceChild* m_pBoundShaders[xiiGALShaderStage::ENUM_COUNT] = {};
+  ID3D11DeviceChild* m_pCommittedShaders[xiiGALShaderStage::ENUM_COUNT] = {};
 
   ID3D11Buffer*         m_pCommittedConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
   xiiGAL::ModifiedRange m_CommittedConstantBuffersRange[xiiGALShaderStage::ENUM_COUNT];
 
-  xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pBoundShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
-  xiiHybridArray<const xiiGALResource*, 16>     m_ResourcesForResourceViews[xiiGALShaderStage::ENUM_COUNT];
-  xiiGAL::ModifiedRange                         m_BoundShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];
+  xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pCommittedShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
+  xiiHybridArray<xiiGALResource*, 16>           m_pResourcesForResourceViews[xiiGALShaderStage::ENUM_COUNT];
+  xiiGAL::ModifiedRange                         m_CommittedShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];
 
-  xiiHybridArray<ID3D11UnorderedAccessView*, 16> m_BoundUnoderedAccessViews;
-  xiiHybridArray<const xiiGALResource*, 16>      m_ResourcesForUnorderedAccessViews;
-  xiiGAL::ModifiedRange                          m_BoundUnoderedAccessViewsRange;
+  xiiHybridArray<ID3D11UnorderedAccessView*, 16> m_CommittedUnoderedAccessViews;
+  xiiHybridArray<xiiGALResource*, 16>            m_ResourcesForUnorderedAccessViews;
+  xiiGAL::ModifiedRange                          m_CommittedUnoderedAccessViewsRange;
 
   ID3D11SamplerState*   m_pCommittedSamplerStates[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
   xiiGAL::ModifiedRange m_CommittedSamplerStatesRange[xiiGALShaderStage::ENUM_COUNT];
 
-  ID3D11RenderTargetView* m_pBoundRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
-  xiiUInt32               m_uiBoundRenderTargetCount                            = 0U;
-  ID3D11DepthStencilView* m_pBoundDepthStencilTarget                            = nullptr;
+  ID3D11RenderTargetView* m_pCommittedRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
+  ID3D11DepthStencilView* m_pCommittedDepthStencilTarget                            = nullptr;
+  xiiUInt32               m_uiBoundRenderTargetCount                                = 0U;
+
+  xiiGALRenderPass*                                                         m_pRenderPass  = nullptr;
+  xiiGALFramebuffer*                                                        m_pFramebuffer = nullptr;
+  xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT> m_AttachmentClearValues;
 
   xiiDisjointQueryPool                                     m_DisjointQueryPool;
   xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> m_pActiveDisjointQuery;

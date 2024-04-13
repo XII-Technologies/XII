@@ -10,6 +10,10 @@ xiiGALCommandListNull::xiiGALCommandListNull(xiiGALDeviceNull* pDeviceNull, cons
 
 xiiGALCommandListNull::~xiiGALCommandListNull() = default;
 
+void xiiGALCommandListNull::BeginPlatform()
+{
+}
+
 void xiiGALCommandListNull::EndPlatform()
 {
 }
@@ -51,6 +55,18 @@ void xiiGALCommandListNull::ClearRenderTargetViewPlatform(xiiGALTextureView* pRe
 }
 
 void xiiGALCommandListNull::ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear)
+{
+}
+
+void xiiGALCommandListNull::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
+{
+}
+
+void xiiGALCommandListNull::NextSubpassPlatform()
+{
+}
+
+void xiiGALCommandListNull::EndRenderPassPlatform()
 {
 }
 

@@ -3,3 +3,8 @@ XII_ALWAYS_INLINE ID3D11CommandList* xiiGALCommandListD3D11::GetD3D11CommandList
 {
   return m_pSubmittedCommandList;
 }
+
+XII_ALWAYS_INLINE ID3D11DeviceContext* xiiGALCommandListD3D11::GetD3D11DeferredContext() const
+{
+  return m_pCommandList;
+}

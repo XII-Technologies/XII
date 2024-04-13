@@ -50,7 +50,7 @@ public:
 
   ~xiiDisjointQueryPool()
   {
-    xiiLog::Info("Disjoint query pool: created {0} {1}", m_uiCreatedQueriesCount, (m_uiCreatedQueriesCount == 1 ? " query" : " queries"));
+    xiiLog::Info("Disjoint query pool: created {0} {1}.", m_uiCreatedQueriesCount, (m_uiCreatedQueriesCount == 1 ? "query" : "queries"));
   }
 
 private:

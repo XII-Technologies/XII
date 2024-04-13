@@ -1,5 +1,6 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
 // clang-format off
@@ -16,6 +17,11 @@ xiiGALCommandQueue::~xiiGALCommandQueue() = default;
 
 void xiiGALCommandQueue::Submit(xiiGALCommandList* pCommandList)
 {
+  if (pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
+  {
+    pCommandList->End();
+  }
+
   SubmitPlatform(pCommandList);
 }
 

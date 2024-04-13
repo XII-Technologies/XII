@@ -17,6 +17,8 @@ xiiGALCommandQueueD3D11::~xiiGALCommandQueueD3D11()
 
 xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
 {
+  m_pCommandList->Begin();
+
   return m_pCommandList.Borrow();
 }
 
@@ -25,11 +27,10 @@ void xiiGALCommandQueueD3D11::SubmitPlatform(xiiGALCommandList* pCommandList)
   if (pCommandList == nullptr)
     return;
 
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  xiiGALDeviceD3D11*      pDeviceD3D11      = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
   xiiGALCommandListD3D11* pCommandListD3D11 = static_cast<xiiGALCommandListD3D11*>(pCommandList);
 
-  ID3D11DeviceContext* pD3D11CommandList = pCommandListD3D11->GetD3D11CommandList();
-  pDeviceD3D11->GetImmediateContext()->FinishCommandList(FALSE, &pD3D11CommandList);
+  pDeviceD3D11->GetImmediateContext()->ExecuteCommandList(pCommandListD3D11->GetD3D11CommandList(), FALSE);
 }
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_CommandEncoder_Implementation_CommandQueueD3D11);

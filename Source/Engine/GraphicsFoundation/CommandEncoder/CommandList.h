@@ -43,7 +43,17 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALViewport : public xiiHashableStruct<xiiG
   float m_fMaxDepth = 1.0f;
 };
 
-/// \brief This describes the fence creation description.
+/// \brief This describes the viewport.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALBeginRenderPassDescription : public xiiHashableStruct<xiiGALBeginRenderPassDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiGALRenderPassHandle                                                    m_hRenderPass;
+  xiiGALFramebufferHandle                                                   m_hFramebuffer;
+  xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT> m_ClearValues;
+};
+
+/// \brief This describes the command list creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandListCreationDescription : public xiiHashableStruct<xiiGALCommandListCreationDescription>
 {
   XII_DECLARE_POD_TYPE();
@@ -58,6 +68,7 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALCommandList : public xiiGALDeviceObject
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandList, xiiGALDeviceObject);
 
 public:
+  void Begin();
   void End();
   void Reset();
 
@@ -76,6 +87,10 @@ public:
 
   void ClearRenderTargetView(xiiGALTextureViewHandle hRenderTargetView, const xiiColor& clearColor);
   void ClearDepthStencilView(xiiGALTextureViewHandle hDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear);
+
+  void BeginRenderPass(const xiiGALBeginRenderPassDescription& beginRenderPass);
+  void NextSubpass();
+  void EndRenderPass();
 
   /// \todo GraphicsFoundation: Add unordered access view clear.
 
@@ -130,7 +145,16 @@ public:
   void InvalidateState();
 
 public:
+  enum class RecordingState
+  {
+    Recording,
+    Ended,
+    Reset
+  };
+
   void AssertRenderingThread() const;
+
+  RecordingState GetRecordingState() const;
 
 protected:
   friend class xiiGALDevice;
@@ -145,7 +169,8 @@ protected:
 
   // These functions need to be implemented by a graphics API abstraction.
 protected:
-  virtual void EndPlatform() = 0;
+  virtual void BeginPlatform() = 0;
+  virtual void EndPlatform()   = 0;
   virtual void ResetPlatform() = 0;
 
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) = 0;
@@ -161,6 +186,10 @@ protected:
 
   virtual void ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)                                                       = 0;
   virtual void ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) = 0;
+
+  virtual void BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues) = 0;
+  virtual void NextSubpassPlatform()                                                                                                                                      = 0;
+  virtual void EndRenderPassPlatform()                                                                                                                                    = 0;
 
   virtual xiiResult DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)                                                                                                        = 0;
   virtual xiiResult DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex)                                                                           = 0;
@@ -199,15 +228,9 @@ protected:
   /// \endcond
 
 protected:
-  enum class RecordingState
-  {
-    Recording,
-    Ended
-  };
-
   xiiGALCommandListCreationDescription m_Description;
 
-  RecordingState m_RecordingState = RecordingState::Ended;
+  RecordingState m_RecordingState = RecordingState::Reset;
 
   xiiGALPipelineStateHandle             m_hPipelineState;
   xiiGALPipelineResourceSignatureHandle m_hPipelineResourceSignature;
@@ -229,6 +252,7 @@ protected:
 private:
   void CountDispatchCall();
   void CountDrawCall();
+  void ClearStatisticCounters();
 
   // Statistic variables.
   xiiUInt32 m_uiDrawCalls     = 0U;

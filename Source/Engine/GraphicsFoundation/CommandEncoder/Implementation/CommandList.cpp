@@ -3,8 +3,11 @@
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Resources/Framebuffer.h>
 #include <GraphicsFoundation/Resources/Query.h>
+#include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/States/PipelineState.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandList, 1, xiiRTTINoAllocator)
@@ -32,18 +35,32 @@ xiiGALCommandList::xiiGALCommandList(xiiGALDevice* pDevice, const xiiGALCommandL
 
 xiiGALCommandList::~xiiGALCommandList() = default;
 
+void xiiGALCommandList::Begin()
+{
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Ended || m_RecordingState == RecordingState::Reset, "The command list has not been ended.");
+
+  if (m_RecordingState != RecordingState::Recording)
+  {
+    BeginPlatform();
+  }
+}
+
 void xiiGALCommandList::End()
 {
-  XII_ASSERT_DEV(m_RecordingState != RecordingState::Ended, "The command list has ended.");
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Recording, "The command list has not begun.");
 
-  EndPlatform();
+  if (m_RecordingState == RecordingState::Recording)
+  {
+    EndPlatform();
+  }
 }
 
 void xiiGALCommandList::Reset()
 {
-  XII_ASSERT_DEV(m_RecordingState != RecordingState::Recording, "The command list has not begun.");
-
-  ResetPlatform();
+  if (m_RecordingState != RecordingState::Reset)
+  {
+    ResetPlatform();
+  }
 }
 
 void xiiGALCommandList::SetPipelineState(xiiGALPipelineStateHandle hPipelineState)
@@ -213,6 +230,69 @@ void xiiGALCommandList::ClearDepthStencilView(xiiGALTextureViewHandle hDepthSten
   XII_VERIFY_COMMAND_LIST(viewDescription.m_ViewType == xiiGALTextureViewType::DepthStencil, "The texture view '{0}' was not created with the xiiGALTextureViewType::DepthStencil.", pDepthStencilView->GetDebugName());
 
   ClearDepthStencilViewPlatform(pDepthStencilView, bClearDepth, bClearStencil, fDepthClear, uiStencilClear);
+}
+
+void xiiGALCommandList::BeginRenderPass(const xiiGALBeginRenderPassDescription& beginRenderPass)
+{
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(!beginRenderPass.m_hRenderPass.IsInvalidated(), "BeginRenderPass: Render pass handle is invalid.");
+  XII_VERIFY_COMMAND_LIST(!beginRenderPass.m_hFramebuffer.IsInvalidated(), "BeginRenderPass: Framebuffer handle is invalid.");
+
+  auto pRenderPass  = m_pDevice->GetRenderPass(beginRenderPass.m_hRenderPass);
+  auto pFramebuffer = m_pDevice->GetFramebuffer(beginRenderPass.m_hFramebuffer);
+
+  const auto& renderPassDescription = m_pDevice->GetRenderPass(beginRenderPass.m_hRenderPass)->GetDescription();
+
+  xiiUInt32 uiRequiredClearValueCount = 0;
+  for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
+  {
+    const auto& attachmentDescription = renderPassDescription.m_Attachments[i];
+    const auto& formatProperties      = xiiGALGraphicsUtilities::GetTextureFormatProperties(attachmentDescription.m_Format);
+
+    if (attachmentDescription.m_LoadOperation == xiiGALAttachmentLoadOperation::Load)
+    {
+      uiRequiredClearValueCount = i + 1;
+    }
+
+    if (formatProperties.m_ComponentType == xiiGALTextureFormatComponentType::DepthStencil)
+    {
+      if (attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Clear)
+      {
+        uiRequiredClearValueCount = i + 1;
+      }
+    }
+  }
+
+  XII_VERIFY_COMMAND_LIST(beginRenderPass.m_ClearValues.GetCount() >= uiRequiredClearValueCount, "BeginRenderPass: At least {0} clear values are required, but only {1} are provided.", uiRequiredClearValueCount, beginRenderPass.m_ClearValues.GetCount());
+
+  /// \todo GraphicsFoundation: Potentially reset the current render targets here.
+  /// \todo GraphicsFoundation: Implement render pass attachment handling in the GAL, as well as state transitions in the begin render pass description.
+
+  m_hRenderPass  = beginRenderPass.m_hRenderPass;
+  m_hFramebuffer = beginRenderPass.m_hFramebuffer;
+
+  BeginRenderPassPlatform(pRenderPass, pFramebuffer, beginRenderPass.m_ClearValues.GetArrayPtr());
+}
+
+void xiiGALCommandList::NextSubpass()
+{
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(!m_hRenderPass.IsInvalidated(), "NextSubpass: Render pass handle is invalid.");
+  XII_VERIFY_COMMAND_LIST(!m_hFramebuffer.IsInvalidated(), "NextSubpass: Framebuffer handle is invalid.");
+
+  NextSubpassPlatform();
+}
+
+void xiiGALCommandList::EndRenderPass()
+{
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Graphics), "BeginRenderPass arguments are invalid. The command list does not have the xiiGALCommandQueueType::Graphics flag.");
+  XII_VERIFY_COMMAND_LIST(!m_hRenderPass.IsInvalidated(), "NextSubpass: Render pass handle is invalid.");
+  XII_VERIFY_COMMAND_LIST(!m_hFramebuffer.IsInvalidated(), "NextSubpass: Framebuffer handle is invalid.");
+
+  EndRenderPassPlatform();
+
+  m_hRenderPass  = xiiGALRenderPassHandle();
+  m_hFramebuffer = xiiGALFramebufferHandle();
 }
 
 xiiResult xiiGALCommandList::Draw(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -656,18 +736,25 @@ void xiiGALCommandList::InvalidateState()
   m_hPipelineState             = xiiGALPipelineStateHandle();
   m_hPipelineResourceSignature = xiiGALPipelineResourceSignatureHandle();
 
+  xiiMemoryUtils::DefaultConstruct(m_VertexBuffers);
+
   m_hIndexBuffer      = xiiGALBufferHandle();
   m_uiIndexDataOffset = 0;
 
-  m_uiStencilRef = 0;
+  m_hRenderPass  = xiiGALRenderPassHandle();
+  m_hFramebuffer = xiiGALFramebufferHandle();
 
   m_BlendFactors = xiiColor::Black;
+  m_uiStencilRef = 0;
 
   m_Viewports.Clear();
   m_ScissorRects.Clear();
 
-  m_hRenderPass  = xiiGALRenderPassHandle();
-  m_hFramebuffer = xiiGALFramebufferHandle();
+  ClearStatisticCounters();
+
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  XII_ASSERT_DEV(m_MappedBuffers.IsEmpty(), "Mapped buffers have not yet been released.");
+#endif
 }
 
 #undef XII_VERIFY_COMMAND_LIST

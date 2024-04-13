@@ -39,9 +39,18 @@ xiiGALCommandListD3D11::~xiiGALCommandListD3D11()
   XII_GAL_D3D11_RELEASE(m_pCommandList);
 }
 
-void xiiGALCommandListD3D11::EndPlatform()
+void xiiGALCommandListD3D11::BeginPlatform()
 {
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
+
+  m_RecordingState = RecordingState::Recording;
+
+  InvalidateState();
+}
+
+void xiiGALCommandListD3D11::EndPlatform()
+{
+  XII_ASSERT_DEV(m_pSubmittedCommandList == nullptr, "Submitted command list is not null.");
 
   XII_ASSERT_DEV(SUCCEEDED(m_pCommandList->FinishCommandList(0U, &m_pSubmittedCommandList)), "Failed to end command list.");
 
@@ -50,22 +59,16 @@ void xiiGALCommandListD3D11::EndPlatform()
 
 void xiiGALCommandListD3D11::ResetPlatform()
 {
-  if (m_RecordingState == RecordingState::Recording)
-  {
-    XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
-
-    XII_ASSERT_DEV(SUCCEEDED(m_pCommandList->FinishCommandList(0U, &m_pSubmittedCommandList)), "Failed to end command list.");
-  }
+  XII_ASSERT_DEV(SUCCEEDED(m_pCommandList->FinishCommandList(0U, &m_pSubmittedCommandList)), "Failed to end command list.");
 
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
 
-  m_RecordingState = RecordingState::Ended;
+  m_RecordingState = RecordingState::Reset;
 }
 
 void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
 {
   auto pPipelineStateD3D11 = static_cast<xiiGALPipelineStateD3D11*>(pPipelineState);
-
 
 #if 0
   if (m_pPipelineState == (pPipelineStateD3D11 != nullptr ? pPipelineStateD3D11->GetPipelineState() : nullptr))
@@ -251,6 +254,33 @@ void xiiGALCommandListD3D11::ClearDepthStencilViewPlatform(xiiGALTextureView* pD
 
   // The full extent of the resource view is always cleared. Viewport and scissor settings are not applied.
   m_pCommandList->ClearDepthStencilView(static_cast<ID3D11DepthStencilView*>(pDepthStencilViewD3D11->GetTextureView()), uiClearFlags, fDepthClear, uiStencilClear);
+}
+
+void xiiGALCommandListD3D11::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues)
+{
+  ResetRenderTargets();
+
+  m_AttachmentClearValues.SetCountUninitialized(pOptimizedClearValues.GetCount());
+  m_AttachmentClearValues = pOptimizedClearValues;
+
+  // Set viewport to match frame buffer size.
+  const auto&    framebufferDescription = pFramebuffer->GetDescription();
+  xiiGALViewport viewport               = {.m_fTopLeftX = 0.0f, .m_fTopLeftY = 0.0f, .m_fWidth = (float)framebufferDescription.m_FramebufferSize.width, .m_fHeight = (float)framebufferDescription.m_FramebufferSize.width};
+  SetViewports(xiiMakeArrayPtr(&viewport, 1U), framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height);
+
+  m_pRenderPass  = static_cast<xiiGALRenderPassD3D11*>(pRenderPass);
+  m_pFramebuffer = static_cast<xiiGALFramebufferD3D11*>(pFramebuffer);
+
+  // Set the active render targes.
+  CommitRenderTargets();
+}
+
+void xiiGALCommandListD3D11::NextSubpassPlatform()
+{
+}
+
+void xiiGALCommandListD3D11::EndRenderPassPlatform()
+{
 }
 
 xiiResult xiiGALCommandListD3D11::DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)
@@ -651,6 +681,186 @@ void xiiGALCommandListD3D11::FlushPlatform()
   XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "Flushing commandlist inside an active render pass is not allowed.");
 
   m_pCommandList->Flush();
+}
+
+void xiiGALCommandListD3D11::InvalidateCachedState()
+{
+  InvalidateState();
+
+  m_pCommandList->ClearState();
+
+  InvalidateResources();
+}
+
+void xiiGALCommandListD3D11::InvalidateResources()
+{
+  m_pPipelineState = nullptr;
+
+  xiiMemoryUtils::DefaultConstruct(m_pCommittedVertexBuffers);
+  xiiMemoryUtils::DefaultConstruct(m_CommittedVertexBufferStrides);
+  xiiMemoryUtils::DefaultConstruct(m_CommittedVertexBufferOffsets);
+  m_bCommittedVertexBufferUpToDate = false;
+  m_CommittedVertexBuffersRange.Reset();
+
+  m_pCommittedInputLayout           = nullptr;
+  m_CommittedIndexBufferFormat      = {};
+  m_uiCommittedIndexDataStartOffset = 0U;
+  m_bCommittedIndexBufferUpToDate   = false;
+
+  m_CommittedPrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
+
+  xiiMemoryUtils::DefaultConstruct(m_pCommittedShaders);
+
+  xiiMemoryUtils::DefaultConstruct(m_pCommittedConstantBuffers);
+  xiiMemoryUtils::DefaultConstruct(m_CommittedConstantBuffersRange);
+
+  xiiMemoryUtils::DefaultConstruct(m_pCommittedShaderResourceViews);
+  xiiMemoryUtils::DefaultConstruct(m_pResourcesForResourceViews);
+  xiiMemoryUtils::DefaultConstruct(m_CommittedShaderResourceViewsRange);
+
+  m_CommittedUnoderedAccessViews.Clear();
+  m_ResourcesForUnorderedAccessViews.Clear();
+  m_CommittedUnoderedAccessViewsRange.Reset();
+
+  xiiMemoryUtils::DefaultConstruct(m_pCommittedRenderTargets);
+  m_uiBoundRenderTargetCount     = 0U;
+  m_pCommittedDepthStencilTarget = nullptr;
+}
+
+void xiiGALCommandListD3D11::CommitRenderTargets()
+{
+  xiiUInt32 uiOldRenderTargetCount = m_uiBoundRenderTargetCount;
+
+  ResetRenderTargets();
+
+  if (!m_pRenderPass || !m_pFramebuffer)
+    return;
+
+  bool bFlushNeeded = false;
+
+  const auto& renderPassDescription  = m_pRenderPass->GetDescription();
+  const auto& framebufferDescription = m_pFramebuffer->GetDescription();
+  const xiiUInt32 uiFramebufferAttachmentCount = framebufferDescription.m_Attachments.GetCount();
+
+  const xiiGALTextureViewD3D11* pRenderTargetViews[XII_GAL_MAX_RENDERTARGET_COUNT] = {nullptr};
+  const xiiGALTextureViewD3D11* pDepthStencilView                                  = nullptr;
+
+  for (xiiUInt32 i = 0; i < uiFramebufferAttachmentCount; ++i)
+  {
+    xiiGALTextureViewD3D11* pAttachmentViewD3D11 = static_cast<xiiGALTextureViewD3D11*>(m_pDevice->GetTextureView(framebufferDescription.m_Attachments[i]));
+    const auto&             viewDescription      = pAttachmentViewD3D11->GetDescription();
+
+    if (pAttachmentViewD3D11 != nullptr)
+    {
+      auto pTexture = pAttachmentViewD3D11->GetTexture();
+
+      bFlushNeeded |= UnsetResourceViews(pTexture);
+      bFlushNeeded |= UnsetUnorderedAccessViews(pTexture);
+
+      if (viewDescription.m_ViewType == xiiGALTextureViewType::DepthStencil || viewDescription.m_ViewType == xiiGALTextureViewType::ReadOnlyDepthStencil)
+      {
+        XII_ASSERT_DEV(pDepthStencilView == nullptr, "Expected only one Depth Stencil attachment.");
+
+        pDepthStencilView = pAttachmentViewD3D11;
+      }
+      else
+      {
+        pRenderTargetViews[i] = pAttachmentViewD3D11;
+      }
+    }
+  }
+
+  if (bFlushNeeded)
+  {
+    FlushDeferredStateChanges().IgnoreResult();
+    FlushPlatform();
+  }
+
+  for (xiiUInt32 i = 0; i < uiFramebufferAttachmentCount; ++i)
+  {
+    if (pRenderTargetViews[i] != nullptr)
+    {
+      m_pCommittedRenderTargets[i] = static_cast<ID3D11RenderTargetView*>(pRenderTargetViews[i]->GetTextureView());
+    }
+  }
+  m_uiBoundRenderTargetCount = uiFramebufferAttachmentCount;
+
+  if (pDepthStencilView != nullptr)
+  {
+    m_pCommittedDepthStencilTarget = static_cast<ID3D11DepthStencilView*>(pDepthStencilView->GetTextureView());
+  }
+
+  m_pCommandList->OMSetRenderTargets(xiiMath::Max(uiFramebufferAttachmentCount, uiOldRenderTargetCount), m_pCommittedRenderTargets, m_pCommittedDepthStencilTarget);
+
+  // Clear render targets.
+  for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
+  {
+    const auto& attachmentDescription = renderPassDescription.m_Attachments[i];
+    const auto& hAttachment = framebufferDescription.m_Attachments[i];
+
+    if (attachmentDescription.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear)
+    {
+      xiiGALTextureView* pTextureView = m_pDevice->GetTextureView(hAttachment);
+
+      if (pTextureView->GetDescription().m_ViewType == xiiGALTextureViewType::DepthStencil || pTextureView->GetDescription().m_ViewType == xiiGALTextureViewType::ReadOnlyDepthStencil)
+      {
+        bool bClearStencil = attachmentDescription.m_StencilLoadOperation == xiiGALAttachmentLoadOperation::Clear;
+
+        ClearDepthStencilViewPlatform(pTextureView, true, bClearStencil, m_AttachmentClearValues[i].m_DepthStencil.m_fDepth, m_AttachmentClearValues[i].m_DepthStencil.m_uiStencil);
+      }
+      else if (pTextureView->GetDescription().m_ViewType == xiiGALTextureViewType::RenderTarget)
+      {
+        ClearRenderTargetViewPlatform(pTextureView, m_AttachmentClearValues[i].m_ClearColor);
+      }
+    }
+  }
+}
+
+void xiiGALCommandListD3D11::ResetRenderTargets()
+{
+  xiiMemoryUtils::DefaultConstruct(m_pCommittedRenderTargets);
+
+  m_pCommittedDepthStencilTarget = nullptr;
+  m_uiBoundRenderTargetCount     = 0U;
+}
+
+bool xiiGALCommandListD3D11::UnsetResourceViews(const xiiGALResource* pResource)
+{
+  bool bResult = false;
+
+  for (xiiUInt32 uiStage = 0U; uiStage < xiiGALShaderStage::ENUM_COUNT; ++uiStage)
+  {
+    for (xiiUInt32 uiSlot = 0U; uiSlot < m_pResourcesForResourceViews[uiStage].GetCount(); ++uiSlot)
+    {
+      if (m_pResourcesForResourceViews[uiStage][uiSlot] == pResource)
+      {
+        m_pResourcesForResourceViews[uiStage][uiSlot]    = nullptr;
+        m_pCommittedShaderResourceViews[uiStage][uiSlot] = nullptr;
+        m_CommittedShaderResourceViewsRange[uiStage].SetToIncludeValue(uiSlot);
+
+        bResult = true;
+      }
+    }
+  }
+  return bResult;
+}
+
+bool xiiGALCommandListD3D11::UnsetUnorderedAccessViews(const xiiGALResource* pResource)
+{
+  bool bResult = false;
+
+  for (xiiUInt32 uiSlot = 0U; uiSlot < m_ResourcesForUnorderedAccessViews.GetCount(); ++uiSlot)
+  {
+    if (m_ResourcesForUnorderedAccessViews[uiSlot] == pResource)
+    {
+      m_ResourcesForUnorderedAccessViews[uiSlot] = nullptr;
+      m_CommittedUnoderedAccessViews[uiSlot]     = nullptr;
+      m_CommittedUnoderedAccessViewsRange.SetToIncludeValue(uiSlot);
+
+      bResult = true;
+    }
+  }
+  return bResult;
 }
 
 xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> xiiGALCommandListD3D11::BeginDisjointQuery()
