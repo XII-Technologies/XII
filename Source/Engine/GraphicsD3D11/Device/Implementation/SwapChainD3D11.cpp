@@ -2,6 +2,8 @@
 
 #include <Core/System/Window.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <GraphicsD3D11/CommandEncoder/CommandListD3D11.h>
+#include <GraphicsD3D11/CommandEncoder/CommandQueueD3D11.h>
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Device/SwapChainD3D11.h>
 #include <GraphicsD3D11/Resources/TextureD3D11.h>
@@ -342,9 +344,19 @@ void xiiGALSwapChainD3D11::Present(xiiGALDevice* pDevice)
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");
 
-  /// \todo GraphicsD3D11: Copy to the actual backbuffer object.
-
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+
+  if (!m_hActualBackBufferTexture.IsInvalidated())
+  {
+    if (auto pQueue = pDeviceD3D11->GetGraphicsQueue())
+    {
+      auto pCommandList = pQueue->BeginCommandList();
+
+      pCommandList->CopyTexture(m_hBackBufferTexture, m_hActualBackBufferTexture);
+
+      pQueue->Submit(pCommandList);
+    }
+  }
 
   xiiUInt32 uiSyncInterval = 1U;
   switch (m_PresentMode)

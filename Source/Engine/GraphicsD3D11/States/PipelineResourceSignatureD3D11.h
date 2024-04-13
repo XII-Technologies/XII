@@ -22,7 +22,6 @@ protected:
   virtual xiiResult DeInitPlatform() override final;
 
 protected:
-
 };
 
 #include <GraphicsD3D11/States/Implementation/PipelineResourceSignatureD3D11_inl.h>

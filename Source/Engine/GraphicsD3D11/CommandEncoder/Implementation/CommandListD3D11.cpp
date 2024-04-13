@@ -738,8 +738,8 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
 
   bool bFlushNeeded = false;
 
-  const auto& renderPassDescription  = m_pRenderPass->GetDescription();
-  const auto& framebufferDescription = m_pFramebuffer->GetDescription();
+  const auto&     renderPassDescription        = m_pRenderPass->GetDescription();
+  const auto&     framebufferDescription       = m_pFramebuffer->GetDescription();
   const xiiUInt32 uiFramebufferAttachmentCount = framebufferDescription.m_Attachments.GetCount();
 
   const xiiGALTextureViewD3D11* pRenderTargetViews[XII_GAL_MAX_RENDERTARGET_COUNT] = {nullptr};
@@ -796,7 +796,7 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
   for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
   {
     const auto& attachmentDescription = renderPassDescription.m_Attachments[i];
-    const auto& hAttachment = framebufferDescription.m_Attachments[i];
+    const auto& hAttachment           = framebufferDescription.m_Attachments[i];
 
     if (attachmentDescription.m_LoadOperation == xiiGALAttachmentLoadOperation::Clear)
     {

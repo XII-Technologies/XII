@@ -188,8 +188,8 @@ protected:
   virtual void ClearDepthStencilViewPlatform(xiiGALTextureView* pDepthStencilView, bool bClearDepth, bool bClearStencil, float fDepthClear, xiiUInt8 uiStencilClear) = 0;
 
   virtual void BeginRenderPassPlatform(xiiGALRenderPass* pRenderPass, xiiGALFramebuffer* pFramebuffer, xiiArrayPtr<const xiiGALOptimizedClearValue> pOptimizedClearValues) = 0;
-  virtual void NextSubpassPlatform()                                                                                                                                      = 0;
-  virtual void EndRenderPassPlatform()                                                                                                                                    = 0;
+  virtual void NextSubpassPlatform()                                                                                                                                       = 0;
+  virtual void EndRenderPassPlatform()                                                                                                                                     = 0;
 
   virtual xiiResult DrawPlatform(xiiUInt32 uiVertexCount, xiiUInt32 uiStartVertex)                                                                                                        = 0;
   virtual xiiResult DrawIndexedPlatform(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex)                                                                           = 0;
