@@ -156,7 +156,20 @@ xiiApplication::Execution xiiGraphicsExplorerWindowApp::Run()
 
     if (auto pCommandList = pGraphicsQueue->BeginCommandList())
     {
-      xiiLog::Info("Graphics begin");
+      xiiGALBeginRenderPassDescription beginRenderPass{
+        .m_hRenderPass  = m_hRenderPass,
+        .m_hFramebuffer = m_hFrameBuffer,
+      };
+
+      auto& clearValue1                      = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+      clearValue1.m_DepthStencil.m_fDepth    = 1.0f;
+      clearValue1.m_DepthStencil.m_uiStencil = 0U;
+
+      auto& clearValue2        = beginRenderPass.m_ClearValues.ExpandAndGetRef();
+      clearValue2.m_ClearColor = xiiColor::Blue;
+
+      pCommandList->BeginRenderPass(beginRenderPass);
+      pCommandList->EndRenderPass();
 
       pGraphicsQueue->Submit(pCommandList);
     }
