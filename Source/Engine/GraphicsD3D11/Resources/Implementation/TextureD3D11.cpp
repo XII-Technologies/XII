@@ -90,6 +90,7 @@ xiiResult xiiGALTextureD3D11::CreateFromNativeObject(void* pNativeObject)
 {
   ID3D11Resource* pTextureObject = static_cast<ID3D11Resource*>(pNativeObject);
 
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   ID3D11Resource* pD3D11TextureResource = nullptr;
   if (FAILED(pTextureObject->QueryInterface(__uuidof(ID3D11Resource), (void**)&pD3D11TextureResource)))
   {
@@ -97,6 +98,7 @@ xiiResult xiiGALTextureD3D11::CreateFromNativeObject(void* pNativeObject)
     return XII_FAILURE;
   }
   XII_GAL_D3D11_RELEASE(pD3D11TextureResource);
+#endif
 
   m_pTexture = pTextureObject;
 
