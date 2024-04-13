@@ -360,6 +360,12 @@ void xiiGraphicsExplorerWindowApp::BeforeCoreSystemsShutdown()
 
 void xiiGraphicsExplorerWindowApp::BeforeHighLevelSystemsShutdown()
 {
+  m_pDevice->DestroyFramebuffer(m_hFrameBuffer);
+  m_hFrameBuffer.Invalidate();
+
+  m_pDevice->DestroyRenderPass(m_hRenderPass);
+  m_hRenderPass.Invalidate();
+
   m_pDevice->DestroyTexture(m_hDepthStencilTexture);
   m_hDepthStencilTexture.Invalidate();
 
