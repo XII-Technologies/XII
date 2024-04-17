@@ -226,15 +226,21 @@ void xiiGALTextureD3D11::InitializeSparseTextureProperties()
   if (m_Description.m_Usage != xiiGALResourceUsage::Sparse)
     return;
 
-  /// \todo: Query interface.
-  xiiGALDeviceD3D11* pDeviceD3D11   = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-  ID3D11Device2*     pDeviceD3D11_2 = static_cast<ID3D11Device2*>(pDeviceD3D11->GetD3D11Device());
+  xiiGALDeviceD3D11* pDeviceD3D11  = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  ID3D11Device2*     pD3D11Device2 = nullptr;
 
-  xiiUInt32             uiTileCountForEntireResource      = 0;
+  if (FAILED(pDeviceD3D11->GetD3D11Device()->QueryInterface(__uuidof(ID3D11Device2), (void**)&pD3D11Device2)))
+  {
+    xiiLog::Error("Failed to query ID3D11Device2 for resource tiling in sparse texture properties.");
+    return;
+  }
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pD3D11Device2););
+
+  xiiUInt32             uiTileCountForEntireResource      = 0U;
   xiiUInt32             uiSubresourceTilingCount          = 0U;
   D3D11_TILE_SHAPE      standardTileShapeForNonPackedMips = {};
   D3D11_PACKED_MIP_DESC packedMipDescription              = {};
-  pDeviceD3D11_2->GetResourceTiling(m_pTexture, &uiTileCountForEntireResource, &packedMipDescription, &standardTileShapeForNonPackedMips, &uiSubresourceTilingCount, 0, nullptr);
+  pD3D11Device2->GetResourceTiling(m_pTexture, &uiTileCountForEntireResource, &packedMipDescription, &standardTileShapeForNonPackedMips, &uiSubresourceTilingCount, 0, nullptr);
 
   XII_ASSERT_DEV(uiTileCountForEntireResource % m_Description.GetArraySize() == 0, "");
 
