@@ -1146,6 +1146,8 @@ void xiiGALDeviceD3D11::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, ID
 
   DXGI_FORMAT  dxgiFormat = xiiD3D11TypeConversions::GetFormat(format);
   IDXGIOutput* pOutput    = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pOutput););
+
   if (pDXGIAdapter->EnumOutputs(uiOutputID, &pOutput) == DXGI_ERROR_NOT_FOUND)
   {
     DXGI_ADAPTER_DESC1 adapterDescription;
@@ -1163,7 +1165,7 @@ void xiiGALDeviceD3D11::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, ID
     xiiDynamicArray<DXGI_MODE_DESC> dxgiDisplayModes;
     dxgiDisplayModes.SetCount(uiModeCount);
 
-    if (SUCCEEDED(pOutput->GetDisplayModeList(dxgiFormat, 0U, &uiModeCount, NULL)))
+    if (SUCCEEDED(pOutput->GetDisplayModeList(dxgiFormat, 0U, &uiModeCount, dxgiDisplayModes.GetData())))
     {
       displayModes.Clear();
       for (xiiUInt32 i = 0; i < uiModeCount; ++i)
