@@ -92,6 +92,8 @@ protected:
 
   virtual ~xiiGALCommandListD3D11();
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
 protected:
   xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> BeginDisjointQuery();
 

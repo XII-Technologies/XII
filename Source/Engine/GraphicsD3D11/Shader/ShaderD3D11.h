@@ -36,6 +36,8 @@ protected:
 
   virtual xiiResult DeInitPlatform();
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
 protected:
   ID3D11VertexShader*   m_pVertexShader   = nullptr;
   ID3D11HullShader*     m_pHullShader     = nullptr;

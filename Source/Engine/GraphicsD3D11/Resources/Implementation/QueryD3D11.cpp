@@ -42,6 +42,21 @@ xiiResult xiiGALQueryD3D11::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALQueryD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  for (auto pQuery : m_pQueryD3D11)
+  {
+    if (pQuery != nullptr)
+    {
+      xiiStringBuilder sb;
+      if (FAILED(pQuery->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+      {
+        xiiLog::Error("Failed to set the Direct3D11 query debug name.");
+      }
+    }
+  }
+}
+
 bool xiiGALQueryD3D11::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate)
 {
   CheckQueryDataPtr(pData, uiDataSize);

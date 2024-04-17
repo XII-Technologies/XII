@@ -30,8 +30,6 @@ protected:
   virtual xiiResult InitPlatform() override final;
 
   virtual xiiResult DeInitPlatform() override final;
-
-protected:
 };
 
 #include <GraphicsD3D11/Resources/Implementation/TopLevelASD3D11_inl.h>

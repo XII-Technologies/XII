@@ -53,6 +53,18 @@ xiiResult xiiGALBufferViewD3D11::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALBufferViewD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pBufferView != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pBufferView->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 input layout debug name.");
+    }
+  }
+}
+
 xiiResult xiiGALBufferViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderResourceView)
 {
   XII_ASSERT_DEV(m_Description.m_ViewType == xiiGALBufferViewType::ShaderResource, "Incorrect view type, expected shader resource view.");

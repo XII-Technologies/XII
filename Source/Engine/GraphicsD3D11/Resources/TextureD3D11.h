@@ -34,6 +34,8 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
   xiiResult CreateFromNativeObject(void* pNativeObject);
   xiiResult CreateTexture1D(ID3D11Texture1D** ppTexture1D, const xiiGALTextureData* pInitialData);
   xiiResult CreateTexture2D(ID3D11Texture2D** ppTexture2D, const xiiGALTextureData* pInitialData);

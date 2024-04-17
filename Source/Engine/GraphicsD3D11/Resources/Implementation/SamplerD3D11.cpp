@@ -64,4 +64,16 @@ xiiResult xiiGALSamplerD3D11::DeInitPlatform()
   return XII_FAILURE;
 }
 
+void xiiGALSamplerD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pSampler != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pSampler->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 sampler debug name.");
+    }
+  }
+}
+
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_Resources_Implementation_SamplerD3D11);

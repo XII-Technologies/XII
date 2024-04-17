@@ -285,6 +285,18 @@ xiiResult xiiGALDeviceD3D11::ShutdownPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALDeviceD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pDeviceD3D11 != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pDeviceD3D11->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 device debug name.");
+    }
+  }
+}
+
 void xiiGALDeviceD3D11::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain)
 {
   if (pSwapChain)

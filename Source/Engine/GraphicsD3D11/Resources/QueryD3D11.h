@@ -31,6 +31,8 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
 protected:
   ID3D11Query* m_pQueryD3D11[2] = {nullptr, nullptr};
 

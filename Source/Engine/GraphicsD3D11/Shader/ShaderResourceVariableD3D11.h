@@ -32,8 +32,6 @@ protected:
   xiiGALShaderResourceVariableD3D11();
 
   virtual ~xiiGALShaderResourceVariableD3D11();
-
-protected:
 };
 
 #include <GraphicsD3D11/Shader/Implementation/ShaderResourceVariableD3D11_inl.h>

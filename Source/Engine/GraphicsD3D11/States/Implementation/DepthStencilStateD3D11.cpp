@@ -54,4 +54,16 @@ xiiResult xiiGALDepthStencilStateD3D11::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALDepthStencilStateD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pDepthStencilState != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pDepthStencilState->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 depth stencil state debug name.");
+    }
+  }
+}
+
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_States_Implementation_DepthStencilStateD3D11);

@@ -91,6 +91,18 @@ xiiResult xiiGALTextureD3D11::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALTextureD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pTexture != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pTexture->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 texture debug name.");
+    }
+  }
+}
+
 xiiResult xiiGALTextureD3D11::CreateFromNativeObject(void* pNativeObject)
 {
   ID3D11Resource* pTextureObject = static_cast<ID3D11Resource*>(pNativeObject);

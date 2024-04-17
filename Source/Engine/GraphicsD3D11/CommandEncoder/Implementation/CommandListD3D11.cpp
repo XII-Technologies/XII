@@ -36,13 +36,25 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALCommandQueueD3D11* pCommandQueueD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(pDeviceD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11)
 {
-  XII_ASSERT_DEV(SUCCEEDED(pDeviceD3D11->GetD3D11Device()->CreateDeferredContext(0U, &m_pCommandList)), "Failed to create command list for recording commands.");
+  XII_ASSERT_DEV(SUCCEEDED(pDeviceD3D11->GetD3D11Device()->CreateDeferredContext(0U, &m_pCommandList)), "Failed to create deferred context for recording commands.");
 }
 
 xiiGALCommandListD3D11::~xiiGALCommandListD3D11()
 {
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
   XII_GAL_D3D11_RELEASE(m_pCommandList);
+}
+
+void xiiGALCommandListD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pCommandList != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pCommandList->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 deferred context debug name.");
+    }
+  }
 }
 
 void xiiGALCommandListD3D11::BeginPlatform()

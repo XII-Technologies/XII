@@ -25,6 +25,8 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
   xiiResult CreateSRV(ID3D11ShaderResourceView** ppShaderResourceView);
   xiiResult CreateRTV(ID3D11RenderTargetView** ppRenderTargetView);
   xiiResult CreateDSV(ID3D11DepthStencilView** ppDepthStencilView);

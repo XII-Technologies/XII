@@ -101,4 +101,29 @@ xiiResult xiiGALShaderD3D11::DeInitPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALShaderD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+#define SET_DEBUG_NAME(pShader)                                                                                     \
+  do                                                                                                                \
+  {                                                                                                                 \
+    if ((pShader) != nullptr)                                                                                       \
+    {                                                                                                               \
+      xiiStringBuilder sb;                                                                                          \
+      if (FAILED((pShader)->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb)))) \
+      {                                                                                                             \
+        xiiLog::Error("Failed to set the Direct3D11 shader debug name.");                                           \
+      }                                                                                                             \
+    }                                                                                                               \
+  } while (0)
+
+  SET_DEBUG_NAME(m_pVertexShader);
+  SET_DEBUG_NAME(m_pHullShader);
+  SET_DEBUG_NAME(m_pDomainShader);
+  SET_DEBUG_NAME(m_pGeometryShader);
+  SET_DEBUG_NAME(m_pPixelShader);
+  SET_DEBUG_NAME(m_pComputeShader);
+
+#undef SET_DEBUG_NAME
+}
+
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_Shader_Implementation_ShaderD3D11);

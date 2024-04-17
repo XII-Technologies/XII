@@ -37,6 +37,8 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
   xiiResult CreateDXGISwapChain();
 
   xiiResult UpdateSwapChain(bool bCreateNew);
