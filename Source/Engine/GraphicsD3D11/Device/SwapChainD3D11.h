@@ -8,6 +8,8 @@ struct IDXGISwapChain;
 
 class XII_GRAPHICSD3D11_DLL xiiGALSwapChainD3D11 final : public xiiGALSwapChain
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALSwapChainD3D11, xiiGALSwapChain);
+
 public:
   virtual void AcquireNextRenderTarget(xiiGALDevice* pDevice) override final;
 

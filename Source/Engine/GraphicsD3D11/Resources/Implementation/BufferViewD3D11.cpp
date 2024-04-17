@@ -6,6 +6,11 @@
 
 #include <d3d11_2.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferViewD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALBufferViewD3D11::xiiGALBufferViewD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
   xiiGALBufferView(pDeviceD3D11, pBuffer, creationDescription)
 {

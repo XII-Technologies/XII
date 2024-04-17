@@ -16,6 +16,11 @@ XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToD3D11) == xiiGALInputLa
 static UINT GALSemanticToIndexD3D11[] = {0, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 0, 1, 0, 1};
 XII_CHECK_AT_COMPILETIME_MSG(XII_ARRAY_SIZE(GALSemanticToIndexD3D11) == xiiGALInputLayoutSemantic::ENUM_COUNT, "GALSemanticToIndexD3D11 array size does not match vertex attribute semantic count.");
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALInputLayoutD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALInputLayoutD3D11::xiiGALInputLayoutD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALInputLayoutCreationDescription& creationDescription) :
   xiiGALInputLayout(pDeviceD3D11, creationDescription)
 {

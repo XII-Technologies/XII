@@ -11,6 +11,8 @@ XII_DEFINE_AS_POD_TYPE(D3D11_INPUT_ELEMENT_DESC);
 
 class XII_GRAPHICSD3D11_DLL xiiGALInputLayoutD3D11 final : public xiiGALInputLayout
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALInputLayoutD3D11, xiiGALInputLayout);
+
 public:
   ID3D11InputLayout* GetInputLayout() const;
 
@@ -27,7 +29,7 @@ protected:
   virtual xiiResult DeInitPlatform() override final;
 
 protected:
-  ID3D11InputLayout* m_pInputLayout = {};
+  ID3D11InputLayout* m_pInputLayout = nullptr;
 };
 
 #include <GraphicsD3D11/Shader/Implementation/InputLayoutD3D11_inl.h>

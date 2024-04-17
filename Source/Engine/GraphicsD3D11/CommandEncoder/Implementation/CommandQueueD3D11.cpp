@@ -4,6 +4,11 @@
 #include <GraphicsD3D11/CommandEncoder/CommandQueueD3D11.h>
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandQueueD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALCommandQueueD3D11::xiiGALCommandQueueD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALCommandQueueCreationDescription& creationDescription) :
   xiiGALCommandQueue(pDeviceD3D11, creationDescription)
 {

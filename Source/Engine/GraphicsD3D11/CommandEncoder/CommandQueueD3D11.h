@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSD3D11_DLL xiiGALCommandQueueD3D11 final : public xiiGALCommandQueue
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandQueueD3D11, xiiGALCommandQueue);
+
 public:
   virtual xiiUInt64 GetNextFenceValue() const override final;
 

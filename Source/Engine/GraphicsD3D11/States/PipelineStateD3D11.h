@@ -14,6 +14,8 @@
 
 class XII_GRAPHICSD3D11_DLL xiiGALPipelineStateD3D11 final : public xiiGALPipelineState
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineStateD3D11, xiiGALPipelineState);
+
 public:
   ID3D11BlendState*        GetD3D11BlendState() const;
   ID3D11RasterizerState*   GetD3D11RasterizerState() const;

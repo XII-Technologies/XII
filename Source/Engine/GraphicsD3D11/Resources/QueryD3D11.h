@@ -8,6 +8,8 @@
 
 class XII_GRAPHICSD3D11_DLL xiiGALQueryD3D11 final : public xiiGALQuery
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALQueryD3D11, xiiGALQuery);
+
 public:
   virtual bool GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate) override final;
 

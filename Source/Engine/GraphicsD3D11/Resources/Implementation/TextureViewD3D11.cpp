@@ -5,6 +5,11 @@
 #include <GraphicsD3D11/Resources/TextureViewD3D11.h>
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureViewD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALTextureViewD3D11::xiiGALTextureViewD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
   xiiGALTextureView(pDeviceD3D11, pTexture, creationDescription)
 {

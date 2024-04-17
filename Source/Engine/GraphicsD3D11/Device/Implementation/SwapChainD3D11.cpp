@@ -17,6 +17,11 @@
 #include <d3d11_1.h>
 #include <dxgi1_4.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSwapChainD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALSwapChainD3D11::xiiGALSwapChainD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALSwapChainCreationDescription& creationDescription) :
   xiiGALSwapChain(pDeviceD3D11, creationDescription)
 {
@@ -329,8 +334,11 @@ xiiResult xiiGALSwapChainD3D11::CreateBackBufferInternal(xiiGALDeviceD3D11* pDev
 
 void xiiGALSwapChainD3D11::DestroyBackBufferInternal(xiiGALDeviceD3D11* pDeviceD3D11)
 {
-  pDeviceD3D11->DestroyTexture(m_hBackBufferTexture);
-  m_hBackBufferTexture.Invalidate();
+  if (!m_hBackBufferTexture.IsInvalidated())
+  {
+    pDeviceD3D11->DestroyTexture(m_hBackBufferTexture);
+    m_hBackBufferTexture.Invalidate();
+  }
 
   if (!m_hActualBackBufferTexture.IsInvalidated())
   {

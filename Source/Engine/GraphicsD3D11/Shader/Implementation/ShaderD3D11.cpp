@@ -5,6 +5,11 @@
 
 #include <GraphicsD3D11/Utilities/D3D11TypeConversions.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALShaderD3D11::xiiGALShaderD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALShaderCreationDescription& creationDescription) :
   xiiGALShader(pDeviceD3D11, creationDescription)
 {
@@ -86,7 +91,7 @@ xiiResult xiiGALShaderD3D11::InitPlatform()
 
 xiiResult xiiGALShaderD3D11::DeInitPlatform()
 {
-  XII_GAL_D3D11_RELEASE(m_pHullShader);
+  XII_GAL_D3D11_RELEASE(m_pVertexShader);
   XII_GAL_D3D11_RELEASE(m_pHullShader);
   XII_GAL_D3D11_RELEASE(m_pDomainShader);
   XII_GAL_D3D11_RELEASE(m_pGeometryShader);

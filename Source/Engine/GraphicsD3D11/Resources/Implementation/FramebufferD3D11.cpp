@@ -6,6 +6,11 @@
 #include <GraphicsD3D11/Resources/TextureD3D11.h>
 #include <GraphicsD3D11/Resources/TextureViewD3D11.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFramebufferD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALFramebufferD3D11::xiiGALFramebufferD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALFramebufferCreationDescription& creationDescription) :
   xiiGALFramebuffer(pDeviceD3D11, creationDescription)
 {

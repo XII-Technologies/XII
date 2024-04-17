@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSD3D11_DLL xiiGALShaderResourceVariableD3D11 final : public xiiGALShaderResourceVariable
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALShaderResourceVariableD3D11, xiiGALShaderResourceVariable);
+
 public:
   virtual void Set(xiiGALResource* pResource, xiiBitflags<xiiGALSetShaderResourceFlags> flags = xiiGALSetShaderResourceFlags::None) override final;
 

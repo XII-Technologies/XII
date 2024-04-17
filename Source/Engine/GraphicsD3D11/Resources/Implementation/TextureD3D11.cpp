@@ -5,6 +5,11 @@
 
 #include <d3d11_2.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALTextureD3D11::xiiGALTextureD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALTextureCreationDescription& creationDescription) :
   xiiGALTexture(pDeviceD3D11, creationDescription)
 {
@@ -221,6 +226,7 @@ void xiiGALTextureD3D11::InitializeSparseTextureProperties()
   if (m_Description.m_Usage != xiiGALResourceUsage::Sparse)
     return;
 
+  /// \todo: Query interface.
   xiiGALDeviceD3D11* pDeviceD3D11   = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
   ID3D11Device2*     pDeviceD3D11_2 = static_cast<ID3D11Device2*>(pDeviceD3D11->GetD3D11Device());
 

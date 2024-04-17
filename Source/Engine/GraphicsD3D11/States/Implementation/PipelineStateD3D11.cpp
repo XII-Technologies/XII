@@ -4,6 +4,11 @@
 
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALPipelineStateD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALPipelineStateD3D11::xiiGALPipelineStateD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALPipelineStateCreationDescription& creationDescription) :
   xiiGALPipelineState(pDeviceD3D11, creationDescription)
 {

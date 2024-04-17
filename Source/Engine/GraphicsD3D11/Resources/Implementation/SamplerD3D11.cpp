@@ -3,6 +3,11 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/SamplerD3D11.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSamplerD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALSamplerD3D11::xiiGALSamplerD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALSamplerCreationDescription& creationDescription) :
   xiiGALSampler(pDeviceD3D11, creationDescription)
 {

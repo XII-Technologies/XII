@@ -8,6 +8,8 @@ struct ID3D11View;
 
 class XII_GRAPHICSD3D11_DLL xiiGALTextureViewD3D11 final : public xiiGALTextureView
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureViewD3D11, xiiGALTextureView);
+
 public:
   ID3D11View* GetTextureView() const;
 
