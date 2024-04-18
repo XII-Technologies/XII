@@ -5,6 +5,11 @@
 
 #include <d3d11_2.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALTextureD3D11::xiiGALTextureD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALTextureCreationDescription& creationDescription) :
   xiiGALTexture(pDeviceD3D11, creationDescription)
 {
@@ -84,6 +89,18 @@ xiiResult xiiGALTextureD3D11::DeInitPlatform()
   XII_GAL_D3D11_RELEASE(m_pTexture);
 
   return XII_SUCCESS;
+}
+
+void xiiGALTextureD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pTexture != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pTexture->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 texture debug name.");
+    }
+  }
 }
 
 xiiResult xiiGALTextureD3D11::CreateFromNativeObject(void* pNativeObject)
@@ -221,14 +238,21 @@ void xiiGALTextureD3D11::InitializeSparseTextureProperties()
   if (m_Description.m_Usage != xiiGALResourceUsage::Sparse)
     return;
 
-  xiiGALDeviceD3D11* pDeviceD3D11   = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-  ID3D11Device2*     pDeviceD3D11_2 = static_cast<ID3D11Device2*>(pDeviceD3D11->GetD3D11Device());
+  xiiGALDeviceD3D11* pDeviceD3D11  = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  ID3D11Device2*     pD3D11Device2 = nullptr;
 
-  xiiUInt32             uiTileCountForEntireResource      = 0;
+  if (FAILED(pDeviceD3D11->GetD3D11Device()->QueryInterface(__uuidof(ID3D11Device2), (void**)&pD3D11Device2)))
+  {
+    xiiLog::Error("Failed to query ID3D11Device2 for resource tiling in sparse texture properties.");
+    return;
+  }
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pD3D11Device2));
+
+  xiiUInt32             uiTileCountForEntireResource      = 0U;
   xiiUInt32             uiSubresourceTilingCount          = 0U;
   D3D11_TILE_SHAPE      standardTileShapeForNonPackedMips = {};
   D3D11_PACKED_MIP_DESC packedMipDescription              = {};
-  pDeviceD3D11_2->GetResourceTiling(m_pTexture, &uiTileCountForEntireResource, &packedMipDescription, &standardTileShapeForNonPackedMips, &uiSubresourceTilingCount, 0, nullptr);
+  pD3D11Device2->GetResourceTiling(m_pTexture, &uiTileCountForEntireResource, &packedMipDescription, &standardTileShapeForNonPackedMips, &uiSubresourceTilingCount, 0, nullptr);
 
   XII_ASSERT_DEV(uiTileCountForEntireResource % m_Description.GetArraySize() == 0, "");
 

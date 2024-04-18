@@ -4,8 +4,12 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
+struct ID3D11DeviceContext1;
+
 class XII_GRAPHICSD3D11_DLL xiiGALCommandQueueD3D11 final : public xiiGALCommandQueue
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandQueueD3D11, xiiGALCommandQueue);
+
 public:
   virtual xiiUInt64 GetNextFenceValue() const override final;
 
@@ -30,8 +34,12 @@ protected:
 
   virtual ~xiiGALCommandQueueD3D11();
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
 protected:
   xiiUInt64 m_uiCompletedFenceValue = 0U;
+
+  ID3D11DeviceContext1* m_pDeviceContext = nullptr;
 
   xiiDeque<xiiGALCommandList*>             m_CommandLists;
   xiiDynamicArray<xiiGALCommandListD3D11*> m_SwapChainCommandListReferences;

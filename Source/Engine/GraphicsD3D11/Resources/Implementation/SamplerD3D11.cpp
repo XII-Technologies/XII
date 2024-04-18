@@ -3,6 +3,11 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/SamplerD3D11.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSamplerD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALSamplerD3D11::xiiGALSamplerD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALSamplerCreationDescription& creationDescription) :
   xiiGALSampler(pDeviceD3D11, creationDescription)
 {
@@ -57,6 +62,18 @@ xiiResult xiiGALSamplerD3D11::DeInitPlatform()
   XII_GAL_D3D11_RELEASE(m_pSampler);
 
   return XII_FAILURE;
+}
+
+void xiiGALSamplerD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pSampler != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pSampler->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 sampler debug name.");
+    }
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_Resources_Implementation_SamplerD3D11);

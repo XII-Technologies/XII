@@ -339,6 +339,8 @@ void xiiGraphicsExplorerWindowApp::AfterCoreSystemsStartup()
     XII_ASSERT_DEV(m_pDevice != nullptr, "Device implemention for '{}' not found", sGraphicsAPIName);
     XII_VERIFY(m_pDevice->Initialize() == XII_SUCCESS, "Device initialization failed!");
 
+    m_pDevice->SetDebugName("Master Graphics Device");
+
     xiiGALDevice::SetDefaultDevice(m_pDevice);
   }
 
@@ -435,6 +437,7 @@ void xiiGraphicsExplorerWindowApp::UpdateSwapChain()
     texDesc.m_BindFlags   = xiiGALBindFlags::DepthStencil;
 
     m_hDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
+    m_pDevice->GetTexture(m_hDepthStencilTexture)->SetDebugName("Depth Stencil");
   }
 
   // Create render pass

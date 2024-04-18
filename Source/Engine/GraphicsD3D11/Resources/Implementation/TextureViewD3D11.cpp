@@ -5,6 +5,11 @@
 #include <GraphicsD3D11/Resources/TextureViewD3D11.h>
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTextureViewD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALTextureViewD3D11::xiiGALTextureViewD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& creationDescription) :
   xiiGALTextureView(pDeviceD3D11, pTexture, creationDescription)
 {
@@ -70,6 +75,18 @@ xiiResult xiiGALTextureViewD3D11::DeInitPlatform()
   XII_GAL_D3D11_RELEASE(m_pTextureView);
 
   return XII_SUCCESS;
+}
+
+void xiiGALTextureViewD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pTextureView != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pTextureView->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 texture view debug name.");
+    }
+  }
 }
 
 xiiResult xiiGALTextureViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderResourceView)

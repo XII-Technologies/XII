@@ -8,6 +8,8 @@ struct ID3D11Buffer;
 
 class XII_GRAPHICSD3D11_DLL xiiGALBufferD3D11 final : public xiiGALBuffer
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferD3D11, xiiGALBuffer);
+
 public:
   virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
 
@@ -36,6 +38,8 @@ protected:
   virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData) override final;
 
   virtual xiiResult DeInitPlatform() override final;
+
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
   ID3D11Buffer* m_pBuffer = nullptr;

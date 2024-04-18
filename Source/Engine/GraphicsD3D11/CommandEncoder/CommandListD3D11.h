@@ -11,6 +11,8 @@ struct ID3D11CommandList;
 
 class XII_GRAPHICSD3D11_DLL xiiGALCommandListD3D11 final : public xiiGALCommandList
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListD3D11, xiiGALCommandList);
+
 public:
   ID3D11CommandList*   GetD3D11CommandList() const;
   ID3D11DeviceContext* GetD3D11DeferredContext() const;
@@ -72,7 +74,7 @@ protected:
 
   virtual void FlushPlatform() override final;
 
-  void InvalidateCachedState();
+  virtual void InvalidateStatePlatform() override final;
   void InvalidateResources();
 
   void CommitRenderTargets();
@@ -89,6 +91,8 @@ protected:
   xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALCommandQueueD3D11* pCommandQueueD3D11, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListD3D11();
+
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
   xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> BeginDisjointQuery();

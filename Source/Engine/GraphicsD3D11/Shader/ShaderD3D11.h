@@ -14,6 +14,8 @@ struct ID3D11ComputeShader;
 
 class XII_GRAPHICSD3D11_DLL xiiGALShaderD3D11 final : public xiiGALShader
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALShaderD3D11, xiiGALShader);
+
 public:
   ID3D11VertexShader*   GetVertexShader() const;
   ID3D11PixelShader*    GetPixelShader() const;
@@ -33,6 +35,8 @@ protected:
   virtual xiiResult InitPlatform();
 
   virtual xiiResult DeInitPlatform();
+
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
   ID3D11VertexShader*   m_pVertexShader   = nullptr;

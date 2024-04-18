@@ -3,6 +3,11 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/QueryD3D11.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALQueryD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALQueryD3D11::xiiGALQueryD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALQueryCreationDescription& creationDescription) :
   xiiGALQuery(pDeviceD3D11, creationDescription)
 {
@@ -35,6 +40,21 @@ xiiResult xiiGALQueryD3D11::DeInitPlatform()
   XII_GAL_D3D11_RELEASE_ARRAY(m_pQueryD3D11);
 
   return XII_SUCCESS;
+}
+
+void xiiGALQueryD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  for (auto pQuery : m_pQueryD3D11)
+  {
+    if (pQuery != nullptr)
+    {
+      xiiStringBuilder sb;
+      if (FAILED(pQuery->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+      {
+        xiiLog::Error("Failed to set the Direct3D11 query debug name.");
+      }
+    }
+  }
 }
 
 bool xiiGALQueryD3D11::GetData(void* pData, xiiUInt32 uiDataSize, bool bAutoInvalidate)

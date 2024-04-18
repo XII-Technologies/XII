@@ -8,5 +8,5 @@ XII_NODISCARD XII_ALWAYS_INLINE void xiiGALObject::SetDebugName(xiiStringView sD
 {
   m_sDebugName.Assign(sDebugName);
 
-  SetDebugNamePlatform(sDebugName);
+  SetDebugNamePlatform(m_sDebugName.GetView());
 }

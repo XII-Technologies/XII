@@ -4,8 +4,13 @@
 #include <GraphicsD3D11/CommandEncoder/CommandQueueD3D11.h>
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandQueueD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALCommandQueueD3D11::xiiGALCommandQueueD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALCommandQueueCreationDescription& creationDescription) :
-  xiiGALCommandQueue(pDeviceD3D11, creationDescription)
+  xiiGALCommandQueue(pDeviceD3D11, creationDescription), m_pDeviceContext(pDeviceD3D11->GetImmediateContext())
 {
 }
 
@@ -20,6 +25,18 @@ xiiGALCommandQueueD3D11::~xiiGALCommandQueueD3D11()
     XII_DEFAULT_DELETE(pCommandList)
   }
   m_CommandLists.Clear();
+}
+
+void xiiGALCommandQueueD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pDeviceContext != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pDeviceContext->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 immediate device context debug name.");
+    }
+  }
 }
 
 xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
@@ -43,6 +60,10 @@ xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
   xiiGALCommandList*                   pCommandListD3D11      = XII_DEFAULT_NEW(xiiGALCommandListD3D11, pDeviceD3D11, this, commandListDescription);
 
   m_CommandLists.PushFront(pCommandListD3D11);
+
+  xiiStringBuilder sb;
+  sb.Format("Command List {}", m_CommandLists.GetCount());
+  pCommandListD3D11->SetDebugName(sb);
 
   pCommandListD3D11->Begin();
 
@@ -89,10 +110,9 @@ void xiiGALCommandQueueD3D11::SubmitPlatform(xiiGALCommandList* pCommandList, bo
   if (pCommandList == nullptr)
     return;
 
-  xiiGALDeviceD3D11*      pDeviceD3D11      = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
   xiiGALCommandListD3D11* pCommandListD3D11 = static_cast<xiiGALCommandListD3D11*>(pCommandList);
 
-  pDeviceD3D11->GetImmediateContext()->ExecuteCommandList(pCommandListD3D11->GetD3D11CommandList(), FALSE);
+  m_pDeviceContext->ExecuteCommandList(pCommandListD3D11->GetD3D11CommandList(), FALSE);
 
   if (bReset && (pCommandListD3D11->GetRecordingState() != xiiGALCommandList::RecordingState::Reset))
   {

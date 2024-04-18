@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSD3D11_DLL xiiGALTopLevelASD3D11 final : public xiiGALTopLevelAS
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTopLevelASD3D11, xiiGALTopLevelAS);
+
 public:
   virtual xiiGALTopLevelASInstanceDescription GetInstanceDescription(xiiStringView sName) const override final;
 
@@ -28,8 +30,6 @@ protected:
   virtual xiiResult InitPlatform() override final;
 
   virtual xiiResult DeInitPlatform() override final;
-
-protected:
 };
 
 #include <GraphicsD3D11/Resources/Implementation/TopLevelASD3D11_inl.h>

@@ -34,7 +34,7 @@ macro(xii_create_target TYPE TARGET_NAME)
       add_library(${TARGET_NAME} STATIC "${ALL_SOURCE_FILES}")
     endif()
 
-    if(ARG_NO_EZ_PREFIX)
+    if(ARG_NO_XII_PREFIX)
       # On some platforms like linux there is a default prefix like "lib".
       # We do not want that as it confuses our plugin system.
       set_target_properties(${TARGET_NAME} PROPERTIES IMPORT_PREFIX "")

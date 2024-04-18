@@ -8,6 +8,8 @@ struct ID3D11Fence;
 
 class XII_GRAPHICSD3D11_DLL xiiGALFenceD3D11 final : public xiiGALFence
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALFenceD3D11, xiiGALFence);
+
 public:
   virtual xiiUInt64 GetCompletedValue() override final;
 

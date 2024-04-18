@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSD3D11_DLL xiiGALPipelineResourceSignatureD3D11 final : public xiiGALPipelineResourceSignature
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineResourceSignatureD3D11, xiiGALPipelineResourceSignature);
+
 public:
   virtual bool IsCompatibleWith(const xiiGALPipelineResourceSignature* pPipelineResourceSignature) const override final;
 
@@ -20,8 +22,6 @@ protected:
   virtual xiiResult InitPlatform() override final;
 
   virtual xiiResult DeInitPlatform() override final;
-
-protected:
 };
 
 #include <GraphicsD3D11/States/Implementation/PipelineResourceSignatureD3D11_inl.h>

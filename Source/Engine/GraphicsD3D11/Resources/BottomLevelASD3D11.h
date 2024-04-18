@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSD3D11_DLL xiiGALBottomLevelASD3D11 final : public xiiGALBottomLevelAS
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBottomLevelASD3D11, xiiGALBottomLevelAS);
+
 public:
   virtual xiiUInt32 GetGeometryDescriptionIndex(xiiStringView sName) const override final;
 
@@ -30,8 +32,6 @@ protected:
   virtual xiiResult InitPlatform() override final;
 
   virtual xiiResult DeInitPlatform() override final;
-
-protected:
 };
 
 #include <GraphicsD3D11/Resources/Implementation/BottomLevelASD3D11_inl.h>

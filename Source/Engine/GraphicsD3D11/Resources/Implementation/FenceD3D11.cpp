@@ -3,6 +3,11 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/FenceD3D11.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFenceD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALFenceD3D11::xiiGALFenceD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALFenceCreationDescription& creationDescription) :
   xiiGALFence(pDeviceD3D11, creationDescription)
 {
@@ -85,6 +90,19 @@ void xiiGALFenceD3D11::Wait(xiiUInt64 uiValue, bool bFlushCommands)
 
 void xiiGALFenceD3D11::SetDebugNamePlatform(xiiStringView sName)
 {
+  for (xiiUInt32 i = 0; i < m_PendingQueries.GetCount(); ++i)
+  {
+    auto& fenceData = m_PendingQueries[i];
+
+    if (fenceData.m_pQueryD3D11 != nullptr)
+    {
+      xiiStringBuilder sb;
+      if (FAILED(fenceData.m_pQueryD3D11->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+      {
+        xiiLog::Error("Failed to set the Direct3D11 shader debug name.");
+      }
+    }
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_Resources_Implementation_FenceD3D11);

@@ -2,6 +2,11 @@
 
 #include <GraphicsD3D11/Shader/ShaderResourceVariableD3D11.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderResourceVariableD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALShaderResourceVariableD3D11::xiiGALShaderResourceVariableD3D11() :
   xiiGALShaderResourceVariable()
 {

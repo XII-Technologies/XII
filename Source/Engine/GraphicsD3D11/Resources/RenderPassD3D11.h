@@ -6,7 +6,8 @@
 
 class XII_GRAPHICSD3D11_DLL xiiGALRenderPassD3D11 final : public xiiGALRenderPass
 {
-public:
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALRenderPassD3D11, xiiGALRenderPass);
+
 protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
@@ -18,8 +19,6 @@ protected:
   virtual xiiResult InitPlatform() override final;
 
   virtual xiiResult DeInitPlatform() override final;
-
-protected:
 };
 
 #include <GraphicsD3D11/Resources/Implementation/RenderPassD3D11_inl.h>

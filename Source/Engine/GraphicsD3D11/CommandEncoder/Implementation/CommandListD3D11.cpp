@@ -28,16 +28,33 @@
 
 #include <d3d11_1.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALCommandListD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALCommandQueueD3D11* pCommandQueueD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(pDeviceD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11)
 {
-  XII_ASSERT_DEV(SUCCEEDED(pDeviceD3D11->GetD3D11Device()->CreateDeferredContext(0U, &m_pCommandList)), "Failed to create command list for recording commands.");
+  XII_ASSERT_DEV(SUCCEEDED(pDeviceD3D11->GetD3D11Device()->CreateDeferredContext(0U, &m_pCommandList)), "Failed to create deferred context for recording commands.");
 }
 
 xiiGALCommandListD3D11::~xiiGALCommandListD3D11()
 {
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
   XII_GAL_D3D11_RELEASE(m_pCommandList);
+}
+
+void xiiGALCommandListD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pCommandList != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pCommandList->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 deferred context debug name.");
+    }
+  }
 }
 
 void xiiGALCommandListD3D11::BeginPlatform()
@@ -56,6 +73,8 @@ void xiiGALCommandListD3D11::EndPlatform()
   XII_ASSERT_DEV(SUCCEEDED(m_pCommandList->FinishCommandList(0U, &m_pSubmittedCommandList)), "Failed to end command list.");
 
   m_RecordingState = RecordingState::Ended;
+
+  InvalidateResources();
 }
 
 void xiiGALCommandListD3D11::ResetPlatform()
@@ -72,6 +91,8 @@ void xiiGALCommandListD3D11::ResetPlatform()
   m_pCommandQueueD3D11->RemoveSwapChainCommandListReference(this);
 
   m_RecordingState = RecordingState::Reset;
+
+  InvalidateState();
 }
 
 void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
@@ -659,6 +680,8 @@ xiiResult xiiGALCommandListD3D11::UnmapTextureSubresourcePlatform(xiiGALTexture*
 void xiiGALCommandListD3D11::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
 {
   ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pAnnotationD3D11));
+
   if (SUCCEEDED(m_pCommandList->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
   {
     xiiStringBuilder sb;
@@ -670,6 +693,8 @@ void xiiGALCommandListD3D11::BeginDebugGroupPlatform(xiiStringView sName, const 
 void xiiGALCommandListD3D11::EndDebugGroupPlatform()
 {
   ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pAnnotationD3D11));
+
   if (SUCCEEDED(m_pCommandList->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
   {
     pAnnotationD3D11->EndEvent();
@@ -679,6 +704,8 @@ void xiiGALCommandListD3D11::EndDebugGroupPlatform()
 void xiiGALCommandListD3D11::InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color)
 {
   ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pAnnotationD3D11));
+
   if (SUCCEEDED(m_pCommandList->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
   {
     xiiStringBuilder sb;
@@ -694,10 +721,8 @@ void xiiGALCommandListD3D11::FlushPlatform()
   m_pCommandList->Flush();
 }
 
-void xiiGALCommandListD3D11::InvalidateCachedState()
+void xiiGALCommandListD3D11::InvalidateStatePlatform()
 {
-  InvalidateState();
-
   m_pCommandList->ClearState();
 
   InvalidateResources();

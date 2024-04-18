@@ -25,6 +25,8 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
 protected:
   ID3D11RasterizerState* m_pRasterizerState = nullptr;
 };

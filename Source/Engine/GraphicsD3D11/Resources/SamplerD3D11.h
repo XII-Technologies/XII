@@ -8,6 +8,8 @@ struct ID3D11SamplerState;
 
 class XII_GRAPHICSD3D11_DLL xiiGALSamplerD3D11 final : public xiiGALSampler
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALSamplerD3D11, xiiGALSampler);
+
 public:
   ID3D11SamplerState* GetSampler() const;
 
@@ -22,6 +24,8 @@ protected:
   virtual xiiResult InitPlatform() override final;
 
   virtual xiiResult DeInitPlatform() override final;
+
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
   ID3D11SamplerState* m_pSampler = nullptr;

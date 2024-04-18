@@ -116,7 +116,7 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
   HRESULT                 hResult                   = E_FAIL;
 
   ID3D11DeviceContext* pDeviceContext = nullptr;
-  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pDeviceContext););
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pDeviceContext));
 
   for (const auto& featureLevel : targetFeatureLevels)
   {
@@ -179,6 +179,8 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
     if (SUCCEEDED(m_pDeviceD3D11->QueryInterface(__uuidof(m_pDebugD3D11), reinterpret_cast<void**>(static_cast<ID3D11Debug**>(&m_pDebugD3D11)))))
     {
       ID3D11InfoQueue* pInfoQueue = nullptr;
+      XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pInfoQueue));
+
       if (SUCCEEDED(m_pDebugD3D11->QueryInterface(&pInfoQueue)))
       {
         // Suppress whole categories of messages
@@ -215,7 +217,6 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
         }
 #endif
       }
-      XII_GAL_D3D11_RELEASE(pInfoQueue);
     }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -280,9 +281,23 @@ xiiResult xiiGALDeviceD3D11::ShutdownPlatform()
   XII_GAL_D3D11_RELEASE(m_pDXGIAdapter);
   XII_GAL_D3D11_RELEASE(m_pDXGIFactory);
 
+  m_DisplayModes.Clear();
+
   ReportLiveGPUObjects();
 
   return XII_SUCCESS;
+}
+
+void xiiGALDeviceD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pDeviceD3D11 != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pDeviceD3D11->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 device debug name.");
+    }
+  }
 }
 
 void xiiGALDeviceD3D11::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain)
@@ -743,6 +758,10 @@ void xiiGALDeviceD3D11::CreateCommandQueuesPlatform()
         xiiGALCommandQueueCreationDescription queueDescription = {.m_QueueType = queueType};
         m_CommandQueues[uiCommandQueueIndex]                   = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, queueDescription);
 
+        xiiStringBuilder sb;
+        sb.Format("Command Queue - {}", uiCommandQueueIndex);
+        m_CommandQueues[uiCommandQueueIndex]->SetDebugName(sb);
+
         return true;
       }
     }
@@ -1134,6 +1153,8 @@ void xiiGALDeviceD3D11::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, ID
 
   DXGI_FORMAT  dxgiFormat = xiiD3D11TypeConversions::GetFormat(format);
   IDXGIOutput* pOutput    = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pOutput));
+
   if (pDXGIAdapter->EnumOutputs(uiOutputID, &pOutput) == DXGI_ERROR_NOT_FOUND)
   {
     DXGI_ADAPTER_DESC1 adapterDescription;
@@ -1151,7 +1172,7 @@ void xiiGALDeviceD3D11::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, ID
     xiiDynamicArray<DXGI_MODE_DESC> dxgiDisplayModes;
     dxgiDisplayModes.SetCount(uiModeCount);
 
-    if (SUCCEEDED(pOutput->GetDisplayModeList(dxgiFormat, 0U, &uiModeCount, NULL)))
+    if (SUCCEEDED(pOutput->GetDisplayModeList(dxgiFormat, 0U, &uiModeCount, dxgiDisplayModes.GetData())))
     {
       displayModes.Clear();
       for (xiiUInt32 i = 0; i < uiModeCount; ++i)

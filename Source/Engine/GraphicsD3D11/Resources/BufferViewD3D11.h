@@ -8,6 +8,8 @@ struct ID3D11View;
 
 class XII_GRAPHICSD3D11_DLL xiiGALBufferViewD3D11 final : public xiiGALBufferView
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferViewD3D11, xiiGALBufferView);
+
 public:
   ID3D11View* GetBufferView() const;
 
@@ -22,6 +24,8 @@ protected:
   virtual xiiResult InitPlatform() override final;
 
   virtual xiiResult DeInitPlatform() override final;
+
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
   xiiResult CreateSRV(ID3D11ShaderResourceView** ppShaderResourceView);
   xiiResult CreateUAV(ID3D11UnorderedAccessView** ppUnorderedAccessView);

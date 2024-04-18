@@ -3,6 +3,11 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Resources/BufferD3D11.h>
 
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferD3D11, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
 xiiGALBufferD3D11::xiiGALBufferD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALBufferCreationDescription& creationDescription) :
   xiiGALBuffer(pDeviceD3D11, creationDescription)
 {
@@ -93,6 +98,18 @@ xiiResult xiiGALBufferD3D11::DeInitPlatform()
   XII_GAL_D3D11_RELEASE(m_pBuffer);
 
   return XII_SUCCESS;
+}
+
+void xiiGALBufferD3D11::SetDebugNamePlatform(xiiStringView sName)
+{
+  if (m_pBuffer != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pBuffer->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 input layout debug name.");
+    }
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_Resources_Implementation_BufferD3D11);
