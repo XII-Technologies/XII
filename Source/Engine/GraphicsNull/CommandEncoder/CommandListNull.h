@@ -71,6 +71,8 @@ protected:
   virtual void InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color) override final;
 
   virtual void FlushPlatform() override final;
+
+  virtual void InvalidateStatePlatform() override final;
 };
 
 #include <GraphicsNull/CommandEncoder/Implementation/CommandListNull_inl.h>

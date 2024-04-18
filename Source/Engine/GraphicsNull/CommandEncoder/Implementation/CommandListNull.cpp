@@ -191,4 +191,8 @@ void xiiGALCommandListNull::FlushPlatform()
 {
 }
 
+void xiiGALCommandListNull::InvalidateStatePlatform()
+{
+}
+
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_CommandEncoder_Implementation_CommandListNull);

@@ -65,6 +65,10 @@ xiiResult xiiGALSwapChainD3D11::DeInitPlatform()
     XII_GAL_D3D11_RELEASE(m_pSwapChain);
 
     m_Description.m_pWindow->RemoveReference();
+
+    // Call context flush to release resources.
+    pDeviceD3D11->GetImmediateContext()->ClearState();
+    pDeviceD3D11->GetImmediateContext()->Flush();
   }
 
   return XII_SUCCESS;
@@ -179,7 +183,7 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
   IDXGIFactory4*   pDXGIFactory = pDeviceD3D11->GetDXGIFactory();
   IDXGISwapChain1* pSwapChain1  = nullptr;
 
-  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pSwapChain1););
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pSwapChain1));
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullScreenDescription = {};
@@ -201,12 +205,13 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
     // calling IDXGISwapchain::GetParent first, otherwise it won't work
     // https://www.gamedev.net/forums/topic/634235-dxgidisabling-altenter/?do=findComment&comment=4999990
     IDXGIFactory1* pFactoryFromSC;
+    XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pFactoryFromSC));
+
     if (SUCCEEDED(pSwapChain1->GetParent(__uuidof(pFactoryFromSC), (void**)&pFactoryFromSC)))
     {
       // Do not allow the swap chain to handle Alt+Enter.
       pFactoryFromSC->MakeWindowAssociation(hNativeWindow, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
     }
-    XII_GAL_D3D11_RELEASE(pFactoryFromSC);
   }
 #elif XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
   if (m_FullScreenMode.m_bIsFullScreen)
@@ -340,6 +345,12 @@ xiiResult xiiGALSwapChainD3D11::CreateBackBufferInternal(xiiGALDeviceD3D11* pDev
   }
 
   m_Description.m_Resolution = textureDescription.m_Size;
+
+  if (!m_hActualBackBufferTexture.IsInvalidated())
+  {
+    m_pDevice->GetTexture(m_hActualBackBufferTexture)->SetDebugName("Internal Backbuffer");
+  }
+  m_pDevice->GetTexture(m_hBackBufferTexture)->SetDebugName("Main Backbuffer");
 
   return XII_SUCCESS;
 }

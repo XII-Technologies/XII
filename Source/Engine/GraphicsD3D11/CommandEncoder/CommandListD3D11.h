@@ -74,7 +74,7 @@ protected:
 
   virtual void FlushPlatform() override final;
 
-  void InvalidateCachedState();
+  virtual void InvalidateStatePlatform() override final;
   void InvalidateResources();
 
   void CommitRenderTargets();

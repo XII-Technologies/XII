@@ -246,7 +246,7 @@ void xiiGALTextureD3D11::InitializeSparseTextureProperties()
     xiiLog::Error("Failed to query ID3D11Device2 for resource tiling in sparse texture properties.");
     return;
   }
-  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pD3D11Device2););
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pD3D11Device2));
 
   xiiUInt32             uiTileCountForEntireResource      = 0U;
   xiiUInt32             uiSubresourceTilingCount          = 0U;

@@ -73,6 +73,8 @@ void xiiGALCommandListD3D11::EndPlatform()
   XII_ASSERT_DEV(SUCCEEDED(m_pCommandList->FinishCommandList(0U, &m_pSubmittedCommandList)), "Failed to end command list.");
 
   m_RecordingState = RecordingState::Ended;
+
+  InvalidateResources();
 }
 
 void xiiGALCommandListD3D11::ResetPlatform()
@@ -89,6 +91,8 @@ void xiiGALCommandListD3D11::ResetPlatform()
   m_pCommandQueueD3D11->RemoveSwapChainCommandListReference(this);
 
   m_RecordingState = RecordingState::Reset;
+
+  InvalidateState();
 }
 
 void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
@@ -676,6 +680,8 @@ xiiResult xiiGALCommandListD3D11::UnmapTextureSubresourcePlatform(xiiGALTexture*
 void xiiGALCommandListD3D11::BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)
 {
   ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pAnnotationD3D11));
+
   if (SUCCEEDED(m_pCommandList->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
   {
     xiiStringBuilder sb;
@@ -687,6 +693,8 @@ void xiiGALCommandListD3D11::BeginDebugGroupPlatform(xiiStringView sName, const 
 void xiiGALCommandListD3D11::EndDebugGroupPlatform()
 {
   ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pAnnotationD3D11));
+
   if (SUCCEEDED(m_pCommandList->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
   {
     pAnnotationD3D11->EndEvent();
@@ -696,6 +704,8 @@ void xiiGALCommandListD3D11::EndDebugGroupPlatform()
 void xiiGALCommandListD3D11::InsertDebugLabelPlatform(xiiStringView sName, const xiiColor& color)
 {
   ID3DUserDefinedAnnotation* pAnnotationD3D11 = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pAnnotationD3D11));
+
   if (SUCCEEDED(m_pCommandList->QueryInterface(_uuidof(ID3DUserDefinedAnnotation), (void**)&pAnnotationD3D11)))
   {
     xiiStringBuilder sb;
@@ -711,10 +721,8 @@ void xiiGALCommandListD3D11::FlushPlatform()
   m_pCommandList->Flush();
 }
 
-void xiiGALCommandListD3D11::InvalidateCachedState()
+void xiiGALCommandListD3D11::InvalidateStatePlatform()
 {
-  InvalidateState();
-
   m_pCommandList->ClearState();
 
   InvalidateResources();

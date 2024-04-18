@@ -61,6 +61,10 @@ xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
 
   m_CommandLists.PushFront(pCommandListD3D11);
 
+  xiiStringBuilder sb;
+  sb.Format("Command List {}", m_CommandLists.GetCount());
+  pCommandListD3D11->SetDebugName(sb);
+
   pCommandListD3D11->Begin();
 
   return pCommandListD3D11;

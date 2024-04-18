@@ -755,6 +755,8 @@ void xiiGALCommandList::InvalidateState()
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   XII_ASSERT_DEV(m_MappedBuffers.IsEmpty(), "Mapped buffers have not yet been released.");
 #endif
+
+  InvalidateStatePlatform();
 }
 
 #undef XII_VERIFY_COMMAND_LIST

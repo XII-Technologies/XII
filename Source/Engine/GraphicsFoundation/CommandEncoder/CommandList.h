@@ -225,6 +225,8 @@ protected:
 
   virtual void FlushPlatform() = 0;
 
+  virtual void InvalidateStatePlatform() = 0;
+
   /// \endcond
 
 protected:
