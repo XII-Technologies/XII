@@ -104,8 +104,8 @@ void xiiLogWriter::HTML::LogMessageHandler(const xiiLoggingEventData& eventData)
 
     case xiiLogMsgType::BeginGroup:
       sText.SetFormat("<br><font color=\"#8080FF\"><b> <<< <u>{0}</u> >>> </b> ({1}) </font><br><table width=100%% border=0><tr width=100%%><td "
-                   "width=10></td><td width=*>\n",
-                   sOriginalText, sTag);
+                      "width=10></td><td width=*>\n",
+                      sOriginalText, sTag);
       break;
 
     case xiiLogMsgType::EndGroup:

@@ -91,7 +91,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
         return;
 
       sAction.SetFormat("Translate (deviation): {0} | {1} | {2}", xiiArgF(s_vTranslateDeviation.x, 2), xiiArgF(s_vTranslateDeviation.y, 2),
-                     xiiArgF(s_vTranslateDeviation.z, 2));
+                        xiiArgF(s_vTranslateDeviation.z, 2));
       break;
 
     case Mode::RotateX:
