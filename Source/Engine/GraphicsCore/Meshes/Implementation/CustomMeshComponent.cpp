@@ -95,7 +95,7 @@ xiiDynamicMeshBufferResourceHandle xiiCustomMeshComponent::CreateMeshResource(xi
   desc.m_bColorStream    = true;
 
   xiiStringBuilder sGuid;
-  sGuid.Format("CustomMesh_{}", s_iCustomMeshResources.Increment());
+  sGuid.SetFormat("CustomMesh_{}", s_iCustomMeshResources.Increment());
 
   m_hDynamicMesh = xiiResourceManager::CreateResource<xiiDynamicMeshBufferResource>(sGuid, std::move(desc));
 

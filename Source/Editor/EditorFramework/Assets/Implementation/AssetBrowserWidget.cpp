@@ -895,7 +895,7 @@ void xiiQtAssetBrowserWidget::OnListFindAllReferences(bool transitive)
   xiiConversionUtils::ToString(guid, sAssetGuid);
 
   xiiStringBuilder sFilter;
-  sFilter.Format("{}:{}", transitive ? "ref-all" : "ref", sAssetGuid);
+  sFilter.SetFormat("{}:{}", transitive ? "ref-all" : "ref", sAssetGuid);
   m_pFilter->SetTextFilter(sFilter);
   m_pFilter->SetPathFilter("");
 }

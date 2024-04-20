@@ -45,7 +45,7 @@ xiiInt32 xiiEnvironmentVariableUtils::GetValueInt(xiiStringView sName, xiiInt32 
 xiiResult xiiEnvironmentVariableUtils::SetValueInt(xiiStringView sName, xiiInt32 iValue)
 {
   xiiStringBuilder sb;
-  sb.Format("{}", iValue);
+  sb.SetFormat("{}", iValue);
 
   return SetValueString(sName, sb);
 }

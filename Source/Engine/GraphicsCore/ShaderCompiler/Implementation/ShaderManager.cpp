@@ -132,7 +132,7 @@ void xiiShaderManager::ReloadPermutationVarConfig(xiiStringView sName, const xii
   }
 
   xiiStringBuilder sPath;
-  sPath.Format("{0}/{1}.xiiPermVar", s_sPermVarSubDir, sName);
+  sPath.SetFormat("{0}/{1}.xiiPermVar", s_sPermVarSubDir, sName);
 
   xiiStringBuilder sTemp = s_sPlatform;
   sTemp.Append(" 1");

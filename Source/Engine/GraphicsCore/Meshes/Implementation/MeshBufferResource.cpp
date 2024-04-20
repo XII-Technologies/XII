@@ -582,7 +582,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
   }
 
   // xiiStringBuilder sName;
-  // sName.Format("{0} Vertex Buffer", GetResourceDescription());
+  // sName.SetFormat("{0} Vertex Buffer", GetResourceDescription());
   // pDevice->GetBuffer(m_hVertexBuffer)->SetDebugName(sName);
 
   if (descriptor.HasIndexBuffer())
@@ -598,7 +598,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
     initData.m_uiDataSize = descriptor.GetIndexBufferData().GetCount();
     m_hIndexBuffer        = pDevice->CreateBuffer(desc, &initData);
 
-    // sName.Format("{0} Index Buffer", GetResourceDescription());
+    // sName.SetFormat("{0} Index Buffer", GetResourceDescription());
     // pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
 
     // we only know the memory usage here, so we write it back to the internal variable directly and then read it in UpdateMemoryUsage() again

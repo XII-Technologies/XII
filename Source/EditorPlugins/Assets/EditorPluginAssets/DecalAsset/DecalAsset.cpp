@@ -107,7 +107,7 @@ xiiTransformStatus xiiDecalAssetDocument::InternalCreateThumbnail(const Thumbnai
   {
     xiiQtEditorApp* pEditorApp = xiiQtEditorApp::GetSingleton();
 
-    temp.Format("-in0");
+    temp.SetFormat("-in0");
 
     xiiStringBuilder sAbsPath = pProp->m_sBaseColor;
     if (!pEditorApp->MakeDataDirectoryRelativePathAbsolute(sAbsPath))

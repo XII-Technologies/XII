@@ -163,7 +163,7 @@ void xiiQtAssetCuratorPanel::UpdateIssueInfo()
       xiiUInt64 uiHigh;
       guid.GetValues(uiLow, uiHigh);
       xiiStringBuilder sTmp;
-      sTmp.Format("{} - u4{{},{}}", sDep, uiLow, uiHigh);
+      sTmp.SetFormat("{} - u4{{},{}}", sDep, uiLow, uiHigh);
 
       return sTmp;
     }

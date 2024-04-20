@@ -37,7 +37,7 @@ void xiiRecentFilesList::Save(xiiStringView sFile)
   for (const RecentFile& file : m_Files)
   {
     xiiStringBuilder sTemp;
-    sTemp.Format("{0}|{1}", file.m_File, file.m_iContainerWindow);
+    sTemp.SetFormat("{0}|{1}", file.m_File, file.m_iContainerWindow);
     File.WriteBytes(sTemp.GetData(), sTemp.GetElementCount()).IgnoreResult();
     File.WriteBytes("\n", sizeof(char)).IgnoreResult();
   }

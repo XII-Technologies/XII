@@ -24,28 +24,28 @@ static xiiString ToShaderString(const xiiVariant& value)
     case xiiVariantType::ColorGamma:
     {
       xiiColor v = value.ConvertTo<xiiColor>();
-      temp.Format("float4({0}, {1}, {2}, {3})", v.r, v.g, v.b, v.a);
+      temp.SetFormat("float4({0}, {1}, {2}, {3})", v.r, v.g, v.b, v.a);
     }
     break;
 
     case xiiVariantType::Vector4:
     {
       xiiVec4 v = value.Get<xiiVec4>();
-      temp.Format("float4({0}, {1}, {2}, {3})", v.x, v.y, v.z, v.w);
+      temp.SetFormat("float4({0}, {1}, {2}, {3})", v.x, v.y, v.z, v.w);
     }
     break;
 
     case xiiVariantType::Vector3:
     {
       xiiVec3 v = value.Get<xiiVec3>();
-      temp.Format("float3({0}, {1}, {2})", v.x, v.y, v.z);
+      temp.SetFormat("float3({0}, {1}, {2})", v.x, v.y, v.z);
     }
     break;
 
     case xiiVariantType::Vector2:
     {
       xiiVec2 v = value.Get<xiiVec2>();
-      temp.Format("float2({0}, {1})", v.x, v.y);
+      temp.SetFormat("float2({0}, {1})", v.x, v.y);
     }
     break;
 
@@ -53,21 +53,21 @@ static xiiString ToShaderString(const xiiVariant& value)
     case xiiVariantType::Int32:
     case xiiVariantType::Bool:
     {
-      temp.Format("{0}", value);
+      temp.SetFormat("{0}", value);
     }
     break;
 
     case xiiVariantType::Time:
     {
       float v = value.Get<xiiTime>().GetSeconds();
-      temp.Format("{0}", v);
+      temp.SetFormat("{0}", v);
     }
     break;
 
     case xiiVariantType::Angle:
     {
       float v = value.Get<xiiAngle>().GetRadian();
-      temp.Format("{0}", v);
+      temp.SetFormat("{0}", v);
     }
     break;
 
@@ -339,7 +339,7 @@ xiiStatus xiiVisualShaderCodeGenerator::ReplaceInputPinsByCode(
   {
     const xiiUInt32 i = i0 - 1;
 
-    sPinName.Format("$in{0}", i);
+    sPinName.SetFormat("$in{0}", i);
 
     auto connections = m_pNodeManager->GetConnections(*inputPins[i]);
     if (connections.IsEmpty())
@@ -394,7 +394,7 @@ void xiiVisualShaderCodeGenerator::SetPinDefines(const xiiDocumentObject* pOwner
 
     for (xiiUInt32 i = 0; i < pins.GetCount(); ++i)
     {
-      sDefineName.Format("INPUT_PIN_{0}_CONNECTED", i);
+      sDefineName.SetFormat("INPUT_PIN_{0}_CONNECTED", i);
 
       if (m_pNodeManager->HasConnections(*pins[i]) == false)
       {
@@ -412,7 +412,7 @@ void xiiVisualShaderCodeGenerator::SetPinDefines(const xiiDocumentObject* pOwner
 
     for (xiiUInt32 i = 0; i < pins.GetCount(); ++i)
     {
-      sDefineName.Format("OUTPUT_PIN_{0}_CONNECTED", i);
+      sDefineName.SetFormat("OUTPUT_PIN_{0}_CONNECTED", i);
 
       if (m_pNodeManager->HasConnections(*pins[i]) == false)
       {
@@ -490,7 +490,7 @@ xiiStatus xiiVisualShaderCodeGenerator::InsertPropertyValues(
   {
     const xiiUInt32 p = p0 - 1;
 
-    sPropName.Format("$prop{0}", p);
+    sPropName.SetFormat("$prop{0}", p);
 
     const xiiVariant value = TypeAccess.GetValue(props[p].m_sName);
     sPropValue             = ToShaderString(value);

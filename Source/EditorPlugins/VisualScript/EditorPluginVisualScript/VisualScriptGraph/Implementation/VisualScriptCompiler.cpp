@@ -31,7 +31,7 @@ namespace
     xiiVariant sNameProperty = pObject->GetTypeAccessor().GetValue("Name");
     xiiUInt32  uiHash        = xiiHashHelper<xiiUuid>::Hash(pObject->GetGuid());
 
-    out_sName.Format("{}_{}_{}", pEntryObject != nullptr ? xiiVisualScriptNodeManager::GetNiceFunctionName(pEntryObject) : "", sNameProperty, xiiArgU(uiHash, 8, true, 16));
+    out_sName.SetFormat("{}_{}_{}", pEntryObject != nullptr ? xiiVisualScriptNodeManager::GetNiceFunctionName(pEntryObject) : "", sNameProperty, xiiArgU(uiHash, 8, true, 16));
   }
 
   xiiVisualScriptDataType::Enum FinalizeDataType(xiiVisualScriptDataType::Enum dataType)

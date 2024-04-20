@@ -640,7 +640,7 @@ bool xiiEngineGizmoHandle::SetupForEngine(xiiWorld* pWorld, xiiUInt32 uiNextComp
   }
 
   xiiStringBuilder sName;
-  sName.Format("Gizmo{0}", m_iHandleType);
+  sName.SetFormat("Gizmo{0}", m_iHandleType);
 
   xiiGameObjectDesc god;
   god.m_LocalPosition = m_Transformation.m_vPosition;

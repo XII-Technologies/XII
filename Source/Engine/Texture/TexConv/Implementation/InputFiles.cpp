@@ -28,7 +28,7 @@ xiiResult xiiTexConvProcessor::LoadInputImages()
     xiiStringBuilder tmp;
     for (xiiUInt32 i = 0; i < m_Descriptor.m_InputFiles.GetCount(); ++i)
     {
-      tmp.Format("InputImage{}", xiiArgI(i, 2, true));
+      tmp.SetFormat("InputImage{}", xiiArgI(i, 2, true));
       m_Descriptor.m_InputFiles[i] = tmp;
     }
   }

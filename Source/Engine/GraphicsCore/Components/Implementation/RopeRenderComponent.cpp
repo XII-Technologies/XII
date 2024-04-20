@@ -300,7 +300,7 @@ void xiiRopeRenderComponent::OnRopePoseUpdated(xiiMsgRopePoseUpdated& msg)
 void xiiRopeRenderComponent::GenerateRenderMesh(xiiUInt32 uiNumRopePieces)
 {
   xiiStringBuilder sResourceName;
-  sResourceName.Format("Rope-Mesh:{}{}-d{}-u{}", uiNumRopePieces, m_bSubdivide ? "Sub" : "", m_uiDetail, m_fUScale);
+  sResourceName.SetFormat("Rope-Mesh:{}{}-d{}-u{}", uiNumRopePieces, m_bSubdivide ? "Sub" : "", m_uiDetail, m_fUScale);
 
   m_hMesh = xiiResourceManager::GetExistingResource<xiiMeshResource>(sResourceName);
   if (m_hMesh.IsValid())

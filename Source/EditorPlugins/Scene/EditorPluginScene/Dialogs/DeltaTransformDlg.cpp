@@ -83,14 +83,14 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
       if (s_vTranslate == xiiVec3(0.0f))
         return;
 
-      sAction.Format("Translate: {0} | {1} | {2}", xiiArgF(s_vTranslate.x, 2), xiiArgF(s_vTranslate.y, 2), xiiArgF(s_vTranslate.z, 2));
+      sAction.SetFormat("Translate: {0} | {1} | {2}", xiiArgF(s_vTranslate.x, 2), xiiArgF(s_vTranslate.y, 2), xiiArgF(s_vTranslate.z, 2));
       break;
 
     case Mode::TranslateDeviation:
       if (s_vTranslateDeviation == xiiVec3(0.0f))
         return;
 
-      sAction.Format("Translate (deviation): {0} | {1} | {2}", xiiArgF(s_vTranslateDeviation.x, 2), xiiArgF(s_vTranslateDeviation.y, 2),
+      sAction.SetFormat("Translate (deviation): {0} | {1} | {2}", xiiArgF(s_vTranslateDeviation.x, 2), xiiArgF(s_vTranslateDeviation.y, 2),
                      xiiArgF(s_vTranslateDeviation.z, 2));
       break;
 
@@ -98,70 +98,70 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
       if (s_vRotate.x == 0.0f)
         return;
 
-      sAction.Format("Rotate X: {0}", xiiArgF(s_vRotate.x, 1));
+      sAction.SetFormat("Rotate X: {0}", xiiArgF(s_vRotate.x, 1));
       break;
 
     case Mode::RotateXRandom:
       if (s_vRotateRandom.x == 0.0f)
         return;
 
-      sAction.Format("Rotate X (random): {0}", xiiArgF(s_vRotateRandom.x, 1));
+      sAction.SetFormat("Rotate X (random): {0}", xiiArgF(s_vRotateRandom.x, 1));
       break;
 
     case Mode::RotateXDeviation:
       if (s_vRotateDeviation.x == 0.0f)
         return;
 
-      sAction.Format("Rotate X (deviation): {0}", xiiArgF(s_vRotateDeviation.x, 1));
+      sAction.SetFormat("Rotate X (deviation): {0}", xiiArgF(s_vRotateDeviation.x, 1));
       break;
 
     case Mode::RotateY:
       if (s_vRotate.y == 0.0f)
         return;
 
-      sAction.Format("Rotate Y: {0}", xiiArgF(s_vRotate.y, 1));
+      sAction.SetFormat("Rotate Y: {0}", xiiArgF(s_vRotate.y, 1));
       break;
 
     case Mode::RotateYRandom:
       if (s_vRotateRandom.y == 0.0f)
         return;
 
-      sAction.Format("Rotate Y (random): {0}", xiiArgF(s_vRotateRandom.y, 1));
+      sAction.SetFormat("Rotate Y (random): {0}", xiiArgF(s_vRotateRandom.y, 1));
       break;
 
     case Mode::RotateYDeviation:
       if (s_vRotateDeviation.y == 0.0f)
         return;
 
-      sAction.Format("Rotate Y (deviation): {0}", xiiArgF(s_vRotateDeviation.y, 1));
+      sAction.SetFormat("Rotate Y (deviation): {0}", xiiArgF(s_vRotateDeviation.y, 1));
       break;
 
     case Mode::RotateZ:
       if (s_vRotate.z == 0.0f)
         return;
 
-      sAction.Format("Rotate Z: {0}", xiiArgF(s_vRotate.z, 1));
+      sAction.SetFormat("Rotate Z: {0}", xiiArgF(s_vRotate.z, 1));
       break;
 
     case Mode::RotateZRandom:
       if (s_vRotateRandom.z == 0.0f)
         return;
 
-      sAction.Format("Rotate Z (random): {0}", xiiArgF(s_vRotateRandom.z, 1));
+      sAction.SetFormat("Rotate Z (random): {0}", xiiArgF(s_vRotateRandom.z, 1));
       break;
 
     case Mode::RotateZDeviation:
       if (s_vRotateDeviation.z == 0.0f)
         return;
 
-      sAction.Format("Rotate Z (deviation): {0}", xiiArgF(s_vRotateDeviation.z, 1));
+      sAction.SetFormat("Rotate Z (deviation): {0}", xiiArgF(s_vRotateDeviation.z, 1));
       break;
 
     case Mode::Scale:
       if (s_vScale == xiiVec3(1.0f))
         return;
 
-      sAction.Format("Scale: {0} | {1} | {2}", xiiArgF(s_vScale.x, 2), xiiArgF(s_vScale.y, 2), xiiArgF(s_vScale.z, 2));
+      sAction.SetFormat("Scale: {0} | {1} | {2}", xiiArgF(s_vScale.x, 2), xiiArgF(s_vScale.y, 2), xiiArgF(s_vScale.z, 2));
       break;
 
     case Mode::ScaleDeviation:
@@ -176,18 +176,18 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
       if (s_fUniformScale == 1.0f)
         return;
 
-      sAction.Format("Scale: {0}", xiiArgF(s_fUniformScale, 2));
+      sAction.SetFormat("Scale: {0}", xiiArgF(s_fUniformScale, 2));
       break;
 
     case Mode::UniformScaleDeviation:
       if (s_fUniformScaleDeviation == 1.0f)
         return;
 
-      sAction.Format("Scale (deviation): {0}", xiiArgF(s_fUniformScaleDeviation, 2));
+      sAction.SetFormat("Scale (deviation): {0}", xiiArgF(s_fUniformScaleDeviation, 2));
       break;
 
     case Mode::NaturalDeviationZ:
-      sAction.Format("Natural Deviation Z: {0}", xiiArgF(s_fNaturalDeviationZ, 1));
+      sAction.SetFormat("Natural Deviation Z: {0}", xiiArgF(s_fNaturalDeviationZ, 1));
       break;
   }
 

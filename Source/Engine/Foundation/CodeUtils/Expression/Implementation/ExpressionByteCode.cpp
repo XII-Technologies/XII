@@ -330,7 +330,7 @@ void xiiExpressionByteCode::Disassemble(xiiStringBuilder& out_sDisassembly) cons
       xiiStringBuilder sNameBuilder;
       if (sName.IsEmpty())
       {
-        sNameBuilder.Format("Unknown_{0}", uiIndex);
+        sNameBuilder.SetFormat("Unknown_{0}", uiIndex);
       }
       else
       {

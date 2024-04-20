@@ -111,7 +111,7 @@ void xiiGameApplicationBase::StoreScreenshot(xiiImage&& image, xiiStringView sCo
   pWriteTask->ConfigureTask("Write Screenshot", xiiTaskNesting::Never);
   pWriteTask->m_Image.ResetAndMove(std::move(image));
 
-  pWriteTask->m_sPath.Format(":appdata/Screenshots/{0}", xiiApplication::GetApplicationInstance()->GetApplicationName());
+  pWriteTask->m_sPath.SetFormat(":appdata/Screenshots/{0}", xiiApplication::GetApplicationInstance()->GetApplicationName());
   AppendCurrentTimestamp(pWriteTask->m_sPath);
   pWriteTask->m_sPath.Append(sContext);
   pWriteTask->m_sPath.Append(".png");

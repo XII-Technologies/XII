@@ -55,7 +55,7 @@ bool xiiMaterialAssetDocumentManager::IsOutputUpToDate(xiiStringView sDocumentPa
     const xiiString sTargetFile = GetAbsoluteOutputFileName(pTypeDescriptor, sDocumentPath, sOutputTag);
 
     xiiStringBuilder sExpectedHeader;
-    sExpectedHeader.Format("//{0}|{1}\n", uiHash, pTypeDescriptor->m_pDocumentType->GetTypeVersion());
+    sExpectedHeader.SetFormat("//{0}|{1}\n", uiHash, pTypeDescriptor->m_pDocumentType->GetTypeVersion());
 
     xiiFileReader file;
     if (file.Open(sTargetFile, 256).Failed())

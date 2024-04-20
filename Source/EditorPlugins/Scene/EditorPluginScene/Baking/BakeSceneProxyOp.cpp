@@ -19,7 +19,7 @@ void xiiLongOpProxy_BakeScene::GetReplicationInfo(xiiStringBuilder& out_sReplica
   out_sReplicationOpType = "xiiLongOpWorker_BakeScene";
 
   xiiStringBuilder sOutputPath;
-  sOutputPath.Format(":project/AssetCache/Generated/{0}", m_ComponentGuid);
+  sOutputPath.SetFormat(":project/AssetCache/Generated/{0}", m_ComponentGuid);
   ref_description << sOutputPath;
 }
 

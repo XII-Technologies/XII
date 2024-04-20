@@ -82,7 +82,7 @@ xiiTransformStatus xiiVisualScriptClassAssetDocument::InternalTransformAsset(xii
   xiiStringBuilder sDumpPath;
   if (GetProperties()->m_bDumpAST)
   {
-    sDumpPath.Format(":appdata/{}_AST.dgml", sScriptClassName);
+    sDumpPath.SetFormat(":appdata/{}_AST.dgml", sScriptClassName);
   }
   XII_SUCCEED_OR_RETURN(compiler.Compile(sDumpPath));
 

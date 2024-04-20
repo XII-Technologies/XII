@@ -1171,7 +1171,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
 
     xiiTime          t = sw.GetRunningTotal();
     xiiStringBuilder s;
-    s.Format("XII-Sort (random keys): {}", t);
+    s.SetFormat("XII-Sort (random keys): {}", t);
     xiiTestFramework::Output(xiiTestOutput::Details, s);
 
     for (xiiUInt32 i = 1; i < list.GetCount(); i++)
@@ -1197,7 +1197,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
 
     xiiTime          t = sw.GetRunningTotal();
     xiiStringBuilder s;
-    s.Format("std::sort (random keys): {}", t);
+    s.SetFormat("std::sort (random keys): {}", t);
     xiiTestFramework::Output(xiiTestOutput::Details, s);
 
     for (xiiUInt32 i = 1; i < list.GetCount(); i++)
@@ -1223,7 +1223,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
 
     xiiTime          t = sw.GetRunningTotal();
     xiiStringBuilder s;
-    s.Format("XII-Sort (equal keys): {}", t);
+    s.SetFormat("XII-Sort (equal keys): {}", t);
     xiiTestFramework::Output(xiiTestOutput::Details, s);
 
     for (xiiUInt32 i = 1; i < list.GetCount(); i++)
@@ -1249,7 +1249,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
 
     xiiTime          t = sw.GetRunningTotal();
     xiiStringBuilder s;
-    s.Format("std::sort (equal keys): {}", t);
+    s.SetFormat("std::sort (equal keys): {}", t);
     xiiTestFramework::Output(xiiTestOutput::Details, s);
 
     for (xiiUInt32 i = 1; i < list.GetCount(); i++)

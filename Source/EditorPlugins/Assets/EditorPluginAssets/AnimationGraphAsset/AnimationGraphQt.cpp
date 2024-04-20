@@ -75,7 +75,7 @@ void xiiQtAnimationGraphNode::UpdateState()
         if (val.IsValid())
         {
 
-          tmp.Format("{}", val);
+          tmp.SetFormat("{}", val);
 
           if (xiiConversionUtils::IsStringUuid(tmp))
           {

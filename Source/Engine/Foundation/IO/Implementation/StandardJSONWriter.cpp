@@ -122,7 +122,7 @@ void xiiStandardJSONWriter::OutputIndentation()
     iIndentation = m_iIndentation;
 
   xiiStringBuilder s;
-  s.Printf("%*s", iIndentation, "");
+  s.SetPrintf("%*s", iIndentation, "");
 
   OutputString(s.GetData());
 }
@@ -142,7 +142,7 @@ void xiiStandardJSONWriter::WriteInt32(xiiInt32 value)
   CommaWriter cw(this);
 
   xiiStringBuilder s;
-  s.Format("{0}", value);
+  s.SetFormat("{0}", value);
 
   OutputString(s.GetData());
 }
@@ -152,7 +152,7 @@ void xiiStandardJSONWriter::WriteUInt32(xiiUInt32 value)
   CommaWriter cw(this);
 
   xiiStringBuilder s;
-  s.Format("{0}", value);
+  s.SetFormat("{0}", value);
 
   OutputString(s.GetData());
 }
@@ -162,7 +162,7 @@ void xiiStandardJSONWriter::WriteInt64(xiiInt64 value)
   CommaWriter cw(this);
 
   xiiStringBuilder s;
-  s.Format("{0}", value);
+  s.SetFormat("{0}", value);
 
   OutputString(s.GetData());
 }
@@ -172,7 +172,7 @@ void xiiStandardJSONWriter::WriteUInt64(xiiUInt64 value)
   CommaWriter cw(this);
 
   xiiStringBuilder s;
-  s.Format("{0}", value);
+  s.SetFormat("{0}", value);
 
   OutputString(s.GetData());
 }
@@ -182,7 +182,7 @@ void xiiStandardJSONWriter::WriteFloat(float value)
   CommaWriter cw(this);
 
   xiiStringBuilder s;
-  s.Format("{0}", value);
+  s.SetFormat("{0}", value);
 
   OutputString(s.GetData());
 }
@@ -192,7 +192,7 @@ void xiiStandardJSONWriter::WriteDouble(double value)
   CommaWriter cw(this);
 
   xiiStringBuilder s;
-  s.Format("{0}", value);
+  s.SetFormat("{0}", value);
 
   OutputString(s.GetData());
 }
@@ -225,9 +225,9 @@ void xiiStandardJSONWriter::WriteColor(const xiiColor& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2},{3})", xiiArgF(value.r, 4), xiiArgF(value.g, 4), xiiArgF(value.b, 4), xiiArgF(value.a, 4));
+    s.SetFormat("({0},{1},{2},{3})", xiiArgF(value.r, 4), xiiArgF(value.g, 4), xiiArgF(value.b, 4), xiiArgF(value.a, 4));
   else
-    s.Format("({0}, {1}, {2}, {3})", xiiArgF(value.r, 4), xiiArgF(value.g, 4), xiiArgF(value.b, 4), xiiArgF(value.a, 4));
+    s.SetFormat("({0}, {1}, {2}, {3})", xiiArgF(value.r, 4), xiiArgF(value.g, 4), xiiArgF(value.b, 4), xiiArgF(value.a, 4));
 
   WriteBinaryData("color", &temp, sizeof(temp), s.GetData());
 }
@@ -237,9 +237,9 @@ void xiiStandardJSONWriter::WriteColorGamma(const xiiColorGammaUB& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2},{3})", value.r, value.g, value.b, value.a);
+    s.SetFormat("({0},{1},{2},{3})", value.r, value.g, value.b, value.a);
   else
-    s.Format("({0}, {1}, {2}, {3})", value.r, value.g, value.b, value.a);
+    s.SetFormat("({0}, {1}, {2}, {3})", value.r, value.g, value.b, value.a);
 
   WriteBinaryData("gamma", value.GetData(), sizeof(xiiColorGammaUB), s.GetData());
 }
@@ -253,9 +253,9 @@ void xiiStandardJSONWriter::WriteVec2(const xiiVec2& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1})", xiiArgF(value.x, 4), xiiArgF(value.y, 4));
+    s.SetFormat("({0},{1})", xiiArgF(value.x, 4), xiiArgF(value.y, 4));
   else
-    s.Format("({0}, {1})", xiiArgF(value.x, 4), xiiArgF(value.y, 4));
+    s.SetFormat("({0}, {1})", xiiArgF(value.x, 4), xiiArgF(value.y, 4));
 
   WriteBinaryData("vec2", &temp, sizeof(temp), s.GetData());
 }
@@ -269,9 +269,9 @@ void xiiStandardJSONWriter::WriteVec2d(const xiiVec2d& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1})", xiiArgF(value.x, 8), xiiArgF(value.y, 8));
+    s.SetFormat("({0},{1})", xiiArgF(value.x, 8), xiiArgF(value.y, 8));
   else
-    s.Format("({0}, {1})", xiiArgF(value.x, 8), xiiArgF(value.y, 8));
+    s.SetFormat("({0}, {1})", xiiArgF(value.x, 8), xiiArgF(value.y, 8));
 
   WriteBinaryData("vec2d", &temp, sizeof(temp), s.GetData());
 }
@@ -285,9 +285,9 @@ void xiiStandardJSONWriter::WriteVec3(const xiiVec3& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2})", xiiArgF(value.x, 4), xiiArgF(value.y, 4), xiiArgF(value.z, 4));
+    s.SetFormat("({0},{1},{2})", xiiArgF(value.x, 4), xiiArgF(value.y, 4), xiiArgF(value.z, 4));
   else
-    s.Format("({0}, {1}, {2})", xiiArgF(value.x, 4), xiiArgF(value.y, 4), xiiArgF(value.z, 4));
+    s.SetFormat("({0}, {1}, {2})", xiiArgF(value.x, 4), xiiArgF(value.y, 4), xiiArgF(value.z, 4));
 
   WriteBinaryData("vec3", &temp, sizeof(temp), s.GetData());
 }
@@ -301,9 +301,9 @@ void xiiStandardJSONWriter::WriteVec3d(const xiiVec3d& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2})", xiiArgF(value.x, 8), xiiArgF(value.y, 8), xiiArgF(value.z, 8));
+    s.SetFormat("({0},{1},{2})", xiiArgF(value.x, 8), xiiArgF(value.y, 8), xiiArgF(value.z, 8));
   else
-    s.Format("({0}, {1}, {2})", xiiArgF(value.x, 8), xiiArgF(value.y, 8), xiiArgF(value.z, 8));
+    s.SetFormat("({0}, {1}, {2})", xiiArgF(value.x, 8), xiiArgF(value.y, 8), xiiArgF(value.z, 8));
 
   WriteBinaryData("vec3d", &temp, sizeof(temp), s.GetData());
 }
@@ -317,9 +317,9 @@ void xiiStandardJSONWriter::WriteVec4(const xiiVec4& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2},{3})", xiiArgF(value.x, 4), xiiArgF(value.y, 4), xiiArgF(value.z, 4), xiiArgF(value.w, 4));
+    s.SetFormat("({0},{1},{2},{3})", xiiArgF(value.x, 4), xiiArgF(value.y, 4), xiiArgF(value.z, 4), xiiArgF(value.w, 4));
   else
-    s.Format("({0}, {1}, {2}, {3})", xiiArgF(value.x, 4), xiiArgF(value.y, 4), xiiArgF(value.z, 4), xiiArgF(value.w, 4));
+    s.SetFormat("({0}, {1}, {2}, {3})", xiiArgF(value.x, 4), xiiArgF(value.y, 4), xiiArgF(value.z, 4), xiiArgF(value.w, 4));
 
   WriteBinaryData("vec4", &temp, sizeof(temp), s.GetData());
 }
@@ -333,9 +333,9 @@ void xiiStandardJSONWriter::WriteVec4d(const xiiVec4d& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2},{3})", xiiArgF(value.x, 8), xiiArgF(value.y, 8), xiiArgF(value.z, 8), xiiArgF(value.w, 8));
+    s.SetFormat("({0},{1},{2},{3})", xiiArgF(value.x, 8), xiiArgF(value.y, 8), xiiArgF(value.z, 8), xiiArgF(value.w, 8));
   else
-    s.Format("({0}, {1}, {2}, {3})", xiiArgF(value.x, 8), xiiArgF(value.y, 8), xiiArgF(value.z, 8), xiiArgF(value.w, 8));
+    s.SetFormat("({0}, {1}, {2}, {3})", xiiArgF(value.x, 8), xiiArgF(value.y, 8), xiiArgF(value.z, 8), xiiArgF(value.w, 8));
 
   WriteBinaryData("vec4d", &temp, sizeof(temp), s.GetData());
 }
@@ -351,9 +351,9 @@ void xiiStandardJSONWriter::WriteVec2I32(const xiiVec2I32& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1})", value.x, value.y);
+    s.SetFormat("({0},{1})", value.x, value.y);
   else
-    s.Format("({0}, {1})", value.x, value.y);
+    s.SetFormat("({0}, {1})", value.x, value.y);
 
   WriteBinaryData("vec2i", &temp, sizeof(temp), s.GetData());
 }
@@ -369,9 +369,9 @@ void xiiStandardJSONWriter::WriteVec2I64(const xiiVec2I64& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1})", value.x, value.y);
+    s.SetFormat("({0},{1})", value.x, value.y);
   else
-    s.Format("({0}, {1})", value.x, value.y);
+    s.SetFormat("({0}, {1})", value.x, value.y);
 
   WriteBinaryData("vec2i64", &temp, sizeof(temp), s.GetData());
 }
@@ -387,9 +387,9 @@ void xiiStandardJSONWriter::WriteVec3I32(const xiiVec3I32& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2})", value.x, value.y, value.z);
+    s.SetFormat("({0},{1},{2})", value.x, value.y, value.z);
   else
-    s.Format("({0}, {1}, {2})", value.x, value.y, value.z);
+    s.SetFormat("({0}, {1}, {2})", value.x, value.y, value.z);
 
   WriteBinaryData("vec3i", &temp, sizeof(temp), s.GetData());
 }
@@ -405,9 +405,9 @@ void xiiStandardJSONWriter::WriteVec3I64(const xiiVec3I64& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2})", value.x, value.y, value.z);
+    s.SetFormat("({0},{1},{2})", value.x, value.y, value.z);
   else
-    s.Format("({0}, {1}, {2})", value.x, value.y, value.z);
+    s.SetFormat("({0}, {1}, {2})", value.x, value.y, value.z);
 
   WriteBinaryData("vec3i64", &temp, sizeof(temp), s.GetData());
 }
@@ -423,9 +423,9 @@ void xiiStandardJSONWriter::WriteVec4I32(const xiiVec4I32& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2},{3})", value.x, value.y, value.z, value.w);
+    s.SetFormat("({0},{1},{2},{3})", value.x, value.y, value.z, value.w);
   else
-    s.Format("({0}, {1}, {2}, {3})", value.x, value.y, value.z, value.w);
+    s.SetFormat("({0}, {1}, {2}, {3})", value.x, value.y, value.z, value.w);
 
   WriteBinaryData("vec4i", &temp, sizeof(temp), s.GetData());
 }
@@ -441,9 +441,9 @@ void xiiStandardJSONWriter::WriteVec4I64(const xiiVec4I64& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2},{3})", value.x, value.y, value.z, value.w);
+    s.SetFormat("({0},{1},{2},{3})", value.x, value.y, value.z, value.w);
   else
-    s.Format("({0}, {1}, {2}, {3})", value.x, value.y, value.z, value.w);
+    s.SetFormat("({0}, {1}, {2}, {3})", value.x, value.y, value.z, value.w);
 
   WriteBinaryData("vec4i64", &temp, sizeof(temp), s.GetData());
 }
@@ -459,9 +459,9 @@ void xiiStandardJSONWriter::WriteVec2U32(const xiiVec2U32& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1})", value.x, value.y);
+    s.SetFormat("({0},{1})", value.x, value.y);
   else
-    s.Format("({0}, {1})", value.x, value.y);
+    s.SetFormat("({0}, {1})", value.x, value.y);
 
   WriteBinaryData("vec2u", &temp, sizeof(temp), s.GetData());
 }
@@ -477,9 +477,9 @@ void xiiStandardJSONWriter::WriteVec2U64(const xiiVec2U64& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1})", value.x, value.y);
+    s.SetFormat("({0},{1})", value.x, value.y);
   else
-    s.Format("({0}, {1})", value.x, value.y);
+    s.SetFormat("({0}, {1})", value.x, value.y);
 
   WriteBinaryData("vec2u64", &temp, sizeof(temp), s.GetData());
 }
@@ -495,9 +495,9 @@ void xiiStandardJSONWriter::WriteVec3U32(const xiiVec3U32& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2})", value.x, value.y, value.z);
+    s.SetFormat("({0},{1},{2})", value.x, value.y, value.z);
   else
-    s.Format("({0}, {1}, {2})", value.x, value.y, value.z);
+    s.SetFormat("({0}, {1}, {2})", value.x, value.y, value.z);
 
   WriteBinaryData("vec3u", &temp, sizeof(temp), s.GetData());
 }
@@ -513,9 +513,9 @@ void xiiStandardJSONWriter::WriteVec3U64(const xiiVec3U64& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2})", value.x, value.y, value.z);
+    s.SetFormat("({0},{1},{2})", value.x, value.y, value.z);
   else
-    s.Format("({0}, {1}, {2})", value.x, value.y, value.z);
+    s.SetFormat("({0}, {1}, {2})", value.x, value.y, value.z);
 
   WriteBinaryData("vec3u64", &temp, sizeof(temp), s.GetData());
 }
@@ -531,9 +531,9 @@ void xiiStandardJSONWriter::WriteVec4U32(const xiiVec4U32& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2},{3})", value.x, value.y, value.z, value.w);
+    s.SetFormat("({0},{1},{2},{3})", value.x, value.y, value.z, value.w);
   else
-    s.Format("({0}, {1}, {2}, {3})", value.x, value.y, value.z, value.w);
+    s.SetFormat("({0}, {1}, {2}, {3})", value.x, value.y, value.z, value.w);
 
   WriteBinaryData("vec4u", &temp, sizeof(temp), s.GetData());
 }
@@ -549,9 +549,9 @@ void xiiStandardJSONWriter::WriteVec4U64(const xiiVec4U64& value)
   xiiStringBuilder s;
 
   if (m_WhitespaceMode >= xiiJSONWriter::WhitespaceMode::NewlinesOnly)
-    s.Format("({0},{1},{2},{3})", value.x, value.y, value.z, value.w);
+    s.SetFormat("({0},{1},{2},{3})", value.x, value.y, value.z, value.w);
   else
-    s.Format("({0}, {1}, {2}, {3})", value.x, value.y, value.z, value.w);
+    s.SetFormat("({0}, {1}, {2}, {3})", value.x, value.y, value.z, value.w);
 
   WriteBinaryData("vec4u64", &temp, sizeof(temp), s.GetData());
 }
@@ -857,7 +857,7 @@ void xiiStandardJSONWriter::WriteBinaryData(xiiStringView sDataType, const void*
 
   for (xiiUInt32 i = 0; i < uiBytes; ++i)
   {
-    s.Format("{0}", xiiArgU((xiiUInt32)*pBytes, 2, true, 16, true));
+    s.SetFormat("{0}", xiiArgU((xiiUInt32)*pBytes, 2, true, 16, true));
     ++pBytes;
 
     OutputString(s.GetData());

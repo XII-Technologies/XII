@@ -736,7 +736,7 @@ void xiiGALCommandList::InvalidateState()
   m_hPipelineState             = xiiGALPipelineStateHandle();
   m_hPipelineResourceSignature = xiiGALPipelineResourceSignatureHandle();
 
-  xiiMemoryUtils::DefaultConstruct(m_VertexBuffers);
+  xiiMemoryUtils::Construct<ConstructAll>(m_VertexBuffers);
 
   m_hIndexBuffer      = xiiGALBufferHandle();
   m_uiIndexDataOffset = 0;

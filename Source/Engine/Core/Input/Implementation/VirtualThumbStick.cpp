@@ -18,7 +18,7 @@ xiiVirtualThumbStick::xiiVirtualThumbStick()
   SetInputArea(xiiVec2(0.0f), xiiVec2(0.0f), 0.0f, 0.0f);
 
   xiiStringBuilder s;
-  s.Format("Thumbstick_{0}", s_iThumbsticks);
+  s.SetFormat("Thumbstick_{0}", s_iThumbsticks);
   m_sName = s;
 
   ++s_iThumbsticks;

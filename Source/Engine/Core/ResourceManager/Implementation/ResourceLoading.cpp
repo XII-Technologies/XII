@@ -72,7 +72,7 @@ void xiiResourceManager::SetupWorkerTasks()
 
       for (xiiUInt32 i = 0; i < InitialDataLoadTasks; ++i)
       {
-        s.Format("Resource Data Loader {0}", i);
+        s.SetFormat("Resource Data Loader {0}", i);
         auto& data   = s_pState->m_WorkerTasksDataLoad.ExpandAndGetRef();
         data.m_pTask = XII_DEFAULT_NEW(xiiResourceManagerWorkerDataLoad);
         data.m_pTask->ConfigureTask(s, xiiTaskNesting::Maybe);
@@ -84,7 +84,7 @@ void xiiResourceManager::SetupWorkerTasks()
 
       for (xiiUInt32 i = 0; i < InitialUpdateContentTasks; ++i)
       {
-        s.Format("Resource Content Updater {0}", i);
+        s.SetFormat("Resource Content Updater {0}", i);
         auto& data   = s_pState->m_WorkerTasksUpdateContent.ExpandAndGetRef();
         data.m_pTask = XII_DEFAULT_NEW(xiiResourceManagerWorkerUpdateContent);
         data.m_pTask->ConfigureTask(s, xiiTaskNesting::Maybe);
@@ -119,7 +119,7 @@ void xiiResourceManager::RunWorkerTask(xiiResource* pResource)
     // could not find any unused task -> need to create a new one
     {
       xiiStringBuilder s;
-      s.Format("Resource Data Loader {0}", s_pState->m_WorkerTasksDataLoad.GetCount());
+      s.SetFormat("Resource Data Loader {0}", s_pState->m_WorkerTasksDataLoad.GetCount());
       auto& data   = s_pState->m_WorkerTasksDataLoad.ExpandAndGetRef();
       data.m_pTask = XII_DEFAULT_NEW(xiiResourceManagerWorkerDataLoad);
       data.m_pTask->ConfigureTask(s, xiiTaskNesting::Maybe);

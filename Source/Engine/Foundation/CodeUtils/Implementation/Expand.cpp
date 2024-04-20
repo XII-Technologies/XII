@@ -185,7 +185,7 @@ xiiResult xiiPreprocessor::ExpandObjectMacro(MacroDefinition& Macro, TokenStream
   if (pMacroToken->m_DataView.IsEqual("__LINE__"))
   {
     xiiStringBuilder sLine;
-    sLine.Format("{0}", m_CurrentFileStack.PeekBack().m_iCurrentLine);
+    sLine.SetFormat("{0}", m_CurrentFileStack.PeekBack().m_iCurrentLine);
 
     xiiToken* pNewToken = AddCustomToken(pMacroToken, sLine);
     pNewToken->m_iType  = xiiTokenType::Integer;

@@ -292,7 +292,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     XII_PROFILE_SCOPE("Logging");
     xiiInt32         iApplicationID = pCmd->GetIntOption("-appid", 0);
     xiiStringBuilder sLogFile;
-    sLogFile.Format(":appdata/Log_{0}.htm", iApplicationID);
+    sLogFile.SetFormat(":appdata/Log_{0}.htm", iApplicationID);
     m_LogHTML.BeginLog(sLogFile, sApplicationName);
 
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);

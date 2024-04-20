@@ -93,7 +93,7 @@ const xiiRTTI* xiiExposedParametersTypeRegistry::GetExposedParametersType(xiiStr
 void xiiExposedParametersTypeRegistry::UpdateExposedParametersType(ParamData& data, const xiiExposedParameters& params)
 {
   xiiStringBuilder name;
-  name.Format("xiiExposedParameters_{0}", data.m_SubAssetGuid);
+  name.SetFormat("xiiExposedParameters_{0}", data.m_SubAssetGuid);
   XII_LOG_BLOCK("Updating Type", name.GetData());
   xiiReflectedTypeDescriptor desc;
   desc.m_sTypeName       = name;

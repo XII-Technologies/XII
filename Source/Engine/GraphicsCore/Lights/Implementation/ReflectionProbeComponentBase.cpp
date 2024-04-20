@@ -189,7 +189,7 @@ float xiiReflectionProbeComponentBase::ComputePriority(xiiMsgExtractRenderData& 
 
 #ifdef XII_SHOW_REFLECTION_PROBE_PRIORITIES
   xiiStringBuilder s;
-  s.Format("{}, {}", pRenderData->m_uiSortingKey, fPriority);
+  s.SetFormat("{}, {}", pRenderData->m_uiSortingKey, fPriority);
   xiiDebugRenderer::Draw3DText(GetWorld(), s, pRenderData->m_GlobalTransform.m_vPosition, xiiColor::Wheat);
 #endif
   return fPriority;

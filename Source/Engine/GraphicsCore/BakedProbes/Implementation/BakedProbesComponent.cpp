@@ -467,7 +467,7 @@ void xiiBakedProbesComponent::RenderDebugOverlay()
 void xiiBakedProbesComponent::OnObjectCreated(const xiiAbstractObjectNode& node)
 {
   xiiStringBuilder sPrefix;
-  sPrefix.Format(":project/AssetCache/Generated/{0}", node.GetGuid());
+  sPrefix.SetFormat(":project/AssetCache/Generated/{0}", node.GetGuid());
 
   m_sProbeTreeResourcePrefix.Assign(sPrefix);
 }

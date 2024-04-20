@@ -329,7 +329,7 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Printf")
   {
     xiiStringBuilder s("abc");
-    s.Printf("Test%i%s%s", 42, "foo", xiiStringUtf8(L"bär").GetData());
+    s.SetPrintf("Test%i%s%s", 42, "foo", xiiStringUtf8(L"bär").GetData());
 
     XII_TEST_BOOL(s == xiiStringUtf8(L"Test42foobär").GetData());
   }
@@ -337,7 +337,7 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Format")
   {
     xiiStringBuilder s("abc");
-    s.Format("Test{0}{1}{2}", 42, "foo", xiiStringUtf8(L"bär").GetData());
+    s.SetFormat("Test{0}{1}{2}", 42, "foo", xiiStringUtf8(L"bär").GetData());
 
     XII_TEST_BOOL(s == xiiStringUtf8(L"Test42foobär").GetData());
   }

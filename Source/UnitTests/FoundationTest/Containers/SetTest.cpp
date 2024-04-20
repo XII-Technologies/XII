@@ -597,10 +597,10 @@ XII_CREATE_SIMPLE_TEST(Containers, Set)
 
     for (xiiUInt32 i = 0; i < 1000; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       set1->Insert(tmp);
 
-      tmp.Format("{0}{0}{0}", i);
+      tmp.SetFormat("{0}{0}{0}", i);
       set2->Insert(tmp);
     }
 
@@ -609,10 +609,10 @@ XII_CREATE_SIMPLE_TEST(Containers, Set)
     // test swapped elements
     for (xiiUInt32 i = 0; i < 1000; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       XII_TEST_BOOL(set2->Contains(tmp));
 
-      tmp.Format("{0}{0}{0}", i);
+      tmp.SetFormat("{0}{0}{0}", i);
       XII_TEST_BOOL(set1->Contains(tmp));
     }
 
@@ -652,7 +652,7 @@ XII_CREATE_SIMPLE_TEST(Containers, Set)
 
     for (xiiUInt32 i = 0; i < 100; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       set1->Insert(tmp);
     }
 
@@ -665,7 +665,7 @@ XII_CREATE_SIMPLE_TEST(Containers, Set)
     // test swapped elements
     for (xiiUInt32 i = 0; i < 100; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       XII_TEST_BOOL(set2->Contains(tmp));
     }
 

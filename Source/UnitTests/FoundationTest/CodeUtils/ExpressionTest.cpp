@@ -18,7 +18,7 @@ namespace
     xiiUInt32 uiCounter = s_uiNumASTDumps;
     ++s_uiNumASTDumps;
 
-    out_sOutputPath.Format(":output/Expression/{}_{}_AST.dgml", xiiArgU(uiCounter, 2, true), sOutputName);
+    out_sOutputPath.SetFormat(":output/Expression/{}_{}_AST.dgml", xiiArgU(uiCounter, 2, true), sOutputName);
   }
 
   void DumpDisassembly(const xiiExpressionByteCode& byteCode, xiiStringView sOutputName, xiiUInt32 uiCounter)
@@ -27,7 +27,7 @@ namespace
     byteCode.Disassemble(sDisassembly);
 
     xiiStringBuilder sFileName;
-    sFileName.Format(":output/Expression/{}_{}_ByteCode.txt", xiiArgU(uiCounter, 2, true), sOutputName);
+    sFileName.SetFormat(":output/Expression/{}_{}_ByteCode.txt", xiiArgU(uiCounter, 2, true), sOutputName);
 
     xiiFileWriter fileWriter;
     if (fileWriter.Open(sFileName).Succeeded())
@@ -254,13 +254,13 @@ namespace
     xiiStringBuilder bValue;
     if constexpr (std::is_same<T, xiiVec3>::value || std::is_same<T, xiiVec3I32>::value)
     {
-      aValue.Format("vec3({}, {}, {})", a.x, a.y, a.z);
-      bValue.Format("vec3({}, {}, {})", b.x, b.y, b.z);
+      aValue.SetFormat("vec3({}, {}, {})", a.x, a.y, a.z);
+      bValue.SetFormat("vec3({}, {}, {})", b.x, b.y, b.z);
     }
     else
     {
-      aValue.Format("{}", a);
-      bValue.Format("{}", b);
+      aValue.SetFormat("{}", a);
+      bValue.SetFormat("{}", b);
     }
 
     xiiInt32 oneConstantInstructions = 3; // LoadX, OpX_RC, StoreX
@@ -294,11 +294,11 @@ namespace
     xiiStringBuilder      code;
     xiiExpressionByteCode byteCode;
 
-    code.Format(formatString, sOp, aInput, bInput);
+    code.SetFormat(formatString, sOp, aInput, bInput);
     Compile<U>(code, byteCode, bDumpASTs ? "BinaryNoConstants" : "");
     TestRes(Execute<U>(byteCode, aAsU, bAsU), expectedResultAsU, code, aValue, bValue);
 
-    code.Format(formatString, sOp, aValue, bInput);
+    code.SetFormat(formatString, sOp, aValue, bInput);
     Compile<U>(code, byteCode, bDumpASTs ? "BinaryLeftConstant" : "");
     if constexpr ((flags & NoInstructionsCountCheck) == 0)
     {
@@ -319,7 +319,7 @@ namespace
     }
     TestRes(Execute<U>(byteCode, aAsU, bAsU), expectedResultAsU, code, aValue, bValue);
 
-    code.Format(formatString, sOp, aInput, bValue);
+    code.SetFormat(formatString, sOp, aInput, bValue);
     Compile<U>(code, byteCode, bDumpASTs ? "BinaryRightConstant" : "");
     if constexpr ((flags & NoInstructionsCountCheck) == 0)
     {
@@ -332,7 +332,7 @@ namespace
     }
     TestRes(Execute<U>(byteCode, aAsU, bAsU), expectedResultAsU, code, aValue, bValue);
 
-    code.Format(formatString, sOp, aValue, bValue);
+    code.SetFormat(formatString, sOp, aValue, bValue);
     Compile<U>(code, byteCode, bDumpASTs ? "BinaryConstant" : "");
     if (hasDifferentOutputElements == false)
     {
@@ -721,7 +721,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     for (xiiInt32 i = 0; i <= 16; ++i)
     {
       xiiStringBuilder testCode;
-      testCode.Format("output = pow(a, {})", i);
+      testCode.SetFormat("output = pow(a, {})", i);
 
       xiiExpressionByteCode testByteCode;
       Compile<xiiInt32>(testCode, testByteCode);

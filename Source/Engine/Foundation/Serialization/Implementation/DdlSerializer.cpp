@@ -255,7 +255,7 @@ void xiiAbstractGraphDdlSerializer::WriteDocument(xiiStreamWriter& ref_stream, c
     writer.SetIndentation(-1);
 
   xiiStringBuilder sHeaderVersion;
-  sHeaderVersion.Format("HeaderV{0}", (xiiInt32)XII_DOCUMENT_VERSION);
+  sHeaderVersion.SetFormat("HeaderV{0}", (xiiInt32)XII_DOCUMENT_VERSION);
   WriteGraph(writer, pHeader, sHeaderVersion);
   WriteGraph(writer, pGraph, "Objects");
   WriteGraph(writer, pTypes, "Types");
@@ -290,7 +290,7 @@ xiiResult xiiAbstractGraphDdlSerializer::ReadDocument(xiiStreamReader& ref_strea
   {
     // Move header into its own graph.
     xiiStringBuilder sHeaderVersion;
-    sHeaderVersion.Format("HeaderV{0}", iVersion);
+    sHeaderVersion.SetFormat("HeaderV{0}", iVersion);
     pHB                           = GetOrCreateBlock(blocks, sHeaderVersion);
     xiiAbstractObjectGraph& graph = *pOB->m_Graph.Borrow();
     if (auto* pHeaderNode = graph.GetNodeByName("Header"))

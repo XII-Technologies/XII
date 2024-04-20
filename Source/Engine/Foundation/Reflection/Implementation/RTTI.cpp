@@ -462,7 +462,7 @@ void xiiRTTI::SanityCheckType(xiiRTTI* pType)
     if (!IsValidIdentifierName(pProp->GetPropertyName()))
     {
       xiiStringBuilder s;
-      s.Format("RTTI: {0}\n", pProp->GetPropertyName());
+      s.SetFormat("RTTI: {0}\n", pProp->GetPropertyName());
 
       xiiLog::Print(s.GetData());
     }

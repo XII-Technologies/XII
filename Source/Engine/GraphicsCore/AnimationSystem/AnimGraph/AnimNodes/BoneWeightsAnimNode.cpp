@@ -111,7 +111,7 @@ void xiiBoneWeightsAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGrap
     const auto pOzzSkeleton = &pSkeleton->GetDescriptor().m_Skeleton.GetOzzSkeleton();
 
     xiiStringBuilder name;
-    name.Format("{}", pSkeleton->GetResourceIDHash());
+    name.SetFormat("{}", pSkeleton->GetResourceIDHash());
 
     for (const auto& rootBone : m_RootBones)
     {

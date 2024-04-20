@@ -39,8 +39,7 @@ void xiiInputManager::RegisterInputSlot(xiiStringView sInputSlot, xiiStringView 
       if ((it.Value().m_SlotFlags != xiiInputSlotFlags::Default) && (SlotFlags != xiiInputSlotFlags::Default))
       {
         xiiStringBuilder tmp;
-        tmp.Printf("Different devices register Input Slot '%s' with different Slot Flags: %16b vs. %16b", sInputSlot,
-                   it.Value().m_SlotFlags.GetValue(), SlotFlags.GetValue());
+        tmp.SetPrintf("Different devices register Input Slot '%s' with different Slot Flags: %16b vs. %16b", sInputSlot, it.Value().m_SlotFlags.GetValue(), SlotFlags.GetValue());
         xiiLog::Warning(tmp);
       }
 

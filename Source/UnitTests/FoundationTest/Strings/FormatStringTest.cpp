@@ -246,10 +246,10 @@ XII_CREATE_SIMPLE_TEST(Strings, FormatString)
 
     xiiStringBuilder fmt;
 
-    fmt.Format("Password: {}", xiiArgSensitive("hunter2", "pwd"));
+    fmt.SetFormat("Password: {}", xiiArgSensitive("hunter2", "pwd"));
     XII_TEST_STRING(fmt, "Password: sud:pwd#96d66ce6($7)");
 
-    fmt.Format("Password: {}", xiiArgSensitive("hunter2"));
+    fmt.SetFormat("Password: {}", xiiArgSensitive("hunter2"));
     XII_TEST_STRING(fmt, "Password: sud:#96d66ce6($7)");
   }
 }

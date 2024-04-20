@@ -70,7 +70,7 @@ xiiString xiiCppProject::GetPluginSourceDir(const xiiCppSettings& cfg, xiiString
 xiiString xiiCppProject::GetBuildDir(const xiiCppSettings& cfg)
 {
   xiiStringBuilder sBuildDir;
-  sBuildDir.Format("{}/Build/{}", GetTargetSourceDir(), GetGeneratorFolderName(cfg));
+  sBuildDir.SetFormat("{}/Build/{}", GetTargetSourceDir(), GetGeneratorFolderName(cfg));
   return sBuildDir;
 }
 
@@ -269,10 +269,10 @@ xiiResult xiiCppProject::RunCMake(const xiiCppSettings& cfg)
   args << "-S";
   args << xiiCppProject::GetTargetSourceDir().GetData();
 
-  tmp.Format("-DXII_SDK_DIR:PATH={}", sSdkDir);
+  tmp.SetFormat("-DXII_SDK_DIR:PATH={}", sSdkDir);
   args << tmp.GetData();
 
-  tmp.Format("-DXII_BUILDTYPE_ONLY:STRING={}", BUILDSYSTEM_BUILDTYPE);
+  tmp.SetFormat("-DXII_BUILDTYPE_ONLY:STRING={}", BUILDSYSTEM_BUILDTYPE);
   args << tmp.GetData();
 
   args << "-G";

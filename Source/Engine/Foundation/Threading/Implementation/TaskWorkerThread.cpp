@@ -9,7 +9,7 @@ thread_local xiiTaskWorkerInfo tl_TaskWorkerInfo;
 static const char* GenerateThreadName(xiiWorkerThreadType::Enum threadType, xiiUInt32 uiThreadNumber)
 {
   static xiiStringBuilder sTemp;
-  sTemp.Format("{} {}", xiiWorkerThreadType::GetThreadTypeName(threadType), uiThreadNumber);
+  sTemp.SetFormat("{} {}", xiiWorkerThreadType::GetThreadTypeName(threadType), uiThreadNumber);
   return sTemp.GetData();
 }
 

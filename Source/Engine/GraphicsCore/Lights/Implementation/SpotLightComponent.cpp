@@ -149,7 +149,7 @@ void xiiSpotLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
   if (cvar_RenderingLightingVisScreenSpaceSize)
   {
     xiiStringBuilder sb;
-    sb.Format("{0}", fScreenSpaceSize);
+    sb.SetFormat("{0}", fScreenSpaceSize);
     xiiDebugRenderer::Draw3DText(msg.m_pView->GetHandle(), sb, t.m_vPosition, xiiColor::Olive);
     xiiDebugRenderer::DrawLineSphere(msg.m_pView->GetHandle(), bs, xiiColor::Olive);
   }

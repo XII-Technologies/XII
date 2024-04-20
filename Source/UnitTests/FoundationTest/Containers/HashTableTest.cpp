@@ -497,10 +497,10 @@ XII_CREATE_SIMPLE_TEST(Containers, HashTable)
 
     for (xiiUInt32 i = 0; i < 1000; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       map1[tmp] = i;
 
-      tmp.Format("{0}{0}{0}", i);
+      tmp.SetFormat("{0}{0}{0}", i);
       map2[tmp] = i;
     }
 
@@ -508,11 +508,11 @@ XII_CREATE_SIMPLE_TEST(Containers, HashTable)
 
     for (xiiUInt32 i = 0; i < 1000; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       XII_TEST_BOOL(map2.Contains(tmp));
       XII_TEST_INT(map2[tmp], i);
 
-      tmp.Format("{0}{0}{0}", i);
+      tmp.SetFormat("{0}{0}{0}", i);
       XII_TEST_BOOL(map1.Contains(tmp));
       XII_TEST_INT(map1[tmp], i);
     }
@@ -526,7 +526,7 @@ XII_CREATE_SIMPLE_TEST(Containers, HashTable)
 
     for (xiiUInt32 i = 0; i < 1000; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       map[tmp] = i;
     }
 
@@ -574,13 +574,13 @@ XII_CREATE_SIMPLE_TEST(Containers, HashTable)
 
     for (xiiUInt32 i = 0; i < 1000; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       map[tmp] = i;
     }
 
     for (xiiInt32 i = map.GetCount() - 1; i > 0; --i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
 
       auto it  = map.Find(tmp);
       auto cit = static_cast<const xiiHashTable<xiiString, xiiInt32>&>(map).Find(tmp);

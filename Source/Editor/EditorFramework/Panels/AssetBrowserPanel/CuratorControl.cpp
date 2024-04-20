@@ -72,7 +72,7 @@ void xiiQtCuratorControl::paintEvent(QPaintEvent* e)
   }
 
   xiiStringBuilder s;
-  s.Format("[Un: {0}, Imp: {4}, Tr: {1}, Th: {2}, Err: {3}]", sections[xiiAssetInfo::TransformState::Unknown],
+  s.SetFormat("[Un: {0}, Imp: {4}, Tr: {1}, Th: {2}, Err: {3}]", sections[xiiAssetInfo::TransformState::Unknown],
            sections[xiiAssetInfo::TransformState::NeedsTransform], sections[xiiAssetInfo::TransformState::NeedsThumbnail],
            sections[xiiAssetInfo::TransformState::MissingTransformDependency] + sections[xiiAssetInfo::TransformState::MissingThumbnailDependency] +
              sections[xiiAssetInfo::TransformState::TransformError] + sections[xiiAssetInfo::TransformState::CircularDependency],
@@ -135,7 +135,7 @@ void xiiQtCuratorControl::SlotUpdateTransformStats()
 
   if (uiNumAssets > 0)
   {
-    s.Format("Unknown: {0}\nImport Needed: {1}\nTransform Needed: {2}\nThumbnail Needed: {3}\nMissing Dependency: {4}\nMissing Reference: {5}\nCircular Dependency: {6}\nFailed Transform: {7}",
+    s.SetFormat("Unknown: {0}\nImport Needed: {1}\nTransform Needed: {2}\nThumbnail Needed: {3}\nMissing Dependency: {4}\nMissing Reference: {5}\nCircular Dependency: {6}\nFailed Transform: {7}",
              sections[xiiAssetInfo::TransformState::Unknown],
              sections[xiiAssetInfo::TransformState::NeedsImport],
              sections[xiiAssetInfo::TransformState::NeedsTransform],

@@ -186,7 +186,7 @@ void xiiCVar::SaveCVars()
   while (it.IsValid())
   {
     // Create the plugin specific file.
-    sTemp.Format("{0}/CVars_{1}.cfg", s_sStorageFolder, it.Key());
+    sTemp.SetFormat("{0}/CVars_{1}.cfg", s_sStorageFolder, it.Key());
 
     SaveCVarsToFileInternal(sTemp, it.Value());
 
@@ -211,31 +211,31 @@ void xiiCVar::SaveCVarsToFileInternal(xiiStringView path, const xiiDynamicArray<
         case xiiCVarType::Int:
         {
           xiiCVarInt* pInt = (xiiCVarInt*)pCVar;
-          sTemp.Format("{0} = {1}\n", pCVar->GetName(), pInt->GetValue(xiiCVarValue::Restart));
+          sTemp.SetFormat("{0} = {1}\n", pCVar->GetName(), pInt->GetValue(xiiCVarValue::Restart));
         }
         break;
         case xiiCVarType::Bool:
         {
           xiiCVarBool* pBool = (xiiCVarBool*)pCVar;
-          sTemp.Format("{0} = {1}\n", pCVar->GetName(), pBool->GetValue(xiiCVarValue::Restart) ? "true" : "false");
+          sTemp.SetFormat("{0} = {1}\n", pCVar->GetName(), pBool->GetValue(xiiCVarValue::Restart) ? "true" : "false");
         }
         break;
         case xiiCVarType::Float:
         {
           xiiCVarFloat* pFloat = (xiiCVarFloat*)pCVar;
-          sTemp.Format("{0} = {1}\n", pCVar->GetName(), pFloat->GetValue(xiiCVarValue::Restart));
+          sTemp.SetFormat("{0} = {1}\n", pCVar->GetName(), pFloat->GetValue(xiiCVarValue::Restart));
         }
         break;
         case xiiCVarType::Double:
         {
           xiiCVarDouble* pDouble = (xiiCVarDouble*)pCVar;
-          sTemp.Format("{0} = {1}\n", pCVar->GetName(), pDouble->GetValue(xiiCVarValue::Restart));
+          sTemp.SetFormat("{0} = {1}\n", pCVar->GetName(), pDouble->GetValue(xiiCVarValue::Restart));
         }
         break;
         case xiiCVarType::String:
         {
           xiiCVarString* pString = (xiiCVarString*)pCVar;
-          sTemp.Format("{0} = \"{1}\"\n", pCVar->GetName(), pString->GetValue(xiiCVarValue::Restart));
+          sTemp.SetFormat("{0} = \"{1}\"\n", pCVar->GetName(), pString->GetValue(xiiCVarValue::Restart));
         }
         break;
         default:
@@ -337,7 +337,7 @@ void xiiCVar::LoadCVarsFromFile(bool bOnlyNewOnes, bool bSetAsCurrentValue, xiiD
     while (it.IsValid())
     {
       // Create the plugin specific file.
-      sTemp.Format("{0}/CVars_{1}.cfg", s_sStorageFolder, it.Key());
+      sTemp.SetFormat("{0}/CVars_{1}.cfg", s_sStorageFolder, it.Key());
 
       LoadCVarsFromFileInternal(sTemp.GetView(), it.Value(), bOnlyNewOnes, bSetAsCurrentValue, pOutCVars);
 

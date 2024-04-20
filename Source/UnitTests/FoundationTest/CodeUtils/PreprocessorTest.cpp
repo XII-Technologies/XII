@@ -228,9 +228,9 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Preprocessor)
         pp.SetPassThroughUnknownCmdsCB([](xiiStringView s) -> bool { return s.IsEqual("version"); }); // TestSettings[i].m_bPassThroughUnknownCommands);
 
         {
-          fileName.Format("Preprocessor/{0}.txt", TestSettings[i].m_szFileName);
-          fileNameExp.Format("Preprocessor/{0} - Expected.txt", TestSettings[i].m_szFileName);
-          fileNameOut.Format(":output/Preprocessor/{0} - Result.txt", TestSettings[i].m_szFileName);
+          fileName.SetFormat("Preprocessor/{0}.txt", TestSettings[i].m_szFileName);
+          fileNameExp.SetFormat("Preprocessor/{0} - Expected.txt", TestSettings[i].m_szFileName);
+          fileNameOut.SetFormat(":output/Preprocessor/{0} - Result.txt", TestSettings[i].m_szFileName);
 
           XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileName), "File does not exist: '%s'", fileName.GetData());
 

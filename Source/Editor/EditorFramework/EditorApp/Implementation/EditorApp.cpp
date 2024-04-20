@@ -168,7 +168,7 @@ bool xiiQtEditorApp::IsProgressBarProcessingEvents() const
 void xiiQtEditorApp::OnDemandDynamicStringEnumLoad(xiiStringView sEnumName, xiiDynamicStringEnum& e)
 {
   xiiStringBuilder sFile;
-  sFile.Format(":project/Editor/{}.txt", sEnumName);
+  sFile.SetFormat(":project/Editor/{}.txt", sEnumName);
 
   // enums loaded this way are user editable
   e.SetStorageFile(sFile);
@@ -381,7 +381,7 @@ xiiStatus xiiQtEditorApp::MakeRemoteProjectLocal(xiiStringBuilder& inout_sFilePa
 
     xiiLog::Success("Cloned remote project '{}' from '{}' to '{}'", sName, sUrl, sTargetDir);
 
-    inout_sFilePath.Format("{}/{}/{}", sTargetDir, sName, sProjectFile);
+    inout_sFilePath.SetFormat("{}/{}/{}", sTargetDir, sName, sProjectFile);
 
     // write redirection file
     {

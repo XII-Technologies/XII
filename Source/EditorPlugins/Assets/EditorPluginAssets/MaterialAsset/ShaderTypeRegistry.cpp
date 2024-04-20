@@ -56,7 +56,7 @@ namespace
     }
 
     xiiStringBuilder sTemp;
-    sTemp.Format("Shaders/PermutationVars/{0}.xiiPermVar", def.m_sName);
+    sTemp.SetFormat("Shaders/PermutationVars/{0}.xiiPermVar", def.m_sName);
 
     xiiString sPath = sTemp;
     xiiQtEditorApp::GetSingleton()->MakeDataDirectoryRelativePathAbsolute(sPath);
@@ -94,14 +94,14 @@ namespace
         xiiArrayPtr<xiiPropertyAttribute* const> noAttributes;
 
         xiiStringBuilder sEnumName;
-        sEnumName.Format("{0}::Default", def.m_sName);
+        sEnumName.SetFormat("{0}::Default", def.m_sName);
 
         descEnum.m_Properties.PushBack(xiiReflectedPropertyDescriptor(sEnumName, defaultValue.Get<xiiUInt32>(), noAttributes));
 
         for (const auto& ev : enumDefinition.m_Values)
         {
           xiiStringBuilder sEnumName;
-          sEnumName.Format("{0}::{1}", def.m_sName, ev.m_sValueName);
+          sEnumName.SetFormat("{0}::{1}", def.m_sName, ev.m_sValueName);
 
           descEnum.m_Properties.PushBack(xiiReflectedPropertyDescriptor(sEnumName, ev.m_iValueValue, noAttributes));
         }
@@ -133,14 +133,14 @@ namespace
     xiiArrayPtr<xiiPropertyAttribute* const> noAttributes;
 
     xiiStringBuilder sEnumName;
-    sEnumName.Format("{0}::Default", def.m_sName);
+    sEnumName.SetFormat("{0}::Default", def.m_sName);
 
     descEnum.m_Properties.PushBack(xiiReflectedPropertyDescriptor(sEnumName, def.m_uiDefaultValue, noAttributes));
 
     for (const auto& ev : def.m_Values)
     {
       xiiStringBuilder sEnumName;
-      sEnumName.Format("{0}::{1}", def.m_sName, ev.m_sValueName);
+      sEnumName.SetFormat("{0}::{1}", def.m_sName, ev.m_sValueName);
 
       descEnum.m_Properties.PushBack(xiiReflectedPropertyDescriptor(sEnumName, ev.m_iValueValue, noAttributes));
     }

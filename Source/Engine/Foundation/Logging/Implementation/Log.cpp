@@ -306,13 +306,13 @@ void xiiLog::GenerateFormattedTimestamp(TimestampMode mode, xiiStringBuilder& re
   switch (mode)
   {
     case TimestampMode::Numeric:
-      ref_sTimestampOut.Format("[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::ShowDate | xiiArgDateTime::ShowMilliseconds | xiiArgDateTime::ShowTimeZone));
+      ref_sTimestampOut.SetFormat("[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::ShowDate | xiiArgDateTime::ShowMilliseconds | xiiArgDateTime::ShowTimeZone));
       break;
     case TimestampMode::TimeOnly:
-      ref_sTimestampOut.Format("[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::ShowMilliseconds));
+      ref_sTimestampOut.SetFormat("[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::ShowMilliseconds));
       break;
     case TimestampMode::Textual:
-      ref_sTimestampOut.Format("[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::TextualDate | xiiArgDateTime::ShowMilliseconds | xiiArgDateTime::ShowTimeZone));
+      ref_sTimestampOut.SetFormat("[{}] ", xiiArgDateTime(dateTime, xiiArgDateTime::TextualDate | xiiArgDateTime::ShowMilliseconds | xiiArgDateTime::ShowTimeZone));
       break;
     default:
       XII_ASSERT_DEV(false, "Unknown timestamp mode.");

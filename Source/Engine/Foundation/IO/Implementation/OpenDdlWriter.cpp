@@ -496,12 +496,12 @@ void xiiOpenDdlWriter::WriteInt8(const xiiInt8* pValues, xiiUInt32 uiCount /*= 1
 
   WritePrimitiveType(State::PrimitivesInt8);
 
-  m_sTemp.Format("{0}", pValues[0]);
+  m_sTemp.SetFormat("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
   for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
-    m_sTemp.Format(",{0}", pValues[i]);
+    m_sTemp.SetFormat(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
@@ -513,12 +513,12 @@ void xiiOpenDdlWriter::WriteInt16(const xiiInt16* pValues, xiiUInt32 uiCount /*=
 
   WritePrimitiveType(State::PrimitivesInt16);
 
-  m_sTemp.Format("{0}", pValues[0]);
+  m_sTemp.SetFormat("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
   for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
-    m_sTemp.Format(",{0}", pValues[i]);
+    m_sTemp.SetFormat(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
@@ -530,12 +530,12 @@ void xiiOpenDdlWriter::WriteInt32(const xiiInt32* pValues, xiiUInt32 uiCount /*=
 
   WritePrimitiveType(State::PrimitivesInt32);
 
-  m_sTemp.Format("{0}", pValues[0]);
+  m_sTemp.SetFormat("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
   for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
-    m_sTemp.Format(",{0}", pValues[i]);
+    m_sTemp.SetFormat(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
@@ -547,12 +547,12 @@ void xiiOpenDdlWriter::WriteInt64(const xiiInt64* pValues, xiiUInt32 uiCount /*=
 
   WritePrimitiveType(State::PrimitivesInt64);
 
-  m_sTemp.Format("{0}", pValues[0]);
+  m_sTemp.SetFormat("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
   for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
-    m_sTemp.Format(",{0}", pValues[i]);
+    m_sTemp.SetFormat(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
@@ -565,12 +565,12 @@ void xiiOpenDdlWriter::WriteUInt8(const xiiUInt8* pValues, xiiUInt32 uiCount /*=
 
   WritePrimitiveType(State::PrimitivesUInt8);
 
-  m_sTemp.Format("{0}", pValues[0]);
+  m_sTemp.SetFormat("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
   for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
-    m_sTemp.Format(",{0}", pValues[i]);
+    m_sTemp.SetFormat(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
@@ -582,12 +582,12 @@ void xiiOpenDdlWriter::WriteUInt16(const xiiUInt16* pValues, xiiUInt32 uiCount /
 
   WritePrimitiveType(State::PrimitivesUInt16);
 
-  m_sTemp.Format("{0}", pValues[0]);
+  m_sTemp.SetFormat("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
   for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
-    m_sTemp.Format(",{0}", pValues[i]);
+    m_sTemp.SetFormat(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
@@ -599,12 +599,12 @@ void xiiOpenDdlWriter::WriteUInt32(const xiiUInt32* pValues, xiiUInt32 uiCount /
 
   WritePrimitiveType(State::PrimitivesUInt32);
 
-  m_sTemp.Format("{0}", pValues[0]);
+  m_sTemp.SetFormat("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
   for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
-    m_sTemp.Format(",{0}", pValues[i]);
+    m_sTemp.SetFormat(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
@@ -616,12 +616,12 @@ void xiiOpenDdlWriter::WriteUInt64(const xiiUInt64* pValues, xiiUInt32 uiCount /
 
   WritePrimitiveType(State::PrimitivesUInt64);
 
-  m_sTemp.Format("{0}", pValues[0]);
+  m_sTemp.SetFormat("{0}", pValues[0]);
   OutputString(m_sTemp.GetData());
 
   for (xiiUInt32 i = 1; i < uiCount; ++i)
   {
-    m_sTemp.Format(",{0}", pValues[i]);
+    m_sTemp.SetFormat(",{0}", pValues[i]);
     OutputString(m_sTemp.GetData());
   }
 }
@@ -635,12 +635,12 @@ void xiiOpenDdlWriter::WriteFloat(const float* pValues, xiiUInt32 uiCount /*= 1*
 
   if (m_FloatPrecisionMode == FloatPrecisionMode::Readable)
   {
-    m_sTemp.Format("{0}", pValues[0]);
+    m_sTemp.SetFormat("{0}", pValues[0]);
     OutputString(m_sTemp.GetData());
 
     for (xiiUInt32 i = 1; i < uiCount; ++i)
     {
-      m_sTemp.Format(",{0}", pValues[i]);
+      m_sTemp.SetFormat(",{0}", pValues[i]);
       OutputString(m_sTemp.GetData());
     }
   }
@@ -682,12 +682,12 @@ void xiiOpenDdlWriter::WriteDouble(const double* pValues, xiiUInt32 uiCount /*= 
 
   if (m_FloatPrecisionMode == FloatPrecisionMode::Readable)
   {
-    m_sTemp.Format("{0}", pValues[0]);
+    m_sTemp.SetFormat("{0}", pValues[0]);
     OutputString(m_sTemp.GetData());
 
     for (xiiUInt32 i = 1; i < uiCount; ++i)
     {
-      m_sTemp.Format(",{0}", pValues[i]);
+      m_sTemp.SetFormat(",{0}", pValues[i]);
       OutputString(m_sTemp.GetData());
     }
   }

@@ -199,19 +199,19 @@ public:
   void Prepend(xiiStringView sData1, xiiStringView sData2 = {}, xiiStringView sData3 = {}, xiiStringView sData4 = {}, xiiStringView sData5 = {}, xiiStringView sData6 = {}); // [tested]
 
   /// \brief Sets this string to the formatted string, uses printf-style formatting.
-  void Printf(const char* szUtf8Format, ...); // [tested]
+  void SetPrintf(const char* szUtf8Format, ...); // [tested]
 
   /// \brief Sets this string to the formatted string, uses printf-style formatting.
-  void PrintfArgs(const char* szUtf8Format, va_list szArgs); // [tested]
+  void SetPrintfArgs(const char* szUtf8Format, va_list szArgs); // [tested]
 
   /// \brief Replaces this with a formatted string. Uses '{}' formatting placeholders, see xiiFormatString for details.
-  void Format(const xiiFormatString& string);
+  void SetFormat(const xiiFormatString& string);
 
   /// \brief Replaces this with a formatted string. Uses '{}' formatting placeholders, see xiiFormatString for details.
   template <typename... ARGS>
-  void Format(const char* szFormat, ARGS&&... args)
+  void SetFormat(const char* szFormat, ARGS&&... args)
   {
-    Format(xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
+    SetFormat(xiiFormatStringImpl<ARGS...>(szFormat, std::forward<ARGS>(args)...));
   }
 
   /// \brief Appends a formatted string. Uses '{}' formatting placeholders, see xiiFormatString for details.

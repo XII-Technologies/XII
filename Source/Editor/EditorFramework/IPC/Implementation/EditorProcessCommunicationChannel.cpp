@@ -21,7 +21,7 @@ xiiResult xiiEditorProcessCommunicationChannel::StartClientProcess(const char* s
   xiiTime time                  = xiiTime::Now();
   uiUniqueHash                  = xiiHashingUtils::xxHash64(&time, sizeof(time), uiUniqueHash);
   xiiStringBuilder sMemName;
-  sMemName.Format("{0}", xiiArgU(uiUniqueHash, 16, false, 16, true));
+  sMemName.SetFormat("{0}", xiiArgU(uiUniqueHash, 16, false, 16, true));
   ++uiUniqueHash;
 
   if (bRemote)

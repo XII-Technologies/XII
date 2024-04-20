@@ -331,7 +331,7 @@ void xiiCameraComponent::ShowStats(xiiView* pView)
     const xiiStringView sName = GetOwner()->GetName();
 
     xiiStringBuilder sb;
-    sb.Format("Camera '{0}':\nEV100: {1}, Exposure: {2}", sName.IsEmpty() ? pView->GetName() : sName, GetEV100(), GetExposure());
+    sb.SetFormat("Camera '{0}':\nEV100: {1}, Exposure: {2}", sName.IsEmpty() ? pView->GetName() : sName, GetEV100(), GetExposure());
     xiiDebugRenderer::DrawInfoText(pView->GetHandle(), xiiDebugTextPlacement::TopLeft, "CamStats", sb, xiiColor::White);
   }
 
@@ -648,7 +648,7 @@ void xiiCameraComponent::ActivateRenderToTexture()
   XII_ASSERT_DEV(m_hRenderTargetView.IsInvalidated(), "Render target view is already created");
 
   xiiStringBuilder name;
-  name.Format("Camera RT: {0}", GetOwner()->GetName());
+  name.SetFormat("Camera RT: {0}", GetOwner()->GetName());
 
   xiiView* pRenderTargetView = nullptr;
   m_hRenderTargetView        = xiiRenderWorld::CreateView(name, pRenderTargetView);

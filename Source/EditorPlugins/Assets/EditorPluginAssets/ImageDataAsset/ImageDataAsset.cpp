@@ -57,11 +57,11 @@ xiiStatus xiiImageDataAssetDocument::RunTexConv(const char* szTargetFile, const 
     const xiiUInt32 uiHashLow32  = uiHash64 & 0xFFFFFFFF;
     const xiiUInt32 uiHashHigh32 = (uiHash64 >> 32) & 0xFFFFFFFF;
 
-    temp.Format("{0}", xiiArgU(uiHashLow32, 8, true, 16, true));
+    temp.SetFormat("{0}", xiiArgU(uiHashLow32, 8, true, 16, true));
     arguments << "-assetHashLow";
     arguments << temp.GetData();
 
-    temp.Format("{0}", xiiArgU(uiHashHigh32, 8, true, 16, true));
+    temp.SetFormat("{0}", xiiArgU(uiHashHigh32, 8, true, 16, true));
     arguments << "-assetHashHigh";
     arguments << temp.GetData();
   }
