@@ -147,7 +147,7 @@ XII_CREATE_SIMPLE_TEST(ResourceManager, Basics)
     xiiStringBuilder sResourceID;
     for (xiiUInt32 i = 0; i < uiNumResources; ++i)
     {
-      sResourceID.Format("Level0-{}", i);
+      sResourceID.SetFormat("Level0-{}", i);
       hResources.PushBack(xiiResourceManager::LoadResource<TestResource>(sResourceID));
     }
 
@@ -209,7 +209,7 @@ XII_CREATE_SIMPLE_TEST(ResourceManager, NestedLoading)
     xiiStringBuilder sResourceID;
     for (xiiUInt32 i = 0; i < uiNumResources; ++i)
     {
-      sResourceID.Format("NonBlockingLevel1-{}", i);
+      sResourceID.SetFormat("NonBlockingLevel1-{}", i);
       hResources.PushBack(xiiResourceManager::LoadResource<TestResource>(sResourceID));
     }
 
@@ -250,7 +250,7 @@ XII_CREATE_SIMPLE_TEST(ResourceManager, NestedLoading)
     xiiStringBuilder sResourceID;
     for (xiiUInt32 i = 0; i < uiNumResources; ++i)
     {
-      sResourceID.Format("BlockingLevel1-{}", i);
+      sResourceID.SetFormat("BlockingLevel1-{}", i);
       hResources.PushBack(xiiResourceManager::LoadResource<TestResource>(sResourceID));
     }
 

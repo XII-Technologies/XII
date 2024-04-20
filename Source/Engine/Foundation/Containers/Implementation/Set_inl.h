@@ -414,7 +414,7 @@ typename xiiSetBase<KeyType, Comparer>::Node* xiiSetBase<KeyType, Comparer>::Acq
     m_pFreeElementStack = m_pFreeElementStack->m_pParent;
   }
 
-  xiiMemoryUtils::Construct<Node>(pNode, 1);
+  xiiMemoryUtils::Construct<SkipTrivialTypes, Node>(pNode, 1);
 
   pNode->m_pParent  = pParent;
   pNode->m_Key      = std::forward<CompatibleKeyType>(key);

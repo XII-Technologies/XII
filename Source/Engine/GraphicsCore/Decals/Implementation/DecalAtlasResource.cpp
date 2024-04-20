@@ -181,7 +181,7 @@ void xiiDecalAtlasResource::CreateLayerTexture(const xiiImage& img, bool bSRGB, 
   xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::HighQuality, td.m_SamplerDesc);
 
   xiiStringBuilder sTexId;
-  sTexId.Format("{0}_Tex{1}", GetResourceID(), s_uiDecalAtlasResources);
+  sTexId.SetFormat("{0}_Tex{1}", GetResourceID(), s_uiDecalAtlasResources);
   ++s_uiDecalAtlasResources;
 
   out_hTexture = xiiResourceManager::CreateResource<xiiTexture2DResource>(sTexId, std::move(td));

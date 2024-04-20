@@ -292,7 +292,7 @@ const xiiString xiiToolsProject::GetProjectName(bool bSanitize) const
   if (!bAnyAscii)
   {
     const xiiUInt32 uiHash = xiiHashingUtils::xxHash32String(sTemp);
-    sTemp.Format("Project{}", uiHash);
+    sTemp.SetFormat("Project{}", uiHash);
   }
 
   if (sTemp.IsEmpty())

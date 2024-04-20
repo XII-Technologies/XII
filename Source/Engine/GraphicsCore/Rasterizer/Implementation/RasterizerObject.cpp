@@ -99,7 +99,7 @@ xiiSharedPtr<const xiiRasterizerObject> xiiRasterizerObject::CreateBox(const xii
   XII_LOCK(s_Mutex);
 
   xiiStringBuilder sName;
-  sName.Format("Box-{}-{}-{}", vFullExtents.x, vFullExtents.y, vFullExtents.z);
+  sName.SetFormat("Box-{}-{}-{}", vFullExtents.x, vFullExtents.y, vFullExtents.z);
 
   xiiSharedPtr<xiiRasterizerObject>& pObj = s_Objects[sName];
 

@@ -652,7 +652,7 @@ void xiiOpenDdlParser::ReadString()
         default:
         {
           xiiStringBuilder s;
-          s.Format("Unknown escape-sequence '\\{0}'", xiiArgC(m_uiCurByte));
+          s.SetFormat("Unknown escape-sequence '\\{0}'", xiiArgC(m_uiCurByte));
           ParsingError(s, false);
         }
         break;
@@ -866,7 +866,7 @@ void xiiOpenDdlParser::ContinueBool()
       if (xiiConversionUtils::StringToBool((const char*)&m_TempString[0], bRes) == XII_FAILURE)
       {
         xiiStringBuilder s;
-        s.Format("Parsing value: Expected 'true' or 'false', Got '{0}' instead.", (const char*)&m_TempString[0]);
+        s.SetFormat("Parsing value: Expected 'true' or 'false', Got '{0}' instead.", (const char*)&m_TempString[0]);
         ParsingError(s.GetData(), false);
       }
 
@@ -1107,7 +1107,7 @@ void xiiOpenDdlParser::ContinueFloat()
     if (xiiConversionUtils::StringToFloat((const char*)&m_TempString[0], dValue) == XII_FAILURE)
     {
       xiiStringBuilder s;
-      s.Format("Reading number failed: Could not convert '{0}' to a floating point value.", (const char*)&m_TempString[0]);
+      s.SetFormat("Reading number failed: Could not convert '{0}' to a floating point value.", (const char*)&m_TempString[0]);
       ParsingError(s.GetData(), true);
     }
 

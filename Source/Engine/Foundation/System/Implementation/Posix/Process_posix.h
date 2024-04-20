@@ -77,8 +77,8 @@ public:
     if (addFlags & O_CLOEXEC)
     {
       xiiInt32 flags = fcntl(m_fd, F_GETFD);
-      flags |= addFlags;
-      if (fcntl(m_fd, F_SETFD, FD_CLOEXEC) != 0)
+      flags |= FD_CLOEXEC;
+      if (fcntl(m_fd, F_SETFD, flags) != 0)
       {
         xiiLog::Error("Failed to set flags on {}: {}", m_fd, errno);
         return XII_FAILURE;
@@ -90,7 +90,7 @@ public:
     {
       xiiInt32 flags = fcntl(m_fd, F_GETFL);
       flags |= addFlags;
-      if (fcntl(m_fd, F_SETFL, addFlags) != 0)
+      if (fcntl(m_fd, F_SETFD, flags) != 0)
       {
         xiiLog::Error("Failed to set flags on {}: {}", m_fd, errno);
         return XII_FAILURE;

@@ -246,7 +246,7 @@ void xiiBeamComponent::CreateMeshes()
   // Create the beam mesh name, it expresses the beam in local space with it's width
   // this way multiple beams in a corridor can share the same mesh for example.
   xiiStringBuilder meshName;
-  meshName.Format("xiiBeamComponent_{0}_{1}_{2}_{3}.createdAtRuntime.xiiMesh", m_fWidth, xiiArgF(targetPositionInOwnerSpace.x, 2), xiiArgF(targetPositionInOwnerSpace.y, 2), xiiArgF(targetPositionInOwnerSpace.z, 2));
+  meshName.SetFormat("xiiBeamComponent_{0}_{1}_{2}_{3}.createdAtRuntime.xiiMesh", m_fWidth, xiiArgF(targetPositionInOwnerSpace.x, 2), xiiArgF(targetPositionInOwnerSpace.y, 2), xiiArgF(targetPositionInOwnerSpace.z, 2));
 
   m_hMesh = xiiResourceManager::GetExistingResource<xiiMeshResource>(meshName);
 

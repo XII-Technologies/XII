@@ -337,10 +337,10 @@ void xiiVisibleObjectsExtractor::Extract(const xiiView& view, const xiiDynamicAr
 
     xiiDebugRenderer::DrawInfoText(hView, xiiDebugTextPlacement::TopLeft, "ExtractionStats", "Extraction Stats:");
 
-    sb.Format("Num Cached Render Data: {0}", m_uiNumCachedRenderData);
+    sb.SetFormat("Num Cached Render Data: {0}", m_uiNumCachedRenderData);
     xiiDebugRenderer::DrawInfoText(hView, xiiDebugTextPlacement::TopLeft, "ExtractionStats", sb);
 
-    sb.Format("Num Uncached Render Data: {0}", m_uiNumUncachedRenderData);
+    sb.SetFormat("Num Uncached Render Data: {0}", m_uiNumUncachedRenderData);
     xiiDebugRenderer::DrawInfoText(hView, xiiDebugTextPlacement::TopLeft, "ExtractionStats", sb);
   }
 #endif

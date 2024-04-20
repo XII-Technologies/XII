@@ -601,10 +601,10 @@ XII_CREATE_SIMPLE_TEST(Containers, Map)
 
     for (xiiUInt32 i = 0; i < 1000; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       map1[tmp] = i;
 
-      tmp.Format("{0}{0}{0}", i);
+      tmp.SetFormat("{0}{0}{0}", i);
       map2[tmp] = i;
     }
 
@@ -612,11 +612,11 @@ XII_CREATE_SIMPLE_TEST(Containers, Map)
 
     for (xiiUInt32 i = 0; i < 1000; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       XII_TEST_BOOL(map2.Contains(tmp));
       XII_TEST_INT(map2[tmp], i);
 
-      tmp.Format("{0}{0}{0}", i);
+      tmp.SetFormat("{0}{0}{0}", i);
       XII_TEST_BOOL(map1.Contains(tmp));
       XII_TEST_INT(map1[tmp], i);
     }
@@ -637,10 +637,10 @@ XII_CREATE_SIMPLE_TEST(Containers, Map)
 
     for (xiiUInt32 i = 0; i < 1000; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       map1->Insert(tmp, i);
 
-      tmp.Format("{0}{0}{0}", i);
+      tmp.SetFormat("{0}{0}{0}", i);
       map2->Insert(tmp, i);
     }
 
@@ -649,11 +649,11 @@ XII_CREATE_SIMPLE_TEST(Containers, Map)
     // test swapped elements
     for (xiiUInt32 i = 0; i < 1000; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       XII_TEST_BOOL(map2->Contains(tmp));
       XII_TEST_INT((*map2)[tmp], i);
 
-      tmp.Format("{0}{0}{0}", i);
+      tmp.SetFormat("{0}{0}{0}", i);
       XII_TEST_BOOL(map1->Contains(tmp));
       XII_TEST_INT((*map1)[tmp], i);
     }
@@ -694,7 +694,7 @@ XII_CREATE_SIMPLE_TEST(Containers, Map)
 
     for (xiiUInt32 i = 0; i < 100; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       map1->Insert(tmp, i);
     }
 
@@ -707,7 +707,7 @@ XII_CREATE_SIMPLE_TEST(Containers, Map)
     // test swapped elements
     for (xiiUInt32 i = 0; i < 100; ++i)
     {
-      tmp.Format("stuff{}bla", i);
+      tmp.SetFormat("stuff{}bla", i);
       XII_TEST_BOOL(map2->Contains(tmp));
     }
 

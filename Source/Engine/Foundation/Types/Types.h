@@ -42,6 +42,7 @@ XII_CHECK_AT_COMPILETIME(sizeof(long long int) == 8);
 #endif
 
 XII_CHECK_AT_COMPILETIME(sizeof(void*) == XII_ALIGNMENT_MINIMUM);
+XII_CHECK_AT_COMPILETIME(alignof(void*) == XII_ALIGNMENT_MINIMUM);
 
 /// \brief Enum values for success and failure. To be used by functions as return values mostly, instead of bool.
 enum xiiResultEnum

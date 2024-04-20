@@ -1639,14 +1639,14 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
     xiiImageConversion::Convert(imgDiffRgba, imgDiffRgb, xiiImageFormat::R8G8B8_UNORM).IgnoreResult();
 
     xiiStringBuilder sImgDiffName;
-    sImgDiffName.Format(":imgout/Images_Diff/{0}.png", sImgName);
+    sImgDiffName.SetFormat(":imgout/Images_Diff/{0}.png", sImgName);
     imgDiffRgb.SaveTo(sImgDiffName).IgnoreResult();
 
     xiiImage imgDiffAlpha;
     xiiImageUtils::ExtractAlphaChannel(imgDiffRgba, imgDiffAlpha);
 
     xiiStringBuilder sImgDiffAlphaName;
-    sImgDiffAlphaName.Format(":imgout/Images_Diff/{0}_alpha.png", sImgName);
+    sImgDiffAlphaName.SetFormat(":imgout/Images_Diff/{0}_alpha.png", sImgName);
     imgDiffAlpha.SaveTo(sImgDiffAlphaName).IgnoreResult();
 
     xiiImage imgExpRgb;
@@ -1660,7 +1660,7 @@ bool xiiTestFramework::PerformImageComparison(xiiStringBuilder sImgName, const x
     xiiImageUtils::ExtractAlphaChannel(imgRgba, imgAlpha);
 
     xiiStringBuilder sDiffHtmlPath;
-    sDiffHtmlPath.Format(":imgout/Html_Diff/{0}.html", sImgName);
+    sDiffHtmlPath.SetFormat(":imgout/Html_Diff/{0}.html", sImgName);
     WriteImageDiffHtml(sDiffHtmlPath, imgExpRgb, imgExpAlpha, imgRgb, imgAlpha, imgDiffRgb, imgDiffAlpha, uiMeanError, uiMaxError, uiMinDiffRgb, uiMaxDiffRgb, uiMinDiffAlpha, uiMaxDiffAlpha);
 
     safeprintf(szErrorMsg, s_iMaxErrorMessageLength, "Error: Image Comparison Failed: MSE of %u exceeds threshold of %u for image '%s'.", uiMeanError, uiMaxError, sImgName.GetData());
@@ -1742,18 +1742,18 @@ xiiResult xiiTestFramework::CaptureRegressionStat(xiiStringView sTestName, xiiSt
   xiiStringBuilder perTestName;
   if (iTestId < 0)
   {
-    perTestName.Format("{}_{}", strippedTestName, sName);
+    perTestName.SetFormat("{}_{}", strippedTestName, sName);
   }
   else
   {
-    perTestName.Format("{}_{}_{}", strippedTestName, sName, iTestId);
+    perTestName.SetFormat("{}_{}_{}", strippedTestName, sName, iTestId);
   }
 
   {
     xiiStringBuilder regression;
     // The 6 floating point digits are forced as per a requirement of the CI
     // feature that parses these values.
-    regression.Format("[test][REGRESSION:{}:{}:{}]", perTestName, sUnit, xiiArgF(value, 6));
+    regression.SetFormat("[test][REGRESSION:{}:{}:{}]", perTestName, sUnit, xiiArgF(value, 6));
     xiiLog::Info(regression);
   }
 

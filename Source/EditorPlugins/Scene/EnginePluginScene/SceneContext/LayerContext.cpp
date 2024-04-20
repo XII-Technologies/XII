@@ -80,7 +80,7 @@ void xiiLayerContext::OnInitialize()
 
   xiiUInt32        uiLayerID = m_pParentSceneContext->RegisterLayer(this);
   xiiStringBuilder sVisibilityTag;
-  sVisibilityTag.Format("Layer_{}", uiLayerID);
+  sVisibilityTag.SetFormat("Layer_{}", uiLayerID);
   m_LayerTag = xiiTagRegistry::GetGlobalRegistry().RegisterTag(sVisibilityTag);
 
   xiiShadowPool::AddExcludeTagToWhiteList(m_LayerTag);

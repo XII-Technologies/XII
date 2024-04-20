@@ -305,7 +305,7 @@ xiiCommandLineOptionInt::xiiCommandLineOptionInt(xiiStringView sSortingGroup, xi
 
 void xiiCommandLineOptionInt::GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const
 {
-  ref_sOut.Format("{}", m_iDefaultValue);
+  ref_sOut.SetFormat("{}", m_iDefaultValue);
 }
 
 
@@ -317,7 +317,7 @@ void xiiCommandLineOptionInt::GetParamShortDesc(xiiStringBuilder& ref_sOut) cons
   }
   else
   {
-    ref_sOut.Format("<int> [{} .. {}]", m_iMinValue, m_iMaxValue);
+    ref_sOut.SetFormat("<int> [{} .. {}]", m_iMinValue, m_iMaxValue);
   }
 }
 
@@ -345,7 +345,7 @@ xiiInt32 xiiCommandLineOptionInt::GetOptionValue(LogMode logMode, const xiiComma
 
   if (ShouldLog(logMode, bSpecified))
   {
-    tmp.Format("{}", result);
+    tmp.SetFormat("{}", result);
     LogOption(sOption, tmp, bSpecified);
   }
 
@@ -368,7 +368,7 @@ xiiCommandLineOptionFloat::xiiCommandLineOptionFloat(xiiStringView sSortingGroup
 
 void xiiCommandLineOptionFloat::GetParamDefaultValueDesc(xiiStringBuilder& ref_sOut) const
 {
-  ref_sOut.Format("{}", m_fDefaultValue);
+  ref_sOut.SetFormat("{}", m_fDefaultValue);
 }
 
 void xiiCommandLineOptionFloat::GetParamShortDesc(xiiStringBuilder& ref_sOut) const
@@ -379,7 +379,7 @@ void xiiCommandLineOptionFloat::GetParamShortDesc(xiiStringBuilder& ref_sOut) co
   }
   else
   {
-    ref_sOut.Format("<float> [{} .. {}]", m_fMinValue, m_fMaxValue);
+    ref_sOut.SetFormat("<float> [{} .. {}]", m_fMinValue, m_fMaxValue);
   }
 }
 
@@ -407,7 +407,7 @@ float xiiCommandLineOptionFloat::GetOptionValue(LogMode logMode, const xiiComman
 
   if (ShouldLog(logMode, bSpecified))
   {
-    tmp.Format("{}", result);
+    tmp.SetFormat("{}", result);
     LogOption(sOption, tmp, bSpecified);
   }
 

@@ -42,11 +42,11 @@ xiiStatus xiiTextureCubeAssetDocument::RunTexConv(const char* szTargetFile, cons
     const xiiUInt32 uiHashLow32  = uiHash64 & 0xFFFFFFFF;
     const xiiUInt32 uiHashHigh32 = (uiHash64 >> 32) & 0xFFFFFFFF;
 
-    temp.Format("{0}", xiiArgU(uiHashLow32, 8, true, 16, true));
+    temp.SetFormat("{0}", xiiArgU(uiHashLow32, 8, true, 16, true));
     arguments << "-assetHashLow";
     arguments << temp.GetData();
 
-    temp.Format("{0}", xiiArgU(uiHashHigh32, 8, true, 16, true));
+    temp.SetFormat("{0}", xiiArgU(uiHashHigh32, 8, true, 16, true));
     arguments << "-assetHashHigh";
     arguments << temp.GetData();
   }
@@ -72,7 +72,7 @@ xiiStatus xiiTextureCubeAssetDocument::RunTexConv(const char* szTargetFile, cons
   if (pProp->m_TextureUsage == xiiTexConvUsage::Hdr)
   {
     arguments << "-hdrExposure";
-    temp.Format("{0}", xiiArgF(pProp->m_fHdrExposureBias, 2));
+    temp.SetFormat("{0}", xiiArgF(pProp->m_fHdrExposureBias, 2));
     arguments << temp.GetData();
   }
 
@@ -145,7 +145,7 @@ xiiStatus xiiTextureCubeAssetDocument::RunTexConv(const char* szTargetFile, cons
     if (xiiStringUtils::IsNullOrEmpty(pProp->GetInputFile(i)))
       break;
 
-    temp.Format("-in{0}", i);
+    temp.SetFormat("-in{0}", i);
     arguments << temp.GetData();
     arguments << QString(pProp->GetAbsoluteInputFilePath(i).GetData());
   }

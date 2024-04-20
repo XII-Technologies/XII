@@ -143,7 +143,7 @@ void xiiStringBuilder::Prepend(xiiStringView sData1, xiiStringView sData2, xiiSt
   }
 }
 
-void xiiStringBuilder::PrintfArgs(const char* szUtf8Format, va_list szArgs0)
+void xiiStringBuilder::SetPrintfArgs(const char* szUtf8Format, va_list szArgs0)
 {
   va_list args;
   va_copy(args, szArgs0);
@@ -1112,7 +1112,7 @@ bool xiiStringBuilder::TrimWordEnd(xiiStringView sWord)
   return trimmed;
 }
 
-void xiiStringBuilder::Format(const xiiFormatString& string)
+void xiiStringBuilder::SetFormat(const xiiFormatString& string)
 {
   Clear();
   xiiStringView sText = string.GetText(*this);
@@ -1137,12 +1137,12 @@ void xiiStringBuilder::PrependFormat(const xiiFormatString& string)
   Prepend(string.GetText(tmp));
 }
 
-void xiiStringBuilder::Printf(const char* szUtf8Format, ...)
+void xiiStringBuilder::SetPrintf(const char* szUtf8Format, ...)
 {
   va_list args;
   va_start(args, szUtf8Format);
 
-  PrintfArgs(szUtf8Format, args);
+  SetPrintfArgs(szUtf8Format, args);
 
   va_end(args);
 }

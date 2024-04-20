@@ -73,7 +73,7 @@ namespace
 
         for (const auto& ev : enumValues)
         {
-          sTemp.Format("{1} {2}", sName, ev.m_sValueName, ev.m_iValueValue);
+          sTemp.SetFormat("{1} {2}", sName, ev.m_sValueName, ev.m_iValueValue);
           out_defines.PushBack(sTemp);
         }
 

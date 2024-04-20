@@ -46,12 +46,12 @@ XII_CREATE_SIMPLE_TEST(Math, Rational)
     xiiRational r1(50, 25);
 
     xiiStringBuilder sb;
-    sb.Format("Rational: {}", r1);
+    sb.SetFormat("Rational: {}", r1);
     XII_TEST_STRING(sb, "Rational: 2");
 
 
     xiiRational r2(233, 76);
-    sb.Format("Rational: {}", r2);
+    sb.SetFormat("Rational: {}", r2);
     XII_TEST_STRING(sb, "Rational: 233/76");
   }
 }

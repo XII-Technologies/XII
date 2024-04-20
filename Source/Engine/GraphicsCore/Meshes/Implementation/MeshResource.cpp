@@ -98,7 +98,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshResource, xiiMeshResourceDescriptor)
   {
     s_uiMeshBufferNameSuffix++;
     xiiStringBuilder sMbName;
-    sMbName.Format("{0}  [MeshBuffer {1}]", GetResourceID(), xiiArgU(s_uiMeshBufferNameSuffix, 4, true, 16, true));
+    sMbName.SetFormat("{0}  [MeshBuffer {1}]", GetResourceID(), xiiArgU(s_uiMeshBufferNameSuffix, 4, true, 16, true));
 
     // note: this gets move'd, might be invalid afterwards
     xiiMeshBufferResourceDescriptor& mb = descriptor.MeshBufferDesc();

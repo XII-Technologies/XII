@@ -12,7 +12,7 @@ void xiiCommandInterpreter::FindPossibleCVars(xiiStringView sVariable, xiiDeque<
   {
     if (pCVar->GetName().StartsWith_NoCase(sVariable))
     {
-      sText.Format("    {0} = {1}", pCVar->GetName(), xiiQuakeConsole::GetFullInfoAsString(pCVar));
+      sText.SetFormat("    {0} = {1}", pCVar->GetName(), xiiQuakeConsole::GetFullInfoAsString(pCVar));
 
       xiiConsoleString cs;
       cs.m_sText = sText;
@@ -35,7 +35,7 @@ void xiiCommandInterpreter::FindPossibleFunctions(xiiStringView sVariable, xiiDe
   {
     if (pFunc->GetName().StartsWith_NoCase(sVariable))
     {
-      sText.Format("    {0} {1}", pFunc->GetName(), pFunc->GetDescription());
+      sText.SetFormat("    {0} {1}", pFunc->GetName(), pFunc->GetDescription());
 
       xiiConsoleString cs;
       cs.m_sText = sText;
@@ -59,7 +59,7 @@ const xiiString xiiQuakeConsole::GetValueAsString(xiiCVar* pCVar)
     case xiiCVarType::Int:
     {
       xiiCVarInt* pInt = static_cast<xiiCVarInt*>(pCVar);
-      s.Format("{0}", pInt->GetValue());
+      s.SetFormat("{0}", pInt->GetValue());
     }
     break;
 
@@ -76,21 +76,21 @@ const xiiString xiiQuakeConsole::GetValueAsString(xiiCVar* pCVar)
     case xiiCVarType::String:
     {
       xiiCVarString* pString = static_cast<xiiCVarString*>(pCVar);
-      s.Format("\"{0}\"", pString->GetValue());
+      s.SetFormat("\"{0}\"", pString->GetValue());
     }
     break;
 
     case xiiCVarType::Float:
     {
       xiiCVarFloat* pFloat = static_cast<xiiCVarFloat*>(pCVar);
-      s.Format("{0}", xiiArgF(pFloat->GetValue(), 4));
+      s.SetFormat("{0}", xiiArgF(pFloat->GetValue(), 4));
     }
     break;
 
     case xiiCVarType::Double:
     {
       xiiCVarDouble* pFloat = static_cast<xiiCVarDouble*>(pCVar);
-      s.Format("{0}", xiiArgF(pFloat->GetValue(), 8));
+      s.SetFormat("{0}", xiiArgF(pFloat->GetValue(), 8));
     }
     break;
 

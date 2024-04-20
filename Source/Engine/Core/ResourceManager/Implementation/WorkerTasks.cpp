@@ -75,7 +75,7 @@ void xiiResourceManagerWorkerDataLoad::Execute()
   if (pUpdateContentTask == nullptr)
   {
     xiiStringBuilder s;
-    s.Format("Resource Content Updater {0}", xiiResourceManager::s_pState->m_WorkerTasksUpdateContent.GetCount());
+    s.SetFormat("Resource Content Updater {0}", xiiResourceManager::s_pState->m_WorkerTasksUpdateContent.GetCount());
 
     auto& td   = xiiResourceManager::s_pState->m_WorkerTasksUpdateContent.ExpandAndGetRef();
     td.m_pTask = XII_DEFAULT_NEW(xiiResourceManagerWorkerUpdateContent);

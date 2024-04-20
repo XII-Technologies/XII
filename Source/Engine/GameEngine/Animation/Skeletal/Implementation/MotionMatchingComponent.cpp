@@ -192,7 +192,7 @@
 //    const xiiVec3 vTargetDir = GetInputDirection() / GetOwner()->GetGlobalScaling().x;
 //
 //    xiiStringBuilder tmp;
-//    tmp.Format("Gamepad: {0} / {1}", xiiArgF(vTargetDir.x, 1), xiiArgF(vTargetDir.y, 1));
+//    tmp.SetFormat("Gamepad: {0} / {1}", xiiArgF(vTargetDir.x, 1), xiiArgF(vTargetDir.y, 1));
 //    xiiDebugRenderer::DrawInfoText(GetWorld(), tmp, xiiVec2I32(10, 10), xiiColor::White);
 //
 //    m_fKeyframeLerp += fKeyframeFraction;

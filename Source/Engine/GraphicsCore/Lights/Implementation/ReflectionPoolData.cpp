@@ -123,7 +123,7 @@ void xiiReflectionPool::Data::UpdateProbeData(ProbeData& ref_probeData, const xi
     xiiConversionUtils::ToString(ref_probeData.m_desc.m_uniqueID, sComponentGuid);
 
     // this is where the editor will put the file for this probe
-    sCubeMapFile.Format(":project/AssetCache/Generated/{0}.xiiTexture", sComponentGuid);
+    sCubeMapFile.SetFormat(":project/AssetCache/Generated/{0}.xiiTexture", sComponentGuid);
 
     ref_probeData.m_hCubeMap = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sCubeMapFile);
   }
@@ -161,7 +161,7 @@ bool xiiReflectionPool::Data::UpdateSkyLightData(ProbeData& ref_probeData, const
         xiiConversionUtils::ToString(ref_probeData.m_desc.m_uniqueID, sComponentGuid);
 
         // this is where the editor will put the file for this probe
-        sCubeMapFile.Format(":project/AssetCache/Generated/{0}.xiiTexture", sComponentGuid);
+        sCubeMapFile.SetFormat(":project/AssetCache/Generated/{0}.xiiTexture", sComponentGuid);
 
         ref_probeData.m_hCubeMap = xiiResourceManager::LoadResource<xiiTextureCubeResource>(sCubeMapFile);
       }
@@ -381,7 +381,7 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
         desc.m_Parameters[uiMipLevel].m_Value             = iMipLevel;
         desc.m_Parameters[uiReflectionProbeIndex].m_Value = iReflectionProbeIndex;
         xiiStringBuilder sMaterialName;
-        sMaterialName.Format("ReflectionProbeVisualization - MipLevel {}, Index {}", iMipLevel, iReflectionProbeIndex);
+        sMaterialName.SetFormat("ReflectionProbeVisualization - MipLevel {}, Index {}", iMipLevel, iReflectionProbeIndex);
 
         xiiMaterialResourceDescriptor desc2                                   = desc;
         m_hDebugMaterial[iReflectionProbeIndex * uiMipLevelCount + iMipLevel] = xiiResourceManager::GetOrCreateResource<xiiMaterialResource>(sMaterialName, std::move(desc2));

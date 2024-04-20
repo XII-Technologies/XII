@@ -54,7 +54,7 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
 
     XII_ASSERT_DEV(!m_hCubemapProxies[i].IsInvalidated(), "");
 
-    sName.Format("Reflection Cubemap View {}", i);
+    sName.SetFormat("Reflection Cubemap View {}", i);
     pDevice->GetTextureView(m_hCubemapProxies[i])->SetDebugName(sName);
   }
 #endif
@@ -308,7 +308,7 @@ void xiiReflectionProbeUpdater::CreateViews(xiiDynamicArray<ReflectionView>& vie
     {
       auto& renderView = views.ExpandAndGetRef();
 
-      sName.Format("Reflection Probe {} {}", szNameSuffix, i);
+      sName.SetFormat("Reflection Probe {} {}", szNameSuffix, i);
 
       xiiView* pView     = nullptr;
       renderView.m_hView = xiiRenderWorld::CreateView(sName, pView);

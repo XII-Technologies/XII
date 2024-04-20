@@ -192,7 +192,7 @@ xiiResult xiiQtEditorApp::CreateOrOpenProject(bool bCreate, xiiStringView sFile0
   if (res.m_Result.Failed())
   {
     xiiStringBuilder s;
-    s.Format("Failed to open project:\n'{0}'", sProjectFile);
+    s.SetFormat("Failed to open project:\n'{0}'", sProjectFile);
 
     xiiQtUiServices::MessageBoxStatus(res, s);
     return XII_FAILURE;

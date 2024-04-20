@@ -1054,19 +1054,19 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 
     xiiDebugRenderer::DrawInfoText(hView, xiiDebugTextPlacement::TopLeft, "VisCulling", "Visibility Culling Stats", xiiColor::LimeGreen);
 
-    sb.Format("Total Num Objects: {0}", stats.m_uiTotalNumObjects);
+    sb.SetFormat("Total Num Objects: {0}", stats.m_uiTotalNumObjects);
     xiiDebugRenderer::DrawInfoText(hView, xiiDebugTextPlacement::TopLeft, "VisCulling", sb, xiiColor::LimeGreen);
 
-    sb.Format("Num Objects Tested: {0}", stats.m_uiNumObjectsTested);
+    sb.SetFormat("Num Objects Tested: {0}", stats.m_uiNumObjectsTested);
     xiiDebugRenderer::DrawInfoText(hView, xiiDebugTextPlacement::TopLeft, "VisCulling", sb, xiiColor::LimeGreen);
 
-    sb.Format("Num Objects Passed: {0}", stats.m_uiNumObjectsPassed);
+    sb.SetFormat("Num Objects Passed: {0}", stats.m_uiNumObjectsPassed);
     xiiDebugRenderer::DrawInfoText(hView, xiiDebugTextPlacement::TopLeft, "VisCulling", sb, xiiColor::LimeGreen);
 
     // Exponential moving average for better readability.
     m_AverageCullingTime = xiiMath::Lerp(m_AverageCullingTime, stats.m_TimeTaken, 0.05f);
 
-    sb.Format("Time Taken: {0}ms", m_AverageCullingTime.GetMilliseconds());
+    sb.SetFormat("Time Taken: {0}ms", m_AverageCullingTime.GetMilliseconds());
     xiiDebugRenderer::DrawInfoText(hView, xiiDebugTextPlacement::TopLeft, "VisCulling", sb, xiiColor::LimeGreen);
 
     view.GetWorld()->GetSpatialSystem()->GetInternalStats(sb);
@@ -1295,7 +1295,7 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
   for (xiiUInt32 p = 0; p < m_Passes.GetCount(); ++p)
   {
     const auto& pPass = m_Passes[p];
-    sTmp.Format("#{}: {}", p, pPass->GetName().IsEmpty() ? pPass->GetDynamicRTTI()->GetTypeName() : pPass->GetName());
+    sTmp.SetFormat("#{}: {}", p, pPass->GetName().IsEmpty() ? pPass->GetDynamicRTTI()->GetTypeName() : pPass->GetName());
 
     xiiDGMLGraph::NodeDesc nd;
     nd.m_Color            = xiiColor::Gray;
@@ -1317,9 +1317,9 @@ void xiiRenderPipeline::CreateDgmlGraph(xiiDGMLGraph& ref_graph)
       xiiStringBuilder sFormat;
       if (!xiiReflectionUtils::EnumerationToString(xiiGetStaticRTTI<xiiGALTextureFormat>(), pCon->m_Desc.m_Format, sFormat, xiiReflectionUtils::EnumConversionMode::ValueNameOnly))
       {
-        sFormat.Format("Unknown Format {}", (int)pCon->m_Desc.m_Format);
+        sFormat.SetFormat("Unknown Format {}", (int)pCon->m_Desc.m_Format);
       }
-      sTmp.Format("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_iTargetTextureIndex != -1 ? "RenderTarget" : "PoolTexture", i, pCon->m_Desc.m_Size.width, pCon->m_Desc.m_Size.height, pCon->m_Desc.m_uiArraySizeOrDepth, pCon->m_Desc.m_uiSampleCount, xiiGALTextureFormat::IsDepthFormat(pCon->m_Desc.m_Format) ? "Depth" : "Color", sFormat);
+      sTmp.SetFormat("{} #{}: {}x{}:{}, MSAA:{}, {}Format: {}", data.m_iTargetTextureIndex != -1 ? "RenderTarget" : "PoolTexture", i, pCon->m_Desc.m_Size.width, pCon->m_Desc.m_Size.height, pCon->m_Desc.m_uiArraySizeOrDepth, pCon->m_Desc.m_uiSampleCount, xiiGALTextureFormat::IsDepthFormat(pCon->m_Desc.m_Format) ? "Depth" : "Color", sFormat);
       xiiUInt32 uiTextureNode = ref_graph.AddNode(sTmp, &nd);
 
       xiiUInt32 uiOutputNode = *nodeMap.GetValue(pCon->m_pOutput->m_pParent);
@@ -1476,7 +1476,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
     name.Increment();
 
     xiiStringBuilder sName;
-    sName.Format("RasterizerPreview-{}", name);
+    sName.SetFormat("RasterizerPreview-{}", name);
 
     xiiTexture2DResourceHandle hDebug = xiiResourceManager::CreateResource<xiiTexture2DResource>(sName, std::move(d));
 

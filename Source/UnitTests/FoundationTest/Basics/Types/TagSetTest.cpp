@@ -116,7 +116,7 @@ XII_CREATE_SIMPLE_TEST(Basics, TagSet)
     for (xiiUInt32 i = 0; i < 250; ++i)
     {
       xiiStringBuilder TagName;
-      TagName.Format("TEST_TAG{0}", i);
+      TagName.SetFormat("TEST_TAG{0}", i);
 
       RegisteredTags[i] = TempTestRegistry.RegisterTag(TagName.GetData());
 
@@ -210,7 +210,7 @@ XII_CREATE_SIMPLE_TEST(Basics, TagSet)
     for (xiiUInt32 i = 0; i < 250; ++i)
     {
       xiiStringBuilder TagName;
-      TagName.Format("TEST_TAG{0}", i);
+      TagName.SetFormat("TEST_TAG{0}", i);
 
       RegisteredTags[i] = TempTestRegistry.RegisterTag(TagName.GetData());
 

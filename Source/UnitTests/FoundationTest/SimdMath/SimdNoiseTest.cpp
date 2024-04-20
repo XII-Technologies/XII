@@ -58,12 +58,12 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdNoise)
       }
 
       xiiStringBuilder sOutFile;
-      sOutFile.Format(":output/SimdNoise/result-perlin_{}.tga", uiNumOctaves);
+      sOutFile.SetFormat(":output/SimdNoise/result-perlin_{}.tga", uiNumOctaves);
 
       XII_TEST_BOOL(image.SaveTo(sOutFile).Succeeded());
 
       xiiStringBuilder sInFile;
-      sInFile.Format("SimdNoise/perlin_{}.tga", uiNumOctaves);
+      sInFile.SetFormat("SimdNoise/perlin_{}.tga", uiNumOctaves);
       XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(sInFile), "Noise image file is missing: '%s'", sInFile.GetData());
 
       XII_TEST_FILES(sOutFile, sInFile, "");
@@ -102,7 +102,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdNoise)
       xiiStringBuilder sLine;
       for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(histogram); ++i)
       {
-        sLine.Format("{},\n", histogram[i]);
+        sLine.SetFormat("{},\n", histogram[i]);
         fileWriter.WriteBytes(sLine.GetData(), sLine.GetElementCount()).IgnoreResult();
       }
     }

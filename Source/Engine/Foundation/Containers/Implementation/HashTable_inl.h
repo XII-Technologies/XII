@@ -553,7 +553,7 @@ V& xiiHashTableBase<K, V, H>::FindOrAdd(const K& key, bool* out_pExisted)
 
     // new entry
     xiiMemoryUtils::CopyConstruct(&m_pEntries[uiIndex].key, key, 1);
-    xiiMemoryUtils::DefaultConstruct(&m_pEntries[uiIndex].value, 1);
+    xiiMemoryUtils::Construct<ConstructAll>(&m_pEntries[uiIndex].value, 1);
     MarkEntryAsValid(uiIndex);
     ++m_uiCount;
   }

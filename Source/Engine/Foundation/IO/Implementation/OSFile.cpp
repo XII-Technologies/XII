@@ -293,7 +293,7 @@ void xiiOSFile::FindFreeFilename(xiiStringBuilder& inout_sPath, xiiStringView sS
 
   for (xiiUInt32 i = 1; i < 100000; ++i)
   {
-    sNewName.Format("{}{}{}", sName, sSuffix, i);
+    sNewName.SetFormat("{}{}{}", sName, sSuffix, i);
 
     inout_sPath.ChangeFileName(sNewName);
 

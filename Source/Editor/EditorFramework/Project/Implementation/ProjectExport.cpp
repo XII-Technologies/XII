@@ -188,7 +188,7 @@ xiiResult xiiProjectExport::CreateExportFilterFile(const char* szExpectedFile, c
 xiiResult xiiProjectExport::ReadExportFilters(xiiPathPatternFilter& out_DataFilter, xiiPathPatternFilter& out_BinariesFilter, const xiiPlatformProfile* pPlatformProfile)
 {
   xiiStringBuilder sDefine;
-  sDefine.Format("PLATFORM_PROFILE_{} 1", pPlatformProfile->GetConfigName());
+  sDefine.SetFormat("PLATFORM_PROFILE_{} 1", pPlatformProfile->GetConfigName());
   sDefine.ToUpper();
 
   xiiHybridArray<xiiString, 1> ppDefines;
@@ -305,7 +305,7 @@ xiiResult xiiProjectExport::ScanDataDirectories(DirectoryMapping& mapping, const
     }
     else
     {
-      sDstPath.Format("Data/Extra{}", uiDataDirNumber);
+      sDstPath.SetFormat("Data/Extra{}", uiDataDirNumber);
       ++uiDataDirNumber;
 
       ddInfo.m_sTargetDirPath = sDstPath;
@@ -363,10 +363,10 @@ xiiResult xiiProjectExport::CreateLaunchConfig(const xiiDynamicArray<xiiString>&
   for (const auto& sf : sceneFiles)
   {
     xiiStringBuilder cmd;
-    cmd.Format("start Bin/Player.exe -project \"Data/project\" -scene \"{}\"", sf);
+    cmd.SetFormat("start Bin/Player.exe -project \"Data/project\" -scene \"{}\"", sf);
 
     xiiStringBuilder bat;
-    bat.Format("{}/Launch {}.bat", szTargetDirectory, xiiPathUtils::GetFileName(sf));
+    bat.SetFormat("{}/Launch {}.bat", szTargetDirectory, xiiPathUtils::GetFileName(sf));
 
     xiiOSFile file;
     if (file.Open(bat, xiiFileOpenMode::Write).Failed())

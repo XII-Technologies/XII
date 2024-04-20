@@ -665,7 +665,7 @@ void xiiDocumentNodeManager::GetDynamicPinNames(const xiiDocumentObject* pObject
       xiiUInt32 uiCount = value.ConvertTo<xiiUInt32>();
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        sTemp.Format("{}[{}]", sPinName, i);
+        sTemp.SetFormat("{}[{}]", sPinName, i);
         out_Names.PushBack(sTemp);
       }
     }
@@ -682,7 +682,7 @@ void xiiDocumentNodeManager::GetDynamicPinNames(const xiiDocumentObject* pObject
     {
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        sTemp.Format("{}", a[i]);
+        sTemp.SetFormat("{}", a[i]);
         out_Names.PushBack(sTemp);
       }
     }
@@ -697,7 +697,7 @@ void xiiDocumentNodeManager::GetDynamicPinNames(const xiiDocumentObject* pObject
     {
       for (xiiUInt32 i = 0; i < uiCount; ++i)
       {
-        sTemp.Format("{}[{}]", sPinName, i);
+        sTemp.SetFormat("{}[{}]", sPinName, i);
         out_Names.PushBack(sTemp);
       }
     }

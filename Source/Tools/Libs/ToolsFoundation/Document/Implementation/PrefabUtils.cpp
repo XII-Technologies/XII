@@ -18,7 +18,7 @@ xiiString ToBinary(const xiiUuid& guid)
 
   for (xiiUInt32 i = 0; i < sizeof(xiiUuid); ++i)
   {
-    s.Format("{0}", xiiArgU((xiiUInt32)*pBytes, 2, true, 16, true));
+    s.SetFormat("{0}", xiiArgU((xiiUInt32)*pBytes, 2, true, 16, true));
     ++pBytes;
 
     sResult.Append(s.GetData());

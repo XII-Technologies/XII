@@ -110,9 +110,9 @@ private:
 
       XII_TEST_BOOL(m_Image.Convert(xiiImageFormat::R32G32B32A32_FLOAT).Succeeded());
 
-      float posInf = +xiiMath::Infinity<float>();
-      float negInf = -xiiMath::Infinity<float>();
-      float NaN    = xiiMath::NaN<float>();
+      const float posInf = +xiiMath::Infinity<float>();
+      const float negInf = -xiiMath::Infinity<float>();
+      const float NaN    = xiiMath::NaN<float>();
 
       for (xiiUInt32 y = 0; y < m_Image.GetHeight(); ++y)
       {

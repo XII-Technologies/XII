@@ -25,56 +25,56 @@ void xiiLogWriter::VisualStudio::LogMessageHandler(const xiiLoggingEventData& ev
   switch (eventData.m_EventType)
   {
     case xiiLogMsgType::BeginGroup:
-      s.Format("+++++ {} ({}) +++++\n", eventData.m_sText, eventData.m_sTag);
+      s.SetFormat("+++++ {} ({}) +++++\n", eventData.m_sText, eventData.m_sTag);
       OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::EndGroup:
 #  if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-      s.Format("----- {} ({} sec) -----\n\n", eventData.m_sText, eventData.m_fSeconds);
+      s.SetFormat("----- {} ({} sec) -----\n\n", eventData.m_sText, eventData.m_fSeconds);
 #  else
-      s.Format("----- {} (timing info not available) -----\n\n", eventData.m_sText);
+      s.SetFormat("----- {} (timing info not available) -----\n\n", eventData.m_sText);
 #  endif
       OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::ErrorMsg:
-      s.Format("Error: {}\n", eventData.m_sText);
+      s.SetFormat("Error: {}\n", eventData.m_sText);
       OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::SeriousWarningMsg:
-      s.Format("Seriously: {}\n", eventData.m_sText);
+      s.SetFormat("Seriously: {}\n", eventData.m_sText);
       OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::WarningMsg:
-      s.Format("Warning: {}\n", eventData.m_sText);
+      s.SetFormat("Warning: {}\n", eventData.m_sText);
       OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::SuccessMsg:
-      s.Format("{}\n", eventData.m_sText);
+      s.SetFormat("{}\n", eventData.m_sText);
       OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::InfoMsg:
-      s.Format("{}\n", eventData.m_sText);
+      s.SetFormat("{}\n", eventData.m_sText);
       OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::DevMsg:
-      s.Format("{}\n", eventData.m_sText);
+      s.SetFormat("{}\n", eventData.m_sText);
       OutputDebugStringW(xiiStringWChar(s));
       break;
 
     case xiiLogMsgType::DebugMsg:
-      s.Format("{}\n", eventData.m_sText);
+      s.SetFormat("{}\n", eventData.m_sText);
       OutputDebugStringW(xiiStringWChar(s));
       break;
 
     default:
-      s.Format("{}\n", eventData.m_sText);
+      s.SetFormat("{}\n", eventData.m_sText);
       OutputDebugStringW(xiiStringWChar(s));
 
       xiiLog::Warning("Unknown Message Type {0}", eventData.m_EventType);

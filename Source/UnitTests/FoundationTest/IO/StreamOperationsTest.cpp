@@ -366,7 +366,7 @@ XII_CREATE_SIMPLE_TEST(IO, StreamOperation)
 
       xiiTime          t = sw.GetRunningTotal();
       xiiStringBuilder s;
-      s.Format("Write {} byte array: {}", xiiArgFileSize(uiCount), t);
+      s.SetFormat("Write {} byte array: {}", xiiArgFileSize(uiCount), t);
       xiiTestFramework::Output(xiiTestOutput::Details, s);
     }
 
@@ -377,7 +377,7 @@ XII_CREATE_SIMPLE_TEST(IO, StreamOperation)
 
       xiiTime          t = sw.GetRunningTotal();
       xiiStringBuilder s;
-      s.Format("Read {} byte array: {}", xiiArgFileSize(uiCount), t);
+      s.SetFormat("Read {} byte array: {}", xiiArgFileSize(uiCount), t);
       xiiTestFramework::Output(xiiTestOutput::Details, s);
     }
 
@@ -411,7 +411,7 @@ XII_CREATE_SIMPLE_TEST(IO, StreamOperation)
 
       xiiTime          t = sw.GetRunningTotal();
       xiiStringBuilder s;
-      s.Format("Write {} vec3 array: {}", xiiArgFileSize(uiCount * sizeof(xiiVec3)), t);
+      s.SetFormat("Write {} vec3 array: {}", xiiArgFileSize(uiCount * sizeof(xiiVec3)), t);
       xiiTestFramework::Output(xiiTestOutput::Details, s);
     }
 
@@ -422,7 +422,7 @@ XII_CREATE_SIMPLE_TEST(IO, StreamOperation)
 
       xiiTime          t = sw.GetRunningTotal();
       xiiStringBuilder s;
-      s.Format("Read {} vec3 array: {}", xiiArgFileSize(uiCount * sizeof(xiiVec3)), t);
+      s.SetFormat("Read {} vec3 array: {}", xiiArgFileSize(uiCount * sizeof(xiiVec3)), t);
       xiiTestFramework::Output(xiiTestOutput::Details, s);
     }
 

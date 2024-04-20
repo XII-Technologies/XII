@@ -176,7 +176,7 @@ T* xiiBlockStorage<T, BlockSize, StorageType>::Create()
     ++m_uiCount;
   }
 
-  xiiMemoryUtils::Construct(pNewObject, 1);
+  xiiMemoryUtils::Construct<SkipTrivialTypes>(pNewObject, 1);
 
   if (StorageType == xiiBlockStorageType::FreeList)
   {

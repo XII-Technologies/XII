@@ -71,8 +71,7 @@ public:
   /// If the matrix is just the projection matrix, the frustum will be in local space. Pass the full ModelViewProjection
   /// matrix to create the frustum in world-space. If the projection matrix contained in ModelViewProjection is an infinite
   /// plane projection matrix, the resulting frustum will yield a far plane with infinite distance.
-  void SetFrustum(const xiiMat4& mModelViewProjection, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default,
-                  xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
+  void SetFrustum(const xiiMat4& mModelViewProjection, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
 
   /// \brief Creates a frustum from the given camera position, direction vectors and the field-of-view along X and Y.
   ///

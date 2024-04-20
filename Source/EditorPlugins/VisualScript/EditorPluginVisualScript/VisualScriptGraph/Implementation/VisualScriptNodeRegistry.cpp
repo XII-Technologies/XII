@@ -1255,7 +1255,7 @@ void xiiVisualScriptNodeRegistry::CreateFunctionCallNodeType(const xiiRTTI* pRtt
     {
       sArgName = pScriptableFunctionAttribute->GetArgumentName(argIdx);
       if (sArgName.IsEmpty())
-        sArgName.Format("Arg{}", argIdx);
+        sArgName.SetFormat("Arg{}", argIdx);
 
       auto       pArgRtti              = pFunction->GetArgumentType(argIdx);
       auto       argType               = pScriptableFunctionAttribute->GetArgumentType(argIdx);
@@ -1401,7 +1401,7 @@ void xiiVisualScriptNodeRegistry::CreateCoroutineNodeType(const xiiRTTI* pRtti)
   {
     sArgName = pScriptableFuncAttribute->GetArgumentName(argIdx);
     if (sArgName.IsEmpty())
-      sArgName.Format("Arg{}", argIdx);
+      sArgName.SetFormat("Arg{}", argIdx);
 
     auto pArgRtti = pStartFunc->GetArgumentType(argIdx);
     auto argType  = pScriptableFuncAttribute->GetArgumentType(argIdx);

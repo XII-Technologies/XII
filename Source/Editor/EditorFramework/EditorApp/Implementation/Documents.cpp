@@ -22,7 +22,7 @@ xiiDocument* xiiQtEditorApp::OpenDocument(xiiStringView sDocument, xiiBitflags<x
   if (xiiDocumentManager::FindDocumentTypeFromPath(sDocument, false, pTypeDesc).Failed())
   {
     xiiStringBuilder sTemp;
-    sTemp.Format("The selected file extension '{0}' is not registered with any known type.\nCannot open file '{1}'", xiiPathUtils::GetFileExtension(sDocument), sDocument);
+    sTemp.SetFormat("The selected file extension '{0}' is not registered with any known type.\nCannot open file '{1}'", xiiPathUtils::GetFileExtension(sDocument), sDocument);
     xiiQtUiServices::MessageBoxWarning(sTemp);
     return nullptr;
   }
@@ -40,7 +40,7 @@ xiiDocument* xiiQtEditorApp::OpenDocument(xiiStringView sDocument, xiiBitflags<x
     if (res.m_Result.Failed())
     {
       xiiStringBuilder s;
-      s.Format("Failed to open document: \n'{0}'", sDocument);
+      s.SetFormat("Failed to open document: \n'{0}'", sDocument);
       xiiQtUiServices::MessageBoxStatus(res, s);
       return nullptr;
     }
@@ -50,10 +50,10 @@ xiiDocument* xiiQtEditorApp::OpenDocument(xiiStringView sDocument, xiiBitflags<x
     if (pDocument->GetUnknownObjectTypeInstances() > 0)
     {
       xiiStringBuilder s;
-      s.Format("The document contained {0} objects of an unknown type. Necessary plugins may be missing.\n\n\
+      s.SetFormat("The document contained {0} objects of an unknown type. Necessary plugins may be missing.\n\n\
 If you save this document, all data for these objects is lost permanently!\n\n\
 The following types are missing:\n",
-               pDocument->GetUnknownObjectTypeInstances());
+                  pDocument->GetUnknownObjectTypeInstances());
 
       for (auto it = pDocument->GetUnknownObjectTypes().GetIterator(); it.IsValid(); ++it)
       {
@@ -85,7 +85,7 @@ xiiDocument* xiiQtEditorApp::CreateDocument(xiiStringView sDocument, xiiBitflags
     if (res.Failed())
     {
       xiiStringBuilder s;
-      s.Format("Failed to create document: \n'{0}'", sDocument);
+      s.SetFormat("Failed to create document: \n'{0}'", sDocument);
       xiiQtUiServices::MessageBoxStatus(res, s);
       return nullptr;
     }
@@ -97,7 +97,7 @@ xiiDocument* xiiQtEditorApp::CreateDocument(xiiStringView sDocument, xiiBitflags
     if (result.m_Result.Failed())
     {
       xiiStringBuilder s;
-      s.Format("Failed to create document: \n'{0}'", sDocument);
+      s.SetFormat("Failed to create document: \n'{0}'", sDocument);
       xiiQtUiServices::MessageBoxStatus(result, s);
       return nullptr;
     }

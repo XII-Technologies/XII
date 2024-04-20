@@ -91,7 +91,7 @@ void xiiJSONParser::StartParsing()
       // Document is malformed
 
       xiiStringBuilder s;
-      s.Format("Start of document: Expected a { or [ or an empty document. Got '{0}' instead.", xiiArgC(m_uiCurByte));
+      s.SetFormat("Start of document: Expected a { or [ or an empty document. Got '{0}' instead.", xiiArgC(m_uiCurByte));
       ParsingError(s.GetData(), true);
 
       return;
@@ -232,7 +232,7 @@ void xiiJSONParser::ContinueObject()
     default:
     {
       xiiStringBuilder s;
-      s.Format("While parsing object: Expected \" to begin a new variable, or } to close the object. Got '{0}' instead.", xiiArgC(m_uiCurByte));
+      s.SetFormat("While parsing object: Expected \" to begin a new variable, or } to close the object. Got '{0}' instead.", xiiArgC(m_uiCurByte));
       ParsingError(s.GetData(), true);
     }
       return;
@@ -280,7 +280,7 @@ void xiiJSONParser::ContinueVariable()
   if (m_uiCurByte != ':')
   {
     xiiStringBuilder s;
-    s.Format("After parsing variable name: Expected : to separate variable and value, Got '{0}' instead.", xiiArgC(m_uiCurByte));
+    s.SetFormat("After parsing variable name: Expected : to separate variable and value, Got '{0}' instead.", xiiArgC(m_uiCurByte));
     ParsingError(s.GetData(), false);
   }
   else
@@ -365,7 +365,7 @@ void xiiJSONParser::ContinueValue()
       if (xiiConversionUtils::StringToBool((const char*)&m_TempString[0], bRes) == XII_FAILURE)
       {
         xiiStringBuilder s;
-        s.Format("Parsing value: Expected 'true' or 'false', Got '{0}' instead.", (const char*)&m_TempString[0]);
+        s.SetFormat("Parsing value: Expected 'true' or 'false', Got '{0}' instead.", (const char*)&m_TempString[0]);
         ParsingError(s.GetData(), false);
       }
 
@@ -391,7 +391,7 @@ void xiiJSONParser::ContinueValue()
       if (!xiiStringUtils::IsEqual((const char*)&m_TempString[0], "null"))
       {
         xiiStringBuilder s;
-        s.Format("Parsing value: Expected 'null', Got '{0}' instead.", (const char*)&m_TempString[0]);
+        s.SetFormat("Parsing value: Expected 'null', Got '{0}' instead.", (const char*)&m_TempString[0]);
         ParsingError(s.GetData(), !bIsNull);
       }
 
@@ -435,7 +435,7 @@ void xiiJSONParser::ContinueValue()
     default:
     {
       xiiStringBuilder s;
-      s.Format("Parsing value: Expected [, {, f, t, \", 0-1, ., +, -, or even 'e'. Got '{0}' instead", xiiArgC(m_uiCurByte));
+      s.SetFormat("Parsing value: Expected [, {, f, t, \", 0-1, ., +, -, or even 'e'. Got '{0}' instead", xiiArgC(m_uiCurByte));
       ParsingError(s.GetData(), true);
     }
       return;
@@ -466,7 +466,7 @@ void xiiJSONParser::ContinueSeparator()
     default:
     {
       xiiStringBuilder s;
-      s.Format("After parsing value: Expected a comma or closing brackets/braces (], }). Got '{0}' instead.", xiiArgC(m_uiCurByte));
+      s.SetFormat("After parsing value: Expected a comma or closing brackets/braces (], }). Got '{0}' instead.", xiiArgC(m_uiCurByte));
       ParsingError(s.GetData(), true);
     }
       return;
@@ -688,7 +688,7 @@ void xiiJSONParser::ReadString()
         default:
         {
           xiiStringBuilder s;
-          s.Format("Unknown escape-sequence '\\{0}'", xiiArgC(m_uiCurByte));
+          s.SetFormat("Unknown escape-sequence '\\{0}'", xiiArgC(m_uiCurByte));
           ParsingError(s, false);
         }
         break;
@@ -745,7 +745,7 @@ double xiiJSONParser::ReadNumber()
   if (xiiConversionUtils::StringToFloat((const char*)&m_TempString[0], fResult) == XII_FAILURE)
   {
     xiiStringBuilder s;
-    s.Format("Reading number failed: Could not convert '{0}' to a floating point value.", (const char*)&m_TempString[0]);
+    s.SetFormat("Reading number failed: Could not convert '{0}' to a floating point value.", (const char*)&m_TempString[0]);
     ParsingError(s.GetData(), true);
   }
 

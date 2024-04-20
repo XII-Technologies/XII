@@ -28,7 +28,7 @@ void xiiDGMLGraphCreator::FillGraphFromWorld(xiiWorld* pWorld, xiiDGMLGraph& ref
     xiiVisitorExecution::Enum Visit(xiiGameObject* pObject)
     {
       xiiStringBuilder name;
-      name.Format("GameObject: \"{0}\"", pObject->GetName().IsEmpty() ? "<Unnamed>" : pObject->GetName());
+      name.SetFormat("GameObject: \"{0}\"", pObject->GetName().IsEmpty() ? "<Unnamed>" : pObject->GetName());
 
       // Create node for game object
       xiiDGMLGraph::NodeDesc gameobjectND;

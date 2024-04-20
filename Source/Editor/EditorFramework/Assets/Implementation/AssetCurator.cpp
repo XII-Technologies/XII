@@ -367,7 +367,7 @@ void xiiAssetCurator::StoreFullTransformDate()
     xiiDateTime date;
     XII_VERIFY(date.SetTimestamp(xiiTimestamp::CurrentTimestamp()), "Failed to retrieve transform date as Date Time.");
 
-    path.Format("{}", date);
+    path.SetFormat("{}", date);
     file.Write(path.GetData(), path.GetElementCount()).AssertSuccess();
   }
 }
@@ -1322,12 +1322,12 @@ void xiiAssetCurator::WriteDependencyDGML(const xiiUuid& guid, xiiStringView sOu
       if (subAsset.m_bMainAsset)
       {
         nd.m_Color = xiiColor::Blue;
-        sTemp.Format("{}", pAssetInfo->m_Path.GetDataDirParentRelativePath());
+        sTemp.SetFormat("{}", pAssetInfo->m_Path.GetDataDirParentRelativePath());
       }
       else
       {
         nd.m_Color = xiiColor::AliceBlue;
-        sTemp.Format("{} | {}", pAssetInfo->m_Path.GetDataDirParentRelativePath(), subAsset.GetName());
+        sTemp.SetFormat("{} | {}", pAssetInfo->m_Path.GetDataDirParentRelativePath(), subAsset.GetName());
       }
       nd.m_Shape = xiiDGMLGraph::NodeShape::Rectangle;
     }

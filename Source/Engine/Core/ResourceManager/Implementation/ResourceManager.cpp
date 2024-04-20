@@ -774,7 +774,7 @@ const xiiRTTI* xiiResourceManager::FindResourceTypeOverride(const xiiRTTI* pRtti
 xiiString xiiResourceManager::GenerateUniqueResourceID(xiiStringView sResourceIDPrefix)
 {
   xiiStringBuilder resourceID;
-  resourceID.Format("{}-{}", sResourceIDPrefix, s_pState->m_uiNextResourceID++);
+  resourceID.SetFormat("{}-{}", sResourceIDPrefix, s_pState->m_uiNextResourceID++);
   return resourceID;
 }
 

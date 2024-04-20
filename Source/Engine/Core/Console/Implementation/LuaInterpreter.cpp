@@ -193,18 +193,18 @@ void xiiCommandInterpreterLua::Interpret(xiiCommandInterpreterState& inout_state
           inout_state.AddOutputLine("  This change takes only effect after a restart.", xiiConsoleString::Type::Note);
         }
 
-        sTemp.Format("  {0} = {1}", sRealVarName, xiiQuakeConsole::GetFullInfoAsString(pCVAR));
+        sTemp.SetFormat("  {0} = {1}", sRealVarName, xiiQuakeConsole::GetFullInfoAsString(pCVAR));
         inout_state.AddOutputLine(sTemp, xiiConsoleString::Type::Success);
       }
     }
     else
     {
-      sTemp.Format("{0} = {1}", sRealVarName, xiiQuakeConsole::GetFullInfoAsString(pCVAR));
+      sTemp.SetFormat("{0} = {1}", sRealVarName, xiiQuakeConsole::GetFullInfoAsString(pCVAR));
       inout_state.AddOutputLine(sTemp);
 
       if (!pCVAR->GetDescription().IsEmpty())
       {
-        sTemp.Format("  Description: {0}", pCVAR->GetDescription());
+        sTemp.SetFormat("  Description: {0}", pCVAR->GetDescription());
         inout_state.AddOutputLine(sTemp, xiiConsoleString::Type::Success);
       }
       else

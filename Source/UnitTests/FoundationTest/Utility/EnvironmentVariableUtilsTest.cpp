@@ -35,7 +35,7 @@ XII_CREATE_SIMPLE_TEST(Utility, EnvironmentVariableUtils)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsVariableSet/SetValue")
   {
     xiiStringBuilder szVarName;
-    szVarName.Format("XII_THIS_SHOULDNT_EXIST_NOW_OR_THIS_TEST_WILL_FAIL_{0}", uiVersionForVariableSetting++);
+    szVarName.SetFormat("XII_THIS_SHOULDNT_EXIST_NOW_OR_THIS_TEST_WILL_FAIL_{0}", uiVersionForVariableSetting++);
 
     XII_TEST_BOOL(!xiiEnvironmentVariableUtils::IsVariableSet(szVarName));
 
@@ -57,7 +57,7 @@ XII_CREATE_SIMPLE_TEST(Utility, EnvironmentVariableUtils)
       "SOME REALLY LONG VALUE, LETS TEST SOME LIMITS WE MIGHT HIT - 012456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz";
 
     xiiStringBuilder szVarName;
-    szVarName.Format("XII_LONG_VARIABLE_TEST_{0}", uiVersionForVariableSetting++);
+    szVarName.SetFormat("XII_LONG_VARIABLE_TEST_{0}", uiVersionForVariableSetting++);
 
     XII_TEST_BOOL(!xiiEnvironmentVariableUtils::IsVariableSet(szVarName));
 

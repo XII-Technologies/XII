@@ -134,7 +134,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
   }
 
   // xiiStringBuilder sName;
-  // sName.Format("{0} - Dynamic Vertex Buffer", GetResourceDescription());
+  // sName.SetFormat("{0} - Dynamic Vertex Buffer", GetResourceDescription());
   // pDevice->GetBuffer(m_hVertexBuffer)->SetDebugName(sName);
 
   const xiiUInt32 uiMaxIndices = xiiGALPrimitiveTopology::VerticesPerPrimitive(m_Descriptor.m_Topology) * m_Descriptor.m_uiMaxPrimitives;
@@ -152,7 +152,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
 
     m_hColorBuffer = pDevice->CreateBuffer(desc);
 
-    // sName.Format("{0} - Dynamic Color Buffer", GetResourceDescription());
+    // sName.SetFormat("{0} - Dynamic Color Buffer", GetResourceDescription());
     // pDevice->GetBuffer(m_hColorBuffer)->SetDebugName(sName);
   }
 
@@ -169,7 +169,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
 
     m_hIndexBuffer = pDevice->CreateBuffer(desc);
 
-    // sName.Format("{0} - Dynamic Index32 Buffer", GetResourceDescription());
+    // sName.SetFormat("{0} - Dynamic Index32 Buffer", GetResourceDescription());
     // pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
   }
   else if (m_Descriptor.m_IndexType == xiiGALValueType::UInt16)
@@ -185,7 +185,7 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiDynamicMeshBufferResource, xiiDynamicMeshBu
 
     m_hIndexBuffer = pDevice->CreateBuffer(desc);
 
-    // sName.Format("{0} - Dynamic Index16 Buffer", GetResourceDescription());
+    // sName.SetFormat("{0} - Dynamic Index16 Buffer", GetResourceDescription());
     // pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
   }
 

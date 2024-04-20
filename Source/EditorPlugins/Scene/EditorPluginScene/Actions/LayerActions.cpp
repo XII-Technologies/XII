@@ -128,7 +128,7 @@ void xiiLayerAction::ToggleLayerLoaded(xiiScene2Document* pSceneDocument, xiiUui
           sLayerName = subAsset->GetName();
         }
       }
-      sMsg.Format("The layer '{}' has been modified.\nSave before unloading?", sLayerName);
+      sMsg.SetFormat("The layer '{}' has been modified.\nSave before unloading?", sLayerName);
       QMessageBox::StandardButton res = xiiQtUiServices::MessageBoxQuestion(sMsg, QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No | QMessageBox::StandardButton::Cancel, QMessageBox::StandardButton::No);
       switch (res)
       {

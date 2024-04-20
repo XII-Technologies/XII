@@ -25,7 +25,7 @@ struct XII_FOUNDATION_DLL xiiInstanceDataDesc
   {
     m_uiTypeSize          = sizeof(T);
     m_uiTypeAlignment     = XII_ALIGNMENT_OF(T);
-    m_ConstructorFunction = xiiMemoryUtils::MakeConstructorFunction<T>();
+    m_ConstructorFunction = xiiMemoryUtils::MakeConstructorFunction<SkipTrivialTypes, T>();
     m_DestructorFunction  = xiiMemoryUtils::MakeDestructorFunction<T>();
   }
 };

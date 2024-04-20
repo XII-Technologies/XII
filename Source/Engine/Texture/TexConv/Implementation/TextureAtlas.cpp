@@ -52,7 +52,7 @@ xiiResult xiiTexConvProcessor::GenerateTextureAtlas(xiiMemoryStreamWriter& strea
     if (false)
     {
       xiiStringBuilder sOut;
-      sOut.Format("D:/atlas_{}.dds", layerIdx);
+      sOut.SetFormat("D:/atlas_{}.dds", layerIdx);
 
       xiiFileWriter fOut;
       if (fOut.Open(sOut).Succeeded())

@@ -129,7 +129,7 @@ xiiAmbientCube<float> xiiBakedProbesWorldModule::GetSkyVisibility(const ProbeInd
 void xiiBakedProbesWorldModule::SetProbeTreeResourcePrefix(const xiiHashedString& prefix)
 {
   xiiStringBuilder sResourcePath;
-  sResourcePath.Format("{}_Global.xiiProbeTreeSector", prefix);
+  sResourcePath.SetFormat("{}_Global.xiiProbeTreeSector", prefix);
 
   m_hProbeTree = xiiResourceManager::LoadResource<xiiProbeTreeSectorResource>(sResourcePath);
 }

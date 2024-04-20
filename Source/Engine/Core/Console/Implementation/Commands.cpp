@@ -37,7 +37,7 @@ void xiiQuakeConsole::ExecuteCommand(xiiStringView sInput)
 void xiiQuakeConsole::BindKey(xiiStringView sKey, xiiStringView sCommand)
 {
   xiiStringBuilder s;
-  s.Format("Binding key '{0}' to command '{1}'", sKey, sCommand);
+  s.SetFormat("Binding key '{0}' to command '{1}'", sKey, sCommand);
   AddConsoleString(s, xiiConsoleString::Type::Success);
 
   m_BoundKeys[sKey] = sCommand;
@@ -46,7 +46,7 @@ void xiiQuakeConsole::BindKey(xiiStringView sKey, xiiStringView sCommand)
 void xiiQuakeConsole::UnbindKey(xiiStringView sKey)
 {
   xiiStringBuilder s;
-  s.Format("Unbinding key '{0}'", sKey);
+  s.SetFormat("Unbinding key '{0}'", sKey);
   AddConsoleString(s, xiiConsoleString::Type::Success);
 
   m_BoundKeys.Remove(sKey);

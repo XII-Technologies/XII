@@ -358,12 +358,16 @@ void xiiDequeBase<T, Construct>::SetCount(xiiUInt32 uiCount)
     {
       // default construct the new elements
       for (xiiUInt32 i = uiOldCount; i < uiNewCount; ++i)
-        xiiMemoryUtils::DefaultConstruct(&ElementAt(i), 1);
+      {
+        xiiMemoryUtils::Construct<ConstructAll>(&ElementAt(i), 1);
+      }
     }
     else
     {
       for (xiiUInt32 i = uiOldCount; i < uiNewCount; ++i)
+      {
         ElementAt(i);
+      }
     }
   }
   else
@@ -372,7 +376,9 @@ void xiiDequeBase<T, Construct>::SetCount(xiiUInt32 uiCount)
     {
       // destruct elements at the end of the deque
       for (xiiUInt32 i = uiNewCount; i < uiOldCount; ++i)
+      {
         xiiMemoryUtils::Destruct(&operator[](i), 1);
+      }
     }
 
     m_uiCount = uiNewCount;
@@ -400,7 +406,9 @@ void xiiDequeBase<T, Construct>::SetCountUninitialized(xiiUInt32 uiCount)
     m_uiCount = uiNewCount;
 
     for (xiiUInt32 i = uiOldCount; i < uiNewCount; ++i)
+    {
       ElementAt(i);
+    }
   }
   else
   {
@@ -408,7 +416,9 @@ void xiiDequeBase<T, Construct>::SetCountUninitialized(xiiUInt32 uiCount)
     {
       // destruct elements at the end of the deque
       for (xiiUInt32 i = uiNewCount; i < uiOldCount; ++i)
+      {
         xiiMemoryUtils::Destruct(&operator[](i), 1);
+      }
     }
 
     m_uiCount = uiNewCount;
@@ -477,7 +487,9 @@ inline T& xiiDequeBase<T, Construct>::ExpandAndGetRef()
   T* pElement = &ElementAt(m_uiCount - 1);
 
   if (Construct)
-    xiiMemoryUtils::DefaultConstruct(pElement, 1);
+  {
+    xiiMemoryUtils::Construct<ConstructAll>(pElement, 1);
+  }
 
   return *pElement;
 }
@@ -491,7 +503,9 @@ inline void xiiDequeBase<T, Construct>::PushBack()
   T* pElement = &ElementAt(m_uiCount - 1);
 
   if (Construct)
-    xiiMemoryUtils::DefaultConstruct(pElement, 1);
+  {
+    xiiMemoryUtils::Construct<ConstructAll>(pElement, 1);
+  }
 }
 
 template <typename T, bool Construct>
@@ -567,7 +581,9 @@ inline void xiiDequeBase<T, Construct>::PushFront()
   T* pElement = &ElementAt(0);
 
   if (Construct)
-    xiiMemoryUtils::Construct(pElement, 1);
+  {
+    xiiMemoryUtils::Construct<SkipTrivialTypes>(pElement, 1);
+  }
 }
 
 template <typename T, bool Construct>
@@ -578,7 +594,9 @@ inline void xiiDequeBase<T, Construct>::PopFront(xiiUInt32 uiElements)
   for (xiiUInt32 i = 0; i < uiElements; ++i)
   {
     if (Construct)
+    {
       xiiMemoryUtils::Destruct(&operator[](0), 1);
+    }
 
     --m_uiCount;
     ++m_uiFirstElement;
