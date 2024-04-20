@@ -2,6 +2,11 @@
 
 #include <Foundation/Containers/HybridArray.h>
 
+static xiiInt32 iCallPodConstructor    = 0;
+static xiiInt32 iCallPodDestructor     = 0;
+static xiiInt32 iCallNonPodConstructor = 0;
+static xiiInt32 iCallNonPodDestructor  = 0;
+
 struct xiiConstructTest
 {
 public:
@@ -38,7 +43,7 @@ XII_CREATE_SIMPLE_TEST(Memory, MemoryUtils)
     xiiUInt8          uiRawData[s_uiSize * 5] = {0};
     xiiConstructTest* pTest                   = (xiiConstructTest*)(uiRawData);
 
-    xiiMemoryUtils::Construct<xiiConstructTest>(pTest + 1, 2);
+    xiiMemoryUtils::Construct<SkipTrivialTypes, xiiConstructTest>(pTest + 1, 2);
 
     XII_TEST_INT(pTest[0].m_iData, 0);
     XII_TEST_INT(pTest[1].m_iData, 42);
@@ -49,7 +54,7 @@ XII_CREATE_SIMPLE_TEST(Memory, MemoryUtils)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeConstructorFunction")
   {
-    xiiMemoryUtils::ConstructorFunction func = xiiMemoryUtils::MakeConstructorFunction<xiiConstructTest>();
+    xiiMemoryUtils::ConstructorFunction func = xiiMemoryUtils::MakeConstructorFunction<SkipTrivialTypes, xiiConstructTest>();
     XII_TEST_BOOL(func != nullptr);
 
     xiiUInt8          uiRawData[s_uiSize] = {0};
@@ -59,10 +64,10 @@ XII_CREATE_SIMPLE_TEST(Memory, MemoryUtils)
 
     XII_TEST_INT(pTest->m_iData, 42);
 
-    func = xiiMemoryUtils::MakeConstructorFunction<PODTest>();
+    func = xiiMemoryUtils::MakeConstructorFunction<SkipTrivialTypes, PODTest>();
     XII_TEST_BOOL(func != nullptr);
 
-    func = xiiMemoryUtils::MakeConstructorFunction<xiiInt32>();
+    func = xiiMemoryUtils::MakeConstructorFunction<SkipTrivialTypes, xiiInt32>();
     XII_TEST_BOOL(func == nullptr);
   }
 
@@ -70,22 +75,10 @@ XII_CREATE_SIMPLE_TEST(Memory, MemoryUtils)
   {
     xiiUInt32 uiRawData[5]; // not initialized here
 
-    xiiMemoryUtils::DefaultConstruct(uiRawData + 1, 2);
+    xiiMemoryUtils::Construct<ConstructAll>(uiRawData + 1, 2);
 
     XII_TEST_INT(uiRawData[1], 0);
     XII_TEST_INT(uiRawData[2], 0);
-  }
-
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeDefaultConstructorFunction")
-  {
-    xiiMemoryUtils::ConstructorFunction func = xiiMemoryUtils::MakeDefaultConstructorFunction<xiiInt32>();
-    XII_TEST_BOOL(func != nullptr);
-
-    xiiInt32 iTest = 2;
-
-    (*func)(&iTest);
-
-    XII_TEST_INT(iTest, 0);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Construct Copy(Array)")
@@ -150,7 +143,7 @@ XII_CREATE_SIMPLE_TEST(Memory, MemoryUtils)
     xiiUInt8          uiRawData[s_uiSize * 5] = {0};
     xiiConstructTest* pTest                   = (xiiConstructTest*)(uiRawData);
 
-    xiiMemoryUtils::Construct<xiiConstructTest>(pTest + 1, 2);
+    xiiMemoryUtils::Construct<SkipTrivialTypes, xiiConstructTest>(pTest + 1, 2);
 
     XII_TEST_INT(pTest[0].m_iData, 0);
     XII_TEST_INT(pTest[1].m_iData, 42);
@@ -180,7 +173,7 @@ XII_CREATE_SIMPLE_TEST(Memory, MemoryUtils)
     xiiUInt8          uiRawData[s_uiSize] = {0};
     xiiConstructTest* pTest               = (xiiConstructTest*)(uiRawData);
 
-    xiiMemoryUtils::Construct(pTest, 1);
+    xiiMemoryUtils::Construct<SkipTrivialTypes>(pTest, 1);
     XII_TEST_INT(pTest->m_iData, 42);
 
     xiiConstructTest::s_dtorList.Clear();
@@ -401,6 +394,120 @@ XII_CREATE_SIMPLE_TEST(Memory, MemoryUtils)
       pData = xiiMemoryUtils::AlignForwards(pData, 4);
       XII_TEST_BOOL(pData == reinterpret_cast<xiiInt32*>(4));
       XII_TEST_BOOL(xiiMemoryUtils::IsAligned(pData, 4));
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "POD")
+  {
+    struct Trivial
+    {
+      XII_DECLARE_POD_TYPE();
+
+      ~Trivial() = default;
+
+      xiiUInt32 a;
+      xiiUInt32 b;
+    };
+
+    static_assert(std::is_trivial<Trivial>::value != 0);
+    static_assert(xiiIsPodType<Trivial>::value == 1);
+    static_assert(std::is_trivially_destructible<Trivial>::value != 0);
+
+    struct POD
+    {
+      XII_DECLARE_POD_TYPE();
+
+      xiiUInt32 a = 2;
+      xiiUInt32 b = 4;
+
+      POD()
+      {
+        iCallPodConstructor++;
+      }
+
+      // This is no longer allowed in types that use XII_DECLARE_POD_TYPE. This means we can't do this kind of check either.
+      // ~POD()
+      // {
+      //   iCallPodDestructor++;
+      // }
+    };
+
+    static_assert(std::is_trivial<POD>::value == 0);
+    static_assert(xiiIsPodType<POD>::value == 1);
+
+    struct NonPOD
+    {
+      xiiUInt32 a = 3;
+      xiiUInt32 b = 5;
+
+      NonPOD()
+      {
+        iCallNonPodConstructor++;
+      }
+
+      ~NonPOD()
+      {
+        iCallNonPodDestructor++;
+      }
+    };
+
+    static_assert(std::is_trivial<NonPOD>::value == 0);
+    static_assert(xiiIsPodType<NonPOD>::value == 0);
+
+    struct NonPOD2
+    {
+      xiiUInt32 a;
+      xiiUInt32 b;
+
+      ~NonPOD2()
+      {
+        iCallNonPodDestructor++;
+      }
+    };
+
+    static_assert(std::is_trivial<NonPOD2>::value == 0); // destructor makes it non-trivial
+    static_assert(xiiIsPodType<NonPOD2>::value == 0);
+    static_assert(std::is_trivially_destructible<NonPOD2>::value == 0);
+
+    // check that xiiMemoryUtils::Construct and xiiMemoryUtils::Destruct ignore POD types
+    {
+      xiiUInt8 mem[sizeof(POD) * 2];
+
+      XII_TEST_INT(iCallPodConstructor, 0);
+      XII_TEST_INT(iCallPodDestructor, 0);
+
+      xiiMemoryUtils::Construct<SkipTrivialTypes, POD>((POD*)mem, 1);
+
+      XII_TEST_INT(iCallPodConstructor, 1);
+      XII_TEST_INT(iCallPodDestructor, 0);
+
+      xiiMemoryUtils::Destruct<POD>((POD*)mem, 1);
+      XII_TEST_INT(iCallPodConstructor, 1);
+      XII_TEST_INT(iCallPodDestructor, 0);
+
+      iCallPodConstructor = 0;
+    }
+
+    // check that xiiMemoryUtils::Destruct calls the destructor of a non-trivial type
+    {
+      xiiUInt8 mem[sizeof(NonPOD2) * 2];
+
+      XII_TEST_INT(iCallNonPodDestructor, 0);
+      xiiMemoryUtils::Destruct<NonPOD2>((NonPOD2*)mem, 1);
+
+      XII_TEST_INT(iCallNonPodDestructor, 1);
+
+      iCallNonPodDestructor = 0;
+    }
+
+    {
+      // make sure xiiMemoryUtils::Construct and xiiMemoryUtils::Destruct don't touch built-in types
+
+      xiiInt32 a = 42;
+      xiiMemoryUtils::Construct<SkipTrivialTypes, xiiInt32>(&a, 1);
+      XII_TEST_INT(a, 42);
+      xiiMemoryUtils::Destruct<xiiInt32>(&a, 1);
+      XII_TEST_INT(a, 42);
     }
   }
 }

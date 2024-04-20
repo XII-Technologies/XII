@@ -103,7 +103,7 @@ void xiiArrayBase<T, Derived>::SetCount(xiiUInt32 uiCount)
   if (uiNewCount > uiOldCount)
   {
     static_cast<Derived*>(this)->Reserve(uiNewCount);
-    xiiMemoryUtils::DefaultConstruct(static_cast<Derived*>(this)->GetElementsPtr() + uiOldCount, uiNewCount - uiOldCount);
+    xiiMemoryUtils::Construct<ConstructAll>(static_cast<Derived*>(this)->GetElementsPtr() + uiOldCount, uiNewCount - uiOldCount);
   }
   else if (uiNewCount < uiOldCount)
   {
@@ -305,7 +305,7 @@ T& xiiArrayBase<T, Derived>::ExpandAndGetRef()
 
   T* pElements = static_cast<Derived*>(this)->GetElementsPtr();
 
-  xiiMemoryUtils::Construct(pElements + m_uiCount, 1);
+  xiiMemoryUtils::Construct<SkipTrivialTypes>(pElements + m_uiCount, 1);
 
   T& ReturnRef = *(pElements + m_uiCount);
 

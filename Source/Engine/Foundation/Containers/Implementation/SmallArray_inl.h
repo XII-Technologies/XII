@@ -39,6 +39,7 @@ void xiiSmallArrayBase<T, Size>::CopyFrom(const xiiArrayPtr<const T>& other, xii
       return;
 
     XII_ASSERT_DEV(m_uiCount > other.GetCount(), "Dangling array pointer. The given array pointer points to invalid memory.");
+
     T* pElements = GetElementsPtr();
     xiiMemoryUtils::Destruct(pElements + other.GetCount(), m_uiCount - other.GetCount());
     m_uiCount = static_cast<xiiUInt16>(other.GetCount());
@@ -51,6 +52,7 @@ void xiiSmallArrayBase<T, Size>::CopyFrom(const xiiArrayPtr<const T>& other, xii
   if (uiNewCount > uiOldCount)
   {
     Reserve(static_cast<xiiUInt16>(uiNewCount), pAllocator);
+
     T* pElements = GetElementsPtr();
     xiiMemoryUtils::Copy(pElements, other.GetPtr(), uiOldCount);
     xiiMemoryUtils::CopyConstructArray(pElements + uiOldCount, other.GetPtr() + uiOldCount, uiNewCount - uiOldCount);
@@ -136,7 +138,7 @@ void xiiSmallArrayBase<T, Size>::SetCount(xiiUInt16 uiCount, xiiAllocatorBase* p
   if (uiNewCount > uiOldCount)
   {
     Reserve(static_cast<xiiUInt16>(uiNewCount), pAllocator);
-    xiiMemoryUtils::DefaultConstruct(GetElementsPtr() + uiOldCount, uiNewCount - uiOldCount);
+    xiiMemoryUtils::Construct<ConstructAll>(GetElementsPtr() + uiOldCount, uiNewCount - uiOldCount);
   }
   else if (uiNewCount < uiOldCount)
   {
@@ -185,7 +187,7 @@ void xiiSmallArrayBase<T, Size>::SetCountUninitialized(xiiUInt16 uiCount, xiiAll
   if (uiNewCount > uiOldCount)
   {
     Reserve(uiNewCount, pAllocator);
-    xiiMemoryUtils::Construct(GetElementsPtr() + uiOldCount, uiNewCount - uiOldCount);
+    xiiMemoryUtils::Construct<SkipTrivialTypes>(GetElementsPtr() + uiOldCount, uiNewCount - uiOldCount);
   }
   else if (uiNewCount < uiOldCount)
   {
@@ -330,7 +332,7 @@ T& xiiSmallArrayBase<T, Size>::ExpandAndGetRef(xiiAllocatorBase* pAllocator)
 
   T* pElements = GetElementsPtr();
 
-  xiiMemoryUtils::Construct(pElements + m_uiCount, 1);
+  xiiMemoryUtils::Construct<SkipTrivialTypes>(pElements + m_uiCount, 1);
 
   T& ReturnRef = *(pElements + m_uiCount);
 

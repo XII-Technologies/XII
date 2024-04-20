@@ -367,12 +367,7 @@ xiiInt32 xiiStringUtils::Compare_NoCase(const char* pString1, const char* pStrin
   }
 }
 
-xiiInt32 xiiStringUtils::CompareN_NoCase(
-  const char* pString1,
-  const char* pString2,
-  xiiUInt32   uiCharsToCompare,
-  const char* pString1End,
-  const char* pString2End)
+xiiInt32 xiiStringUtils::CompareN_NoCase(const char* pString1, const char* pString2, xiiUInt32 uiCharsToCompare, const char* pString1End, const char* pString2End)
 {
   if (uiCharsToCompare == 0)
     return 0;
@@ -722,11 +717,7 @@ const char* xiiStringUtils::FindWholeWord(const char* szString, const char* szSe
   return nullptr;
 }
 
-const char* xiiStringUtils::FindWholeWord_NoCase(
-  const char*          szString,
-  const char*          szSearchFor,
-  XII_CHARACTER_FILTER isDelimiterCB,
-  const char*          pStringEnd)
+const char* xiiStringUtils::FindWholeWord_NoCase(const char* szString, const char* szSearchFor, XII_CHARACTER_FILTER isDelimiterCB, const char* pStringEnd)
 {
   // Handle nullptr-pointer strings
   if ((IsNullOrEmpty(szString)) || (IsNullOrEmpty(szSearchFor)))

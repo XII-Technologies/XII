@@ -58,7 +58,7 @@ namespace xiiMemoryPolicies
 
     // Store information in meta data.
     AlloctionMetaData* metaData = xiiMemoryUtils::AddByteOffset(static_cast<AlloctionMetaData*>(ptr), uiFullPageSize - uiTotalSize);
-    xiiMemoryUtils::Construct(metaData, 1);
+    xiiMemoryUtils::Construct<SkipTrivialTypes>(metaData, 1);
     metaData->m_uiSize = uiAlignedSize;
 
     // Finally add offset to the actual payload.

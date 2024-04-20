@@ -91,20 +91,6 @@ struct xiiGetStrongestTypeClass : public xiiTraitInt<(T1::value == 0 || T2::valu
 };
 
 
-/// \brief Determines whether a type is a pointer.
-template <typename T>
-struct xiiIsPointer
-{
-  static constexpr bool value = false;
-};
-
-template <typename T>
-struct xiiIsPointer<T*>
-{
-  static constexpr bool value = true;
-};
-
-
 #ifdef __INTELLISENSE__
 
 /// \brief Embed this into a class to mark it as a POD type.

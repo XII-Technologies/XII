@@ -553,7 +553,7 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Node* xiiMapBase<KeyType, Val
     m_pFreeElementStack = m_pFreeElementStack->m_pParent;
   }
 
-  xiiMemoryUtils::Construct(pNode, 1);
+  xiiMemoryUtils::Construct<SkipTrivialTypes>(pNode, 1);
 
   pNode->m_pParent  = pParent;
   pNode->m_Key      = std::forward<CompatibleKeyType>(key);

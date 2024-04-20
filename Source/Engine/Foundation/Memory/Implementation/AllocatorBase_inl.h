@@ -88,20 +88,20 @@ namespace xiiInternal
   template <typename T>
   inline xiiArrayPtr<T> CreateArray(xiiAllocatorBase* pAllocator, xiiUInt32 uiCount)
   {
-    T* buffer = CreateRawBuffer<T>(pAllocator, uiCount);
-    xiiMemoryUtils::Construct(buffer, uiCount);
+    T* pBuffer = CreateRawBuffer<T>(pAllocator, uiCount);
+    xiiMemoryUtils::Construct<SkipTrivialTypes>(pBuffer, uiCount);
 
-    return xiiArrayPtr<T>(buffer, uiCount);
+    return xiiArrayPtr<T>(pBuffer, uiCount);
   }
 
   template <typename T>
-  inline void DeleteArray(xiiAllocatorBase* pAllocator, xiiArrayPtr<T> arrayPtr)
+  inline void DeleteArray(xiiAllocatorBase* pAllocator, xiiArrayPtr<T> pArrayPtr)
   {
-    T* buffer = arrayPtr.GetPtr();
-    if (buffer != nullptr)
+    T* pBuffer = pArrayPtr.GetPtr();
+    if (pBuffer != nullptr)
     {
-      xiiMemoryUtils::Destruct(buffer, arrayPtr.GetCount());
-      pAllocator->Deallocate(buffer);
+      xiiMemoryUtils::Destruct(pBuffer, pArrayPtr.GetCount());
+      pAllocator->Deallocate(pBuffer);
     }
   }
 
@@ -120,8 +120,7 @@ namespace xiiInternal
   template <typename T>
   XII_FORCE_INLINE T* ExtendRawBuffer(T* pPtr, xiiAllocatorBase* pAllocator, size_t uiCurrentCount, size_t uiNewCount, xiiTypeIsClass)
   {
-    XII_CHECK_AT_COMPILETIME_MSG(!std::is_trivial<T>::value,
-                                 "POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.");
+    XII_CHECK_AT_COMPILETIME_MSG(!std::is_trivial<T>::value, "POD type is treated as class. Use XII_DECLARE_POD_TYPE(YourClass) or XII_DEFINE_AS_POD_TYPE(ExternalClass) to mark it as POD.");
 
     T* pNewMem = CreateRawBuffer<T>(pAllocator, uiNewCount);
     xiiMemoryUtils::RelocateConstruct(pNewMem, pPtr, uiCurrentCount);

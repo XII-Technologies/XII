@@ -114,27 +114,27 @@ void xiiVisualScriptDataStorage::AllocateStorage()
     if (scriptDataType == xiiVisualScriptDataType::String)
     {
       auto pStrings = reinterpret_cast<xiiString*>(pData + typeInfo.m_uiStartOffset);
-      xiiMemoryUtils::Construct(pStrings, typeInfo.m_uiCount);
+      xiiMemoryUtils::Construct<SkipTrivialTypes>(pStrings, typeInfo.m_uiCount);
     }
     if (scriptDataType == xiiVisualScriptDataType::HashedString)
     {
       auto pStrings = reinterpret_cast<xiiHashedString*>(pData + typeInfo.m_uiStartOffset);
-      xiiMemoryUtils::Construct(pStrings, typeInfo.m_uiCount);
+      xiiMemoryUtils::Construct<SkipTrivialTypes>(pStrings, typeInfo.m_uiCount);
     }
     else if (scriptDataType == xiiVisualScriptDataType::Variant)
     {
       auto pVariants = reinterpret_cast<xiiVariant*>(pData + typeInfo.m_uiStartOffset);
-      xiiMemoryUtils::Construct(pVariants, typeInfo.m_uiCount);
+      xiiMemoryUtils::Construct<SkipTrivialTypes>(pVariants, typeInfo.m_uiCount);
     }
     else if (scriptDataType == xiiVisualScriptDataType::Array)
     {
       auto pVariantArrays = reinterpret_cast<xiiVariantArray*>(pData + typeInfo.m_uiStartOffset);
-      xiiMemoryUtils::Construct(pVariantArrays, typeInfo.m_uiCount);
+      xiiMemoryUtils::Construct<SkipTrivialTypes>(pVariantArrays, typeInfo.m_uiCount);
     }
     else if (scriptDataType == xiiVisualScriptDataType::Map)
     {
       auto pVariantMaps = reinterpret_cast<xiiVariantDictionary*>(pData + typeInfo.m_uiStartOffset);
-      xiiMemoryUtils::Construct(pVariantMaps, typeInfo.m_uiCount);
+      xiiMemoryUtils::Construct<SkipTrivialTypes>(pVariantMaps, typeInfo.m_uiCount);
     }
   }
 }

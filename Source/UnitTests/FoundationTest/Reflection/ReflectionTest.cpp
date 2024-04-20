@@ -999,7 +999,18 @@ XII_CREATE_SIMPLE_TEST(Reflection, Arrays)
   TestSerialization<xiiTestArrays>(containers);
 }
 
+/// \brief Determines whether a type is a pointer.
+template <typename T>
+struct xiiIsPointer
+{
+  static constexpr bool value = false;
+};
 
+template <typename T>
+struct xiiIsPointer<T*>
+{
+  static constexpr bool value = true;
+};
 
 template <typename T>
 void TestSetProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti, T& ref_value1, T& ref_value2)
@@ -1017,11 +1028,15 @@ void TestSetProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti
   {
     pSetProp->Clear(pObject);
     XII_TEST_BOOL(pSetProp->IsEmpty(pObject));
+
     pSetProp->Insert(pObject, &ref_value1);
+
     XII_TEST_BOOL(!pSetProp->IsEmpty(pObject));
     XII_TEST_BOOL(pSetProp->Contains(pObject, &ref_value1));
     XII_TEST_BOOL(!pSetProp->Contains(pObject, &ref_value2));
+
     pSetProp->Insert(pObject, &ref_value2);
+
     XII_TEST_BOOL(!pSetProp->IsEmpty(pObject));
     XII_TEST_BOOL(pSetProp->Contains(pObject, &ref_value1));
     XII_TEST_BOOL(pSetProp->Contains(pObject, &ref_value2));
@@ -1031,6 +1046,7 @@ void TestSetProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti
     {
       T temp = T{};
       pSetProp->Insert(pObject, &temp);
+
       XII_TEST_BOOL(!pSetProp->IsEmpty(pObject));
       XII_TEST_BOOL(pSetProp->Contains(pObject, &ref_value1));
       XII_TEST_BOOL(pSetProp->Contains(pObject, &ref_value2));
@@ -1149,6 +1165,7 @@ void TestMapProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti
   const xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
   XII_TEST_BOOL(pProp != nullptr);
   XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Map);
+
   auto           pMapProp  = static_cast<const xiiAbstractMapProperty*>(pProp);
   const xiiRTTI* pElemRtti = pProp->GetSpecificType();
   XII_TEST_BOOL(pElemRtti == xiiGetStaticRTTI<T>());
@@ -1158,16 +1175,21 @@ void TestMapProperty(const char* szPropName, void* pObject, const xiiRTTI* pRtti
   {
     pMapProp->Clear(pObject);
     XII_TEST_BOOL(pMapProp->IsEmpty(pObject));
+
     pMapProp->Insert(pObject, "value1", &ref_value1);
+
     XII_TEST_BOOL(!pMapProp->IsEmpty(pObject));
     XII_TEST_BOOL(pMapProp->Contains(pObject, "value1"));
     XII_TEST_BOOL(!pMapProp->Contains(pObject, "value2"));
+
     T getValue;
+
     XII_TEST_BOOL(!pMapProp->GetValue(pObject, "value2", &getValue));
     XII_TEST_BOOL(pMapProp->GetValue(pObject, "value1", &getValue));
     XII_TEST_BOOL(getValue == ref_value1);
 
     pMapProp->Insert(pObject, "value2", &ref_value2);
+
     XII_TEST_BOOL(!pMapProp->IsEmpty(pObject));
     XII_TEST_BOOL(pMapProp->Contains(pObject, "value1"));
     XII_TEST_BOOL(pMapProp->Contains(pObject, "value2"));
@@ -1264,9 +1286,11 @@ void TestPointerMemberProperty(const char* szPropName, void* pObject, const xiiR
   const xiiAbstractProperty* pProp = pRtti->FindPropertyByName(szPropName);
   XII_TEST_BOOL(pProp != nullptr);
   XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Member);
+
   auto pAbsMember = static_cast<const xiiAbstractMemberProperty*>(pProp);
   XII_TEST_INT(pProp->GetFlags().GetValue(), expectedFlags.GetValue());
   XII_TEST_BOOL(pProp->GetSpecificType() == xiiGetStaticRTTI<T>());
+
   void* pData = nullptr;
   pAbsMember->GetValuePtr(pObject, &pData);
   XII_TEST_BOOL(pData == pExpectedValue);
@@ -1275,8 +1299,10 @@ void TestPointerMemberProperty(const char* szPropName, void* pObject, const xiiR
   {
     void* pDataNull = nullptr;
     pAbsMember->SetValuePtr(pObject, &pDataNull);
+
     void* pDataNull2 = nullptr;
     pAbsMember->GetValuePtr(pObject, &pDataNull2);
+
     XII_TEST_BOOL(pDataNull == pDataNull2);
   }
 
@@ -1284,8 +1310,10 @@ void TestPointerMemberProperty(const char* szPropName, void* pObject, const xiiR
   {
     void* pNewData = pAbsMember->GetSpecificType()->GetAllocator()->Allocate<void>();
     pAbsMember->SetValuePtr(pObject, &pNewData);
+
     void* pData2 = nullptr;
     pAbsMember->GetValuePtr(pObject, &pData2);
+
     XII_TEST_BOOL(pNewData == pData2);
   }
 
@@ -1303,6 +1331,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Pointer)
     xiiTestPtr containers;
     {
       const xiiAbstractProperty* pProp = pRtti->FindPropertyByName("ConstCharPtr");
+
       XII_TEST_BOOL(pProp != nullptr);
       XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Member);
       XII_TEST_INT(pProp->GetFlags().GetValue(), (xiiPropertyFlags::StandardType | xiiPropertyFlags::Const).GetValue());

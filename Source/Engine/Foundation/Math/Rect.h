@@ -58,10 +58,13 @@ public:
   /// The larger value along y. Same as Bottom().
   Type GetY2() const { return y + height; }
 
-  /// \brief Returns the x,y position as an xiiVec2.
-  xiiVec2Template<Type> GetPosition() const { return xiiVec2Template<Type>(x, y); }
+  /// \brief Returns the minimum corner position. Same as GetTopLeft().
+  xiiVec2Template<Type> GetMinCorner() const { return xiiVec2Template<Type>(x, y); }
 
-  /// \brief Returns the top left corner. Same as GetPosition().
+  /// \brief Returns the maximum corner position. Same as GetBottomRight().
+  xiiVec2Template<Type> GetMaxCorner() const { return xiiVec2Template<Type>(x + width, y + height); }
+
+  /// \brief Returns the top left corner. Same as GetMinCorner().
   xiiVec2Template<Type> GetTopLeft() const { return xiiVec2Template<Type>(x, y); }
 
   /// \brief Returns the top right corner.
@@ -70,7 +73,7 @@ public:
   /// \brief Returns the bottom left corner.
   xiiVec2Template<Type> GetBottomLeft() const { return xiiVec2Template<Type>(x, y + height); }
 
-  /// \brief Returns the bottom right corner. Same as GetPosition() + GetExtents().
+  /// \brief Returns the bottom right corner. Same as GetMaxCorner().
   xiiVec2Template<Type> GetBottomRight() const { return xiiVec2Template<Type>(x + width, y + height); }
 
   /// \brief Returns the center point of the rectangle.
@@ -128,9 +131,9 @@ public:
   /// If the input rect is entirely outside this rect, the result will be reduced to a point or a line closest to the input rect.
   [[nodiscard]] const xiiRectTemplate<Type> GetClampedRect(const xiiRectTemplate<Type>& r) const
   {
-    const xiiVec2Template<Type> vNewTL   = GetClampedPoint(r.GetTopLeft());
-    const xiiVec2Template<Type> vNewSize = GetClampedPoint(r.GetBottomRight()) - vNewTL;
-    return xiiRectTemplate<Type>(vNewTL, vNewSize);
+    const xiiVec2Template<Type> vNewMin = GetClampedPoint(r.GetMinCorner());
+    const xiiVec2Template<Type> vNewMax = GetClampedPoint(r.GetMaxCorner());
+    return xiiRectTemplate<Type>(vNewMin, vNewMax - vNewMin);
   }
 
   void SetIntersection(const xiiRectTemplate<Type>& r0, const xiiRectTemplate<Type>& r1);
