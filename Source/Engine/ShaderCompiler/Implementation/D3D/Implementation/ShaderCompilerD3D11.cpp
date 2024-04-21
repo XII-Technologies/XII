@@ -1,125 +1,91 @@
 #include <ShaderCompiler/ShaderCompilerPCH.h>
 
-#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
 
-#  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D12.h>
+#  include <ShaderCompiler/Implementation/D3D/ShaderCompilerD3D11.h>
 #  include <ShaderCompiler/ShaderCompiler.h>
 
 #  include <d3dcompiler.h>
-#  include <dxc/dxcapi.h>
 
-XII_DEFINE_AS_POD_TYPE(D3D12_SHADER_INPUT_BIND_DESC);
+XII_DEFINE_AS_POD_TYPE(D3D11_SHADER_INPUT_BIND_DESC);
 
-xiiEnum<xiiGALTextureFormat> GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents);
+xiiEnum<xiiGALTextureFormat> GetXIIFormatD3D11(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents);
 
-xiiResult xiiShaderCompilerD3D12::CompileShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
+xiiResult xiiShaderCompilerD3D11::CompileShader(xiiStringView sFile, xiiStringView sSource, bool bDebug, xiiStringView sProfile, xiiStringView sEntryPoint, xiiDynamicArray<xiiUInt8>& out_ByteCode)
 {
   out_ByteCode.Clear();
 
+  xiiUInt32        uiCompileFlags = 0U;
   xiiStringView    sCompileSource = sSource;
   xiiStringBuilder sDebugSource;
 
-  xiiDynamicArray<xiiStringWChar> args;
-  args.PushBack(xiiStringWChar(sFile));
-  args.PushBack(L"-E");
-  args.PushBack(xiiStringWChar(sEntryPoint));
-  args.PushBack(L"-T");
-  args.PushBack(xiiStringWChar(sProfile));
-  args.PushBack(L"-Zpc"); // Matrices in column-major order
-
   if (bDebug)
   {
+    uiCompileFlags = D3DCOMPILE_DEBUG | D3DCOMPILE_PREFER_FLOW_CONTROL | D3DCOMPILE_SKIP_OPTIMIZATION | D3DCOMPILE_ENABLE_STRICTNESS;
+
     // In debug mode we need to remove '#line' as any shader debugger won't work with them.
     sDebugSource = sSource;
     sDebugSource.ReplaceAll("#line ", "//line ");
     sCompileSource = sDebugSource;
-
-    args.PushBack(L"-Zi"); // Enable debug information.
-    args.PushBack(L"-Od"); // Disable optimization
-  }
-  else
-  {
-    args.PushBack(L"-O3"); // Optimization Level 3
   }
 
-  xiiHybridArray<LPCWSTR, 16> pszArgs;
-  pszArgs.SetCount(args.GetCount());
-  for (xiiUInt32 i = 0; i < args.GetCount(); ++i)
+  ID3DBlob* pResultBlob = nullptr;
+  ID3DBlob* pErrorBlob  = nullptr;
+
+  if (FAILED(D3DCompile(sCompileSource.GetStartPointer(), sCompileSource.GetElementCount(), sFile.GetStartPointer(), nullptr, nullptr, sEntryPoint.GetStartPointer(), sProfile.GetStartPointer(), uiCompileFlags, 0U, &pResultBlob, &pErrorBlob)))
   {
-    pszArgs[i] = args[i].GetData();
-  }
-
-  xiiComPtr<IDxcBlobEncoding> pSource;
-  m_pDxcUtils->CreateBlob(sCompileSource.GetStartPointer(), sCompileSource.GetElementCount(), DXC_CP_UTF8, pSource.RawDblPtr());
-
-  DxcBuffer Source;
-  Source.Ptr      = pSource->GetBufferPointer();
-  Source.Size     = pSource->GetBufferSize();
-  Source.Encoding = DXC_CP_UTF8;
-
-  xiiComPtr<IDxcResult> pCompileResult;
-  m_pDxcCompiler->Compile(&Source, pszArgs.GetData(), pszArgs.GetCount(), nullptr, IID_PPV_ARGS(pCompileResult.RawDblPtr()));
-
-  xiiComPtr<IDxcBlobUtf8> pCompileError;
-  pCompileResult->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(pCompileError.RawDblPtr()), nullptr);
-
-  HRESULT hrStatus;
-  pCompileResult->GetStatus(&hrStatus);
-  if (FAILED(hrStatus))
-  {
-    xiiLog::Error("Shader compilation failed.");
-
-    if (pCompileError != nullptr && pCompileError->GetStringLength() != 0)
+    if (bDebug)
     {
-      xiiLog::Error("{}", xiiStringUtf8(pCompileError->GetStringPointer()).GetData());
+      // Try again with '#line' intact to get correct error messages with file and line info.
+      pErrorBlob->Release();
+      pErrorBlob = nullptr;
+      XII_VERIFY(FAILED(D3DCompile(sSource.GetStartPointer(), sSource.GetElementCount(), sFile.GetStartPointer(), nullptr, nullptr, sEntryPoint.GetStartPointer(), sProfile.GetStartPointer(), uiCompileFlags, 0, &pResultBlob, &pErrorBlob)), "Debug compilation with commented out '#line' failed but original version did not.");
     }
-    return XII_FAILURE;
-  }
-  else
-  {
-    if (pCompileError != nullptr && pCompileError->GetStringLength() != 0)
-    {
-      xiiLog::Warning("{}", xiiStringUtf8(pCompileError->GetStringPointer()).GetData());
-    }
-  }
 
-  xiiComPtr<IDxcBlob>     pShader;
-  xiiComPtr<IDxcBlobWide> pShaderName;
-  pCompileResult->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(pShader.RawDblPtr()), pShaderName.RawDblPtr());
+    const char* szError = static_cast<const char*>(pErrorBlob->GetBufferPointer());
 
-  if (pShader == nullptr)
-  {
-    xiiLog::Error("No shader bytecode was generated.");
+    xiiLog::Error("Shader Compilation Failed.");
+    xiiLog::Error("Could not compile shader '{0}' for profile '{1}'", sFile, sProfile);
+    xiiLog::Error("{0}", szError);
+
+    pErrorBlob->Release();
     return XII_FAILURE;
   }
 
-  out_ByteCode.SetCountUninitialized(static_cast<xiiUInt32>(pShader->GetBufferSize()));
+  if (pErrorBlob != nullptr)
+  {
+    const char* szError = static_cast<const char*>(pErrorBlob->GetBufferPointer());
 
-  xiiMemoryUtils::Copy(out_ByteCode.GetData(), reinterpret_cast<xiiUInt8*>(pShader->GetBufferPointer()), out_ByteCode.GetCount());
+    xiiLog::SeriousWarning("{0}", szError);
+
+    pErrorBlob->Release();
+  }
+
+  if (pResultBlob != nullptr)
+  {
+    out_ByteCode.SetCountUninitialized((xiiUInt32)pResultBlob->GetBufferSize());
+    xiiMemoryUtils::Copy(out_ByteCode.GetData(), static_cast<xiiUInt8*>(pResultBlob->GetBufferPointer()), out_ByteCode.GetCount());
+    pResultBlob->Release();
+  }
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderStage> Stage, xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>>& vertexInputMapping)
+xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderStage> Stage, xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>>& vertexInputMapping)
 {
   XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_sSourceFile);
 
   xiiGALShaderByteCode* pShader  = inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)];
   auto&                 byteCode = pShader->m_ByteCode;
 
-  DxcBuffer ReflectionData;
-  ReflectionData.Encoding = DXC_CP_ACP;
-  ReflectionData.Ptr      = reinterpret_cast<const void*>(byteCode.GetData());
-  ReflectionData.Size     = byteCode.GetCount();
-
-  xiiComPtr<ID3D12ShaderReflection> pReflector;
-  if (FAILED(m_pDxcUtils->CreateReflection(&ReflectionData, IID_PPV_ARGS(pReflector.RawDblPtr()))))
+  xiiComPtr<ID3D11ShaderReflection> pReflector;
+  if (FAILED(D3DReflect(byteCode.GetData(), byteCode.GetCount(), IID_ID3D11ShaderReflection, reinterpret_cast<void**>(pReflector.RawDblPtr()))))
   {
     xiiLog::Error("Failed to create shader reflector.");
     return XII_FAILURE;
   }
 
-  D3D12_SHADER_DESC shaderDescription;
+  D3D11_SHADER_DESC shaderDescription;
   if (FAILED(pReflector->GetDesc(&shaderDescription)))
   {
     xiiLog::Error("Failed to extract shader information.");
@@ -132,14 +98,14 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramData& inout
   {
     xiiUInt32 uiNumVars = shaderDescription.InputParameters;
 
-    xiiDynamicArray<D3D12_PARAMETER_DESC*> inputParameters;
+    xiiDynamicArray<D3D11_PARAMETER_DESC*> inputParameters;
     inputParameters.SetCount(uiNumVars);
 
     vertexInputLayouts.Reserve(inputParameters.GetCount());
 
     for (xiiUInt32 i = 0; i < inputParameters.GetCount(); ++i)
     {
-      D3D12_SIGNATURE_PARAMETER_DESC parameterDesc;
+      D3D11_SIGNATURE_PARAMETER_DESC parameterDesc;
       if FAILED (pReflector->GetInputParameterDesc(i, &parameterDesc))
       {
         xiiLog::Error("Failed to retrieve shader parameter descriptor");
@@ -162,7 +128,7 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramData& inout
         else
           xiiLog::Dev("Unknown vertex input semantic found: {}", parameterDesc.SemanticName);
 
-        attribute.m_Format = GetXIIFormatD3D12(parameterDesc.ComponentType, parameterDesc.Mask);
+        attribute.m_Format = GetXIIFormatD3D11(parameterDesc.ComponentType, parameterDesc.Mask);
         XII_ASSERT_DEV(attribute.m_Format != xiiGALTextureFormat::Unknown, "Unknown vertex input format found: {}", parameterDesc.ComponentType);
       }
     }
@@ -172,12 +138,12 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramData& inout
   {
     xiiUInt32 uiNumBoundResources = shaderDescription.BoundResources;
 
-    xiiDynamicArray<D3D12_SHADER_INPUT_BIND_DESC> boundResources;
+    xiiDynamicArray<D3D11_SHADER_INPUT_BIND_DESC> boundResources;
     boundResources.SetCount(uiNumBoundResources);
 
     for (xiiUInt32 i = 0; i < uiNumBoundResources; ++i)
     {
-      D3D12_SHADER_INPUT_BIND_DESC& inputDescription = boundResources[i];
+      D3D11_SHADER_INPUT_BIND_DESC& inputDescription = boundResources[i];
       if (FAILED(pReflector->GetResourceBindingDesc(i, &inputDescription)))
       {
         xiiLog::Error("Failed to retrieve shader input descriptor");
@@ -207,7 +173,7 @@ xiiResult xiiShaderCompilerD3D12::ReflectShaderStage(xiiShaderProgramData& inout
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerD3D12::FillResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, xiiComPtr<ID3D12ShaderReflection>& pReflector, const D3D12_SHADER_INPUT_BIND_DESC& info)
+xiiResult xiiShaderCompilerD3D11::FillResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, xiiComPtr<ID3D11ShaderReflection>& pReflector, const D3D11_SHADER_INPUT_BIND_DESC& info)
 {
   // clang-format off
   if (info.Type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED
@@ -258,11 +224,11 @@ xiiResult xiiShaderCompilerD3D12::FillResourceBinding(xiiGALShaderByteCode& shad
   return XII_FAILURE;
 }
 
-xiiResult xiiShaderCompilerD3D12::ReflectConstantBufferLayout(xiiGALShaderByteCode& pStageBinary, xiiGALShaderResourceDescription& binding, ID3D12ShaderReflectionConstantBuffer* pConstantBufferReflection)
+xiiResult xiiShaderCompilerD3D11::ReflectConstantBufferLayout(xiiGALShaderByteCode& pStageBinary, xiiGALShaderResourceDescription& binding, ID3D11ShaderReflectionConstantBuffer* pConstantBufferReflection)
 {
   XII_LOG_BLOCK("Constant Buffer Layout", binding.m_sName);
 
-  D3D12_SHADER_BUFFER_DESC shaderDescription;
+  D3D11_SHADER_BUFFER_DESC shaderDescription;
 
   if (FAILED(pConstantBufferReflection->GetDesc(&shaderDescription)))
   {
@@ -276,18 +242,18 @@ xiiResult xiiShaderCompilerD3D12::ReflectConstantBufferLayout(xiiGALShaderByteCo
 
   for (xiiUInt32 i = 0; i < shaderDescription.Variables; ++i)
   {
-    ID3D12ShaderReflectionVariable* pCBVariable = pConstantBufferReflection->GetVariableByIndex(i);
+    ID3D11ShaderReflectionVariable* pCBVariable = pConstantBufferReflection->GetVariableByIndex(i);
 
-    D3D12_SHADER_VARIABLE_DESC variableDescription;
+    D3D11_SHADER_VARIABLE_DESC variableDescription;
     if (FAILED(pCBVariable->GetDesc(&variableDescription)))
     {
       xiiLog::Error("Failed to retrieve shader variable descriptor.");
       return XII_FAILURE;
     }
 
-    ID3D12ShaderReflectionType* pTypeDescription = pCBVariable->GetType();
+    ID3D11ShaderReflectionType* pTypeDescription = pCBVariable->GetType();
 
-    D3D12_SHADER_TYPE_DESC typeDescription;
+    D3D11_SHADER_TYPE_DESC typeDescription;
     if (FAILED(pTypeDescription->GetDesc(&typeDescription)))
     {
       xiiLog::Info("Failed to retrieve shader variable type descriptor");
@@ -398,7 +364,7 @@ xiiResult xiiShaderCompilerD3D12::ReflectConstantBufferLayout(xiiGALShaderByteCo
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerD3D12::FillSRVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const D3D12_SHADER_INPUT_BIND_DESC& info)
+xiiResult xiiShaderCompilerD3D11::FillSRVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const D3D11_SHADER_INPUT_BIND_DESC& info)
 {
   if (info.Type == D3D_SIT_STRUCTURED || info.Type == D3D_SIT_BYTEADDRESS || info.Type == D3D_SVT_BUFFER)
   {
@@ -456,7 +422,7 @@ xiiResult xiiShaderCompilerD3D12::FillSRVResourceBinding(xiiGALShaderByteCode& s
   return XII_FAILURE;
 }
 
-xiiResult xiiShaderCompilerD3D12::FillUAVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const D3D12_SHADER_INPUT_BIND_DESC& info)
+xiiResult xiiShaderCompilerD3D11::FillUAVResourceBinding(xiiGALShaderByteCode& shaderBinary, xiiGALShaderResourceDescription& binding, const D3D11_SHADER_INPUT_BIND_DESC& info)
 {
   switch (info.Type)
   {
@@ -493,7 +459,7 @@ xiiResult xiiShaderCompilerD3D12::FillUAVResourceBinding(xiiGALShaderByteCode& s
   return XII_FAILURE;
 }
 
-xiiEnum<xiiGALTextureFormat> GetXIIFormatD3D12(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents)
+xiiEnum<xiiGALTextureFormat> GetXIIFormatD3D11(D3D_REGISTER_COMPONENT_TYPE format, xiiUInt32 numComponents)
 {
   switch (format)
   {

@@ -14,6 +14,13 @@ public:
   {
     Platforms.PushBack("NULL_SM");
 
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
+    Platforms.PushBack("D3D_SM40_93");
+    Platforms.PushBack("D3D_SM40");
+    Platforms.PushBack("D3D_SM41");
+    Platforms.PushBack("D3D_SM50");
+#endif
+
 #if BUILDSYSTEM_ENABLE_D3D12_SUPPORT && XII_ENABLED(XII_PLATFORM_WINDOWS)
     Platforms.PushBack("D3D_SM51");
     Platforms.PushBack("D3D_SM60"); /// Wave intrinsics, 64-bit integers
