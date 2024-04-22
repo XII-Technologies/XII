@@ -357,11 +357,12 @@ public:
   void InvalidateState();
 
 public:
+  /// \brief Enum class representing the state of a command list recording.
   enum class RecordingState
   {
-    Recording,
-    Ended,
-    Reset
+    Recording, ///< The command list is currently being recorded.
+    Ended,     ///< The recording of the command list has ended.
+    Reset      ///< The command list has been reset and is ready to be recorded again.
   };
 
   void AssertRenderingThread() const;
