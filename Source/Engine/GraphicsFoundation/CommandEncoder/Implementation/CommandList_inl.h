@@ -1,4 +1,9 @@
 
+XII_ALWAYS_INLINE const xiiGALCommandListCreationDescription& xiiGALCommandList::GetDescription() const
+{
+  return m_Description;
+}
+
 XII_ALWAYS_INLINE void xiiGALCommandList::AssertRenderingThread() const
 {
   XII_ASSERT_DEV(xiiThreadUtils::IsMainThread(), "This function may only be executed on the main thread.");

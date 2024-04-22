@@ -28,8 +28,10 @@ public:
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() = 0;
 
+  /// \brief This begins a command list for recording commmands.
   XII_NODISCARD virtual xiiGALCommandList* BeginCommandList() = 0;
 
+  /// \brief Submits a command list for execution. If bReset is true, the command list is reset after submission.
   virtual void Submit(xiiGALCommandList* pCommandList, bool bReset = true);
 
 protected:
