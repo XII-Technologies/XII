@@ -1,6 +1,6 @@
 namespace xiiInternal
 {
-  template <typename AllocationPolicy, xiiUInt32 TrackingFlags>
+  template <typename AllocationPolicy, xiiAllocatorTrackingMode TrackingMode>
   class xiiAllocatorImpl : public xiiAllocatorBase
   {
   public:
@@ -23,15 +23,15 @@ namespace xiiInternal
     xiiThreadID    m_ThreadID;
   };
 
-  template <typename AllocationPolicy, xiiUInt32 TrackingFlags, bool HasReallocate>
-  class xiiAllocatorMixinReallocate : public xiiAllocatorImpl<AllocationPolicy, TrackingFlags>
+  template <typename AllocationPolicy, xiiAllocatorTrackingMode TrackingMode, bool HasReallocate>
+  class xiiAllocatorMixinReallocate : public xiiAllocatorImpl<AllocationPolicy, TrackingMode>
   {
   public:
     xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent);
   };
 
-  template <typename AllocationPolicy, xiiUInt32 TrackingFlags>
-  class xiiAllocatorMixinReallocate<AllocationPolicy, TrackingFlags, true> : public xiiAllocatorImpl<AllocationPolicy, TrackingFlags>
+  template <typename AllocationPolicy, xiiAllocatorTrackingMode TrackingMode>
+  class xiiAllocatorMixinReallocate<AllocationPolicy, TrackingMode, true> : public xiiAllocatorImpl<AllocationPolicy, TrackingMode>
   {
   public:
     xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent);
@@ -39,34 +39,29 @@ namespace xiiInternal
   };
 }; // namespace xiiInternal
 
-template <typename A, xiiUInt32 TrackingFlags>
-XII_FORCE_INLINE xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::xiiAllocatorImpl(xiiStringView sName, xiiAllocatorBase* pParent /* = nullptr */) :
+template <typename A, xiiAllocatorTrackingMode TrackingMode>
+XII_FORCE_INLINE xiiInternal::xiiAllocatorImpl<A, TrackingMode>::xiiAllocatorImpl(xiiStringView sName, xiiAllocatorBase* pParent /* = nullptr */) :
   m_allocator(pParent), m_ThreadID(xiiThreadUtils::GetCurrentThreadID())
 {
-  if constexpr ((TrackingFlags & xiiMemoryTrackingFlags::RegisterAllocator) != 0)
+  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::Basics)
   {
-    XII_CHECK_AT_COMPILETIME_MSG((TrackingFlags & ~xiiMemoryTrackingFlags::All) == 0, "Invalid tracking flags");
-    const xiiUInt32                     uiTrackingFlags = TrackingFlags;
-    xiiBitflags<xiiMemoryTrackingFlags> flags           = *reinterpret_cast<const xiiBitflags<xiiMemoryTrackingFlags>*>(&uiTrackingFlags);
-    this->m_Id                                          = xiiMemoryTracker::RegisterAllocator(sName, flags, pParent != nullptr ? pParent->GetId() : xiiAllocatorId());
+    this->m_Id = xiiMemoryTracker::RegisterAllocator(sName, TrackingMode, pParent != nullptr ? pParent->GetId() : xiiAllocatorId());
   }
 }
 
-template <typename A, xiiUInt32 TrackingFlags>
-xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::~xiiAllocatorImpl()
+template <typename A, xiiAllocatorTrackingMode TrackingMode>
+xiiInternal::xiiAllocatorImpl<A, TrackingMode>::~xiiAllocatorImpl()
 {
-  // XII_ASSERT_RELEASE(m_ThreadID == xiiThreadUtils::GetCurrentThreadID(), "Allocator is deleted from another thread");
-
-  if constexpr ((TrackingFlags & xiiMemoryTrackingFlags::RegisterAllocator) != 0)
+  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::Basics)
   {
     xiiMemoryTracker::DeregisterAllocator(this->m_Id);
   }
 }
 
-template <typename A, xiiUInt32 TrackingFlags>
-void* xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc)
+template <typename A, xiiAllocatorTrackingMode TrackingMode>
+void* xiiInternal::xiiAllocatorImpl<A, TrackingMode>::Allocate(size_t uiSize, size_t uiAlign, xiiMemoryUtils::DestructorFunction destructorFunc)
 {
-  // Zero size allocations always return nullptr without tracking (since deallocate nullptr is ignored).
+  // zero size allocations always return nullptr without tracking (since deallocate nullptr is ignored)
   if (uiSize == 0)
     return nullptr;
 
@@ -74,24 +69,21 @@ void* xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::Allocate(size_t uiSize, s
 
   xiiTime fAllocationTime = xiiTime::Now();
 
-  void* pPtr = m_allocator.Allocate(uiSize, uiAlign);
-  XII_ASSERT_DEV(pPtr != nullptr, "Could not allocate {0} bytes. Out of memory?", uiSize);
+  void* ptr = m_allocator.Allocate(uiSize, uiAlign);
+  XII_ASSERT_DEV(ptr != nullptr, "Could not allocate {0} bytes. Out of memory?", uiSize);
 
-  if constexpr ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
+  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
   {
-    xiiBitflags<xiiMemoryTrackingFlags> flags;
-    flags.SetValue(TrackingFlags);
-
-    xiiMemoryTracker::AddAllocation(this->m_Id, flags, pPtr, uiSize, uiAlign, xiiTime::Now() - fAllocationTime);
+    xiiMemoryTracker::AddAllocation(this->m_Id, TrackingMode, ptr, uiSize, uiAlign, xiiTime::Now() - fAllocationTime);
   }
 
-  return pPtr;
+  return ptr;
 }
 
-template <typename A, xiiUInt32 TrackingFlags>
-void xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::Deallocate(void* pPtr)
+template <typename A, xiiAllocatorTrackingMode TrackingMode>
+void xiiInternal::xiiAllocatorImpl<A, TrackingMode>::Deallocate(void* pPtr)
 {
-  if constexpr ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
+  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
   {
     xiiMemoryTracker::RemoveAllocation(this->m_Id, pPtr);
   }
@@ -99,10 +91,10 @@ void xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::Deallocate(void* pPtr)
   m_allocator.Deallocate(pPtr);
 }
 
-template <typename A, xiiUInt32 TrackingFlags>
-size_t xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::AllocatedSize(const void* pPtr)
+template <typename A, xiiAllocatorTrackingMode TrackingMode>
+size_t xiiInternal::xiiAllocatorImpl<A, TrackingMode>::AllocatedSize(const void* pPtr)
 {
-  if constexpr ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
+  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
   {
     return xiiMemoryTracker::GetAllocationInfo(this->m_Id, pPtr).m_uiSize;
   }
@@ -112,16 +104,16 @@ size_t xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::AllocatedSize(const void
   }
 }
 
-template <typename A, xiiUInt32 TrackingFlags>
-xiiAllocatorId xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::GetId() const
+template <typename A, xiiAllocatorTrackingMode TrackingMode>
+xiiAllocatorId xiiInternal::xiiAllocatorImpl<A, TrackingMode>::GetId() const
 {
   return this->m_Id;
 }
 
-template <typename A, xiiUInt32 TrackingFlags>
-xiiAllocatorBase::Stats xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::GetStats() const
+template <typename A, xiiAllocatorTrackingMode TrackingMode>
+xiiAllocatorBase::Stats xiiInternal::xiiAllocatorImpl<A, TrackingMode>::GetStats() const
 {
-  if constexpr ((TrackingFlags & xiiMemoryTrackingFlags::RegisterAllocator) != 0)
+  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::Basics)
   {
     return xiiMemoryTracker::GetAllocatorStats(this->m_Id);
   }
@@ -131,28 +123,28 @@ xiiAllocatorBase::Stats xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::GetStat
   }
 }
 
-template <typename A, xiiUInt32 TrackingFlags>
-XII_ALWAYS_INLINE xiiAllocatorBase* xiiInternal::xiiAllocatorImpl<A, TrackingFlags>::GetParent() const
+template <typename A, xiiAllocatorTrackingMode TrackingMode>
+XII_ALWAYS_INLINE xiiAllocatorBase* xiiInternal::xiiAllocatorImpl<A, TrackingMode>::GetParent() const
 {
   return m_allocator.GetParent();
 }
 
-template <typename A, xiiUInt32 TrackingFlags, bool HasReallocate>
-xiiInternal::xiiAllocatorMixinReallocate<A, TrackingFlags, HasReallocate>::xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent) :
-  xiiAllocatorImpl<A, TrackingFlags>(sName, pParent)
+template <typename A, xiiAllocatorTrackingMode TrackingMode, bool HasReallocate>
+xiiInternal::xiiAllocatorMixinReallocate<A, TrackingMode, HasReallocate>::xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent) :
+  xiiAllocatorImpl<A, TrackingMode>(sName, pParent)
 {
 }
 
-template <typename A, xiiUInt32 TrackingFlags>
-xiiInternal::xiiAllocatorMixinReallocate<A, TrackingFlags, true>::xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent) :
-  xiiAllocatorImpl<A, TrackingFlags>(sName, pParent)
+template <typename A, xiiAllocatorTrackingMode TrackingMode>
+xiiInternal::xiiAllocatorMixinReallocate<A, TrackingMode, true>::xiiAllocatorMixinReallocate(xiiStringView sName, xiiAllocatorBase* pParent) :
+  xiiAllocatorImpl<A, TrackingMode>(sName, pParent)
 {
 }
 
-template <typename A, xiiUInt32 TrackingFlags>
-void* xiiInternal::xiiAllocatorMixinReallocate<A, TrackingFlags, true>::Reallocate(void* pPtr, size_t uiCurrentSize, size_t uiNewSize, size_t uiAlign)
+template <typename A, xiiAllocatorTrackingMode TrackingMode>
+void* xiiInternal::xiiAllocatorMixinReallocate<A, TrackingMode, true>::Reallocate(void* pPtr, size_t uiCurrentSize, size_t uiNewSize, size_t uiAlign)
 {
-  if constexpr ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
+  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
   {
     xiiMemoryTracker::RemoveAllocation(this->m_Id, pPtr);
   }
@@ -161,12 +153,10 @@ void* xiiInternal::xiiAllocatorMixinReallocate<A, TrackingFlags, true>::Realloca
 
   void* pNewMem = this->m_allocator.Reallocate(pPtr, uiCurrentSize, uiNewSize, uiAlign);
 
-  if constexpr ((TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
+  if constexpr (TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
   {
-    xiiBitflags<xiiMemoryTrackingFlags> flags;
-    flags.SetValue(TrackingFlags);
-
-    xiiMemoryTracker::AddAllocation(this->m_Id, flags, pNewMem, uiNewSize, uiAlign, xiiTime::Now() - fAllocationTime);
+    xiiMemoryTracker::AddAllocation(this->m_Id, TrackingMode, pNewMem, uiNewSize, uiAlign, xiiTime::Now() - fAllocationTime);
   }
+
   return pNewMem;
 }

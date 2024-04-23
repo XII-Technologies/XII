@@ -45,7 +45,7 @@ private:
   bool                                                          m_bHadErrors;
   bool                                                          m_bHadSeriousWarnings;
   bool                                                          m_bHadWarnings;
-  xiiUniquePtr<xiiStackAllocator<xiiMemoryTrackingFlags::None>> m_pStackAllocator;
+  xiiUniquePtr<xiiStackAllocator<xiiAllocatorTrackingMode::DoNotTrack>> m_pStackAllocator;
   xiiDynamicArray<xiiString>                                    m_IncludeDirectories;
 
   struct IgnoreInfo
@@ -177,7 +177,7 @@ public:
     xiiGlobalLog::AddLogWriter(xiiLogWriter::VisualStudio::LogMessageHandler);
     xiiGlobalLog::AddLogWriter(LogInspector);
 
-    m_pStackAllocator = XII_DEFAULT_NEW(xiiStackAllocator<xiiMemoryTrackingFlags::None>, "Temp Allocator", xiiFoundation::GetAlignedAllocator());
+    m_pStackAllocator = XII_DEFAULT_NEW(xiiStackAllocator<xiiAllocatorTrackingMode::DoNotTrack>, "Temp Allocator", xiiFoundation::GetAlignedAllocator());
 
     if (GetArgumentCount() < 2)
       xiiLog::Error("This tool requires at leas one command-line argument: An absolute path to the top-level folder of a library.");

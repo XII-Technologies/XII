@@ -39,7 +39,7 @@ template <xiiUInt32 BlockSizeInByte>
 class xiiLargeBlockAllocator
 {
 public:
-  xiiLargeBlockAllocator(xiiStringView sName, xiiAllocatorBase* pParent, xiiBitflags<xiiMemoryTrackingFlags> flags = xiiMemoryTrackingFlags::Default);
+  xiiLargeBlockAllocator(xiiStringView sName, xiiAllocatorBase* pParent, xiiAllocatorTrackingMode mode = xiiAllocatorTrackingMode::Default);
   ~xiiLargeBlockAllocator();
 
   template <typename T>
@@ -60,7 +60,7 @@ private:
   void  Deallocate(void* ptr);
 
   xiiAllocatorId                      m_Id;
-  xiiBitflags<xiiMemoryTrackingFlags> m_TrackingFlags;
+  xiiAllocatorTrackingMode m_TrackingMode;
 
   xiiMutex    m_Mutex;
   xiiThreadID m_ThreadID;

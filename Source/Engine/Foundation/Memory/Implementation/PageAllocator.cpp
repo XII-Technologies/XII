@@ -10,7 +10,7 @@ static xiiAllocatorId GetPageAllocatorId()
 
   if (id.IsInvalidated())
   {
-    id = xiiMemoryTracker::RegisterAllocator("Page", xiiMemoryTrackingFlags::Default, xiiAllocatorId());
+    id = xiiMemoryTracker::RegisterAllocator("Page", xiiAllocatorTrackingMode::Default, xiiAllocatorId());
   }
 
   return id;

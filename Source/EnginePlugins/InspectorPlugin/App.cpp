@@ -78,18 +78,18 @@ void SetAppStats()
 #endif
   xiiStats::SetStat("Features/Profiling", sOut.GetData());
 
-#if XII_ENABLED(XII_USE_ALLOCATION_TRACKING)
-  sOut = "Enabled";
-#else
-  sOut = "Disabled";
-#endif
+  if constexpr (xiiAllocatorTrackingMode::Default >= xiiAllocatorTrackingMode::AllocationStats)
+    sOut = "Enabled";
+  else
+    sOut = "Disabled";
+
   xiiStats::SetStat("Features/Allocation Tracking", sOut.GetData());
 
-#if XII_ENABLED(XII_USE_ALLOCATION_STACK_TRACING)
-  sOut = "Enabled";
-#else
-  sOut = "Disabled";
-#endif
+  if constexpr (xiiAllocatorTrackingMode::Default >= xiiAllocatorTrackingMode::AllocationStatsAndStacktraces)
+    sOut = "Enabled";
+  else
+    sOut = "Disabled";
+
   xiiStats::SetStat("Features/Allocation Stack Tracing", sOut.GetData());
 
 #if XII_ENABLED(XII_PLATFORM_LITTLE_ENDIAN)
@@ -99,6 +99,5 @@ void SetAppStats()
 #endif
   xiiStats::SetStat("Platform/Endianess", sOut.GetData());
 }
-
 
 XII_STATICLINK_FILE(InspectorPlugin, InspectorPlugin_App);

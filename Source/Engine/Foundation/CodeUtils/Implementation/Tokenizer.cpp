@@ -25,7 +25,7 @@ namespace
 {
   // This allocator is used to get rid of some of the memory allocation tracking
   // that would otherwise occur for allocations made by the tokenizer.
-  thread_local xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiMemoryTrackingFlags::None> s_ClassAllocator("xiiTokenizer", xiiFoundation::GetDefaultAllocator());
+  thread_local xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiAllocatorTrackingMode::DoNotTrack> s_ClassAllocator("xiiTokenizer", xiiFoundation::GetDefaultAllocator());
 } // namespace
 
 

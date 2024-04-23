@@ -10,14 +10,10 @@
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/Mutex.h>
 
-#if XII_ENABLED(XII_PLATFORM_WINDOWS)
-#  include <Foundation/Basics/Platform/Win/IncludeWindows.h>
-#endif
-
 namespace
 {
   // There is no tracking for the tracker data itself.
-  using TrackerDataAllocator = xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, 0>;
+  using TrackerDataAllocator = xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiAllocatorTrackingMode::DoNotTrack>;
 
   static TrackerDataAllocator* s_pTrackerDataAllocator;
 
@@ -32,7 +28,7 @@ namespace
     XII_ALWAYS_INLINE AllocatorData() = default;
 
     xiiHybridString<32, TrackerDataAllocatorWrapper> m_sName;
-    xiiBitflags<xiiMemoryTrackingFlags>              m_Flags;
+    xiiAllocatorTrackingMode                         m_TrackingMode;
 
     xiiAllocatorId m_ParentId;
 
@@ -111,7 +107,7 @@ xiiAllocatorId xiiMemoryTracker::Iterator::Id() const
 
 xiiStringView xiiMemoryTracker::Iterator::Name() const
 {
-  return CAST_ITER(m_pData)->Value().m_sName.GetData();
+  return CAST_ITER(m_pData)->Value().m_sName;
 }
 
 xiiAllocatorId xiiMemoryTracker::Iterator::ParentId() const
@@ -143,16 +139,16 @@ xiiMemoryTracker::Iterator::~Iterator()
 
 
 // static
-xiiAllocatorId xiiMemoryTracker::RegisterAllocator(xiiStringView sName, xiiBitflags<xiiMemoryTrackingFlags> flags, xiiAllocatorId parentId)
+xiiAllocatorId xiiMemoryTracker::RegisterAllocator(xiiStringView sName, xiiAllocatorTrackingMode mode, xiiAllocatorId parentId)
 {
   Initialize();
 
   XII_LOCK(*s_pTrackerData);
 
   AllocatorData data;
-  data.m_sName    = sName;
-  data.m_Flags    = flags;
-  data.m_ParentId = parentId;
+  data.m_sName        = sName;
+  data.m_TrackingMode = mode;
+  data.m_ParentId     = parentId;
 
   xiiAllocatorId id = s_pTrackerData->m_AllocatorData.Insert(data);
 
@@ -186,14 +182,12 @@ void xiiMemoryTracker::DeregisterAllocator(xiiAllocatorId allocatorId)
 }
 
 // static
-void xiiMemoryTracker::AddAllocation(xiiAllocatorId allocatorId, xiiBitflags<xiiMemoryTrackingFlags> flags, const void* pPtr, size_t uiSize, size_t uiAlign, xiiTime allocationTime)
+void xiiMemoryTracker::AddAllocation(xiiAllocatorId allocatorId, xiiAllocatorTrackingMode mode, const void* pPtr, size_t uiSize, size_t uiAlign, xiiTime allocationTime)
 {
-  XII_ASSERT_DEV((flags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0, "Allocation tracking is turned off, but xiiMemoryTracker::AddAllocation() is called anyway.");
-
   XII_ASSERT_DEV(uiAlign < 0xFFFF, "Alignment too big");
 
   xiiArrayPtr<void*> stackTrace;
-  if (flags.IsSet(xiiMemoryTrackingFlags::EnableStackTrace))
+  if (mode >= xiiAllocatorTrackingMode::AllocationStatsAndStacktraces)
   {
     void*              pBuffer[64];
     xiiArrayPtr<void*> tempTrace(pBuffer);
@@ -212,7 +206,6 @@ void xiiMemoryTracker::AddAllocation(xiiAllocatorId allocatorId, xiiBitflags<xii
     data.m_Stats.m_uiPerFrameAllocationSize += uiSize;
     data.m_Stats.m_PerFrameAllocationTime += allocationTime;
 
-    XII_ASSERT_DEBUG(data.m_Flags == flags, "Given flags have to be identical to allocator flags");
     auto pInfo           = &data.m_Allocations[pPtr];
     pInfo->m_uiSize      = uiSize;
     pInfo->m_uiAlignment = (xiiUInt16)uiAlign;
@@ -396,20 +389,24 @@ xiiUInt32 xiiMemoryTracker::PrintMemoryLeaks(PrintFunc printFunc)
 
     if (leak.IsRootLeak())
     {
-      if (uiNumLeaks == 0)
+      const AllocatorData& data = s_pTrackerData->m_AllocatorData[leak.m_AllocatorId];
+
+      if (data.m_TrackingMode != xiiAllocatorTrackingMode::AllocationStatsIgnoreLeaks)
       {
-        printFunc("\n\n--------------------------------------------------------------------\n"
-                  "Memory Leak Report:"
-                  "\n--------------------------------------------------------------------\n\n");
+        if (uiNumLeaks == 0)
+        {
+          printFunc("\n\n--------------------------------------------------------------------\n"
+                    "Memory Leak Report:"
+                    "\n--------------------------------------------------------------------\n\n");
+        }
+
+        xiiMemoryTracker::AllocationInfo info;
+        data.m_Allocations.TryGetValue(ptr, info);
+
+        DumpLeak(info, data.m_sName.GetData());
+
+        ++uiNumLeaks;
       }
-
-      const AllocatorData&             data = s_pTrackerData->m_AllocatorData[leak.m_AllocatorId];
-      xiiMemoryTracker::AllocationInfo info;
-      data.m_Allocations.TryGetValue(ptr, info);
-
-      DumpLeak(info, data.m_sName.GetData());
-
-      ++uiNumLeaks;
     }
   }
 

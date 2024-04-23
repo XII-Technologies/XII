@@ -45,7 +45,7 @@ public:
   ///
   /// \note Careful! This information is only available, if allocation tracking is enabled!
   /// Otherwise 0 is returned.
-  /// See xiiMemoryTrackingFlags::EnableAllocationTracking and XII_USE_ALLOCATION_TRACKING.
+  /// See xiiAllocatorTrackingMode and XII_ALLOC_TRACKING_DEFAULT.
   virtual size_t AllocatedSize(const void* pPtr) = 0;
 
   virtual xiiAllocatorId GetId() const    = 0;

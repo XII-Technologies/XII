@@ -43,12 +43,12 @@ XII_FORCE_INLINE T& xiiDataBlock<T, SizeInBytes>::operator[](xiiUInt32 uiIndex) 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <xiiUInt32 BlockSize>
-xiiLargeBlockAllocator<BlockSize>::xiiLargeBlockAllocator(xiiStringView sName, xiiAllocatorBase* pParent, xiiBitflags<xiiMemoryTrackingFlags> flags) :
-  m_TrackingFlags(flags), m_SuperBlocks(pParent), m_FreeBlocks(pParent)
+xiiLargeBlockAllocator<BlockSize>::xiiLargeBlockAllocator(xiiStringView sName, xiiAllocatorBase* pParent, xiiAllocatorTrackingMode mode) :
+  m_TrackingMode(mode), m_SuperBlocks(pParent), m_FreeBlocks(pParent)
 {
   XII_CHECK_AT_COMPILETIME_MSG(BlockSize >= 4096, "Block size must be 4096 or bigger");
 
-  m_Id       = xiiMemoryTracker::RegisterAllocator(sName, flags, xiiPageAllocator::GetId());
+  m_Id       = xiiMemoryTracker::RegisterAllocator(sName, mode, xiiPageAllocator::GetId());
   m_ThreadID = xiiThreadUtils::GetCurrentThreadID();
 
   const xiiUInt32 uiPageSize = xiiSystemInformation::Get().GetMemoryPageSize();
@@ -159,9 +159,9 @@ void* xiiLargeBlockAllocator<BlockSize>::Allocate(size_t uiAlign)
     ptr = pMemory;
   }
 
-  if ((m_TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
+  if (m_TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
   {
-    xiiMemoryTracker::AddAllocation(m_Id, m_TrackingFlags, ptr, BlockSize, uiAlign, xiiTime::Now() - fAllocationTime);
+    xiiMemoryTracker::AddAllocation(m_Id, m_TrackingMode, ptr, BlockSize, uiAlign, xiiTime::Now() - fAllocationTime);
   }
 
   return ptr;
@@ -172,7 +172,7 @@ void xiiLargeBlockAllocator<BlockSize>::Deallocate(void* ptr)
 {
   XII_LOCK(m_Mutex);
 
-  if ((m_TrackingFlags & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
+  if (m_TrackingMode >= xiiAllocatorTrackingMode::AllocationStats)
   {
     xiiMemoryTracker::RemoveAllocation(m_Id, ptr);
   }

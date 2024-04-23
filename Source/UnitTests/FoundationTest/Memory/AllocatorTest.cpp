@@ -62,22 +62,24 @@ void TestAlignmentHelper(size_t uiExpectedAlignment)
 
   size_t uiExpectedSize = sizeof(T) * 32;
 
-#if XII_ENABLED(XII_USE_ALLOCATION_TRACKING)
-  XII_TEST_INT(pAllocator->AllocatedSize(pTestBuffer), uiExpectedSize);
+  if constexpr (xiiAllocatorTrackingMode::Default >= xiiAllocatorTrackingMode::AllocationStats)
+  {
+    XII_TEST_INT(pAllocator->AllocatedSize(pTestBuffer), uiExpectedSize);
 
-  xiiAllocatorBase::Stats stats = pAllocator->GetStats();
-  XII_TEST_INT(stats.m_uiAllocationSize, uiExpectedSize * 2);
-  XII_TEST_INT(stats.m_uiNumAllocations - stats.m_uiNumDeallocations, 2);
-#endif
+    xiiAllocatorBase::Stats stats = pAllocator->GetStats();
+    XII_TEST_INT(stats.m_uiAllocationSize, uiExpectedSize * 2);
+    XII_TEST_INT(stats.m_uiNumAllocations - stats.m_uiNumDeallocations, 2);
+  }
 
   XII_DELETE_ARRAY(pAllocator, TestArray);
   XII_DELETE_RAW_BUFFER(pAllocator, pTestBuffer);
 
-#if XII_ENABLED(XII_USE_ALLOCATION_TRACKING)
-  stats = pAllocator->GetStats();
-  XII_TEST_INT(stats.m_uiAllocationSize, 0);
-  XII_TEST_INT(stats.m_uiNumAllocations - stats.m_uiNumDeallocations, 0);
-#endif
+  if constexpr (xiiAllocatorTrackingMode::Default >= xiiAllocatorTrackingMode::Basics)
+  {
+    xiiAllocatorBase::Stats stats = pAllocator->GetStats();
+    XII_TEST_INT(stats.m_uiAllocationSize, 0);
+    XII_TEST_INT(stats.m_uiNumAllocations - stats.m_uiNumDeallocations, 0);
+  }
 }
 
 XII_CREATE_SIMPLE_TEST_GROUP(Memory);
@@ -98,7 +100,7 @@ XII_CREATE_SIMPLE_TEST(Memory, Allocator)
     };
     const xiiUInt32 uiPageSize = xiiSystemInformation::Get().GetMemoryPageSize();
 
-    xiiLargeBlockAllocator<BLOCK_SIZE_IN_BYTES> allocator("Test", xiiFoundation::GetDefaultAllocator(), xiiMemoryTrackingFlags::EnableAllocationTracking);
+    xiiLargeBlockAllocator<BLOCK_SIZE_IN_BYTES> allocator("Test", xiiFoundation::GetDefaultAllocator(), xiiAllocatorTrackingMode::AllocationStats);
 
     xiiDynamicArray<xiiDataBlock<int, BLOCK_SIZE_IN_BYTES>> blocks;
     blocks.Reserve(1000);
