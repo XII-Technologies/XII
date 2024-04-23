@@ -60,7 +60,7 @@ private:
   void  Deallocate(void* ptr);
 
   xiiAllocatorId                      m_Id;
-  xiiAllocatorTrackingMode m_TrackingMode;
+  xiiAllocatorTrackingMode            m_TrackingMode;
 
   xiiMutex    m_Mutex;
   xiiThreadID m_ThreadID;
