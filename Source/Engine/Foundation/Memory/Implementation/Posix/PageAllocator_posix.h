@@ -14,9 +14,9 @@ void* xiiPageAllocator::AllocatePage(size_t uiSize)
 
   XII_CHECK_ALIGNMENT(pPtr, uiAlign);
 
-  if ((xiiMemoryTrackingFlags::Default & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
+  if constexpr (xiiAllocatorTrackingMode::Default >= xiiAllocatorTrackingMode::AllocationStats)
   {
-    xiiMemoryTracker::AddAllocation(GetPageAllocatorId(), xiiMemoryTrackingFlags::Default, pPtr, uiSize, uiAlign, xiiTime::Now() - fAllocationTime);
+    xiiMemoryTracker::AddAllocation(xiiPageAllocator::GetId(), xiiAllocatorTrackingMode::Default, pPtr, uiSize, uiAlign, xiiTime::Now() - fAllocationTime);
   }
 
   return pPtr;
@@ -25,9 +25,9 @@ void* xiiPageAllocator::AllocatePage(size_t uiSize)
 // static
 void xiiPageAllocator::DeallocatePage(void* pPtr)
 {
-  if ((xiiMemoryTrackingFlags::Default & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
+  if constexpr (xiiAllocatorTrackingMode::Default >= xiiAllocatorTrackingMode::AllocationStats)
   {
-    xiiMemoryTracker::RemoveAllocation(GetPageAllocatorId(), pPtr);
+    xiiMemoryTracker::RemoveAllocation(xiiPageAllocator::GetId(), pPtr);
   }
 
   free(pPtr);

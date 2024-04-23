@@ -4,38 +4,16 @@
 #include <Foundation/Time/Time.h>
 #include <Foundation/Types/Bitflags.h>
 
-struct xiiMemoryTrackingFlags
+enum class xiiAllocatorTrackingMode : xiiUInt32
 {
-  using StorageType = xiiUInt32;
+  DoNotTrack,                    ///< The allocator doesn't track anything. Use this for best performance.
+  Basics,                        ///< The allocator will be known to the system, so it can show up in debugging tools, but barely anything more.
+  AllocationStats,               ///< The allocator keeps track of how many allocations and deallocations it did and how large its memory usage is.
+  AllocationStatsIgnoreLeaks,    ///< Same as AllocationStats, but any remaining allocations at shutdown are not reported as leaks.
+  AllocationStatsAndStacktraces, ///< The allocator will record stack traces for each allocation, which can be used to find memory leaks.
 
-  enum Enum
-  {
-    None,
-    RegisterAllocator = XII_BIT(0),        ///< Register the allocator with the memory tracker. If EnableAllocationTracking is not set as well it is up to the
-                                           ///< allocator implementation whether it collects usable stats or not.
-    EnableAllocationTracking = XII_BIT(1), ///< Enable tracking of individual allocations
-    EnableStackTrace         = XII_BIT(2), ///< Enable stack traces for each allocation
-
-    All = RegisterAllocator | EnableAllocationTracking | EnableStackTrace,
-
-    Default = 0
-#if XII_ENABLED(XII_USE_ALLOCATION_TRACKING)
-      | RegisterAllocator | EnableAllocationTracking
-#endif
-#if XII_ENABLED(XII_USE_ALLOCATION_STACK_TRACING)
-      | EnableStackTrace
-#endif
-  };
-
-  struct Bits
-  {
-    StorageType RegisterAllocator : 1;
-    StorageType EnableAllocationTracking : 1;
-    StorageType EnableStackTrace : 1;
-  };
+  Default = XII_ALLOC_TRACKING_DEFAULT,
 };
-
-// XII_DECLARE_FLAGS_OPERATORS(xiiMemoryTrackingFlags);
 
 #define XII_STATIC_ALLOCATOR_NAME "Statics"
 
@@ -92,10 +70,10 @@ public:
     void* m_pData;
   };
 
-  static xiiAllocatorId RegisterAllocator(xiiStringView sName, xiiBitflags<xiiMemoryTrackingFlags> flags, xiiAllocatorId parentId);
+  static xiiAllocatorId RegisterAllocator(xiiStringView sName, xiiAllocatorTrackingMode mode, xiiAllocatorId parentId);
   static void           DeregisterAllocator(xiiAllocatorId allocatorId);
 
-  static void AddAllocation(xiiAllocatorId allocatorId, xiiBitflags<xiiMemoryTrackingFlags> flags, const void* pPtr, size_t uiSize, size_t uiAlign, xiiTime allocationTime);
+  static void AddAllocation(xiiAllocatorId allocatorId, xiiAllocatorTrackingMode mode, const void* pPtr, size_t uiSize, size_t uiAlign, xiiTime allocationTime);
   static void RemoveAllocation(xiiAllocatorId allocatorId, const void* pPtr);
   static void RemoveAllAllocations(xiiAllocatorId allocatorId);
   static void SetAllocatorStats(xiiAllocatorId allocatorId, const xiiAllocatorBase::Stats& stats);

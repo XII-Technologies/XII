@@ -25,12 +25,8 @@
 #  define XII_USE_PROFILING XII_OFF
 
 // Tracking of memory allocations.
-#  undef XII_USE_ALLOCATION_TRACKING
-#  define XII_USE_ALLOCATION_TRACKING XII_OFF
-
-// Stack traces for memory allocations.
-#  undef XII_USE_ALLOCATION_STACK_TRACING
-#  define XII_USE_ALLOCATION_STACK_TRACING XII_OFF
+#  undef XII_ALLOC_TRACKING_DEFAULT
+#  define XII_ALLOC_TRACKING_DEFAULT xiiAllocatorTrackingMode::DoNotTrack
 
 #else
 
@@ -43,12 +39,8 @@
 #  define XII_USE_PROFILING XII_ON
 
 // Tracking of memory allocations.
-#  undef XII_USE_ALLOCATION_TRACKING
-#  define XII_USE_ALLOCATION_TRACKING XII_ON
-
-// Stack traces for memory allocations.
-#  undef XII_USE_ALLOCATION_STACK_TRACING
-#  define XII_USE_ALLOCATION_STACK_TRACING XII_ON
+#  undef XII_ALLOC_TRACKING_DEFAULT
+#  define XII_ALLOC_TRACKING_DEFAULT xiiAllocatorTrackingMode::AllocationStatsAndStacktraces
 
 #endif
 

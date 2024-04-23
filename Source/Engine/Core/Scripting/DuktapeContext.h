@@ -40,9 +40,9 @@ protected:
 
 private:
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiMemoryTrackingFlags::RegisterAllocator | xiiMemoryTrackingFlags::EnableAllocationTracking> m_Allocator;
+  xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiAllocatorTrackingMode::AllocationStats> m_Allocator;
 #  else
-  xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiMemoryTrackingFlags::None> m_Allocator;
+  xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiAllocatorTrackingMode::DoNotTrack> m_Allocator;
 #  endif
 };
 

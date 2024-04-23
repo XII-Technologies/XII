@@ -7,8 +7,8 @@
 #include <Foundation/Threading/Lock.h>
 #include <Foundation/Threading/Mutex.h>
 
-template <xiiUInt32 TrackingFlags = xiiMemoryTrackingFlags::Default>
-class xiiStackAllocator : public xiiAllocator<xiiMemoryPolicies::xiiStackAllocation, TrackingFlags>
+template <xiiAllocatorTrackingMode TrackingMode = xiiAllocatorTrackingMode::Default>
+class xiiStackAllocator : public xiiAllocator<xiiMemoryPolicies::xiiStackAllocation, TrackingMode>
 {
 public:
   xiiStackAllocator(xiiStringView sName, xiiAllocatorBase* pParent);

@@ -9,24 +9,24 @@ void* xiiPageAllocator::AllocatePage(size_t uiSize)
 {
   xiiTime fAllocationTime = xiiTime::Now();
 
-  void* ptr = ::VirtualAlloc(nullptr, uiSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-  XII_ASSERT_DEV(ptr != nullptr, "Could not allocate memory pages. Error Code '{0}'", xiiArgErrorCode(::GetLastError()));
+  void* pPtr = ::VirtualAlloc(nullptr, uiSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+  XII_ASSERT_DEV(pPtr != nullptr, "Could not allocate memory pages. Error Code '{0}'", xiiArgErrorCode(::GetLastError()));
 
   size_t uiAlign = xiiSystemInformation::Get().GetMemoryPageSize();
-  XII_CHECK_ALIGNMENT(ptr, uiAlign);
+  XII_CHECK_ALIGNMENT(pPtr, uiAlign);
 
-  if constexpr ((xiiMemoryTrackingFlags::Default & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
+  if constexpr (xiiAllocatorTrackingMode::Default >= xiiAllocatorTrackingMode::AllocationStats)
   {
-    xiiMemoryTracker::AddAllocation(GetPageAllocatorId(), xiiMemoryTrackingFlags::Default, ptr, uiSize, uiAlign, xiiTime::Now() - fAllocationTime);
+    xiiMemoryTracker::AddAllocation(GetPageAllocatorId(), xiiAllocatorTrackingMode::Default, pPtr, uiSize, uiAlign, xiiTime::Now() - fAllocationTime);
   }
 
-  return ptr;
+  return pPtr;
 }
 
 // static
 void xiiPageAllocator::DeallocatePage(void* pPtr)
 {
-  if constexpr ((xiiMemoryTrackingFlags::Default & xiiMemoryTrackingFlags::EnableAllocationTracking) != 0)
+  if constexpr (xiiAllocatorTrackingMode::Default >= xiiAllocatorTrackingMode::AllocationStats)
   {
     xiiMemoryTracker::RemoveAllocation(GetPageAllocatorId(), pPtr);
   }

@@ -6,7 +6,7 @@
 class XII_FOUNDATION_DLL xiiDoubleBufferedStackAllocator
 {
 public:
-  using StackAllocatorType = xiiStackAllocator<xiiMemoryTrackingFlags::RegisterAllocator>;
+  using StackAllocatorType = xiiStackAllocator<xiiAllocatorTrackingMode::Basics>;
 
   xiiDoubleBufferedStackAllocator(xiiStringView sName, xiiAllocatorBase* pParent);
   ~xiiDoubleBufferedStackAllocator();
