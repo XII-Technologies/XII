@@ -3,6 +3,7 @@
 /// \file
 
 #include <Foundation/Basics.h>
+#include <Foundation/Containers/Implementation/BitIterator.h>
 #include <Foundation/Types/Enum.h>
 
 /// \brief The xiiBitflags class allows you to work with type-safe bitflags.
@@ -85,6 +86,8 @@ private:
   using StorageType = typename T::StorageType;
 
 public:
+  using ConstIterator = xiiBitIterator<Enum, false>;
+
   /// \brief Constructor. Initializes the flags to the default value.
   XII_ALWAYS_INLINE xiiBitflags() :
     m_Value(T::Default) // [tested]
@@ -144,8 +147,6 @@ public:
   /// \brief Returns whether there are strictly any of the given flags set.
   XII_ALWAYS_INLINE bool IsStrictlyAnySet(const xiiBitflags<T>& rhs) const
   {
-    /// \test Not yet tested.
-
     return (m_Value & ~rhs.m_Value) == 0;
   }
 
@@ -221,6 +222,19 @@ public:
     return m_Value != 0;
   }
 
+  /// \brief Returns a constant iterator to the very first set bit.
+  /// Note that due to the way iterating through bits is accelerated, changes to the bitflags will not affect the iterator after creation.
+  XII_ALWAYS_INLINE ConstIterator GetIterator() const // [tested]
+  {
+    return ConstIterator((Enum)m_Value);
+  }
+
+  /// \brief Returns an invalid iterator. Needed to support range based for loops.
+  XII_ALWAYS_INLINE ConstIterator GetEndIterator() const // [tested]
+  {
+    return ConstIterator();
+  }
+
 private:
   XII_ALWAYS_INLINE explicit xiiBitflags(StorageType flags) :
     m_Value(flags)
@@ -234,6 +248,31 @@ private:
   };
 };
 
+//////////////////////////////////////////////////////////////////////////
+// begin() /end() for range-based for-loop support
+template <typename T>
+typename xiiBitflags<T>::ConstIterator begin(const xiiBitflags<T>& container)
+{
+  return container.GetIterator();
+}
+
+template <typename T>
+typename xiiBitflags<T>::ConstIterator cbegin(const xiiBitflags<T>& container)
+{
+  return container.GetIterator();
+}
+
+template <typename T>
+typename xiiBitflags<T>::ConstIterator end(const xiiBitflags<T>& container)
+{
+  return container.GetEndIterator();
+}
+
+template <typename T>
+typename xiiBitflags<T>::ConstIterator cend(const xiiBitflags<T>& container)
+{
+  return container.GetEndIterator();
+}
 
 /// \brief This macro will define the operator| and operator& function that is required for class \a FlagsType to work with xiiBitflags.
 /// See class xiiBitflags for more information.

@@ -2,6 +2,7 @@
 
 #include <Foundation/Containers/Bitfield.h>
 #include <Foundation/Containers/Deque.h>
+#include <Foundation/Math/Random.h>
 #include <Foundation/Strings/String.h>
 
 XII_CREATE_SIMPLE_TEST(Containers, Bitfield)
@@ -198,12 +199,98 @@ XII_CREATE_SIMPLE_TEST(Containers, Bitfield)
     XII_TEST_BOOL(bf.IsNoBitSet() == false);
     XII_TEST_BOOL(bf.AreAllBitsSet() == true);
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Iterator")
+  {
+    {
+      // Check empty bitfields of varying sizes.
+      for (xiiUInt32 uiNumBits = 0; uiNumBits <= 65; ++uiNumBits)
+      {
+        xiiHybridBitfield<128> bitfield;
+        bitfield.SetCount(uiNumBits, true);
+        for (xiiUInt32 b = 0; b < uiNumBits; ++b)
+        {
+          bitfield.ClearBit(b);
+        }
+        for (xiiUInt32 uiBit : bitfield)
+        {
+          XII_TEST_BOOL_MSG(false, "No bit should be set");
+        }
+
+        for (auto it = bitfield.GetIterator(); it.IsValid(); it.Next())
+        {
+          XII_TEST_BOOL_MSG(false, "No bit should be set");
+        }
+        XII_TEST_BOOL(bitfield.GetIterator() == bitfield.GetEndIterator());
+        XII_TEST_BOOL(!bitfield.GetIterator().IsValid());
+        XII_TEST_BOOL(!bitfield.GetEndIterator().IsValid());
+      }
+    }
+
+    {
+      // Full bits.
+      for (xiiUInt32 uiNumBits = 0; uiNumBits <= 65; ++uiNumBits)
+      {
+        xiiHybridBitfield<128> bitfield;
+        bitfield.SetCount(uiNumBits, true);
+        xiiUInt32 uiNextBit = 0;
+        for (xiiUInt32 uiBit : bitfield)
+        {
+          XII_TEST_INT(uiBit, uiNextBit);
+          uiNextBit++;
+        }
+        XII_TEST_INT(uiNumBits, uiNextBit);
+
+        uiNextBit = 0;
+        for (auto it = bitfield.GetIterator(); it.IsValid(); ++it)
+        {
+          XII_TEST_INT(it.Value(), uiNextBit);
+          XII_TEST_INT(*it, uiNextBit);
+          XII_TEST_BOOL(it.IsValid());
+          uiNextBit++;
+        }
+        XII_TEST_INT(uiNumBits, uiNextBit);
+      }
+    }
+
+    {
+      // Partial bits set.
+      xiiRandom rnd;
+      rnd.Initialize(42);
+
+      for (xiiUInt32 uiNumBits = 2; uiNumBits <= 65; ++uiNumBits)
+      {
+        xiiHybridBitfield<128> bitfield;
+        bitfield.SetCount(uiNumBits, false);
+
+        // Add some random bits and ensure they appear in the iterator in order.
+        xiiHybridArray<xiiUInt32, 3> bits;
+        for (int i = 0; i < uiNumBits / 2; ++i)
+        {
+          xiiUInt32 bit = (xiiUInt32)rnd.IntMinMax(0, uiNumBits - 1);
+          if (!bitfield.IsBitSet(bit))
+          {
+            bits.PushBack(bit);
+            bitfield.SetBit(bit);
+          }
+        }
+        bits.Sort();
+
+        for (xiiUInt32 uiBit : bitfield)
+        {
+          XII_TEST_INT(uiBit, bits[0]);
+          bits.RemoveAtAndCopy(0);
+        }
+        XII_TEST_BOOL(bits.IsEmpty());
+      }
+    }
+  }
 }
 
 
 XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
 {
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetAllBits / ClearAllBits / SetBitValue")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetAllBits / ClearAllBits")
   {
     xiiStaticBitfield64 bf;
 
@@ -221,7 +308,7 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
       XII_TEST_BOOL(!bf.IsBitSet(i));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetBit / ClearBit")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetBit / ClearBit / SetBitValue")
   {
     xiiStaticBitfield32 bf;
 
@@ -364,5 +451,145 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
     XII_TEST_INT(xiiStaticBitfield32::FromMask(0x80000000u).GetHighestBitSet(), 31);
     XII_TEST_INT(xiiStaticBitfield32::FromMask(0xffffffffu).GetHighestBitSet(), 31);
     XII_TEST_INT(xiiStaticBitfield64::FromMask(0xffffffffffffffffull).GetHighestBitSet(), 63);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Iterator")
+  {
+    {
+      // Empty bitfield
+      xiiStaticBitfield32 bitfield = xiiStaticBitfield32::FromMask(0u);
+      for (xiiUInt32 uiBit : bitfield)
+      {
+        XII_TEST_BOOL_MSG(false, "No bit should be set");
+      }
+      for (auto it = bitfield.GetIterator(); it.IsValid(); it.Next())
+      {
+        XII_TEST_BOOL_MSG(false, "No bit should be set");
+      }
+      XII_TEST_BOOL(bitfield.GetIterator() == bitfield.GetEndIterator());
+      XII_TEST_BOOL(!bitfield.GetIterator().IsValid());
+      XII_TEST_BOOL(!bitfield.GetEndIterator().IsValid());
+
+      xiiStaticBitfield64 bitfield64 = xiiStaticBitfield64::FromMask(0u);
+      for (xiiUInt32 uiBit : bitfield64)
+      {
+        XII_TEST_BOOL_MSG(false, "No bit should be set");
+      }
+      for (auto it = bitfield64.GetIterator(); it.IsValid(); it.Next())
+      {
+        XII_TEST_BOOL_MSG(false, "No bit should be set");
+      }
+      XII_TEST_BOOL(bitfield64.GetIterator() == bitfield64.GetEndIterator());
+      XII_TEST_BOOL(!bitfield64.GetIterator().IsValid());
+      XII_TEST_BOOL(!bitfield64.GetEndIterator().IsValid());
+    }
+
+    {
+      // Full 32 bits
+      xiiStaticBitfield32 bitfield  = xiiStaticBitfield32::FromMask(0xffffffffu);
+      xiiUInt32           uiNextBit = 0;
+      for (xiiUInt32 uiBit : bitfield)
+      {
+        XII_TEST_INT(uiBit, uiNextBit);
+        uiNextBit++;
+      }
+      XII_TEST_INT(32, uiNextBit);
+
+      uiNextBit = 0;
+      for (auto it = bitfield.GetIterator(); it.IsValid(); ++it)
+      {
+        XII_TEST_INT(it.Value(), uiNextBit);
+        XII_TEST_INT(*it, uiNextBit);
+        XII_TEST_BOOL(it.IsValid());
+        uiNextBit++;
+      }
+      XII_TEST_INT(32, uiNextBit);
+    }
+
+    {
+      // Full 64 bits
+      xiiStaticBitfield64 bitfield  = xiiStaticBitfield64::FromMask(0xffffffffffffffffull);
+      xiiUInt32           uiNextBit = 0;
+      for (xiiUInt32 uiBit : bitfield)
+      {
+        XII_TEST_INT(uiBit, uiNextBit);
+        uiNextBit++;
+      }
+      XII_TEST_INT(64, uiNextBit);
+
+      uiNextBit = 0;
+      for (auto it = bitfield.GetIterator(); it.IsValid(); ++it)
+      {
+        XII_TEST_INT(it.Value(), uiNextBit);
+        XII_TEST_INT(*it, uiNextBit);
+        XII_TEST_BOOL(it.IsValid());
+        uiNextBit++;
+      }
+      XII_TEST_INT(64, uiNextBit);
+    }
+
+    {
+      // Partial bits set 32 bit.
+      xiiRandom rnd;
+      rnd.Initialize(42);
+
+      for (xiiUInt32 uiNumBits = 2; uiNumBits <= 32; ++uiNumBits)
+      {
+        // Add some random bits and ensure they appear in the iterator in order.
+        xiiHybridArray<xiiUInt32, 3> bits;
+        xiiUInt32                    uiBits = 0;
+        for (int i = 0; i < uiNumBits; ++i)
+        {
+          const xiiUInt32 bit = (xiiUInt32)rnd.IntMinMax(0, 31);
+          if (!bits.Contains(bit))
+          {
+            bits.PushBack(bit);
+            uiBits |= XII_BIT(bit);
+          }
+        }
+        bits.Sort();
+
+        xiiStaticBitfield32 bitfield = xiiStaticBitfield32::FromMask(uiBits);
+
+        for (xiiUInt32 uiBit : bitfield)
+        {
+          XII_TEST_INT(uiBit, bits[0]);
+          bits.RemoveAtAndCopy(0);
+        }
+        XII_TEST_BOOL(bits.IsEmpty());
+      }
+    }
+
+    {
+      // Partial bits set 64 bit.
+      xiiRandom rnd;
+      rnd.Initialize(42);
+
+      for (xiiUInt32 uiNumBits = 2; uiNumBits <= 63; ++uiNumBits)
+      {
+        // Add some random bits and ensure they appear in the iterator in order.
+        xiiHybridArray<xiiUInt32, 3> bits;
+        xiiUInt64                    uiBits = 0;
+        for (int i = 0; i < uiNumBits; ++i)
+        {
+          const xiiUInt32 bit = (xiiUInt32)rnd.IntMinMax(0, 63);
+          if (!bits.Contains(bit))
+          {
+            bits.PushBack(bit);
+            uiBits |= XII_BIT(bit);
+          }
+        }
+        bits.Sort();
+
+        xiiStaticBitfield64 bitfield = xiiStaticBitfield64::FromMask(uiBits);
+
+        for (xiiUInt32 uiBit : bitfield)
+        {
+          XII_TEST_INT(uiBit, bits[0]);
+          bits.RemoveAtAndCopy(0);
+        }
+        XII_TEST_BOOL(bits.IsEmpty());
+      }
+    }
   }
 }

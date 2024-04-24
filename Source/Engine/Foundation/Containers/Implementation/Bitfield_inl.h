@@ -298,6 +298,105 @@ void xiiBitfield<Container>::ClearBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNum
     ClearBit(i);
 }
 
+template <class Container>
+XII_ALWAYS_INLINE typename xiiBitfield<Container>::ConstIterator xiiBitfield<Container>::GetIterator() const
+{
+  return ConstIterator(*this);
+};
+
+template <class Container>
+XII_ALWAYS_INLINE typename xiiBitfield<Container>::ConstIterator xiiBitfield<Container>::GetEndIterator() const
+{
+  return ConstIterator();
+};
+
+//////////////////////////////////////////////////////////////////////////
+// xiiBitfield<Container>::ConstIterator
+
+template <class Container>
+xiiBitfield<Container>::ConstIterator::ConstIterator(const xiiBitfield<Container>& bitfield)
+{
+  m_pBitfield = &bitfield;
+  FindNextChunk(0);
+}
+
+template <class Container>
+XII_ALWAYS_INLINE bool xiiBitfield<Container>::ConstIterator::IsValid() const
+{
+  return m_pBitfield != nullptr;
+}
+
+template <class Container>
+XII_ALWAYS_INLINE xiiUInt32 xiiBitfield<Container>::ConstIterator::Value() const
+{
+  return *m_Iterator + (m_uiChunk << 5);
+}
+
+template <class Container>
+XII_ALWAYS_INLINE void xiiBitfield<Container>::ConstIterator::Next()
+{
+  ++m_Iterator;
+  if (!m_Iterator.IsValid())
+  {
+    FindNextChunk(m_uiChunk + 1);
+  }
+}
+
+template <class Container>
+XII_ALWAYS_INLINE bool xiiBitfield<Container>::ConstIterator::operator==(const ConstIterator& other) const
+{
+  return m_pBitfield == other.m_pBitfield && m_Iterator == other.m_Iterator && m_uiChunk == other.m_uiChunk;
+}
+
+template <class Container>
+XII_ALWAYS_INLINE bool xiiBitfield<Container>::ConstIterator::operator!=(const ConstIterator& other) const
+{
+  return m_pBitfield != other.m_pBitfield || m_Iterator != other.m_Iterator || m_uiChunk != other.m_uiChunk;
+}
+
+template <class Container>
+XII_ALWAYS_INLINE xiiUInt32 xiiBitfield<Container>::ConstIterator::operator*() const
+{
+  return Value();
+}
+
+template <class Container>
+XII_ALWAYS_INLINE void xiiBitfield<Container>::ConstIterator::operator++()
+{
+  Next();
+}
+
+template <class Container>
+void xiiBitfield<Container>::ConstIterator::FindNextChunk(xiiUInt32 uiStartChunk)
+{
+  if (uiStartChunk < m_pBitfield->m_Container.GetCount())
+  {
+    const xiiUInt32 uiLastChunk = m_pBitfield->m_Container.GetCount() - 1;
+    for (xiiUInt32 i = uiStartChunk; i < uiLastChunk; ++i)
+    {
+      if (m_pBitfield->m_Container[i] != 0)
+      {
+        m_uiChunk  = i;
+        m_Iterator = sub_iterator(m_pBitfield->m_Container[i]);
+        return;
+      }
+    }
+
+    const xiiUInt32 uiMask = 0xFFFFFFFF >> (32 - (m_pBitfield->m_uiCount - (uiLastChunk << 5)));
+    if ((m_pBitfield->m_Container[uiLastChunk] & uiMask) != 0)
+    {
+      m_uiChunk  = uiLastChunk;
+      m_Iterator = sub_iterator(m_pBitfield->m_Container[uiLastChunk] & uiMask);
+      return;
+    }
+  }
+
+  // End iterator.
+  m_pBitfield = nullptr;
+  m_uiChunk   = 0;
+  m_Iterator  = sub_iterator();
+}
+
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////

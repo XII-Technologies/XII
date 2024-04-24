@@ -43,6 +43,7 @@
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/HybridArray.h>
 #include <Foundation/Containers/IdTable.h>
+#include <Foundation/Containers/IterateBits.h>
 #include <Foundation/Containers/List.h>
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Containers/Set.h>
@@ -180,6 +181,5 @@
 #include <Foundation/Utilities/EnumerableClass.h>
 #include <Foundation/Utilities/GraphicsUtils.h>
 #include <Foundation/Utilities/Stats.h>
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Basics_IncludeAll);
