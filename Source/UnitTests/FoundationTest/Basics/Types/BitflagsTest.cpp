@@ -1,5 +1,7 @@
 #include <FoundationTest/FoundationTestPCH.h>
 
+#include <Foundation/Containers/IterateBits.h>
+
 namespace
 {
   // declare bitflags using macro magic
@@ -32,6 +34,7 @@ namespace
   XII_DECLARE_FLAGS_OPERATORS(ManualFlags);
 } // namespace
 
+XII_DEFINE_AS_POD_TYPE(AutoFlags::Enum);
 XII_CHECK_AT_COMPILETIME(sizeof(xiiBitflags<AutoFlags>) == 4);
 
 XII_CREATE_SIMPLE_TEST(Basics, Bitflags)
@@ -47,15 +50,23 @@ XII_CREATE_SIMPLE_TEST(Basics, Bitflags)
     XII_TEST_BOOL(!flags.IsAnySet(AutoFlags::Bit2 | AutoFlags::Bit3));
     XII_TEST_BOOL(flags.AreNoneSet(AutoFlags::Bit2 | AutoFlags::Bit3));
     XII_TEST_BOOL(!flags.AreNoneSet(AutoFlags::Bit2 | AutoFlags::Bit4));
+    XII_TEST_BOOL(flags.IsStrictlyAnySet(AutoFlags::Bit1 | AutoFlags::Bit4));
+    XII_TEST_BOOL(flags.IsStrictlyAnySet(AutoFlags::Bit1 | AutoFlags::Bit2 | AutoFlags::Bit4));
+    XII_TEST_BOOL(!flags.IsStrictlyAnySet(AutoFlags::Bit1));
+    XII_TEST_BOOL(!flags.IsStrictlyAnySet(AutoFlags::Bit2 | AutoFlags::Bit4));
 
     flags.Add(AutoFlags::Bit3);
     XII_TEST_BOOL(flags.IsSet(AutoFlags::Bit3));
+    XII_TEST_BOOL(flags.IsStrictlyAnySet(AutoFlags::Bit1 | AutoFlags::Bit3 | AutoFlags::Bit4));
+    XII_TEST_BOOL(!flags.IsStrictlyAnySet(AutoFlags::Bit1 | AutoFlags::Bit4));
 
     flags.Remove(AutoFlags::Bit1);
     XII_TEST_BOOL(!flags.IsSet(AutoFlags::Bit1));
+    XII_TEST_BOOL(flags.IsStrictlyAnySet(AutoFlags::Bit1 | AutoFlags::Bit3 | AutoFlags::Bit4));
 
     flags.Toggle(AutoFlags::Bit4);
     XII_TEST_BOOL(flags.AreAllSet(AutoFlags::Bit3));
+    XII_TEST_BOOL(flags.IsStrictlyAnySet(AutoFlags::Bit1 | AutoFlags::Bit3 | AutoFlags::Bit4));
 
     flags.AddOrRemove(AutoFlags::Bit2, true);
     flags.AddOrRemove(AutoFlags::Bit3, false);
@@ -100,6 +111,52 @@ XII_CREATE_SIMPLE_TEST(Basics, Bitflags)
     f &= AutoFlags::Bit3;
 
     XII_TEST_BOOL(f.GetValue() == AutoFlags::Bit3);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Iterator")
+  {
+    {
+      // Empty
+      xiiBitflags<AutoFlags> f;
+      auto                   it = f.GetIterator();
+      XII_TEST_BOOL(it == f.GetEndIterator());
+      XII_TEST_BOOL(!it.IsValid());
+
+      for (AutoFlags::Enum flag : f)
+      {
+        XII_TEST_BOOL_MSG(false, "No bit should be set");
+      }
+    }
+
+    {
+      // All flags
+      xiiBitflags<AutoFlags>             f = AutoFlags::Bit1 | AutoFlags::Bit2 | AutoFlags::Bit3 | AutoFlags::Bit4;
+      xiiHybridArray<AutoFlags::Enum, 4> flags;
+      flags.PushBack(AutoFlags::Bit1);
+      flags.PushBack(AutoFlags::Bit2);
+      flags.PushBack(AutoFlags::Bit3);
+      flags.PushBack(AutoFlags::Bit4);
+
+      xiiUInt32 uiIndex = 0;
+      // Iterator
+      for (auto it = f.GetIterator(); it.IsValid(); ++it)
+      {
+        XII_TEST_INT(*it, flags[uiIndex]);
+        XII_TEST_INT(it.Value(), flags[uiIndex]);
+        XII_TEST_BOOL(it.IsValid());
+        ++uiIndex;
+      }
+      XII_TEST_INT(uiIndex, 4);
+
+      // Range-base for loop
+      uiIndex = 0;
+      for (AutoFlags::Enum flag : f)
+      {
+        XII_TEST_INT(flag, flags[uiIndex]);
+        ++uiIndex;
+      }
+      XII_TEST_INT(uiIndex, 4);
+    }
   }
 }
 

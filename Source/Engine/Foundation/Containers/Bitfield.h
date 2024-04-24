@@ -2,6 +2,7 @@
 
 #include <Foundation/Containers/DynamicArray.h>
 #include <Foundation/Containers/HybridArray.h>
+#include <Foundation/Containers/Implementation/BitIterator.h>
 #include <Foundation/IO/Stream.h>
 #include <Foundation/Math/Constants.h>
 
@@ -66,7 +67,55 @@ public:
   /// \brief Clears the range starting at uiFirstBit up to (and including) uiLastBit to 0.
   void ClearBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBits); // [tested]
 
+  struct ConstIterator
+  {
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = xiiUInt32;
+    using sub_iterator = ::xiiBitIterator<xiiUInt32, true>;
+
+    // Invalid iterator (end)
+    XII_FORCE_INLINE ConstIterator() = default; // [tested]
+
+    // Start iterator.
+    explicit ConstIterator(const xiiBitfield<Container>& bitfield); // [tested]
+
+    /// \brief Checks whether this iterator points to a valid element.
+    bool IsValid() const; // [tested]
+
+    /// \brief Returns the 'value' of the element that this iterator points to.
+    xiiUInt32 Value() const; // [tested]
+
+    /// \brief Advances the iterator to the next element in the map. The iterator will not be valid anymore, if the end is reached.
+    void Next(); // [tested]
+
+    bool operator==(const ConstIterator& other) const; // [tested]
+    bool operator!=(const ConstIterator& other) const; // [tested]
+
+    /// \brief Returns 'Value()' to enable foreach.
+    xiiUInt32 operator*() const; // [tested]
+
+    /// \brief Shorthand for 'Next'.
+    void operator++(); // [tested]
+
+  private:
+    void FindNextChunk(xiiUInt32 uiStartChunk);
+
+  private:
+    xiiUInt32 m_uiChunk = 0;
+    sub_iterator m_Iterator;
+    const xiiBitfield<Container>* m_pBitfield = nullptr;
+  };
+
+  /// \brief Returns a constant iterator to the very first set bit.
+  /// Note that due to the way iterating through bits is accelerated, changes to the bitfield while iterating through the bits has undefined behaviour.
+  ConstIterator GetIterator() const; // [tested]
+
+  /// \brief Returns an invalid iterator. Needed to support range based for loops.
+  ConstIterator GetEndIterator() const; // [tested]
+
 private:
+  friend struct ConstIterator;
+
   xiiUInt32 GetBitInt(xiiUInt32 uiBitIndex) const;
   xiiUInt32 GetBitMask(xiiUInt32 uiBitIndex) const;
 
@@ -82,6 +131,32 @@ template <xiiUInt32 BITS>
 using xiiHybridBitfield = xiiBitfield<xiiHybridArray<xiiUInt32, (BITS + 31) / 32>>;
 
 //////////////////////////////////////////////////////////////////////////
+// begin() /end() for range-based for-loop support
+template <typename Container>
+typename xiiBitfield<Container>::ConstIterator begin(const xiiBitfield<Container>& container)
+{
+  return container.GetIterator();
+}
+
+template <typename Container>
+typename xiiBitfield<Container>::ConstIterator cbegin(const xiiBitfield<Container>& container)
+{
+  return container.GetIterator();
+}
+
+template <typename Container>
+typename xiiBitfield<Container>::ConstIterator end(const xiiBitfield<Container>& container)
+{
+  return container.GetEndIterator();
+}
+
+template <typename Container>
+typename xiiBitfield<Container>::ConstIterator cend(const xiiBitfield<Container>& container)
+{
+  return container.GetEndIterator();
+}
+
+//////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
@@ -90,6 +165,8 @@ class xiiStaticBitfield
 {
 public:
   using StorageType = T;
+  using ConstIterator = xiiBitIterator<StorageType, true, xiiUInt32>;
+
   static constexpr xiiUInt32 GetStorageTypeBitCount() { return xiiMath::NumBits<T>(); }
 
   /// \brief Initializes the bitfield to all zero.
@@ -165,6 +242,19 @@ public:
     return XII_SUCCESS;
   }
 
+  /// \brief Returns a constant iterator to the very first set bit.
+  /// Note that due to the way iterating through bits is accelerated, changes to the bitfield while iterating through the bits has undefined behaviour.
+  ConstIterator GetIterator() const // [tested]
+  {
+    return ConstIterator(m_Storage);
+  };
+
+  /// \brief Returns an invalid iterator. Needed to support range based for loops.
+  ConstIterator GetEndIterator() const // [tested]
+  {
+    return ConstIterator();
+  };
+
 private:
   static constexpr xiiTypeVersion s_Version = 1;
 
@@ -184,6 +274,9 @@ private:
 
   template <typename U>
   friend bool operator==(xiiStaticBitfield<U> lhs, xiiStaticBitfield<U> rhs);
+
+  template <typename U>
+  friend bool operator!=(xiiStaticBitfield<U> lhs, xiiStaticBitfield<U> rhs);
 
   StorageType m_Storage = 0;
 };
@@ -212,7 +305,39 @@ inline bool operator==(xiiStaticBitfield<T> lhs, xiiStaticBitfield<T> rhs)
   return lhs.m_Storage == rhs.m_Storage;
 }
 
-using xiiStaticBitfield8  = xiiStaticBitfield<xiiUInt8>;
+template <typename T>
+inline bool operator!=(xiiStaticBitfield<T> lhs, xiiStaticBitfield<T> rhs)
+{
+  return lhs.m_Storage != rhs.m_Storage;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// begin() /end() for range-based for-loop support
+template <typename Container>
+typename xiiStaticBitfield<Container>::ConstIterator begin(const xiiStaticBitfield<Container>& container)
+{
+  return container.GetIterator();
+}
+
+template <typename Container>
+typename xiiStaticBitfield<Container>::ConstIterator cbegin(const xiiStaticBitfield<Container>& container)
+{
+  return container.GetIterator();
+}
+
+template <typename Container>
+typename xiiStaticBitfield<Container>::ConstIterator end(const xiiStaticBitfield<Container>& container)
+{
+  return container.GetEndIterator();
+}
+
+template <typename Container>
+typename xiiStaticBitfield<Container>::ConstIterator cend(const xiiStaticBitfield<Container>& container)
+{
+  return container.GetEndIterator();
+}
+
+using xiiStaticBitfield8 = xiiStaticBitfield<xiiUInt8>;
 using xiiStaticBitfield16 = xiiStaticBitfield<xiiUInt16>;
 using xiiStaticBitfield32 = xiiStaticBitfield<xiiUInt32>;
 using xiiStaticBitfield64 = xiiStaticBitfield<xiiUInt64>;
