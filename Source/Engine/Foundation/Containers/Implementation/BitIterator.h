@@ -3,7 +3,7 @@
 #include <Foundation/Math/Math.h>
 
 /// Chooses either xiiUInt32 or xiiUInt64 as the storage type for a given type T depending on its size. Required as xiiMath::FirstBitLow only supports xiiUInt32 or xiiUInt64.
-/// 
+///
 /// \tparam T Type for which the storage should be inferred.
 template <typename T, typename = std::void_t<>>
 struct xiiBitIteratorStorage;
@@ -19,7 +19,7 @@ struct xiiBitIteratorStorage<T, std::enable_if_t<sizeof(T) >= 5>>
 };
 
 /// Configurable bit iterator. Allows for iterating over the bits in an integer, returning either the bit index or value.
-/// 
+///
 /// \tparam DataType The type of data that is being iterated over.
 /// \tparam ReturnsIndex If set, returns the index of the bit. Otherwise returns the value of the bit, i.e. XII_BIT(value).
 /// \tparam ReturnType Returned value type of the iterator. Defaults to same as DataType.

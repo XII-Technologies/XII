@@ -3,8 +3,8 @@
 /// \file
 
 #include <Foundation/Basics.h>
-#include <Foundation/Types/Enum.h>
 #include <Foundation/Containers/Implementation/BitIterator.h>
+#include <Foundation/Types/Enum.h>
 
 /// \brief The xiiBitflags class allows you to work with type-safe bitflags.
 ///

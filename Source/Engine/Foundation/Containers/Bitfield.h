@@ -70,8 +70,8 @@ public:
   struct ConstIterator
   {
     using iterator_category = std::forward_iterator_tag;
-    using value_type = xiiUInt32;
-    using sub_iterator = ::xiiBitIterator<xiiUInt32, true>;
+    using value_type        = xiiUInt32;
+    using sub_iterator      = ::xiiBitIterator<xiiUInt32, true>;
 
     // Invalid iterator (end)
     XII_FORCE_INLINE ConstIterator() = default; // [tested]
@@ -101,8 +101,8 @@ public:
     void FindNextChunk(xiiUInt32 uiStartChunk);
 
   private:
-    xiiUInt32 m_uiChunk = 0;
-    sub_iterator m_Iterator;
+    xiiUInt32                     m_uiChunk = 0;
+    sub_iterator                  m_Iterator;
     const xiiBitfield<Container>* m_pBitfield = nullptr;
   };
 
@@ -337,7 +337,7 @@ typename xiiStaticBitfield<Container>::ConstIterator cend(const xiiStaticBitfiel
   return container.GetEndIterator();
 }
 
-using xiiStaticBitfield8 = xiiStaticBitfield<xiiUInt8>;
+using xiiStaticBitfield8  = xiiStaticBitfield<xiiUInt8>;
 using xiiStaticBitfield16 = xiiStaticBitfield<xiiUInt16>;
 using xiiStaticBitfield32 = xiiStaticBitfield<xiiUInt32>;
 using xiiStaticBitfield64 = xiiStaticBitfield<xiiUInt64>;
