@@ -12,10 +12,16 @@ target_link_libraries(${PROJECT_NAME}
   GraphicsCore
 )
 
-target_include_directories(${PROJECT_NAME}
-  PRIVATE
-  "${CMAKE_SOURCE_DIR}/Source/ThirdParty/DirectXShaderCompiler"
-)
+if (XII_BUILD_D3D11)
+  xii_link_target_d3d11(${PROJECT_NAME})
+endif()
+
+if (XII_BUILD_D3D12 OR XII_BUILD_VULKAN)
+  target_include_directories(${PROJECT_NAME}
+    PRIVATE
+    "${CMAKE_SOURCE_DIR}/Source/ThirdParty/DirectXShaderCompiler"
+  )
+endif()
 
 if (XII_BUILD_D3D12)
   # Always link D3D12 first before Vulkan so that the SPIRV Enabled DX Compiler

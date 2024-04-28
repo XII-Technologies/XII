@@ -1,32 +1,34 @@
+#include <ShaderCompilerTool/ShaderCompilerTool.h>
+
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Utilities/CommandLineOptions.h>
+
 #include <GraphicsCore/ShaderCompiler/ShaderCompiler.h>
 #include <GraphicsCore/ShaderCompiler/ShaderManager.h>
 #include <GraphicsCore/ShaderCompiler/ShaderParser.h>
-#include <ShaderCompilerTool/ShaderCompilerTool.h>
 
+// clang-format off
 xiiCommandLineOptionString opt_Shader("_ShaderCompiler", "-shader", "\
 One or multiple paths to shader files or folders containing shaders.\n\
 Paths are separated with semicolons.\n\
 Paths may be absolute or relative to the -project directory.\n\
 If a path to a folder is specified, all .xiiShader files in that folder are compiled.\n\
 \n\
-This option has to be specified.",
-                                      "");
+This option has to be specified.", "");
 
 xiiCommandLineOptionPath opt_Project("_ShaderCompiler", "-project", "\
-Path to the folder of the project, for which shaders should be compiled.",
-                                     "");
+Path to the folder of the project, for which shaders should be compiled.", "");
 
 xiiCommandLineOptionString opt_Platform("_ShaderCompiler", "-platform", "The name of the platform for which to compile the shaders.\n\
 Examples:\n\
+  -platform D3D_SM50\n\
   -platform D3D_SM60\n\
   -platform VK_SM60\n\
   -platform ALL",
-                                        "D3D_SM60");
+"D3D_SM50");
 
 xiiCommandLineOptionBool opt_IgnoreErrors("_ShaderCompiler", "-IgnoreErrors", "If set, a compile error won't stop other shaders from being compiled.", false);
 
@@ -38,8 +40,8 @@ Examples:\n\
   -perm TWO_SIDED=FALSE MSAA=TRUE\n\
 \n\
 If a permutation variable is not set to a fixed value, all shader permutations for that variable will generated and compiled.\n\
-",
-                                 "");
+", "");
+// clang-format on
 
 xiiShaderCompilerApplication::xiiShaderCompilerApplication() :
   xiiGameApplication("xiiShaderCompiler", nullptr)
@@ -103,7 +105,6 @@ xiiResult xiiShaderCompilerApplication::BeforeCoreSystemsStartup()
 
   return XII_SUCCESS;
 }
-
 
 void xiiShaderCompilerApplication::AfterCoreSystemsStartup()
 {
