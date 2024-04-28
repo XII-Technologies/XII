@@ -1,5 +1,6 @@
 #include <GraphicsD3D11/GraphicsD3D11PCH.h>
 
+#include <Foundation/Basics/Platform/Win/HResultUtils.h>
 #include <Foundation/Memory/MemoryUtils.h>
 
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
@@ -645,12 +646,20 @@ xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiGALTexture* p
 
   xiiUInt32 uiSubresource = D3D11CalcSubresource(textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
 
+  // We need to use the immediate context to handle other map types.
+  // If you call Map on a deferred context, you can only pass D3D11_MAP_WRITE_DISCARD, D3D11_MAP_WRITE_NO_OVERWRITE, or both to the MapType parameter.
+  // Other D3D11_MAP-typed values are not supported for a deferred context.
+  auto pCommandList = m_pCommandList;
+  if (textureMapType != D3D11_MAP_WRITE_DISCARD && textureMapType != D3D11_MAP_WRITE_NO_OVERWRITE)
+    pCommandList = static_cast<xiiGALDeviceD3D11*>(m_pDevice)->GetImmediateContext();
+
   D3D11_MAPPED_SUBRESOURCE mappedSubresource;
-  if (FAILED(m_pCommandList->Map(pTextureD3D11->GetTexture(), uiSubresource, textureMapType, uiMapFlags, &mappedSubresource)))
+  HRESULT                  hr = pCommandList->Map(pTextureD3D11->GetTexture(), uiSubresource, textureMapType, uiMapFlags, &mappedSubresource);
+  if (FAILED(hr))
   {
     // XII_ASSERT_DEV(hResult == DXGI_ERROR_WAS_STILL_DRAWING, "");
 
-    xiiLog::Error("Failed to map texture subresource.");
+    xiiLog::Error("Failed to map texture subresource: {0}", xiiHRESULTtoString(hr));
 
     mappedData = xiiGALMappedTextureSubresource();
     return XII_FAILURE;
@@ -674,7 +683,10 @@ xiiResult xiiGALCommandListD3D11::UnmapTextureSubresourcePlatform(xiiGALTexture*
   const auto& textureDescription = pTextureD3D11->GetDescription();
   xiiUInt32   uiSubresource      = D3D11CalcSubresource(textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
 
-  m_pCommandList->Unmap(pTextureD3D11->GetTexture(), uiSubresource);
+  auto pCommandList = *m_MappedTextureSubresources.GetValue(pTextureD3D11);
+  pCommandList->Unmap(pTextureD3D11->GetTexture(), uiSubresource);
+
+  m_MappedTextureSubresources.Remove(pTextureD3D11);
 
   return XII_SUCCESS;
 }
