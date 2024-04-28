@@ -323,7 +323,7 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALPrimitiveTopology, 1)
   XII_ENUM_CONSTANT(xiiGALPrimitiveTopology::LineList),
   XII_ENUM_CONSTANT(xiiGALPrimitiveTopology::LineStrip),
   XII_ENUM_CONSTANT(xiiGALPrimitiveTopology::TriangleListAdjacent),
-  XII_ENUM_CONSTANT(xiiGALPrimitiveTopology::TrangleStripAdjacent),
+  XII_ENUM_CONSTANT(xiiGALPrimitiveTopology::TriangleStripAdjacent),
   XII_ENUM_CONSTANT(xiiGALPrimitiveTopology::LineListAdjacent),
   XII_ENUM_CONSTANT(xiiGALPrimitiveTopology::LineStripAdjacent),
   XII_ENUM_CONSTANT(xiiGALPrimitiveTopology::ControlPointPatchList1),
@@ -367,7 +367,7 @@ const char* xiiGALPrimitiveTopology::Names[ENUM_COUNT] = {
   "LineList",
   "LineStrip",
   "TriangleListAdjacent",
-  "TrangleStripAdjacent",
+  "TriangleStripAdjacent",
   "LineListAdjacent",
   "LineStripAdjacent",
   "ControlPointPatchList1",
@@ -544,6 +544,17 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALSampleCount, 1)
   XII_BITFLAGS_CONSTANT(xiiGALSampleCount::SixtyFourSamples),
   XII_BITFLAGS_CONSTANT(xiiGALSampleCount::AllSamples),
 XII_END_STATIC_REFLECTED_BITFLAGS;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALMSAASampleCount, 1)
+  XII_ENUM_CONSTANT(xiiGALMSAASampleCount::None),
+  XII_ENUM_CONSTANT(xiiGALMSAASampleCount::OneSample),
+  XII_ENUM_CONSTANT(xiiGALMSAASampleCount::TwoSamples),
+  XII_ENUM_CONSTANT(xiiGALMSAASampleCount::FourSamples),
+  XII_ENUM_CONSTANT(xiiGALMSAASampleCount::EightSamples),
+  XII_ENUM_CONSTANT(xiiGALMSAASampleCount::SixteenSamples),
+  XII_ENUM_CONSTANT(xiiGALMSAASampleCount::ThirtyTwoSamples),
+  XII_ENUM_CONSTANT(xiiGALMSAASampleCount::SixtyFourSamples),
+XII_END_STATIC_REFLECTED_ENUM;
 
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShadingRateCapabilityFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALShadingRateCapabilityFlags::None),

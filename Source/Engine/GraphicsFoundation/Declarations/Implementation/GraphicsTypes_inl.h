@@ -69,7 +69,6 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderStage::GetStageIndex(xiiBitflags<xiiGALS
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-
   return xiiInvalidIndex;
 }
 
@@ -161,7 +160,7 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALPrimitiveTopology::VerticesPerPrimitive(xiiEnu
       return 2;
     case xiiGALPrimitiveTopology::TriangleListAdjacent:
       return 6;
-    case xiiGALPrimitiveTopology::TrangleStripAdjacent:
+    case xiiGALPrimitiveTopology::TriangleStripAdjacent:
       return 6;
     case xiiGALPrimitiveTopology::LineListAdjacent:
       return 4;

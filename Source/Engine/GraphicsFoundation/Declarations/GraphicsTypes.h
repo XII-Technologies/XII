@@ -285,7 +285,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALResourceUsage
     Staging,       ///< A resource that facilitates transferring data between the GPU and CPU.
     Unified,       ///< A resource that resides in a unified memory (eg. memory shared between the CPU and GPU), that can be read and written
                    ///  to by the GPU and can also be directly accessed by the CPU.
-                   ///  \remarks An application should check if unified memory is available on th edevice by checking the device capabilities.
+                   ///  \remarks An application should check if unified memory is available on the device by checking the device capabilities.
                    ///           If there is no unified memory support, an application should choose another usage type (typically xiiGALResourceUsage::Default).
     Sparse,        ///< A resource that can be partially committed to physical memory.
 
@@ -682,7 +682,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPrimitiveTopology
     TriangleStrip,           ///< Interpret the vertex data as a triangle strip.
     LineStrip,               ///< Interpret the vertex data as a line strip.
     TriangleListAdjacent,    ///< Interpret the vertex data as a list of triangles with adjacency data.
-    TrangleStripAdjacent,    ///< Interpret the vertex data as a triangle strip with adjacency data.
+    TriangleStripAdjacent,   ///< Interpret the vertex data as a triangle strip with adjacency data.
     LineListAdjacent,        ///< Interpret the vertex data as a list of lines with adjacency data.
     LineStripAdjacent,       ///< Interpret the vertex data as a line strip with adjacency data.
     ControlPointPatchList1,  ///< Interpret the vertex data as a list of one control point patches.
@@ -1189,6 +1189,28 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSampleCount
 XII_DECLARE_FLAGS_OPERATORS(xiiGALSampleCount);
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALSampleCount);
+
+/// \brief This describes the multi-sample count.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALMSAASampleCount
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    None             = 0U,  ///< No samples.
+    OneSample        = 1U,  ///< One sample.
+    TwoSamples       = 2U,  ///< Two samples.
+    FourSamples      = 4U,  ///< Four samples.
+    EightSamples     = 8U,  ///< Eight samples.
+    SixteenSamples   = 16U, ///< Sixteen samples.
+    ThirtyTwoSamples = 32U, ///< Thirty-two samples.
+    SixtyFourSamples = 64U, ///< Sixty-four samples.
+
+    Default = OneSample
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALMSAASampleCount);
 
 /// \brief This describes the shading rate capability flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALShadingRateCapabilityFlags
