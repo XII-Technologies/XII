@@ -3,12 +3,13 @@
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
 #include <GraphicsFoundation/Declarations/Descriptors.h>
-#include <GraphicsFoundation/Resources/TextureView.h>
+#include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 
 class XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsUtilities
 {
 public:
+  /// \brief This returns the graphics adapter vendor type from the given ID.
   static XII_NODISCARD xiiEnum<xiiGALGraphicsAdapterVendor> GetVendorFromID(xiiUInt32 uiID);
 
   /// \brief Returns true if all components of the xiiGALTextureComponentMapping are xiiGALTextureComponentSwizzle::Identity.
@@ -28,6 +29,12 @@ public:
 
   /// \brief This returns the valid pipeline resource flags for a given shader resource type.
   static XII_NODISCARD xiiBitflags<xiiGALPipelineResourceFlags> GetValidPipelineResourceFlags(xiiEnum<xiiGALShaderResourceType> type);
+
+  /// \brief This returns the mip level size of a given texture. This is typically used when retrieving the frame buffer size for a particular texture.
+  static XII_NODISCARD xiiVec3U32 GetMipLevelSize(xiiUInt32 uiMipLevelSize, const xiiGALTextureCreationDescription& textureDescription);
+
+  /// \brief This returns the mip size for a given mip level.
+  static XII_NODISCARD xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel);
 };
 
 #include <GraphicsFoundation/Utilities/Implementation/GraphicsUtilities_inl.h>
