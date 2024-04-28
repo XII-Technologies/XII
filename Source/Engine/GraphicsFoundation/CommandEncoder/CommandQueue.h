@@ -34,8 +34,15 @@ public:
   /// \brief Submits a command list for execution. If bReset is true, the command list is reset after submission.
   virtual void Submit(xiiGALCommandList* pCommandList, bool bReset = true);
 
+  // Deactivate Doxygen document generation for the following block. (API abstraction only)
+  /// \cond
+
+  // These functions need to be implemented by a graphics API abstraction.
+
 protected:
   virtual void SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) = 0;
+
+  /// \endcond
 
 protected:
   friend class xiiGALDevice;

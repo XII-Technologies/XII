@@ -16,8 +16,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSetVertexBufferFlags
 
   enum Enum : StorageType
   {
-    None  = 0U,         ///< No addditional operations.
-    Reset = XII_BIT(1), ///< Reset the vertex buffers outside the range of the currently set vertex buffers. All buffers previously bound to the pipeline will be unbound.
+    None  = 0x0U,       ///< No addditional operations.
+    Reset = XII_BIT(0), ///< Reset the vertex buffers outside the range of the currently set vertex buffers. All buffers previously bound to the pipeline will be unbound.
 
     Default = None
   };
@@ -170,7 +170,7 @@ public:
   /// \param uiIndexCount - The number of indices to draw.
   /// \param uiStartIndex - The index of the first index to use.
   /// \param uiBaseVertex - A value added to each index before reading a vertex from the vertex buffer.
-  xiiResult DrawIndexed(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex);
+  xiiResult DrawIndexed(xiiUInt32 uiIndexCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex = 0U);
 
   /// \brief Draws indexed, instanced primitives.
   ///
@@ -179,7 +179,7 @@ public:
   /// \param uiStartIndex            - The index of the first index to use.
   /// \param uiBaseVertex            - A value added to each index before reading a vertex from the vertex buffer.
   /// \param uiFirstInstance         - The index of the first instance to draw.
-  xiiResult DrawIndexedInstanced(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex, xiiUInt32 uiFirstInstance);
+  xiiResult DrawIndexedInstanced(xiiUInt32 uiIndexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartIndex, xiiUInt32 uiBaseVertex = 0U, xiiUInt32 uiFirstInstance = 0U);
 
   /// \brief Draws indexed, instanced primitives using an indirect argument buffer.
   ///
@@ -193,7 +193,7 @@ public:
   /// \param uiInstanceCount          - The number of instances to draw.
   /// \param uiStartVertex            - The index of the first vertex to draw.
   /// \param uiFirstInstance          - The index of the first instance to draw.
-  xiiResult DrawInstanced(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex, xiiUInt32 uiFirstInstance);
+  xiiResult DrawInstanced(xiiUInt32 uiVertexCountPerInstance, xiiUInt32 uiInstanceCount, xiiUInt32 uiStartVertex = 0U, xiiUInt32 uiFirstInstance = 0U);
 
   /// \brief Draws instanced primitives using an indirect argument buffer.
   ///
@@ -323,9 +323,9 @@ public:
   /// \param textureMipLevelData - Specifies the subresource to map. This is the mipmap level of the texture to map.
   /// \param mapType             - Specifies the CPU's read and write access to a resource.
   /// \param mapFlags            - Specifies the behavior of the map operation.
-  /// \param textureBox          - Specifies the region of the resource to map. If this parameter is null, the entire resource is mapped.
+  /// \param pTextureBox         - Specifies the region of the resource to map. If this parameter is null, the entire resource is mapped.
   /// \param mappedData          - Receives information about the resource data when the function returns.
-  xiiResult MapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32 textureBox, xiiGALMappedTextureSubresource& mappedData);
+  xiiResult MapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData);
 
   /// \brief Unmaps a texture subresource from the address space of the command list.
   ///
@@ -429,7 +429,7 @@ protected:
   virtual void      CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) = 0;
   virtual void      ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)                                                            = 0;
   virtual void      GenerateMipsPlatform(xiiGALTextureView* pTextureView)                                                                                                                                                                                                                          = 0;
-  virtual xiiResult MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32 textureBox, xiiGALMappedTextureSubresource& mappedData)                          = 0;
+  virtual xiiResult MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)                        = 0;
   virtual xiiResult UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData)                                                                                                                                                                        = 0;
 
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color)  = 0;

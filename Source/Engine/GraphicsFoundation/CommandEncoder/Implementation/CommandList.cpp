@@ -706,7 +706,7 @@ void xiiGALCommandList::GenerateMips(xiiGALTextureViewHandle hTextureView)
   GenerateMipsPlatform(pTextureView);
 }
 
-xiiResult xiiGALCommandList::MapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32 textureBox, xiiGALMappedTextureSubresource& mappedData)
+xiiResult xiiGALCommandList::MapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
 {
   XII_VERIFY_COMMAND_LIST_RESULT(!hTexture.IsInvalidated(), "MapTextureSubresource arguments are invalid. The texture handle has been invalidated.");
 
@@ -714,7 +714,7 @@ xiiResult xiiGALCommandList::MapTextureSubresource(xiiGALTextureHandle hTexture,
 
   xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
 
-  return MapTextureSubresourcePlatform(pTexture, textureMipLevelData, mapType, mapFlags, textureBox, mappedData);
+  return MapTextureSubresourcePlatform(pTexture, textureMipLevelData, mapType, mapFlags, pTextureBox, mappedData);
 }
 
 xiiResult xiiGALCommandList::UnmapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData)
