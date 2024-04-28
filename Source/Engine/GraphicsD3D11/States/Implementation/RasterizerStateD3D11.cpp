@@ -30,7 +30,7 @@ xiiResult xiiGALRasterizerStateD3D11::InitPlatform()
   rasterizerDescription.SlopeScaledDepthBias  = m_Description.m_fSlopeScaledDepthBias;
   rasterizerDescription.DepthClipEnable       = D3D11_BOOL(m_Description.m_bDepthClipEnable);
   rasterizerDescription.AntialiasedLineEnable = D3D11_BOOL(m_Description.m_bAntialiasedLineEnable);
-  rasterizerDescription.MultisampleEnable     = m_Description.m_bAntialiasedLineEnable;
+  rasterizerDescription.MultisampleEnable     = D3D11_BOOL(m_Description.m_bAntialiasedLineEnable);
 
   // Not available in the D3D11 API currently.
   // rasterizerDescription.ScissorEnable = D3D11_BOOL(m_Description.m_bScissorEnable);
