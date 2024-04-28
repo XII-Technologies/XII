@@ -17,7 +17,7 @@ function(xii_add_renderers TARGET_NAME)
     ShaderCompiler
   )
 
-  if (XII_BUILD_D3D12)
+  if (XII_BUILD_D3D11)
     if(TARGET GraphicsD3D11)
       add_dependencies(${TARGET_NAME}
         GraphicsD3D11
