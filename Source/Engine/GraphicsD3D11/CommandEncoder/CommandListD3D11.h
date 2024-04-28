@@ -65,7 +65,7 @@ protected:
   virtual void      CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) override final;
   virtual void      ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData) override final;
   virtual void      GenerateMipsPlatform(xiiGALTextureView* pTextureView) override final;
-  virtual xiiResult MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32 textureBox, xiiGALMappedTextureSubresource& mappedData) override final;
+  virtual xiiResult MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData) override final;
   virtual xiiResult UnmapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData) override final;
 
   virtual void BeginDebugGroupPlatform(xiiStringView sName, const xiiColor& color) override final;
@@ -75,13 +75,10 @@ protected:
   virtual void FlushPlatform() override final;
 
   virtual void InvalidateStatePlatform() override final;
-  void InvalidateResources();
+  void         InvalidateResources();
 
   void CommitRenderTargets();
   void ResetRenderTargets();
-
-  bool UnsetResourceViews(const xiiGALResource* pResource);
-  bool UnsetUnorderedAccessViews(const xiiGALResource* pResource);
 
 protected:
   friend class xiiGALCommandQueueD3D11;
@@ -115,35 +112,23 @@ protected:
 
   ID3D11InputLayout* m_pCommittedInputLayout = nullptr;
 
-  ID3D11Buffer*            m_pCommittedIndexBuffer           = nullptr;
-  xiiEnum<xiiGALValueType> m_CommittedIndexBufferFormat      = xiiGALValueType::Undefined;
-  xiiUInt32                m_uiCommittedIndexDataStartOffset = 0;
-  bool                     m_bCommittedIndexBufferUpToDate   = false;
+  ID3D11Buffer* m_pCommittedIndexBuffer           = nullptr;
+  DXGI_FORMAT   m_CommittedIndexBufferFormat      = DXGI_FORMAT_UNKNOWN;
+  xiiUInt32     m_uiCommittedIndexDataStartOffset = 0;
+  bool          m_bCommittedIndexBufferUpToDate   = false;
 
-  D3D11_PRIMITIVE_TOPOLOGY m_CommittedPrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
-
-  ID3D11DeviceChild* m_pCommittedShaders[xiiGALShaderStage::ENUM_COUNT] = {};
-
-  ID3D11Buffer*         m_pCommittedConstantBuffers[XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
-  xiiGAL::ModifiedRange m_CommittedConstantBuffersRange[xiiGALShaderStage::ENUM_COUNT];
-
-  xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pCommittedShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
-  xiiHybridArray<xiiGALResource*, 16>           m_pResourcesForResourceViews[xiiGALShaderStage::ENUM_COUNT];
-  xiiGAL::ModifiedRange                         m_CommittedShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];
-
-  xiiHybridArray<ID3D11UnorderedAccessView*, 16> m_CommittedUnoderedAccessViews;
-  xiiHybridArray<xiiGALResource*, 16>            m_ResourcesForUnorderedAccessViews;
-  xiiGAL::ModifiedRange                          m_CommittedUnoderedAccessViewsRange;
-
-  ID3D11SamplerState*   m_pCommittedSamplerStates[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
-  xiiGAL::ModifiedRange m_CommittedSamplerStatesRange[xiiGALShaderStage::ENUM_COUNT];
+  D3D11_PRIMITIVE_TOPOLOGY m_CommittedPrimitiveTopology  = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
+  xiiColor                 m_CommittedBlendFactors       = xiiColor::White;
+  xiiUInt32                m_uiCommittedBlendSampleMask  = 0xFFFFFFFFU;
+  xiiUInt32                m_uiCommittedStencilReference = 0xFFU;
 
   ID3D11RenderTargetView* m_pCommittedRenderTargets[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
   ID3D11DepthStencilView* m_pCommittedDepthStencilTarget                            = nullptr;
   xiiUInt32               m_uiBoundRenderTargetCount                                = 0U;
 
-  xiiGALRenderPass*                                                         m_pRenderPass  = nullptr;
-  xiiGALFramebuffer*                                                        m_pFramebuffer = nullptr;
+  xiiUInt32                                                                 m_uiSubpassIndex = 0U;
+  xiiGALRenderPass*                                                         m_pRenderPass    = nullptr;
+  xiiGALFramebuffer*                                                        m_pFramebuffer   = nullptr;
   xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT> m_AttachmentClearValues;
 
   xiiDisjointQueryPool                                     m_DisjointQueryPool;
