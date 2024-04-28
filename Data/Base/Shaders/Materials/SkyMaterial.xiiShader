@@ -53,11 +53,11 @@ CONSTANT_BUFFER(xiiMaterialConstants, 1)
 VS_OUT main(VS_IN Input)
 {
   VS_OUT Output = FillVertexData(Input);
-  
+
   float2 ScreenPos = sign(Input.Position.xy);
   float4 dir = mul(GetScreenToCameraMatrix(), float4(ScreenPos.xy,1.0,1.0));
   dir.w = 0.0;
-    
+
   xiiPerInstanceData data = GetInstanceData();
   float4x4 objectToWorld = TransformToMatrix(data.ObjectToWorld);
 
@@ -71,10 +71,7 @@ VS_OUT main(VS_IN Input)
 
 #define CUSTOM_INTERPOLATOR float3 ViewDirection : TEXCOORD0;
 
-void CopyCustomInterpolators(GS_OUT output, VS_OUT input)
-{
-  output.ViewDirection = input.ViewDirection;
-}
+#define CopyCustomInterpolators(output, input) output.ViewDirection = input.ViewDirection;
 
 #include <Shaders/Materials/MaterialStereoGeometryShader.h>
 

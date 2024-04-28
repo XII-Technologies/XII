@@ -7,6 +7,7 @@ RENDER_PASS
 GIZMO_CONSTANT_SIZE
 PREPARE_DEPTH
 CAMERA_MODE
+VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX
 GIZMO_FACE_CAMERA
 
 [RENDERSTATE]
@@ -21,12 +22,10 @@ GIZMO_FACE_CAMERA
 	DepthEnable = true
 	DepthWriteEnable = true
 	ComparisonDepthFunction = ComparisonFunction_Greater
-
 #else
 	DepthEnable = true
 	DepthWriteEnable = true
 	ComparisonDepthFunction = ComparisonFunction_LessEqual
-
 #endif
 
 #if !PREPARE_DEPTH && RENDER_PASS == RENDER_PASS_FORWARD
