@@ -29,7 +29,7 @@ public:
   virtual xiiUInt64 WaitForIdle() = 0;
 
   /// \brief This begins a command list for recording commmands.
-  XII_NODISCARD virtual xiiGALCommandList* BeginCommandList() = 0;
+  XII_NODISCARD virtual xiiGALCommandList* BeginCommandList(xiiStringView sScopeName = {}) = 0;
 
   /// \brief Submits a command list for execution. If bReset is true, the command list is reset after submission.
   virtual void Submit(xiiGALCommandList* pCommandList, bool bReset = true);

@@ -35,13 +35,20 @@ xiiGALCommandList::xiiGALCommandList(xiiGALDevice* pDevice, const xiiGALCommandL
 
 xiiGALCommandList::~xiiGALCommandList() = default;
 
-void xiiGALCommandList::Begin()
+void xiiGALCommandList::Begin(xiiStringView sScopeName /*= {}*/)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Ended || m_RecordingState == RecordingState::Reset, "The command list has not been ended.");
 
   if (m_RecordingState != RecordingState::Recording)
   {
     BeginPlatform();
+
+    if (!sScopeName.IsEmpty())
+    {
+      BeginDebugGroup(sScopeName);
+
+      m_bHasActiveScope = true;
+    }
   }
 }
 
@@ -51,12 +58,23 @@ void xiiGALCommandList::End()
 
   if (m_RecordingState == RecordingState::Recording)
   {
+    if (m_bHasActiveScope)
+    {
+      EndDebugGroup();
+
+      m_bHasActiveScope = false;
+    }
+
     EndPlatform();
   }
 }
 
 void xiiGALCommandList::Reset()
 {
+  if (m_RecordingState == RecordingState::Recording)
+  {
+    End();
+  }
   if (m_RecordingState != RecordingState::Reset)
   {
     ResetPlatform();

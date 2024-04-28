@@ -74,7 +74,7 @@ public:
   /// \brief Begins the command list for recording commands. This method should be called before any command is issued.
   ///
   /// \remarks This method is called automatically when using xiiGALCommandQueue::BeginCommandList to request a command list.
-  void Begin();
+  void Begin(xiiStringView sScopeName = {});
 
   /// \brief Ends the command list. This method should be called after all commands are issued.
   ///
@@ -468,6 +468,8 @@ private:
   void CountDispatchCall();
   void CountDrawCall();
   void ClearStatisticCounters();
+
+  bool m_bHasActiveScope = false;
 
   // Statistic variables.
   xiiUInt32 m_uiDrawCalls     = 0U;

@@ -144,7 +144,7 @@ public:
 
       m_pDevice->BeginPipeline("TextureSample", m_hSwapChain);
 
-      xiiGALCommandQueue* pGALCommandQueue = m_pDevice->GetGraphicsQueue(/*"xiiTextureSampleMainPass"*/);
+      xiiGALCommandQueue* pGALCommandQueue = m_pDevice->GetGraphicsQueue();
 
       // Must always retrieve the current swapchain render target
       const xiiGALSwapChain*  pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
@@ -158,7 +158,7 @@ public:
         renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
         renderingSetup.m_bClearDepth             = true;
 
-        xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight));
+        xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiTextureSampleMainPass");
         xiiRenderContext::GetDefaultInstance()->BeginRenderPass();
         xiiRenderContext::GetDefaultInstance()->EndRenderPass();
         xiiRenderContext::GetDefaultInstance()->EndRendering();
