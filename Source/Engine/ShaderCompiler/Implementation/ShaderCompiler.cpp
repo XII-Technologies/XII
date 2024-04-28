@@ -22,10 +22,13 @@
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <d3dcompiler.h>
 #endif
-#include <dxc/dxcapi.h>
+
+#if (BUILDSYSTEM_ENABLE_D3D12_SUPPORT || BUILDSYSTEM_ENABLE_VULKAN_SUPPORT) && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
+#  include <dxc/dxcapi.h>
 
 xiiComPtr<IDxcUtils>     s_pDxcUtils;
 xiiComPtr<IDxcCompiler3> s_pDxcCompiler;
+#endif
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(ShaderCompiler, ShaderCompilerPlugin)
@@ -44,8 +47,10 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(ShaderCompiler, ShaderCompilerPlugin)
 
   ON_CORESYSTEMS_SHUTDOWN
   {
+    #if (BUILDSYSTEM_ENABLE_D3D12_SUPPORT || BUILDSYSTEM_ENABLE_VULKAN_SUPPORT) && (XII_ENABLED(XII_PLATFORM_WINDOWS) || XII_ENABLED(XII_PLATFORM_LINUX))
     s_pDxcUtils = {};
     s_pDxcCompiler = {};
+    #endif
   }
 
 XII_END_SUBSYSTEM_DECLARATION;
@@ -364,7 +369,7 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
     if (inout_Data.m_uiSourceHash[stage] == 0)
       continue;
 
-    if (!inout_Data.m_bWriteToDisk[stage] == false)
+    if (inout_Data.m_bWriteToDisk[stage] == false)
     {
       xiiLog::Debug("Shader for stage '{}' is already compiled.", xiiGALShaderStage::Names[stage]);
       continue;
