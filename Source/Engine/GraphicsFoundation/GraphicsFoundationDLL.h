@@ -95,3 +95,5 @@ class xiiGALDepthStencilState;
 class xiiGALPipelineResourceSignature;
 class xiiGALPipelineState;
 class xiiGALRasterizerState;
+
+struct xiiGALPipelineResourceDescription;
