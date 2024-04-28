@@ -40,13 +40,13 @@ namespace
 class xiiHeaderCheckApp : public xiiApplication
 {
 private:
-  xiiString                                                     m_sSearchDir;
-  xiiString                                                     m_sProjectName;
-  bool                                                          m_bHadErrors;
-  bool                                                          m_bHadSeriousWarnings;
-  bool                                                          m_bHadWarnings;
+  xiiString                                                             m_sSearchDir;
+  xiiString                                                             m_sProjectName;
+  bool                                                                  m_bHadErrors;
+  bool                                                                  m_bHadSeriousWarnings;
+  bool                                                                  m_bHadWarnings;
   xiiUniquePtr<xiiStackAllocator<xiiAllocatorTrackingMode::DoNotTrack>> m_pStackAllocator;
-  xiiDynamicArray<xiiString>                                    m_IncludeDirectories;
+  xiiDynamicArray<xiiString>                                            m_IncludeDirectories;
 
   struct IgnoreInfo
   {

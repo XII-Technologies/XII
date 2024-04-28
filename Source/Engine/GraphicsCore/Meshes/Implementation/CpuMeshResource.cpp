@@ -85,6 +85,4 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiCpuMeshResource, xiiMeshResourceDescriptor)
   return res;
 }
 
-
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_CpuMeshResource);

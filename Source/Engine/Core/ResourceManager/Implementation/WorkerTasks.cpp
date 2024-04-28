@@ -96,8 +96,7 @@ void xiiResourceManagerWorkerDataLoad::Execute()
     pUpdateContentTask->m_pResourceToLoad = pResourceToLoad;
 
     // schedule the task to run, either on the main thread or on some other thread
-    *pUpdateContentGroup = xiiTaskSystem::StartSingleTask(
-      pUpdateContentTask, bResourceIsLoadedOnMainThread ? xiiTaskPriority::SomeFrameMainThread : xiiTaskPriority::LateNextFrame);
+    *pUpdateContentGroup = xiiTaskSystem::StartSingleTask(pUpdateContentTask, bResourceIsLoadedOnMainThread ? xiiTaskPriority::SomeFrameMainThread : xiiTaskPriority::LateNextFrame);
 
     // restart the next loading task (this one is about to finish)
     xiiResourceManager::s_pState->m_bAllowLaunchDataLoadTask = true;
@@ -139,10 +138,8 @@ void xiiResourceManagerWorkerUpdateContent::Execute()
     MemUsage.m_uiMemoryGPU = 0xFFFFFFFF;
     m_pResourceToLoad->UpdateMemoryUsage(MemUsage);
 
-    XII_ASSERT_DEV(
-      MemUsage.m_uiMemoryCPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its CPU memory usage", m_pResourceToLoad->GetResourceID());
-    XII_ASSERT_DEV(
-      MemUsage.m_uiMemoryGPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its GPU memory usage", m_pResourceToLoad->GetResourceID());
+    XII_ASSERT_DEV(MemUsage.m_uiMemoryCPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its CPU memory usage", m_pResourceToLoad->GetResourceID());
+    XII_ASSERT_DEV(MemUsage.m_uiMemoryGPU != 0xFFFFFFFF, "Resource '{0}' did not properly update its GPU memory usage", m_pResourceToLoad->GetResourceID());
 
     m_pResourceToLoad->m_MemoryUsage = MemUsage;
   }

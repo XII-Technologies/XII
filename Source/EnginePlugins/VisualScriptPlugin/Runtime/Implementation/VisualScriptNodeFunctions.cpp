@@ -934,7 +934,7 @@ namespace
                   std::is_same_v<T, xiiTypedPointer>)
     {
       xiiTypedPointer p = inout_context.GetPointerData(node.GetInputDataOffset(0));
-      sb.Format("{} {}", p.m_pType->GetTypeName(), xiiArgP(p.m_pObject));
+      sb.SetFormat("{} {}", p.m_pType->GetTypeName(), xiiArgP(p.m_pObject));
       s = sb;
     }
     else if constexpr (std::is_same_v<T, xiiString>)
@@ -989,7 +989,7 @@ namespace
                   std::is_same_v<T, xiiTypedPointer>)
     {
       xiiTypedPointer p = inout_context.GetPointerData(node.GetInputDataOffset(0));
-      sb.Format("{} {}", p.m_pType->GetTypeName(), xiiArgP(p.m_pObject));
+      sb.SetFormat("{} {}", p.m_pType->GetTypeName(), xiiArgP(p.m_pObject));
       s = sb;
     }
     else if constexpr (std::is_same_v<T, xiiString>)

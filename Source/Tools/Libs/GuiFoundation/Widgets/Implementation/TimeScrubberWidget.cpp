@@ -131,7 +131,7 @@ void xiiQtTimeScrubberWidget::paintEvent(QPaintEvent* event)
       const double scaledX = x * scale;
 
       textRect.setRect(scaledX - 20, areaTop, 39, areaHeight);
-      tmp.Format("{0}", xiiArgF(x));
+      tmp.SetFormat("{0}", xiiArgF(x));
 
       p.drawText(textRect, tmp.GetData(), textOpt);
     }

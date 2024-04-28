@@ -759,7 +759,7 @@ void xiiGALDeviceD3D11::CreateCommandQueuesPlatform()
         m_CommandQueues[uiCommandQueueIndex]                   = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, queueDescription);
 
         xiiStringBuilder sb;
-        sb.Format("Command Queue - {}", uiCommandQueueIndex);
+        sb.SetFormat("Command Queue - {}", uiCommandQueueIndex);
         m_CommandQueues[uiCommandQueueIndex]->SetDebugName(sb);
 
         return true;

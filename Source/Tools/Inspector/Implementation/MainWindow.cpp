@@ -221,7 +221,7 @@ void xiiQtMainWindow::UpdateNetwork()
         bResetStats = true;
 
         xiiStringBuilder s;
-        s.Format("Connected to new Server with ID {0}", uiServerID);
+        s.SetFormat("Connected to new Server with ID {0}", uiServerID);
 
         xiiQtLogDockWidget::s_pWidget->Log(s.GetData());
       }

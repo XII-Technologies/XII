@@ -73,7 +73,7 @@ xiiQtStatVisWidget::xiiQtStatVisWidget(QWidget* pParent, xiiInt32 iWindowNumber)
   m_ShowWindowAction.setCheckable(true);
 
   xiiStringBuilder sStatHistory;
-  sStatHistory.Format("StatHistory{0}", m_iWindowNumber);
+  sStatHistory.SetFormat("StatHistory{0}", m_iWindowNumber);
 
   QSettings Settings;
   Settings.beginGroup(sStatHistory.GetData());
@@ -105,7 +105,7 @@ void xiiQtStatVisWidget::on_ComboTimeframe_currentIndexChanged(int index)
 void xiiQtStatVisWidget::on_LineName_textChanged(const QString& text)
 {
   xiiStringBuilder sStatHistory;
-  sStatHistory.Format("StatHistory{0}", m_iWindowNumber);
+  sStatHistory.SetFormat("StatHistory{0}", m_iWindowNumber);
 
   QSettings Settings;
   Settings.beginGroup(sStatHistory.GetData());
@@ -119,7 +119,7 @@ void xiiQtStatVisWidget::on_LineName_textChanged(const QString& text)
 void xiiQtStatVisWidget::on_SpinMin_valueChanged(double val)
 {
   xiiStringBuilder sStatHistory;
-  sStatHistory.Format("StatHistory{0}", m_iWindowNumber);
+  sStatHistory.SetFormat("StatHistory{0}", m_iWindowNumber);
 
   QSettings Settings;
   Settings.beginGroup(sStatHistory.GetData());
@@ -130,7 +130,7 @@ void xiiQtStatVisWidget::on_SpinMin_valueChanged(double val)
 void xiiQtStatVisWidget::on_SpinMax_valueChanged(double val)
 {
   xiiStringBuilder sStatHistory;
-  sStatHistory.Format("StatHistory{0}", m_iWindowNumber);
+  sStatHistory.SetFormat("StatHistory{0}", m_iWindowNumber);
 
   QSettings Settings;
   Settings.beginGroup(sStatHistory.GetData());
@@ -170,7 +170,7 @@ void xiiQtStatVisWidget::on_ButtonRemove_clicked()
 void xiiQtStatVisWidget::Save()
 {
   xiiStringBuilder sStatHistory;
-  sStatHistory.Format("/StatWindow{0}.stats", m_iWindowNumber);
+  sStatHistory.SetFormat("/StatWindow{0}.stats", m_iWindowNumber);
 
   QString sFile = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
   QDir    dir;
@@ -200,7 +200,7 @@ void xiiQtStatVisWidget::Save()
 void xiiQtStatVisWidget::Load()
 {
   xiiStringBuilder sStatHistory;
-  sStatHistory.Format("/StatWindow{0}.stats", m_iWindowNumber);
+  sStatHistory.SetFormat("/StatWindow{0}.stats", m_iWindowNumber);
 
   QString sFile = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
   QDir    dir;

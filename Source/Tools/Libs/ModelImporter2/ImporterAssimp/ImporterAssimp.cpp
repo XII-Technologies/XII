@@ -139,7 +139,7 @@ namespace xiiModelImporter2
       {
         const auto& st = *m_pScene->mTextures[i];
 
-        refName.Format("*{}", i);
+        refName.SetFormat("*{}", i);
 
         auto& tex       = m_OutputTextures[refName];
         tex.m_sFilename = st.mFilename.C_Str();

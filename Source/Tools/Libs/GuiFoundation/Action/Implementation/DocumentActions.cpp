@@ -213,7 +213,7 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
           if (res.Failed())
           {
             xiiStringBuilder s;
-            s.Format("Failed to save document: \n'{0}'", sFile);
+            s.SetFormat("Failed to save document: \n'{0}'", sFile);
             xiiQtUiServices::MessageBoxStatus(res, s);
           }
           else

@@ -490,7 +490,7 @@ public:
     xiiString sFileMarker    = GetFileMarkerName(szFile);
 
     xiiStringBuilder sNewMarker;
-    sNewMarker.Format("XII_STATICLINK_FILE({0}, {1});", sLibraryMarker, sFileMarker);
+    sNewMarker.SetFormat("XII_STATICLINK_FILE({0}, {1});", sLibraryMarker, sFileMarker);
 
     m_AllRefPoints.Insert(sFileMarker.GetData());
 
@@ -553,7 +553,7 @@ public:
     // Generate the code that should be inserted into this file
     // This code will reference all the other files in the library
     {
-      sNewGroupMarker.Format("XII_STATICLINK_LIBRARY({0})\n{\n  if (bReturn)\n    return;\n\n", GetLibraryMarkerName());
+      sNewGroupMarker.SetFormat("XII_STATICLINK_LIBRARY({0})\n{\n  if (bReturn)\n    return;\n\n", GetLibraryMarkerName());
 
       auto it = m_AllRefPoints.GetIterator();
 

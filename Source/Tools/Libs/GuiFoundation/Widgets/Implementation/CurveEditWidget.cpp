@@ -1286,7 +1286,7 @@ void xiiQtCurveEditWidget::RenderSideLinesAndText(QPainter* painter, const QRect
       const QPoint pos = MapFromScene(QPointF(0, y));
 
       textRect.setRect(0, pos.y() - 15, areaRect.width(), 15);
-      tmp.Format("{0}", xiiArgF(y));
+      tmp.SetFormat("{0}", xiiArgF(y));
 
       painter->drawText(textRect, tmp.GetData(), textOpt);
     }

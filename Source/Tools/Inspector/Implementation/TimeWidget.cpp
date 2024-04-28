@@ -180,7 +180,7 @@ void xiiQtTimeWidget::UpdateStats()
     m_LastUpdatedClockList = xiiTime::Now();
 
     xiiStringBuilder s;
-    s.Format("Max: {0}ms", xiiArgF(tShowMax.GetMilliseconds(), 0));
+    s.SetFormat("Max: {0}ms", xiiArgF(tShowMax.GetMilliseconds(), 0));
     LabelMaxTime->setText(s.GetData());
 
     for (xiiMap<xiiString, xiiQtTimeWidget::ClockData>::Iterator it = m_ClockData.GetIterator(); it.IsValid(); ++it)
@@ -191,8 +191,8 @@ void xiiQtTimeWidget::UpdateStats()
         continue;
 
       xiiStringBuilder sTooltip;
-      sTooltip.Format("<p>Clock: {0}<br>Max Time Step: <b>{1}ms</b><br>Min Time Step: <b>{2}ms</b><br></p>", it.Key().GetData(),
-                      xiiArgF(Clock.m_MaxTimestep.GetMilliseconds(), 2), xiiArgF(Clock.m_MinTimestep.GetMilliseconds(), 2));
+      sTooltip.SetFormat("<p>Clock: {0}<br>Max Time Step: <b>{1}ms</b><br>Min Time Step: <b>{2}ms</b><br></p>", it.Key().GetData(),
+                         xiiArgF(Clock.m_MaxTimestep.GetMilliseconds(), 2), xiiArgF(Clock.m_MinTimestep.GetMilliseconds(), 2));
 
       Clock.m_pListItem->setToolTip(sTooltip.GetData());
     }
@@ -213,7 +213,7 @@ void xiiQtTimeWidget::ProcessTelemetry(void* pUnuseed)
     xiiString sClockName;
     Msg.GetReader() >> sClockName;
 
-    sTemp.Format("{0} [smoothed]", sClockName);
+    sTemp.SetFormat("{0} [smoothed]", sClockName);
 
     ClockData& ad  = s_pWidget->m_ClockData[sClockName];
     ClockData& ads = s_pWidget->m_ClockData[sTemp.GetData()];

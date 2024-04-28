@@ -189,7 +189,7 @@ void xiiQtFileWidget::ProcessTelemetry(void* pUnuseed)
         Msg.GetReader() >> bSuccess;
 
         xiiStringBuilder s;
-        s.Format("'{0}' -> '{1}'", sFile1, sFile2);
+        s.SetFormat("'{0}' -> '{1}'", sFile1, sFile2);
         data.m_sFile = s.GetData();
 
         data.m_State = bSuccess ? FileCopy : FileCopyFailed;
