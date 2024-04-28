@@ -150,6 +150,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderVariableDescription : public xiiHa
   xiiUInt32                                        m_uiArraySize   = 0U;                                     ///< The array size.
   xiiDynamicArray<xiiGALShaderVariableDescription> m_Members;                                                ///< For a structure, an array of member variables.
 
+  /// \brief This copies the data in a variant into into its destination, given its structure in the shader variable description.
   static void CopyDataFormVariant(xiiUInt8* pDestination, xiiVariant* pValue, const xiiGALShaderVariableDescription& description);
 };
 
