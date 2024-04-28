@@ -170,11 +170,11 @@ public:
 
       m_pDevice->BeginPipeline("ShaderExplorer", m_hSwapChain);
 
-      xiiGALPass* pGALPass = m_pDevice->BeginPass("xiiShaderExplorerMainPass");
+      xiiGALCommandQueue* pGALCommandQueue = m_pDevice->GetGraphicsQueue(/*"xiiShaderExplorerMainPass"*/);
 
       // Must always retrieve the current swapchain render target
       const xiiGALSwapChain*  pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
-      xiiGALTextureViewHandle hBBRTV            = m_pDevice->GetTexture(pPrimarySwapChain->GetRenderTargets().m_hRTs[0])->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+      xiiGALTextureViewHandle hBBRTV            = m_pDevice->GetTexture(pPrimarySwapChain->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
       xiiGALTextureViewHandle hBBDSV            = m_pDevice->GetTexture(m_hDepthStencilTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
 
       xiiGALRenderingSetup renderingSetup;
@@ -183,7 +183,7 @@ public:
       renderingSetup.m_bClearDepth             = true;
       renderingSetup.m_bClearStencil           = true;
 
-      xiiGALGraphicsCommandEncoder* pCommandEncoder = xiiRenderContext::GetDefaultInstance()->BeginRendering(pGALPass, renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight));
+      xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight));
 
       auto& gc = xiiRenderContext::GetDefaultInstance()->WriteGlobalConstants();
       xiiMemoryUtils::ZeroFill(&gc, 1);
@@ -202,11 +202,11 @@ public:
       xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer().IgnoreResult();
       xiiRenderContext::GetDefaultInstance()->EndRendering();
 
-      m_pDevice->EndPass(pGALPass);
-
       m_pDevice->EndPipeline(m_hSwapChain);
 
       m_pDevice->EndFrame();
+
+      xiiRenderContext::GetDefaultInstance()->ResetContextState();
     }
 
     // Make sure telemetry is sent out regularly.
@@ -260,7 +260,9 @@ public:
 
     XII_VERIFY(m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded(), "Failed to watch project directory.");
 
-#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
+    constexpr const char* szDefaultGraphicsAPI = "D3D11";
+#elif BUILDSYSTEM_ENABLE_D3D12_SUPPORT
     constexpr const char* szDefaultGraphicsAPI = "D3D12";
 #elif BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
     constexpr const char* szDefaultGraphicsAPI = "Vulkan";
