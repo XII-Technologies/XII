@@ -204,7 +204,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderStage
   };
 
   /// \brief Retrieves the shader stage index of a single shader stage.
-  static xiiUInt32 GetStageIndex(xiiBitflags<xiiGALShaderStage> stage);
+  static xiiUInt32 GetStageIndex(xiiGALShaderStage::Enum stage);
 
   /// \brief Returns a the stage flag for a given stage index.
   static xiiGALShaderStage::Enum GetStageFlag(xiiUInt32 uiIndex);

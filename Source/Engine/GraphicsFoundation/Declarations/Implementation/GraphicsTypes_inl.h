@@ -30,11 +30,9 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALValueType::GetSize(const xiiGALValueType::Enum
 }
 
 // static
-XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderStage::GetStageIndex(xiiBitflags<xiiGALShaderStage> stage)
+XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Enum stage)
 {
-  // \todo Assert that a single shader stage is set.
-
-  switch (stage.GetValue())
+  switch (stage)
   {
     case xiiGALShaderStage::Vertex:
       return 0U;
