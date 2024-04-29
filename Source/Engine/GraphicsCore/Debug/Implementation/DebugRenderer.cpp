@@ -1605,7 +1605,19 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
       while (uiNumLineBoxes > 0)
       {
         const xiiUInt32 uiNumLineBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineBoxes, BOXES_PER_BATCH);
-        pGALCommandList->UpdateBuffer(s_hDataBuffer[BufferType::LineBoxes], 0, xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray());
+
+        void* pMappedData = nullptr;
+        if (pGALCommandList->MapBuffer(s_hDataBuffer[BufferType::LineBoxes], xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+        {
+          auto pDataToUpdate = xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray();
+          memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+          pGALCommandList->UnmapBuffer(s_hDataBuffer[BufferType::LineBoxes], xiiGALMapType::Write).AssertSuccess();
+        }
+        else
+        {
+          xiiLog::Error("Failed to map buffer to update content.");
+        }
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer(0xFFFFFFFF, 0, uiNumLineBoxesInBatch).IgnoreResult();
 

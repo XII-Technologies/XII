@@ -76,7 +76,6 @@ void xiiForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   RenderObjects(renderViewContext);
 
   renderViewContext.m_pRenderContext->EndRendering();
-  pGALCommandQueue->Submit(renderViewContext.m_pRenderContext->GetCommandList());
 }
 
 xiiResult xiiForwardRenderPass::Serialize(xiiStreamWriter& inout_stream) const
