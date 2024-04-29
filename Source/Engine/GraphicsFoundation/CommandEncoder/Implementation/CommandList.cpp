@@ -627,7 +627,17 @@ xiiResult xiiGALCommandList::MapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGA
     XII_VERIFY_COMMAND_LIST_RESULT(mapType == xiiGALMapType::Write, "xiiGALMapType::Write is only valid when mapping buffer for writing.");
   }
 
-  return MapBufferPlatform(pBuffer, mapType, mapFlags, pMappedData);
+  if (MapBufferPlatform(pBuffer, mapType, mapFlags, pMappedData).Failed())
+  {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+    XII_VERIFY_COMMAND_LIST_RESULT(m_MappedBuffers.Contains(uiKey), "The buffer '{0}' has not been mapped.", pBuffer->GetDebugName());
+    XII_VERIFY_COMMAND_LIST_RESULT(*m_MappedBuffers.GetValue(uiKey) == mapType, "The map type ({0}) does not match the map type ({1}) that was used to map the buffer.", mapType, *m_MappedBuffers.GetValue(uiKey));
+
+    m_MappedBuffers.Remove(uiKey);
+#endif
+    return XII_FAILURE;
+  }
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALCommandList::UnmapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType)

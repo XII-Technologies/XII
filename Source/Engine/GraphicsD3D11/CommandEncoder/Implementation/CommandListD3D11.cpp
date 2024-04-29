@@ -503,14 +503,26 @@ xiiResult xiiGALCommandListD3D11::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEn
   xiiUInt32 uiMapFlags    = 0U;
   xiiD3D11TypeConversions::GetMapTypeAndFlags(mapType, mapFlags, bufferMapType, uiMapFlags);
 
+  // We need to use the immediate context to handle other map types.
+  // If you call Map on a deferred context, you can only pass D3D11_MAP_WRITE_DISCARD, D3D11_MAP_WRITE_NO_OVERWRITE, or both to the MapType parameter.
+  // Other D3D11_MAP-typed values are not supported for a deferred context.
+  //
+  // But also, there is an issue with needing to first map the buffer with discard before no overwrite, perhaps we can resolve this later.
+  // D3D11 ERROR: ID3D11DeviceContext::Map: Returning D3D11_ERROR_DEFERRED_CONTEXT_MAP_WITHOUT_INITIAL_DISCARD, meaning that MapType must be D3D11_MAP_WRITE_DISCARD when Map is called for the first time with a particular Resource on a Deferred Context. [ RESOURCE_MANIPULATION ERROR #2097216: RESOURCE_MAP_WITHOUT_INITIAL_DISCARD]
+  auto pCommandList = m_pCommandList;
+  if (bufferMapType != D3D11_MAP_WRITE_DISCARD /*&& bufferMapType != D3D11_MAP_WRITE_NO_OVERWRITE*/)
+    pCommandList = static_cast<xiiGALDeviceD3D11*>(m_pDevice)->GetImmediateContext();
+
   D3D11_MAPPED_SUBRESOURCE mappedSubresource;
-  if (FAILED(m_pCommandList->Map(pBufferD3D11->GetBuffer(), 0U, bufferMapType, uiMapFlags, &mappedSubresource)))
+  if (FAILED(pCommandList->Map(pBufferD3D11->GetBuffer(), 0U, bufferMapType, uiMapFlags, &mappedSubresource)))
   {
     xiiLog::Error("Failed to map buffer '{0}'.", pBufferD3D11->GetDebugName());
     return XII_FAILURE;
   }
 
   pMappedData = mappedSubresource.pData;
+
+  m_MappedBuffers.Insert(pBufferD3D11, pCommandList);
 
   return XII_SUCCESS;
 }
@@ -521,7 +533,10 @@ xiiResult xiiGALCommandListD3D11::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xii
 
   XII_ASSERT_DEV(pBuffer != nullptr, "Invalid resource.");
 
-  m_pCommandList->Unmap(pBufferD3D11->GetBuffer(), 0U);
+  auto pCommandList = *m_MappedBuffers.GetValue(pBufferD3D11);
+  pCommandList->Unmap(pBufferD3D11->GetBuffer(), 0U);
+
+  m_MappedBuffers.Remove(pBufferD3D11);
 
   return XII_SUCCESS;
 }

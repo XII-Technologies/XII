@@ -131,6 +131,7 @@ protected:
   xiiGALFramebuffer*                                                        m_pFramebuffer   = nullptr;
   xiiStaticArray<xiiGALOptimizedClearValue, XII_GAL_MAX_RENDERTARGET_COUNT> m_AttachmentClearValues;
 
+  xiiMap<xiiGALBufferD3D11*, ID3D11DeviceContext*>  m_MappedBuffers;
   xiiMap<xiiGALTextureD3D11*, ID3D11DeviceContext*> m_MappedTextureSubresources;
 
   xiiDisjointQueryPool                                     m_DisjointQueryPool;
