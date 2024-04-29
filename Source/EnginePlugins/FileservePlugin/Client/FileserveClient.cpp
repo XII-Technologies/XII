@@ -316,7 +316,7 @@ void xiiFileserveClient::ComputeDataDirMountPoint(xiiStringView sDataDir, xiiStr
   XII_ASSERT_DEV(sDataDir.IsEmpty() || sDataDir.EndsWith("/"), "Invalid path");
 
   const xiiUInt32 uiMountPoint = xiiHashingUtils::xxHash32String(sDataDir);
-  out_sMountPoint.Format("{0}", xiiArgU(uiMountPoint, 8, true, 16));
+  out_sMountPoint.SetFormat("{0}", xiiArgU(uiMountPoint, 8, true, 16));
 }
 
 void xiiFileserveClient::GetFullDataDirCachePath(const char* szDataDir, xiiStringBuilder& out_sFullPath, xiiStringBuilder& out_sFullPathMeta) const
@@ -854,7 +854,7 @@ xiiResult xiiFileserveClient::WaitForServerInfo(xiiTime timeout /*= xiiTime::Sec
     xiiStringBuilder sAddress;
     for (auto& ip : sServerIPs)
     {
-      sAddress.Format("{0}:{1}", ip, uiPort);
+      sAddress.SetFormat("{0}:{1}", ip, uiPort);
 
       xiiThreadUtils::Sleep(xiiTime::Milliseconds(500));
 

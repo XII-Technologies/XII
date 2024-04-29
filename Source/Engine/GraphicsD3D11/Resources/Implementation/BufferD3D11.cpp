@@ -81,7 +81,7 @@ xiiResult xiiGALBufferD3D11::InitPlatform(const xiiGALBufferData* pInitialData)
     m_IndexFormat = m_Description.m_uiElementByteStride == 2U ? xiiGALValueType::UInt16 : xiiGALValueType::UInt32;
 
   D3D11_SUBRESOURCE_DATA initialData = {};
-  initialData.pSysMem                = pInitialData ? pInitialData->m_pData : nullptr;
+  initialData.pSysMem                = (pInitialData && pInitialData->m_pData) ? pInitialData->m_pData : nullptr;
   initialData.SysMemPitch            = 0U;
   initialData.SysMemSlicePitch       = 0U;
 

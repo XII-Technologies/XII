@@ -91,8 +91,8 @@ xiiResult xiiQtModifiedDocumentsDlg::SaveDocument(xiiDocument* pDoc)
   if (res.m_Result.Failed())
   {
     xiiStringBuilder s, s2;
-    s.Format("Failed to save document:\n'{0}'", pDoc->GetDocumentPath());
-    s2.Format("Successfully saved document:\n'{0}'", pDoc->GetDocumentPath());
+    s.SetFormat("Failed to save document:\n'{0}'", pDoc->GetDocumentPath());
+    s2.SetFormat("Successfully saved document:\n'{0}'", pDoc->GetDocumentPath());
 
     xiiQtUiServices::MessageBoxStatus(res, s, s2);
 

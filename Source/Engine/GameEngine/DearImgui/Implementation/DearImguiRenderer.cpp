@@ -172,8 +172,8 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, co
   if (xiiImgui::GetSingleton() == nullptr)
     return;
 
-  xiiRenderContext*             pRenderContext  = renderContext.m_pRenderContext;
-  xiiGALGraphicsCommandEncoder* pCommandEncoder = pRenderContext->GetGraphicsCommandEncoder();
+  xiiRenderContext*  pRenderContext = renderContext.m_pRenderContext;
+  xiiGALCommandList* pCommandList   = pRenderContext->GetGraphicsCommandList();
 
   pRenderContext->BindShader(m_hShader);
   const auto&     textures    = xiiImgui::GetSingleton()->m_Textures;
@@ -186,8 +186,35 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, co
     XII_ASSERT_DEV(pRenderData->m_Vertices.GetCount() < s_uiVertexBufferSize, "GUI has too many elements to render in one drawcall");
     XII_ASSERT_DEV(pRenderData->m_Indices.GetCount() < s_uiIndexBufferSize, "GUI has too many elements to render in one drawcall");
 
-    pCommandEncoder->UpdateBuffer(m_hVertexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Vertices.GetPtr(), pRenderData->m_Vertices.GetCount()).ToByteArray());
-    pCommandEncoder->UpdateBuffer(m_hIndexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Indices.GetPtr(), pRenderData->m_Indices.GetCount()).ToByteArray());
+    {
+      void* pMappedData = nullptr;
+      if (pCommandList->MapBuffer(m_hVertexBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+      {
+        auto pDataToUpdate = xiiMakeArrayPtr(pRenderData->m_Vertices.GetPtr(), pRenderData->m_Vertices.GetCount()).ToByteArray();
+        memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+        pCommandList->UnmapBuffer(m_hVertexBuffer, xiiGALMapType::Write).AssertSuccess();
+      }
+      else
+      {
+        xiiLog::Error("Failed to map buffer to update content.");
+      }
+    }
+
+    {
+      void* pMappedData = nullptr;
+      if (pCommandList->MapBuffer(m_hIndexBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+      {
+        auto pDataToUpdate = xiiMakeArrayPtr(pRenderData->m_Indices.GetPtr(), pRenderData->m_Indices.GetCount()).ToByteArray();
+        memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+        pCommandList->UnmapBuffer(m_hIndexBuffer, xiiGALMapType::Write).AssertSuccess();
+      }
+      else
+      {
+        xiiLog::Error("Failed to map buffer to update content.");
+      }
+    }
 
     pRenderContext->BindMeshBuffer(m_hVertexBuffer, m_hIndexBuffer, &m_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, pRenderData->m_Indices.GetCount() / 3);
 
@@ -199,7 +226,9 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, co
 
       if (imGuiBatch.m_uiVertexCount > 0 && imGuiBatch.m_uiTextureID < numTextures)
       {
-        pCommandEncoder->SetScissorRect(imGuiBatch.m_ScissorRect);
+        auto rect = imGuiBatch.m_ScissorRect;
+
+        pCommandList->SetScissorRects(xiiMakeArrayPtr(&rect, 1U), 0U, 0U);
         pRenderContext->BindTexture2D("BaseTexture", textures[imGuiBatch.m_uiTextureID]);
         pRenderContext->DrawMeshBuffer(imGuiBatch.m_uiVertexCount / 3, uiFirstIndex / 3).IgnoreResult();
       }

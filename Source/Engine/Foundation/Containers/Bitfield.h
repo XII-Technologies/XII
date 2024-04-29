@@ -164,7 +164,7 @@ template <typename T>
 class xiiStaticBitfield
 {
 public:
-  using StorageType = T;
+  using StorageType   = T;
   using ConstIterator = xiiBitIterator<StorageType, true, xiiUInt32>;
 
   static constexpr xiiUInt32 GetStorageTypeBitCount() { return xiiMath::NumBits<T>(); }

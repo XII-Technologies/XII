@@ -141,12 +141,11 @@ void xiiQtColorDialog::ApplyColor()
 
   if (m_bAlpha)
   {
-    s.Format("{0}{1}{2}{3}", xiiArgU(m_uiGammaRed, 2, true, 16, true), xiiArgU(m_uiGammaGreen, 2, true, 16, true), xiiArgU(m_uiGammaBlue, 2, true, 16, true),
-             xiiArgU(m_uiAlpha, 2, true, 16, true));
+    s.SetFormat("{0}{1}{2}{3}", xiiArgU(m_uiGammaRed, 2, true, 16, true), xiiArgU(m_uiGammaGreen, 2, true, 16, true), xiiArgU(m_uiGammaBlue, 2, true, 16, true), xiiArgU(m_uiAlpha, 2, true, 16, true));
   }
   else
   {
-    s.Format("{0}{1}{2}", xiiArgU(m_uiGammaRed, 2, true, 16, true), xiiArgU(m_uiGammaGreen, 2, true, 16, true), xiiArgU(m_uiGammaBlue, 2, true, 16, true));
+    s.SetFormat("{0}{1}{2}", xiiArgU(m_uiGammaRed, 2, true, 16, true), xiiArgU(m_uiGammaGreen, 2, true, 16, true), xiiArgU(m_uiGammaBlue, 2, true, 16, true));
   }
 
   LineHEX->setText(s.GetData());

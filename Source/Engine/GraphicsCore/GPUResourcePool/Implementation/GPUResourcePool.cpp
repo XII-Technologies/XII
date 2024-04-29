@@ -85,7 +85,7 @@ xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(const xiiGALTextureCreat
   return hNewTexture;
 }
 
-xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALSampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray)
+xiiGALTextureHandle xiiGPUResourcePool::GetRenderTarget(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALMSAASampleCount> sampleCount, xiiUInt32 uiSliceColunt, bool bIsArray)
 {
   xiiGALTextureCreationDescription TextureDesc;
   TextureDesc.m_Format             = format;

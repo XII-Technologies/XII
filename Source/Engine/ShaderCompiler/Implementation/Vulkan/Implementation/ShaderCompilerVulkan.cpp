@@ -127,7 +127,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramData& inou
 
   XII_SCOPE_EXIT(spvReflectDestroyShaderModule(&reflectShaderModule));
 
-  xiiHybridArray<xiiGALVertexInputLayout, 8> vertexInputLayouts;
+  xiiHybridArray<xiiGALVertexInputLayout, 8>& vertexInputLayouts = pShader->m_VertexInputLayout;
   if (Stage.IsSet(xiiGALShaderStage::Vertex))
   {
     xiiUInt32 uiNumInputVariables = 0;
@@ -212,7 +212,10 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramData& inou
 
       XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown, "FillResourceBinding should have failed.");
 
-      inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)]->m_ShaderResourceBindings.PushBack(shaderResourceBinding);
+      if (shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown)
+      {
+        inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)]->m_ShaderResourceBindings.PushBack(shaderResourceBinding);
+      }
     }
   }
   return XII_SUCCESS;

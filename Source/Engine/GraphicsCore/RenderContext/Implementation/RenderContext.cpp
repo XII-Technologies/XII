@@ -1,14 +1,19 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
+#include <Foundation/Algorithm/HashStream.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/Types/ScopeExit.h>
 
-#include <GraphicsFoundation/CommandEncoder/CommandEncoder.h>
 #include <GraphicsFoundation/Resources/BufferView.h>
+#include <GraphicsFoundation/Resources/Framebuffer.h>
+#include <GraphicsFoundation/Resources/RenderPass.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 #include <GraphicsFoundation/Shader/InputLayout.h>
+#include <GraphicsFoundation/States/PipelineResourceSignature.h>
+#include <GraphicsFoundation/States/PipelineState.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/DynamicMeshBufferResource.h>
@@ -37,8 +42,8 @@ xiiGALSamplerHandle xiiRenderContext::s_hDefaultSamplers[4];
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, RendererContext)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-  "Foundation",
-  "Core"
+    "Foundation",
+    "Core"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
@@ -117,6 +122,29 @@ xiiRenderContext::xiiRenderContext()
 
 xiiRenderContext::~xiiRenderContext()
 {
+  xiiGALDevice* pGALDevice = xiiGALDevice::GetDefaultDevice();
+
+  for (auto& framebufferInfo : m_FramebufferCache)
+  {
+    auto& hFramebuffer = framebufferInfo.Value().hFrameBuffer;
+    if (hFramebuffer.IsInvalidated())
+      continue;
+
+    pGALDevice->DestroyFramebuffer(hFramebuffer);
+    hFramebuffer.Invalidate();
+  }
+
+  for (auto& renderPassInfo : m_RenderPassCache)
+  {
+    auto& hRenderPass = renderPassInfo.Value();
+
+    if (hRenderPass.IsInvalidated())
+      continue;
+
+    pGALDevice->DestroyRenderPass(hRenderPass);
+    hRenderPass.Invalidate();
+  }
+
   DeleteConstantBufferStorage(m_hGlobalConstantBufferStorage);
 
   if (s_pDefaultInstance == this)
@@ -133,80 +161,128 @@ xiiRenderContext::Statistics xiiRenderContext::GetAndResetStatistics()
   return ret;
 }
 
-xiiGALGraphicsCommandEncoder* xiiRenderContext::BeginRendering(xiiGALPass* pGALPass, const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName, bool bStereoSupport)
+xiiGALCommandList* xiiRenderContext::BeginRendering(xiiGALCommandQueue* pCommandQueue, const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName, bool bStereoSupport)
 {
-  xiiUInt32 msaaSampleCount = 1;
-
   xiiGALTextureViewHandle hRTV;
-  if (renderingSetup.m_RenderTargetSetup.GetRenderTargetCount() > 0)
   {
-    hRTV = renderingSetup.m_RenderTargetSetup.GetRenderTarget(0);
-  }
-  if (hRTV.IsInvalidated())
-  {
-    hRTV = renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget();
-  }
-
-  if (const xiiGALTextureView* pRTV = xiiGALDevice::GetDefaultDevice()->GetTextureView(hRTV))
-  {
-    msaaSampleCount = pRTV->GetTexture()->GetDescription().m_uiSampleCount;
+    if (renderingSetup.m_RenderTargetSetup.GetRenderTargetCount() > 0)
+    {
+      hRTV = renderingSetup.m_RenderTargetSetup.GetRenderTarget(0);
+    }
+    if (hRTV.IsInvalidated())
+    {
+      hRTV = renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget();
+    }
   }
 
-  if (msaaSampleCount > 1)
+  xiiUInt32 uiSampleCount = 1;
   {
-    SetShaderPermutationVariable("MSAA", "TRUE");
-  }
-  else
-  {
-    SetShaderPermutationVariable("MSAA", "FALSE");
+    if (const xiiGALTextureView* pRTV = xiiGALDevice::GetDefaultDevice()->GetTextureView(hRTV))
+    {
+      uiSampleCount = pRTV->GetTexture()->GetDescription().m_uiSampleCount;
+    }
+
+    if (uiSampleCount > 1)
+    {
+      SetShaderPermutationVariable("MSAA", "TRUE");
+    }
+    else
+    {
+      SetShaderPermutationVariable("MSAA", "FALSE");
+    }
   }
 
   auto& gc          = WriteGlobalConstants();
   gc.ViewportSize   = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
-  gc.NumMsaaSamples = msaaSampleCount;
+  gc.NumMsaaSamples = uiSampleCount;
 
-  auto pGALCommandEncoder = pGALPass->BeginRendering(renderingSetup, sName);
+  auto pGALCommandList = pCommandQueue->BeginCommandList(sName);
 
-  pGALCommandEncoder->SetViewport(viewport);
+  GetRenderPassAndFramebuffer(renderingSetup, m_hCurrentRenderPass, m_hCurrentFramebuffer, &m_BeginRenderPass);
 
-  m_pGALPass           = pGALPass;
-  m_pGALCommandEncoder = pGALCommandEncoder;
-  m_bCompute           = false;
-  m_bStereoRendering   = bStereoSupport;
+  xiiGALViewport viewPort;
+  viewPort.m_fTopLeftX = viewport.x;
+  viewPort.m_fTopLeftY = viewport.y;
+  viewPort.m_fWidth    = viewport.width;
+  viewPort.m_fHeight   = viewport.height;
+  viewPort.m_fMinDepth = 0.0f;
+  viewPort.m_fMaxDepth = 0.1f;
 
-  return pGALCommandEncoder;
+  pGALCommandList->SetViewports(xiiMakeArrayPtr(&viewPort, 1), viewport.width, viewport.height);
+
+  m_pCommandQueue    = pCommandQueue;
+  m_pGALCommandList  = pGALCommandList;
+  m_bCompute         = false;
+  m_bStereoRendering = bStereoSupport;
+
+  return pGALCommandList;
+}
+
+void xiiRenderContext::BeginRenderPass()
+{
+  XII_ASSERT_DEV(!m_bCompute, "Error, not available in compute.");
+
+  GetGraphicsCommandList()->BeginRenderPass(m_BeginRenderPass);
+}
+
+void xiiRenderContext::NextSubpass()
+{
+  // Currently, we build single subpasses using the xiiGALRenderingSetup structure.
+  // GetGraphicsCommandList()->NextSubpass();
+}
+
+void xiiRenderContext::EndRenderPass()
+{
+  GetGraphicsCommandList()->EndRenderPass();
 }
 
 void xiiRenderContext::EndRendering()
 {
-  m_pGALPass->EndRendering(GetGraphicsCommandEncoder());
+  m_pCommandQueue->Submit(GetGraphicsCommandList());
 
-  m_pGALPass           = nullptr;
-  m_pGALCommandEncoder = nullptr;
-  m_bStereoRendering   = false;
+  // See TODO below.
+  if (!m_hCurrentPipelineState.IsInvalidated())
+  {
+    xiiGALDevice::GetDefaultDevice()->DestroyPipelineState(m_hCurrentPipelineState);
 
-  ResetContextState();
+    m_hCurrentPipelineState.Invalidate();
+  }
+
+  m_BeginRenderPass     = xiiGALBeginRenderPassDescription();
+  m_hCurrentFramebuffer = xiiGALFramebufferHandle();
+  m_hCurrentRenderPass  = xiiGALRenderPassHandle();
+  m_pCommandQueue       = nullptr;
+  m_pGALCommandList     = nullptr;
+  m_bStereoRendering    = false;
+
+  // TODO: The render context needs to reset its state after every encoding block if we want to record to separate command buffers.
+  // Although this is currently not possible since a lot of high level code binds stuff only once per frame on the render context.
+  // Resetting the state after every encoding block breaks those assumptions.
+  // ResetContextState();
 }
 
-xiiGALComputeCommandEncoder* xiiRenderContext::BeginCompute(xiiGALPass* pGALPass, xiiStringView sName /*= {}*/)
+xiiGALCommandList* xiiRenderContext::BeginCompute(xiiGALCommandQueue* pCommandQueue, xiiStringView sName /*= {}*/)
 {
-  auto pGALCommandEncoder = pGALPass->BeginCompute(sName);
+  XII_ASSERT_DEV(m_hCurrentRenderPass.IsInvalidated() && m_hCurrentFramebuffer.IsInvalidated(), "Render pass and frame buffer are still active.");
 
-  m_pGALPass           = pGALPass;
-  m_pGALCommandEncoder = pGALCommandEncoder;
-  m_bCompute           = true;
+  auto pGALCommandList = pCommandQueue->BeginCommandList(sName);
 
-  return pGALCommandEncoder;
+  m_pCommandQueue   = pCommandQueue;
+  m_pGALCommandList = pGALCommandList;
+  m_bCompute        = true;
+
+  return pGALCommandList;
 }
 
 void xiiRenderContext::EndCompute()
 {
-  m_pGALPass->EndCompute(GetComputeCommandEncoder());
+  m_pCommandQueue->Submit(GetComputeCommandList());
 
-  m_pGALPass           = nullptr;
-  m_pGALCommandEncoder = nullptr;
+  m_pCommandQueue   = nullptr;
+  m_pGALCommandList = nullptr;
 
-  ResetContextState();
+  // TODO: See EndRendering
+  // ResetContextState();
 }
 
 void xiiRenderContext::SetShaderPermutationVariable(xiiStringView sName, const xiiTempHashedString& sTempValue)
@@ -490,49 +566,53 @@ void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBu
   {
     m_Topology = topology;
 
-    xiiTempHashedString sTopologies[xiiGALPrimitiveTopology::ENUM_COUNT] = {
-      xiiTempHashedString("TOPOLOGY_POINT_LIST"),
-      xiiTempHashedString("TOPOLOGY_LINE_LIST"),
-      xiiTempHashedString("TOPOLOGY_TRIANGLE_LIST"),
-      xiiTempHashedString("TOPOLOGY_TRIANGLE_STRIP"),
-      xiiTempHashedString("TOPOLOGY_LINE_STRIP"),
-      xiiTempHashedString("TOPOLOGY_TRIANGLE_LIST_ADJACENT"),
-      xiiTempHashedString("TOPOLOGY_TRANGLE_STRIP_ADJACENT"),
-      xiiTempHashedString("TOPOLOGY_LINE_LIST_ADJACENT"),
-      xiiTempHashedString("TOPOLOGY_LINE_STRIP_ADJACENT"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_1"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_2"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_3"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_4"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_5"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_6"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_7"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_8"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_9"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_10"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_11"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_12"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_13"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_14"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_15"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_16"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_17"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_18"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_19"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_20"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_21"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_22"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_23"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_24"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_25"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_26"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_27"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_28"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_29"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_30"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_31"),
-      xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_32"),
-    };
+    static bool                bInitialized                                     = false;
+    static xiiTempHashedString sTopologies[xiiGALPrimitiveTopology::ENUM_COUNT] = {};
+    if (!bInitialized)
+    {
+      sTopologies[xiiGALPrimitiveTopology::PointList]               = xiiTempHashedString("TOPOLOGY_POINT_LIST");
+      sTopologies[xiiGALPrimitiveTopology::LineList]                = xiiTempHashedString("TOPOLOGY_LINE_LIST");
+      sTopologies[xiiGALPrimitiveTopology::TriangleList]            = xiiTempHashedString("TOPOLOGY_TRIANGLE_LIST");
+      sTopologies[xiiGALPrimitiveTopology::TriangleStrip]           = xiiTempHashedString("TOPOLOGY_TRIANGLE_STRIP");
+      sTopologies[xiiGALPrimitiveTopology::LineStrip]               = xiiTempHashedString("TOPOLOGY_LINE_STRIP");
+      sTopologies[xiiGALPrimitiveTopology::TriangleListAdjacent]    = xiiTempHashedString("TOPOLOGY_TRIANGLE_LIST_ADJACENT");
+      sTopologies[xiiGALPrimitiveTopology::TriangleStripAdjacent]   = xiiTempHashedString("TOPOLOGY_TRIANGLE_STRIP_ADJACENT");
+      sTopologies[xiiGALPrimitiveTopology::LineListAdjacent]        = xiiTempHashedString("TOPOLOGY_LINE_LIST_ADJACENT");
+      sTopologies[xiiGALPrimitiveTopology::LineStripAdjacent]       = xiiTempHashedString("TOPOLOGY_LINE_STRIP_ADJACENT");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList1]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_1");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList2]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_2");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList3]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_3");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList4]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_4");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList5]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_5");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList6]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_6");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList7]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_7");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList8]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_8");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList9]  = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_9");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList10] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_10");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList11] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_11");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList12] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_12");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList13] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_13");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList14] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_14");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList15] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_15");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList16] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_16");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList17] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_17");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList18] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_18");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList19] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_19");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList20] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_20");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList21] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_21");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList22] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_22");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList23] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_23");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList24] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_24");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList25] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_25");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList26] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_26");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList27] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_27");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList28] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_28");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList29] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_29");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList30] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_30");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList31] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_31");
+      sTopologies[xiiGALPrimitiveTopology::ControlPointPatchList32] = xiiTempHashedString("TOPOLOGY_CONTROL_POINT_PATCH_LIST_32");
+      bInitialized                                                  = true;
+    }
 
     SetShaderPermutationVariable("TOPOLOGY", sTopologies[m_Topology]);
   }
@@ -543,6 +623,7 @@ void xiiRenderContext::BindMeshBuffer(xiiGALBufferHandle hVertexBuffer, xiiGALBu
   m_hVertexBuffers[3]          = hVertexBuffer4;
   m_hIndexBuffer               = hIndexBuffer;
   m_pInputLayoutInfo           = pInputLayoutInfo;
+  m_hInputLayout               = xiiGALInputLayoutHandle();
   m_uiMeshBufferPrimitiveCount = uiPrimitiveCount;
 
   m_StateFlags.Add(xiiRenderContextFlags::MeshBufferBindingChanged);
@@ -567,9 +648,11 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
   uiPrimitiveCount = xiiMath::Min(uiPrimitiveCount, m_uiMeshBufferPrimitiveCount - uiFirstPrimitive);
   XII_ASSERT_DEV(uiPrimitiveCount > 0, "Invalid primitive range: number of primitives can't be zero.");
 
-  auto pCommandEncoder = GetGraphicsCommandEncoder();
+  auto pCommandList = GetGraphicsCommandList();
 
-  const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pCommandEncoder->GetPrimitiveTopology());
+  xiiGALPipelineState* pPipelineState = xiiGALDevice::GetDefaultDevice()->GetPipelineState(m_hCurrentPipelineState);
+
+  const xiiUInt32 uiVertsPerPrimitive = xiiGALPrimitiveTopology::VerticesPerPrimitive(pPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
 
   uiPrimitiveCount *= uiVertsPerPrimitive;
   uiFirstPrimitive *= uiVertsPerPrimitive;
@@ -578,29 +661,31 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
     uiInstanceCount *= 2;
   }
 
+  pCommandList->BeginRenderPass(m_BeginRenderPass);
+  XII_SCOPE_EXIT(pCommandList->EndRenderPass());
+
   if (uiInstanceCount > 1)
   {
     if (!m_hIndexBuffer.IsInvalidated())
     {
-      pCommandEncoder->DrawIndexedInstanced(uiPrimitiveCount, uiInstanceCount, uiFirstPrimitive);
+      return pCommandList->DrawIndexedInstanced(uiPrimitiveCount, uiInstanceCount, uiFirstPrimitive);
     }
     else
     {
-      pCommandEncoder->DrawInstanced(uiPrimitiveCount, uiInstanceCount, uiFirstPrimitive);
+      return pCommandList->DrawInstanced(uiPrimitiveCount, uiInstanceCount, uiFirstPrimitive);
     }
   }
   else
   {
     if (!m_hIndexBuffer.IsInvalidated())
     {
-      pCommandEncoder->DrawIndexed(uiPrimitiveCount, uiFirstPrimitive);
+      return pCommandList->DrawIndexed(uiPrimitiveCount, uiFirstPrimitive);
     }
     else
     {
-      pCommandEncoder->Draw(uiPrimitiveCount, uiFirstPrimitive);
+      return pCommandList->Draw(uiPrimitiveCount, uiFirstPrimitive);
     }
   }
-
   return XII_SUCCESS;
 }
 
@@ -612,9 +697,7 @@ xiiResult xiiRenderContext::Dispatch(xiiUInt32 uiThreadGroupCountX, xiiUInt32 ui
     return XII_FAILURE;
   }
 
-  GetComputeCommandEncoder()->Dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
-
-  return XII_SUCCESS;
+  return GetComputeCommandList()->Dispatch(uiThreadGroupCountX, uiThreadGroupCountY, uiThreadGroupCountZ);
 }
 
 xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
@@ -651,90 +734,115 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
   if (m_hActiveShaderPermutation.IsValid())
   {
-    if ((bForce || m_StateFlags.IsAnySet(xiiRenderContextFlags::TextureBindingChanged | xiiRenderContextFlags::UAVBindingChanged | xiiRenderContextFlags::SamplerBindingChanged | xiiRenderContextFlags::BufferBindingChanged | xiiRenderContextFlags::ConstantBufferBindingChanged)))
+    bool bIsModified = (bForce || m_StateFlags.IsAnySet(xiiRenderContextFlags::TextureBindingChanged | xiiRenderContextFlags::UAVBindingChanged | xiiRenderContextFlags::SamplerBindingChanged | xiiRenderContextFlags::BufferBindingChanged | xiiRenderContextFlags::ConstantBufferBindingChanged));
+
+    if (bIsModified)
     {
       if (pShaderPermutation == nullptr)
       {
         pShaderPermutation = xiiResourceManager::BeginAcquireResource(m_hActiveShaderPermutation, xiiResourceAcquireMode::BlockTillLoaded);
       }
+      if (pShaderPermutation == nullptr)
+      {
+        return XII_FAILURE;
+      }
     }
 
     xiiLogBlock applyBindingsBlock("Applying Shader Bindings", pShaderPermutation != nullptr ? pShaderPermutation->GetResourceDescription().GetData() : "");
 
-    if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::UAVBindingChanged))
+    if ((bForce || bRebuildInputLayout) && !m_bCompute)
     {
-      if (pShaderPermutation == nullptr)
-      {
+      if (m_hActiveGALShader.IsInvalidated())
         return XII_FAILURE;
+
+      auto pCommandList = GetGraphicsCommandList();
+
+      if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::MeshBufferBindingChanged))
+      {
+        pCommandList->SetVertexBuffers(0, xiiMakeArrayPtr(&m_hVertexBuffers[0], XII_ARRAY_SIZE(m_hVertexBuffers)), xiiArrayPtr<xiiUInt64>(), xiiGALSetVertexBufferFlags::Reset);
+
+        if (!m_hIndexBuffer.IsInvalidated())
+          pCommandList->SetIndexBuffer(m_hIndexBuffer);
       }
 
-      // RWTextures/UAV are usually only supported in compute and pixel shader.
-      if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::Compute))
-      {
-        ApplyUnorderedAccessViewBindings(pBin);
-      }
-      if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::Pixel))
-      {
-        ApplyUnorderedAccessViewBindings(pBin);
-      }
+      if (m_pInputLayoutInfo != nullptr && BuildInputLayout(m_hActiveGALShader, *m_pInputLayoutInfo, m_hInputLayout).Failed())
+        return XII_FAILURE;
 
-      m_StateFlags.Remove(xiiRenderContextFlags::UAVBindingChanged);
+      // If there is a vertex buffer we need a valid vertex declaration as well.
+      if ((!m_hVertexBuffers[0].IsInvalidated() || !m_hVertexBuffers[1].IsInvalidated() || !m_hVertexBuffers[2].IsInvalidated() || !m_hVertexBuffers[3].IsInvalidated()) && m_hInputLayout.IsInvalidated())
+        return XII_FAILURE;
+
+      m_StateFlags.Remove(xiiRenderContextFlags::MeshBufferBindingChanged);
     }
 
-    if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::TextureBindingChanged))
+    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+    if (pShaderPermutation != nullptr)
     {
-      if (pShaderPermutation == nullptr)
+      if (!m_hCurrentPipelineState.IsInvalidated())
       {
-        return XII_FAILURE;
+        pDevice->DestroyPipelineState(m_hCurrentPipelineState);
+
+        m_hCurrentPipelineState.Invalidate();
       }
 
-      for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+      // Set render state from shader.
+      // Create pipeline state that is valid for this scope.
+      xiiGALPipelineStateCreationDescription pipelineDescription;
+      pipelineDescription.m_PipelineType               = m_bCompute ? xiiGALPipelineType::Compute : xiiGALPipelineType::Graphics;
+      pipelineDescription.m_hPipelineResourceSignature = (pShaderPermutation != nullptr) ? pShaderPermutation->GetPipelineResourceSignature() : xiiGALPipelineResourceSignatureHandle();
+      pipelineDescription.m_hShader                    = m_hActiveGALShader;
+
+      if (!m_bCompute && (pShaderPermutation != nullptr))
       {
-        if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::GetStageFlag(stage)))
-        {
-          ApplyResourceViewBindings(xiiGALShaderStage::GetStageFlag(stage), pBin, xiiGALShaderResourceType::TextureSRV);
-        }
+        auto& graphicsPipeline = pipelineDescription.m_GraphicsPipeline;
+
+        if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoBlendState))
+          graphicsPipeline.m_hBlendState = pShaderPermutation->GetBlendState();
+
+        if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoRasterizerState))
+          graphicsPipeline.m_hRasterizerState = pShaderPermutation->GetRasterizerState();
+
+        if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoDepthStencilState))
+          graphicsPipeline.m_hDepthStencilState = pShaderPermutation->GetDepthStencilState();
+
+        graphicsPipeline.m_PrimitiveTopology = m_Topology;
+        graphicsPipeline.m_hInputLayout      = m_hInputLayout;
       }
 
-      m_StateFlags.Remove(xiiRenderContextFlags::TextureBindingChanged);
+      m_hCurrentPipelineState = pDevice->CreatePipelineState(pipelineDescription);
+      XII_ASSERT_DEV(!m_hCurrentPipelineState.IsInvalidated(), "");
     }
 
-    if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::SamplerBindingChanged))
+    xiiGALPipelineState* pPipelineState = pDevice->GetPipelineState(m_hCurrentPipelineState);
+
+    if (bIsModified)
     {
-      if (pShaderPermutation == nullptr)
+      if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::UAVBindingChanged))
       {
-        return XII_FAILURE;
+        ApplyUnorderedAccessViewBindings(pPipelineState);
+        m_StateFlags.Remove(xiiRenderContextFlags::UAVBindingChanged);
       }
 
-      for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+      if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::TextureBindingChanged))
       {
-        if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::GetStageFlag(stage)))
-        {
-          ApplySamplerBindings(xiiGALShaderStage::GetStageFlag(stage), pBin);
-        }
+        ApplyResourceViewBindings(pPipelineState, xiiGALShaderResourceType::TextureSRV);
+        m_StateFlags.Remove(xiiRenderContextFlags::TextureBindingChanged);
       }
 
-      m_StateFlags.Remove(xiiRenderContextFlags::SamplerBindingChanged);
+      if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::SamplerBindingChanged))
+      {
+        ApplySamplerBindings(pPipelineState);
+        m_StateFlags.Remove(xiiRenderContextFlags::SamplerBindingChanged);
+      }
+
+      if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::BufferBindingChanged))
+      {
+        ApplyResourceViewBindings(pPipelineState, xiiGALShaderResourceType::BufferSRV);
+        m_StateFlags.Remove(xiiRenderContextFlags::BufferBindingChanged);
+      }
     }
 
-    if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::BufferBindingChanged))
-    {
-      if (pShaderPermutation == nullptr)
-      {
-        return XII_FAILURE;
-      }
-
-      for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
-      {
-        if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::GetStageFlag(stage)))
-        {
-          ApplyResourceViewBindings(xiiGALShaderStage::GetStageFlag(stage), pBin, xiiGALShaderResourceType::BufferSRV);
-        }
-      }
-
-      m_StateFlags.Remove(xiiRenderContextFlags::BufferBindingChanged);
-    }
-
+    // Note that pMaterial is only valid, if material constants have changed, so this also always implies that ConstantBufferBindingChanged is set.
     if (pMaterial != nullptr)
     {
       pMaterial->UpdateConstantBuffer(pShaderPermutation);
@@ -743,56 +851,16 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
     UploadConstants();
 
-    if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::ConstantBufferBindingChanged))
+    if (bIsModified)
     {
-      if (pShaderPermutation == nullptr)
+      if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::ConstantBufferBindingChanged))
       {
-        return XII_FAILURE;
+        ApplyConstantBufferBindings(pPipelineState);
+        m_StateFlags.Remove(xiiRenderContextFlags::ConstantBufferBindingChanged);
       }
-
-      for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
-      {
-        if (auto pBin = pShaderPermutation->GetShaderStageBinary(xiiGALShaderStage::GetStageFlag(stage)))
-        {
-          ApplyConstantBufferBindings(pBin);
-        }
-      }
-
-      m_StateFlags.Remove(xiiRenderContextFlags::ConstantBufferBindingChanged);
-    }
-  }
-
-  if ((bForce || bRebuildInputLayout) && !m_bCompute)
-  {
-    if (m_hActiveGALShader.IsInvalidated())
-      return XII_FAILURE;
-
-    auto pCommandEncoder = GetGraphicsCommandEncoder();
-
-    if (bForce || m_StateFlags.IsSet(xiiRenderContextFlags::MeshBufferBindingChanged))
-    {
-      pCommandEncoder->SetPrimitiveTopology(m_Topology);
-
-      for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hVertexBuffers); ++i)
-      {
-        pCommandEncoder->SetVertexBuffer(i, m_hVertexBuffers[i]);
-      }
-
-      if (!m_hIndexBuffer.IsInvalidated())
-        pCommandEncoder->SetIndexBuffer(m_hIndexBuffer, 0);
     }
 
-    xiiGALInputLayoutHandle hInputLayout;
-    if (m_pInputLayoutInfo != nullptr && BuildInputLayout(m_hActiveGALShader, *m_pInputLayoutInfo, hInputLayout).Failed())
-      return XII_FAILURE;
-
-    // If there is a vertex buffer we need a valid input layout as well.
-    if ((!m_hVertexBuffers[0].IsInvalidated() || !m_hVertexBuffers[1].IsInvalidated() || !m_hVertexBuffers[2].IsInvalidated() || !m_hVertexBuffers[3].IsInvalidated()) && hInputLayout.IsInvalidated())
-      return XII_FAILURE;
-
-    pCommandEncoder->SetInputLayout(hInputLayout);
-
-    m_StateFlags.Remove(xiiRenderContextFlags::MeshBufferBindingChanged);
+    m_pGALCommandList->SetPipelineState(m_hCurrentPipelineState);
   }
 
   return XII_SUCCESS;
@@ -818,6 +886,7 @@ void xiiRenderContext::ResetContextState()
 
   m_hIndexBuffer.Invalidate();
   m_pInputLayoutInfo           = nullptr;
+  m_hInputLayout               = xiiGALInputLayoutHandle();
   m_Topology                   = xiiGALPrimitiveTopology::Undefined;
   m_uiMeshBufferPrimitiveCount = 0;
 
@@ -832,6 +901,13 @@ void xiiRenderContext::ResetContextState()
   m_BoundUAVs.Clear();
 
   m_BoundConstantBuffers.Clear();
+
+  if (!m_hCurrentPipelineState.IsInvalidated())
+  {
+    xiiGALDevice::GetDefaultDevice()->DestroyPipelineState(m_hCurrentPipelineState);
+
+    m_hCurrentPipelineState.Invalidate();
+  }
 }
 
 xiiGlobalConstants& xiiRenderContext::WriteGlobalConstants()
@@ -1038,6 +1114,230 @@ void xiiRenderContext::OnEngineShutdown()
   }
 }
 
+void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPassHandle& out_hRenderPass, xiiGALFramebufferHandle& out_hFramebuffer, xiiGALBeginRenderPassDescription* pBeginRenderPass)
+{
+  XII_ASSERT_DEV(out_hRenderPass.IsInvalidated() && out_hFramebuffer.IsInvalidated(), "Render pass and frame buffer are still active.");
+
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
+  RenderPassFrameBufferInfo frameBufferInfo;
+  if (!m_FramebufferCache.TryGetValue(renderingSetup, frameBufferInfo))
+  {
+    // Retrieve an existing render pass handle if any, a new one is created otherwise.
+
+    xiiGALRenderPassHandle hRenderPass;
+    if (!m_RenderPassCache.TryGetValue(renderingSetup, hRenderPass))
+    {
+      xiiGALRenderPassCreationDescription renderPassDescription;
+
+      const bool      bHasDepthAttachment    = !renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+      const xiiUInt32 uiColorAttachmentCount = renderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+
+      // Build render pass description.
+      {
+        if (bHasDepthAttachment)
+        {
+          xiiGALTexture*                          pDepthTexture      = pDevice->GetTextureView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget())->GetTexture();
+          const xiiGALTextureCreationDescription& textureDescription = pDepthTexture->GetDescription();
+
+          xiiGALRenderPassAttachmentDescription& attachmentReference = renderPassDescription.m_Attachments.ExpandAndGetRef();
+          attachmentReference.m_Format                               = textureDescription.m_Format;
+          attachmentReference.m_uiSampleCount                        = static_cast<xiiUInt8>(textureDescription.m_uiSampleCount);
+          attachmentReference.m_InitialStateFlags                    = xiiGALResourceStateFlags::DepthWrite;
+          attachmentReference.m_FinalStateFlags                      = xiiGALResourceStateFlags::DepthWrite;
+
+          if (renderingSetup.m_bDiscardDepth)
+          {
+            attachmentReference.m_LoadOperation = xiiGALAttachmentLoadOperation::Discard;
+          }
+          else
+          {
+            attachmentReference.m_LoadOperation = renderingSetup.m_bClearDepth ? xiiGALAttachmentLoadOperation::Clear : xiiGALAttachmentLoadOperation::Load;
+          }
+          attachmentReference.m_StoreOperation = xiiGALAttachmentStoreOperation::Store;
+
+          if (textureDescription.m_Format.IsStencilFormat(textureDescription.m_Format))
+          {
+            attachmentReference.m_StencilLoadOperation  = renderingSetup.m_bClearStencil ? xiiGALAttachmentLoadOperation::Clear : xiiGALAttachmentLoadOperation::Load;
+            attachmentReference.m_StencilStoreOperation = xiiGALAttachmentStoreOperation::Store;
+          }
+          else
+          {
+            attachmentReference.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Discard;
+            attachmentReference.m_StencilStoreOperation = xiiGALAttachmentStoreOperation::Discard;
+          }
+        }
+
+        for (xiiUInt32 i = 0; i < uiColorAttachmentCount; ++i)
+        {
+          xiiGALTexture*                          pColourTexture     = pDevice->GetTextureView(renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i)))->GetTexture();
+          const xiiGALTextureCreationDescription& textureDescription = pColourTexture->GetDescription();
+
+          xiiGALRenderPassAttachmentDescription& attachmentReference = renderPassDescription.m_Attachments.ExpandAndGetRef();
+          attachmentReference.m_Format                               = textureDescription.m_Format;
+          attachmentReference.m_uiSampleCount                        = static_cast<xiiUInt8>(textureDescription.m_uiSampleCount);
+          attachmentReference.m_InitialStateFlags                    = xiiGALResourceStateFlags::RenderTarget;
+          attachmentReference.m_FinalStateFlags                      = xiiGALResourceStateFlags::RenderTarget;
+
+          if (renderingSetup.m_bDiscardColor)
+          {
+            attachmentReference.m_LoadOperation = xiiGALAttachmentLoadOperation::Discard;
+          }
+          else
+          {
+            if (renderingSetup.m_uiRenderTargetClearMask & XII_BIT(i))
+            {
+              attachmentReference.m_LoadOperation = xiiGALAttachmentLoadOperation::Clear;
+            }
+            else
+            {
+              attachmentReference.m_LoadOperation = xiiGALAttachmentLoadOperation::Load;
+            }
+          }
+
+          attachmentReference.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
+          attachmentReference.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Discard;
+          attachmentReference.m_StencilStoreOperation = xiiGALAttachmentStoreOperation::Discard;
+        }
+      }
+
+      // Build render pass attachment description.
+      {
+        xiiHybridArray<xiiGALAttachmentReferenceDescription, 1U> depthAttachmentRefs;
+        xiiHybridArray<xiiGALAttachmentReferenceDescription, 4U> colorAttachmentRefs;
+
+        const xiiUInt32 uiAttachmentCount = renderPassDescription.m_Attachments.GetCount();
+        for (xiiUInt32 i = 0; i < uiAttachmentCount; ++i)
+        {
+          auto& attachment = renderPassDescription.m_Attachments[i];
+
+          const bool bIsDepthAttachment = xiiGALTextureFormat::IsDepthFormat(attachment.m_Format);
+          if (bIsDepthAttachment)
+          {
+            attachment.m_FinalStateFlags = xiiGALResourceStateFlags::DepthWrite;
+
+            xiiGALAttachmentReferenceDescription& attachmentRef = depthAttachmentRefs.ExpandAndGetRef();
+            attachmentRef.m_uiAttachmentIndex                   = i;
+            attachmentRef.m_ResourceStateFlags                  = xiiGALResourceStateFlags::DepthWrite;
+          }
+          else
+          {
+            attachment.m_FinalStateFlags = xiiGALResourceStateFlags::RenderTarget;
+
+            xiiGALAttachmentReferenceDescription& attachmentRef = colorAttachmentRefs.ExpandAndGetRef();
+            attachmentRef.m_uiAttachmentIndex                   = i;
+            attachmentRef.m_ResourceStateFlags                  = xiiGALResourceStateFlags::RenderTarget;
+          }
+        }
+
+        XII_ASSERT_DEV(depthAttachmentRefs.GetCount() <= 1U, "There can only be a maximum of 1 bound depth attachment.");
+
+        xiiGALSubPassDescription& subpassDescription = renderPassDescription.m_SubPasses.ExpandAndGetRef();
+        subpassDescription.m_RenderTargetAttachments = colorAttachmentRefs;
+        subpassDescription.m_DepthStencilAttachment  = depthAttachmentRefs;
+
+        xiiGALSubPassDependencyDescription& subpassDependency = renderPassDescription.m_Dependencies.ExpandAndGetRef();
+        subpassDependency.m_uiSourceSubPass                   = XII_GAL_SUBPASS_EXTERNAL;
+        subpassDependency.m_uiDestinationSubPass              = 0;
+        subpassDependency.m_SourceStageFlags                  = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+        subpassDependency.m_DestinationStageFlags             = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
+
+        if (!depthAttachmentRefs.IsEmpty())
+          subpassDependency.m_DestinationAccessFlags |= xiiGALAccessFlags::DepthStencilWrite;
+
+        if (!colorAttachmentRefs.IsEmpty())
+          subpassDependency.m_DestinationAccessFlags |= xiiGALAccessFlags::RenderTargetWrite;
+      }
+
+      hRenderPass = pDevice->CreateRenderPass(renderPassDescription);
+      XII_VERIFY(!m_RenderPassCache.Insert(renderingSetup, hRenderPass), "Overwrote existing render pass, this is unexpected behaviour.");
+    }
+
+    XII_ASSERT_DEV(!hRenderPass.IsInvalidated(), "Render pass handle is invalidated!");
+
+    // Since no framebuffer was retrieved, a new one needs to be created.
+    {
+      xiiGALFramebufferCreationDescription frameBufferDescription;
+      frameBufferDescription.m_hRenderPass = hRenderPass;
+
+      // Framebuffer size and slice count are intentionally left unattended to be filled by the GAL Implementation.
+
+      const bool      bHasDepthAttachment    = !renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+      const xiiUInt32 uiColorAttachmentCount = renderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+
+      if (bHasDepthAttachment)
+      {
+        xiiGALTexture*                          pDepthTexture      = pDevice->GetTextureView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget())->GetTexture();
+        const xiiGALTextureCreationDescription& textureDescription = pDepthTexture->GetDescription();
+
+        xiiVec3U32 size                                 = xiiGALGraphicsUtilities::GetMipLevelSize(pDevice->GetTextureView(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget())->GetDescription().m_uiMostDetailedMip, textureDescription);
+        frameBufferDescription.m_FramebufferSize.width  = size.x;
+        frameBufferDescription.m_FramebufferSize.height = size.y;
+        frameBufferDescription.m_uiArraySliceCount      = textureDescription.m_uiArraySizeOrDepth;
+
+        frameBufferDescription.m_Attachments.PushBack(renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget());
+      }
+
+      for (xiiUInt32 i = 0; i < uiColorAttachmentCount; ++i)
+      {
+        xiiGALTexture*                          pColourTexture     = pDevice->GetTextureView(renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i)))->GetTexture();
+        const xiiGALTextureCreationDescription& textureDescription = pColourTexture->GetDescription();
+
+        xiiVec3U32 size                                 = xiiGALGraphicsUtilities::GetMipLevelSize(pDevice->GetTextureView(renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i)))->GetDescription().m_uiMostDetailedMip, textureDescription);
+        frameBufferDescription.m_FramebufferSize.width  = size.x;
+        frameBufferDescription.m_FramebufferSize.height = size.y;
+        frameBufferDescription.m_uiArraySliceCount      = textureDescription.m_uiArraySizeOrDepth;
+
+        frameBufferDescription.m_Attachments.PushBack(renderingSetup.m_RenderTargetSetup.GetRenderTarget(static_cast<xiiUInt8>(i)));
+      }
+
+      // In some places rendering is started with an empty xiiGALRenderTargetSetup just to be able to run GPU commands.
+      // An empty size is invalid in both D3D12 and Vulkan so we just set it so (1, 1).
+      if (xiiVec2U32(frameBufferDescription.m_FramebufferSize.width, frameBufferDescription.m_FramebufferSize.height) == xiiVec2U32(0, 0))
+      {
+        frameBufferDescription.m_FramebufferSize.width  = 1U;
+        frameBufferDescription.m_FramebufferSize.height = 1U;
+        frameBufferDescription.m_uiArraySliceCount      = 1U;
+      }
+
+      frameBufferInfo.hRenderPass  = hRenderPass;
+      frameBufferInfo.hFrameBuffer = pDevice->CreateFramebuffer(frameBufferDescription);
+
+      XII_VERIFY(!m_FramebufferCache.Insert(renderingSetup, frameBufferInfo), "Overwrote existing frame buffer, this is unexpected behaviour.");
+    }
+  }
+
+  XII_ASSERT_DEV(!frameBufferInfo.hRenderPass.IsInvalidated(), "Render Pass handle is invalidated!");
+  XII_ASSERT_DEV(!frameBufferInfo.hFrameBuffer.IsInvalidated(), "Framebuffer handle is invalidated!");
+
+  out_hRenderPass  = frameBufferInfo.hRenderPass;
+  out_hFramebuffer = frameBufferInfo.hFrameBuffer;
+
+  if (pBeginRenderPass != nullptr)
+  {
+    pBeginRenderPass->m_hRenderPass  = out_hRenderPass;
+    pBeginRenderPass->m_hFramebuffer = out_hFramebuffer;
+
+    pBeginRenderPass->m_ClearValues.Clear();
+
+    const bool      bHasDepthAttachment    = !renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+    const xiiUInt32 uiColorAttachmentCount = renderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+
+    if (bHasDepthAttachment)
+    {
+      auto& depthClearValue                      = pBeginRenderPass->m_ClearValues.ExpandAndGetRef();
+      depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
+      depthClearValue.m_DepthStencil.m_uiStencil = 0U;
+    }
+
+    for (xiiUInt32 i = 0; i < uiColorAttachmentCount; ++i)
+    {
+      auto& colorClearValue        = pBeginRenderPass->m_ClearValues.ExpandAndGetRef();
+      colorClearValue.m_ClearColor = renderingSetup.m_ClearColor;
+    }
+  }
+}
+
 // static
 xiiResult xiiRenderContext::BuildInputLayout(xiiGALShaderHandle hShader, const xiiInputLayoutInfo& decl, xiiGALInputLayoutHandle& out_Declaration)
 {
@@ -1111,7 +1411,7 @@ void xiiRenderContext::UploadConstants()
     xiiConstantBufferStorageBase*  pConstantBufferStorage = nullptr;
     if (TryGetConstantBufferStorage(hConstantBufferStorage, pConstantBufferStorage))
     {
-      pConstantBufferStorage->UploadData(m_pGALCommandEncoder);
+      pConstantBufferStorage->UploadData(m_pGALCommandList);
     }
   }
 }
@@ -1153,8 +1453,7 @@ xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
   if (!m_hActiveShaderPermutation.IsValid())
     return nullptr;
 
-  xiiShaderPermutationResource* pShaderPermutation = xiiResourceManager::BeginAcquireResource(
-    m_hActiveShaderPermutation, m_bAllowAsyncShaderLoading ? xiiResourceAcquireMode::AllowLoadingFallback : xiiResourceAcquireMode::BlockTillLoaded);
+  xiiShaderPermutationResource* pShaderPermutation = xiiResourceManager::BeginAcquireResource(m_hActiveShaderPermutation, m_bAllowAsyncShaderLoading ? xiiResourceAcquireMode::AllowLoadingFallback : xiiResourceAcquireMode::BlockTillLoaded);
 
   if (!pShaderPermutation->IsShaderValid())
   {
@@ -1164,23 +1463,6 @@ xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
 
   m_hActiveGALShader = pShaderPermutation->GetGALShader();
   XII_ASSERT_DEV(!m_hActiveGALShader.IsInvalidated(), "Invalid GAL Shader handle.");
-
-  m_pGALCommandEncoder->SetShader(m_hActiveGALShader);
-
-  // Set render state from shader
-  if (!m_bCompute)
-  {
-    auto pCommandEncoder = GetGraphicsCommandEncoder();
-
-    if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoBlendState))
-      pCommandEncoder->SetBlendState(pShaderPermutation->GetBlendState());
-
-    if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoRasterizerState))
-      pCommandEncoder->SetRasterizerState(pShaderPermutation->GetRasterizerState());
-
-    if (!m_ShaderBindFlags.IsSet(xiiShaderBindFlags::NoDepthStencilState))
-      pCommandEncoder->SetDepthStencilState(pShaderPermutation->GetDepthStencilState());
-  }
 
   return pShaderPermutation;
 }
@@ -1238,11 +1520,14 @@ xiiMaterialResource* xiiRenderContext::ApplyMaterialState()
   return nullptr;
 }
 
-void xiiRenderContext::ApplyConstantBufferBindings(const xiiShaderStageBinary* pBinary)
+void xiiRenderContext::ApplyConstantBufferBindings(xiiGALPipelineState* pPipelineState)
 {
-  for (const auto& binding : pBinary->m_ShaderResourceBindings)
+  xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
+  xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
+
+  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
   {
-    if (binding.m_Type != xiiGALShaderResourceType::ConstantBuffer)
+    if (binding.m_ResourceType != xiiGALShaderResourceType::ConstantBuffer)
       continue;
 
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
@@ -1252,81 +1537,90 @@ void xiiRenderContext::ApplyConstantBufferBindings(const xiiShaderStageBinary* p
     {
       // If the shader was compiled with debug info the shader compiler will not strip unused resources and
       // thus this error would trigger although the shader doesn't actually uses the resource.
-      if (!pBinary->m_bWasCompiledWithDebug)
+      /// \todo if (!pBinary->m_bWasCompiledWithDebug)
       {
         xiiLog::Error("No resource is bound for constant buffer slot '{0}'", binding.m_sName);
       }
-      m_pGALCommandEncoder->SetConstantBuffer(binding.m_iSlot, xiiGALBufferHandle());
+      pPipelineState->SetConstantBuffer(binding, xiiGALBufferHandle());
       continue;
     }
 
     if (!boundConstantBuffer.m_hConstantBuffer.IsInvalidated())
     {
-      m_pGALCommandEncoder->SetConstantBuffer(binding.m_iSlot, boundConstantBuffer.m_hConstantBuffer);
+      pPipelineState->SetConstantBuffer(binding, boundConstantBuffer.m_hConstantBuffer);
     }
     else
     {
       xiiConstantBufferStorageBase* pConstantBufferStorage = nullptr;
       if (TryGetConstantBufferStorage(boundConstantBuffer.m_hConstantBufferStorage, pConstantBufferStorage))
       {
-        m_pGALCommandEncoder->SetConstantBuffer(binding.m_iSlot, pConstantBufferStorage->GetGALBufferHandle());
+        pPipelineState->SetConstantBuffer(binding, pConstantBufferStorage->GetGALBufferHandle());
       }
       else
       {
         xiiLog::Error("Invalid constant buffer storage is bound for slot '{0}'", binding.m_sName);
-        m_pGALCommandEncoder->SetConstantBuffer(binding.m_iSlot, xiiGALBufferHandle());
+        pPipelineState->SetConstantBuffer(binding, xiiGALBufferHandle());
       }
     }
   }
 }
 
-void xiiRenderContext::ApplyResourceViewBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary, xiiEnum<xiiGALShaderResourceType> type)
+void xiiRenderContext::ApplyResourceViewBindings(xiiGALPipelineState* pPipelineState, xiiEnum<xiiGALShaderResourceType> type)
 {
   XII_ASSERT_DEV(type == xiiGALShaderResourceType::BufferSRV || type == xiiGALShaderResourceType::TextureSRV, "");
 
-  for (const auto& binding : pBinary->m_ShaderResourceBindings)
+  xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
+  xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
+
+  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
   {
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
     ResourceBinding resourceBinding;
 
-    if (binding.m_Type == xiiGALShaderResourceType::BufferSRV && binding.m_Type == type)
+    if (binding.m_ResourceType == xiiGALShaderResourceType::BufferSRV && binding.m_ResourceType == type)
     {
       m_BoundResources.TryGetValue(uiResourceHash, resourceBinding);
-      m_pGALCommandEncoder->SetBufferView(stage, binding.m_iSlot, resourceBinding.m_hBufferView);
+      pPipelineState->SetShaderResourceBufferView(binding, resourceBinding.m_hBufferView);
     }
-    else if (binding.m_Type == xiiGALShaderResourceType::TextureSRV && binding.m_Type == type)
+    else if (binding.m_ResourceType == xiiGALShaderResourceType::TextureSRV && binding.m_ResourceType == type)
     {
       m_BoundResources.TryGetValue(uiResourceHash, resourceBinding);
-      m_pGALCommandEncoder->SetTextureView(stage, binding.m_iSlot, resourceBinding.m_hTextureView);
+      pPipelineState->SetShaderResourceTextureView(binding, resourceBinding.m_hTextureView);
     }
   }
 }
 
-void xiiRenderContext::ApplyUnorderedAccessViewBindings(const xiiShaderStageBinary* pBinary)
+void xiiRenderContext::ApplyUnorderedAccessViewBindings(xiiGALPipelineState* pPipelineState)
 {
-  for (const auto& binding : pBinary->m_ShaderResourceBindings)
+  xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
+  xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
+
+  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
   {
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
     ResourceBinding resourceBinding;
 
-    if (binding.m_Type == xiiGALShaderResourceType::BufferUAV)
+    if (binding.m_ResourceType == xiiGALShaderResourceType::BufferUAV)
     {
       m_BoundUAVs.TryGetValue(uiResourceHash, resourceBinding);
-      m_pGALCommandEncoder->SetUnorderedAccessBufferView(binding.m_iSlot, resourceBinding.m_hBufferView);
+      pPipelineState->SetUnorderedAccessBufferView(binding, resourceBinding.m_hBufferView);
     }
-    else if (binding.m_Type == xiiGALShaderResourceType::TextureUAV)
+    else if (binding.m_ResourceType == xiiGALShaderResourceType::TextureUAV)
     {
       m_BoundUAVs.TryGetValue(uiResourceHash, resourceBinding);
-      m_pGALCommandEncoder->SetUnorderedAccessTextureView(binding.m_iSlot, resourceBinding.m_hTextureView);
+      pPipelineState->SetUnorderedAccessTextureView(binding, resourceBinding.m_hTextureView);
     }
   }
 }
 
-void xiiRenderContext::ApplySamplerBindings(xiiBitflags<xiiGALShaderStage> stage, const xiiShaderStageBinary* pBinary)
+void xiiRenderContext::ApplySamplerBindings(xiiGALPipelineState* pPipelineState)
 {
-  for (const auto& binding : pBinary->m_ShaderResourceBindings)
+  xiiGALDevice*                    pDevice            = xiiGALDevice::GetDefaultDevice();
+  xiiGALPipelineResourceSignature* pResourceSignature = pDevice->GetPipelineResourceSignature(pPipelineState->GetDescription().m_hPipelineResourceSignature);
+
+  for (const auto& binding : pResourceSignature->GetDescription().m_Resources)
   {
-    if (binding.m_Type != xiiGALShaderResourceType::Sampler)
+    if (binding.m_ResourceType != xiiGALShaderResourceType::Sampler)
       continue;
 
     const xiiUInt64 uiResourceHash = binding.m_sName.GetHash();
@@ -1337,7 +1631,7 @@ void xiiRenderContext::ApplySamplerBindings(xiiBitflags<xiiGALShaderStage> stage
       hSampler = GetDefaultSampler(xiiDefaultSamplerFlags::LinearFiltering); // Bind a default state to avoid DX11 errors.
     }
 
-    m_pGALCommandEncoder->SetSampler(stage, binding.m_iSlot, hSampler);
+    pPipelineState->SetSampler(binding, hSampler);
   }
 }
 
@@ -1392,5 +1686,68 @@ bool xiiRenderContext::GetAllowAsyncShaderLoading()
 {
   return m_bAllowAsyncShaderLoading;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Resource Cache Hash
+
+XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt32) == sizeof(xiiGALTextureViewHandle));
+namespace
+{
+  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& stream, const xiiGALTextureViewHandle& value)
+  {
+    stream << reinterpret_cast<const xiiUInt32&>(value);
+    return stream;
+  }
+} // namespace
+
+xiiUInt32 xiiRenderContext::ResourceCacheHash::Hash(const xiiGALRenderTargetSetup& renderTargetSetup)
+{
+  xiiHashStreamWriter32 writer;
+  writer << renderTargetSetup.GetDepthStencilTarget();
+
+  const xiiUInt8 uiCount = renderTargetSetup.GetRenderTargetCount();
+  writer << uiCount;
+
+  for (xiiUInt8 i = 0; i < uiCount; ++i)
+  {
+    writer << renderTargetSetup.GetRenderTarget(i);
+  }
+
+  return writer.GetHashValue();
+}
+
+bool xiiRenderContext::ResourceCacheHash::Equal(const xiiGALRenderTargetSetup& a, const xiiGALRenderTargetSetup& b)
+{
+  return a == b;
+}
+
+xiiUInt32 xiiRenderContext::ResourceCacheHash::Hash(const xiiGALRenderingSetup& renderingSetup)
+{
+  xiiHashStreamWriter32 writer;
+  writer << renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget();
+
+  const xiiUInt8 uiCount = renderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+  writer << uiCount;
+
+  for (xiiUInt8 i = 0; i < uiCount; ++i)
+  {
+    writer << renderingSetup.m_RenderTargetSetup.GetRenderTarget(i);
+  }
+
+  writer << renderingSetup.m_uiRenderTargetClearMask;
+  writer << renderingSetup.m_bClearDepth;
+  writer << renderingSetup.m_bClearStencil;
+  writer << renderingSetup.m_bDiscardColor;
+  writer << renderingSetup.m_bDiscardDepth;
+
+  return writer.GetHashValue();
+}
+
+bool xiiRenderContext::ResourceCacheHash::Equal(const xiiGALRenderingSetup& a, const xiiGALRenderingSetup& b)
+{
+  return a == b;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_RenderContext_Implementation_RenderContext);

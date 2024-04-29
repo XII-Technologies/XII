@@ -111,6 +111,7 @@ private:
 
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(GraphicsCore, RenderWorld);
+
   friend class xiiView;
   friend class xiiRenderPipeline;
 

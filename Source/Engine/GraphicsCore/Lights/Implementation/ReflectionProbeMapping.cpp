@@ -29,6 +29,7 @@ xiiReflectionProbeMapping::xiiReflectionProbeMapping(xiiUInt32 uiAtlasSize) :
   desc.m_CPUAccessFlags     = xiiGALCPUAccessFlag::Read;
 
   m_hReflectionSpecularTexture = pDevice->CreateTexture(desc);
+  pDevice->GetTexture(m_hReflectionSpecularTexture)->SetDebugName("Reflection Specular Texture");
 }
 
 xiiReflectionProbeMapping::~xiiReflectionProbeMapping()

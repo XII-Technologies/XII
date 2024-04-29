@@ -73,7 +73,7 @@ xiiResult xiiRenderPipelinePass::Deserialize(xiiStreamReader& inout_stream)
 
 void xiiRenderPipelinePass::RenderDataWithCategory(const xiiRenderViewContext& renderViewContext, xiiRenderData::Category category, xiiRenderDataBatch::Filter filter)
 {
-  XII_PROFILE_AND_MARKER(renderViewContext.m_pRenderContext->GetCommandEncoder(), xiiRenderData::GetCategoryName(category));
+  XII_PROFILE_AND_MARKER(renderViewContext.m_pRenderContext->GetCommandList(), xiiRenderData::GetCategoryName(category));
 
   auto            batchList    = m_pPipeline->GetRenderDataBatchesWithCategory(category, filter);
   const xiiUInt32 uiBatchCount = batchList.GetBatchCount();

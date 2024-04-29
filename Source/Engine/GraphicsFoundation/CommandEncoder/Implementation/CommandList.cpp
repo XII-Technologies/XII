@@ -35,13 +35,20 @@ xiiGALCommandList::xiiGALCommandList(xiiGALDevice* pDevice, const xiiGALCommandL
 
 xiiGALCommandList::~xiiGALCommandList() = default;
 
-void xiiGALCommandList::Begin()
+void xiiGALCommandList::Begin(xiiStringView sScopeName /*= {}*/)
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Ended || m_RecordingState == RecordingState::Reset, "The command list has not been ended.");
 
   if (m_RecordingState != RecordingState::Recording)
   {
     BeginPlatform();
+
+    if (!sScopeName.IsEmpty())
+    {
+      BeginDebugGroup(sScopeName);
+
+      m_bHasActiveScope = true;
+    }
   }
 }
 
@@ -51,12 +58,23 @@ void xiiGALCommandList::End()
 
   if (m_RecordingState == RecordingState::Recording)
   {
+    if (m_bHasActiveScope)
+    {
+      EndDebugGroup();
+
+      m_bHasActiveScope = false;
+    }
+
     EndPlatform();
   }
 }
 
 void xiiGALCommandList::Reset()
 {
+  if (m_RecordingState == RecordingState::Recording)
+  {
+    End();
+  }
   if (m_RecordingState != RecordingState::Reset)
   {
     ResetPlatform();
@@ -609,7 +627,17 @@ xiiResult xiiGALCommandList::MapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGA
     XII_VERIFY_COMMAND_LIST_RESULT(mapType == xiiGALMapType::Write, "xiiGALMapType::Write is only valid when mapping buffer for writing.");
   }
 
-  return MapBufferPlatform(pBuffer, mapType, mapFlags, pMappedData);
+  if (MapBufferPlatform(pBuffer, mapType, mapFlags, pMappedData).Failed())
+  {
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+    XII_VERIFY_COMMAND_LIST_RESULT(m_MappedBuffers.Contains(uiKey), "The buffer '{0}' has not been mapped.", pBuffer->GetDebugName());
+    XII_VERIFY_COMMAND_LIST_RESULT(*m_MappedBuffers.GetValue(uiKey) == mapType, "The map type ({0}) does not match the map type ({1}) that was used to map the buffer.", mapType, *m_MappedBuffers.GetValue(uiKey));
+
+    m_MappedBuffers.Remove(uiKey);
+#endif
+    return XII_FAILURE;
+  }
+  return XII_SUCCESS;
 }
 
 xiiResult xiiGALCommandList::UnmapBuffer(xiiGALBufferHandle hBuffer, xiiEnum<xiiGALMapType> mapType)
@@ -706,7 +734,7 @@ void xiiGALCommandList::GenerateMips(xiiGALTextureViewHandle hTextureView)
   GenerateMipsPlatform(pTextureView);
 }
 
-xiiResult xiiGALCommandList::MapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32 textureBox, xiiGALMappedTextureSubresource& mappedData)
+xiiResult xiiGALCommandList::MapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
 {
   XII_VERIFY_COMMAND_LIST_RESULT(!hTexture.IsInvalidated(), "MapTextureSubresource arguments are invalid. The texture handle has been invalidated.");
 
@@ -714,7 +742,7 @@ xiiResult xiiGALCommandList::MapTextureSubresource(xiiGALTextureHandle hTexture,
 
   xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
 
-  return MapTextureSubresourcePlatform(pTexture, textureMipLevelData, mapType, mapFlags, textureBox, mappedData);
+  return MapTextureSubresourcePlatform(pTexture, textureMipLevelData, mapType, mapFlags, pTextureBox, mappedData);
 }
 
 xiiResult xiiGALCommandList::UnmapTextureSubresource(xiiGALTextureHandle hTexture, xiiGALTextureMipLevelData textureMipLevelData)

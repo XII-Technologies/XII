@@ -203,6 +203,4 @@ void xiiDecalAtlasResource::ReportResourceIsMissing()
 #endif
 }
 
-
-
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Decals_Implementation_DecalAtlasResource);

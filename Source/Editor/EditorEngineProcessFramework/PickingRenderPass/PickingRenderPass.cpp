@@ -5,6 +5,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPickingRenderPass, 1, xiiRTTIDefaultAllocator<xiiPickingRenderPass>)
@@ -58,88 +59,98 @@ void xiiPickingRenderPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPip
 
 void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  const xiiRectFloat& viewPortRect = renderViewContext.m_pViewData->m_ViewPortRect;
-  m_uiWindowWidth                  = (xiiUInt32)viewPortRect.width;
-  m_uiWindowHeight                 = (xiiUInt32)viewPortRect.height;
-
-  const xiiGALTexture* pDepthTexture = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hPickingDepthRT);
-  XII_ASSERT_DEV(m_uiWindowWidth == pDepthTexture->GetDescription().m_Size.width, "");
-  XII_ASSERT_DEV(m_uiWindowHeight == pDepthTexture->GetDescription().m_Size.height, "");
-
-  xiiGALRenderingSetup renderingSetup;
-  renderingSetup.m_RenderTargetSetup       = m_RenderTargetSetup;
-  renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
-  renderingSetup.m_bClearDepth             = true;
-  renderingSetup.m_bClearStencil           = true;
-
-  auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, renderingSetup, GetName());
-
-  xiiViewRenderMode::Enum viewRenderMode = renderViewContext.m_pViewData->m_ViewRenderMode;
-  if (viewRenderMode == xiiViewRenderMode::WireframeColor || viewRenderMode == xiiViewRenderMode::WireframeMonochrome)
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_PICKING_WIREFRAME");
-  else
-    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_PICKING");
-
-  // Setup clustered data
-  auto pClusteredData = GetPipeline()->GetFrameDataProvider<xiiClusteredDataProvider>()->GetData(renderViewContext);
-  pClusteredData->BindResources(renderViewContext.m_pRenderContext);
-
-  // copy selection to set for faster checks
-  m_SelectionSet.Clear();
-
-  auto            batchList    = GetPipeline()->GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::Selection);
-  const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
-  for (xiiUInt32 i = 0; i < uiBatchCount; ++i)
+  // Render result
   {
-    const xiiRenderDataBatch& batch = batchList.GetBatch(i);
-    for (auto it = batch.GetIterator<xiiRenderData>(); it.IsValid(); ++it)
+    const xiiRectFloat& viewPortRect = renderViewContext.m_pViewData->m_ViewPortRect;
+    m_uiWindowWidth                  = (xiiUInt32)viewPortRect.width;
+    m_uiWindowHeight                 = (xiiUInt32)viewPortRect.height;
+
+    const xiiGALTexture* pDepthTexture = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hPickingDepthRT);
+    XII_ASSERT_DEV(m_uiWindowWidth == pDepthTexture->GetDescription().m_Size.width, "");
+    XII_ASSERT_DEV(m_uiWindowHeight == pDepthTexture->GetDescription().m_Size.height, "");
+
+    xiiGALRenderingSetup renderingSetup;
+    renderingSetup.m_RenderTargetSetup       = m_RenderTargetSetup;
+    renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
+    renderingSetup.m_bClearDepth             = true;
+    renderingSetup.m_bClearStencil           = true;
+
+    auto pCommandList = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, renderingSetup, GetName());
+
+    xiiViewRenderMode::Enum viewRenderMode = renderViewContext.m_pViewData->m_ViewRenderMode;
+    if (viewRenderMode == xiiViewRenderMode::WireframeColor || viewRenderMode == xiiViewRenderMode::WireframeMonochrome)
+      renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_PICKING_WIREFRAME");
+    else
+      renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_PICKING");
+
+    // Setup clustered data
+    auto pClusteredData = GetPipeline()->GetFrameDataProvider<xiiClusteredDataProvider>()->GetData(renderViewContext);
+    pClusteredData->BindResources(renderViewContext.m_pRenderContext);
+
+    // copy selection to set for faster checks
+    m_SelectionSet.Clear();
+
+    auto            batchList    = GetPipeline()->GetRenderDataBatchesWithCategory(xiiDefaultRenderDataCategories::Selection);
+    const xiiUInt32 uiBatchCount = batchList.GetBatchCount();
+    for (xiiUInt32 i = 0; i < uiBatchCount; ++i)
     {
-      m_SelectionSet.Insert(it->m_hOwner);
+      const xiiRenderDataBatch& batch = batchList.GetBatch(i);
+      for (auto it = batch.GetIterator<xiiRenderData>(); it.IsValid(); ++it)
+      {
+        m_SelectionSet.Insert(it->m_hOwner);
+      }
     }
-  }
 
-  // filter out all selected objects
-  xiiRenderDataBatch::Filter filter([&](const xiiRenderData* pRenderData) { return m_SelectionSet.Contains(pRenderData->m_hOwner); });
+    // filter out all selected objects
+    xiiRenderDataBatch::Filter filter([&](const xiiRenderData* pRenderData) { return m_SelectionSet.Contains(pRenderData->m_hOwner); });
 
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaque, filter);
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMasked, filter);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitOpaque, filter);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitMasked, filter);
 
-  if (m_bPickTransparent)
-  {
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitTransparent, filter);
+    if (m_bPickTransparent)
+    {
+      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitTransparent, filter);
+
+      renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
+      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
+
+      renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
+      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
+    }
+
+    if (m_bPickSelected)
+    {
+      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Selection);
+    }
+
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleOpaque);
+
+    if (m_bPickTransparent)
+    {
+      RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleTransparent, filter);
+    }
 
     renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
 
     renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::LitForeground);
+    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
+
+    renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_FORWARD");
   }
-
-  if (m_bPickSelected)
-  {
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::Selection);
-  }
-
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleOpaque);
-
-  if (m_bPickTransparent)
-  {
-    RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleTransparent, filter);
-  }
-
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
-
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "FALSE");
-  RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
-
-  renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_FORWARD");
 
   // download the picking information from the GPU
   if (m_uiWindowWidth != 0 && m_uiWindowHeight != 0)
   {
-    pCommandEncoder->ReadbackTexture(GetPickingDepthRT(), m_hPickingDepthRTStaging);
-    pCommandEncoder->ReadbackTexture(GetPickingIdRT(), m_hPickingIdRTStaging);
+    auto pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetGraphicsQueue();
+
+    auto pCommandList = pCommandQueue->BeginCommandList("Readback Picking Rendertargets");
+
+    pCommandList->CopyTexture(GetPickingDepthRT(), m_hPickingDepthRTStaging);
+    pCommandList->CopyTexture(GetPickingIdRT(), m_hPickingIdRTStaging);
+
+    // Submit immediately, so that the data is available when reading back the result from the staging texture.
+    pCommandQueue->Submit(pCommandList, false);
 
     xiiMat4 mProj;
     renderViewContext.m_pCamera->GetProjectionMatrix((float)m_uiWindowWidth / m_uiWindowHeight, mProj);
@@ -160,26 +171,97 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
     xiiGALTextureSubResourceData MemDesc;
     MemDesc.m_uiStride      = 4 * m_uiWindowWidth;
     MemDesc.m_uiDepthStride = 4 * m_uiWindowWidth * m_uiWindowHeight;
-    xiiArrayPtr<xiiGALTextureSubResourceData> SysMemDescs(&MemDesc, 1);
 
-    xiiGALTextureMipLevelData              sourceSubResource;
-    xiiArrayPtr<xiiGALTextureMipLevelData> sourceSubResources(&sourceSubResource, 1);
+    xiiGALTextureMipLevelData sourceSubResource;
 
+    auto pDevice = xiiGALDevice::GetDefaultDevice();
     {
       m_PickingResultsDepth.Clear();
       m_PickingResultsDepth.SetCountUninitialized(m_uiWindowWidth * m_uiWindowHeight);
 
       MemDesc.m_pData = m_PickingResultsDepth.GetData();
-      pCommandEncoder->CopyTextureReadbackResult(GetPickingDepthRT(), m_hPickingDepthRTStaging, sourceSubResources, SysMemDescs);
-    }
 
+      xiiGALMappedTextureSubresource mappedSubResource;
+      if (pCommandList->MapTextureSubresource(m_hPickingDepthRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
+      {
+        const auto& textureDescription = pDevice->GetTexture(m_hPickingDepthRTStaging)->GetDescription();
+        const auto& formatProperties   = xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format);
+
+        if (mappedSubResource.m_pData)
+        {
+          /// \todo Support depth pitch.
+          if (mappedSubResource.m_uiStride == MemDesc.m_uiStride)
+          {
+            const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * xiiGALGraphicsUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel) * xiiGALGraphicsUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
+
+            memcpy(MemDesc.m_pData, mappedSubResource.m_pData, uiMemorySize);
+          }
+          else
+          {
+            // Copy row by row.
+            const xiiUInt32 uiHeight = xiiGALGraphicsUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
+
+            for (xiiUInt32 y = 0; y < uiHeight; ++y)
+            {
+              const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.m_pData, y * mappedSubResource.m_uiStride);
+              void*       pDestination = xiiMemoryUtils::AddByteOffset(MemDesc.m_pData, y * MemDesc.m_uiStride);
+
+              memcpy(pDestination, pSource, formatProperties.GetElementSize() * xiiGALGraphicsUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel));
+            }
+          }
+        }
+        else
+        {
+          xiiLog::Error("Failed to map texture subresource for reading backbuffer data.");
+        }
+
+        pCommandList->UnmapTextureSubresource(m_hPickingDepthRTStaging, sourceSubResource).IgnoreResult();
+      }
+    }
     {
       m_PickingResultsID.Clear();
       m_PickingResultsID.SetCountUninitialized(m_uiWindowWidth * m_uiWindowHeight);
 
       MemDesc.m_pData = m_PickingResultsID.GetData();
-      pCommandEncoder->CopyTextureReadbackResult(GetPickingIdRT(), m_hPickingIdRTStaging, sourceSubResources, SysMemDescs);
+
+      xiiGALMappedTextureSubresource mappedSubResource;
+      if (pCommandList->MapTextureSubresource(m_hPickingIdRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
+      {
+        const auto& textureDescription = pDevice->GetTexture(m_hPickingIdRTStaging)->GetDescription();
+        const auto& formatProperties   = xiiGALGraphicsUtilities::GetTextureFormatProperties(textureDescription.m_Format);
+
+        if (mappedSubResource.m_pData)
+        {
+          /// \todo Support depth pitch.
+          if (mappedSubResource.m_uiStride == MemDesc.m_uiStride)
+          {
+            const xiiUInt32 uiMemorySize = formatProperties.GetElementSize() * xiiGALGraphicsUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel) * xiiGALGraphicsUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
+
+            memcpy(MemDesc.m_pData, mappedSubResource.m_pData, uiMemorySize);
+          }
+          else
+          {
+            // Copy row by row.
+            const xiiUInt32 uiHeight = xiiGALGraphicsUtilities::GetMipSize(textureDescription.m_Size.height, sourceSubResource.m_uiMipLevel);
+
+            for (xiiUInt32 y = 0; y < uiHeight; ++y)
+            {
+              const void* pSource      = xiiMemoryUtils::AddByteOffset(mappedSubResource.m_pData, y * mappedSubResource.m_uiStride);
+              void*       pDestination = xiiMemoryUtils::AddByteOffset(MemDesc.m_pData, y * MemDesc.m_uiStride);
+
+              memcpy(pDestination, pSource, formatProperties.GetElementSize() * xiiGALGraphicsUtilities::GetMipSize(textureDescription.m_Size.width, sourceSubResource.m_uiMipLevel));
+            }
+          }
+        }
+        else
+        {
+          xiiLog::Error("Failed to map texture subresource for reading backbuffer data.");
+        }
+
+        pCommandList->UnmapTextureSubresource(m_hPickingIdRTStaging, sourceSubResource).IgnoreResult();
+      }
     }
+    pCommandQueue->Submit(pCommandList);
   }
 }
 

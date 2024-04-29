@@ -2,7 +2,7 @@
 
 #include <EditorEngineProcessFramework/EngineProcess/ViewRenderSettings.h>
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
-#include <GraphicsFoundation/Resources/RenderTargetSetup.h>
+#include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 
 class XII_EDITORENGINEPROCESSFRAMEWORK_DLL xiiPickingRenderPass : public xiiRenderPipelinePass
 {

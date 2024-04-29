@@ -730,7 +730,8 @@ void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, 
 void xiiDebugRenderer::DrawLineFrustum(const xiiDebugRendererContext& context, const xiiFrustum& frustum, const xiiColor& color, bool bDrawPlaneNormals /*= false*/)
 {
   xiiVec3 cornerPoints[8];
-  frustum.ComputeCornerPoints(cornerPoints);
+  if (frustum.ComputeCornerPoints(cornerPoints).Failed())
+    return;
 
   Line lines[12] = {
     Line(cornerPoints[xiiFrustum::FrustumCorner::NearBottomLeft], cornerPoints[xiiFrustum::FrustumCorner::FarBottomLeft]),
@@ -1406,8 +1407,8 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
   // update the frame counter
   pDoubleBufferedContextData->m_uiLastRenderedFrame = xiiRenderWorld::GetFrameCounter();
 
-  xiiGALDevice*         pDevice            = xiiGALDevice::GetDefaultDevice();
-  xiiGALCommandEncoder* pGALCommandEncoder = renderViewContext.m_pRenderContext->GetCommandEncoder();
+  xiiGALDevice*      pDevice         = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandList* pGALCommandList = renderViewContext.m_pRenderContext->GetCommandList();
 
   // SolidBoxes
   {
@@ -1424,7 +1425,19 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
       while (uiNumSolidBoxes > 0)
       {
         const xiiUInt32 uiNumSolidBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumSolidBoxes, BOXES_PER_BATCH);
-        pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::SolidBoxes], 0, xiiMakeArrayPtr(pSolidBoxData, uiNumSolidBoxesInBatch).ToByteArray());
+
+        auto  pDataToUpdate = xiiMakeArrayPtr(pSolidBoxData, uiNumSolidBoxesInBatch).ToByteArray();
+        void* pMappedData   = nullptr;
+        if (pGALCommandList->MapBuffer(s_hDataBuffer[BufferType::SolidBoxes], xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+        {
+          memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+          pGALCommandList->UnmapBuffer(s_hDataBuffer[BufferType::SolidBoxes], xiiGALMapType::Write).AssertSuccess();
+        }
+        else
+        {
+          xiiLog::Error("Failed to map buffer to update content.");
+        }
 
         unsigned int uiRenderedInstances = uiNumSolidBoxesInBatch;
         if (renderViewContext.m_pCamera->IsStereoscopic())
@@ -1453,7 +1466,19 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
       {
         const xiiUInt32 uiNumTriangleVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumTriangleVertices, TRIANGLE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumTriangleVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
-        pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Triangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumTriangleVerticesInBatch).ToByteArray());
+
+        auto  pDataToUpdate = xiiMakeArrayPtr(pTriangleData, uiNumTriangleVerticesInBatch).ToByteArray();
+        void* pMappedData   = nullptr;
+        if (pGALCommandList->MapBuffer(s_hDataBuffer[BufferType::Triangles3D], xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+        {
+          memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+          pGALCommandList->UnmapBuffer(s_hDataBuffer[BufferType::Triangles3D], xiiGALMapType::Write).AssertSuccess();
+        }
+        else
+        {
+          xiiLog::Error("Failed to map buffer to update content.");
+        }
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles3D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumTriangleVerticesInBatch / 3);
 
@@ -1486,7 +1511,19 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         {
           const xiiUInt32 uiNumVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumVertices, TEX_TRIANGLE_VERTICES_PER_BATCH);
           XII_ASSERT_DEV(uiNumVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
-          pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::TexTriangles3D], 0, xiiMakeArrayPtr(pTriangleData, uiNumVerticesInBatch).ToByteArray());
+
+          auto  pDataToUpdate = xiiMakeArrayPtr(pTriangleData, uiNumVerticesInBatch).ToByteArray();
+          void* pMappedData   = nullptr;
+          if (pGALCommandList->MapBuffer(s_hDataBuffer[BufferType::TexTriangles3D], xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+          {
+            memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+            pGALCommandList->UnmapBuffer(s_hDataBuffer[BufferType::TexTriangles3D], xiiGALMapType::Write).AssertSuccess();
+          }
+          else
+          {
+            xiiLog::Error("Failed to map buffer to update content.");
+          }
 
           renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles3D], xiiGALBufferHandle(), &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNumVerticesInBatch / 3);
 
@@ -1514,7 +1551,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
       {
         const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
-        pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Lines], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
+        pGALCommandList->UpdateBuffer(s_hDataBuffer[BufferType::Lines], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
 
@@ -1541,7 +1578,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
       {
         const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
-        pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Lines2D], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
+        pGALCommandList->UpdateBuffer(s_hDataBuffer[BufferType::Lines2D], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines2D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
 
@@ -1568,7 +1605,19 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
       while (uiNumLineBoxes > 0)
       {
         const xiiUInt32 uiNumLineBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineBoxes, BOXES_PER_BATCH);
-        pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::LineBoxes], 0, xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray());
+
+        void* pMappedData = nullptr;
+        if (pGALCommandList->MapBuffer(s_hDataBuffer[BufferType::LineBoxes], xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+        {
+          auto pDataToUpdate = xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray();
+          memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+          pGALCommandList->UnmapBuffer(s_hDataBuffer[BufferType::LineBoxes], xiiGALMapType::Write).AssertSuccess();
+        }
+        else
+        {
+          xiiLog::Error("Failed to map buffer to update content.");
+        }
 
         renderViewContext.m_pRenderContext->DrawMeshBuffer(0xFFFFFFFF, 0, uiNumLineBoxesInBatch).IgnoreResult();
 
@@ -1593,7 +1642,19 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
       {
         const xiiUInt32 uiNum2DVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNum2DVertices, TRIANGLE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
-        pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Triangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray());
+
+        void* pMappedData = nullptr;
+        if (pGALCommandList->MapBuffer(s_hDataBuffer[BufferType::Triangles2D], xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+        {
+          auto pDataToUpdate = xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray();
+          memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+          pGALCommandList->UnmapBuffer(s_hDataBuffer[BufferType::Triangles2D], xiiGALMapType::Write).AssertSuccess();
+        }
+        else
+        {
+          xiiLog::Error("Failed to map buffer to update content.");
+        }
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Triangles2D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
 
@@ -1626,7 +1687,19 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         {
           const xiiUInt32 uiNum2DVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNum2DVertices, TEX_TRIANGLE_VERTICES_PER_BATCH);
           XII_ASSERT_DEV(uiNum2DVerticesInBatch % 3 == 0, "Vertex count must be a multiple of 3.");
-          pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::TexTriangles2D], 0, xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray());
+
+          void* pMappedData = nullptr;
+          if (pGALCommandList->MapBuffer(s_hDataBuffer[BufferType::TexTriangles2D], xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+          {
+            auto pDataToUpdate = xiiMakeArrayPtr(pTriangleData, uiNum2DVerticesInBatch).ToByteArray();
+            memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+            pGALCommandList->UnmapBuffer(s_hDataBuffer[BufferType::TexTriangles2D], xiiGALMapType::Write).AssertSuccess();
+          }
+          else
+          {
+            xiiLog::Error("Failed to map buffer to update content.");
+          }
 
           renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::TexTriangles2D], xiiGALBufferHandle(), &s_TexInputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, uiNum2DVerticesInBatch / 3);
 
@@ -1674,7 +1747,19 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
       while (uiNumGlyphs > 0)
       {
         const xiiUInt32 uiNumGlyphsInBatch = xiiMath::Min<xiiUInt32>(uiNumGlyphs, GLYPHS_PER_BATCH);
-        pGALCommandEncoder->UpdateBuffer(s_hDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray());
+
+        void* pMappedData = nullptr;
+        if (pGALCommandList->MapBuffer(s_hDataBuffer[BufferType::Glyphs], xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+        {
+          auto pDataToUpdate = xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray();
+          memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+          pGALCommandList->UnmapBuffer(s_hDataBuffer[BufferType::Glyphs], xiiGALMapType::Write).AssertSuccess();
+        }
+        else
+        {
+          xiiLog::Error("Failed to map buffer to update content.");
+        }
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, uiNumGlyphsInBatch * 2);
 

@@ -52,10 +52,10 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   xiiGALTextureHandle hSceneColor = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
 
-  xiiGALDevice* pDevice  = xiiGALDevice::GetDefaultDevice();
-  xiiGALPass*   pGALPass = pDevice->BeginPass(GetName());
+  xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*GetName()*/);
 
-  SetupResources(pGALPass, renderViewContext, inputs, outputs);
+  SetupResources(pGALCommandQueue, renderViewContext, inputs, outputs);
   SetupPermutationVars(renderViewContext);
 
   UpdateSceneColorTexture(renderViewContext, hSceneColor, pColorInput->m_TextureHandle);
@@ -67,14 +67,13 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
   RenderObjects(renderViewContext);
 
   renderViewContext.m_pRenderContext->EndRendering();
-  pDevice->EndPass(pGALPass);
 
   xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(hSceneColor);
 }
 
-void xiiTransparentForwardRenderPass::SetupResources(xiiGALPass* pGALPass, const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiTransparentForwardRenderPass::SetupResources(xiiGALCommandQueue* pGALCommandQueue, const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  SUPER::SetupResources(pGALPass, renderViewContext, inputs, outputs);
+  SUPER::SetupResources(pGALCommandQueue, renderViewContext, inputs, outputs);
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -102,17 +101,17 @@ void xiiTransparentForwardRenderPass::UpdateSceneColorTexture(const xiiRenderVie
 {
   const xiiGALTextureCreationDescription& textureDescription = xiiGALDevice::GetDefaultDevice()->GetTexture(hCurrentColorTexture)->GetDescription();
 
-  if (textureDescription.m_uiSampleCount > xiiGALSampleCount::OneSample)
+  if (textureDescription.m_uiSampleCount > xiiGALMSAASampleCount::OneSample)
   {
     xiiGALTextureMipLevelData subresource;
     subresource.m_uiMipLevel   = 0;
     subresource.m_uiArraySlice = 0;
 
-    renderViewContext.m_pRenderContext->GetCommandEncoder()->ResolveTexture(hSceneColorTexture, subresource, hCurrentColorTexture, subresource);
+    renderViewContext.m_pRenderContext->GetCommandList()->ResolveTextureSubResource(hCurrentColorTexture, subresource, hSceneColorTexture, subresource);
   }
   else
   {
-    renderViewContext.m_pRenderContext->GetCommandEncoder()->CopyTexture(hSceneColorTexture, hCurrentColorTexture);
+    renderViewContext.m_pRenderContext->GetCommandList()->CopyTexture(hCurrentColorTexture, hSceneColorTexture);
   }
 }
 

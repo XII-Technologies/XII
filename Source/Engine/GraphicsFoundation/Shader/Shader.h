@@ -12,7 +12,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHa
   xiiGALShaderCreationDescription();
   ~xiiGALShaderCreationDescription();
 
-  bool HasByteCodeForStage(xiiBitflags<xiiGALShaderStage> stage) const;
+  bool HasByteCodeForStage(xiiGALShaderStage::Enum stage) const;
 
   xiiStringView                  m_sName;                                                    ///< Resource name. The default is an empty string view.
   xiiBitflags<xiiGALShaderStage> m_ShaderStage                 = xiiGALShaderStage::Unknown; ///< The shader stages. The default is xiiGALShaderStage::Unknown.

@@ -30,7 +30,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSampleBlendSpace2DAnimNode, 1, xiiRTTIDefaul
       XII_MEMBER_PROPERTY("PlaybackSpeed", m_fPlaybackSpeed)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.0f, {})),
       XII_MEMBER_PROPERTY("ApplyRootMotion", m_bApplyRootMotion),
       XII_MEMBER_PROPERTY("InputResponse", m_InputResponse)->AddAttributes(new xiiDefaultValueAttribute(xiiTime::Milliseconds(100))),
-    XII_ACCESSOR_PROPERTY("CenterClip", GetCenterClipFile, SetCenterClipFile)->AddAttributes(new xiiDynamicStringEnumAttribute("AnimationClipMappingEnum")),
+      XII_ACCESSOR_PROPERTY("CenterClip", GetCenterClipFile, SetCenterClipFile)->AddAttributes(new xiiDynamicStringEnumAttribute("AnimationClipMappingEnum")),
       XII_ARRAY_MEMBER_PROPERTY("Clips", m_Clips),
 
       XII_MEMBER_PROPERTY("InStart", m_InStart)->AddAttributes(new xiiHiddenAttribute()),

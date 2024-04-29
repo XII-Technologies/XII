@@ -130,11 +130,11 @@ void xiiInstancedMeshComponentManager::OnRenderEvent(const xiiRenderWorldRenderE
   if (m_RequireUpdate.IsEmpty())
     return;
 
-  xiiGALDevice* pDevice  = xiiGALDevice::GetDefaultDevice();
-  xiiGALPass*   pGALPass = pDevice->BeginPass("Update Instanced Mesh Data");
+  xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue();
 
   xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
-  pRenderContext->BeginCompute(pGALPass);
+  auto              pCommandList   = pRenderContext->BeginCompute(pGALCommandQueue, "Update Instanced Mesh Data");
 
   for (const auto& componentToUpdate : m_RequireUpdate)
   {
@@ -153,7 +153,7 @@ void xiiInstancedMeshComponentManager::OnRenderEvent(const xiiRenderWorldRenderE
   }
 
   pRenderContext->EndCompute();
-  pDevice->EndPass(pGALPass);
+  pGALCommandQueue->Submit(pCommandList);
 
   m_RequireUpdate.Clear();
 }

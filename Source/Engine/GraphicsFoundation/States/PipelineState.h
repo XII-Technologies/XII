@@ -115,7 +115,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineDescription : public xii
   xiiGALRasterizerStateHandle                 m_hRasterizerState;                                          ///< The handle to rasterizer state object.
   xiiGALDepthStencilStateHandle               m_hDepthStencilState;                                        ///< The handle to depth-stencil state object.
   xiiGALInputLayoutHandle                     m_hInputLayout;                                              ///< The handle to vertex input layout, ignored in a mesh pipeline.
-  xiiEnum<xiiGALPrimitiveTopology>            m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList; ///< The psrimitive topology type, ignored in a mesh pipeline. The default is xiiGALPrimitiveTopology::TriangleList.
+  xiiEnum<xiiGALPrimitiveTopology>            m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList; ///< The primitive topology type, ignored in a mesh pipeline. The default is xiiGALPrimitiveTopology::TriangleList.
   xiiUInt8                                    m_uiViewportCount   = 1U;                                    ///< The number of viewports used by this pipeline. The default is 1.
   xiiUInt8                                    m_uiSubpassIndex    = 0U;                                    ///< The subpass index within the render pass. The default is 0.
   xiiBitflags<xiiGALPipelineShadingRateFlags> m_ShadingRateFlags  = xiiGALPipelineShadingRateFlags::None;  ///< Shading rate flags that specify which type of the shading rate will be used with this pipeline. The default is xiiGALPipelineShadingRateFlags::None.
@@ -177,6 +177,45 @@ public:
   /// \brief This returns the creation description for this object.
   XII_NODISCARD const xiiGALPipelineStateCreationDescription& GetDescription() const;
 
+  /// \brief This is used to set the constant (uniform) buffer for a shader resource.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hConstantBuffer    - The handle to the constant (uniform) buffer object to set.
+  void SetConstantBuffer(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferHandle hConstantBuffer);
+
+  /// \brief This is used to set the buffer view for a shader resource.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hBufferView        - The handle to the buffer view object to set.
+  void SetShaderResourceBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView);
+
+  /// \brief This is used to set the texture view for a shader resource.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hTextureView       - The handle to the texture view object to set.
+  void SetShaderResourceTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView);
+
+  /// This is used to set the buffer view for an unordered access.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hBufferView        - The handle to the buffer view object to set.
+  void SetUnorderedAccessBufferView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferViewHandle hBufferView);
+
+  /// \brief This is used to set the texture view for an unordered access.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hTextureView       - The handle to the texture view object to set.
+  void SetUnorderedAccessTextureView(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureViewHandle hTextureView);
+
+  /// \brief This is used to set the sampler for a shader resource.
+  ///
+  /// \param bindingInformation - This describes the binding information for the shader resource, see xiiGALPipelineResourceDescription for details.
+  /// \param hSampler           - The handle to the sampler object to set.
+  void SetSampler(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSamplerHandle hSampler);
+
+  /// \brief Resets the bound resources.
+  virtual void ResetBoundResources() = 0;
+
 protected:
   friend class xiiGALDevice;
 
@@ -187,6 +226,21 @@ protected:
   virtual xiiResult InitPlatform() = 0;
 
   virtual xiiResult DeInitPlatform() = 0;
+
+  // Deactivate Doxygen document generation for the following block. (API abstraction only)
+  /// \cond
+
+  // These functions need to be implemented by a graphics API abstraction.
+
+protected:
+  virtual void SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer)               = 0;
+  virtual void SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)     = 0;
+  virtual void SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView)  = 0;
+  virtual void SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView)    = 0;
+  virtual void SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) = 0;
+  virtual void SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler)                            = 0;
+
+  /// \endcond
 
 protected:
   xiiGALPipelineStateCreationDescription m_Description;

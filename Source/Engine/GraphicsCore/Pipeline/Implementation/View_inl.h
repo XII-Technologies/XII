@@ -26,7 +26,7 @@ XII_ALWAYS_INLINE xiiGALSwapChainHandle xiiView::GetSwapChain() const
 
 XII_ALWAYS_INLINE const xiiGALRenderTargets& xiiView::GetRenderTargets() const
 {
-  return m_Data.m_renderTargets;
+  return m_Data.m_RenderTargets;
 }
 
 XII_ALWAYS_INLINE void xiiView::SetCamera(xiiCamera* pCamera)

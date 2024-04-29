@@ -53,7 +53,20 @@ void xiiLensFlareRenderer::RenderBatch(const xiiRenderViewContext& renderViewCon
 
   if (m_LensFlareData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
   {
-    pContext->GetCommandEncoder()->UpdateBuffer(hLensFlareData, 0, m_LensFlareData.GetByteArrayPtr());
+    auto pCommandList = pContext->GetCommandList();
+
+    void* pMappedData = nullptr;
+    if (pCommandList->MapBuffer(hLensFlareData, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+    {
+      auto pDataToUpdate = m_LensFlareData.GetByteArrayPtr();
+      memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+      pCommandList->UnmapBuffer(hLensFlareData, xiiGALMapType::Write).AssertSuccess();
+    }
+    else
+    {
+      xiiLog::Error("Failed to map buffer to update content.");
+    }
 
     pContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, m_LensFlareData.GetCount() * 2);
     pContext->DrawMeshBuffer().IgnoreResult();

@@ -122,7 +122,7 @@ o
 		s %Name{""}
 		Vec2 %Node::Pos{f{0xA115F342,0xE893D743}}
 		Uuid %Output{u4{18145787413205851195,10498656058703515073}}
-		s %SampleCount{"xiiGALSampleCount::OneSample"}
+		s %SampleCount{"xiiGALMSAASampleCount::OneSample"}
 	}
 }
 o
@@ -273,7 +273,7 @@ o
 		s %ParentTypeName{"xiiEnumBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiGALSampleCount"}
+		s %TypeName{"xiiGALMSAASampleCount"}
 		u3 %TypeVersion{1}
 	}
 }

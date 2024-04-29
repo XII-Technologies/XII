@@ -5,7 +5,6 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
-
 #include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
@@ -15,7 +14,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiMsaaUpscalePass, 2, xiiRTTIDefaultAllocator<
   {
     XII_MEMBER_PROPERTY("Input", m_PinInput),
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
-    XII_ENUM_MEMBER_PROPERTY("MSAA_Mode", xiiGALSampleCount, m_MsaaMode)
+    XII_ENUM_MEMBER_PROPERTY("MSAA_Mode", xiiGALMSAASampleCount, m_MsaaMode)
   }
   XII_END_PROPERTIES;
 }
@@ -39,7 +38,7 @@ bool xiiMsaaUpscalePass::GetRenderTargetDescriptions(const xiiView& view, const 
   auto pInput = inputs[m_PinInput.m_uiInputIndex];
   if (pInput != nullptr)
   {
-    if (pInput->m_uiSampleCount > xiiGALSampleCount::OneSample)
+    if (pInput->m_uiSampleCount > xiiGALMSAASampleCount::OneSample)
     {
       xiiLog::Error("Input must not be a msaa target");
       return false;

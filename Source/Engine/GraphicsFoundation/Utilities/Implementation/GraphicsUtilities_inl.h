@@ -72,3 +72,21 @@ XII_ALWAYS_INLINE xiiBitflags<xiiGALPipelineResourceFlags> xiiGALGraphicsUtiliti
   }
   return pipelineResourceFlags;
 }
+
+XII_ALWAYS_INLINE xiiVec3U32 xiiGALGraphicsUtilities::GetMipLevelSize(xiiUInt32 uiMipLevelSize, const xiiGALTextureCreationDescription& textureDescription)
+{
+  xiiVec3U32 size = {textureDescription.m_Size.width, textureDescription.m_Size.height, textureDescription.m_uiArraySizeOrDepth};
+  size.x          = xiiMath::Max(1U, size.x >> uiMipLevelSize);
+  size.y          = xiiMath::Max(1U, size.y >> uiMipLevelSize);
+  size.z          = xiiMath::Max(1U, size.z >> uiMipLevelSize);
+  return size;
+}
+
+XII_ALWAYS_INLINE xiiUInt32 xiiGALGraphicsUtilities::GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel)
+{
+  for (xiiUInt32 i = 0; i < uiMipLevel; ++i)
+  {
+    uiSize = uiSize / 2;
+  }
+  return xiiMath::Max(1U, uiSize);
+}

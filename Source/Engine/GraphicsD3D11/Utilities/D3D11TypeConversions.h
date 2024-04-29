@@ -71,6 +71,8 @@ public:
   static xiiBitflags<xiiGALMiscTextureFlags> GetGALMiscTextureFlags(xiiUInt32 e);
 
   static void GetMapTypeAndFlags(xiiEnum<xiiGALMapType> type, xiiBitflags<xiiGALMapFlags> flags, D3D11_MAP& out_mapType, xiiUInt32& out_mapFlags);
+
+  static D3D_PRIMITIVE_TOPOLOGY GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e);
 };
 
 #include <GraphicsD3D11/Utilities/Implementation/D3D11TypeConversions_inl.h>

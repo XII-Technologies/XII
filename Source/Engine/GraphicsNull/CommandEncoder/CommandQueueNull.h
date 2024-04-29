@@ -2,6 +2,8 @@
 
 #include <GraphicsNull/GraphicsNullDLL.h>
 
+#include <Foundation/Types/UniquePtr.h>
+
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
 class XII_GRAPHICSNULL_DLL xiiGALCommandQueueNull final : public xiiGALCommandQueue
@@ -16,7 +18,7 @@ public:
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
 
-  virtual xiiGALCommandList* BeginCommandList() override final;
+  virtual xiiGALCommandList* BeginCommandList(xiiStringView sScopeName) override final;
 
 protected:
   virtual void SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) override final;
@@ -28,6 +30,9 @@ protected:
   xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull, const xiiGALCommandQueueCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandQueueNull();
+
+protected:
+  xiiUniquePtr<xiiGALCommandListNull> m_pDefaultCommandList;
 };
 
 #include <GraphicsNull/CommandEncoder/Implementation/CommandQueueNull_inl.h>

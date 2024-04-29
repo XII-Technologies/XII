@@ -17,7 +17,7 @@ public:
 
   virtual xiiUInt64 WaitForIdle() override final;
 
-  virtual xiiGALCommandList* BeginCommandList() override final;
+  virtual xiiGALCommandList* BeginCommandList(xiiStringView sScopeName) override final;
 
   void AddSwapChainCommandListReference(xiiGALCommandListD3D11* pCommandListD3D11);
   void RemoveSwapChainCommandListReference(xiiGALCommandListD3D11* pCommandListD3D11);

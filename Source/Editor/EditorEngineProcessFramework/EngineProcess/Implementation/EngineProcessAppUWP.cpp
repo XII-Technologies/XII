@@ -4,9 +4,9 @@
 #include <EditorEngineProcessFramework/EngineProcess/RemoteViewContext.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GraphicsCore/Pipeline/View.h>
+#include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/RenderTargetSetup.h>
 
 xiiEditorEngineProcessAppUWP::xiiEditorEngineProcessAppUWP() = default;
 

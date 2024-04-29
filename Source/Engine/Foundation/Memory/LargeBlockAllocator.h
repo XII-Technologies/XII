@@ -59,8 +59,8 @@ private:
   void* Allocate(size_t uiAlign);
   void  Deallocate(void* ptr);
 
-  xiiAllocatorId                      m_Id;
-  xiiAllocatorTrackingMode            m_TrackingMode;
+  xiiAllocatorId           m_Id;
+  xiiAllocatorTrackingMode m_TrackingMode;
 
   xiiMutex    m_Mutex;
   xiiThreadID m_ThreadID;

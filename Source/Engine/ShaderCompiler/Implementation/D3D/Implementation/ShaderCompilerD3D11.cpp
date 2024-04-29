@@ -75,7 +75,7 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramData& inout
 {
   XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_sSourceFile);
 
-  xiiGALShaderByteCode* pShader  = inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)];
+  xiiGALShaderByteCode* pShader  = inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)Stage.GetValue())];
   auto&                 byteCode = pShader->m_ByteCode;
 
   xiiComPtr<ID3D11ShaderReflection> pReflector;
@@ -93,7 +93,7 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramData& inout
   }
 
   // Vertex Attributes
-  xiiHybridArray<xiiGALVertexInputLayout, 8> vertexInputLayouts;
+  xiiHybridArray<xiiGALVertexInputLayout, 8>& vertexInputLayouts = pShader->m_VertexInputLayout;
   if (Stage.IsSet(xiiGALShaderStage::Vertex))
   {
     xiiUInt32 uiNumVars = shaderDescription.InputParameters;
@@ -161,12 +161,15 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramData& inout
       shaderResourceBinding.m_ShaderStages                  = Stage;
       shaderResourceBinding.m_sName.Assign(inputDescription.Name);
 
-      if (FillResourceBinding(*inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)], shaderResourceBinding, pReflector, inputDescription).Failed())
+      if (FillResourceBinding(*inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)Stage.GetValue())], shaderResourceBinding, pReflector, inputDescription).Failed())
         continue;
 
       XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown, "FillResourceBinding should have failed.");
 
-      inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)]->m_ShaderResourceBindings.PushBack(shaderResourceBinding);
+      if (shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown)
+      {
+        inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)Stage.GetValue())]->m_ShaderResourceBindings.PushBack(shaderResourceBinding);
+      }
     }
   }
 

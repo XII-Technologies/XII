@@ -17,7 +17,7 @@ public:
   xiiArrayPtr<xiiUInt8>       GetRawDataForWriting();
   xiiArrayPtr<const xiiUInt8> GetRawDataForReading() const;
 
-  void UploadData(xiiGALCommandEncoder* pCommandEncoder);
+  void UploadData(xiiGALCommandList* pCommandList);
 
   XII_ALWAYS_INLINE xiiGALBufferHandle GetGALBufferHandle() const { return m_hGALConstantBuffer; }
 

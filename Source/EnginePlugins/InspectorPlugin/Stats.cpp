@@ -96,10 +96,10 @@ static void PerFrameUpdateHandler(const xiiGameApplicationExecutionEvent& e)
           xiiUInt32    uiNumTasks  = 0;
           const double Utilization = xiiTaskSystem::GetThreadUtilization(xiiWorkerThreadType::ShortTasks, t, &uiNumTasks);
 
-          s.Format("Utilization/Short{0}_Load[%%]", xiiArgI(t, 2, true));
+          s.SetFormat("Utilization/Short{0}_Load[%%]", xiiArgI(t, 2, true));
           xiiStats::SetStat(s.GetData(), Utilization * 100.0);
 
-          s.Format("Utilization/Short{0}_Tasks", xiiArgI(t, 2, true));
+          s.SetFormat("Utilization/Short{0}_Tasks", xiiArgI(t, 2, true));
           xiiStats::SetStat(s.GetData(), uiNumTasks);
         }
 
@@ -108,10 +108,10 @@ static void PerFrameUpdateHandler(const xiiGameApplicationExecutionEvent& e)
           xiiUInt32    uiNumTasks  = 0;
           const double Utilization = xiiTaskSystem::GetThreadUtilization(xiiWorkerThreadType::LongTasks, t, &uiNumTasks);
 
-          s.Format("Utilization/Long{0}_Load[%%]", xiiArgI(t, 2, true));
+          s.SetFormat("Utilization/Long{0}_Load[%%]", xiiArgI(t, 2, true));
           xiiStats::SetStat(s.GetData(), Utilization * 100.0);
 
-          s.Format("Utilization/Long{0}_Tasks", xiiArgI(t, 2, true));
+          s.SetFormat("Utilization/Long{0}_Tasks", xiiArgI(t, 2, true));
           xiiStats::SetStat(s.GetData(), uiNumTasks);
         }
 
@@ -120,10 +120,10 @@ static void PerFrameUpdateHandler(const xiiGameApplicationExecutionEvent& e)
           xiiUInt32    uiNumTasks  = 0;
           const double Utilization = xiiTaskSystem::GetThreadUtilization(xiiWorkerThreadType::FileAccess, t, &uiNumTasks);
 
-          s.Format("Utilization/File{0}_Load[%%]", xiiArgI(t, 2, true));
+          s.SetFormat("Utilization/File{0}_Load[%%]", xiiArgI(t, 2, true));
           xiiStats::SetStat(s.GetData(), Utilization * 100.0);
 
-          s.Format("Utilization/File{0}_Tasks", xiiArgI(t, 2, true));
+          s.SetFormat("Utilization/File{0}_Tasks", xiiArgI(t, 2, true));
           xiiStats::SetStat(s.GetData(), uiNumTasks);
         }
       }

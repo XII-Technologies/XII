@@ -157,9 +157,9 @@ xiiClusteredDataProvider::~xiiClusteredDataProvider() = default;
 
 void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
 {
-  xiiGALCommandEncoder* pGALCommandEncoder = renderViewContext.m_pRenderContext->GetGraphicsCommandEncoder();
+  xiiGALCommandList* pGALCommandList = renderViewContext.m_pRenderContext->GetGraphicsCommandList();
 
-  XII_PROFILE_AND_MARKER(pGALCommandEncoder, "Update Clustered Data");
+  XII_PROFILE_AND_MARKER(pGALCommandList, "Update Clustered Data");
 
   if (auto pData = extractedData.GetFrameData<xiiClusteredDataCPU>())
   {
@@ -171,23 +171,82 @@ void* xiiClusteredDataProvider::UpdateData(const xiiRenderViewContext& renderVie
     {
       if (!pData->m_LightData.IsEmpty())
       {
-        pGALCommandEncoder->UpdateBuffer(m_Data.m_hLightDataBuffer, 0, pData->m_LightData.ToByteArray());
+        void* pMappedData = nullptr;
+        if (pGALCommandList->MapBuffer(m_Data.m_hLightDataBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+        {
+          auto pUpdateData = pData->m_LightData.ToByteArray();
+          memcpy(pMappedData, pUpdateData.GetPtr(), pUpdateData.GetCount());
+
+          pGALCommandList->UnmapBuffer(m_Data.m_hLightDataBuffer, xiiGALMapType::Write).AssertSuccess();
+        }
+        else
+        {
+          xiiLog::Error("Failed to map buffer to update content.");
+        }
       }
 
       if (!pData->m_DecalData.IsEmpty())
       {
-        pGALCommandEncoder->UpdateBuffer(m_Data.m_hDecalDataBuffer, 0, pData->m_DecalData.ToByteArray());
+        void* pMappedData = nullptr;
+        if (pGALCommandList->MapBuffer(m_Data.m_hLightDataBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+        {
+          auto pUpdateData = pData->m_DecalData.ToByteArray();
+          memcpy(pMappedData, pUpdateData.GetPtr(), pUpdateData.GetCount());
+
+          pGALCommandList->UnmapBuffer(m_Data.m_hDecalDataBuffer, xiiGALMapType::Write).AssertSuccess();
+        }
+        else
+        {
+          xiiLog::Error("Failed to map buffer to update content.");
+        }
       }
 
       if (!pData->m_ReflectionProbeData.IsEmpty())
       {
-        pGALCommandEncoder->UpdateBuffer(m_Data.m_hReflectionProbeDataBuffer, 0, pData->m_ReflectionProbeData.ToByteArray());
+        void* pMappedData = nullptr;
+        if (pGALCommandList->MapBuffer(m_Data.m_hReflectionProbeDataBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+        {
+          auto pUpdateData = pData->m_ReflectionProbeData.ToByteArray();
+          memcpy(pMappedData, pUpdateData.GetPtr(), pUpdateData.GetCount());
+
+          pGALCommandList->UnmapBuffer(m_Data.m_hReflectionProbeDataBuffer, xiiGALMapType::Write).AssertSuccess();
+        }
+        else
+        {
+          xiiLog::Error("Failed to map buffer to update content.");
+        }
       }
 
-      pGALCommandEncoder->UpdateBuffer(m_Data.m_hClusterItemBuffer, 0, pData->m_ClusterItemList.ToByteArray());
+      {
+        void* pMappedData = nullptr;
+        if (pGALCommandList->MapBuffer(m_Data.m_hClusterItemBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+        {
+          auto pUpdateData = pData->m_ClusterItemList.ToByteArray();
+          memcpy(pMappedData, pUpdateData.GetPtr(), pUpdateData.GetCount());
+
+          pGALCommandList->UnmapBuffer(m_Data.m_hClusterItemBuffer, xiiGALMapType::Write).AssertSuccess();
+        }
+        else
+        {
+          xiiLog::Error("Failed to map buffer to update content.");
+        }
+      }
     }
 
-    pGALCommandEncoder->UpdateBuffer(m_Data.m_hClusterDataBuffer, 0, pData->m_ClusterData.ToByteArray());
+    {
+      void* pMappedData = nullptr;
+      if (pGALCommandList->MapBuffer(m_Data.m_hClusterDataBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+      {
+        auto pUpdateData = pData->m_ClusterData.ToByteArray();
+        memcpy(pMappedData, pUpdateData.GetPtr(), pUpdateData.GetCount());
+
+        pGALCommandList->UnmapBuffer(m_Data.m_hClusterDataBuffer, xiiGALMapType::Write).AssertSuccess();
+      }
+      else
+      {
+        xiiLog::Error("Failed to map buffer to update content.");
+      }
+    }
 
     // Update Constants
     const xiiRectFloat& viewport = renderViewContext.m_pViewData->m_ViewPortRect;

@@ -1293,3 +1293,96 @@ XII_ALWAYS_INLINE void xiiD3D11TypeConversions::GetMapTypeAndFlags(xiiEnum<xiiGA
   if (flags.IsSet(xiiGALMapFlags::DoNotWait))
     out_mapFlags |= D3D11_MAP_FLAG_DO_NOT_WAIT;
 }
+
+XII_ALWAYS_INLINE D3D_PRIMITIVE_TOPOLOGY xiiD3D11TypeConversions::GetPrimitiveTopology(xiiEnum<xiiGALPrimitiveTopology> e)
+{
+  switch (e)
+  {
+    case xiiGALPrimitiveTopology::PointList:
+      return D3D_PRIMITIVE_TOPOLOGY_POINTLIST;
+    case xiiGALPrimitiveTopology::LineList:
+      return D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+    case xiiGALPrimitiveTopology::TriangleList:
+      return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+    case xiiGALPrimitiveTopology::TriangleStrip:
+      return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP;
+    case xiiGALPrimitiveTopology::LineStrip:
+      return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP;
+    case xiiGALPrimitiveTopology::TriangleListAdjacent:
+      return D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST_ADJ;
+    case xiiGALPrimitiveTopology::TriangleStripAdjacent:
+      return D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP_ADJ;
+    case xiiGALPrimitiveTopology::LineListAdjacent:
+      return D3D_PRIMITIVE_TOPOLOGY_LINELIST_ADJ;
+    case xiiGALPrimitiveTopology::LineStripAdjacent:
+      return D3D_PRIMITIVE_TOPOLOGY_LINESTRIP_ADJ;
+    case xiiGALPrimitiveTopology::ControlPointPatchList1:
+      return D3D_PRIMITIVE_TOPOLOGY_1_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList2:
+      return D3D_PRIMITIVE_TOPOLOGY_2_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList3:
+      return D3D_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList4:
+      return D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList5:
+      return D3D_PRIMITIVE_TOPOLOGY_5_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList6:
+      return D3D_PRIMITIVE_TOPOLOGY_6_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList7:
+      return D3D_PRIMITIVE_TOPOLOGY_7_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList8:
+      return D3D_PRIMITIVE_TOPOLOGY_8_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList9:
+      return D3D_PRIMITIVE_TOPOLOGY_9_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList10:
+      return D3D_PRIMITIVE_TOPOLOGY_10_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList11:
+      return D3D_PRIMITIVE_TOPOLOGY_11_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList12:
+      return D3D_PRIMITIVE_TOPOLOGY_12_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList13:
+      return D3D_PRIMITIVE_TOPOLOGY_13_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList14:
+      return D3D_PRIMITIVE_TOPOLOGY_14_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList15:
+      return D3D_PRIMITIVE_TOPOLOGY_15_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList16:
+      return D3D_PRIMITIVE_TOPOLOGY_16_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList17:
+      return D3D_PRIMITIVE_TOPOLOGY_17_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList18:
+      return D3D_PRIMITIVE_TOPOLOGY_18_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList19:
+      return D3D_PRIMITIVE_TOPOLOGY_19_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList20:
+      return D3D_PRIMITIVE_TOPOLOGY_20_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList21:
+      return D3D_PRIMITIVE_TOPOLOGY_21_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList22:
+      return D3D_PRIMITIVE_TOPOLOGY_22_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList23:
+      return D3D_PRIMITIVE_TOPOLOGY_23_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList24:
+      return D3D_PRIMITIVE_TOPOLOGY_24_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList25:
+      return D3D_PRIMITIVE_TOPOLOGY_25_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList26:
+      return D3D_PRIMITIVE_TOPOLOGY_26_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList27:
+      return D3D_PRIMITIVE_TOPOLOGY_27_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList28:
+      return D3D_PRIMITIVE_TOPOLOGY_28_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList29:
+      return D3D_PRIMITIVE_TOPOLOGY_29_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList30:
+      return D3D_PRIMITIVE_TOPOLOGY_30_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList31:
+      return D3D_PRIMITIVE_TOPOLOGY_31_CONTROL_POINT_PATCHLIST;
+    case xiiGALPrimitiveTopology::ControlPointPatchList32:
+      return D3D_PRIMITIVE_TOPOLOGY_32_CONTROL_POINT_PATCHLIST;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+
+  return D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
+}

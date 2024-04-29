@@ -18,8 +18,11 @@ public:
 protected:
   xiiRenderPipelineNodeOutputPin m_PinOutput;
 
-  xiiEnum<xiiGALTextureFormat> m_Format;
-  xiiEnum<xiiGALSampleCount>   m_SampleCount;
-  xiiColor                     m_ClearColor;
-  bool                         m_bClear;
+  xiiEnum<xiiGALTextureFormat>   m_Format;
+  xiiEnum<xiiGALMSAASampleCount> m_SampleCount;
+  xiiColor                       m_ClearColor;
+  bool                           m_bClear;
+
+  xiiGALRenderPassHandle  m_hRenderPass;
+  xiiGALFramebufferHandle m_hFramebuffer;
 };

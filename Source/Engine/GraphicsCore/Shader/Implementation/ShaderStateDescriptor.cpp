@@ -170,7 +170,7 @@ xiiUInt32 xiiShaderStateResourceDescriptor::CalculateHash() const
 
 static xiiStringView InsertNumber(const char* szString, xiiUInt32 uiNumber, xiiStringBuilder& ref_sTemp)
 {
-  ref_sTemp.Format(szString, uiNumber);
+  ref_sTemp.SetFormat(szString, uiNumber);
   return ref_sTemp.GetView();
 }
 

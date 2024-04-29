@@ -22,9 +22,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiOpaqueForwardRenderPass::xiiOpaqueForwardRenderPass(xiiStringView sName) :
   xiiForwardRenderPass(sName)
 {
-#if XII_RENDERER_TODO
   m_hWhiteTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>("White.color");
-#endif
 }
 
 xiiOpaqueForwardRenderPass::~xiiOpaqueForwardRenderPass() = default;
@@ -52,9 +50,9 @@ bool xiiOpaqueForwardRenderPass::GetRenderTargetDescriptions(const xiiView& view
   return true;
 }
 
-void xiiOpaqueForwardRenderPass::SetupResources(xiiGALPass* pGALPass, const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiOpaqueForwardRenderPass::SetupResources(xiiGALCommandQueue* pGALCommandQueue, const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  SUPER::SetupResources(pGALPass, renderViewContext, inputs, outputs);
+  SUPER::SetupResources(pGALCommandQueue, renderViewContext, inputs, outputs);
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -68,9 +66,7 @@ void xiiOpaqueForwardRenderPass::SetupResources(xiiGALPass* pGALPass, const xiiR
     }
     else
     {
-#if XII_RENDERER_TODO
       renderViewContext.m_pRenderContext->BindTexture2D("SSAOTexture", m_hWhiteTexture, xiiResourceAcquireMode::BlockTillLoaded);
-#endif
     }
   }
 }

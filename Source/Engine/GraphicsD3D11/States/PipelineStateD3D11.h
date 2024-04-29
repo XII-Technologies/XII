@@ -28,6 +28,11 @@ public:
   ID3D11HullShader*        GetD3D11HullShader() const;
   ID3D11ComputeShader*     GetD3D11ComputeShader() const;
 
+  xiiResult CommitShaderResources(xiiGALCommandListD3D11* pCommandListD3D11);
+
+  bool UnsetResourceViews(const xiiGALResource* pResource);
+  bool UnsetUnorderedAccessViews(const xiiGALResource* pResource);
+
 protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
@@ -40,6 +45,14 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
+  virtual void SetConstantBufferPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBuffer* pConstantBuffer) override final;
+  virtual void SetShaderResourceBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
+  virtual void SetShaderResourceTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
+  virtual void SetUnorderedAccessBufferViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALBufferView* pBufferView) override final;
+  virtual void SetUnorderedAccessTextureViewPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALTextureView* pTextureView) override final;
+  virtual void SetSamplerPlatform(const xiiGALPipelineResourceDescription& bindingInformation, xiiGALSampler* pSampler) override final;
+  virtual void ResetBoundResources() override final;
+
 protected:
   xiiGALShaderD3D11*            m_pShaderD3D11            = nullptr;
   xiiGALBlendStateD3D11*        m_pBlendStateD3D11        = nullptr;
@@ -49,6 +62,22 @@ protected:
 
   xiiGALRenderPassD3D11*                m_pRenderPassD3D11                = nullptr;
   xiiGALPipelineResourceSignatureD3D11* m_pPipelineResourceSignatureD3D11 = nullptr;
+
+  ID3D11Buffer*         m_pBoundConstantBuffers[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pBoundShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
+  xiiHybridArray<xiiGALResource*, 16>           m_ResourcesForResourceViews[xiiGALShaderStage::ENUM_COUNT];
+  xiiGAL::ModifiedRange                         m_BoundShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];
+
+  xiiHybridArray<ID3D11UnorderedAccessView*, 16> m_BoundUnoderedAccessViews;
+  xiiHybridArray<xiiGALResource*, 16>            m_ResourcesForUnorderedAccessViews;
+  xiiGAL::ModifiedRange                          m_BoundUnoderedAccessViewsRange;
+
+  ID3D11SamplerState*   m_pBoundSamplerStates[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundSamplerStatesRange[xiiGALShaderStage::ENUM_COUNT];
+
+  ID3D11DeviceChild* m_pBoundShaders[xiiGALShaderStage::ENUM_COUNT] = {};
 };
 
 #include <GraphicsD3D11/States/Implementation/PipelineStateD3D11_inl.h>

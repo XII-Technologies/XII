@@ -30,11 +30,9 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALValueType::GetSize(const xiiGALValueType::Enum
 }
 
 // static
-XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderStage::GetStageIndex(xiiBitflags<xiiGALShaderStage> stage)
+XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Enum stage)
 {
-  // \todo Assert that a single shader stage is set.
-
-  switch (stage.GetValue())
+  switch (stage)
   {
     case xiiGALShaderStage::Vertex:
       return 0U;
@@ -69,7 +67,6 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderStage::GetStageIndex(xiiBitflags<xiiGALS
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-
   return xiiInvalidIndex;
 }
 
@@ -161,7 +158,7 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALPrimitiveTopology::VerticesPerPrimitive(xiiEnu
       return 2;
     case xiiGALPrimitiveTopology::TriangleListAdjacent:
       return 6;
-    case xiiGALPrimitiveTopology::TrangleStripAdjacent:
+    case xiiGALPrimitiveTopology::TriangleStripAdjacent:
       return 6;
     case xiiGALPrimitiveTopology::LineListAdjacent:
       return 4;

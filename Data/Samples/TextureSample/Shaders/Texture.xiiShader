@@ -4,7 +4,7 @@ ALL
 [RENDERSTATE]
 
 CullMode = CullMode_None
-DepthTest = false
+DepthEnable = false
 
 [VERTEXSHADER]
 

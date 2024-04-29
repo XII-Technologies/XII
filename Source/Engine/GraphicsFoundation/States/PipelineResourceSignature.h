@@ -67,6 +67,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceDescription : public xii
                                                                                                                  ///
                                                                                                                  ///  \remarks There may be multiple resources with the same name in different shader stages, but the stages specified for different resources with the same name must not overlap.
   xiiUInt32                                 m_uiArraySize           = 0U;                                        ///< The resource array size (must be set to 1 for non-array resources). The default is 0.
+  xiiUInt32                                 m_uiBindSet             = 0U;                                        ///< \brief The resource bind set, for descriptor sets.
+  xiiUInt32                                 m_uiBindSlot            = 0U;                                        ///< \brief The resource bind slot in the bind set.
   xiiEnum<xiiGALShaderResourceType>         m_ResourceType          = xiiGALShaderResourceType::Unknown;         ///< The resource type, see xiiGALShaderResourceType. The default is xiiGALShaderResourceType::Unknown.
   xiiEnum<xiiGALShaderResourceVariableType> m_ResourceVariableType  = xiiGALShaderResourceVariableType::Mutable; ///< The resource variable type, see xiiGALShaderResourceVariableType. The default is xiiGALShaderResourceVariableType::Mutable.
   xiiBitflags<xiiGALPipelineResourceFlags>  m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None;         ///< Special resource flags, see xiiGALPipelineResourceFlags. The default is xiiGALPipelineResourceFlags::None.

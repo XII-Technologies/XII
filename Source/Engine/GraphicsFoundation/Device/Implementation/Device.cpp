@@ -129,7 +129,6 @@ struct xiiHashHelper<xiiGALPipelineStateCreationDescription>
   {
     xiiHashStreamWriter32 writer;
 
-    writer << description.m_sName;
     writer << description.m_PipelineType;
     writer << description.m_hShader;
     writer << description.m_uiNodeMask;
@@ -197,7 +196,6 @@ struct xiiHashHelper<xiiGALPipelineResourceSignatureCreationDescription>
   {
     xiiHashStreamWriter32 writer;
 
-    writer << description.m_sName;
     writer << description.m_uiBindingIndex;
     writer << description.m_bUseCombinedTextureSamplers;
     writer << description.m_sCombinedSamplerSuffix;
@@ -293,6 +291,12 @@ xiiGALDevice::~xiiGALDevice()
 
     if (!m_RasterizerStates.IsEmpty())
       xiiLog::Warning("{0} rasterizer states have not been cleaned up.", m_RasterizerStates.GetCount());
+
+    if (!m_PipelineResourceSignatures.IsEmpty())
+      xiiLog::Warning("{0} pipeline resource signatures have not been cleaned up.", m_PipelineResourceSignatures.GetCount());
+
+    if (!m_PipelineStates.IsEmpty())
+      xiiLog::Warning("{0} pipeline states have not been cleaned up.", m_PipelineStates.GetCount());
   }
 }
 
@@ -1953,7 +1957,7 @@ xiiGALRenderPassHandle xiiGALDevice::CreateRenderPass(const xiiGALRenderPassCrea
 
     if (!subpass.m_DepthStencilAttachment.IsEmpty())
     {
-      const auto& attachmentReference = subpass.m_DepthStencilAttachment[0];
+      const auto& attachmentReference = subpass.m_DepthStencilAttachment.PeekBack();
 
       if (attachmentReference.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
       {
@@ -2568,16 +2572,37 @@ XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipeline
 
   /// \todo GraphicsFoundation: Verify combined texture samplers, all samplers should be assigned to textures when combined texture samplers are used, all immutable samplers should be assigned to textures or samplers when combined texture samplers are used.
 
+  xiiUInt32 uiHash = PipelineResourceSignatureHashHelper::Hash(description);
+  {
+    xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature;
+    if (m_PipelineResourceSignatureTable.TryGetValue(uiHash, hPipelineResourceSignature))
+    {
+      xiiGALPipelineResourceSignature* pPipelineResourceSignature = m_PipelineResourceSignatures[hPipelineResourceSignature];
+      if (pPipelineResourceSignature->GetRefCount() == 0)
+      {
+        ReviveDestroyedObject(GALObjectType::PipelineResourceSignature, hPipelineResourceSignature);
+      }
+
+      pPipelineResourceSignature->AddRef();
+      return hPipelineResourceSignature;
+    }
+  }
+
   xiiGALPipelineResourceSignature* pPipelineResourceSignature = CreatePipelineResourceSignaturePlatform(description);
 
-  if (pPipelineResourceSignature == nullptr)
+  if (pPipelineResourceSignature != nullptr)
   {
-    return xiiGALPipelineResourceSignatureHandle();
+    XII_ASSERT_DEBUG(PipelineResourceSignatureHashHelper::Hash(pPipelineResourceSignature->GetDescription()) == uiHash, "PipelineResourceSignature hash does not match.");
+
+    pPipelineResourceSignature->AddRef();
+
+    xiiGALPipelineResourceSignatureHandle hPipelineResourceSignaure(m_PipelineResourceSignatures.Insert(pPipelineResourceSignature));
+    m_PipelineResourceSignatureTable.Insert(uiHash, hPipelineResourceSignaure);
+
+    return hPipelineResourceSignaure;
   }
-  else
-  {
-    return xiiGALPipelineResourceSignatureHandle(m_PipelineResourceSignatures.Insert(pPipelineResourceSignature));
-  }
+
+  return xiiGALPipelineResourceSignatureHandle();
 }
 
 void xiiGALDevice::DestroyPipelineResourceSignature(xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature)
@@ -2588,7 +2613,12 @@ void xiiGALDevice::DestroyPipelineResourceSignature(xiiGALPipelineResourceSignat
 
   if (m_PipelineResourceSignatures.TryGetValue(hPipelineResourceSignature, pPipelineResourceSignature))
   {
-    AddDestroyedObject(GALObjectType::PipelineResourceSignature, hPipelineResourceSignature);
+    pPipelineResourceSignature->ReleaseRef();
+
+    if (pPipelineResourceSignature->GetRefCount() == 0)
+    {
+      AddDestroyedObject(GALObjectType::PipelineResourceSignature, hPipelineResourceSignature);
+    }
   }
   else
   {
@@ -2609,16 +2639,37 @@ XII_NODISCARD xiiGALPipelineStateHandle xiiGALDevice::CreatePipelineState(const 
 {
   /// \todo GraphicsFoundation: Verify pipeline state description.
 
+  xiiUInt32 uiHash = PipelineStateHashHelper::Hash(description);
+  {
+    xiiGALPipelineStateHandle hPipelineState;
+    if (m_PipelineStateTable.TryGetValue(uiHash, hPipelineState))
+    {
+      xiiGALPipelineState* pPipelineState = m_PipelineStates[hPipelineState];
+      if (pPipelineState->GetRefCount() == 0)
+      {
+        ReviveDestroyedObject(GALObjectType::PipelineState, hPipelineState);
+      }
+
+      pPipelineState->AddRef();
+      return hPipelineState;
+    }
+  }
+
   xiiGALPipelineState* pPipelineState = CreatePipelineStatePlatform(description);
 
-  if (pPipelineState == nullptr)
+  if (pPipelineState != nullptr)
   {
-    return xiiGALPipelineStateHandle();
+    XII_ASSERT_DEBUG(PipelineStateHashHelper::Hash(pPipelineState->GetDescription()) == uiHash, "PipelineState hash does not match.");
+
+    pPipelineState->AddRef();
+
+    xiiGALPipelineStateHandle hPipelineResourceSignaure(m_PipelineStates.Insert(pPipelineState));
+    m_PipelineStateTable.Insert(uiHash, hPipelineResourceSignaure);
+
+    return hPipelineResourceSignaure;
   }
-  else
-  {
-    return xiiGALPipelineStateHandle(m_PipelineStates.Insert(pPipelineState));
-  }
+
+  return xiiGALPipelineStateHandle();
 }
 
 void xiiGALDevice::DestroyPipelineState(xiiGALPipelineStateHandle hPipelineState)
@@ -2629,7 +2680,12 @@ void xiiGALDevice::DestroyPipelineState(xiiGALPipelineStateHandle hPipelineState
 
   if (m_PipelineStates.TryGetValue(hPipelineState, pPipelineState))
   {
-    AddDestroyedObject(GALObjectType::PipelineState, hPipelineState);
+    pPipelineState->ReleaseRef();
+
+    if (pPipelineState->GetRefCount() == 0)
+    {
+      AddDestroyedObject(GALObjectType::PipelineState, hPipelineState);
+    }
   }
   else
   {
@@ -2678,7 +2734,7 @@ void xiiGALDevice::FlushDestroyedObjects()
     {
       case GALObjectType::SwapChain:
       {
-        xiiGALSwapChainHandle hSwapChain(xiiGAL::xii16_16Id(destroyedObject.m_uiHandle));
+        xiiGALSwapChainHandle hSwapChain(xiiGALSwapChainHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALSwapChain*      pSwapChain = nullptr;
 
         XII_VERIFY(m_SwapChains.Remove(hSwapChain, &pSwapChain), "SwapChain not found in idTable.");
@@ -2688,7 +2744,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::BottomLevelAS:
       {
-        xiiGALBottomLevelASHandle hBottomLevelAS(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALBottomLevelASHandle hBottomLevelAS(xiiGALBottomLevelASHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALBottomLevelAS*      pBottomLevelAS = nullptr;
 
         XII_VERIFY(m_BottomLevelAccelerationStructures.Remove(hBottomLevelAS, &pBottomLevelAS), "BottomLevelAS not found in idTable.");
@@ -2698,7 +2754,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::Buffer:
       {
-        xiiGALBufferHandle hBuffer(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALBufferHandle hBuffer(xiiGALBufferHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALBuffer*      pBuffer = nullptr;
 
         XII_VERIFY(m_Buffers.Remove(hBuffer, &pBuffer), "Buffer not found in idTable.");
@@ -2709,7 +2765,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::BufferView:
       {
-        xiiGALBufferViewHandle hBufferView(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALBufferViewHandle hBufferView(xiiGALBufferViewHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALBufferView*      pBufferView = nullptr;
 
         m_BufferViews.Remove(hBufferView, &pBufferView);
@@ -2725,7 +2781,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::Fence:
       {
-        xiiGALFenceHandle hFence(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALFenceHandle hFence(xiiGALFenceHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALFence*      pFence = nullptr;
 
         XII_VERIFY(m_Fences.Remove(hFence, &pFence), "Fence not found in idTable.");
@@ -2735,7 +2791,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::Framebuffer:
       {
-        xiiGALFramebufferHandle hFramebuffer(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALFramebufferHandle hFramebuffer(xiiGALFramebufferHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALFramebuffer*      pFramebuffer = nullptr;
 
         XII_VERIFY(m_Framebuffers.Remove(hFramebuffer, &pFramebuffer), "Framebuffer not found in idTable.");
@@ -2745,7 +2801,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::Query:
       {
-        xiiGALQueryHandle hQuery(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALQueryHandle hQuery(xiiGALQueryHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALQuery*      pQuery = nullptr;
 
         XII_VERIFY(m_Queries.Remove(hQuery, &pQuery), "Query not found in idTable.");
@@ -2755,7 +2811,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::RenderPass:
       {
-        xiiGALRenderPassHandle hRenderPass(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALRenderPassHandle hRenderPass(xiiGALRenderPassHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALRenderPass*      pRenderPass = nullptr;
 
         XII_VERIFY(m_RenderPasses.Remove(hRenderPass, &pRenderPass), "RenderPass not found in idTable.");
@@ -2765,7 +2821,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::Sampler:
       {
-        xiiGALSamplerHandle hSampler(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALSamplerHandle hSampler(xiiGALSamplerHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALSampler*      pSampler = nullptr;
 
         XII_VERIFY(m_Samplers.Remove(hSampler, &pSampler), "Sampler not found in idTable.");
@@ -2776,7 +2832,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::Texture:
       {
-        xiiGALTextureHandle hTexture(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALTextureHandle hTexture(xiiGALTextureHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALTexture*      pTexture = nullptr;
 
         XII_VERIFY(m_Textures.Remove(hTexture, &pTexture), "Texture not found in idTable.");
@@ -2787,7 +2843,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::TextureView:
       {
-        xiiGALTextureViewHandle hTextureView(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALTextureViewHandle hTextureView(xiiGALTextureViewHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALTextureView*      pTextureView = nullptr;
 
         m_TextureViews.Remove(hTextureView, &pTextureView);
@@ -2803,7 +2859,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::TopLevelAS:
       {
-        xiiGALTopLevelASHandle hTopLevelAS(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALTopLevelASHandle hTopLevelAS(xiiGALTopLevelASHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALTopLevelAS*      pTopLevelAS = nullptr;
 
         XII_VERIFY(m_TopLevelAccelerationStructures.Remove(hTopLevelAS, &pTopLevelAS), "TopLevelAS not found in idTable.");
@@ -2813,7 +2869,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::InputLayout:
       {
-        xiiGALInputLayoutHandle hInputLayout(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALInputLayoutHandle hInputLayout(xiiGALInputLayoutHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALInputLayout*      pInputLayout = nullptr;
 
         XII_VERIFY(m_InputLayouts.Remove(hInputLayout, &pInputLayout), "InputLayout not found in idTable.");
@@ -2824,7 +2880,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::Shader:
       {
-        xiiGALShaderHandle hShader(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALShaderHandle hShader(xiiGALShaderHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALShader*      pShader = nullptr;
 
         XII_VERIFY(m_Shaders.Remove(hShader, &pShader), "Shader not found in idTable.");
@@ -2834,7 +2890,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::BlendState:
       {
-        xiiGALBlendStateHandle hBlendState(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALBlendStateHandle hBlendState(xiiGALBlendStateHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALBlendState*      pBlendState = nullptr;
 
         XII_VERIFY(m_BlendStates.Remove(hBlendState, &pBlendState), "BlendState not found in idTable.");
@@ -2845,7 +2901,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::DepthStencilState:
       {
-        xiiGALDepthStencilStateHandle hDepthStencilState(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALDepthStencilStateHandle hDepthStencilState(xiiGALDepthStencilStateHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALDepthStencilState*      pDepthStencilState = nullptr;
 
         XII_VERIFY(m_DepthStencilStates.Remove(hDepthStencilState, &pDepthStencilState), "DepthStencilState not found in idTable.");
@@ -2856,7 +2912,7 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::RasterizerState:
       {
-        xiiGALRasterizerStateHandle hRasterizerState(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALRasterizerStateHandle hRasterizerState(xiiGALRasterizerStateHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALRasterizerState*      pRasterizerState = nullptr;
 
         XII_VERIFY(m_RasterizerStates.Remove(hRasterizerState, &pRasterizerState), "RasterizerState not found in idTable.");
@@ -2867,20 +2923,22 @@ void xiiGALDevice::FlushDestroyedObjects()
       break;
       case GALObjectType::PipelineResourceSignature:
       {
-        xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature(xiiGALPipelineResourceSignatureHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALPipelineResourceSignature*      pPipelineResourceSignature = nullptr;
 
         XII_VERIFY(m_PipelineResourceSignatures.Remove(hPipelineResourceSignature, &pPipelineResourceSignature), "PipelineResourceSignature not found in idTable.");
+        XII_VERIFY(m_PipelineResourceSignatureTable.Remove(PipelineResourceSignatureHashHelper::Hash(pPipelineResourceSignature->GetDescription())), "PipelineResourceSignature not found in de-duplication table.");
 
         DestroyPipelineResourceSignaturePlatform(pPipelineResourceSignature);
       }
       break;
       case GALObjectType::PipelineState:
       {
-        xiiGALPipelineStateHandle hPipelineState(xiiGAL::xii24_8Id(destroyedObject.m_uiHandle));
+        xiiGALPipelineStateHandle hPipelineState(xiiGALPipelineStateHandle::IdType(destroyedObject.m_uiHandle));
         xiiGALPipelineState*      pPipelineState = nullptr;
 
         XII_VERIFY(m_PipelineStates.Remove(hPipelineState, &pPipelineState), "PipelineState not found in idTable.");
+        XII_VERIFY(m_PipelineStateTable.Remove(PipelineStateHashHelper::Hash(pPipelineState->GetDescription())), "PipelineState not found in de-duplication table.");
 
         DestroyPipelineStatePlatform(pPipelineState);
       }

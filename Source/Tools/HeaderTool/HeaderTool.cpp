@@ -202,7 +202,7 @@ public:
             // xiiOSFile::DeleteFile(sExportDirectoryPath).AssertSuccess("Failed to delete existing file at '{}'", sPath);
           }
 
-          sPrintStr.Format("Failed to copy file '{}' to '{}'", sPath, sExportDirectoryPath);
+          sPrintStr.SetFormat("Failed to copy file '{}' to '{}'", sPath, sExportDirectoryPath);
           xiiOSFile::CopyFile(sPath, sExportDirectoryPath).AssertSuccess(sPrintStr);
 
           ++uiFiles;

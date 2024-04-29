@@ -7,8 +7,6 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
-#include <GraphicsFoundation/Resources/RenderTargetSetup.h>
-
 #include <GraphicsFoundation/Resources/Texture.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/SelectionHighlightConstants.h>
@@ -83,10 +81,10 @@ void xiiSelectionHighlightPass::Execute(const xiiRenderViewContext& renderViewCo
 
   // render all selection objects to depth target only
   {
-    xiiUInt32                  uiWidth      = pColorOutput->m_Desc.m_Size.width;
-    xiiUInt32                  uiHeight     = pColorOutput->m_Desc.m_Size.height;
-    xiiEnum<xiiGALSampleCount> sampleCount  = (xiiGALSampleCount::Enum)pColorOutput->m_Desc.m_uiSampleCount;
-    xiiUInt32                  uiSliceCount = pColorOutput->m_Desc.m_uiArraySizeOrDepth;
+    xiiUInt32                      uiWidth      = pColorOutput->m_Desc.m_Size.width;
+    xiiUInt32                      uiHeight     = pColorOutput->m_Desc.m_Size.height;
+    xiiEnum<xiiGALMSAASampleCount> sampleCount  = (xiiGALMSAASampleCount::Enum)pColorOutput->m_Desc.m_uiSampleCount;
+    xiiUInt32                      uiSliceCount = pColorOutput->m_Desc.m_uiArraySizeOrDepth;
 
     hDepthTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::D24UNormalizedS8UInt, sampleCount, uiSliceCount);
 

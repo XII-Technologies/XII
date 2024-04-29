@@ -63,7 +63,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRasterizerStateCreationDescription : pub
   bool                    m_bFrontCounterClockwise = false;                 ///< Determines if a triangle is front or back facing. If this member is true, a triangle will be considered front-facing if its vertices are counter-clockwise on the render target and considered back-facing if they are clockwise. If this parameter is false, then the opposite is true. The default is false.
   bool                    m_bDepthClipEnable       = true;                  ///< Enable clipping against near and far clip planes. The default is true.
   bool                    m_bScissorEnable         = false;                 ///< Enable scissor-rectangle culling. All pixels outside an active scissor rectangle are culled. The default is false.
-  bool                    m_bAntialiasedLineEnable = false;                 ///< Specifies whether to enable line antialiasing. The default is false.
+  bool                    m_bAntialiasedLineEnable = true;                  ///< Specifies whether to enable line antialiasing. The default is true.
   xiiInt32                m_iDepthBias             = 0;                     ///< Constant value added to the depth of a given pixel. The default is false.
   float                   m_fDepthBiasClamp        = 0.0f;                  ///< The maximum depth bias of a pixel. The default is 0.
   float                   m_fSlopeScaledDepthBias  = 0.0f;                  ///< Scalar that scales the given pixel's slope before adding to the pixel's depth. The default is 0.

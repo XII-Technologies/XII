@@ -41,7 +41,20 @@ void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& rende
     {
       // if this is the first renderer that is supposed to actually render the skinned mesh, upload the skinning matrices
       *pSkinnedRenderData->m_bTransformsUpdated = true;
-      pContext->GetCommandEncoder()->UpdateBuffer(pSkinnedRenderData->m_hSkinningTransforms, 0, pSkinnedRenderData->m_pNewSkinningTransformData);
+
+      auto pCommandList = pContext->GetCommandList();
+
+      void* pMappedData = nullptr;
+      if (pCommandList->MapBuffer(pSkinnedRenderData->m_hSkinningTransforms, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+      {
+        memcpy(pMappedData, pSkinnedRenderData->m_pNewSkinningTransformData.GetPtr(), pSkinnedRenderData->m_pNewSkinningTransformData.GetCount());
+
+        pCommandList->UnmapBuffer(pSkinnedRenderData->m_hSkinningTransforms, xiiGALMapType::Write).AssertSuccess();
+      }
+      else
+      {
+        xiiLog::Error("Failed to map buffer to update content.");
+      }
 
       // TODO: could expose this somewhere (xiiStats?)
       s_uiSkinningBufferUpdates++;
@@ -50,6 +63,5 @@ void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& rende
     pContext->BindBuffer("skinningTransforms", pDevice->GetBuffer(pSkinnedRenderData->m_hSkinningTransforms)->GetDefaultView(xiiGALBufferViewType::ShaderResource));
   }
 }
-
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Meshes_Implementation_SkinnedMeshRenderer);

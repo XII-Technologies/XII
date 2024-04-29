@@ -90,8 +90,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
       if (s_vTranslateDeviation == xiiVec3(0.0f))
         return;
 
-      sAction.SetFormat("Translate (deviation): {0} | {1} | {2}", xiiArgF(s_vTranslateDeviation.x, 2), xiiArgF(s_vTranslateDeviation.y, 2),
-                        xiiArgF(s_vTranslateDeviation.z, 2));
+      sAction.SetFormat("Translate (deviation): {0} | {1} | {2}", xiiArgF(s_vTranslateDeviation.x, 2), xiiArgF(s_vTranslateDeviation.y, 2), xiiArgF(s_vTranslateDeviation.z, 2));
       break;
 
     case Mode::RotateX:
@@ -168,8 +167,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
       if (s_vScaleDeviation == xiiVec3(1.0f))
         return;
 
-      sAction.Format(
-        "Scale (deviation): {0} | {1} | {2}", xiiArgF(s_vScaleDeviation.x, 2), xiiArgF(s_vScaleDeviation.y, 2), xiiArgF(s_vScaleDeviation.z, 2));
+      sAction.SetFormat("Scale (deviation): {0} | {1} | {2}", xiiArgF(s_vScaleDeviation.x, 2), xiiArgF(s_vScaleDeviation.y, 2), xiiArgF(s_vScaleDeviation.z, 2));
       break;
 
     case Mode::UniformScale:

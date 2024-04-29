@@ -4,7 +4,6 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
-
 #include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
@@ -37,17 +36,17 @@ bool xiiMsaaResolvePass::GetRenderTargetDescriptions(const xiiView& view, const 
   auto pInput = inputs[m_PinInput.m_uiInputIndex];
   if (pInput != nullptr)
   {
-    if (pInput->m_uiSampleCount == xiiGALSampleCount::OneSample)
+    if (pInput->m_uiSampleCount == xiiGALMSAASampleCount::OneSample)
     {
       xiiLog::Error("Input is not a valid msaa target");
       return false;
     }
 
     m_bIsDepth        = xiiGALTextureFormat::IsDepthFormat(pInput->m_Format);
-    m_MsaaSampleCount = (xiiGALSampleCount::Enum)pInput->m_uiSampleCount;
+    m_MsaaSampleCount = (xiiGALMSAASampleCount::Enum)pInput->m_uiSampleCount;
 
     xiiGALTextureCreationDescription desc = *pInput;
-    desc.m_uiSampleCount                  = xiiGALSampleCount::OneSample;
+    desc.m_uiSampleCount                  = xiiGALMSAASampleCount::OneSample;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }
@@ -97,12 +96,12 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
     subresource.m_uiMipLevel   = 0;
     subresource.m_uiArraySlice = 0;
 
-    pCommandEncoder->ResolveTexture(pOutput->m_TextureHandle, subresource, pInput->m_TextureHandle, subresource);
+    pCommandEncoder->ResolveTextureSubResource(pInput->m_TextureHandle, subresource, pOutput->m_TextureHandle, subresource);
 
     if (renderViewContext.m_pCamera->IsStereoscopic())
     {
       subresource.m_uiArraySlice = 1;
-      pCommandEncoder->ResolveTexture(pOutput->m_TextureHandle, subresource, pInput->m_TextureHandle, subresource);
+      pCommandEncoder->ResolveTextureSubResource(pInput->m_TextureHandle, subresource, pOutput->m_TextureHandle, subresource);
     }
   }
 }

@@ -1,5 +1,6 @@
 #include <GraphicsD3D11/GraphicsD3D11PCH.h>
 
+#include <Foundation/Basics/Platform/Win/HResultUtils.h>
 #include <Foundation/Memory/MemoryUtils.h>
 
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
@@ -79,12 +80,7 @@ void xiiGALCommandListD3D11::EndPlatform()
 
 void xiiGALCommandListD3D11::ResetPlatform()
 {
-  XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
-
-  if (m_RecordingState == RecordingState::Recording)
-  {
-    XII_ASSERT_DEV(SUCCEEDED(m_pCommandList->FinishCommandList(0U, &m_pSubmittedCommandList)), "Failed to end command list for reset.");
-  }
+  XII_ASSERT_DEV(m_RecordingState == RecordingState::Ended, "Command list has not been ended by the GAL!");
 
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
 
@@ -99,12 +95,13 @@ void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipe
 {
   auto pPipelineStateD3D11 = static_cast<xiiGALPipelineStateD3D11*>(pPipelineState);
 
-#if 0
-  if (m_pPipelineState == (pPipelineStateD3D11 != nullptr ? pPipelineStateD3D11->GetPipelineState() : nullptr))
-    return;
+  m_pPipelineState             = pPipelineStateD3D11;
+  m_CommittedPrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
 
-  m_pPipelineState = (pPipelineStateD3D11 != nullptr ? pPipelineStateD3D11->GetPipelineState() : nullptr);
-#endif
+  if (m_pPipelineState != nullptr)
+  {
+    m_CommittedPrimitiveTopology = xiiD3D11TypeConversions::GetPrimitiveTopology(m_pPipelineState->GetDescription().m_GraphicsPipeline.m_PrimitiveTopology);
+  }
 }
 
 void xiiGALCommandListD3D11::SetStencilRefPlatform(xiiUInt32 uiStencilRef)
@@ -112,6 +109,8 @@ void xiiGALCommandListD3D11::SetStencilRefPlatform(xiiUInt32 uiStencilRef)
   ID3D11DepthStencilState* pD3D11DepthStencilState = m_pPipelineState ? m_pPipelineState->GetD3D11DepthStencilState() : nullptr;
 
   m_pCommandList->OMSetDepthStencilState(pD3D11DepthStencilState, uiStencilRef);
+
+  m_uiCommittedStencilReference = uiStencilRef;
 }
 
 void xiiGALCommandListD3D11::SetBlendFactorPlatform(const xiiColor& blendFactor)
@@ -129,6 +128,8 @@ void xiiGALCommandListD3D11::SetBlendFactorPlatform(const xiiColor& blendFactor)
       pD3D11BlendState = m_pPipelineState->GetD3D11BlendState();
     }
   }
+  m_CommittedBlendFactors      = blendFactor;
+  m_uiCommittedBlendSampleMask = uiSampleMask;
   m_pCommandList->OMSetBlendState(pD3D11BlendState, blendFactor.GetData(), uiSampleMask);
 }
 
@@ -200,13 +201,13 @@ void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, 
     }
 
     m_pCommittedIndexBuffer           = pIndexBufferD3D11->GetBuffer();
-    m_CommittedIndexBufferFormat      = indexFormat;
+    m_CommittedIndexBufferFormat      = d3d11IndexFormat;
     m_uiCommittedIndexDataStartOffset = static_cast<xiiUInt32>(uiByteOffset);
   }
   else
   {
     m_pCommittedIndexBuffer           = nullptr;
-    m_CommittedIndexBufferFormat      = xiiGALValueType::Undefined;
+    m_CommittedIndexBufferFormat      = DXGI_FORMAT_UNKNOWN;
     m_uiCommittedIndexDataStartOffset = static_cast<xiiUInt32>(uiByteOffset);
   }
   m_bCommittedIndexBufferUpToDate = false;
@@ -237,12 +238,12 @@ void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xii
     m_bCommittedVertexBufferUpToDate = false;
   }
 
-  for (xiiUInt32 i = uiStartSlot; i, pVertexBuffers.GetCount(); ++i)
+  for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
   {
     auto pVertexBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pVertexBuffers[i]);
 
     ID3D11Buffer* pD3D11VertexBuffer   = pVertexBufferD3D11 ? pVertexBufferD3D11->GetBuffer() : nullptr;
-    xiiUInt32     uiVertexBufferOffset = static_cast<xiiUInt32>(pByteOffsets[i]);
+    xiiUInt32     uiVertexBufferOffset = pByteOffsets.IsEmpty() ? 0U : static_cast<xiiUInt32>(pByteOffsets[i]);
     xiiUInt32     uiVertexBufferStride = pVertexBufferD3D11 ? pVertexBufferD3D11->GetDescription().m_uiElementByteStride : 0U;
 
     if (m_pCommittedVertexBuffers[i] != pD3D11VertexBuffer || m_CommittedVertexBufferOffsets[i] != uiVertexBufferOffset || m_CommittedVertexBufferStrides[i] != uiVertexBufferStride)
@@ -294,7 +295,7 @@ void xiiGALCommandListD3D11::BeginRenderPassPlatform(xiiGALRenderPass* pRenderPa
 
   // Set viewport to match frame buffer size.
   const auto&    framebufferDescription = pFramebuffer->GetDescription();
-  xiiGALViewport viewport               = {.m_fTopLeftX = 0.0f, .m_fTopLeftY = 0.0f, .m_fWidth = (float)framebufferDescription.m_FramebufferSize.width, .m_fHeight = (float)framebufferDescription.m_FramebufferSize.width};
+  xiiGALViewport viewport               = {.m_fTopLeftX = 0.0f, .m_fTopLeftY = 0.0f, .m_fWidth = (float)framebufferDescription.m_FramebufferSize.width, .m_fHeight = (float)framebufferDescription.m_FramebufferSize.height};
   SetViewports(xiiMakeArrayPtr(&viewport, 1U), framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height);
 
   m_pRenderPass  = static_cast<xiiGALRenderPassD3D11*>(pRenderPass);
@@ -502,14 +503,26 @@ xiiResult xiiGALCommandListD3D11::MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEn
   xiiUInt32 uiMapFlags    = 0U;
   xiiD3D11TypeConversions::GetMapTypeAndFlags(mapType, mapFlags, bufferMapType, uiMapFlags);
 
+  // We need to use the immediate context to handle other map types.
+  // If you call Map on a deferred context, you can only pass D3D11_MAP_WRITE_DISCARD, D3D11_MAP_WRITE_NO_OVERWRITE, or both to the MapType parameter.
+  // Other D3D11_MAP-typed values are not supported for a deferred context.
+  //
+  // But also, there is an issue with needing to first map the buffer with discard before no overwrite, perhaps we can resolve this later.
+  // D3D11 ERROR: ID3D11DeviceContext::Map: Returning D3D11_ERROR_DEFERRED_CONTEXT_MAP_WITHOUT_INITIAL_DISCARD, meaning that MapType must be D3D11_MAP_WRITE_DISCARD when Map is called for the first time with a particular Resource on a Deferred Context. [ RESOURCE_MANIPULATION ERROR #2097216: RESOURCE_MAP_WITHOUT_INITIAL_DISCARD]
+  auto pCommandList = m_pCommandList;
+  if (bufferMapType != D3D11_MAP_WRITE_DISCARD /*&& bufferMapType != D3D11_MAP_WRITE_NO_OVERWRITE*/)
+    pCommandList = static_cast<xiiGALDeviceD3D11*>(m_pDevice)->GetImmediateContext();
+
   D3D11_MAPPED_SUBRESOURCE mappedSubresource;
-  if (FAILED(m_pCommandList->Map(pBufferD3D11->GetBuffer(), 0U, bufferMapType, uiMapFlags, &mappedSubresource)))
+  if (FAILED(pCommandList->Map(pBufferD3D11->GetBuffer(), 0U, bufferMapType, uiMapFlags, &mappedSubresource)))
   {
     xiiLog::Error("Failed to map buffer '{0}'.", pBufferD3D11->GetDebugName());
     return XII_FAILURE;
   }
 
   pMappedData = mappedSubresource.pData;
+
+  m_MappedBuffers.Insert(pBufferD3D11, pCommandList);
 
   return XII_SUCCESS;
 }
@@ -520,7 +533,10 @@ xiiResult xiiGALCommandListD3D11::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xii
 
   XII_ASSERT_DEV(pBuffer != nullptr, "Invalid resource.");
 
-  m_pCommandList->Unmap(pBufferD3D11->GetBuffer(), 0U);
+  auto pCommandList = *m_MappedBuffers.GetValue(pBufferD3D11);
+  pCommandList->Unmap(pBufferD3D11->GetBuffer(), 0U);
+
+  m_MappedBuffers.Remove(pBufferD3D11);
 
   return XII_SUCCESS;
 }
@@ -632,7 +648,7 @@ void xiiGALCommandListD3D11::GenerateMipsPlatform(xiiGALTextureView* pTextureVie
   m_pCommandList->GenerateMips(static_cast<ID3D11ShaderResourceView*>(pTextureViewD3D11->GetTextureView()));
 }
 
-xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32 textureBox, xiiGALMappedTextureSubresource& mappedData)
+xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiGALTexture* pTexture, xiiGALTextureMipLevelData textureMipLevelData, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, xiiBoundingBoxU32* pTextureBox, xiiGALMappedTextureSubresource& mappedData)
 {
   auto pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
 
@@ -645,12 +661,20 @@ xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiGALTexture* p
 
   xiiUInt32 uiSubresource = D3D11CalcSubresource(textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
 
+  // We need to use the immediate context to handle other map types.
+  // If you call Map on a deferred context, you can only pass D3D11_MAP_WRITE_DISCARD, D3D11_MAP_WRITE_NO_OVERWRITE, or both to the MapType parameter.
+  // Other D3D11_MAP-typed values are not supported for a deferred context.
+  auto pCommandList = m_pCommandList;
+  if (textureMapType != D3D11_MAP_WRITE_DISCARD && textureMapType != D3D11_MAP_WRITE_NO_OVERWRITE)
+    pCommandList = static_cast<xiiGALDeviceD3D11*>(m_pDevice)->GetImmediateContext();
+
   D3D11_MAPPED_SUBRESOURCE mappedSubresource;
-  if (FAILED(m_pCommandList->Map(pTextureD3D11->GetTexture(), uiSubresource, textureMapType, uiMapFlags, &mappedSubresource)))
+  HRESULT                  hr = pCommandList->Map(pTextureD3D11->GetTexture(), uiSubresource, textureMapType, uiMapFlags, &mappedSubresource);
+  if (FAILED(hr))
   {
     // XII_ASSERT_DEV(hResult == DXGI_ERROR_WAS_STILL_DRAWING, "");
 
-    xiiLog::Error("Failed to map texture subresource.");
+    xiiLog::Error("Failed to map texture subresource: {0}", xiiHRESULTtoString(hr));
 
     mappedData = xiiGALMappedTextureSubresource();
     return XII_FAILURE;
@@ -659,6 +683,8 @@ xiiResult xiiGALCommandListD3D11::MapTextureSubresourcePlatform(xiiGALTexture* p
   mappedData.m_pData         = mappedSubresource.pData;
   mappedData.m_uiStride      = mappedSubresource.RowPitch;
   mappedData.m_uiDepthStride = mappedSubresource.DepthPitch;
+
+  m_MappedTextureSubresources.Insert(pTextureD3D11, pCommandList);
 
   return XII_SUCCESS;
 }
@@ -672,7 +698,10 @@ xiiResult xiiGALCommandListD3D11::UnmapTextureSubresourcePlatform(xiiGALTexture*
   const auto& textureDescription = pTextureD3D11->GetDescription();
   xiiUInt32   uiSubresource      = D3D11CalcSubresource(textureMipLevelData.m_uiMipLevel, textureMipLevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
 
-  m_pCommandList->Unmap(pTextureD3D11->GetTexture(), uiSubresource);
+  auto pCommandList = *m_MappedTextureSubresources.GetValue(pTextureD3D11);
+  pCommandList->Unmap(pTextureD3D11->GetTexture(), uiSubresource);
+
+  m_MappedTextureSubresources.Remove(pTextureD3D11);
 
   return XII_SUCCESS;
 }
@@ -716,7 +745,7 @@ void xiiGALCommandListD3D11::InsertDebugLabelPlatform(xiiStringView sName, const
 
 void xiiGALCommandListD3D11::FlushPlatform()
 {
-  XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "Flushing commandlist inside an active render pass is not allowed.");
+  // XII_ASSERT_DEV(m_hRenderPass.IsInvalidated(), "Flushing commandlist inside an active render pass is not allowed.");
 
   m_pCommandList->Flush();
 }
@@ -732,9 +761,9 @@ void xiiGALCommandListD3D11::InvalidateResources()
 {
   m_pPipelineState = nullptr;
 
-  xiiMemoryUtils::DefaultConstruct(m_pCommittedVertexBuffers);
-  xiiMemoryUtils::DefaultConstruct(m_CommittedVertexBufferStrides);
-  xiiMemoryUtils::DefaultConstruct(m_CommittedVertexBufferOffsets);
+  xiiMemoryUtils::Construct<ConstructAll>(m_pCommittedVertexBuffers);
+  xiiMemoryUtils::Construct<ConstructAll>(m_CommittedVertexBufferStrides);
+  xiiMemoryUtils::Construct<ConstructAll>(m_CommittedVertexBufferOffsets);
   m_bCommittedVertexBufferUpToDate = false;
   m_CommittedVertexBuffersRange.Reset();
 
@@ -743,22 +772,12 @@ void xiiGALCommandListD3D11::InvalidateResources()
   m_uiCommittedIndexDataStartOffset = 0U;
   m_bCommittedIndexBufferUpToDate   = false;
 
-  m_CommittedPrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
+  m_CommittedPrimitiveTopology  = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
+  m_CommittedBlendFactors       = xiiColor::White;
+  m_uiCommittedBlendSampleMask  = 0xFFFFFFFFU;
+  m_uiCommittedStencilReference = 0xFFU;
 
-  xiiMemoryUtils::DefaultConstruct(m_pCommittedShaders);
-
-  xiiMemoryUtils::DefaultConstruct(m_pCommittedConstantBuffers);
-  xiiMemoryUtils::DefaultConstruct(m_CommittedConstantBuffersRange);
-
-  xiiMemoryUtils::DefaultConstruct(m_pCommittedShaderResourceViews);
-  xiiMemoryUtils::DefaultConstruct(m_pResourcesForResourceViews);
-  xiiMemoryUtils::DefaultConstruct(m_CommittedShaderResourceViewsRange);
-
-  m_CommittedUnoderedAccessViews.Clear();
-  m_ResourcesForUnorderedAccessViews.Clear();
-  m_CommittedUnoderedAccessViewsRange.Reset();
-
-  xiiMemoryUtils::DefaultConstruct(m_pCommittedRenderTargets);
+  xiiMemoryUtils::Construct<ConstructAll>(m_pCommittedRenderTargets);
   m_uiBoundRenderTargetCount     = 0U;
   m_pCommittedDepthStencilTarget = nullptr;
 }
@@ -772,61 +791,75 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
   if (!m_pRenderPass || !m_pFramebuffer)
     return;
 
-  bool bFlushNeeded = false;
+  const auto& renderPassDescription  = m_pRenderPass->GetDescription();
+  const auto& framebufferDescription = m_pFramebuffer->GetDescription();
+  const auto& currentSubpass         = renderPassDescription.m_SubPasses[m_uiSubpassIndex];
 
-  const auto&     renderPassDescription        = m_pRenderPass->GetDescription();
-  const auto&     framebufferDescription       = m_pFramebuffer->GetDescription();
-  const xiiUInt32 uiFramebufferAttachmentCount = framebufferDescription.m_Attachments.GetCount();
-
-  const xiiGALTextureViewD3D11* pRenderTargetViews[XII_GAL_MAX_RENDERTARGET_COUNT] = {nullptr};
-  const xiiGALTextureViewD3D11* pDepthStencilView                                  = nullptr;
-
-  for (xiiUInt32 i = 0; i < uiFramebufferAttachmentCount; ++i)
+  const xiiGALTextureViewD3D11* pDepthStencilView = nullptr;
+  if (!currentSubpass.m_DepthStencilAttachment.IsEmpty())
   {
-    xiiGALTextureViewD3D11* pAttachmentViewD3D11 = static_cast<xiiGALTextureViewD3D11*>(m_pDevice->GetTextureView(framebufferDescription.m_Attachments[i]));
-    const auto&             viewDescription      = pAttachmentViewD3D11->GetDescription();
+    const auto& attachmentDescription = currentSubpass.m_DepthStencilAttachment.PeekBack();
 
-    if (pAttachmentViewD3D11 != nullptr)
+    if (attachmentDescription.m_uiAttachmentIndex != XII_GAL_ATTACHMENT_UNUSED)
     {
-      auto pTexture = pAttachmentViewD3D11->GetTexture();
+      pDepthStencilView              = static_cast<xiiGALTextureViewD3D11*>(m_pDevice->GetTextureView(framebufferDescription.m_Attachments[attachmentDescription.m_uiAttachmentIndex]));
+      m_pCommittedDepthStencilTarget = static_cast<ID3D11DepthStencilView*>(pDepthStencilView->GetTextureView());
 
-      bFlushNeeded |= UnsetResourceViews(pTexture);
-      bFlushNeeded |= UnsetUnorderedAccessViews(pTexture);
-
-      if (viewDescription.m_ViewType == xiiGALTextureViewType::DepthStencil || viewDescription.m_ViewType == xiiGALTextureViewType::ReadOnlyDepthStencil)
-      {
-        XII_ASSERT_DEV(pDepthStencilView == nullptr, "Expected only one Depth Stencil attachment.");
-
-        pDepthStencilView = pAttachmentViewD3D11;
-      }
-      else
-      {
-        pRenderTargetViews[i] = pAttachmentViewD3D11;
-      }
+      XII_ASSERT_DEV((pDepthStencilView->GetDescription().m_ViewType == xiiGALTextureViewType::DepthStencil || pDepthStencilView->GetDescription().m_ViewType == xiiGALTextureViewType::ReadOnlyDepthStencil), "Expected xiiGALTextureViewType::DepthStencil or xiiGALTextureViewType::ReadOnlyDepthStencil at the subpass depth attachment render target index.");
     }
   }
 
-  if (bFlushNeeded)
-  {
-    FlushDeferredStateChanges().IgnoreResult();
-    FlushPlatform();
-  }
+  const xiiGALTextureViewD3D11* pAttachmentViews[XII_GAL_MAX_RENDERTARGET_COUNT] = {};
+  xiiGAL::ModifiedRange         boundRenderTargetsRange;
 
-  for (xiiUInt32 i = 0; i < uiFramebufferAttachmentCount; ++i)
+  for (xiiUInt32 i = 0; i < currentSubpass.m_RenderTargetAttachments.GetCount(); ++i)
   {
-    if (pRenderTargetViews[i] != nullptr)
+    const auto& attachmentDescription = currentSubpass.m_RenderTargetAttachments[i];
+
+    if (attachmentDescription.m_uiAttachmentIndex == XII_GAL_ATTACHMENT_UNUSED)
+      continue;
+
+    auto pRenderTargetView = static_cast<xiiGALTextureViewD3D11*>(m_pDevice->GetTextureView(framebufferDescription.m_Attachments[attachmentDescription.m_uiAttachmentIndex]));
+
+    XII_ASSERT_DEV((pRenderTargetView->GetDescription().m_ViewType == xiiGALTextureViewType::RenderTarget), "Expected xiiGALTextureViewType::RenderTarget at the subpass color attachment render target index.");
+
+    pAttachmentViews[i]          = pRenderTargetView;
+    m_pCommittedRenderTargets[i] = static_cast<ID3D11RenderTargetView*>(pRenderTargetView->GetTextureView());
+
+    boundRenderTargetsRange.SetToIncludeValue(i);
+  }
+  m_uiBoundRenderTargetCount = boundRenderTargetsRange.GetCount();
+
+  // Unbind these attachments that will be used for output by the subpass.
+  // There is no need to unbind textures from output as the new subpass attachments
+  // will be committed as render target/depth stencil anyway, so these that can be used for
+  // input will be unbound.
+  {
+    bool bFlushNeeded = false;
+
+    if (m_pPipelineState != nullptr && pDepthStencilView != nullptr)
     {
-      m_pCommittedRenderTargets[i] = static_cast<ID3D11RenderTargetView*>(pRenderTargetViews[i]->GetTextureView());
+      bFlushNeeded |= m_pPipelineState->UnsetResourceViews(pDepthStencilView->GetTexture());
+      bFlushNeeded |= m_pPipelineState->UnsetUnorderedAccessViews(pDepthStencilView->GetTexture());
+    }
+
+    for (xiiUInt32 i = boundRenderTargetsRange.m_uiMin; i < boundRenderTargetsRange.GetCount(); ++i)
+    {
+      if (m_pPipelineState != nullptr && pAttachmentViews[i] != nullptr)
+      {
+        bFlushNeeded |= m_pPipelineState->UnsetResourceViews(pAttachmentViews[i]->GetTexture());
+        bFlushNeeded |= m_pPipelineState->UnsetUnorderedAccessViews(pAttachmentViews[i]->GetTexture());
+      }
+    }
+
+    if (bFlushNeeded)
+    {
+      FlushDeferredStateChanges().IgnoreResult();
+      FlushPlatform();
     }
   }
-  m_uiBoundRenderTargetCount = uiFramebufferAttachmentCount;
 
-  if (pDepthStencilView != nullptr)
-  {
-    m_pCommittedDepthStencilTarget = static_cast<ID3D11DepthStencilView*>(pDepthStencilView->GetTextureView());
-  }
-
-  m_pCommandList->OMSetRenderTargets(xiiMath::Max(uiFramebufferAttachmentCount, uiOldRenderTargetCount), m_pCommittedRenderTargets, m_pCommittedDepthStencilTarget);
+  m_pCommandList->OMSetRenderTargets(xiiMath::Max(boundRenderTargetsRange.GetCount(), uiOldRenderTargetCount), m_pCommittedRenderTargets, m_pCommittedDepthStencilTarget);
 
   // Clear render targets.
   for (xiiUInt32 i = 0; i < renderPassDescription.m_Attachments.GetCount(); ++i)
@@ -854,7 +887,7 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
 
 void xiiGALCommandListD3D11::ResetRenderTargets()
 {
-  xiiMemoryUtils::DefaultConstruct(m_pCommittedRenderTargets);
+  xiiMemoryUtils::Construct<ConstructAll>(m_pCommittedRenderTargets);
 
   m_pCommittedDepthStencilTarget = nullptr;
   m_uiBoundRenderTargetCount     = 0U;
@@ -862,43 +895,9 @@ void xiiGALCommandListD3D11::ResetRenderTargets()
   m_pCommandList->OMSetRenderTargets(0, nullptr, nullptr);
 }
 
-bool xiiGALCommandListD3D11::UnsetResourceViews(const xiiGALResource* pResource)
+void xiiGALCommandListD3D11::ReleaseInternalCommandList()
 {
-  bool bResult = false;
-
-  for (xiiUInt32 uiStage = 0U; uiStage < xiiGALShaderStage::ENUM_COUNT; ++uiStage)
-  {
-    for (xiiUInt32 uiSlot = 0U; uiSlot < m_pResourcesForResourceViews[uiStage].GetCount(); ++uiSlot)
-    {
-      if (m_pResourcesForResourceViews[uiStage][uiSlot] == pResource)
-      {
-        m_pResourcesForResourceViews[uiStage][uiSlot]    = nullptr;
-        m_pCommittedShaderResourceViews[uiStage][uiSlot] = nullptr;
-        m_CommittedShaderResourceViewsRange[uiStage].SetToIncludeValue(uiSlot);
-
-        bResult = true;
-      }
-    }
-  }
-  return bResult;
-}
-
-bool xiiGALCommandListD3D11::UnsetUnorderedAccessViews(const xiiGALResource* pResource)
-{
-  bool bResult = false;
-
-  for (xiiUInt32 uiSlot = 0U; uiSlot < m_ResourcesForUnorderedAccessViews.GetCount(); ++uiSlot)
-  {
-    if (m_ResourcesForUnorderedAccessViews[uiSlot] == pResource)
-    {
-      m_ResourcesForUnorderedAccessViews[uiSlot] = nullptr;
-      m_CommittedUnoderedAccessViews[uiSlot]     = nullptr;
-      m_CommittedUnoderedAccessViewsRange.SetToIncludeValue(uiSlot);
-
-      bResult = true;
-    }
-  }
-  return bResult;
+  XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
 }
 
 xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> xiiGALCommandListD3D11::BeginDisjointQuery()
@@ -919,6 +918,38 @@ xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> xiiGALCommandListD3D11:
 
 xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
 {
+  // Commit primitive topology.
+  m_pCommandList->IASetPrimitiveTopology(m_CommittedPrimitiveTopology);
+
+  // Commit vertex buffers.
+  if (m_CommittedVertexBuffersRange.IsValid())
+  {
+    const xiiUInt32 uiStartSlot = m_CommittedVertexBuffersRange.m_uiMin;
+    const xiiUInt32 uiNumSlots  = m_CommittedVertexBuffersRange.GetCount();
+
+    m_pCommandList->IASetVertexBuffers(uiStartSlot, uiNumSlots, m_pCommittedVertexBuffers + uiStartSlot, m_CommittedVertexBufferStrides + uiStartSlot, m_CommittedVertexBufferOffsets + uiStartSlot);
+
+    m_CommittedVertexBuffersRange.Reset();
+
+    m_bCommittedVertexBufferUpToDate = true;
+  }
+
+  // Commit index buffer
+  if (!m_bCommittedIndexBufferUpToDate)
+  {
+    m_pCommandList->IASetIndexBuffer(m_pCommittedIndexBuffer, m_CommittedIndexBufferFormat, m_uiCommittedIndexDataStartOffset);
+
+    m_bCommittedIndexBufferUpToDate = true;
+  }
+
+  // Commit graphics pipeline states.
+  m_pCommandList->IASetInputLayout(m_pPipelineState->GetD3D11InputLayout());
+  m_pCommandList->OMSetBlendState(m_pPipelineState->GetD3D11BlendState(), m_CommittedBlendFactors.GetData(), m_uiCommittedBlendSampleMask);
+  m_pCommandList->RSSetState(m_pPipelineState->GetD3D11RasterizerState());
+  m_pCommandList->OMSetDepthStencilState(m_pPipelineState->GetD3D11DepthStencilState(), m_uiCommittedStencilReference);
+
+  XII_SUCCEED_OR_RETURN(m_pPipelineState->CommitShaderResources(this));
+
   return XII_SUCCESS;
 }
 

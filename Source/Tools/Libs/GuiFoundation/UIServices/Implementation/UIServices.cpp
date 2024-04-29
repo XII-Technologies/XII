@@ -114,7 +114,7 @@ const QIcon& xiiQtUiServices::GetCachedIconResource(xiiStringView sIdentifier, x
       const xiiColorGammaUB color8 = svgTintColor;
 
       xiiStringBuilder rep;
-      rep.Format("#{}{}{}", xiiArgI((int)color8.r, 2, true, 16), xiiArgI((int)color8.g, 2, true, 16), xiiArgI((int)color8.b, 2, true, 16));
+      rep.SetFormat("#{}{}{}", xiiArgI((int)color8.r, 2, true, 16), xiiArgI((int)color8.g, 2, true, 16), xiiArgI((int)color8.b, 2, true, 16));
 
       sContent.ReplaceAll_NoCase("#ffffff", rep);
     }

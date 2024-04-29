@@ -106,7 +106,7 @@ XII_FORCE_INLINE xiiGALShaderCreationDescription::~xiiGALShaderCreationDescripti
   }
 }
 
-XII_FORCE_INLINE bool xiiGALShaderCreationDescription::HasByteCodeForStage(xiiBitflags<xiiGALShaderStage> stage) const
+XII_FORCE_INLINE bool xiiGALShaderCreationDescription::HasByteCodeForStage(xiiGALShaderStage::Enum stage) const
 {
   if (stage == xiiGALShaderStage::Unknown)
     return false;

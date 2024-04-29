@@ -25,7 +25,7 @@ public:
   xiiShaderPermutationResource();
 
   xiiGALShaderHandle          GetGALShader() const { return m_hShader; }
-  const xiiGALShaderByteCode* GetShaderByteCode(xiiBitflags<xiiGALShaderStage> stage) const { return m_ByteCodes[xiiGALShaderStage::GetStageIndex(stage)]; }
+  const xiiGALShaderByteCode* GetShaderByteCode(xiiBitflags<xiiGALShaderStage> stage) const { return m_ByteCodes[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)stage.GetValue())]; }
 
   xiiGALPipelineResourceSignatureHandle GetPipelineResourceSignature() const { return m_hPipelineResourceSignature; }
 

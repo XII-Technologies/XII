@@ -364,7 +364,7 @@ void xiiQtDocumentWindow::SaveWindowLayout()
     showNormal();
 
   xiiStringBuilder sGroup;
-  sGroup.Format("DocumentWnd_{0}", GetWindowLayoutGroupName());
+  sGroup.SetFormat("DocumentWnd_{0}", GetWindowLayoutGroupName());
 
   QSettings Settings;
   Settings.beginGroup(xiiMakeQString(sGroup.GetView()));
@@ -383,7 +383,7 @@ void xiiQtDocumentWindow::RestoreWindowLayout()
   xiiQtScopedUpdatesDisabled _(this);
 
   xiiStringBuilder sGroup;
-  sGroup.Format("DocumentWnd_{0}", GetWindowLayoutGroupName());
+  sGroup.SetFormat("DocumentWnd_{0}", GetWindowLayoutGroupName());
 
   {
     QSettings Settings;
@@ -434,8 +434,8 @@ xiiStatus xiiQtDocumentWindow::SaveDocument()
     xiiStatus res = m_pDocument->SaveDocument();
 
     xiiStringBuilder s, s2;
-    s.Format("Failed to save document:\n'{0}'", m_pDocument->GetDocumentPath());
-    s2.Format("Successfully saved document:\n'{0}'", m_pDocument->GetDocumentPath());
+    s.SetFormat("Failed to save document:\n'{0}'", m_pDocument->GetDocumentPath());
+    s2.SetFormat("Successfully saved document:\n'{0}'", m_pDocument->GetDocumentPath());
 
     xiiQtUiServices::MessageBoxStatus(res, s, s2);
 

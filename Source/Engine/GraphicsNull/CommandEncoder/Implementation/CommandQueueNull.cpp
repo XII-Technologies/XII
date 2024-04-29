@@ -1,18 +1,24 @@
 #include <GraphicsNull/GraphicsNullPCH.h>
 
+#include <GraphicsNull/CommandEncoder/CommandListNull.h>
 #include <GraphicsNull/CommandEncoder/CommandQueueNull.h>
 #include <GraphicsNull/Device/DeviceNull.h>
 
 xiiGALCommandQueueNull::xiiGALCommandQueueNull(xiiGALDeviceNull* pDeviceNull, const xiiGALCommandQueueCreationDescription& creationDescription) :
   xiiGALCommandQueue(pDeviceNull, creationDescription)
 {
+  xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
+  m_pDefaultCommandList                                       = XII_DEFAULT_NEW(xiiGALCommandListNull, pDeviceNull, commandListDescription);
 }
 
-xiiGALCommandQueueNull::~xiiGALCommandQueueNull() = default;
-
-xiiGALCommandList* xiiGALCommandQueueNull::BeginCommandList()
+xiiGALCommandQueueNull::~xiiGALCommandQueueNull()
 {
-  return nullptr;
+  m_pDefaultCommandList.Clear();
+}
+
+xiiGALCommandList* xiiGALCommandQueueNull::BeginCommandList(xiiStringView sScopeName)
+{
+  return m_pDefaultCommandList.Borrow();
 }
 
 void xiiGALCommandQueueNull::SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset)

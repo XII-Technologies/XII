@@ -892,6 +892,9 @@ void xiiMaterialResource::UpdateConstantBuffer(xiiShaderPermutationResource* pSh
   xiiTempHashedString                    sConstantBufferName("xiiMaterialConstants");
   const xiiGALShaderResourceDescription* pBinding = pShaderPermutation->GetShaderByteCode(xiiGALShaderStage::Pixel)->GetDescription(sConstantBufferName);
 
+  if (pBinding == nullptr)
+    return;
+
   auto pCachedValues = GetOrUpdateCachedValues();
 
   m_iLastConstantsUpdated = m_iLastConstantsModified;

@@ -144,73 +144,88 @@ public:
 
       m_pDevice->BeginPipeline("TextureSample", m_hSwapChain);
 
-      xiiGALPass* pGALPass = m_pDevice->BeginPass("xiiTextureSampleMainPass");
+      xiiGALCommandQueue* pGALCommandQueue = m_pDevice->GetGraphicsQueue();
 
       // Must always retrieve the current swapchain render target
       const xiiGALSwapChain*  pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
-      xiiGALTextureViewHandle hBBRTV            = m_pDevice->GetTexture(pPrimarySwapChain->GetRenderTargets().m_hRTs[0])->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+      xiiGALTextureViewHandle hBBRTV            = m_pDevice->GetTexture(pPrimarySwapChain->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
       xiiGALTextureViewHandle hBBDSV            = m_pDevice->GetTexture(m_hDepthStencilTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
 
-      xiiGALRenderingSetup renderingSetup;
-      renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hBBRTV).SetDepthStencilTarget(hBBDSV);
-      renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
-      renderingSetup.m_bClearDepth             = true;
-
-      xiiGALGraphicsCommandEncoder* pCommandEncoder = xiiRenderContext::GetDefaultInstance()->BeginRendering(pGALPass, renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight));
-
-      xiiMat4 Proj = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_vCameraPosition.x + -(float)g_uiWindowWidth * 0.5f, m_vCameraPosition.x + (float)g_uiWindowWidth * 0.5f, m_vCameraPosition.y + -(float)g_uiWindowHeight * 0.5f, m_vCameraPosition.y + (float)g_uiWindowHeight * 0.5f, -1.0f, 1.0f);
-
-      xiiRenderContext::GetDefaultInstance()->BindConstantBuffer(XII_STRINGIZE(xiiTextureSampleConstants), m_hSampleConstants);
-      xiiRenderContext::GetDefaultInstance()->BindMaterial(m_hMaterial);
-
-      xiiMat4 mTransform = xiiMat4::IdentityMatrix();
-
-      xiiInt32 iLeftBound  = (xiiInt32)xiiMath::Floor((m_vCameraPosition.x - g_uiWindowWidth * 0.5f) / 100.0f);
-      xiiInt32 iLowerBound = (xiiInt32)xiiMath::Floor((m_vCameraPosition.y - g_uiWindowHeight * 0.5f) / 100.0f);
-      xiiInt32 iRightBound = (xiiInt32)xiiMath::Ceil((m_vCameraPosition.x + g_uiWindowWidth * 0.5f) / 100.0f) + 1;
-      xiiInt32 iUpperBound = (xiiInt32)xiiMath::Ceil((m_vCameraPosition.y + g_uiWindowHeight * 0.5f) / 100.0f) + 1;
-
-      iLeftBound  = xiiMath::Max(iLeftBound, -g_iMaxHalfExtent);
-      iRightBound = xiiMath::Min(iRightBound, g_iMaxHalfExtent);
-      iLowerBound = xiiMath::Max(iLowerBound, -g_iMaxHalfExtent);
-      iUpperBound = xiiMath::Min(iUpperBound, g_iMaxHalfExtent);
-
-      xiiStringBuilder sResourceName;
-
-      for (xiiInt32 y = iLowerBound; y < iUpperBound; ++y)
+      // Clear attachments.
       {
-        for (xiiInt32 x = iLeftBound; x < iRightBound; ++x)
-        {
-          mTransform.SetTranslationVector(xiiVec3((float)x * 100.0f, (float)y * 100.0f, 0));
+        xiiGALRenderingSetup renderingSetup;
+        renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hBBRTV).SetDepthStencilTarget(hBBDSV);
+        renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
+        renderingSetup.m_bClearDepth             = true;
 
-          // Update the constant buffer
-          {
-            xiiTextureSampleConstants& cb = m_pSampleConstantBuffer->GetDataForWriting();
-            cb.ModelMatrix                = mTransform;
-            cb.ViewProjectionMatrix       = Proj;
-          }
-
-          sResourceName.Printf("Loaded_%+03i_%+03i_D", x, y);
-
-          xiiTexture2DResourceHandle hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(sResourceName);
-
-          // force immediate loading
-          if (g_bForceImmediateLoading)
-            xiiResourceLock<xiiTexture2DResource> l(hTexture, xiiResourceAcquireMode::BlockTillLoaded);
-
-          xiiRenderContext::GetDefaultInstance()->BindTexture2D("DiffuseTexture", hTexture);
-          xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(m_hQuadMeshBuffer);
-          xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer().IgnoreResult();
-        }
+        xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiTextureSampleMainPass");
+        xiiRenderContext::GetDefaultInstance()->BeginRenderPass();
+        xiiRenderContext::GetDefaultInstance()->EndRenderPass();
+        xiiRenderContext::GetDefaultInstance()->EndRendering();
       }
 
-      xiiRenderContext::GetDefaultInstance()->EndRendering();
+      {
+        xiiGALRenderingSetup renderingSetup;
+        renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hBBRTV).SetDepthStencilTarget(hBBDSV);
+        renderingSetup.m_uiRenderTargetClearMask = 0x0U;
+        renderingSetup.m_bClearDepth             = false;
 
-      m_pDevice->EndPass(pGALPass);
+        xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight));
+
+        xiiMat4 Proj = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_vCameraPosition.x + -(float)g_uiWindowWidth * 0.5f, m_vCameraPosition.x + (float)g_uiWindowWidth * 0.5f, m_vCameraPosition.y + -(float)g_uiWindowHeight * 0.5f, m_vCameraPosition.y + (float)g_uiWindowHeight * 0.5f, -1.0f, 1.0f);
+
+        xiiRenderContext::GetDefaultInstance()->BindConstantBuffer(XII_STRINGIZE(xiiTextureSampleConstants), m_hSampleConstants);
+        xiiRenderContext::GetDefaultInstance()->BindMaterial(m_hMaterial);
+
+        xiiMat4 mTransform = xiiMat4::IdentityMatrix();
+
+        xiiInt32 iLeftBound  = (xiiInt32)xiiMath::Floor((m_vCameraPosition.x - g_uiWindowWidth * 0.5f) / 100.0f);
+        xiiInt32 iLowerBound = (xiiInt32)xiiMath::Floor((m_vCameraPosition.y - g_uiWindowHeight * 0.5f) / 100.0f);
+        xiiInt32 iRightBound = (xiiInt32)xiiMath::Ceil((m_vCameraPosition.x + g_uiWindowWidth * 0.5f) / 100.0f) + 1;
+        xiiInt32 iUpperBound = (xiiInt32)xiiMath::Ceil((m_vCameraPosition.y + g_uiWindowHeight * 0.5f) / 100.0f) + 1;
+
+        iLeftBound  = xiiMath::Max(iLeftBound, -g_iMaxHalfExtent);
+        iRightBound = xiiMath::Min(iRightBound, g_iMaxHalfExtent);
+        iLowerBound = xiiMath::Max(iLowerBound, -g_iMaxHalfExtent);
+        iUpperBound = xiiMath::Min(iUpperBound, g_iMaxHalfExtent);
+
+        xiiStringBuilder sResourceName;
+
+        for (xiiInt32 y = iLowerBound; y < iUpperBound; ++y)
+        {
+          for (xiiInt32 x = iLeftBound; x < iRightBound; ++x)
+          {
+            mTransform.SetTranslationVector(xiiVec3((float)x * 100.0f, (float)y * 100.0f, 0));
+
+            // Update the constant buffer
+            {
+              xiiTextureSampleConstants& cb = m_pSampleConstantBuffer->GetDataForWriting();
+              cb.ModelMatrix                = mTransform;
+              cb.ViewProjectionMatrix       = Proj;
+            }
+
+            sResourceName.SetPrintf("Loaded_%+03i_%+03i_D", x, y);
+
+            xiiTexture2DResourceHandle hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(sResourceName);
+
+            // force immediate loading
+            if (g_bForceImmediateLoading)
+              xiiResourceLock<xiiTexture2DResource> l(hTexture, xiiResourceAcquireMode::BlockTillLoaded);
+
+            xiiRenderContext::GetDefaultInstance()->BindTexture2D("DiffuseTexture", hTexture);
+            xiiRenderContext::GetDefaultInstance()->BindMeshBuffer(m_hQuadMeshBuffer);
+            xiiRenderContext::GetDefaultInstance()->DrawMeshBuffer().IgnoreResult();
+          }
+        }
+
+        xiiRenderContext::GetDefaultInstance()->EndRendering();
+      }
 
       m_pDevice->EndPipeline(m_hSwapChain);
 
       m_pDevice->EndFrame();
+
+      xiiRenderContext::GetDefaultInstance()->ResetContextState();
     }
 
     // Make sure telemetry is sent out regularly.
@@ -270,7 +285,9 @@ public:
 
     XII_VERIFY(m_pDirectoryWatcher->OpenDirectory(sProjectDirResolved, xiiDirectoryWatcher::Watch::Writes | xiiDirectoryWatcher::Watch::Subdirectories).Succeeded(), "Failed to watch project directory.");
 
-#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
+    constexpr const char* szDefaultGraphicsAPI = "D3D11";
+#elif BUILDSYSTEM_ENABLE_D3D12_SUPPORT
     constexpr const char* szDefaultGraphicsAPI = "D3D12";
 #elif BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
     constexpr const char* szDefaultGraphicsAPI = "Vulkan";
@@ -393,7 +410,7 @@ public:
       {
         for (xiiInt32 x = -g_iMaxHalfExtent; x < g_iMaxHalfExtent; ++x)
         {
-          sResourceName.Printf("Loaded_%+03i_%+03i_D", x, y);
+          sResourceName.SetPrintf("Loaded_%+03i_%+03i_D", x, y);
 
           xiiTexture2DResourceHandle hTexture = xiiResourceManager::LoadResource<xiiTexture2DResource>(sResourceName);
 

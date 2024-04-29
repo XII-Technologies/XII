@@ -299,8 +299,8 @@ void xiiCustomMeshRenderer::GetSupportedRenderDataTypes(xiiHybridArray<const xii
 
 void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext, const xiiRenderPipelinePass* pPass, const xiiRenderDataBatch& batch) const
 {
-  xiiRenderContext*     pRenderContext     = renderViewContext.m_pRenderContext;
-  xiiGALCommandEncoder* pGALCommandEncoder = pRenderContext->GetCommandEncoder();
+  xiiRenderContext*  pRenderContext  = renderViewContext.m_pRenderContext;
+  xiiGALCommandList* pGALCommandList = pRenderContext->GetCommandList();
 
   xiiInstanceData* pInstanceData = pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);
   pInstanceData->BindResources(pRenderContext);
@@ -351,7 +351,7 @@ void xiiCustomMeshRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
     pInstanceData->UpdateInstanceData(pRenderContext, 1);
 
     const auto& desc = pBuffer->GetDescriptor();
-    pBuffer->UpdateGpuBuffer(pGALCommandEncoder);
+    pBuffer->UpdateGpuBuffer(pGALCommandList);
 
     // redo this after the primitive count has changed
     pRenderContext->BindMeshBuffer(pRenderData->m_hMesh);

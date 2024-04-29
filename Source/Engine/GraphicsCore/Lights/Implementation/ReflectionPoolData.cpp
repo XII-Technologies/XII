@@ -311,6 +311,10 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
     desc.m_CPUAccessFlags     = xiiGALCPUAccessFlag::Read;
 
     m_hFallbackReflectionSpecularTexture = pDevice->CreateTexture(desc);
+    if (!m_hFallbackReflectionSpecularTexture.IsInvalidated())
+    {
+      pDevice->GetTexture(m_hFallbackReflectionSpecularTexture)->SetDebugName("Reflection Fallback Specular Texture");
+    }
   }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
@@ -406,6 +410,7 @@ void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
     desc.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
 
     m_hSkyIrradianceTexture = pDevice->CreateTexture(desc);
+    pDevice->GetTexture(m_hSkyIrradianceTexture)->SetDebugName("Sky Irradiance Texture");
   }
 }
 

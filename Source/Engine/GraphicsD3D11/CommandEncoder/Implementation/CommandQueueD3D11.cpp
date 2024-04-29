@@ -39,7 +39,7 @@ void xiiGALCommandQueueD3D11::SetDebugNamePlatform(xiiStringView sName)
   }
 }
 
-xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
+xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList(xiiStringView sScopeName)
 {
   // Try to find a command list that has been reset.
   for (xiiUInt32 i = 0; i < m_CommandLists.GetCount(); ++i)
@@ -48,7 +48,7 @@ xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
 
     if (pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Reset)
     {
-      pCommandList->Begin();
+      pCommandList->Begin(sScopeName);
 
       return pCommandList;
     }
@@ -62,10 +62,10 @@ xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList()
   m_CommandLists.PushFront(pCommandListD3D11);
 
   xiiStringBuilder sb;
-  sb.Format("Command List {}", m_CommandLists.GetCount());
+  sb.SetFormat("Command List {}", m_CommandLists.GetCount());
   pCommandListD3D11->SetDebugName(sb);
 
-  pCommandListD3D11->Begin();
+  pCommandListD3D11->Begin(sScopeName);
 
   return pCommandListD3D11;
 }
@@ -99,7 +99,7 @@ void xiiGALCommandQueueD3D11::ReleaseSwapChainCommanListReferences()
 
     if (pCommandListReferenceD3D11->GetRecordingState() != xiiGALCommandList::RecordingState::Reset)
     {
-      pCommandListReferenceD3D11->Reset();
+      pCommandListReferenceD3D11->ReleaseInternalCommandList();
     }
   }
   m_SwapChainCommandListReferences.Clear();

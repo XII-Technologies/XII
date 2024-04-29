@@ -403,21 +403,6 @@ void xiiGALSwapChainD3D11::Present(xiiGALDevice* pDevice)
       break;
   }
   m_pSwapChain->Present(uiSyncInterval, 0);
-
-  // We now handle discarding.
-  {
-    auto hBackBuffer = m_hBackBufferTexture;
-    if (!hBackBuffer.IsInvalidated())
-    {
-      auto pTextureD3D11     = static_cast<xiiGALTextureD3D11*>(pDeviceD3D11->GetTexture(hBackBuffer));
-      auto pTextureViewD3D11 = static_cast<xiiGALTextureViewD3D11*>(pDeviceD3D11->GetTextureView(pTextureD3D11->GetDefaultView(xiiGALTextureViewType::RenderTarget)));
-
-      if (pTextureViewD3D11)
-      {
-        pDeviceD3D11->GetImmediateContext()->DiscardView(pTextureViewD3D11->GetTextureView());
-      }
-    }
-  }
 }
 
 xiiResult xiiGALSwapChainD3D11::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)

@@ -22,7 +22,7 @@ static void FileSystemEventHandler(const xiiFileSystem::FileEvent& e)
       }
 
       xiiStringBuilder sName;
-      sName.Format("IO/DataDirs/Dir{0}", xiiArgI(it.Value(), 2, true));
+      sName.SetFormat("IO/DataDirs/Dir{0}", xiiArgI(it.Value(), 2, true));
 
       xiiStats::SetStat(sName.GetData(), e.m_sFileOrDirectory);
     }
@@ -36,7 +36,7 @@ static void FileSystemEventHandler(const xiiFileSystem::FileEvent& e)
         break;
 
       xiiStringBuilder sName;
-      sName.Format("IO/DataDirs/Dir{0}", xiiArgI(it.Value(), 2, true));
+      sName.SetFormat("IO/DataDirs/Dir{0}", xiiArgI(it.Value(), 2, true));
 
       xiiStats::RemoveStat(sName.GetData());
     }

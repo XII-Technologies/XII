@@ -78,14 +78,14 @@ bool xiiAOPass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayP
       return false;
     }
 
-    if (pDepthInput->m_uiSampleCount != xiiGALSampleCount::OneSample)
+    if (pDepthInput->m_uiSampleCount != xiiGALMSAASampleCount::OneSample)
     {
       xiiLog::Error("'{0}' input must be resolved", GetName());
       return false;
     }
 
     xiiGALTextureCreationDescription desc = *pDepthInput;
-    desc.m_Format                         = xiiGALTextureFormat::R16UNormalized;
+    desc.m_Format                         = xiiGALTextureFormat::RG16Float;
     desc.m_BindFlags.Add(xiiGALBindFlags::RenderTarget);
     desc.m_BindFlags.Remove(xiiGALBindFlags::DepthStencil);
 
@@ -109,9 +109,8 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
     return;
   }
 
-  xiiGALDevice* pDevice  = xiiGALDevice::GetDefaultDevice();
-  xiiGALPass*   pGALPass = pDevice->BeginPass(GetName());
-  XII_SCOPE_EXIT(pDevice->EndPass(pGALPass));
+  xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*GetName()*/);
 
   xiiUInt32 uiWidth  = pDepthInput->m_Desc.m_Size.width;
   xiiUInt32 uiHeight = pDepthInput->m_Desc.m_Size.height;
@@ -177,7 +176,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
       }
     }
 
-    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG16Float, xiiGALSampleCount::OneSample, pOutput->m_Desc.m_uiArraySizeOrDepth, true);
+    tempSSAOTexture = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG16Float, xiiGALMSAASampleCount::OneSample, pOutput->m_Desc.m_uiArraySizeOrDepth, true);
   }
 
   // Mip map passes
@@ -205,7 +204,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
 
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hOutputView);
-      renderViewContext.m_pRenderContext->BeginRendering(pGALPass, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "SSAOMipMaps", renderViewContext.m_pCamera->IsStereoscopic());
+      renderViewContext.m_pRenderContext->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "SSAOMipMaps", renderViewContext.m_pCamera->IsStereoscopic());
 
       xiiDownscaleDepthConstants* constants = xiiRenderContext::GetConstantBufferData<xiiDownscaleDepthConstants>(m_hDownscaleConstantBuffer);
       constants->PixelSize                  = pixelSize;
@@ -246,7 +245,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   {
     xiiGALRenderingSetup renderingSetup;
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(tempSSAOTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALPass, renderViewContext, renderingSetup, "SSAO", renderViewContext.m_pCamera->IsStereoscopic());
+    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALCommandQueue, renderViewContext, renderingSetup, "SSAO", renderViewContext.m_pCamera->IsStereoscopic());
 
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
     renderViewContext.m_pRenderContext->BindShader(m_hSSAOShader);
@@ -266,7 +265,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   {
     xiiGALRenderingSetup renderingSetup;
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALPass, renderViewContext, renderingSetup, "Blur", renderViewContext.m_pCamera->IsStereoscopic());
+    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALCommandQueue, renderViewContext, renderingSetup, "Blur", renderViewContext.m_pCamera->IsStereoscopic());
 
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
     renderViewContext.m_pRenderContext->BindShader(m_hBlurShader);

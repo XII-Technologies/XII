@@ -77,13 +77,13 @@ xiiResult xiiGALBufferViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderRe
 
   const auto& bufferDescription = pBufferD3D11->GetDescription();
 
-  if (bufferDescription.m_Mode == xiiGALBufferMode::Raw || m_Description.m_Format.m_ValueType == xiiGALValueType::Undefined)
+  if (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format.m_ValueType == xiiGALValueType::Undefined)
   {
     // Raw buffer view.
     xiiUInt32 uiElementByteStride = 4U;
 
     XII_ASSERT_DEV((m_Description.m_uiByteOffset % 16U) == 0, "Byte offset ({0}) is not a multiple of 16.", m_Description.m_uiByteOffset);
-    XII_ASSERT_DEV((m_Description.m_uiByteWidth % m_Description.m_uiByteOffset) == 0, "Byte width ({0}) is not a multiple of 16.", m_Description.m_uiByteWidth);
+    XII_ASSERT_DEV((m_Description.m_uiByteWidth % uiElementByteStride) == 0, "Byte width ({0}) is not a multiple of 16.", m_Description.m_uiByteWidth);
 
     shaderResourceViewDescription.BufferEx.FirstElement = static_cast<xiiUInt32>(m_Description.m_uiByteOffset / uiElementByteStride);
     shaderResourceViewDescription.BufferEx.NumElements  = static_cast<xiiUInt32>(m_Description.m_uiByteWidth / uiElementByteStride);
@@ -93,7 +93,7 @@ xiiResult xiiGALBufferViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderRe
   }
   else
   {
-    if ((bufferDescription.m_Mode == xiiGALBufferMode::Formatted) || (bufferDescription.m_BindFlags == xiiGALBufferMode::Raw && m_Description.m_Format.m_ValueType != xiiGALValueType::Undefined))
+    if ((bufferDescription.m_Mode == xiiGALBufferMode::Formatted) || (bufferDescription.m_Mode == xiiGALBufferMode::Raw && m_Description.m_Format.m_ValueType != xiiGALValueType::Undefined))
     {
       shaderResourceViewDescription.Format = xiiD3D11TypeConversions::GetDXGIFormatFromType(m_Description.m_Format.m_ValueType, m_Description.m_Format.m_uiComponents, m_Description.m_Format.m_bIsNormalized);
     }

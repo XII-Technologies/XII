@@ -228,21 +228,21 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
       {
         pPaste->setEnabled(false);
         xiiStringBuilder sTemp;
-        sTemp.Format("Cannot convert clipboard and property content between arrays and members.");
+        sTemp.SetFormat("Cannot convert clipboard and property content between arrays and members.");
         pPaste->setToolTip(sTemp.GetData());
       }
       else if (bEnumerationMissmatch || (!content.m_Value.CanConvertTo(m_pProp->GetSpecificType()->GetVariantType()) && content.m_Type != m_pProp->GetSpecificType()->GetTypeName()))
       {
         pPaste->setEnabled(false);
         xiiStringBuilder sTemp;
-        sTemp.Format("Cannot convert clipboard of type '{}' to property of type '{}'", content.m_Type, m_pProp->GetSpecificType()->GetTypeName());
+        sTemp.SetFormat("Cannot convert clipboard of type '{}' to property of type '{}'", content.m_Type, m_pProp->GetSpecificType()->GetTypeName());
         pPaste->setToolTip(sTemp.GetData());
       }
       else if (clamped.Failed())
       {
         pPaste->setEnabled(false);
         xiiStringBuilder sTemp;
-        sTemp.Format("The member property '{}' has a xiiClampValueAttribute but xiiReflectionUtils::ClampValue failed.", m_pProp->GetPropertyName());
+        sTemp.SetFormat("The member property '{}' has a xiiClampValueAttribute but xiiReflectionUtils::ClampValue failed.", m_pProp->GetPropertyName());
       }
 
       connect(pPaste, &QAction::triggered, this, [this, content]() {
@@ -459,7 +459,7 @@ void xiiQtPropertyWidget::PropertyChangedHandler(const xiiPropertyEvent& ed)
     case xiiPropertyEvent::Type::SingleValueChanged:
     {
       xiiStringBuilder sTemp;
-      sTemp.Format("Change Property '{0}'", xiiTranslate(ed.m_pProperty->GetPropertyName().GetData(tmp)));
+      sTemp.SetFormat("Change Property '{0}'", xiiTranslate(ed.m_pProperty->GetPropertyName().GetData(tmp)));
       m_pObjectAccessor->StartTransaction(sTemp);
 
       xiiStatus res;
@@ -482,7 +482,7 @@ void xiiQtPropertyWidget::PropertyChangedHandler(const xiiPropertyEvent& ed)
     case xiiPropertyEvent::Type::BeginTemporary:
     {
       xiiStringBuilder sTemp;
-      sTemp.Format("Change Property '{0}'", xiiTranslate(ed.m_pProperty->GetPropertyName().GetData(tmp)));
+      sTemp.SetFormat("Change Property '{0}'", xiiTranslate(ed.m_pProperty->GetPropertyName().GetData(tmp)));
       m_pObjectAccessor->BeginTemporaryCommands(sTemp);
     }
     break;
@@ -1554,9 +1554,9 @@ void xiiQtPropertyStandardTypeContainerWidget::UpdateElement(xiiUInt32 index)
 
   xiiStringBuilder sTitle;
   if (m_pProp->GetCategory() == xiiPropertyCategory::Map)
-    sTitle.Format("{0}", m_Keys[index].ConvertTo<xiiString>());
+    sTitle.SetFormat("{0}", m_Keys[index].ConvertTo<xiiString>());
   else
-    sTitle.Format("[{0}]", m_Keys[index].ConvertTo<xiiString>());
+    sTitle.SetFormat("[{0}]", m_Keys[index].ConvertTo<xiiString>());
 
   elem.m_pSubGroup->SetTitle(sTitle);
   m_pGrid->SetCollapseState(elem.m_pSubGroup);
@@ -1614,7 +1614,7 @@ void xiiQtPropertyTypeContainerWidget::UpdateElement(xiiUInt32 index)
     // Label
     {
       xiiStringBuilder sTitle;
-      sTitle.Format("[{0}] - {1}", m_Keys[index].ConvertTo<xiiString>(), xiiTranslate(pCommonType->GetTypeName()));
+      sTitle.SetFormat("[{0}] - {1}", m_Keys[index].ConvertTo<xiiString>(), xiiTranslate(pCommonType->GetTypeName()));
 
       if (auto pInDev = pCommonType->GetAttributeByType<xiiInDevelopmentAttribute>())
       {
