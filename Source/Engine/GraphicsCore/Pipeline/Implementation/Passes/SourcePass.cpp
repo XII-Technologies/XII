@@ -155,6 +155,18 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     XII_ASSERT_DEV(!m_hRenderPass.IsInvalidated(), "Failed to create render pass.");
   }
 
+  if (auto pFramebuffer = pDevice->GetFramebuffer(m_hFramebuffer))
+  {
+    const bool  bIsDepthAttachment        = xiiGALTextureFormat::IsDepthFormat(pOutput->m_Desc.m_Format);
+    const auto& hAttachmentView           = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
+
+    if (pFramebuffer->GetDescription().m_Attachments.PeekBack() != hAttachmentView)
+    {
+      pDevice->DestroyFramebuffer(m_hFramebuffer);
+      m_hFramebuffer.Invalidate();
+    }
+  }
+
   if (m_hFramebuffer.IsInvalidated())
   {
     const bool  bIsDepthAttachment        = xiiGALTextureFormat::IsDepthFormat(pOutput->m_Desc.m_Format);
@@ -180,7 +192,7 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
   {
     auto& clearValue = renderPassDescription.m_ClearValues.ExpandAndGetRef();
 
-    clearValue.m_TextureFormat            = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDescription().m_Format;
+    clearValue.m_TextureFormat            = pOutput->m_Desc.m_Format;
     clearValue.m_DepthStencil.m_fDepth    = 1.0f;
     clearValue.m_DepthStencil.m_uiStencil = 0U;
   }
@@ -188,7 +200,7 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
   {
     auto& clearValue = renderPassDescription.m_ClearValues.ExpandAndGetRef();
 
-    clearValue.m_TextureFormat = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDescription().m_Format;
+    clearValue.m_TextureFormat = pOutput->m_Desc.m_Format;
     clearValue.m_ClearColor    = m_ClearColor;
   }
 
@@ -199,12 +211,6 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     pCommandList->EndRenderPass();
     pGraphicsQueue->Submit(pCommandList);
   }
-
-  pDevice->DestroyFramebuffer(m_hFramebuffer);
-  m_hFramebuffer.Invalidate();
-
-  pDevice->DestroyRenderPass(m_hRenderPass);
-  m_hRenderPass.Invalidate();
 }
 
 xiiResult xiiSourcePass::Serialize(xiiStreamWriter& inout_stream) const
