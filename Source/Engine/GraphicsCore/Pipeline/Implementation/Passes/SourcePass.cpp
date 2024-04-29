@@ -194,20 +194,17 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
 
   if (auto pGraphicsQueue = pDevice->GetGraphicsQueue())
   {
-    auto       pCommandList = pGraphicsQueue->BeginCommandList();
-    const bool bDebugGroup  = !GetName().IsEmpty();
-
-    if (bDebugGroup)
-      pCommandList->BeginDebugGroup(GetName());
-
+    auto pCommandList = pGraphicsQueue->BeginCommandList(GetName());
     pCommandList->BeginRenderPass(renderPassDescription);
     pCommandList->EndRenderPass();
-
-    if (bDebugGroup)
-      pCommandList->EndDebugGroup();
-
     pGraphicsQueue->Submit(pCommandList);
   }
+
+  pDevice->DestroyFramebuffer(m_hFramebuffer);
+  m_hFramebuffer.Invalidate();
+
+  pDevice->DestroyRenderPass(m_hRenderPass);
+  m_hRenderPass.Invalidate();
 }
 
 xiiResult xiiSourcePass::Serialize(xiiStreamWriter& inout_stream) const
