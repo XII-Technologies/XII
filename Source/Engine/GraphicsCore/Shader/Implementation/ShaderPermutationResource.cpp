@@ -137,7 +137,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
     // since it contains other useful information (resource bindings), that we need for shader binding
     m_ByteCodes[stage] = pStageBin->GetByteCode();
 
-    XII_ASSERT_DEV(pStageBin->m_pGALByteCode->m_ShaderStage == xiiGALShaderStage::GetStageFlag(stage), "Invalid shader stage! Expected stage '{0}', but loaded data is for stage '{1}'", xiiGALShaderStage::Names[stage], xiiGALShaderStage::Names[xiiGALShaderStage::GetStageIndex(pStageBin->m_pGALByteCode->m_ShaderStage)]);
+    XII_ASSERT_DEV(pStageBin->m_pGALByteCode->m_ShaderStage == xiiGALShaderStage::GetStageFlag(stage), "Invalid shader stage! Expected stage '{0}', but loaded data is for stage '{1}'", xiiGALShaderStage::Names[stage], xiiGALShaderStage::Names[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)pStageBin->m_pGALByteCode->m_ShaderStage.GetValue())]);
 
     ShaderDesc.m_ByteCodes[stage] = pStageBin->m_pGALByteCode;
 
@@ -151,6 +151,8 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
       resourceSignature.m_ResourceType          = resource.m_Type;
       resourceSignature.m_ShaderStages          = resource.m_ShaderStages;
       resourceSignature.m_uiArraySize           = resource.m_uiArraySize;
+      resourceSignature.m_uiBindSlot            = resource.m_uiBindIndex;
+      resourceSignature.m_uiBindSet             = resource.m_uiDescriptorSet;
       resourceSignature.m_ResourceVariableType  = xiiGALShaderResourceVariableType::Mutable;
       resourceSignature.m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None;
     }
