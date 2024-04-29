@@ -1192,7 +1192,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALMSAASampleCount
 
   enum Enum : StorageType
   {
-    None             = 0U,  ///< No samples.
     OneSample        = 1U,  ///< One sample.
     TwoSamples       = 2U,  ///< Two samples.
     FourSamples      = 4U,  ///< Four samples.

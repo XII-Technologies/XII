@@ -73,7 +73,7 @@ o
 		s %Name{"ColorSource"}
 		Vec2 %Node::Pos{f{0x4ED5A8C4,0x82D88EC3}}
 		Uuid %Output{u4{17090548153543632830,13319031493794220399}}
-		s %SampleCount{"xiiGALSampleCount::FourSamples"}
+		s %SampleCount{"xiiGALMSAASampleCount::FourSamples"}
 	}
 }
 o
@@ -292,7 +292,7 @@ o
 		s %Name{"DepthStencil"}
 		Vec2 %Node::Pos{f{0x5E87DFC4,0x0E2548C3}}
 		Uuid %Output{u4{11878451819111558318,16597073390835690512}}
-		s %SampleCount{"xiiGALSampleCount::FourSamples"}
+		s %SampleCount{"xiiGALMSAASampleCount::FourSamples"}
 	}
 }
 o
@@ -653,7 +653,7 @@ o
 		s %ParentTypeName{"xiiEnumBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiGALSampleCount"}
+		s %TypeName{"xiiGALMSAASampleCount"}
 		u3 %TypeVersion{1}
 	}
 }
