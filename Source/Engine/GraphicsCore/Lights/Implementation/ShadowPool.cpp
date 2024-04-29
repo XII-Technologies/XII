@@ -265,7 +265,7 @@ struct xiiShadowPool::Data
       desc.m_Size.height        = s_uiShadowAtlasTextureHeight;
       desc.m_uiArraySizeOrDepth = 1;
       desc.m_uiMipLevels        = 1;
-      desc.m_uiSampleCount      = xiiGALSampleCount::OneSample;
+      desc.m_uiSampleCount      = xiiGALMSAASampleCount::OneSample;
       desc.m_BindFlags          = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
 
       m_hShadowAtlasTexture = xiiGALDevice::GetDefaultDevice()->CreateTexture(desc);
@@ -983,14 +983,12 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
   if (s_pData->m_hShadowAtlasTexture.IsInvalidated() || s_pData->m_hShadowDataBuffer.IsInvalidated())
     return;
 
-  xiiGALDevice* pDevice  = xiiGALDevice::GetDefaultDevice();
-  xiiGALPass*   pGALPass = pDevice->BeginPass("Shadow Atlas");
+  xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*"Shadow Atlas"*/);
 
-  xiiGALRenderingSetup renderingSetup;
-  renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(s_pData->m_hShadowAtlasTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
-  renderingSetup.m_bClearDepth = true;
+  auto pCommandList = pGALCommandQueue->BeginCommandList();
 
-  auto pCommandEncoder = pGALPass->BeginRendering(renderingSetup);
+  pCommandList->ClearDepthStencilView(pDevice->GetTexture(s_pData->m_hShadowAtlasTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 1.0f, 0U);
 
   xiiUInt32 uiDataIndex      = xiiRenderWorld::GetDataIndexForRendering();
   auto&     packedShadowData = s_pData->m_PackedShadowData[uiDataIndex];
@@ -998,11 +996,20 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
   {
     XII_PROFILE_SCOPE("Shadow Data Buffer Update");
 
-    pCommandEncoder->UpdateBuffer(s_pData->m_hShadowDataBuffer, 0, packedShadowData.GetByteArrayPtr());
-  }
+    void* pMappedData = nullptr;
+    if (pCommandList->MapBuffer(s_pData->m_hShadowDataBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+    {
+      auto pDataToUpdate = packedShadowData.GetByteArrayPtr();
+      memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
 
-  pGALPass->EndRendering(pCommandEncoder);
-  pDevice->EndPass(pGALPass);
+      pCommandList->UnmapBuffer(s_pData->m_hShadowDataBuffer, xiiGALMapType::Write).AssertSuccess();
+    }
+    else
+    {
+      xiiLog::Error("Failed to map buffer to update content.");
+    }
+  }
+  pGALCommandQueue->Submit(pCommandList);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ShadowPool);

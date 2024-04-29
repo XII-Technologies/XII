@@ -60,7 +60,19 @@ void xiiSpriteRenderer::RenderBatch(const xiiRenderViewContext& renderViewContex
 
   if (m_SpriteData.GetCount() > 0) // Instance data might be empty if all render data was filtered.
   {
-    pContext->GetCommandEncoder()->UpdateBuffer(hSpriteData, 0, m_SpriteData.GetByteArrayPtr());
+    auto pCommandList = pContext->GetCommandList();
+
+    void* pMappedData = nullptr;
+    if (pCommandList->MapBuffer(hSpriteData, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+    {
+      memcpy(pMappedData, m_SpriteData.GetData(), m_SpriteData.GetCount());
+
+      pCommandList->UnmapBuffer(hSpriteData, xiiGALMapType::Write).AssertSuccess();
+    }
+    else
+    {
+      xiiLog::Error("Failed to map buffer to update content.");
+    }
 
     pContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, m_SpriteData.GetCount() * 2);
     pContext->DrawMeshBuffer().IgnoreResult();

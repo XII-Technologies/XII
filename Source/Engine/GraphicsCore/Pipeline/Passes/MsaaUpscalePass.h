@@ -21,6 +21,6 @@ protected:
   xiiRenderPipelineNodeInputPin  m_PinInput;
   xiiRenderPipelineNodeOutputPin m_PinOutput;
 
-  xiiEnum<xiiGALSampleCount> m_MsaaMode = xiiGALSampleCount::OneSample;
-  xiiShaderResourceHandle    m_hShader;
+  xiiEnum<xiiGALMSAASampleCount> m_MsaaMode = xiiGALMSAASampleCount::OneSample;
+  xiiShaderResourceHandle        m_hShader;
 };

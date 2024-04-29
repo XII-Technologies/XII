@@ -67,16 +67,16 @@ void xiiForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiGALPass* pGALPass = pDevice->BeginPass(GetName());
+  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*GetName()*/);
 
-  SetupResources(pGALPass, renderViewContext, inputs, outputs);
+  SetupResources(pGALCommandQueue, renderViewContext, inputs, outputs);
   SetupPermutationVars(renderViewContext);
   SetupLighting(renderViewContext);
 
   RenderObjects(renderViewContext);
 
   renderViewContext.m_pRenderContext->EndRendering();
-  pDevice->EndPass(pGALPass);
+  pGALCommandQueue->Submit(renderViewContext.m_pRenderContext->GetCommandList());
 }
 
 xiiResult xiiForwardRenderPass::Serialize(xiiStreamWriter& inout_stream) const
@@ -95,7 +95,7 @@ xiiResult xiiForwardRenderPass::Deserialize(xiiStreamReader& inout_stream)
   return XII_SUCCESS;
 }
 
-void xiiForwardRenderPass::SetupResources(xiiGALPass* pGALPass, const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiForwardRenderPass::SetupResources(xiiGALCommandQueue* pGALCommandQueue, const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -111,7 +111,7 @@ void xiiForwardRenderPass::SetupResources(xiiGALPass* pGALPass, const xiiRenderV
     renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(inputs[m_PinDepthStencil.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
   }
 
-  renderViewContext.m_pRenderContext->BeginRendering(pGALPass, std::move(renderingSetup), renderViewContext.m_pViewData->m_ViewPortRect, "", renderViewContext.m_pCamera->IsStereoscopic());
+  renderViewContext.m_pRenderContext->BeginRendering(pGALCommandQueue, std::move(renderingSetup), renderViewContext.m_pViewData->m_ViewPortRect, "", renderViewContext.m_pCamera->IsStereoscopic());
 }
 
 void xiiForwardRenderPass::SetupPermutationVars(const xiiRenderViewContext& renderViewContext)

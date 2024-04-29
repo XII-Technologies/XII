@@ -105,7 +105,7 @@ void xiiWindowOutputTargetXR::RenderCompanionView(bool bThrottleCompanionView)
   {
     pDevice->BeginPipeline("VR CompanionView", m_pCompanionWindowOutputTarget->m_hSwapChain);
 
-    auto pPass = pDevice->BeginPass("Blit CompanionView");
+    auto pCommandQueue = pDevice->GetGraphicsQueue();
 
     const xiiGALSwapChain* pSwapChain             = xiiGALDevice::GetDefaultDevice()->GetSwapChain(m_pCompanionWindowOutputTarget->m_hSwapChain);
     xiiGALTextureHandle    hCompanionRenderTarget = pSwapChain->GetBackBufferTexture();
@@ -116,7 +116,7 @@ void xiiWindowOutputTargetXR::RenderCompanionView(bool bThrottleCompanionView)
     xiiGALRenderingSetup renderingSetup;
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hRenderTargetView);
 
-    m_pRenderContext->BeginRendering(pPass, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y));
+    m_pRenderContext->BeginRendering(pCommandQueue, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Blit CompanionView");
 
     m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, 1);
     m_pRenderContext->BindConstantBuffer("xiiVRCompanionViewConstants", m_hCompanionConstantBuffer);
@@ -130,8 +130,6 @@ void xiiWindowOutputTargetXR::RenderCompanionView(bool bThrottleCompanionView)
     m_pRenderContext->DrawMeshBuffer().IgnoreResult();
 
     m_pRenderContext->EndRendering();
-
-    pDevice->EndPass(pPass);
 
     pDevice->EndPipeline(m_pCompanionWindowOutputTarget->m_hSwapChain);
     m_pRenderContext->ResetContextState();

@@ -70,7 +70,7 @@ void xiiCopyTexturePass::Execute(const xiiRenderViewContext& renderViewContext, 
   {
     auto pCommandEncoder = xiiRenderContext::BeginPassAndComputeScope(renderViewContext, GetName());
 
-    pCommandEncoder->CopyTexture(pOutput->m_TextureHandle, pInput->m_TextureHandle);
+    pCommandEncoder->CopyTexture(pInput->m_TextureHandle, pOutput->m_TextureHandle);
   }
 }
 

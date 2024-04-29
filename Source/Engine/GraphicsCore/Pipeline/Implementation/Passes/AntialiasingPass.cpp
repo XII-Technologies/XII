@@ -37,15 +37,15 @@ bool xiiAntialiasingPass::GetRenderTargetDescriptions(const xiiView& view, const
   auto pInput = inputs[m_PinInput.m_uiInputIndex];
   if (pInput != nullptr)
   {
-    if (pInput->m_uiSampleCount == xiiGALSampleCount::TwoSamples)
+    if (pInput->m_uiSampleCount == xiiGALMSAASampleCount::TwoSamples)
     {
       m_sMsaaSampleCount.Assign("MSAA_SAMPLES_TWO");
     }
-    else if (pInput->m_uiSampleCount == xiiGALSampleCount::FourSamples)
+    else if (pInput->m_uiSampleCount == xiiGALMSAASampleCount::FourSamples)
     {
       m_sMsaaSampleCount.Assign("MSAA_SAMPLES_FOUR");
     }
-    else if (pInput->m_uiSampleCount == xiiGALSampleCount::EightSamples)
+    else if (pInput->m_uiSampleCount == xiiGALMSAASampleCount::EightSamples)
     {
       m_sMsaaSampleCount.Assign("MSAA_SAMPLES_EIGHT");
     }
@@ -56,7 +56,7 @@ bool xiiAntialiasingPass::GetRenderTargetDescriptions(const xiiView& view, const
     }
 
     xiiGALTextureCreationDescription desc = *pInput;
-    desc.m_uiSampleCount                  = xiiGALSampleCount::OneSample;
+    desc.m_uiSampleCount                  = xiiGALMSAASampleCount::OneSample;
 
     outputs[m_PinOutput.m_uiOutputIndex] = desc;
   }

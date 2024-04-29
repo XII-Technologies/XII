@@ -85,9 +85,8 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
     return;
   }
 
-  xiiGALDevice* pDevice  = xiiGALDevice::GetDefaultDevice();
-  xiiGALPass*   pGALPass = pDevice->BeginPass(GetName());
-  XII_SCOPE_EXIT(pDevice->EndPass(pGALPass));
+  xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*GetName()*/);
 
   xiiUInt32 uiWidth        = pColorInput->m_Desc.m_Size.width;
   xiiUInt32 uiHeight       = pColorInput->m_Desc.m_Size.height;
@@ -111,12 +110,12 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
     targetSizes.PushBack(xiiVec2((float)uiWidth, (float)uiHeight));
     auto uiSliceCount = pColorOutput->m_Desc.m_uiArraySizeOrDepth;
 
-    tempDownscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG11B10Float, xiiGALSampleCount::OneSample, uiSliceCount));
+    tempDownscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG11B10Float, xiiGALMSAASampleCount::OneSample, uiSliceCount));
 
     // biggest upscale target is the output and lowest is not needed
     if (i > 0 && i < uiNumBlurPasses - 1)
     {
-      tempUpscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG11B10Float, xiiGALSampleCount::OneSample, uiSliceCount));
+      tempUpscaleTextures.PushBack(xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(uiWidth, uiHeight, xiiGALTextureFormat::RG11B10Float, xiiGALMSAASampleCount::OneSample, uiSliceCount));
     }
     else
     {
@@ -155,7 +154,7 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
 
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(hOutput)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-      renderViewContext.m_pRenderContext->BeginRendering(pGALPass, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Downscale", renderViewContext.m_pCamera->IsStereoscopic());
+      renderViewContext.m_pRenderContext->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Downscale", renderViewContext.m_pCamera->IsStereoscopic());
 
       xiiColor tintColor = (i == uiNumBlurPasses - 1) ? xiiColor(m_OuterTintColor) : xiiColor::White;
       UpdateConstantBuffer(xiiVec2(1.0f).CompDiv(targetSize), tintColor);
@@ -203,7 +202,7 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
 
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(hOutput)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-      renderViewContext.m_pRenderContext->BeginRendering(pGALPass, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Upscale", renderViewContext.m_pCamera->IsStereoscopic());
+      renderViewContext.m_pRenderContext->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Upscale", renderViewContext.m_pCamera->IsStereoscopic());
 
       xiiColor tintColor;
       float    fPass = (float)i;

@@ -304,11 +304,11 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  auto                                   pGALPass = pDevice->BeginPass("Sky Irradiance Texture Update");
+  auto                                   pGALCommandQueue = pDevice->GetGraphicsQueue();
   xiiHybridArray<xiiGALTextureHandle, 4> atlasToClear;
 
   {
-    auto pGALCommandEncoder = pGALPass->BeginCompute();
+    auto pGALCommandEncoder = pGALCommandQueue->BeginCommandList("Sky Irradiance Texture Update");
     for (xiiUInt32 i = 0; i < skyIrradianceStorage.GetCount(); ++i)
     {
       if ((uiWorldHasSkyLight & XII_BIT(i)) == 0 && (uiSkyIrradianceChanged & XII_BIT(i)) != 0)
@@ -330,10 +330,12 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
         }
       }
     }
-    pGALPass->EndCompute(pGALCommandEncoder);
+    pGALCommandQueue->Submit(pGALCommandEncoder);
   }
 
   {
+    auto pGALCommandEncoder = pGALCommandQueue->BeginCommandList("ClearSkySpecular");
+
     // Clear specular sky reflection to black.
     const xiiUInt32 uiNumMipMaps = GetMipLevels();
     for (xiiGALTextureHandle atlas : atlasToClear)
@@ -356,15 +358,12 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
           renderingSetup.m_ClearColor              = xiiColor(0, 0, 0, 1);
           renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
 
-          auto pGALCommandEncoder = pGALPass->BeginRendering(renderingSetup, "ClearSkySpecular");
-          pGALCommandEncoder->ClearRenderTarget(hRenderTarget, xiiColor::Black);
-          pGALPass->EndRendering(pGALCommandEncoder);
+          pGALCommandEncoder->ClearRenderTargetView(hRenderTarget, xiiColor::Black);
         }
       }
     }
+    pGALCommandQueue->Submit(pGALCommandEncoder);
   }
-
-  pDevice->EndPass(pGALPass);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ReflectionPool);

@@ -265,8 +265,7 @@ xiiGALCommandList* xiiRenderContext::BeginCompute(xiiGALCommandQueue* pCommandQu
 {
   XII_ASSERT_DEV(m_hCurrentRenderPass.IsInvalidated() && m_hCurrentFramebuffer.IsInvalidated(), "Render pass and frame buffer are still active.");
 
-  /// \todo Set debug name
-  auto pGALCommandList = pCommandQueue->BeginCommandList();
+  auto pGALCommandList = pCommandQueue->BeginCommandList(sName);
 
   m_pCommandQueue   = pCommandQueue;
   m_pGALCommandList = pGALCommandList;

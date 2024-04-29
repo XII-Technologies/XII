@@ -188,12 +188,24 @@ void xiiGridRenderer::RenderBatch(const xiiRenderViewContext& renderViewContext,
     xiiUInt32         uiNumLineVertices = m_Vertices.GetCount();
     const GridVertex* pLineData         = m_Vertices.GetData();
 
+    auto pGALCommandList = pRenderContext->GetCommandList();
     while (uiNumLineVertices > 0)
     {
       const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, s_uiLineVerticesPerBatch);
       XII_ASSERT_DEBUG(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
 
-      pRenderContext->GetCommandEncoder()->UpdateBuffer(m_hVertexBuffer, 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
+      void* pMappedData = nullptr;
+      if (pGALCommandList->MapBuffer(m_hVertexBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+      {
+        auto pDataToUpdate = xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray();
+        memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+        pGALCommandList->UnmapBuffer(m_hVertexBuffer, xiiGALMapType::Write).AssertSuccess();
+      }
+      else
+      {
+        xiiLog::Error("Failed to map buffer to update content.");
+      }
 
       pRenderContext->BindMeshBuffer(m_hVertexBuffer, xiiGALBufferHandle(), &m_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
       pRenderContext->DrawMeshBuffer().IgnoreResult();

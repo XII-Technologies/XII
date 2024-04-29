@@ -110,9 +110,14 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
     {
       task->m_bHasNewData = false;
 
-      xiiGALDevice* pGALDevice      = xiiGALDevice::GetDefaultDevice();
-      xiiGALPass*   pGALPass        = pGALDevice->BeginPass("BakingDebugViewUpdate");
-      auto          pCommandEncoder = pGALPass->BeginCompute();
+      xiiGALDevice*       pGALDevice       = xiiGALDevice::GetDefaultDevice();
+      xiiGALCommandQueue* pGALCommandQueue = pGALDevice->GetComputeQueue();
+      if (!pGALCommandQueue)
+      {
+        pGALCommandQueue = pGALDevice->GetGraphicsQueue();
+      }
+
+      xiiGALCommandList* pGALCommandList = pGALCommandQueue->BeginCommandList("BakingDebugViewUpdate");
 
       xiiBoundingBoxU32 destBox;
       destBox.m_vMin.SetZero();
@@ -122,10 +127,9 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
       sourceData.m_pData    = task->m_PixelData.GetData();
       sourceData.m_uiStride = task->m_uiWidth * sizeof(xiiColorGammaUB);
 
-      pCommandEncoder->UpdateTexture(pComponent->m_hDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
+      pGALCommandList->UpdateTexture(pComponent->m_hDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
 
-      pGALPass->EndCompute(pCommandEncoder);
-      pGALDevice->EndPass(pGALPass);
+      pGALCommandQueue->Submit(pGALCommandList);
     }
   }
 }
@@ -453,7 +457,7 @@ void xiiBakedProbesComponent::RenderDebugOverlay()
     desc.m_Size.height = uiHeight;
     desc.m_Format      = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
     desc.m_BindFlags   = xiiGALBindFlags::ShaderResource;
-    desc.m_Usage       = xiiGALResourceUsage::Immutable;
+    desc.m_Usage       = xiiGALResourceUsage::Default;
 
     m_hDebugViewTexture = pDevice->CreateTexture(desc);
   }

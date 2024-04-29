@@ -20,8 +20,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiDepthOnlyPass, 1, xiiRTTIDefaultAllocator<xi
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiDepthOnlyPass::xiiDepthOnlyPass(const char* szName) :
-  xiiRenderPipelinePass(szName, true)
+xiiDepthOnlyPass::xiiDepthOnlyPass(xiiStringView sName) :
+  xiiRenderPipelinePass(sName, true)
 {
 }
 

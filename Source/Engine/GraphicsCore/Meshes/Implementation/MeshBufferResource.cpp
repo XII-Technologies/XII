@@ -569,38 +569,18 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiMeshBufferResource, xiiMeshBufferResourceDe
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  {
-    xiiGALBufferCreationDescription desc;
-    desc.m_uiElementByteStride = descriptor.GetVertexDataSize();
-    desc.m_uiSize              = desc.m_uiElementByteStride * descriptor.GetVertexCount();
-    desc.m_ResourceUsage       = xiiGALResourceUsage::Immutable;
-    desc.m_BindFlags           = xiiGALBindFlags::VertexBuffer;
+  m_hVertexBuffer = xiiGALDeviceUtilities::CreateVertexBuffer(pDevice, descriptor.GetVertexDataSize(), descriptor.GetVertexCount(), descriptor.GetVertexBufferData().GetArrayPtr());
 
-    xiiGALBufferData initData;
-    initData.m_pData      = descriptor.GetVertexBufferData().GetData();
-    initData.m_uiDataSize = descriptor.GetVertexBufferData().GetArrayPtr().GetCount();
-    m_hVertexBuffer       = pDevice->CreateBuffer(desc, &initData);
-  }
-
-  // xiiStringBuilder sName;
-  // sName.SetFormat("{0} Vertex Buffer", GetResourceDescription());
-  // pDevice->GetBuffer(m_hVertexBuffer)->SetDebugName(sName);
+  xiiStringBuilder sName;
+  sName.SetFormat("{0} Vertex Buffer", GetResourceDescription());
+  pDevice->GetBuffer(m_hVertexBuffer)->SetDebugName(sName);
 
   if (descriptor.HasIndexBuffer())
   {
-    xiiGALBufferCreationDescription desc;
-    desc.m_uiElementByteStride = xiiGALValueType::GetSize(descriptor.Uses32BitIndices() ? xiiGALValueType::UInt32 : xiiGALValueType::UInt16);
-    desc.m_uiSize              = desc.m_uiElementByteStride * m_uiPrimitiveCount * xiiGALPrimitiveTopology::VerticesPerPrimitive(m_Topology);
-    desc.m_ResourceUsage       = xiiGALResourceUsage::Immutable;
-    desc.m_BindFlags           = xiiGALBindFlags::IndexBuffer;
+    m_hIndexBuffer = xiiGALDeviceUtilities::CreateIndexBuffer(pDevice, descriptor.Uses32BitIndices() ? xiiGALDeviceUtilities::IndexType::UInt : xiiGALDeviceUtilities::IndexType::UShort, m_uiPrimitiveCount * xiiGALPrimitiveTopology::VerticesPerPrimitive(m_Topology), descriptor.GetIndexBufferData());
 
-    xiiGALBufferData initData;
-    initData.m_pData      = descriptor.GetIndexBufferData().GetData();
-    initData.m_uiDataSize = descriptor.GetIndexBufferData().GetCount();
-    m_hIndexBuffer        = pDevice->CreateBuffer(desc, &initData);
-
-    // sName.SetFormat("{0} Index Buffer", GetResourceDescription());
-    // pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
+    sName.SetFormat("{0} Index Buffer", GetResourceDescription());
+    pDevice->GetBuffer(m_hIndexBuffer)->SetDebugName(sName);
 
     // we only know the memory usage here, so we write it back to the internal variable directly and then read it in UpdateMemoryUsage() again
     ModifyMemoryUsage().m_uiMemoryGPU = descriptor.GetVertexBufferData().GetCount() + descriptor.GetIndexBufferData().GetCount();

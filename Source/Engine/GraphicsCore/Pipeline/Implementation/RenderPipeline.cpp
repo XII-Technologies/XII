@@ -1077,7 +1077,7 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 
 void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
 {
-  // XII_PROFILE_AND_MARKER(pRenderContext->GetGALContext(), m_sName.GetData());
+  // XII_PROFILE_AND_MARKER(pRenderContext->GetCommandList(), m_sName.GetData());
   XII_PROFILE_SCOPE(m_sName.GetData());
 
   XII_ASSERT_DEV(m_PipelineState != PipelineState::Uninitialized, "Pipeline must be rebuild before rendering.");
@@ -1180,7 +1180,8 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
 
   if (const xiiGALSwapChain* pSwapChain = pDevice->GetSwapChain(renderViewContext.m_pViewData->m_hSwapChain))
   {
-    const xiiGALRenderTargets& renderTargets = pSwapChain->GetRenderTargets();
+    xiiGALRenderTargets renderTargets;
+    renderTargets.m_hRTs[0] = pSwapChain->GetBackBufferTexture();
     // Update target textures after the swap chain acquired new textures.
     for (xiiUInt32 i = 0; i < m_TextureUsage.GetCount(); i++)
     {
@@ -1433,15 +1434,15 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       desc.m_Format         = xiiGALTextureFormat::RGBA8UNormalized;
       desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
       desc.m_BindFlags      = xiiGALBindFlags::ShaderResource;
-      desc.m_Usage          = xiiGALResourceUsage::Immutable;
+      desc.m_Usage          = xiiGALResourceUsage::Default;
 
       m_hOcclusionDebugViewTexture = pDevice->CreateTexture(desc);
     }
 
     // upload the image to the texture
     {
-      xiiGALPass* pGALPass        = pDevice->BeginPass("RasterizerDebugViewUpdate");
-      auto        pCommandEncoder = pGALPass->BeginCompute();
+      xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*"RasterizerDebugViewUpdate"*/);
+      auto                pCommandList     = pGALCommandQueue->BeginCommandList();
 
       xiiBoundingBoxU32 destBox;
       destBox.m_vMin.SetZero();
@@ -1451,10 +1452,9 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       sourceData.m_pData    = fb.GetData();
       sourceData.m_uiStride = uiImgWidth * sizeof(xiiColorLinearUB);
 
-      pCommandEncoder->UpdateTexture(m_hOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
+      pCommandList->UpdateTexture(m_hOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
 
-      pGALPass->EndCompute(pCommandEncoder);
-      pDevice->EndPass(pGALPass);
+      pGALCommandQueue->Submit(pCommandList);
     }
 
     xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, pDevice->GetTexture(m_hOcclusionDebugViewTexture)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiVec2(1, -1));

@@ -8,7 +8,7 @@ class XII_GRAPHICSCORE_DLL xiiDepthOnlyPass : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiDepthOnlyPass, xiiRenderPipelinePass);
 
 public:
-  xiiDepthOnlyPass(const char* szName = "DepthOnlyPass");
+  xiiDepthOnlyPass(xiiStringView sName = "DepthOnlyPass");
   ~xiiDepthOnlyPass();
 
   virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
