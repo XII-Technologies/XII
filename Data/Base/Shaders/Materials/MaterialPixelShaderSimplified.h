@@ -61,10 +61,10 @@ PS_OUT main(PS_IN Input)
   uint            gameObjectId = GetInstanceData().GameObjectID;
 
 #if SHADING_MODE == SHADING_MODE_LIT
-    AccumulatedLight light = CalculateLightingSimplified(matData);
-  #else
-    AccumulatedLight light = InitializeLight(matData.diffuseColor, 0.0f);
-  #endif
+  AccumulatedLight light = CalculateLightingSimplified(matData);
+#else
+  AccumulatedLight light = InitializeLight(matData.diffuseColor, 0.0f);
+#endif
 
   float3 litColor = light.diffuseLight + light.specularLight;
   litColor += matData.emissiveColor;
@@ -74,7 +74,7 @@ PS_OUT main(PS_IN Input)
     Output.Color = float4(litColor, matData.opacity);
 
 #elif RENDER_PASS == RENDER_PASS_EDITOR
-  Output.Color             = float4(litColor, matData.opacity);
+  Output.Color           = float4(litColor, matData.opacity);
 #elif RENDER_PASS == RENDER_PASS_WIREFRAME
   Output.Color = float4(litColor, matData.opacity);
 #elif (RENDER_PASS == RENDER_PASS_PICKING || RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME)
