@@ -80,6 +80,8 @@ protected:
   void CommitRenderTargets();
   void ResetRenderTargets();
 
+  void ReleaseInternalCommandList();
+
 protected:
   friend class xiiGALCommandQueueD3D11;
   friend class xiiGALDeviceD3D11;

@@ -895,6 +895,11 @@ void xiiGALCommandListD3D11::ResetRenderTargets()
   m_pCommandList->OMSetRenderTargets(0, nullptr, nullptr);
 }
 
+void xiiGALCommandListD3D11::ReleaseInternalCommandList()
+{
+  XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
+}
+
 xiiSharedPtr<xiiDisjointQueryPool::DisjointQueryWrapper> xiiGALCommandListD3D11::BeginDisjointQuery()
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);

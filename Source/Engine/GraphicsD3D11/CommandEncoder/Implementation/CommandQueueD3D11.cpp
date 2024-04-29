@@ -99,7 +99,7 @@ void xiiGALCommandQueueD3D11::ReleaseSwapChainCommanListReferences()
 
     if (pCommandListReferenceD3D11->GetRecordingState() != xiiGALCommandList::RecordingState::Reset)
     {
-      pCommandListReferenceD3D11->Reset();
+      pCommandListReferenceD3D11->ReleaseInternalCommandList();
     }
   }
   m_SwapChainCommandListReferences.Clear();
