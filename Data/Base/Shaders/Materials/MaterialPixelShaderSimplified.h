@@ -24,13 +24,13 @@
 
 struct PS_OUT
 {
-  #if RENDER_PASS != RENDER_PASS_DEPTH_ONLY
-    float4 Color : SV_Target;
-  #endif
+#if RENDER_PASS != RENDER_PASS_DEPTH_ONLY
+  float4 Color : SV_Target;
+#endif
 
-  #if defined(USE_ALPHA_TEST_SUPER_SAMPLING)
-    uint Coverage : SV_Coverage;
-  #endif
+#if defined(USE_ALPHA_TEST_SUPER_SAMPLING)
+  uint Coverage : SV_Coverage;
+#endif
 };
 
 PS_OUT main(PS_IN Input)
@@ -40,27 +40,27 @@ PS_OUT main(PS_IN Input)
 #endif
 
   G.Input = Input;
-  #if defined(CUSTOM_GLOBALS)
-    FillCustomGlobals();
-  #endif
+#if defined(CUSTOM_GLOBALS)
+  FillCustomGlobals();
+#endif
 
   PS_OUT Output;
 
-  #if defined(USE_ALPHA_TEST)
-    uint coverage = CalculateCoverage();
-    if (coverage == 0)
-    {
-      discard;
-    }
-    #if defined(USE_ALPHA_TEST_SUPER_SAMPLING)
-      Output.Coverage = coverage;
-    #endif
-  #endif
+#if defined(USE_ALPHA_TEST)
+  uint coverage = CalculateCoverage();
+  if (coverage == 0)
+  {
+    discard;
+  }
+#  if defined(USE_ALPHA_TEST_SUPER_SAMPLING)
+  Output.Coverage = coverage;
+#  endif
+#endif
 
   xiiMaterialData matData = FillMaterialData();
-  uint gameObjectId = GetInstanceData().GameObjectID;
+  uint            gameObjectId = GetInstanceData().GameObjectID;
 
-  #if SHADING_MODE == SHADING_MODE_LIT
+#if SHADING_MODE == SHADING_MODE_LIT
     AccumulatedLight light = CalculateLightingSimplified(matData);
   #else
     AccumulatedLight light = InitializeLight(matData.diffuseColor, 0.0f);
@@ -73,18 +73,18 @@ PS_OUT main(PS_IN Input)
 
     Output.Color = float4(litColor, matData.opacity);
 
-  #elif RENDER_PASS == RENDER_PASS_EDITOR
-    Output.Color = float4(litColor, matData.opacity);
-  #elif RENDER_PASS == RENDER_PASS_WIREFRAME
-    Output.Color = float4(litColor, matData.opacity);
-  #elif (RENDER_PASS == RENDER_PASS_PICKING || RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME)
-    Output.Color = RGBA8ToFloat4(gameObjectId);
-  #elif RENDER_PASS == RENDER_PASS_DEPTH_ONLY
+#elif RENDER_PASS == RENDER_PASS_EDITOR
+  Output.Color             = float4(litColor, matData.opacity);
+#elif RENDER_PASS == RENDER_PASS_WIREFRAME
+  Output.Color = float4(litColor, matData.opacity);
+#elif (RENDER_PASS == RENDER_PASS_PICKING || RENDER_PASS == RENDER_PASS_PICKING_WIREFRAME)
+  Output.Color = RGBA8ToFloat4(gameObjectId);
+#elif RENDER_PASS == RENDER_PASS_DEPTH_ONLY
 
-  #else
-    Output.Color = float4(litColor, matData.opacity);
-    #error "RENDER_PASS uses undefined value."
-  #endif
+#else
+  Output.Color = float4(litColor, matData.opacity);
+#  error "RENDER_PASS uses undefined value."
+#endif
 
-  return Output;
+    return Output;
 }
