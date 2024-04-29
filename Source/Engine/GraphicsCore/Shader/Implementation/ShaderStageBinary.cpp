@@ -46,6 +46,7 @@ xiiResult xiiShaderStageBinary::Write(xiiStreamWriter& inout_stream) const
     inout_stream << resource.m_uiBindIndex;
     inout_stream << resource.m_uiDescriptorSet;
     inout_stream << resource.m_ShaderStages;
+    inout_stream << resource.m_uiTotalSize;
     inout_stream << resource.m_sName.GetData();
 
     const bool bHasMembers = !resource.m_Variables.IsEmpty();
@@ -120,6 +121,7 @@ xiiResult xiiShaderStageBinary::Read(xiiStreamReader& inout_stream)
       inout_stream >> resource.m_uiBindIndex;
       inout_stream >> resource.m_uiDescriptorSet;
       inout_stream >> resource.m_ShaderStages;
+      inout_stream >> resource.m_uiTotalSize;
       inout_stream >> sTemp;
 
       resource.m_sName.Assign(sTemp.GetData());
