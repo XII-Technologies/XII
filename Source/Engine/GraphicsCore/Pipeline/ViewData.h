@@ -26,7 +26,8 @@ struct XII_GRAPHICSCORE_DLL xiiViewData
     }
   }
 
-  xiiGALRenderTargets         m_renderTargets;
+  xiiGALRenderTargets         m_RenderTargets;
+  xiiGALRenderTargets         m_SwapChainRenderTargets;
   xiiGALSwapChainHandle       m_hSwapChain;
   xiiRectFloat                m_ViewPortRect;
   xiiEnum<xiiViewRenderMode>  m_ViewRenderMode;
