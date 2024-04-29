@@ -11,12 +11,7 @@ xiiConstantBufferStorageBase::xiiConstantBufferStorageBase(xiiUInt32 uiSizeInByt
   m_Data = xiiMakeArrayPtr(static_cast<xiiUInt8*>(xiiFoundation::GetAlignedAllocator()->Allocate(uiSizeInBytes, 16)), uiSizeInBytes);
   xiiMemoryUtils::ZeroFill(m_Data.GetPtr(), m_Data.GetCount());
 
-  xiiGALBufferCreationDescription desc;
-  desc.m_uiSize         = uiSizeInBytes;
-  desc.m_BindFlags      = xiiGALBindFlags::UniformBuffer;
-  desc.m_ResourceUsage  = xiiGALResourceUsage::Dynamic;
-  desc.m_CPUAccessFlags = xiiGALCPUAccessFlag::Write;
-  m_hGALConstantBuffer  = xiiGALDevice::GetDefaultDevice()->CreateBuffer(desc);
+  m_hGALConstantBuffer = xiiGALDeviceUtilities::CreateConstantBuffer(xiiGALDevice::GetDefaultDevice(), uiSizeInBytes);
 }
 
 xiiConstantBufferStorageBase::~xiiConstantBufferStorageBase()
@@ -38,9 +33,8 @@ xiiArrayPtr<const xiiUInt8> xiiConstantBufferStorageBase::GetRawDataForReading()
   return m_Data;
 }
 
-void xiiConstantBufferStorageBase::UploadData(xiiGALCommandEncoder* pCommandEncoder)
+void xiiConstantBufferStorageBase::UploadData(xiiGALCommandList* pCommandList)
 {
-#if 0
   if (!m_bHasBeenModified)
     return;
 
@@ -49,13 +43,22 @@ void xiiConstantBufferStorageBase::UploadData(xiiGALCommandEncoder* pCommandEnco
   xiiUInt32 uiNewHash = xiiHashingUtils::xxHash32(m_Data.GetPtr(), m_Data.GetCount());
   if (m_uiLastHash != uiNewHash)
   {
-    pCommandEncoder->UpdateBuffer(m_hGALConstantBuffer, 0, m_Data);
-    m_uiLastHash = uiNewHash;
+    XII_ASSERT_DEV(m_Data.GetCount() <= xiiGALDevice::GetDefaultDevice()->GetBuffer(m_hGALConstantBuffer)->GetDescription().m_uiSize, "The size of the constant buffer storage is greater than the available storage!");
+
+    void* pMappedData = nullptr;
+    if (pCommandList->MapBuffer(m_hGALConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+    {
+      memcpy(pMappedData, m_Data.GetPtr(), m_Data.GetCount());
+
+      pCommandList->UnmapBuffer(m_hGALConstantBuffer, xiiGALMapType::Write).AssertSuccess();
+
+      m_uiLastHash = uiNewHash;
+    }
+    else
+    {
+      xiiLog::Error("Failed to map buffer to update content.");
+    }
   }
-#else
-  m_bHasBeenModified = false;
-  pCommandEncoder->UpdateBuffer(m_hGALConstantBuffer, 0, m_Data);
-#endif
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Shader_Implementation_ConstantBufferStorage);
