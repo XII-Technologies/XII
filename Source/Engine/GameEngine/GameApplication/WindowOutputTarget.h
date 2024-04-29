@@ -28,4 +28,5 @@ public:
   xiiEnum<xiiGALPresentMode>         m_PresentMode;
   xiiGALSwapChainCreationDescription m_CurrentDesc;
   xiiGALSwapChainHandle              m_hSwapChain;
+  xiiGALTextureHandle                m_hBackbufferStagingTexture;
 };
