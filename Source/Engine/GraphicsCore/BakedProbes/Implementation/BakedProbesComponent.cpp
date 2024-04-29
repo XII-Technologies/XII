@@ -14,9 +14,9 @@
 #include <GraphicsCore/Meshes/MeshComponentBase.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/CommandEncoder/ComputeCommandEncoder.h>
+#include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Device/Pass.h>
 #include <GraphicsFoundation/Resources/Texture.h>
 
 struct xiiBakedProbesComponent::RenderDebugViewTask : public xiiTask
@@ -164,8 +164,7 @@ void xiiBakedProbesComponentManager::CreateDebugResources()
 
   if (!m_hDebugMaterial.IsValid())
   {
-    m_hDebugMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>(
-      "{ 4d15c716-a8e9-43d4-9424-43174403fb94 }"); // IrradianceProbeVisualization.xiiMaterialAsset
+    m_hDebugMaterial = xiiResourceManager::LoadResource<xiiMaterialResource>("{ 4d15c716-a8e9-43d4-9424-43174403fb94 }"); // IrradianceProbeVisualization.xiiMaterialAsset
   }
 }
 

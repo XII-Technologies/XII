@@ -5,6 +5,7 @@
 #include <GraphicsCore/Meshes/MeshBufferUtils.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 // clang-format off

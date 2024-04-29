@@ -5,7 +5,6 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 
-
 #include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off

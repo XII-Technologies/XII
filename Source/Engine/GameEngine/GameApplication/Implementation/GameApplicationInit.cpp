@@ -30,7 +30,9 @@
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Device/DeviceFactory.h>
 
-#if BUILDSYSTEM_ENABLE_D3D12_SUPPORT
+#if BUILDSYSTEM_ENABLE_D3D11_SUPPORT
+constexpr const char* szDefaultGraphicsAPI = "D3D11";
+#elif BUILDSYSTEM_ENABLE_D3D12_SUPPORT
 constexpr const char* szDefaultGraphicsAPI = "D3D12";
 #elif BUILDSYSTEM_ENABLE_VULKAN_SUPPORT
 constexpr const char* szDefaultGraphicsAPI = "Vulkan";

@@ -164,6 +164,8 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
     return res;
   }
 
+  pDevice->GetShader(m_hShader)->SetDebugName(GetResourceID());
+
   m_hPipelineResourceSignature = pDevice->CreatePipelineResourceSignature(resourceSignatureDescription);
 
   if (m_hPipelineResourceSignature.IsInvalidated())

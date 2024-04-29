@@ -14,6 +14,7 @@ class XII_GAMEENGINE_DLL xiiWindowOutputTargetGAL : public xiiWindowOutputTarget
 {
 public:
   using OnSwapChainChanged = xiiDelegate<void(xiiGALSwapChainHandle hSwapChain, xiiSizeU32 size)>;
+
   xiiWindowOutputTargetGAL(OnSwapChainChanged onSwapChainChanged = {});
   ~xiiWindowOutputTargetGAL();
 

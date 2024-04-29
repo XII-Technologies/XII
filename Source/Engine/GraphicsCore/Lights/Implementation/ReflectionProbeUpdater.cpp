@@ -35,6 +35,7 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
     desc.m_MiscFlags          = xiiGALMiscTextureFlags::GenerateMips;
 
     m_hCubemap = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
+    pDevice->GetTexture(m_hCubemap)->SetDebugName("Reflection Cubemap");
   }
 
 #if XII_RENDERER_TODO

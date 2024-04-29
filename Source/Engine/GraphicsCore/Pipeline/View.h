@@ -4,12 +4,14 @@
 #include <Foundation/Threading/DelegateTask.h>
 #include <Foundation/Types/SharedPtr.h>
 #include <Foundation/Types/TagSet.h>
+
+#include <GraphicsFoundation/Device/SwapChain.h>
+
 #include <GraphicsCore/Pipeline/RenderPipeline.h>
 #include <GraphicsCore/Pipeline/RenderPipelineNode.h>
 #include <GraphicsCore/Pipeline/RenderPipelineResource.h>
 #include <GraphicsCore/Pipeline/ViewData.h>
-#include <GraphicsFoundation/Device/SwapChain.h>
-#include <GraphicsFoundation/Resources/RenderTargetSetup.h>
+#include <GraphicsCore/RenderContext/RenderTargetSetup.h>
 
 class xiiFrustum;
 class xiiWorld;
