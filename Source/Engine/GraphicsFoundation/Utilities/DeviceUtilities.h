@@ -66,7 +66,7 @@ public:
   }
 
   /// \brief Creates a constant buffer with the given size.
-  XII_NODISCARD XII_ALWAYS_INLINE xiiGALBufferHandle CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize)
+  static XII_NODISCARD XII_ALWAYS_INLINE xiiGALBufferHandle CreateConstantBuffer(xiiGALDevice* pDevice, xiiUInt32 uiBufferSize)
   {
     XII_ASSERT_DEV(pDevice != nullptr, "Invalid device provided.");
 

@@ -569,11 +569,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureFormat
 
   /// \brief Returns whether the given texture format is a sRGB format.
   static bool IsSrgb(xiiEnum<xiiGALTextureFormat> format);
-
-private:
-  static const xiiUInt8 s_BitsPerElement[xiiGALTextureFormat::ENUM_COUNT];
-
-  static const xiiUInt8 s_ChannelCount[xiiGALTextureFormat::ENUM_COUNT];
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALTextureFormat);
