@@ -41,14 +41,14 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
 
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
   {
-    viewDescription.m_ViewType = xiiGALTextureViewType::ShaderResource;
+    auto shaderResourceViewDescription                = viewDescription;
+    shaderResourceViewDescription.m_ViewType          = xiiGALTextureViewType::ShaderResource;
+    shaderResourceViewDescription.m_ResourceDimension = m_Description.m_Type;
 
     if (m_Description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
-      viewDescription.m_Flags.Add(xiiGALTextureViewFlags::AllowMipGeneration);
+      shaderResourceViewDescription.m_Flags.Add(xiiGALTextureViewFlags::AllowMipGeneration);
 
-    m_DefaultTextureViews[xiiGALTextureViewType::ShaderResource] = m_pDevice->CreateTextureView(viewDescription);
-
-    viewDescription.m_Flags = {};
+    m_DefaultTextureViews[xiiGALTextureViewType::ShaderResource] = m_pDevice->CreateTextureView(shaderResourceViewDescription);
   }
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
   {
