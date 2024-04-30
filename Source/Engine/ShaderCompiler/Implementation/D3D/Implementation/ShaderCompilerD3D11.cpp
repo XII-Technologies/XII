@@ -271,10 +271,13 @@ xiiResult xiiShaderCompilerD3D11::ReflectConstantBufferLayout(xiiGALShaderByteCo
     switch (typeDescription.Class)
     {
       case D3D_SVC_SCALAR:
-        memberDescription.m_Class = xiiGALShaderVariableClassType::Scalar;
+        memberDescription.m_Class         = xiiGALShaderVariableClassType::Scalar;
+        memberDescription.m_uiRowCount    = 1U;
+        memberDescription.m_uiColumnCount = 1U;
         break;
       case D3D_SVC_VECTOR:
         memberDescription.m_Class         = xiiGALShaderVariableClassType::Array;
+        memberDescription.m_uiRowCount    = 1U;
         memberDescription.m_uiColumnCount = typeDescription.Columns;
         break;
       case D3D_SVC_MATRIX_ROWS:

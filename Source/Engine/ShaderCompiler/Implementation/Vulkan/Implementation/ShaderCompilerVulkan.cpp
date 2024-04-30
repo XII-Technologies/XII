@@ -301,14 +301,18 @@ xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteC
       memberDescription.m_Class         = xiiGALShaderVariableClassType::Scalar;
       memberDescription.m_PrimitiveType = xiiGALShaderPrimitiveType::Bool;
       memberDescription.m_uiArraySize   = 1U;
+      memberDescription.m_uiRowCount    = 1U;
+      memberDescription.m_uiColumnCount = 1U;
     }
 
     if (uiFlags & SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_INT)
     {
       uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_INT;
 
-      memberDescription.m_Class       = xiiGALShaderVariableClassType::Scalar;
-      memberDescription.m_uiArraySize = 1U;
+      memberDescription.m_Class         = xiiGALShaderVariableClassType::Scalar;
+      memberDescription.m_uiArraySize   = 1U;
+      memberDescription.m_uiRowCount    = 1U;
+      memberDescription.m_uiColumnCount = 1U;
 
       const bool bIsUnsigned = !memberBlock.type_description->traits.numeric.scalar.signedness;
       switch (memberBlock.type_description->traits.numeric.scalar.width)
@@ -357,8 +361,10 @@ xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteC
     {
       uiFlags &= ~SpvReflectTypeFlagBits::SPV_REFLECT_TYPE_FLAG_FLOAT;
 
-      memberDescription.m_Class       = xiiGALShaderVariableClassType::Scalar;
-      memberDescription.m_uiArraySize = 1U;
+      memberDescription.m_Class         = xiiGALShaderVariableClassType::Scalar;
+      memberDescription.m_uiArraySize   = 1U;
+      memberDescription.m_uiRowCount    = 1U;
+      memberDescription.m_uiColumnCount = 1U;
 
       switch (memberBlock.type_description->traits.numeric.scalar.width)
       {
@@ -393,6 +399,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectConstantBufferLayout(xiiGALShaderByteC
 
       XII_ASSERT_DEV(memberDescription.m_PrimitiveType != xiiGALShaderPrimitiveType::Unknown, "Expected a known shader variable primitive type.");
 
+      memberDescription.m_uiRowCount    = 1U;
       memberDescription.m_uiColumnCount = memberBlock.type_description->traits.numeric.vector.component_count;
     }
 
