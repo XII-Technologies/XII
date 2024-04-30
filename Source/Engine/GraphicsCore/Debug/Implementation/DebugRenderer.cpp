@@ -1551,7 +1551,19 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
       {
         const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
-        pGALCommandList->UpdateBuffer(s_hDataBuffer[BufferType::Lines], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
+
+        auto  pDataToUpdate = xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray();
+        void* pMappedData   = nullptr;
+        if (pGALCommandList->MapBuffer(s_hDataBuffer[BufferType::Lines], xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+        {
+          memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+          pGALCommandList->UnmapBuffer(s_hDataBuffer[BufferType::Lines], xiiGALMapType::Write).AssertSuccess();
+        }
+        else
+        {
+          xiiLog::Error("Failed to map buffer to update content.");
+        }
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
 
@@ -1578,7 +1590,19 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
       {
         const xiiUInt32 uiNumLineVerticesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineVertices, LINE_VERTICES_PER_BATCH);
         XII_ASSERT_DEV(uiNumLineVerticesInBatch % 2 == 0, "Vertex count must be a multiple of 2.");
-        pGALCommandList->UpdateBuffer(s_hDataBuffer[BufferType::Lines2D], 0, xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray());
+
+        auto  pDataToUpdate = xiiMakeArrayPtr(pLineData, uiNumLineVerticesInBatch).ToByteArray();
+        void* pMappedData   = nullptr;
+        if (pGALCommandList->MapBuffer(s_hDataBuffer[BufferType::Lines2D], xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+        {
+          memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
+
+          pGALCommandList->UnmapBuffer(s_hDataBuffer[BufferType::Lines2D], xiiGALMapType::Write).AssertSuccess();
+        }
+        else
+        {
+          xiiLog::Error("Failed to map buffer to update content.");
+        }
 
         renderViewContext.m_pRenderContext->BindMeshBuffer(s_hDataBuffer[BufferType::Lines2D], xiiGALBufferHandle(), &s_InputLayoutInfo, xiiGALPrimitiveTopology::LineList, uiNumLineVerticesInBatch / 2);
 
