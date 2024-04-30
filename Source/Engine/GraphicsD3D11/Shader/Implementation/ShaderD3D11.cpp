@@ -78,7 +78,7 @@ xiiResult xiiGALShaderD3D11::InitPlatform()
 
   if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Compute))
   {
-    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Geometry)];
+    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Compute)];
 
     if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateComputeShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pComputeShader)))
     {

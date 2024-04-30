@@ -1272,6 +1272,8 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
     xiiRenderWorld::s_RenderEvent.Broadcast(renderEvent);
   }
 
+  pRenderContext->ResetContextState();
+
   data.Clear();
 
   m_CurrentRenderThread = (xiiThreadID)0;

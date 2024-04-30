@@ -179,38 +179,37 @@ void xiiGALCommandListD3D11::SetScissorRectsPlatform(xiiArrayPtr<xiiRectU32> pRe
 
 void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, xiiUInt64 uiByteOffset)
 {
-  auto pIndexBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndexBuffer);
+  auto          pIndexBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndexBuffer);
+  ID3D11Buffer* pD3D11IndexBuffer = pIndexBufferD3D11 ? pIndexBufferD3D11->GetBuffer() : nullptr;
 
-  if (pIndexBufferD3D11 != nullptr)
+  if (pD3D11IndexBuffer != m_pCommittedIndexBuffer)
   {
-    const auto& indexFormat = pIndexBufferD3D11->GetIndexFormat();
-
-    DXGI_FORMAT d3d11IndexFormat = DXGI_FORMAT_UNKNOWN;
-    if (indexFormat == xiiGALValueType::UInt32)
-    {
-      d3d11IndexFormat = DXGI_FORMAT_R32_UINT;
-    }
-    else if (indexFormat == xiiGALValueType::UInt16)
-    {
-      d3d11IndexFormat = DXGI_FORMAT_R16_UINT;
-    }
-    else
-    {
-      xiiLog::Error("Unsupported index format, only xiiGALValueType::UInt16 or xiiGALValueType::UInt32 are supported.");
-      return;
-    }
-
-    m_pCommittedIndexBuffer           = pIndexBufferD3D11->GetBuffer();
-    m_CommittedIndexBufferFormat      = d3d11IndexFormat;
-    m_uiCommittedIndexDataStartOffset = static_cast<xiiUInt32>(uiByteOffset);
-  }
-  else
-  {
-    m_pCommittedIndexBuffer           = nullptr;
+    m_pCommittedIndexBuffer           = pD3D11IndexBuffer;
     m_CommittedIndexBufferFormat      = DXGI_FORMAT_UNKNOWN;
     m_uiCommittedIndexDataStartOffset = static_cast<xiiUInt32>(uiByteOffset);
+
+    if (pIndexBufferD3D11 != nullptr)
+    {
+      const auto& indexFormat = pIndexBufferD3D11->GetIndexFormat();
+
+      DXGI_FORMAT d3d11IndexFormat = DXGI_FORMAT_UNKNOWN;
+      if (indexFormat == xiiGALValueType::UInt32)
+      {
+        d3d11IndexFormat = DXGI_FORMAT_R32_UINT;
+      }
+      else if (indexFormat == xiiGALValueType::UInt16)
+      {
+        d3d11IndexFormat = DXGI_FORMAT_R16_UINT;
+      }
+      else
+      {
+        xiiLog::Error("Unsupported index format, only xiiGALValueType::UInt16 or xiiGALValueType::UInt32 are supported.");
+        return;
+      }
+      m_CommittedIndexBufferFormat = d3d11IndexFormat;
+    }
+    m_bCommittedIndexBufferUpToDate = false;
   }
-  m_bCommittedIndexBufferUpToDate = false;
 }
 
 void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xiiArrayPtr<xiiGALBuffer*> pVertexBuffers, xiiArrayPtr<xiiUInt64> pByteOffsets, xiiBitflags<xiiGALSetVertexBufferFlags> flags)
@@ -221,21 +220,29 @@ void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xii
   {
     m_CommittedVertexBuffersRange.Reset();
 
+    bool bWasRangeModified = false;
+
     // Reset only the buffer slots that are not being set.
     for (xiiUInt32 i = 0; i < uiStartSlot; ++i)
     {
+      if (m_pCommittedVertexBuffers[i] != nullptr)
+        bWasRangeModified = true;
+
       m_pCommittedVertexBuffers[i]      = nullptr;
       m_CommittedVertexBufferOffsets[i] = 0U;
       m_CommittedVertexBufferStrides[i] = 0U;
     }
     for (xiiUInt32 i = uiStartSlot + pVertexBuffers.GetCount(); i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
     {
+      if (m_pCommittedVertexBuffers[i] != nullptr)
+        bWasRangeModified = true;
+
       m_pCommittedVertexBuffers[i]      = nullptr;
       m_CommittedVertexBufferOffsets[i] = 0U;
       m_CommittedVertexBufferStrides[i] = 0U;
     }
 
-    m_bCommittedVertexBufferUpToDate = false;
+    m_bCommittedVertexBufferUpToDate = !bWasRangeModified;
   }
 
   for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
@@ -257,7 +264,6 @@ void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xii
       m_bCommittedVertexBufferUpToDate = false;
     }
   }
-  m_bCommittedVertexBufferUpToDate = true;
 }
 
 void xiiGALCommandListD3D11::ClearRenderTargetViewPlatform(xiiGALTextureView* pRenderTargetView, const xiiColor& clearColor)
@@ -768,6 +774,7 @@ void xiiGALCommandListD3D11::InvalidateResources()
   m_CommittedVertexBuffersRange.Reset();
 
   m_pCommittedInputLayout           = nullptr;
+  m_pCommittedIndexBuffer           = nullptr;
   m_CommittedIndexBufferFormat      = {};
   m_uiCommittedIndexDataStartOffset = 0U;
   m_bCommittedIndexBufferUpToDate   = false;
@@ -922,14 +929,12 @@ xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
   m_pCommandList->IASetPrimitiveTopology(m_CommittedPrimitiveTopology);
 
   // Commit vertex buffers.
-  if (m_CommittedVertexBuffersRange.IsValid())
+  if (m_CommittedVertexBuffersRange.IsValid() && !m_bCommittedVertexBufferUpToDate)
   {
     const xiiUInt32 uiStartSlot = m_CommittedVertexBuffersRange.m_uiMin;
     const xiiUInt32 uiNumSlots  = m_CommittedVertexBuffersRange.GetCount();
 
     m_pCommandList->IASetVertexBuffers(uiStartSlot, uiNumSlots, m_pCommittedVertexBuffers + uiStartSlot, m_CommittedVertexBufferStrides + uiStartSlot, m_CommittedVertexBufferOffsets + uiStartSlot);
-
-    m_CommittedVertexBuffersRange.Reset();
 
     m_bCommittedVertexBufferUpToDate = true;
   }
