@@ -992,6 +992,13 @@ xiiGALSamplerHandle xiiRenderContext::GetDefaultSampler(xiiBitflags<xiiDefaultSa
   if (s_hDefaultSamplers[uiSamplerIndex].IsInvalidated())
   {
     xiiGALSamplerCreationDescription desc;
+    desc.m_ComparisonFunction = xiiGALComparisonFunction::Never;
+    desc.m_BorderColor        = xiiColor::Black;
+    desc.m_fMipLODBias        = 0.0f;
+    desc.m_fMinLOD            = -1.0f;
+    desc.m_fMaxLOD            = 42000.0f;
+    desc.m_uiMaxAnisotropy    = 4U;
+
     desc.m_MinFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALFilterType::Linear : xiiGALFilterType::Point;
     desc.m_MagFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALFilterType::Linear : xiiGALFilterType::Point;
     desc.m_MipFilter = flags.IsSet(xiiDefaultSamplerFlags::LinearFiltering) ? xiiGALFilterType::Linear : xiiGALFilterType::Point;
