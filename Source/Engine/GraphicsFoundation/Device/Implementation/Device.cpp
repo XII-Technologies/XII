@@ -1362,6 +1362,10 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
   XII_VERIFY_TEXTURE_VIEW((description.m_uiMostDetailedMip + description.m_uiMipLevelCount) <= textureDescription.m_uiMipLevels, "The most detailed mip ({0}) and the number of mip levels in the view ({1}) is out of range. The texture has only {2} mip level (s).", description.m_uiMostDetailedMip, description.m_uiMipLevelCount, textureDescription.m_uiMipLevels);
 
   /// \todo GraphicsFoundation: Implement default texture view format deduction.
+  if (description.m_Format == xiiGALTextureFormat::Unknown)
+  {
+    description.m_Format = textureDescription.m_Format;
+  }
 
   if (textureDescription.IsArray())
   {
