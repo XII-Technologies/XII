@@ -94,6 +94,10 @@ const xiiGALRenderTargets& xiiView::GetActiveRenderTargets() const
 {
   if (const xiiGALSwapChain* pSwapChain = xiiGALDevice::GetDefaultDevice()->GetSwapChain(m_Data.m_hSwapChain))
   {
+    if (pSwapChain->GetBackBufferTexture() != m_Data.m_SwapChainRenderTargets.m_hRTs[0])
+    {
+      m_Data.m_SwapChainRenderTargets.m_hRTs[0] = pSwapChain->GetBackBufferTexture();
+    }
     return m_Data.m_SwapChainRenderTargets;
   }
   return m_Data.m_RenderTargets;
