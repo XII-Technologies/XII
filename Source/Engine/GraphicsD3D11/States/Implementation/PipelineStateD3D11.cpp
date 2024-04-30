@@ -33,7 +33,7 @@ xiiResult xiiGALPipelineStateD3D11::InitPlatform()
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   xiiGALShaderD3D11* pShaderD3D11 = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_hShader));
-  if (pShaderD3D11->GetVertexShader() == nullptr)
+  if (m_Description.IsAnyGraphicsPipeline() && pShaderD3D11->GetVertexShader() == nullptr)
   {
     xiiLog::Error("The given shader has an invalidated vertex shader!");
     return XII_FAILURE;
