@@ -204,7 +204,7 @@ void xiiQtCppProjectDlg::on_GenerateSolution_clicked()
       progress.BeginNextStep("Populate with Default Sources");
       if (xiiCppProject::PopulateWithDefaultSources(m_CppSettings).Failed())
       {
-        xiiQtUiServices::GetSingleton()->MessageBoxWarning("Failed to populate the CppSource directory with the default files.\n\nCheck the log for details.");
+        xiiQtUiServices::GetSingleton()->MessageBoxWarning("Failed to populate the Source directory with the default files.\n\nCheck the log for details.");
         return;
       }
     }
