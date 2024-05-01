@@ -8,7 +8,6 @@ class xiiView;
 class xiiViewRedrawMsgToEngine;
 class xiiEngineProcessDocumentContext;
 class xiiEditorEngineDocumentMsg;
-class xiiEditorRenderPass;
 class xiiSelectedObjectsExtractorBase;
 class xiiSceneContext;
 using xiiRenderPipelineResourceHandle = xiiTypedResourceHandle<class xiiRenderPipelineResource>;
