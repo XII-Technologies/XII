@@ -14,8 +14,8 @@ class XII_GRAPHICSD3D11_DLL xiiGALCommandListD3D11 final : public xiiGALCommandL
   XII_ADD_DYNAMIC_REFLECTION(xiiGALCommandListD3D11, xiiGALCommandList);
 
 public:
-  ID3D11CommandList*   GetD3D11CommandList() const;
-  ID3D11DeviceContext* GetD3D11DeferredContext() const;
+  ID3D11CommandList*    GetD3D11CommandList() const;
+  ID3D11DeviceContext1* GetD3D11DeferredContext() const;
 
 protected:
   virtual void BeginPlatform() override final;
@@ -101,8 +101,8 @@ protected:
 protected:
   xiiGALCommandQueueD3D11* m_pCommandQueueD3D11 = nullptr;
 
-  ID3D11DeviceContext* m_pCommandList          = nullptr;
-  ID3D11CommandList*   m_pSubmittedCommandList = nullptr;
+  ID3D11DeviceContext1* m_pCommandList          = nullptr;
+  ID3D11CommandList*    m_pSubmittedCommandList = nullptr;
 
   xiiGALPipelineStateD3D11* m_pPipelineState = nullptr;
 

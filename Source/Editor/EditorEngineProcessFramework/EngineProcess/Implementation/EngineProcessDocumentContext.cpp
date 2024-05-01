@@ -479,7 +479,7 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
         xiiGALTextureMipLevelData sourceSubResource;
 
         pGALCommandList->Begin("Thumbnail Readback Download");
-        
+
         xiiGALMappedTextureSubresource mappedSubResource;
         if (pGALCommandList->MapTextureSubresource(m_hThumbnailColorRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
         {

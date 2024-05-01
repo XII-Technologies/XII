@@ -37,7 +37,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALCommandQueueD3D11* pCommandQueueD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(pDeviceD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11)
 {
-  XII_ASSERT_DEV(SUCCEEDED(pDeviceD3D11->GetD3D11Device()->CreateDeferredContext(0U, &m_pCommandList)), "Failed to create deferred context for recording commands.");
+  XII_ASSERT_DEV(SUCCEEDED(pDeviceD3D11->GetD3D11Device()->CreateDeferredContext1(0U, &m_pCommandList)), "Failed to create deferred context for recording commands.");
 }
 
 xiiGALCommandListD3D11::~xiiGALCommandListD3D11()
@@ -590,8 +590,9 @@ void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
   }
 
   xiiUInt32 uiDestinationSubresourceIndex = D3D11CalcSubresource(textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, textureDescription.m_uiMipLevels);
+  xiiUInt32 uiCopyFlags                   = D3D11_COPY_DISCARD;
 
-  m_pCommandList->UpdateSubresource(pTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, &destinationBox, subresourceData.m_pData, static_cast<xiiUInt32>(subresourceData.m_uiStride), static_cast<xiiUInt32>(subresourceData.m_uiDepthStride));
+  m_pCommandList->UpdateSubresource1(pTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, &destinationBox, subresourceData.m_pData, static_cast<xiiUInt32>(subresourceData.m_uiStride), static_cast<xiiUInt32>(subresourceData.m_uiDepthStride), uiCopyFlags);
 }
 
 void xiiGALCommandListD3D11::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)

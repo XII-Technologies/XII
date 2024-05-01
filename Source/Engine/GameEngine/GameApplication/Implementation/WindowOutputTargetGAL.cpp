@@ -161,7 +161,7 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 
   /// \todo Make this more efficient
   MemDesc.m_pData = backbufferData.GetData();
-  xiiGALTextureMipLevelData      sourceSubResource;
+  xiiGALTextureMipLevelData sourceSubResource;
 
   xiiGALMappedTextureSubresource mappedSubResource;
   XII_SUCCEED_OR_RETURN(pGALCommandList->MapTextureSubresource(m_hBackbufferStagingTexture, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource));

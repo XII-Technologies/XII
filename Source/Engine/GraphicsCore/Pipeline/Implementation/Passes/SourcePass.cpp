@@ -157,8 +157,8 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
 
   if (auto pFramebuffer = pDevice->GetFramebuffer(m_hFramebuffer))
   {
-    const bool  bIsDepthAttachment        = xiiGALTextureFormat::IsDepthFormat(pOutput->m_Desc.m_Format);
-    const auto& hAttachmentView           = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
+    const bool  bIsDepthAttachment = xiiGALTextureFormat::IsDepthFormat(pOutput->m_Desc.m_Format);
+    const auto& hAttachmentView    = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
 
     if (pFramebuffer->GetDescription().m_Attachments.PeekBack() != hAttachmentView)
     {

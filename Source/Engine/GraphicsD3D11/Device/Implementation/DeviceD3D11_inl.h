@@ -19,7 +19,7 @@ XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALDeviceD3D11::GetSparseBindingQueue()
   return m_CommandQueues[GetCommandQueueIndex(xiiGALCommandQueueType::SparseBinding)].Borrow();
 }
 
-XII_ALWAYS_INLINE ID3D11Device* xiiGALDeviceD3D11::GetD3D11Device() const
+XII_ALWAYS_INLINE ID3D11Device1* xiiGALDeviceD3D11::GetD3D11Device() const
 {
   return m_pDeviceD3D11;
 }

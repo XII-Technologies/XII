@@ -115,18 +115,16 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
   xiiUInt32               uiFeatureLevelIndex       = 0U;
   HRESULT                 hResult                   = E_FAIL;
 
+  ID3D11Device*        pDevice        = nullptr;
   ID3D11DeviceContext* pDeviceContext = nullptr;
-  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pDeviceContext));
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pDeviceContext); XII_GAL_D3D11_RELEASE(pDevice));
 
   for (const auto& featureLevel : targetFeatureLevels)
   {
-    hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_UNKNOWN, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &pDeviceContext);
+    hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_UNKNOWN, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &pDevice, nullptr, &pDeviceContext);
 
     if (SUCCEEDED(hResult))
-    {
-      XII_ASSERT_DEV(m_pDeviceD3D11 != nullptr, "");
       break;
-    }
 
     ++uiFeatureLevelIndex;
   }
@@ -146,12 +144,10 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
 
     for (const auto& featureLevel : targetFeatureLevels)
     {
-      hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_UNKNOWN, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &m_pDeviceD3D11, nullptr, &pDeviceContext);
+      hResult = D3D11CreateDevice(m_pDXGIAdapter, D3D_DRIVER_TYPE_UNKNOWN, 0, static_cast<xiiUInt32>(uiCreationFlags), &featureLevel, 1, D3D11_SDK_VERSION, &pDevice, nullptr, &pDeviceContext);
 
       if (SUCCEEDED(hResult))
       {
-        XII_ASSERT_DEV(m_pDeviceD3D11 != nullptr, "");
-
         xiiLog::Info("Initialized D3D11 WARP device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
         break;
       }
@@ -166,9 +162,15 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
     xiiLog::Info("Initialized D3D11 device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
   }
 
+  if (FAILED(pDevice->QueryInterface(__uuidof(m_pDeviceD3D11), reinterpret_cast<void**>(static_cast<ID3D11Device1**>(&m_pDeviceD3D11)))))
+  {
+    xiiLog::Error("Failed to retrieve ID3D11Device1 from device interface.");
+    return XII_FAILURE;
+  }
+
   if (FAILED(pDeviceContext->QueryInterface(__uuidof(m_pDeviceContext), reinterpret_cast<void**>(static_cast<ID3D11DeviceContext1**>(&m_pDeviceContext)))))
   {
-    xiiLog::Error("Failed to retrieve IDeviceContext1 from device context interface.");
+    xiiLog::Error("Failed to retrieve ID3D11DeviceContext1 from device context interface.");
     return XII_FAILURE;
   }
 
