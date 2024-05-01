@@ -117,6 +117,13 @@ xiiRenderContext::xiiRenderContext()
 
   m_hGlobalConstantBufferStorage = CreateConstantBufferStorage<xiiGlobalConstants>();
 
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
+  // Retrive a command list that we record all commands in the render context with.
+  m_pCommandQueue = pDevice->GetGraphicsQueue();
+  m_pCommandList  = m_pCommandQueue->BeginCommandList();
+  m_pCommandList->End();
+
   ResetContextState();
 }
 
@@ -161,7 +168,7 @@ xiiRenderContext::Statistics xiiRenderContext::GetAndResetStatistics()
   return ret;
 }
 
-xiiGALCommandList* xiiRenderContext::BeginRendering(xiiGALCommandQueue* pCommandQueue, const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName, bool bStereoSupport)
+xiiGALCommandList* xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName, bool bStereoSupport)
 {
   xiiGALTextureViewHandle hRTV;
   {
@@ -196,7 +203,7 @@ xiiGALCommandList* xiiRenderContext::BeginRendering(xiiGALCommandQueue* pCommand
   gc.ViewportSize   = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
   gc.NumMsaaSamples = uiSampleCount;
 
-  auto pGALCommandList = pCommandQueue->BeginCommandList(sName);
+  m_pCommandList->Begin(sName);
 
   GetRenderPassAndFramebuffer(renderingSetup, m_hCurrentRenderPass, m_hCurrentFramebuffer, &m_BeginRenderPass);
 
@@ -208,14 +215,12 @@ xiiGALCommandList* xiiRenderContext::BeginRendering(xiiGALCommandQueue* pCommand
   viewPort.m_fMinDepth = 0.0f;
   viewPort.m_fMaxDepth = 0.1f;
 
-  pGALCommandList->SetViewports(xiiMakeArrayPtr(&viewPort, 1), viewport.width, viewport.height);
+  m_pCommandList->SetViewports(xiiMakeArrayPtr(&viewPort, 1), viewport.width, viewport.height);
 
-  m_pCommandQueue    = pCommandQueue;
-  m_pGALCommandList  = pGALCommandList;
   m_bCompute         = false;
   m_bStereoRendering = bStereoSupport;
 
-  return pGALCommandList;
+  return m_pCommandList;
 }
 
 void xiiRenderContext::BeginRenderPass()
@@ -238,21 +243,11 @@ void xiiRenderContext::EndRenderPass()
 
 void xiiRenderContext::EndRendering()
 {
-  m_pCommandQueue->Submit(GetGraphicsCommandList());
-
-  // See TODO below.
-  if (!m_hCurrentPipelineState.IsInvalidated())
-  {
-    xiiGALDevice::GetDefaultDevice()->DestroyPipelineState(m_hCurrentPipelineState);
-
-    m_hCurrentPipelineState.Invalidate();
-  }
+  m_pCommandQueue->Submit(GetGraphicsCommandList(), false);
 
   m_BeginRenderPass     = xiiGALBeginRenderPassDescription();
   m_hCurrentFramebuffer = xiiGALFramebufferHandle();
   m_hCurrentRenderPass  = xiiGALRenderPassHandle();
-  m_pCommandQueue       = nullptr;
-  m_pGALCommandList     = nullptr;
   m_bStereoRendering    = false;
 
   // TODO: The render context needs to reset its state after every encoding block if we want to record to separate command buffers.
@@ -261,25 +256,20 @@ void xiiRenderContext::EndRendering()
   // ResetContextState();
 }
 
-xiiGALCommandList* xiiRenderContext::BeginCompute(xiiGALCommandQueue* pCommandQueue, xiiStringView sName /*= {}*/)
+xiiGALCommandList* xiiRenderContext::BeginCompute(xiiStringView sName /*= {}*/)
 {
   XII_ASSERT_DEV(m_hCurrentRenderPass.IsInvalidated() && m_hCurrentFramebuffer.IsInvalidated(), "Render pass and frame buffer are still active.");
 
-  auto pGALCommandList = pCommandQueue->BeginCommandList(sName);
+  m_pCommandList->Begin(sName);
 
-  m_pCommandQueue   = pCommandQueue;
-  m_pGALCommandList = pGALCommandList;
-  m_bCompute        = true;
+  m_bCompute = true;
 
-  return pGALCommandList;
+  return m_pCommandList;
 }
 
 void xiiRenderContext::EndCompute()
 {
-  m_pCommandQueue->Submit(GetComputeCommandList());
-
-  m_pCommandQueue   = nullptr;
-  m_pGALCommandList = nullptr;
+  m_pCommandQueue->Submit(GetComputeCommandList(), false);
 
   // TODO: See EndRendering
   // ResetContextState();
@@ -860,7 +850,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       }
     }
 
-    m_pGALCommandList->SetPipelineState(m_hCurrentPipelineState);
+    m_pCommandList->SetPipelineState(m_hCurrentPipelineState);
   }
 
   return XII_SUCCESS;
@@ -869,6 +859,8 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 void xiiRenderContext::ResetContextState()
 {
   m_StateFlags = xiiRenderContextFlags::AllStatesInvalid;
+
+  m_pCommandList->Reset();
 
   m_hActiveShader.Invalidate();
   m_hActiveGALShader.Invalidate();
@@ -1418,7 +1410,7 @@ void xiiRenderContext::UploadConstants()
     xiiConstantBufferStorageBase*  pConstantBufferStorage = nullptr;
     if (TryGetConstantBufferStorage(hConstantBufferStorage, pConstantBufferStorage))
     {
-      pConstantBufferStorage->UploadData(m_pGALCommandList);
+      pConstantBufferStorage->UploadData(m_pCommandList);
     }
   }
 }

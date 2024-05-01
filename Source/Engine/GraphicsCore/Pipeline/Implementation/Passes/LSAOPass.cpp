@@ -138,7 +138,6 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
     return;
 
   xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
-  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*GetName()*/);
 
   xiiGALRenderingSetup renderingSetup;
   xiiGALTextureHandle  tempTexture;
@@ -157,7 +156,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
   // Line Sweep part (compute)
   {
     XII_PROFILE_SCOPE("Line Sweep");
-    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginComputeScope(pGALCommandQueue, renderViewContext, "Line Sweep");
+    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginComputeScope(renderViewContext, "Line Sweep");
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiLSAOConstants", m_hLineSweepCB);
     renderViewContext.m_pRenderContext->BindTexture2D("DepthBuffer", pDevice->GetTexture(inputs[m_PinDepthInput.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
     renderViewContext.m_pRenderContext->BindShader(m_hShaderLineSweep);
@@ -172,7 +171,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
   // Gather samples.
   {
     XII_PROFILE_SCOPE("Gather");
-    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALCommandQueue, renderViewContext, renderingSetup, "Gather Samples", renderViewContext.m_pCamera->IsStereoscopic());
+    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(renderViewContext, renderingSetup, "Gather Samples", renderViewContext.m_pCamera->IsStereoscopic());
 
     if (m_bDistributedGathering)
       renderViewContext.m_pRenderContext->SetShaderPermutationVariable("DISTRIBUTED_SSAO_GATHERING", "TRUE");
@@ -221,7 +220,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
 
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(outputs[m_PinOutput.m_uiOutputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
 
-    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALCommandQueue, renderViewContext, renderingSetup, "Averaging", renderViewContext.m_pCamera->IsStereoscopic());
+    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(renderViewContext, renderingSetup, "Averaging", renderViewContext.m_pCamera->IsStereoscopic());
 
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiLSAOConstants", m_hLineSweepCB);
     renderViewContext.m_pRenderContext->BindTexture2D("DepthBuffer", pDevice->GetTexture(inputs[m_PinDepthInput.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::ShaderResource));

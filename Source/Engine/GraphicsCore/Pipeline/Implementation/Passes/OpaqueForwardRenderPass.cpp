@@ -50,9 +50,9 @@ bool xiiOpaqueForwardRenderPass::GetRenderTargetDescriptions(const xiiView& view
   return true;
 }
 
-void xiiOpaqueForwardRenderPass::SetupResources(xiiGALCommandQueue* pGALCommandQueue, const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiOpaqueForwardRenderPass::SetupResources(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  SUPER::SetupResources(pGALCommandQueue, renderViewContext, inputs, outputs);
+  SUPER::SetupResources(renderViewContext, inputs, outputs);
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 

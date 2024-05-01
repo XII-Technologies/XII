@@ -86,7 +86,6 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
   }
 
   xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
-  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*GetName()*/);
 
   xiiUInt32 uiWidth        = pColorInput->m_Desc.m_Size.width;
   xiiUInt32 uiHeight       = pColorInput->m_Desc.m_Size.height;
@@ -154,7 +153,7 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
 
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(hOutput)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-      renderViewContext.m_pRenderContext->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Downscale", renderViewContext.m_pCamera->IsStereoscopic());
+      renderViewContext.m_pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Downscale", renderViewContext.m_pCamera->IsStereoscopic());
 
       xiiColor tintColor = (i == uiNumBlurPasses - 1) ? xiiColor(m_OuterTintColor) : xiiColor::White;
       UpdateConstantBuffer(xiiVec2(1.0f).CompDiv(targetSize), tintColor);
@@ -202,7 +201,7 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
 
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(hOutput)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-      renderViewContext.m_pRenderContext->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Upscale", renderViewContext.m_pCamera->IsStereoscopic());
+      renderViewContext.m_pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "Upscale", renderViewContext.m_pCamera->IsStereoscopic());
 
       xiiColor tintColor;
       float    fPass = (float)i;

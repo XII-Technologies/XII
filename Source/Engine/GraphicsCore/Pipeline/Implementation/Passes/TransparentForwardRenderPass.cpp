@@ -53,9 +53,8 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
   xiiGALTextureHandle hSceneColor = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
 
   xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
-  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*GetName()*/);
 
-  SetupResources(pGALCommandQueue, renderViewContext, inputs, outputs);
+  SetupResources(renderViewContext, inputs, outputs);
   SetupPermutationVars(renderViewContext);
 
   UpdateSceneColorTexture(renderViewContext, hSceneColor, pColorInput->m_TextureHandle);
@@ -71,9 +70,9 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
   xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(hSceneColor);
 }
 
-void xiiTransparentForwardRenderPass::SetupResources(xiiGALCommandQueue* pGALCommandQueue, const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiTransparentForwardRenderPass::SetupResources(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
-  SUPER::SetupResources(pGALCommandQueue, renderViewContext, inputs, outputs);
+  SUPER::SetupResources(renderViewContext, inputs, outputs);
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
