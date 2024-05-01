@@ -373,13 +373,18 @@ void xiiAOPass::CreateSampler()
   if (m_hSSAOSampler.IsInvalidated())
   {
     xiiGALSamplerCreationDescription desc;
-    desc.m_MinFilter   = xiiGALFilterType::Point;
-    desc.m_MagFilter   = xiiGALFilterType::Point;
-    desc.m_MipFilter   = xiiGALFilterType::Point;
-    desc.m_AddressU    = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
-    desc.m_AddressV    = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
-    desc.m_AddressW    = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
-    desc.m_BorderColor = xiiColor::White * m_fFadeOutEnd;
+    desc.m_MinFilter          = xiiGALFilterType::Point;
+    desc.m_MagFilter          = xiiGALFilterType::Point;
+    desc.m_MipFilter          = xiiGALFilterType::Point;
+    desc.m_AddressU           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
+    desc.m_AddressV           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
+    desc.m_AddressW           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
+    desc.m_BorderColor        = xiiColor::White * m_fFadeOutEnd;
+    desc.m_ComparisonFunction = xiiGALComparisonFunction::Never;
+    desc.m_fMipLODBias        = 0.0f;
+    desc.m_fMinLOD            = -1.0f;
+    desc.m_fMaxLOD            = 42000.0f;
+    desc.m_uiMaxAnisotropy    = 4U;
 
     m_hSSAOSampler = xiiGALDevice::GetDefaultDevice()->CreateSampler(desc);
   }
