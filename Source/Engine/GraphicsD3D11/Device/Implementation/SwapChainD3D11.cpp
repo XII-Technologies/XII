@@ -14,7 +14,6 @@
 #include <Foundation/Basics/Platform/Win/HResultUtils.h>
 
 #include <VersionHelpers.h>
-#include <d3d11_1.h>
 #include <dxgi1_4.h>
 
 // clang-format off
@@ -181,9 +180,6 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
 
   // Create DXGI Factory.
   IDXGIFactory4*   pDXGIFactory = pDeviceD3D11->GetDXGIFactory();
-  IDXGISwapChain1* pSwapChain1  = nullptr;
-
-  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pSwapChain1));
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullScreenDescription = {};
@@ -194,9 +190,10 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
   fullScreenDescription.Scaling                 = xiiD3D11TypeConversions::GetScalingMode(m_FullScreenMode.m_ScalingMode);
   fullScreenDescription.ScanlineOrdering        = xiiD3D11TypeConversions::GetScanLineOrder(m_FullScreenMode.m_ScanLineOrder);
 
-  if (FAILED(pDXGIFactory->CreateSwapChainForHwnd(pDeviceD3D11->GetD3D11Device(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &pSwapChain1)))
+  HRESULT hResult = pDXGIFactory->CreateSwapChainForHwnd(pDeviceD3D11->GetD3D11Device(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &m_pSwapChain);
+  if (FAILED(hResult))
   {
-    xiiLog::Error("Failed to create the DXGI Swap Chain.");
+    xiiLog::Error("Failed to create the DXGI Swap Chain: {}", xiiHRESULTtoString(hResult));
     return XII_FAILURE;
   }
 
@@ -204,10 +201,10 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
     // This is silly, but IDXGIFactory used for MakeWindowAssociation must be retrieved via
     // calling IDXGISwapchain::GetParent first, otherwise it won't work
     // https://www.gamedev.net/forums/topic/634235-dxgidisabling-altenter/?do=findComment&comment=4999990
-    IDXGIFactory1* pFactoryFromSC;
+    IDXGIFactory1* pFactoryFromSC = nullptr;
     XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pFactoryFromSC));
 
-    if (SUCCEEDED(pSwapChain1->GetParent(__uuidof(pFactoryFromSC), (void**)&pFactoryFromSC)))
+    if (SUCCEEDED(m_pSwapChain->GetParent(__uuidof(pFactoryFromSC), (void**)&pFactoryFromSC)))
     {
       // Do not allow the swap chain to handle Alt+Enter.
       pFactoryFromSC->MakeWindowAssociation(hNativeWindow, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
@@ -219,18 +216,13 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
     xiiLog::Warning("UWP applications do not support full screen mode.");
   }
 
-  if (FAILED(pDXGIFactory->CreateSwapChainForCoreWindow(pDeviceD3D11->GetD3D11Device(), reinterpret_cast<IUnknown*>(m_Description.m_pWindow->GetNativeWindowHandle()), &swapChainDescription, nullptr, &pSwapChain1)))
+  if (FAILED(pDXGIFactory->CreateSwapChainForCoreWindow(pDeviceD3D11->GetD3D11Device(), reinterpret_cast<IUnknown*>(m_Description.m_pWindow->GetNativeWindowHandle()), &swapChainDescription, nullptr, &m_pSwapChain)))
   {
     xiiLog::Error("Failed to create the DXGI Swap Chain.");
     return XII_FAILURE;
   }
 #endif
 
-  if (FAILED(pSwapChain1->QueryInterface(&m_pSwapChain)))
-  {
-    xiiLog::Error("Failed to query the required swap chain interface.");
-    return XII_FAILURE;
-  }
   return XII_SUCCESS;
 }
 
