@@ -109,7 +109,6 @@ protected:
   ID3D11Buffer*         m_pCommittedVertexBuffers[XII_GAL_MAX_VERTEX_BUFFER_COUNT]      = {};
   xiiUInt32             m_CommittedVertexBufferStrides[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
   xiiUInt32             m_CommittedVertexBufferOffsets[XII_GAL_MAX_VERTEX_BUFFER_COUNT] = {};
-  bool                  m_bCommittedVertexBufferUpToDate                                = false;
   xiiGAL::ModifiedRange m_CommittedVertexBuffersRange;
 
   ID3D11InputLayout* m_pCommittedInputLayout = nullptr;
@@ -117,7 +116,6 @@ protected:
   ID3D11Buffer* m_pCommittedIndexBuffer           = nullptr;
   DXGI_FORMAT   m_CommittedIndexBufferFormat      = DXGI_FORMAT_UNKNOWN;
   xiiUInt32     m_uiCommittedIndexDataStartOffset = 0;
-  bool          m_bCommittedIndexBufferUpToDate   = false;
 
   D3D11_PRIMITIVE_TOPOLOGY m_CommittedPrimitiveTopology  = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
   xiiColor                 m_CommittedBlendFactors       = xiiColor::White;

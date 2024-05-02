@@ -63,8 +63,6 @@ void xiiGALCommandListD3D11::BeginPlatform()
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
 
   m_RecordingState = RecordingState::Recording;
-
-  InvalidateState();
 }
 
 void xiiGALCommandListD3D11::EndPlatform()
@@ -74,8 +72,6 @@ void xiiGALCommandListD3D11::EndPlatform()
   XII_ASSERT_DEV(SUCCEEDED(m_pCommandList->FinishCommandList(0U, &m_pSubmittedCommandList)), "Failed to end command list.");
 
   m_RecordingState = RecordingState::Ended;
-
-  InvalidateResources();
 }
 
 void xiiGALCommandListD3D11::ResetPlatform()
@@ -208,7 +204,6 @@ void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, 
       }
       m_CommittedIndexBufferFormat = d3d11IndexFormat;
     }
-    m_bCommittedIndexBufferUpToDate = false;
   }
 }
 
@@ -220,29 +215,19 @@ void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xii
   {
     m_CommittedVertexBuffersRange.Reset();
 
-    bool bWasRangeModified = false;
-
     // Reset only the buffer slots that are not being set.
     for (xiiUInt32 i = 0; i < uiStartSlot; ++i)
     {
-      if (m_pCommittedVertexBuffers[i] != nullptr)
-        bWasRangeModified = true;
-
       m_pCommittedVertexBuffers[i]      = nullptr;
       m_CommittedVertexBufferOffsets[i] = 0U;
       m_CommittedVertexBufferStrides[i] = 0U;
     }
     for (xiiUInt32 i = uiStartSlot + pVertexBuffers.GetCount(); i < XII_GAL_MAX_VERTEX_BUFFER_COUNT; ++i)
     {
-      if (m_pCommittedVertexBuffers[i] != nullptr)
-        bWasRangeModified = true;
-
       m_pCommittedVertexBuffers[i]      = nullptr;
       m_CommittedVertexBufferOffsets[i] = 0U;
       m_CommittedVertexBufferStrides[i] = 0U;
     }
-
-    m_bCommittedVertexBufferUpToDate = !bWasRangeModified;
   }
 
   for (xiiUInt32 i = uiStartSlot; i < pVertexBuffers.GetCount(); ++i)
@@ -260,8 +245,6 @@ void xiiGALCommandListD3D11::SetVertexBuffersPlatform(xiiUInt32 uiStartSlot, xii
       m_CommittedVertexBufferStrides[i] = uiVertexBufferStride;
 
       m_CommittedVertexBuffersRange.SetToIncludeValue(i);
-
-      m_bCommittedVertexBufferUpToDate = false;
     }
   }
 }
@@ -771,14 +754,12 @@ void xiiGALCommandListD3D11::InvalidateResources()
   xiiMemoryUtils::Construct<ConstructAll>(m_pCommittedVertexBuffers);
   xiiMemoryUtils::Construct<ConstructAll>(m_CommittedVertexBufferStrides);
   xiiMemoryUtils::Construct<ConstructAll>(m_CommittedVertexBufferOffsets);
-  m_bCommittedVertexBufferUpToDate = false;
   m_CommittedVertexBuffersRange.Reset();
 
   m_pCommittedInputLayout           = nullptr;
   m_pCommittedIndexBuffer           = nullptr;
   m_CommittedIndexBufferFormat      = {};
   m_uiCommittedIndexDataStartOffset = 0U;
-  m_bCommittedIndexBufferUpToDate   = false;
 
   m_CommittedPrimitiveTopology  = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
   m_CommittedBlendFactors       = xiiColor::White;
@@ -930,23 +911,16 @@ xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
   m_pCommandList->IASetPrimitiveTopology(m_CommittedPrimitiveTopology);
 
   // Commit vertex buffers.
-  if (m_CommittedVertexBuffersRange.IsValid() && !m_bCommittedVertexBufferUpToDate)
+  if (m_CommittedVertexBuffersRange.IsValid())
   {
     const xiiUInt32 uiStartSlot = m_CommittedVertexBuffersRange.m_uiMin;
     const xiiUInt32 uiNumSlots  = m_CommittedVertexBuffersRange.GetCount();
 
     m_pCommandList->IASetVertexBuffers(uiStartSlot, uiNumSlots, m_pCommittedVertexBuffers + uiStartSlot, m_CommittedVertexBufferStrides + uiStartSlot, m_CommittedVertexBufferOffsets + uiStartSlot);
-
-    m_bCommittedVertexBufferUpToDate = true;
   }
 
   // Commit index buffer
-  if (!m_bCommittedIndexBufferUpToDate)
-  {
-    m_pCommandList->IASetIndexBuffer(m_pCommittedIndexBuffer, m_CommittedIndexBufferFormat, m_uiCommittedIndexDataStartOffset);
-
-    m_bCommittedIndexBufferUpToDate = true;
-  }
+  m_pCommandList->IASetIndexBuffer(m_pCommittedIndexBuffer, m_CommittedIndexBufferFormat, m_uiCommittedIndexDataStartOffset);
 
   // Commit graphics pipeline states.
   m_pCommandList->IASetInputLayout(m_pPipelineState->GetD3D11InputLayout());
@@ -954,6 +928,7 @@ xiiResult xiiGALCommandListD3D11::FlushDeferredStateChanges()
   m_pCommandList->RSSetState(m_pPipelineState->GetD3D11RasterizerState());
   m_pCommandList->OMSetDepthStencilState(m_pPipelineState->GetD3D11DepthStencilState(), m_uiCommittedStencilReference);
 
+  // Commit shader resources.
   XII_SUCCEED_OR_RETURN(m_pPipelineState->CommitShaderResources(this));
 
   return XII_SUCCESS;
