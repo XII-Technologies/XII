@@ -46,19 +46,7 @@ xiiSourcePass::xiiSourcePass(xiiStringView sName) :
 
 xiiSourcePass::~xiiSourcePass()
 {
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
-  if (!m_hRenderPass.IsInvalidated())
-  {
-    pDevice->DestroyRenderPass(m_hRenderPass);
-    m_hRenderPass.Invalidate();
-  }
-
-  if (!m_hFramebuffer.IsInvalidated())
-  {
-    pDevice->DestroyFramebuffer(m_hFramebuffer);
-    m_hFramebuffer.Invalidate();
-  }
+  DestroyRenderPasses();
 }
 
 bool xiiSourcePass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
@@ -93,6 +81,9 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     return;
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
+  /// \todo Cache created render passes and frame buffers.
+  DestroyRenderPasses();
 
   if (m_hRenderPass.IsInvalidated())
   {
@@ -153,18 +144,6 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
 
     m_hRenderPass = pDevice->CreateRenderPass(renderPassDescription);
     XII_ASSERT_DEV(!m_hRenderPass.IsInvalidated(), "Failed to create render pass.");
-  }
-
-  if (auto pFramebuffer = pDevice->GetFramebuffer(m_hFramebuffer))
-  {
-    const bool  bIsDepthAttachment = xiiGALTextureFormat::IsDepthFormat(pOutput->m_Desc.m_Format);
-    const auto& hAttachmentView    = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
-
-    if (pFramebuffer->GetDescription().m_Attachments.PeekBack() != hAttachmentView)
-    {
-      pDevice->DestroyFramebuffer(m_hFramebuffer);
-      m_hFramebuffer.Invalidate();
-    }
   }
 
   if (m_hFramebuffer.IsInvalidated())
@@ -233,6 +212,23 @@ xiiResult xiiSourcePass::Deserialize(xiiStreamReader& inout_stream)
   inout_stream >> m_ClearColor;
   inout_stream >> m_bClear;
   return XII_SUCCESS;
+}
+
+void xiiSourcePass::DestroyRenderPasses()
+{
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
+  if (!m_hRenderPass.IsInvalidated())
+  {
+    pDevice->DestroyRenderPass(m_hRenderPass);
+    m_hRenderPass.Invalidate();
+  }
+
+  if (!m_hFramebuffer.IsInvalidated())
+  {
+    pDevice->DestroyFramebuffer(m_hFramebuffer);
+    m_hFramebuffer.Invalidate();
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_SourcePass);
