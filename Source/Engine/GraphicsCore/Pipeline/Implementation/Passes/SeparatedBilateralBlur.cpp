@@ -92,7 +92,6 @@ void xiiSeparatedBilateralBlurPass::Execute(const xiiRenderViewContext& renderVi
   if (outputs[m_PinOutput.m_uiOutputIndex])
   {
     xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
-    xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*GetName()*/);
 
     // Setup input view and sampler
     xiiGALTextureViewCreationDescription rvcd;
@@ -119,7 +118,7 @@ void xiiSeparatedBilateralBlurPass::Execute(const xiiRenderViewContext& renderVi
     // Horizontal
     {
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(tempTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-      auto pCommandList = xiiRenderContext::BeginRenderingScope(pGALCommandQueue, renderViewContext, renderingSetup, "", renderViewContext.m_pCamera->IsStereoscopic());
+      auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, "", renderViewContext.m_pCamera->IsStereoscopic());
 
       renderViewContext.m_pRenderContext->SetShaderPermutationVariable("BLUR_DIRECTION", "BLUR_DIRECTION_HORIZONTAL");
       renderViewContext.m_pRenderContext->BindTexture2D("BlurSource", hBlurSourceInputView);
@@ -129,7 +128,7 @@ void xiiSeparatedBilateralBlurPass::Execute(const xiiRenderViewContext& renderVi
     // Vertical
     {
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(outputs[m_PinOutput.m_uiOutputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-      auto pCommandList = xiiRenderContext::BeginRenderingScope(pGALCommandQueue, renderViewContext, renderingSetup, "", renderViewContext.m_pCamera->IsStereoscopic());
+      auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, "", renderViewContext.m_pCamera->IsStereoscopic());
 
       renderViewContext.m_pRenderContext->SetShaderPermutationVariable("BLUR_DIRECTION", "BLUR_DIRECTION_VERTICAL");
       renderViewContext.m_pRenderContext->BindTexture2D("BlurSource", hTempTextureRView);

@@ -23,7 +23,7 @@ xiiString xiiCppProject::GetTargetSourceDir(xiiStringView sProjectDirectory /*= 
     sTargetDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
   }
 
-  sTargetDir.AppendPath("CppSource");
+  sTargetDir.AppendPath("Source");
   return sTargetDir;
 }
 

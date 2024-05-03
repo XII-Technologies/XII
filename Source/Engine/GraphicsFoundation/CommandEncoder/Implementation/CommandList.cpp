@@ -398,7 +398,7 @@ xiiResult xiiGALCommandList::DrawInstancedIndirect(xiiGALBufferHandle hIndirectA
 
   XII_VERIFY_COMMAND_LIST_RESULT(bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments), "The dispatch indirect arguments buffer '{0}' was not created with the xiiGALBindFlags::IndirectDrawArguments bind flag.", pIndirectArgumentsBuffer->GetDebugName());
 
-  /// \todo GraphicsFoundation: Add more validation and parameters (draw count, draw offse/stride, etc.).
+  /// \todo GraphicsFoundation: Add more validation and parameters (draw count, draw offset/stride, etc.).
 
   return DrawInstancedIndirectPlatform(pIndirectArgumentsBuffer, uiArgumentOffsetInBytes);
 }

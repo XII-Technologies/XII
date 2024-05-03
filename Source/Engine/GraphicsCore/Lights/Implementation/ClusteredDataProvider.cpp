@@ -68,7 +68,15 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
     desc.m_AddressU           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
     desc.m_AddressV           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
     desc.m_AddressW           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    desc.m_MinFilter          = xiiGALFilterType::ComparisonLinear;
+    desc.m_MagFilter          = xiiGALFilterType::ComparisonLinear;
+    desc.m_MipFilter          = xiiGALFilterType::ComparisonLinear;
     desc.m_ComparisonFunction = xiiGALComparisonFunction::Less;
+    desc.m_BorderColor        = xiiColor::Black;
+    desc.m_fMipLODBias        = 0.0f;
+    desc.m_fMinLOD            = -1.0f;
+    desc.m_fMaxLOD            = 42000.0f;
+    desc.m_uiMaxAnisotropy    = 4U;
 
     m_hShadowSampler = pDevice->CreateSampler(desc);
   }
@@ -77,9 +85,15 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
 
   {
     xiiGALSamplerCreationDescription desc;
-    desc.m_AddressU = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
-    desc.m_AddressV = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
-    desc.m_AddressW = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    desc.m_AddressU           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    desc.m_AddressV           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    desc.m_AddressW           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    desc.m_ComparisonFunction = xiiGALComparisonFunction::Never;
+    desc.m_BorderColor        = xiiColor::Black;
+    desc.m_fMipLODBias        = 0.0f;
+    desc.m_fMinLOD            = -1.0f;
+    desc.m_fMaxLOD            = 42000.0f;
+    desc.m_uiMaxAnisotropy    = 4U;
 
     xiiTextureUtils::ConfigureSampler(xiiTextureFilterSetting::DefaultQuality, desc);
     desc.m_uiMaxAnisotropy = xiiMath::Min(desc.m_uiMaxAnisotropy, 4u);

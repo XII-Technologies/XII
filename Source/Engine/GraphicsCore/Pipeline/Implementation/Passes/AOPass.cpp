@@ -109,8 +109,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
     return;
   }
 
-  xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
-  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*GetName()*/);
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiUInt32 uiWidth  = pDepthInput->m_Desc.m_Size.width;
   xiiUInt32 uiHeight = pDepthInput->m_Desc.m_Size.height;
@@ -204,7 +203,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
 
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hOutputView);
-      renderViewContext.m_pRenderContext->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "SSAOMipMaps", renderViewContext.m_pCamera->IsStereoscopic());
+      renderViewContext.m_pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "SSAOMipMaps", renderViewContext.m_pCamera->IsStereoscopic());
 
       xiiDownscaleDepthConstants* constants = xiiRenderContext::GetConstantBufferData<xiiDownscaleDepthConstants>(m_hDownscaleConstantBuffer);
       constants->PixelSize                  = pixelSize;
@@ -245,7 +244,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   {
     xiiGALRenderingSetup renderingSetup;
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(tempSSAOTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALCommandQueue, renderViewContext, renderingSetup, "SSAO", renderViewContext.m_pCamera->IsStereoscopic());
+    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(renderViewContext, renderingSetup, "SSAO", renderViewContext.m_pCamera->IsStereoscopic());
 
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
     renderViewContext.m_pRenderContext->BindShader(m_hSSAOShader);
@@ -265,7 +264,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   {
     xiiGALRenderingSetup renderingSetup;
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
-    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(pGALCommandQueue, renderViewContext, renderingSetup, "Blur", renderViewContext.m_pCamera->IsStereoscopic());
+    auto pCommandEncoder = renderViewContext.m_pRenderContext->BeginRenderingScope(renderViewContext, renderingSetup, "Blur", renderViewContext.m_pCamera->IsStereoscopic());
 
     renderViewContext.m_pRenderContext->BindConstantBuffer("xiiSSAOConstants", m_hSSAOConstantBuffer);
     renderViewContext.m_pRenderContext->BindShader(m_hBlurShader);
@@ -373,13 +372,18 @@ void xiiAOPass::CreateSampler()
   if (m_hSSAOSampler.IsInvalidated())
   {
     xiiGALSamplerCreationDescription desc;
-    desc.m_MinFilter   = xiiGALFilterType::Point;
-    desc.m_MagFilter   = xiiGALFilterType::Point;
-    desc.m_MipFilter   = xiiGALFilterType::Point;
-    desc.m_AddressU    = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
-    desc.m_AddressV    = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
-    desc.m_AddressW    = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
-    desc.m_BorderColor = xiiColor::White * m_fFadeOutEnd;
+    desc.m_MinFilter          = xiiGALFilterType::Point;
+    desc.m_MagFilter          = xiiGALFilterType::Point;
+    desc.m_MipFilter          = xiiGALFilterType::Point;
+    desc.m_AddressU           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
+    desc.m_AddressV           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
+    desc.m_AddressW           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::ClampBorder);
+    desc.m_BorderColor        = xiiColor::White * m_fFadeOutEnd;
+    desc.m_ComparisonFunction = xiiGALComparisonFunction::Never;
+    desc.m_fMipLODBias        = 0.0f;
+    desc.m_fMinLOD            = -1.0f;
+    desc.m_fMaxLOD            = 42000.0f;
+    desc.m_uiMaxAnisotropy    = 4U;
 
     m_hSSAOSampler = xiiGALDevice::GetDefaultDevice()->CreateSampler(desc);
   }

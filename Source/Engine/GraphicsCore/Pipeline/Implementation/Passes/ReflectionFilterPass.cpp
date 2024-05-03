@@ -73,9 +73,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
 
   auto pInputCubemap = pDevice->GetTexture(m_hInputCubemap);
   if (pInputCubemap == nullptr)
-  {
     return;
-  }
 
   // We cannot allow the filter to work on fallback resources as the step will not be repeated for static cube maps. Thus, we force loading the shaders and disable async shader loading in this scope.
   xiiResourceManager::ForceLoadResourceNow(m_hFilteredSpecularShader);
@@ -83,15 +81,13 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
   bool bAllowAsyncShaderLoading = renderViewContext.m_pRenderContext->GetAllowAsyncShaderLoading();
   renderViewContext.m_pRenderContext->SetAllowAsyncShaderLoading(false);
 
-  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*GetName()*/);
-  XII_SCOPE_EXIT(
-    {
-      renderViewContext.m_pRenderContext->SetAllowAsyncShaderLoading(bAllowAsyncShaderLoading);
-    });
+  XII_SCOPE_EXIT({
+    renderViewContext.m_pRenderContext->SetAllowAsyncShaderLoading(bAllowAsyncShaderLoading);
+  });
 
   if (pInputCubemap->GetDescription().m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
   {
-    auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(pGALCommandQueue, renderViewContext, xiiGALRenderingSetup(), "MipMaps");
+    auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, xiiGALRenderingSetup(), "MipMaps");
     pCommandEncoder->GenerateMips(pDevice->GetTexture(m_hInputCubemap)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
   }
 
@@ -104,7 +100,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
       xiiUInt32 uiWidth  = pFilteredSpecularOutput->m_Desc.m_Size.width;
       xiiUInt32 uiHeight = pFilteredSpecularOutput->m_Desc.m_Size.height;
 
-      auto pCommandEncoder = xiiRenderContext::BeginComputeScope(pGALCommandQueue, renderViewContext, "ReflectionFilter");
+      auto pCommandEncoder = xiiRenderContext::BeginComputeScope(renderViewContext, "ReflectionFilter");
       renderViewContext.m_pRenderContext->BindTextureCube("InputCubemap", pDevice->GetTexture(m_hInputCubemap)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
       renderViewContext.m_pRenderContext->BindConstantBuffer("xiiReflectionFilteredSpecularConstants", m_hFilteredSpecularConstantBuffer);
       renderViewContext.m_pRenderContext->BindShader(m_hFilteredSpecularShader);
@@ -140,7 +136,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
   auto pIrradianceOutput = outputs[m_PinIrradianceData.m_uiOutputIndex];
   if (pIrradianceOutput != nullptr && !pIrradianceOutput->m_TextureHandle.IsInvalidated())
   {
-    auto pCommandEncoder = xiiRenderContext::BeginComputeScope(pGALCommandQueue, renderViewContext, "Irradiance");
+    auto pCommandEncoder = xiiRenderContext::BeginComputeScope(renderViewContext, "Irradiance");
 
     xiiGALTextureViewHandle hIrradianceOutput;
     {

@@ -15,6 +15,8 @@ public:
   virtual xiiResult Serialize(xiiStreamWriter& inout_stream) const override;
   virtual xiiResult Deserialize(xiiStreamReader& inout_stream) override;
 
+  void DestroyRenderPasses();
+
 protected:
   xiiRenderPipelineNodeOutputPin m_PinOutput;
 

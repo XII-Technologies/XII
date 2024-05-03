@@ -56,13 +56,13 @@ public:
 
   Statistics GetAndResetStatistics();
 
-  xiiGALCommandList* BeginRendering(xiiGALCommandQueue* pCommandQueue, const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName = {}, bool bStereoRendering = false);
+  xiiGALCommandList* BeginRendering(const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName = {}, bool bStereoRendering = false);
   void               BeginRenderPass();
   void               NextSubpass();
   void               EndRenderPass();
   void               EndRendering();
 
-  xiiGALCommandList* BeginCompute(xiiGALCommandQueue* pCommandQueue, xiiStringView sName = {});
+  xiiGALCommandList* BeginCompute(xiiStringView sName = {});
   void               EndCompute();
 
   // Helper class to automatically end rendering or compute on scope exit
@@ -76,74 +76,68 @@ public:
     {
       if (m_RenderContext.m_bCompute)
       {
-        m_RenderContext.EndComputeCommandList(m_pGALCommandList);
+        m_RenderContext.EndComputeCommandList(m_pCommandList);
       }
       else
       {
-        m_RenderContext.EndGraphicsCommandList(m_pGALCommandList);
+        m_RenderContext.EndGraphicsCommandList(m_pCommandList);
       }
     }
 
-    XII_ALWAYS_INLINE T* operator->() { return m_pGALCommandList; }
-    XII_ALWAYS_INLINE    operator const T*() { return m_pGALCommandList; }
+    XII_ALWAYS_INLINE T* operator->() { return m_pCommandList; }
+    XII_ALWAYS_INLINE    operator const T*() { return m_pCommandList; }
 
   private:
     friend class xiiRenderContext;
 
     XII_ALWAYS_INLINE CommandListScope(xiiRenderContext& renderContext, xiiGALCommandQueue* pCommandQueue, T* pGALCommandList) :
-      m_RenderContext(renderContext), m_pCommandQueue(pCommandQueue), m_pGALCommandList(pGALCommandList)
+      m_RenderContext(renderContext), m_pCommandQueue(pCommandQueue), m_pCommandList(pGALCommandList)
     {
     }
 
     xiiRenderContext&   m_RenderContext;
-    xiiGALCommandQueue* m_pCommandQueue   = nullptr;
-    T*                  m_pGALCommandList = nullptr;
+    xiiGALCommandQueue* m_pCommandQueue = nullptr;
+    T*                  m_pCommandList  = nullptr;
   };
 
   using RenderingScope = CommandListScope<xiiGALCommandList>;
-  XII_ALWAYS_INLINE static RenderingScope BeginRenderingScope(xiiGALCommandQueue* pCommandQueue, const xiiRenderViewContext& viewContext, const xiiGALRenderingSetup& renderingSetup, xiiStringView sName = {}, bool bStereoRendering = false)
+  XII_ALWAYS_INLINE static RenderingScope BeginRenderingScope(const xiiRenderViewContext& viewContext, const xiiGALRenderingSetup& renderingSetup, xiiStringView sName = {}, bool bStereoRendering = false)
   {
-    return RenderingScope(*viewContext.m_pRenderContext, nullptr, viewContext.m_pRenderContext->BeginRendering(pCommandQueue, renderingSetup, viewContext.m_pViewData->m_ViewPortRect, sName, bStereoRendering));
+    return RenderingScope(*viewContext.m_pRenderContext, nullptr, viewContext.m_pRenderContext->BeginRendering(renderingSetup, viewContext.m_pViewData->m_ViewPortRect, sName, bStereoRendering));
   }
 
   XII_ALWAYS_INLINE static RenderingScope BeginPassAndRenderingScope(const xiiRenderViewContext& viewContext, const xiiGALRenderingSetup& renderingSetup, xiiStringView sName, bool bStereoRendering = false)
   {
-    xiiGALCommandQueue* pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetGraphicsQueue();
-
-    return RenderingScope(*viewContext.m_pRenderContext, pCommandQueue, viewContext.m_pRenderContext->BeginRendering(pCommandQueue, renderingSetup, viewContext.m_pViewData->m_ViewPortRect, "", bStereoRendering));
+    return RenderingScope(*viewContext.m_pRenderContext, xiiRenderContext::GetDefaultInstance()->m_pCommandQueue, viewContext.m_pRenderContext->BeginRendering(renderingSetup, viewContext.m_pViewData->m_ViewPortRect, "", bStereoRendering));
   }
 
   using ComputeScope = CommandListScope<xiiGALCommandList>;
-  XII_ALWAYS_INLINE static ComputeScope BeginComputeScope(xiiGALCommandQueue* pCommandQueue, const xiiRenderViewContext& viewContext, xiiStringView sName = {})
+  XII_ALWAYS_INLINE static ComputeScope BeginComputeScope(const xiiRenderViewContext& viewContext, xiiStringView sName = {})
   {
-    return ComputeScope(*viewContext.m_pRenderContext, nullptr, viewContext.m_pRenderContext->BeginCompute(pCommandQueue, sName));
+    return ComputeScope(*viewContext.m_pRenderContext, nullptr, viewContext.m_pRenderContext->BeginCompute(sName));
   }
 
   XII_ALWAYS_INLINE static ComputeScope BeginPassAndComputeScope(const xiiRenderViewContext& viewContext, xiiStringView sName)
   {
-    xiiGALCommandQueue* pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetComputeQueue();
-    if (!pCommandQueue)
-      pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetGraphicsQueue();
-
-    return ComputeScope(*viewContext.m_pRenderContext, pCommandQueue, viewContext.m_pRenderContext->BeginCompute(pCommandQueue));
+    return ComputeScope(*viewContext.m_pRenderContext, xiiRenderContext::GetDefaultInstance()->m_pCommandQueue, viewContext.m_pRenderContext->BeginCompute(sName));
   }
 
   XII_ALWAYS_INLINE xiiGALCommandList* GetCommandList()
   {
-    XII_ASSERT_DEBUG(m_pGALCommandList != nullptr, "BeginRendering/Compute has not been called");
-    return m_pGALCommandList;
+    XII_ASSERT_DEBUG(m_pCommandList != nullptr, "BeginRendering/Compute has not been called");
+    return m_pCommandList;
   }
 
   XII_ALWAYS_INLINE xiiGALCommandList* GetGraphicsCommandList()
   {
-    XII_ASSERT_DEBUG(m_pGALCommandList != nullptr && !m_bCompute, "BeginRendering has not been called");
-    return m_pGALCommandList;
+    XII_ASSERT_DEBUG(m_pCommandList != nullptr && !m_bCompute, "BeginRendering has not been called");
+    return m_pCommandList;
   }
 
   XII_ALWAYS_INLINE xiiGALCommandList* GetComputeCommandList()
   {
-    XII_ASSERT_DEBUG(m_pGALCommandList != nullptr && m_bCompute, "BeginCompute has not been called");
-    return m_pGALCommandList;
+    XII_ASSERT_DEBUG(m_pCommandList != nullptr && m_bCompute, "BeginCompute has not been called");
+    return m_pCommandList;
   }
 
 
@@ -408,9 +402,9 @@ private: // Per Renderer States
   xiiGALPipelineStateHandle        m_hCurrentPipelineState;
   xiiGALFramebufferHandle          m_hCurrentFramebuffer;
   xiiGALRenderPassHandle           m_hCurrentRenderPass;
-  xiiGALCommandQueue*              m_pCommandQueue   = nullptr;
-  xiiGALCommandList*               m_pGALCommandList = nullptr;
-  bool                             m_bCompute        = false;
+  xiiGALCommandQueue*              m_pCommandQueue = nullptr;
+  xiiGALCommandList*               m_pCommandList  = nullptr;
+  bool                             m_bCompute      = false;
 
   // Member Functions
   void UploadConstants();

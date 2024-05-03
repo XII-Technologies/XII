@@ -67,9 +67,7 @@ void xiiForwardRenderPass::Execute(const xiiRenderViewContext& renderViewContext
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*GetName()*/);
-
-  SetupResources(pGALCommandQueue, renderViewContext, inputs, outputs);
+  SetupResources(renderViewContext, inputs, outputs);
   SetupPermutationVars(renderViewContext);
   SetupLighting(renderViewContext);
 
@@ -94,7 +92,7 @@ xiiResult xiiForwardRenderPass::Deserialize(xiiStreamReader& inout_stream)
   return XII_SUCCESS;
 }
 
-void xiiForwardRenderPass::SetupResources(xiiGALCommandQueue* pGALCommandQueue, const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
+void xiiForwardRenderPass::SetupResources(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -110,7 +108,7 @@ void xiiForwardRenderPass::SetupResources(xiiGALCommandQueue* pGALCommandQueue, 
     renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(inputs[m_PinDepthStencil.m_uiInputIndex]->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
   }
 
-  renderViewContext.m_pRenderContext->BeginRendering(pGALCommandQueue, std::move(renderingSetup), renderViewContext.m_pViewData->m_ViewPortRect, "", renderViewContext.m_pCamera->IsStereoscopic());
+  renderViewContext.m_pRenderContext->BeginRendering(std::move(renderingSetup), renderViewContext.m_pViewData->m_ViewPortRect, "", renderViewContext.m_pCamera->IsStereoscopic());
 }
 
 void xiiForwardRenderPass::SetupPermutationVars(const xiiRenderViewContext& renderViewContext)
