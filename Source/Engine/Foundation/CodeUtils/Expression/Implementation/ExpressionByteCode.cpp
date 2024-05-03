@@ -288,7 +288,7 @@ void xiiExpressionByteCode::Disassemble(xiiStringBuilder& out_sDisassembly) cons
     OpCode::Enum opCode = GetOpCode(pByteCode);
     {
       const char* szOpCode       = OpCode::GetName(opCode);
-      xiiUInt32    uiOpCodeLength = xiiStringUtils::GetStringElementCount(szOpCode);
+      xiiUInt32   uiOpCodeLength = xiiStringUtils::GetStringElementCount(szOpCode);
 
       out_sDisassembly.Append(szOpCode);
       for (xiiUInt32 i = uiOpCodeLength; i < s_uiMaxOpCodeLength + 1; ++i)
@@ -356,7 +356,7 @@ void xiiExpressionByteCode::Disassemble(xiiStringBuilder& out_sDisassembly) cons
     }
     else if (opCode == OpCode::Call)
     {
-      xiiUInt32    uiIndex = GetFunctionIndex(pByteCode);
+      xiiUInt32   uiIndex = GetFunctionIndex(pByteCode);
       const char* szName  = m_pFunctions[uiIndex].m_sName;
 
       xiiStringBuilder sName;

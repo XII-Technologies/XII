@@ -1036,7 +1036,7 @@ xiiResult xiiExpressionAST::ScalarizeInputs()
       for (xiiUInt32 i = 0; i < uiNumElements; ++i)
       {
         xiiEnum<VectorComponent> component = static_cast<VectorComponent::Enum>(i);
-        auto                    pNewInput = CreateInput(CreateScalarizedStreamDesc(pInput->m_Desc, component));
+        auto                     pNewInput = CreateInput(CreateScalarizedStreamDesc(pInput->m_Desc, component));
         m_InputNodes.Insert(pNewInput, uiInputIndex + i);
       }
     }

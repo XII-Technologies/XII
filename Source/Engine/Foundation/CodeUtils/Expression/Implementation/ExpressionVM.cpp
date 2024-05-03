@@ -115,8 +115,8 @@ xiiResult xiiExpressionVM::ScalarizeStreams(xiiArrayPtr<const xiiProcessingStrea
     {
       xiiStringBuilder sNewName;
       xiiHashedString  sNewNameHashed;
-      auto            data            = xiiMakeArrayPtr((xiiUInt8*)(stream.GetData()), static_cast<xiiUInt32>(stream.GetDataSize()));
-      auto            elementDataType = static_cast<xiiProcessingStream::DataType>((xiiUInt32)stream.GetDataType() & ~3u);
+      auto             data            = xiiMakeArrayPtr((xiiUInt8*)(stream.GetData()), static_cast<xiiUInt32>(stream.GetDataSize()));
+      auto             elementDataType = static_cast<xiiProcessingStream::DataType>((xiiUInt32)stream.GetDataType() & ~3u);
 
       for (xiiUInt32 i = 0; i < uiNumElements; ++i)
       {

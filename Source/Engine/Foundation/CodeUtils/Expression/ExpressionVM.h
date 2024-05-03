@@ -40,8 +40,8 @@ private:
   void RegisterDefaultFunctions();
 
   static xiiResult ScalarizeStreams(xiiArrayPtr<const xiiProcessingStream> streams, xiiDynamicArray<xiiProcessingStream>& out_ScalarizedStreams);
-  static xiiResult  AreStreamsScalarized(xiiArrayPtr<const xiiProcessingStream> streams);
-  static xiiResult  ValidateStream(const xiiProcessingStream& stream, const xiiExpression::StreamDesc& streamDesc, xiiStringView sStreamType, xiiUInt32 uiNumInstances);
+  static xiiResult AreStreamsScalarized(xiiArrayPtr<const xiiProcessingStream> streams);
+  static xiiResult ValidateStream(const xiiProcessingStream& stream, const xiiExpression::StreamDesc& streamDesc, xiiStringView sStreamType, xiiUInt32 uiNumInstances);
 
   template <typename T>
   static xiiResult MapStreams(xiiArrayPtr<const xiiExpression::StreamDesc> streamDescs, xiiArrayPtr<T> streams, xiiStringView sStreamType, xiiUInt32 uiNumInstances, xiiBitflags<Flags> flags, xiiDynamicArray<T*>& out_MappedStreams);
@@ -52,7 +52,7 @@ private:
   xiiDynamicArray<xiiProcessingStream> m_ScalarizedInputs;
   xiiDynamicArray<xiiProcessingStream> m_ScalarizedOutputs;
 
-  xiiDynamicArray<const xiiProcessingStream*>         m_MappedInputs;
+  xiiDynamicArray<const xiiProcessingStream*>   m_MappedInputs;
   xiiDynamicArray<xiiProcessingStream*>         m_MappedOutputs;
   xiiDynamicArray<const xiiExpressionFunction*> m_MappedFunctions;
 
