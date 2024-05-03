@@ -1,12 +1,17 @@
 
-XII_ALWAYS_INLINE const xiiExpressionByteCode::StorageType* xiiExpressionByteCode::GetByteCode() const
+XII_ALWAYS_INLINE const xiiExpressionByteCode::StorageType* xiiExpressionByteCode::GetByteCodeStart() const
 {
-  return m_ByteCode.GetData();
+  return m_pByteCode;
 }
 
 XII_ALWAYS_INLINE const xiiExpressionByteCode::StorageType* xiiExpressionByteCode::GetByteCodeEnd() const
 {
-  return m_ByteCode.GetData() + m_ByteCode.GetCount();
+  return m_pByteCode + m_uiByteCodeCount;
+}
+
+XII_ALWAYS_INLINE xiiArrayPtr<const xiiExpressionByteCode::StorageType> xiiExpressionByteCode::GetByteCode() const
+{
+  return xiiMakeArrayPtr(m_pByteCode, m_uiByteCodeCount);
 }
 
 XII_ALWAYS_INLINE xiiUInt32 xiiExpressionByteCode::GetNumInstructions() const
@@ -21,17 +26,17 @@ XII_ALWAYS_INLINE xiiUInt32 xiiExpressionByteCode::GetNumTempRegisters() const
 
 XII_ALWAYS_INLINE xiiArrayPtr<const xiiExpression::StreamDesc> xiiExpressionByteCode::GetInputs() const
 {
-  return m_Inputs;
+  return xiiMakeArrayPtr(m_pInputs, m_uiNumInputs);
 }
 
 XII_ALWAYS_INLINE xiiArrayPtr<const xiiExpression::StreamDesc> xiiExpressionByteCode::GetOutputs() const
 {
-  return m_Outputs;
+  return xiiMakeArrayPtr(m_pOutputs, m_uiNumOutputs);
 }
 
 XII_ALWAYS_INLINE xiiArrayPtr<const xiiExpression::FunctionDesc> xiiExpressionByteCode::GetFunctions() const
 {
-  return m_Functions;
+  return xiiMakeArrayPtr(m_pFunctions, m_uiNumFunctions);
 }
 
 // static

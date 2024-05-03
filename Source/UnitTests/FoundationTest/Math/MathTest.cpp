@@ -592,6 +592,12 @@ XII_CREATE_SIMPLE_TEST(Math, General)
       XII_TEST_FLOAT(xiiMath::SmoothStep(0.0f * iScale, 0.1f * iScale, 0.1f * iScale), iScale > 0 ? 0.0f : 1.0f, 0.000001);
       XII_TEST_FLOAT(xiiMath::SmoothStep(0.2f * iScale, 0.1f * iScale, 0.1f * iScale), iScale < 0 ? 0.0f : 1.0f, 0.000001);
     }
+
+    XII_TEST_FLOAT(xiiMath::SmoothStep(0.2f, 0.0f, 1.0f), 0.104f, 0.00001f);
+    XII_TEST_FLOAT(xiiMath::SmoothStep(0.4f, 0.2f, 0.8f), 0.259259f, 0.00001f);
+
+    XII_TEST_FLOAT(xiiMath::SmootherStep(0.2f, 0.0f, 1.0f), 0.05792f, 0.00001f);
+    XII_TEST_FLOAT(xiiMath::SmootherStep(0.4f, 0.2f, 0.8f), 0.209876f, 0.00001f);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsPowerOf")

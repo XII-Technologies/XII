@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include "Math.h"
 
 namespace xiiMath
 {
@@ -326,25 +327,33 @@ namespace xiiMath
   }
 
   template <typename Type>
-  inline Type SmoothStep(Type x, Type edge1, Type edge2)
+  inline Type SmoothStep(Type value, Type edge1, Type edge2)
   {
     const Type divider = edge2 - edge1;
 
     if (divider == (Type)0)
     {
-      if (x >= edge2)
-        return (Type)1;
-      return (Type)0;
+      return (value >= edge2) ? 1 : 0;
     }
 
-    x = (x - edge1) / divider;
+    value = Saturate((value - edge1) / divider);
 
-    if (x <= (Type)0)
-      return (Type)0;
-    if (x >= (Type)1)
-      return (Type)1;
+    return (value * value * ((Type)3 - ((Type)2 * value)));
+  }
 
-    return (x * x * ((Type)3 - ((Type)2 * x)));
+  template <typename Type>
+  Type SmootherStep(Type value, Type edge1, Type edge2)
+  {
+    const Type divider = edge2 - edge1;
+
+    if (divider == (Type)0)
+    {
+      return (value >= edge2) ? 1 : 0;
+    }
+
+    value = Saturate((value - edge1) / divider);
+
+    return (value * value * value * (value * ((Type)6 * value - (Type)15) + (Type)10));
   }
 
   inline xiiUInt8 ColorFloatToByte(float value)

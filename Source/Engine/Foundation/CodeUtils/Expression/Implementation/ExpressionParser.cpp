@@ -56,6 +56,9 @@ namespace
     {"%"_xiisv, xiiExpressionAST::NodeType::Modulo, 5},
   };
 
+  static xiiHashTable<xiiHashedString, xiiEnum<xiiExpressionAST::DataType>> s_KnownTypes;
+  static xiiHashTable<xiiHashedString, xiiEnum<xiiExpressionAST::NodeType>> s_BuiltinFunctions;
+
 } // namespace
 
 using namespace xiiTokenParseUtils;
@@ -67,6 +70,22 @@ xiiExpressionParser::xiiExpressionParser()
 }
 
 xiiExpressionParser::~xiiExpressionParser() = default;
+
+// static
+const xiiHashTable<xiiHashedString, xiiEnum<xiiExpressionAST::DataType>>& xiiExpressionParser::GetKnownTypes()
+{
+  RegisterKnownTypes();
+
+  return s_KnownTypes;
+}
+
+// static
+const xiiHashTable<xiiHashedString, xiiEnum<xiiExpressionAST::NodeType>>& xiiExpressionParser::GetBuiltinFunctions()
+{
+  RegisterBuiltinFunctions();
+
+  return s_BuiltinFunctions;
+}
 
 void xiiExpressionParser::RegisterFunction(const xiiExpression::FunctionDesc& funcDesc)
 {
@@ -123,17 +142,21 @@ xiiResult xiiExpressionParser::Parse(xiiStringView sCode, xiiArrayPtr<xiiExpress
   return XII_SUCCESS;
 }
 
+// static
 void xiiExpressionParser::RegisterKnownTypes()
 {
-  m_KnownTypes.Insert(xiiMakeHashedString("var"), xiiExpressionAST::DataType::Unknown);
+  if (s_KnownTypes.IsEmpty() == false)
+    return;
 
-  m_KnownTypes.Insert(xiiMakeHashedString("vec2"), xiiExpressionAST::DataType::Float2);
-  m_KnownTypes.Insert(xiiMakeHashedString("vec3"), xiiExpressionAST::DataType::Float3);
-  m_KnownTypes.Insert(xiiMakeHashedString("vec4"), xiiExpressionAST::DataType::Float4);
+  s_KnownTypes.Insert(xiiMakeHashedString("var"), xiiExpressionAST::DataType::Unknown);
 
-  m_KnownTypes.Insert(xiiMakeHashedString("vec2i"), xiiExpressionAST::DataType::Int2);
-  m_KnownTypes.Insert(xiiMakeHashedString("vec3i"), xiiExpressionAST::DataType::Int3);
-  m_KnownTypes.Insert(xiiMakeHashedString("vec4i"), xiiExpressionAST::DataType::Int4);
+  s_KnownTypes.Insert(xiiMakeHashedString("vec2"), xiiExpressionAST::DataType::Float2);
+  s_KnownTypes.Insert(xiiMakeHashedString("vec3"), xiiExpressionAST::DataType::Float3);
+  s_KnownTypes.Insert(xiiMakeHashedString("vec4"), xiiExpressionAST::DataType::Float4);
+
+  s_KnownTypes.Insert(xiiMakeHashedString("vec2i"), xiiExpressionAST::DataType::Int2);
+  s_KnownTypes.Insert(xiiMakeHashedString("vec3i"), xiiExpressionAST::DataType::Int3);
+  s_KnownTypes.Insert(xiiMakeHashedString("vec4i"), xiiExpressionAST::DataType::Int4);
 
   xiiStringBuilder sTypeName;
   for (xiiUInt32 type = xiiExpressionAST::DataType::Bool; type < xiiExpressionAST::DataType::Count; ++type)
@@ -144,54 +167,59 @@ void xiiExpressionParser::RegisterKnownTypes()
     xiiHashedString sTypeNameHashed;
     sTypeNameHashed.Assign(sTypeName);
 
-    m_KnownTypes.Insert(sTypeNameHashed, static_cast<xiiExpressionAST::DataType::Enum>(type));
+    s_KnownTypes.Insert(sTypeNameHashed, static_cast<xiiExpressionAST::DataType::Enum>(type));
   }
 }
 
 void xiiExpressionParser::RegisterBuiltinFunctions()
 {
+  if (s_BuiltinFunctions.IsEmpty() == false)
+    return;
+
   // Unary
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("abs"), xiiExpressionAST::NodeType::Absolute);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("saturate"), xiiExpressionAST::NodeType::Saturate);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("sqrt"), xiiExpressionAST::NodeType::Sqrt);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("exp"), xiiExpressionAST::NodeType::Exp);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("ln"), xiiExpressionAST::NodeType::Ln);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("log2"), xiiExpressionAST::NodeType::Log2);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("log10"), xiiExpressionAST::NodeType::Log10);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("pow2"), xiiExpressionAST::NodeType::Pow2);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("sin"), xiiExpressionAST::NodeType::Sin);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("cos"), xiiExpressionAST::NodeType::Cos);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("tan"), xiiExpressionAST::NodeType::Tan);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("asin"), xiiExpressionAST::NodeType::ASin);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("acos"), xiiExpressionAST::NodeType::ACos);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("atan"), xiiExpressionAST::NodeType::ATan);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("radToDeg"), xiiExpressionAST::NodeType::RadToDeg);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("rad_to_deg"), xiiExpressionAST::NodeType::RadToDeg);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("degToRad"), xiiExpressionAST::NodeType::DegToRad);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("deg_to_rad"), xiiExpressionAST::NodeType::DegToRad);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("round"), xiiExpressionAST::NodeType::Round);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("floor"), xiiExpressionAST::NodeType::Floor);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("ceil"), xiiExpressionAST::NodeType::Ceil);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("trunc"), xiiExpressionAST::NodeType::Trunc);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("frac"), xiiExpressionAST::NodeType::Frac);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("length"), xiiExpressionAST::NodeType::Length);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("normalize"), xiiExpressionAST::NodeType::Normalize);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("all"), xiiExpressionAST::NodeType::All);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("any"), xiiExpressionAST::NodeType::Any);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("abs"), xiiExpressionAST::NodeType::Absolute);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("saturate"), xiiExpressionAST::NodeType::Saturate);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("sqrt"), xiiExpressionAST::NodeType::Sqrt);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("exp"), xiiExpressionAST::NodeType::Exp);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("ln"), xiiExpressionAST::NodeType::Ln);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("log2"), xiiExpressionAST::NodeType::Log2);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("log10"), xiiExpressionAST::NodeType::Log10);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("pow2"), xiiExpressionAST::NodeType::Pow2);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("sin"), xiiExpressionAST::NodeType::Sin);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("cos"), xiiExpressionAST::NodeType::Cos);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("tan"), xiiExpressionAST::NodeType::Tan);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("asin"), xiiExpressionAST::NodeType::ASin);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("acos"), xiiExpressionAST::NodeType::ACos);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("atan"), xiiExpressionAST::NodeType::ATan);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("radToDeg"), xiiExpressionAST::NodeType::RadToDeg);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("rad_to_deg"), xiiExpressionAST::NodeType::RadToDeg);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("degToRad"), xiiExpressionAST::NodeType::DegToRad);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("deg_to_rad"), xiiExpressionAST::NodeType::DegToRad);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("round"), xiiExpressionAST::NodeType::Round);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("floor"), xiiExpressionAST::NodeType::Floor);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("ceil"), xiiExpressionAST::NodeType::Ceil);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("trunc"), xiiExpressionAST::NodeType::Trunc);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("frac"), xiiExpressionAST::NodeType::Frac);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("length"), xiiExpressionAST::NodeType::Length);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("normalize"), xiiExpressionAST::NodeType::Normalize);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("all"), xiiExpressionAST::NodeType::All);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("any"), xiiExpressionAST::NodeType::Any);
 
   // Binary
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("mod"), xiiExpressionAST::NodeType::Modulo);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("log"), xiiExpressionAST::NodeType::Log);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("pow"), xiiExpressionAST::NodeType::Pow);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("min"), xiiExpressionAST::NodeType::Min);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("max"), xiiExpressionAST::NodeType::Max);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("dot"), xiiExpressionAST::NodeType::Dot);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("cross"), xiiExpressionAST::NodeType::Cross);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("reflect"), xiiExpressionAST::NodeType::Reflect);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("mod"), xiiExpressionAST::NodeType::Modulo);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("log"), xiiExpressionAST::NodeType::Log);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("pow"), xiiExpressionAST::NodeType::Pow);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("min"), xiiExpressionAST::NodeType::Min);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("max"), xiiExpressionAST::NodeType::Max);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("dot"), xiiExpressionAST::NodeType::Dot);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("cross"), xiiExpressionAST::NodeType::Cross);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("reflect"), xiiExpressionAST::NodeType::Reflect);
 
   // Ternary
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("clamp"), xiiExpressionAST::NodeType::Clamp);
-  m_BuiltinFunctions.Insert(xiiMakeHashedString("lerp"), xiiExpressionAST::NodeType::Lerp);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("clamp"), xiiExpressionAST::NodeType::Clamp);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("lerp"), xiiExpressionAST::NodeType::Lerp);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("smoothstep"), xiiExpressionAST::NodeType::SmoothStep);
+  s_BuiltinFunctions.Insert(xiiMakeHashedString("smootherstep"), xiiExpressionAST::NodeType::SmootherStep);
 }
 
 void xiiExpressionParser::SetupInAndOutputs(xiiArrayPtr<xiiExpression::StreamDesc> inputs, xiiArrayPtr<xiiExpression::StreamDesc> outputs)
@@ -201,6 +229,7 @@ void xiiExpressionParser::SetupInAndOutputs(xiiArrayPtr<xiiExpression::StreamDes
   for (auto& inputDesc : inputs)
   {
     auto pInput = m_pAST->CreateInput(inputDesc);
+    m_pAST->m_InputNodes.PushBack(pInput);
     m_KnownVariables.Insert(inputDesc.m_sName, pInput);
   }
 
@@ -243,7 +272,7 @@ xiiResult xiiExpressionParser::ParseStatement()
 xiiResult xiiExpressionParser::ParseType(xiiStringView sTypeName, xiiEnum<xiiExpressionAST::DataType>& out_type)
 {
   xiiTempHashedString sTypeNameHashed(sTypeName);
-  if (m_KnownTypes.TryGetValue(sTypeNameHashed, out_type))
+  if (s_KnownTypes.TryGetValue(sTypeNameHashed, out_type))
   {
     return XII_SUCCESS;
   }
@@ -265,17 +294,17 @@ xiiResult xiiExpressionParser::ParseVariableDefinition(xiiEnum<xiiExpressionAST:
   xiiExpressionAST::Node* pVariableNode;
   if (m_KnownVariables.TryGetValue(sHashedVarName, pVariableNode))
   {
-    xiiStringView sExisting = "a variable";
+    const char* szExisting = "a variable";
     if (xiiExpressionAST::NodeType::IsInput(pVariableNode->m_Type))
     {
-      sExisting = "an input";
+      szExisting = "an input";
     }
     else if (xiiExpressionAST::NodeType::IsOutput(pVariableNode->m_Type))
     {
-      sExisting = "an output";
+      szExisting = "an output";
     }
 
-    ReportError(pIdentifierToken, xiiFmt("Local variable '{}' cannot be defined because {} of the same name already exists", pIdentifierToken->m_DataView, sExisting));
+    ReportError(pIdentifierToken, xiiFmt("Local variable '{}' cannot be defined because {} of the same name already exists", pIdentifierToken->m_DataView, szExisting));
     return XII_FAILURE;
   }
 
@@ -553,7 +582,7 @@ xiiExpressionAST::Node* xiiExpressionParser::ParseFunctionCall(xiiStringView sFu
   sHashedFuncName.Assign(sFunctionName);
 
   xiiEnum<xiiExpressionAST::DataType> dataType;
-  if (m_KnownTypes.TryGetValue(sHashedFuncName, dataType))
+  if (s_KnownTypes.TryGetValue(sHashedFuncName, dataType))
   {
     xiiUInt32 uiElementCount = xiiExpressionAST::DataType::GetElementCount(dataType);
     if (arguments.GetCount() > uiElementCount)
@@ -566,7 +595,7 @@ xiiExpressionAST::Node* xiiExpressionParser::ParseFunctionCall(xiiStringView sFu
   }
 
   xiiEnum<xiiExpressionAST::NodeType> builtinType;
-  if (m_BuiltinFunctions.TryGetValue(sHashedFuncName, builtinType))
+  if (s_BuiltinFunctions.TryGetValue(sHashedFuncName, builtinType))
   {
     if (xiiExpressionAST::NodeType::IsUnary(builtinType))
     {
@@ -740,6 +769,5 @@ xiiResult xiiExpressionParser::CheckOutputs()
 
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Expression_Implementation_ExpressionParser);

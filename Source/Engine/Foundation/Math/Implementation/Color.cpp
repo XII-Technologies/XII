@@ -429,9 +429,19 @@ const xiiColor xiiColor::WhiteSmoke(xiiColorGammaUB(0xF5, 0xF5, 0xF5));
 const xiiColor xiiColor::Yellow(xiiColorGammaUB(0xFF, 0xFF, 0x00));
 const xiiColor xiiColor::YellowGreen(xiiColorGammaUB(0x9A, 0xCD, 0x32));
 
+xiiColor xiiColor::NaN()
+{
+  return xiiColor(xiiMath::NaN<float>(), xiiMath::NaN<float>(), xiiMath::NaN<float>(), xiiMath::NaN<float>());
+}
+
 xiiColor xiiColor::ZeroColor()
 {
   return xiiColor(0.0f, 0.0f, 0.0f, 0.0f);
+}
+
+xiiColor xiiColor::FromRGBA(float fLinearRed, float fLinearGreen, float fLinearBlue, float fLinearAlpha)
+{
+  return xiiColor(fLinearRed, fLinearGreen, fLinearBlue, fLinearAlpha);
 }
 
 xiiUInt32 xiiColor::ToRGBA8() const

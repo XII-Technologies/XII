@@ -386,13 +386,15 @@ namespace
     xiiProcessingStream inputs[] = {
       xiiProcessingStream(s_sA, a.GetByteArrayPtr(), StreamDataTypeDeduction<T>::Type),
       xiiProcessingStream(s_sB, b.GetByteArrayPtr(), StreamDataTypeDeduction<T>::Type),
+      xiiProcessingStream(s_sC, a.GetByteArrayPtr(), StreamDataTypeDeduction<T>::Type), // Dummy stream, not actually used
+      xiiProcessingStream(s_sD, a.GetByteArrayPtr(), StreamDataTypeDeduction<T>::Type), // Dummy stream, not actually used
     };
 
     xiiProcessingStream outputs[] = {
       xiiProcessingStream(s_sOutput, o.GetByteArrayPtr(), StreamDataTypeDeduction<T>::Type),
     };
 
-    XII_TEST_BOOL(s_pVM->Execute(testByteCode, inputs, outputs, uiCount).Succeeded());
+    XII_TEST_BOOL(s_pVM->Execute(testByteCode, inputs, outputs, uiCount, xiiExpression::GlobalData(), xiiExpressionVM::Flags::BestPerformance).Succeeded());
 
     for (xiiUInt32 i = 0; i < uiCount; ++i)
     {
@@ -860,6 +862,24 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     XII_TEST_FLOAT(TestInstruction("output = lerp(a, b, c)", -1.0f, -11.0f, 0.1f), -2.0f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = lerp(1, 5, 0.75)"), 4.0f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = lerp(-1, -11, 0.1)"), -2.0f, xiiMath::DefaultEpsilon<float>());
+
+    // SmoothStep
+    XII_TEST_FLOAT(TestInstruction("output = smoothstep(a, b, c)", 0.0f, 0.0f, 1.0f), 0.0f, xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = smoothstep(a, b, c)", 0.2f, 0.0f, 1.0f), xiiMath::SmoothStep(0.2f, 0.0f, 1.0f), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = smoothstep(a, b, c)", 0.5f, 0.0f, 1.0f), 0.5f, xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = smoothstep(a, b, c)", 0.2f, 0.2f, 0.8f), 0.0f, xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = smoothstep(a, b, c)", 0.4f, 0.2f, 0.8f), xiiMath::SmoothStep(0.4f, 0.2f, 0.8f), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestConstant<float>("output = smoothstep(0.2, 0, 1)"), xiiMath::SmoothStep(0.2f, 0.0f, 1.0f), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestConstant<float>("output = smoothstep(0.4, 0.2, 0.8)"), xiiMath::SmoothStep(0.4f, 0.2f, 0.8f), xiiMath::DefaultEpsilon<float>());
+
+    // SmootherStep
+    XII_TEST_FLOAT(TestInstruction("output = smootherstep(a, b, c)", 0.0f, 0.0f, 1.0f), 0.0f, xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = smootherstep(a, b, c)", 0.2f, 0.0f, 1.0f), xiiMath::SmootherStep(0.2f, 0.0f, 1.0f), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = smootherstep(a, b, c)", 0.5f, 0.0f, 1.0f), 0.5f, xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = smootherstep(a, b, c)", 0.2f, 0.2f, 0.8f), 0.0f, xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = smootherstep(a, b, c)", 0.4f, 0.2f, 0.8f), xiiMath::SmootherStep(0.4f, 0.2f, 0.8f), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestConstant<float>("output = smootherstep(0.2, 0, 1)"), xiiMath::SmootherStep(0.2f, 0.0f, 1.0f), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestConstant<float>("output = smootherstep(0.4, 0.2, 0.8)"), xiiMath::SmootherStep(0.4f, 0.2f, 0.8f), xiiMath::DefaultEpsilon<float>());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Local variables")

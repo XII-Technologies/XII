@@ -449,6 +449,35 @@ xiiExpressionAST::Node* xiiExpressionAST::ReplaceUnsupportedInstructions(Node* p
     auto pBMinusA     = CreateBinaryOperator(NodeType::Subtract, pBValue, pAValue);
     return CreateBinaryOperator(NodeType::Add, pAValue, CreateBinaryOperator(NodeType::Multiply, pSValue, pBMinusA));
   }
+  else if (nodeType == NodeType::SmoothStep || nodeType == NodeType::SmootherStep)
+  {
+    auto pTernaryNode = static_cast<const TernaryOperator*>(pNode);
+    auto pXValue      = pTernaryNode->m_pFirstOperand;
+    auto pEdge1Value  = pTernaryNode->m_pSecondOperand;
+    auto pEdge2Value  = pTernaryNode->m_pThirdOperand;
+
+    auto pXMinusEdge1 = CreateBinaryOperator(NodeType::Subtract, pXValue, pEdge1Value);
+    auto pDivider     = CreateBinaryOperator(NodeType::Subtract, pEdge2Value, pEdge1Value);
+    auto pNormalizedX = CreateBinaryOperator(NodeType::Divide, pXMinusEdge1, pDivider);
+    auto pX           = ReplaceUnsupportedInstructions(CreateUnaryOperator(NodeType::Saturate, pNormalizedX));
+    auto pXX          = CreateBinaryOperator(NodeType::Multiply, pX, pX);
+
+    if (nodeType == NodeType::SmoothStep)
+    {
+      auto p2X       = CreateBinaryOperator(NodeType::Multiply, pX, CreateConstant(2));
+      auto p3Minus2X = CreateBinaryOperator(NodeType::Subtract, CreateConstant(3), p2X);
+      return CreateBinaryOperator(NodeType::Multiply, pXX, p3Minus2X);
+    }
+    else
+    {
+      auto pXXX       = CreateBinaryOperator(NodeType::Multiply, pXX, pX);
+      auto p6X        = CreateBinaryOperator(NodeType::Multiply, pX, CreateConstant(6));
+      auto p6XMinus15 = CreateBinaryOperator(NodeType::Subtract, p6X, CreateConstant(15));
+      auto pTimesX    = CreateBinaryOperator(NodeType::Multiply, p6XMinus15, pX);
+      auto pAdd10     = CreateBinaryOperator(NodeType::Add, pTimesX, CreateConstant(10));
+      return CreateBinaryOperator(NodeType::Multiply, pXXX, pAdd10);
+    }
+  }
   else if (nodeType == NodeType::TypeConversion)
   {
     auto pUnaryNode = static_cast<const UnaryOperator*>(pNode);
@@ -889,8 +918,9 @@ xiiExpressionAST::Node* xiiExpressionAST::FoldConstants(Node* pNode)
   else if (NodeType::IsTernary(nodeType))
   {
     auto pTernaryNode = static_cast<const TernaryOperator*>(pNode);
-    if (nodeType == NodeType::Clamp || nodeType == NodeType::Lerp)
+    if (nodeType == NodeType::Clamp || nodeType == NodeType::Lerp || nodeType == NodeType::SmoothStep || nodeType == NodeType::SmootherStep)
     {
+      // Nothing to do here since these nodes will be replaced at a later step anyways
       return pNode;
     }
     else if (nodeType == NodeType::Select)
@@ -990,6 +1020,31 @@ xiiExpressionAST::Node* xiiExpressionAST::Validate(Node* pNode)
   return pNode;
 }
 
+xiiResult xiiExpressionAST::ScalarizeInputs()
+{
+  for (xiiUInt32 uiInputIndex = 0; uiInputIndex < m_InputNodes.GetCount(); ++uiInputIndex)
+  {
+    const auto pInput = m_InputNodes[uiInputIndex];
+    if (pInput == nullptr)
+      return XII_FAILURE;
+
+    const xiiUInt32 uiNumElements = pInput->m_uiNumInputElements;
+    if (uiNumElements > 1)
+    {
+      m_InputNodes.RemoveAtAndCopy(uiInputIndex);
+
+      for (xiiUInt32 i = 0; i < uiNumElements; ++i)
+      {
+        xiiEnum<VectorComponent> component = static_cast<VectorComponent::Enum>(i);
+        auto                    pNewInput = CreateInput(CreateScalarizedStreamDesc(pInput->m_Desc, component));
+        m_InputNodes.Insert(pNewInput, uiInputIndex + i);
+      }
+    }
+  }
+
+  return XII_SUCCESS;
+}
+
 xiiResult xiiExpressionAST::ScalarizeOutputs()
 {
   for (xiiUInt32 uiOutputIndex = 0; uiOutputIndex < m_OutputNodes.GetCount(); ++uiOutputIndex)
@@ -1015,6 +1070,5 @@ xiiResult xiiExpressionAST::ScalarizeOutputs()
 
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Expression_Implementation_ExpressionASTTransforms);

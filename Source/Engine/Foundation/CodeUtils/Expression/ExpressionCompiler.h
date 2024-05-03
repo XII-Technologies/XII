@@ -19,7 +19,7 @@ private:
   xiiResult UpdateRegisterLifetime(const xiiExpressionAST& ast);
   xiiResult AssignRegisters();
   xiiResult GenerateByteCode(const xiiExpressionAST& ast, xiiExpressionByteCode& out_byteCode);
-  xiiResult GenerateConstantByteCode(const xiiExpressionAST::Constant* pConstant, xiiExpressionByteCode& out_byteCode);
+  xiiResult GenerateConstantByteCode(const xiiExpressionAST::Constant* pConstant);
 
   using TransformFunc = xiiDelegate<xiiExpressionAST::Node*(xiiExpressionAST::Node*)>;
   xiiResult TransformASTPreOrder(xiiExpressionAST& ast, TransformFunc func);
@@ -37,6 +37,8 @@ private:
   xiiHashTable<xiiHashedString, xiiUInt32> m_InputToIndex;
   xiiHashTable<xiiHashedString, xiiUInt32> m_OutputToIndex;
   xiiHashTable<xiiHashedString, xiiUInt32> m_FunctionToIndex;
+
+  xiiDynamicArray<xiiUInt32> m_ByteCode;
 
   struct LiveInterval
   {

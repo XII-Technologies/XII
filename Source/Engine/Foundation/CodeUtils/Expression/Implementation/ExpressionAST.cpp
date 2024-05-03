@@ -148,6 +148,8 @@ namespace
     "Clamp",
     "Select",
     "Lerp",
+    "SmoothStep",
+    "SmootherStep",
     "",
 
     "Constant",
@@ -262,6 +264,8 @@ namespace
     {SIG3(Float, Float, Float, Float), SIG3(Int, Int, Int, Int)},                               // Clamp,
     {SIG3(Float, Bool, Float, Float), SIG3(Int, Bool, Int, Int), SIG3(Bool, Bool, Bool, Bool)}, // Select,
     {SIG3(Float, Float, Float, Float)},                                                         // Lerp,
+    {SIG3(Float, Float, Float, Float)},                                                         // SmoothStep,
+    {SIG3(Float, Float, Float, Float)},                                                         // SmootherStep,
     {},                                                                                         // LastTernary,
 
     {}, // Constant,
@@ -577,10 +581,11 @@ xiiExpressionAST::Swizzle* xiiExpressionAST::CreateSwizzle(xiiArrayPtr<xiiEnum<V
 
 xiiExpressionAST::Input* xiiExpressionAST::CreateInput(const xiiExpression::StreamDesc& desc)
 {
-  auto pInput          = XII_NEW(&m_Allocator, Input);
-  pInput->m_Type       = NodeType::Input;
-  pInput->m_ReturnType = DataType::FromStreamType(desc.m_DataType);
-  pInput->m_Desc       = desc;
+  auto pInput                  = XII_NEW(&m_Allocator, Input);
+  pInput->m_Type               = NodeType::Input;
+  pInput->m_ReturnType         = DataType::FromStreamType(desc.m_DataType);
+  pInput->m_uiNumInputElements = static_cast<xiiUInt8>(DataType::GetElementCount(pInput->m_ReturnType));
+  pInput->m_Desc               = desc;
 
   return pInput;
 }
@@ -1276,6 +1281,5 @@ bool xiiExpressionAST::IsEqual(const Node* pNodeA, const Node* pNodeB)
   XII_ASSERT_NOT_IMPLEMENTED;
   return false;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Expression_Implementation_ExpressionAST);

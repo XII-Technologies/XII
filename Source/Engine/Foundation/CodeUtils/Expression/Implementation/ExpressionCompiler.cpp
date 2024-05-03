@@ -172,6 +172,7 @@ xiiResult xiiExpressionCompiler::TransformAndOptimizeAST(xiiExpressionAST& ast, 
   XII_SUCCEED_OR_RETURN(TransformASTPreOrder(ast, xiiMakeDelegate(&xiiExpressionAST::ReplaceVectorInstructions, &ast)));
   DumpAST(ast, sDebugAstOutputPath, "_02_ReplacedVectorInst");
 
+  XII_SUCCEED_OR_RETURN(ast.ScalarizeInputs());
   XII_SUCCEED_OR_RETURN(ast.ScalarizeOutputs());
   XII_SUCCEED_OR_RETURN(TransformASTPreOrder(ast, xiiMakeDelegate(&xiiExpressionAST::ScalarizeVectorInstructions, &ast)));
   DumpAST(ast, sDebugAstOutputPath, "_03_Scalarized");
@@ -357,12 +358,32 @@ xiiResult xiiExpressionCompiler::AssignRegisters()
 
 xiiResult xiiExpressionCompiler::GenerateByteCode(const xiiExpressionAST& ast, xiiExpressionByteCode& out_byteCode)
 {
-  auto& byteCode = out_byteCode.m_ByteCode;
+  xiiHybridArray<xiiExpression::StreamDesc, 8>   inputs;
+  xiiHybridArray<xiiExpression::StreamDesc, 8>   outputs;
+  xiiHybridArray<xiiExpression::FunctionDesc, 4> functions;
+
+  m_ByteCode.Clear();
 
   xiiUInt32 uiMaxRegisterIndex = 0;
 
   m_InputToIndex.Clear();
+  for (xiiUInt32 i = 0; i < ast.m_InputNodes.GetCount(); ++i)
+  {
+    auto& desc = ast.m_InputNodes[i]->m_Desc;
+    m_InputToIndex.Insert(desc.m_sName, i);
+
+    inputs.PushBack(desc);
+  }
+
   m_OutputToIndex.Clear();
+  for (xiiUInt32 i = 0; i < ast.m_OutputNodes.GetCount(); ++i)
+  {
+    auto& desc = ast.m_OutputNodes[i]->m_Desc;
+    m_OutputToIndex.Insert(desc.m_sName, i);
+
+    outputs.PushBack(desc);
+  }
+
   m_FunctionToIndex.Clear();
 
   for (auto pCurrentNode : m_NodeInstructions)
@@ -396,42 +417,42 @@ xiiResult xiiExpressionCompiler::GenerateByteCode(const xiiExpressionAST& ast, x
     {
       auto pUnary = static_cast<const xiiExpressionAST::UnaryOperator*>(pCurrentNode);
 
-      byteCode.PushBack(opCode);
-      byteCode.PushBack(uiTargetRegister);
-      byteCode.PushBack(m_NodeToRegisterIndex[pUnary->m_pOperand]);
+      m_ByteCode.PushBack(opCode);
+      m_ByteCode.PushBack(uiTargetRegister);
+      m_ByteCode.PushBack(m_NodeToRegisterIndex[pUnary->m_pOperand]);
     }
     else if (xiiExpressionAST::NodeType::IsBinary(nodeType))
     {
       auto pBinary = static_cast<const xiiExpressionAST::BinaryOperator*>(pCurrentNode);
 
-      byteCode.PushBack(opCode);
-      byteCode.PushBack(uiTargetRegister);
-      byteCode.PushBack(m_NodeToRegisterIndex[pBinary->m_pLeftOperand]);
+      m_ByteCode.PushBack(opCode);
+      m_ByteCode.PushBack(uiTargetRegister);
+      m_ByteCode.PushBack(m_NodeToRegisterIndex[pBinary->m_pLeftOperand]);
 
       if (bRightIsConstant)
       {
-        XII_SUCCEED_OR_RETURN(GenerateConstantByteCode(static_cast<const xiiExpressionAST::Constant*>(pBinary->m_pRightOperand), out_byteCode));
+        XII_SUCCEED_OR_RETURN(GenerateConstantByteCode(static_cast<const xiiExpressionAST::Constant*>(pBinary->m_pRightOperand)));
       }
       else
       {
-        byteCode.PushBack(m_NodeToRegisterIndex[pBinary->m_pRightOperand]);
+        m_ByteCode.PushBack(m_NodeToRegisterIndex[pBinary->m_pRightOperand]);
       }
     }
     else if (xiiExpressionAST::NodeType::IsTernary(nodeType))
     {
       auto pTernary = static_cast<const xiiExpressionAST::TernaryOperator*>(pCurrentNode);
 
-      byteCode.PushBack(opCode);
-      byteCode.PushBack(uiTargetRegister);
-      byteCode.PushBack(m_NodeToRegisterIndex[pTernary->m_pFirstOperand]);
-      byteCode.PushBack(m_NodeToRegisterIndex[pTernary->m_pSecondOperand]);
-      byteCode.PushBack(m_NodeToRegisterIndex[pTernary->m_pThirdOperand]);
+      m_ByteCode.PushBack(opCode);
+      m_ByteCode.PushBack(uiTargetRegister);
+      m_ByteCode.PushBack(m_NodeToRegisterIndex[pTernary->m_pFirstOperand]);
+      m_ByteCode.PushBack(m_NodeToRegisterIndex[pTernary->m_pSecondOperand]);
+      m_ByteCode.PushBack(m_NodeToRegisterIndex[pTernary->m_pThirdOperand]);
     }
     else if (xiiExpressionAST::NodeType::IsConstant(nodeType))
     {
-      byteCode.PushBack(opCode);
-      byteCode.PushBack(uiTargetRegister);
-      XII_SUCCEED_OR_RETURN(GenerateConstantByteCode(static_cast<const xiiExpressionAST::Constant*>(pCurrentNode), out_byteCode));
+      m_ByteCode.PushBack(opCode);
+      m_ByteCode.PushBack(uiTargetRegister);
+      XII_SUCCEED_OR_RETURN(GenerateConstantByteCode(static_cast<const xiiExpressionAST::Constant*>(pCurrentNode)));
     }
     else if (xiiExpressionAST::NodeType::IsInput(nodeType))
     {
@@ -439,32 +460,26 @@ xiiResult xiiExpressionCompiler::GenerateByteCode(const xiiExpressionAST& ast, x
       xiiUInt32 uiInputIndex = 0;
       if (!m_InputToIndex.TryGetValue(desc.m_sName, uiInputIndex))
       {
-        uiInputIndex = out_byteCode.m_Inputs.GetCount();
+        uiInputIndex = inputs.GetCount();
         m_InputToIndex.Insert(desc.m_sName, uiInputIndex);
 
-        out_byteCode.m_Inputs.PushBack(desc);
+        inputs.PushBack(desc);
       }
 
-      byteCode.PushBack(opCode);
-      byteCode.PushBack(uiTargetRegister);
-      byteCode.PushBack(uiInputIndex);
+      m_ByteCode.PushBack(opCode);
+      m_ByteCode.PushBack(uiTargetRegister);
+      m_ByteCode.PushBack(uiInputIndex);
     }
     else if (xiiExpressionAST::NodeType::IsOutput(nodeType))
     {
       auto      pOutput       = static_cast<const xiiExpressionAST::Output*>(pCurrentNode);
       auto&     desc          = pOutput->m_Desc;
       xiiUInt32 uiOutputIndex = 0;
-      if (!m_OutputToIndex.TryGetValue(desc.m_sName, uiOutputIndex))
-      {
-        uiOutputIndex = out_byteCode.m_Outputs.GetCount();
-        m_OutputToIndex.Insert(desc.m_sName, uiOutputIndex);
+      XII_VERIFY(m_OutputToIndex.TryGetValue(desc.m_sName, uiOutputIndex), "Invalid output '{}'", desc.m_sName);
 
-        out_byteCode.m_Outputs.PushBack(desc);
-      }
-
-      byteCode.PushBack(opCode);
-      byteCode.PushBack(uiOutputIndex);
-      byteCode.PushBack(m_NodeToRegisterIndex[pOutput->m_pExpression]);
+      m_ByteCode.PushBack(opCode);
+      m_ByteCode.PushBack(uiOutputIndex);
+      m_ByteCode.PushBack(m_NodeToRegisterIndex[pOutput->m_pExpression]);
     }
     else if (xiiExpressionAST::NodeType::IsFunctionCall(nodeType))
     {
@@ -475,22 +490,22 @@ xiiResult xiiExpressionCompiler::GenerateByteCode(const xiiExpressionAST& ast, x
       xiiUInt32 uiFunctionIndex = 0;
       if (!m_FunctionToIndex.TryGetValue(sMangledName, uiFunctionIndex))
       {
-        uiFunctionIndex = out_byteCode.m_Functions.GetCount();
+        uiFunctionIndex = functions.GetCount();
         m_FunctionToIndex.Insert(sMangledName, uiFunctionIndex);
 
-        out_byteCode.m_Functions.PushBack(*pDesc);
-        out_byteCode.m_Functions.PeekBack().m_sName = std::move(sMangledName);
+        functions.PushBack(*pDesc);
+        functions.PeekBack().m_sName = std::move(sMangledName);
       }
 
-      byteCode.PushBack(opCode);
-      byteCode.PushBack(uiFunctionIndex);
-      byteCode.PushBack(uiTargetRegister);
+      m_ByteCode.PushBack(opCode);
+      m_ByteCode.PushBack(uiFunctionIndex);
+      m_ByteCode.PushBack(uiTargetRegister);
 
-      byteCode.PushBack(pFunctionCall->m_Arguments.GetCount());
+      m_ByteCode.PushBack(pFunctionCall->m_Arguments.GetCount());
       for (auto pArg : pFunctionCall->m_Arguments)
       {
         xiiUInt32 uiArgRegister = m_NodeToRegisterIndex[pArg];
-        byteCode.PushBack(uiArgRegister);
+        m_ByteCode.PushBack(uiArgRegister);
       }
     }
     else
@@ -499,29 +514,25 @@ xiiResult xiiExpressionCompiler::GenerateByteCode(const xiiExpressionAST& ast, x
     }
   }
 
-  out_byteCode.m_uiNumInstructions  = m_NodeInstructions.GetCount();
-  out_byteCode.m_uiNumTempRegisters = uiMaxRegisterIndex + 1;
-
+  out_byteCode.Init(m_ByteCode, inputs, outputs, functions, uiMaxRegisterIndex + 1, m_NodeInstructions.GetCount());
   return XII_SUCCESS;
 }
 
-xiiResult xiiExpressionCompiler::GenerateConstantByteCode(const xiiExpressionAST::Constant* pConstant, xiiExpressionByteCode& out_byteCode)
+xiiResult xiiExpressionCompiler::GenerateConstantByteCode(const xiiExpressionAST::Constant* pConstant)
 {
-  auto& byteCode = out_byteCode.m_ByteCode;
-
   if (pConstant->m_ReturnType == xiiExpressionAST::DataType::Float)
   {
-    byteCode.PushBack(*reinterpret_cast<const xiiUInt32*>(&pConstant->m_Value.Get<float>()));
+    m_ByteCode.PushBack(*reinterpret_cast<const xiiUInt32*>(&pConstant->m_Value.Get<float>()));
     return XII_SUCCESS;
   }
   else if (pConstant->m_ReturnType == xiiExpressionAST::DataType::Int)
   {
-    byteCode.PushBack(pConstant->m_Value.Get<xiiInt32>());
+    m_ByteCode.PushBack(pConstant->m_Value.Get<int>());
     return XII_SUCCESS;
   }
   else if (pConstant->m_ReturnType == xiiExpressionAST::DataType::Bool)
   {
-    byteCode.PushBack(pConstant->m_Value.Get<bool>() ? 0xFFFFFFFF : 0);
+    m_ByteCode.PushBack(pConstant->m_Value.Get<bool>() ? 0xFFFFFFFF : 0);
     return XII_SUCCESS;
   }
 
@@ -680,6 +691,5 @@ void xiiExpressionCompiler::DumpAST(const xiiExpressionAST& ast, xiiStringView s
     xiiLog::Error("Failed to dump AST to: {}", sFullPath);
   }
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Expression_Implementation_ExpressionCompiler);

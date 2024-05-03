@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Foundation/CodeUtils/Expression/ExpressionDeclarations.h>
-#include <Foundation/Containers/DynamicArray.h>
+#include <Foundation/Containers/Blob.h>
 
 class xiiStreamWriter;
 class xiiStreamReader;
@@ -175,21 +175,26 @@ public:
       Count
     };
 
-    static const char* GetName(Enum opCode);
+    static const char* GetName(Enum code);
   };
 
   using StorageType = xiiUInt32;
 
   xiiExpressionByteCode();
+  xiiExpressionByteCode(const xiiExpressionByteCode& other);
   ~xiiExpressionByteCode();
 
+  void operator=(const xiiExpressionByteCode& other);
+
   bool operator==(const xiiExpressionByteCode& other) const;
+  bool operator!=(const xiiExpressionByteCode& other) const { return !(*this == other); }
 
   void Clear();
-  bool IsEmpty() const { return m_ByteCode.IsEmpty(); }
+  bool IsEmpty() const { return m_uiByteCodeCount == 0; }
 
-  const StorageType* GetByteCode() const;
-  const StorageType* GetByteCodeEnd() const;
+  const StorageType*             GetByteCodeStart() const;
+  const StorageType*             GetByteCodeEnd() const;
+  xiiArrayPtr<const StorageType> GetByteCode() const;
 
   xiiUInt32                                      GetNumInstructions() const;
   xiiUInt32                                      GetNumTempRegisters() const;
@@ -205,19 +210,37 @@ public:
 
   void Disassemble(xiiStringBuilder& out_sDisassembly) const;
 
-  void      Save(xiiStreamWriter& ref_stream) const;
-  xiiResult Load(xiiStreamReader& ref_stream);
+  xiiResult Save(xiiStreamWriter& inout_stream) const;
+  xiiResult Load(xiiStreamReader& inout_stream, xiiByteArrayPtr externalMemory = xiiByteArrayPtr());
+
+  xiiConstByteBlobPtr GetDataBlob() const { return m_Data.GetByteBlobPtr(); }
 
 private:
   friend class xiiExpressionCompiler;
 
-  xiiDynamicArray<StorageType>                 m_ByteCode;
-  xiiDynamicArray<xiiExpression::StreamDesc>   m_Inputs;
-  xiiDynamicArray<xiiExpression::StreamDesc>   m_Outputs;
-  xiiDynamicArray<xiiExpression::FunctionDesc> m_Functions;
+  void Init(xiiArrayPtr<const StorageType> byteCode, xiiArrayPtr<const xiiExpression::StreamDesc> inputs, xiiArrayPtr<const xiiExpression::StreamDesc> outputs, xiiArrayPtr<const xiiExpression::FunctionDesc> functions, xiiUInt32 uiNumTempRegisters, xiiUInt32 uiNumInstructions);
 
+  xiiBlob m_Data;
+
+  xiiExpression::StreamDesc*   m_pInputs    = nullptr;
+  xiiExpression::StreamDesc*   m_pOutputs   = nullptr;
+  xiiExpression::FunctionDesc* m_pFunctions = nullptr;
+  StorageType*                 m_pByteCode  = nullptr;
+
+  xiiUInt32 m_uiByteCodeCount = 0;
+  xiiUInt16 m_uiNumInputs     = 0;
+  xiiUInt16 m_uiNumOutputs    = 0;
+  xiiUInt16 m_uiNumFunctions  = 0;
+
+  xiiUInt16 m_uiNumTempRegisters = 0;
   xiiUInt32 m_uiNumInstructions  = 0;
-  xiiUInt32 m_uiNumTempRegisters = 0;
 };
+
+#if XII_ENABLED(XII_PLATFORM_64BIT)
+static_assert(sizeof(xiiExpressionByteCode) == 64);
+#endif
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_FOUNDATION_DLL, xiiExpressionByteCode);
+XII_DECLARE_CUSTOM_VARIANT_TYPE(xiiExpressionByteCode);
 
 #include <Foundation/CodeUtils/Expression/Implementation/ExpressionByteCode_inl.h>

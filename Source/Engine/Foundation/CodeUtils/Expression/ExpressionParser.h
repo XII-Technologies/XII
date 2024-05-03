@@ -9,6 +9,9 @@ public:
   xiiExpressionParser();
   ~xiiExpressionParser();
 
+  static const xiiHashTable<xiiHashedString, xiiEnum<xiiExpressionAST::DataType>>& GetKnownTypes();
+  static const xiiHashTable<xiiHashedString, xiiEnum<xiiExpressionAST::NodeType>>& GetBuiltinFunctions();
+
   void RegisterFunction(const xiiExpression::FunctionDesc& funcDesc);
   void UnregisterFunction(const xiiExpression::FunctionDesc& funcDesc);
 
@@ -22,8 +25,8 @@ public:
 private:
   static constexpr xiiInt32 s_iLowestPrecedence = 20;
 
-  void RegisterKnownTypes();
-  void RegisterBuiltinFunctions();
+  static void RegisterKnownTypes();
+  static void RegisterBuiltinFunctions();
   void SetupInAndOutputs(xiiArrayPtr<xiiExpression::StreamDesc> inputs, xiiArrayPtr<xiiExpression::StreamDesc> outputs);
 
   xiiResult ParseStatement();
@@ -58,10 +61,7 @@ private:
   xiiUInt32                       m_uiCurrentToken = 0;
   xiiExpressionAST*               m_pAST           = nullptr;
 
-  xiiHashTable<xiiHashedString, xiiEnum<xiiExpressionAST::DataType>> m_KnownTypes;
-
   xiiHashTable<xiiHashedString, xiiExpressionAST::Node*>                        m_KnownVariables;
-  xiiHashTable<xiiHashedString, xiiEnum<xiiExpressionAST::NodeType>>            m_BuiltinFunctions;
   xiiHashTable<xiiHashedString, xiiHybridArray<xiiExpression::FunctionDesc, 1>> m_FunctionDescs;
 };
 

@@ -269,7 +269,7 @@ bool xiiSmallArrayBase<T, Size>::RemoveAndSwap(const T& value)
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::RemoveAtAndCopy(xiiUInt32 uiIndex, xiiUInt32 uiNumElements /*= 1*/)
+void xiiSmallArrayBase<T, Size>::RemoveAtAndCopy(xiiUInt32 uiIndex, xiiUInt16 uiNumElements /*= 1*/)
 {
   XII_ASSERT_DEV(uiIndex + uiNumElements <= m_uiCount, "Out of bounds access. Array has {0} elements, trying to remove element at index {1}.", m_uiCount, uiIndex + uiNumElements - 1);
 
@@ -280,7 +280,7 @@ void xiiSmallArrayBase<T, Size>::RemoveAtAndCopy(xiiUInt32 uiIndex, xiiUInt32 ui
 }
 
 template <typename T, xiiUInt16 Size>
-void xiiSmallArrayBase<T, Size>::RemoveAtAndSwap(xiiUInt32 uiIndex, xiiUInt32 uiNumElements /*= 1*/)
+void xiiSmallArrayBase<T, Size>::RemoveAtAndSwap(xiiUInt32 uiIndex, xiiUInt16 uiNumElements /*= 1*/)
 {
   XII_ASSERT_DEV(uiIndex + uiNumElements <= m_uiCount, "Out of bounds access. Array has {0} elements, trying to remove element at index {1}.", m_uiCount, uiIndex + uiNumElements - 1);
 

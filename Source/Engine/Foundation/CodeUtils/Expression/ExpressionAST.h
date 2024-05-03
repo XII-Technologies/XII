@@ -84,6 +84,8 @@ public:
       Clamp,
       Select,
       Lerp,
+      SmoothStep,
+      SmootherStep,
       LastTernary,
 
       Constant,
@@ -279,7 +281,8 @@ public:
 
   void PrintGraph(xiiDGMLGraph& ref_graph) const;
 
-  xiiHybridArray<Output*, 8> m_OutputNodes;
+  xiiSmallArray<Input*, 8>  m_InputNodes;
+  xiiSmallArray<Output*, 8> m_OutputNodes;
 
   // Transforms
   Node* TypeDeductionAndConversion(Node* pNode);
@@ -290,6 +293,7 @@ public:
   Node* CommonSubexpressionElimination(Node* pNode);
   Node* Validate(Node* pNode);
 
+  xiiResult ScalarizeInputs();
   xiiResult ScalarizeOutputs();
 
 private:

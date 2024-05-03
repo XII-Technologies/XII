@@ -205,8 +205,14 @@ public:
 
   // *** Static Functions ***
 public:
+  /// \brief Returns a color with all four RGBA components set to Not-A-Number (NaN).
+  XII_NODISCARD static xiiColor NaN();
+
   /// \brief Returns a color with all four RGBA components set to zero. This is different to xiiColor::Black, which has alpha still set to 1.0.
-  static xiiColor ZeroColor();
+  XII_NODISCARD static xiiColor ZeroColor();
+
+  /// \brief Returns a color with the given r, g, b, a values. The values must be given in a linear color space.
+  XII_NODISCARD static xiiColor FromRGBA(float fLinearRed, float fLinearGreen, float fLinearBlue, float fLinearAlpha = 1.0f);
 
   // *** Constructors ***
 public:

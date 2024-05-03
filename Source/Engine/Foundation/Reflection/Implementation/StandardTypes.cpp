@@ -86,6 +86,8 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiColor, xiiNoBase, 1, xiiRTTINoAllocator)
     XII_CONSTRUCTOR_PROPERTY(float, float, float, float),
     XII_CONSTRUCTOR_PROPERTY(xiiColorLinearUB),
     XII_CONSTRUCTOR_PROPERTY(xiiColorGammaUB),
+    XII_SCRIPT_FUNCTION_PROPERTY(FromRGBA, In, "R", In, "G", In, "B", In, "A")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(SetHSV, In, "Hue", In, "Saturation", In, "Value")->AddFlags(xiiPropertyFlags::Const),
   }
   XII_END_FUNCTIONS;
 }
