@@ -144,8 +144,6 @@ public:
 
       m_pDevice->BeginPipeline("TextureSample", m_hSwapChain);
 
-      xiiGALCommandQueue* pGALCommandQueue = m_pDevice->GetGraphicsQueue();
-
       // Must always retrieve the current swapchain render target
       const xiiGALSwapChain*  pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
       xiiGALTextureViewHandle hBBRTV            = m_pDevice->GetTexture(pPrimarySwapChain->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
@@ -158,7 +156,7 @@ public:
         renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
         renderingSetup.m_bClearDepth             = true;
 
-        xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiTextureSampleMainPass");
+        xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiTextureSampleMainPass");
         xiiRenderContext::GetDefaultInstance()->BeginRenderPass();
         xiiRenderContext::GetDefaultInstance()->EndRenderPass();
         xiiRenderContext::GetDefaultInstance()->EndRendering();
@@ -170,7 +168,7 @@ public:
         renderingSetup.m_uiRenderTargetClearMask = 0x0U;
         renderingSetup.m_bClearDepth             = false;
 
-        xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight));
+        xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight));
 
         xiiMat4 Proj = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_vCameraPosition.x + -(float)g_uiWindowWidth * 0.5f, m_vCameraPosition.x + (float)g_uiWindowWidth * 0.5f, m_vCameraPosition.y + -(float)g_uiWindowHeight * 0.5f, m_vCameraPosition.y + (float)g_uiWindowHeight * 0.5f, -1.0f, 1.0f);
 
