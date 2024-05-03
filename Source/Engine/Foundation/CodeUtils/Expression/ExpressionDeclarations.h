@@ -3,6 +3,7 @@
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/SmallArray.h>
 #include <Foundation/DataProcessing/Stream/ProcessingStream.h>
+#include <Foundation/Reflection/Reflection.h>
 #include <Foundation/SimdMath/SimdVec4f.h>
 #include <Foundation/SimdMath/SimdVec4i.h>
 #include <Foundation/Types/Variant.h>
@@ -112,4 +113,27 @@ struct XII_FOUNDATION_DLL xiiDefaultExpressionFunctions
 {
   static xiiExpressionFunction s_RandomFunc;
   static xiiExpressionFunction s_PerlinNoiseFunc;
+};
+
+/// \brief Add this attribute a string property that should be interpreted as expression source.
+///
+/// The Inputs/Outputs property reference another array property on the same object that contains objects
+/// with a name and a type property that can be used for real time error checking of the expression source.
+class XII_FOUNDATION_DLL xiiExpressionWidgetAttribute : public xiiTypeWidgetAttribute
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiExpressionWidgetAttribute, xiiTypeWidgetAttribute);
+
+public:
+  xiiExpressionWidgetAttribute() = default;
+  xiiExpressionWidgetAttribute(const char* szInputsProperty, const char* szOutputProperty) :
+    m_sInputsProperty(szInputsProperty), m_sOutputsProperty(szOutputProperty)
+  {
+  }
+
+  const char* GetInputsProperty() const { return m_sInputsProperty; }
+  const char* GetOutputsProperty() const { return m_sOutputsProperty; }
+
+private:
+  xiiUntrackedString m_sInputsProperty;
+  xiiUntrackedString m_sOutputsProperty;
 };

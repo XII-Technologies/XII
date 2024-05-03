@@ -11,7 +11,7 @@ namespace
     xiiExpression::Register*                  m_pRegisters          = nullptr;
     xiiUInt32                                 m_uiNumInstances      = 0;
     xiiUInt32                                 m_uiNumSimd4Instances = 0;
-    xiiArrayPtr<xiiProcessingStream*>         m_Inputs;
+    xiiArrayPtr<const xiiProcessingStream*>   m_Inputs;
     xiiArrayPtr<xiiProcessingStream*>         m_Outputs;
     xiiArrayPtr<const xiiExpressionFunction*> m_Functions;
     const xiiExpression::GlobalData*          m_pGlobalData = nullptr;

@@ -318,9 +318,13 @@ namespace xiiMath
   template <typename T>
   [[nodiscard]] constexpr T Step(T value, T edge); // [tested]
 
-  /// \brief Returns 0, if value is <= edge1, 1 if value >= edge2 and the hermite interpolation in between
+  /// \brief Returns 0, if value is <= edge1, 1 if value >= edge2 and the hermite interpolation in between.
   template <typename Type>
   [[nodiscard]] Type SmoothStep(Type value, Type edge1, Type edge2); // [tested]
+
+  /// \brief Returns 0, if value is <= edge1, 1 if value >= edge2 and the second order hermite interpolation in between.
+  template <typename Type>
+  [[nodiscard]] Type SmootherStep(Type value, Type edge1, Type edge2); // [tested]
 
   /// \brief Returns true, if there exists some x with base^x == value.
   [[nodiscard]] XII_FOUNDATION_DLL bool IsPowerOf(xiiInt32 value, xiiInt32 iBase); // [tested]

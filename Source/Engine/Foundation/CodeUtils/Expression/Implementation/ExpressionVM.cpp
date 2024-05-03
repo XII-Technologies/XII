@@ -35,20 +35,34 @@ void xiiExpressionVM::UnregisterFunction(const xiiExpressionFunction& func)
   }
 }
 
-xiiResult xiiExpressionVM::Execute(const xiiExpressionByteCode& byteCode, xiiArrayPtr<const xiiProcessingStream> inputs, xiiArrayPtr<xiiProcessingStream> outputs, xiiUInt32 uiNumInstances, const xiiExpression::GlobalData& globalData)
+xiiResult xiiExpressionVM::Execute(const xiiExpressionByteCode& byteCode, xiiArrayPtr<const xiiProcessingStream> inputs, xiiArrayPtr<xiiProcessingStream> outputs, xiiUInt32 uiNumInstances, const xiiExpression::GlobalData& globalData, xiiBitflags<Flags> flags)
 {
-  XII_SUCCEED_OR_RETURN(ScalarizeStreams(inputs, m_ScalarizedInputs));
-  XII_SUCCEED_OR_RETURN(ScalarizeStreams(outputs, m_ScalarizedOutputs));
+  if (flags.IsSet(Flags::ScalarizeStreams))
+  {
+    XII_SUCCEED_OR_RETURN(ScalarizeStreams(inputs, m_ScalarizedInputs));
+    XII_SUCCEED_OR_RETURN(ScalarizeStreams(outputs, m_ScalarizedOutputs));
 
-  XII_SUCCEED_OR_RETURN(MapStreams(byteCode.GetInputs(), m_ScalarizedInputs, "Input", uiNumInstances, m_MappedInputs));
-  XII_SUCCEED_OR_RETURN(MapStreams(byteCode.GetOutputs(), m_ScalarizedOutputs, "Output", uiNumInstances, m_MappedOutputs));
+    inputs  = m_ScalarizedInputs;
+    outputs = m_ScalarizedOutputs;
+  }
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+  else
+  {
+    AreStreamsScalarized(inputs).AssertSuccess("Input streams are not scalarized");
+    AreStreamsScalarized(outputs).AssertSuccess("Output streams are not scalarized");
+  }
+#endif
+
+  XII_SUCCEED_OR_RETURN(MapStreams(byteCode.GetInputs(), inputs, "Input", uiNumInstances, flags, m_MappedInputs));
+  XII_SUCCEED_OR_RETURN(MapStreams(byteCode.GetOutputs(), outputs, "Output", uiNumInstances, flags, m_MappedOutputs));
+
   XII_SUCCEED_OR_RETURN(MapFunctions(byteCode.GetFunctions(), globalData));
 
   const xiiUInt32 uiTotalNumRegisters = byteCode.GetNumTempRegisters() * ((uiNumInstances + 3) / 4);
   m_Registers.SetCountUninitialized(uiTotalNumRegisters);
 
   // Execute bytecode
-  const xiiExpressionByteCode::StorageType* pByteCode    = byteCode.GetByteCode();
+  const xiiExpressionByteCode::StorageType* pByteCode    = byteCode.GetByteCodeStart();
   const xiiExpressionByteCode::StorageType* pByteCodeEnd = byteCode.GetByteCodeEnd();
 
   ExecutionContext context;
@@ -119,47 +133,90 @@ xiiResult xiiExpressionVM::ScalarizeStreams(xiiArrayPtr<const xiiProcessingStrea
   return XII_SUCCESS;
 }
 
-xiiResult xiiExpressionVM::MapStreams(xiiArrayPtr<const xiiExpression::StreamDesc> streamDescs, xiiArrayPtr<xiiProcessingStream> streams, xiiStringView sStreamType, xiiUInt32 uiNumInstances, xiiDynamicArray<xiiProcessingStream*>& out_MappedStreams)
+xiiResult xiiExpressionVM::AreStreamsScalarized(xiiArrayPtr<const xiiProcessingStream> streams)
+{
+  for (auto& stream : streams)
+  {
+    const xiiUInt32 uiNumElements = xiiExpressionAST::DataType::GetElementCount(xiiExpressionAST::DataType::FromStreamType(stream.GetDataType()));
+    if (uiNumElements > 1)
+    {
+      return XII_FAILURE;
+    }
+  }
+
+  return XII_SUCCESS;
+}
+
+
+xiiResult xiiExpressionVM::ValidateStream(const xiiProcessingStream& stream, const xiiExpression::StreamDesc& streamDesc, xiiStringView sStreamType, xiiUInt32 uiNumInstances)
+{
+  // verify stream data type
+  if (stream.GetDataType() != streamDesc.m_DataType)
+  {
+    xiiLog::Error("{} stream '{}' expects data of type '{}' or a compatible type. Given type '{}' is not compatible.", sStreamType, streamDesc.m_sName, xiiProcessingStream::GetDataTypeName(streamDesc.m_DataType), xiiProcessingStream::GetDataTypeName(stream.GetDataType()));
+    return XII_FAILURE;
+  }
+
+  // verify stream size
+  xiiUInt32 uiElementSize  = stream.GetElementSize();
+  xiiUInt32 uiExpectedSize = stream.GetElementStride() * (uiNumInstances - 1) + uiElementSize;
+
+  if (stream.GetDataSize() < uiExpectedSize)
+  {
+    xiiLog::Error("{} stream '{}' data size must be {} bytes or more. Only {} bytes given", sStreamType, streamDesc.m_sName, uiExpectedSize, stream.GetDataSize());
+    return XII_FAILURE;
+  }
+
+  return XII_SUCCESS;
+}
+
+template <typename T>
+xiiResult xiiExpressionVM::MapStreams(xiiArrayPtr<const xiiExpression::StreamDesc> streamDescs, xiiArrayPtr<T> streams, xiiStringView sStreamType, xiiUInt32 uiNumInstances, xiiBitflags<Flags> flags, xiiDynamicArray<T*>& out_MappedStreams)
 {
   out_MappedStreams.Clear();
   out_MappedStreams.Reserve(streamDescs.GetCount());
 
-  for (auto& streamDesc : streamDescs)
+  if (flags.IsSet(Flags::MapStreamsByName))
   {
-    bool bFound = false;
+    for (auto& streamDesc : streamDescs)
+    {
+      bool bFound = false;
+
+      for (xiiUInt32 i = 0; i < streams.GetCount(); ++i)
+      {
+        auto& stream = streams[i];
+        if (stream.GetName() == streamDesc.m_sName)
+        {
+          XII_SUCCEED_OR_RETURN(ValidateStream(stream, streamDesc, sStreamType, uiNumInstances));
+
+          out_MappedStreams.PushBack(&stream);
+          bFound = true;
+          break;
+        }
+      }
+
+      if (!bFound)
+      {
+        xiiLog::Error("Bytecode expects an {} stream '{}'", sStreamType, streamDesc.m_sName);
+        return XII_FAILURE;
+      }
+    }
+  }
+  else
+  {
+    if (streams.GetCount() != streamDescs.GetCount())
+      return XII_FAILURE;
 
     for (xiiUInt32 i = 0; i < streams.GetCount(); ++i)
     {
-      auto& stream = streams[i];
-      if (stream.GetName() == streamDesc.m_sName)
-      {
-        // verify stream data type
-        if (stream.GetDataType() != streamDesc.m_DataType)
-        {
-          xiiLog::Error("{} stream '{}' expects data of type '{}' or a compatible type. Given type '{}' is not compatible.", sStreamType, streamDesc.m_sName, xiiProcessingStream::GetDataTypeName(streamDesc.m_DataType), xiiProcessingStream::GetDataTypeName(stream.GetDataType()));
-          return XII_FAILURE;
-        }
+      auto& stream = streams.GetPtr()[i];
 
-        // verify stream size
-        xiiUInt32 uiElementSize  = stream.GetElementSize();
-        xiiUInt32 uiExpectedSize = stream.GetElementStride() * (uiNumInstances - 1) + uiElementSize;
+#if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
+      auto& streamDesc = streamDescs.GetPtr()[i];
+      XII_SUCCEED_OR_RETURN(ValidateStream(stream, streamDesc, sStreamType, uiNumInstances));
+#endif
 
-        if (stream.GetDataSize() < uiExpectedSize)
-        {
-          xiiLog::Error("{} stream '{}' data size must be {} bytes or more. Only {} bytes given", sStreamType, streamDesc.m_sName, uiExpectedSize, stream.GetDataSize());
-          return XII_FAILURE;
-        }
-
-        out_MappedStreams.PushBack(&stream);
-        bFound = true;
-        break;
-      }
-    }
-
-    if (!bFound)
-    {
-      xiiLog::Error("Bytecode expects an {} stream '{}'", sStreamType, streamDesc.m_sName);
-      return XII_FAILURE;
+      out_MappedStreams.PushBack(&stream);
     }
   }
 

@@ -170,8 +170,6 @@ public:
 
       m_pDevice->BeginPipeline("ShaderExplorer", m_hSwapChain);
 
-      xiiGALCommandQueue* pGALCommandQueue = m_pDevice->GetGraphicsQueue();
-
       // Must always retrieve the current swapchain render target
       const xiiGALSwapChain*  pPrimarySwapChain = m_pDevice->GetSwapChain(m_hSwapChain);
       xiiGALTextureViewHandle hBBRTV            = m_pDevice->GetTexture(pPrimarySwapChain->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
@@ -183,7 +181,7 @@ public:
       renderingSetup.m_bClearDepth             = true;
       renderingSetup.m_bClearStencil           = true;
 
-      xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(pGALCommandQueue, renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
+      xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiShaderExplorerMainPass");
 
       auto& gc = xiiRenderContext::GetDefaultInstance()->WriteGlobalConstants();
       xiiMemoryUtils::ZeroFill(&gc, 1);

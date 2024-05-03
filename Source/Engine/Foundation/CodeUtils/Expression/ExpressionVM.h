@@ -12,13 +12,39 @@ public:
   void RegisterFunction(const xiiExpressionFunction& func);
   void UnregisterFunction(const xiiExpressionFunction& func);
 
-  xiiResult Execute(const xiiExpressionByteCode& byteCode, xiiArrayPtr<const xiiProcessingStream> inputs, xiiArrayPtr<xiiProcessingStream> outputs, xiiUInt32 uiNumInstances, const xiiExpression::GlobalData& globalData = xiiExpression::GlobalData());
+  struct Flags
+  {
+    using StorageType = xiiUInt32;
+
+    enum Enum
+    {
+      MapStreamsByName = XII_BIT(0),
+      ScalarizeStreams = XII_BIT(1),
+
+      UserFriendly    = MapStreamsByName | ScalarizeStreams,
+      BestPerformance = 0,
+
+      Default = UserFriendly
+    };
+
+    struct Bits
+    {
+      StorageType MapStreamsByName : 1;
+      StorageType ScalarizeStreams : 1;
+    };
+  };
+
+  xiiResult Execute(const xiiExpressionByteCode& byteCode, xiiArrayPtr<const xiiProcessingStream> inputs, xiiArrayPtr<xiiProcessingStream> outputs, xiiUInt32 uiNumInstances, const xiiExpression::GlobalData& globalData = xiiExpression::GlobalData(), xiiBitflags<Flags> flags = Flags::Default);
 
 private:
   void RegisterDefaultFunctions();
 
   static xiiResult ScalarizeStreams(xiiArrayPtr<const xiiProcessingStream> streams, xiiDynamicArray<xiiProcessingStream>& out_ScalarizedStreams);
-  static xiiResult MapStreams(xiiArrayPtr<const xiiExpression::StreamDesc> streamDescs, xiiArrayPtr<xiiProcessingStream> streams, xiiStringView sStreamType, xiiUInt32 uiNumInstances, xiiDynamicArray<xiiProcessingStream*>& out_MappedStreams);
+  static xiiResult AreStreamsScalarized(xiiArrayPtr<const xiiProcessingStream> streams);
+  static xiiResult ValidateStream(const xiiProcessingStream& stream, const xiiExpression::StreamDesc& streamDesc, xiiStringView sStreamType, xiiUInt32 uiNumInstances);
+
+  template <typename T>
+  static xiiResult MapStreams(xiiArrayPtr<const xiiExpression::StreamDesc> streamDescs, xiiArrayPtr<T> streams, xiiStringView sStreamType, xiiUInt32 uiNumInstances, xiiBitflags<Flags> flags, xiiDynamicArray<T*>& out_MappedStreams);
   xiiResult        MapFunctions(xiiArrayPtr<const xiiExpression::FunctionDesc> functionDescs, const xiiExpression::GlobalData& globalData);
 
   xiiDynamicArray<xiiExpression::Register, xiiAlignedAllocatorWrapper> m_Registers;
@@ -26,7 +52,7 @@ private:
   xiiDynamicArray<xiiProcessingStream> m_ScalarizedInputs;
   xiiDynamicArray<xiiProcessingStream> m_ScalarizedOutputs;
 
-  xiiDynamicArray<xiiProcessingStream*>         m_MappedInputs;
+  xiiDynamicArray<const xiiProcessingStream*>   m_MappedInputs;
   xiiDynamicArray<xiiProcessingStream*>         m_MappedOutputs;
   xiiDynamicArray<const xiiExpressionFunction*> m_MappedFunctions;
 

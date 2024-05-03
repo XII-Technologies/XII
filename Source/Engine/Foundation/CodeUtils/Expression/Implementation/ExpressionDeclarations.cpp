@@ -188,5 +188,24 @@ xiiExpressionFunction xiiDefaultExpressionFunctions::s_PerlinNoiseFunc = {
   &PerlinNoise,
 };
 
+//////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiExpressionWidgetAttribute, 1, xiiRTTIDefaultAllocator<xiiExpressionWidgetAttribute>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    XII_MEMBER_PROPERTY("InputsProperty", m_sInputsProperty),
+    XII_MEMBER_PROPERTY("OutputsProperty", m_sOutputsProperty),
+  }
+  XII_END_PROPERTIES;
+  XII_BEGIN_FUNCTIONS
+  {
+    XII_CONSTRUCTOR_PROPERTY(const char*, const char*),
+  }
+  XII_END_FUNCTIONS;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 XII_STATICLINK_FILE(Foundation, Foundation_CodeUtils_Expression_Implementation_ExpressionDeclarations);
