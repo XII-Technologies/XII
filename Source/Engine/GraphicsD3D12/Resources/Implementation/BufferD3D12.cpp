@@ -9,7 +9,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALBufferD3D12::xiiGALBufferD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALBufferCreationDescription& creationDescription) :
-  xiiGALBuffer(creationDescription)
+  xiiGALBuffer(pDeviceD3D12, creationDescription)
 {
 }
 

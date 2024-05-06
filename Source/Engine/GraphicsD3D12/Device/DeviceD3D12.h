@@ -15,6 +15,8 @@ struct IDXGIFactory2;
 struct IDXGIFactory4;
 struct ID3D12Device;
 
+XII_DEFINE_AS_POD_TYPE(DXGI_MODE_DESC);
+
 using xiiGALFormatLookupEntryD3D12 = xiiGALFormatLookupEntry<DXGI_FORMAT, (DXGI_FORMAT)0U>;
 using xiiGALFormatLookupTableD3D12 = xiiGALFormatLookupTable<xiiGALFormatLookupEntryD3D12>;
 
@@ -25,12 +27,20 @@ class XII_GRAPHICSD3D12_DLL xiiGALDeviceD3D12 final : public xiiGALDevice
 private:
   friend xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
 
-  xiiGALDeviceD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALDeviceCreationDescription& description);
+  xiiGALDeviceD3D12(const xiiGALDeviceCreationDescription& description);
 
 public:
   ~xiiGALDeviceD3D12();
 
 public:
+  virtual xiiGALCommandQueue* GetGraphicsQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetComputeQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetTransferQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetSparseBindingQueue() const override final;
+
   // Internal objects retrieval.
 
   ID3D12Device*  GetDeviceD3D12() const;
@@ -54,6 +64,8 @@ public:
 protected:
   virtual xiiResult InitializePlatform() override final;
   virtual xiiResult ShutdownPlatform() override final;
+
+  virtual void CreateCommandQueuesPlatform() override final;
 
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override final;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override final;

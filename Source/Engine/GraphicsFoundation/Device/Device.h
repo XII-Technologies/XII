@@ -498,6 +498,8 @@ protected:
   virtual xiiResult InitializePlatform() = 0;
   virtual xiiResult ShutdownPlatform()   = 0;
 
+  virtual void CreateCommandQueuesPlatform() = 0;
+
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) = 0;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain)                        = 0;
 
@@ -562,8 +564,6 @@ protected:
   virtual void                 DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState)                      = 0;
 
   virtual void WaitIdlePlatform() = 0;
-
-  virtual void CreateCommandQueuesPlatform() = 0;
 
   virtual void FillCapabilitiesPlatform() = 0;
 

@@ -19,8 +19,6 @@ public:
 
   virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) override final;
 
-  Diligent::ISwapChain* GetSwapChain() const;
-
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
@@ -39,16 +37,6 @@ protected:
   void DestroyBackBufferInternal(xiiGALDeviceD3D12* pDeviceD3D12);
 
 protected:
-  struct RenderTargetInfo
-  {
-    XII_DECLARE_POD_TYPE();
-
-    Diligent::ITextureView* m_pTextureView = nullptr;
-    xiiGALTextureHandle     m_hRenderTargetHandle;
-  };
-
-  Diligent::ISwapChain*                m_pSwapChain = nullptr;
-  xiiHybridArray<RenderTargetInfo, 2U> m_BackbufferTextures;
 };
 
 #include <GraphicsD3D12/Device/Implementation/SwapChainD3D12_inl.h>

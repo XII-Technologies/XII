@@ -68,7 +68,7 @@ XII_END_SUBSYSTEM_DECLARATION;
     if (!(expression)) { return XII_FAILURE; } \
   } while (false)
 
-xiiGALDeviceD3D12::xiiGALDeviceD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALDeviceCreationDescription& description) :
+xiiGALDeviceD3D12::xiiGALDeviceD3D12(const xiiGALDeviceCreationDescription& description) :
   xiiGALDevice(description)
 {
 }
@@ -131,7 +131,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   const D3D_FEATURE_LEVEL targetFeatureLevels[]     = {D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
   const char*             targetFeatureLevelNames[] = {"12.2", "12.1", "12.0", "11.1", "11.0"};
   xiiUInt32               uiFeatureLevelIndex       = 0U;
-  HRESULT                 hResult;
+  HRESULT                 hResult                   = E_FAIL;
 
   for (const auto& featureLevel : targetFeatureLevels)
   {
@@ -282,6 +282,10 @@ xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
   return XII_SUCCESS;
 }
 
+void xiiGALDeviceD3D12::CreateCommandQueuesPlatform()
+{
+}
+
 void xiiGALDeviceD3D12::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain)
 {
   if (pSwapChain)
@@ -418,7 +422,7 @@ xiiGALBuffer* xiiGALDeviceD3D12::CreateBufferPlatform(const xiiGALBufferCreation
 {
   xiiGALBufferD3D12* pBufferD3D12 = XII_NEW(&m_Allocator, xiiGALBufferD3D12, this, description);
 
-  if (pBufferD3D12->InitPlatform(this, pInitialData).Succeeded())
+  if (pBufferD3D12->InitPlatform(pInitialData).Succeeded())
     return pBufferD3D12;
 
   XII_DELETE(&m_Allocator, pBufferD3D12);
@@ -460,7 +464,7 @@ xiiGALTexture* xiiGALDeviceD3D12::CreateTexturePlatform(const xiiGALTextureCreat
 {
   xiiGALTextureD3D12* pTextureD3D12 = XII_NEW(&m_Allocator, xiiGALTextureD3D12, this, description);
 
-  if (pTextureD3D12->InitPlatform(this, pInitialData).Succeeded())
+  if (pTextureD3D12->InitPlatform(pInitialData).Succeeded())
     return pTextureD3D12;
 
   XII_DELETE(&m_Allocator, pTextureD3D12);
@@ -793,7 +797,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
     {
       auto& queueProperty                       = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
       queueProperty.m_Type                      = queueIndexType[i];
-      queueProperty.m_MaxDeviceContexts         = 0xFFU;
+      queueProperty.m_uiMaxDeviceContexts       = 0xFFU;
       queueProperty.m_TextureCopyGranularity[0] = 1U;
       queueProperty.m_TextureCopyGranularity[1] = 1U;
       queueProperty.m_TextureCopyGranularity[2] = 1U;
@@ -971,7 +975,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
         }
       }
 
-#ifdef NTDDI_WIN10_19H1 || FORCE_NTDDI_WIN10_19H1
+#if defined(NTDDI_WIN10_19H1) || defined(FORCE_NTDDI_WIN10_19H1)
       D3D12_FEATURE_DATA_D3D12_OPTIONS6 featureDataOptions6{};
       if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &featureDataOptions6, sizeof(featureDataOptions6))))
       {
@@ -1072,9 +1076,9 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
   // Draw command properties.
   {
 #if D3D12_REQ_DRAWINDEXED_INDEX_COUNT_2_TO_EXP >= 32
-    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue = ~0u;
+    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue = ~0U;
 #else
-    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue = 1u << D3D12_REQ_DRAWINDEXED_INDEX_COUNT_2_TO_EXP;
+    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue = 1U << D3D12_REQ_DRAWINDEXED_INDEX_COUNT_2_TO_EXP;
 #endif
     m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::BaseVertex | xiiGALDrawCommandCapabilityFlags::NativeMultiDrawIndirect | xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer;
   }
@@ -1296,7 +1300,7 @@ void xiiGALDeviceD3D12::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, ID
 {
   auto DXGIAdapters = GetCompatibleAdapters(featureLevel);
 
-  DXGI_FORMAT  dxgiFormat = xiiD3D12TypeConversions::GetD3D12Format(format);
+  DXGI_FORMAT  dxgiFormat = xiiD3D12TypeConversions::GetFormat(format);
   IDXGIOutput* pOutput    = nullptr;
   if (pDXGIAdapter->EnumOutputs(uiOutputID, &pOutput) == DXGI_ERROR_NOT_FOUND)
   {

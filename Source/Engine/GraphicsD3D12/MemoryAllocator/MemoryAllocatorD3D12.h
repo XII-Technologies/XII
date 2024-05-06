@@ -1,3 +1,5 @@
+#pragma once
+
 #include <GraphicsD3D12/GraphicsD3D12DLL.h>
 
 #include <Foundation/Memory/CommonAllocators.h>
@@ -8,6 +10,9 @@ namespace D3D12MA
   class Allocator;
 }
 
+struct ID3D12Device;
+struct IDXGIAdapter1;
+
 class XII_GRAPHICSD3D12_DLL xiiMemoryAllocatorD3D12
 {
 public:
@@ -15,7 +20,7 @@ public:
   D3D12MA::Allocator* GetD3D12Allocator() { return m_pD3D12MAAllocator; }
 
 private:
-  friend class xiiMemoryAllocator;
+  friend class xiiMemoryUtils;
   friend class xiiGALDeviceD3D12;
 
   xiiMemoryAllocatorD3D12(IDXGIAdapter1* pDXGIAdapter, ID3D12Device* pDeviceD3D12);

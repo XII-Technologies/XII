@@ -11,7 +11,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALShaderD3D12::xiiGALShaderD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALShaderCreationDescription& creationDescription) :
-  xiiGALShader(creationDescription)
+  xiiGALShader(pDeviceD3D12, creationDescription)
 {
 }
 

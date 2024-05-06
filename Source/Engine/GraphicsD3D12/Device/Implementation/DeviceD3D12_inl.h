@@ -1,4 +1,24 @@
 
+XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALDeviceD3D12::GetGraphicsQueue() const
+{
+  return nullptr;
+}
+
+XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALDeviceD3D12::GetComputeQueue() const
+{
+  return nullptr;
+}
+
+XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALDeviceD3D12::GetTransferQueue() const
+{
+  return nullptr;
+}
+
+XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALDeviceD3D12::GetSparseBindingQueue() const
+{
+  return nullptr;
+}
+
 XII_ALWAYS_INLINE ID3D12Device* xiiGALDeviceD3D12::GetDeviceD3D12() const
 {
   return m_pDeviceD3D12;
