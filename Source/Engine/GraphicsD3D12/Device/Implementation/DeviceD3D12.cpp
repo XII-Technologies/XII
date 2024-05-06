@@ -80,7 +80,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   XII_LOG_BLOCK("xiiGALDeviceD3D12::InitializePlatform");
 
   // Load Direct3D 12 dynamic library.
-  XII_SUCCEED_OR_RETURN_LOG(xiiPlugin::LoadPlugin("d3d12.dll"));
+  // XII_SUCCEED_OR_RETURN_LOG(xiiPlugin::LoadPlugin("d3d12.dll"));
 
   // Enable the D3D12 debug layer.
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
@@ -222,8 +222,9 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
       XII_VERIFY(SUCCEEDED(pInfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter. Error code '{}'.", xiiArgErrorCode(GetLastError()));
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-      XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true), "Failed to set break on corruption. Error code '{}'.", xiiArgErrorCode(GetLastError()));
-      XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true), "Failed to set break on error. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+      XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE)), "Failed to set break on corruption.");
+      XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE)), "Failed to set break on error.");
+      XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE)), "Failed to set break on warning.");
 #endif
     }
     XII_GAL_D3D12_RELEASE(pInfoQueue);
@@ -793,11 +794,15 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 
     // Set queue information.
     xiiGALCommandQueueType::Enum queueIndexType[] = {xiiGALCommandQueueType::Graphics, xiiGALCommandQueueType::Compute, xiiGALCommandQueueType::Transfer};
+    m_AdapterDescription.m_CommandQueueProperties.SetCount(XII_ARRAY_SIZE(queueIndexType));
+
     for (xiiUInt32 i = 0; i < 3; ++i)
     {
       auto& queueProperty                       = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
       queueProperty.m_Type                      = queueIndexType[i];
       queueProperty.m_uiMaxDeviceContexts       = 0xFFU;
+
+      queueProperty.m_TextureCopyGranularity.SetCountUninitialized(3);
       queueProperty.m_TextureCopyGranularity[0] = 1U;
       queueProperty.m_TextureCopyGranularity[1] = 1U;
       queueProperty.m_TextureCopyGranularity[2] = 1U;

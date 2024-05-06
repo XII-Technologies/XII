@@ -21,6 +21,8 @@ void xiiShaderStateResourceDescriptor::Save(xiiStreamWriter& inout_stream) const
   {
     inout_stream << m_BlendDesc.m_bAlphaToCoverage;
     inout_stream << m_BlendDesc.m_bIndependentBlend;
+    inout_stream << m_BlendDesc.m_LogicOperationEnable;
+    inout_stream << (xiiUInt8)m_BlendDesc.m_LogicOperation.GetValue();
 
     const xiiUInt8 iBlends = m_BlendDesc.m_RenderTargets.GetCount();
     inout_stream << iBlends;
@@ -28,14 +30,12 @@ void xiiShaderStateResourceDescriptor::Save(xiiStreamWriter& inout_stream) const
     for (xiiUInt32 b = 0; b < iBlends; ++b)
     {
       inout_stream << m_BlendDesc.m_RenderTargets[b].m_bBlendEnable;
-      inout_stream << m_BlendDesc.m_RenderTargets[b].m_LogicOperationEnable;
       inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_SourceBlend.GetValue();
       inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_DestinationBlend.GetValue();
       inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_BlendOperation.GetValue();
       inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_SourceBlendAlpha.GetValue();
       inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_DestinationBlendAlpha.GetValue();
       inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_BlendOperationAlpha.GetValue();
-      inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_LogicOperation.GetValue();
       inout_stream << (xiiUInt8)m_BlendDesc.m_RenderTargets[b].m_ColorMask.GetValue();
     }
   }
@@ -83,6 +83,12 @@ void xiiShaderStateResourceDescriptor::Load(xiiStreamReader& inout_stream)
   {
     inout_stream >> m_BlendDesc.m_bAlphaToCoverage;
     inout_stream >> m_BlendDesc.m_bIndependentBlend;
+    inout_stream >> m_BlendDesc.m_LogicOperationEnable;
+    {
+      xiiUInt8 uiTemp;
+      inout_stream >> uiTemp;
+      m_BlendDesc.m_LogicOperation = (xiiGALLogicOperation::Enum)uiTemp;
+    }
 
     xiiUInt8 uiBlends = 0;
     inout_stream >> uiBlends;
@@ -92,7 +98,6 @@ void xiiShaderStateResourceDescriptor::Load(xiiStreamReader& inout_stream)
     for (xiiUInt32 b = 0; b < uiBlends; ++b)
     {
       inout_stream >> m_BlendDesc.m_RenderTargets[b].m_bBlendEnable;
-      inout_stream >> m_BlendDesc.m_RenderTargets[b].m_LogicOperationEnable;
 
       xiiUInt8 uiTemp;
       inout_stream >> uiTemp;
@@ -107,8 +112,6 @@ void xiiShaderStateResourceDescriptor::Load(xiiStreamReader& inout_stream)
       m_BlendDesc.m_RenderTargets[b].m_DestinationBlendAlpha = (xiiGALBlendFactor::Enum)uiTemp;
       inout_stream >> uiTemp;
       m_BlendDesc.m_RenderTargets[b].m_BlendOperationAlpha = (xiiGALBlendOperation::Enum)uiTemp;
-      inout_stream >> uiTemp;
-      m_BlendDesc.m_RenderTargets[b].m_LogicOperation = (xiiGALLogicOperation::Enum)uiTemp;
       inout_stream >> uiTemp;
       m_BlendDesc.m_RenderTargets[b].m_ColorMask = (xiiGALColorMask::Enum)uiTemp;
     }
@@ -400,8 +403,10 @@ xiiResult xiiShaderStateResourceDescriptor::Parse(xiiStringView sSource)
 
   // Retrieve Blend State
   {
-    m_BlendDesc.m_bAlphaToCoverage  = GetBoolStateVariable(VariableValues, "AlphaToCoverage", m_BlendDesc.m_bAlphaToCoverage);
-    m_BlendDesc.m_bIndependentBlend = GetBoolStateVariable(VariableValues, "IndependentBlend", m_BlendDesc.m_bIndependentBlend);
+    m_BlendDesc.m_bAlphaToCoverage     = GetBoolStateVariable(VariableValues, "AlphaToCoverage", m_BlendDesc.m_bAlphaToCoverage);
+    m_BlendDesc.m_bIndependentBlend    = GetBoolStateVariable(VariableValues, "IndependentBlend", m_BlendDesc.m_bIndependentBlend);
+    m_BlendDesc.m_LogicOperationEnable = GetBoolStateVariable(VariableValues, "LogicOperationEnable", m_BlendDesc.m_LogicOperationEnable);
+    m_BlendDesc.m_LogicOperation       = (xiiGALLogicOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesLogicOperation, "LogicOperation", m_BlendDesc.m_LogicOperation);
 
     xiiStringBuilder s;
 
@@ -409,13 +414,11 @@ xiiResult xiiShaderStateResourceDescriptor::Parse(xiiStringView sSource)
     for (xiiUInt32 i = 0; i < m_BlendDesc.m_RenderTargets.GetCount(); ++i)
     {
       m_BlendDesc.m_RenderTargets[i].m_bBlendEnable          = GetBoolStateVariable(VariableValues, InsertNumber("BlendEnable{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_bBlendEnable);
-      m_BlendDesc.m_RenderTargets[i].m_LogicOperationEnable  = GetBoolStateVariable(VariableValues, InsertNumber("LogicOperationEnable{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_LogicOperationEnable);
       m_BlendDesc.m_RenderTargets[i].m_SourceBlend           = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("SourceBlend{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_SourceBlend);
       m_BlendDesc.m_RenderTargets[i].m_DestinationBlend      = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("DestinationBlend{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_DestinationBlend);
       m_BlendDesc.m_RenderTargets[i].m_BlendOperation        = (xiiGALBlendOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendOperation, InsertNumber("BlendOperation{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_BlendOperation);
       m_BlendDesc.m_RenderTargets[i].m_SourceBlendAlpha      = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("SourceBlendAlpha{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_SourceBlendAlpha);
       m_BlendDesc.m_RenderTargets[i].m_DestinationBlendAlpha = (xiiGALBlendFactor::Enum)GetEnumStateVariable(VariableValues, StateValuesBlendFactor, InsertNumber("DestinationBlendAlpha{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_DestinationBlendAlpha);
-      m_BlendDesc.m_RenderTargets[i].m_LogicOperationEnable  = (xiiGALLogicOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesLogicOperation, InsertNumber("LogicOperation{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_LogicOperation);
       m_BlendDesc.m_RenderTargets[i].m_ColorMask             = (xiiGALColorMask::Enum)GetIntStateVariable(VariableValues, InsertNumber("ColorMask{0}", i, s), m_BlendDesc.m_RenderTargets[0].m_ColorMask.GetValue());
     }
   }

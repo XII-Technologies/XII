@@ -6,7 +6,7 @@
 
 class XII_GRAPHICSD3D12_DLL xiiGALRenderPassD3D12 final : public xiiGALRenderPass
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiGALRenderPassD3D12, xiiGALRasterizerState);
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALRenderPassD3D12, xiiGALRenderPass);
 
 public:
 
