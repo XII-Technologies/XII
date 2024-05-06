@@ -21,13 +21,13 @@ protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALBlendStateVulkan(const xiiGALBlendStateCreationDescription& creationDescription);
+  xiiGALBlendStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALBlendStateCreationDescription& creationDescription);
 
   virtual ~xiiGALBlendStateVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
   vk::PipelineColorBlendStateCreateInfo                                                 m_BlendState = {};

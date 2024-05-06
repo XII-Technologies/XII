@@ -4,14 +4,19 @@
 
 #include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
 
-xiiGALRasterizerStateVulkan::xiiGALRasterizerStateVulkan(const xiiGALRasterizerStateCreationDescription& creationDescription) :
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRasterizerStateVulkan, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiGALRasterizerStateVulkan::xiiGALRasterizerStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALRasterizerStateCreationDescription& creationDescription) :
   xiiGALRasterizerState(creationDescription)
 {
 }
 
 xiiGALRasterizerStateVulkan::~xiiGALRasterizerStateVulkan() = default;
 
-xiiResult xiiGALRasterizerStateVulkan::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALRasterizerStateVulkan::InitPlatform()
 {
   m_RasterizerState.sType = vk::StructureType::ePipelineRasterizationStateCreateInfo;
   m_RasterizerState.pNext = nullptr;
@@ -19,8 +24,8 @@ xiiResult xiiGALRasterizerStateVulkan::InitPlatform(xiiGALDevice* pDevice)
 
   m_RasterizerState.depthClampEnable        = VK_BOOL(m_Description.m_bDepthClipEnable);
   m_RasterizerState.rasterizerDiscardEnable = VK_FALSE;
-  m_RasterizerState.polygonMode             = xiiVulkanTypeConversions::GetVkPolygonMode(m_Description.m_FillMode);
-  m_RasterizerState.cullMode                = xiiVulkanTypeConversions::GetVkCullMode(m_Description.m_CullMode);
+  m_RasterizerState.polygonMode             = xiiVulkanTypeConversions::GetPolygonMode(m_Description.m_FillMode);
+  m_RasterizerState.cullMode                = xiiVulkanTypeConversions::GetCullMode(m_Description.m_CullMode);
   m_RasterizerState.frontFace               = m_Description.m_bFrontCounterClockwise ? vk::FrontFace::eCounterClockwise : vk::FrontFace::eClockwise;
 
   m_RasterizerState.depthBiasEnable         = VK_BOOL(m_Description.m_iDepthBias != 0 || m_Description.m_fSlopeScaledDepthBias != 0.0f);
@@ -32,7 +37,7 @@ xiiResult xiiGALRasterizerStateVulkan::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALRasterizerStateVulkan::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALRasterizerStateVulkan::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

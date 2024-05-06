@@ -7,14 +7,14 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBlendStateVulkan, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiGALBlendStateVulkan::xiiGALBlendStateVulkan(const xiiGALBlendStateCreationDescription& creationDescription) :
-  xiiGALBlendState(creationDescription)
+xiiGALBlendStateVulkan::xiiGALBlendStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALBlendStateCreationDescription& creationDescription) :
+  xiiGALBlendState(pDeviceVulkan, creationDescription)
 {
 }
 
 xiiGALBlendStateVulkan::~xiiGALBlendStateVulkan() = default;
 
-xiiResult xiiGALBlendStateVulkan::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBlendStateVulkan::InitPlatform()
 {
   // \note The blend state attachment count is known and set when the number of render targets are given.
   // \note The attachment count must be equal to the color attachment count in the subpass where this blend state is used.
@@ -25,8 +25,8 @@ xiiResult xiiGALBlendStateVulkan::InitPlatform(xiiGALDevice* pDevice)
   m_BlendState.sType             = vk::StructureType::ePipelineColorBlendStateCreateInfo;
   m_BlendState.pNext             = nullptr;
   m_BlendState.flags             = {};
-  m_BlendState.logicOpEnable     = VK_BOOL(m_Description.m_RenderTargets[0].m_LogicOperationEnable);
-  m_BlendState.logicOp           = xiiVulkanTypeConversions::GetVkLogicOp(m_Description.m_RenderTargets[0].m_LogicOperation);
+  m_BlendState.logicOpEnable     = VK_BOOL(m_Description.m_LogicOperationEnable);
+  m_BlendState.logicOp           = xiiVulkanTypeConversions::GetLogicOp(m_Description.m_LogicOperation);
   m_BlendState.blendConstants[0] = 0.0f; // We use dynamic blend constants.
   m_BlendState.blendConstants[1] = 0.0f;
   m_BlendState.blendConstants[2] = 0.0f;
@@ -40,12 +40,12 @@ xiiResult xiiGALBlendStateVulkan::InitPlatform(xiiGALDevice* pDevice)
       auto& rtAttachmentState = m_BlendAttachmentState.ExpandAndGetRef();
 
       rtAttachmentState.blendEnable         = VK_BOOL(rtBlendState.m_bBlendEnable);
-      rtAttachmentState.colorBlendOp        = xiiVulkanTypeConversions::GetVkBlendOp(rtBlendState.m_BlendOperation);
-      rtAttachmentState.alphaBlendOp        = xiiVulkanTypeConversions::GetVkBlendOp(rtBlendState.m_BlendOperationAlpha);
-      rtAttachmentState.srcColorBlendFactor = xiiVulkanTypeConversions::GetVkBlendFactor(rtBlendState.m_SourceBlend);
-      rtAttachmentState.srcAlphaBlendFactor = xiiVulkanTypeConversions::GetVkBlendFactor(rtBlendState.m_SourceBlendAlpha);
-      rtAttachmentState.dstColorBlendFactor = xiiVulkanTypeConversions::GetVkBlendFactor(rtBlendState.m_DestinationBlend);
-      rtAttachmentState.dstAlphaBlendFactor = xiiVulkanTypeConversions::GetVkBlendFactor(rtBlendState.m_DestinationBlendAlpha);
+      rtAttachmentState.colorBlendOp        = xiiVulkanTypeConversions::GetBlendOp(rtBlendState.m_BlendOperation);
+      rtAttachmentState.alphaBlendOp        = xiiVulkanTypeConversions::GetBlendOp(rtBlendState.m_BlendOperationAlpha);
+      rtAttachmentState.srcColorBlendFactor = xiiVulkanTypeConversions::GetBlendFactor(rtBlendState.m_SourceBlend);
+      rtAttachmentState.srcAlphaBlendFactor = xiiVulkanTypeConversions::GetBlendFactor(rtBlendState.m_SourceBlendAlpha);
+      rtAttachmentState.dstColorBlendFactor = xiiVulkanTypeConversions::GetBlendFactor(rtBlendState.m_DestinationBlend);
+      rtAttachmentState.dstAlphaBlendFactor = xiiVulkanTypeConversions::GetBlendFactor(rtBlendState.m_DestinationBlendAlpha);
       rtAttachmentState.colorWriteMask      = xiiVulkanTypeConversions::GetColorWriteMask(rtBlendState.m_ColorMask);
     }
   }
@@ -55,12 +55,12 @@ xiiResult xiiGALBlendStateVulkan::InitPlatform(xiiGALDevice* pDevice)
 
     vk::PipelineColorBlendAttachmentState rtAttachmentState0 = {};
     rtAttachmentState0.blendEnable                           = VK_BOOL(rtBlendState0.m_bBlendEnable);
-    rtAttachmentState0.colorBlendOp                          = xiiVulkanTypeConversions::GetVkBlendOp(rtBlendState0.m_BlendOperation);
-    rtAttachmentState0.alphaBlendOp                          = xiiVulkanTypeConversions::GetVkBlendOp(rtBlendState0.m_BlendOperationAlpha);
-    rtAttachmentState0.srcColorBlendFactor                   = xiiVulkanTypeConversions::GetVkBlendFactor(rtBlendState0.m_SourceBlend);
-    rtAttachmentState0.srcAlphaBlendFactor                   = xiiVulkanTypeConversions::GetVkBlendFactor(rtBlendState0.m_SourceBlendAlpha);
-    rtAttachmentState0.dstColorBlendFactor                   = xiiVulkanTypeConversions::GetVkBlendFactor(rtBlendState0.m_DestinationBlend);
-    rtAttachmentState0.dstAlphaBlendFactor                   = xiiVulkanTypeConversions::GetVkBlendFactor(rtBlendState0.m_DestinationBlendAlpha);
+    rtAttachmentState0.colorBlendOp                          = xiiVulkanTypeConversions::GetBlendOp(rtBlendState0.m_BlendOperation);
+    rtAttachmentState0.alphaBlendOp                          = xiiVulkanTypeConversions::GetBlendOp(rtBlendState0.m_BlendOperationAlpha);
+    rtAttachmentState0.srcColorBlendFactor                   = xiiVulkanTypeConversions::GetBlendFactor(rtBlendState0.m_SourceBlend);
+    rtAttachmentState0.srcAlphaBlendFactor                   = xiiVulkanTypeConversions::GetBlendFactor(rtBlendState0.m_SourceBlendAlpha);
+    rtAttachmentState0.dstColorBlendFactor                   = xiiVulkanTypeConversions::GetBlendFactor(rtBlendState0.m_DestinationBlend);
+    rtAttachmentState0.dstAlphaBlendFactor                   = xiiVulkanTypeConversions::GetBlendFactor(rtBlendState0.m_DestinationBlendAlpha);
     rtAttachmentState0.colorWriteMask                        = xiiVulkanTypeConversions::GetColorWriteMask(rtBlendState0.m_ColorMask);
 
     for (xiiUInt32 uiAttachmentIndex = 0; uiAttachmentIndex < m_Description.m_RenderTargets.GetCount(); ++uiAttachmentIndex)
@@ -72,7 +72,7 @@ xiiResult xiiGALBlendStateVulkan::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALBlendStateVulkan::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBlendStateVulkan::DeInitPlatform()
 {
   return XII_SUCCESS;
 }
