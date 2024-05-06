@@ -94,8 +94,8 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
         ID3D12Debug1* pDebugController1 = nullptr;
         if (SUCCEEDED(pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController1))))
         {
-          // pDebugController1->SetEnableSynchronizedCommandQueueValidation(FALSE);
-          pDebugController1->SetEnableGPUBasedValidation(true);
+          pDebugController1->SetEnableGPUBasedValidation(TRUE);
+          pDebugController1->SetEnableSynchronizedCommandQueueValidation(TRUE);
         }
         XII_GAL_D3D12_RELEASE(pDebugController1);
       }
