@@ -2,8 +2,6 @@
 
 #include <GraphicsD3D12/States/RasterizerStateD3D12.h>
 
-#include <GraphicsD3D12/Utilities/D3D12TypeConversions.h>
-
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRasterizerStateD3D12, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;

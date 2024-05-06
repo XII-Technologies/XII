@@ -4,36 +4,28 @@
 #include <GraphicsD3D12/Resources/BufferD3D12.h>
 #include <GraphicsD3D12/Resources/BufferViewD3D12.h>
 
-xiiGALBufferViewD3D12::xiiGALBufferViewD3D12(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
-  xiiGALBufferView(pBuffer, creationDescription)
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALBufferViewD3D12, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiGALBufferViewD3D12::xiiGALBufferViewD3D12(xiiGALDeviceD3D12* pDeviceD3D12, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
+  xiiGALBufferView(pDeviceD3D12, pBuffer, creationDescription)
 {
 }
 
 xiiGALBufferViewD3D12::~xiiGALBufferViewD3D12() = default;
 
-xiiResult xiiGALBufferViewD3D12::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBufferViewD3D12::InitPlatform()
 {
-  // xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
+  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
 
-  Diligent::BufferViewDesc viewDescription;
-  viewDescription.Name                 = m_Description.m_sName.GetStartPointer();
-  viewDescription.ViewType             = xiiDiligentTypeConversions::GetBufferViewType(m_Description.m_ViewType);
-  viewDescription.Format.IsNormalized  = m_Description.m_Format.m_bIsNormalized;
-  viewDescription.Format.NumComponents = m_Description.m_Format.m_uiComponents;
-  viewDescription.Format.ValueType     = xiiDiligentTypeConversions::GetValueType(m_Description.m_Format.m_ValueType);
-  viewDescription.ByteOffset           = m_Description.m_uiByteOffset;
-  viewDescription.ByteWidth            = m_Description.m_uiByteWidth;
-
-  Diligent::IBuffer* pBufferD3D12 = static_cast<xiiGALBufferD3D12*>(m_pBuffer)->GetBuffer();
-
-  pBufferD3D12->CreateView(viewDescription, &m_pBufferView);
-
-  return (m_pBufferView != nullptr) ? XII_SUCCESS : XII_FAILURE;
+  return XII_SUCCESS;
 }
 
-xiiResult xiiGALBufferViewD3D12::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBufferViewD3D12::DeInitPlatform()
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pBufferView);
+  XII_ASSERT_NOT_IMPLEMENTED;
 
   return XII_SUCCESS;
 }

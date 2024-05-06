@@ -6,26 +6,22 @@
 
 class XII_GRAPHICSD3D12_DLL xiiGALPipelineStateD3D12 final : public xiiGALPipelineState
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineStateD3D12, xiiGALPipelineState);
+
 public:
-  Diligent::IPipelineState* GetPipelineState() const;
-
-  Diligent::IShaderResourceBinding* GetShaderResourceBinding() const;
-
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALPipelineStateD3D12(const xiiGALPipelineStateCreationDescription& creationDescription);
+  xiiGALPipelineStateD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALPipelineStateCreationDescription& creationDescription);
 
   virtual ~xiiGALPipelineStateD3D12();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
-  Diligent::IPipelineState*         m_pPipelineState         = nullptr;
-  Diligent::IShaderResourceBinding* m_pShaderResourceBinding = nullptr;
 };
 
 

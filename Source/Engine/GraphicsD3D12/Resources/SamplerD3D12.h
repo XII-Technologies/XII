@@ -8,6 +8,8 @@ struct ID3D12DescriptorHeap;
 
 class XII_GRAPHICSD3D12_DLL xiiGALSamplerD3D12 final : public xiiGALSampler
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALSamplerD3D12, xiiGALSampler);
+
 public:
   D3D12_CPU_DESCRIPTOR_HANDLE GetCPUDescriptorHandle() const;
 
@@ -15,13 +17,13 @@ protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALSamplerD3D12(const xiiGALSamplerCreationDescription& creationDescription);
+  xiiGALSamplerD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALSamplerCreationDescription& creationDescription);
 
   virtual ~xiiGALSamplerD3D12();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
   ID3D12DescriptorHeap* m_pDescriptorHeap = nullptr;

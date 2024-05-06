@@ -26,13 +26,13 @@ protected:
   friend class xiiMemoryUtils;
   friend class xiiGALTexture;
 
-  xiiGALSwapChainD3D12(const xiiGALSwapChainCreationDescription& creationDescription);
+  xiiGALSwapChainD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALSwapChainCreationDescription& creationDescription);
 
   virtual ~xiiGALSwapChainD3D12();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
   xiiResult CreateBackBufferInternal(xiiGALDeviceD3D12* pDeviceD3D12);
 

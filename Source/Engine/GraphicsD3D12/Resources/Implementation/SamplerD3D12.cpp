@@ -3,16 +3,21 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Resources/SamplerD3D12.h>
 
-xiiGALSamplerD3D12::xiiGALSamplerD3D12(const xiiGALSamplerCreationDescription& creationDescription) :
-  xiiGALSampler(creationDescription)
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALSamplerD3D12, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiGALSamplerD3D12::xiiGALSamplerD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALSamplerCreationDescription& creationDescription) :
+  xiiGALSampler(pDeviceD3D12, creationDescription)
 {
 }
 
 xiiGALSamplerD3D12::~xiiGALSamplerD3D12() = default;
 
-xiiResult xiiGALSamplerD3D12::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALSamplerD3D12::InitPlatform()
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
+  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
 
   D3D12_SAMPLER_DESC samplerDescription = {};
   samplerDescription.AddressU           = xiiD3D12TypeConversions::GetTextureAddressMode(m_Description.m_AddressU);
@@ -60,7 +65,7 @@ xiiResult xiiGALSamplerD3D12::InitPlatform(xiiGALDevice* pDevice)
   return XII_SUCCESS;
 }
 
-xiiResult xiiGALSamplerD3D12::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALSamplerD3D12::DeInitPlatform()
 {
   // Schedule deletion on device.
   XII_ASSERT_NOT_IMPLEMENTED;

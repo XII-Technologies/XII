@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSD3D12_DLL xiiGALBufferD3D12 final : public xiiGALBuffer
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferD3D12, xiiGALBuffer);
+
 public:
   virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
 
@@ -19,26 +21,19 @@ public:
 
   virtual xiiGALSparseBufferProperties GetSparseProperties() const override final;
 
-  Diligent::IBuffer* GetBuffer() const;
-
-  Diligent::VALUE_TYPE GetIndexFormat() const;
-
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALBufferD3D12(const xiiGALBufferCreationDescription& creationDescription);
+  xiiGALBufferD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALBufferCreationDescription& creationDescription);
 
   virtual ~xiiGALBufferD3D12();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice, const xiiGALBufferData* pInitialData) override final;
+  virtual xiiResult InitPlatform(const xiiGALBufferData* pInitialData) override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
-  Diligent::IBuffer* m_pBuffer = nullptr;
-
-  Diligent::VALUE_TYPE m_IndexFormat = {}; // Strictly index buffers.
 };
 
 #include <GraphicsD3D12/Resources/Implementation/BufferD3D12_inl.h>

@@ -2,7 +2,10 @@
 
 #include <GraphicsD3D12/Shader/ShaderResourceVariableD3D12.h>
 
-#include <Diligent/Graphics/GraphicsEngine/interface/ShaderResourceVariable.h>
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderResourceVariableD3D12, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
 
 xiiGALShaderResourceVariableD3D12::xiiGALShaderResourceVariableD3D12() :
   xiiGALShaderResourceVariable()

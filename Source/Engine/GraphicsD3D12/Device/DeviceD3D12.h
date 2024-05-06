@@ -25,7 +25,7 @@ class XII_GRAPHICSD3D12_DLL xiiGALDeviceD3D12 final : public xiiGALDevice
 private:
   friend xiiInternal::NewInstance<xiiGALDevice> CreateD3D12Device(xiiAllocatorBase* pAllocator, const xiiGALDeviceCreationDescription& description);
 
-  xiiGALDeviceD3D12(const xiiGALDeviceCreationDescription& description);
+  xiiGALDeviceD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALDeviceCreationDescription& description);
 
 public:
   ~xiiGALDeviceD3D12();
@@ -63,9 +63,6 @@ protected:
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
-
-  virtual xiiGALCommandList* CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description) override final;
-  virtual void               DestroyCommandListPlatform(xiiGALCommandList* pCommandList) override final;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;

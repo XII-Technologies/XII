@@ -24,14 +24,14 @@
 #include <GraphicsD3D12/States/PipelineStateD3D12.h>
 #include <GraphicsD3D12/States/RasterizerStateD3D12.h>
 
-xiiGALCommandListD3D12::xiiGALCommandListD3D12(const xiiGALCommandListCreationDescription& creationDescription) :
+xiiGALCommandListD3D12::xiiGALCommandListD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(creationDescription)
 {
 }
 
 xiiGALCommandListD3D12::~xiiGALCommandListD3D12() = default;
 
-xiiResult xiiGALCommandListD3D12::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALCommandListD3D12::InitPlatform()
 {
   xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 
@@ -62,7 +62,7 @@ xiiResult xiiGALCommandListD3D12::InitPlatform(xiiGALDevice* pDevice)
   return m_pCommandList != nullptr ? XII_SUCCESS : XII_FAILURE;
 }
 
-xiiResult xiiGALCommandListD3D12::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALCommandListD3D12::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

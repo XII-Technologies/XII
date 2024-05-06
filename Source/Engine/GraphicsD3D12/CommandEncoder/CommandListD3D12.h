@@ -63,13 +63,13 @@ protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListD3D12(const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListD3D12();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
   Diligent::IDeviceContext* m_pCommandList = nullptr;

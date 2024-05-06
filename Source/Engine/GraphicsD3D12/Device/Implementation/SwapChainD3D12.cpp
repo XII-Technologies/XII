@@ -10,14 +10,14 @@
 
 #include <Diligent/Graphics/GraphicsEngineD3D12/interface/EngineFactoryD3D12.h>
 
-xiiGALSwapChainD3D12::xiiGALSwapChainD3D12(const xiiGALSwapChainCreationDescription& creationDescription) :
+xiiGALSwapChainD3D12::xiiGALSwapChainD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALSwapChainCreationDescription& creationDescription) :
   xiiGALSwapChain(creationDescription)
 {
 }
 
 xiiGALSwapChainD3D12::~xiiGALSwapChainD3D12() = default;
 
-xiiResult xiiGALSwapChainD3D12::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALSwapChainD3D12::InitPlatform()
 {
   xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 
@@ -51,7 +51,7 @@ xiiResult xiiGALSwapChainD3D12::InitPlatform(xiiGALDevice* pDevice)
   return CreateBackBufferInternal(pDeviceD3D12);
 }
 
-xiiResult xiiGALSwapChainD3D12::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALSwapChainD3D12::DeInitPlatform()
 {
   xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
 

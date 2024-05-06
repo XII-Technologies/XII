@@ -3,29 +3,28 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Resources/QueryD3D12.h>
 
-xiiGALQueryD3D12::xiiGALQueryD3D12(const xiiGALQueryCreationDescription& creationDescription) :
-  xiiGALQuery(creationDescription)
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALQueryD3D12, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiGALQueryD3D12::xiiGALQueryD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALQueryCreationDescription& creationDescription) :
+  xiiGALQuery(pDeviceD3D12, creationDescription)
 {
 }
 
 xiiGALQueryD3D12::~xiiGALQueryD3D12() = default;
 
-xiiResult xiiGALQueryD3D12::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALQueryD3D12::InitPlatform()
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
+  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
 
-  Diligent::QueryDesc queryDescription;
-  queryDescription.Name = m_Description.m_sName.GetStartPointer();
-  queryDescription.Type = xiiDiligentTypeConversions::GetQueryType(m_Description.m_Type);
-
-  pDeviceD3D12->GetDevice()->CreateQuery(queryDescription, &m_pQuery);
-
-  return (m_pQuery != nullptr) ? XII_SUCCESS : XII_FAILURE;
+  return XII_SUCCESS;
 }
 
-xiiResult xiiGALQueryD3D12::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALQueryD3D12::DeInitPlatform()
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pQuery);
+  XII_ASSERT_NOT_IMPLEMENTED;
 
   return XII_SUCCESS;
 }

@@ -6,56 +6,28 @@
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
 #include <GraphicsD3D12/Resources/TextureViewD3D12.h>
 
-xiiGALFramebufferD3D12::xiiGALFramebufferD3D12(const xiiGALFramebufferCreationDescription& creationDescription) :
-  xiiGALFramebuffer(creationDescription)
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALFramebufferD3D12, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiGALFramebufferD3D12::xiiGALFramebufferD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALFramebufferCreationDescription& creationDescription) :
+  xiiGALFramebuffer(pDeviceD3D12, creationDescription)
 {
 }
 
 xiiGALFramebufferD3D12::~xiiGALFramebufferD3D12() = default;
 
-xiiResult xiiGALFramebufferD3D12::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALFramebufferD3D12::InitPlatform()
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
+  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
 
-  Diligent::FramebufferDesc framebufferDescription;
-  framebufferDescription.Name           = m_Description.m_sName.GetStartPointer();
-  framebufferDescription.pRenderPass    = static_cast<xiiGALRenderPassD3D12*>(pDeviceD3D12->GetRenderPass(m_Description.m_hRenderPass))->GetRenderPass();
-  framebufferDescription.Width          = m_Description.m_FramebufferSize.width;
-  framebufferDescription.Height         = m_Description.m_FramebufferSize.height;
-  framebufferDescription.NumArraySlices = m_Description.m_uiArraySliceCount;
-
-  const xiiUInt32 uiAttachmentViewCount = m_Description.m_Attachments.GetCount();
-
-  xiiHybridArray<Diligent::ITextureView*, 16U> attachmentViews;
-  attachmentViews.SetCount(uiAttachmentViewCount);
-
-  for (xiiUInt32 i = 0; i < uiAttachmentViewCount; ++i)
-  {
-    const auto& xiiAttachmentView = m_Description.m_Attachments[i];
-
-    attachmentViews[i] = static_cast<xiiGALTextureViewD3D12*>(pDeviceD3D12->GetTextureView(xiiAttachmentView))->GetTextureView();
-  }
-  framebufferDescription.AttachmentCount = uiAttachmentViewCount;
-  framebufferDescription.ppAttachments   = attachmentViews.GetData();
-
-  pDeviceD3D12->GetDevice()->CreateFramebuffer(framebufferDescription, &m_pFramebuffer);
-
-  // Resolve frame buffer size if none was provided in the creation description.
-  if (m_pFramebuffer && !m_Description.m_FramebufferSize.HasNonZeroArea())
-  {
-    const auto& description = m_pFramebuffer->GetDesc();
-
-    m_Description.m_FramebufferSize.width  = description.Width;
-    m_Description.m_FramebufferSize.height = description.Height;
-    m_Description.m_uiArraySliceCount      = description.NumArraySlices;
-  }
-
-  return (m_pFramebuffer != nullptr) ? XII_SUCCESS : XII_FAILURE;
+  return XII_SUCCESS;
 }
 
-xiiResult xiiGALFramebufferD3D12::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALFramebufferD3D12::DeInitPlatform()
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pFramebuffer);
+  XII_ASSERT_NOT_IMPLEMENTED;
 
   return XII_SUCCESS;
 }

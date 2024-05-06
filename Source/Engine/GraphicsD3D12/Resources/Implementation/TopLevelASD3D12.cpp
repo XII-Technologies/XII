@@ -3,32 +3,28 @@
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Resources/TopLevelASD3D12.h>
 
-xiiGALTopLevelASD3D12::xiiGALTopLevelASD3D12(const xiiGALTopLevelASCreationDescription& creationDescription) :
-  xiiGALTopLevelAS(creationDescription)
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTopLevelASD3D12, 1, xiiRTTINoAllocator)
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiGALTopLevelASD3D12::xiiGALTopLevelASD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALTopLevelASCreationDescription& creationDescription) :
+  xiiGALTopLevelAS(pDeviceD3D12, creationDescription)
 {
 }
 
 xiiGALTopLevelASD3D12::~xiiGALTopLevelASD3D12() = default;
 
-xiiResult xiiGALTopLevelASD3D12::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALTopLevelASD3D12::InitPlatform()
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(pDevice);
+  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
 
-  Diligent::TopLevelASDesc topLevelASDescription;
-  topLevelASDescription.Name                 = m_Description.m_sName.GetStartPointer();
-  topLevelASDescription.MaxInstanceCount     = m_Description.m_uiMaxInstanceCount;
-  topLevelASDescription.Flags                = xiiDiligentTypeConversions::GetRayTracingBuildASFlags(m_Description.m_Flags);
-  topLevelASDescription.CompactedSize        = m_Description.m_uiCompactedSize;
-  topLevelASDescription.ImmediateContextMask = m_Description.m_uiImmediateContextMask;
-
-  pDeviceD3D12->GetDevice()->CreateTLAS(topLevelASDescription, &m_pTopLevelAS);
-
-  return m_pTopLevelAS == nullptr ? XII_FAILURE : XII_SUCCESS;
+  return XII_SUCCESS;
 }
 
-xiiResult xiiGALTopLevelASD3D12::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALTopLevelASD3D12::DeInitPlatform()
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pTopLevelAS);
+  XII_ASSERT_NOT_IMPLEMENTED;
 
   return XII_SUCCESS;
 }

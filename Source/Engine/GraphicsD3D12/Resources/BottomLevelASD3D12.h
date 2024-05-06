@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSD3D12_DLL xiiGALBottomLevelASD3D12 final : public xiiGALBottomLevelAS
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBottomLevelASD3D12, xiiGALBottomLevelAS);
+
 public:
   virtual xiiUInt32 GetGeometryDescriptionIndex(xiiStringView sName) const override final;
 
@@ -19,22 +21,19 @@ public:
 
   virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
 
-  Diligent::IBottomLevelAS* GetBottomLevelAS() const;
-
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALBottomLevelASD3D12(const xiiGALBottomLevelASCreationDescription& creationDescription);
+  xiiGALBottomLevelASD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALBottomLevelASCreationDescription& creationDescription);
 
   virtual ~xiiGALBottomLevelASD3D12();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
-  Diligent::IBottomLevelAS* m_pBottomLevelAS = nullptr;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/BottomLevelASD3D12_inl.h>
