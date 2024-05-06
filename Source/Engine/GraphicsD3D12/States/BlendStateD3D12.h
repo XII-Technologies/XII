@@ -17,13 +17,13 @@ protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALBlendStateD3D12(const xiiGALBlendStateCreationDescription& creationDescription);
+  xiiGALBlendStateD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALBlendStateCreationDescription& creationDescription);
 
   virtual ~xiiGALBlendStateD3D12();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
   D3D12_BLEND_DESC m_BlendState = {};
