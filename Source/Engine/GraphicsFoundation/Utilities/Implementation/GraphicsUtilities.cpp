@@ -174,9 +174,12 @@ class TextureFormatToViewFormatConverter
 public:
   TextureFormatToViewFormatConverter()
   {
+    m_ViewFormats.SetCount(xiiGALTextureFormat::ENUM_COUNT);
+
     // clang-format off
 #define INIT_TEX_VIEW_FORMAT_INFO(textureFormat, SRVFormat, RTVFormat, DSVFormat, UAVFormat) \
     {\
+      m_ViewFormats[textureFormat].SetCount(xiiGALTextureViewType::ENUM_COUNT);                                     \
       m_ViewFormats[textureFormat][xiiGALTextureViewType::ShaderResource]       = xiiGALTextureFormat::##SRVFormat; \
       m_ViewFormats[textureFormat][xiiGALTextureViewType::RenderTarget]         = xiiGALTextureFormat::##RTVFormat; \
       m_ViewFormats[textureFormat][xiiGALTextureViewType::DepthStencil]         = xiiGALTextureFormat::##DSVFormat; \
