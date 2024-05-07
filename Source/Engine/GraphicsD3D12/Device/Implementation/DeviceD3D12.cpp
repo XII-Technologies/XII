@@ -133,15 +133,15 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   xiiUInt32               uiFeatureLevelIndex       = 0U;
   HRESULT                 hResult                   = E_FAIL;
 
+  ID3D12Device* pD3D12Device = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12Device));
+
   for (const auto& featureLevel : targetFeatureLevels)
   {
-    hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(m_pDeviceD3D12), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&m_pDeviceD3D12)));
+    hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&pD3D12Device)));
 
     if (SUCCEEDED(hResult))
-    {
-      XII_ASSERT_DEV(m_pDeviceD3D12 != nullptr, "");
       break;
-    }
 
     ++uiFeatureLevelIndex;
   }
@@ -154,19 +154,17 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
 
     IDXGIAdapter1* pWarpAdapter = nullptr;
-    XII_VERIFY_D3D12(SUCCEEDED(m_pDXGIFactory->EnumWarpAdapter(__uuidof(pWarpAdapter), reinterpret_cast<void**>(static_cast<IDXGIAdapter1**>(&pWarpAdapter)))), "Failed to enumerate WARP adapter. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+    XII_VERIFY_D3D12(SUCCEEDED(m_pDXGIFactory->EnumWarpAdapter(__uuidof(pWarpAdapter), reinterpret_cast<void**>(static_cast<IDXGIAdapter1**>(&pWarpAdapter)))), "Failed to enumerate WARP adapter.");
     m_pDXGIAdapter = pWarpAdapter;
 
     uiFeatureLevelIndex = 0U;
 
     for (const auto& featureLevel : targetFeatureLevels)
     {
-      hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(m_pDeviceD3D12), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&m_pDeviceD3D12)));
+      hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&pD3D12Device)));
 
       if (SUCCEEDED(hResult))
       {
-        XII_ASSERT_DEV(m_pDeviceD3D12 != nullptr, "");
-
         xiiLog::Info("Initialized D3D12 WARP device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
         break;
       }
@@ -181,59 +179,69 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     xiiLog::Info("Initialized D3D12 device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
   }
 
+  if (FAILED(pD3D12Device->QueryInterface(__uuidof(m_pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device1**>(&m_pD3D12Device)))))
+  {
+    xiiLog::Error("Failed to retrieve ID3D12Device1 from device interface.");
+    return XII_FAILURE;
+  }
+
   // Create D3D12 Memory Allocator.
-  m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiMemoryAllocatorD3D12, m_pDXGIAdapter, m_pDeviceD3D12);
+  m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiMemoryAllocatorD3D12, m_pDXGIAdapter, pD3D12Device);
 
   EnumerateDisplayModes(targetFeatureLevels[uiFeatureLevelIndex], m_pDXGIAdapter, 0, xiiGALTextureFormat::RGBA8UNormalizedSRGB, m_DisplayModes);
 
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
-    ID3D12InfoQueue* pInfoQueue = nullptr;
-    if (SUCCEEDED(m_pDeviceD3D12->QueryInterface(&pInfoQueue)))
+    if (SUCCEEDED(m_pD3D12Device->QueryInterface(__uuidof(m_pD3D12Debug), reinterpret_cast<void**>(static_cast<ID3D12Debug1**>(&m_pD3D12Debug)))))
     {
-      // Suppress whole categories of messages
-      // D3D12_MESSAGE_CATEGORY categories[] = {};
+      ID3D12InfoQueue* pD3D12InfoQueue = nullptr;
+      XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12InfoQueue));
 
-      // Suppress messages based on their severity level
-      D3D12_MESSAGE_SEVERITY severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
+      if (SUCCEEDED(m_pD3D12Debug->QueryInterface(&pD3D12InfoQueue)))
+      {
+        // Suppress whole categories of messages
+        // D3D12_MESSAGE_CATEGORY categories[] = {};
 
-      // Suppress individual messages by their ID
-      D3D12_MESSAGE_ID denyIDs[] =
-        {
-          // D3D12 WARNING: ID3D12CommandList::ClearRenderTargetView: The clear values do not match those passed to resource creation.
-          // The clear operation is typically slower as a result; but will still clear to the desired value.
-          // [ EXECUTION WARNING #820: CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE]
-          D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+        // Suppress messages based on their severity level
+        D3D12_MESSAGE_SEVERITY severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
 
-          // D3D12 WARNING: ID3D12CommandList::ClearDepthStencilView: The clear values do not match those passed to resource creation.
-          // The clear operation is typically slower as a result; but will still clear to the desired value.
-          // [ EXECUTION WARNING #821: CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE]
-          D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE //
-        };
+        // Suppress individual messages by their ID
+        D3D12_MESSAGE_ID denyIDs[] =
+          {
+            // D3D12 WARNING: ID3D12CommandList::ClearRenderTargetView: The clear values do not match those passed to resource creation.
+            // The clear operation is typically slower as a result; but will still clear to the desired value.
+            // [ EXECUTION WARNING #820: CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE]
+            D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
 
-      D3D12_INFO_QUEUE_FILTER queueFilter = {};
-      // queueFilter.DenyList.NumCategories = XII_ARRAY_SIZE(categories);
-      // queueFilter.DenyList.pCategoryList = categories;
-      queueFilter.DenyList.NumSeverities = XII_ARRAY_SIZE(severities);
-      queueFilter.DenyList.pSeverityList = severities;
-      queueFilter.DenyList.NumIDs        = XII_ARRAY_SIZE(denyIDs);
-      queueFilter.DenyList.pIDList       = denyIDs;
+            // D3D12 WARNING: ID3D12CommandList::ClearDepthStencilView: The clear values do not match those passed to resource creation.
+            // The clear operation is typically slower as a result; but will still clear to the desired value.
+            // [ EXECUTION WARNING #821: CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE]
+            D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE //
+          };
 
-      XII_VERIFY(SUCCEEDED(pInfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+        D3D12_INFO_QUEUE_FILTER queueFilter = {};
+        // queueFilter.DenyList.NumCategories = XII_ARRAY_SIZE(categories);
+        // queueFilter.DenyList.pCategoryList = categories;
+        queueFilter.DenyList.NumSeverities = XII_ARRAY_SIZE(severities);
+        queueFilter.DenyList.pSeverityList = severities;
+        queueFilter.DenyList.NumIDs        = XII_ARRAY_SIZE(denyIDs);
+        queueFilter.DenyList.pIDList       = denyIDs;
+
+        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-      XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE)), "Failed to set break on corruption.");
-      XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE)), "Failed to set break on error.");
-      XII_VERIFY(SUCCEEDED(pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE)), "Failed to set break on warning.");
+        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE)), "Failed to set break on corruption.");
+        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE)), "Failed to set break on error.");
+        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE)), "Failed to set break on warning.");
 #endif
+      }
     }
-    XII_GAL_D3D12_RELEASE(pInfoQueue);
-  }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 // We can prevent the GPU from overclocking or underclocking to get consistent timings.
-// m_pDeviceD3D12->SetStablePowerState(TRUE);
+// m_pD3D12Device->SetStablePowerState(TRUE);
 #endif
+  }
 
   FillFormatLookupTable();
 
@@ -274,7 +282,7 @@ xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
     m_CommandQueues[i].Clear();
   }
 
-  XII_GAL_D3D12_RELEASE(m_pDeviceD3D12);
+  XII_GAL_D3D12_RELEASE(m_pD3D12Device);
   XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
   XII_GAL_D3D12_RELEASE(m_pDXGIFactory);
 
@@ -743,7 +751,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 
     {
       D3D12_FEATURE_DATA_ARCHITECTURE dataArchitecture = {};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, &dataArchitecture, sizeof(dataArchitecture))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, &dataArchitecture, sizeof(dataArchitecture))))
       {
         if (m_AdapterDescription.m_Type != xiiGALDeviceAdapterType::Software && (dataArchitecture.UMA || dataArchitecture.CacheCoherentUMA))
           m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Integrated;
@@ -798,9 +806,9 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 
     for (xiiUInt32 i = 0; i < 3; ++i)
     {
-      auto& queueProperty                       = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
-      queueProperty.m_Type                      = queueIndexType[i];
-      queueProperty.m_uiMaxDeviceContexts       = 0xFFU;
+      auto& queueProperty                 = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
+      queueProperty.m_Type                = queueIndexType[i];
+      queueProperty.m_uiMaxDeviceContexts = 0xFFU;
 
       queueProperty.m_TextureCopyGranularity.SetCountUninitialized(3);
       queueProperty.m_TextureCopyGranularity[0] = 1U;
@@ -826,10 +834,10 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 #ifdef D3D12_H_HAS_MESH_SHADER
     {
       D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = {static_cast<D3D_SHADER_MODEL>(0x65)};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))))
       {
         D3D12_FEATURE_DATA_D3D12_OPTIONS7 featureData = {};
-        bMeshShadersSupported                         = SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &featureData, sizeof(featureData))) && featureData.MeshShaderTier != D3D12_MESH_SHADER_TIER_NOT_SUPPORTED;
+        bMeshShadersSupported                         = SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &featureData, sizeof(featureData))) && featureData.MeshShaderTier != D3D12_MESH_SHADER_TIER_NOT_SUPPORTED;
       }
     }
 #endif
@@ -848,7 +856,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 
     {
       D3D12_FEATURE_DATA_D3D12_OPTIONS featureDataOptions = {};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &featureDataOptions, sizeof(featureDataOptions))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &featureDataOptions, sizeof(featureDataOptions))))
       {
         if (featureDataOptions.MinPrecisionSupport & D3D12_SHADER_MIN_PRECISION_SUPPORT_16_BIT)
         {
@@ -862,7 +870,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
           m_AdapterDescription.m_SparseResourceProperties.m_uiStandardBlockSize = D3D12_TILED_RESOURCE_TILE_SIZE_IN_BYTES;
 
           D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT featureDataGPUVirtualAddress = {};
-          if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT, &featureDataGPUVirtualAddress, sizeof(featureDataGPUVirtualAddress))))
+          if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT, &featureDataGPUVirtualAddress, sizeof(featureDataGPUVirtualAddress))))
           {
             m_AdapterDescription.m_SparseResourceProperties.m_uiAddressSpaceSize  = XII_BIT(featureDataGPUVirtualAddress.MaxGPUVirtualAddressBitsPerProcess);
             m_AdapterDescription.m_SparseResourceProperties.m_uiResourceSpaceSize = XII_BIT(featureDataGPUVirtualAddress.MaxGPUVirtualAddressBitsPerResource);
@@ -918,7 +926,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
       }
 
       D3D12_FEATURE_DATA_D3D12_OPTIONS1 featureDataOptions1 = {};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &featureDataOptions1, sizeof(featureDataOptions1))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &featureDataOptions1, sizeof(featureDataOptions1))))
       {
         if (featureDataOptions1.WaveOps != FALSE)
         {
@@ -934,14 +942,14 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
       }
 
       D3D12_FEATURE_DATA_D3D12_OPTIONS3 featureDataOptions3 = {};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featureDataOptions3, sizeof(featureDataOptions3))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featureDataOptions3, sizeof(featureDataOptions3))))
       {
         if (featureDataOptions3.CopyQueueTimestampQueriesSupported)
           deviceFeatures.m_TransferQueueTimestampQueries = xiiGALDeviceFeatureState::Enabled;
       }
 
       D3D12_FEATURE_DATA_D3D12_OPTIONS4 featureDataOptions4{};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS4, &featureDataOptions4, sizeof(featureDataOptions4))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS4, &featureDataOptions4, sizeof(featureDataOptions4))))
       {
         if (featureDataOptions4.Native16BitShaderOpsSupported)
         {
@@ -952,7 +960,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
       }
 
       D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureDataOptions5{};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureDataOptions5, sizeof(featureDataOptions5))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureDataOptions5, sizeof(featureDataOptions5))))
       {
         if (featureDataOptions5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0)
         {
@@ -982,7 +990,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 
 #if defined(NTDDI_WIN10_19H1) || defined(FORCE_NTDDI_WIN10_19H1)
       D3D12_FEATURE_DATA_D3D12_OPTIONS6 featureDataOptions6{};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &featureDataOptions6, sizeof(featureDataOptions6))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &featureDataOptions6, sizeof(featureDataOptions6))))
       {
         // https://microsoft.github.io/DirectX-Specs/d3d/VariableRateShading.html#feature-tiering
         auto& shadingRateProperties = m_AdapterDescription.m_ShadingRateProperties;

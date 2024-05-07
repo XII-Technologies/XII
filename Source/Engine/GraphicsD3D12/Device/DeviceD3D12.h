@@ -13,7 +13,8 @@ enum D3D_FEATURE_LEVEL;
 struct IDXGIAdapter1;
 struct IDXGIFactory2;
 struct IDXGIFactory4;
-struct ID3D12Device;
+struct ID3D12Device1;
+struct ID3D12Debug;
 
 XII_DEFINE_AS_POD_TYPE(DXGI_MODE_DESC);
 
@@ -43,16 +44,11 @@ public:
 
   // Internal objects retrieval.
 
-  ID3D12Device*  GetDeviceD3D12() const;
+  ID3D12Device1* GetD3D12Device() const;
   IDXGIAdapter1* GetDXGIAdapter() const;
   IDXGIFactory4* GetDXGIFactory() const;
 
   xiiMemoryAllocatorD3D12* GetD3D12Allocator() const;
-
-  // Diligent::IDeviceContext* GetImmediateContext();
-  // Diligent::IDeviceContext* GetComputeContext();
-  // Diligent::IDeviceContext* GetTransferContext();
-  // Diligent::IDeviceContext* GetSparseBindingContext();
 
   const xiiGALFormatLookupTableD3D12& GetFormatLookupTable() const;
 
@@ -149,7 +145,8 @@ private:
 
   IDXGIFactory4* m_pDXGIFactory = nullptr;
   IDXGIAdapter1* m_pDXGIAdapter = nullptr;
-  ID3D12Device*  m_pDeviceD3D12 = nullptr;
+  ID3D12Device1* m_pD3D12Device = nullptr;
+  ID3D12Debug1*  m_pD3D12Debug  = nullptr;
 
   xiiUniquePtr<xiiMemoryAllocatorD3D12> m_pAllocatorD3D12;
 

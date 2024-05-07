@@ -19,9 +19,9 @@ XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALDeviceD3D12::GetSparseBindingQueue()
   return nullptr;
 }
 
-XII_ALWAYS_INLINE ID3D12Device* xiiGALDeviceD3D12::GetDeviceD3D12() const
+XII_ALWAYS_INLINE ID3D12Device1* xiiGALDeviceD3D12::GetD3D12Device() const
 {
-  return m_pDeviceD3D12;
+  return m_pD3D12Device;
 }
 
 XII_ALWAYS_INLINE IDXGIAdapter1* xiiGALDeviceD3D12::GetDXGIAdapter() const

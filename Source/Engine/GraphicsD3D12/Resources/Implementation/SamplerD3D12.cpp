@@ -54,13 +54,13 @@ xiiResult xiiGALSamplerD3D12::InitPlatform()
   samplerHeapDescription.NumDescriptors             = 1U;
   samplerHeapDescription.Flags                      = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 
-  if (FAILED(pDeviceD3D12->GetDeviceD3D12()->CreateDescriptorHeap(&samplerHeapDescription, IID_PPV_ARGS(&m_pDescriptorHeap))))
+  if (FAILED(pDeviceD3D12->GetD3D12Device()->CreateDescriptorHeap(&samplerHeapDescription, IID_PPV_ARGS(&m_pDescriptorHeap))))
   {
     xiiLog::Info("Failed to create descriptor heap for sampler {}.", GetDebugName());
     return XII_FAILURE;
   }
 
-  pDeviceD3D12->GetDeviceD3D12()->CreateSampler(&samplerDescription, m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
+  pDeviceD3D12->GetD3D12Device()->CreateSampler(&samplerDescription, m_pDescriptorHeap->GetCPUDescriptorHandleForHeapStart());
 
   return XII_SUCCESS;
 }
