@@ -186,35 +186,8 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, co
     XII_ASSERT_DEV(pRenderData->m_Vertices.GetCount() < s_uiVertexBufferSize, "GUI has too many elements to render in one drawcall");
     XII_ASSERT_DEV(pRenderData->m_Indices.GetCount() < s_uiIndexBufferSize, "GUI has too many elements to render in one drawcall");
 
-    {
-      void* pMappedData = nullptr;
-      if (pCommandList->MapBuffer(m_hVertexBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
-      {
-        auto pDataToUpdate = xiiMakeArrayPtr(pRenderData->m_Vertices.GetPtr(), pRenderData->m_Vertices.GetCount()).ToByteArray();
-        memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
-
-        pCommandList->UnmapBuffer(m_hVertexBuffer, xiiGALMapType::Write).AssertSuccess();
-      }
-      else
-      {
-        xiiLog::Error("Failed to map buffer to update content.");
-      }
-    }
-
-    {
-      void* pMappedData = nullptr;
-      if (pCommandList->MapBuffer(m_hIndexBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
-      {
-        auto pDataToUpdate = xiiMakeArrayPtr(pRenderData->m_Indices.GetPtr(), pRenderData->m_Indices.GetCount()).ToByteArray();
-        memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
-
-        pCommandList->UnmapBuffer(m_hIndexBuffer, xiiGALMapType::Write).AssertSuccess();
-      }
-      else
-      {
-        xiiLog::Error("Failed to map buffer to update content.");
-      }
-    }
+    pCommandList->UpdateBufferExtended(m_hVertexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Vertices.GetPtr(), pRenderData->m_Vertices.GetCount()).ToByteArray());
+    pCommandList->UpdateBufferExtended(m_hIndexBuffer, 0, xiiMakeArrayPtr(pRenderData->m_Indices.GetPtr(), pRenderData->m_Indices.GetCount()).ToByteArray());
 
     pRenderContext->BindMeshBuffer(m_hVertexBuffer, m_hIndexBuffer, &m_InputLayoutInfo, xiiGALPrimitiveTopology::TriangleList, pRenderData->m_Indices.GetCount() / 3);
 

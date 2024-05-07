@@ -42,19 +42,7 @@ void xiiSkinnedMeshRenderer::SetAdditionalData(const xiiRenderViewContext& rende
       // if this is the first renderer that is supposed to actually render the skinned mesh, upload the skinning matrices
       *pSkinnedRenderData->m_bTransformsUpdated = true;
 
-      auto pCommandList = pContext->GetCommandList();
-
-      void* pMappedData = nullptr;
-      if (pCommandList->MapBuffer(pSkinnedRenderData->m_hSkinningTransforms, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
-      {
-        memcpy(pMappedData, pSkinnedRenderData->m_pNewSkinningTransformData.GetPtr(), pSkinnedRenderData->m_pNewSkinningTransformData.GetCount());
-
-        pCommandList->UnmapBuffer(pSkinnedRenderData->m_hSkinningTransforms, xiiGALMapType::Write).AssertSuccess();
-      }
-      else
-      {
-        xiiLog::Error("Failed to map buffer to update content.");
-      }
+      pContext->GetCommandList()->UpdateBufferExtended(pSkinnedRenderData->m_hSkinningTransforms, 0, pSkinnedRenderData->m_pNewSkinningTransformData);
 
       // TODO: could expose this somewhere (xiiStats?)
       s_uiSkinningBufferUpdates++;
