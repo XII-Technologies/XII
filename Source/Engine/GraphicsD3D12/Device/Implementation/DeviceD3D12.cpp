@@ -282,6 +282,7 @@ xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
     m_CommandQueues[i].Clear();
   }
 
+  XII_GAL_D3D12_RELEASE(m_pD3D12Debug);
   XII_GAL_D3D12_RELEASE(m_pD3D12Device);
   XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
   XII_GAL_D3D12_RELEASE(m_pDXGIFactory);

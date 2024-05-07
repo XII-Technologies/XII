@@ -29,21 +29,17 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
 {
   xiiGALTextureViewCreationDescription viewDescription;
   viewDescription.m_hTexture                  = hTexture;
-  viewDescription.m_Format                    = m_Description.m_Format;
-  viewDescription.m_ResourceDimension         = m_Description.m_Type;
   viewDescription.m_uiMostDetailedMip         = 0U;
   viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
   viewDescription.m_uiMipLevelCount           = 0U;
   viewDescription.m_uiArrayOrDepthSlicesCount = 0U;
 
-  if (m_Description.m_Type == xiiGALResourceDimension::TextureCube || m_Description.m_Type == xiiGALResourceDimension::TextureCubeArray)
-    viewDescription.m_ResourceDimension = xiiGALResourceDimension::Texture2DArray;
+  // Allow viewDescription.m_Format and viewDescription.m_ResourceDimension to be determined by the device.
 
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
   {
-    auto shaderResourceViewDescription                = viewDescription;
-    shaderResourceViewDescription.m_ViewType          = xiiGALTextureViewType::ShaderResource;
-    shaderResourceViewDescription.m_ResourceDimension = m_Description.m_Type;
+    auto shaderResourceViewDescription       = viewDescription;
+    shaderResourceViewDescription.m_ViewType = xiiGALTextureViewType::ShaderResource;
 
     if (m_Description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
       shaderResourceViewDescription.m_Flags.Add(xiiGALTextureViewFlags::AllowMipGeneration);
@@ -52,9 +48,8 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
   }
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
   {
-    auto rtViewDescription                                     = viewDescription;
-    rtViewDescription.m_ViewType                               = xiiGALTextureViewType::RenderTarget;
-    m_DefaultTextureViews[xiiGALTextureViewType::RenderTarget] = m_pDevice->CreateTextureView(rtViewDescription);
+    viewDescription.m_ViewType                                 = xiiGALTextureViewType::RenderTarget;
+    m_DefaultTextureViews[xiiGALTextureViewType::RenderTarget] = m_pDevice->CreateTextureView(viewDescription);
   }
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
   {
@@ -66,9 +61,8 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
   }
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess))
   {
-    auto uavViewDescription                                       = viewDescription;
-    uavViewDescription.m_ViewType                                 = xiiGALTextureViewType::UnorderedAccess;
-    m_DefaultTextureViews[xiiGALTextureViewType::UnorderedAccess] = m_pDevice->CreateTextureView(uavViewDescription);
+    viewDescription.m_ViewType                                    = xiiGALTextureViewType::UnorderedAccess;
+    m_DefaultTextureViews[xiiGALTextureViewType::UnorderedAccess] = m_pDevice->CreateTextureView(viewDescription);
   }
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShadingRate))
   {

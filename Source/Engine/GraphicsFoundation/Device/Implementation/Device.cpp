@@ -1364,7 +1364,7 @@ xiiGALTextureViewHandle xiiGALDevice::CreateTextureView(xiiGALTextureViewCreatio
   /// \todo GraphicsFoundation: Implement default texture view format deduction.
   if (description.m_Format == xiiGALTextureFormat::Unknown)
   {
-    description.m_Format = textureDescription.m_Format;
+    description.m_Format = xiiGALGraphicsUtilities::GetDefaultTextureViewFormat(textureDescription.m_Format, description.m_ViewType, textureDescription.m_BindFlags);
   }
 
   if (textureDescription.IsArray())
