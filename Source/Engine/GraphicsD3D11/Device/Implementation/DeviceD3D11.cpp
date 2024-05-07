@@ -277,6 +277,25 @@ xiiResult xiiGALDeviceD3D11::ShutdownPlatform()
     m_CommandQueues[i].Clear();
   }
 
+  for (xiiUInt32 type = 0; type < TemporaryResourceType::ENUM_COUNT; ++type)
+  {
+    for (auto it = m_FreeTempResources[type].GetIterator(); it.IsValid(); ++it)
+    {
+      xiiDynamicArray<ID3D11Resource*>& resources = it.Value();
+      for (auto pResource : resources)
+      {
+        XII_GAL_D3D11_RELEASE(pResource);
+      }
+    }
+    m_FreeTempResources[type].Clear();
+
+    for (auto& tempResource : m_UsedTempResources[type])
+    {
+      XII_GAL_D3D11_RELEASE(tempResource.m_pResource);
+    }
+    m_UsedTempResources[type].Clear();
+  }
+
   XII_GAL_D3D11_RELEASE(m_pDeviceContext);
   XII_GAL_D3D11_RELEASE(m_pDebugD3D11);
   XII_GAL_D3D11_RELEASE(m_pDeviceD3D11);
@@ -325,6 +344,8 @@ void xiiGALDeviceD3D11::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 void xiiGALDeviceD3D11::EndFramePlatform()
 {
   // Call FinishFrame() to release references to Swapchain resources
+
+  FreeTemporaryResources(m_uiFrameCounter);
 
   ++m_uiFrameCounter;
 }
@@ -1068,6 +1089,142 @@ void xiiGALDeviceD3D11::FillFormatLookupTable()
   m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7UNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC7_TYPELESS).RT(DXGI_FORMAT_BC7_UNORM).IL(DXGI_FORMAT_BC7_UNORM).RV(DXGI_FORMAT_BC7_UNORM));
   m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7UNormalizedSRGB,           xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC7_TYPELESS).RT(DXGI_FORMAT_BC7_UNORM_SRGB).IL(DXGI_FORMAT_BC7_UNORM_SRGB).RV(DXGI_FORMAT_BC7_UNORM_SRGB));
   // clang-format on
+}
+
+ID3D11Resource* xiiGALDeviceD3D11::FindTemporaryBuffer(xiiUInt32 uiSize)
+{
+  const xiiUInt32 uiExpGrowthLimit = 16 * 1024 * 1024;
+
+  uiSize = xiiMath::Max(uiSize, 256U);
+  if (uiSize < uiExpGrowthLimit)
+  {
+    uiSize = xiiMath::PowerOfTwo_Ceil(uiSize);
+  }
+  else
+  {
+    uiSize = xiiMemoryUtils::AlignSize(uiSize, uiExpGrowthLimit);
+  }
+
+  ID3D11Resource* pResource = nullptr;
+  auto            it        = m_FreeTempResources[TemporaryResourceType::Buffer].Find(uiSize);
+  if (it.IsValid())
+  {
+    xiiDynamicArray<ID3D11Resource*>& resources = it.Value();
+    if (!resources.IsEmpty())
+    {
+      pResource = resources[0];
+      resources.RemoveAtAndSwap(0);
+    }
+  }
+
+  if (pResource == nullptr)
+  {
+    D3D11_BUFFER_DESC desc;
+    desc.ByteWidth           = uiSize;
+    desc.Usage               = D3D11_USAGE_STAGING;
+    desc.BindFlags           = 0;
+    desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+    desc.MiscFlags           = 0;
+    desc.StructureByteStride = 0;
+
+    ID3D11Buffer* pBuffer = nullptr;
+    if (!SUCCEEDED(m_pDeviceD3D11->CreateBuffer(&desc, nullptr, &pBuffer)))
+    {
+      return nullptr;
+    }
+
+    pResource = pBuffer;
+  }
+
+  auto& tempResource       = m_UsedTempResources[TemporaryResourceType::Buffer].ExpandAndGetRef();
+  tempResource.m_pResource = pResource;
+  tempResource.m_uiFrame   = m_uiFrameCounter;
+  tempResource.m_uiHash    = uiSize;
+
+  return pResource;
+}
+
+ID3D11Resource* xiiGALDeviceD3D11::FindTemporaryTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiEnum<xiiGALTextureFormat> format)
+{
+  xiiUInt32 data[] = {uiWidth, uiHeight, uiDepth, (xiiUInt32)format};
+  xiiUInt32 uiHash = xiiHashingUtils::xxHash32(data, sizeof(data));
+
+  ID3D11Resource* pResource = nullptr;
+  auto            it        = m_FreeTempResources[TemporaryResourceType::Texture].Find(uiHash);
+  if (it.IsValid())
+  {
+    xiiDynamicArray<ID3D11Resource*>& resources = it.Value();
+    if (!resources.IsEmpty())
+    {
+      pResource = resources[0];
+      resources.RemoveAtAndSwap(0);
+    }
+  }
+
+  if (pResource == nullptr)
+  {
+    if (uiDepth == 1)
+    {
+      D3D11_TEXTURE2D_DESC desc;
+      desc.Width              = uiWidth;
+      desc.Height             = uiHeight;
+      desc.MipLevels          = 1;
+      desc.ArraySize          = 1;
+      desc.Format             = GetFormatLookupTable().GetFormatInfo(format).m_eStorage;
+      desc.SampleDesc.Count   = 1;
+      desc.SampleDesc.Quality = 0;
+      desc.Usage              = D3D11_USAGE_STAGING;
+      desc.BindFlags          = 0;
+      desc.CPUAccessFlags     = D3D11_CPU_ACCESS_WRITE;
+      desc.MiscFlags          = 0;
+
+      ID3D11Texture2D* pTexture = nullptr;
+      if (!SUCCEEDED(m_pDeviceD3D11->CreateTexture2D(&desc, nullptr, &pTexture)))
+      {
+        return nullptr;
+      }
+
+      pResource = pTexture;
+    }
+    else
+    {
+      XII_ASSERT_NOT_IMPLEMENTED;
+      return nullptr;
+    }
+  }
+
+  auto& tempResource       = m_UsedTempResources[TemporaryResourceType::Texture].ExpandAndGetRef();
+  tempResource.m_pResource = pResource;
+  tempResource.m_uiFrame   = m_uiFrameCounter;
+  tempResource.m_uiHash    = uiHash;
+
+  return pResource;
+}
+
+void xiiGALDeviceD3D11::FreeTemporaryResources(xiiUInt64 uiFrame)
+{
+  for (xiiUInt32 type = 0; type < TemporaryResourceType::ENUM_COUNT; ++type)
+  {
+    while (!m_UsedTempResources[type].IsEmpty())
+    {
+      auto& usedTempResource = m_UsedTempResources[type].PeekFront();
+      if (usedTempResource.m_uiFrame == uiFrame)
+      {
+        auto it = m_FreeTempResources[type].Find(usedTempResource.m_uiHash);
+        if (!it.IsValid())
+        {
+          it = m_FreeTempResources[type].Insert(usedTempResource.m_uiHash, xiiDynamicArray<ID3D11Resource*>(&m_Allocator));
+        }
+
+        it.Value().PushBack(usedTempResource.m_pResource);
+        m_UsedTempResources[type].PopFront();
+      }
+      else
+      {
+        break;
+      }
+    }
+  }
 }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)

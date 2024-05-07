@@ -431,7 +431,7 @@ void xiiGALCommandListD3D11::EndQueryPlatform(xiiGALQuery* pQuery)
   m_pCommandList->End(pQueryD3D11->GetQuery(queryType == xiiGALQueryType::Duration ? 1 : 0));
 }
 
-void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
+void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
   XII_CHECK_ALIGNMENT_16(pSourceData.GetPtr());
 
@@ -450,6 +450,72 @@ void xiiGALCommandListD3D11::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt
   D3D11_BOX* pDestinationBox = (uiDestinationOffset == 0 && pSourceData.GetCount() == pDestinationBufferD3D11->GetDescription().m_uiSize) ? nullptr : &destinationBox;
 
   m_pCommandList->UpdateSubresource(pDestinationBufferD3D11->GetBuffer(), 0U, pDestinationBox, pSourceData.GetPtr(), 0U, 0U);
+}
+
+void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage)
+{
+  XII_CHECK_ALIGNMENT_16(pSourceData.GetPtr());
+
+  xiiGALDeviceD3D11* pDeviceD3D11            = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  auto               pCommandList            = pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
+  auto               pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
+
+  XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
+
+  const auto& bufferDescription = pDestinationBufferD3D11->GetDescription();
+
+  if (bufferDescription.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+  {
+    XII_ASSERT_DEV(uiDestinationOffset == 0 && pSourceData.GetCount() == bufferDescription.m_uiSize, "Constant buffers can't be updated partially (and we don't check for DX11.1)!");
+
+    D3D11_MAPPED_SUBRESOURCE mapResult;
+    if (SUCCEEDED(pCommandList->Map(pDestinationBufferD3D11->GetBuffer(), 0U, D3D11_MAP_WRITE_DISCARD, 0U, &mapResult)))
+    {
+      memcpy(mapResult.pData, pSourceData.GetPtr(), pSourceData.GetCount());
+
+      pCommandList->Unmap(pDestinationBufferD3D11->GetBuffer(), 0);
+    }
+  }
+  else
+  {
+    if (bCopyToTemporaryStorage)
+    {
+      if (ID3D11Resource* pD3D11TempBuffer = pDeviceD3D11->FindTemporaryBuffer(pSourceData.GetCount()))
+      {
+        D3D11_MAPPED_SUBRESOURCE MapResult;
+        HRESULT                  hRes = pCommandList->Map(pD3D11TempBuffer, 0, D3D11_MAP_WRITE, 0, &MapResult);
+        XII_ASSERT_DEV(SUCCEEDED(hRes), "Implementation error");
+
+        memcpy(MapResult.pData, pSourceData.GetPtr(), pSourceData.GetCount());
+
+        pCommandList->Unmap(pD3D11TempBuffer, 0);
+
+        // Schedule copy command using this command list.
+        D3D11_BOX srcBox = {0, 0, 0, pSourceData.GetCount(), 1, 1};
+        m_pCommandList->CopySubresourceRegion(pD3D11TempBuffer, 0, uiDestinationOffset, 0, 0, pD3D11TempBuffer, 0, &srcBox);
+      }
+      else
+      {
+        XII_REPORT_FAILURE("Could not find a temp buffer for update.");
+      }
+    }
+    else
+    {
+      D3D11_MAP mapType = (mapFlags == xiiGALMapFlags::Discard) ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE;
+
+      D3D11_MAPPED_SUBRESOURCE mapResult;
+      if (SUCCEEDED(pCommandList->Map(pDestinationBufferD3D11->GetBuffer(), 0, mapType, 0, &mapResult)))
+      {
+        memcpy(xiiMemoryUtils::AddByteOffset(mapResult.pData, uiDestinationOffset), pSourceData.GetPtr(), pSourceData.GetCount());
+
+        pCommandList->Unmap(pDestinationBufferD3D11->GetBuffer(), 0);
+      }
+      else
+      {
+        xiiLog::Error("Could not map buffer to update content.");
+      }
+    }
+  }
 }
 
 void xiiGALCommandListD3D11::CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)
@@ -576,6 +642,74 @@ void xiiGALCommandListD3D11::UpdateTexturePlatform(xiiGALTexture* pTexture, cons
   xiiUInt32 uiCopyFlags                   = D3D11_COPY_DISCARD;
 
   m_pCommandList->UpdateSubresource1(pTextureD3D11->GetTexture(), uiDestinationSubresourceIndex, &destinationBox, subresourceData.m_pData, static_cast<xiiUInt32>(subresourceData.m_uiStride), static_cast<xiiUInt32>(subresourceData.m_uiDepthStride), uiCopyFlags);
+}
+
+void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
+{
+  xiiGALDeviceD3D11* pDeviceD3D11  = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
+  auto               pCommandList  = pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
+  auto               pTextureD3D11 = static_cast<xiiGALTextureD3D11*>(pTexture);
+
+  XII_ASSERT_DEV(pTextureD3D11 != nullptr, "Invalid resource.");
+
+  const auto& textureDescription = pTextureD3D11->GetDescription();
+
+  if (!subresourceData.m_hSourceBuffer.IsInvalidated())
+  {
+    xiiLog::Error("Direct3D11 does not support texture updates using texture subresource from GPU buffer");
+    return;
+  }
+
+  xiiUInt32                    uiWidth  = xiiMath::Max(textureBox.m_vMax.x - textureBox.m_vMin.x, 1u);
+  xiiUInt32                    uiHeight = xiiMath::Max(textureBox.m_vMax.y - textureBox.m_vMin.y, 1u);
+  xiiUInt32                    uiDepth  = xiiMath::Max(textureBox.m_vMax.z - textureBox.m_vMin.z, 1u);
+  xiiEnum<xiiGALTextureFormat> format   = pTextureD3D11->GetDescription().m_Format;
+
+  if (ID3D11Resource* pDXTempTexture = pDeviceD3D11->FindTemporaryTexture(uiWidth, uiHeight, uiDepth, format))
+  {
+    D3D11_MAPPED_SUBRESOURCE MapResult;
+    HRESULT                  hRes = pCommandList->Map(pDXTempTexture, 0, D3D11_MAP_WRITE, 0, &MapResult);
+    XII_ASSERT_DEV(SUCCEEDED(hRes), "Implementation error");
+
+    xiiUInt32 uiRowPitch   = uiWidth * xiiGALGraphicsUtilities::GetTextureFormatProperties(format).GetElementSize();
+    xiiUInt32 uiSlicePitch = uiRowPitch * uiHeight;
+    XII_ASSERT_DEV(subresourceData.m_uiStride == uiRowPitch, "Invalid row pitch. Expected {0} got {1}", uiRowPitch, subresourceData.m_uiStride);
+    XII_ASSERT_DEV(subresourceData.m_uiDepthStride == 0 || subresourceData.m_uiDepthStride == uiSlicePitch, "Invalid slice pitch. Expected {0} got {1}", uiSlicePitch, subresourceData.m_uiDepthStride);
+
+    if (MapResult.RowPitch == uiRowPitch && MapResult.DepthPitch == uiSlicePitch)
+    {
+      memcpy(MapResult.pData, subresourceData.m_pData, uiSlicePitch * uiDepth);
+    }
+    else
+    {
+      // Copy row by row
+      for (xiiUInt32 z = 0; z < uiDepth; ++z)
+      {
+        const void* pSource = xiiMemoryUtils::AddByteOffset(subresourceData.m_pData, z * uiSlicePitch);
+        void*       pDest   = xiiMemoryUtils::AddByteOffset(MapResult.pData, z * MapResult.DepthPitch);
+
+        for (xiiUInt32 y = 0; y < uiHeight; ++y)
+        {
+          memcpy(pDest, pSource, uiRowPitch);
+
+          pSource = xiiMemoryUtils::AddByteOffset(pSource, uiRowPitch);
+          pDest   = xiiMemoryUtils::AddByteOffset(pDest, MapResult.RowPitch);
+        }
+      }
+    }
+
+    pCommandList->Unmap(pDXTempTexture, 0);
+
+    xiiUInt32 dstSubResource = D3D11CalcSubresource(textureMiplevelData.m_uiMipLevel, textureMiplevelData.m_uiArraySlice, pTextureD3D11->GetDescription().m_uiMipLevels);
+
+    // Schedule copy command using this command list.
+    D3D11_BOX srcBox = {0, 0, 0, uiWidth, uiHeight, uiDepth};
+    m_pCommandList->CopySubresourceRegion(pTextureD3D11->GetTexture(), dstSubResource, textureBox.m_vMin.x, textureBox.m_vMin.y, textureBox.m_vMin.z, pDXTempTexture, 0, &srcBox);
+  }
+  else
+  {
+    XII_REPORT_FAILURE("Could not find a temp texture for update.");
+  }
 }
 
 void xiiGALCommandListD3D11::CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)

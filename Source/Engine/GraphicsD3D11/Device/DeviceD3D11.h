@@ -65,6 +65,10 @@ public:
 
   void ResetCommandQueuesSwapChainReferences();
 
+  ID3D11Resource* FindTemporaryBuffer(xiiUInt32 uiSize);
+  ID3D11Resource* FindTemporaryTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiEnum<xiiGALTextureFormat> format);
+  void            FreeTemporaryResources(xiiUInt64 uiFrame);
+
   // These functions are implemented by a graphics API implementation.
 protected:
   virtual xiiResult InitializePlatform() override final;
@@ -171,6 +175,31 @@ private:
   // 2 : Transfer Queue
   // 3 : Sparse Queue
   xiiUniquePtr<xiiGALCommandQueueD3D11> m_CommandQueues[4];
+
+  struct TemporaryResourceType
+  {
+    using StorageType = xiiUInt8;
+
+    enum Enum : StorageType
+    {
+      Buffer = 0,
+      Texture,
+
+      ENUM_COUNT
+    };
+  };
+
+  struct UsedTempResource
+  {
+    XII_DECLARE_POD_TYPE();
+
+    ID3D11Resource* m_pResource = nullptr;
+    xiiUInt64       m_uiFrame   = 0U;
+    xiiUInt32       m_uiHash    = 0U;
+  };
+
+  xiiMap<xiiUInt32, xiiDynamicArray<ID3D11Resource*>, xiiCompareHelper<xiiUInt32>, xiiLocalAllocatorWrapper> m_FreeTempResources[TemporaryResourceType::ENUM_COUNT];
+  xiiDeque<UsedTempResource, xiiLocalAllocatorWrapper>                                                       m_UsedTempResources[TemporaryResourceType::ENUM_COUNT];
 };
 
 #include <GraphicsD3D11/Device/Implementation/DeviceD3D11_inl.h>

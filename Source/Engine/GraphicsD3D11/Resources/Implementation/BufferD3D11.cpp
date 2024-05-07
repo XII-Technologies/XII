@@ -25,20 +25,13 @@ xiiResult xiiGALBufferD3D11::InitPlatform(const xiiGALBufferData* pInitialData)
     return XII_FAILURE;
   }
 
-  // If uniform/constant buffer, align size to 64 bytes.
-  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
-  {
-    // Note that Direct3D11 does not allow partial updates of constant buffers with UpdateSubresource().
-    // Only the entire buffer may be updated.
-    m_Description.m_uiSize = xiiMemoryUtils::AlignSize(m_Description.m_uiSize, 64ULL);
-  }
-
   D3D11_BUFFER_DESC bufferDescription = {};
   bufferDescription.BindFlags         = xiiD3D11TypeConversions::GetBindFlags(m_Description.m_BindFlags);
   bufferDescription.ByteWidth         = static_cast<xiiUInt32>(m_Description.m_uiSize);
   bufferDescription.Usage             = xiiD3D11TypeConversions::GetUsage(m_Description.m_ResourceUsage);
   bufferDescription.CPUAccessFlags    = xiiD3D11TypeConversions::GetCPUAccessFlags(m_Description.m_CPUAccessFlags);
   bufferDescription.MiscFlags         = 0U;
+  bufferDescription.ByteWidth         = static_cast<xiiUInt32>(m_Description.m_uiSize);
 
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::IndirectDrawArguments))
   {
@@ -74,6 +67,14 @@ xiiResult xiiGALBufferD3D11::InitPlatform(const xiiGALBufferData* pInitialData)
     {
       XII_ASSERT_DEV(false, "Unexpected buffer mode.");
     }
+  }
+
+  // If uniform/constant buffer, align size to 64 bytes.
+  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
+  {
+    // Note that Direct3D11 does not allow partial updates of constant buffers with UpdateSubresource().
+    // Only the entire buffer may be updated.
+    bufferDescription.ByteWidth = (xiiUInt32)xiiMemoryUtils::AlignSize(m_Description.m_uiSize, 64ULL);
   }
 
   // Set the index format for index buffers.
