@@ -519,7 +519,7 @@ void xiiGALCommandList::Flush()
   FlushPlatform();
 }
 
-void xiiGALCommandList::UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
+void xiiGALCommandList::UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
 {
   /// \todo GraphicsFoundation: Check alignment.
 
@@ -534,7 +534,24 @@ void xiiGALCommandList::UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDes
   XII_VERIFY_COMMAND_LIST(uiDestinationOffset < bufferDescription.m_uiSize, "UpdateBuffer command arguments are invalid. Unable to update buffer '{0}', the destination offset ({1}) exceeds the buffer size ({2}).", pBuffer->GetDebugName(), uiDestinationOffset, bufferDescription.m_uiSize);
   XII_VERIFY_COMMAND_LIST((uiDestinationOffset + pSourceData.GetCount()) <= bufferDescription.m_uiSize, "UpdateBuffer command arguments are invalid. Unable to update buffer '{0}', the update region [{1}, {2}) is out of buffer bounds [0, {3}).", pBuffer->GetDebugName(), uiDestinationOffset, uiDestinationOffset + pSourceData.GetCount(), bufferDescription.m_uiSize);
 
-  UpdateBufferPlatform(pBuffer, uiDestinationOffset, pSourceData, mapFlags);
+  UpdateBufferPlatform(pBuffer, uiDestinationOffset, pSourceData);
+}
+
+void xiiGALCommandList::UpdateBufferExtended(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage)
+{
+  /// \todo GraphicsFoundation: Check alignment.
+
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
+  XII_VERIFY_COMMAND_LIST(!hBuffer.IsInvalidated(), "UpdateBufferExtended arguments are invalid. The buffer handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "UpdateBufferExtended command must be used outside of render pass.");
+
+  xiiGALBuffer* pBuffer           = m_pDevice->GetBuffer(hBuffer);
+  const auto&   bufferDescription = pBuffer->GetDescription();
+
+  XII_VERIFY_COMMAND_LIST(uiDestinationOffset < bufferDescription.m_uiSize, "UpdateBufferExtended command arguments are invalid. Unable to update buffer '{0}', the destination offset ({1}) exceeds the buffer size ({2}).", pBuffer->GetDebugName(), uiDestinationOffset, bufferDescription.m_uiSize);
+  XII_VERIFY_COMMAND_LIST((uiDestinationOffset + pSourceData.GetCount()) <= bufferDescription.m_uiSize, "UpdateBufferExtended command arguments are invalid. Unable to update buffer '{0}', the update region [{1}, {2}) is out of buffer bounds [0, {3}).", pBuffer->GetDebugName(), uiDestinationOffset, uiDestinationOffset + pSourceData.GetCount(), bufferDescription.m_uiSize);
+
+  UpdateBufferExtendedPlatform(pBuffer, uiDestinationOffset, pSourceData, mapFlags, bCopyToTemporaryStorage /*|| mapFlags == xiiGALMapFlags::NoOverWrite*/);
 }
 
 void xiiGALCommandList::CopyBuffer(xiiGALBufferHandle hSourceBuffer, xiiGALBufferHandle hDestinationBuffer)
@@ -669,6 +686,19 @@ void xiiGALCommandList::UpdateTexture(xiiGALTextureHandle hTexture, const xiiGAL
   xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
 
   UpdateTexturePlatform(pTexture, textureMiplevelData, textureBox, subresourceData);
+}
+
+void xiiGALCommandList::UpdateTextureExtended(xiiGALTextureHandle hTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
+{
+  XII_VERIFY_COMMAND_LIST(m_Description.m_QueueType.IsSet(xiiGALCommandQueueType::Transfer), "The command list does not have the xiiGALCommandQueueType::Transfer flag.");
+  XII_VERIFY_COMMAND_LIST(!hTexture.IsInvalidated(), "UpdateTextureExtended arguments are invalid. The texture handle has been invalidated.");
+  XII_VERIFY_COMMAND_LIST(m_hRenderPass.IsInvalidated(), "UpdateTextureExtended command must be used outside of render pass.");
+
+  /// \todo GraphicsFoundation: Validate texture update parameters.
+
+  xiiGALTexture* pTexture = m_pDevice->GetTexture(hTexture);
+
+  UpdateTextureExtendedPlatform(pTexture, textureMiplevelData, textureBox, subresourceData);
 }
 
 void xiiGALCommandList::CopyTexture(xiiGALTextureHandle hSourceTexture, xiiGALTextureHandle hDestinationTexture)

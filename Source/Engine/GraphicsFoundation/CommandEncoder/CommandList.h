@@ -244,8 +244,16 @@ public:
   /// \param hBuffer             - The handle to the buffer object.
   /// \param uiDestinationOffset - Byte offset into the buffer where the update should start.
   /// \param pSourceData         - Pointer to the source data.
-  /// \param mapFlags            - Flags specifying how the buffer should be mapped.
-  void UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard);
+  void UpdateBuffer(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData);
+
+  /// \brief Updates a buffer.
+  ///
+  /// \param hBuffer                 - The handle to the buffer object.
+  /// \param uiDestinationOffset     - Byte offset into the buffer where the update should start.
+  /// \param pSourceData             - Pointer to the source data.
+  /// \param mapFlags                - Flags specifying how the buffer should be mapped.
+  /// \param bCopyToTemporaryStorage - Upload to temporary buffer, then buffer to buffer transfer at the current time in the command list.
+  void UpdateBufferExtended(xiiGALBufferHandle hBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags = xiiGALMapFlags::Discard, bool bCopyToTemporaryStorage = false);
 
   /// \brief Copies the entire contents of the source buffer to the destination buffer.
   ///
@@ -285,6 +293,14 @@ public:
   /// \param textureBox          - Specifies the region within the subresource to update.
   /// \param subresourceData     - Specifies the new data. See xiiGALTextureSubResourceData for details.
   void UpdateTexture(xiiGALTextureHandle hTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData);
+
+  /// \brief Updates a texture.
+  ///
+  /// \param hTexture            - The handle to the texture object.
+  /// \param textureMiplevelData - Specifies the subresource to update. See xiiGALTextureMipLevelData for details.
+  /// \param textureBox          - Specifies the region within the subresource to update.
+  /// \param subresourceData     - Specifies the new data. See xiiGALTextureSubResourceData for details.
+  void UpdateTextureExtended(xiiGALTextureHandle hTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData);
 
   /// \brief Copies the entire contents of the source texture to the destination texture.
   ///
@@ -418,13 +434,15 @@ protected:
   virtual void BeginQueryPlatform(xiiGALQuery* pQuery) = 0;
   virtual void EndQueryPlatform(xiiGALQuery* pQuery)   = 0;
 
-  virtual void      UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags)          = 0;
-  virtual void      CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)                                                                                  = 0;
-  virtual void      CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize) = 0;
-  virtual xiiResult MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)                                 = 0;
-  virtual xiiResult UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)                                                                                         = 0;
+  virtual void      UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)                                                                             = 0;
+  virtual void      UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage) = 0;
+  virtual void      CopyBufferPlatform(xiiGALBuffer* pSourceBuffer, xiiGALBuffer* pDestinationBuffer)                                                                                                               = 0;
+  virtual void      CopyBufferRegionPlatform(xiiGALBuffer* pSourceBuffer, xiiUInt64 uiSourceOffset, xiiGALBuffer* pDestinationBuffer, xiiUInt64 uiDestinationOffset, xiiUInt64 uiSize)                              = 0;
+  virtual xiiResult MapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType, xiiBitflags<xiiGALMapFlags> mapFlags, void*& pMappedData)                                                              = 0;
+  virtual xiiResult UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiEnum<xiiGALMapType> mapType)                                                                                                                      = 0;
 
   virtual void      UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)                                                                                 = 0;
+  virtual void      UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)                                                                         = 0;
   virtual void      CopyTexturePlatform(xiiGALTexture* pSourceTexture, xiiGALTexture* pDestinationTexture)                                                                                                                                                                                         = 0;
   virtual void      CopyTextureRegionPlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, const xiiBoundingBoxU32& box, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData, const xiiVec3U32& vDestinationPoint) = 0;
   virtual void      ResolveTextureSubResourcePlatform(xiiGALTexture* pSourceTexture, const xiiGALTextureMipLevelData& sourceMipLevelData, xiiGALTexture* pDestinationTexture, const xiiGALTextureMipLevelData& destinationMipLevelData)                                                            = 0;

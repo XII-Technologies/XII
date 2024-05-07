@@ -123,7 +123,11 @@ void xiiGALCommandListNull::EndQueryPlatform(xiiGALQuery* pQuery)
 {
 }
 
-void xiiGALCommandListNull::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags)
+void xiiGALCommandListNull::UpdateBufferPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData)
+{
+}
+
+void xiiGALCommandListNull::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer, xiiUInt32 uiDestinationOffset, xiiArrayPtr<const xiiUInt8> pSourceData, xiiBitflags<xiiGALMapFlags> mapFlags, bool bCopyToTemporaryStorage)
 {
 }
 
@@ -146,6 +150,10 @@ xiiResult xiiGALCommandListNull::UnmapBufferPlatform(xiiGALBuffer* pBuffer, xiiE
 }
 
 void xiiGALCommandListNull::UpdateTexturePlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
+{
+}
+
+void xiiGALCommandListNull::UpdateTextureExtendedPlatform(xiiGALTexture* pTexture, const xiiGALTextureMipLevelData& textureMiplevelData, const xiiBoundingBoxU32& textureBox, const xiiGALTextureSubResourceData& subresourceData)
 {
 }
 
