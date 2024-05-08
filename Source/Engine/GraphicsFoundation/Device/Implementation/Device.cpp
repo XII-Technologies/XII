@@ -81,155 +81,10 @@ namespace
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALRasterizerStateHandle) == sizeof(xiiUInt32));
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALPipelineResourceSignatureHandle) == sizeof(xiiUInt32));
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALPipelineStateHandle) == sizeof(xiiUInt32));
-
-  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALShaderHandle& Value)
-  {
-    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
-    return ref_stream;
-  }
-
-  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALBlendStateHandle& Value)
-  {
-    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
-    return ref_stream;
-  }
-
-  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRasterizerStateHandle& Value)
-  {
-    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
-    return ref_stream;
-  }
-
-  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALDepthStencilStateHandle& Value)
-  {
-    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
-    return ref_stream;
-  }
-
-  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALInputLayoutHandle& Value)
-  {
-    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
-    return ref_stream;
-  }
-
-  XII_ALWAYS_INLINE xiiStreamWriter& operator<<(xiiStreamWriter& ref_stream, const xiiGALRenderPassHandle& Value)
-  {
-    ref_stream << reinterpret_cast<const xiiUInt32&>(Value);
-    return ref_stream;
-  }
 } // namespace
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
-template <>
-struct xiiHashHelper<xiiGALPipelineStateCreationDescription>
-{
-  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiGALPipelineStateCreationDescription& description)
-  {
-    xiiHashStreamWriter32 writer;
-
-    writer << description.m_PipelineType;
-    writer << description.m_hShader;
-    writer << description.m_uiNodeMask;
-    writer << description.m_uiImmediateContextMask;
-
-    // Graphics pipeline state.
-    switch (description.m_PipelineType)
-    {
-      case xiiGALPipelineType::Graphics:
-      case xiiGALPipelineType::Mesh:
-      {
-        const auto& graphicsPipeline = description.m_GraphicsPipeline;
-
-        writer << graphicsPipeline.m_hBlendState;
-        writer << graphicsPipeline.m_uiSampleMask;
-        writer << graphicsPipeline.m_hRasterizerState;
-        writer << graphicsPipeline.m_hDepthStencilState;
-        writer << graphicsPipeline.m_hInputLayout;
-        writer << graphicsPipeline.m_PrimitiveTopology;
-        writer << graphicsPipeline.m_uiViewportCount;
-        writer << graphicsPipeline.m_uiSubpassIndex;
-        writer << graphicsPipeline.m_ShadingRateFlags;
-        writer << graphicsPipeline.m_hRenderPass;
-      }
-      break;
-      case xiiGALPipelineType::Compute:
-      {
-      }
-      break;
-      case xiiGALPipelineType::RayTracing:
-      {
-        const auto& rayTracingPipeline = description.m_RayTracingPipeline;
-
-        writer << rayTracingPipeline.m_uiShaderRecordSize;
-        writer << rayTracingPipeline.m_uiMaxRecursionDepth;
-      }
-      break;
-      case xiiGALPipelineType::Tile:
-      {
-        const auto& tilePipeline = description.m_TilePipeline;
-
-        writer << tilePipeline.m_SampleCount;
-        writer << tilePipeline.m_RenderTargetFormats.GetCount();
-
-        for (xiiUInt32 i = 0; i < tilePipeline.m_RenderTargetFormats.GetCount(); ++i)
-        {
-          writer << tilePipeline.m_RenderTargetFormats[i];
-        }
-      }
-      break;
-
-        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
-    }
-
-    return writer.GetHashValue();
-  }
-
-  XII_ALWAYS_INLINE static bool Equal(const xiiGALPipelineStateCreationDescription& a, const xiiGALPipelineStateCreationDescription& b) { return false; }
-};
-
-template <>
-struct xiiHashHelper<xiiGALPipelineResourceSignatureCreationDescription>
-{
-  XII_ALWAYS_INLINE static xiiUInt32 Hash(const xiiGALPipelineResourceSignatureCreationDescription& description)
-  {
-    xiiHashStreamWriter32 writer;
-
-    writer << description.m_uiBindingIndex;
-    writer << description.m_bUseCombinedTextureSamplers;
-    writer << description.m_sCombinedSamplerSuffix;
-
-    writer << description.m_Resources.GetCount();
-    for (xiiUInt32 i = 0; i < description.m_Resources.GetCount(); ++i)
-    {
-      const auto& resource = description.m_Resources[i];
-
-      writer << i;
-      writer << resource.m_sName;
-      writer << resource.m_ShaderStages;
-      writer << resource.m_uiArraySize;
-      writer << resource.m_ResourceType;
-      writer << resource.m_ResourceVariableType;
-      writer << resource.m_PipelineResourceFlags;
-    }
-
-    writer << description.m_ImmutableSamplers.GetCount();
-    for (xiiUInt32 i = 0; i < description.m_ImmutableSamplers.GetCount(); ++i)
-    {
-      const auto& sampler = description.m_ImmutableSamplers[i];
-
-      writer << i;
-      writer << sampler.m_SamplerOrTextureName;
-      writer << sampler.m_ShaderStages;
-      writer << sampler.m_SamplerDescription.CalculateHash();
-    }
-
-    return writer.GetHashValue();
-  }
-
-  XII_ALWAYS_INLINE static bool Equal(const xiiGALPipelineResourceSignatureCreationDescription& a, const xiiGALPipelineResourceSignatureCreationDescription& b) { return false; }
-};
 
 xiiGALDevice* xiiGALDevice::s_pDefaultDevice = nullptr;
 
@@ -2576,7 +2431,7 @@ XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipeline
 
   /// \todo GraphicsFoundation: Verify combined texture samplers, all samplers should be assigned to textures when combined texture samplers are used, all immutable samplers should be assigned to textures or samplers when combined texture samplers are used.
 
-  xiiUInt32 uiHash = PipelineResourceSignatureHashHelper::Hash(description);
+  xiiUInt32 uiHash = xiiGALDescriptorHash::Hash(description);
   {
     xiiGALPipelineResourceSignatureHandle hPipelineResourceSignature;
     if (m_PipelineResourceSignatureTable.TryGetValue(uiHash, hPipelineResourceSignature))
@@ -2596,7 +2451,7 @@ XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipeline
 
   if (pPipelineResourceSignature != nullptr)
   {
-    XII_ASSERT_DEBUG(PipelineResourceSignatureHashHelper::Hash(pPipelineResourceSignature->GetDescription()) == uiHash, "PipelineResourceSignature hash does not match.");
+    XII_ASSERT_DEBUG(xiiGALDescriptorHash::Hash(pPipelineResourceSignature->GetDescription()) == uiHash, "PipelineResourceSignature hash does not match.");
 
     pPipelineResourceSignature->AddRef();
 
@@ -2643,7 +2498,7 @@ XII_NODISCARD xiiGALPipelineStateHandle xiiGALDevice::CreatePipelineState(const 
 {
   /// \todo GraphicsFoundation: Verify pipeline state description.
 
-  xiiUInt32 uiHash = PipelineStateHashHelper::Hash(description);
+  xiiUInt32 uiHash = xiiGALDescriptorHash::Hash(description);
   {
     xiiGALPipelineStateHandle hPipelineState;
     if (m_PipelineStateTable.TryGetValue(uiHash, hPipelineState))
@@ -2663,7 +2518,7 @@ XII_NODISCARD xiiGALPipelineStateHandle xiiGALDevice::CreatePipelineState(const 
 
   if (pPipelineState != nullptr)
   {
-    XII_ASSERT_DEBUG(PipelineStateHashHelper::Hash(pPipelineState->GetDescription()) == uiHash, "PipelineState hash does not match.");
+    XII_ASSERT_DEBUG(xiiGALDescriptorHash::Hash(pPipelineState->GetDescription()) == uiHash, "PipelineState hash does not match.");
 
     pPipelineState->AddRef();
 
@@ -2931,7 +2786,7 @@ void xiiGALDevice::FlushDestroyedObjects()
         xiiGALPipelineResourceSignature*      pPipelineResourceSignature = nullptr;
 
         XII_VERIFY(m_PipelineResourceSignatures.Remove(hPipelineResourceSignature, &pPipelineResourceSignature), "PipelineResourceSignature not found in idTable.");
-        XII_VERIFY(m_PipelineResourceSignatureTable.Remove(PipelineResourceSignatureHashHelper::Hash(pPipelineResourceSignature->GetDescription())), "PipelineResourceSignature not found in de-duplication table.");
+        XII_VERIFY(m_PipelineResourceSignatureTable.Remove(xiiGALDescriptorHash::Hash(pPipelineResourceSignature->GetDescription())), "PipelineResourceSignature not found in de-duplication table.");
 
         DestroyPipelineResourceSignaturePlatform(pPipelineResourceSignature);
       }
@@ -2942,7 +2797,7 @@ void xiiGALDevice::FlushDestroyedObjects()
         xiiGALPipelineState*      pPipelineState = nullptr;
 
         XII_VERIFY(m_PipelineStates.Remove(hPipelineState, &pPipelineState), "PipelineState not found in idTable.");
-        XII_VERIFY(m_PipelineStateTable.Remove(PipelineStateHashHelper::Hash(pPipelineState->GetDescription())), "PipelineState not found in de-duplication table.");
+        XII_VERIFY(m_PipelineStateTable.Remove(xiiGALDescriptorHash::Hash(pPipelineState->GetDescription())), "PipelineState not found in de-duplication table.");
 
         DestroyPipelineStatePlatform(pPipelineState);
       }

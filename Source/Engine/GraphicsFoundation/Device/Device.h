@@ -2,21 +2,13 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Strings/HashedString.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/Object.h>
-
-template <>
-struct xiiHashHelper<xiiGALPipelineStateCreationDescription>;
-using PipelineStateHashHelper = xiiHashHelper<xiiGALPipelineStateCreationDescription>;
-
-template <>
-struct xiiHashHelper<xiiGALPipelineResourceSignatureCreationDescription>;
-using PipelineResourceSignatureHashHelper = xiiHashHelper<xiiGALPipelineResourceSignatureCreationDescription>;
+#include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 /// \brief The xiiRenderDevice class is the primary interface for interactions with rendering APIs.
 /// It contains a set of (non-virtual) functions to set state, create resources etc. which rely on API specific implementations provided by protected virtual functions.
