@@ -5,7 +5,6 @@
 #include <Foundation/Basics/Platform/Win/MinWindows.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/ResourceFormats.h>
 
 #include <GraphicsD3D11/CommandEncoder/CommandQueueD3D11.h>
 
@@ -22,9 +21,6 @@ struct ID3D11DeviceContext1;
 struct DXGI_MODE_DESC;
 
 XII_DEFINE_AS_POD_TYPE(DXGI_MODE_DESC);
-
-using xiiGALFormatLookupEntryD3D11 = xiiGALFormatLookupEntry<DXGI_FORMAT, (DXGI_FORMAT)0U>;
-using xiiGALFormatLookupTableD3D11 = xiiGALFormatLookupTable<xiiGALFormatLookupEntryD3D11>;
 
 class XII_GRAPHICSD3D11_DLL xiiGALDeviceD3D11 final : public xiiGALDevice
 {
@@ -54,8 +50,6 @@ public:
   IDXGIFactory4* GetDXGIFactory() const;
 
   ID3D11DeviceContext1* GetImmediateContext();
-
-  const xiiGALFormatLookupTableD3D11& GetFormatLookupTable() const;
 
   xiiUInt32 GetCommandQueueIndex(xiiBitflags<xiiGALCommandQueueType> queueType) const;
 
@@ -145,8 +139,6 @@ protected:
 
   virtual void FillCapabilitiesPlatform() override final;
 
-  void FillFormatLookupTable();
-
 private:
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   bool HasSDKLayers();
@@ -158,8 +150,6 @@ private:
   void EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter1* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALTextureFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes);
 
 private:
-  xiiGALFormatLookupTableD3D11 m_FormatLookupTable;
-
   IDXGIFactory4*        m_pDXGIFactory   = nullptr;
   IDXGIAdapter1*        m_pDXGIAdapter   = nullptr;
   ID3D11Device1*        m_pDeviceD3D11   = nullptr;

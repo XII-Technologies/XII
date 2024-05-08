@@ -81,8 +81,3 @@ XII_ALWAYS_INLINE Diligent::IDeviceContext* xiiGALDeviceD3D12::GetSparseBindingC
   return nullptr;
 }
 #endif
-
-XII_ALWAYS_INLINE const xiiGALFormatLookupTableD3D12& xiiGALDeviceD3D12::GetFormatLookupTable() const
-{
-  return m_FormatLookupTable;
-}

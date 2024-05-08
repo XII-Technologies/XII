@@ -73,15 +73,12 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform()
       continue;
     }
 
-    const auto& d3d11Format      = pDeviceD3D11->GetFormatLookupTable().GetFormatInfo(inputLayout.m_Format).m_eInputLayoutType;
-    const auto& formatProperties = xiiGALGraphicsUtilities::GetTextureFormatProperties(xiiD3D11TypeConversions::GetGALFormat(d3d11Format));
-
     D3D11_INPUT_ELEMENT_DESC& layoutElement = inputElementDescriptions.ExpandAndGetRef();
     layoutElement.SemanticName              = GALSemanticToD3D11[inputLayout.m_Semantic];
     layoutElement.SemanticIndex             = uiLocation;
     layoutElement.AlignedByteOffset         = inputLayout.m_uiRelativeOffset;
     layoutElement.InputSlot                 = inputLayout.m_uiBufferSlot;
-    layoutElement.Format                    = d3d11Format;
+    layoutElement.Format                    = xiiD3D11TypeConversions::GetFormat(inputLayout.m_Format);
     layoutElement.InputSlotClass            = xiiD3D11TypeConversions::GetElementFrequency(inputLayout.m_Frequency);
     layoutElement.InstanceDataStepRate      = (inputLayout.m_Frequency == xiiGALInputElementFrequency::PerVertex) ? 0U : inputLayout.m_uiInstanceDataStepRate;
 

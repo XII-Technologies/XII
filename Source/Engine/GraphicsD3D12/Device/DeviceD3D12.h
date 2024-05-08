@@ -6,7 +6,6 @@
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
 #include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/ResourceFormats.h>
 
 enum D3D_FEATURE_LEVEL;
 
@@ -17,9 +16,6 @@ struct ID3D12Device1;
 struct ID3D12Debug;
 
 XII_DEFINE_AS_POD_TYPE(DXGI_MODE_DESC);
-
-using xiiGALFormatLookupEntryD3D12 = xiiGALFormatLookupEntry<DXGI_FORMAT, (DXGI_FORMAT)0U>;
-using xiiGALFormatLookupTableD3D12 = xiiGALFormatLookupTable<xiiGALFormatLookupEntryD3D12>;
 
 class XII_GRAPHICSD3D12_DLL xiiGALDeviceD3D12 final : public xiiGALDevice
 {
@@ -49,8 +45,6 @@ public:
   IDXGIFactory4* GetDXGIFactory() const;
 
   xiiMemoryAllocatorD3D12* GetD3D12Allocator() const;
-
-  const xiiGALFormatLookupTableD3D12& GetFormatLookupTable() const;
 
   void ReportLiveGPUObjects();
 
@@ -132,8 +126,6 @@ protected:
 
   void CreateCommandQueues();
 
-  void FillFormatLookupTable();
-
 private:
   void                            GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel);
   xiiDynamicArray<IDXGIAdapter1*> GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel);
@@ -141,8 +133,6 @@ private:
   void EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter1* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALTextureFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes);
 
 private:
-  xiiGALFormatLookupTableD3D12 m_FormatLookupTable;
-
   IDXGIFactory4* m_pDXGIFactory = nullptr;
   IDXGIAdapter1* m_pDXGIAdapter = nullptr;
   ID3D12Device1* m_pD3D12Device = nullptr;

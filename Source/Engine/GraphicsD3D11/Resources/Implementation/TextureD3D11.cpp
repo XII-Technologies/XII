@@ -130,7 +130,7 @@ xiiResult xiiGALTextureD3D11::CreateTexture1D(ID3D11Texture1D** ppTexture1D, con
   textureDescription.Width                = m_Description.m_Size.width;
   textureDescription.MipLevels            = m_Description.m_uiMipLevels;
   textureDescription.ArraySize            = m_Description.GetArraySize();
-  textureDescription.Format               = pDeviceD3D11->GetFormatLookupTable().GetFormatInfo(m_Description.m_Format).m_eStorage;
+  textureDescription.Format               = xiiD3D11TypeConversions::GetFormat(m_Description.m_Format);
   textureDescription.Usage                = xiiD3D11TypeConversions::GetUsage(m_Description.m_Usage);
   textureDescription.BindFlags            = xiiD3D11TypeConversions::GetBindFlags(m_Description.m_BindFlags);
   textureDescription.CPUAccessFlags       = xiiD3D11TypeConversions::GetCPUAccessFlags(m_Description.m_CPUAccessFlags);
@@ -158,7 +158,7 @@ xiiResult xiiGALTextureD3D11::CreateTexture2D(ID3D11Texture2D** ppTexture2D, con
   textureDescription.Height               = m_Description.m_Size.height;
   textureDescription.MipLevels            = m_Description.m_uiMipLevels;
   textureDescription.ArraySize            = m_Description.GetArraySize();
-  textureDescription.Format               = pDeviceD3D11->GetFormatLookupTable().GetFormatInfo(m_Description.m_Format).m_eStorage;
+  textureDescription.Format               = xiiD3D11TypeConversions::GetFormat(m_Description.m_Format);
   textureDescription.SampleDesc           = sampleDescription;
   textureDescription.Usage                = xiiD3D11TypeConversions::GetUsage(m_Description.m_Usage);
   textureDescription.BindFlags            = xiiD3D11TypeConversions::GetBindFlags(m_Description.m_BindFlags);
@@ -194,7 +194,7 @@ xiiResult xiiGALTextureD3D11::CreateTexture3D(ID3D11Texture3D** ppTexture3D, con
   textureDescription.Height               = m_Description.m_Size.height;
   textureDescription.Depth                = m_Description.GetArraySize();
   textureDescription.MipLevels            = m_Description.m_uiMipLevels;
-  textureDescription.Format               = pDeviceD3D11->GetFormatLookupTable().GetFormatInfo(m_Description.m_Format).m_eStorage;
+  textureDescription.Format               = xiiD3D11TypeConversions::GetFormat(m_Description.m_Format);
   textureDescription.Usage                = xiiD3D11TypeConversions::GetUsage(m_Description.m_Usage);
   textureDescription.BindFlags            = xiiD3D11TypeConversions::GetBindFlags(m_Description.m_BindFlags);
   textureDescription.CPUAccessFlags       = xiiD3D11TypeConversions::GetCPUAccessFlags(m_Description.m_CPUAccessFlags);
