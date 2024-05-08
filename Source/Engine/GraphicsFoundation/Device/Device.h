@@ -288,7 +288,7 @@ public:
 
 public:
   /// \brief Registers event handlers.
-  xiiEvent<const xiiGALDeviceEvent&> m_Events;
+  static xiiEvent<const xiiGALDeviceEvent&> s_Events;
 
   /// \brief Returns the creation description for this device.
   XII_NODISCARD const xiiGALDeviceCreationDescription& GetDescription() const;

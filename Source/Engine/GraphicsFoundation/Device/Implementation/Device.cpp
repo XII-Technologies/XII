@@ -86,7 +86,8 @@ namespace
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDevice, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiGALDevice* xiiGALDevice::s_pDefaultDevice = nullptr;
+xiiGALDevice*                      xiiGALDevice::s_pDefaultDevice = nullptr;
+xiiEvent<const xiiGALDeviceEvent&> xiiGALDevice::s_Events;
 
 xiiGALDevice::xiiGALDevice(const xiiGALDeviceCreationDescription& creationDescription) :
   xiiGALObject(), m_Description(creationDescription), m_Allocator("GALDevice", xiiFoundation::GetDefaultAllocator()), m_AllocatorWrapper(&m_Allocator)
@@ -188,7 +189,7 @@ xiiResult xiiGALDevice::Initialize()
     xiiGALDeviceEvent e;
     e.m_pDevice = this;
     e.m_Type    = xiiGALDeviceEventType::AfterInitialization;
-    m_Events.Broadcast(e);
+    s_Events.Broadcast(e);
   }
 
   return XII_SUCCESS;
@@ -204,7 +205,7 @@ xiiResult xiiGALDevice::Shutdown()
     xiiGALDeviceEvent e;
     e.m_pDevice = this;
     e.m_Type    = xiiGALDeviceEventType::BeforeShutdown;
-    m_Events.Broadcast(e);
+    s_Events.Broadcast(e);
   }
 
   FlushDestroyedObjects();
@@ -250,7 +251,7 @@ void xiiGALDevice::BeginFrame(const xiiUInt64 uiRenderFrame)
     xiiGALDeviceEvent e;
     e.m_pDevice = this;
     e.m_Type    = xiiGALDeviceEventType::BeforeBeginFrame;
-    m_Events.Broadcast(e);
+    s_Events.Broadcast(e);
   }
 
   {
@@ -266,7 +267,7 @@ void xiiGALDevice::BeginFrame(const xiiUInt64 uiRenderFrame)
     xiiGALDeviceEvent e;
     e.m_pDevice = this;
     e.m_Type    = xiiGALDeviceEventType::AfterBeginFrame;
-    m_Events.Broadcast(e);
+    s_Events.Broadcast(e);
   }
 }
 
@@ -276,7 +277,7 @@ void xiiGALDevice::EndFrame()
     xiiGALDeviceEvent e;
     e.m_pDevice = this;
     e.m_Type    = xiiGALDeviceEventType::BeforeEndFrame;
-    m_Events.Broadcast(e);
+    s_Events.Broadcast(e);
   }
 
   {
@@ -295,7 +296,7 @@ void xiiGALDevice::EndFrame()
     xiiGALDeviceEvent e;
     e.m_pDevice = this;
     e.m_Type    = xiiGALDeviceEventType::AfterEndFrame;
-    m_Events.Broadcast(e);
+    s_Events.Broadcast(e);
   }
 }
 
