@@ -127,7 +127,7 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
       sourceData.m_pData    = task->m_PixelData.GetData();
       sourceData.m_uiStride = task->m_uiWidth * sizeof(xiiColorGammaUB);
 
-      pGALCommandList->UpdateTexture(pComponent->m_hDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
+      pGALCommandList->UpdateTextureExtended(pComponent->m_hDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
 
       pGALCommandQueue->Submit(pGALCommandList);
     }

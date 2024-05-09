@@ -1,7 +1,27 @@
 
-XII_ALWAYS_INLINE ID3D12Device* xiiGALDeviceD3D12::GetDeviceD3D12() const
+XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALDeviceD3D12::GetGraphicsQueue() const
 {
-  return m_pDeviceD3D12;
+  return nullptr;
+}
+
+XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALDeviceD3D12::GetComputeQueue() const
+{
+  return nullptr;
+}
+
+XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALDeviceD3D12::GetTransferQueue() const
+{
+  return nullptr;
+}
+
+XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALDeviceD3D12::GetSparseBindingQueue() const
+{
+  return nullptr;
+}
+
+XII_ALWAYS_INLINE ID3D12Device1* xiiGALDeviceD3D12::GetD3D12Device() const
+{
+  return m_pD3D12Device;
 }
 
 XII_ALWAYS_INLINE IDXGIAdapter1* xiiGALDeviceD3D12::GetDXGIAdapter() const
@@ -61,8 +81,3 @@ XII_ALWAYS_INLINE Diligent::IDeviceContext* xiiGALDeviceD3D12::GetSparseBindingC
   return nullptr;
 }
 #endif
-
-XII_ALWAYS_INLINE const xiiGALFormatLookupTableD3D12& xiiGALDeviceD3D12::GetFormatLookupTable() const
-{
-  return m_FormatLookupTable;
-}

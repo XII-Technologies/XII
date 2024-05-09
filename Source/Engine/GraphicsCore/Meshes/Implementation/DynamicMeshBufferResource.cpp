@@ -182,19 +182,7 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandList* pGALComman
 
     m_bAccessedVB = false;
 
-    void* pMappedData = nullptr;
-    if (pGALCommandList->MapBuffer(m_hVertexBuffer, xiiGALMapType::Write, mapFlags, pMappedData).Succeeded())
-    {
-      auto pByteData = m_VertexData.GetArrayPtr().GetSubArray(uiFirstVertex, uiNumVertices).ToByteArray();
-
-      memcpy(xiiMemoryUtils::AddByteOffset(pMappedData, sizeof(xiiDynamicMeshVertex) * uiFirstVertex), pByteData.GetPtr(), pByteData.GetCount());
-
-      pGALCommandList->UnmapBuffer(m_hVertexBuffer, xiiGALMapType::Write).AssertSuccess();
-    }
-    else
-    {
-      xiiLog::Error("Failed to map buffer to update content.");
-    }
+    pGALCommandList->UpdateBufferExtended(m_hVertexBuffer, sizeof(xiiDynamicMeshVertex) * uiFirstVertex, m_VertexData.GetArrayPtr().GetSubArray(uiFirstVertex, uiNumVertices).ToByteArray(), mapFlags);
   }
 
   if (m_bAccessedCB && uiNumVertices > 0)
@@ -206,19 +194,7 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandList* pGALComman
 
     m_bAccessedCB = false;
 
-    void* pMappedData = nullptr;
-    if (pGALCommandList->MapBuffer(m_hColorBuffer, xiiGALMapType::Write, mapFlags, pMappedData).Succeeded())
-    {
-      auto pByteData = m_ColorData.GetArrayPtr().GetSubArray(uiFirstVertex, uiNumVertices).ToByteArray();
-
-      memcpy(xiiMemoryUtils::AddByteOffset(pMappedData, sizeof(xiiColorLinearUB) * uiFirstVertex), pByteData.GetPtr(), pByteData.GetCount());
-
-      pGALCommandList->UnmapBuffer(m_hColorBuffer, xiiGALMapType::Write).AssertSuccess();
-    }
-    else
-    {
-      xiiLog::Error("Failed to map buffer to update content.");
-    }
+    pGALCommandList->UpdateBufferExtended(m_hColorBuffer, sizeof(xiiColorLinearUB) * uiFirstVertex, m_ColorData.GetArrayPtr().GetSubArray(uiFirstVertex, uiNumVertices).ToByteArray(), mapFlags);
   }
 
   if (m_bAccessedIB && uiNumIndices > 0 && !m_hIndexBuffer.IsInvalidated())
@@ -234,19 +210,7 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandList* pGALComman
 
       XII_ASSERT_DEV(uiNumIndices <= m_Index16Data.GetCount(), "Can't upload {} indices, the buffer was allocated to hold a maximum of {} indices.", uiNumIndices, m_Index16Data.GetCount());
 
-      void* pMappedData = nullptr;
-      if (pGALCommandList->MapBuffer(m_hIndexBuffer, xiiGALMapType::Write, mapFlags, pMappedData).Succeeded())
-      {
-        auto pByteData = m_Index16Data.GetArrayPtr().GetSubArray(uiFirstIndex, uiNumIndices).ToByteArray();
-
-        memcpy(xiiMemoryUtils::AddByteOffset(pMappedData, sizeof(xiiUInt16) * uiFirstIndex), pByteData.GetPtr(), pByteData.GetCount());
-
-        pGALCommandList->UnmapBuffer(m_hIndexBuffer, xiiGALMapType::Write).AssertSuccess();
-      }
-      else
-      {
-        xiiLog::Error("Failed to map buffer to update content.");
-      }
+      pGALCommandList->UpdateBufferExtended(m_hIndexBuffer, sizeof(xiiUInt16) * uiFirstIndex, m_Index16Data.GetArrayPtr().GetSubArray(uiFirstIndex, uiNumIndices).ToByteArray(), mapFlags);
     }
     else if (!m_Index32Data.IsEmpty())
     {
@@ -257,19 +221,7 @@ void xiiDynamicMeshBufferResource::UpdateGpuBuffer(xiiGALCommandList* pGALComman
 
       XII_ASSERT_DEV(uiNumIndices <= m_Index32Data.GetCount(), "Can't upload {} indices, the buffer was allocated to hold a maximum of {} indices.", uiNumIndices, m_Index32Data.GetCount());
 
-      void* pMappedData = nullptr;
-      if (pGALCommandList->MapBuffer(m_hIndexBuffer, xiiGALMapType::Write, mapFlags, pMappedData).Succeeded())
-      {
-        auto pByteData = m_Index32Data.GetArrayPtr().GetSubArray(uiFirstIndex, uiNumIndices).ToByteArray();
-
-        memcpy(xiiMemoryUtils::AddByteOffset(pMappedData, sizeof(xiiUInt32) * uiFirstIndex), pByteData.GetPtr(), pByteData.GetCount());
-
-        pGALCommandList->UnmapBuffer(m_hIndexBuffer, xiiGALMapType::Write).AssertSuccess();
-      }
-      else
-      {
-        xiiLog::Error("Failed to map buffer to update content.");
-      }
+      pGALCommandList->UpdateBufferExtended(m_hIndexBuffer, sizeof(xiiUInt32) * uiFirstIndex, m_Index32Data.GetArrayPtr().GetSubArray(uiFirstIndex, uiNumIndices).ToByteArray(), mapFlags);
     }
   }
 }

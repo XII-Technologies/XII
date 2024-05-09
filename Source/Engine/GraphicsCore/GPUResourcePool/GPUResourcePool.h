@@ -1,10 +1,10 @@
 #pragma once
 
+#include <GraphicsCore/GraphicsCoreDLL.h>
+
 #include <Foundation/Containers/Map.h>
 #include <Foundation/Containers/Set.h>
 #include <Foundation/Threading/Mutex.h>
-#include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsFoundation/Resources/ResourceFormats.h>
 
 struct xiiGALDeviceEvent;
 

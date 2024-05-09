@@ -5,7 +5,6 @@
 #include <Foundation/Basics/Platform/Win/MinWindows.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/ResourceFormats.h>
 
 #include <GraphicsNull/CommandEncoder/CommandQueueNull.h>
 

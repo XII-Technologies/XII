@@ -32,15 +32,15 @@ public:
     return static_cast<typename T::MaskType>(value);
   }
 
-  static vk::BlendOp     GetVkBlendOp(xiiEnum<xiiGALBlendOperation> e);
-  static vk::BlendFactor GetVkBlendFactor(xiiEnum<xiiGALBlendFactor> e);
-  static vk::LogicOp     GetVkLogicOp(xiiEnum<xiiGALLogicOperation> e);
+  static vk::BlendOp     GetBlendOp(xiiEnum<xiiGALBlendOperation> e);
+  static vk::BlendFactor GetBlendFactor(xiiEnum<xiiGALBlendFactor> e);
+  static vk::LogicOp     GetLogicOp(xiiEnum<xiiGALLogicOperation> e);
 
-  static vk::CompareOp GetVkCompareOp(xiiEnum<xiiGALComparisonFunction> e);
-  static vk::StencilOp GetVkStencilOp(xiiEnum<xiiGALStencilOperation> e);
+  static vk::CompareOp GetCompareOp(xiiEnum<xiiGALComparisonFunction> e);
+  static vk::StencilOp GetStencilOp(xiiEnum<xiiGALStencilOperation> e);
 
-  static vk::PolygonMode      GetVkPolygonMode(xiiEnum<xiiGALFillMode> e);
-  static vk::CullModeFlagBits GetVkCullMode(xiiEnum<xiiGALCullMode> e);
+  static vk::PolygonMode      GetPolygonMode(xiiEnum<xiiGALFillMode> e);
+  static vk::CullModeFlagBits GetCullMode(xiiEnum<xiiGALCullMode> e);
 
   static vk::ColorComponentFlags GetColorWriteMask(xiiBitflags<xiiGALColorMask> e);
 };

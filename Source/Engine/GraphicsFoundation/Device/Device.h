@@ -2,21 +2,13 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <Foundation/Algorithm/HashingUtils.h>
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/Memory/CommonAllocators.h>
 #include <Foundation/Strings/HashedString.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/Object.h>
-
-template <>
-struct xiiHashHelper<xiiGALPipelineStateCreationDescription>;
-using PipelineStateHashHelper = xiiHashHelper<xiiGALPipelineStateCreationDescription>;
-
-template <>
-struct xiiHashHelper<xiiGALPipelineResourceSignatureCreationDescription>;
-using PipelineResourceSignatureHashHelper = xiiHashHelper<xiiGALPipelineResourceSignatureCreationDescription>;
+#include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 /// \brief The xiiRenderDevice class is the primary interface for interactions with rendering APIs.
 /// It contains a set of (non-virtual) functions to set state, create resources etc. which rely on API specific implementations provided by protected virtual functions.
@@ -296,7 +288,7 @@ public:
 
 public:
   /// \brief Registers event handlers.
-  xiiEvent<const xiiGALDeviceEvent&> m_Events;
+  static xiiEvent<const xiiGALDeviceEvent&> s_Events;
 
   /// \brief Returns the creation description for this device.
   XII_NODISCARD const xiiGALDeviceCreationDescription& GetDescription() const;
@@ -498,6 +490,8 @@ protected:
   virtual xiiResult InitializePlatform() = 0;
   virtual xiiResult ShutdownPlatform()   = 0;
 
+  virtual void CreateCommandQueuesPlatform() = 0;
+
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) = 0;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain)                        = 0;
 
@@ -562,8 +556,6 @@ protected:
   virtual void                 DestroyPipelineStatePlatform(xiiGALPipelineState* pPipelineState)                      = 0;
 
   virtual void WaitIdlePlatform() = 0;
-
-  virtual void CreateCommandQueuesPlatform() = 0;
 
   virtual void FillCapabilitiesPlatform() = 0;
 

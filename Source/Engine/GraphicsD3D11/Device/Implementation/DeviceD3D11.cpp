@@ -227,8 +227,6 @@ xiiResult xiiGALDeviceD3D11::InitializePlatform()
 #endif
   }
 
-  FillFormatLookupTable();
-
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
 
@@ -275,6 +273,25 @@ xiiResult xiiGALDeviceD3D11::ShutdownPlatform()
   for (xiiUInt8 i = 0; i < XII_ARRAY_SIZE(m_CommandQueues); ++i)
   {
     m_CommandQueues[i].Clear();
+  }
+
+  for (xiiUInt32 type = 0; type < TemporaryResourceType::ENUM_COUNT; ++type)
+  {
+    for (auto it = m_FreeTempResources[type].GetIterator(); it.IsValid(); ++it)
+    {
+      xiiDynamicArray<ID3D11Resource*>& resources = it.Value();
+      for (auto pResource : resources)
+      {
+        XII_GAL_D3D11_RELEASE(pResource);
+      }
+    }
+    m_FreeTempResources[type].Clear();
+
+    for (auto& tempResource : m_UsedTempResources[type])
+    {
+      XII_GAL_D3D11_RELEASE(tempResource.m_pResource);
+    }
+    m_UsedTempResources[type].Clear();
   }
 
   XII_GAL_D3D11_RELEASE(m_pDeviceContext);
@@ -325,6 +342,8 @@ void xiiGALDeviceD3D11::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 void xiiGALDeviceD3D11::EndFramePlatform()
 {
   // Call FinishFrame() to release references to Swapchain resources
+
+  FreeTemporaryResources(m_uiFrameCounter);
 
   ++m_uiFrameCounter;
 }
@@ -963,111 +982,140 @@ void xiiGALDeviceD3D11::FillCapabilitiesPlatform()
   }
 }
 
-void xiiGALDeviceD3D11::FillFormatLookupTable()
+ID3D11Resource* xiiGALDeviceD3D11::FindTemporaryBuffer(xiiUInt32 uiSize)
 {
-  // The list below is in the same order as the xiiGALTextureFormat enumeration, no format should be missing.
+  const xiiUInt32 uiExpGrowthLimit = 16 * 1024 * 1024;
 
-  // clang-format off
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32Typeless,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32G32B32A32_TYPELESS).RT(DXGI_FORMAT_R32G32B32A32_TYPELESS).IL(DXGI_FORMAT_R32G32B32A32_TYPELESS).RV(DXGI_FORMAT_R32G32B32A32_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32Float,                  xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32G32B32A32_TYPELESS).RT(DXGI_FORMAT_R32G32B32A32_FLOAT).IL(DXGI_FORMAT_R32G32B32A32_FLOAT).RV(DXGI_FORMAT_R32G32B32A32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32UInt,                   xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32G32B32A32_TYPELESS).RT(DXGI_FORMAT_R32G32B32A32_UINT).IL(DXGI_FORMAT_R32G32B32A32_UINT).RV(DXGI_FORMAT_R32G32B32A32_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32SInt,                   xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32G32B32A32_TYPELESS).RT(DXGI_FORMAT_R32G32B32A32_SINT).IL(DXGI_FORMAT_R32G32B32A32_SINT).RV(DXGI_FORMAT_R32G32B32A32_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32Typeless,                xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32G32B32_TYPELESS).RT(DXGI_FORMAT_R32G32B32_TYPELESS).IL(DXGI_FORMAT_R32G32B32_TYPELESS).RV(DXGI_FORMAT_R32G32B32_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32Float,                   xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32G32B32_TYPELESS).RT(DXGI_FORMAT_R32G32B32_FLOAT).IL(DXGI_FORMAT_R32G32B32_FLOAT).RV(DXGI_FORMAT_R32G32B32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32UInt,                    xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32G32B32_TYPELESS).RT(DXGI_FORMAT_R32G32B32_UINT).IL(DXGI_FORMAT_R32G32B32_UINT).RV(DXGI_FORMAT_R32G32B32_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32SInt,                    xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32G32B32_TYPELESS).RT(DXGI_FORMAT_R32G32B32_SINT).IL(DXGI_FORMAT_R32G32B32_SINT).RV(DXGI_FORMAT_R32G32B32_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16Typeless,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_TYPELESS).IL(DXGI_FORMAT_R16G16B16A16_TYPELESS).RV(DXGI_FORMAT_R16G16B16A16_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16Float,                  xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_FLOAT).IL(DXGI_FORMAT_R16G16B16A16_FLOAT).RV(DXGI_FORMAT_R16G16B16A16_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16UNormalized,            xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_UNORM).IL(DXGI_FORMAT_R16G16B16A16_UNORM).RV(DXGI_FORMAT_R16G16B16A16_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16UInt,                   xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_UINT).IL(DXGI_FORMAT_R16G16B16A16_UINT).RV(DXGI_FORMAT_R16G16B16A16_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16SNormalized,            xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_SNORM).IL(DXGI_FORMAT_R16G16B16A16_SNORM).RV(DXGI_FORMAT_R16G16B16A16_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16SInt,                   xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_SINT).IL(DXGI_FORMAT_R16G16B16A16_SINT).RV(DXGI_FORMAT_R16G16B16A16_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32Typeless,                 xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32G32_TYPELESS).RT(DXGI_FORMAT_R32G32_TYPELESS).IL(DXGI_FORMAT_R32G32_TYPELESS).RV(DXGI_FORMAT_R32G32_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32Float,                    xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32G32_TYPELESS).RT(DXGI_FORMAT_R32G32_FLOAT).IL(DXGI_FORMAT_R32G32_FLOAT).RV(DXGI_FORMAT_R32G32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32UInt,                     xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32G32_TYPELESS).RT(DXGI_FORMAT_R32G32_UINT).IL(DXGI_FORMAT_R32G32_UINT).RV(DXGI_FORMAT_R32G32_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32SInt,                     xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32G32_TYPELESS).RT(DXGI_FORMAT_R32G32_SINT).IL(DXGI_FORMAT_R32G32_SINT).RV(DXGI_FORMAT_R32G32_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32G8X24Typeless,             xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32G8X24_TYPELESS).RT(DXGI_FORMAT_R32G8X24_TYPELESS).IL(DXGI_FORMAT_R32G8X24_TYPELESS).RV(DXGI_FORMAT_R32G8X24_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D32FloatS8X24UInt,            xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_D32_FLOAT_S8X24_UINT).D(DXGI_FORMAT_D32_FLOAT_S8X24_UINT).DS(DXGI_FORMAT_D32_FLOAT_S8X24_UINT).S(DXGI_FORMAT_D32_FLOAT_S8X24_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32FloatX8X24Typeless,        xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS).RT(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS).IL(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS).RV(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::X32TypelessG8X24UInt,         xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT).RT(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT).IL(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT).RV(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2Typeless,              xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R10G10B10A2_TYPELESS).RT(DXGI_FORMAT_R10G10B10A2_TYPELESS).IL(DXGI_FORMAT_R10G10B10A2_TYPELESS).RV(DXGI_FORMAT_R10G10B10A2_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2UNormalized,           xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R10G10B10A2_TYPELESS).RT(DXGI_FORMAT_R10G10B10A2_UNORM).IL(DXGI_FORMAT_R10G10B10A2_UNORM).RV(DXGI_FORMAT_R10G10B10A2_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2UInt,                  xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R10G10B10A2_TYPELESS).RT(DXGI_FORMAT_R10G10B10A2_UINT).IL(DXGI_FORMAT_R10G10B10A2_UINT).RV(DXGI_FORMAT_R10G10B10A2_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG11B10Float,                 xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R11G11B10_FLOAT).RT(DXGI_FORMAT_R11G11B10_FLOAT).IL(DXGI_FORMAT_R11G11B10_FLOAT).RV(DXGI_FORMAT_R11G11B10_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8Typeless,                xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_TYPELESS).IL(DXGI_FORMAT_R8G8B8A8_TYPELESS).RV(DXGI_FORMAT_R8G8B8A8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UNormalized,             xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_UNORM).IL(DXGI_FORMAT_R8G8B8A8_UNORM).RV(DXGI_FORMAT_R8G8B8A8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UNormalizedSRGB,         xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB).IL(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB).RV(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UInt,                    xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_UINT).IL(DXGI_FORMAT_R8G8B8A8_UINT).RV(DXGI_FORMAT_R8G8B8A8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8SNormalized,             xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_SNORM).IL(DXGI_FORMAT_R8G8B8A8_SNORM).RV(DXGI_FORMAT_R8G8B8A8_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8SInt,                    xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_SINT).IL(DXGI_FORMAT_R8G8B8A8_SINT).RV(DXGI_FORMAT_R8G8B8A8_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16Typeless,                 xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_TYPELESS).IL(DXGI_FORMAT_R16G16_TYPELESS).RV(DXGI_FORMAT_R16G16_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16Float,                    xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_FLOAT).IL(DXGI_FORMAT_R16G16_FLOAT).RV(DXGI_FORMAT_R16G16_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16UNormalized,              xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_UNORM).IL(DXGI_FORMAT_R16G16_UNORM).RV(DXGI_FORMAT_R16G16_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16UInt,                     xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_UINT).IL(DXGI_FORMAT_R16G16_UINT).RV(DXGI_FORMAT_R16G16_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16SNormalized,              xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_SNORM).IL(DXGI_FORMAT_R16G16_SNORM).RV(DXGI_FORMAT_R16G16_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16SInt,                     xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_SINT).IL(DXGI_FORMAT_R16G16_SINT).RV(DXGI_FORMAT_R16G16_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32Typeless,                  xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32_TYPELESS).RT(DXGI_FORMAT_R32_TYPELESS).IL(DXGI_FORMAT_R32_TYPELESS).RV(DXGI_FORMAT_R32_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D32Float,                     xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32_TYPELESS).RV(DXGI_FORMAT_R32_FLOAT).D(DXGI_FORMAT_R32_FLOAT).DS(DXGI_FORMAT_D32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32Float,                     xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32_TYPELESS).RT(DXGI_FORMAT_R32_FLOAT).IL(DXGI_FORMAT_R32_FLOAT).RV(DXGI_FORMAT_R32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32UInt,                      xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32_TYPELESS).RT(DXGI_FORMAT_R32_UINT).IL(DXGI_FORMAT_R32_UINT).RV(DXGI_FORMAT_R32_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32SInt,                      xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R32_TYPELESS).RT(DXGI_FORMAT_R32_SINT).IL(DXGI_FORMAT_R32_SINT).RV(DXGI_FORMAT_R32_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R24G8Typeless,                xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R24G8_TYPELESS).RT(DXGI_FORMAT_R24G8_TYPELESS).IL(DXGI_FORMAT_R24G8_TYPELESS).RV(DXGI_FORMAT_R24G8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D24UNormalizedS8UInt,         xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R24G8_TYPELESS).D(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).DS(DXGI_FORMAT_D24_UNORM_S8_UINT).S(DXGI_FORMAT_X24_TYPELESS_G8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R24UNormalizedX8Typeless,     xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).RT(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).IL(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).RV(DXGI_FORMAT_R24_UNORM_X8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::X24TypelessG8UInt,            xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_X24_TYPELESS_G8_UINT).RT(DXGI_FORMAT_X24_TYPELESS_G8_UINT).IL(DXGI_FORMAT_X24_TYPELESS_G8_UINT).RV(DXGI_FORMAT_X24_TYPELESS_G8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8Typeless,                  xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_TYPELESS).IL(DXGI_FORMAT_R8G8_TYPELESS).RV(DXGI_FORMAT_R8G8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8UNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_UNORM).IL(DXGI_FORMAT_R8G8_UNORM).RV(DXGI_FORMAT_R8G8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8UInt,                      xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_UINT).IL(DXGI_FORMAT_R8G8_UINT).RV(DXGI_FORMAT_R8G8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8SNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_SNORM).IL(DXGI_FORMAT_R8G8_SNORM).RV(DXGI_FORMAT_R8G8_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8SInt,                      xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_SINT).IL(DXGI_FORMAT_R8G8_SINT).RV(DXGI_FORMAT_R8G8_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16Typeless,                  xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_TYPELESS).IL(DXGI_FORMAT_R16_TYPELESS).RV(DXGI_FORMAT_R16_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16Float,                     xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_FLOAT).IL(DXGI_FORMAT_R16_FLOAT).RV(DXGI_FORMAT_R16_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D16UNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16_TYPELESS).RV(DXGI_FORMAT_R16_UNORM).DS(DXGI_FORMAT_D16_UNORM).D(DXGI_FORMAT_R16_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16UNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16_TYPELESS).D(DXGI_FORMAT_R16_UNORM).DS(DXGI_FORMAT_R16_UNORM).S(DXGI_FORMAT_R16_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16UInt,                      xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_UINT).IL(DXGI_FORMAT_R16_UINT).RV(DXGI_FORMAT_R16_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16SNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_SNORM).IL(DXGI_FORMAT_R16_SNORM).RV(DXGI_FORMAT_R16_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16SInt,                      xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_SINT).IL(DXGI_FORMAT_R16_SINT).RV(DXGI_FORMAT_R16_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8Typeless,                   xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_TYPELESS).IL(DXGI_FORMAT_R8_TYPELESS).RV(DXGI_FORMAT_R8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8UNormalized,                xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_UNORM).IL(DXGI_FORMAT_R8_UNORM).RV(DXGI_FORMAT_R8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8UInt,                       xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_UINT).IL(DXGI_FORMAT_R8_UINT).RV(DXGI_FORMAT_R8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8SNormalized,                xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_SNORM).IL(DXGI_FORMAT_R8_SNORM).RV(DXGI_FORMAT_R8_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8SInt,                       xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_SINT).IL(DXGI_FORMAT_R8_SINT).RV(DXGI_FORMAT_R8_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::A8UNormalized,                xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_A8_UNORM).IL(DXGI_FORMAT_A8_UNORM).RV(DXGI_FORMAT_A8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R1UNormalized,                xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R1_UNORM).RT(DXGI_FORMAT_R1_UNORM).IL(DXGI_FORMAT_R1_UNORM).RV(DXGI_FORMAT_R1_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB9E5SharedExponent,         xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R9G9B9E5_SHAREDEXP).RT(DXGI_FORMAT_R9G9B9E5_SHAREDEXP).IL(DXGI_FORMAT_R9G9B9E5_SHAREDEXP).RV(DXGI_FORMAT_R9G9B9E5_SHAREDEXP));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8BG8UNormalized,            xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R8G8_B8G8_UNORM).RT(DXGI_FORMAT_R8G8_B8G8_UNORM).IL(DXGI_FORMAT_R8G8_B8G8_UNORM).RV(DXGI_FORMAT_R8G8_B8G8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::GR8GB8UNormalized,            xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_G8R8_G8B8_UNORM).RT(DXGI_FORMAT_G8R8_G8B8_UNORM).IL(DXGI_FORMAT_G8R8_G8B8_UNORM).RV(DXGI_FORMAT_G8R8_G8B8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1Typeless,                  xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC1_TYPELESS).RT(DXGI_FORMAT_BC1_TYPELESS).IL(DXGI_FORMAT_BC1_TYPELESS).RV(DXGI_FORMAT_BC1_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1UNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC1_TYPELESS).RT(DXGI_FORMAT_BC1_UNORM).IL(DXGI_FORMAT_BC1_UNORM).RV(DXGI_FORMAT_BC1_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1UNormalizedSRGB,           xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC1_TYPELESS).RT(DXGI_FORMAT_BC1_UNORM_SRGB).IL(DXGI_FORMAT_BC1_UNORM_SRGB).RV(DXGI_FORMAT_BC1_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2Typeless,                  xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC2_TYPELESS).RT(DXGI_FORMAT_BC2_TYPELESS).IL(DXGI_FORMAT_BC2_TYPELESS).RV(DXGI_FORMAT_BC2_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2UNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC2_TYPELESS).RT(DXGI_FORMAT_BC2_UNORM).IL(DXGI_FORMAT_BC2_UNORM).RV(DXGI_FORMAT_BC2_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2UNormalizedSRGB,           xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC2_TYPELESS).RT(DXGI_FORMAT_BC2_UNORM_SRGB).IL(DXGI_FORMAT_BC2_UNORM_SRGB).RV(DXGI_FORMAT_BC2_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3Typeless,                  xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC3_TYPELESS).RT(DXGI_FORMAT_BC3_TYPELESS).IL(DXGI_FORMAT_BC3_TYPELESS).RV(DXGI_FORMAT_BC3_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3UNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC3_TYPELESS).RT(DXGI_FORMAT_BC3_UNORM).IL(DXGI_FORMAT_BC3_UNORM).RV(DXGI_FORMAT_BC3_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3UNormalizedSRGB,           xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC3_TYPELESS).RT(DXGI_FORMAT_BC3_UNORM_SRGB).IL(DXGI_FORMAT_BC3_UNORM_SRGB).RV(DXGI_FORMAT_BC3_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4Typeless,                  xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC4_TYPELESS).RT(DXGI_FORMAT_BC4_TYPELESS).IL(DXGI_FORMAT_BC4_TYPELESS).RV(DXGI_FORMAT_BC4_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4UNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC4_TYPELESS).RT(DXGI_FORMAT_BC4_UNORM).IL(DXGI_FORMAT_BC4_UNORM).RV(DXGI_FORMAT_BC4_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4SNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC4_TYPELESS).RT(DXGI_FORMAT_BC4_SNORM).IL(DXGI_FORMAT_BC4_SNORM).RV(DXGI_FORMAT_BC4_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5Typeless,                  xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC5_TYPELESS).RT(DXGI_FORMAT_BC5_TYPELESS).IL(DXGI_FORMAT_BC5_TYPELESS).RV(DXGI_FORMAT_BC5_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5UNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC5_TYPELESS).RT(DXGI_FORMAT_BC5_UNORM).IL(DXGI_FORMAT_BC5_UNORM).RV(DXGI_FORMAT_BC5_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5SNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC5_TYPELESS).RT(DXGI_FORMAT_BC5_SNORM).IL(DXGI_FORMAT_BC5_SNORM).RV(DXGI_FORMAT_BC5_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::B5G6R5UNormalized,            xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_B5G6R5_UNORM).RT(DXGI_FORMAT_B5G6R5_UNORM).IL(DXGI_FORMAT_B5G6R5_UNORM).RV(DXGI_FORMAT_B5G6R5_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::B5G5R5A1UNormalized,          xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_B5G5R5A1_UNORM).RT(DXGI_FORMAT_B5G5R5A1_UNORM).IL(DXGI_FORMAT_B5G5R5A1_UNORM).RV(DXGI_FORMAT_B5G5R5A1_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8UNormalized,             xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_B8G8R8A8_TYPELESS).RT(DXGI_FORMAT_B8G8R8A8_UNORM).IL(DXGI_FORMAT_B8G8R8A8_UNORM).RV(DXGI_FORMAT_B8G8R8A8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8UNormalized,             xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_B8G8R8X8_TYPELESS).RT(DXGI_FORMAT_B8G8R8X8_UNORM).IL(DXGI_FORMAT_B8G8R8X8_UNORM).RV(DXGI_FORMAT_B8G8R8X8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized, xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).RT(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).IL(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).RV(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8Typeless,                xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_B8G8R8A8_TYPELESS).RT(DXGI_FORMAT_B8G8R8A8_TYPELESS).IL(DXGI_FORMAT_B8G8R8A8_TYPELESS).RV(DXGI_FORMAT_B8G8R8A8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8UNormalizedSRGB,         xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_B8G8R8A8_TYPELESS).RT(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB).IL(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB).RV(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8Typeless,                xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_B8G8R8X8_TYPELESS).RT(DXGI_FORMAT_B8G8R8X8_TYPELESS).IL(DXGI_FORMAT_B8G8R8X8_TYPELESS).RV(DXGI_FORMAT_B8G8R8X8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8UNormalizedSRGB,         xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_B8G8R8X8_TYPELESS).RT(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB).IL(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB).RV(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HTypeless,                 xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC6H_TYPELESS).RT(DXGI_FORMAT_BC6H_TYPELESS).IL(DXGI_FORMAT_BC6H_TYPELESS).RV(DXGI_FORMAT_BC6H_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HUF16,                     xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC6H_TYPELESS).RT(DXGI_FORMAT_BC6H_UF16).IL(DXGI_FORMAT_BC6H_UF16).RV(DXGI_FORMAT_BC6H_UF16));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HSF16,                     xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC6H_TYPELESS).RT(DXGI_FORMAT_BC6H_SF16).IL(DXGI_FORMAT_BC6H_SF16).RV(DXGI_FORMAT_BC6H_SF16));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7Typeless,                  xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC7_TYPELESS).RT(DXGI_FORMAT_BC7_TYPELESS).IL(DXGI_FORMAT_BC7_TYPELESS).RV(DXGI_FORMAT_BC7_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7UNormalized,               xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC7_TYPELESS).RT(DXGI_FORMAT_BC7_UNORM).IL(DXGI_FORMAT_BC7_UNORM).RV(DXGI_FORMAT_BC7_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7UNormalizedSRGB,           xiiGALFormatLookupEntryD3D11(DXGI_FORMAT_BC7_TYPELESS).RT(DXGI_FORMAT_BC7_UNORM_SRGB).IL(DXGI_FORMAT_BC7_UNORM_SRGB).RV(DXGI_FORMAT_BC7_UNORM_SRGB));
-  // clang-format on
+  uiSize = xiiMath::Max(uiSize, 256U);
+  if (uiSize < uiExpGrowthLimit)
+  {
+    uiSize = xiiMath::PowerOfTwo_Ceil(uiSize);
+  }
+  else
+  {
+    uiSize = xiiMemoryUtils::AlignSize(uiSize, uiExpGrowthLimit);
+  }
+
+  ID3D11Resource* pResource = nullptr;
+  auto            it        = m_FreeTempResources[TemporaryResourceType::Buffer].Find(uiSize);
+  if (it.IsValid())
+  {
+    xiiDynamicArray<ID3D11Resource*>& resources = it.Value();
+    if (!resources.IsEmpty())
+    {
+      pResource = resources[0];
+      resources.RemoveAtAndSwap(0);
+    }
+  }
+
+  if (pResource == nullptr)
+  {
+    D3D11_BUFFER_DESC desc;
+    desc.ByteWidth           = uiSize;
+    desc.Usage               = D3D11_USAGE_STAGING;
+    desc.BindFlags           = 0;
+    desc.CPUAccessFlags      = D3D11_CPU_ACCESS_WRITE;
+    desc.MiscFlags           = 0;
+    desc.StructureByteStride = 0;
+
+    ID3D11Buffer* pBuffer = nullptr;
+    if (!SUCCEEDED(m_pDeviceD3D11->CreateBuffer(&desc, nullptr, &pBuffer)))
+    {
+      return nullptr;
+    }
+
+    pResource = pBuffer;
+  }
+
+  auto& tempResource       = m_UsedTempResources[TemporaryResourceType::Buffer].ExpandAndGetRef();
+  tempResource.m_pResource = pResource;
+  tempResource.m_uiFrame   = m_uiFrameCounter;
+  tempResource.m_uiHash    = uiSize;
+
+  return pResource;
+}
+
+ID3D11Resource* xiiGALDeviceD3D11::FindTemporaryTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiEnum<xiiGALTextureFormat> format)
+{
+  xiiUInt32 data[] = {uiWidth, uiHeight, uiDepth, (xiiUInt32)format};
+  xiiUInt32 uiHash = xiiHashingUtils::xxHash32(data, sizeof(data));
+
+  ID3D11Resource* pResource = nullptr;
+  auto            it        = m_FreeTempResources[TemporaryResourceType::Texture].Find(uiHash);
+  if (it.IsValid())
+  {
+    xiiDynamicArray<ID3D11Resource*>& resources = it.Value();
+    if (!resources.IsEmpty())
+    {
+      pResource = resources[0];
+      resources.RemoveAtAndSwap(0);
+    }
+  }
+
+  if (pResource == nullptr)
+  {
+    if (uiDepth == 1)
+    {
+      D3D11_TEXTURE2D_DESC desc;
+      desc.Width              = uiWidth;
+      desc.Height             = uiHeight;
+      desc.MipLevels          = 1;
+      desc.ArraySize          = 1;
+      desc.Format             = xiiD3D11TypeConversions::GetFormat(format);
+      desc.SampleDesc.Count   = 1;
+      desc.SampleDesc.Quality = 0;
+      desc.Usage              = D3D11_USAGE_STAGING;
+      desc.BindFlags          = 0;
+      desc.CPUAccessFlags     = D3D11_CPU_ACCESS_WRITE;
+      desc.MiscFlags          = 0;
+
+      ID3D11Texture2D* pTexture = nullptr;
+      if (!SUCCEEDED(m_pDeviceD3D11->CreateTexture2D(&desc, nullptr, &pTexture)))
+      {
+        return nullptr;
+      }
+
+      pResource = pTexture;
+    }
+    else
+    {
+      XII_ASSERT_NOT_IMPLEMENTED;
+      return nullptr;
+    }
+  }
+
+  auto& tempResource       = m_UsedTempResources[TemporaryResourceType::Texture].ExpandAndGetRef();
+  tempResource.m_pResource = pResource;
+  tempResource.m_uiFrame   = m_uiFrameCounter;
+  tempResource.m_uiHash    = uiHash;
+
+  return pResource;
+}
+
+void xiiGALDeviceD3D11::FreeTemporaryResources(xiiUInt64 uiFrame)
+{
+  for (xiiUInt32 type = 0; type < TemporaryResourceType::ENUM_COUNT; ++type)
+  {
+    while (!m_UsedTempResources[type].IsEmpty())
+    {
+      auto& usedTempResource = m_UsedTempResources[type].PeekFront();
+      if (usedTempResource.m_uiFrame == uiFrame)
+      {
+        auto it = m_FreeTempResources[type].Find(usedTempResource.m_uiHash);
+        if (!it.IsValid())
+        {
+          it = m_FreeTempResources[type].Insert(usedTempResource.m_uiHash, xiiDynamicArray<ID3D11Resource*>(&m_Allocator));
+        }
+
+        it.Value().PushBack(usedTempResource.m_pResource);
+        m_UsedTempResources[type].PopFront();
+      }
+      else
+      {
+        break;
+      }
+    }
+  }
 }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)

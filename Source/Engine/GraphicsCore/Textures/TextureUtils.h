@@ -3,7 +3,6 @@
 #include <GraphicsCore/GraphicsCoreDLL.h>
 
 #include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
-#include <GraphicsFoundation/Resources/ResourceFormats.h>
 #include <Texture/Image/Image.h>
 
 struct XII_GRAPHICSCORE_DLL xiiTextureUtils

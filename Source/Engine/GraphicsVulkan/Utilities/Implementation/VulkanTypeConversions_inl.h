@@ -1,5 +1,5 @@
 
-XII_ALWAYS_INLINE vk::BlendOp xiiVulkanTypeConversions::GetVkBlendOp(xiiEnum<xiiGALBlendOperation> e)
+XII_ALWAYS_INLINE vk::BlendOp xiiVulkanTypeConversions::GetBlendOp(xiiEnum<xiiGALBlendOperation> e)
 {
   switch (e)
   {
@@ -20,7 +20,7 @@ XII_ALWAYS_INLINE vk::BlendOp xiiVulkanTypeConversions::GetVkBlendOp(xiiEnum<xii
   return vk::BlendOp::eAdd;
 }
 
-XII_ALWAYS_INLINE vk::BlendFactor xiiVulkanTypeConversions::GetVkBlendFactor(xiiEnum<xiiGALBlendFactor> e)
+XII_ALWAYS_INLINE vk::BlendFactor xiiVulkanTypeConversions::GetBlendFactor(xiiEnum<xiiGALBlendFactor> e)
 {
   switch (e)
   {
@@ -65,7 +65,7 @@ XII_ALWAYS_INLINE vk::BlendFactor xiiVulkanTypeConversions::GetVkBlendFactor(xii
   return vk::BlendFactor::eZero;
 }
 
-XII_ALWAYS_INLINE vk::LogicOp xiiVulkanTypeConversions::GetVkLogicOp(xiiEnum<xiiGALLogicOperation> e)
+XII_ALWAYS_INLINE vk::LogicOp xiiVulkanTypeConversions::GetLogicOp(xiiEnum<xiiGALLogicOperation> e)
 {
   switch (e)
   {
@@ -108,7 +108,7 @@ XII_ALWAYS_INLINE vk::LogicOp xiiVulkanTypeConversions::GetVkLogicOp(xiiEnum<xii
   return vk::LogicOp::eClear;
 }
 
-XII_ALWAYS_INLINE vk::CompareOp xiiVulkanTypeConversions::GetVkCompareOp(xiiEnum<xiiGALComparisonFunction> e)
+XII_ALWAYS_INLINE vk::CompareOp xiiVulkanTypeConversions::GetCompareOp(xiiEnum<xiiGALComparisonFunction> e)
 {
   switch (e)
   {
@@ -135,7 +135,7 @@ XII_ALWAYS_INLINE vk::CompareOp xiiVulkanTypeConversions::GetVkCompareOp(xiiEnum
   return vk::CompareOp::eNever;
 }
 
-XII_ALWAYS_INLINE vk::StencilOp xiiVulkanTypeConversions::GetVkStencilOp(xiiEnum<xiiGALStencilOperation> e)
+XII_ALWAYS_INLINE vk::StencilOp xiiVulkanTypeConversions::GetStencilOp(xiiEnum<xiiGALStencilOperation> e)
 {
   switch (e)
   {
@@ -162,7 +162,7 @@ XII_ALWAYS_INLINE vk::StencilOp xiiVulkanTypeConversions::GetVkStencilOp(xiiEnum
   return vk::StencilOp::eKeep;
 }
 
-XII_ALWAYS_INLINE vk::PolygonMode xiiVulkanTypeConversions::GetVkPolygonMode(xiiEnum<xiiGALFillMode> e)
+XII_ALWAYS_INLINE vk::PolygonMode xiiVulkanTypeConversions::GetPolygonMode(xiiEnum<xiiGALFillMode> e)
 {
   switch (e)
   {
@@ -177,7 +177,7 @@ XII_ALWAYS_INLINE vk::PolygonMode xiiVulkanTypeConversions::GetVkPolygonMode(xii
   return vk::PolygonMode::eFill;
 }
 
-XII_ALWAYS_INLINE vk::CullModeFlagBits xiiVulkanTypeConversions::GetVkCullMode(xiiEnum<xiiGALCullMode> e)
+XII_ALWAYS_INLINE vk::CullModeFlagBits xiiVulkanTypeConversions::GetCullMode(xiiEnum<xiiGALCullMode> e)
 {
   switch (e)
   {

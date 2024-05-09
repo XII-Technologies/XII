@@ -6,6 +6,8 @@
 
 class XII_GRAPHICSD3D12_DLL xiiGALTopLevelASD3D12 final : public xiiGALTopLevelAS
 {
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALTopLevelASD3D12, xiiGALTopLevelAS);
+
 public:
   virtual xiiGALTopLevelASInstanceDescription GetInstanceDescription(xiiStringView sName) const override final;
 
@@ -17,22 +19,19 @@ public:
 
   virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
 
-  Diligent::ITopLevelAS* GetTopLevelAS() const;
-
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
 
-  xiiGALTopLevelASD3D12(const xiiGALTopLevelASCreationDescription& creationDescription);
+  xiiGALTopLevelASD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALTopLevelASCreationDescription& creationDescription);
 
   virtual ~xiiGALTopLevelASD3D12();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
-  Diligent::ITopLevelAS* m_pTopLevelAS = nullptr;
 };
 
 #include <GraphicsD3D12/Resources/Implementation/TopLevelASD3D12_inl.h>

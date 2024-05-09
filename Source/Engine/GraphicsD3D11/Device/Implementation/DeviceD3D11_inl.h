@@ -39,11 +39,6 @@ XII_ALWAYS_INLINE ID3D11DeviceContext1* xiiGALDeviceD3D11::GetImmediateContext()
   return m_pDeviceContext;
 }
 
-XII_ALWAYS_INLINE const xiiGALFormatLookupTableD3D11& xiiGALDeviceD3D11::GetFormatLookupTable() const
-{
-  return m_FormatLookupTable;
-}
-
 XII_ALWAYS_INLINE xiiUInt32 xiiGALDeviceD3D11::GetCommandQueueIndex(xiiBitflags<xiiGALCommandQueueType> queueType) const
 {
   if (queueType.IsSet(xiiGALCommandQueueType::Graphics))

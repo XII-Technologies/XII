@@ -111,17 +111,6 @@ xiiResult xiiGALTextureViewD3D11::CreateSRV(ID3D11ShaderResourceView** ppShaderR
   D3D11_SHADER_RESOURCE_VIEW_DESC viewDescription = {};
   viewDescription.Format                          = xiiD3D11TypeConversions::GetFormat(m_Description.m_Format);
 
-  if (xiiGALTextureFormat::IsDepthFormat(m_Description.m_Format))
-    viewDescription.Format = pDeviceD3D11->GetFormatLookupTable().GetFormatInfo(m_Description.m_Format).m_eDepthOnlyType;
-  else
-    viewDescription.Format = pDeviceD3D11->GetFormatLookupTable().GetFormatInfo(m_Description.m_Format).m_eResourceViewType;
-
-  if (viewDescription.Format == DXGI_FORMAT_UNKNOWN)
-  {
-    xiiLog::Error("Failed to retrieve a valid DXGI format for the (format {0}) resource view type.", m_Description.m_Format);
-    return XII_FAILURE;
-  }
-
   switch (m_Description.m_ResourceDimension)
   {
     case xiiGALResourceDimension::Texture1D:

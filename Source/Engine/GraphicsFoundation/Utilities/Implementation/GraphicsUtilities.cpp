@@ -169,6 +169,203 @@ const xiiGALTextureFormatDescription& xiiGALGraphicsUtilities::GetTextureFormatP
   return formatDescriptions[xiiGALTextureFormat::Unknown];
 }
 
+class TextureFormatToViewFormatConverter
+{
+public:
+  TextureFormatToViewFormatConverter()
+  {
+    m_ViewFormats.SetCount(xiiGALTextureFormat::ENUM_COUNT);
+
+    // clang-format off
+#define INIT_TEX_VIEW_FORMAT_INFO(textureFormat, SRVFormat, RTVFormat, DSVFormat, UAVFormat) \
+    {\
+      m_ViewFormats[textureFormat].SetCount(xiiGALTextureViewType::ENUM_COUNT);                                     \
+      m_ViewFormats[textureFormat][xiiGALTextureViewType::ShaderResource]       = xiiGALTextureFormat::##SRVFormat; \
+      m_ViewFormats[textureFormat][xiiGALTextureViewType::RenderTarget]         = xiiGALTextureFormat::##RTVFormat; \
+      m_ViewFormats[textureFormat][xiiGALTextureViewType::DepthStencil]         = xiiGALTextureFormat::##DSVFormat; \
+      m_ViewFormats[textureFormat][xiiGALTextureViewType::ReadOnlyDepthStencil] = xiiGALTextureFormat::##DSVFormat; \
+      m_ViewFormats[textureFormat][xiiGALTextureViewType::UnorderedAccess]      = xiiGALTextureFormat::##UAVFormat; \
+    }
+    static_assert(xiiGALTextureViewType::ENUM_COUNT == 6, "Please handle the new view type above, if necessary");
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::Unknown,                  Unknown, Unknown, Unknown, Unknown);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA32Typeless,           RGBA32Float, RGBA32Float, Unknown, RGBA32Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA32Float,              RGBA32Float, RGBA32Float, Unknown, RGBA32Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA32UInt,               RGBA32UInt,  RGBA32UInt,  Unknown, RGBA32UInt);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA32SInt,               RGBA32SInt,  RGBA32SInt,  Unknown, RGBA32SInt);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGB32Typeless,            RGB32Float, RGB32Float, Unknown, RGB32Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGB32Float,               RGB32Float, RGB32Float, Unknown, RGB32Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGB32UInt,                RGB32UInt,  RGB32UInt,  Unknown, RGB32UInt);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGB32SInt,                RGB32SInt,  RGB32SInt,  Unknown, RGB32SInt);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA16Typeless,           RGBA16Float,       RGBA16Float,       Unknown, RGBA16Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA16Float,              RGBA16Float,       RGBA16Float,       Unknown, RGBA16Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA16UNormalized,        RGBA16UNormalized, RGBA16UNormalized, Unknown, RGBA16UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA16UInt,               RGBA16UInt,        RGBA16UInt,        Unknown, RGBA16UInt);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA16SNormalized,        RGBA16SNormalized, RGBA16SNormalized, Unknown, RGBA16SNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA16SInt,               RGBA16SInt,        RGBA16SInt,        Unknown, RGBA16SInt);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG32Typeless,             RG32Float, RG32Float, Unknown, RG32Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG32Float,                RG32Float, RG32Float, Unknown, RG32Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG32UInt,                 RG32UInt,  RG32UInt,  Unknown, RG32UInt);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG32SInt,                 RG32SInt,  RG32SInt,  Unknown, RG32SInt);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R32G8X24Typeless,         R32FloatX8X24Typeless, Unknown, D32FloatS8X24UInt, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::D32FloatS8X24UInt,        R32FloatX8X24Typeless, Unknown, D32FloatS8X24UInt, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R32FloatX8X24Typeless,    R32FloatX8X24Typeless, Unknown, D32FloatS8X24UInt, R32FloatX8X24Typeless);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::X32TypelessG8X24UInt,     X32TypelessG8X24UInt,  Unknown, D32FloatS8X24UInt, X32TypelessG8X24UInt);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGB10A2Typeless,          RGB10A2UNormalized, RGB10A2UNormalized, Unknown, RGB10A2UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGB10A2UNormalized,       RGB10A2UNormalized, RGB10A2UNormalized, Unknown, RGB10A2UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGB10A2UInt,              RGB10A2UInt,        RGB10A2UInt,        Unknown, RGB10A2UInt);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG11B10Float,             RG11B10Float,       RG11B10Float,       Unknown, RG11B10Float);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA8Typeless,            RGBA8UNormalizedSRGB, RGBA8UNormalizedSRGB, Unknown, RGBA8UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA8UNormalized,         RGBA8UNormalized,     RGBA8UNormalized,     Unknown, RGBA8UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA8UNormalizedSRGB,     RGBA8UNormalizedSRGB, RGBA8UNormalizedSRGB, Unknown, RGBA8UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA8UInt,                RGBA8UInt,            RGBA8UInt,            Unknown, RGBA8UInt);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA8SNormalized,         RGBA8SNormalized,     RGBA8SNormalized,     Unknown, RGBA8SNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGBA8SInt,                RGBA8SInt,            RGBA8SInt,            Unknown, RGBA8SInt);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG16Typeless,             RG16Float,       RG16Float,       Unknown, RG16Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG16Float,                RG16Float,       RG16Float,       Unknown, RG16Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG16UNormalized,          RG16UNormalized, RG16UNormalized, Unknown, RG16UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG16UInt,                 RG16UInt,        RG16UInt,        Unknown, RG16UInt);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG16SNormalized,          RG16SNormalized, RG16SNormalized, Unknown, RG16SNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG16SInt,                 RG16SInt,        RG16SInt,        Unknown, RG16SInt);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R32Typeless,              R32Float, R32Float, D32Float, R32Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::D32Float,                 R32Float, R32Float, D32Float, R32Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R32Float,                 R32Float, R32Float, D32Float, R32Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R32UInt,                  R32UInt,  R32UInt,  Unknown,  R32UInt);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R32SInt,                  R32SInt,  R32SInt,  Unknown,  R32SInt);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R24G8Typeless,            R24UNormalizedX8Typeless, Unknown, D24UNormalizedS8UInt, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::D24UNormalizedS8UInt,     R24UNormalizedX8Typeless, Unknown, D24UNormalizedS8UInt, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R24UNormalizedX8Typeless, R24UNormalizedX8Typeless, Unknown, D24UNormalizedS8UInt, R24UNormalizedX8Typeless);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::X24TypelessG8UInt,        X24TypelessG8UInt,        Unknown, D24UNormalizedS8UInt, X24TypelessG8UInt);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG8Typeless,              RG8UNormalized, RG8UNormalized, Unknown, RG8UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG8UNormalized,           RG8UNormalized, RG8UNormalized, Unknown, RG8UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG8UInt,                  RG8UInt,        RG8UInt,        Unknown, RG8UInt);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG8SNormalized,           RG8SNormalized, RG8SNormalized, Unknown, RG8SNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG8SInt,                  RG8SInt,        RG8SInt,        Unknown, RG8SInt);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R16Typeless,              R16Float,       R16Float,       Unknown,        R16Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R16Float,                 R16Float,       R16Float,       Unknown,        R16Float);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::D16UNormalized,           R16UNormalized, R16UNormalized, D16UNormalized, R16UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R16UNormalized,           R16UNormalized, R16UNormalized, D16UNormalized, R16UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R16UInt,                  R16UInt,        R16UInt,        Unknown,        R16UInt);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R16SNormalized,           R16SNormalized, R16SNormalized, Unknown,        R16SNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R16SInt,                  R16SInt,        R16SInt,        Unknown,        R16SInt);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R8Typeless,               R8UNormalized, R8UNormalized, Unknown, R8UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R8UNormalized,            R8UNormalized, R8UNormalized, Unknown, R8UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R8UInt,                   R8UInt,        R8UInt,        Unknown, R8UInt);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R8SNormalized,            R8SNormalized, R8SNormalized, Unknown, R8SNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R8SInt,                   R8SInt,        R8SInt,        Unknown, R8SInt);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::A8UNormalized,            A8UNormalized, A8UNormalized, Unknown, A8UNormalized);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R1UNormalized,            R1UNormalized, R1UNormalized, Unknown, R1UNormalized);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RGB9E5SharedExponent,     RGB9E5SharedExponent, RGB9E5SharedExponent, Unknown, RGB9E5SharedExponent);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::RG8BG8UNormalized,        RG8BG8UNormalized,    RG8BG8UNormalized,    Unknown, RG8BG8UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::GR8GB8UNormalized,        GR8GB8UNormalized,    GR8GB8UNormalized,    Unknown, GR8GB8UNormalized);
+
+    // http://www.g-truc.net/post-0335.html
+    // http://renderingpipeline.com/2012/07/texture-compression/
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC1Typeless,              BC1UNormalizedSRGB, Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC1UNormalized,           BC1UNormalized,     Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC1UNormalizedSRGB,       BC1UNormalizedSRGB, Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC2Typeless,              BC2UNormalizedSRGB, Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC2UNormalized,           BC2UNormalized,     Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC2UNormalizedSRGB,       BC2UNormalizedSRGB, Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC3Typeless,              BC3UNormalizedSRGB, Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC3UNormalized,           BC3UNormalized,     Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC3UNormalizedSRGB,       BC3UNormalizedSRGB, Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC4Typeless,              BC4UNormalized,     Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC4UNormalized,           BC4UNormalized,     Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC4SNormalized,           BC4SNormalized,     Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC5Typeless,              BC5UNormalized,     Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC5UNormalized,           BC5UNormalized,     Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC5SNormalized,           BC5SNormalized,     Unknown, Unknown, Unknown);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::B5G6R5UNormalized,        B5G6R5UNormalized,   B5G6R5UNormalized,     Unknown, B5G6R5UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::B5G5R5A1UNormalized,      B5G5R5A1UNormalized, B5G5R5A1UNormalized,   Unknown, B5G5R5A1UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BGRA8UNormalized,         BGRA8UNormalized,    BGRA8UNormalized,      Unknown, BGRA8UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BGRX8UNormalized,         BGRX8UNormalized,    BGRX8UNormalized,      Unknown, BGRX8UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized, R10G10B10XRBiasA2UNormalized, Unknown,  Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BGRA8Typeless,            BGRA8UNormalizedSRGB, BGRA8UNormalizedSRGB, Unknown, BGRA8UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BGRA8UNormalizedSRGB,     BGRA8UNormalizedSRGB, BGRA8UNormalizedSRGB, Unknown, BGRA8UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BGRX8Typeless,            BGRX8UNormalizedSRGB, BGRX8UNormalizedSRGB, Unknown, BGRX8UNormalized);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BGRX8UNormalizedSRGB,     BGRX8UNormalizedSRGB, BGRX8UNormalizedSRGB, Unknown, BGRX8UNormalized);
+
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC6HTypeless,             BC6HUF16,           Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC6HUF16,                 BC6HUF16,           Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC6HSF16,                 BC6HSF16,           Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC7Typeless,              BC7UNormalizedSRGB, Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC7UNormalized,           BC7UNormalized,     Unknown, Unknown, Unknown);
+    INIT_TEX_VIEW_FORMAT_INFO(xiiGALTextureFormat::BC7UNormalizedSRGB,       BC7UNormalizedSRGB, Unknown, Unknown, Unknown);
+#undef INIT_TVIEW_FORMAT_INFO
+    // clang-format on
+
+    m_ViewFormats[xiiGALTextureFormat::R8UInt][xiiGALTextureViewType::ShadingRate]         = xiiGALTextureFormat::R8UInt;
+    m_ViewFormats[xiiGALTextureFormat::RG8UNormalized][xiiGALTextureViewType::ShadingRate] = xiiGALTextureFormat::RG8UNormalized;
+  }
+
+  xiiGALTextureFormat::Enum GetViewFormat(xiiGALTextureFormat::Enum format, xiiGALTextureViewType::Enum viewType, xiiUInt32 uiBindFlags)
+  {
+    XII_ASSERT_DEV(viewType > xiiGALTextureViewType::Undefined && viewType < xiiGALTextureViewType::ENUM_COUNT, "Unexpected texture view type.");
+    XII_ASSERT_DEV(format >= xiiGALTextureFormat::Unknown && format < xiiGALTextureFormat::ENUM_COUNT, "Unknown texture format.");
+
+    switch (format)
+    {
+      case xiiGALTextureFormat::R16Typeless:
+      {
+        if (uiBindFlags & xiiGALBindFlags::DepthStencil)
+        {
+          switch (viewType)
+          {
+            case xiiGALTextureViewType::ShaderResource:
+            case xiiGALTextureViewType::RenderTarget:
+            case xiiGALTextureViewType::UnorderedAccess:
+              return xiiGALTextureFormat::R16UNormalized;
+
+            case xiiGALTextureViewType::DepthStencil:
+            case xiiGALTextureViewType::ReadOnlyDepthStencil:
+              return xiiGALTextureFormat::D16UNormalized;
+
+            case xiiGALTextureViewType::ShadingRate:
+              return xiiGALTextureFormat::Unknown;
+
+            default:
+              XII_REPORT_FAILURE("Unexpected texture view type");
+              return xiiGALTextureFormat::Unknown;
+          }
+          static_assert(xiiGALTextureViewType::ENUM_COUNT == 6, "Please handle the new view type in the switch above, if necessary.");
+        }
+        [[fallthrough]];
+      }
+
+      default: // Nothing to do.
+        break;
+    }
+
+    return m_ViewFormats[format][viewType];
+  }
+
+private:
+  xiiStaticArray<xiiStaticArray<xiiGALTextureFormat::Enum, xiiGALTextureViewType::ENUM_COUNT>, xiiGALTextureFormat::ENUM_COUNT> m_ViewFormats;
+};
+
+xiiEnum<xiiGALTextureFormat> xiiGALGraphicsUtilities::GetDefaultTextureViewFormat(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALTextureViewType> viewType, xiiBitflags<xiiGALBindFlags> bindFlags)
+{
+  static TextureFormatToViewFormatConverter formatConverter;
+  return formatConverter.GetViewFormat(format, viewType, bindFlags.GetValue());
+}
+
 const xiiGALSparseTextureProperties xiiGALGraphicsUtilities::GetSparseTextureProperties(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALResourceDimension> dimension, xiiUInt32 uiSampleCount)
 {
   /// \todo GraphicsFoundation: To be implemented.

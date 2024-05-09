@@ -996,18 +996,7 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
   {
     XII_PROFILE_SCOPE("Shadow Data Buffer Update");
 
-    void* pMappedData = nullptr;
-    if (pCommandList->MapBuffer(s_pData->m_hShadowDataBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
-    {
-      auto pDataToUpdate = packedShadowData.GetByteArrayPtr();
-      memcpy(pMappedData, pDataToUpdate.GetPtr(), pDataToUpdate.GetCount());
-
-      pCommandList->UnmapBuffer(s_pData->m_hShadowDataBuffer, xiiGALMapType::Write).AssertSuccess();
-    }
-    else
-    {
-      xiiLog::Error("Failed to map buffer to update content.");
-    }
+    pCommandList->UpdateBufferExtended(s_pData->m_hShadowDataBuffer, 0, packedShadowData.GetByteArrayPtr());
   }
   pGALCommandQueue->Submit(pCommandList);
 }

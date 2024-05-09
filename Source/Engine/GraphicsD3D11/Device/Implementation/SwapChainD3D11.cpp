@@ -115,7 +115,7 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
   }
 #endif
 
-  DXGI_FORMAT dxgiColorBufferFormat = pDeviceD3D11->GetFormatLookupTable().GetFormatInfo(m_Description.m_ColorBufferFormat).m_eRenderTarget;
+  DXGI_FORMAT dxgiColorBufferFormat = xiiD3D11TypeConversions::GetFormat(m_Description.m_ColorBufferFormat);
 
   DXGI_SWAP_CHAIN_DESC1 swapChainDescription = {};
   swapChainDescription.Width                 = m_Description.m_Resolution.width;
@@ -179,7 +179,7 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
   swapChainDescription.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
   // Create DXGI Factory.
-  IDXGIFactory4*   pDXGIFactory = pDeviceD3D11->GetDXGIFactory();
+  IDXGIFactory4* pDXGIFactory = pDeviceD3D11->GetDXGIFactory();
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   DXGI_SWAP_CHAIN_FULLSCREEN_DESC fullScreenDescription = {};

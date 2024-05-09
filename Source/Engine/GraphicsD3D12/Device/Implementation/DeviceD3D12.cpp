@@ -80,7 +80,7 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   XII_LOG_BLOCK("xiiGALDeviceD3D12::InitializePlatform");
 
   // Load Direct3D 12 dynamic library.
-  XII_SUCCEED_OR_RETURN_LOG(xiiPlugin::LoadPlugin("d3d12.dll"));
+  // XII_SUCCEED_OR_RETURN_LOG(xiiPlugin::LoadPlugin("d3d12.dll"));
 
   // Enable the D3D12 debug layer.
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
@@ -94,8 +94,8 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
         ID3D12Debug1* pDebugController1 = nullptr;
         if (SUCCEEDED(pDebugController->QueryInterface(IID_PPV_ARGS(&pDebugController1))))
         {
-          // pDebugController1->SetEnableSynchronizedCommandQueueValidation(FALSE);
-          pDebugController1->SetEnableGPUBasedValidation(true);
+          pDebugController1->SetEnableGPUBasedValidation(TRUE);
+          pDebugController1->SetEnableSynchronizedCommandQueueValidation(TRUE);
         }
         XII_GAL_D3D12_RELEASE(pDebugController1);
       }
@@ -131,17 +131,17 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
   const D3D_FEATURE_LEVEL targetFeatureLevels[]     = {D3D_FEATURE_LEVEL_12_2, D3D_FEATURE_LEVEL_12_1, D3D_FEATURE_LEVEL_12_0, D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
   const char*             targetFeatureLevelNames[] = {"12.2", "12.1", "12.0", "11.1", "11.0"};
   xiiUInt32               uiFeatureLevelIndex       = 0U;
-  HRESULT                 hResult;
+  HRESULT                 hResult                   = E_FAIL;
+
+  ID3D12Device* pD3D12Device = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12Device));
 
   for (const auto& featureLevel : targetFeatureLevels)
   {
-    hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(m_pDeviceD3D12), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&m_pDeviceD3D12)));
+    hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&pD3D12Device)));
 
     if (SUCCEEDED(hResult))
-    {
-      XII_ASSERT_DEV(m_pDeviceD3D12 != nullptr, "");
       break;
-    }
 
     ++uiFeatureLevelIndex;
   }
@@ -154,19 +154,17 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
 
     IDXGIAdapter1* pWarpAdapter = nullptr;
-    XII_VERIFY_D3D12(SUCCEEDED(m_pDXGIFactory->EnumWarpAdapter(__uuidof(pWarpAdapter), reinterpret_cast<void**>(static_cast<IDXGIAdapter1**>(&pWarpAdapter)))), "Failed to enumerate WARP adapter. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+    XII_VERIFY_D3D12(SUCCEEDED(m_pDXGIFactory->EnumWarpAdapter(__uuidof(pWarpAdapter), reinterpret_cast<void**>(static_cast<IDXGIAdapter1**>(&pWarpAdapter)))), "Failed to enumerate WARP adapter.");
     m_pDXGIAdapter = pWarpAdapter;
 
     uiFeatureLevelIndex = 0U;
 
     for (const auto& featureLevel : targetFeatureLevels)
     {
-      hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(m_pDeviceD3D12), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&m_pDeviceD3D12)));
+      hResult = D3D12CreateDevice(m_pDXGIAdapter, featureLevel, __uuidof(pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device**>(&pD3D12Device)));
 
       if (SUCCEEDED(hResult))
       {
-        XII_ASSERT_DEV(m_pDeviceD3D12 != nullptr, "");
-
         xiiLog::Info("Initialized D3D12 WARP device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
         break;
       }
@@ -181,60 +179,69 @@ xiiResult xiiGALDeviceD3D12::InitializePlatform()
     xiiLog::Info("Initialized D3D12 device with feature level {0}.", targetFeatureLevelNames[uiFeatureLevelIndex]);
   }
 
+  if (FAILED(pD3D12Device->QueryInterface(__uuidof(m_pD3D12Device), reinterpret_cast<void**>(static_cast<ID3D12Device1**>(&m_pD3D12Device)))))
+  {
+    xiiLog::Error("Failed to retrieve ID3D12Device1 from device interface.");
+    return XII_FAILURE;
+  }
+
   // Create D3D12 Memory Allocator.
-  m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiMemoryAllocatorD3D12, m_pDXGIAdapter, m_pDeviceD3D12);
+  m_pAllocatorD3D12 = XII_NEW(&m_Allocator, xiiMemoryAllocatorD3D12, m_pDXGIAdapter, pD3D12Device);
 
   EnumerateDisplayModes(targetFeatureLevels[uiFeatureLevelIndex], m_pDXGIAdapter, 0, xiiGALTextureFormat::RGBA8UNormalizedSRGB, m_DisplayModes);
 
   if (m_Description.m_ValidationLevel != xiiGALDeviceValidationLevel::Disabled)
   {
-    ID3D12InfoQueue* pInfoQueue = nullptr;
-    if (SUCCEEDED(m_pDeviceD3D12->QueryInterface(&pInfoQueue)))
+    if (SUCCEEDED(m_pD3D12Device->QueryInterface(__uuidof(m_pD3D12Debug), reinterpret_cast<void**>(static_cast<ID3D12Debug1**>(&m_pD3D12Debug)))))
     {
-      // Suppress whole categories of messages
-      // D3D12_MESSAGE_CATEGORY categories[] = {};
+      ID3D12InfoQueue* pD3D12InfoQueue = nullptr;
+      XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pD3D12InfoQueue));
 
-      // Suppress messages based on their severity level
-      D3D12_MESSAGE_SEVERITY severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
+      if (SUCCEEDED(m_pD3D12Debug->QueryInterface(&pD3D12InfoQueue)))
+      {
+        // Suppress whole categories of messages
+        // D3D12_MESSAGE_CATEGORY categories[] = {};
 
-      // Suppress individual messages by their ID
-      D3D12_MESSAGE_ID denyIDs[] =
-        {
-          // D3D12 WARNING: ID3D12CommandList::ClearRenderTargetView: The clear values do not match those passed to resource creation.
-          // The clear operation is typically slower as a result; but will still clear to the desired value.
-          // [ EXECUTION WARNING #820: CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE]
-          D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
+        // Suppress messages based on their severity level
+        D3D12_MESSAGE_SEVERITY severities[] = {D3D12_MESSAGE_SEVERITY_INFO};
 
-          // D3D12 WARNING: ID3D12CommandList::ClearDepthStencilView: The clear values do not match those passed to resource creation.
-          // The clear operation is typically slower as a result; but will still clear to the desired value.
-          // [ EXECUTION WARNING #821: CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE]
-          D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE //
-        };
+        // Suppress individual messages by their ID
+        D3D12_MESSAGE_ID denyIDs[] =
+          {
+            // D3D12 WARNING: ID3D12CommandList::ClearRenderTargetView: The clear values do not match those passed to resource creation.
+            // The clear operation is typically slower as a result; but will still clear to the desired value.
+            // [ EXECUTION WARNING #820: CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE]
+            D3D12_MESSAGE_ID_CLEARRENDERTARGETVIEW_MISMATCHINGCLEARVALUE,
 
-      D3D12_INFO_QUEUE_FILTER queueFilter = {};
-      // queueFilter.DenyList.NumCategories = XII_ARRAY_SIZE(categories);
-      // queueFilter.DenyList.pCategoryList = categories;
-      queueFilter.DenyList.NumSeverities = XII_ARRAY_SIZE(severities);
-      queueFilter.DenyList.pSeverityList = severities;
-      queueFilter.DenyList.NumIDs        = XII_ARRAY_SIZE(denyIDs);
-      queueFilter.DenyList.pIDList       = denyIDs;
+            // D3D12 WARNING: ID3D12CommandList::ClearDepthStencilView: The clear values do not match those passed to resource creation.
+            // The clear operation is typically slower as a result; but will still clear to the desired value.
+            // [ EXECUTION WARNING #821: CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE]
+            D3D12_MESSAGE_ID_CLEARDEPTHSTENCILVIEW_MISMATCHINGCLEARVALUE //
+          };
 
-      XII_VERIFY(SUCCEEDED(pInfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+        D3D12_INFO_QUEUE_FILTER queueFilter = {};
+        // queueFilter.DenyList.NumCategories = XII_ARRAY_SIZE(categories);
+        // queueFilter.DenyList.pCategoryList = categories;
+        queueFilter.DenyList.NumSeverities = XII_ARRAY_SIZE(severities);
+        queueFilter.DenyList.pSeverityList = severities;
+        queueFilter.DenyList.NumIDs        = XII_ARRAY_SIZE(denyIDs);
+        queueFilter.DenyList.pIDList       = denyIDs;
+
+        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->PushStorageFilter(&queueFilter)), "Failed to push storage filter.");
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-      XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, true), "Failed to set break on corruption. Error code '{}'.", xiiArgErrorCode(GetLastError()));
-      XII_VERIFY(pInfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, true), "Failed to set break on error. Error code '{}'.", xiiArgErrorCode(GetLastError()));
+        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_CORRUPTION, TRUE)), "Failed to set break on corruption.");
+        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_ERROR, TRUE)), "Failed to set break on error.");
+        XII_VERIFY(SUCCEEDED(pD3D12InfoQueue->SetBreakOnSeverity(D3D12_MESSAGE_SEVERITY_WARNING, TRUE)), "Failed to set break on warning.");
 #endif
+      }
     }
-    XII_GAL_D3D12_RELEASE(pInfoQueue);
-  }
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
 // We can prevent the GPU from overclocking or underclocking to get consistent timings.
-// m_pDeviceD3D12->SetStablePowerState(TRUE);
+// m_pD3D12Device->SetStablePowerState(TRUE);
 #endif
-
-  FillFormatLookupTable();
+  }
 
   xiiClipSpaceDepthRange::Default           = xiiClipSpaceDepthRange::ZeroToOne;
   xiiClipSpaceYMode::RenderToTextureDefault = xiiClipSpaceYMode::Regular;
@@ -273,13 +280,18 @@ xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
     m_CommandQueues[i].Clear();
   }
 
-  XII_GAL_D3D12_RELEASE(m_pDeviceD3D12);
+  XII_GAL_D3D12_RELEASE(m_pD3D12Debug);
+  XII_GAL_D3D12_RELEASE(m_pD3D12Device);
   XII_GAL_D3D12_RELEASE(m_pDXGIAdapter);
   XII_GAL_D3D12_RELEASE(m_pDXGIFactory);
 
   ReportLiveGPUObjects();
 
   return XII_SUCCESS;
+}
+
+void xiiGALDeviceD3D12::CreateCommandQueuesPlatform()
+{
 }
 
 void xiiGALDeviceD3D12::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain)
@@ -311,9 +323,9 @@ void xiiGALDeviceD3D12::EndFramePlatform()
 
 xiiGALSwapChain* xiiGALDeviceD3D12::CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description)
 {
-  xiiGALSwapChainD3D12* pSwapChainD3D12 = XII_NEW(&m_Allocator, xiiGALSwapChainD3D12, description);
+  xiiGALSwapChainD3D12* pSwapChainD3D12 = XII_NEW(&m_Allocator, xiiGALSwapChainD3D12, this, description);
 
-  if (pSwapChainD3D12->InitPlatform(this).Succeeded())
+  if (pSwapChainD3D12->InitPlatform().Succeeded())
     return pSwapChainD3D12;
 
   XII_DELETE(&m_Allocator, pSwapChainD3D12);
@@ -325,37 +337,16 @@ void xiiGALDeviceD3D12::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
 {
   xiiGALSwapChainD3D12* pSwapChainD3D12 = static_cast<xiiGALSwapChainD3D12*>(pSwapChain);
 
-  pSwapChainD3D12->DeInitPlatform(this).IgnoreResult();
+  pSwapChainD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pSwapChainD3D12);
 }
 
-xiiGALCommandList* xiiGALDeviceD3D12::CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description)
-{
-  xiiGALCommandListD3D12* pCommandListD3D12 = XII_NEW(&m_Allocator, xiiGALCommandListD3D12, description);
-
-  if (pCommandListD3D12->InitPlatform(this).Succeeded())
-    return pCommandListD3D12;
-
-  XII_DELETE(&m_Allocator, pCommandListD3D12);
-
-  return pCommandListD3D12;
-}
-
-void xiiGALDeviceD3D12::DestroyCommandListPlatform(xiiGALCommandList* pCommandList)
-{
-  xiiGALCommandListD3D12* pCommandListD3D12 = static_cast<xiiGALCommandListD3D12*>(pCommandList);
-
-  pCommandListD3D12->DeInitPlatform(this).IgnoreResult();
-
-  XII_DELETE(&m_Allocator, pCommandListD3D12);
-}
-
 xiiGALBlendState* xiiGALDeviceD3D12::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
 {
-  xiiGALBlendStateD3D12* pBlendStateD3D12 = XII_NEW(&m_Allocator, xiiGALBlendStateD3D12, description);
+  xiiGALBlendStateD3D12* pBlendStateD3D12 = XII_NEW(&m_Allocator, xiiGALBlendStateD3D12, this, description);
 
-  if (pBlendStateD3D12->InitPlatform(this).Succeeded())
+  if (pBlendStateD3D12->InitPlatform().Succeeded())
     return pBlendStateD3D12;
 
   XII_DELETE(&m_Allocator, pBlendStateD3D12);
@@ -367,16 +358,16 @@ void xiiGALDeviceD3D12::DestroyBlendStatePlatform(xiiGALBlendState* pBlendState)
 {
   xiiGALBlendStateD3D12* pBlendStateD3D12 = static_cast<xiiGALBlendStateD3D12*>(pBlendState);
 
-  pBlendStateD3D12->DeInitPlatform(this).IgnoreResult();
+  pBlendStateD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pBlendStateD3D12);
 }
 
 xiiGALDepthStencilState* xiiGALDeviceD3D12::CreateDepthStencilStatePlatform(const xiiGALDepthStencilStateCreationDescription& description)
 {
-  xiiGALDepthStencilStateD3D12* pDepthStencilStateD3D12 = XII_NEW(&m_Allocator, xiiGALDepthStencilStateD3D12, description);
+  xiiGALDepthStencilStateD3D12* pDepthStencilStateD3D12 = XII_NEW(&m_Allocator, xiiGALDepthStencilStateD3D12, this, description);
 
-  if (pDepthStencilStateD3D12->InitPlatform(this).Succeeded())
+  if (pDepthStencilStateD3D12->InitPlatform().Succeeded())
     return pDepthStencilStateD3D12;
 
   XII_DELETE(&m_Allocator, pDepthStencilStateD3D12);
@@ -388,16 +379,16 @@ void xiiGALDeviceD3D12::DestroyDepthStencilStatePlatform(xiiGALDepthStencilState
 {
   xiiGALDepthStencilStateD3D12* pDepthStencilStateD3D12 = static_cast<xiiGALDepthStencilStateD3D12*>(pDepthStencilState);
 
-  pDepthStencilStateD3D12->DeInitPlatform(this).IgnoreResult();
+  pDepthStencilStateD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pDepthStencilStateD3D12);
 }
 
 xiiGALRasterizerState* xiiGALDeviceD3D12::CreateRasterizerStatePlatform(const xiiGALRasterizerStateCreationDescription& description)
 {
-  xiiGALRasterizerStateD3D12* pRasterizerStateD3D12 = XII_NEW(&m_Allocator, xiiGALRasterizerStateD3D12, description);
+  xiiGALRasterizerStateD3D12* pRasterizerStateD3D12 = XII_NEW(&m_Allocator, xiiGALRasterizerStateD3D12, this, description);
 
-  if (pRasterizerStateD3D12->InitPlatform(this).Succeeded())
+  if (pRasterizerStateD3D12->InitPlatform().Succeeded())
     return pRasterizerStateD3D12;
 
   XII_DELETE(&m_Allocator, pRasterizerStateD3D12);
@@ -409,16 +400,16 @@ void xiiGALDeviceD3D12::DestroyRasterizerStatePlatform(xiiGALRasterizerState* pR
 {
   xiiGALRasterizerStateD3D12* pRasterizerStateD3D12 = static_cast<xiiGALRasterizerStateD3D12*>(pRasterizerState);
 
-  pRasterizerStateD3D12->DeInitPlatform(this).IgnoreResult();
+  pRasterizerStateD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pRasterizerStateD3D12);
 }
 
 xiiGALShader* xiiGALDeviceD3D12::CreateShaderPlatform(const xiiGALShaderCreationDescription& description)
 {
-  xiiGALShaderD3D12* pShaderD3D12 = XII_NEW(&m_Allocator, xiiGALShaderD3D12, description);
+  xiiGALShaderD3D12* pShaderD3D12 = XII_NEW(&m_Allocator, xiiGALShaderD3D12, this, description);
 
-  if (pShaderD3D12->InitPlatform(this).Succeeded())
+  if (pShaderD3D12->InitPlatform().Succeeded())
     return pShaderD3D12;
 
   XII_DELETE(&m_Allocator, pShaderD3D12);
@@ -430,16 +421,16 @@ void xiiGALDeviceD3D12::DestroyShaderPlatform(xiiGALShader* pShader)
 {
   xiiGALShaderD3D12* pShaderD3D12 = static_cast<xiiGALShaderD3D12*>(pShader);
 
-  pShaderD3D12->DeInitPlatform(this).IgnoreResult();
+  pShaderD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pShaderD3D12);
 }
 
 xiiGALBuffer* xiiGALDeviceD3D12::CreateBufferPlatform(const xiiGALBufferCreationDescription& description, const xiiGALBufferData* pInitialData)
 {
-  xiiGALBufferD3D12* pBufferD3D12 = XII_NEW(&m_Allocator, xiiGALBufferD3D12, description);
+  xiiGALBufferD3D12* pBufferD3D12 = XII_NEW(&m_Allocator, xiiGALBufferD3D12, this, description);
 
-  if (pBufferD3D12->InitPlatform(this, pInitialData).Succeeded())
+  if (pBufferD3D12->InitPlatform(pInitialData).Succeeded())
     return pBufferD3D12;
 
   XII_DELETE(&m_Allocator, pBufferD3D12);
@@ -451,16 +442,16 @@ void xiiGALDeviceD3D12::DestroyBufferPlatform(xiiGALBuffer* pBuffer)
 {
   xiiGALBufferD3D12* pBufferD3D12 = static_cast<xiiGALBufferD3D12*>(pBuffer);
 
-  pBufferD3D12->DeInitPlatform(this).IgnoreResult();
+  pBufferD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pBufferD3D12);
 }
 
 xiiGALBufferView* xiiGALDeviceD3D12::CreateBufferViewPlatform(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& description)
 {
-  xiiGALBufferViewD3D12* pBufferViewD3D12 = XII_NEW(&m_Allocator, xiiGALBufferViewD3D12, pBuffer, description);
+  xiiGALBufferViewD3D12* pBufferViewD3D12 = XII_NEW(&m_Allocator, xiiGALBufferViewD3D12, this, pBuffer, description);
 
-  if (pBufferViewD3D12->InitPlatform(this).Succeeded())
+  if (pBufferViewD3D12->InitPlatform().Succeeded())
     return pBufferViewD3D12;
 
   XII_DELETE(&m_Allocator, pBufferViewD3D12);
@@ -472,16 +463,16 @@ void xiiGALDeviceD3D12::DestroyBufferViewPlatform(xiiGALBufferView* pBufferView)
 {
   xiiGALBufferViewD3D12* pBufferViewD3D12 = static_cast<xiiGALBufferViewD3D12*>(pBufferView);
 
-  pBufferViewD3D12->DeInitPlatform(this).IgnoreResult();
+  pBufferViewD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pBufferViewD3D12);
 }
 
 xiiGALTexture* xiiGALDeviceD3D12::CreateTexturePlatform(const xiiGALTextureCreationDescription& description, const xiiGALTextureData* pInitialData)
 {
-  xiiGALTextureD3D12* pTextureD3D12 = XII_NEW(&m_Allocator, xiiGALTextureD3D12, description);
+  xiiGALTextureD3D12* pTextureD3D12 = XII_NEW(&m_Allocator, xiiGALTextureD3D12, this, description);
 
-  if (pTextureD3D12->InitPlatform(this, pInitialData).Succeeded())
+  if (pTextureD3D12->InitPlatform(pInitialData).Succeeded())
     return pTextureD3D12;
 
   XII_DELETE(&m_Allocator, pTextureD3D12);
@@ -493,16 +484,16 @@ void xiiGALDeviceD3D12::DestroyTexturePlatform(xiiGALTexture* pTexture)
 {
   xiiGALTextureD3D12* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pTexture);
 
-  pTextureD3D12->DeInitPlatform(this).IgnoreResult();
+  pTextureD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pTextureD3D12);
 }
 
 xiiGALTextureView* xiiGALDeviceD3D12::CreateTextureViewPlatform(xiiGALTexture* pTexture, const xiiGALTextureViewCreationDescription& description)
 {
-  xiiGALTextureViewD3D12* pTextureViewD3D12 = XII_NEW(&m_Allocator, xiiGALTextureViewD3D12, pTexture, description);
+  xiiGALTextureViewD3D12* pTextureViewD3D12 = XII_NEW(&m_Allocator, xiiGALTextureViewD3D12, this, pTexture, description);
 
-  if (pTextureViewD3D12->InitPlatform(this).Succeeded())
+  if (pTextureViewD3D12->InitPlatform().Succeeded())
     return pTextureViewD3D12;
 
   XII_DELETE(&m_Allocator, pTextureViewD3D12);
@@ -514,16 +505,16 @@ void xiiGALDeviceD3D12::DestroyTextureViewPlatform(xiiGALTextureView* pTextureVi
 {
   xiiGALTextureViewD3D12* pTextureViewD3D12 = static_cast<xiiGALTextureViewD3D12*>(pTextureView);
 
-  pTextureViewD3D12->DeInitPlatform(this).IgnoreResult();
+  pTextureViewD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pTextureViewD3D12);
 }
 
 xiiGALSampler* xiiGALDeviceD3D12::CreateSamplerPlatform(const xiiGALSamplerCreationDescription& description)
 {
-  xiiGALSamplerD3D12* pSamplerD3D12 = XII_NEW(&m_Allocator, xiiGALSamplerD3D12, description);
+  xiiGALSamplerD3D12* pSamplerD3D12 = XII_NEW(&m_Allocator, xiiGALSamplerD3D12, this, description);
 
-  if (pSamplerD3D12->InitPlatform(this).Succeeded())
+  if (pSamplerD3D12->InitPlatform().Succeeded())
     return pSamplerD3D12;
 
   XII_DELETE(&m_Allocator, pSamplerD3D12);
@@ -535,16 +526,16 @@ void xiiGALDeviceD3D12::DestroySamplerPlatform(xiiGALSampler* pSampler)
 {
   xiiGALSamplerD3D12* pSamplerD3D12 = static_cast<xiiGALSamplerD3D12*>(pSampler);
 
-  pSamplerD3D12->DeInitPlatform(this).IgnoreResult();
+  pSamplerD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pSamplerD3D12);
 }
 
 xiiGALInputLayout* xiiGALDeviceD3D12::CreateInputLayoutPlatform(const xiiGALInputLayoutCreationDescription& description)
 {
-  xiiGALInputLayoutD3D12* pInputLayoutD3D12 = XII_NEW(&m_Allocator, xiiGALInputLayoutD3D12, description);
+  xiiGALInputLayoutD3D12* pInputLayoutD3D12 = XII_NEW(&m_Allocator, xiiGALInputLayoutD3D12, this, description);
 
-  if (pInputLayoutD3D12->InitPlatform(this).Succeeded())
+  if (pInputLayoutD3D12->InitPlatform().Succeeded())
     return pInputLayoutD3D12;
 
   XII_DELETE(&m_Allocator, pInputLayoutD3D12);
@@ -556,16 +547,16 @@ void xiiGALDeviceD3D12::DestroyInputLayoutPlatform(xiiGALInputLayout* pInputLayo
 {
   xiiGALInputLayoutD3D12* pInputLayoutD3D12 = static_cast<xiiGALInputLayoutD3D12*>(pInputLayout);
 
-  pInputLayoutD3D12->DeInitPlatform(this).IgnoreResult();
+  pInputLayoutD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pInputLayoutD3D12);
 }
 
 xiiGALQuery* xiiGALDeviceD3D12::CreateQueryPlatform(const xiiGALQueryCreationDescription& description)
 {
-  xiiGALQueryD3D12* pQueryD3D12 = XII_NEW(&m_Allocator, xiiGALQueryD3D12, description);
+  xiiGALQueryD3D12* pQueryD3D12 = XII_NEW(&m_Allocator, xiiGALQueryD3D12, this, description);
 
-  if (pQueryD3D12->InitPlatform(this).Succeeded())
+  if (pQueryD3D12->InitPlatform().Succeeded())
     return pQueryD3D12;
 
   XII_DELETE(&m_Allocator, pQueryD3D12);
@@ -577,16 +568,16 @@ void xiiGALDeviceD3D12::DestroyQueryPlatform(xiiGALQuery* pQuery)
 {
   xiiGALQueryD3D12* pQueryD3D12 = static_cast<xiiGALQueryD3D12*>(pQuery);
 
-  pQueryD3D12->DeInitPlatform(this).IgnoreResult();
+  pQueryD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pQueryD3D12);
 }
 
 xiiGALFence* xiiGALDeviceD3D12::CreateFencePlatform(const xiiGALFenceCreationDescription& description)
 {
-  xiiGALFenceD3D12* pFenceD3D12 = XII_NEW(&m_Allocator, xiiGALFenceD3D12, description);
+  xiiGALFenceD3D12* pFenceD3D12 = XII_NEW(&m_Allocator, xiiGALFenceD3D12, this, description);
 
-  if (pFenceD3D12->InitPlatform(this).Succeeded())
+  if (pFenceD3D12->InitPlatform().Succeeded())
     return pFenceD3D12;
 
   XII_DELETE(&m_Allocator, pFenceD3D12);
@@ -598,16 +589,16 @@ void xiiGALDeviceD3D12::DestroyFencePlatform(xiiGALFence* pFence)
 {
   xiiGALFenceD3D12* pFenceD3D12 = static_cast<xiiGALFenceD3D12*>(pFence);
 
-  pFenceD3D12->DeInitPlatform(this).IgnoreResult();
+  pFenceD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pFenceD3D12);
 }
 
 xiiGALRenderPass* xiiGALDeviceD3D12::CreateRenderPassPlatform(const xiiGALRenderPassCreationDescription& description)
 {
-  xiiGALRenderPassD3D12* pRenderPassD3D12 = XII_NEW(&m_Allocator, xiiGALRenderPassD3D12, description);
+  xiiGALRenderPassD3D12* pRenderPassD3D12 = XII_NEW(&m_Allocator, xiiGALRenderPassD3D12, this, description);
 
-  if (pRenderPassD3D12->InitPlatform(this).Succeeded())
+  if (pRenderPassD3D12->InitPlatform().Succeeded())
     return pRenderPassD3D12;
 
   XII_DELETE(&m_Allocator, pRenderPassD3D12);
@@ -619,16 +610,16 @@ void xiiGALDeviceD3D12::DestroyRenderPassPlatform(xiiGALRenderPass* pRenderPass)
 {
   xiiGALRenderPassD3D12* pRenderPassD3D12 = static_cast<xiiGALRenderPassD3D12*>(pRenderPass);
 
-  pRenderPassD3D12->DeInitPlatform(this).IgnoreResult();
+  pRenderPassD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pRenderPassD3D12);
 }
 
 xiiGALFramebuffer* xiiGALDeviceD3D12::CreateFramebufferPlatform(const xiiGALFramebufferCreationDescription& description)
 {
-  xiiGALFramebufferD3D12* pFramebufferD3D12 = XII_NEW(&m_Allocator, xiiGALFramebufferD3D12, description);
+  xiiGALFramebufferD3D12* pFramebufferD3D12 = XII_NEW(&m_Allocator, xiiGALFramebufferD3D12, this, description);
 
-  if (pFramebufferD3D12->InitPlatform(this).Succeeded())
+  if (pFramebufferD3D12->InitPlatform().Succeeded())
     return pFramebufferD3D12;
 
   XII_DELETE(&m_Allocator, pFramebufferD3D12);
@@ -640,16 +631,16 @@ void xiiGALDeviceD3D12::DestroyFramebufferPlatform(xiiGALFramebuffer* pFramebuff
 {
   xiiGALFramebufferD3D12* pFramebufferD3D12 = static_cast<xiiGALFramebufferD3D12*>(pFramebuffer);
 
-  pFramebufferD3D12->DeInitPlatform(this).IgnoreResult();
+  pFramebufferD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pFramebufferD3D12);
 }
 
 xiiGALBottomLevelAS* xiiGALDeviceD3D12::CreateBottomLevelASPlatform(const xiiGALBottomLevelASCreationDescription& description)
 {
-  xiiGALBottomLevelASD3D12* pBottomLevelASD3D12 = XII_NEW(&m_Allocator, xiiGALBottomLevelASD3D12, description);
+  xiiGALBottomLevelASD3D12* pBottomLevelASD3D12 = XII_NEW(&m_Allocator, xiiGALBottomLevelASD3D12, this, description);
 
-  if (pBottomLevelASD3D12->InitPlatform(this).Succeeded())
+  if (pBottomLevelASD3D12->InitPlatform().Succeeded())
     return pBottomLevelASD3D12;
 
   XII_DELETE(&m_Allocator, pBottomLevelASD3D12);
@@ -661,16 +652,16 @@ void xiiGALDeviceD3D12::DestroyBottomLevelASPlatform(xiiGALBottomLevelAS* pBotto
 {
   xiiGALBottomLevelASD3D12* pBottomLevelASD3D12 = static_cast<xiiGALBottomLevelASD3D12*>(pBottomLevelAS);
 
-  pBottomLevelASD3D12->DeInitPlatform(this).IgnoreResult();
+  pBottomLevelASD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pBottomLevelASD3D12);
 }
 
 xiiGALTopLevelAS* xiiGALDeviceD3D12::CreateTopLevelASPlatform(const xiiGALTopLevelASCreationDescription& description)
 {
-  xiiGALTopLevelASD3D12* pTopLevelASD3D12 = XII_NEW(&m_Allocator, xiiGALTopLevelASD3D12, description);
+  xiiGALTopLevelASD3D12* pTopLevelASD3D12 = XII_NEW(&m_Allocator, xiiGALTopLevelASD3D12, this, description);
 
-  if (pTopLevelASD3D12->InitPlatform(this).Succeeded())
+  if (pTopLevelASD3D12->InitPlatform().Succeeded())
     return pTopLevelASD3D12;
 
   XII_DELETE(&m_Allocator, pTopLevelASD3D12);
@@ -682,16 +673,16 @@ void xiiGALDeviceD3D12::DestroyTopLevelASPlatform(xiiGALTopLevelAS* pTopLevelAS)
 {
   xiiGALTopLevelASD3D12* pTopLevelASD3D12 = static_cast<xiiGALTopLevelASD3D12*>(pTopLevelAS);
 
-  pTopLevelASD3D12->DeInitPlatform(this).IgnoreResult();
+  pTopLevelASD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pTopLevelASD3D12);
 }
 
 xiiGALPipelineResourceSignature* xiiGALDeviceD3D12::CreatePipelineResourceSignaturePlatform(const xiiGALPipelineResourceSignatureCreationDescription& description)
 {
-  xiiGALPipelineResourceSignatureD3D12* pPipelineResourceSignatureD3D12 = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureD3D12, description);
+  xiiGALPipelineResourceSignatureD3D12* pPipelineResourceSignatureD3D12 = XII_NEW(&m_Allocator, xiiGALPipelineResourceSignatureD3D12, this, description);
 
-  if (pPipelineResourceSignatureD3D12->InitPlatform(this).Succeeded())
+  if (pPipelineResourceSignatureD3D12->InitPlatform().Succeeded())
     return pPipelineResourceSignatureD3D12;
 
   XII_DELETE(&m_Allocator, pPipelineResourceSignatureD3D12);
@@ -703,16 +694,16 @@ void xiiGALDeviceD3D12::DestroyPipelineResourceSignaturePlatform(xiiGALPipelineR
 {
   xiiGALPipelineResourceSignatureD3D12* pPipelineResourceSignatureD3D12 = static_cast<xiiGALPipelineResourceSignatureD3D12*>(pPipelineResourceSignature);
 
-  pPipelineResourceSignatureD3D12->DeInitPlatform(this).IgnoreResult();
+  pPipelineResourceSignatureD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pPipelineResourceSignatureD3D12);
 }
 
 xiiGALPipelineState* xiiGALDeviceD3D12::CreatePipelineStatePlatform(const xiiGALPipelineStateCreationDescription& description)
 {
-  xiiGALPipelineStateD3D12* pPipelineStateD3D12 = XII_NEW(&m_Allocator, xiiGALPipelineStateD3D12, description);
+  xiiGALPipelineStateD3D12* pPipelineStateD3D12 = XII_NEW(&m_Allocator, xiiGALPipelineStateD3D12, this, description);
 
-  if (pPipelineStateD3D12->InitPlatform(this).Succeeded())
+  if (pPipelineStateD3D12->InitPlatform().Succeeded())
     return pPipelineStateD3D12;
 
   XII_DELETE(&m_Allocator, pPipelineStateD3D12);
@@ -724,7 +715,7 @@ void xiiGALDeviceD3D12::DestroyPipelineStatePlatform(xiiGALPipelineState* pPipel
 {
   xiiGALPipelineStateD3D12* pPipelineStateD3D12 = static_cast<xiiGALPipelineStateD3D12*>(pPipelineState);
 
-  pPipelineStateD3D12->DeInitPlatform(this).IgnoreResult();
+  pPipelineStateD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pPipelineStateD3D12);
 }
@@ -759,7 +750,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 
     {
       D3D12_FEATURE_DATA_ARCHITECTURE dataArchitecture = {};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, &dataArchitecture, sizeof(dataArchitecture))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE, &dataArchitecture, sizeof(dataArchitecture))))
       {
         if (m_AdapterDescription.m_Type != xiiGALDeviceAdapterType::Software && (dataArchitecture.UMA || dataArchitecture.CacheCoherentUMA))
           m_AdapterDescription.m_Type = xiiGALDeviceAdapterType::Integrated;
@@ -810,11 +801,15 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 
     // Set queue information.
     xiiGALCommandQueueType::Enum queueIndexType[] = {xiiGALCommandQueueType::Graphics, xiiGALCommandQueueType::Compute, xiiGALCommandQueueType::Transfer};
+    m_AdapterDescription.m_CommandQueueProperties.SetCount(XII_ARRAY_SIZE(queueIndexType));
+
     for (xiiUInt32 i = 0; i < 3; ++i)
     {
-      auto& queueProperty                       = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
-      queueProperty.m_Type                      = queueIndexType[i];
-      queueProperty.m_MaxDeviceContexts         = 0xFFU;
+      auto& queueProperty                 = m_AdapterDescription.m_CommandQueueProperties.ExpandAndGetRef();
+      queueProperty.m_Type                = queueIndexType[i];
+      queueProperty.m_uiMaxDeviceContexts = 0xFFU;
+
+      queueProperty.m_TextureCopyGranularity.SetCountUninitialized(3);
       queueProperty.m_TextureCopyGranularity[0] = 1U;
       queueProperty.m_TextureCopyGranularity[1] = 1U;
       queueProperty.m_TextureCopyGranularity[2] = 1U;
@@ -838,10 +833,10 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 #ifdef D3D12_H_HAS_MESH_SHADER
     {
       D3D12_FEATURE_DATA_SHADER_MODEL shaderModel = {static_cast<D3D_SHADER_MODEL>(0x65)};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &shaderModel, sizeof(shaderModel))))
       {
         D3D12_FEATURE_DATA_D3D12_OPTIONS7 featureData = {};
-        bMeshShadersSupported                         = SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &featureData, sizeof(featureData))) && featureData.MeshShaderTier != D3D12_MESH_SHADER_TIER_NOT_SUPPORTED;
+        bMeshShadersSupported                         = SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS7, &featureData, sizeof(featureData))) && featureData.MeshShaderTier != D3D12_MESH_SHADER_TIER_NOT_SUPPORTED;
       }
     }
 #endif
@@ -860,7 +855,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
 
     {
       D3D12_FEATURE_DATA_D3D12_OPTIONS featureDataOptions = {};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &featureDataOptions, sizeof(featureDataOptions))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &featureDataOptions, sizeof(featureDataOptions))))
       {
         if (featureDataOptions.MinPrecisionSupport & D3D12_SHADER_MIN_PRECISION_SUPPORT_16_BIT)
         {
@@ -874,7 +869,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
           m_AdapterDescription.m_SparseResourceProperties.m_uiStandardBlockSize = D3D12_TILED_RESOURCE_TILE_SIZE_IN_BYTES;
 
           D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT featureDataGPUVirtualAddress = {};
-          if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT, &featureDataGPUVirtualAddress, sizeof(featureDataGPUVirtualAddress))))
+          if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT, &featureDataGPUVirtualAddress, sizeof(featureDataGPUVirtualAddress))))
           {
             m_AdapterDescription.m_SparseResourceProperties.m_uiAddressSpaceSize  = XII_BIT(featureDataGPUVirtualAddress.MaxGPUVirtualAddressBitsPerProcess);
             m_AdapterDescription.m_SparseResourceProperties.m_uiResourceSpaceSize = XII_BIT(featureDataGPUVirtualAddress.MaxGPUVirtualAddressBitsPerResource);
@@ -930,7 +925,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
       }
 
       D3D12_FEATURE_DATA_D3D12_OPTIONS1 featureDataOptions1 = {};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &featureDataOptions1, sizeof(featureDataOptions1))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS1, &featureDataOptions1, sizeof(featureDataOptions1))))
       {
         if (featureDataOptions1.WaveOps != FALSE)
         {
@@ -946,14 +941,14 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
       }
 
       D3D12_FEATURE_DATA_D3D12_OPTIONS3 featureDataOptions3 = {};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featureDataOptions3, sizeof(featureDataOptions3))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featureDataOptions3, sizeof(featureDataOptions3))))
       {
         if (featureDataOptions3.CopyQueueTimestampQueriesSupported)
           deviceFeatures.m_TransferQueueTimestampQueries = xiiGALDeviceFeatureState::Enabled;
       }
 
       D3D12_FEATURE_DATA_D3D12_OPTIONS4 featureDataOptions4{};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS4, &featureDataOptions4, sizeof(featureDataOptions4))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS4, &featureDataOptions4, sizeof(featureDataOptions4))))
       {
         if (featureDataOptions4.Native16BitShaderOpsSupported)
         {
@@ -964,7 +959,7 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
       }
 
       D3D12_FEATURE_DATA_D3D12_OPTIONS5 featureDataOptions5{};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureDataOptions5, sizeof(featureDataOptions5))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS5, &featureDataOptions5, sizeof(featureDataOptions5))))
       {
         if (featureDataOptions5.RaytracingTier >= D3D12_RAYTRACING_TIER_1_0)
         {
@@ -992,9 +987,9 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
         }
       }
 
-#ifdef NTDDI_WIN10_19H1 || FORCE_NTDDI_WIN10_19H1
+#if defined(NTDDI_WIN10_19H1) || defined(FORCE_NTDDI_WIN10_19H1)
       D3D12_FEATURE_DATA_D3D12_OPTIONS6 featureDataOptions6{};
-      if (SUCCEEDED(m_pDeviceD3D12->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &featureDataOptions6, sizeof(featureDataOptions6))))
+      if (SUCCEEDED(m_pD3D12Device->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &featureDataOptions6, sizeof(featureDataOptions6))))
       {
         // https://microsoft.github.io/DirectX-Specs/d3d/VariableRateShading.html#feature-tiering
         auto& shadingRateProperties = m_AdapterDescription.m_ShadingRateProperties;
@@ -1093,9 +1088,9 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
   // Draw command properties.
   {
 #if D3D12_REQ_DRAWINDEXED_INDEX_COUNT_2_TO_EXP >= 32
-    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue = ~0u;
+    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue = ~0U;
 #else
-    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue = 1u << D3D12_REQ_DRAWINDEXED_INDEX_COUNT_2_TO_EXP;
+    m_AdapterDescription.m_DrawCommandProperties.m_uiMaxIndexValue = 1U << D3D12_REQ_DRAWINDEXED_INDEX_COUNT_2_TO_EXP;
 #endif
     m_AdapterDescription.m_DrawCommandProperties.m_CapabilityFlags |= xiiGALDrawCommandCapabilityFlags::BaseVertex | xiiGALDrawCommandCapabilityFlags::NativeMultiDrawIndirect | xiiGALDrawCommandCapabilityFlags::DrawIndirectCounterBuffer;
   }
@@ -1142,113 +1137,6 @@ void xiiGALDeviceD3D12::CreateCommandQueues()
   AddContext(Diligent::COMMAND_QUEUE_TYPE_COMPUTE, "Compute Command Queue", m_Description.m_uiAdapterID);
   AddContext(Diligent::COMMAND_QUEUE_TYPE_SPARSE_BINDING, "Sparse Bindingn Command Queue", m_Description.m_uiAdapterID);
 #endif
-}
-
-void xiiGALDeviceD3D12::FillFormatLookupTable()
-{
-  // The list below is in the same order as the xiiGALTextureFormat enumeration, no format should be missing.
-
-  // clang-format off
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32Typeless,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32A32_TYPELESS).RT(DXGI_FORMAT_R32G32B32A32_TYPELESS).IL(DXGI_FORMAT_R32G32B32A32_TYPELESS).RV(DXGI_FORMAT_R32G32B32A32_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32Float,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32A32_TYPELESS).RT(DXGI_FORMAT_R32G32B32A32_FLOAT).IL(DXGI_FORMAT_R32G32B32A32_FLOAT).RV(DXGI_FORMAT_R32G32B32A32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32UInt,                   xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32A32_TYPELESS).RT(DXGI_FORMAT_R32G32B32A32_UINT).IL(DXGI_FORMAT_R32G32B32A32_UINT).RV(DXGI_FORMAT_R32G32B32A32_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA32SInt,                   xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32A32_TYPELESS).RT(DXGI_FORMAT_R32G32B32A32_SINT).IL(DXGI_FORMAT_R32G32B32A32_SINT).RV(DXGI_FORMAT_R32G32B32A32_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32Typeless,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32_TYPELESS).RT(DXGI_FORMAT_R32G32B32_TYPELESS).IL(DXGI_FORMAT_R32G32B32_TYPELESS).RV(DXGI_FORMAT_R32G32B32_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32Float,                   xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32_TYPELESS).RT(DXGI_FORMAT_R32G32B32_FLOAT).IL(DXGI_FORMAT_R32G32B32_FLOAT).RV(DXGI_FORMAT_R32G32B32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32UInt,                    xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32_TYPELESS).RT(DXGI_FORMAT_R32G32B32_UINT).IL(DXGI_FORMAT_R32G32B32_UINT).RV(DXGI_FORMAT_R32G32B32_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB32SInt,                    xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32B32_TYPELESS).RT(DXGI_FORMAT_R32G32B32_SINT).IL(DXGI_FORMAT_R32G32B32_SINT).RV(DXGI_FORMAT_R32G32B32_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16Typeless,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_TYPELESS).IL(DXGI_FORMAT_R16G16B16A16_TYPELESS).RV(DXGI_FORMAT_R16G16B16A16_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16Float,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_FLOAT).IL(DXGI_FORMAT_R16G16B16A16_FLOAT).RV(DXGI_FORMAT_R16G16B16A16_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16UNormalized,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_UNORM).IL(DXGI_FORMAT_R16G16B16A16_UNORM).RV(DXGI_FORMAT_R16G16B16A16_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16UInt,                   xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_UINT).IL(DXGI_FORMAT_R16G16B16A16_UINT).RV(DXGI_FORMAT_R16G16B16A16_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16SNormalized,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_SNORM).IL(DXGI_FORMAT_R16G16B16A16_SNORM).RV(DXGI_FORMAT_R16G16B16A16_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA16SInt,                   xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16B16A16_TYPELESS).RT(DXGI_FORMAT_R16G16B16A16_SINT).IL(DXGI_FORMAT_R16G16B16A16_SINT).RV(DXGI_FORMAT_R16G16B16A16_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32Typeless,                 xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32_TYPELESS).RT(DXGI_FORMAT_R32G32_TYPELESS).IL(DXGI_FORMAT_R32G32_TYPELESS).RV(DXGI_FORMAT_R32G32_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32Float,                    xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32_TYPELESS).RT(DXGI_FORMAT_R32G32_FLOAT).IL(DXGI_FORMAT_R32G32_FLOAT).RV(DXGI_FORMAT_R32G32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32UInt,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32_TYPELESS).RT(DXGI_FORMAT_R32G32_UINT).IL(DXGI_FORMAT_R32G32_UINT).RV(DXGI_FORMAT_R32G32_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG32SInt,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G32_TYPELESS).RT(DXGI_FORMAT_R32G32_SINT).IL(DXGI_FORMAT_R32G32_SINT).RV(DXGI_FORMAT_R32G32_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32G8X24Typeless,             xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32G8X24_TYPELESS).RT(DXGI_FORMAT_R32G8X24_TYPELESS).IL(DXGI_FORMAT_R32G8X24_TYPELESS).RV(DXGI_FORMAT_R32G8X24_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D32FloatS8X24UInt,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_D32_FLOAT_S8X24_UINT).D(DXGI_FORMAT_D32_FLOAT_S8X24_UINT).DS(DXGI_FORMAT_D32_FLOAT_S8X24_UINT).S(DXGI_FORMAT_D32_FLOAT_S8X24_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32FloatX8X24Typeless,        xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS).RT(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS).IL(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS).RV(DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::X32TypelessG8X24UInt,         xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT).RT(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT).IL(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT).RV(DXGI_FORMAT_X32_TYPELESS_G8X24_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2Typeless,              xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R10G10B10A2_TYPELESS).RT(DXGI_FORMAT_R10G10B10A2_TYPELESS).IL(DXGI_FORMAT_R10G10B10A2_TYPELESS).RV(DXGI_FORMAT_R10G10B10A2_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2UNormalized,           xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R10G10B10A2_TYPELESS).RT(DXGI_FORMAT_R10G10B10A2_UNORM).IL(DXGI_FORMAT_R10G10B10A2_UNORM).RV(DXGI_FORMAT_R10G10B10A2_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB10A2UInt,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R10G10B10A2_TYPELESS).RT(DXGI_FORMAT_R10G10B10A2_UINT).IL(DXGI_FORMAT_R10G10B10A2_UINT).RV(DXGI_FORMAT_R10G10B10A2_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG11B10Float,                 xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R11G11B10_FLOAT).RT(DXGI_FORMAT_R11G11B10_FLOAT).IL(DXGI_FORMAT_R11G11B10_FLOAT).RV(DXGI_FORMAT_R11G11B10_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8Typeless,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_TYPELESS).IL(DXGI_FORMAT_R8G8B8A8_TYPELESS).RV(DXGI_FORMAT_R8G8B8A8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UNormalized,             xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_UNORM).IL(DXGI_FORMAT_R8G8B8A8_UNORM).RV(DXGI_FORMAT_R8G8B8A8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UNormalizedSRGB,         xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB).IL(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB).RV(DXGI_FORMAT_R8G8B8A8_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8UInt,                    xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_UINT).IL(DXGI_FORMAT_R8G8B8A8_UINT).RV(DXGI_FORMAT_R8G8B8A8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8SNormalized,             xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_SNORM).IL(DXGI_FORMAT_R8G8B8A8_SNORM).RV(DXGI_FORMAT_R8G8B8A8_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGBA8SInt,                    xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8B8A8_TYPELESS).RT(DXGI_FORMAT_R8G8B8A8_SINT).IL(DXGI_FORMAT_R8G8B8A8_SINT).RV(DXGI_FORMAT_R8G8B8A8_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16Typeless,                 xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_TYPELESS).IL(DXGI_FORMAT_R16G16_TYPELESS).RV(DXGI_FORMAT_R16G16_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16Float,                    xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16_FLOAT).RT(DXGI_FORMAT_R16G16_FLOAT).IL(DXGI_FORMAT_R16G16_FLOAT).RV(DXGI_FORMAT_R16G16_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16UNormalized,              xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_UNORM).IL(DXGI_FORMAT_R16G16_UNORM).RV(DXGI_FORMAT_R16G16_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16UInt,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_UINT).IL(DXGI_FORMAT_R16G16_UINT).RV(DXGI_FORMAT_R16G16_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16SNormalized,              xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_SNORM).IL(DXGI_FORMAT_R16G16_SNORM).RV(DXGI_FORMAT_R16G16_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG16SInt,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16G16_TYPELESS).RT(DXGI_FORMAT_R16G16_SINT).IL(DXGI_FORMAT_R16G16_SINT).RV(DXGI_FORMAT_R16G16_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32_TYPELESS).RT(DXGI_FORMAT_R32_TYPELESS).IL(DXGI_FORMAT_R32_TYPELESS).RV(DXGI_FORMAT_R32_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D32Float,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32_TYPELESS).D(DXGI_FORMAT_D32_FLOAT).DS(DXGI_FORMAT_D32_FLOAT).S(DXGI_FORMAT_D32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32Float,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32_TYPELESS).RT(DXGI_FORMAT_R32_FLOAT).IL(DXGI_FORMAT_R32_FLOAT).RV(DXGI_FORMAT_R32_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32UInt,                      xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32_TYPELESS).RT(DXGI_FORMAT_R32_UINT).IL(DXGI_FORMAT_R32_UINT).RV(DXGI_FORMAT_R32_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R32SInt,                      xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R32_TYPELESS).RT(DXGI_FORMAT_R32_SINT).IL(DXGI_FORMAT_R32_SINT).RV(DXGI_FORMAT_R32_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R24G8Typeless,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R24G8_TYPELESS).RT(DXGI_FORMAT_R24G8_TYPELESS).IL(DXGI_FORMAT_R24G8_TYPELESS).RV(DXGI_FORMAT_R24G8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D24UNormalizedS8UInt,         xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_D24_UNORM_S8_UINT).D(DXGI_FORMAT_D24_UNORM_S8_UINT).DS(DXGI_FORMAT_D24_UNORM_S8_UINT).S(DXGI_FORMAT_D24_UNORM_S8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R24UNormalizedX8Typeless,     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).RT(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).IL(DXGI_FORMAT_R24_UNORM_X8_TYPELESS).RV(DXGI_FORMAT_R24_UNORM_X8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::X24TypelessG8UInt,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_X24_TYPELESS_G8_UINT).RT(DXGI_FORMAT_X24_TYPELESS_G8_UINT).IL(DXGI_FORMAT_X24_TYPELESS_G8_UINT).RV(DXGI_FORMAT_X24_TYPELESS_G8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_TYPELESS).IL(DXGI_FORMAT_R8G8_TYPELESS).RV(DXGI_FORMAT_R8G8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_UNORM).IL(DXGI_FORMAT_R8G8_UNORM).RV(DXGI_FORMAT_R8G8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8UInt,                      xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_UINT).IL(DXGI_FORMAT_R8G8_UINT).RV(DXGI_FORMAT_R8G8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8SNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_SNORM).IL(DXGI_FORMAT_R8G8_SNORM).RV(DXGI_FORMAT_R8G8_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8SInt,                      xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8_TYPELESS).RT(DXGI_FORMAT_R8G8_SINT).IL(DXGI_FORMAT_R8G8_SINT).RV(DXGI_FORMAT_R8G8_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_TYPELESS).IL(DXGI_FORMAT_R16_TYPELESS).RV(DXGI_FORMAT_R16_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16Float,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_FLOAT).IL(DXGI_FORMAT_R16_FLOAT).RV(DXGI_FORMAT_R16_FLOAT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::D16UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_D16_UNORM).IL(DXGI_FORMAT_D16_UNORM).RV(DXGI_FORMAT_D16_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).D(DXGI_FORMAT_R16_UNORM).DS(DXGI_FORMAT_R16_UNORM).S(DXGI_FORMAT_R16_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16UInt,                      xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_UINT).IL(DXGI_FORMAT_R16_UINT).RV(DXGI_FORMAT_R16_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16SNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_SNORM).IL(DXGI_FORMAT_R16_SNORM).RV(DXGI_FORMAT_R16_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R16SInt,                      xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R16_TYPELESS).RT(DXGI_FORMAT_R16_SINT).IL(DXGI_FORMAT_R16_SINT).RV(DXGI_FORMAT_R16_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8Typeless,                   xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_TYPELESS).IL(DXGI_FORMAT_R8_TYPELESS).RV(DXGI_FORMAT_R8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8UNormalized,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_UNORM).IL(DXGI_FORMAT_R8_UNORM).RV(DXGI_FORMAT_R8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8UInt,                       xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_UINT).IL(DXGI_FORMAT_R8_UINT).RV(DXGI_FORMAT_R8_UINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8SNormalized,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_SNORM).IL(DXGI_FORMAT_R8_SNORM).RV(DXGI_FORMAT_R8_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R8SInt,                       xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_R8_SINT).IL(DXGI_FORMAT_R8_SINT).RV(DXGI_FORMAT_R8_SINT));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::A8UNormalized,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8_TYPELESS).RT(DXGI_FORMAT_A8_UNORM).IL(DXGI_FORMAT_A8_UNORM).RV(DXGI_FORMAT_A8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R1UNormalized,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R1_UNORM).RT(DXGI_FORMAT_R1_UNORM).IL(DXGI_FORMAT_R1_UNORM).RV(DXGI_FORMAT_R1_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RGB9E5SharedExponent,         xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R9G9B9E5_SHAREDEXP).RT(DXGI_FORMAT_R9G9B9E5_SHAREDEXP).IL(DXGI_FORMAT_R9G9B9E5_SHAREDEXP).RV(DXGI_FORMAT_R9G9B9E5_SHAREDEXP));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::RG8BG8UNormalized,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R8G8_B8G8_UNORM).RT(DXGI_FORMAT_R8G8_B8G8_UNORM).IL(DXGI_FORMAT_R8G8_B8G8_UNORM).RV(DXGI_FORMAT_R8G8_B8G8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::GR8GB8UNormalized,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_G8R8_G8B8_UNORM).RT(DXGI_FORMAT_G8R8_G8B8_UNORM).IL(DXGI_FORMAT_G8R8_G8B8_UNORM).RV(DXGI_FORMAT_G8R8_G8B8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC1_TYPELESS).RT(DXGI_FORMAT_BC1_TYPELESS).IL(DXGI_FORMAT_BC1_TYPELESS).RV(DXGI_FORMAT_BC1_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC1_TYPELESS).RT(DXGI_FORMAT_BC1_UNORM).IL(DXGI_FORMAT_BC1_UNORM).RV(DXGI_FORMAT_BC1_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC1UNormalizedSRGB,           xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC1_TYPELESS).RT(DXGI_FORMAT_BC1_UNORM_SRGB).IL(DXGI_FORMAT_BC1_UNORM_SRGB).RV(DXGI_FORMAT_BC1_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC2_TYPELESS).RT(DXGI_FORMAT_BC2_TYPELESS).IL(DXGI_FORMAT_BC2_TYPELESS).RV(DXGI_FORMAT_BC2_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC2_TYPELESS).RT(DXGI_FORMAT_BC2_UNORM).IL(DXGI_FORMAT_BC2_UNORM).RV(DXGI_FORMAT_BC2_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC2UNormalizedSRGB,           xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC2_TYPELESS).RT(DXGI_FORMAT_BC2_UNORM_SRGB).IL(DXGI_FORMAT_BC2_UNORM_SRGB).RV(DXGI_FORMAT_BC2_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC3_TYPELESS).RT(DXGI_FORMAT_BC3_TYPELESS).IL(DXGI_FORMAT_BC3_TYPELESS).RV(DXGI_FORMAT_BC3_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC3_TYPELESS).RT(DXGI_FORMAT_BC3_UNORM).IL(DXGI_FORMAT_BC3_UNORM).RV(DXGI_FORMAT_BC3_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC3UNormalizedSRGB,           xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC3_TYPELESS).RT(DXGI_FORMAT_BC3_UNORM_SRGB).IL(DXGI_FORMAT_BC3_UNORM_SRGB).RV(DXGI_FORMAT_BC3_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC4_TYPELESS).RT(DXGI_FORMAT_BC4_TYPELESS).IL(DXGI_FORMAT_BC4_TYPELESS).RV(DXGI_FORMAT_BC4_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC4_TYPELESS).RT(DXGI_FORMAT_BC4_UNORM).IL(DXGI_FORMAT_BC4_UNORM).RV(DXGI_FORMAT_BC4_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC4SNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC4_TYPELESS).RT(DXGI_FORMAT_BC4_SNORM).IL(DXGI_FORMAT_BC4_SNORM).RV(DXGI_FORMAT_BC4_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC5_TYPELESS).RT(DXGI_FORMAT_BC5_TYPELESS).IL(DXGI_FORMAT_BC5_TYPELESS).RV(DXGI_FORMAT_BC5_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC5_TYPELESS).RT(DXGI_FORMAT_BC5_UNORM).IL(DXGI_FORMAT_BC5_UNORM).RV(DXGI_FORMAT_BC5_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC5SNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC5_TYPELESS).RT(DXGI_FORMAT_BC5_SNORM).IL(DXGI_FORMAT_BC5_SNORM).RV(DXGI_FORMAT_BC5_SNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::B5G6R5UNormalized,            xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B5G6R5_UNORM).RT(DXGI_FORMAT_B5G6R5_UNORM).IL(DXGI_FORMAT_B5G6R5_UNORM).RV(DXGI_FORMAT_B5G6R5_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::B5G5R5A1UNormalized,          xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B5G5R5A1_UNORM).RT(DXGI_FORMAT_B5G5R5A1_UNORM).IL(DXGI_FORMAT_B5G5R5A1_UNORM).RV(DXGI_FORMAT_B5G5R5A1_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8UNormalized,             xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B8G8R8A8_TYPELESS).RT(DXGI_FORMAT_B8G8R8A8_UNORM).IL(DXGI_FORMAT_B8G8R8A8_UNORM).RV(DXGI_FORMAT_B8G8R8A8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8UNormalized,             xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B8G8R8X8_TYPELESS).RT(DXGI_FORMAT_B8G8R8X8_UNORM).IL(DXGI_FORMAT_B8G8R8X8_UNORM).RV(DXGI_FORMAT_B8G8R8X8_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::R10G10B10XRBiasA2UNormalized, xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).RT(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).IL(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM).RV(DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8Typeless,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B8G8R8A8_TYPELESS).RT(DXGI_FORMAT_B8G8R8A8_TYPELESS).IL(DXGI_FORMAT_B8G8R8A8_TYPELESS).RV(DXGI_FORMAT_B8G8R8A8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRA8UNormalizedSRGB,         xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B8G8R8A8_TYPELESS).RT(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB).IL(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB).RV(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8Typeless,                xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B8G8R8X8_TYPELESS).RT(DXGI_FORMAT_B8G8R8X8_TYPELESS).IL(DXGI_FORMAT_B8G8R8X8_TYPELESS).RV(DXGI_FORMAT_B8G8R8X8_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BGRX8UNormalizedSRGB,         xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_B8G8R8X8_TYPELESS).RT(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB).IL(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB).RV(DXGI_FORMAT_B8G8R8X8_UNORM_SRGB));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HTypeless,                 xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC6H_TYPELESS).RT(DXGI_FORMAT_BC6H_TYPELESS).IL(DXGI_FORMAT_BC6H_TYPELESS).RV(DXGI_FORMAT_BC6H_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HUF16,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC6H_TYPELESS).RT(DXGI_FORMAT_BC6H_UF16).IL(DXGI_FORMAT_BC6H_UF16).RV(DXGI_FORMAT_BC6H_UF16));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC6HSF16,                     xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC6H_TYPELESS).RT(DXGI_FORMAT_BC6H_SF16).IL(DXGI_FORMAT_BC6H_SF16).RV(DXGI_FORMAT_BC6H_SF16));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7Typeless,                  xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC7_TYPELESS).RT(DXGI_FORMAT_BC7_TYPELESS).IL(DXGI_FORMAT_BC7_TYPELESS).RV(DXGI_FORMAT_BC7_TYPELESS));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7UNormalized,               xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC7_TYPELESS).RT(DXGI_FORMAT_BC7_UNORM).IL(DXGI_FORMAT_BC7_UNORM).RV(DXGI_FORMAT_BC7_UNORM));
-  m_FormatLookupTable.SetFormatInfo(xiiGALTextureFormat::BC7UNormalizedSRGB,           xiiGALFormatLookupEntryD3D12(DXGI_FORMAT_BC7_TYPELESS).RT(DXGI_FORMAT_BC7_UNORM_SRGB).IL(DXGI_FORMAT_BC7_UNORM_SRGB).RV(DXGI_FORMAT_BC7_UNORM_SRGB));
-  // clang-format on
 }
 
 void xiiGALDeviceD3D12::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel)
@@ -1317,8 +1205,10 @@ void xiiGALDeviceD3D12::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, ID
 {
   auto DXGIAdapters = GetCompatibleAdapters(featureLevel);
 
-  DXGI_FORMAT  dxgiFormat = xiiD3D12TypeConversions::GetD3D12Format(format);
+  DXGI_FORMAT  dxgiFormat = xiiD3D12TypeConversions::GetFormat(format);
   IDXGIOutput* pOutput    = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D12_RELEASE(pOutput));
+
   if (pDXGIAdapter->EnumOutputs(uiOutputID, &pOutput) == DXGI_ERROR_NOT_FOUND)
   {
     DXGI_ADAPTER_DESC1 adapterDescription;
@@ -1336,7 +1226,7 @@ void xiiGALDeviceD3D12::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, ID
     xiiDynamicArray<DXGI_MODE_DESC> dxgiDisplayModes;
     dxgiDisplayModes.SetCount(uiModeCount);
 
-    if (SUCCEEDED(pOutput->GetDisplayModeList(dxgiFormat, 0U, &uiModeCount, NULL)))
+    if (SUCCEEDED(pOutput->GetDisplayModeList(dxgiFormat, 0U, &uiModeCount, dxgiDisplayModes.GetData())))
     {
       displayModes.Clear();
       for (xiiUInt32 i = 0; i < uiModeCount; ++i)

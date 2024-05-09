@@ -151,16 +151,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRenderTargetBlendDescription : public xi
 {
   XII_DECLARE_POD_TYPE();
 
-  bool                          m_bBlendEnable          = false;                             ///< Enable or disable blending for this render target. The default is false.
-  bool                          m_LogicOperationEnable  = false;                             ///< Enable or disable a logical operation for this render target. The default is false.
-  xiiEnum<xiiGALBlendFactor>    m_SourceBlend           = xiiGALBlendFactor::One;            ///< Specifies the blend factor to apply to the RGB value output from the pixel shader. The default is One.
-  xiiEnum<xiiGALBlendFactor>    m_DestinationBlend      = xiiGALBlendFactor::Zero;           ///< Specifies the blend factor to apply to the RGB value in the render target. The default is Zero.
-  xiiEnum<xiiGALBlendOperation> m_BlendOperation        = xiiGALBlendOperation::Add;         ///< Defines how to combine the source and destination RGB values after applying the source and destination blend factors. The default is Add.
-  xiiEnum<xiiGALBlendFactor>    m_SourceBlendAlpha      = xiiGALBlendFactor::One;            ///< Specifies the blend factor to apply to the alpha value output from the pixel shader. The default is One.
-  xiiEnum<xiiGALBlendFactor>    m_DestinationBlendAlpha = xiiGALBlendFactor::Zero;           ///< Specifies the blend factor to apply to the alpha value in the render target. The default is Zero.
-  xiiEnum<xiiGALBlendOperation> m_BlendOperationAlpha   = xiiGALBlendOperation::Add;         ///< Defines how to combine the source and destination alpha values after applying the source and destination blend alpha factors. The default is Add.
-  xiiEnum<xiiGALLogicOperation> m_LogicOperation        = xiiGALLogicOperation::NoOperation; ///< Defines logical operation for the render target. The default is NoOperation.
-  xiiBitflags<xiiGALColorMask>  m_ColorMask             = xiiGALColorMask::RGBA;             ///< Render target color write mask. The default is default is RGBA.
+  bool                          m_bBlendEnable          = false;                     ///< Enable or disable blending for this render target. The default is false.
+  xiiEnum<xiiGALBlendFactor>    m_SourceBlend           = xiiGALBlendFactor::One;    ///< Specifies the blend factor to apply to the RGB value output from the pixel shader. The default is One.
+  xiiEnum<xiiGALBlendFactor>    m_DestinationBlend      = xiiGALBlendFactor::Zero;   ///< Specifies the blend factor to apply to the RGB value in the render target. The default is Zero.
+  xiiEnum<xiiGALBlendOperation> m_BlendOperation        = xiiGALBlendOperation::Add; ///< Defines how to combine the source and destination RGB values after applying the source and destination blend factors. The default is Add.
+  xiiEnum<xiiGALBlendFactor>    m_SourceBlendAlpha      = xiiGALBlendFactor::One;    ///< Specifies the blend factor to apply to the alpha value output from the pixel shader. The default is One.
+  xiiEnum<xiiGALBlendFactor>    m_DestinationBlendAlpha = xiiGALBlendFactor::Zero;   ///< Specifies the blend factor to apply to the alpha value in the render target. The default is Zero.
+  xiiEnum<xiiGALBlendOperation> m_BlendOperationAlpha   = xiiGALBlendOperation::Add; ///< Defines how to combine the source and destination alpha values after applying the source and destination blend alpha factors. The default is Add.
+  xiiBitflags<xiiGALColorMask>  m_ColorMask             = xiiGALColorMask::RGBA;     ///< Render target color write mask. The default is default is RGBA.
 };
 
 /// \brief This describes the blend state for all render targets in the graphics pipeline.
@@ -168,9 +166,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBlendStateCreationDescription : public x
 {
   XII_DECLARE_POD_TYPE();
 
-  bool                                                                               m_bAlphaToCoverage  = false; ///< Specifies whether to use alpha-to-coverage as a multisampling technique when setting a pixel to a render target. The default is false.
-  bool                                                                               m_bIndependentBlend = false; ///< Specifies whether to enable independent blending in simultaneous render targets. If set to false, only m_RenderTargets[0] is used. The default is false.
-  xiiStaticArray<xiiGALRenderTargetBlendDescription, XII_GAL_MAX_RENDERTARGET_COUNT> m_RenderTargets;             ///< An array of render target blend descriptions that describe the blend states for each render targets at an index.
+  bool                                                                               m_bAlphaToCoverage     = false;                             ///< Specifies whether to use alpha-to-coverage as a multisampling technique when setting a pixel to a render target. The default is false.
+  bool                                                                               m_bIndependentBlend    = false;                             ///< Specifies whether to enable independent blending in simultaneous render targets. If set to false, only m_RenderTargets[0] is used. The default is false.
+  bool                                                                               m_LogicOperationEnable = false;                             ///< Enable or disable a logical operation for this render target. The default is false.
+  xiiEnum<xiiGALLogicOperation>                                                      m_LogicOperation       = xiiGALLogicOperation::NoOperation; ///< Defines logical operation for the render target. The default is NoOperation.
+  xiiStaticArray<xiiGALRenderTargetBlendDescription, XII_GAL_MAX_RENDERTARGET_COUNT> m_RenderTargets;                                            ///< An array of render target blend descriptions that describe the blend states for each render targets at an index.
 };
 
 /// \brief Interface that defines methods to manipulate a blend state object.

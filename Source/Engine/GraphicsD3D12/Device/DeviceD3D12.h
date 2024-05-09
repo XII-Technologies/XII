@@ -6,17 +6,16 @@
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsD3D12/MemoryAllocator/MemoryAllocatorD3D12.h>
 #include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/ResourceFormats.h>
 
 enum D3D_FEATURE_LEVEL;
 
 struct IDXGIAdapter1;
 struct IDXGIFactory2;
 struct IDXGIFactory4;
-struct ID3D12Device;
+struct ID3D12Device1;
+struct ID3D12Debug;
 
-using xiiGALFormatLookupEntryD3D12 = xiiGALFormatLookupEntry<DXGI_FORMAT, (DXGI_FORMAT)0U>;
-using xiiGALFormatLookupTableD3D12 = xiiGALFormatLookupTable<xiiGALFormatLookupEntryD3D12>;
+XII_DEFINE_AS_POD_TYPE(DXGI_MODE_DESC);
 
 class XII_GRAPHICSD3D12_DLL xiiGALDeviceD3D12 final : public xiiGALDevice
 {
@@ -31,20 +30,21 @@ public:
   ~xiiGALDeviceD3D12();
 
 public:
+  virtual xiiGALCommandQueue* GetGraphicsQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetComputeQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetTransferQueue() const override final;
+
+  virtual xiiGALCommandQueue* GetSparseBindingQueue() const override final;
+
   // Internal objects retrieval.
 
-  ID3D12Device*  GetDeviceD3D12() const;
+  ID3D12Device1* GetD3D12Device() const;
   IDXGIAdapter1* GetDXGIAdapter() const;
   IDXGIFactory4* GetDXGIFactory() const;
 
   xiiMemoryAllocatorD3D12* GetD3D12Allocator() const;
-
-  // Diligent::IDeviceContext* GetImmediateContext();
-  // Diligent::IDeviceContext* GetComputeContext();
-  // Diligent::IDeviceContext* GetTransferContext();
-  // Diligent::IDeviceContext* GetSparseBindingContext();
-
-  const xiiGALFormatLookupTableD3D12& GetFormatLookupTable() const;
 
   void ReportLiveGPUObjects();
 
@@ -55,6 +55,8 @@ protected:
   virtual xiiResult InitializePlatform() override final;
   virtual xiiResult ShutdownPlatform() override final;
 
+  virtual void CreateCommandQueuesPlatform() override final;
+
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override final;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override final;
 
@@ -63,9 +65,6 @@ protected:
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
-
-  virtual xiiGALCommandList* CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description) override final;
-  virtual void               DestroyCommandListPlatform(xiiGALCommandList* pCommandList) override final;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;
@@ -127,8 +126,6 @@ protected:
 
   void CreateCommandQueues();
 
-  void FillFormatLookupTable();
-
 private:
   void                            GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel);
   xiiDynamicArray<IDXGIAdapter1*> GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel);
@@ -136,11 +133,10 @@ private:
   void EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter1* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALTextureFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes);
 
 private:
-  xiiGALFormatLookupTableD3D12 m_FormatLookupTable;
-
   IDXGIFactory4* m_pDXGIFactory = nullptr;
   IDXGIAdapter1* m_pDXGIAdapter = nullptr;
-  ID3D12Device*  m_pDeviceD3D12 = nullptr;
+  ID3D12Device1* m_pD3D12Device = nullptr;
+  ID3D12Debug1*  m_pD3D12Debug  = nullptr;
 
   xiiUniquePtr<xiiMemoryAllocatorD3D12> m_pAllocatorD3D12;
 

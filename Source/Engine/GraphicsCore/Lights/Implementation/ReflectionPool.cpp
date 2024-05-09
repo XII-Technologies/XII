@@ -308,7 +308,7 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
   xiiHybridArray<xiiGALTextureHandle, 4> atlasToClear;
 
   {
-    auto pGALCommandEncoder = pGALCommandQueue->BeginCommandList("Sky Irradiance Texture Update");
+    auto pGALCommandList = pGALCommandQueue->BeginCommandList("Sky Irradiance Texture Update");
     for (xiiUInt32 i = 0; i < skyIrradianceStorage.GetCount(); ++i)
     {
       if ((uiWorldHasSkyLight & XII_BIT(i)) == 0 && (uiSkyIrradianceChanged & XII_BIT(i)) != 0)
@@ -319,7 +319,7 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
         xiiGALTextureSubResourceData memDesc;
         memDesc.m_pData    = &skyIrradianceStorage[i].m_Values[0];
         memDesc.m_uiStride = sizeof(xiiAmbientCube<xiiColorLinear16f>);
-        pGALCommandEncoder->UpdateTexture(s_pData->m_hSkyIrradianceTexture, xiiGALTextureMipLevelData(), destBox, memDesc);
+        pGALCommandList->UpdateTextureExtended(s_pData->m_hSkyIrradianceTexture, xiiGALTextureMipLevelData(), destBox, memDesc);
 
         uiSkyIrradianceChanged &= ~XII_BIT(i);
 
@@ -330,11 +330,11 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
         }
       }
     }
-    pGALCommandQueue->Submit(pGALCommandEncoder);
+    pGALCommandQueue->Submit(pGALCommandList);
   }
 
   {
-    auto pGALCommandEncoder = pGALCommandQueue->BeginCommandList("ClearSkySpecular");
+    auto pGALCommandList = pGALCommandQueue->BeginCommandList("ClearSkySpecular");
 
     // Clear specular sky reflection to black.
     const xiiUInt32 uiNumMipMaps = GetMipLevels();
@@ -358,11 +358,11 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
           renderingSetup.m_ClearColor              = xiiColor(0, 0, 0, 1);
           renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
 
-          pGALCommandEncoder->ClearRenderTargetView(hRenderTarget, xiiColor::Black);
+          pGALCommandList->ClearRenderTargetView(hRenderTarget, xiiColor::Black);
         }
       }
     }
-    pGALCommandQueue->Submit(pGALCommandEncoder);
+    pGALCommandQueue->Submit(pGALCommandList);
   }
 }
 

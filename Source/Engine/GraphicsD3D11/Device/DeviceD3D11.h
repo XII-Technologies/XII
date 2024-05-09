@@ -5,7 +5,6 @@
 #include <Foundation/Basics/Platform/Win/MinWindows.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/ResourceFormats.h>
 
 #include <GraphicsD3D11/CommandEncoder/CommandQueueD3D11.h>
 
@@ -22,9 +21,6 @@ struct ID3D11DeviceContext1;
 struct DXGI_MODE_DESC;
 
 XII_DEFINE_AS_POD_TYPE(DXGI_MODE_DESC);
-
-using xiiGALFormatLookupEntryD3D11 = xiiGALFormatLookupEntry<DXGI_FORMAT, (DXGI_FORMAT)0U>;
-using xiiGALFormatLookupTableD3D11 = xiiGALFormatLookupTable<xiiGALFormatLookupEntryD3D11>;
 
 class XII_GRAPHICSD3D11_DLL xiiGALDeviceD3D11 final : public xiiGALDevice
 {
@@ -55,8 +51,6 @@ public:
 
   ID3D11DeviceContext1* GetImmediateContext();
 
-  const xiiGALFormatLookupTableD3D11& GetFormatLookupTable() const;
-
   xiiUInt32 GetCommandQueueIndex(xiiBitflags<xiiGALCommandQueueType> queueType) const;
 
   void ReportLiveGPUObjects();
@@ -64,6 +58,10 @@ public:
   void FlushPendingObjects();
 
   void ResetCommandQueuesSwapChainReferences();
+
+  ID3D11Resource* FindTemporaryBuffer(xiiUInt32 uiSize);
+  ID3D11Resource* FindTemporaryTexture(xiiUInt32 uiWidth, xiiUInt32 uiHeight, xiiUInt32 uiDepth, xiiEnum<xiiGALTextureFormat> format);
+  void            FreeTemporaryResources(xiiUInt64 uiFrame);
 
   // These functions are implemented by a graphics API implementation.
 protected:
@@ -141,8 +139,6 @@ protected:
 
   virtual void FillCapabilitiesPlatform() override final;
 
-  void FillFormatLookupTable();
-
 private:
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
   bool HasSDKLayers();
@@ -154,8 +150,6 @@ private:
   void EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter1* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALTextureFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes);
 
 private:
-  xiiGALFormatLookupTableD3D11 m_FormatLookupTable;
-
   IDXGIFactory4*        m_pDXGIFactory   = nullptr;
   IDXGIAdapter1*        m_pDXGIAdapter   = nullptr;
   ID3D11Device1*        m_pDeviceD3D11   = nullptr;
@@ -171,6 +165,31 @@ private:
   // 2 : Transfer Queue
   // 3 : Sparse Queue
   xiiUniquePtr<xiiGALCommandQueueD3D11> m_CommandQueues[4];
+
+  struct TemporaryResourceType
+  {
+    using StorageType = xiiUInt8;
+
+    enum Enum : StorageType
+    {
+      Buffer = 0,
+      Texture,
+
+      ENUM_COUNT
+    };
+  };
+
+  struct UsedTempResource
+  {
+    XII_DECLARE_POD_TYPE();
+
+    ID3D11Resource* m_pResource = nullptr;
+    xiiUInt64       m_uiFrame   = 0U;
+    xiiUInt32       m_uiHash    = 0U;
+  };
+
+  xiiMap<xiiUInt32, xiiDynamicArray<ID3D11Resource*>, xiiCompareHelper<xiiUInt32>, xiiLocalAllocatorWrapper> m_FreeTempResources[TemporaryResourceType::ENUM_COUNT];
+  xiiDeque<UsedTempResource, xiiLocalAllocatorWrapper>                                                       m_UsedTempResources[TemporaryResourceType::ENUM_COUNT];
 };
 
 #include <GraphicsD3D11/Device/Implementation/DeviceD3D11_inl.h>

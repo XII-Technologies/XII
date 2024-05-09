@@ -35,6 +35,13 @@ public:
 
   /// \brief This returns the mip size for a given mip level.
   static XII_NODISCARD xiiUInt32 GetMipSize(xiiUInt32 uiSize, xiiUInt32 uiMipLevel);
+
+  /// \brief This returns the default texture view type for a source format and the view type that are matched with the bind flags.
+  ///
+  /// \param format    - The source texture format.
+  /// \param viewType  - The view type to be created.
+  /// \param bindFlags - The texture bind flags.
+  static XII_NODISCARD xiiEnum<xiiGALTextureFormat> GetDefaultTextureViewFormat(xiiEnum<xiiGALTextureFormat> format, xiiEnum<xiiGALTextureViewType> viewType, xiiBitflags<xiiGALBindFlags> bindFlags);
 };
 
 #include <GraphicsFoundation/Utilities/Implementation/GraphicsUtilities_inl.h>
