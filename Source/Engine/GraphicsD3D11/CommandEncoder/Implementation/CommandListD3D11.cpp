@@ -178,7 +178,7 @@ void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, 
   auto          pIndexBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndexBuffer);
   ID3D11Buffer* pD3D11IndexBuffer = pIndexBufferD3D11 ? pIndexBufferD3D11->GetBuffer() : nullptr;
 
-  if (pD3D11IndexBuffer != m_pCommittedIndexBuffer)
+  if (pD3D11IndexBuffer != m_pCommittedIndexBuffer && m_uiCommittedIndexDataStartOffset != uiByteOffset)
   {
     m_pCommittedIndexBuffer           = pD3D11IndexBuffer;
     m_CommittedIndexBufferFormat      = DXGI_FORMAT_UNKNOWN;
