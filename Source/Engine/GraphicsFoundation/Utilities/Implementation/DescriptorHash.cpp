@@ -1,9 +1,9 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
-#include <GraphicsFoundation/Utilities/DescriptorHash.h>
+#include <Foundation/Algorithm/HashStream.h>
 #include <GraphicsFoundation/States/PipelineResourceSignature.h>
 #include <GraphicsFoundation/States/PipelineState.h>
-#include <Foundation/Algorithm/HashStream.h>
+#include <GraphicsFoundation/Utilities/DescriptorHash.h>
 
 namespace
 {

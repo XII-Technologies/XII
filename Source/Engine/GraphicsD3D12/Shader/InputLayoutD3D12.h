@@ -9,7 +9,6 @@ class XII_GRAPHICSD3D12_DLL xiiGALInputLayoutD3D12 final : public xiiGALInputLay
   XII_ADD_DYNAMIC_REFLECTION(xiiGALInputLayoutD3D12, xiiGALInputLayout);
 
 public:
-
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
