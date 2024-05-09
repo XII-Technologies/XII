@@ -492,7 +492,7 @@ void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer,
 
         // Schedule copy command using this command list.
         D3D11_BOX srcBox = {0, 0, 0, pSourceData.GetCount(), 1, 1};
-        m_pCommandList->CopySubresourceRegion(pD3D11TempBuffer, 0, uiDestinationOffset, 0, 0, pD3D11TempBuffer, 0, &srcBox);
+        pCommandList->CopySubresourceRegion(pDestinationBufferD3D11->GetBuffer(), 0, uiDestinationOffset, 0, 0, pD3D11TempBuffer, 0, &srcBox);
       }
       else
       {
@@ -704,7 +704,7 @@ void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTextu
 
     // Schedule copy command using this command list.
     D3D11_BOX srcBox = {0, 0, 0, uiWidth, uiHeight, uiDepth};
-    m_pCommandList->CopySubresourceRegion(pTextureD3D11->GetTexture(), dstSubResource, textureBox.m_vMin.x, textureBox.m_vMin.y, textureBox.m_vMin.z, pDXTempTexture, 0, &srcBox);
+    pCommandList->CopySubresourceRegion(pTextureD3D11->GetTexture(), dstSubResource, textureBox.m_vMin.x, textureBox.m_vMin.y, textureBox.m_vMin.z, pDXTempTexture, 0, &srcBox);
   }
   else
   {
