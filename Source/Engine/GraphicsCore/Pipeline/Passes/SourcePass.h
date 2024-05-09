@@ -2,6 +2,29 @@
 
 #include <GraphicsCore/Pipeline/RenderPipelinePass.h>
 
+struct xiiSourceFormat
+{
+  using StorageType = xiiUInt8;
+
+  enum Enum : StorageType
+  {
+    Color4Channel8BitNormalized_sRGB,
+    Color4Channel8BitNormalized,
+    Color4Channel16BitFloat,
+    Color4Channel32BitFloat,
+    Color3Channel11_11_10BitFloat,
+    Depth16Bit,
+    Depth24BitStencil8Bit,
+    Depth32BitFloat,
+
+    ENUM_COUNT,
+
+    Default = Color4Channel8BitNormalized_sRGB
+  };
+};
+
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiSourceFormat);
+
 class XII_GRAPHICSCORE_DLL xiiSourcePass : public xiiRenderPipelinePass
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiSourcePass, xiiRenderPipelinePass);
@@ -20,7 +43,7 @@ public:
 protected:
   xiiRenderPipelineNodeOutputPin m_PinOutput;
 
-  xiiEnum<xiiGALTextureFormat>   m_Format;
+  xiiEnum<xiiSourceFormat>       m_Format;
   xiiEnum<xiiGALMSAASampleCount> m_SampleCount;
   xiiColor                       m_ClearColor;
   bool                           m_bClear;

@@ -118,7 +118,7 @@ o
 		b %Active{1}
 		b %Clear{0}
 		Color %ClearColor{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
-		s %Format{"xiiGALTextureFormat::D16UNormalized"}
+		s %Format{"xiiSourceFormat::Depth16Bit"}
 		s %Name{""}
 		Vec2 %Node::Pos{f{0xA115F342,0xE893D743}}
 		Uuid %Output{u4{18145787413205851195,10498656058703515073}}
@@ -307,7 +307,7 @@ o
 		s %ParentTypeName{"xiiEnumBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiGALTextureFormat"}
+		s %TypeName{"xiiSourceFormat"}
 		u3 %TypeVersion{1}
 	}
 }
