@@ -17,12 +17,12 @@ xiiGPUResourcePool::xiiGPUResourcePool()
 {
   m_pDevice = xiiGALDevice::GetDefaultDevice();
 
-  m_GALDeviceEventSubscriptionID = m_pDevice->m_Events.AddEventHandler(xiiMakeDelegate(&xiiGPUResourcePool::GALDeviceEventHandler, this));
+  m_GALDeviceEventSubscriptionID = xiiGALDevice::s_Events.AddEventHandler(xiiMakeDelegate(&xiiGPUResourcePool::GALDeviceEventHandler, this));
 }
 
 xiiGPUResourcePool::~xiiGPUResourcePool()
 {
-  m_pDevice->m_Events.RemoveEventHandler(m_GALDeviceEventSubscriptionID);
+  xiiGALDevice::s_Events.RemoveEventHandler(m_GALDeviceEventSubscriptionID);
   if (!m_TexturesInUse.IsEmpty())
   {
     xiiLog::SeriousWarning("Destructing a GPU resource pool of which textures are still in use!");

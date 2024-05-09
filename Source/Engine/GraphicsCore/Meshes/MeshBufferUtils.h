@@ -2,7 +2,8 @@
 #pragma once
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsFoundation/Resources/ResourceFormats.h>
+
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 struct xiiMeshBufferResourceDescriptor;
 
