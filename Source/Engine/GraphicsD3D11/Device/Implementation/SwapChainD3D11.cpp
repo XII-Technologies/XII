@@ -9,8 +9,6 @@
 #include <GraphicsD3D11/Resources/TextureD3D11.h>
 #include <GraphicsD3D11/Resources/TextureViewD3D11.h>
 
-#include <GraphicsD3D11/Utilities/D3D11TypeConversions.h>
-
 #include <Foundation/Basics/Platform/Win/HResultUtils.h>
 
 #include <VersionHelpers.h>
@@ -52,7 +50,7 @@ xiiResult xiiGALSwapChainD3D11::DeInitPlatform()
     // Full screen swap chains must be switched to windowed mode before destruction.
     // See: https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Destroying
     BOOL bIsFullScreen = FALSE;
-    if (SUCCEEDED(m_pSwapChain->GetFullscreenState(&bIsFullScreen, nullptr)))
+    if (SUCCEEDED(m_pSwapChain->GetFullscreenState(&bIsFullScreen, nullptr)) && (bIsFullScreen == TRUE))
     {
       m_pSwapChain->SetFullscreenState(FALSE, nullptr);
     }
@@ -362,15 +360,15 @@ void xiiGALSwapChainD3D11::DestroyBackBufferInternal(xiiGALDeviceD3D11* pDeviceD
   }
 }
 
-void xiiGALSwapChainD3D11::AcquireNextRenderTarget(xiiGALDevice* pDevice)
+void xiiGALSwapChainD3D11::AcquireNextRenderTarget()
 {
 }
 
-void xiiGALSwapChainD3D11::Present(xiiGALDevice* pDevice)
+void xiiGALSwapChainD3D11::Present()
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");
 
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   if (!m_hActualBackBufferTexture.IsInvalidated())
   {
@@ -397,9 +395,9 @@ void xiiGALSwapChainD3D11::Present(xiiGALDevice* pDevice)
   m_pSwapChain->Present(uiSyncInterval, 0);
 }
 
-xiiResult xiiGALSwapChainD3D11::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
+xiiResult xiiGALSwapChainD3D11::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   if (newTransform != xiiGALSurfaceTransform::Optimal && newTransform != xiiGALSurfaceTransform::Identity)
   {

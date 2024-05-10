@@ -11,11 +11,11 @@ class XII_GRAPHICSD3D11_DLL xiiGALSwapChainD3D11 final : public xiiGALSwapChain
   XII_ADD_DYNAMIC_REFLECTION(xiiGALSwapChainD3D11, xiiGALSwapChain);
 
 public:
-  virtual void AcquireNextRenderTarget(xiiGALDevice* pDevice) override final;
+  virtual void AcquireNextRenderTarget() override final;
 
-  virtual void Present(xiiGALDevice* pDevice) override final;
+  virtual void Present() override final;
 
-  virtual xiiResult Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override final;
+  virtual xiiResult Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override final;
 
   virtual void SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode) override final;
 

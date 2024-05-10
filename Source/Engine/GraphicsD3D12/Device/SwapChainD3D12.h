@@ -4,14 +4,16 @@
 
 #include <GraphicsFoundation/Device/SwapChain.h>
 
+struct IDXGISwapChain3;
+
 class XII_GRAPHICSD3D12_DLL xiiGALSwapChainD3D12 final : public xiiGALSwapChain
 {
 public:
-  virtual void AcquireNextRenderTarget(xiiGALDevice* pDevice) override final;
+  virtual void AcquireNextRenderTarget() override final;
 
-  virtual void Present(xiiGALDevice* pDevice) override final;
+  virtual void Present() override final;
 
-  virtual xiiResult Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override final;
+  virtual xiiResult Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override final;
 
   virtual void SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode) override final;
 
@@ -32,11 +34,28 @@ protected:
 
   virtual xiiResult DeInitPlatform() override final;
 
-  xiiResult CreateBackBufferInternal(xiiGALDeviceD3D12* pDeviceD3D12);
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
-  void DestroyBackBufferInternal(xiiGALDeviceD3D12* pDeviceD3D12);
+  xiiResult CreateDXGISwapChain();
+
+  xiiResult UpdateSwapChain(bool bCreateNew);
+
+  xiiResult CreateBackBufferInternal(xiiGALDeviceD3D12* pDeviceD3D11);
+
+  void DestroyBackBufferInternal(xiiGALDeviceD3D12* pDeviceD3D11);
+
+  void WaitForFrame();
 
 protected:
+  IDXGISwapChain3* m_pDXGISwapChain3 = nullptr;
+
+  xiiHybridArray<xiiGALTextureHandle, 4U> m_BackBufferTextures;
+
+  xiiGALFullScreenModeDescription m_FullScreenMode;
+
+  HANDLE m_FrameLatencyWaitableObject = NULL;
+
+  xiiUInt32 m_uiMaximumFrameLatency = 0U;
 };
 
 #include <GraphicsD3D12/Device/Implementation/SwapChainD3D12_inl.h>
