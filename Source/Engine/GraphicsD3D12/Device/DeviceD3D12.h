@@ -30,13 +30,7 @@ public:
   ~xiiGALDeviceD3D12();
 
 public:
-  virtual xiiGALCommandQueue* GetGraphicsQueue() const override final;
-
-  virtual xiiGALCommandQueue* GetComputeQueue() const override final;
-
-  virtual xiiGALCommandQueue* GetTransferQueue() const override final;
-
-  virtual xiiGALCommandQueue* GetSparseBindingQueue() const override final;
+  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final;
 
   // Internal objects retrieval.
 
@@ -45,6 +39,8 @@ public:
   IDXGIFactory4* GetDXGIFactory() const;
 
   xiiMemoryAllocatorD3D12* GetD3D12Allocator() const;
+
+  xiiUInt32 GetCommandQueueIndex(xiiBitflags<xiiGALCommandQueueType> queueType) const;
 
   void ReportLiveGPUObjects();
 
@@ -55,7 +51,7 @@ protected:
   virtual xiiResult InitializePlatform() override final;
   virtual xiiResult ShutdownPlatform() override final;
 
-  virtual void CreateCommandQueuesPlatform() override final;
+  virtual xiiResult CreateCommandQueuesPlatform() override final;
 
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override final;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override final;
@@ -65,6 +61,9 @@ protected:
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
+
+  virtual xiiGALCommandQueue* CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description) override final;
+  virtual void                DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue) override final;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;
@@ -123,8 +122,6 @@ protected:
   virtual void WaitIdlePlatform() override final;
 
   virtual void FillCapabilitiesPlatform() override final;
-
-  void CreateCommandQueues();
 
 private:
   void                            GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel);

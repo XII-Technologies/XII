@@ -49,7 +49,7 @@ protected:
 protected:
   IDXGISwapChain3* m_pDXGISwapChain3 = nullptr;
 
-  xiiHybridArray<xiiGALTextureHandle, 4U> m_BackBufferTextures;
+  xiiHybridArray<xiiGALTextureHandle, 2U> m_BackBufferTextures;
 
   xiiGALFullScreenModeDescription m_FullScreenMode;
 

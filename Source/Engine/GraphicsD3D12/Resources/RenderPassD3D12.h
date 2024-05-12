@@ -9,7 +9,6 @@ class XII_GRAPHICSD3D12_DLL xiiGALRenderPassD3D12 final : public xiiGALRenderPas
   XII_ADD_DYNAMIC_REFLECTION(xiiGALRenderPassD3D12, xiiGALRenderPass);
 
 public:
-
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;

@@ -290,15 +290,55 @@ xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
   return XII_SUCCESS;
 }
 
-void xiiGALDeviceD3D12::CreateCommandQueuesPlatform()
+xiiResult xiiGALDeviceD3D12::CreateCommandQueuesPlatform()
 {
+  xiiUInt32 queueCountPerContext[XII_GAL_MAX_ADAPTER_QUEUE_COUNT] = {};
+
+  auto CreateCommandQueue = [&](xiiBitflags<xiiGALCommandQueueType> queueType, xiiStringView sName, xiiUInt32 uiAdapterId) {
+    const auto& queues = m_AdapterDescription.m_CommandQueueProperties;
+
+    for (xiiUInt32 i = 0, uiCount = queues.GetCount(); i < uiCount; ++i)
+    {
+      auto& currentQueue = queues[i];
+
+      if (queueCountPerContext[i] >= currentQueue.m_uiMaxDeviceContexts)
+        continue;
+
+      if ((currentQueue.m_Type & queueType) == queueType)
+      {
+        queueCountPerContext[i] += 1;
+
+        xiiUInt32 uiCommandQueueIndex = GetCommandQueueIndex(queueType);
+
+        xiiGALCommandQueueCreationDescription queueDescription   = {.m_QueueType = queueType};
+        xiiGALCommandQueueD3D12*              pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(CreateCommandQueuePlatform(queueDescription));
+        m_CommandQueues[uiCommandQueueIndex]                     = xiiUniquePtr<xiiGALCommandQueueD3D12>(pCommandQueueD3D12, &m_Allocator);
+
+        xiiStringBuilder sb;
+        sb.SetFormat("Command Queue ({}) - {}", uiCommandQueueIndex, sName);
+        m_CommandQueues[uiCommandQueueIndex]->SetDebugName(sb);
+
+        return true;
+      }
+    }
+    return false;
+  };
+
+  if (!CreateCommandQueue(xiiGALCommandQueueType::Graphics, "Default Graphics", m_Description.m_uiAdapterID))
+    return XII_FAILURE;
+
+  CreateCommandQueue(xiiGALCommandQueueType::Transfer, "Default Transfer", m_Description.m_uiAdapterID);
+  CreateCommandQueue(xiiGALCommandQueueType::Compute, "Default Compute", m_Description.m_uiAdapterID);
+  CreateCommandQueue(xiiGALCommandQueueType::SparseBinding, "Default Sparse Binding", m_Description.m_uiAdapterID);
+
+  return XII_FAILURE;
 }
 
 void xiiGALDeviceD3D12::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain)
 {
   if (pSwapChain)
   {
-    pSwapChain->AcquireNextRenderTarget(this);
+    pSwapChain->AcquireNextRenderTarget();
   }
 }
 
@@ -306,7 +346,7 @@ void xiiGALDeviceD3D12::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
 {
   if (pSwapChain)
   {
-    pSwapChain->Present(this);
+    pSwapChain->Present();
   }
 }
 
@@ -340,6 +380,27 @@ void xiiGALDeviceD3D12::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
   pSwapChainD3D12->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pSwapChainD3D12);
+}
+
+xiiGALCommandQueue* xiiGALDeviceD3D12::CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description)
+{
+  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D12, this, description);
+
+  if (pCommandQueueD3D12->InitPlatform().Succeeded())
+    return pCommandQueueD3D12;
+
+  XII_DELETE(&m_Allocator, pCommandQueueD3D12);
+
+  return pCommandQueueD3D12;
+}
+
+void xiiGALDeviceD3D12::DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue)
+{
+  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pCommandQueue);
+
+  pCommandQueueD3D12->DeInitPlatform().IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pCommandQueueD3D12);
 }
 
 xiiGALBlendState* xiiGALDeviceD3D12::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
@@ -1096,49 +1157,6 @@ void xiiGALDeviceD3D12::FillCapabilitiesPlatform()
   }
 }
 
-void xiiGALDeviceD3D12::CreateCommandQueues()
-{
-///\todo Create command queues.
-#if 0
-  m_ContextDescriptions.Clear();
-
-  auto AddContext = [&](Diligent::COMMAND_QUEUE_TYPE queueType, const char* szName, xiiUInt32 uiAdapterId) {
-    constexpr auto uiQueueMask = Diligent::COMMAND_QUEUE_TYPE_PRIMARY_MASK;
-
-    auto* pQueues = m_pDevice->GetAdapterInfo().Queues;
-
-    xiiUInt32 queueCountPerContext[XII_GAL_MAX_ADAPTER_QUEUE_COUNT] = {};
-
-    for (xiiUInt32 i = 0, uiCount = m_pDevice->GetAdapterInfo().NumQueues; i < uiCount; ++i)
-    {
-      auto& currentQueue = pQueues[i];
-
-      if (queueCountPerContext[i] >= currentQueue.MaxDeviceContexts)
-        continue;
-
-      if ((currentQueue.QueueType & uiQueueMask) == queueType)
-      {
-        queueCountPerContext[i] += 1;
-
-        Diligent::ImmediateContextCreateInfo contextDescription = {};
-        contextDescription.QueueId                              = static_cast<xiiUInt8>(i);
-        contextDescription.Name                                 = szName;
-        contextDescription.Priority                             = Diligent::QUEUE_PRIORITY_MEDIUM;
-
-        m_ContextDescriptions.PushBack(contextDescription);
-        return true;
-      }
-    }
-    return false;
-  };
-
-  AddContext(Diligent::COMMAND_QUEUE_TYPE_GRAPHICS, "Graphics Command Queue", m_Description.m_uiAdapterID);
-  AddContext(Diligent::COMMAND_QUEUE_TYPE_TRANSFER, "Transfer Command Queue", m_Description.m_uiAdapterID);
-  AddContext(Diligent::COMMAND_QUEUE_TYPE_COMPUTE, "Compute Command Queue", m_Description.m_uiAdapterID);
-  AddContext(Diligent::COMMAND_QUEUE_TYPE_SPARSE_BINDING, "Sparse Bindingn Command Queue", m_Description.m_uiAdapterID);
-#endif
-}
-
 void xiiGALDeviceD3D12::GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel)
 {
   IDXGIAdapter1* pDXGIAdapter = nullptr;
@@ -1243,6 +1261,11 @@ void xiiGALDeviceD3D12::EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, ID
       }
     }
   }
+}
+
+xiiGALCommandQueue* xiiGALDeviceD3D12::GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const
+{
+  return m_CommandQueues[GetCommandQueueIndex(queueType)].Borrow();
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_Device_Implementation_DeviceD3D12);

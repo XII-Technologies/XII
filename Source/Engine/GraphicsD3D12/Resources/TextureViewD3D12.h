@@ -9,7 +9,6 @@ class XII_GRAPHICSD3D12_DLL xiiGALTextureViewD3D12 final : public xiiGALTextureV
   XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureViewD3D12, xiiGALTextureView);
 
 public:
-
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;
