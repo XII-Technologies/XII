@@ -372,7 +372,7 @@ void xiiGALSwapChainD3D11::Present()
 
   if (!m_hActualBackBufferTexture.IsInvalidated())
   {
-    if (auto pQueue = pDeviceD3D11->GetGraphicsQueue())
+    if (auto pQueue = pDeviceD3D11->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics))
     {
       auto pCommandList = pQueue->BeginCommandList();
 
@@ -397,8 +397,6 @@ void xiiGALSwapChainD3D11::Present()
 
 xiiResult xiiGALSwapChainD3D11::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-
   if (newTransform != xiiGALSurfaceTransform::Optimal && newTransform != xiiGALSurfaceTransform::Identity)
   {
     xiiLog::Warning("The current pre-transform is unsupported by Direct3D swap chains. Use xiiGALSurfaceTransform::Optimal (recommended) or xiiGALSurfaceTransform::Identity.");

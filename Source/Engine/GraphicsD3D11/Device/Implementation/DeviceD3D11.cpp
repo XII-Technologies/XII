@@ -323,7 +323,7 @@ void xiiGALDeviceD3D11::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapCha
 {
   if (pSwapChain)
   {
-    pSwapChain->AcquireNextRenderTarget(this);
+    pSwapChain->AcquireNextRenderTarget();
   }
 }
 
@@ -331,7 +331,7 @@ void xiiGALDeviceD3D11::EndPipelinePlatform(xiiGALSwapChain* pSwapChain)
 {
   if (pSwapChain)
   {
-    pSwapChain->Present(this);
+    pSwapChain->Present();
   }
 }
 
@@ -367,6 +367,27 @@ void xiiGALDeviceD3D11::DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)
   pSwapChainD3D11->DeInitPlatform().IgnoreResult();
 
   XII_DELETE(&m_Allocator, pSwapChainD3D11);
+}
+
+xiiGALCommandQueue* xiiGALDeviceD3D11::CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description)
+{
+  xiiGALCommandQueueD3D11* pCommandQueueD3D11 = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, description);
+
+  if (pCommandQueueD3D11->InitPlatform().Succeeded())
+    return pCommandQueueD3D11;
+
+  XII_DELETE(&m_Allocator, pCommandQueueD3D11);
+
+  return pCommandQueueD3D11;
+}
+
+void xiiGALDeviceD3D11::DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue)
+{
+  xiiGALCommandQueueD3D11* pCommandQueueD3D11 = static_cast<xiiGALCommandQueueD3D11*>(pCommandQueue);
+
+  pCommandQueueD3D11->DeInitPlatform().IgnoreResult();
+
+  XII_DELETE(&m_Allocator, pCommandQueueD3D11);
 }
 
 xiiGALBlendState* xiiGALDeviceD3D11::CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description)
@@ -756,11 +777,11 @@ void xiiGALDeviceD3D11::WaitIdlePlatform()
   ///\todo Release stale resources.
 }
 
-void xiiGALDeviceD3D11::CreateCommandQueuesPlatform()
+xiiResult xiiGALDeviceD3D11::CreateCommandQueuesPlatform()
 {
   xiiUInt32 queueCountPerContext[XII_GAL_MAX_ADAPTER_QUEUE_COUNT] = {};
 
-  auto AddContext = [&](xiiBitflags<xiiGALCommandQueueType> queueType, xiiStringView sName, xiiUInt32 uiAdapterId) {
+  auto CreateCommandQueue = [&](xiiBitflags<xiiGALCommandQueueType> queueType, xiiStringView sName, xiiUInt32 uiAdapterId) {
     const auto& queues = m_AdapterDescription.m_CommandQueueProperties;
 
     for (xiiUInt32 i = 0, uiCount = queues.GetCount(); i < uiCount; ++i)
@@ -780,7 +801,7 @@ void xiiGALDeviceD3D11::CreateCommandQueuesPlatform()
         m_CommandQueues[uiCommandQueueIndex]                   = XII_NEW(&m_Allocator, xiiGALCommandQueueD3D11, this, queueDescription);
 
         xiiStringBuilder sb;
-        sb.SetFormat("Command Queue - {}", uiCommandQueueIndex);
+        sb.SetFormat("Command Queue ({}) - {}", sName, uiCommandQueueIndex);
         m_CommandQueues[uiCommandQueueIndex]->SetDebugName(sb);
 
         return true;
@@ -789,10 +810,14 @@ void xiiGALDeviceD3D11::CreateCommandQueuesPlatform()
     return false;
   };
 
-  AddContext(xiiGALCommandQueueType::Graphics, "Graphics Command Queue", m_Description.m_uiAdapterID);
-  AddContext(xiiGALCommandQueueType::Transfer, "Transfer Command Queue", m_Description.m_uiAdapterID);
-  AddContext(xiiGALCommandQueueType::Compute, "Compute Command Queue", m_Description.m_uiAdapterID);
-  AddContext(xiiGALCommandQueueType::SparseBinding, "Sparse Bindingn Command Queue", m_Description.m_uiAdapterID);
+  if (!CreateCommandQueue(xiiGALCommandQueueType::Graphics, "Graphics Command Queue", m_Description.m_uiAdapterID))
+    return XII_FAILURE;
+
+  CreateCommandQueue(xiiGALCommandQueueType::Transfer, "Transfer Command Queue", m_Description.m_uiAdapterID);
+  CreateCommandQueue(xiiGALCommandQueueType::Compute, "Compute Command Queue", m_Description.m_uiAdapterID);
+  CreateCommandQueue(xiiGALCommandQueueType::SparseBinding, "Sparse Bindingn Command Queue", m_Description.m_uiAdapterID);
+
+  return XII_SUCCESS;
 }
 
 void xiiGALDeviceD3D11::FillCapabilitiesPlatform()

@@ -52,7 +52,7 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   xiiGALTextureHandle hSceneColor = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
 
-  xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   SetupResources(renderViewContext, inputs, outputs);
   SetupPermutationVars(renderViewContext);

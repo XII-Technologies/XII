@@ -14,7 +14,14 @@ xiiGALCommandQueueD3D11::xiiGALCommandQueueD3D11(xiiGALDeviceD3D11* pDeviceD3D11
 {
 }
 
-xiiGALCommandQueueD3D11::~xiiGALCommandQueueD3D11()
+xiiGALCommandQueueD3D11::~xiiGALCommandQueueD3D11() = default;
+
+xiiResult xiiGALCommandQueueD3D11::InitPlatform()
+{
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALCommandQueueD3D11::DeInitPlatform()
 {
   m_SwapChainCommandListReferences.Clear();
 
@@ -25,6 +32,7 @@ xiiGALCommandQueueD3D11::~xiiGALCommandQueueD3D11()
     XII_DEFAULT_DELETE(pCommandList)
   }
   m_CommandLists.Clear();
+  return XII_SUCCESS;
 }
 
 void xiiGALCommandQueueD3D11::SetDebugNamePlatform(xiiStringView sName)

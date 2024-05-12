@@ -35,13 +35,7 @@ public:
   ~xiiGALDeviceD3D11();
 
 public:
-  virtual xiiGALCommandQueue* GetGraphicsQueue() const override final;
-
-  virtual xiiGALCommandQueue* GetComputeQueue() const override final;
-
-  virtual xiiGALCommandQueue* GetTransferQueue() const override final;
-
-  virtual xiiGALCommandQueue* GetSparseBindingQueue() const override final;
+  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final;
 
   // Internal objects retrieval.
 
@@ -78,6 +72,9 @@ protected:
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
+
+  virtual xiiGALCommandQueue* CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description) override final;
+  virtual void                DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue) override final;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;
@@ -135,7 +132,7 @@ protected:
 
   virtual void WaitIdlePlatform() override final;
 
-  virtual void CreateCommandQueuesPlatform() override final;
+  virtual xiiResult CreateCommandQueuesPlatform() override final;
 
   virtual void FillCapabilitiesPlatform() override final;
 

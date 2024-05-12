@@ -16,6 +16,16 @@ xiiGALCommandQueueNull::~xiiGALCommandQueueNull()
   m_pDefaultCommandList.Clear();
 }
 
+xiiResult xiiGALCommandQueueNull::InitPlatform()
+{
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALCommandQueueNull::DeInitPlatform()
+{
+  return XII_SUCCESS;
+}
+
 xiiGALCommandList* xiiGALCommandQueueNull::BeginCommandList(xiiStringView sScopeName)
 {
   return m_pDefaultCommandList.Borrow();

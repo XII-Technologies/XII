@@ -137,7 +137,7 @@ void xiiLSAOPass::Execute(const xiiRenderViewContext& renderViewContext, const x
   if (outputs[m_PinOutput.m_uiOutputIndex] == nullptr)
     return;
 
-  xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALRenderingSetup renderingSetup;
   xiiGALTextureHandle  tempTexture;
