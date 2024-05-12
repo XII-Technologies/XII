@@ -2,6 +2,7 @@
 
 #include <Core/System/Window.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <GraphicsD3D12/CommandEncoder/CommandQueueD3D12.h>
 #include <GraphicsD3D12/Device/DeviceD3D12.h>
 #include <GraphicsD3D12/Device/SwapChainD3D12.h>
 #include <GraphicsD3D12/Resources/TextureD3D12.h>
@@ -194,9 +195,8 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
     }
   }
 
-  // \todo Retrieve the command queue from the device.
-  ID3D12CommandQueue* pD3D12CommandQueue = nullptr;
-  IDXGISwapChain1*    pDXGISwapChain1    = nullptr;
+  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics));
+  IDXGISwapChain1*         pDXGISwapChain1    = nullptr;
   XII_GAL_D3D12_RELEASE(pDXGISwapChain1);
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
@@ -208,7 +208,7 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
   fullScreenDescription.Scaling                 = xiiD3D12TypeConversions::GetScalingMode(m_FullScreenMode.m_ScalingMode);
   fullScreenDescription.ScanlineOrdering        = xiiD3D12TypeConversions::GetScanLineOrder(m_FullScreenMode.m_ScanLineOrder);
 
-  HRESULT hResult = pDXGIFactory2->CreateSwapChainForHwnd(pD3D12CommandQueue, hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &pDXGISwapChain1);
+  HRESULT hResult = pDXGIFactory2->CreateSwapChainForHwnd(pCommandQueueD3D12->GetD3D12CommandQueue(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &pDXGISwapChain1);
   if (FAILED(hResult))
   {
     xiiLog::Error("Failed to create the DXGI Swap Chain: {}", xiiHRESULTtoString(hResult));
@@ -271,7 +271,51 @@ xiiResult xiiGALSwapChainD3D12::CreateDXGISwapChain()
 
 xiiResult xiiGALSwapChainD3D12::UpdateSwapChain(bool bCreateNew)
 {
-  return XII_SUCCESS;
+  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
+
+  // When switching to full screen mode, WM_SIZE is send to the window
+  // and Resize() is called before the new swap chain is created
+  if (!m_pDXGISwapChain3)
+    return XII_SUCCESS;
+
+  xiiGALCommandQueueD3D12* pCommandQueueD3D12 = static_cast<xiiGALCommandQueueD3D12*>(pDeviceD3D12->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics));
+  // Flush command queue?
+
+  {
+    // Reset command list swapchain references or ResizeBuffers will fail as the backbuffer is still referenced.
+    for (xiiUInt32 i = 0; i < m_BackBufferTextures.GetCount(); ++i)
+    {
+      xiiGALTextureD3D12* pTextureD3D12 = static_cast<xiiGALTextureD3D12*>(pDeviceD3D12->GetTexture(m_BackBufferTextures[i]));
+
+      pCommandQueueD3D12->UnbindTextureFromFramebuffer(pTextureD3D12);
+    }
+
+    DestroyBackBufferInternal(pDeviceD3D12);
+
+    // Need to flush pending deletion or ResizeBuffers will fail as the backbuffer is still referenced.
+    pDeviceD3D12->WaitIdle();
+
+    if (bCreateNew)
+    {
+      XII_GAL_D3D12_RELEASE(m_pDXGISwapChain3);
+
+      CreateDXGISwapChain().AssertSuccess();
+    }
+    else
+    {
+      DXGI_SWAP_CHAIN_DESC swapChainDescription;
+      memset(&swapChainDescription, 0, sizeof(swapChainDescription));
+      m_pDXGISwapChain3->GetDesc(&swapChainDescription);
+
+      HRESULT hResult = m_pDXGISwapChain3->ResizeBuffers(swapChainDescription.BufferCount, m_Description.m_Resolution.width, m_Description.m_Resolution.height, swapChainDescription.BufferDesc.Format, swapChainDescription.Flags);
+      if (FAILED(hResult))
+      {
+        xiiLog::Error("Failed to resize the DXGI swap chain: {}", xiiHRESULTtoString(hResult));
+        return XII_FAILURE;
+      }
+    }
+  }
+  return CreateBackBufferInternal(pDeviceD3D12);
 }
 
 xiiResult xiiGALSwapChainD3D12::CreateBackBufferInternal(xiiGALDeviceD3D12* pDeviceD3D12)
@@ -281,6 +325,12 @@ xiiResult xiiGALSwapChainD3D12::CreateBackBufferInternal(xiiGALDeviceD3D12* pDev
 
 void xiiGALSwapChainD3D12::DestroyBackBufferInternal(xiiGALDeviceD3D12* pDeviceD3D12)
 {
+  for (xiiUInt32 i = 0; i < m_BackBufferTextures.GetCount(); ++i)
+  {
+    pDeviceD3D12->DestroyTexture(m_BackBufferTextures[i]);
+    m_BackBufferTextures[i].Invalidate();
+  }
+  m_hBackBufferTexture.Invalidate();
 }
 
 void xiiGALSwapChainD3D12::WaitForFrame()
@@ -311,10 +361,66 @@ void xiiGALSwapChainD3D12::AcquireNextRenderTarget()
 
 void xiiGALSwapChainD3D12::Present()
 {
+  XII_PROFILE_SCOPE("PresentRenderTarget");
+
+  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
+
+#if 0
+  if (!m_hActualBackBufferTexture.IsInvalidated())
+  {
+    if (auto pQueue = pDeviceD3D12->GetGraphicsQueue())
+    {
+      auto pCommandList = pQueue->BeginCommandList();
+
+      pCommandList->CopyTexture(m_hBackBufferTexture, m_hActualBackBufferTexture);
+
+      pQueue->Submit(pCommandList);
+    }
+  }
+#endif
+
+  xiiUInt32 uiSyncInterval = 1U;
+#if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
+  switch (m_PresentMode)
+  {
+    case xiiGALPresentMode::Immediate:
+      uiSyncInterval = 0U;
+      break;
+    case xiiGALPresentMode::VSync:
+      uiSyncInterval = 1U;
+      break;
+  }
+#endif
+
+  // In contrast to MSDN sample, we wait for the frame as late as possible - right
+  // before presenting.
+  // https://docs.microsoft.com/en-us/windows/uwp/gaming/reduce-latency-with-dxgi-1-3-swap-chains#step-4-wait-before-rendering-each-frame
+  WaitForFrame();
+
+  HRESULT hResult = m_pDXGISwapChain3->Present(uiSyncInterval, 0);
+  if (FAILED(hResult))
+  {
+    xiiLog::Error("Failed to present to swap chain: {}", xiiHRESULTtoString(hResult));
+  }
 }
 
 xiiResult xiiGALSwapChainD3D12::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
 {
+  if (newTransform != xiiGALSurfaceTransform::Optimal && newTransform != xiiGALSurfaceTransform::Identity)
+  {
+    xiiLog::Warning("The current pre-transform is unsupported by Direct3D swap chains. Use xiiGALSurfaceTransform::Optimal (recommended) or xiiGALSurfaceTransform::Identity.");
+  }
+  newTransform = xiiGALSurfaceTransform::Optimal;
+
+  if (newSize.HasNonZeroArea() && (newSize.width != m_Description.m_Resolution.width || newSize.height != m_Description.m_Resolution.height || m_DesiredSurfaceTransform != newTransform))
+  {
+    m_Description.m_Resolution = newSize;
+
+    if (UpdateSwapChain(false).Succeeded())
+    {
+      xiiLog::Info("Resized swapchain to {}x{}.", m_Description.m_Resolution.width, m_Description.m_Resolution.height);
+    }
+  }
   return XII_SUCCESS;
 }
 
@@ -380,7 +486,7 @@ void xiiGALSwapChainD3D12::SetMaximumFrameLatency(xiiUInt32 uiMaxLatency)
 
     // Destroying the swap chain and creating a new one is the only reliable way to
     // change the maximum frame latency of a waitable swap chain.
-    UpdateSwapChain(true);
+    UpdateSwapChain(true).AssertSuccess();
   }
 }
 
