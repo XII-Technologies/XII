@@ -111,11 +111,7 @@ void xiiBakedProbesComponentManager::OnRenderEvent(const xiiRenderWorldRenderEve
       task->m_bHasNewData = false;
 
       xiiGALDevice*       pGALDevice       = xiiGALDevice::GetDefaultDevice();
-      xiiGALCommandQueue* pGALCommandQueue = pGALDevice->GetComputeQueue();
-      if (!pGALCommandQueue)
-      {
-        pGALCommandQueue = pGALDevice->GetGraphicsQueue();
-      }
+      xiiGALCommandQueue* pGALCommandQueue = pGALDevice->GetDefaultCommandQueue();
 
       xiiGALCommandList* pGALCommandList = pGALCommandQueue->BeginCommandList("BakingDebugViewUpdate");
 

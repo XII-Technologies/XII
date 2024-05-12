@@ -120,8 +120,9 @@ xiiRenderContext::xiiRenderContext()
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Retrive a command list that we record all commands in the render context with.
-  m_pCommandQueue = pDevice->GetGraphicsQueue();
+  m_pCommandQueue = pDevice->GetDefaultCommandQueue();
   m_pCommandList  = m_pCommandQueue->BeginCommandList();
+  // No commands to record, so we end the command list immediately.
   m_pCommandList->End();
 
   ResetContextState();

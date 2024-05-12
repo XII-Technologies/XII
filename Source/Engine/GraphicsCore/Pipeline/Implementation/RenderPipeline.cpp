@@ -1443,8 +1443,8 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
 
     // upload the image to the texture
     {
-      xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*"RasterizerDebugViewUpdate"*/);
-      auto                pCommandList     = pGALCommandQueue->BeginCommandList();
+      xiiGALCommandQueue* pGALCommandQueue = pDevice->GetDefaultCommandQueue();
+      auto                pCommandList     = pGALCommandQueue->BeginCommandList("RasterizerDebugViewUpdate");
 
       xiiBoundingBoxU32 destBox;
       destBox.m_vMin.SetZero();

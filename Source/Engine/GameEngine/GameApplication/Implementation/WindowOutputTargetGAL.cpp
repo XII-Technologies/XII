@@ -51,7 +51,7 @@ void xiiWindowOutputTargetGAL::CreateSwapchain(const xiiGALSwapChainCreationDesc
     auto* pSwapchain = pDevice->GetSwapChain(m_hSwapChain);
 
     pSwapchain->SetPresentMode(m_PresentMode);
-    pSwapchain->Resize(pDevice, m_Size).IgnoreResult();
+    pSwapchain->Resize(m_Size).IgnoreResult();
 
     if (bSwapChainExisted && m_OnSwapChainChanged.IsValid())
     {
@@ -132,9 +132,9 @@ xiiResult xiiWindowOutputTargetGAL::CaptureImage(xiiImage& out_image)
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  auto pCommandQueue = pDevice->GetGraphicsQueue(/*"CaptureImage"*/);
+  auto pCommandQueue = pDevice->GetDefaultCommandQueue();
 
-  auto pGALCommandList = pCommandQueue->BeginCommandList();
+  auto pGALCommandList = pCommandQueue->BeginCommandList("CaptureImage");
 
   const xiiGALSwapChain* pSwapChain  = pDevice->GetSwapChain(m_hSwapChain);
   xiiGALTextureHandle    hBackbuffer = pSwapChain ? pSwapChain->GetBackBufferTexture() : xiiGALTextureHandle();

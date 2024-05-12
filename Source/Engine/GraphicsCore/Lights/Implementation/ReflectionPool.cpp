@@ -304,7 +304,7 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  auto                                   pGALCommandQueue = pDevice->GetGraphicsQueue();
+  auto                                   pGALCommandQueue = pDevice->GetDefaultCommandQueue();
   xiiHybridArray<xiiGALTextureHandle, 4> atlasToClear;
 
   {

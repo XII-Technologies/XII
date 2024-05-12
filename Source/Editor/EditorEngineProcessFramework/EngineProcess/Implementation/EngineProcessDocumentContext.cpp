@@ -448,7 +448,7 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
 
       // Download image
       {
-        auto pGALCommandQueue = xiiGALDevice::GetDefaultDevice()->GetGraphicsQueue();
+        auto pGALCommandQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue();
 
         auto pGALCommandList = pGALCommandQueue->BeginCommandList("Thumbnail Readback");
 

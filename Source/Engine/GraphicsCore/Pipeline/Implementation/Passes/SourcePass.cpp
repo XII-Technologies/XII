@@ -256,7 +256,7 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     clearValue.m_ClearColor    = m_ClearColor;
   }
 
-  if (auto pGraphicsQueue = pDevice->GetGraphicsQueue())
+  if (auto pGraphicsQueue = pDevice->GetDefaultCommandQueue())
   {
     auto pCommandList = pGraphicsQueue->BeginCommandList(GetName());
     pCommandList->BeginRenderPass(renderPassDescription);
