@@ -272,7 +272,10 @@ xiiResult xiiGALDeviceD3D11::ShutdownPlatform()
 {
   for (xiiUInt8 i = 0; i < XII_ARRAY_SIZE(m_CommandQueues); ++i)
   {
-    m_CommandQueues[i].Clear();
+    if (m_CommandQueues[i] == nullptr)
+      continue;
+
+    DestroyCommandQueuePlatform(m_CommandQueues[i].Release());
   }
 
   for (xiiUInt32 type = 0; type < TemporaryResourceType::ENUM_COUNT; ++type)

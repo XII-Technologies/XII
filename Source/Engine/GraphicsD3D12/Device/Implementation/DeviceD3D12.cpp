@@ -277,7 +277,10 @@ xiiResult xiiGALDeviceD3D12::ShutdownPlatform()
 {
   for (xiiUInt8 i = 0; i < XII_ARRAY_SIZE(m_CommandQueues); ++i)
   {
-    m_CommandQueues[i].Clear();
+    if (m_CommandQueues[i] == nullptr)
+      continue;
+
+    DestroyCommandQueuePlatform(m_CommandQueues[i].Release());
   }
 
   XII_GAL_D3D12_RELEASE(m_pD3D12Debug);
