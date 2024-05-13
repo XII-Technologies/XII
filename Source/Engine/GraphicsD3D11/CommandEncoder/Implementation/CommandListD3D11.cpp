@@ -457,7 +457,6 @@ void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer,
   XII_CHECK_ALIGNMENT_16(pSourceData.GetPtr());
 
   xiiGALDeviceD3D11* pDeviceD3D11            = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-  auto               pCommandList            = pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
   auto               pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
   XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
@@ -482,6 +481,8 @@ void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer,
     {
       if (ID3D11Resource* pD3D11TempBuffer = pDeviceD3D11->FindTemporaryBuffer(pSourceData.GetCount()))
       {
+        auto pCommandList = pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
+
         D3D11_MAPPED_SUBRESOURCE MapResult;
         HRESULT                  hRes = pCommandList->Map(pD3D11TempBuffer, 0, D3D11_MAP_WRITE, 0, &MapResult);
         XII_ASSERT_DEV(SUCCEEDED(hRes), "Implementation error");
@@ -492,7 +493,7 @@ void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer,
 
         // Schedule copy command using this command list.
         D3D11_BOX srcBox = {0, 0, 0, pSourceData.GetCount(), 1, 1};
-        pCommandList->CopySubresourceRegion(pDestinationBufferD3D11->GetBuffer(), 0, uiDestinationOffset, 0, 0, pD3D11TempBuffer, 0, &srcBox);
+        m_pCommandList->CopySubresourceRegion(pDestinationBufferD3D11->GetBuffer(), 0, uiDestinationOffset, 0, 0, pD3D11TempBuffer, 0, &srcBox);
       }
       else
       {
@@ -501,7 +502,8 @@ void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer,
     }
     else
     {
-      D3D11_MAP mapType = (mapFlags == xiiGALMapFlags::Discard) ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE;
+      D3D11_MAP mapType      = (mapFlags == xiiGALMapFlags::Discard) ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE;
+      auto      pCommandList = (mapFlags == xiiGALMapFlags::Discard) ? m_pCommandList : pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
 
       D3D11_MAPPED_SUBRESOURCE mapResult;
       if (SUCCEEDED(pCommandList->Map(pDestinationBufferD3D11->GetBuffer(), 0, mapType, 0, &mapResult)))
