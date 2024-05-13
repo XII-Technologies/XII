@@ -178,7 +178,7 @@ void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, 
   auto          pIndexBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndexBuffer);
   ID3D11Buffer* pD3D11IndexBuffer = pIndexBufferD3D11 ? pIndexBufferD3D11->GetBuffer() : nullptr;
 
-  if (pD3D11IndexBuffer != m_pCommittedIndexBuffer && m_uiCommittedIndexDataStartOffset != uiByteOffset)
+  if (pD3D11IndexBuffer != m_pCommittedIndexBuffer || m_uiCommittedIndexDataStartOffset != uiByteOffset)
   {
     m_pCommittedIndexBuffer           = pD3D11IndexBuffer;
     m_CommittedIndexBufferFormat      = DXGI_FORMAT_UNKNOWN;
@@ -469,11 +469,11 @@ void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer,
     XII_ASSERT_DEV(uiDestinationOffset == 0 && pSourceData.GetCount() == bufferDescription.m_uiSize, "Constant buffers can't be updated partially (and we don't check for DX11.1)!");
 
     D3D11_MAPPED_SUBRESOURCE mapResult;
-    if (SUCCEEDED(pCommandList->Map(pDestinationBufferD3D11->GetBuffer(), 0U, D3D11_MAP_WRITE_DISCARD, 0U, &mapResult)))
+    if (SUCCEEDED(m_pCommandList->Map(pDestinationBufferD3D11->GetBuffer(), 0U, D3D11_MAP_WRITE_DISCARD, 0U, &mapResult)))
     {
       memcpy(mapResult.pData, pSourceData.GetPtr(), pSourceData.GetCount());
 
-      pCommandList->Unmap(pDestinationBufferD3D11->GetBuffer(), 0);
+      m_pCommandList->Unmap(pDestinationBufferD3D11->GetBuffer(), 0);
     }
   }
   else
