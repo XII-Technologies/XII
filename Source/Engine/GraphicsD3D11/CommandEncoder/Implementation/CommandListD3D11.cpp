@@ -706,7 +706,7 @@ void xiiGALCommandListD3D11::UpdateTextureExtendedPlatform(xiiGALTexture* pTextu
 
     // Schedule copy command using this command list.
     D3D11_BOX srcBox = {0, 0, 0, uiWidth, uiHeight, uiDepth};
-    pCommandList->CopySubresourceRegion(pTextureD3D11->GetTexture(), dstSubResource, textureBox.m_vMin.x, textureBox.m_vMin.y, textureBox.m_vMin.z, pDXTempTexture, 0, &srcBox);
+    m_pCommandList->CopySubresourceRegion(pTextureD3D11->GetTexture(), dstSubResource, textureBox.m_vMin.x, textureBox.m_vMin.y, textureBox.m_vMin.z, pDXTempTexture, 0, &srcBox);
   }
   else
   {

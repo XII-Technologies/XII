@@ -43,7 +43,17 @@ xiiResult xiiGALSwapChainD3D11::DeInitPlatform()
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
+  // Reset command list swapchain references or ResizeBuffers will fail as the backbuffer is still referenced.
+  pDeviceD3D11->ResetCommandQueuesSwapChainReferences();
+
   DestroyBackBufferInternal(pDeviceD3D11);
+
+  // Need to flush pending deletion or ResizeBuffers will fail as the backbuffer is still referenced.
+  pDeviceD3D11->FlushPendingObjects();
+
+  // Call context flush to release resources.
+  pDeviceD3D11->GetImmediateContext()->ClearState();
+  pDeviceD3D11->GetImmediateContext()->Flush();
 
   if (m_pSwapChain)
   {
@@ -62,10 +72,6 @@ xiiResult xiiGALSwapChainD3D11::DeInitPlatform()
     XII_GAL_D3D11_RELEASE(m_pSwapChain);
 
     m_Description.m_pWindow->RemoveReference();
-
-    // Call context flush to release resources.
-    pDeviceD3D11->GetImmediateContext()->ClearState();
-    pDeviceD3D11->GetImmediateContext()->Flush();
   }
 
   return XII_SUCCESS;
@@ -191,7 +197,14 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
   HRESULT hResult = pDXGIFactory->CreateSwapChainForHwnd(pDeviceD3D11->GetD3D11Device(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &m_pSwapChain);
   if (FAILED(hResult))
   {
-    xiiLog::Error("Failed to create the DXGI Swap Chain: {}", xiiHRESULTtoString(hResult));
+    if (hResult == E_ACCESSDENIED)
+    {
+      xiiLog::Error("Failed to create the DXGI Swap Chain: {}. This may occur when the old swap chain is still in use. Ensure that all resources referencing the swap chain were destroyed, keeping in mind the deferred destruction that applies with FLIP model swap chains.", xiiHRESULTtoString(hResult));
+    }
+    else
+    {
+      xiiLog::Error("Failed to create the DXGI Swap Chain: {}", xiiHRESULTtoString(hResult));
+    }
     return XII_FAILURE;
   }
 
