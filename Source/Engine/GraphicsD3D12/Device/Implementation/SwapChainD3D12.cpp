@@ -43,13 +43,13 @@ xiiResult xiiGALSwapChainD3D12::DeInitPlatform()
     // Full screen swap chains must be switched to windowed mode before destruction.
     // See: https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Destroying
     BOOL bIsFullScreen = FALSE;
-    if (SUCCEEDED(m_pDXGISwapChain3->GetFullscreenState(&bIsFullScreen, nullptr)) && (bIsFullScreen == TRUE))
-    {
-      m_pDXGISwapChain3->SetFullscreenState(FALSE, nullptr);
-    }
-    else
+    if (FAILED(m_pDXGISwapChain3->GetFullscreenState(&bIsFullScreen, nullptr)))
     {
       xiiLog::Error("Failed to query swap chain full screen state.");
+    }
+    if (bIsFullScreen == TRUE)
+    {
+      m_pDXGISwapChain3->SetFullscreenState(FALSE, nullptr);
     }
 
     XII_GAL_D3D12_RELEASE(m_pDXGISwapChain3);
