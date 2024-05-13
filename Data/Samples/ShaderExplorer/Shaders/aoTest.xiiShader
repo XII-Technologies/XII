@@ -3,6 +3,7 @@
 [PERMUTATIONS]
 
 [RENDERSTATE]
+
 DepthEnable = false
 CullMode = CullMode_None
 

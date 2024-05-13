@@ -50,6 +50,9 @@ void xiiGALCommandQueueD3D11::SetDebugNamePlatform(xiiStringView sName)
 xiiGALCommandList* xiiGALCommandQueueD3D11::BeginCommandList(xiiStringView sScopeName)
 {
   // Try to find a command list that has been reset.
+  // TODO: We want to store resetted command lists at the front of the queue.
+  // Hence, the moment we encounter a command list that has not been reset, we establish that there are no other command lists
+  // to search.
   for (xiiUInt32 i = 0; i < m_CommandLists.GetCount(); ++i)
   {
     auto pCommandList = m_CommandLists[i];
