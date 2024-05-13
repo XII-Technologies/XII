@@ -152,7 +152,7 @@ xiiApplication::Execution xiiGraphicsExplorerWindowApp::Run()
 
     m_pDevice->BeginPipeline("GraphicsExplorer", m_hSwapChain);
 
-    auto pGraphicsQueue = m_pDevice->GetGraphicsQueue();
+    auto pGraphicsQueue = m_pDevice->GetDefaultCommandQueue();
 
     if (auto pCommandList = pGraphicsQueue->BeginCommandList())
     {
@@ -414,7 +414,7 @@ void xiiGraphicsExplorerWindowApp::UpdateSwapChain()
 
     if (pSwapChain->GetCurrentSize() != currentSize)
     {
-      pSwapChain->Resize(m_pDevice, currentSize).IgnoreResult();
+      pSwapChain->Resize(currentSize).IgnoreResult();
     }
   }
 

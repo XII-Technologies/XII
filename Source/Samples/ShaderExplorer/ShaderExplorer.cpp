@@ -420,7 +420,7 @@ public:
 
       if (pSwapChain->GetCurrentSize() != currentSize)
       {
-        pSwapChain->Resize(m_pDevice, currentSize).IgnoreResult();
+        pSwapChain->Resize(currentSize).IgnoreResult();
       }
     }
 
