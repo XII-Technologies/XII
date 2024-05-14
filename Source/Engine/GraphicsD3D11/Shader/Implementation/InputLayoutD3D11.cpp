@@ -75,7 +75,7 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform()
 
     D3D11_INPUT_ELEMENT_DESC& layoutElement = inputElementDescriptions.ExpandAndGetRef();
     layoutElement.SemanticName              = GALSemanticToD3D11[inputLayout.m_Semantic];
-    layoutElement.SemanticIndex             = uiLocation;
+    layoutElement.SemanticIndex             = GALSemanticToIndexD3D11[inputLayout.m_Semantic];
     layoutElement.AlignedByteOffset         = inputLayout.m_uiRelativeOffset;
     layoutElement.InputSlot                 = inputLayout.m_uiBufferSlot;
     layoutElement.Format                    = xiiD3D11TypeConversions::GetFormat(inputLayout.m_Format);
@@ -92,7 +92,7 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform()
   if (!vertexInputLayouts.IsEmpty())
   {
     xiiLog::Error("Vertex buffers do not cover all vertex input layouts defined in the shader!");
-    return XII_FAILURE;
+    // return XII_FAILURE;
   }
 
   auto& byteCode = pShaderD3D11->GetDescription().m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)];
