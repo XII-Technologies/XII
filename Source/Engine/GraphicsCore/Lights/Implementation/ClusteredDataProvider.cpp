@@ -88,6 +88,9 @@ xiiClusteredDataGPU::xiiClusteredDataGPU()
     desc.m_AddressU           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
     desc.m_AddressV           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
     desc.m_AddressW           = xiiTextureUtils::GALTextureAddressMode(xiiImageAddressMode::Clamp);
+    desc.m_MinFilter          = xiiGALFilterType::Linear;
+    desc.m_MagFilter          = xiiGALFilterType::Linear;
+    desc.m_MipFilter          = xiiGALFilterType::Linear;
     desc.m_ComparisonFunction = xiiGALComparisonFunction::Never;
     desc.m_BorderColor        = xiiColor::Black;
     desc.m_fMipLODBias        = 0.0f;

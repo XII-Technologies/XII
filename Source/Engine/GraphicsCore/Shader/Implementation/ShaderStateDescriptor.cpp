@@ -438,12 +438,12 @@ xiiResult xiiShaderStateResourceDescriptor::Parse(xiiStringView sSource)
 
   // Retrieve Depth-Stencil State
   {
-    m_DepthStencilDesc.m_bDepthEnable       = GetBoolStateVariable(VariableValues, "DepthEnable", m_DepthStencilDesc.m_bDepthEnable);
-    m_DepthStencilDesc.m_bDepthWriteEnable  = GetBoolStateVariable(VariableValues, "DepthWriteEnable", m_DepthStencilDesc.m_bDepthWriteEnable);
-    m_DepthStencilDesc.m_bDepthWriteEnable  = (xiiGALComparisonFunction::Enum)GetEnumStateVariable(VariableValues, StateValuesComparisonFunction, "ComparisonDepthFunction", m_DepthStencilDesc.m_ComparisonDepthFunction);
-    m_DepthStencilDesc.m_bStencilEnable     = GetBoolStateVariable(VariableValues, "StencilEnable", m_DepthStencilDesc.m_bStencilEnable);
-    m_DepthStencilDesc.m_uiStencilReadMask  = static_cast<xiiUInt8>(GetIntStateVariable(VariableValues, "StencilReadMask", m_DepthStencilDesc.m_uiStencilReadMask));
-    m_DepthStencilDesc.m_uiStencilWriteMask = static_cast<xiiUInt8>(GetIntStateVariable(VariableValues, "StencilWriteMask", m_DepthStencilDesc.m_uiStencilWriteMask));
+    m_DepthStencilDesc.m_bDepthEnable            = GetBoolStateVariable(VariableValues, "DepthEnable", m_DepthStencilDesc.m_bDepthEnable);
+    m_DepthStencilDesc.m_bDepthWriteEnable       = GetBoolStateVariable(VariableValues, "DepthWriteEnable", m_DepthStencilDesc.m_bDepthWriteEnable);
+    m_DepthStencilDesc.m_ComparisonDepthFunction = (xiiGALComparisonFunction::Enum)GetEnumStateVariable(VariableValues, StateValuesComparisonFunction, "ComparisonDepthFunction", m_DepthStencilDesc.m_ComparisonDepthFunction);
+    m_DepthStencilDesc.m_bStencilEnable          = GetBoolStateVariable(VariableValues, "StencilEnable", m_DepthStencilDesc.m_bStencilEnable);
+    m_DepthStencilDesc.m_uiStencilReadMask       = static_cast<xiiUInt8>(GetIntStateVariable(VariableValues, "StencilReadMask", m_DepthStencilDesc.m_uiStencilReadMask));
+    m_DepthStencilDesc.m_uiStencilWriteMask      = static_cast<xiiUInt8>(GetIntStateVariable(VariableValues, "StencilWriteMask", m_DepthStencilDesc.m_uiStencilWriteMask));
 
     m_DepthStencilDesc.m_FrontFace.m_StencilFailOperation      = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "FrontFaceStencilFailOperation", m_DepthStencilDesc.m_FrontFace.m_StencilFailOperation);
     m_DepthStencilDesc.m_FrontFace.m_StencilDepthFailOperation = (xiiGALStencilOperation::Enum)GetEnumStateVariable(VariableValues, StateValuesStencilOperation, "FrontFaceStencilDepthFailOperation", m_DepthStencilDesc.m_FrontFace.m_StencilDepthFailOperation);

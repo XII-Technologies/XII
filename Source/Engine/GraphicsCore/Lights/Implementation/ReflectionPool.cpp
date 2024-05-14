@@ -353,11 +353,6 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
 
           xiiGALTextureViewHandle hRenderTarget = pDevice->CreateTextureView(desc);
 
-          xiiGALRenderingSetup renderingSetup;
-          renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hRenderTarget);
-          renderingSetup.m_ClearColor              = xiiColor(0, 0, 0, 1);
-          renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
-
           pGALCommandList->ClearRenderTargetView(hRenderTarget, xiiColor::Black);
         }
       }
