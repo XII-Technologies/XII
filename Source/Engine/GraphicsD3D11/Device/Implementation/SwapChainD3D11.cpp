@@ -48,9 +48,6 @@ xiiResult xiiGALSwapChainD3D11::DeInitPlatform()
 
   DestroyBackBufferInternal(pDeviceD3D11);
 
-  // Need to flush pending deletion or ResizeBuffers will fail as the backbuffer is still referenced.
-  pDeviceD3D11->FlushPendingObjects();
-
   // Call context flush to release resources.
   pDeviceD3D11->GetImmediateContext()->ClearState();
   pDeviceD3D11->GetImmediateContext()->Flush();
