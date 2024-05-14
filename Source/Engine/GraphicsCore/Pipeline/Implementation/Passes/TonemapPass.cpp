@@ -69,7 +69,7 @@ bool xiiTonemapPass::GetRenderTargetDescriptions(const xiiView& view, const xiiA
   auto pColorInput = inputs[m_PinColorInput.m_uiInputIndex];
   if (pColorInput != nullptr)
   {
-    if (const xiiGALTexture* pTexture = pDevice->GetTexture(renderTargets.m_hRTs[0]))
+    if (const xiiGALTexture* pTexture = pDevice->GetTextureView(renderTargets.m_hRTs[0])->GetTexture())
     {
       const xiiGALTextureCreationDescription& desc = pTexture->GetDescription();
 #if 0

@@ -12,7 +12,7 @@ public:
   xiiTargetPass(xiiStringView sName = "TargetPass");
   ~xiiTargetPass();
 
-  const xiiGALTextureHandle* GetTextureHandle(const xiiGALRenderTargets& renderTargets, const xiiRenderPipelineNodePin* pPin);
+  const xiiGALTextureViewHandle* GetTextureViewHandle(const xiiGALRenderTargets& renderTargets, const xiiRenderPipelineNodePin* pPin);
 
   virtual bool GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;
   virtual void Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs) override;

@@ -361,6 +361,8 @@ void xiiReflectionProbeUpdater::ResetProbeUpdateInfo(xiiUInt32 uiInfo)
 
 void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& step, ProbeUpdateInfo& updateInfo)
 {
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
   xiiVec3 vForward[6] = {
     xiiVec3(1.0f, 0.0f, 0.0f),
     xiiVec3(-1.0f, 0.0f, 0.0f),
@@ -405,11 +407,11 @@ void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& ste
     xiiGALRenderTargets renderTargets;
     if (step.m_UpdateStep == UpdateStep::Filter)
     {
-      renderTargets.m_hRTs[0] = updateInfo.m_TargetSlot.m_hSpecularOutputTexture;
+      renderTargets.m_hRTs[0] = pDevice->GetTexture(updateInfo.m_TargetSlot.m_hSpecularOutputTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
 
       if (updateInfo.m_flags.IsSet(xiiReflectionProbeUpdaterFlags::SkyLight))
       {
-        renderTargets.m_hRTs[2] = updateInfo.m_TargetSlot.m_hIrradianceOutputTexture;
+        renderTargets.m_hRTs[2] = pDevice->GetTexture(updateInfo.m_TargetSlot.m_hIrradianceOutputTexture)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
       }
       pView->SetRenderPassProperty("ReflectionFilterPass", "Intensity", updateInfo.m_desc.m_fIntensity);
       pView->SetRenderPassProperty("ReflectionFilterPass", "Saturation", updateInfo.m_desc.m_fSaturation);
@@ -434,7 +436,7 @@ void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& ste
     }
     else
     {
-      renderTargets.m_hRTs[0] = updateInfo.m_hCubemap;
+      renderTargets.m_hRTs[0] = updateInfo.m_hCubemapProxies[uiFaceIndex];
     }
     pView->SetRenderTargets(renderTargets);
 

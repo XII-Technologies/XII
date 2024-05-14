@@ -31,7 +31,7 @@ xiiTargetPass::xiiTargetPass(xiiStringView sName) :
 
 xiiTargetPass::~xiiTargetPass() = default;
 
-const xiiGALTextureHandle* xiiTargetPass::GetTextureHandle(const xiiGALRenderTargets& renderTargets, const xiiRenderPipelineNodePin* pPin)
+const xiiGALTextureViewHandle* xiiTargetPass::GetTextureViewHandle(const xiiGALRenderTargets& renderTargets, const xiiRenderPipelineNodePin* pPin)
 {
   // auto inputs = GetInputPins();
   if (pPin->m_pParent != this)
@@ -40,7 +40,6 @@ const xiiGALTextureHandle* xiiTargetPass::GetTextureHandle(const xiiGALRenderTar
     return nullptr;
   }
 
-  xiiGALTextureHandle hTarget;
   if (pPin->m_uiInputIndex == 8)
   {
     return &renderTargets.m_hDSTarget;
@@ -85,14 +84,14 @@ bool xiiTargetPass::VerifyInput(const xiiView& view, const xiiArrayPtr<xiiGALTex
   const xiiRenderPipelineNodePin* pPin = GetPinByName(sPinName);
   if (inputs[pPin->m_uiInputIndex])
   {
-    const xiiGALTextureHandle* pHandle = GetTextureHandle(view.GetActiveRenderTargets(), pPin);
+    const xiiGALTextureViewHandle* pHandle = GetTextureViewHandle(view.GetActiveRenderTargets(), pPin);
     if (pHandle)
     {
-      const xiiGALTexture* pTexture = pDevice->GetTexture(*pHandle);
-      if (pTexture)
+      const xiiGALTextureView* pTextureView = pDevice->GetTextureView(*pHandle);
+      if (pTextureView)
       {
         // TODO: Need a more sophisticated check here what is considered 'matching'
-        // if (inputs[pPin->m_uiInputIndex]->CalculateHash() != pTexture->GetDescription().CalculateHash())
+        // if (inputs[pPin->m_uiInputIndex]->CalculateHash() != pTextureView->GetDescription().CalculateHash())
         //  return false;
       }
     }

@@ -10,8 +10,8 @@ struct XII_GRAPHICSCORE_DLL xiiGALRenderTargets
   bool operator==(const xiiGALRenderTargets& other) const;
   bool operator!=(const xiiGALRenderTargets& other) const;
 
-  xiiGALTextureHandle m_hRTs[XII_GAL_MAX_RENDERTARGET_COUNT];
-  xiiGALTextureHandle m_hDSTarget;
+  xiiGALTextureViewHandle m_hRTs[XII_GAL_MAX_RENDERTARGET_COUNT];
+  xiiGALTextureViewHandle m_hDSTarget;
 };
 
 // \brief This class can be used to construct render target setups on the stack.

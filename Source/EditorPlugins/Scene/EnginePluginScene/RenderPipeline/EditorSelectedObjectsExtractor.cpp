@@ -126,6 +126,8 @@ void xiiEditorSelectedObjectsExtractor::CreateRenderTargetView(const xiiView& vi
 {
   XII_ASSERT_DEV(m_hRenderTargetView.IsInvalidated(), "Render target view is already created");
 
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
   xiiResourceLock<xiiRenderToTexture2DResource> pRenderTarget(m_hRenderTarget, xiiResourceAcquireMode::BlockTillLoaded);
 
   xiiStringBuilder name("EditorCameraRT");
@@ -144,7 +146,7 @@ void xiiEditorSelectedObjectsExtractor::CreateRenderTargetView(const xiiView& vi
   m_RenderTargetCamera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovY, 45, 0.1f, 100.0f);
 
   xiiGALRenderTargets renderTargets;
-  renderTargets.m_hRTs[0] = pRenderTarget->GetGALTexture();
+  renderTargets.m_hRTs[0] = pDevice->GetTexture(pRenderTarget->GetGALTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
   pRenderTargetView->SetRenderTargets(renderTargets);
 
   const float resX = (float)pRenderTarget->GetWidth();

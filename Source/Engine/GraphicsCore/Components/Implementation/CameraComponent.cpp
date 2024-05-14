@@ -9,6 +9,7 @@
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
+#include <GraphicsFoundation/Device/Device.h>
 
 xiiCameraComponentManager::xiiCameraComponentManager(xiiWorld* pWorld) :
   xiiComponentManager<xiiCameraComponent, xiiBlockStorageType::Compact>(pWorld)
@@ -647,6 +648,8 @@ void xiiCameraComponent::ActivateRenderToTexture()
 
   XII_ASSERT_DEV(m_hRenderTargetView.IsInvalidated(), "Render target view is already created");
 
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
   xiiStringBuilder name;
   name.SetFormat("Camera RT: {0}", GetOwner()->GetName());
 
@@ -661,7 +664,7 @@ void xiiCameraComponent::ActivateRenderToTexture()
   pRenderTarget->m_ResourceEvents.AddEventHandler(xiiMakeDelegate(&xiiCameraComponent::ResourceChangeEventHandler, this));
 
   xiiGALRenderTargets renderTargets;
-  renderTargets.m_hRTs[0] = pRenderTarget->GetGALTexture();
+  renderTargets.m_hRTs[0] = pDevice->GetTexture(pRenderTarget->GetGALTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
   pRenderTargetView->SetRenderTargets(renderTargets);
 
   const float maxSizeX = 1.0f - m_vRenderTargetRectOffset.x;

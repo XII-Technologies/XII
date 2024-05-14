@@ -114,8 +114,8 @@ xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiEnum<xiiGALSam
 
 
   xiiGALRenderTargets renderTargets;
-  renderTargets.m_hRTs[0]   = m_hColorRT;
-  renderTargets.m_hDSTarget = m_hDepthRT;
+  renderTargets.m_hRTs[0]   = pDevice->GetTexture(m_hColorRT)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+  renderTargets.m_hDSTarget = pDevice->GetTexture(m_hDepthRT)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
   pView->SetRenderTargets(renderTargets);
 
   pView->SetViewport(xiiRectFloat((float)m_Info.m_vEyeRenderTargetSize.width, (float)m_Info.m_vEyeRenderTargetSize.height));
