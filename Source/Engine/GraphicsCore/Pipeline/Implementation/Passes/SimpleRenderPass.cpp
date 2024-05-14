@@ -43,10 +43,9 @@ bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const
   else
   {
     // If no input is available, we use the render target setup instead.
-    const xiiGALTexture* pTexture = pDevice->GetTextureView(renderTargets.m_hRTs[0])->GetTexture();
-    if (pTexture)
+    if (const xiiGALTextureView* pTextureView = pDevice->GetTextureView(renderTargets.m_hRTs[0]))
     {
-      outputs[m_PinColor.m_uiOutputIndex] = pTexture->GetDescription();
+      outputs[m_PinColor.m_uiOutputIndex] = pTextureView->GetTexture()->GetDescription();
       outputs[m_PinColor.m_uiOutputIndex].m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
     }
   }
@@ -59,10 +58,9 @@ bool xiiSimpleRenderPass::GetRenderTargetDescriptions(const xiiView& view, const
   else
   {
     // If no input is available, we use the render target setup instead.
-    const xiiGALTexture* pTexture = pDevice->GetTextureView(renderTargets.m_hDSTarget)->GetTexture();
-    if (pTexture)
+    if (const xiiGALTextureView* pTextureView = pDevice->GetTextureView(renderTargets.m_hDSTarget))
     {
-      outputs[m_PinDepthStencil.m_uiOutputIndex] = pTexture->GetDescription();
+      outputs[m_PinDepthStencil.m_uiOutputIndex] = pTextureView->GetTexture()->GetDescription();
     }
   }
 

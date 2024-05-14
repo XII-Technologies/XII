@@ -585,7 +585,14 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
 
             for (auto pUsedByConn : m_TextureUsage[uiDataIdx].m_UsedBy)
             {
-              pUsedByConn->m_TextureHandle = hTextureView->IsInvalidated() ? xiiGALTextureHandle() : pDevice->GetTextureView(*hTextureView)->GetDescription().m_hTexture;
+              if (xiiGALTextureView* pTextureView = pDevice->GetTextureView(*hTextureView))
+              {
+                pUsedByConn->m_TextureHandle = pTextureView->GetDescription().m_hTexture;
+              }
+              else
+              {
+                pUsedByConn->m_TextureHandle = xiiGALTextureHandle();
+              }
             }
           }
           else

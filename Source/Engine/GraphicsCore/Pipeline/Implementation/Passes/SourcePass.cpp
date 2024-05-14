@@ -69,9 +69,9 @@ bool xiiSourcePass::GetRenderTargetDescriptions(const xiiView& view, const xiiAr
   if (m_Format == xiiSourceFormat::Color4Channel8BitNormalized || m_Format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
   {
     xiiGALTextureFormat::Enum preferredFormat = xiiGALTextureFormat::Unknown;
-    if (const xiiGALTexture* pTexture = pDevice->GetTextureView(renderTargets.m_hRTs[0])->GetTexture())
+    if (const xiiGALTextureView* pTextureView = pDevice->GetTextureView(renderTargets.m_hRTs[0]))
     {
-      auto rendertargetDesc = pTexture->GetDescription();
+      auto rendertargetDesc = pTextureView->GetTexture()->GetDescription();
 
       preferredFormat = rendertargetDesc.m_Format;
     }
