@@ -23,7 +23,7 @@ public:
   virtual xiiUInt64 GetNextFenceValue() const = 0;
 
   /// \brief This returns the last completed value of the internal fence.
-  virtual xiiUInt64 GetCompletedFenceValue() const = 0;
+  virtual xiiUInt64 GetCompletedFenceValue() = 0;
 
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() = 0;
@@ -32,7 +32,7 @@ public:
   XII_NODISCARD virtual xiiGALCommandList* BeginCommandList(xiiStringView sScopeName = {}) = 0;
 
   /// \brief Submits a command list for execution. If bReset is true, the command list is reset after submission.
-  virtual void Submit(xiiGALCommandList* pCommandList, bool bReset = true);
+  virtual xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset = true);
 
   // Deactivate Doxygen document generation for the following block. (API abstraction only)
   /// \cond
@@ -40,7 +40,7 @@ public:
   // These functions need to be implemented by a graphics API abstraction.
 
 protected:
-  virtual void SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) = 0;
+  virtual xiiUInt64 SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) = 0;
 
   /// \endcond
 

@@ -31,8 +31,9 @@ xiiGALCommandList* xiiGALCommandQueueNull::BeginCommandList(xiiStringView sScope
   return m_pDefaultCommandList.Borrow();
 }
 
-void xiiGALCommandQueueNull::SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset)
+xiiUInt64 xiiGALCommandQueueNull::SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset)
 {
+  return 0U;
 }
 
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_CommandEncoder_Implementation_CommandQueueNull);

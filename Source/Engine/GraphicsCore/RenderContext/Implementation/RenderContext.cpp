@@ -245,6 +245,7 @@ void xiiRenderContext::EndRenderPass()
 void xiiRenderContext::EndRendering()
 {
   m_pCommandQueue->Submit(GetGraphicsCommandList(), false);
+  m_pCommandQueue->WaitForIdle();
 
   m_BeginRenderPass     = xiiGALBeginRenderPassDescription();
   m_hCurrentFramebuffer = xiiGALFramebufferHandle();
@@ -271,6 +272,7 @@ xiiGALCommandList* xiiRenderContext::BeginCompute(xiiStringView sName /*= {}*/)
 void xiiRenderContext::EndCompute()
 {
   m_pCommandQueue->Submit(GetComputeCommandList(), false);
+  m_pCommandQueue->WaitForIdle();
 
   // TODO: See EndRendering
   // ResetContextState();
