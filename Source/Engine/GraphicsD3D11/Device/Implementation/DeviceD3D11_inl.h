@@ -4,7 +4,7 @@ XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALDeviceD3D11::GetDefaultCommandQueue(
   return m_CommandQueues[GetCommandQueueIndex(queueType)].Borrow();
 }
 
-XII_ALWAYS_INLINE ID3D11Device4* xiiGALDeviceD3D11::GetD3D11Device() const
+XII_ALWAYS_INLINE ID3D11Device5* xiiGALDeviceD3D11::GetD3D11Device() const
 {
   return m_pDeviceD3D11;
 }
@@ -14,7 +14,7 @@ XII_ALWAYS_INLINE IDXGIAdapter4* xiiGALDeviceD3D11::GetDXGIAdapter() const
   return m_pDXGIAdapter;
 }
 
-XII_ALWAYS_INLINE IDXGIFactory4* xiiGALDeviceD3D11::GetDXGIFactory() const
+XII_ALWAYS_INLINE IDXGIFactory5* xiiGALDeviceD3D11::GetDXGIFactory() const
 {
   return m_pDXGIFactory;
 }
