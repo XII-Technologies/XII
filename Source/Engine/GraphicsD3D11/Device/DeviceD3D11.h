@@ -12,12 +12,11 @@
 
 enum D3D_FEATURE_LEVEL;
 
-struct IDXGIAdapter1;
-struct IDXGIFactory2;
+struct IDXGIAdapter4;
 struct IDXGIFactory4;
-struct ID3D11Device1;
+struct ID3D11Device4;
 struct ID3D11Debug;
-struct ID3D11DeviceContext1;
+struct ID3D11DeviceContext4;
 struct DXGI_MODE_DESC;
 
 XII_DEFINE_AS_POD_TYPE(DXGI_MODE_DESC);
@@ -39,11 +38,11 @@ public:
 
   // Internal objects retrieval.
 
-  ID3D11Device1* GetD3D11Device() const;
-  IDXGIAdapter1* GetDXGIAdapter() const;
+  ID3D11Device4* GetD3D11Device() const;
+  IDXGIAdapter4* GetDXGIAdapter() const;
   IDXGIFactory4* GetDXGIFactory() const;
 
-  ID3D11DeviceContext1* GetImmediateContext();
+  ID3D11DeviceContext4* GetImmediateContext();
 
   xiiUInt32 GetCommandQueueIndex(xiiBitflags<xiiGALCommandQueueType> queueType) const;
 
@@ -141,17 +140,17 @@ private:
   bool HasSDKLayers();
 #endif
 
-  void                            GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel);
-  xiiDynamicArray<IDXGIAdapter1*> GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel);
+  void                            GetHardwareAdapter(IDXGIFactory4* pFactory, IDXGIAdapter4** ppAdapter, D3D_FEATURE_LEVEL featureLevel);
+  xiiDynamicArray<IDXGIAdapter4*> GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel);
 
-  void EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter1* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALTextureFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes);
+  void EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter4* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALTextureFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes);
 
 private:
   IDXGIFactory4*        m_pDXGIFactory   = nullptr;
-  IDXGIAdapter1*        m_pDXGIAdapter   = nullptr;
-  ID3D11Device1*        m_pDeviceD3D11   = nullptr;
+  IDXGIAdapter4*        m_pDXGIAdapter   = nullptr;
+  ID3D11Device4*        m_pDeviceD3D11   = nullptr;
   ID3D11Debug*          m_pDebugD3D11    = nullptr;
-  ID3D11DeviceContext1* m_pDeviceContext = nullptr;
+  ID3D11DeviceContext4* m_pDeviceContext = nullptr;
 
   xiiDynamicArray<xiiGALDisplayModeDescription> m_DisplayModes;
 

@@ -191,7 +191,10 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
   fullScreenDescription.Scaling                 = xiiD3D11TypeConversions::GetScalingMode(m_FullScreenMode.m_ScalingMode);
   fullScreenDescription.ScanlineOrdering        = xiiD3D11TypeConversions::GetScanLineOrder(m_FullScreenMode.m_ScanLineOrder);
 
-  HRESULT hResult = pDXGIFactory->CreateSwapChainForHwnd(pDeviceD3D11->GetD3D11Device(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &m_pSwapChain);
+  IDXGISwapChain1* pSwapChain1 = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pSwapChain1));
+
+  HRESULT hResult = pDXGIFactory->CreateSwapChainForHwnd(pDeviceD3D11->GetD3D11Device(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &pSwapChain1);
   if (FAILED(hResult))
   {
     if (hResult == E_ACCESSDENIED)
@@ -212,7 +215,7 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
     IDXGIFactory1* pFactoryFromSC = nullptr;
     XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pFactoryFromSC));
 
-    if (SUCCEEDED(m_pSwapChain->GetParent(__uuidof(pFactoryFromSC), (void**)&pFactoryFromSC)))
+    if (SUCCEEDED(pSwapChain1->GetParent(__uuidof(pFactoryFromSC), (void**)&pFactoryFromSC)))
     {
       // Do not allow the swap chain to handle Alt+Enter.
       pFactoryFromSC->MakeWindowAssociation(hNativeWindow, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
@@ -224,13 +227,18 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
     xiiLog::Warning("UWP applications do not support full screen mode.");
   }
 
-  if (FAILED(pDXGIFactory->CreateSwapChainForCoreWindow(pDeviceD3D11->GetD3D11Device(), reinterpret_cast<IUnknown*>(m_Description.m_pWindow->GetNativeWindowHandle()), &swapChainDescription, nullptr, &m_pSwapChain)))
+  if (FAILED(pDXGIFactory->CreateSwapChainForCoreWindow(pDeviceD3D11->GetD3D11Device(), reinterpret_cast<IUnknown*>(m_Description.m_pWindow->GetNativeWindowHandle()), &swapChainDescription, nullptr, &pSwapChain1)))
   {
     xiiLog::Error("Failed to create the DXGI Swap Chain.");
     return XII_FAILURE;
   }
 #endif
 
+  if (FAILED(pSwapChain1->QueryInterface(__uuidof(m_pSwapChain), reinterpret_cast<void**>(static_cast<IDXGISwapChain4**>(&m_pSwapChain)))))
+  {
+    xiiLog::Error("Failed to retrieve IDXGISwapChain4 from DXGI interface.");
+    return XII_FAILURE;
+  }
   return XII_SUCCESS;
 }
 

@@ -50,7 +50,9 @@ public:
 
   ~xiiDisjointQueryPool()
   {
-    xiiLog::Info("Disjoint query pool: created {0} {1}.", m_uiCreatedQueriesCount, (m_uiCreatedQueriesCount == 1 ? "query" : "queries"));
+    XII_GAL_D3D11_RELEASE_ARRAY(m_AvailableQueries);
+
+    xiiLog::Info("GraphicsD3D11: Disjoint query pool: created {0} {1}.", m_uiCreatedQueriesCount, (m_uiCreatedQueriesCount == 1 ? "query" : "queries"));
   }
 
 private:

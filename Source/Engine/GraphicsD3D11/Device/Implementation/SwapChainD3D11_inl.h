@@ -31,7 +31,7 @@ XII_ALWAYS_INLINE void xiiGALSwapChainD3D11::SetWindowedMode()
 {
 }
 
-XII_ALWAYS_INLINE IDXGISwapChain1* xiiGALSwapChainD3D11::GetSwapChain() const
+XII_ALWAYS_INLINE IDXGISwapChain4* xiiGALSwapChainD3D11::GetSwapChain() const
 {
   return m_pSwapChain;
 }

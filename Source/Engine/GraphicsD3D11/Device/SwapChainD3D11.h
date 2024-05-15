@@ -4,7 +4,7 @@
 
 #include <GraphicsFoundation/Device/SwapChain.h>
 
-struct IDXGISwapChain1;
+struct IDXGISwapChain4;
 
 class XII_GRAPHICSD3D11_DLL xiiGALSwapChainD3D11 final : public xiiGALSwapChain
 {
@@ -23,7 +23,7 @@ public:
 
   virtual void SetMaximumFrameLatency(xiiUInt32 uiMaxLatency) override final;
 
-  IDXGISwapChain1* GetSwapChain() const;
+  IDXGISwapChain4* GetSwapChain() const;
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -48,7 +48,7 @@ protected:
   void DestroyBackBufferInternal(xiiGALDeviceD3D11* pDeviceD3D11);
 
 protected:
-  IDXGISwapChain1* m_pSwapChain = nullptr;
+  IDXGISwapChain4* m_pSwapChain = nullptr;
 
   xiiGALTextureHandle m_hActualBackBufferTexture;
 
