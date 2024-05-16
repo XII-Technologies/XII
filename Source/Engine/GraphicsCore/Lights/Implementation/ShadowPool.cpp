@@ -293,13 +293,15 @@ struct xiiShadowPool::Data
     CreateShadowAtlasTexture();
     CreateShadowDataBuffer();
 
+    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
     xiiView*      pView = nullptr;
     xiiViewHandle hView = xiiRenderWorld::CreateView("Unknown", pView);
 
     pView->SetCameraUsageHint(xiiCameraUsageHint::Shadow);
 
     xiiGALRenderTargets renderTargets;
-    renderTargets.m_hDSTarget = m_hShadowAtlasTexture;
+    renderTargets.m_hDSTarget = pDevice->GetTexture(m_hShadowAtlasTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
     pView->SetRenderTargets(renderTargets);
 
     XII_ASSERT_DEV(m_ShadowViewsMutex.IsLocked(), "m_ShadowViewsMutex must be locked at this point.");
@@ -984,9 +986,9 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
     return;
 
   xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
-  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*"Shadow Atlas"*/);
+  xiiGALCommandQueue* pGALCommandQueue = pDevice->GetDefaultCommandQueue();
 
-  auto pCommandList = pGALCommandQueue->BeginCommandList();
+  auto pCommandList = pGALCommandQueue->BeginCommandList("Shadow Atlas");
 
   pCommandList->ClearDepthStencilView(pDevice->GetTexture(s_pData->m_hShadowAtlasTexture)->GetDefaultView(xiiGALTextureViewType::DepthStencil), true, false, 1.0f, 0U);
 

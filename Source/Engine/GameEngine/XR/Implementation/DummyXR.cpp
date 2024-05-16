@@ -33,7 +33,7 @@ xiiResult xiiDummyXR::Initialize()
   m_Info.m_sDeviceName          = "Dummy VR device";
   m_Info.m_vEyeRenderTargetSize = xiiSizeU32(640, 720);
 
-  m_GALdeviceEventsId = xiiGALDevice::GetDefaultDevice()->m_Events.AddEventHandler(xiiMakeDelegate(&xiiDummyXR::GALDeviceEventHandler, this));
+  m_GALdeviceEventsId = xiiGALDevice::s_Events.AddEventHandler(xiiMakeDelegate(&xiiDummyXR::GALDeviceEventHandler, this));
   m_ExecutionEventsId = xiiGameApplicationBase::GetGameApplicationBaseInstance()->m_ExecutionEvents.AddEventHandler(xiiMakeDelegate(&xiiDummyXR::GameApplicationEventHandler, this));
 
   m_bInitialized = true;
@@ -45,7 +45,7 @@ void xiiDummyXR::Deinitialize()
   m_bInitialized = false;
   if (m_GALdeviceEventsId != 0)
   {
-    xiiGALDevice::GetDefaultDevice()->m_Events.RemoveEventHandler(m_GALdeviceEventsId);
+    xiiGALDevice::s_Events.RemoveEventHandler(m_GALdeviceEventsId);
   }
   if (m_ExecutionEventsId != 0)
   {
@@ -114,8 +114,8 @@ xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiEnum<xiiGALSam
 
 
   xiiGALRenderTargets renderTargets;
-  renderTargets.m_hRTs[0]   = m_hColorRT;
-  renderTargets.m_hDSTarget = m_hDepthRT;
+  renderTargets.m_hRTs[0]   = pDevice->GetTexture(m_hColorRT)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+  renderTargets.m_hDSTarget = pDevice->GetTexture(m_hDepthRT)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
   pView->SetRenderTargets(renderTargets);
 
   pView->SetViewport(xiiRectFloat((float)m_Info.m_vEyeRenderTargetSize.width, (float)m_Info.m_vEyeRenderTargetSize.height));

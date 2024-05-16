@@ -73,17 +73,17 @@ void xiiGALSwapChainNull::DestroyBackBufferInternal(xiiGALDeviceNull* pDeviceNul
   m_hBackBufferTexture.Invalidate();
 }
 
-void xiiGALSwapChainNull::AcquireNextRenderTarget(xiiGALDevice* pDevice)
+void xiiGALSwapChainNull::AcquireNextRenderTarget()
 {
 }
 
-void xiiGALSwapChainNull::Present(xiiGALDevice* pDevice)
+void xiiGALSwapChainNull::Present()
 {
 }
 
-xiiResult xiiGALSwapChainNull::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
+xiiResult xiiGALSwapChainNull::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
 {
-  xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(pDevice);
+  xiiGALDeviceNull* pDeviceNull = static_cast<xiiGALDeviceNull*>(m_pDevice);
 
   DestroyBackBufferInternal(pDeviceNull);
 

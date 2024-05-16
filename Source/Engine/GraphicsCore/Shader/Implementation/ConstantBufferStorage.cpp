@@ -45,7 +45,19 @@ void xiiConstantBufferStorageBase::UploadData(xiiGALCommandList* pCommandList)
   {
     XII_ASSERT_DEV(m_Data.GetCount() <= xiiGALDevice::GetDefaultDevice()->GetBuffer(m_hGALConstantBuffer)->GetDescription().m_uiSize, "The size of the constant buffer storage is greater than the available storage!");
 
-    pCommandList->UpdateBufferExtended(m_hGALConstantBuffer, 0, m_Data);
+    void* pMappedData = nullptr;
+    if (pCommandList->MapBuffer(m_hGALConstantBuffer, xiiGALMapType::Write, xiiGALMapFlags::Discard, pMappedData).Succeeded())
+    {
+      memcpy(pMappedData, m_Data.GetPtr(), m_Data.GetCount());
+
+      pCommandList->UnmapBuffer(m_hGALConstantBuffer, xiiGALMapType::Write).AssertSuccess();
+
+      m_uiLastHash = uiNewHash;
+    }
+    else
+    {
+      xiiLog::Error("Failed to map buffer to update content.");
+    }
   }
 }
 

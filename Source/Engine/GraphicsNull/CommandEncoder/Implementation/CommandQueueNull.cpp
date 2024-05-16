@@ -16,13 +16,24 @@ xiiGALCommandQueueNull::~xiiGALCommandQueueNull()
   m_pDefaultCommandList.Clear();
 }
 
+xiiResult xiiGALCommandQueueNull::InitPlatform()
+{
+  return XII_SUCCESS;
+}
+
+xiiResult xiiGALCommandQueueNull::DeInitPlatform()
+{
+  return XII_SUCCESS;
+}
+
 xiiGALCommandList* xiiGALCommandQueueNull::BeginCommandList(xiiStringView sScopeName)
 {
   return m_pDefaultCommandList.Borrow();
 }
 
-void xiiGALCommandQueueNull::SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset)
+xiiUInt64 xiiGALCommandQueueNull::SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset)
 {
+  return 0U;
 }
 
 XII_STATICLINK_FILE(GraphicsNull, GraphicsNull_CommandEncoder_Implementation_CommandQueueNull);

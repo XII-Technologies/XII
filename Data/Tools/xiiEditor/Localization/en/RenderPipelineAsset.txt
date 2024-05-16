@@ -69,9 +69,13 @@ xiiGALResourceFormat::BC6Float;BC6 Float
 xiiGALResourceFormat::BC7UNormalized;BC7 UNormalized
 xiiGALResourceFormat::BC7UNormalizedsRGB;BC7 UNormalized sRGB
 
-xiiGALMSAASampleCount::TwoSamples;2 Samples
-xiiGALMSAASampleCount::FourSamples;4 Samples
-xiiGALMSAASampleCount::EightSamples;8 Samples
+xiiGALMSAASampleCount::OneSample;One Sample
+xiiGALMSAASampleCount::TwoSamples;Two Samples
+xiiGALMSAASampleCount::FourSamples;Four Samples
+xiiGALMSAASampleCount::EightSamples;Eight Samples
+xiiGALMSAASampleCount::SixteenSamples;16 Samples
+xiiGALMSAASampleCount::ThirtyTwoSamples;32 Samples
+xiiGALMSAASampleCount::SixtyFourSamples;64 Samples
 
 xiiLSAODepthCompareFunction::NormalAndSampleDistance;Normal And Sample-Distance
 

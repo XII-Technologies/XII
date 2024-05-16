@@ -126,7 +126,7 @@ namespace xiiModelImporter2
     xiiMeshBufferResourceDescriptor& mb = m_Options.m_pMeshOutput->MeshBufferDesc();
 
     const xiiUInt32 uiPosStream = mb.AddStream(xiiGALInputLayoutSemantic::Position, xiiGALTextureFormat::RGB32Float);
-    const xiiUInt32 uiNrmStream = mb.AddStream(xiiGALInputLayoutSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_8Bit));
+    const xiiUInt32 uiNrmStream = mb.AddStream(xiiGALInputLayoutSemantic::Normal, xiiMeshNormalPrecision::ToResourceFormatNormal(xiiMeshNormalPrecision::_16Bit));
     const xiiUInt32 uiColStream = mb.AddStream(xiiGALInputLayoutSemantic::Color0, xiiGALTextureFormat::RGBA8UNormalized);
 
     mb.AllocateStreams(positions.GetCount(), xiiGALPrimitiveTopology::TriangleList, indices.GetCount() / 3);

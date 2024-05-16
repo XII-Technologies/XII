@@ -337,16 +337,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsDeviceAdapterDescription : publi
   xiiStaticArray<xiiGALCommandQueueProperties, XII_GAL_MAX_ADAPTER_QUEUE_COUNT> m_CommandQueueProperties;                                    ///< An array of NumQueues command queues supported by this device.
 };
 
-/// \brief This describes the immediate context device creation description.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALImmediateContextCreationDescription : public xiiHashableStruct<xiiGALImmediateContextCreationDescription>
-{
-  XII_DECLARE_POD_TYPE();
-
-  xiiStringView                       m_sName;                                              ///< Context name.
-  xiiUInt8                            m_uiQueueID     = XII_GAL_DEFAULT_QUEUE_ID;           ///< Queue index.
-  xiiEnum<xiiGALCommandQueuePriority> m_QueuePriority = xiiGALCommandQueuePriority::Medium; ///< Priority of the software queue created by the context.
-};
-
 /// \brief This describes the graphics abstraction layer device events.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALDeviceEvent : public xiiHashableStruct<xiiGALDeviceEvent>
 {

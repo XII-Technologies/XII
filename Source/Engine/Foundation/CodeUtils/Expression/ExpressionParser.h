@@ -27,7 +27,7 @@ private:
 
   static void RegisterKnownTypes();
   static void RegisterBuiltinFunctions();
-  void SetupInAndOutputs(xiiArrayPtr<xiiExpression::StreamDesc> inputs, xiiArrayPtr<xiiExpression::StreamDesc> outputs);
+  void        SetupInAndOutputs(xiiArrayPtr<xiiExpression::StreamDesc> inputs, xiiArrayPtr<xiiExpression::StreamDesc> outputs);
 
   xiiResult ParseStatement();
   xiiResult ParseType(xiiStringView sTypeName, xiiEnum<xiiExpressionAST::DataType>& out_type);

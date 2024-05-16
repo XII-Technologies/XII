@@ -420,7 +420,7 @@ public:
 
       if (pSwapChain->GetCurrentSize() != currentSize)
       {
-        pSwapChain->Resize(m_pDevice, currentSize).IgnoreResult();
+        pSwapChain->Resize(currentSize).IgnoreResult();
       }
     }
 
@@ -440,7 +440,7 @@ public:
       texDesc.m_Size.width  = g_uiWindowWidth;
       texDesc.m_Size.height = g_uiWindowHeight;
       texDesc.m_Format      = xiiGALTextureFormat::D24UNormalizedS8UInt;
-      texDesc.m_BindFlags.Add(xiiGALBindFlags::DepthStencil);
+      texDesc.m_BindFlags   = xiiGALBindFlags::DepthStencil;
 
       m_hDepthStencilTexture = m_pDevice->CreateTexture(texDesc);
     }

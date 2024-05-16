@@ -9,7 +9,6 @@ class XII_GRAPHICSD3D12_DLL xiiGALFramebufferD3D12 final : public xiiGALFramebuf
   XII_ADD_DYNAMIC_REFLECTION(xiiGALFramebufferD3D12, xiiGALFramebuffer);
 
 public:
-
 protected:
   friend class xiiGALDeviceD3D12;
   friend class xiiMemoryUtils;

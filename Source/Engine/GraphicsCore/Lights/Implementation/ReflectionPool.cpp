@@ -304,7 +304,7 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  auto                                   pGALCommandQueue = pDevice->GetGraphicsQueue();
+  auto                                   pGALCommandQueue = pDevice->GetDefaultCommandQueue();
   xiiHybridArray<xiiGALTextureHandle, 4> atlasToClear;
 
   {
@@ -352,11 +352,6 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
           desc.m_uiArrayOrDepthSlicesCount = 1;
 
           xiiGALTextureViewHandle hRenderTarget = pDevice->CreateTextureView(desc);
-
-          xiiGALRenderingSetup renderingSetup;
-          renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hRenderTarget);
-          renderingSetup.m_ClearColor              = xiiColor(0, 0, 0, 1);
-          renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
 
           pGALCommandList->ClearRenderTargetView(hRenderTarget, xiiColor::Black);
         }

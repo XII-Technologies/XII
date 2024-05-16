@@ -142,7 +142,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   // download the picking information from the GPU
   if (m_uiWindowWidth != 0 && m_uiWindowHeight != 0)
   {
-    auto pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetGraphicsQueue();
+    auto pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue();
 
     auto pCommandList = pCommandQueue->BeginCommandList("Readback Picking Rendertargets");
 

@@ -41,6 +41,7 @@ namespace
     enum Enum : xiiUInt8
     {
       SwapChain = 0U,
+      CommandQueue,
       BottomLevelAS,
       Buffer,
       BufferView,
@@ -63,6 +64,7 @@ namespace
   };
 
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALSwapChainHandle) == sizeof(xiiUInt32));
+  XII_CHECK_AT_COMPILETIME(sizeof(xiiGALCommandQueueHandle) == sizeof(xiiUInt32));
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALBottomLevelASHandle) == sizeof(xiiUInt32));
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALBufferHandle) == sizeof(xiiUInt32));
   XII_CHECK_AT_COMPILETIME(sizeof(xiiGALBufferViewHandle) == sizeof(xiiUInt32));
@@ -160,15 +162,13 @@ xiiResult xiiGALDevice::Initialize()
 {
   XII_LOG_BLOCK("xiiGALDevice::Initialize");
 
-  xiiResult platformInitResult = InitializePlatform();
-
-  if (platformInitResult == XII_FAILURE)
-  {
-    return XII_FAILURE;
-  }
+  XII_SUCCEED_OR_RETURN(InitializePlatform());
 
   // Fill the device capabilities
   FillCapabilitiesPlatform();
+
+  // Create command queues.
+  XII_SUCCEED_OR_RETURN(CreateCommandQueuesPlatform());
 
   xiiLog::Info("Adapter: '{}' - {} VRAM, {} Sys RAM, {} Shared RAM.", m_AdapterDescription.m_sAdapterName, xiiArgFileSize(m_AdapterDescription.m_MemoryProperties.m_uiLocalMemory),
                xiiArgFileSize(m_AdapterDescription.m_MemoryProperties.m_uiHostVisibleMemory), xiiArgFileSize(m_AdapterDescription.m_MemoryProperties.m_uiUnifiedMemory));
@@ -177,9 +177,6 @@ xiiResult xiiGALDevice::Initialize()
   {
     xiiLog::Warning("Selected graphics adapter has no hardware acceleration.");
   }
-
-  // Create command queues.
-  CreateCommandQueuesPlatform();
 
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
@@ -331,6 +328,40 @@ void xiiGALDevice::DestroySwapChain(xiiGALSwapChainHandle hSwapChain)
   else
   {
     xiiLog::Warning("DestroySwapChain called on invalid handle (double free?).");
+  }
+}
+
+xiiGALCommandQueueHandle xiiGALDevice::CreateCommandQueue(const xiiGALCommandQueueCreationDescription& description)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  /// \todo GraphicsFoundation: Add command queue description validation.
+
+  xiiGALCommandQueue* pCommandQueue = CreateCommandQueuePlatform(description);
+
+  if (pCommandQueue == nullptr)
+  {
+    return xiiGALCommandQueueHandle();
+  }
+  else
+  {
+    return xiiGALCommandQueueHandle(m_CommandQueues.Insert(pCommandQueue));
+  }
+}
+
+void xiiGALDevice::DestroyCommandQueue(xiiGALCommandQueueHandle hCommandQueue)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALCommandQueue* pCommandQueue = nullptr;
+
+  if (m_CommandQueues.TryGetValue(hCommandQueue, pCommandQueue))
+  {
+    AddDestroyedObject(GALObjectType::CommandQueue, hCommandQueue);
+  }
+  else
+  {
+    xiiLog::Warning("DestroyCommandQueue called on invalid handle (double free?).");
   }
 }
 
@@ -2600,6 +2631,16 @@ void xiiGALDevice::FlushDestroyedObjects()
         XII_VERIFY(m_SwapChains.Remove(hSwapChain, &pSwapChain), "SwapChain not found in idTable.");
 
         DestroySwapChainPlatform(pSwapChain);
+      }
+      break;
+      case GALObjectType::CommandQueue:
+      {
+        xiiGALCommandQueueHandle hCommandQueue(xiiGALCommandQueueHandle::IdType(destroyedObject.m_uiHandle));
+        xiiGALCommandQueue*      pCommandQueue = nullptr;
+
+        XII_VERIFY(m_CommandQueues.Remove(hCommandQueue, &pCommandQueue), "CommandQueue not found in idTable.");
+
+        DestroyCommandQueuePlatform(pCommandQueue);
       }
       break;
       case GALObjectType::BottomLevelAS:

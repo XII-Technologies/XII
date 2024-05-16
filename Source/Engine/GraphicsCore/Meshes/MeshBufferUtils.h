@@ -2,7 +2,8 @@
 #pragma once
 
 #include <GraphicsCore/GraphicsCoreDLL.h>
-#include <GraphicsFoundation/Resources/ResourceFormats.h>
+
+#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 
 struct xiiMeshBufferResourceDescriptor;
 
@@ -13,10 +14,11 @@ struct xiiMeshNormalPrecision
   enum Enum
   {
     _8Bit,
+    _10Bit,
     _16Bit,
     _32Bit,
 
-    Default = _8Bit
+    Default = _16Bit
   };
 
   /// \brief Convert mesh normal precision to actual resource format used for normals
@@ -79,19 +81,11 @@ struct XII_GRAPHICSCORE_DLL xiiMeshBufferUtils
   static xiiResult EncodeBoneWeights(const xiiVec4& vWeights, xiiArrayPtr<xiiUInt8> dest, xiiEnum<xiiGALTextureFormat> destFormat);
 
   static xiiResult DecodeNormal(xiiArrayPtr<const xiiUInt8> source, xiiVec3& ref_vDestNormal, xiiMeshNormalPrecision::Enum normalPrecision);
-  static xiiResult DecodeTangent(
-    xiiArrayPtr<const xiiUInt8>  source,
-    xiiVec3&                     ref_vDestTangent,
-    float&                       ref_fDestBiTangentSign,
-    xiiMeshNormalPrecision::Enum tangentPrecision);
+  static xiiResult DecodeTangent(xiiArrayPtr<const xiiUInt8> source, xiiVec3& ref_vDestTangent, float& ref_fDestBiTangentSign, xiiMeshNormalPrecision::Enum tangentPrecision);
   static xiiResult DecodeTexCoord(xiiArrayPtr<const xiiUInt8> source, xiiVec2& ref_vDestTexCoord, xiiMeshTexCoordPrecision::Enum texCoordPrecision);
 
   static xiiResult DecodeNormal(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, xiiVec3& ref_vDestNormal);
-  static xiiResult DecodeTangent(
-    xiiArrayPtr<const xiiUInt8>  source,
-    xiiEnum<xiiGALTextureFormat> sourceFormat,
-    xiiVec3&                     ref_vDestTangent,
-    float&                       ref_fDestBiTangentSign);
+  static xiiResult DecodeTangent(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, xiiVec3& ref_vDestTangent, float& ref_fDestBiTangentSign);
   static xiiResult DecodeTexCoord(xiiArrayPtr<const xiiUInt8> source, xiiEnum<xiiGALTextureFormat> sourceFormat, xiiVec2& ref_vDestTexCoord);
 
   // low level conversion functions

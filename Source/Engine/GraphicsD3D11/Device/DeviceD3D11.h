@@ -12,12 +12,11 @@
 
 enum D3D_FEATURE_LEVEL;
 
-struct IDXGIAdapter1;
-struct IDXGIFactory2;
-struct IDXGIFactory4;
-struct ID3D11Device1;
+struct IDXGIAdapter4;
+struct IDXGIFactory5;
+struct ID3D11Device5;
 struct ID3D11Debug;
-struct ID3D11DeviceContext1;
+struct ID3D11DeviceContext4;
 struct DXGI_MODE_DESC;
 
 XII_DEFINE_AS_POD_TYPE(DXGI_MODE_DESC);
@@ -35,21 +34,15 @@ public:
   ~xiiGALDeviceD3D11();
 
 public:
-  virtual xiiGALCommandQueue* GetGraphicsQueue() const override final;
-
-  virtual xiiGALCommandQueue* GetComputeQueue() const override final;
-
-  virtual xiiGALCommandQueue* GetTransferQueue() const override final;
-
-  virtual xiiGALCommandQueue* GetSparseBindingQueue() const override final;
+  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final;
 
   // Internal objects retrieval.
 
-  ID3D11Device1* GetD3D11Device() const;
-  IDXGIAdapter1* GetDXGIAdapter() const;
-  IDXGIFactory4* GetDXGIFactory() const;
+  ID3D11Device5* GetD3D11Device() const;
+  IDXGIAdapter4* GetDXGIAdapter() const;
+  IDXGIFactory5* GetDXGIFactory() const;
 
-  ID3D11DeviceContext1* GetImmediateContext();
+  ID3D11DeviceContext4* GetImmediateContext();
 
   xiiUInt32 GetCommandQueueIndex(xiiBitflags<xiiGALCommandQueueType> queueType) const;
 
@@ -68,6 +61,8 @@ protected:
   virtual xiiResult InitializePlatform() override final;
   virtual xiiResult ShutdownPlatform() override final;
 
+  virtual xiiResult CreateCommandQueuesPlatform() override final;
+
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override final;
@@ -78,6 +73,9 @@ protected:
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
+
+  virtual xiiGALCommandQueue* CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description) override final;
+  virtual void                DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue) override final;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;
@@ -135,8 +133,6 @@ protected:
 
   virtual void WaitIdlePlatform() override final;
 
-  virtual void CreateCommandQueuesPlatform() override final;
-
   virtual void FillCapabilitiesPlatform() override final;
 
 private:
@@ -144,17 +140,17 @@ private:
   bool HasSDKLayers();
 #endif
 
-  void                            GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter, D3D_FEATURE_LEVEL featureLevel);
-  xiiDynamicArray<IDXGIAdapter1*> GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel);
+  void                            GetHardwareAdapter(IDXGIFactory5* pFactory, IDXGIAdapter4** ppAdapter, D3D_FEATURE_LEVEL featureLevel);
+  xiiDynamicArray<IDXGIAdapter4*> GetCompatibleAdapters(D3D_FEATURE_LEVEL minFeatureLevel);
 
-  void EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter1* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALTextureFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes);
+  void EnumerateDisplayModes(D3D_FEATURE_LEVEL featureLevel, IDXGIAdapter4* pDXGIAdapter, xiiUInt32 uiOutputID, xiiEnum<xiiGALTextureFormat> format, xiiDynamicArray<xiiGALDisplayModeDescription>& displayModes);
 
 private:
-  IDXGIFactory4*        m_pDXGIFactory   = nullptr;
-  IDXGIAdapter1*        m_pDXGIAdapter   = nullptr;
-  ID3D11Device1*        m_pDeviceD3D11   = nullptr;
+  IDXGIFactory5*        m_pDXGIFactory   = nullptr;
+  IDXGIAdapter4*        m_pDXGIAdapter   = nullptr;
+  ID3D11Device5*        m_pDeviceD3D11   = nullptr;
   ID3D11Debug*          m_pDebugD3D11    = nullptr;
-  ID3D11DeviceContext1* m_pDeviceContext = nullptr;
+  ID3D11DeviceContext4* m_pDeviceContext = nullptr;
 
   xiiDynamicArray<xiiGALDisplayModeDescription> m_DisplayModes;
 

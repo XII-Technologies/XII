@@ -7,11 +7,11 @@
 class XII_GRAPHICSNULL_DLL xiiGALSwapChainNull final : public xiiGALSwapChain
 {
 public:
-  virtual void AcquireNextRenderTarget(xiiGALDevice* pDevice) override final;
+  virtual void AcquireNextRenderTarget() override final;
 
-  virtual void Present(xiiGALDevice* pDevice) override final;
+  virtual void Present() override final;
 
-  virtual xiiResult Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override final;
+  virtual xiiResult Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) override final;
 
   virtual void SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode) override final;
 

@@ -64,9 +64,11 @@ void xiiView::SetSwapChain(xiiGALSwapChainHandle hSwapChain)
 {
   if (m_Data.m_hSwapChain != hSwapChain)
   {
+    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
     // Swap chain and render target setup are mutually exclusive.
     m_Data.m_hSwapChain                       = hSwapChain;
-    m_Data.m_SwapChainRenderTargets.m_hRTs[0] = xiiGALDevice::GetDefaultDevice()->GetSwapChain(m_Data.m_hSwapChain)->GetBackBufferTexture();
+    m_Data.m_SwapChainRenderTargets.m_hRTs[0] = pDevice->GetTexture(pDevice->GetSwapChain(m_Data.m_hSwapChain)->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
     m_Data.m_RenderTargets                    = xiiGALRenderTargets();
     if (m_pRenderPipeline)
     {
@@ -92,11 +94,13 @@ void xiiView::SetRenderTargets(const xiiGALRenderTargets& renderTargets)
 
 const xiiGALRenderTargets& xiiView::GetActiveRenderTargets() const
 {
-  if (const xiiGALSwapChain* pSwapChain = xiiGALDevice::GetDefaultDevice()->GetSwapChain(m_Data.m_hSwapChain))
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+  if (const xiiGALSwapChain* pSwapChain = pDevice->GetSwapChain(m_Data.m_hSwapChain))
   {
-    if (pSwapChain->GetBackBufferTexture() != m_Data.m_SwapChainRenderTargets.m_hRTs[0])
+    xiiGALTextureViewHandle hBackbufferRT = pDevice->GetTexture(pSwapChain->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+    if (hBackbufferRT != m_Data.m_SwapChainRenderTargets.m_hRTs[0])
     {
-      m_Data.m_SwapChainRenderTargets.m_hRTs[0] = pSwapChain->GetBackBufferTexture();
+      m_Data.m_SwapChainRenderTargets.m_hRTs[0] = hBackbufferRT;
     }
     return m_Data.m_SwapChainRenderTargets;
   }

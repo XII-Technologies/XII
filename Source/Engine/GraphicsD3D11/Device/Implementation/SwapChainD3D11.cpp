@@ -9,8 +9,6 @@
 #include <GraphicsD3D11/Resources/TextureD3D11.h>
 #include <GraphicsD3D11/Resources/TextureViewD3D11.h>
 
-#include <GraphicsD3D11/Utilities/D3D11TypeConversions.h>
-
 #include <Foundation/Basics/Platform/Win/HResultUtils.h>
 
 #include <VersionHelpers.h>
@@ -45,29 +43,32 @@ xiiResult xiiGALSwapChainD3D11::DeInitPlatform()
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
+  // Reset command list swapchain references or ResizeBuffers will fail as the backbuffer is still referenced.
+  pDeviceD3D11->ResetCommandQueuesSwapChainReferences();
+
   DestroyBackBufferInternal(pDeviceD3D11);
+
+  // Call context flush to release resources.
+  pDeviceD3D11->GetImmediateContext()->ClearState();
+  pDeviceD3D11->GetImmediateContext()->Flush();
 
   if (m_pSwapChain)
   {
     // Full screen swap chains must be switched to windowed mode before destruction.
     // See: https://msdn.microsoft.com/en-us/library/windows/desktop/bb205075(v=vs.85).aspx#Destroying
     BOOL bIsFullScreen = FALSE;
-    if (SUCCEEDED(m_pSwapChain->GetFullscreenState(&bIsFullScreen, nullptr)))
-    {
-      m_pSwapChain->SetFullscreenState(FALSE, nullptr);
-    }
-    else
+    if (FAILED(m_pSwapChain->GetFullscreenState(&bIsFullScreen, nullptr)))
     {
       xiiLog::Error("Failed to query swap chain full screen state.");
+    }
+    if (bIsFullScreen == TRUE)
+    {
+      m_pSwapChain->SetFullscreenState(FALSE, nullptr);
     }
 
     XII_GAL_D3D11_RELEASE(m_pSwapChain);
 
     m_Description.m_pWindow->RemoveReference();
-
-    // Call context flush to release resources.
-    pDeviceD3D11->GetImmediateContext()->ClearState();
-    pDeviceD3D11->GetImmediateContext()->Flush();
   }
 
   return XII_SUCCESS;
@@ -190,10 +191,20 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
   fullScreenDescription.Scaling                 = xiiD3D11TypeConversions::GetScalingMode(m_FullScreenMode.m_ScalingMode);
   fullScreenDescription.ScanlineOrdering        = xiiD3D11TypeConversions::GetScanLineOrder(m_FullScreenMode.m_ScanLineOrder);
 
-  HRESULT hResult = pDXGIFactory->CreateSwapChainForHwnd(pDeviceD3D11->GetD3D11Device(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &m_pSwapChain);
+  IDXGISwapChain1* pSwapChain1 = nullptr;
+  XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pSwapChain1));
+
+  HRESULT hResult = pDXGIFactory->CreateSwapChainForHwnd(pDeviceD3D11->GetD3D11Device(), hNativeWindow, &swapChainDescription, &fullScreenDescription, nullptr, &pSwapChain1);
   if (FAILED(hResult))
   {
-    xiiLog::Error("Failed to create the DXGI Swap Chain: {}", xiiHRESULTtoString(hResult));
+    if (hResult == E_ACCESSDENIED)
+    {
+      xiiLog::Error("Failed to create the DXGI Swap Chain: {}. This may occur when the old swap chain is still in use. Ensure that all resources referencing the swap chain were destroyed, keeping in mind the deferred destruction that applies with FLIP model swap chains.", xiiHRESULTtoString(hResult));
+    }
+    else
+    {
+      xiiLog::Error("Failed to create the DXGI Swap Chain: {}", xiiHRESULTtoString(hResult));
+    }
     return XII_FAILURE;
   }
 
@@ -204,7 +215,7 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
     IDXGIFactory1* pFactoryFromSC = nullptr;
     XII_SCOPE_EXIT(XII_GAL_D3D11_RELEASE(pFactoryFromSC));
 
-    if (SUCCEEDED(m_pSwapChain->GetParent(__uuidof(pFactoryFromSC), (void**)&pFactoryFromSC)))
+    if (SUCCEEDED(pSwapChain1->GetParent(__uuidof(pFactoryFromSC), (void**)&pFactoryFromSC)))
     {
       // Do not allow the swap chain to handle Alt+Enter.
       pFactoryFromSC->MakeWindowAssociation(hNativeWindow, DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
@@ -216,13 +227,18 @@ xiiResult xiiGALSwapChainD3D11::CreateDXGISwapChain()
     xiiLog::Warning("UWP applications do not support full screen mode.");
   }
 
-  if (FAILED(pDXGIFactory->CreateSwapChainForCoreWindow(pDeviceD3D11->GetD3D11Device(), reinterpret_cast<IUnknown*>(m_Description.m_pWindow->GetNativeWindowHandle()), &swapChainDescription, nullptr, &m_pSwapChain)))
+  if (FAILED(pDXGIFactory->CreateSwapChainForCoreWindow(pDeviceD3D11->GetD3D11Device(), reinterpret_cast<IUnknown*>(m_Description.m_pWindow->GetNativeWindowHandle()), &swapChainDescription, nullptr, &pSwapChain1)))
   {
     xiiLog::Error("Failed to create the DXGI Swap Chain.");
     return XII_FAILURE;
   }
 #endif
 
+  if (FAILED(pSwapChain1->QueryInterface(__uuidof(m_pSwapChain), reinterpret_cast<void**>(static_cast<IDXGISwapChain4**>(&m_pSwapChain)))))
+  {
+    xiiLog::Error("Failed to retrieve IDXGISwapChain4 from DXGI interface.");
+    return XII_FAILURE;
+  }
   return XII_SUCCESS;
 }
 
@@ -362,19 +378,19 @@ void xiiGALSwapChainD3D11::DestroyBackBufferInternal(xiiGALDeviceD3D11* pDeviceD
   }
 }
 
-void xiiGALSwapChainD3D11::AcquireNextRenderTarget(xiiGALDevice* pDevice)
+void xiiGALSwapChainD3D11::AcquireNextRenderTarget()
 {
 }
 
-void xiiGALSwapChainD3D11::Present(xiiGALDevice* pDevice)
+void xiiGALSwapChainD3D11::Present()
 {
   XII_PROFILE_SCOPE("PresentRenderTarget");
 
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
+  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
   if (!m_hActualBackBufferTexture.IsInvalidated())
   {
-    if (auto pQueue = pDeviceD3D11->GetGraphicsQueue())
+    if (auto pQueue = pDeviceD3D11->GetDefaultCommandQueue(xiiGALCommandQueueType::Graphics))
     {
       auto pCommandList = pQueue->BeginCommandList();
 
@@ -397,10 +413,8 @@ void xiiGALSwapChainD3D11::Present(xiiGALDevice* pDevice)
   m_pSwapChain->Present(uiSyncInterval, 0);
 }
 
-xiiResult xiiGALSwapChainD3D11::Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
+xiiResult xiiGALSwapChainD3D11::Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform)
 {
-  xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(pDevice);
-
   if (newTransform != xiiGALSurfaceTransform::Optimal && newTransform != xiiGALSurfaceTransform::Identity)
   {
     xiiLog::Warning("The current pre-transform is unsupported by Direct3D swap chains. Use xiiGALSurfaceTransform::Optimal (recommended) or xiiGALSurfaceTransform::Identity.");

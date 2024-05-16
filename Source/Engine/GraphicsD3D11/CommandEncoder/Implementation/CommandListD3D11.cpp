@@ -178,7 +178,7 @@ void xiiGALCommandListD3D11::SetIndexBufferPlatform(xiiGALBuffer* pIndexBuffer, 
   auto          pIndexBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pIndexBuffer);
   ID3D11Buffer* pD3D11IndexBuffer = pIndexBufferD3D11 ? pIndexBufferD3D11->GetBuffer() : nullptr;
 
-  if (pD3D11IndexBuffer != m_pCommittedIndexBuffer)
+  if (pD3D11IndexBuffer != m_pCommittedIndexBuffer || m_uiCommittedIndexDataStartOffset != uiByteOffset)
   {
     m_pCommittedIndexBuffer           = pD3D11IndexBuffer;
     m_CommittedIndexBufferFormat      = DXGI_FORMAT_UNKNOWN;
@@ -399,6 +399,7 @@ xiiResult xiiGALCommandListD3D11::DispatchIndirectPlatform(xiiGALBuffer* pIndire
 void xiiGALCommandListD3D11::BeginQueryPlatform(xiiGALQuery* pQuery)
 {
   auto pQueryD3D11 = static_cast<xiiGALQueryD3D11*>(pQuery);
+  auto pImmediateContext = static_cast<xiiGALDeviceD3D11*>(m_pDevice)->GetImmediateContext();
 
   XII_ASSERT_DEV(pQueryD3D11 != nullptr, "Invalid resource.");
 
@@ -406,11 +407,11 @@ void xiiGALCommandListD3D11::BeginQueryPlatform(xiiGALQuery* pQuery)
   {
     pQueryD3D11->SetDisjointQuery(BeginDisjointQuery());
 
-    m_pCommandList->Begin(pQueryD3D11->GetQuery(0));
+    pImmediateContext->End(pQueryD3D11->GetQuery(0));
   }
   else
   {
-    m_pCommandList->Begin(pQueryD3D11->GetQuery(0));
+    pImmediateContext->Begin(pQueryD3D11->GetQuery(0));
   }
 }
 
@@ -457,7 +458,6 @@ void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer,
   XII_CHECK_ALIGNMENT_16(pSourceData.GetPtr());
 
   xiiGALDeviceD3D11* pDeviceD3D11            = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
-  auto               pCommandList            = pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
   auto               pDestinationBufferD3D11 = static_cast<xiiGALBufferD3D11*>(pBuffer);
 
   XII_ASSERT_DEV(pDestinationBufferD3D11 != nullptr, "Invalid resource.");
@@ -469,11 +469,11 @@ void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer,
     XII_ASSERT_DEV(uiDestinationOffset == 0 && pSourceData.GetCount() == bufferDescription.m_uiSize, "Constant buffers can't be updated partially (and we don't check for DX11.1)!");
 
     D3D11_MAPPED_SUBRESOURCE mapResult;
-    if (SUCCEEDED(pCommandList->Map(pDestinationBufferD3D11->GetBuffer(), 0U, D3D11_MAP_WRITE_DISCARD, 0U, &mapResult)))
+    if (SUCCEEDED(m_pCommandList->Map(pDestinationBufferD3D11->GetBuffer(), 0U, D3D11_MAP_WRITE_DISCARD, 0U, &mapResult)))
     {
       memcpy(mapResult.pData, pSourceData.GetPtr(), pSourceData.GetCount());
 
-      pCommandList->Unmap(pDestinationBufferD3D11->GetBuffer(), 0);
+      m_pCommandList->Unmap(pDestinationBufferD3D11->GetBuffer(), 0);
     }
   }
   else
@@ -482,6 +482,8 @@ void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer,
     {
       if (ID3D11Resource* pD3D11TempBuffer = pDeviceD3D11->FindTemporaryBuffer(pSourceData.GetCount()))
       {
+        auto pCommandList = pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
+
         D3D11_MAPPED_SUBRESOURCE MapResult;
         HRESULT                  hRes = pCommandList->Map(pD3D11TempBuffer, 0, D3D11_MAP_WRITE, 0, &MapResult);
         XII_ASSERT_DEV(SUCCEEDED(hRes), "Implementation error");
@@ -492,7 +494,7 @@ void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer,
 
         // Schedule copy command using this command list.
         D3D11_BOX srcBox = {0, 0, 0, pSourceData.GetCount(), 1, 1};
-        m_pCommandList->CopySubresourceRegion(pD3D11TempBuffer, 0, uiDestinationOffset, 0, 0, pD3D11TempBuffer, 0, &srcBox);
+        m_pCommandList->CopySubresourceRegion(pDestinationBufferD3D11->GetBuffer(), 0, uiDestinationOffset, 0, 0, pD3D11TempBuffer, 0, &srcBox);
       }
       else
       {
@@ -501,7 +503,8 @@ void xiiGALCommandListD3D11::UpdateBufferExtendedPlatform(xiiGALBuffer* pBuffer,
     }
     else
     {
-      D3D11_MAP mapType = (mapFlags == xiiGALMapFlags::Discard) ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE;
+      D3D11_MAP mapType      = (mapFlags == xiiGALMapFlags::Discard) ? D3D11_MAP_WRITE_DISCARD : D3D11_MAP_WRITE_NO_OVERWRITE;
+      auto      pCommandList = (mapFlags == xiiGALMapFlags::Discard) ? m_pCommandList : pDeviceD3D11->GetImmediateContext(); // Used in buffer updates.
 
       D3D11_MAPPED_SUBRESOURCE mapResult;
       if (SUCCEEDED(pCommandList->Map(pDestinationBufferD3D11->GetBuffer(), 0, mapType, 0, &mapResult)))

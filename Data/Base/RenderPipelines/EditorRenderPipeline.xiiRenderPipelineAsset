@@ -11,7 +11,7 @@ o
 		s %AssetType{"RenderPipeline"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{5189305147899033520,5264929536831011917}}
-		u4 %Hash{10915628779472140178}
+		u4 %Hash{9934807755097595561}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps
@@ -172,7 +172,7 @@ o
 		Uuid %Input{u4{1693719222467801280,16253266015374940668}}
 		s %MSAA_Mode{"xiiGALMSAASampleCount::FourSamples"}
 		s %Name{""}
-		Vec2 %Node::Pos{f{0xCD3CF043,0x6E07C7C2}}
+		Vec2 %Node::Pos{f{0xB3C4EC43,0x6E07C7C2}}
 		Uuid %Output{u4{12549809385479936141,9318708163534302915}}
 	}
 }
@@ -383,7 +383,7 @@ o
 		b %Active{1}
 		b %Clear{1}
 		Color %ClearColor{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
-		s %Format{"xiiGALTextureFormat::D24UNormalizedS8UInt"}
+		s %Format{"xiiSourceFormat::Depth24BitStencil8Bit"}
 		s %Name{"DepthStencil"}
 		Vec2 %Node::Pos{f{0xB434FAC4,0xACF141C3}}
 		Uuid %Output{u4{1500338303832159158,6081944764471030876}}
@@ -561,6 +561,19 @@ o
 }
 o
 {
+	Uuid %id{u4{105562483887252380,5483601361641284243}}
+	s %t{"DocumentNodeManager_DefaultConnection"}
+	u3 %v{1}
+	p
+	{
+		Uuid %Connection::Source{u4{16840712943722261895,5279572552041294647}}
+		s %Connection::SourcePin{"Output"}
+		Uuid %Connection::Target{u4{13322696006305406385,5091989779618512607}}
+		s %Connection::TargetPin{"Color0"}
+	}
+}
+o
+{
 	Uuid %id{u4{15282650655215059344,5492193585903248934}}
 	s %t{"DocumentNodeManager_DefaultConnection"}
 	u3 %v{1}
@@ -585,19 +598,6 @@ o
 		s %Name{""}
 		Vec2 %Node::Pos{f{0x3AC85EC4,0xD0B05AC3}}
 		s %ShadingQuality{"xiiForwardRenderShadingQuality::Normal"}
-	}
-}
-o
-{
-	Uuid %id{u4{11455447251752844931,5561017216901247176}}
-	s %t{"DocumentNodeManager_DefaultConnection"}
-	u3 %v{1}
-	p
-	{
-		Uuid %Connection::Source{u4{16840712943722261895,5279572552041294647}}
-		s %Connection::SourcePin{"Output"}
-		Uuid %Connection::Target{u4{13322696006305406385,5091989779618512607}}
-		s %Connection::TargetPin{"Color0"}
 	}
 }
 o
@@ -681,8 +681,8 @@ o
 	{
 		b %Active{1}
 		b %Clear{1}
-		Color %ClearColor{f{0x7DD3AD3C,0x7DD3AD3C,0x7DD3AD3C,0x0000803F}}
-		s %Format{"xiiGALTextureFormat::RGBA16Float"}
+		Color %ClearColor{f{0,0,0,0x0000803F}}
+		s %Format{"xiiSourceFormat::Color4Channel16BitFloat"}
 		s %Name{"ColorSource"}
 		Vec2 %Node::Pos{f{0x403DA1C4,0x67047BC3}}
 		Uuid %Output{u4{7053429786865683355,12290627144904873763}}
@@ -809,7 +809,6 @@ o
 			Uuid{u4{4930078867020710797,4769897519508714145}}
 			Uuid{u4{7979952125669242009,5082784643417179236}}
 			Uuid{u4{14597216330890791079,5346000778102780937}}
-			Uuid{u4{11455447251752844931,5561017216901247176}}
 			Uuid{u4{15282650655215059344,5492193585903248934}}
 			Uuid{u4{18231352288840467377,5589899293176819568}}
 			Uuid{u4{834378831336964240,5751617149466920510}}
@@ -818,6 +817,7 @@ o
 			Uuid{u4{14158916982781269897,5166489920795777660}}
 			Uuid{u4{14761260171370226848,4614374089066522459}}
 			Uuid{u4{11109057645192709762,4966431435699652749}}
+			Uuid{u4{105562483887252380,5483601361641284243}}
 		}
 	}
 }
@@ -1203,23 +1203,6 @@ o
 }
 o
 {
-	Uuid %id{u4{2095558529357776083,3563582284431343824}}
-	s %t{"xiiReflectedTypeDescriptor"}
-	u3 %v{1}
-	p
-	{
-		VarArray %Attributes{}
-		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
-		VarArray %Functions{}
-		s %ParentTypeName{"xiiEnumBase"}
-		s %PluginName{"Static"}
-		VarArray %Properties{}
-		s %TypeName{"xiiGALMSAASampleCount"}
-		u3 %TypeVersion{1}
-	}
-}
-o
-{
 	Uuid %id{u4{9458844672690985845,4779112216626949986}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -1351,7 +1334,7 @@ o
 		s %ParentTypeName{"xiiEnumBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiGALTextureFormat"}
+		s %TypeName{"xiiSourceFormat"}
 		u3 %TypeVersion{1}
 	}
 }
@@ -1844,6 +1827,23 @@ o
 	p
 	{
 		s %Suffix{" m"}
+	}
+}
+o
+{
+	Uuid %id{u4{9829981565878393430,16210413098011528930}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::IsEnum|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiEnumBase"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiGALMSAASampleCount"}
+		u3 %TypeVersion{1}
 	}
 }
 o

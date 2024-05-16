@@ -15,7 +15,7 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSourcePass, 1, xiiRTTIDefaultAllocator<xiiSo
   XII_BEGIN_PROPERTIES
   {
     XII_MEMBER_PROPERTY("Output", m_PinOutput),
-    XII_ENUM_MEMBER_PROPERTY("Format", xiiGALTextureFormat, m_Format),
+    XII_ENUM_MEMBER_PROPERTY("Format", xiiSourceFormat, m_Format),
     XII_ENUM_MEMBER_PROPERTY("SampleCount", xiiGALMSAASampleCount, m_SampleCount),
     XII_MEMBER_PROPERTY("ClearColor", m_ClearColor)->AddAttributes(new xiiExposeColorAlphaAttribute()),
     XII_MEMBER_PROPERTY("Clear", m_bClear),
@@ -23,6 +23,19 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSourcePass, 1, xiiRTTIDefaultAllocator<xiiSo
   XII_END_PROPERTIES;
 }
 XII_END_DYNAMIC_REFLECTED_TYPE;
+
+XII_BEGIN_STATIC_REFLECTED_ENUM(xiiSourceFormat, 1)
+  XII_ENUM_CONSTANTS(
+    xiiSourceFormat::Color4Channel8BitNormalized_sRGB,
+    xiiSourceFormat::Color4Channel8BitNormalized,
+    xiiSourceFormat::Color4Channel16BitFloat,
+    xiiSourceFormat::Color4Channel32BitFloat,
+    xiiSourceFormat::Color3Channel11_11_10BitFloat,
+    xiiSourceFormat::Depth16Bit,
+    xiiSourceFormat::Depth24BitStencil8Bit,
+    xiiSourceFormat::Depth32BitFloat
+  )
+XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 xiiSourcePass::xiiSourcePass(xiiStringView sName) :
@@ -30,15 +43,7 @@ xiiSourcePass::xiiSourcePass(xiiStringView sName) :
 {
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  if (pDevice->GetGraphicsDeviceType() == xiiGALGraphicsDeviceType::Vulkan)
-  {
-    m_Format = xiiGALTextureFormat::BGRA8UNormalizedSRGB;
-  }
-  else
-  {
-    m_Format = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
-  }
-
+  m_Format      = xiiSourceFormat::Default;
   m_SampleCount = xiiGALMSAASampleCount::OneSample;
   m_bClear      = true;
   m_ClearColor  = xiiColor::Black;
@@ -54,14 +59,82 @@ bool xiiSourcePass::GetRenderTargetDescriptions(const xiiView& view, const xiiAr
   xiiUInt32 uiWidth  = static_cast<xiiUInt32>(view.GetViewport().width);
   xiiUInt32 uiHeight = static_cast<xiiUInt32>(view.GetViewport().height);
 
+  xiiGALDevice*              pDevice       = xiiGALDevice::GetDefaultDevice();
+  const xiiGALRenderTargets& renderTargets = view.GetActiveRenderTargets();
+
   xiiGALTextureCreationDescription desc;
-  desc.m_Type               = xiiGALResourceDimension::Texture2D;
-  desc.m_Format             = m_Format;
+  desc.m_Type = xiiGALResourceDimension::Texture2D;
+
+  // Color
+  if (m_Format == xiiSourceFormat::Color4Channel8BitNormalized || m_Format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
+  {
+    xiiGALTextureFormat::Enum preferredFormat = xiiGALTextureFormat::Unknown;
+    if (const xiiGALTextureView* pTextureView = pDevice->GetTextureView(renderTargets.m_hRTs[0]))
+    {
+      auto rendertargetDesc = pTextureView->GetTexture()->GetDescription();
+
+      preferredFormat = rendertargetDesc.m_Format;
+    }
+
+    switch (preferredFormat)
+    {
+      case xiiGALTextureFormat::RGBA8UNormalized:
+      case xiiGALTextureFormat::RGBA8UNormalizedSRGB:
+      default:
+        if (m_Format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
+        {
+          desc.m_Format = xiiGALTextureFormat::RGBA8UNormalizedSRGB;
+        }
+        else
+        {
+          desc.m_Format = xiiGALTextureFormat::RGBA8UNormalized;
+        }
+        break;
+      case xiiGALTextureFormat::BGRA8UNormalized:
+      case xiiGALTextureFormat::BGRA8UNormalizedSRGB:
+        if (m_Format == xiiSourceFormat::Color4Channel8BitNormalized_sRGB)
+        {
+          desc.m_Format = xiiGALTextureFormat::BGRA8UNormalizedSRGB;
+        }
+        else
+        {
+          desc.m_Format = xiiGALTextureFormat::BGRA8UNormalized;
+        }
+        break;
+    }
+  }
+  else
+  {
+    switch (m_Format)
+    {
+      case xiiSourceFormat::Color4Channel16BitFloat:
+        desc.m_Format = xiiGALTextureFormat::RGBA16Float;
+        break;
+      case xiiSourceFormat::Color4Channel32BitFloat:
+        desc.m_Format = xiiGALTextureFormat::RGBA32Float;
+        break;
+      case xiiSourceFormat::Color3Channel11_11_10BitFloat:
+        desc.m_Format = xiiGALTextureFormat::RG11B10Float;
+        break;
+      case xiiSourceFormat::Depth16Bit:
+        desc.m_Format = xiiGALTextureFormat::D16UNormalized;
+        break;
+      case xiiSourceFormat::Depth24BitStencil8Bit:
+        desc.m_Format = xiiGALTextureFormat::D24UNormalizedS8UInt;
+        break;
+      case xiiSourceFormat::Depth32BitFloat:
+        desc.m_Format = xiiGALTextureFormat::D32Float;
+        break;
+
+        XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    }
+  }
+
   desc.m_Size.width         = uiWidth;
   desc.m_Size.height        = uiHeight;
   desc.m_uiSampleCount      = m_SampleCount;
   desc.m_uiArraySizeOrDepth = view.GetCamera()->IsStereoscopic() ? 2 : 1;
-  desc.m_BindFlags          = ((!xiiGALTextureFormat::IsDepthFormat(m_Format) ? xiiGALBindFlags::RenderTarget : xiiGALBindFlags::DepthStencil) | xiiGALBindFlags::ShaderResource);
+  desc.m_BindFlags          = ((!xiiGALTextureFormat::IsDepthFormat(desc.m_Format) ? xiiGALBindFlags::RenderTarget : xiiGALBindFlags::DepthStencil) | xiiGALBindFlags::ShaderResource);
 
   if (desc.m_uiArraySizeOrDepth > 1 || desc.m_uiSampleCount > xiiGALMSAASampleCount::OneSample)
     desc.m_Type = xiiGALResourceDimension::Texture2DArray;
@@ -183,7 +256,7 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     clearValue.m_ClearColor    = m_ClearColor;
   }
 
-  if (auto pGraphicsQueue = pDevice->GetGraphicsQueue())
+  if (auto pGraphicsQueue = pDevice->GetDefaultCommandQueue())
   {
     auto pCommandList = pGraphicsQueue->BeginCommandList(GetName());
     pCommandList->BeginRenderPass(renderPassDescription);

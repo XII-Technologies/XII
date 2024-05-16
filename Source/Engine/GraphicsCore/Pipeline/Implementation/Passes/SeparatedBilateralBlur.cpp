@@ -91,7 +91,7 @@ void xiiSeparatedBilateralBlurPass::Execute(const xiiRenderViewContext& renderVi
 {
   if (outputs[m_PinOutput.m_uiOutputIndex])
   {
-    xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
+    xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
     // Setup input view and sampler
     xiiGALTextureViewCreationDescription rvcd;

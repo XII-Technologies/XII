@@ -6,6 +6,8 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
+struct ID3D12CommandQueue;
+
 class XII_GRAPHICSD3D12_DLL xiiGALCommandQueueD3D12 final : public xiiGALCommandQueue
 {
 public:
@@ -20,6 +22,10 @@ public:
 
   virtual xiiGALCommandList* BeginCommandList(xiiStringView sScopeName) override final;
 
+  void UnbindTextureFromFramebuffer(xiiGALTextureD3D12* pTextureD3D12);
+
+  ID3D12CommandQueue* GetD3D12CommandQueue() const;
+
 protected:
   virtual void SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) override final;
 
@@ -30,6 +36,12 @@ protected:
   xiiGALCommandQueueD3D12(xiiGALDeviceD3D12* pDeviceD3D12, const xiiGALCommandQueueCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandQueueD3D12();
+
+  virtual xiiResult InitPlatform() override final;
+
+  virtual xiiResult DeInitPlatform() override final;
+
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
   xiiUniquePtr<xiiGALCommandListD3D12> m_pDefaultCommandList;

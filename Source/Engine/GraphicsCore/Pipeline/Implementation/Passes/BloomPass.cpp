@@ -85,7 +85,7 @@ void xiiBloomPass::Execute(const xiiRenderViewContext& renderViewContext, const 
     return;
   }
 
-  xiiGALDevice*       pDevice          = xiiGALDevice::GetDefaultDevice();
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiUInt32 uiWidth        = pColorInput->m_Desc.m_Size.width;
   xiiUInt32 uiHeight       = pColorInput->m_Desc.m_Size.height;

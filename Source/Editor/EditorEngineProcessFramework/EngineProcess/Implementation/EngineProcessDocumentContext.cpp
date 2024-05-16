@@ -448,7 +448,7 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
 
       // Download image
       {
-        auto pGALCommandQueue = xiiGALDevice::GetDefaultDevice()->GetGraphicsQueue();
+        auto pGALCommandQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue();
 
         auto pGALCommandList = pGALCommandQueue->BeginCommandList("Thumbnail Readback");
 
@@ -592,8 +592,8 @@ void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreate
 
   m_hThumbnailDepthRT = pDevice->CreateTexture(tcd);
 
-  m_ThumbnailRenderTargets.m_hRTs[0]   = m_hThumbnailColorRT;
-  m_ThumbnailRenderTargets.m_hDSTarget = m_hThumbnailDepthRT;
+  m_ThumbnailRenderTargets.m_hRTs[0]   = pDevice->GetTexture(m_hThumbnailColorRT)->GetDefaultView(xiiGALTextureViewType::RenderTarget);
+  m_ThumbnailRenderTargets.m_hDSTarget = pDevice->GetTexture(m_hThumbnailDepthRT)->GetDefaultView(xiiGALTextureViewType::DepthStencil);
   m_pThumbnailViewContext->SetupRenderTarget({}, &m_ThumbnailRenderTargets, m_uiThumbnailWidth, m_uiThumbnailHeight);
 
   xiiResourceManager::ForceNoFallbackAcquisition(3);

@@ -184,13 +184,13 @@ XII_ALWAYS_INLINE DXGI_FORMAT xiiD3D12TypeConversions::GetFormat(xiiEnum<xiiGALT
     case xiiGALTextureFormat::RGBA32SInt:
       return DXGI_FORMAT_R32G32B32A32_SINT;
     case xiiGALTextureFormat::RGB32Typeless:
-      return DXGI_FORMAT_R32G32B32A32_TYPELESS;
+      return DXGI_FORMAT_R32G32B32_TYPELESS;
     case xiiGALTextureFormat::RGB32Float:
-      return DXGI_FORMAT_R32G32B32A32_FLOAT;
+      return DXGI_FORMAT_R32G32B32_FLOAT;
     case xiiGALTextureFormat::RGB32UInt:
-      return DXGI_FORMAT_R32G32B32A32_UINT;
+      return DXGI_FORMAT_R32G32B32_UINT;
     case xiiGALTextureFormat::RGB32SInt:
-      return DXGI_FORMAT_R32G32B32A32_SINT;
+      return DXGI_FORMAT_R32G32B32_SINT;
     case xiiGALTextureFormat::RGBA16Typeless:
       return DXGI_FORMAT_R16G16B16A16_TYPELESS;
     case xiiGALTextureFormat::RGBA16Float:

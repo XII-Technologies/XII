@@ -21,6 +21,7 @@
 ////////// Forward Declarations //////////
 
 struct xiiGALSwapChainCreationDescription;
+struct xiiGALCommandQueueCreationDescription;
 struct xiiGALCommandListCreationDescription;
 struct xiiGALBLASTriangleDescription;
 struct xiiGALBLASBoundingBoxDescription;

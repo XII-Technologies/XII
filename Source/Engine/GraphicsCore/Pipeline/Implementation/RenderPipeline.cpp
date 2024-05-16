@@ -505,6 +505,8 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
 
   m_ConnectionToTextureIndex.Clear();
 
+  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
   // Gather all connections that share the same path-through texture and their first and last usage pass index.
   for (xiiUInt16 i = 0; i < static_cast<xiiUInt16>(m_Passes.GetCount()); i++)
   {
@@ -564,11 +566,11 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
         xiiRenderPipelinePassConnection* pConn = data.m_Inputs[j];
         if (pConn != nullptr)
         {
-          const xiiGALTextureHandle* hTexture = pTargetPass->GetTextureHandle(renderTargets, pPass->GetInputPins()[j]);
+          const xiiGALTextureViewHandle* hTextureView = pTargetPass->GetTextureViewHandle(renderTargets, pPass->GetInputPins()[j]);
           XII_ASSERT_DEV(m_ConnectionToTextureIndex.Contains(pConn), "");
 
           xiiUInt32 uiDataIdx = m_ConnectionToTextureIndex[pConn];
-          if (!hTexture)
+          if (!hTextureView)
           {
             m_TextureUsage[uiDataIdx].m_iTargetTextureIndex = -1;
             for (auto pUsedByConn : m_TextureUsage[uiDataIdx].m_UsedBy)
@@ -576,14 +578,21 @@ bool xiiRenderPipeline::CreateRenderTargetUsage(const xiiView& view)
               pUsedByConn->m_TextureHandle.Invalidate();
             }
           }
-          else if (!hTexture->IsInvalidated() || pConn->m_Desc.CalculateHash() == defaultTextureDescHash)
+          else if (!hTextureView->IsInvalidated() || pConn->m_Desc.CalculateHash() == defaultTextureDescHash)
           {
-            m_TextureUsage[uiDataIdx].m_iTargetTextureIndex = static_cast<xiiInt32>(hTexture - reinterpret_cast<const xiiGALTextureHandle*>(&renderTargets));
-            XII_ASSERT_DEV(reinterpret_cast<const xiiGALTextureHandle*>(&renderTargets)[m_TextureUsage[uiDataIdx].m_iTargetTextureIndex] == *hTexture, "Offset computation broken.");
+            m_TextureUsage[uiDataIdx].m_iTargetTextureIndex = static_cast<xiiInt32>(hTextureView - reinterpret_cast<const xiiGALTextureViewHandle*>(&renderTargets));
+            XII_ASSERT_DEV(reinterpret_cast<const xiiGALTextureViewHandle*>(&renderTargets)[m_TextureUsage[uiDataIdx].m_iTargetTextureIndex] == *hTextureView, "Offset computation broken.");
 
             for (auto pUsedByConn : m_TextureUsage[uiDataIdx].m_UsedBy)
             {
-              pUsedByConn->m_TextureHandle = *hTexture;
+              if (xiiGALTextureView* pTextureView = pDevice->GetTextureView(*hTextureView))
+              {
+                pUsedByConn->m_TextureHandle = pTextureView->GetDescription().m_hTexture;
+              }
+              else
+              {
+                pUsedByConn->m_TextureHandle = xiiGALTextureHandle();
+              }
             }
           }
           else
@@ -1181,17 +1190,17 @@ void xiiRenderPipeline::Render(xiiRenderContext* pRenderContext)
   if (const xiiGALSwapChain* pSwapChain = pDevice->GetSwapChain(renderViewContext.m_pViewData->m_hSwapChain))
   {
     xiiGALRenderTargets renderTargets;
-    renderTargets.m_hRTs[0] = pSwapChain->GetBackBufferTexture();
+    renderTargets.m_hRTs[0] = pDevice->GetTexture(pSwapChain->GetBackBufferTexture())->GetDefaultView(xiiGALTextureViewType::RenderTarget);
     // Update target textures after the swap chain acquired new textures.
     for (xiiUInt32 i = 0; i < m_TextureUsage.GetCount(); i++)
     {
       TextureUsageData& textureUsageData = m_TextureUsage[i];
       if (textureUsageData.m_iTargetTextureIndex != -1)
       {
-        xiiGALTextureHandle hTexture = reinterpret_cast<const xiiGALTextureHandle*>(&renderTargets)[textureUsageData.m_iTargetTextureIndex];
+        xiiGALTextureViewHandle hTextureView = reinterpret_cast<const xiiGALTextureViewHandle*>(&renderTargets)[textureUsageData.m_iTargetTextureIndex];
         for (auto pUsedByConn : textureUsageData.m_UsedBy)
         {
-          pUsedByConn->m_TextureHandle = hTexture;
+          pUsedByConn->m_TextureHandle = pDevice->GetTextureView(hTextureView)->GetDescription().m_hTexture;
         }
       }
     }
@@ -1443,8 +1452,8 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
 
     // upload the image to the texture
     {
-      xiiGALCommandQueue* pGALCommandQueue = pDevice->GetGraphicsQueue(/*"RasterizerDebugViewUpdate"*/);
-      auto                pCommandList     = pGALCommandQueue->BeginCommandList();
+      xiiGALCommandQueue* pGALCommandQueue = pDevice->GetDefaultCommandQueue();
+      auto                pCommandList     = pGALCommandQueue->BeginCommandList("RasterizerDebugViewUpdate");
 
       xiiBoundingBoxU32 destBox;
       destBox.m_vMin.SetZero();

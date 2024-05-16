@@ -50,6 +50,17 @@ public:
   void DestroySwapChain(xiiGALSwapChainHandle hSwapChain);
 
 
+  /// \brief This creates a new command queue object.
+  ///
+  /// \param description - The command queue description. See xiiGALCommandQueueCreationDescription.
+  ///
+  /// \return The handle to the created command queue object. The function calls AddRef(), so that the new object will have one reference.
+  XII_NODISCARD xiiGALCommandQueueHandle CreateCommandQueue(const xiiGALCommandQueueCreationDescription& description);
+
+  /// \brief This destroys the command queue with the given handle.
+  void DestroyCommandQueue(xiiGALCommandQueueHandle hCommandQueue);
+
+
   /// \brief This creates a new blend state object.
   ///
   /// \param description - The blend state description. See xiiGALBlendStateCreationDescription.
@@ -293,20 +304,18 @@ public:
   /// \brief Returns the creation description for this device.
   XII_NODISCARD const xiiGALDeviceCreationDescription& GetDescription() const;
 
-  /// \brief Retrieves a pointer to the graphics queue, this is guaranteed to exist, for a successful device initialization.
-  XII_NODISCARD virtual xiiGALCommandQueue* GetGraphicsQueue() const = 0;
-
   /// \brief Retrieves a pointer to the compute queue if available, null otherwise.
-  XII_NODISCARD virtual xiiGALCommandQueue* GetComputeQueue() const = 0;
-
-  /// \brief Retrieves a pointer to the transfer (copy) queue if available, null otherwise.
-  XII_NODISCARD virtual xiiGALCommandQueue* GetTransferQueue() const = 0;
-
-  /// \brief Retrieves a pointer to the sparse binding queue if available, null otherwise.
-  XII_NODISCARD virtual xiiGALCommandQueue* GetSparseBindingQueue() const = 0;
+  ///
+  /// \param queueType - The queue type that has the required feature.
+  ///
+  /// \note The default graphics queue is guaranteed to exist, for a successful device initialization.
+  XII_NODISCARD virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType = xiiGALCommandQueueType::Graphics) const = 0;
 
   /// \brief Retrieves a pointer to the swap chain object with the given handle.
   XII_NODISCARD xiiGALSwapChain* GetSwapChain(xiiGALSwapChainHandle hSwapChain) const;
+
+  /// \brief Retrieves a pointer to the command queue object with the given handle.
+  XII_NODISCARD xiiGALCommandQueue* GetCommandQueue(xiiGALCommandQueueHandle hCommandQueue) const;
 
   /// \brief Retrieves a pointer to the blend state object with the given handle.
   XII_NODISCARD xiiGALBlendState* GetBlendState(xiiGALBlendStateHandle hBlendState) const;
@@ -420,6 +429,7 @@ protected:
   mutable xiiMutex m_Mutex;
 
   using SwapChainTable                 = xiiIdTable<xiiGALSwapChainHandle::IdType, xiiGALSwapChain*, xiiLocalAllocatorWrapper>;
+  using CommandQueueTable              = xiiIdTable<xiiGALCommandQueueHandle::IdType, xiiGALCommandQueue*, xiiLocalAllocatorWrapper>;
   using BlendStateTable                = xiiIdTable<xiiGALBlendStateHandle::IdType, xiiGALBlendState*, xiiLocalAllocatorWrapper>;
   using DepthStencilStateTable         = xiiIdTable<xiiGALDepthStencilStateHandle::IdType, xiiGALDepthStencilState*, xiiLocalAllocatorWrapper>;
   using RasterizerStateTable           = xiiIdTable<xiiGALRasterizerStateHandle::IdType, xiiGALRasterizerState*, xiiLocalAllocatorWrapper>;
@@ -440,6 +450,7 @@ protected:
   using PipelineResourceSignatureTable = xiiIdTable<xiiGALPipelineResourceSignatureHandle::IdType, xiiGALPipelineResourceSignature*, xiiLocalAllocatorWrapper>;
 
   SwapChainTable                 m_SwapChains;
+  CommandQueueTable              m_CommandQueues;
   BlendStateTable                m_BlendStates;
   DepthStencilStateTable         m_DepthStencilStates;
   RasterizerStateTable           m_RasterizerStates;
@@ -490,7 +501,7 @@ protected:
   virtual xiiResult InitializePlatform() = 0;
   virtual xiiResult ShutdownPlatform()   = 0;
 
-  virtual void CreateCommandQueuesPlatform() = 0;
+  virtual xiiResult CreateCommandQueuesPlatform() = 0;
 
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) = 0;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain)                        = 0;
@@ -500,6 +511,9 @@ protected:
 
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) = 0;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain)                          = 0;
+
+  virtual xiiGALCommandQueue* CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description) = 0;
+  virtual void                DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue)                       = 0;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) = 0;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState)                         = 0;

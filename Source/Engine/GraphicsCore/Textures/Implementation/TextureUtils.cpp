@@ -333,25 +333,25 @@ void xiiTextureUtils::ConfigureSampler(xiiEnum<xiiTextureFilterSetting> filter, 
     case xiiTextureFilterSetting::FixedAnisotropic2x:
       out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
       out_sampler.m_MagFilter       = xiiGALFilterType::Anisotropic;
-      out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
+      out_sampler.m_MipFilter       = xiiGALFilterType::Anisotropic;
       out_sampler.m_uiMaxAnisotropy = 2;
       break;
     case xiiTextureFilterSetting::FixedAnisotropic4x:
       out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
       out_sampler.m_MagFilter       = xiiGALFilterType::Anisotropic;
-      out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
+      out_sampler.m_MipFilter       = xiiGALFilterType::Anisotropic;
       out_sampler.m_uiMaxAnisotropy = 4;
       break;
     case xiiTextureFilterSetting::FixedAnisotropic8x:
       out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
       out_sampler.m_MagFilter       = xiiGALFilterType::Anisotropic;
-      out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
+      out_sampler.m_MipFilter       = xiiGALFilterType::Anisotropic;
       out_sampler.m_uiMaxAnisotropy = 8;
       break;
     case xiiTextureFilterSetting::FixedAnisotropic16x:
       out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
       out_sampler.m_MagFilter       = xiiGALFilterType::Anisotropic;
-      out_sampler.m_MinFilter       = xiiGALFilterType::Anisotropic;
+      out_sampler.m_MipFilter       = xiiGALFilterType::Anisotropic;
       out_sampler.m_uiMaxAnisotropy = 16;
       break;
     default:

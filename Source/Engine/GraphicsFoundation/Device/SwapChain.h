@@ -15,10 +15,10 @@ public:
   XII_NODISCARD const xiiGALSwapChainCreationDescription& GetDescription() const;
 
   /// \brief Acquires the next render target for presenting.
-  virtual void AcquireNextRenderTarget(xiiGALDevice* pDevice) = 0;
+  virtual void AcquireNextRenderTarget() = 0;
 
   /// \brief This presents a rendered image to the screen.
-  virtual void Present(xiiGALDevice* pDevice) = 0;
+  virtual void Present() = 0;
 
   /// \brief This changes the swap chain size.
   ///
@@ -26,7 +26,7 @@ public:
   /// \param newTransform - newTransform The new surface transform.
   ///
   /// \note When resizing non-primary swap chains, the engine unbinds the swap chain buffers from the output.
-  virtual xiiResult Resize(xiiGALDevice* pDevice, xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) = 0;
+  virtual xiiResult Resize(xiiSizeU32 newSize, xiiEnum<xiiGALSurfaceTransform> newTransform = xiiGALSurfaceTransform::Optimal) = 0;
 
   /// \brief This sets the swap chain to full screen mode. Note that this is only supported on the Windows platform.
   virtual void SetFullScreenMode(const xiiGALDisplayModeDescription& displayMode) = 0;

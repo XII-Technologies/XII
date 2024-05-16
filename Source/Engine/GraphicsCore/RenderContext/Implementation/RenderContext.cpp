@@ -120,8 +120,9 @@ xiiRenderContext::xiiRenderContext()
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Retrive a command list that we record all commands in the render context with.
-  m_pCommandQueue = pDevice->GetGraphicsQueue();
+  m_pCommandQueue = pDevice->GetDefaultCommandQueue();
   m_pCommandList  = m_pCommandQueue->BeginCommandList();
+  // No commands to record, so we end the command list immediately.
   m_pCommandList->End();
 
   ResetContextState();
@@ -244,6 +245,7 @@ void xiiRenderContext::EndRenderPass()
 void xiiRenderContext::EndRendering()
 {
   m_pCommandQueue->Submit(GetGraphicsCommandList(), false);
+  m_pCommandQueue->WaitForIdle();
 
   m_BeginRenderPass     = xiiGALBeginRenderPassDescription();
   m_hCurrentFramebuffer = xiiGALFramebufferHandle();
@@ -270,6 +272,7 @@ xiiGALCommandList* xiiRenderContext::BeginCompute(xiiStringView sName /*= {}*/)
 void xiiRenderContext::EndCompute()
 {
   m_pCommandQueue->Submit(GetComputeCommandList(), false);
+  m_pCommandQueue->WaitForIdle();
 
   // TODO: See EndRendering
   // ResetContextState();

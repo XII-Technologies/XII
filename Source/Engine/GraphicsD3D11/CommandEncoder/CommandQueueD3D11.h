@@ -4,6 +4,8 @@
 
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
+#include <atomic>
+
 struct ID3D11DeviceContext1;
 
 class XII_GRAPHICSD3D11_DLL xiiGALCommandQueueD3D11 final : public xiiGALCommandQueue
@@ -13,7 +15,7 @@ class XII_GRAPHICSD3D11_DLL xiiGALCommandQueueD3D11 final : public xiiGALCommand
 public:
   virtual xiiUInt64 GetNextFenceValue() const override final;
 
-  virtual xiiUInt64 GetCompletedFenceValue() const override final;
+  virtual xiiUInt64 GetCompletedFenceValue() override final;
 
   virtual xiiUInt64 WaitForIdle() override final;
 
@@ -24,7 +26,7 @@ public:
   void ReleaseSwapChainCommanListReferences();
 
 protected:
-  virtual void SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) override final;
+  virtual xiiUInt64 SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) override final;
 
 protected:
   friend class xiiGALDeviceD3D11;
@@ -34,15 +36,29 @@ protected:
 
   virtual ~xiiGALCommandQueueD3D11();
 
+  virtual xiiResult InitPlatform() override final;
+
+  virtual xiiResult DeInitPlatform() override final;
+
   virtual void SetDebugNamePlatform(xiiStringView sName) override final;
 
 protected:
-  xiiUInt64 m_uiCompletedFenceValue = 0U;
+  ID3D11DeviceContext4* m_pImmediateContext = nullptr;
 
-  ID3D11DeviceContext1* m_pDeviceContext = nullptr;
-
+  xiiMutex                                 m_QueueMutex;
   xiiDeque<xiiGALCommandList*>             m_CommandLists;
   xiiDynamicArray<xiiGALCommandListD3D11*> m_SwapChainCommandListReferences;
+
+  // A value that will be signaled by the command queue next.
+  std::atomic<xiiUInt64> m_NextFenceValue{1};
+
+  // Last fence value completed by the GPU
+  std::atomic<xiiUInt64> m_LastCompletedFenceValue{0};
+
+  // The fence is signaled right after the command list has been submitted to the command queue for execution.
+  // All command lists with fence value less or equal to the signaled value are guaranteed to be finished by the GPU.
+  ID3D11Fence* m_pD3D11DFence          = nullptr;
+  HANDLE       m_WaitForGPUEventHandle = {};
 };
 
 #include <GraphicsD3D11/CommandEncoder/Implementation/CommandQueueD3D11_inl.h>

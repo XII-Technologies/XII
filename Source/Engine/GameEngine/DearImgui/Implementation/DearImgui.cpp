@@ -97,9 +97,11 @@ void xiiImgui::Startup(xiiImguiConfigFontCallback configFontCallback)
     memoryDesc.m_uiDepthStride = width * height * 4;
 
     xiiTexture2DResourceDescriptor desc;
+    desc.m_DescGAL.m_Type        = xiiGALResourceDimension::Texture2D;
     desc.m_DescGAL.m_Size.width  = width;
     desc.m_DescGAL.m_Size.height = height;
     desc.m_DescGAL.m_Format      = xiiGALTextureFormat::RGBA8UNormalized;
+    desc.m_DescGAL.m_Usage       = xiiGALResourceUsage::Immutable;
     desc.m_InitialContent        = xiiMakeArrayPtr(&memoryDesc, 1);
 
     hFont = xiiResourceManager::GetOrCreateResource<xiiTexture2DResource>("ImguiFont", std::move(desc));

@@ -204,7 +204,7 @@ o
 		b %Active{1}
 		b %Clear{1}
 		Color %ClearColor{f{0x0000803F,0x0000803F,0x0000803F,0x0000803F}}
-		s %Format{"xiiGALTextureFormat::D24UNormalizedS8UInt"}
+		s %Format{"xiiSourceFormat::Depth24BitStencil8Bit"}
 		s %Name{"DepthStencil"}
 		Vec2 %Node::Pos{f{0xE19BB9C4,0x25F266C3}}
 		Uuid %Output{u4{1500338303832159158,6081944764471030876}}
@@ -291,7 +291,7 @@ o
 		b %Active{1}
 		b %Clear{1}
 		Color %ClearColor{f{0,0,0,0x0000803F}}
-		s %Format{"xiiGALTextureFormat::RGBA8UNormalizedSRGB"}
+		s %Format{"xiiSourceFormat::Color4Channel8BitNormalized_sRGB"}
 		s %Name{"ColorSource"}
 		Vec2 %Node::Pos{f{0x89DFB9C4,0x1409A7C3}}
 		Uuid %Output{u4{7053429786865683355,12290627144904873763}}
@@ -545,7 +545,7 @@ o
 		s %ParentTypeName{"xiiEnumBase"}
 		s %PluginName{"Static"}
 		VarArray %Properties{}
-		s %TypeName{"xiiGALTextureFormat"}
+		s %TypeName{"xiiSourceFormat"}
 		u3 %TypeVersion{1}
 	}
 }
