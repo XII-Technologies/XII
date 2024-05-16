@@ -2,13 +2,39 @@
 // static
 XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshNormalPrecision::ToResourceFormatNormal(Enum value)
 {
-  return value == _8Bit ? xiiGALTextureFormat::RGBA8UNormalized : (value == _16Bit ? xiiGALTextureFormat::RGBA16UNormalized : xiiGALTextureFormat::RGB32Float);
+  switch (value)
+  {
+    case xiiMeshNormalPrecision::_8Bit:
+      return xiiGALTextureFormat::GR8GB8UNormalized;
+    case xiiMeshNormalPrecision::_10Bit:
+      return xiiGALTextureFormat::RGB10A2UNormalized;
+    case xiiMeshNormalPrecision::_16Bit:
+      return xiiGALTextureFormat::RGBA16UNormalized;
+    case xiiMeshNormalPrecision::_32Bit:
+      return xiiGALTextureFormat::RGB32Float;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiGALTextureFormat::Unknown;
 }
 
 // static
 XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshNormalPrecision::ToResourceFormatTangent(Enum value)
 {
-  return value == _8Bit ? xiiGALTextureFormat::RGBA8UNormalized : (value == _16Bit ? xiiGALTextureFormat::RGBA16UNormalized : xiiGALTextureFormat::RGB32Float);
+  switch (value)
+  {
+    case xiiMeshNormalPrecision::_8Bit:
+      return xiiGALTextureFormat::RGBA8UNormalized;
+    case xiiMeshNormalPrecision::_10Bit:
+      return xiiGALTextureFormat::RGB10A2UNormalized;
+    case xiiMeshNormalPrecision::_16Bit:
+      return xiiGALTextureFormat::RGBA16UNormalized;
+    case xiiMeshNormalPrecision::_32Bit:
+      return xiiGALTextureFormat::RGBA32Float;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiGALTextureFormat::Unknown;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -16,7 +42,16 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshNormalPrecision::ToResourc
 // static
 XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshTexCoordPrecision::ToResourceFormat(Enum value)
 {
-  return value == _16Bit ? xiiGALTextureFormat::RG16Float : xiiGALTextureFormat::RG32Float;
+  switch (value)
+  {
+    case xiiMeshTexCoordPrecision::_16Bit:
+      return xiiGALTextureFormat::RG16Float;
+    case xiiMeshTexCoordPrecision::_32Bit:
+      return xiiGALTextureFormat::RG32Float;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiGALTextureFormat::Unknown;
 }
 
 //////////////////////////////////////////////////////////////////////////
