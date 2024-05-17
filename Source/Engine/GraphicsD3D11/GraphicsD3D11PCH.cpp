@@ -5,6 +5,7 @@ XII_STATICLINK_LIBRARY(GraphicsD3D11)
   if (bReturn)
     return;
 
+  XII_STATICLINK_REFERENCE(GraphicsD3D11_Startup);
   XII_STATICLINK_REFERENCE(GraphicsD3D11_CommandEncoder_Implementation_CommandListD3D11);
   XII_STATICLINK_REFERENCE(GraphicsD3D11_CommandEncoder_Implementation_CommandQueueD3D11);
   XII_STATICLINK_REFERENCE(GraphicsD3D11_Device_Implementation_DeviceD3D11);
