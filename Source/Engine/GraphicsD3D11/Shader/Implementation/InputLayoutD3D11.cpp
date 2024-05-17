@@ -39,25 +39,6 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform()
     return XII_FAILURE;
   }
 
-  xiiHybridArray<xiiGALVertexInputLayout, 8U> vertexInputLayouts(pShaderD3D11->GetVertexInputLayout());
-
-  auto FindLocation = [&](xiiEnum<xiiGALInputLayoutSemantic> sematic, xiiEnum<xiiGALTextureFormat> format) -> xiiUInt32 {
-    for (xiiUInt32 i = 0; i < vertexInputLayouts.GetCount(); ++i)
-    {
-      if (vertexInputLayouts[i].m_Semantic == sematic)
-      {
-        if (vertexInputLayouts[i].m_Format != format)
-        {
-          xiiLog::Warning("Found matching sematic {} with differing formats: {} : {}.", sematic, format, vertexInputLayouts[i].m_Format);
-        }
-        xiiUInt32 uiLocation = vertexInputLayouts[i].m_uiSemanticIndex;
-        vertexInputLayouts.RemoveAtAndSwap(i);
-        return uiLocation;
-      }
-    }
-    return xiiInvalidIndex;
-  };
-
   xiiHybridArray<D3D11_INPUT_ELEMENT_DESC, 8> inputElementDescriptions;
 
   const xiiUInt32 uiLayoutCount = m_Description.m_LayoutElements.GetCount();
@@ -65,13 +46,6 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform()
   for (xiiUInt32 uiLayout = 0; uiLayout < uiLayoutCount; ++uiLayout)
   {
     const auto& inputLayout = m_Description.m_LayoutElements[uiLayout];
-
-    xiiUInt32 uiLocation = FindLocation(inputLayout.m_Semantic, inputLayout.m_Format);
-    if (uiLocation == xiiInvalidIndex)
-    {
-      xiiLog::Warning("Vertex buffer semantic {} not used by shader.", inputLayout.m_Semantic);
-      continue;
-    }
 
     D3D11_INPUT_ELEMENT_DESC& layoutElement = inputElementDescriptions.ExpandAndGetRef();
     layoutElement.SemanticName              = GALSemanticToD3D11[inputLayout.m_Semantic];
@@ -87,12 +61,6 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform()
       xiiLog::Error("Vertex input layout format {0} of input layout at index {1} is unknown!", inputLayout.m_Format, uiLayout);
       return XII_FAILURE;
     }
-  }
-
-  if (!vertexInputLayouts.IsEmpty())
-  {
-    xiiLog::Error("Vertex buffers do not cover all vertex input layouts defined in the shader!");
-    // return XII_FAILURE;
   }
 
   auto& byteCode = pShaderD3D11->GetDescription().m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)];
