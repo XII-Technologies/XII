@@ -327,8 +327,7 @@ xiiResult xiiGALPipelineStateD3D11::CommitShaderResources(xiiGALCommandListD3D11
   }
 
   // Set input layout.
-  if (m_pInputLayoutD3D11 != nullptr)
-    pContext->IASetInputLayout(m_pInputLayoutD3D11->GetInputLayout());
+  pContext->IASetInputLayout((m_pInputLayoutD3D11 != nullptr) ? m_pInputLayoutD3D11->GetInputLayout() : nullptr);
 
   // Set constant (uniform) buffers.
   for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderStage::ENUM_COUNT; ++uiStage)

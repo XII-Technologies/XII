@@ -389,8 +389,6 @@ void xiiGALDeviceD3D11::BeginFramePlatform(const xiiUInt64 uiRenderFrame)
 
 void xiiGALDeviceD3D11::EndFramePlatform()
 {
-  // Call FinishFrame() to release references to Swapchain resources
-
   FreeTemporaryResources(m_uiFrameCounter);
 
   ++m_uiFrameCounter;
