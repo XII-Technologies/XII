@@ -260,7 +260,6 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiTexture2DResource, xiiTexture2DResourceDesc
   m_uiWidth  = descriptor.m_DescGAL.m_Size.width;
   m_uiHeight = descriptor.m_DescGAL.m_Size.height;
 
-  descriptor.m_DescGAL.m_sName = GetResourceDescription();
   descriptor.m_DescGAL.m_BindFlags.Add(xiiGALBindFlags::ShaderResource);
 
   xiiGALTextureData textureData;

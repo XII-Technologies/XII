@@ -49,7 +49,7 @@ public:
   const xiiHMDInfo&      GetHmdInfo() const override;
   xiiXRInputDevice&      GetXRInput() const override;
   bool                   SupportsCompanionView() override;
-  xiiUniquePtr<xiiActor> CreateActor(xiiView* pView, xiiEnum<xiiGALSampleCount> msaaCount = xiiGALSampleCount::OneSample, xiiUniquePtr<xiiWindowBase> pCompanionWindow = nullptr, xiiUniquePtr<xiiWindowOutputTargetGAL> pCompanionWindowOutput = nullptr) override;
+  xiiUniquePtr<xiiActor> CreateActor(xiiView* pView, xiiEnum<xiiGALMSAASampleCount> msaaCount = xiiGALMSAASampleCount::OneSample, xiiUniquePtr<xiiWindowBase> pCompanionWindow = nullptr, xiiUniquePtr<xiiWindowOutputTargetGAL> pCompanionWindowOutput = nullptr) override;
   xiiGALTextureHandle    GetCurrentTexture() override;
   void                   OnActorDestroyed() override;
   void                   GALDeviceEventHandler(const xiiGALDeviceEvent& e);

@@ -18,7 +18,6 @@ xiiReflectionProbeMapping::xiiReflectionProbeMapping(xiiUInt32 uiAtlasSize) :
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   xiiGALTextureCreationDescription desc;
-  desc.m_sName              = "Reflection Specular Texture";
   desc.m_Type               = xiiGALResourceDimension::TextureCubeArray;
   desc.m_Format             = xiiGALTextureFormat::RGBA16Float;
   desc.m_Size.width         = s_uiReflectionCubeMapSize;

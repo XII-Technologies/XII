@@ -14,9 +14,7 @@
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Buffer.h>
-#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Common/LightData.h>
 
@@ -257,18 +255,13 @@ struct xiiShadowPool::Data
   {
     if (m_hShadowAtlasTexture.IsInvalidated())
     {
-      xiiGALTextureCreationDescription desc;
-      desc.m_sName              = "Shadow Atlas Texture";
-      desc.m_Type               = xiiGALResourceDimension::Texture2D;
-      desc.m_Format             = xiiGALTextureFormat::D16UNormalized;
-      desc.m_Size.width         = s_uiShadowAtlasTextureWidth;
-      desc.m_Size.height        = s_uiShadowAtlasTextureHeight;
-      desc.m_uiArraySizeOrDepth = 1;
-      desc.m_uiMipLevels        = 1;
-      desc.m_uiSampleCount      = xiiGALMSAASampleCount::OneSample;
-      desc.m_BindFlags          = xiiGALBindFlags::DepthStencil | xiiGALBindFlags::ShaderResource;
+      xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-      m_hShadowAtlasTexture = xiiGALDevice::GetDefaultDevice()->CreateTexture(desc);
+      xiiGALTextureCreationDescription desc = xiiGALDeviceUtilities::CreateRenderTargetDescription(xiiSizeU32(s_uiShadowAtlasTextureWidth, s_uiShadowAtlasTextureHeight), xiiGALTextureFormat::D16UNormalized, xiiGALMSAASampleCount::OneSample);
+
+      m_hShadowAtlasTexture = pDevice->CreateTexture(desc);
+
+      pDevice->GetTexture(m_hShadowAtlasTexture)->SetDebugName("Shadow Atlas Texture");
     }
   }
 

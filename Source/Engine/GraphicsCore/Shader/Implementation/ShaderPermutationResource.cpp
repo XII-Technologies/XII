@@ -110,10 +110,8 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
   }
 
   xiiGALShaderCreationDescription ShaderDesc;
-  ShaderDesc.m_sName = GetResourceID();
 
   xiiGALPipelineResourceSignatureCreationDescription resourceSignatureDescription;
-  resourceSignatureDescription.m_sName                       = GetResourceID();
   resourceSignatureDescription.m_bUseCombinedTextureSamplers = true;
   resourceSignatureDescription.m_sCombinedSamplerSuffix      = "_AutoSampler";
 

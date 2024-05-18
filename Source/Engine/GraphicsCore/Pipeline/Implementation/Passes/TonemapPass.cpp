@@ -7,8 +7,7 @@
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
 
-
-#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 #include <GraphicsCore/../../../Data/Base/Shaders/Pipeline/TonemapConstants.h>
 
@@ -80,13 +79,8 @@ bool xiiTonemapPass::GetRenderTargetDescriptions(const xiiView& view, const xiiA
       }
 #endif
 
-      outputs[m_PinOutput.m_uiOutputIndex].m_Type               = pColorInput->m_Type;
-      outputs[m_PinOutput.m_uiOutputIndex].m_Format             = desc.m_Format;
-      outputs[m_PinOutput.m_uiOutputIndex].m_Size               = pColorInput->m_Size;
-      outputs[m_PinOutput.m_uiOutputIndex].m_uiArraySizeOrDepth = pColorInput->m_uiArraySizeOrDepth;
-      outputs[m_PinOutput.m_uiOutputIndex].m_uiMipLevels        = 1;
-      outputs[m_PinOutput.m_uiOutputIndex].m_uiSampleCount      = xiiGALMSAASampleCount::OneSample;
-      outputs[m_PinOutput.m_uiOutputIndex].m_BindFlags.Add(xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget);
+      outputs[m_PinOutput.m_uiOutputIndex]                      = xiiGALDeviceUtilities::CreateRenderTargetDescription(pColorInput->m_Size, desc.m_Format);
+      outputs[m_PinOutput.m_uiOutputIndex].m_uiArraySizeOrDepth = pColorInput->GetArraySize();
     }
     else
     {

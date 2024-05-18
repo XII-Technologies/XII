@@ -10,8 +10,7 @@
 #include <GraphicsCore/Components/CameraComponent.h>
 #include <GraphicsCore/Pipeline/View.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>
-#include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 XII_IMPLEMENT_SINGLETON(xiiDummyXR);
 
@@ -73,20 +72,15 @@ bool xiiDummyXR::SupportsCompanionView()
   return true;
 }
 
-xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiEnum<xiiGALSampleCount> msaaCount, xiiUniquePtr<xiiWindowBase> pCompanionWindow, xiiUniquePtr<xiiWindowOutputTargetGAL> pCompanionWindowOutput)
+xiiUniquePtr<xiiActor> xiiDummyXR::CreateActor(xiiView* pView, xiiEnum<xiiGALMSAASampleCount> msaaCount, xiiUniquePtr<xiiWindowBase> pCompanionWindow, xiiUniquePtr<xiiWindowOutputTargetGAL> pCompanionWindowOutput)
 {
   XII_ASSERT_DEV(IsInitialized(), "Need to call 'Initialize' first.");
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
   // Create dummy swap chain
   {
-    xiiGALTextureCreationDescription textureDesc;
-    textureDesc.m_Type               = xiiGALResourceDimension::Texture2D;
-    textureDesc.m_Size               = m_Info.m_vEyeRenderTargetSize;
-    textureDesc.m_uiArraySizeOrDepth = 2;
-    textureDesc.m_uiMipLevels        = 1;
-    textureDesc.m_uiSampleCount      = msaaCount;
-    textureDesc.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
+    xiiGALTextureCreationDescription textureDesc = xiiGALDeviceUtilities::CreateRenderTargetDescription(m_Info.m_vEyeRenderTargetSize, xiiGALTextureFormat::RGBA8UNormalizedSRGB, msaaCount);
+    textureDesc.m_uiArraySizeOrDepth             = 2U;
 
     m_hColorRT = pDevice->CreateTexture(textureDesc);
 
