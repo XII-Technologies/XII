@@ -399,7 +399,7 @@ xiiResult xiiGALCommandListD3D11::DispatchIndirectPlatform(xiiGALBuffer* pIndire
 
 void xiiGALCommandListD3D11::BeginQueryPlatform(xiiGALQuery* pQuery)
 {
-  auto pQueryD3D11 = static_cast<xiiGALQueryD3D11*>(pQuery);
+  auto pQueryD3D11       = static_cast<xiiGALQueryD3D11*>(pQuery);
   auto pImmediateContext = static_cast<xiiGALDeviceD3D11*>(m_pDevice)->GetImmediateContext();
 
   XII_ASSERT_DEV(pQueryD3D11 != nullptr, "Invalid resource.");

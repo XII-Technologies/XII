@@ -300,7 +300,6 @@ void xiiReflectionPool::Data::CreateReflectionViewsAndResources()
     xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
     xiiGALTextureCreationDescription desc;
-    desc.m_sName              = "Reflection Fallback Specular Texture";
     desc.m_Type               = xiiGALResourceDimension::TextureCubeArray;
     desc.m_Format             = xiiGALTextureFormat::RGBA16Float;
     desc.m_uiArraySizeOrDepth = 6;
@@ -402,7 +401,6 @@ void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
     xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
     xiiGALTextureCreationDescription desc;
-    desc.m_sName       = "Sky Irradiance Texture";
     desc.m_Type        = xiiGALResourceDimension::Texture2D;
     desc.m_Format      = xiiGALTextureFormat::RGBA16Float;
     desc.m_Size.width  = 6;
@@ -410,7 +408,11 @@ void xiiReflectionPool::Data::CreateSkyIrradianceTexture()
     desc.m_BindFlags   = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
 
     m_hSkyIrradianceTexture = pDevice->CreateTexture(desc);
-    pDevice->GetTexture(m_hSkyIrradianceTexture)->SetDebugName("Sky Irradiance Texture");
+
+    if (!m_hSkyIrradianceTexture.IsInvalidated())
+    {
+      pDevice->GetTexture(m_hSkyIrradianceTexture)->SetDebugName("Sky Irradiance Texture");
+    }
   }
 }
 

@@ -24,13 +24,12 @@ xiiReflectionProbeUpdater::ProbeUpdateInfo::ProbeUpdateInfo()
 
   {
     xiiGALTextureCreationDescription desc;
-    desc.m_sName              = "Reflection Cubemap";
     desc.m_Type               = xiiGALResourceDimension::TextureCube;
     desc.m_Format             = xiiGALTextureFormat::RGBA16Float;
     desc.m_Size.width         = s_uiReflectionCubeMapSize;
     desc.m_Size.height        = s_uiReflectionCubeMapSize;
     desc.m_uiMipLevels        = GetMipLevels();
-    desc.m_uiArraySizeOrDepth = 6;
+    desc.m_uiArraySizeOrDepth = 6U;
     desc.m_BindFlags          = xiiGALBindFlags::RenderTarget | xiiGALBindFlags::ShaderResource;
     desc.m_MiscFlags          = xiiGALMiscTextureFlags::GenerateMips;
 

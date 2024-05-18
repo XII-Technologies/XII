@@ -52,12 +52,11 @@ XII_RESOURCE_IMPLEMENT_CREATEABLE(xiiRenderToTexture2DResource, xiiRenderToTextu
   m_uiHeight = descriptor.m_uiHeight;
 
   xiiGALTextureCreationDescription descGAL;
-  descGAL.m_sName              = GetResourceDescription();
   descGAL.m_Type               = xiiGALResourceDimension::Texture2D;
   descGAL.m_Size.width         = m_uiWidth;
   descGAL.m_Size.height        = m_uiHeight;
-  descGAL.m_uiArraySizeOrDepth = 1;
-  descGAL.m_uiMipLevels        = 1;
+  descGAL.m_uiArraySizeOrDepth = 1U;
+  descGAL.m_uiMipLevels        = 1U;
   descGAL.m_uiSampleCount      = descriptor.m_SampleCount;
   descGAL.m_Format             = m_Format;
   descGAL.m_BindFlags          = xiiGALBindFlags::ShaderResource | (!xiiGALTextureFormat::IsDepthFormat(m_Format) ? xiiGALBindFlags::RenderTarget : xiiGALBindFlags::DepthStencil);

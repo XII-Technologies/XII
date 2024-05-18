@@ -4,6 +4,7 @@
 #include <GraphicsCore/Pipeline/Passes/TransparentForwardRenderPass.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
+#include <GraphicsFoundation/Utilities/DeviceUtilities.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTransparentForwardRenderPass, 1, xiiRTTIDefaultAllocator<xiiTransparentForwardRenderPass>)
@@ -41,18 +42,14 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   CreateSampler();
 
-  xiiGALTextureCreationDescription desc;
-  desc.m_Type               = xiiGALResourceDimension::Texture2D;
-  desc.m_Size               = pColorInput->m_Desc.m_Size;
-  desc.m_uiArraySizeOrDepth = pColorInput->m_Desc.m_uiArraySizeOrDepth;
-  desc.m_uiMipLevels        = 1;
-  desc.m_uiSampleCount      = 1;
-  desc.m_Format             = pColorInput->m_Desc.m_Format;
-  desc.m_BindFlags          = xiiGALBindFlags::ShaderResource | xiiGALBindFlags::RenderTarget;
+  xiiGALTextureCreationDescription desc = xiiGALDeviceUtilities::CreateRenderTargetDescription(pColorInput->m_Desc.m_Size, pColorInput->m_Desc.m_Format);
+  desc.m_uiArraySizeOrDepth             = pColorInput->m_Desc.GetArraySize();
 
   xiiGALTextureHandle hSceneColor = xiiGPUResourcePool::GetDefaultInstance()->GetRenderTarget(desc);
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
+
+  renderViewContext.m_pRenderContext->GetGraphicsCommandList()->BeginDebugGroup(GetName());
 
   SetupResources(renderViewContext, inputs, outputs);
   SetupPermutationVars(renderViewContext);
@@ -64,6 +61,8 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
   renderViewContext.m_pRenderContext->BindSampler("SceneColorSampler", m_hSceneColorSampler);
 
   RenderObjects(renderViewContext);
+
+  renderViewContext.m_pRenderContext->GetGraphicsCommandList()->EndDebugGroup();
 
   renderViewContext.m_pRenderContext->EndRendering();
 
