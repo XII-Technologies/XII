@@ -5,7 +5,7 @@ XII_ALWAYS_INLINE xiiEnum<xiiGALTextureFormat> xiiMeshNormalPrecision::ToResourc
   switch (value)
   {
     case xiiMeshNormalPrecision::_8Bit:
-      return xiiGALTextureFormat::GR8GB8UNormalized;
+      return xiiGALTextureFormat::RGBA8UNormalized;
     case xiiMeshNormalPrecision::_10Bit:
       return xiiGALTextureFormat::RGB10A2UNormalized;
     case xiiMeshNormalPrecision::_16Bit:
