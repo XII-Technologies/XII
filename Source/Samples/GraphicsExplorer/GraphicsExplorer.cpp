@@ -450,7 +450,6 @@ void xiiGraphicsExplorerWindowApp::UpdateSwapChain()
     }
 
     xiiGALRenderPassCreationDescription renderPassDesc;
-    renderPassDesc.m_sName = "xiiGraphicsExplorerMainPass";
 
     const auto& depthTextureDesc    = m_pDevice->GetTexture(m_hDepthStencilTexture)->GetDescription();
     auto&       depthAttachmentDesc = renderPassDesc.m_Attachments.ExpandAndGetRef();
