@@ -185,11 +185,13 @@ void xiiPrefabUtils::WriteDiff(const xiiDeque<xiiAbstractGraphDiffOperation>& me
       break;
 
       case xiiAbstractGraphDiffOperation::Op::PropertyChanged:
+      {
         if (diff.m_Value.CanConvertTo<xiiString>())
           out_sText.AppendFormat("<set> - {{0}} - \"{1}\" = {2}\n", Data, diff.m_sProperty, diff.m_Value.ConvertTo<xiiString>());
         else
           out_sText.AppendFormat("<set> - {{0}} - \"{1}\" = xxx\n", Data, diff.m_sProperty);
-        break;
+      }
+      break;
     }
   }
 }

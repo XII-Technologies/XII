@@ -14,7 +14,7 @@ o
 			s{"Shaders/Materials/SkyMaterial.xiiShader"}
 		}
 		Uuid %DocumentID{u4{10074911756598670976,5336416775761779484}}
-		u4 %Hash{17288606896826490208}
+		u4 %Hash{5504645422795785122}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps
@@ -119,6 +119,7 @@ o
 			Uuid{u4{14748429493298786165,3031258161031435669}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"VirtualDistance"}
 		s %Type{"float"}
@@ -216,6 +217,7 @@ o
 			Uuid{u4{4492236341252329290,12023302703595939533}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"CubeMap"}
 		s %Type{"xiiString"}
@@ -348,6 +350,7 @@ o
 			Uuid{u4{7173440046456064097,1624778190562037204}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"InverseTonemap"}
 		s %Type{"bool"}
@@ -392,6 +395,7 @@ o
 			Uuid{u4{14509984458409031342,16045394600075895401}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"ExposureBias"}
 		s %Type{"float"}
@@ -420,6 +424,7 @@ o
 			Uuid{u4{8018275819363580684,6500742144776262308}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"MaskThreshold"}
 		s %Type{"float"}
@@ -467,6 +472,7 @@ o
 			Uuid{u4{5980819571034034394,9122930130954135648}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"BaseColor"}
 		s %Type{"xiiColor"}
@@ -484,6 +490,7 @@ o
 			Uuid{u4{16470911758358415508,4534043374674550030}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::IsEnum|xiiPropertyFlags::Phantom"}
 		s %Name{"BLEND_MODE"}
 		s %Type{"BLEND_MODE"}
@@ -588,6 +595,7 @@ o
 			Uuid{u4{17962200210337893892,8257157465494404741}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"UseFog"}
 		s %Type{"bool"}

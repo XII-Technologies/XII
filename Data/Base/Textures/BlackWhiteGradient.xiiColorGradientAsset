@@ -11,7 +11,7 @@ o
 		s %AssetType{"ColorGradient"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{13621572428772333617,1444910283028215760}}
-		u4 %Hash{3750330796844306357}
+		u4 %Hash{18376226134226008468}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}

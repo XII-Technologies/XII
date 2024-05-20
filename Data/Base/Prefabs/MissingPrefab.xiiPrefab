@@ -21,7 +21,7 @@ o
 		s %AssetType{"Prefab"}
 		VarArray %Dependencies{}
 		Uuid %DocumentID{u4{8866705325096395918,5045814042450016507}}
-		u4 %Hash{1593115094004065420}
+		u4 %Hash{17124585600229661342}
 		VarArray %MetaInfo
 		{
 			Uuid{u4{6260322975900899627,3647404401962759201}}
@@ -56,6 +56,7 @@ o
 			s{"Materials/Common/MissingPrefab.xiiMaterial"}
 		}
 		s %Mesh{"{ e9e6b167-c18c-4260-9b0e-4cf4503c1463 }"}
+		f %SortingDepthOffset{0}
 	}
 }
 o
@@ -196,6 +197,23 @@ o
 }
 o
 {
+	Uuid %id{u4{16531145568626605552,4457094835024808881}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiPropertyAttribute"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiCategoryAttribute"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{7113270210448903041,4914649027248066584}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -281,6 +299,23 @@ o
 }
 o
 {
+	Uuid %id{u4{8425327503915406266,13353872395401440826}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiPropertyAttribute"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{4959089980164382630,15193493213242724458}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -310,7 +345,7 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiMeshComponentBase"}
-		u3 %TypeVersion{1}
+		u3 %TypeVersion{3}
 	}
 }
 o

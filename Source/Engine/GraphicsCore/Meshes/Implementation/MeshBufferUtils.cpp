@@ -37,6 +37,7 @@ namespace
 // clang-format off
 XII_BEGIN_STATIC_REFLECTED_ENUM(xiiMeshNormalPrecision, 1)
   XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_8Bit),
+  XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_10Bit),
   XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_16Bit),
   XII_ENUM_CONSTANT(xiiMeshNormalPrecision::_32Bit),
 XII_END_STATIC_REFLECTED_ENUM;
