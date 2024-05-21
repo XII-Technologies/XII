@@ -165,9 +165,9 @@ xiiResult xiiWindow::Initialize()
   xiiLog::Info("Window Dimensions: {0}*{1} at left/top origin ({2}, {3}).", iWidth, iHeight, m_CreationDescription.m_Position.x, m_CreationDescription.m_Position.y);
 
   // Create window
-  xiiStringWChar sTitelWChar(m_CreationDescription.m_Title.GetData());
-  const wchar_t* sTitelWCharRaw = sTitelWChar.GetData();
-  m_hWindowHandle               = xiiMinWindows::FromNative(CreateWindowExW(dwExStyle, windowClass.lpszClassName, sTitelWCharRaw, dwWindowStyle, m_CreationDescription.m_Position.x, m_CreationDescription.m_Position.y, iWidth, iHeight, nullptr, nullptr, windowClass.hInstance, nullptr));
+  xiiStringWChar sTitleWChar(m_CreationDescription.m_Title.GetData());
+  const wchar_t* sTitleWCharRaw = sTitleWChar.GetData();
+  m_hWindowHandle               = xiiMinWindows::FromNative(CreateWindowExW(dwExStyle, windowClass.lpszClassName, sTitleWCharRaw, dwWindowStyle, m_CreationDescription.m_Position.x, m_CreationDescription.m_Position.y, iWidth, iHeight, nullptr, nullptr, windowClass.hInstance, nullptr));
 
   if (m_hWindowHandle == INVALID_HANDLE_VALUE)
   {
