@@ -56,15 +56,6 @@ xiiResult xiiWindowCreationDesc::AdjustWindowSizeAndPosition()
     pScreen = &screens[iShowOnMonitor];
   }
 
-  if (m_bCenterWindowOnDisplay)
-  {
-    m_Position.Set(pScreen->m_iOffsetX + (pScreen->m_iResolutionX - m_Resolution.width) / 2, pScreen->m_iOffsetY + (pScreen->m_iResolutionY - m_Resolution.height) / 2);
-  }
-  else
-  {
-    m_Position.Set(pScreen->m_iOffsetX, pScreen->m_iOffsetY);
-  }
-
   if (m_WindowMode == xiiWindowMode::FullscreenBorderlessNativeResolution)
   {
     m_Resolution.width  = pScreen->m_iResolutionX;
@@ -75,6 +66,15 @@ xiiResult xiiWindowCreationDesc::AdjustWindowSizeAndPosition()
     // Clamp the resolution to the native resolution ?
     // m_ClientAreaSize.width = xiiMath::Min<xiiUInt32>(m_ClientAreaSize.width, pScreen->m_iResolutionX);
     // m_ClientAreaSize.height= xiiMath::Min<xiiUInt32>(m_ClientAreaSize.height,pScreen->m_iResolutionY);
+  }
+
+  if (m_bCenterWindowOnDisplay)
+  {
+    m_Position.Set(pScreen->m_iOffsetX + (pScreen->m_iResolutionX - (xiiInt32)m_Resolution.width) / 2, pScreen->m_iOffsetY + (pScreen->m_iResolutionY - (xiiInt32)m_Resolution.height) / 2);
+  }
+  else
+  {
+    m_Position.Set(pScreen->m_iOffsetX, pScreen->m_iOffsetY);
   }
 
   return XII_SUCCESS;
