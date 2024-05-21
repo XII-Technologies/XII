@@ -399,8 +399,8 @@ private: // Per Renderer States
   // xiiHashTable<xiiGALPipelineStateCreationDescription, xiiGALPipelineStateHandle, ResourceCacheHash> m_CachedPipelineStates;
 
   // Renderpass and Framebuffer
-  bool m_bClearSubmitted = false;
-  bool                    m_bRenderPassActive   = false;
+  bool                    m_bClearSubmitted   = false;
+  bool                    m_bRenderPassActive = false;
   xiiGALFramebufferHandle m_hCurrentFramebuffer;
   xiiGALRenderPassHandle  m_hCurrentRenderPass;
   xiiGALRenderingSetup    m_CurrentRenderingSetup = {};
