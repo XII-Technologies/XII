@@ -80,8 +80,6 @@ void xiiGALCommandListD3D11::ResetPlatform()
 
   XII_GAL_D3D11_RELEASE(m_pSubmittedCommandList);
 
-  m_pCommandQueueD3D11->RemoveSwapChainCommandListReference(this);
-
   m_RecordingState = RecordingState::Reset;
 
   InvalidateState();
@@ -303,6 +301,8 @@ void xiiGALCommandListD3D11::NextSubpassPlatform()
 
 void xiiGALCommandListD3D11::EndRenderPassPlatform()
 {
+  m_pCommandQueueD3D11->RemoveSwapChainCommandListReference(this);
+
   ResetRenderTargets();
 }
 
