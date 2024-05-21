@@ -14,7 +14,7 @@ o
 			s{"Textures/MissingCubeMap.dds"}
 		}
 		Uuid %DocumentID{u4{1338951568161559681,5334970008066883333}}
-		u4 %Hash{13795729365161493011}
+		u4 %Hash{14302822630145914301}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}

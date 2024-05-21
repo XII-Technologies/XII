@@ -14,7 +14,7 @@ o
 			s{"Textures/Sky.jpg"}
 		}
 		Uuid %DocumentID{u4{2456737913628888755,5070391613908332040}}
-		u4 %Hash{8015573151011356169}
+		u4 %Hash{10614532506252466390}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}

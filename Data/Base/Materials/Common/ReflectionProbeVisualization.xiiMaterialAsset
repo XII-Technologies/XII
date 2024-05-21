@@ -14,7 +14,7 @@ o
 			s{"Shaders/Materials/ReflectionProbeVisualization.xiiShader"}
 		}
 		Uuid %DocumentID{u4{4746343837574186671,4963508747386251216}}
-		u4 %Hash{15281474290921095176}
+		u4 %Hash{652876398132365137}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps{}
@@ -82,6 +82,7 @@ o
 			Uuid{u4{11394783713612651699,9927413684623926992}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"ReflectionProbeIndex"}
 		s %Type{"xiiInt32"}
@@ -225,6 +226,7 @@ o
 			Uuid{u4{10681235576402668664,13875438801561573454}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"MipLevel"}
 		s %Type{"xiiInt32"}

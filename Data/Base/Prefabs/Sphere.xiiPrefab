@@ -2,7 +2,7 @@ HeaderV2
 {
 o
 {
-	Uuid %id{u4{5697229966826873357,5299780223228843891}}
+	Uuid %id{u4{4845061311353680451,4580871010728353972}}
 	s %t{"xiiExposedParameters"}
 	u3 %v{3}
 	p
@@ -12,7 +12,7 @@ o
 }
 o
 {
-	Uuid %id{u4{18244993842488090760,5465890411451931965}}
+	Uuid %id{u4{15748994306735928310,12904375070997979970}}
 	s %t{"xiiAssetDocumentInfo"}
 	u3 %v{2}
 	s %n{"Header"}
@@ -20,11 +20,11 @@ o
 	{
 		s %AssetType{"Prefab"}
 		VarArray %Dependencies{}
-		Uuid %DocumentID{u4{18244993842488090760,5465890411451931965}}
-		u4 %Hash{15324772374669405954}
+		Uuid %DocumentID{u4{15748994306735928310,12904375070997979970}}
+		u4 %Hash{17182022250867472885}
 		VarArray %MetaInfo
 		{
-			Uuid{u4{5697229966826873357,5299780223228843891}}
+			Uuid{u4{4845061311353680451,4580871010728353972}}
 		}
 		VarArray %Outputs{}
 		VarArray %PackageDeps
@@ -44,44 +44,7 @@ Objects
 {
 o
 {
-	Uuid %id{u4{7202841292630950076,5085336067047384715}}
-	s %t{"xiiGameObject"}
-	u3 %v{1}
-	p
-	{
-		b %Active{1}
-		VarArray %Children{}
-		VarArray %Components
-		{
-			Uuid{u4{9998572217319314826,5118374387357359972}}
-		}
-		s %GlobalKey{""}
-		Vec3 %LocalPosition{f{0,0,0}}
-		Quat %LocalRotation{f{0,0,0,0x0000803F}}
-		Vec3 %LocalScaling{f{0x0000803F,0x0000803F,0x0000803F}}
-		f %LocalUniformScaling{0x0000803F}
-		s %Mode{"xiiObjectMode::Automatic"}
-		s %Name{""}
-		VarArray %Tags
-		{
-			s{"CastShadow"}
-			s{"AutoColMesh"}
-		}
-	}
-}
-o
-{
-	Uuid %id{u4{1668480228519690643,5103232242018410495}}
-	s %t{"xiiPrefabDocumentSettings"}
-	u3 %v{1}
-	p
-	{
-		VarArray %ExposedProperties{}
-	}
-}
-o
-{
-	Uuid %id{u4{9998572217319314826,5118374387357359972}}
+	Uuid %id{u4{4821827150793336727,5479752337044029889}}
 	s %t{"xiiMeshComponent"}
 	u3 %v{3}
 	p
@@ -93,6 +56,7 @@ o
 			s{"{ b93a6e80-5bf7-48f0-b7b3-2097d0133159 }"}
 		}
 		s %Mesh{"{ 618ee743-ed04-4fac-bf5f-572939db2f1d }"}
+		f %SortingDepthOffset{0}
 	}
 }
 o
@@ -105,9 +69,45 @@ o
 	{
 		VarArray %Children
 		{
-			Uuid{u4{7202841292630950076,5085336067047384715}}
+			Uuid{u4{8559613271567058160,13868789796251136320}}
 		}
-		Uuid %Settings{u4{1668480228519690643,5103232242018410495}}
+		Uuid %Settings{u4{4291054050262991350,13609240740794466840}}
+	}
+}
+o
+{
+	Uuid %id{u4{4291054050262991350,13609240740794466840}}
+	s %t{"xiiPrefabDocumentSettings"}
+	u3 %v{1}
+	p
+	{
+		VarArray %ExposedProperties{}
+	}
+}
+o
+{
+	Uuid %id{u4{8559613271567058160,13868789796251136320}}
+	s %t{"xiiGameObject"}
+	u3 %v{1}
+	p
+	{
+		b %Active{1}
+		VarArray %Children{}
+		VarArray %Components
+		{
+			Uuid{u4{4821827150793336727,5479752337044029889}}
+		}
+		s %GlobalKey{""}
+		Vec3 %LocalPosition{f{0,0,0}}
+		Quat %LocalRotation{f{0,0,0,0x0000803F}}
+		Vec3 %LocalScaling{f{0x0000803F,0x0000803F,0x0000803F}}
+		f %LocalUniformScaling{0x0000803F}
+		s %Mode{"xiiObjectMode::Automatic"}
+		s %Name{""}
+		VarArray %Tags
+		{
+			s{"CastShadow"}
+		}
 	}
 }
 }
@@ -200,6 +200,23 @@ o
 }
 o
 {
+	Uuid %id{u4{16531145568626605552,4457094835024808881}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiPropertyAttribute"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiCategoryAttribute"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{7113270210448903041,4914649027248066584}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -285,6 +302,23 @@ o
 }
 o
 {
+	Uuid %id{u4{8425327503915406266,13353872395401440826}}
+	s %t{"xiiReflectedTypeDescriptor"}
+	u3 %v{1}
+	p
+	{
+		VarArray %Attributes{}
+		s %Flags{"xiiTypeFlags::Class|xiiTypeFlags::Minimal"}
+		VarArray %Functions{}
+		s %ParentTypeName{"xiiReflectedClass"}
+		s %PluginName{"Static"}
+		VarArray %Properties{}
+		s %TypeName{"xiiPropertyAttribute"}
+		u3 %TypeVersion{1}
+	}
+}
+o
+{
 	Uuid %id{u4{4959089980164382630,15193493213242724458}}
 	s %t{"xiiReflectedTypeDescriptor"}
 	u3 %v{1}
@@ -314,7 +348,7 @@ o
 		s %PluginName{"Static"}
 		VarArray %Properties{}
 		s %TypeName{"xiiMeshComponentBase"}
-		u3 %TypeVersion{1}
+		u3 %TypeVersion{3}
 	}
 }
 o

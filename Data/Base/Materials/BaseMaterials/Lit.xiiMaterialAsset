@@ -14,7 +14,7 @@ o
 			s{"Shaders/Materials/DefaultMaterial.xiiShader"}
 		}
 		Uuid %DocumentID{u4{14732239694908818835,5276013256709897261}}
-		u4 %Hash{11264032505023739740}
+		u4 %Hash{15347810411286218224}
 		VarArray %MetaInfo{}
 		VarArray %Outputs{}
 		VarArray %PackageDeps
@@ -122,6 +122,7 @@ o
 			Uuid{u4{17475050775861980511,5808358483481921086}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"UseOcclusionTexture"}
 		s %Type{"bool"}
@@ -149,6 +150,7 @@ o
 			Uuid{u4{10508212557175865459,17088077429444871274}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"UseRoughnessTexture"}
 		s %Type{"bool"}
@@ -193,6 +195,7 @@ o
 			Uuid{u4{10742724896468748273,7011848842114564573}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"MetallicValue"}
 		s %Type{"float"}
@@ -210,6 +213,7 @@ o
 			Uuid{u4{18277643623662011884,7090777364095310597}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"UseEmissiveTexture"}
 		s %Type{"bool"}
@@ -243,6 +247,7 @@ o
 			Uuid{u4{9733240771701429935,5931069563419203014}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"BaseTexture"}
 		s %Type{"xiiString"}
@@ -312,6 +317,7 @@ o
 			Uuid{u4{14276664288527359396,14809835105141061187}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"TWO_SIDED"}
 		s %Type{"bool"}
@@ -330,6 +336,7 @@ o
 			Uuid{u4{3453085233533690528,12323579771031646224}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"MaskThreshold"}
 		s %Type{"float"}
@@ -474,6 +481,7 @@ o
 			Uuid{u4{10984248596977922601,16672057532924808848}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"MetallicTexture"}
 		s %Type{"xiiString"}
@@ -501,6 +509,7 @@ o
 			Uuid{u4{8947622519889705727,15990276380748978406}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"UseOrmTexture"}
 		s %Type{"bool"}
@@ -595,6 +604,7 @@ o
 			Uuid{u4{8713236412902087851,16796547248582186264}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"EmissiveColor"}
 		s %Type{"xiiColor"}
@@ -681,6 +691,7 @@ o
 			Uuid{u4{10285666632093402752,15179951913377150622}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"RoughnessTexture"}
 		s %Type{"xiiString"}
@@ -716,6 +727,7 @@ o
 			Uuid{u4{10232938138768638489,14260325280137861591}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"NormalTexture"}
 		s %Type{"xiiString"}
@@ -734,6 +746,7 @@ o
 			Uuid{u4{12133433492518225260,14024774068329841738}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"EmissiveTexture"}
 		s %Type{"xiiString"}
@@ -753,6 +766,7 @@ o
 			Uuid{u4{15729347259924717533,13520569893306591008}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"BaseColor"}
 		s %Type{"xiiColor"}
@@ -827,6 +841,7 @@ o
 			Uuid{u4{17813942562865445921,18136070045126367717}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"UseMetallicTexture"}
 		s %Type{"bool"}
@@ -865,6 +880,7 @@ o
 			Uuid{u4{15614090796771752204,9695963284839285545}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"UseBaseTexture"}
 		s %Type{"bool"}
@@ -894,6 +910,7 @@ o
 			Uuid{u4{6078056290232965908,6922459062233551260}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"OcclusionTexture"}
 		s %Type{"xiiString"}
@@ -949,6 +966,7 @@ o
 			Uuid{u4{11984106027196139757,8986233512669279548}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"UseNormalTexture"}
 		s %Type{"bool"}
@@ -1029,6 +1047,7 @@ o
 			Uuid{u4{16479870773045862754,17541701458065298529}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::IsEnum|xiiPropertyFlags::Phantom"}
 		s %Name{"SHADING_MODE"}
 		s %Type{"SHADING_MODE"}
@@ -1131,6 +1150,7 @@ o
 			Uuid{u4{4876155409286426731,15820081499163663595}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"RoughnessValue"}
 		s %Type{"float"}
@@ -1149,6 +1169,7 @@ o
 			Uuid{u4{7535960161509843617,4865692782255542738}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::StandardType|xiiPropertyFlags::Phantom"}
 		s %Name{"OrmTexture"}
 		s %Type{"xiiString"}
@@ -1176,6 +1197,7 @@ o
 			Uuid{u4{10110149550082643860,17053484078953932487}}
 		}
 		s %Category{"xiiPropertyCategory::Member"}
+		Invalid %ConstantValue{}
 		s %Flags{"xiiPropertyFlags::IsEnum|xiiPropertyFlags::Phantom"}
 		s %Name{"BLEND_MODE"}
 		s %Type{"BLEND_MODE"}

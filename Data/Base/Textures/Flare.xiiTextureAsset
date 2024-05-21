@@ -14,7 +14,7 @@ o
 			s{"Textures/Flare.tga"}
 		}
 		Uuid %DocumentID{u4{104150515546721672,4824860388845839080}}
-		u4 %Hash{15661697732879529982}
+		u4 %Hash{13520227706148269965}
 		VarArray %MetaInfo{}
 		VarArray %Outputs
 		{

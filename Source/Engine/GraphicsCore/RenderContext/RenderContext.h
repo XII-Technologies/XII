@@ -57,9 +57,6 @@ public:
   Statistics GetAndResetStatistics();
 
   xiiGALCommandList* BeginRendering(const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName = {}, bool bStereoRendering = false);
-  void               BeginRenderPass();
-  void               NextSubpass();
-  void               EndRenderPass();
   void               EndRendering();
 
   xiiGALCommandList* BeginCompute(xiiStringView sName = {});
@@ -76,11 +73,11 @@ public:
     {
       if (m_RenderContext.m_bCompute)
       {
-        m_RenderContext.EndComputeCommandList(m_pCommandList);
+        m_RenderContext.EndCompute();
       }
       else
       {
-        m_RenderContext.EndGraphicsCommandList(m_pCommandList);
+        m_RenderContext.EndRendering();
       }
     }
 
@@ -290,7 +287,10 @@ private:
     static bool      Equal(const xiiGALRenderingSetup& a, const xiiGALRenderingSetup& b);
   };
 
-  void GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPassHandle& out_hRenderPass, xiiGALFramebufferHandle& out_hFramebuffer, xiiGALBeginRenderPassDescription* pBeginRenderPass = nullptr);
+  void GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPassHandle& out_hRenderPass, xiiGALFramebufferHandle& out_hFramebuffer);
+
+  void BeginRenderPass();
+  void EndRenderPass();
 
 private:
   Statistics                         m_Statistics;
@@ -395,13 +395,17 @@ private: // Per Renderer States
   friend RenderingScope;
   friend ComputeScope;
 
-  XII_ALWAYS_INLINE void EndGraphicsCommandList(xiiGALCommandList*) { EndRendering(); }
-  XII_ALWAYS_INLINE void EndComputeCommandList(xiiGALCommandList*) { EndCompute(); }
+  // Pipeline state description
+  // xiiHashTable<xiiGALPipelineStateCreationDescription, xiiGALPipelineStateHandle, ResourceCacheHash> m_CachedPipelineStates;
 
-  xiiGALBeginRenderPassDescription m_BeginRenderPass;
+  // Renderpass and Framebuffer
+  bool                    m_bClearSubmitted   = false;
+  bool                    m_bRenderPassActive = false;
+  xiiGALFramebufferHandle m_hCurrentFramebuffer;
+  xiiGALRenderPassHandle  m_hCurrentRenderPass;
+  xiiGALRenderingSetup    m_CurrentRenderingSetup = {};
+
   xiiGALPipelineStateHandle        m_hCurrentPipelineState;
-  xiiGALFramebufferHandle          m_hCurrentFramebuffer;
-  xiiGALRenderPassHandle           m_hCurrentRenderPass;
   xiiGALCommandQueue*              m_pCommandQueue = nullptr;
   xiiGALCommandList*               m_pCommandList  = nullptr;
   bool                             m_bCompute      = false;

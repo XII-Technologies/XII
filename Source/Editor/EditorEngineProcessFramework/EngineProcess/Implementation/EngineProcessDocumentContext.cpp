@@ -692,7 +692,6 @@ void xiiEngineProcessDocumentContext::SetTagRecursive(xiiGameObject* pObject, co
 
   for (auto itChild = pObject->GetChildren(); itChild.IsValid(); ++itChild)
   {
-
     SetTagRecursive(itChild, tag);
   }
 }
