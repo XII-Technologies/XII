@@ -26,9 +26,6 @@ xiiUInt8 xiiWindow::s_uiNextUnusedWindowNumber = 0;
 
 xiiResult xiiWindowCreationDesc::AdjustWindowSizeAndPosition()
 {
-  if (m_WindowMode == xiiWindowMode::WindowFixedResolution || m_WindowMode == xiiWindowMode::WindowResizable)
-    return XII_SUCCESS;
-
   xiiHybridArray<xiiScreenInfo, 2> screens;
   if (xiiScreen::EnumerateScreens(screens).Failed() || screens.IsEmpty())
     return XII_FAILURE;
@@ -59,7 +56,14 @@ xiiResult xiiWindowCreationDesc::AdjustWindowSizeAndPosition()
     pScreen = &screens[iShowOnMonitor];
   }
 
-  m_Position.Set(pScreen->m_iOffsetX, pScreen->m_iOffsetY);
+  if (m_bCenterWindowOnDisplay)
+  {
+    m_Position.Set(pScreen->m_iOffsetX + (pScreen->m_iResolutionX - m_Resolution.width) / 2, pScreen->m_iOffsetY + (pScreen->m_iResolutionY - m_Resolution.height) / 2);
+  }
+  else
+  {
+    m_Position.Set(pScreen->m_iOffsetX, pScreen->m_iOffsetY);
+  }
 
   if (m_WindowMode == xiiWindowMode::FullscreenBorderlessNativeResolution)
   {
@@ -114,6 +118,7 @@ void xiiWindowCreationDesc::SaveToDDL(xiiOpenDdlWriter& ref_writer)
   xiiOpenDdlUtils::StoreBool(ref_writer, m_bClipMouseCursor, "ClipMouseCursor");
   xiiOpenDdlUtils::StoreBool(ref_writer, m_bShowMouseCursor, "ShowMouseCursor");
   xiiOpenDdlUtils::StoreBool(ref_writer, m_bSetForegroundOnInit, "SetForegroundOnInit");
+  xiiOpenDdlUtils::StoreBool(ref_writer, m_bSetForegroundOnInit, "CenterWindowOnDisplay");
 
   ref_writer.EndObject();
 }
@@ -184,9 +189,11 @@ void xiiWindowCreationDesc::LoadFromDDL(const xiiOpenDdlReaderElement* pParentEl
 
     if (const xiiOpenDdlReaderElement* pSetForegroundOnInit = pDesc->FindChildOfType(xiiOpenDdlPrimitiveType::Bool, "SetForegroundOnInit"))
       m_bSetForegroundOnInit = pSetForegroundOnInit->GetPrimitivesBool()[0];
+
+    if (const xiiOpenDdlReaderElement* pSetForegroundOnInit = pDesc->FindChildOfType(xiiOpenDdlPrimitiveType::Bool, "CenterWindowOnDisplay"))
+      m_bCenterWindowOnDisplay = pSetForegroundOnInit->GetPrimitivesBool()[0];
   }
 }
-
 
 xiiResult xiiWindowCreationDesc::LoadFromDDL(xiiStringView sFile)
 {

@@ -16,7 +16,6 @@ xiiGameStateWindow::~xiiGameStateWindow()
   Destroy().IgnoreResult();
 }
 
-
 void xiiGameStateWindow::ResetOnClickClose(xiiDelegate<void()> onClickClose)
 {
   m_OnClickClose = onClickClose;
@@ -36,7 +35,5 @@ void xiiGameStateWindow::OnResize(const xiiSizeU32& newWindowSize)
 
   m_CreationDescription.m_Resolution = newWindowSize;
 }
-
-
 
 XII_STATICLINK_FILE(Core, Core_GameState_Implementation_GameStateWindow);
