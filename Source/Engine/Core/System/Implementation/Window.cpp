@@ -118,7 +118,7 @@ void xiiWindowCreationDesc::SaveToDDL(xiiOpenDdlWriter& ref_writer)
   xiiOpenDdlUtils::StoreBool(ref_writer, m_bClipMouseCursor, "ClipMouseCursor");
   xiiOpenDdlUtils::StoreBool(ref_writer, m_bShowMouseCursor, "ShowMouseCursor");
   xiiOpenDdlUtils::StoreBool(ref_writer, m_bSetForegroundOnInit, "SetForegroundOnInit");
-  xiiOpenDdlUtils::StoreBool(ref_writer, m_bSetForegroundOnInit, "CenterWindowOnDisplay");
+  xiiOpenDdlUtils::StoreBool(ref_writer, m_bCenterWindowOnDisplay, "CenterWindowOnDisplay");
 
   ref_writer.EndObject();
 }
@@ -190,8 +190,8 @@ void xiiWindowCreationDesc::LoadFromDDL(const xiiOpenDdlReaderElement* pParentEl
     if (const xiiOpenDdlReaderElement* pSetForegroundOnInit = pDesc->FindChildOfType(xiiOpenDdlPrimitiveType::Bool, "SetForegroundOnInit"))
       m_bSetForegroundOnInit = pSetForegroundOnInit->GetPrimitivesBool()[0];
 
-    if (const xiiOpenDdlReaderElement* pSetForegroundOnInit = pDesc->FindChildOfType(xiiOpenDdlPrimitiveType::Bool, "CenterWindowOnDisplay"))
-      m_bCenterWindowOnDisplay = pSetForegroundOnInit->GetPrimitivesBool()[0];
+    if (const xiiOpenDdlReaderElement* pCenterWindowOnDisplay = pDesc->FindChildOfType(xiiOpenDdlPrimitiveType::Bool, "CenterWindowOnDisplay"))
+      m_bCenterWindowOnDisplay = pCenterWindowOnDisplay->GetPrimitivesBool()[0];
   }
 }
 
