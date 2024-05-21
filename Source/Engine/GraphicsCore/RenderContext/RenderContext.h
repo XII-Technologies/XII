@@ -71,13 +71,16 @@ public:
   public:
     XII_ALWAYS_INLINE ~CommandListScope()
     {
-      if (m_RenderContext.m_bCompute)
+      if (m_pCommandQueue != nullptr)
       {
-        m_RenderContext.EndCompute();
-      }
-      else
-      {
-        m_RenderContext.EndRendering();
+        if (m_RenderContext.m_bCompute)
+        {
+          m_RenderContext.EndCompute();
+        }
+        else
+        {
+          m_RenderContext.EndRendering();
+        }
       }
     }
 

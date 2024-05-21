@@ -207,7 +207,14 @@ xiiGALCommandList* xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& 
   gc.ViewportSize   = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
   gc.NumMsaaSamples = uiSampleCount;
 
-  m_pCommandList->Begin(sName);
+  if (m_pCommandList->GetRecordingState() != xiiGALCommandList::RecordingState::Recording)
+  {
+    m_pCommandList->Begin(sName);
+  }
+  else
+  {
+    // Push marker
+  }
 
   GetRenderPassAndFramebuffer(renderingSetup, m_hCurrentRenderPass, m_hCurrentFramebuffer);
 
@@ -247,6 +254,11 @@ void xiiRenderContext::EndRendering()
   m_pCommandQueue->Submit(GetGraphicsCommandList(), false);
   m_pCommandQueue->WaitForIdle();
 
+  if (m_pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
+  {
+    m_pCommandList->End();
+  }
+
   m_hCurrentFramebuffer = xiiGALFramebufferHandle();
   m_hCurrentRenderPass  = xiiGALRenderPassHandle();
   m_bStereoRendering    = false;
@@ -259,9 +271,14 @@ void xiiRenderContext::EndRendering()
 
 xiiGALCommandList* xiiRenderContext::BeginCompute(xiiStringView sName /*= {}*/)
 {
-  XII_ASSERT_DEV(m_hCurrentRenderPass.IsInvalidated() && m_hCurrentFramebuffer.IsInvalidated(), "Render pass and frame buffer are still active.");
-
-  m_pCommandList->Begin(sName);
+  if (m_pCommandList->GetRecordingState() != xiiGALCommandList::RecordingState::Recording)
+  {
+    m_pCommandList->Begin(sName);
+  }
+  else
+  {
+    // Push marker
+  }
 
   m_bCompute = true;
 
@@ -272,6 +289,11 @@ void xiiRenderContext::EndCompute()
 {
   m_pCommandQueue->Submit(GetComputeCommandList(), false);
   m_pCommandQueue->WaitForIdle();
+
+  if (m_pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
+  {
+    m_pCommandList->End();
+  }
 
   // TODO: See EndRendering
   // ResetContextState();
