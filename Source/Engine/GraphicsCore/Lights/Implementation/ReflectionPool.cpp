@@ -358,6 +358,7 @@ void xiiReflectionPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
       }
     }
     pGALCommandQueue->Submit(pGALCommandList);
+    pGALCommandQueue->WaitForIdle();
   }
 }
 

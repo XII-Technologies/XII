@@ -156,18 +156,6 @@ public:
         renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
         renderingSetup.m_bClearDepth             = true;
 
-        xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight), "xiiTextureSampleMainPass");
-        xiiRenderContext::GetDefaultInstance()->BeginRenderPass();
-        xiiRenderContext::GetDefaultInstance()->EndRenderPass();
-        xiiRenderContext::GetDefaultInstance()->EndRendering();
-      }
-
-      {
-        xiiGALRenderingSetup renderingSetup;
-        renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hBBRTV).SetDepthStencilTarget(hBBDSV);
-        renderingSetup.m_uiRenderTargetClearMask = 0x0U;
-        renderingSetup.m_bClearDepth             = false;
-
         xiiGALCommandList* pCommandList = xiiRenderContext::GetDefaultInstance()->BeginRendering(renderingSetup, xiiRectFloat(0.0f, 0.0f, (float)g_uiWindowWidth, (float)g_uiWindowHeight));
 
         xiiMat4 Proj = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(m_vCameraPosition.x + -(float)g_uiWindowWidth * 0.5f, m_vCameraPosition.x + (float)g_uiWindowWidth * 0.5f, m_vCameraPosition.y + -(float)g_uiWindowHeight * 0.5f, m_vCameraPosition.y + (float)g_uiWindowHeight * 0.5f, -1.0f, 1.0f);

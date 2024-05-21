@@ -49,10 +49,7 @@ xiiSourcePass::xiiSourcePass(xiiStringView sName) :
   m_ClearColor  = xiiColor::Black;
 }
 
-xiiSourcePass::~xiiSourcePass()
-{
-  DestroyRenderPasses();
-}
+xiiSourcePass::~xiiSourcePass() = default;
 
 bool xiiSourcePass::GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs)
 {
@@ -155,114 +152,23 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  /// \todo Cache created render passes and frame buffers.
-  DestroyRenderPasses();
-
-  if (m_hRenderPass.IsInvalidated())
-  {
-    const auto& attachmentDescription = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDescription();
-
-    xiiGALRenderPassCreationDescription renderPassDescription;
-
-    auto& subpassDescription    = renderPassDescription.m_SubPasses.ExpandAndGetRef();
-    auto& dependencyDescription = renderPassDescription.m_Dependencies.ExpandAndGetRef();
-
-    dependencyDescription.m_uiSourceSubPass      = XII_GAL_SUBPASS_EXTERNAL;
-    dependencyDescription.m_uiDestinationSubPass = 0U;
-
-    if (xiiGALTextureFormat::IsDepthFormat(pOutput->m_Desc.m_Format))
-    {
-      auto& depthAttachmentDescription = renderPassDescription.m_Attachments.ExpandAndGetRef();
-
-      depthAttachmentDescription.m_Format                = attachmentDescription.m_Format;
-      depthAttachmentDescription.m_uiSampleCount         = static_cast<xiiUInt8>(attachmentDescription.m_uiSampleCount);
-      depthAttachmentDescription.m_InitialStateFlags     = xiiGALResourceStateFlags::Unknown;
-      depthAttachmentDescription.m_FinalStateFlags       = xiiGALResourceStateFlags::DepthWrite;
-      depthAttachmentDescription.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
-      depthAttachmentDescription.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
-      depthAttachmentDescription.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Clear;
-      depthAttachmentDescription.m_StencilStoreOperation = xiiGALAttachmentStoreOperation::Store;
-
-      auto& depthAttachmentReference                = subpassDescription.m_DepthStencilAttachment.ExpandAndGetRef();
-      depthAttachmentReference.m_ResourceStateFlags = xiiGALResourceStateFlags::DepthWrite;
-      depthAttachmentReference.m_uiAttachmentIndex  = 0U;
-
-      dependencyDescription.m_SourceStageFlags       = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
-      dependencyDescription.m_DestinationStageFlags  = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
-      dependencyDescription.m_SourceAccessFlags      = xiiGALAccessFlags::DepthStencilWrite;
-      dependencyDescription.m_DestinationAccessFlags = xiiGALAccessFlags::DepthStencilWrite;
-    }
-    else
-    {
-      auto& colorAttachmentDescription = renderPassDescription.m_Attachments.ExpandAndGetRef();
-
-      colorAttachmentDescription.m_Format                = attachmentDescription.m_Format;
-      colorAttachmentDescription.m_uiSampleCount         = attachmentDescription.m_uiSampleCount;
-      colorAttachmentDescription.m_InitialStateFlags     = xiiGALResourceStateFlags::Unknown;
-      colorAttachmentDescription.m_FinalStateFlags       = xiiGALResourceStateFlags::RenderTarget;
-      colorAttachmentDescription.m_LoadOperation         = xiiGALAttachmentLoadOperation::Clear;
-      colorAttachmentDescription.m_StoreOperation        = xiiGALAttachmentStoreOperation::Store;
-      colorAttachmentDescription.m_StencilLoadOperation  = xiiGALAttachmentLoadOperation::Discard;
-      colorAttachmentDescription.m_StencilStoreOperation = xiiGALAttachmentStoreOperation::Discard;
-
-      auto& colorAttachmentReference                = subpassDescription.m_RenderTargetAttachments.ExpandAndGetRef();
-      colorAttachmentReference.m_ResourceStateFlags = xiiGALResourceStateFlags::RenderTarget;
-      colorAttachmentReference.m_uiAttachmentIndex  = 0U;
-
-      dependencyDescription.m_SourceStageFlags       = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
-      dependencyDescription.m_DestinationStageFlags  = xiiGALPipelineStageFlags::RenderTarget | xiiGALPipelineStageFlags::EarlyFragmentTests;
-      dependencyDescription.m_SourceAccessFlags      = xiiGALAccessFlags::RenderTargetWrite;
-      dependencyDescription.m_DestinationAccessFlags = xiiGALAccessFlags::RenderTargetWrite;
-    }
-
-    m_hRenderPass = pDevice->CreateRenderPass(renderPassDescription);
-    XII_ASSERT_DEV(!m_hRenderPass.IsInvalidated(), "Failed to create render pass.");
-  }
-
-  if (m_hFramebuffer.IsInvalidated())
-  {
-    const bool  bIsDepthAttachment        = xiiGALTextureFormat::IsDepthFormat(pOutput->m_Desc.m_Format);
-    const auto& attachmentDescription     = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDescription();
-    const auto& hAttachmentView           = pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(bIsDepthAttachment ? xiiGALTextureViewType::DepthStencil : xiiGALTextureViewType::RenderTarget);
-    const auto& attachmentViewDescription = pDevice->GetTextureView(hAttachmentView)->GetDescription();
-    xiiVec3U32  vSize                     = xiiGALGraphicsUtilities::GetMipLevelSize(attachmentViewDescription.m_uiMostDetailedMip, attachmentDescription);
-
-    xiiGALFramebufferCreationDescription framebufferDescription;
-
-    framebufferDescription.m_hRenderPass       = m_hRenderPass;
-    framebufferDescription.m_FramebufferSize   = {vSize.x, vSize.y};
-    framebufferDescription.m_uiArraySliceCount = attachmentDescription.GetArraySize();
-    framebufferDescription.m_Attachments.PushBack(hAttachmentView);
-
-    m_hFramebuffer = pDevice->CreateFramebuffer(framebufferDescription);
-    XII_ASSERT_DEV(!m_hFramebuffer.IsInvalidated(), "Failed to frame buffer.");
-  }
-
-  xiiGALBeginRenderPassDescription renderPassDescription = {.m_hRenderPass = m_hRenderPass, .m_hFramebuffer = m_hFramebuffer};
+  // Setup render target
+  xiiGALRenderingSetup renderingSetup;
+  renderingSetup.m_ClearColor              = m_ClearColor;
+  renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFFU;
+  renderingSetup.m_bClearDepth             = true;
+  renderingSetup.m_bClearStencil           = true;
 
   if (xiiGALTextureFormat::IsDepthFormat(pOutput->m_Desc.m_Format))
   {
-    auto& clearValue = renderPassDescription.m_ClearValues.ExpandAndGetRef();
-
-    clearValue.m_TextureFormat            = pOutput->m_Desc.m_Format;
-    clearValue.m_DepthStencil.m_fDepth    = 1.0f;
-    clearValue.m_DepthStencil.m_uiStencil = 0U;
+    renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
   }
   else
   {
-    auto& clearValue = renderPassDescription.m_ClearValues.ExpandAndGetRef();
-
-    clearValue.m_TextureFormat = pOutput->m_Desc.m_Format;
-    clearValue.m_ClearColor    = m_ClearColor;
+    renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   }
 
-  if (auto pGraphicsQueue = pDevice->GetDefaultCommandQueue())
-  {
-    auto pCommandList = pGraphicsQueue->BeginCommandList(GetName());
-    pCommandList->BeginRenderPass(renderPassDescription);
-    pCommandList->EndRenderPass();
-    pGraphicsQueue->Submit(pCommandList);
-  }
+  auto pCommandList = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, renderingSetup, GetName());
 }
 
 xiiResult xiiSourcePass::Serialize(xiiStreamWriter& inout_stream) const
@@ -285,23 +191,6 @@ xiiResult xiiSourcePass::Deserialize(xiiStreamReader& inout_stream)
   inout_stream >> m_ClearColor;
   inout_stream >> m_bClear;
   return XII_SUCCESS;
-}
-
-void xiiSourcePass::DestroyRenderPasses()
-{
-  xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
-
-  if (!m_hRenderPass.IsInvalidated())
-  {
-    pDevice->DestroyRenderPass(m_hRenderPass);
-    m_hRenderPass.Invalidate();
-  }
-
-  if (!m_hFramebuffer.IsInvalidated())
-  {
-    pDevice->DestroyFramebuffer(m_hFramebuffer);
-    m_hFramebuffer.Invalidate();
-  }
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Pipeline_Implementation_Passes_SourcePass);
