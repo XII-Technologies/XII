@@ -994,6 +994,7 @@ void xiiShadowPool::OnRenderEvent(const xiiRenderWorldRenderEvent& e)
     pCommandList->UpdateBufferExtended(s_pData->m_hShadowDataBuffer, 0, packedShadowData.GetByteArrayPtr());
   }
   pGALCommandQueue->Submit(pCommandList);
+  pGALCommandQueue->WaitForIdle();
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_Lights_Implementation_ShadowPool);

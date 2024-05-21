@@ -172,6 +172,7 @@ xiiApplication::Execution xiiGraphicsExplorerWindowApp::Run()
       pCommandList->EndRenderPass();
 
       pGraphicsQueue->Submit(pCommandList);
+      pGraphicsQueue->WaitForIdle();
     }
 
     m_pDevice->EndPipeline(m_hSwapChain);
