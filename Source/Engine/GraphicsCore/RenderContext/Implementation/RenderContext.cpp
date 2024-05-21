@@ -171,6 +171,7 @@ xiiRenderContext::Statistics xiiRenderContext::GetAndResetStatistics()
 
 xiiGALCommandList* xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName, bool bStereoSupport)
 {
+  xiiGALDevice*           pDevice = xiiGALDevice::GetDefaultDevice();
   xiiGALTextureViewHandle hRTV;
   {
     if (renderingSetup.m_RenderTargetSetup.GetRenderTargetCount() > 0)
@@ -200,13 +201,15 @@ xiiGALCommandList* xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& 
     }
   }
 
+  m_CurrentRenderingSetup = renderingSetup;
+
   auto& gc          = WriteGlobalConstants();
   gc.ViewportSize   = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
   gc.NumMsaaSamples = uiSampleCount;
 
   m_pCommandList->Begin(sName);
 
-  GetRenderPassAndFramebuffer(renderingSetup, m_hCurrentRenderPass, m_hCurrentFramebuffer, &m_BeginRenderPass);
+  GetRenderPassAndFramebuffer(renderingSetup, m_hCurrentRenderPass, m_hCurrentFramebuffer);
 
   xiiGALViewport viewPort;
   viewPort.m_fTopLeftX = viewport.x;
@@ -216,38 +219,34 @@ xiiGALCommandList* xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& 
   viewPort.m_fMinDepth = 0.0f;
   viewPort.m_fMaxDepth = 0.1f;
 
-  m_pCommandList->SetViewports(xiiMakeArrayPtr(&viewPort, 1), viewport.width, viewport.height);
+  m_pCommandList->SetViewports(xiiMakeArrayPtr(&viewPort, 1U));
 
+  const auto& framebufferDescription = pDevice->GetFramebuffer(m_hCurrentFramebuffer)->GetDescription();
+  auto        scissorRect            = xiiRectU32(framebufferDescription.m_FramebufferSize.width, framebufferDescription.m_FramebufferSize.height);
+
+  m_pCommandList->SetScissorRects(xiiMakeArrayPtr(&scissorRect, 1U));
+
+  m_bClearSubmitted  = !(renderingSetup.m_bClearDepth || renderingSetup.m_bClearStencil || renderingSetup.m_uiRenderTargetClearMask);
   m_bCompute         = false;
   m_bStereoRendering = bStereoSupport;
 
   return m_pCommandList;
 }
 
-void xiiRenderContext::BeginRenderPass()
-{
-  XII_ASSERT_DEV(!m_bCompute, "Error, not available in compute.");
-
-  GetGraphicsCommandList()->BeginRenderPass(m_BeginRenderPass);
-}
-
-void xiiRenderContext::NextSubpass()
-{
-  // Currently, we build single subpasses using the xiiGALRenderingSetup structure.
-  // GetGraphicsCommandList()->NextSubpass();
-}
-
-void xiiRenderContext::EndRenderPass()
-{
-  GetGraphicsCommandList()->EndRenderPass();
-}
-
 void xiiRenderContext::EndRendering()
 {
+  if (!m_bClearSubmitted)
+  {
+    BeginRenderPass();
+
+    m_bClearSubmitted = true;
+  }
+
+  EndRenderPass();
+
   m_pCommandQueue->Submit(GetGraphicsCommandList(), false);
   m_pCommandQueue->WaitForIdle();
 
-  m_BeginRenderPass     = xiiGALBeginRenderPassDescription();
   m_hCurrentFramebuffer = xiiGALFramebufferHandle();
   m_hCurrentRenderPass  = xiiGALRenderPassHandle();
   m_bStereoRendering    = false;
@@ -654,8 +653,8 @@ xiiResult xiiRenderContext::DrawMeshBuffer(xiiUInt32 uiPrimitiveCount, xiiUInt32
     uiInstanceCount *= 2;
   }
 
-  pCommandList->BeginRenderPass(m_BeginRenderPass);
-  XII_SCOPE_EXIT(pCommandList->EndRenderPass());
+  BeginRenderPass();
+  XII_SCOPE_EXIT(EndRenderPass());
 
   if (uiInstanceCount > 1)
   {
@@ -862,6 +861,10 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 void xiiRenderContext::ResetContextState()
 {
   m_StateFlags = xiiRenderContextFlags::AllStatesInvalid;
+
+  m_CurrentRenderingSetup = {};
+  m_hCurrentFramebuffer   = xiiGALFramebufferHandle();
+  m_hCurrentRenderPass    = xiiGALRenderPassHandle();
 
   m_pCommandList->Reset();
 
@@ -1116,9 +1119,9 @@ void xiiRenderContext::OnEngineShutdown()
   }
 }
 
-void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPassHandle& out_hRenderPass, xiiGALFramebufferHandle& out_hFramebuffer, xiiGALBeginRenderPassDescription* pBeginRenderPass)
+void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& renderingSetup, xiiGALRenderPassHandle& out_hRenderPass, xiiGALFramebufferHandle& out_hFramebuffer)
 {
-  XII_ASSERT_DEV(out_hRenderPass.IsInvalidated() && out_hFramebuffer.IsInvalidated(), "Render pass and frame buffer are still active.");
+  // XII_ASSERT_DEV(out_hRenderPass.IsInvalidated() && out_hFramebuffer.IsInvalidated(), "Render pass and frame buffer are still active.");
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
@@ -1314,29 +1317,60 @@ void xiiRenderContext::GetRenderPassAndFramebuffer(const xiiGALRenderingSetup& r
 
   out_hRenderPass  = frameBufferInfo.hRenderPass;
   out_hFramebuffer = frameBufferInfo.hFrameBuffer;
+}
 
-  if (pBeginRenderPass != nullptr)
+void xiiRenderContext::BeginRenderPass()
+{
+  XII_ASSERT_DEV(!m_bCompute, "Cannot begin render pass while compute pipeline is active!");
+
+  const bool     bHasDepthAttachment    = !m_CurrentRenderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
+  const xiiUInt8 uiColorAttachmentCount = m_CurrentRenderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+
+  if (!m_bRenderPassActive && (bHasDepthAttachment || uiColorAttachmentCount > 0))
   {
-    pBeginRenderPass->m_hRenderPass  = out_hRenderPass;
-    pBeginRenderPass->m_hFramebuffer = out_hFramebuffer;
+    if (m_bClearSubmitted)
+    {
+      xiiGALRenderingSetup renderingSetup      = m_CurrentRenderingSetup;
+      renderingSetup.m_bClearDepth             = false;
+      renderingSetup.m_bClearStencil           = false;
+      renderingSetup.m_uiRenderTargetClearMask = 0x00U;
+      renderingSetup.m_bDiscardColor           = false;
+      renderingSetup.m_bDiscardDepth           = false;
 
-    pBeginRenderPass->m_ClearValues.Clear();
+      GetRenderPassAndFramebuffer(renderingSetup, m_hCurrentRenderPass, m_hCurrentFramebuffer);
+    }
 
-    const bool      bHasDepthAttachment    = !renderingSetup.m_RenderTargetSetup.GetDepthStencilTarget().IsInvalidated();
-    const xiiUInt32 uiColorAttachmentCount = renderingSetup.m_RenderTargetSetup.GetRenderTargetCount();
+    xiiGALBeginRenderPassDescription beginRenderPassDescription;
+    beginRenderPassDescription.m_hFramebuffer = m_hCurrentFramebuffer;
+    beginRenderPassDescription.m_hRenderPass  = m_hCurrentRenderPass;
 
     if (bHasDepthAttachment)
     {
-      auto& depthClearValue                      = pBeginRenderPass->m_ClearValues.ExpandAndGetRef();
+      xiiGALOptimizedClearValue& depthClearValue = beginRenderPassDescription.m_ClearValues.ExpandAndGetRef();
       depthClearValue.m_DepthStencil.m_fDepth    = 1.0f;
       depthClearValue.m_DepthStencil.m_uiStencil = 0U;
     }
 
-    for (xiiUInt32 i = 0; i < uiColorAttachmentCount; ++i)
+    for (xiiUInt8 i = 0; i < uiColorAttachmentCount; ++i)
     {
-      auto& colorClearValue        = pBeginRenderPass->m_ClearValues.ExpandAndGetRef();
-      colorClearValue.m_ClearColor = renderingSetup.m_ClearColor;
+      xiiGALOptimizedClearValue& colorClearValue = beginRenderPassDescription.m_ClearValues.ExpandAndGetRef();
+      colorClearValue.m_ClearColor               = m_CurrentRenderingSetup.m_ClearColor;
     }
+
+    GetGraphicsCommandList()->BeginRenderPass(beginRenderPassDescription);
+
+    m_bRenderPassActive = true;
+    m_bClearSubmitted   = true;
+  }
+}
+
+void xiiRenderContext::EndRenderPass()
+{
+  if (m_bRenderPassActive)
+  {
+    GetGraphicsCommandList()->EndRenderPass();
+
+    m_bRenderPassActive = false;
   }
 }
 
