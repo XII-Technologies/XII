@@ -182,6 +182,8 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
   {
     CreateSampler();
 
+    renderViewContext.m_pRenderContext->GetCommandList()->BeginDebugGroup("SSAOMipMaps");
+
     for (xiiUInt32 i = 0; i < uiNumMips; ++i)
     {
       xiiGALTextureViewHandle hInputView;
@@ -203,7 +205,7 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
 
       xiiGALRenderingSetup renderingSetup;
       renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, hOutputView);
-      renderViewContext.m_pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), "SSAOMipMaps", renderViewContext.m_pCamera->IsStereoscopic());
+      renderViewContext.m_pRenderContext->BeginRendering(renderingSetup, xiiRectFloat(targetSize.x, targetSize.y), {}, renderViewContext.m_pCamera->IsStereoscopic());
 
       xiiDownscaleDepthConstants* constants = xiiRenderContext::GetConstantBufferData<xiiDownscaleDepthConstants>(m_hDownscaleConstantBuffer);
       constants->PixelSize                  = pixelSize;
@@ -221,6 +223,8 @@ void xiiAOPass::Execute(const xiiRenderViewContext& renderViewContext, const xii
 
       renderViewContext.m_pRenderContext->EndRendering();
     }
+
+    renderViewContext.m_pRenderContext->GetCommandList()->EndDebugGroup();
   }
 
   // Update constants

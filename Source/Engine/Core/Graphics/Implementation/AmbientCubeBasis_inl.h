@@ -30,12 +30,6 @@ XII_FORCE_INLINE bool xiiAmbientCube<T>::operator==(const xiiAmbientCube& other)
 }
 
 template <typename T>
-XII_ALWAYS_INLINE bool xiiAmbientCube<T>::operator!=(const xiiAmbientCube& other) const
-{
-  return !(*this == other);
-}
-
-template <typename T>
 void xiiAmbientCube<T>::AddSample(const xiiVec3& vDir, const T& value)
 {
   m_Values[vDir.x > 0.0f ? 0 : 1] += xiiMath::Abs(vDir.x) * value;
@@ -47,8 +41,7 @@ template <typename T>
 T xiiAmbientCube<T>::Evaluate(const xiiVec3& vNormal) const
 {
   xiiVec3 vNormalSquared = vNormal.CompMul(vNormal);
-  return vNormalSquared.x * m_Values[vNormal.x > 0.0f ? 0 : 1] + vNormalSquared.y * m_Values[vNormal.y > 0.0f ? 2 : 3] +
-    vNormalSquared.z * m_Values[vNormal.z > 0.0f ? 4 : 5];
+  return vNormalSquared.x * m_Values[vNormal.x > 0.0f ? 0 : 1] + vNormalSquared.y * m_Values[vNormal.y > 0.0f ? 2 : 3] + vNormalSquared.z * m_Values[vNormal.z > 0.0f ? 4 : 5];
 }
 
 template <typename T>

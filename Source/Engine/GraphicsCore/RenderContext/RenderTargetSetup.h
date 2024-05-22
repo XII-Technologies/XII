@@ -8,7 +8,6 @@
 struct XII_GRAPHICSCORE_DLL xiiGALRenderTargets
 {
   bool operator==(const xiiGALRenderTargets& other) const;
-  bool operator!=(const xiiGALRenderTargets& other) const;
 
   xiiGALTextureViewHandle m_hRTs[XII_GAL_MAX_RENDERTARGET_COUNT];
   xiiGALTextureViewHandle m_hDSTarget;

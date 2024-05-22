@@ -16,11 +16,6 @@ bool xiiGALRenderTargets::operator==(const xiiGALRenderTargets& other) const
   return true;
 }
 
-bool xiiGALRenderTargets::operator!=(const xiiGALRenderTargets& other) const
-{
-  return !(*this == other);
-}
-
 xiiGALRenderTargetSetup::xiiGALRenderTargetSetup() = default;
 
 xiiGALRenderTargetSetup& xiiGALRenderTargetSetup::SetRenderTarget(xiiUInt8 uiIndex, xiiGALTextureViewHandle hRenderTarget)
