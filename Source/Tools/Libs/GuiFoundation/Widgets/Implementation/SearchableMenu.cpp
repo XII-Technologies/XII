@@ -151,8 +151,7 @@ bool xiiQtSearchableMenu::eventFilter(QObject* pObject, QEvent* event)
 
 void xiiQtSearchableMenu::AddItem(xiiStringView sDisplayName, xiiStringView sInternalPath, const QVariant& variant, QIcon icon)
 {
-  xiiStringBuilder tmp;
-  QStandardItem*   pParent = m_pItemModel->invisibleRootItem();
+  QStandardItem* pParent = m_pItemModel->invisibleRootItem();
 
   const char* szLastCat = sInternalPath.FindLastSubString("/");
   if (szLastCat != nullptr)
@@ -162,7 +161,8 @@ void xiiQtSearchableMenu::AddItem(xiiStringView sDisplayName, xiiStringView sInt
     pParent = CreateCategoryMenu(sCategory);
   }
 
-  QStandardItem* pThisItem = new QStandardItem(sInternalPath.GetData(tmp));
+  xiiStringBuilder tmp;
+  QStandardItem* pThisItem = new QStandardItem(xiiMakeQString(sDisplayName));
   pThisItem->setFlags(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable);
   pThisItem->setData(sInternalPath.GetData(tmp), InternalPathRole);
   pThisItem->setData(variant, VariantRole);

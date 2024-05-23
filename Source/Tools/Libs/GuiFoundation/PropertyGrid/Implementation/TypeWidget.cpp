@@ -424,9 +424,9 @@ void xiiQtTypeWidget::UpdatePropertyMetaState()
 
       if (itData.IsValid() && !itData.Value().m_sNewLabelText.IsEmpty())
       {
-        const char* szLabelText = itData.Value().m_sNewLabelText;
-        it.Value().m_pLabel->setText(xiiMakeQString(xiiTranslate(szLabelText)));
-        it.Value().m_pLabel->setToolTip(xiiMakeQString(xiiTranslateTooltip(szLabelText)));
+        xiiString& sLabelText = itData.Value().m_sNewLabelText;
+        it.Value().m_pLabel->setText(xiiMakeQString(xiiTranslate(sLabelText)));
+        it.Value().m_pLabel->setToolTip(xiiMakeQString(xiiTranslateTooltip(sLabelText)));
       }
       else
       {

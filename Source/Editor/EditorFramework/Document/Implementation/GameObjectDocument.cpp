@@ -291,7 +291,7 @@ void xiiGameObjectDocument::DetermineNodeName(const xiiDocumentObject* pObject, 
       if (out_sResult.EndsWith_NoCase("Component"))
         out_sResult.Shrink(0, 9);
       if (out_sResult.StartsWith("xii"))
-        out_sResult.Shrink(2, 0);
+        out_sResult.Shrink(3, 0);
 
       if (auto pInDev = pChild->GetTypeAccessor().GetType()->GetAttributeByType<xiiInDevelopmentAttribute>())
       {
@@ -370,6 +370,7 @@ void xiiGameObjectDocument::QueryCachedNodeName(const xiiDocumentObject* pObject
   out_sResult = pMetaScene->m_CachedNodeName;
   if (out_pIcon)
     *out_pIcon = pMetaScene->m_Icon;
+
   m_GameObjectMetaData->EndReadMetaData();
   m_DocumentObjectMetaData->EndReadMetaData();
 
