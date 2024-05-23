@@ -162,7 +162,7 @@ void xiiQtSearchableMenu::AddItem(xiiStringView sDisplayName, xiiStringView sInt
   }
 
   xiiStringBuilder tmp;
-  QStandardItem* pThisItem = new QStandardItem(xiiMakeQString(sDisplayName));
+  QStandardItem*   pThisItem = new QStandardItem(xiiMakeQString(sDisplayName));
   pThisItem->setFlags(Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable);
   pThisItem->setData(sInternalPath.GetData(tmp), InternalPathRole);
   pThisItem->setData(variant, VariantRole);
