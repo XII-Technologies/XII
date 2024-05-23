@@ -122,6 +122,57 @@ def ResolveFileNames() -> None:
         except Exception as e:
             logger.error(f"Failed to rename file: {e}")
 
+def GetResolvedLineContent(sLineText: str) -> str:
+    """
+    Returns a the sLineText with modifications to move it into the XII namespace if needed.
+    """
+    # Perform rudimentary processing.
+    sLineContent: str = sLineText
+    sLineContent      = sLineContent.replace(' an ez', ' a xii')
+    sLineContent      = sLineContent.replace(' ez',  ' xii')
+    sLineContent      = sLineContent.replace(' Ez',  ' XII')
+    sLineContent      = sLineContent.replace(' EZ',  ' XII')
+    sLineContent      = sLineContent.replace(' ez ', ' XII ')
+    sLineContent      = sLineContent.replace(' Ez ', ' XII ')
+    sLineContent      = sLineContent.replace(' eZ ', ' XII ')
+    sLineContent      = sLineContent.replace(' EZ ', ' XII ')
+
+    # Find namespace conversions hidden in punctuations.
+    for sPunctuation in InstanceData.xiiInvariantPunctuations:
+        sLineContent = sLineContent.replace(f"{sPunctuation}ez", f"{sPunctuation}xii")
+        sLineContent = sLineContent.replace(f"{sPunctuation}Ez", f"{sPunctuation}XII")
+        sLineContent = sLineContent.replace(f"{sPunctuation}EZ", f"{sPunctuation}XII")
+
+    # Regex namespace conversions that can occur at the start of the file.
+    if (rSearch := re.match(r"^ez", sLineContent)) and rSearch != None:
+        sLineContent = 'xii' + sLineContent.removeprefix('ez')
+    if (rSearch := re.match(r"^Ez", sLineContent)) and rSearch != None:
+        sLineContent = 'XII' + sLineContent.removeprefix('Ez')
+    if (rSearch := re.match(r"^EZ", sLineContent)) and rSearch != None:
+        sLineContent = 'XII' + sLineContent.removeprefix('EZ')
+    if (rSearch := re.match(r"^\s+ez", sLineContent)) and rSearch != None:
+        uiIndex: int = sLineContent.find('ez')
+
+        assert uiIndex != -1, "Implementation error. Index is -1, but had a successful regex match!"
+
+        sLineContent = sLineContent[:uiIndex] + 'xii' + sLineContent[uiIndex:].removeprefix('ez')
+    if (rSearch := re.match(r"^\s+Ez", sLineContent)) and rSearch != None:
+        uiIndex: int = sLineContent.find('Ez')
+
+        assert uiIndex != -1, "Implementation error. Index is -1, but had a successful regex match!"
+
+        sLineContent = sLineContent[:uiIndex] + 'XII' + sLineContent[uiIndex:].removeprefix('Ez')
+    if (rSearch := re.match(r"^\s+EZ", sLineContent)) and rSearch != None:
+        uiIndex: int = sLineContent.find('EZ')
+
+        assert uiIndex != -1, "Implementation error. Index is -1, but had a successful regex match!"
+
+        sLineContent = sLineContent[:uiIndex] + 'XII' + sLineContent[uiIndex:].removeprefix('EZ')
+
+    # TODO: Remove references to xiiEngine as a result of the transformation.
+    # sLineContent = sLineContent.replace('xiiEngine', 'XII')
+
+    return sLineContent
 
 def ResolveNamespace() -> None:
     """
@@ -139,7 +190,7 @@ def ResolveNamespace() -> None:
     """
     subfolders, files = ScanDirectory(InstanceData.sSourcePath)
     for file in files:
-        logger.info(f"Transforming file: {file}")
+        #logger.info(f"Transforming file: {file}")
 
         # Read file content, we will perform processing outside the file reading.
         fileContent: t.List[str] = []
@@ -149,45 +200,57 @@ def ResolveNamespace() -> None:
 
         # Perform processing.
         processedFileContent: t.List[str] = []
+        uiCurrentLine: int                = 0
+        uiNextLinesToSkip: int            = 0
         for sLine in fileContent:
+            if uiNextLinesToSkip > 0:
+                uiNextLinesToSkip -= 1
+                continue
+
             sStrippedLine: str = sLine.rstrip()
 
             # We do not act on empty lines, clang-format may restrict how many empty lines are possible.
             if len(sStrippedLine) == 0:
                 processedFileContent.append('\n')
+                uiCurrentLine += 1
                 continue
 
             # Perform rudimentary processing.
-            sLineContent: str = sStrippedLine
-            sLineContent      = sLineContent.replace(' an ez', ' a xii')
-            sLineContent      = sLineContent.replace(' ez',  ' xii')
-            sLineContent      = sLineContent.replace(' Ez',  ' XII')
-            sLineContent      = sLineContent.replace(' EZ',  ' XII')
-            sLineContent      = sLineContent.replace(' ez ', ' XII ')
-            sLineContent      = sLineContent.replace(' Ez ', ' XII ')
-            sLineContent      = sLineContent.replace(' eZ ', ' XII ')
-            sLineContent      = sLineContent.replace(' EZ ', ' XII ')
+            sLineContent: str = GetResolvedLineContent(sStrippedLine)
 
-            # Find namespace conversions hidden in punctuations.
-            for sPunctuation in InstanceData.xiiInvariantPunctuations:
-                sLineContent = sLineContent.replace(f"{sPunctuation}ez", f"{sPunctuation}xii")
-                sLineContent = sLineContent.replace(f"{sPunctuation}Ez", f"{sPunctuation}XII")
-                sLineContent = sLineContent.replace(f"{sPunctuation}EZ", f"{sPunctuation}XII")
+            # Cleanup multiline function arguments, clang-format does not clean them up.
+            if (rSearch := re.match(r"^[a-zA-Z123]+\s[a-zA-Z123]+::[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None:
+                sLineParse: str = sLineContent
 
-            # Regex namespace conversions that can occur at the start of the file.
-            if (rSearch := re.match(r"^ez", sLineContent)) and rSearch != None:
-                sLineContent = 'xii' + sLineContent.removeprefix('ez')
-            if (rSearch := re.match(r"^Ez", sLineContent)) and rSearch != None:
-                sLineContent = 'XII' + sLineContent.removeprefix('Ez')
-            if (rSearch := re.match(r"^EZ", sLineContent)) and rSearch != None:
-                sLineContent = 'XII' + sLineContent.removeprefix('EZ')
+                uiIndexAdvancement: int = 1
+                while (uiCurrentLine + uiIndexAdvancement) < len(fileContent):
+                    sProcessedLine: str = GetResolvedLineContent(fileContent[uiCurrentLine + uiIndexAdvancement].strip())
 
-            # Remove references to xiiEngine as a result of the transformation.
-            # sLineContent = sLineContent.replace('xiiEngine', 'XII')
+                    if len(sProcessedLine) == 0:
+                        uiIndexAdvancement += 1
+                        continue
+
+                    sLineParse += sProcessedLine
+
+                    if sProcessedLine.endswith('{'):
+                        sLineContent       = sLineParse
+                        uiCurrentLine     += uiIndexAdvancement
+                        uiNextLinesToSkip += uiIndexAdvancement
+                        logger.info(f"Applied code format rules: {sLineContent}")
+                        break
+
+                    # Max depth
+                    if uiIndexAdvancement > 50:
+                        logger.info(f"Failed to apply code format rules: {sLineContent}")
+                        break
+
+                    uiIndexAdvancement += 1
 
             sLineContent += '\n'
 
             processedFileContent.append(sLineContent)
+
+            uiCurrentLine += 1
 
         # Write file contents back into file.
         with open(file, mode='w') as filestream:
