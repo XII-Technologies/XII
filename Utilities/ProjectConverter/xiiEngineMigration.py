@@ -5,6 +5,7 @@ Copyright (c) Theophilus Eriata. All rights reserved.
 """
 import os
 import sys
+import re
 import time
 import shutil
 import string
@@ -83,8 +84,9 @@ class InstanceData:
     sSourcePath:         str = None
     bShouldRenameFiles: bool = True
 
-    xiiExtensionsNoRename: set = set()
-    xiiExtensionsNoEdit: set   = { ".jpg", ".png", ".svg", ".dds", ".pdn" }
+    xiiExtensionsNoRename: set    = set()
+    xiiExtensionsNoEdit: set      = { ".jpg", ".png", ".svg", ".dds", ".pdn" }
+    xiiInvariantPunctuations: set = {'!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~'}
 
 
 def ResolveFileNames() -> None:
@@ -121,6 +123,78 @@ def ResolveFileNames() -> None:
             logger.error(f"Failed to rename file: {e}")
 
 
+def ResolveNamespace() -> None:
+    """
+    Resolves the namespaces. That is, the ez -> xii conversion.
+
+    The following conversion holds:
+    - ez -> xii
+    - Ez -> XII
+    - EZ -> XII
+
+    Steps are taken to ensure that:
+    - Words like breeze, freeze, etc. do not get modified.
+    - Words like 'an ezType' should be 'a xiiType'.
+    - Methods should have all definitions on the same line.
+    """
+    subfolders, files = ScanDirectory(InstanceData.sSourcePath)
+    for file in files:
+        logger.info(f"Transforming file: {file}")
+
+        # Read file content, we will perform processing outside the file reading.
+        fileContent: t.List[str] = []
+        with open(file, mode='r') as filestream:
+            for line in filestream:
+                fileContent.append(line)
+
+        # Perform processing.
+        processedFileContent: t.List[str] = []
+        for sLine in fileContent:
+            sStrippedLine: str = sLine.rstrip()
+
+            # We do not act on empty lines, clang-format may restrict how many empty lines are possible.
+            if len(sStrippedLine) == 0:
+                processedFileContent.append('\n')
+                continue
+
+            # Perform rudimentary processing.
+            sLineContent: str = sStrippedLine
+            sLineContent      = sLineContent.replace(' an ez', ' a xii')
+            sLineContent      = sLineContent.replace(' ez',  ' xii')
+            sLineContent      = sLineContent.replace(' Ez',  ' XII')
+            sLineContent      = sLineContent.replace(' EZ',  ' XII')
+            sLineContent      = sLineContent.replace(' ez ', ' XII ')
+            sLineContent      = sLineContent.replace(' Ez ', ' XII ')
+            sLineContent      = sLineContent.replace(' eZ ', ' XII ')
+            sLineContent      = sLineContent.replace(' EZ ', ' XII ')
+
+            # Find namespace conversions hidden in punctuations.
+            for sPunctuation in InstanceData.xiiInvariantPunctuations:
+                sLineContent = sLineContent.replace(f"{sPunctuation}ez", f"{sPunctuation}xii")
+                sLineContent = sLineContent.replace(f"{sPunctuation}Ez", f"{sPunctuation}XII")
+                sLineContent = sLineContent.replace(f"{sPunctuation}EZ", f"{sPunctuation}XII")
+
+            # Regex namespace conversions that can occur at the start of the file.
+            if (rSearch := re.match(r"^ez", sLineContent)) and rSearch != None:
+                sLineContent = 'xii' + sLineContent.removeprefix('ez')
+            if (rSearch := re.match(r"^Ez", sLineContent)) and rSearch != None:
+                sLineContent = 'XII' + sLineContent.removeprefix('Ez')
+            if (rSearch := re.match(r"^EZ", sLineContent)) and rSearch != None:
+                sLineContent = 'XII' + sLineContent.removeprefix('EZ')
+
+            # Remove references to xiiEngine as a result of the transformation.
+            # sLineContent = sLineContent.replace('xiiEngine', 'XII')
+
+            sLineContent += '\n'
+
+            processedFileContent.append(sLineContent)
+
+        # Write file contents back into file.
+        with open(file, mode='w') as filestream:
+            filestream.writelines(processedFileContent)
+        #break
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="XII Migration Tool.")
 
@@ -140,12 +214,15 @@ def main() -> int:
 
     logger.info("XII Migration Tool")
     logger.info("Copyright (c) 2024 Theophilus Eriata. All Rights Reserved")
-    logger.info("Please that all project files are backed up before using this tool.")
+    logger.info("Please ensure that all project files are backed up before using this tool.")
 
     InstanceData.sSourcePath = sEnginePath
 
     # First resolve file names.
     ResolveFileNames()
+
+    # Next, resolve the namespaces. That is, the ez -> xii conversion.
+    ResolveNamespace()
 
     return 0
 
