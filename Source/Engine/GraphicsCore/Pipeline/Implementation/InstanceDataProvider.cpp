@@ -55,7 +55,7 @@ void xiiInstanceData::UpdateInstanceData(xiiRenderContext* pRenderContext, xiiUI
   auto                        pSourceData  = m_PerInstanceData.GetArrayPtr().GetSubArray(m_uiBufferOffset, uiCount);
   xiiBitflags<xiiGALMapFlags> mapFlags     = (m_uiBufferOffset == 0) ? xiiGALMapFlags::Discard : xiiGALMapFlags::NoOverWrite;
 
-  pGALCommandList->UpdateBufferExtended(m_hInstanceDataBuffer, uiDestOffset, pSourceData.ToByteArray(), mapFlags);
+  pGALCommandList->UpdateBufferExtended(m_hInstanceDataBuffer, uiDestOffset, pSourceData.ToByteArray(), mapFlags, true);
 
   xiiObjectConstants* pConstants = pRenderContext->GetConstantBufferData<xiiObjectConstants>(m_hConstantBuffer);
   pConstants->InstanceDataOffset = m_uiBufferOffset;

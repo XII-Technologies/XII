@@ -1466,6 +1466,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
       pCommandList->UpdateTextureExtended(m_hOcclusionDebugViewTexture, xiiGALTextureMipLevelData(), destBox, sourceData);
 
       pGALCommandQueue->Submit(pCommandList);
+      pGALCommandQueue->WaitForIdle();
     }
 
     xiiDebugRenderer::Draw2DRectangle(view.GetHandle(), rectInPixel2, 0.0f, xiiColor::White, pDevice->GetTexture(m_hOcclusionDebugViewTexture)->GetDefaultView(xiiGALTextureViewType::ShaderResource), xiiVec2(1, -1));
@@ -1473,6 +1474,7 @@ void xiiRenderPipeline::PreviewOcclusionBuffer(const xiiRasterizerView& rasteriz
   else
   {
     xiiTexture2DResourceDescriptor d;
+    d.m_DescGAL.m_Type        = xiiGALResourceDimension::Texture2D;
     d.m_DescGAL.m_Size.width  = rasterizer.GetResolutionX();
     d.m_DescGAL.m_Size.height = rasterizer.GetResolutionY();
     d.m_DescGAL.m_Format      = xiiGALTextureFormat::RGBA8SNormalized;

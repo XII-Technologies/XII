@@ -36,7 +36,6 @@ struct xiiAmbientCube
   void operator=(const xiiAmbientCube<U>& other);
 
   bool operator==(const xiiAmbientCube& other) const;
-  bool operator!=(const xiiAmbientCube& other) const;
 
   void AddSample(const xiiVec3& vDir, const T& value);
 
