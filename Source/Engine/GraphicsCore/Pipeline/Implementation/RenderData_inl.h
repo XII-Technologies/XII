@@ -12,11 +12,6 @@ XII_ALWAYS_INLINE bool xiiRenderData::Category::operator==(const Category& other
   return m_uiValue == other.m_uiValue;
 }
 
-XII_ALWAYS_INLINE bool xiiRenderData::Category::operator!=(const Category& other) const
-{
-  return m_uiValue != other.m_uiValue;
-}
-
 //////////////////////////////////////////////////////////////////////////
 
 // static

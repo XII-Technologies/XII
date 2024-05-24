@@ -20,21 +20,22 @@
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, ShadowPool)
-BEGIN_SUBSYSTEM_DEPENDENCIES
-"Foundation",
-"Core",
-"RenderWorld"
-END_SUBSYSTEM_DEPENDENCIES
 
-ON_HIGHLEVELSYSTEMS_STARTUP
-{
-  xiiShadowPool::OnEngineStartup();
-}
-
-ON_HIGHLEVELSYSTEMS_SHUTDOWN
-{
-  xiiShadowPool::OnEngineShutdown();
-}
+  BEGIN_SUBSYSTEM_DEPENDENCIES
+    "Foundation",
+    "Core",
+    "RenderWorld"
+  END_SUBSYSTEM_DEPENDENCIES
+  
+  ON_HIGHLEVELSYSTEMS_STARTUP
+  {
+    xiiShadowPool::OnEngineStartup();
+  }
+  
+  ON_HIGHLEVELSYSTEMS_SHUTDOWN
+  {
+    xiiShadowPool::OnEngineShutdown();
+  }
 
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on

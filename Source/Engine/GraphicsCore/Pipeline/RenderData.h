@@ -21,7 +21,6 @@ public:
     explicit Category(xiiUInt16 uiValue);
 
     bool operator==(const Category& other) const;
-    bool operator!=(const Category& other) const;
 
     xiiUInt16 m_uiValue = 0xFFFF;
   };
