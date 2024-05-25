@@ -23,7 +23,6 @@ public:
   xiiGALRenderTargetSetup& SetDepthStencilTarget(xiiGALTextureViewHandle hDSTarget);
 
   bool operator==(const xiiGALRenderTargetSetup& other) const;
-  bool operator!=(const xiiGALRenderTargetSetup& other) const;
 
   inline xiiUInt8 GetRenderTargetCount() const;
 
@@ -42,7 +41,6 @@ protected:
 struct XII_GRAPHICSCORE_DLL xiiGALRenderingSetup
 {
   bool operator==(const xiiGALRenderingSetup& other) const;
-  bool operator!=(const xiiGALRenderingSetup& other) const;
 
   xiiGALRenderTargetSetup m_RenderTargetSetup;
   xiiUInt32               m_uiRenderTargetClearMask = 0x0U;
