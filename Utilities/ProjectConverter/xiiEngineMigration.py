@@ -252,6 +252,67 @@ def ResolveNamespace() -> None:
 
                     uiIndexAdvancement += 1
 
+            # Cleanup multiline function arguments, clang-format does not clean them up.
+            if (rSearch := re.search(r"[a-zA-Z0-9]+\s+[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None:
+                sLineParse: str = sLineContent
+
+                uiIndexAdvancement: int = 1
+                while (uiCurrentLine + uiIndexAdvancement) < len(fileContent):
+                    sProcessedLine: str = GetResolvedLineContent(fileContent[uiCurrentLine + uiIndexAdvancement].strip())
+
+                    if len(sProcessedLine) == 0:
+                        uiIndexAdvancement += 1
+                        continue
+
+                    sLineParse += sProcessedLine
+
+                    if sProcessedLine.endswith('(') or sProcessedLine.endswith('{') or sProcessedLine.endswith(';') or sProcessedLine.endswith('[tested]'):
+                        sLineContent       = sLineParse
+                        uiCurrentLine     += uiIndexAdvancement
+                        uiNextLinesToSkip += uiIndexAdvancement
+                        logger.info(f"Applied code format rules: {sLineContent}")
+                        break
+
+                    # Max depth
+                    if uiIndexAdvancement > 50:
+                        logger.info(f"Failed to apply code format rules: {sLineContent}")
+                        break
+
+                    uiIndexAdvancement += 1
+
+            # Cleanup multiline function arguments, clang-format does not clean them up.
+                # We do not apply code format rules on comments. (Block comments are unhandled)
+            if (rSearch := re.search(r"[a-zA-Z0-9]+\s+[a-zA-Z0-9_]+\(+([a-zA-Z0-9\s<>&*:,.\(\)])+$", sLineContent)) and rSearch != None and not sLineContent.strip().startswith("//") and not sLineContent.strip().startswith("/*") and not sLineContent.strip().startswith("*") and not sLineContent.strip().startswith("#"):
+                sLineParse: str = sLineContent
+
+                uiIndexAdvancement: int = 1
+                while (uiCurrentLine + uiIndexAdvancement) < len(fileContent):
+                    sProcessedLine: str = GetResolvedLineContent(fileContent[uiCurrentLine + uiIndexAdvancement].strip())
+
+                    # Empty lines are ambiguous at the moment.
+                    if len(sProcessedLine) == 0:
+                        break
+
+                    # We do not apply code format rules on comments. (Block comments are unhandled)
+                    if sProcessedLine.strip().startswith("//"):
+                        break
+
+                    sLineParse += sProcessedLine
+
+                    if sProcessedLine.endswith('(') or sProcessedLine.endswith('{') or sProcessedLine.endswith(';') or sProcessedLine.endswith('[tested]'):
+                        sLineContent       = sLineParse
+                        uiCurrentLine     += uiIndexAdvancement
+                        uiNextLinesToSkip += uiIndexAdvancement
+                        logger.info(f"Applied code format rules: {sLineContent}")
+                        break
+
+                    # Max depth
+                    if uiIndexAdvancement > 50:
+                        logger.info(f"Failed to apply code format rules: {sLineContent}")
+                        break
+
+                    uiIndexAdvancement += 1
+
             sLineContent += '\n'
 
             processedFileContent.append(sLineContent)
