@@ -174,6 +174,12 @@ def GetResolvedLineContent(sLineText: str) -> str:
 
     return sLineContent
 
+def ApplyCodeFormatRules(sText: str) -> str:
+    """
+    Returns a string containing the formatted sText, if any code format rules were applied.
+    """
+    pass
+
 def ResolveNamespace() -> None:
     """
     Resolves the namespaces. That is, the ez -> xii conversion.
@@ -219,7 +225,7 @@ def ResolveNamespace() -> None:
             sLineContent: str = GetResolvedLineContent(sStrippedLine)
 
             # Cleanup multiline function arguments, clang-format does not clean them up.
-            if (rSearch := re.match(r"^[a-zA-Z123]+\s[a-zA-Z123]+::[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None:
+            if (rSearch := re.match(r"^[a-zA-Z0-9]+\s[a-zA-Z0-9]+::[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None:
                 sLineParse: str = sLineContent
 
                 uiIndexAdvancement: int = 1
