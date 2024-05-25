@@ -7,7 +7,7 @@
 #  include "MaterialInterpolator.h"
 
 #  if defined(TOPOLOGY)
-#    if TOPOLOGY == TOPOLOGY_LINES
+#    if TOPOLOGY == TOPOLOGY_LINE_LIST
 [maxvertexcount(2)] void main(line VS_OUT input[2], inout LineStream<GS_OUT> outStream) {
   GS_OUT output;
   [unroll(3)] for (int i = 0; i < 2; ++i)

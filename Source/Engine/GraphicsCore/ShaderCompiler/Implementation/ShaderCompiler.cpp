@@ -333,15 +333,16 @@ xiiResult xiiShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringView 
   }
 
   // Try out every compiler that we can find
+  // clang-format off
   xiiResult result = XII_SUCCESS;
-  xiiRTTI::ForEachDerivedType<xiiShaderProgramCompiler>(
-    [&](const xiiRTTI* pRtti) {
-      xiiUniquePtr<xiiShaderProgramCompiler> pCompiler = pRtti->GetAllocator()->Allocate<xiiShaderProgramCompiler>();
+  xiiRTTI::ForEachDerivedType<xiiShaderProgramCompiler>([&](const xiiRTTI* pRtti) {
+    xiiUniquePtr<xiiShaderProgramCompiler> pCompiler = pRtti->GetAllocator()->Allocate<xiiShaderProgramCompiler>();
 
-      if (RunShaderCompiler(sFile, sPlatform, pCompiler.Borrow(), pLog).Failed())
-        result = XII_FAILURE;
-    },
-    xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
+    if (RunShaderCompiler(sFile, sPlatform, pCompiler.Borrow(), pLog).Failed())
+      result = XII_FAILURE;
+  },
+  xiiRTTI::ForEachOptions::ExcludeNonAllocatable);
+  // clang-format on
 
   return result;
 }

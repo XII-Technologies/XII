@@ -13,7 +13,7 @@ VERTEX_SHADER_RENDER_TARGET_ARRAY_INDEX
 [RENDERSTATE]
 
 BlendEnable0 = true
-SourceBlend0 = Blend_SrcAlpha
+SourceBlend0 = BlendFactor_SourceAlpha
 DepthEnable = true
 DepthWriteEnable = false
 CullMode = CullMode_None

@@ -37,7 +37,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALCommandQueueD3D11* pCommandQueueD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(pDeviceD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11)
 {
-  XII_ASSERT_DEV(SUCCEEDED(pDeviceD3D11->GetD3D11Device()->CreateDeferredContext1(0U, &m_pCommandList)), "Failed to create deferred context for recording commands.");
+  XII_ASSERT_ALWAYS(SUCCEEDED(pDeviceD3D11->GetD3D11Device()->CreateDeferredContext1(0U, &m_pCommandList)), "Failed to create deferred context for recording commands.");
 }
 
 xiiGALCommandListD3D11::~xiiGALCommandListD3D11()
@@ -890,9 +890,18 @@ void xiiGALCommandListD3D11::InvalidateResources()
 {
   m_pPipelineState = nullptr;
 
-  xiiMemoryUtils::Construct<ConstructAll>(m_pCommittedVertexBuffers);
-  xiiMemoryUtils::Construct<ConstructAll>(m_CommittedVertexBufferStrides);
-  xiiMemoryUtils::Construct<ConstructAll>(m_CommittedVertexBufferOffsets);
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCommittedVertexBuffers); ++i)
+  {
+    m_pCommittedVertexBuffers[i] = nullptr;
+  }
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_CommittedVertexBufferStrides); ++i)
+  {
+    m_CommittedVertexBufferStrides[i] = 0U;
+  }
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_CommittedVertexBufferOffsets); ++i)
+  {
+    m_CommittedVertexBufferOffsets[i] = 0U;
+  }
   m_CommittedVertexBuffersRange.Reset();
 
   m_pCommittedInputLayout           = nullptr;
@@ -905,7 +914,10 @@ void xiiGALCommandListD3D11::InvalidateResources()
   m_uiCommittedBlendSampleMask  = 0xFFFFFFFFU;
   m_uiCommittedStencilReference = 0xFFU;
 
-  xiiMemoryUtils::Construct<ConstructAll>(m_pCommittedRenderTargets);
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCommittedRenderTargets); ++i)
+  {
+    m_pCommittedRenderTargets[i] = nullptr;
+  }
   m_uiBoundRenderTargetCount     = 0U;
   m_pCommittedDepthStencilTarget = nullptr;
 }
@@ -1015,8 +1027,10 @@ void xiiGALCommandListD3D11::CommitRenderTargets()
 
 void xiiGALCommandListD3D11::ResetRenderTargets()
 {
-  xiiMemoryUtils::Construct<ConstructAll>(m_pCommittedRenderTargets);
-
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_pCommittedRenderTargets); ++i)
+  {
+    m_pCommittedRenderTargets[i] = nullptr;
+  }
   m_pCommittedDepthStencilTarget = nullptr;
   m_uiBoundRenderTargetCount     = 0U;
 

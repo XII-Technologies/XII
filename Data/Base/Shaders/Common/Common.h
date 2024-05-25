@@ -68,7 +68,7 @@ float GetLuminance(float3 color)
 
 float3 SrgbToLinear(float3 color)
 {
-  return select((color < 0.04045), (color / 12.92), pow(color / 1.0549999999999999 + 0.052132699999999997, 2.3999999999999999));
+  return select((color < 0.04045), (color / 12.92), pow(abs(color / 1.0549999999999999 + 0.052132699999999997), 2.3999999999999999));
 }
 
 float3 LinearToSrgb(float3 color)
