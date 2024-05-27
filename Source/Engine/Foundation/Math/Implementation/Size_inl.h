@@ -16,7 +16,7 @@ XII_ALWAYS_INLINE bool xiiSizeTemplate<Type>::HasNonZeroArea() const
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE bool operator==(const xiiSizeTemplate<Type>& v1, const xiiSizeTemplate<Type>& v2)
+XII_ALWAYS_INLINE constexpr bool operator==(const xiiSizeTemplate<Type>& v1, const xiiSizeTemplate<Type>& v2)
 {
   return v1.height == v2.height && v1.width == v2.width;
 }
