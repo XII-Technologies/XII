@@ -34,7 +34,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiRopeRenderComponent, 2, xiiComponentMode::Static)
     XII_MESSAGE_HANDLER(xiiMsgExtractRenderData, OnMsgExtractRenderData),
     XII_MESSAGE_HANDLER(xiiMsgRopePoseUpdated, OnRopePoseUpdated),
     XII_MESSAGE_HANDLER(xiiMsgSetColor, OnMsgSetColor),
-    XII_MESSAGE_HANDLER(xiiMsgSetMeshMaterial, OnMsgSetMeshMaterial),      
+    XII_MESSAGE_HANDLER(xiiMsgSetMeshMaterial, OnMsgSetMeshMaterial),
   }
   XII_END_MESSAGEHANDLERS;
   XII_BEGIN_ATTRIBUTES

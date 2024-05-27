@@ -1841,7 +1841,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiScriptExtensionClass_Debug, xiiNoBase, 1, xii
     XII_SCRIPT_FUNCTION_PROPERTY(DrawLineSphere, In, "World", In, "Position", In, "Radius", In, "Color", In, "Transform")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(1.0f)),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute())),
 
     XII_SCRIPT_FUNCTION_PROPERTY(DrawSolidBox, In, "World", In, "Position", In, "HalfExtents", In, "Color", In, "Transform")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(xiiVec3(1))),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute())),
-    
+
     XII_SCRIPT_FUNCTION_PROPERTY(Draw2DText, In, "World", In, "Text", In, "Position", In, "Color", In, "SizeInPixel", In, "HAlign")->AddAttributes(new xiiFunctionArgumentAttributes(4, new xiiDefaultValueAttribute(16))),
     XII_SCRIPT_FUNCTION_PROPERTY(Draw3DText, In, "World", In, "Text", In, "Position", In, "Color", In, "SizeInPixel")->AddAttributes(new xiiFunctionArgumentAttributes(4, new xiiDefaultValueAttribute(16))),
     XII_SCRIPT_FUNCTION_PROPERTY(DrawInfoText, In, "World", In, "Text", In, "Placement", In, "Group", In, "Color"),
