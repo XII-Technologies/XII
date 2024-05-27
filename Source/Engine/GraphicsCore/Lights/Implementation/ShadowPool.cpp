@@ -26,12 +26,12 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, ShadowPool)
     "Core",
     "RenderWorld"
   END_SUBSYSTEM_DEPENDENCIES
-  
+
   ON_HIGHLEVELSYSTEMS_STARTUP
   {
     xiiShadowPool::OnEngineStartup();
   }
-  
+
   ON_HIGHLEVELSYSTEMS_SHUTDOWN
   {
     xiiShadowPool::OnEngineShutdown();

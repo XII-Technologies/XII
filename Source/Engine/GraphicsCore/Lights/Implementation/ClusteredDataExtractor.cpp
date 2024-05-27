@@ -173,10 +173,7 @@ xiiClusteredDataExtractor::xiiClusteredDataExtractor(const char* szName) :
 
 xiiClusteredDataExtractor::~xiiClusteredDataExtractor() = default;
 
-void xiiClusteredDataExtractor::PostSortAndBatch(
-  const xiiView&                               view,
-  const xiiDynamicArray<const xiiGameObject*>& visibleObjects,
-  xiiExtractedRenderData&                      ref_extractedRenderData)
+void xiiClusteredDataExtractor::PostSortAndBatch(const xiiView& view, const xiiDynamicArray<const xiiGameObject*>& visibleObjects, xiiExtractedRenderData& ref_extractedRenderData)
 {
   XII_PROFILE_SCOPE("PostSortAndBatch");
 
@@ -221,10 +218,8 @@ void xiiClusteredDataExtractor::PostSortAndBatch(
         {
           FillPointLightData(m_TempLightData.ExpandAndGetRef(), pPointLightRenderData);
 
-          xiiSimdBSphere pointLightSphere =
-            xiiSimdBSphere(xiiSimdConversion::ToVec3(pPointLightRenderData->m_GlobalTransform.m_vPosition), pPointLightRenderData->m_fRange);
-          RasterizeSphere(
-            pointLightSphere, uiLightIndex, viewMatrix, projectionMatrix, m_TempLightsClusters.GetData(), m_ClusterBoundingSpheres.GetData());
+          xiiSimdBSphere pointLightSphere = xiiSimdBSphere(xiiSimdConversion::ToVec3(pPointLightRenderData->m_GlobalTransform.m_vPosition), pPointLightRenderData->m_fRange);
+          RasterizeSphere(pointLightSphere, uiLightIndex, viewMatrix, projectionMatrix, m_TempLightsClusters.GetData(), m_ClusterBoundingSpheres.GetData());
 
           if (false)
           {
@@ -374,10 +369,8 @@ void xiiClusteredDataExtractor::PostSortAndBatch(
 
           if (bRasterizeSphere)
           {
-            xiiSimdBSphere pointLightSphere =
-              xiiSimdBSphere(xiiSimdConversion::ToVec3(pReflectionProbeRenderData->m_GlobalTransform.m_vPosition), fMaxRadius);
-            RasterizeSphere(
-              pointLightSphere, uiProbeIndex, viewMatrix, projectionMatrix, m_TempReflectionProbeClusters.GetData(), m_ClusterBoundingSpheres.GetData());
+            xiiSimdBSphere pointLightSphere = xiiSimdBSphere(xiiSimdConversion::ToVec3(pReflectionProbeRenderData->m_GlobalTransform.m_vPosition), fMaxRadius);
+            RasterizeSphere(pointLightSphere, uiProbeIndex, viewMatrix, projectionMatrix, m_TempReflectionProbeClusters.GetData(), m_ClusterBoundingSpheres.GetData());
           }
           else
           {
@@ -385,8 +378,8 @@ void xiiClusteredDataExtractor::PostSortAndBatch(
             transform.m_vScale     = vFullScale.CompMul(probeData.InfluenceScale.GetAsVec3());
             transform.m_vPosition += transform.m_qRotation * vFullScale.CompMul(probeData.InfluenceShift.GetAsVec3());
 
-            //const xiiBoundingBox aabb(xiiVec3(-1.0f), xiiVec3(1.0f));
-            //xiiDebugRenderer::DrawLineBox(view.GetHandle(), aabb, xiiColor::DarkBlue, transform);
+            // const xiiBoundingBox aabb(xiiVec3(-1.0f), xiiVec3(1.0f));
+            // xiiDebugRenderer::DrawLineBox(view.GetHandle(), aabb, xiiColor::DarkBlue, transform);
 
             RasterizeBox(transform, uiProbeIndex, viewProjectionMatrix, m_TempReflectionProbeClusters.GetData(), m_ClusterBoundingSpheres.GetData());
           }

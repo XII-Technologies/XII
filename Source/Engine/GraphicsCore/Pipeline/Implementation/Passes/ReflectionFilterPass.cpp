@@ -55,12 +55,13 @@ bool xiiReflectionFilterPass::GetRenderTargetDescriptions(const xiiView& view, c
 {
   {
     xiiGALTextureCreationDescription desc;
-    desc.m_Size.width  = xiiReflectionPool::GetReflectionCubeMapSize();
-    desc.m_Size.height = desc.m_Size.width;
-    desc.m_Format      = xiiGALTextureFormat::RGBA16Float;
-    desc.m_Type        = xiiGALResourceDimension::TextureCubeArray;
-    desc.m_uiMipLevels = xiiMath::Log2i(desc.m_Size.width) - 1;
-    desc.m_BindFlags   = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
+    desc.m_Size.width         = xiiReflectionPool::GetReflectionCubeMapSize();
+    desc.m_Size.height        = desc.m_Size.width;
+    desc.m_Format             = xiiGALTextureFormat::RGBA16Float;
+    desc.m_Type               = xiiGALResourceDimension::TextureCube;
+    desc.m_uiArraySizeOrDepth = 6U;
+    desc.m_uiMipLevels        = xiiMath::Log2i(desc.m_Size.width) - 1;
+    desc.m_BindFlags          = xiiGALBindFlags::UnorderedAccess | xiiGALBindFlags::ShaderResource;
 
     outputs[m_PinFilteredSpecular.m_uiOutputIndex] = desc;
   }
@@ -82,9 +83,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
   bool bAllowAsyncShaderLoading = renderViewContext.m_pRenderContext->GetAllowAsyncShaderLoading();
   renderViewContext.m_pRenderContext->SetAllowAsyncShaderLoading(false);
 
-  XII_SCOPE_EXIT({
-    renderViewContext.m_pRenderContext->SetAllowAsyncShaderLoading(bAllowAsyncShaderLoading);
-  });
+  XII_SCOPE_EXIT(renderViewContext.m_pRenderContext->SetAllowAsyncShaderLoading(bAllowAsyncShaderLoading));
 
   if (pInputCubemap->GetDescription().m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
   {

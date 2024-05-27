@@ -17,10 +17,10 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, Texture2D)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-    "ResourceManager" 
+    "ResourceManager"
   END_SUBSYSTEM_DEPENDENCIES
 
-  ON_CORESYSTEMS_STARTUP 
+  ON_CORESYSTEMS_STARTUP
   {
     xiiResourceManager::RegisterResourceOverrideType(xiiGetStaticRTTI<xiiRenderToTexture2DResource>(), [](const xiiStringBuilder& sResourceID) -> bool  {
       return sResourceID.HasExtension(".xiiRenderTarget");

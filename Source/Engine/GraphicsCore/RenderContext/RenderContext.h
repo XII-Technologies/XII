@@ -408,10 +408,10 @@ private: // Per Renderer States
   xiiGALRenderPassHandle  m_hCurrentRenderPass;
   xiiGALRenderingSetup    m_CurrentRenderingSetup = {};
 
-  xiiGALPipelineStateHandle        m_hCurrentPipelineState;
-  xiiGALCommandQueue*              m_pCommandQueue = nullptr;
-  xiiGALCommandList*               m_pCommandList  = nullptr;
-  bool                             m_bCompute      = false;
+  xiiGALPipelineStateHandle m_hCurrentPipelineState;
+  xiiGALCommandQueue*       m_pCommandQueue = nullptr;
+  xiiGALCommandList*        m_pCommandList  = nullptr;
+  bool                      m_bCompute      = false;
 
   // Member Functions
   void UploadConstants();

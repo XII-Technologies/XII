@@ -18,13 +18,10 @@ public:
   xiiClusteredDataCPU();
   ~xiiClusteredDataCPU();
 
-  enum
-  {
-    MAX_LIGHT_DATA            = 1024,
-    MAX_DECAL_DATA            = 1024,
-    MAX_REFLECTION_PROBE_DATA = 1024,
-    MAX_ITEMS_PER_CLUSTER     = 256
-  };
+  static constexpr xiiUInt32 MAX_LIGHT_DATA            = 1024U;
+  static constexpr xiiUInt32 MAX_DECAL_DATA            = 1024U;
+  static constexpr xiiUInt32 MAX_REFLECTION_PROBE_DATA = 1024U;
+  static constexpr xiiUInt32 MAX_ITEMS_PER_CLUSTER     = 256U;
 
   xiiArrayPtr<xiiPerLightData>           m_LightData;
   xiiArrayPtr<xiiPerDecalData>           m_DecalData;
