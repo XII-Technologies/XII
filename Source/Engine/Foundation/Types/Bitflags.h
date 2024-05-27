@@ -103,13 +103,13 @@ public:
   XII_ALWAYS_INLINE void operator=(Enum flag1) { m_Value = (StorageType)flag1; }
 
   /// \brief Comparison operator.
-  XII_ALWAYS_INLINE bool operator==(const StorageType rhs) const // [tested]
+  XII_ALWAYS_INLINE constexpr bool operator==(const StorageType rhs) const // [tested]
   {
     return m_Value == rhs;
   }
 
   /// \brief Comparison operator.
-  XII_ALWAYS_INLINE bool operator==(const xiiBitflags<T>& rhs) const
+  XII_ALWAYS_INLINE constexpr bool operator==(const xiiBitflags<T>& rhs) const
   {
     return m_Value == rhs.m_Value;
   }

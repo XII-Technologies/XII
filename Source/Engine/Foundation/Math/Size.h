@@ -31,7 +31,7 @@ public:
 };
 
 template <typename Type>
-bool operator==(const xiiSizeTemplate<Type>& v1, const xiiSizeTemplate<Type>& v2);
+constexpr bool operator==(const xiiSizeTemplate<Type>& v1, const xiiSizeTemplate<Type>& v2);
 
 #include <Foundation/Math/Implementation/Size_inl.h>
 
