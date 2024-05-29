@@ -11,10 +11,6 @@ class XII_GRAPHICSD3D11_DLL xiiGALBufferD3D11 final : public xiiGALBuffer
   XII_ADD_DYNAMIC_REFLECTION(xiiGALBufferD3D11, xiiGALBuffer);
 
 public:
-  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
-
-  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
-
   virtual xiiGALMemoryProperties GetMemoryProperties() const override final;
 
   virtual void FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;

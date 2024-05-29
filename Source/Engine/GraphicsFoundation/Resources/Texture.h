@@ -150,15 +150,6 @@ public:
   /// \note The function does not increase the reference counter for the returned interface, so ReleaseRef() must *NOT* be called.
   XII_NODISCARD xiiGALTextureViewHandle GetDefaultView(xiiEnum<xiiGALTextureViewType> viewType);
 
-  /// \brief This sets the texture usage state.
-  ///
-  /// \note This method does not perform state transition, but resets the internal texture state to the given value.
-  ///       This method should be used after the application finished manually managing the texture state and wants to hand over state management back to the engine.
-  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) = 0;
-
-  /// \brief This returns the internal texture state.
-  XII_NODISCARD virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const = 0;
-
   /// \brief This returns the sparse texture properties.
   XII_NODISCARD virtual const xiiGALSparseTextureProperties& GetSparseProperties() const = 0;
 

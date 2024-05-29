@@ -11,10 +11,21 @@ class XII_GRAPHICSFOUNDATION_DLL xiiGALResource : public xiiGALDeviceObject
   XII_ADD_DYNAMIC_REFLECTION(xiiGALResource, xiiGALDeviceObject);
 
 public:
+  /// \brief This sets the buffer usage state.
+  ///
+  /// \note This method does not perform state transition, but resets the buffer state to the given value.
+  ///       This method should be used after manually managing the buffer state to hand over state management back to the engine.
+  virtual void SetResourceState(xiiBitflags<xiiGALResourceStateFlags> stateFlags);
+
+  /// \brief This returns the buffer state.
+  XII_NODISCARD virtual xiiBitflags<xiiGALResourceStateFlags> GetResourceState() const;
+
 protected:
   friend class xiiGALDevice;
 
   xiiGALResource(xiiGALDevice* pDevice);
+
+  xiiBitflags<xiiGALResourceStateFlags> m_ResourceState;
 
   xiiHashTable<xiiUInt32, xiiGALBufferViewHandle>  m_BufferViews;
   xiiHashTable<xiiUInt32, xiiGALTextureViewHandle> m_TextureViews;
