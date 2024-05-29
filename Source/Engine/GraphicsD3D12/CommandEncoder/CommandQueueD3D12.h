@@ -15,7 +15,7 @@ public:
   virtual xiiUInt64 GetNextFenceValue() const override final;
 
   /// \brief This returns the last completed value of the internal fence.
-  virtual xiiUInt64 GetCompletedFenceValue() const override final;
+  virtual xiiUInt64 GetCompletedFenceValue() override final;
 
   /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
@@ -27,7 +27,7 @@ public:
   ID3D12CommandQueue* GetD3D12CommandQueue() const;
 
 protected:
-  virtual void SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) override final;
+  virtual xiiUInt64 SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) override final;
 
 protected:
   friend class xiiGALDeviceD3D12;

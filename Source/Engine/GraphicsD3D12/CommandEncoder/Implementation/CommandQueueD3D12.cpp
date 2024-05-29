@@ -39,8 +39,9 @@ void xiiGALCommandQueueD3D12::UnbindTextureFromFramebuffer(xiiGALTextureD3D12* p
 {
 }
 
-void xiiGALCommandQueueD3D12::SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset)
+xiiUInt64 xiiGALCommandQueueD3D12::SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset)
 {
+  return 0U;
 }
 
 XII_STATICLINK_FILE(GraphicsD3D12, GraphicsD3D12_CommandEncoder_Implementation_CommandQueueD3D12);
