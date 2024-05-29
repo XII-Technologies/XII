@@ -1,42 +1,29 @@
 
 XII_ALWAYS_INLINE xiiUInt32 xiiGALBottomLevelASVulkan::GetGeometryDescriptionIndex(xiiStringView sName) const
 {
-  return m_pBottomLevelAS->GetGeometryDescIndex(sName.GetStartPointer());
+  return xiiInvalidIndex;
 }
 
 XII_ALWAYS_INLINE xiiUInt32 xiiGALBottomLevelASVulkan::GetGeometryIndex(xiiStringView sName) const
 {
-  return m_pBottomLevelAS->GetGeometryIndex(sName.GetStartPointer());
+  return xiiInvalidIndex;
 }
 
 XII_ALWAYS_INLINE xiiUInt32 xiiGALBottomLevelASVulkan::GetActualGeometryCount() const
 {
-  return m_pBottomLevelAS->GetActualGeometryCount();
+  return 0;
 }
 
 XII_ALWAYS_INLINE xiiGALScratchBufferSizeDescription xiiGALBottomLevelASVulkan::GetScratchBufferSizeDescription() const
 {
-  const Diligent::ScratchBufferSizes sizes = m_pBottomLevelAS->GetScratchBufferSizes();
-
-  return xiiGALScratchBufferSizeDescription{.m_uiBuild = sizes.Build, .m_uiUpdate = sizes.Update};
+  return xiiGALScratchBufferSizeDescription{.m_uiBuild = 0U, .m_uiUpdate = 0U};
 }
 
 XII_ALWAYS_INLINE void xiiGALBottomLevelASVulkan::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
 {
-  Diligent::RESOURCE_STATE requestedStates = xiiDiligentTypeConversions::GetResourceState(stateFlags);
-
-  if (!(m_pBottomLevelAS->GetState() & requestedStates))
-  {
-    m_pBottomLevelAS->SetState(requestedStates);
-  }
 }
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALBottomLevelASVulkan::GetState() const
 {
-  return xiiDiligentTypeConversions::GetResourceState(m_pBottomLevelAS->GetState());
-}
-
-XII_ALWAYS_INLINE Diligent::IBottomLevelAS* xiiGALBottomLevelASVulkan::GetBottomLevelAS() const
-{
-  return m_pBottomLevelAS;
+  return xiiGALResourceStateFlags::Undefined;
 }

@@ -7,25 +7,19 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALPipelineStateVulkan final : public xiiGALPipelineState
 {
 public:
-  Diligent::IPipelineState* GetPipelineState() const;
-
-  Diligent::IShaderResourceBinding* GetShaderResourceBinding() const;
-
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALPipelineStateVulkan(const xiiGALPipelineStateCreationDescription& creationDescription);
+  xiiGALPipelineStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALPipelineStateCreationDescription& creationDescription);
 
   virtual ~xiiGALPipelineStateVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
-  Diligent::IPipelineState*         m_pPipelineState         = nullptr;
-  Diligent::IShaderResourceBinding* m_pShaderResourceBinding = nullptr;
 };
 
 

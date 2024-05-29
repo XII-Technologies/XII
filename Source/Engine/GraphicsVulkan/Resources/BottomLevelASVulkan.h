@@ -19,22 +19,19 @@ public:
 
   virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
 
-  Diligent::IBottomLevelAS* GetBottomLevelAS() const;
-
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALBottomLevelASVulkan(const xiiGALBottomLevelASCreationDescription& creationDescription);
+  xiiGALBottomLevelASVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALBottomLevelASCreationDescription& creationDescription);
 
   virtual ~xiiGALBottomLevelASVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
-  Diligent::IBottomLevelAS* m_pBottomLevelAS = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/BottomLevelASVulkan_inl.h>

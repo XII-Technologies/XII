@@ -24,14 +24,14 @@
 #include <GraphicsVulkan/States/PipelineStateVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
 
-xiiGALCommandListVulkan::xiiGALCommandListVulkan(const xiiGALCommandListCreationDescription& creationDescription) :
+xiiGALCommandListVulkan::xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandListCreationDescription& creationDescription) :
   xiiGALCommandList(creationDescription)
 {
 }
 
 xiiGALCommandListVulkan::~xiiGALCommandListVulkan() = default;
 
-xiiResult xiiGALCommandListVulkan::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALCommandListVulkan::InitPlatform()
 {
   xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
 
@@ -62,7 +62,7 @@ xiiResult xiiGALCommandListVulkan::InitPlatform(xiiGALDevice* pDevice)
   return m_pCommandList != nullptr ? XII_SUCCESS : XII_FAILURE;
 }
 
-xiiResult xiiGALCommandListVulkan::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALCommandListVulkan::DeInitPlatform()
 {
   return XII_SUCCESS;
 }

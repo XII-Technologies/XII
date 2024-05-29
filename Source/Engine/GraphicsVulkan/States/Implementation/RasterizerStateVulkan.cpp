@@ -10,7 +10,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALRasterizerStateVulkan::xiiGALRasterizerStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALRasterizerStateCreationDescription& creationDescription) :
-  xiiGALRasterizerState(creationDescription)
+  xiiGALRasterizerState(pDeviceVulkan, creationDescription)
 {
 }
 

@@ -7,22 +7,19 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALFramebufferVulkan final : public xiiGALFramebuffer
 {
 public:
-  Diligent::IFramebuffer* GetFramebuffer() const;
-
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALFramebufferVulkan(const xiiGALFramebufferCreationDescription& creationDescription);
+  xiiGALFramebufferVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALFramebufferCreationDescription& creationDescription);
 
   virtual ~xiiGALFramebufferVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
-  Diligent::IFramebuffer* m_pFramebuffer = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/FramebufferVulkan_inl.h>

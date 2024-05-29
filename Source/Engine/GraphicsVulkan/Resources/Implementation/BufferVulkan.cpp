@@ -3,54 +3,23 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
 
-xiiGALBufferVulkan::xiiGALBufferVulkan(const xiiGALBufferCreationDescription& creationDescription) :
-  xiiGALBuffer(creationDescription)
+xiiGALBufferVulkan::xiiGALBufferVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALBufferCreationDescription& creationDescription) :
+  xiiGALBuffer(pDeviceVulkan, creationDescription)
 {
 }
 
 xiiGALBufferVulkan::~xiiGALBufferVulkan() = default;
 
-xiiResult xiiGALBufferVulkan::InitPlatform(xiiGALDevice* pDevice, const xiiGALBufferData* pInitialData)
+xiiResult xiiGALBufferVulkan::InitPlatform(const xiiGALBufferData* pInitialData)
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
+  // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
 
-  Diligent::BufferDesc bufferDescription;
-  bufferDescription.Name                 = m_Description.m_sName.GetStartPointer();
-  bufferDescription.Size                 = m_Description.m_uiSize;
-  bufferDescription.BindFlags            = xiiDiligentTypeConversions::GetBindFlags(m_Description.m_BindFlags);
-  bufferDescription.Usage                = xiiDiligentTypeConversions::GetUsage(m_Description.m_ResourceUsage);
-  bufferDescription.CPUAccessFlags       = xiiDiligentTypeConversions::GetCPUAccessFlags(m_Description.m_CPUAccessFlags);
-  bufferDescription.Mode                 = xiiDiligentTypeConversions::GetBufferMode(m_Description.m_Mode);
-  bufferDescription.ElementByteStride    = m_Description.m_uiElementByteStride;
-  bufferDescription.ImmediateContextMask = m_Description.m_uiImmediateContextMask;
-
-  // If uniform/constant buffer, align size to 64 bytes.
-  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UniformBuffer))
-    bufferDescription.Size = xiiMemoryUtils::AlignSize(m_Description.m_uiSize, 64ULL);
-
-  // Set the index format for index buffers.
-  if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::IndexBuffer))
-    m_IndexFormat = m_Description.m_uiElementByteStride == 2U ? Diligent::VT_UINT16 : Diligent::VT_UINT32;
-
-  if (pInitialData != nullptr)
-  {
-    Diligent::BufferData initialData = {};
-    initialData.pData                = pInitialData->m_pData;
-    initialData.DataSize             = pInitialData->m_uiDataSize;
-
-    pDeviceVulkan->GetDevice()->CreateBuffer(bufferDescription, &initialData, &m_pBuffer);
-  }
-  else
-  {
-    pDeviceVulkan->GetDevice()->CreateBuffer(bufferDescription, nullptr, &m_pBuffer);
-  }
-
-  return (m_pBuffer != nullptr) ? XII_SUCCESS : XII_FAILURE;
+  return XII_FAILURE;
 }
 
-xiiResult xiiGALBufferVulkan::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBufferVulkan::DeInitPlatform()
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pBuffer);
+  XII_ASSERT_NOT_IMPLEMENTED;
 
   return XII_SUCCESS;
 }

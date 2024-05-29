@@ -7,22 +7,20 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALSamplerVulkan final : public xiiGALSampler
 {
 public:
-  Diligent::ISampler* GetSampler() const;
 
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALSamplerVulkan(const xiiGALSamplerCreationDescription& creationDescription);
+  xiiGALSamplerVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALSamplerCreationDescription& creationDescription);
 
   virtual ~xiiGALSamplerVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
-  Diligent::ISampler* m_pSampler = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/SamplerVulkan_inl.h>

@@ -4,36 +4,23 @@
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
 #include <GraphicsVulkan/Resources/BufferVulkan.h>
 
-xiiGALBufferViewVulkan::xiiGALBufferViewVulkan(xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
-  xiiGALBufferView(pBuffer, creationDescription)
+xiiGALBufferViewVulkan::xiiGALBufferViewVulkan(xiiGALDeviceVulkan* pDeviceVulkan, xiiGALBuffer* pBuffer, const xiiGALBufferViewCreationDescription& creationDescription) :
+  xiiGALBufferView(pDeviceVulkan, pBuffer, creationDescription)
 {
 }
 
 xiiGALBufferViewVulkan::~xiiGALBufferViewVulkan() = default;
 
-xiiResult xiiGALBufferViewVulkan::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBufferViewVulkan::InitPlatform()
 {
   // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
 
-  Diligent::BufferViewDesc viewDescription;
-  viewDescription.Name                 = m_Description.m_sName.GetStartPointer();
-  viewDescription.ViewType             = xiiDiligentTypeConversions::GetBufferViewType(m_Description.m_ViewType);
-  viewDescription.Format.IsNormalized  = m_Description.m_Format.m_bIsNormalized;
-  viewDescription.Format.NumComponents = m_Description.m_Format.m_uiComponents;
-  viewDescription.Format.ValueType     = xiiDiligentTypeConversions::GetValueType(m_Description.m_Format.m_ValueType);
-  viewDescription.ByteOffset           = m_Description.m_uiByteOffset;
-  viewDescription.ByteWidth            = m_Description.m_uiByteWidth;
-
-  Diligent::IBuffer* pBufferVulkan = static_cast<xiiGALBufferVulkan*>(m_pBuffer)->GetBuffer();
-
-  pBufferVulkan->CreateView(viewDescription, &m_pBufferView);
-
-  return (m_pBufferView != nullptr) ? XII_SUCCESS : XII_FAILURE;
+  return XII_FAILURE;
 }
 
-xiiResult xiiGALBufferViewVulkan::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALBufferViewVulkan::DeInitPlatform()
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pBufferView);
+  XII_ASSERT_NOT_IMPLEMENTED;
 
   return XII_SUCCESS;
 }

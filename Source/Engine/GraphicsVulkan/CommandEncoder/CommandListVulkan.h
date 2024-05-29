@@ -63,13 +63,13 @@ protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListVulkan(const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
   Diligent::IDeviceContext* m_pCommandList = nullptr;

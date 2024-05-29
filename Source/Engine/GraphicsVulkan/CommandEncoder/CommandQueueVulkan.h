@@ -9,27 +9,20 @@ class XII_GRAPHICSVULKAN_DLL xiiGALCommandQueueVulkan final : public xiiGALComma
 public:
   virtual xiiUInt64 GetNextFenceValue() const override final;
 
-  virtual xiiUInt64 GetCompletedFenceValue() const override final;
+  virtual xiiUInt64 GetCompletedFenceValue() override final;
 
   virtual xiiUInt64 WaitForIdle() override final;
-
-  Diligent::IDeviceContext* GetContext() const;
 
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandQueueVulkan(xiiGALDeviceVulkan& deviceVulkan, Diligent::IDeviceContext* pDeviceContext);
+  xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& description);
 
   virtual ~xiiGALCommandQueueVulkan();
 
 protected:
-  xiiGALDeviceVulkan& m_DeviceVulkan;
-
-  Diligent::IDeviceContext* m_pContext = nullptr;
-
-  Diligent::IFence* m_pFence                = nullptr;
-  xiiUInt64         m_uiCompletedFenceValue = 0U;
+  xiiUInt64 m_uiCompletedFenceValue = 0U;
 };
 
 #include <GraphicsVulkan/CommandEncoder/Implementation/CommandQueueVulkan_inl.h>
