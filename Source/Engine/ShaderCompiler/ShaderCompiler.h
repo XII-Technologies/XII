@@ -48,7 +48,7 @@ public:
 
   virtual xiiResult Compile(xiiShaderProgramData& inout_Data, xiiLogInterface* pLog) override;
 
-  xiiStringView GetProfileName(xiiStringView sPlatform, xiiBitflags<xiiGALShaderStage> Stage);
+  xiiStringView GetProfileName(xiiStringView sPlatform, xiiBitflags<xiiGALShaderType> Stage);
 
   xiiEnum<xiiGALGraphicsDeviceType> GetProfileNameDeviceType(xiiStringView sPlatform, xiiStringView sProfileName);
 

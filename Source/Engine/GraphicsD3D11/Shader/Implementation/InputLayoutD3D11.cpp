@@ -33,7 +33,7 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform()
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
   xiiGALShaderD3D11* pShaderD3D11 = static_cast<xiiGALShaderD3D11*>(pDeviceD3D11->GetShader(m_Description.m_hShader));
 
-  if (pShaderD3D11 == nullptr || !pShaderD3D11->GetDescription().HasByteCodeForStage(xiiGALShaderStage::Vertex))
+  if (pShaderD3D11 == nullptr || !pShaderD3D11->GetDescription().HasByteCodeForStage(xiiGALShaderType::Vertex))
   {
     xiiLog::Error("Shader is invalid, or does not have Vertex shader bytecode.");
     return XII_FAILURE;
@@ -63,7 +63,7 @@ xiiResult xiiGALInputLayoutD3D11::InitPlatform()
     }
   }
 
-  auto& byteCode = pShaderD3D11->GetDescription().m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)];
+  auto& byteCode = pShaderD3D11->GetDescription().m_ByteCodes[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)];
   if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateInputLayout(inputElementDescriptions.GetData(), inputElementDescriptions.GetCount(), byteCode->GetByteCode(), byteCode->GetSize(), &m_pInputLayout)))
   {
     xiiLog::Error("Failed to create the Direct3D11 input layout.");

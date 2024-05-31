@@ -17,7 +17,7 @@ struct xiiShaderPermutationBinaryVersion
 
 xiiShaderPermutationBinary::xiiShaderPermutationBinary()
 {
-  for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = 0; stage < xiiGALShaderType::ENUM_COUNT; ++stage)
     m_uiShaderStageHashes[stage] = 0;
 }
 
@@ -32,7 +32,7 @@ xiiResult xiiShaderPermutationBinary::Write(xiiStreamWriter& inout_stream)
   if (inout_stream.WriteBytes(&uiVersion, sizeof(xiiUInt8)).Failed())
     return XII_FAILURE;
 
-  for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = 0; stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
     if (inout_stream.WriteDWordValue(&m_uiShaderStageHashes[stage]).Failed())
       return XII_FAILURE;
@@ -64,7 +64,7 @@ xiiResult xiiShaderPermutationBinary::Read(xiiStreamReader& inout_stream, bool& 
 
   out_bOldVersion = uiVersion != xiiShaderPermutationBinaryVersion::Current;
 
-  for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = 0; stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
     if (inout_stream.ReadDWordValue(&m_uiShaderStageHashes[stage]).Failed())
       return XII_FAILURE;

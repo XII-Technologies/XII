@@ -21,9 +21,9 @@ xiiResult xiiGALShaderD3D11::InitPlatform()
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
-  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Vertex))
+  if (m_Description.HasByteCodeForStage(xiiGALShaderType::Vertex))
   {
-    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)];
+    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)];
 
     if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateVertexShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pVertexShader)))
     {
@@ -32,9 +32,9 @@ xiiResult xiiGALShaderD3D11::InitPlatform()
     }
   }
 
-  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Hull))
+  if (m_Description.HasByteCodeForStage(xiiGALShaderType::Hull))
   {
-    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Hull)];
+    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Hull)];
 
     if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateHullShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pHullShader)))
     {
@@ -43,9 +43,9 @@ xiiResult xiiGALShaderD3D11::InitPlatform()
     }
   }
 
-  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Domain))
+  if (m_Description.HasByteCodeForStage(xiiGALShaderType::Domain))
   {
-    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Domain)];
+    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Domain)];
 
     if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateDomainShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pDomainShader)))
     {
@@ -54,9 +54,9 @@ xiiResult xiiGALShaderD3D11::InitPlatform()
     }
   }
 
-  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Geometry))
+  if (m_Description.HasByteCodeForStage(xiiGALShaderType::Geometry))
   {
-    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Geometry)];
+    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Geometry)];
 
     if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateGeometryShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pGeometryShader)))
     {
@@ -65,9 +65,9 @@ xiiResult xiiGALShaderD3D11::InitPlatform()
     }
   }
 
-  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Pixel))
+  if (m_Description.HasByteCodeForStage(xiiGALShaderType::Pixel))
   {
-    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Pixel)];
+    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Pixel)];
 
     if (FAILED(pDeviceD3D11->GetD3D11Device()->CreatePixelShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pPixelShader)))
     {
@@ -76,9 +76,9 @@ xiiResult xiiGALShaderD3D11::InitPlatform()
     }
   }
 
-  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Compute))
+  if (m_Description.HasByteCodeForStage(xiiGALShaderType::Compute))
   {
-    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Compute)];
+    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Compute)];
 
     if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateComputeShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pComputeShader)))
     {

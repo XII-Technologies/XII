@@ -53,7 +53,7 @@ xiiResult xiiGALPipelineStateD3D11::InitPlatform()
       m_pRasterizerStateD3D11   = static_cast<xiiGALRasterizerStateD3D11*>(pDeviceD3D11->GetRasterizerState(m_Description.m_GraphicsPipeline.m_hRasterizerState));
       m_pDepthStencilStateD3D11 = static_cast<xiiGALDepthStencilStateD3D11*>(pDeviceD3D11->GetDepthStencilState(m_Description.m_GraphicsPipeline.m_hDepthStencilState));
 
-#define SET_BOUND_SHADER(ShaderStage) m_pBoundShaders[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::##ShaderStage)] = XII_CONCAT(XII_CONCAT(pShaderD3D11->Get, ##ShaderStage), Shader())
+#define SET_BOUND_SHADER(ShaderStage) m_pBoundShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::##ShaderStage)] = XII_CONCAT(XII_CONCAT(pShaderD3D11->Get, ##ShaderStage), Shader())
 
       SET_BOUND_SHADER(Vertex);
       SET_BOUND_SHADER(Pixel);
@@ -66,7 +66,7 @@ xiiResult xiiGALPipelineStateD3D11::InitPlatform()
     break;
     case xiiGALPipelineType::Compute:
     {
-#define SET_BOUND_SHADER(ShaderStage) m_pBoundShaders[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::##ShaderStage)] = XII_CONCAT(XII_CONCAT(pShaderD3D11->Get, ##ShaderStage), Shader())
+#define SET_BOUND_SHADER(ShaderStage) m_pBoundShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::##ShaderStage)] = XII_CONCAT(XII_CONCAT(pShaderD3D11->Get, ##ShaderStage), Shader())
 
       SET_BOUND_SHADER(Compute);
 
@@ -225,26 +225,26 @@ void xiiGALPipelineStateD3D11::SetSamplerPlatform(const xiiGALPipelineResourceDe
 
 //////////////////////////////////////////////////////////////////////////
 
-static void SetShaderResources(xiiGALShaderStage::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11ShaderResourceView** pShaderResourceViews)
+static void SetShaderResources(xiiGALShaderType::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11ShaderResourceView** pShaderResourceViews)
 {
   switch (stage)
   {
-    case xiiGALShaderStage::Vertex:
+    case xiiGALShaderType::Vertex:
       pContext->VSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
       break;
-    case xiiGALShaderStage::Hull:
+    case xiiGALShaderType::Hull:
       pContext->HSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
       break;
-    case xiiGALShaderStage::Domain:
+    case xiiGALShaderType::Domain:
       pContext->DSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
       break;
-    case xiiGALShaderStage::Geometry:
+    case xiiGALShaderType::Geometry:
       pContext->GSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
       break;
-    case xiiGALShaderStage::Pixel:
+    case xiiGALShaderType::Pixel:
       pContext->PSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
       break;
-    case xiiGALShaderStage::Compute:
+    case xiiGALShaderType::Compute:
       pContext->CSSetShaderResources(uiStartSlot, uiNumSlots, pShaderResourceViews);
       break;
 
@@ -252,26 +252,26 @@ static void SetShaderResources(xiiGALShaderStage::Enum stage, ID3D11DeviceContex
   }
 }
 
-static void SetConstantBuffers(xiiGALShaderStage::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11Buffer** pConstantBuffers)
+static void SetConstantBuffers(xiiGALShaderType::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11Buffer** pConstantBuffers)
 {
   switch (stage)
   {
-    case xiiGALShaderStage::Vertex:
+    case xiiGALShaderType::Vertex:
       pContext->VSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
       break;
-    case xiiGALShaderStage::Hull:
+    case xiiGALShaderType::Hull:
       pContext->HSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
       break;
-    case xiiGALShaderStage::Domain:
+    case xiiGALShaderType::Domain:
       pContext->DSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
       break;
-    case xiiGALShaderStage::Geometry:
+    case xiiGALShaderType::Geometry:
       pContext->GSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
       break;
-    case xiiGALShaderStage::Pixel:
+    case xiiGALShaderType::Pixel:
       pContext->PSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
       break;
-    case xiiGALShaderStage::Compute:
+    case xiiGALShaderType::Compute:
       pContext->CSSetConstantBuffers(uiStartSlot, uiNumSlots, pConstantBuffers);
       break;
 
@@ -279,26 +279,26 @@ static void SetConstantBuffers(xiiGALShaderStage::Enum stage, ID3D11DeviceContex
   }
 }
 
-static void SetSamplers(xiiGALShaderStage::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11SamplerState** pSamplerStates)
+static void SetSamplers(xiiGALShaderType::Enum stage, ID3D11DeviceContext* pContext, xiiUInt32 uiStartSlot, xiiUInt32 uiNumSlots, ID3D11SamplerState** pSamplerStates)
 {
   switch (stage)
   {
-    case xiiGALShaderStage::Vertex:
+    case xiiGALShaderType::Vertex:
       pContext->VSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
       break;
-    case xiiGALShaderStage::Hull:
+    case xiiGALShaderType::Hull:
       pContext->HSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
       break;
-    case xiiGALShaderStage::Domain:
+    case xiiGALShaderType::Domain:
       pContext->DSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
       break;
-    case xiiGALShaderStage::Geometry:
+    case xiiGALShaderType::Geometry:
       pContext->GSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
       break;
-    case xiiGALShaderStage::Pixel:
+    case xiiGALShaderType::Pixel:
       pContext->PSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
       break;
-    case xiiGALShaderStage::Compute:
+    case xiiGALShaderType::Compute:
       pContext->CSSetSamplers(uiStartSlot, uiNumSlots, pSamplerStates);
       break;
 
@@ -315,29 +315,29 @@ xiiResult xiiGALPipelineStateD3D11::CommitShaderResources(xiiGALCommandListD3D11
   // Set shaders.
   if (m_Description.IsAnyGraphicsPipeline())
   {
-    pContext->VSSetShader(static_cast<ID3D11VertexShader*>(m_pBoundShaders[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)]), nullptr, 0U);
-    pContext->HSSetShader(static_cast<ID3D11HullShader*>(m_pBoundShaders[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Hull)]), nullptr, 0U);
-    pContext->DSSetShader(static_cast<ID3D11DomainShader*>(m_pBoundShaders[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Domain)]), nullptr, 0U);
-    pContext->GSSetShader(static_cast<ID3D11GeometryShader*>(m_pBoundShaders[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Geometry)]), nullptr, 0U);
-    pContext->PSSetShader(static_cast<ID3D11PixelShader*>(m_pBoundShaders[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Pixel)]), nullptr, 0U);
+    pContext->VSSetShader(static_cast<ID3D11VertexShader*>(m_pBoundShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)]), nullptr, 0U);
+    pContext->HSSetShader(static_cast<ID3D11HullShader*>(m_pBoundShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Hull)]), nullptr, 0U);
+    pContext->DSSetShader(static_cast<ID3D11DomainShader*>(m_pBoundShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Domain)]), nullptr, 0U);
+    pContext->GSSetShader(static_cast<ID3D11GeometryShader*>(m_pBoundShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Geometry)]), nullptr, 0U);
+    pContext->PSSetShader(static_cast<ID3D11PixelShader*>(m_pBoundShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Pixel)]), nullptr, 0U);
   }
   else if (m_Description.IsComputePipeline())
   {
-    pContext->CSSetShader(static_cast<ID3D11ComputeShader*>(m_pBoundShaders[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Compute)]), nullptr, 0U);
+    pContext->CSSetShader(static_cast<ID3D11ComputeShader*>(m_pBoundShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Compute)]), nullptr, 0U);
   }
 
   // Set input layout.
   pContext->IASetInputLayout((m_pInputLayoutD3D11 != nullptr) ? m_pInputLayoutD3D11->GetInputLayout() : nullptr);
 
   // Set constant (uniform) buffers.
-  for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderStage::ENUM_COUNT; ++uiStage)
+  for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderType::ENUM_COUNT; ++uiStage)
   {
     if (m_BoundConstantBuffersRange[uiStage].IsValid())
     {
       const xiiUInt32 uiStartSlot = m_BoundConstantBuffersRange[uiStage].m_uiMin;
       const xiiUInt32 uiNumSlots  = m_BoundConstantBuffersRange[uiStage].GetCount();
 
-      SetConstantBuffers(xiiGALShaderStage::GetStageFlag(uiStage), pContext, uiStartSlot, uiNumSlots, m_pBoundConstantBuffers[uiStage] + uiStartSlot);
+      SetConstantBuffers(xiiGALShaderType::GetStageFlag(uiStage), pContext, uiStartSlot, uiNumSlots, m_pBoundConstantBuffers[uiStage] + uiStartSlot);
     }
   }
 
@@ -349,7 +349,7 @@ xiiResult xiiGALPipelineStateD3D11::CommitShaderResources(xiiGALCommandListD3D11
     pContext->CSSetUnorderedAccessViews(uiStartSlot, uiNumSlots, m_BoundUnoderedAccessViews.GetData() + uiStartSlot, nullptr); // Maybe consider unordered access views count reset.
   }
 
-  for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderStage::ENUM_COUNT; ++uiStage)
+  for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderType::ENUM_COUNT; ++uiStage)
   {
     // Need to do bindings even on inactive shader stages since we might miss unbindings otherwise!
     if (m_BoundShaderResourceViewsRange[uiStage].IsValid())
@@ -357,7 +357,7 @@ xiiResult xiiGALPipelineStateD3D11::CommitShaderResources(xiiGALCommandListD3D11
       const xiiUInt32 uiStartSlot = m_BoundShaderResourceViewsRange[uiStage].m_uiMin;
       const xiiUInt32 uiNumSlots  = m_BoundShaderResourceViewsRange[uiStage].GetCount();
 
-      SetShaderResources(xiiGALShaderStage::GetStageFlag(uiStage), pContext, uiStartSlot, uiNumSlots, m_pBoundShaderResourceViews[uiStage].GetData() + uiStartSlot);
+      SetShaderResources(xiiGALShaderType::GetStageFlag(uiStage), pContext, uiStartSlot, uiNumSlots, m_pBoundShaderResourceViews[uiStage].GetData() + uiStartSlot);
     }
 
     // Don't need to unset sampler stages for unbound shader stages.
@@ -369,7 +369,7 @@ xiiResult xiiGALPipelineStateD3D11::CommitShaderResources(xiiGALCommandListD3D11
       const xiiUInt32 uiStartSlot = m_BoundSamplerStatesRange[uiStage].m_uiMin;
       const xiiUInt32 uiNumSlots  = m_BoundSamplerStatesRange[uiStage].GetCount();
 
-      SetSamplers(xiiGALShaderStage::GetStageFlag(uiStage), pContext, uiStartSlot, uiNumSlots, m_pBoundSamplerStates[uiStage] + uiStartSlot);
+      SetSamplers(xiiGALShaderType::GetStageFlag(uiStage), pContext, uiStartSlot, uiNumSlots, m_pBoundSamplerStates[uiStage] + uiStartSlot);
     }
   }
   return XII_SUCCESS;
@@ -379,7 +379,7 @@ bool xiiGALPipelineStateD3D11::UnsetResourceViews(const xiiGALResource* pResourc
 {
   bool bResult = false;
 
-  for (xiiUInt32 uiStage = 0U; uiStage < xiiGALShaderStage::ENUM_COUNT; ++uiStage)
+  for (xiiUInt32 uiStage = 0U; uiStage < xiiGALShaderType::ENUM_COUNT; ++uiStage)
   {
     for (xiiUInt32 uiSlot = 0U; uiSlot < m_ResourcesForResourceViews[uiStage].GetCount(); ++uiSlot)
     {
@@ -416,7 +416,7 @@ bool xiiGALPipelineStateD3D11::UnsetUnorderedAccessViews(const xiiGALResource* p
 
 void xiiGALPipelineStateD3D11::ResetBoundResources()
 {
-  for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderStage::ENUM_COUNT; ++uiStage)
+  for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderType::ENUM_COUNT; ++uiStage)
   {
     for (xiiUInt32 i = 0; i < XII_GAL_MAX_CONSTANT_BUFFER_COUNT; ++i)
     {

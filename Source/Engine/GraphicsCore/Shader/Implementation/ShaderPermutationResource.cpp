@@ -23,7 +23,7 @@ xiiShaderPermutationResource::xiiShaderPermutationResource() :
 {
   m_bShaderPermutationValid = false;
 
-  for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = 0; stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
     m_ByteCodes[stage] = nullptr;
   }
@@ -116,18 +116,18 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
   resourceSignatureDescription.m_sCombinedSamplerSuffix      = "_AutoSampler";
 
   // iterate over all shader stages, add them to the descriptor
-  for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
     const xiiUInt32 uiStageHash = PermutationBinary.m_uiShaderStageHashes[stage];
 
     if (uiStageHash == 0) // not used
       continue;
 
-    xiiShaderStageBinary* pStageBin = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderStage::GetStageFlag(stage), uiStageHash);
+    xiiShaderStageBinary* pStageBin = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash);
 
     if (pStageBin == nullptr)
     {
-      xiiLog::Error("Shader Permutation '{0}': Stage '{1}' could not be loaded", GetResourceID(), xiiGALShaderStage::Names[stage]);
+      xiiLog::Error("Shader Permutation '{0}': Stage '{1}' could not be loaded", GetResourceID(), xiiGALShaderType::Names[stage]);
       return res;
     }
 
@@ -135,7 +135,7 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
     // since it contains other useful information (resource bindings), that we need for shader binding
     m_ByteCodes[stage] = pStageBin->GetByteCode();
 
-    XII_ASSERT_DEV(pStageBin->m_pGALByteCode->m_ShaderStage == xiiGALShaderStage::GetStageFlag(stage), "Invalid shader stage! Expected stage '{0}', but loaded data is for stage '{1}'", xiiGALShaderStage::Names[stage], xiiGALShaderStage::Names[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)pStageBin->m_pGALByteCode->m_ShaderStage.GetValue())]);
+    XII_ASSERT_DEV(pStageBin->m_pGALByteCode->m_ShaderStage == xiiGALShaderType::GetStageFlag(stage), "Invalid shader stage! Expected stage '{0}', but loaded data is for stage '{1}'", xiiGALShaderType::Names[stage], xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)pStageBin->m_pGALByteCode->m_ShaderStage.GetValue())]);
 
     ShaderDesc.m_ByteCodes[stage] = pStageBin->m_pGALByteCode;
 
@@ -365,7 +365,7 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
     // write the permutation file info back to the output stream, so that the resource can read it as well
     permutationBinary.Write(w).IgnoreResult();
 
-    for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+    for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
     {
       const xiiUInt32 uiStageHash = permutationBinary.m_uiShaderStageHashes[stage];
 
@@ -373,7 +373,7 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
         continue;
 
       // this is where the preloading happens
-      xiiShaderStageBinary::LoadStageBinary(xiiGALShaderStage::GetStageFlag(stage), uiStageHash);
+      xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash);
     }
   }
 

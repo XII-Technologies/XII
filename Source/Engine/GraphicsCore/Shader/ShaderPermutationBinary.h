@@ -30,7 +30,7 @@ public:
   xiiResult Read(xiiStreamReader& inout_stream, bool& out_bOldVersion);
 
   // Actual binary will be loaded from the hash via xiiShaderStageBinary::LoadStageBinary to produce xiiShaderStageBinary
-  xiiUInt32 m_uiShaderStageHashes[xiiGALShaderStage::ENUM_COUNT];
+  xiiUInt32 m_uiShaderStageHashes[xiiGALShaderType::ENUM_COUNT];
 
   xiiDependencyFile m_DependencyFile;
 

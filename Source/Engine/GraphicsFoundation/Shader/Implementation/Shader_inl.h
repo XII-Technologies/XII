@@ -6,9 +6,9 @@ XII_ALWAYS_INLINE const xiiGALShaderCreationDescription& xiiGALShader::GetDescri
 
 XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALVertexInputLayout> xiiGALShader::GetVertexInputLayout() const
 {
-  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Vertex))
+  if (m_Description.HasByteCodeForStage(xiiGALShaderType::Vertex))
   {
-    return m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)]->m_VertexInputLayout;
+    return m_Description.m_ByteCodes[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)]->m_VertexInputLayout;
   }
   return xiiArrayPtr<const xiiGALVertexInputLayout>();
 }
@@ -94,7 +94,7 @@ XII_FORCE_INLINE xiiGALShaderCreationDescription::xiiGALShaderCreationDescriptio
 
 XII_FORCE_INLINE xiiGALShaderCreationDescription::~xiiGALShaderCreationDescription()
 {
-  for (xiiUInt32 i = 0; i < xiiGALShaderStage::ENUM_COUNT; ++i)
+  for (xiiUInt32 i = 0; i < xiiGALShaderType::ENUM_COUNT; ++i)
   {
     xiiGALShaderByteCode* pByteCode = m_ByteCodes[i];
     m_ByteCodes[i]                  = nullptr;
@@ -106,11 +106,11 @@ XII_FORCE_INLINE xiiGALShaderCreationDescription::~xiiGALShaderCreationDescripti
   }
 }
 
-XII_FORCE_INLINE bool xiiGALShaderCreationDescription::HasByteCodeForStage(xiiGALShaderStage::Enum stage) const
+XII_FORCE_INLINE bool xiiGALShaderCreationDescription::HasByteCodeForStage(xiiGALShaderType::Enum stage) const
 {
-  if (stage == xiiGALShaderStage::Unknown)
+  if (stage == xiiGALShaderType::Unknown)
     return false;
 
-  const xiiUInt32 uiStageIndex = xiiGALShaderStage::GetStageIndex(stage);
+  const xiiUInt32 uiStageIndex = xiiGALShaderType::GetStageIndex(stage);
   return m_ByteCodes[uiStageIndex] != nullptr && m_ByteCodes[uiStageIndex]->IsValid();
 }

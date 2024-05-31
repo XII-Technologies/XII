@@ -618,9 +618,9 @@ xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescript
 
   bool bHasByteCodes = false;
 
-  for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderStage::ENUM_COUNT; ++uiStage)
+  for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderType::ENUM_COUNT; ++uiStage)
   {
-    if (description.HasByteCodeForStage(xiiGALShaderStage::GetStageFlag(uiStage)))
+    if (description.HasByteCodeForStage(xiiGALShaderType::GetStageFlag(uiStage)))
     {
       bHasByteCodes = true;
       break;
@@ -634,30 +634,30 @@ xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescript
     return xiiGALShaderHandle();
   }
 
-  if (description.m_ShaderStage.IsSet(xiiGALShaderStage::Geometry) && m_AdapterDescription.m_Features.m_GeometryShaders != xiiGALDeviceFeatureState::Enabled)
+  if (description.m_ShaderStage.IsSet(xiiGALShaderType::Geometry) && m_AdapterDescription.m_Features.m_GeometryShaders != xiiGALDeviceFeatureState::Enabled)
   {
     XII_VERIFY_SHADER(false, "Geometry shaders are not supported by this device.");
   }
-  if (description.m_ShaderStage.IsAnySet(xiiGALShaderStage::Domain | xiiGALShaderStage::Hull) && m_AdapterDescription.m_Features.m_Tessellation != xiiGALDeviceFeatureState::Enabled)
+  if (description.m_ShaderStage.IsAnySet(xiiGALShaderType::Domain | xiiGALShaderType::Hull) && m_AdapterDescription.m_Features.m_Tessellation != xiiGALDeviceFeatureState::Enabled)
   {
     XII_VERIFY_SHADER(false, "Tessellation shaders are not supported by this device.");
   }
-  if (description.m_ShaderStage.IsSet(xiiGALShaderStage::Compute) && m_AdapterDescription.m_Features.m_ComputeShaders != xiiGALDeviceFeatureState::Enabled)
+  if (description.m_ShaderStage.IsSet(xiiGALShaderType::Compute) && m_AdapterDescription.m_Features.m_ComputeShaders != xiiGALDeviceFeatureState::Enabled)
   {
     XII_VERIFY_SHADER(false, "Compute shaders are not supported by this device.");
   }
-  if (description.m_ShaderStage.IsAnySet(xiiGALShaderStage::Amplification | xiiGALShaderStage::Mesh) && m_AdapterDescription.m_Features.m_MeshShaders != xiiGALDeviceFeatureState::Enabled)
+  if (description.m_ShaderStage.IsAnySet(xiiGALShaderType::Amplification | xiiGALShaderType::Mesh) && m_AdapterDescription.m_Features.m_MeshShaders != xiiGALDeviceFeatureState::Enabled)
   {
     XII_VERIFY_SHADER(false, "Mesh shaders are not supported by this device.");
   }
-  if (description.m_ShaderStage.IsAnySet(xiiGALShaderStage::AllRayTracing))
+  if (description.m_ShaderStage.IsAnySet(xiiGALShaderType::AllRayTracing))
   {
     if (m_AdapterDescription.m_Features.m_RayTracing != xiiGALDeviceFeatureState::Enabled || m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags.AreNoneSet(xiiGALRayTracingCapabilityFlags::StandaloneShaders))
     {
       XII_VERIFY_SHADER(false, "Standalone ray tracing shaders are not supported by this device.");
     }
   }
-  if (description.m_ShaderStage.IsSet(xiiGALShaderStage::Tile) && m_AdapterDescription.m_Features.m_TileShaders != xiiGALDeviceFeatureState::Enabled)
+  if (description.m_ShaderStage.IsSet(xiiGALShaderType::Tile) && m_AdapterDescription.m_Features.m_TileShaders != xiiGALDeviceFeatureState::Enabled)
   {
     XII_VERIFY_SHADER(false, "Tile shaders are not supported by this device.");
   }
@@ -2380,23 +2380,23 @@ XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipeline
 
   // Ensure that shader stages do not conflict for resources with the same name.
 
-  xiiMap<xiiHashedString, xiiSet<xiiGALShaderStage::StorageType>> usedResourceShaderStages;
+  xiiMap<xiiHashedString, xiiSet<xiiGALShaderType::StorageType>> usedResourceShaderStages;
   for (xiiUInt32 i = 0; i < description.m_Resources.GetCount(); ++i)
   {
     const auto& resource = description.m_Resources[i];
 
     XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!resource.m_sName.IsEmpty(), "The pipeline resource at index '{0}' requires a non-empty name.", i);
-    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!resource.m_ShaderStages.IsNoFlagSet(), "The pipeline resource at index '{0}' requires a valid shader stage, and must not be xiiGALShaderStage::Unknown.", i);
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!resource.m_ShaderStages.IsNoFlagSet(), "The pipeline resource at index '{0}' requires a valid shader stage, and must not be xiiGALShaderType::Unknown.", i);
     XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_uiArraySize > 0U, "The pipeline resource at index '{0}' requires a non-zero array size.", i);
 
-    xiiSet<xiiGALShaderStage::StorageType> shaderStageSet;
+    xiiSet<xiiGALShaderType::StorageType> shaderStageSet;
     if (usedResourceShaderStages.TryGetValue(resource.m_sName, shaderStageSet))
     {
       XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!shaderStageSet.Contains(resource.m_ShaderStages.GetValue()), "Multiple resources with name '{}' found with overlapping shader stages. There may be resources with the same name in different shader stages, but the stages must not overlap.");
     }
     else
     {
-      xiiSet<xiiGALShaderStage::StorageType> set;
+      xiiSet<xiiGALShaderType::StorageType> set;
       set.Insert(resource.m_ShaderStages.GetValue());
 
       usedResourceShaderStages.Insert(resource.m_sName, set);
@@ -2404,7 +2404,7 @@ XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipeline
 
     XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_PipelineResourceFlags.IsSet(xiiGALPipelineResourceFlags::RuntimeArray) && m_AdapterDescription.m_Features.m_ShaderResourceRuntimeArray == xiiGALDeviceFeatureState::Disabled), "The pipeline resource at index '{0}' specifies the xiiGALPipelineResourceFlags::RuntimeArray flag, which requires the shader resource runtime array device feature.", i);
     XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_ResourceVariableType == xiiGALShaderResourceType::AccelerationStructure && m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Disabled), "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::AccelerationStructure type, which requires ray tracing device feature.", i);
-    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_ResourceVariableType == xiiGALShaderResourceType::InputAttachment && resource.m_ShaderStages != xiiGALShaderStage::Pixel), "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::InputAttachment type, but its only supported in the pixel shader stage.", i);
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!(resource.m_ResourceVariableType == xiiGALShaderResourceType::InputAttachment && resource.m_ShaderStages != xiiGALShaderType::Pixel), "The pipeline resource at index '{0}' specifies the xiiGALShaderResourceType::InputAttachment type, but its only supported in the pixel shader stage.", i);
 
     xiiBitflags<xiiGALPipelineResourceFlags> allowedResourceFlags = xiiGALGraphicsUtilities::GetValidPipelineResourceFlags(resource.m_ResourceType);
     XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(resource.m_PipelineResourceFlags.IsStrictlyAnySet(allowedResourceFlags), "The pipeline resource at index '{0}' contains flags that are not allowed for the shader resource type.", i);
@@ -2419,13 +2419,13 @@ XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipeline
 
   // Ensure that immutable samplers do not have conflicting shader stages.
 
-  xiiMap<xiiHashedString, xiiSet<xiiGALShaderStage::StorageType>> usedImmutableSamplerShaderStages;
+  xiiMap<xiiHashedString, xiiSet<xiiGALShaderType::StorageType>> usedImmutableSamplerShaderStages;
   for (xiiUInt32 i = 0; i < description.m_ImmutableSamplers.GetCount(); ++i)
   {
     auto& samplerDescription = description.m_ImmutableSamplers[i];
 
     XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!samplerDescription.m_SamplerOrTextureName.IsEmpty(), "The immutable sampler at index '{0}' requires a non-empty name.", i);
-    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!samplerDescription.m_ShaderStages.IsNoFlagSet(), "The immutable sampler at index '{0}' requires a valid shader stage, and must not be xiiGALShaderStage::Unknown.", i);
+    XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!samplerDescription.m_ShaderStages.IsNoFlagSet(), "The immutable sampler at index '{0}' requires a valid shader stage, and must not be xiiGALShaderType::Unknown.", i);
 
     // Use anisotropic filtering if any of Anisotropic is set.
     if (samplerDescription.m_SamplerDescription.m_MagFilter == xiiGALFilterType::Anisotropic || samplerDescription.m_SamplerDescription.m_MinFilter == xiiGALFilterType::Anisotropic || samplerDescription.m_SamplerDescription.m_MipFilter == xiiGALFilterType::Anisotropic)
@@ -2444,14 +2444,14 @@ XII_NODISCARD xiiGALPipelineResourceSignatureHandle xiiGALDevice::CreatePipeline
       }
     }
 
-    xiiSet<xiiGALShaderStage::StorageType> shaderStageSet;
+    xiiSet<xiiGALShaderType::StorageType> shaderStageSet;
     if (usedImmutableSamplerShaderStages.TryGetValue(samplerDescription.m_SamplerOrTextureName, shaderStageSet))
     {
       XII_VERIFY_PIPELINE_RESOURCE_SIGNATURE(!shaderStageSet.Contains(samplerDescription.m_ShaderStages.GetValue()), "Multiple immutable samplers with name '{}' found with overlapping shader stages. There may be immutable samplers with the same name in different shader stages, but the stages must not overlap.");
     }
     else
     {
-      xiiSet<xiiGALShaderStage::StorageType> set;
+      xiiSet<xiiGALShaderType::StorageType> set;
       set.Insert(samplerDescription.m_ShaderStages.GetValue());
 
       usedImmutableSamplerShaderStages.Insert(samplerDescription.m_SamplerOrTextureName, set);

@@ -90,7 +90,7 @@ namespace
     }
   }
 
-  static const char* s_szStageDefines[xiiGALShaderStage::ENUM_COUNT] = {
+  static const char* s_szStageDefines[xiiGALShaderType::ENUM_COUNT] = {
     "VERTEX_SHADER",
     "PIXEL_SHADER",
     "GEOMETRY_SHADER",
@@ -127,7 +127,7 @@ xiiResult xiiShaderCompiler::FileOpen(xiiStringView sAbsoluteFile, xiiDynamicArr
     return XII_SUCCESS;
   }
 
-  for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = 0; stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
     if (m_StageSourceFile[stage] == sAbsoluteFile)
     {
@@ -228,7 +228,7 @@ xiiResult xiiShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringView 
   xiiUInt32     uiFirstShaderLine = 0;
   xiiStringView sShaderSource     = Sections.GetSectionContent(xiiShaderHelper::xiiShaderSections::SHADER, uiFirstShaderLine);
 
-  for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
     xiiStringView sStageSource = Sections.GetSectionContent(xiiShaderHelper::xiiShaderSections::VERTEXSHADER + stage, uiFirstLine);
 
@@ -257,77 +257,77 @@ xiiResult xiiShaderCompiler::CompileShaderPermutationForPlatforms(xiiStringView 
   tmp.MakeCleanPath();
 
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("vs");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Pixel)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Pixel)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("ps");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Geometry)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Geometry)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("gs");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Hull)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Hull)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("hs");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Domain)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Domain)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("ds");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Compute)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Compute)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("cs");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Amplification)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Amplification)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("as");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Mesh)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Mesh)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("ms");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayGeneration)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayGeneration)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("rg");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayMiss)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayMiss)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("rms");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayClosestHit)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayClosestHit)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("rchs");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayAnyHit)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayAnyHit)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("rahs");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::RayIntersection)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::RayIntersection)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("ris");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Callable)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Callable)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("cas");
   }
   {
-    auto& sSourceFile = m_StageSourceFile[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Tile)];
+    auto& sSourceFile = m_StageSourceFile[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Tile)];
     sSourceFile       = tmp;
     sSourceFile.ChangeFileExtension("ts");
   }
@@ -351,7 +351,7 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
 {
   XII_LOG_BLOCK(pLog, "Compiling Shader", sFile);
 
-  xiiStringBuilder sProcessed[xiiGALShaderStage::ENUM_COUNT];
+  xiiStringBuilder sProcessed[xiiGALShaderType::ENUM_COUNT];
 
   xiiHybridArray<xiiString, 4> Platforms;
   pCompiler->GetSupportedPlatforms(Platforms);
@@ -431,7 +431,7 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
     }
 
     // Shader Preprocessing
-    for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+    for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
     {
       spd.m_uiSourceHash[stage] = 0;
 
@@ -484,14 +484,14 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
     }
 
     // Load shader cache
-    for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+    for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
     {
       xiiUInt32 uiSourceStringLen = spd.m_sShaderSource[stage].GetElementCount();
       spd.m_uiSourceHash[stage]   = uiSourceStringLen == 0 ? 0u : xiiHashingUtils::xxHash32(spd.m_sShaderSource[stage].GetData(), uiSourceStringLen);
 
       if (spd.m_uiSourceHash[stage] != 0)
       {
-        xiiShaderStageBinary* pBinary = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderStage::GetStageFlag(stage), spd.m_uiSourceHash[stage]);
+        xiiShaderStageBinary* pBinary = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), spd.m_uiSourceHash[stage]);
 
         if (pBinary)
         {
@@ -502,14 +502,14 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
         {
           // Can't find shader with given hash on disk, create a new xiiGALShaderByteCode and let the compiler build it.
           spd.m_ByteCode[stage]                          = XII_DEFAULT_NEW(xiiGALShaderByteCode);
-          spd.m_ByteCode[stage]->m_ShaderStage           = xiiGALShaderStage::GetStageFlag(stage);
+          spd.m_ByteCode[stage]->m_ShaderStage           = xiiGALShaderType::GetStageFlag(stage);
           spd.m_ByteCode[stage]->m_bWasCompiledWithDebug = spd.m_Flags.IsSet(xiiShaderCompilerFlags::Debug);
         }
       }
     }
 
     // copy the source hashes
-    for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+    for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
     {
       shaderPermutationBinary.m_uiShaderStageHashes[stage] = spd.m_uiSourceHash[stage];
     }
@@ -522,7 +522,7 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
       return XII_FAILURE;
     }
 
-    for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+    for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
     {
       if (spd.m_uiSourceHash[stage] != 0 && spd.m_bWriteToDisk[stage])
       {
@@ -575,14 +575,14 @@ xiiResult xiiShaderCompiler::RunShaderCompiler(xiiStringView sFile, xiiStringVie
 
 void xiiShaderCompiler::WriteFailedShaderSource(xiiShaderProgramData& spd, xiiLogInterface* pLog)
 {
-  for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
     if (spd.m_uiSourceHash[stage] != 0 && spd.m_bWriteToDisk[stage])
     {
       xiiStringBuilder sShaderStageFile = xiiShaderManager::GetCacheDirectory();
 
       sShaderStageFile.AppendPath(xiiShaderManager::GetActivePlatform());
-      sShaderStageFile.AppendFormat("/_Failed_{0}_{1}.xiiShaderSource", xiiGALShaderStage::Names[stage], xiiArgU(spd.m_uiSourceHash[stage], 8, true, 16, true));
+      sShaderStageFile.AppendFormat("/_Failed_{0}_{1}.xiiShaderSource", xiiGALShaderType::Names[stage], xiiArgU(spd.m_uiSourceHash[stage], 8, true, 16, true));
 
       xiiFileWriter StageFileOut;
       if (StageFileOut.Open(sShaderStageFile).Succeeded())

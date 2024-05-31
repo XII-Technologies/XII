@@ -61,7 +61,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 ////////// Utility Functions //////////
 
-xiiStringView xiiShaderCompilerProgram::GetProfileName(xiiStringView sPlatform, xiiBitflags<xiiGALShaderStage> Stage)
+xiiStringView xiiShaderCompilerProgram::GetProfileName(xiiStringView sPlatform, xiiBitflags<xiiGALShaderType> Stage)
 {
   if (sPlatform == "NULL_SM")
     return "null_sm";
@@ -72,201 +72,201 @@ xiiStringView xiiShaderCompilerProgram::GetProfileName(xiiStringView sPlatform, 
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM40_93"))
   {
-    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+    if (Stage.IsSet(xiiGALShaderType::Vertex))
       return "vs_4_0_level_9_3";
-    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+    if (Stage.IsSet(xiiGALShaderType::Pixel))
       return "ps_4_0_level_9_3";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM40"))
   {
-    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+    if (Stage.IsSet(xiiGALShaderType::Vertex))
       return "vs_4_0";
-    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+    if (Stage.IsSet(xiiGALShaderType::Geometry))
       return "gs_4_0";
-    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+    if (Stage.IsSet(xiiGALShaderType::Pixel))
       return "ps_4_0";
-    if (Stage.IsSet(xiiGALShaderStage::Compute))
+    if (Stage.IsSet(xiiGALShaderType::Compute))
       return "cs_4_0";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM41"))
   {
-    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+    if (Stage.IsSet(xiiGALShaderType::Geometry))
       return "gs_4_0";
-    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+    if (Stage.IsSet(xiiGALShaderType::Vertex))
       return "vs_4_1";
-    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+    if (Stage.IsSet(xiiGALShaderType::Pixel))
       return "ps_4_1";
-    if (Stage.IsSet(xiiGALShaderStage::Compute))
+    if (Stage.IsSet(xiiGALShaderType::Compute))
       return "cs_4_1";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM50"))
   {
-    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+    if (Stage.IsSet(xiiGALShaderType::Vertex))
       return "vs_5_0";
-    if (Stage.IsSet(xiiGALShaderStage::Hull))
+    if (Stage.IsSet(xiiGALShaderType::Hull))
       return "hs_5_0";
-    if (Stage.IsSet(xiiGALShaderStage::Domain))
+    if (Stage.IsSet(xiiGALShaderType::Domain))
       return "ds_5_0";
-    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+    if (Stage.IsSet(xiiGALShaderType::Geometry))
       return "gs_5_0";
-    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+    if (Stage.IsSet(xiiGALShaderType::Pixel))
       return "ps_5_0";
-    if (Stage.IsSet(xiiGALShaderStage::Compute))
+    if (Stage.IsSet(xiiGALShaderType::Compute))
       return "cs_5_0";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM51"))
   {
-    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+    if (Stage.IsSet(xiiGALShaderType::Vertex))
       return "vs_5_1";
-    if (Stage.IsSet(xiiGALShaderStage::Hull))
+    if (Stage.IsSet(xiiGALShaderType::Hull))
       return "hs_5_1";
-    if (Stage.IsSet(xiiGALShaderStage::Domain))
+    if (Stage.IsSet(xiiGALShaderType::Domain))
       return "ds_5_1";
-    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+    if (Stage.IsSet(xiiGALShaderType::Geometry))
       return "gs_5_1";
-    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+    if (Stage.IsSet(xiiGALShaderType::Pixel))
       return "ps_5_1";
-    if (Stage.IsSet(xiiGALShaderStage::Compute))
+    if (Stage.IsSet(xiiGALShaderType::Compute))
       return "cs_5_1";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM60"))
   {
-    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+    if (Stage.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_0";
-    if (Stage.IsSet(xiiGALShaderStage::Hull))
+    if (Stage.IsSet(xiiGALShaderType::Hull))
       return "hs_6_0";
-    if (Stage.IsSet(xiiGALShaderStage::Domain))
+    if (Stage.IsSet(xiiGALShaderType::Domain))
       return "ds_6_0";
-    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+    if (Stage.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_0";
-    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+    if (Stage.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_0";
-    if (Stage.IsSet(xiiGALShaderStage::Compute))
+    if (Stage.IsSet(xiiGALShaderType::Compute))
       return "cs_6_0";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM61"))
   {
-    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+    if (Stage.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_1";
-    if (Stage.IsSet(xiiGALShaderStage::Hull))
+    if (Stage.IsSet(xiiGALShaderType::Hull))
       return "hs_6_1";
-    if (Stage.IsSet(xiiGALShaderStage::Domain))
+    if (Stage.IsSet(xiiGALShaderType::Domain))
       return "ds_6_1";
-    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+    if (Stage.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_1";
-    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+    if (Stage.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_1";
-    if (Stage.IsSet(xiiGALShaderStage::Compute))
+    if (Stage.IsSet(xiiGALShaderType::Compute))
       return "cs_6_1";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM62"))
   {
-    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+    if (Stage.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_2";
-    if (Stage.IsSet(xiiGALShaderStage::Hull))
+    if (Stage.IsSet(xiiGALShaderType::Hull))
       return "hs_6_2";
-    if (Stage.IsSet(xiiGALShaderStage::Domain))
+    if (Stage.IsSet(xiiGALShaderType::Domain))
       return "ds_6_2";
-    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+    if (Stage.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_2";
-    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+    if (Stage.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_2";
-    if (Stage.IsSet(xiiGALShaderStage::Compute))
+    if (Stage.IsSet(xiiGALShaderType::Compute))
       return "cs_6_2";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM63"))
   {
-    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+    if (Stage.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_3";
-    if (Stage.IsSet(xiiGALShaderStage::Hull))
+    if (Stage.IsSet(xiiGALShaderType::Hull))
       return "hs_6_3";
-    if (Stage.IsSet(xiiGALShaderStage::Domain))
+    if (Stage.IsSet(xiiGALShaderType::Domain))
       return "ds_6_3";
-    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+    if (Stage.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_3";
-    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+    if (Stage.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_3";
-    if (Stage.IsSet(xiiGALShaderStage::Compute))
+    if (Stage.IsSet(xiiGALShaderType::Compute))
       return "cs_6_3";
 
-    if (Stage.IsAnySet(xiiGALShaderStage::RayGeneration | xiiGALShaderStage::RayMiss | xiiGALShaderStage::RayAnyHit | xiiGALShaderStage::RayClosestHit | xiiGALShaderStage::RayIntersection | xiiGALShaderStage::Callable))
+    if (Stage.IsAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::RayAnyHit | xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayIntersection | xiiGALShaderType::Callable))
       return "lib_6_3";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM64"))
   {
-    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+    if (Stage.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_4";
-    if (Stage.IsSet(xiiGALShaderStage::Hull))
+    if (Stage.IsSet(xiiGALShaderType::Hull))
       return "hs_6_4";
-    if (Stage.IsSet(xiiGALShaderStage::Domain))
+    if (Stage.IsSet(xiiGALShaderType::Domain))
       return "ds_6_4";
-    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+    if (Stage.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_4";
-    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+    if (Stage.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_4";
-    if (Stage.IsSet(xiiGALShaderStage::Compute))
+    if (Stage.IsSet(xiiGALShaderType::Compute))
       return "cs_6_4";
 
-    if (Stage.IsAnySet(xiiGALShaderStage::RayGeneration | xiiGALShaderStage::RayMiss | xiiGALShaderStage::RayAnyHit | xiiGALShaderStage::RayClosestHit | xiiGALShaderStage::RayIntersection | xiiGALShaderStage::Callable))
+    if (Stage.IsAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::RayAnyHit | xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayIntersection | xiiGALShaderType::Callable))
       return "lib_6_4";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM65"))
   {
-    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+    if (Stage.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_5";
-    if (Stage.IsSet(xiiGALShaderStage::Hull))
+    if (Stage.IsSet(xiiGALShaderType::Hull))
       return "hs_6_5";
-    if (Stage.IsSet(xiiGALShaderStage::Domain))
+    if (Stage.IsSet(xiiGALShaderType::Domain))
       return "ds_6_5";
-    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+    if (Stage.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_5";
-    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+    if (Stage.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_5";
-    if (Stage.IsSet(xiiGALShaderStage::Compute))
+    if (Stage.IsSet(xiiGALShaderType::Compute))
       return "cs_6_5";
 
-    if (Stage.IsAnySet(xiiGALShaderStage::RayGeneration | xiiGALShaderStage::RayMiss | xiiGALShaderStage::RayAnyHit | xiiGALShaderStage::RayClosestHit | xiiGALShaderStage::RayIntersection | xiiGALShaderStage::Callable))
+    if (Stage.IsAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::RayAnyHit | xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayIntersection | xiiGALShaderType::Callable))
       return "lib_6_5";
 
-    if (Stage.IsSet(xiiGALShaderStage::Amplification))
+    if (Stage.IsSet(xiiGALShaderType::Amplification))
       return "as_6_5";
 
-    if (Stage.IsSet(xiiGALShaderStage::Mesh))
+    if (Stage.IsSet(xiiGALShaderType::Mesh))
       return "ms_6_5";
   }
 
   if (xiiStringUtils::IsEqual(sPlatformStripped, "SM66"))
   {
-    if (Stage.IsSet(xiiGALShaderStage::Vertex))
+    if (Stage.IsSet(xiiGALShaderType::Vertex))
       return "vs_6_6";
-    if (Stage.IsSet(xiiGALShaderStage::Hull))
+    if (Stage.IsSet(xiiGALShaderType::Hull))
       return "hs_6_6";
-    if (Stage.IsSet(xiiGALShaderStage::Domain))
+    if (Stage.IsSet(xiiGALShaderType::Domain))
       return "ds_6_6";
-    if (Stage.IsSet(xiiGALShaderStage::Geometry))
+    if (Stage.IsSet(xiiGALShaderType::Geometry))
       return "gs_6_6";
-    if (Stage.IsSet(xiiGALShaderStage::Pixel))
+    if (Stage.IsSet(xiiGALShaderType::Pixel))
       return "ps_6_6";
-    if (Stage.IsSet(xiiGALShaderStage::Compute))
+    if (Stage.IsSet(xiiGALShaderType::Compute))
       return "cs_6_6";
 
-    if (Stage.IsAnySet(xiiGALShaderStage::RayGeneration | xiiGALShaderStage::RayMiss | xiiGALShaderStage::RayAnyHit | xiiGALShaderStage::RayClosestHit | xiiGALShaderStage::RayIntersection | xiiGALShaderStage::Callable))
+    if (Stage.IsAnySet(xiiGALShaderType::RayGeneration | xiiGALShaderType::RayMiss | xiiGALShaderType::RayAnyHit | xiiGALShaderType::RayClosestHit | xiiGALShaderType::RayIntersection | xiiGALShaderType::Callable))
       return "lib_6_6";
 
-    if (Stage.IsSet(xiiGALShaderStage::Amplification))
+    if (Stage.IsSet(xiiGALShaderType::Amplification))
       return "as_6_6";
 
-    if (Stage.IsSet(xiiGALShaderStage::Mesh))
+    if (Stage.IsSet(xiiGALShaderType::Mesh))
       return "ms_6_6";
   }
 
@@ -362,16 +362,16 @@ xiiResult xiiShaderCompilerProgram::Compile(xiiShaderProgramData& inout_Data, xi
 {
   XII_SUCCEED_OR_RETURN(Initialize(inout_Data.m_sPlatform));
 
-  for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = 0; stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
-    xiiBitflags<xiiGALShaderStage> stageFlag = xiiGALShaderStage::GetStageFlag(stage);
+    xiiBitflags<xiiGALShaderType> stageFlag = xiiGALShaderType::GetStageFlag(stage);
 
     if (inout_Data.m_uiSourceHash[stage] == 0)
       continue;
 
     if (inout_Data.m_bWriteToDisk[stage] == false)
     {
-      xiiLog::Debug("Shader for stage '{}' is already compiled.", xiiGALShaderStage::Names[stage]);
+      xiiLog::Debug("Shader for stage '{}' is already compiled.", xiiGALShaderType::Names[stage]);
       continue;
     }
 

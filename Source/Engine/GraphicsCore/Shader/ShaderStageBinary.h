@@ -44,9 +44,9 @@ private:
   xiiSharedPtr<xiiGALShaderByteCode> m_pGALByteCode;
 
 private: // statics
-  static xiiShaderStageBinary* LoadStageBinary(xiiBitflags<xiiGALShaderStage> Stage, xiiUInt32 uiHash);
+  static xiiShaderStageBinary* LoadStageBinary(xiiBitflags<xiiGALShaderType> Stage, xiiUInt32 uiHash);
 
   static void OnEngineShutdown();
 
-  static xiiMap<xiiUInt32, xiiShaderStageBinary> s_ShaderStageBinaries[xiiGALShaderStage::ENUM_COUNT];
+  static xiiMap<xiiUInt32, xiiShaderStageBinary> s_ShaderStageBinaries[xiiGALShaderType::ENUM_COUNT];
 };

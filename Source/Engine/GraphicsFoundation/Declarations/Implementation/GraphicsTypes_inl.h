@@ -30,39 +30,39 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALValueType::GetSize(const xiiGALValueType::Enum
 }
 
 // static
-XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Enum stage)
+XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderType::GetStageIndex(xiiGALShaderType::Enum stage)
 {
   switch (stage)
   {
-    case xiiGALShaderStage::Vertex:
+    case xiiGALShaderType::Vertex:
       return 0U;
-    case xiiGALShaderStage::Pixel:
+    case xiiGALShaderType::Pixel:
       return 1U;
-    case xiiGALShaderStage::Geometry:
+    case xiiGALShaderType::Geometry:
       return 2U;
-    case xiiGALShaderStage::Hull:
+    case xiiGALShaderType::Hull:
       return 3U;
-    case xiiGALShaderStage::Domain:
+    case xiiGALShaderType::Domain:
       return 4U;
-    case xiiGALShaderStage::Compute:
+    case xiiGALShaderType::Compute:
       return 5U;
-    case xiiGALShaderStage::Amplification:
+    case xiiGALShaderType::Amplification:
       return 6U;
-    case xiiGALShaderStage::Mesh:
+    case xiiGALShaderType::Mesh:
       return 7U;
-    case xiiGALShaderStage::RayGeneration:
+    case xiiGALShaderType::RayGeneration:
       return 8U;
-    case xiiGALShaderStage::RayMiss:
+    case xiiGALShaderType::RayMiss:
       return 9U;
-    case xiiGALShaderStage::RayClosestHit:
+    case xiiGALShaderType::RayClosestHit:
       return 10U;
-    case xiiGALShaderStage::RayAnyHit:
+    case xiiGALShaderType::RayAnyHit:
       return 11U;
-    case xiiGALShaderStage::RayIntersection:
+    case xiiGALShaderType::RayIntersection:
       return 12U;
-    case xiiGALShaderStage::Callable:
+    case xiiGALShaderType::Callable:
       return 13U;
-    case xiiGALShaderStage::Tile:
+    case xiiGALShaderType::Tile:
       return 14U;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
@@ -71,44 +71,44 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::
 }
 
 // static
-XII_ALWAYS_INLINE xiiGALShaderStage::Enum xiiGALShaderStage::GetStageFlag(xiiUInt32 uiIndex)
+XII_ALWAYS_INLINE xiiGALShaderType::Enum xiiGALShaderType::GetStageFlag(xiiUInt32 uiIndex)
 {
   switch (uiIndex)
   {
     case 0U:
-      return xiiGALShaderStage::Vertex;
+      return xiiGALShaderType::Vertex;
     case 1U:
-      return xiiGALShaderStage::Pixel;
+      return xiiGALShaderType::Pixel;
     case 2U:
-      return xiiGALShaderStage::Geometry;
+      return xiiGALShaderType::Geometry;
     case 3U:
-      return xiiGALShaderStage::Hull;
+      return xiiGALShaderType::Hull;
     case 4U:
-      return xiiGALShaderStage::Domain;
+      return xiiGALShaderType::Domain;
     case 5U:
-      return xiiGALShaderStage::Compute;
+      return xiiGALShaderType::Compute;
     case 6U:
-      return xiiGALShaderStage::Amplification;
+      return xiiGALShaderType::Amplification;
     case 7U:
-      return xiiGALShaderStage::Mesh;
+      return xiiGALShaderType::Mesh;
     case 8U:
-      return xiiGALShaderStage::RayGeneration;
+      return xiiGALShaderType::RayGeneration;
     case 9U:
-      return xiiGALShaderStage::RayMiss;
+      return xiiGALShaderType::RayMiss;
     case 10U:
-      return xiiGALShaderStage::RayClosestHit;
+      return xiiGALShaderType::RayClosestHit;
     case 11U:
-      return xiiGALShaderStage::RayAnyHit;
+      return xiiGALShaderType::RayAnyHit;
     case 12U:
-      return xiiGALShaderStage::RayIntersection;
+      return xiiGALShaderType::RayIntersection;
     case 13U:
-      return xiiGALShaderStage::Callable;
+      return xiiGALShaderType::Callable;
     case 14U:
-      return xiiGALShaderStage::Tile;
+      return xiiGALShaderType::Tile;
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
-  return xiiGALShaderStage::Unknown;
+  return xiiGALShaderType::Unknown;
 }
 
 // static

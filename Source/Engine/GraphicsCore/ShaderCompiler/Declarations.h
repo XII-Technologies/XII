@@ -50,7 +50,7 @@ struct XII_GRAPHICSCORE_DLL xiiShaderProgramData
     m_sPlatform   = {};
     m_sSourceFile = {};
 
-    for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+    for (xiiUInt32 stage = 0; stage < xiiGALShaderType::ENUM_COUNT; ++stage)
     {
       m_bWriteToDisk[stage] = true;
       m_sShaderSource[stage].Clear();
@@ -63,9 +63,9 @@ struct XII_GRAPHICSCORE_DLL xiiShaderProgramData
   xiiBitflags<xiiShaderCompilerFlags>             m_Flags;
   xiiStringView                                   m_sPlatform;
   xiiStringView                                   m_sSourceFile;
-  xiiString                                       m_sShaderSource[xiiGALShaderStage::ENUM_COUNT];
-  xiiHybridArray<xiiShaderResourceDefinition, 8U> m_Resources[xiiGALShaderStage::ENUM_COUNT];
-  xiiUInt32                                       m_uiSourceHash[xiiGALShaderStage::ENUM_COUNT];
-  xiiSharedPtr<xiiGALShaderByteCode>              m_ByteCode[xiiGALShaderStage::ENUM_COUNT];
-  bool                                            m_bWriteToDisk[xiiGALShaderStage::ENUM_COUNT];
+  xiiString                                       m_sShaderSource[xiiGALShaderType::ENUM_COUNT];
+  xiiHybridArray<xiiShaderResourceDefinition, 8U> m_Resources[xiiGALShaderType::ENUM_COUNT];
+  xiiUInt32                                       m_uiSourceHash[xiiGALShaderType::ENUM_COUNT];
+  xiiSharedPtr<xiiGALShaderByteCode>              m_ByteCode[xiiGALShaderType::ENUM_COUNT];
+  bool                                            m_bWriteToDisk[xiiGALShaderType::ENUM_COUNT];
 };

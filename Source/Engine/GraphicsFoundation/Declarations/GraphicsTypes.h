@@ -148,7 +148,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALValueType
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALValueType);
 
 /// \brief This describes the shader stage.
-struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderStage
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderType
 {
   using StorageType = xiiUInt32;
 
@@ -204,19 +204,19 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderStage
   };
 
   /// \brief Retrieves the shader stage index of a single shader stage.
-  static xiiUInt32 GetStageIndex(xiiGALShaderStage::Enum stage);
+  static xiiUInt32 GetStageIndex(xiiGALShaderType::Enum stage);
 
   /// \brief Returns a the stage flag for a given stage index.
-  static xiiGALShaderStage::Enum GetStageFlag(xiiUInt32 uiIndex);
+  static xiiGALShaderType::Enum GetStageFlag(xiiUInt32 uiIndex);
 
   static const char* Names[ENUM_COUNT];
 
   // Note: Changes to this enumeration flag requires updating code paths.
 };
 
-XII_DECLARE_FLAGS_OPERATORS(xiiGALShaderStage);
+XII_DECLARE_FLAGS_OPERATORS(xiiGALShaderType);
 
-XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderStage);
+XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderType);
 
 /// [D3D11_BIND_FLAG]: https://docs.microsoft.com/en-us/windows/win32/api/d3d11/ne-d3d11-d3d11_bind_flag
 ///

@@ -131,7 +131,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceDescription : public xiiHa
   xiiUInt32                                        m_uiArraySize     = 0U;                                ///< The array size. For a non-array resource this value should be 1.
   xiiUInt32                                        m_uiBindIndex     = xiiInvalidIndex;                   ///< The resource binding index in the shader.
   xiiUInt32                                        m_uiDescriptorSet = xiiInvalidIndex;                   ///< The descriptor set to which this resource belongs to.
-  xiiBitflags<xiiGALShaderStage>                   m_ShaderStages    = xiiGALShaderStage::Unknown;        ///< The shader stages to which this resource is bound.
+  xiiBitflags<xiiGALShaderType>                   m_ShaderStages    = xiiGALShaderType::Unknown;        ///< The shader stages to which this resource is bound.
   xiiUInt32                                        m_uiTotalSize     = 0U;                                ///< For a resource with variables, the total size of the resource.
   xiiDynamicArray<xiiGALShaderVariableDescription> m_Variables;                                           ///< An array of member variables for shader constant buffer, or push constants.
 };
@@ -191,7 +191,7 @@ public:
 
   // Filled by the compiler base library.
 
-  xiiBitflags<xiiGALShaderStage> m_ShaderStage           = xiiGALShaderStage::Unknown;
+  xiiBitflags<xiiGALShaderType> m_ShaderStage           = xiiGALShaderType::Unknown;
   bool                           m_bWasCompiledWithDebug = false;
 };
 

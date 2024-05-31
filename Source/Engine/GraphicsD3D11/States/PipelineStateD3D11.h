@@ -63,21 +63,21 @@ protected:
   xiiGALRenderPassD3D11*                m_pRenderPassD3D11                = nullptr;
   xiiGALPipelineResourceSignatureD3D11* m_pPipelineResourceSignatureD3D11 = nullptr;
 
-  ID3D11Buffer*         m_pBoundConstantBuffers[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[xiiGALShaderStage::ENUM_COUNT];
+  ID3D11Buffer*         m_pBoundConstantBuffers[xiiGALShaderType::ENUM_COUNT][XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[xiiGALShaderType::ENUM_COUNT];
 
-  xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pBoundShaderResourceViews[xiiGALShaderStage::ENUM_COUNT] = {};
-  xiiHybridArray<xiiGALResource*, 16>           m_ResourcesForResourceViews[xiiGALShaderStage::ENUM_COUNT];
-  xiiGAL::ModifiedRange                         m_BoundShaderResourceViewsRange[xiiGALShaderStage::ENUM_COUNT];
+  xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pBoundShaderResourceViews[xiiGALShaderType::ENUM_COUNT] = {};
+  xiiHybridArray<xiiGALResource*, 16>           m_ResourcesForResourceViews[xiiGALShaderType::ENUM_COUNT];
+  xiiGAL::ModifiedRange                         m_BoundShaderResourceViewsRange[xiiGALShaderType::ENUM_COUNT];
 
   xiiHybridArray<ID3D11UnorderedAccessView*, 16> m_BoundUnoderedAccessViews;
   xiiHybridArray<xiiGALResource*, 16>            m_ResourcesForUnorderedAccessViews;
   xiiGAL::ModifiedRange                          m_BoundUnoderedAccessViewsRange;
 
-  ID3D11SamplerState*   m_pBoundSamplerStates[xiiGALShaderStage::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundSamplerStatesRange[xiiGALShaderStage::ENUM_COUNT];
+  ID3D11SamplerState*   m_pBoundSamplerStates[xiiGALShaderType::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundSamplerStatesRange[xiiGALShaderType::ENUM_COUNT];
 
-  ID3D11DeviceChild* m_pBoundShaders[xiiGALShaderStage::ENUM_COUNT] = {};
+  ID3D11DeviceChild* m_pBoundShaders[xiiGALShaderType::ENUM_COUNT] = {};
 };
 
 #include <GraphicsD3D11/States/Implementation/PipelineStateD3D11_inl.h>

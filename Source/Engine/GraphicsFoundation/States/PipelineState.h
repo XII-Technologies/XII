@@ -100,7 +100,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariableDescription : publ
   XII_DECLARE_POD_TYPE();
 
   xiiStringView                             m_sName;                                                   ///< The shader variable name.
-  xiiBitflags<xiiGALShaderStage>            m_ShaderStages = xiiGALShaderStage::Unknown;               ///< The shader stages this resources variable applies to. If more than one shader stage is specified, the variable will be shared between these stages. Shader stages used by different variables with the same name must not overlap.
+  xiiBitflags<xiiGALShaderType>            m_ShaderStages = xiiGALShaderType::Unknown;               ///< The shader stages this resources variable applies to. If more than one shader stage is specified, the variable will be shared between these stages. Shader stages used by different variables with the same name must not overlap.
   xiiEnum<xiiGALShaderResourceVariableType> m_Type         = xiiGALShaderResourceVariableType::Static; ///< The shader variable type.
   xiiBitflags<xiiGALShaderVariableFlags>    m_Flags        = xiiGALShaderVariableFlags::None;          ///< The shader variable flags.
 };

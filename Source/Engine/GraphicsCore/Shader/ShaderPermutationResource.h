@@ -25,7 +25,7 @@ public:
   xiiShaderPermutationResource();
 
   xiiGALShaderHandle          GetGALShader() const { return m_hShader; }
-  const xiiGALShaderByteCode* GetShaderByteCode(xiiBitflags<xiiGALShaderStage> stage) const { return m_ByteCodes[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)stage.GetValue())]; }
+  const xiiGALShaderByteCode* GetShaderByteCode(xiiBitflags<xiiGALShaderType> stage) const { return m_ByteCodes[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)stage.GetValue())]; }
 
   xiiGALPipelineResourceSignatureHandle GetPipelineResourceSignature() const { return m_hPipelineResourceSignature; }
 
@@ -46,7 +46,7 @@ private:
 private:
   friend class xiiShaderManager;
 
-  xiiSharedPtr<const xiiGALShaderByteCode> m_ByteCodes[xiiGALShaderStage::ENUM_COUNT];
+  xiiSharedPtr<const xiiGALShaderByteCode> m_ByteCodes[xiiGALShaderType::ENUM_COUNT];
 
   bool               m_bShaderPermutationValid;
   xiiGALShaderHandle m_hShader;

@@ -700,7 +700,7 @@ void xiiShaderParser::ParseShaderResources(xiiStringView sShaderStageSource, xii
 xiiResult xiiShaderParser::MergeShaderResourceBindings(const xiiShaderProgramData& spd, xiiHashTable<xiiHashedString, xiiGALShaderResourceDescription>& out_bindings, xiiLogInterface* pLog)
 {
   xiiUInt32 uiSize = 0;
-  for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
     uiSize += spd.m_Resources[stage].GetCount();
   }
@@ -710,7 +710,7 @@ xiiResult xiiShaderParser::MergeShaderResourceBindings(const xiiShaderProgramDat
 
   xiiMap<xiiHashedString, const xiiShaderResourceDefinition*> resourceFirstOccurence;
 
-  for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
     for (const xiiShaderResourceDefinition& res : spd.m_Resources[stage])
     {
@@ -725,13 +725,13 @@ xiiResult xiiShaderParser::MergeShaderResourceBindings(const xiiShaderProgramDat
           return XII_FAILURE;
         }
 
-        current.m_ShaderStages |= xiiGALShaderStage::GetStageFlag(stage);
+        current.m_ShaderStages |= xiiGALShaderType::GetStageFlag(stage);
       }
       else
       {
         out_bindings.Insert(sName, res.m_ResourceDescription);
         resourceFirstOccurence.Insert(sName, &res);
-        out_bindings.Find(sName).Value().m_ShaderStages |= xiiGALShaderStage::GetStageFlag(stage);
+        out_bindings.Find(sName).Value().m_ShaderStages |= xiiGALShaderType::GetStageFlag(stage);
       }
     }
   }

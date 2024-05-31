@@ -71,11 +71,11 @@ xiiResult xiiShaderCompilerD3D11::CompileShader(xiiStringView sFile, xiiStringVi
   return XII_SUCCESS;
 }
 
-xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderStage> Stage, xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>>& vertexInputMapping)
+xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramData& inout_Data, xiiBitflags<xiiGALShaderType> Stage, xiiMap<xiiStringView, xiiEnum<xiiGALInputLayoutSemantic>>& vertexInputMapping)
 {
   XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_sSourceFile);
 
-  xiiGALShaderByteCode* pShader  = inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)Stage.GetValue())];
+  xiiGALShaderByteCode* pShader  = inout_Data.m_ByteCode[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)Stage.GetValue())];
   auto&                 byteCode = pShader->m_ByteCode;
 
   xiiComPtr<ID3D11ShaderReflection> pReflector;
@@ -94,7 +94,7 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramData& inout
 
   // Vertex Attributes
   xiiHybridArray<xiiGALVertexInputLayout, 8>& vertexInputLayouts = pShader->m_VertexInputLayout;
-  if (Stage.IsSet(xiiGALShaderStage::Vertex))
+  if (Stage.IsSet(xiiGALShaderType::Vertex))
   {
     xiiUInt32 uiNumVars = shaderDescription.InputParameters;
 
@@ -161,14 +161,14 @@ xiiResult xiiShaderCompilerD3D11::ReflectShaderStage(xiiShaderProgramData& inout
       shaderResourceBinding.m_ShaderStages                  = Stage;
       shaderResourceBinding.m_sName.Assign(inputDescription.Name);
 
-      if (FillResourceBinding(*inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)Stage.GetValue())], shaderResourceBinding, pReflector, inputDescription).Failed())
+      if (FillResourceBinding(*inout_Data.m_ByteCode[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)Stage.GetValue())], shaderResourceBinding, pReflector, inputDescription).Failed())
         continue;
 
       XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown, "FillResourceBinding should have failed.");
 
       if (shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown)
       {
-        inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)Stage.GetValue())]->m_ShaderResourceBindings.PushBack(shaderResourceBinding);
+        inout_Data.m_ByteCode[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)Stage.GetValue())]->m_ShaderResourceBindings.PushBack(shaderResourceBinding);
       }
     }
   }

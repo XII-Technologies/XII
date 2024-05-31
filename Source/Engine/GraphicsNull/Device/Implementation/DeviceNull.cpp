@@ -586,7 +586,7 @@ void xiiGALDeviceNull::FillCapabilitiesPlatform()
   m_AdapterDescription.m_WaveOperationProperties.m_uiMinSize             = 32;
   m_AdapterDescription.m_WaveOperationProperties.m_uiMaxSize             = 32;
   m_AdapterDescription.m_WaveOperationProperties.m_WaveFeatures          = xiiGALWaveFeature::Basic | xiiGALWaveFeature::Vote | xiiGALWaveFeature::Arithmetic | xiiGALWaveFeature::BallOut | xiiGALWaveFeature::Quad;
-  m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages = xiiGALShaderStage::Pixel | xiiGALShaderStage::Compute | xiiGALShaderStage::Amplification | xiiGALShaderStage::Mesh;
+  m_AdapterDescription.m_WaveOperationProperties.m_SupportedShaderStages = xiiGALShaderType::Pixel | xiiGALShaderType::Compute | xiiGALShaderType::Amplification | xiiGALShaderType::Mesh;
 
   // Buffer properties
 
