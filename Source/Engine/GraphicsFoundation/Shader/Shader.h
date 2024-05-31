@@ -14,21 +14,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHa
 
   bool HasByteCodeForStage(xiiGALShaderType::Enum stage) const;
 
-  xiiBitflags<xiiGALShaderType> m_ShaderStage                 = xiiGALShaderType::Unknown; ///< The shader type. The default is xiiGALShaderType::Unknown.
-  bool                           m_bUseCombinedTextureSamplers = false;                      ///< If set to true, textures will be combined with texture samplers.
-                                                                                             ///<
-                                                                                             ///< The m_bCombinedSamplerSuffix member defines the suffix added to the texture variable name to get corresponding sampler name.
-                                                                                             ///< When using combined samplers, the sampler assigned to the shader resource view is automatically set when
-                                                                                             ///< the view is bound. Otherwise, samplers need to be explicitly set similar to other shader variables.
-                                                                                             ///<
-                                                                                             ///< This member has no effect if the shader is used in the PSO that uses pipeline resource signature(s).
-
-  xiiStringView m_sCombinedSamplerSuffix = "_Sampler"; ///< If m_bUseCombinedTextureSamplers is true, defines the suffix added to the texture variable name to get corresponding sampler name. For example,
-                                                       ///< for the default value "_Sampler", a texture named "Tex" will be combined with the sampler named "Tex_Sampler". If m_bUseCombinedTextureSamplers is false, this member is ignored.
-                                                       ///<
-                                                       ///< This member has no effect if the shader is used in the PSO that uses pipeline resource signature(s).
-
-  xiiScopedRefPointer<xiiGALShaderByteCode> m_ByteCodes[xiiGALShaderType::ENUM_COUNT]; ///< The shader byte code per stage.
+  xiiBitflags<xiiGALShaderType>             m_ShaderType = xiiGALShaderType::Unknown; ///< The shader type. The default is xiiGALShaderType::Unknown.
+  xiiScopedRefPointer<xiiGALShaderByteCode> m_ByteCodes;                              ///< The shader byte code. See xiiGALShaderByteCode.
 };
 
 /// \brief Interface that defines methods to manipulate a shader object.

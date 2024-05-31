@@ -202,16 +202,6 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderType
     StorageType AllMesh : 1;
     StorageType AllRayTracing : 1;
   };
-
-  /// \brief Retrieves the shader stage index of a single shader stage.
-  static xiiUInt32 GetStageIndex(xiiGALShaderType::Enum stage);
-
-  /// \brief Returns a the stage flag for a given stage index.
-  static xiiGALShaderType::Enum GetStageFlag(xiiUInt32 uiIndex);
-
-  static const char* Names[ENUM_COUNT];
-
-  // Note: Changes to this enumeration flag requires updating code paths.
 };
 
 XII_DECLARE_FLAGS_OPERATORS(xiiGALShaderType);
