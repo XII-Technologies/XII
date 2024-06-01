@@ -42,7 +42,7 @@ protected:
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
 
   virtual xiiGALCommandQueue* CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description) override final;
-  virtual void               DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue) override final;
+  virtual void                DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue) override final;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;

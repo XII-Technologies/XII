@@ -1,7 +1,7 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
-#include <GraphicsVulkan/States/DepthStencilStateVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
+#include <GraphicsVulkan/States/DepthStencilStateVulkan.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALDepthStencilStateVulkan, 1, xiiRTTINoAllocator)

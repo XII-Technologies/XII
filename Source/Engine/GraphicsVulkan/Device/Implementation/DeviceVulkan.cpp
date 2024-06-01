@@ -59,7 +59,7 @@ xiiGALDeviceVulkan::~xiiGALDeviceVulkan() = default;
 
 xiiResult xiiGALDeviceVulkan::InitializePlatform()
 {
-  
+
   return XII_FAILURE;
 }
 
@@ -536,12 +536,10 @@ void xiiGALDeviceVulkan::WaitIdlePlatform()
 
 void xiiGALDeviceVulkan::FillCapabilitiesPlatform()
 {
- 
 }
 
 void xiiGALDeviceVulkan::CreateCommandQueues()
 {
- 
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_Device_Implementation_DeviceVulkan);

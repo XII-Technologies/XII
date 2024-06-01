@@ -13,7 +13,7 @@ xiiGALRenderPassVulkan::~xiiGALRenderPassVulkan() = default;
 xiiResult xiiGALRenderPassVulkan::InitPlatform()
 {
   // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
-  
+
   return XII_FAILURE;
 }
 

@@ -15,7 +15,7 @@ xiiGALShaderVulkan::~xiiGALShaderVulkan() = default;
 xiiResult xiiGALShaderVulkan::InitPlatform()
 {
   // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
-  
+
   return XII_SUCCESS;
 }
 
