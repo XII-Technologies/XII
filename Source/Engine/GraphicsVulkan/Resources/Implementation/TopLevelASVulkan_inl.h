@@ -19,12 +19,3 @@ XII_ALWAYS_INLINE xiiGALScratchBufferSizeDescription xiiGALTopLevelASVulkan::Get
 {
   return xiiGALScratchBufferSizeDescription{.m_uiBuild = 0, .m_uiUpdate = 0};
 }
-
-XII_ALWAYS_INLINE void xiiGALTopLevelASVulkan::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
-{
-}
-
-XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALTopLevelASVulkan::GetState() const
-{
-  return xiiGALResourceStateFlags::Undefined;
-}

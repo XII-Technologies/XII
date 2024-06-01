@@ -153,6 +153,10 @@ protected:
 protected:
   xiiGALBufferCreationDescription m_Description;
 
+  xiiHashTable<xiiUInt32, xiiGALBufferViewHandle> m_BufferViews;
+
+  xiiGALBufferViewHandle m_DefaultBufferViews[xiiGALBufferViewType::ENUM_COUNT];
+
 private:
   void CreateDefaultResourceViews(xiiGALBufferHandle hBuffer);
 };

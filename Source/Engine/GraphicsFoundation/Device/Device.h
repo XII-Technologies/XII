@@ -5,7 +5,6 @@
 #include <Foundation/Containers/HashTable.h>
 #include <Foundation/Containers/IdTable.h>
 #include <Foundation/Memory/CommonAllocators.h>
-#include <Foundation/Strings/HashedString.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Declarations/Object.h>
 #include <GraphicsFoundation/Utilities/DescriptorHash.h>
@@ -416,7 +415,8 @@ protected:
 
   void FlushDestroyedObjects();
 
-  void DestroyViews(xiiGALResource* pResource);
+  void DestroyViews(xiiGALBuffer* pGALBuffer);
+  void DestroyViews(xiiGALTexture* pGALTexture);
 
   /// \brief Asserts that either this device supports multi-threaded resource creation, or that this function is executed on the main thread.
   void VerifyMultithreadedAccess() const;

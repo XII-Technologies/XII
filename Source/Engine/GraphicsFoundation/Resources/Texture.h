@@ -2,7 +2,6 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <Foundation/Math/Size.h>
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/TextureView.h>
 
@@ -166,6 +165,10 @@ protected:
 
 protected:
   xiiGALTextureCreationDescription m_Description;
+
+  xiiHashTable<xiiUInt32, xiiGALTextureViewHandle> m_TextureViews;
+
+  xiiGALTextureViewHandle m_DefaultTextureViews[xiiGALTextureViewType::ENUM_COUNT];
 
 private:
   void CreateDefaultResourceViews(xiiGALTextureHandle hTexture);

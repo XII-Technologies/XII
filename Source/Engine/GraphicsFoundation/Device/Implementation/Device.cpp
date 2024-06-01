@@ -2849,27 +2849,32 @@ void xiiGALDevice::FlushDestroyedObjects()
   m_DestroyedObjects.Clear();
 }
 
-void xiiGALDevice::DestroyViews(xiiGALResource* pResource)
+void xiiGALDevice::DestroyViews(xiiGALBuffer* pGALBuffer)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
-  for (auto it = pResource->m_BufferViews.GetIterator(); it.IsValid(); ++it)
+  for (auto it = pGALBuffer->m_BufferViews.GetIterator(); it.IsValid(); ++it)
   {
-    xiiGALBufferViewHandle hBufferView = it.Value();
-    xiiGALBufferView*      pBufferView = m_BufferViews[hBufferView];
+    xiiGALBufferViewHandle hBufferView    = it.Value();
+    xiiGALBufferView*      pGALBufferView = m_BufferViews[hBufferView];
 
     XII_VERIFY(m_BufferViews.Remove(hBufferView), "");
 
-    DestroyBufferViewPlatform(pBufferView);
+    DestroyBufferViewPlatform(pGALBufferView);
   }
-  pResource->m_BufferViews.Clear();
+  pGALBuffer->m_BufferViews.Clear();
 
   for (xiiUInt32 i = 0; i < xiiGALBufferViewType::ENUM_COUNT; ++i)
   {
-    pResource->m_DefaultBufferViews[i].Invalidate();
+    pGALBuffer->m_DefaultBufferViews[i].Invalidate();
   }
+}
 
-  for (auto it = pResource->m_TextureViews.GetIterator(); it.IsValid(); ++it)
+void xiiGALDevice::DestroyViews(xiiGALTexture* pGALTexture)
+{
+  XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  for (auto it = pGALTexture->m_TextureViews.GetIterator(); it.IsValid(); ++it)
   {
     xiiGALTextureViewHandle hTextureView = it.Value();
     xiiGALTextureView*      pTextureView = m_TextureViews[hTextureView];
@@ -2878,11 +2883,11 @@ void xiiGALDevice::DestroyViews(xiiGALResource* pResource)
 
     DestroyTextureViewPlatform(pTextureView);
   }
-  pResource->m_TextureViews.Clear();
+  pGALTexture->m_TextureViews.Clear();
 
   for (xiiUInt32 i = 0; i < xiiGALBufferViewType::ENUM_COUNT; ++i)
   {
-    pResource->m_DefaultTextureViews[i].Invalidate();
+    pGALTexture->m_DefaultTextureViews[i].Invalidate();
   }
 }
 

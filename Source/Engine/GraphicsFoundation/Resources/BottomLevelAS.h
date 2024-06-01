@@ -2,8 +2,7 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/DeviceObject.h>
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
+#include <GraphicsFoundation/Resources/Resource.h>
 
 /// \brief This describes the acceleration structure build flags.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingBuildASFlags
@@ -85,9 +84,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALScratchBufferSizeDescription : public xi
 };
 
 /// \brief Interface that defines methods to manipulate a bottom level acceleration structure (BLAS) object.
-class XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelAS : public xiiGALDeviceObject
+class XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelAS : public xiiGALResource
 {
-  XII_ADD_DYNAMIC_REFLECTION(xiiGALBottomLevelAS, xiiGALDeviceObject);
+  XII_ADD_DYNAMIC_REFLECTION(xiiGALBottomLevelAS, xiiGALResource);
 
 public:
   /// \brief This returns the creation description for this object.
@@ -122,15 +121,6 @@ public:
   ///
   /// \return The scratch buffer size description, see xiiGALScratchBufferSizeDescription.
   XII_NODISCARD virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const = 0;
-
-  /// \brief Sets the acceleration structure usage state.
-  ///
-  /// \note This method does not perform state transition, but resets the internal acceleration structure state to the given value.
-  ///       This method should be used after the application finished manually managing the acceleration structure state and wants to hand over state management back to the engine.
-  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) = 0;
-
-  /// \brief Returns the internal acceleration structure state.
-  XII_NODISCARD virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const = 0;
 
 protected:
   friend class xiiGALDevice;

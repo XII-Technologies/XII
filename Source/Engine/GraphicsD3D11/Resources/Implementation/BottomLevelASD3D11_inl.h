@@ -21,12 +21,3 @@ XII_ALWAYS_INLINE xiiGALScratchBufferSizeDescription xiiGALBottomLevelASD3D11::G
   XII_ASSERT_NOT_IMPLEMENTED;
   return xiiGALScratchBufferSizeDescription{.m_uiBuild = 0, .m_uiUpdate = 0};
 }
-
-XII_ALWAYS_INLINE void xiiGALBottomLevelASD3D11::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
-{
-}
-
-XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALBottomLevelASD3D11::GetState() const
-{
-  return xiiGALResourceStateFlags::Undefined;
-}

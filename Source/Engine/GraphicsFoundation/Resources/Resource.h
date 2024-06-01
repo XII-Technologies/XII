@@ -26,12 +26,6 @@ protected:
   xiiGALResource(xiiGALDevice* pDevice);
 
   xiiBitflags<xiiGALResourceStateFlags> m_ResourceState;
-
-  xiiHashTable<xiiUInt32, xiiGALBufferViewHandle>  m_BufferViews;
-  xiiHashTable<xiiUInt32, xiiGALTextureViewHandle> m_TextureViews;
-
-  xiiGALBufferViewHandle  m_DefaultBufferViews[xiiGALBufferViewType::ENUM_COUNT];
-  xiiGALTextureViewHandle m_DefaultTextureViews[xiiGALTextureViewType::ENUM_COUNT];
 };
 
 /// \brief Base class for all GAL resource views (texture and buffer views).

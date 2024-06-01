@@ -20,12 +20,3 @@ XII_ALWAYS_INLINE xiiGALScratchBufferSizeDescription xiiGALTopLevelASNull::GetSc
 {
   return xiiGALScratchBufferSizeDescription{.m_uiBuild = 0, .m_uiUpdate = 0};
 }
-
-XII_ALWAYS_INLINE void xiiGALTopLevelASNull::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
-{
-}
-
-XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALTopLevelASNull::GetState() const
-{
-  return xiiGALResourceStateFlags::Unknown;
-}

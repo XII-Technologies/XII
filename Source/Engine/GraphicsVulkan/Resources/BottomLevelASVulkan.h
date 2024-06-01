@@ -15,10 +15,6 @@ public:
 
   virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const override final;
 
-  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
-
-  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
-
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
