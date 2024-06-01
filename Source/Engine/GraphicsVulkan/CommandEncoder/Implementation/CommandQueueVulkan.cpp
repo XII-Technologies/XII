@@ -1,27 +1,47 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 
-#include <Diligent/Graphics/GraphicsEngine/interface/Fence.h>
-
-xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan& deviceVulkan, Diligent::IDeviceContext* pDeviceContext) :
-  xiiGALCommandQueue(), m_DeviceVulkan(deviceVulkan), m_pContext(pDeviceContext)
+xiiGALCommandQueueVulkan::xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription) :
+  xiiGALCommandQueue(pDeviceVulkan, creationDescription)
 {
-  {
-    Diligent::FenceDesc fenceDescription = {};
-    fenceDescription.Name                = m_pContext->GetDesc().Name;
-    fenceDescription.Type                = Diligent::FENCE_TYPE_GENERAL;
-
-    m_DeviceVulkan.GetDevice()->CreateFence(fenceDescription, &m_pFence);
-
-    m_uiCompletedFenceValue = 0;
-  }
+  xiiGALCommandListCreationDescription commandListDescription = {.m_QueueType = m_Description.m_QueueType};
+  m_pDefaultCommandList                                       = XII_DEFAULT_NEW(xiiGALCommandListVulkan, pDeviceVulkan, commandListDescription);
 }
 
 xiiGALCommandQueueVulkan::~xiiGALCommandQueueVulkan()
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pFence);
+  m_pDefaultCommandList.Clear();
+}
+
+xiiResult xiiGALCommandQueueVulkan::InitPlatform()
+{
+  return XII_FAILURE;
+}
+
+xiiResult xiiGALCommandQueueVulkan::DeInitPlatform()
+{
+  return XII_FAILURE;
+}
+
+void xiiGALCommandQueueVulkan::SetDebugNamePlatform(xiiStringView sName)
+{
+}
+
+xiiGALCommandList* xiiGALCommandQueueVulkan::BeginCommandList(xiiStringView sScopeName)
+{
+  return m_pDefaultCommandList.Borrow();
+}
+
+void xiiGALCommandQueueVulkan::UnbindTextureFromFramebuffer(xiiGALTextureVulkan* pTextureVulkan)
+{
+}
+
+xiiUInt64 xiiGALCommandQueueVulkan::SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset)
+{
+  return 0U;
 }
 
 XII_STATICLINK_FILE(GraphicsVulkan, GraphicsVulkan_CommandEncoder_Implementation_CommandQueueVulkan);

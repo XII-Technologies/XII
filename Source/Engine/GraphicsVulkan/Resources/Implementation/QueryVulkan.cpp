@@ -3,29 +3,23 @@
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/Resources/QueryVulkan.h>
 
-xiiGALQueryVulkan::xiiGALQueryVulkan(const xiiGALQueryCreationDescription& creationDescription) :
-  xiiGALQuery(creationDescription)
+xiiGALQueryVulkan::xiiGALQueryVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALQueryCreationDescription& creationDescription) :
+  xiiGALQuery(pDeviceVulkan, creationDescription)
 {
 }
 
 xiiGALQueryVulkan::~xiiGALQueryVulkan() = default;
 
-xiiResult xiiGALQueryVulkan::InitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALQueryVulkan::InitPlatform()
 {
-  xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
+  // xiiGALDeviceVulkan* pDeviceVulkan = static_cast<xiiGALDeviceVulkan*>(pDevice);
 
-  Diligent::QueryDesc queryDescription;
-  queryDescription.Name = m_Description.m_sName.GetStartPointer();
-  queryDescription.Type = xiiDiligentTypeConversions::GetQueryType(m_Description.m_Type);
-
-  pDeviceVulkan->GetDevice()->CreateQuery(queryDescription, &m_pQuery);
-
-  return (m_pQuery != nullptr) ? XII_SUCCESS : XII_FAILURE;
+  return XII_FAILURE;
 }
 
-xiiResult xiiGALQueryVulkan::DeInitPlatform(xiiGALDevice* pDevice)
+xiiResult xiiGALQueryVulkan::DeInitPlatform()
 {
-  XII_GAL_DILIGENT_PTR_RELEASE(m_pQuery);
+  XII_ASSERT_NOT_IMPLEMENTED;
 
   return XII_SUCCESS;
 }

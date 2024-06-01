@@ -1,13 +1,4 @@
 
-XII_ALWAYS_INLINE void xiiGALBufferD3D12::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
-{
-}
-
-XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALBufferD3D12::GetState() const
-{
-  return {};
-}
-
 XII_ALWAYS_INLINE xiiGALMemoryProperties xiiGALBufferD3D12::GetMemoryProperties() const
 {
   /// \todo GraphicsD3D12: Not yet implemented.

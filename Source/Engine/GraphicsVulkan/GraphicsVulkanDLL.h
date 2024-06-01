@@ -48,3 +48,6 @@ class xiiGALShaderVulkan;
 class xiiGALBlendStateVulkan;
 class xiiGALDepthStencilStateVulkan;
 class xiiGALRasterizerStateVulkan;
+class xiiGALPipelineStateVulkan;
+class xiiGALPipelineResourceSignatureVulkan;
+class xiiGALShaderResourceVariableVulkan;

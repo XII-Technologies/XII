@@ -13,22 +13,19 @@ public:
 
   virtual void Wait(xiiUInt64 uiValue) override final;
 
-  Diligent::IFence* GetFence() const;
-
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALFenceVulkan(const xiiGALFenceCreationDescription& creationDescription);
+  xiiGALFenceVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALFenceCreationDescription& creationDescription);
 
   virtual ~xiiGALFenceVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
-  Diligent::IFence* m_pFence = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/FenceVulkan_inl.h>

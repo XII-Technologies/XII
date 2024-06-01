@@ -7,25 +7,20 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALInputLayoutVulkan final : public xiiGALInputLayout
 {
 public:
-  const Diligent::InputLayoutDesc* GetLayout() const;
-
-  xiiArrayPtr<Diligent::LayoutElement> GetElements();
 
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALInputLayoutVulkan(const xiiGALInputLayoutCreationDescription& creationDescription);
+  xiiGALInputLayoutVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALInputLayoutCreationDescription& creationDescription);
 
   virtual ~xiiGALInputLayoutVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
-  Diligent::InputLayoutDesc                   m_InputLayout = {};
-  xiiHybridArray<Diligent::LayoutElement, 8U> m_InputElements;
 };
 
 #include <GraphicsVulkan/Shader/Implementation/InputLayoutVulkan_inl.h>

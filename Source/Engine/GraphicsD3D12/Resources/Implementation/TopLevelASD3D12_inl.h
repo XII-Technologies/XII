@@ -17,12 +17,3 @@ XII_ALWAYS_INLINE xiiGALScratchBufferSizeDescription xiiGALTopLevelASD3D12::GetS
 {
   return xiiGALScratchBufferSizeDescription{.m_uiBuild = 0, .m_uiUpdate = 0};
 }
-
-XII_ALWAYS_INLINE void xiiGALTopLevelASD3D12::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
-{
-}
-
-XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALTopLevelASD3D12::GetState() const
-{
-  return {};
-}

@@ -5,10 +5,6 @@
 #include <Foundation/Basics/Platform/Win/MinWindows.h>
 #include <Foundation/Types/UniquePtr.h>
 #include <GraphicsFoundation/Device/Device.h>
-#include <GraphicsFoundation/Resources/ResourceFormats.h>
-
-using xiiGALFormatLookupEntryVulkan = xiiGALFormatLookupEntry<Diligent::TEXTURE_FORMAT, (Diligent::TEXTURE_FORMAT)0U>;
-using xiiGALFormatLookupTableVulkan = xiiGALFormatLookupTable<xiiGALFormatLookupEntryVulkan>;
 
 class XII_GRAPHICSVULKAN_DLL xiiGALDeviceVulkan final : public xiiGALDevice
 {
@@ -21,16 +17,9 @@ public:
   ~xiiGALDeviceVulkan();
 
 public:
+  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final;
+
   // Internal objects retrieval.
-
-  Diligent::IRenderDevice*  GetDevice();
-  Diligent::IEngineFactory* GetFactory();
-  Diligent::IDeviceContext* GetImmediateContext();
-  Diligent::IDeviceContext* GetComputeContext();
-  Diligent::IDeviceContext* GetTransferContext();
-  Diligent::IDeviceContext* GetSparseBindingContext();
-
-  const xiiGALFormatLookupTableVulkan& GetFormatLookupTable() const;
 
   void ReportLiveGPUObjects();
 
@@ -41,6 +30,8 @@ protected:
   virtual xiiResult InitializePlatform() override final;
   virtual xiiResult ShutdownPlatform() override final;
 
+  virtual xiiResult CreateCommandQueuesPlatform() override final;
+
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override final;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override final;
 
@@ -50,8 +41,8 @@ protected:
   virtual xiiGALSwapChain* CreateSwapChainPlatform(const xiiGALSwapChainCreationDescription& description) override final;
   virtual void             DestroySwapChainPlatform(xiiGALSwapChain* pSwapChain) override final;
 
-  virtual xiiGALCommandList* CreateCommandListPlatform(const xiiGALCommandListCreationDescription& description) override final;
-  virtual void               DestroyCommandListPlatform(xiiGALCommandList* pCommandList) override final;
+  virtual xiiGALCommandQueue* CreateCommandQueuePlatform(const xiiGALCommandQueueCreationDescription& description) override final;
+  virtual void                DestroyCommandQueuePlatform(xiiGALCommandQueue* pCommandQueue) override final;
 
   virtual xiiGALBlendState* CreateBlendStatePlatform(const xiiGALBlendStateCreationDescription& description) override final;
   virtual void              DestroyBlendStatePlatform(xiiGALBlendState* pBlendState) override final;
@@ -116,24 +107,12 @@ protected:
   void FillFormatLookupTable();
 
 private:
-  xiiGALFormatLookupTableVulkan m_FormatLookupTable;
-
-  Diligent::IEngineFactory*                     m_pEngineFactory = nullptr;
-  Diligent::IRenderDevice*                      m_pDevice        = nullptr;
-  xiiDynamicArray<Diligent::IDeviceContext*>    m_pDeviceContexts;
-  xiiDynamicArray<Diligent::DisplayModeAttribs> m_DisplayModes;
-
-  xiiHybridArray<Diligent::ImmediateContextCreateInfo, XII_GAL_MAX_ADAPTER_QUEUE_COUNT> m_ContextDescriptions;
 
   // 0 : Graphics Queue
   // 1 : Compute Queue
   // 2 : Transfer Queue
   // 3 : Sparse Queue
   xiiUniquePtr<xiiGALCommandQueueVulkan> m_CommandQueues[4];
-
-  struct GPUTimingScope* m_pFrameTimingScope    = nullptr;
-  struct GPUTimingScope* m_pPipelineTimingScope = nullptr;
-  struct GPUTimingScope* m_pPassTimingScope     = nullptr;
 };
 
 #include <GraphicsVulkan/Device/Implementation/DeviceVulkan_inl.h>

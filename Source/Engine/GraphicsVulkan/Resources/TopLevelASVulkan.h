@@ -13,26 +13,19 @@ public:
 
   virtual xiiGALScratchBufferSizeDescription GetScratchBufferSizeDescription() const override final;
 
-  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
-
-  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
-
-  Diligent::ITopLevelAS* GetTopLevelAS() const;
-
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALTopLevelASVulkan(const xiiGALTopLevelASCreationDescription& creationDescription);
+  xiiGALTopLevelASVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALTopLevelASCreationDescription& creationDescription);
 
   virtual ~xiiGALTopLevelASVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
-  Diligent::ITopLevelAS* m_pTopLevelAS = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/TopLevelASVulkan_inl.h>

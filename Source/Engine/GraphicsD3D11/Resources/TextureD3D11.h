@@ -14,10 +14,6 @@ class XII_GRAPHICSD3D11_DLL xiiGALTextureD3D11 final : public xiiGALTexture
   XII_ADD_DYNAMIC_REFLECTION(xiiGALTextureD3D11, xiiGALTexture);
 
 public:
-  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
-
-  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
-
   virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final;
 
   ID3D11Resource* GetTexture() const;

@@ -115,7 +115,7 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramData& inou
 {
   XII_LOG_BLOCK("ReflectShaderStage", inout_Data.m_sSourceFile);
 
-  xiiGALShaderByteCode* pShader  = inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)];
+  xiiGALShaderByteCode* pShader  = inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)Stage.GetValue())];
   auto&                 byteCode = pShader->m_ByteCode;
 
   SpvReflectShaderModule reflectShaderModule = {};
@@ -207,14 +207,14 @@ xiiResult xiiShaderCompilerVulkan::ReflectShaderStage(xiiShaderProgramData& inou
       shaderResourceBinding.m_uiTotalSize                   = 0U;
       shaderResourceBinding.m_sName.Assign(descriptorBinding.name);
 
-      if (FillResourceBinding(*inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)], shaderResourceBinding, descriptorBinding).Failed())
+      if (FillResourceBinding(*inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)Stage.GetValue())], shaderResourceBinding, descriptorBinding).Failed())
         continue;
 
       XII_ASSERT_DEV(shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown, "FillResourceBinding should have failed.");
 
       if (shaderResourceBinding.m_Type != xiiGALShaderResourceType::Unknown)
       {
-        inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex(Stage)]->m_ShaderResourceBindings.PushBack(shaderResourceBinding);
+        inout_Data.m_ByteCode[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)Stage.GetValue())]->m_ShaderResourceBindings.PushBack(shaderResourceBinding);
       }
     }
   }

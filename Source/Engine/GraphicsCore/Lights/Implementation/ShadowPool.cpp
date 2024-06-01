@@ -74,8 +74,8 @@ struct LightAndRefView
 {
   XII_DECLARE_POD_TYPE();
 
-  const xiiLightComponent* m_pLight;
-  const xiiView*           m_pReferenceView;
+  const xiiLightComponent* m_pLight         = nullptr;
+  const xiiView*           m_pReferenceView = nullptr;
 };
 
 struct SortedShadowData
@@ -306,8 +306,7 @@ struct xiiShadowPool::Data
 
     m_ShadowViewsMutex.Lock();
 
-    // Set viewport size to something valid, this will be changed to the proper location in the atlas texture in OnEndExtraction before
-    // rendering.
+    // Set viewport size to something valid, this will be changed to the proper location in the atlas texture in OnEndExtraction before rendering.
     pView->SetViewport(xiiRectFloat(0.0f, 0.0f, 1024.0f, 1024.0f));
 
     const xiiTag& tagCastShadows = xiiTagRegistry::GetGlobalRegistry().RegisterTag("CastShadow");

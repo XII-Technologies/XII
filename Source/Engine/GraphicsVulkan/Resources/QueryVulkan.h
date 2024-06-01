@@ -11,22 +11,19 @@ public:
 
   virtual void Invalidate() override final;
 
-  Diligent::IQuery* GetQuery() const;
-
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALQueryVulkan(const xiiGALQueryCreationDescription& creationDescription);
+  xiiGALQueryVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALQueryCreationDescription& creationDescription);
 
   virtual ~xiiGALQueryVulkan();
 
-  virtual xiiResult InitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult InitPlatform() override final;
 
-  virtual xiiResult DeInitPlatform(xiiGALDevice* pDevice) override final;
+  virtual xiiResult DeInitPlatform() override final;
 
 protected:
-  Diligent::IQuery* m_pQuery = nullptr;
 };
 
 #include <GraphicsVulkan/Resources/Implementation/QueryVulkan_inl.h>

@@ -1,8 +1,7 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/States/RasterizerStateVulkan.h>
-
-#include <GraphicsVulkan/Utilities/VulkanTypeConversions.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALRasterizerStateVulkan, 1, xiiRTTINoAllocator)
@@ -10,7 +9,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALRasterizerStateVulkan::xiiGALRasterizerStateVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALRasterizerStateCreationDescription& creationDescription) :
-  xiiGALRasterizerState(creationDescription)
+  xiiGALRasterizerState(pDeviceVulkan, creationDescription)
 {
 }
 
