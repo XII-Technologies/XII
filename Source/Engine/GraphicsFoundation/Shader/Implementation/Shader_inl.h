@@ -6,14 +6,14 @@ XII_ALWAYS_INLINE const xiiGALShaderCreationDescription& xiiGALShader::GetDescri
 
 XII_ALWAYS_INLINE xiiArrayPtr<const xiiGALVertexInputLayout> xiiGALShader::GetVertexInputLayout() const
 {
-  if (m_Description.HasByteCodeForStage(xiiGALShaderType::Vertex))
+  if (m_Description.m_ShaderType == xiiGALShaderType::Vertex)
   {
-    return m_Description.m_ByteCodes[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)]->m_VertexInputLayout;
+    return m_Description.m_ByteCode->m_VertexInputLayout;
   }
   return xiiArrayPtr<const xiiGALVertexInputLayout>();
 }
 
-XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderPrimitiveType::GetPrimitiveTypeSize(xiiEnum<xiiGALShaderPrimitiveType> type)
+XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderPrimitiveType::GetPrimitiveTypeSize(xiiGALShaderPrimitiveType::Enum type)
 {
   switch (type)
   {
@@ -60,7 +60,7 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderPrimitiveType::GetPrimitiveTypeSize(xiiE
   return 0;
 }
 
-XII_ALWAYS_INLINE bool xiiGALShaderPrimitiveType::IsNumberType(xiiEnum<xiiGALShaderPrimitiveType> type)
+XII_ALWAYS_INLINE bool xiiGALShaderPrimitiveType::IsNumberType(xiiGALShaderPrimitiveType::Enum type)
 {
   switch (type)
   {
@@ -94,23 +94,22 @@ XII_FORCE_INLINE xiiGALShaderCreationDescription::xiiGALShaderCreationDescriptio
 
 XII_FORCE_INLINE xiiGALShaderCreationDescription::~xiiGALShaderCreationDescription()
 {
-  for (xiiUInt32 i = 0; i < xiiGALShaderType::ENUM_COUNT; ++i)
+  if (m_ByteCode != nullptr && m_ByteCode->GetRefCount() == 0)
   {
-    xiiGALShaderByteCode* pByteCode = m_ByteCodes[i];
-    m_ByteCodes[i]                  = nullptr;
-
-    if (pByteCode != nullptr && pByteCode->GetRefCount() == 0)
-    {
-      XII_DEFAULT_DELETE(pByteCode);
-    }
+    xiiGALShaderByteCode* pByteCode = m_ByteCode;
+    XII_DEFAULT_DELETE(pByteCode);
   }
 }
 
-XII_FORCE_INLINE bool xiiGALShaderCreationDescription::HasByteCodeForStage(xiiGALShaderType::Enum stage) const
+XII_FORCE_INLINE bool xiiGALShaderCreationDescription::HasValidByteCode() const
 {
-  if (stage == xiiGALShaderType::Unknown)
+  if (m_ShaderType == xiiGALShaderType::Unknown)
     return false;
 
-  const xiiUInt32 uiStageIndex = xiiGALShaderType::GetStageIndex(stage);
-  return m_ByteCodes[uiStageIndex] != nullptr && m_ByteCodes[uiStageIndex]->IsValid();
+  return m_ByteCode != nullptr && m_ByteCode->IsValid();
+}
+
+XII_ALWAYS_INLINE bool xiiGALShaderCreationDescription::operator==(const xiiGALShaderCreationDescription& rhs) const
+{
+  return m_ShaderType == rhs.m_ShaderType && m_ByteCode == rhs.m_ByteCode;
 }

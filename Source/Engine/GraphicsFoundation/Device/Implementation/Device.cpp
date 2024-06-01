@@ -616,50 +616,32 @@ xiiGALShaderHandle xiiGALDevice::CreateShader(const xiiGALShaderCreationDescript
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
 
-  bool bHasByteCodes = false;
+  XII_VERIFY_SHADER(description.m_ShaderType != xiiGALShaderType::Unknown, "The shader type must not be xiiGALShaderType::Unknown.");
+  XII_VERIFY_SHADER(description.HasValidByteCode(), "A shader cannot be created with no provided valid shader bytecode.");
 
-  for (xiiUInt32 uiStage = 0; uiStage < xiiGALShaderType::ENUM_COUNT; ++uiStage)
+  if (description.m_ShaderType == xiiGALShaderType::Geometry)
   {
-    if (description.HasByteCodeForStage(xiiGALShaderType::GetStageFlag(uiStage)))
-    {
-      bHasByteCodes = true;
-      break;
-    }
+    XII_VERIFY_SHADER(m_AdapterDescription.m_Features.m_GeometryShaders == xiiGALDeviceFeatureState::Enabled, "Geometry shaders are not supported by this device.");
   }
-
-  if (!bHasByteCodes)
+  if (description.m_ShaderType.IsAnySet(xiiGALShaderType::Domain | xiiGALShaderType::Hull))
   {
-    xiiLog::Error("A shader cannot be created with no shader bytecode.");
-
-    return xiiGALShaderHandle();
+    XII_VERIFY_SHADER(m_AdapterDescription.m_Features.m_Tessellation == xiiGALDeviceFeatureState::Enabled, "Tessellation shaders are not supported by this device.");
   }
-
-  if (description.m_ShaderStage.IsSet(xiiGALShaderType::Geometry) && m_AdapterDescription.m_Features.m_GeometryShaders != xiiGALDeviceFeatureState::Enabled)
+  if (description.m_ShaderType.IsSet(xiiGALShaderType::Compute))
   {
-    XII_VERIFY_SHADER(false, "Geometry shaders are not supported by this device.");
+    XII_VERIFY_SHADER(m_AdapterDescription.m_Features.m_ComputeShaders == xiiGALDeviceFeatureState::Enabled, "Compute shaders are not supported by this device.");
   }
-  if (description.m_ShaderStage.IsAnySet(xiiGALShaderType::Domain | xiiGALShaderType::Hull) && m_AdapterDescription.m_Features.m_Tessellation != xiiGALDeviceFeatureState::Enabled)
+  if (description.m_ShaderType.IsAnySet(xiiGALShaderType::Amplification | xiiGALShaderType::Mesh))
   {
-    XII_VERIFY_SHADER(false, "Tessellation shaders are not supported by this device.");
+    XII_VERIFY_SHADER(m_AdapterDescription.m_Features.m_MeshShaders == xiiGALDeviceFeatureState::Enabled, "Mesh shaders are not supported by this device.");
   }
-  if (description.m_ShaderStage.IsSet(xiiGALShaderType::Compute) && m_AdapterDescription.m_Features.m_ComputeShaders != xiiGALDeviceFeatureState::Enabled)
+  if (description.m_ShaderType.IsAnySet(xiiGALShaderType::AllRayTracing))
   {
-    XII_VERIFY_SHADER(false, "Compute shaders are not supported by this device.");
+    XII_VERIFY_SHADER(m_AdapterDescription.m_Features.m_RayTracing == xiiGALDeviceFeatureState::Enabled && m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags.IsSet(xiiGALRayTracingCapabilityFlags::StandaloneShaders), "Standalone ray tracing shaders are not supported by this device.");
   }
-  if (description.m_ShaderStage.IsAnySet(xiiGALShaderType::Amplification | xiiGALShaderType::Mesh) && m_AdapterDescription.m_Features.m_MeshShaders != xiiGALDeviceFeatureState::Enabled)
+  if (description.m_ShaderType.IsSet(xiiGALShaderType::Tile))
   {
-    XII_VERIFY_SHADER(false, "Mesh shaders are not supported by this device.");
-  }
-  if (description.m_ShaderStage.IsAnySet(xiiGALShaderType::AllRayTracing))
-  {
-    if (m_AdapterDescription.m_Features.m_RayTracing != xiiGALDeviceFeatureState::Enabled || m_AdapterDescription.m_RayTracingProperties.m_CapabilityFlags.AreNoneSet(xiiGALRayTracingCapabilityFlags::StandaloneShaders))
-    {
-      XII_VERIFY_SHADER(false, "Standalone ray tracing shaders are not supported by this device.");
-    }
-  }
-  if (description.m_ShaderStage.IsSet(xiiGALShaderType::Tile) && m_AdapterDescription.m_Features.m_TileShaders != xiiGALDeviceFeatureState::Enabled)
-  {
-    XII_VERIFY_SHADER(false, "Tile shaders are not supported by this device.");
+    XII_VERIFY_SHADER(m_AdapterDescription.m_Features.m_TileShaders == xiiGALDeviceFeatureState::Enabled, "Tile shaders are not supported by this device.");
   }
 
   xiiGALShader* pShader = CreateShaderPlatform(description);
@@ -1562,9 +1544,24 @@ void xiiGALDevice::DestroySampler(xiiGALSamplerHandle hSampler)
 
 #undef XII_VERIFY_SAMPLER
 
+#define XII_VERIFY_INPUT_LAYOUT(expression, ...)             \
+  do                                                         \
+  {                                                          \
+    XII_ASSERT_DEV((expression), __VA_ARGS__);               \
+    if (!(expression)) { return xiiGALInputLayoutHandle(); } \
+  } while (false)
+
 xiiGALInputLayoutHandle xiiGALDevice::CreateInputLayout(const xiiGALInputLayoutCreationDescription& description)
 {
   XII_GAL_DEVICE_LOCK_AND_CHECK();
+
+  xiiGALShader* pShader = Get<ShaderTable, xiiGALShader>(description.m_hVertexShader, m_Shaders);
+
+  XII_VERIFY_INPUT_LAYOUT(pShader != nullptr, "The given vertex shader handle is invalid.");
+
+  const auto& shaderDescription = pShader->GetDescription();
+
+  XII_VERIFY_INPUT_LAYOUT(pShader->GetDescription().m_ShaderType == xiiGALShaderType::Vertex, "An Input Layout must be created with shaders of type xiiGALShaderType::Vertex.");
 
   // Hash description and return any existing one (including increasing the refcount).
   xiiUInt32 uiHash = description.CalculateHash();
@@ -1588,6 +1585,8 @@ xiiGALInputLayoutHandle xiiGALDevice::CreateInputLayout(const xiiGALInputLayoutC
 
   if (pInputLayout != nullptr)
   {
+    XII_ASSERT_DEBUG(pInputLayout->GetDescription().CalculateHash() == uiHash, "InputLayout hash does not match");
+
     pInputLayout->AddRef();
 
     xiiGALInputLayoutHandle hInputLayout(m_InputLayouts.Insert(pInputLayout));
@@ -1619,6 +1618,8 @@ void xiiGALDevice::DestroyInputLayout(xiiGALInputLayoutHandle hInputLayout)
     xiiLog::Warning("DestroyInputLayout called on an invalid handle (double free?).");
   }
 }
+
+#undef XII_VERIFY_INPUT_LAYOUT
 
 #define XII_VERIFY_QUERY(expression, ...)              \
   do                                                   \

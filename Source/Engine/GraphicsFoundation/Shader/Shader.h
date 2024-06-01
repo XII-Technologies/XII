@@ -2,8 +2,6 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/DeviceObject.h>
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
 /// \brief This describes the shader creation description.
@@ -12,10 +10,12 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHa
   xiiGALShaderCreationDescription();
   ~xiiGALShaderCreationDescription();
 
-  bool HasByteCodeForStage(xiiGALShaderType::Enum stage) const;
+  bool HasValidByteCode() const;
 
   xiiBitflags<xiiGALShaderType>             m_ShaderType = xiiGALShaderType::Unknown; ///< The shader type. The default is xiiGALShaderType::Unknown.
-  xiiScopedRefPointer<xiiGALShaderByteCode> m_ByteCodes;                              ///< The shader byte code. See xiiGALShaderByteCode.
+  xiiScopedRefPointer<xiiGALShaderByteCode> m_ByteCode;                               ///< The shader byte code. See xiiGALShaderByteCode.
+
+  bool operator==(const xiiGALShaderCreationDescription& rhs) const;
 };
 
 /// \brief Interface that defines methods to manipulate a shader object.
