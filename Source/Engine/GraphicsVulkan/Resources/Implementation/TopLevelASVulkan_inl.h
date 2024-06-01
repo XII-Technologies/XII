@@ -26,5 +26,5 @@ XII_ALWAYS_INLINE void xiiGALTopLevelASVulkan::SetState(xiiBitflags<xiiGALResour
 
 XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALTopLevelASVulkan::GetState() const
 {
-  return xiiGALResourceState::Undefined;
+  return xiiGALResourceStateFlags::Undefined;
 }

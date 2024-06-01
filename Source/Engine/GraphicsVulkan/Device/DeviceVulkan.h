@@ -17,6 +17,8 @@ public:
   ~xiiGALDeviceVulkan();
 
 public:
+  virtual xiiGALCommandQueue* GetDefaultCommandQueue(xiiBitflags<xiiGALCommandQueueType> queueType) const override final;
+
   // Internal objects retrieval.
 
   void ReportLiveGPUObjects();
@@ -27,6 +29,8 @@ public:
 protected:
   virtual xiiResult InitializePlatform() override final;
   virtual xiiResult ShutdownPlatform() override final;
+
+  virtual xiiResult CreateCommandQueuesPlatform() override final;
 
   virtual void BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain) override final;
   virtual void EndPipelinePlatform(xiiGALSwapChain* pSwapChain) override final;

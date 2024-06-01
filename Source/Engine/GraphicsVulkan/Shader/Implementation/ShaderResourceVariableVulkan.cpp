@@ -2,8 +2,6 @@
 
 #include <GraphicsVulkan/Shader/ShaderResourceVariableVulkan.h>
 
-#include <Diligent/Graphics/GraphicsEngine/interface/ShaderResourceVariable.h>
-
 xiiGALShaderResourceVariableVulkan::xiiGALShaderResourceVariableVulkan() :
   xiiGALShaderResourceVariable()
 {

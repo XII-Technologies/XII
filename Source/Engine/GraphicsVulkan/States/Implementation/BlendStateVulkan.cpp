@@ -1,5 +1,6 @@
 #include <GraphicsVulkan/GraphicsVulkanPCH.h>
 
+#include <GraphicsVulkan/Device/DeviceVulkan.h>
 #include <GraphicsVulkan/States/BlendStateVulkan.h>
 
 // clang-format off

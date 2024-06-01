@@ -7,10 +7,6 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALTextureVulkan final : public xiiGALTexture
 {
 public:
-  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
-
-  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
-
   virtual const xiiGALSparseTextureProperties& GetSparseProperties() const override final;
 
 protected:

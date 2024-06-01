@@ -7,7 +7,6 @@
 #include <GraphicsVulkan/CommandEncoder/CommandListVulkan.h>
 #include <GraphicsVulkan/CommandEncoder/CommandQueueVulkan.h>
 #include <GraphicsVulkan/Device/DeviceVulkan.h>
-#include <GraphicsVulkan/Device/DiligentCore.h>
 #include <GraphicsVulkan/Device/SwapChainVulkan.h>
 #include <GraphicsVulkan/Resources/BottomLevelASVulkan.h>
 #include <GraphicsVulkan/Resources/BufferViewVulkan.h>
@@ -78,6 +77,11 @@ xiiResult xiiGALDeviceVulkan::ShutdownPlatform()
   ReportLiveGPUObjects();
 
   return XII_SUCCESS;
+}
+
+xiiResult xiiGALDeviceVulkan::CreateCommandQueuesPlatform()
+{
+  return XII_FAILURE;
 }
 
 void xiiGALDeviceVulkan::BeginPipelinePlatform(xiiStringView sName, xiiGALSwapChain* pSwapChain)

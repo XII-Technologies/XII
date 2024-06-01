@@ -7,7 +7,7 @@
 #include <GraphicsVulkan/Resources/TextureVulkan.h>
 
 xiiGALFramebufferVulkan::xiiGALFramebufferVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALFramebufferCreationDescription& creationDescription) :
-  xiiGALFramebuffer(creationDescription)
+  xiiGALFramebuffer(pDeviceVulkan, creationDescription)
 {
 }
 

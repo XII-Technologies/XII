@@ -2,27 +2,45 @@
 
 #include <GraphicsVulkan/GraphicsVulkanDLL.h>
 
+#include <Foundation/Types/UniquePtr.h>
+
 #include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 
 class XII_GRAPHICSVULKAN_DLL xiiGALCommandQueueVulkan final : public xiiGALCommandQueue
 {
 public:
+  /// \brief This returns the value of the internal fence that will be signaled the next time.
   virtual xiiUInt64 GetNextFenceValue() const override final;
 
+  /// \brief This returns the last completed value of the internal fence.
   virtual xiiUInt64 GetCompletedFenceValue() override final;
 
+  /// \brief This blocks execution until all pending GPU commands are complete.
   virtual xiiUInt64 WaitForIdle() override final;
+
+  virtual xiiGALCommandList* BeginCommandList(xiiStringView sScopeName) override final;
+
+  void UnbindTextureFromFramebuffer(xiiGALTextureVulkan* pTextureVulkan);
+
+protected:
+  virtual xiiUInt64 SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) override final;
 
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& description);
+  xiiGALCommandQueueVulkan(xiiGALDeviceVulkan* pDeviceVulkan, const xiiGALCommandQueueCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandQueueVulkan();
 
+  virtual xiiResult InitPlatform() override final;
+
+  virtual xiiResult DeInitPlatform() override final;
+
+  virtual void SetDebugNamePlatform(xiiStringView sName) override final;
+
 protected:
-  xiiUInt64 m_uiCompletedFenceValue = 0U;
+  xiiUniquePtr<xiiGALCommandListVulkan> m_pDefaultCommandList;
 };
 
 #include <GraphicsVulkan/CommandEncoder/Implementation/CommandQueueVulkan_inl.h>

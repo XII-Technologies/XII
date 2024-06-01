@@ -1,13 +1,4 @@
 
-XII_ALWAYS_INLINE void xiiGALBufferVulkan::SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags)
-{
-}
-
-XII_ALWAYS_INLINE xiiBitflags<xiiGALResourceStateFlags> xiiGALBufferVulkan::GetState() const
-{
-  return xiiGALResourceStateFlags::Undefined;
-}
-
 XII_ALWAYS_INLINE xiiGALMemoryProperties xiiGALBufferVulkan::GetMemoryProperties() const
 {
   /// \todo GraphicsVulkan: Not yet implemented.

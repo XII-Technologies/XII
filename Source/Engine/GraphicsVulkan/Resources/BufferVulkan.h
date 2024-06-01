@@ -7,10 +7,6 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALBufferVulkan final : public xiiGALBuffer
 {
 public:
-  virtual void SetState(xiiBitflags<xiiGALResourceStateFlags> stateFlags) override final;
-
-  virtual xiiBitflags<xiiGALResourceStateFlags> GetState() const override final;
-
   virtual xiiGALMemoryProperties GetMemoryProperties() const override final;
 
   virtual void FlushMappedRange(xiiUInt64 uiStartOffset, xiiUInt64 uiSize) override final;

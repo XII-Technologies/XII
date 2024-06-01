@@ -1,15 +1,15 @@
 
 XII_ALWAYS_INLINE xiiUInt64 xiiGALCommandQueueVulkan::GetNextFenceValue() const
 {
-  return m_uiCompletedFenceValue + 1;
+  return 0U;
 }
 
 XII_ALWAYS_INLINE xiiUInt64 xiiGALCommandQueueVulkan::GetCompletedFenceValue()
 {
-  return m_uiCompletedFenceValue;
+  return 0U;
 }
 
 XII_ALWAYS_INLINE xiiUInt64 xiiGALCommandQueueVulkan::WaitForIdle()
 {
-  return m_uiCompletedFenceValue;
+  return 0U;
 }

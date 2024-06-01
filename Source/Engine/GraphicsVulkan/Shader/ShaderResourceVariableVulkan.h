@@ -32,7 +32,6 @@ protected:
   virtual ~xiiGALShaderResourceVariableVulkan();
 
 protected:
-  Diligent::IShaderResourceVariable* m_pShaderResourceVariable = nullptr;
 };
 
 #include <GraphicsVulkan/Shader/Implementation/ShaderResourceVariableVulkan_inl.h>
