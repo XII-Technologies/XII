@@ -135,28 +135,73 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescriptio
     {
       const auto& graphicsPipeline = description.m_GraphicsPipeline;
 
+      writer << graphicsPipeline.m_hVertexShader;
+      writer << graphicsPipeline.m_hPixelShader;
+      writer << graphicsPipeline.m_hDomainShader;
+      writer << graphicsPipeline.m_hHullShader;
+      writer << graphicsPipeline.m_hGeometryShader;
+      writer << graphicsPipeline.m_hAmplificationShader;
+      writer << graphicsPipeline.m_hMeshShader;
       writer << graphicsPipeline.m_hBlendState;
-      writer << graphicsPipeline.m_uiSampleMask;
       writer << graphicsPipeline.m_hRasterizerState;
       writer << graphicsPipeline.m_hDepthStencilState;
       writer << graphicsPipeline.m_hInputLayout;
+      writer << graphicsPipeline.m_hRenderPass;
+      writer << graphicsPipeline.m_uiSampleMask;
       writer << graphicsPipeline.m_PrimitiveTopology;
       writer << graphicsPipeline.m_uiViewportCount;
       writer << graphicsPipeline.m_uiSubpassIndex;
       writer << graphicsPipeline.m_ShadingRateFlags;
-      writer << graphicsPipeline.m_hRenderPass;
+      writer << graphicsPipeline.m_SampleDescription.m_uiCount;
+      writer << graphicsPipeline.m_SampleDescription.m_uiQuality;
     }
     break;
     case xiiGALPipelineType::Compute:
     {
+      const auto& computePipeline = description.m_ComputePipeline;
+
+      writer << computePipeline.hComputeShader;
     }
     break;
     case xiiGALPipelineType::RayTracing:
     {
       const auto& rayTracingPipeline = description.m_RayTracingPipeline;
 
+      writer << rayTracingPipeline.m_sShaderRecordName;
+      writer << rayTracingPipeline.m_uiMaximumAttributeSize;
+      writer << rayTracingPipeline.m_uiMaximumPayloadSize;
       writer << rayTracingPipeline.m_uiShaderRecordSize;
       writer << rayTracingPipeline.m_uiMaxRecursionDepth;
+
+      writer << rayTracingPipeline.m_GeneralShaders.GetCount();
+      for (xiiUInt32 i = 0; i < rayTracingPipeline.m_GeneralShaders.GetCount(); ++i)
+      {
+        const auto& generalShaderDescription = rayTracingPipeline.m_GeneralShaders[i];
+
+        writer << generalShaderDescription.m_sName;
+        writer << generalShaderDescription.m_hShader;
+      }
+
+      writer << rayTracingPipeline.m_TriangleHitShaders.GetCount();
+      for (xiiUInt32 i = 0; i < rayTracingPipeline.m_TriangleHitShaders.GetCount(); ++i)
+      {
+        const auto& triangleHitShaderDescription = rayTracingPipeline.m_TriangleHitShaders[i];
+
+        writer << triangleHitShaderDescription.m_sName;
+        writer << triangleHitShaderDescription.m_hClosestHitShader;
+        writer << triangleHitShaderDescription.m_hAnyHitShader;
+      }
+
+      writer << rayTracingPipeline.m_ProceduralHitShaders.GetCount();
+      for (xiiUInt32 i = 0; i < rayTracingPipeline.m_ProceduralHitShaders.GetCount(); ++i)
+      {
+        const auto& proceduralHitShaderDescription = rayTracingPipeline.m_ProceduralHitShaders[i];
+
+        writer << proceduralHitShaderDescription.m_sName;
+        writer << proceduralHitShaderDescription.m_hIntersectionShader;
+        writer << proceduralHitShaderDescription.m_hClosestHitShader;
+        writer << proceduralHitShaderDescription.m_hAnyHitShader;
+      }
     }
     break;
     case xiiGALPipelineType::Tile:
