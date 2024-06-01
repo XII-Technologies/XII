@@ -52,9 +52,9 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALImmutableSamplerDescription : public xii
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiHashedString                  m_SamplerOrTextureName;                      ///< The name of the sampler itself or the name of the texture variable that this immutable sampler is assigned to if combined texture samplers are used.
-  xiiBitflags<xiiGALShaderType>   m_ShaderStages = xiiGALShaderType::Unknown; ///< The shader stages that this immutable sampler applies to. More than one shader stage can be specified. The default is xiiGALShaderType::Unknown.
-  xiiGALSamplerCreationDescription m_SamplerDescription;                        ///< The sampler creation description. See xiiGALSamplerCreationDescription for details.
+  xiiHashedString                  m_SamplerOrTextureName;                     ///< The name of the sampler itself or the name of the texture variable that this immutable sampler is assigned to if combined texture samplers are used.
+  xiiBitflags<xiiGALShaderType>    m_ShaderStages = xiiGALShaderType::Unknown; ///< The shader stages that this immutable sampler applies to. More than one shader stage can be specified. The default is xiiGALShaderType::Unknown.
+  xiiGALSamplerCreationDescription m_SamplerDescription;                       ///< The sampler creation description. See xiiGALSamplerCreationDescription for details.
 };
 
 /// \brief This describes the pipeline resource information.
@@ -62,8 +62,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineResourceDescription : public xii
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiHashedString                m_sName;                                                                        ///< The resource name in the shader.
-  xiiBitflags<xiiGALShaderType> m_ShaderStages = xiiGALShaderType::Unknown;                                    ///< The shader stages that this resource applies to. When multiple shader stages are specified, all stages will share the same resource. The default is xiiGALShaderType::Unknown.
+  xiiHashedString               m_sName;                                                                         ///< The resource name in the shader.
+  xiiBitflags<xiiGALShaderType> m_ShaderStages = xiiGALShaderType::Unknown;                                      ///< The shader stages that this resource applies to. When multiple shader stages are specified, all stages will share the same resource. The default is xiiGALShaderType::Unknown.
                                                                                                                  ///
                                                                                                                  ///  \remarks There may be multiple resources with the same name in different shader stages, but the stages specified for different resources with the same name must not overlap.
   xiiUInt32                                 m_uiArraySize           = 0U;                                        ///< The resource array size (must be set to 1 for non-array resources). The default is 0.

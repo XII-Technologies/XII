@@ -7,7 +7,6 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALInputLayoutVulkan final : public xiiGALInputLayout
 {
 public:
-
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;

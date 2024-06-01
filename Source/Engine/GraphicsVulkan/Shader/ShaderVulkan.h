@@ -8,7 +8,6 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALShaderVulkan final : public xiiGALShader
 {
 public:
-
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;

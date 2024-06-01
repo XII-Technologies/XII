@@ -54,7 +54,7 @@ xiiResult xiiGALSwapChainNull::CreateBackBufferInternal(xiiGALDeviceNull* pDevic
   textureDescription.m_ClearValue.m_ClearColor               = xiiColor::Black;
   textureDescription.m_ClearValue.m_DepthStencil.m_fDepth    = 1.0f;
   textureDescription.m_ClearValue.m_DepthStencil.m_uiStencil = 0U;
-  textureDescription.m_uiImmediateContextMask                = XII_BIT(0);
+  textureDescription.m_uiCommandQueueMask                    = XII_BIT(0);
 
   textureDescription.m_pExisitingNativeObject = nullptr;
 

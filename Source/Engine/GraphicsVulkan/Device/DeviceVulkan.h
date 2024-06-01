@@ -107,7 +107,6 @@ protected:
   void FillFormatLookupTable();
 
 private:
-
   // 0 : Graphics Queue
   // 1 : Compute Queue
   // 2 : Transfer Queue

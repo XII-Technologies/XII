@@ -150,8 +150,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStateCreationDescription : publi
   xiiGALGraphicsPipelineDescription     m_GraphicsPipeline;                            ///< The graphics pipeline description, see xiiGALGraphicsPipelineDescription.
   xiiGALRayTracingPipelineDescription   m_RayTracingPipeline;                          ///< The ray tracing pipeline description, see xiiGALRayTracingPipelineDescription.
   xiiGALTilePipelineDescription         m_TilePipeline;                                ///< The tile pipeline description, see xiiGALTilePipelineDescription.
-  xiiUInt32                             m_uiNodeMask             = 0x0;                ///< Node mask.
-  xiiUInt64                             m_uiImmediateContextMask = XII_BIT(0);         ///< Defines which immediate contexts are allowed to execute commands that use this texture. The default is the main immediate context.
+  xiiUInt32                             m_uiNodeMask         = 0x0;                    ///< Node mask.
+  xiiUInt64                             m_uiCommandQueueMask = XII_BIT(0);             ///< Defines which immediate contexts are allowed to execute commands that use this texture. The default is the main immediate context.
                                                                                        ///< Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
 
   /// \brief Returns true if this pipeline state is a graphics pipeline.

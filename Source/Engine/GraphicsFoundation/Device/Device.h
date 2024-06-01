@@ -292,7 +292,7 @@ public:
   ///
   /// \note The method blocks the execution of the calling thread until the GPU is idle.
   ///
-  /// \remarks The method does not flush immediate contexts, so it will only wait for commands that have been previously submitted for execution. An application should explicitly flush
+  /// \remarks The method does not flush command queues, so it will only wait for commands that have been previously submitted for execution. An application should explicitly flush
   ///          the contexts using xiiGALCommandList::Flush() if it needs to make sure all recorded commands are complete when the method returns.
   void WaitIdle();
 

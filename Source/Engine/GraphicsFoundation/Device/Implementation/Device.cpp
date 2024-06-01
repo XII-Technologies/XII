@@ -768,7 +768,7 @@ xiiGALBufferHandle xiiGALDevice::CreateBuffer(const xiiGALBufferCreationDescript
       return xiiGALBufferHandle();
   }
 
-  if (description.m_ResourceUsage == xiiGALResourceUsage::Dynamic && xiiMath::CountBits(description.m_uiImmediateContextMask) > 1U)
+  if (description.m_ResourceUsage == xiiGALResourceUsage::Dynamic && xiiMath::CountBits(description.m_uiCommandQueueMask) > 1U)
   {
     const bool bNeedsBackingResource = (description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess) || description.m_Mode == xiiGALBufferMode::Formatted);
     XII_VERIFY_BUFFER(!bNeedsBackingResource, "xiiGALResourceUsage::Dynamic buffers that use the Unordered Access flag or Formatted mode requires an internal backing resource. "
@@ -1064,7 +1064,7 @@ xiiGALTextureHandle xiiGALDevice::CreateTexture(const xiiGALTextureCreationDescr
     XII_VERIFY_TEXTURE(false, "xiiGALResourceUsage::Unified textures are currently not supported.");
   }
 
-  if (description.m_Usage == xiiGALResourceUsage::Dynamic && xiiMath::CountBits(description.m_uiImmediateContextMask) > 1U)
+  if (description.m_Usage == xiiGALResourceUsage::Dynamic && xiiMath::CountBits(description.m_uiCommandQueueMask) > 1U)
   {
     // Dynamic textures always use a backing resource that requires implicit state transitions in map/unmap operations, which is not safe in multiple device contexts.
     XII_VERIFY_TEXTURE(false, "xiiGALResourceUsage::Dynamic textures may only be used in one immediate device context.");

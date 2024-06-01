@@ -124,9 +124,8 @@ xiiUInt32 xiiGALDescriptorHash::Hash(const xiiGALPipelineStateCreationDescriptio
   xiiHashStreamWriter32 writer;
 
   writer << description.m_PipelineType;
-  writer << description.m_hShader;
   writer << description.m_uiNodeMask;
-  writer << description.m_uiImmediateContextMask;
+  writer << description.m_uiCommandQueueMask;
 
   // Graphics pipeline state.
   switch (description.m_PipelineType)

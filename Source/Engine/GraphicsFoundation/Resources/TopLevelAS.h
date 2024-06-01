@@ -51,11 +51,11 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTopLevelASCreationDescription : public x
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt32                                 m_uiMaxInstanceCount     = 0U;                                 ///< The allocated size for the specified number of instances. The default is 0.
-  xiiBitflags<xiiGALRayTracingBuildASFlags> m_Flags                  = xiiGALRayTracingBuildASFlags::None; ///< The ray tracing build flags. The default is None.
-  xiiUInt64                                 m_uiCompactedSize        = 0U;                                 ///< The size returned when writing the TLAS compacted size, if the acceleration structure is going to be the target of a compacted copy command. The default is 0.
-  xiiUInt64                                 m_uiImmediateContextMask = XII_BIT(0);                         ///< Defines which immediate contexts are allowed to execute commands that use this top level acceleration structure. The default is the main immediate context.
-                                                                                                           ///< Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
+  xiiUInt32                                 m_uiMaxInstanceCount = 0U;                                 ///< The allocated size for the specified number of instances. The default is 0.
+  xiiBitflags<xiiGALRayTracingBuildASFlags> m_Flags              = xiiGALRayTracingBuildASFlags::None; ///< The ray tracing build flags. The default is None.
+  xiiUInt64                                 m_uiCompactedSize    = 0U;                                 ///< The size returned when writing the TLAS compacted size, if the acceleration structure is going to be the target of a compacted copy command. The default is 0.
+  xiiUInt64                                 m_uiCommandQueueMask = XII_BIT(0);                         ///< Defines which command queues are allowed to execute commands that use this top level acceleration structure. The default is the main command queue.
+                                                                                                       ///< Only specify the bits that indicate those command queues where the resource will be used, setting unnecessary bits will result in extra overhead.
 };
 
 /// \brief Interface that defines methods to manipulate a top level acceleration structure (TLAS) object.
