@@ -12,11 +12,35 @@
 #include <GraphicsD3D11/States/PipelineResourceSignatureD3D11.h>
 #include <GraphicsD3D11/States/RasterizerStateD3D11.h>
 
+struct ID3D11VertexShader;
+struct ID3D11PixelShader;
+struct ID3D11GeometryShader;
+struct ID3D11DomainShader;
+struct ID3D11HullShader;
+struct ID3D11ComputeShader;
+
 class XII_GRAPHICSD3D11_DLL xiiGALPipelineStateD3D11 final : public xiiGALPipelineState
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiGALPipelineStateD3D11, xiiGALPipelineState);
 
 public:
+  struct ShaderType
+  {
+    using StorageType = xiiUInt8;
+
+    enum Enum : StorageType
+    {
+      Vertex = 0U,
+      Pixel,
+      Compute,
+      Domain,
+      Hull,
+      Geometry,
+
+      ENUM_COUNT
+    };
+  };
+
   ID3D11BlendState*        GetD3D11BlendState() const;
   ID3D11RasterizerState*   GetD3D11RasterizerState() const;
   ID3D11DepthStencilState* GetD3D11DepthStencilState() const;
@@ -54,7 +78,12 @@ protected:
   virtual void ResetBoundResources() override final;
 
 protected:
-  xiiGALShaderD3D11*            m_pShaderD3D11            = nullptr;
+  xiiGALShaderD3D11*            m_pVertexShaderD3D11      = nullptr;
+  xiiGALShaderD3D11*            m_pPixelShaderD3D11       = nullptr;
+  xiiGALShaderD3D11*            m_pDomainShaderD3D11      = nullptr;
+  xiiGALShaderD3D11*            m_pHullShaderD3D11        = nullptr;
+  xiiGALShaderD3D11*            m_pGeometryShaderD3D11    = nullptr;
+  xiiGALShaderD3D11*            m_pComputeShaderD3D11     = nullptr;
   xiiGALBlendStateD3D11*        m_pBlendStateD3D11        = nullptr;
   xiiGALInputLayoutD3D11*       m_pInputLayoutD3D11       = nullptr;
   xiiGALRasterizerStateD3D11*   m_pRasterizerStateD3D11   = nullptr;
@@ -63,21 +92,19 @@ protected:
   xiiGALRenderPassD3D11*                m_pRenderPassD3D11                = nullptr;
   xiiGALPipelineResourceSignatureD3D11* m_pPipelineResourceSignatureD3D11 = nullptr;
 
-  ID3D11Buffer*         m_pBoundConstantBuffers[xiiGALShaderType::ENUM_COUNT][XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[xiiGALShaderType::ENUM_COUNT];
+  ID3D11Buffer*         m_pBoundConstantBuffers[ShaderType::ENUM_COUNT][XII_GAL_MAX_CONSTANT_BUFFER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundConstantBuffersRange[ShaderType::ENUM_COUNT];
 
-  xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pBoundShaderResourceViews[xiiGALShaderType::ENUM_COUNT] = {};
-  xiiHybridArray<xiiGALResource*, 16>           m_ResourcesForResourceViews[xiiGALShaderType::ENUM_COUNT];
-  xiiGAL::ModifiedRange                         m_BoundShaderResourceViewsRange[xiiGALShaderType::ENUM_COUNT];
+  xiiHybridArray<ID3D11ShaderResourceView*, 16> m_pBoundShaderResourceViews[ShaderType::ENUM_COUNT] = {};
+  xiiHybridArray<xiiGALResource*, 16>           m_ResourcesForResourceViews[ShaderType::ENUM_COUNT];
+  xiiGAL::ModifiedRange                         m_BoundShaderResourceViewsRange[ShaderType::ENUM_COUNT];
 
   xiiHybridArray<ID3D11UnorderedAccessView*, 16> m_BoundUnoderedAccessViews;
   xiiHybridArray<xiiGALResource*, 16>            m_ResourcesForUnorderedAccessViews;
   xiiGAL::ModifiedRange                          m_BoundUnoderedAccessViewsRange;
 
-  ID3D11SamplerState*   m_pBoundSamplerStates[xiiGALShaderType::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
-  xiiGAL::ModifiedRange m_BoundSamplerStatesRange[xiiGALShaderType::ENUM_COUNT];
-
-  ID3D11DeviceChild* m_pBoundShaders[xiiGALShaderType::ENUM_COUNT] = {};
+  ID3D11SamplerState*   m_pBoundSamplerStates[ShaderType::ENUM_COUNT][XII_GAL_MAX_SAMPLER_COUNT] = {};
+  xiiGAL::ModifiedRange m_BoundSamplerStatesRange[ShaderType::ENUM_COUNT];
 };
 
 #include <GraphicsD3D11/States/Implementation/PipelineStateD3D11_inl.h>

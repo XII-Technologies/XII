@@ -24,10 +24,7 @@ xiiGALPipelineStateD3D12::~xiiGALPipelineStateD3D12() = default;
 
 xiiResult xiiGALPipelineStateD3D12::InitPlatform()
 {
-  xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
-
-  xiiGALShaderD3D12*                    pShaderD3D12                    = static_cast<xiiGALShaderD3D12*>(pDeviceD3D12->GetShader(m_Description.m_hShader));
-  xiiGALPipelineResourceSignatureD3D12* pPipelineResourceSignatureD3D12 = static_cast<xiiGALPipelineResourceSignatureD3D12*>(pDeviceD3D12->GetPipelineResourceSignature(m_Description.m_hPipelineResourceSignature));
+  // xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
 
   return XII_SUCCESS;
 }

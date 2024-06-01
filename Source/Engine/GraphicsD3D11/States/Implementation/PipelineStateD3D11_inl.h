@@ -21,30 +21,30 @@ XII_ALWAYS_INLINE ID3D11InputLayout* xiiGALPipelineStateD3D11::GetD3D11InputLayo
 
 XII_ALWAYS_INLINE ID3D11VertexShader* xiiGALPipelineStateD3D11::GetD3D11VertexShader() const
 {
-  return m_pShaderD3D11->GetVertexShader();
+  return m_pVertexShaderD3D11 != nullptr ? static_cast<ID3D11VertexShader*>(m_pVertexShaderD3D11->GetD3D11Shader()) : nullptr;
 }
 
 XII_ALWAYS_INLINE ID3D11PixelShader* xiiGALPipelineStateD3D11::GetD3D11PixelShader() const
 {
-  return m_pShaderD3D11->GetPixelShader();
+  return m_pPixelShaderD3D11 != nullptr ? static_cast<ID3D11PixelShader*>(m_pPixelShaderD3D11->GetD3D11Shader()) : nullptr;
 }
 
 XII_ALWAYS_INLINE ID3D11GeometryShader* xiiGALPipelineStateD3D11::GetD3D11GeometryShader() const
 {
-  return m_pShaderD3D11->GetGeometryShader();
+  return m_pGeometryShaderD3D11 != nullptr ? static_cast<ID3D11GeometryShader*>(m_pGeometryShaderD3D11->GetD3D11Shader()) : nullptr;
 }
 
 XII_ALWAYS_INLINE ID3D11DomainShader* xiiGALPipelineStateD3D11::GetD3D11DomainShader() const
 {
-  return m_pShaderD3D11->GetDomainShader();
+  return m_pDomainShaderD3D11 != nullptr ? static_cast<ID3D11DomainShader*>(m_pDomainShaderD3D11->GetD3D11Shader()) : nullptr;
 }
 
 XII_ALWAYS_INLINE ID3D11HullShader* xiiGALPipelineStateD3D11::GetD3D11HullShader() const
 {
-  return m_pShaderD3D11->GetHullShader();
+  return m_pHullShaderD3D11 != nullptr ? static_cast<ID3D11HullShader*>(m_pHullShaderD3D11->GetD3D11Shader()) : nullptr;
 }
 
 XII_ALWAYS_INLINE ID3D11ComputeShader* xiiGALPipelineStateD3D11::GetD3D11ComputeShader() const
 {
-  return m_pShaderD3D11->GetComputeShader();
+  return m_pComputeShaderD3D11 != nullptr ? static_cast<ID3D11ComputeShader*>(m_pComputeShaderD3D11->GetD3D11Shader()) : nullptr;
 }
