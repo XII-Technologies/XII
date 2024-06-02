@@ -177,6 +177,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderType
     AllMesh       = Amplification | Mesh | Pixel,                                                     ///< All mesh shading pipeline stages.
     AllRayTracing = RayGeneration | RayMiss | RayClosestHit | RayAnyHit | RayIntersection | Callable, ///< All ray-tracing shader stages.
 
+    All = Vertex | Pixel | Geometry | Hull | Domain | Compute | Amplification | Mesh | RayGeneration | RayMiss | RayClosestHit | RayAnyHit | RayIntersection | Callable | Tile, ///< All shader stages.
+
     Default = Unknown
   };
 
