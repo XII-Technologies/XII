@@ -723,25 +723,25 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 
 // clang-format on
 
-// static
-xiiUInt32 xiiGALShaderType::GetStageIndex(xiiGALShaderType::Enum stage)
-{
-  xiiStaticBitfield32 shaderTypeBitfield = xiiStaticBitfield32::FromMask(stage);
-
-  XII_ASSERT_DEV(shaderTypeBitfield.GetNumBitsSet() <= 1U, "There are more than one bits set.");
-
-  const auto iterator = shaderTypeBitfield.GetIterator();
-  if (iterator.IsValid())
+  // static
+  xiiUInt32 xiiGALShaderType::GetStageIndex(xiiGALShaderType::Enum stage)
   {
-    return iterator.Value();
+    xiiStaticBitfield32 shaderTypeBitfield = xiiStaticBitfield32::FromMask(stage);
+
+    XII_ASSERT_DEV(shaderTypeBitfield.GetNumBitsSet() <= 1U, "There are more than one bits set.");
+
+    const auto iterator = shaderTypeBitfield.GetIterator();
+    if (iterator.IsValid())
+    {
+      return iterator.Value();
+    }
+    return xiiInvalidIndex;
   }
-  return xiiInvalidIndex;
-}
 
-// static
-xiiGALShaderType::Enum xiiGALShaderType::GetStageFlag(xiiUInt32 uiIndex)
-{
-  XII_ASSERT_DEV(uiIndex >= 0 && uiIndex < xiiGALShaderType::ENUM_COUNT, "The shader type index it out of range. Expeceted [0, {}), but got {}", xiiGALShaderType::ENUM_COUNT, uiIndex);
+  // static
+  xiiGALShaderType::Enum xiiGALShaderType::GetStageFlag(xiiUInt32 uiIndex)
+  {
+    XII_ASSERT_DEV(uiIndex >= 0 && uiIndex < xiiGALShaderType::ENUM_COUNT, "The shader type index it out of range. Expeceted [0, {}), but got {}", xiiGALShaderType::ENUM_COUNT, uiIndex);
 
-  return static_cast<xiiGALShaderType::Enum>(XII_BIT(uiIndex));
-}
+    return static_cast<xiiGALShaderType::Enum>(XII_BIT(uiIndex));
+  }
