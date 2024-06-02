@@ -766,7 +766,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
 
     if ((bForce || bRebuildInputLayout) && !m_bCompute)
     {
-      if (m_hActiveGALShader.IsInvalidated())
+      if (m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)].IsInvalidated())
         return XII_FAILURE;
 
       auto pCommandList = GetGraphicsCommandList();
@@ -779,7 +779,7 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
           pCommandList->SetIndexBuffer(m_hIndexBuffer);
       }
 
-      if (m_pInputLayoutInfo != nullptr && BuildInputLayout(m_hActiveGALShader, *m_pInputLayoutInfo, m_hInputLayout).Failed())
+      if (m_pInputLayoutInfo != nullptr && BuildInputLayout(m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)], *m_pInputLayoutInfo, m_hInputLayout).Failed())
         return XII_FAILURE;
 
       // If there is a vertex buffer we need a valid vertex declaration as well.
@@ -804,7 +804,21 @@ xiiResult xiiRenderContext::ApplyContextStates(bool bForce)
       xiiGALPipelineStateCreationDescription pipelineDescription;
       pipelineDescription.m_PipelineType               = m_bCompute ? xiiGALPipelineType::Compute : xiiGALPipelineType::Graphics;
       pipelineDescription.m_hPipelineResourceSignature = (pShaderPermutation != nullptr) ? pShaderPermutation->GetPipelineResourceSignature() : xiiGALPipelineResourceSignatureHandle();
-      pipelineDescription.m_hShader                    = m_hActiveGALShader;
+
+      if (pipelineDescription.IsAnyGraphicsPipeline())
+      {
+        pipelineDescription.m_GraphicsPipeline.m_hVertexShader        = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)];
+        pipelineDescription.m_GraphicsPipeline.m_hPixelShader         = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Pixel)];
+        pipelineDescription.m_GraphicsPipeline.m_hDomainShader        = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Domain)];
+        pipelineDescription.m_GraphicsPipeline.m_hHullShader          = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Hull)];
+        pipelineDescription.m_GraphicsPipeline.m_hGeometryShader      = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Geometry)];
+        pipelineDescription.m_GraphicsPipeline.m_hAmplificationShader = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Amplification)];
+        pipelineDescription.m_GraphicsPipeline.m_hMeshShader          = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Mesh)];
+      }
+      else if (pipelineDescription.IsComputePipeline())
+      {
+        pipelineDescription.m_ComputePipeline.hComputeShader = m_hActiveGALShaders[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Compute)];
+      }
 
       if (!m_bCompute && (pShaderPermutation != nullptr))
       {
@@ -891,7 +905,10 @@ void xiiRenderContext::ResetContextState()
   m_pCommandList->Reset();
 
   m_hActiveShader.Invalidate();
-  m_hActiveGALShader.Invalidate();
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hActiveGALShaders); ++i)
+  {
+    m_hActiveGALShaders[i].Invalidate();
+  }
 
   m_PermutationVariables.Clear();
   m_hNewMaterial.Invalidate();
@@ -1080,8 +1097,13 @@ void xiiRenderContext::LoadBuiltinShader(xiiShaderUtilities::xiiBuiltinShaderTyp
 
   XII_ASSERT_DEV(pShaderPermutation->IsShaderValid(), "Builtin shader permutation shader is invalid!");
 
-  out_shader.m_hActiveGALShader = pShaderPermutation->GetGALShader();
-  XII_ASSERT_DEV(!out_shader.m_hActiveGALShader.IsInvalidated(), "Invalid GAL Shader handle.");
+  xiiStaticBitfield32 shaderBitfield = xiiStaticBitfield32::FromMask(pShaderPermutation->GetActiveShaderStages().GetValue());
+  for (xiiUInt32 uiStageBitIndex : shaderBitfield)
+  {
+    out_shader.m_hActiveGALShaders[uiStageBitIndex] = pShaderPermutation->GetGALShader(xiiGALShaderType::GetStageFlag(uiStageBitIndex));
+
+    XII_ASSERT_DEV(!out_shader.m_hActiveGALShaders[uiStageBitIndex].IsInvalidated(), "Invalid GAL {} Shader handle.", xiiGALShaderType::Names[uiStageBitIndex]);
+  }
 
   out_shader.m_hBlendState        = pShaderPermutation->GetBlendState();
   out_shader.m_hDepthStencilState = pShaderPermutation->GetDepthStencilState();
@@ -1397,10 +1419,10 @@ void xiiRenderContext::EndRenderPass()
 }
 
 // static
-xiiResult xiiRenderContext::BuildInputLayout(xiiGALShaderHandle hShader, const xiiInputLayoutInfo& decl, xiiGALInputLayoutHandle& out_Declaration)
+xiiResult xiiRenderContext::BuildInputLayout(xiiGALShaderHandle hVertexShader, const xiiInputLayoutInfo& decl, xiiGALInputLayoutHandle& out_Declaration)
 {
   ShaderVertexDecl svd;
-  svd.m_hShader           = hShader;
+  svd.m_hShader           = hVertexShader;
   svd.m_uiInputLayoutHash = decl.m_uiHash;
 
   bool bExisted = false;
@@ -1408,12 +1430,12 @@ xiiResult xiiRenderContext::BuildInputLayout(xiiGALShaderHandle hShader, const x
 
   if (!bExisted)
   {
-    const xiiGALShader* pShader = xiiGALDevice::GetDefaultDevice()->GetShader(hShader);
+    const xiiGALShader* pShader = xiiGALDevice::GetDefaultDevice()->GetShader(hVertexShader);
 
-    auto pBytecode = pShader->GetDescription().m_ByteCodes[xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex)];
+    auto pBytecode = pShader->GetDescription().m_ByteCode;
 
     xiiGALInputLayoutCreationDescription vd;
-    vd.m_hShader = hShader;
+    vd.m_hVertexShader = hVertexShader;
 
     for (xiiUInt32 slot = 0; slot < decl.m_VertexStreams.GetCount(); ++slot)
     {
@@ -1499,7 +1521,10 @@ void xiiRenderContext::BindShaderInternal(const xiiShaderResourceHandle& hShader
 
 xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
 {
-  m_hActiveGALShader.Invalidate();
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hActiveGALShaders); ++i)
+  {
+    m_hActiveGALShaders[i].Invalidate();
+  }
 
   m_StateFlags.Add(xiiRenderContextFlags::TextureBindingChanged | xiiRenderContextFlags::SamplerBindingChanged | xiiRenderContextFlags::BufferBindingChanged | xiiRenderContextFlags::ConstantBufferBindingChanged);
 
@@ -1519,8 +1544,14 @@ xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
     return nullptr;
   }
 
-  m_hActiveGALShader = pShaderPermutation->GetGALShader();
-  XII_ASSERT_DEV(!m_hActiveGALShader.IsInvalidated(), "Invalid GAL Shader handle.");
+
+  xiiStaticBitfield32 shaderBitfield = xiiStaticBitfield32::FromMask(pShaderPermutation->GetActiveShaderStages().GetValue());
+  for (xiiUInt32 uiStageBitIndex : shaderBitfield)
+  {
+    m_hActiveGALShaders[uiStageBitIndex] = pShaderPermutation->GetGALShader(xiiGALShaderType::GetStageFlag(uiStageBitIndex));
+
+    XII_ASSERT_DEV(!m_hActiveGALShaders[uiStageBitIndex].IsInvalidated(), "Invalid GAL {} Shader handle.", xiiGALShaderType::Names[uiStageBitIndex]);
+  }
 
   return pShaderPermutation;
 }

@@ -299,7 +299,7 @@ private:
   Statistics                         m_Statistics;
   xiiBitflags<xiiRenderContextFlags> m_StateFlags;
   xiiShaderResourceHandle            m_hActiveShader;
-  xiiGALShaderHandle                 m_hActiveGALShader;
+  xiiGALShaderHandle                 m_hActiveGALShaders[xiiGALShaderType::ENUM_COUNT];
 
   xiiHashTable<xiiHashedString, xiiHashedString> m_PermutationVariables;
   xiiMaterialResourceHandle                      m_hNewMaterial;
@@ -381,7 +381,7 @@ private:
     }
   };
 
-  static xiiResult BuildInputLayout(xiiGALShaderHandle hShader, const xiiInputLayoutInfo& decl, xiiGALInputLayoutHandle& out_Declaration);
+  static xiiResult BuildInputLayout(xiiGALShaderHandle hVertexShader, const xiiInputLayoutInfo& decl, xiiGALInputLayoutHandle& out_Declaration);
 
   static xiiMap<ShaderVertexDecl, xiiGALInputLayoutHandle> s_GALInputLayouts;
 

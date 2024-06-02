@@ -35,10 +35,13 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UnloadData(Unload WhatToUnload
 
   auto pDevice = xiiGALDevice::GetDefaultDevice();
 
-  if (!m_hShader.IsInvalidated())
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hShaders); ++i)
   {
-    pDevice->DestroyShader(m_hShader);
-    m_hShader.Invalidate();
+    if (!m_hShaders[i].IsInvalidated())
+    {
+      pDevice->DestroyShader(m_hShaders[i]);
+      m_hShaders[i].Invalidate();
+    }
   }
 
   if (!m_hPipelineResourceSignature.IsInvalidated())
@@ -109,8 +112,6 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
     m_hRasterizerState   = pDevice->CreateRasterizerState(PermutationBinary.m_StateDescriptor.m_RasterizerDesc);
   }
 
-  xiiGALShaderCreationDescription ShaderDesc;
-
   xiiGALPipelineResourceSignatureCreationDescription resourceSignatureDescription;
   resourceSignatureDescription.m_bUseCombinedTextureSamplers = true;
   resourceSignatureDescription.m_sCombinedSamplerSuffix      = "_AutoSampler";
@@ -137,7 +138,20 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
 
     XII_ASSERT_DEV(pStageBin->m_pGALByteCode->m_ShaderStage == xiiGALShaderType::GetStageFlag(stage), "Invalid shader stage! Expected stage '{0}', but loaded data is for stage '{1}'", xiiGALShaderType::Names[stage], xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)pStageBin->m_pGALByteCode->m_ShaderStage.GetValue())]);
 
-    ShaderDesc.m_ByteCodes[stage] = pStageBin->m_pGALByteCode;
+    xiiGALShaderCreationDescription shaderDescription;
+    shaderDescription.m_ShaderType = xiiGALShaderType::GetStageFlag(stage);
+    shaderDescription.m_ByteCode   = pStageBin->m_pGALByteCode;
+
+    m_hShaders[stage] = pDevice->CreateShader(shaderDescription);
+
+    if (m_hShaders[stage].IsInvalidated())
+    {
+      xiiLog::Error("Shader Permutation '{0}': Shader program creation for {1} shader failed.", GetResourceID(), xiiGALShaderType::Names[stage]);
+      return res;
+    }
+    pDevice->GetShader(m_hShaders[stage])->SetDebugName(GetResourceID());
+
+    m_ActiveShaderStages |= xiiGALShaderType::GetStageFlag(stage);
 
     uiGPUMem += pStageBin->m_pGALByteCode->m_ByteCode.GetCount();
 
@@ -155,16 +169,6 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
       resourceSignature.m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None;
     }
   }
-
-  m_hShader = pDevice->CreateShader(ShaderDesc);
-
-  if (m_hShader.IsInvalidated())
-  {
-    xiiLog::Error("Shader Permutation '{0}': Shader program creation failed.", GetResourceID());
-    return res;
-  }
-
-  pDevice->GetShader(m_hShader)->SetDebugName(GetResourceID());
 
   m_hPipelineResourceSignature = pDevice->CreatePipelineResourceSignature(resourceSignatureDescription);
 

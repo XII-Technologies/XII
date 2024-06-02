@@ -20,7 +20,7 @@ public:
 
   struct xiiBuiltinShader
   {
-    xiiGALShaderHandle            m_hActiveGALShader;
+    xiiGALShaderHandle            m_hActiveGALShaders[xiiGALShaderType::ENUM_COUNT];
     xiiGALBlendStateHandle        m_hBlendState;
     xiiGALDepthStencilStateHandle m_hDepthStencilState;
     xiiGALRasterizerStateHandle   m_hRasterizerState;
