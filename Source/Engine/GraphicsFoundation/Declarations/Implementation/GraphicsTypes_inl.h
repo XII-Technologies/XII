@@ -30,6 +30,88 @@ XII_ALWAYS_INLINE xiiUInt32 xiiGALValueType::GetSize(const xiiGALValueType::Enum
 }
 
 // static
+XII_ALWAYS_INLINE xiiUInt32 xiiGALShaderType::GetStageIndex(xiiGALShaderType::Enum stage)
+{
+  switch (stage)
+  {
+    case xiiGALShaderType::Vertex:
+      return 0U;
+    case xiiGALShaderType::Pixel:
+      return 1U;
+    case xiiGALShaderType::Geometry:
+      return 2U;
+    case xiiGALShaderType::Hull:
+      return 3U;
+    case xiiGALShaderType::Domain:
+      return 4U;
+    case xiiGALShaderType::Compute:
+      return 5U;
+    case xiiGALShaderType::Amplification:
+      return 6U;
+    case xiiGALShaderType::Mesh:
+      return 7U;
+    case xiiGALShaderType::RayGeneration:
+      return 8U;
+    case xiiGALShaderType::RayMiss:
+      return 9U;
+    case xiiGALShaderType::RayClosestHit:
+      return 10U;
+    case xiiGALShaderType::RayAnyHit:
+      return 11U;
+    case xiiGALShaderType::RayIntersection:
+      return 12U;
+    case xiiGALShaderType::Callable:
+      return 13U;
+    case xiiGALShaderType::Tile:
+      return 14U;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiInvalidIndex;
+}
+
+// static
+XII_ALWAYS_INLINE xiiGALShaderType::Enum xiiGALShaderType::GetStageFlag(xiiUInt32 uiIndex)
+{
+  switch (uiIndex)
+  {
+    case 0U:
+      return xiiGALShaderType::Vertex;
+    case 1U:
+      return xiiGALShaderType::Pixel;
+    case 2U:
+      return xiiGALShaderType::Geometry;
+    case 3U:
+      return xiiGALShaderType::Hull;
+    case 4U:
+      return xiiGALShaderType::Domain;
+    case 5U:
+      return xiiGALShaderType::Compute;
+    case 6U:
+      return xiiGALShaderType::Amplification;
+    case 7U:
+      return xiiGALShaderType::Mesh;
+    case 8U:
+      return xiiGALShaderType::RayGeneration;
+    case 9U:
+      return xiiGALShaderType::RayMiss;
+    case 10U:
+      return xiiGALShaderType::RayClosestHit;
+    case 11U:
+      return xiiGALShaderType::RayAnyHit;
+    case 12U:
+      return xiiGALShaderType::RayIntersection;
+    case 13U:
+      return xiiGALShaderType::Callable;
+    case 14U:
+      return xiiGALShaderType::Tile;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return xiiGALShaderType::Unknown;
+}
+
+// static
 XII_FORCE_INLINE bool xiiGALTextureFormat::IsDepthFormat(xiiGALTextureFormat::Enum format)
 {
   return format == D16UNormalized || format == D24UNormalizedS8UInt || format == D32Float || format == D32FloatS8X24UInt;

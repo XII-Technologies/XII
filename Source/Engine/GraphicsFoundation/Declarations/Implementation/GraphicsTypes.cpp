@@ -86,6 +86,24 @@ XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShaderType, 1)
   XII_BITFLAGS_CONSTANT(xiiGALShaderType::AllRayTracing),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
+const char* xiiGALShaderType::Names[ENUM_COUNT] = {
+  "Vertex",
+  "Pixel",
+  "Geometry",
+  "Hull",
+  "Domain",
+  "Compute",
+  "Amplification",
+  "Mesh",
+  "RayGeneration",
+  "RayMiss",
+  "RayClosestHit",
+  "RayAnyHit",
+  "RayIntersection",
+  "Callable",
+  "Tile",
+};
+
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALBindFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALBindFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALBindFlags::VertexBuffer),
