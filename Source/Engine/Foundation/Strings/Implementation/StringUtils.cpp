@@ -192,26 +192,26 @@ xiiUInt32 xiiStringUtils::ToLowerString(char* pString, const char* pStringEnd)
 }
 
 // Macro to Handle nullptr-pointer strings
-#define XII_STRINGCOMPARE_HANDLE_NULL_PTRS(szString1, szString2, ret_equal, ret_str2_larger, ret_str1_larger, szString1End, szString2End)                    \
-  if (szString1 == szString2) /* Handles the case that both are nullptr and that both are actually the same string */                                        \
-  {                                                                                                                                                          \
+#define XII_STRINGCOMPARE_HANDLE_NULL_PTRS(szString1, szString2, ret_equal, ret_str2_larger, ret_str1_larger, szString1End, szString2End)                   \
+  if (szString1 == szString2) /* Handles the case that both are nullptr and that both are actually the same string */                                       \
+  {                                                                                                                                                         \
     if ((szString1 == nullptr) || (szString1End == szString2End)) /* if both are nullptr, ignore the end pointer, otherwise the strings                   \
                                                                      are equal, if both end pointers are also the same */ \
-      return (ret_equal);                                                                                                                                    \
-  }                                                                                                                                                          \
-  if (szString1 == nullptr)                                                                                                                                  \
-  {                                                                                                                                                          \
-    if (szString2[0] == '\0') /* if String1 is nullptr, String2 is never nullptr, otherwise the previous IF would have returned already */                   \
-      return (ret_equal);                                                                                                                                    \
-    else                                                                                                                                                     \
-      return (ret_str2_larger);                                                                                                                              \
-  }                                                                                                                                                          \
-  if (szString2 == nullptr)                                                                                                                                  \
-  {                                                                                                                                                          \
-    if (szString1[0] == '\0') /* if String2 is nullptr, String1 is never nullptr, otherwise the previous IF would have returned already */                   \
-      return (ret_equal);                                                                                                                                    \
-    else                                                                                                                                                     \
-      return (ret_str1_larger);                                                                                                                              \
+      return (ret_equal);                                                                                                                                   \
+  }                                                                                                                                                         \
+  if (szString1 == nullptr)                                                                                                                                 \
+  {                                                                                                                                                         \
+    if (szString2[0] == '\0') /* if String1 is nullptr, String2 is never nullptr, otherwise the previous IF would have returned already */                  \
+      return (ret_equal);                                                                                                                                   \
+    else                                                                                                                                                    \
+      return (ret_str2_larger);                                                                                                                             \
+  }                                                                                                                                                         \
+  if (szString2 == nullptr)                                                                                                                                 \
+  {                                                                                                                                                         \
+    if (szString1[0] == '\0') /* if String2 is nullptr, String1 is never nullptr, otherwise the previous IF would have returned already */                  \
+      return (ret_equal);                                                                                                                                   \
+    else                                                                                                                                                    \
+      return (ret_str1_larger);                                                                                                                             \
   }
 
 #define ToSignedInt(c) ((xiiInt32)((unsigned char)c))
