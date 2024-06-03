@@ -44,7 +44,7 @@ private:
   xiiSharedPtr<xiiGALShaderByteCode> m_pGALByteCode;
 
 private: // statics
-  static xiiShaderStageBinary* LoadStageBinary(xiiBitflags<xiiGALShaderType> Stage, xiiUInt32 uiHash);
+  static xiiShaderStageBinary* LoadStageBinary(xiiGALShaderType::Enum Stage, xiiUInt32 uiHash);
 
   static void OnEngineShutdown();
 

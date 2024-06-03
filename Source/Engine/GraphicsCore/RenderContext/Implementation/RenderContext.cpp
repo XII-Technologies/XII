@@ -1432,8 +1432,6 @@ xiiResult xiiRenderContext::BuildInputLayout(xiiGALShaderHandle hVertexShader, c
   {
     const xiiGALShader* pShader = xiiGALDevice::GetDefaultDevice()->GetShader(hVertexShader);
 
-    auto pBytecode = pShader->GetDescription().m_ByteCode;
-
     xiiGALInputLayoutCreationDescription vd;
     vd.m_hVertexShader = hVertexShader;
 
