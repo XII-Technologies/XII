@@ -159,15 +159,6 @@ void XII_IGNORE_UNUSED(const T&)
 {
 }
 
-
-// Math Debug checks
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-
-#  undef XII_MATH_CHECK_FOR_NAN
-#  define XII_MATH_CHECK_FOR_NAN XII_ON
-
-#endif
-
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  define XII_DECL_EXPORT        __declspec(dllexport)
 #  define XII_DECL_IMPORT        __declspec(dllimport)

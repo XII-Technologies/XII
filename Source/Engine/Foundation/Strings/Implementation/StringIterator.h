@@ -47,7 +47,7 @@ struct xiiStringIterator
 
     if (m_pCurPtr < m_pEndPtr)
     {
-      xiiUnicodeUtils::MoveToNextUtf8(m_pCurPtr);
+      xiiUnicodeUtils::MoveToNextUtf8(m_pCurPtr).AssertSuccess();
     }
 
     return static_cast<xiiUInt32>(m_pCurPtr - pPrevElement);
@@ -58,7 +58,7 @@ struct xiiStringIterator
   {
     if (m_pCurPtr < m_pEndPtr)
     {
-      xiiUnicodeUtils::MoveToNextUtf8(m_pCurPtr);
+      xiiUnicodeUtils::MoveToNextUtf8(m_pCurPtr).AssertSuccess();
     }
 
     return *this;
@@ -69,7 +69,7 @@ struct xiiStringIterator
   {
     if (m_pStartPtr < m_pCurPtr)
     {
-      xiiUnicodeUtils::MoveToPriorUtf8(m_pCurPtr);
+      xiiUnicodeUtils::MoveToPriorUtf8(m_pCurPtr, m_pStartPtr).AssertSuccess();
     }
 
     return *this;
@@ -182,7 +182,7 @@ struct xiiStringReverseIterator
     }
     else if (m_pCurPtr == m_pEndPtr)
     {
-      xiiUnicodeUtils::MoveToPriorUtf8(m_pCurPtr);
+      xiiUnicodeUtils::MoveToPriorUtf8(m_pCurPtr, m_pStartPtr).AssertSuccess();
     }
   }
 
@@ -205,7 +205,7 @@ struct xiiStringReverseIterator
   XII_FORCE_INLINE xiiStringReverseIterator& operator++() // [tested]
   {
     if (m_pCurPtr != nullptr && m_pStartPtr < m_pCurPtr)
-      xiiUnicodeUtils::MoveToPriorUtf8(m_pCurPtr);
+      xiiUnicodeUtils::MoveToPriorUtf8(m_pCurPtr, m_pStartPtr).AssertSuccess();
     else
       m_pCurPtr = nullptr;
 
@@ -218,7 +218,7 @@ struct xiiStringReverseIterator
     if (m_pCurPtr != nullptr)
     {
       const char* szOldPos = m_pCurPtr;
-      xiiUnicodeUtils::MoveToNextUtf8(m_pCurPtr);
+      xiiUnicodeUtils::MoveToNextUtf8(m_pCurPtr).AssertSuccess();
 
       if (m_pCurPtr == m_pEndPtr)
         m_pCurPtr = szOldPos;

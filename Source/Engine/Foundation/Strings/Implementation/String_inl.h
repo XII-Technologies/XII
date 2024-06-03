@@ -49,8 +49,7 @@ template <xiiUInt16 Size>
 void xiiHybridStringBase<Size>::Clear()
 {
   m_Data.SetCountUninitialized(1);
-  m_Data[0]          = '\0';
-  m_uiCharacterCount = 0;
+  m_Data[0] = '\0';
 }
 
 template <xiiUInt16 Size>
@@ -71,14 +70,13 @@ XII_ALWAYS_INLINE xiiUInt32 xiiHybridStringBase<Size>::GetElementCount() const
 template <xiiUInt16 Size>
 XII_ALWAYS_INLINE xiiUInt32 xiiHybridStringBase<Size>::GetCharacterCount() const
 {
-  return m_uiCharacterCount;
+  return xiiStringUtils::GetCharacterCount(GetData());
 }
 
 template <xiiUInt16 Size>
 void xiiHybridStringBase<Size>::operator=(const char* szString)
 {
-  xiiUInt32 uiElementCount = 0;
-  xiiStringUtils::GetCharacterAndElementCount(szString, m_uiCharacterCount, uiElementCount);
+  xiiUInt32 uiElementCount = xiiStringUtils::GetStringElementCount(szString);
 
   if (szString + uiElementCount < m_Data.GetData() || szString >= m_Data.GetData() + m_Data.GetCount())
   {
@@ -100,8 +98,7 @@ void xiiHybridStringBase<Size>::operator=(const xiiHybridStringBase& rhs)
   if (this == &rhs)
     return;
 
-  m_uiCharacterCount = rhs.m_uiCharacterCount;
-  m_Data             = rhs.m_Data;
+  m_Data = rhs.m_Data;
 }
 
 template <xiiUInt16 Size>
@@ -110,8 +107,7 @@ void xiiHybridStringBase<Size>::operator=(xiiHybridStringBase&& rhs)
   if (this == &rhs)
     return;
 
-  m_uiCharacterCount = rhs.m_uiCharacterCount;
-  m_Data             = std::move(rhs.m_Data);
+  m_Data = std::move(rhs.m_Data);
 }
 
 template <xiiUInt16 Size>
@@ -128,19 +124,17 @@ void xiiHybridStringBase<Size>::operator=(const xiiStringView& rhs)
 
   m_Data.SetCountUninitialized(rhs.GetElementCount() + 1);
   xiiStringUtils::Copy(&m_Data[0], m_Data.GetCount(), rhs.GetStartPointer(), rhs.GetEndPointer());
-  m_uiCharacterCount = xiiStringUtils::GetCharacterCount(GetData());
 }
 
 template <xiiUInt16 Size>
 xiiStringView xiiHybridStringBase<Size>::GetSubString(xiiUInt32 uiFirstCharacter, xiiUInt32 uiNumCharacters) const
 {
-  XII_ASSERT_DEV(uiFirstCharacter + uiNumCharacters <= m_uiCharacterCount, "The string only has {0} characters, cannot get a sub-string up to character {1}.", m_uiCharacterCount, uiFirstCharacter + uiNumCharacters);
-
   const char* szStart = GetData();
-  xiiUnicodeUtils::MoveToNextUtf8(szStart, uiFirstCharacter);
+  if (xiiUnicodeUtils::MoveToNextUtf8(szStart, uiFirstCharacter).Failed())
+    return {}; // szStart was moved too far, the result is just an empty string
 
   const char* szEnd = szStart;
-  xiiUnicodeUtils::MoveToNextUtf8(szEnd, uiNumCharacters);
+  xiiUnicodeUtils::MoveToNextUtf8(szEnd, uiNumCharacters).IgnoreResult(); // if it fails, szEnd just points to the end of this string
 
   return xiiStringView(szStart, szEnd);
 }
@@ -154,8 +148,9 @@ xiiStringView xiiHybridStringBase<Size>::GetFirst(xiiUInt32 uiNumCharacters) con
 template <xiiUInt16 Size>
 xiiStringView xiiHybridStringBase<Size>::GetLast(xiiUInt32 uiNumCharacters) const
 {
-  XII_ASSERT_DEV(uiNumCharacters < m_uiCharacterCount, "The string only contains {0} characters, cannot return the last {1} characters.", m_uiCharacterCount, uiNumCharacters);
-  return GetSubString(m_uiCharacterCount - uiNumCharacters, uiNumCharacters);
+  const xiiUInt32 uiMaxCharacterCount = GetCharacterCount();
+  XII_ASSERT_DEV(uiNumCharacters < uiMaxCharacterCount, "The string only contains {0} characters, cannot return the last {1} characters.", uiMaxCharacterCount, uiNumCharacters);
+  return GetSubString(uiMaxCharacterCount - uiNumCharacters, uiNumCharacters);
 }
 
 
@@ -254,5 +249,65 @@ XII_ALWAYS_INLINE void xiiHybridString<Size, A>::operator=(const xiiStringView& 
 {
   xiiHybridStringBase<Size>::operator=(rhs);
 }
+
+#if XII_ENABLED(XII_INTEROP_STL_STRINGS)
+
+template <xiiUInt16 Size>
+xiiHybridStringBase<Size>::xiiHybridStringBase(const std::string_view& rhs, xiiAllocatorBase* pAllocator)
+{
+  *this = rhs;
+}
+
+template <xiiUInt16 Size>
+xiiHybridStringBase<Size>::xiiHybridStringBase(const std::string& rhs, xiiAllocatorBase* pAllocator)
+{
+  *this = rhs;
+}
+
+template <xiiUInt16 Size>
+void xiiHybridStringBase<Size>::operator=(const std::string_view& rhs)
+{
+  if (rhs.empty())
+  {
+    Clear();
+  }
+  else
+  {
+    m_Data.SetCountUninitialized(((xiiUInt32)rhs.size() + 1));
+    xiiStringUtils::Copy(&m_Data[0], m_Data.GetCount(), rhs.data(), rhs.data() + rhs.size());
+  }
+}
+
+template <xiiUInt16 Size>
+void xiiHybridStringBase<Size>::operator=(const std::string& rhs)
+{
+  *this = std::string_view(rhs);
+}
+
+template <xiiUInt16 Size, typename A>
+XII_ALWAYS_INLINE xiiHybridString<Size, A>::xiiHybridString(const std::string_view& rhs) :
+  xiiHybridStringBase<Size>(rhs, A::GetAllocator())
+{
+}
+
+template <xiiUInt16 Size, typename A>
+XII_ALWAYS_INLINE xiiHybridString<Size, A>::xiiHybridString(const std::string& rhs) :
+  xiiHybridStringBase<Size>(rhs, A::GetAllocator())
+{
+}
+
+template <xiiUInt16 Size, typename A>
+XII_ALWAYS_INLINE void xiiHybridString<Size, A>::operator=(const std::string_view& rhs)
+{
+  xiiHybridStringBase<Size>::operator=(rhs);
+}
+
+template <xiiUInt16 Size, typename A>
+XII_ALWAYS_INLINE void xiiHybridString<Size, A>::operator=(const std::string& rhs)
+{
+  xiiHybridStringBase<Size>::operator=(rhs);
+}
+
+#endif
 
 #include <Foundation/Strings/Implementation/AllStrings_inl.h>

@@ -9,7 +9,7 @@ struct xiiStringView;
 /// \brief Implements formating of strings with placeholders and formatting options.
 ///
 /// xiiFormatString can be used anywhere where a string should be formatable when passing it into a function.
-/// Good examples are xiiStringBuilder::Format() or xiiLog::Info().
+/// Good examples are xiiStringBuilder::SetFormat() or xiiLog::Info().
 ///
 /// A function taking a xiiFormatString can internally call xiiFormatString::GetText() to retrieve he formatted result.
 /// When calling such a function, one must wrap the parameter into 'xiiFmt' to enable formatting options, example:
@@ -44,7 +44,7 @@ struct xiiStringView;
 ///   xiiArgFileSize - for representing file sizes
 ///
 /// Example:
-///   xiiStringBuilder::Format("HEX: {}", xiiArgU(1337, 8 /*width*/, true /*pad with zeros*/, 16 /*base16*/, true/*upper case*/));
+///   xiiStringBuilder::SetFormat("HEX: {}", xiiArgU(1337, 8 /*width*/, true /*pad with zeros*/, 16 /*base16*/, true/*upper case*/));
 ///
 /// Arbitrary other types can support special formatting even without a xiiArgXY call. E.g. xiiTime and xiiAngle do special formatting.
 /// xiiArgXY calls are only necessary if formatting options are needed for a specific formatting should be enforced (e.g. xiiArgErrorCode

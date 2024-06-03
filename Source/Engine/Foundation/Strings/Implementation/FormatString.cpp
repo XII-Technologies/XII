@@ -9,7 +9,7 @@
 
 xiiFormatString::xiiFormatString(const xiiStringBuilder& s)
 {
-  m_sString = s.GetData();
+  m_sString = s.GetView();
 }
 
 const char* xiiFormatString::GetTextCStr(xiiStringBuilder& out_sString) const
@@ -269,7 +269,7 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiRational& ar
   }
 }
 
-xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiTime& arg)
+xiiStringView BuildString(char* pTmp, xiiUInt32 uiLength, const xiiTime& arg)
 {
   xiiUInt32 writepos = 0;
 
@@ -277,37 +277,37 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiTime& arg)
 
   if (fAbsSec < 0.000001)
   {
-    xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 5, writepos, arg.GetNanoseconds(), 1, false, 1, false, true);
-    // tmp[writepos++] = ' ';
-    szTmp[writepos++] = 'n';
-    szTmp[writepos++] = 's';
+    xiiStringUtils::OutputFormattedFloat(pTmp, uiLength - 5, writepos, arg.GetNanoseconds(), 1, false, 1, false, true);
+    // szTmp[writepos++] = ' ';
+    pTmp[writepos++] = 'n';
+    pTmp[writepos++] = 's';
   }
   else if (fAbsSec < 0.001)
   {
-    xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 5, writepos, arg.GetMicroseconds(), 1, false, 1, false, true);
+    xiiStringUtils::OutputFormattedFloat(pTmp, uiLength - 5, writepos, arg.GetMicroseconds(), 1, false, 1, false, true);
 
-    // tmp[writepos++] = ' ';
+    // szTmp[writepos++] = ' ';
     // Utf-8 representation of the microsecond (us) sign
-    szTmp[writepos++] = /*(char)0xC2;*/ -62;
-    szTmp[writepos++] = /*(char)0xB5;*/ -75;
-    szTmp[writepos++] = 's';
+    pTmp[writepos++] = /*(char)0xC2;*/ -62;
+    pTmp[writepos++] = /*(char)0xB5;*/ -75;
+    pTmp[writepos++] = 's';
   }
   else if (fAbsSec < 1.0)
   {
-    xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 5, writepos, arg.GetMilliseconds(), 1, false, 1, false, true);
+    xiiStringUtils::OutputFormattedFloat(pTmp, uiLength - 5, writepos, arg.GetMilliseconds(), 1, false, 1, false, true);
 
     // tmp[writepos++] = ' ';
-    szTmp[writepos++] = 'm';
-    szTmp[writepos++] = 's';
+    pTmp[writepos++] = 'm';
+    pTmp[writepos++] = 's';
   }
   else if (fAbsSec < 60.0)
   {
-    xiiStringUtils::OutputFormattedFloat(szTmp, uiLength - 5, writepos, arg.GetSeconds(), 1, false, 1, false, true);
+    xiiStringUtils::OutputFormattedFloat(pTmp, uiLength - 5, writepos, arg.GetSeconds(), 1, false, 1, false, true);
 
-    // tmp[writepos++] = ' ';
-    szTmp[writepos++] = 's';
-    szTmp[writepos++] = 'e';
-    szTmp[writepos++] = 'c';
+    // szTmp[writepos++] = ' ';
+    pTmp[writepos++] = 's';
+    pTmp[writepos++] = 'e';
+    pTmp[writepos++] = 'c';
   }
   else if (fAbsSec < 60.0 * 60.0)
   {
@@ -319,7 +319,7 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiTime& arg)
 
     const xiiInt32 iSec = static_cast<xiiInt32>(xiiMath::Trunc(tRem));
 
-    writepos = xiiStringUtils::snprintf(szTmp, uiLength, "%imin %isec", iMin, iSec);
+    writepos = xiiStringUtils::snprintf(pTmp, uiLength, "%imin %isec", iMin, iSec);
   }
   else
   {
@@ -334,11 +334,11 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiTime& arg)
 
     const xiiInt32 iSec = static_cast<xiiInt32>(xiiMath::Trunc(tRem));
 
-    writepos = xiiStringUtils::snprintf(szTmp, uiLength, "%ih %imin %isec", iHrs, iMin, iSec);
+    writepos = xiiStringUtils::snprintf(pTmp, uiLength, "%ih %imin %isec", iHrs, iMin, iSec);
   }
 
-  szTmp[writepos] = '\0';
-  return xiiStringView(szTmp, szTmp + writepos);
+  pTmp[writepos] = '\0';
+  return xiiStringView(pTmp, pTmp + writepos);
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgHumanReadable& arg)
@@ -387,8 +387,7 @@ xiiStringView xiiArgSensitive::BuildString_SensitiveUserData_Hash(char* szTmp, x
 
   if (!xiiStringUtils::IsNullOrEmpty(arg.m_szContext))
   {
-    xiiStringUtils::snprintf(
-      szTmp, uiLength, "sud:%s#%08x($%u)", arg.m_szContext, xiiHashingUtils::xxHash32(arg.m_sSensitiveInfo.GetStartPointer(), len), len);
+    xiiStringUtils::snprintf(szTmp, uiLength, "sud:%s#%08x($%u)", arg.m_szContext, xiiHashingUtils::xxHash32(arg.m_sSensitiveInfo.GetStartPointer(), len), len);
   }
   else
   {
@@ -404,8 +403,7 @@ xiiStringView xiiArgSensitive::BuildString_SensitiveUserData_Hash(char* szTmp, x
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode& arg)
 {
   LPVOID lpMsgBuf = nullptr;
-  if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, arg.m_ErrorCode,
-                     MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), (LPWSTR)&lpMsgBuf, 0, nullptr) == 0)
+  if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, nullptr, arg.m_ErrorCode, MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), (LPWSTR)&lpMsgBuf, 0, nullptr) == 0)
   {
     DWORD err = GetLastError();
     xiiStringUtils::snprintf(szTmp, uiLength, "%i (FormatMessageW failed with error code %i)", arg.m_ErrorCode, err);
@@ -428,7 +426,7 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrorCode
 }
 #endif
 
-#if XII_ENABLED(XII_PLATFORM_LINUX)
+#if XII_ENABLED(XII_PLATFORM_LINUX) || XII_ENABLED(XII_PLATFORM_ANDROID)
 #  include <string.h>
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgErrno& arg)

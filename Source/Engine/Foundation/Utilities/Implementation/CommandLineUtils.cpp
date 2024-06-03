@@ -45,7 +45,7 @@ void xiiCommandLineUtils::SplitCommandLineString(xiiStringView sCommandString, b
       out_args.PushBack(path);
       lastEnd = currentChar + 1;
     }
-    xiiUnicodeUtils::MoveToNextUtf8(currentChar);
+    xiiUnicodeUtils::MoveToNextUtf8(currentChar).IgnoreResult();
   }
 
   out_argsV.Reserve(out_argsV.GetCount());

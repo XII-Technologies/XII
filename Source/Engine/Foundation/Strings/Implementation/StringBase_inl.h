@@ -169,7 +169,9 @@ template <typename Derived>
 const char* xiiStringBase<Derived>::ComputeCharacterPosition(xiiUInt32 uiCharacterIndex) const
 {
   const char* pos = InternalGetData();
-  xiiUnicodeUtils::MoveToNextUtf8(pos, InternalGetDataEnd(), uiCharacterIndex);
+  if (xiiUnicodeUtils::MoveToNextUtf8(pos, InternalGetDataEnd(), uiCharacterIndex).Failed())
+    return nullptr;
+
   return pos;
 }
 
@@ -204,75 +206,15 @@ XII_ALWAYS_INLINE bool operator==(const xiiStringBase<DerivedLhs>& lhs, const ch
 }
 
 template <typename DerivedLhs, typename DerivedRhs>
-XII_ALWAYS_INLINE bool operator<(const xiiStringBase<DerivedLhs>& lhs, const xiiStringBase<DerivedRhs>& rhs) // [tested]
+XII_ALWAYS_INLINE std::strong_ordering operator<=>(const xiiStringBase<DerivedLhs>& lhs, const xiiStringBase<DerivedRhs>& rhs)
 {
-  return lhs.Compare(rhs) < 0;
-}
-
-template <typename DerivedRhs>
-XII_ALWAYS_INLINE bool operator<(const char* lhs, const xiiStringBase<DerivedRhs>& rhs) // [tested]
-{
-  return rhs.Compare(lhs) > 0;
-}
-
-template <typename DerivedLhs>
-XII_ALWAYS_INLINE bool operator<(const xiiStringBase<DerivedLhs>& lhs, const char* rhs) // [tested]
-{
-  return lhs.Compare(rhs) < 0;
+  return lhs.Compare(rhs) <=> 0;
 }
 
 template <typename DerivedLhs, typename DerivedRhs>
-XII_ALWAYS_INLINE bool operator>(const xiiStringBase<DerivedLhs>& lhs, const xiiStringBase<DerivedRhs>& rhs) // [tested]
+XII_ALWAYS_INLINE std::strong_ordering operator<=>(const xiiStringBase<DerivedLhs>& lhs, const char* rhs)
 {
-  return lhs.Compare(rhs) > 0;
-}
-
-template <typename DerivedRhs>
-XII_ALWAYS_INLINE bool operator>(const char* lhs, const xiiStringBase<DerivedRhs>& rhs) // [tested]
-{
-  return rhs.Compare(lhs) < 0;
-}
-
-template <typename DerivedLhs>
-XII_ALWAYS_INLINE bool operator>(const xiiStringBase<DerivedLhs>& lhs, const char* rhs) // [tested]
-{
-  return lhs.Compare(rhs) > 0;
-}
-
-template <typename DerivedLhs, typename DerivedRhs>
-XII_ALWAYS_INLINE bool operator<=(const xiiStringBase<DerivedLhs>& lhs, const xiiStringBase<DerivedRhs>& rhs) // [tested]
-{
-  return xiiStringUtils::Compare(lhs.InternalGetData(), rhs.InternalGetData(), lhs.InternalGetDataEnd(), rhs.InternalGetDataEnd()) <= 0;
-}
-
-template <typename DerivedRhs>
-XII_ALWAYS_INLINE bool operator<=(const char* lhs, const xiiStringBase<DerivedRhs>& rhs) // [tested]
-{
-  return rhs.Compare(lhs) >= 0;
-}
-
-template <typename DerivedLhs>
-XII_ALWAYS_INLINE bool operator<=(const xiiStringBase<DerivedLhs>& lhs, const char* rhs) // [tested]
-{
-  return lhs.Compare(rhs) <= 0;
-}
-
-template <typename DerivedLhs, typename DerivedRhs>
-XII_ALWAYS_INLINE bool operator>=(const xiiStringBase<DerivedLhs>& lhs, const xiiStringBase<DerivedRhs>& rhs) // [tested]
-{
-  return xiiStringUtils::Compare(lhs.InternalGetData(), rhs.InternalGetData(), lhs.InternalGetDataEnd(), rhs.InternalGetDataEnd()) >= 0;
-}
-
-template <typename DerivedRhs>
-XII_ALWAYS_INLINE bool operator>=(const char* lhs, const xiiStringBase<DerivedRhs>& rhs) // [tested]
-{
-  return rhs.Compare(lhs) <= 0;
-}
-
-template <typename DerivedLhs>
-XII_ALWAYS_INLINE bool operator>=(const xiiStringBase<DerivedLhs>& lhs, const char* rhs) // [tested]
-{
-  return lhs.Compare(rhs) >= 0;
+  return lhs.Compare(rhs) <=> 0;
 }
 
 template <typename DerivedLhs>

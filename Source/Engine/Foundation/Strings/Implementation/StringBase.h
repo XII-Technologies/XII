@@ -162,6 +162,31 @@ public:
   /// Returns an empty string, if the path is not rooted.
   xiiStringView GetRootedPathRootName() const; // [tested]
 
+#if XII_ENABLED(XII_INTEROP_STL_STRINGS)
+  /// \brief Returns a std::string_view to this string.
+  XII_ALWAYS_INLINE std::string_view GetAsStdView() const
+  {
+    return std::string_view(InternalGetData(), static_cast<size_t>(InternalGetElementCount()));
+  }
+  /// \brief Returns a std::string copy of this string.
+  XII_ALWAYS_INLINE std::string GetAsStdString() const
+  {
+    return std::string(GetAsStdView());
+  }
+
+  /// \brief Returns a std::string_view to this string.
+  XII_ALWAYS_INLINE operator std::string_view() const
+  {
+    return GetAsStdView();
+  }
+
+  /// \brief Returns a std::string copy of this string.
+  XII_ALWAYS_INLINE operator std::string() const
+  {
+    return std::string(GetAsStdView());
+  }
+#endif
+
 private:
   const char* InternalGetData() const;
   const char* InternalGetDataEnd() const;

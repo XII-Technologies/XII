@@ -51,3 +51,7 @@
 #if !defined(XII_SIMD_IMPLEMENTATION) || (XII_SIMD_IMPLEMENTATION == 0)
 #  error "XII_SIMD_IMPLEMENTATION is not correctly defined."
 #endif
+
+#ifndef XII_DOUBLE_PRECISION
+#  error "XII_DOUBLE_PRECISION is not defined."
+#endif

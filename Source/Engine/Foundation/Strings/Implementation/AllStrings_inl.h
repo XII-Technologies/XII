@@ -33,15 +33,13 @@ XII_ALWAYS_INLINE xiiHybridString<Size, A>::xiiHybridString(xiiStringBuilder&& r
 template <xiiUInt16 Size>
 void xiiHybridStringBase<Size>::operator=(const xiiStringBuilder& rhs)
 {
-  m_uiCharacterCount = rhs.m_uiCharacterCount;
-  m_Data             = rhs.m_Data;
+  m_Data = rhs.m_Data;
 }
 
 template <xiiUInt16 Size>
 void xiiHybridStringBase<Size>::operator=(xiiStringBuilder&& rhs)
 {
-  m_uiCharacterCount = rhs.m_uiCharacterCount;
-  m_Data             = std::move(rhs.m_Data);
+  m_Data = std::move(rhs.m_Data);
 }
 
 template <xiiUInt16 Size, typename A>

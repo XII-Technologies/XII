@@ -3,51 +3,6 @@
 #include <Foundation/Strings/StringView.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-#  include <Foundation/Logging/Log.h>
-
-xiiAtomicInteger32 xiiStringUtils::g_MaxUsedStringLength;
-xiiAtomicInteger32 xiiStringUtils::g_UsedStringLengths[256];
-
-void xiiStringUtils::AddUsedStringLength(xiiUInt32 uiLength)
-{
-  g_MaxUsedStringLength.Max(uiLength);
-
-  if (uiLength > 255)
-    uiLength = 255;
-
-  g_UsedStringLengths[uiLength].Increment();
-}
-
-void xiiStringUtils::PrintStringLengthStatistics()
-{
-  XII_LOG_BLOCK("String Length Statistics");
-
-  xiiLog::Info("Max String Length: {0}", (xiiInt32)g_MaxUsedStringLength);
-
-  xiiUInt32 uiCopiedStrings = 0;
-  for (xiiUInt32 i = 0; i < 256; ++i)
-    uiCopiedStrings += g_UsedStringLengths[i];
-
-  xiiLog::Info("Number of String Copies: {0}", uiCopiedStrings);
-  xiiLog::Info("");
-
-  xiiUInt32 uiPercent = 0;
-  xiiUInt32 uiStrings = 0;
-  for (xiiUInt32 i = 0; i < 256; ++i)
-  {
-    if (100.0f * (uiStrings + g_UsedStringLengths[i]) / (float)uiCopiedStrings >= uiPercent)
-    {
-      xiiLog::Info("{0}%% of all Strings are shorter than {1} Elements.", xiiArgI(uiPercent, 3), xiiArgI(i + 1, 3));
-      uiPercent += 10;
-    }
-
-    uiStrings += g_UsedStringLengths[i];
-  }
-}
-
-#endif
-
 // Unicode ToUpper / ToLower character conversion
 //  License: $(WEB www.boost.org/LICENSE_1_0.txt, Boost License 1.0).
 //  Authors: $(WEB digitalmars.com, Walter Bright), Jonathan M Davis, and Kenji Hara
@@ -237,26 +192,26 @@ xiiUInt32 xiiStringUtils::ToLowerString(char* pString, const char* pStringEnd)
 }
 
 // Macro to Handle nullptr-pointer strings
-#define XII_STRINGCOMPARE_HANDLE_NULL_PTRS(szString1, szString2, ret_equal, ret_str2_larger, ret_str1_larger, szString1End, szString2End)    \
-  if (szString1 == szString2) /* Handles the case that both are nullptr and that both are actually the same string */                        \
-  {                                                                                                                                          \
-    if ((szString1 == nullptr) || (szString1End == szString2End)) /* if both are nullptr, ignore the end pointer, otherwise the strings    \
+#define XII_STRINGCOMPARE_HANDLE_NULL_PTRS(szString1, szString2, ret_equal, ret_str2_larger, ret_str1_larger, szString1End, szString2End)                    \
+  if (szString1 == szString2) /* Handles the case that both are nullptr and that both are actually the same string */                                        \
+  {                                                                                                                                                          \
+    if ((szString1 == nullptr) || (szString1End == szString2End)) /* if both are nullptr, ignore the end pointer, otherwise the strings                   \
                                                                      are equal, if both end pointers are also the same */ \
-      return (ret_equal);                                                                                                                    \
-  }                                                                                                                                          \
-  if (szString1 == nullptr)                                                                                                                  \
-  {                                                                                                                                          \
-    if (szString2[0] == '\0') /* if String1 is nullptr, String2 is never nullptr, otherwise the previous IF would have returned already */   \
-      return (ret_equal);                                                                                                                    \
-    else                                                                                                                                     \
-      return (ret_str2_larger);                                                                                                              \
-  }                                                                                                                                          \
-  if (szString2 == nullptr)                                                                                                                  \
-  {                                                                                                                                          \
-    if (szString1[0] == '\0') /* if String2 is nullptr, String1 is never nullptr, otherwise the previous IF would have returned already */   \
-      return (ret_equal);                                                                                                                    \
-    else                                                                                                                                     \
-      return (ret_str1_larger);                                                                                                              \
+      return (ret_equal);                                                                                                                                    \
+  }                                                                                                                                                          \
+  if (szString1 == nullptr)                                                                                                                                  \
+  {                                                                                                                                                          \
+    if (szString2[0] == '\0') /* if String1 is nullptr, String2 is never nullptr, otherwise the previous IF would have returned already */                   \
+      return (ret_equal);                                                                                                                                    \
+    else                                                                                                                                                     \
+      return (ret_str2_larger);                                                                                                                              \
+  }                                                                                                                                                          \
+  if (szString2 == nullptr)                                                                                                                                  \
+  {                                                                                                                                                          \
+    if (szString1[0] == '\0') /* if String2 is nullptr, String1 is never nullptr, otherwise the previous IF would have returned already */                   \
+      return (ret_equal);                                                                                                                                    \
+    else                                                                                                                                                     \
+      return (ret_str1_larger);                                                                                                                              \
   }
 
 #define ToSignedInt(c) ((xiiInt32)((unsigned char)c))
@@ -290,12 +245,7 @@ xiiInt32 xiiStringUtils::Compare(const char* pString1, const char* pString2, con
   }
 }
 
-xiiInt32 xiiStringUtils::CompareN(
-  const char* pString1,
-  const char* pString2,
-  xiiUInt32   uiCharsToCompare,
-  const char* pString1End,
-  const char* pString2End)
+xiiInt32 xiiStringUtils::CompareN(const char* pString1, const char* pString2, xiiUInt32 uiCharsToCompare, const char* pString1End, const char* pString2End)
 {
   if (uiCharsToCompare == 0)
     return 0;
@@ -414,7 +364,6 @@ xiiUInt32 xiiStringUtils::Copy(char* szDest, xiiUInt32 uiDstSize, const char* sz
 
   if (IsNullOrEmpty(szSource))
   {
-    xiiStringUtils::AddUsedStringLength(0);
     szDest[0] = '\0';
     return 0;
   }
@@ -443,14 +392,10 @@ xiiUInt32 xiiStringUtils::Copy(char* szDest, xiiUInt32 uiDstSize, const char* sz
   }
 #endif
 
-
   // make sure the buffer is always terminated
   *szLastCharacterPos = '\0';
 
-  const xiiUInt32 uiLength = (xiiUInt32)(szLastCharacterPos - szDest);
-
-  xiiStringUtils::AddUsedStringLength(uiLength);
-  return uiLength;
+  return uiBytesToCopy;
 }
 
 xiiUInt32 xiiStringUtils::CopyN(char* szDest, xiiUInt32 uiDstSize, const char* szSource, xiiUInt32 uiCharsToCopy, const char* pSourceEnd)
@@ -459,7 +404,6 @@ xiiUInt32 xiiStringUtils::CopyN(char* szDest, xiiUInt32 uiDstSize, const char* s
 
   if (IsNullOrEmpty(szSource))
   {
-    xiiStringUtils::AddUsedStringLength(0);
     szDest[0] = '\0';
     return 0;
   }
@@ -502,10 +446,7 @@ xiiUInt32 xiiStringUtils::CopyN(char* szDest, xiiUInt32 uiDstSize, const char* s
   // this will actually overwrite the last byte that we wrote into the output buffer
   *szLastCharacterPos = '\0';
 
-  const xiiUInt32 uiLength = (xiiUInt32)(szLastCharacterPos - szStartPos);
-
-  xiiStringUtils::AddUsedStringLength(uiLength);
-  return uiLength;
+  return (xiiUInt32)(szLastCharacterPos - szStartPos);
 }
 
 bool xiiStringUtils::StartsWith(const char* szString, const char* szStartsWith, const char* pStringEnd, const char* szStartsWithEnd)
@@ -548,8 +489,8 @@ bool xiiStringUtils::StartsWith_NoCase(const char* szString, const char* szStart
     if (xiiStringUtils::CompareChars_NoCase(szStartsWith, szString) != 0)
       return false;
 
-    xiiUnicodeUtils::MoveToNextUtf8(szString, pStringEnd);
-    xiiUnicodeUtils::MoveToNextUtf8(szStartsWith, szStartsWithEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(szString, pStringEnd).AssertSuccess();
+    xiiUnicodeUtils::MoveToNextUtf8(szStartsWith, szStartsWithEnd).AssertSuccess();
   }
 
   // if both are equally long, this comparison will return true
@@ -592,8 +533,8 @@ bool xiiStringUtils::EndsWith_NoCase(const char* szString, const char* szEndsWit
       return true;
 
     // move to the previous character
-    xiiUnicodeUtils::MoveToPriorUtf8(pCur1);
-    xiiUnicodeUtils::MoveToPriorUtf8(pCur2);
+    xiiUnicodeUtils::MoveToPriorUtf8(pCur1, szString).AssertSuccess();
+    xiiUnicodeUtils::MoveToPriorUtf8(pCur2, szEndsWith).AssertSuccess();
 
     if (xiiStringUtils::CompareChars_NoCase(pCur1, pCur2) != 0)
       return false;
@@ -618,7 +559,7 @@ const char* xiiStringUtils::FindSubString(const char* szSource, const char* szSt
     if (xiiStringUtils::StartsWith(pCurPos, szStringToFind, pSourceEnd, szStringToFindEnd))
       return pCurPos;
 
-    xiiUnicodeUtils::MoveToNextUtf8(pCurPos, pSourceEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(pCurPos, pSourceEnd).AssertSuccess();
   }
 
   return nullptr;
@@ -637,7 +578,7 @@ const char* xiiStringUtils::FindSubString_NoCase(const char* szSource, const cha
     if (xiiStringUtils::StartsWith_NoCase(pCurPos, szStringToFind, pSourceEnd, szStringToFindEnd))
       return pCurPos;
 
-    xiiUnicodeUtils::MoveToNextUtf8(pCurPos, pSourceEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(pCurPos, pSourceEnd).AssertSuccess();
   }
 
   return nullptr;
@@ -657,7 +598,7 @@ const char* xiiStringUtils::FindLastSubString(const char* szSource, const char* 
   // while we haven't reached the stars .. erm, start
   while (szStartSearchAt > szSource)
   {
-    xiiUnicodeUtils::MoveToPriorUtf8(szStartSearchAt);
+    xiiUnicodeUtils::MoveToPriorUtf8(szStartSearchAt, szSource).AssertSuccess();
 
     if (xiiStringUtils::StartsWith(szStartSearchAt, szStringToFind, pSourceEnd, szStringToFindEnd))
       return szStartSearchAt;
@@ -677,7 +618,7 @@ const char* xiiStringUtils::FindLastSubString_NoCase(const char* szSource, const
 
   while (szStartSearchAt > szSource)
   {
-    xiiUnicodeUtils::MoveToPriorUtf8(szStartSearchAt);
+    xiiUnicodeUtils::MoveToPriorUtf8(szStartSearchAt, szSource).AssertSuccess();
 
     if (xiiStringUtils::StartsWith_NoCase(szStartSearchAt, szStringToFind, pSourceEnd, szStringToFindEnd))
       return szStartSearchAt;
@@ -711,7 +652,7 @@ const char* xiiStringUtils::FindWholeWord(const char* szString, const char* szSe
     }
 
     pPrevPos = pCurPos;
-    xiiUnicodeUtils::MoveToNextUtf8(pCurPos, pStringEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(pCurPos, pStringEnd).AssertSuccess();
   }
 
   return nullptr;
@@ -740,7 +681,7 @@ const char* xiiStringUtils::FindWholeWord_NoCase(const char* szString, const cha
     }
 
     pPrevPos = pCurPos;
-    xiiUnicodeUtils::MoveToNextUtf8(pCurPos, pStringEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(pCurPos, pStringEnd).AssertSuccess();
   }
 
   return nullptr;
@@ -806,7 +747,8 @@ const char* xiiStringUtils::SkipCharacters(const char* szString, XII_CHARACTER_F
       break;
 
     bAlwaysSkipFirst = false;
-    xiiUnicodeUtils::MoveToNextUtf8(szString);
+
+    xiiUnicodeUtils::MoveToNextUtf8(szString).AssertSuccess();
   }
 
   return szString;
@@ -822,7 +764,7 @@ const char* xiiStringUtils::FindWordEnd(const char* szString, XII_CHARACTER_FILT
       break;
 
     bAlwaysSkipFirst = false;
-    xiiUnicodeUtils::MoveToNextUtf8(szString);
+    xiiUnicodeUtils::MoveToNextUtf8(szString).AssertSuccess();
   }
 
   return szString;

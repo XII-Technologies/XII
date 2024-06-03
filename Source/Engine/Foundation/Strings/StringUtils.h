@@ -266,18 +266,6 @@ public:
   static void OutputFormattedUInt(char* szOutputBuffer, xiiUInt32 uiBufferSize, xiiUInt32& ref_uiWritePos, xiiUInt64 value, xiiUInt8 uiWidth, bool bPadZeros, xiiUInt8 uiBase, bool bUpperCase);
   /// \brief [internal] Prefer to use snprintf.
   static void OutputFormattedFloat(char* szOutputBuffer, xiiUInt32 uiBufferSize, xiiUInt32& ref_uiWritePos, double value, xiiUInt8 uiWidth, bool bPadZeros, xiiInt8 iPrecision, bool bScientific, bool bRemoveTrailingZeroes = false);
-
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
-  static void               AddUsedStringLength(xiiUInt32 uiLength);
-  static void               PrintStringLengthStatistics();
-  static xiiAtomicInteger32 g_MaxUsedStringLength;
-  static xiiAtomicInteger32 g_UsedStringLengths[256];
-#else
-  XII_ALWAYS_INLINE static void AddUsedStringLength(xiiUInt32)
-  {
-  }
-  XII_ALWAYS_INLINE static void PrintStringLengthStatistics() {}
-#endif
 };
 
 #include <Foundation/Strings/Implementation/StringUtils_inl.h>

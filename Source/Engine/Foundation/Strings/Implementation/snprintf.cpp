@@ -26,7 +26,7 @@
 //  Small values (bytes / shorts) don't get any larger by this, I don't see anything that could be done
 //  differently knowing these values are supposed to be bytes or shorts.
 
-//#define USE_STRICT_SPECIFICATION
+// #define USE_STRICT_SPECIFICATION
 
 struct sprintfFlags
 {
@@ -320,7 +320,7 @@ static void OutputReverseString(char* szOutputBuffer, unsigned int uiBufferSize,
   {
     --iStringLength;
 
-    OutputChar(szOutputBuffer, uiBufferSize, ref_uiWritePos, szString[iStringLength]); // NOLINT: False positive from Clang Tidy.
+    OutputChar(szOutputBuffer, uiBufferSize, ref_uiWritePos, szString[iStringLength]); // NOLINT: False positive from clang-tidy
   }
 }
 
@@ -866,7 +866,7 @@ int xiiStringUtils::vsnprintf(char* szOutputBuffer, unsigned int uiBufferSize, c
   va_list args;
   va_copy(args, szArgs0);
 
-  XII_ASSERT_DEV(xiiUnicodeUtils::IsValidUtf8(szFormat), "The sprintf format string must be valid Utf8.");
+  XII_ASSERT_DEBUG(xiiUnicodeUtils::IsValidUtf8(szFormat), "The sprintf format string must be valid Utf8.");
 
   // make sure the last character is a \0
   if ((szOutputBuffer) && (uiBufferSize > 0))
@@ -1063,36 +1063,19 @@ int xiiStringUtils::snprintf(char* szOutputBuffer, unsigned int uiBufferSize, co
 }
 
 
-void xiiStringUtils::OutputFormattedInt(
-  char*      szOutputBuffer,
-  xiiUInt32  uiBufferSize,
-  xiiUInt32& ref_uiWritePos,
-  xiiInt64   value,
-  xiiUInt8   uiWidth,
-  bool       bPadZeros,
-  xiiUInt8   uiBase)
+void xiiStringUtils::OutputFormattedInt(char* szOutputBuffer, xiiUInt32 uiBufferSize, xiiUInt32& ref_uiWritePos, xiiInt64 value, xiiUInt8 uiWidth, bool bPadZeros, xiiUInt8 uiBase)
 {
   OutputInt(szOutputBuffer, uiBufferSize, ref_uiWritePos, value, uiWidth, -1, bPadZeros ? sprintfFlags::PadZeros : 0, uiBase);
 }
 
-void xiiStringUtils::OutputFormattedUInt(
-  char*      szOutputBuffer,
-  xiiUInt32  uiBufferSize,
-  xiiUInt32& ref_uiWritePos,
-  xiiUInt64  value,
-  xiiUInt8   uiWidth,
-  bool       bPadZeros,
-  xiiUInt8   uiBase,
-  bool       bUpperCase)
+void xiiStringUtils::OutputFormattedUInt(char* szOutputBuffer, xiiUInt32 uiBufferSize, xiiUInt32& ref_uiWritePos, xiiUInt64 value, xiiUInt8 uiWidth, bool bPadZeros, xiiUInt8 uiBase, bool bUpperCase)
 {
   OutputUInt(szOutputBuffer, uiBufferSize, ref_uiWritePos, value, uiWidth, -1, bPadZeros ? sprintfFlags::PadZeros : 0, uiBase, bUpperCase);
 }
 
 void xiiStringUtils::OutputFormattedFloat(char* szOutputBuffer, xiiUInt32 uiBufferSize, xiiUInt32& ref_uiWritePos, double value, xiiUInt8 uiWidth, bool bPadZeros, xiiInt8 iPrecision, bool bScientific, bool bRemoveTrailingZeroes)
 {
-  OutputFloat(szOutputBuffer, uiBufferSize, ref_uiWritePos, value, uiWidth, xiiMath::Max<int>(-1, iPrecision), bPadZeros ? sprintfFlags::PadZeros : 0,
-              false, bScientific, bRemoveTrailingZeroes);
+  OutputFloat(szOutputBuffer, uiBufferSize, ref_uiWritePos, value, uiWidth, xiiMath::Max<int>(-1, iPrecision), bPadZeros ? sprintfFlags::PadZeros : 0, false, bScientific, bRemoveTrailingZeroes);
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_snprintf);

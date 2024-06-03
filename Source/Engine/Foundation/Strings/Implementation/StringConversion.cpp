@@ -451,5 +451,4 @@ void xiiStringHString::operator=(const wchar_t* szWChar)
 
 #endif
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_StringConversion);

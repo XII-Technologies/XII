@@ -44,11 +44,13 @@ XII_ALWAYS_INLINE void xiiStringUtils::UpdateStringEnd(const T* pStringStart, co
 template <typename T>
 constexpr xiiUInt32 xiiStringUtils::GetStringElementCount(const T* pString)
 {
-  if (IsNullOrEmpty(pString))
+  // can't use strlen here as long as it's not constexpr (C++ 23)
+
+  if (pString == nullptr)
     return 0;
 
   xiiUInt32 uiCount = 0;
-  while ((*pString != '\0'))
+  while (*pString != '\0')
   {
     ++pString;
     ++uiCount;
@@ -86,8 +88,7 @@ inline xiiUInt32 xiiStringUtils::GetCharacterCount(const char* szUtf8, const cha
   while ((*szUtf8 != '\0') && (szUtf8 < pStringEnd))
   {
     // skip all the Utf8 continuation bytes
-    if (!xiiUnicodeUtils::IsUtf8ContinuationByte(*szUtf8))
-      ++uiCharacters;
+    if (!xiiUnicodeUtils::IsUtf8ContinuationByte(*szUtf8)) ++uiCharacters;
 
     ++szUtf8;
   }

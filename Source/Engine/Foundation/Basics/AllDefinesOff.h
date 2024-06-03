@@ -74,11 +74,11 @@
 #define XII_DOUBLE_PRECISION XII_OFF
 
 // Other Features
-#define XII_USE_PROFILING XII_OFF
+#define XII_USE_PROFILING         XII_OFF
+#define XII_USE_STRING_VALIDATION XII_OFF
 
 // Hashed String
-/// \brief Ref counting on hashed strings adds the possibility to cleanup unused strings. Since ref counting has a performance overhead it is disabled
-/// by default.
+/// \brief Ref counting on hashed strings adds the possibility to cleanup unused strings. Since ref counting has a performance overhead it is disabled by default.
 #define XII_HASHED_STRING_REF_COUNTING XII_OFF
 
 // Math Debug Checks
@@ -94,3 +94,7 @@
 
 // Application entry point code injection (undef and redefine in UserConfig.h if needed)
 #define XII_APPLICATION_ENTRY_POINT_CODE_INJECTION
+
+// Interoperability with other libraries
+#define XII_INTEROP_STL_STRINGS XII_OFF
+#define XII_INTEROP_STL_SPAN    XII_OFF

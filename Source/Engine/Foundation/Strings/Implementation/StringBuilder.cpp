@@ -8,16 +8,45 @@
 
 xiiStringBuilder::xiiStringBuilder(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4, xiiStringView sData5, xiiStringView sData6)
 {
-  m_uiCharacterCount = 0;
   AppendTerminator();
 
   Append(sData1, sData2, sData3, sData4, sData5, sData6);
+}
+
+void xiiStringBuilder::Set(xiiStringView sData1)
+{
+  Clear();
+  Append(sData1);
+}
+
+void xiiStringBuilder::Set(xiiStringView sData1, xiiStringView sData2)
+{
+  Clear();
+  Append(sData1, sData2);
+}
+
+void xiiStringBuilder::Set(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3)
+{
+  Clear();
+  Append(sData1, sData2, sData3);
+}
+
+void xiiStringBuilder::Set(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4)
+{
+  Clear();
+  Append(sData1, sData2, sData3, sData4);
 }
 
 void xiiStringBuilder::Set(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4, xiiStringView sData5, xiiStringView sData6)
 {
   Clear();
   Append(sData1, sData2, sData3, sData4, sData5, sData6);
+}
+
+void xiiStringBuilder::SetPath(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4)
+{
+  Clear();
+  AppendPath(sData1, sData2, sData3, sData4);
 }
 
 void xiiStringBuilder::SetSubString_FromTo(const char* pStart, const char* pEnd)
@@ -39,57 +68,177 @@ void xiiStringBuilder::SetSubString_ElementCount(const char* pStart, xiiUInt32 u
 void xiiStringBuilder::SetSubString_CharacterCount(const char* pStart, xiiUInt32 uiCharacterCount)
 {
   const char* pEnd = pStart;
-  xiiUnicodeUtils::MoveToNextUtf8(pEnd, uiCharacterCount);
+  xiiUnicodeUtils::MoveToNextUtf8(pEnd, uiCharacterCount).IgnoreResult(); // fine to fail, will just copy as much as possible
 
   xiiStringView view(pStart, pEnd);
   *this = view;
 }
 
-void xiiStringBuilder::Append(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4, xiiStringView sData5, xiiStringView sData6)
+void xiiStringBuilder::Append(xiiStringView sData1)
 {
-  // it is not possible to find out how many parameters were passed to a vararg function
-  // with a fixed size of parameters we do not need to have a parameter that tells us how many strings will come
-
-  const xiiUInt32 uiMaxParams = 6;
-
-  const xiiStringView pStrings[uiMaxParams] = {sData1, sData2, sData3, sData4, sData5, sData6};
-  xiiUInt32           uiStrLen[uiMaxParams] = {0};
-
   xiiUInt32 uiMoreBytes = 0;
-
-  // first figure out how much the string has to grow
-  for (xiiUInt32 i = 0; i < uiMaxParams; ++i)
-  {
-    if (pStrings[i].IsEmpty())
-      continue;
-
-    XII_ASSERT_DEBUG(pStrings[i].GetStartPointer() < m_Data.GetData() || pStrings[i].GetStartPointer() >= m_Data.GetData() + m_Data.GetCapacity(),
-                     "Parameter {0} comes from the string builders own storage. This type assignment is not allowed.", i);
-
-    xiiUInt32 uiCharacters = 0;
-    xiiStringUtils::GetCharacterAndElementCount(pStrings[i].GetStartPointer(), uiCharacters, uiStrLen[i], pStrings[i].GetEndPointer());
-    uiMoreBytes += uiStrLen[i];
-    m_uiCharacterCount += uiCharacters;
-
-    XII_ASSERT_DEBUG(xiiUnicodeUtils::IsValidUtf8(pStrings[i].GetStartPointer(), pStrings[i].GetEndPointer()), "Parameter {0} is not a valid Utf8 sequence.", i + 1);
-  }
+  uiMoreBytes += sData1.GetElementCount();
 
   xiiUInt32 uiPrevCount = m_Data.GetCount(); // already contains a 0 terminator
-  XII_ASSERT_DEBUG(uiPrevCount > 0, "There should be a 0 terminator somewhere around here.");
-
-  // now resize
   m_Data.SetCountUninitialized(uiPrevCount + uiMoreBytes);
 
-  // and then append all the strings
-  for (xiiUInt32 i = 0; i < uiMaxParams; ++i)
   {
-    if (uiStrLen[i] == 0)
-      continue;
+    const char*     szStartPtr = sData1.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData1.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+}
 
-    // make enough room to copy the entire string, including the T-800
-    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen[i] + 1, pStrings[i].GetStartPointer(), pStrings[i].GetStartPointer() + uiStrLen[i]);
+void xiiStringBuilder::Append(xiiStringView sData1, xiiStringView sData2)
+{
+  xiiUInt32 uiMoreBytes = 0;
+  uiMoreBytes += sData1.GetElementCount();
+  uiMoreBytes += sData2.GetElementCount();
 
-    uiPrevCount += uiStrLen[i];
+  xiiUInt32 uiPrevCount = m_Data.GetCount(); // already contains a 0 terminator
+  m_Data.SetCountUninitialized(uiPrevCount + uiMoreBytes);
+
+  {
+    const char*     szStartPtr = sData1.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData1.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+
+  {
+    const char*     szStartPtr = sData2.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData2.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+}
+
+void xiiStringBuilder::Append(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3)
+{
+  xiiUInt32 uiMoreBytes = 0;
+  uiMoreBytes += sData1.GetElementCount();
+  uiMoreBytes += sData2.GetElementCount();
+  uiMoreBytes += sData3.GetElementCount();
+
+  xiiUInt32 uiPrevCount = m_Data.GetCount(); // already contains a 0 terminator
+  m_Data.SetCountUninitialized(uiPrevCount + uiMoreBytes);
+
+  {
+    const char*     szStartPtr = sData1.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData1.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+
+  {
+    const char*     szStartPtr = sData2.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData2.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+
+  {
+    const char*     szStartPtr = sData3.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData3.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+}
+
+void xiiStringBuilder::Append(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4)
+{
+  xiiUInt32 uiMoreBytes = 0;
+  uiMoreBytes += sData1.GetElementCount();
+  uiMoreBytes += sData2.GetElementCount();
+  uiMoreBytes += sData3.GetElementCount();
+  uiMoreBytes += sData4.GetElementCount();
+
+  xiiUInt32 uiPrevCount = m_Data.GetCount(); // already contains a 0 terminator
+  m_Data.SetCountUninitialized(uiPrevCount + uiMoreBytes);
+
+  {
+    const char*     szStartPtr = sData1.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData1.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+
+  {
+    const char*     szStartPtr = sData2.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData2.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+
+  {
+    const char*     szStartPtr = sData3.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData3.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+
+  {
+    const char*     szStartPtr = sData4.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData4.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+}
+
+void xiiStringBuilder::Append(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4, xiiStringView sData5, xiiStringView sData6)
+{
+  xiiUInt32 uiMoreBytes = 0;
+  uiMoreBytes += sData1.GetElementCount();
+  uiMoreBytes += sData2.GetElementCount();
+  uiMoreBytes += sData3.GetElementCount();
+  uiMoreBytes += sData4.GetElementCount();
+  uiMoreBytes += sData5.GetElementCount();
+  uiMoreBytes += sData6.GetElementCount();
+
+  xiiUInt32 uiPrevCount = m_Data.GetCount(); // already contains a 0 terminator
+  m_Data.SetCountUninitialized(uiPrevCount + uiMoreBytes);
+
+  {
+    const char*     szStartPtr = sData1.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData1.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+
+  {
+    const char*     szStartPtr = sData2.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData2.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+
+  {
+    const char*     szStartPtr = sData3.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData3.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+
+  {
+    const char*     szStartPtr = sData4.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData4.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+
+  {
+    const char*     szStartPtr = sData5.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData5.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
+  }
+
+  {
+    const char*     szStartPtr = sData6.GetStartPointer();
+    const xiiUInt32 uiStrLen   = sData6.GetElementCount();
+    xiiStringUtils::Copy(&m_Data[uiPrevCount - 1], uiStrLen + 1, szStartPtr, szStartPtr + uiStrLen);
+    uiPrevCount += uiStrLen;
   }
 }
 
@@ -111,10 +260,8 @@ void xiiStringBuilder::Prepend(xiiStringView sData1, xiiStringView sData2, xiiSt
     if (pStrings[i].IsEmpty())
       continue;
 
-    xiiUInt32 uiCharacters = 0;
-    xiiStringUtils::GetCharacterAndElementCount(pStrings[i].GetStartPointer(), uiCharacters, uiStrLen[i], pStrings[i].GetEndPointer());
+    uiStrLen[i] = pStrings[i].GetElementCount();
     uiMoreBytes += uiStrLen[i];
-    m_uiCharacterCount += uiCharacters;
 
     XII_ASSERT_DEBUG(xiiUnicodeUtils::IsValidUtf8(pStrings[i].GetStartPointer(), pStrings[i].GetEndPointer()), "Parameter {0} is not a valid Utf8 sequence.", i + 1);
   }
@@ -244,39 +391,27 @@ void xiiStringBuilder::ChangeCharacterNonASCII(iterator& it, xiiUInt32 uiCharact
 
 void xiiStringBuilder::Shrink(xiiUInt32 uiShrinkCharsFront, xiiUInt32 uiShrinkCharsBack)
 {
-  if (uiShrinkCharsFront + uiShrinkCharsBack >= m_uiCharacterCount)
+  if (uiShrinkCharsBack > 0)
   {
-    Clear();
-    return;
+    const char* szEnd    = GetData() + GetElementCount();
+    const char* szNewEnd = szEnd;
+    if (xiiUnicodeUtils::MoveToPriorUtf8(szNewEnd, GetData(), uiShrinkCharsBack).Failed())
+    {
+      Clear();
+      return;
+    }
+
+    const xiiUInt32 uiLessBytes = (xiiUInt32)(szEnd - szNewEnd);
+
+    m_Data.PopBack(uiLessBytes + 1);
+    AppendTerminator();
   }
 
   const char* szNewStart = &m_Data[0];
-
-  if (IsPureASCII())
+  if (xiiUnicodeUtils::MoveToNextUtf8(szNewStart, uiShrinkCharsFront).Failed())
   {
-    if (uiShrinkCharsBack > 0)
-    {
-      m_Data.PopBack(uiShrinkCharsBack + 1);
-      AppendTerminator();
-    }
-
-    szNewStart = &m_Data[uiShrinkCharsFront];
-  }
-  else
-  {
-    if (uiShrinkCharsBack > 0)
-    {
-      const char* szEnd    = GetData() + GetElementCount();
-      const char* szNewEnd = szEnd;
-      xiiUnicodeUtils::MoveToPriorUtf8(szNewEnd, uiShrinkCharsBack);
-
-      const xiiUInt32 uiLessBytes = (xiiUInt32)(szEnd - szNewEnd);
-
-      m_Data.PopBack(uiLessBytes + 1);
-      AppendTerminator();
-    }
-
-    xiiUnicodeUtils::MoveToNextUtf8(szNewStart, uiShrinkCharsFront);
+    Clear();
+    return;
   }
 
   if (szNewStart > &m_Data[0])
@@ -286,9 +421,6 @@ void xiiStringBuilder::Shrink(xiiUInt32 uiShrinkCharsFront, xiiUInt32 uiShrinkCh
     xiiMemoryUtils::CopyOverlapped(&m_Data[0], szNewStart, m_Data.GetCount() - uiLessBytes);
     m_Data.PopBack(uiLessBytes);
   }
-
-  m_uiCharacterCount -= uiShrinkCharsFront;
-  m_uiCharacterCount -= uiShrinkCharsBack;
 }
 
 void xiiStringBuilder::ReplaceSubString(const char* szStartPos, const char* szEndPos, xiiStringView sReplaceWith)
@@ -297,9 +429,7 @@ void xiiStringBuilder::ReplaceSubString(const char* szStartPos, const char* szEn
   XII_ASSERT_DEV(xiiMath::IsInRange(szEndPos, GetData(), GetData() + m_Data.GetCount()), "szEndPos is not inside this string.");
   XII_ASSERT_DEV(szStartPos <= szEndPos, "xiiStartPos must be before xiiEndPos");
 
-  xiiUInt32 uiWordChars = 0;
-  xiiUInt32 uiWordBytes = 0;
-  xiiStringUtils::GetCharacterAndElementCount(sReplaceWith.GetStartPointer(), uiWordChars, uiWordBytes, sReplaceWith.GetEndPointer());
+  const xiiUInt32 uiWordBytes = sReplaceWith.GetElementCount();
 
   const xiiUInt32 uiSubStringBytes = (xiiUInt32)(szEndPos - szStartPos);
 
@@ -311,27 +441,17 @@ void xiiStringBuilder::ReplaceSubString(const char* szStartPos, const char* szEn
   {
     while (szWritePos < szEndPos)
     {
-      if (!xiiUnicodeUtils::IsUtf8ContinuationByte(*szWritePos))
-        --m_uiCharacterCount;
-
       *szWritePos = *szReadPos;
       ++szWritePos;
       ++szReadPos;
     }
 
-    // the number of bytes might be identical, but that does not mean that the number of characters is also identical
-    // therefore we subtract the number of characters that were found in the old substring
-    // and add the number of characters for the new substring
-    m_uiCharacterCount += uiWordChars;
     return;
   }
 
   // the replacement is shorter than the existing stuff -> move characters to the left, no reallocation needed
   if (uiWordBytes < uiSubStringBytes)
   {
-    m_uiCharacterCount -= xiiStringUtils::GetCharacterCount(szStartPos, szEndPos);
-    m_uiCharacterCount += uiWordChars;
-
     // first copy the replacement to the correct position
     xiiMemoryUtils::Copy(szWritePos, sReplaceWith.GetStartPointer(), uiWordBytes);
 
@@ -349,9 +469,6 @@ void xiiStringBuilder::ReplaceSubString(const char* szStartPos, const char* szEn
 
   // else the replacement is longer than the existing word
   {
-    m_uiCharacterCount -= xiiStringUtils::GetCharacterCount(szStartPos, szEndPos);
-    m_uiCharacterCount += uiWordChars;
-
     const xiiUInt32 uiDifference            = uiWordBytes - uiSubStringBytes;
     const xiiUInt64 uiRelativeWritePosition = szWritePos - GetData();
     const xiiUInt64 uiDataByteCountBefore   = m_Data.GetCount();
@@ -604,10 +721,7 @@ xiiUInt32 xiiStringBuilder::ReplaceWholeWordAll_NoCase(const char* szSearchFor, 
 
 void xiiStringBuilder::operator=(xiiStringView rhs)
 {
-  xiiUInt32 uiBytes;
-  xiiUInt32 uiCharacters;
-
-  xiiStringUtils::GetCharacterAndElementCount(rhs.GetStartPointer(), uiCharacters, uiBytes, rhs.GetEndPointer());
+  xiiUInt32 uiBytes = rhs.GetElementCount();
 
   // if we need more room, allocate up front (rhs cannot use our own data in this case)
   if (uiBytes + 1 > m_Data.GetCount())
@@ -621,8 +735,6 @@ void xiiStringBuilder::operator=(xiiStringView rhs)
 
   m_Data.SetCountUninitialized(uiBytes + 1);
   m_Data[uiBytes] = '\0';
-
-  m_uiCharacterCount = uiCharacters;
 }
 
 enum PathUpState
@@ -651,7 +763,7 @@ void xiiStringBuilder::MakeCleanPath()
   const char* const szEndPos      = &m_Data[m_Data.GetCount() - 1];
   const char*       szCurReadPos  = &m_Data[0];
   char* const       szCurWritePos = &m_Data[0];
-  xiiInt32          writeOffset   = 0;
+  int               writeOffset   = 0;
 
   xiiInt32    iLevelsDown = 0;
   PathUpState FoundPathUp = NotStarted;
@@ -731,12 +843,8 @@ void xiiStringBuilder::MakeCleanPath()
   const xiiUInt32 uiPrevByteCount = m_Data.GetCount();
   const xiiUInt32 uiNewByteCount  = (xiiUInt32)(writeOffset) + 1;
 
-  XII_ASSERT_DEBUG(uiPrevByteCount >= uiNewByteCount, "It should not be possible that a path grows during cleanup. Old: {0} Bytes, New: {1} Bytes",
-                   uiPrevByteCount, uiNewByteCount);
-
-  // we will only remove characters and only ASCII ones (slash, backslash, dot)
-  // so the number of characters shrinks equally to the number of bytes
-  m_uiCharacterCount -= (uiPrevByteCount - uiNewByteCount);
+  XII_IGNORE_UNUSED(uiPrevByteCount);
+  XII_ASSERT_DEBUG(uiPrevByteCount >= uiNewByteCount, "It should not be possible that a path grows during cleanup. Old: {0} Bytes, New: {1} Bytes", uiPrevByteCount, uiNewByteCount);
 
   // make sure to write the terminating \0 and reset the count
   szCurWritePos[writeOffset] = '\0';
@@ -795,7 +903,6 @@ void xiiStringBuilder::AppendWithSeparator(xiiStringView sOptional, xiiStringVie
   const xiiStringView pStrings[uiMaxParams] = {sOptional, sText1, sText2, sText3, sText4, sText5, sText6};
   xiiUInt32           uiStrLen[uiMaxParams] = {0};
   xiiUInt32           uiMoreBytes           = 0;
-  xiiUInt32           uiMoreChars           = 0;
 
   // first figure out how much the string has to grow
   for (xiiUInt32 i = 0; i < uiMaxParams; ++i)
@@ -803,13 +910,10 @@ void xiiStringBuilder::AppendWithSeparator(xiiStringView sOptional, xiiStringVie
     if (pStrings[i].IsEmpty())
       continue;
 
-    XII_ASSERT_DEBUG(pStrings[i].GetStartPointer() < m_Data.GetData() || pStrings[i].GetStartPointer() >= m_Data.GetData() + m_Data.GetCapacity(),
-                     "Parameter {0} comes from the string builders own storage. This type assignment is not allowed.", i);
+    XII_ASSERT_DEBUG(pStrings[i].GetStartPointer() < m_Data.GetData() || pStrings[i].GetStartPointer() >= m_Data.GetData() + m_Data.GetCapacity(), "Parameter {0} comes from the string builders own storage. This type assignment is not allowed.", i);
 
-    xiiUInt32 uiCharacters = 0;
-    xiiStringUtils::GetCharacterAndElementCount(pStrings[i].GetStartPointer(), uiCharacters, uiStrLen[i], pStrings[i].GetEndPointer());
+    uiStrLen[i] = pStrings[i].GetElementCount();
     uiMoreBytes += uiStrLen[i];
-    uiMoreChars += uiCharacters;
 
     XII_ASSERT_DEV(xiiUnicodeUtils::IsValidUtf8(pStrings[i].GetStartPointer(), pStrings[i].GetEndPointer()), "Parameter {0} is not a valid Utf8 sequence.", i + 1);
   }
@@ -825,7 +929,6 @@ void xiiStringBuilder::AppendWithSeparator(xiiStringView sOptional, xiiStringVie
 
   // now resize
   m_Data.SetCountUninitialized(uiPrevCount + uiMoreBytes);
-  m_uiCharacterCount += uiMoreChars;
 
   // and then append all the strings
   for (xiiUInt32 i = 0; i < uiMaxParams; ++i)
@@ -854,26 +957,37 @@ void xiiStringBuilder::ChangeFileNameAndExtension(xiiStringView sNewFileNameWith
   ReplaceSubString(it.GetStartPointer(), it.GetEndPointer(), sNewFileNameWithExtension);
 }
 
-void xiiStringBuilder::ChangeFileExtension(xiiStringView sNewExtension)
+void xiiStringBuilder::ChangeFileExtension(xiiStringView sNewExtension, bool bFullExtension /*= false*/)
 {
   while (sNewExtension.StartsWith("."))
   {
     sNewExtension.ChopAwayFirstCharacterAscii();
   }
 
-  const xiiStringView it = xiiPathUtils::GetFileExtension(GetView());
+  const xiiStringView it = xiiPathUtils::GetFileExtension(GetView(), bFullExtension);
 
-  if (it.IsEmpty() && !EndsWith("."))
-    Append(".", sNewExtension);
+  if (it.IsEmpty())
+  {
+    if (!EndsWith("."))
+    {
+      Append(".", sNewExtension);
+    }
+    else
+    {
+      Append(sNewExtension);
+    }
+  }
   else
+  {
     ReplaceSubString(it.GetStartPointer(), it.GetEndPointer(), sNewExtension);
+  }
 }
 
-void xiiStringBuilder::RemoveFileExtension()
+void xiiStringBuilder::RemoveFileExtension(bool bFullExtension /*= false*/)
 {
   if (HasAnyExtension())
   {
-    ChangeFileExtension("");
+    ChangeFileExtension("", bFullExtension);
     Shrink(0, 1); // remove the dot
   }
 }
@@ -1025,12 +1139,8 @@ void xiiStringBuilder::RemoveDoubleSlashesInPath()
   const xiiUInt32 uiPrevByteCount = m_Data.GetCount();
   const xiiUInt32 uiNewByteCount  = (xiiUInt32)(szCurWritePos - &m_Data[0]) + 1;
 
-  XII_ASSERT_DEBUG(uiPrevByteCount >= uiNewByteCount, "It should not be possible that a path grows during cleanup. Old: {0} Bytes, New: {1} Bytes",
-                   uiPrevByteCount, uiNewByteCount);
-
-  // we will only remove characters and only ASCII ones (slash, backslash)
-  // so the number of characters shrinks equally to the number of bytes
-  m_uiCharacterCount -= (uiPrevByteCount - uiNewByteCount);
+  XII_IGNORE_UNUSED(uiPrevByteCount);
+  XII_ASSERT_DEBUG(uiPrevByteCount >= uiNewByteCount, "It should not be possible that a path grows during cleanup. Old: {0} Bytes, New: {1} Bytes", uiPrevByteCount, uiNewByteCount);
 
   // make sure to write the terminating \0 and reset the count
   *szCurWritePos = '\0';
@@ -1062,7 +1172,7 @@ void xiiStringBuilder::ReadAll(xiiStreamReader& ref_stream)
 
 void xiiStringBuilder::Trim(const char* szTrimChars)
 {
-  return Trim(szTrimChars, szTrimChars);
+  Trim(szTrimChars, szTrimChars);
 }
 
 void xiiStringBuilder::Trim(const char* szTrimCharsStart, const char* szTrimCharsEnd)
@@ -1071,6 +1181,16 @@ void xiiStringBuilder::Trim(const char* szTrimCharsStart, const char* szTrimChar
   const char* szNewEnd   = GetData() + GetElementCount();
   xiiStringUtils::Trim(szNewStart, szNewEnd, szTrimCharsStart, szTrimCharsEnd);
   Shrink(xiiStringUtils::GetCharacterCount(GetData(), szNewStart), xiiStringUtils::GetCharacterCount(szNewEnd, GetData() + GetElementCount()));
+}
+
+void xiiStringBuilder::TrimLeft(const char* szTrimChars /*= " \f\n\r\t\v"*/)
+{
+  Trim(szTrimChars, "");
+}
+
+void xiiStringBuilder::TrimRight(const char* szTrimChars /*= " \f\n\r\t\v"*/)
+{
+  Trim("", szTrimChars);
 }
 
 bool xiiStringBuilder::TrimWordStart(xiiStringView sWord)
@@ -1146,5 +1266,48 @@ void xiiStringBuilder::SetPrintf(const char* szUtf8Format, ...)
 
   va_end(args);
 }
+
+#if XII_ENABLED(XII_INTEROP_STL_STRINGS)
+xiiStringBuilder::xiiStringBuilder(const std::string_view& rhs, xiiAllocatorBase* pAllocator) :
+  m_Data(pAllocator)
+{
+  AppendTerminator();
+
+  *this = rhs;
+}
+
+xiiStringBuilder::xiiStringBuilder(const std::string& rhs, xiiAllocatorBase* pAllocator) :
+  m_Data(pAllocator)
+{
+  AppendTerminator();
+
+  *this = rhs;
+}
+
+void xiiStringBuilder::operator=(const std::string_view& rhs)
+{
+  if (rhs.empty())
+  {
+    Clear();
+  }
+  else
+  {
+    *this = xiiStringView(rhs.data(), rhs.data() + rhs.size());
+  }
+}
+
+void xiiStringBuilder::operator=(const std::string& rhs)
+{
+  if (rhs.empty())
+  {
+    Clear();
+  }
+  else
+  {
+    *this = xiiStringView(rhs.data(), rhs.data() + rhs.size());
+  }
+}
+
+#endif
 
 XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_StringBuilder);
