@@ -26,11 +26,12 @@ class XII_GRAPHICSD3D11_DLL xiiGALPipelineStateD3D11 final : public xiiGALPipeli
 public:
   struct ShaderType
   {
-    using StorageType = xiiUInt8;
+    using StorageType = xiiInt8;
 
     enum Enum : StorageType
     {
-      Vertex = 0U,
+      Unknown = -1,
+      Vertex,
       Pixel,
       Compute,
       Domain,
@@ -39,6 +40,8 @@ public:
 
       ENUM_COUNT
     };
+
+    static ShaderType::Enum GetIndex(xiiBitflags<xiiGALShaderType> type);
   };
 
   ID3D11BlendState*        GetD3D11BlendState() const;

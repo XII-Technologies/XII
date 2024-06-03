@@ -97,7 +97,8 @@ void xiiGALPipelineStateD3D11::SetConstantBufferPlatform(const xiiGALPipelineRes
   xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::FromMask(bindingInformation.m_ShaderStages.GetValue());
   for (auto it = stageBitfield.GetIterator(); it.IsValid(); ++it)
   {
-    xiiUInt32 uiStageIndex = it.Value();
+    // xiiUInt32 uiStageIndex = it.Value();
+    xiiUInt32 uiStageIndex = ShaderType::GetIndex(xiiGALShaderType::GetStageFlag(it.Value()));
 
     if (m_pBoundConstantBuffers[uiStageIndex][bindingInformation.m_uiBindSlot] != pD3D11Buffer)
     {
@@ -119,7 +120,7 @@ void xiiGALPipelineStateD3D11::SetShaderResourceBufferViewPlatform(const xiiGALP
   xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::FromMask(bindingInformation.m_ShaderStages.GetValue());
   for (auto it = stageBitfield.GetIterator(); it.IsValid(); ++it)
   {
-    xiiUInt32 uiStageIndex = it.Value();
+    xiiUInt32 uiStageIndex = ShaderType::GetIndex(xiiGALShaderType::GetStageFlag(it.Value()));
 
     auto& boundShaderResourceViews = m_pBoundShaderResourceViews[uiStageIndex];
     boundShaderResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
@@ -148,7 +149,7 @@ void xiiGALPipelineStateD3D11::SetShaderResourceTextureViewPlatform(const xiiGAL
   xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::FromMask(bindingInformation.m_ShaderStages.GetValue());
   for (auto it = stageBitfield.GetIterator(); it.IsValid(); ++it)
   {
-    xiiUInt32 uiStageIndex = it.Value();
+    xiiUInt32 uiStageIndex = ShaderType::GetIndex(xiiGALShaderType::GetStageFlag(it.Value()));
 
     auto& boundShaderResourceViews = m_pBoundShaderResourceViews[uiStageIndex];
     boundShaderResourceViews.EnsureCount(bindingInformation.m_uiBindSlot + 1);
@@ -215,7 +216,7 @@ void xiiGALPipelineStateD3D11::SetSamplerPlatform(const xiiGALPipelineResourceDe
   xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::FromMask(bindingInformation.m_ShaderStages.GetValue());
   for (auto it = stageBitfield.GetIterator(); it.IsValid(); ++it)
   {
-    xiiUInt32 uiStageIndex = it.Value();
+    xiiUInt32 uiStageIndex = ShaderType::GetIndex(xiiGALShaderType::GetStageFlag(it.Value()));
 
     if (m_pBoundSamplerStates[uiStageIndex][bindingInformation.m_uiBindSlot] != pD3D11SamplerState)
     {
@@ -436,6 +437,28 @@ void xiiGALPipelineStateD3D11::ResetBoundResources()
   m_BoundUnoderedAccessViews.Clear();
   m_ResourcesForUnorderedAccessViews.Clear();
   m_BoundUnoderedAccessViewsRange.Reset();
+}
+
+xiiGALPipelineStateD3D11::ShaderType::Enum xiiGALPipelineStateD3D11::ShaderType::GetIndex(xiiBitflags<xiiGALShaderType> type)
+{
+  switch (type.GetValue())
+  {
+    case xiiGALShaderType::Vertex:
+      return ShaderType::Vertex;
+    case xiiGALShaderType::Pixel:
+      return ShaderType::Pixel;
+    case xiiGALShaderType::Geometry:
+      return ShaderType::Geometry;
+    case xiiGALShaderType::Hull:
+      return ShaderType::Hull;
+    case xiiGALShaderType::Domain:
+      return ShaderType::Domain;
+    case xiiGALShaderType::Compute:
+      return ShaderType::Compute;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+  }
+  return ShaderType::Unknown;
 }
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_States_Implementation_PipelineStateD3D11);
