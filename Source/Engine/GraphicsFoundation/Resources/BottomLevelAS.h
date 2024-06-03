@@ -66,12 +66,12 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALBLASBoundingBoxDescription : public xiiH
 /// \brief This describes bottom level acceleration structure creation description.
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALBottomLevelASCreationDescription : public xiiHashableStruct<xiiGALBottomLevelASCreationDescription>
 {
-  xiiHybridArray<xiiGALBLASTriangleDescription, 16U>    m_Triangles;                                                   ///< Array of triangle geometry descriptions.
-  xiiHybridArray<xiiGALBLASBoundingBoxDescription, 16U> m_BoundingBoxes;                                               ///< Array of AABB geometry descriptions.
-  xiiBitflags<xiiGALRayTracingBuildASFlags>             m_BuildASFlags           = xiiGALRayTracingBuildASFlags::None; ///< Ray tracing build flags. The default is None.
-  xiiUInt64                                             m_uiCompactedSize        = 0U;                                 ///< Compacted size, if this acceleration structure will be the target of a compacted copy operation. The default is 0.
-  xiiUInt64                                             m_uiImmediateContextMask = XII_BIT(0);                         ///< Defines which immediate contexts are allowed to execute commands that use this bottom level acceleration structure. The default is the main immediate context.
-                                                                                                                       ///< Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
+  xiiHybridArray<xiiGALBLASTriangleDescription, 16U>    m_Triangles;                                               ///< Array of triangle geometry descriptions.
+  xiiHybridArray<xiiGALBLASBoundingBoxDescription, 16U> m_BoundingBoxes;                                           ///< Array of AABB geometry descriptions.
+  xiiBitflags<xiiGALRayTracingBuildASFlags>             m_BuildASFlags       = xiiGALRayTracingBuildASFlags::None; ///< Ray tracing build flags. The default is None.
+  xiiUInt64                                             m_uiCompactedSize    = 0U;                                 ///< Compacted size, if this acceleration structure will be the target of a compacted copy operation. The default is 0.
+  xiiUInt64                                             m_uiCommandQueueMask = XII_BIT(0);                         ///< Defines which command queues are allowed to execute commands that use this bottom level acceleration structure. The default is the main command queue.
+                                                                                                                   ///< Only specify the bits that indicate those command queues where the resource will be used, setting unnecessary bits will result in extra overhead.
 };
 
 /// \brief This describes the scratch buffer information for the acceleration structure.

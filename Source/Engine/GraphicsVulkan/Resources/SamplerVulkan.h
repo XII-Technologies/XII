@@ -7,7 +7,6 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALSamplerVulkan final : public xiiGALSampler
 {
 public:
-
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;

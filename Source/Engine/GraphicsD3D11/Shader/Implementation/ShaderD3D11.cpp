@@ -3,8 +3,6 @@
 #include <GraphicsD3D11/Device/DeviceD3D11.h>
 #include <GraphicsD3D11/Shader/ShaderD3D11.h>
 
-#include <GraphicsD3D11/Utilities/D3D11TypeConversions.h>
-
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALShaderD3D11, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
@@ -21,109 +19,86 @@ xiiResult xiiGALShaderD3D11::InitPlatform()
 {
   xiiGALDeviceD3D11* pDeviceD3D11 = static_cast<xiiGALDeviceD3D11*>(m_pDevice);
 
-  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Vertex))
-  {
-    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex)];
+  auto&   byteCode = m_Description.m_ByteCode;
+  HRESULT hResult  = E_FAIL;
 
-    if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateVertexShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pVertexShader)))
+  switch (m_Description.m_ShaderType.GetValue())
+  {
+    case xiiGALShaderType::Vertex:
     {
-      xiiLog::Error("Failed to create Direct3D11 vertex shader.");
+      ID3D11VertexShader* pD3D11VertexShader = nullptr;
+      hResult                                = pDeviceD3D11->GetD3D11Device()->CreateVertexShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &pD3D11VertexShader);
+      m_pD3D11Shader                         = pD3D11VertexShader;
+    }
+    break;
+    case xiiGALShaderType::Pixel:
+    {
+      ID3D11PixelShader* pD3D11PixelShader = nullptr;
+      hResult                              = pDeviceD3D11->GetD3D11Device()->CreatePixelShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &pD3D11PixelShader);
+      m_pD3D11Shader                       = pD3D11PixelShader;
+    }
+    break;
+    case xiiGALShaderType::Geometry:
+    {
+      ID3D11GeometryShader* pD3D11GeometryShader = nullptr;
+      hResult                                    = pDeviceD3D11->GetD3D11Device()->CreateGeometryShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &pD3D11GeometryShader);
+      m_pD3D11Shader                             = pD3D11GeometryShader;
+    }
+    break;
+    case xiiGALShaderType::Hull:
+    {
+      ID3D11HullShader* pD3D11HullShader = nullptr;
+      hResult                            = pDeviceD3D11->GetD3D11Device()->CreateHullShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &pD3D11HullShader);
+      m_pD3D11Shader                     = pD3D11HullShader;
+    }
+    break;
+    case xiiGALShaderType::Domain:
+    {
+      ID3D11DomainShader* pD3D11DomainShader = nullptr;
+      hResult                                = pDeviceD3D11->GetD3D11Device()->CreateDomainShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &pD3D11DomainShader);
+      m_pD3D11Shader                         = pD3D11DomainShader;
+    }
+    break;
+    case xiiGALShaderType::Compute:
+    {
+      ID3D11ComputeShader* pD3D11ComputeShader = nullptr;
+      hResult                                  = pDeviceD3D11->GetD3D11Device()->CreateComputeShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &pD3D11ComputeShader);
+      m_pD3D11Shader                           = pD3D11ComputeShader;
+    }
+    break;
+    default:
+    {
+      xiiLog::Error("Unsupported shader type");
       return XII_FAILURE;
     }
+    break;
   }
 
-  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Hull))
+  if (FAILED(hResult))
   {
-    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Hull)];
-
-    if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateHullShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pHullShader)))
-    {
-      xiiLog::Error("Failed to create Direct3D11 hull shader.");
-      return XII_FAILURE;
-    }
-  }
-
-  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Domain))
-  {
-    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Domain)];
-
-    if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateDomainShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pDomainShader)))
-    {
-      xiiLog::Error("Failed to create Direct3D11 domain shader.");
-      return XII_FAILURE;
-    }
-  }
-
-  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Geometry))
-  {
-    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Geometry)];
-
-    if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateGeometryShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pGeometryShader)))
-    {
-      xiiLog::Error("Failed to create Direct3D11 geometry shader.");
-      return XII_FAILURE;
-    }
-  }
-
-  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Pixel))
-  {
-    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Pixel)];
-
-    if (FAILED(pDeviceD3D11->GetD3D11Device()->CreatePixelShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pPixelShader)))
-    {
-      xiiLog::Error("Failed to create Direct3D11 pixel shader.");
-      return XII_FAILURE;
-    }
-  }
-
-  if (m_Description.HasByteCodeForStage(xiiGALShaderStage::Compute))
-  {
-    auto& byteCode = m_Description.m_ByteCodes[xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Compute)];
-
-    if (FAILED(pDeviceD3D11->GetD3D11Device()->CreateComputeShader(byteCode->GetByteCode(), byteCode->GetSize(), nullptr, &m_pComputeShader)))
-    {
-      xiiLog::Error("Failed to create Direct3D11 compute shader.");
-      return XII_FAILURE;
-    }
+    xiiLog::Error("Failed to create Direct3D11 shader: {}", xiiHRESULTtoString(hResult));
+    return XII_FAILURE;
   }
   return XII_SUCCESS;
 }
 
 xiiResult xiiGALShaderD3D11::DeInitPlatform()
 {
-  XII_GAL_D3D11_RELEASE(m_pVertexShader);
-  XII_GAL_D3D11_RELEASE(m_pHullShader);
-  XII_GAL_D3D11_RELEASE(m_pDomainShader);
-  XII_GAL_D3D11_RELEASE(m_pGeometryShader);
-  XII_GAL_D3D11_RELEASE(m_pPixelShader);
-  XII_GAL_D3D11_RELEASE(m_pComputeShader);
+  XII_GAL_D3D11_RELEASE(m_pD3D11Shader);
 
   return XII_SUCCESS;
 }
 
 void xiiGALShaderD3D11::SetDebugNamePlatform(xiiStringView sName)
 {
-#define SET_DEBUG_NAME(pShader)                                                                                     \
-  do                                                                                                                \
-  {                                                                                                                 \
-    if ((pShader) != nullptr)                                                                                       \
-    {                                                                                                               \
-      xiiStringBuilder sb;                                                                                          \
-      if (FAILED((pShader)->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb)))) \
-      {                                                                                                             \
-        xiiLog::Error("Failed to set the Direct3D11 shader debug name.");                                           \
-      }                                                                                                             \
-    }                                                                                                               \
-  } while (0)
-
-  SET_DEBUG_NAME(m_pVertexShader);
-  SET_DEBUG_NAME(m_pHullShader);
-  SET_DEBUG_NAME(m_pDomainShader);
-  SET_DEBUG_NAME(m_pGeometryShader);
-  SET_DEBUG_NAME(m_pPixelShader);
-  SET_DEBUG_NAME(m_pComputeShader);
-
-#undef SET_DEBUG_NAME
+  if (m_pD3D11Shader != nullptr)
+  {
+    xiiStringBuilder sb;
+    if (FAILED(m_pD3D11Shader->SetPrivateData(WKPDID_D3DDebugObjectName, sName.GetElementCount(), sName.GetData(sb))))
+    {
+      xiiLog::Error("Failed to set the Direct3D11 shader debug name.");
+    }
+  }
 }
 
 XII_STATICLINK_FILE(GraphicsD3D11, GraphicsD3D11_Shader_Implementation_ShaderD3D11);

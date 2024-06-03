@@ -180,7 +180,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALWaveOperationProperties : public xiiHash
 
   xiiUInt32                      m_uiMinSize             = 0U;                         ///< Minimum supported size of the wave.
   xiiUInt32                      m_uiMaxSize             = 0U;                         ///< Maximum supported size of the wave. If variable wave size is not supported then this value is equal to MinSize. Direct3D12 backend: requires shader model 6.6. Vulkan backend: requires VK_EXT_subgroup_size_control.
-  xiiBitflags<xiiGALShaderStage> m_SupportedShaderStages = xiiGALShaderStage::Unknown; ///< Shader stages in which wave operations can be used.
+  xiiBitflags<xiiGALShaderType>  m_SupportedShaderStages = xiiGALShaderType::Unknown;  ///< Shader stages in which wave operations can be used.
   xiiBitflags<xiiGALWaveFeature> m_WaveFeatures          = xiiGALWaveFeature::Unknown; ///< Indicates which groups of wave operations are supported by this device.
 
   /// \brief Equality comparison operator.
@@ -368,7 +368,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALSparseResourceProperties : public xiiHas
 struct XII_GRAPHICSFOUNDATION_DLL xiiGALCommandQueueProperties : public xiiHashableStruct<xiiGALCommandQueueProperties>
 {
   xiiBitflags<xiiGALCommandQueueType> m_Type                = xiiGALCommandQueueType::Unknown; ///< Indicates which type of commands are supported by this queue.
-  xiiUInt32                           m_uiMaxDeviceContexts = 0U;                              ///< The maximum number of immediate contexts that may be created for this queue.
+  xiiUInt32                           m_uiMaxDeviceContexts = 0U;                              ///< The maximum number of command queues that may be created for this queue.
   xiiStaticArray<xiiUInt32, 3U>       m_TextureCopyGranularity;                                ///< Defines required texture offset and size alignment for copy operations in transfer queues.
 
   /// \brief Equality comparison operator.

@@ -7,7 +7,6 @@
 class XII_GRAPHICSVULKAN_DLL xiiGALTextureViewVulkan final : public xiiGALTextureView
 {
 public:
-
 protected:
   friend class xiiGALDeviceVulkan;
   friend class xiiMemoryUtils;

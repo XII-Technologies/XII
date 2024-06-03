@@ -52,12 +52,12 @@ private:
     xiiHybridArray<xiiPermutationVar, 16> m_Permutations;
     xiiHybridArray<xiiPermutationVar, 16> m_FixedPermVars;
     xiiString                             m_StateSource;
-    xiiString                             m_ShaderStageSource[xiiGALShaderStage::ENUM_COUNT];
+    xiiString                             m_ShaderStageSource[xiiGALShaderType::ENUM_COUNT];
   };
 
   xiiResult FileOpen(xiiStringView sAbsoluteFile, xiiDynamicArray<xiiUInt8>& FileContent, xiiTimestamp& out_FileModification);
 
-  xiiStringBuilder m_StageSourceFile[xiiGALShaderStage::ENUM_COUNT];
+  xiiStringBuilder m_StageSourceFile[xiiGALShaderType::ENUM_COUNT];
 
   xiiTokenizedFileCache m_FileCache;
   xiiShaderData         m_ShaderData;

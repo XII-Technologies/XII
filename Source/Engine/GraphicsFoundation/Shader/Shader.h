@@ -2,8 +2,6 @@
 
 #include <GraphicsFoundation/GraphicsFoundationDLL.h>
 
-#include <GraphicsFoundation/Declarations/DeviceObject.h>
-#include <GraphicsFoundation/Declarations/GraphicsTypes.h>
 #include <GraphicsFoundation/Shader/ShaderByteCode.h>
 
 /// \brief This describes the shader creation description.
@@ -12,23 +10,12 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderCreationDescription : public xiiHa
   xiiGALShaderCreationDescription();
   ~xiiGALShaderCreationDescription();
 
-  bool HasByteCodeForStage(xiiGALShaderStage::Enum stage) const;
+  bool HasValidByteCode() const;
 
-  xiiBitflags<xiiGALShaderStage> m_ShaderStage                 = xiiGALShaderStage::Unknown; ///< The shader stages. The default is xiiGALShaderStage::Unknown.
-  bool                           m_bUseCombinedTextureSamplers = false;                      ///< If set to true, textures will be combined with texture samplers.
-                                                                                             ///<
-                                                                                             ///< The m_bCombinedSamplerSuffix member defines the suffix added to the texture variable name to get corresponding sampler name.
-                                                                                             ///< When using combined samplers, the sampler assigned to the shader resource view is automatically set when
-                                                                                             ///< the view is bound. Otherwise, samplers need to be explicitly set similar to other shader variables.
-                                                                                             ///<
-                                                                                             ///< This member has no effect if the shader is used in the PSO that uses pipeline resource signature(s).
+  xiiBitflags<xiiGALShaderType>             m_ShaderType = xiiGALShaderType::Unknown; ///< The shader type. The default is xiiGALShaderType::Unknown.
+  xiiScopedRefPointer<xiiGALShaderByteCode> m_ByteCode;                               ///< The shader byte code. See xiiGALShaderByteCode.
 
-  xiiStringView m_sCombinedSamplerSuffix = "_Sampler"; ///< If m_bUseCombinedTextureSamplers is true, defines the suffix added to the texture variable name to get corresponding sampler name. For example,
-                                                       ///< for the default value "_Sampler", a texture named "Tex" will be combined with the sampler named "Tex_Sampler". If m_bUseCombinedTextureSamplers is false, this member is ignored.
-                                                       ///<
-                                                       ///< This member has no effect if the shader is used in the PSO that uses pipeline resource signature(s).
-
-  xiiScopedRefPointer<xiiGALShaderByteCode> m_ByteCodes[xiiGALShaderStage::ENUM_COUNT]; ///< The shader byte code per stage.
+  bool operator==(const xiiGALShaderCreationDescription& rhs) const;
 };
 
 /// \brief Interface that defines methods to manipulate a shader object.

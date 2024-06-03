@@ -58,8 +58,8 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALTextureCreationDescription : public xiiH
   xiiBitflags<xiiGALCPUAccessFlag>    m_CPUAccessFlags     = xiiGALCPUAccessFlag::None;          ///< CPU access flags. The default is None.
   xiiBitflags<xiiGALMiscTextureFlags> m_MiscFlags          = xiiGALMiscTextureFlags::None;       ///< Miscellaneous flags. The default is None.
   xiiGALOptimizedClearValue           m_ClearValue;                                              ///< Optimized clear value.
-  xiiUInt64                           m_uiImmediateContextMask = XII_BIT(0);                     ///< Defines which immediate contexts are allowed to execute commands that use this texture. The default is the main immediate context.
-                                                                                                 ///< Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
+  xiiUInt64                           m_uiCommandQueueMask = XII_BIT(0);                         ///< Defines which command queues are allowed to execute commands that use this texture. The default is the main command queue.
+                                                                                                 ///< Only specify the bits that indicate those command queues where the resource will be used, setting unnecessary bits will result in extra overhead.
   void* m_pExisitingNativeObject = nullptr;                                                      ///< Can be used to encapsulate existing native textures in objects usable by the GAL
 
   bool      IsArray() const;

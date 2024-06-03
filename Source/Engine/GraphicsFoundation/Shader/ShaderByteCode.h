@@ -90,10 +90,10 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderPrimitiveType
   };
 
   /// \brief This returns the size of the shader primitive data type.
-  static xiiUInt32 GetPrimitiveTypeSize(xiiEnum<xiiGALShaderPrimitiveType> type);
+  static xiiUInt32 GetPrimitiveTypeSize(xiiGALShaderPrimitiveType::Enum type);
 
   /// \brief This returns true if the given shader primitive data type is a number representation, else false.
-  static bool IsNumberType(xiiEnum<xiiGALShaderPrimitiveType> type);
+  static bool IsNumberType(xiiGALShaderPrimitiveType::Enum type);
 };
 
 XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSFOUNDATION_DLL, xiiGALShaderPrimitiveType);
@@ -131,7 +131,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceDescription : public xiiHa
   xiiUInt32                                        m_uiArraySize     = 0U;                                ///< The array size. For a non-array resource this value should be 1.
   xiiUInt32                                        m_uiBindIndex     = xiiInvalidIndex;                   ///< The resource binding index in the shader.
   xiiUInt32                                        m_uiDescriptorSet = xiiInvalidIndex;                   ///< The descriptor set to which this resource belongs to.
-  xiiBitflags<xiiGALShaderStage>                   m_ShaderStages    = xiiGALShaderStage::Unknown;        ///< The shader stages to which this resource is bound.
+  xiiBitflags<xiiGALShaderType>                    m_ShaderStages    = xiiGALShaderType::Unknown;         ///< The shader stages to which this resource is bound.
   xiiUInt32                                        m_uiTotalSize     = 0U;                                ///< For a resource with variables, the total size of the resource.
   xiiDynamicArray<xiiGALShaderVariableDescription> m_Variables;                                           ///< An array of member variables for shader constant buffer, or push constants.
 };
@@ -191,8 +191,8 @@ public:
 
   // Filled by the compiler base library.
 
-  xiiBitflags<xiiGALShaderStage> m_ShaderStage           = xiiGALShaderStage::Unknown;
-  bool                           m_bWasCompiledWithDebug = false;
+  xiiBitflags<xiiGALShaderType> m_ShaderStage           = xiiGALShaderType::Unknown;
+  bool                          m_bWasCompiledWithDebug = false;
 };
 
 #include <GraphicsFoundation/Shader/Implementation/ShaderByteCode_inl.h>

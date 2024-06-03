@@ -6,7 +6,7 @@
 #include <GraphicsCore/ShaderCompiler/ShaderManager.h>
 #include <GraphicsFoundation/Shader/Types.h>
 
-xiiMap<xiiUInt32, xiiShaderStageBinary> xiiShaderStageBinary::s_ShaderStageBinaries[xiiGALShaderStage::ENUM_COUNT];
+xiiMap<xiiUInt32, xiiShaderStageBinary> xiiShaderStageBinary::s_ShaderStageBinaries[xiiGALShaderType::ENUM_COUNT];
 
 xiiShaderStageBinary::xiiShaderStageBinary() = default;
 
@@ -221,7 +221,7 @@ xiiResult xiiShaderStageBinary::WriteStageBinary(xiiLogInterface* pLog) const
   xiiStringBuilder sShaderStageFile = xiiShaderManager::GetCacheDirectory();
 
   sShaderStageFile.AppendPath(xiiShaderManager::GetActivePlatform().GetData());
-  sShaderStageFile.AppendFormat("/{0}_{1}.xiiShaderStage", xiiGALShaderStage::Names[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)m_pGALByteCode->m_ShaderStage.GetValue())], xiiArgU(m_uiSourceHash, 8, true, 16, true));
+  sShaderStageFile.AppendFormat("/{0}_{1}.xiiShaderStage", xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)m_pGALByteCode->m_ShaderStage.GetValue())], xiiArgU(m_uiSourceHash, 8, true, 16, true));
 
   xiiFileWriter StageFileOut;
   if (StageFileOut.Open(sShaderStageFile.GetData()).Failed())
@@ -240,16 +240,16 @@ xiiResult xiiShaderStageBinary::WriteStageBinary(xiiLogInterface* pLog) const
 }
 
 // static
-xiiShaderStageBinary* xiiShaderStageBinary::LoadStageBinary(xiiBitflags<xiiGALShaderStage> Stage, xiiUInt32 uiHash)
+xiiShaderStageBinary* xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::Enum Stage, xiiUInt32 uiHash)
 {
-  auto itStage = s_ShaderStageBinaries[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)Stage.GetValue())].Find(uiHash);
+  auto itStage = s_ShaderStageBinaries[xiiGALShaderType::GetStageIndex(Stage)].Find(uiHash);
 
   if (!itStage.IsValid())
   {
     xiiStringBuilder sShaderStageFile = xiiShaderManager::GetCacheDirectory();
 
     sShaderStageFile.AppendPath(xiiShaderManager::GetActivePlatform().GetData());
-    sShaderStageFile.AppendFormat("/{0}_{1}.xiiShaderStage", xiiGALShaderStage::Names[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)Stage.GetValue())], xiiArgU(uiHash, 8, true, 16, true));
+    sShaderStageFile.AppendFormat("/{0}_{1}.xiiShaderStage", xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex(Stage)], xiiArgU(uiHash, 8, true, 16, true));
 
     xiiFileReader StageFileIn;
     if (StageFileIn.Open(sShaderStageFile.GetData()).Failed())
@@ -265,7 +265,7 @@ xiiShaderStageBinary* xiiShaderStageBinary::LoadStageBinary(xiiBitflags<xiiGALSh
       return nullptr;
     }
 
-    itStage = xiiShaderStageBinary::s_ShaderStageBinaries[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)Stage.GetValue())].Insert(uiHash, shaderStageBinary);
+    itStage = xiiShaderStageBinary::s_ShaderStageBinaries[xiiGALShaderType::GetStageIndex(Stage)].Insert(uiHash, shaderStageBinary);
   }
 
   xiiShaderStageBinary* pShaderStageBinary = &itStage.Value();
@@ -276,7 +276,7 @@ xiiShaderStageBinary* xiiShaderStageBinary::LoadStageBinary(xiiBitflags<xiiGALSh
 // static
 void xiiShaderStageBinary::OnEngineShutdown()
 {
-  for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = 0; stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
     s_ShaderStageBinaries[stage].Clear();
   }

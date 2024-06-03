@@ -64,29 +64,52 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiGALValueType, 1)
   XII_ENUM_CONSTANT(xiiGALValueType::Float64),
 XII_END_STATIC_REFLECTED_ENUM;
 
-XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShaderStage, 1)
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::Unknown),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::Vertex),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::Pixel),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::Geometry),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::Hull),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::Domain),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::Compute),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::Amplification),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::Mesh),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::RayGeneration),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::RayMiss),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::RayClosestHit),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::RayAnyHit),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::RayIntersection),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::Callable),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::Tile),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::AllGraphics),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::AllMesh),
-  XII_BITFLAGS_CONSTANT(xiiGALShaderStage::AllRayTracing),
+XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALShaderType, 1)
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::Unknown),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::Vertex),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::Pixel),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::Geometry),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::Hull),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::Domain),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::Compute),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::Amplification),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::Mesh),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::RayGeneration),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::RayMiss),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::RayClosestHit),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::RayAnyHit),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::RayIntersection),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::Callable),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::Tile),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::AllGraphics),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::AllMesh),
+  XII_BITFLAGS_CONSTANT(xiiGALShaderType::AllRayTracing),
 XII_END_STATIC_REFLECTED_BITFLAGS;
 
-const char* xiiGALShaderStage::Names[ENUM_COUNT] = {
+// static
+xiiUInt32 xiiGALShaderType::GetStageIndex(xiiGALShaderType::Enum stage)
+{
+  xiiStaticBitfield32 shaderTypeBitfield = xiiStaticBitfield32::FromMask(stage);
+
+  XII_ASSERT_DEV(shaderTypeBitfield.GetNumBitsSet() <= 1U, "There are more than one bits set.");
+
+  const auto iterator = shaderTypeBitfield.GetIterator();
+  if (iterator.IsValid())
+  {
+    return iterator.Value();
+  }
+  return xiiInvalidIndex;
+}
+
+// static
+xiiGALShaderType::Enum xiiGALShaderType::GetStageFlag(xiiUInt32 uiIndex)
+{
+  XII_ASSERT_DEV(uiIndex >= 0 && uiIndex < xiiGALShaderType::ENUM_COUNT, "The shader type index it out of range. Expeceted [0, {}), but got {}", xiiGALShaderType::ENUM_COUNT, uiIndex);
+
+  return static_cast<xiiGALShaderType::Enum>(XII_BIT(uiIndex));
+}
+
+const char* xiiGALShaderType::Names[ENUM_COUNT] = {
   "Vertex",
   "Pixel",
   "Geometry",

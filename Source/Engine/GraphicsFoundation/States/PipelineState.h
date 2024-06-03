@@ -100,7 +100,7 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALShaderResourceVariableDescription : publ
   XII_DECLARE_POD_TYPE();
 
   xiiStringView                             m_sName;                                                   ///< The shader variable name.
-  xiiBitflags<xiiGALShaderStage>            m_ShaderStages = xiiGALShaderStage::Unknown;               ///< The shader stages this resources variable applies to. If more than one shader stage is specified, the variable will be shared between these stages. Shader stages used by different variables with the same name must not overlap.
+  xiiBitflags<xiiGALShaderType>             m_ShaderStages = xiiGALShaderType::Unknown;                ///< The shader stages this resources variable applies to. If more than one shader stage is specified, the variable will be shared between these stages. Shader stages used by different variables with the same name must not overlap.
   xiiEnum<xiiGALShaderResourceVariableType> m_Type         = xiiGALShaderResourceVariableType::Static; ///< The shader variable type.
   xiiBitflags<xiiGALShaderVariableFlags>    m_Flags        = xiiGALShaderVariableFlags::None;          ///< The shader variable flags.
 };
@@ -110,17 +110,62 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALGraphicsPipelineDescription : public xii
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiGALBlendStateHandle                      m_hBlendState;                                               ///< The handle to the blend state object.
-  xiiUInt32                                   m_uiSampleMask = 0xFFFFFFFF;                                 ///< A 32-bit sample mask that determines which samples get updated in all the active render targets. A sample mask is always applied; it is independent of whether multisampling is enabled, and does not depend on whether an application uses multisample render targets.
-  xiiGALRasterizerStateHandle                 m_hRasterizerState;                                          ///< The handle to rasterizer state object.
-  xiiGALDepthStencilStateHandle               m_hDepthStencilState;                                        ///< The handle to depth-stencil state object.
+  xiiGALShaderHandle                          m_hVertexShader;                                             ///< The vertex shader to be used with the pipeline.
+  xiiGALShaderHandle                          m_hPixelShader;                                              ///< The pixel shader to be used with the pipeline.
+  xiiGALShaderHandle                          m_hDomainShader;                                             ///< The domain shader to be used with the pipeline.
+  xiiGALShaderHandle                          m_hHullShader;                                               ///< The hull shader to be used with the pipeline.
+  xiiGALShaderHandle                          m_hGeometryShader;                                           ///< The geometry shader to be used with the pipeline.
+  xiiGALShaderHandle                          m_hAmplificationShader;                                      ///< The amplification shader to be used with the pipeline.
+  xiiGALShaderHandle                          m_hMeshShader;                                               ///< The mesh shader to be used with the pipeline.
+  xiiGALBlendStateHandle                      m_hBlendState;                                               ///< The handle to the blend state object to be used with the pipeline.
+  xiiGALRasterizerStateHandle                 m_hRasterizerState;                                          ///< The handle to rasterizer state object to be used with the pipeline.
+  xiiGALDepthStencilStateHandle               m_hDepthStencilState;                                        ///< The handle to depth-stencil state object to be used with the pipeline.
   xiiGALInputLayoutHandle                     m_hInputLayout;                                              ///< The handle to vertex input layout, ignored in a mesh pipeline.
+  xiiGALRenderPassHandle                      m_hRenderPass;                                               ///< The handle to the render pass object to be used with the pipeline.
+  xiiUInt32                                   m_uiSampleMask      = 0xFFFFFFFFU;                           ///< A 32-bit sample mask that determines which samples get updated in all the active render targets. A sample mask is always applied; it is independent of whether multisampling is enabled, and does not depend on whether an application uses multisample render targets.
   xiiEnum<xiiGALPrimitiveTopology>            m_PrimitiveTopology = xiiGALPrimitiveTopology::TriangleList; ///< The primitive topology type, ignored in a mesh pipeline. The default is xiiGALPrimitiveTopology::TriangleList.
   xiiUInt8                                    m_uiViewportCount   = 1U;                                    ///< The number of viewports used by this pipeline. The default is 1.
   xiiUInt8                                    m_uiSubpassIndex    = 0U;                                    ///< The subpass index within the render pass. The default is 0.
   xiiBitflags<xiiGALPipelineShadingRateFlags> m_ShadingRateFlags  = xiiGALPipelineShadingRateFlags::None;  ///< Shading rate flags that specify which type of the shading rate will be used with this pipeline. The default is xiiGALPipelineShadingRateFlags::None.
   xiiGALSampleDescription                     m_SampleDescription;                                         ///< Multi-sampling parameters.
-  xiiGALRenderPassHandle                      m_hRenderPass;                                               ///< The handle to the render pass object.
+};
+
+/// \brief This describes compute pipeline information.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALComputePipelineDescription : public xiiHashableStruct<xiiGALComputePipelineDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiGALShaderHandle hComputeShader; ///< The compute shader to be used with the pipeline.
+};
+
+/// \brief This describes the ray tracing general shader group information.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingGeneralShaderGroupDescription : public xiiHashableStruct<xiiGALRayTracingGeneralShaderGroupDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiHashedString    m_sName;   ///< The unique group name.
+  xiiGALShaderHandle m_hShader; ///< The shader of type xiiGALShaderType::RayGeneration, xiiGALShaderType::RayMiss, or xiiGALShaderType::Callable. This must not be invalid.
+};
+
+/// \brief This describes the ray tracing general shader group information.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingTriangleHitShaderGroupDescription : public xiiHashableStruct<xiiGALRayTracingTriangleHitShaderGroupDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiHashedString    m_sName;             ///< The unique group name.
+  xiiGALShaderHandle m_hClosestHitShader; ///< The shader of type xiiGALShaderType::RayClosestHit. This must not be invalid.
+  xiiGALShaderHandle m_hAnyHitShader;     ///< The shader of type xiiGALShaderType::RayAnyHit. This can be invalid.
+};
+
+/// \brief This describes the ray tracing general shader group information.
+struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingProceduralHitShaderGroupDescription : public xiiHashableStruct<xiiGALRayTracingProceduralHitShaderGroupDescription>
+{
+  XII_DECLARE_POD_TYPE();
+
+  xiiHashedString    m_sName;               ///< The unique group name.
+  xiiGALShaderHandle m_hIntersectionShader; ///< The shader of type xiiGALShaderType::RayIntersection. This must not be invalid.
+  xiiGALShaderHandle m_hClosestHitShader;   ///< The shader of type xiiGALShaderType::RayClosestHit. This can be invalid.
+  xiiGALShaderHandle m_hAnyHitShader;       ///< The shader of type xiiGALShaderType::RayAnyHit. This can be invalid.
 };
 
 /// \brief This describes the ray tracing pipeline information.
@@ -128,8 +173,14 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALRayTracingPipelineDescription : public x
 {
   XII_DECLARE_POD_TYPE();
 
-  xiiUInt16 m_uiShaderRecordSize  = 0U; ///< Size of the additional data passed to the shader. Shader record size plus shader group size (32 bytes) must be aligned to 32 bytes. Shader record size plus shader group size (32 bytes) must not exceed 4096 bytes
-  xiiUInt8  m_uiMaxRecursionDepth = 0U; ///< Number of recursive calls of TraceRay() in HLSL. Zero means no tracing of rays at all, only ray-gen shader will be executed. See Device MaxRayTracingRecursionDepth.
+  xiiHashedString                                                      m_sShaderRecordName;           ///< In Direct3D12, the name of the constant buffer that will be used by the local root signature. This is unused if m_uiShaderRecordSize is zero.
+  xiiDynamicArray<xiiGALRayTracingGeneralShaderGroupDescription>       m_GeneralShaders;              ///< An array of xiiGALRayTracingGeneralShaderGroupDescription structures that contain the shader group description.
+  xiiDynamicArray<xiiGALRayTracingTriangleHitShaderGroupDescription>   m_TriangleHitShaders;          ///< An array of xiiGALRayTracingTriangleHitShaderGroupDescription structures that contain the shader group description.
+  xiiDynamicArray<xiiGALRayTracingProceduralHitShaderGroupDescription> m_ProceduralHitShaders;        ///< An array of xiiGALRayTracingProceduralHitShaderGroupDescription structures that contain the shader group description.
+  xiiUInt32                                                            m_uiMaximumAttributeSize = 0U; ///< In Direct3D12, the maximum hit shader attribute size in bytes. If zero then maximum allowed size will be used.
+  xiiUInt32                                                            m_uiMaximumPayloadSize   = 0U; ///< In Direct3D12, the maximum payload size in bytes. If zero then maximum allowed size will be used.
+  xiiUInt16                                                            m_uiShaderRecordSize     = 0U; ///< Size of the additional data passed to the shader. Shader record size plus shader group size (32 bytes) must be aligned to 32 bytes. Shader record size plus shader group size (32 bytes) must not exceed 4096 bytes
+  xiiUInt8                                                             m_uiMaxRecursionDepth    = 0U; ///< Number of recursive calls of TraceRay() in HLSL. Zero means no tracing of rays at all, only ray-gen shader will be executed. See Device MaxRayTracingRecursionDepth.
 };
 
 /// \brief This describes the tile pipeline information.
@@ -146,13 +197,13 @@ struct XII_GRAPHICSFOUNDATION_DLL xiiGALPipelineStateCreationDescription : publi
 
   xiiEnum<xiiGALPipelineType>           m_PipelineType = xiiGALPipelineType::Graphics; ///< The pipeline type. The default is xiiGALPipelineType::Graphics.
   xiiGALPipelineResourceSignatureHandle m_hPipelineResourceSignature;                  ///< The pipeline resource signature that contains the shader resource description.
-  xiiGALShaderHandle                    m_hShader;                                     ///< The shader that contains the valid shader code for the specified pipeline type.
   xiiGALGraphicsPipelineDescription     m_GraphicsPipeline;                            ///< The graphics pipeline description, see xiiGALGraphicsPipelineDescription.
+  xiiGALComputePipelineDescription      m_ComputePipeline;                             ///< The compute pipeline description, see xiiGALComputePipelineDescription.
   xiiGALRayTracingPipelineDescription   m_RayTracingPipeline;                          ///< The ray tracing pipeline description, see xiiGALRayTracingPipelineDescription.
   xiiGALTilePipelineDescription         m_TilePipeline;                                ///< The tile pipeline description, see xiiGALTilePipelineDescription.
-  xiiUInt32                             m_uiNodeMask             = 0x0;                ///< Node mask.
-  xiiUInt64                             m_uiImmediateContextMask = XII_BIT(0);         ///< Defines which immediate contexts are allowed to execute commands that use this texture. The default is the main immediate context.
-                                                                                       ///< Only specify the bits that indicate those immediate contexts where the resource will be used, setting unnecessary bits will result in extra overhead.
+  xiiUInt32                             m_uiNodeMask         = 0x0;                    ///< Node mask.
+  xiiUInt64                             m_uiCommandQueueMask = XII_BIT(0);             ///< Defines which command queues are allowed to execute commands that use this texture. The default is the main command queue.
+                                                                                       ///< Only specify the bits that indicate those command queues where the resource will be used, setting unnecessary bits will result in extra overhead.
 
   /// \brief Returns true if this pipeline state is a graphics pipeline.
   bool IsAnyGraphicsPipeline() const;

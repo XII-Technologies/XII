@@ -23,7 +23,7 @@ xiiShaderPermutationResource::xiiShaderPermutationResource() :
 {
   m_bShaderPermutationValid = false;
 
-  for (xiiUInt32 stage = 0; stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = 0; stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
     m_ByteCodes[stage] = nullptr;
   }
@@ -35,10 +35,13 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UnloadData(Unload WhatToUnload
 
   auto pDevice = xiiGALDevice::GetDefaultDevice();
 
-  if (!m_hShader.IsInvalidated())
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(m_hShaders); ++i)
   {
-    pDevice->DestroyShader(m_hShader);
-    m_hShader.Invalidate();
+    if (!m_hShaders[i].IsInvalidated())
+    {
+      pDevice->DestroyShader(m_hShaders[i]);
+      m_hShaders[i].Invalidate();
+    }
   }
 
   if (!m_hPipelineResourceSignature.IsInvalidated())
@@ -109,25 +112,23 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
     m_hRasterizerState   = pDevice->CreateRasterizerState(PermutationBinary.m_StateDescriptor.m_RasterizerDesc);
   }
 
-  xiiGALShaderCreationDescription ShaderDesc;
-
   xiiGALPipelineResourceSignatureCreationDescription resourceSignatureDescription;
   resourceSignatureDescription.m_bUseCombinedTextureSamplers = true;
   resourceSignatureDescription.m_sCombinedSamplerSuffix      = "_AutoSampler";
 
   // iterate over all shader stages, add them to the descriptor
-  for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+  for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
   {
     const xiiUInt32 uiStageHash = PermutationBinary.m_uiShaderStageHashes[stage];
 
     if (uiStageHash == 0) // not used
       continue;
 
-    xiiShaderStageBinary* pStageBin = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderStage::GetStageFlag(stage), uiStageHash);
+    xiiShaderStageBinary* pStageBin = xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash);
 
     if (pStageBin == nullptr)
     {
-      xiiLog::Error("Shader Permutation '{0}': Stage '{1}' could not be loaded", GetResourceID(), xiiGALShaderStage::Names[stage]);
+      xiiLog::Error("Shader Permutation '{0}': Stage '{1}' could not be loaded", GetResourceID(), xiiGALShaderType::Names[stage]);
       return res;
     }
 
@@ -135,36 +136,42 @@ xiiResourceLoadDesc xiiShaderPermutationResource::UpdateContent(xiiStreamReader*
     // since it contains other useful information (resource bindings), that we need for shader binding
     m_ByteCodes[stage] = pStageBin->GetByteCode();
 
-    XII_ASSERT_DEV(pStageBin->m_pGALByteCode->m_ShaderStage == xiiGALShaderStage::GetStageFlag(stage), "Invalid shader stage! Expected stage '{0}', but loaded data is for stage '{1}'", xiiGALShaderStage::Names[stage], xiiGALShaderStage::Names[xiiGALShaderStage::GetStageIndex((xiiGALShaderStage::Enum)pStageBin->m_pGALByteCode->m_ShaderStage.GetValue())]);
+    XII_ASSERT_DEV(pStageBin->m_pGALByteCode->m_ShaderStage == xiiGALShaderType::GetStageFlag(stage), "Invalid shader stage! Expected stage '{0}', but loaded data is for stage '{1}'", xiiGALShaderType::Names[stage], xiiGALShaderType::Names[xiiGALShaderType::GetStageIndex((xiiGALShaderType::Enum)pStageBin->m_pGALByteCode->m_ShaderStage.GetValue())]);
 
-    ShaderDesc.m_ByteCodes[stage] = pStageBin->m_pGALByteCode;
-
-    uiGPUMem += pStageBin->m_pGALByteCode->m_ByteCode.GetCount();
-
-    for (const auto& resource : pStageBin->m_pGALByteCode->m_ShaderResourceBindings)
+    if (pStageBin->m_pGALByteCode->IsValid())
     {
-      auto& resourceSignature = resourceSignatureDescription.m_Resources.ExpandAndGetRef();
+      xiiGALShaderCreationDescription shaderDescription;
+      shaderDescription.m_ShaderType = xiiGALShaderType::GetStageFlag(stage);
+      shaderDescription.m_ByteCode   = pStageBin->m_pGALByteCode;
 
-      resourceSignature.m_sName                 = resource.m_sName;
-      resourceSignature.m_ResourceType          = resource.m_Type;
-      resourceSignature.m_ShaderStages          = resource.m_ShaderStages;
-      resourceSignature.m_uiArraySize           = resource.m_uiArraySize;
-      resourceSignature.m_uiBindSlot            = resource.m_uiBindIndex;
-      resourceSignature.m_uiBindSet             = resource.m_uiDescriptorSet;
-      resourceSignature.m_ResourceVariableType  = xiiGALShaderResourceVariableType::Mutable;
-      resourceSignature.m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None;
+      m_hShaders[stage] = pDevice->CreateShader(shaderDescription);
+
+      if (m_hShaders[stage].IsInvalidated())
+      {
+        xiiLog::Error("Shader Permutation '{0}': Shader program creation for {1} shader failed.", GetResourceID(), xiiGALShaderType::Names[stage]);
+        return res;
+      }
+      pDevice->GetShader(m_hShaders[stage])->SetDebugName(GetResourceID());
+
+      m_ActiveShaderStages |= xiiGALShaderType::GetStageFlag(stage);
+
+      uiGPUMem += pStageBin->m_pGALByteCode->m_ByteCode.GetCount();
+
+      for (const auto& resource : pStageBin->m_pGALByteCode->m_ShaderResourceBindings)
+      {
+        auto& resourceSignature = resourceSignatureDescription.m_Resources.ExpandAndGetRef();
+
+        resourceSignature.m_sName                 = resource.m_sName;
+        resourceSignature.m_ResourceType          = resource.m_Type;
+        resourceSignature.m_ShaderStages          = resource.m_ShaderStages;
+        resourceSignature.m_uiArraySize           = resource.m_uiArraySize;
+        resourceSignature.m_uiBindSlot            = resource.m_uiBindIndex;
+        resourceSignature.m_uiBindSet             = resource.m_uiDescriptorSet;
+        resourceSignature.m_ResourceVariableType  = xiiGALShaderResourceVariableType::Mutable;
+        resourceSignature.m_PipelineResourceFlags = xiiGALPipelineResourceFlags::None;
+      }
     }
   }
-
-  m_hShader = pDevice->CreateShader(ShaderDesc);
-
-  if (m_hShader.IsInvalidated())
-  {
-    xiiLog::Error("Shader Permutation '{0}': Shader program creation failed.", GetResourceID());
-    return res;
-  }
-
-  pDevice->GetShader(m_hShader)->SetDebugName(GetResourceID());
 
   m_hPipelineResourceSignature = pDevice->CreatePipelineResourceSignature(resourceSignatureDescription);
 
@@ -365,7 +372,7 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
     // write the permutation file info back to the output stream, so that the resource can read it as well
     permutationBinary.Write(w).IgnoreResult();
 
-    for (xiiUInt32 stage = xiiGALShaderStage::GetStageIndex(xiiGALShaderStage::Vertex); stage < xiiGALShaderStage::ENUM_COUNT; ++stage)
+    for (xiiUInt32 stage = xiiGALShaderType::GetStageIndex(xiiGALShaderType::Vertex); stage < xiiGALShaderType::ENUM_COUNT; ++stage)
     {
       const xiiUInt32 uiStageHash = permutationBinary.m_uiShaderStageHashes[stage];
 
@@ -373,7 +380,7 @@ xiiResourceLoadData xiiShaderPermutationResourceLoader::OpenDataStream(const xii
         continue;
 
       // this is where the preloading happens
-      xiiShaderStageBinary::LoadStageBinary(xiiGALShaderStage::GetStageFlag(stage), uiStageHash);
+      xiiShaderStageBinary::LoadStageBinary(xiiGALShaderType::GetStageFlag(stage), uiStageHash);
     }
   }
 

@@ -27,9 +27,9 @@ xiiResult xiiGALInputLayoutD3D12::InitPlatform()
 {
   xiiGALDeviceD3D12* pDeviceD3D12 = static_cast<xiiGALDeviceD3D12*>(m_pDevice);
 
-  xiiGALShaderD3D12* pShaderD3D12 = static_cast<xiiGALShaderD3D12*>(pDeviceD3D12->GetShader(m_Description.m_hShader));
+  xiiGALShaderD3D12* pShaderD3D12 = static_cast<xiiGALShaderD3D12*>(pDeviceD3D12->GetShader(m_Description.m_hVertexShader));
 
-  if (pShaderD3D12 == nullptr || !pShaderD3D12->GetDescription().HasByteCodeForStage(xiiGALShaderStage::Vertex))
+  if (pShaderD3D12 == nullptr || !pShaderD3D12->GetDescription().HasValidByteCode() || pShaderD3D12->GetDescription().m_ShaderType != xiiGALShaderType::Vertex)
   {
     xiiLog::Error("Shader is invalid, or does not have Vertex shader bytecode.");
     return XII_FAILURE;

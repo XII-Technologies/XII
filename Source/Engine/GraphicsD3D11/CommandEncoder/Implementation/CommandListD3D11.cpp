@@ -1,6 +1,5 @@
 #include <GraphicsD3D11/GraphicsD3D11PCH.h>
 
-#include <Foundation/Basics/Platform/Win/HResultUtils.h>
 #include <Foundation/Memory/MemoryUtils.h>
 
 #include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
