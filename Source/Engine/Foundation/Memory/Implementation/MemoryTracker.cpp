@@ -46,8 +46,6 @@ namespace
 
     using AllocatorTable = xiiIdTable<xiiAllocatorId, AllocatorData, TrackerDataAllocatorWrapper>;
     AllocatorTable m_AllocatorData;
-
-    xiiAllocatorId m_StaticAllocatorId;
   };
 
   static TrackerData* s_pTrackerData;
@@ -150,14 +148,7 @@ xiiAllocatorId xiiMemoryTracker::RegisterAllocator(xiiStringView sName, xiiAlloc
   data.m_TrackingMode = mode;
   data.m_ParentId     = parentId;
 
-  xiiAllocatorId id = s_pTrackerData->m_AllocatorData.Insert(data);
-
-  if (data.m_sName == XII_STATIC_ALLOCATOR_NAME)
-  {
-    s_pTrackerData->m_StaticAllocatorId = id;
-  }
-
-  return id;
+  return s_pTrackerData->m_AllocatorData.Insert(data);
 }
 
 // static
@@ -324,10 +315,8 @@ struct LeakInfo
   XII_DECLARE_POD_TYPE();
 
   xiiAllocatorId m_AllocatorId;
-  size_t         m_uiSize      = 0;
-  const void*    m_pParentLeak = nullptr;
-
-  XII_ALWAYS_INLINE bool IsRootLeak() const { return m_pParentLeak == nullptr && m_AllocatorId != s_pTrackerData->m_StaticAllocatorId; }
+  size_t         m_uiSize      = 0U;
+  bool           m_bIsRootLeak = true;
 };
 
 // static
@@ -338,8 +327,7 @@ xiiUInt32 xiiMemoryTracker::PrintMemoryLeaks(PrintFunc printFunc)
 
   XII_LOCK(*s_pTrackerData);
 
-  static xiiHashTable<const void*, LeakInfo, xiiHashHelper<const void*>, TrackerDataAllocatorWrapper> leakTable;
-  leakTable.Clear();
+  xiiHashTable<const void*, LeakInfo, xiiHashHelper<const void*>, TrackerDataAllocatorWrapper> leakTable;
 
   // first collect all leaks
   for (auto it = s_pTrackerData->m_AllocatorData.GetIterator(); it.IsValid(); ++it)
@@ -350,7 +338,11 @@ xiiUInt32 xiiMemoryTracker::PrintMemoryLeaks(PrintFunc printFunc)
       LeakInfo leak;
       leak.m_AllocatorId = it.Id();
       leak.m_uiSize      = it2.Value().m_uiSize;
-      leak.m_pParentLeak = nullptr;
+
+      if (data.m_TrackingMode == xiiAllocatorTrackingMode::AllocationStatsIgnoreLeaks)
+      {
+        leak.m_bIsRootLeak = false;
+      }
 
       leakTable.Insert(it2.Key(), leak);
     }
@@ -372,7 +364,7 @@ xiiUInt32 xiiMemoryTracker::PrintMemoryLeaks(PrintFunc printFunc)
       LeakInfo* dependentLeak = nullptr;
       if (leakTable.TryGetValue(testPtr, dependentLeak))
       {
-        dependentLeak->m_pParentLeak = ptr;
+        dependentLeak->m_bIsRootLeak = false;
       }
 
       curPtr = xiiMemoryUtils::AddByteOffset(curPtr, sizeof(void*));
@@ -387,7 +379,7 @@ xiiUInt32 xiiMemoryTracker::PrintMemoryLeaks(PrintFunc printFunc)
     const void*     ptr  = it.Key();
     const LeakInfo& leak = it.Value();
 
-    if (leak.IsRootLeak())
+    if (leak.m_bIsRootLeak)
     {
       const AllocatorData& data = s_pTrackerData->m_AllocatorData[leak.m_AllocatorId];
 

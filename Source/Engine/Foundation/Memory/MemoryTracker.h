@@ -15,8 +15,6 @@ enum class xiiAllocatorTrackingMode : xiiUInt32
   Default = XII_ALLOC_TRACKING_DEFAULT,
 };
 
-#define XII_STATIC_ALLOCATOR_NAME "Statics"
-
 /// \brief Memory tracker which keeps track of all allocations and constructions
 class XII_FOUNDATION_DLL xiiMemoryTracker
 {

@@ -5,11 +5,11 @@
 #if XII_ENABLED(XII_USE_GUARDED_ALLOCATIONS)
 using DefaultHeapType        = xiiGuardedAllocator;
 using DefaultAlignedHeapType = xiiGuardedAllocator;
-using DefaultStaticHeapType  = xiiGuardedAllocator;
+using DefaultStaticHeapType  = xiiAllocator<xiiMemoryPolicies::xiiGuardedAllocation, xiiAllocatorTrackingMode::AllocationStatsIgnoreLeaks>;
 #else
 using DefaultHeapType        = xiiHeapAllocator;
 using DefaultAlignedHeapType = xiiAlignedHeapAllocator;
-using DefaultStaticHeapType  = xiiHeapAllocator;
+using DefaultStaticHeapType  = xiiAllocator<xiiMemoryPolicies::xiiHeapAllocation, xiiAllocatorTrackingMode::AllocationStatsIgnoreLeaks>;
 #endif
 
 static constexpr xiiUInt32 HEAP_ALLOCATOR_BUFFER_SIZE    = sizeof(DefaultHeapType);
@@ -80,12 +80,10 @@ xiiAllocatorBase* xiiFoundation::GetStaticAllocator()
 
 #endif
 
-    pStaticAllocator = new (s_StaticAllocatorBuffer) DefaultStaticHeapType(XII_STATIC_ALLOCATOR_NAME);
+    pStaticAllocator = new (s_StaticAllocatorBuffer) DefaultStaticHeapType("Statics");
   }
 
   return pStaticAllocator;
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Basics_Basics);
