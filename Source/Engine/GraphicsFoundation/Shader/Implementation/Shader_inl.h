@@ -94,9 +94,11 @@ XII_FORCE_INLINE xiiGALShaderCreationDescription::xiiGALShaderCreationDescriptio
 
 XII_FORCE_INLINE xiiGALShaderCreationDescription::~xiiGALShaderCreationDescription()
 {
-  if (m_ByteCode != nullptr && m_ByteCode->GetRefCount() == 0)
+  xiiGALShaderByteCode* pByteCode = m_ByteCode;
+  m_ByteCode                      = nullptr;
+
+  if (pByteCode != nullptr && pByteCode->GetRefCount() == 0)
   {
-    xiiGALShaderByteCode* pByteCode = m_ByteCode;
     XII_DEFAULT_DELETE(pByteCode);
   }
 }
