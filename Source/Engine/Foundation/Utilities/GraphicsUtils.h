@@ -136,7 +136,7 @@ namespace xiiGraphicsUtils
   /// \brief Computes the distances of the near and far clip planes from the given perspective projection matrix.
   ///
   /// Returns XII_FAILURE when one of the values could not be computed, because it would result in a "division by zero".
-  XII_FOUNDATION_DLL xiiResult ExtractNearAndFarClipPlaneDistances(double& out_fNear, double& out_fFar, const xiiMat4& mProjectionMatrix, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
+  XII_FOUNDATION_DLL xiiResult ExtractNearAndFarClipPlaneDistances(double& out_fNear, double& out_fFar, const xiiMat4d& mProjectionMatrix, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
 
   enum class FrustumPlaneInterpolation
   {
@@ -217,7 +217,7 @@ namespace xiiGraphicsUtils
   /// \brief Returns a look-at matrix (only direction, no translation).
   ///
   /// Since this only creates a rotation matrix, vTarget can be interpreted both as a position or a direction.
-  XII_FOUNDATION_DLL xiiMat3 CreateLookAtViewMatrix(const xiiVec3d& vTarget, const xiiVec3d& vUpDir, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
+  XII_FOUNDATION_DLL xiiMat3d CreateLookAtViewMatrix(const xiiVec3d& vTarget, const xiiVec3d& vUpDir, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
 
   /// \brief Same as CreateLookAtViewMatrix() but returns the inverse matrix
   XII_FOUNDATION_DLL xiiMat3 CreateInverseLookAtViewMatrix(const xiiVec3& vTarget, const xiiVec3& vUpDir, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
