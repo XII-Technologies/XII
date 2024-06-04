@@ -51,7 +51,7 @@ public:
   /// \param sGroupFilter
   ///   If this is empty, all options from all 'sorting groups' are logged.
   ///   If non-empty, only options from sorting groups that appear in this string will be logged.
-  static bool LogAvailableOptions(LogAvailableModes mode, xiiStringView sGroupFilter0 = {}, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
+  static bool LogAvailableOptions(LogAvailableModes mode, xiiStringView sGroupFilter = {}, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
 
   /// \brief Same as LogAvailableOptions() but captures the output from xiiLog and returns it in a xiiStringBuilder.
   static bool LogAvailableOptionsToBuffer(xiiStringBuilder& out_sBuffer, LogAvailableModes mode, xiiStringView sGroupFilter = {}, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()); // [tested]
@@ -261,9 +261,9 @@ public:
   xiiStringView GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
 
   /// \brief Modifies the default value
-  void SetDefaultValue(xiiStringView value)
+  void SetDefaultValue(xiiStringView sValue)
   {
-    m_sDefaultValue = value;
+    m_sDefaultValue = sValue;
   }
 
   /// \brief Returns the default value.
@@ -290,9 +290,9 @@ public:
   xiiString GetOptionValue(LogMode logMode, const xiiCommandLineUtils* pUtils = xiiCommandLineUtils::GetGlobalInstance()) const; // [tested]
 
   /// \brief Modifies the default value
-  void SetDefaultValue(xiiStringView value)
+  void SetDefaultValue(xiiStringView sValue)
   {
-    m_sDefaultValue = value;
+    m_sDefaultValue = sValue;
   }
 
   /// \brief Returns the default value.
@@ -302,7 +302,7 @@ public:
   virtual xiiStringView GetType() override { return "Path"; }
 
 protected:
-  xiiStringView m_sDefaultValue = "";
+  xiiStringView m_sDefaultValue;
 };
 
 //////////////////////////////////////////////////////////////////////////

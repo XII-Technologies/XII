@@ -734,13 +734,13 @@ namespace xiiConversionUtils
 
   const xiiStringBuilder& ToString(const xiiQuat& value, xiiStringBuilder& out_sResult)
   {
-    out_sResult.SetFormat("{ x={0}, y={1}, z={2}, w={3} }", value.v.x, value.v.y, value.v.z, value.w);
+    out_sResult.SetFormat("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
     return out_sResult;
   }
 
   const xiiStringBuilder& ToString(const xiiQuatd& value, xiiStringBuilder& out_sResult)
   {
-    out_sResult.SetFormat("{ x={0}, y={1}, z={2}, w={3} }", value.v.x, value.v.y, value.v.z, value.w);
+    out_sResult.SetFormat("{ x={0}, y={1}, z={2}, w={3} }", value.x, value.y, value.z, value.w);
     return out_sResult;
   }
 

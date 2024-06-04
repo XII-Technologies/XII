@@ -5,7 +5,7 @@ get_filename_component(PROJECT_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME_WE)
 
 xii_create_target(LIBRARY ${PROJECT_NAME})
 
-if(XII_CMAKE_PLATFORM_WINDOWS)
+if (XII_CMAKE_PLATFORM_WINDOWS)
   target_link_libraries(${PROJECT_NAME}
     PRIVATE
     Rpcrt4.lib
@@ -20,6 +20,7 @@ endif()
 
 if (XII_CMAKE_PLATFORM_LINUX)
   CHECK_INCLUDE_FILE_CXX("uuid/uuid.h" UUID_HEADER)
+
   if (NOT UUID_HEADER)
     message(FATAL_ERROR "Missing uuid/uuid.h. Have you installed the uuid-dev package?")
   endif()
@@ -45,34 +46,23 @@ if (CURRENT_OSX_VERSION)
 endif()
 
 if (XII_3RDPARTY_ENET_SUPPORT)
-  target_link_libraries(${PROJECT_NAME}
-    PUBLIC
-    enet
-  )
+  target_link_libraries(${PROJECT_NAME} PUBLIC enet)
 endif()
 
 if (XII_3RDPARTY_ZSTD_SUPPORT)
-  target_link_libraries(${PROJECT_NAME}
-    PUBLIC
-    zstd
-  )
+  target_link_libraries(${PROJECT_NAME} PUBLIC zstd)
 endif()
 
 if (XII_3RDPARTY_ZLIB_SUPPORT)
   # ZLIB is required to read the apk on Android.
-  target_link_libraries(${PROJECT_NAME}
-    PUBLIC
-    zlib
-  )
-endif()
-
-if(XII_3RDPARTY_TRACELOGGING_LTTNG_SUPPORT)
-  target_link_libraries(${PROJECT_NAME} PRIVATE tracelogging)
+  target_link_libraries(${PROJECT_NAME} PUBLIC zlib)
 endif()
 
 if (XII_3RDPARTY_TRACELOGGING_LTTNG_SUPPORT)
-  target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-    tracelogging
-  )
+  target_link_libraries(${PROJECT_NAME} PRIVATE tracelogging)
+endif()
+
+if (XII_3RDPARTY_TRACY_SUPPORT)
+  # Tracy has to be linked to all possible targets since it is a multi dll project.
+  target_link_libraries(${PROJECT_NAME} PUBLIC TracyClient)
 endif()

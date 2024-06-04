@@ -163,7 +163,7 @@ class xiiHybridStringSynthProvider:
 
         try:
             if index == 0:
-                count = self.m_uiCount.GetValueAsUnsigned(0) 
+                count = self.m_uiCount.GetValueAsUnsigned(0)
                 if count > 0x10000000:
                     count = 0
                 if count <= self.local_storage_size:
@@ -220,7 +220,7 @@ class xiiStringViewSynthProvider:
                 self.valid = True
                 self.count = end - start
                 logger >> "count " + str(self.count)
-            
+
         except Exception as inst:
             logger >> inst
 
@@ -342,7 +342,7 @@ class xiiMapSynthProvider:
         self.valobj = valobj
         # reading the data through the debugger can take a long time
         # Limit the loops to this number of iterations
-        self.maxSteps = 1000 
+        self.maxSteps = 1000
         self.lastNodeIndex = -2
         self.lastNode = None
 
@@ -427,7 +427,7 @@ class xiiMapSynthProvider:
 
             return parent
 
-        return None   
+        return None
 
     def get_child_at_index(self, index):
         logger = lldb.formatters.Logger.Logger()
