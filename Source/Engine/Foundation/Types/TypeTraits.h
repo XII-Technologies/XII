@@ -184,6 +184,7 @@ XII_DEFINE_AS_POD_TYPE(xiiUInt64);
 XII_DEFINE_AS_POD_TYPE(wchar_t);
 XII_DEFINE_AS_POD_TYPE(unsigned long);
 XII_DEFINE_AS_POD_TYPE(long);
+XII_DEFINE_AS_POD_TYPE(std::byte);
 
 /// \brief Checks inheritance at compile time.
 #define XII_IS_DERIVED_FROM_STATIC(BaseClass, DerivedClass) \

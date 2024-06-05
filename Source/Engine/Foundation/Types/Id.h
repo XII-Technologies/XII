@@ -5,20 +5,38 @@
 #include <Foundation/Basics.h>
 
 /// \brief Declares an id type, see generic id below how to use this
-#define XII_DECLARE_ID_TYPE(name, instanceIndexBits, generationBits)                                       \
-  static const StorageType MAX_INSTANCES             = (1ULL << instanceIndexBits);                        \
-  static const StorageType INVALID_INSTANCE_INDEX    = MAX_INSTANCES - 1;                                  \
-  static const StorageType INDEX_AND_GENERATION_MASK = (1ULL << (instanceIndexBits + generationBits)) - 1; \
-  XII_DECLARE_POD_TYPE();                                                                                  \
-  XII_ALWAYS_INLINE name() { m_Data = INVALID_INSTANCE_INDEX; }                                            \
-  XII_ALWAYS_INLINE explicit name(StorageType internalData) { m_Data = internalData; }                     \
-  XII_ALWAYS_INLINE bool operator==(const name other) const { return m_Data == other.m_Data; }             \
-  XII_ALWAYS_INLINE bool operator<(const name other) const { return m_Data < other.m_Data; }               \
-  XII_ALWAYS_INLINE void Invalidate() { m_Data = INVALID_INSTANCE_INDEX; }                                 \
-  XII_ALWAYS_INLINE bool IsInvalidated() const { return m_Data == INVALID_INSTANCE_INDEX; }                \
-  XII_ALWAYS_INLINE bool IsIndexAndGenerationEqual(const name other) const                                 \
-  {                                                                                                        \
-    return (m_Data & INDEX_AND_GENERATION_MASK) == (other.m_Data & INDEX_AND_GENERATION_MASK);             \
+#define XII_DECLARE_ID_TYPE(name, instanceIndexBits, generationBits)                                           \
+  static constexpr StorageType MAX_INSTANCES             = (1ULL << instanceIndexBits);                        \
+  static constexpr StorageType INVALID_INSTANCE_INDEX    = MAX_INSTANCES - 1;                                  \
+  static constexpr StorageType INDEX_AND_GENERATION_MASK = (1ULL << (instanceIndexBits + generationBits)) - 1; \
+  XII_DECLARE_POD_TYPE();                                                                                      \
+  XII_ALWAYS_INLINE name()                                                                                     \
+  {                                                                                                            \
+    m_Data = INVALID_INSTANCE_INDEX;                                                                           \
+  }                                                                                                            \
+  XII_ALWAYS_INLINE explicit name(StorageType internalData)                                                    \
+  {                                                                                                            \
+    m_Data = internalData;                                                                                     \
+  }                                                                                                            \
+  XII_ALWAYS_INLINE bool operator==(const name other) const                                                    \
+  {                                                                                                            \
+    return m_Data == other.m_Data;                                                                             \
+  }                                                                                                            \
+  XII_ALWAYS_INLINE bool operator<(const name other) const                                                     \
+  {                                                                                                            \
+    return m_Data < other.m_Data;                                                                              \
+  }                                                                                                            \
+  XII_ALWAYS_INLINE void Invalidate()                                                                          \
+  {                                                                                                            \
+    m_Data = INVALID_INSTANCE_INDEX;                                                                           \
+  }                                                                                                            \
+  XII_ALWAYS_INLINE bool IsInvalidated() const                                                                 \
+  {                                                                                                            \
+    return m_Data == INVALID_INSTANCE_INDEX;                                                                   \
+  }                                                                                                            \
+  XII_ALWAYS_INLINE bool IsIndexAndGenerationEqual(const name other) const                                     \
+  {                                                                                                            \
+    return (m_Data & INDEX_AND_GENERATION_MASK) == (other.m_Data & INDEX_AND_GENERATION_MASK);                 \
   }
 
 
@@ -54,21 +72,42 @@ struct xiiGenericId
   };
 };
 
-#define XII_DECLARE_HANDLE_TYPE(name, idType)                                                                \
-public:                                                                                                      \
-  XII_DECLARE_POD_TYPE();                                                                                    \
-  XII_ALWAYS_INLINE name() {}                                                                                \
-  XII_ALWAYS_INLINE explicit name(idType internalId) : m_InternalId(internalId)                              \
-  {                                                                                                          \
-  }                                                                                                          \
-  XII_ALWAYS_INLINE bool   operator==(const name other) const { return m_InternalId == other.m_InternalId; } \
-  XII_ALWAYS_INLINE bool   operator<(const name other) const { return m_InternalId < other.m_InternalId; }   \
-  XII_ALWAYS_INLINE void   Invalidate() { m_InternalId.Invalidate(); }                                       \
-  XII_ALWAYS_INLINE bool   IsInvalidated() const { return m_InternalId.IsInvalidated(); }                    \
-  XII_ALWAYS_INLINE idType GetInternalID() const { return m_InternalId; }                                    \
-  using IdType = idType;                                                                                     \
-                                                                                                             \
-protected:                                                                                                   \
-  idType m_InternalId;                                                                                       \
-  operator idType() { return m_InternalId; }                                                                 \
-  operator const idType() const { return m_InternalId; }
+#define XII_DECLARE_HANDLE_TYPE(name, idType)                                   \
+public:                                                                         \
+  XII_DECLARE_POD_TYPE();                                                       \
+  XII_ALWAYS_INLINE name() {}                                                   \
+  XII_ALWAYS_INLINE explicit name(idType internalId) : m_InternalId(internalId) \
+  {                                                                             \
+  }                                                                             \
+  XII_ALWAYS_INLINE bool operator==(const name other) const                     \
+  {                                                                             \
+    return m_InternalId == other.m_InternalId;                                  \
+  }                                                                             \
+  XII_ALWAYS_INLINE bool operator<(const name other) const                      \
+  {                                                                             \
+    return m_InternalId < other.m_InternalId;                                   \
+  }                                                                             \
+  XII_ALWAYS_INLINE void Invalidate()                                           \
+  {                                                                             \
+    m_InternalId.Invalidate();                                                  \
+  }                                                                             \
+  XII_ALWAYS_INLINE bool IsInvalidated() const                                  \
+  {                                                                             \
+    return m_InternalId.IsInvalidated();                                        \
+  }                                                                             \
+  XII_ALWAYS_INLINE idType GetInternalID() const                                \
+  {                                                                             \
+    return m_InternalId;                                                        \
+  }                                                                             \
+  using IdType = idType;                                                        \
+                                                                                \
+protected:                                                                      \
+  idType m_InternalId;                                                          \
+  operator idType()                                                             \
+  {                                                                             \
+    return m_InternalId;                                                        \
+  }                                                                             \
+  operator const idType() const                                                 \
+  {                                                                             \
+    return m_InternalId;                                                        \
+  }

@@ -706,7 +706,7 @@ xiiMat4d xiiGraphicsUtils::CreatePerspectiveProjectionMatrixDouble(double fLeft,
     }
     else
     {
-      const float fOneDivNearMinusFar = 1.0 / (fNearZ - fFarZ);
+      const double fOneDivNearMinusFar = 1.0 / (fNearZ - fFarZ);
 
       res.Element(2, 2) = (fFarZ + fNearZ) * fOneDivNearMinusFar;
       res.Element(3, 2) = 2 * fFarZ * fNearZ * fOneDivNearMinusFar;
@@ -733,7 +733,7 @@ xiiMat4d xiiGraphicsUtils::CreatePerspectiveProjectionMatrixDouble(double fLeft,
     }
     else
     {
-      const float fOneDivNearMinusFar = 1.0 / (fNearZ - fFarZ);
+      const double fOneDivNearMinusFar = 1.0 / (fNearZ - fFarZ);
 
       res.Element(2, 2) = fFarZ * fOneDivNearMinusFar;
       res.Element(3, 2) = fFarZ * fNearZ * fOneDivNearMinusFar;

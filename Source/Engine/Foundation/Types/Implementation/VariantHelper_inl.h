@@ -730,7 +730,7 @@ class xiiVariantHelper
     if (value.IsA<V1>())
     {
       const V1& v = value.Cast<V1>();
-      result      = T(static_cast<typename T::ComponentType>(v.v.x), static_cast<typename T::ComponentType>(v.v.y), static_cast<typename T::ComponentType>(v.v.z), static_cast<typename T::ComponentType>(v.w));
+      result      = T(static_cast<typename T::ComponentType>(v.x), static_cast<typename T::ComponentType>(v.y), static_cast<typename T::ComponentType>(v.z), static_cast<typename T::ComponentType>(v.w));
     }
     else
     {
@@ -800,8 +800,7 @@ class xiiVariantHelper
     {
       const V1&                                        v         = value.Cast<V1>();
       const xiiVec3Template<typename T::ComponentType> vPosition = xiiVec3Template<typename T::ComponentType>(static_cast<typename T::ComponentType>(v.m_vPosition.x), static_cast<typename T::ComponentType>(v.m_vPosition.y), static_cast<typename T::ComponentType>(v.m_vPosition.z));
-      const xiiQuatTemplate<typename T::ComponentType> qRotation = xiiQuatTemplate<typename T::ComponentType>(static_cast<typename T::ComponentType>(v.m_qRotation.v.x), static_cast<typename T::ComponentType>(v.m_qRotation.v.y),
-                                                                                                              static_cast<typename T::ComponentType>(v.m_qRotation.v.z), static_cast<typename T::ComponentType>(v.m_qRotation.w));
+      const xiiQuatTemplate<typename T::ComponentType> qRotation = xiiQuatTemplate<typename T::ComponentType>(static_cast<typename T::ComponentType>(v.m_qRotation.x), static_cast<typename T::ComponentType>(v.m_qRotation.y), static_cast<typename T::ComponentType>(v.m_qRotation.z), static_cast<typename T::ComponentType>(v.m_qRotation.w));
       const xiiVec3Template<typename T::ComponentType> vScale    = xiiVec3Template<typename T::ComponentType>(static_cast<typename T::ComponentType>(v.m_vScale.x), static_cast<typename T::ComponentType>(v.m_vScale.y), static_cast<typename T::ComponentType>(v.m_vScale.z));
       result                                                     = T(vPosition, qRotation, vScale);
     }

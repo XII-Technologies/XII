@@ -19,8 +19,8 @@ public:
   using Container             = xiiTagSet;
   using Type                  = xiiStringView;
   using RealType              = typename xiiTypeTraits<Type>::NonConstReferenceType;
-  using GetConstContainerFunc = const Container& (*)(const Class* pInstance);
-  using GetContainerFunc      = Container& (*)(Class* pInstance);
+  using GetConstContainerFunc = const Container& (*)(const Class*);
+  using GetContainerFunc      = Container& (*)(Class*);
 
   xiiMemberSetProperty(xiiStringView sPropertyName, GetConstContainerFunc constGetter, GetContainerFunc getter) :
     xiiTypedSetProperty<RealType>(sPropertyName)
@@ -31,7 +31,9 @@ public:
     m_Getter      = getter;
 
     if (m_Getter == nullptr)
+    {
       xiiAbstractSetProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
   virtual bool IsEmpty(const void* pInstance) const override { return m_ConstGetter(static_cast<const Class*>(pInstance)).IsEmpty(); }
@@ -101,7 +103,9 @@ public:
     m_Remove    = remove;
 
     if (m_Insert == nullptr || m_Remove == nullptr)
+    {
       xiiAbstractSetProperty::m_Flags.Add(xiiPropertyFlags::ReadOnly);
+    }
   }
 
 
@@ -167,15 +171,21 @@ xiiTagSetTemplate<BlockStorageAllocator>::Iterator::Iterator(const xiiTagSetTemp
     m_uiIndex = m_pTagSet->GetTagBlockStart() * (sizeof(xiiTagSetBlockStorage) * 8);
 
     if (m_pTagSet->IsEmpty())
+    {
       m_uiIndex = 0xFFFFFFFFU;
+    }
     else
     {
       if (!IsBitSet())
+      {
         operator++();
+      }
     }
   }
   else
+  {
     m_uiIndex = 0xFFFFFFFFU;
+  }
 }
 
 template <typename BlockStorageAllocator>
@@ -199,7 +209,9 @@ void xiiTagSetTemplate<BlockStorageAllocator>::Iterator::operator++()
   } while (m_uiIndex < uiMax && !IsBitSet());
 
   if (m_uiIndex >= uiMax)
+  {
     m_uiIndex = 0xFFFFFFFFU;
+  }
 }
 
 template <typename BlockStorageAllocator>
@@ -313,11 +325,8 @@ bool xiiTagSetTemplate<BlockStorageAllocator>::IsAnySet(const xiiTagSetTemplate&
     const xiiUInt32 uiOtherBlockStorageIndex = i - otherSet.GetTagBlockStart();
 
     if ((m_TagBlocks[uiThisBlockStorageIndex] & otherSet.m_TagBlocks[uiOtherBlockStorageIndex]) != 0)
-    {
       return true;
-    }
   }
-
   return false;
 }
 
@@ -364,7 +373,6 @@ bool xiiTagSetTemplate<BlockStorageAllocator>::IsSetByName(xiiStringView sTag) c
   {
     return IsSet(*tag);
   }
-
   return false;
 }
 

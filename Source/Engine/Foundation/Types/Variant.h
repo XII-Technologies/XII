@@ -183,7 +183,7 @@ public:
   /// \brief Returns whether the stored type is a string (xiiString or xiiStringView).
   bool IsString() const; // [tested]
 
-  /// \brief Returns whether the stored type is a string (xiiHashedString or xiiTempHashedString).
+  /// \brief Returns whether the stored type is a hashed string (xiiHashedString or xiiTempHashedString).
   bool IsHashedString() const;
 
   /// \brief Returns whether the stored type is exactly the given type.
@@ -258,7 +258,7 @@ public:
 
   /// \brief Returns whether the stored type can generally be converted to the desired type.
   ///
-  /// This function will return true for all number conversions, as float / double / xiiInt32 / etc. can generally be converted into each
+  /// This function will return true for all number conversions, as float / double / int / etc. can generally be converted into each
   /// other. It will also return true for all conversion from string to number types, and from all 'simple' types (not array or dictionary)
   /// to string.
   ///

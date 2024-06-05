@@ -12,7 +12,7 @@ XII_WARNING_POP()
 
 XII_WARNING_PUSH()
 XII_WARNING_DISABLE_CLANG("-Wunused-local-typedef")
-XII_WARNING_DISABLE_GCC("-Wunused-local-typedef")
+XII_WARNING_DISABLE_GCC("-Wunused-local-typedefs")
 
 XII_ALWAYS_INLINE xiiVariant::xiiVariant(const xiiVariant& other)
 {
@@ -306,6 +306,20 @@ XII_FORCE_INLINE bool xiiVariant::operator==(const T& other) const
       return Cast<xiiHashedString>() == other;
     }
   }
+  else if constexpr (std::is_same_v<T, xiiStringView>)
+  {
+    if (m_uiType == Type::String)
+    {
+      return Cast<xiiString>().GetView() == other;
+    }
+  }
+  else if constexpr (std::is_same_v<T, xiiString>)
+  {
+    if (m_uiType == Type::StringView)
+    {
+      return Cast<xiiStringView>() == other.GetView();
+    }
+  }
 
   using StorageType = typename TypeDeduction<T>::StorageType;
   XII_ASSERT_DEV(IsA<StorageType>(), "Stored type '{0}' does not match comparison type '{1}'", m_uiType, TypeDeduction<T>::value);
@@ -588,6 +602,7 @@ T xiiVariant::Cast() const
 
   const xiiRTTI* pType = GetReflectedType();
   using NonRefPtrT     = typename xiiTypeTraits<T>::NonConstReferencePointerType;
+  XII_IGNORE_UNUSED(pType);
   if constexpr (!std::is_same<T, void*>::value && !std::is_same<T, const void*>::value)
   {
     XII_ASSERT_DEV(pType == nullptr || IsDerivedFrom(pType, xiiGetStaticRTTI<NonRefPtrT>()), "Object of type '{0}' does not derive from '{}'", GetTypeName(pType), GetTypeName(xiiGetStaticRTTI<NonRefPtrT>()));
@@ -609,6 +624,7 @@ const T& xiiVariant::Cast() const
 {
   const xiiRTTI* pType = GetReflectedType();
   using NonRefT        = typename xiiTypeTraits<T>::NonConstReferenceType;
+  XII_IGNORE_UNUSED(pType);
 
   XII_ASSERT_DEV(IsDerivedFrom(pType, xiiGetStaticRTTI<NonRefT>()), "Object of type '{0}' does not derive from '{}'", GetTypeName(pType), GetTypeName(xiiGetStaticRTTI<NonRefT>()));
 

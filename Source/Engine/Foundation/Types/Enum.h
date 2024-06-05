@@ -69,10 +69,16 @@ public:
     m_Value = (StorageType)value;
   }
 
-  /// \brief Comparison operator
+  /// \brief Comparison operator.
+  XII_ALWAYS_INLINE constexpr bool operator==(const SelfType& rhs) const { return m_Value == rhs.m_Value; }
+
+  /// \brief Comparison operator.
   XII_ALWAYS_INLINE constexpr std::strong_ordering operator<=>(const SelfType& rhs) const { return m_Value <=> rhs.m_Value; }
 
-  /// \brief Comparison operator
+  /// \brief Comparison operator.
+  XII_ALWAYS_INLINE constexpr bool operator==(typename Derived::Enum value) const { return m_Value == value; }
+
+  /// \brief Comparison operator.
   XII_ALWAYS_INLINE constexpr std::strong_ordering operator<=>(typename Derived::Enum value) const { return m_Value <=> value; }
 
   /// brief Bitwise operators
