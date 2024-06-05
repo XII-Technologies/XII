@@ -28,7 +28,7 @@ inline Type xiiBoundingBoxTemplate<Type>::GetDistanceTo(const xiiBoundingSphereT
 template <typename Type>
 inline const xiiBoundingSphereTemplate<Type> xiiBoundingBoxTemplate<Type>::GetBoundingSphere() const
 {
-  return xiiBoundingSphereTemplate<Type>(GetCenter(), (m_vMax - m_vMin).GetLength() * (Type)0.5);
+  return xiiBoundingSphereTemplate<Type>::MakeFromCenterAndRadius(GetCenter(), (m_vMax - m_vMin).GetLength() * (Type)0.5);
 }
 
 template <typename Type>
@@ -87,9 +87,8 @@ bool xiiBoundingSphereTemplate<Type>::Overlaps(const xiiBoundingBoxTemplate<Type
 template <typename Type>
 const xiiBoundingBoxTemplate<Type> xiiBoundingSphereTemplate<Type>::GetBoundingBox() const
 {
-  return xiiBoundingBoxTemplate<Type>(m_vCenter - xiiVec3Template<Type>(m_fRadius), m_vCenter + xiiVec3Template<Type>(m_fRadius));
+  return xiiBoundingBoxTemplate<Type>::MakeFromMinMax(m_vCenter - xiiVec3Template<Type>(m_fRadius), m_vCenter + xiiVec3Template<Type>(m_fRadius));
 }
-
 
 template <typename Type>
 xiiPositionOnPlane::Enum xiiPlaneTemplate<Type>::GetObjectPosition(const xiiBoundingSphereTemplate<Type>& sphere) const
@@ -185,7 +184,7 @@ Type xiiPlaneTemplate<Type>::GetMaximumDistanceTo(const xiiBoundingBoxTemplate<T
 }
 
 template <typename Type>
-void xiiMat3Template<Type>::SetRotationMatrix(const xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type> angle)
+xiiMat3Template<Type> xiiMat3Template<Type>::MakeAxisRotation(const xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type> angle)
 {
   XII_ASSERT_DEBUG(vAxis.IsNormalized(0.1f), "vAxis must be normalized.");
 
@@ -205,20 +204,24 @@ void xiiMat3Template<Type>::SetRotationMatrix(const xiiVec3Template<Type>& vAxis
   const Type onecos_xz = oneminuscos * xz;
   const Type onecos_yz = oneminuscos * yz;
 
+  xiiMat3Template<Type> res;
+
   // Column 1
-  Element(0, 0) = cos + (oneminuscos * (vAxis.x * vAxis.x));
-  Element(0, 1) = onecos_xy + zsin;
-  Element(0, 2) = onecos_xz - ysin;
+  res.Element(0, 0) = cos + (oneminuscos * (vAxis.x * vAxis.x));
+  res.Element(0, 1) = onecos_xy + zsin;
+  res.Element(0, 2) = onecos_xz - ysin;
 
   // Column 2  )
-  Element(1, 0) = onecos_xy - zsin;
-  Element(1, 1) = cos + (oneminuscos * (vAxis.y * vAxis.y));
-  Element(1, 2) = onecos_yz + xsin;
+  res.Element(1, 0) = onecos_xy - zsin;
+  res.Element(1, 1) = cos + (oneminuscos * (vAxis.y * vAxis.y));
+  res.Element(1, 2) = onecos_yz + xsin;
 
   // Column 3  )
-  Element(2, 0) = onecos_xz + ysin;
-  Element(2, 1) = onecos_yz - xsin;
-  Element(2, 2) = cos + (oneminuscos * (vAxis.z * vAxis.z));
+  res.Element(2, 0) = onecos_xz + ysin;
+  res.Element(2, 1) = onecos_yz - xsin;
+  res.Element(2, 2) = cos + (oneminuscos * (vAxis.z * vAxis.z));
+
+  return res;
 }
 
 template <typename Type>
@@ -252,7 +255,7 @@ xiiResult xiiMat3Template<Type>::Invert(Type fEpsilon)
 }
 
 template <typename Type>
-void xiiMat4Template<Type>::SetRotationMatrix(const xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type> angle)
+xiiMat4Template<Type> xiiMat4Template<Type>::MakeAxisRotation(const xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type> angle)
 {
   XII_ASSERT_DEBUG(vAxis.IsNormalized(), "vAxis must be normalized.");
 
@@ -272,29 +275,33 @@ void xiiMat4Template<Type>::SetRotationMatrix(const xiiVec3Template<Type>& vAxis
   const Type onecos_xz = oneminuscos * xz;
   const Type onecos_yz = oneminuscos * yz;
 
+  xiiMat4Template<Type> res;
+
   // Column 1
-  Element(0, 0) = cos + (oneminuscos * (vAxis.x * vAxis.x));
-  Element(0, 1) = onecos_xy + zsin;
-  Element(0, 2) = onecos_xz - ysin;
-  Element(0, 3) = 0;
+  res.Element(0, 0) = cos + (oneminuscos * (vAxis.x * vAxis.x));
+  res.Element(0, 1) = onecos_xy + zsin;
+  res.Element(0, 2) = onecos_xz - ysin;
+  res.Element(0, 3) = 0;
 
   // Column 2
-  Element(1, 0) = onecos_xy - zsin;
-  Element(1, 1) = cos + (oneminuscos * (vAxis.y * vAxis.y));
-  Element(1, 2) = onecos_yz + xsin;
-  Element(1, 3) = 0;
+  res.Element(1, 0) = onecos_xy - zsin;
+  res.Element(1, 1) = cos + (oneminuscos * (vAxis.y * vAxis.y));
+  res.Element(1, 2) = onecos_yz + xsin;
+  res.Element(1, 3) = 0;
 
   // Column 3
-  Element(2, 0) = onecos_xz + ysin;
-  Element(2, 1) = onecos_yz - xsin;
-  Element(2, 2) = cos + (oneminuscos * (vAxis.z * vAxis.z));
-  Element(2, 3) = 0;
+  res.Element(2, 0) = onecos_xz + ysin;
+  res.Element(2, 1) = onecos_yz - xsin;
+  res.Element(2, 2) = cos + (oneminuscos * (vAxis.z * vAxis.z));
+  res.Element(2, 3) = 0;
 
   // Column 4
-  Element(3, 0) = 0;
-  Element(3, 1) = 0;
-  Element(3, 2) = 0;
-  Element(3, 3) = 1;
+  res.Element(3, 0) = 0;
+  res.Element(3, 1) = 0;
+  res.Element(3, 2) = 0;
+  res.Element(3, 3) = 1;
+
+  return res;
 }
 
 template <typename Type>

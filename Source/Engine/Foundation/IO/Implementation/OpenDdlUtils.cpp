@@ -712,7 +712,7 @@ xiiResult xiiOpenDdlUtils::ConvertToMat3(const xiiOpenDdlReaderElement* pElement
   {
     const float* pValues = pElement->GetPrimitivesFloat();
 
-    out_mResult.SetFromArray(pValues, xiiMatrixLayout::ColumnMajor);
+    out_mResult = xiiMat3::MakeFromColumnMajorArray(pValues);
 
     return XII_SUCCESS;
   }
@@ -741,7 +741,7 @@ xiiResult xiiOpenDdlUtils::ConvertToMat3d(const xiiOpenDdlReaderElement* pElemen
   {
     const double* pValues = pElement->GetPrimitivesDouble();
 
-    out_mResult.SetFromArray(pValues, xiiMatrixLayout::ColumnMajor);
+    out_mResult = xiiMat3d::MakeFromColumnMajorArray(pValues);
 
     return XII_SUCCESS;
   }
@@ -770,7 +770,7 @@ xiiResult xiiOpenDdlUtils::ConvertToMat4(const xiiOpenDdlReaderElement* pElement
   {
     const float* pValues = pElement->GetPrimitivesFloat();
 
-    out_mResult.SetFromArray(pValues, xiiMatrixLayout::ColumnMajor);
+    out_mResult = xiiMat4::MakeFromColumnMajorArray(pValues);
 
     return XII_SUCCESS;
   }
@@ -799,7 +799,7 @@ xiiResult xiiOpenDdlUtils::ConvertToMat4d(const xiiOpenDdlReaderElement* pElemen
   {
     const double* pValues = pElement->GetPrimitivesDouble();
 
-    out_mResult.SetFromArray(pValues, xiiMatrixLayout::ColumnMajor);
+    out_mResult = xiiMat4d::MakeFromColumnMajorArray(pValues);
 
     return XII_SUCCESS;
   }
@@ -828,16 +828,16 @@ xiiResult xiiOpenDdlUtils::ConvertToTransform(const xiiOpenDdlReaderElement* pEl
   {
     const float* pValues = pElement->GetPrimitivesFloat();
 
-    out_result.m_vPosition.x   = pValues[0];
-    out_result.m_vPosition.y   = pValues[1];
-    out_result.m_vPosition.z   = pValues[2];
-    out_result.m_qRotation.v.x = pValues[3];
-    out_result.m_qRotation.v.y = pValues[4];
-    out_result.m_qRotation.v.z = pValues[5];
-    out_result.m_qRotation.w   = pValues[6];
-    out_result.m_vScale.x      = pValues[7];
-    out_result.m_vScale.y      = pValues[8];
-    out_result.m_vScale.z      = pValues[9];
+    out_result.m_vPosition.x = pValues[0];
+    out_result.m_vPosition.y = pValues[1];
+    out_result.m_vPosition.z = pValues[2];
+    out_result.m_qRotation.x = pValues[3];
+    out_result.m_qRotation.y = pValues[4];
+    out_result.m_qRotation.z = pValues[5];
+    out_result.m_qRotation.w = pValues[6];
+    out_result.m_vScale.x    = pValues[7];
+    out_result.m_vScale.y    = pValues[8];
+    out_result.m_vScale.z    = pValues[9];
 
     return XII_SUCCESS;
   }
@@ -866,16 +866,16 @@ xiiResult xiiOpenDdlUtils::ConvertToTransformd(const xiiOpenDdlReaderElement* pE
   {
     const double* pValues = pElement->GetPrimitivesDouble();
 
-    out_result.m_vPosition.x   = pValues[0];
-    out_result.m_vPosition.y   = pValues[1];
-    out_result.m_vPosition.z   = pValues[2];
-    out_result.m_qRotation.v.x = pValues[3];
-    out_result.m_qRotation.v.y = pValues[4];
-    out_result.m_qRotation.v.z = pValues[5];
-    out_result.m_qRotation.w   = pValues[6];
-    out_result.m_vScale.x      = pValues[7];
-    out_result.m_vScale.y      = pValues[8];
-    out_result.m_vScale.z      = pValues[9];
+    out_result.m_vPosition.x = pValues[0];
+    out_result.m_vPosition.y = pValues[1];
+    out_result.m_vPosition.z = pValues[2];
+    out_result.m_qRotation.x = pValues[3];
+    out_result.m_qRotation.y = pValues[4];
+    out_result.m_qRotation.z = pValues[5];
+    out_result.m_qRotation.w = pValues[6];
+    out_result.m_vScale.x    = pValues[7];
+    out_result.m_vScale.y    = pValues[8];
+    out_result.m_vScale.z    = pValues[9];
 
     return XII_SUCCESS;
   }
@@ -904,7 +904,7 @@ xiiResult xiiOpenDdlUtils::ConvertToQuat(const xiiOpenDdlReaderElement* pElement
   {
     const float* pValues = pElement->GetPrimitivesFloat();
 
-    out_qResult.SetElements(pValues[0], pValues[1], pValues[2], pValues[3]);
+    out_qResult = xiiQuat(pValues[0], pValues[1], pValues[2], pValues[3]);
 
     return XII_SUCCESS;
   }
@@ -933,7 +933,7 @@ xiiResult xiiOpenDdlUtils::ConvertToQuatd(const xiiOpenDdlReaderElement* pElemen
   {
     const double* pValues = pElement->GetPrimitivesDouble();
 
-    out_qResult.SetElements(pValues[0], pValues[1], pValues[2], pValues[3]);
+    out_qResult = xiiQuatd(pValues[0], pValues[1], pValues[2], pValues[3]);
 
     return XII_SUCCESS;
   }
@@ -992,7 +992,7 @@ xiiResult xiiOpenDdlUtils::ConvertToAngle(const xiiOpenDdlReaderElement* pElemen
     const float* pValues = pElement->GetPrimitivesFloat();
 
     // have to use radians to prevent precision loss
-    out_result = xiiAngle::Radian(pValues[0]);
+    out_result = xiiAngle::MakeFromRadian(pValues[0]);
 
     return XII_SUCCESS;
   }
@@ -1022,7 +1022,7 @@ xiiResult xiiOpenDdlUtils::ConvertToAngle(const xiiOpenDdlReaderElement* pElemen
     const double* pValues = pElement->GetPrimitivesDouble();
 
     // have to use radians to prevent precision loss
-    out_result = xiiAngled::Radian(pValues[0]);
+    out_result = xiiAngled::MakeFromRadian(pValues[0]);
 
     return XII_SUCCESS;
   }
@@ -1912,9 +1912,9 @@ void xiiOpenDdlUtils::StoreTransform(xiiOpenDdlWriter& ref_writer, const xiiTran
     f[1] = value.m_vPosition.y;
     f[2] = value.m_vPosition.z;
 
-    f[3] = value.m_qRotation.v.x;
-    f[4] = value.m_qRotation.v.y;
-    f[5] = value.m_qRotation.v.z;
+    f[3] = value.m_qRotation.x;
+    f[4] = value.m_qRotation.y;
+    f[5] = value.m_qRotation.z;
     f[6] = value.m_qRotation.w;
 
     f[7] = value.m_vScale.x;
@@ -1939,9 +1939,9 @@ void xiiOpenDdlUtils::StoreTransformd(xiiOpenDdlWriter& ref_writer, const xiiTra
     f[1] = value.m_vPosition.y;
     f[2] = value.m_vPosition.z;
 
-    f[3] = value.m_qRotation.v.x;
-    f[4] = value.m_qRotation.v.y;
-    f[5] = value.m_qRotation.v.z;
+    f[3] = value.m_qRotation.x;
+    f[4] = value.m_qRotation.y;
+    f[5] = value.m_qRotation.z;
     f[6] = value.m_qRotation.w;
 
     f[7] = value.m_vScale.x;
@@ -1959,7 +1959,7 @@ void xiiOpenDdlUtils::StoreQuat(xiiOpenDdlWriter& ref_writer, const xiiQuat& val
   ref_writer.BeginObject("Quat", sName, bGlobalName, true);
   {
     ref_writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Float);
-    ref_writer.WriteFloat(value.v.GetData(), 4);
+    ref_writer.WriteFloat(value.GetData(), 4);
     ref_writer.EndPrimitiveList();
   }
   ref_writer.EndObject();
@@ -1970,7 +1970,7 @@ void xiiOpenDdlUtils::StoreQuatd(xiiOpenDdlWriter& ref_writer, const xiiQuatd& v
   ref_writer.BeginObject("Quatd", sName, bGlobalName, true);
   {
     ref_writer.BeginPrimitiveList(xiiOpenDdlPrimitiveType::Double);
-    ref_writer.WriteDouble(value.v.GetData(), 4);
+    ref_writer.WriteDouble(value.GetData(), 4);
     ref_writer.EndPrimitiveList();
   }
   ref_writer.EndObject();

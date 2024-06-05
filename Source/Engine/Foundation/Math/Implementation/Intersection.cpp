@@ -9,8 +9,7 @@ bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3& vRayStartPos, c
   XII_ASSERT_DEBUG(uiNumVertices >= 3, "A polygon must have at least three vertices.");
   XII_ASSERT_DEBUG(uiVertexStride >= sizeof(xiiVec3), "The vertex stride is invalid.");
 
-  xiiPlane p(*pPolygonVertices, *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride),
-             *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride * 2));
+  xiiPlane p = xiiPlane::MakeFromPoints(*pPolygonVertices, *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride), *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride * 2));
 
   XII_ASSERT_DEBUG(p.IsValid(), "The given polygon's plane is invalid (computed from the first three vertices only).");
 
@@ -30,7 +29,7 @@ bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3& vRayStartPos, c
   {
     const xiiVec3 vThisPoint = *xiiMemoryUtils::AddByteOffset(pPolygonVertices, xiiMath::SafeMultiply32(uiVertexStride, i));
 
-    const xiiPlane EdgePlane(vThisPoint, vPrevPoint, vPrevPoint + p.m_vNormal);
+    xiiPlane EdgePlane = xiiPlane::MakeFromPoints(vThisPoint, vPrevPoint, vPrevPoint + p.m_vNormal);
 
     // if the intersection point is outside of any of the edge planes, it is not inside the (convex) polygon
     if (EdgePlane.GetPointPosition(vIntersection) == xiiPositionOnPlane::Back)
@@ -48,8 +47,7 @@ bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3d& vRayStartPos, 
   XII_ASSERT_DEBUG(uiNumVertices >= 3, "A polygon must have at least three vertices.");
   XII_ASSERT_DEBUG(uiVertexStride >= sizeof(xiiVec3d), "The vertex stride is invalid.");
 
-  xiiPlaned p(*pPolygonVertices, *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride),
-              *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride * 2));
+  xiiPlaned p = xiiPlaned::MakeFromPoints(*pPolygonVertices, *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride), *xiiMemoryUtils::AddByteOffset(pPolygonVertices, uiVertexStride * 2));
 
   XII_ASSERT_DEBUG(p.IsValid(), "The given polygon's plane is invalid (computed from the first three vertices only).");
 
@@ -69,7 +67,7 @@ bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3d& vRayStartPos, 
   {
     const xiiVec3d vThisPoint = *xiiMemoryUtils::AddByteOffset(pPolygonVertices, xiiMath::SafeMultiply32(uiVertexStride, i));
 
-    const xiiPlaned EdgePlane(vThisPoint, vPrevPoint, vPrevPoint + p.m_vNormal);
+    xiiPlaned EdgePlane = xiiPlaned::MakeFromPoints(vThisPoint, vPrevPoint, vPrevPoint + p.m_vNormal);
 
     // if the intersection point is outside of any of the edge planes, it is not inside the (convex) polygon
     if (EdgePlane.GetPointPosition(vIntersection) == xiiPositionOnPlane::Back)
@@ -82,11 +80,7 @@ bool xiiIntersectionUtils::RayPolygonIntersection(const xiiVec3d& vRayStartPos, 
   return true;
 }
 
-xiiVec3 xiiIntersectionUtils::ClosestPoint_PointLineSegment(
-  const xiiVec3& vStartPoint,
-  const xiiVec3& vLineSegmentPos0,
-  const xiiVec3& vLineSegmentPos1,
-  float*         out_pFractionAlongSegment)
+xiiVec3 xiiIntersectionUtils::ClosestPoint_PointLineSegment(const xiiVec3& vStartPoint, const xiiVec3& vLineSegmentPos0, const xiiVec3& vLineSegmentPos1, float* out_pFractionAlongSegment)
 {
   const xiiVec3 vLineDir      = vLineSegmentPos1 - vLineSegmentPos0;
   const xiiVec3 vToStartPoint = vStartPoint - vLineSegmentPos0;
@@ -120,11 +114,7 @@ xiiVec3 xiiIntersectionUtils::ClosestPoint_PointLineSegment(
   return vLineSegmentPos0 + fPosAlongSegment * vLineDir;
 }
 
-xiiVec3d xiiIntersectionUtils::ClosestPoint_PointLineSegment(
-  const xiiVec3d& vStartPoint,
-  const xiiVec3d& vLineSegmentPos0,
-  const xiiVec3d& vLineSegmentPos1,
-  double*         out_pFractionAlongSegment)
+xiiVec3d xiiIntersectionUtils::ClosestPoint_PointLineSegment(const xiiVec3d& vStartPoint, const xiiVec3d& vLineSegmentPos0, const xiiVec3d& vLineSegmentPos1, double* out_pFractionAlongSegment)
 {
   const xiiVec3d vLineDir      = vLineSegmentPos1 - vLineSegmentPos0;
   const xiiVec3d vToStartPoint = vStartPoint - vLineSegmentPos0;

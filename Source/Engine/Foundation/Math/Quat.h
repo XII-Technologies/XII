@@ -25,15 +25,17 @@ public:
 
   // *** Data ***
 public:
-  xiiVec3Template<Type> v;
-  Type                  w;
+  Type x;
+  Type y;
+  Type z;
+  Type w;
 
   // *** Constructors ***
 public:
   xiiQuatTemplate(); // [tested]
 
   /// \brief For internal use. You should never construct quaternions this way.
-  xiiQuatTemplate(Type inX, Type inY, Type inZ, Type inW); // [tested]
+  xiiQuatTemplate(Type x, Type y, Type z, Type w); // [tested]
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
@@ -44,7 +46,7 @@ public:
 #endif
 
   /// \brief Static function that returns a quaternion that represents the identity rotation (none).
-  static const xiiQuatTemplate<Type> IdentityQuaternion(); // [tested]
+  [[nodiscard]] static const xiiQuatTemplate<Type> MakeIdentity(); // [tested]
 
   // *** Functions to create a quaternion ***
 public:
@@ -55,16 +57,16 @@ public:
   /// angle.
   ///
   /// Use this function only if you have good understanding of quaternion math and know exactly what you are doing.
-  void SetElements(Type inX, Type inY, Type inZ, Type inW); // [tested]
+  [[nodiscard]] static xiiQuatTemplate<Type> MakeFromElements(Type x, Type y, Type z, Type w); // [tested]
 
   /// \brief Creates a quaternion from a rotation-axis and an angle.
-  void SetFromAxisAndAngle(const xiiVec3Template<Type>& vRotationAxis, xiiAngleTemplate<Type> angle); // [tested]
+  [[nodiscard]] static xiiQuatTemplate<Type> MakeFromAxisAndAngle(const xiiVec3Template<Type>& vRotationAxis, xiiAngleTemplate<Type> angle); // [tested]
 
   /// \brief Creates a quaternion, that rotates through the shortest arc from "vDirFrom" to "vDirTo".
-  void SetShortestRotation(const xiiVec3Template<Type>& vDirFrom, const xiiVec3Template<Type>& vDirTo); // [tested]
+  [[nodiscard]] static xiiQuatTemplate<Type> MakeShortestRotation(const xiiVec3Template<Type>& vDirFrom, const xiiVec3Template<Type>& vDirTo); // [tested]
 
   /// \brief Creates a quaternion from the given matrix.
-  void SetFromMat3(const xiiMat3Template<Type>& m); // [tested]
+  [[nodiscard]] static xiiQuatTemplate<Type> MakeFromMat3(const xiiMat3Template<Type>& m); // [tested]
 
   /// \brief Reconstructs a rotation quaternion from a matrix that may contain scaling and mirroring.
   ///
@@ -79,16 +81,22 @@ public:
   /// \sa ReconstructFromMat3()
   void ReconstructFromMat4(const xiiMat4Template<Type>& m);
 
-  /// \brief Sets this quaternion to be the spherical linear interpolation of the other two.
-  void SetSlerp(const xiiQuatTemplate& qFrom, const xiiQuatTemplate& qTo, Type t); // [tested]
+  /// \brief Returns a quaternion that is the spherical linear interpolation of the other two.
+  [[nodiscard]] static xiiQuatTemplate<Type> MakeSlerp(const xiiQuatTemplate& qFrom, const xiiQuatTemplate& qTo, Type t); // [tested]
 
   // *** Common Functions ***
 public:
+  /// \brief Returns the data as an array.
+  const Type* GetData() const { return &x; }
+
   /// \brief Normalizes the quaternion to unit length. ALL rotation-quaternions should be normalized at all times (automatically).
   void Normalize(); // [tested]
 
   /// \brief Returns the rotation-axis and angle, that this quaternion rotates around.
-  void GetRotationAxisAndAngle(xiiVec3Template<Type>& ref_vAxis, xiiAngleTemplate<Type>& ref_angle, Type fEpsilon = xiiMath::DefaultEpsilon<Type>()) const; // [tested]
+  void GetRotationAxisAndAngle(xiiVec3Template<Type>& out_vAxis, xiiAngleTemplate<Type>& out_angle, Type fEpsilon = xiiMath::DefaultEpsilon<Type>()) const; // [tested]
+
+  /// \brief Returns the x,y,z components as a vector.
+  xiiVec3Template<Type> GetVectorPart() const { return xiiVec3Template<Type>(x, y, z); }
 
   /// \brief Returns the Quaternion as a matrix.
   const xiiMat3Template<Type> GetAsMat3() const; // [tested]
@@ -123,13 +131,16 @@ public:
   /// \brief Returns the dot-product of the two quaternions (commutative, order does not matter).
   Type Dot(const xiiQuatTemplate& rhs) const; // [tested]
 
+  /// \brief Returns v rotated by the quaternion. Same as operator*.
+  xiiVec3Template<Type> Rotate(const xiiVec3Template<Type>& v) const;
+
   // *** Euler Angle Conversions ***
 public:
   /// \brief Converts the quaternion to Euler angles
   void GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiAngleTemplate<Type>& out_y, xiiAngleTemplate<Type>& out_z) const; // [tested]
 
   /// \brief Sets the quaternion from Euler angles
-  void SetFromEulerAngles(const xiiAngleTemplate<Type>& x, const xiiAngleTemplate<Type>& y, const xiiAngleTemplate<Type>& z); // [tested]
+  [[nodiscard]] static xiiQuatTemplate<Type> MakeFromEulerAngles(const xiiAngleTemplate<Type>& x, const xiiAngleTemplate<Type>& y, const xiiAngleTemplate<Type>& z); // [tested]
 };
 
 /// \brief Rotates v by q

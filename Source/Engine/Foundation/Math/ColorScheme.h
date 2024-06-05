@@ -95,7 +95,7 @@ public:
 
   /// \brief Returns a color to use in UI for elements of a given 'category'.
   ///
-  /// The category is typically defined via an xiiCategoryAttribute.
+  /// The category is typically defined via a xiiCategoryAttribute.
   /// It is simply a string. If it is a complex category, e.g. a path such as "Effects/Wind",
   /// the default implementation only looks at the first part, ie. it treats this all as the category "Effects.
   ///

@@ -20,33 +20,23 @@ public:
   // *** Constructors ***
 public:
   /// \brief Default-constructed vector is uninitialized (for speed)
-  xiiVec4Template<Type>(); // [tested]
+  xiiVec4Template(); // [tested]
 
   /// \brief Initializes the vector with x,y,z,w
-  xiiVec4Template<Type>(Type inX, Type inY, Type inZ, Type inW); // [tested]
+  xiiVec4Template(Type x, Type y, Type z, Type w); // [tested]
 
   /// \brief Initializes the vector from a vec3 and a float.
-  xiiVec4Template<Type>(xiiVec3Template<Type> xyz, Type w);
+  xiiVec4Template(xiiVec3Template<Type> vXyz, Type w);
 
   /// \brief Initializes all 4 components with xyzw
-  explicit xiiVec4Template<Type>(Type inV); // [tested]
+  explicit xiiVec4Template(Type v); // [tested]
   // no copy-constructor and operator= since the default-generated ones will be faster
 
-  /// \brief Returns a vector with all components set to zero.
-  static const xiiVec4Template<Type> ZeroVector() { return xiiVec4Template<Type>(0); } // [tested]
-  /// \brief Returns a vector with all components set to one.
-  static const xiiVec4Template<Type> OneVector() { return xiiVec4Template<Type>(1); }
+  /// \brief Returns a vector with all components set to Not-a-Number (NaN).
+  XII_DECLARE_IF_FLOAT_TYPE [[nodiscard]] static xiiVec4Template<Type> MakeNaN() { return xiiVec4Template<Type>(xiiMath::NaN<Type>()); }
 
-  /// \brief Returns a vector initialized to the origin point (0, 0, 0, 1).
-  static const xiiVec4Template<Type> OriginPoint() { return xiiVec4Template<Type>(0, 0, 0, 1); }
-  /// \brief Returns a vector initialized to the x unit vector (1, 0, 0, 0).
-  static const xiiVec4Template<Type> UnitXAxis() { return xiiVec4Template<Type>(1, 0, 0, 0); }
-  /// \brief Returns a vector initialized to the y unit vector (0, 1, 0, 0).
-  static const xiiVec4Template<Type> UnitYAxis() { return xiiVec4Template<Type>(0, 1, 0, 0); }
-  /// \brief Returns a vector initialized to the z unit vector (1, 0, 0, 0).
-  static const xiiVec4Template<Type> UnitZAxis() { return xiiVec4Template<Type>(0, 0, 1, 0); }
-  /// \brief Returns a vector initialized to the w unit vector (0, 0, 0, 1).
-  static const xiiVec4Template<Type> UnitWAxis() { return xiiVec4Template<Type>(0, 0, 0, 1); }
+  /// \brief Returns a vector with all components set to zero.
+  [[nodiscard]] static xiiVec4Template<Type> MakeZero() { return xiiVec4Template<Type>(0); } // [tested]
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
@@ -76,7 +66,7 @@ public:
   void Set(Type xyzw); // [tested]
 
   /// \brief Sets the vector to these values.
-  void Set(Type inX, Type inY, Type inZ, Type inW); // [tested]
+  void Set(Type x, Type y, Type z, Type w); // [tested]
 
   /// \brief Sets the vector to all zero.
   void SetZero(); // [tested]
@@ -84,7 +74,8 @@ public:
   // *** Functions dealing with length ***
 public:
   /// \brief Returns the length of the vector.
-  XII_DECLARE_IF_FLOAT_TYPE Type GetLength() const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  Type GetLength() const; // [tested]
 
   /// \brief Returns the squared length. Faster, since no square-root is taken. Useful, if one only wants to compare the lengths of two
   /// vectors.
@@ -92,17 +83,21 @@ public:
 
   /// \brief Normalizes this vector and returns its previous length in one operation. More efficient than calling GetLength and then
   /// Normalize.
-  XII_DECLARE_IF_FLOAT_TYPE Type GetLengthAndNormalize(); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  Type GetLengthAndNormalize(); // [tested]
 
   /// \brief Returns a normalized version of this vector, leaves the vector itself unchanged.
-  XII_DECLARE_IF_FLOAT_TYPE const xiiVec4Template<Type> GetNormalized() const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  const xiiVec4Template<Type> GetNormalized() const; // [tested]
 
   /// \brief Normalizes this vector.
-  XII_DECLARE_IF_FLOAT_TYPE void Normalize(); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  void Normalize(); // [tested]
 
   /// \brief Tries to normalize this vector. If the vector is too close to zero, XII_FAILURE is returned and the vector is set to the given
   /// fallback value.
-  XII_DECLARE_IF_FLOAT_TYPE xiiResult NormalizeIfNotZero(const xiiVec4Template<Type>& vFallback = xiiVec4Template<Type>(1, 0, 0, 0), Type fEpsilon = xiiMath::SmallEpsilon<Type>()); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  xiiResult NormalizeIfNotZero(const xiiVec4Template<Type>& vFallback = xiiVec4Template<Type>(1, 0, 0, 0), Type fEpsilon = xiiMath::SmallEpsilon<Type>()); // [tested]
 
   /// \brief Returns, whether this vector is (0, 0, 0, 0).
   bool IsZero() const; // [tested]
@@ -111,7 +106,8 @@ public:
   bool IsZero(Type fEpsilon) const; // [tested]
 
   /// \brief Returns, whether the squared length of this vector is between 0.999f and 1.001f.
-  XII_DECLARE_IF_FLOAT_TYPE bool IsNormalized(Type fEpsilon = xiiMath::HugeEpsilon<Type>()) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  bool IsNormalized(Type fEpsilon = xiiMath::HugeEpsilon<Type>()) const; // [tested]
 
   /// \brief Returns true, if any of x, y, z or w is NaN.
   bool IsNaN() const; // [tested]
@@ -120,7 +116,8 @@ public:
   bool IsValid() const; // [tested]
 
   /// \brief Returns the distance between two 3D Vectors.
-  XII_DECLARE_IF_FLOAT_TYPE Type Distance(const xiiVec4Template<Type>& vPoint) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  Type Distance(const xiiVec4Template<Type>& vPoint) const; // [tested]
 
   /// \brief Returns the squared distance between two 3D Vectors. Faster, since no square-root is taken. Useful, if one only wants to compare the distance of two
   /// vectors regardless of the magnitude.

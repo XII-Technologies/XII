@@ -24,17 +24,32 @@ public:
 
   void operator=(const xiiBoundingBoxSphereTemplate& rhs);
 
-  /// \brief Constructs the bounds from the center position, the box half extends and the sphere radius.
-  xiiBoundingBoxSphereTemplate(const xiiVec3Template<Type>& vCenter, const xiiVec3Template<Type>& vBoxHalfExtents, Type fSphereRadius); // [tested]
-
-  /// \brief Constructs the bounds from the given box and sphere.
-  xiiBoundingBoxSphereTemplate(const xiiBoundingBoxTemplate<Type>& box, const xiiBoundingSphereTemplate<Type>& sphere); // [tested]
-
   /// \brief Constructs the bounds from the given box. The sphere radius is calculated from the box extends.
   xiiBoundingBoxSphereTemplate(const xiiBoundingBoxTemplate<Type>& box); // [tested]
 
   /// \brief Constructs the bounds from the given sphere. The box extends are calculated from the sphere radius.
   xiiBoundingBoxSphereTemplate(const xiiBoundingSphereTemplate<Type>& sphere); // [tested]
+
+  /// \brief Creates an object with all zero values. These are valid bounds around the origin with no volume.
+  [[nodiscard]] static xiiBoundingBoxSphereTemplate<Type> MakeZero();
+
+  /// \brief Creates an 'invalid' object, ie one with negative extents/radius. Invalid objects can be made valid through ExpandToInclude().
+  [[nodiscard]] static xiiBoundingBoxSphereTemplate<Type> MakeInvalid();
+
+  /// \brief Creates an object from the given center point and extents.
+  [[nodiscard]] static xiiBoundingBoxSphereTemplate<Type> MakeFromCenterExtents(const xiiVec3Template<Type>& vCenter, const xiiVec3Template<Type>& vBoxHalfExtents, Type fSphereRadius);
+
+  /// \brief Creates an object that contains all the provided points.
+  [[nodiscard]] static xiiBoundingBoxSphereTemplate<Type> MakeFromPoints(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride = sizeof(xiiVec3Template<Type>));
+
+  /// \brief Creates an object from another bounding box.
+  [[nodiscard]] static xiiBoundingBoxSphereTemplate<Type> MakeFromBox(const xiiBoundingBoxTemplate<Type>& box);
+
+  /// \brief Creates an object from another bounding sphere.
+  [[nodiscard]] static xiiBoundingBoxSphereTemplate<Type> MakeFromSphere(const xiiBoundingSphereTemplate<Type>& sphere);
+
+  /// \brief Creates an object from another bounding box and a sphere.
+  [[nodiscard]] static xiiBoundingBoxSphereTemplate<Type> MakeFromBoxAndSphere(const xiiBoundingBoxTemplate<Type>& box, const xiiBoundingSphereTemplate<Type>& sphere);
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
@@ -44,17 +59,11 @@ public:
   }
 #endif
 
-  /// \brief Resets the bounds to an invalid state.
-  void SetInvalid(); // [tested]
-
   /// \brief Checks whether the bounds is in an invalid state.
   bool IsValid() const; // [tested]
 
   /// \brief Checks whether any component is NaN.
   bool IsNaN() const; // [tested]
-
-  /// \brief Calculates the bounds from given set of points.
-  void SetFromPoints(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride = sizeof(xiiVec3Template<Type>)); // [tested]
 
   /// \brief Returns the bounding box.
   const xiiBoundingBoxTemplate<Type> GetBox() const; // [tested]

@@ -3,18 +3,12 @@
 template <typename Type>
 XII_FORCE_INLINE xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate()
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   // m_vOrigin and m_vBoxHalfExtends are already initialized to NaN by their own constructor.
   const Type TypeNaN = xiiMath::NaN<Type>();
   m_fSphereRadius    = TypeNaN;
 #endif
-}
-
-template <typename Type>
-xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiVec3Template<Type>& vCenter, const xiiVec3Template<Type>& vBoxHalfExtents, Type fSphereRadius) :
-  m_vCenter(vCenter), m_fSphereRadius(fSphereRadius), m_vBoxHalfExtends(vBoxHalfExtents)
-{
 }
 
 template <typename Type>
@@ -34,13 +28,6 @@ void xiiBoundingBoxSphereTemplate<Type>::operator=(const xiiBoundingBoxSphereTem
 }
 
 template <typename Type>
-xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiBoundingBoxTemplate<Type>& box, const xiiBoundingSphereTemplate<Type>& sphere) :
-  m_vCenter(box.GetCenter()), m_vBoxHalfExtends(box.GetHalfExtents())
-{
-  m_fSphereRadius = xiiMath::Min(m_vBoxHalfExtends.GetLength(), (sphere.m_vCenter - m_vCenter).GetLength() + sphere.m_fRadius);
-}
-
-template <typename Type>
 xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiBoundingBoxTemplate<Type>& box) :
   m_vCenter(box.GetCenter())
 {
@@ -56,17 +43,85 @@ xiiBoundingBoxSphereTemplate<Type>::xiiBoundingBoxSphereTemplate(const xiiBoundi
 }
 
 template <typename Type>
-XII_FORCE_INLINE void xiiBoundingBoxSphereTemplate<Type>::SetInvalid()
+XII_FORCE_INLINE xiiBoundingBoxSphereTemplate<Type> xiiBoundingBoxSphereTemplate<Type>::MakeZero()
 {
-  m_vCenter.SetZero();
-  m_fSphereRadius = -xiiMath::SmallEpsilon<Type>();
-  m_vBoxHalfExtends.Set(-xiiMath::MaxValue<Type>());
+  xiiBoundingBoxSphereTemplate<Type> res;
+  res.m_vCenter.SetZero();
+  res.m_fSphereRadius = 0;
+  res.m_vBoxHalfExtends.SetZero();
+  return res;
+}
+
+template <typename Type>
+XII_FORCE_INLINE xiiBoundingBoxSphereTemplate<Type> xiiBoundingBoxSphereTemplate<Type>::MakeInvalid()
+{
+  xiiBoundingBoxSphereTemplate<Type> res;
+  res.m_vCenter.SetZero();
+  res.m_fSphereRadius = -xiiMath::SmallEpsilon<Type>(); // has to be very small for ExpandToInclude to work
+  res.m_vBoxHalfExtends.Set(-xiiMath::MaxValue<Type>());
+  return res;
+}
+
+template <typename Type>
+XII_FORCE_INLINE xiiBoundingBoxSphereTemplate<Type> xiiBoundingBoxSphereTemplate<Type>::MakeFromCenterExtents(const xiiVec3Template<Type>& vCenter, const xiiVec3Template<Type>& vBoxHalfExtents, Type fSphereRadius)
+{
+  xiiBoundingBoxSphereTemplate<Type> res;
+  res.m_vCenter         = vCenter;
+  res.m_fSphereRadius   = fSphereRadius;
+  res.m_vBoxHalfExtends = vBoxHalfExtents;
+  return res;
+}
+
+template <typename Type>
+xiiBoundingBoxSphereTemplate<Type> xiiBoundingBoxSphereTemplate<Type>::MakeFromPoints(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /*= sizeof(xiiVec3Template<Type>)*/)
+{
+  xiiBoundingBoxTemplate<Type> box = xiiBoundingBoxTemplate<Type>::MakeFromPoints(pPoints, uiNumPoints, uiStride);
+
+  xiiBoundingBoxSphereTemplate<Type> res;
+  res.m_vCenter         = box.GetCenter();
+  res.m_vBoxHalfExtends = box.GetHalfExtents();
+
+  xiiBoundingSphereTemplate<Type> sphere = xiiBoundingSphereTemplate<Type>::MakeFromCenterAndRadius(res.m_vCenter, 0.0f);
+  sphere.ExpandToInclude(pPoints, uiNumPoints, uiStride);
+
+  res.m_fSphereRadius = sphere.m_fRadius;
+  return res;
+}
+
+template <typename Type>
+xiiBoundingBoxSphereTemplate<Type> xiiBoundingBoxSphereTemplate<Type>::MakeFromBox(const xiiBoundingBoxTemplate<Type>& box)
+{
+  xiiBoundingBoxSphereTemplate<Type> res;
+  res.m_vCenter         = box.GetCenter();
+  res.m_vBoxHalfExtends = box.GetHalfExtents();
+  res.m_fSphereRadius   = res.m_vBoxHalfExtends.GetLength();
+  return res;
+}
+
+template <typename Type>
+xiiBoundingBoxSphereTemplate<Type> xiiBoundingBoxSphereTemplate<Type>::MakeFromSphere(const xiiBoundingSphereTemplate<Type>& sphere)
+{
+  xiiBoundingBoxSphereTemplate<Type> res;
+  res.m_vCenter       = sphere.m_vCenter;
+  res.m_fSphereRadius = sphere.m_fRadius;
+  res.m_vBoxHalfExtends.Set(res.m_fSphereRadius);
+  return res;
+}
+
+template <typename Type>
+xiiBoundingBoxSphereTemplate<Type> xiiBoundingBoxSphereTemplate<Type>::MakeFromBoxAndSphere(const xiiBoundingBoxTemplate<Type>& box, const xiiBoundingSphereTemplate<Type>& sphere)
+{
+  xiiBoundingBoxSphereTemplate<Type> res;
+  res.m_vCenter         = box.GetCenter();
+  res.m_vBoxHalfExtends = box.GetHalfExtents();
+  res.m_fSphereRadius   = xiiMath::Min(res.m_vBoxHalfExtends.GetLength(), (sphere.m_vCenter - res.m_vCenter).GetLength() + sphere.m_fRadius);
+  return res;
 }
 
 template <typename Type>
 XII_FORCE_INLINE bool xiiBoundingBoxSphereTemplate<Type>::IsValid() const
 {
-  return (m_vCenter.IsValid() && m_fSphereRadius >= 0.0f && m_vBoxHalfExtends.IsValid());
+  return (m_vCenter.IsValid() && m_fSphereRadius >= 0.0f && m_vBoxHalfExtends.IsValid() && (m_vBoxHalfExtends.x >= 0) && (m_vBoxHalfExtends.y >= 0) && (m_vBoxHalfExtends.z >= 0));
 }
 
 template <typename Type>
@@ -76,30 +131,15 @@ XII_FORCE_INLINE bool xiiBoundingBoxSphereTemplate<Type>::IsNaN() const
 }
 
 template <typename Type>
-void xiiBoundingBoxSphereTemplate<Type>::SetFromPoints(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride)
-{
-  xiiBoundingBoxTemplate<Type> box;
-  box.SetFromPoints(pPoints, uiNumPoints, uiStride);
-
-  m_vCenter         = box.GetCenter();
-  m_vBoxHalfExtends = box.GetHalfExtents();
-
-  xiiBoundingSphereTemplate<Type> sphere(m_vCenter, 0.0f);
-  sphere.ExpandToInclude(pPoints, uiNumPoints, uiStride);
-
-  m_fSphereRadius = sphere.m_fRadius;
-}
-
-template <typename Type>
 XII_FORCE_INLINE const xiiBoundingBoxTemplate<Type> xiiBoundingBoxSphereTemplate<Type>::GetBox() const
 {
-  return xiiBoundingBoxTemplate<Type>(m_vCenter - m_vBoxHalfExtends, m_vCenter + m_vBoxHalfExtends);
+  return xiiBoundingBoxTemplate<Type>::MakeFromMinMax(m_vCenter - m_vBoxHalfExtends, m_vCenter + m_vBoxHalfExtends);
 }
 
 template <typename Type>
 XII_FORCE_INLINE const xiiBoundingSphereTemplate<Type> xiiBoundingBoxSphereTemplate<Type>::GetSphere() const
 {
-  return xiiBoundingSphereTemplate<Type>(m_vCenter, m_fSphereRadius);
+  return xiiBoundingSphereTemplate<Type>::MakeFromCenterAndRadius(m_vCenter, m_fSphereRadius);
 }
 
 template <typename Type>
@@ -110,7 +150,7 @@ void xiiBoundingBoxSphereTemplate<Type>::ExpandToInclude(const xiiBoundingBoxSph
   box.m_vMax = m_vCenter + m_vBoxHalfExtends;
   box.ExpandToInclude(rhs.GetBox());
 
-  xiiBoundingBoxSphereTemplate<Type> result(box);
+  xiiBoundingBoxSphereTemplate<Type> result = xiiBoundingBoxSphereTemplate<Type>::MakeFromBox(box);
 
   const Type fSphereRadiusA = (m_vCenter - result.m_vCenter).GetLength() + m_fSphereRadius;
   const Type fSphereRadiusB = (rhs.m_vCenter - result.m_vCenter).GetLength() + rhs.m_fSphereRadius;
@@ -133,7 +173,7 @@ void xiiBoundingBoxSphereTemplate<Type>::Transform(const xiiMat4Template<Type>& 
     mAbsRotation.m_fElementsCM[i] = xiiMath::Abs(mAbsRotation.m_fElementsCM[i]);
   }
 
-  m_vBoxHalfExtends = mAbsRotation.TransformDirection(m_vBoxHalfExtends).CompMin(xiiVec3Template<Type>(m_fSphereRadius));
+  m_vBoxHalfExtends = mAbsRotation.TransformDirection(m_vBoxHalfExtends).CompMin(xiiVec3(m_fSphereRadius));
 }
 
 template <typename Type>

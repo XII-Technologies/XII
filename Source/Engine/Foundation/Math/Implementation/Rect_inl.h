@@ -25,6 +25,62 @@ XII_ALWAYS_INLINE xiiRectTemplate<Type>::xiiRectTemplate(const xiiVec2Template<T
 }
 
 template <typename Type>
+xiiRectTemplate<Type> xiiRectTemplate<Type>::MakeInvalid()
+{
+  /// \test This is new
+
+  xiiRectTemplate<Type> res;
+
+  const Type fLargeValue = xiiMath::MaxValue<Type>() / 2;
+  res.x                  = fLargeValue;
+  res.y                  = fLargeValue;
+  res.width              = -fLargeValue;
+  res.height             = -fLargeValue;
+
+  return res;
+}
+
+template <typename Type>
+xiiRectTemplate<Type> xiiRectTemplate<Type>::MakeIntersection(const xiiRectTemplate<Type>& r0, const xiiRectTemplate<Type>& r1)
+{
+  /// \test This is new
+
+  xiiRectTemplate<Type> res;
+
+  Type x1 = xiiMath::Max(r0.GetX1(), r1.GetX1());
+  Type y1 = xiiMath::Max(r0.GetY1(), r1.GetY1());
+  Type x2 = xiiMath::Min(r0.GetX2(), r1.GetX2());
+  Type y2 = xiiMath::Min(r0.GetY2(), r1.GetY2());
+
+  res.x      = x1;
+  res.y      = y1;
+  res.width  = x2 - x1;
+  res.height = y2 - y1;
+
+  return res;
+}
+
+template <typename Type>
+xiiRectTemplate<Type> xiiRectTemplate<Type>::MakeUnion(const xiiRectTemplate<Type>& r0, const xiiRectTemplate<Type>& r1)
+{
+  /// \test This is new
+
+  xiiRectTemplate<Type> res;
+
+  Type x1 = xiiMath::Min(r0.GetX1(), r1.GetX1());
+  Type y1 = xiiMath::Min(r0.GetY1(), r1.GetY1());
+  Type x2 = xiiMath::Max(r0.GetX2(), r1.GetX2());
+  Type y2 = xiiMath::Max(r0.GetY2(), r1.GetY2());
+
+  res.x      = x1;
+  res.y      = y1;
+  res.width  = x2 - x1;
+  res.height = y2 - y1;
+
+  return res;
+}
+
+template <typename Type>
 XII_ALWAYS_INLINE bool xiiRectTemplate<Type>::operator==(const xiiRectTemplate<Type>& rhs) const
 {
   return x == rhs.x && y == rhs.y && width == rhs.width && height == rhs.height;
@@ -134,18 +190,6 @@ XII_ALWAYS_INLINE void xiiRectTemplate<Type>::Clip(const xiiRectTemplate<Type>& 
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE void xiiRectTemplate<Type>::SetInvalid()
-{
-  /// \test This is new
-
-  const Type fLargeValue = xiiMath::MaxValue<Type>() / 2;
-  x                      = fLargeValue;
-  y                      = fLargeValue;
-  width                  = -fLargeValue;
-  height                 = -fLargeValue;
-}
-
-template <typename Type>
 XII_ALWAYS_INLINE bool xiiRectTemplate<Type>::IsValid() const
 {
   /// \test This is new
@@ -162,35 +206,12 @@ XII_ALWAYS_INLINE const xiiVec2Template<Type> xiiRectTemplate<Type>::GetClampedP
 }
 
 template <typename Type>
-void xiiRectTemplate<Type>::SetIntersection(const xiiRectTemplate<Type>& r0, const xiiRectTemplate<Type>& r1)
+void xiiRectTemplate<Type>::SetCenter(Type tX, Type tY)
 {
   /// \test This is new
 
-  Type x1 = xiiMath::Max(r0.GetX1(), r1.GetX1());
-  Type y1 = xiiMath::Max(r0.GetY1(), r1.GetY1());
-  Type x2 = xiiMath::Min(r0.GetX2(), r1.GetX2());
-  Type y2 = xiiMath::Min(r0.GetY2(), r1.GetY2());
-
-  x      = x1;
-  y      = y1;
-  width  = x2 - x1;
-  height = y2 - y1;
-}
-
-template <typename Type>
-void xiiRectTemplate<Type>::SetUnion(const xiiRectTemplate<Type>& r0, const xiiRectTemplate<Type>& r1)
-{
-  /// \test This is new
-
-  Type x1 = xiiMath::Min(r0.GetX1(), r1.GetX1());
-  Type y1 = xiiMath::Min(r0.GetY1(), r1.GetY1());
-  Type x2 = xiiMath::Max(r0.GetX2(), r1.GetX2());
-  Type y2 = xiiMath::Max(r0.GetY2(), r1.GetY2());
-
-  x      = x1;
-  y      = y1;
-  width  = x2 - x1;
-  height = y2 - y1;
+  x = tX - width / 2;
+  y = tY - height / 2;
 }
 
 template <typename Type>

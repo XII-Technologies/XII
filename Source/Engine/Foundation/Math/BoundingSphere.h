@@ -19,8 +19,22 @@ public:
   /// \brief Default constructor does not initialize any data.
   xiiBoundingSphereTemplate();
 
-  /// \brief Creates a sphere with the given radius around the given center.
-  xiiBoundingSphereTemplate(const xiiVec3Template<Type>& vCenter, Type fRadius); // [tested]
+  /// \brief Creates a sphere at the origin with radius zero.
+  [[nodiscard]] static xiiBoundingSphereTemplate<Type> MakeZero();
+
+  /// \brief Creates an 'invalid' sphere, with its center at the given position and a negative radius.
+  ///
+  /// Such a sphere can be made 'valid' through ExpandToInclude(), but be aware that the originally provided center position
+  /// will always be part of the sphere.
+  [[nodiscard]] static xiiBoundingSphereTemplate<Type> MakeInvalid(const xiiVec3Template<Type>& vCenter = xiiVec3Template<Type>::MakeZero());
+
+  /// \brief Creates a sphere with the provided center and radius.
+  [[nodiscard]] static xiiBoundingSphereTemplate<Type> MakeFromCenterAndRadius(const xiiVec3Template<Type>& vCenter, Type fRadius);
+
+  /// \brief Creates a bounding sphere around the provided points.
+  ///
+  /// The center of the sphere will be at the 'center of mass' of all the points, and the radius will be the distance to the farthest point from there.
+  [[nodiscard]] static xiiBoundingSphereTemplate<Type> MakeFromPoints(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride = sizeof(xiiVec3Template<Type>));
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
@@ -30,14 +44,8 @@ public:
   }
 #endif
 
-  /// \brief Sets all elements to Zero. The sphere is thus 'valid'.
-  void SetZero(); // [tested]
-
   /// \brief Checks whether the sphere is all zero.
   bool IsZero(Type fEpsilon = xiiMath::DefaultEpsilon<Type>()) const; // [tested]
-
-  /// \brief Sets the bounding sphere to invalid values.
-  void SetInvalid(); // [tested]
 
   /// \brief Returns whether the sphere has valid values.
   bool IsValid() const; // [tested]
@@ -45,14 +53,7 @@ public:
   /// \brief Returns whether any value is NaN.
   bool IsNaN() const; // [tested]
 
-  /// \brief Sets the sphere to the given values.
-  void SetElements(const xiiVec3Template<Type>& vCenter, Type fRadius); // [tested]
-
-  /// \brief Initializes the sphere to be the bounding sphere of all the given points (not necessarily the smallest one).
-  void SetFromPoints(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride = sizeof(xiiVec3Template<Type>)); // [tested]
-
-  /// \brief Increases the sphere's radius to include this point. Does NOT change its position, thus the resulting sphere might be not a very tight
-  /// fit.
+  /// \brief Increases the sphere's radius to include this point. Does NOT change its position, thus the resulting sphere might be not a very tight fit.
   void ExpandToInclude(const xiiVec3Template<Type>& vPoint); // [tested]
 
   /// \brief Increases the sphere's radius to include all given points. Does NOT change its position, thus the resulting sphere might be not a very
@@ -129,15 +130,15 @@ public:
 
   /// \brief Clamps the given position to the volume of the sphere. The resulting point will always be inside the sphere, but have the closest
   /// distance to the original point.
-  const xiiVec3Template<Type> GetClampedPoint(const xiiVec3Template<Type>& vPoint); // [tested]
+  [[nodiscard]] const xiiVec3Template<Type> GetClampedPoint(const xiiVec3Template<Type>& vPoint); // [tested]
 
   /// \brief Computes the intersection of a ray with this sphere. Returns true if there was an intersection. May optionally return the intersection
   /// time and position. The ray's direction must be normalized. The function will also return true, if the ray already starts inside the sphere, but
   /// it will still compute the intersection with the surface of the sphere.
-  bool GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_pIntersectionDistance = nullptr, xiiVec3Template<Type>* out_pIntersection = nullptr) const; // [tested]
+  [[nodiscard]] bool GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_pIntersectionDistance = nullptr, xiiVec3Template<Type>* out_pIntersection = nullptr) const; // [tested]
 
   /// \brief Returns true if the line segment intersects the sphere.
-  bool GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos, Type* out_pHitFraction = nullptr, xiiVec3Template<Type>* out_pIntersection = nullptr) const; // [tested]
+  [[nodiscard]] bool GetLineSegmentIntersection(const xiiVec3Template<Type>& vLineStartPos, const xiiVec3Template<Type>& vLineEndPos, Type* out_pHitFraction = nullptr, xiiVec3Template<Type>* out_pIntersection = nullptr) const; // [tested]
 
 public:
   xiiVec3Template<Type> m_vCenter;

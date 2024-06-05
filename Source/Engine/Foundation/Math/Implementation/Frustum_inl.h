@@ -10,7 +10,7 @@ XII_FORCE_INLINE bool xiiFrustum::Overlaps(const xiiSimdBBox& object) const
   // We're working with center and extents scaled by two - but the plane equation still works out
   // correctly since we set W = 2 here.
   center2.SetW(xiiSimdFloat(2.0f));
-  extents.SetW(xiiSimdFloat::Zero());
+  extents.SetW(xiiSimdFloat::MakeZero());
 
 #if XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE
   xiiSimdVec4f minusZero;
@@ -29,13 +29,13 @@ XII_FORCE_INLINE bool xiiFrustum::Overlaps(const xiiSimdBBox& object) const
     // Specialized for SSE - this is faster than FlipSign for multiple calls since we can preload the constant -0.0f
     maxExtent.m_v = _mm_xor_ps(extents.m_v, _mm_andnot_ps(equation.m_v, minusZero.m_v));
 #else
-    maxExtent = extents.FlipSign(equation >= xiiSimdVec4f::ZeroVector());
+    maxExtent = extents.FlipSign(equation >= xiiSimdVec4f::MakeZero());
 #endif
 
     // Compute AABB corner which is the furthest along the plane normal
     const xiiSimdVec4f offset = center2 + maxExtent;
 
-    if (equation.Dot<4>(offset) > xiiSimdFloat::Zero())
+    if (equation.Dot<4>(offset) > xiiSimdFloat::MakeZero())
     {
       // outside
       return false;
@@ -98,7 +98,6 @@ XII_FORCE_INLINE bool xiiFrustum::Overlaps(const xiiSimdBSphere& object) const
     dPlanes1 = -tmp.m_col3;
   }
 
-
   xiiSimdVec4f minDist1 = dPlanes1 + xPlanes1 * xSphere;
   minDist1 += yPlanes1 * ySphere;
   minDist1 += zPlanes1 * zSphere;
@@ -109,5 +108,5 @@ XII_FORCE_INLINE bool xiiFrustum::Overlaps(const xiiSimdBSphere& object) const
   minDist += radius;
 
   // If the distance is still less than zero, the sphere is completely "outside" of at least one plane.
-  return (minDist < xiiSimdVec4f::ZeroVector()).NoneSet();
+  return (minDist < xiiSimdVec4f::MakeZero()).NoneSet();
 }

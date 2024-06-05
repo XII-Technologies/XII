@@ -3,7 +3,7 @@
 template <typename Type>
 XII_FORCE_INLINE xiiVec3Template<Type>::xiiVec3Template()
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   const Type TypeNaN = xiiMath::NaN<Type>();
   x                  = TypeNaN;
@@ -13,14 +13,14 @@ XII_FORCE_INLINE xiiVec3Template<Type>::xiiVec3Template()
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec3Template<Type>::xiiVec3Template(Type inX, Type inY, Type inZ) :
-  x(inX), y(inY), z(inZ)
+XII_ALWAYS_INLINE xiiVec3Template<Type>::xiiVec3Template(Type x, Type y, Type z) :
+  x(x), y(y), z(z)
 {
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec3Template<Type>::xiiVec3Template(Type inV) :
-  x(inV), y(inV), z(inV)
+XII_ALWAYS_INLINE xiiVec3Template<Type>::xiiVec3Template(Type v) :
+  x(v), y(v), z(v)
 {
 }
 
@@ -55,7 +55,7 @@ XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec3Template<Type>::GetLen
 template <typename Type>
 XII_IMPLEMENT_IF_FLOAT_TYPE xiiResult xiiVec3Template<Type>::SetLength(Type fNewLength, Type fEpsilon /* = xiiMath::DefaultEpsilon<Type>() */)
 {
-  if (NormalizeIfNotZero(xiiVec3Template<Type>::ZeroVector(), fEpsilon) == XII_FAILURE)
+  if (NormalizeIfNotZero(xiiVec3Template<Type>::MakeZero(), fEpsilon) == XII_FAILURE)
     return XII_FAILURE;
 
   *this *= fNewLength;
@@ -68,14 +68,6 @@ XII_FORCE_INLINE Type xiiVec3Template<Type>::GetLengthSquared() const
   XII_NAN_ASSERT(this);
 
   return (x * x + y * y + z * z);
-}
-
-template <typename Type>
-XII_FORCE_INLINE Type xiiVec3Template<Type>::GetLengthSquared2D() const
-{
-  XII_NAN_ASSERT(this);
-
-  return (x * x + y * y);
 }
 
 template <typename Type>

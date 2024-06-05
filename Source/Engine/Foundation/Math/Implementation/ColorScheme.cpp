@@ -232,7 +232,7 @@ xiiColor xiiColorScheme::GetCategoryColor(xiiStringView sCategory, CategoryColor
   if (usage == xiiColorScheme::CategoryColorUsage::BorderIconColor)
   {
     // Do not color these icons at all.
-    return xiiColor::ZeroColor();
+    return xiiColor::MakeZero();
   }
 
   if (usage == xiiColorScheme::CategoryColorUsage::MenuEntryIcon || usage == xiiColorScheme::CategoryColorUsage::AssetMenuIcon)
@@ -279,7 +279,7 @@ xiiColor xiiColorScheme::GetCategoryColor(xiiStringView sCategory, CategoryColor
   if (sCategory.IsEqual_NoCase("Construction"))
     return xiiColorScheme::GetColor(xiiColorScheme::Orange, uiBrightness, fSaturation) * DarkUIFactor;
 
-  if (sCategory.IsEqual_NoCase("Custom"))
+  if (sCategory.IsEqual_NoCase("Custom") || sCategory.IsEqual_NoCase("Game"))
     return xiiColorScheme::GetColor(xiiColorScheme::Red, uiBrightness, fSaturation) * DarkUIFactor;
 
   if (sCategory.IsEqual_NoCase("Effects"))
@@ -322,7 +322,7 @@ xiiColor xiiColorScheme::GetCategoryColor(xiiStringView sCategory, CategoryColor
     return xiiColorScheme::GetColor(xiiColorScheme::Cyan, uiBrightness, fSaturation) * DarkUIFactor;
 
   xiiLog::Warning("Color for category '{}' is undefined.", sCategory);
-  return xiiColor::ZeroColor();
+  return xiiColor::MakeZero();
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_Math_Implementation_ColorScheme);

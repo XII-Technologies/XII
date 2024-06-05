@@ -9,29 +9,61 @@ inline xiiTransformTemplate<Type>::xiiTransformTemplate(const xiiVec3Template<Ty
 }
 
 template <typename Type>
-void xiiTransformTemplate<Type>::SetFromMat4(const xiiMat4Template<Type>& mMat)
+inline xiiTransformTemplate<Type> xiiTransformTemplate<Type>::Make(const xiiVec3Template<Type>& vPosition, const xiiQuatTemplate<Type>& qRotation /*= xiiQuatTemplate<Type>::IdentityQuaternion()*/, const xiiVec3Template<Type>& vScale /*= xiiVec3Template<Type>(1)*/)
+{
+  xiiTransformTemplate<Type> res;
+  res.m_vPosition = vPosition;
+  res.m_qRotation = qRotation;
+  res.m_vScale    = vScale;
+  return res;
+}
+
+template <typename Type>
+inline xiiTransformTemplate<Type> xiiTransformTemplate<Type>::MakeIdentity()
+{
+  xiiTransformTemplate<Type> res;
+  res.m_vPosition.SetZero();
+  res.m_qRotation = xiiQuatTemplate<Type>::MakeIdentity();
+  res.m_vScale.Set(1.0f);
+  return res;
+}
+
+template <typename Type>
+xiiTransformTemplate<Type> xiiTransformTemplate<Type>::MakeFromMat4(const xiiMat4Template<Type>& mMat)
 {
   xiiMat3Template<Type> mRot = mMat.GetRotationalPart();
 
-  m_vPosition = mMat.GetTranslationVector();
-  m_vScale    = mRot.GetScalingFactors();
+  xiiTransformTemplate<Type> res;
+  res.m_vPosition = mMat.GetTranslationVector();
+  res.m_vScale    = mRot.GetScalingFactors();
   mRot.SetScalingFactors(xiiVec3Template<Type>(1)).IgnoreResult();
-  m_qRotation.SetFromMat3(mRot);
+  res.m_qRotation = xiiQuat::MakeFromMat3(mRot);
+  return res;
 }
 
 template <typename Type>
-inline void xiiTransformTemplate<Type>::SetIdentity()
+xiiTransformTemplate<Type> xiiTransformTemplate<Type>::MakeLocalTransform(const xiiTransformTemplate& globalTransformParent, const xiiTransformTemplate& globalTransformChild)
 {
-  m_vPosition.SetZero();
-  m_qRotation.SetIdentity();
-  m_vScale.Set(1);
+  const auto invRot   = globalTransformParent.m_qRotation.GetInverse();
+  const auto invScale = xiiVec3Template<Type>(1).CompDiv(globalTransformParent.m_vScale);
+
+  xiiTransformTemplate<Type> res;
+  res.m_vPosition = (invRot * (globalTransformChild.m_vPosition - globalTransformParent.m_vPosition)).CompMul(invScale);
+  res.m_qRotation = invRot * globalTransformChild.m_qRotation;
+  res.m_vScale    = invScale.CompMul(globalTransformChild.m_vScale);
+  return res;
 }
 
-// static
 template <typename Type>
-inline const xiiTransformTemplate<Type> xiiTransformTemplate<Type>::IdentityTransform()
+XII_ALWAYS_INLINE xiiTransformTemplate<Type> xiiTransformTemplate<Type>::MakeGlobalTransform(const xiiTransformTemplate& globalTransformParent, const xiiTransformTemplate& localTransformChild)
 {
-  return xiiTransformTemplate<Type>(xiiVec3Template<Type>::ZeroVector(), xiiQuatTemplate<Type>::IdentityQuaternion(), xiiVec3Template<Type>(1));
+  return globalTransformParent * localTransformChild;
+}
+
+template <typename Type>
+XII_ALWAYS_INLINE void xiiTransformTemplate<Type>::SetIdentity()
+{
+  *this = MakeIdentity();
 }
 
 template <typename Type>
@@ -67,20 +99,9 @@ inline bool xiiTransformTemplate<Type>::IsEqual(const xiiTransformTemplate<Type>
 }
 
 template <typename Type>
-inline void xiiTransformTemplate<Type>::SetLocalTransform(const xiiTransformTemplate<Type>& globalTransformParent, const xiiTransformTemplate<Type>& globalTransformChild)
+inline bool xiiTransformTemplate<Type>::IsValid() const
 {
-  const auto invRot   = globalTransformParent.m_qRotation.GetInverse();
-  const auto invScale = xiiVec3Template<Type>(1).CompDiv(globalTransformParent.m_vScale);
-
-  m_vPosition = (invRot * (globalTransformChild.m_vPosition - globalTransformParent.m_vPosition)).CompMul(invScale);
-  m_qRotation = invRot * globalTransformChild.m_qRotation;
-  m_vScale    = invScale.CompMul(globalTransformChild.m_vScale);
-}
-
-template <typename Type>
-inline void xiiTransformTemplate<Type>::SetGlobalTransform(const xiiTransformTemplate<Type>& globalTransformParent, const xiiTransformTemplate<Type>& localTransformChild)
-{
-  *this = globalTransformParent * localTransformChild;
+  return m_vPosition.IsValid() && m_qRotation.IsValid(0.005f) && m_vScale.IsValid();
 }
 
 template <typename Type>
@@ -109,13 +130,13 @@ XII_ALWAYS_INLINE const xiiMat4Template<Type> xiiTransformTemplate<Type>::GetAsM
 
 
 template <typename Type>
-void xiiTransformTemplate<Type>::operator+=(const xiiVec3Template<Type>& v)
+XII_ALWAYS_INLINE void xiiTransformTemplate<Type>::operator+=(const xiiVec3Template<Type>& v)
 {
   m_vPosition += v;
 }
 
 template <typename Type>
-void xiiTransformTemplate<Type>::operator-=(const xiiVec3Template<Type>& v)
+XII_ALWAYS_INLINE void xiiTransformTemplate<Type>::operator-=(const xiiVec3Template<Type>& v)
 {
   m_vPosition -= v;
 }

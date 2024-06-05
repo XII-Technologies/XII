@@ -7,19 +7,19 @@
 // Cannot put this into the Vec3_inl.h file, that would result in circular dependencies
 
 template <typename Type>
-XII_FORCE_INLINE const xiiVec3Template<Type> xiiVec2Template<Type>::GetAsVec3(Type inZ) const
+XII_FORCE_INLINE const xiiVec3Template<Type> xiiVec2Template<Type>::GetAsVec3(Type z) const
 {
   XII_NAN_ASSERT(this);
 
-  return xiiVec3Template<Type>(x, y, inZ);
+  return xiiVec3Template<Type>(x, y, z);
 }
 
 template <typename Type>
-XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec2Template<Type>::GetAsVec4(Type inZ, Type inW) const
+XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec2Template<Type>::GetAsVec4(Type z, Type w) const
 {
   XII_NAN_ASSERT(this);
 
-  return xiiVec4Template<Type>(x, y, inZ, inW);
+  return xiiVec4Template<Type>(x, y, z, w);
 }
 
 template <typename Type>
@@ -32,11 +32,11 @@ XII_FORCE_INLINE const xiiVec2Template<Type> xiiVec3Template<Type>::GetAsVec2() 
 }
 
 template <typename Type>
-XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec3Template<Type>::GetAsVec4(Type inW) const
+XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec3Template<Type>::GetAsVec4(Type w) const
 {
   XII_NAN_ASSERT(this);
 
-  return xiiVec4Template<Type>(x, y, z, inW);
+  return xiiVec4Template<Type>(x, y, z, w);
 }
 
 template <typename Type>
@@ -62,7 +62,7 @@ XII_FORCE_INLINE const xiiVec4Template<Type> xiiVec3Template<Type>::GetAsDirecti
 template <typename Type>
 XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template()
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   const Type TypeNaN = xiiMath::NaN<Type>();
   x                  = TypeNaN;
@@ -73,20 +73,20 @@ XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template()
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type inX, Type inY, Type inZ, Type inW) :
-  x(inX), y(inY), z(inZ), w(inW)
+XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type x, Type y, Type z, Type w) :
+  x(x), y(y), z(z), w(w)
 {
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(xiiVec3Template<Type> xyz, Type w) :
-  x(xyz.x), y(xyz.y), z(xyz.z), w(w)
+XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(xiiVec3Template<Type> vXyz, Type w) :
+  x(vXyz.x), y(vXyz.y), z(vXyz.z), w(w)
 {
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type inV) :
-  x(inV), y(inV), z(inV), w(inV)
+XII_ALWAYS_INLINE xiiVec4Template<Type>::xiiVec4Template(Type v) :
+  x(v), y(v), z(v), w(v)
 {
 }
 

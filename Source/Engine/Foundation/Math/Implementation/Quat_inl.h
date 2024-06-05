@@ -6,46 +6,52 @@
 template <typename Type>
 XII_ALWAYS_INLINE xiiQuatTemplate<Type>::xiiQuatTemplate()
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   const Type TypeNaN = xiiMath::NaN<Type>();
+  x                  = TypeNaN;
+  y                  = TypeNaN;
+  z                  = TypeNaN;
   w                  = TypeNaN;
 #endif
 }
 
 template <typename Type>
 XII_ALWAYS_INLINE xiiQuatTemplate<Type>::xiiQuatTemplate(Type inX, Type inY, Type inZ, Type inW) :
-  v(inX, inY, inZ), w(inW)
+  x(inX), y(inY), z(inZ), w(inW)
 {
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE const xiiQuatTemplate<Type> xiiQuatTemplate<Type>::IdentityQuaternion()
+XII_ALWAYS_INLINE const xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeIdentity()
 {
   return xiiQuatTemplate(0, 0, 0, 1);
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE void xiiQuatTemplate<Type>::SetElements(Type inX, Type inY, Type inZ, Type inW)
+XII_ALWAYS_INLINE xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeFromElements(Type inX, Type inY, Type inZ, Type inW)
 {
-  v.Set(inX, inY, inZ);
-  w = inW;
+  return xiiQuatTemplate<Type>(inX, inY, inZ, inW);
 }
 
 template <typename Type>
 XII_ALWAYS_INLINE void xiiQuatTemplate<Type>::SetIdentity()
 {
-  v.SetZero();
+  x = (Type)0;
+  y = (Type)0;
+  z = (Type)0;
   w = (Type)1;
 }
 
 template <typename Type>
-void xiiQuatTemplate<Type>::SetFromAxisAndAngle(const xiiVec3Template<Type>& vRotationAxis, xiiAngleTemplate<Type> angle)
+xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeFromAxisAndAngle(const xiiVec3Template<Type>& vRotationAxis, xiiAngleTemplate<Type> angle)
 {
-  const xiiAngleTemplate<Type> halfAngle = angle * (Type)0.5;
+  const xiiAngleTemplate<Type> halfAngle = angle * 0.5f;
 
-  v = static_cast<Type>(xiiMath::Sin(halfAngle)) * vRotationAxis;
-  w = xiiMath::Cos(halfAngle);
+  xiiVec3 v = static_cast<Type>(xiiMath::Sin(halfAngle)) * vRotationAxis;
+  Type    w = xiiMath::Cos(halfAngle);
+
+  return xiiQuatTemplate<Type>(v.x, v.y, v.z, w);
 }
 
 template <typename Type>
@@ -53,33 +59,35 @@ void xiiQuatTemplate<Type>::Normalize()
 {
   XII_NAN_ASSERT(this);
 
-  Type n = v.x * v.x + v.y * v.y + v.z * v.z + w * w;
+  Type n = x * x + y * y + z * z + w * w;
 
   n = xiiMath::Invert(xiiMath::Sqrt(n));
 
-  v *= n;
+  x *= n;
+  y *= n;
+  z *= n;
   w *= n;
 }
 
 template <typename Type>
-void xiiQuatTemplate<Type>::GetRotationAxisAndAngle(xiiVec3Template<Type>& ref_vAxis, xiiAngleTemplate<Type>& ref_angle, Type fEpsilon) const
+void xiiQuatTemplate<Type>::GetRotationAxisAndAngle(xiiVec3Template<Type>& out_vAxis, xiiAngleTemplate<Type>& out_angle, Type fEpsilon) const
 {
   XII_NAN_ASSERT(this);
 
-  ref_angle = 2.0f * xiiMath::ACos(static_cast<float>(w));
+  out_angle = 2 * xiiMath::ACos(static_cast<Type>(w));
 
-  const float s  = xiiMath::Sqrt(1 - w * w);
-  const float ds = 1.0f / s;
+  const Type s = xiiMath::Sqrt(1 - w * w);
 
   if (s < fEpsilon)
   {
-    ref_vAxis.Set(1, 0, 0);
+    out_vAxis.Set(1, 0, 0);
   }
   else
   {
-    ref_vAxis.x = v.x * ds;
-    ref_vAxis.y = v.y * ds;
-    ref_vAxis.z = v.z * ds;
+    const Type ds = 1.0f / s;
+    out_vAxis.x   = x * ds;
+    out_vAxis.y   = y * ds;
+    out_vAxis.z   = z * ds;
   }
 }
 
@@ -96,7 +104,7 @@ XII_FORCE_INLINE const xiiQuatTemplate<Type> xiiQuatTemplate<Type>::GetInverse()
 {
   XII_NAN_ASSERT(this);
 
-  return (xiiQuatTemplate(-v.x, -v.y, -v.z, w));
+  return (xiiQuatTemplate(-x, -y, -z, w));
 }
 
 template <typename Type>
@@ -104,7 +112,7 @@ XII_FORCE_INLINE const xiiQuatTemplate<Type> xiiQuatTemplate<Type>::GetNegated()
 {
   XII_NAN_ASSERT(this);
 
-  return (xiiQuatTemplate(-v.x, -v.y, -v.z, -w));
+  return (xiiQuatTemplate(-x, -y, -z, -w));
 }
 
 template <typename Type>
@@ -113,14 +121,20 @@ XII_FORCE_INLINE Type xiiQuatTemplate<Type>::Dot(const xiiQuatTemplate& rhs) con
   XII_NAN_ASSERT(this);
   XII_NAN_ASSERT(&rhs);
 
-  return v.Dot(rhs.v) + w * rhs.w;
+  return GetVectorPart().Dot(rhs.GetVectorPart()) + w * rhs.w;
+}
+
+template <typename Type>
+XII_ALWAYS_INLINE xiiVec3Template<Type> xiiQuatTemplate<Type>::Rotate(const xiiVec3Template<Type>& v) const
+{
+  return *this * v;
 }
 
 template <typename Type>
 XII_ALWAYS_INLINE const xiiVec3Template<Type> operator*(const xiiQuatTemplate<Type>& q, const xiiVec3Template<Type>& v)
 {
-  xiiVec3Template<Type> t = q.v.CrossRH(v) * (Type)2;
-  return v + q.w * t + q.v.CrossRH(t);
+  xiiVec3Template<Type> t = q.GetVectorPart().CrossRH(v) * (Type)2;
+  return v + q.w * t + q.GetVectorPart().CrossRH(t);
 }
 
 template <typename Type>
@@ -128,49 +142,56 @@ XII_ALWAYS_INLINE const xiiQuatTemplate<Type> operator*(const xiiQuatTemplate<Ty
 {
   xiiQuatTemplate<Type> q;
 
-  q.w = q1.w * q2.w - q1.v.Dot(q2.v);
-  q.v = q1.w * q2.v + q2.w * q1.v + q1.v.CrossRH(q2.v);
+  q.w = q1.w * q2.w - (q1.x * q2.x + q1.y * q2.y + q1.z * q2.z);
 
-  return (q);
+  const xiiVec3 v1 = q1.GetVectorPart();
+  const xiiVec3 v2 = q2.GetVectorPart();
+
+  const xiiVec3 vr = q1.w * v2 + q2.w * v1 + v1.CrossRH(v2);
+  q.x              = vr.x;
+  q.y              = vr.y;
+  q.z              = vr.z;
+
+  return q;
 }
 
 template <typename Type>
 bool xiiQuatTemplate<Type>::IsValid(Type fEpsilon) const
 {
-  if (!v.IsValid())
+  if (!GetVectorPart().IsValid())
     return false;
   if (!xiiMath::IsFinite(w))
     return false;
 
-  Type n = v.x * v.x + v.y * v.y + v.z * v.z + w * w;
+  Type n = x * x + y * y + z * z + w * w;
 
-  return (xiiMath::IsEqual(n, (Type)1, fEpsilon));
+  return xiiMath::IsEqual(n, (Type)1, fEpsilon);
 }
 
 template <typename Type>
 bool xiiQuatTemplate<Type>::IsNaN() const
 {
-  return v.IsNaN() || xiiMath::IsNaN(w);
+  return xiiMath::IsNaN(x) || xiiMath::IsNaN(y) || xiiMath::IsNaN(z) || xiiMath::IsNaN(w);
 }
 
 template <typename Type>
 bool xiiQuatTemplate<Type>::IsEqualRotation(const xiiQuatTemplate<Type>& qOther, Type fEpsilon) const
 {
-  if (v.IsEqual(qOther.v, xiiMath::DefaultEpsilon<Type>()) && xiiMath::IsEqual(w, qOther.w, xiiMath::DefaultEpsilon<Type>()))
+  if (GetVectorPart().IsEqual(qOther.GetVectorPart(), (Type)0.00001) && xiiMath::IsEqual(w, qOther.w, (Type)0.00001))
   {
     return true;
   }
 
-  xiiVec3Template<Type> vA1, vA2;
-  xiiAngle              A1, A2;
+  xiiVec3Template<Type>  vA1, vA2;
+  xiiAngleTemplate<Type> A1, A2;
 
   GetRotationAxisAndAngle(vA1, A1);
   qOther.GetRotationAxisAndAngle(vA2, A2);
 
-  if ((A1.IsEqualSimple(A2, xiiAngle::Degree(static_cast<float>(fEpsilon)))) && (vA1.IsEqual(vA2, fEpsilon)))
+  if ((A1.IsEqualSimple(A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(fEpsilon)))) && (vA1.IsEqual(vA2, fEpsilon)))
     return true;
 
-  if ((A1.IsEqualSimple(-A2, xiiAngle::Degree(static_cast<float>(fEpsilon)))) && (vA1.IsEqual(-vA2, fEpsilon)))
+  if ((A1.IsEqualSimple(-A2, xiiAngleTemplate<Type>::MakeFromDegree(static_cast<Type>(fEpsilon)))) && (vA1.IsEqual(-vA2, fEpsilon)))
     return true;
 
   return false;
@@ -183,18 +204,18 @@ const xiiMat3Template<Type> xiiQuatTemplate<Type>::GetAsMat3() const
 
   xiiMat3Template<Type> m;
 
-  const Type fTx  = v.x + v.x;
-  const Type fTy  = v.y + v.y;
-  const Type fTz  = v.z + v.z;
+  const Type fTx  = x + x;
+  const Type fTy  = y + y;
+  const Type fTz  = z + z;
   const Type fTwx = fTx * w;
   const Type fTwy = fTy * w;
   const Type fTwz = fTz * w;
-  const Type fTxx = fTx * v.x;
-  const Type fTxy = fTy * v.x;
-  const Type fTxz = fTz * v.x;
-  const Type fTyy = fTy * v.y;
-  const Type fTyz = fTz * v.y;
-  const Type fTzz = fTz * v.z;
+  const Type fTxx = fTx * x;
+  const Type fTxy = fTy * x;
+  const Type fTxz = fTz * x;
+  const Type fTyy = fTy * y;
+  const Type fTyz = fTz * y;
+  const Type fTzz = fTz * z;
 
   m.Element(0, 0) = (Type)1 - (fTyy + fTzz);
   m.Element(1, 0) = fTxy - fTwz;
@@ -215,18 +236,18 @@ const xiiMat4Template<Type> xiiQuatTemplate<Type>::GetAsMat4() const
 
   xiiMat4Template<Type> m;
 
-  const Type fTx  = v.x + v.x;
-  const Type fTy  = v.y + v.y;
-  const Type fTz  = v.z + v.z;
+  const Type fTx  = x + x;
+  const Type fTy  = y + y;
+  const Type fTz  = z + z;
   const Type fTwx = fTx * w;
   const Type fTwy = fTy * w;
   const Type fTwz = fTz * w;
-  const Type fTxx = fTx * v.x;
-  const Type fTxy = fTy * v.x;
-  const Type fTxz = fTz * v.x;
-  const Type fTyy = fTy * v.y;
-  const Type fTyz = fTz * v.y;
-  const Type fTzz = fTz * v.z;
+  const Type fTxx = fTx * x;
+  const Type fTxy = fTy * x;
+  const Type fTxz = fTz * x;
+  const Type fTyy = fTy * y;
+  const Type fTyz = fTz * y;
+  const Type fTzz = fTz * z;
 
   m.Element(0, 0) = (Type)1 - (fTyy + fTzz);
   m.Element(1, 0) = fTxy - fTwz;
@@ -248,7 +269,7 @@ const xiiMat4Template<Type> xiiQuatTemplate<Type>::GetAsMat4() const
 }
 
 template <typename Type>
-void xiiQuatTemplate<Type>::SetFromMat3(const xiiMat3Template<Type>& m)
+xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeFromMat3(const xiiMat3Template<Type>& m)
 {
   XII_NAN_ASSERT(&m);
 
@@ -291,10 +312,12 @@ void xiiQuatTemplate<Type>::SetFromMat3(const xiiMat3Template<Type>& m)
     val[k] = (m.Element(i, k) + m.Element(k, i)) * t;
   }
 
-  v.x = val[0];
-  v.y = val[1];
-  v.z = val[2];
-  w   = val[3];
+  xiiQuatTemplate<Type> q;
+  q.x = val[0];
+  q.y = val[1];
+  q.z = val[2];
+  q.w = val[3];
+  return q;
 }
 
 template <typename Type>
@@ -309,7 +332,7 @@ void xiiQuatTemplate<Type>::ReconstructFromMat3(const xiiMat3Template<Type>& mMa
   m.SetColumn(1, y);
   m.SetColumn(2, z);
 
-  SetFromMat3(m);
+  *this = xiiQuat::MakeFromMat3(m);
 }
 
 template <typename Type>
@@ -324,7 +347,7 @@ void xiiQuatTemplate<Type>::ReconstructFromMat4(const xiiMat4Template<Type>& mMa
   m.SetColumn(1, y);
   m.SetColumn(2, z);
 
-  SetFromMat3(m);
+  *this = xiiQuat::MakeFromMat3(m);
 }
 
 /*! \note This function will ALWAYS return a quaternion that rotates from one direction to another.
@@ -334,7 +357,7 @@ void xiiQuatTemplate<Type>::ReconstructFromMat4(const xiiMat4Template<Type>& mMa
   such a rotation with other means.
 */
 template <typename Type>
-void xiiQuatTemplate<Type>::SetShortestRotation(const xiiVec3Template<Type>& vDirFrom, const xiiVec3Template<Type>& vDirTo)
+xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeShortestRotation(const xiiVec3Template<Type>& vDirFrom, const xiiVec3Template<Type>& vDirTo)
 {
   const xiiVec3Template<Type> v0 = vDirFrom.GetNormalized();
   const xiiVec3Template<Type> v1 = vDirTo.GetNormalized();
@@ -342,20 +365,17 @@ void xiiQuatTemplate<Type>::SetShortestRotation(const xiiVec3Template<Type>& vDi
   const Type fDot = v0.Dot(v1);
 
   // if both vectors are identical -> no rotation needed
-  if (xiiMath::IsEqual(fDot, (Type)1, xiiMath::SmallEpsilon<Type>()))
+  if (xiiMath::IsEqual(fDot, (Type)1, (Type)0.0000001))
   {
-    SetIdentity();
-    return;
+    return MakeIdentity();
   }
-  else if (xiiMath::IsEqual(fDot, (Type)-1, xiiMath::SmallEpsilon<Type>())) // If both vectors are opposing
+  else if (xiiMath::IsEqual(fDot, (Type)-1, (Type)0.0000001)) // if both vectors are opposing
   {
     // find an axis, that is not identical and not opposing, xiiVec3Template::Cross-product to find perpendicular vector, rotate around that
     if (xiiMath::Abs(v0.Dot(xiiVec3Template<Type>(1, 0, 0))) < (Type)0.8)
-      SetFromAxisAndAngle(v0.CrossRH(xiiVec3Template<Type>(1, 0, 0)).GetNormalized(), xiiAngleTemplate<Type>::Radian(xiiMath::Pi<Type>()));
+      return MakeFromAxisAndAngle(v0.CrossRH(xiiVec3Template<Type>(1, 0, 0)).GetNormalized(), xiiAngleTemplate<Type>::MakeFromRadian(xiiMath::Pi<Type>()));
     else
-      SetFromAxisAndAngle(v0.CrossRH(xiiVec3Template<Type>(0, 1, 0)).GetNormalized(), xiiAngleTemplate<Type>::Radian(xiiMath::Pi<Type>()));
-
-    return;
+      return MakeFromAxisAndAngle(v0.CrossRH(xiiVec3Template<Type>(0, 1, 0)).GetNormalized(), xiiAngleTemplate<Type>::MakeFromRadian(xiiMath::Pi<Type>()));
   }
 
   const xiiVec3Template<Type> c = v0.CrossRH(v1);
@@ -364,21 +384,27 @@ void xiiQuatTemplate<Type>::SetShortestRotation(const xiiVec3Template<Type>& vDi
 
   XII_ASSERT_DEBUG(c.IsValid(), "SetShortestRotation failed.");
 
-  v = c / s;
-  w = s / (Type)2;
+  const Type fOneDivS = 1.0f / s;
 
-  Normalize();
+  xiiQuatTemplate<Type> q;
+  q.x = c.x * fOneDivS;
+  q.y = c.y * fOneDivS;
+  q.z = c.z * fOneDivS;
+  q.w = s / (Type)2;
+  q.Normalize();
+
+  return q;
 }
 
 template <typename Type>
-void xiiQuatTemplate<Type>::SetSlerp(const xiiQuatTemplate<Type>& qFrom, const xiiQuatTemplate<Type>& qTo, Type t)
+xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeSlerp(const xiiQuatTemplate<Type>& qFrom, const xiiQuatTemplate<Type>& qTo, Type t)
 {
   XII_ASSERT_DEBUG((t >= (Type)0) && (t <= (Type)1), "Invalid lerp factor.");
 
   const Type one    = 1;
   const Type qdelta = (Type)1 - (Type)0.001;
 
-  const Type fDot = (qFrom.v.x * qTo.v.x + qFrom.v.y * qTo.v.y + qFrom.v.z * qTo.v.z + qFrom.w * qTo.w);
+  const Type fDot = (qFrom.x * qTo.x + qFrom.y * qTo.y + qFrom.z * qTo.z + qFrom.w * qTo.w);
 
   Type cosTheta = fDot;
 
@@ -393,11 +419,11 @@ void xiiQuatTemplate<Type>::SetSlerp(const xiiQuatTemplate<Type>& qFrom, const x
 
   if (cosTheta < qdelta)
   {
-    xiiAngleTemplate<Type> theta = xiiMath::ACos(cosTheta);
+    xiiAngleTemplate<Type> theta = xiiMath::ACos((Type)cosTheta);
 
-    // Use sqrtInv(1+c^2) instead of 1.0/sin(theta)
+    // use sqrtInv(1+c^2) instead of 1.0/sin(theta)
     const Type                   iSinTheta = (Type)1 / xiiMath::Sqrt(one - (cosTheta * cosTheta));
-    const xiiAngleTemplate<Type> tTheta    = t * theta;
+    const xiiAngleTemplate<Type> tTheta    = static_cast<Type>(t) * theta;
 
     Type s0 = xiiMath::Sin(theta - tTheta);
     Type s1 = xiiMath::Sin(tTheta);
@@ -415,23 +441,27 @@ void xiiQuatTemplate<Type>::SetSlerp(const xiiQuatTemplate<Type>& qFrom, const x
   if (bFlipSign)
     t1 = -t1;
 
-  v.x = t0 * qFrom.v.x;
-  v.y = t0 * qFrom.v.y;
-  v.z = t0 * qFrom.v.z;
-  w   = t0 * qFrom.w;
+  xiiQuatTemplate<Type> q;
 
-  v.x += t1 * qTo.v.x;
-  v.y += t1 * qTo.v.y;
-  v.z += t1 * qTo.v.z;
-  w += t1 * qTo.w;
+  q.x = t0 * qFrom.x;
+  q.y = t0 * qFrom.y;
+  q.z = t0 * qFrom.z;
+  q.w = t0 * qFrom.w;
 
-  Normalize();
+  q.x += t1 * qTo.x;
+  q.y += t1 * qTo.y;
+  q.z += t1 * qTo.z;
+  q.w += t1 * qTo.w;
+
+  q.Normalize();
+
+  return q;
 }
 
 template <typename Type>
 XII_ALWAYS_INLINE bool operator==(const xiiQuatTemplate<Type>& q1, const xiiQuatTemplate<Type>& q2)
 {
-  return q1.v.IsIdentical(q2.v) && q1.w == q2.w;
+  return q1.x == q2.x && q1.y == q2.y && q1.z == q2.z && q1.w == q2.w;
 }
 
 template <typename Type>
@@ -445,55 +475,57 @@ void xiiQuatTemplate<Type>::GetAsEulerAngles(xiiAngleTemplate<Type>& out_x, xiiA
   auto& pitch = out_y;
   auto& roll  = out_x;
 
-  const double fSingularityTest      = w * v.y - v.z * v.x;
+  const double fSingularityTest      = w * y - z * x;
   const double fSingularityThreshold = 0.4999995;
 
   if (fSingularityTest > fSingularityThreshold) // singularity at north pole
   {
-    yaw   = -(Type)2.0f * xiiMath::ATan2(v.x, w);
-    pitch = xiiAngleTemplate<Type>::Degree(90.0f);
-    roll  = xiiAngleTemplate<Type>::Degree(0.0f);
+    yaw   = -2.0f * xiiMath::ATan2(x, w);
+    pitch = xiiAngleTemplate<Type>::MakeFromDegree(90.0f);
+    roll  = xiiAngleTemplate<Type>::MakeFromDegree(0.0f);
   }
   else if (fSingularityTest < -fSingularityThreshold) // singularity at south pole
   {
-    yaw   = (Type)2.0f * xiiMath::ATan2(v.x, w);
-    pitch = xiiAngleTemplate<Type>::Degree(-90.0f);
-    roll  = xiiAngleTemplate<Type>::Degree(0.0f);
+    yaw   = 2.0f * xiiMath::ATan2(x, w);
+    pitch = xiiAngleTemplate<Type>::MakeFromDegree(-90.0f);
+    roll  = xiiAngleTemplate<Type>::MakeFromDegree(0.0f);
   }
   else
   {
     // yaw (z-axis rotation)
-    const double siny = 2.0 * (w * v.z + v.x * v.y);
-    const double cosy = 1.0 - 2.0 * (v.y * v.y + v.z * v.z);
+    const double siny = 2.0 * (w * z + x * y);
+    const double cosy = 1.0 - 2.0 * (y * y + z * z);
     yaw               = xiiMath::ATan2((Type)siny, (Type)cosy);
 
     // pitch (y-axis rotation)
-    pitch = xiiMath::ASin((Type)2.0f * (Type)fSingularityTest);
+    pitch = xiiMath::ASin(2.0f * (Type)fSingularityTest);
 
     // roll (x-axis rotation)
-    const double sinr = 2.0 * (w * v.x + v.y * v.z);
-    const double cosr = 1.0 - 2.0 * (v.x * v.x + v.y * v.y);
+    const double sinr = 2.0 * (w * x + y * z);
+    const double cosr = 1.0 - 2.0 * (x * x + y * y);
     roll              = xiiMath::ATan2((Type)sinr, (Type)cosr);
   }
 }
 
 template <typename Type>
-void xiiQuatTemplate<Type>::SetFromEulerAngles(const xiiAngleTemplate<Type>& x, const xiiAngleTemplate<Type>& y, const xiiAngleTemplate<Type>& z)
+xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeFromEulerAngles(const xiiAngleTemplate<Type>& x, const xiiAngleTemplate<Type>& y, const xiiAngleTemplate<Type>& z)
 {
   /// Taken from here (yaw->pitch->roll, ZYX order or 3-2-1 order):
   /// https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
   const auto&  yaw   = z;
   const auto&  pitch = y;
   const auto&  roll  = x;
-  const double cy    = xiiMath::Cos(yaw * (Type)0.5f);
-  const double sy    = xiiMath::Sin(yaw * (Type)0.5f);
-  const double cp    = xiiMath::Cos(pitch * (Type)0.5f);
-  const double sp    = xiiMath::Sin(pitch * (Type)0.5f);
-  const double cr    = xiiMath::Cos(roll * (Type)0.5f);
-  const double sr    = xiiMath::Sin(roll * (Type)0.5f);
+  const double cy    = xiiMath::Cos(yaw * 0.5);
+  const double sy    = xiiMath::Sin(yaw * 0.5);
+  const double cp    = xiiMath::Cos(pitch * 0.5);
+  const double sp    = xiiMath::Sin(pitch * 0.5);
+  const double cr    = xiiMath::Cos(roll * 0.5);
+  const double sr    = xiiMath::Sin(roll * 0.5);
 
-  w   = (Type)(cy * cp * cr + sy * sp * sr);
-  v.x = (Type)(cy * cp * sr - sy * sp * cr);
-  v.y = (Type)(cy * sp * cr + sy * cp * sr);
-  v.z = (Type)(sy * cp * cr - cy * sp * sr);
+  xiiQuatTemplate<Type> q;
+  q.w = (Type)(cy * cp * cr + sy * sp * sr);
+  q.x = (Type)(cy * cp * sr - sy * sp * cr);
+  q.y = (Type)(cy * sp * cr + sy * cp * sr);
+  q.z = (Type)(sy * cp * cr - cy * sp * sr);
+  return q;
 }

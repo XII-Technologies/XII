@@ -31,23 +31,26 @@ public:
   }
 #endif
 
-  /// \brief Resets the box to an invalid state. ExpandToInclude can then be used to make it into a bounding box for objects.
-  void SetInvalid(); // [tested]
+  /// \brief Creates a box that is located at the origin and has zero size. This is a 'valid' box.
+  [[nodiscard]] static xiiBoundingBoxTemplate<Type> MakeZero();
 
-  /// \brief Sets the box from a center point and half-extents for each axis.
-  void SetCenterAndHalfExtents(const xiiVec3Template<Type>& vCenter, const xiiVec3Template<Type>& vHalfExtents); // [tested]
+  /// \brief Creates a box that is in an invalid state. ExpandToInclude can then be used to make it into a bounding box for objects.
+  [[nodiscard]] static xiiBoundingBoxTemplate<Type> MakeInvalid(); // [tested]
+
+  /// \brief Creates a box from a center point and half-extents for each axis.
+  [[nodiscard]] static xiiBoundingBoxTemplate<Type> MakeFromCenterAndHalfExtents(const xiiVec3Template<Type>& vCenter, const xiiVec3Template<Type>& vHalfExtents); // [tested]
+
+  /// \brief Creates a box with the given minimum and maximum values.
+  [[nodiscard]] static xiiBoundingBoxTemplate<Type> MakeFromMinMax(const xiiVec3Template<Type>& vMin, const xiiVec3Template<Type>& vMax); // [tested]
+
+  /// \brief Creates a box around the given set of points. If uiNumPoints is zero, the returned box is invalid (same as MakeInvalid() returns).
+  [[nodiscard]] static xiiBoundingBoxTemplate<Type> MakeFromPoints(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride = sizeof(xiiVec3Template<Type>)); // [tested]
 
   /// \brief Checks whether the box is in an invalid state.
   bool IsValid() const; // [tested]
 
   /// \brief Checks whether any component is NaN.
   bool IsNaN() const; // [tested]
-
-  /// \brief Directly sets the minimum and maximum values.
-  void SetElements(const xiiVec3Template<Type>& vMin, const xiiVec3Template<Type>& vMax); // [tested]
-
-  /// \brief Creates a new bounding-box around the given set of points.
-  void SetFromPoints(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride = sizeof(xiiVec3Template<Type>)); // [tested]
 
   /// \brief Writes the 8 different corners of the box to the given array.
   void GetCorners(xiiVec3Template<Type>* out_pCorners) const; // [tested]
@@ -147,7 +150,6 @@ public:
 
   /// \brief Returns a bounding sphere that encloses this box.
   const xiiBoundingSphereTemplate<Type> GetBoundingSphere() const; // [tested]
-
 
 public:
   xiiVec3Template<Type> m_vMin;

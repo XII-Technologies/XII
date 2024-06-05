@@ -25,9 +25,18 @@ xiiPlane& xiiFrustum::AccessPlane(xiiUInt8 uiPlane)
 
 bool xiiFrustum::IsValid() const
 {
+  // For frustums with infinite farplanes we test a finite frustum slice for validity, as the
+  // computations below don't work when 4 of the corner points are at infinity.
+  if (xiiMath::Abs(m_Planes[FarPlane].m_fNegDistance) == xiiMath::Infinity<float>())
+  {
+    xiiFrustum finiteSlice                        = *this;
+    finiteSlice.m_Planes[FarPlane].m_fNegDistance = -2.f * xiiMath::Abs(m_Planes[NearPlane].m_fNegDistance);
+    return finiteSlice.IsValid();
+  }
+
   for (xiiUInt32 i = 0; i < PLANE_COUNT; ++i)
   {
-    if (!m_Planes[i].IsValid())
+    if (!m_Planes[i].IsValid() || (i != FarPlane && !xiiMath::IsFinite(m_Planes[i].m_fNegDistance)))
       return false;
   }
 
@@ -35,7 +44,7 @@ bool xiiFrustum::IsValid() const
   if (ComputeCornerPoints(corners).Failed())
     return false;
 
-  xiiVec3 center = xiiVec3::ZeroVector();
+  xiiVec3 center = xiiVec3::MakeZero();
   for (xiiUInt32 i = 0; i < 8; ++i)
   {
     center += corners[i];
@@ -48,10 +57,29 @@ bool xiiFrustum::IsValid() const
   return true;
 }
 
-void xiiFrustum::SetFrustum(const xiiPlane* pPlanes)
+xiiFrustum xiiFrustum::MakeFromPlanes(const xiiPlane* pPlanes)
 {
+  xiiFrustum      frustum;
+  const xiiResult res = TryMakeFromPlanes(frustum, pPlanes);
+  XII_ASSERT_DEV(res.Succeeded() && frustum.IsValid(), "Frustum is not valid after construction.");
+  XII_IGNORE_UNUSED(res);
+  return frustum;
+}
+
+xiiResult xiiFrustum::TryMakeFromPlanes(xiiFrustum& out_frustum, const xiiPlane* pPlanes)
+{
+  xiiFrustum f;
+
   for (xiiUInt32 i = 0; i < PLANE_COUNT; ++i)
-    m_Planes[i] = pPlanes[i];
+    f.m_Planes[i] = pPlanes[i];
+
+  if (f.IsValid())
+  {
+    out_frustum = std::move(f);
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
 }
 
 void xiiFrustum::TransformFrustum(const xiiMat4& mTransform)
@@ -60,6 +88,13 @@ void xiiFrustum::TransformFrustum(const xiiMat4& mTransform)
   {
     m_Planes[i].Transform(mTransform);
   }
+}
+
+xiiFrustum xiiFrustum::GetTransformedFrustum(const xiiMat4& mTransform) const
+{
+  xiiFrustum result = *this;
+  result.TransformFrustum(mTransform);
+  return result;
 }
 
 xiiVolumePosition::Enum xiiFrustum::GetObjectPosition(const xiiVec3* pVertices, xiiUInt32 uiNumVertices) const
@@ -219,7 +254,16 @@ xiiResult xiiFrustum::ComputeCornerPoints(xiiVec3 out_pPoints[FrustumCorner::COR
   return XII_SUCCESS;
 }
 
-void xiiFrustum::SetFrustum(const xiiMat4& mModelViewProjection0, xiiClipSpaceDepthRange::Enum depthRange, xiiHandedness::Enum handedness)
+xiiFrustum xiiFrustum::MakeFromMVP(const xiiMat4& mModelViewProjection0, xiiClipSpaceDepthRange::Enum depthRange, xiiHandedness::Enum handedness)
+{
+  xiiFrustum      frustum;
+  const xiiResult res = TryMakeFromMVP(frustum, mModelViewProjection0, depthRange, handedness);
+  XII_ASSERT_DEV(res.Succeeded() && frustum.IsValid(), "Frustum is not valid after construction.");
+  XII_IGNORE_UNUSED(res);
+  return frustum;
+}
+
+xiiResult xiiFrustum::TryMakeFromMVP(xiiFrustum& out_frustum, const xiiMat4& mModelViewProjection0, xiiClipSpaceDepthRange::Enum depthRange, xiiHandedness::Enum handedness)
 {
   xiiMat4 ModelViewProjection = mModelViewProjection0;
   xiiGraphicsUtils::ConvertProjectionMatrixDepthRange(ModelViewProjection, depthRange, xiiClipSpaceDepthRange::MinusOneToOne);
@@ -271,11 +315,27 @@ void xiiFrustum::SetFrustum(const xiiMat4& mModelViewProjection0, xiiClipSpaceDe
     planes[FarPlane] = (-planes[NearPlane].GetAsVec3()).GetAsVec4(planes[FarPlane].w);
   }
 
-  static_assert(offsetof(xiiPlane, m_vNormal) == offsetof(xiiVec4, x) && offsetof(xiiPlane, m_fNegDistance) == offsetof(xiiVec4, w));
-  xiiMemoryUtils::Copy(m_Planes, (xiiPlane*)planes, 6);
+  static_assert(sizeof(xiiFrustum) == sizeof(planes));
+  if (reinterpret_cast<xiiFrustum*>(planes)->IsValid())
+  {
+    static_assert(offsetof(xiiPlane, m_vNormal) == offsetof(xiiVec4, x) && offsetof(xiiPlane, m_fNegDistance) == offsetof(xiiVec4, w));
+    xiiMemoryUtils::Copy(out_frustum.m_Planes, (xiiPlane*)planes, 6);
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
 }
 
-void xiiFrustum::SetFrustum(const xiiVec3& vPosition, const xiiVec3& vForwards, const xiiVec3& vUp, xiiAngle fovX, xiiAngle fovY, float fNearPlane, float fFarPlane)
+xiiFrustum xiiFrustum::MakeFromFOV(const xiiVec3& vPosition, const xiiVec3& vForwards, const xiiVec3& vUp, xiiAngle fovX, xiiAngle fovY, float fNearPlane, float fFarPlane)
+{
+  xiiFrustum      frustum;
+  const xiiResult res = TryMakeFromFOV(frustum, vPosition, vForwards, vUp, fovX, fovY, fNearPlane, fFarPlane);
+  XII_ASSERT_DEV(res.Succeeded() && frustum.IsValid(), "Frustum is not valid after construction.");
+  XII_IGNORE_UNUSED(res);
+  return frustum;
+}
+
+xiiResult xiiFrustum::TryMakeFromFOV(xiiFrustum& out_frustum, const xiiVec3& vPosition, const xiiVec3& vForwards, const xiiVec3& vUp, xiiAngle fovX, xiiAngle fovY, float fNearPlane, float fFarPlane)
 {
   XII_ASSERT_DEBUG(xiiMath::Abs(vForwards.GetNormalized().Dot(vUp.GetNormalized())) < 0.999f, "Up dir must be different from forward direction");
 
@@ -283,16 +343,18 @@ void xiiFrustum::SetFrustum(const xiiVec3& vPosition, const xiiVec3& vForwards, 
   const xiiVec3 vRightNorm    = vForwards.CrossRH(vUp).GetNormalized();
   const xiiVec3 vUpNorm       = vRightNorm.CrossRH(vForwards).GetNormalized();
 
+  xiiFrustum res;
+
   // Near Plane
-  m_Planes[NearPlane].SetFromNormalAndPoint(-vForwardsNorm, vPosition + fNearPlane * vForwardsNorm);
+  res.m_Planes[NearPlane] = xiiPlane::MakeFromNormalAndPoint(-vForwardsNorm, vPosition + fNearPlane * vForwardsNorm);
 
   // Far Plane
-  m_Planes[FarPlane].SetFromNormalAndPoint(vForwardsNorm, vPosition + fFarPlane * vForwardsNorm);
+  res.m_Planes[FarPlane] = xiiPlane::MakeFromNormalAndPoint(vForwardsNorm, vPosition + fFarPlane * vForwardsNorm);
 
   // Making sure the near/far plane is always closest/farthest.
   if (fNearPlane > fFarPlane)
   {
-    xiiMath::Swap(m_Planes[NearPlane], m_Planes[FarPlane]);
+    xiiMath::Swap(res.m_Planes[NearPlane], res.m_Planes[FarPlane]);
   }
 
   xiiMat3 mLocalFrame;
@@ -311,7 +373,7 @@ void xiiFrustum::SetFrustum(const xiiVec3& vPosition, const xiiVec3& vForwards, 
     xiiVec3 vPlaneNormal = mLocalFrame * xiiVec3(-fCosFovX, 0, fSinFovX);
     vPlaneNormal.Normalize();
 
-    m_Planes[LeftPlane].SetFromNormalAndPoint(vPlaneNormal, vPosition);
+    res.m_Planes[LeftPlane] = xiiPlane::MakeFromNormalAndPoint(vPlaneNormal, vPosition);
   }
 
   // Right Plane
@@ -319,7 +381,7 @@ void xiiFrustum::SetFrustum(const xiiVec3& vPosition, const xiiVec3& vForwards, 
     xiiVec3 vPlaneNormal = mLocalFrame * xiiVec3(fCosFovX, 0, fSinFovX);
     vPlaneNormal.Normalize();
 
-    m_Planes[RightPlane].SetFromNormalAndPoint(vPlaneNormal, vPosition);
+    res.m_Planes[RightPlane] = xiiPlane::MakeFromNormalAndPoint(vPlaneNormal, vPosition);
   }
 
   // Bottom Plane
@@ -327,7 +389,7 @@ void xiiFrustum::SetFrustum(const xiiVec3& vPosition, const xiiVec3& vForwards, 
     xiiVec3 vPlaneNormal = mLocalFrame * xiiVec3(0, -fCosFovY, fSinFovY);
     vPlaneNormal.Normalize();
 
-    m_Planes[BottomPlane].SetFromNormalAndPoint(vPlaneNormal, vPosition);
+    res.m_Planes[BottomPlane] = xiiPlane::MakeFromNormalAndPoint(vPlaneNormal, vPosition);
   }
 
   // Top Plane
@@ -335,8 +397,48 @@ void xiiFrustum::SetFrustum(const xiiVec3& vPosition, const xiiVec3& vForwards, 
     xiiVec3 vPlaneNormal = mLocalFrame * xiiVec3(0, fCosFovY, fSinFovY);
     vPlaneNormal.Normalize();
 
-    m_Planes[TopPlane].SetFromNormalAndPoint(vPlaneNormal, vPosition);
+    res.m_Planes[TopPlane] = xiiPlane::MakeFromNormalAndPoint(vPlaneNormal, vPosition);
   }
+
+  if (res.IsValid())
+  {
+    out_frustum = std::move(res);
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
 }
 
-XII_STATICLINK_FILE(Foundation, Foundation_Math_Implementation_Frustum);
+xiiFrustum xiiFrustum::MakeFromCorners(const xiiVec3 pCorners[FrustumCorner::CORNER_COUNT])
+{
+  xiiFrustum      frustum;
+  const xiiResult res = TryMakeFromCorners(frustum, pCorners);
+  XII_ASSERT_DEV(res.Succeeded() && frustum.IsValid(), "Frustum is not valid after construction.");
+  XII_IGNORE_UNUSED(res);
+  return frustum;
+}
+
+xiiResult xiiFrustum::TryMakeFromCorners(xiiFrustum& out_frustum, const xiiVec3 pCorners[FrustumCorner::CORNER_COUNT])
+{
+  xiiFrustum res;
+
+  res.m_Planes[PlaneType::LeftPlane] = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::FarTopLeft], pCorners[FrustumCorner::NearBottomLeft], pCorners[FrustumCorner::NearTopLeft]);
+
+  res.m_Planes[PlaneType::RightPlane] = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::NearTopRight], pCorners[FrustumCorner::FarBottomRight], pCorners[FrustumCorner::FarTopRight]);
+
+  res.m_Planes[PlaneType::BottomPlane] = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::NearBottomLeft], pCorners[FrustumCorner::FarBottomRight], pCorners[FrustumCorner::NearBottomRight]);
+
+  res.m_Planes[PlaneType::TopPlane] = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::FarTopLeft], pCorners[FrustumCorner::NearTopRight], pCorners[FrustumCorner::FarTopRight]);
+
+  res.m_Planes[PlaneType::FarPlane] = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::FarTopLeft], pCorners[FrustumCorner::FarBottomRight], pCorners[FrustumCorner::FarBottomLeft]);
+
+  res.m_Planes[PlaneType::NearPlane] = xiiPlane::MakeFromPoints(pCorners[FrustumCorner::NearTopLeft], pCorners[FrustumCorner::NearBottomRight], pCorners[FrustumCorner::NearTopRight]);
+
+  if (res.IsValid())
+  {
+    out_frustum = std::move(res);
+    return XII_SUCCESS;
+  }
+
+  return XII_FAILURE;
+}

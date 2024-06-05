@@ -4,12 +4,13 @@
 
 /// \brief Wrapper class for a safe usage and conversions of angles.
 ///
-/// Uses radian internally. Will <b>not</b> automatically keep its range between 0 degree - 360 degree (0 - 2PI) but you can call NormalizeRange to do
-/// so.
+/// Uses radian internally. Will <b>not</b> automatically keep its range between 0 degree - 360 degree (0 - 2PI) but you can call NormalizeRange to do so.
 template <typename Type>
 class xiiAngleTemplate
 {
 public:
+  XII_DECLARE_POD_TYPE();
+
   /// \brief Returns the constant to multiply with an angle in degree to convert it to radians.
   constexpr static XII_ALWAYS_INLINE Type DegToRadMultiplier(); // [tested]
 
@@ -22,17 +23,17 @@ public:
   /// \brief Converts an angle in radians to degree.
   constexpr static Type RadToDeg(Type f); // [tested]
 
-  /// \brief Creates an instance of xiiAngleTemplate that was initialized from degree. (Performs a conversion)
-  constexpr static xiiAngleTemplate<Type> Degree(Type fDegree); // [tested]
+  /// \brief Returns a zero initialized angle. Same as a default constructed object.
+  [[nodiscard]] constexpr static xiiAngleTemplate<Type> MakeZero() { return xiiAngleTemplate<Type>(); }
 
-  /// \brief Creates an instance of xiiAngleTemplate that was initialized from radian. (No need for any conversion)
-  constexpr static xiiAngleTemplate<Type> Radian(Type fRadian); // [tested]
+  /// \brief Creates an instance of xiiAngleTemplate<Type> that was initialized from degree. (Performs a conversion)
+  [[nodiscard]] constexpr static xiiAngleTemplate<Type> MakeFromDegree(Type fDegree); // [tested]
 
-public:
-  XII_DECLARE_POD_TYPE();
+  /// \brief Creates an instance of xiiAngleTemplate<Type> that was initialized from radian. (No need for any conversion)
+  [[nodiscard]] constexpr static xiiAngleTemplate<Type> MakeFromRadian(Type fRadian); // [tested]
 
   /// \brief Standard constructor, initializing with 0.
-  constexpr xiiAngleTemplate() :
+  constexpr xiiAngleTemplate<Type>() :
     m_fRadian(static_cast<Type>(0))
   {
   } // [tested]
@@ -44,19 +45,19 @@ public:
   constexpr Type GetRadian() const; // [tested]
 
   /// \brief Sets the radian value. (No need for any conversion)
-  XII_ALWAYS_INLINE void SetRadian(Type rad) { m_fRadian = rad; };
+  XII_ALWAYS_INLINE void SetRadian(Type fRadian) { m_fRadian = fRadian; };
 
   /// \brief Brings the angle into the range of 0 degree - 360 degree
   /// \see GetNormalizedRange()
   void NormalizeRange(); // [tested]
 
-  /// \brief Returns an equivalent angle with range between 0 degree - 360 degree
+  /// \brief Returns an equivalent angle with range between 0 degree - 360 degree.
   /// \see NormalizeRange()
   xiiAngleTemplate<Type> GetNormalizedRange() const; // [tested]
 
   /// \brief Computes the smallest angle between the two given angles. The angle will always be a positive value.
-  /// \note The two angles must be in the same range. E.g. they should be either normalized or at least the absolute angle between them should not be
-  /// more than 180 degree.
+  ///
+  /// \note The two angles must be in the same range. E.g. they should be either normalized or at least the absolute angle between them should not be more than 180 degree.
   constexpr static xiiAngleTemplate<Type> AngleBetween(xiiAngleTemplate<Type> a, xiiAngleTemplate<Type> b); // [tested]
 
   /// \brief Equality check with epsilon. Simple check without normalization. 360 degree will equal 0 degree, but 720 will not.
@@ -80,16 +81,13 @@ public:
   constexpr bool operator==(const xiiAngleTemplate<Type>& r) const; // [tested]
 
   // At least the < operator is implement to make clamping etc. work
-  constexpr bool operator<(const xiiAngleTemplate<Type>& r) const;
-  constexpr bool operator>(const xiiAngleTemplate<Type>& r) const;
-  constexpr bool operator<=(const xiiAngleTemplate<Type>& r) const;
-  constexpr bool operator>=(const xiiAngleTemplate<Type>& r) const;
+  constexpr std::strong_ordering operator<=>(const xiiAngleTemplate<Type>& r) const;
 
   // Note: relational operators on angles are not really possible - is 0 degree smaller or bigger than 359 degree?
 
 private:
   /// \brief For internal use only.
-  constexpr explicit xiiAngleTemplate(Type fRadian) :
+  constexpr explicit xiiAngleTemplate<Type>(Type fRadian) :
     m_fRadian(fRadian)
   {
   }

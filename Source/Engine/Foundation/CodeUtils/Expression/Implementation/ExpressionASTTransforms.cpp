@@ -586,11 +586,11 @@ xiiExpressionAST::Node* xiiExpressionAST::FoldConstants(Node* pNode)
           case NodeType::Pow2:
             return CreateConstant(xiiMath::Pow2(fValue));
           case NodeType::Sin:
-            return CreateConstant(xiiMath::Sin(xiiAngle::Radian(fValue)));
+            return CreateConstant(xiiMath::Sin(xiiAngle::MakeFromRadian(fValue)));
           case NodeType::Cos:
-            return CreateConstant(xiiMath::Cos(xiiAngle::Radian(fValue)));
+            return CreateConstant(xiiMath::Cos(xiiAngle::MakeFromRadian(fValue)));
           case NodeType::Tan:
-            return CreateConstant(xiiMath::Tan(xiiAngle::Radian(fValue)));
+            return CreateConstant(xiiMath::Tan(xiiAngle::MakeFromRadian(fValue)));
           case NodeType::ASin:
             return CreateConstant(xiiMath::ASin(fValue).GetRadian());
           case NodeType::ACos:

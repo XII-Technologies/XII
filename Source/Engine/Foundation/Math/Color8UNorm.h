@@ -105,5 +105,4 @@ public:
 
 XII_CHECK_AT_COMPILETIME(sizeof(xiiColorGammaUB) == 4);
 
-
 #include <Foundation/Math/Implementation/Color8UNorm_inl.h>

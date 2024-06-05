@@ -8,6 +8,7 @@ template <typename Type>
 class xiiMat3Template
 {
 public:
+  // Means that vectors can be copied using memcpy instead of copy construction.
   XII_DECLARE_POD_TYPE();
 
   using ComponentType = Type;
@@ -41,6 +42,36 @@ public:
   /// \brief Sets each element manually: Naming is "column-n row-m"
   xiiMat3Template(Type c1r1, Type c2r1, Type c3r1, Type c1r2, Type c2r2, Type c3r2, Type c1r3, Type c2r3, Type c3r3); // [tested]
 
+  /// \brief Returns a zero matrix.
+  [[nodiscard]] static xiiMat3Template<Type> MakeZero();
+
+  /// \brief Returns an identity matrix.
+  [[nodiscard]] static xiiMat3Template<Type> MakeIdentity();
+
+  /// \brief Creates a matrix from 9 values that are in row-major layout.
+  [[nodiscard]] static xiiMat3Template<Type> MakeFromRowMajorArray(const Type* const pData);
+
+  /// \brief Creates a matrix from 9 values that are in column-major layout.
+  [[nodiscard]] static xiiMat3Template<Type> MakeFromColumnMajorArray(const Type* const pData);
+
+  /// \brief Creates a matrix from 9 values. Naming is "column-n row-m"
+  [[nodiscard]] static xiiMat3Template<Type> MakeFromValues(Type c1r1, Type c2r1, Type c3r1, Type c1r2, Type c2r2, Type c3r2, Type c1r3, Type c2r3, Type c3r3);
+
+  /// \brief Creates a matrix with all zero values, except along the diagonal, which is set to x,y,z
+  [[nodiscard]] static xiiMat3Template<Type> MakeScaling(const xiiVec3Template<Type>& vScale);
+
+  /// \brief Creates a matrix that is a rotation matrix around the X-axis.
+  [[nodiscard]] static xiiMat3Template<Type> MakeRotationX(xiiAngleTemplate<Type> angle);
+
+  /// \brief Creates a matrix that is a rotation matrix around the Y-axis.
+  [[nodiscard]] static xiiMat3Template<Type> MakeRotationY(xiiAngleTemplate<Type> angle);
+
+  /// \brief Creates a matrix that is a rotation matrix around the Z-axis.
+  [[nodiscard]] static xiiMat3Template<Type> MakeRotationZ(xiiAngleTemplate<Type> angle);
+
+  /// \brief Creates a matrix that is a rotation matrix around the given axis.
+  [[nodiscard]] static xiiMat3Template<Type> MakeAxisRotation(const xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type> angle);
+
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
   {
@@ -49,21 +80,9 @@ public:
   }
 #endif
 
-  /// \brief Copies 9 values from pData into the matrix. Can handle the data in row-major or column-major order.
-  ///
-  /// \param pData
-  ///   The array of Type values from which to set the matrix data.
-  /// \param layout
-  ///   The layout in which pData stores the matrix. The data will get transposed, if necessary.
-  ///   The data should be in column-major format, if you want to prevent unnecessary transposes.
-  void SetFromArray(const Type* const pData, xiiMatrixLayout::Enum layout); // [tested]
-
   /// \brief Copies the 9 values of this matrix into the given array. 'layout' defines whether the data should end up in column-major or row-major
   /// format.
   void GetAsArray(Type* out_pData, xiiMatrixLayout::Enum layout) const; // [tested]
-
-  /// \brief Sets each element manually: Naming is "column-n row-m"
-  void SetElements(Type c1r1, Type c2r1, Type c3r1, Type c1r2, Type c2r2, Type c3r2, Type c1r3, Type c2r3, Type c3r3); // [tested]
 
   // *** Special matrix constructors ***
 public:
@@ -73,29 +92,8 @@ public:
   /// \brief Sets all elements to zero, except the diagonal, which is set to one.
   void SetIdentity(); // [tested]
 
-  /// \brief Sets the matrix to all zero, except the diagonal, which is set to x,y,z,1
-  void SetScalingMatrix(const xiiVec3Template<Type>& vScale); // [tested]
-
-  /// \brief Sets this matrix to be a rotation matrix around the X-axis.
-  void SetRotationMatrixX(xiiAngleTemplate<Type> angle); // [tested]
-
-  /// \brief Sets this matrix to be a rotation matrix around the Y-axis.
-  void SetRotationMatrixY(xiiAngleTemplate<Type> angle); // [tested]
-
-  /// \brief Sets this matrix to be a rotation matrix around the Z-axis.
-  void SetRotationMatrixZ(xiiAngleTemplate<Type> angle); // [tested]
-
-  /// \brief Sets this matrix to be a rotation matrix around the given axis.
-  void SetRotationMatrix(const xiiVec3Template<Type>& vAxis, xiiAngleTemplate<Type> angle); // [tested]
-
   // *** Common Matrix Operations ***
 public:
-  /// \brief Returns an Identity Matrix.
-  static const xiiMat3Template<Type> IdentityMatrix(); // [tested]
-
-  /// \brief Returns a Zero Matrix.
-  static const xiiMat3Template<Type> ZeroMatrix(); // [tested]
-
   /// \brief Transposes this matrix.
   void Transpose(); // [tested]
 
@@ -149,7 +147,7 @@ public:
   /// is possible.
   xiiResult SetScalingFactors(const xiiVec3Template<Type>& vXYZ, Type fEpsilon = xiiMath::DefaultEpsilon<Type>()); // [tested]
 
-  /// \brief Computes the determinant of the matix.
+  /// \brief Computes the determinant of the matrix.
   Type GetDeterminant() const;
 
   // *** Operators ***
@@ -169,7 +167,6 @@ public:
   /// \brief Equality Check with epsilon.
   bool IsEqual(const xiiMat3Template<Type>& rhs, Type fEpsilon) const; // [tested]
 };
-
 
 // *** free functions ***
 

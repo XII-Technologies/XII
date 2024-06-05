@@ -764,7 +764,7 @@ xiiCylinderVisualizerAttribute::xiiCylinderVisualizerAttribute(xiiEnum<xiiBasisA
   m_Anchor = anchor;
 }
 
-xiiCylinderVisualizerAttribute::xiiCylinderVisualizerAttribute(xiiStringView sAxisProperty, xiiStringView sHeightProperty, xiiStringView sRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, xiiStringView sColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::ZeroVector()*/, xiiStringView sOffsetProperty /*= nullptr*/) :
+xiiCylinderVisualizerAttribute::xiiCylinderVisualizerAttribute(xiiStringView sAxisProperty, xiiStringView sHeightProperty, xiiStringView sRadiusProperty, const xiiColor& fixedColor /*= xiiColorScheme::LightUI(xiiColorScheme::Grape)*/, xiiStringView sColorProperty /*= nullptr*/, xiiBitflags<xiiVisualizerAnchor> anchor /*= xiiVisualizerAnchor::Center*/, xiiVec3 vOffsetOrScale /*= xiiVec3::MakeZero()*/, xiiStringView sOffsetProperty /*= nullptr*/) :
   xiiVisualizerAttribute(sHeightProperty, sRadiusProperty, sColorProperty, sOffsetProperty, sAxisProperty), m_Color(fixedColor), m_vOffsetOrScale(vOffsetOrScale), m_Axis(xiiBasisAxis::Default)
 {
   m_Anchor = anchor;

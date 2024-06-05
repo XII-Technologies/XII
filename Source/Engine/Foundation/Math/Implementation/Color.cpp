@@ -5,6 +5,21 @@
 
 // ****** xiiColor ******
 
+xiiColor xiiColor::MakeNaN()
+{
+  return xiiColor(xiiMath::NaN<float>(), xiiMath::NaN<float>(), xiiMath::NaN<float>(), xiiMath::NaN<float>());
+}
+
+xiiColor xiiColor::MakeZero()
+{
+  return xiiColor(0.0f, 0.0f, 0.0f, 0.0f);
+}
+
+xiiColor xiiColor::MakeRGBA(float fLinearRed, float fLinearGreen, float fLinearBlue, float fLinearAlpha /*= 1.0f*/)
+{
+  return xiiColor(fLinearRed, fLinearGreen, fLinearBlue, fLinearAlpha);
+}
+
 void xiiColor::operator=(const xiiColorLinearUB& cc)
 {
   *this = cc.ToLinearFloat();
@@ -83,7 +98,7 @@ void xiiColor::GetHSV(float& out_fHue, float& out_fSat, float& out_fValue) const
 }
 
 // http://www.rapidtables.com/convert/color/hsv-to-rgb.htm
-void xiiColor::SetHSV(float fHue, float fSat, float fVal)
+xiiColor xiiColor::MakeHSV(float fHue, float fSat, float fVal)
 {
   XII_ASSERT_DEBUG(fHue <= 360 && fHue >= 0, "HSV 'hue' is in invalid range.");
   XII_ASSERT_DEBUG(fSat <= 1 && fVal >= 0, "HSV 'saturation' is in invalid range.");
@@ -93,50 +108,52 @@ void xiiColor::SetHSV(float fHue, float fSat, float fVal)
   float x = c * (1.0f - xiiMath::Abs(xiiMath::Mod(fHue / 60.0f, 2) - 1.0f));
   float m = fVal - c;
 
-
-  a = 1.0f;
+  xiiColor res;
+  res.a = 1.0f;
 
   if (fHue < 60)
   {
-    r = c + m;
-    g = x + m;
-    b = 0 + m;
+    res.r = c + m;
+    res.g = x + m;
+    res.b = 0 + m;
   }
   else if (fHue < 120)
   {
-    r = x + m;
-    g = c + m;
-    b = 0 + m;
+    res.r = x + m;
+    res.g = c + m;
+    res.b = 0 + m;
   }
   else if (fHue < 180)
   {
-    r = 0 + m;
-    g = c + m;
-    b = x + m;
+    res.r = 0 + m;
+    res.g = c + m;
+    res.b = x + m;
   }
   else if (fHue < 240)
   {
-    r = 0 + m;
-    g = x + m;
-    b = c + m;
+    res.r = 0 + m;
+    res.g = x + m;
+    res.b = c + m;
   }
   else if (fHue < 300)
   {
-    r = x + m;
-    g = 0 + m;
-    b = c + m;
+    res.r = x + m;
+    res.g = 0 + m;
+    res.b = c + m;
   }
   else
   {
-    r = c + m;
-    g = 0 + m;
-    b = x + m;
+    res.r = c + m;
+    res.g = 0 + m;
+    res.b = x + m;
   }
 
   // The formula above produces value in gamma space
-  r = GammaToLinear(r);
-  g = GammaToLinear(g);
-  b = GammaToLinear(b);
+  res.r = GammaToLinear(res.r);
+  res.g = GammaToLinear(res.g);
+  res.b = GammaToLinear(res.b);
+
+  return res;
 }
 
 float xiiColor::GetSaturation() const
@@ -207,6 +224,14 @@ void xiiColor::ScaleRGB(float fFactor)
   b *= fFactor;
 }
 
+void xiiColor::ScaleRGBA(float fFactor)
+{
+  r *= fFactor;
+  g *= fFactor;
+  b *= fFactor;
+  a *= fFactor;
+}
+
 float xiiColor::ComputeHdrMultiplier() const
 {
   return xiiMath::Max(1.0f, r, g, b);
@@ -236,9 +261,7 @@ xiiColor xiiColor::GetDarker(float fFactor /*= 2.0f*/) const
   float h, s, v;
   GetHSV(h, s, v);
 
-  xiiColor result;
-  result.SetHSV(h, s, v / fFactor);
-  return result;
+  return xiiColor::MakeHSV(h, s, v / fFactor);
 }
 
 xiiColor xiiColor::GetComplementaryColor() const
@@ -246,9 +269,8 @@ xiiColor xiiColor::GetComplementaryColor() const
   float hue, sat, val;
   GetHSV(hue, sat, val);
 
-  xiiColor Shifted;
-  Shifted.SetHSV(xiiMath::Mod(hue + 180.0f, 360.0f), sat, val);
-  Shifted.a = a;
+  xiiColor Shifted = xiiColor::MakeHSV(xiiMath::Mod(hue + 180.0f, 360.0f), sat, val);
+  Shifted.a        = a;
 
   return Shifted;
 }
@@ -429,20 +451,6 @@ const xiiColor xiiColor::WhiteSmoke(xiiColorGammaUB(0xF5, 0xF5, 0xF5));
 const xiiColor xiiColor::Yellow(xiiColorGammaUB(0xFF, 0xFF, 0x00));
 const xiiColor xiiColor::YellowGreen(xiiColorGammaUB(0x9A, 0xCD, 0x32));
 
-xiiColor xiiColor::NaN()
-{
-  return xiiColor(xiiMath::NaN<float>(), xiiMath::NaN<float>(), xiiMath::NaN<float>(), xiiMath::NaN<float>());
-}
-
-xiiColor xiiColor::ZeroColor()
-{
-  return xiiColor(0.0f, 0.0f, 0.0f, 0.0f);
-}
-
-xiiColor xiiColor::FromRGBA(float fLinearRed, float fLinearGreen, float fLinearBlue, float fLinearAlpha)
-{
-  return xiiColor(fLinearRed, fLinearGreen, fLinearBlue, fLinearAlpha);
-}
 
 xiiUInt32 xiiColor::ToRGBA8() const
 {

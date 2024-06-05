@@ -26,18 +26,21 @@ public:
   // *** Constructors ***
 public:
   /// \brief default-constructed vector is uninitialized (for speed)
-  xiiVec2Template<Type>(); // [tested]
+  xiiVec2Template(); // [tested]
 
   /// \brief Initializes the vector with x,y
-  xiiVec2Template<Type>(Type inX, Type inY); // [tested]
+  xiiVec2Template(Type x, Type y); // [tested]
 
   /// \brief Initializes all components with xy
-  explicit xiiVec2Template<Type>(Type inV); // [tested]
+  explicit xiiVec2Template(Type v); // [tested]
 
   // no copy-constructor and operator= since the default-generated ones will be faster
 
+  /// \brief Returns a vector with all components set to Not-a-Number (NaN).
+  XII_DECLARE_IF_FLOAT_TYPE [[nodiscard]] static const xiiVec2Template<Type> MakeNaN() { return xiiVec2Template<Type>(xiiMath::NaN<Type>()); }
+
   /// \brief Static function that returns a zero-vector.
-  static const xiiVec2Template<Type> ZeroVector() { return xiiVec2Template(0); } // [tested]
+  [[nodiscard]] static constexpr xiiVec2Template<Type> MakeZero() { return xiiVec2Template(0); } // [tested]
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
@@ -50,10 +53,10 @@ public:
   // *** Conversions ***
 public:
   /// \brief Returns a xiiVec3Template with x,y from this vector and z set by the parameter.
-  const xiiVec3Template<Type> GetAsVec3(Type inZ) const; // [tested]
+  const xiiVec3Template<Type> GetAsVec3(Type z) const; // [tested]
 
   /// \brief Returns a xiiVec4Template with x,y from this vector and z and w set by the parameters.
-  const xiiVec4Template<Type> GetAsVec4(Type inZ, Type inW) const; // [tested]
+  const xiiVec4Template<Type> GetAsVec4(Type z, Type w) const; // [tested]
 
   /// \brief Returns the data as an array.
   const Type* GetData() const { return &x; }
@@ -67,7 +70,7 @@ public:
   void Set(Type xy); // [tested]
 
   /// \brief Sets the vector to these values.
-  void Set(Type inX, Type inY); // [tested]
+  void Set(Type x, Type y); // [tested]
 
   /// \brief Sets the vector to all zero.
   void SetZero(); // [tested]
@@ -75,11 +78,13 @@ public:
   // *** Functions dealing with length ***
 public:
   /// \brief Returns the length of the vector.
-  XII_DECLARE_IF_FLOAT_TYPE Type GetLength() const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  Type GetLength() const; // [tested]
 
   /// \brief Tries to rescale the vector to the given length. If the vector is too close to zero, XII_FAILURE is returned and the vector is
   /// set to zero.
-  XII_DECLARE_IF_FLOAT_TYPE xiiResult SetLength(Type fNewLength, Type fEpsilon = xiiMath::DefaultEpsilon<Type>()); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  xiiResult SetLength(Type fNewLength, Type fEpsilon = xiiMath::DefaultEpsilon<Type>()); // [tested]
 
   /// \brief Returns the squared length. Faster, since no square-root is taken. Useful, if one only wants to compare the lengths of two
   /// vectors.
@@ -87,17 +92,21 @@ public:
 
   /// \brief Normalizes this vector and returns its previous length in one operation. More efficient than calling GetLength and then
   /// Normalize.
-  XII_DECLARE_IF_FLOAT_TYPE Type GetLengthAndNormalize(); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  Type GetLengthAndNormalize(); // [tested]
 
   /// \brief Returns a normalized version of this vector, leaves the vector itself unchanged.
-  XII_DECLARE_IF_FLOAT_TYPE const xiiVec2Template<Type> GetNormalized() const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  const xiiVec2Template<Type> GetNormalized() const; // [tested]
 
   /// \brief Normalizes this vector.
-  XII_DECLARE_IF_FLOAT_TYPE void Normalize(); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  void Normalize(); // [tested]
 
   /// \brief Tries to normalize this vector. If the vector is too close to zero, XII_FAILURE is returned and the vector is set to the given
   /// fallback value.
-  XII_DECLARE_IF_FLOAT_TYPE xiiResult NormalizeIfNotZero(const xiiVec2Template<Type>& vFallback = xiiVec2Template<Type>(1, 0), Type fEpsilon = xiiMath::DefaultEpsilon<Type>()); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  xiiResult NormalizeIfNotZero(const xiiVec2Template<Type>& vFallback = xiiVec2Template<Type>(1, 0), Type fEpsilon = xiiMath::DefaultEpsilon<Type>()); // [tested]
 
   /// \brief Returns, whether this vector is (0, 0).
   bool IsZero() const; // [tested]
@@ -106,7 +115,8 @@ public:
   bool IsZero(Type fEpsilon) const; // [tested]
 
   /// \brief Returns, whether the squared length of this vector is between 0.999f and 1.001f.
-  XII_DECLARE_IF_FLOAT_TYPE bool IsNormalized(Type fEpsilon = xiiMath::HugeEpsilon<Type>()) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  bool IsNormalized(Type fEpsilon = xiiMath::HugeEpsilon<Type>()) const; // [tested]
 
   /// \brief Returns true, if any of x or y is NaN
   bool IsNaN() const; // [tested]
@@ -115,7 +125,8 @@ public:
   bool IsValid() const; // [tested]
 
   /// \brief Returns the distance between two 2D Vectors.
-  XII_DECLARE_IF_FLOAT_TYPE Type Distance(const xiiVec2Template<Type>& vPoint) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  Type Distance(const xiiVec2Template<Type>& vPoint) const; // [tested]
 
   /// \brief Returns the squared distance between two 2D Vectors. Faster, since no square-root is taken. Useful, if one only wants to compare the distance of two
   /// vectors regardless of the magnitude.
@@ -179,13 +190,15 @@ public:
   ///
   /// \note This function may fail, e.g. create a vector that is zero, if the given normal is parallel to the vector itself.
   ///       If you need to handle such cases, you should manually check afterwards, whether the result is zero, or cannot be normalized.
-  XII_DECLARE_IF_FLOAT_TYPE void MakeOrthogonalTo(const xiiVec2Template<Type>& vNormal); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  void MakeOrthogonalTo(const xiiVec2Template<Type>& vNormal); // [tested]
 
   /// \brief Returns some arbitrary vector orthogonal to this one. The vector is NOT normalized.
   const xiiVec2Template<Type> GetOrthogonalVector() const; // [tested]
 
   /// \brief Returns this vector reflected at vNormal.
-  XII_DECLARE_IF_FLOAT_TYPE const xiiVec2Template<Type> GetReflectedVector(const xiiVec2Template<Type>& vNormal) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE
+  const xiiVec2Template<Type> GetReflectedVector(const xiiVec2Template<Type>& vNormal) const; // [tested]
 };
 
 // *** Operators ***
