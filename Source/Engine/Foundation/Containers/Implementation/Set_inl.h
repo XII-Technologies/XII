@@ -5,13 +5,10 @@
 #define STACK_SIZE 64
 
 // ***** Const Iterator *****
-
 template <typename KeyType, typename Comparer>
-void xiiSetBase<KeyType, Comparer>::Iterator::Next()
+template <bool REVERSE>
+void xiiSetBase<KeyType, Comparer>::IteratorBase<REVERSE>::Advance(xiiInt32 dir0, xiiInt32 dir1)
 {
-  const xiiInt32 dir0 = 0;
-  const xiiInt32 dir1 = 1;
-
   if (m_pElement == nullptr)
   {
     XII_ASSERT_DEBUG(m_pElement != nullptr, "The Iterator is invalid (end).");
@@ -54,58 +51,34 @@ void xiiSetBase<KeyType, Comparer>::Iterator::Next()
   }
 
   m_pElement = nullptr;
-  return;
 }
 
 template <typename KeyType, typename Comparer>
-void xiiSetBase<KeyType, Comparer>::Iterator::Prev()
+template <bool REVERSE>
+void xiiSetBase<KeyType, Comparer>::IteratorBase<REVERSE>::Next()
 {
-  const xiiInt32 dir0 = 1;
-  const xiiInt32 dir1 = 0;
-
-  if (m_pElement == nullptr)
+  if constexpr (REVERSE)
   {
-    XII_ASSERT_DEBUG(m_pElement != nullptr, "The Iterator is invalid (end).");
-    return;
+    Advance(1, 0);
   }
-
-  // if this element has a right child, go there and then search for the left most child of that
-  if (m_pElement->m_pLink[dir1] != m_pElement->m_pLink[dir1]->m_pLink[dir1])
+  else
   {
-    m_pElement = m_pElement->m_pLink[dir1];
-
-    while (m_pElement->m_pLink[dir0] != m_pElement->m_pLink[dir0]->m_pLink[dir0])
-      m_pElement = m_pElement->m_pLink[dir0];
-
-    return;
+    Advance(0, 1);
   }
+}
 
-  // if this element has a parent and this element is that parents left child, go directly to the parent
-  if ((m_pElement->m_pParent != m_pElement->m_pParent->m_pParent) && (m_pElement->m_pParent->m_pLink[dir0] == m_pElement))
+template <typename KeyType, typename Comparer>
+template <bool REVERSE>
+void xiiSetBase<KeyType, Comparer>::IteratorBase<REVERSE>::Prev()
+{
+  if constexpr (REVERSE)
   {
-    m_pElement = m_pElement->m_pParent;
-    return;
+    Advance(0, 1);
   }
-
-  // if this element has a parent and this element is that parents right child, search for the next parent, whose left child this is
-  if ((m_pElement->m_pParent != m_pElement->m_pParent->m_pParent) && (m_pElement->m_pParent->m_pLink[dir1] == m_pElement))
+  else
   {
-    while (m_pElement->m_pParent->m_pLink[dir1] == m_pElement)
-      m_pElement = m_pElement->m_pParent;
-
-    // if we are at the root node..
-    if ((m_pElement->m_pParent == nullptr) || (m_pElement->m_pParent == m_pElement->m_pParent->m_pParent))
-    {
-      m_pElement = nullptr;
-      return;
-    }
-
-    m_pElement = m_pElement->m_pParent;
-    return;
+    Advance(1, 0);
   }
-
-  m_pElement = nullptr;
-  return;
 }
 
 // ***** xiiSetBase *****
@@ -194,9 +167,9 @@ XII_ALWAYS_INLINE typename xiiSetBase<KeyType, Comparer>::Iterator xiiSetBase<Ke
 }
 
 template <typename KeyType, typename Comparer>
-XII_ALWAYS_INLINE typename xiiSetBase<KeyType, Comparer>::Iterator xiiSetBase<KeyType, Comparer>::GetLastIterator() const
+XII_ALWAYS_INLINE typename xiiSetBase<KeyType, Comparer>::ReverseIterator xiiSetBase<KeyType, Comparer>::GetReverseIterator() const
 {
-  return Iterator(GetRightMost());
+  return ReverseIterator(GetRightMost());
 }
 
 template <typename KeyType, typename Comparer>
@@ -728,8 +701,6 @@ bool xiiSetBase<KeyType, Comparer>::operator==(const xiiSetBase<KeyType, Compare
 }
 
 #undef STACK_SIZE
-
-
 
 template <typename KeyType, typename Comparer, typename AllocatorWrapper>
 xiiSet<KeyType, Comparer, AllocatorWrapper>::xiiSet() :

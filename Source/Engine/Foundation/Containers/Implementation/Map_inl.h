@@ -6,12 +6,9 @@
 
 #define STACK_SIZE 64
 
-template <typename KeyType, typename ValueType, typename Comparer>
-void xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator::Next()
+template <typename KeyType, typename ValueType, typename Comparer, bool REVERSE>
+void xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>::Advance(const xiiInt32 dir0, const xiiInt32 dir1)
 {
-  const xiiInt32 dir0 = 0;
-  const xiiInt32 dir1 = 1;
-
   if (m_pElement == nullptr)
   {
     XII_ASSERT_DEBUG(m_pElement != nullptr, "The Iterator is invalid (end).");
@@ -57,56 +54,71 @@ void xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator::Next()
   return;
 }
 
-template <typename KeyType, typename ValueType, typename Comparer>
-void xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator::Prev()
+template <typename KeyType, typename ValueType, typename Comparer, bool REVERSE>
+void xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>::Next()
 {
-  const xiiInt32 dir0 = 1;
-  const xiiInt32 dir1 = 0;
-
-  if (m_pElement == nullptr)
+  if constexpr (REVERSE)
   {
-    XII_ASSERT_DEBUG(m_pElement != nullptr, "The Iterator is invalid (end).");
-    return;
+    Advance(1, 0);
   }
-
-  // if this element has a right child, go there and then search for the left most child of that
-  if (m_pElement->m_pLink[dir1] != m_pElement->m_pLink[dir1]->m_pLink[dir1])
+  else
   {
-    m_pElement = m_pElement->m_pLink[dir1];
-
-    while (m_pElement->m_pLink[dir0] != m_pElement->m_pLink[dir0]->m_pLink[dir0])
-      m_pElement = m_pElement->m_pLink[dir0];
-
-    return;
+    Advance(0, 1);
   }
-
-  // if this element has a parent and this element is that parents left child, go directly to the parent
-  if ((m_pElement->m_pParent != m_pElement->m_pParent->m_pParent) && (m_pElement->m_pParent->m_pLink[dir0] == m_pElement))
-  {
-    m_pElement = m_pElement->m_pParent;
-    return;
-  }
-
-  // if this element has a parent and this element is that parents right child, search for the next parent, whose left child this is
-  if ((m_pElement->m_pParent != m_pElement->m_pParent->m_pParent) && (m_pElement->m_pParent->m_pLink[dir1] == m_pElement))
-  {
-    while (m_pElement->m_pParent->m_pLink[dir1] == m_pElement)
-      m_pElement = m_pElement->m_pParent;
-
-    // if we are at the root node..
-    if ((m_pElement->m_pParent == nullptr) || (m_pElement->m_pParent == m_pElement->m_pParent->m_pParent))
-    {
-      m_pElement = nullptr;
-      return;
-    }
-
-    m_pElement = m_pElement->m_pParent;
-    return;
-  }
-
-  m_pElement = nullptr;
-  return;
 }
+
+template <typename KeyType, typename ValueType, typename Comparer, bool REVERSE>
+void xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>::Prev()
+{
+  if constexpr (REVERSE)
+  {
+    Advance(0, 1);
+  }
+  else
+  {
+    Advance(1, 0);
+  }
+}
+
+// These functions are used for structured bindings.
+// They describe how many elements can be accessed in the binding and which type they are.
+namespace std
+{
+  template <typename KeyType, typename ValueType, typename Comparer, bool REVERSE>
+  struct tuple_size<xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>> : integral_constant<size_t, 2>
+  {
+  };
+
+  template <typename KeyType, typename ValueType, typename Comparer, bool REVERSE>
+  struct tuple_element<0, xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>>
+  {
+    using type = const KeyType&;
+  };
+
+  template <typename KeyType, typename ValueType, typename Comparer, bool REVERSE>
+  struct tuple_element<1, xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>>
+  {
+    using type = const ValueType&;
+  };
+
+
+  template <typename KeyType, typename ValueType, typename Comparer, bool REVERSE>
+  struct tuple_size<xiiMapBaseIteratorBase<KeyType, ValueType, Comparer, REVERSE>> : integral_constant<size_t, 2>
+  {
+  };
+
+  template <typename KeyType, typename ValueType, typename Comparer, bool REVERSE>
+  struct tuple_element<0, xiiMapBaseIteratorBase<KeyType, ValueType, Comparer, REVERSE>>
+  {
+    using type = const KeyType&;
+  };
+
+  template <typename KeyType, typename ValueType, typename Comparer, bool REVERSE>
+  struct tuple_element<1, xiiMapBaseIteratorBase<KeyType, ValueType, Comparer, REVERSE>>
+  {
+    using type = ValueType&;
+  };
+} // namespace std
 
 // ***** xiiMapBase *****
 
@@ -200,15 +212,15 @@ XII_ALWAYS_INLINE typename xiiMapBase<KeyType, ValueType, Comparer>::ConstIterat
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
-XII_ALWAYS_INLINE typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, ValueType, Comparer>::GetLastIterator()
+XII_ALWAYS_INLINE typename xiiMapBase<KeyType, ValueType, Comparer>::ReverseIterator xiiMapBase<KeyType, ValueType, Comparer>::GetReverseIterator()
 {
-  return Iterator(GetRightMost());
+  return ReverseIterator(GetRightMost());
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
-XII_ALWAYS_INLINE typename xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator xiiMapBase<KeyType, ValueType, Comparer>::GetLastIterator() const
+XII_ALWAYS_INLINE typename xiiMapBase<KeyType, ValueType, Comparer>::ConstReverseIterator xiiMapBase<KeyType, ValueType, Comparer>::GetReverseIterator() const
 {
-  return ConstIterator(GetRightMost());
+  return ConstReverseIterator(GetRightMost());
 }
 
 template <typename KeyType, typename ValueType, typename Comparer>
@@ -438,7 +450,7 @@ ValueType& xiiMapBase<KeyType, ValueType, Comparer>::operator[](const Compatible
 
 template <typename KeyType, typename ValueType, typename Comparer>
 template <typename CompatibleKeyType>
-typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, ValueType, Comparer>::FindOrAdd(CompatibleKeyType&& key, bool* pExisted)
+typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, ValueType, Comparer>::FindOrAdd(CompatibleKeyType&& key, bool* out_pExisted)
 {
   Node* pNilNode      = reinterpret_cast<Node*>(&m_NilNode);
   Node* pInsertedNode = nullptr;
@@ -458,8 +470,8 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, 
       {
         if (m_Comparer.Equal(it->m_Key, key))
         {
-          if (pExisted)
-            *pExisted = true;
+          if (out_pExisted)
+            *out_pExisted = true;
 
           return Iterator(it);
         }
@@ -508,8 +520,8 @@ typename xiiMapBase<KeyType, ValueType, Comparer>::Iterator xiiMapBase<KeyType, 
 
   XII_ASSERT_DEBUG(pInsertedNode != nullptr, "Implementation Error.");
 
-  if (pExisted)
-    *pExisted = false;
+  if (out_pExisted)
+    *out_pExisted = false;
 
   return Iterator(pInsertedNode);
 }

@@ -1,19 +1,19 @@
 
 /// \brief Value used by containers for indices to indicate an invalid index.
 #ifndef xiiInvalidIndex
-#  define xiiInvalidIndex 0xFFFFFFFF
+#  define xiiInvalidIndex 0xFFFFFFFFU
 #endif
 
 // ***** Const Iterator *****
 
 template <typename K, typename V, typename H>
-xiiHashTableBase<K, V, H>::ConstIterator::ConstIterator(const xiiHashTableBase<K, V, H>& hashTable) :
+xiiHashTableBaseConstIterator<K, V, H>::xiiHashTableBaseConstIterator(const xiiHashTableBase<K, V, H>& hashTable) :
   m_pHashTable(&hashTable)
 {
 }
 
 template <typename K, typename V, typename H>
-void xiiHashTableBase<K, V, H>::ConstIterator::SetToBegin()
+void xiiHashTableBaseConstIterator<K, V, H>::SetToBegin()
 {
   if (m_pHashTable->IsEmpty())
   {
@@ -27,7 +27,7 @@ void xiiHashTableBase<K, V, H>::ConstIterator::SetToBegin()
 }
 
 template <typename K, typename V, typename H>
-inline void xiiHashTableBase<K, V, H>::ConstIterator::SetToEnd()
+inline void xiiHashTableBaseConstIterator<K, V, H>::SetToEnd()
 {
   m_uiCurrentCount = m_pHashTable->m_uiCount;
   m_uiCurrentIndex = m_pHashTable->m_uiCapacity;
@@ -35,31 +35,31 @@ inline void xiiHashTableBase<K, V, H>::ConstIterator::SetToEnd()
 
 
 template <typename K, typename V, typename H>
-XII_FORCE_INLINE bool xiiHashTableBase<K, V, H>::ConstIterator::IsValid() const
+XII_FORCE_INLINE bool xiiHashTableBaseConstIterator<K, V, H>::IsValid() const
 {
   return m_uiCurrentCount < m_pHashTable->m_uiCount;
 }
 
 template <typename K, typename V, typename H>
-XII_FORCE_INLINE bool xiiHashTableBase<K, V, H>::ConstIterator::operator==(const typename xiiHashTableBase<K, V, H>::ConstIterator& rhs) const
+XII_FORCE_INLINE bool xiiHashTableBaseConstIterator<K, V, H>::operator==(const xiiHashTableBaseConstIterator<K, V, H>& rhs) const
 {
   return m_uiCurrentIndex == rhs.m_uiCurrentIndex && m_pHashTable->m_pEntries == rhs.m_pHashTable->m_pEntries;
 }
 
 template <typename K, typename V, typename H>
-XII_ALWAYS_INLINE const K& xiiHashTableBase<K, V, H>::ConstIterator::Key() const
+XII_ALWAYS_INLINE const K& xiiHashTableBaseConstIterator<K, V, H>::Key() const
 {
   return m_pHashTable->m_pEntries[m_uiCurrentIndex].key;
 }
 
 template <typename K, typename V, typename H>
-XII_ALWAYS_INLINE const V& xiiHashTableBase<K, V, H>::ConstIterator::Value() const
+XII_ALWAYS_INLINE const V& xiiHashTableBaseConstIterator<K, V, H>::Value() const
 {
   return m_pHashTable->m_pEntries[m_uiCurrentIndex].value;
 }
 
 template <typename K, typename V, typename H>
-void xiiHashTableBase<K, V, H>::ConstIterator::Next()
+void xiiHashTableBaseConstIterator<K, V, H>::Next()
 {
   // if we already iterated over the amount of valid elements that the hash-table stores, early out
   if (m_uiCurrentCount >= m_pHashTable->m_uiCount)
@@ -85,30 +85,51 @@ void xiiHashTableBase<K, V, H>::ConstIterator::Next()
 }
 
 template <typename K, typename V, typename H>
-XII_ALWAYS_INLINE void xiiHashTableBase<K, V, H>::ConstIterator::operator++()
+XII_ALWAYS_INLINE void xiiHashTableBaseConstIterator<K, V, H>::operator++()
 {
   Next();
 }
 
+// These functions are used for structured bindings.
+// They describe how many elements can be accessed in the binding and which type they are.
+namespace std
+{
+  template <typename K, typename V, typename H>
+  struct tuple_size<xiiHashTableBaseConstIterator<K, V, H>> : integral_constant<size_t, 2>
+  {
+  };
+
+  template <typename K, typename V, typename H>
+  struct tuple_element<0, xiiHashTableBaseConstIterator<K, V, H>>
+  {
+    using type = const K&;
+  };
+
+  template <typename K, typename V, typename H>
+  struct tuple_element<1, xiiHashTableBaseConstIterator<K, V, H>>
+  {
+    using type = const V&;
+  };
+} // namespace std
 
 // ***** Iterator *****
 
 template <typename K, typename V, typename H>
-xiiHashTableBase<K, V, H>::Iterator::Iterator(const xiiHashTableBase<K, V, H>& hashTable) :
-  ConstIterator(hashTable)
+xiiHashTableBaseIterator<K, V, H>::xiiHashTableBaseIterator(const xiiHashTableBase<K, V, H>& hashTable) :
+  xiiHashTableBaseConstIterator<K, V, H>(hashTable)
 {
 }
 
 template <typename K, typename V, typename H>
-xiiHashTableBase<K, V, H>::Iterator::Iterator(const typename xiiHashTableBase<K, V, H>::Iterator& rhs) :
-  ConstIterator(*rhs.m_pHashTable)
+xiiHashTableBaseIterator<K, V, H>::xiiHashTableBaseIterator(const xiiHashTableBaseIterator<K, V, H>& rhs) :
+  xiiHashTableBaseConstIterator<K, V, H>(*rhs.m_pHashTable)
 {
   this->m_uiCurrentIndex = rhs.m_uiCurrentIndex;
   this->m_uiCurrentCount = rhs.m_uiCurrentCount;
 }
 
 template <typename K, typename V, typename H>
-XII_ALWAYS_INLINE void xiiHashTableBase<K, V, H>::Iterator::operator=(const Iterator& rhs) // [tested]
+XII_ALWAYS_INLINE void xiiHashTableBaseIterator<K, V, H>::operator=(const xiiHashTableBaseIterator& rhs) // [tested]
 {
   this->m_pHashTable     = rhs.m_pHashTable;
   this->m_uiCurrentIndex = rhs.m_uiCurrentIndex;
@@ -116,11 +137,38 @@ XII_ALWAYS_INLINE void xiiHashTableBase<K, V, H>::Iterator::operator=(const Iter
 }
 
 template <typename K, typename V, typename H>
-XII_FORCE_INLINE V& xiiHashTableBase<K, V, H>::Iterator::Value()
+XII_FORCE_INLINE V& xiiHashTableBaseIterator<K, V, H>::Value()
 {
   return this->m_pHashTable->m_pEntries[this->m_uiCurrentIndex].value;
 }
 
+template <typename K, typename V, typename H>
+XII_FORCE_INLINE V& xiiHashTableBaseIterator<K, V, H>::Value() const
+{
+  return this->m_pHashTable->m_pEntries[this->m_uiCurrentIndex].value;
+}
+
+// These functions are used for structured bindings.
+// They describe how many elements can be accessed in the binding and which type they are.
+namespace std
+{
+  template <typename K, typename V, typename H>
+  struct tuple_size<xiiHashTableBaseIterator<K, V, H>> : integral_constant<size_t, 2>
+  {
+  };
+
+  template <typename K, typename V, typename H>
+  struct tuple_element<0, xiiHashTableBaseIterator<K, V, H>>
+  {
+    using type = const K&;
+  };
+
+  template <typename K, typename V, typename H>
+  struct tuple_element<1, xiiHashTableBaseIterator<K, V, H>>
+  {
+    using type = V&;
+  };
+} // namespace std
 
 // ***** xiiHashTableBase *****
 

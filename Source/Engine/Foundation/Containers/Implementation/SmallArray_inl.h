@@ -181,8 +181,8 @@ template <typename> // Second template needed so that the compiler does only ins
 void xiiSmallArrayBase<T, Size>::SetCountUninitialized(xiiUInt16 uiCount, xiiAllocatorBase* pAllocator)
 {
   static_assert(xiiIsPodType<T>::value == xiiTypeIsPod::value, "SetCountUninitialized is only supported for POD types.");
-  const xiiUInt32 uiOldCount = m_uiCount;
-  const xiiUInt32 uiNewCount = uiCount;
+  const xiiUInt16 uiOldCount = m_uiCount;
+  const xiiUInt16 uiNewCount = uiCount;
 
   if (uiNewCount > uiOldCount)
   {
@@ -659,13 +659,13 @@ XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::SetCountUniniti
 }
 
 template <typename T, xiiUInt16 Size, typename AllocatorWrapper /*= xiiDefaultAllocatorWrapper*/>
-XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::Insert(const T& value, xiiUInt32 uiIndex)
+XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::InsertAt(xiiUInt32 uiIndex, const T& value)
 {
   SUPER::Insert(value, uiIndex, AllocatorWrapper::GetAllocator());
 }
 
 template <typename T, xiiUInt16 Size, typename AllocatorWrapper /*= xiiDefaultAllocatorWrapper*/>
-XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::Insert(T&& value, xiiUInt32 uiIndex)
+XII_ALWAYS_INLINE void xiiSmallArray<T, Size, AllocatorWrapper>::InsertAt(xiiUInt32 uiIndex, T&& value)
 {
   SUPER::Insert(value, uiIndex, AllocatorWrapper::GetAllocator());
 }

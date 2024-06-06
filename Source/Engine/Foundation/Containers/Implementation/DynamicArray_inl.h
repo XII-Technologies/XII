@@ -89,8 +89,7 @@ inline void xiiDynamicArrayBase<T>::operator=(xiiDynamicArrayBase<T>&& rhs) noex
     this->Reserve(rhs.m_uiCount);
     this->m_uiCount = rhs.m_uiCount;
 
-    xiiMemoryUtils::RelocateConstruct(
-      this->GetElementsPtr(), rhs.GetElementsPtr() /* vital to remap rhs.m_pElements to absolute ptr */, rhs.m_uiCount);
+    xiiMemoryUtils::RelocateConstruct(this->GetElementsPtr(), rhs.GetElementsPtr() /* vital to remap rhs.m_pElements to absolute ptr */, rhs.m_uiCount);
 
     rhs.m_uiCount = 0;
   }
