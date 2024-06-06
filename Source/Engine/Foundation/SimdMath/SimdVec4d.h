@@ -168,10 +168,10 @@ public:
   ///\brief Generates an arbitrary vector such that Dot<3>(GetOrthogonalVector()) == 0
   [[nodiscard]] xiiSimdVec4d GetOrthogonalVector() const; // [tested]
 
-  [[nodiscard]] static xiiSimdVec4d MulAdd(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& c); // [tested]
+  [[nodiscard]] static xiiSimdVec4d MulAdd(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& c);  // [tested]
   [[nodiscard]] static xiiSimdVec4d MulAdd(const xiiSimdVec4d& a, const xiiSimdDouble& b, const xiiSimdVec4d& c); // [tested]
 
-  [[nodiscard]] static xiiSimdVec4d MulSub(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& c); // [tested]
+  [[nodiscard]] static xiiSimdVec4d MulSub(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& c);  // [tested]
   [[nodiscard]] static xiiSimdVec4d MulSub(const xiiSimdVec4d& a, const xiiSimdDouble& b, const xiiSimdVec4d& c); // [tested]
 
   [[nodiscard]] static xiiSimdVec4d CopySign(const xiiSimdVec4d& vMagnitude, const xiiSimdVec4d& vSign); // [tested]
