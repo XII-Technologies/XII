@@ -4,11 +4,135 @@
 #include <Foundation/Math/Math.h>
 #include <Foundation/Memory/AllocatorWrapper.h>
 
+template <typename KeyType, typename ValueType, typename Hasher>
+class xiiHashTableBase;
+
+/// \brief Const iterator.
+template <typename KeyType, typename ValueType, typename Hasher>
+struct xiiHashTableBaseConstIterator
+{
+  using iterator_category = std::forward_iterator_tag;
+  using value_type        = xiiHashTableBaseConstIterator;
+  using difference_type   = std::ptrdiff_t;
+  using pointer           = xiiHashTableBaseConstIterator*;
+  using reference         = xiiHashTableBaseConstIterator&;
+
+  XII_DECLARE_POD_TYPE();
+
+  /// \brief Checks whether this iterator points to a valid element.
+  bool IsValid() const; // [tested]
+
+  /// \brief Checks whether the two iterators point to the same element.
+  bool operator==(const xiiHashTableBaseConstIterator& rhs) const;
+
+  /// \brief Returns the 'key' of the element that this iterator points to.
+  const KeyType& Key() const; // [tested]
+
+  /// \brief Returns the 'value' of the element that this iterator points to.
+  const ValueType& Value() const; // [tested]
+
+  /// \brief Advances the iterator to the next element in the map. The iterator will not be valid anymore, if the end is reached.
+  void Next(); // [tested]
+
+  /// \brief Shorthand for 'Next'
+  void operator++(); // [tested]
+
+  /// \brief Returns '*this' to enable foreach
+  XII_ALWAYS_INLINE xiiHashTableBaseConstIterator& operator*() { return *this; } // [tested]
+
+protected:
+  friend class xiiHashTableBase<KeyType, ValueType, Hasher>;
+
+  explicit xiiHashTableBaseConstIterator(const xiiHashTableBase<KeyType, ValueType, Hasher>& hashTable);
+  void SetToBegin();
+  void SetToEnd();
+
+  const xiiHashTableBase<KeyType, ValueType, Hasher>* m_pHashTable     = nullptr;
+  xiiUInt32                                           m_uiCurrentIndex = 0; // current element index that this iterator points to.
+  xiiUInt32                                           m_uiCurrentCount = 0; // current number of valid elements that this iterator has found so far.
+
+public:
+  struct Pointer
+  {
+    std::pair<const KeyType&, const ValueType&>        value;
+    const std::pair<const KeyType&, const ValueType&>* operator->() const { return &value; }
+  };
+
+  XII_ALWAYS_INLINE Pointer operator->() const
+  {
+    return Pointer{.value = {Key(), Value()}};
+  }
+
+  // These function is used to return the values for structured bindings.
+  // The number and type of type of each slot are defined in the inl file.
+  template <std::size_t Index>
+  std::tuple_element_t<Index, xiiHashTableBaseConstIterator>& get() const
+  {
+    if constexpr (Index == 0)
+      return Key();
+    if constexpr (Index == 1)
+      return Value();
+  }
+};
+
+/// \brief Iterator with write access.
+template <typename KeyType, typename ValueType, typename Hasher>
+struct xiiHashTableBaseIterator : public xiiHashTableBaseConstIterator<KeyType, ValueType, Hasher>
+{
+  XII_DECLARE_POD_TYPE();
+
+  /// \brief Creates a new iterator from another.
+  XII_ALWAYS_INLINE xiiHashTableBaseIterator(const xiiHashTableBaseIterator& rhs); // [tested]
+
+  /// \brief Assigns one iterator no another.
+  XII_ALWAYS_INLINE void operator=(const xiiHashTableBaseIterator& rhs); // [tested]
+
+  // this is required to pull in the const version of this function
+  using xiiHashTableBaseConstIterator<KeyType, ValueType, Hasher>::Value;
+
+  /// \brief Returns the 'value' of the element that this iterator points to.
+  XII_FORCE_INLINE ValueType& Value(); // [tested]
+
+  /// \brief Returns the 'value' of the element that this iterator points to.
+  XII_FORCE_INLINE ValueType& Value() const;
+
+  /// \brief Returns '*this' to enable foreach
+  XII_ALWAYS_INLINE xiiHashTableBaseIterator& operator*() { return *this; } // [tested]
+
+private:
+  friend class xiiHashTableBase<KeyType, ValueType, Hasher>;
+
+  explicit xiiHashTableBaseIterator(const xiiHashTableBase<KeyType, ValueType, Hasher>& hashTable);
+
+public:
+  // These functions are used to return the values for structured bindings.
+  // The number and type of type of each slot are defined in the inl file.
+  template <std::size_t Index>
+  std::tuple_element_t<Index, xiiHashTableBaseIterator>& get()
+  {
+    if constexpr (Index == 0)
+      return xiiHashTableBaseConstIterator<KeyType, ValueType, Hasher>::Key();
+    if constexpr (Index == 1)
+      return Value();
+  }
+
+  template <std::size_t Index>
+  std::tuple_element_t<Index, xiiHashTableBaseIterator>& get() const
+  {
+    if constexpr (Index == 0)
+      return xiiHashTableBaseConstIterator<KeyType, ValueType, Hasher>::Key();
+    if constexpr (Index == 1)
+      return Value();
+  }
+};
+
 /// \brief Implementation of a hashtable which stores key/value pairs.
 ///
 /// The hashtable maps keys to values by using the hash of the key as an index into the table.
-/// This implementation uses linear-probing to resolve hash collisions which means all key/value pairs are stored in a linear array.
-/// All insertion/erasure/lookup functions take O(1) time if the table does not need to be expanded, which happens when the load gets greater than 60%.
+/// This implementation uses linear-probing to resolve hash collisions which means all key/value pairs are stored
+/// in a linear array.
+/// All insertion/erasure/lookup functions take O(1) time if the table does not need to be expanded,
+/// which happens when the load gets greater than 60%.
 /// The hash function can be customized by providing a Hasher helper class like xiiHashHelper.
 
 /// \see xiiHashHelper
@@ -16,75 +140,8 @@ template <typename KeyType, typename ValueType, typename Hasher>
 class xiiHashTableBase
 {
 public:
-  /// \brief Const iterator.
-  struct ConstIterator
-  {
-    using iterator_category = std::forward_iterator_tag;
-    using value_type        = ConstIterator;
-    using difference_type   = std::ptrdiff_t;
-    using pointer           = ConstIterator*;
-    using reference         = ConstIterator&;
-
-    XII_DECLARE_POD_TYPE();
-
-    /// \brief Checks whether this iterator points to a valid element.
-    bool IsValid() const; // [tested]
-
-    /// \brief Checks whether the two iterators point to the same element.
-    bool operator==(const typename xiiHashTableBase<KeyType, ValueType, Hasher>::ConstIterator& rhs) const;
-
-    /// \brief Returns the 'key' of the element that this iterator points to.
-    const KeyType& Key() const; // [tested]
-
-    /// \brief Returns the 'value' of the element that this iterator points to.
-    const ValueType& Value() const; // [tested]
-
-    /// \brief Advances the iterator to the next element in the map. The iterator will not be valid anymore, if the end is reached.
-    void Next(); // [tested]
-
-    /// \brief Shorthand for 'Next'
-    void operator++(); // [tested]
-
-    /// \brief Returns '*this' to enable foreach
-    XII_ALWAYS_INLINE ConstIterator& operator*() { return *this; } // [tested]
-
-  protected:
-    friend class xiiHashTableBase<KeyType, ValueType, Hasher>;
-
-    explicit ConstIterator(const xiiHashTableBase<KeyType, ValueType, Hasher>& hashTable);
-    void SetToBegin();
-    void SetToEnd();
-
-    const xiiHashTableBase<KeyType, ValueType, Hasher>* m_pHashTable     = nullptr;
-    xiiUInt32                                           m_uiCurrentIndex = 0; // current element index that this iterator points to.
-    xiiUInt32                                           m_uiCurrentCount = 0; // current number of valid elements that this iterator has found so far.
-  };
-
-  /// \brief Iterator with write access.
-  struct Iterator : public ConstIterator
-  {
-    XII_DECLARE_POD_TYPE();
-
-    /// \brief Creates a new iterator from another.
-    XII_ALWAYS_INLINE Iterator(const Iterator& rhs); // [tested]
-
-    /// \brief Assigns one iterator no another.
-    XII_ALWAYS_INLINE void operator=(const Iterator& rhs); // [tested]
-
-    // this is required to pull in the const version of this function
-    using ConstIterator::Value;
-
-    /// \brief Returns the 'value' of the element that this iterator points to.
-    XII_FORCE_INLINE ValueType& Value(); // [tested]
-
-    /// \brief Returns '*this' to enable foreach
-    XII_ALWAYS_INLINE Iterator& operator*() { return *this; } // [tested]
-
-  private:
-    friend class xiiHashTableBase<KeyType, ValueType, Hasher>;
-
-    explicit Iterator(const xiiHashTableBase<KeyType, ValueType, Hasher>& hashTable);
-  };
+  using Iterator      = xiiHashTableBaseIterator<KeyType, ValueType, Hasher>;
+  using ConstIterator = xiiHashTableBaseConstIterator<KeyType, ValueType, Hasher>;
 
 protected:
   /// \brief Creates an empty hashtable. Does not allocate any data yet.
@@ -109,7 +166,8 @@ public:
   /// \brief Compares this table to another table.
   bool operator==(const xiiHashTableBase<KeyType, ValueType, Hasher>& rhs) const; // [tested]
 
-  /// \brief Expands the hashtable by over-allocating the internal storage so that the load factor is lower or equal to 60% when inserting the given number of entries.
+  /// \brief Expands the hashtable by over-allocating the internal storage so that the load factor is lower or equal to 60% when inserting the given
+  /// number of entries.
   void Reserve(xiiUInt32 uiCapacity); // [tested]
 
   /// \brief Tries to compact the hashtable to avoid wasting memory.
@@ -140,7 +198,7 @@ public:
   /// \brief Erases the key/value pair at the given Iterator. Returns an iterator to the element after the given iterator.
   Iterator Remove(const Iterator& pos); // [tested]
 
-  /// \brief Cannot remove an element with just a ConstIterator
+  /// \brief Cannot remove an element with just a xiiHashTableBaseConstIterator
   void Remove(const ConstIterator& pos) = delete;
 
   /// \brief Returns whether an entry with the given key was found and if found writes out the corresponding value to out_value.
@@ -155,7 +213,7 @@ public:
   template <typename CompatibleKeyType>
   bool TryGetValue(const CompatibleKeyType& key, ValueType*& out_pValue) const; // [tested]
 
-  /// \brief Searches for key, returns a ConstIterator to it or an invalid iterator, if no such key is found. O(1) operation.
+  /// \brief Searches for key, returns a xiiHashTableBaseConstIterator to it or an invalid iterator, if no such key is found. O(1) operation.
   template <typename CompatibleKeyType>
   ConstIterator Find(const CompatibleKeyType& key) const;
 
@@ -175,7 +233,7 @@ public:
   ValueType& operator[](const KeyType& key); // [tested]
 
   /// \brief Returns the value stored at the given key. If none exists, one is created. \a bExisted indicates whether an element needed to be created.
-  ValueType& FindOrAdd(const KeyType& key, bool* pExisted); // [tested]
+  ValueType& FindOrAdd(const KeyType& key, bool* out_pExisted); // [tested]
 
   /// \brief Returns if an entry with given key exists in the table.
   template <typename CompatibleKeyType>
@@ -190,7 +248,7 @@ public:
   /// \brief Returns a constant Iterator to the very first element.
   ConstIterator GetIterator() const; // [tested]
 
-  /// \brief Returns a ConstIterator to the first element that is not part of the hash-table. Needed to support range based for loops.
+  /// \brief Returns a xiiHashTableBaseConstIterator to the first element that is not part of the hash-table. Needed to support range based for loops.
   ConstIterator GetEndIterator() const; // [tested]
 
   /// \brief Returns the allocator that is used by this instance.
@@ -202,21 +260,23 @@ public:
   /// \brief Swaps this map with the other one.
   void Swap(xiiHashTableBase<KeyType, ValueType, Hasher>& other); // [tested]
 
-
 private:
+  friend struct xiiHashTableBaseConstIterator<KeyType, ValueType, Hasher>;
+  friend struct xiiHashTableBaseIterator<KeyType, ValueType, Hasher>;
+
   struct Entry
   {
     KeyType   key;
     ValueType value;
   };
 
-  Entry*     m_pEntries;
-  xiiUInt32* m_pEntryFlags;
+  Entry*     m_pEntries    = nullptr;
+  xiiUInt32* m_pEntryFlags = nullptr;
 
-  xiiUInt32 m_uiCount;
-  xiiUInt32 m_uiCapacity;
+  xiiUInt32 m_uiCount    = 0;
+  xiiUInt32 m_uiCapacity = 0;
 
-  xiiAllocatorBase* m_pAllocator;
+  xiiAllocatorBase* m_pAllocator = nullptr;
 
   enum
   {

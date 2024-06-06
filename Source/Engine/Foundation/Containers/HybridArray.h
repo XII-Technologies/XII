@@ -24,7 +24,7 @@ public:
   explicit xiiHybridArray(const xiiArrayPtr<const T>& other); // [tested]
 
   /// \brief Moves the given array.
-  xiiHybridArray(xiiHybridArray<T, Size, AllocatorWrapper>&& other); // [tested]
+  xiiHybridArray(xiiHybridArray<T, Size, AllocatorWrapper>&& other) noexcept; // [tested]
 
   /// \brief Copies the data from some other contiguous array into this one.
   void operator=(const xiiHybridArray<T, Size, AllocatorWrapper>& rhs); // [tested]

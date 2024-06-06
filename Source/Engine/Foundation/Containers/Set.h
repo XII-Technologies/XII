@@ -30,18 +30,19 @@ private:
 
 public:
   /// \brief Base class for all iterators.
-  struct Iterator
+  template <bool REVERSE>
+  struct IteratorBase
   {
     using iterator_category = std::forward_iterator_tag;
-    using value_type        = Iterator;
+    using value_type        = IteratorBase<REVERSE>;
     using difference_type   = std::ptrdiff_t;
-    using pointer           = Iterator*;
-    using reference         = Iterator&;
+    using pointer           = IteratorBase<REVERSE>*;
+    using reference         = IteratorBase<REVERSE>&;
 
     XII_DECLARE_POD_TYPE();
 
     /// \brief Constructs an invalid iterator.
-    XII_ALWAYS_INLINE Iterator() :
+    XII_ALWAYS_INLINE IteratorBase() :
       m_pElement(nullptr)
     {
     } // [tested]
@@ -50,7 +51,7 @@ public:
     XII_ALWAYS_INLINE bool IsValid() const { return (m_pElement != nullptr); } // [tested]
 
     /// \brief Checks whether the two iterators point to the same element.
-    XII_ALWAYS_INLINE bool operator==(const typename xiiSetBase<KeyType, Comparer>::Iterator& it2) const { return (m_pElement == it2.m_pElement); }
+    XII_ALWAYS_INLINE bool operator==(const typename xiiSetBase<KeyType, Comparer>::IteratorBase<REVERSE>& it2) const { return (m_pElement == it2.m_pElement); }
 
     /// \brief Returns the 'key' of the element that this iterator points to.
     XII_FORCE_INLINE const KeyType& Key() const
@@ -60,7 +61,7 @@ public:
     } // [tested]
 
     /// \brief Returns the 'key' of the element that this iterator points to.
-    XII_ALWAYS_INLINE const KeyType& operator*() { return Key(); }
+    XII_ALWAYS_INLINE const KeyType& operator*() const { return Key(); }
 
     /// \brief Advances the iterator to the next element in the set. The iterator will not be valid anymore, if the end is reached.
     void Next(); // [tested]
@@ -75,15 +76,20 @@ public:
     XII_ALWAYS_INLINE void operator--() { Prev(); } // [tested]
 
   protected:
+    void Advance(xiiInt32 dir0, xiiInt32 dir1);
+
     friend class xiiSetBase<KeyType, Comparer>;
 
-    XII_ALWAYS_INLINE explicit Iterator(Node* pInit) :
+    XII_ALWAYS_INLINE explicit IteratorBase(Node* pInit) :
       m_pElement(pInit)
     {
     }
 
     Node* m_pElement;
   };
+
+  using Iterator        = IteratorBase<false>;
+  using ReverseIterator = IteratorBase<true>;
 
 protected:
   /// \brief Initializes the set to be empty.
@@ -111,8 +117,8 @@ public:
   /// \brief Returns a constant Iterator to the very first element.
   Iterator GetIterator() const; // [tested]
 
-  /// \brief Returns a constant Iterator to the very last element. For reverse traversal.
-  Iterator GetLastIterator() const; // [tested]
+  /// \brief Returns a constant ReverseIterator to the very last element.
+  ReverseIterator GetReverseIterator() const; // [tested]
 
   /// \brief Inserts the key into the tree and returns an Iterator to it. O(log n) operation.
   template <typename CompatibleKeyType>
