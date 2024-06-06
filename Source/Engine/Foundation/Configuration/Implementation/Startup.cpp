@@ -66,7 +66,7 @@ void xiiStartup::AssignSubSystemPlugin(xiiStringView sPluginName)
 
   while (pSub)
   {
-    if (pSub->m_sPluginName == nullptr)
+    if (pSub->m_sPluginName.IsEmpty())
     {
       pSub->m_sPluginName = sPluginName;
     }
@@ -301,13 +301,11 @@ void xiiStartup::Startup(xiiStartupStage::Enum stage)
         {
           if (!sSystemsFound.Find(pSub->GetDependency(iDep)).IsValid())
           {
-            xiiLog::Error("SubSystem '{0}::{1}' could not be started because dependency '{2}' is unknown.", pSub->GetGroupName(),
-                          pSub->GetSubSystemName(), pSub->GetDependency(iDep));
+            xiiLog::Error("SubSystem '{0}::{1}' could not be started because dependency '{2}' is unknown.", pSub->GetGroupName(), pSub->GetSubSystemName(), pSub->GetDependency(iDep));
           }
           else
           {
-            xiiLog::Error("SubSystem '{0}::{1}' could not be started because dependency '{2}' has not been initialized.", pSub->GetGroupName(),
-                          pSub->GetSubSystemName(), pSub->GetDependency(iDep));
+            xiiLog::Error("SubSystem '{0}::{1}' could not be started because dependency '{2}' has not been initialized.", pSub->GetGroupName(), pSub->GetSubSystemName(), pSub->GetDependency(iDep));
           }
 
           ++iDep;

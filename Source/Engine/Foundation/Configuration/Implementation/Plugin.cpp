@@ -18,6 +18,12 @@
 xiiResult UnloadPluginModule(xiiPluginModule& ref_pModule, xiiStringView sPluginFile);
 xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& ref_pModule, xiiStringView sPluginFile);
 
+xiiDynamicArray<xiiString>& GetStaticPlugins()
+{
+  static xiiDynamicArray<xiiString> s_StaticPlugins;
+  return s_StaticPlugins;
+}
+
 struct ModuleData
 {
   xiiPluginModule                          m_hModule       = 0;
@@ -48,7 +54,23 @@ void xiiPlugin::SetMaxParallelInstances(xiiUInt32 uiMaxParallelInstances)
 
 void xiiPlugin::InitializeStaticallyLinkedPlugins()
 {
-  g_StaticModule.Initialize();
+  if (!g_StaticModule.m_bCalledOnLoad)
+  {
+    // We need to trigger the xiiPlugin events to make sure the sub-systems are initialized at least once.
+    xiiPlugin::BeginPluginChanges();
+    XII_SCOPE_EXIT(xiiPlugin::EndPluginChanges());
+    g_StaticModule.Initialize();
+
+#if XII_DISABLED(XII_COMPILE_ENGINE_AS_DLL)
+    XII_LOG_BLOCK("Initialize Statically Linked Plugins");
+    // Merely add dummy entries so plugins can be enumerated etc.
+    for (xiiStringView sPlugin : GetStaticPlugins())
+    {
+      g_LoadedModules.FindOrAdd(sPlugin);
+      xiiLog::Debug("Plugin '{0}' statically linked.", sPlugin);
+    }
+#endif
+  }
 }
 
 void xiiPlugin::GetAllPluginInfos(xiiDynamicArray<PluginInfo>& ref_infos)
@@ -288,15 +310,10 @@ bool xiiPlugin::ExistsPluginFile(xiiStringView sPluginFile)
 
 xiiResult xiiPlugin::LoadPlugin(xiiStringView sPluginFile, xiiBitflags<xiiPluginLoadFlags> flags /*= xiiPluginLoadFlags::Default*/)
 {
-  if (flags.IsSet(xiiPluginLoadFlags::PluginIsOptional))
-  {
-    // early out without logging an error
-
-    if (!ExistsPluginFile(sPluginFile))
-      return XII_FAILURE;
-  }
-
   XII_LOG_BLOCK("Loading Plugin", sPluginFile);
+
+  // make sure this is done first
+  InitializeStaticallyLinkedPlugins();
 
   if (g_LoadedModules.Find(sPluginFile).IsValid())
   {
@@ -304,8 +321,17 @@ xiiResult xiiPlugin::LoadPlugin(xiiStringView sPluginFile, xiiBitflags<xiiPlugin
     return XII_SUCCESS;
   }
 
-  // make sure this is done first
-  InitializeStaticallyLinkedPlugins();
+#if XII_DISABLED(XII_COMPILE_ENGINE_AS_DLL)
+  // #TODO XII_COMPILE_ENGINE_AS_DLL and being able to load plugins are not necessarily the same thing.
+  return XII_FAILURE;
+#endif
+
+  if (flags.IsSet(xiiPluginLoadFlags::PluginIsOptional))
+  {
+    // early out without logging an error
+    if (!ExistsPluginFile(sPluginFile))
+      return XII_FAILURE;
+  }
 
   xiiLog::Debug("Plugin to load: \"{0}\"", sPluginFile);
 
@@ -364,9 +390,13 @@ xiiPlugin::Init::Init(xiiPluginInitCallback onLoadOrUnloadCB, bool bOnLoad)
   ModuleData* pMD = g_pCurrentlyLoadingModule ? g_pCurrentlyLoadingModule : &g_StaticModule;
 
   if (bOnLoad)
+  {
     pMD->m_OnLoadCB.PushBack(onLoadOrUnloadCB);
+  }
   else
+  {
     pMD->m_OnUnloadCB.PushBack(onLoadOrUnloadCB);
+  }
 }
 
 xiiPlugin::Init::Init(xiiStringView sAddPluginDependency)
@@ -375,5 +405,15 @@ xiiPlugin::Init::Init(xiiStringView sAddPluginDependency)
 
   pMD->m_sPluginDependencies.PushBack(sAddPluginDependency);
 }
+
+#if XII_DISABLED(XII_COMPILE_ENGINE_AS_DLL)
+xiiPluginRegister::xiiPluginRegister(xiiStringView sAddPlugin)
+{
+  if (g_pCurrentlyLoadingModule == nullptr)
+  {
+    GetStaticPlugins().PushBack(sAddPlugin);
+  }
+}
+#endif
 
 XII_STATICLINK_FILE(Foundation, Foundation_Configuration_Implementation_Plugin);
