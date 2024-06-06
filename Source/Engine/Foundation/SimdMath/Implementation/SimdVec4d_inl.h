@@ -5,6 +5,16 @@ XII_ALWAYS_INLINE xiiSimdVec4d::xiiSimdVec4d(xiiInternal::QuadDouble v)
   m_v = v;
 }
 
+XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MakeZero()
+{
+  return xiiSimdVec4d(xiiSimdDouble::MakeZero());
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MakeNaN()
+{
+  return xiiSimdVec4d(xiiSimdDouble::MakeNaN());
+}
+
 template <xiiInt32 N, xiiMathDoubleBits::Enum acc>
 XII_ALWAYS_INLINE xiiSimdDouble xiiSimdVec4d::GetLength() const
 {

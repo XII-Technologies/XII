@@ -4,7 +4,7 @@ XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i()
 {
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   m_v = _mm_set1_epi32(0xCDCDCDCD);
 #endif
 }
@@ -26,6 +26,11 @@ XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i(xiiInt32 x, xiiInt32 y, xiiInt32 z,
 XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i(xiiInternal::QuadInt v)
 {
   m_v = v;
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::MakeZero()
+{
+  return _mm_setzero_si128();
 }
 
 XII_ALWAYS_INLINE void xiiSimdVec4i::Set(xiiInt32 iXyzw)
@@ -137,6 +142,12 @@ template <xiiSwizzle::Enum s>
 XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::Get() const
 {
   return _mm_shuffle_epi32(m_v, XII_TO_SHUFFLE(s));
+}
+
+template <xiiSwizzle::Enum s>
+XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::GetCombined(const xiiSimdVec4i& other) const
+{
+  return _mm_castps_si128(_mm_shuffle_ps(_mm_castsi128_ps(m_v), _mm_castsi128_ps(other.m_v), XII_TO_SHUFFLE(s)));
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::operator-() const
@@ -356,16 +367,10 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4i::operator>(const xiiSimdVec4i& v) co
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::ZeroVector()
-{
-  return _mm_setzero_si128();
-}
-
-// static
-XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4i& vIfTrue, const xiiSimdVec4i& vIfFalse)
+XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4i& vTrue, const xiiSimdVec4i& vFalse)
 {
 #if XII_SSE_LEVEL >= XII_SSE_41
-  return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(vIfFalse.m_v), _mm_castsi128_ps(vIfTrue.m_v), vCmp.m_v));
+  return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(vFalse.m_v), _mm_castsi128_ps(vTrue.m_v), vCmp.m_v));
 #else
   return _mm_castps_si128(_mm_or_ps(_mm_andnot_ps(cmp.m_v, _mm_castsi128_ps(ifFalse.m_v)), _mm_and_ps(cmp.m_v, _mm_castsi128_ps(ifTrue.m_v))));
 #endif

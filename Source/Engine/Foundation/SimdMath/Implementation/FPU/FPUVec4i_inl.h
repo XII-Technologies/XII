@@ -2,7 +2,7 @@
 
 XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i()
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   m_v.Set(0xCDCDCDCD);
 #endif
 }
@@ -20,6 +20,11 @@ XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i(xiiInt32 x, xiiInt32 y, xiiInt32 z,
 XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i(xiiInternal::QuadInt v)
 {
   m_v = v;
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::MakeZero()
+{
+  return xiiSimdVec4i(0);
 }
 
 XII_ALWAYS_INLINE void xiiSimdVec4i::Set(xiiInt32 xyzw)
@@ -356,12 +361,6 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4i::operator>(const xiiSimdVec4i& v) co
   result[3] = m_v.w > v.m_v.w;
 
   return xiiSimdVec4b(result[0], result[1], result[2], result[3]);
-}
-
-// static
-XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::ZeroVector()
-{
-  return xiiVec4I32::ZeroVector();
 }
 
 // static

@@ -42,7 +42,7 @@ public:
   template <xiiInt32 N = 4>
   bool NoneSet() const; // [tested]
 
-  static xiiSimdVec4b Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4b& vIfTrue, const xiiSimdVec4b& vIfFalse); // [tested]
+  static xiiSimdVec4b Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4b& vTrue, const xiiSimdVec4b& vFalse); // [tested]
 
 public:
   xiiInternal::QuadBool m_v;

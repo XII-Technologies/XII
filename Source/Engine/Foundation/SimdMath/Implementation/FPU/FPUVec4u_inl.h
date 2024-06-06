@@ -2,7 +2,7 @@
 
 XII_ALWAYS_INLINE xiiSimdVec4u::xiiSimdVec4u()
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   m_v.Set(0xCDCDCDCD);
 #endif
 }
@@ -62,7 +62,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4u::ToFloat() const
 // static
 XII_ALWAYS_INLINE xiiSimdVec4u xiiSimdVec4u::Truncate(const xiiSimdVec4f& f)
 {
-  xiiSimdVec4f clampedF = f.CompMax(xiiSimdVec4f::ZeroVector());
+  xiiSimdVec4f clampedF = f.CompMax(xiiSimdVec4f::MakeZero());
 
   xiiSimdVec4u result;
   result.m_v.x = (xiiUInt32)clampedF.m_v.x;
@@ -310,7 +310,7 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4u::operator>(const xiiSimdVec4u& v) co
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4u xiiSimdVec4u::ZeroVector()
+XII_ALWAYS_INLINE xiiSimdVec4u xiiSimdVec4u::MakeZero()
 {
-  return xiiVec4U32::ZeroVector();
+  return xiiVec4U32::MakeZero();
 }
