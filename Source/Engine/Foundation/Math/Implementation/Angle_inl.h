@@ -143,7 +143,7 @@ constexpr XII_ALWAYS_INLINE bool xiiAngleTemplate<Type>::operator==(const xiiAng
 }
 
 template <typename Type>
-constexpr XII_ALWAYS_INLINE std::strong_ordering xiiAngleTemplate<Type>::operator<=>(const xiiAngleTemplate<Type>& r) const
+constexpr XII_ALWAYS_INLINE std::partial_ordering xiiAngleTemplate<Type>::operator<=>(const xiiAngleTemplate<Type>& r) const
 {
   return m_fRadian <=> r.m_fRadian;
 }

@@ -81,7 +81,7 @@ public:
   constexpr bool operator==(const xiiAngleTemplate<Type>& r) const; // [tested]
 
   // At least the < operator is implement to make clamping etc. work
-  constexpr std::strong_ordering operator<=>(const xiiAngleTemplate<Type>& r) const;
+  constexpr std::partial_ordering operator<=>(const xiiAngleTemplate<Type>& r) const;
 
   // Note: relational operators on angles are not really possible - is 0 degree smaller or bigger than 359 degree?
 

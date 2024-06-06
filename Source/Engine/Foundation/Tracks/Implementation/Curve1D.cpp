@@ -245,7 +245,7 @@ void xiiCurve1D::CreateLinearApproximation(double fMaxError /*= 0.01f*/, xiiUInt
 
   if (m_ControlPoints.IsEmpty())
   {
-    m_LinearApproximation.PushBack(xiiVec2d::ZeroVector());
+    m_LinearApproximation.PushBack(xiiVec2d::MakeZero());
     return;
   }
 

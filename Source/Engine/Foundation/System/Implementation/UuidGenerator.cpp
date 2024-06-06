@@ -2,7 +2,6 @@
 
 #include <Foundation/Types/Uuid.h>
 
-
 // Include inline file
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
 #  include <Foundation/System/Implementation/Win/UuidGenerator_win.h>
@@ -16,7 +15,7 @@
 #  error "Uuid generation functions are not implemented on current platform"
 #endif
 
-xiiUuid xiiUuid::StableUuidForString(xiiStringView sString)
+xiiUuid xiiUuid::MakeStableUuidFromString(xiiStringView sString)
 {
   xiiUuid NewUuid;
   NewUuid.m_uiLow  = xiiHashingUtils::xxHash64String(sString);
@@ -25,7 +24,7 @@ xiiUuid xiiUuid::StableUuidForString(xiiStringView sString)
   return NewUuid;
 }
 
-xiiUuid xiiUuid::StableUuidForInt(xiiInt64 iInt)
+xiiUuid xiiUuid::MakeStableUuidFromInt(xiiInt64 iInt)
 {
   xiiUuid NewUuid;
   NewUuid.m_uiLow  = xiiHashingUtils::xxHash64(&iInt, sizeof(xiiInt64));

@@ -209,27 +209,22 @@ public:
   // *** Other common operations ***
 public:
   /// \brief Calculates the normal of the triangle defined by the three vertices. Vertices are assumed to be ordered counter-clockwise.
-  XII_DECLARE_IF_FLOAT_TYPE
-  xiiResult CalculateNormal(const xiiVec3Template<Type>& v1, const xiiVec3Template<Type>& v2, const xiiVec3Template<Type>& v3); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE xiiResult CalculateNormal(const xiiVec3Template<Type>& v1, const xiiVec3Template<Type>& v2, const xiiVec3Template<Type>& v3); // [tested]
 
   /// \brief Modifies this direction vector to be orthogonal to the given (normalized) direction vector. The result is NOT normalized.
   ///
   /// \note This function may fail, e.g. create a vector that is zero, if the given normal is parallel to the vector itself.
   ///       If you need to handle such cases, you should manually check afterwards, whether the result is zero, or cannot be normalized.
-  XII_DECLARE_IF_FLOAT_TYPE
-  void MakeOrthogonalTo(const xiiVec3Template<Type>& vNormal); // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE void MakeOrthogonalTo(const xiiVec3Template<Type>& vNormal); // [tested]
 
   /// \brief Returns some arbitrary vector orthogonal to this one. The vector is NOT normalized.
-  XII_DECLARE_IF_FLOAT_TYPE
-  const xiiVec3Template<Type> GetOrthogonalVector() const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE const xiiVec3Template<Type> GetOrthogonalVector() const; // [tested]
 
   /// \brief Returns this vector reflected at vNormal.
-  XII_DECLARE_IF_FLOAT_TYPE
-  const xiiVec3Template<Type> GetReflectedVector(const xiiVec3Template<Type>& vNormal) const; // [tested]
+  XII_DECLARE_IF_FLOAT_TYPE const xiiVec3Template<Type> GetReflectedVector(const xiiVec3Template<Type>& vNormal) const; // [tested]
 
   /// \brief Returns this vector, refracted at vNormal, using the refraction index of the current medium and the medium it enters.
-  XII_DECLARE_IF_FLOAT_TYPE
-  const xiiVec3Template<Type> GetRefractedVector(const xiiVec3Template<Type>& vNormal, Type fRefIndex1, Type fRefIndex2) const;
+  XII_DECLARE_IF_FLOAT_TYPE const xiiVec3Template<Type> GetRefractedVector(const xiiVec3Template<Type>& vNormal, Type fRefIndex1, Type fRefIndex2) const;
 
   /// \brief Returns a random point inside a unit sphere (radius 1).
   XII_DECLARE_IF_FLOAT_TYPE [[nodiscard]] static xiiVec3Template<Type> MakeRandomPointInSphere(xiiRandom& inout_rng); // [tested]

@@ -6,7 +6,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 
 XII_CHECK_AT_COMPILETIME(sizeof(xiiUInt64) * 2 == sizeof(UUID));
 
-void xiiUuid::CreateNewUuid()
+xiiUuid xiiUuid::MakeUuid()
 {
   xiiUInt64 uiUuidData[2];
 
@@ -16,8 +16,8 @@ void xiiUuid::CreateNewUuid()
   // This also works on UWP
   GUID*   guid = reinterpret_cast<GUID*>(&uiUuidData[0]);
   HRESULT hr   = CoCreateGuid(guid);
+  XII_IGNORE_UNUSED(hr);
   XII_ASSERT_DEBUG(SUCCEEDED(hr), "CoCreateGuid failed, guid might be invalid!");
 
-  m_uiHigh = uiUuidData[0];
-  m_uiLow  = uiUuidData[1];
+  return xiiUuid(uiUuidData[1], uiUuidData[0]);
 }

@@ -46,10 +46,10 @@ XII_ALWAYS_INLINE void xiiQuatTemplate<Type>::SetIdentity()
 template <typename Type>
 xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeFromAxisAndAngle(const xiiVec3Template<Type>& vRotationAxis, xiiAngleTemplate<Type> angle)
 {
-  const xiiAngleTemplate<Type> halfAngle = angle * 0.5f;
+  const xiiAngleTemplate<Type> halfAngle = angle * (Type)0.5;
 
-  xiiVec3 v = static_cast<Type>(xiiMath::Sin(halfAngle)) * vRotationAxis;
-  Type    w = xiiMath::Cos(halfAngle);
+  xiiVec3Template<Type> v = static_cast<Type>(xiiMath::Sin(halfAngle)) * vRotationAxis;
+  Type                  w = xiiMath::Cos(halfAngle);
 
   return xiiQuatTemplate<Type>(v.x, v.y, v.z, w);
 }
@@ -144,13 +144,13 @@ XII_ALWAYS_INLINE const xiiQuatTemplate<Type> operator*(const xiiQuatTemplate<Ty
 
   q.w = q1.w * q2.w - (q1.x * q2.x + q1.y * q2.y + q1.z * q2.z);
 
-  const xiiVec3 v1 = q1.GetVectorPart();
-  const xiiVec3 v2 = q2.GetVectorPart();
+  const xiiVec3Template<Type> v1 = q1.GetVectorPart();
+  const xiiVec3Template<Type> v2 = q2.GetVectorPart();
 
-  const xiiVec3 vr = q1.w * v2 + q2.w * v1 + v1.CrossRH(v2);
-  q.x              = vr.x;
-  q.y              = vr.y;
-  q.z              = vr.z;
+  const xiiVec3Template<Type> vr = q1.w * v2 + q2.w * v1 + v1.CrossRH(v2);
+  q.x                            = vr.x;
+  q.y                            = vr.y;
+  q.z                            = vr.z;
 
   return q;
 }
@@ -323,31 +323,31 @@ xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeFromMat3(const xiiMat3Template<
 template <typename Type>
 void xiiQuatTemplate<Type>::ReconstructFromMat3(const xiiMat3Template<Type>& mMat)
 {
-  const xiiVec3 x = (mMat * xiiVec3(1, 0, 0)).GetNormalized();
-  const xiiVec3 y = (mMat * xiiVec3(0, 1, 0)).GetNormalized();
-  const xiiVec3 z = x.CrossRH(y);
+  const xiiVec3Template<Type> x = (mMat * xiiVec3Template<Type>(1, 0, 0)).GetNormalized();
+  const xiiVec3Template<Type> y = (mMat * xiiVec3Template<Type>(0, 1, 0)).GetNormalized();
+  const xiiVec3Template<Type> z = x.CrossRH(y);
 
-  xiiMat3 m;
+  xiiMat3Template<Type> m;
   m.SetColumn(0, x);
   m.SetColumn(1, y);
   m.SetColumn(2, z);
 
-  *this = xiiQuat::MakeFromMat3(m);
+  *this = xiiQuatTemplate<Type>::MakeFromMat3(m);
 }
 
 template <typename Type>
 void xiiQuatTemplate<Type>::ReconstructFromMat4(const xiiMat4Template<Type>& mMat)
 {
-  const xiiVec3 x = mMat.TransformDirection(xiiVec3(1, 0, 0)).GetNormalized();
-  const xiiVec3 y = mMat.TransformDirection(xiiVec3(0, 1, 0)).GetNormalized();
-  const xiiVec3 z = x.CrossRH(y);
+  const xiiVec3Template<Type> x = mMat.TransformDirection(xiiVec3Template<Type>(1, 0, 0)).GetNormalized();
+  const xiiVec3Template<Type> y = mMat.TransformDirection(xiiVec3Template<Type>(0, 1, 0)).GetNormalized();
+  const xiiVec3Template<Type> z = x.CrossRH(y);
 
-  xiiMat3 m;
+  xiiMat3Template<Type> m;
   m.SetColumn(0, x);
   m.SetColumn(1, y);
   m.SetColumn(2, z);
 
-  *this = xiiQuat::MakeFromMat3(m);
+  *this = xiiQuatTemplate<Type>::MakeFromMat3(m);
 }
 
 /*! \note This function will ALWAYS return a quaternion that rotates from one direction to another.

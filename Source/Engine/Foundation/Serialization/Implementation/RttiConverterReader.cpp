@@ -191,8 +191,8 @@ void xiiRttiConverterReader::ApplyProperty(void* pObject, const xiiAbstractPrope
         }
         else if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::Class))
         {
-          xiiUuid temp;
-          temp.CreateNewUuid();
+          xiiUuid temp = xiiUuid::MakeUuid();
+
           void* pValuePtr = m_pContext->CreateObject(temp, pPropType);
 
           for (xiiUInt32 i = 0; i < array.GetCount(); ++i)
@@ -275,8 +275,8 @@ void xiiRttiConverterReader::ApplyProperty(void* pObject, const xiiAbstractPrope
         }
         else if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::Class))
         {
-          xiiUuid temp;
-          temp.CreateNewUuid();
+          xiiUuid temp = xiiUuid::MakeUuid();
+
           void* pValuePtr = m_pContext->CreateObject(temp, pPropType);
 
           for (xiiUInt32 i = 0; i < array.GetCount(); ++i)
@@ -363,8 +363,8 @@ void xiiRttiConverterReader::ApplyProperty(void* pObject, const xiiAbstractPrope
         }
         else if (pProp->GetFlags().IsAnySet(xiiPropertyFlags::Class))
         {
-          xiiUuid temp;
-          temp.CreateNewUuid();
+          xiiUuid temp = xiiUuid::MakeUuid();
+
           void* pValuePtr = m_pContext->CreateObject(temp, pPropType);
 
           for (auto it = dict.GetIterator(); it.IsValid(); ++it)

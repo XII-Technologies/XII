@@ -89,6 +89,9 @@ public:
   /// \brief Returns the data as an array.
   const Type* GetData() const { return &x; }
 
+  /// \brief Returns the data as an array.
+  Type* GetData() { return &x; }
+
   /// \brief Normalizes the quaternion to unit length. ALL rotation-quaternions should be normalized at all times (automatically).
   void Normalize(); // [tested]
 

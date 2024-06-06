@@ -1036,14 +1036,12 @@ struct LerpFunc
   {
     if constexpr (std::is_same_v<T, xiiQuat>)
     {
-      xiiQuat q;
-      q.SetSlerp(a.Get<xiiQuat>(), b.Get<xiiQuat>(), static_cast<float>(x));
+      xiiQuat q = xiiQuat::MakeSlerp(a.Get<xiiQuat>(), b.Get<xiiQuat>(), static_cast<float>(x));
       out_res = q;
     }
     else if constexpr (std::is_same_v<T, xiiQuatd>)
     {
-      xiiQuatd q;
-      q.SetSlerp(a.Get<xiiQuatd>(), b.Get<xiiQuatd>(), x);
+      xiiQuatd q = xiiQuatd::MakeSlerp(a.Get<xiiQuatd>(), b.Get<xiiQuatd>(), x);
       out_res = q;
     }
     else if constexpr (CanInterpolateFloat(static_cast<xiiVariantType::Enum>(xiiVariantTypeDeduction<T>::value)))
