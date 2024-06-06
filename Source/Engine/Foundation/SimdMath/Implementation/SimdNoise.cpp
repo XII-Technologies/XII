@@ -22,7 +22,7 @@ xiiSimdPerlinNoise::xiiSimdPerlinNoise(xiiUInt32 uiSeed)
 
 xiiSimdVec4f xiiSimdPerlinNoise::NoiseZeroToOne(const xiiSimdVec4f& vX, const xiiSimdVec4f& vY, const xiiSimdVec4f& vZ, xiiUInt32 uiNumOctaves /*= 1*/)
 {
-  xiiSimdVec4f result    = xiiSimdVec4f::ZeroVector();
+  xiiSimdVec4f result    = xiiSimdVec4f::MakeZero();
   xiiSimdFloat amplitude = 1.0f;
   xiiUInt32    uiOffset  = 0;
 
@@ -57,11 +57,13 @@ namespace
     const xiiSimdVec4i h = vHash & xiiSimdVec4i(15);
     const xiiSimdVec4f u = xiiSimdVec4f::Select(h < xiiSimdVec4i(8), x, y);
     const xiiSimdVec4f v = xiiSimdVec4f::Select(h < xiiSimdVec4i(4), y, xiiSimdVec4f::Select(h == xiiSimdVec4i(12) || h == xiiSimdVec4i(14), x, z));
-    return xiiSimdVec4f::Select((h & xiiSimdVec4i(1)) == xiiSimdVec4i::ZeroVector(), u, -u) +
-      xiiSimdVec4f::Select((h & xiiSimdVec4i(2)) == xiiSimdVec4i::ZeroVector(), v, -v);
+    return xiiSimdVec4f::Select((h & xiiSimdVec4i(1)) == xiiSimdVec4i::MakeZero(), u, -u) + xiiSimdVec4f::Select((h & xiiSimdVec4i(2)) == xiiSimdVec4i::MakeZero(), v, -v);
   }
 
-  XII_ALWAYS_INLINE xiiSimdVec4f Lerp(const xiiSimdVec4f& t, const xiiSimdVec4f& a, const xiiSimdVec4f& b) { return xiiSimdVec4f::Lerp(a, b, t); }
+  XII_ALWAYS_INLINE xiiSimdVec4f Lerp(const xiiSimdVec4f& t, const xiiSimdVec4f& a, const xiiSimdVec4f& b)
+  {
+    return xiiSimdVec4f::Lerp(a, b, t);
+  }
 
 } // namespace
 
@@ -120,6 +122,5 @@ xiiSimdVec4f xiiSimdPerlinNoise::Noise(const xiiSimdVec4f& inX, const xiiSimdVec
 
   return Lerp(w, Lerp(v, c000_c100, c010_c110), Lerp(v, c001_c101, c011_c111));
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_SimdMath_Implementation_SimdNoise);

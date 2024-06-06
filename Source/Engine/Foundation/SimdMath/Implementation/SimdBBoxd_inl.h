@@ -7,22 +7,31 @@ XII_ALWAYS_INLINE xiiSimdBBoxd::xiiSimdBBoxd(const xiiSimdVec4d& vMin, const xii
 {
 }
 
-XII_ALWAYS_INLINE void xiiSimdBBoxd::SetInvalid()
+XII_ALWAYS_INLINE xiiSimdBBoxd xiiSimdBBoxd::MakeZero()
 {
-  m_Min.Set(xiiMath::MaxValue<double>());
-  m_Max.Set(-xiiMath::MaxValue<double>());
+  return xiiSimdBBoxd(xiiSimdVec4d::MakeZero(), xiiSimdVec4d::MakeZero());
 }
 
-XII_ALWAYS_INLINE void xiiSimdBBoxd::SetCenterAndHalfExtents(const xiiSimdVec4d& vCenter, const xiiSimdVec4d& vHalfExtents)
+XII_ALWAYS_INLINE xiiSimdBBoxd xiiSimdBBoxd::MakeInvalid()
 {
-  m_Min = vCenter - vHalfExtents;
-  m_Max = vCenter + vHalfExtents;
+  return xiiSimdBBoxd(xiiSimdVec4d(xiiMath::MaxValue<float>()), xiiSimdVec4d(-xiiMath::MaxValue<float>()));
 }
 
-XII_ALWAYS_INLINE void xiiSimdBBoxd::SetFromPoints(const xiiSimdVec4d* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride)
+XII_ALWAYS_INLINE xiiSimdBBoxd xiiSimdBBoxd::MakeFromCenterAndHalfExtents(const xiiSimdVec4d& vCenter, const xiiSimdVec4d& vHalfExtents)
 {
-  SetInvalid();
-  ExpandToInclude(pPoints, uiNumPoints, uiStride);
+  return xiiSimdBBoxd(vCenter - vHalfExtents, vCenter + vHalfExtents);
+}
+
+XII_ALWAYS_INLINE xiiSimdBBoxd xiiSimdBBoxd::MakeFromMinMax(const xiiSimdVec4d& vMin, const xiiSimdVec4d& vMax)
+{
+  return xiiSimdBBoxd(vMin, vMax);
+}
+
+XII_ALWAYS_INLINE xiiSimdBBoxd xiiSimdBBoxd::MakeFromPoints(const xiiSimdVec4d* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /*= sizeof(xiiSimdVec4d)*/)
+{
+  xiiSimdBBoxd box = xiiSimdBBoxd::MakeInvalid();
+  box.ExpandToInclude(pPoints, uiNumPoints, uiStride);
+  return box;
 }
 
 XII_ALWAYS_INLINE bool xiiSimdBBoxd::IsValid() const
@@ -82,7 +91,7 @@ inline void xiiSimdBBoxd::ExpandToCube()
   const xiiSimdVec4d center      = GetCenter();
   const xiiSimdVec4d halfExtents = center - m_Min;
 
-  SetCenterAndHalfExtents(center, xiiSimdVec4d(halfExtents.HorizontalMax<3>()));
+  *this = xiiSimdBBoxd::MakeFromCenterAndHalfExtents(center, xiiSimdVec4d(halfExtents.HorizontalMax<3>()));
 }
 
 XII_ALWAYS_INLINE bool xiiSimdBBoxd::Contains(const xiiSimdVec4d& vPoint) const
@@ -97,8 +106,7 @@ XII_ALWAYS_INLINE bool xiiSimdBBoxd::Contains(const xiiSimdBBoxd& rhs) const
 
 inline bool xiiSimdBBoxd::Contains(const xiiSimdBSphered& rhs) const
 {
-  xiiSimdBBoxd otherBox;
-  otherBox.SetCenterAndHalfExtents(rhs.GetCenter(), xiiSimdVec4d(rhs.GetRadius()));
+  const xiiSimdBBoxd otherBox = xiiSimdBBoxd::MakeFromCenterAndHalfExtents(rhs.GetCenter(), xiiSimdVec4d(rhs.GetRadius()));
 
   return Contains(otherBox);
 }
@@ -142,7 +150,7 @@ XII_ALWAYS_INLINE void xiiSimdBBoxd::Transform(const xiiSimdMat4d& mMat)
   newHalfExtents += mMat.m_col1.Abs() * halfExtents.y();
   newHalfExtents += mMat.m_col2.Abs() * halfExtents.z();
 
-  SetCenterAndHalfExtents(newCenter, newHalfExtents);
+  *this = xiiSimdBBoxd::MakeFromCenterAndHalfExtents(newCenter, newHalfExtents);
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdBBoxd::GetClampedPoint(const xiiSimdVec4d& vPoint) const

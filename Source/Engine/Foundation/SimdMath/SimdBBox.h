@@ -13,16 +13,22 @@ public:
   /// \brief Constructs the box with the given minimum and maximum values.
   xiiSimdBBox(const xiiSimdVec4f& vMin, const xiiSimdVec4f& vMax); // [tested]
 
+  /// \brief Creates a box that is located at the origin and has zero size. This is a 'valid' box.
+  [[nodiscard]] static xiiSimdBBox MakeZero();
+
+  /// \brief Creates a box that is in an invalid state. ExpandToInclude can then be used to make it into a bounding box for objects.
+  [[nodiscard]] static xiiSimdBBox MakeInvalid(); // [tested]
+
+  /// \brief Creates a box from a center point and half-extents for each axis.
+  [[nodiscard]] static xiiSimdBBox MakeFromCenterAndHalfExtents(const xiiSimdVec4f& vCenter, const xiiSimdVec4f& vHalfExtents); // [tested]
+
+  /// \brief Creates a box with the given minimum and maximum values.
+  [[nodiscard]] static xiiSimdBBox MakeFromMinMax(const xiiSimdVec4f& vMin, const xiiSimdVec4f& vMax); // [tested]
+
+  /// \brief Creates a box around the given set of points. If uiNumPoints is zero, the returned box is invalid (same as MakeInvalid() returns).
+  [[nodiscard]] static xiiSimdBBox MakeFromPoints(const xiiSimdVec4f* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride = sizeof(xiiSimdVec4f)); // [tested]
+
 public:
-  /// \brief Resets the box to an invalid state. ExpandToInclude can then be used to make it into a bounding box for objects.
-  void SetInvalid(); // [tested]
-
-  /// \brief Sets the box from a center point and half-extents for each axis.
-  void SetCenterAndHalfExtents(const xiiSimdVec4f& vCenter, const xiiSimdVec4f& vHalfExtents); // [tested]
-
-  /// \brief Creates a new bounding-box around the given set of points.
-  void SetFromPoints(const xiiSimdVec4f* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride = sizeof(xiiSimdVec4f)); // [tested]
-
   /// \brief Checks whether the box is in an invalid state.
   bool IsValid() const; // [tested]
 

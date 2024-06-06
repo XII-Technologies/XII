@@ -8,14 +8,63 @@ XII_ALWAYS_INLINE xiiSimdBSphered::xiiSimdBSphered(const xiiSimdVec4d& vCenter, 
   m_CenterAndRadius.SetW(fRadius);
 }
 
-XII_ALWAYS_INLINE void xiiSimdBSphered::SetInvalid()
+XII_ALWAYS_INLINE xiiSimdBSphered xiiSimdBSphered::MakeZero()
 {
-  m_CenterAndRadius.Set(0.0, 0.0, 0.0, -xiiMath::SmallEpsilon<float>());
+  xiiSimdBSphered res;
+  res.m_CenterAndRadius = xiiSimdVec4d::MakeZero();
+  return res;
+}
+
+XII_ALWAYS_INLINE xiiSimdBSphered xiiSimdBSphered::MakeInvalid(const xiiSimdVec4d& vCenter /*= xiiSimdVec4d::MakeZero()*/)
+{
+  xiiSimdBSphered res;
+  res.m_CenterAndRadius.Set(0.0, 0.0, 0.0, -xiiMath::SmallEpsilon<float>());
+  return res;
+}
+
+XII_ALWAYS_INLINE xiiSimdBSphered xiiSimdBSphered::MakeFromCenterAndRadius(const xiiSimdVec4d& vCenter, const xiiSimdDouble& fRadius)
+{
+  return xiiSimdBSphered(vCenter, fRadius);
+}
+
+inline xiiSimdBSphered xiiSimdBSphered::MakeFromPoints(const xiiSimdVec4d* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /*= sizeof(xiiSimdVec4d)*/)
+{
+  XII_ASSERT_DEBUG(pPoints != nullptr, "The array must not be empty.");
+  XII_ASSERT_DEBUG(uiStride >= sizeof(xiiSimdVec4d), "The data must not overlap.");
+  XII_ASSERT_DEBUG(uiNumPoints > 0, "The array must contain at least one point.");
+
+  xiiSimdBSphered res;
+
+  const xiiSimdVec4d* pCur = pPoints;
+
+  xiiSimdVec4d vCenter = xiiSimdVec4d::MakeZero();
+  for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
+  {
+    vCenter += *pCur;
+    pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
+  }
+
+  res.m_CenterAndRadius = vCenter / xiiSimdDouble(uiNumPoints);
+
+  pCur = pPoints;
+
+  xiiSimdDouble fMaxDistSquare = xiiSimdDouble::MakeZero();
+  for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
+  {
+    const xiiSimdDouble fDistSQR = (*pCur - res.m_CenterAndRadius).GetLengthSquared<3>();
+    fMaxDistSquare               = fMaxDistSquare.Max(fDistSQR);
+
+    pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
+  }
+
+  res.m_CenterAndRadius.SetW(fMaxDistSquare.GetSqrt());
+
+  return res;
 }
 
 XII_ALWAYS_INLINE bool xiiSimdBSphered::IsValid() const
 {
-  return m_CenterAndRadius.IsValid<4>() && GetRadius() >= xiiSimdDouble::Zero();
+  return m_CenterAndRadius.IsValid<4>() && GetRadius() >= xiiSimdDouble::MakeZero();
 }
 
 XII_ALWAYS_INLINE bool xiiSimdBSphered::IsNaN() const
@@ -33,38 +82,7 @@ XII_ALWAYS_INLINE xiiSimdDouble xiiSimdBSphered::GetRadius() const
   return m_CenterAndRadius.w();
 }
 
-inline void xiiSimdBSphered::SetFromPoints(const xiiSimdVec4d* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride)
-{
-  XII_ASSERT_DEBUG(pPoints != nullptr, "The array must not be empty.");
-  XII_ASSERT_DEBUG(uiStride >= sizeof(xiiSimdVec4d), "The data must not overlap.");
-  XII_ASSERT_DEBUG(uiNumPoints > 0, "The array must contain at least one point.");
-
-  const xiiSimdVec4d* pCur = pPoints;
-
-  xiiSimdVec4d vCenter = xiiSimdVec4d::ZeroVector();
-  for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
-  {
-    vCenter += *pCur;
-    pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
-  }
-
-  m_CenterAndRadius = vCenter / xiiSimdDouble(uiNumPoints);
-
-  pCur = pPoints;
-
-  xiiSimdDouble fMaxDistSquare = xiiSimdDouble::Zero();
-  for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
-  {
-    const xiiSimdDouble fDistSQR = (*pCur - m_CenterAndRadius).GetLengthSquared<3>();
-    fMaxDistSquare               = fMaxDistSquare.Max(fDistSQR);
-
-    pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
-  }
-
-  m_CenterAndRadius.SetW(fMaxDistSquare.GetSqrt());
-}
-
-inline void xiiSimdBSphered::ExpandToInclude(const xiiSimdVec4d& vPoint)
+XII_ALWAYS_INLINE void xiiSimdBSphered::ExpandToInclude(const xiiSimdVec4d& vPoint)
 {
   const xiiSimdDouble fDist = (vPoint - m_CenterAndRadius).GetLength<3>();
 
@@ -78,7 +96,7 @@ inline void xiiSimdBSphered::ExpandToInclude(const xiiSimdVec4d* pPoints, xiiUIn
 
   const xiiSimdVec4d* pCur = pPoints;
 
-  xiiSimdDouble fMaxDistSquare = xiiSimdDouble::Zero();
+  xiiSimdDouble fMaxDistSquare = xiiSimdDouble::MakeZero();
 
   for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
   {
@@ -91,7 +109,7 @@ inline void xiiSimdBSphered::ExpandToInclude(const xiiSimdVec4d* pPoints, xiiUIn
   m_CenterAndRadius.SetW(fMaxDistSquare.GetSqrt().Max(GetRadius()));
 }
 
-inline void xiiSimdBSphered::ExpandToInclude(const xiiSimdBSphered& rhs)
+XII_ALWAYS_INLINE void xiiSimdBSphered::ExpandToInclude(const xiiSimdBSphered& rhs)
 {
   const xiiSimdDouble fReqRadius = (rhs.m_CenterAndRadius - m_CenterAndRadius).GetLength<3>() + rhs.GetRadius();
 
