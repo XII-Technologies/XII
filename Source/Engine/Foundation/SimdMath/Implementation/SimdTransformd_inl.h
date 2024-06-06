@@ -3,9 +3,7 @@
 XII_ALWAYS_INLINE xiiSimdTransformd::xiiSimdTransformd() = default;
 
 XII_ALWAYS_INLINE xiiSimdTransformd::xiiSimdTransformd(const xiiSimdVec4d& vPosition, const xiiSimdQuatd& qRotation, const xiiSimdVec4d& vScale) :
-  m_Position(vPosition),
-  m_Rotation(qRotation),
-  m_Scale(vScale)
+  m_Position(vPosition), m_Rotation(qRotation), m_Scale(vScale)
 {
 }
 
@@ -16,19 +14,39 @@ XII_ALWAYS_INLINE xiiSimdTransformd::xiiSimdTransformd(const xiiSimdQuatd& qRota
   m_Scale.Set(1.0);
 }
 
-XII_ALWAYS_INLINE void xiiSimdTransformd::SetIdentity()
+inline xiiSimdTransformd xiiSimdTransformd::Make(const xiiSimdVec4d& vPosition, const xiiSimdQuatd& qRotation /*= xiiSimdQuatd::IdentityQuaternion()*/, const xiiSimdVec4d& vScale /*= xiiSimdVec4d(1.0)*/)
 {
-  m_Position.SetZero();
-  m_Rotation.SetIdentity();
-  m_Scale.Set(1.0);
+  xiiSimdTransformd res;
+  res.m_Position = vPosition;
+  res.m_Rotation = qRotation;
+  res.m_Scale    = vScale;
+  return res;
 }
 
-// static
-XII_ALWAYS_INLINE xiiSimdTransformd xiiSimdTransformd::IdentityTransform()
+XII_ALWAYS_INLINE xiiSimdTransformd xiiSimdTransformd::MakeIdentity()
 {
-  xiiSimdTransformd result;
-  result.SetIdentity();
-  return result;
+  xiiSimdTransformd res;
+  res.m_Position.SetZero();
+  res.m_Rotation = xiiSimdQuatd::MakeIdentity();
+  res.m_Scale.Set(1.0);
+  return res;
+}
+
+inline xiiSimdTransformd xiiSimdTransformd::MakeLocalTransform(const xiiSimdTransformd& globalTransformParent, const xiiSimdTransformd& globalTransformChild)
+{
+  const xiiSimdQuatd invRot   = -globalTransformParent.m_Rotation;
+  const xiiSimdVec4d invScale = globalTransformParent.m_Scale.GetReciprocal();
+
+  xiiSimdTransformd res;
+  res.m_Position = (invRot * (globalTransformChild.m_Position - globalTransformParent.m_Position)).CompMul(invScale);
+  res.m_Rotation = invRot * globalTransformChild.m_Rotation;
+  res.m_Scale    = invScale.CompMul(globalTransformChild.m_Scale);
+  return res;
+}
+
+XII_ALWAYS_INLINE xiiSimdTransformd xiiSimdTransformd::MakeGlobalTransform(const xiiSimdTransformd& globalTransformParent, const xiiSimdTransformd& localTransformChild)
+{
+  return globalTransformParent * localTransformChild;
 }
 
 XII_ALWAYS_INLINE xiiSimdDouble xiiSimdTransformd::GetMaxScale() const
@@ -38,18 +56,19 @@ XII_ALWAYS_INLINE xiiSimdDouble xiiSimdTransformd::GetMaxScale() const
 
 XII_ALWAYS_INLINE bool xiiSimdTransformd::ContainsNegativeScale() const
 {
-  return (m_Scale.x() * m_Scale.y() * m_Scale.z()) < xiiSimdDouble::Zero();
+  return (m_Scale.x() * m_Scale.y() * m_Scale.z()) < xiiSimdDouble::MakeZero();
 }
 
 XII_ALWAYS_INLINE bool xiiSimdTransformd::ContainsUniformScale() const
 {
-  const xiiSimdDouble fEpsilon = xiiMath::DefaultEpsilon<double>();
+  const xiiSimdDouble fEpsilon = xiiMath::DefaultEpsilon<float>();
   return m_Scale.x().IsEqual(m_Scale.y(), fEpsilon) && m_Scale.x().IsEqual(m_Scale.z(), fEpsilon);
 }
 
 XII_ALWAYS_INLINE bool xiiSimdTransformd::IsEqual(const xiiSimdTransformd& rhs, const xiiSimdDouble& fEpsilon) const
 {
-  return m_Position.IsEqual(rhs.m_Position, fEpsilon).AllSet<3>() && m_Rotation.IsEqualRotation(rhs.m_Rotation, fEpsilon) && m_Scale.IsEqual(rhs.m_Scale, fEpsilon).AllSet<3>();
+  return m_Position.IsEqual(rhs.m_Position, fEpsilon).AllSet<3>() && m_Rotation.IsEqualRotation(rhs.m_Rotation, fEpsilon) &&
+    m_Scale.IsEqual(rhs.m_Scale, fEpsilon).AllSet<3>();
 }
 
 XII_ALWAYS_INLINE void xiiSimdTransformd::Invert()
@@ -64,21 +83,6 @@ XII_ALWAYS_INLINE xiiSimdTransformd xiiSimdTransformd::GetInverse() const
   xiiSimdVec4d invPos   = invRot * (invScale.CompMul(-m_Position));
 
   return xiiSimdTransformd(invPos, invRot, invScale);
-}
-
-inline void xiiSimdTransformd::SetLocalTransform(const xiiSimdTransformd& globalTransformParent, const xiiSimdTransformd& globalTransformChild)
-{
-  xiiSimdQuatd invRot   = -globalTransformParent.m_Rotation;
-  xiiSimdVec4d invScale = globalTransformParent.m_Scale.GetReciprocal();
-
-  m_Position = (invRot * (globalTransformChild.m_Position - globalTransformParent.m_Position)).CompMul(invScale);
-  m_Rotation = invRot * globalTransformChild.m_Rotation;
-  m_Scale    = invScale.CompMul(globalTransformChild.m_Scale);
-}
-
-XII_ALWAYS_INLINE void xiiSimdTransformd::SetGlobalTransform(const xiiSimdTransformd& globalTransformParent, const xiiSimdTransformd& localTransformChild)
-{
-  *this = globalTransformParent * localTransformChild;
 }
 
 XII_FORCE_INLINE xiiSimdMat4d xiiSimdTransformd::GetAsMat4() const

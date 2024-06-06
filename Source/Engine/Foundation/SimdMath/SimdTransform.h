@@ -11,17 +11,22 @@ public:
   xiiSimdTransform(); // [tested]
 
   /// \brief Sets position, rotation and scale.
-  explicit xiiSimdTransform(const xiiSimdVec4f& vPosition, const xiiSimdQuat& qRotation = xiiSimdQuat::IdentityQuaternion(),
-                            const xiiSimdVec4f& vScale = xiiSimdVec4f(1.0f)); // [tested]
+  explicit xiiSimdTransform(const xiiSimdVec4f& vPosition, const xiiSimdQuat& qRotation = xiiSimdQuat::MakeIdentity(), const xiiSimdVec4f& vScale = xiiSimdVec4f(1.0f)); // [tested]
 
   /// \brief Sets rotation.
   explicit xiiSimdTransform(const xiiSimdQuat& qRotation); // [tested]
 
-  /// \brief Sets the position to be zero and the rotation to identity.
-  void SetIdentity(); // [tested]
+  /// \brief Creates a transform from the given position, rotation and scale.
+  [[nodiscard]] static xiiSimdTransform Make(const xiiSimdVec4f& vPosition, const xiiSimdQuat& qRotation = xiiSimdQuat::MakeIdentity(), const xiiSimdVec4f& vScale = xiiSimdVec4f(1.0f)); // [tested]
 
-  /// \brief Returns an Identity Transform.
-  static xiiSimdTransform IdentityTransform(); // [tested]
+  /// \brief Creates an identity transform.
+  [[nodiscard]] static xiiSimdTransform MakeIdentity(); // [tested]
+
+  /// \brief Creates a transform that is the local transformation needed to get from the parent's transform to the child's.
+  [[nodiscard]] static xiiSimdTransform MakeLocalTransform(const xiiSimdTransform& globalTransformParent, const xiiSimdTransform& globalTransformChild); // [tested]
+
+  /// \brief Creates a transform that is the global transform, that is reached by applying the child's local transform to the parent's global one.
+  [[nodiscard]] static xiiSimdTransform MakeGlobalTransform(const xiiSimdTransform& globalTransformParent, const xiiSimdTransform& localTransformChild); // [tested]
 
   /// \brief Returns the scale component with maximum magnitude.
   xiiSimdFloat GetMaxScale() const; // [tested]
@@ -43,20 +48,12 @@ public:
   /// \brief Returns the inverse of this transform.
   xiiSimdTransform GetInverse() const; // [tested]
 
-public:
-  /// \brief Sets this transform to be the local transformation needed to get from the parent's transform to the child's.
-  void SetLocalTransform(const xiiSimdTransform& globalTransformParent, const xiiSimdTransform& globalTransformChild); // [tested]
-
-  /// \brief Sets this transform to the global transform, that is reached by applying the child's local transform to the parent's global
-  /// one.
-  void SetGlobalTransform(const xiiSimdTransform& globalTransformParent, const xiiSimdTransform& localTransformChild); // [tested]
-
   /// \brief Returns the transformation as a matrix.
   xiiSimdMat4f GetAsMat4() const; // [tested]
 
 public:
-  xiiSimdVec4f TransformPosition(const xiiSimdVec4f& v) const;  // [tested]
-  xiiSimdVec4f TransformDirection(const xiiSimdVec4f& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4f TransformPosition(const xiiSimdVec4f& v) const;  // [tested]
+  [[nodiscard]] xiiSimdVec4f TransformDirection(const xiiSimdVec4f& v) const; // [tested]
 
   /// \brief Concatenates the two transforms. This is the same as a matrix multiplication, thus not commutative.
   void operator*=(const xiiSimdTransform& other); // [tested]

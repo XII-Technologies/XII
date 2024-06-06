@@ -9,23 +9,24 @@ public:
 
   xiiSimdQuat(); // [tested]
 
-  xiiSimdQuat(const xiiSimdVec4f& v); // [tested]
+  explicit xiiSimdQuat(const xiiSimdVec4f& v); // [tested]
 
   /// \brief Static function that returns a quaternion that represents the identity rotation (none).
-  static xiiSimdQuat IdentityQuaternion(); // [tested]
+  [[nodiscard]] static const xiiSimdQuat MakeIdentity(); // [tested]
 
-public:
-  /// \brief Sets the Quaternion to the identity.
-  void SetIdentity(); // [tested]
+  /// \brief Sets the individual elements of the quaternion directly. Note that x,y,z do NOT represent a rotation axis, and w does NOT represent an angle.
+  ///
+  /// Use this function only if you have good understanding of quaternion math and know exactly what you are doing.
+  [[nodiscard]] static xiiSimdQuat MakeFromElements(xiiSimdFloat x, xiiSimdFloat y, xiiSimdFloat z, xiiSimdFloat w); // [tested]
 
   /// \brief Creates a quaternion from a rotation-axis and an angle (angle is given in Radians or as a xiiAngle)
-  void SetFromAxisAndAngle(const xiiSimdVec4f& vRotationAxis, const xiiSimdFloat& fAngle); // [tested]
+  [[nodiscard]] static xiiSimdQuat MakeFromAxisAndAngle(const xiiSimdVec4f& vRotationAxis, const xiiSimdFloat& fAngle); // [tested]
 
   /// \brief Creates a quaternion, that rotates through the shortest arc from "vDirFrom" to "vDirTo".
-  void SetShortestRotation(const xiiSimdVec4f& vDirFrom, const xiiSimdVec4f& vDirTo); // [tested]
+  [[nodiscard]] static xiiSimdQuat MakeShortestRotation(const xiiSimdVec4f& vDirFrom, const xiiSimdVec4f& vDirTo); // [tested]
 
-  /// \brief Sets this quaternion to be the spherical linear interpolation of the other two.
-  void SetSlerp(const xiiSimdQuat& qFrom, const xiiSimdQuat& qTo, const xiiSimdFloat& t); // [tested]
+  /// \brief Returns a quaternion that is the spherical linear interpolation of the other two.
+  [[nodiscard]] static xiiSimdQuat MakeSlerp(const xiiSimdQuat& qFrom, const xiiSimdQuat& qTo, const xiiSimdFloat& t); // [tested]
 
 public:
   /// \brief Normalizes the quaternion to unit length. ALL rotation-quaternions should be normalized at all times (automatically).
@@ -52,13 +53,13 @@ public:
 
 public:
   /// \brief Returns a Quaternion that represents the negative / inverted rotation.
-  xiiSimdQuat operator-() const; // [tested]
+  [[nodiscard]] xiiSimdQuat operator-() const; // [tested]
 
   /// \brief Rotates v by q
-  xiiSimdVec4f operator*(const xiiSimdVec4f& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4f operator*(const xiiSimdVec4f& v) const; // [tested]
 
   /// \brief Concatenates the rotations of q1 and q2
-  xiiSimdQuat operator*(const xiiSimdQuat& q2) const; // [tested]
+  [[nodiscard]] xiiSimdQuat operator*(const xiiSimdQuat& q2) const; // [tested]
 
   bool operator==(const xiiSimdQuat& q2) const; // [tested]
   bool operator!=(const xiiSimdQuat& q2) const; // [tested]

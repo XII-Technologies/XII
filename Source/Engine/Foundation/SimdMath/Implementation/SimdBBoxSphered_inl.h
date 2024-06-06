@@ -55,17 +55,17 @@ inline xiiSimdBBoxSphered xiiSimdBBoxSphered::MakeFromPoints(const xiiSimdVec4d*
   return res;
 }
 
-XII_ALWAYS_INLINE xiiSimdBBoxSphered xiiSimdBBoxSphered::MakeFromBox(const xiiSimdBBox& box)
+XII_ALWAYS_INLINE xiiSimdBBoxSphered xiiSimdBBoxSphered::MakeFromBox(const xiiSimdBBoxd& box)
 {
   return xiiSimdBBoxSphered(box);
 }
 
-XII_ALWAYS_INLINE xiiSimdBBoxSphered xiiSimdBBoxSphered::MakeFromSphere(const xiiSimdBSphere& sphere)
+XII_ALWAYS_INLINE xiiSimdBBoxSphered xiiSimdBBoxSphered::MakeFromSphere(const xiiSimdBSphered& sphere)
 {
   return xiiSimdBBoxSphered(sphere);
 }
 
-XII_ALWAYS_INLINE xiiSimdBBoxSphered xiiSimdBBoxSphered::MakeFromBoxAndSphere(const xiiSimdBBox& box, const xiiSimdBSphere& sphere)
+XII_ALWAYS_INLINE xiiSimdBBoxSphered xiiSimdBBoxSphered::MakeFromBoxAndSphere(const xiiSimdBBoxd& box, const xiiSimdBSphered& sphere)
 {
   xiiSimdBBoxSphered res;
   res.m_CenterAndRadius = box.GetCenter();

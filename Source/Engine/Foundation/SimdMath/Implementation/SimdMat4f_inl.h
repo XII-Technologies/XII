@@ -2,38 +2,45 @@
 
 XII_ALWAYS_INLINE xiiSimdMat4f::xiiSimdMat4f() = default;
 
-XII_ALWAYS_INLINE xiiSimdMat4f::xiiSimdMat4f(const float* const pData, xiiMatrixLayout::Enum layout)
+inline xiiSimdMat4f xiiSimdMat4f::MakeFromValues(float f1r1, float f2r1, float f3r1, float f4r1, float f1r2, float f2r2, float f3r2, float f4r2, float f1r3, float f2r3, float f3r3, float f4r3, float f1r4, float f2r4, float f3r4, float f4r4)
 {
-  SetFromArray(pData, layout);
+  xiiSimdMat4f res;
+  res.m_col0.Set(f1r1, f1r2, f1r3, f1r4);
+  res.m_col1.Set(f2r1, f2r2, f2r3, f2r4);
+  res.m_col2.Set(f3r1, f3r2, f3r3, f3r4);
+  res.m_col3.Set(f4r1, f4r2, f4r3, f4r4);
+  return res;
 }
 
-XII_ALWAYS_INLINE xiiSimdMat4f::xiiSimdMat4f(const xiiSimdVec4f& vCol0, const xiiSimdVec4f& vCol1, const xiiSimdVec4f& vCol2, const xiiSimdVec4f& vCol3) :
-  m_col0(vCol0),
-  m_col1(vCol1),
-  m_col2(vCol2),
-  m_col3(vCol3)
+inline xiiSimdMat4f xiiSimdMat4f::MakeFromColumns(const xiiSimdVec4f& vCol0, const xiiSimdVec4f& vCol1, const xiiSimdVec4f& vCol2, const xiiSimdVec4f& vCol3)
 {
+  xiiSimdMat4f res;
+  res.m_col0 = vCol0;
+  res.m_col1 = vCol1;
+  res.m_col2 = vCol2;
+  res.m_col3 = vCol3;
+  return res;
 }
 
-XII_ALWAYS_INLINE xiiSimdMat4f::xiiSimdMat4f(float f1r1, float f2r1, float f3r1, float f4r1, float f1r2, float f2r2, float f3r2, float f4r2, float f1r3, float f2r3, float f3r3, float f4r3, float f1r4, float f2r4, float f3r4, float f4r4)
+inline xiiSimdMat4f xiiSimdMat4f::MakeFromRowMajorArray(const float* const pData)
 {
-  m_col0.Set(f1r1, f1r2, f1r3, f1r4);
-  m_col1.Set(f2r1, f2r2, f2r3, f2r4);
-  m_col2.Set(f3r1, f3r2, f3r3, f3r4);
-  m_col3.Set(f4r1, f4r2, f4r3, f4r4);
+  xiiSimdMat4f res;
+  res.m_col0.Load<4>(pData + 0);
+  res.m_col1.Load<4>(pData + 4);
+  res.m_col2.Load<4>(pData + 8);
+  res.m_col3.Load<4>(pData + 12);
+  res.Transpose();
+  return res;
 }
 
-inline void xiiSimdMat4f::SetFromArray(const float* const pData, xiiMatrixLayout::Enum layout)
+inline xiiSimdMat4f xiiSimdMat4f::MakeFromColumnMajorArray(const float* const pData)
 {
-  m_col0.Load<4>(pData + 0);
-  m_col1.Load<4>(pData + 4);
-  m_col2.Load<4>(pData + 8);
-  m_col3.Load<4>(pData + 12);
-
-  if (layout == xiiMatrixLayout::RowMajor)
-  {
-    Transpose();
-  }
+  xiiSimdMat4f res;
+  res.m_col0.Load<4>(pData + 0);
+  res.m_col1.Load<4>(pData + 4);
+  res.m_col2.Load<4>(pData + 8);
+  res.m_col3.Load<4>(pData + 12);
+  return res;
 }
 
 inline void xiiSimdMat4f::GetAsArray(float* out_pData, xiiMatrixLayout::Enum layout) const
@@ -51,36 +58,24 @@ inline void xiiSimdMat4f::GetAsArray(float* out_pData, xiiMatrixLayout::Enum lay
   tmp.m_col3.Store<4>(out_pData + 12);
 }
 
-XII_ALWAYS_INLINE void xiiSimdMat4f::SetIdentity()
+XII_ALWAYS_INLINE xiiSimdMat4f xiiSimdMat4f::MakeZero()
 {
-  m_col0.Set(1, 0, 0, 0);
-  m_col1.Set(0, 1, 0, 0);
-  m_col2.Set(0, 0, 1, 0);
-  m_col3.Set(0, 0, 0, 1);
+  xiiSimdMat4f res;
+  res.m_col0.SetZero();
+  res.m_col1.SetZero();
+  res.m_col2.SetZero();
+  res.m_col3.SetZero();
+  return res;
 }
 
-XII_ALWAYS_INLINE void xiiSimdMat4f::SetZero()
+XII_ALWAYS_INLINE xiiSimdMat4f xiiSimdMat4f::MakeIdentity()
 {
-  m_col0.SetZero();
-  m_col1.SetZero();
-  m_col2.SetZero();
-  m_col3.SetZero();
-}
-
-// static
-XII_ALWAYS_INLINE xiiSimdMat4f xiiSimdMat4f::IdentityMatrix()
-{
-  xiiSimdMat4f result;
-  result.SetIdentity();
-  return result;
-}
-
-// static
-XII_ALWAYS_INLINE xiiSimdMat4f xiiSimdMat4f::ZeroMatrix()
-{
-  xiiSimdMat4f result;
-  result.SetZero();
-  return result;
+  xiiSimdMat4f res;
+  res.m_col0.Set(1, 0, 0, 0);
+  res.m_col1.Set(0, 1, 0, 0);
+  res.m_col2.Set(0, 0, 1, 0);
+  res.m_col3.Set(0, 0, 0, 1);
+  return res;
 }
 
 XII_ALWAYS_INLINE xiiSimdMat4f xiiSimdMat4f::GetTranspose() const
