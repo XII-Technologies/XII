@@ -61,14 +61,14 @@ inline double xiiClock::GetSpeed() const
 
 inline void xiiClock::SetMinimumTimeStep(xiiTime min)
 {
-  XII_ASSERT_DEV(min >= xiiTime::Seconds(0.0), "Time flows in one direction only.");
+  XII_ASSERT_DEV(min >= xiiTime::MakeFromSeconds(0.0), "Time flows in one direction only.");
 
   m_MinTimeStep = min;
 }
 
 inline void xiiClock::SetMaximumTimeStep(xiiTime max)
 {
-  XII_ASSERT_DEV(max >= xiiTime::Seconds(0.0), "Time flows in one direction only.");
+  XII_ASSERT_DEV(max >= xiiTime::MakeFromSeconds(0.0), "Time flows in one direction only.");
 
   m_MaxTimeStep = max;
 }

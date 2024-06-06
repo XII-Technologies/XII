@@ -15,33 +15,36 @@ public:
   static xiiTime Now(); // [tested]
 
   /// \brief Creates an instance of xiiTime that was initialized from nanoseconds.
-  XII_ALWAYS_INLINE constexpr static xiiTime Nanoseconds(double fNanoseconds) { return xiiTime(fNanoseconds * 0.000000001); }
+  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeFromNanoseconds(double fNanoseconds) { return xiiTime(fNanoseconds * 0.000000001); }
+  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime Nanoseconds(double fNanoseconds) { return xiiTime(fNanoseconds * 0.000000001); }
 
   /// \brief Creates an instance of xiiTime that was initialized from microseconds.
-  XII_ALWAYS_INLINE constexpr static xiiTime Microseconds(double fMicroseconds) { return xiiTime(fMicroseconds * 0.000001); }
+  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeFromMicroseconds(double fMicroseconds) { return xiiTime(fMicroseconds * 0.000001); }
+  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime Microseconds(double fMicroseconds) { return xiiTime(fMicroseconds * 0.000001); }
 
   /// \brief Creates an instance of xiiTime that was initialized from milliseconds.
-  XII_ALWAYS_INLINE constexpr static xiiTime Milliseconds(double fMilliseconds) { return xiiTime(fMilliseconds * 0.001); }
+  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeFromMilliseconds(double fMilliseconds) { return xiiTime(fMilliseconds * 0.001); }
+  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime Milliseconds(double fMilliseconds) { return xiiTime(fMilliseconds * 0.001); }
 
   /// \brief Creates an instance of xiiTime that was initialized from seconds.
-  XII_ALWAYS_INLINE constexpr static xiiTime Seconds(double fSeconds) { return xiiTime(fSeconds); }
+  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeFromSeconds(double fSeconds) { return xiiTime(fSeconds); }
+  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime Seconds(double fSeconds) { return xiiTime(fSeconds); }
 
   /// \brief Creates an instance of xiiTime that was initialized from minutes.
-  XII_ALWAYS_INLINE constexpr static xiiTime Minutes(double fMinutes) { return xiiTime(fMinutes * 60); }
+  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeFromMinutes(double fMinutes) { return xiiTime(fMinutes * 60); }
+  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime Minutes(double fMinutes) { return xiiTime(fMinutes * 60); }
 
   /// \brief Creates an instance of xiiTime that was initialized from hours.
-  XII_ALWAYS_INLINE constexpr static xiiTime Hours(double fHours) { return xiiTime(fHours * 60 * 60); }
+  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeFromHours(double fHours) { return xiiTime(fHours * 60 * 60); }
+  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime Hours(double fHours) { return xiiTime(fHours * 60 * 60); }
 
   /// \brief Creates an instance of xiiTime that was initialized with zero.
-  XII_ALWAYS_INLINE constexpr static xiiTime Zero() { return xiiTime(0.0); }
+  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeZero() { return xiiTime(0.0); }
 
   XII_DECLARE_POD_TYPE();
 
   /// \brief The default constructor sets the time to zero.
   XII_ALWAYS_INLINE constexpr xiiTime() = default;
-
-  /// \brief Sets the time value to zero.
-  void SetZero();
 
   /// \brief Returns true if the stored time is exactly zero. That typically means the value was not changed from the default.
   XII_ALWAYS_INLINE constexpr bool IsZero() const { return m_fTime == 0.0; }
@@ -103,11 +106,9 @@ public:
 
   constexpr xiiTime operator-() const;
 
-  constexpr bool operator<(const xiiTime& rhs) const { return m_fTime < rhs.m_fTime; }
-  constexpr bool operator<=(const xiiTime& rhs) const { return m_fTime <= rhs.m_fTime; }
-  constexpr bool operator>(const xiiTime& rhs) const { return m_fTime > rhs.m_fTime; }
-  constexpr bool operator>=(const xiiTime& rhs) const { return m_fTime >= rhs.m_fTime; }
   constexpr bool operator==(const xiiTime& rhs) const { return m_fTime == rhs.m_fTime; }
+
+  constexpr std::partial_ordering operator<=>(const xiiTime& rhs) const { return m_fTime <=> rhs.m_fTime; }
 
 private:
   /// \brief For internal use only.

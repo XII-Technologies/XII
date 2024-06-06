@@ -429,6 +429,4 @@ void xiiColorGradient::Load(xiiStreamReader& ref_stream)
   PrecomputeLerpNormalizer();
 }
 
-
-
 XII_STATICLINK_FILE(Foundation, Foundation_Tracks_Implementation_ColorGradient);

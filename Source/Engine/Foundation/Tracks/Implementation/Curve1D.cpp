@@ -265,8 +265,11 @@ void xiiCurve1D::CreateLinearApproximation(double fMaxError /*= 0.01f*/, xiiUInt
 
     ApproximateCurve(m_ControlPoints[i - 1].m_Position,
                      m_ControlPoints[i - 1].m_Position + xiiVec2d(m_ControlPoints[i - 1].m_RightTangent.x, m_ControlPoints[i - 1].m_RightTangent.y),
-                     m_ControlPoints[i].m_Position + xiiVec2d(m_ControlPoints[i].m_LeftTangent.x, m_ControlPoints[i].m_LeftTangent.y), m_ControlPoints[i].m_Position,
-                     fMaxErrorX, fMaxErrorY, uiMaxSubDivs);
+                     m_ControlPoints[i].m_Position + xiiVec2d(m_ControlPoints[i].m_LeftTangent.x, m_ControlPoints[i].m_LeftTangent.y),
+                     m_ControlPoints[i].m_Position,
+                     fMaxErrorX,
+                     fMaxErrorY,
+                     uiMaxSubDivs);
   }
 
   m_LinearApproximation.PushBack(m_ControlPoints.PeekBack().m_Position);
@@ -320,14 +323,7 @@ void xiiCurve1D::ApproximateMinMaxValues(const ControlPoint& lhs, const ControlP
   fMaxY = xiiMath::Max(fMaxY, rhs.m_Position.y + rhs.m_LeftTangent.y);
 }
 
-void xiiCurve1D::ApproximateCurve(
-  const xiiVec2d& p0,
-  const xiiVec2d& p1,
-  const xiiVec2d& p2,
-  const xiiVec2d& p3,
-  double          fMaxErrorX,
-  double          fMaxErrorY,
-  xiiInt32        iSubDivLeft)
+void xiiCurve1D::ApproximateCurve(const xiiVec2d& p0, const xiiVec2d& p1, const xiiVec2d& p2, const xiiVec2d& p3, double fMaxErrorX, double fMaxErrorY, xiiInt32 iSubDivLeft)
 {
   const xiiVec2d cubicCenter = xiiMath::EvaluateBezierCurve(0.5, p0, p1, p2, p3);
 

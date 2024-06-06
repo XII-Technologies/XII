@@ -3,22 +3,7 @@
 #include <Foundation/Basics.h>
 #include <Foundation/Math/Math.h>
 
-static const xiiInt64 XII_INVALID_TIME_STAMP = 0x7FFFFFFFFFFFFFFFLL;
-
-inline xiiTimestamp::xiiTimestamp()
-{
-  Invalidate();
-}
-
-inline xiiTimestamp::xiiTimestamp(xiiInt64 iTimeValue, xiiSIUnitOfTime::Enum unitOfTime)
-{
-  SetInt64(iTimeValue, unitOfTime);
-}
-
-inline void xiiTimestamp::Invalidate()
-{
-  m_iTimestamp = XII_INVALID_TIME_STAMP;
-}
+inline xiiTimestamp::xiiTimestamp() = default;
 
 inline bool xiiTimestamp::IsValid() const
 {
@@ -41,25 +26,25 @@ inline const xiiTime xiiTimestamp::operator-(const xiiTimestamp& other) const
 {
   XII_ASSERT_DEBUG(IsValid(), "Arithmetics on invalid time stamps are not allowed!");
   XII_ASSERT_DEBUG(other.IsValid(), "Arithmetics on invalid time stamps are not allowed!");
-  return xiiTime::Microseconds((double)(m_iTimestamp - other.m_iTimestamp));
+  return xiiTime::MakeFromMicroseconds((double)(m_iTimestamp - other.m_iTimestamp));
 }
 
 inline const xiiTimestamp xiiTimestamp::operator+(const xiiTime& timeSpan) const
 {
   XII_ASSERT_DEBUG(IsValid(), "Arithmetics on invalid time stamps are not allowed!");
-  return xiiTimestamp(m_iTimestamp + (xiiInt64)timeSpan.GetMicroseconds(), xiiSIUnitOfTime::Microsecond);
+  return xiiTimestamp::MakeFromInt(m_iTimestamp + (xiiInt64)timeSpan.GetMicroseconds(), xiiSIUnitOfTime::Microsecond);
 }
 
 inline const xiiTimestamp xiiTimestamp::operator-(const xiiTime& timeSpan) const
 {
   XII_ASSERT_DEBUG(IsValid(), "Arithmetics on invalid time stamps are not allowed!");
-  return xiiTimestamp(m_iTimestamp - (xiiInt64)timeSpan.GetMicroseconds(), xiiSIUnitOfTime::Microsecond);
+  return xiiTimestamp::MakeFromInt(m_iTimestamp - (xiiInt64)timeSpan.GetMicroseconds(), xiiSIUnitOfTime::Microsecond);
 }
 
 inline const xiiTimestamp operator+(const xiiTime& timeSpan, const xiiTimestamp& timestamp)
 {
   XII_ASSERT_DEBUG(timestamp.IsValid(), "Arithmetics on invalid time stamps are not allowed!");
-  return xiiTimestamp(timestamp.GetInt64(xiiSIUnitOfTime::Microsecond) + (xiiInt64)timeSpan.GetMicroseconds(), xiiSIUnitOfTime::Microsecond);
+  return xiiTimestamp::MakeFromInt(timestamp.GetInt64(xiiSIUnitOfTime::Microsecond) + (xiiInt64)timeSpan.GetMicroseconds(), xiiSIUnitOfTime::Microsecond);
 }
 
 
@@ -81,7 +66,8 @@ inline xiiUInt8 xiiDateTime::GetMonth() const
 
 inline void xiiDateTime::SetMonth(xiiUInt8 uiMonth)
 {
-  m_uiMonth = xiiMath::Clamp<xiiUInt8>(uiMonth, 1, 12);
+  XII_ASSERT_DEBUG(uiMonth >= 1 && uiMonth <= 12, "Invalid month value");
+  m_uiMonth = uiMonth;
 }
 
 inline xiiUInt8 xiiDateTime::GetDay() const
@@ -91,7 +77,8 @@ inline xiiUInt8 xiiDateTime::GetDay() const
 
 inline void xiiDateTime::SetDay(xiiUInt8 uiDay)
 {
-  m_uiDay = xiiMath::Clamp<xiiUInt8>(uiDay, 1u, 31u);
+  XII_ASSERT_DEBUG(uiDay >= 1 && uiDay <= 31, "Invalid day value");
+  m_uiDay = uiDay;
 }
 
 inline xiiUInt8 xiiDateTime::GetDayOfWeek() const
@@ -101,7 +88,8 @@ inline xiiUInt8 xiiDateTime::GetDayOfWeek() const
 
 inline void xiiDateTime::SetDayOfWeek(xiiUInt8 uiDayOfWeek)
 {
-  m_uiDayOfWeek = xiiMath::Clamp<xiiUInt8>(uiDayOfWeek, 0u, 6u);
+  XII_ASSERT_DEBUG(uiDayOfWeek <= 6, "Invalid day of week value");
+  m_uiDayOfWeek = uiDayOfWeek;
 }
 
 inline xiiUInt8 xiiDateTime::GetHour() const
@@ -111,7 +99,8 @@ inline xiiUInt8 xiiDateTime::GetHour() const
 
 inline void xiiDateTime::SetHour(xiiUInt8 uiHour)
 {
-  m_uiHour = xiiMath::Clamp<xiiUInt8>(uiHour, 0u, 23u);
+  XII_ASSERT_DEBUG(uiHour <= 23, "Invalid hour value");
+  m_uiHour = uiHour;
 }
 
 inline xiiUInt8 xiiDateTime::GetMinute() const
@@ -121,7 +110,8 @@ inline xiiUInt8 xiiDateTime::GetMinute() const
 
 inline void xiiDateTime::SetMinute(xiiUInt8 uiMinute)
 {
-  m_uiMinute = xiiMath::Clamp<xiiUInt8>(uiMinute, 0u, 59u);
+  XII_ASSERT_DEBUG(uiMinute <= 59, "Invalid minute value");
+  m_uiMinute = uiMinute;
 }
 
 inline xiiUInt8 xiiDateTime::GetSecond() const
@@ -131,7 +121,8 @@ inline xiiUInt8 xiiDateTime::GetSecond() const
 
 inline void xiiDateTime::SetSecond(xiiUInt8 uiSecond)
 {
-  m_uiSecond = xiiMath::Clamp<xiiUInt8>(uiSecond, 0u, 59u);
+  XII_ASSERT_DEBUG(uiSecond <= 59, "Invalid second value");
+  m_uiSecond = uiSecond;
 }
 
 inline xiiUInt32 xiiDateTime::GetMicroseconds() const
@@ -141,5 +132,6 @@ inline xiiUInt32 xiiDateTime::GetMicroseconds() const
 
 inline void xiiDateTime::SetMicroseconds(xiiUInt32 uiMicroSeconds)
 {
-  m_uiMicroseconds = xiiMath::Clamp<xiiUInt32>(uiMicroSeconds, 0u, 999999u);
+  XII_ASSERT_DEBUG(uiMicroSeconds <= 999999u, "Invalid micro-second value");
+  m_uiMicroseconds = uiMicroSeconds;
 }

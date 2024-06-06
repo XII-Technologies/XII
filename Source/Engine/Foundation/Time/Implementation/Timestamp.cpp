@@ -33,25 +33,31 @@ xiiInt64 xiiTimestamp::GetInt64(xiiSIUnitOfTime::Enum unitOfTime) const
   return XII_INVALID_TIME_STAMP;
 }
 
-void xiiTimestamp::SetInt64(xiiInt64 iTimeValue, xiiSIUnitOfTime::Enum unitOfTime)
+xiiTimestamp xiiTimestamp::MakeFromInt(xiiInt64 iTimeValue, xiiSIUnitOfTime::Enum unitOfTime)
 {
   XII_ASSERT_DEV(unitOfTime >= xiiSIUnitOfTime::Nanosecond && unitOfTime <= xiiSIUnitOfTime::Second, "Invalid xiiSIUnitOfTime value ({0})", unitOfTime);
+
+  xiiTimestamp ts;
 
   switch (unitOfTime)
   {
     case xiiSIUnitOfTime::Nanosecond:
-      m_iTimestamp = iTimeValue / 1000LL;
+      ts.m_iTimestamp = iTimeValue / 1000LL;
       break;
     case xiiSIUnitOfTime::Microsecond:
-      m_iTimestamp = iTimeValue;
+      ts.m_iTimestamp = iTimeValue;
       break;
     case xiiSIUnitOfTime::Millisecond:
-      m_iTimestamp = iTimeValue * 1000LL;
+      ts.m_iTimestamp = iTimeValue * 1000LL;
       break;
     case xiiSIUnitOfTime::Second:
-      m_iTimestamp = iTimeValue * 1000000LL;
+      ts.m_iTimestamp = iTimeValue * 1000000LL;
       break;
+
+      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
+
+  return ts;
 }
 
 bool xiiTimestamp::Compare(const xiiTimestamp& rhs, CompareMode::Enum mode) const
@@ -74,28 +80,41 @@ bool xiiTimestamp::Compare(const xiiTimestamp& rhs, CompareMode::Enum mode) cons
   return false;
 }
 
-xiiDateTime::xiiDateTime() :
-  m_uiMicroseconds(0), m_iYear(0), m_uiMonth(0), m_uiDay(0), m_uiDayOfWeek(0), m_uiHour(0), m_uiMinute(0), m_uiSecond(0)
+xiiDateTime::xiiDateTime()  = default;
+xiiDateTime::~xiiDateTime() = default;
+
+xiiDateTime xiiDateTime::MakeFromTimestamp(xiiTimestamp timestamp)
 {
+  xiiDateTime res;
+  res.SetFromTimestamp(timestamp).AssertSuccess("Invalid timestamp");
+  return res;
 }
 
-xiiDateTime::xiiDateTime(xiiTimestamp timestamp) :
-  xiiDateTime()
+bool xiiDateTime::IsValid() const
 {
-  SetTimestamp(timestamp);
+  if (m_uiMonth <= 0 || m_uiMonth > 12)
+    return false;
+
+  if (m_uiDay <= 0 || m_uiDay > 31)
+    return false;
+
+  if (m_uiDayOfWeek > 6)
+    return false;
+
+  if (m_uiHour > 23)
+    return false;
+
+  if (m_uiMinute > 59)
+    return false;
+
+  if (m_uiSecond > 59)
+    return false;
+
+  return true;
 }
 
 xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiDateTime& arg)
 {
-  xiiStringUtils::snprintf(szTmp, uiLength, "%04u-%02u-%02u_%02u-%02u-%02u-%03u", arg.GetYear(), arg.GetMonth(), arg.GetDay(), arg.GetHour(), arg.GetMinute(), arg.GetSecond(), arg.GetMicroseconds() / 1000);
-
-  return szTmp;
-}
-
-xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiTimestamp& arg0)
-{
-  const xiiDateTime arg = xiiDateTime(arg0);
-
   xiiStringUtils::snprintf(szTmp, uiLength, "%04u-%02u-%02u_%02u-%02u-%02u-%03u", arg.GetYear(), arg.GetMonth(), arg.GetDay(), arg.GetHour(), arg.GetMinute(), arg.GetSecond(), arg.GetMicroseconds() / 1000);
 
   return szTmp;
@@ -178,13 +197,11 @@ xiiStringView BuildString(char* szTmp, xiiUInt32 uiLength, const xiiArgDateTime&
   {
     if ((arg.m_uiFormattingFlags & xiiArgDateTime::TextualDate) == xiiArgDateTime::TextualDate)
     {
-      offset += xiiStringUtils::snprintf(
-        szTmp + offset, uiLength - offset, "%04u %s %02u", dateTime.GetYear(), ::GetMonthShortName(dateTime), dateTime.GetDay());
+      offset += xiiStringUtils::snprintf(szTmp + offset, uiLength - offset, "%04u %s %02u", dateTime.GetYear(), ::GetMonthShortName(dateTime), dateTime.GetDay());
     }
     else
     {
-      offset +=
-        xiiStringUtils::snprintf(szTmp + offset, uiLength - offset, "%04u-%02u-%02u", dateTime.GetYear(), dateTime.GetMonth(), dateTime.GetDay());
+      offset += xiiStringUtils::snprintf(szTmp + offset, uiLength - offset, "%04u-%02u-%02u", dateTime.GetYear(), dateTime.GetMonth(), dateTime.GetDay());
     }
   }
 

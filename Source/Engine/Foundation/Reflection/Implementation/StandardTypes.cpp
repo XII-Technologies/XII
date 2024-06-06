@@ -57,13 +57,13 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTime, xiiNoBase, 1, xiiRTTINoAllocator)
 {
   XII_BEGIN_FUNCTIONS
   {
-    XII_SCRIPT_FUNCTION_PROPERTY(Nanoseconds, In, "Nanoseconds")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(Microseconds, In, "Microseconds")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(Milliseconds, In, "Milliseconds")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(Seconds, In, "Seconds")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(Minutes, In, "Minutes")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(Hours, In, "Hours")->AddFlags(xiiPropertyFlags::Const),
-    XII_SCRIPT_FUNCTION_PROPERTY(Zero)->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromNanoseconds, In, "Nanoseconds")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromMicroseconds, In, "Microseconds")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromMilliseconds, In, "Milliseconds")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromSeconds, In, "Seconds")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromMinutes, In, "Minutes")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeFromHours, In, "Hours")->AddFlags(xiiPropertyFlags::Const),
+    XII_SCRIPT_FUNCTION_PROPERTY(MakeZero)->AddFlags(xiiPropertyFlags::Const),
     XII_SCRIPT_FUNCTION_PROPERTY(AsFloatInSeconds),
   }
   XII_END_FUNCTIONS;
