@@ -50,7 +50,10 @@ namespace xiiApplicationDetails
   alignas(XII_ALIGNMENT_OF(AppClass)) static char appBuffer[sizeof(AppClass)]; /* Not on the stack to cope with smaller stacks */ \
                                                                                                                                   \
   XII_APPLICATION_ENTRY_POINT_CODE_INJECTION                                                                                      \
-  int main(int argc, const char** argv) { return ::xiiApplicationDetails::EntryFunc<AppClass>(__VA_ARGS__); }
+  int main(int argc, const char** argv)                                                                                           \
+  {                                                                                                                               \
+    return ::xiiApplicationDetails::EntryFunc<AppClass>(__VA_ARGS__);                                                             \
+  }
 
 /// \brief This macro allows for easy creation of application entry points (since they can't be placed in DLLs)
 ///

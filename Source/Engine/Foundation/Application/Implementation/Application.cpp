@@ -37,7 +37,7 @@ xiiResult xiiApplication::BeforeCoreSystemsStartup()
   {
     while (!xiiSystemInformation::IsDebuggerAttached())
     {
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
     }
 
     XII_DEBUG_BREAK;
