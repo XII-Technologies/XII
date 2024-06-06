@@ -43,14 +43,14 @@ void xiiTaskSystem::TaskHasFinished(xiiSharedPtr<xiiTask>&& pTask, xiiTaskGroup*
   {
     // If this was the last task that had to be finished from this group, make sure all dependent groups are started
 
-    xiiUInt32 groupCounter = 0;
+    xiiUInt32 uiGroupCounter = 0;
     {
       // see xiiTaskGroup::WaitForFinish() for why we need this lock here
       // without it, there would be a race condition between these two places, reading and writing m_uiGroupCounter and waiting/signaling
       // m_CondVarGroupFinished
       XII_LOCK(pGroup->m_CondVarGroupFinished);
 
-      groupCounter = pGroup->m_uiGroupCounter;
+      uiGroupCounter = pGroup->m_uiGroupCounter;
 
       // set this task group to be finished such that no one tries to append further dependencies
       pGroup->m_uiGroupCounter += 2;
@@ -75,7 +75,7 @@ void xiiTaskSystem::TaskHasFinished(xiiSharedPtr<xiiTask>&& pTask, xiiTaskGroup*
     {
       xiiTaskGroupID id;
       id.m_pTaskGroup     = pGroup;
-      id.m_uiGroupCounter = groupCounter;
+      id.m_uiGroupCounter = uiGroupCounter;
       pGroup->m_OnFinishedCallback(id);
     }
 
@@ -88,8 +88,7 @@ xiiTaskSystem::TaskData xiiTaskSystem::GetNextTask(xiiTaskPriority::Enum FirstPr
 {
   // this is the central function that selects tasks for the worker threads to work on
 
-  XII_ASSERT_DEV(FirstPriority >= xiiTaskPriority::EarlyThisFrame && LastPriority < xiiTaskPriority::ENUM_COUNT, "Priority Range is invalid: {0} to {1}",
-                 FirstPriority, LastPriority);
+  XII_ASSERT_DEV(FirstPriority >= xiiTaskPriority::EarlyThisFrame && LastPriority < xiiTaskPriority::ENUM_COUNT, "Priority Range is invalid: {0} to {1}", FirstPriority, LastPriority);
 
   XII_LOCK(s_TaskSystemMutex);
 
@@ -333,7 +332,7 @@ void xiiTaskSystem::ExecuteSomeFrameTasks(xiiTime smoothFrameTime)
     // therefore at some point we will start executing these tasks, no matter how low the frame rate is
     //
     // this gives us some buffer to smooth out performance drops
-    s_FrameTimeThreshold += xiiTime::Milliseconds(0.2);
+    s_FrameTimeThreshold += xiiTime::MakeFromMilliseconds(0.2);
   }
 
   // if the queue is really full, we have to guarantee more progress
@@ -391,7 +390,7 @@ void xiiTaskSystem::FinishFrameTasks()
     const xiiTime  tDiff             = tNow - s_LastFrameUpdate;
 
     // prevent division by zero (inside ComputeThreadUtilization)
-    if (tDiff > xiiTime::Seconds(0.0))
+    if (tDiff > xiiTime::MakeFromSeconds(0.0))
     {
       s_LastFrameUpdate = tNow;
 

@@ -16,5 +16,4 @@ xiiProcessingStreamProcessor::~xiiProcessingStreamProcessor()
   m_pStreamGroup = nullptr;
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_DataProcessing_Stream_Implementation_ProcessingStreamProcessor);

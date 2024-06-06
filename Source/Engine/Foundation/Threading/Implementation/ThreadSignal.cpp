@@ -30,7 +30,7 @@ xiiThreadSignal::WaitResult xiiThreadSignal::WaitForSignal(xiiTime timeout) cons
   XII_LOCK(m_ConditionVariable);
 
   const xiiTime tStart   = xiiTime::Now();
-  xiiTime       tElapsed = xiiTime::Zero();
+  xiiTime       tElapsed = xiiTime::MakeZero();
 
   while (!m_bSignalState)
   {

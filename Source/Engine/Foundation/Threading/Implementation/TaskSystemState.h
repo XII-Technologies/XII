@@ -24,7 +24,7 @@ private:
   friend class xiiTaskSystem;
 
   // The target frame time used by FinishFrameTasks()
-  xiiTime m_TargetFrameTime = xiiTime::Seconds(1.0 / 40.0); // => 25 ms
+  xiiTime m_TargetFrameTime = xiiTime::MakeFromSeconds(1.0 / 40.0); // => 25 ms
 
   // The deque can grow without relocating existing data, therefore the xiiTaskGroupID's can store pointers directly to the data
   xiiDeque<xiiTaskGroup> m_TaskGroups;

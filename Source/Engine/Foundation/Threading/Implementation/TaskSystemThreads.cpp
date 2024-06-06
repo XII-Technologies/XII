@@ -112,8 +112,7 @@ void xiiTaskSystem::AllocateThreads(xiiWorkerThreadType::Enum type, xiiUInt32 ui
 
     xiiUInt32 uiNextThreadIdx = s_pThreadState->m_iAllocatedWorkers[type];
 
-    XII_ASSERT_ALWAYS(uiNextThreadIdx + uiAddThreads <= s_pThreadState->m_Workers[type].GetCount(), "Max number of worker threads ({}) exceeded.",
-                      s_pThreadState->m_Workers[type].GetCount());
+    XII_ASSERT_ALWAYS(uiNextThreadIdx + uiAddThreads <= s_pThreadState->m_Workers[type].GetCount(), "Max number of worker threads ({}) exceeded.", s_pThreadState->m_Workers[type].GetCount());
 
     for (xiiUInt32 i = 0; i < uiAddThreads; ++i)
     {
@@ -127,8 +126,7 @@ void xiiTaskSystem::AllocateThreads(xiiWorkerThreadType::Enum type, xiiUInt32 ui
     s_pThreadState->m_iAllocatedWorkers[type] = uiNextThreadIdx;
   }
 
-  xiiLog::Dev("Allocated {} additional '{}' worker threads ({} total)", uiAddThreads, xiiWorkerThreadType::GetThreadTypeName(type),
-              s_pThreadState->m_iAllocatedWorkers[type]);
+  xiiLog::Dev("Allocated {} additional '{}' worker threads ({} total)", uiAddThreads, xiiWorkerThreadType::GetThreadTypeName(type), s_pThreadState->m_iAllocatedWorkers[type]);
 }
 
 void xiiTaskSystem::WakeUpThreads(xiiWorkerThreadType::Enum type, xiiUInt32 uiNumThreadsToWakeUp)
@@ -237,6 +235,5 @@ void xiiTaskSystem::DetermineTasksToExecuteOnThread(xiiTaskPriority::Enum& out_F
     }
   }
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_TaskSystemThreads);

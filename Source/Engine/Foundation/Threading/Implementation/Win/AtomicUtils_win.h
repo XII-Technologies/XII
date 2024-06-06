@@ -17,7 +17,7 @@ XII_ALWAYS_INLINE xiiInt64 xiiAtomicUtils::Read(const xiiInt64& iSrc)
   xiiInt64 old;
   do
   {
-    old = src;
+    old = iSrc;
   } while (_InterlockedCompareExchange64(const_cast<xiiInt64*>(&iSrc), old, old) != old);
   return old;
 #else

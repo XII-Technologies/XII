@@ -143,7 +143,7 @@ void xiiTaskSystem::WriteStateSnapshotToFile(xiiStringView sPath /*= {}*/)
   {
     sPathBuilder = ":appdata/TaskGraphs/";
 
-    const xiiDateTime dt = xiiTimestamp::CurrentTimestamp();
+    const xiiDateTime dt = xiiDateTime::MakeFromTimestamp(xiiTimestamp::CurrentTimestamp());
 
     sPathBuilder.AppendFormat("{0}-{1}-{2}_{3}-{4}-{5}-{6}", dt.GetYear(), xiiArgU(dt.GetMonth(), 2, true), xiiArgU(dt.GetDay(), 2, true), xiiArgU(dt.GetHour(), 2, true), xiiArgU(dt.GetMinute(), 2, true), xiiArgU(dt.GetSecond(), 2, true), xiiArgU(dt.GetMicroseconds() / 1000, 3, true));
 
@@ -159,6 +159,5 @@ void xiiTaskSystem::WriteStateSnapshotToFile(xiiStringView sPath /*= {}*/)
   xiiFileSystem::ResolvePath(sPathBuilder, &absPath, nullptr).IgnoreResult();
   xiiLog::Info("Task graph snapshot saved to '{}'", absPath);
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_TaskSystemUtils);

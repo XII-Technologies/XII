@@ -5,6 +5,13 @@
 
 xiiEvent<const xiiThreadEvent&, xiiMutex> xiiThread::s_ThreadEvents;
 
+thread_local xiiThread* g_pCurrentThread = nullptr;
+
+const xiiThread* xiiThread::GetCurrentThread()
+{
+  return g_pCurrentThread;
+}
+
 xiiThread::xiiThread(xiiStringView sName /*= "xiiThread"*/, xiiUInt32 uiStackSize /*= 128 * 1024*/) :
   xiiOSThread(xiiThreadClassEntryPoint, this, sName, uiStackSize), m_sName(sName)
 {
@@ -24,15 +31,13 @@ xiiThread::~xiiThread()
   xiiThread::s_ThreadEvents.Broadcast(e, 255);
 }
 
-// Deactivate Doxygen document generation for the following block.
-/// \cond
-
 xiiUInt32 RunThread(xiiThread* pThread)
 {
   if (pThread == nullptr)
     return 0;
 
-  xiiProfilingSystem::SetThreadName(pThread->m_sName.GetData());
+  g_pCurrentThread = pThread;
+  xiiProfilingSystem::SetThreadName(pThread->m_sName.GetView());
 
   {
     xiiThreadEvent e;

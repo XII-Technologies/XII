@@ -21,7 +21,8 @@ private:
   static void DebugCheckTaskGroup(xiiTaskGroupID groupID, xiiMutex& mutex);
 #else
   XII_ALWAYS_INLINE static void DebugCheckTaskGroup(xiiTaskGroupID groupID, xiiMutex& mutex)
-  {}
+  {
+  }
 #endif
 
   /// \brief Puts the calling thread to sleep until this group is fully finished.
