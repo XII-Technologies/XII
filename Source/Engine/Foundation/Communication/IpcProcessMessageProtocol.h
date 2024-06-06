@@ -27,7 +27,7 @@ public:
   /// \brief Processes all pending messages by broadcasting m_MessageEvent. Not re-entrant.
   bool ProcessMessages();
   /// \brief Block and wait for new messages and call ProcessMessages.
-  xiiResult WaitForMessages(xiiTime timeout = xiiTime::Zero());
+  xiiResult WaitForMessages(xiiTime timeout = xiiTime::MakeZero());
 
 public:
   xiiEvent<const xiiProcessMessage*> m_MessageEvent; ///< Will be sent from thread calling ProcessMessages or WaitForMessages.

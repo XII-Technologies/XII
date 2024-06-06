@@ -49,7 +49,7 @@ public:
 
 public:
   /// \brief [internal] Use the macro XII_ON_GLOBAL_EVENT or XII_ON_GLOBAL_EVENT_ONCE to create an event handler.
-  using XII_GLOBAL_EVENT_HANDLER = void (*)(const xiiVariant& param0, const xiiVariant& param1, const xiiVariant& param2, const xiiVariant& param3);
+  using XII_GLOBAL_EVENT_HANDLER = void (*)(const xiiVariant&, const xiiVariant&, const xiiVariant&, const xiiVariant&);
 
   /// \brief [internal] Use the macro XII_ON_GLOBAL_EVENT or XII_ON_GLOBAL_EVENT_ONCE to create an event handler.
   xiiGlobalEvent(xiiStringView sEventName, XII_GLOBAL_EVENT_HANDLER eventHandler, bool bOnlyOnce); // [tested]

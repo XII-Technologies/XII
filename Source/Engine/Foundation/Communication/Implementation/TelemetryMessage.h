@@ -23,7 +23,7 @@ public:
     m_uiMsgID    = uiMessageID;
   }
 
-  //xiiUInt64 GetMessageSize() const { return m_Storage.GetStorageSize64(); }
+  // xiiUInt64 GetMessageSize() const { return m_Storage.GetStorageSize64(); }
 
 private:
   friend class xiiTelemetry;

@@ -185,5 +185,4 @@ void xiiTelemetry::Send(TransmitMode tm, xiiTelemetryMessage& msg)
   Send(tm, msg.GetSystemID(), msg.GetMessageID(), msg.GetReader(), (xiiInt32)msg.m_Storage.GetStorageSize32());
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_TelemetryHelpers);

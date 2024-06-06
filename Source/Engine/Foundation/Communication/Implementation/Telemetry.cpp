@@ -33,7 +33,7 @@ void xiiTelemetry::UpdateServerPing()
 {
 #ifdef BUILDSYSTEM_ENABLE_ENET_SUPPORT
   enet_peer_ping(g_pConnectionToServer);
-  xiiTelemetry::s_PingToServer = xiiTime::Milliseconds(g_pConnectionToServer->lastRoundTripTime);
+  xiiTelemetry::s_PingToServer = xiiTime::MakeFromMilliseconds(g_pConnectionToServer->lastRoundTripTime);
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT
 }
 
@@ -106,7 +106,7 @@ void xiiTelemetry::UpdateNetwork()
           s_bConnectedToServer = false;
 
           // First wait a bit to ensure that the Server could shut down, if this was a legitimate disconnect
-          xiiThreadUtils::Sleep(xiiTime::Seconds(1));
+          xiiThreadUtils::Sleep(xiiTime::MakeFromSeconds(1));
 
           // Now try to reconnect. If the Server still exists, fine, connect to that.
           // If it does not exist anymore, this will connect to the next best Server that can be found.
@@ -466,8 +466,6 @@ void xiiTelemetry::Send(TransmitMode tm, xiiUInt32 uiSystemID, xiiUInt32 uiMsgID
 void xiiTelemetry::CloseConnection()
 {
 #ifdef BUILDSYSTEM_ENABLE_ENET_SUPPORT
-  s_bConnectedToServer  = false;
-  s_bConnectedToClient  = false;
   s_ConnectionMode      = None;
   s_uiServerID          = 0;
   g_pConnectionToServer = nullptr;
@@ -478,7 +476,7 @@ void xiiTelemetry::CloseConnection()
   XII_LOCK(GetTelemetryMutex());
 
   UpdateNetwork();
-  xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+  xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
   if (g_pHost)
   {
@@ -488,7 +486,26 @@ void xiiTelemetry::CloseConnection()
 
     // process the network messages (e.g. send the disconnect messages)
     UpdateNetwork();
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
+  }
+
+  {
+    // Fire disconnect event.
+    if (s_bConnectedToClient)
+    {
+      TelemetryEventData e;
+      e.m_EventType = TelemetryEventData::DisconnectedFromClient;
+      s_TelemetryEvents.Broadcast(e);
+      s_bConnectedToClient = false;
+    }
+
+    if (s_bConnectedToServer)
+    {
+      TelemetryEventData e;
+      e.m_EventType = TelemetryEventData::DisconnectedFromServer;
+      s_TelemetryEvents.Broadcast(e);
+      s_bConnectedToServer = false;
+    }
   }
 
   // finally close the network connection
@@ -512,6 +529,5 @@ void xiiTelemetry::CloseConnection()
   }
 #endif // BUILDSYSTEM_ENABLE_ENET_SUPPORT
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_Telemetry);

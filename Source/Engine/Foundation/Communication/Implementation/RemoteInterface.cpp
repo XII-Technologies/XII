@@ -55,7 +55,7 @@ xiiResult xiiRemoteInterface::ConnectToServer(xiiUInt32 uiConnectionToken, xiiSt
   return CreateConnection(uiConnectionToken, xiiRemoteMode::Client, sAddress, bStartUpdateThread);
 }
 
-xiiResult xiiRemoteInterface::WaitForConnectionToServer(xiiTime timeout /*= xiiTime::Seconds(10)*/)
+xiiResult xiiRemoteInterface::WaitForConnectionToServer(xiiTime timeout /*= xiiTime::MakeFromSeconds(10)*/)
 {
   if (m_RemoteMode != xiiRemoteMode::Client)
     return XII_FAILURE;
@@ -75,7 +75,7 @@ xiiResult xiiRemoteInterface::WaitForConnectionToServer(xiiTime timeout /*= xiiT
         return XII_FAILURE;
     }
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
   }
 }
 
@@ -194,6 +194,11 @@ void xiiRemoteInterface::SetMessageHandler(xiiUInt32 uiSystemID, xiiRemoteMessag
   m_MessageQueues[uiSystemID].m_MessageHandler = messageHandler;
 }
 
+void xiiRemoteInterface::SetUnhandledMessageHandler(xiiRemoteMessageHandler messageHandler)
+{
+  m_UnhandledMessageHandler = messageHandler;
+}
+
 xiiUInt32 xiiRemoteInterface::ExecuteMessageHandlers(xiiUInt32 uiSystem)
 {
   XII_LOCK(m_Mutex);
@@ -219,12 +224,18 @@ xiiUInt32 xiiRemoteInterface::ExecuteMessageHandlersForQueue(xiiRemoteMessageQue
   queue.m_MessageQueueIn.Swap(queue.m_MessageQueueOut);
   const xiiUInt32 ret = queue.m_MessageQueueOut.GetCount();
 
-
   if (queue.m_MessageHandler.IsValid())
   {
     for (auto& msg : queue.m_MessageQueueOut)
     {
       queue.m_MessageHandler(msg);
+    }
+  }
+  else if (m_UnhandledMessageHandler.IsValid())
+  {
+    for (auto& msg : queue.m_MessageQueueOut)
+    {
+      m_UnhandledMessageHandler(msg);
     }
   }
 
@@ -310,10 +321,6 @@ void xiiRemoteInterface::ReportMessage(xiiUInt32 uiApplicationID, xiiUInt32 uiSy
   XII_LOCK(m_Mutex);
 
   auto& queue = m_MessageQueues[uiSystemID];
-
-  // discard messages for which we have no message handler
-  if (!queue.m_MessageHandler.IsValid())
-    return;
 
   // store the data for later
   auto& msg             = queue.m_MessageQueueIn.ExpandAndGetRef();
@@ -401,7 +408,7 @@ xiiUInt32 xiiRemoteThread::Run()
     {
       xiiTime tNow = xiiTime::Now();
 
-      if (tNow - lastPing > xiiTime::Milliseconds(500))
+      if (tNow - lastPing > xiiTime::MakeFromMilliseconds(500))
       {
         lastPing = tNow;
 
@@ -409,7 +416,7 @@ xiiUInt32 xiiRemoteThread::Run()
       }
     }
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
   }
 
   return 0;

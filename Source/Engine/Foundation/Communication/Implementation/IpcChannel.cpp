@@ -111,7 +111,7 @@ xiiResult xiiIpcChannel::WaitForMessages(xiiTime timeout)
 {
   if (IsConnected())
   {
-    if (timeout == xiiTime::Zero())
+    if (timeout == xiiTime::MakeZero())
     {
       m_IncomingMessages.WaitForSignal();
     }
