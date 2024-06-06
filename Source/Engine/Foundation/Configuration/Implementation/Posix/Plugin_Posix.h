@@ -31,9 +31,9 @@ void xiiPlugin::GetPluginPaths(xiiStringView sPluginName, xiiStringBuilder& sOri
   sCopiedFile.Append(".loaded");
 }
 
-xiiResult UnloadPluginModule(xiiPluginModule& Module, xiiStringView sPluginFile)
+xiiResult UnloadPluginModule(xiiPluginModule& ref_pModule, xiiStringView sPluginFile)
 {
-  if (dlclose(Module) != 0)
+  if (dlclose(ref_pModule) != 0)
   {
     xiiStringBuilder tmp;
     xiiLog::Error("Could not unload plugin '{0}'. Error {1}", sPluginFile.GetData(tmp), static_cast<const char*>(dlerror()));
@@ -43,11 +43,11 @@ xiiResult UnloadPluginModule(xiiPluginModule& Module, xiiStringView sPluginFile)
   return XII_SUCCESS;
 }
 
-xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& Module, xiiStringView sPluginFile)
+xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& ref_pModule, xiiStringView sPluginFile)
 {
   xiiStringBuilder tmp;
-  Module = dlopen(sFileToLoad.GetStartPointer(), RTLD_NOW | RTLD_GLOBAL);
-  if (Module == nullptr)
+  ref_pModule = dlopen(sFileToLoad.GetData(tmp), RTLD_NOW | RTLD_GLOBAL);
+  if (ref_pModule == nullptr)
   {
     xiiLog::Error("Could not load plugin '{0}'. Error {1}.\nSet the environment variable LD_DEBUG=all to get more information.", sPluginFile.GetData(tmp), static_cast<const char*>(dlerror()));
     return XII_FAILURE;

@@ -67,7 +67,7 @@ xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& ref_pModu
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS_UWP)
   xiiStringBuilder relativePath = sFileToLoad;
   XII_SUCCEED_OR_RETURN(relativePath.MakeRelativeTo(xiiOSFile::GetApplicationDirectory()));
-  Module = LoadPackagedLibrary(xiiStringWChar(relativePath).GetData(), 0);
+  ref_pModule = LoadPackagedLibrary(xiiStringWChar(relativePath).GetData(), 0);
 #  else
   ref_pModule = LoadLibraryW(xiiStringWChar(sFileToLoad).GetData());
 #  endif
@@ -79,13 +79,10 @@ xiiResult LoadPluginModule(xiiStringView sFileToLoad, xiiPluginModule& ref_pModu
 
     if (err == 126)
     {
-      xiiLog::Error("Please Note: This means that the plugin exists, but a DLL dependency of the plugin is missing. You probably need to copy 3rd "
-                    "party DLLs next to the plugin.");
+      xiiLog::Error("Please Note: This means that the plugin exists, but a DLL dependency of the plugin is missing. You probably need to copy 3rd party DLLs next to the plugin.");
     }
-
     return XII_FAILURE;
   }
-
   return XII_SUCCESS;
 }
 
