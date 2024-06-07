@@ -70,13 +70,16 @@ namespace
     xiiDelegate<void()> m_dtorDel;
   };
 
-  static xiiInt32 Function(xiiInt32 b) { return b + 2; }
+  static xiiInt32 Function(xiiInt32 b)
+  {
+    return b + 2;
+  }
 } // namespace
 
 XII_CREATE_SIMPLE_TEST(Basics, Delegate)
 {
-  typedef xiiDelegate<xiiInt32(xiiInt32)> TestDelegate;
-  TestDelegate                            d;
+  using TestDelegate = xiiDelegate<xiiInt32(xiiInt32)>;
+  TestDelegate d;
 
 #if XII_ENABLED(XII_PLATFORM_64BIT)
   XII_TEST_BOOL(sizeof(d) == 32);
@@ -100,8 +103,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Delegate)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Method With Many Params")
   {
-    typedef xiiDelegate<xiiInt32(xiiInt32, xiiInt32, xiiInt32, xiiInt32, xiiInt32, xiiInt32)> TestDelegateMany;
-    TestDelegateMany                                                                          many;
+    using TestDelegateMany = xiiDelegate<xiiInt32(xiiInt32, xiiInt32, xiiInt32, xiiInt32, xiiInt32, xiiInt32)>;
+    TestDelegateMany many;
 
     TestType test;
     test.m_iA = 1000000;

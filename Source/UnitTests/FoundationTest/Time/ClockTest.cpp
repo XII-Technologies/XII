@@ -6,7 +6,7 @@
 class xiiSimpleTimeStepSmoother : public xiiTimeStepSmoothing
 {
 public:
-  virtual xiiTime GetSmoothedTimeStep(xiiTime rawTimeStep, const xiiClock* pClock) override { return xiiTime::Seconds(0.42); }
+  virtual xiiTime GetSmoothedTimeStep(xiiTime rawTimeStep, const xiiClock* pClock) override { return xiiTime::MakeFromSeconds(0.42); }
 
   virtual void Reset(const xiiClock* pClock) override {}
 };
@@ -25,7 +25,7 @@ XII_CREATE_SIMPLE_TEST(Time, Clock)
     XII_TEST_BOOL(c.GetPaused() == false);
     XII_TEST_DOUBLE(c.GetMinimumTimeStep().GetSeconds(), 0.001, 0.0); // to ensure the tests fail if somebody changes these constants
     XII_TEST_DOUBLE(c.GetMaximumTimeStep().GetSeconds(), 0.1, 0.0);   // to ensure the tests fail if somebody changes these constants
-    XII_TEST_BOOL(c.GetTimeDiff() > xiiTime::Seconds(0.0));
+    XII_TEST_BOOL(c.GetTimeDiff() > xiiTime::MakeFromSeconds(0.0));
 
     xiiSimpleTimeStepSmoother s;
 
@@ -68,7 +68,7 @@ XII_CREATE_SIMPLE_TEST(Time, Clock)
 
     const xiiTime t0 = c.GetAccumulatedTime();
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
     c.Update();
 
     const xiiTime t1 = c.GetAccumulatedTime();
@@ -76,7 +76,7 @@ XII_CREATE_SIMPLE_TEST(Time, Clock)
 
     c.SetPaused(true);
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
     c.Update();
 
     const xiiTime t2 = c.GetAccumulatedTime();
@@ -89,7 +89,7 @@ XII_CREATE_SIMPLE_TEST(Time, Clock)
 
     XII_TEST_DOUBLE(c.GetFixedTimeStep().GetSeconds(), 0.0, 0.0);
 
-    c.SetFixedTimeStep(xiiTime::Seconds(1.0 / 60.0));
+    c.SetFixedTimeStep(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     XII_TEST_DOUBLE(c.GetFixedTimeStep().GetSeconds(), 1.0 / 60.0, 0.000001);
   }
@@ -97,15 +97,15 @@ XII_CREATE_SIMPLE_TEST(Time, Clock)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Updates with fixed time step")
   {
     xiiClock c("Test");
-    c.SetFixedTimeStep(xiiTime::Seconds(1.0 / 60.0));
+    c.SetFixedTimeStep(xiiTime::MakeFromSeconds(1.0 / 60.0));
     c.Update();
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
     c.Update();
     XII_TEST_DOUBLE(c.GetTimeDiff().GetSeconds(), 1.0 / 60.0, 0.000001);
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(50));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(50));
 
     c.Update();
     XII_TEST_DOUBLE(c.GetTimeDiff().GetSeconds(), 1.0 / 60.0, 0.000001);
@@ -118,7 +118,7 @@ XII_CREATE_SIMPLE_TEST(Time, Clock)
   {
     xiiClock c("Test");
 
-    c.SetAccumulatedTime(xiiTime::Seconds(23.42));
+    c.SetAccumulatedTime(xiiTime::MakeFromSeconds(23.42));
 
     XII_TEST_DOUBLE(c.GetAccumulatedTime().GetSeconds(), 23.42, 0.000001);
 
@@ -128,7 +128,7 @@ XII_CREATE_SIMPLE_TEST(Time, Clock)
 
     const xiiTime t0 = c.GetAccumulatedTime();
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(5));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(5));
     c.Update();
 
     const xiiTime t1 = c.GetAccumulatedTime();
@@ -142,7 +142,7 @@ XII_CREATE_SIMPLE_TEST(Time, Clock)
     xiiClock c("Test");
     XII_TEST_DOUBLE(c.GetSpeed(), 1.0, 0.0);
 
-    c.SetFixedTimeStep(xiiTime::Seconds(0.01));
+    c.SetFixedTimeStep(xiiTime::MakeFromSeconds(0.01));
 
     c.SetSpeed(10.0);
     XII_TEST_DOUBLE(c.GetSpeed(), 10.0, 0.000001);
@@ -174,8 +174,8 @@ XII_CREATE_SIMPLE_TEST(Time, Clock)
 
     XII_TEST_DOUBLE(c.GetTimeDiff().GetSeconds(), c.GetMinimumTimeStep().GetSeconds(), 0.0000000001);
 
-    c.SetMinimumTimeStep(xiiTime::Seconds(0.1));
-    c.SetMaximumTimeStep(xiiTime::Seconds(1.0));
+    c.SetMinimumTimeStep(xiiTime::MakeFromSeconds(0.1));
+    c.SetMaximumTimeStep(xiiTime::MakeFromSeconds(1.0));
 
     XII_TEST_DOUBLE(c.GetMinimumTimeStep().GetSeconds(), 0.1, 0.0);
 
@@ -190,16 +190,16 @@ XII_CREATE_SIMPLE_TEST(Time, Clock)
     xiiClock c("Test");
     XII_TEST_DOUBLE(c.GetMaximumTimeStep().GetSeconds(), 0.1, 0.0); // to ensure the tests fail if somebody changes these constants
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(200));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(200));
     c.Update();
 
     XII_TEST_DOUBLE(c.GetTimeDiff().GetSeconds(), c.GetMaximumTimeStep().GetSeconds(), 0.0000000001);
 
-    c.SetMaximumTimeStep(xiiTime::Seconds(0.2));
+    c.SetMaximumTimeStep(xiiTime::MakeFromSeconds(0.2));
 
     XII_TEST_DOUBLE(c.GetMaximumTimeStep().GetSeconds(), 0.2, 0.0);
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(400));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(400));
     c.Update();
 
     XII_TEST_DOUBLE(c.GetTimeDiff().GetSeconds(), c.GetMaximumTimeStep().GetSeconds(), 0.0000000001);
@@ -216,7 +216,7 @@ XII_CREATE_SIMPLE_TEST(Time, Clock)
 
     XII_TEST_BOOL(c.GetTimeStepSmoothing() == &s);
 
-    c.SetMaximumTimeStep(xiiTime::Seconds(10.0)); // this would limit the time step even after smoothing
+    c.SetMaximumTimeStep(xiiTime::MakeFromSeconds(10.0)); // this would limit the time step even after smoothing
     c.Update();
 
     XII_TEST_DOUBLE(c.GetTimeDiff().GetSeconds(), 0.42, 0.0);

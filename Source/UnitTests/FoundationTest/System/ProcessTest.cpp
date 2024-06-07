@@ -66,7 +66,7 @@ XII_CREATE_SIMPLE_TEST(System, Process)
       return;
 
     XII_TEST_BOOL(proc.GetState() == xiiProcessState::Running);
-    XII_TEST_BOOL(proc.WaitToFinish(xiiTime::Seconds(5)).Succeeded());
+    XII_TEST_BOOL(proc.WaitToFinish(xiiTime::MakeFromSeconds(5)).Succeeded());
     XII_TEST_BOOL(proc.GetState() == xiiProcessState::Finished);
     XII_TEST_INT(proc.GetExitCode(), 0);
   }
@@ -114,7 +114,7 @@ XII_CREATE_SIMPLE_TEST(System, Process)
     }
 
     const xiiTime tDiff = xiiTime::Now() - tTerminate;
-    XII_TEST_BOOL_MSG(tDiff < xiiTime::Seconds(1.0), "Destruction of xiiProcess should be instant after Detach() was used.");
+    XII_TEST_BOOL_MSG(tDiff < xiiTime::MakeFromSeconds(1.0), "Destruction of xiiProcess should be instant after Detach() was used.");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "STDOUT")

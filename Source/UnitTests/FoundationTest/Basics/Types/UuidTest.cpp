@@ -12,12 +12,10 @@ XII_CREATE_SIMPLE_TEST(Basics, Uuid)
 
     XII_TEST_BOOL(ShouldBeInvalid.IsValid() == false);
 
-    xiiUuid FirstGenerated;
-    FirstGenerated.CreateNewUuid();
+    xiiUuid FirstGenerated = xiiUuid::MakeUuid();
     XII_TEST_BOOL(FirstGenerated.IsValid());
 
-    xiiUuid SecondGenerated;
-    SecondGenerated.CreateNewUuid();
+    xiiUuid SecondGenerated = xiiUuid::MakeUuid();
     XII_TEST_BOOL(SecondGenerated.IsValid());
 
     XII_TEST_BOOL(!(FirstGenerated == SecondGenerated));
@@ -29,7 +27,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Uuid)
     xiiUuid Uuid;
     XII_TEST_BOOL(Uuid.IsValid() == false);
 
-    Uuid.CreateNewUuid();
+    Uuid = xiiUuid::MakeUuid();
     XII_TEST_BOOL(Uuid.IsValid());
 
     xiiDefaultMemoryStreamStorage StreamStorage;
@@ -52,9 +50,9 @@ XII_CREATE_SIMPLE_TEST(Basics, Uuid)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Stable Uuid From String")
   {
-    xiiUuid uuid1 = xiiUuid::StableUuidForString("TEST 1");
-    xiiUuid uuid2 = xiiUuid::StableUuidForString("TEST 2");
-    xiiUuid uuid3 = xiiUuid::StableUuidForString("TEST 1");
+    xiiUuid uuid1 = xiiUuid::MakeStableUuidFromString("TEST 1");
+    xiiUuid uuid2 = xiiUuid::MakeStableUuidFromString("TEST 2");
+    xiiUuid uuid3 = xiiUuid::MakeStableUuidFromString("TEST 1");
 
     XII_TEST_BOOL(uuid1 == uuid3);
     XII_TEST_BOOL(uuid1 != uuid2);
@@ -62,10 +60,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Uuid)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Uuid Combine")
   {
-    xiiUuid uuid1;
-    uuid1.CreateNewUuid();
-    xiiUuid uuid2;
-    uuid2.CreateNewUuid();
+    xiiUuid uuid1    = xiiUuid::MakeUuid();
+    xiiUuid uuid2    = xiiUuid::MakeUuid();
     xiiUuid combined = uuid1;
     combined.CombineWithSeed(uuid2);
     XII_TEST_BOOL(combined != uuid1);

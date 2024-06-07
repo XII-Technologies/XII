@@ -29,7 +29,7 @@ namespace
 
       if (m_bTimeout)
       {
-        m_pSignalManual->WaitForSignal(xiiTime::Seconds(0.5));
+        m_pSignalManual->WaitForSignal(xiiTime::MakeFromSeconds(0.5));
       }
       else
       {
@@ -77,7 +77,7 @@ XII_CREATE_SIMPLE_TEST(Threading, ThreadSignal)
 
       for (xiiUInt32 a = 0; a < 1000; ++a)
       {
-        xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+        xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
 
         if (iCounter >= iExpected)
           break;
@@ -95,7 +95,7 @@ XII_CREATE_SIMPLE_TEST(Threading, ThreadSignal)
 
       for (xiiUInt32 a = 0; a < 1000; ++a)
       {
-        xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+        xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
 
         if (iCounter >= (xiiInt32)uiNumThreads * 2)
           break;
@@ -146,7 +146,7 @@ XII_CREATE_SIMPLE_TEST(Threading, ThreadSignal)
 
       for (xiiUInt32 a = 0; a < 1000; ++a)
       {
-        xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+        xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
 
         if (iCounter >= (xiiInt32)t + 1)
           break;
@@ -160,7 +160,7 @@ XII_CREATE_SIMPLE_TEST(Threading, ThreadSignal)
     {
       for (xiiUInt32 a = 0; a < 100; ++a)
       {
-        xiiThreadUtils::Sleep(xiiTime::Milliseconds(50));
+        xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(50));
 
         if (iCounter >= (xiiInt32)uiNumThreads * 2)
           break;

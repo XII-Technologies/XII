@@ -736,7 +736,7 @@ XII_CREATE_SIMPLE_TEST(Utility, ConversionUtils)
 
     for (xiiUInt32 i = 0; i < 100; ++i)
     {
-      guid.CreateNewUuid();
+      guid = xiiUuid::MakeUuid();
 
       xiiConversionUtils::ToString(guid, sGuid);
 
@@ -750,8 +750,8 @@ XII_CREATE_SIMPLE_TEST(Utility, ConversionUtils)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetColorName")
   {
-    XII_TEST_STRING(xiiConversionUtils::GetColorName(xiiColorGammaUB(1, 2, 3)), "#010203");
-    XII_TEST_STRING(xiiConversionUtils::GetColorName(xiiColorGammaUB(10, 20, 30, 40)), "#0A141E28");
+    XII_TEST_STRING(xiiString(xiiConversionUtils::GetColorName(xiiColorGammaUB(1, 2, 3))), "#010203");
+    XII_TEST_STRING(xiiString(xiiConversionUtils::GetColorName(xiiColorGammaUB(10, 20, 30, 40))), "#0A141E28");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetColorByName")

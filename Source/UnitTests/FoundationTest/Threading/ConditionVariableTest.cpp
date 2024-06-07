@@ -56,7 +56,7 @@ namespace
       // this condition will never be met during the test
       // it should always run into the timeout
       XII_LOCK(*m_pCVTimeout);
-      m_pCVTimeout->UnlockWaitForSignalAndLock(xiiTime::Seconds(0.5));
+      m_pCVTimeout->UnlockWaitForSignalAndLock(xiiTime::MakeFromSeconds(0.5));
 
       m_pCounter->Increment();
       return 0;
@@ -96,22 +96,21 @@ XII_CREATE_SIMPLE_TEST(Threading, ConditionalVariable)
 
     for (xiiUInt32 t = 0; t < uiNumThreads / 2; ++t)
     {
-      const xiiInt32 iExpected = t + 1;
+      const xiiInt32 iExpected = iCounter + 1;
 
       cv.SignalOne();
 
       for (xiiUInt32 a = 0; a < 1000; ++a)
       {
-        xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+        xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
 
         if (iCounter >= iExpected)
           break;
       }
 
-      // theoretically this could fail, if the OS doesn't wake up any other thread in time
-      // but with 1000 tries that is very unlikely
-      XII_TEST_INT(iCounter, iExpected);
-      XII_TEST_BOOL(iCounter <= iExpected); // THIS test must never fail!
+      // Theoretically this could fail, if the OS doesn't wake up any other thread in time but with 1000 tries that is very unlikely.
+      // On some platforms like posix it is not guaranteed that exactly one thread is woken up, so we check that at least one thread was woken up.
+      XII_TEST_BOOL(iCounter >= iExpected);
     }
 
     // wake up the rest
@@ -120,7 +119,7 @@ XII_CREATE_SIMPLE_TEST(Threading, ConditionalVariable)
 
       for (xiiUInt32 a = 0; a < 1000; ++a)
       {
-        xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+        xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
 
         if (iCounter >= (xiiInt32)uiNumThreads)
           break;
@@ -174,7 +173,7 @@ XII_CREATE_SIMPLE_TEST(Threading, ConditionalVariable)
     // all threads should run into their timeout now
     for (xiiUInt32 a = 0; a < 100; ++a)
     {
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(50));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(50));
 
       if (iCounter >= (xiiInt32)uiNumThreads)
         break;

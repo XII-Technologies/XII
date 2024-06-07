@@ -88,7 +88,7 @@ XII_CREATE_SIMPLE_TEST(Threading, Thread)
     pTestThread32->Start();
 
     // give the threads a bit of time to start
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(50));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(50));
 
     // allow the threads to run now
     waitMutex.Unlock();
@@ -117,7 +117,7 @@ XII_CREATE_SIMPLE_TEST(Threading, Thread)
   {
     const xiiTime start = xiiTime::Now();
 
-    xiiTime sleepTime(xiiTime::Seconds(0.3));
+    xiiTime sleepTime(xiiTime::MakeFromSeconds(0.3));
 
     xiiThreadUtils::Sleep(sleepTime);
 
