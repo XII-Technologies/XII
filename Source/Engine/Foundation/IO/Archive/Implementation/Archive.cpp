@@ -32,6 +32,41 @@ xiiUInt32 xiiArchiveTOC::FindEntry(xiiStringView sFile) const
   return uiIndex;
 }
 
+xiiUInt32 xiiArchiveTOC::AddPathString(xiiStringView sPathString)
+{
+  const xiiUInt32 offset            = m_AllPathStrings.GetCount();
+  const xiiUInt32 numNewBytesNeeded = sPathString.GetElementCount() + 1;
+  m_AllPathStrings.Reserve(m_AllPathStrings.GetCount() + numNewBytesNeeded);
+  m_AllPathStrings.PushBackRange(xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(sPathString.GetStartPointer()), sPathString.GetElementCount()));
+  m_AllPathStrings.PushBackUnchecked('\0');
+  return offset;
+}
+
+void xiiArchiveTOC::RebuildPathToEntryHashes()
+{
+  const xiiUInt32 uiNumEntries = m_Entries.GetCount();
+  m_PathToEntryIndex.Clear();
+  m_PathToEntryIndex.Reserve(uiNumEntries);
+
+  xiiStringBuilder sLowerCasePath;
+
+  for (xiiUInt32 i = 0; i < uiNumEntries; i++)
+  {
+    const xiiUInt32 uiSrcStringOffset = m_Entries[i].m_uiPathStringOffset;
+    xiiStringView   sEntryString      = GetEntryPathString(i);
+    sLowerCasePath                    = sEntryString;
+    sLowerCasePath.ToLower();
+
+    // cut off the upper 32 bit, we don't need them here
+    const xiiUInt32 uiLowerCaseHash = xiiHashingUtils::StringHashTo32(xiiHashingUtils::StringHash(sLowerCasePath.GetView()) & 0xFFFFFFFFllu);
+
+    m_PathToEntryIndex.Insert(xiiArchiveStoredString(uiLowerCaseHash, uiSrcStringOffset), i);
+
+    // Verify that the conversion worked
+    XII_ASSERT_DEBUG(FindEntry(sEntryString) == i, "Hashed path retrieval did not yield inserted index");
+  }
+}
+
 xiiStringView xiiArchiveTOC::GetEntryPathString(xiiUInt32 uiEntryIdx) const
 {
   return reinterpret_cast<const char*>(&m_AllPathStrings[m_Entries[uiEntryIdx].m_uiPathStringOffset]);
@@ -128,29 +163,7 @@ xiiResult xiiArchiveTOC::Deserialize(xiiStreamReader& ref_stream, xiiUInt8 uiArc
     // version 3 switched to 32 bit xxHash
     // version 4 switched to 64 bit hashes
 
-    const xiiUInt32 uiNumEntries = m_Entries.GetCount();
-    m_PathToEntryIndex.Clear();
-    m_PathToEntryIndex.Reserve(uiNumEntries);
-
-    xiiStringBuilder sLowerCasePath;
-
-    for (xiiUInt32 i = 0; i < uiNumEntries; i++)
-    {
-      const xiiUInt32 uiSrcStringOffset = m_Entries[i].m_uiPathStringOffset;
-
-      xiiStringView sEntryString = GetEntryPathString(i);
-
-      sLowerCasePath = sEntryString;
-      sLowerCasePath.ToLower();
-
-      // cut off the upper 32 bit, we don't need them here
-      const xiiUInt32 uiLowerCaseHash = xiiHashingUtils::StringHashTo32(xiiHashingUtils::StringHash(sLowerCasePath.GetView()) & 0xFFFFFFFFllu);
-
-      m_PathToEntryIndex.Insert(xiiArchiveStoredString(uiLowerCaseHash, uiSrcStringOffset), i);
-
-      // Verify that the conversion worked
-      XII_ASSERT_DEBUG(FindEntry(sEntryString) == i, "Hashed path retrieval did not yield inserted index");
-    }
+    RebuildPathToEntryHashes();
   }
 
   // path strings mustn't be empty and must be zero-terminated

@@ -41,6 +41,7 @@ xiiDataDirectoryReader* xiiDataDirectory::ArchiveType::OpenFileToRead(xiiStringV
   const xiiArchiveTOC& toc          = m_ArchiveReader.GetArchiveTOC();
   xiiStringBuilder     sArchivePath = m_sArchiveSubFolder;
   sArchivePath.AppendPath(sFile);
+  sArchivePath.MakeCleanPath();
 
   const xiiUInt32 uiEntryIndex = toc.FindEntry(sArchivePath);
 
@@ -49,7 +50,7 @@ xiiDataDirectoryReader* xiiDataDirectory::ArchiveType::OpenFileToRead(xiiStringV
 
   const xiiArchiveEntry* pEntry = &toc.m_Entries[uiEntryIndex];
 
-  ArchiveReaderUncompressed* pReader = nullptr;
+  ArchiveReaderCommon* pReader = nullptr;
 
   {
     XII_LOCK(m_ReaderMutex);
@@ -87,6 +88,22 @@ xiiDataDirectoryReader* xiiDataDirectory::ArchiveType::OpenFileToRead(xiiStringV
         break;
       }
 #endif
+#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
+      case xiiArchiveCompressionMode::Compressed_zip:
+      {
+        if (!m_FreeReadersZip.IsEmpty())
+        {
+          pReader = m_FreeReadersZip.PeekBack();
+          m_FreeReadersZip.PopBack();
+        }
+        else
+        {
+          m_ReadersZip.PushBack(XII_DEFAULT_NEW(ArchiveReaderZip, 2));
+          pReader = m_ReadersZip.PeekBack().Borrow();
+        }
+        break;
+      }
+#endif
 
       default:
         XII_REPORT_FAILURE("Compression mode {} is unknown (or not compiled in)", (xiiUInt8)pEntry->m_CompressionMode);
@@ -118,6 +135,7 @@ bool xiiDataDirectory::ArchiveType::ExistsFile(xiiStringView sFile, bool bOneSpe
 {
   xiiStringBuilder sArchivePath = m_sArchiveSubFolder;
   sArchivePath.AppendPath(sFile);
+  sArchivePath.MakeCleanPath();
   return m_ArchiveReader.GetArchiveTOC().FindEntry(sArchivePath) != xiiInvalidIndex;
 }
 
@@ -126,6 +144,8 @@ xiiResult xiiDataDirectory::ArchiveType::GetFileStats(xiiStringView sFileOrFolde
   const xiiArchiveTOC& toc          = m_ArchiveReader.GetArchiveTOC();
   xiiStringBuilder     sArchivePath = m_sArchiveSubFolder;
   sArchivePath.AppendPath(sFileOrFolder);
+  // We might be called with paths like AAA/../BBB which we won't find in the toc unless we clean the path first.
+  sArchivePath.MakeCleanPath();
   const xiiUInt32 uiEntryIndex = toc.FindEntry(sArchivePath);
 
   if (uiEntryIndex == xiiInvalidIndex)
@@ -133,7 +153,7 @@ xiiResult xiiDataDirectory::ArchiveType::GetFileStats(xiiStringView sFileOrFolde
 
   const xiiArchiveEntry* pEntry = &toc.m_Entries[uiEntryIndex];
 
-  xiiStringView sPath = toc.GetEntryPathString(uiEntryIndex);
+  const xiiStringView sPath = toc.GetEntryPathString(uiEntryIndex);
 
   out_Stats.m_bIsDirectory         = false;
   out_Stats.m_LastModificationTime = m_LastModificationTime;
@@ -158,7 +178,12 @@ xiiResult xiiDataDirectory::ArchiveType::InternalInitializeDataDirectory(xiiStri
   bool             bSupported = false;
   xiiStringBuilder sArchivePath;
 
-  xiiHybridArray<xiiString, 4, xiiStaticAllocatorWrapper> extensions = xiiArchiveUtils::GetAcceptedArchiveFileExtensions();
+  xiiHybridArray<xiiString, 4, xiiStaticsAllocatorWrapper> extensions = xiiArchiveUtils::GetAcceptedArchiveFileExtensions();
+
+#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
+  extensions.PushBack("zip");
+  extensions.PushBack("apk");
+#endif
 
   for (const auto& ext : extensions)
   {
@@ -223,27 +248,44 @@ void xiiDataDirectory::ArchiveType::OnReaderWriterClose(xiiDataDirectoryReaderWr
   }
 #endif
 
+#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
+  if (pClosed->GetDataDirUserData() == 2)
+  {
+    m_FreeReadersZip.PushBack(static_cast<ArchiveReaderZip*>(pClosed));
+    return;
+  }
+#endif
 
   XII_ASSERT_NOT_IMPLEMENTED;
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-xiiDataDirectory::ArchiveReaderUncompressed::ArchiveReaderUncompressed(xiiInt32 iDataDirUserData) :
+xiiDataDirectory::ArchiveReaderCommon::ArchiveReaderCommon(xiiInt32 iDataDirUserData) :
   xiiDataDirectoryReader(iDataDirUserData)
 {
 }
 
-xiiDataDirectory::ArchiveReaderUncompressed::~ArchiveReaderUncompressed() = default;
+xiiUInt64 xiiDataDirectory::ArchiveReaderCommon::GetFileSize() const
+{
+  return m_uiUncompressedSize;
+}
+
+//////////////////////////////////////////////////////////////////////////
+
+xiiDataDirectory::ArchiveReaderUncompressed::ArchiveReaderUncompressed(xiiInt32 iDataDirUserData) :
+  ArchiveReaderCommon(iDataDirUserData)
+{
+}
+
+xiiUInt64 xiiDataDirectory::ArchiveReaderUncompressed::Skip(xiiUInt64 uiBytes)
+{
+  return m_MemStreamReader.SkipBytes(uiBytes);
+}
 
 xiiUInt64 xiiDataDirectory::ArchiveReaderUncompressed::Read(void* pBuffer, xiiUInt64 uiBytes)
 {
   return m_MemStreamReader.ReadBytes(pBuffer, uiBytes);
-}
-
-xiiUInt64 xiiDataDirectory::ArchiveReaderUncompressed::GetFileSize() const
-{
-  return m_uiUncompressedSize;
 }
 
 xiiResult xiiDataDirectory::ArchiveReaderUncompressed::InternalOpen(xiiFileShareMode::Enum FileShareMode)
@@ -264,11 +306,9 @@ void xiiDataDirectory::ArchiveReaderUncompressed::InternalClose()
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
 
 xiiDataDirectory::ArchiveReaderZstd::ArchiveReaderZstd(xiiInt32 iDataDirUserData) :
-  ArchiveReaderUncompressed(iDataDirUserData)
+  ArchiveReaderCommon(iDataDirUserData)
 {
 }
-
-xiiDataDirectory::ArchiveReaderZstd::~ArchiveReaderZstd() = default;
 
 xiiUInt64 xiiDataDirectory::ArchiveReaderZstd::Read(void* pBuffer, xiiUInt64 uiBytes)
 {
@@ -283,8 +323,36 @@ xiiResult xiiDataDirectory::ArchiveReaderZstd::InternalOpen(xiiFileShareMode::En
   return XII_SUCCESS;
 }
 
+void xiiDataDirectory::ArchiveReaderZstd::InternalClose()
+{
+  // nothing to do
+}
 #endif
 
 //////////////////////////////////////////////////////////////////////////
+
+#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
+
+xiiDataDirectory::ArchiveReaderZip::ArchiveReaderZip(xiiInt32 iDataDirUserData) :
+  ArchiveReaderUncompressed(iDataDirUserData)
+{
+}
+
+xiiDataDirectory::ArchiveReaderZip::~ArchiveReaderZip() = default;
+
+xiiUInt64 xiiDataDirectory::ArchiveReaderZip::Read(void* pBuffer, xiiUInt64 uiBytes)
+{
+  return m_CompressedStreamReader.ReadBytes(pBuffer, uiBytes);
+}
+
+xiiResult xiiDataDirectory::ArchiveReaderZip::InternalOpen(xiiFileShareMode::Enum FileShareMode)
+{
+  XII_ASSERT_DEBUG(FileShareMode != xiiFileShareMode::Exclusive, "Archives only support shared reading of files. Exclusive access cannot be guaranteed.");
+
+  m_CompressedStreamReader.SetInputStream(&m_MemStreamReader, m_uiCompressedSize);
+  return XII_SUCCESS;
+}
+
+#endif
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Archive_Implementation_DataDirTypeArchive);

@@ -86,5 +86,4 @@ xiiResult xiiFileWriter::WriteBytes(const void* pWriteBuffer, xiiUInt64 uiBytesT
   }
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_IO_FileSystem_Implementation_FileWriter);

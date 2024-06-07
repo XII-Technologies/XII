@@ -29,11 +29,28 @@ xiiResult xiiArchiveReader::OpenArchive(xiiStringView sPath)
     {
       XII_SUCCEED_OR_RETURN(xiiArchiveUtils::ReadHeader(reader, m_uiArchiveVersion));
 
-      m_pDataStart = m_MemFile.GetReadPointer(17, xiiMemoryMappedFile::OffsetBase::Start);
+      m_pDataStart = m_MemFile.GetReadPointer(xiiArchiveUtils::ArchiveHeaderSize, xiiMemoryMappedFile::OffsetBase::Start);
 
       XII_SUCCEED_OR_RETURN(xiiArchiveUtils::ExtractTOC(m_MemFile, m_ArchiveTOC, m_uiArchiveVersion));
     }
+#  ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
+    else if (extension == "zip" || extension == "apk")
+    {
+      XII_SUCCEED_OR_RETURN(xiiArchiveUtils::ReadZipHeader(reader, m_uiArchiveVersion));
+      if (m_uiArchiveVersion != 0)
+      {
+        xiiLog::Error("Unknown zip version '{}'", m_uiArchiveVersion);
+        return XII_FAILURE;
+      }
+      m_pDataStart = m_MemFile.GetReadPointer(0, xiiMemoryMappedFile::OffsetBase::Start);
 
+      if (xiiArchiveUtils::ExtractZipTOC(m_MemFile, m_ArchiveTOC).Failed())
+      {
+        xiiLog::Error("Failed to deserialize zip TOC");
+        return XII_FAILURE;
+      }
+    }
+#  endif
     else
     {
       xiiLog::Error("Unknown archive file extension '{}'", extension);
@@ -88,9 +105,9 @@ xiiResult xiiArchiveReader::ExtractAllFiles(xiiStringView sTargetFolder) const
 
   for (xiiUInt32 e = 0; e < numEntries; ++e)
   {
-    xiiStringView sPath = reinterpret_cast<const char*>(&m_ArchiveTOC.m_AllPathStrings[m_ArchiveTOC.m_Entries[e].m_uiPathStringOffset]);
+    const char* szPath = reinterpret_cast<const char*>(&m_ArchiveTOC.m_AllPathStrings[m_ArchiveTOC.m_Entries[e].m_uiPathStringOffset]);
 
-    if (!ExtractNextFileCallback(e + 1, numEntries, sPath))
+    if (!ExtractNextFileCallback(e + 1, numEntries, szPath))
       return XII_FAILURE;
 
     XII_SUCCEED_OR_RETURN(ExtractFile(e, sTargetFolder));
@@ -155,6 +172,5 @@ bool xiiArchiveReader::ExtractFileProgressCallback(xiiUInt64 bytesWritten, xiiUI
 {
   return true;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Archive_Implementation_ArchiveReader);

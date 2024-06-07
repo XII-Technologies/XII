@@ -111,8 +111,7 @@ xiiResult xiiArchiveBuilder::WriteArchive(xiiStreamWriter& ref_stream) const
   {
     const SourceEntry& e = m_Entries[i];
 
-    const xiiUInt32 uiPathStringOffset = toc.m_AllPathStrings.GetCount();
-    toc.m_AllPathStrings.PushBackRange(xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(e.m_sRelTargetPath.GetData()), e.m_sRelTargetPath.GetElementCount() + 1));
+    const xiiUInt32 uiPathStringOffset = toc.AddPathString(e.m_sRelTargetPath);
 
     sHashablePath = e.m_sRelTargetPath;
     sHashablePath.ToLower();

@@ -3,6 +3,7 @@
 #include <Foundation/IO/Archive/ArchiveUtils.h>
 
 #include <Foundation/Algorithm/HashStream.h>
+#include <Foundation/IO/CompressedStreamZlib.h>
 #include <Foundation/IO/CompressedStreamZstd.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/MemoryMappedFile.h>
@@ -34,6 +35,8 @@ bool xiiArchiveUtils::IsAcceptedArchiveFileExtensions(xiiStringView sExtension)
 
 xiiResult xiiArchiveUtils::WriteHeader(xiiStreamWriter& ref_stream)
 {
+  static_assert(16 == ArchiveHeaderSize);
+
   const char* szTag = "XIIARCHIVE";
   XII_SUCCEED_OR_RETURN(ref_stream.WriteBytes(szTag, 11));
 
@@ -52,6 +55,8 @@ xiiResult xiiArchiveUtils::WriteHeader(xiiStreamWriter& ref_stream)
 
 xiiResult xiiArchiveUtils::ReadHeader(xiiStreamReader& ref_stream, xiiUInt8& out_uiVersion)
 {
+  static_assert(16 == ArchiveHeaderSize);
+
   char szTag[11];
   if (ref_stream.ReadBytes(szTag, 11) != 11 || !xiiStringUtils::IsEqual(szTag, "XIIARCHIVE"))
   {
@@ -86,18 +91,48 @@ xiiResult xiiArchiveUtils::ReadHeader(xiiStreamReader& ref_stream, xiiUInt8& out
   return XII_SUCCESS;
 }
 
-xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView sAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiInt32 iCompressionLevel, xiiArchiveEntry& ref_tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress /*= FileWriteProgressCallback()*/)
+xiiResult xiiArchiveUtils::WriteEntryPreprocessed(xiiStreamWriter& ref_stream, xiiConstByteArrayPtr entryData, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiUInt32 uiUncompressedEntryDataSize, xiiArchiveEntry& ref_tocEntry, xiiUInt64& inout_uiCurrentStreamPosition)
+{
+  XII_SUCCEED_OR_RETURN(ref_stream.WriteBytes(entryData.GetPtr(), entryData.GetCount()));
+
+  ref_tocEntry.m_uiPathStringOffset     = uiPathStringOffset;
+  ref_tocEntry.m_uiDataStartOffset      = inout_uiCurrentStreamPosition;
+  ref_tocEntry.m_uiUncompressedDataSize = uiUncompressedEntryDataSize;
+  ref_tocEntry.m_uiStoredDataSize       = entryData.GetCount();
+  ref_tocEntry.m_CompressionMode        = compression;
+
+  inout_uiCurrentStreamPosition += entryData.GetCount();
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView sAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiInt32 iCompressionLevel, xiiArchiveEntry& inout_tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress /*= FileWriteProgressCallback()*/)
 {
   xiiFileReader file;
   XII_SUCCEED_OR_RETURN(file.Open(sAbsSourcePath, 1024 * 1024));
 
   const xiiUInt64 uiMaxBytes = file.GetFileSize();
 
-  xiiUInt8 uiTemp[1024 * 8];
+  constexpr xiiUInt32 uiMaxNumWorkerThreads = 12u;
 
-  ref_tocEntry.m_uiPathStringOffset     = uiPathStringOffset;
-  ref_tocEntry.m_uiDataStartOffset      = inout_uiCurrentStreamPosition;
-  ref_tocEntry.m_uiUncompressedDataSize = 0;
+  xiiUInt8 buf[1024 * 32];
+
+#ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
+  xiiUInt32 uiWorkerThreadCount;
+  if (uiMaxBytes > xiiMath::MaxValue<xiiUInt32>())
+  {
+    uiWorkerThreadCount = uiMaxNumWorkerThreads;
+  }
+  else
+  {
+    constexpr xiiUInt32 uiBytesPerThread = 1024u * 1024u;
+    uiWorkerThreadCount                  = xiiMath::Clamp((xiiUInt32)floor(uiMaxBytes / uiBytesPerThread), 1u, uiMaxNumWorkerThreads);
+  }
+#endif
+
+  inout_tocEntry.m_uiPathStringOffset     = uiPathStringOffset;
+  inout_tocEntry.m_uiDataStartOffset      = inout_uiCurrentStreamPosition;
+  inout_tocEntry.m_uiUncompressedDataSize = 0;
 
   xiiStreamWriter* pWriter = &ref_stream;
 
@@ -113,8 +148,7 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
     case xiiArchiveCompressionMode::Compressed_zstd:
     {
-      constexpr xiiUInt32 uiMaxNumWorkerThreads = 12u;
-      zstdWriter.SetOutputStream(&ref_stream, uiMaxNumWorkerThreads, (xiiCompressedStreamWriterZstd::Compression)iCompressionLevel);
+      zstdWriter.SetOutputStream(&ref_stream, uiWorkerThreadCount, (xiiCompressedStreamWriterZstd::Compression)iCompressionLevel);
       pWriter = &zstdWriter;
     }
     break;
@@ -125,45 +159,44 @@ xiiResult xiiArchiveUtils::WriteEntry(xiiStreamWriter& ref_stream, xiiStringView
       break;
   }
 
-  ref_tocEntry.m_CompressionMode = compression;
+  inout_tocEntry.m_CompressionMode = compression;
 
   xiiUInt64 uiRead = 0;
   while (true)
   {
-    uiRead = file.ReadBytes(uiTemp, XII_ARRAY_SIZE(uiTemp));
+    uiRead = file.ReadBytes(buf, XII_ARRAY_SIZE(buf));
 
     if (uiRead == 0)
       break;
 
-    ref_tocEntry.m_uiUncompressedDataSize += uiRead;
+    inout_tocEntry.m_uiUncompressedDataSize += uiRead;
 
     if (progress.IsValid())
     {
-      if (!progress(ref_tocEntry.m_uiUncompressedDataSize, uiMaxBytes))
+      if (!progress(inout_tocEntry.m_uiUncompressedDataSize, uiMaxBytes))
         return XII_FAILURE;
     }
 
-    XII_SUCCEED_OR_RETURN(pWriter->WriteBytes(uiTemp, uiRead));
+    XII_SUCCEED_OR_RETURN(pWriter->WriteBytes(buf, uiRead));
   }
+
 
   switch (compression)
   {
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
     case xiiArchiveCompressionMode::Compressed_zstd:
-    {
       XII_SUCCEED_OR_RETURN(zstdWriter.FinishCompressedStream());
-      ref_tocEntry.m_uiStoredDataSize = zstdWriter.GetWrittenBytes();
-    }
-    break;
+      inout_tocEntry.m_uiStoredDataSize = zstdWriter.GetWrittenBytes();
+      break;
 #endif
 
     case xiiArchiveCompressionMode::Uncompressed:
     default:
-      ref_tocEntry.m_uiStoredDataSize = ref_tocEntry.m_uiUncompressedDataSize;
+      inout_tocEntry.m_uiStoredDataSize = inout_tocEntry.m_uiUncompressedDataSize;
       break;
   }
 
-  inout_uiCurrentStreamPosition += ref_tocEntry.m_uiStoredDataSize;
+  inout_uiCurrentStreamPosition += inout_tocEntry.m_uiStoredDataSize;
 
   return XII_SUCCESS;
 }
@@ -207,6 +240,15 @@ public:
 
 #endif
 
+#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
+
+class xiiCompressedStreamReaderZipWithSource : public xiiCompressedStreamReaderZip
+{
+public:
+  xiiRawMemoryStreamReader m_Source;
+};
+
+#endif
 
 xiiUniquePtr<xiiStreamReader> xiiArchiveUtils::CreateEntryReader(const xiiArchiveEntry& entry, const void* pStartOfArchiveData)
 {
@@ -229,6 +271,16 @@ xiiUniquePtr<xiiStreamReader> xiiArchiveUtils::CreateEntryReader(const xiiArchiv
       xiiCompressedStreamReaderZstdWithSource* pRawReader = static_cast<xiiCompressedStreamReaderZstdWithSource*>(reader.Borrow());
       ConfigureRawMemoryStreamReader(entry, pStartOfArchiveData, pRawReader->m_Source);
       pRawReader->SetInputStream(&pRawReader->m_Source);
+    }
+    break;
+#endif
+#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
+    case xiiArchiveCompressionMode::Compressed_zip:
+    {
+      reader                                             = XII_DEFAULT_NEW(xiiCompressedStreamReaderZipWithSource);
+      xiiCompressedStreamReaderZipWithSource* pRawReader = static_cast<xiiCompressedStreamReaderZipWithSource*>(reader.Borrow());
+      ConfigureRawMemoryStreamReader(entry, pStartOfArchiveData, pRawReader->m_Source);
+      pRawReader->SetInputStream(&pRawReader->m_Source, entry.m_uiStoredDataSize);
     }
     break;
 #endif
@@ -296,14 +348,22 @@ xiiResult xiiArchiveUtils::AppendTOC(xiiStreamWriter& ref_stream, const xiiArchi
   return ref_stream.WriteBytes(szEndMarker, 15);
 }
 
-static xiiResult VerifyEndMarker(xiiMemoryMappedFile& ref_memFile, xiiUInt8 uiArchiveVersion)
+static xiiResult VerifyEndMarker(xiiUInt64 uiArchiveDataSize, const void* pArchiveDataBuffer, xiiUInt8 uiArchiveVersion)
 {
   const xiiUInt32 uiEndMarkerSize = GetEndMarkerSize(uiArchiveVersion);
 
   if (uiEndMarkerSize == 0)
+  {
     return XII_SUCCESS;
+  }
 
-  const void* pStart = ref_memFile.GetReadPointer(uiEndMarkerSize, xiiMemoryMappedFile::OffsetBase::End);
+  if (uiEndMarkerSize > uiArchiveDataSize)
+  {
+    xiiLog::Error("Archive is too small. End-marker not found.");
+    return XII_FAILURE;
+  }
+
+  const void* pStart = xiiMemoryUtils::AddByteOffset(pArchiveDataBuffer, uiArchiveDataSize - uiEndMarkerSize);
 
   xiiRawMemoryStreamReader reader(pStart, uiEndMarkerSize);
 
@@ -317,9 +377,9 @@ static xiiResult VerifyEndMarker(xiiMemoryMappedFile& ref_memFile, xiiUInt8 uiAr
   return XII_SUCCESS;
 }
 
-xiiResult xiiArchiveUtils::ExtractTOC(xiiMemoryMappedFile& ref_memFile, xiiArchiveTOC& ref_toc, xiiUInt8 uiArchiveVersion)
+xiiResult xiiArchiveUtils::ExtractTOCMeta(xiiUInt64 uiArchiveEndingDataSize, const void* pArchiveEndingDataBuffer, TOCMeta& ref_tocMeta, xiiUInt8 uiArchiveVersion)
 {
-  XII_SUCCEED_OR_RETURN(VerifyEndMarker(ref_memFile, uiArchiveVersion));
+  XII_SUCCEED_OR_RETURN(VerifyEndMarker(uiArchiveEndingDataSize, pArchiveEndingDataBuffer, uiArchiveVersion));
 
   const xiiUInt32 uiEndMarkerSize = GetEndMarkerSize(uiArchiveVersion);
   const xiiUInt32 uiTocMetaSize   = GetTocMetaSize(uiArchiveVersion);
@@ -329,7 +389,15 @@ xiiResult xiiArchiveUtils::ExtractTOC(xiiMemoryMappedFile& ref_memFile, xiiArchi
 
   // read the TOC meta data
   {
-    const void* pTocMetaStart = ref_memFile.GetReadPointer(uiEndMarkerSize + uiTocMetaSize, xiiMemoryMappedFile::OffsetBase::End);
+    XII_ASSERT_DEV(uiEndMarkerSize + uiTocMetaSize <= ArchiveTOCMetaMaxFooterSize, "");
+
+    if (uiEndMarkerSize + uiTocMetaSize > uiArchiveEndingDataSize)
+    {
+      xiiLog::Error("Unable to extract Archive TOC. File size too small: {0}", xiiArgFileSize(uiArchiveEndingDataSize));
+      return XII_FAILURE;
+    }
+
+    const void* pTocMetaStart = xiiMemoryUtils::AddByteOffset(pArchiveEndingDataBuffer, uiArchiveEndingDataSize - uiEndMarkerSize - uiTocMetaSize);
 
     xiiRawMemoryStreamReader tocMetaReader(pTocMetaStart, uiTocMetaSize);
 
@@ -347,13 +415,46 @@ xiiResult xiiArchiveUtils::ExtractTOC(xiiMemoryMappedFile& ref_memFile, xiiArchi
     }
   }
 
-  const void* pTocStart = ref_memFile.GetReadPointer(uiTocSize + uiTocMetaSize + uiEndMarkerSize, xiiMemoryMappedFile::OffsetBase::End);
+  // output the result
+  {
+    ref_tocMeta                             = TOCMeta();
+    ref_tocMeta.m_uiTocSize                 = uiTocSize;
+    ref_tocMeta.m_uiExpectedTocHash         = uiExpectedTocHash;
+    ref_tocMeta.m_uiTocOffsetFromArchiveEnd = uiTocSize + uiTocMetaSize + uiEndMarkerSize;
+  }
+
+  return XII_SUCCESS;
+}
+
+xiiResult xiiArchiveUtils::ExtractTOCMeta(const xiiMemoryMappedFile& memFile, TOCMeta& ref_tocMeta, xiiUInt8 uiArchiveVersion)
+{
+  return ExtractTOCMeta(memFile.GetFileSize(), memFile.GetReadPointer(), ref_tocMeta, uiArchiveVersion);
+}
+
+xiiResult xiiArchiveUtils::ExtractTOC(xiiUInt64 uiArchiveEndingDataSize, const void* pArchiveEndingDataBuffer, xiiArchiveTOC& ref_toc, xiiUInt8 uiArchiveVersion)
+{
+  // get toc meta
+  TOCMeta tocMeta;
+  if (ExtractTOCMeta(uiArchiveEndingDataSize, pArchiveEndingDataBuffer, tocMeta, uiArchiveVersion).Failed())
+  {
+    return XII_FAILURE;
+  }
+
+  // verify meta is valid
+  if (tocMeta.m_uiTocOffsetFromArchiveEnd > uiArchiveEndingDataSize)
+  {
+    xiiLog::Error("Archive TOC offset is corrupted.");
+    return XII_FAILURE;
+  }
+
+  // get toc data ptr
+  const void* pTocStart = xiiMemoryUtils::AddByteOffset(pArchiveEndingDataBuffer, uiArchiveEndingDataSize - tocMeta.m_uiTocOffsetFromArchiveEnd);
 
   // validate the TOC hash
   if (uiArchiveVersion >= 2)
   {
-    const xiiUInt64 uiActualTocHash = xiiHashingUtils::xxHash64(pTocStart, uiTocSize);
-    if (uiExpectedTocHash != uiActualTocHash)
+    const xiiUInt64 uiActualTocHash = xiiHashingUtils::xxHash64(pTocStart, tocMeta.m_uiTocSize);
+    if (tocMeta.m_uiExpectedTocHash != uiActualTocHash)
     {
       xiiLog::Error("Archive TOC is corrupted. Hashes do not match.");
       return XII_FAILURE;
@@ -362,7 +463,7 @@ xiiResult xiiArchiveUtils::ExtractTOC(xiiMemoryMappedFile& ref_memFile, xiiArchi
 
   // read the actual TOC data
   {
-    xiiRawMemoryStreamReader tocReader(pTocStart, uiTocSize);
+    xiiRawMemoryStreamReader tocReader(pTocStart, tocMeta.m_uiTocSize);
 
     if (ref_toc.Deserialize(tocReader, uiArchiveVersion).Failed())
     {
@@ -372,6 +473,11 @@ xiiResult xiiArchiveUtils::ExtractTOC(xiiMemoryMappedFile& ref_memFile, xiiArchi
   }
 
   return XII_SUCCESS;
+}
+
+xiiResult xiiArchiveUtils::ExtractTOC(const xiiMemoryMappedFile& memFile, xiiArchiveTOC& ref_toc, xiiUInt8 uiArchiveVersion)
+{
+  return ExtractTOC(memFile.GetFileSize(), memFile.GetReadPointer(), ref_toc, uiArchiveVersion);
 }
 
 namespace ZipFormat
@@ -441,6 +547,7 @@ namespace ZipFormat
     ref_stream >> ref_value.signature >> ref_value.version >> ref_value.versionNeeded >> ref_value.flags >> ref_value.compression >> ref_value.modTime >> ref_value.modDate;
     ref_stream >> ref_value.crc32 >> ref_value.compressedSize >> ref_value.uncompressedSize >> ref_value.fileNameLength >> ref_value.extraFieldLength;
     ref_stream >> ref_value.fileCommentLength >> ref_value.diskNumStart >> ref_value.internalAttr >> ref_value.externalAttr >> ref_value.offsetLocalHeader;
+    XII_IGNORE_UNUSED(CDFileMagicSignature);
     XII_ASSERT_DEBUG(ref_value.signature == CDFileMagicSignature, "ZIP: Corrupt central directory file entry header.");
     return ref_stream;
   }
@@ -483,7 +590,7 @@ xiiResult xiiArchiveUtils::ReadZipHeader(xiiStreamReader& ref_stream, xiiUInt8& 
   return XII_SUCCESS;
 }
 
-xiiResult xiiArchiveUtils::ExtractZipTOC(xiiMemoryMappedFile& ref_memFile, xiiArchiveTOC& ref_toc)
+xiiResult xiiArchiveUtils::ExtractZipTOC(const xiiMemoryMappedFile& memFile, xiiArchiveTOC& ref_toc)
 {
   using namespace ZipFormat;
 
@@ -491,9 +598,9 @@ xiiResult xiiArchiveUtils::ExtractZipTOC(xiiMemoryMappedFile& ref_memFile, xiiAr
   {
     // Find End of CD signature by searching from the end of the file.
     // As a comment can come after it we have to potentially walk max comment length backwards.
-    const xiiUInt64 SearchEnd    = ref_memFile.GetFileSize() - xiiMath::Min(MaxEndOfCDSearchLength, ref_memFile.GetFileSize());
-    const xiiUInt8* pSearchEnd   = static_cast<const xiiUInt8*>(ref_memFile.GetReadPointer(SearchEnd, xiiMemoryMappedFile::OffsetBase::End));
-    const xiiUInt8* pSearchStart = static_cast<const xiiUInt8*>(ref_memFile.GetReadPointer(EndOfCDHeaderLength, xiiMemoryMappedFile::OffsetBase::End));
+    const xiiUInt64 SearchEnd    = memFile.GetFileSize() - xiiMath::Min(MaxEndOfCDSearchLength, memFile.GetFileSize());
+    const xiiUInt8* pSearchEnd   = static_cast<const xiiUInt8*>(memFile.GetReadPointer(SearchEnd, xiiMemoryMappedFile::OffsetBase::End));
+    const xiiUInt8* pSearchStart = static_cast<const xiiUInt8*>(memFile.GetReadPointer(EndOfCDHeaderLength, xiiMemoryMappedFile::OffsetBase::End));
     while (pSearchStart >= pSearchEnd)
     {
       if (*reinterpret_cast<const xiiUInt32*>(pSearchStart) == EndOfCDMagicSignature)
@@ -519,7 +626,7 @@ xiiResult xiiArchiveUtils::ExtractZipTOC(xiiMemoryMappedFile& ref_memFile, xiiAr
   for (xiiUInt16 uiEntry = 0; uiEntry < ecdHeader.diskEntries; ++uiEntry)
   {
     // First, read the current file's header from the central directory
-    const void*              pCdfStart = ref_memFile.GetReadPointer(ecdHeader.cdOffset + uiEntryOffset, xiiMemoryMappedFile::OffsetBase::Start);
+    const void*              pCdfStart = memFile.GetReadPointer(ecdHeader.cdOffset + uiEntryOffset, xiiMemoryMappedFile::OffsetBase::Start);
     xiiRawMemoryStreamReader cdfReader(pCdfStart, ecdHeader.cdSize - uiEntryOffset);
     CDFileHeader             cdfHeader;
     cdfReader >> cdfHeader;
@@ -541,8 +648,8 @@ xiiResult xiiArchiveUtils::ExtractZipTOC(xiiMemoryMappedFile& ref_memFile, xiiAr
       ref_toc.m_PathToEntryIndex.Insert(xiiArchiveStoredString(xiiHashingUtils::StringHash(sLowerCaseHash), entry.m_uiPathStringOffset), ref_toc.m_Entries.GetCount() - 1);
 
       // Compute data stream start location. We need to skip past the local (and redundant) file header to find it.
-      const void*              pLfStart = ref_memFile.GetReadPointer(cdfHeader.offsetLocalHeader, xiiMemoryMappedFile::OffsetBase::Start);
-      xiiRawMemoryStreamReader lfReader(pLfStart, ref_memFile.GetFileSize() - cdfHeader.offsetLocalHeader);
+      const void*              pLfStart = memFile.GetReadPointer(cdfHeader.offsetLocalHeader, xiiMemoryMappedFile::OffsetBase::Start);
+      xiiRawMemoryStreamReader lfReader(pLfStart, memFile.GetFileSize() - cdfHeader.offsetLocalHeader);
       LocalFileHeader          lfHeader;
       lfReader >> lfHeader;
       entry.m_uiDataStartOffset = cdfHeader.offsetLocalHeader + LocalFileHeaderLength + lfHeader.fileNameLength + lfHeader.extraFieldLength;

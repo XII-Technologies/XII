@@ -14,7 +14,16 @@ class xiiRawMemoryStreamReader;
 /// \brief Utilities for working with xiiArchive files
 namespace xiiArchiveUtils
 {
-  using FileWriteProgressCallback = xiiDelegate<bool(xiiUInt64, xiiUInt64)>;
+  using FileWriteProgressCallback                 = xiiDelegate<bool(xiiUInt64, xiiUInt64)>;
+  constexpr xiiUInt32 ArchiveHeaderSize           = 17;
+  constexpr xiiUInt32 ArchiveTOCMetaMaxFooterSize = 15 + 12; //< note that it's the MAX size, i.e. toc meta can be smaller
+
+  struct TOCMeta
+  {
+    xiiUInt32 m_uiTocSize                 = 0;
+    xiiUInt64 m_uiExpectedTocHash         = 0;
+    xiiUInt32 m_uiTocOffsetFromArchiveEnd = 0;
+  };
 
   /// \brief Returns a modifiable array of file extensions that the engine considers to be valid xiiArchive file extensions.
   ///
@@ -34,14 +43,29 @@ namespace xiiArchiveUtils
   /// \brief Writes the archive TOC to the stream. This must be the last thing in the stream, if ExtractTOC() is supposed to work.
   XII_FOUNDATION_DLL xiiResult AppendTOC(xiiStreamWriter& ref_stream, const xiiArchiveTOC& toc);
 
+  /// \brief Deserializes the TOC meta from archive ending. Assumes the TOC is the very last data in the file.
+  XII_FOUNDATION_DLL xiiResult ExtractTOCMeta(xiiUInt64 uiArchiveEndingDataSize, const void* pArchiveEndingDataBuffer, TOCMeta& ref_tocMeta, xiiUInt8 uiArchiveVersion);
+
+  /// \brief Deserializes the TOC meta from the memory mapped file. Assumes the TOC is the very last data in the file.
+  XII_FOUNDATION_DLL xiiResult ExtractTOCMeta(const xiiMemoryMappedFile& memFile, TOCMeta& ref_tocMeta, xiiUInt8 uiArchiveVersion);
+
+  /// \brief Deserializes the TOC from from archive ending. Assumes the TOC is the very last data in the file and reads it from the back.
+  XII_FOUNDATION_DLL xiiResult ExtractTOC(xiiUInt64 uiArchiveEndingDataSize, const void* pArchiveEndingDataBuffer, xiiArchiveTOC& ref_toc, xiiUInt8 uiArchiveVersion);
+
   /// \brief Deserializes the TOC from the memory mapped file. Assumes the TOC is the very last data in the file and reads it from the back.
-  XII_FOUNDATION_DLL xiiResult ExtractTOC(xiiMemoryMappedFile& ref_memFile, xiiArchiveTOC& ref_toc, xiiUInt8 uiArchiveVersion);
+  XII_FOUNDATION_DLL xiiResult ExtractTOC(const xiiMemoryMappedFile& memFile, xiiArchiveTOC& ref_toc, xiiUInt8 uiArchiveVersion);
 
   /// \brief Writes a single file entry to a xiiArchive stream with the given compression level.
   ///
   /// Appends information to the TOC for finding the data in the stream. Reads and updates inout_uiCurrentStreamPosition with the data byte
   /// offset. The progress callback is executed for every couple of KB of data that were written.
   XII_FOUNDATION_DLL xiiResult WriteEntry(xiiStreamWriter& ref_stream, xiiStringView sAbsSourcePath, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiInt32 iCompressionLevel, xiiArchiveEntry& ref_tocEntry, xiiUInt64& inout_uiCurrentStreamPosition, FileWriteProgressCallback progress = FileWriteProgressCallback());
+
+  /// \brief Writes a single file entry to a xiiArchive stream with the given compression level.
+  ///
+  /// Appends information to the TOC for finding the data in the stream. Reads and updates inout_uiCurrentStreamPosition with the data byte
+  /// offset. Compression parameter indicate compression that the entry data already have applied.
+  XII_FOUNDATION_DLL xiiResult WriteEntryPreprocessed(xiiStreamWriter& ref_stream, xiiConstByteArrayPtr entryData, xiiUInt32 uiPathStringOffset, xiiArchiveCompressionMode compression, xiiUInt32 uiUncompressedEntryDataSize, xiiArchiveEntry& ref_tocEntry, xiiUInt64& inout_uiCurrentStreamPosition);
 
   /// \brief Similar to WriteEntry, but if compression is enabled, checks that compression makes enough of a difference.
   /// If compression does not reduce file size enough, the file is stored uncompressed instead.
@@ -58,7 +82,7 @@ namespace xiiArchiveUtils
   XII_FOUNDATION_DLL xiiUniquePtr<xiiStreamReader> CreateEntryReader(const xiiArchiveEntry& entry, const void* pStartOfArchiveData);
 
   XII_FOUNDATION_DLL xiiResult ReadZipHeader(xiiStreamReader& ref_stream, xiiUInt8& out_uiVersion);
-  XII_FOUNDATION_DLL xiiResult ExtractZipTOC(xiiMemoryMappedFile& ref_memFile, xiiArchiveTOC& ref_toc);
+  XII_FOUNDATION_DLL xiiResult ExtractZipTOC(const xiiMemoryMappedFile& memFile, xiiArchiveTOC& ref_toc);
 
 
 } // namespace xiiArchiveUtils
