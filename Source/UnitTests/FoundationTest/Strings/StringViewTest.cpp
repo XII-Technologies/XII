@@ -3,6 +3,14 @@
 #include <Foundation/Containers/Deque.h>
 #include <Foundation/Strings/String.h>
 
+#include <string_view>
+
+using namespace std;
+
+const xiiStringView    gConstant1 = "gConstant1"_xiisv;
+const xiiStringView    gConstant2("gConstant2");
+const std::string_view gConstant3 = "gConstant3"sv;
+
 XII_CREATE_SIMPLE_TEST(Strings, StringView)
 {
   xiiStringBuilder tmp;
@@ -55,6 +63,16 @@ XII_CREATE_SIMPLE_TEST(Strings, StringView)
     xiiStringView b = "Hello Worl"_xiisv;
     XII_TEST_INT(b.GetElementCount(), 10);
     XII_TEST_STRING(b.GetData(tmp), "Hello Worl");
+
+    // tests a special case in which the MSVC compiler would run into trouble
+    XII_TEST_INT(gConstant1.GetElementCount(), 10);
+    XII_TEST_STRING(gConstant1.GetData(tmp), "gConstant1");
+
+    XII_TEST_INT(gConstant2.GetElementCount(), 10);
+    XII_TEST_STRING(gConstant2.GetData(tmp), "gConstant2");
+
+    XII_TEST_INT(gConstant3.size(), 10);
+    XII_TEST_BOOL(gConstant3 == "gConstant3");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator++")
@@ -602,9 +620,14 @@ XII_CREATE_SIMPLE_TEST(Strings, StringView)
     p = "This/Is\\My//Path.dot\\";
     XII_TEST_BOOL(p.GetFileName() == "");
 
-    // so far we treat file and folders whose names start with a '.' as extensions
     p = "This/Is\\My//Path.dot\\.stupidfile";
-    XII_TEST_BOOL(p.GetFileName() == "");
+    XII_TEST_BOOL(p.GetFileName() == ".stupidfile");
+
+    p = "This/Is\\My//Path.dot\\.stupidfile.ext";
+    XII_TEST_BOOL(p.GetFileName() == ".stupidfile");
+
+    p = "This/Is\\My//Path.dot\\.stupidfile.ext.";
+    XII_TEST_BOOL(p.GetFileName() == ".stupidfile.ext.");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetFileDirectory")

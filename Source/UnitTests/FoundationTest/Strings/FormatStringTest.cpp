@@ -192,20 +192,20 @@ XII_CREATE_SIMPLE_TEST(Strings, FormatString)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiTime")
   {
     TestFormat(xiiFmt("{}", xiiTime()), "0ns");
-    TestFormat(xiiFmt("{}", xiiTime::Nanoseconds(999)), "999ns");
-    TestFormat(xiiFmt("{}", xiiTime::Nanoseconds(999.1)), "999.1ns");
-    TestFormat(xiiFmt("{}", xiiTime::Microseconds(999)), (const char*)u8"999\u00B5s");     // Utf-8 encoding for the microsecond sign
-    TestFormat(xiiFmt("{}", xiiTime::Microseconds(999.2)), (const char*)u8"999.2\u00B5s"); // Utf-8 encoding for the microsecond sign
-    TestFormat(xiiFmt("{}", xiiTime::Milliseconds(-999)), "-999ms");
-    TestFormat(xiiFmt("{}", xiiTime::Milliseconds(-999.3)), "-999.3ms");
-    TestFormat(xiiFmt("{}", xiiTime::Seconds(59)), "59sec");
-    TestFormat(xiiFmt("{}", xiiTime::Seconds(-59.9)), "-59.9sec");
-    TestFormat(xiiFmt("{}", xiiTime::Seconds(75)), "1min 15sec");
-    TestFormat(xiiFmt("{}", xiiTime::Seconds(-75.4)), "-1min 15sec");
-    TestFormat(xiiFmt("{}", xiiTime::Minutes(59)), "59min 0sec");
-    TestFormat(xiiFmt("{}", xiiTime::Minutes(-1)), "-1min 0sec");
-    TestFormat(xiiFmt("{}", xiiTime::Minutes(90)), "1h 30min 0sec");
-    TestFormat(xiiFmt("{}", xiiTime::Minutes(-90.5)), "-1h 30min 30sec");
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromNanoseconds(999)), "999ns");
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromNanoseconds(999.1)), "999.1ns");
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromMicroseconds(999)), (const char*)u8"999\u00B5s");     // Utf-8 encoding for the microsecond sign
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromMicroseconds(999.2)), (const char*)u8"999.2\u00B5s"); // Utf-8 encoding for the microsecond sign
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromMilliseconds(-999)), "-999ms");
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromMilliseconds(-999.3)), "-999.3ms");
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromSeconds(59)), "59sec");
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromSeconds(-59.9)), "-59.9sec");
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromSeconds(75)), "1min 15sec");
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromSeconds(-75.4)), "-1min 15sec");
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromMinutes(59)), "59min 0sec");
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromMinutes(-1)), "-1min 0sec");
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromMinutes(90)), "1h 30min 0sec");
+    TestFormat(xiiFmt("{}", xiiTime::MakeFromMinutes(-90.5)), "-1h 30min 30sec");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiDateTime")

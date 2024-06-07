@@ -43,7 +43,7 @@ void TestConstruction(const STRING& value, const char* szStart, const char* szEn
   XII_TEST_BOOL(itBeginR.IsValid());
   XII_TEST_BOOL(itBeginR == itBeginR);
   const char* szEndPrior = szEnd;
-  xiiUnicodeUtils::MoveToPriorUtf8(szEndPrior);
+  xiiUnicodeUtils::MoveToPriorUtf8(szEndPrior, szStart).AssertSuccess();
   XII_TEST_BOOL(itBeginR.GetData() == szEndPrior);
   XII_TEST_BOOL(itBeginR.GetCharacter() == xiiUnicodeUtils::ConvertUtf8ToUtf32("F"));
   XII_TEST_BOOL(*itBeginR == xiiUnicodeUtils::ConvertUtf8ToUtf32("F"));

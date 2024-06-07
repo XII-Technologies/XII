@@ -37,11 +37,45 @@ XII_CREATE_SIMPLE_TEST(Strings, PathUtils)
     XII_TEST_BOOL(xiiPathUtils::FindPreviousSeparator(nullptr, nullptr) == nullptr);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetFileExtension")
+  {
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("This/Is\\My//Path.dot\\file.extension") == "extension");
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("This/Is\\My//Path.dot\\file") == "");
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("") == "");
+
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("/foo/bar.txt") == "txt");
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("/foo/bar.") == "");
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("/foo/bar") == "");
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("/foo/bar.txt/bar.cc") == "cc");
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("/foo/bar.txt/bar.") == "");
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("/foo/bar.txt/bar") == "");
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("/foo/.") == "");
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("/foo/..") == "");
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("/foo/.hidden") == "");
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("/foo/..bar") == "");
+
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("foo.bar.baz.tar") == "tar");
+    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("foo.bar.baz") == "baz");
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "HasAnyExtension")
   {
     XII_TEST_BOOL(xiiPathUtils::HasAnyExtension("This/Is\\My//Path.dot\\file.extension"));
     XII_TEST_BOOL(!xiiPathUtils::HasAnyExtension("This/Is\\My//Path.dot\\file_no_extension"));
     XII_TEST_BOOL(!xiiPathUtils::HasAnyExtension(""));
+
+    XII_TEST_BOOL(xiiPathUtils::HasAnyExtension("/foo/bar.txt"));
+    XII_TEST_BOOL(!xiiPathUtils::HasAnyExtension("/foo/bar."));
+    XII_TEST_BOOL(!xiiPathUtils::HasAnyExtension("/foo/bar"));
+    XII_TEST_BOOL(xiiPathUtils::HasAnyExtension("/foo/bar.txt/bar.cc"));
+    XII_TEST_BOOL(!xiiPathUtils::HasAnyExtension("/foo/bar.txt/bar."));
+    XII_TEST_BOOL(!xiiPathUtils::HasAnyExtension("/foo/bar.txt/bar"));
+    XII_TEST_BOOL(!xiiPathUtils::HasAnyExtension("."));
+    XII_TEST_BOOL(!xiiPathUtils::HasAnyExtension(".."));
+    XII_TEST_BOOL(!xiiPathUtils::HasAnyExtension("/foo/."));
+    XII_TEST_BOOL(!xiiPathUtils::HasAnyExtension("/foo/.."));
+    XII_TEST_BOOL(!xiiPathUtils::HasAnyExtension("/foo/.hidden"));
+    XII_TEST_BOOL(!xiiPathUtils::HasAnyExtension("/foo/..bar"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "HasExtension")
@@ -52,13 +86,31 @@ XII_CREATE_SIMPLE_TEST(Strings, PathUtils)
     XII_TEST_BOOL(!xiiPathUtils::HasExtension("This/Is\\My//Path.dot\\file.extension", ".Ext"));
     XII_TEST_BOOL(!xiiPathUtils::HasExtension("This/Is\\My//Path.dot\\file.extension", "sion"));
     XII_TEST_BOOL(!xiiPathUtils::HasExtension("", "ext"));
-  }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetFileExtension")
-  {
-    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("This/Is\\My//Path.dot\\file.extension") == "extension");
-    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("This/Is\\My//Path.dot\\file") == "");
-    XII_TEST_BOOL(xiiPathUtils::GetFileExtension("") == "");
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("/foo/bar.txt", "txt"));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("/foo/bar.", ""));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("/foo/bar", ""));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("/foo/bar.txt/bar.cc", "cc"));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("/foo/bar.txt/bar.", ""));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("/foo/bar.txt/bar", ""));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("/foo/.", ""));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("/foo/..", ""));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("/foo/.hidden", ""));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("/foo/..bar", ""));
+    XII_TEST_BOOL(!xiiPathUtils::HasExtension(".file", ".file"));
+    XII_TEST_BOOL(!xiiPathUtils::HasExtension(".file", "file"));
+    XII_TEST_BOOL(!xiiPathUtils::HasExtension("folder/.file", ".file"));
+    XII_TEST_BOOL(!xiiPathUtils::HasExtension("folder/.file", "file"));
+
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("foo.bar.baz.tar", "tar"));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("foo.bar.baz", "baz"));
+
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("file.txt", "txt"));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("file.txt", ".txt"));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("file.a.b", ".b"));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("file.a.b", "a.b"));
+    XII_TEST_BOOL(xiiPathUtils::HasExtension("file.a.b", ".a.b"));
+    XII_TEST_BOOL(!xiiPathUtils::HasExtension("file.a.b", "file.a.b"));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetFileNameAndExtension")
@@ -70,6 +122,13 @@ XII_CREATE_SIMPLE_TEST(Strings, PathUtils)
     XII_TEST_BOOL(xiiPathUtils::GetFileNameAndExtension("") == "");
     XII_TEST_BOOL(xiiPathUtils::GetFileNameAndExtension("/") == "");
     XII_TEST_BOOL(xiiPathUtils::GetFileNameAndExtension("This/Is\\My//Path.dot\\") == "");
+    XII_TEST_BOOL(xiiPathUtils::GetFileNameAndExtension("file") == "file");
+    XII_TEST_BOOL(xiiPathUtils::GetFileNameAndExtension("file.ext") == "file.ext");
+    XII_TEST_BOOL(xiiPathUtils::GetFileNameAndExtension(".stupidfile") == ".stupidfile");
+    XII_TEST_BOOL(xiiPathUtils::GetFileNameAndExtension("folder/.") == ".");
+    XII_TEST_BOOL(xiiPathUtils::GetFileNameAndExtension("folder/..") == "..");
+    XII_TEST_BOOL(xiiPathUtils::GetFileNameAndExtension(".") == ".");
+    XII_TEST_BOOL(xiiPathUtils::GetFileNameAndExtension("..") == "..");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetFileName")
@@ -81,8 +140,17 @@ XII_CREATE_SIMPLE_TEST(Strings, PathUtils)
     XII_TEST_BOOL(xiiPathUtils::GetFileName("/") == "");
     XII_TEST_BOOL(xiiPathUtils::GetFileName("This/Is\\My//Path.dot\\") == "");
 
-    // so far we treat file and folders whose names start with a '.' as extensions
-    XII_TEST_BOOL(xiiPathUtils::GetFileName("This/Is\\My//Path.dot\\.stupidfile") == "");
+    XII_TEST_BOOL(xiiPathUtils::GetFileName("This/Is\\My//Path.dot\\.stupidfile") == ".stupidfile");
+    XII_TEST_BOOL(xiiPathUtils::GetFileName(".stupidfile") == ".stupidfile");
+
+    XII_TEST_BOOL(xiiPathUtils::GetFileName("File.ext") == "File");
+    XII_TEST_BOOL(xiiPathUtils::GetFileName("File.") == "File.");
+    XII_TEST_BOOL(xiiPathUtils::GetFileName("File.ext.") == "File.ext.");
+
+    XII_TEST_BOOL(xiiPathUtils::GetFileName("folder/.") == ".");
+    XII_TEST_BOOL(xiiPathUtils::GetFileName("folder/..") == "..");
+    XII_TEST_BOOL(xiiPathUtils::GetFileName(".") == ".");
+    XII_TEST_BOOL(xiiPathUtils::GetFileName("..") == "..");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetFileDirectory")
@@ -126,21 +194,29 @@ XII_CREATE_SIMPLE_TEST(Strings, PathUtils)
     XII_TEST_BOOL(xiiPathUtils::GetRootedPathRootName(":MyRoot\\folder\\file.txt") == root);
     XII_TEST_BOOL(root == "MyRoot");
     XII_TEST_BOOL(relPath == "folder\\file.txt");
+
     xiiPathUtils::GetRootedPathParts("folder\\file2.txt", root, relPath);
     XII_TEST_BOOL(root.IsEmpty());
     XII_TEST_BOOL(relPath == "folder\\file2.txt");
+
+    xiiPathUtils::GetRootedPathParts(":root", root, relPath);
+    XII_TEST_BOOL(root == "root");
+    XII_TEST_BOOL(relPath == "");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsSubPath")
   {
     XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:/DataDir", "C:/DataDir/SomeFolder"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:/DataDir/", "C:/DataDir/SomeFolder"));
     XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:/DataDir", "C:/DataDir"));
     XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:/DataDir", "C:/DataDir/"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:/DataDir/", "C:/DataDir/"));
     XII_TEST_BOOL(!xiiPathUtils::IsSubPath("C:/DataDir", "C:/DataDir2"));
 
     XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:\\DataDir", "C:/DataDir/SomeFolder"));
     XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:\\DataDir", "C:/DataDir"));
     XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:\\DataDir", "C:/DataDir/"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath("C:\\DataDir\\", "C:/DataDir/"));
     XII_TEST_BOOL(!xiiPathUtils::IsSubPath("C:\\DataDir", "C:/DataDir2"));
 
     XII_TEST_BOOL(!xiiPathUtils::IsSubPath("C:\\DataDiR", "C:/DataDir/SomeFolder"));
@@ -154,12 +230,16 @@ XII_CREATE_SIMPLE_TEST(Strings, PathUtils)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsSubPath_NoCase")
   {
     XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:/DataDir", "C:/DataDir/SomeFolder"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:/DataDir/", "C:/DataDir/SomeFolder"));
     XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:/DataDir", "C:/DataDir"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:/DataDir/", "C:/DataDir"));
     XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:/DataDir", "C:/DataDir/"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:/DataDir/", "C:/DataDir/"));
     XII_TEST_BOOL(!xiiPathUtils::IsSubPath_NoCase("C:/DataDir", "C:/DataDir2"));
 
     XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:\\DataDir", "C:/DataDir/SomeFolder"));
     XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:\\DataDir", "C:/DataDir"));
+    XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:\\DataDir\\", "C:/DataDir"));
     XII_TEST_BOOL(xiiPathUtils::IsSubPath_NoCase("C:\\DataDir", "C:/DataDir/"));
     XII_TEST_BOOL(!xiiPathUtils::IsSubPath_NoCase("C:\\DataDir", "C:/DataDir2"));
 

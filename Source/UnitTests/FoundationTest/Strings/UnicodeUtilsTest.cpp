@@ -120,8 +120,8 @@ XII_CREATE_SIMPLE_TEST(Strings, UnicodeUtils)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Decode")
   {
-    char      utf8[]  = {(char)0xC3, (char)0xb6, 0};
-    xiiUInt16 utf16[] = {0xf6, 0};
+    char      utf8[]  = {(char)0xC3, (char)0xB6, 0};
+    xiiUInt16 utf16[] = {0xF6, 0};
     wchar_t   wchar[] = {L'ö', 0};
 
     char*      szUtf8  = &utf8[0];
@@ -165,50 +165,50 @@ XII_CREATE_SIMPLE_TEST(Strings, UnicodeUtils)
 
     // test how far it skips ahead
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz);
+    xiiUnicodeUtils::MoveToNextUtf8(sz).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[1]);
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz);
+    xiiUnicodeUtils::MoveToNextUtf8(sz).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[2]);
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz);
+    xiiUnicodeUtils::MoveToNextUtf8(sz).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[4]);
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz);
+    xiiUnicodeUtils::MoveToNextUtf8(sz).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[6]);
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz);
+    xiiUnicodeUtils::MoveToNextUtf8(sz).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[8]);
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz);
+    xiiUnicodeUtils::MoveToNextUtf8(sz).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[11]);
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz);
+    xiiUnicodeUtils::MoveToNextUtf8(sz).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[12]);
 
     sz                = s.GetData();
     const char* szEnd = s.GetView().GetEndPointer();
 
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[1]);
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[2]);
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[4]);
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[6]);
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[8]);
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[11]);
 
-    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(sz, szEnd).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[12]);
   }
 
@@ -222,28 +222,28 @@ XII_CREATE_SIMPLE_TEST(Strings, UnicodeUtils)
 
     // test how far it skips ahead
 
-    xiiUnicodeUtils::MoveToPriorUtf8(sz);
+    xiiUnicodeUtils::MoveToPriorUtf8(sz, s.GetData()).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[12]);
 
-    xiiUnicodeUtils::MoveToPriorUtf8(sz);
+    xiiUnicodeUtils::MoveToPriorUtf8(sz, s.GetData()).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[11]);
 
-    xiiUnicodeUtils::MoveToPriorUtf8(sz);
+    xiiUnicodeUtils::MoveToPriorUtf8(sz, s.GetData()).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[8]);
 
-    xiiUnicodeUtils::MoveToPriorUtf8(sz);
+    xiiUnicodeUtils::MoveToPriorUtf8(sz, s.GetData()).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[6]);
 
-    xiiUnicodeUtils::MoveToPriorUtf8(sz);
+    xiiUnicodeUtils::MoveToPriorUtf8(sz, s.GetData()).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[4]);
 
-    xiiUnicodeUtils::MoveToPriorUtf8(sz);
+    xiiUnicodeUtils::MoveToPriorUtf8(sz, s.GetData()).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[2]);
 
-    xiiUnicodeUtils::MoveToPriorUtf8(sz);
+    xiiUnicodeUtils::MoveToPriorUtf8(sz, s.GetData()).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[1]);
 
-    xiiUnicodeUtils::MoveToPriorUtf8(sz);
+    xiiUnicodeUtils::MoveToPriorUtf8(sz, s.GetData()).AssertSuccess();
     XII_TEST_BOOL(sz == &s.GetData()[0]);
   }
 
