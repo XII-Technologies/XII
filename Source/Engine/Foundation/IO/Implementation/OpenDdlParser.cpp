@@ -4,7 +4,7 @@
 #include <Foundation/Logging/Log.h>
 #include <Foundation/Utilities/ConversionUtils.h>
 
-xiiOpenDdlParser::xiiOpenDdlParser():
+xiiOpenDdlParser::xiiOpenDdlParser() :
   m_pLogInterface(nullptr), m_bHadFatalParsingError(false)
 {
 }

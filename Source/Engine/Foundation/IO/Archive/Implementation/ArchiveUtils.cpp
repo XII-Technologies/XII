@@ -35,7 +35,7 @@ bool xiiArchiveUtils::IsAcceptedArchiveFileExtensions(xiiStringView sExtension)
 
 xiiResult xiiArchiveUtils::WriteHeader(xiiStreamWriter& ref_stream)
 {
-  static_assert(16 == ArchiveHeaderSize);
+  static_assert(17 == ArchiveHeaderSize);
 
   const char* szTag = "XIIARCHIVE";
   XII_SUCCEED_OR_RETURN(ref_stream.WriteBytes(szTag, 11));
@@ -55,7 +55,7 @@ xiiResult xiiArchiveUtils::WriteHeader(xiiStreamWriter& ref_stream)
 
 xiiResult xiiArchiveUtils::ReadHeader(xiiStreamReader& ref_stream, xiiUInt8& out_uiVersion)
 {
-  static_assert(16 == ArchiveHeaderSize);
+  static_assert(17 == ArchiveHeaderSize);
 
   char szTag[11];
   if (ref_stream.ReadBytes(szTag, 11) != 11 || !xiiStringUtils::IsEqual(szTag, "XIIARCHIVE"))

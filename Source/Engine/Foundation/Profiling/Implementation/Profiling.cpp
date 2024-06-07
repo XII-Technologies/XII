@@ -863,8 +863,8 @@ xiiProfilingListScope::xiiProfilingListScope(xiiStringView sListName, xiiStringV
 xiiProfilingListScope::~xiiProfilingListScope()
 {
   xiiTime now = xiiTime::Now();
-  xiiProfilingSystem::AddCPUScope(m_sCurSectionName, nullptr, m_CurSectionBeginTime, now, xiiTime::Zero());
-  xiiProfilingSystem::AddCPUScope(m_sListName, m_sListFunction, m_ListBeginTime, now, xiiTime::Zero());
+  xiiProfilingSystem::AddCPUScope(m_sCurSectionName, nullptr, m_CurSectionBeginTime, now, xiiTime::MakeZero());
+  xiiProfilingSystem::AddCPUScope(m_sListName, m_sListFunction, m_ListBeginTime, now, xiiTime::MakeZero());
 
   s_pCurrentList = m_pPreviousList;
 }
@@ -875,7 +875,7 @@ void xiiProfilingListScope::StartNextSection(xiiStringView sNextSectionName)
   xiiProfilingListScope* pCurScope = s_pCurrentList;
 
   xiiTime now = xiiTime::Now();
-  xiiProfilingSystem::AddCPUScope(pCurScope->m_sCurSectionName, nullptr, pCurScope->m_CurSectionBeginTime, now, xiiTime::Zero());
+  xiiProfilingSystem::AddCPUScope(pCurScope->m_sCurSectionName, nullptr, pCurScope->m_CurSectionBeginTime, now, xiiTime::MakeZero());
 
   pCurScope->m_sCurSectionName     = sNextSectionName;
   pCurScope->m_CurSectionBeginTime = now;

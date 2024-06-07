@@ -13,7 +13,7 @@ const xiiTimestamp xiiTimestamp::CurrentTimestamp()
   timeval currentTime;
   gettimeofday(&currentTime, nullptr);
 
-  return xiiTimestamp(currentTime.tv_sec * 1000000LL + currentTime.tv_usec, xiiSIUnitOfTime::Microsecond);
+  return xiiTimestamp::MakeFromInt(currentTime.tv_sec * 1000000LL + currentTime.tv_usec, xiiSIUnitOfTime::Microsecond);
 }
 
 bool operator!=(const tm& lhs, const tm& rhs)
@@ -50,25 +50,25 @@ const xiiTimestamp xiiDateTime::GetTimestamp() const
   // If it can't round trip it is assumed to be invalid.
   tm timeinfoRoundtrip = {0};
   if (gmtime64_r(&iTimeStamp, &timeinfoRoundtrip) == nullptr)
-    return xiiTimestamp();
+    return xiiTimestamp::MakeInvalid();
 
   // mktime may have 'patched' our time to be valid, we don't want that to count as a valid date.
   if (timeinfoRoundtrip != timeinfo)
-    return xiiTimestamp();
+    return xiiTimestamp::MakeInvalid();
 
   iTimeStamp += timeinfo.tm_gmtoff;
   // Subtract one hour if daylight saving time was activated by mktime.
   if (timeinfo.tm_isdst == 1)
     iTimeStamp -= 3600;
-  return xiiTimestamp(iTimeStamp, xiiSIUnitOfTime::Second);
+  return xiiTimestamp::MakeFromInt(iTimeStamp, xiiSIUnitOfTime::Second);
 }
 
-bool xiiDateTime::SetTimestamp(xiiTimestamp timestamp)
+xiiResult xiiDateTime::SetFromTimestamp(xiiTimestamp timestamp)
 {
   tm       timeinfo = {0};
   time64_t iTime    = (time64_t)timestamp.GetInt64(xiiSIUnitOfTime::Second);
   if (gmtime64_r(&iTime, &timeinfo) == nullptr)
-    return false;
+    return XII_FAILURE;
 
   m_iYear          = timeinfo.tm_year + 1900;
   m_uiMonth        = timeinfo.tm_mon + 1;
@@ -79,7 +79,7 @@ bool xiiDateTime::SetTimestamp(xiiTimestamp timestamp)
   m_uiDayOfWeek    = xiiMath::MaxValue<xiiUInt8>(); // TODO: no day of week exists, setting to uint8 max.
   m_uiMicroseconds = 0;
 
-  return true;
+  return XII_SUCCESS;
 }
 
 #endif

@@ -178,7 +178,7 @@ xiiResult xiiDataDirectory::ArchiveType::InternalInitializeDataDirectory(xiiStri
   bool             bSupported = false;
   xiiStringBuilder sArchivePath;
 
-  xiiHybridArray<xiiString, 4, xiiStaticsAllocatorWrapper> extensions = xiiArchiveUtils::GetAcceptedArchiveFileExtensions();
+  xiiHybridArray<xiiString, 4, xiiStaticAllocatorWrapper> extensions = xiiArchiveUtils::GetAcceptedArchiveFileExtensions();
 
 #ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
   extensions.PushBack("zip");

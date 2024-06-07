@@ -31,7 +31,7 @@ const xiiTimestamp xiiTimestamp::CurrentTimestamp()
 {
   FILETIME fileTime;
   GetSystemTimeAsFileTime(&fileTime);
-  return xiiTimestamp(FileTimeToEpoch(fileTime), xiiSIUnitOfTime::Microsecond);
+  return xiiTimestamp::MakeFromInt(FileTimeToEpoch(fileTime), xiiSIUnitOfTime::Microsecond);
 }
 
 const xiiTimestamp xiiDateTime::GetTimestamp() const
@@ -50,19 +50,19 @@ const xiiTimestamp xiiDateTime::GetTimestamp() const
   BOOL         res = SystemTimeToFileTime(&st, &fileTime);
   xiiTimestamp timestamp;
   if (res != 0)
-    timestamp.SetInt64(FileTimeToEpoch(fileTime), xiiSIUnitOfTime::Microsecond);
+    timestamp = xiiTimestamp::MakeFromInt(FileTimeToEpoch(fileTime), xiiSIUnitOfTime::Microsecond);
 
   return timestamp;
 }
 
-bool xiiDateTime::SetTimestamp(xiiTimestamp timestamp)
+xiiResult xiiDateTime::SetFromTimestamp(xiiTimestamp timestamp)
 {
   FILETIME fileTime = EpochToFileTime(timestamp.GetInt64(xiiSIUnitOfTime::Microsecond));
 
   SYSTEMTIME st;
   BOOL       res = FileTimeToSystemTime(&fileTime, &st);
   if (res == 0)
-    return false;
+    return XII_FAILURE;
 
   m_iYear          = (xiiInt16)st.wYear;
   m_uiMonth        = (xiiUInt8)st.wMonth;
@@ -72,5 +72,5 @@ bool xiiDateTime::SetTimestamp(xiiTimestamp timestamp)
   m_uiMinute       = (xiiUInt8)st.wMinute;
   m_uiSecond       = (xiiUInt8)st.wSecond;
   m_uiMicroseconds = xiiUInt32(st.wMilliseconds * 1000);
-  return true;
+  return XII_SUCCESS;
 }

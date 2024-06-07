@@ -45,7 +45,7 @@ public:
   void ReturnToken();
 
   /// \brief Same as AcquireToken() but returns immediately with XII_FAILURE, if currently not tokens are available.
-  xiiResult TryAcquireToken(xiiTime timeout = xiiTime::Zero());
+  xiiResult TryAcquireToken(xiiTime timeout = xiiTime::MakeZero());
 
 private:
   xiiSemaphoreHandle m_hSemaphore = {};

@@ -97,7 +97,7 @@ xiiResult xiiProcessGroup::Launch(const xiiProcessOptions& opt)
   return XII_SUCCESS;
 }
 
-xiiResult xiiProcessGroup::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
+xiiResult xiiProcessGroup::WaitToFinish(xiiTime timeout /*= xiiTime::MakeZero()*/)
 {
   if (m_pImpl->m_hJobObject == INVALID_HANDLE_VALUE)
     return XII_SUCCESS;

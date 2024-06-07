@@ -387,7 +387,7 @@ xiiResult xiiProcess::ResumeSuspended()
   return XII_SUCCESS;
 }
 
-xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
+xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::MakeZero()*/)
 {
   XII_ASSERT_DEV(m_pImpl->m_ProcessHandle != nullptr, "Launch a process before waiting on it");
   XII_ASSERT_DEV(m_pImpl->m_ProcessID != 0, "Launch a process before waiting on it");

@@ -322,7 +322,6 @@ public:
 
   /// \brief Comparison operator
   bool operator==(const xiiMapBase<KeyType, ValueType, Comparer>& rhs) const; // [tested]
-  XII_ADD_DEFAULT_OPERATOR_NOTEQUAL(const xiiMapBase<KeyType, ValueType, Comparer>&);
 
   /// \brief Returns the amount of bytes that are currently allocated on the heap.
   xiiUInt64 GetHeapMemoryUsage() const { return m_Elements.GetHeapMemoryUsage(); } // [tested]

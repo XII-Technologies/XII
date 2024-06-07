@@ -93,7 +93,6 @@ public:
 
   /// \brief
   /// Same as the other EnumerateChanges function, but enumerates multiple watchers.
-  static void EnumerateChanges(xiiArrayPtr<xiiDirectoryWatcher*> watchers, EnumerateChangesFunction func, xiiTime waitUpTo = xiiTime::Zero());
   static void EnumerateChanges(xiiArrayPtr<xiiDirectoryWatcher*> watchers, EnumerateChangesFunction func, xiiTime waitUpTo = xiiTime::MakeZero());
 
 private:
