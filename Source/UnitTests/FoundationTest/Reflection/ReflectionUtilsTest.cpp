@@ -77,16 +77,17 @@ XII_CREATE_SIMPLE_TEST(Reflection, Utils)
     xiiMemoryStreamWriter FileOut(&StreamStorage);
 
     xiiTestClass2 c2;
-    c2.SetText("Hallo");
-    c2.SetText2("Hallo2");
+    c2.SetCharPtr("Hallo");
+    c2.SetString("World");
+    c2.SetStringView("!!!");
     c2.m_MyVector.Set(14, 16, 18);
     c2.m_Struct.m_fFloat1 = 128;
     c2.m_Struct.m_UInt8   = 234;
-    c2.m_Struct.m_Angle   = xiiAngle::Degree(360);
+    c2.m_Struct.m_Angle   = xiiAngle::MakeFromDegree(360);
     c2.m_Struct.m_vVec3I  = xiiVec3I32(9, 8, 7);
     c2.m_Struct.m_DataBuffer.Clear();
     c2.m_Color         = xiiColor(0.1f, 0.2f, 0.3f);
-    c2.m_Time          = xiiTime::Seconds(91.0f);
+    c2.m_Time          = xiiTime::MakeFromSeconds(91.0f);
     c2.m_enumClass     = xiiExampleEnum::Value3;
     c2.m_bitflagsClass = xiiExampleBitflags::Value1 | xiiExampleBitflags::Value2 | xiiExampleBitflags::Value3;
     c2.m_array.PushBack(5.0f);
@@ -104,8 +105,9 @@ XII_CREATE_SIMPLE_TEST(Reflection, Utils)
 
     xiiReflectionSerializer::ReadObjectPropertiesFromDDL(FileIn, *c2.GetDynamicRTTI(), &c2);
 
-    XII_TEST_STRING(c2.GetText(), "Hallo");
-    XII_TEST_STRING(c2.GetText2(), "Hallo2");
+    XII_TEST_STRING(c2.GetCharPtr(), "Hallo");
+    XII_TEST_STRING(c2.GetString(), "World");
+    XII_TEST_STRING(c2.GetStringView(), "!!!");
     XII_TEST_VEC3(c2.m_MyVector, xiiVec3(3, 4, 5), 0.0f);
     XII_TEST_FLOAT(c2.m_Time.GetSeconds(), 91.0f, 0.0f);
     XII_TEST_FLOAT(c2.m_Color.r, 0.1f, 0.0f);
@@ -113,7 +115,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Utils)
     XII_TEST_FLOAT(c2.m_Color.b, 0.3f, 0.0f);
     XII_TEST_FLOAT(c2.m_Struct.m_fFloat1, 128, 0.0f);
     XII_TEST_INT(c2.m_Struct.m_UInt8, 234);
-    XII_TEST_BOOL(c2.m_Struct.m_Angle == xiiAngle::Degree(360));
+    XII_TEST_BOOL(c2.m_Struct.m_Angle == xiiAngle::MakeFromDegree(360));
     XII_TEST_BOOL(c2.m_Struct.m_vVec3I == xiiVec3I32(9, 8, 7));
     XII_TEST_BOOL(c2.m_Struct.m_DataBuffer == xiiDataBuffer());
     XII_TEST_BOOL(c2.m_enumClass == xiiExampleEnum::Value3);
@@ -155,8 +157,9 @@ XII_CREATE_SIMPLE_TEST(Reflection, Utils)
 
     xiiTestClass2& c2 = *((xiiTestClass2*)pObject);
 
-    XII_TEST_STRING(c2.GetText(), "Hallo");
-    XII_TEST_STRING(c2.GetText2(), "Hallo2");
+    XII_TEST_STRING(c2.GetCharPtr(), "Hallo");
+    XII_TEST_STRING(c2.GetString(), "World");
+    XII_TEST_STRING(c2.GetStringView(), "!!!");
     XII_TEST_VEC3(c2.m_MyVector, xiiVec3(3, 4, 5), 0.0f);
     XII_TEST_FLOAT(c2.m_Time.GetSeconds(), 91.0f, 0.0f);
     XII_TEST_FLOAT(c2.m_Color.r, 0.1f, 0.0f);
@@ -164,7 +167,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Utils)
     XII_TEST_FLOAT(c2.m_Color.b, 0.3f, 0.0f);
     XII_TEST_FLOAT(c2.m_Struct.m_fFloat1, 128, 0.0f);
     XII_TEST_INT(c2.m_Struct.m_UInt8, 234);
-    XII_TEST_BOOL(c2.m_Struct.m_Angle == xiiAngle::Degree(360));
+    XII_TEST_BOOL(c2.m_Struct.m_Angle == xiiAngle::MakeFromDegree(360));
     XII_TEST_BOOL(c2.m_Struct.m_vVec3I == xiiVec3I32(9, 8, 7));
     XII_TEST_BOOL(c2.m_Struct.m_DataBuffer == xiiDataBuffer());
     XII_TEST_BOOL(c2.m_enumClass == xiiExampleEnum::Value3);
@@ -204,8 +207,8 @@ XII_CREATE_SIMPLE_TEST(Reflection, Utils)
     ClampValueTest<double>(-1, 1000, 2, 4);
     ClampValueTest<xiiInt32>(-1, 1000, 2, 4);
     ClampValueTest<xiiUInt64>(1, 1000, 2, 4);
-    ClampValueTest<xiiTime>(xiiTime::Milliseconds(1), xiiTime::Milliseconds(1000), xiiTime::Milliseconds(2), xiiTime::Milliseconds(4));
-    ClampValueTest<xiiAngle>(xiiAngle::Degree(1), xiiAngle::Degree(1000), xiiAngle::Degree(2), xiiAngle::Degree(4));
+    ClampValueTest<xiiTime>(xiiTime::MakeFromMilliseconds(1), xiiTime::MakeFromMilliseconds(1000), xiiTime::MakeFromMilliseconds(2), xiiTime::MakeFromMilliseconds(4));
+    ClampValueTest<xiiAngle>(xiiAngle::MakeFromDegree(1), xiiAngle::MakeFromDegree(1000), xiiAngle::MakeFromDegree(2), xiiAngle::MakeFromDegree(4));
     ClampValueTest<xiiVec3>(xiiVec3(1), xiiVec3(1000), xiiVec3(2), xiiVec3(4));
     ClampValueTest<xiiVec4I32>(xiiVec4I32(1), xiiVec4I32(1000), xiiVec4I32(2), xiiVec4I32(4));
     ClampValueTest<xiiVec4U32>(xiiVec4U32(1), xiiVec4U32(1000), xiiVec4U32(2), xiiVec4U32(4));

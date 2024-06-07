@@ -7,7 +7,8 @@
 struct xiiExampleEnum
 {
   using StorageType = xiiInt8;
-  enum Enum
+
+  enum Enum : StorageType
   {
     Value1  = 1,     // normal value
     Value2  = -2,    // normal value
@@ -83,17 +84,15 @@ public:
     m_vProperty3.Set(3, 4, 5);
     m_UInt8                      = 6;
     m_variant                    = "Test";
-    m_Angle                      = xiiAngle::Degree(0.5);
-    m_Angled                     = xiiAngled::Degree(0.5);
+    m_Angle                      = xiiAngle::MakeFromDegree(0.5);
+    m_Angled                     = xiiAngled::MakeFromDegree(0.5);
     m_DataBuffer                 = GetDefaultDataBuffer();
     m_vVec3I                     = xiiVec3I32(1, 2, 3);
     m_VarianceAngle.m_fVariance  = 0.5f;
-    m_VarianceAngle.m_Value      = xiiAngle::Degree(90.0f);
+    m_VarianceAngle.m_Value      = xiiAngle::MakeFromDegree(90.0f);
     m_VarianceAngled.m_fVariance = 0.5f;
-    m_VarianceAngled.m_Value     = xiiAngled::Degree(90.0);
+    m_VarianceAngled.m_Value     = xiiAngled::MakeFromDegree(90.0);
   }
-
-
 
   bool operator==(const xiiTestStruct& rhs) const
   {
@@ -220,17 +219,21 @@ class xiiTestClass2 : public xiiTestClass1
 public:
   xiiTestClass2()
   {
-    m_sText  = "Legen";
-    m_sText2 = "Legen2";
+    m_sCharPtr    = "AAA";
+    m_sString     = "BBB";
+    m_sStringView = "CCC";
   }
 
-  bool operator==(const xiiTestClass2& rhs) const { return m_Time == rhs.m_Time && m_enumClass == rhs.m_enumClass && m_bitflagsClass == rhs.m_bitflagsClass && m_array == rhs.m_array && m_Variant == rhs.m_Variant && m_sText == rhs.m_sText && m_sText2 == rhs.m_sText2; }
+  bool operator==(const xiiTestClass2& rhs) const { return m_Time == rhs.m_Time && m_enumClass == rhs.m_enumClass && m_bitflagsClass == rhs.m_bitflagsClass && m_array == rhs.m_array && m_Variant == rhs.m_Variant && m_sCharPtr == rhs.m_sCharPtr && m_sString == rhs.m_sString && m_sStringView == rhs.m_sStringView; }
 
-  xiiStringView GetText() const { return m_sText; }
-  void          SetText(xiiStringView sSz) { m_sText = sSz; }
+  const char* GetCharPtr() const { return m_sCharPtr.GetData(); }
+  void        SetCharPtr(const char* szSz) { m_sCharPtr = szSz; }
 
-  const char* GetText2() const { return m_sText2; }
-  void        SetText2(const char* szSz) { m_sText2 = szSz; }
+  const xiiString& GetString() const { return m_sString; }
+  void             SetString(const xiiString& sStr) { m_sString = sStr; }
+
+  xiiStringView GetStringView() const { return m_sStringView.GetView(); }
+  void          SetStringView(xiiStringView sStrView) { m_sStringView = sStrView; }
 
   xiiTime                         m_Time;
   xiiEnum<xiiExampleEnum>         m_enumClass;
@@ -239,8 +242,9 @@ public:
   xiiVariant                      m_Variant;
 
 private:
-  xiiString m_sText;
-  xiiString m_sText2;
+  xiiString m_sCharPtr;
+  xiiString m_sString;
+  xiiString m_sStringView;
 };
 
 
@@ -487,8 +491,8 @@ public:
     return *m_SetPtr.GetIterator().Key() == *rhs.m_SetPtr.GetIterator().Key();
   }
 
-  void        SetString(const char* szPzValue) { m_sString = szPzValue; }
-  const char* GetString() const { return m_sString.GetData(); }
+  void        SetString(const char* szValue) { m_sString = szValue; }
+  const char* GetString() const { return m_sString; }
 
   void           SetArrays(xiiTestArrays* pValue) { m_pArrays = pValue; }
   xiiTestArrays* GetArrays() const { return m_pArrays; }

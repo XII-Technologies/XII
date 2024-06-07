@@ -16,27 +16,21 @@ public:
 
   /// \brief Creates an instance of xiiTime that was initialized from nanoseconds.
   [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeFromNanoseconds(double fNanoseconds) { return xiiTime(fNanoseconds * 0.000000001); }
-  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime Nanoseconds(double fNanoseconds) { return xiiTime(fNanoseconds * 0.000000001); }
 
   /// \brief Creates an instance of xiiTime that was initialized from microseconds.
   [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeFromMicroseconds(double fMicroseconds) { return xiiTime(fMicroseconds * 0.000001); }
-  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime Microseconds(double fMicroseconds) { return xiiTime(fMicroseconds * 0.000001); }
 
   /// \brief Creates an instance of xiiTime that was initialized from milliseconds.
   [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeFromMilliseconds(double fMilliseconds) { return xiiTime(fMilliseconds * 0.001); }
-  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime Milliseconds(double fMilliseconds) { return xiiTime(fMilliseconds * 0.001); }
 
   /// \brief Creates an instance of xiiTime that was initialized from seconds.
   [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeFromSeconds(double fSeconds) { return xiiTime(fSeconds); }
-  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime Seconds(double fSeconds) { return xiiTime(fSeconds); }
 
   /// \brief Creates an instance of xiiTime that was initialized from minutes.
   [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeFromMinutes(double fMinutes) { return xiiTime(fMinutes * 60); }
-  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime Minutes(double fMinutes) { return xiiTime(fMinutes * 60); }
 
   /// \brief Creates an instance of xiiTime that was initialized from hours.
   [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeFromHours(double fHours) { return xiiTime(fHours * 60 * 60); }
-  [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime Hours(double fHours) { return xiiTime(fHours * 60 * 60); }
 
   /// \brief Creates an instance of xiiTime that was initialized with zero.
   [[nodiscard]] XII_ALWAYS_INLINE constexpr static xiiTime MakeZero() { return xiiTime(0.0); }

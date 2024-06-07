@@ -31,12 +31,12 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiTestStruct, xiiNoBase, 7, xiiRTTIDefaultAlloc
     XII_ACCESSOR_PROPERTY("Int", GetInt, SetInt)->AddAttributes(new xiiDefaultValueAttribute(2)),
     XII_MEMBER_PROPERTY("UInt8", m_UInt8)->AddAttributes(new xiiDefaultValueAttribute(6)),
     XII_MEMBER_PROPERTY("Variant", m_variant)->AddAttributes(new xiiDefaultValueAttribute("Test")),
-    XII_MEMBER_PROPERTY("Angle", m_Angle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::Degree(0.5f))),
-    XII_MEMBER_PROPERTY("Angled", m_Angled)->AddAttributes(new xiiDefaultValueAttribute(xiiAngled::Degree(0.5))),
+    XII_MEMBER_PROPERTY("Angle", m_Angle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(0.5f))),
+    XII_MEMBER_PROPERTY("Angled", m_Angled)->AddAttributes(new xiiDefaultValueAttribute(xiiAngled::MakeFromDegree(0.5))),
     XII_MEMBER_PROPERTY("DataBuffer", m_DataBuffer)->AddAttributes(new xiiDefaultValueAttribute(xiiTestStruct::GetDefaultDataBuffer())),
     XII_MEMBER_PROPERTY("vVec3I", m_vVec3I)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3I32(1,2,3))),
-    XII_MEMBER_PROPERTY("VarianceAngle", m_VarianceAngle)->AddAttributes(new xiiDefaultValueAttribute(xiiVarianceTypeAngle{0.5f, xiiAngle::Degree(90.0f)})),
-    XII_MEMBER_PROPERTY("VarianceAngled", m_VarianceAngled)->AddAttributes(new xiiDefaultValueAttribute(xiiVarianceTypeAngled{0.5, xiiAngled::Degree(90.0)})),
+    XII_MEMBER_PROPERTY("VarianceAngle", m_VarianceAngle)->AddAttributes(new xiiDefaultValueAttribute(xiiVarianceTypeAngle{0.5f, xiiAngle::MakeFromDegree(90.0f)})),
+    XII_MEMBER_PROPERTY("VarianceAngled", m_VarianceAngled)->AddAttributes(new xiiDefaultValueAttribute(xiiVarianceTypeAngled{0.5, xiiAngled::MakeFromDegree(90.0)})),
   }
   XII_END_PROPERTIES;
 }
@@ -92,8 +92,9 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiTestClass2, 22, xiiTestClass2Allocator)
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Text", GetText, SetText)->AddAttributes(new xiiDefaultValueAttribute("Legen")),
-    XII_ACCESSOR_PROPERTY("Text2", GetText2, SetText2)->AddAttributes(new xiiDefaultValueAttribute("Legen2")),
+    XII_ACCESSOR_PROPERTY("CharPtr", GetCharPtr, SetCharPtr)->AddAttributes(new xiiDefaultValueAttribute("AAA")),
+    XII_ACCESSOR_PROPERTY("String", GetString, SetString)->AddAttributes(new xiiDefaultValueAttribute("BBB")),
+    XII_ACCESSOR_PROPERTY("StringView", GetStringView, SetStringView)->AddAttributes(new xiiDefaultValueAttribute("CCC")),
     XII_MEMBER_PROPERTY("Time", m_Time),
     XII_ENUM_MEMBER_PROPERTY("Enum", xiiExampleEnum, m_enumClass),
     XII_BITFLAGS_MEMBER_PROPERTY("Bitflags", xiiExampleBitflags, m_bitflagsClass),
@@ -166,7 +167,7 @@ void xiiTestArrays::SetValue(xiiUInt32 uiIndex, double value)
 }
 void xiiTestArrays::Insert(xiiUInt32 uiIndex, double value)
 {
-  m_Hybrid.Insert(value, uiIndex);
+  m_Hybrid.InsertAt(uiIndex, value);
 }
 void xiiTestArrays::Remove(xiiUInt32 uiIndex)
 {
@@ -187,7 +188,7 @@ void xiiTestArrays::SetValueChar(xiiUInt32 uiIndex, xiiStringView sValue)
 }
 void xiiTestArrays::InsertChar(xiiUInt32 uiIndex, xiiStringView sValue)
 {
-  m_HybridChar.Insert(sValue, uiIndex);
+  m_HybridChar.InsertAt(uiIndex, sValue);
 }
 void xiiTestArrays::RemoveChar(xiiUInt32 uiIndex)
 {
@@ -208,7 +209,7 @@ void xiiTestArrays::SetValueDyn(xiiUInt32 uiIndex, const xiiTestStruct3& value)
 }
 void xiiTestArrays::InsertDyn(xiiUInt32 uiIndex, const xiiTestStruct3& value)
 {
-  m_Dynamic.Insert(value, uiIndex);
+  m_Dynamic.InsertAt(uiIndex, value);
 }
 void xiiTestArrays::RemoveDyn(xiiUInt32 uiIndex)
 {
@@ -229,7 +230,7 @@ void xiiTestArrays::SetValueDeq(xiiUInt32 uiIndex, const xiiTestArrays& value)
 }
 void xiiTestArrays::InsertDeq(xiiUInt32 uiIndex, const xiiTestArrays& value)
 {
-  m_Deque.Insert(value, uiIndex);
+  m_Deque.InsertAt(uiIndex, value);
 }
 void xiiTestArrays::RemoveDeq(xiiUInt32 uiIndex)
 {
@@ -250,7 +251,7 @@ void xiiTestArrays::SetValueCustom(xiiUInt32 uiIndex, xiiVarianceTypeAngle value
 }
 void xiiTestArrays::InsertCustom(xiiUInt32 uiIndex, xiiVarianceTypeAngle value)
 {
-  m_CustomVariant.Insert(value, uiIndex);
+  m_CustomVariant.InsertAt(uiIndex, value);
 }
 void xiiTestArrays::RemoveCustom(xiiUInt32 uiIndex)
 {
@@ -271,7 +272,7 @@ void xiiTestArrays::SetValueCustom2(xiiUInt32 uiIndex, xiiVarianceTypeAngled val
 }
 void xiiTestArrays::InsertCustom2(xiiUInt32 uiIndex, xiiVarianceTypeAngled value)
 {
-  m_CustomVariant2.Insert(value, uiIndex);
+  m_CustomVariant2.InsertAt(uiIndex, value);
 }
 void xiiTestArrays::RemoveCustom2(xiiUInt32 uiIndex)
 {

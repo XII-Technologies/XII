@@ -247,29 +247,31 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
       const xiiRTTI* pType = xiiRTTI::FindTypeByName("xiiTestClass2");
 
       auto Props = pType->GetProperties();
-      XII_TEST_INT(Props.GetCount(), 7);
-      XII_TEST_STRING(Props[0]->GetPropertyName(), "Text");
-      XII_TEST_STRING(Props[1]->GetPropertyName(), "Text2");
-      XII_TEST_STRING(Props[2]->GetPropertyName(), "Time");
-      XII_TEST_STRING(Props[3]->GetPropertyName(), "Enum");
-      XII_TEST_STRING(Props[4]->GetPropertyName(), "Bitflags");
-      XII_TEST_STRING(Props[5]->GetPropertyName(), "Array");
-      XII_TEST_STRING(Props[6]->GetPropertyName(), "Variant");
+      XII_TEST_INT(Props.GetCount(), 8);
+      XII_TEST_STRING(Props[0]->GetPropertyName(), "CharPtr");
+      XII_TEST_STRING(Props[1]->GetPropertyName(), "String");
+      XII_TEST_STRING(Props[2]->GetPropertyName(), "StringView");
+      XII_TEST_STRING(Props[3]->GetPropertyName(), "Time");
+      XII_TEST_STRING(Props[4]->GetPropertyName(), "Enum");
+      XII_TEST_STRING(Props[5]->GetPropertyName(), "Bitflags");
+      XII_TEST_STRING(Props[6]->GetPropertyName(), "Array");
+      XII_TEST_STRING(Props[7]->GetPropertyName(), "Variant");
 
       xiiHybridArray<const xiiAbstractProperty*, 32> AllProps;
       pType->GetAllProperties(AllProps);
 
-      XII_TEST_INT(AllProps.GetCount(), 10);
+      XII_TEST_INT(AllProps.GetCount(), 11);
       XII_TEST_STRING(AllProps[0]->GetPropertyName(), "SubStruct");
       XII_TEST_STRING(AllProps[1]->GetPropertyName(), "Color");
       XII_TEST_STRING(AllProps[2]->GetPropertyName(), "SubVector");
-      XII_TEST_STRING(AllProps[3]->GetPropertyName(), "Text");
-      XII_TEST_STRING(AllProps[4]->GetPropertyName(), "Text2");
-      XII_TEST_STRING(AllProps[5]->GetPropertyName(), "Time");
-      XII_TEST_STRING(AllProps[6]->GetPropertyName(), "Enum");
-      XII_TEST_STRING(AllProps[7]->GetPropertyName(), "Bitflags");
-      XII_TEST_STRING(AllProps[8]->GetPropertyName(), "Array");
-      XII_TEST_STRING(AllProps[9]->GetPropertyName(), "Variant");
+      XII_TEST_STRING(AllProps[3]->GetPropertyName(), "CharPtr");
+      XII_TEST_STRING(AllProps[4]->GetPropertyName(), "String");
+      XII_TEST_STRING(AllProps[5]->GetPropertyName(), "StringView");
+      XII_TEST_STRING(AllProps[6]->GetPropertyName(), "Time");
+      XII_TEST_STRING(AllProps[7]->GetPropertyName(), "Enum");
+      XII_TEST_STRING(AllProps[8]->GetPropertyName(), "Bitflags");
+      XII_TEST_STRING(AllProps[9]->GetPropertyName(), "Array");
+      XII_TEST_STRING(AllProps[10]->GetPropertyName(), "Variant");
     }
   }
 
@@ -318,37 +320,37 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
     bool bFoundStruct2 = false;
 
     xiiRTTI::ForEachType([&](const xiiRTTI* pRtti) {
-        if (pRtti->GetTypeName() == "xiiTestStruct2")
-        {
-          bFoundStruct2 = true;
+      if (pRtti->GetTypeName() == "xiiTestStruct2")
+      {
+        bFoundStruct2 = true;
 
-          XII_TEST_STRING(pRtti->GetPluginName(), xiiFoundationTest_Plugin1);
+        XII_TEST_STRING(pRtti->GetPluginName(), xiiFoundationTest_Plugin1);
 
-          void* pInstance = pRtti->GetAllocator()->Allocate<void>();
-          XII_TEST_BOOL(pInstance != nullptr);
+        void* pInstance = pRtti->GetAllocator()->Allocate<void>();
+        XII_TEST_BOOL(pInstance != nullptr);
 
-          const xiiAbstractProperty* pProp = pRtti->FindPropertyByName("Float2");
+        const xiiAbstractProperty* pProp = pRtti->FindPropertyByName("Float2");
 
-          XII_TEST_BOOL(pProp != nullptr);
+        XII_TEST_BOOL(pProp != nullptr);
 
-          XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Member);
-          auto pAbsMember = static_cast<const xiiAbstractMemberProperty*>(pProp);
+        XII_TEST_BOOL(pProp->GetCategory() == xiiPropertyCategory::Member);
+        auto pAbsMember = static_cast<const xiiAbstractMemberProperty*>(pProp);
 
-          XII_TEST_BOOL(pAbsMember->GetSpecificType() == xiiGetStaticRTTI<float>());
+        XII_TEST_BOOL(pAbsMember->GetSpecificType() == xiiGetStaticRTTI<float>());
 
-          auto pMember = static_cast<const xiiTypedMemberProperty<float>*>(pAbsMember);
+        auto pMember = static_cast<const xiiTypedMemberProperty<float>*>(pAbsMember);
 
-          XII_TEST_FLOAT(pMember->GetValue(pInstance), 42.0f, 0);
-          pMember->SetValue(pInstance, 43.0f);
-          XII_TEST_FLOAT(pMember->GetValue(pInstance), 43.0f, 0);
+        XII_TEST_FLOAT(pMember->GetValue(pInstance), 42.0f, 0);
+        pMember->SetValue(pInstance, 43.0f);
+        XII_TEST_FLOAT(pMember->GetValue(pInstance), 43.0f, 0);
 
-          pRtti->GetAllocator()->Deallocate(pInstance);
-        }
-        else
-        {
-          XII_TEST_STRING(pRtti->GetPluginName(), "Static");
-        }
-      });
+        pRtti->GetAllocator()->Deallocate(pInstance);
+      }
+      else
+      {
+        XII_TEST_STRING(pRtti->GetPluginName(), "Static");
+      }
+    });
 
     XII_TEST_BOOL(bFoundStruct2);
 
@@ -501,18 +503,18 @@ XII_CREATE_SIMPLE_TEST(Reflection, MemberProperties)
     TestMemberProperty<xiiInt32>("Int", &data, pRtti, xiiPropertyFlags::StandardType, 2, -8);
     TestMemberProperty<xiiVec3>("Vector", &data, pRtti, xiiPropertyFlags::StandardType | xiiPropertyFlags::ReadOnly, xiiVec3(3, 4, 5), xiiVec3(0, -1.0f, 3.14f));
     TestMemberProperty<xiiVariant>("Variant", &data, pRtti, xiiPropertyFlags::StandardType, xiiVariant("Test"), xiiVariant(xiiVec3(0, -1.0f, 3.14f)));
-    TestMemberProperty<xiiAngle>("Angle", &data, pRtti, xiiPropertyFlags::StandardType, xiiAngle::Degree(0.5f), xiiAngle::Degree(1.0f));
-    TestMemberProperty<xiiAngled>("Angled", &data, pRtti, xiiPropertyFlags::StandardType, xiiAngled::Degree(0.5), xiiAngled::Degree(1.0));
+    TestMemberProperty<xiiAngle>("Angle", &data, pRtti, xiiPropertyFlags::StandardType, xiiAngle::MakeFromDegree(0.5f), xiiAngle::MakeFromDegree(1.0f));
+    TestMemberProperty<xiiAngled>("Angled", &data, pRtti, xiiPropertyFlags::StandardType, xiiAngled::MakeFromDegree(0.5), xiiAngled::MakeFromDegree(1.0));
 
     {
-      xiiVarianceTypeAngle expectedVA = {0.5f, xiiAngle::Degree(90.0f)};
-      xiiVarianceTypeAngle testVA     = {0.1f, xiiAngle::Degree(45.0f)};
+      xiiVarianceTypeAngle expectedVA = {0.5f, xiiAngle::MakeFromDegree(90.0f)};
+      xiiVarianceTypeAngle testVA     = {0.1f, xiiAngle::MakeFromDegree(45.0f)};
       TestMemberProperty<xiiVarianceTypeAngle>("VarianceAngle", &data, pRtti, xiiPropertyFlags::Class, expectedVA, testVA);
     }
 
     {
-      xiiVarianceTypeAngled expectedVA = {0.5, xiiAngled::Degree(90.0)};
-      xiiVarianceTypeAngled testVA     = {0.1, xiiAngled::Degree(45.0)};
+      xiiVarianceTypeAngled expectedVA = {0.5, xiiAngled::MakeFromDegree(90.0)};
+      xiiVarianceTypeAngled testVA     = {0.1, xiiAngled::MakeFromDegree(45.0)};
       TestMemberProperty<xiiVarianceTypeAngled>("VarianceAngled", &data, pRtti, xiiPropertyFlags::Class, expectedVA, testVA);
     }
 
@@ -537,13 +539,15 @@ XII_CREATE_SIMPLE_TEST(Reflection, MemberProperties)
     const xiiRTTI* pRtti = xiiGetStaticRTTI<xiiTestClass2>();
 
     {
-      TestMemberProperty<xiiStringView>("Text", &Instance, pRtti, xiiPropertyFlags::StandardType, xiiString("Legen"), xiiString("dary"));
-      const xiiAbstractProperty* pProp = pRtti->FindPropertyByName("SubVector", false);
-      XII_TEST_BOOL(pProp == nullptr);
-    }
+      TestMemberProperty<const char*>("CharPtr", &Instance, pRtti, xiiPropertyFlags::StandardType | xiiPropertyFlags::Const, xiiString("AAA"), xiiString("aaaa"));
 
-    {
-      TestMemberProperty<const char*>("Text2", &Instance, pRtti, xiiPropertyFlags::StandardType | xiiPropertyFlags::Const, xiiString("Legen2"), xiiString("dary2"));
+      TestMemberProperty<xiiString>("String", &Instance, pRtti, xiiPropertyFlags::StandardType, xiiString("BBB"), xiiString("bbbb"));
+
+      TestMemberProperty<xiiStringView>("StringView", &Instance, pRtti, xiiPropertyFlags::StandardType, "CCC"_xiisv, "cccc"_xiisv);
+
+      Instance.SetStringView("CCC");
+      TestMemberProperty<xiiStringView>("StringView", &Instance, pRtti, xiiPropertyFlags::StandardType, xiiString("CCC"), xiiString("cccc"));
+
       const xiiAbstractProperty* pProp = pRtti->FindPropertyByName("SubVector", false);
       XII_TEST_BOOL(pProp == nullptr);
     }
@@ -974,7 +978,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Arrays)
   {
     // xiiVarianceTypeAngle
     {
-      xiiVarianceTypeAngle data{0.1f, xiiAngle::Degree(45.0f)};
+      xiiVarianceTypeAngle data{0.1f, xiiAngle::MakeFromDegree(45.0f)};
 
       TestArrayProperty<xiiVarianceTypeAngle>("Custom", &containers, pRtti, data);
       TestArrayProperty<xiiVarianceTypeAngle>("CustomRO", &containers, pRtti, data);
@@ -985,7 +989,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Arrays)
 
     // xiiVarianceTypeAngled
     {
-      xiiVarianceTypeAngled data{0.1, xiiAngled::Degree(45.0)};
+      xiiVarianceTypeAngled data{0.1, xiiAngled::MakeFromDegree(45.0)};
 
       TestArrayProperty<xiiVarianceTypeAngled>("Custom2", &containers, pRtti, data);
       TestArrayProperty<xiiVarianceTypeAngled>("CustomRO2", &containers, pRtti, data);
@@ -1129,28 +1133,28 @@ XII_CREATE_SIMPLE_TEST(Reflection, Sets)
   {
     // xiiVarianceTypeAngle
     {
-      xiiVarianceTypeAngle value1{-0.1f, xiiAngle::Degree(-45.0f)};
-      xiiVarianceTypeAngle value2{0.1f, xiiAngle::Degree(45.0f)};
+      xiiVarianceTypeAngle value1{-0.1f, xiiAngle::MakeFromDegree(-45.0f)};
+      xiiVarianceTypeAngle value2{0.1f, xiiAngle::MakeFromDegree(45.0f)};
 
       TestSetProperty<xiiVarianceTypeAngle>("CustomHashSet", &containers, pRtti, value1, value2);
       TestSetProperty<xiiVarianceTypeAngle>("CustomHashSetRO", &containers, pRtti, value1, value2);
 
-      xiiVarianceTypeAngle value3{-0.2f, xiiAngle::Degree(-90.0f)};
-      xiiVarianceTypeAngle value4{0.2f, xiiAngle::Degree(90.0f)};
+      xiiVarianceTypeAngle value3{-0.2f, xiiAngle::MakeFromDegree(-90.0f)};
+      xiiVarianceTypeAngle value4{0.2f, xiiAngle::MakeFromDegree(90.0f)};
       TestSetProperty<xiiVarianceTypeAngle>("CustomHashAcSet", &containers, pRtti, value3, value4);
       TestSetProperty<xiiVarianceTypeAngle>("CustomHashAcSetRO", &containers, pRtti, value3, value4);
     }
 
     // xiiVarianceTypeAngled
     {
-      xiiVarianceTypeAngled value1{-0.1, xiiAngled::Degree(-45.0)};
-      xiiVarianceTypeAngled value2{0.1, xiiAngled::Degree(45.0)};
+      xiiVarianceTypeAngled value1{-0.1, xiiAngled::MakeFromDegree(-45.0)};
+      xiiVarianceTypeAngled value2{0.1, xiiAngled::MakeFromDegree(45.0)};
 
       TestSetProperty<xiiVarianceTypeAngled>("CustomHashSet2", &containers, pRtti, value1, value2);
       TestSetProperty<xiiVarianceTypeAngled>("CustomHashSetRO2", &containers, pRtti, value1, value2);
 
-      xiiVarianceTypeAngled value3{-0.2, xiiAngled::Degree(-90.0)};
-      xiiVarianceTypeAngled value4{0.2, xiiAngled::Degree(90.0)};
+      xiiVarianceTypeAngled value3{-0.2, xiiAngled::MakeFromDegree(-90.0)};
+      xiiVarianceTypeAngled value4{0.2, xiiAngled::MakeFromDegree(90.0)};
       TestSetProperty<xiiVarianceTypeAngled>("CustomHashAcSet2", &containers, pRtti, value3, value4);
       TestSetProperty<xiiVarianceTypeAngled>("CustomHashAcSetRO2", &containers, pRtti, value3, value4);
     }
@@ -1259,8 +1263,8 @@ XII_CREATE_SIMPLE_TEST(Reflection, Maps)
   {
     // xiiVarianceTypeAngle
     {
-      xiiVarianceTypeAngle value1{-0.1f, xiiAngle::Degree(-45.0f)};
-      xiiVarianceTypeAngle value2{0.1f, xiiAngle::Degree(45.0f)};
+      xiiVarianceTypeAngle value1{-0.1f, xiiAngle::MakeFromDegree(-45.0f)};
+      xiiVarianceTypeAngle value2{0.1f, xiiAngle::MakeFromDegree(45.0f)};
 
       TestMapProperty<xiiVarianceTypeAngle>("CustomVariant", &containers, pRtti, value1, value2);
       TestMapProperty<xiiVarianceTypeAngle>("CustomVariantRO", &containers, pRtti, value1, value2);
@@ -1268,8 +1272,8 @@ XII_CREATE_SIMPLE_TEST(Reflection, Maps)
 
     // xiiVarianceTypeAngled
     {
-      xiiVarianceTypeAngled value1{-0.1, xiiAngled::Degree(-45.0)};
-      xiiVarianceTypeAngled value2{0.1, xiiAngled::Degree(45.0)};
+      xiiVarianceTypeAngled value1{-0.1, xiiAngled::MakeFromDegree(-45.0)};
+      xiiVarianceTypeAngled value2{0.1, xiiAngled::MakeFromDegree(45.0)};
 
       TestMapProperty<xiiVarianceTypeAngled>("CustomVariant2", &containers, pRtti, value1, value2);
       TestMapProperty<xiiVarianceTypeAngled>("CustomVariantRO2", &containers, pRtti, value1, value2);
