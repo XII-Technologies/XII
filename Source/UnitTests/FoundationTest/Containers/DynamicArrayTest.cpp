@@ -111,7 +111,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
 
     xiiDynamicArray<xiiInt32> a4(aptr);
 
-    XII_TEST_BOOL(a4.GetArrayPtr() == aptr);
+    XII_TEST_BOOL(a4 == aptr);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Move Constructor / Operator")
@@ -199,7 +199,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
 
     a2 = arrayPtr;
 
-    XII_TEST_BOOL(a2.GetArrayPtr() == arrayPtr);
+    XII_TEST_BOOL(a2 == arrayPtr);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator == / !=/ <")
@@ -424,7 +424,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
 
     // always inserts at the front
     for (xiiInt32 i = 0; i < 100; ++i)
-      a1.Insert(i, 0);
+      a1.InsertAt(0, i);
 
     for (xiiInt32 i = 0; i < 100; ++i)
       XII_TEST_INT(a1[i], 99 - i);
@@ -435,9 +435,9 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
     {
       xiiDynamicArray<xiiUniquePtr<DynamicArrayTestDetail::st>> a2;
       for (xiiUInt32 i = 0; i < 10; ++i)
-        a2.Insert(xiiUniquePtr<DynamicArrayTestDetail::st>(), 0);
+        a2.InsertAt(0, xiiUniquePtr<DynamicArrayTestDetail::st>());
 
-      a2.Insert(std::move(ptr), 0);
+      a2.InsertAt(0, std::move(ptr));
       XII_TEST_BOOL(ptr == nullptr);
       XII_TEST_BOOL(a2[0] != nullptr);
 
@@ -587,7 +587,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
     xiiDynamicArray<xiiInt32> a1;
 
     for (xiiInt32 i = 0; i < 10; ++i)
-      a1.Insert(i, i); // inserts at the end
+      a1.InsertAt(i, i); // inserts at the end
 
     a1.RemoveAndSwap(9);
     a1.RemoveAndSwap(7);
@@ -606,7 +606,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
     xiiDynamicArray<xiiInt32> a1;
 
     for (xiiInt32 i = 0; i < 10; ++i)
-      a1.Insert(i, i); // inserts at the end
+      a1.InsertAt(i, i); // inserts at the end
 
     a1.RemoveAtAndCopy(9);
     a1.RemoveAtAndCopy(7);
@@ -625,7 +625,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
     {
       xiiDynamicArray<xiiUniquePtr<DynamicArrayTestDetail::st>> a2;
       for (xiiUInt32 i = 0; i < 10; ++i)
-        a2.Insert(xiiUniquePtr<DynamicArrayTestDetail::st>(), 0);
+        a2.InsertAt(0, xiiUniquePtr<DynamicArrayTestDetail::st>());
 
       a2.PushBack(std::move(ptr));
       XII_TEST_BOOL(ptr == nullptr);
@@ -644,7 +644,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
     xiiDynamicArray<xiiInt32> a1;
 
     for (xiiInt32 i = 0; i < 10; ++i)
-      a1.Insert(i, i); // inserts at the end
+      a1.InsertAt(i, i); // inserts at the end
 
     a1.RemoveAtAndSwap(9);
     a1.RemoveAtAndSwap(7);
@@ -663,7 +663,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
     {
       xiiDynamicArray<xiiUniquePtr<DynamicArrayTestDetail::st>> a2;
       for (xiiUInt32 i = 0; i < 10; ++i)
-        a2.Insert(xiiUniquePtr<DynamicArrayTestDetail::st>(), 0);
+        a2.InsertAt(0, xiiUniquePtr<DynamicArrayTestDetail::st>());
 
       a2.PushBack(std::move(ptr));
       XII_TEST_BOOL(ptr == nullptr);
@@ -733,7 +733,7 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
       a1.PushBack(DynamicArrayTestDetail::st(1));
       XII_TEST_BOOL(DynamicArrayTestDetail::st::HasDone(2, 1)); // one temporary, one final (copy constructed)
 
-      a1.Insert(DynamicArrayTestDetail::st(2), 0);
+      a1.InsertAt(0, DynamicArrayTestDetail::st(2));
       XII_TEST_BOOL(DynamicArrayTestDetail::st::HasDone(2, 1)); // one temporary, one final (copy constructed)
 
       a2 = a1;
@@ -829,9 +829,9 @@ XII_CREATE_SIMPLE_TEST(Containers, DynamicArray)
     list.PushBack(1);
     list.PushBack(2);
     list.PushBack(3);
-    list.Insert(4, 3);
-    list.Insert(0, 1);
-    list.Insert(0, 5);
+    list.InsertAt(3, 4);
+    list.InsertAt(1, 0);
+    list.InsertAt(5, 0);
 
     XII_TEST_BOOL(list[0].a == 1);
     XII_TEST_BOOL(list[1].a == 0);

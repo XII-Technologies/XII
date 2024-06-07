@@ -200,6 +200,50 @@ XII_CREATE_SIMPLE_TEST(Containers, Bitfield)
     XII_TEST_BOOL(bf.AreAllBitsSet() == true);
   }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Swap")
+  {
+    xiiHybridBitfield<512> bf0; // using a hybrid array
+    xiiHybridBitfield<512> bf1; // using a hybrid array
+
+    xiiUInt32 bitFieldCount0 = 100;
+    xiiUInt32 bitFieldCount1 = 999;
+    xiiUInt32 bitIndexSet0   = 2;
+    xiiUInt32 bitIndexSet1   = 555;
+
+    bf0.SetCount(bitFieldCount0, false);
+    bf1.SetCount(bitFieldCount1, false);
+    bf0.SetBit(bitIndexSet0);
+    bf1.SetBit(bitIndexSet1);
+
+    XII_TEST_BOOL(bitFieldCount0 == bf0.GetCount());
+    for (xiiUInt32 i = 0; i < bf0.GetCount(); ++i)
+    {
+      XII_TEST_BOOL(bf0.IsBitSet(i) == (bitIndexSet0 == i));
+    }
+
+    XII_TEST_BOOL(bitFieldCount1 == bf1.GetCount());
+    for (xiiUInt32 i = 0; i < bf1.GetCount(); ++i)
+    {
+      XII_TEST_BOOL(bf1.IsBitSet(i) == (bitIndexSet1 == i));
+    }
+
+    bf0.Swap(bf1);
+    xiiMath::Swap(bitIndexSet0, bitIndexSet1);
+    xiiMath::Swap(bitFieldCount0, bitFieldCount1);
+
+    XII_TEST_BOOL(bitFieldCount0 == bf0.GetCount());
+    for (xiiUInt32 i = 0; i < bf0.GetCount(); ++i)
+    {
+      XII_TEST_BOOL(bf0.IsBitSet(i) == (bitIndexSet0 == i));
+    }
+
+    XII_TEST_BOOL(bitFieldCount1 == bf1.GetCount());
+    for (xiiUInt32 i = 0; i < bf1.GetCount(); ++i)
+    {
+      XII_TEST_BOOL(bf1.IsBitSet(i) == (bitIndexSet1 == i));
+    }
+  }
+
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Iterator")
   {
     {
@@ -417,47 +461,47 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetNumBitsSet")
   {
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0).GetNumBitsSet(), 0);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff).GetNumBitsSet(), 8);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xffff).GetNumBitsSet(), 16);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xffffffffu).GetNumBitsSet(), 32);
-    XII_TEST_INT(xiiStaticBitfield64::FromMask(0).GetNumBitsSet(), 0);
-    XII_TEST_INT(xiiStaticBitfield64::FromMask(0xff).GetNumBitsSet(), 8);
-    XII_TEST_INT(xiiStaticBitfield64::FromMask(0xffff).GetNumBitsSet(), 16);
-    XII_TEST_INT(xiiStaticBitfield64::FromMask(0xffffffffu).GetNumBitsSet(), 32);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0).GetNumBitsSet(), 0);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0xff).GetNumBitsSet(), 8);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0xffff).GetNumBitsSet(), 16);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0xffffffffu).GetNumBitsSet(), 32);
+    XII_TEST_INT(xiiStaticBitfield64::MakeFromMask(0).GetNumBitsSet(), 0);
+    XII_TEST_INT(xiiStaticBitfield64::MakeFromMask(0xff).GetNumBitsSet(), 8);
+    XII_TEST_INT(xiiStaticBitfield64::MakeFromMask(0xffff).GetNumBitsSet(), 16);
+    XII_TEST_INT(xiiStaticBitfield64::MakeFromMask(0xffffffffu).GetNumBitsSet(), 32);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetLowestBitSet")
   {
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0u).GetLowestBitSet(), 32);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(1u).GetLowestBitSet(), 0);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xffu).GetLowestBitSet(), 0);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff00u).GetLowestBitSet(), 8);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff0000u).GetLowestBitSet(), 16);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff000000u).GetLowestBitSet(), 24);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0x80000000u).GetLowestBitSet(), 31);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xffffffffu).GetLowestBitSet(), 0);
-    XII_TEST_INT(xiiStaticBitfield64::FromMask(0xffffffffffffffffull).GetLowestBitSet(), 0);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0u).GetLowestBitSet(), 32);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(1u).GetLowestBitSet(), 0);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0xffu).GetLowestBitSet(), 0);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0xff00u).GetLowestBitSet(), 8);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0xff0000u).GetLowestBitSet(), 16);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0xff000000u).GetLowestBitSet(), 24);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0x80000000u).GetLowestBitSet(), 31);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0xffffffffu).GetLowestBitSet(), 0);
+    XII_TEST_INT(xiiStaticBitfield64::MakeFromMask(0xffffffffffffffffull).GetLowestBitSet(), 0);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetHighestBitSet")
   {
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0u).GetHighestBitSet(), 32);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(1u).GetHighestBitSet(), 0);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xffu).GetHighestBitSet(), 7);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff00u).GetHighestBitSet(), 15);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff0000u).GetHighestBitSet(), 23);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xff000000u).GetHighestBitSet(), 31);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0x80000000u).GetHighestBitSet(), 31);
-    XII_TEST_INT(xiiStaticBitfield32::FromMask(0xffffffffu).GetHighestBitSet(), 31);
-    XII_TEST_INT(xiiStaticBitfield64::FromMask(0xffffffffffffffffull).GetHighestBitSet(), 63);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0u).GetHighestBitSet(), 32);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(1u).GetHighestBitSet(), 0);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0xffu).GetHighestBitSet(), 7);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0xff00u).GetHighestBitSet(), 15);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0xff0000u).GetHighestBitSet(), 23);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0xff000000u).GetHighestBitSet(), 31);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0x80000000u).GetHighestBitSet(), 31);
+    XII_TEST_INT(xiiStaticBitfield32::MakeFromMask(0xffffffffu).GetHighestBitSet(), 31);
+    XII_TEST_INT(xiiStaticBitfield64::MakeFromMask(0xffffffffffffffffull).GetHighestBitSet(), 63);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Iterator")
   {
     {
       // Empty bitfield
-      xiiStaticBitfield32 bitfield = xiiStaticBitfield32::FromMask(0u);
+      xiiStaticBitfield32 bitfield = xiiStaticBitfield32::MakeFromMask(0u);
       for (xiiUInt32 uiBit : bitfield)
       {
         XII_TEST_BOOL_MSG(false, "No bit should be set");
@@ -470,7 +514,7 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
       XII_TEST_BOOL(!bitfield.GetIterator().IsValid());
       XII_TEST_BOOL(!bitfield.GetEndIterator().IsValid());
 
-      xiiStaticBitfield64 bitfield64 = xiiStaticBitfield64::FromMask(0u);
+      xiiStaticBitfield64 bitfield64 = xiiStaticBitfield64::MakeFromMask(0u);
       for (xiiUInt32 uiBit : bitfield64)
       {
         XII_TEST_BOOL_MSG(false, "No bit should be set");
@@ -486,7 +530,7 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
 
     {
       // Full 32 bits
-      xiiStaticBitfield32 bitfield  = xiiStaticBitfield32::FromMask(0xffffffffu);
+      xiiStaticBitfield32 bitfield  = xiiStaticBitfield32::MakeFromMask(0xffffffffu);
       xiiUInt32           uiNextBit = 0;
       for (xiiUInt32 uiBit : bitfield)
       {
@@ -508,7 +552,7 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
 
     {
       // Full 64 bits
-      xiiStaticBitfield64 bitfield  = xiiStaticBitfield64::FromMask(0xffffffffffffffffull);
+      xiiStaticBitfield64 bitfield  = xiiStaticBitfield64::MakeFromMask(0xffffffffffffffffull);
       xiiUInt32           uiNextBit = 0;
       for (xiiUInt32 uiBit : bitfield)
       {
@@ -549,7 +593,7 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
         }
         bits.Sort();
 
-        xiiStaticBitfield32 bitfield = xiiStaticBitfield32::FromMask(uiBits);
+        xiiStaticBitfield32 bitfield = xiiStaticBitfield32::MakeFromMask(uiBits);
 
         for (xiiUInt32 uiBit : bitfield)
         {
@@ -581,7 +625,7 @@ XII_CREATE_SIMPLE_TEST(Containers, StaticBitfield)
         }
         bits.Sort();
 
-        xiiStaticBitfield64 bitfield = xiiStaticBitfield64::FromMask(uiBits);
+        xiiStaticBitfield64 bitfield = xiiStaticBitfield64::MakeFromMask(uiBits);
 
         for (xiiUInt32 uiBit : bitfield)
         {

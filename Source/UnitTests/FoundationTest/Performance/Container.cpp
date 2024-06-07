@@ -84,7 +84,7 @@ XII_CREATE_SIMPLE_TEST(Performance, Container)
     xiiUInt32 sum = 0;
     for (xiiUInt32 n = 0; n < NUM_SAMPLES; n++)
     {
-      xiiDynamicArray<int> a;
+      xiiDynamicArray<xiiInt32> a;
       for (xiiUInt32 i = 0; i < NUM_APPENDS; i++)
       {
         a.PushBack(i);
@@ -107,7 +107,7 @@ XII_CREATE_SIMPLE_TEST(Performance, Container)
     xiiUInt32 sum = 0;
     for (xiiUInt32 n = 0; n < NUM_SAMPLES; n++)
     {
-      std::vector<int> a;
+      std::vector<xiiInt32> a;
       for (xiiUInt32 i = 0; i < NUM_APPENDS; i++)
       {
         a.push_back(i);
@@ -178,8 +178,7 @@ XII_CREATE_SIMPLE_TEST(Performance, Container)
     }
 
     xiiTime t1 = xiiTime::Now();
-    xiiLog::Info("[test]xiiDynamicArray<xiiHybridArray<char, 64>> Appending {0}ms",
-                 xiiArgF((t1 - t0).GetMilliseconds() / static_cast<double>(NUM_SAMPLES), 4), sum);
+    xiiLog::Info("[test]xiiDynamicArray<xiiHybridArray<char, 64>> Appending {0}ms", xiiArgF((t1 - t0).GetMilliseconds() / static_cast<double>(NUM_SAMPLES), 4), sum);
   }
 
   XII_TEST_BLOCK(XII_PERFORMANCE_TESTS_STATE, "std::vector<std::vector<char>> Appending")
@@ -320,8 +319,6 @@ XII_CREATE_SIMPLE_TEST(Performance, Container)
   {
     xiiUInt32 sum = 0;
 
-
-
     for (xiiUInt32 size = 1024; size < 4096 * 32; size += 1024)
     {
       xiiMap<void*, xiiUInt32> map;
@@ -345,21 +342,22 @@ XII_CREATE_SIMPLE_TEST(Performance, Container)
         }
 
         for (xiiUInt32 i = 0; i < 1024; i++)
+        {
           free(ptrs[i]);
+        }
 
-        auto last = map.GetLastIterator();
-        for (auto it = map.GetIterator(); it != last; ++it)
+        for (auto it = map.GetIterator(); it.IsValid(); ++it)
         {
           sum += it.Value();
         }
       }
       xiiTime t1 = xiiTime::Now();
 
-      auto last = map.GetLastIterator();
-      for (auto it = map.GetIterator(); it != last; ++it)
+      for (auto it = map.GetIterator(); it.IsValid(); ++it)
       {
         free(it.Key());
       }
+
       xiiLog::Info("[test]xiiMap<void*, xiiUInt32> size = {0} => {1}ms", size, xiiArgF((t1 - t0).GetMilliseconds() / static_cast<double>(NUM_SAMPLES), 4), sum);
     }
   }
@@ -367,8 +365,6 @@ XII_CREATE_SIMPLE_TEST(Performance, Container)
   XII_TEST_BLOCK(xiiTestBlock::DisabledNoWarning, "xiiHashTable<void*, xiiUInt32>")
   {
     xiiUInt32 sum = 0;
-
-
 
     for (xiiUInt32 size = 1024; size < 4096 * 32; size += 1024)
     {
@@ -394,7 +390,9 @@ XII_CREATE_SIMPLE_TEST(Performance, Container)
         }
 
         for (xiiUInt32 i = 0; i < 1024; i++)
+        {
           free(ptrs[i]);
+        }
 
         for (auto it = map.GetIterator(); it.IsValid(); it.Next())
         {
@@ -408,8 +406,7 @@ XII_CREATE_SIMPLE_TEST(Performance, Container)
         free(it.Key());
       }
 
-      xiiLog::Info("[test]xiiHashTable<void*, xiiUInt32> size = {0} => {1}ms", size,
-                   xiiArgF((t1 - t0).GetMilliseconds() / static_cast<double>(NUM_SAMPLES), 4), sum);
+      xiiLog::Info("[test]xiiHashTable<void*, xiiUInt32> size = {0} => {1}ms", size, xiiArgF((t1 - t0).GetMilliseconds() / static_cast<double>(NUM_SAMPLES), 4), sum);
     }
   }
 }

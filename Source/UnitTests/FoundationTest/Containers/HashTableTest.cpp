@@ -610,4 +610,48 @@ XII_CREATE_SIMPLE_TEST(Containers, HashTable)
       map.Remove(it);
     }
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Find")
+  {
+    xiiStringBuilder                  tmp;
+    xiiHashTable<xiiString, xiiInt32> map;
+
+    for (xiiUInt32 i = 0; i < 1000; ++i)
+    {
+      tmp.SetFormat("stuff{}bla", i);
+      map[tmp] = i;
+    }
+
+    for (xiiInt32 i = map.GetCount() - 1; i > 0; --i)
+    {
+      tmp.SetFormat("stuff{}bla", i);
+
+      auto it  = map.Find(tmp);
+      auto cit = static_cast<const xiiHashTable<xiiString, xiiInt32>&>(map).Find(tmp);
+
+      XII_TEST_STRING(it.Key(), tmp);
+      XII_TEST_INT(it.Value(), i);
+
+      XII_TEST_STRING(cit.Key(), tmp);
+      XII_TEST_INT(cit.Value(), i);
+
+      xiiInt32 allowedIterations = map.GetCount();
+      for (auto it2 = it; it2.IsValid(); ++it2)
+      {
+        // just test that iteration is possible and terminates correctly
+        --allowedIterations;
+        XII_TEST_BOOL(allowedIterations >= 0);
+      }
+
+      allowedIterations = map.GetCount();
+      for (auto cit2 = cit; cit2.IsValid(); ++cit2)
+      {
+        // just test that iteration is possible and terminates correctly
+        --allowedIterations;
+        XII_TEST_BOOL(allowedIterations >= 0);
+      }
+
+      map.Remove(it);
+    }
+  }
 }
