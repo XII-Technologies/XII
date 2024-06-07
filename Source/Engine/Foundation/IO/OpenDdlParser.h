@@ -71,7 +71,7 @@ protected:
   /// \brief Outputs that a parsing error was detected (via OnParsingError) and stops further parsing, if bFatal is set to true.
   void ParsingError(xiiStringView sMessage, bool bFatal);
 
-  xiiLogInterface* m_pLogInterface = nullptr;
+  xiiLogInterface* m_pLogInterface;
 
 protected:
   /// \brief Called when something unexpected is encountered in the document.

@@ -225,7 +225,7 @@ public:
   /// \brief Checks whether the given file exists.
   static bool ExistsFile(xiiStringView sFile); // [tested]
 
-  /// \brief Checks whether the given file exists.
+  /// \brief Checks whether the given directory exists.
   static bool ExistsDirectory(xiiStringView sDirectory); // [tested]
 
   /// \brief If the given file already exists, determines a file path that doesn't exist yet.
@@ -270,13 +270,14 @@ public:
   static xiiResult CopyFolder(xiiStringView sSourceFolder, xiiStringView sDestinationFolder, xiiDynamicArray<xiiString>* out_pFilesCopied = nullptr);
 
   /// \brief Deletes all files recursively in \a sFolder.
-  ///
-  /// \note The current implementation does not remove the (empty) folders themselves.
   static xiiResult DeleteFolder(xiiStringView sFolder);
 
 #endif
 
-  /// \brief Returns the path in which the applications binary file is located.
+  /// \brief Returns the full path to the application binary.
+  static xiiStringView GetApplicationPath();
+
+  /// \brief Returns the path to the directory in which the application binary is located.
   static xiiStringView GetApplicationDirectory();
 
   /// \brief Returns the folder into which user data may be safely written.
@@ -404,7 +405,7 @@ private:
   /// \brief Platform specific data about the open file.
   xiiOSFileData m_FileData;
 
-  /// \brief The application binaries' path.
+  /// \brief The application binary's path.
   static xiiString64 s_sApplicationPath;
 
   /// \brief The path where user data is stored on this OS.

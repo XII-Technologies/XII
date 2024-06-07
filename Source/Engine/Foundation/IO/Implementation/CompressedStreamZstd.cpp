@@ -78,6 +78,7 @@ xiiUInt64 xiiCompressedStreamReaderZstd::ReadBytes(void* pReadBuffer, xiiUInt64 
       return outBuffer.pos;
 
     const size_t res = ZSTD_decompressStream(reinterpret_cast<ZSTD_DStream*>(m_pZstdDStream), &outBuffer, reinterpret_cast<ZSTD_inBuffer*>(&m_InBuffer));
+    XII_IGNORE_UNUSED(res);
     XII_ASSERT_DEV(!ZSTD_isError(res), "Decompressing the stream failed: '{0}'", ZSTD_getErrorName(res));
   }
 
@@ -304,6 +305,5 @@ xiiResult xiiCompressedStreamWriterZstd::WriteBytes(const void* pWriteBuffer, xi
 }
 
 #endif
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_CompressedStreamZstd);

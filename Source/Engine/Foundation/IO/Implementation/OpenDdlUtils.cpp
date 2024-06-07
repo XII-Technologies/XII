@@ -152,7 +152,7 @@ xiiResult xiiOpenDdlUtils::ConvertToTime(const xiiOpenDdlReaderElement* pElement
   {
     const float* pValues = pElement->GetPrimitivesFloat();
 
-    out_result = xiiTime::Seconds(pValues[0]);
+    out_result = xiiTime::MakeFromSeconds(pValues[0]);
 
     return XII_SUCCESS;
   }
@@ -161,7 +161,7 @@ xiiResult xiiOpenDdlUtils::ConvertToTime(const xiiOpenDdlReaderElement* pElement
   {
     const double* pValues = pElement->GetPrimitivesDouble();
 
-    out_result = xiiTime::Seconds(pValues[0]);
+    out_result = xiiTime::MakeFromSeconds(pValues[0]);
 
     return XII_SUCCESS;
   }

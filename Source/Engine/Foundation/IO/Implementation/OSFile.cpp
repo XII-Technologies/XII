@@ -329,6 +329,18 @@ xiiResult xiiOSFile::DeleteFile(xiiStringView sFile)
   return Res;
 }
 
+xiiStringView xiiOSFile::GetApplicationDirectory()
+{
+  if (s_sApplicationPath.IsEmpty())
+  {
+    // s_sApplicationPath is filled out and cached by GetApplicationPath(), so call that first, if necessary
+    GetApplicationPath();
+  }
+
+  XII_ASSERT_ALWAYS(!s_sApplicationPath.IsEmpty(), "Invalid application directory");
+  return s_sApplicationPath.GetFileDirectory();
+}
+
 xiiResult xiiOSFile::CreateDirectoryStructure(xiiStringView sDirectory)
 {
   const xiiTime t0 = xiiTime::Now();
@@ -686,7 +698,10 @@ void xiiFileSystemIterator::Next()
         xiiStringBuilder search = m_StartFolders[m_uiCurrentStartFolder];
         search.AppendPath(m_sMultiSearchTerm);
 
-        StartSearch(search, m_Flags);
+        if (search.IsAbsolutePath())
+        {
+          StartSearch(search, m_Flags);
+        }
       }
       else
       {

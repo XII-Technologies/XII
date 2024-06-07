@@ -68,5 +68,4 @@ xiiResult xiiStreamWriter::WriteString(const xiiStringView sStringView)
   return XII_SUCCESS;
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_Stream);

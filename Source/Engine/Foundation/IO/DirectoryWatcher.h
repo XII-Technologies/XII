@@ -14,7 +14,7 @@ struct xiiDirectoryWatcherImpl;
 /// \brief Which action has been performed on a file.
 enum class xiiDirectoryWatcherAction
 {
-  None,           ///< Nothing happened.
+  None,           ///< No operation occurred.
   Added,          ///< A file or directory was added
   Removed,        ///< A file or directory was removed
   Modified,       ///< A file was modified. Both Reads and Writes can 'modify' the timestamps of a file.
@@ -40,7 +40,7 @@ public:
     constexpr static xiiUInt8 Default = 0;
 
     /// \brief Enum values
-    enum Enum
+    enum Enum : StorageType
     {
       Writes         = XII_BIT(0), ///< Watch for writes.
       Creates        = XII_BIT(1), ///< Watch for newly created files.
@@ -60,7 +60,12 @@ public:
   };
 
   xiiDirectoryWatcher();
+  xiiDirectoryWatcher(const xiiDirectoryWatcher&)     = delete;
+  xiiDirectoryWatcher(xiiDirectoryWatcher&&) noexcept = delete;
   ~xiiDirectoryWatcher();
+
+  xiiDirectoryWatcher& operator=(const xiiDirectoryWatcher&) = delete;
+  xiiDirectoryWatcher& operator=(xiiDirectoryWatcher&&) noexcept = delete;
 
   /// \brief
   /// Opens the directory at \p absolutePath for watching. \p whatToWatch controls what exactly should be watched.
@@ -84,11 +89,12 @@ public:
   /// If waitUpToMilliseconds is greater than 0, blocks until either a change was observed or the timelimit is reached.
   ///
   /// \note There might be multiple changes on the same file reported.
-  void EnumerateChanges(EnumerateChangesFunction func, xiiTime waitUpTo = xiiTime::Zero());
+  void EnumerateChanges(EnumerateChangesFunction func, xiiTime waitUpTo = xiiTime::MakeZero());
 
   /// \brief
   /// Same as the other EnumerateChanges function, but enumerates multiple watchers.
   static void EnumerateChanges(xiiArrayPtr<xiiDirectoryWatcher*> watchers, EnumerateChangesFunction func, xiiTime waitUpTo = xiiTime::Zero());
+  static void EnumerateChanges(xiiArrayPtr<xiiDirectoryWatcher*> watchers, EnumerateChangesFunction func, xiiTime waitUpTo = xiiTime::MakeZero());
 
 private:
   xiiString                m_sDirectoryPath;

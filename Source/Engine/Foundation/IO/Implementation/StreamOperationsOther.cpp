@@ -35,7 +35,7 @@ void operator>>(xiiStreamReader& ref_stream, xiiTime& ref_value)
   double d = 0;
   ref_stream.ReadQWordValue(&d).IgnoreResult();
 
-  ref_value = xiiTime::Seconds(d);
+  ref_value = xiiTime::MakeFromSeconds(d);
 }
 
 // xiiUuid
@@ -297,7 +297,7 @@ void operator>>(xiiStreamReader& ref_stream, xiiTimestamp& ref_value)
   xiiInt64 value;
   ref_stream >> value;
 
-  ref_value.SetInt64(value, xiiSIUnitOfTime::Microsecond);
+  ref_value = xiiTimestamp::MakeFromInt(value, xiiSIUnitOfTime::Microsecond);
 }
 
 // xiiVarianceTypeFloat
