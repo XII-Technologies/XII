@@ -186,7 +186,7 @@ bool xiiArrayBase<T, Derived>::Contains(const T& value) const
 }
 
 template <typename T, typename Derived>
-void xiiArrayBase<T, Derived>::Insert(const T& value, xiiUInt32 uiIndex)
+void xiiArrayBase<T, Derived>::InsertAt(xiiUInt32 uiIndex, const T& value)
 {
   XII_ASSERT_DEV(uiIndex <= m_uiCount, "Invalid index. Array has {0} elements, trying to insert element at index {1}.", m_uiCount, uiIndex);
 
@@ -197,7 +197,7 @@ void xiiArrayBase<T, Derived>::Insert(const T& value, xiiUInt32 uiIndex)
 }
 
 template <typename T, typename Derived>
-void xiiArrayBase<T, Derived>::Insert(T&& value, xiiUInt32 uiIndex)
+void xiiArrayBase<T, Derived>::InsertAt(xiiUInt32 uiIndex, T&& value)
 {
   XII_ASSERT_DEV(uiIndex <= m_uiCount, "Invalid index. Array has {0} elements, trying to insert element at index {1}.", m_uiCount, uiIndex);
 

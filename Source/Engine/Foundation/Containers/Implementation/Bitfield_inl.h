@@ -299,6 +299,13 @@ void xiiBitfield<Container>::ClearBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNum
 }
 
 template <class Container>
+void xiiBitfield<Container>::Swap(xiiBitfield<Container>& other)
+{
+  xiiMath::Swap(m_uiCount, other.m_uiCount);
+  m_Container.Swap(other.m_Container);
+}
+
+template <class Container>
 XII_ALWAYS_INLINE typename xiiBitfield<Container>::ConstIterator xiiBitfield<Container>::GetIterator() const
 {
   return ConstIterator(*this);
@@ -408,7 +415,7 @@ XII_ALWAYS_INLINE xiiStaticBitfield<T>::xiiStaticBitfield()
 }
 
 template <typename T>
-XII_ALWAYS_INLINE xiiStaticBitfield<T> xiiStaticBitfield<T>::FromMask(StorageType bits)
+XII_ALWAYS_INLINE xiiStaticBitfield<T> xiiStaticBitfield<T>::MakeFromMask(StorageType bits)
 {
   return xiiStaticBitfield<T>(bits);
 }
@@ -530,4 +537,10 @@ template <typename T>
 XII_ALWAYS_INLINE T xiiStaticBitfield<T>::GetValue() const
 {
   return m_Storage;
+}
+
+template <typename T>
+XII_ALWAYS_INLINE void xiiStaticBitfield<T>::Swap(xiiStaticBitfield<T>& other)
+{
+  xiiMath::Swap(m_Storage, other.m_Storage);
 }
