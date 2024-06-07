@@ -149,8 +149,7 @@ XII_CREATE_SIMPLE_TEST(Performance, Container)
     }
 
     xiiTime t1 = xiiTime::Now();
-    xiiLog::Info(
-      "[test]xiiDynamicArray<xiiDynamicArray<char>> Appending {0}ms", xiiArgF((t1 - t0).GetMilliseconds() / static_cast<double>(NUM_SAMPLES), 4), sum);
+    xiiLog::Info("[test]xiiDynamicArray<xiiDynamicArray<char>> Appending {0}ms", xiiArgF((t1 - t0).GetMilliseconds() / static_cast<double>(NUM_SAMPLES), 4), sum);
   }
 
   XII_TEST_BLOCK(XII_PERFORMANCE_TESTS_STATE, "xiiDynamicArray<xiiHybridArray<char, 64>> Appending")
@@ -209,8 +208,7 @@ XII_CREATE_SIMPLE_TEST(Performance, Container)
     }
 
     xiiTime t1 = xiiTime::Now();
-    xiiLog::Info(
-      "[test]std::vector<std::vector<char>> Appending {0}ms", xiiArgF((t1 - t0).GetMilliseconds() / static_cast<double>(NUM_SAMPLES), 4), sum);
+    xiiLog::Info("[test]std::vector<std::vector<char>> Appending {0}ms", xiiArgF((t1 - t0).GetMilliseconds() / static_cast<double>(NUM_SAMPLES), 4), sum);
   }
 
   XII_TEST_BLOCK(XII_PERFORMANCE_TESTS_STATE, "xiiDynamicArray<xiiString> Appending")
@@ -292,8 +290,7 @@ XII_CREATE_SIMPLE_TEST(Performance, Container)
     }
 
     xiiTime t1 = xiiTime::Now();
-    xiiLog::Info(
-      "[test]xiiDynamicArray<SomeBigObject> Appending {0}ms", xiiArgF((t1 - t0).GetMilliseconds() / static_cast<double>(NUM_SAMPLES), 4), sum);
+    xiiLog::Info("[test]xiiDynamicArray<SomeBigObject> Appending {0}ms", xiiArgF((t1 - t0).GetMilliseconds() / static_cast<double>(NUM_SAMPLES), 4), sum);
   }
 
   XII_TEST_BLOCK(XII_PERFORMANCE_TESTS_STATE, "std::vector<SomeBigObject> Appending")
@@ -363,8 +360,7 @@ XII_CREATE_SIMPLE_TEST(Performance, Container)
       {
         free(it.Key());
       }
-      xiiLog::Info(
-        "[test]xiiMap<void*, xiiUInt32> size = {0} => {1}ms", size, xiiArgF((t1 - t0).GetMilliseconds() / static_cast<double>(NUM_SAMPLES), 4), sum);
+      xiiLog::Info("[test]xiiMap<void*, xiiUInt32> size = {0} => {1}ms", size, xiiArgF((t1 - t0).GetMilliseconds() / static_cast<double>(NUM_SAMPLES), 4), sum);
     }
   }
 

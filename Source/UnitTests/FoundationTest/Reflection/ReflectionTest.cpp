@@ -317,8 +317,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, Types)
 
     bool bFoundStruct2 = false;
 
-    xiiRTTI::ForEachType(
-      [&](const xiiRTTI* pRtti) {
+    xiiRTTI::ForEachType([&](const xiiRTTI* pRtti) {
         if (pRtti->GetTypeName() == "xiiTestStruct2")
         {
           bFoundStruct2 = true;

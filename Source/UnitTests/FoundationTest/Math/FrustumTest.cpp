@@ -99,10 +99,8 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
         const xiiMat4 mViewLH = xiiGraphicsUtils::CreateLookAtViewMatrix(vCamPos, vCamPos + vLookDir, xiiVec3(0, 1, 0), xiiHandedness::LeftHanded);
         const xiiMat4 mViewRH = xiiGraphicsUtils::CreateLookAtViewMatrix(vCamPos, vCamPos + vLookDir, xiiVec3(0, 1, 0), xiiHandedness::RightHanded);
 
-        const xiiMat4 mProjLH = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(
-          xiiAngle::Degree(90), 1.0f, 1.0f, 100.0f, range, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
-        const xiiMat4 mProjRH = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(
-          xiiAngle::Degree(90), 1.0f, 1.0f, 100.0f, range, xiiClipSpaceYMode::Regular, xiiHandedness::RightHanded);
+        const xiiMat4 mProjLH = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::Degree(90), 1.0f, 1.0f, 100.0f, range, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+        const xiiMat4 mProjRH = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::Degree(90), 1.0f, 1.0f, 100.0f, range, xiiClipSpaceYMode::Regular, xiiHandedness::RightHanded);
 
         const xiiMat4 mViewProjLH = mProjLH * mViewLH;
         const xiiMat4 mViewProjRH = mProjRH * mViewRH;
@@ -236,8 +234,7 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ComputeCornerPoints")
   {
-    const xiiMat4 mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(
-      xiiAngle::Degree(90), 1.0f, 1.0f, 10.0f, xiiClipSpaceDepthRange::MinusOneToOne, xiiClipSpaceYMode::Regular, xiiHandedness::RightHanded);
+    const xiiMat4 mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::Degree(90), 1.0f, 1.0f, 10.0f, xiiClipSpaceDepthRange::MinusOneToOne, xiiClipSpaceYMode::Regular, xiiHandedness::RightHanded);
 
     xiiFrustum frustum[2];
     frustum[0].SetFrustum(mProj, xiiClipSpaceDepthRange::MinusOneToOne, xiiHandedness::RightHanded);

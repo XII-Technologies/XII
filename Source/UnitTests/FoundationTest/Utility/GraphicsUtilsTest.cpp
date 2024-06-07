@@ -8,8 +8,7 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
   {
     xiiMat4 mProj, mProjInv;
 
-    mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(
-      xiiAngle::Degree(85.0f), 2.0f, 1.0f, 1000.0f, xiiClipSpaceDepthRange::MinusOneToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+    mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::Degree(85.0f), 2.0f, 1.0f, 1000.0f, xiiClipSpaceDepthRange::MinusOneToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
     mProjInv = mProj.GetInverse();
 
     for (xiiUInt32 y = 0; y < 25; ++y)
@@ -17,9 +16,7 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
       for (xiiUInt32 x = 0; x < 50; ++x)
       {
         xiiVec3 vPoint, vDir;
-        XII_TEST_BOOL(xiiGraphicsUtils::ConvertScreenPosToWorldPos(
-                        mProjInv, 0, 0, 50, 25, xiiVec3((float)x, (float)y, 0.5f), vPoint, &vDir, xiiClipSpaceDepthRange::MinusOneToOne)
-                        .Succeeded());
+        XII_TEST_BOOL(xiiGraphicsUtils::ConvertScreenPosToWorldPos(mProjInv, 0, 0, 50, 25, xiiVec3((float)x, (float)y, 0.5f), vPoint, &vDir, xiiClipSpaceDepthRange::MinusOneToOne).Succeeded());
 
         XII_TEST_VEC3(vDir, vPoint.GetNormalized(), 0.01f);
 
@@ -34,8 +31,7 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Perspective (0/1): ConvertWorldPosToScreenPos / ConvertScreenPosToWorldPos")
   {
     xiiMat4 mProj, mProjInv;
-    mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(
-      xiiAngle::Degree(85.0f), 2.0f, 1.0f, 1000.0f, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+    mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::Degree(85.0f), 2.0f, 1.0f, 1000.0f, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
     mProjInv = mProj.GetInverse();
 
     for (xiiUInt32 y = 0; y < 25; ++y)
@@ -43,9 +39,7 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
       for (xiiUInt32 x = 0; x < 50; ++x)
       {
         xiiVec3 vPoint, vDir;
-        XII_TEST_BOOL(xiiGraphicsUtils::ConvertScreenPosToWorldPos(
-                        mProjInv, 0, 0, 50, 25, xiiVec3((float)x, (float)y, 0.5f), vPoint, &vDir, xiiClipSpaceDepthRange::ZeroToOne)
-                        .Succeeded());
+        XII_TEST_BOOL(xiiGraphicsUtils::ConvertScreenPosToWorldPos(mProjInv, 0, 0, 50, 25, xiiVec3((float)x, (float)y, 0.5f), vPoint, &vDir, xiiClipSpaceDepthRange::ZeroToOne).Succeeded());
 
         XII_TEST_VEC3(vDir, vPoint.GetNormalized(), 0.01f);
 
@@ -60,8 +54,7 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Ortho (-1/1): ConvertWorldPosToScreenPos / ConvertScreenPosToWorldPos")
   {
     xiiMat4 mProj, mProjInv;
-    mProj = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(
-      50, 25, 1.0f, 1000.0f, xiiClipSpaceDepthRange::MinusOneToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+    mProj = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(50, 25, 1.0f, 1000.0f, xiiClipSpaceDepthRange::MinusOneToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
 
     mProjInv = mProj.GetInverse();
 
@@ -70,9 +63,7 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
       for (xiiUInt32 x = 0; x < 50; ++x)
       {
         xiiVec3 vPoint, vDir;
-        XII_TEST_BOOL(xiiGraphicsUtils::ConvertScreenPosToWorldPos(
-                        mProjInv, 0, 0, 50, 25, xiiVec3((float)x, (float)y, 0.5f), vPoint, &vDir, xiiClipSpaceDepthRange::MinusOneToOne)
-                        .Succeeded());
+        XII_TEST_BOOL(xiiGraphicsUtils::ConvertScreenPosToWorldPos(mProjInv, 0, 0, 50, 25, xiiVec3((float)x, (float)y, 0.5f), vPoint, &vDir, xiiClipSpaceDepthRange::MinusOneToOne).Succeeded());
 
         XII_TEST_VEC3(vDir, xiiVec3(0, 0, 1.0f), 0.01f);
 
@@ -87,8 +78,7 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Ortho (0/1): ConvertWorldPosToScreenPos / ConvertScreenPosToWorldPos")
   {
     xiiMat4 mProj, mProjInv;
-    mProj = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(
-      50, 25, 1.0f, 1000.0f, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+    mProj = xiiGraphicsUtils::CreateOrthographicProjectionMatrix(50, 25, 1.0f, 1000.0f, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
     mProjInv = mProj.GetInverse();
 
     for (xiiUInt32 y = 0; y < 25; ++y)
@@ -96,9 +86,7 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
       for (xiiUInt32 x = 0; x < 50; ++x)
       {
         xiiVec3 vPoint, vDir;
-        XII_TEST_BOOL(xiiGraphicsUtils::ConvertScreenPosToWorldPos(
-                        mProjInv, 0, 0, 50, 25, xiiVec3((float)x, (float)y, 0.5f), vPoint, &vDir, xiiClipSpaceDepthRange::ZeroToOne)
-                        .Succeeded());
+        XII_TEST_BOOL(xiiGraphicsUtils::ConvertScreenPosToWorldPos(mProjInv, 0, 0, 50, 25, xiiVec3((float)x, (float)y, 0.5f), vPoint, &vDir, xiiClipSpaceDepthRange::ZeroToOne).Succeeded());
 
         XII_TEST_VEC3(vDir, xiiVec3(0, 0, 1.0f), 0.01f);
 
@@ -113,10 +101,8 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ConvertProjectionMatrixDepthRange")
   {
     xiiMat4 mProj1, mProj2;
-    mProj1 = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(
-      xiiAngle::Degree(85.0f), 2.0f, 1.0f, 1000.0f, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
-    mProj2 = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(
-      xiiAngle::Degree(85.0f), 2.0f, 1.0f, 1000.0f, xiiClipSpaceDepthRange::MinusOneToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+    mProj1 = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::Degree(85.0f), 2.0f, 1.0f, 1000.0f, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+    mProj2 = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::Degree(85.0f), 2.0f, 1.0f, 1000.0f, xiiClipSpaceDepthRange::MinusOneToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
 
     xiiMat4 mProj1b = mProj1;
     xiiMat4 mProj2b = mProj2;
@@ -152,8 +138,7 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
             {
               {
                 xiiMat4 mProj;
-                mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(
-                  xiiAngle::Degree((float)angle), 2.0f, depthRange.fNear, depthRange.fFar, clipRange, clipSpaceYMode, handedness);
+                mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::Degree((float)angle), 2.0f, depthRange.fNear, depthRange.fFar, clipRange, clipSpaceYMode, handedness);
 
                 xiiAngle fovx, fovy;
                 xiiGraphicsUtils::ExtractPerspectiveMatrixFieldOfView(mProj, fovx, fovy);
@@ -163,8 +148,7 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
 
               {
                 xiiMat4 mProj;
-                mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(
-                  xiiAngle::Degree((float)angle), 1.0f / 3.0f, depthRange.fNear, depthRange.fFar, clipRange, clipSpaceYMode, handedness);
+                mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::Degree((float)angle), 1.0f / 3.0f, depthRange.fNear, depthRange.fFar, clipRange, clipSpaceYMode, handedness);
 
                 xiiAngle fovx, fovy;
                 xiiGraphicsUtils::ExtractPerspectiveMatrixFieldOfView(mProj, fovx, fovy);
@@ -233,8 +217,7 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
             for (auto fov : fovs)
             {
               xiiMat4 mProj;
-              mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(
-                fov, 0.7f, depthRange.fNear, depthRange.fFar, clipRange, clipSpaceYMode, handedness);
+              mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(fov, 0.7f, depthRange.fNear, depthRange.fFar, clipRange, clipSpaceYMode, handedness);
 
               float fNearOut, fFarOut;
               XII_TEST_BOOL(xiiGraphicsUtils::ExtractNearAndFarClipPlaneDistances(fNearOut, fFarOut, mProj, clipRange).Succeeded());
@@ -278,15 +261,11 @@ XII_CREATE_SIMPLE_TEST(Utility, GraphicsUtils)
       float farPlane  = 1000.0f;
 
       xiiMat4 mProj;
-      mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(
-        xiiAngle::Degree(90.0f), 1.0f, nearPlane, farPlane, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+      mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::Degree(90.0f), 1.0f, nearPlane, farPlane, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
 
-      const xiiPlane horz = xiiGraphicsUtils::ComputeInterpolatedFrustumPlane(
-        xiiGraphicsUtils::FrustumPlaneInterpolation::LeftToRight, i * 0.1f, mProj, xiiClipSpaceDepthRange::ZeroToOne);
-      const xiiPlane vert = xiiGraphicsUtils::ComputeInterpolatedFrustumPlane(
-        xiiGraphicsUtils::FrustumPlaneInterpolation::BottomToTop, i * 0.1f, mProj, xiiClipSpaceDepthRange::ZeroToOne);
-      const xiiPlane forw = xiiGraphicsUtils::ComputeInterpolatedFrustumPlane(
-        xiiGraphicsUtils::FrustumPlaneInterpolation::NearToFar, i * 0.1f, mProj, xiiClipSpaceDepthRange::ZeroToOne);
+      const xiiPlane horz = xiiGraphicsUtils::ComputeInterpolatedFrustumPlane(xiiGraphicsUtils::FrustumPlaneInterpolation::LeftToRight, i * 0.1f, mProj, xiiClipSpaceDepthRange::ZeroToOne);
+      const xiiPlane vert = xiiGraphicsUtils::ComputeInterpolatedFrustumPlane(xiiGraphicsUtils::FrustumPlaneInterpolation::BottomToTop, i * 0.1f, mProj, xiiClipSpaceDepthRange::ZeroToOne);
+      const xiiPlane forw = xiiGraphicsUtils::ComputeInterpolatedFrustumPlane(xiiGraphicsUtils::FrustumPlaneInterpolation::NearToFar, i * 0.1f, mProj, xiiClipSpaceDepthRange::ZeroToOne);
 
       // Generate clip space point at intersection of the 3 planes and project to worldspace
       xiiVec4 clipSpacePoint = xiiVec4(0.1f * i * 2 - 1, 0.1f * i * 2 - 1, 0.1f * i, 1);

@@ -27,8 +27,7 @@ XII_CREATE_SIMPLE_TEST(Math, Intersection)
 
           float   fIntersection;
           xiiVec3 vIntersection;
-          XII_TEST_BOOL(xiiIntersectionUtils::RayPolygonIntersection(
-                          vRayStart, vRayDir, Vertices, 4, &fIntersection, &vIntersection, sizeof(xiiVec3) * 2) == bIntersects);
+          XII_TEST_BOOL(xiiIntersectionUtils::RayPolygonIntersection(vRayStart, vRayDir, Vertices, 4, &fIntersection, &vIntersection, sizeof(xiiVec3) * 2) == bIntersects);
 
           if (bIntersects)
           {

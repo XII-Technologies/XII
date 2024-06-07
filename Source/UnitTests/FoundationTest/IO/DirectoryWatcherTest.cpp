@@ -90,8 +90,7 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
   auto CheckExpectedEventsMultiple = [&](xiiArrayPtr<xiiDirectoryWatcher*> watchers, xiiArrayPtr<ExpectedEvent> events) {
     xiiDynamicArray<ExpectedEventStorage> firedEvents;
     xiiUInt32                             i = 0;
-    xiiDirectoryWatcher::EnumerateChanges(
-      watchers, [&](xiiStringView sPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
+    xiiDirectoryWatcher::EnumerateChanges(watchers, [&](xiiStringView sPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
         tmp = sPath;
         tmp.Shrink(sTestRootPath.GetCharacterCount(), 0);
         firedEvents.PushBack({tmp, action, type});

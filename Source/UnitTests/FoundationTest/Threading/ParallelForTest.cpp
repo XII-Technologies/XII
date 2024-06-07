@@ -50,9 +50,7 @@ XII_CREATE_SIMPLE_TEST(Threading, ParallelFor)
     // Test
     // - Sum up the slice of number assigned to us via index ranges
     // - Check if the ranges described by them are as expected
-    xiiTaskSystem::ParallelForIndexed(
-      0, ::s_uiTotalNumberOfTaskItems,
-      [&dataAccessMutex, &uiRangesEncounteredCheck, &uiNumbersSum, &numbers](xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex) {
+    xiiTaskSystem::ParallelForIndexed(0, ::s_uiTotalNumberOfTaskItems,[&dataAccessMutex, &uiRangesEncounteredCheck, &uiNumbersSum, &numbers](xiiUInt32 uiStartIndex, xiiUInt32 uiEndIndex) {
         XII_LOCK(dataAccessMutex);
 
         // Size check
@@ -126,9 +124,7 @@ XII_CREATE_SIMPLE_TEST(Threading, ParallelFor)
 
     // Test
     // - Sum up the slice of numbers by summing up the individual numbers that get handed to us
-    xiiTaskSystem::ParallelForSingle(
-      numbers.GetArrayPtr(),
-      [&dataAccessMutex, &uiNumbersSum](xiiUInt32 uiNumber) {
+    xiiTaskSystem::ParallelForSingle(numbers.GetArrayPtr(),[&dataAccessMutex, &uiNumbersSum](xiiUInt32 uiNumber) {
         XII_LOCK(dataAccessMutex);
         uiNumbersSum += uiNumber;
       },
@@ -145,9 +141,7 @@ XII_CREATE_SIMPLE_TEST(Threading, ParallelFor)
 
     // Test
     // Sum up the slice of numbers that got assigned to us via an index range
-    xiiTaskSystem::ParallelForSingleIndex(
-      numbers.GetArrayPtr(),
-      [&dataAccessMutex, &uiNumbersSum](xiiUInt32 uiIndex, xiiUInt32 uiNumber) {
+    xiiTaskSystem::ParallelForSingleIndex(numbers.GetArrayPtr(),[&dataAccessMutex, &uiNumbersSum](xiiUInt32 uiIndex, xiiUInt32 uiNumber) {
         XII_LOCK(dataAccessMutex);
         uiNumbersSum += uiNumber + (uiIndex + 1);
       },
@@ -164,18 +158,14 @@ XII_CREATE_SIMPLE_TEST(Threading, ParallelFor)
 
     // Test
     // - Modify the original array of numbers
-    xiiTaskSystem::ParallelForSingle(
-      numbers.GetArrayPtr(),
-      [&dataAccessMutex](xiiUInt32& ref_uiNumber) {
+    xiiTaskSystem::ParallelForSingle(numbers.GetArrayPtr(),[&dataAccessMutex](xiiUInt32& ref_uiNumber) {
         XII_LOCK(dataAccessMutex);
         ref_uiNumber = ref_uiNumber * 3;
       },
       "ParallelFor Array Single Write Test (Write)", parallelForParams);
 
     // Sum up the new values to test if writing worked
-    xiiTaskSystem::ParallelForSingle(
-      numbers.GetArrayPtr(),
-      [&dataAccessMutex, &uiNumbersSum](const xiiUInt32& uiNumber) {
+    xiiTaskSystem::ParallelForSingle(numbers.GetArrayPtr(),[&dataAccessMutex, &uiNumbersSum](const xiiUInt32& uiNumber) {
         XII_LOCK(dataAccessMutex);
         uiNumbersSum += uiNumber;
       },
@@ -192,18 +182,14 @@ XII_CREATE_SIMPLE_TEST(Threading, ParallelFor)
 
     // Test
     // - Modify the original array of numbers
-    xiiTaskSystem::ParallelForSingleIndex(
-      numbers.GetArrayPtr(),
-      [&dataAccessMutex](xiiUInt32, xiiUInt32& ref_uiNumber) {
+    xiiTaskSystem::ParallelForSingleIndex(numbers.GetArrayPtr(),[&dataAccessMutex](xiiUInt32, xiiUInt32& ref_uiNumber) {
         XII_LOCK(dataAccessMutex);
         ref_uiNumber = ref_uiNumber * 4;
       },
       "ParallelFor Array Single Write Test (Write)", parallelForParams);
 
     // Sum up the new values to test if writing worked
-    xiiTaskSystem::ParallelForSingle(
-      numbers.GetArrayPtr(),
-      [&dataAccessMutex, &uiNumbersSum](const xiiUInt32& uiNumber) {
+    xiiTaskSystem::ParallelForSingle(numbers.GetArrayPtr(),[&dataAccessMutex, &uiNumbersSum](const xiiUInt32& uiNumber) {
         XII_LOCK(dataAccessMutex);
         uiNumbersSum += uiNumber;
       },
