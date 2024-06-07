@@ -35,8 +35,8 @@ XII_CREATE_SIMPLE_TEST(Communication, Event)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Basics")
   {
-    typedef xiiEvent<xiiInt32*> TestEvent;
-    TestEvent                   e;
+    using TestEvent = xiiEvent<xiiInt32*>;
+    TestEvent e;
 
     Test test1;
     test1.m_iData = 3;
@@ -81,8 +81,8 @@ XII_CREATE_SIMPLE_TEST(Communication, Event)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Unsubscribing via ID")
   {
-    typedef xiiEvent<xiiInt32*> TestEvent;
-    TestEvent                   e;
+    using TestEvent = xiiEvent<xiiInt32*>;
+    TestEvent e;
 
     Test test1;
     Test test2;
@@ -102,8 +102,8 @@ XII_CREATE_SIMPLE_TEST(Communication, Event)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Unsubscribing via Unsubscriber")
   {
-    typedef xiiEvent<xiiInt32*> TestEvent;
-    TestEvent                   e;
+    using TestEvent = xiiEvent<xiiInt32*>;
+    TestEvent e;
 
     Test test1;
     Test test2;
@@ -141,8 +141,8 @@ XII_CREATE_SIMPLE_TEST(Communication, Event)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Remove while iterate")
   {
-    typedef xiiEvent<int, xiiMutex, xiiDefaultAllocatorWrapper, xiiEventType::CopyOnBroadcast> TestEvent;
-    TestEvent                                                                                  e;
+    using TestEvent = xiiEvent<int, xiiMutex, xiiDefaultAllocatorWrapper, xiiEventType::CopyOnBroadcast>;
+    TestEvent e;
 
     xiiUInt32 callMap = 0;
 

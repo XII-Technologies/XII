@@ -34,7 +34,7 @@ xiiResult FileLocator(xiiStringView sCurAbsoluteFile, xiiStringView sIncludeFile
 class Logger : public xiiLogInterface
 {
 public:
-  virtual void HandleLogMessage(const xiiLoggingEventData& le) override { m_sOutput.AppendFormat("Log: '{0}'\n", le.m_sText); }
+  virtual void HandleLogMessage(const xiiLoggingEventData& le) override { m_sOutput.AppendFormat("Log: '{0}'\r\n", le.m_sText); }
 
   void EventHandler(const xiiPreprocessor::ProcessingEvent& ed)
   {
@@ -79,7 +79,7 @@ public:
           break;
       }
 
-      m_sOutput.AppendFormat("{0}\n", event.m_sInfo);
+      m_sOutput.AppendFormat("{0}\r\n", event.m_sInfo);
     }
 
     m_EventStack.PopBack();
@@ -225,7 +225,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Preprocessor)
         pp.m_ProcessingEvents.AddEventHandler(xiiDelegate<void(const xiiPreprocessor::ProcessingEvent&)>(&Logger::EventHandler, &log));
         pp.AddCustomDefine("PP_OBJ").IgnoreResult();
         pp.AddCustomDefine("PP_FUNC(a) a").IgnoreResult();
-        pp.SetPassThroughUnknownCmdsCB([](xiiStringView s) -> bool { return s.IsEqual("version"); }); // TestSettings[i].m_bPassThroughUnknownCommands);
+        pp.SetPassThroughUnknownCmdsCB([](xiiStringView s) -> bool { return s == "version"; }); // TestSettings[i].m_bPassThroughUnknownCommands);
 
         {
           fileName.SetFormat("Preprocessor/{0}.txt", TestSettings[i].m_szFileName);
@@ -239,16 +239,16 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Preprocessor)
 
           if (pp.Process(fileName, sOutput) == XII_SUCCESS)
           {
-            xiiString sError = "Processing succeeded\n";
+            xiiString sError = "Processing succeeded\r\n";
             fout.WriteBytes(sError.GetData(), sError.GetElementCount()).IgnoreResult();
             fout.WriteBytes(sOutput.GetData(), sOutput.GetElementCount()).IgnoreResult();
 
             if (!log.m_sOutput.IsEmpty())
-              fout.WriteBytes("\n", 1).IgnoreResult();
+              fout.WriteBytes("\r\n", 2).IgnoreResult();
           }
           else
           {
-            xiiString sError = "Processing failed\n";
+            xiiString sError = "Processing failed\r\n";
             fout.WriteBytes(sError.GetData(), sError.GetElementCount()).IgnoreResult();
           }
 
@@ -257,7 +257,7 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Preprocessor)
           XII_TEST_BOOL_MSG(xiiFileSystem::ExistsFile(fileNameOut), "Output file is missing: '%s'", fileNameOut.GetData());
         }
 
-        XII_TEST_FILES(fileNameOut.GetData(), fileNameExp.GetData(), "");
+        XII_TEST_TEXT_FILES(fileNameOut.GetData(), fileNameExp.GetData(), "");
       }
     }
   }

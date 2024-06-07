@@ -34,7 +34,7 @@ public:
 
     while (sw.GetRunningTotal() < timeout)
     {
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
       XII_LOCK(m_Mutex);
       if (!m_ReceivedEvents.IsEmpty())
       {
@@ -68,9 +68,9 @@ public:
       XII_LOCK(m_Mutex);
       if (m_ReceivedMessages.GetCount() > 0)
       {
-        auto res = m_ReceivedMessages.PeekFront();
+        auto res2 = m_ReceivedMessages.PeekFront();
         m_ReceivedMessages.PopFront();
-        return res;
+        return res2;
       }
     }
     return {};
@@ -96,25 +96,25 @@ void TestIPCChannel(xiiIpcChannel* pServer, ChannelTester* pServerTester, xiiIpc
     XII_TEST_BOOL(pServer->GetConnectionState() == xiiIpcChannel::ConnectionState::Disconnected);
     XII_TEST_BOOL(pClient->GetConnectionState() == xiiIpcChannel::ConnectionState::Disconnected);
     {
-      auto res = pServerTester->WaitForEvents(xiiTime::Milliseconds(100));
+      auto res = pServerTester->WaitForEvents(xiiTime::MakeFromMilliseconds(100));
       XII_TEST_BOOL(!res.has_value());
-      auto res2 = pClientTester->WaitForEvents(xiiTime::Milliseconds(100));
+      auto res2 = pClientTester->WaitForEvents(xiiTime::MakeFromMilliseconds(100));
       XII_TEST_BOOL(!res2.has_value());
     }
     {
       pServer->Connect();
-      auto res = pServerTester->WaitForEvents(xiiTime::Milliseconds(100));
+      auto res = pServerTester->WaitForEvents(xiiTime::MakeFromMilliseconds(100));
       XII_TEST_BOOL(res.has_value() && res->m_Type == xiiIpcChannelEvent::Connecting);
       XII_TEST_BOOL(pServer->GetConnectionState() == xiiIpcChannel::ConnectionState::Connecting);
     }
     {
       pClient->Connect();
-      auto res = pClientTester->WaitForEvents(xiiTime::Milliseconds(100));
+      auto res = pClientTester->WaitForEvents(xiiTime::MakeFromMilliseconds(100));
       XII_TEST_BOOL(res.has_value() && res->m_Type == xiiIpcChannelEvent::Connecting);
     }
-    auto res = pServerTester->WaitForEvents(xiiTime::Seconds(100));
+    auto res = pServerTester->WaitForEvents(xiiTime::MakeFromSeconds(100));
     XII_TEST_BOOL(res.has_value() && res->m_Type == xiiIpcChannelEvent::Connected);
-    auto res2 = pClientTester->WaitForEvents(xiiTime::Seconds(100));
+    auto res2 = pClientTester->WaitForEvents(xiiTime::MakeFromSeconds(100));
     XII_TEST_BOOL(res2.has_value() && res2->m_Type == xiiIpcChannelEvent::Connected);
 
     XII_TEST_BOOL(pServer->GetConnectionState() == xiiIpcChannel::ConnectionState::Connected);
@@ -133,12 +133,12 @@ void TestIPCChannel(xiiIpcChannel* pServer, ChannelTester* pServerTester, xiiIpc
 
     XII_TEST_BOOL(pClient->Send(xiiConstByteArrayPtr(reinterpret_cast<const xiiUInt8*>(sMsg.GetStartPointer()), sMsg.GetElementCount())));
 
-    auto res = pServerTester->WaitForEvents(xiiTime::Seconds(1));
+    auto res = pServerTester->WaitForEvents(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res.has_value() && res->m_Type == xiiIpcChannelEvent::NewMessages);
-    auto res2 = pClientTester->WaitForEvents(xiiTime::Seconds(1));
+    auto res2 = pClientTester->WaitForEvents(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res2.has_value() && res2->m_Type == xiiIpcChannelEvent::NewMessages);
 
-    auto res3 = pClientTester->WaitForMessage(xiiTime::Seconds(1));
+    auto res3 = pClientTester->WaitForMessage(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res3.has_value() && MessageMatches(sMsg, res3.value()));
   }
 
@@ -148,10 +148,10 @@ void TestIPCChannel(xiiIpcChannel* pServer, ChannelTester* pServerTester, xiiIpc
 
     XII_TEST_BOOL(pServer->Send(xiiConstByteArrayPtr(reinterpret_cast<const xiiUInt8*>(sMsg.GetStartPointer()), sMsg.GetElementCount())));
 
-    auto res2 = pClientTester->WaitForEvents(xiiTime::Seconds(1));
+    auto res2 = pClientTester->WaitForEvents(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res2.has_value() && res2->m_Type == xiiIpcChannelEvent::NewMessages);
 
-    auto res3 = pClientTester->WaitForMessage(xiiTime::Seconds(1));
+    auto res3 = pClientTester->WaitForMessage(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res3.has_value() && MessageMatches(sMsg, res3.value()));
   }
 
@@ -160,9 +160,9 @@ void TestIPCChannel(xiiIpcChannel* pServer, ChannelTester* pServerTester, xiiIpc
     pClient->Disconnect();
     pClient->Disconnect();
 
-    auto res = pServerTester->WaitForEvents(xiiTime::Seconds(1));
+    auto res = pServerTester->WaitForEvents(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res.has_value() && res->m_Type == xiiIpcChannelEvent::Disconnected);
-    auto res2 = pClientTester->WaitForEvents(xiiTime::Seconds(1));
+    auto res2 = pClientTester->WaitForEvents(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res2.has_value() && res2->m_Type == xiiIpcChannelEvent::Disconnected);
 
     XII_TEST_BOOL(pServer->GetConnectionState() == xiiIpcChannel::ConnectionState::Disconnected);
@@ -173,19 +173,19 @@ void TestIPCChannel(xiiIpcChannel* pServer, ChannelTester* pServerTester, xiiIpc
   {
     {
       pServer->Connect();
-      auto res = pServerTester->WaitForEvents(xiiTime::Milliseconds(100));
+      auto res = pServerTester->WaitForEvents(xiiTime::MakeFromMilliseconds(100));
       XII_TEST_BOOL(res.has_value() && res->m_Type == xiiIpcChannelEvent::Connecting);
       XII_TEST_BOOL(pServer->GetConnectionState() == xiiIpcChannel::ConnectionState::Connecting);
     }
     {
       pClient->Connect();
-      auto res = pClientTester->WaitForEvents(xiiTime::Milliseconds(100));
+      auto res = pClientTester->WaitForEvents(xiiTime::MakeFromMilliseconds(100));
       XII_TEST_BOOL(res.has_value() && res->m_Type == xiiIpcChannelEvent::Connecting);
     }
 
-    auto res = pServerTester->WaitForEvents(xiiTime::Seconds(1));
+    auto res = pServerTester->WaitForEvents(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res.has_value() && res->m_Type == xiiIpcChannelEvent::Connected);
-    auto res2 = pClientTester->WaitForEvents(xiiTime::Seconds(1));
+    auto res2 = pClientTester->WaitForEvents(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res2.has_value() && res2->m_Type == xiiIpcChannelEvent::Connected);
 
     XII_TEST_BOOL(pServer->GetConnectionState() == xiiIpcChannel::ConnectionState::Connected);
@@ -198,12 +198,12 @@ void TestIPCChannel(xiiIpcChannel* pServer, ChannelTester* pServerTester, xiiIpc
 
     XII_TEST_BOOL(pClient->Send(xiiConstByteArrayPtr(reinterpret_cast<const xiiUInt8*>(sMsg.GetStartPointer()), sMsg.GetElementCount())));
 
-    auto res = pServerTester->WaitForEvents(xiiTime::Seconds(1));
+    auto res = pServerTester->WaitForEvents(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res.has_value() && res->m_Type == xiiIpcChannelEvent::NewMessages);
-    auto res2 = pClientTester->WaitForEvents(xiiTime::Seconds(1));
+    auto res2 = pClientTester->WaitForEvents(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res2.has_value() && res2->m_Type == xiiIpcChannelEvent::NewMessages);
 
-    auto res3 = pClientTester->WaitForMessage(xiiTime::Seconds(1));
+    auto res3 = pClientTester->WaitForMessage(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res3.has_value() && MessageMatches(sMsg, res3.value()));
   }
 
@@ -212,9 +212,9 @@ void TestIPCChannel(xiiIpcChannel* pServer, ChannelTester* pServerTester, xiiIpc
     pServer->Disconnect();
     pServer->Disconnect();
 
-    auto res = pServerTester->WaitForEvents(xiiTime::Seconds(1));
+    auto res = pServerTester->WaitForEvents(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res.has_value() && res->m_Type == xiiIpcChannelEvent::Disconnected);
-    auto res2 = pClientTester->WaitForEvents(xiiTime::Seconds(1));
+    auto res2 = pClientTester->WaitForEvents(xiiTime::MakeFromSeconds(1));
     XII_TEST_BOOL(res2.has_value() && res2->m_Type == xiiIpcChannelEvent::Disconnected);
 
     XII_TEST_BOOL(pServer->GetConnectionState() == xiiIpcChannel::ConnectionState::Disconnected);
