@@ -686,7 +686,7 @@ TempHashedString $v14 { uint64 { 2720389094277464445 } }\
     js.SetFloatPrecisionMode(xiiOpenDdlWriter::FloatPrecisionMode::Readable);
     js.SetOutputStream(&sc);
 
-    xiiOpenDdlUtils::StoreTime(js, xiiTime::Seconds(2.3), "v1", true);
+    xiiOpenDdlUtils::StoreTime(js, xiiTime::MakeFromSeconds(2.3), "v1", true);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "StoreVec2")
@@ -862,7 +862,7 @@ TempHashedString $v14 { uint64 { 2720389094277464445 } }\
     js.SetFloatPrecisionMode(xiiOpenDdlWriter::FloatPrecisionMode::Readable);
     js.SetOutputStream(&sc);
 
-    xiiOpenDdlUtils::StoreAngle(js, xiiAngle::Radian(2.3f), "v1", true);
+    xiiOpenDdlUtils::StoreAngle(js, xiiAngle::MakeFromRadian(2.3f), "v1", true);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "StoreAngled")
@@ -873,7 +873,7 @@ TempHashedString $v14 { uint64 { 2720389094277464445 } }\
     js.SetFloatPrecisionMode(xiiOpenDdlWriter::FloatPrecisionMode::Readable);
     js.SetOutputStream(&sc);
 
-    xiiOpenDdlUtils::StoreAngle(js, xiiAngled::Radian(2.2), "v1", true);
+    xiiOpenDdlUtils::StoreAngle(js, xiiAngled::MakeFromRadian(2.2), "v1", true);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "StoreHashedString")
@@ -1046,7 +1046,8 @@ static xiiVariant CreateVariant(xiiVariant::Type::Enum t, const void* pData)
     case xiiVariant::Type::ColorGamma:
       return xiiVariant(*((xiiColorGammaUB*)pData));
 
-      XII_DEFAULT_CASE_NOT_IMPLEMENTED;
+    default:
+      XII_REPORT_FAILURE("Unknown type");
   }
 
   return xiiVariant();

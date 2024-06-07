@@ -31,7 +31,7 @@ namespace DirectoryWatcherTestHelpers
 
   void TickWatcher(xiiDirectoryWatcher& ref_watcher)
   {
-    ref_watcher.EnumerateChanges([&](xiiStringView sPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {}, xiiTime::Milliseconds(100));
+    ref_watcher.EnumerateChanges([&](xiiStringView sPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {}, xiiTime::MakeFromMilliseconds(100));
   }
 } // namespace DirectoryWatcherTestHelpers
 
@@ -58,7 +58,7 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
       }
       i++;
     },
-                                 xiiTime::Milliseconds(100));
+                                 xiiTime::MakeFromMilliseconds(100));
     XII_TEST_BOOL_MSG(firedEvents.GetCount() == events.GetCount(), "Directory watcher did not fire expected amount of events");
   };
 
@@ -79,7 +79,7 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
       }
       i++;
     },
-                                 xiiTime::Milliseconds(100));
+                                 xiiTime::MakeFromMilliseconds(100));
     for (auto& fired : eventFired)
     {
       XII_TEST_BOOL(fired);
@@ -90,7 +90,8 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
   auto CheckExpectedEventsMultiple = [&](xiiArrayPtr<xiiDirectoryWatcher*> watchers, xiiArrayPtr<ExpectedEvent> events) {
     xiiDynamicArray<ExpectedEventStorage> firedEvents;
     xiiUInt32                             i = 0;
-    xiiDirectoryWatcher::EnumerateChanges(watchers, [&](xiiStringView sPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
+    xiiDirectoryWatcher::EnumerateChanges(
+      watchers, [&](xiiStringView sPath, xiiDirectoryWatcherAction action, xiiDirectoryWatcherType type) {
         tmp = sPath;
         tmp.Shrink(sTestRootPath.GetCharacterCount(), 0);
         firedEvents.PushBack({tmp, action, type});
@@ -102,7 +103,7 @@ XII_CREATE_SIMPLE_TEST(IO, DirectoryWatcher)
         }
         i++;
       },
-      xiiTime::Milliseconds(100));
+      xiiTime::MakeFromMilliseconds(100));
     XII_TEST_BOOL_MSG(firedEvents.GetCount() == events.GetCount(), "Directory watcher did not fire expected amount of events");
   };
 

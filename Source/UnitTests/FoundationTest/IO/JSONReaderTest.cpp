@@ -625,7 +625,7 @@ XII_CREATE_SIMPLE_TEST(IO, JSONReader)
     const char* szTestData = "[\"a\",\"b\"]";
 
     // NOTE: The way this test is implemented, it might break, if the HashMap uses another insertion algorithm.
-    // xiiVariantDictionary is an xiiHashmap and this test currently relies on one exact order in of the result.
+    // xiiVariantDictionary is a xiiHashmap and this test currently relies on one exact order in of the result.
     // If this should ever change (or be arbitrary at runtime), the test needs to be implemented in a more robust way.
 
     JSONReaderTestDetail::StringStream stream(szTestData);

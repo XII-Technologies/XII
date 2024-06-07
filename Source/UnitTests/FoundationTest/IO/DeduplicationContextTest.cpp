@@ -83,11 +83,9 @@ namespace
     xiiResult Deserialize(xiiStreamReader& ref_stream)
     {
       XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadArray(ref_stream, m_Transforms));
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadArray(ref_stream, m_Positions,
-                                                                                 nullptr)); // should not allocate anything
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadArray(ref_stream, m_Positions, nullptr)); // should not allocate anything
       XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadArray(ref_stream, m_Scales));
-      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadMap(
-        ref_stream, m_TransformMap, xiiDeduplicationReadContext::ReadMapMode::DedupValue, nullptr, nullptr));            // should not allocate anything
+      XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadMap(ref_stream, m_TransformMap, xiiDeduplicationReadContext::ReadMapMode::DedupValue, nullptr, nullptr)); // should not allocate anything
       XII_SUCCEED_OR_RETURN(xiiDeduplicationReadContext::GetContext()->ReadSet(ref_stream, m_UniquePositions, nullptr)); // should not allocate anything
       XII_SUCCEED_OR_RETURN(ref_stream.ReadArray(m_Components));
       return XII_SUCCESS;
