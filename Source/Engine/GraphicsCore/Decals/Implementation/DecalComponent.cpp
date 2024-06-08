@@ -45,8 +45,8 @@ XII_BEGIN_COMPONENT_TYPE(xiiDecalComponent, 8, xiiComponentMode::Static)
     XII_ACCESSOR_PROPERTY("SortOrder", GetSortOrder, SetSortOrder)->AddAttributes(new xiiClampValueAttribute(-64.0f, 64.0f)),
     XII_ACCESSOR_PROPERTY("WrapAround", GetWrapAround, SetWrapAround),
     XII_ACCESSOR_PROPERTY("MapNormalToGeometry", GetMapNormalToGeometry, SetMapNormalToGeometry)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_ACCESSOR_PROPERTY("InnerFadeAngle", GetInnerFadeAngle, SetInnerFadeAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::Degree(0.0f), xiiAngle::Degree(89.0f)), new xiiDefaultValueAttribute(xiiAngle::Degree(50.0f))),
-    XII_ACCESSOR_PROPERTY("OuterFadeAngle", GetOuterFadeAngle, SetOuterFadeAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::Degree(0.0f), xiiAngle::Degree(89.0f)), new xiiDefaultValueAttribute(xiiAngle::Degree(80.0f))),
+    XII_ACCESSOR_PROPERTY("InnerFadeAngle", GetInnerFadeAngle, SetInnerFadeAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(89.0f)), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(50.0f))),
+    XII_ACCESSOR_PROPERTY("OuterFadeAngle", GetOuterFadeAngle, SetOuterFadeAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(89.0f)), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(80.0f))),
     XII_MEMBER_PROPERTY("FadeOutDelay", m_FadeOutDelay),
     XII_MEMBER_PROPERTY("FadeOutDuration", m_FadeOutDuration),
     XII_ENUM_MEMBER_PROPERTY("OnFinishedAction", xiiOnComponentFinishedAction, m_OnFinishedAction),
@@ -275,7 +275,7 @@ xiiColor xiiDecalComponent::GetEmissiveColor() const
 
 void xiiDecalComponent::SetInnerFadeAngle(xiiAngle spotAngle)
 {
-  m_InnerFadeAngle = xiiMath::Clamp(spotAngle, xiiAngle::Degree(0.0f), m_OuterFadeAngle);
+  m_InnerFadeAngle = xiiMath::Clamp(spotAngle, xiiAngle::MakeFromDegree(0.0f), m_OuterFadeAngle);
 }
 
 xiiAngle xiiDecalComponent::GetInnerFadeAngle() const
@@ -285,7 +285,7 @@ xiiAngle xiiDecalComponent::GetInnerFadeAngle() const
 
 void xiiDecalComponent::SetOuterFadeAngle(xiiAngle spotAngle)
 {
-  m_OuterFadeAngle = xiiMath::Clamp(spotAngle, m_InnerFadeAngle, xiiAngle::Degree(90.0f));
+  m_OuterFadeAngle = xiiMath::Clamp(spotAngle, m_InnerFadeAngle, xiiAngle::MakeFromDegree(90.0f));
 }
 
 xiiAngle xiiDecalComponent::GetOuterFadeAngle() const
@@ -389,7 +389,7 @@ void xiiDecalComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg) con
   if (finalColor.a <= 0.0f)
     return;
 
-  const bool  bNoFade          = m_InnerFadeAngle == xiiAngle::Radian(0.0f) && m_OuterFadeAngle == xiiAngle::Radian(0.0f);
+  const bool  bNoFade          = m_InnerFadeAngle == xiiAngle::MakeFromRadian(0.0f) && m_OuterFadeAngle == xiiAngle::MakeFromRadian(0.0f);
   const float fCosInner        = xiiMath::Cos(m_InnerFadeAngle);
   const float fCosOuter        = xiiMath::Cos(m_OuterFadeAngle);
   const float fFadeParamScale  = bNoFade ? 0.0f : (1.0f / xiiMath::Max(0.001f, (fCosInner - fCosOuter)));
@@ -533,7 +533,7 @@ void xiiDecalComponent::OnSimulationStarted()
 
   if (m_FadeOutDelay.m_Value.GetSeconds() > 0.0 || m_FadeOutDuration.GetSeconds() > 0.0)
   {
-    const xiiTime tFadeOutDelay = xiiTime::Seconds(pWorld->GetRandomNumberGenerator().DoubleVariance(m_FadeOutDelay.m_Value.GetSeconds(), m_FadeOutDelay.m_fVariance));
+    const xiiTime tFadeOutDelay = xiiTime::MakeFromSeconds(pWorld->GetRandomNumberGenerator().DoubleVariance(m_FadeOutDelay.m_Value.GetSeconds(), m_FadeOutDelay.m_fVariance));
     m_StartFadeOutTime          = pWorld->GetClock().GetAccumulatedTime() + tFadeOutDelay;
 
     if (m_OnFinishedAction != xiiOnComponentFinishedAction::None)

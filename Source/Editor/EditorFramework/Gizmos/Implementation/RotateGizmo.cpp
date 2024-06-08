@@ -180,7 +180,7 @@ xiiEditorInput xiiRotateGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   const xiiTime tNow = xiiTime::Now();
 
-  if (tNow - m_LastInteraction < xiiTime::Seconds(1.0 / 25.0))
+  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
     return xiiEditorInput::WasExclusivelyHandled;
 
   m_LastInteraction = tNow;
@@ -193,7 +193,7 @@ xiiEditorInput xiiRotateGizmo::DoMouseMoveEvent(QMouseEvent* e)
   m_vLastMousePos = UpdateMouseMode(e);
 
   const float dv = m_vScreenTangent.Dot(vDiff);
-  m_Rotation += xiiAngle::Degree(dv);
+  m_Rotation += xiiAngle::MakeFromDegree(dv);
 
   xiiAngle rot = m_Rotation;
 

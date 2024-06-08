@@ -74,7 +74,7 @@ void xiiQuatTemplate<Type>::GetRotationAxisAndAngle(xiiVec3Template<Type>& out_v
 {
   XII_NAN_ASSERT(this);
 
-  out_angle = 2 * xiiMath::ACos(static_cast<Type>(w));
+  out_angle = (Type)2 * xiiMath::ACos(static_cast<Type>(w));
 
   const Type s = xiiMath::Sqrt(1 - w * w);
 
@@ -84,7 +84,7 @@ void xiiQuatTemplate<Type>::GetRotationAxisAndAngle(xiiVec3Template<Type>& out_v
   }
   else
   {
-    const Type ds = 1.0f / s;
+    const Type ds = (Type)1 / s;
     out_vAxis.x   = x * ds;
     out_vAxis.y   = y * ds;
     out_vAxis.z   = z * ds;
@@ -515,12 +515,12 @@ xiiQuatTemplate<Type> xiiQuatTemplate<Type>::MakeFromEulerAngles(const xiiAngleT
   const auto&  yaw   = z;
   const auto&  pitch = y;
   const auto&  roll  = x;
-  const double cy    = xiiMath::Cos(yaw * 0.5);
-  const double sy    = xiiMath::Sin(yaw * 0.5);
-  const double cp    = xiiMath::Cos(pitch * 0.5);
-  const double sp    = xiiMath::Sin(pitch * 0.5);
-  const double cr    = xiiMath::Cos(roll * 0.5);
-  const double sr    = xiiMath::Sin(roll * 0.5);
+  const double cy    = xiiMath::Cos(yaw * (Type)0.5);
+  const double sy    = xiiMath::Sin(yaw * (Type)0.5);
+  const double cp    = xiiMath::Cos(pitch * (Type)0.5);
+  const double sp    = xiiMath::Sin(pitch * (Type)0.5);
+  const double cr    = xiiMath::Cos(roll * (Type)0.5);
+  const double sr    = xiiMath::Sin(roll * (Type)0.5);
 
   xiiQuatTemplate<Type> q;
   q.w = (Type)(cy * cp * cr + sy * sp * sr);

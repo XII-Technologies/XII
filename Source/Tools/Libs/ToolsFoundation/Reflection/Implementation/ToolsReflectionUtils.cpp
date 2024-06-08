@@ -86,21 +86,21 @@ namespace
   template <>
   void GetVariantFunc::operator()<xiiAngle>()
   {
-    m_Value  = xiiAngle::Degree((float)m_fValue);
+    m_Value  = xiiAngle::MakeFromDegree((float)m_fValue);
     m_bValid = true;
   }
 
   template <>
   void GetVariantFunc::operator()<xiiAngled>()
   {
-    m_Value  = xiiAngled::Degree(m_fValue);
+    m_Value  = xiiAngled::MakeFromDegree(m_fValue);
     m_bValid = true;
   }
 
   template <>
   void GetVariantFunc::operator()<xiiTime>()
   {
-    m_Value  = xiiTime::Seconds(m_fValue);
+    m_Value  = xiiTime::MakeFromSeconds(m_fValue);
     m_bValid = true;
   }
 } // namespace

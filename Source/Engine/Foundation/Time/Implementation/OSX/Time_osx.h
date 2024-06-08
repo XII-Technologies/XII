@@ -17,5 +17,5 @@ void xiiTime::Initialize()
 xiiTime xiiTime::Now()
 {
   // mach_absolute_time() returns nanoseconds after factoring in the mach_timebase_info_data_t
-  return xiiTime::Seconds((double)mach_absolute_time() * g_TimeFactor);
+  return xiiTime::MakeFromSeconds((double)mach_absolute_time() * g_TimeFactor);
 }

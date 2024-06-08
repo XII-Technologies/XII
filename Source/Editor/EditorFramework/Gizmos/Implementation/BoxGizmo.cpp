@@ -55,19 +55,19 @@ void xiiBoxGizmo::OnTransformationChanged(const xiiTransform& transform)
 
   m_hCorners.SetTransformation(scale);
 
-  rot.SetRotationMatrixX(xiiAngle::Degree(90));
+  rot.SetRotationMatrixX(xiiAngle::MakeFromDegree(90));
   m_Edges[0].SetTransformation(scale * rot);
 
-  rot.SetRotationMatrixY(xiiAngle::Degree(90));
+  rot.SetRotationMatrixY(xiiAngle::MakeFromDegree(90));
   m_Faces[0].SetTransformation(scale * rot);
 
   rot.SetIdentity();
   m_Edges[1].SetTransformation(scale * rot);
 
-  rot.SetRotationMatrixX(xiiAngle::Degree(90));
+  rot.SetRotationMatrixX(xiiAngle::MakeFromDegree(90));
   m_Faces[1].SetTransformation(scale * rot);
 
-  rot.SetRotationMatrixZ(xiiAngle::Degree(90));
+  rot.SetRotationMatrixZ(xiiAngle::MakeFromDegree(90));
   m_Edges[2].SetTransformation(scale * rot);
 
   rot.SetIdentity();
@@ -167,7 +167,7 @@ xiiEditorInput xiiBoxGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   const xiiTime tNow = xiiTime::Now();
 
-  if (tNow - m_LastInteraction < xiiTime::Seconds(1.0 / 25.0))
+  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
     return xiiEditorInput::WasExclusivelyHandled;
 
   m_LastInteraction = tNow;

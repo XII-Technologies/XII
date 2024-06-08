@@ -167,7 +167,7 @@ void xiiSceneLoadUtility::TickSceneLoading()
         return;
       }
 
-      m_pInstantiationContext = m_WorldReader.InstantiateWorld(*m_pWorld, nullptr, xiiTime::Milliseconds(1), &m_InstantiationProgress);
+      m_pInstantiationContext = m_WorldReader.InstantiateWorld(*m_pWorld, nullptr, xiiTime::MakeFromMilliseconds(1), &m_InstantiationProgress);
     }
   }
   else if (m_pInstantiationContext)

@@ -103,7 +103,7 @@ xiiTime xiiPropertyAnimAssetDocument::GetAnimationDurationTime() const
 {
   const xiiInt64 ticks = GetAnimationDurationTicks();
 
-  return xiiTime::Seconds(ticks / 4800.0);
+  return xiiTime::MakeFromSeconds(ticks / 4800.0);
 }
 
 void xiiPropertyAnimAssetDocument::AdjustDuration()
@@ -440,7 +440,7 @@ void xiiPropertyAnimAssetDocument::ApplyAnimation(const xiiPropertyReference& ke
           bIsRotation         = true;
           const double fValue = pTrack->m_FloatCurve.Evaluate(m_uiScrubberTickPos);
 
-          euler[(xiiUInt32)pTrack->m_Target - xiiPropertyAnimTarget::RotationX] = xiiAngle::Degree(fValue);
+          euler[(xiiUInt32)pTrack->m_Target - xiiPropertyAnimTarget::RotationX] = xiiAngle::MakeFromDegree(fValue);
         }
       }
       break;

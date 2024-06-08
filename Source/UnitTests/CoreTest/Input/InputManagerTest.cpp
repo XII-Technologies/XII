@@ -164,42 +164,42 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
     XII_TEST_BOOL(xiiInputManager::GetInputSlotState("test_slot_1", &f) == xiiKeyState::Up);
     XII_TEST_FLOAT(f, 0.0f, 0);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
     XII_TEST_BOOL(xiiInputManager::GetInputSlotState("test_slot_1", &f) == xiiKeyState::Pressed);
     XII_TEST_FLOAT(f, 1.0f, 0);
 
     xiiInputManager::InjectInputSlotValue("test_slot_1", 0.5f);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
     XII_TEST_BOOL(xiiInputManager::GetInputSlotState("test_slot_1", &f) == xiiKeyState::Down);
     XII_TEST_FLOAT(f, 0.5f, 0);
 
     xiiInputManager::InjectInputSlotValue("test_slot_1", 0.3f);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
     XII_TEST_BOOL(xiiInputManager::GetInputSlotState("test_slot_1", &f) == xiiKeyState::Down);
     XII_TEST_FLOAT(f, 0.3f, 0);
 
     // below dead zone value
     xiiInputManager::InjectInputSlotValue("test_slot_1", 0.2f);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
     XII_TEST_BOOL(xiiInputManager::GetInputSlotState("test_slot_1", &f) == xiiKeyState::Released);
     XII_TEST_FLOAT(f, 0.0f, 0);
 
     xiiInputManager::InjectInputSlotValue("test_slot_1", 0.5f);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
     XII_TEST_BOOL(xiiInputManager::GetInputSlotState("test_slot_1", &f) == xiiKeyState::Pressed);
     XII_TEST_FLOAT(f, 0.5f, 0);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
     XII_TEST_BOOL(xiiInputManager::GetInputSlotState("test_slot_1", &f) == xiiKeyState::Released);
     XII_TEST_FLOAT(f, 0.0f, 0);
 
     xiiInputManager::InjectInputSlotValue("test_slot_1", 0.2f);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
     XII_TEST_BOOL(xiiInputManager::GetInputSlotState("test_slot_1", &f) == xiiKeyState::Up);
     XII_TEST_FLOAT(f, 0.0f, 0);
   }
@@ -299,7 +299,7 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
     XII_TEST_BOOL(xiiInputManager::GetInputActionState("test_inputset", "test_action", &f, &iSlot) == xiiKeyState::Up);
     XII_TEST_BOOL(xiiInputManager::GetInputActionState("test_inputset", "test_action_2", &f, &iSlot) == xiiKeyState::Up);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     XII_TEST_BOOL(xiiInputManager::GetInputActionState("test_inputset", "test_action", &f, &iSlot) == xiiKeyState::Pressed);
     XII_TEST_INT(iSlot, 1);
@@ -314,7 +314,7 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
     xiiInputManager::InjectInputSlotValue("test_input_slot_2", 1.0f);
     xiiInputManager::InjectInputSlotValue("test_input_slot_3", 1.0f);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     XII_TEST_BOOL(xiiInputManager::GetInputActionState("test_inputset", "test_action", &f, &iSlot) == xiiKeyState::Down);
     XII_TEST_INT(iSlot, 1); // still the same slot that 'triggered' the action
@@ -327,7 +327,7 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
     xiiInputManager::InjectInputSlotValue("test_input_slot_1", 1.0f);
     xiiInputManager::InjectInputSlotValue("test_input_slot_3", 1.0f);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     XII_TEST_BOOL(xiiInputManager::GetInputActionState("test_inputset", "test_action", &f, &iSlot) == xiiKeyState::Released);
     XII_TEST_BOOL(xiiInputManager::GetInputActionState("test_inputset", "test_action_2", &f, &iSlot) == xiiKeyState::Released);
@@ -335,14 +335,14 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
     xiiInputManager::InjectInputSlotValue("test_input_slot_1", 1.0f);
     xiiInputManager::InjectInputSlotValue("test_input_slot_3", 1.0f);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     XII_TEST_BOOL(xiiInputManager::GetInputActionState("test_inputset", "test_action", &f, &iSlot) == xiiKeyState::Up);
     XII_TEST_BOOL(xiiInputManager::GetInputActionState("test_inputset", "test_action_2", &f, &iSlot) == xiiKeyState::Up);
 
     xiiInputManager::InjectInputSlotValue("test_input_slot_3", 1.0f);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     XII_TEST_BOOL(xiiInputManager::GetInputActionState("test_inputset", "test_action", &f, &iSlot) == xiiKeyState::Pressed);
     XII_TEST_INT(iSlot, 2);
@@ -352,12 +352,12 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
     XII_TEST_INT(iSlot, 2);
     XII_TEST_FLOAT(f, 1.0f, 0.0f);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     XII_TEST_BOOL(xiiInputManager::GetInputActionState("test_inputset", "test_action", &f, &iSlot) == xiiKeyState::Released);
     XII_TEST_BOOL(xiiInputManager::GetInputActionState("test_inputset", "test_action_2", &f, &iSlot) == xiiKeyState::Released);
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     XII_TEST_BOOL(xiiInputManager::GetInputActionState("test_inputset", "test_action", &f, &iSlot) == xiiKeyState::Up);
     XII_TEST_BOOL(xiiInputManager::GetInputActionState("test_inputset", "test_action_2", &f, &iSlot) == xiiKeyState::Up);
@@ -365,7 +365,7 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetPressedInputSlot")
   {
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     xiiStringView sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::None, xiiInputSlotFlags::None);
     XII_TEST_BOOL(sSlot.IsEmpty());
@@ -375,7 +375,7 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
     sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::None, xiiInputSlotFlags::None);
     XII_TEST_STRING(sSlot, "");
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::None, xiiInputSlotFlags::None);
     XII_TEST_STRING(sSlot, "test_slot");
@@ -387,7 +387,7 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
 
       xiiInputManager::InjectInputSlotValue("test_slot", 1.0f);
 
-      xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+      xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
       sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsButton, xiiInputSlotFlags::None);
       XII_TEST_STRING(sSlot, "testdevice_button");
@@ -403,7 +403,7 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
 
       xiiInputManager::InjectInputSlotValue("test_slot", 1.0f);
 
-      xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+      xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
       sSlot = xiiInputManager::GetPressedInputSlot(xiiInputSlotFlags::IsButton, xiiInputSlotFlags::None);
       XII_TEST_STRING(sSlot, "");
@@ -426,7 +426,7 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
 
     XII_TEST_BOOL(xiiInputManager::RetrieveLastCharacter(true) == '\0');
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     XII_TEST_BOOL(xiiInputManager::RetrieveLastCharacter(false) == '\42');
     XII_TEST_BOOL(xiiInputManager::RetrieveLastCharacter(true) == '\42');
@@ -435,7 +435,7 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Time Scaling")
   {
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     xiiInputActionConfig iac;
     iac.m_bApplyTimeScaling    = true;
@@ -447,14 +447,14 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
 
     float fVal;
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
     xiiInputManager::GetInputActionState("test_inputset", "test_timescaling", &fVal);
 
     XII_TEST_FLOAT(fVal, 0.1f * (1.0 / 60.0), 0.0001f); // testdevice_button has a value of 0.1f
 
     dev.ActivateAll();
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 30.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 30.0));
     xiiInputManager::GetInputActionState("test_inputset", "test_timescaling", &fVal);
 
     XII_TEST_FLOAT(fVal, 0.1f * (1.0 / 30.0), 0.0001f);
@@ -466,14 +466,14 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
 
     dev.ActivateAll();
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
     xiiInputManager::GetInputActionState("test_inputset", "test_timescaling", &fVal);
 
     XII_TEST_FLOAT(fVal, 0.1f, 0.0001f); // testdevice_button has a value of 0.1f
 
     dev.ActivateAll();
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 30.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 30.0));
     xiiInputManager::GetInputActionState("test_inputset", "test_timescaling", &fVal);
 
     XII_TEST_FLOAT(fVal, 0.1f, 0.0001f);
@@ -482,7 +482,7 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetInputSlotFlags")
   {
     xiiTestInputDevide dev;
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 30.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 30.0));
 
     XII_TEST_BOOL(xiiInputManager::GetInputSlotFlags("testdevice_button") == xiiInputSlotFlags::IsButton);
     XII_TEST_BOOL(xiiInputManager::GetInputSlotFlags("testdevice_stick") == xiiInputSlotFlags::IsAnalogStick);
@@ -492,7 +492,7 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ClearInputMapping")
   {
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     xiiInputActionConfig iac;
     iac.m_bApplyTimeScaling    = true;
@@ -504,7 +504,7 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
 
     float fVal;
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
     xiiInputManager::GetInputActionState("test_inputset", "test_timescaling", &fVal);
 
     XII_TEST_FLOAT(fVal, 0.1f * (1.0 / 60.0), 0.0001f); // testdevice_button has a value of 0.1f
@@ -514,7 +514,7 @@ XII_CREATE_SIMPLE_TEST(Input, InputManager)
 
     dev.ActivateAll();
 
-    xiiInputManager::Update(xiiTime::Seconds(1.0 / 60.0));
+    xiiInputManager::Update(xiiTime::MakeFromSeconds(1.0 / 60.0));
 
     // should not receive input anymore
     xiiInputManager::GetInputActionState("test_inputset", "test_timescaling", &fVal);

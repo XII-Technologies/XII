@@ -100,7 +100,7 @@ void xiiAnimationControllerComponent::OnSimulationStarted()
 
 void xiiAnimationControllerComponent::Update()
 {
-  xiiTime            tMinStep = xiiTime::Seconds(0);
+  xiiTime            tMinStep = xiiTime::MakeFromSeconds(0);
   xiiVisibilityState visType  = GetOwner()->GetVisibilityState();
 
   if (visType != xiiVisibilityState::Direct)

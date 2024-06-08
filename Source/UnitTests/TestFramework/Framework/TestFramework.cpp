@@ -645,7 +645,7 @@ xiiTestAppRun xiiTestFramework::RunTestExecutionLoop()
       }
     }
 
-    if (xiiFileserveClient::GetSingleton()->EnsureConnected(xiiTime::Seconds(-30)).Failed())
+    if (xiiFileserveClient::GetSingleton()->EnsureConnected(xiiTime::MakeFromSeconds(-30)).Failed())
     {
       Error("Failed to establish a Fileserve connection", "", 0, "xiiTestFramework::RunTestExecutionLoop", "");
       return xiiTestAppRun::Quit;
@@ -1445,7 +1445,7 @@ void xiiTestFramework::WriteImageDiffHtml(const char* szFileName, xiiImage& ref_
                 "<div style=\"line-height: 1.5; margin-top: 0px; margin-left: 10px; font-family: sans-serif;\">\n");
 
   output.AppendFormat("<b>Test result for \"{} > {}\" from ", szTestName, szSubTestName);
-  xiiDateTime dateTime(xiiTimestamp::CurrentTimestamp());
+  xiiDateTime dateTime = xiiDateTime::MakeFromTimestamp(xiiTimestamp::CurrentTimestamp());
   output.AppendFormat("{}-{}-{} {}:{}:{}</b><br>\n", dateTime.GetYear(), xiiArgI(dateTime.GetMonth(), 2, true), xiiArgI(dateTime.GetDay(), 2, true), xiiArgI(dateTime.GetHour(), 2, true), xiiArgI(dateTime.GetMinute(), 2, true), xiiArgI(dateTime.GetSecond(), 2, true));
 
   output.Append("<table cellpadding=\"0\" cellspacing=\"0\" border=\"0\">\n");

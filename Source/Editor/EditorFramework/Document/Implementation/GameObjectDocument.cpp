@@ -270,7 +270,7 @@ void xiiGameObjectDocument::DetermineNodeName(const xiiDocumentObject* pObject, 
     {
       bHasIcon = true;
 
-      xiiColor color = xiiColor::ZeroColor();
+      xiiColor color = xiiColor::MakeZero();
 
       if (auto pCatAttr = pChild->GetTypeAccessor().GetType()->GetAttributeByType<xiiCategoryAttribute>())
       {

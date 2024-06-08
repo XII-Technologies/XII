@@ -25,7 +25,7 @@ static bool TelemetryAssertHandler(const char* szSourceFile, xiiUInt32 uiLine, c
     // since we are crashing the application in (half) 'a second', we need to make sure the network traffic has indeed been sent
     for (xiiUInt32 i = 0; i < 5; ++i)
     {
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
       xiiTelemetry::UpdateNetwork();
     }
   }

@@ -379,7 +379,7 @@ void xiiWorld::PostMessage(const xiiGameObjectHandle& receiverObject, const xiiM
 
   if (m_Data.m_ProcessingMessageQueue == queueType)
   {
-    delay = xiiMath::Max(delay, xiiTime::Milliseconds(1));
+    delay = xiiMath::Max(delay, xiiTime::MakeFromMilliseconds(1));
   }
 
   xiiRTTIAllocator* pMsgRTTIAllocator = msg.GetDynamicRTTI()->GetAllocator();
@@ -410,7 +410,7 @@ void xiiWorld::PostMessage(const xiiComponentHandle& hReceiverComponent, const x
 
   if (m_Data.m_ProcessingMessageQueue == queueType)
   {
-    delay = xiiMath::Max(delay, xiiTime::Milliseconds(1));
+    delay = xiiMath::Max(delay, xiiTime::MakeFromMilliseconds(1));
   }
 
   xiiRTTIAllocator* pMsgRTTIAllocator = msg.GetDynamicRTTI()->GetAllocator();

@@ -177,7 +177,7 @@ void xiiAssetProcessor::Run()
         m_ProcessRunning[i] = m_ProcessTasks[i].BeginExecute();
       }
     }
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
   }
 
   while (true)
@@ -197,7 +197,7 @@ void xiiAssetProcessor::Run()
     }
 
     if (bAnyRunning)
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
     else
       break;
   }

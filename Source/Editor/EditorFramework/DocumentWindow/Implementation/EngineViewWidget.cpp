@@ -80,7 +80,7 @@ xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
       };
       xiiProcessCommunicationChannel::WaitForMessageCallback cb = callback;
 
-      if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForMessage(xiiGetStaticRTTI<xiiViewDestroyedResponseMsgToEditor>(), xiiTime::Seconds(5), &cb).Failed())
+      if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForMessage(xiiGetStaticRTTI<xiiViewDestroyedResponseMsgToEditor>(), xiiTime::MakeFromSeconds(5), &cb).Failed())
       {
         xiiLog::Error("Timeout while waiting for engine process to destroy view.");
       }
@@ -154,7 +154,7 @@ void xiiQtEngineViewWidget::UpdateCameraInterpolation()
 
   xiiCamera& cam = m_pViewConfig->m_Camera;
 
-  const float fLerpValue = xiiMath::Sin(xiiAngle::Degree(90.0f * m_fCameraLerp));
+  const float fLerpValue = xiiMath::Sin(xiiAngle::MakeFromDegree(90.0f * m_fCameraLerp));
 
   xiiQuat qRot, qRotFinal;
   qRot.SetShortestRotation(m_vCameraStartDirection, m_vCameraTargetDirection);
@@ -204,7 +204,7 @@ void xiiQtEngineViewWidget::InterpolateCameraTo(const xiiVec3& vPosition, const 
   if (bImmediate)
   {
     // make sure the next camera update interpolates all the way
-    m_LastCameraUpdate -= xiiTime::Seconds(10);
+    m_LastCameraUpdate -= xiiTime::MakeFromSeconds(10);
     m_fCameraLerp = 0.9f;
   }
 }

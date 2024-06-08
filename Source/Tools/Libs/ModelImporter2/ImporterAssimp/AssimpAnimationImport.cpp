@@ -254,7 +254,7 @@ namespace xiiModelImporter2
         }
       }
 
-      pAnimOut->SetDuration(xiiTime::Seconds(fMaxTimestamp));
+      pAnimOut->SetDuration(xiiTime::MakeFromSeconds(fMaxTimestamp));
 
       return XII_SUCCESS;
     }

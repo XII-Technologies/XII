@@ -1620,7 +1620,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
   {
     // xiiVarianceTypeAngle
     {
-      // xiiAngle::Degree(90.0f) was replaced with radian as release builds generate a different float then debug.
+      // xiiAngle::MakeFromDegree(90.0f) was replaced with radian as release builds generate a different float then debug.
       xiiVarianceTypeAngle value  = {0.1f, xiiAngle::MakeFromRadian(1.57079637f)};
       xiiVarianceTypeAngle value2 = {0.2f, xiiAngle::MakeFromRadian(1.57079637f)};
 
@@ -2896,8 +2896,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiUuid)")
   {
-    xiiUuid uuid;
-    uuid.CreateNewUuid();
+    xiiUuid uuid = xiiUuid::MakeUuid();
     xiiVariant v(uuid);
 
     TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Uuid);
@@ -2911,7 +2910,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiAngle)")
   {
-    xiiAngle   t = xiiAngle::Degree(123.0);
+    xiiAngle   t = xiiAngle::MakeFromDegree(123.0);
     xiiVariant v(t);
 
     TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Angle);
@@ -2929,7 +2928,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiAngled)")
   {
-    xiiAngled  t = xiiAngled::Degree(123.0);
+    xiiAngled  t = xiiAngled::MakeFromDegree(123.0);
     xiiVariant v(t);
 
     TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Angled);

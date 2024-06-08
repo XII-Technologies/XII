@@ -5,7 +5,7 @@
 #include <EditorFramework/Preferences/EditorPreferences.h>
 #include <Foundation/Configuration/SubSystem.h>
 
-xiiAngle               xiiSnapProvider::s_RotationSnapValue      = xiiAngle::Degree(15.0f);
+xiiAngle               xiiSnapProvider::s_RotationSnapValue      = xiiAngle::MakeFromDegree(15.0f);
 float                  xiiSnapProvider::s_fScaleSnapValue        = 0.125f;
 float                  xiiSnapProvider::s_fTranslationSnapValue  = 0.25f;
 xiiEventSubscriptionID xiiSnapProvider::s_UserPreferencesChanged = 0;
@@ -157,7 +157,7 @@ void xiiSnapProvider::SnapRotation(xiiAngle& ref_rotation)
 {
   if (s_RotationSnapValue.GetRadian() != 0.0f)
   {
-    ref_rotation = xiiAngle::Radian(xiiMath::RoundToMultiple(ref_rotation.GetRadian(), s_RotationSnapValue.GetRadian()));
+    ref_rotation = xiiAngle::MakeFromRadian(xiiMath::RoundToMultiple(ref_rotation.GetRadian(), s_RotationSnapValue.GetRadian()));
   }
 }
 

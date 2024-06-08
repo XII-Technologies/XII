@@ -220,7 +220,7 @@ void xiiQtGameObjectReferencePropertyWidget::OnCopyReference()
   QClipboard* clipboard = QApplication::clipboard();
   clipboard->setText(m_sInternalValue);
 
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Object Reference: {}", m_sInternalValue.toUtf8().data()), xiiTime::Seconds(5));
+  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Object Reference: {}", m_sInternalValue.toUtf8().data()), xiiTime::MakeFromSeconds(5));
 }
 
 void xiiQtGameObjectReferencePropertyWidget::OnClearReference()

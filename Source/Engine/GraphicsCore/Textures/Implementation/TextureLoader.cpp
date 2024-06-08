@@ -150,7 +150,7 @@ xiiResourceLoadData xiiTextureResourceLoader::OpenDataStream(const xiiResource* 
 
   if (cvar_StreamingTextureLoadDelay > 0)
   {
-    xiiThreadUtils::Sleep(xiiTime::Seconds(cvar_StreamingTextureLoadDelay));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromSeconds(cvar_StreamingTextureLoadDelay));
   }
 
   return res;

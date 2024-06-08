@@ -259,7 +259,7 @@ xiiEditorInput xiiTranslateGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   const xiiTime tNow = xiiTime::Now();
 
-  if (tNow - m_LastInteraction < xiiTime::Seconds(1.0 / 25.0))
+  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
     return xiiEditorInput::WasExclusivelyHandled;
 
   const QPoint mousePosition = e->globalPosition().toPoint();

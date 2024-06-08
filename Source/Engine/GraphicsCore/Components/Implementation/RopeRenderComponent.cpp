@@ -308,7 +308,7 @@ void xiiRopeRenderComponent::GenerateRenderMesh(xiiUInt32 uiNumRopePieces)
 
   xiiGeometry geom;
 
-  const xiiAngle fDegStep = xiiAngle::Degree(360.0f / m_uiDetail);
+  const xiiAngle fDegStep = xiiAngle::MakeFromDegree(360.0f / m_uiDetail);
   const float    fVStep   = 1.0f / m_uiDetail;
 
   auto addCap = [&](float x, const xiiVec3& vNormal, xiiUInt16 uiBoneIndex, bool bFlipWinding) {
@@ -316,7 +316,7 @@ void xiiRopeRenderComponent::GenerateRenderMesh(xiiUInt32 uiNumRopePieces)
 
     xiiUInt32 centerIndex = geom.AddVertex(xiiVec3(x, 0, 0), vNormal, xiiVec2(0.5f, 0.5f), xiiColor::White, boneIndices);
 
-    xiiAngle deg = xiiAngle::Radian(0);
+    xiiAngle deg = xiiAngle::MakeFromRadian(0);
     for (xiiUInt32 s = 0; s < m_uiDetail; ++s)
     {
       const float fY = xiiMath::Cos(deg);
@@ -339,7 +339,7 @@ void xiiRopeRenderComponent::GenerateRenderMesh(xiiUInt32 uiNumRopePieces)
   };
 
   auto addPiece = [&](float x, const xiiVec4U16& vBoneIndices, const xiiColorLinearUB& boneWeights, bool bCreatePolygons) {
-    xiiAngle deg = xiiAngle::Radian(0);
+    xiiAngle deg = xiiAngle::MakeFromRadian(0);
     float    fU  = x * m_fUScale;
     float    fV  = 0;
 

@@ -126,7 +126,7 @@ void xiiSimpleAnimationComponent::Update()
   if (m_fSpeed == 0.0f && !GetUserFlag(1))
     return;
 
-  xiiTime            tMinStep = xiiTime::Seconds(0);
+  xiiTime            tMinStep = xiiTime::MakeFromSeconds(0);
   xiiVisibilityState visType  = GetOwner()->GetVisibilityState();
 
   if (visType != xiiVisibilityState::Direct)

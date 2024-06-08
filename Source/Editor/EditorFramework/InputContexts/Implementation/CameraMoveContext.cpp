@@ -148,13 +148,13 @@ void xiiCameraMoveContext::UpdateContext()
   if (m_bMoveDown)
     m_pCamera->MoveGlobally(0, 0, -1 * fSpeedFactor);
   if (m_bRotateLeft)
-    m_pCamera->RotateGlobally(xiiAngle::Radian(0), xiiAngle::Radian(0), xiiAngle::Degree(-fRotateHorizontal));
+    m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromDegree(-fRotateHorizontal));
   if (m_bRotateRight)
-    m_pCamera->RotateGlobally(xiiAngle::Radian(0), xiiAngle::Radian(0), xiiAngle::Degree(fRotateHorizontal));
+    m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromDegree(fRotateHorizontal));
   if (m_bRotateUp)
-    m_pCamera->RotateLocally(xiiAngle::Radian(0), xiiAngle::Degree(fRotateVertical), xiiAngle::Radian(0));
+    m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromDegree(fRotateVertical), xiiAngle::MakeFromRadian(0));
   if (m_bRotateDown)
-    m_pCamera->RotateLocally(xiiAngle::Radian(0), xiiAngle::Degree(-fRotateVertical), xiiAngle::Radian(0));
+    m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromDegree(-fRotateVertical), xiiAngle::MakeFromRadian(0));
 
   if (m_bMoveForwardsInPlane)
   {
@@ -624,8 +624,8 @@ xiiEditorInput xiiCameraMoveContext::DoMouseMoveEvent(QMouseEvent* e)
       float fRotateHorizontal = diff.x * fMouseRotateSensitivityX;
       float fRotateVertical   = -diff.y * fMouseRotateSensitivityY;
 
-      m_pCamera->RotateLocally(xiiAngle::Radian(0), xiiAngle::Radian(fRotateVertical), xiiAngle::Radian(0));
-      m_pCamera->RotateGlobally(xiiAngle::Radian(0), xiiAngle::Radian(0), xiiAngle::Radian(fRotateHorizontal));
+      m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(fRotateVertical), xiiAngle::MakeFromRadian(0));
+      m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(fRotateHorizontal));
 
       if (m_bOrbitCamera)
       {

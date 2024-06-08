@@ -75,7 +75,7 @@ public:
   xiiQtContainerWindow*       GetContainerWindow() const;
 
   /// \brief Shows the given message for the given duration in the statusbar, then shows the permanent message again.
-  void ShowTemporaryStatusBarMsg(const xiiFormatString& text, xiiTime duration = xiiTime::Seconds(5));
+  void ShowTemporaryStatusBarMsg(const xiiFormatString& text, xiiTime duration = xiiTime::MakeFromSeconds(5));
 
   /// \brief Sets which text to show permanently in the statusbar. Set an empty string to clear the message.
   void SetPermanentStatusBarMsg(const xiiFormatString& text);

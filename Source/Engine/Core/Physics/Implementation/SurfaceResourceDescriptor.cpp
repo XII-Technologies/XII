@@ -18,7 +18,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiSurfaceInteraction, xiiNoBase, 1, xiiRTTIDefa
     XII_ACCESSOR_PROPERTY("Prefab", GetPrefab, SetPrefab)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Prefab", xiiDependencyFlags::Package)),
     XII_MAP_ACCESSOR_PROPERTY("Parameters", GetParameters, GetParameter, SetParameter, RemoveParameter)->AddAttributes(new xiiExposedParametersAttribute("Prefab")),
     XII_ENUM_MEMBER_PROPERTY("Alignment", xiiSurfaceInteractionAlignment, m_Alignment),
-    XII_MEMBER_PROPERTY("Deviation", m_Deviation)->AddAttributes(new xiiClampValueAttribute(xiiVariant(xiiAngle::Degree(0.0f)), xiiVariant(xiiAngle::Degree(90.0f)))),
+    XII_MEMBER_PROPERTY("Deviation", m_Deviation)->AddAttributes(new xiiClampValueAttribute(xiiVariant(xiiAngle::MakeFromDegree(0.0f)), xiiVariant(xiiAngle::MakeFromDegree(90.0f)))),
     XII_MEMBER_PROPERTY("ImpulseThreshold", m_fImpulseThreshold),
     XII_MEMBER_PROPERTY("ImpulseScale", m_fImpulseScale)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
   }

@@ -237,15 +237,14 @@ xiiResult xiiImageConversion::BuildPath(xiiImageFormat::Enum sourceFormat, xiiIm
       {
         // Only a single step, so we need to add a copy step
         xiiImageConversion::ConversionPathNode copy;
-        copy.m_inPlace           = false;
-        copy.m_sourceFormat      = sourceFormat;
-        copy.m_targetFormat      = sourceFormat;
-        copy.m_sourceBufferIndex = ref_path_out[0].m_sourceBufferIndex;
-        copy.m_targetBufferIndex =
-          allocateScratchBufferIndex(scratchBuffers, xiiImageFormat::GetBitsPerBlock(ref_path_out[0].m_sourceFormat), ref_path_out[0].m_sourceBufferIndex);
+        copy.m_inPlace                      = false;
+        copy.m_sourceFormat                 = sourceFormat;
+        copy.m_targetFormat                 = sourceFormat;
+        copy.m_sourceBufferIndex            = ref_path_out[0].m_sourceBufferIndex;
+        copy.m_targetBufferIndex            = allocateScratchBufferIndex(scratchBuffers, xiiImageFormat::GetBitsPerBlock(ref_path_out[0].m_sourceFormat), ref_path_out[0].m_sourceBufferIndex);
         ref_path_out[0].m_sourceBufferIndex = copy.m_targetBufferIndex;
         copy.m_step                         = nullptr;
-        ref_path_out.Insert(copy, 0);
+        ref_path_out.InsertAt(0, copy);
       }
       else
       {

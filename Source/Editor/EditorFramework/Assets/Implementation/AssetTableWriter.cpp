@@ -259,7 +259,7 @@ xiiResult xiiAssetTableWriter::WriteAssetTables(const xiiPlatformProfile* pAsset
     xiiEditorEngineProcessConnection::GetSingleton()->SendMessage(&msg);
   }
 
-  m_NextTableFlush = xiiTime::Now() + xiiTime::Seconds(1.5);
+  m_NextTableFlush = xiiTime::Now() + xiiTime::MakeFromSeconds(1.5);
   return res;
 }
 

@@ -114,7 +114,7 @@ void xiiInputDeviceController::UpdateVibration(xiiTime tTimeDifference)
   static xiiTime tElapsedTime;
   tElapsedTime += tTimeDifference;
 
-  const xiiTime tTimePerSample = xiiTime::Seconds(1.0 / static_cast<double>(VibrationSamplesPerSecond));
+  const xiiTime tTimePerSample = xiiTime::MakeFromSeconds(1.0 / static_cast<double>(VibrationSamplesPerSecond));
 
   // advance the vibration track sampling
   while (tElapsedTime >= tTimePerSample)

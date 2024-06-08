@@ -32,11 +32,11 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
       auto& work        = works.ExpandAndGetRef();
       work.m_IntervalMs = intervals[i];
 
-      scheduler.AddOrUpdateWork(&work, xiiTime::Milliseconds(work.m_IntervalMs));
+      scheduler.AddOrUpdateWork(&work, xiiTime::MakeFromMilliseconds(work.m_IntervalMs));
     }
 
     constexpr xiiUInt32 uiNumIterations = 60;
-    constexpr xiiTime   timeStep        = xiiTime::Milliseconds(10);
+    constexpr xiiTime   timeStep        = xiiTime::MakeFromMilliseconds(10);
 
     xiiUInt32 wrongDelta = 0;
     for (xiiUInt32 i = 0; i < uiNumIterations; ++i)
@@ -61,7 +61,7 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
 
       for (auto& work : works)
       {
-        XII_TEST_BOOL(scheduler.GetInterval(&work) == xiiTime::Milliseconds(work.m_IntervalMs));
+        XII_TEST_BOOL(scheduler.GetInterval(&work) == xiiTime::MakeFromMilliseconds(work.m_IntervalMs));
       }
     }
 
@@ -89,11 +89,11 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
       auto& work        = works.ExpandAndGetRef();
       work.m_IntervalMs = intervals[i];
 
-      scheduler.AddOrUpdateWork(&work, xiiTime::Milliseconds(work.m_IntervalMs));
+      scheduler.AddOrUpdateWork(&work, xiiTime::MakeFromMilliseconds(work.m_IntervalMs));
     }
 
     constexpr xiiUInt32 uiNumIterations = 60;
-    constexpr xiiTime   timeStep        = xiiTime::Milliseconds(20);
+    constexpr xiiTime   timeStep        = xiiTime::MakeFromMilliseconds(20);
 
     xiiUInt32 wrongDelta = 0;
     for (xiiUInt32 i = 0; i < uiNumIterations; ++i)
@@ -118,7 +118,7 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
 
       for (auto& work : works)
       {
-        XII_TEST_BOOL(scheduler.GetInterval(&work) == xiiTime::Milliseconds(work.m_IntervalMs));
+        XII_TEST_BOOL(scheduler.GetInterval(&work) == xiiTime::MakeFromMilliseconds(work.m_IntervalMs));
       }
     }
 
@@ -143,13 +143,13 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
     for (xiiUInt32 i = 0; i < 16; ++i)
     {
       auto& work = works.ExpandAndGetRef();
-      scheduler.AddOrUpdateWork(&work, xiiTime::Milliseconds(i));
+      scheduler.AddOrUpdateWork(&work, xiiTime::MakeFromMilliseconds(i));
     }
 
     for (xiiUInt32 i = 0; i < 60; ++i)
     {
       float fNumWorks = 0;
-      scheduler.Update(xiiTime::Milliseconds(10), [&](TestWork* pWork, xiiTime deltaTime) {
+      scheduler.Update(xiiTime::MakeFromMilliseconds(10), [&](TestWork* pWork, xiiTime deltaTime) {
         pWork->Run();
         ++fNumWorks;
       });
@@ -160,14 +160,14 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
     for (xiiUInt32 i = 0; i < 16; ++i)
     {
       auto& work = works.ExpandAndGetRef();
-      scheduler.AddOrUpdateWork(&work, xiiTime::Milliseconds(20 + i));
+      scheduler.AddOrUpdateWork(&work, xiiTime::MakeFromMilliseconds(20 + i));
     }
 
     float fPrevNumWorks = 15.5f;
     for (xiiUInt32 i = 0; i < 60; ++i)
     {
       float fNumWorks = 0.0f;
-      scheduler.Update(xiiTime::Milliseconds(10), [&](TestWork* pWork, xiiTime deltaTime) {
+      scheduler.Update(xiiTime::MakeFromMilliseconds(10), [&](TestWork* pWork, xiiTime deltaTime) {
         pWork->Run();
         ++fNumWorks;
       });
@@ -185,22 +185,22 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
       scheduler.RemoveWork(&work);
     }
 
-    scheduler.Update(xiiTime::Milliseconds(10), xiiIntervalScheduler<TestWork*>::RunWorkCallback());
+    scheduler.Update(xiiTime::MakeFromMilliseconds(10), xiiIntervalScheduler<TestWork*>::RunWorkCallback());
 
     for (xiiUInt32 i = 0; i < 16; ++i)
     {
       auto& work = works[i + 16];
-      XII_TEST_BOOL(scheduler.GetInterval(&work) == xiiTime::Milliseconds(20 + i));
+      XII_TEST_BOOL(scheduler.GetInterval(&work) == xiiTime::MakeFromMilliseconds(20 + i));
 
-      scheduler.AddOrUpdateWork(&work, xiiTime::Milliseconds(100 + i));
+      scheduler.AddOrUpdateWork(&work, xiiTime::MakeFromMilliseconds(100 + i));
     }
 
-    scheduler.Update(xiiTime::Milliseconds(10), xiiIntervalScheduler<TestWork*>::RunWorkCallback());
+    scheduler.Update(xiiTime::MakeFromMilliseconds(10), xiiIntervalScheduler<TestWork*>::RunWorkCallback());
 
     for (xiiUInt32 i = 0; i < 16; ++i)
     {
       auto& work = works[i + 16];
-      XII_TEST_BOOL(scheduler.GetInterval(&work) == xiiTime::Milliseconds(100 + i));
+      XII_TEST_BOOL(scheduler.GetInterval(&work) == xiiTime::MakeFromMilliseconds(100 + i));
     }
   }
 
@@ -215,11 +215,11 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
       auto& work        = works.ExpandAndGetRef();
       work.m_IntervalMs = static_cast<float>((i & 1u));
 
-      scheduler.AddOrUpdateWork(&work, xiiTime::Milliseconds(i));
+      scheduler.AddOrUpdateWork(&work, xiiTime::MakeFromMilliseconds(i));
     }
 
     xiiUInt32 uiNumWorks = 0;
-    scheduler.Update(xiiTime::Milliseconds(33),
+    scheduler.Update(xiiTime::MakeFromMilliseconds(33),
                      [&](TestWork* pWork, xiiTime deltaTime) {
                        pWork->Run();
                        ++uiNumWorks;
@@ -230,7 +230,7 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
                        }
                        else
                        {
-                         scheduler.AddOrUpdateWork(pWork, xiiTime::Milliseconds(50));
+                         scheduler.AddOrUpdateWork(pWork, xiiTime::MakeFromMilliseconds(50));
                        }
                      });
 
@@ -242,7 +242,7 @@ XII_CREATE_SIMPLE_TEST(Utils, IntervalScheduler)
     }
 
     uiNumWorks = 0;
-    scheduler.Update(xiiTime::Milliseconds(100),
+    scheduler.Update(xiiTime::MakeFromMilliseconds(100),
                      [&](TestWork* pWork, xiiTime deltaTime) {
                        XII_TEST_FLOAT(pWork->m_IntervalMs, 1.0f, xiiMath::DefaultEpsilon<float>());
 

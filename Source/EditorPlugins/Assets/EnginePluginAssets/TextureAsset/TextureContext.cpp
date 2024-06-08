@@ -135,7 +135,7 @@ void xiiTextureContext::OnInitialize()
     xiiGameObject*    pObj;
 
     obj.m_sName.Assign("TexturePreview");
-    obj.m_LocalRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
+    obj.m_LocalRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(90));
     m_hPreviewObject = m_pWorld->CreateObject(obj, pObj);
 
     xiiMeshComponent* pMesh;

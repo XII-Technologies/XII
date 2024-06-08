@@ -397,7 +397,7 @@ namespace JSONReaderTestDetail
       case xiiVariant::Type::Quaternion:
       {
         xiiStringBuilder sTemp;
-        sTemp.SetFormat("quat ({0}, {1}, {2}, {3})", xiiArgF(var.Get<xiiQuat>().v.x, 4), xiiArgF(var.Get<xiiQuat>().v.y, 4), xiiArgF(var.Get<xiiQuat>().v.z, 4), xiiArgF(var.Get<xiiQuat>().w, 4));
+        sTemp.SetFormat("quat ({0}, {1}, {2}, {3})", xiiArgF(var.Get<xiiQuat>().x, 4), xiiArgF(var.Get<xiiQuat>().y, 4), xiiArgF(var.Get<xiiQuat>().z, 4), xiiArgF(var.Get<xiiQuat>().w, 4));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
         XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
         ref_compare.PopFront();
@@ -407,7 +407,7 @@ namespace JSONReaderTestDetail
       case xiiVariant::Type::Quaterniond:
       {
         xiiStringBuilder sTemp;
-        sTemp.SetFormat("quatd ({0}, {1}, {2}, {3})", xiiArgF(var.Get<xiiQuatd>().v.x, 8), xiiArgF(var.Get<xiiQuatd>().v.y, 8), xiiArgF(var.Get<xiiQuatd>().v.z, 8), xiiArgF(var.Get<xiiQuatd>().w, 8));
+        sTemp.SetFormat("quatd ({0}, {1}, {2}, {3})", xiiArgF(var.Get<xiiQuatd>().x, 8), xiiArgF(var.Get<xiiQuatd>().y, 8), xiiArgF(var.Get<xiiQuatd>().z, 8), xiiArgF(var.Get<xiiQuatd>().w, 8));
         // xiiLog::Printf("Expect: %s - Is: %s\n", sTemp.GetData(), Compare.PeekFront().GetData());
         XII_TEST_STRING(ref_compare.PeekFront().GetData(), sTemp.GetData());
         ref_compare.PopFront();

@@ -610,7 +610,7 @@ void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, co
 
   const xiiVec3  vCenter   = sphere.m_vCenter;
   const float    fRadius   = sphere.m_fRadius;
-  const xiiAngle stepAngle = xiiAngle::Degree(360.0f / (float)NUM_SEGMENTS);
+  const xiiAngle stepAngle = xiiAngle::MakeFromDegree(360.0f / (float)NUM_SEGMENTS);
 
   XII_LOCK(s_Mutex);
 
@@ -645,7 +645,7 @@ void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, 
   static constexpr xiiUInt32 NUM_HALF_SEGMENTS = 16;
   static constexpr xiiUInt32 NUM_LINES         = NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + 4;
 
-  const xiiAngle stepAngle = xiiAngle::Degree(360.0f / (float)NUM_SEGMENTS);
+  const xiiAngle stepAngle = xiiAngle::MakeFromDegree(360.0f / (float)NUM_SEGMENTS);
 
   Line lines[NUM_LINES];
 
@@ -1005,10 +1005,10 @@ void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngl
   endAngle.NormalizeRange();
 
   if (startAngle > endAngle)
-    startAngle -= xiiAngle::Degree(360);
+    startAngle -= xiiAngle::MakeFromDegree(360);
 
   const xiiAngle  range         = endAngle - startAngle;
-  const xiiUInt32 uiTesselation = xiiMath::Max(1u, (xiiUInt32)(range / xiiAngle::Degree(5)));
+  const xiiUInt32 uiTesselation = xiiMath::Max(1u, (xiiUInt32)(range / xiiAngle::MakeFromDegree(5)));
   const xiiAngle  step          = range / (float)uiTesselation;
 
   xiiQuat qStart;
@@ -1066,10 +1066,10 @@ void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, x
   xiiHybridArray<Triangle, 64> trisInside;
   xiiHybridArray<Triangle, 64> trisOutside;
 
-  halfAngle = xiiMath::Clamp(halfAngle, xiiAngle(), xiiAngle::Degree(180));
+  halfAngle = xiiMath::Clamp(halfAngle, xiiAngle(), xiiAngle::MakeFromDegree(180));
 
-  const xiiAngle  refAngle      = halfAngle <= xiiAngle::Degree(90) ? halfAngle : xiiAngle::Degree(180) - halfAngle;
-  const xiiUInt32 uiTesselation = xiiMath::Max(8u, (xiiUInt32)(refAngle / xiiAngle::Degree(2)));
+  const xiiAngle  refAngle      = halfAngle <= xiiAngle::MakeFromDegree(90) ? halfAngle : xiiAngle::MakeFromDegree(180) - halfAngle;
+  const xiiUInt32 uiTesselation = xiiMath::Max(8u, (xiiUInt32)(refAngle / xiiAngle::MakeFromDegree(2)));
 
   const xiiVec3 tangentAxis = vForwardAxis.GetOrthogonalVector().GetNormalized();
 
@@ -1077,7 +1077,7 @@ void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, x
   tilt.SetFromAxisAndAngle(tangentAxis, halfAngle);
 
   xiiQuat step;
-  step.SetFromAxisAndAngle(vForwardAxis, xiiAngle::Degree(360) / (float)uiTesselation);
+  step.SetFromAxisAndAngle(vForwardAxis, xiiAngle::MakeFromDegree(360) / (float)uiTesselation);
 
   xiiVec3 vCurDir = tilt * vForwardAxis;
 
@@ -1127,7 +1127,7 @@ void xiiDebugRenderer::DrawLimitCone(const xiiDebugRendererContext& context, xii
     for (xiiUInt32 i = 0; i <= NUM_LINES; i++)
     {
       const float   angle = 2 * xiiMath::Pi<float>() / NUM_LINES * i;
-      const float   c = xiiMath::Cos(xiiAngle::Radian(angle)), s = xiiMath::Sin(xiiAngle::Radian(angle));
+      const float   c = xiiMath::Cos(xiiAngle::MakeFromRadian(angle)), s = xiiMath::Sin(xiiAngle::MakeFromRadian(angle));
       const xiiVec3 rv(0, -tanQSwingZ * s, tanQSwingY * c);
       const float   rv2 = rv.GetLengthSquared();
       const float   r   = (1 / (1 + rv2));
@@ -1172,7 +1172,7 @@ void xiiDebugRenderer::DrawCylinder(const xiiDebugRendererContext& context, floa
   xiiHybridArray<Line, NUM_SEGMENTS * 3>         lines;
   xiiHybridArray<Triangle, NUM_SEGMENTS * 2 * 2> tris;
 
-  const xiiAngle step  = xiiAngle::Degree(360) / (float)NUM_SEGMENTS;
+  const xiiAngle step  = xiiAngle::MakeFromDegree(360) / (float)NUM_SEGMENTS;
   xiiAngle       angle = {};
 
   xiiVec3 vCurCircle(0, 1 /*xiiMath::Cos(angle)*/, 0 /*xiiMath::Sin(angle)*/);
@@ -1846,9 +1846,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiScriptExtensionClass_Debug, xiiNoBase, 1, xii
     XII_SCRIPT_FUNCTION_PROPERTY(Draw3DText, In, "World", In, "Text", In, "Position", In, "Color", In, "SizeInPixel")->AddAttributes(new xiiFunctionArgumentAttributes(4, new xiiDefaultValueAttribute(16))),
     XII_SCRIPT_FUNCTION_PROPERTY(DrawInfoText, In, "World", In, "Text", In, "Placement", In, "Group", In, "Color"),
 
-    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentCross, In, "World", In, "Position", In, "Size", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(0.1f)),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
-    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineBox, In, "World", In, "Position", In, "HalfExtents", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(xiiVec3(1))),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
-    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineSphere, In, "World", In, "Position", In, "Radius", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(1.0f)),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
+    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentCross, In, "World", In, "Position", In, "Size", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(0.1f)),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(1)))),
+    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineBox, In, "World", In, "Position", In, "HalfExtents", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(xiiVec3(1))),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(1)))),
+    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineSphere, In, "World", In, "Position", In, "Radius", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(1.0f)),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(1)))),
   }
   XII_END_FUNCTIONS;
   XII_BEGIN_ATTRIBUTES

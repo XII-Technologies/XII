@@ -189,7 +189,7 @@ void xiiDummyXR::GameApplicationEventHandler(const xiiGameApplicationExecutionEv
         {
           const float fAspectRatio = (float)m_Info.m_vEyeRenderTargetSize.width / (float)m_Info.m_vEyeRenderTargetSize.height;
 
-          xiiMat4 mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::Degree(pCameraComponent->GetFieldOfView()), fAspectRatio,
+          xiiMat4 mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::MakeFromDegree(pCameraComponent->GetFieldOfView()), fAspectRatio,
                                                                                       pCameraComponent->GetNearPlane(), xiiMath::Max(pCameraComponent->GetNearPlane() + 0.00001f, pCameraComponent->GetFarPlane()));
 
           m_pCameraToSynchronize->SetStereoProjection(mProj, mProj, fAspectRatio);

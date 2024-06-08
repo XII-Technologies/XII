@@ -112,7 +112,7 @@ xiiResult xiiFileserveClient::EnsureConnected(xiiTime timeout)
 
     if (timeout.GetSeconds() < 0)
     {
-      timeout = xiiTime::Seconds(xiiCommandLineUtils::GetGlobalInstance()->GetFloatOption("-fs_timeout", -timeout.GetSeconds()));
+      timeout = xiiTime::MakeFromSeconds(xiiCommandLineUtils::GetGlobalInstance()->GetFloatOption("-fs_timeout", -timeout.GetSeconds()));
     }
 
     if (m_pNetwork->WaitForConnectionToServer(timeout).Failed())
@@ -613,7 +613,7 @@ xiiResult xiiFileserveClient::DownloadFile(xiiUInt16 uiDataDirID, const char* sz
   const xiiUInt16        uiUseDataDirCache = bForceThisDataDir ? uiDataDirID : itFileDataDir.Value();
   const FileCacheStatus& CacheStatus       = m_MountedDataDirs[uiUseDataDirCache].m_CacheStatus[szFile];
 
-  if (m_CurrentTime - CacheStatus.m_LastCheck < xiiTime::Seconds(5.0f))
+  if (m_CurrentTime - CacheStatus.m_LastCheck < xiiTime::MakeFromSeconds(5.0f))
   {
     if (CacheStatus.m_FileHash == 0) // file does not exist
       return XII_FAILURE;
@@ -727,7 +727,7 @@ xiiResult xiiFileserveClient::TryReadFileserveConfig(const char* szFile, xiiStri
   return XII_FAILURE;
 }
 
-xiiResult xiiFileserveClient::SearchForServerAddress(xiiTime timeout /*= xiiTime::Seconds(5)*/)
+xiiResult xiiFileserveClient::SearchForServerAddress(xiiTime timeout /*= xiiTime::MakeFromSeconds(5)*/)
 {
   XII_LOCK(m_Mutex);
   if (!s_bEnableFileserve)
@@ -778,7 +778,7 @@ xiiResult xiiFileserveClient::TryConnectWithFileserver(const char* szAddress, xi
     {
       network->Send('FSRV', 'RUTR');
 
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
 
       network->UpdateRemoteInterface();
       network->ExecuteAllMessageHandlers();
@@ -797,7 +797,7 @@ xiiResult xiiFileserveClient::TryConnectWithFileserver(const char* szAddress, xi
   return XII_SUCCESS;
 }
 
-xiiResult xiiFileserveClient::WaitForServerInfo(xiiTime timeout /*= xiiTime::Seconds(60.0 * 5)*/)
+xiiResult xiiFileserveClient::WaitForServerInfo(xiiTime timeout /*= xiiTime::MakeFromSeconds(60.0 * 5)*/)
 {
   XII_LOCK(m_Mutex);
   if (!s_bEnableFileserve)
@@ -833,7 +833,7 @@ xiiResult xiiFileserveClient::WaitForServerInfo(xiiTime timeout /*= xiiTime::Sec
     xiiTime tStart = xiiTime::Now();
     while (xiiTime::Now() - tStart < timeout && sServerIPs.IsEmpty())
     {
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
 
       network->UpdateRemoteInterface();
       network->ExecuteAllMessageHandlers();
@@ -856,13 +856,13 @@ xiiResult xiiFileserveClient::WaitForServerInfo(xiiTime timeout /*= xiiTime::Sec
     {
       sAddress.SetFormat("{0}:{1}", ip, uiPort);
 
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(500));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(500));
 
-      if (TryConnectWithFileserver(sAddress, xiiTime::Seconds(3)).Succeeded())
+      if (TryConnectWithFileserver(sAddress, xiiTime::MakeFromSeconds(3)).Succeeded())
         return XII_SUCCESS;
     }
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(1000));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1000));
   }
 
   return XII_FAILURE;

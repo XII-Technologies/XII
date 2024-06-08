@@ -236,8 +236,8 @@ xiiEditorInput xiiOrbitCameraContext::DoMouseMoveEvent(QMouseEvent* e)
 
     // then rotate the camera, and adjust its position to again point at the orbit point
 
-    m_pCamera->RotateLocally(xiiAngle::Radian(0.0f), xiiAngle::Radian(fMoveUp), xiiAngle::Radian(0.0f));
-    m_pCamera->RotateGlobally(xiiAngle::Radian(0.0f), xiiAngle::Radian(0.0f), xiiAngle::Radian(fMoveRight));
+    m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0.0f), xiiAngle::MakeFromRadian(fMoveUp), xiiAngle::MakeFromRadian(0.0f));
+    m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0.0f), xiiAngle::MakeFromRadian(0.0f), xiiAngle::MakeFromRadian(fMoveRight));
 
     xiiVec3 vDir = m_pCamera->GetDirForwards();
     if (fDistance == 0.0f || vDir.SetLength(fDistance).Failed())
@@ -263,8 +263,8 @@ xiiEditorInput xiiOrbitCameraContext::DoMouseMoveEvent(QMouseEvent* e)
     float fRotateHorizontal = diff.x * fMouseRotateSensitivityX;
     float fRotateVertical   = -diff.y * fMouseRotateSensitivityY;
 
-    m_pCamera->RotateLocally(xiiAngle::Radian(0), xiiAngle::Radian(fRotateVertical), xiiAngle::Radian(0));
-    m_pCamera->RotateGlobally(xiiAngle::Radian(0), xiiAngle::Radian(0), xiiAngle::Radian(fRotateHorizontal));
+    m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(fRotateVertical), xiiAngle::MakeFromRadian(0));
+    m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(0), xiiAngle::MakeFromRadian(fRotateHorizontal));
   }
 
   if (m_Mode == Mode::Pan)

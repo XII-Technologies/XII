@@ -12,7 +12,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSimpleWindComponent, 2, xiiComponentMode::Static)
   {
     XII_ENUM_MEMBER_PROPERTY("MinWindStrength", xiiWindStrength, m_MinWindStrength),
     XII_ENUM_MEMBER_PROPERTY("MaxWindStrength", xiiWindStrength, m_MaxWindStrength),
-    XII_MEMBER_PROPERTY("MaxDeviation", m_Deviation)->AddAttributes(new xiiClampValueAttribute(xiiAngle::Degree(0), xiiAngle::Degree(180))),
+    XII_MEMBER_PROPERTY("MaxDeviation", m_Deviation)->AddAttributes(new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0), xiiAngle::MakeFromDegree(180))),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -95,7 +95,7 @@ void xiiSimpleWindComponent::OnActivated()
   m_fNextStrength  = xiiWindStrength::GetInMetersPerSecond(m_MinWindStrength);
   m_vNextDirection = GetOwner()->GetGlobalDirForwards();
   m_NextChange     = GetWorld()->GetClock().GetAccumulatedTime();
-  m_LastChange     = m_NextChange - xiiTime::Seconds(1);
+  m_LastChange     = m_NextChange - xiiTime::MakeFromSeconds(1);
 
   ComputeNextState();
 }
@@ -129,12 +129,12 @@ void xiiSimpleWindComponent::ComputeNextState()
   float fStrengthDiff   = fMaxStrength - fMinStrength;
   float fStrengthChange = fStrengthDiff * 0.2f;
 
-  m_NextChange    = m_LastChange + xiiTime::Seconds(rng.DoubleMinMax(2.0f, 5.0f));
+  m_NextChange    = m_LastChange + xiiTime::MakeFromSeconds(rng.DoubleMinMax(2.0f, 5.0f));
   m_fNextStrength = xiiMath::Clamp<float>(m_fLastStrength + (float)rng.DoubleMinMax(-fStrengthChange, +fStrengthChange), fMinStrength, fMaxStrength);
 
   const xiiVec3 vMainDir = GetOwner()->GetGlobalDirForwards();
 
-  if (m_Deviation < xiiAngle::Degree(1))
+  if (m_Deviation < xiiAngle::MakeFromDegree(1))
     m_vNextDirection = vMainDir;
   else
     m_vNextDirection = xiiVec3::CreateRandomDeviation(rng, m_Deviation, vMainDir);

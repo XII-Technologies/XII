@@ -204,14 +204,14 @@ XII_CREATE_SIMPLE_TEST(World, Messaging)
     {
       TestMessage1 msg;
       msg.m_iValue = i;
-      pRoot->PostMessage(msg, xiiTime::Seconds(i + 1));
+      pRoot->PostMessage(msg, xiiTime::MakeFromSeconds(i + 1));
 
       TestMessage2 msg2;
       msg2.m_iValue = i;
-      pRoot->PostMessage(msg2, xiiTime::Seconds(i + 1));
+      pRoot->PostMessage(msg2, xiiTime::MakeFromSeconds(i + 1));
     }
 
-    world.GetClock().SetFixedTimeStep(xiiTime::Seconds(1.001f));
+    world.GetClock().SetFixedTimeStep(xiiTime::MakeFromSeconds(1.001f));
 
     int iDesiredValue  = 1;
     int iDesiredValue2 = 2;

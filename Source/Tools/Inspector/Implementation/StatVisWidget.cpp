@@ -31,7 +31,7 @@ xiiQtStatVisWidget::xiiQtStatVisWidget(QWidget* pParent, xiiInt32 iWindowNumber)
   ads::CDockWidget(QString("StatVisWidget") + QString::number(iWindowNumber), pParent), m_ShowWindowAction(pParent)
 {
   m_iWindowNumber   = iWindowNumber;
-  m_DisplayInterval = xiiTime::Seconds(60.0);
+  m_DisplayInterval = xiiTime::MakeFromSeconds(60.0);
 
   s_pWidget = this;
 
@@ -99,7 +99,7 @@ void xiiQtStatVisWidget::on_ComboTimeframe_currentIndexChanged(int index)
     60 * 10,
   };
 
-  m_DisplayInterval = xiiTime::Seconds(uiSeconds[index]);
+  m_DisplayInterval = xiiTime::MakeFromSeconds(uiSeconds[index]);
 }
 
 void xiiQtStatVisWidget::on_LineName_textChanged(const QString& text)

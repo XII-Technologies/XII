@@ -18,9 +18,9 @@ XII_BEGIN_COMPONENT_TYPE(xiiSpawnComponent, 3, xiiComponentMode::Static)
     XII_ACCESSOR_PROPERTY("AttachAsChild", GetAttachAsChild, SetAttachAsChild),
     XII_ACCESSOR_PROPERTY("SpawnAtStart", GetSpawnAtStart, SetSpawnAtStart),
     XII_ACCESSOR_PROPERTY("SpawnContinuously", GetSpawnContinuously, SetSpawnContinuously),
-    XII_MEMBER_PROPERTY("MinDelay", m_MinDelay)->AddAttributes(new xiiClampValueAttribute(xiiTime(), xiiVariant()), new xiiDefaultValueAttribute(xiiTime::Seconds(1.0))),
+    XII_MEMBER_PROPERTY("MinDelay", m_MinDelay)->AddAttributes(new xiiClampValueAttribute(xiiTime(), xiiVariant()), new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(1.0))),
     XII_MEMBER_PROPERTY("DelayRange", m_DelayRange)->AddAttributes(new xiiClampValueAttribute(xiiTime(), xiiVariant())),
-    XII_MEMBER_PROPERTY("Deviation", m_MaxDeviation)->AddAttributes(new xiiClampValueAttribute(xiiAngle(), xiiAngle::Degree(179.0))),
+    XII_MEMBER_PROPERTY("Deviation", m_MaxDeviation)->AddAttributes(new xiiClampValueAttribute(xiiAngle(), xiiAngle::MakeFromDegree(179.0))),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES
@@ -81,8 +81,8 @@ bool xiiSpawnComponent::SpawnOnce(const xiiVec3& vLocalOffset)
       const xiiVec3 vTiltAxis = xiiVec3(0, 1, 0);
       const xiiVec3 vTurnAxis = xiiVec3(1, 0, 0);
 
-      const xiiAngle tiltAngle = xiiAngle::Radian((float)GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, (double)m_MaxDeviation.GetRadian()));
-      const xiiAngle turnAngle = xiiAngle::Radian((float)GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, xiiMath::Pi<double>() * 2.0));
+      const xiiAngle tiltAngle = xiiAngle::MakeFromRadian((float)GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, (double)m_MaxDeviation.GetRadian()));
+      const xiiAngle turnAngle = xiiAngle::MakeFromRadian((float)GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, xiiMath::Pi<double>() * 2.0));
 
       xiiQuat qTilt, qTurn, qDeviate;
       qTilt;
@@ -138,7 +138,7 @@ void xiiSpawnComponent::ScheduleSpawn()
 
   xiiWorld* pWorld = GetWorld();
 
-  const xiiTime tKill = xiiTime::Seconds(pWorld->GetRandomNumberGenerator().DoubleInRange(m_MinDelay.GetSeconds(), m_DelayRange.GetSeconds()));
+  const xiiTime tKill = xiiTime::MakeFromSeconds(pWorld->GetRandomNumberGenerator().DoubleInRange(m_MinDelay.GetSeconds(), m_DelayRange.GetSeconds()));
 
   PostMessage(msg, tKill);
 }

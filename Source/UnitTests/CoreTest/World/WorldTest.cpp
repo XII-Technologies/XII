@@ -26,7 +26,7 @@ namespace
     xiiMemoryUtils::ZeroFill(&testWorldObjects, 1);
 
     xiiQuat q;
-    q.SetFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::Degree(90.0f));
+    q.SetFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromDegree(90.0f));
 
     xiiGameObjectDesc desc;
     desc.m_bDynamic      = bDynamic;
@@ -55,7 +55,7 @@ namespace
   {
     const float eps = xiiMath::DefaultEpsilon<float>();
     xiiQuat     q;
-    q.SetFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::Degree(90.0f));
+    q.SetFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromDegree(90.0f));
 
     for (xiiUInt32 i = 0; i < 2; ++i)
     {
@@ -167,7 +167,7 @@ namespace
         it->SetLocalPosition(newPos);
 
         xiiQuat newRot;
-        newRot.SetFromAxisAndAngle(xiiVec3::UnitZAxis(), xiiAngle::Degree(i * 30.0f));
+        newRot.SetFromAxisAndAngle(xiiVec3::UnitZAxis(), xiiAngle::MakeFromDegree(i * 30.0f));
         it->SetLocalRotation(newRot);
 
         if (i > 5)
@@ -268,7 +268,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
 
     const float eps = xiiMath::DefaultEpsilon<float>();
     xiiQuat     q;
-    q.SetFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::Degree(90.0f));
+    q.SetFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromDegree(90.0f));
 
     xiiGameObjectDesc desc;
     desc.m_LocalPosition = xiiVec3(100.0f, 0.0f, 0.0f);
@@ -733,7 +733,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
     for (xiiUInt32 i = 0; i < numObjects; ++i)
     {
       objectDesc.m_LocalPosition = xiiVec3(0, 0, 5);
-      objectDesc.m_LocalRotation.SetFromAxisAndAngle(xiiVec3::UnitZAxis(), xiiAngle::Degree(90));
+      objectDesc.m_LocalRotation.SetFromAxisAndAngle(xiiVec3::UnitZAxis(), xiiAngle::MakeFromDegree(90));
 
       hObjects[i] = world.CreateObject(objectDesc, pObjects[i]);
     }
@@ -741,7 +741,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
     pModule->m_bSetLocalPos    = true;
     pModule->m_bResetGlobalPos = false;
 
-    world.GetClock().SetFixedTimeStep(xiiTime::Milliseconds(100));
+    world.GetClock().SetFixedTimeStep(xiiTime::MakeFromMilliseconds(100));
     world.Update();
 
     for (auto& pObject : pObjects)
@@ -754,7 +754,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
       XII_TEST_VEC3(pObject->GetGlobalPosition(), expectedPos, xiiMath::DefaultEpsilon<float>());
       XII_TEST_VEC3(pObject->GetLinearVelocity(), expectedLinearVelocity, xiiMath::DefaultEpsilon<float>());
 
-      xiiVec3 expectedAngularVelocity = xiiVec3(0, 0, (xiiAngle::Degree(i * 30) - xiiAngle::Degree(90)).GetRadian() * 10);
+      xiiVec3 expectedAngularVelocity = xiiVec3(0, 0, (xiiAngle::MakeFromDegree(i * 30) - xiiAngle::MakeFromDegree(90)).GetRadian() * 10);
       xiiVec3 angularVelocity         = pObject->GetAngularVelocity();
       XII_TEST_VEC3(angularVelocity, expectedAngularVelocity, xiiMath::DefaultEpsilon<float>());
     }

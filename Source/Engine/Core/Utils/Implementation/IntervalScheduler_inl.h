@@ -48,7 +48,7 @@ bool xiiIntervalScheduler<T>::Data::IsValid() const
 template <typename T>
 void xiiIntervalScheduler<T>::Data::MarkAsInvalid()
 {
-  m_Interval = xiiTime::Seconds(-1);
+  m_Interval = xiiTime::MakeFromSeconds(-1);
 }
 
 //////////////////////////////////////////////////////////////////////////

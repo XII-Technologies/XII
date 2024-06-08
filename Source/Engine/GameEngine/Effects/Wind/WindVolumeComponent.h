@@ -182,5 +182,5 @@ private:
   void OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg);
 
   float    m_fLength = 1.0f;
-  xiiAngle m_Angle   = xiiAngle::Degree(45);
+  xiiAngle m_Angle   = xiiAngle::MakeFromDegree(45);
 };

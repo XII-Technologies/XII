@@ -684,7 +684,7 @@ xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::MakeZero()*/)
       {
         return XII_FAILURE;
       }
-      xiiThreadUtils::Sleep(xiiMath::Min(xiiTime::Milliseconds(100.0), timeout - timeSpent));
+      xiiThreadUtils::Sleep(xiiMath::Min(xiiTime::MakeFromMilliseconds(100.0), timeout - timeSpent));
     }
   }
 

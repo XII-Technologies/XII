@@ -103,17 +103,17 @@ xiiTime xiiAnimationInvisibleUpdateRate::GetTimeStep(xiiAnimationInvisibleUpdate
     case xiiAnimationInvisibleUpdateRate::FullUpdate:
       return xiiTime::Zero();
     case xiiAnimationInvisibleUpdateRate::Max60FPS:
-      return xiiTime::Seconds(1.0 / 60.0);
+      return xiiTime::MakeFromSeconds(1.0 / 60.0);
     case xiiAnimationInvisibleUpdateRate::Max30FPS:
-      return xiiTime::Seconds(1.0 / 30.0);
+      return xiiTime::MakeFromSeconds(1.0 / 30.0);
     case xiiAnimationInvisibleUpdateRate::Max15FPS:
-      return xiiTime::Seconds(1.0 / 15.0);
+      return xiiTime::MakeFromSeconds(1.0 / 15.0);
     case xiiAnimationInvisibleUpdateRate::Max10FPS:
-      return xiiTime::Seconds(1.0 / 10.0);
+      return xiiTime::MakeFromSeconds(1.0 / 10.0);
 
     case xiiAnimationInvisibleUpdateRate::Max5FPS:
     case xiiAnimationInvisibleUpdateRate::Pause: // full pausing should be handled separately, and if something isn't fully paused, it should behave like a very low update rate
-      return xiiTime::Seconds(1.0 / 5.0);
+      return xiiTime::MakeFromSeconds(1.0 / 5.0);
 
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }

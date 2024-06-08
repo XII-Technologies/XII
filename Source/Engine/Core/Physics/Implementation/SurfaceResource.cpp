@@ -217,12 +217,12 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
     double randomAngle = pWorld->GetRandomNumberGenerator().DoubleInRange(0.0, xiiMath::Pi<double>() * 2.0);
 
     xiiMat3 rotMat;
-    rotMat.SetRotationMatrix(vDir, xiiAngle::Radian((float)randomAngle));
+    rotMat.SetRotationMatrix(vDir, xiiAngle::MakeFromRadian((float)randomAngle));
 
     vTangent = rotMat * vTangent;
   }
 
-  if (pIA->m_Deviation > xiiAngle::Radian(0.0f))
+  if (pIA->m_Deviation > xiiAngle::MakeFromRadian(0.0f))
   {
     xiiAngle maxDeviation;
 
@@ -235,7 +235,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
         const float fCosAngle     = vDir.Dot(-vSurfaceNormal);
         const float fMaxDeviation = xiiMath::Pi<float>() - xiiMath::ACos(fCosAngle).GetRadian();
 
-        maxDeviation = xiiMath::Min(pIA->m_Deviation, xiiAngle::Radian(fMaxDeviation));
+        maxDeviation = xiiMath::Min(pIA->m_Deviation, xiiAngle::MakeFromRadian(fMaxDeviation));
       }
       break;
 
@@ -245,7 +245,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
         const float fCosAngle     = vDir.Dot(vSurfaceNormal);
         const float fMaxDeviation = xiiMath::Pi<float>() - xiiMath::ACos(fCosAngle).GetRadian();
 
-        maxDeviation = xiiMath::Min(pIA->m_Deviation, xiiAngle::Radian(fMaxDeviation));
+        maxDeviation = xiiMath::Min(pIA->m_Deviation, xiiAngle::MakeFromRadian(fMaxDeviation));
       }
       break;
 
@@ -254,7 +254,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
         break;
     }
 
-    const xiiAngle deviation = xiiAngle::Radian((float)pWorld->GetRandomNumberGenerator().DoubleMinMax(-maxDeviation.GetRadian(), maxDeviation.GetRadian()));
+    const xiiAngle deviation = xiiAngle::MakeFromRadian((float)pWorld->GetRandomNumberGenerator().DoubleMinMax(-maxDeviation.GetRadian(), maxDeviation.GetRadian()));
 
     // tilt around the tangent (we don't want to compute another random rotation here)
     xiiMat3 matTilt;

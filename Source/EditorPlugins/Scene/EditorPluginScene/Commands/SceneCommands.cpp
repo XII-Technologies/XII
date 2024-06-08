@@ -271,7 +271,7 @@ void xiiDuplicateObjectsCommand::AdjustObjectPositions(xiiHybridArray<xiiDocumen
   }
 
   xiiQuat qRot;
-  qRot.SetFromEulerAngles(xiiAngle::Degree(fStep * m_vAccumulativeRotation.x + vRandR.x), xiiAngle::Degree(fStep * m_vAccumulativeRotation.y + vRandR.y), xiiAngle::Degree(fStep * m_vAccumulativeRotation.z + vRandR.z));
+  qRot.SetFromEulerAngles(xiiAngle::MakeFromDegree(fStep * m_vAccumulativeRotation.x + vRandR.x), xiiAngle::MakeFromDegree(fStep * m_vAccumulativeRotation.y + vRandR.y), xiiAngle::MakeFromDegree(fStep * m_vAccumulativeRotation.z + vRandR.z));
 
   for (const auto& pi : Duplicates)
   {

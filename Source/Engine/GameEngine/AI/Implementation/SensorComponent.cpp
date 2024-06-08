@@ -407,7 +407,7 @@ void xiiSensorCylinderComponent::DebugDrawSensorShape() const
   xiiTransform pt = GetOwner()->GetGlobalTransform();
 
   xiiQuat r;
-  r.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(-90.0f));
+  r.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(-90.0f));
   xiiTransform t = xiiTransform(xiiVec3(0, 0, -0.5f * m_fHeight * pt.m_vScale.z), r, xiiVec3(pt.m_vScale.z, pt.m_vScale.y, pt.m_vScale.x));
 
   pt.m_vScale.Set(1);
@@ -426,7 +426,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSensorConeComponent, 1, xiiComponentMode::Static)
   {
     XII_MEMBER_PROPERTY("NearDistance", m_fNearDistance)->AddAttributes(new xiiDefaultValueAttribute(0.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("FarDistance", m_fFarDistance)->AddAttributes(new xiiDefaultValueAttribute(10.0f), new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("Angle", m_Angle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::Degree(90.0f)), new xiiClampValueAttribute(0.0f, xiiAngle::Degree(180.0f))),
+    XII_MEMBER_PROPERTY("Angle", m_Angle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(90.0f)), new xiiClampValueAttribute(0.0f, xiiAngle::MakeFromDegree(180.0f))),
   }
   XII_END_PROPERTIES;
 }
@@ -498,9 +498,9 @@ void xiiSensorConeComponent::DebugDrawSensorShape() const
   xiiDebugRenderer::Line lines[NUM_LINES];
   xiiUInt32              curLine = 0;
 
-  const xiiUInt32 numSegments     = xiiMath::Clamp(static_cast<xiiUInt32>(m_Angle / xiiAngle::Degree(180) * MAX_SEGMENTS), MIN_SEGMENTS, MAX_SEGMENTS);
+  const xiiUInt32 numSegments     = xiiMath::Clamp(static_cast<xiiUInt32>(m_Angle / xiiAngle::MakeFromDegree(180) * MAX_SEGMENTS), MIN_SEGMENTS, MAX_SEGMENTS);
   const xiiAngle  stepAngle       = m_Angle / static_cast<float>(numSegments);
-  const xiiAngle  circleStepAngle = xiiAngle::Degree(360.0f / CIRCLE_SEGMENTS);
+  const xiiAngle  circleStepAngle = xiiAngle::MakeFromDegree(360.0f / CIRCLE_SEGMENTS);
 
   for (xiiUInt32 i = 0; i < 2; ++i)
   {
@@ -518,7 +518,7 @@ void xiiSensorConeComponent::DebugDrawSensorShape() const
     }
     else
     {
-      q.SetFromAxisAndAngle(xiiVec3::UnitXAxis(), xiiAngle::Degree(90));
+      q.SetFromAxisAndAngle(xiiVec3::UnitXAxis(), xiiAngle::MakeFromDegree(90));
       fX *= m_fFarDistance;
       fCircleRadius *= m_fFarDistance;
     }
@@ -560,7 +560,7 @@ void xiiSensorConeComponent::DebugDrawSensorShape() const
       }
     }
 
-    curAngle = xiiAngle::Degree(0.0f);
+    curAngle = xiiAngle::MakeFromDegree(0.0f);
     for (xiiUInt32 s = 0; s < CIRCLE_SEGMENTS; ++s)
     {
       const xiiAngle nextAngle = curAngle + circleStepAngle;

@@ -27,8 +27,8 @@ void xiiFileserverApp::AfterCoreSystemsStartup()
 #endif
 
   // TODO: CommandLine Option
-  m_CloseAppTimeout = xiiTime::Seconds(xiiCommandLineUtils::GetGlobalInstance()->GetIntOption("-fs_close_timeout", 0));
-  m_TimeTillClosing = xiiTime::Seconds(xiiCommandLineUtils::GetGlobalInstance()->GetIntOption("-fs_wait_timeout", 0));
+  m_CloseAppTimeout = xiiTime::MakeFromSeconds(xiiCommandLineUtils::GetGlobalInstance()->GetIntOption("-fs_close_timeout", 0));
+  m_TimeTillClosing = xiiTime::MakeFromSeconds(xiiCommandLineUtils::GetGlobalInstance()->GetIntOption("-fs_wait_timeout", 0));
 
   if (m_TimeTillClosing.GetSeconds() > 0)
   {
@@ -55,7 +55,7 @@ void xiiFileserverApp::BeforeCoreSystemsShutdown()
 xiiApplication::Execution xiiFileserverApp::Run()
 {
   // if there are no more connections, and we have a timeout to close when no connections are left, we return Quit
-  if (m_uiConnections == 0 && m_TimeTillClosing > xiiTime::Seconds(0) && xiiTime::Now() > m_TimeTillClosing)
+  if (m_uiConnections == 0 && m_TimeTillClosing > xiiTime::MakeFromSeconds(0) && xiiTime::Now() > m_TimeTillClosing)
   {
     return xiiApplication::Execution::Quit;
   }
@@ -67,12 +67,12 @@ xiiApplication::Execution xiiFileserverApp::Run()
     if (m_uiSleepCounter > 1000)
     {
       // only sleep when no work had to be done in a while
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
     }
     else if (m_uiSleepCounter > 10)
     {
       // only sleep when no work had to be done in a while
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
     }
   }
   else

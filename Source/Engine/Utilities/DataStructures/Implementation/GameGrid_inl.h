@@ -36,10 +36,10 @@ void xiiGameGrid<CellData>::SetWorldSpaceDimensions(const xiiVec3& vLowerLeftCor
       mRot.SetIdentity();
       break;
     case InPlaneXZ:
-      mRot.SetRotationMatrix(xiiVec3(1, 0, 0), xiiAngle::Degree(90.0f));
+      mRot.SetRotationMatrix(xiiVec3(1, 0, 0), xiiAngle::MakeFromDegree(90.0f));
       break;
     case InPlaneXminusZ:
-      mRot.SetRotationMatrix(xiiVec3(1, 0, 0), xiiAngle::Degree(-90.0f));
+      mRot.SetRotationMatrix(xiiVec3(1, 0, 0), xiiAngle::MakeFromDegree(-90.0f));
       break;
   }
 

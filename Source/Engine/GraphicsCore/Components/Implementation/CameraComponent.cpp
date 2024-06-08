@@ -167,7 +167,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiCameraComponent, 10, xiiComponentMode::Static)
     XII_SET_MEMBER_PROPERTY("ExcludeTags", m_ExcludeTags)->AddAttributes(new xiiTagSetWidgetAttribute("Default")),
     XII_ACCESSOR_PROPERTY("CameraRenderPipeline", GetRenderPipelineEnum, SetRenderPipelineEnum)->AddAttributes(new xiiDynamicStringEnumAttribute("CameraPipelines")),
     XII_ACCESSOR_PROPERTY("Aperture", GetAperture, SetAperture)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(1.0f, 32.0f), new xiiSuffixAttribute(" f-stop(s)")),
-    XII_ACCESSOR_PROPERTY("ShutterTime", GetShutterTime, SetShutterTime)->AddAttributes(new xiiDefaultValueAttribute(xiiTime::Seconds(1.0)), new xiiClampValueAttribute(xiiTime::Seconds(1.0f / 100000.0f), xiiTime::Seconds(600.0f))),
+    XII_ACCESSOR_PROPERTY("ShutterTime", GetShutterTime, SetShutterTime)->AddAttributes(new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(1.0)), new xiiClampValueAttribute(xiiTime::MakeFromSeconds(1.0f / 100000.0f), xiiTime::MakeFromSeconds(600.0f))),
     XII_ACCESSOR_PROPERTY("ISO", GetISO, SetISO)->AddAttributes(new xiiDefaultValueAttribute(100.0f), new xiiClampValueAttribute(50.0f, 64000.0f)),
     XII_ACCESSOR_PROPERTY("ExposureCompensation", GetExposureCompensation, SetExposureCompensation)->AddAttributes(new xiiClampValueAttribute(-32.0f, 32.0f)),
     XII_MEMBER_PROPERTY("ShowStats", m_bShowStats),
@@ -260,7 +260,7 @@ void xiiCameraComponent::DeserializeComponent(xiiWorldReader& inout_stream)
     s >> m_fAperture;
     float shutterTime;
     s >> shutterTime;
-    m_ShutterTime = xiiTime::Seconds(shutterTime);
+    m_ShutterTime = xiiTime::MakeFromSeconds(shutterTime);
     s >> m_fISO;
     s >> m_fExposureCompensation;
   }
@@ -775,7 +775,7 @@ public:
       if (pProp->m_Value.IsA<float>())
       {
         const float shutterTime = pProp->m_Value.Get<float>();
-        pProp->m_Value          = xiiTime::Seconds(shutterTime);
+        pProp->m_Value          = xiiTime::MakeFromSeconds(shutterTime);
       }
     }
   }

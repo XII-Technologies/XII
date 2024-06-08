@@ -38,8 +38,8 @@ public:
   xiiTimedDeathComponent();
   ~xiiTimedDeathComponent();
 
-  xiiTime m_MinDelay   = xiiTime::Seconds(1.0); // [ property ]
-  xiiTime m_DelayRange = xiiTime::Seconds(0.0); // [ property ]
+  xiiTime m_MinDelay   = xiiTime::MakeFromSeconds(1.0); // [ property ]
+  xiiTime m_DelayRange = xiiTime::MakeFromSeconds(0.0); // [ property ]
 
   void        SetTimeoutPrefab(const char* szPrefab); // [ property ]
   const char* GetTimeoutPrefab() const;               // [ property ]

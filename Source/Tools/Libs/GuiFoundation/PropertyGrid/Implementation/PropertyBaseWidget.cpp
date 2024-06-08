@@ -293,7 +293,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
       mimeData->setText(m_pProp->GetPropertyName().GetData(tmp));
       clipboard->setMimeData(mimeData);
 
-      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Property Name: {}", m_pProp->GetPropertyName()), xiiTime::Seconds(5));
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Property Name: {}", m_pProp->GetPropertyName()), xiiTime::MakeFromSeconds(5));
     };
 
     QAction* pAction = m.addAction("Copy Internal Property Name:");
@@ -1624,7 +1624,7 @@ void xiiQtPropertyTypeContainerWidget::UpdateElement(xiiUInt32 index)
       elem.m_pSubGroup->SetTitle(sTitle);
     }
 
-    xiiColor borderIconColor = xiiColor::ZeroColor();
+    xiiColor borderIconColor = xiiColor::MakeZero();
 
     if (const xiiColorAttribute* pColorAttrib = pCommonType->GetAttributeByType<xiiColorAttribute>())
     {

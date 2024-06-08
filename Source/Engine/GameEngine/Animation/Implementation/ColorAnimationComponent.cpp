@@ -71,7 +71,7 @@ void xiiColorAnimationComponent::OnSimulationStarted()
 
   if (GetRandomStartOffset())
   {
-    m_CurAnimTime = xiiTime::Seconds(GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, m_Duration.GetSeconds()));
+    m_CurAnimTime = xiiTime::MakeFromSeconds(GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, m_Duration.GetSeconds()));
   }
 }
 

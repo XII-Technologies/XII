@@ -22,7 +22,7 @@ xiiStandardInputDevice::xiiStandardInputDevice(xiiUInt32 uiWindowNumber)
     xiiStandardInputDevice::s_bMainWindowUsed = true;
   }
 
-  m_DoubleClickTime = xiiTime::Milliseconds(GetDoubleClickTime());
+  m_DoubleClickTime = xiiTime::MakeFromMilliseconds(GetDoubleClickTime());
 }
 
 xiiStandardInputDevice::~xiiStandardInputDevice()

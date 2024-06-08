@@ -66,7 +66,7 @@ class xiiIntervalScheduler : public xiiIntervalSchedulerBase
   using SUPER = xiiIntervalSchedulerBase;
 
 public:
-  XII_ALWAYS_INLINE xiiIntervalScheduler(xiiTime minInterval = xiiTime::Milliseconds(1), xiiTime maxInterval = xiiTime::Seconds(1)) :
+  XII_ALWAYS_INLINE xiiIntervalScheduler(xiiTime minInterval = xiiTime::MakeFromMilliseconds(1), xiiTime maxInterval = xiiTime::MakeFromSeconds(1)) :
     SUPER(minInterval, maxInterval)
   {
   }

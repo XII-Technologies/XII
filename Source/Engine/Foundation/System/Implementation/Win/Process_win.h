@@ -484,7 +484,7 @@ xiiProcessState xiiProcess::GetState() const
   // Do not consider a process finished if the pipe threads have not exited yet.
   if (m_pImpl->m_pipeStdOut.IsRunning() || m_pImpl->m_pipeStdErr.IsRunning())
   {
-    if (xiiTime::Now() - m_ProcessExited < xiiTime::Seconds(2))
+    if (xiiTime::Now() - m_ProcessExited < xiiTime::MakeFromSeconds(2))
     {
       return xiiProcessState::Running;
     }

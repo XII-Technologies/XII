@@ -18,7 +18,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiRotorComponent, 3, xiiComponentMode::Dynamic)
   XII_BEGIN_PROPERTIES
   {
     XII_ENUM_MEMBER_PROPERTY("Axis", xiiBasisAxis, m_Axis),
-    XII_MEMBER_PROPERTY("AxisDeviation", m_AxisDeviation)->AddAttributes(new xiiClampValueAttribute(xiiAngle::Degree(-180), xiiAngle::Degree(180))),
+    XII_MEMBER_PROPERTY("AxisDeviation", m_AxisDeviation)->AddAttributes(new xiiClampValueAttribute(xiiAngle::MakeFromDegree(-180), xiiAngle::MakeFromDegree(180))),
     XII_MEMBER_PROPERTY("DegreesToRotate", m_iDegreeToRotate),
     XII_MEMBER_PROPERTY("Acceleration", m_fAcceleration),
     XII_MEMBER_PROPERTY("Deceleration", m_fDeceleration),
@@ -46,7 +46,7 @@ void xiiRotorComponent::Update()
         CalculateAcceleratedMovement((float)m_iDegreeToRotate, m_fAcceleration, m_fAnimationSpeed, m_fDeceleration, m_AnimationTime);
 
       xiiQuat qRotation;
-      qRotation.SetFromAxisAndAngle(m_vRotationAxis, xiiAngle::Degree(fNewDistance));
+      qRotation.SetFromAxisAndAngle(m_vRotationAxis, xiiAngle::MakeFromDegree(fNewDistance));
 
       GetOwner()->SetLocalRotation(GetOwner()->GetLocalRotation() * m_qLastRotation.GetInverse() * qRotation);
 
@@ -90,7 +90,7 @@ void xiiRotorComponent::Update()
       /// \todo This will probably give precision issues pretty quickly
 
       xiiQuat qRotation;
-      qRotation.SetFromAxisAndAngle(m_vRotationAxis, xiiAngle::Degree(m_fAnimationSpeed * GetWorld()->GetClock().GetTimeDiff().AsFloatInSeconds()));
+      qRotation.SetFromAxisAndAngle(m_vRotationAxis, xiiAngle::MakeFromDegree(m_fAnimationSpeed * GetWorld()->GetClock().GetTimeDiff().AsFloatInSeconds()));
 
       GetOwner()->SetLocalRotation(GetOwner()->GetLocalRotation() * qRotation);
     }
@@ -162,7 +162,7 @@ void xiiRotorComponent::OnSimulationStarted()
 
   if (m_AxisDeviation.GetRadian() != 0.0f)
   {
-    if (m_AxisDeviation > xiiAngle::Degree(179))
+    if (m_AxisDeviation > xiiAngle::MakeFromDegree(179))
     {
       m_vRotationAxis = xiiVec3::CreateRandomDirection(GetWorld()->GetRandomNumberGenerator());
     }

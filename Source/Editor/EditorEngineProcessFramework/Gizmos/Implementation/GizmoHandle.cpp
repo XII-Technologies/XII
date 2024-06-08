@@ -96,7 +96,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferArrow()
   const float fLength    = 1.0f;
 
   xiiGeometry::GeoOptions opt;
-  opt.m_Transform.SetRotationMatrixY(xiiAngle::Degree(90));
+  opt.m_Transform.SetRotationMatrixY(xiiAngle::MakeFromDegree(90));
 
   xiiGeometry geom;
   geom.AddCylinderOnePiece(fThickness, fThickness, fLength * 0.5f, fLength * 0.5f, 16, opt);
@@ -120,7 +120,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferPiston()
   const float fLength    = 1.0f;
 
   xiiGeometry::GeoOptions opt;
-  opt.m_Transform.SetRotationMatrixY(xiiAngle::Degree(90));
+  opt.m_Transform.SetRotationMatrixY(xiiAngle::MakeFromDegree(90));
 
   xiiGeometry geom;
   geom.AddCylinderOnePiece(fThickness, fThickness, fLength * 0.5f, fLength * 0.5f, 16, opt);
@@ -144,7 +144,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferHalfPiston()
   const float fLength    = 1.0f;
 
   xiiGeometry::GeoOptions opt;
-  opt.m_Transform.SetRotationMatrixY(xiiAngle::Degree(90));
+  opt.m_Transform.SetRotationMatrixY(xiiAngle::MakeFromDegree(90));
   opt.m_Transform.SetTranslationVector(xiiVec3(fLength * 0.5f, 0, 0));
 
   xiiGeometry geom;
@@ -314,7 +314,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferBoxFaces()
 
   geom.AddRectXY(xiiVec2(0.5f), 1, 1, opt);
 
-  opt.m_Transform.SetRotationMatrixY(xiiAngle::Degree(180.0f));
+  opt.m_Transform.SetRotationMatrixY(xiiAngle::MakeFromDegree(180.0f));
   opt.m_Transform.SetTranslationVector(xiiVec3(0, 0, -0.5f));
   geom.AddRectXY(xiiVec2(0.5f), 1, 1, opt);
 
@@ -337,7 +337,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferBoxEdges()
 
   for (xiiUInt32 i = 0; i < 4; ++i)
   {
-    rot.SetRotationMatrixY(xiiAngle::Degree(90.0f * i));
+    rot.SetRotationMatrixY(xiiAngle::MakeFromDegree(90.0f * i));
 
     opt.m_Transform.SetTranslationMatrix(xiiVec3(0.5f - 0.125f, 0, 0.5f));
     opt.m_Transform = rot * opt.m_Transform;
@@ -361,11 +361,11 @@ static xiiMeshBufferResourceHandle CreateMeshBufferBoxCorners()
 
   xiiMat4 rot[6];
   rot[0].SetIdentity();
-  rot[1].SetRotationMatrixX(xiiAngle::Degree(90));
-  rot[2].SetRotationMatrixX(xiiAngle::Degree(180));
-  rot[3].SetRotationMatrixX(xiiAngle::Degree(270));
-  rot[4].SetRotationMatrixY(xiiAngle::Degree(90));
-  rot[5].SetRotationMatrixY(xiiAngle::Degree(-90));
+  rot[1].SetRotationMatrixX(xiiAngle::MakeFromDegree(90));
+  rot[2].SetRotationMatrixX(xiiAngle::MakeFromDegree(180));
+  rot[3].SetRotationMatrixX(xiiAngle::MakeFromDegree(270));
+  rot[4].SetRotationMatrixY(xiiAngle::MakeFromDegree(90));
+  rot[5].SetRotationMatrixY(xiiAngle::MakeFromDegree(-90));
 
   xiiGeometry             geom;
   xiiGeometry::GeoOptions opt;
@@ -402,7 +402,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferCone()
     return hMesh;
 
   xiiGeometry::GeoOptions opt;
-  opt.m_Transform.SetRotationMatrixY(xiiAngle::Degree(270.0f));
+  opt.m_Transform.SetRotationMatrixY(xiiAngle::MakeFromDegree(270.0f));
   opt.m_Transform.SetTranslationVector(xiiVec3(1.0f, 0, 0));
 
   xiiGeometry geom;

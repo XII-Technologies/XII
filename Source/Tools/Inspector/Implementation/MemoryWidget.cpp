@@ -156,7 +156,7 @@ void xiiQtMemoryWidget::UpdateStats()
   }
 
   // once a second update the display of the allocators in the list
-  if (xiiTime::Now() - m_LastUpdatedAllocatorList > xiiTime::Seconds(1))
+  if (xiiTime::Now() - m_LastUpdatedAllocatorList > xiiTime::MakeFromSeconds(1))
   {
     m_LastUpdatedAllocatorList = xiiTime::Now();
 
@@ -205,7 +205,7 @@ void xiiQtMemoryWidget::UpdateStats()
     }
   }
 
-  if (xiiTime::Now() - s_pWidget->m_LastUsedMemoryStored > xiiTime::Milliseconds(200))
+  if (xiiTime::Now() - s_pWidget->m_LastUsedMemoryStored > xiiTime::MakeFromMilliseconds(200))
   {
     m_LastUsedMemoryStored = xiiTime::Now();
 

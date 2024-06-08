@@ -80,7 +80,7 @@ const QIcon& xiiQtUiServices::GetCachedIconResource(xiiStringView sIdentifier, x
   xiiStringBuilder sFullIdentifier = sIdentifier;
   auto&            map             = s_IconsCache;
 
-  const bool bNeedsColoring = svgTintColor != xiiColor::ZeroColor() && sIdentifier.EndsWith_NoCase(".svg");
+  const bool bNeedsColoring = svgTintColor != xiiColor::MakeZero() && sIdentifier.EndsWith_NoCase(".svg");
 
   if (bNeedsColoring)
   {
@@ -291,7 +291,7 @@ void xiiQtUiServices::TickEventHandler()
   const xiiTime endTime       = xiiTime::Now();
   xiiTime       lastFrameTime = endTime - startTime;
 
-  xiiTime delay = xiiTime::Milliseconds(1000.0 / s_LastTickEvent.m_fRefreshRate);
+  xiiTime delay = xiiTime::MakeFromMilliseconds(1000.0 / s_LastTickEvent.m_fRefreshRate);
   delay -= lastFrameTime;
   delay = xiiMath::Max(delay, xiiTime::Zero());
 
@@ -339,7 +339,7 @@ void xiiQtUiServices::ShowGlobalStatusBarMessage(const xiiFormatString& msg)
   Event e;
   e.m_Type  = Event::ShowGlobalStatusBarText;
   e.m_sText = msg.GetText(tmp);
-  e.m_Time  = xiiTime::Seconds(0);
+  e.m_Time  = xiiTime::MakeFromSeconds(0);
 
   s_Events.Broadcast(e);
 }

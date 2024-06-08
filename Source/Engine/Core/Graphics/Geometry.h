@@ -205,7 +205,7 @@ public:
   /// uiSegments is the detail around the up axis, must be at least 3.
   /// The top or bottom caps can be removed using \a bCapTop and \a bCapBottom.
   /// When \a fraction is set to any value below 360 degree, a pie / pacman shaped cylinder is created.
-  void AddCylinder(float fRadiusTop, float fRadiusBottom, float fPositiveLength, float fNegativeLength, bool bCapTop, bool bCapBottom, xiiUInt16 uiSegments, const GeoOptions& options = GeoOptions(), xiiAngle fraction = xiiAngle::Degree(360.0f));
+  void AddCylinder(float fRadiusTop, float fRadiusBottom, float fPositiveLength, float fNegativeLength, bool bCapTop, bool bCapBottom, xiiUInt16 uiSegments, const GeoOptions& options = GeoOptions(), xiiAngle fraction = xiiAngle::MakeFromDegree(360.0f));
 
   /// \brief Same as AddCylinder(), but always adds caps and does not generate separate vertices for the caps.
   ///

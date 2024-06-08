@@ -29,7 +29,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiFollowPathComponent, 1, xiiComponentMode::Dynamic)
     XII_MEMBER_PROPERTY("Smoothing", m_fSmoothing)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_ENUM_MEMBER_PROPERTY("FollowMode", xiiFollowPathMode, m_FollowMode),  
     XII_MEMBER_PROPERTY("TiltAmount", m_fTiltAmount)->AddAttributes(new xiiDefaultValueAttribute(5.0f)),
-    XII_MEMBER_PROPERTY("MaxTilt", m_MaxTilt)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::Degree(30.0f)), new xiiClampValueAttribute(xiiAngle::Degree(0.0f), xiiAngle::Degree(90.0f))),
+    XII_MEMBER_PROPERTY("MaxTilt", m_MaxTilt)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(30.0f)), new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(90.0f))),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
@@ -150,7 +150,7 @@ void xiiFollowPathComponent::Update(bool bForce)
   vUp.NormalizeIfNotZero(xiiVec3::UnitZAxis()).IgnoreResult();
 
   // check if we want to tilt the platform when turning
-  xiiAngle deltaAngle = xiiAngle::Degree(0.0f);
+  xiiAngle deltaAngle = xiiAngle::MakeFromDegree(0.0f);
   if (m_FollowMode == xiiFollowPathMode::AlignUpZ && !xiiMath::IsZero(m_fTiltAmount, 0.0001f) && !xiiMath::IsZero(m_MaxTilt.GetDegree(), 0.0001f))
   {
     if (m_bLastStateValid)

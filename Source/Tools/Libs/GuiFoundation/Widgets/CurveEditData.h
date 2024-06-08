@@ -66,7 +66,7 @@ class XII_GUIFOUNDATION_DLL xiiCurveControlPointData : public xiiReflectedClass
   XII_ADD_DYNAMIC_REFLECTION(xiiCurveControlPointData, xiiReflectedClass);
 
 public:
-  xiiTime GetTickAsTime() const { return xiiTime::Seconds(m_iTick / 4800.0); }
+  xiiTime GetTickAsTime() const { return xiiTime::MakeFromSeconds(m_iTick / 4800.0); }
   void    SetTickFromTime(xiiTime time, xiiInt64 iFps);
 
   xiiInt64                     m_iTick; // 4800 ticks per second

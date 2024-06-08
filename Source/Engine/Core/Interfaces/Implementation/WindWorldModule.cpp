@@ -80,7 +80,7 @@ xiiVec3 xiiWindWorldModuleInterface::ComputeWindFlutter(const xiiVec3& vWind, co
 
   const float fFlutterOffset = (uiFlutterRandomOffset & 1023u) / 256.0f;
 
-  const float fFlutter = xiiMath::Sin(xiiAngle::Radian(fFlutterOffset + fFlutterSpeed * fWindStrength * GetWorld()->GetClock().GetAccumulatedTime().AsFloatInSeconds())) * fWindStrength;
+  const float fFlutter = xiiMath::Sin(xiiAngle::MakeFromRadian(fFlutterOffset + fFlutterSpeed * fWindStrength * GetWorld()->GetClock().GetAccumulatedTime().AsFloatInSeconds())) * fWindStrength;
 
   return flutterDir * fFlutter;
 }

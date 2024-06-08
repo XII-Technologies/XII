@@ -484,7 +484,7 @@ xiiResult xiiFileserver::SendConnectionInfo(const char* szClientAddress, xiiUInt
   for (xiiUInt32 i = 0; i < 10; ++i)
   {
     network->UpdateRemoteInterface();
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
   }
 
   network->ShutdownConnection();

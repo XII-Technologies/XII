@@ -168,7 +168,7 @@
 //  xiiInputManager::GetInputActionState("mm", "turnleft", &tl);
 //  xiiInputManager::GetInputActionState("mm", "turnright", &tr);
 //
-//  const xiiAngle turn = xiiAngle::Degree((tr - tl) * 90.0f);
+//  const xiiAngle turn = xiiAngle::MakeFromDegree((tr - tl) * 90.0f);
 //
 //  xiiQuat q;
 //  q.SetFromAxisAndAngle(xiiVec3(0, 0, 1), turn);

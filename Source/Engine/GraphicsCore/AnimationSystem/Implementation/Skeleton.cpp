@@ -208,12 +208,12 @@ xiiUInt64 xiiSkeleton::GetHeapMemoryUsage() const
 
 xiiAngle xiiSkeletonJoint::GetTwistLimitLow() const
 {
-  return xiiMath::Max(xiiAngle::Degree(-179), m_TwistLimitCenterAngle - m_TwistLimitHalfAngle);
+  return xiiMath::Max(xiiAngle::MakeFromDegree(-179), m_TwistLimitCenterAngle - m_TwistLimitHalfAngle);
 }
 
 xiiAngle xiiSkeletonJoint::GetTwistLimitHigh() const
 {
-  return xiiMath::Min(xiiAngle::Degree(179), m_TwistLimitCenterAngle + m_TwistLimitHalfAngle);
+  return xiiMath::Min(xiiAngle::MakeFromDegree(179), m_TwistLimitCenterAngle + m_TwistLimitHalfAngle);
 }
 
 XII_STATICLINK_FILE(GraphicsCore, GraphicsCore_AnimationSystem_Implementation_Skeleton);

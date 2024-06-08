@@ -205,7 +205,7 @@ void xiiLongOpControllerManager::CancelAndRemoveAllOpsForDocument(const xiiUuid&
 
     if (bOperationsStillActive)
     {
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
     }
   }
 }

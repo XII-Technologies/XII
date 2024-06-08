@@ -225,8 +225,8 @@ void xiiSceneDocument::DuplicateSpecial()
   cmd.m_bGroupDuplicates         = dlg.s_bGroupCopies;
   cmd.m_iRevolveAxis             = dlg.s_iRevolveAxis;
   cmd.m_fRevolveRadius           = dlg.s_fRevolveRadius;
-  cmd.m_RevolveStartAngle        = xiiAngle::Degree(dlg.s_iRevolveStartAngle);
-  cmd.m_RevolveAngleStep         = xiiAngle::Degree(dlg.s_iRevolveAngleStep);
+  cmd.m_RevolveStartAngle        = xiiAngle::MakeFromDegree(dlg.s_iRevolveStartAngle);
+  cmd.m_RevolveAngleStep         = xiiAngle::MakeFromDegree(dlg.s_iRevolveAngleStep);
 
   auto history = GetCommandHistory();
 
@@ -382,7 +382,7 @@ void xiiSceneDocument::CopyReference()
 
   QApplication::clipboard()->setText(sGuid.GetData());
 
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Object Reference: {}", sGuid), xiiTime::Seconds(5));
+  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Object Reference: {}", sGuid), xiiTime::MakeFromSeconds(5));
 }
 
 xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPickedPosition)
@@ -1557,7 +1557,7 @@ void xiiSceneDocument::ExportSceneGeometry(const char* szFile, bool bOnlySelecti
 
   SendMessageToEngine(&msg);
 
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Geometry exported to '{0}'", szFile), xiiTime::Seconds(5.0f));
+  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Geometry exported to '{0}'", szFile), xiiTime::MakeFromSeconds(5.0f));
 }
 
 void xiiSceneDocument::HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg)

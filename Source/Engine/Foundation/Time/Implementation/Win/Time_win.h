@@ -30,5 +30,5 @@ xiiTime xiiTime::Now()
   s_LastTime = temp.QuadPart;
 #endif
 
-  return xiiTime::Seconds(double(temp.QuadPart) * g_fInvQpcFrequency);
+  return xiiTime::MakeFromSeconds(double(temp.QuadPart) * g_fInvQpcFrequency);
 }

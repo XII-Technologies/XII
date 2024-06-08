@@ -109,7 +109,7 @@ xiiEditorInput xiiConeLengthGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   const xiiTime tNow = xiiTime::Now();
 
-  if (tNow - m_LastInteraction < xiiTime::Seconds(1.0 / 25.0))
+  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
     return xiiEditorInput::WasExclusivelyHandled;
 
   m_LastInteraction = tNow;
@@ -122,7 +122,7 @@ xiiEditorInput xiiConeLengthGizmo::DoMouseMoveEvent(QMouseEvent* e)
   m_vLastMousePos = UpdateMouseMode(e);
 
   const float    fSpeed = 0.02f;
-  const xiiAngle aSpeed = xiiAngle::Degree(1.0f);
+  const xiiAngle aSpeed = xiiAngle::MakeFromDegree(1.0f);
 
   if (m_ManipulateMode == ManipulateMode::Radius)
   {

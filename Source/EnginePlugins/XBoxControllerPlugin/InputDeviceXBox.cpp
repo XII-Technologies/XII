@@ -122,7 +122,7 @@ void xiiInputDeviceXBox360::UpdateInputSlotValues()
   // even on unconnected controllers
   static xiiTime tLastControllerSearch;
   const xiiTime  tNow               = xiiTime::Now();
-  const bool     bSearchControllers = tNow - tLastControllerSearch > xiiTime::Seconds(0.5);
+  const bool     bSearchControllers = tNow - tLastControllerSearch > xiiTime::MakeFromSeconds(0.5);
 
   if (bSearchControllers)
     tLastControllerSearch = tNow;

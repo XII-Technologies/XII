@@ -131,7 +131,7 @@ static xiiResult PatchAssetGuid(xiiStringView sAbsFilePath, xiiUuid oldGuid, xii
     if (uiTries >= 5)
       return XII_FAILURE;
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(50 * (uiTries + 1)));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(50 * (uiTries + 1)));
     uiTries++;
   }
 

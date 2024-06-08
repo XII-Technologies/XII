@@ -16,10 +16,10 @@ XII_BEGIN_COMPONENT_TYPE(xiiPropertyAnimComponent, 3, xiiComponentMode::Dynamic)
     XII_ACCESSOR_PROPERTY("Animation", GetPropertyAnimFile, SetPropertyAnimFile)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Property_Animation")),
     XII_MEMBER_PROPERTY("Playing", m_bPlaying)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ENUM_MEMBER_PROPERTY("Mode", xiiPropertyAnimMode, m_AnimationMode),
-    XII_MEMBER_PROPERTY("RandomOffset", m_RandomOffset)->AddAttributes(new xiiClampValueAttribute(xiiTime::Seconds(0), xiiVariant())),
+    XII_MEMBER_PROPERTY("RandomOffset", m_RandomOffset)->AddAttributes(new xiiClampValueAttribute(xiiTime::MakeFromSeconds(0), xiiVariant())),
     XII_MEMBER_PROPERTY("Speed", m_fSpeed)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(-10.0f, +10.0f)),
     XII_MEMBER_PROPERTY("RangeLow", m_AnimationRangeLow)->AddAttributes(new xiiClampValueAttribute(xiiTime(), xiiVariant())),
-    XII_MEMBER_PROPERTY("RangeHigh", m_AnimationRangeHigh)->AddAttributes(new xiiClampValueAttribute(xiiTime(), xiiVariant()), new xiiDefaultValueAttribute(xiiTime::Seconds(60 * 60))),
+    XII_MEMBER_PROPERTY("RangeHigh", m_AnimationRangeHigh)->AddAttributes(new xiiClampValueAttribute(xiiTime(), xiiVariant()), new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(60 * 60))),
   } XII_END_PROPERTIES;
   XII_BEGIN_ATTRIBUTES{
     new xiiCategoryAttribute("Animation"),
@@ -38,7 +38,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiPropertyAnimComponent::xiiPropertyAnimComponent()
 {
-  m_AnimationRangeHigh = xiiTime::Seconds(60.0 * 60.0);
+  m_AnimationRangeHigh = xiiTime::MakeFromSeconds(60.0 * 60.0);
 }
 
 xiiPropertyAnimComponent::~xiiPropertyAnimComponent() = default;
@@ -591,7 +591,7 @@ void xiiPropertyAnimComponent::StartPlayback()
   if (!m_RandomOffset.IsZero() && m_pAnimDesc->m_AnimationDuration.IsPositive())
   {
     // should the random offset also be scaled by the speed factor? I guess not
-    m_AnimationTime += xiiMath::Abs(m_fSpeed) * xiiTime::Seconds(GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, m_RandomOffset.GetSeconds()));
+    m_AnimationTime += xiiMath::Abs(m_fSpeed) * xiiTime::MakeFromSeconds(GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, m_RandomOffset.GetSeconds()));
 
     const xiiTime duration = m_AnimationRangeHigh - m_AnimationRangeLow;
 
@@ -641,14 +641,14 @@ void xiiPropertyAnimComponent::ApplySingleFloatAnimation(const FloatBinding& bin
   {
     auto pTyped = static_cast<const xiiTypedMemberProperty<xiiAngle>*>(binding.m_pMemberProperty);
 
-    pTyped->SetValue(binding.m_pObject, xiiAngle::Degree((float)fFinalValue));
+    pTyped->SetValue(binding.m_pObject, xiiAngle::MakeFromDegree((float)fFinalValue));
     return;
   }
   else if (pRtti == xiiGetStaticRTTI<xiiTime>())
   {
     auto pTyped = static_cast<const xiiTypedMemberProperty<xiiTime>*>(binding.m_pMemberProperty);
 
-    pTyped->SetValue(binding.m_pObject, xiiTime::Seconds(fFinalValue));
+    pTyped->SetValue(binding.m_pObject, xiiTime::MakeFromSeconds(fFinalValue));
     return;
   }
 
@@ -748,7 +748,7 @@ void xiiPropertyAnimComponent::ApplyFloatAnimation(const FloatBinding& binding, 
     auto pTyped = static_cast<const xiiTypedMemberProperty<xiiQuat>*>(binding.m_pMemberProperty);
 
     xiiQuat rot;
-    rot.SetFromEulerAngles(xiiAngle::Degree(fCurValue[0]), xiiAngle::Degree(fCurValue[1]), xiiAngle::Degree(fCurValue[2]));
+    rot.SetFromEulerAngles(xiiAngle::MakeFromDegree(fCurValue[0]), xiiAngle::MakeFromDegree(fCurValue[1]), xiiAngle::MakeFromDegree(fCurValue[2]));
 
     pTyped->SetValue(binding.m_pObject, rot);
   }

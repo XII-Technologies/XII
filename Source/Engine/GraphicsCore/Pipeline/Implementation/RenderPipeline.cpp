@@ -44,7 +44,7 @@ xiiRenderPipeline::xiiRenderPipeline()
   m_uiLastRenderFrame     = -1;
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEVELOPMENT)
-  m_AverageCullingTime = xiiTime::Seconds(0.1f);
+  m_AverageCullingTime = xiiTime::MakeFromSeconds(0.1f);
 #endif
 }
 

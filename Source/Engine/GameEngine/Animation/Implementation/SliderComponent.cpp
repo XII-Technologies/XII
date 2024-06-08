@@ -119,7 +119,7 @@ void xiiSliderComponent::OnSimulationStarted()
 
   if (m_RandomStart.IsPositive())
   {
-    m_AnimationTime = xiiTime::Seconds(GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, m_RandomStart.GetSeconds()));
+    m_AnimationTime = xiiTime::MakeFromSeconds(GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, m_RandomStart.GetSeconds()));
   }
 }
 

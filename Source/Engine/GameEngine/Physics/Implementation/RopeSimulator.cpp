@@ -10,7 +10,7 @@ void xiiRopeSimulator::SimulateRope(const xiiTime& diff)
 {
   m_LeftOverTimeStep += diff;
 
-  constexpr xiiTime  tStep         = xiiTime::Seconds(1.0 / 60.0);
+  constexpr xiiTime  tStep         = xiiTime::MakeFromSeconds(1.0 / 60.0);
   const xiiSimdFloat tStepSqr      = static_cast<float>(tStep.GetSeconds() * tStep.GetSeconds());
   const xiiSimdFloat fAllowedError = m_fSegmentLength;
 
@@ -41,7 +41,7 @@ void xiiRopeSimulator::SimulateStep(const xiiSimdFloat fDiffSqr, xiiUInt32 uiMax
 
 void xiiRopeSimulator::SimulateTillEquilibrium(xiiSimdFloat fAllowedMovement, xiiUInt32 uiMaxIterations)
 {
-  constexpr xiiTime tStep    = xiiTime::Seconds(1.0 / 60.0);
+  constexpr xiiTime tStep    = xiiTime::MakeFromSeconds(1.0 / 60.0);
   xiiSimdFloat      tStepSqr = static_cast<float>(tStep.GetSeconds() * tStep.GetSeconds());
 
   xiiUInt8 uiInEquilibrium = 0;

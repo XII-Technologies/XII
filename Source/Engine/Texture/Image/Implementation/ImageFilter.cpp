@@ -64,7 +64,7 @@ static xiiSimdFloat sinc(const xiiSimdFloat& x)
   }
   else
   {
-    return xiiMath::Sin(xiiAngle::Radian(x)) / x;
+    return xiiMath::Sin(xiiAngle::MakeFromRadian(x)) / x;
   }
 }
 

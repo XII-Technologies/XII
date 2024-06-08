@@ -43,12 +43,12 @@ void xiiDecalContext::OnInitialize()
 
       xiiMat4 t, r;
       t.SetTranslationMatrix(xiiVec3(0, 1.5f, 0));
-      r.SetRotationMatrixZ(xiiAngle::Degree(90));
+      r.SetRotationMatrixZ(xiiAngle::MakeFromDegree(90));
       opt.m_Transform = t * r;
       geom.AddSphere(0.5f, 64, 64, opt);
 
       t.SetTranslationVector(xiiVec3(0, -1.5f, 0));
-      r.SetRotationMatrixY(xiiAngle::Degree(90));
+      r.SetRotationMatrixY(xiiAngle::MakeFromDegree(90));
       opt.m_Transform = t * r;
       geom.AddTorus(0.1f, 0.5f, 32, 64, true, opt);
 
@@ -131,7 +131,7 @@ void xiiDecalContext::OnInitialize()
     // box
     {
       obj.m_sName.Assign("Decal4");
-      obj.m_LocalRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(180));
+      obj.m_LocalRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(180));
       obj.m_LocalPosition.Set(0.25f, 0, 0);
       pWorld->CreateObject(obj, pObj);
 
@@ -144,7 +144,7 @@ void xiiDecalContext::OnInitialize()
     // torus
     {
       obj.m_sName.Assign("Decal5");
-      obj.m_LocalRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(180));
+      obj.m_LocalRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(180));
       obj.m_LocalPosition.Set(0.2f, -1.5f, 0);
       pWorld->CreateObject(obj, pObj);
 
@@ -157,7 +157,7 @@ void xiiDecalContext::OnInitialize()
     // sphere
     {
       obj.m_sName.Assign("Decal6");
-      obj.m_LocalRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(180));
+      obj.m_LocalRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(180));
       obj.m_LocalPosition.Set(0.5f, 1.5f, 0);
       pWorld->CreateObject(obj, pObj);
 

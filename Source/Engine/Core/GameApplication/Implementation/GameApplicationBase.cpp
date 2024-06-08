@@ -531,7 +531,7 @@ void xiiGameApplicationBase::Run_FinishFrame()
   xiiProfilingSystem::StartNewFrame();
 
   // If many messages have been logged, make sure they get written to disk
-  xiiLog::Flush(100, xiiTime::Seconds(10));
+  xiiLog::Flush(100, xiiTime::MakeFromSeconds(10));
 
   // Reset this state
   m_bTakeScreenshot = false;

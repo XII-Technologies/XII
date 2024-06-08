@@ -224,7 +224,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
     queryParams.m_uiCategoryBitmask = xiiDefaultSpatialDataCategories::RenderDynamic.GetBitmask();
 
     xiiMat4 lookAt     = xiiGraphicsUtils::CreateLookAtViewMatrix(xiiVec3::ZeroVector(), xiiVec3::UnitXAxis(), xiiVec3::UnitZAxis());
-    xiiMat4 projection = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::Degree(80.0f), 1.0f, 1.0f, 10000.0f);
+    xiiMat4 projection = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::MakeFromDegree(80.0f), 1.0f, 1.0f, 10000.0f);
 
     xiiFrustum testFrustum;
     testFrustum.SetFrustum(projection * lookAt);

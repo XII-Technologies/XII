@@ -351,7 +351,7 @@ void xiiQtFileserveWidget::FileserverEventHandler(const xiiFileserverEvent& e)
 
     case xiiFileserverEvent::Type::FileDownloading:
     {
-      if (xiiTime::Now() - m_LastProgressUpdate > xiiTime::Milliseconds(100))
+      if (xiiTime::Now() - m_LastProgressUpdate > xiiTime::MakeFromMilliseconds(100))
       {
         m_LastProgressUpdate = xiiTime::Now();
         Progress->setValue((int)(100.0 * e.m_uiSentTotal / e.m_uiSizeTotal));
@@ -380,7 +380,7 @@ void xiiQtFileserveWidget::FileserverEventHandler(const xiiFileserverEvent& e)
 
     case xiiFileserverEvent::Type::FileUploading:
     {
-      if (xiiTime::Now() - m_LastProgressUpdate > xiiTime::Milliseconds(100))
+      if (xiiTime::Now() - m_LastProgressUpdate > xiiTime::MakeFromMilliseconds(100))
       {
         m_LastProgressUpdate = xiiTime::Now();
         Progress->setValue((int)(100.0 * e.m_uiSentTotal / e.m_uiSizeTotal));

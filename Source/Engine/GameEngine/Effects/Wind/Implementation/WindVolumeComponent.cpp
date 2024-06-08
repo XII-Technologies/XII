@@ -327,7 +327,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiWindVolumeConeComponent, 1, xiiComponentMode::Static
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_ACCESSOR_PROPERTY("Angle", GetAngle, SetAngle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::Degree(45)), new xiiClampValueAttribute(xiiAngle::Degree(1), xiiAngle::Degree(179))),
+    XII_ACCESSOR_PROPERTY("Angle", GetAngle, SetAngle)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(45)), new xiiClampValueAttribute(xiiAngle::MakeFromDegree(1), xiiAngle::MakeFromDegree(179))),
     XII_ACCESSOR_PROPERTY("Length", GetLength, SetLength)->AddAttributes(new xiiDefaultValueAttribute(1.0f), new xiiClampValueAttribute(0.1f, xiiVariant())),
   }
   XII_END_PROPERTIES;
@@ -401,7 +401,7 @@ void xiiWindVolumeConeComponent::SetLength(float fVal)
 
 void xiiWindVolumeConeComponent::SetAngle(xiiAngle val)
 {
-  m_Angle = xiiMath::Max(val, xiiAngle::Degree(1.0f));
+  m_Angle = xiiMath::Max(val, xiiAngle::MakeFromDegree(1.0f));
 
   if (IsActiveAndInitialized())
   {

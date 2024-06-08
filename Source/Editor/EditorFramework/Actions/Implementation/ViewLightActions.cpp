@@ -299,7 +299,7 @@ void xiiViewLightSliderAction::Execute(const xiiVariant& value)
     break;
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightAngleChanged:
     {
-      m_pSettings->SetDirectionalLightAngle(xiiAngle::Degree(value.ConvertTo<float>()));
+      m_pSettings->SetDirectionalLightAngle(xiiAngle::MakeFromDegree(value.ConvertTo<float>()));
     }
     break;
     case xiiEngineViewLightSettingsEvent::Type::DirectionalLightIntensityChanged:

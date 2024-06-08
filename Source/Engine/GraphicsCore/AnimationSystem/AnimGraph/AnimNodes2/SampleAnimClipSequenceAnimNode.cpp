@@ -190,7 +190,7 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       }
 
       tCurDuration = pAnimClip->GetDescriptor().GetDuration();
-      XII_ASSERT_DEBUG(tCurDuration >= xiiTime::Milliseconds(5), "Too short clip");
+      XII_ASSERT_DEBUG(tCurDuration >= xiiTime::MakeFromMilliseconds(5), "Too short clip");
 
       if (pState->m_PlaybackTime >= tCurDuration)
       {
@@ -235,7 +235,7 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       }
 
       tCurDuration = pAnimClip->GetDescriptor().GetDuration();
-      XII_ASSERT_DEBUG(tCurDuration >= xiiTime::Milliseconds(5), "Too short clip");
+      XII_ASSERT_DEBUG(tCurDuration >= xiiTime::MakeFromMilliseconds(5), "Too short clip");
 
       if (pState->m_PlaybackTime >= tCurDuration)
       {
@@ -286,7 +286,7 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       }
 
       tCurDuration = pAnimClip->GetDescriptor().GetDuration();
-      XII_ASSERT_DEBUG(tCurDuration >= xiiTime::Milliseconds(5), "Too short clip");
+      XII_ASSERT_DEBUG(tCurDuration >= xiiTime::MakeFromMilliseconds(5), "Too short clip");
 
       if (pState->m_PlaybackTime >= tCurDuration)
       {

@@ -106,8 +106,8 @@ public:
       if (xiiInputManager::GetInputActionState("Main", "LookNegY", &fInputValue) != xiiKeyState::Up)
         mouseMotion.y += fInputValue * fMouseSpeed;
 
-      m_pCamera->RotateLocally(xiiAngle::Radian(0.0f), xiiAngle::Radian(mouseMotion.y), xiiAngle::Radian(0.0f));
-      m_pCamera->RotateGlobally(xiiAngle::Radian(0.0f), xiiAngle::Radian(mouseMotion.x), xiiAngle::Radian(0.0f));
+      m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0.0f), xiiAngle::MakeFromRadian(mouseMotion.y), xiiAngle::MakeFromRadian(0.0f));
+      m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0.0f), xiiAngle::MakeFromRadian(mouseMotion.x), xiiAngle::MakeFromRadian(0.0f));
     }
     else
     {
@@ -131,8 +131,8 @@ public:
       if (xiiInputManager::GetInputActionState("Main", "TurnNegY", &fInputValue) != xiiKeyState::Up)
         mouseMotion.y -= fInputValue * fTurnSpeed;
 
-      m_pCamera->RotateLocally(xiiAngle::Radian(0.0f), xiiAngle::Radian(mouseMotion.y), xiiAngle::Radian(0.0f));
-      m_pCamera->RotateGlobally(xiiAngle::Radian(0.0f), xiiAngle::Radian(mouseMotion.x), xiiAngle::Radian(0.0f));
+      m_pCamera->RotateLocally(xiiAngle::MakeFromRadian(0.0f), xiiAngle::MakeFromRadian(mouseMotion.y), xiiAngle::MakeFromRadian(0.0f));
+      m_pCamera->RotateGlobally(xiiAngle::MakeFromRadian(0.0f), xiiAngle::MakeFromRadian(mouseMotion.x), xiiAngle::MakeFromRadian(0.0f));
     }
 
     // Apply translation

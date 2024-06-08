@@ -93,17 +93,17 @@ void xiiSkeletonComponent::Update()
 
     for (const auto& shape : m_AngleShapes)
     {
-      xiiDebugRenderer::DrawAngle(GetWorld(), shape.m_StartAngle, shape.m_EndAngle, xiiColor::ZeroColor(), shape.m_Color, GetOwner()->GetGlobalTransform() * shape.m_Transform, vBoneTangent, vBoneDir);
+      xiiDebugRenderer::DrawAngle(GetWorld(), shape.m_StartAngle, shape.m_EndAngle, xiiColor::MakeZero(), shape.m_Color, GetOwner()->GetGlobalTransform() * shape.m_Transform, vBoneTangent, vBoneDir);
     }
 
     for (const auto& shape : m_ConeLimitShapes)
     {
-      xiiDebugRenderer::DrawLimitCone(GetWorld(), shape.m_Angle1, shape.m_Angle2, xiiColor::ZeroColor(), shape.m_Color, GetOwner()->GetGlobalTransform() * shape.m_Transform);
+      xiiDebugRenderer::DrawLimitCone(GetWorld(), shape.m_Angle1, shape.m_Angle2, xiiColor::MakeZero(), shape.m_Color, GetOwner()->GetGlobalTransform() * shape.m_Transform);
     }
 
     for (const auto& shape : m_CylinderShapes)
     {
-      xiiDebugRenderer::DrawCylinder(GetWorld(), shape.m_fRadius1, shape.m_fRadius2, shape.m_fLength, shape.m_Color, xiiColor::ZeroColor(), GetOwner()->GetGlobalTransform() * shape.m_Transform, false, false);
+      xiiDebugRenderer::DrawCylinder(GetWorld(), shape.m_fRadius1, shape.m_fRadius2, shape.m_fLength, shape.m_Color, xiiColor::MakeZero(), GetOwner()->GetGlobalTransform() * shape.m_Transform, false, false);
     }
   }
 }
@@ -277,7 +277,7 @@ void xiiSkeletonComponent::BuildSkeletonVisualization(xiiMsgAnimationPoseUpdated
 
     if (!pb.dir.IsZero() && dirToBone.NormalizeIfNotZero(xiiVec3::ZeroVector()).Succeeded())
     {
-      if (pb.dir.GetAngleBetween(dirToBone) < xiiAngle::Degree(45))
+      if (pb.dir.GetAngleBetween(dirToBone) < xiiAngle::MakeFromDegree(45))
       {
         xiiPlane plane;
         plane.SetFromNormalAndPoint(pb.dir, pb.pos);
@@ -409,7 +409,7 @@ void xiiSkeletonComponent::BuildColliderVisualization(xiiMsgAnimationPoseUpdated
     bonesToHighlight.Clear();
 
   xiiQuat qRotZtoX; // the capsule should extend along X, but the debug renderer draws them along Z
-  qRotZtoX.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(-90));
+  qRotZtoX.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(-90));
 
   for (const auto& geo : pSkeleton->GetDescriptor().m_Geometry)
   {
@@ -612,7 +612,7 @@ void xiiSkeletonComponent::BuildJointVisualization(xiiMsgAnimationPoseUpdated& m
     }
 
     // twist limit
-    if (m_bVisualizeTwistLimits && thisJoint.GetTwistLimitHalfAngle() > xiiAngle::Degree(0))
+    if (m_bVisualizeTwistLimits && thisJoint.GetTwistLimitHalfAngle() > xiiAngle::MakeFromDegree(0))
     {
       auto& shape        = m_AngleShapes.ExpandAndGetRef();
       shape.m_StartAngle = thisJoint.GetTwistLimitLow();
