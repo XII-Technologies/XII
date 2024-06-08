@@ -2896,7 +2896,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiUuid)")
   {
-    xiiUuid uuid = xiiUuid::MakeUuid();
+    xiiUuid    uuid = xiiUuid::MakeUuid();
     xiiVariant v(uuid);
 
     TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Uuid);

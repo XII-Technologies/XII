@@ -356,7 +356,7 @@ static xiiColor GetAvgColor(xiiColor* pPixels, xiiInt32 iWidth, xiiInt32 iHeight
   if (colAt.a > 0)
     return colAt;
 
-  xiiColor avg = xiiColor::MakeZero();
+  xiiColor  avg          = xiiColor::MakeZero();
   xiiUInt32 uiValidCount = 0;
 
   const xiiInt32 iRadius = 1;
