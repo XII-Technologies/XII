@@ -4,12 +4,12 @@
 
 XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
 {
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor (Array Data)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeFromColumnMajorArray / MakeFromRowMajorArray")
   {
     const float data[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 
     {
-      xiiSimdMat4f m(data, xiiMatrixLayout::ColumnMajor);
+      xiiSimdMat4f m = xiiSimdMat4f::MakeFromColumnMajorArray(data);
 
       XII_TEST_BOOL((m.m_col0 == xiiSimdVec4f(1, 2, 3, 4)).AllSet());
       XII_TEST_BOOL((m.m_col1 == xiiSimdVec4f(5, 6, 7, 8)).AllSet());
@@ -18,7 +18,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
     }
 
     {
-      xiiSimdMat4f m(data, xiiMatrixLayout::RowMajor);
+      xiiSimdMat4f m = xiiSimdMat4f::MakeFromRowMajorArray(data);
 
       XII_TEST_BOOL((m.m_col0 == xiiSimdVec4f(1, 5, 9, 13)).AllSet());
       XII_TEST_BOOL((m.m_col1 == xiiSimdVec4f(2, 6, 10, 14)).AllSet());
@@ -27,14 +27,14 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
     }
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor (Columns)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeFromColumns")
   {
     xiiSimdVec4f c0(1, 2, 3, 4);
     xiiSimdVec4f c1(5, 6, 7, 8);
     xiiSimdVec4f c2(9, 10, 11, 12);
     xiiSimdVec4f c3(13, 14, 15, 16);
 
-    xiiSimdMat4f m(c0, c1, c2, c3);
+    xiiSimdMat4f m = xiiSimdMat4f::MakeFromColumns(c0, c1, c2, c3);
 
     XII_TEST_BOOL((m.m_col0 == xiiSimdVec4f(1, 2, 3, 4)).AllSet());
     XII_TEST_BOOL((m.m_col1 == xiiSimdVec4f(5, 6, 7, 8)).AllSet());
@@ -47,8 +47,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
     const float data[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 
     {
-      xiiSimdMat4f m;
-      m.SetFromArray(data, xiiMatrixLayout::ColumnMajor);
+      xiiSimdMat4f m = xiiSimdMat4f::MakeFromColumnMajorArray(data);
 
       XII_TEST_BOOL((m.m_col0 == xiiSimdVec4f(1, 2, 3, 4)).AllSet());
       XII_TEST_BOOL((m.m_col1 == xiiSimdVec4f(5, 6, 7, 8)).AllSet());
@@ -57,8 +56,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
     }
 
     {
-      xiiSimdMat4f m;
-      m.SetFromArray(data, xiiMatrixLayout::RowMajor);
+      xiiSimdMat4f m = xiiSimdMat4f::MakeFromRowMajorArray(data);
 
       XII_TEST_BOOL((m.m_col0 == xiiSimdVec4f(1, 5, 9, 13)).AllSet());
       XII_TEST_BOOL((m.m_col1 == xiiSimdVec4f(2, 6, 10, 14)).AllSet());
@@ -69,7 +67,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetAsArray")
   {
-    xiiSimdMat4f m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiSimdMat4f m = xiiSimdMat4f::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     float data[16];
 
@@ -110,10 +108,9 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
     XII_TEST_FLOAT(data[15], 16, 0.0001f);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetIdentity")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeIdentity")
   {
-    xiiSimdMat4f m;
-    m.SetIdentity();
+    xiiSimdMat4f m = xiiSimdMat4f::MakeIdentity();
 
     XII_TEST_BOOL((m.m_col0 == xiiSimdVec4f(1, 0, 0, 0)).AllSet());
     XII_TEST_BOOL((m.m_col1 == xiiSimdVec4f(0, 1, 0, 0)).AllSet());
@@ -121,30 +118,9 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
     XII_TEST_BOOL((m.m_col3 == xiiSimdVec4f(0, 0, 0, 1)).AllSet());
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetZero")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeZero")
   {
-    xiiSimdMat4f m;
-    m.SetZero();
-
-    XII_TEST_BOOL((m.m_col0 == xiiSimdVec4f(0, 0, 0, 0)).AllSet());
-    XII_TEST_BOOL((m.m_col1 == xiiSimdVec4f(0, 0, 0, 0)).AllSet());
-    XII_TEST_BOOL((m.m_col2 == xiiSimdVec4f(0, 0, 0, 0)).AllSet());
-    XII_TEST_BOOL((m.m_col3 == xiiSimdVec4f(0, 0, 0, 0)).AllSet());
-  }
-
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "IdentityMatrix")
-  {
-    xiiSimdMat4f m = xiiSimdMat4f::IdentityMatrix();
-
-    XII_TEST_BOOL((m.m_col0 == xiiSimdVec4f(1, 0, 0, 0)).AllSet());
-    XII_TEST_BOOL((m.m_col1 == xiiSimdVec4f(0, 1, 0, 0)).AllSet());
-    XII_TEST_BOOL((m.m_col2 == xiiSimdVec4f(0, 0, 1, 0)).AllSet());
-    XII_TEST_BOOL((m.m_col3 == xiiSimdVec4f(0, 0, 0, 1)).AllSet());
-  }
-
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ZeroMatrix")
-  {
-    xiiSimdMat4f m = xiiSimdMat4f::ZeroMatrix();
+    xiiSimdMat4f m = xiiSimdMat4f::MakeZero();
 
     XII_TEST_BOOL((m.m_col0 == xiiSimdVec4f(0, 0, 0, 0)).AllSet());
     XII_TEST_BOOL((m.m_col1 == xiiSimdVec4f(0, 0, 0, 0)).AllSet());
@@ -154,7 +130,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Transpose")
   {
-    xiiSimdMat4f m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiSimdMat4f m = xiiSimdMat4f::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     m.Transpose();
 
@@ -166,7 +142,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetTranspose")
   {
-    xiiSimdMat4f m0(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiSimdMat4f m0 = xiiSimdMat4f::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiSimdMat4f m = m0.GetTranspose();
 
@@ -184,8 +160,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
       {
         for (float z = 3.0f; z < 360.0f; z += 33.0f)
         {
-          xiiSimdQuat q;
-          q.SetFromAxisAndAngle(xiiSimdVec4f(x, y, z).GetNormalized<3>(), xiiAngle::Degree(19.0f));
+          xiiSimdQuat q = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(x, y, z).GetNormalized<3>(), xiiAngle::MakeFromDegree(19.0f));
 
           xiiSimdTransform t(q);
 
@@ -211,8 +186,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
       {
         for (float z = 3.0f; z < 360.0f; z += 31.0f)
         {
-          xiiSimdQuat q;
-          q.SetFromAxisAndAngle(xiiSimdVec4f(x, y, z).GetNormalized<3>(), xiiAngle::Degree(83.0f));
+          xiiSimdQuat q = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(x, y, z).GetNormalized<3>(), xiiAngle::MakeFromDegree(83.0f));
 
           xiiSimdTransform t(q);
 
@@ -231,7 +205,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsEqual")
   {
-    xiiSimdMat4f m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiSimdMat4f m = xiiSimdMat4f::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiSimdMat4f m2 = m;
 
@@ -244,9 +218,8 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsIdentity")
   {
-    xiiSimdMat4f m;
+    xiiSimdMat4f m = xiiSimdMat4f::MakeIdentity();
 
-    m.SetIdentity();
     XII_TEST_BOOL(m.IsIdentity());
 
     m.m_col0.SetZero();
@@ -255,9 +228,8 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsValid")
   {
-    xiiSimdMat4f m;
+    xiiSimdMat4f m = xiiSimdMat4f::MakeIdentity();
 
-    m.SetIdentity();
     XII_TEST_BOOL(m.IsValid());
 
     m.m_col0.SetX(xiiMath::NaN<float>());
@@ -266,19 +238,18 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsNaN")
   {
-    xiiSimdMat4f m;
+    xiiSimdMat4f m = xiiSimdMat4f::MakeIdentity();
 
-    m.SetIdentity();
     XII_TEST_BOOL(!m.IsNaN());
 
     float data[16];
 
     for (xiiUInt32 i = 0; i < 16; ++i)
     {
-      m.SetIdentity();
+      m = xiiSimdMat4f::MakeIdentity();
       m.GetAsArray(data, xiiMatrixLayout::ColumnMajor);
       data[i] = xiiMath::NaN<float>();
-      m.SetFromArray(data, xiiMatrixLayout::ColumnMajor);
+      m       = xiiSimdMat4f::MakeFromColumnMajorArray(data);
 
       XII_TEST_BOOL(m.IsNaN());
     }
@@ -302,7 +273,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetRows")
   {
-    xiiSimdMat4f m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiSimdMat4f m = xiiSimdMat4f::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiSimdVec4f r0, r1, r2, r3;
     m.GetRows(r0, r1, r2, r3);
@@ -315,7 +286,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "TransformPosition")
   {
-    xiiSimdMat4f m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiSimdMat4f m = xiiSimdMat4f::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     const xiiSimdVec4f r = m.TransformPosition(xiiSimdVec4f(1, 2, 3));
 
@@ -324,7 +295,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "TransformDirection")
   {
-    xiiSimdMat4f m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiSimdMat4f m = xiiSimdMat4f::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     const xiiSimdVec4f r = m.TransformDirection(xiiSimdVec4f(1, 2, 3));
 
@@ -333,9 +304,9 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*(mat, mat)")
   {
-    xiiSimdMat4f m1(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiSimdMat4f m1 = xiiSimdMat4f::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
-    xiiSimdMat4f m2(-1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -16);
+    xiiSimdMat4f m2 = xiiSimdMat4f::MakeFromValues(-1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -16);
 
     xiiSimdMat4f r = m1 * m2;
 
@@ -351,7 +322,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMat4f)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator== (mat, mat) | operator!= (mat, mat)")
   {
-    xiiSimdMat4f m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiSimdMat4f m = xiiSimdMat4f::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiSimdMat4f m2 = m;
 

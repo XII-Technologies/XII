@@ -42,7 +42,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdNoise)
           xiiSimdVec4f sX = (xiiSimdVec4f(x * 4.0f) + xOffset) / scale;
           xiiSimdVec4f sY = xiiSimdVec4f(y * 1.0f) / scale;
 
-          xiiSimdVec4f noise = perlin.NoiseZeroToOne(sX, sY, xiiSimdVec4f::ZeroVector(), uiNumOctaves);
+          xiiSimdVec4f noise = perlin.NoiseZeroToOne(sX, sY, xiiSimdVec4f::MakeZero(), uiNumOctaves);
           float        p[4];
           p[0] = noise.x();
           p[1] = noise.y();
@@ -77,7 +77,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdNoise)
     for (xiiUInt32 i = 0; i < 10000; ++i)
     {
       xiiSimdVec4u seed              = xiiSimdVec4u(i);
-      xiiSimdVec4f randomValues      = xiiSimdRandom::FloatMinMax(xiiSimdVec4i(0, 1, 2, 3), xiiSimdVec4f::ZeroVector(), xiiSimdVec4f(256.0f), seed);
+      xiiSimdVec4f randomValues      = xiiSimdRandom::FloatMinMax(xiiSimdVec4i(0, 1, 2, 3), xiiSimdVec4f::MakeZero(), xiiSimdVec4f(256.0f), seed);
       xiiSimdVec4i randomValuesAsInt = xiiSimdVec4i::Truncate(randomValues);
 
       ++histogram[randomValuesAsInt.x()];
@@ -85,7 +85,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdNoise)
       ++histogram[randomValuesAsInt.z()];
       ++histogram[randomValuesAsInt.w()];
 
-      randomValues      = xiiSimdRandom::FloatMinMax(xiiSimdVec4i(32, 33, 34, 35), xiiSimdVec4f::ZeroVector(), xiiSimdVec4f(256.0f), seed);
+      randomValues      = xiiSimdRandom::FloatMinMax(xiiSimdVec4i(32, 33, 34, 35), xiiSimdVec4f::MakeZero(), xiiSimdVec4f(256.0f), seed);
       randomValuesAsInt = xiiSimdVec4i::Truncate(randomValues);
 
       ++histogram[randomValuesAsInt.x()];

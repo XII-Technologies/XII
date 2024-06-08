@@ -6,7 +6,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4i)
 {
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor")
   {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
     // In debug the default constructor initializes everything with 0xCDCDCDCD.
     xiiSimdVec4i vDefCtor;
     XII_TEST_BOOL(vDefCtor.x() == 0xCDCDCDCD && vDefCtor.y() == 0xCDCDCDCD && vDefCtor.z() == 0xCDCDCDCD && vDefCtor.w() == 0xCDCDCDCD);
@@ -39,7 +39,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4i)
 
     XII_TEST_BOOL(copy.GetComponent<0>() == 1 && copy.GetComponent<1>() == 2 && copy.GetComponent<2>() == 3 && copy.GetComponent<3>() == 4);
 
-    xiiSimdVec4i vZero = xiiSimdVec4i::ZeroVector();
+    xiiSimdVec4i vZero = xiiSimdVec4i::MakeZero();
     XII_TEST_BOOL(vZero.x() == 0 && vZero.y() == 0 && vZero.z() == 0 && vZero.w() == 0);
   }
 

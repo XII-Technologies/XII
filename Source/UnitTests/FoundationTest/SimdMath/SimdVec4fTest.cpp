@@ -177,7 +177,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4f)
     xiiSimdVec4f vCopy(vInit4F);
     XII_TEST_BOOL(vCopy.x() == 1.0f && vCopy.y() == 2.0f && vCopy.z() == 3.0f && vCopy.w() == 4.0f);
 
-    xiiSimdVec4f vZero = xiiSimdVec4f::ZeroVector();
+    xiiSimdVec4f vZero = xiiSimdVec4f::MakeZero();
     XII_TEST_BOOL(vZero.x() == 0.0f && vZero.y() == 0.0f && vZero.z() == 0.0f && vZero.w() == 0.0f);
   }
 
@@ -206,6 +206,14 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdVec4f)
     xiiSimdVec4f c;
     c.SetZero();
     XII_TEST_BOOL(c.x() == 0.0f && c.y() == 0.0f && c.z() == 0.0f && c.w() == 0.0f);
+
+    {
+      xiiSimdVec4f z = xiiSimdVec4f::MakeNaN();
+      XII_TEST_BOOL(xiiMath::IsNaN((float)z.x()));
+      XII_TEST_BOOL(xiiMath::IsNaN((float)z.y()));
+      XII_TEST_BOOL(xiiMath::IsNaN((float)z.z()));
+      XII_TEST_BOOL(xiiMath::IsNaN((float)z.w()));
+    }
 
     {
       float        testBlock[4] = {1, 2, 3, 4};
