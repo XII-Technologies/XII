@@ -10,7 +10,7 @@ XII_CREATE_SIMPLE_TEST(Math, Intersection)
     for (xiiUInt32 i = 0; i < 100; ++i)
     {
       xiiMat4 m;
-      m.SetRotationMatrix(xiiVec3(i + 1.0f, i * 3.0f, i * 7.0f).GetNormalized(), xiiAngle::Degree((float)i));
+      m = xiiMat4::MakeAxisRotation(xiiVec3(i + 1.0f, i * 3.0f, i * 7.0f).GetNormalized(), xiiAngle::MakeFromDegree((float)i));
       m.SetTranslationVector(xiiVec3((float)i, i * 2.0f, i * 3.0f));
 
       xiiVec3 Vertices[8] = {m.TransformPosition(xiiVec3(-10, -10, 0)), xiiVec3(-10, -10, 0), m.TransformPosition(xiiVec3(10, -10, 0)),
@@ -44,7 +44,7 @@ XII_CREATE_SIMPLE_TEST(Math, Intersection)
     for (xiiUInt32 i = 0; i < 100; ++i)
     {
       xiiMat4 m;
-      m.SetRotationMatrix(xiiVec3(i + 1.0f, i * 3.0f, i * 7.0f).GetNormalized(), xiiAngle::Degree((float)i));
+      m = xiiMat4::MakeAxisRotation(xiiVec3(i + 1.0f, i * 3.0f, i * 7.0f).GetNormalized(), xiiAngle::MakeFromDegree((float)i));
       m.SetTranslationVector(xiiVec3((float)i, i * 2.0f, i * 3.0f));
 
       xiiVec3 vSegment0 = m.TransformPosition(xiiVec3(-10, 1, 2));
@@ -90,7 +90,7 @@ XII_CREATE_SIMPLE_TEST(Math, Intersection)
     for (xiiUInt32 i = 0; i < 100; ++i)
     {
       xiiMat4 m;
-      m.SetRotationMatrixZ(xiiAngle::Degree((float)i));
+      m = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree((float)i));
       m.SetTranslationVector(xiiVec3((float)i, i * 2.0f, i * 3.0f));
 
       const xiiVec2 vSegment0   = m.TransformPosition(xiiVec3(23, 42, 0)).GetAsVec2();

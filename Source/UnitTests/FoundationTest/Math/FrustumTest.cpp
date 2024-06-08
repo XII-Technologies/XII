@@ -6,49 +6,55 @@
 
 XII_CREATE_SIMPLE_TEST(Math, Frustum)
 {
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetFrustum (planes)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeFromPlanes")
   {
     xiiFrustum f;
 
     xiiPlane p[6];
-    p[xiiFrustum::PlaneType::LeftPlane].SetFromNormalAndPoint(xiiVec3(-1, 0, 0), xiiVec3(-2, 0, 0));
-    p[xiiFrustum::PlaneType::RightPlane].SetFromNormalAndPoint(xiiVec3(+1, 0, 0), xiiVec3(+2, 0, 0));
-    p[xiiFrustum::PlaneType::BottomPlane].SetFromNormalAndPoint(xiiVec3(0, -1, 0), xiiVec3(0, -2, 0));
-    p[xiiFrustum::PlaneType::TopPlane].SetFromNormalAndPoint(xiiVec3(0, +1, 0), xiiVec3(0, +2, 0));
-    p[xiiFrustum::PlaneType::NearPlane].SetFromNormalAndPoint(xiiVec3(0, 0, -1), xiiVec3(0, 0, 0));
-    p[xiiFrustum::PlaneType::FarPlane].SetFromNormalAndPoint(xiiVec3(0, 0, 1), xiiVec3(0, 0, 100));
+    p[xiiFrustum::PlaneType::LeftPlane]   = xiiPlane::MakeFromNormalAndPoint(xiiVec3(-1, 0, 0), xiiVec3(-2, 0, 0));
+    p[xiiFrustum::PlaneType::RightPlane]  = xiiPlane::MakeFromNormalAndPoint(xiiVec3(+1, 0, 0), xiiVec3(+2, 0, 0));
+    p[xiiFrustum::PlaneType::BottomPlane] = xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, -1, 0), xiiVec3(0, -2, 0));
+    p[xiiFrustum::PlaneType::TopPlane]    = xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, +1, 0), xiiVec3(0, +2, 0));
+    p[xiiFrustum::PlaneType::NearPlane]   = xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, 0, -1), xiiVec3(0, 0, 0));
+    p[xiiFrustum::PlaneType::FarPlane]    = xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, 0, 1), xiiVec3(0, 0, 100));
 
-    f.SetFrustum(p);
+    f = xiiFrustum::MakeFromPlanes(p);
 
     XII_TEST_BOOL(f.GetPlane(0) == p[0]);
     XII_TEST_BOOL(f.GetPlane(1) == p[1]);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "TransformFrustum")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "TransformFrustum/GetTransformedFrustum")
   {
     xiiFrustum f;
 
     xiiPlane p[6];
-    p[xiiFrustum::PlaneType::LeftPlane].SetFromNormalAndPoint(xiiVec3(-1, 0, 0), xiiVec3(-2, 0, 0));
-    p[xiiFrustum::PlaneType::RightPlane].SetFromNormalAndPoint(xiiVec3(+1, 0, 0), xiiVec3(+2, 0, 0));
-    p[xiiFrustum::PlaneType::BottomPlane].SetFromNormalAndPoint(xiiVec3(0, -1, 0), xiiVec3(0, -2, 0));
-    p[xiiFrustum::PlaneType::TopPlane].SetFromNormalAndPoint(xiiVec3(0, +1, 0), xiiVec3(0, +2, 0));
-    p[xiiFrustum::PlaneType::NearPlane].SetFromNormalAndPoint(xiiVec3(0, 0, -1), xiiVec3(0, 0, 0));
-    p[xiiFrustum::PlaneType::FarPlane].SetFromNormalAndPoint(xiiVec3(0, 0, 1), xiiVec3(0, 0, 100));
+    p[xiiFrustum::PlaneType::LeftPlane]   = xiiPlane::MakeFromNormalAndPoint(xiiVec3(-1, 0, 0), xiiVec3(-2, 0, 0));
+    p[xiiFrustum::PlaneType::RightPlane]  = xiiPlane::MakeFromNormalAndPoint(xiiVec3(+1, 0, 0), xiiVec3(+2, 0, 0));
+    p[xiiFrustum::PlaneType::BottomPlane] = xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, -1, 0), xiiVec3(0, -2, 0));
+    p[xiiFrustum::PlaneType::TopPlane]    = xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, +1, 0), xiiVec3(0, +2, 0));
+    p[xiiFrustum::PlaneType::NearPlane]   = xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, 0, -1), xiiVec3(0, 0, 0));
+    p[xiiFrustum::PlaneType::FarPlane]    = xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, 0, 1), xiiVec3(0, 0, 100));
 
-    f.SetFrustum(p);
+    f = xiiFrustum::MakeFromPlanes(p);
 
     xiiMat4 mTransform;
-    mTransform.SetRotationMatrixY(xiiAngle::Degree(90.0f));
+    mTransform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(90.0f));
     mTransform.SetTranslationVector(xiiVec3(2, 3, 4));
 
-    f.TransformFrustum(mTransform);
+    xiiFrustum tf = f;
+    tf.TransformFrustum(mTransform);
 
     p[0].Transform(mTransform);
     p[1].Transform(mTransform);
 
-    XII_TEST_BOOL(f.GetPlane(0).IsEqual(p[0], 0.001f));
-    XII_TEST_BOOL(f.GetPlane(1).IsEqual(p[1], 0.001f));
+    for (int planeIndex = 0; planeIndex < 6; ++planeIndex)
+    {
+      XII_TEST_BOOL(f.GetTransformedFrustum(mTransform).GetPlane(planeIndex) == tf.GetPlane(planeIndex));
+    }
+
+    XII_TEST_BOOL(tf.GetPlane(0).IsEqual(p[0], 0.001f));
+    XII_TEST_BOOL(tf.GetPlane(1).IsEqual(p[1], 0.001f));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "InvertFrustum")
@@ -56,14 +62,14 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
     xiiFrustum f;
 
     xiiPlane p[6];
-    p[xiiFrustum::PlaneType::LeftPlane].SetFromNormalAndPoint(xiiVec3(-1, 0, 0), xiiVec3(-2, 0, 0));
-    p[xiiFrustum::PlaneType::RightPlane].SetFromNormalAndPoint(xiiVec3(+1, 0, 0), xiiVec3(+2, 0, 0));
-    p[xiiFrustum::PlaneType::BottomPlane].SetFromNormalAndPoint(xiiVec3(0, -1, 0), xiiVec3(0, -2, 0));
-    p[xiiFrustum::PlaneType::TopPlane].SetFromNormalAndPoint(xiiVec3(0, +1, 0), xiiVec3(0, +2, 0));
-    p[xiiFrustum::PlaneType::NearPlane].SetFromNormalAndPoint(xiiVec3(0, 0, -1), xiiVec3(0, 0, 0));
-    p[xiiFrustum::PlaneType::FarPlane].SetFromNormalAndPoint(xiiVec3(0, 0, 1), xiiVec3(0, 0, 100));
+    p[xiiFrustum::PlaneType::LeftPlane]   = xiiPlane::MakeFromNormalAndPoint(xiiVec3(-1, 0, 0), xiiVec3(-2, 0, 0));
+    p[xiiFrustum::PlaneType::RightPlane]  = xiiPlane::MakeFromNormalAndPoint(xiiVec3(+1, 0, 0), xiiVec3(+2, 0, 0));
+    p[xiiFrustum::PlaneType::BottomPlane] = xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, -1, 0), xiiVec3(0, -2, 0));
+    p[xiiFrustum::PlaneType::TopPlane]    = xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, +1, 0), xiiVec3(0, +2, 0));
+    p[xiiFrustum::PlaneType::NearPlane]   = xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, 0, -1), xiiVec3(0, 0, 0));
+    p[xiiFrustum::PlaneType::FarPlane]    = xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, 0, 1), xiiVec3(0, 0, 100));
 
-    f.SetFrustum(p);
+    f = xiiFrustum::MakeFromPlanes(p);
 
     f.InvertFrustum();
 
@@ -87,10 +93,10 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
       for (int rot = 0; rot < 360; rot += 45)
       {
         xiiVec3 vLookDir;
-        vLookDir.Set(xiiMath::Sin(xiiAngle::Degree((float)rot)), 0, -xiiMath::Cos(xiiAngle::Degree((float)rot)));
+        vLookDir.Set(xiiMath::Sin(xiiAngle::MakeFromDegree((float)rot)), 0, -xiiMath::Cos(xiiAngle::MakeFromDegree((float)rot)));
 
         xiiVec3 vRightDir;
-        vRightDir.Set(xiiMath::Sin(xiiAngle::Degree(rot + 90.0f)), 0, -xiiMath::Cos(xiiAngle::Degree(rot + 90.0f)));
+        vRightDir.Set(xiiMath::Sin(xiiAngle::MakeFromDegree(rot + 90.0f)), 0, -xiiMath::Cos(xiiAngle::MakeFromDegree(rot + 90.0f)));
 
         const xiiVec3 vCamPos(rot * 1.0f, rot * 0.5f, rot * -0.3f);
 
@@ -99,17 +105,17 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
         const xiiMat4 mViewLH = xiiGraphicsUtils::CreateLookAtViewMatrix(vCamPos, vCamPos + vLookDir, xiiVec3(0, 1, 0), xiiHandedness::LeftHanded);
         const xiiMat4 mViewRH = xiiGraphicsUtils::CreateLookAtViewMatrix(vCamPos, vCamPos + vLookDir, xiiVec3(0, 1, 0), xiiHandedness::RightHanded);
 
-        const xiiMat4 mProjLH = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::Degree(90), 1.0f, 1.0f, 100.0f, range, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
-        const xiiMat4 mProjRH = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::Degree(90), 1.0f, 1.0f, 100.0f, range, xiiClipSpaceYMode::Regular, xiiHandedness::RightHanded);
+        const xiiMat4 mProjLH = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(90), 1.0f, 1.0f, 100.0f, range, xiiClipSpaceYMode::Regular, xiiHandedness::LeftHanded);
+        const xiiMat4 mProjRH = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(90), 1.0f, 1.0f, 100.0f, range, xiiClipSpaceYMode::Regular, xiiHandedness::RightHanded);
 
         const xiiMat4 mViewProjLH = mProjLH * mViewLH;
         const xiiMat4 mViewProjRH = mProjRH * mViewRH;
 
-        xiiFrustum fLH, fRH, fB;
-        fLH.SetFrustum(mViewProjLH, range, xiiHandedness::LeftHanded);
-        fRH.SetFrustum(mViewProjRH, range, xiiHandedness::RightHanded);
+        xiiFrustum       fB;
+        const xiiFrustum fLH = xiiFrustum::MakeFromMVP(mViewProjLH, range, xiiHandedness::LeftHanded);
+        const xiiFrustum fRH = xiiFrustum::MakeFromMVP(mViewProjRH, range, xiiHandedness::RightHanded);
 
-        fB.SetFrustum(vCamPos, vLookDir, xiiVec3(0, 1, 0), xiiAngle::Degree(90), xiiAngle::Degree(90), 1.0f, 100.0f);
+        fB = xiiFrustum::MakeFromFOV(vCamPos, vLookDir, xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90), xiiAngle::MakeFromDegree(90), 1.0f, 100.0f);
 
         XII_TEST_BOOL(fRH.GetPlane(xiiFrustum::NearPlane).IsEqual(fB.GetPlane(xiiFrustum::NearPlane), 0.1f));
         XII_TEST_BOOL(fRH.GetPlane(xiiFrustum::LeftPlane).IsEqual(fB.GetPlane(xiiFrustum::LeftPlane), 0.1f));
@@ -137,15 +143,14 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
     for (xiiUInt32 dir = 0; dir < 6; ++dir)
     {
       xiiFrustum fDir;
-      fDir.SetFrustum(
-        offsetPos, camDir[dir], camDir[dir].GetOrthogonalVector() /*arbitrary*/, xiiAngle::Degree(90), xiiAngle::Degree(90), 1.0f, 100.0f);
+      fDir = xiiFrustum::MakeFromFOV(offsetPos, camDir[dir], camDir[dir].GetOrthogonalVector() /*arbitrary*/, xiiAngle::MakeFromDegree(90), xiiAngle::MakeFromDegree(90), 1.0f, 100.0f);
 
       for (xiiUInt32 obj = 0; obj < 6; ++obj)
       {
         // box
         {
           xiiBoundingBox boundingObj;
-          boundingObj.SetCenterAndHalfExtents(offsetPos + objPos[obj], xiiVec3(1.0f));
+          boundingObj = xiiBoundingBox::MakeFromCenterAndHalfExtents(offsetPos + objPos[obj], xiiVec3(1.0f));
 
           const xiiVolumePosition::Enum res = fDir.GetObjectPosition(boundingObj);
 
@@ -157,8 +162,7 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
 
         // sphere
         {
-          xiiBoundingSphere boundingObj;
-          boundingObj.SetElements(offsetPos + objPos[obj], 0.93f);
+          xiiBoundingSphere boundingObj = xiiBoundingSphere::MakeFromCenterAndRadius(offsetPos + objPos[obj], 0.93f);
 
           const xiiVolumePosition::Enum res = fDir.GetObjectPosition(boundingObj);
 
@@ -171,7 +175,7 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
         // vertices
         {
           xiiBoundingBox boundingObj;
-          boundingObj.SetCenterAndHalfExtents(offsetPos + objPos[obj], xiiVec3(1.0f));
+          boundingObj = xiiBoundingBox::MakeFromCenterAndHalfExtents(offsetPos + objPos[obj], xiiVec3(1.0f));
 
           xiiVec3 vertices[8];
           boundingObj.GetCorners(vertices);
@@ -187,13 +191,12 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
         // vertices + transform
         {
           xiiBoundingBox boundingObj;
-          boundingObj.SetCenterAndHalfExtents(objPos[obj], xiiVec3(1.0f));
+          boundingObj = xiiBoundingBox::MakeFromCenterAndHalfExtents(objPos[obj], xiiVec3(1.0f));
 
           xiiVec3 vertices[8];
           boundingObj.GetCorners(vertices);
 
-          xiiMat4 transform;
-          transform.SetTranslationMatrix(offsetPos);
+          xiiMat4 transform = xiiMat4::MakeTranslation(offsetPos);
 
           const xiiVolumePosition::Enum res = fDir.GetObjectPosition(vertices, 8, transform);
 
@@ -206,7 +209,7 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
         // SIMD box
         {
           xiiBoundingBox boundingObj;
-          boundingObj.SetCenterAndHalfExtents(offsetPos + objPos[obj], xiiVec3(1.0f));
+          boundingObj = xiiBoundingBox::MakeFromCenterAndHalfExtents(offsetPos + objPos[obj], xiiVec3(1.0f));
 
           const bool res = fDir.Overlaps(xiiSimdConversion::ToBBox(boundingObj));
 
@@ -218,8 +221,7 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
 
         // SIMD sphere
         {
-          xiiBoundingSphere boundingObj;
-          boundingObj.SetElements(offsetPos + objPos[obj], 0.93f);
+          xiiBoundingSphere boundingObj = xiiBoundingSphere::MakeFromCenterAndRadius(offsetPos + objPos[obj], 0.93f);
 
           const bool res = fDir.Overlaps(xiiSimdConversion::ToBSphere(boundingObj));
 
@@ -234,11 +236,11 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ComputeCornerPoints")
   {
-    const xiiMat4 mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::Degree(90), 1.0f, 1.0f, 10.0f, xiiClipSpaceDepthRange::MinusOneToOne, xiiClipSpaceYMode::Regular, xiiHandedness::RightHanded);
+    const xiiMat4 mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(90), 1.0f, 1.0f, 10.0f, xiiClipSpaceDepthRange::MinusOneToOne, xiiClipSpaceYMode::Regular, xiiHandedness::RightHanded);
 
     xiiFrustum frustum[2];
-    frustum[0].SetFrustum(mProj, xiiClipSpaceDepthRange::MinusOneToOne, xiiHandedness::RightHanded);
-    frustum[1].SetFrustum(xiiVec3::ZeroVector(), xiiVec3(0, 0, -1), xiiVec3(0, 1, 0), xiiAngle::Degree(90), xiiAngle::Degree(90), 1.0f, 10.0f);
+    frustum[0] = xiiFrustum::MakeFromMVP(mProj, xiiClipSpaceDepthRange::MinusOneToOne, xiiHandedness::RightHanded);
+    frustum[1] = xiiFrustum::MakeFromFOV(xiiVec3::MakeZero(), xiiVec3(0, 0, -1), xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90), xiiAngle::MakeFromDegree(90), 1.0f, 10.0f);
 
     for (int f = 0; f < 2; ++f)
     {
@@ -303,5 +305,39 @@ XII_CREATE_SIMPLE_TEST(Math, Frustum)
         }
       }
     }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeFromCorners")
+  {
+    const xiiFrustum fOrg = xiiFrustum::MakeFromFOV(xiiVec3(1, 2, 3), xiiVec3(1, 1, 0).GetNormalized(), xiiVec3(0, 0, 1).GetNormalized(), xiiAngle::MakeFromDegree(110), xiiAngle::MakeFromDegree(70), 0.1f, 100.0f);
+
+    xiiVec3 corners[8];
+    fOrg.ComputeCornerPoints(corners).AssertSuccess();
+
+    const xiiFrustum fNew = xiiFrustum::MakeFromCorners(corners);
+
+    for (xiiUInt32 i = 0; i < 6; ++i)
+    {
+      xiiPlane p1 = fOrg.GetPlane(i);
+      xiiPlane p2 = fNew.GetPlane(i);
+
+      XII_TEST_BOOL(p1.IsEqual(p2, xiiMath::LargeEpsilon<float>()));
+    }
+
+    xiiVec3 corners2[8];
+    fNew.ComputeCornerPoints(corners2).AssertSuccess();
+
+    for (xiiUInt32 i = 0; i < 8; ++i)
+    {
+      XII_TEST_BOOL(corners[i].IsEqual(corners2[i], 0.01f));
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeFromMVPInfiniteFarPlane")
+  {
+    xiiMat4 perspective = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovY(xiiAngle::MakeFromDegree(90), 1.0f, xiiMath::Infinity<float>(), 100.0f, xiiClipSpaceDepthRange::ZeroToOne, xiiClipSpaceYMode::Regular, xiiHandedness::RightHanded);
+
+    auto frustum = xiiFrustum::MakeFromMVP(perspective);
+    XII_TEST_BOOL(frustum.IsValid());
   }
 }

@@ -7,7 +7,7 @@
 #include <Foundation/Math/Random.h>
 
 // only works when also linking against CoreUtils
-//#define USE_XIIIMAGE
+// #define USE_XIIIMAGE
 
 #ifdef USE_XIIIMAGE
 #  include <Texture/Image/Image.h>

@@ -38,11 +38,20 @@ XII_CREATE_SIMPLE_TEST(Math, Vec2)
     XII_TEST_VEC2(v, xiiVec2T(3, 3), 0);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ZeroVector") { XII_TEST_VEC2(xiiVec2T::ZeroVector(), xiiVec2T(0, 0), 0); }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeZero")
+  {
+    XII_TEST_VEC2(xiiVec2T::MakeZero(), xiiVec2T(0, 0), 0);
+  }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetAsVec3") { XII_TEST_VEC3(xiiVec2T(2, 3).GetAsVec3(4), xiiVec3T(2, 3, 4), 0); }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetAsVec3")
+  {
+    XII_TEST_VEC3(xiiVec2T(2, 3).GetAsVec3(4), xiiVec3T(2, 3, 4), 0);
+  }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetAsVec4") { XII_TEST_VEC4(xiiVec2T(2, 3).GetAsVec4(4, 5), xiiVec4T(2, 3, 4, 5), 0); }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetAsVec4")
+  {
+    XII_TEST_VEC4(xiiVec2T(2, 3).GetAsVec4(4, 5), xiiVec4T(2, 3, 4, 5), 0);
+  }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Set(x, y)")
   {

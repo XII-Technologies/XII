@@ -74,11 +74,11 @@ XII_CREATE_SIMPLE_TEST(Math, Angle)
     XII_TEST_FLOAT(a0.GetRadian(), 0.0f, 0.0f);
     XII_TEST_FLOAT(a0.GetDegree(), 0.0f, 0.0f);
 
-    xiiAngle a1 = xiiAngle::Radian(1.570796327f);
+    xiiAngle a1 = xiiAngle::MakeFromRadian(1.570796327f);
     XII_TEST_FLOAT(a1.GetRadian(), 1.570796327f, 0.00001f);
     XII_TEST_FLOAT(a1.GetDegree(), 90.0f, 0.00001f);
 
-    xiiAngle a2 = xiiAngle::Degree(90);
+    xiiAngle a2 = xiiAngle::MakeFromDegree(90);
     XII_TEST_FLOAT(a2.GetRadian(), 1.570796327f, 0.00001f);
     XII_TEST_FLOAT(a2.GetDegree(), 90.0f, 0.00001f);
   }
@@ -89,11 +89,11 @@ XII_CREATE_SIMPLE_TEST(Math, Angle)
     XII_TEST_DOUBLE(a0.GetRadian(), 0.0, 0.0);
     XII_TEST_DOUBLE(a0.GetDegree(), 0.0, 0.0);
 
-    xiiAngled a1 = xiiAngled::Radian(1.570796327);
+    xiiAngled a1 = xiiAngled::MakeFromRadian(1.570796327);
     XII_TEST_DOUBLE(a1.GetRadian(), 1.570796327, 0.00001);
     XII_TEST_DOUBLE(a1.GetDegree(), 90.0, 0.00001);
 
-    xiiAngled a2 = xiiAngled::Degree(90);
+    xiiAngled a2 = xiiAngled::MakeFromDegree(90);
     XII_TEST_DOUBLE(a2.GetRadian(), 1.570796327, 0.00001);
     XII_TEST_DOUBLE(a2.GetDegree(), 90.0, 0.00001);
   }
@@ -104,70 +104,70 @@ XII_CREATE_SIMPLE_TEST(Math, Angle)
 
     for (xiiInt32 i = 1; i < 359; i++)
     {
-      a = xiiAngle::Degree((float)i);
+      a = xiiAngle::MakeFromDegree((float)i);
       a.NormalizeRange();
       XII_TEST_FLOAT(a.GetDegree(), (float)i, 0.01f);
-      a = xiiAngle::Degree((float)i);
+      a = xiiAngle::MakeFromDegree((float)i);
       a.NormalizeRange();
       XII_TEST_FLOAT(a.GetDegree(), (float)i, 0.01f);
-      a = xiiAngle::Degree((float)i + 360.0f);
+      a = xiiAngle::MakeFromDegree((float)i + 360.0f);
       a.NormalizeRange();
       XII_TEST_FLOAT(a.GetDegree(), (float)i, 0.01f);
-      a = xiiAngle::Degree((float)i - 360.0f);
+      a = xiiAngle::MakeFromDegree((float)i - 360.0f);
       a.NormalizeRange();
       XII_TEST_FLOAT(a.GetDegree(), (float)i, 0.01f);
-      a = xiiAngle::Degree((float)i + 3600.0f);
+      a = xiiAngle::MakeFromDegree((float)i + 3600.0f);
       a.NormalizeRange();
       XII_TEST_FLOAT(a.GetDegree(), (float)i, 0.01f);
-      a = xiiAngle::Degree((float)i - 3600.0f);
+      a = xiiAngle::MakeFromDegree((float)i - 3600.0f);
       a.NormalizeRange();
       XII_TEST_FLOAT(a.GetDegree(), (float)i, 0.01f);
-      a = xiiAngle::Degree((float)i + 36000.0f);
+      a = xiiAngle::MakeFromDegree((float)i + 36000.0f);
       a.NormalizeRange();
       XII_TEST_FLOAT(a.GetDegree(), (float)i, 0.01f);
-      a = xiiAngle::Degree((float)i - 36000.0f);
+      a = xiiAngle::MakeFromDegree((float)i - 36000.0f);
       a.NormalizeRange();
       XII_TEST_FLOAT(a.GetDegree(), (float)i, 0.01f);
     }
 
     for (xiiInt32 i = 0; i < 360; i++)
     {
-      a = xiiAngle::Degree((float)i);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i + 360.0f);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i - 360.0f);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i + 3600.0f);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i - 3600.0f);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i + 36000.0f);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i - 36000.0f);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i + 360.0f);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i - 360.0f);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i + 3600.0f);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i - 3600.0f);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i + 36000.0f);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i - 36000.0f);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
     }
 
     for (xiiInt32 i = 0; i < 360; i++)
     {
-      a = xiiAngle::Degree((float)i);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i + 360.0f);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i - 360.0f);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i + 3600.0f);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i - 3600.0f);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i + 36000.0f);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
-      a = xiiAngle::Degree((float)i - 36000.0f);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::Degree((float)i), xiiAngle::Degree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i + 360.0f);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i - 360.0f);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i + 3600.0f);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i - 3600.0f);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i + 36000.0f);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
+      a = xiiAngle::MakeFromDegree((float)i - 36000.0f);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree(0.01f)));
     }
   }
 
@@ -177,110 +177,110 @@ XII_CREATE_SIMPLE_TEST(Math, Angle)
 
     for (xiiInt32 i = 1; i < 359; i++)
     {
-      a = xiiAngled::Degree((double)i);
+      a = xiiAngled::MakeFromDegree((double)i);
       a.NormalizeRange();
       XII_TEST_DOUBLE(a.GetDegree(), (double)i, 0.01);
-      a = xiiAngled::Degree((double)i);
+      a = xiiAngled::MakeFromDegree((double)i);
       a.NormalizeRange();
       XII_TEST_DOUBLE(a.GetDegree(), (double)i, 0.01);
-      a = xiiAngled::Degree((double)i + 360.0);
+      a = xiiAngled::MakeFromDegree((double)i + 360.0);
       a.NormalizeRange();
       XII_TEST_DOUBLE(a.GetDegree(), (double)i, 0.01);
-      a = xiiAngled::Degree((double)i - 360.0);
+      a = xiiAngled::MakeFromDegree((double)i - 360.0);
       a.NormalizeRange();
       XII_TEST_DOUBLE(a.GetDegree(), (double)i, 0.01);
-      a = xiiAngled::Degree((double)i + 3600.0);
+      a = xiiAngled::MakeFromDegree((double)i + 3600.0);
       a.NormalizeRange();
       XII_TEST_DOUBLE(a.GetDegree(), (double)i, 0.01);
-      a = xiiAngled::Degree((double)i - 3600.0);
+      a = xiiAngled::MakeFromDegree((double)i - 3600.0);
       a.NormalizeRange();
       XII_TEST_DOUBLE(a.GetDegree(), (double)i, 0.01);
-      a = xiiAngled::Degree((double)i + 36000.0);
+      a = xiiAngled::MakeFromDegree((double)i + 36000.0);
       a.NormalizeRange();
       XII_TEST_DOUBLE(a.GetDegree(), (double)i, 0.01);
-      a = xiiAngled::Degree((double)i - 36000.0);
+      a = xiiAngled::MakeFromDegree((double)i - 36000.0);
       a.NormalizeRange();
       XII_TEST_DOUBLE(a.GetDegree(), (double)i, 0.01);
     }
 
     for (xiiInt32 i = 0; i < 360; i++)
     {
-      a = xiiAngled::Degree((double)i);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i + 360.0);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i - 360.0);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i + 3600.0);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i - 3600.0);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i + 36000.0);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i - 36000.0);
-      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i + 360.0);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i - 360.0);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i + 3600.0);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i - 3600.0);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i + 36000.0);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i - 36000.0);
+      XII_TEST_BOOL(a.GetNormalizedRange().IsEqualSimple(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
     }
 
     for (xiiInt32 i = 0; i < 360; i++)
     {
-      a = xiiAngled::Degree((double)i);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i + 360.0);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i - 360.0);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i + 3600.0);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i - 3600.0);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i + 36000.0);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
-      a = xiiAngled::Degree((double)i - 36000.0);
-      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::Degree((double)i), xiiAngled::Degree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i + 360.0);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i - 360.0);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i + 3600.0);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i - 3600.0);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i + 36000.0);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
+      a = xiiAngled::MakeFromDegree((double)i - 36000.0);
+      XII_TEST_BOOL(a.IsEqualNormalized(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree(0.01)));
     }
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "AngleBetween (Float)")
   {
-    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::Degree(0), xiiAngle::Degree(0)).GetDegree(), 0.0f, 0.0001f);
-    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::Degree(0), xiiAngle::Degree(360)).GetDegree(), 0.0f, 0.0001f);
-    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::Degree(360), xiiAngle::Degree(360)).GetDegree(), 0.0f, 0.0001f);
-    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::Degree(360), xiiAngle::Degree(0)).GetDegree(), 0.0f, 0.0001f);
+    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::MakeFromDegree(0), xiiAngle::MakeFromDegree(0)).GetDegree(), 0.0f, 0.0001f);
+    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::MakeFromDegree(0), xiiAngle::MakeFromDegree(360)).GetDegree(), 0.0f, 0.0001f);
+    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::MakeFromDegree(360), xiiAngle::MakeFromDegree(360)).GetDegree(), 0.0f, 0.0001f);
+    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::MakeFromDegree(360), xiiAngle::MakeFromDegree(0)).GetDegree(), 0.0f, 0.0001f);
 
-    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::Degree(5), xiiAngle::Degree(186)).GetDegree(), 179.0f, 0.0001f);
-    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::Degree(-5), xiiAngle::Degree(-186)).GetDegree(), 179.0f, 0.0001f);
+    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::MakeFromDegree(5), xiiAngle::MakeFromDegree(186)).GetDegree(), 179.0f, 0.0001f);
+    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::MakeFromDegree(-5), xiiAngle::MakeFromDegree(-186)).GetDegree(), 179.0f, 0.0001f);
 
-    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::Degree(360.0f + 5), xiiAngle::Degree(360.0f + 186)).GetDegree(), 179.0f, 0.0001f);
-    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::Degree(360.0f + -5), xiiAngle::Degree(360.0f - 186)).GetDegree(), 179.0f, 0.0001f);
+    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::MakeFromDegree(360.0f + 5), xiiAngle::MakeFromDegree(360.0f + 186)).GetDegree(), 179.0f, 0.0001f);
+    XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::MakeFromDegree(360.0f + -5), xiiAngle::MakeFromDegree(360.0f - 186)).GetDegree(), 179.0f, 0.0001f);
 
     for (xiiInt32 i = 0; i <= 179; ++i)
-      XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::Degree((float)i), xiiAngle::Degree((float)(i + i))).GetDegree(), (float)i, 0.0001f);
+      XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree((float)(i + i))).GetDegree(), (float)i, 0.0001f);
 
     for (xiiInt32 i = -179; i <= 0; ++i)
-      XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::Degree((float)i), xiiAngle::Degree((float)(i + i))).GetDegree(), (float)-i, 0.0001f);
+      XII_TEST_FLOAT(xiiAngle::AngleBetween(xiiAngle::MakeFromDegree((float)i), xiiAngle::MakeFromDegree((float)(i + i))).GetDegree(), (float)-i, 0.0001f);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "AngleBetween (Double)")
   {
-    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::Degree(0), xiiAngled::Degree(0)).GetDegree(), 0.0, 0.0001);
-    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::Degree(0), xiiAngled::Degree(360)).GetDegree(), 0.0, 0.0001);
-    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::Degree(360), xiiAngled::Degree(360)).GetDegree(), 0.0, 0.0001);
-    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::Degree(360), xiiAngled::Degree(0)).GetDegree(), 0.0, 0.0001);
+    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::MakeFromDegree(0), xiiAngled::MakeFromDegree(0)).GetDegree(), 0.0, 0.0001);
+    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::MakeFromDegree(0), xiiAngled::MakeFromDegree(360)).GetDegree(), 0.0, 0.0001);
+    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::MakeFromDegree(360), xiiAngled::MakeFromDegree(360)).GetDegree(), 0.0, 0.0001);
+    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::MakeFromDegree(360), xiiAngled::MakeFromDegree(0)).GetDegree(), 0.0, 0.0001);
 
-    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::Degree(5), xiiAngled::Degree(186)).GetDegree(), 179.0, 0.0001);
-    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::Degree(-5), xiiAngled::Degree(-186)).GetDegree(), 179.0, 0.0001);
+    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::MakeFromDegree(5), xiiAngled::MakeFromDegree(186)).GetDegree(), 179.0, 0.0001);
+    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::MakeFromDegree(-5), xiiAngled::MakeFromDegree(-186)).GetDegree(), 179.0, 0.0001);
 
-    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::Degree(360.0 + 5), xiiAngled::Degree(360.0 + 186)).GetDegree(), 179.0f, 0.0001);
-    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::Degree(360.0 + -5), xiiAngled::Degree(360.0 - 186)).GetDegree(), 179.0f, 0.0001);
+    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::MakeFromDegree(360.0 + 5), xiiAngled::MakeFromDegree(360.0 + 186)).GetDegree(), 179.0f, 0.0001);
+    XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::MakeFromDegree(360.0 + -5), xiiAngled::MakeFromDegree(360.0 - 186)).GetDegree(), 179.0f, 0.0001);
 
     for (xiiInt32 i = 0; i <= 179; ++i)
-      XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::Degree((double)i), xiiAngled::Degree((double)(i + i))).GetDegree(), (double)i, 0.0001);
+      XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree((double)(i + i))).GetDegree(), (double)i, 0.0001);
 
     for (xiiInt32 i = -179; i <= 0; ++i)
-      XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::Degree((double)i), xiiAngled::Degree((double)(i + i))).GetDegree(), (double)-i, 0.0001);
+      XII_TEST_DOUBLE(xiiAngled::AngleBetween(xiiAngled::MakeFromDegree((double)i), xiiAngled::MakeFromDegree((double)(i + i))).GetDegree(), (double)-i, 0.0001);
   }
 }

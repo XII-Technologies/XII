@@ -38,7 +38,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec4)
     xiiVec4T vCopy(vInit4F);
     XII_TEST_BOOL(vCopy.x == 1.0f && vCopy.y == 2.0f && vCopy.z == 3.0f && vCopy.w == 4.0f);
 
-    xiiVec4T vZero = xiiVec4T::ZeroVector();
+    xiiVec4T vZero = xiiVec4T::MakeZero();
     XII_TEST_BOOL(vZero.x == 0.0f && vZero.y == 0.0f && vZero.z == 0.0f && vZero.w == 0.0f);
   }
 
@@ -110,14 +110,14 @@ XII_CREATE_SIMPLE_TEST(Math, Vec4)
     XII_TEST_VEC4(vNormCond, vNorm, xiiMath::DefaultEpsilon<xiiVec4T::ComponentType>());
 
     // IsZero
-    XII_TEST_BOOL(xiiVec4T::ZeroVector().IsZero());
+    XII_TEST_BOOL(xiiVec4T::MakeZero().IsZero());
     for (int i = 0; i < 4; ++i)
     {
       XII_TEST_BOOL(!compArray[i].IsZero());
     }
 
     // IsZero(float)
-    XII_TEST_BOOL(xiiVec4T::ZeroVector().IsZero(0.0f));
+    XII_TEST_BOOL(xiiVec4T::MakeZero().IsZero(0.0f));
     for (int i = 0; i < 4; ++i)
     {
       XII_TEST_BOOL(!compArray[i].IsZero(0.0f));
@@ -202,7 +202,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec4)
     vMulFloat *= 2.0f;
     XII_TEST_BOOL(vMulFloat.IsEqual(xiiVec4T(-8.0f, 0.4f, -14.0f, -0.0f), xiiMath::SmallEpsilon<xiiMathTestType>()));
     vMulFloat *= 0.0f;
-    XII_TEST_BOOL(vMulFloat.IsEqual(xiiVec4T::ZeroVector(), xiiMath::SmallEpsilon<xiiMathTestType>()));
+    XII_TEST_BOOL(vMulFloat.IsEqual(xiiVec4T::MakeZero(), xiiMath::SmallEpsilon<xiiMathTestType>()));
 
     // operator/= (float)
     xiiVec4T vDivFloat = vOp1;
@@ -221,13 +221,13 @@ XII_CREATE_SIMPLE_TEST(Math, Vec4)
     xiiVec4T vMulFloatVec4 = ((xiiMathTestType)2 * vOp1);
     XII_TEST_BOOL(vMulFloatVec4.IsEqual(xiiVec4T(-8.0f, 0.4f, -14.0f, -0.0f), xiiMath::SmallEpsilon<xiiMathTestType>()));
     vMulFloatVec4 = ((xiiMathTestType)0 * vOp1);
-    XII_TEST_BOOL(vMulFloatVec4.IsEqual(xiiVec4T::ZeroVector(), xiiMath::SmallEpsilon<xiiMathTestType>()));
+    XII_TEST_BOOL(vMulFloatVec4.IsEqual(xiiVec4T::MakeZero(), xiiMath::SmallEpsilon<xiiMathTestType>()));
 
     // operator* (xiiVec4T, float)
     xiiVec4T vMulVec4Float = (vOp1 * (xiiMathTestType)2);
     XII_TEST_BOOL(vMulVec4Float.IsEqual(xiiVec4T(-8.0f, 0.4f, -14.0f, -0.0f), xiiMath::SmallEpsilon<xiiMathTestType>()));
     vMulVec4Float = (vOp1 * (xiiMathTestType)0);
-    XII_TEST_BOOL(vMulVec4Float.IsEqual(xiiVec4T::ZeroVector(), xiiMath::SmallEpsilon<xiiMathTestType>()));
+    XII_TEST_BOOL(vMulVec4Float.IsEqual(xiiVec4T::MakeZero(), xiiMath::SmallEpsilon<xiiMathTestType>()));
 
     // operator/ (xiiVec4T, float)
     xiiVec4T vDivVec4Float = (vOp1 / (xiiMathTestType)2);

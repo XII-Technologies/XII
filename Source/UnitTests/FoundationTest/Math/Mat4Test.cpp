@@ -39,7 +39,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
     const xiiMathTestType data[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 
     {
-      xiiMat4T m(data, xiiMatrixLayout::ColumnMajor);
+      xiiMat4T m = xiiMat4T::MakeFromColumnMajorArray(data);
 
       XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 2.0f && m.m_fElementsCM[2] == 3.0f && m.m_fElementsCM[3] == 4.0f &&
                     m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 6.0f && m.m_fElementsCM[6] == 7.0f && m.m_fElementsCM[7] == 8.0f &&
@@ -48,7 +48,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
     }
 
     {
-      xiiMat4T m(data, xiiMatrixLayout::RowMajor);
+      xiiMat4T m = xiiMat4T::MakeFromRowMajorArray(data);
 
       XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 5.0f && m.m_fElementsCM[2] == 9.0f && m.m_fElementsCM[3] == 13.0f &&
                     m.m_fElementsCM[4] == 2.0f && m.m_fElementsCM[5] == 6.0f && m.m_fElementsCM[6] == 10.0f && m.m_fElementsCM[7] == 14.0f &&
@@ -59,7 +59,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor (Elements)")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     XII_TEST_FLOAT(m.Element(0, 0), 1, 0.00001f);
     XII_TEST_FLOAT(m.Element(1, 0), 2, 0.00001f);
@@ -81,7 +81,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor (composite)")
   {
-    xiiMat3T mr(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T mr = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
     xiiVec3T vt(10, 11, 12);
 
     xiiMat4T m(mr, vt);
@@ -109,8 +109,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
     const xiiMathTestType data[16] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16};
 
     {
-      xiiMat4T m;
-      m.SetFromArray(data, xiiMatrixLayout::ColumnMajor);
+      xiiMat4T m = xiiMat4T::MakeFromColumnMajorArray(data);
 
       XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 2.0f && m.m_fElementsCM[2] == 3.0f && m.m_fElementsCM[3] == 4.0f &&
                     m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 6.0f && m.m_fElementsCM[6] == 7.0f && m.m_fElementsCM[7] == 8.0f &&
@@ -119,8 +118,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
     }
 
     {
-      xiiMat4T m;
-      m.SetFromArray(data, xiiMatrixLayout::RowMajor);
+      xiiMat4T m = xiiMat4T::MakeFromRowMajorArray(data);
 
       XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 5.0f && m.m_fElementsCM[2] == 9.0f && m.m_fElementsCM[3] == 13.0f &&
                     m.m_fElementsCM[4] == 2.0f && m.m_fElementsCM[5] == 6.0f && m.m_fElementsCM[6] == 10.0f && m.m_fElementsCM[7] == 14.0f &&
@@ -131,8 +129,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetElements")
   {
-    xiiMat4T m;
-    m.SetElements(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     XII_TEST_FLOAT(m.Element(0, 0), 1, 0.00001f);
     XII_TEST_FLOAT(m.Element(1, 0), 2, 0.00001f);
@@ -152,13 +149,12 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
     XII_TEST_FLOAT(m.Element(3, 3), 16, 0.00001f);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetTransformationMatrix")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeTransformation")
   {
-    xiiMat3T mr(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T mr = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
     xiiVec3T vt(10, 11, 12);
 
-    xiiMat4T m;
-    m.SetTransformationMatrix(mr, vt);
+    xiiMat4T m = xiiMat4T::MakeTransformation(mr, vt);
 
     XII_TEST_FLOAT(m.Element(0, 0), 1, 0);
     XII_TEST_FLOAT(m.Element(1, 0), 2, 0);
@@ -180,7 +176,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetAsArray")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiMathTestType data[16];
 
@@ -255,8 +251,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetTranslationMatrix")
   {
-    xiiMat4T m;
-    m.SetTranslationMatrix(xiiVec3T(2, 3, 4));
+    xiiMat4T m = xiiMat4::MakeTranslation(xiiVec3T(2, 3, 4));
 
     XII_TEST_FLOAT(m.Element(0, 0), 1, 0);
     XII_TEST_FLOAT(m.Element(1, 0), 0, 0);
@@ -278,8 +273,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetScalingMatrix")
   {
-    xiiMat4T m;
-    m.SetScalingMatrix(xiiVec3T(2, 3, 4));
+    xiiMat4T m = xiiMat4::MakeScaling(xiiVec3T(2, 3, 4));
 
     XII_TEST_FLOAT(m.Element(0, 0), 2, 0);
     XII_TEST_FLOAT(m.Element(1, 0), 0, 0);
@@ -303,16 +297,16 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
   {
     xiiMat4T m;
 
-    m.SetRotationMatrixX(xiiAngle::Degree(90));
+    m = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(90));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, -3, 2), 0.0001f));
 
-    m.SetRotationMatrixX(xiiAngle::Degree(180));
+    m = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(180));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, -2, -3), 0.0001f));
 
-    m.SetRotationMatrixX(xiiAngle::Degree(270));
+    m = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(270));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, 3, -2), 0.0001f));
 
-    m.SetRotationMatrixX(xiiAngle::Degree(360));
+    m = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(360));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, 2, 3), 0.0001f));
   }
 
@@ -320,16 +314,16 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
   {
     xiiMat4T m;
 
-    m.SetRotationMatrixY(xiiAngle::Degree(90));
+    m = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(90));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(3, 2, -1), 0.0001f));
 
-    m.SetRotationMatrixY(xiiAngle::Degree(180));
+    m = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(180));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-1, 2, -3), 0.0001f));
 
-    m.SetRotationMatrixY(xiiAngle::Degree(270));
+    m = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(270));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-3, 2, 1), 0.0001f));
 
-    m.SetRotationMatrixY(xiiAngle::Degree(360));
+    m = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(360));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, 2, 3), 0.0001f));
   }
 
@@ -337,16 +331,16 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
   {
     xiiMat4T m;
 
-    m.SetRotationMatrixZ(xiiAngle::Degree(90));
+    m = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(90));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-2, 1, 3), 0.0001f));
 
-    m.SetRotationMatrixZ(xiiAngle::Degree(180));
+    m = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(180));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-1, -2, 3), 0.0001f));
 
-    m.SetRotationMatrixZ(xiiAngle::Degree(270));
+    m = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(270));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(2, -1, 3), 0.0001f));
 
-    m.SetRotationMatrixZ(xiiAngle::Degree(360));
+    m = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(360));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, 2, 3), 0.0001f));
   }
 
@@ -354,37 +348,37 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
   {
     xiiMat4T m;
 
-    m.SetRotationMatrix(xiiVec3T(1, 0, 0), xiiAngle::Degree(90));
+    m = xiiMat4::MakeAxisRotation(xiiVec3T(1, 0, 0), xiiAngle::MakeFromDegree(90));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, -3, 2), xiiMath::DefaultEpsilon<xiiMat3T::ComponentType>()));
 
-    m.SetRotationMatrix(xiiVec3T(1, 0, 0), xiiAngle::Degree(180));
+    m = xiiMat4::MakeAxisRotation(xiiVec3T(1, 0, 0), xiiAngle::MakeFromDegree(180));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, -2, -3), xiiMath::DefaultEpsilon<xiiMat3T::ComponentType>()));
 
-    m.SetRotationMatrix(xiiVec3T(1, 0, 0), xiiAngle::Degree(270));
+    m = xiiMat4::MakeAxisRotation(xiiVec3T(1, 0, 0), xiiAngle::MakeFromDegree(270));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, 3, -2), xiiMath::DefaultEpsilon<xiiMat3T::ComponentType>()));
 
-    m.SetRotationMatrix(xiiVec3T(0, 1, 0), xiiAngle::Degree(90));
+    m = xiiMat4::MakeAxisRotation(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(90));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(3, 2, -1), xiiMath::DefaultEpsilon<xiiMat3T::ComponentType>()));
 
-    m.SetRotationMatrix(xiiVec3T(0, 1, 0), xiiAngle::Degree(180));
+    m = xiiMat4::MakeAxisRotation(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(180));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-1, 2, -3), xiiMath::DefaultEpsilon<xiiMat3T::ComponentType>()));
 
-    m.SetRotationMatrix(xiiVec3T(0, 1, 0), xiiAngle::Degree(270));
+    m = xiiMat4::MakeAxisRotation(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(270));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-3, 2, 1), xiiMath::DefaultEpsilon<xiiMat3T::ComponentType>()));
 
-    m.SetRotationMatrix(xiiVec3T(0, 0, 1), xiiAngle::Degree(90));
+    m = xiiMat4::MakeAxisRotation(xiiVec3T(0, 0, 1), xiiAngle::MakeFromDegree(90));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-2, 1, 3), xiiMath::DefaultEpsilon<xiiMat3T::ComponentType>()));
 
-    m.SetRotationMatrix(xiiVec3T(0, 0, 1), xiiAngle::Degree(180));
+    m = xiiMat4::MakeAxisRotation(xiiVec3T(0, 0, 1), xiiAngle::MakeFromDegree(180));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-1, -2, 3), xiiMath::DefaultEpsilon<xiiMat3T::ComponentType>()));
 
-    m.SetRotationMatrix(xiiVec3T(0, 0, 1), xiiAngle::Degree(270));
+    m = xiiMat4::MakeAxisRotation(xiiVec3T(0, 0, 1), xiiAngle::MakeFromDegree(270));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(2, -1, 3), xiiMath::DefaultEpsilon<xiiMat3T::ComponentType>()));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "IdentityMatrix")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeIdentity")
   {
-    xiiMat4T m = xiiMat4T::IdentityMatrix();
+    xiiMat4T m = xiiMat4T::MakeIdentity();
 
     XII_TEST_FLOAT(m.Element(0, 0), 1, 0);
     XII_TEST_FLOAT(m.Element(1, 0), 0, 0);
@@ -404,9 +398,9 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
     XII_TEST_FLOAT(m.Element(3, 3), 1, 0);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ZeroMatrix")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeZero")
   {
-    xiiMat4T m = xiiMat4T::ZeroMatrix();
+    xiiMat4T m = xiiMat4T::MakeZero();
 
     XII_TEST_FLOAT(m.Element(0, 0), 0, 0);
     XII_TEST_FLOAT(m.Element(1, 0), 0, 0);
@@ -428,7 +422,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Transpose")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     m.Transpose();
 
@@ -452,7 +446,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetTranspose")
   {
-    xiiMat4T m0(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m0 = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiMat4T m = m0.GetTranspose();
 
@@ -483,7 +477,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
         for (float z = 3.0f; z < 360.0f; z += 23.0f)
         {
           xiiMat4T m, inv;
-          m.SetRotationMatrix(xiiVec3T(x, y, z).GetNormalized(), xiiAngle::Degree(19.0f));
+          m   = xiiMat4::MakeAxisRotation(xiiVec3T(x, y, z).GetNormalized(), xiiAngle::MakeFromDegree(19.0f));
           inv = m;
           XII_TEST_BOOL(inv.Invert() == XII_SUCCESS);
 
@@ -505,7 +499,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
         for (float z = 3.0f; z < 360.0f; z += 21.0f)
         {
           xiiMat4T m, inv;
-          m.SetRotationMatrix(xiiVec3T(x, y, z).GetNormalized(), xiiAngle::Degree(83.0f));
+          m   = xiiMat4::MakeAxisRotation(xiiVec3T(x, y, z).GetNormalized(), xiiAngle::MakeFromDegree(83.0f));
           inv = m.GetInverse();
 
           xiiVec3T v    = m * xiiVec3T(1, 1, 1);
@@ -555,7 +549,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetRow")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     XII_TEST_VEC4(m.GetRow(0), xiiVec4T(1, 2, 3, 4), 0.0f);
     XII_TEST_VEC4(m.GetRow(1), xiiVec4T(5, 6, 7, 8), 0.0f);
@@ -583,7 +577,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetColumn")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     XII_TEST_VEC4(m.GetColumn(0), xiiVec4T(1, 5, 9, 13), 0.0f);
     XII_TEST_VEC4(m.GetColumn(1), xiiVec4T(2, 6, 10, 14), 0.0f);
@@ -611,7 +605,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetDiagonal")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     XII_TEST_VEC4(m.GetDiagonal(), xiiVec4T(1, 6, 11, 16), 0.0f);
   }
@@ -630,14 +624,14 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetTranslationVector")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     XII_TEST_VEC3(m.GetTranslationVector(), xiiVec3T(4, 8, 12), 0.0f);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetTranslationVector")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     m.SetTranslationVector(xiiVec3T(17, 18, 19));
     XII_TEST_VEC4(m.GetRow(0), xiiVec4T(1, 2, 3, 17), 0.0f);
@@ -648,9 +642,9 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetRotationalPart")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
-    xiiMat3T r(17, 18, 19, 20, 21, 22, 23, 24, 25);
+    xiiMat3T r = xiiMat3T::MakeFromValues(17, 18, 19, 20, 21, 22, 23, 24, 25);
 
     m.SetRotationalPart(r);
     XII_TEST_VEC4(m.GetRow(0), xiiVec4T(17, 18, 19, 4), 0.0f);
@@ -661,7 +655,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetRotationalPart")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiMat3T r = m.GetRotationalPart();
     XII_TEST_VEC3(r.GetRow(0), xiiVec3T(1, 2, 3), 0.0f);
@@ -671,7 +665,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetScalingFactors")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiVec3T s = m.GetScalingFactors();
     XII_TEST_VEC3(s, xiiVec3T(xiiMath::Sqrt((xiiMathTestType)(1 * 1 + 5 * 5 + 9 * 9)), xiiMath::Sqrt((xiiMathTestType)(2 * 2 + 6 * 6 + 10 * 10)), xiiMath::Sqrt((xiiMathTestType)(3 * 3 + 7 * 7 + 11 * 11))), 0.0001f);
@@ -679,7 +673,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetScalingFactors")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     XII_TEST_BOOL(m.SetScalingFactors(xiiVec3T(1, 2, 3)) == XII_SUCCESS);
 
@@ -689,7 +683,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "TransformDirection")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     const xiiVec3T r = m.TransformDirection(xiiVec3T(1, 2, 3));
 
@@ -698,7 +692,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "TransformDirection(array)")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiVec3T data[3] = {xiiVec3T(1, 2, 3), xiiVec3T(4, 5, 6), xiiVec3T(7, 8, 9)};
 
@@ -711,7 +705,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "TransformPosition")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     const xiiVec3T r = m.TransformPosition(xiiVec3T(1, 2, 3));
 
@@ -720,7 +714,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "TransformPosition(array)")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiVec3T data[3] = {xiiVec3T(1, 2, 3), xiiVec3T(4, 5, 6), xiiVec3T(7, 8, 9)};
 
@@ -733,16 +727,18 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Transform")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     const xiiVec4T r = m.Transform(xiiVec4T(1, 2, 3, 4));
 
-    XII_TEST_VEC4(r, xiiVec4T(1 * 1 + 2 * 2 + 3 * 3 + 4 * 4, 1 * 5 + 2 * 6 + 3 * 7 + 8 * 4, 1 * 9 + 2 * 10 + 3 * 11 + 12 * 4, 1 * 13 + 2 * 14 + 3 * 15 + 4 * 16), 0.0001f);
+    XII_TEST_VEC4(r,
+                  xiiVec4T(1 * 1 + 2 * 2 + 3 * 3 + 4 * 4, 1 * 5 + 2 * 6 + 3 * 7 + 8 * 4, 1 * 9 + 2 * 10 + 3 * 11 + 12 * 4, 1 * 13 + 2 * 14 + 3 * 15 + 4 * 16),
+                  0.0001f);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Transform(array)")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiVec4T data[3] = {xiiVec4T(1, 2, 3, 4), xiiVec4T(5, 6, 7, 8), xiiVec4T(9, 10, 11, 12)};
 
@@ -759,7 +755,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*=")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     m *= 2.0f;
 
@@ -771,7 +767,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator/=")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     m *= 4.0f;
     m /= 2.0f;
@@ -784,7 +780,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsIdentical")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiMat4T m2 = m;
 
@@ -796,7 +792,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsEqual")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiMat4T m2 = m;
 
@@ -809,9 +805,9 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*(mat, mat)")
   {
-    xiiMat4T m1(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m1 = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
-    xiiMat4T m2(-1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -16);
+    xiiMat4T m2 = xiiMat4T::MakeFromValues(-1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -16);
 
     xiiMat4T r = m1 * m2;
 
@@ -835,7 +831,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*(mat, vec3)")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     const xiiVec3T r = m * xiiVec3T(1, 2, 3);
 
@@ -844,16 +840,18 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*(mat, vec4)")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     const xiiVec4T r = m * xiiVec4T(1, 2, 3, 4);
 
-    XII_TEST_VEC4(r, xiiVec4T(1 * 1 + 2 * 2 + 3 * 3 + 4 * 4, 1 * 5 + 2 * 6 + 3 * 7 + 4 * 8, 1 * 9 + 2 * 10 + 3 * 11 + 4 * 12, 1 * 13 + 2 * 14 + 3 * 15 + 4 * 16), 0.0001f);
+    XII_TEST_VEC4(r,
+                  xiiVec4T(1 * 1 + 2 * 2 + 3 * 3 + 4 * 4, 1 * 5 + 2 * 6 + 3 * 7 + 4 * 8, 1 * 9 + 2 * 10 + 3 * 11 + 4 * 12, 1 * 13 + 2 * 14 + 3 * 15 + 4 * 16),
+                  0.0001f);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*(mat, float) | operator*(float, mat)")
   {
-    xiiMat4T m0(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m0 = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiMat4T m  = m0 * (xiiMathTestType)2;
     xiiMat4T m2 = (xiiMathTestType)2 * m0;
@@ -871,7 +869,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator/(mat, float)")
   {
-    xiiMat4T m0(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m0 = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     m0 *= (xiiMathTestType)4;
 
@@ -885,9 +883,9 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator+(mat, mat) | operator-(mat, mat)")
   {
-    xiiMat4T m0(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m0 = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
-    xiiMat4T m1(-1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -16);
+    xiiMat4T m1 = xiiMat4T::MakeFromValues(-1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15, -16);
 
     XII_TEST_BOOL((m0 + m1).IsZero());
     XII_TEST_BOOL((m0 - m1).IsEqual(m0 * (xiiMathTestType)2, 0.0001f));
@@ -895,7 +893,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat4)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator== (mat, mat) | operator!= (mat, mat)")
   {
-    xiiMat4T m(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    xiiMat4T m = xiiMat4T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
     xiiMat4T m2 = m;
 

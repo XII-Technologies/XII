@@ -15,7 +15,7 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
 
     {
       xiiQuat qRot;
-      qRot.SetFromAxisAndAngle(xiiVec3T(1, 2, 3).GetNormalized(), xiiAngle::Degree(42.0f));
+      qRot = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(1, 2, 3).GetNormalized(), xiiAngle::MakeFromDegree(42.0f));
 
       xiiTransformT t(xiiVec3T(4, 5, 6), qRot);
       XII_TEST_VEC3(t.m_vPosition, xiiVec3T(4, 5, 6), 0);
@@ -23,11 +23,10 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
     }
 
     {
-      xiiMat3 mRot;
-      mRot.SetRotationMatrix(xiiVec3T(1, 2, 3).GetNormalized(), xiiAngle::Degree(42.0f));
+      xiiMat3 mRot = xiiMat3::MakeAxisRotation(xiiVec3T(1, 2, 3).GetNormalized(), xiiAngle::MakeFromDegree(42.0f));
 
       xiiQuat q;
-      q.SetFromMat3(mRot);
+      q = xiiQuat::MakeFromMat3(mRot);
 
       xiiTransformT t(xiiVec3T(4, 5, 6), q);
       XII_TEST_VEC3(t.m_vPosition, xiiVec3T(4, 5, 6), 0);
@@ -40,18 +39,16 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
 
       xiiTransformT t(xiiVec3T(4, 5, 6), qRot, xiiVec3T(2, 3, 4));
       XII_TEST_VEC3(t.m_vPosition, xiiVec3T(4, 5, 6), 0);
-      XII_TEST_BOOL(t.m_qRotation.GetAsMat3().IsEqual(xiiMat3(1, 0, 0, 0, 1, 0, 0, 0, 1), 0.001f));
+      XII_TEST_BOOL(t.m_qRotation.GetAsMat3().IsEqual(xiiMat3::MakeFromValues(1, 0, 0, 0, 1, 0, 0, 0, 1), 0.001f));
       XII_TEST_VEC3(t.m_vScale, xiiVec3T(2, 3, 4), 0);
     }
 
     {
-      xiiMat3T mRot;
-      mRot.SetRotationMatrix(xiiVec3T(1, 2, 3).GetNormalized(), xiiAngle::Degree(42.0f));
+      xiiMat3T mRot = xiiMat3::MakeAxisRotation(xiiVec3T(1, 2, 3).GetNormalized(), xiiAngle::MakeFromDegree(42.0f));
       xiiMat4T mTrans;
       mTrans.SetTransformationMatrix(mRot, xiiVec3T(1, 2, 3));
 
-      xiiTransformT t;
-      t.SetFromMat4(mTrans);
+      xiiTransformT t = xiiTransform::MakeFromMat4(mTrans);
       XII_TEST_VEC3(t.m_vPosition, xiiVec3T(1, 2, 3), 0);
       XII_TEST_BOOL(t.m_qRotation.GetAsMat3().IsEqual(mRot, 0.001f));
     }
@@ -63,7 +60,7 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
     t.SetIdentity();
 
     XII_TEST_VEC3(t.m_vPosition, xiiVec3T(0), 0);
-    XII_TEST_BOOL(t.m_qRotation == xiiQuat::IdentityQuaternion());
+    XII_TEST_BOOL(t.m_qRotation == xiiQuat::MakeIdentity());
     XII_TEST_BOOL(t.m_vScale == xiiVec3T(1.0f));
   }
 
@@ -73,7 +70,7 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
     qRot.SetIdentity();
 
     xiiTransformT t(xiiVec3T(4, 5, 6), qRot, xiiVec3T(2, 3, 4));
-    XII_TEST_BOOL(t.GetAsMat4() == xiiMat4(2, 0, 0, 4, 0, 3, 0, 5, 0, 0, 4, 6, 0, 0, 0, 1));
+    XII_TEST_BOOL(t.GetAsMat4() == xiiMat4T::MakeFromValues(2, 0, 0, 4, 0, 3, 0, 5, 0, 0, 4, 6, 0, 0, 0, 1));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator + / -")
@@ -92,8 +89,8 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator * (quat)")
   {
     xiiQuat qRotX, qRotY;
-    qRotX.SetFromAxisAndAngle(xiiVec3T(1, 0, 0), xiiAngle::Radian(1.57079637f));
-    qRotY.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Radian(1.57079637f));
+    qRotX = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(1, 0, 0), xiiAngle::MakeFromRadian(1.57079637f));
+    qRotY = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromRadian(1.57079637f));
 
     xiiTransformT t0, t1;
     t0.SetIdentity();
@@ -103,20 +100,20 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
     XII_TEST_VEC3(t1.m_vPosition, xiiVec3T(0, 0, 0), 0.0001f);
 
     xiiQuat q;
-    q.SetFromMat3(xiiMat3(1, 0, 0, 0, 0, -1, 0, 1, 0));
+    q = xiiQuat::MakeFromMat3(xiiMat3::MakeFromValues(1, 0, 0, 0, 0, -1, 0, 1, 0));
     XII_TEST_BOOL(t1.m_qRotation.IsEqualRotation(q, 0.0001f));
 
     t1 = qRotY * t1;
     XII_TEST_VEC3(t1.m_vPosition, xiiVec3T(0, 0, 0), 0.0001f);
-    q.SetFromMat3(xiiMat3(0, 1, 0, 0, 0, -1, -1, 0, 0));
+    q = xiiQuat::MakeFromMat3(xiiMat3::MakeFromValues(0, 1, 0, 0, 0, -1, -1, 0, 0));
     XII_TEST_BOOL(t1.m_qRotation.IsEqualRotation(q, 0.0001f));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator * (vec3)")
   {
     xiiQuat qRotX, qRotY;
-    qRotX.SetFromAxisAndAngle(xiiVec3T(1, 0, 0), xiiAngle::Radian(1.57079637f));
-    qRotY.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Radian(1.57079637f));
+    qRotX = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(1, 0, 0), xiiAngle::MakeFromRadian(1.57079637f));
+    qRotY = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromRadian(1.57079637f));
 
     xiiTransformT t;
     t.SetIdentity();
@@ -140,7 +137,7 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
     XII_TEST_VEC3(t.m_vScale, xiiVec3T(1, 1, 1), 0.0001f);
 
     xiiQuat q;
-    q.SetFromMat3(xiiMat3(0, 1, 0, 0, 0, -1, -1, 0, 0));
+    q = xiiQuat::MakeFromMat3(xiiMat3::MakeFromValues(0, 1, 0, 0, 0, -1, -1, 0, 0));
     XII_TEST_BOOL(t.m_qRotation.IsEqualRotation(q, 0.0001f));
 
     xiiVec3T v;
@@ -152,17 +149,17 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsIdentical")
   {
     xiiTransformT t(xiiVec3T(1, 2, 3));
-    t.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Degree(90));
+    t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(90));
 
     XII_TEST_BOOL(t.IsIdentical(t));
 
     xiiTransformT t2(xiiVec3T(1, 2, 4));
-    t2.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Degree(90));
+    t2.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(90));
 
     XII_TEST_BOOL(!t.IsIdentical(t2));
 
     xiiTransformT t3(xiiVec3T(1, 2, 3));
-    t3.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Degree(91));
+    t3.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(91));
 
     XII_TEST_BOOL(!t.IsIdentical(t3));
   }
@@ -170,17 +167,17 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator == / !=")
   {
     xiiTransformT t(xiiVec3T(1, 2, 3));
-    t.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Degree(90));
+    t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(90));
 
     XII_TEST_BOOL(t == t);
 
     xiiTransformT t2(xiiVec3T(1, 2, 4));
-    t2.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Degree(90));
+    t2.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(90));
 
     XII_TEST_BOOL(t != t2);
 
     xiiTransformT t3(xiiVec3T(1, 2, 3));
-    t3.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Degree(91));
+    t3.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(91));
 
     XII_TEST_BOOL(t != t3);
   }
@@ -188,18 +185,18 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsEqual")
   {
     xiiTransformT t(xiiVec3T(1, 2, 3));
-    t.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Degree(90));
+    t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(90));
 
     XII_TEST_BOOL(t.IsEqual(t, 0.0001f));
 
     xiiTransformT t2(xiiVec3T(1, 2, 3.0002f));
-    t2.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Degree(90));
+    t2.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(90));
 
     XII_TEST_BOOL(t.IsEqual(t2, 0.001f));
     XII_TEST_BOOL(!t.IsEqual(t2, 0.0001f));
 
     xiiTransformT t3(xiiVec3T(1, 2, 3));
-    t3.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Degree(90.01f));
+    t3.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(90.01f));
 
     XII_TEST_BOOL(t.IsEqual(t3, 0.01f));
     XII_TEST_BOOL(!t.IsEqual(t3, 0.0001f));
@@ -208,11 +205,11 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*(xiiTransformT, xiiTransformT)")
   {
     xiiTransformT tParent(xiiVec3T(1, 2, 3));
-    tParent.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Radian(1.57079637f));
+    tParent.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromRadian(1.57079637f));
     tParent.m_vScale.Set(2);
 
     xiiTransformT tToChild(xiiVec3T(4, 5, 6));
-    tToChild.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 0, 1), xiiAngle::Radian(1.57079637f));
+    tToChild.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 0, 1), xiiAngle::MakeFromRadian(1.57079637f));
     tToChild.m_vScale.Set(4);
 
     // this is exactly the same as SetGlobalTransform
@@ -220,7 +217,7 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
     tChild = tParent * tToChild;
 
     XII_TEST_VEC3(tChild.m_vPosition, xiiVec3T(13, 12, -5), 0.003f);
-    XII_TEST_BOOL(tChild.m_qRotation.GetAsMat3().IsEqual(xiiMat3(0, 0, 1, 1, 0, 0, 0, 1, 0), 0.0001f));
+    XII_TEST_BOOL(tChild.m_qRotation.GetAsMat3().IsEqual(xiiMat3::MakeFromValues(0, 0, 1, 1, 0, 0, 0, 1, 0), 0.0001f));
     XII_TEST_VEC3(tChild.m_vScale, xiiVec3T(8, 8, 8), 0.0001f);
 
     // verify that it works exactly like a 4x4 matrix
@@ -234,11 +231,11 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*(xiiTransformT, xiiMat4)")
   {
     xiiTransformT tParent(xiiVec3T(1, 2, 3));
-    tParent.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Degree(90));
+    tParent.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(90));
     tParent.m_vScale.Set(2);
 
     xiiTransformT tToChild(xiiVec3T(4, 5, 6));
-    tToChild.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 0, 1), xiiAngle::Degree(90));
+    tToChild.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 0, 1), xiiAngle::MakeFromDegree(90));
     tToChild.m_vScale.Set(4);
 
     // this is exactly the same as SetGlobalTransform
@@ -246,7 +243,7 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
     tChild = tParent * tToChild;
 
     XII_TEST_VEC3(tChild.m_vPosition, xiiVec3T(13, 12, -5), 0.0001f);
-    XII_TEST_BOOL(tChild.m_qRotation.GetAsMat3().IsEqual(xiiMat3(0, 0, 1, 1, 0, 0, 0, 1, 0), 0.0001f));
+    XII_TEST_BOOL(tChild.m_qRotation.GetAsMat3().IsEqual(xiiMat3::MakeFromValues(0, 0, 1, 1, 0, 0, 0, 1, 0), 0.0001f));
     XII_TEST_VEC3(tChild.m_vScale, xiiVec3T(8, 8, 8), 0.0001f);
 
     // verify that it works exactly like a 4x4 matrix
@@ -260,11 +257,11 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*(xiiMat4, xiiTransformT)")
   {
     xiiTransformT tParent(xiiVec3T(1, 2, 3));
-    tParent.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Degree(90));
+    tParent.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(90));
     tParent.m_vScale.Set(2);
 
     xiiTransformT tToChild(xiiVec3T(4, 5, 6));
-    tToChild.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 0, 1), xiiAngle::Degree(90));
+    tToChild.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 0, 1), xiiAngle::MakeFromDegree(90));
     tToChild.m_vScale.Set(4);
 
     // this is exactly the same as SetGlobalTransform
@@ -272,7 +269,7 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
     tChild = tParent * tToChild;
 
     XII_TEST_VEC3(tChild.m_vPosition, xiiVec3T(13, 12, -5), 0.0001f);
-    XII_TEST_BOOL(tChild.m_qRotation.GetAsMat3().IsEqual(xiiMat3(0, 0, 1, 1, 0, 0, 0, 1, 0), 0.0001f));
+    XII_TEST_BOOL(tChild.m_qRotation.GetAsMat3().IsEqual(xiiMat3::MakeFromValues(0, 0, 1, 1, 0, 0, 0, 1, 0), 0.0001f));
     XII_TEST_VEC3(tChild.m_vScale, xiiVec3T(8, 8, 8), 0.0001f);
 
     // verify that it works exactly like a 4x4 matrix
@@ -286,15 +283,15 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Invert / GetInverse")
   {
     xiiTransformT tParent(xiiVec3T(1, 2, 3));
-    tParent.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::Degree(90));
+    tParent.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(90));
     tParent.m_vScale.Set(2);
 
     xiiTransformT tToChild(xiiVec3T(4, 5, 6));
-    tToChild.m_qRotation.SetFromAxisAndAngle(xiiVec3T(0, 0, 1), xiiAngle::Degree(90));
+    tToChild.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3T(0, 0, 1), xiiAngle::MakeFromDegree(90));
     tToChild.m_vScale.Set(4);
 
     xiiTransformT tChild;
-    tChild.SetGlobalTransform(tParent, tToChild);
+    tChild = xiiTransform::MakeGlobalTransform(tParent, tToChild);
 
     // negate twice -> get back original
     tToChild.Invert();
@@ -303,7 +300,7 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
     xiiTransformT tInvToChild = tToChild.GetInverse();
 
     xiiTransformT tParentFromChild;
-    tParentFromChild.SetGlobalTransform(tChild, tInvToChild);
+    tParentFromChild = xiiTransform::MakeGlobalTransform(tChild, tInvToChild);
 
     XII_TEST_BOOL(tParent.IsEqual(tParentFromChild, 0.0001f));
   }
@@ -318,14 +315,14 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
 
     {
       xiiQuat qRot;
-      qRot.SetFromAxisAndAngle(xiiVec3(1, 2, 3).GetNormalized(), xiiAngle::Degree(42.0f));
+      qRot = xiiQuat::MakeFromAxisAndAngle(xiiVec3(1, 2, 3).GetNormalized(), xiiAngle::MakeFromDegree(42.0f));
 
       xiiVec3 pos(4, 5, 6);
       xiiVec3 scale(7, 8, 9);
 
       xiiTransform t(pos);
       XII_TEST_BOOL((t.m_vPosition == pos));
-      XII_TEST_BOOL(t.m_qRotation == xiiQuat::IdentityQuaternion());
+      XII_TEST_BOOL(t.m_qRotation == xiiQuat::MakeIdentity());
       XII_TEST_BOOL((t.m_vScale == xiiVec3(1)));
 
       t = xiiTransform(pos, qRot);
@@ -338,7 +335,7 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
       XII_TEST_BOOL(t.m_qRotation == qRot);
       XII_TEST_BOOL((t.m_vScale == scale));
 
-      t = xiiTransform(xiiVec3::ZeroVector(), qRot);
+      t = xiiTransform(xiiVec3::MakeZero(), qRot);
       XII_TEST_BOOL(t.m_vPosition.IsZero());
       XII_TEST_BOOL(t.m_qRotation == qRot);
       XII_TEST_BOOL((t.m_vScale == xiiVec3(1)));
@@ -349,22 +346,22 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
       t.SetIdentity();
 
       XII_TEST_BOOL(t.m_vPosition.IsZero());
-      XII_TEST_BOOL(t.m_qRotation == xiiQuat::IdentityQuaternion());
+      XII_TEST_BOOL(t.m_qRotation == xiiQuat::MakeIdentity());
       XII_TEST_BOOL((t.m_vScale == xiiVec3(1)));
 
-      XII_TEST_BOOL(t == xiiTransform::IdentityTransform());
+      XII_TEST_BOOL(t == xiiTransform::MakeIdentity());
     }
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Inverse")
   {
     xiiTransform tParent(xiiVec3(1, 2, 3));
-    tParent.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
-    tParent.m_vScale = xiiVec3(2);
+    tParent.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90));
+    tParent.m_vScale    = xiiVec3(2);
 
     xiiTransform tToChild(xiiVec3(4, 5, 6));
-    tToChild.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
-    tToChild.m_vScale = xiiVec3(4);
+    tToChild.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(90));
+    tToChild.m_vScale    = xiiVec3(4);
 
     xiiTransform tChild;
     tChild = tParent * tToChild;
@@ -386,11 +383,11 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetLocalTransform")
   {
     xiiQuat q;
-    q.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
+    q = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(90));
 
     xiiTransform tParent(xiiVec3(1, 2, 3));
-    tParent.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
-    tParent.m_vScale = xiiVec3(2);
+    tParent.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90));
+    tParent.m_vScale    = xiiVec3(2);
 
     xiiTransform tChild;
     tChild.m_vPosition = xiiVec3(13, 12, -5);
@@ -398,7 +395,7 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
     tChild.m_vScale    = xiiVec3(8);
 
     xiiTransform tToChild;
-    tToChild.SetLocalTransform(tParent, tChild);
+    tToChild = xiiTransform::MakeLocalTransform(tParent, tChild);
 
     XII_TEST_BOOL(tToChild.m_vPosition.IsEqual(xiiVec3(4, 5, 6), 0.0001f));
     XII_TEST_BOOL(tToChild.m_qRotation.IsEqualRotation(q, 0.0001f));
@@ -408,15 +405,15 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetGlobalTransform")
   {
     xiiTransform tParent(xiiVec3(1, 2, 3));
-    tParent.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
-    tParent.m_vScale = xiiVec3(2);
+    tParent.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90));
+    tParent.m_vScale    = xiiVec3(2);
 
     xiiTransform tToChild(xiiVec3(4, 5, 6));
-    tToChild.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
-    tToChild.m_vScale = xiiVec3(4);
+    tToChild.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(90));
+    tToChild.m_vScale    = xiiVec3(4);
 
     xiiTransform tChild;
-    tChild.SetGlobalTransform(tParent, tToChild);
+    tChild = xiiTransform::MakeGlobalTransform(tParent, tToChild);
 
     XII_TEST_BOOL(tChild.m_vPosition.IsEqual(xiiVec3(13, 12, -5), 0.0001f));
     XII_TEST_BOOL(tChild.m_qRotation.IsEqualRotation(tParent.m_qRotation * tToChild.m_qRotation, 0.0001f));
@@ -426,8 +423,8 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetAsMat4")
   {
     xiiTransform t(xiiVec3(1, 2, 3));
-    t.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(34));
-    t.m_vScale = xiiVec3(2, -1, 5);
+    t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(34));
+    t.m_vScale    = xiiVec3(2, -1, 5);
 
     xiiMat4 m = t.GetAsMat4();
 
@@ -435,11 +432,11 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
     refM.SetZero();
     {
       xiiQuat q;
-      q.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(34));
+      q = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(34));
 
       xiiTransform referenceTransform(xiiVec3(1, 2, 3), q, xiiVec3(2, -1, 5));
       xiiMat4      tmp = referenceTransform.GetAsMat4();
-      refM.SetFromArray(tmp.m_fElementsCM, xiiMatrixLayout::ColumnMajor);
+      refM             = xiiMat4::MakeFromColumnMajorArray(tmp.m_fElementsCM);
     }
     XII_TEST_BOOL(m.IsEqual(refM, 0.00001f));
 
@@ -458,8 +455,8 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "TransformPos / Dir / operator*")
   {
     xiiQuat qRotX, qRotY;
-    qRotX.SetFromAxisAndAngle(xiiVec3(1, 0, 0), xiiAngle::Degree(90.0f));
-    qRotY.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90.0f));
+    qRotX = xiiQuat::MakeFromAxisAndAngle(xiiVec3(1, 0, 0), xiiAngle::MakeFromDegree(90.0f));
+    qRotY = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90.0f));
 
     xiiTransform t(xiiVec3(1, 2, 3), qRotY * qRotX, xiiVec3(2, -2, 4));
 
@@ -478,12 +475,12 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   {
     {
       xiiTransform tParent(xiiVec3(1, 2, 3));
-      tParent.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
-      tParent.m_vScale = xiiVec3(2);
+      tParent.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90));
+      tParent.m_vScale    = xiiVec3(2);
 
       xiiTransform tToChild(xiiVec3(4, 5, 6));
-      tToChild.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
-      tToChild.m_vScale = xiiVec3(4);
+      tToChild.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(90));
+      tToChild.m_vScale    = xiiVec3(4);
 
       // this is exactly the same as SetGlobalTransform
       xiiTransform tChild;
@@ -520,11 +517,11 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
 
     {
       xiiTransform t(xiiVec3(1, 2, 3));
-      t.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
-      t.m_vScale = xiiVec3(2);
+      t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90));
+      t.m_vScale    = xiiVec3(2);
 
       xiiQuat q;
-      q.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
+      q = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(90));
 
       xiiTransform t2 = t * q;
       xiiTransform t4 = q * t;
@@ -546,8 +543,8 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
 
     {
       xiiTransform t(xiiVec3(1, 2, 3));
-      t.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
-      t.m_vScale = xiiVec3(2);
+      t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90));
+      t.m_vScale    = xiiVec3(2);
 
       xiiVec3 p(4, 5, 6);
 
@@ -567,8 +564,8 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
 
     {
       xiiTransform t(xiiVec3(1, 2, 3));
-      t.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
-      t.m_vScale = xiiVec3(2);
+      t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90));
+      t.m_vScale    = xiiVec3(2);
 
       xiiVec3 p(4, 5, 6);
 
@@ -590,17 +587,17 @@ XII_CREATE_SIMPLE_TEST(Math, Transform)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Comparison")
   {
     xiiTransform t(xiiVec3(1, 2, 3));
-    t.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
+    t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90));
 
     XII_TEST_BOOL(t == t);
 
     xiiTransform t2(xiiVec3(1, 2, 4));
-    t2.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
+    t2.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(90));
 
     XII_TEST_BOOL(t != t2);
 
     xiiTransform t3(xiiVec3(1, 2, 3));
-    t3.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(91));
+    t3.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(91));
 
     XII_TEST_BOOL(t != t3);
   }

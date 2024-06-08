@@ -72,58 +72,109 @@ XII_CREATE_SIMPLE_TEST(Math, General)
   }
 #endif
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Sin")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Sin (float)")
   {
-    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::Degree(0.0f)), 0.0f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::Degree(90.0f)), 1.0f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::Degree(180.0f)), 0.0f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::Degree(270.0f)), -1.0f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::MakeFromDegree(0.0f)), 0.0f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::MakeFromDegree(90.0f)), 1.0f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::MakeFromDegree(180.0f)), 0.0f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::MakeFromDegree(270.0f)), -1.0f, 0.000001f);
 
-    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::Degree(45.0f)), 0.7071067f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::Degree(135.0f)), 0.7071067f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::Degree(225.0f)), -0.7071067f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::Degree(315.0f)), -0.7071067f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::MakeFromDegree(45.0f)), 0.7071067f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::MakeFromDegree(135.0f)), 0.7071067f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::MakeFromDegree(225.0f)), -0.7071067f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Sin(xiiAngle::MakeFromDegree(315.0f)), -0.7071067f, 0.000001f);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Cos")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Sin (double)")
   {
-    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::Degree(0.0f)), 1.0f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::Degree(90.0f)), 0.0f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::Degree(180.0f)), -1.0f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::Degree(270.0f)), 0.0f, 0.000001f);
+    XII_TEST_DOUBLE(xiiMath::Sin(xiiAngled::MakeFromDegree(0.0)), 0.0, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Sin(xiiAngled::MakeFromDegree(90.0)), 1.0, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Sin(xiiAngled::MakeFromDegree(180.0)), 0.0, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Sin(xiiAngled::MakeFromDegree(270.0)), -1.0, 0.000001);
 
-    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::Degree(45.0f)), 0.7071067f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::Degree(135.0f)), -0.7071067f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::Degree(225.0f)), -0.7071067f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::Degree(315.0f)), 0.7071067f, 0.000001f);
+    XII_TEST_DOUBLE(xiiMath::Sin(xiiAngled::MakeFromDegree(45.0)), 0.7071067, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Sin(xiiAngled::MakeFromDegree(135.0)), 0.7071067, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Sin(xiiAngled::MakeFromDegree(225.0)), -0.7071067, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Sin(xiiAngled::MakeFromDegree(315.0)), -0.7071067, 0.000001);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Tan")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Cos (float)")
   {
-    XII_TEST_FLOAT(xiiMath::Tan(xiiAngle::Degree(0.0f)), 0.0f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Tan(xiiAngle::Degree(45.0f)), 1.0f, 0.000001f);
-    XII_TEST_FLOAT(xiiMath::Tan(xiiAngle::Degree(-45.0f)), -1.0f, 0.000001f);
-    XII_TEST_BOOL(xiiMath::Tan(xiiAngle::Degree(90.00001f)) < 1000000.0f);
-    XII_TEST_BOOL(xiiMath::Tan(xiiAngle::Degree(89.9999f)) > 100000.0f);
+    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::MakeFromDegree(0.0f)), 1.0f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::MakeFromDegree(90.0f)), 0.0f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::MakeFromDegree(180.0f)), -1.0f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::MakeFromDegree(270.0f)), 0.0f, 0.000001f);
+
+    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::MakeFromDegree(45.0f)), 0.7071067f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::MakeFromDegree(135.0f)), -0.7071067f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::MakeFromDegree(225.0f)), -0.7071067f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Cos(xiiAngle::MakeFromDegree(315.0f)), 0.7071067f, 0.000001f);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Cos (double")
+  {
+    XII_TEST_DOUBLE(xiiMath::Cos(xiiAngled::MakeFromDegree(0.0)), 1.0, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Cos(xiiAngled::MakeFromDegree(90.0)), 0.0, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Cos(xiiAngled::MakeFromDegree(180.0)), -1.0, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Cos(xiiAngled::MakeFromDegree(270.0)), 0.0, 0.000001);
+
+    XII_TEST_DOUBLE(xiiMath::Cos(xiiAngled::MakeFromDegree(45.0)), 0.7071067, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Cos(xiiAngled::MakeFromDegree(135.0)), -0.7071067, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Cos(xiiAngled::MakeFromDegree(225.0)), -0.7071067, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Cos(xiiAngled::MakeFromDegree(315.0)), 0.7071067, 0.000001);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Tan (float)")
+  {
+    XII_TEST_FLOAT(xiiMath::Tan(xiiAngle::MakeFromDegree(0.0f)), 0.0f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Tan(xiiAngle::MakeFromDegree(45.0f)), 1.0f, 0.000001f);
+    XII_TEST_FLOAT(xiiMath::Tan(xiiAngle::MakeFromDegree(-45.0f)), -1.0f, 0.000001f);
+    XII_TEST_BOOL(xiiMath::Tan(xiiAngle::MakeFromDegree(90.00001f)) < 1000000.0f);
+    XII_TEST_BOOL(xiiMath::Tan(xiiAngle::MakeFromDegree(89.9999f)) > 100000.0f);
 
     // Testing the period of tan(x) centered at 0 and the adjacent ones
-    xiiAngle angle = xiiAngle::Degree(-89.0f);
+    xiiAngle angle = xiiAngle::MakeFromDegree(-89.0f);
     while (angle.GetDegree() < 89.0f)
     {
       float fTan     = xiiMath::Tan(angle);
-      float fTanPrev = xiiMath::Tan(xiiAngle::Degree(angle.GetDegree() - 180.0f));
-      float fTanNext = xiiMath::Tan(xiiAngle::Degree(angle.GetDegree() + 180.0f));
+      float fTanPrev = xiiMath::Tan(xiiAngle::MakeFromDegree(angle.GetDegree() - 180.0f));
+      float fTanNext = xiiMath::Tan(xiiAngle::MakeFromDegree(angle.GetDegree() + 180.0f));
       float fSin     = xiiMath::Sin(angle);
       float fCos     = xiiMath::Cos(angle);
 
       XII_TEST_FLOAT(fTan - fTanPrev, 0.0f, 0.002f);
       XII_TEST_FLOAT(fTan - fTanNext, 0.0f, 0.002f);
       XII_TEST_FLOAT(fTan - (fSin / fCos), 0.0f, 0.0005f);
-      angle += xiiAngle::Degree(1.234f);
+      angle += xiiAngle::MakeFromDegree(1.234f);
     }
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ASin")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Tan (double)")
+  {
+    XII_TEST_DOUBLE(xiiMath::Tan(xiiAngled::MakeFromDegree(0.0)), 0.0, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Tan(xiiAngled::MakeFromDegree(45.0)), 1.0, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Tan(xiiAngled::MakeFromDegree(-45.0)), -1.0, 0.000001);
+    XII_TEST_BOOL(xiiMath::Tan(xiiAngled::MakeFromDegree(90.00001)) < 1000000.0);
+    XII_TEST_BOOL(xiiMath::Tan(xiiAngled::MakeFromDegree(89.9999)) > 100000.0);
+
+    // Testing the period of tan(x) centered at 0 and the adjacent ones
+    xiiAngled angle = xiiAngled::MakeFromDegree(-89.0);
+    while (angle.GetDegree() < 89.0)
+    {
+      double fTan     = xiiMath::Tan(angle);
+      double fTanPrev = xiiMath::Tan(xiiAngled::MakeFromDegree(angle.GetDegree() - 180.0));
+      double fTanNext = xiiMath::Tan(xiiAngled::MakeFromDegree(angle.GetDegree() + 180.0));
+      double fSin     = xiiMath::Sin(angle);
+      double fCos     = xiiMath::Cos(angle);
+
+      XII_TEST_DOUBLE(fTan - fTanPrev, 0.0, 0.002);
+      XII_TEST_DOUBLE(fTan - fTanNext, 0.0, 0.002);
+      XII_TEST_DOUBLE(fTan - (fSin / fCos), 0.0, 0.0005);
+      angle += xiiAngled::MakeFromDegree(1.234);
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ASin (float)")
   {
     XII_TEST_FLOAT(xiiMath::ASin(0.0f).GetDegree(), 0.0f, 0.00001f);
     XII_TEST_FLOAT(xiiMath::ASin(1.0f).GetDegree(), 90.0f, 0.00001f);
@@ -133,7 +184,17 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(xiiMath::ASin(-0.7071067f).GetDegree(), -45.0f, 0.0001f);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ACos")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ASin (double)")
+  {
+    XII_TEST_DOUBLE(xiiMath::ASin(0.0).GetDegree(), 0.0, 0.00001);
+    XII_TEST_DOUBLE(xiiMath::ASin(1.0).GetDegree(), 90.0, 0.00001);
+    XII_TEST_DOUBLE(xiiMath::ASin(-1.0).GetDegree(), -90.0, 0.00001);
+
+    XII_TEST_DOUBLE(xiiMath::ASin(0.7071067).GetDegree(), 45.0, 0.0001);
+    XII_TEST_DOUBLE(xiiMath::ASin(-0.7071067).GetDegree(), -45.0, 0.0001);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ACos (float)")
   {
     XII_TEST_FLOAT(xiiMath::ACos(0.0f).GetDegree(), 90.0f, 0.00001f);
     XII_TEST_FLOAT(xiiMath::ACos(1.0f).GetDegree(), 0.0f, 0.00001f);
@@ -143,7 +204,17 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(xiiMath::ACos(-0.7071067f).GetDegree(), 135.0f, 0.0001f);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ATan")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ACos (double)")
+  {
+    XII_TEST_DOUBLE(xiiMath::ACos(0.0).GetDegree(), 90.0, 0.00001);
+    XII_TEST_DOUBLE(xiiMath::ACos(1.0).GetDegree(), 0.0, 0.00001);
+    XII_TEST_DOUBLE(xiiMath::ACos(-1.0).GetDegree(), 180.0, 0.0001);
+
+    XII_TEST_DOUBLE(xiiMath::ACos(0.7071067).GetDegree(), 45.0, 0.0001);
+    XII_TEST_DOUBLE(xiiMath::ACos(-0.7071067).GetDegree(), 135.0, 0.0001);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ATan (float)")
   {
     XII_TEST_FLOAT(xiiMath::ATan(0.0f).GetDegree(), 0.0f, 0.0000001f);
     XII_TEST_FLOAT(xiiMath::ATan(1.0f).GetDegree(), 45.0f, 0.00001f);
@@ -152,7 +223,16 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(xiiMath::ATan(-10000000.0f).GetDegree(), -90.0f, 0.00002f);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ATan2")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ATan (double)")
+  {
+    XII_TEST_DOUBLE(xiiMath::ATan(0.0).GetDegree(), 0.0, 0.0000001);
+    XII_TEST_DOUBLE(xiiMath::ATan(1.0).GetDegree(), 45.0, 0.00001);
+    XII_TEST_DOUBLE(xiiMath::ATan(-1.0).GetDegree(), -45.0, 0.00001);
+    XII_TEST_DOUBLE(xiiMath::ATan(10000000.0).GetDegree(), 90.0, 0.00002);
+    XII_TEST_DOUBLE(xiiMath::ATan(-10000000.0).GetDegree(), -90.0, 0.00002);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ATan2 (float)")
   {
     for (float fScale = 0.125f; fScale < 1000000.0f; fScale *= 2.0f)
     {
@@ -165,34 +245,56 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     }
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Exp")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ATan2 (double)")
+  {
+    for (double fScale = 0.125; fScale < 1000000.0; fScale *= 2.0)
+    {
+      XII_TEST_DOUBLE(xiiMath::ATan2(0.0, fScale).GetDegree(), 0.0, 0.0000001);
+      XII_TEST_DOUBLE(xiiMath::ATan2(fScale, fScale).GetDegree(), 45.0, 0.00001);
+      XII_TEST_DOUBLE(xiiMath::ATan2(fScale, 0.0).GetDegree(), 90.0, 0.00001);
+      XII_TEST_DOUBLE(xiiMath::ATan2(-fScale, fScale).GetDegree(), -45.0, 0.00001);
+      XII_TEST_DOUBLE(xiiMath::ATan2(-fScale, 0.0).GetDegree(), -90.0, 0.00001);
+      XII_TEST_DOUBLE(xiiMath::ATan2(0.0, -fScale).GetDegree(), 180.0, 0.0001);
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Exp (float)")
   {
     XII_TEST_FLOAT(1.0f, xiiMath::Exp(0.0f), 0.000001f);
     XII_TEST_FLOAT(2.7182818284f, xiiMath::Exp(1.0f), 0.000001f);
     XII_TEST_FLOAT(7.3890560989f, xiiMath::Exp(2.0f), 0.000001f);
+  }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Exp (double)")
+  {
     XII_TEST_DOUBLE(1.0, xiiMath::Exp(0.0), 0.000001);
     XII_TEST_DOUBLE(2.7182818284, xiiMath::Exp(1.0), 0.000001);
     XII_TEST_DOUBLE(7.3890560989, xiiMath::Exp(2.0), 0.000001);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Ln")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Ln (float)")
   {
     XII_TEST_FLOAT(0.0f, xiiMath::Ln(1.0f), 0.000001f);
     XII_TEST_FLOAT(1.0f, xiiMath::Ln(2.7182818284f), 0.000001f);
     XII_TEST_FLOAT(2.0f, xiiMath::Ln(7.3890560989f), 0.000001f);
+  }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Ln (double)")
+  {
     XII_TEST_DOUBLE(0.0, xiiMath::Ln(1.0), 0.000001);
     XII_TEST_DOUBLE(1.0, xiiMath::Ln(2.7182818284), 0.000001);
     XII_TEST_DOUBLE(2.0, xiiMath::Ln(7.3890560989), 0.000001);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log2")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log2 (float)")
   {
     XII_TEST_FLOAT(0.0f, xiiMath::Log2(1.0f), 0.000001f);
     XII_TEST_FLOAT(1.0f, xiiMath::Log2(2.0f), 0.000001f);
     XII_TEST_FLOAT(2.0f, xiiMath::Log2(4.0f), 0.000001f);
+  }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log2 (double)")
+  {
     XII_TEST_DOUBLE(0.0, xiiMath::Log2(1.0), 0.000001);
     XII_TEST_DOUBLE(1.0, xiiMath::Log2(2.0), 0.000001);
     XII_TEST_DOUBLE(2.0, xiiMath::Log2(4.0), 0.000001);
@@ -210,18 +312,21 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_BOOL(xiiMath::Log2i(8) == 3);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log10")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log10 (float)")
   {
     XII_TEST_FLOAT(0.0f, xiiMath::Log10(1.0f), 0.000001f);
     XII_TEST_FLOAT(1.0f, xiiMath::Log10(10.0f), 0.000001f);
     XII_TEST_FLOAT(2.0f, xiiMath::Log10(100.0f), 0.000001f);
+  }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log10 (double)")
+  {
     XII_TEST_DOUBLE(0.0, xiiMath::Log10(1.0), 0.000001);
     XII_TEST_DOUBLE(1.0, xiiMath::Log10(10.0), 0.000001);
     XII_TEST_DOUBLE(2.0, xiiMath::Log10(100.0), 0.000001);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log (float)")
   {
     XII_TEST_FLOAT(0.0f, xiiMath::Log(2.7182818284f, 1.0f), 0.000001f);
     XII_TEST_FLOAT(1.0f, xiiMath::Log(2.7182818284f, 2.7182818284f), 0.000001f);
@@ -234,7 +339,10 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(0.0f, xiiMath::Log(10.0f, 1.0f), 0.000001f);
     XII_TEST_FLOAT(1.0f, xiiMath::Log(10.0f, 10.0f), 0.000001f);
     XII_TEST_FLOAT(2.0f, xiiMath::Log(10.0f, 100.0f), 0.000001f);
+  }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Log (double)")
+  {
     XII_TEST_DOUBLE(0.0, xiiMath::Log(2.7182818284, 1.0), 0.000001);
     XII_TEST_DOUBLE(1.0, xiiMath::Log(2.7182818284, 2.7182818284), 0.000001);
     XII_TEST_DOUBLE(2.0, xiiMath::Log(2.7182818284, 7.3890560989), 0.000001);
@@ -248,12 +356,19 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_DOUBLE(2.0, xiiMath::Log(10.0, 100.0), 0.000001);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pow2")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pow2 (float)")
   {
     XII_TEST_FLOAT(1.0f, xiiMath::Pow2(0.0f), 0.000001f);
     XII_TEST_FLOAT(2.0f, xiiMath::Pow2(1.0f), 0.000001f);
     XII_TEST_FLOAT(4.0f, xiiMath::Pow2(2.0f), 0.000001f);
 
+    XII_TEST_BOOL(xiiMath::Pow2(0) == 1);
+    XII_TEST_BOOL(xiiMath::Pow2(1) == 2);
+    XII_TEST_BOOL(xiiMath::Pow2(2) == 4);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pow2 (double)")
+  {
     XII_TEST_DOUBLE(1.0, xiiMath::Pow2(0.0), 0.000001);
     XII_TEST_DOUBLE(2.0, xiiMath::Pow2(1.0), 0.000001);
     XII_TEST_DOUBLE(4.0, xiiMath::Pow2(2.0), 0.000001);
@@ -263,12 +378,19 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_BOOL(xiiMath::Pow2(2) == 4);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pow")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pow (float)")
   {
     XII_TEST_FLOAT(1.0f, xiiMath::Pow(3.0f, 0.0f), 0.000001f);
     XII_TEST_FLOAT(3.0f, xiiMath::Pow(3.0f, 1.0f), 0.000001f);
     XII_TEST_FLOAT(9.0f, xiiMath::Pow(3.0f, 2.0f), 0.000001f);
 
+    XII_TEST_BOOL(xiiMath::Pow(3, 0) == 1);
+    XII_TEST_BOOL(xiiMath::Pow(3, 1) == 3);
+    XII_TEST_BOOL(xiiMath::Pow(3, 2) == 9);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Pow (double)")
+  {
     XII_TEST_DOUBLE(1.0, xiiMath::Pow(3.0, 0.0), 0.000001);
     XII_TEST_DOUBLE(3.0, xiiMath::Pow(3.0, 1.0), 0.000001);
     XII_TEST_DOUBLE(9.0, xiiMath::Pow(3.0, 2.0), 0.000001);
@@ -278,13 +400,16 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_BOOL(xiiMath::Pow(3, 2) == 9);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Square")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Square (float)")
   {
     XII_TEST_FLOAT(0.0f, xiiMath::Square(0.0f), 0.000001f);
     XII_TEST_FLOAT(1.0f, xiiMath::Square(1.0f), 0.000001f);
     XII_TEST_FLOAT(4.0f, xiiMath::Square(2.0f), 0.000001f);
     XII_TEST_FLOAT(4.0f, xiiMath::Square(-2.0f), 0.000001f);
+  }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Square (double)")
+  {
     XII_TEST_DOUBLE(0.0, xiiMath::Square(0.0), 0.000001);
     XII_TEST_DOUBLE(1.0, xiiMath::Square(1.0), 0.000001);
     XII_TEST_DOUBLE(4.0, xiiMath::Square(2.0), 0.000001);
@@ -556,7 +681,7 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_BOOL((a == 2) && (b == 1));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Lerp")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Lerp (float)")
   {
     XII_TEST_FLOAT(xiiMath::Lerp(-5.0f, 5.0f, 0.5f), 0.0f, 0.000001);
     XII_TEST_FLOAT(xiiMath::Lerp(0.0f, 5.0f, 0.5f), 2.5f, 0.000001);
@@ -564,13 +689,43 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_FLOAT(xiiMath::Lerp(-5.0f, 5.0f, 1.0f), 5.0f, 0.000001);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Step")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Lerp (double)")
+  {
+    XII_TEST_DOUBLE(xiiMath::Lerp(-5.0, 5.0, 0.5f), 0.0, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Lerp(0.0, 5.0, 0.5f), 2.5, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Lerp(-5.0, 5.0, 0.0f), -5.0, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::Lerp(-5.0, 5.0, 1.0f), 5.0, 0.000001);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Unlerp (float)")
+  {
+    XII_TEST_FLOAT(xiiMath::Unlerp(-5.0f, 5.0f, 0.0f), 0.5f, 0.000001);
+    XII_TEST_FLOAT(xiiMath::Unlerp(0.0f, 5.0f, 2.5f), 0.5f, 0.000001);
+    XII_TEST_FLOAT(xiiMath::Unlerp(-5.0f, 5.0f, -5.0f), 0.0f, 0.000001);
+    XII_TEST_FLOAT(xiiMath::Unlerp(-5.0f, 5.0f, 5.0f), 1.0f, 0.000001);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Unlerp (double)")
+  {
+    XII_TEST_DOUBLE(xiiMath::UnlerpDouble(-5.0, 5.0, 0.0), 0.5, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::UnlerpDouble(0.0, 5.0, 2.5), 0.5, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::UnlerpDouble(-5.0, 5.0, -5.0), 0.0, 0.000001);
+    XII_TEST_DOUBLE(xiiMath::UnlerpDouble(-5.0, 5.0, 5.0), 1.0, 0.000001);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Step (float)")
   {
     XII_TEST_FLOAT(xiiMath::Step(0.5f, 0.4f), 1.0f, 0.00001f);
     XII_TEST_FLOAT(xiiMath::Step(0.3f, 0.4f), 0.0f, 0.00001f);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SmoothStep")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Step (double)")
+  {
+    XII_TEST_DOUBLE(xiiMath::Step(0.5, 0.4), 1.0, 0.00001);
+    XII_TEST_DOUBLE(xiiMath::Step(0.3, 0.4), 0.0, 0.00001);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SmoothStep (float)")
   {
     // Only test values that must be true for any symmetric step function.
     // How should one test smoothness?
@@ -598,6 +753,36 @@ XII_CREATE_SIMPLE_TEST(Math, General)
 
     XII_TEST_FLOAT(xiiMath::SmootherStep(0.2f, 0.0f, 1.0f), 0.05792f, 0.00001f);
     XII_TEST_FLOAT(xiiMath::SmootherStep(0.4f, 0.2f, 0.8f), 0.209876f, 0.00001f);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SmoothStep (double)")
+  {
+    // Only test values that must be true for any symmetric step function.
+    // How should one test smoothness?
+    for (int iScale = -19; iScale <= 19; iScale += 2)
+    {
+      XII_TEST_DOUBLE(xiiMath::SmoothStep(0.0 * iScale, 0.1 * iScale, 0.4 * iScale), 0.0, 0.000001);
+      XII_TEST_DOUBLE(xiiMath::SmoothStep(0.1 * iScale, 0.1 * iScale, 0.4 * iScale), 0.0, 0.000001);
+      XII_TEST_DOUBLE(xiiMath::SmoothStep(0.4 * iScale, 0.1 * iScale, 0.4 * iScale), 1.0, 0.000001);
+      XII_TEST_DOUBLE(xiiMath::SmoothStep(0.25 * iScale, 0.1 * iScale, 0.4 * iScale), 0.5, 0.000001);
+      XII_TEST_DOUBLE(xiiMath::SmoothStep(0.5 * iScale, 0.1 * iScale, 0.4 * iScale), 1.0, 0.000001);
+
+      XII_TEST_DOUBLE(xiiMath::SmoothStep(0.5 * iScale, 0.4 * iScale, 0.1 * iScale), 0.0, 0.000001);
+      XII_TEST_DOUBLE(xiiMath::SmoothStep(0.4 * iScale, 0.4 * iScale, 0.1 * iScale), 0.0, 0.000001);
+      XII_TEST_DOUBLE(xiiMath::SmoothStep(0.1 * iScale, 0.4 * iScale, 0.1 * iScale), 1.0, 0.000001);
+      XII_TEST_DOUBLE(xiiMath::SmoothStep(0.25 * iScale, 0.1 * iScale, 0.4 * iScale), 0.5, 0.000001);
+      XII_TEST_DOUBLE(xiiMath::SmoothStep(0.0 * iScale, 0.4 * iScale, 0.1 * iScale), 1.0, 0.000001);
+
+      // For edge1 == edge2 SmoothStep should behave like Step
+      XII_TEST_DOUBLE(xiiMath::SmoothStep(0.0 * iScale, 0.1 * iScale, 0.1 * iScale), iScale > 0 ? 0.0 : 1.0, 0.000001);
+      XII_TEST_DOUBLE(xiiMath::SmoothStep(0.2 * iScale, 0.1 * iScale, 0.1 * iScale), iScale < 0 ? 0.0 : 1.0, 0.000001);
+    }
+
+    XII_TEST_DOUBLE(xiiMath::SmoothStep(0.2, 0.0, 1.0), 0.104, 0.00001);
+    XII_TEST_DOUBLE(xiiMath::SmoothStep(0.4, 0.2, 0.8), 0.259259, 0.00001);
+
+    XII_TEST_DOUBLE(xiiMath::SmootherStep(0.2, 0.0, 1.0), 0.05792, 0.00001);
+    XII_TEST_DOUBLE(xiiMath::SmootherStep(0.4, 0.2, 0.8), 0.209876, 0.00001);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsPowerOf")
@@ -636,7 +821,7 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_INT(xiiMath::PowerOfTwo_Floor(0x80000000U), 0x80000000U);
     XII_TEST_INT(xiiMath::PowerOfTwo_Floor(0x80000001U), 0x80000000U);
     // strange case...
-    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(0U), 1);
+    XII_TEST_INT(xiiMath::PowerOfTwo_Floor(0U), 1U);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "PowerOf2_Ceil")
@@ -1009,13 +1194,16 @@ XII_CREATE_SIMPLE_TEST(Math, General)
     XII_TEST_DOUBLE(11.40175425, xiiMath::Hypot(9.0, 7.0), 0.000001);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "NormalizeToRange")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "NormalizeToRange (float)")
   {
     XII_TEST_FLOAT(0.5f, xiiMath::NormalizeToRange(5.0f, 0.0f, 10.0f), 0.000001f);
     XII_TEST_FLOAT(0.0f, xiiMath::NormalizeToRange(0.0f, 0.0f, 10.0f), 0.000001f);
     XII_TEST_FLOAT(1.0f, xiiMath::NormalizeToRange(10.0f, 0.0f, 10.0f), 0.000001f);
     XII_TEST_FLOAT(0.3f, xiiMath::NormalizeToRange(3.0f, 0.0f, 10.0f), 0.000001f);
+  }
 
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "NormalizeToRange (double)")
+  {
     XII_TEST_DOUBLE(0.5, xiiMath::NormalizeToRange(5.0, 0.0, 10.0), 0.000001);
     XII_TEST_DOUBLE(0.0, xiiMath::NormalizeToRange(0.0, 0.0, 10.0), 0.000001);
     XII_TEST_DOUBLE(1.0, xiiMath::NormalizeToRange(10.0, 0.0, 10.0), 0.000001);

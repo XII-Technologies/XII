@@ -26,7 +26,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor(Normal, Point)")
   {
-    xiiPlaneT p(xiiVec3T(1, 0, 0), xiiVec3T(5, 3, 1));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(1, 0, 0), xiiVec3T(5, 3, 1));
 
     XII_TEST_BOOL(p.m_vNormal == xiiVec3T(1, 0, 0));
     XII_TEST_FLOAT(p.m_fNegDistance, -5.0f, 0.0001f);
@@ -34,7 +34,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor(Point, Point, Point)")
   {
-    xiiPlaneT p(xiiVec3T(-1, 5, 1), xiiVec3T(1, 5, 1), xiiVec3T(0, 5, -5));
+    xiiPlaneT p = xiiPlaneT::MakeFromPoints(xiiVec3T(-1, 5, 1), xiiVec3T(1, 5, 1), xiiVec3T(0, 5, -5));
 
     XII_TEST_VEC3(p.m_vNormal, xiiVec3T(0, 1, 0), 0.0001f);
     XII_TEST_FLOAT(p.m_fNegDistance, -5.0f, 0.0001f);
@@ -44,7 +44,8 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
   {
     xiiVec3T v[3] = {xiiVec3T(-1, 5, 1), xiiVec3T(1, 5, 1), xiiVec3T(0, 5, -5)};
 
-    xiiPlaneT p(v);
+    xiiPlaneT p;
+    p.SetFromPoints(v).AssertSuccess();
 
     XII_TEST_VEC3(p.m_vNormal, xiiVec3T(0, 1, 0), 0.0001f);
     XII_TEST_FLOAT(p.m_fNegDistance, -5.0f, 0.0001f);
@@ -54,7 +55,8 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
   {
     xiiVec3T v[6] = {xiiVec3T(-1, 5, 1), xiiVec3T(-1, 5, 1), xiiVec3T(1, 5, 1), xiiVec3T(1, 5, 1), xiiVec3T(0, 5, -5), xiiVec3T(0, 5, -5)};
 
-    xiiPlaneT p(v, 6);
+    xiiPlaneT p;
+    p.SetFromPoints(v, 6).AssertSuccess();
 
     XII_TEST_VEC3(p.m_vNormal, xiiVec3T(0, 1, 0), 0.0001f);
     XII_TEST_FLOAT(p.m_fNegDistance, -5.0f, 0.0001f);
@@ -63,7 +65,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetFromNormalAndPoint")
   {
     xiiPlaneT p;
-    p.SetFromNormalAndPoint(xiiVec3T(1, 0, 0), xiiVec3T(5, 3, 1));
+    p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(1, 0, 0), xiiVec3T(5, 3, 1));
 
     XII_TEST_BOOL(p.m_vNormal == xiiVec3T(1, 0, 0));
     XII_TEST_FLOAT(p.m_fNegDistance, -5.0f, 0.0001f);
@@ -114,7 +116,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
     xiiPlaneT p;
     p.SetFromDirections(xiiVec3T(1, 0, 0), xiiVec3T(1, 0, -1), xiiVec3T(3, 5, 9)).IgnoreResult();
 
-    p.SetInvalid();
+    p = xiiPlaneT::MakeInvalid();
 
     XII_TEST_VEC3(p.m_vNormal, xiiVec3T(0, 0, 0), 0.0001f);
     XII_TEST_FLOAT(p.m_fNegDistance, 0.0f, 0.0001f);
@@ -122,7 +124,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetDistanceTo")
   {
-    xiiPlaneT p(xiiVec3T(1, 0, 0), xiiVec3T(5, 0, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(1, 0, 0), xiiVec3T(5, 0, 0));
 
     XII_TEST_FLOAT(p.GetDistanceTo(xiiVec3T(10, 3, 5)), 5.0f, 0.0001f);
     XII_TEST_FLOAT(p.GetDistanceTo(xiiVec3T(0, 7, 123)), -5.0f, 0.0001f);
@@ -134,7 +136,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
     xiiVec3T v1[3] = {xiiVec3T(15, 3, 5), xiiVec3T(6, 7, 123), xiiVec3T(10, 12, 23)};
     xiiVec3T v2[3] = {xiiVec3T(3, 3, 5), xiiVec3T(5, 7, 123), xiiVec3T(10, 12, 23)};
 
-    xiiPlaneT p(xiiVec3T(1, 0, 0), xiiVec3T(5, 0, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(1, 0, 0), xiiVec3T(5, 0, 0));
 
     XII_TEST_FLOAT(p.GetMinimumDistanceTo(v1, 3), 1.0f, 0.0001f);
     XII_TEST_FLOAT(p.GetMinimumDistanceTo(v2, 3), -2.0f, 0.0001f);
@@ -145,7 +147,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
     xiiVec3T v1[3] = {xiiVec3T(15, 3, 5), xiiVec3T(5, 7, 123), xiiVec3T(0, 12, 23)};
     xiiVec3T v2[3] = {xiiVec3T(8, 3, 5), xiiVec3T(6, 7, 123), xiiVec3T(10, 12, 23)};
 
-    xiiPlaneT p(xiiVec3T(1, 0, 0), xiiVec3T(5, 0, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(1, 0, 0), xiiVec3T(5, 0, 0));
 
     xiiMathTestType fmin, fmax;
 
@@ -160,7 +162,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetPointPosition")
   {
-    xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
     XII_TEST_BOOL(p.GetPointPosition(xiiVec3T(0, 15, 0)) == xiiPositionOnPlane::Front);
     XII_TEST_BOOL(p.GetPointPosition(xiiVec3T(0, 5, 0)) == xiiPositionOnPlane::Back);
@@ -168,7 +170,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetPointPosition(planewidth)")
   {
-    xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
     XII_TEST_BOOL(p.GetPointPosition(xiiVec3T(0, 15, 0), 0.01f) == xiiPositionOnPlane::Front);
     XII_TEST_BOOL(p.GetPointPosition(xiiVec3T(0, 5, 0), 0.01f) == xiiPositionOnPlane::Back);
@@ -177,7 +179,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetObjectPosition")
   {
-    xiiPlaneT p(xiiVec3T(1, 0, 0), xiiVec3T(10, 0, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(1, 0, 0), xiiVec3T(10, 0, 0));
 
     xiiVec3T v0[3] = {xiiVec3T(12, 0, 0), xiiVec3T(15, 0, 0), xiiVec3T(20, 0, 0)};
     xiiVec3T v1[3] = {xiiVec3T(8, 0, 0), xiiVec3T(6, 0, 0), xiiVec3T(4, 0, 0)};
@@ -190,7 +192,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetObjectPosition(fPlaneHalfWidth)")
   {
-    xiiPlaneT p(xiiVec3T(1, 0, 0), xiiVec3T(10, 0, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(1, 0, 0), xiiVec3T(10, 0, 0));
 
     xiiVec3T v0[3] = {xiiVec3T(12, 0, 0), xiiVec3T(15, 0, 0), xiiVec3T(20, 0, 0)};
     xiiVec3T v1[3] = {xiiVec3T(8, 0, 0), xiiVec3T(6, 0, 0), xiiVec3T(4, 0, 0)};
@@ -205,41 +207,41 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetObjectPosition(sphere)")
   {
-    xiiPlaneT p(xiiVec3T(1, 0, 0), xiiVec3T(10, 0, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(1, 0, 0), xiiVec3T(10, 0, 0));
 
-    XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingSphereT(xiiVec3T(15, 2, 3), 3.0f)) == xiiPositionOnPlane::Front);
-    XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingSphereT(xiiVec3T(5, 2, 3), 3.0f)) == xiiPositionOnPlane::Back);
-    XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingSphereT(xiiVec3T(15, 2, 4.999f), 3.0f)) == xiiPositionOnPlane::Front);
-    XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingSphereT(xiiVec3T(5, 2, 3), 4.999f)) == xiiPositionOnPlane::Back);
-    XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingSphereT(xiiVec3T(8, 2, 3), 3.0f)) == xiiPositionOnPlane::Spanning);
-    XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingSphereT(xiiVec3T(12, 2, 3), 3.0f)) == xiiPositionOnPlane::Spanning);
+    XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(15, 2, 3), 3.0f)) == xiiPositionOnPlane::Front);
+    XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(5, 2, 3), 3.0f)) == xiiPositionOnPlane::Back);
+    XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(15, 2, 4.999f), 3.0f)) == xiiPositionOnPlane::Front);
+    XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(5, 2, 3), 4.999f)) == xiiPositionOnPlane::Back);
+    XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(8, 2, 3), 3.0f)) == xiiPositionOnPlane::Spanning);
+    XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(12, 2, 3), 3.0f)) == xiiPositionOnPlane::Spanning);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetObjectPosition(box)")
   {
     {
-      xiiPlaneT p(xiiVec3T(1, 0, 0), xiiVec3T(10, 0, 0));
-      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT(xiiVec3T(10.1f), xiiVec3T(15))) == xiiPositionOnPlane::Front);
-      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT(xiiVec3T(7), xiiVec3T(9.9f))) == xiiPositionOnPlane::Back);
-      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT(xiiVec3T(7), xiiVec3T(15))) == xiiPositionOnPlane::Spanning);
+      xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(1, 0, 0), xiiVec3T(10, 0, 0));
+      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(10.1f), xiiVec3T(15))) == xiiPositionOnPlane::Front);
+      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(7), xiiVec3T(9.9f))) == xiiPositionOnPlane::Back);
+      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(7), xiiVec3T(15))) == xiiPositionOnPlane::Spanning);
     }
     {
-      xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
-      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT(xiiVec3T(10.1f), xiiVec3T(15))) == xiiPositionOnPlane::Front);
-      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT(xiiVec3T(7), xiiVec3T(9.9f))) == xiiPositionOnPlane::Back);
-      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT(xiiVec3T(7), xiiVec3T(15))) == xiiPositionOnPlane::Spanning);
+      xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(10.1f), xiiVec3T(15))) == xiiPositionOnPlane::Front);
+      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(7), xiiVec3T(9.9f))) == xiiPositionOnPlane::Back);
+      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(7), xiiVec3T(15))) == xiiPositionOnPlane::Spanning);
     }
     {
-      xiiPlaneT p(xiiVec3T(0, 0, 1), xiiVec3T(0, 0, 10));
-      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT(xiiVec3T(10.1f), xiiVec3T(15))) == xiiPositionOnPlane::Front);
-      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT(xiiVec3T(7), xiiVec3T(9.9f))) == xiiPositionOnPlane::Back);
-      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT(xiiVec3T(7), xiiVec3T(15))) == xiiPositionOnPlane::Spanning);
+      xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 0, 1), xiiVec3T(0, 0, 10));
+      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(10.1f), xiiVec3T(15))) == xiiPositionOnPlane::Front);
+      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(7), xiiVec3T(9.9f))) == xiiPositionOnPlane::Back);
+      XII_TEST_BOOL(p.GetObjectPosition(xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(7), xiiVec3T(15))) == xiiPositionOnPlane::Spanning);
     }
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ProjectOntoPlane")
   {
-    xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
     XII_TEST_VEC3(p.ProjectOntoPlane(xiiVec3T(3, 15, 2)), xiiVec3T(3, 10, 2), 0.001f);
     XII_TEST_VEC3(p.ProjectOntoPlane(xiiVec3T(-1, 5, -5)), xiiVec3T(-1, 10, -5), 0.001f);
@@ -247,7 +249,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Mirror")
   {
-    xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
     XII_TEST_VEC3(p.Mirror(xiiVec3T(3, 15, 2)), xiiVec3T(3, 5, 2), 0.001f);
     XII_TEST_VEC3(p.Mirror(xiiVec3T(-1, 5, -5)), xiiVec3T(-1, 15, -5), 0.001f);
@@ -255,7 +257,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetCoplanarDirection")
   {
-    xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
     XII_TEST_VEC3(p.GetCoplanarDirection(xiiVec3T(0, 1, 0)), xiiVec3T(0, 0, 0), 0.001f);
     XII_TEST_VEC3(p.GetCoplanarDirection(xiiVec3T(1, 1, 0)).GetNormalized(), xiiVec3T(1, 0, 0), 0.001f);
@@ -266,9 +268,9 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsIdentical / operator== / operator!=")
   {
-    xiiPlaneT p1(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
-    xiiPlaneT p2(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
-    xiiPlaneT p3(xiiVec3T(0, 1, 0), xiiVec3T(0, 10.00001f, 0));
+    xiiPlaneT p1 = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p2 = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p3 = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10.00001f, 0));
 
     XII_TEST_BOOL(p1.IsIdentical(p1));
     XII_TEST_BOOL(p2.IsIdentical(p2));
@@ -290,9 +292,9 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsEqual")
   {
-    xiiPlaneT p1(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
-    xiiPlaneT p2(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
-    xiiPlaneT p3(xiiVec3T(0, 1, 0), xiiVec3T(0, 10.00001f, 0));
+    xiiPlaneT p1 = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p2 = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p3 = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10.00001f, 0));
 
     XII_TEST_BOOL(p1.IsEqual(p1));
     XII_TEST_BOOL(p2.IsEqual(p2));
@@ -307,59 +309,84 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsValid")
   {
-    xiiPlaneT p1(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p1 = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
     XII_TEST_BOOL(p1.IsValid());
 
-    p1.SetInvalid();
+    p1 = xiiPlaneT::MakeInvalid();
     XII_TEST_BOOL(!p1.IsValid());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Transform(Mat3)")
   {
-    xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    const float matrixScale[] = {1, 2, 99};
 
-    xiiMat3T m;
-    m.SetRotationMatrixX(xiiAngle::Degree(90));
+    for (xiiUInt32 loopIndex = 0; loopIndex < XII_ARRAY_SIZE(matrixScale); ++loopIndex)
+    {
+      xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
-    p.Transform(m);
+      xiiMat3T m;
+      {
+        m = xiiMat3::MakeRotationX(xiiAngle::MakeFromDegree(90));
 
-    XII_TEST_VEC3(p.m_vNormal, xiiVec3T(0, 0, 1), 0.0001f);
-    XII_TEST_FLOAT(p.m_fNegDistance, -10.0f, 0.0001f);
+        xiiMat3T rot = xiiMat3T::MakeScaling(xiiVec3(1) * matrixScale[loopIndex]);
+        m            = m * rot;
+      }
+
+      p.Transform(m);
+
+      XII_TEST_VEC3(p.m_vNormal, xiiVec3T(0, 0, 1), 0.0001f);
+      XII_TEST_FLOAT(p.m_fNegDistance, -10.0f * matrixScale[loopIndex], 0.0001f);
+    }
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Transform(Mat4)")
   {
+    const float matrixScale[] = {1, 2, 99};
+
+    for (xiiUInt32 loopIndex = 0; loopIndex < XII_ARRAY_SIZE(matrixScale); ++loopIndex)
     {
-      xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+      {
+        xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
-      xiiMat4T m;
-      m.SetRotationMatrixX(xiiAngle::Degree(90));
-      m.SetTranslationVector(xiiVec3T(0, 5, 0));
+        xiiMat4T m;
+        {
+          m = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(90));
+          m.SetTranslationVector(xiiVec3T(0, 5, 0));
 
-      p.Transform(m);
+          xiiMat4T rot = xiiMat4T::MakeScaling(xiiVec3(1) * matrixScale[loopIndex]);
+          m            = m * rot;
+        }
 
-      XII_TEST_VEC3(p.m_vNormal, xiiVec3T(0, 0, 1), 0.0001f);
-      XII_TEST_FLOAT(p.m_fNegDistance, -10.0f, 0.0001f);
-    }
+        p.Transform(m);
 
-    {
-      xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+        XII_TEST_VEC3(p.m_vNormal, xiiVec3T(0, 0, 1), 0.0001f);
+        XII_TEST_FLOAT(p.m_fNegDistance, -10.0f * matrixScale[loopIndex], 0.0001f);
+      }
 
-      xiiMat4T m;
-      m.SetRotationMatrixX(xiiAngle::Degree(90));
-      m.SetTranslationVector(xiiVec3T(0, 0, 5));
+      {
+        xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
-      p.Transform(m);
+        xiiMat4T m;
+        {
+          m = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(90));
+          m.SetTranslationVector(xiiVec3T(0, 0, 5));
 
-      XII_TEST_VEC3(p.m_vNormal, xiiVec3T(0, 0, 1), 0.0001f);
-      XII_TEST_FLOAT(p.m_fNegDistance, -15.0f, 0.0001f);
+          xiiMat4T rot = xiiMat4T::MakeScaling(xiiVec3(1) * matrixScale[loopIndex]);
+          m            = m * rot;
+        }
+
+        p.Transform(m);
+
+        XII_TEST_VEC3(p.m_vNormal, xiiVec3T(0, 0, 1), 0.0001f);
+        XII_TEST_FLOAT(p.m_fNegDistance, -10.0f * matrixScale[loopIndex] - 5.0f, 0.0001f);
+      }
     }
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Flip")
   {
-    xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
     XII_TEST_VEC3(p.m_vNormal, xiiVec3T(0, 1, 0), 0.0001f);
     XII_TEST_FLOAT(p.m_fNegDistance, -10.0f, 0.0001f);
@@ -373,7 +400,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "FlipIfNecessary")
   {
     {
-      xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+      xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
       XII_TEST_VEC3(p.m_vNormal, xiiVec3T(0, 1, 0), 0.0001f);
       XII_TEST_FLOAT(p.m_fNegDistance, -10.0f, 0.0001f);
@@ -385,7 +412,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
     }
 
     {
-      xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+      xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
       XII_TEST_VEC3(p.m_vNormal, xiiVec3T(0, 1, 0), 0.0001f);
       XII_TEST_FLOAT(p.m_fNegDistance, -10.0f, 0.0001f);
@@ -399,7 +426,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetRayIntersection")
   {
-    xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
     xiiMathTestType f;
     xiiVec3T        v;
@@ -418,7 +445,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetRayIntersectionBiDirectional")
   {
-    xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
     xiiMathTestType f;
     xiiVec3T        v;
@@ -436,7 +463,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetLineSegmentIntersection")
   {
-    xiiPlaneT p(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
 
     xiiMathTestType f;
     xiiVec3T        v;
@@ -450,9 +477,9 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetPlanesIntersectionPoint")
   {
-    xiiPlaneT p1(xiiVec3T(1, 0, 0), xiiVec3T(0, 10, 0));
-    xiiPlaneT p2(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
-    xiiPlaneT p3(xiiVec3T(0, 0, 1), xiiVec3T(0, 10, 0));
+    xiiPlaneT p1 = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(1, 0, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p2 = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 1, 0), xiiVec3T(0, 10, 0));
+    xiiPlaneT p3 = xiiPlane::MakeFromNormalAndPoint(xiiVec3T(0, 0, 1), xiiVec3T(0, 10, 0));
 
     xiiVec3T r;
 
@@ -483,22 +510,22 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
     {
       xiiPlaneT p;
 
-      p.SetInvalid();
+      p = xiiPlaneT::MakeInvalid();
       XII_TEST_BOOL(!p.IsNaN());
 
-      p.SetInvalid();
+      p                = xiiPlaneT::MakeInvalid();
       p.m_fNegDistance = xiiMath::NaN<xiiMathTestType>();
       XII_TEST_BOOL(p.IsNaN());
 
-      p.SetInvalid();
+      p             = xiiPlaneT::MakeInvalid();
       p.m_vNormal.x = xiiMath::NaN<xiiMathTestType>();
       XII_TEST_BOOL(p.IsNaN());
 
-      p.SetInvalid();
+      p             = xiiPlaneT::MakeInvalid();
       p.m_vNormal.y = xiiMath::NaN<xiiMathTestType>();
       XII_TEST_BOOL(p.IsNaN());
 
-      p.SetInvalid();
+      p             = xiiPlaneT::MakeInvalid();
       p.m_vNormal.z = xiiMath::NaN<xiiMathTestType>();
       XII_TEST_BOOL(p.IsNaN());
     }
@@ -515,19 +542,19 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
       XII_TEST_BOOL(p.IsValid());
       XII_TEST_BOOL(p.IsFinite());
 
-      p.SetInvalid();
+      p                = xiiPlaneT::MakeInvalid();
       p.m_vNormal      = xiiVec3(1, 2, 3).GetNormalized();
       p.m_fNegDistance = xiiMath::Infinity<xiiMathTestType>();
       XII_TEST_BOOL(p.IsValid());
       XII_TEST_BOOL(!p.IsFinite());
 
-      p.SetInvalid();
+      p                = xiiPlaneT::MakeInvalid();
       p.m_vNormal.x    = xiiMath::NaN<xiiMathTestType>();
       p.m_fNegDistance = xiiMath::Infinity<xiiMathTestType>();
       XII_TEST_BOOL(!p.IsValid());
       XII_TEST_BOOL(!p.IsFinite());
 
-      p.SetInvalid();
+      p                = xiiPlaneT::MakeInvalid();
       p.m_vNormal      = xiiVec3(1, 2, 3);
       p.m_fNegDistance = 42;
       XII_TEST_BOOL(!p.IsValid());
@@ -545,12 +572,12 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
     const auto randomNonZeroVec3T = [&randomGenerator]() -> xiiVec3T {
       const float    extent = 1000.f;
       const xiiVec3T v(randomGenerator.FloatMinMax(-extent, extent), randomGenerator.FloatMinMax(-extent, extent), randomGenerator.FloatMinMax(-extent, extent));
-      return v.GetLength() > 0.001f ? v : xiiVec3T::UnitXAxis();
+      return v.GetLength() > 0.001f ? v : xiiVec3T::MakeAxisX();
     };
 
     for (xiiUInt32 loopIndex = 0; loopIndex < numTestLoops; ++loopIndex)
     {
-      const xiiPlaneT plane(randomNonZeroVec3T().GetNormalized(), randomNonZeroVec3T());
+      const xiiPlaneT plane = xiiPlane::MakeFromNormalAndPoint(randomNonZeroVec3T().GetNormalized(), randomNonZeroVec3T());
 
       xiiVec3T        boxCorners[8];
       xiiBoundingBoxT box;
@@ -559,7 +586,7 @@ XII_CREATE_SIMPLE_TEST(Math, Plane)
         const xiiVec3T boxPoint1 = randomNonZeroVec3T();
         const xiiVec3T boxMins(xiiMath::Min(boxPoint0.x, boxPoint1.x), xiiMath::Min(boxPoint0.y, boxPoint1.y), xiiMath::Min(boxPoint0.z, boxPoint1.z));
         const xiiVec3T boxMaxs(xiiMath::Max(boxPoint0.x, boxPoint1.x), xiiMath::Max(boxPoint0.y, boxPoint1.y), xiiMath::Max(boxPoint0.z, boxPoint1.z));
-        box = xiiBoundingBoxT(boxMins, boxMaxs);
+        box = xiiBoundingBoxT::MakeFromMinMax(boxMins, boxMaxs);
         box.GetCorners(boxCorners);
       }
 

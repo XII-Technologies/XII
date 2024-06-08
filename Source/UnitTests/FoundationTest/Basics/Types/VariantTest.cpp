@@ -2882,7 +2882,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiTime)")
   {
-    xiiTime    t = xiiTime::Seconds(123.0);
+    xiiTime    t = xiiTime::MakeFromSeconds(123.0);
     xiiVariant v(t);
 
     TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Time);
