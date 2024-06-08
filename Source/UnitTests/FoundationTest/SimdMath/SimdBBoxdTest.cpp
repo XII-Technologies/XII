@@ -25,50 +25,48 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdBBoxd)
     XII_TEST_BOOL((b.m_Max == xiiSimdVec4d(1, 2, 3)).AllSet<3>());
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetInvalid")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeInvalid")
   {
-    xiiSimdBBoxd b;
-    b.SetInvalid();
+    xiiSimdBBoxd b = xiiSimdBBoxd::MakeInvalid();
 
     XII_TEST_BOOL(!b.IsValid());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsNaN")
   {
-    xiiSimdBBoxd b;
+    xiiSimdBBoxd b = xiiSimdBBoxd::MakeInvalid();
 
-    b.SetInvalid();
+    b = xiiSimdBBoxd::MakeInvalid();
     XII_TEST_BOOL(!b.IsNaN());
 
-    b.SetInvalid();
-    b.m_Min.SetX(xiiMath::NaN<xiiMathTestType>());
+    b = xiiSimdBBoxd::MakeInvalid();
+    b.m_Min.SetX(xiiMath::NaN<double>());
     XII_TEST_BOOL(b.IsNaN());
 
-    b.SetInvalid();
-    b.m_Min.SetY(xiiMath::NaN<xiiMathTestType>());
+    b = xiiSimdBBoxd::MakeInvalid();
+    b.m_Min.SetY(xiiMath::NaN<double>());
     XII_TEST_BOOL(b.IsNaN());
 
-    b.SetInvalid();
-    b.m_Min.SetZ(xiiMath::NaN<xiiMathTestType>());
+    b = xiiSimdBBoxd::MakeInvalid();
+    b.m_Min.SetZ(xiiMath::NaN<double>());
     XII_TEST_BOOL(b.IsNaN());
 
-    b.SetInvalid();
-    b.m_Max.SetX(xiiMath::NaN<xiiMathTestType>());
+    b = xiiSimdBBoxd::MakeInvalid();
+    b.m_Max.SetX(xiiMath::NaN<double>());
     XII_TEST_BOOL(b.IsNaN());
 
-    b.SetInvalid();
-    b.m_Max.SetY(xiiMath::NaN<xiiMathTestType>());
+    b = xiiSimdBBoxd::MakeInvalid();
+    b.m_Max.SetY(xiiMath::NaN<double>());
     XII_TEST_BOOL(b.IsNaN());
 
-    b.SetInvalid();
-    b.m_Max.SetZ(xiiMath::NaN<xiiMathTestType>());
+    b = xiiSimdBBoxd::MakeInvalid();
+    b.m_Max.SetZ(xiiMath::NaN<double>());
     XII_TEST_BOOL(b.IsNaN());
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetCenterAndHalfExtents")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeFromCenterAndHalfExtents")
   {
-    xiiSimdBBoxd b;
-    b.SetCenterAndHalfExtents(xiiSimdVec4d(1, 2, 3), xiiSimdVec4d(4, 5, 6));
+    const xiiSimdBBoxd b = xiiSimdBBoxd::MakeFromCenterAndHalfExtents(xiiSimdVec4d(1, 2, 3), xiiSimdVec4d(4, 5, 6));
 
     XII_TEST_BOOL((b.m_Min == xiiSimdVec4d(-3, -3, -3)).AllSet<3>());
     XII_TEST_BOOL((b.m_Max == xiiSimdVec4d(5, 7, 9)).AllSet<3>());
@@ -78,7 +76,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdBBoxd)
     XII_TEST_BOOL((b.GetHalfExtents() == xiiSimdVec4d(4, 5, 6)).AllSet<3>());
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetFromPoints")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeFromPoints")
   {
     xiiSimdVec4d p[6] = {
       xiiSimdVec4d(-4, 0, 0),
@@ -89,8 +87,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdBBoxd)
       xiiSimdVec4d(0, 0, 9),
     };
 
-    xiiSimdBBoxd b;
-    b.SetFromPoints(p, 6);
+    const xiiSimdBBoxd b = xiiSimdBBoxd::MakeFromPoints(p, 6);
 
     XII_TEST_BOOL((b.m_Min == xiiSimdVec4d(-4, -6, -8)).AllSet<3>());
     XII_TEST_BOOL((b.m_Max == xiiSimdVec4d(5, 7, 9)).AllSet<3>());
@@ -98,8 +95,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdBBoxd)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ExpandToInclude (Point)")
   {
-    xiiSimdBBoxd b;
-    b.SetInvalid();
+    xiiSimdBBoxd b = xiiSimdBBoxd::MakeInvalid();
     b.ExpandToInclude(xiiSimdVec4d(1, 2, 3));
 
     XII_TEST_BOOL((b.m_Min == xiiSimdVec4d(1, 2, 3)).AllSet<3>());
@@ -121,8 +117,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdBBoxd)
   {
     xiiSimdVec4d v[4] = {xiiSimdVec4d(1, 1, 1), xiiSimdVec4d(-1, -1, -1), xiiSimdVec4d(2, 2, 2), xiiSimdVec4d(4, 4, 4)};
 
-    xiiSimdBBoxd b;
-    b.SetInvalid();
+    xiiSimdBBoxd b = xiiSimdBBoxd::MakeInvalid();
     b.ExpandToInclude(v, 2, sizeof(xiiSimdVec4d) * 2);
 
     XII_TEST_BOOL((b.m_Min == xiiSimdVec4d(1, 1, 1)).AllSet<3>());
@@ -144,8 +139,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdBBoxd)
     XII_TEST_BOOL((b1.m_Min == xiiSimdVec4d(-1, -2, -3)).AllSet<3>());
     XII_TEST_BOOL((b1.m_Max == xiiSimdVec4d(4, 5, 6)).AllSet<3>());
 
-    xiiSimdBBoxd b3;
-    b3.SetInvalid();
+    xiiSimdBBoxd b3 = xiiSimdBBoxd::MakeInvalid();
     b3.ExpandToInclude(b1);
     XII_TEST_BOOL(b3 == b1);
 
@@ -160,8 +154,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdBBoxd)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ExpandToCube")
   {
-    xiiSimdBBoxd b;
-    b.SetCenterAndHalfExtents(xiiSimdVec4d(1, 2, 3), xiiSimdVec4d(4, 5, 6));
+    xiiSimdBBoxd b = xiiSimdBBoxd::MakeFromCenterAndHalfExtents(xiiSimdVec4d(1, 2, 3), xiiSimdVec4d(4, 5, 6));
 
     b.ExpandToCube();
 
@@ -203,7 +196,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdBBoxd)
     xiiSimdBBoxd b(xiiSimdVec4d(1), xiiSimdVec4d(5));
 
     XII_TEST_BOOL(b.Contains(xiiSimdBSphered(xiiSimdVec4d(3), 2)));
-    XII_TEST_BOOL(!b.Contains(xiiSimdBSphered(xiiSimdVec4d(3), 2.1f)));
+    XII_TEST_BOOL(!b.Contains(xiiSimdBSphered(xiiSimdVec4d(3), 2.1)));
     XII_TEST_BOOL(!b.Contains(xiiSimdBSphered(xiiSimdVec4d(8), 2)));
   }
 
@@ -252,33 +245,32 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdBBoxd)
     xiiSimdBBoxd b(xiiSimdVec4d(3), xiiSimdVec4d(5));
 
     xiiSimdTransformd t(xiiSimdVec4d(4, 5, 6));
-    t.m_Rotation.SetFromAxisAndAngle(xiiSimdVec4d(0, 0, 1), xiiAngled::Degree(90));
-    t.m_Scale = xiiSimdVec4d(1, -2, -4);
+    t.m_Rotation = xiiSimdQuatd::MakeFromAxisAndAngle(xiiSimdVec4d(0, 0, 1), xiiAngled::MakeFromDegree(90));
+    t.m_Scale    = xiiSimdVec4d(1, -2, -4);
 
     b.Transform(t);
 
     XII_TEST_SIMD_VECTOR_EQUAL(3, b.m_Min, xiiSimdVec4d(10, 8, -14), 0.00001);
     XII_TEST_SIMD_VECTOR_EQUAL(3, b.m_Max, xiiSimdVec4d(14, 10, -6), 0.00001);
 
-    t.m_Rotation.SetFromAxisAndAngle(xiiSimdVec4d(0, 0, 1), xiiAngled::Degree(-30));
+    t.m_Rotation = xiiSimdQuatd::MakeFromAxisAndAngle(xiiSimdVec4d(0, 0, 1), xiiAngled::MakeFromDegree(-30));
 
     b.m_Min = xiiSimdVec4d(3);
     b.m_Max = xiiSimdVec4d(5);
     b.Transform(t);
 
     // reference
-    xiiBoundingBoxd referenceBox(xiiVec3d(3), xiiVec3d(5));
+    xiiBoundingBoxd referenceBox = xiiBoundingBoxd::MakeFromMinMax(xiiVec3d(3), xiiVec3d(5));
     {
-      xiiQuatd q;
-      q.SetFromAxisAndAngle(xiiVec3d(0, 0, 1), xiiAngled::Degree(-30));
+      xiiQuatd q = xiiQuatd::MakeFromAxisAndAngle(xiiVec3d(0, 0, 1), xiiAngled::MakeFromDegree(-30));
 
       xiiTransformd referenceTransform(xiiVec3d(4, 5, 6), q, xiiVec3d(1, -2, -4));
 
       referenceBox.TransformFromOrigin(referenceTransform.GetAsMat4());
     }
 
-    XII_TEST_SIMD_VECTOR_EQUAL(3, b.m_Min, xiiSimdConversion::ToVec3(referenceBox.m_vMin), 0.00001f);
-    XII_TEST_SIMD_VECTOR_EQUAL(3, b.m_Max, xiiSimdConversion::ToVec3(referenceBox.m_vMax), 0.00001f);
+    XII_TEST_SIMD_VECTOR_EQUAL(3, b.m_Min, xiiSimdConversion::ToVec3(referenceBox.m_vMin), 0.00001);
+    XII_TEST_SIMD_VECTOR_EQUAL(3, b.m_Max, xiiSimdConversion::ToVec3(referenceBox.m_vMax), 0.00001);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetClampedPoint")

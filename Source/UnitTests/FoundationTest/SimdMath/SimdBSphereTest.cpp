@@ -4,9 +4,9 @@
 
 XII_CREATE_SIMPLE_TEST(SimdMath, SimdBSphere)
 {
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeFromCenterAndRadius")
   {
-    xiiSimdBSphere s(xiiSimdVec4f(1, 2, 3), 4);
+    xiiSimdBSphere s = xiiSimdBSphere::MakeFromCenterAndRadius(xiiSimdVec4f(1, 2, 3), 4);
 
     XII_TEST_BOOL((s.m_CenterAndRadius == xiiSimdVec4f(1, 2, 3, 4)).AllSet());
 
@@ -14,13 +14,13 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdBSphere)
     XII_TEST_BOOL(s.GetRadius() == 4.0f);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetInvalid / IsValid")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeInvalid / IsValid")
   {
     xiiSimdBSphere s(xiiSimdVec4f(1, 2, 3), 4);
 
     XII_TEST_BOOL(s.IsValid());
 
-    s.SetInvalid();
+    s = xiiSimdBSphere::MakeInvalid();
 
     XII_TEST_BOOL(!s.IsValid());
     XII_TEST_BOOL(!s.IsNaN());
@@ -31,13 +31,13 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdBSphere)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ExpandToInclude(Point)")
   {
-    xiiSimdBSphere s(xiiSimdVec4f::ZeroVector(), 0.0f);
+    xiiSimdBSphere s(xiiSimdVec4f::MakeZero(), 0.0f);
 
     s.ExpandToInclude(xiiSimdVec4f(3, 0, 0));
 
     XII_TEST_BOOL((s.m_CenterAndRadius == xiiSimdVec4f(0, 0, 0, 3)).AllSet());
 
-    s.SetInvalid();
+    s = xiiSimdBSphere::MakeInvalid();
 
     s.ExpandToInclude(xiiSimdVec4f(0.25, 0, 0));
 
@@ -73,8 +73,8 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdBSphere)
     xiiSimdBSphere s(xiiSimdVec4f(5, 0, 0), 2);
 
     xiiSimdTransform t(xiiSimdVec4f(4, 5, 6));
-    t.m_Rotation.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(90));
-    t.m_Scale = xiiSimdVec4f(1, -2, -4);
+    t.m_Rotation = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(90));
+    t.m_Scale    = xiiSimdVec4f(1, -2, -4);
 
     s.Transform(t);
     XII_TEST_BOOL(s.m_CenterAndRadius.IsEqual(xiiSimdVec4f(4, 10, 6, 8), xiiSimdFloat(xiiMath::SmallEpsilon<float>())).AllSet());

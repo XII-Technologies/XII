@@ -53,13 +53,27 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdFloat)
     XII_TEST_BOOL(vInit1U.m_v.m128_f32[0] == 4553.0f && vInit1U.m_v.m128_f32[1] == 4553.0f && vInit1U.m_v.m128_f32[2] == 4553.0f && vInit1U.m_v.m128_f32[3] == 4553.0f);
 #endif
 
-    xiiSimdFloat z = xiiSimdFloat::Zero();
-    XII_TEST_BOOL(z == 0.0f);
+    {
+      xiiSimdFloat z = xiiSimdFloat::MakeZero();
+      XII_TEST_BOOL(z == 0.0f);
 
-    // Make sure all components are set to the same value
+      // Make sure all components are set to the same value
 #if ((XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) || (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)) && XII_ENABLED(XII_COMPILER_MSVC)
-    XII_TEST_BOOL(z.m_v.m128_f32[0] == 0.0f && z.m_v.m128_f32[1] == 0.0f && z.m_v.m128_f32[2] == 0.0f && z.m_v.m128_f32[3] == 0.0f);
+      XII_TEST_BOOL(z.m_v.m128_f32[0] == 0.0f && z.m_v.m128_f32[1] == 0.0f && z.m_v.m128_f32[2] == 0.0f && z.m_v.m128_f32[3] == 0.0f);
 #endif
+    }
+
+    {
+      xiiSimdFloat z = xiiSimdFloat::MakeNaN();
+
+      // Make sure all components are set to the same value
+#if ((XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) || (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)) && XII_ENABLED(XII_COMPILER_MSVC)
+      XII_TEST_BOOL(xiiMath::IsNaN(z.m_v.m128_f32[0]));
+      XII_TEST_BOOL(xiiMath::IsNaN(z.m_v.m128_f32[1]));
+      XII_TEST_BOOL(xiiMath::IsNaN(z.m_v.m128_f32[2]));
+      XII_TEST_BOOL(xiiMath::IsNaN(z.m_v.m128_f32[3]));
+#endif
+    }
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Operators")
