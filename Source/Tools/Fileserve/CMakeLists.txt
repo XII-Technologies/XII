@@ -13,6 +13,8 @@ xii_create_target(APPLICATION ${PROJECT_NAME})
 
 xii_make_winmain_executable(${PROJECT_NAME})
 
+xii_add_output_xii_prefix(${PROJECT_NAME})
+
 target_link_libraries(${PROJECT_NAME}
   PUBLIC
   Foundation

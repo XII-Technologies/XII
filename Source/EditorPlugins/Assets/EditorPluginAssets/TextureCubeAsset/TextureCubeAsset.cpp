@@ -150,7 +150,7 @@ xiiStatus xiiTextureCubeAssetDocument::RunTexConv(const char* szTargetFile, cons
     arguments << QString(pProp->GetAbsoluteInputFilePath(i).GetData());
   }
 
-  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("TexConv", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
+  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTexConv", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
 
   if (bUpdateThumbnail)
   {

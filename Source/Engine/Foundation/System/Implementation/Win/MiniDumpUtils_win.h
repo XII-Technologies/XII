@@ -128,11 +128,11 @@ xiiStatus xiiMiniDumpUtils::LaunchMiniDumpTool(xiiStringView sDumpFile)
 {
 #if XII_ENABLED(XII_PLATFORM_WINDOWS_DESKTOP)
   xiiStringBuilder sDumpToolPath = xiiOSFile::GetApplicationDirectory();
-  sDumpToolPath.AppendPath("MiniDumpTool.exe");
+  sDumpToolPath.AppendPath("xiiMiniDumpTool.exe");
   sDumpToolPath.MakeCleanPath();
 
   if (!xiiOSFile::ExistsFile(sDumpToolPath))
-    return xiiStatus(xiiFmt("MiniDumpTool.exe not found in '{}'", sDumpToolPath));
+    return xiiStatus(xiiFmt("xiiMiniDumpTool.exe not found in '{}'", sDumpToolPath));
 
   xiiProcessOptions procOpt;
   procOpt.m_sProcess = sDumpToolPath;

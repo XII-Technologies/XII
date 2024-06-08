@@ -9,6 +9,10 @@ xii_create_target(APPLICATION ${PROJECT_NAME})
 
 xii_make_winmain_executable(${PROJECT_NAME})
 
+xii_add_output_xii_prefix(${PROJECT_NAME})
+
+xii_add_renderers(${PROJECT_NAME})
+
 target_link_libraries(${PROJECT_NAME}
   PRIVATE
   GameEngine
@@ -29,8 +33,6 @@ if (XII_CMAKE_PLATFORM_WINDOWS_UWP)
   endif()
 
 endif()
-
-xii_add_renderers(${PROJECT_NAME})
 
 add_dependencies(${PROJECT_NAME}
   InspectorPlugin

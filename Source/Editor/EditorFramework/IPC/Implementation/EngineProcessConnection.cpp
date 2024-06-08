@@ -134,9 +134,9 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
   }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  const char* EditorEngineProcessExecutableName = "EditorEngineProcess.exe";
+  const char* EditorEngineProcessExecutableName = "xiiEditorEngineProcess.exe";
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-  const char* EditorEngineProcessExecutableName = "EditorEngineProcess";
+  const char* EditorEngineProcessExecutableName = "xiiEditorEngineProcess";
 #else
 #  error Platform not supported
 #endif

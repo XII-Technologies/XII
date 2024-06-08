@@ -68,9 +68,9 @@ private:
   void RunTexConv(xiiProcessOptions& options, const char* szOutName)
   {
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    const char* szTexConvExecutableName = "TexConv.exe";
+    const char* szTexConvExecutableName = "xiiTexConv.exe";
 #  else
-    const char* szTexConvExecutableName = "TexConv";
+    const char* szTexConvExecutableName = "xiiTexConv";
 #  endif
     xiiStringBuilder sTexConvExe = xiiOSFile::GetApplicationDirectory();
     sTexConvExe.AppendPath(szTexConvExecutableName);
