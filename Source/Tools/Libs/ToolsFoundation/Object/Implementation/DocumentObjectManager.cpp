@@ -680,7 +680,7 @@ void xiiDocumentObjectManager::PatchEmbeddedClassObjectsInternal(xiiDocumentObje
       xiiStringBuilder sTemp;
       xiiConversionUtils::ToString(pObject->GetGuid(), sTemp);
       sTemp.Append("/", pProperty->GetPropertyName());
-      const xiiUuid      subObjectGuid   = xiiUuid::StableUuidForString(sTemp);
+      const xiiUuid      subObjectGuid   = xiiUuid::MakeStableUuidFromString(sTemp);
       xiiDocumentObject* pEmbeddedObject = CreateObject(pProperty->GetSpecificType(), subObjectGuid);
       if (addToDoc)
       {

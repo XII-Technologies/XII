@@ -251,7 +251,7 @@ void xiiLongOpManager::AddLongOperation(xiiUniquePtr<xiiLongOp>&& pOperation, co
 
   auto& opInfo        = *opInfoPtr;
   opInfo.m_pOperation = std::move(pOperation);
-  opInfo.m_OperationGuid.CreateNewUuid();
+  opInfo.m_OperationGuid = xiiUuid::MakeUuid();
   opInfo.m_DocumentGuid         = documentGuid;
   opInfo.m_StartOrDuration      = xiiTime::Now();
   opInfo.m_Progress.m_pUserData = opInfo.m_pOperation.Borrow();

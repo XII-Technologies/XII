@@ -179,7 +179,7 @@ xiiResult xiiAssetCurator::EnsureAssetInfoUpdated(const xiiDataDirPath& absFileP
 
       xiiLog::Error("Two assets have identical GUIDs: '{0}' and '{1}'", pNewAssetInfo->m_Path.GetAbsolutePath(), pCurrentAssetInfo->m_Path.GetAbsolutePath());
 
-      const xiiUuid mod             = xiiUuid::StableUuidForString(absFilePath);
+      const xiiUuid mod             = xiiUuid::MakeStableUuidFromString(absFilePath);
       xiiUuid       replacementGuid = pNewAssetInfo->m_Info->m_DocumentID;
       replacementGuid.CombineWithSeed(mod);
 

@@ -177,7 +177,7 @@ xiiStatus xiiAddObjectCommand::DoInternal(bool bRedo)
   if (!bRedo)
   {
     if (!m_NewObjectGuid.IsValid())
-      m_NewObjectGuid.CreateNewUuid();
+      m_NewObjectGuid = xiiUuid::MakeUuid();
   }
 
   xiiDocumentObject* pParent = nullptr;

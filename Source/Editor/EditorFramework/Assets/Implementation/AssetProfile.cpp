@@ -152,7 +152,7 @@ xiiResult xiiAssetCurator::SaveAssetProfiles()
     ddl.BeginObject("Config", pCfg->m_sName);
 
     // make sure to create the same GUID every time, otherwise the serialized file changes all the time
-    const xiiUuid guid = xiiUuid::StableUuidForString(pCfg->GetConfigName());
+    const xiiUuid guid = xiiUuid::MakeStableUuidFromString(pCfg->GetConfigName());
 
     xiiReflectionSerializer::WriteObjectToDDL(ddl, pCfg->GetDynamicRTTI(), pCfg, guid);
 

@@ -47,7 +47,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiDocumentInfo::xiiDocumentInfo()
 {
-  m_DocumentID.CreateNewUuid();
+  m_DocumentID = xiiUuid::MakeUuid();
 }
 
 

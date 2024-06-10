@@ -431,7 +431,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
   }
 
   auto CreateGuid = [](const char* szType, xiiInt32 iIndex) -> xiiUuid {
-    xiiUuid A = xiiUuid::StableUuidForString(szType);
+    xiiUuid A = xiiUuid::MakeStableUuidFromString(szType);
     xiiUuid B = xiiUuid::StableUuidForInt(iIndex);
     A.CombineWithSeed(B);
     return A;

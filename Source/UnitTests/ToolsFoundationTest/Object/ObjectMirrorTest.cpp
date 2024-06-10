@@ -151,7 +151,7 @@ xiiVariant GetVariantFromType(xiiVariant::Type::Enum type)
     case xiiVariant::Type::Uuid:
     {
       xiiUuid guid;
-      guid.CreateNewUuid();
+      guid = xiiUuid::MakeUuid();
       return xiiVariant(guid);
     }
     case xiiVariant::Type::Angle:

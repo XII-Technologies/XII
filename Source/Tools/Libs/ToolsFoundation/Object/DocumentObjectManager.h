@@ -32,7 +32,7 @@ public:
   xiiDocumentRootObject(const xiiRTTI* pRootType) :
     xiiDocumentStorageObject(pRootType)
   {
-    m_Guid = xiiUuid::StableUuidForString("DocumentRoot");
+    m_Guid = xiiUuid::MakeStableUuidFromString("DocumentRoot");
   }
 
 public:
