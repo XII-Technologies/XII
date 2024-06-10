@@ -77,7 +77,7 @@ void xiiVolumeSampler::SampleAtPosition(const xiiWorld& world, xiiSpatialData::C
           if ((absLocalPos <= xiiSimdVec4f(1.0f)).AllSet<3>())
           {
             xiiSimdVec4f vAlpha = (xiiSimdVec4f(1.0f) - absLocalPos).CompDiv(xiiSimdConversion::ToVec3(pBoxComponent->GetFalloff().CompMax(xiiVec3(0.0001f))));
-            vAlpha = vAlpha.CompMin(xiiSimdVec4f(1.0f)).CompMax(xiiSimdVec4f::MakeZero());
+            vAlpha              = vAlpha.CompMin(xiiSimdVec4f(1.0f)).CompMax(xiiSimdVec4f::MakeZero());
             info.m_fAlpha = vAlpha.x() * vAlpha.y() * vAlpha.z();
           }
         }
