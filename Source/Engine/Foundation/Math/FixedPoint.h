@@ -55,18 +55,8 @@ public:
   /// \brief 'Equality' comparison.
   bool operator==(const xiiFixedPoint<DecimalBits>& rhs) const { return m_iValue == rhs.m_iValue; } // [tested]
 
-  /// \brief 'Less than' comparison.
-  bool operator<(const xiiFixedPoint<DecimalBits>& rhs) const { return m_iValue < rhs.m_iValue; } // [tested]
-
-  /// \brief 'Greater than' comparison.
-  bool operator>(const xiiFixedPoint<DecimalBits>& rhs) const { return m_iValue > rhs.m_iValue; } // [tested]
-
-  /// \brief 'Less than or equal' comparison.
-  bool operator<=(const xiiFixedPoint<DecimalBits>& rhs) const { return m_iValue <= rhs.m_iValue; } // [tested]
-
-  /// \brief 'Greater than or equal' comparison.
-  bool operator>=(const xiiFixedPoint<DecimalBits>& rhs) const { return m_iValue >= rhs.m_iValue; } // [tested]
-
+  /// \brief Comparison operator.
+  std::strong_ordering operator<=>(const xiiFixedPoint<DecimalBits>& rhs) const { return m_iValue <=> rhs.m_iValue; } // [tested]
 
   const xiiFixedPoint<DecimalBits> operator-() const { return xiiFixedPoint<DecimalBits>(-m_iValue, true); }
 

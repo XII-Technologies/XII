@@ -446,3 +446,16 @@ struct xiiVariantAdapter<const char*, const char*, 1, 0>
 
   xiiVariant& m_value;
 };
+
+template <class T>
+struct xiiVariantAdapter<T, xiiStringView, 1, 0>
+{
+  xiiVariantAdapter(xiiVariant& value) :
+    m_value(value)
+  {
+  }
+
+  operator const xiiStringView() { return m_value.IsA<xiiStringView>() ? m_value.Get<xiiStringView>() : m_value.Get<xiiString>().GetView(); }
+
+  xiiVariant& m_value;
+};

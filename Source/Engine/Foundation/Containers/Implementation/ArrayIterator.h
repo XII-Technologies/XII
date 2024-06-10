@@ -66,10 +66,7 @@ public:
   }
   XII_ALWAYS_INLINE const T* operator->() const { return &(**this); }
 
-  XII_ALWAYS_INLINE bool operator<(const const_iterator_base& rhs) const { return m_uiIndex < rhs.m_uiIndex; }
-  XII_ALWAYS_INLINE bool operator>(const const_iterator_base& rhs) const { return m_uiIndex > rhs.m_uiIndex; }
-  XII_ALWAYS_INLINE bool operator<=(const const_iterator_base& rhs) const { return m_uiIndex <= rhs.m_uiIndex; }
-  XII_ALWAYS_INLINE bool operator>=(const const_iterator_base& rhs) const { return m_uiIndex >= rhs.m_uiIndex; }
+  XII_ALWAYS_INLINE std::strong_ordering operator<=>(const const_iterator_base& rhs) const { return m_uiIndex <=> rhs.m_uiIndex; }
 
   XII_ALWAYS_INLINE const T& operator[](size_t uiIndex) const
   {

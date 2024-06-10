@@ -206,13 +206,19 @@ XII_ALWAYS_INLINE bool operator==(const xiiStringBase<DerivedLhs>& lhs, const ch
 }
 
 template <typename DerivedLhs, typename DerivedRhs>
-XII_ALWAYS_INLINE std::strong_ordering operator<=>(const xiiStringBase<DerivedLhs>& lhs, const xiiStringBase<DerivedRhs>& rhs)
+XII_ALWAYS_INLINE std::strong_ordering operator<=>(const xiiStringBase<DerivedLhs>& lhs, const xiiStringBase<DerivedRhs>& rhs) // [tested]
 {
   return lhs.Compare(rhs) <=> 0;
 }
 
-template <typename DerivedLhs, typename DerivedRhs>
-XII_ALWAYS_INLINE std::strong_ordering operator<=>(const xiiStringBase<DerivedLhs>& lhs, const char* rhs)
+template <typename DerivedRhs>
+XII_ALWAYS_INLINE std::strong_ordering operator<=>(const char* lhs, const xiiStringBase<DerivedRhs>& rhs) // [tested]
+{
+  return -rhs.Compare(lhs) <=> 0;
+}
+
+template <typename DerivedLhs>
+XII_ALWAYS_INLINE std::strong_ordering operator<=>(const xiiStringBase<DerivedLhs>& lhs, const char* rhs) // [tested]
 {
   return lhs.Compare(rhs) <=> 0;
 }
