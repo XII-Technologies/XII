@@ -249,7 +249,7 @@ xiiStatus xiiPasteObjectsCommand::DoInternal(bool bRedo)
     }
 
     // Remap
-    graph.ReMapNodeGuids(xiiUuid::CreateUuid());
+    graph.ReMapNodeGuids(xiiUuid::MakeUuid());
 
     xiiDocumentObjectConverterReader reader(&graph, pDocument->GetObjectManager(), xiiDocumentObjectConverterReader::Mode::CreateOnly);
 

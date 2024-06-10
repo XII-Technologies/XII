@@ -171,7 +171,7 @@
 //  const xiiAngle turn = xiiAngle::MakeFromDegree((tr - tl) * 90.0f);
 //
 //  xiiQuat q;
-//  q.SetFromAxisAndAngle(xiiVec3(0, 0, 1), turn);
+//  q = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), turn);
 //  return q;
 //}
 //

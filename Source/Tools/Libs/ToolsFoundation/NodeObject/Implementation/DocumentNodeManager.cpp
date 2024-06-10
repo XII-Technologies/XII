@@ -899,7 +899,7 @@ void xiiDocumentNodeManager::RestoreOldMetaDataAfterLoading(const xiiAbstractObj
     xiiDocumentNodeManager::CanConnectResult res;
     if (CanConnect(pConnectionType, *pSourcePin, *pTargetPin, res).m_Result.Succeeded())
     {
-      xiiDocumentObject* pConnectionObject = CreateObject(pConnectionType, xiiUuid::CreateUuid());
+      xiiDocumentObject* pConnectionObject = CreateObject(pConnectionType, xiiUuid::MakeUuid());
 
       AddObject(pConnectionObject, nullptr, "", -1);
 

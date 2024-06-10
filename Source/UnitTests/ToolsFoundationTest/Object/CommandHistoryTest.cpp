@@ -124,7 +124,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
     const xiiDocumentObject* pFloat = CreateObject(xiiGetStaticRTTI<xiiFloatStruct>());
     TestSetValue(pFloat, "Float", -5.0f);
     TestSetValue(pFloat, "Double", -5.0);
-    TestSetValue(pFloat, "Time", xiiTime::Minutes(3.0f));
+    TestSetValue(pFloat, "Time", xiiTime::MakeFromMinutes(3.0f));
     TestSetValue(pFloat, "Angle", xiiAngle::MakeFromDegree(45.0f));
 
     TestSetValue(pFloat, "Float", 5.0);

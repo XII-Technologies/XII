@@ -44,7 +44,7 @@ xiiResult xiiPointLightComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bound
 {
   m_fEffectiveRange = CalculateEffectiveRange(m_fRange, m_fIntensity);
 
-  ref_bounds = xiiBoundingSphere(xiiVec3::MakeZero(), m_fEffectiveRange);
+  ref_bounds = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), m_fEffectiveRange);
   return XII_SUCCESS;
 }
 
@@ -108,7 +108,7 @@ void xiiPointLightComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
 
   xiiTransform t = GetOwner()->GetGlobalTransform();
 
-  float fScreenSpaceSize = CalculateScreenSpaceSize(xiiBoundingSphere(t.m_vPosition, m_fEffectiveRange * 0.5f), *msg.m_pView->GetCullingCamera());
+  float fScreenSpaceSize = CalculateScreenSpaceSize(xiiBoundingSphere::MakeFromCenterAndRadius(t.m_vPosition, m_fEffectiveRange * 0.5f), *msg.m_pView->GetCullingCamera());
 
   auto pRenderData = xiiCreateRenderDataForThisFrame<xiiPointLightRenderData>(GetOwner());
 

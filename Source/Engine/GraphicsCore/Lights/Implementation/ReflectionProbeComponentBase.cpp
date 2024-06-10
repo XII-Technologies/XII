@@ -46,7 +46,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiReflectionProbeComponentBase::xiiReflectionProbeComponentBase()
 {
-  m_Desc.m_uniqueID = xiiUuid::CreateUuid();
+  m_Desc.m_uniqueID = xiiUuid::MakeUuid();
 }
 
 xiiReflectionProbeComponentBase::~xiiReflectionProbeComponentBase() = default;

@@ -128,7 +128,7 @@ void xiiQtCurve1DAssetDocumentWindow::onInsertCpAt(xiiUInt32 uiCurveIdx, xiiInt6
 
     xiiAddObjectCommand cmdAddCurve;
     cmdAddCurve.m_Parent          = pDoc->GetPropertyObject()->GetGuid();
-    cmdAddCurve.m_NewObjectGuid   = xiiUuid::CreateUuid();
+    cmdAddCurve.m_NewObjectGuid   = xiiUuid::MakeUuid();
     cmdAddCurve.m_sParentProperty = "Curves";
     cmdAddCurve.m_pType           = xiiGetStaticRTTI<xiiSingleCurveData>();
     cmdAddCurve.m_Index           = -1;
@@ -140,7 +140,7 @@ void xiiQtCurve1DAssetDocumentWindow::onInsertCpAt(xiiUInt32 uiCurveIdx, xiiInt6
 
   xiiAddObjectCommand cmdAdd;
   cmdAdd.m_Parent          = curveGuid.Get<xiiUuid>();
-  cmdAdd.m_NewObjectGuid   = xiiUuid::CreateUuid();
+  cmdAdd.m_NewObjectGuid   = xiiUuid::MakeUuid();
   cmdAdd.m_sParentProperty = "ControlPoints";
   cmdAdd.m_pType           = xiiGetStaticRTTI<xiiCurveControlPointData>();
   cmdAdd.m_Index           = -1;

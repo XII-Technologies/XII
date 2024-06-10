@@ -618,7 +618,7 @@ void xiiDecalComponent::DecalFile_Set(xiiUInt32 uiIndex, const char* szFile)
 
 void xiiDecalComponent::DecalFile_Insert(xiiUInt32 uiIndex, const char* szFile)
 {
-  m_Decals.Insert(xiiDecalResourceHandle(), uiIndex);
+  m_Decals.InsertAt(uiIndex, xiiDecalResourceHandle());
   DecalFile_Set(uiIndex, szFile);
 }
 

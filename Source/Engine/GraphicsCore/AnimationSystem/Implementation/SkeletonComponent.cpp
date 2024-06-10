@@ -146,7 +146,7 @@ void xiiSkeletonComponent::OnActivated()
 {
   SUPER::OnActivated();
 
-  m_MaxBounds.SetInvalid();
+  m_MaxBounds = xiiBoundingBox::MakeInvalid();
   VisualizeSkeletonDefaultState();
 }
 
@@ -177,7 +177,7 @@ void xiiSkeletonComponent::SetSkeleton(const xiiSkeletonResourceHandle& hResourc
   {
     m_hSkeleton = hResource;
 
-    m_MaxBounds.SetInvalid();
+    m_MaxBounds = xiiBoundingBox::MakeInvalid();
     VisualizeSkeletonDefaultState();
   }
 }
@@ -216,7 +216,7 @@ void xiiSkeletonComponent::OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& ms
   BuildJointVisualization(msg);
 
   xiiBoundingBox poseBounds;
-  poseBounds.SetInvalid();
+  poseBounds = xiiBoundingBox::MakeInvalid();
 
   for (const auto& bone : msg.m_ModelTransforms)
   {
@@ -279,8 +279,7 @@ void xiiSkeletonComponent::BuildSkeletonVisualization(xiiMsgAnimationPoseUpdated
     {
       if (pb.dir.GetAngleBetween(dirToBone) < xiiAngle::MakeFromDegree(45))
       {
-        xiiPlane plane;
-        plane.SetFromNormalAndPoint(pb.dir, pb.pos);
+        xiiPlane plane    = xiiPlane::MakeFromNormalAndPoint(pb.dir, pb.pos);
         pb.minDistToChild = xiiMath::Min(pb.minDistToChild, plane.GetDistanceTo(v1));
       }
     }
@@ -409,7 +408,7 @@ void xiiSkeletonComponent::BuildColliderVisualization(xiiMsgAnimationPoseUpdated
     bonesToHighlight.Clear();
 
   xiiQuat qRotZtoX; // the capsule should extend along X, but the debug renderer draws them along Z
-  qRotZtoX.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(-90));
+  qRotZtoX = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(-90));
 
   for (const auto& geo : pSkeleton->GetDescriptor().m_Geometry)
   {
@@ -436,7 +435,7 @@ void xiiSkeletonComponent::BuildColliderVisualization(xiiMsgAnimationPoseUpdated
       auto& shape       = m_SpheresShapes.ExpandAndGetRef();
       shape.m_Transform = st;
       shape.m_Color     = hlS;
-      shape.m_Shape     = xiiBoundingSphere(xiiVec3::MakeZero(), geo.m_Transform.m_vScale.z);
+      shape.m_Shape     = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), geo.m_Transform.m_vScale.z);
     }
 
     if (geo.m_Type == xiiSkeletonJointGeometryType::Box)
@@ -643,7 +642,7 @@ void xiiSkeletonComponent::BuildJointVisualization(xiiMsgAnimationPoseUpdated& m
         const xiiVec3 vRotDir = shape.m_Transform.m_qRotation * qBoneDir * xiiVec3(1, 0, 0);
 
         xiiQuat qRotRef;
-        qRotRef.SetFromAxisAndAngle(vRotDir, thisJoint.GetTwistLimitCenterAngle());
+        qRotRef = xiiQuat::MakeFromAxisAndAngle(vRotDir, thisJoint.GetTwistLimitCenterAngle());
         vDirRef = qRotRef * vDirRef;
 
         // if the current twist is outside the twist limit range, highlight the bone

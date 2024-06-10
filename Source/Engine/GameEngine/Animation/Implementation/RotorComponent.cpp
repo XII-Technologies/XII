@@ -46,7 +46,7 @@ void xiiRotorComponent::Update()
         CalculateAcceleratedMovement((float)m_iDegreeToRotate, m_fAcceleration, m_fAnimationSpeed, m_fDeceleration, m_AnimationTime);
 
       xiiQuat qRotation;
-      qRotation.SetFromAxisAndAngle(m_vRotationAxis, xiiAngle::MakeFromDegree(fNewDistance));
+      qRotation = xiiQuat::MakeFromAxisAndAngle(m_vRotationAxis, xiiAngle::MakeFromDegree(fNewDistance));
 
       GetOwner()->SetLocalRotation(GetOwner()->GetLocalRotation() * m_qLastRotation.GetInverse() * qRotation);
 
@@ -90,7 +90,7 @@ void xiiRotorComponent::Update()
       /// \todo This will probably give precision issues pretty quickly
 
       xiiQuat qRotation;
-      qRotation.SetFromAxisAndAngle(m_vRotationAxis, xiiAngle::MakeFromDegree(m_fAnimationSpeed * GetWorld()->GetClock().GetTimeDiff().AsFloatInSeconds()));
+      qRotation = xiiQuat::MakeFromAxisAndAngle(m_vRotationAxis, xiiAngle::MakeFromDegree(m_fAnimationSpeed * GetWorld()->GetClock().GetTimeDiff().AsFloatInSeconds()));
 
       GetOwner()->SetLocalRotation(GetOwner()->GetLocalRotation() * qRotation);
     }

@@ -152,7 +152,7 @@ namespace
           cc[6] = cc[4] - dirUp * steps.w();
           cc[7] = cc[6] + dirRight * steps.z();
 
-          clusterBoundingSpheres[GetClusterIndexFromCoord(x, y, z)].SetFromPoints(cc, 8);
+          clusterBoundingSpheres[GetClusterIndexFromCoord(x, y, z)] = xiiSimdBSphere::MakeFromPoints(cc, 8);
         }
       }
 
@@ -213,9 +213,8 @@ namespace
     // if negative scaling should be allowed, this would need to be changed
     scale = xiiVec3(1.0f).CompDiv(scale.CompMax(xiiVec3(0.00001f)));
 
-    const xiiMat4 lookAt = xiiGraphicsUtils::CreateLookAtViewMatrix(position, position + dirForwards, dirUp);
-    xiiMat4       scaleMat;
-    scaleMat.SetScalingMatrix(xiiVec3(scale.y, -scale.z, scale.x));
+    const xiiMat4 lookAt   = xiiGraphicsUtils::CreateLookAtViewMatrix(position, position + dirForwards, dirUp);
+    xiiMat4       scaleMat = xiiMat4::MakeScaling(xiiVec3(scale.y, -scale.z, scale.x));
 
     ref_perDecalData.worldToDecalMatrix   = scaleMat * lookAt;
     ref_perDecalData.applyOnlyToId        = pDecalRenderData->m_uiApplyOnlyToId;
@@ -425,10 +424,10 @@ namespace
     xiiVec3 corners[8];
     xiiBoundingBox(xiiVec3(-1), xiiVec3(1)).GetCorners(corners);
 
-    xiiSimdMat4f decalToScreen = mViewProjectionMatrix * decalToWorld;
-    bool         bInsideBox    = false;
-    xiiSimdBBox  screenSpaceBounds;
-    screenSpaceBounds.SetInvalid();
+    xiiSimdMat4f decalToScreen     = mViewProjectionMatrix * decalToWorld;
+    bool         bInsideBox        = false;
+    xiiSimdBBox  screenSpaceBounds = xiiSimdBBox::MakeInvalid();
+
     for (xiiUInt32 i = 0; i < 8; ++i)
     {
       xiiSimdVec4f corner            = xiiSimdConversion::ToVec3(corners[i]);

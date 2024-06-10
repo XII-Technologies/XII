@@ -201,7 +201,7 @@ xiiEditorInput xiiRotateGizmo::DoMouseMoveEvent(QMouseEvent* e)
   if (!e->modifiers().testFlag(Qt::AltModifier))
     xiiSnapProvider::SnapRotation(rot);
 
-  m_qCurrentRotation.SetFromAxisAndAngle(m_vRotationAxis, rot);
+  m_qCurrentRotation = xiiQuat::MakeFromAxisAndAngle(m_vRotationAxis, rot);
 
   xiiTransform mTrans = GetTransformation();
   mTrans.m_qRotation  = m_qCurrentRotation * m_qStartRotation;

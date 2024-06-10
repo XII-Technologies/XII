@@ -664,7 +664,7 @@ static void ComputeSegmentUpVector(xiiArrayPtr<xiiPathComponent::LinearizedEleme
     const xiiAngle roll = xiiMath::Lerp(cp0.m_Roll, cp1.m_Roll, fLerpFactor);
 
     xiiQuat qRoll;
-    qRoll.SetFromAxisAndAngle(tangents[t], roll);
+    qRoll = xiiQuat::MakeFromAxisAndAngle(tangents[t], roll);
 
     xiiVec3 vLocalUp = xiiMath::Lerp(cp0up, cp1up, fLerpFactor);
     vLocalUp.NormalizeIfNotZero(vWorldUp).IgnoreResult();

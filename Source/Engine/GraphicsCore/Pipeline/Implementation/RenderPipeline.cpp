@@ -1007,7 +1007,7 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
 
   xiiFrustum     limitedFrustum                               = frustum;
   const xiiPlane farPlane                                     = limitedFrustum.GetPlane(xiiFrustum::PlaneType::FarPlane);
-  limitedFrustum.AccessPlane(xiiFrustum::PlaneType::FarPlane) = xiiPlane(farPlane.m_vNormal, view.GetCullingCamera()->GetCenterPosition() + farPlane.m_vNormal * cvar_SpatialCullingOcclusionFarPlane.GetValue()); // only use occluders closer than this
+  limitedFrustum.AccessPlane(xiiFrustum::PlaneType::FarPlane) = xiiPlane::MakeFromNormalAndPoint(farPlane.m_vNormal, view.GetCullingCamera()->GetCenterPosition() + farPlane.m_vNormal * cvar_SpatialCullingOcclusionFarPlane.GetValue()); // only use occluders closer than this
 
   xiiRasterizerView* pRasterizer = PrepareOcclusionCulling(limitedFrustum, view);
   XII_SCOPE_EXIT(g_pRasterizerViewPool->ReturnRasterizerView(pRasterizer));
@@ -1024,8 +1024,7 @@ void xiiRenderPipeline::FindVisibleObjects(const xiiView& view)
       const xiiSimdVec4f c = aabb.GetCenter();
       const xiiSimdVec4f e = aabb.GetHalfExtents();
 
-      xiiSimdBBox aabb2;
-      aabb2.SetCenterAndHalfExtents(c, e.CompMul(xiiSimdVec4f(1.0f + cvar_SpatialCullingOcclusionBoundsInlation)));
+      xiiSimdBBox aabb2 = xiiSimdBBox::MakeFromCenterAndHalfExtents(c, e.CompMul(xiiSimdVec4f(1.0f + cvar_SpatialCullingOcclusionBoundsInlation)));
 
       return !pRasterizer->IsVisible(aabb2);
     };

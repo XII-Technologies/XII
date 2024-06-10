@@ -31,8 +31,7 @@ namespace
       float y = (float)rng.DoubleMinMax(1.0, 100.0);
       float z = (float)rng.DoubleMinMax(1.0, 100.0);
 
-      xiiBoundingBox bounds;
-      bounds.SetCenterAndHalfExtents(xiiVec3::MakeZero(), xiiVec3(x, y, z));
+      xiiBoundingBox bounds = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3::MakeZero(), xiiVec3(x, y, z));
 
       xiiSpatialData::Category category = m_SpecialCategory;
       if (category == xiiInvalidSpatialDataCategory)
@@ -100,7 +99,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "FindObjectsInSphere")
   {
-    xiiBoundingSphere testSphere(xiiVec3(100.0f, 60.0f, 400.0f), 3000.0f);
+    xiiBoundingSphere testSphere = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3(100.0f, 60.0f, 400.0f), 3000.0f);
 
     xiiDynamicArray<xiiGameObject*> objectsInSphere;
     xiiHashSet<xiiGameObject*>      uniqueObjects;
@@ -156,8 +155,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "FindObjectsInBox")
   {
-    xiiBoundingBox testBox;
-    testBox.SetCenterAndHalfExtents(xiiVec3(100.0f, 60.0f, 400.0f), xiiVec3(3000.0f));
+    xiiBoundingBox testBox = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3(100.0f, 60.0f, 400.0f), xiiVec3(3000.0f));
 
     xiiDynamicArray<xiiGameObject*> objectsInBox;
     xiiHashSet<xiiGameObject*>      uniqueObjects;
@@ -226,8 +224,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
     xiiMat4 lookAt     = xiiGraphicsUtils::CreateLookAtViewMatrix(xiiVec3::MakeZero(), xiiVec3::MakeAxisX(), xiiVec3::MakeAxisZ());
     xiiMat4 projection = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::MakeFromDegree(80.0f), 1.0f, 1.0f, 10000.0f);
 
-    xiiFrustum testFrustum;
-    testFrustum.SetFrustum(projection * lookAt);
+    xiiFrustum testFrustum = xiiFrustum::MakeFromMVP(projection * lookAt);
 
     xiiDynamicArray<const xiiGameObject*> visibleObjects;
     xiiHashSet<const xiiGameObject*>      uniqueObjects;

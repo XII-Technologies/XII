@@ -291,7 +291,7 @@ void xiiInstancedMeshComponent::Instances_SetValue(xiiUInt32 uiIndex, xiiMeshIns
 
 void xiiInstancedMeshComponent::Instances_Insert(xiiUInt32 uiIndex, xiiMeshInstanceData value)
 {
-  m_RawInstancedData.Insert(value, uiIndex);
+  m_RawInstancedData.InsertAt(uiIndex, value);
 
   TriggerLocalBoundsUpdate();
 }

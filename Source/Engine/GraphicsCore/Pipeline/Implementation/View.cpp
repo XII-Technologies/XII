@@ -181,7 +181,7 @@ void xiiView::ComputeCullingFrustum(xiiFrustum& out_frustum) const
   xiiMat4 projectionMatrix;
   pCamera->GetProjectionMatrix(fViewportAspectRatio, projectionMatrix);
 
-  out_frustum.SetFrustum(projectionMatrix * viewMatrix);
+  out_frustum = xiiFrustum::MakeFromMVP(projectionMatrix * viewMatrix);
 }
 
 void xiiView::SetShaderPermutationVariable(xiiStringView sName, xiiStringView sValue)

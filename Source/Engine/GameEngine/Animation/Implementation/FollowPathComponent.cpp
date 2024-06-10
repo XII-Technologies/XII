@@ -167,7 +167,7 @@ void xiiFollowPathComponent::Update(bool bForce)
       deltaAngle                = xiiMath::Lerp(tiltAngle * fTiltStrength, m_LastTiltAngle, 0.85f); // this smooths out the tilting from being jittery
 
       xiiQuat rot;
-      rot.SetFromAxisAndAngle(vTarget, deltaAngle);
+      rot    = xiiQuat::MakeFromAxisAndAngle(vTarget, deltaAngle);
       vUp    = rot * vUp;
       vRight = rot * vRight;
     }

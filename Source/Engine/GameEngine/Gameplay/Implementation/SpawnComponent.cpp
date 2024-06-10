@@ -86,9 +86,9 @@ bool xiiSpawnComponent::SpawnOnce(const xiiVec3& vLocalOffset)
 
       xiiQuat qTilt, qTurn, qDeviate;
       qTilt;
-      qTilt.SetFromAxisAndAngle(vTiltAxis, tiltAngle);
+      qTilt = xiiQuat::MakeFromAxisAndAngle(vTiltAxis, tiltAngle);
       qTurn;
-      qTurn.SetFromAxisAndAngle(vTurnAxis, turnAngle);
+      qTurn    = xiiQuat::MakeFromAxisAndAngle(vTurnAxis, turnAngle);
       qDeviate = qTurn * qTilt;
 
       tLocalSpawn.m_qRotation = qDeviate;

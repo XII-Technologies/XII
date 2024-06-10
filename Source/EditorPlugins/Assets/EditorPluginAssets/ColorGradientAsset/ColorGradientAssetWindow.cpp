@@ -106,7 +106,7 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientColorCpAdded(double posX, 
 
   xiiAddObjectCommand cmdAdd;
   cmdAdd.m_Parent          = pDoc->GetPropertyObject()->GetGuid();
-  cmdAdd.m_NewObjectGuid   = xiiUuid::CreateUuid();
+  cmdAdd.m_NewObjectGuid   = xiiUuid::MakeUuid();
   cmdAdd.m_sParentProperty = "ColorCPs";
   cmdAdd.m_pType           = xiiGetStaticRTTI<xiiColorControlPoint>();
   cmdAdd.m_Index           = -1;
@@ -145,7 +145,7 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientAlphaCpAdded(double posX, 
 
   xiiAddObjectCommand cmdAdd;
   cmdAdd.m_Parent          = pDoc->GetPropertyObject()->GetGuid();
-  cmdAdd.m_NewObjectGuid   = xiiUuid::CreateUuid();
+  cmdAdd.m_NewObjectGuid   = xiiUuid::MakeUuid();
   cmdAdd.m_sParentProperty = "AlphaCPs";
   cmdAdd.m_pType           = xiiGetStaticRTTI<xiiAlphaControlPoint>();
   cmdAdd.m_Index           = -1;
@@ -176,7 +176,7 @@ void xiiQtColorGradientAssetDocumentWindow::onGradientIntensityCpAdded(double po
 
   xiiAddObjectCommand cmdAdd;
   cmdAdd.m_Parent          = pDoc->GetPropertyObject()->GetGuid();
-  cmdAdd.m_NewObjectGuid   = xiiUuid::CreateUuid();
+  cmdAdd.m_NewObjectGuid   = xiiUuid::MakeUuid();
   cmdAdd.m_sParentProperty = "IntensityCPs";
   cmdAdd.m_pType           = xiiGetStaticRTTI<xiiIntensityControlPoint>();
   cmdAdd.m_Index           = -1;

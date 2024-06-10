@@ -89,7 +89,7 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 // static
 xiiUInt32 xiiGALShaderType::GetStageIndex(xiiGALShaderType::Enum stage)
 {
-  xiiStaticBitfield32 shaderTypeBitfield = xiiStaticBitfield32::FromMask(stage);
+  xiiStaticBitfield32 shaderTypeBitfield = xiiStaticBitfield32::MakeFromMask(stage);
 
   XII_ASSERT_DEV(shaderTypeBitfield.GetNumBitsSet() <= 1U, "There are more than one bits set.");
 

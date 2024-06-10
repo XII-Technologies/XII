@@ -191,7 +191,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
       if (pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner))
       {
         const xiiUuid oldGuid = pObjectAccessor->Get<xiiUuid>(pObject, pProp);
-        xiiUuid       newGuid = xiiUuid::CreateUuid();
+        xiiUuid       newGuid = xiiUuid::MakeUuid();
         if (oldGuid.IsValid())
         {
           XII_TEST_BOOL(pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(oldGuid)).m_Result.Succeeded());
@@ -249,7 +249,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
 
       if (pProp->GetCategory() == xiiPropertyCategory::Array)
       {
-        xiiUuid newGuid = xiiUuid::CreateUuid();
+        xiiUuid newGuid = xiiUuid::MakeUuid();
         XII_TEST_BOOL(pObjectAccessor->AddObject(pObject, pProp, 0, pProp->GetSpecificType(), newGuid).m_Result.Succeeded());
       }
     }
@@ -282,7 +282,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
         XII_TEST_BOOL(pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(currentValues[i].Get<xiiUuid>())).m_Result.Succeeded());
       }
 
-      xiiUuid newGuid = xiiUuid::CreateUuid();
+      xiiUuid newGuid = xiiUuid::MakeUuid();
       XII_TEST_BOOL(pObjectAccessor->AddObject(pObject, pProp, "value1", pProp->GetSpecificType(), newGuid).m_Result.Succeeded());
     }
   }

@@ -119,7 +119,7 @@ void xiiLongOpControllerManager::RegisterLongOp(const xiiUuid& documentGuid, con
   auto& opInfo           = *opInfoPtr;
   opInfo.m_DocumentGuid  = documentGuid;
   opInfo.m_ComponentGuid = componentGuid;
-  opInfo.m_OperationGuid = xiiUuid::CreateUuid();
+  opInfo.m_OperationGuid = xiiUuid::MakeUuid();
 
   opInfo.m_pProxyOp = pRtti->GetAllocator()->Allocate<xiiLongOpProxy>();
   opInfo.m_pProxyOp->InitializeRegistered(documentGuid, componentGuid);

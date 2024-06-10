@@ -242,10 +242,8 @@ void xiiDummyXR::GameApplicationEventHandler(const xiiGameApplicationExecutionEv
           {
             const float   fHeight         = m_StageSpace == xiiXRStageSpace::Standing ? m_fHeadHeight : 0.0f;
             const xiiMat4 mStageTransform = add.GetInverse().GetAsMat4();
-            xiiMat4       poseLeft;
-            poseLeft.SetTranslationMatrix(xiiVec3(0, -m_fEyeOffset, fHeight));
-            xiiMat4 poseRight;
-            poseRight.SetTranslationMatrix(xiiVec3(0, m_fEyeOffset, fHeight));
+            xiiMat4       poseLeft        = xiiMat4::MakeTranslation(xiiVec3(0, -m_fEyeOffset, fHeight));
+            xiiMat4       poseRight       = xiiMat4::MakeTranslation(xiiVec3(0, m_fEyeOffset, fHeight));
 
             // XII Forward is +X, need to add this to align the forward projection
             const xiiMat4 viewMatrix          = xiiGraphicsUtils::CreateLookAtViewMatrix(xiiVec3::MakeZero(), xiiVec3(1, 0, 0), xiiVec3(0, 0, 1));

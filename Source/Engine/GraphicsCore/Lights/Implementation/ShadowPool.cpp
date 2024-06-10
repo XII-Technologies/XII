@@ -503,7 +503,7 @@ xiiUInt32 xiiShadowPool::AddDirectionalLight(const xiiDirectionalLightComponent*
 
       if (false)
       {
-        xiiDebugRenderer::DrawLineSphere(pReferenceView->GetHandle(), xiiBoundingSphere(center, radius), xiiColor::OrangeRed);
+        xiiDebugRenderer::DrawLineSphere(pReferenceView->GetHandle(), xiiBoundingSphere::MakeFromCenterAndRadius(center, radius), xiiColor::OrangeRed);
       }
 
       float   fCameraToCenterDistance = radius + fNearPlaneOffset;

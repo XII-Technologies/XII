@@ -1012,10 +1012,10 @@ void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngl
   const xiiAngle  step          = range / (float)uiTesselation;
 
   xiiQuat qStart;
-  qStart.SetFromAxisAndAngle(vRotationAxis, startAngle);
+  qStart = xiiQuat::MakeFromAxisAndAngle(vRotationAxis, startAngle);
 
   xiiQuat qStep;
-  qStep.SetFromAxisAndAngle(vRotationAxis, step);
+  qStep = xiiQuat::MakeFromAxisAndAngle(vRotationAxis, step);
 
   xiiVec3 vCurDir = qStart * vForwardAxis;
 
@@ -1074,10 +1074,10 @@ void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, x
   const xiiVec3 tangentAxis = vForwardAxis.GetOrthogonalVector().GetNormalized();
 
   xiiQuat tilt;
-  tilt.SetFromAxisAndAngle(tangentAxis, halfAngle);
+  tilt = xiiQuat::MakeFromAxisAndAngle(tangentAxis, halfAngle);
 
   xiiQuat step;
-  step.SetFromAxisAndAngle(vForwardAxis, xiiAngle::MakeFromDegree(360) / (float)uiTesselation);
+  step = xiiQuat::MakeFromAxisAndAngle(vForwardAxis, xiiAngle::MakeFromDegree(360) / (float)uiTesselation);
 
   xiiVec3 vCurDir = tilt * vForwardAxis;
 
@@ -1307,7 +1307,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         }
         else
         {
-          xiiDebugRenderer::DrawLineSphere(context, xiiBoundingSphere(xiiVec3::MakeZero(), item.m_fRadius), item.m_Color, item.m_Transform);
+          xiiDebugRenderer::DrawLineSphere(context, xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), item.m_fRadius), item.m_Color, item.m_Transform);
 
           ++i;
         }
@@ -1869,22 +1869,20 @@ void xiiScriptExtensionClass_Debug::DrawCross(const xiiWorld* pWorld, const xiiV
 // static
 void xiiScriptExtensionClass_Debug::DrawLineBox(const xiiWorld* pWorld, const xiiVec3& vPosition, const xiiVec3& vHalfExtents, const xiiColor& color, const xiiTransform& transform)
 {
-  xiiBoundingBox bbox;
-  bbox.SetCenterAndHalfExtents(vPosition, vHalfExtents);
+  xiiBoundingBox bbox = xiiBoundingBox::MakeFromCenterAndHalfExtents(vPosition, vHalfExtents);
   xiiDebugRenderer::DrawLineBox(pWorld, bbox, color, transform);
 }
 
 // static
 void xiiScriptExtensionClass_Debug::DrawLineSphere(const xiiWorld* pWorld, const xiiVec3& vPosition, float fRadius, const xiiColor& color, const xiiTransform& transform)
 {
-  xiiDebugRenderer::DrawLineSphere(pWorld, xiiBoundingSphere(vPosition, fRadius), color, transform);
+  xiiDebugRenderer::DrawLineSphere(pWorld, xiiBoundingSphere::MakeFromCenterAndRadius(vPosition, fRadius), color, transform);
 }
 
 // static
 void xiiScriptExtensionClass_Debug::DrawSolidBox(const xiiWorld* pWorld, const xiiVec3& vPosition, const xiiVec3& vHalfExtents, const xiiColor& color, const xiiTransform& transform)
 {
-  xiiBoundingBox bbox;
-  bbox.SetCenterAndHalfExtents(vPosition, vHalfExtents);
+  xiiBoundingBox bbox = xiiBoundingBox::MakeFromCenterAndHalfExtents(vPosition, vHalfExtents);
   xiiDebugRenderer::DrawSolidBox(pWorld, bbox, color, transform);
 }
 

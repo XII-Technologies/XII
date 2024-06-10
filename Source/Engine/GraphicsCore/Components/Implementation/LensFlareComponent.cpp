@@ -186,7 +186,7 @@ xiiResult xiiLensFlareComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds
   }
   else
   {
-    ref_bounds = xiiBoundingSphere(xiiVec3::MakeZero(), m_fOcclusionSampleRadius);
+    ref_bounds = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), m_fOcclusionSampleRadius);
   }
   return XII_SUCCESS;
 }
@@ -272,7 +272,7 @@ void xiiLensFlareComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
     xiiTransform localOffset = xiiTransform::MakeIdentity();
     localOffset.m_vPosition  = xiiVec3(pCamera->GetFarPlane() * -0.999, 0, 0);
 
-    globalTransform.SetGlobalTransform(globalTransform, localOffset);
+    globalTransform = xiiTransform::MakeGlobalTransform(globalTransform, localOffset);
     globalTransform.m_vPosition += pCamera->GetCenterPosition();
 
     if (pCamera->IsPerspective())

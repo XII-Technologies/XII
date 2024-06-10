@@ -151,7 +151,7 @@ void xiiDeviceTrackingComponent::Update()
         xiiTransform       local;
         if (GetOwner()->GetParent() != nullptr)
         {
-          local.SetLocalTransform(GetOwner()->GetParent()->GetGlobalTransform(), global);
+          local = xiiTransform::MakeLocalTransform(GetOwner()->GetParent()->GetGlobalTransform(), global);
         }
         else
         {

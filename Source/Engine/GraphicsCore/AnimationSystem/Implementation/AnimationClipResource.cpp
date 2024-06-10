@@ -250,9 +250,9 @@ XII_FORCE_INLINE void xii2ozz(const xiiVec3& vIn, ozz::math::Float3& ref_out)
 
 XII_FORCE_INLINE void xii2ozz(const xiiQuat& qIn, ozz::math::Quaternion& ref_out)
 {
-  ref_out.x = qIn.v.x;
-  ref_out.y = qIn.v.y;
-  ref_out.z = qIn.v.z;
+  ref_out.x = qIn.x;
+  ref_out.y = qIn.y;
+  ref_out.z = qIn.z;
   ref_out.w = qIn.w;
 }
 

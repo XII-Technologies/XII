@@ -207,7 +207,7 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
 
         if (!sFile.IsEmpty())
         {
-          xiiUuid   newDoc = xiiUuid::CreateUuid();
+          xiiUuid   newDoc = xiiUuid::MakeUuid();
           xiiStatus res    = m_Context.m_pDocument->GetDocumentManager()->CloneDocument(m_Context.m_pDocument->GetDocumentPath(), sFile, newDoc);
 
           if (res.Failed())

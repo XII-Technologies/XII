@@ -141,7 +141,7 @@ void xiiSceneDocument::GroupSelection()
 
   pHistory->StartTransaction("Group Selection");
 
-  xiiUuid groupObj = xiiUuid::CreateUuid();
+  xiiUuid groupObj = xiiUuid::MakeUuid();
 
   xiiAddObjectCommand cmdAdd;
   cmdAdd.m_NewObjectGuid   = groupObj;
@@ -402,7 +402,7 @@ xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPick
 
   if (Sel.IsEmpty() || !bAttachToParent)
   {
-    cmdAdd.m_NewObjectGuid = xiiUuid::CreateUuid();
+    cmdAdd.m_NewObjectGuid = xiiUuid::MakeUuid();
     NewNode                = cmdAdd.m_NewObjectGuid;
 
     auto res = history->AddCommand(cmdAdd);
@@ -414,7 +414,7 @@ xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPick
   }
   else
   {
-    cmdAdd.m_NewObjectGuid = xiiUuid::CreateUuid();
+    cmdAdd.m_NewObjectGuid = xiiUuid::MakeUuid();
     NewNode                = cmdAdd.m_NewObjectGuid;
 
     cmdAdd.m_Parent = Sel[0]->GetGuid();
@@ -626,7 +626,7 @@ xiiStatus xiiSceneDocument::CreatePrefabDocumentFromSelection(xiiStringView sFil
     {
       const xiiRTTI* pRtti = xiiGetStaticRTTI<xiiGameObject>();
 
-      xiiAbstractObjectNode* pRoot = ref_graph.AddNode(xiiUuid::CreateUuid(), pRtti->GetTypeName(), pRtti->GetTypeVersion());
+      xiiAbstractObjectNode* pRoot = ref_graph.AddNode(xiiUuid::MakeUuid(), pRtti->GetTypeName(), pRtti->GetTypeVersion());
       pRoot->AddProperty("Name", "<Prefab-Root>");
       pRoot->AddProperty("Children", varChildren);
 

@@ -16,7 +16,7 @@ void xiiComponentDragDropHandler::CreateDropObject(const xiiVec3& vPosition, con
   if (vPos.IsNaN())
     vPos.SetZero();
 
-  xiiUuid ObjectGuid = xiiUuid::CreateUuid();
+  xiiUuid ObjectGuid = xiiUuid::MakeUuid();
 
   xiiAddObjectCommand cmd;
   cmd.m_Parent = parent;
@@ -45,7 +45,7 @@ void xiiComponentDragDropHandler::AttachComponentToObject(const char* szType, co
 {
   auto history = m_pDocument->GetCommandHistory();
 
-  xiiUuid CmpGuid = xiiUuid::CreateUuid();
+  xiiUuid CmpGuid = xiiUuid::MakeUuid();
 
   xiiAddObjectCommand cmd;
 

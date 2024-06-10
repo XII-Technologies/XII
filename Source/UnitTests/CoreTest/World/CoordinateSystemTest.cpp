@@ -38,7 +38,7 @@ void TestRotation(const xiiCoordinateSystemConversion& atoB, const xiiCoordinate
 xiiQuat FromAxisAndAngle(const xiiVec3& vAxis, xiiAngle angle)
 {
   xiiQuat q;
-  q.SetFromAxisAndAngle(vAxis.GetNormalized(), angle);
+  q = xiiQuat::MakeFromAxisAndAngle(vAxis.GetNormalized(), angle);
   return q;
 }
 

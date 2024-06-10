@@ -91,7 +91,7 @@ xiiDocumentObject* xiiDocumentObjectManager::CreateObject(const xiiRTTI* pRtti, 
   if (guid.IsValid())
     pObject->m_Guid = guid;
   else
-    pObject->m_Guid = xiiUuid::CreateUuid();
+    pObject->m_Guid = xiiUuid::MakeUuid();
 
   PatchEmbeddedClassObjectsInternal(pObject, pRtti, false);
 

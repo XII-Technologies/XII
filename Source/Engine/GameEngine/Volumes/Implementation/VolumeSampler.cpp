@@ -53,7 +53,7 @@ void xiiVolumeSampler::SampleAtPosition(const xiiWorld& world, xiiSpatialData::C
   };
 
   auto              vPos   = xiiSimdConversion::ToVec3(vGlobalPosition);
-  xiiBoundingSphere sphere = xiiBoundingSphere(vGlobalPosition, 0.01f);
+  xiiBoundingSphere sphere = xiiBoundingSphere::MakeFromCenterAndRadius(vGlobalPosition, 0.01f);
 
   xiiSpatialSystem::QueryParams queryParams;
   queryParams.m_uiCategoryBitmask = spatialCategory.GetBitmask();

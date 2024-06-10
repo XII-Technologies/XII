@@ -245,7 +245,7 @@ xiiEditorInput xiiDragToPositionGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
     if (alignAxis.GetAngleBetween(res.m_vPickedNormal) > xiiAngle::MakeFromDegree(179))
     {
-      rot.SetFromAxisAndAngle(m_qStartOrientation * orthoAxis, xiiAngle::MakeFromDegree(180));
+      rot = xiiQuat::MakeFromAxisAndAngle(m_qStartOrientation * orthoAxis, xiiAngle::MakeFromDegree(180));
     }
     else
     {

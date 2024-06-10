@@ -115,7 +115,7 @@ void xiiSampleAnimClipSequenceAnimNode::Clips_Insert(xiiUInt32 uiIndex, const ch
 {
   xiiHashedString s;
   s.Assign(szValue);
-  m_Clips.Insert(s, uiIndex);
+  m_Clips.InsertAt(uiIndex, s);
 }
 
 void xiiSampleAnimClipSequenceAnimNode::Clips_Remove(xiiUInt32 uiIndex)

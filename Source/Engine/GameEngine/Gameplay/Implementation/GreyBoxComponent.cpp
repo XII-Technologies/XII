@@ -457,7 +457,7 @@ void xiiGreyBoxComponent::BuildGeometry(xiiGeometry& geom, xiiEnum<xiiGreyBoxSha
 
   xiiMat4 t2, t3;
 
-  opt.m_Transform.SetTranslationMatrix(offset);
+  opt.m_Transform = xiiMat4::MakeTranslation(offset);
 
   switch (shape)
   {
@@ -471,7 +471,7 @@ void xiiGreyBoxComponent::BuildGeometry(xiiGeometry& geom, xiiEnum<xiiGreyBoxSha
 
     case xiiGreyBoxShape::RampY:
       xiiMath::Swap(size.x, size.y);
-      opt.m_Transform.SetRotationMatrixZ(xiiAngle::MakeFromDegree(-90.0f));
+      opt.m_Transform = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(-90.0f));
       opt.m_Transform.SetTranslationVector(offset);
       geom.AddTexturedRamp(size, opt);
       break;
@@ -487,7 +487,7 @@ void xiiGreyBoxComponent::BuildGeometry(xiiGeometry& geom, xiiEnum<xiiGreyBoxSha
 
     case xiiGreyBoxShape::StairsY:
       xiiMath::Swap(size.x, size.y);
-      opt.m_Transform.SetRotationMatrixZ(xiiAngle::MakeFromDegree(-90.0f));
+      opt.m_Transform = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(-90.0f));
       opt.m_Transform.SetTranslationVector(offset);
       geom.AddStairs(size, m_uiDetail, m_Curvature, m_bSlopedTop, opt);
       break;
@@ -498,7 +498,7 @@ void xiiGreyBoxComponent::BuildGeometry(xiiGeometry& geom, xiiEnum<xiiGreyBoxSha
       size.z          = size.x;
       size.x          = size.y;
       size.y          = tmp;
-      opt.m_Transform.SetRotationMatrixY(xiiAngle::MakeFromDegree(-90));
+      opt.m_Transform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(-90));
       t2.SetRotationMatrixX(xiiAngle::MakeFromDegree(90));
       opt.m_Transform = t2 * opt.m_Transform;
       opt.m_Transform.SetTranslationVector(offset);
@@ -508,9 +508,9 @@ void xiiGreyBoxComponent::BuildGeometry(xiiGeometry& geom, xiiEnum<xiiGreyBoxSha
 
     case xiiGreyBoxShape::ArchY:
     {
-      opt.m_Transform.SetRotationMatrixY(xiiAngle::MakeFromDegree(-90));
+      opt.m_Transform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(-90));
       t2.SetRotationMatrixX(xiiAngle::MakeFromDegree(90));
-      t3.SetRotationMatrixZ(xiiAngle::MakeFromDegree(90));
+      t3 = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(90));
       xiiMath::Swap(size.y, size.z);
       opt.m_Transform = t3 * t2 * opt.m_Transform;
       opt.m_Transform.SetTranslationVector(offset);

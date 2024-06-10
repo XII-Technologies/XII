@@ -58,7 +58,7 @@ void xiiBoxGizmo::OnTransformationChanged(const xiiTransform& transform)
   rot.SetRotationMatrixX(xiiAngle::MakeFromDegree(90));
   m_Edges[0].SetTransformation(scale * rot);
 
-  rot.SetRotationMatrixY(xiiAngle::MakeFromDegree(90));
+  rot = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(90));
   m_Faces[0].SetTransformation(scale * rot);
 
   rot.SetIdentity();
@@ -67,7 +67,7 @@ void xiiBoxGizmo::OnTransformationChanged(const xiiTransform& transform)
   rot.SetRotationMatrixX(xiiAngle::MakeFromDegree(90));
   m_Faces[1].SetTransformation(scale * rot);
 
-  rot.SetRotationMatrixZ(xiiAngle::MakeFromDegree(90));
+  rot = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(90));
   m_Edges[2].SetTransformation(scale * rot);
 
   rot.SetIdentity();

@@ -80,7 +80,7 @@ void xiiRopeRenderComponent::OnActivated()
 {
   SUPER::OnActivated();
 
-  m_LocalBounds.SetInvalid();
+  m_LocalBounds = xiiBoundingBoxSphere::MakeInvalid();
 }
 
 void xiiRopeRenderComponent::OnDeactivated()
@@ -214,7 +214,7 @@ void xiiRopeRenderComponent::SetThickness(float fThickness)
         offsetMat.SetTranslationVector(xiiVec3(static_cast<float>(i), 0, 0));
         xiiMat4 skinningMat = m_SkinningState.m_Transforms[i].GetAsMat4() * offsetMat;
 
-        transforms[i].SetFromMat4(skinningMat);
+        transforms[i] = xiiTransform::MakeFromMat4(skinningMat);
       }
 
       UpdateSkinningTransformBuffer(transforms);
@@ -285,8 +285,7 @@ void xiiRopeRenderComponent::OnRopePoseUpdated(xiiMsgRopePoseUpdated& msg)
 
   UpdateSkinningTransformBuffer(msg.m_LinkTransforms);
 
-  xiiBoundingBox newBounds;
-  newBounds.SetFromPoints(&msg.m_LinkTransforms[0].m_vPosition, msg.m_LinkTransforms.GetCount(), sizeof(xiiTransform));
+  xiiBoundingBox newBounds = xiiBoundingBox::MakeFromPoints(&msg.m_LinkTransforms[0].m_vPosition, msg.m_LinkTransforms.GetCount(), sizeof(xiiTransform));
 
   // if the existing bounds are big enough, don't update them
   if (!m_LocalBounds.IsValid() || !m_LocalBounds.GetBox().Contains(newBounds))

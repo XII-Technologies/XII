@@ -198,7 +198,7 @@ void xiiFileserveClient::UploadFile(xiiUInt16 uiDataDirID, const char* szFile, c
 
   const xiiUInt32 uiFileSize = fileContent.GetCount();
 
-  xiiUuid uploadGuid = xiiUuid::CreateUuid();
+  xiiUuid uploadGuid = xiiUuid::MakeUuid();
 
   {
     xiiRemoteMessage msg;
@@ -626,7 +626,7 @@ xiiResult xiiFileserveClient::DownloadFile(xiiUInt16 uiDataDirID, const char* sz
 
   m_Download.Clear();
   m_sCurFileRequest    = szFile;
-  m_CurFileRequestGuid = xiiUuid::CreateUuid();
+  m_CurFileRequestGuid = xiiUuid::MakeUuid();
   m_bDownloading       = true;
 
   xiiRemoteMessage msg('FSRV', 'READ');

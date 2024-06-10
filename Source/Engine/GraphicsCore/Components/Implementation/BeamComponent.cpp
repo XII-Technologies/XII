@@ -116,9 +116,8 @@ xiiResult xiiBeamComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, boo
 
     xiiVec3 pts[] = {xiiVec3::MakeZero(), targetPositionInOwnerSpace};
 
-    xiiBoundingBox box;
-    box.SetFromPoints(pts, 2);
-    const float fHalfWidth = m_fWidth * 0.5f;
+    xiiBoundingBox box        = xiiBoundingBox::MakeFromPoints(pts, 2);
+    const float    fHalfWidth = m_fWidth * 0.5f;
     box.m_vMin -= xiiVec3(0, fHalfWidth, fHalfWidth);
     box.m_vMax += xiiVec3(0, fHalfWidth, fHalfWidth);
     ref_bounds = xiiBoundingBoxSphere(box);

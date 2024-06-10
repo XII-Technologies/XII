@@ -303,7 +303,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
       case Mode::RotateX:
       case Mode::RotateXRandom:
       case Mode::RotateXDeviation:
-        qRot.SetFromAxisAndAngle(xiiVec3(1, 0, 0), xiiAngle::MakeFromDegree(vRotate.x));
+        qRot                   = xiiQuat::MakeFromAxisAndAngle(xiiVec3(1, 0, 0), xiiAngle::MakeFromDegree(vRotate.x));
         localTrans.m_qRotation = qRot * localTrans.m_qRotation;
         localTrans.m_vPosition = qRot * localTrans.m_vPosition;
         trans                  = tReference * localTrans;
@@ -314,7 +314,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
       case Mode::RotateY:
       case Mode::RotateYRandom:
       case Mode::RotateYDeviation:
-        qRot.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(vRotate.y));
+        qRot                   = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(vRotate.y));
         localTrans.m_qRotation = qRot * localTrans.m_qRotation;
         localTrans.m_vPosition = qRot * localTrans.m_vPosition;
         trans                  = tReference * localTrans;
@@ -325,7 +325,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
       case Mode::RotateZ:
       case Mode::RotateZRandom:
       case Mode::RotateZDeviation:
-        qRot.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(vRotate.z));
+        qRot                   = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(vRotate.z));
         localTrans.m_qRotation = qRot * localTrans.m_qRotation;
         localTrans.m_vPosition = qRot * localTrans.m_vPosition;
         trans                  = tReference * localTrans;
@@ -363,7 +363,7 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
           qDeviation.SetShortestRotation(xiiVec3(0, 0, 1), vDeviationAxis);
         }
 
-        qRot.SetFromAxisAndAngle(xiiVec3(0, 0, 1), randomRotationZ);
+        qRot                   = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), randomRotationZ);
         localTrans.m_qRotation = qDeviation * qRot * localTrans.m_qRotation;
         localTrans.m_vPosition = qDeviation * qRot * localTrans.m_vPosition;
         trans                  = tReference * localTrans;

@@ -407,7 +407,7 @@ void xiiSensorCylinderComponent::DebugDrawSensorShape() const
   xiiTransform pt = GetOwner()->GetGlobalTransform();
 
   xiiQuat r;
-  r.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(-90.0f));
+  r              = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(-90.0f));
   xiiTransform t = xiiTransform(xiiVec3(0, 0, -0.5f * m_fHeight * pt.m_vScale.z), r, xiiVec3(pt.m_vScale.z, pt.m_vScale.y, pt.m_vScale.x));
 
   pt.m_vScale.Set(1);
@@ -518,7 +518,7 @@ void xiiSensorConeComponent::DebugDrawSensorShape() const
     }
     else
     {
-      q.SetFromAxisAndAngle(xiiVec3::MakeAxisX(), xiiAngle::MakeFromDegree(90));
+      q = xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisX(), xiiAngle::MakeFromDegree(90));
       fX *= m_fFarDistance;
       fCircleRadius *= m_fFarDistance;
     }

@@ -742,7 +742,7 @@ xiiStatus xiiGameObjectDocument::CreateGameObjectHere()
 
   if (true)
   {
-    cmdAdd.m_NewObjectGuid = xiiUuid::CreateUuid();
+    cmdAdd.m_NewObjectGuid = xiiUuid::MakeUuid();
     NewNode                = cmdAdd.m_NewObjectGuid;
 
     auto res = history->AddCommand(cmdAdd);

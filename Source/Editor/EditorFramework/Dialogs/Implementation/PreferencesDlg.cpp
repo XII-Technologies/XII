@@ -86,7 +86,7 @@ xiiUuid xiiQtPreferencesDlg::NativeToObject(xiiPreferences* pPreferences)
   xiiRttiConverterContext context;
   xiiRttiConverterWriter  conv(&graph, &context, true, true);
 
-  const xiiUuid guid = xiiUuid::CreateUuid();
+  const xiiUuid guid = xiiUuid::MakeUuid();
   context.RegisterObject(guid, pType, pPreferences);
   xiiAbstractObjectNode* pNode = conv.AddObjectToGraph(pType, pPreferences, "root");
 

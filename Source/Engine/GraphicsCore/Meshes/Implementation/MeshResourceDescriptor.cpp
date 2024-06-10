@@ -12,12 +12,12 @@
 
 xiiMeshResourceDescriptor::xiiMeshResourceDescriptor()
 {
-  m_Bounds.SetInvalid();
+  m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
 }
 
 void xiiMeshResourceDescriptor::Clear()
 {
-  m_Bounds.SetInvalid();
+  m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
   m_hMeshBuffer.Invalidate();
   m_Materials.Clear();
   m_MeshBufferDescriptor.Clear();
@@ -84,7 +84,7 @@ void xiiMeshResourceDescriptor::AddSubMesh(xiiUInt32 uiPrimitiveCount, xiiUInt32
   p.m_uiFirstPrimitive = uiFirstPrimitive;
   p.m_uiPrimitiveCount = uiPrimitiveCount;
   p.m_uiMaterialIndex  = uiMaterialIndex;
-  p.m_Bounds.SetInvalid();
+  p.m_Bounds           = xiiBoundingBoxSphere::MakeInvalid();
 
   m_SubMeshes.PushBack(p);
 }
@@ -381,7 +381,7 @@ xiiResult xiiMeshResourceDescriptor::Load(xiiStreamReader& inout_stream)
         chunk >> m_SubMeshes[idx].m_uiPrimitiveCount;
 
         /// \todo load from file
-        m_SubMeshes[idx].m_Bounds.SetInvalid();
+        m_SubMeshes[idx].m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
       }
     }
 

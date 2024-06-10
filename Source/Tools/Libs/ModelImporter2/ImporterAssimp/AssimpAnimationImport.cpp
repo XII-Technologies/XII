@@ -34,10 +34,10 @@ namespace xiiModelImporter2
 
   XII_FORCE_INLINE void ozz2xii(const ozz::math::Quaternion& in, xiiQuat& ref_qOut)
   {
-    ref_qOut.v.x = (float)in.x;
-    ref_qOut.v.y = (float)in.y;
-    ref_qOut.v.z = (float)in.z;
-    ref_qOut.w   = (float)in.w;
+    ref_qOut.x = (float)in.x;
+    ref_qOut.y = (float)in.y;
+    ref_qOut.z = (float)in.z;
+    ref_qOut.w = (float)in.w;
   }
 
   xiiResult ImporterAssimp::ImportAnimations()

@@ -26,7 +26,7 @@ namespace
     xiiMemoryUtils::ZeroFill(&testWorldObjects, 1);
 
     xiiQuat q;
-    q.SetFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromDegree(90.0f));
+    q = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromDegree(90.0f));
 
     xiiGameObjectDesc desc;
     desc.m_bDynamic      = bDynamic;
@@ -55,7 +55,7 @@ namespace
   {
     const float eps = xiiMath::DefaultEpsilon<float>();
     xiiQuat     q;
-    q.SetFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromDegree(90.0f));
+    q = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromDegree(90.0f));
 
     for (xiiUInt32 i = 0; i < 2; ++i)
     {
@@ -167,7 +167,7 @@ namespace
         it->SetLocalPosition(newPos);
 
         xiiQuat newRot;
-        newRot.SetFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromDegree(i * 30.0f));
+        newRot = xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromDegree(i * 30.0f));
         it->SetLocalRotation(newRot);
 
         if (i > 5)
@@ -268,7 +268,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
 
     const float eps = xiiMath::DefaultEpsilon<float>();
     xiiQuat     q;
-    q.SetFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromDegree(90.0f));
+    q = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 0.0f, 1.0f), xiiAngle::MakeFromDegree(90.0f));
 
     xiiGameObjectDesc desc;
     desc.m_LocalPosition = xiiVec3(100.0f, 0.0f, 0.0f);
@@ -733,7 +733,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
     for (xiiUInt32 i = 0; i < numObjects; ++i)
     {
       objectDesc.m_LocalPosition = xiiVec3(0, 0, 5);
-      objectDesc.m_LocalRotation.SetFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromDegree(90));
+      objectDesc.m_LocalRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromDegree(90));
 
       hObjects[i] = world.CreateObject(objectDesc, pObjects[i]);
     }

@@ -69,7 +69,7 @@ xiiStatus xiiObjectDirectAccessor::AddObject(const xiiDocumentObject* pParent, c
   XII_ASSERT_DEBUG(pPar, "Parent is not part of this document manager.");
 
   if (!inout_objectGuid.IsValid())
-    inout_objectGuid = xiiUuid::CreateUuid();
+    inout_objectGuid = xiiUuid::MakeUuid();
 
   xiiDocumentObject* pObj = m_pManager->CreateObject(pType, inout_objectGuid);
   m_pManager->AddObject(pObj, pPar, pParentProp->GetPropertyName(), index);

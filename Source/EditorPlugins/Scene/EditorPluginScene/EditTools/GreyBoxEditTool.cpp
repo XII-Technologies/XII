@@ -170,8 +170,8 @@ void xiiGreyBoxEditTool::GizmoEventHandler(const xiiGizmoEvent& e)
     pHistory->StartTransaction("Add Grey-Box");
 
     xiiUuid objGuid, compGuid;
-    objGuid  = xiiUuid::CreateUuid();
-    compGuid = xiiUuid::CreateUuid();
+    objGuid  = xiiUuid::MakeUuid();
+    compGuid = xiiUuid::MakeUuid();
 
     {
       xiiAddObjectCommand cmdAdd;

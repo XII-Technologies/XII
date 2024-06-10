@@ -280,7 +280,7 @@ xiiStatus xiiNodeCommands::AddAndConnectCommand(xiiCommandHistory* pHistory, con
 {
   xiiAddObjectCommand cmd;
   cmd.m_pType         = pConnectionType;
-  cmd.m_NewObjectGuid = xiiUuid::CreateUuid();
+  cmd.m_NewObjectGuid = xiiUuid::MakeUuid();
   cmd.m_Index         = -1;
 
   xiiStatus res = pHistory->AddCommand(cmd);

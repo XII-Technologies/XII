@@ -288,8 +288,7 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& ref_m
     return;
 
   // Don't trigger probe rendering in shadow or reflection views.
-  if (ref_msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow ||
-      ref_msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Reflection)
+  if (ref_msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow || ref_msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Reflection)
     return;
 
   auto pModule = GetWorld()->GetModule<xiiBakedProbesWorldModule>();
@@ -314,7 +313,7 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& ref_m
       pRenderData->m_Color           = encodedSkyVisibility;
       pRenderData->m_uiSubMeshIndex  = 0;
       pRenderData->m_uiUniqueID      = xiiRenderComponent::GetUniqueIdForRendering(this, 0);
-      pRenderData->m_GlobalBounds.SetInvalid();
+      pRenderData->m_GlobalBounds    = xiiBoundingBoxSphere::MakeInvalid();
 
       pRenderData->FillBatchIdAndSortingKey();
     }

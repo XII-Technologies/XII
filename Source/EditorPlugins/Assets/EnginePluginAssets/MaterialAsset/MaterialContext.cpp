@@ -89,8 +89,8 @@ void xiiMaterialContext::OnInitialize()
         xiiGeometry geom;
 
         xiiGeometry::GeoOptions opt;
-        opt.m_Color = xiiColor::Red;
-        opt.m_Transform.SetRotationMatrixZ(xiiAngle::MakeFromDegree(90));
+        opt.m_Color     = xiiColor::Red;
+        opt.m_Transform = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(90));
         geom.AddSphere(0.1f, 64, 64, opt);
         geom.ComputeTangents();
 
@@ -179,8 +179,8 @@ void xiiMaterialContext::OnInitialize()
         xiiGeometry geom;
 
         xiiGeometry::GeoOptions opt;
-        opt.m_Color = xiiColor::Red;
-        opt.m_Transform.SetRotationMatrixZ(xiiAngle::MakeFromDegree(-90));
+        opt.m_Color     = xiiColor::Red;
+        opt.m_Transform = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(-90));
         geom.AddRectXY(xiiVec2(0.2f), 64, 64, opt);
         geom.ComputeTangents();
 

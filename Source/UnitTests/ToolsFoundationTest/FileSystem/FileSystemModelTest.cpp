@@ -794,7 +794,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     xiiStringBuilder sFilePathNew(sOutputFolder);
     sFilePathNew.AppendPath("Folder12", "rootFile2.txt");
 
-    xiiUuid docGuid  = xiiUuid::CreateUuid();
+    xiiUuid docGuid  = xiiUuid::MakeUuid();
     auto    callback = [&](const xiiFileStatus& status, xiiStreamReader& ref_reader) {
       XII_TEST_INT((xiiInt64)status.m_uiHash, (xiiInt64)10983861097202158394u);
       xiiFileSystemModel::GetSingleton()->LinkDocument(sFilePathNew, docGuid).IgnoreResult();
@@ -814,8 +814,8 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     xiiStringBuilder sFilePathNew(sOutputFolder);
     sFilePathNew.AppendPath("Folder12", "rootFile2.txt");
 
-    xiiUuid guid  = xiiUuid::CreateUuid();
-    xiiUuid guid2 = xiiUuid::CreateUuid();
+    xiiUuid guid  = xiiUuid::MakeUuid();
+    xiiUuid guid2 = xiiUuid::MakeUuid();
     {
       XII_TEST_RESULT(xiiFileSystemModel::GetSingleton()->LinkDocument(sFilePathNew, guid));
       XII_TEST_RESULT(xiiFileSystemModel::GetSingleton()->LinkDocument(sFilePathNew, guid));
