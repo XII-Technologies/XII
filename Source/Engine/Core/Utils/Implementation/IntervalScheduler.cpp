@@ -12,7 +12,7 @@ XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 static xiiTime s_Intervals[] = {
-  xiiTime::Zero(),                      // EveryFrame
+  xiiTime::MakeZero(),                  // EveryFrame
   xiiTime::MakeFromSeconds(1.0 / 30.0), // Max30fps
   xiiTime::MakeFromSeconds(1.0 / 20.0), // Max20fps
   xiiTime::MakeFromSeconds(1.0 / 10.0), // Max10fps

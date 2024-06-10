@@ -109,7 +109,7 @@ void xiiSimpleWindComponent::OnDeactivated()
   if (pWindModule == nullptr)
     return;
 
-  pWindModule->SetFallbackWind(xiiVec3::ZeroVector());
+  pWindModule->SetFallbackWind(xiiVec3::MakeZero());
 }
 
 void xiiSimpleWindComponent::ComputeNextState()
@@ -144,7 +144,7 @@ void xiiSimpleWindComponent::ComputeNextState()
   const float fRemoveUp = m_vNextDirection.Dot(cs.m_vUpDir);
 
   m_vNextDirection -= cs.m_vUpDir * fRemoveUp;
-  m_vNextDirection.NormalizeIfNotZero(xiiVec3::ZeroVector()).IgnoreResult();
+  m_vNextDirection.NormalizeIfNotZero(xiiVec3::MakeZero()).IgnoreResult();
 }
 
 void xiiSimpleWindComponent::Initialize()

@@ -107,7 +107,7 @@ void xiiCylinderVisualizerAdapter::UpdateGizmoTransform()
   t.m_vScale    = xiiVec3(m_fRadius, m_fRadius, m_fHeight);
   t.m_vPosition = m_vPositionOffset;
 
-  xiiVec3 vOffset = xiiVec3::ZeroVector();
+  xiiVec3 vOffset = xiiVec3::MakeZero();
 
   if (m_Anchor.IsSet(xiiVisualizerAnchor::PosX))
     vOffset.x -= t.m_vScale.x;

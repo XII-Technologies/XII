@@ -22,7 +22,7 @@ xiiBoxGizmo::xiiBoxGizmo()
   }
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiBoxGizmo::OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)

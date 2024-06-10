@@ -438,7 +438,7 @@ void xiiPropertyAnimComponent::ApplyAnimations(const xiiTime& tDiff)
 
 xiiTime xiiPropertyAnimComponent::ComputeAnimationLookup(xiiTime tDiff)
 {
-  m_AnimationRangeLow  = xiiMath::Clamp(m_AnimationRangeLow, xiiTime::Zero(), m_pAnimDesc->m_AnimationDuration);
+  m_AnimationRangeLow  = xiiMath::Clamp(m_AnimationRangeLow, xiiTime::MakeZero(), m_pAnimDesc->m_AnimationDuration);
   m_AnimationRangeHigh = xiiMath::Clamp(m_AnimationRangeHigh, m_AnimationRangeLow, m_pAnimDesc->m_AnimationDuration);
 
   const xiiTime duration = m_AnimationRangeHigh - m_AnimationRangeLow;
@@ -574,7 +574,7 @@ void xiiPropertyAnimComponent::StartPlayback()
   if (m_pAnimDesc == nullptr)
     return;
 
-  m_AnimationRangeLow  = xiiMath::Clamp(m_AnimationRangeLow, xiiTime::Zero(), m_pAnimDesc->m_AnimationDuration);
+  m_AnimationRangeLow  = xiiMath::Clamp(m_AnimationRangeLow, xiiTime::MakeZero(), m_pAnimDesc->m_AnimationDuration);
   m_AnimationRangeHigh = xiiMath::Clamp(m_AnimationRangeHigh, m_AnimationRangeLow, m_pAnimDesc->m_AnimationDuration);
 
   // when starting with a negative speed, start at the end of the animation and play backwards

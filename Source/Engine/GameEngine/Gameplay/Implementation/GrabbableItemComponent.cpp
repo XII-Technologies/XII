@@ -108,16 +108,16 @@ bool xiiGrabbableItemComponent::GetDebugShowPoints() const
 
 void xiiGrabbableItemComponent::DebugDrawGrabPoint(const xiiWorld& world, const xiiTransform& globalGrabPointTransform)
 {
-  xiiDebugRenderer::DrawArrow(&world, 0.75f, xiiColorScheme::LightUI(xiiColorScheme::Red), globalGrabPointTransform, xiiVec3::UnitXAxis());
-  xiiDebugRenderer::DrawArrow(&world, 0.3f, xiiColorScheme::LightUI(xiiColorScheme::Green), globalGrabPointTransform, xiiVec3::UnitYAxis());
-  xiiDebugRenderer::DrawArrow(&world, 0.3f, xiiColorScheme::LightUI(xiiColorScheme::Blue), globalGrabPointTransform, xiiVec3::UnitZAxis());
+  xiiDebugRenderer::DrawArrow(&world, 0.75f, xiiColorScheme::LightUI(xiiColorScheme::Red), globalGrabPointTransform, xiiVec3::MakeAxisX());
+  xiiDebugRenderer::DrawArrow(&world, 0.3f, xiiColorScheme::LightUI(xiiColorScheme::Green), globalGrabPointTransform, xiiVec3::MakeAxisY());
+  xiiDebugRenderer::DrawArrow(&world, 0.3f, xiiColorScheme::LightUI(xiiColorScheme::Blue), globalGrabPointTransform, xiiVec3::MakeAxisZ());
 }
 
 void xiiGrabbableItemComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) const
 {
   if (GetDebugShowPoints())
   {
-    msg.AddBounds(xiiBoundingSphere(xiiVec3::ZeroVector(), 1.0f), xiiDefaultSpatialDataCategories::RenderDynamic);
+    msg.AddBounds(xiiBoundingSphere(xiiVec3::MakeZero(), 1.0f), xiiDefaultSpatialDataCategories::RenderDynamic);
   }
 }
 

@@ -68,10 +68,10 @@ void xiiMeshAssetDocument::CreateMeshFromGeom(xiiMeshAssetProperties* pProp, xii
   const xiiMat3 mTransformation = CalculateTransformationMatrix(pProp);
 
   xiiGeometry geom;
-  // const xiiMat4 mTrans(mTransformation, xiiVec3::ZeroVector());
+  // const xiiMat4 mTrans(mTransformation, xiiVec3::MakeZero());
 
   xiiGeometry::GeoOptions opt;
-  opt.m_Transform = xiiMat4(mTransformation, xiiVec3::ZeroVector());
+  opt.m_Transform = xiiMat4(mTransformation, xiiVec3::MakeZero());
 
   auto detail1 = pProp->m_uiDetail;
   auto detail2 = pProp->m_uiDetail2;

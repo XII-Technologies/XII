@@ -140,7 +140,7 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectionUtils)
     VariantToPropertyTest(&mathClass, pRttiMath, "Mat3", xiiVariant::Type::Matrix3);
     XII_TEST_BOOL(mathClass.GetMat3() == xiiMat3::IdentityMatrix());
     VariantToPropertyTest(&mathClass, pRttiMath, "Mat4", xiiVariant::Type::Matrix4);
-    XII_TEST_BOOL(mathClass.GetMat4() == xiiMat4::IdentityMatrix());
+    XII_TEST_BOOL(mathClass.GetMat4() == xiiMat4::MakeIdentity());
     VariantToPropertyTest(&mathClass, pRttiMath, "Vec2d", xiiVariant::Type::Vector2d);
     XII_TEST_BOOL(mathClass.GetVec2d() == xiiVec2d(0.0, 0.0));
     VariantToPropertyTest(&mathClass, pRttiMath, "Vec3d", xiiVariant::Type::Vector3d);

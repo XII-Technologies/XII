@@ -181,7 +181,7 @@ void xiiAnimatedMeshComponent::RetrievePose(xiiDynamicArray<xiiMat4>& out_modelT
 
   const xiiHashTable<xiiHashedString, xiiMeshResourceDescriptor::BoneData>& bones = pMesh->m_Bones;
 
-  out_modelTransforms.SetCount(skeleton.GetJointCount(), xiiMat4::IdentityMatrix());
+  out_modelTransforms.SetCount(skeleton.GetJointCount(), xiiMat4::MakeIdentity());
 
   for (auto itBone : bones)
   {

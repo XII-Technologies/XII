@@ -132,7 +132,7 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
 
   if ((!m_InStart.IsConnected() && pState->m_uiState == 0) || m_InStart.IsTriggered(ref_graph))
   {
-    pState->m_PlaybackTime = xiiTime::Zero();
+    pState->m_PlaybackTime = xiiTime::MakeZero();
     pState->m_uiState      = 1;
   }
 
@@ -196,7 +196,7 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       {
         // TODO: sample anim events of previous clip
         m_OutOnMiddleStarted.SetTriggered(ref_graph);
-        tPrevSamplePos = xiiTime::Zero();
+        tPrevSamplePos = xiiTime::MakeZero();
         pState->m_PlaybackTime -= tCurDuration;
         pState->m_uiState = 2;
 
@@ -240,7 +240,7 @@ void xiiSampleAnimClipSequenceAnimNode::Step(xiiAnimController& ref_controller, 
       if (pState->m_PlaybackTime >= tCurDuration)
       {
         // TODO: sample anim events of previous clip
-        tPrevSamplePos = xiiTime::Zero();
+        tPrevSamplePos = xiiTime::MakeZero();
         pState->m_PlaybackTime -= tCurDuration;
 
         if (bLoop)

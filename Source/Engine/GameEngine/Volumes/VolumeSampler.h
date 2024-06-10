@@ -11,7 +11,7 @@ public:
   xiiVolumeSampler();
   ~xiiVolumeSampler();
 
-  void RegisterValue(xiiHashedString sName, xiiVariant defaultValue, xiiTime interpolationDuration = xiiTime::Zero());
+  void RegisterValue(xiiHashedString sName, xiiVariant defaultValue, xiiTime interpolationDuration = xiiTime::MakeZero());
   void DeregisterValue(xiiHashedString sName);
   void DeregisterAllValues();
 

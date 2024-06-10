@@ -68,7 +68,7 @@ public:
   xiiArrayPtr<const KeyframeQuat> GetRotationKeyframes(const JointInfo& jointInfo) const;
   xiiArrayPtr<const KeyframeVec3> GetScaleKeyframes(const JointInfo& jointInfo) const;
 
-  xiiVec3 m_vConstantRootMotion = xiiVec3::ZeroVector();
+  xiiVec3 m_vConstantRootMotion = xiiVec3::MakeZero();
 
   xiiEventTrack m_EventTrack;
 

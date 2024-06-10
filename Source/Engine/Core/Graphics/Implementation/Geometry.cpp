@@ -65,7 +65,7 @@ void xiiGeometry::Clear()
   m_Lines.Clear();
 }
 
-xiiUInt32 xiiGeometry::AddVertex(const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord, const xiiColor& color, const xiiVec4U16& vBoneIndices /*= xiiVec4U16::ZeroVector()*/, const xiiColorLinearUB& boneWeights /*= xiiColorLinearUB(255, 0, 0, 0)*/)
+xiiUInt32 xiiGeometry::AddVertex(const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord, const xiiColor& color, const xiiVec4U16& vBoneIndices /*= xiiVec4U16::MakeZero()*/, const xiiColorLinearUB& boneWeights /*= xiiColorLinearUB(255, 0, 0, 0)*/)
 {
   Vertex& v       = m_Vertices.ExpandAndGetRef();
   v.m_vPosition   = vPos;
@@ -693,22 +693,22 @@ void xiiGeometry::AddGeodesicSphere(float fRadius, xiiUInt8 uiSubDivisions, cons
   // create icosahedron
   {
     xiiMat3 mRotX, mRotZ, mRotZh;
-    mRotX.SetRotationMatrixX(xiiAngle::MakeFromDegree(360.0f / 6.0f));
-    mRotZ.SetRotationMatrixZ(xiiAngle::MakeFromDegree(-360.0f / 5.0f));
-    mRotZh.SetRotationMatrixZ(xiiAngle::MakeFromDegree(-360.0f / 10.0f));
+    mRotX  = xiiMat3::MakeRotationX(xiiAngle::MakeFromDegree(360.0f / 6.0f));
+    mRotZ  = xiiMat3::MakeRotationZ(xiiAngle::MakeFromDegree(-360.0f / 5.0f));
+    mRotZh = xiiMat3::MakeRotationZ(xiiAngle::MakeFromDegree(-360.0f / 10.0f));
 
     xiiUInt32 vert[12];
     xiiVec3   vDir(0, 0, 1);
 
     vDir.Normalize();
-    vert[0] = AddVertex(vDir * fRadius, vDir, xiiVec2::ZeroVector(), options.m_Color, boneIndices);
+    vert[0] = AddVertex(vDir * fRadius, vDir, xiiVec2::MakeZero(), options.m_Color, boneIndices);
 
     vDir = mRotX * vDir;
 
     for (xiiInt32 i = 0; i < 5; ++i)
     {
       vDir.Normalize();
-      vert[1 + i] = AddVertex(vDir * fRadius, vDir, xiiVec2::ZeroVector(), options.m_Color, boneIndices);
+      vert[1 + i] = AddVertex(vDir * fRadius, vDir, xiiVec2::MakeZero(), options.m_Color, boneIndices);
       vDir        = mRotZ * vDir;
     }
 
@@ -718,13 +718,13 @@ void xiiGeometry::AddGeodesicSphere(float fRadius, xiiUInt8 uiSubDivisions, cons
     for (xiiInt32 i = 0; i < 5; ++i)
     {
       vDir.Normalize();
-      vert[6 + i] = AddVertex(vDir * fRadius, vDir, xiiVec2::ZeroVector(), options.m_Color, boneIndices);
+      vert[6 + i] = AddVertex(vDir * fRadius, vDir, xiiVec2::MakeZero(), options.m_Color, boneIndices);
       vDir        = mRotZ * vDir;
     }
 
     vDir.Set(0, 0, -1);
     vDir.Normalize();
-    vert[11] = AddVertex(vDir * fRadius, vDir, xiiVec2::ZeroVector(), options.m_Color, boneIndices);
+    vert[11] = AddVertex(vDir * fRadius, vDir, xiiVec2::MakeZero(), options.m_Color, boneIndices);
 
 
     Tris[0].PushBack(Triangle(vert[0], vert[2], vert[1]));
@@ -781,7 +781,7 @@ void xiiGeometry::AddGeodesicSphere(float fRadius, xiiUInt8 uiSubDivisions, cons
         else
         {
           const xiiVec3 vCenter = (m_Vertices[Edges[i].m_uiVertex[0]].m_vPosition + m_Vertices[Edges[i].m_uiVertex[1]].m_vPosition).GetNormalized();
-          uiNewVert[i]          = AddVertex(vCenter * fRadius, vCenter, xiiVec2::ZeroVector(), options.m_Color, boneIndices);
+          uiNewVert[i]          = AddVertex(vCenter * fRadius, vCenter, xiiVec2::MakeZero(), options.m_Color, boneIndices);
 
           NewVertices[Edges[i]] = uiNewVert[i];
         }
@@ -1526,8 +1526,7 @@ void xiiGeometry::AddStairs(const xiiVec3& vSize, xiiUInt32 uiNumSteps, xiiAngle
   xiiVec3 vSideNormal1(0, 1, 0);
   xiiVec3 vStepFrontNormal(-1, 0, 0);
 
-  xiiQuat qRot;
-  qRot.SetFromAxisAndAngle(xiiVec3(0, 0, 1), curveStep);
+  xiiQuat qRot = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), curveStep);
 
   for (xiiUInt32 step = 0; step < uiNumSteps; ++step)
   {

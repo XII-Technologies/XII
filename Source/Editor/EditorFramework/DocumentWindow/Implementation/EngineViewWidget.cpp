@@ -158,7 +158,7 @@ void xiiQtEngineViewWidget::UpdateCameraInterpolation()
 
   xiiQuat qRot, qRotFinal;
   qRot.SetShortestRotation(m_vCameraStartDirection, m_vCameraTargetDirection);
-  qRotFinal.SetSlerp(xiiQuat::IdentityQuaternion(), qRot, fLerpValue);
+  qRotFinal.SetSlerp(xiiQuat::MakeIdentity(), qRot, fLerpValue);
 
   const xiiVec3 vNewDirection = qRotFinal * m_vCameraStartDirection;
   const xiiVec3 vNewPosition  = xiiMath::Lerp(m_vCameraStartPosition, m_vCameraTargetPosition, fLerpValue);

@@ -73,7 +73,7 @@ void xiiQtUiServices::SaveState()
   Settings.endGroup();
 }
 
-xiiTime g_Total = xiiTime::Zero();
+xiiTime g_Total = xiiTime::MakeZero();
 
 const QIcon& xiiQtUiServices::GetCachedIconResource(xiiStringView sIdentifier, xiiColor svgTintColor)
 {
@@ -293,7 +293,7 @@ void xiiQtUiServices::TickEventHandler()
 
   xiiTime delay = xiiTime::MakeFromMilliseconds(1000.0 / s_LastTickEvent.m_fRefreshRate);
   delay -= lastFrameTime;
-  delay = xiiMath::Max(delay, xiiTime::Zero());
+  delay = xiiMath::Max(delay, xiiTime::MakeZero());
 
   QTimer::singleShot((xiiInt32)xiiMath::Floor(delay.GetMilliseconds()), this, SLOT(TickEventHandler()));
 }

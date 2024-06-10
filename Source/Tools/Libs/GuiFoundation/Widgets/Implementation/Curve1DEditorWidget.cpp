@@ -768,7 +768,7 @@ void xiiQtCurve1DEditorWidget::onAddPoint()
 {
   Q_EMIT BeginCpChangesEvent("Add Control Point");
 
-  InsertCpAt(m_ContextMenuScenePos.x(), m_ContextMenuScenePos.y(), xiiVec2d::ZeroVector());
+  InsertCpAt(m_ContextMenuScenePos.x(), m_ContextMenuScenePos.y(), xiiVec2d::MakeZero());
 
   Q_EMIT EndCpChangesEvent();
 }
@@ -966,7 +966,7 @@ void xiiQtCurve1DEditorWidget::onGenerateCurve(xiiEasingFunction::Enum function,
     const double y             = samples[uiIdx].m_fCorrectValue;
 
     cmp.AddControlPoint(x).m_Position.y = y;
-    InsertCpAt(x, y, xiiVec2d::ZeroVector());
+    InsertCpAt(x, y, xiiVec2d::MakeZero());
   };
 
   AddPt(0);
@@ -1014,7 +1014,7 @@ void xiiQtCurve1DEditorWidget::onGenerateCurve(xiiEasingFunction::Enum function,
   for (xiiUInt32 i = 0; i <= m_Curves.m_uiFramesPerSecond; i += 2)
   {
     const double x = i / fps;
-    InsertCpAt(x, xiiMath::GetEasingValue<double>(easingFunction, x, inverse), xiiVec2d::ZeroVector());
+    InsertCpAt(x, xiiMath::GetEasingValue<double>(easingFunction, x, inverse), xiiVec2d::MakeZero());
   }
 
 #endif

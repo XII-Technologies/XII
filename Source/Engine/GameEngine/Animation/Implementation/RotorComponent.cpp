@@ -136,7 +136,7 @@ void xiiRotorComponent::OnSimulationStarted()
   SUPER::OnSimulationStarted();
 
   // reset to start state
-  m_qLastRotation = xiiQuat::IdentityQuaternion();
+  m_qLastRotation = xiiQuat::MakeIdentity();
 
   switch (m_Axis)
   {

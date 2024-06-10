@@ -26,7 +26,7 @@ void xiiDecalComponentDragDropHandler::OnDragBegin(const xiiDragDropInfo* pInfo)
   {
     CreateDropObject(pInfo->m_vDropPosition, "xiiDecalComponent", "Decals", var, xiiUuid(), -1);
 
-    m_vAlignAxisWithNormal = -xiiVec3::UnitXAxis();
+    m_vAlignAxisWithNormal = -xiiVec3::MakeAxisX();
   }
   else
     CreateDropObject(pInfo->m_vDropPosition, "xiiDecalComponent", "Decals", var, pInfo->m_TargetObject, pInfo->m_iTargetObjectInsertChildIndex);

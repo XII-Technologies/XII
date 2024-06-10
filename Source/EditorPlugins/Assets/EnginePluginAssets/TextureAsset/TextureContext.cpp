@@ -19,7 +19,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 static void CreatePreviewRect(xiiGeometry& ref_geom)
 {
-  const xiiMat4  mTransform = xiiMat4::IdentityMatrix();
+  const xiiMat4  mTransform = xiiMat4::MakeIdentity();
   const xiiVec2  size(1.0f);
   const xiiColor color = xiiColor::White;
 

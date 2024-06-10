@@ -64,19 +64,19 @@ public:
       };
     };
 
-    static XII_ALWAYS_INLINE Result Running(xiiTime maxDelay = xiiTime::Zero()) { return {State::Running, maxDelay}; }
+    static XII_ALWAYS_INLINE Result Running(xiiTime maxDelay = xiiTime::MakeZero()) { return {State::Running, maxDelay}; }
     static XII_ALWAYS_INLINE Result Completed() { return {State::Completed}; }
     static XII_ALWAYS_INLINE Result Failed() { return {State::Failed}; }
 
     xiiEnum<State> m_State;
-    xiiTime        m_MaxDelay = xiiTime::Zero();
+    xiiTime        m_MaxDelay = xiiTime::MakeZero();
   };
 
   virtual void   Start(xiiArrayPtr<xiiVariant> arguments) = 0;
   virtual void   Stop() {}
   virtual Result Update(xiiTime deltaTimeSinceLastUpdate) = 0;
 
-  void UpdateAndSchedule(xiiTime deltaTimeSinceLastUpdate = xiiTime::Zero());
+  void UpdateAndSchedule(xiiTime deltaTimeSinceLastUpdate = xiiTime::MakeZero());
 
 private:
   friend class xiiScriptWorldModule;

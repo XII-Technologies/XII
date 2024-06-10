@@ -46,7 +46,7 @@ XII_END_COMPONENT_TYPE;
 
 void xiiSpawnBoxComponent::SetHalfExtents(const xiiVec3& value)
 {
-  m_vHalfExtents = value.CompMax(xiiVec3::ZeroVector());
+  m_vHalfExtents = value.CompMax(xiiVec3::MakeZero());
 
   if (IsActiveAndInitialized())
   {
@@ -167,7 +167,7 @@ void xiiSpawnBoxComponent::InternalStartSpawning(bool bFirstTime)
     }
 
     xiiMsgComponentInternalTrigger msg;
-    PostMessage(msg, xiiTime::Zero());
+    PostMessage(msg, xiiTime::MakeZero());
   }
 }
 
@@ -239,7 +239,7 @@ void xiiSpawnBoxComponent::Spawn(xiiUInt32 uiCount)
 
   for (xiiUInt32 i = 0; i < uiCount; ++i)
   {
-    xiiTransform tLocal  = xiiTransform::IdentityTransform();
+    xiiTransform tLocal  = xiiTransform::MakeIdentity();
     tLocal.m_vPosition.x = rnd.DoubleMinMax(-m_vHalfExtents.x, m_vHalfExtents.x);
     tLocal.m_vPosition.y = rnd.DoubleMinMax(-m_vHalfExtents.y, m_vHalfExtents.y);
     tLocal.m_vPosition.z = rnd.DoubleMinMax(-m_vHalfExtents.z, m_vHalfExtents.z);

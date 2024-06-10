@@ -39,5 +39,5 @@ protected:
 
   virtual float CanHandle(const xiiDragDropInfo* pInfo) const override;
 
-  xiiVec3 m_vAlignAxisWithNormal = xiiVec3::ZeroVector();
+  xiiVec3 m_vAlignAxisWithNormal = xiiVec3::MakeZero();
 };

@@ -474,7 +474,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 // static
-void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
+void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
 {
   if (lines.IsEmpty())
     return;
@@ -520,15 +520,15 @@ void xiiDebugRenderer::Draw2DLines(const xiiDebugRendererContext& context, xiiAr
 }
 
 // static
-void xiiDebugRenderer::DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
+void xiiDebugRenderer::DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
 {
   if (fLineLength <= 0.0f)
     return;
 
   const float   fHalfLineLength = fLineLength * 0.5f;
-  const xiiVec3 xAxis           = xiiVec3::UnitXAxis() * fHalfLineLength;
-  const xiiVec3 yAxis           = xiiVec3::UnitYAxis() * fHalfLineLength;
-  const xiiVec3 zAxis           = xiiVec3::UnitZAxis() * fHalfLineLength;
+  const xiiVec3 xAxis           = xiiVec3::MakeAxisX() * fHalfLineLength;
+  const xiiVec3 yAxis           = xiiVec3::MakeAxisY() * fHalfLineLength;
+  const xiiVec3 zAxis           = xiiVec3::MakeAxisZ() * fHalfLineLength;
 
   XII_LOCK(s_Mutex);
 
@@ -553,7 +553,7 @@ void xiiDebugRenderer::DrawLineBox(const xiiDebugRendererContext& context, const
 
   auto& boxData = data.m_lineBoxes.ExpandAndGetRef();
 
-  xiiTransform boxTransform(box.GetCenter(), xiiQuat::IdentityQuaternion(), box.GetHalfExtents());
+  xiiTransform boxTransform(box.GetCenter(), xiiQuat::MakeIdentity(), box.GetHalfExtents());
 
   boxData.m_transform = transform * boxTransform;
   boxData.m_color     = color;
@@ -604,7 +604,7 @@ void xiiDebugRenderer::DrawLineBoxCorners(const xiiDebugRendererContext& context
 }
 
 // static
-void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
+void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
 {
   static constexpr xiiUInt32 NUM_SEGMENTS = 32;
 
@@ -639,7 +639,7 @@ void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, co
 }
 
 
-void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
+void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
 {
   static constexpr xiiUInt32 NUM_SEGMENTS      = 32;
   static constexpr xiiUInt32 NUM_HALF_SEGMENTS = 16;
@@ -809,7 +809,7 @@ void xiiDebugRenderer::DrawSolidBox(const xiiDebugRendererContext& context, cons
 
   auto& boxData = data.m_solidBoxes.ExpandAndGetRef();
 
-  xiiTransform boxTransform(box.GetCenter(), xiiQuat::IdentityQuaternion(), box.GetHalfExtents());
+  xiiTransform boxTransform(box.GetCenter(), xiiQuat::MakeIdentity(), box.GetHalfExtents());
 
   boxData.m_transform = transform * boxTransform;
   boxData.m_color     = color;
@@ -996,7 +996,7 @@ void xiiDebugRenderer::AddPersistentLineBox(const xiiDebugRendererContext& conte
   item.m_Timeout   = data.m_Now + duration;
 }
 
-void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::UnitXAxis()*/, xiiVec3 vRotationAxis /*= xiiVec3::UnitZAxis()*/)
+void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/, xiiVec3 vRotationAxis /*= xiiVec3::MakeAxisZ()*/)
 {
   xiiHybridArray<Triangle, 64> tris;
   xiiHybridArray<Line, 64>     lines;
@@ -1061,7 +1061,7 @@ void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngl
   DrawLines(context, lines, lineColor, transform);
 }
 
-void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::UnitXAxis()*/)
+void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/)
 {
   xiiHybridArray<Triangle, 64> trisInside;
   xiiHybridArray<Triangle, 64> trisOutside;
@@ -1236,7 +1236,7 @@ void xiiDebugRenderer::DrawArrow(const xiiDebugRendererContext& context, float f
   const float   tipSize   = fSize * 0.1f;
 
   Line lines[9];
-  lines[0] = Line(xiiVec3::ZeroVector(), endPoint);
+  lines[0] = Line(xiiVec3::MakeZero(), endPoint);
   lines[1] = Line(endPoint, endPoint2 + right * tipSize);
   lines[2] = Line(endPoint, endPoint2 + up * tipSize);
   lines[3] = Line(endPoint, endPoint2 - right * tipSize);
@@ -1286,7 +1286,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         }
         else
         {
-          xiiDebugRenderer::DrawCross(context, xiiVec3::ZeroVector(), item.m_fSize, item.m_Color, item.m_Transform);
+          xiiDebugRenderer::DrawCross(context, xiiVec3::MakeZero(), item.m_fSize, item.m_Color, item.m_Transform);
 
           ++i;
         }
@@ -1307,7 +1307,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         }
         else
         {
-          xiiDebugRenderer::DrawLineSphere(context, xiiBoundingSphere(xiiVec3::ZeroVector(), item.m_fRadius), item.m_Color, item.m_Transform);
+          xiiDebugRenderer::DrawLineSphere(context, xiiBoundingSphere(xiiVec3::MakeZero(), item.m_fRadius), item.m_Color, item.m_Transform);
 
           ++i;
         }

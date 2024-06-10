@@ -98,7 +98,7 @@ float xiiRopeSimulator::GetTotalLength() const
 xiiSimdVec4f xiiRopeSimulator::GetPositionAtLength(float fLength) const
 {
   if (m_Nodes.IsEmpty())
-    return xiiSimdVec4f::ZeroVector();
+    return xiiSimdVec4f::MakeZero();
 
   xiiSimdVec4f prev = m_Nodes[0].m_vPosition;
   for (xiiUInt32 i = 1; i < m_Nodes.GetCount(); ++i)
@@ -128,7 +128,7 @@ xiiSimdVec4f xiiRopeSimulator::MoveTowards(const xiiSimdVec4f posThis, const xii
 
   if (fLen < m_fSegmentLength)
   {
-    return xiiSimdVec4f::ZeroVector();
+    return xiiSimdVec4f::MakeZero();
   }
 
   vDir /= fLen;
@@ -155,7 +155,7 @@ xiiSimdFloat xiiRopeSimulator::EnforceDistanceConstraint()
   auto& firstNode = m_Nodes[0];
   auto& lastNode  = m_Nodes.PeekBack();
 
-  xiiSimdFloat fError = xiiSimdFloat::Zero();
+  xiiSimdFloat fError = xiiSimdFloat::MakeZero();
 
   if (!m_bFirstNodeIsFixed)
   {

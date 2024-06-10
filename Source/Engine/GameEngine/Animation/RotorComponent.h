@@ -37,5 +37,5 @@ protected:
   void Update();
 
   xiiVec3 m_vRotationAxis = xiiVec3(0, 0, 1);
-  xiiQuat m_qLastRotation = xiiQuat::IdentityQuaternion();
+  xiiQuat m_qLastRotation = xiiQuat::MakeIdentity();
 };

@@ -34,7 +34,7 @@ xiiNonUniformBoxGizmo::xiiNonUniformBoxGizmo()
   }
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiNonUniformBoxGizmo::OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)

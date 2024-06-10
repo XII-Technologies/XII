@@ -64,19 +64,19 @@ xiiWindWorldModuleInterface::xiiWindWorldModuleInterface(xiiWorld* pWorld) :
 xiiVec3 xiiWindWorldModuleInterface::ComputeWindFlutter(const xiiVec3& vWind, const xiiVec3& vObjectDir, float fFlutterSpeed, xiiUInt32 uiFlutterRandomOffset) const
 {
   if (vWind.IsZero(0.001f))
-    return xiiVec3::ZeroVector();
+    return xiiVec3::MakeZero();
 
   xiiVec3     windDir       = vWind;
   const float fWindStrength = windDir.GetLengthAndNormalize();
 
   if (fWindStrength <= 0.01f)
-    return xiiVec3::ZeroVector();
+    return xiiVec3::MakeZero();
 
   xiiVec3 mainDir = vObjectDir;
-  mainDir.NormalizeIfNotZero(xiiVec3::UnitZAxis()).IgnoreResult();
+  mainDir.NormalizeIfNotZero(xiiVec3::MakeAxisZ()).IgnoreResult();
 
   xiiVec3 flutterDir = windDir.CrossRH(mainDir);
-  flutterDir.NormalizeIfNotZero(xiiVec3::UnitZAxis()).IgnoreResult();
+  flutterDir.NormalizeIfNotZero(xiiVec3::MakeAxisZ()).IgnoreResult();
 
   const float fFlutterOffset = (uiFlutterRandomOffset & 1023u) / 256.0f;
 

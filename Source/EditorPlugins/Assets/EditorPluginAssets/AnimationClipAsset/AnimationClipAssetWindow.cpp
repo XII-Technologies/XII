@@ -206,7 +206,7 @@ void xiiQtAnimationClipAssetDocumentWindow::InternalRedraw()
     }
   }
 
-  m_PlaybackPosition = xiiMath::Clamp(m_PlaybackPosition, xiiTime::Zero(), m_ClipDuration);
+  m_PlaybackPosition = xiiMath::Clamp(m_PlaybackPosition, xiiTime::MakeZero(), m_ClipDuration);
   m_pTimeScrubber->SetScrubberPosition(m_PlaybackPosition);
   m_pEventTrackEditor->SetScrubberPosition(m_PlaybackPosition);
 

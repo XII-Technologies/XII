@@ -41,12 +41,12 @@ public:
   const char* GetCenterClipFile() const;
 
 private:
-  xiiHashedString                       m_sCenterClip;                                   // [ property ]
-  xiiHybridArray<xiiAnimationClip2D, 8> m_Clips;                                         // [ property ]
+  xiiHashedString                       m_sCenterClip;                                           // [ property ]
+  xiiHybridArray<xiiAnimationClip2D, 8> m_Clips;                                                 // [ property ]
   xiiTime                               m_InputResponse    = xiiTime::MakeFromMilliseconds(100); // [ property ]
-  bool                                  m_bLoop            = true;                       // [ property ]
-  bool                                  m_bApplyRootMotion = false;                      // [ property ]
-  float                                 m_fPlaybackSpeed   = 1.0f;                       // [ property ]
+  bool                                  m_bLoop            = true;                               // [ property ]
+  bool                                  m_bApplyRootMotion = false;                              // [ property ]
+  float                                 m_fPlaybackSpeed   = 1.0f;                               // [ property ]
 
   xiiAnimGraphTriggerInputPin    m_InStart;       // [ property ]
   xiiAnimGraphBoolInputPin       m_InLoop;        // [ property ]

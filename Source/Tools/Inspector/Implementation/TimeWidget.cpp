@@ -229,13 +229,13 @@ void xiiQtTimeWidget::ProcessTelemetry(void* pUnuseed)
 
     s_pWidget->m_MaxGlobalTime = xiiMath::Max(s_pWidget->m_MaxGlobalTime, Sample.m_AtGlobalTime);
 
-    if (ad.m_TimeSamples.GetCount() > 1 && (xiiMath::IsEqual(ad.m_TimeSamples.PeekBack().m_Timestep, Sample.m_Timestep, xiiTime::Microseconds(100))))
+    if (ad.m_TimeSamples.GetCount() > 1 && (xiiMath::IsEqual(ad.m_TimeSamples.PeekBack().m_Timestep, Sample.m_Timestep, xiiTime::MakeFromMicroseconds(100))))
       ad.m_TimeSamples.PeekBack() = Sample;
     else
       ad.m_TimeSamples.PushBack(Sample);
 
     if (ads.m_TimeSamples.GetCount() > 1 &&
-        (xiiMath::IsEqual(ads.m_TimeSamples.PeekBack().m_Timestep, SampleSmooth.m_Timestep, xiiTime::Microseconds(100))))
+        (xiiMath::IsEqual(ads.m_TimeSamples.PeekBack().m_Timestep, SampleSmooth.m_Timestep, xiiTime::MakeFromMicroseconds(100))))
       ads.m_TimeSamples.PeekBack() = SampleSmooth;
     else
       ads.m_TimeSamples.PushBack(SampleSmooth);

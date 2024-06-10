@@ -254,7 +254,7 @@ void xiiBlackboardComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) c
 {
   if (GetShowDebugInfo())
   {
-    msg.AddBounds(xiiBoundingSphere(xiiVec3::ZeroVector(), 2.0f), xiiDefaultSpatialDataCategories::RenderDynamic);
+    msg.AddBounds(xiiBoundingSphere(xiiVec3::MakeZero(), 2.0f), xiiDefaultSpatialDataCategories::RenderDynamic);
   }
 }
 

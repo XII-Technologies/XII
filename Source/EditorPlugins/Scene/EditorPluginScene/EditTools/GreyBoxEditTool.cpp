@@ -94,7 +94,7 @@ void xiiGreyBoxEditTool::UpdateGizmoState()
   xiiManipulatorManager::GetSingleton()->HideActiveManipulator(GetDocument(), GetDocument()->GetActiveEditTool() != nullptr);
 
   m_DrawBoxGizmo.SetVisible(IsActive());
-  m_DrawBoxGizmo.SetTransformation(xiiTransform::IdentityTransform());
+  m_DrawBoxGizmo.SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiGreyBoxEditTool::GameObjectEventHandler(const xiiGameObjectEvent& e)

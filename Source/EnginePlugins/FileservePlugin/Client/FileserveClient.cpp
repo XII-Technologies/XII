@@ -256,7 +256,7 @@ void xiiFileserveClient::InvalidateFileCache(xiiUInt16 uiDataDirID, xiiStringVie
   auto& cache       = m_MountedDataDirs[uiDataDirID].m_CacheStatus[sFile];
   cache.m_FileHash  = uiHash;
   cache.m_TimeStamp = 0;
-  cache.m_LastCheck = xiiTime::Zero(); // will trigger a server request and that in turn will update the file timestamp
+  cache.m_LastCheck = xiiTime::MakeZero(); // will trigger a server request and that in turn will update the file timestamp
 
   // redirect the next access to this cache entry
   // together with the zero LastCheck that will make sure the best match gets updated as well
@@ -279,7 +279,7 @@ void xiiFileserveClient::FillFileStatusCache(const char* szFile)
     auto& cache = m_MountedDataDirs[dd].m_CacheStatus[szFile];
 
     DetermineCacheStatus(dd, szFile, cache);
-    cache.m_LastCheck = xiiTime::Zero();
+    cache.m_LastCheck = xiiTime::MakeZero();
 
     if (cache.m_TimeStamp != 0 && cache.m_FileHash != 0) // file exists
     {

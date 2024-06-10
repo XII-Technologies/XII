@@ -539,8 +539,8 @@ static void ComputeCpDirs(const xiiDynamicArray<xiiPathComponent::ControlPoint>&
 
     xiiVec3 dirP = (posPrev - cpC.m_vPosition);
     xiiVec3 dirN = (posNext - cpC.m_vPosition);
-    dirP.NormalizeIfNotZero(xiiVec3::ZeroVector()).IgnoreResult();
-    dirN.NormalizeIfNotZero(xiiVec3::ZeroVector()).IgnoreResult();
+    dirP.NormalizeIfNotZero(xiiVec3::MakeZero()).IgnoreResult();
+    dirN.NormalizeIfNotZero(xiiVec3::MakeZero()).IgnoreResult();
 
     xiiVec3 dirAvg = dirP - dirN;
     dirAvg.NormalizeIfNotZero(cs.m_vForwardDir).IgnoreResult();

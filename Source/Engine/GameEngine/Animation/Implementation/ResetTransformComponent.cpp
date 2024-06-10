@@ -15,7 +15,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiResetTransformComponent, 1, xiiComponentMode::Dynami
     XII_MEMBER_PROPERTY("ResetPositionZ", m_bResetLocalPositionZ)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("LocalPosition", m_vLocalPosition),
     XII_MEMBER_PROPERTY("ResetRotation", m_bResetLocalRotation)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_MEMBER_PROPERTY("LocalRotation", m_qLocalRotation)->AddAttributes(new xiiDefaultValueAttribute(xiiQuat::IdentityQuaternion())),
+    XII_MEMBER_PROPERTY("LocalRotation", m_qLocalRotation)->AddAttributes(new xiiDefaultValueAttribute(xiiQuat::MakeIdentity())),
     XII_MEMBER_PROPERTY("ResetScaling", m_bResetLocalScaling)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("LocalScaling", m_vLocalScaling)->AddAttributes(new xiiDefaultValueAttribute(xiiVec3(1))),
     XII_MEMBER_PROPERTY("LocalUniformScaling", m_fLocalUniformScaling)->AddAttributes(new xiiDefaultValueAttribute(1)),

@@ -63,7 +63,7 @@ protected:
   xiiTime                        m_Duration;
   xiiAnimationClipResourceHandle m_hAnimationClip;
   xiiSkeletonResourceHandle      m_hSkeleton;
-  xiiTime                        m_ElapsedTimeSinceUpdate = xiiTime::Zero();
+  xiiTime                        m_ElapsedTimeSinceUpdate = xiiTime::MakeZero();
 
   ozz::vector<ozz::math::SoaTransform> m_OzzLocalTransforms; // TODO: could be frame allocated
 };

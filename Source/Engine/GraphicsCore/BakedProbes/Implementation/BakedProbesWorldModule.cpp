@@ -43,7 +43,7 @@ xiiResult xiiBakedProbesWorldModule::GetProbeIndexData(const xiiVec3& vGlobalPos
     return XII_FAILURE;
 
   xiiSimdVec4f gridSpacePos = xiiSimdConversion::ToVec3((vGlobalPosition - pProbeTree->GetGridOrigin()).CompDiv(pProbeTree->GetProbeSpacing()));
-  gridSpacePos              = gridSpacePos.CompMax(xiiSimdVec4f::ZeroVector());
+  gridSpacePos              = gridSpacePos.CompMax(xiiSimdVec4f::MakeZero());
 
   xiiSimdVec4f gridSpacePosFloor = gridSpacePos.Floor();
   xiiSimdVec4f weights           = gridSpacePos - gridSpacePosFloor;

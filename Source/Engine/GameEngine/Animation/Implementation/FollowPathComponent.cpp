@@ -137,17 +137,17 @@ void xiiFollowPathComponent::Update(bool bForce)
   xiiVec3 vTarget = transformAhead.m_vPosition - transform.m_vPosition;
   if (m_FollowMode == xiiFollowPathMode::AlignUpZ)
   {
-    const xiiPlane plane = xiiPlane(xiiVec3::UnitZAxis(), transform.m_vPosition);
+    const xiiPlane plane = xiiPlane(xiiVec3::MakeAxisZ(), transform.m_vPosition);
     vTarget              = plane.GetCoplanarDirection(vTarget);
   }
-  vTarget.NormalizeIfNotZero(xiiVec3::UnitXAxis()).IgnoreResult();
+  vTarget.NormalizeIfNotZero(xiiVec3::MakeAxisX()).IgnoreResult();
 
-  xiiVec3 vUp    = (m_FollowMode == xiiFollowPathMode::FullRotation) ? transform.m_vUpDirection : xiiVec3::UnitZAxis();
+  xiiVec3 vUp    = (m_FollowMode == xiiFollowPathMode::FullRotation) ? transform.m_vUpDirection : xiiVec3::MakeAxisZ();
   xiiVec3 vRight = vTarget.CrossRH(vUp);
-  vRight.NormalizeIfNotZero(xiiVec3::UnitYAxis()).IgnoreResult();
+  vRight.NormalizeIfNotZero(xiiVec3::MakeAxisY()).IgnoreResult();
 
   vUp = vRight.CrossRH(vTarget);
-  vUp.NormalizeIfNotZero(xiiVec3::UnitZAxis()).IgnoreResult();
+  vUp.NormalizeIfNotZero(xiiVec3::MakeAxisZ()).IgnoreResult();
 
   // check if we want to tilt the platform when turning
   xiiAngle deltaAngle = xiiAngle::MakeFromDegree(0.0f);
@@ -157,9 +157,9 @@ void xiiFollowPathComponent::Update(bool bForce)
     {
       xiiVec3 vLastTarget = m_vLastTargetPosition - m_vLastPosition;
       {
-        const xiiPlane plane = xiiPlane(xiiVec3::UnitZAxis(), transform.m_vPosition);
+        const xiiPlane plane = xiiPlane(xiiVec3::MakeAxisZ(), transform.m_vPosition);
         vLastTarget          = plane.GetCoplanarDirection(vLastTarget);
-        vLastTarget.NormalizeIfNotZero(xiiVec3::UnitXAxis()).IgnoreResult();
+        vLastTarget.NormalizeIfNotZero(xiiVec3::MakeAxisX()).IgnoreResult();
       }
 
       const float fTiltStrength = xiiMath::Sign((vTarget - vLastTarget).Dot(vRight)) * xiiMath::Sign(m_fTiltAmount);

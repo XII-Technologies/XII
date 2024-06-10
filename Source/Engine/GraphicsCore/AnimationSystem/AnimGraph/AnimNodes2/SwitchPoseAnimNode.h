@@ -21,10 +21,10 @@ protected:
 
 private:
   xiiTime                                          m_TransitionDuration = xiiTime::MakeFromMilliseconds(200); // [ property ]
-  xiiUInt8                                         m_uiPosesCount       = 0;                          // [ property ]
-  xiiHybridArray<xiiAnimGraphLocalPoseInputPin, 4> m_InPoses;                                         // [ property ]
-  xiiAnimGraphNumberInputPin                       m_InIndex;                                         // [ property ]
-  xiiAnimGraphLocalPoseOutputPin                   m_OutPose;                                         // [ property ]
+  xiiUInt8                                         m_uiPosesCount       = 0;                                  // [ property ]
+  xiiHybridArray<xiiAnimGraphLocalPoseInputPin, 4> m_InPoses;                                                 // [ property ]
+  xiiAnimGraphNumberInputPin                       m_InIndex;                                                 // [ property ]
+  xiiAnimGraphLocalPoseOutputPin                   m_OutPose;                                                 // [ property ]
 
   struct InstanceData
   {

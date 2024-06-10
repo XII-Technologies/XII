@@ -73,7 +73,7 @@ private:
   xiiArrayMap<xiiHashedString, xiiVariant> m_Parameters;
 
   xiiScriptClassResourceHandle m_hScriptClass;
-  xiiTime                      m_UpdateInterval = xiiTime::Zero();
+  xiiTime                      m_UpdateInterval = xiiTime::MakeZero();
 
   xiiSharedPtr<xiiScriptRTTI>     m_pScriptType;
   xiiUniquePtr<xiiScriptInstance> m_pInstance;

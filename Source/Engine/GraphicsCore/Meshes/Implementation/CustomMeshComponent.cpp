@@ -240,7 +240,7 @@ void xiiCustomMeshComponent::OnActivated()
       ind[i * 3 + 2] = geo.GetPolygons()[i].m_Vertices[2];
     }
 
-    SetBounds(xiiBoundingSphere(xiiVec3::ZeroVector(), 1.5f));
+    SetBounds(xiiBoundingSphere(xiiVec3::MakeZero(), 1.5f));
   }
 }
 

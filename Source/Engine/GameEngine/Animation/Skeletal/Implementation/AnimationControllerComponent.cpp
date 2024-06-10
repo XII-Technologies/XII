@@ -117,7 +117,7 @@ void xiiAnimationControllerComponent::Update()
     return;
 
   m_AnimController.Update(m_ElapsedTimeSinceUpdate, GetOwner());
-  m_ElapsedTimeSinceUpdate = xiiTime::Zero();
+  m_ElapsedTimeSinceUpdate = xiiTime::MakeZero();
 
   xiiVec3  translation;
   xiiAngle rotationX;

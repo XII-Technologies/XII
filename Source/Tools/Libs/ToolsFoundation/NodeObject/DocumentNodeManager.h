@@ -157,7 +157,7 @@ protected:
 
   struct NodeInternal
   {
-    xiiVec2                                 m_vPos = xiiVec2::ZeroVector();
+    xiiVec2                                 m_vPos = xiiVec2::MakeZero();
     xiiHybridArray<xiiUniquePtr<xiiPin>, 6> m_Inputs;
     xiiHybridArray<xiiUniquePtr<xiiPin>, 6> m_Outputs;
   };

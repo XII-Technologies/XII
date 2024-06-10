@@ -216,8 +216,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
   {
     double randomAngle = pWorld->GetRandomNumberGenerator().DoubleInRange(0.0, xiiMath::Pi<double>() * 2.0);
 
-    xiiMat3 rotMat;
-    rotMat.SetRotationMatrix(vDir, xiiAngle::MakeFromRadian((float)randomAngle));
+    xiiMat3 rotMat = xiiMat3::MakeAxisRotation(vDir, xiiAngle::MakeFromRadian((float)randomAngle));
 
     vTangent = rotMat * vTangent;
   }
@@ -257,8 +256,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
     const xiiAngle deviation = xiiAngle::MakeFromRadian((float)pWorld->GetRandomNumberGenerator().DoubleMinMax(-maxDeviation.GetRadian(), maxDeviation.GetRadian()));
 
     // tilt around the tangent (we don't want to compute another random rotation here)
-    xiiMat3 matTilt;
-    matTilt.SetRotationMatrix(vTangent, deviation);
+    xiiMat3 matTilt = xiiMat3::MakeAxisRotation(vTangent, deviation);
 
     vDir = matTilt * vDir;
   }
@@ -274,7 +272,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
 
   xiiTransform t;
   t.m_vPosition = vPosition;
-  t.m_qRotation.SetFromMat3(mRot);
+  t.m_qRotation = xiiQuat::MakeFromMat3(mRot);
   t.m_vScale.Set(1.0f);
 
   // attach to dynamic objects
@@ -284,7 +282,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
   if (pWorld->TryGetObject(hObject, pObject) && pObject->IsDynamic())
   {
     hParent = hObject;
-    t.SetLocalTransform(pObject->GetGlobalTransform(), t);
+    t       = xiiTransform::MakeLocalTransform(pObject->GetGlobalTransform(), t);
   }
 
   xiiHybridArray<xiiGameObject*, 8> rootObjects;
@@ -303,7 +301,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
 
     for (auto pRootObject : rootObjects)
     {
-      pRootObject->PostMessageRecursive(msgSetFloat, xiiTime::Zero(), xiiObjectMsgQueueType::AfterInitialized);
+      pRootObject->PostMessageRecursive(msgSetFloat, xiiTime::MakeZero(), xiiObjectMsgQueueType::AfterInitialized);
     }
   }
 
@@ -314,7 +312,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
 
     for (auto pRootObject : rootObjects)
     {
-      pRootObject->PostMessageRecursive(msg, xiiTime::Zero(), xiiObjectMsgQueueType::AfterInitialized);
+      pRootObject->PostMessageRecursive(msg, xiiTime::MakeZero(), xiiObjectMsgQueueType::AfterInitialized);
     }
   }
 

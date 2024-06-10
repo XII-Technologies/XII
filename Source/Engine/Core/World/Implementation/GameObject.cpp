@@ -677,7 +677,7 @@ xiiVec3 xiiGameObject::GetAngularVelocity() const
 {
   const xiiSimdFloat invDeltaSeconds = GetWorld()->GetInvDeltaSeconds();
   const xiiSimdQuat  q               = m_pTransformationData->m_globalTransform.m_Rotation * -m_pTransformationData->m_lastGlobalTransform.m_Rotation;
-  xiiSimdVec4f       angularVelocity = xiiSimdVec4f::ZeroVector();
+  xiiSimdVec4f       angularVelocity = xiiSimdVec4f::MakeZero();
 
   xiiSimdVec4f axis;
   xiiSimdFloat angle;
@@ -697,11 +697,11 @@ void xiiGameObject::UpdateGlobalTransform()
 void xiiGameObject::UpdateLocalBounds()
 {
   xiiMsgUpdateLocalBounds msg;
-  msg.m_ResultingLocalBounds.SetInvalid();
+  msg.m_ResultingLocalBounds = xiiBoundingBoxSphere::MakeInvalid();
 
   SendMessage(msg);
 
-  const bool bIsAlwaysVisible     = m_pTransformationData->m_localBounds.m_BoxHalfExtents.w() != xiiSimdFloat::Zero();
+  const bool bIsAlwaysVisible     = m_pTransformationData->m_localBounds.m_BoxHalfExtents.w() != xiiSimdFloat::MakeZero();
   bool       bRecreateSpatialData = false;
 
   if (m_pTransformationData->m_hSpatialData.IsInvalidated() == false)
@@ -1126,7 +1126,7 @@ void xiiGameObject::TransformationData::UpdateLocalTransform()
 
   if (m_pParentData != nullptr)
   {
-    tLocal.SetLocalTransform(m_pParentData->m_globalTransform, m_globalTransform);
+    tLocal = xiiSimdTransform::MakeLocalTransform(m_pParentData->m_globalTransform, m_globalTransform);
   }
   else
   {
@@ -1182,7 +1182,7 @@ void xiiGameObject::TransformationData::UpdateGlobalBoundsAndSpatialData(xiiSpat
 
   UpdateGlobalBounds();
 
-  const bool bIsAlwaysVisible = m_localBounds.m_BoxHalfExtents.w() != xiiSimdFloat::Zero();
+  const bool bIsAlwaysVisible = m_localBounds.m_BoxHalfExtents.w() != xiiSimdFloat::MakeZero();
   if (m_hSpatialData.IsInvalidated() == false && bIsAlwaysVisible == false && m_globalBounds != oldGlobalBounds)
   {
     ref_spatialSystem.UpdateSpatialDataBounds(m_hSpatialData, m_globalBounds);
@@ -1197,7 +1197,7 @@ void xiiGameObject::TransformationData::RecreateSpatialData(xiiSpatialSystem& re
     m_hSpatialData.Invalidate();
   }
 
-  const bool bIsAlwaysVisible = m_localBounds.m_BoxHalfExtents.w() != xiiSimdFloat::Zero();
+  const bool bIsAlwaysVisible = m_localBounds.m_BoxHalfExtents.w() != xiiSimdFloat::MakeZero();
   if (bIsAlwaysVisible)
   {
     m_hSpatialData = ref_spatialSystem.CreateSpatialDataAlwaysVisible(m_pObject, m_uiSpatialDataCategoryBitmask, m_pObject->m_Tags);

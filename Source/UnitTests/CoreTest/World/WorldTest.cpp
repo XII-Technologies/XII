@@ -167,7 +167,7 @@ namespace
         it->SetLocalPosition(newPos);
 
         xiiQuat newRot;
-        newRot.SetFromAxisAndAngle(xiiVec3::UnitZAxis(), xiiAngle::MakeFromDegree(i * 30.0f));
+        newRot.SetFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromDegree(i * 30.0f));
         it->SetLocalRotation(newRot);
 
         if (i > 5)
@@ -188,7 +188,7 @@ namespace
 
       for (auto it = GetWorld()->GetObjects(); it.IsValid(); ++it)
       {
-        it->SetGlobalPosition(xiiVec3::ZeroVector());
+        it->SetGlobalPosition(xiiVec3::MakeZero());
       }
     }
 
@@ -733,7 +733,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
     for (xiiUInt32 i = 0; i < numObjects; ++i)
     {
       objectDesc.m_LocalPosition = xiiVec3(0, 0, 5);
-      objectDesc.m_LocalRotation.SetFromAxisAndAngle(xiiVec3::UnitZAxis(), xiiAngle::MakeFromDegree(90));
+      objectDesc.m_LocalRotation.SetFromAxisAndAngle(xiiVec3::MakeAxisZ(), xiiAngle::MakeFromDegree(90));
 
       hObjects[i] = world.CreateObject(objectDesc, pObjects[i]);
     }
@@ -770,7 +770,7 @@ XII_CREATE_SIMPLE_TEST(World, World)
       xiiVec3   expectedLastPos        = xiiVec3(i * 10, 0, 0);
       xiiVec3   expectedLinearVelocity = xiiVec3(i * -100.0f, 0, 0);
       XII_TEST_VEC3(pObject->GetLastGlobalTransform().m_vPosition, expectedLastPos, xiiMath::DefaultEpsilon<float>());
-      XII_TEST_VEC3(pObject->GetGlobalPosition(), xiiVec3::ZeroVector(), xiiMath::DefaultEpsilon<float>());
+      XII_TEST_VEC3(pObject->GetGlobalPosition(), xiiVec3::MakeZero(), xiiMath::DefaultEpsilon<float>());
       XII_TEST_VEC3(pObject->GetLinearVelocity(), expectedLinearVelocity, xiiMath::DefaultEpsilon<float>());
     }
   }

@@ -72,7 +72,7 @@ void xiiSphereVisualizerAdapter::UpdateGizmoTransform()
   t.m_vScale.Set(m_fScale);
   t.m_vPosition = m_vPositionOffset;
 
-  xiiVec3 vOffset = xiiVec3::ZeroVector();
+  xiiVec3 vOffset = xiiVec3::MakeZero();
 
   if (m_Anchor.IsSet(xiiVisualizerAnchor::PosX))
     vOffset.x -= t.m_vScale.x;

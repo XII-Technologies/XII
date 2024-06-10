@@ -65,7 +65,7 @@ void xiiPrefabComponentDragDropHandler::CreatePrefab(const xiiVec3& vPosition, c
 
   if (PasteCmd.m_CreatedRootObject.IsValid())
   {
-    MoveObjectToPosition(PasteCmd.m_CreatedRootObject, vPos, xiiQuat::IdentityQuaternion());
+    MoveObjectToPosition(PasteCmd.m_CreatedRootObject, vPos, xiiQuat::MakeIdentity());
 
     m_DraggedObjects.PushBack(PasteCmd.m_CreatedRootObject);
   }

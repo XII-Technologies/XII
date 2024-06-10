@@ -19,7 +19,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 struct DocumentNodeManager_NodeMetaData
 {
-  xiiVec2 m_Pos = xiiVec2::ZeroVector();
+  xiiVec2 m_Pos = xiiVec2::MakeZero();
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, DocumentNodeManager_NodeMetaData);
 

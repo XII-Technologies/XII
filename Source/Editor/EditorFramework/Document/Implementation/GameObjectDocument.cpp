@@ -1021,7 +1021,7 @@ xiiTransform xiiGameObjectDocument::ComputeGlobalTransform(const xiiDocumentObje
   if (pObject == nullptr || pObject->GetTypeAccessor().GetType() != xiiGetStaticRTTI<xiiGameObject>())
   {
     m_GlobalTransforms[pObject] = xiiSimdTransform::IdentityTransform();
-    return xiiTransform::IdentityTransform();
+    return xiiTransform::MakeIdentity();
   }
 
   const xiiSimdTransform tParent = xiiSimdConversion::ToTransform(ComputeGlobalTransform(pObject->GetParent()));

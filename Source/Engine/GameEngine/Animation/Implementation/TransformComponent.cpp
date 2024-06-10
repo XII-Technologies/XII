@@ -61,7 +61,7 @@ void xiiTransformComponent::OnSimulationStarted()
   SUPER::OnSimulationStarted();
 
   // reset to start state
-  m_AnimationTime = xiiTime::Zero();
+  m_AnimationTime = xiiTime::MakeZero();
   m_Flags.Add(xiiTransformComponentFlags::Running);
   m_Flags.Remove(xiiTransformComponentFlags::AnimationReversed);
 }

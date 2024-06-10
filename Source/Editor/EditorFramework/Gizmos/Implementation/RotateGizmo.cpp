@@ -22,7 +22,7 @@ xiiRotateGizmo::xiiRotateGizmo()
   m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/RotatePlaneZ.obj");
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiRotateGizmo::UpdateStatusBarText(xiiQtEngineDocumentWindow* pWindow)

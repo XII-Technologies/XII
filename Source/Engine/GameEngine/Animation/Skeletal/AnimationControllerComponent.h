@@ -48,5 +48,5 @@ protected:
   xiiAnimController          m_AnimController;
   xiiAnimPoseGenerator       m_PoseGenerator;
 
-  xiiTime m_ElapsedTimeSinceUpdate = xiiTime::Zero();
+  xiiTime m_ElapsedTimeSinceUpdate = xiiTime::MakeZero();
 };

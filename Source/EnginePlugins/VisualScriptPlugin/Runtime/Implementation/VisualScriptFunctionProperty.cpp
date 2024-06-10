@@ -23,7 +23,7 @@ void xiiVisualScriptFunctionProperty::Execute(void* pInstance, xiiArrayPtr<xiiVa
   xiiVisualScriptExecutionContext context(m_pDesc);
   context.Initialize(*pVisualScriptInstance, m_LocalDataStorage, arguments);
 
-  auto result = context.Execute(xiiTime::Zero());
+  auto result = context.Execute(xiiTime::MakeZero());
   XII_ASSERT_DEBUG(result.m_NextExecAndState != xiiVisualScriptExecutionContext::ExecResult::State::ContinueLater, "A non-coroutine function must not return 'ContinueLater'");
 
   // TODO: return value
@@ -55,6 +55,6 @@ void xiiVisualScriptMessageHandler::Dispatch(xiiAbstractMessageHandler* pSelf, v
   xiiVisualScriptExecutionContext context(pHandler->m_pDesc);
   context.Initialize(*pVisualScriptInstance, pHandler->m_LocalDataStorage, arguments);
 
-  auto result = context.Execute(xiiTime::Zero());
+  auto result = context.Execute(xiiTime::MakeZero());
   XII_ASSERT_DEBUG(result.m_NextExecAndState != xiiVisualScriptExecutionContext::ExecResult::State::ContinueLater, "A non-coroutine function must not return 'ContinueLater'");
 }

@@ -179,11 +179,11 @@ XII_CREATE_SIMPLE_TEST(World, Messaging)
     {
       TestMessage1 msg;
       msg.m_iValue = i;
-      pRoot->PostMessage(msg, xiiTime::Zero(), xiiObjectMsgQueueType::NextFrame);
+      pRoot->PostMessage(msg, xiiTime::MakeZero(), xiiObjectMsgQueueType::NextFrame);
 
       TestMessage2 msg2;
       msg2.m_iValue = i;
-      pRoot->PostMessage(msg2, xiiTime::Zero(), xiiObjectMsgQueueType::NextFrame);
+      pRoot->PostMessage(msg2, xiiTime::MakeZero(), xiiObjectMsgQueueType::NextFrame);
     }
 
     world.Update();

@@ -458,7 +458,7 @@ static xiiMeshBufferResourceHandle CreateMeshBufferFromFile(const char* szFile)
   xiiGeometry geom;
   for (xiiUInt32 v = 0; v < obj.m_Positions.GetCount(); ++v)
   {
-    geom.AddVertex(obj.m_Positions[v], xiiVec3::ZeroVector(), xiiVec2::ZeroVector(), xiiColor::White);
+    geom.AddVertex(obj.m_Positions[v], xiiVec3::MakeZero(), xiiVec2::MakeZero(), xiiColor::White);
   }
 
   xiiStaticArray<xiiUInt32, 3> triangle;

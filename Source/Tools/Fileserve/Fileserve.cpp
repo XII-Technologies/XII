@@ -79,7 +79,7 @@ void xiiFileserverApp::FileserverEventHandler(const xiiFileserverEvent& e)
     case xiiFileserverEvent::Type::ClientReconnected:
     {
       ++m_uiConnections;
-      m_TimeTillClosing = xiiTime::Zero();
+      m_TimeTillClosing = xiiTime::MakeZero();
     }
     break;
 

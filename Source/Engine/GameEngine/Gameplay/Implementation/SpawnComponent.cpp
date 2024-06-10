@@ -190,7 +190,7 @@ bool xiiSpawnComponent::CanTriggerManualSpawn() const
   return tNow - m_LastManualSpawn >= m_MinDelay;
 }
 
-bool xiiSpawnComponent::TriggerManualSpawn(bool bIgnoreSpawnDelay /*= false*/, const xiiVec3& vLocalOffset /*= xiiVec3::ZeroVector()*/)
+bool xiiSpawnComponent::TriggerManualSpawn(bool bIgnoreSpawnDelay /*= false*/, const xiiVec3& vLocalOffset /*= xiiVec3::MakeZero()*/)
 {
   const xiiTime tNow = GetWorld()->GetClock().GetAccumulatedTime();
 
@@ -262,7 +262,7 @@ void xiiSpawnComponent::OnTriggered(xiiMsgComponentInternalTrigger& msg)
   {
     m_SpawnFlags.Remove(xiiSpawnComponentFlags::SpawnInFlight);
 
-    SpawnOnce(xiiVec3::ZeroVector());
+    SpawnOnce(xiiVec3::MakeZero());
 
     // do it all again
     if (m_SpawnFlags.IsAnySet(xiiSpawnComponentFlags::SpawnContinuously))

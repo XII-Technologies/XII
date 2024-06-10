@@ -153,7 +153,7 @@ void xiiSampleBlendSpace2DAnimNode::Step(xiiAnimController& ref_controller, xiiA
 
   if ((!m_InStart.IsConnected() && !pState->m_bPlaying) || m_InStart.IsTriggered(ref_graph))
   {
-    pState->m_CenterPlaybackTime    = xiiTime::Zero();
+    pState->m_CenterPlaybackTime    = xiiTime::MakeZero();
     pState->m_fOtherPlaybackPosNorm = 0.0f;
     pState->m_bPlaying              = true;
 
@@ -299,12 +299,12 @@ void xiiSampleBlendSpace2DAnimNode::PlayClips(xiiAnimController& ref_controller,
   const bool  bLoop  = m_InLoop.GetBool(ref_graph, m_bLoop);
   const float fSpeed = static_cast<float>(m_InSpeed.GetNumber(ref_graph, m_fPlaybackSpeed));
 
-  xiiTime tAvgDuration = xiiTime::Zero();
+  xiiTime tAvgDuration = xiiTime::MakeZero();
 
   xiiHybridArray<xiiAnimPoseGeneratorCommandSampleTrack*, 8> pSampleTrack;
   pSampleTrack.SetCountUninitialized(clips.GetCount());
 
-  xiiVec3   vRootMotion   = xiiVec3::ZeroVector();
+  xiiVec3   vRootMotion   = xiiVec3::MakeZero();
   xiiUInt32 uiNumAvgClips = 0;
 
   for (xiiUInt32 i = 0; i < clips.GetCount(); ++i)

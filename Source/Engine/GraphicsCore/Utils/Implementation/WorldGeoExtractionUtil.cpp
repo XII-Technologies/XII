@@ -74,7 +74,7 @@ void xiiWorldGeoExtractionUtil::WriteWorldGeometryToOBJ(xiiStringView sFile, con
     return;
   }
 
-  xiiMat4 transform = xiiMat4::IdentityMatrix();
+  xiiMat4 transform = xiiMat4::MakeIdentity();
   transform.SetRotationalPart(mTransform);
 
   xiiStringBuilder line;

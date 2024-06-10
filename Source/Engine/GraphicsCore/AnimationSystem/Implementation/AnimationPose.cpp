@@ -101,7 +101,7 @@ xiiTime xiiAnimationInvisibleUpdateRate::GetTimeStep(xiiAnimationInvisibleUpdate
   switch (value)
   {
     case xiiAnimationInvisibleUpdateRate::FullUpdate:
-      return xiiTime::Zero();
+      return xiiTime::MakeZero();
     case xiiAnimationInvisibleUpdateRate::Max60FPS:
       return xiiTime::MakeFromSeconds(1.0 / 60.0);
     case xiiAnimationInvisibleUpdateRate::Max30FPS:
@@ -118,7 +118,7 @@ xiiTime xiiAnimationInvisibleUpdateRate::GetTimeStep(xiiAnimationInvisibleUpdate
       XII_DEFAULT_CASE_NOT_IMPLEMENTED;
   }
 
-  return xiiTime::Zero();
+  return xiiTime::MakeZero();
 }
 
 void xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(xiiUInt32 uiJointIndex, xiiMat4& ref_mFullTransform) const

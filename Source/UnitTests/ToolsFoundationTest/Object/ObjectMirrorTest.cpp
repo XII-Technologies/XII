@@ -128,7 +128,7 @@ xiiVariant GetVariantFromType(xiiVariant::Type::Enum type)
     }
     case xiiVariant::Type::Matrix4:
     {
-      xiiMat4 mat = xiiMat4::IdentityMatrix();
+      xiiMat4 mat = xiiMat4::MakeIdentity();
 
       mat.SetRotationMatrix(xiiVec3(0.0f, 1.0f, 0.0f), xiiAngle::MakeFromDegree(30));
       mat.SetTranslationVector(xiiVec3(1.0f, 2.0f, 3.0f));

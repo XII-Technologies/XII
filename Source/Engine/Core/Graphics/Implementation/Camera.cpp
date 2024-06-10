@@ -386,7 +386,7 @@ void xiiCamera::RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle
   if (forwardAxis.GetRadian() != 0.0f)
   {
     xiiMat3 m;
-    m.SetRotationMatrix(vDirForwards, forwardAxis);
+    m = xiiMat3::MakeAxisRotation(vDirForwards, forwardAxis);
 
     vDirUp    = m * vDirUp;
     vDirRight = m * vDirRight;
@@ -395,7 +395,7 @@ void xiiCamera::RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle
   if (rightAxis.GetRadian() != 0.0f)
   {
     xiiMat3 m;
-    m.SetRotationMatrix(vDirRight, rightAxis);
+    m = xiiMat3::MakeAxisRotation(vDirRight, rightAxis);
 
     vDirUp       = m * vDirUp;
     vDirForwards = m * vDirForwards;
@@ -404,7 +404,7 @@ void xiiCamera::RotateLocally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngle
   if (axis.GetRadian() != 0.0f)
   {
     xiiMat3 m;
-    m.SetRotationMatrix(vDirUp, axis);
+    m = xiiMat3::MakeAxisRotation(vDirUp, axis);
 
     vDirRight    = m * vDirRight;
     vDirForwards = m * vDirForwards;
@@ -429,7 +429,7 @@ void xiiCamera::RotateGlobally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngl
   if (forwardAxis.GetRadian() != 0.0f)
   {
     xiiMat3 m;
-    m.SetRotationMatrixX(forwardAxis);
+    m = xiiMat3::MakeRotationX(forwardAxis);
 
     vDirUp       = m * vDirUp;
     vDirForwards = m * vDirForwards;
@@ -438,7 +438,7 @@ void xiiCamera::RotateGlobally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngl
   if (rightAxis.GetRadian() != 0.0f)
   {
     xiiMat3 m;
-    m.SetRotationMatrixY(rightAxis);
+    m = xiiMat3::MakeRotationY(rightAxis);
 
     vDirUp       = m * vDirUp;
     vDirForwards = m * vDirForwards;
@@ -447,7 +447,7 @@ void xiiCamera::RotateGlobally(xiiAngle forwardAxis, xiiAngle rightAxis, xiiAngl
   if (axis.GetRadian() != 0.0f)
   {
     xiiMat3 m;
-    m.SetRotationMatrixZ(axis);
+    m = xiiMat3::MakeRotationZ(axis);
 
     vDirUp       = m * vDirUp;
     vDirForwards = m * vDirForwards;

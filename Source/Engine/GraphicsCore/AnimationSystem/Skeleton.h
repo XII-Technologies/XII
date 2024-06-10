@@ -62,7 +62,7 @@ private:
   xiiUInt8                 m_uiCollisionLayer = 0;
 
   xiiEnum<xiiSkeletonJointType> m_JointType;
-  xiiQuat                       m_qLocalJointOrientation = xiiQuat::IdentityQuaternion();
+  xiiQuat                       m_qLocalJointOrientation = xiiQuat::MakeIdentity();
   xiiAngle                      m_HalfSwingLimitY;
   xiiAngle                      m_HalfSwingLimitZ;
   xiiAngle                      m_TwistLimitHalfAngle;

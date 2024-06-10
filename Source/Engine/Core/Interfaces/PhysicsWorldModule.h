@@ -154,8 +154,8 @@ public:
   {
     xiiGameObjectHandle m_hActorA;
     xiiGameObjectHandle m_hActorB;
-    xiiTransform        m_LocalFrameA = xiiTransform::IdentityTransform();
-    xiiTransform        m_LocalFrameB = xiiTransform::IdentityTransform();
+    xiiTransform        m_LocalFrameA = xiiTransform::MakeIdentity();
+    xiiTransform        m_LocalFrameB = xiiTransform::MakeIdentity();
   };
 
   struct FixedJointConfig : JointConfig

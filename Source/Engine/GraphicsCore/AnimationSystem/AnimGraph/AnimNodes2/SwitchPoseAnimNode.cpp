@@ -108,7 +108,7 @@ void xiiSwitchPoseAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGraph
   {
     pInstance->m_iTransitionFromIndex = pInstance->m_iTransitionToIndex;
     pInstance->m_iTransitionToIndex   = iDstIdx;
-    pInstance->m_TransitionTime       = xiiTime::Zero();
+    pInstance->m_TransitionTime       = xiiTime::MakeZero();
   }
 
   if (pInstance->m_TransitionTime >= m_TransitionDuration)

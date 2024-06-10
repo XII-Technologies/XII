@@ -204,7 +204,7 @@ void xiiWindVolumeSphereComponent::SetRadius(float fVal)
 
 void xiiWindVolumeSphereComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)
 {
-  msg.AddBounds(xiiBoundingSphere(xiiVec3::ZeroVector(), m_fRadius), xiiWindVolumeComponent::SpatialDataCategory);
+  msg.AddBounds(xiiBoundingSphere(xiiVec3::MakeZero(), m_fRadius), xiiWindVolumeComponent::SpatialDataCategory);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -271,13 +271,13 @@ xiiSimdVec4f xiiWindVolumeCylinderComponent::ComputeForceAtLocalPosition(const x
   const xiiSimdFloat fCylDist = vLocalPos.x();
 
   if (fCylDist <= -m_fLength * 0.5f || fCylDist >= m_fLength * 0.5f)
-    return xiiSimdVec4f::ZeroVector();
+    return xiiSimdVec4f::MakeZero();
 
   xiiSimdVec4f orthoDir = vLocalPos;
   orthoDir.SetX(0.0f);
 
   if (orthoDir.GetLengthSquared<3>() >= xiiMath::Square(m_fRadius))
-    return xiiSimdVec4f::ZeroVector();
+    return xiiSimdVec4f::MakeZero();
 
   if (m_Mode == xiiWindVolumeCylinderMode::Vortex)
   {
@@ -371,8 +371,8 @@ xiiSimdVec4f xiiWindVolumeConeComponent::ComputeForceAtLocalPosition(const xiiSi
 {
   const xiiSimdFloat fConeDist = vLocalPos.x();
 
-  if (fConeDist <= xiiSimdFloat::Zero() || fConeDist >= m_fLength)
-    return xiiSimdVec4f::ZeroVector();
+  if (fConeDist <= xiiSimdFloat::MakeZero() || fConeDist >= m_fLength)
+    return xiiSimdVec4f::MakeZero();
 
   // TODO: precompute base radius
   const float fBaseRadius = xiiMath::Tan(m_Angle * 0.5f) * m_fLength;
@@ -384,7 +384,7 @@ xiiSimdVec4f xiiWindVolumeConeComponent::ComputeForceAtLocalPosition(const xiiSi
   orthoDir.SetX(0.0f);
 
   if (orthoDir.GetLengthSquared<3>() >= fConeRadius * fConeRadius)
-    return xiiSimdVec4f::ZeroVector();
+    return xiiSimdVec4f::MakeZero();
 
   return vLocalPos.GetNormalized<3>() * GetWindInMetersPerSecond();
 }

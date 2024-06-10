@@ -121,7 +121,7 @@ namespace
     xiiSimdVec4f dirUp      = xiiSimdConversion::ToVec3(camera.GetDirUp());
 
 
-    xiiSimdVec4f fZn = xiiSimdVec4f::ZeroVector();
+    xiiSimdVec4f fZn = xiiSimdVec4f::MakeZero();
     xiiSimdVec4f cc[8];
 
     for (xiiInt32 z = 0; z < NUM_CLUSTERS_Z; z++)
@@ -312,7 +312,7 @@ namespace
 
     xiiSimdVec4i maxClusterIndex = xiiSimdVec4i(NUM_CLUSTERS_X, NUM_CLUSTERS_Y, NUM_CLUSTERS_X, NUM_CLUSTERS_Y);
     minXY_maxXY                  = minXY_maxXY.CompMin(maxClusterIndex - xiiSimdVec4i(1));
-    minXY_maxXY                  = minXY_maxXY.CompMax(xiiSimdVec4i::ZeroVector());
+    minXY_maxXY                  = minXY_maxXY.CompMax(xiiSimdVec4i::MakeZero());
 
     xiiUInt32 xMin = minXY_maxXY.x();
     xiiUInt32 yMin = minXY_maxXY.w();
@@ -434,7 +434,7 @@ namespace
       xiiSimdVec4f corner            = xiiSimdConversion::ToVec3(corners[i]);
       xiiSimdVec4f screenSpaceCorner = decalToScreen.TransformPosition(corner);
       xiiSimdFloat depth             = screenSpaceCorner.w();
-      bInsideBox |= depth < xiiSimdFloat::Zero();
+      bInsideBox |= depth < xiiSimdFloat::MakeZero();
 
       screenSpaceCorner /= depth;
       screenSpaceCorner = screenSpaceCorner.GetCombined<xiiSwizzle::XYZW>(xiiSimdVec4f(depth));

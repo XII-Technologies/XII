@@ -244,8 +244,8 @@ void xiiSkeletonComponent::BuildSkeletonVisualization(xiiMsgAnimationPoseUpdated
 
   struct Bone
   {
-    xiiVec3 pos            = xiiVec3::ZeroVector();
-    xiiVec3 dir            = xiiVec3::ZeroVector();
+    xiiVec3 pos            = xiiVec3::MakeZero();
+    xiiVec3 dir            = xiiVec3::MakeZero();
     float   distToParent   = 0.0f;
     float   minDistToChild = 10.0f;
     bool    highlight      = false;
@@ -271,11 +271,11 @@ void xiiSkeletonComponent::BuildSkeletonVisualization(xiiMsgAnimationPoseUpdated
     bone.pos          = v1;
     bone.distToParent = dirToBone.GetLength();
     bone.dir          = *msg.m_pRootTransform * msg.m_ModelTransforms[iCurrentBone].TransformDirection(vBoneDir);
-    bone.dir.NormalizeIfNotZero(xiiVec3::ZeroVector()).IgnoreResult();
+    bone.dir.NormalizeIfNotZero(xiiVec3::MakeZero()).IgnoreResult();
 
     auto& pb = bones[iParentBone];
 
-    if (!pb.dir.IsZero() && dirToBone.NormalizeIfNotZero(xiiVec3::ZeroVector()).Succeeded())
+    if (!pb.dir.IsZero() && dirToBone.NormalizeIfNotZero(xiiVec3::MakeZero()).Succeeded())
     {
       if (pb.dir.GetAngleBetween(dirToBone) < xiiAngle::MakeFromDegree(45))
       {
@@ -436,7 +436,7 @@ void xiiSkeletonComponent::BuildColliderVisualization(xiiMsgAnimationPoseUpdated
       auto& shape       = m_SpheresShapes.ExpandAndGetRef();
       shape.m_Transform = st;
       shape.m_Color     = hlS;
-      shape.m_Shape     = xiiBoundingSphere(xiiVec3::ZeroVector(), geo.m_Transform.m_vScale.z);
+      shape.m_Shape     = xiiBoundingSphere(xiiVec3::MakeZero(), geo.m_Transform.m_vScale.z);
     }
 
     if (geo.m_Type == xiiSkeletonJointGeometryType::Box)
@@ -452,7 +452,7 @@ void xiiSkeletonComponent::BuildColliderVisualization(xiiMsgAnimationPoseUpdated
       st.m_vPosition += qFinalBoneRot * xiiVec3(geo.m_Transform.m_vScale.x * 0.5f, 0, 0);
 
       shape.m_Transform = st;
-      shape.m_Shape     = xiiBoundingBox(xiiVec3::ZeroVector(), ext);
+      shape.m_Shape     = xiiBoundingBox(xiiVec3::MakeZero(), ext);
       shape.m_Color     = hlS;
     }
 

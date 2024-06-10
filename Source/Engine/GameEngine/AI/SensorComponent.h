@@ -193,8 +193,8 @@ public:
   xiiSensorConeComponent();
   ~xiiSensorConeComponent();
 
-  float    m_fNearDistance = 0.0f;                    // [ property ]
-  float    m_fFarDistance  = 10.0f;                   // [ property ]
+  float    m_fNearDistance = 0.0f;                            // [ property ]
+  float    m_fFarDistance  = 10.0f;                           // [ property ]
   xiiAngle m_Angle         = xiiAngle::MakeFromDegree(90.0f); // [ property ]
 };
 

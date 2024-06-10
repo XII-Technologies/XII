@@ -310,7 +310,7 @@ xiiUniquePtr<xiiWorldReader::InstantiationContextBase> xiiWorldReader::Instantia
 
   ClearHandles();
 
-  if (options.m_MaxStepTime <= xiiTime::Zero())
+  if (options.m_MaxStepTime <= xiiTime::MakeZero())
   {
     InstantiationContext context = InstantiationContext(*this, bUseTransform, rootTransform, options);
 
@@ -330,7 +330,7 @@ xiiWorldReader::InstantiationContext::InstantiationContext(xiiWorldReader& ref_w
 
   if (m_Options.m_MaxStepTime.IsZeroOrNegative())
   {
-    m_Options.m_MaxStepTime = xiiTime::Hours(24 * 365);
+    m_Options.m_MaxStepTime = xiiTime::MakeFromHours(24 * 365);
   }
 
   if (options.m_MaxStepTime.IsPositive())
@@ -553,7 +553,7 @@ bool xiiWorldReader::InstantiationContext::CreateGameObjects(const xiiDynamicArr
     {
       xiiTransform tChild(desc.m_LocalPosition, desc.m_LocalRotation, desc.m_LocalScaling);
       xiiTransform tFinal;
-      tFinal.SetGlobalTransform(m_RootTransform, tChild);
+      tFinal = xiiTransform::MakeGlobalTransform(m_RootTransform, tChild);
 
       desc.m_LocalPosition = tFinal.m_vPosition;
       desc.m_LocalRotation = tFinal.m_qRotation;

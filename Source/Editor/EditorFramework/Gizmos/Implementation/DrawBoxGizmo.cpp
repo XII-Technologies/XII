@@ -17,7 +17,7 @@ xiiDrawBoxGizmo::xiiDrawBoxGizmo()
   m_hBox.ConfigureHandle(this, xiiEngineGizmoHandleType::LineBox, xiiColorLinearUB(255, 100, 0), xiiGizmoFlags::ShowInOrtho);
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 }
 
 xiiDrawBoxGizmo::~xiiDrawBoxGizmo() = default;
@@ -227,7 +227,7 @@ void xiiDrawBoxGizmo::UpdateBox()
 
   if (m_ManipulateMode == ManipulateMode::None || m_vFirstCorner == m_vSecondCorner)
   {
-    m_hBox.SetTransformation(xiiTransform(xiiVec3(0), xiiQuat::IdentityQuaternion(), xiiVec3(0)));
+    m_hBox.SetTransformation(xiiTransform(xiiVec3(0), xiiQuat::MakeIdentity(), xiiVec3(0)));
     m_hBox.SetVisible(false);
     return;
   }
@@ -266,7 +266,7 @@ void xiiDrawBoxGizmo::UpdateBox()
     vSize.y = m_fBoxHeight;
   }
 
-  m_hBox.SetTransformation(xiiTransform(vCenter, xiiQuat::IdentityQuaternion(), vSize));
+  m_hBox.SetTransformation(xiiTransform(vCenter, xiiQuat::MakeIdentity(), vSize));
   m_hBox.SetVisible(true);
 }
 

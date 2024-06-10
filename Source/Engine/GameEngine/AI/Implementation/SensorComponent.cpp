@@ -216,7 +216,7 @@ bool xiiSensorComponent::RunSensorCheck(xiiPhysicsWorldModuleInterface* pPhysics
   {
     xiiMsgSensorDetectedObjectsChanged msg;
     msg.m_DetectedObjects = m_LastDetectedObjects;
-    pSensorOwner->PostEventMessage(msg, this, xiiTime::Zero(), xiiObjectMsgQueueType::PostAsync);
+    pSensorOwner->PostEventMessage(msg, this, xiiTime::MakeZero(), xiiObjectMsgQueueType::PostAsync);
   }
 
   return true;
@@ -325,7 +325,7 @@ void xiiSensorSphereComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameO
 
 void xiiSensorSphereComponent::DebugDrawSensorShape() const
 {
-  const xiiBoundingSphere sphere = xiiBoundingSphere(xiiVec3::ZeroVector(), m_fRadius);
+  const xiiBoundingSphere sphere = xiiBoundingSphere(xiiVec3::MakeZero(), m_fRadius);
   xiiDebugRenderer::DrawLineSphere(GetWorld(), sphere, m_Color, GetOwner()->GetGlobalTransform());
 }
 
@@ -518,7 +518,7 @@ void xiiSensorConeComponent::DebugDrawSensorShape() const
     }
     else
     {
-      q.SetFromAxisAndAngle(xiiVec3::UnitXAxis(), xiiAngle::MakeFromDegree(90));
+      q.SetFromAxisAndAngle(xiiVec3::MakeAxisX(), xiiAngle::MakeFromDegree(90));
       fX *= m_fFarDistance;
       fCircleRadius *= m_fFarDistance;
     }

@@ -15,7 +15,7 @@ XII_ALWAYS_INLINE xiiUInt32 xiiIntervalSchedulerBase::GetHistogramIndex(xiiTime 
 XII_ALWAYS_INLINE xiiTime xiiIntervalSchedulerBase::GetHistogramSlotValue(xiiUInt32 uiIndex)
 {
   if (uiIndex == 0)
-    return xiiTime::Zero();
+    return xiiTime::MakeZero();
 
   constexpr double norm = 1.0 / (HistogramSize - 2.0);
   const double     x    = (uiIndex - 1) * norm;
@@ -28,7 +28,7 @@ XII_ALWAYS_INLINE float xiiIntervalSchedulerBase::GetRandomZeroToOne(int pos, xi
   return xiiSimdRandom::FloatZeroToOne(xiiSimdVec4i(pos), xiiSimdVec4u(seed++)).x();
 }
 
-constexpr xiiTime s_JitterRange = xiiTime::Microseconds(10);
+constexpr xiiTime s_JitterRange = xiiTime::MakeFromMicroseconds(10);
 
 // static
 XII_ALWAYS_INLINE xiiTime xiiIntervalSchedulerBase::GetRandomTimeJitter(int pos, xiiUInt32& seed)
@@ -72,7 +72,7 @@ void xiiIntervalScheduler<T>::AddOrUpdateWork(const T& work, xiiTime interval)
 
   Data data;
   data.m_Work              = work;
-  data.m_Interval          = xiiMath::Max(interval, xiiTime::Zero());
+  data.m_Interval          = xiiMath::Max(interval, xiiTime::MakeZero());
   data.m_DueTime           = m_CurrentTime + GetRandomZeroToOne(m_Data.GetCount(), m_uiSeed) * data.m_Interval;
   data.m_LastScheduledTime = m_CurrentTime;
 
@@ -188,7 +188,7 @@ void xiiIntervalScheduler<T>::Update(xiiTime deltaTime, RunWorkCallback runWorkC
 template <typename T>
 void xiiIntervalScheduler<T>::Clear()
 {
-  m_CurrentTime = xiiTime::Zero();
+  m_CurrentTime = xiiTime::MakeZero();
   m_uiSeed      = 0;
   xiiMemoryUtils::ZeroFill(m_Histogram, HistogramSize);
 

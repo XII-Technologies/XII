@@ -516,7 +516,7 @@ xiiUInt32 xiiShadowPool::AddDirectionalLight(const xiiDirectionalLightComponent*
 
       // stabilize
       xiiMat4 worldToLightMatrix = pView->GetViewMatrix(xiiCameraEye::Left);
-      xiiVec3 offset             = worldToLightMatrix.TransformPosition(xiiVec3::ZeroVector());
+      xiiVec3 offset             = worldToLightMatrix.TransformPosition(xiiVec3::MakeZero());
       float   texelInWorld       = (2.0f * radius) / s_uiShadowMapSize;
       offset.x -= xiiMath::Floor(offset.x / texelInWorld) * texelInWorld;
       offset.y -= xiiMath::Floor(offset.y / texelInWorld) * texelInWorld;

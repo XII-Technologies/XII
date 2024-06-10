@@ -49,7 +49,7 @@ xiiVec3 xiiCoordinateSystemConversion::ConvertSourcePosition(const xiiVec3& vPos
 
 xiiQuat xiiCoordinateSystemConversion::ConvertSourceRotation(const xiiQuat& qOrientation) const
 {
-  xiiVec3 axis = m_mSourceToTarget * qOrientation.v;
+  xiiVec3 axis = m_mSourceToTarget * qOrientation.GetVectorPart();
   xiiQuat rr(axis.x, axis.y, axis.z, qOrientation.w * m_fWindingSwap);
   return rr;
 }
@@ -66,7 +66,7 @@ xiiVec3 xiiCoordinateSystemConversion::ConvertTargetPosition(const xiiVec3& vPos
 
 xiiQuat xiiCoordinateSystemConversion::ConvertTargetRotation(const xiiQuat& qOrientation) const
 {
-  xiiVec3 axis = m_mTargetToSource * qOrientation.v;
+  xiiVec3 axis = m_mTargetToSource * qOrientation.GetVectorPart();
   xiiQuat rr(axis.x, axis.y, axis.z, qOrientation.w * m_fWindingSwap);
   return rr;
 }

@@ -38,7 +38,7 @@ protected:
     xiiUInt16                     m_uiParentIndex = xiiInvalidJointIndex;
     xiiHashedString               m_sName;
     xiiEnum<xiiSkeletonJointType> m_JointType;
-    xiiQuat                       m_qLocalJointOrientation = xiiQuat::IdentityQuaternion();
+    xiiQuat                       m_qLocalJointOrientation = xiiQuat::MakeIdentity();
     xiiAngle                      m_HalfSwingLimitZ;
     xiiAngle                      m_HalfSwingLimitY;
     xiiAngle                      m_TwistLimitHalfAngle;

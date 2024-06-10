@@ -32,7 +32,7 @@ xiiDragToPositionGizmo::xiiDragToPositionGizmo()
   m_hAlignNZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowNZ.obj");
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiDragToPositionGizmo::UpdateStatusBarText(xiiQtEngineDocumentWindow* pWindow)

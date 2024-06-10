@@ -172,7 +172,7 @@ public:
     static XII_ALWAYS_INLINE ExecResult Error() { return {State::Error}; }
 
     int     m_NextExecAndState = 0;
-    xiiTime m_MaxDelay         = xiiTime::Zero();
+    xiiTime m_MaxDelay         = xiiTime::MakeZero();
   };
 
   struct Node;

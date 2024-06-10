@@ -32,7 +32,7 @@ xiiVec3 xiiSimpleWindWorldModule::GetWindAt(const xiiVec3& vPosition) const
     pSpatial->FindObjectsInSphere(xiiBoundingSphere(vPosition, 0.5f), queryParams, volumes);
 
     const xiiSimdVec4f pos   = xiiSimdConversion::ToVec3(vPosition);
-    xiiSimdVec4f       force = xiiSimdVec4f::ZeroVector();
+    xiiSimdVec4f       force = xiiSimdVec4f::MakeZero();
 
     for (xiiGameObject* pObj : volumes)
     {

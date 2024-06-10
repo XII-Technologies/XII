@@ -164,11 +164,11 @@ namespace xiiModelImporter2
     if (m_Options.m_pSkeletonOutput != nullptr)
     {
       m_Options.m_pSkeletonOutput->m_Children.PushBack(XII_DEFAULT_NEW(xiiEditableSkeletonJoint));
-      XII_SUCCEED_OR_RETURN(TraverseAiNode(m_pScene->mRootNode, xiiMat4::IdentityMatrix(), m_Options.m_pSkeletonOutput->m_Children.PeekBack()));
+      XII_SUCCEED_OR_RETURN(TraverseAiNode(m_pScene->mRootNode, xiiMat4::MakeIdentity(), m_Options.m_pSkeletonOutput->m_Children.PeekBack()));
     }
     else
     {
-      XII_SUCCEED_OR_RETURN(TraverseAiNode(m_pScene->mRootNode, xiiMat4::IdentityMatrix(), nullptr));
+      XII_SUCCEED_OR_RETURN(TraverseAiNode(m_pScene->mRootNode, xiiMat4::MakeIdentity(), nullptr));
     }
 
     return XII_SUCCESS;

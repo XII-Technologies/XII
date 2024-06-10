@@ -59,7 +59,7 @@ XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiDecalAtlasResource);
 xiiUInt32 xiiDecalAtlasResource::s_uiDecalAtlasResources = 0;
 
 xiiDecalAtlasResource::xiiDecalAtlasResource() :
-  xiiResource(DoUpdate::OnAnyThread, 1), m_vBaseColorSize(xiiVec2U32::ZeroVector()), m_vNormalSize(xiiVec2U32::ZeroVector())
+  xiiResource(DoUpdate::OnAnyThread, 1), m_vBaseColorSize(xiiVec2U32::MakeZero()), m_vNormalSize(xiiVec2U32::MakeZero())
 {
 }
 

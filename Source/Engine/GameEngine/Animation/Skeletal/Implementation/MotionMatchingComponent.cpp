@@ -157,7 +157,7 @@
 //  dir.x = r - l;
 //  dir.z = 0;
 //
-//  // dir.NormalizeIfNotZero(xiiVec3::ZeroVector());
+//  // dir.NormalizeIfNotZero(xiiVec3::MakeZero());
 //  return dir * 3.0f;
 //}
 //
@@ -276,7 +276,7 @@
 //  if (uiLeftFootJoint != xiiInvalidJointIndex && uiRightFootJoint != xiiInvalidJointIndex)
 //  {
 //    xiiTransform tLeft, tRight;
-//    xiiBoundingSphere sphere(xiiVec3::ZeroVector(), 0.5f);
+//    xiiBoundingSphere sphere(xiiVec3::MakeZero(), 0.5f);
 //
 //    tLeft.SetFromMat4(m_AnimationPose.GetTransform(uiLeftFootJoint));
 //    tRight.SetFromMat4(m_AnimationPose.GetTransform(uiRightFootJoint));
@@ -443,7 +443,7 @@
 //    md.m_vLeftFootVelocity.SetZero();
 //    md.m_vRightFootVelocity.SetZero();
 //    md.m_vRootVelocity =
-//      animClip.HasRootMotion() ? fRootMotionToVelocity * animClip.GetJointKeyframes(uiRootJoint)[uiFrameIdx].m_vPosition : xiiVec3::ZeroVector();
+//      animClip.HasRootMotion() ? fRootMotionToVelocity * animClip.GetJointKeyframes(uiRootJoint)[uiFrameIdx].m_vPosition : xiiVec3::MakeZero();
 //  }
 //
 //  // now compute the velocity

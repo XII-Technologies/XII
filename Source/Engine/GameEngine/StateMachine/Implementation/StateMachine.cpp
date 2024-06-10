@@ -483,7 +483,7 @@ void xiiStateMachineInstance::EnterCurrentState(const xiiStateMachineState* pFro
     void* pInstanceData = GetCurrentStateInstanceData();
     m_pCurrentState->OnEnter(*this, pInstanceData, pFromState);
 
-    m_TimeInCurrentState = xiiTime::Zero();
+    m_TimeInCurrentState = xiiTime::MakeZero();
   }
 }
 

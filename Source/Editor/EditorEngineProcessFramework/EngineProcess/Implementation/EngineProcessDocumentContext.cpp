@@ -89,7 +89,7 @@ xiiBoundingBoxSphere xiiEngineProcessDocumentContext::GetWorldBounds(xiiWorld* p
   }
 
   if (!bounds.IsValid())
-    bounds = xiiBoundingBoxSphere(xiiVec3::ZeroVector(), xiiVec3(1, 1, 1), 2);
+    bounds = xiiBoundingBoxSphere(xiiVec3::MakeZero(), xiiVec3(1, 1, 1), 2);
 
   return bounds;
 }

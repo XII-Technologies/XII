@@ -233,7 +233,7 @@ xiiResult xiiDecalComponent::GetLocalBounds(xiiBoundingBoxSphere& bounds, bool& 
 
 void xiiDecalComponent::SetExtents(const xiiVec3& value)
 {
-  m_vExtents = value.CompMax(xiiVec3::ZeroVector());
+  m_vExtents = value.CompMax(xiiVec3::MakeZero());
 
   TriggerLocalBoundsUpdate();
 }
@@ -529,7 +529,7 @@ void xiiDecalComponent::OnSimulationStarted()
   xiiWorld* pWorld = GetWorld();
 
   // no fade out -> fade out pretty late
-  m_StartFadeOutTime = xiiTime::Hours(24.0 * 365.0 * 100.0); // 100 years should be enough for everybody (ignoring leap years)
+  m_StartFadeOutTime = xiiTime::MakeFromHours(24.0 * 365.0 * 100.0); // 100 years should be enough for everybody (ignoring leap years)
 
   if (m_FadeOutDelay.m_Value.GetSeconds() > 0.0 || m_FadeOutDuration.GetSeconds() > 0.0)
   {

@@ -32,7 +32,7 @@ namespace
       float z = (float)rng.DoubleMinMax(1.0, 100.0);
 
       xiiBoundingBox bounds;
-      bounds.SetCenterAndHalfExtents(xiiVec3::ZeroVector(), xiiVec3(x, y, z));
+      bounds.SetCenterAndHalfExtents(xiiVec3::MakeZero(), xiiVec3(x, y, z));
 
       xiiSpatialData::Category category = m_SpecialCategory;
       if (category == xiiInvalidSpatialDataCategory)
@@ -223,7 +223,7 @@ XII_CREATE_SIMPLE_TEST(World, SpatialSystem)
 
     queryParams.m_uiCategoryBitmask = xiiDefaultSpatialDataCategories::RenderDynamic.GetBitmask();
 
-    xiiMat4 lookAt     = xiiGraphicsUtils::CreateLookAtViewMatrix(xiiVec3::ZeroVector(), xiiVec3::UnitXAxis(), xiiVec3::UnitZAxis());
+    xiiMat4 lookAt     = xiiGraphicsUtils::CreateLookAtViewMatrix(xiiVec3::MakeZero(), xiiVec3::MakeAxisX(), xiiVec3::MakeAxisZ());
     xiiMat4 projection = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::MakeFromDegree(80.0f), 1.0f, 1.0f, 10000.0f);
 
     xiiFrustum testFrustum;

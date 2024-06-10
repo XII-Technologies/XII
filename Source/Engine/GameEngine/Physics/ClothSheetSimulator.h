@@ -19,8 +19,8 @@ public:
   {
     /// Whether this node can swing freely or will remain fixed in place.
     bool         m_bFixed            = false;
-    xiiSimdVec4f m_vPosition         = xiiSimdVec4f::ZeroVector();
-    xiiSimdVec4f m_vPreviousPosition = xiiSimdVec4f::ZeroVector();
+    xiiSimdVec4f m_vPosition         = xiiSimdVec4f::MakeZero();
+    xiiSimdVec4f m_vPreviousPosition = xiiSimdVec4f::MakeZero();
   };
 
   /// Resolution of the cloth along X

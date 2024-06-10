@@ -29,7 +29,7 @@ xiiTranslateGizmo::xiiTranslateGizmo()
   m_hPlaneXY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::FaceCamera, "Editor/Meshes/TranslatePlaneZ.obj");
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 
   m_Mode                 = TranslateMode::None;
   m_MovementMode         = MovementMode::ScreenProjection;
@@ -374,6 +374,6 @@ void xiiTranslateGizmo::SetCameraSpeed(float fSpeed)
 
 void xiiTranslateGizmo::UpdateStatusBarText(xiiQtEngineDocumentWindow* pWindow)
 {
-  const xiiVec3 diff = xiiVec3::ZeroVector();
+  const xiiVec3 diff = xiiVec3::MakeZero();
   GetOwnerWindow()->SetPermanentStatusBarMsg(xiiFmt("Translation: {}, {}, {}", xiiArgF(diff.x, 2), xiiArgF(diff.y, 2), xiiArgF(diff.z, 2)));
 }

@@ -14,7 +14,7 @@ xiiSkeletonViewContext::xiiSkeletonViewContext(xiiSkeletonContext* pContext) :
 
   // Start with something valid.
   m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovX, 45.0f, 0.1f, 1000.0f);
-  m_Camera.LookAt(xiiVec3(1, 1, 1), xiiVec3::ZeroVector(), xiiVec3(0.0f, 0.0f, 1.0f));
+  m_Camera.LookAt(xiiVec3(1, 1, 1), xiiVec3::MakeZero(), xiiVec3(0.0f, 0.0f, 1.0f));
 }
 
 xiiSkeletonViewContext::~xiiSkeletonViewContext() = default;

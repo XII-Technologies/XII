@@ -163,7 +163,7 @@ public:
         xiiRenderContext::GetDefaultInstance()->BindConstantBuffer(XII_STRINGIZE(xiiTextureSampleConstants), m_hSampleConstants);
         xiiRenderContext::GetDefaultInstance()->BindMaterial(m_hMaterial);
 
-        xiiMat4 mTransform = xiiMat4::IdentityMatrix();
+        xiiMat4 mTransform = xiiMat4::MakeIdentity();
 
         xiiInt32 iLeftBound  = (xiiInt32)xiiMath::Floor((m_vCameraPosition.x - g_uiWindowWidth * 0.5f) / 100.0f);
         xiiInt32 iLowerBound = (xiiInt32)xiiMath::Floor((m_vCameraPosition.y - g_uiWindowHeight * 0.5f) / 100.0f);
@@ -569,7 +569,7 @@ private:
   xiiMaterialResourceHandle   m_hMaterial;
   xiiMeshBufferResourceHandle m_hQuadMeshBuffer;
 
-  xiiVec2 m_vCameraPosition = xiiVec2::ZeroVector();
+  xiiVec2 m_vCameraPosition = xiiVec2::MakeZero();
 
   xiiUniquePtr<xiiDirectoryWatcher> m_pDirectoryWatcher;
   bool                              m_bFileModified = false;

@@ -324,7 +324,7 @@ void xiiVolumeSphereComponent::DeserializeComponent(xiiWorldReader& inout_stream
 
 void xiiVolumeSphereComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& ref_msg) const
 {
-  ref_msg.AddBounds(xiiBoundingSphere(xiiVec3::ZeroVector(), m_fRadius), m_SpatialCategory);
+  ref_msg.AddBounds(xiiBoundingSphere(xiiVec3::MakeZero(), m_fRadius), m_SpatialCategory);
 }
 
 //////////////////////////////////////////////////////////////////////////

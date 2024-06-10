@@ -19,7 +19,7 @@ xiiCapsuleGizmo::xiiCapsuleGizmo()
   m_hLengthBottom.ConfigureHandle(this, xiiEngineGizmoHandleType::HalfSphereZ, xiiColorLinearUB(200, 200, 200, 128), xiiGizmoFlags::Pickable);
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiCapsuleGizmo::OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)

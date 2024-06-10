@@ -6,7 +6,7 @@
 
 xiiOrbitCameraContext::xiiOrbitCameraContext(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)
 {
-  m_Volume.SetCenterAndHalfExtents(xiiVec3::ZeroVector(), xiiVec3::ZeroVector());
+  m_Volume.SetCenterAndHalfExtents(xiiVec3::MakeZero(), xiiVec3::MakeZero());
   m_pCamera = nullptr;
 
   m_LastUpdate = xiiTime::Now();
@@ -32,7 +32,7 @@ void xiiOrbitCameraContext::SetDefaultCameraRelative(const xiiVec3& vDirection, 
   m_bFixedDefaultCamera = false;
 
   m_vDefaultCamera = vDirection;
-  m_vDefaultCamera.NormalizeIfNotZero(xiiVec3::UnitXAxis()).IgnoreResult();
+  m_vDefaultCamera.NormalizeIfNotZero(xiiVec3::MakeAxisX()).IgnoreResult();
   m_vDefaultCamera *= xiiMath::Max(0.01f, fDistanceScale);
 }
 

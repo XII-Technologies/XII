@@ -154,19 +154,19 @@ void xiiRopeRenderComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg
 
       auto& x        = lines.ExpandAndGetRef();
       x.m_start      = pos;
-      x.m_end        = x.m_start + skinningMat.TransformDirection(xiiVec3::UnitXAxis());
+      x.m_end        = x.m_start + skinningMat.TransformDirection(xiiVec3::MakeAxisX());
       x.m_startColor = xiiColor::Red;
       x.m_endColor   = xiiColor::Red;
 
       auto& y        = lines.ExpandAndGetRef();
       y.m_start      = pos;
-      y.m_end        = y.m_start + skinningMat.TransformDirection(xiiVec3::UnitYAxis() * 2.0f);
+      y.m_end        = y.m_start + skinningMat.TransformDirection(xiiVec3::MakeAxisY() * 2.0f);
       y.m_startColor = xiiColor::Green;
       y.m_endColor   = xiiColor::Green;
 
       auto& z        = lines.ExpandAndGetRef();
       z.m_start      = pos;
-      z.m_end        = z.m_start + skinningMat.TransformDirection(xiiVec3::UnitZAxis() * 2.0f);
+      z.m_end        = z.m_start + skinningMat.TransformDirection(xiiVec3::MakeAxisZ() * 2.0f);
       z.m_startColor = xiiColor::Blue;
       z.m_endColor   = xiiColor::Blue;
     }

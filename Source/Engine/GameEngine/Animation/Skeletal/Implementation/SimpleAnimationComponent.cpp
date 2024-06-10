@@ -149,7 +149,7 @@ void xiiSimpleAnimationComponent::Update()
     return;
 
   const xiiTime tDiff      = m_ElapsedTimeSinceUpdate;
-  m_ElapsedTimeSinceUpdate = xiiTime::Zero();
+  m_ElapsedTimeSinceUpdate = xiiTime::MakeZero();
 
   const xiiAnimationClipResourceDescriptor& animDesc = pAnimation->GetDescriptor();
 
