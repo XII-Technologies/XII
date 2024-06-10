@@ -499,7 +499,7 @@ void xiiGreyBoxComponent::BuildGeometry(xiiGeometry& geom, xiiEnum<xiiGreyBoxSha
       size.x          = size.y;
       size.y          = tmp;
       opt.m_Transform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(-90));
-      t2.SetRotationMatrixX(xiiAngle::MakeFromDegree(90));
+      t2              = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(90));
       opt.m_Transform = t2 * opt.m_Transform;
       opt.m_Transform.SetTranslationVector(offset);
       geom.AddArch(size, m_uiDetail, m_fThickness, m_Curvature, false, false, false, !bOnlyRoughDetails, opt);
@@ -509,8 +509,8 @@ void xiiGreyBoxComponent::BuildGeometry(xiiGeometry& geom, xiiEnum<xiiGreyBoxSha
     case xiiGreyBoxShape::ArchY:
     {
       opt.m_Transform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(-90));
-      t2.SetRotationMatrixX(xiiAngle::MakeFromDegree(90));
-      t3 = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(90));
+      t2              = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(90));
+      t3              = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(90));
       xiiMath::Swap(size.y, size.z);
       opt.m_Transform = t3 * t2 * opt.m_Transform;
       opt.m_Transform.SetTranslationVector(offset);

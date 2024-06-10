@@ -254,7 +254,7 @@ void xiiBlackboardComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) c
 {
   if (GetShowDebugInfo())
   {
-    msg.AddBounds(xiiBoundingSphere(xiiVec3::MakeZero(), 2.0f), xiiDefaultSpatialDataCategories::RenderDynamic);
+    msg.AddBounds(xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), 2.0f), xiiDefaultSpatialDataCategories::RenderDynamic);
   }
 }
 
@@ -456,7 +456,7 @@ void xiiLocalBlackboardComponent::Entries_SetValue(xiiUInt32 uiIndex, const xiiB
 
 void xiiLocalBlackboardComponent::Entries_Insert(xiiUInt32 uiIndex, const xiiBlackboardEntry& entry)
 {
-  m_InitialEntries.Insert(entry, uiIndex);
+  m_InitialEntries.InsertAt(uiIndex, entry);
 
   m_pBoard->SetEntryValue(entry.m_sName, entry.m_InitialValue);
   m_pBoard->SetEntryFlags(entry.m_sName, entry.m_Flags).AssertSuccess();

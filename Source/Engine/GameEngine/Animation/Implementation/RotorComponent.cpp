@@ -164,11 +164,11 @@ void xiiRotorComponent::OnSimulationStarted()
   {
     if (m_AxisDeviation > xiiAngle::MakeFromDegree(179))
     {
-      m_vRotationAxis = xiiVec3::CreateRandomDirection(GetWorld()->GetRandomNumberGenerator());
+      m_vRotationAxis = xiiVec3::MakeRandomDirection(GetWorld()->GetRandomNumberGenerator());
     }
     else
     {
-      m_vRotationAxis = xiiVec3::CreateRandomDeviation(GetWorld()->GetRandomNumberGenerator(), m_AxisDeviation, m_vRotationAxis);
+      m_vRotationAxis = xiiVec3::MakeRandomDeviation(GetWorld()->GetRandomNumberGenerator(), m_AxisDeviation, m_vRotationAxis);
 
       if (m_AxisDeviation.GetRadian() > 0 && GetWorld()->GetRandomNumberGenerator().Bool())
         m_vRotationAxis = -m_vRotationAxis;

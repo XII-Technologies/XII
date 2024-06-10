@@ -137,7 +137,7 @@ void xiiSimpleWindComponent::ComputeNextState()
   if (m_Deviation < xiiAngle::MakeFromDegree(1))
     m_vNextDirection = vMainDir;
   else
-    m_vNextDirection = xiiVec3::CreateRandomDeviation(rng, m_Deviation, vMainDir);
+    m_vNextDirection = xiiVec3::MakeRandomDeviation(rng, m_Deviation, vMainDir);
 
   xiiCoordinateSystem cs;
   GetWorld()->GetCoordinateSystem(GetOwner()->GetGlobalPosition(), cs);

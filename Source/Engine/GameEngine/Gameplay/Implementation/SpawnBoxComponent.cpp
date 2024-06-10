@@ -268,8 +268,7 @@ void xiiSpawnBoxComponent::Spawn(xiiUInt32 uiCount)
       tLocal.m_qRotation = tLocal.m_qRotation * qTilt;
     }
 
-    xiiTransform tGlobal;
-    tGlobal.SetGlobalTransform(tOwner, tLocal);
+    xiiTransform tGlobal = xiiTransform::MakeGlobalTransform(tOwner, tLocal);
 
     pResource->InstantiatePrefab(*GetWorld(), tGlobal, options);
   }

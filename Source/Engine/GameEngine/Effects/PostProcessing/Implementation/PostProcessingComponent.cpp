@@ -175,7 +175,7 @@ void xiiPostProcessingComponent::Mappings_SetMapping(xiiUInt32 i, const xiiPostP
 
 void xiiPostProcessingComponent::Mappings_Insert(xiiUInt32 uiIndex, const xiiPostProcessingValueMapping& mapping)
 {
-  m_Mappings.Insert(mapping, uiIndex);
+  m_Mappings.InsertAt(uiIndex, mapping);
 
   RegisterSamplerValues();
 }

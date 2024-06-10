@@ -117,7 +117,7 @@ void xiiGrabbableItemComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg
 {
   if (GetDebugShowPoints())
   {
-    msg.AddBounds(xiiBoundingSphere(xiiVec3::MakeZero(), 1.0f), xiiDefaultSpatialDataCategories::RenderDynamic);
+    msg.AddBounds(xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), 1.0f), xiiDefaultSpatialDataCategories::RenderDynamic);
   }
 }
 
@@ -138,8 +138,7 @@ void xiiGrabbableItemComponent::OnExtractRenderData(xiiMsgExtractRenderData& msg
 
   for (auto& grabPoint : m_GrabPoints)
   {
-    xiiTransform grabPointTransform;
-    grabPointTransform.SetGlobalTransform(globalTransform, xiiTransform(grabPoint.m_vLocalPosition, grabPoint.m_qLocalRotation));
+    xiiTransform grabPointTransform = xiiTransform::MakeGlobalTransform(globalTransform, xiiTransform(grabPoint.m_vLocalPosition, grabPoint.m_qLocalRotation));
 
     DebugDrawGrabPoint(*GetWorld(), grabPointTransform);
   }

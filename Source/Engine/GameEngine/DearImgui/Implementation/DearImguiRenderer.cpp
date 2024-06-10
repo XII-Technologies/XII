@@ -72,7 +72,7 @@ void xiiImguiExtractor::Extract(const xiiView& view, const xiiDynamicArray<const
       xiiImguiRenderData* pRenderData = xiiCreateRenderDataForThisFrame<xiiImguiRenderData>(nullptr);
       pRenderData->m_uiSortingKey     = draw;
       pRenderData->m_GlobalTransform.SetIdentity();
-      pRenderData->m_GlobalBounds.SetInvalid();
+      pRenderData->m_GlobalBounds = xiiBoundingBoxSphere::MakeInvalid();
 
       // copy the vertex data
       // uses the frame allocator to prevent unnecessary deallocations

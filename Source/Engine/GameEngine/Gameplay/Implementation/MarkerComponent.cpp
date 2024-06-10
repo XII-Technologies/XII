@@ -61,7 +61,7 @@ float xiiMarkerComponent::GetRadius() const
 
 void xiiMarkerComponent::OnMsgUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg) const
 {
-  msg.AddBounds(xiiBoundingSphere(xiiVec3(0), m_fRadius), m_SpatialCategory);
+  msg.AddBounds(xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), m_fRadius), m_SpatialCategory);
 }
 
 void xiiMarkerComponent::UpdateMarker()

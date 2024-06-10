@@ -151,7 +151,7 @@ void xiiGameApplication::Init_SetupDefaultResources()
 
     // Create mesh buffer resource
     xiiGeometry geom;
-    geom.AddBox(xiiVec3::OneVector(), true);
+    geom.AddBox(xiiVec3(1), true);
     geom.TriangulatePolygons(4);
     geom.ComputeTangents();
     geom.ComputeFaceNormals();

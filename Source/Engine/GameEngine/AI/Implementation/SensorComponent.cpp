@@ -303,7 +303,7 @@ void xiiSensorSphereComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameO
   const xiiGameObject* pOwner = GetOwner();
 
   const float             scale  = pOwner->GetGlobalTransformSimd().GetMaxScale();
-  const xiiBoundingSphere sphere = xiiBoundingSphere(pOwner->GetGlobalPosition(), m_fRadius * scale);
+  const xiiBoundingSphere sphere = xiiBoundingSphere::MakeFromCenterAndRadius(pOwner->GetGlobalPosition(), m_fRadius * scale);
 
   xiiSpatialSystem::QueryParams params;
   params.m_uiCategoryBitmask = m_SpatialCategory.GetBitmask();
@@ -325,7 +325,7 @@ void xiiSensorSphereComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameO
 
 void xiiSensorSphereComponent::DebugDrawSensorShape() const
 {
-  const xiiBoundingSphere sphere = xiiBoundingSphere(xiiVec3::MakeZero(), m_fRadius);
+  const xiiBoundingSphere sphere = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), m_fRadius);
   xiiDebugRenderer::DrawLineSphere(GetWorld(), sphere, m_Color, GetOwner()->GetGlobalTransform());
 }
 
@@ -380,7 +380,7 @@ void xiiSensorCylinderComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGam
   const float   xyScale = xiiMath::Max(scale.x, scale.y);
 
   const float             sphereRadius = xiiVec2(m_fRadius * xyScale, m_fHeight * 0.5f * scale.z).GetLength();
-  const xiiBoundingSphere sphere       = xiiBoundingSphere(pOwner->GetGlobalPosition(), sphereRadius);
+  const xiiBoundingSphere sphere       = xiiBoundingSphere::MakeFromCenterAndRadius(pOwner->GetGlobalPosition(), sphereRadius);
 
   xiiSpatialSystem::QueryParams params;
   params.m_uiCategoryBitmask = m_SpatialCategory.GetBitmask();
@@ -462,7 +462,7 @@ void xiiSensorConeComponent::GetObjectsInSensorVolume(xiiDynamicArray<xiiGameObj
   const xiiGameObject* pOwner = GetOwner();
 
   const float             scale  = pOwner->GetGlobalTransformSimd().GetMaxScale();
-  const xiiBoundingSphere sphere = xiiBoundingSphere(pOwner->GetGlobalPosition(), m_fFarDistance * scale);
+  const xiiBoundingSphere sphere = xiiBoundingSphere::MakeFromCenterAndRadius(pOwner->GetGlobalPosition(), m_fFarDistance * scale);
 
   xiiSpatialSystem::QueryParams params;
   params.m_uiCategoryBitmask = m_SpatialCategory.GetBitmask();

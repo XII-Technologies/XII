@@ -747,8 +747,7 @@ void xiiPropertyAnimComponent::ApplyFloatAnimation(const FloatBinding& binding, 
   {
     auto pTyped = static_cast<const xiiTypedMemberProperty<xiiQuat>*>(binding.m_pMemberProperty);
 
-    xiiQuat rot;
-    rot.SetFromEulerAngles(xiiAngle::MakeFromDegree(fCurValue[0]), xiiAngle::MakeFromDegree(fCurValue[1]), xiiAngle::MakeFromDegree(fCurValue[2]));
+    xiiQuat rot = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(fCurValue[0]), xiiAngle::MakeFromDegree(fCurValue[1]), xiiAngle::MakeFromDegree(fCurValue[2]));
 
     pTyped->SetValue(binding.m_pObject, rot);
   }

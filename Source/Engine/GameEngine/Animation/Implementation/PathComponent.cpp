@@ -147,7 +147,7 @@ void xiiPathComponent::Nodes_SetNode(xiiUInt32 i, const xiiString& node)
 
 void xiiPathComponent::Nodes_Insert(xiiUInt32 uiIndex, const xiiString& node)
 {
-  m_Nodes.Insert(node, uiIndex);
+  m_Nodes.InsertAt(uiIndex, node);
   m_bControlPointsChanged            = true;
   m_bLinearizedRepresentationChanged = true;
 }

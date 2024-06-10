@@ -204,7 +204,7 @@ void xiiWindVolumeSphereComponent::SetRadius(float fVal)
 
 void xiiWindVolumeSphereComponent::OnUpdateLocalBounds(xiiMsgUpdateLocalBounds& msg)
 {
-  msg.AddBounds(xiiBoundingSphere(xiiVec3::MakeZero(), m_fRadius), xiiWindVolumeComponent::SpatialDataCategory);
+  msg.AddBounds(xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), m_fRadius), xiiWindVolumeComponent::SpatialDataCategory);
 }
 
 //////////////////////////////////////////////////////////////////////////

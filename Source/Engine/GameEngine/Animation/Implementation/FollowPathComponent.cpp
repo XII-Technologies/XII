@@ -137,7 +137,7 @@ void xiiFollowPathComponent::Update(bool bForce)
   xiiVec3 vTarget = transformAhead.m_vPosition - transform.m_vPosition;
   if (m_FollowMode == xiiFollowPathMode::AlignUpZ)
   {
-    const xiiPlane plane = xiiPlane(xiiVec3::MakeAxisZ(), transform.m_vPosition);
+    const xiiPlane plane = xiiPlane::MakeFromNormalAndPoint(xiiVec3::MakeAxisZ(), transform.m_vPosition);
     vTarget              = plane.GetCoplanarDirection(vTarget);
   }
   vTarget.NormalizeIfNotZero(xiiVec3::MakeAxisX()).IgnoreResult();
@@ -157,7 +157,7 @@ void xiiFollowPathComponent::Update(bool bForce)
     {
       xiiVec3 vLastTarget = m_vLastTargetPosition - m_vLastPosition;
       {
-        const xiiPlane plane = xiiPlane(xiiVec3::MakeAxisZ(), transform.m_vPosition);
+        const xiiPlane plane = xiiPlane::MakeFromNormalAndPoint(xiiVec3::MakeAxisZ(), transform.m_vPosition);
         vLastTarget          = plane.GetCoplanarDirection(vLastTarget);
         vLastTarget.NormalizeIfNotZero(xiiVec3::MakeAxisX()).IgnoreResult();
       }
@@ -181,7 +181,7 @@ void xiiFollowPathComponent::Update(bool bForce)
     m_LastTiltAngle       = deltaAngle;
   }
 
-  xiiMat3 mRot = xiiMat3::IdentityMatrix();
+  xiiMat3 mRot = xiiMat3::MakeIdentity();
   if (m_FollowMode != xiiFollowPathMode::OnlyPosition)
   {
     mRot.SetColumn(0, vTarget);
@@ -192,7 +192,7 @@ void xiiFollowPathComponent::Update(bool bForce)
   xiiTransform tFinal;
   tFinal.m_vPosition = transform.m_vPosition;
   tFinal.m_vScale.Set(1);
-  tFinal.m_qRotation.SetFromMat3(mRot);
+  tFinal.m_qRotation = xiiQuat::MakeFromMat3(mRot);
 
   GetOwner()->SetGlobalTransform(pPathObject->GetGlobalTransform() * tFinal);
 }
