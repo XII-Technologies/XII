@@ -331,13 +331,17 @@ endfunction()
 # ## xii_enable_strict_warnings(<target>)
 # #####################################
 function(xii_enable_strict_warnings TARGET_NAME)
-  if(MSVC)
+  if(XII_CMAKE_COMPILER_MSVC)
     # In case there is W3 already, remove it so it doesn't spam warnings when using Ninja builds.
     get_target_property(TARGET_COMPILE_OPTS ${PROJECT_NAME} COMPILE_OPTIONS)
     list(REMOVE_ITEM TARGET_COMPILE_OPTS /W3)
     set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_OPTIONS "${TARGET_COMPILE_OPTS}")
 
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+  endif()
+
+  if(XII_CMAKE_COMPILER_CLANG)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wlogical-op-parentheses)
   endif()
 endfunction()
 
@@ -352,4 +356,3 @@ function(xii_set_clib_build_flags TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_OPTIONS "${TARGET_COMPILE_OPTS}")
   endif()
 endfunction()
-
