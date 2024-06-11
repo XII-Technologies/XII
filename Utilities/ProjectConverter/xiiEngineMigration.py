@@ -196,206 +196,208 @@ def ResolveNamespace() -> None:
     """
     subfolders, files = ScanDirectory(InstanceData.sSourcePath)
     for file in files:
-        #logger.info(f"Transforming file: {file}")
+        try:
+            #logger.info(f"Transforming file: {file}")
 
-        # Read file content, we will perform processing outside the file reading.
-        fileContent: t.List[str] = []
-        with open(file, mode='r') as filestream:
-            for line in filestream:
-                fileContent.append(line)
+            # Read file content, we will perform processing outside the file reading.
+            fileContent: t.List[str] = []
+            with open(file, mode='r') as filestream:
+                for line in filestream:
+                    fileContent.append(line)
 
-        # Perform processing.
-        processedFileContent: t.List[str] = []
-        uiCurrentLine: int                = 0
-        uiNextLinesToSkip: int            = 0
-        for sLine in fileContent:
-            if uiNextLinesToSkip > 0:
-                uiNextLinesToSkip -= 1
-                continue
+            # Perform processing.
+            processedFileContent: t.List[str] = []
+            uiCurrentLine: int                = 0
+            uiNextLinesToSkip: int            = 0
+            for sLine in fileContent:
+                if uiNextLinesToSkip > 0:
+                    uiNextLinesToSkip -= 1
+                    continue
 
-            sStrippedLine: str = sLine.rstrip()
+                sStrippedLine: str = sLine.rstrip()
 
-            # We do not act on empty lines, clang-format may restrict how many empty lines are possible.
-            if len(sStrippedLine) == 0:
-                processedFileContent.append('\n')
+                # We do not act on empty lines, clang-format may restrict how many empty lines are possible.
+                if len(sStrippedLine) == 0:
+                    processedFileContent.append('\n')
+                    uiCurrentLine += 1
+                    continue
+
+                # Perform rudimentary processing.
+                sLineContent: str = GetResolvedLineContent(sStrippedLine)
+
+                # Cleanup multiline function arguments, clang-format does not clean them up.
+                if (rSearch := re.match(r"^[a-zA-Z0-9]+\s[a-zA-Z0-9]+::[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None:
+                    sLineParse: str = sLineContent
+
+                    uiIndexAdvancement: int = 1
+                    while (uiCurrentLine + uiIndexAdvancement) < len(fileContent):
+                        sProcessedLine: str = GetResolvedLineContent(fileContent[uiCurrentLine + uiIndexAdvancement].strip())
+
+                        if len(sProcessedLine) == 0:
+                            uiIndexAdvancement += 1
+                            continue
+
+                        sLineParse += sProcessedLine
+
+                        if sProcessedLine.endswith('{'):
+                            sLineContent       = sLineParse
+                            uiCurrentLine     += uiIndexAdvancement
+                            uiNextLinesToSkip += uiIndexAdvancement
+                            logger.info(f"Applied code format rules: {sLineContent}")
+                            break
+
+                        # Max depth
+                        if uiIndexAdvancement > 50:
+                            logger.info(f"Failed to apply code format rules: {sLineContent}")
+                            break
+
+                        uiIndexAdvancement += 1
+
+                # Cleanup multiline function arguments, clang-format does not clean them up.
+                if (rSearch := re.search(r"[a-zA-Z0-9]+\s+[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None:
+                    sLineParse: str = sLineContent
+
+                    uiIndexAdvancement: int = 1
+                    while (uiCurrentLine + uiIndexAdvancement) < len(fileContent):
+                        sProcessedLine: str = GetResolvedLineContent(fileContent[uiCurrentLine + uiIndexAdvancement].strip())
+
+                        if len(sProcessedLine) == 0:
+                            uiIndexAdvancement += 1
+                            continue
+
+                        sLineParse += sProcessedLine
+
+                        if sProcessedLine.endswith('(') or sProcessedLine.endswith('{') or sProcessedLine.endswith(';') or sProcessedLine.endswith('[tested]'):
+                            sLineContent       = sLineParse
+                            uiCurrentLine     += uiIndexAdvancement
+                            uiNextLinesToSkip += uiIndexAdvancement
+                            logger.info(f"Applied code format rules: {sLineContent}")
+                            break
+
+                        # Max depth
+                        if uiIndexAdvancement > 50:
+                            logger.info(f"Failed to apply code format rules: {sLineContent}")
+                            break
+
+                        uiIndexAdvancement += 1
+
+                # Cleanup multiline function arguments, clang-format does not clean them up.
+                # We do not apply code format rules on comments. (Block comments are unhandled)
+                if (rSearch := re.search(r"[a-zA-Z0-9]+\s+[a-zA-Z0-9_]+\(+([a-zA-Z0-9\s<>&*:,.\(\)])+$", sLineContent)) and rSearch != None and not sLineContent.strip().startswith("//") and not sLineContent.strip().startswith("/*") and not sLineContent.strip().startswith("*") and not sLineContent.strip().startswith("#"):
+                    sLineParse: str = sLineContent
+
+                    uiIndexAdvancement: int = 1
+                    while (uiCurrentLine + uiIndexAdvancement) < len(fileContent):
+                        sProcessedLine: str = GetResolvedLineContent(fileContent[uiCurrentLine + uiIndexAdvancement].strip())
+
+                        # Empty lines are ambiguous at the moment.
+                        if len(sProcessedLine) == 0:
+                            break
+
+                        # We do not apply code format rules on comments. (Block comments are unhandled)
+                        if sProcessedLine.strip().startswith("//"):
+                            break
+
+                        sLineParse += sProcessedLine
+
+                        if sProcessedLine.endswith('(') or sProcessedLine.endswith('{') or sProcessedLine.endswith(';') or sProcessedLine.endswith('[tested]'):
+                            sLineContent       = sLineParse
+                            uiCurrentLine     += uiIndexAdvancement
+                            uiNextLinesToSkip += uiIndexAdvancement
+                            logger.info(f"Applied code format rules: {sLineContent}")
+                            break
+
+                        # Max depth
+                        if uiIndexAdvancement > 50:
+                            logger.info(f"Failed to apply code format rules: {sLineContent}")
+                            break
+
+                        uiIndexAdvancement += 1
+
+                # Cleanup multiline function arguments, clang-format does not clean them up.
+                # We do not apply code format rules on comments. (Block comments are unhandled)
+                if (rSearch := re.search(r"[a-zA-Z0-9]+::+[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None and not sLineContent.strip().startswith("//") and not sLineContent.strip().startswith("/*") and not sLineContent.strip().startswith("*") and not sLineContent.strip().startswith("#"):
+                    sLineParse: str = sLineContent
+
+                    uiIndexAdvancement: int = 1
+                    while (uiCurrentLine + uiIndexAdvancement) < len(fileContent):
+                        sProcessedLine: str = GetResolvedLineContent(fileContent[uiCurrentLine + uiIndexAdvancement].strip())
+
+                        # Empty lines are ambiguous at the moment.
+                        if len(sProcessedLine) == 0:
+                            break
+
+                        # We do not apply code format rules on comments. (Block comments are unhandled)
+                        if sProcessedLine.strip().startswith("//"):
+                            break
+
+                        sLineParse += sProcessedLine
+
+                        if sProcessedLine.endswith('(') or sProcessedLine.endswith('{') or sProcessedLine.endswith(';') or sProcessedLine.endswith('[tested]'):
+                            sLineContent       = sLineParse
+                            uiCurrentLine     += uiIndexAdvancement
+                            uiNextLinesToSkip += uiIndexAdvancement
+                            logger.info(f"Applied code format rules: {sLineContent}")
+                            break
+
+                        # Max depth
+                        if uiIndexAdvancement > 50:
+                            logger.info(f"Failed to apply code format rules: {sLineContent}")
+                            break
+
+                        uiIndexAdvancement += 1
+
+                # Cleanup multiline function arguments, clang-format does not clean them up.
+                # We do not apply code format rules on comments. (Block comments are unhandled)
+                if (rSearch := re.search(r"XII_ASSERT_(DEBUG|DEV|RELEASE|ALWAYS)\($", sLineContent)) and rSearch != None and not sLineContent.strip().startswith("//") and not sLineContent.strip().startswith("/*") and not sLineContent.strip().startswith("*") and not sLineContent.strip().startswith("#"):
+                    sLineParse: str = sLineContent
+
+                    uiIndexAdvancement: int = 1
+                    while (uiCurrentLine + uiIndexAdvancement) < len(fileContent):
+                        sProcessedLine: str = GetResolvedLineContent(fileContent[uiCurrentLine + uiIndexAdvancement].strip())
+
+                        # Empty lines are ambiguous at the moment.
+                        if len(sProcessedLine) == 0:
+                            break
+
+                        # We do not apply code format rules on comments. (Block comments are unhandled)
+                        if sProcessedLine.strip().startswith("//"):
+                            break
+
+                        sLineParse += sProcessedLine
+
+                        if sProcessedLine.endswith(';'):
+                            sLineContent       = sLineParse
+                            uiCurrentLine     += uiIndexAdvancement
+                            uiNextLinesToSkip += uiIndexAdvancement
+                            logger.info(f"Applied code format rules: {sLineContent}")
+                            break
+
+                        # Max depth
+                        if uiIndexAdvancement > 50:
+                            logger.info(f"Failed to apply code format rules: {sLineContent}")
+                            break
+
+                        uiIndexAdvancement += 1
+
+                sLineContent += '\n'
+
+                processedFileContent.append(sLineContent)
+
                 uiCurrentLine += 1
-                continue
 
-            # Perform rudimentary processing.
-            sLineContent: str = GetResolvedLineContent(sStrippedLine)
-
-            # Cleanup multiline function arguments, clang-format does not clean them up.
-            if (rSearch := re.match(r"^[a-zA-Z0-9]+\s[a-zA-Z0-9]+::[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None:
-                sLineParse: str = sLineContent
-
-                uiIndexAdvancement: int = 1
-                while (uiCurrentLine + uiIndexAdvancement) < len(fileContent):
-                    sProcessedLine: str = GetResolvedLineContent(fileContent[uiCurrentLine + uiIndexAdvancement].strip())
-
-                    if len(sProcessedLine) == 0:
-                        uiIndexAdvancement += 1
-                        continue
-
-                    sLineParse += sProcessedLine
-
-                    if sProcessedLine.endswith('{'):
-                        sLineContent       = sLineParse
-                        uiCurrentLine     += uiIndexAdvancement
-                        uiNextLinesToSkip += uiIndexAdvancement
-                        logger.info(f"Applied code format rules: {sLineContent}")
-                        break
-
-                    # Max depth
-                    if uiIndexAdvancement > 50:
-                        logger.info(f"Failed to apply code format rules: {sLineContent}")
-                        break
-
-                    uiIndexAdvancement += 1
-
-            # Cleanup multiline function arguments, clang-format does not clean them up.
-            if (rSearch := re.search(r"[a-zA-Z0-9]+\s+[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None:
-                sLineParse: str = sLineContent
-
-                uiIndexAdvancement: int = 1
-                while (uiCurrentLine + uiIndexAdvancement) < len(fileContent):
-                    sProcessedLine: str = GetResolvedLineContent(fileContent[uiCurrentLine + uiIndexAdvancement].strip())
-
-                    if len(sProcessedLine) == 0:
-                        uiIndexAdvancement += 1
-                        continue
-
-                    sLineParse += sProcessedLine
-
-                    if sProcessedLine.endswith('(') or sProcessedLine.endswith('{') or sProcessedLine.endswith(';') or sProcessedLine.endswith('[tested]'):
-                        sLineContent       = sLineParse
-                        uiCurrentLine     += uiIndexAdvancement
-                        uiNextLinesToSkip += uiIndexAdvancement
-                        logger.info(f"Applied code format rules: {sLineContent}")
-                        break
-
-                    # Max depth
-                    if uiIndexAdvancement > 50:
-                        logger.info(f"Failed to apply code format rules: {sLineContent}")
-                        break
-
-                    uiIndexAdvancement += 1
-
-            # Cleanup multiline function arguments, clang-format does not clean them up.
-            # We do not apply code format rules on comments. (Block comments are unhandled)
-            if (rSearch := re.search(r"[a-zA-Z0-9]+\s+[a-zA-Z0-9_]+\(+([a-zA-Z0-9\s<>&*:,.\(\)])+$", sLineContent)) and rSearch != None and not sLineContent.strip().startswith("//") and not sLineContent.strip().startswith("/*") and not sLineContent.strip().startswith("*") and not sLineContent.strip().startswith("#"):
-                sLineParse: str = sLineContent
-
-                uiIndexAdvancement: int = 1
-                while (uiCurrentLine + uiIndexAdvancement) < len(fileContent):
-                    sProcessedLine: str = GetResolvedLineContent(fileContent[uiCurrentLine + uiIndexAdvancement].strip())
-
-                    # Empty lines are ambiguous at the moment.
-                    if len(sProcessedLine) == 0:
-                        break
-
-                    # We do not apply code format rules on comments. (Block comments are unhandled)
-                    if sProcessedLine.strip().startswith("//"):
-                        break
-
-                    sLineParse += sProcessedLine
-
-                    if sProcessedLine.endswith('(') or sProcessedLine.endswith('{') or sProcessedLine.endswith(';') or sProcessedLine.endswith('[tested]'):
-                        sLineContent       = sLineParse
-                        uiCurrentLine     += uiIndexAdvancement
-                        uiNextLinesToSkip += uiIndexAdvancement
-                        logger.info(f"Applied code format rules: {sLineContent}")
-                        break
-
-                    # Max depth
-                    if uiIndexAdvancement > 50:
-                        logger.info(f"Failed to apply code format rules: {sLineContent}")
-                        break
-
-                    uiIndexAdvancement += 1
-
-            # Cleanup multiline function arguments, clang-format does not clean them up.
-            # We do not apply code format rules on comments. (Block comments are unhandled)
-            if (rSearch := re.search(r"[a-zA-Z0-9]+::+[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None and not sLineContent.strip().startswith("//") and not sLineContent.strip().startswith("/*") and not sLineContent.strip().startswith("*") and not sLineContent.strip().startswith("#"):
-                sLineParse: str = sLineContent
-
-                uiIndexAdvancement: int = 1
-                while (uiCurrentLine + uiIndexAdvancement) < len(fileContent):
-                    sProcessedLine: str = GetResolvedLineContent(fileContent[uiCurrentLine + uiIndexAdvancement].strip())
-
-                    # Empty lines are ambiguous at the moment.
-                    if len(sProcessedLine) == 0:
-                        break
-
-                    # We do not apply code format rules on comments. (Block comments are unhandled)
-                    if sProcessedLine.strip().startswith("//"):
-                        break
-
-                    sLineParse += sProcessedLine
-
-                    if sProcessedLine.endswith('(') or sProcessedLine.endswith('{') or sProcessedLine.endswith(';') or sProcessedLine.endswith('[tested]'):
-                        sLineContent       = sLineParse
-                        uiCurrentLine     += uiIndexAdvancement
-                        uiNextLinesToSkip += uiIndexAdvancement
-                        logger.info(f"Applied code format rules: {sLineContent}")
-                        break
-
-                    # Max depth
-                    if uiIndexAdvancement > 50:
-                        logger.info(f"Failed to apply code format rules: {sLineContent}")
-                        break
-
-                    uiIndexAdvancement += 1
-
-            # Cleanup multiline function arguments, clang-format does not clean them up.
-            # We do not apply code format rules on comments. (Block comments are unhandled)
-            if (rSearch := re.search(r"XII_ASSERT_(DEBUG|DEV|RELEASE|ALWAYS)\($", sLineContent)) and rSearch != None and not sLineContent.strip().startswith("//") and not sLineContent.strip().startswith("/*") and not sLineContent.strip().startswith("*") and not sLineContent.strip().startswith("#"):
-                sLineParse: str = sLineContent
-
-                uiIndexAdvancement: int = 1
-                while (uiCurrentLine + uiIndexAdvancement) < len(fileContent):
-                    sProcessedLine: str = GetResolvedLineContent(fileContent[uiCurrentLine + uiIndexAdvancement].strip())
-
-                    # Empty lines are ambiguous at the moment.
-                    if len(sProcessedLine) == 0:
-                        break
-
-                    # We do not apply code format rules on comments. (Block comments are unhandled)
-                    if sProcessedLine.strip().startswith("//"):
-                        break
-
-                    sLineParse += sProcessedLine
-
-                    if sProcessedLine.endswith(';'):
-                        sLineContent       = sLineParse
-                        uiCurrentLine     += uiIndexAdvancement
-                        uiNextLinesToSkip += uiIndexAdvancement
-                        logger.info(f"Applied code format rules: {sLineContent}")
-                        break
-
-                    # Max depth
-                    if uiIndexAdvancement > 50:
-                        logger.info(f"Failed to apply code format rules: {sLineContent}")
-                        break
-
-                    uiIndexAdvancement += 1
-
-            sLineContent += '\n'
-
-            processedFileContent.append(sLineContent)
-
-            uiCurrentLine += 1
-
-        # Write file contents back into file.
-        with open(file, mode='w') as filestream:
-            filestream.writelines(processedFileContent)
-        #break
+            # Write file contents back into file.
+            with open(file, mode='w') as filestream:
+                filestream.writelines(processedFileContent)
+            #break
+        except Exception as e:
+            logger.error(f"Failed to transform source file {file}: {e}")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="XII Migration Tool.")
 
-    sEnginePath: str = "C:\\Development\\XII-Technologies\\XII-Migration\\Source\\Engine\\Foundation"
-    parser.add_argument("--source",            type=str, default=sEnginePath, help="The full path to the engine source files. This does not have to be the engine source directory.")
+    parser.add_argument("source",              type=str, default=".",         help="The full path to the engine source files. This does not have to be the engine source directory.")
     parser.add_argument("--consolelog", "-cl", type=int, default=1,           help="Should log to console instead of a file. Default is 1, use 0 to log to file.")
     parser.add_argument("--loglevel",   "-lv", type=str, default="DEBUG",     help="The logging level to use.", choices={"DEBUG", "INFO", "WARNING", "ERROR"})
 
@@ -412,7 +414,7 @@ def main() -> int:
     logger.info("Copyright (c) 2024 Theophilus Eriata. All Rights Reserved")
     logger.info("Please ensure that all project files are backed up before using this tool.")
 
-    InstanceData.sSourcePath = sEnginePath
+    InstanceData.sSourcePath = args.source
 
     # First resolve file names.
     ResolveFileNames()
