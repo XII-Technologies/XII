@@ -966,8 +966,7 @@ xiiSpatialDataHandle xiiSpatialSystem_RegularGrid::AddSpatialDataToGrids(const x
     if (pGrid == nullptr)
       continue;
 
-    if ((pGrid->m_Category.GetBitmask() & uiCategoryBitmask) == 0 ||
-        FilterByTags(tags, pGrid->m_IncludeTags, pGrid->m_ExcludeTags))
+    if ((pGrid->m_Category.GetBitmask() & uiCategoryBitmask) == 0 || FilterByTags(tags, pGrid->m_IncludeTags, pGrid->m_ExcludeTags))
       continue;
 
     data.m_uiGridBitmask |= XII_BIT(uiCachedGridIndex);
@@ -1030,9 +1029,7 @@ void xiiSpatialSystem_RegularGrid::ForEachCellInBoxInMatchingGrids(const xiiSimd
     if (pGrid == nullptr || pGrid->CachingCompleted() == false)
       continue;
 
-    if ((pGrid->m_Category.GetBitmask() & uiGridBitmask) == 0 ||
-        pGrid->m_IncludeTags != queryParams.m_IncludeTags ||
-        pGrid->m_ExcludeTags != queryParams.m_ExcludeTags)
+    if (((pGrid->m_Category.GetBitmask() & uiGridBitmask) == 0) || (pGrid->m_IncludeTags != queryParams.m_IncludeTags) || (pGrid->m_ExcludeTags != queryParams.m_ExcludeTags))
       continue;
 
     uiGridBitmask &= ~pGrid->m_Category.GetBitmask();
@@ -1055,7 +1052,7 @@ void xiiSpatialSystem_RegularGrid::ForEachCellInBoxInMatchingGrids(const xiiSimd
   }
 
   // then search for the rest
-  const bool   useTagsFilter = queryParams.m_IncludeTags.IsEmpty() == false || queryParams.m_ExcludeTags.IsEmpty() == false;
+  const bool   useTagsFilter = (queryParams.m_IncludeTags.IsEmpty() == false) || (queryParams.m_ExcludeTags.IsEmpty() == false);
   CellCallback cellCallback  = useTagsFilter ? filterByTagsCallback : noFilterCallback;
 
   while (uiGridBitmask > 0)
@@ -1199,9 +1196,7 @@ void xiiSpatialSystem_RegularGrid::UpdateCacheCandidate(const xiiTagSet& include
   CacheCandidate* pCacheCandiate = nullptr;
   for (auto& cacheCandidate : m_CacheCandidates)
   {
-    if (cacheCandidate.m_Category == category &&
-        cacheCandidate.m_IncludeTags == includeTags &&
-        cacheCandidate.m_ExcludeTags == excludeTags)
+    if ((cacheCandidate.m_Category == category) && (cacheCandidate.m_IncludeTags == includeTags) && (cacheCandidate.m_ExcludeTags == excludeTags))
     {
       pCacheCandiate = &cacheCandidate;
       break;
