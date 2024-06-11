@@ -357,6 +357,8 @@ function(xii_glob_source_files ROOT_DIR RESULT_ALL_SOURCES)
     "${ROOT_DIR}/*.xiiPermVar"
     "${ROOT_DIR}/*.xiiShader"
     "${ROOT_DIR}/*.xiiShaderTemplate"
+    "${ROOT_DIR}/*.rml"
+    "${ROOT_DIR}/*.rcss"
   )
 
   set(${RESULT_ALL_SOURCES} ${RELEVANT_FILES} PARENT_SCOPE)
@@ -435,6 +437,13 @@ endmacro()
 # #####################################
 macro(xii_requires_windows_desktop)
   xii_requires(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP)
+endmacro()
+
+# #####################################
+# ## xii_requires_desktop()
+# #####################################
+macro(xii_requires_desktop)
+  xii_requires_one_of(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP XII_CMAKE_PLATFORM_LINUX)
 endmacro()
 
 # #####################################
@@ -601,8 +610,10 @@ function(xii_set_build_types)
 
   # Fix for cl : Command line warning D9025 : overriding '/Ob0' with '/Ob1'
   # We are adding /Ob1 to debug inside ./CMakeUtils/xiiUtilsCppFlags.cmake
-  string(REPLACE "/Ob0" "/Ob1" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
-  string(REPLACE "/Ob0" "/Ob1" CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+  if(XII_CMAKE_COMPILER_GCC)
+    string(REPLACE "/Ob0" "/Ob1" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    string(REPLACE "/Ob0" "/Ob1" CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+  endif ()
 
   set(CMAKE_CXX_FLAGS_${XII_BUILDTYPENAME_DEBUG_UPPER} ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE)
   set(CMAKE_CXX_FLAGS_${XII_BUILDTYPENAME_DEV_UPPER} ${CMAKE_CXX_FLAGS_RELWITHDEBINFO} CACHE STRING "" FORCE)
@@ -729,4 +740,4 @@ function(xii_get_export_location DST_VAR)
       message(FATAL_ERROR "Unknown CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
     endif()
   endif()
-endfunction() 
+endfunction()

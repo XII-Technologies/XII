@@ -23,8 +23,18 @@ xiiJniAttachment::xiiJniAttachment()
     bool    ownsEnv   = (envStatus != JNI_OK);
     if (ownsEnv)
     {
+      const char* szThreadName = "XII JNI";
+      if (const xiiThread* pThread = xiiThread::GetCurrentThread())
+      {
+        szThreadName = pThread->GetThreadName();
+      }
+      else if (xiiThreadUtils::IsMainThread())
+      {
+        szThreadName = "XII Main Thread";
+      }
+
       // Assign name to attachment since ART complains about it not being set.
-      JavaVMAttachArgs args = {JNI_VERSION_1_6, "XII JNI", nullptr};
+      JavaVMAttachArgs args = {JNI_VERSION_1_6, szThreadName, nullptr};
       xiiAndroidUtils::GetAndroidJavaVM()->AttachCurrentThread(&env, &args);
     }
     else
@@ -78,8 +88,7 @@ JNIEnv* xiiJniAttachment::GetEnv()
 
 #  if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   void* unused;
-  XII_ASSERT_DEBUG(xiiAndroidUtils::GetAndroidJavaVM()->GetEnv(&unused, JNI_VERSION_1_6) == JNI_OK,
-                   "Current thread has lost its attachment to the JVM - some OS calls can cause this to happen. Try to reduce the attachment to a smaller scope.");
+  XII_ASSERT_DEBUG(xiiAndroidUtils::GetAndroidJavaVM()->GetEnv(&unused, JNI_VERSION_1_6) == JNI_OK, "Current thread has lost its attachment to the JVM - some OS calls can cause this to happen. Try to reduce the attachment to a smaller scope.");
 #  endif
 
   return s_env;

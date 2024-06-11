@@ -122,15 +122,25 @@ struct xiiStaticLinkHelper
   xiiStaticLinkHelper(Func f) { f(true); }
 };
 
+/// \brief Helper struct to register the existence of statically linked plugins.
+/// The macro XII_STATICLINK_LIBRARY will register a the given library name prepended with `xii` to the xiiPlugin system.
+/// Implemented in Plugin.cpp.
+struct XII_FOUNDATION_DLL xiiPluginRegister
+{
+  xiiPluginRegister(const char* szName);
+};
+
 /// \brief The tool 'StaticLinkUtil' inserts this macro into each file in a library.
 /// Each library also needs to contain exactly one instance of XII_STATICLINK_LIBRARY.
 /// The macros create functions that reference each other, which means the linker is forced to look at all files in the library.
 /// This in turn will drag all global variables into the visibility of the linker, and since it mustn't optimize them away,
 /// they then end up in the final application, where they will do what they are meant for.
-#  define XII_STATICLINK_FILE(LibraryName, UniqueName)                           \
-    void xiiReferenceFunction_##UniqueName(bool bReturn)                         \
-    {}                                                                           \
-    void                       xiiReferenceFunction_##LibraryName(bool bReturn); \
+#  define XII_STATICLINK_FILE(LibraryName, UniqueName)              \
+#    define XII_STATICLINK_FILE(LibraryName, UniqueName) extern "C" \
+    {                                                               \
+      void xiiReferenceFunction_##UniqueName(bool bReturn) {}       \
+      void xiiReferenceFunction_##LibraryName(bool bReturn);        \
+    }                                                               \
     static xiiStaticLinkHelper StaticLinkHelper_##UniqueName(xiiReferenceFunction_##LibraryName);
 
 /// \brief Used by the tool 'StaticLinkUtil' to generate the block after XII_STATICLINK_LIBRARY, to create references to all
@@ -140,7 +150,9 @@ struct xiiStaticLinkHelper
     xiiReferenceFunction_##UniqueName()
 
 /// \brief This must occur exactly once in each static library, such that all XII_STATICLINK_FILE macros can reference it.
-#  define XII_STATICLINK_LIBRARY(LibraryName) void xiiReferenceFunction_##LibraryName(bool bReturn = true)
+#  define XII_STATICLINK_LIBRARY(LibraryName)                                                          \
+    xiiPluginRegister xiiPluginRegister_##LibraryName(XII_PP_STRINGIFY(XII_CONCAT(xii, LibraryName))); \
+    extern "C" void   xiiReferenceFunction_##LibraryName(bool bReturn = true)
 
 #endif
 
