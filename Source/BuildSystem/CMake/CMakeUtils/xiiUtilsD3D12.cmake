@@ -9,7 +9,7 @@ set(XII_BUILD_D3D12 OFF CACHE BOOL "Build the DirectX 12 Graphics Device")
 # #####################################
 
 macro(xii_requires_d3d12)
-  xii_requires_windows()
+  xii_requires(XII_CMAKE_PLATFORM_SUPPORTS_D3D12)
   xii_requires(XII_BUILD_D3D12)
 endmacro()
 
