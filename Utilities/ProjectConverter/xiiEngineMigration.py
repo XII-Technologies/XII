@@ -128,6 +128,7 @@ def GetResolvedLineContent(sLineText: str) -> str:
     """
     # Perform rudimentary processing.
     sLineContent: str = sLineText
+    sLineContent      = sLineContent.replace('\t', '  ')
     sLineContent      = sLineContent.replace(' an ez', ' a xii')
     sLineContent      = sLineContent.replace(' ez',  ' xii')
     sLineContent      = sLineContent.replace(' Ez',  ' XII')
@@ -393,13 +394,12 @@ def ResolveNamespace() -> None:
         except Exception as e:
             logger.error(f"Failed to transform source file {file}: {e}")
 
-
 def main() -> int:
     parser = argparse.ArgumentParser(description="XII Migration Tool.")
 
-    parser.add_argument("source",              type=str, default=".",         help="The full path to the engine source files. This does not have to be the engine source directory.")
-    parser.add_argument("--consolelog", "-cl", type=int, default=1,           help="Should log to console instead of a file. Default is 1, use 0 to log to file.")
-    parser.add_argument("--loglevel",   "-lv", type=str, default="DEBUG",     help="The logging level to use.", choices={"DEBUG", "INFO", "WARNING", "ERROR"})
+    parser.add_argument("source",              type=str,                  help="The full path to the engine source files. This does not have to be the engine source directory.")
+    parser.add_argument("--consolelog", "-cl", type=int, default=1,       help="Should log to console instead of a file. Default is 1, use 0 to log to file.")
+    parser.add_argument("--loglevel",   "-lv", type=str, default="DEBUG", help="The logging level to use.", choices={"DEBUG", "INFO", "WARNING", "ERROR"})
 
     args = parser.parse_args()
 
@@ -410,11 +410,20 @@ def main() -> int:
     else:
         logging.basicConfig(level=GetLoggingLevel(args.loglevel))
 
+    if len(args.source.strip()) == 0:
+        logger.error("No valid engine path provided.")
+        return 1
+
+    path: pathlib.Path = pathlib.Path(args.source)
+    if not path.exists() or not path.is_dir():
+        logger.error(f"The engine path {path} does not exist or is not a valid directory.")
+        return 1
+
+    InstanceData.sSourcePath = str(path)
+
     logger.info("XII Migration Tool")
     logger.info("Copyright (c) 2024 Theophilus Eriata. All Rights Reserved")
     logger.info("Please ensure that all project files are backed up before using this tool.")
-
-    InstanceData.sSourcePath = args.source
 
     # First resolve file names.
     ResolveFileNames()
