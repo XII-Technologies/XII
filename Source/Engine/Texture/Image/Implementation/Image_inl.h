@@ -68,14 +68,7 @@ const T* xiiImageView::GetPixelPointer(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 u
 }
 
 template <typename T>
-T* xiiImage::GetPixelPointer(
-  xiiUInt32 uiMipLevel /*= 0*/,
-  xiiUInt32 uiFace /*= 0*/,
-  xiiUInt32 uiArrayIndex /*= 0*/,
-  xiiUInt32 x /*= 0*/,
-  xiiUInt32 y /*= 0*/,
-  xiiUInt32 z /*= 0*/,
-  xiiUInt32 uiPlaneIndex /*= 0*/)
+T* xiiImage::GetPixelPointer(xiiUInt32 uiMipLevel /*= 0*/, xiiUInt32 uiFace /*= 0*/, xiiUInt32 uiArrayIndex /*= 0*/, xiiUInt32 x /*= 0*/, xiiUInt32 y /*= 0*/, xiiUInt32 z /*= 0*/, xiiUInt32 uiPlaneIndex /*= 0*/)
 {
   return const_cast<T*>(xiiImageView::GetPixelPointer<T>(uiMipLevel, uiFace, uiArrayIndex, x, y, z, uiPlaneIndex));
 }

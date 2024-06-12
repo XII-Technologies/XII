@@ -422,12 +422,7 @@ xiiResult xiiImageConversion::Convert(const xiiImageView& source, xiiImage& ref_
   return XII_SUCCESS;
 }
 
-xiiResult xiiImageConversion::ConvertRaw(
-  xiiConstByteBlobPtr  source,
-  xiiByteBlobPtr       target,
-  xiiUInt32            uiNumElements,
-  xiiImageFormat::Enum sourceFormat,
-  xiiImageFormat::Enum targetFormat)
+xiiResult xiiImageConversion::ConvertRaw(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumElements, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat)
 {
   if (uiNumElements == 0)
   {
@@ -457,12 +452,7 @@ xiiResult xiiImageConversion::ConvertRaw(
   return ConvertRaw(source, target, uiNumElements, path, numScratchBuffers);
 }
 
-xiiResult xiiImageConversion::ConvertRaw(
-  xiiConstByteBlobPtr             source,
-  xiiByteBlobPtr                  target,
-  xiiUInt32                       uiNumElements,
-  xiiArrayPtr<ConversionPathNode> path,
-  xiiUInt32                       uiNumScratchBuffers)
+xiiResult xiiImageConversion::ConvertRaw(xiiConstByteBlobPtr source, xiiByteBlobPtr target, xiiUInt32 uiNumElements, xiiArrayPtr<ConversionPathNode> path, xiiUInt32 uiNumScratchBuffers)
 {
   XII_ASSERT_DEV(path.GetCount() > 0, "Path of length 0 is invalid.");
 
@@ -516,11 +506,7 @@ xiiResult xiiImageConversion::ConvertRaw(
   return XII_SUCCESS;
 }
 
-xiiResult xiiImageConversion::ConvertSingleStep(
-  const xiiImageConversionStep* pStep,
-  const xiiImageView&           source,
-  xiiImage&                     target,
-  xiiImageFormat::Enum          targetFormat)
+xiiResult xiiImageConversion::ConvertSingleStep(const xiiImageConversionStep* pStep, const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum targetFormat)
 {
   if (!pStep)
   {
@@ -562,12 +548,7 @@ xiiResult xiiImageConversion::ConvertSingleStep(
   }
 }
 
-xiiResult xiiImageConversion::ConvertSingleStepDecompress(
-  const xiiImageView&           source,
-  xiiImage&                     target,
-  xiiImageFormat::Enum          sourceFormat,
-  xiiImageFormat::Enum          targetFormat,
-  const xiiImageConversionStep* pStep)
+xiiResult xiiImageConversion::ConvertSingleStepDecompress(const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, const xiiImageConversionStep* pStep)
 {
   for (xiiUInt32 arrayIndex = 0; arrayIndex < source.GetNumArrayIndices(); arrayIndex++)
   {
@@ -629,12 +610,7 @@ xiiResult xiiImageConversion::ConvertSingleStepDecompress(
   return XII_SUCCESS;
 }
 
-xiiResult xiiImageConversion::ConvertSingleStepCompress(
-  const xiiImageView&           source,
-  xiiImage&                     target,
-  xiiImageFormat::Enum          sourceFormat,
-  xiiImageFormat::Enum          targetFormat,
-  const xiiImageConversionStep* pStep)
+xiiResult xiiImageConversion::ConvertSingleStepCompress(const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, const xiiImageConversionStep* pStep)
 {
   for (xiiUInt32 arrayIndex = 0; arrayIndex < source.GetNumArrayIndices(); arrayIndex++)
   {
@@ -694,12 +670,7 @@ xiiResult xiiImageConversion::ConvertSingleStepCompress(
   return XII_SUCCESS;
 }
 
-xiiResult xiiImageConversion::ConvertSingleStepDeplanarize(
-  const xiiImageView&           source,
-  xiiImage&                     target,
-  xiiImageFormat::Enum          sourceFormat,
-  xiiImageFormat::Enum          targetFormat,
-  const xiiImageConversionStep* pStep)
+xiiResult xiiImageConversion::ConvertSingleStepDeplanarize(const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, const xiiImageConversionStep* pStep)
 {
   for (xiiUInt32 arrayIndex = 0; arrayIndex < source.GetNumArrayIndices(); arrayIndex++)
   {
@@ -738,12 +709,7 @@ xiiResult xiiImageConversion::ConvertSingleStepDeplanarize(
   return XII_SUCCESS;
 }
 
-xiiResult xiiImageConversion::ConvertSingleStepPlanarize(
-  const xiiImageView&           source,
-  xiiImage&                     target,
-  xiiImageFormat::Enum          sourceFormat,
-  xiiImageFormat::Enum          targetFormat,
-  const xiiImageConversionStep* pStep)
+xiiResult xiiImageConversion::ConvertSingleStepPlanarize(const xiiImageView& source, xiiImage& target, xiiImageFormat::Enum sourceFormat, xiiImageFormat::Enum targetFormat, const xiiImageConversionStep* pStep)
 {
   for (xiiUInt32 arrayIndex = 0; arrayIndex < source.GetNumArrayIndices(); arrayIndex++)
   {
@@ -795,9 +761,7 @@ bool xiiImageConversion::IsConvertible(xiiImageFormat::Enum sourceFormat, xiiIma
   return s_conversionTable.Contains(tableIndex);
 }
 
-xiiImageFormat::Enum xiiImageConversion::FindClosestCompatibleFormat(
-  xiiImageFormat::Enum                    format,
-  xiiArrayPtr<const xiiImageFormat::Enum> compatibleFormats)
+xiiImageFormat::Enum xiiImageConversion::FindClosestCompatibleFormat(xiiImageFormat::Enum format, xiiArrayPtr<const xiiImageFormat::Enum> compatibleFormats)
 {
   XII_LOCK(s_conversionTableLock);
 

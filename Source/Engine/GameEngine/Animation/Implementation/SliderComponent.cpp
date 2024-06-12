@@ -4,12 +4,7 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GameEngine/Animation/SliderComponent.h>
 
-float CalculateAcceleratedMovement(
-  float    fDistanceInMeters,
-  float    fAcceleration,
-  float    fMaxVelocity,
-  float    fDeceleration,
-  xiiTime& ref_timeSinceStartInSec);
+float CalculateAcceleratedMovement(float fDistanceInMeters, float fAcceleration, float fMaxVelocity, float fDeceleration, xiiTime& ref_timeSinceStartInSec);
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiSliderComponent, 3, xiiComponentMode::Dynamic)

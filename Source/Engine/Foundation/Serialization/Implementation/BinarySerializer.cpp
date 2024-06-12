@@ -78,11 +78,7 @@ static void ReadGraph(xiiStreamReader& ref_stream, xiiAbstractObjectGraph* pGrap
   }
 }
 
-void xiiAbstractGraphBinarySerializer::Read(
-  xiiStreamReader&        ref_stream,
-  xiiAbstractObjectGraph* pGraph,
-  xiiAbstractObjectGraph* pTypesGraph,
-  bool                    bApplyPatches)
+void xiiAbstractGraphBinarySerializer::Read(xiiStreamReader& ref_stream, xiiAbstractObjectGraph* pGraph, xiiAbstractObjectGraph* pTypesGraph, bool bApplyPatches)
 {
   xiiUInt32 uiVersion = 0;
   ref_stream >> uiVersion;

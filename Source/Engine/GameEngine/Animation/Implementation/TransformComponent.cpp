@@ -120,12 +120,7 @@ negative, internally the absolute value is used. Distance, acceleration, max vel
 "in seconds". The returned value is 0, if time is negative. It is clamped to fDistanceInMeters, if time is too big.
 */
 
-float CalculateAcceleratedMovement(
-  float    fDistanceInMeters,
-  float    fAcceleration,
-  float    fMaxVelocity,
-  float    fDeceleration,
-  xiiTime& ref_timeSinceStartInSec)
+float CalculateAcceleratedMovement(float fDistanceInMeters, float fAcceleration, float fMaxVelocity, float fDeceleration, xiiTime& ref_timeSinceStartInSec)
 {
   // linear motion, if no acceleration or deceleration is present
   if ((fAcceleration <= 0.0f) && (fDeceleration <= 0.0f))

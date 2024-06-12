@@ -31,9 +31,7 @@ namespace xiiInternal
 
   // static
   template <typename VISITOR>
-  XII_FORCE_INLINE xiiVisitorExecution::Enum WorldData::TraverseHierarchyLevelMultiThreaded(
-    Hierarchy::DataBlockArray& blocks,
-    void*                      pUserData /* = nullptr*/)
+  XII_FORCE_INLINE xiiVisitorExecution::Enum WorldData::TraverseHierarchyLevelMultiThreaded(Hierarchy::DataBlockArray& blocks, void* pUserData /* = nullptr*/)
   {
     xiiParallelForParams parallelForParams;
     parallelForParams.m_uiBinSize           = 100;
@@ -41,8 +39,7 @@ namespace xiiInternal
     parallelForParams.m_pTaskAllocator      = m_StackAllocator.GetCurrentAllocator();
 
     xiiTaskSystem::ParallelFor(
-      blocks.GetArrayPtr(),
-      [pUserData](xiiArrayPtr<WorldData::Hierarchy::DataBlock> blocksSlice) {
+      blocks.GetArrayPtr(), [pUserData](xiiArrayPtr<WorldData::Hierarchy::DataBlock> blocksSlice) {
         for (WorldData::Hierarchy::DataBlock& block : blocksSlice)
         {
           xiiGameObject::TransformationData* pCurrentData = block.m_pData;

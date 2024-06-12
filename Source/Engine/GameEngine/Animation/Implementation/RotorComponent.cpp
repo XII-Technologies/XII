@@ -5,12 +5,7 @@
 #include <Foundation/Serialization/AbstractObjectGraph.h>
 #include <GameEngine/Animation/RotorComponent.h>
 
-float CalculateAcceleratedMovement(
-  float    fDistanceInMeters,
-  float    fAcceleration,
-  float    fMaxVelocity,
-  float    fDeceleration,
-  xiiTime& ref_timeSinceStartInSec);
+float CalculateAcceleratedMovement(float fDistanceInMeters, float fAcceleration, float fMaxVelocity, float fDeceleration, xiiTime& ref_timeSinceStartInSec);
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiRotorComponent, 3, xiiComponentMode::Dynamic)

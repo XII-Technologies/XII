@@ -84,9 +84,22 @@ class InstanceData:
     sSourcePath:         str = None
     bShouldRenameFiles: bool = True
 
-    xiiExtensionsNoRename: set    = set()
-    xiiExtensionsNoEdit: set      = { ".jpg", ".png", ".svg", ".dds", ".pdn" }
-    xiiInvariantPunctuations: set = {'!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~'}
+    xiiExtensionsNoRename: t.Set[str]    = set()
+    xiiExtensionsNoEdit: t.Set[str]      = { ".jpg", ".png", ".svg", ".dds", ".pdn" }
+    xiiInvariantPunctuations: t.Set[str] = {'!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~'}
+
+    xiiDebugMacroRegex: t.Set[str] = {
+        r"XII_ASSERT_(DEBUG|DEV|RELEASE|ALWAYS)\($",
+        r"[a-zA-Z0-9]+::+[a-zA-Z0-9_]+\($"
+    }
+    xiiIgnoreMacroRegex: t.Set[str] = {
+        r"#define+\s+[a-zA-Z]+",
+        r"^XII_BEGIN_DYNAMIC_REFLECTED_TYPE\($",
+        r"^XII_END_DYNAMIC_REFLECTED_TYPE\($",
+        r"XII_BEGIN_PROPERTIES",
+        r"XII_END_PROPERTIES",
+        r"XII_(ENUM|ARRAY|)_MEMBER_PROPERTY\($",
+    }
 
 
 def ResolveFileNames() -> None:
@@ -175,9 +188,9 @@ def GetResolvedLineContent(sLineText: str) -> str:
 
     return sLineContent
 
-def ApplyCodeFormatRules(sText: str) -> str:
+def ApplyCodeFormatRules(lineData: t.List[str]) -> t.Tuple[str, int]:
     """
-    Returns a string containing the formatted sText, if any code format rules were applied.
+    Returns a tuple containing string containing the formatted text, and the offset from the start of the buffer that was used.
     """
     pass
 

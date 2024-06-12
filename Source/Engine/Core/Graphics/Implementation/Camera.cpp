@@ -265,8 +265,7 @@ void xiiCamera::SetViewMatrix(const xiiMat4& mLookAtMatrix, xiiCameraEye eye)
   m_mViewMatrix[iEyeIdx] = mLookAtMatrix;
 
   xiiVec3 decFwd, decRight, decUp;
-  xiiGraphicsUtils::DecomposeViewMatrix(
-    m_vCameraPosition[iEyeIdx], decFwd, decRight, decUp, m_mViewMatrix[static_cast<int>(eye)], xiiHandedness::LeftHanded);
+  xiiGraphicsUtils::DecomposeViewMatrix(m_vCameraPosition[iEyeIdx], decFwd, decRight, decUp, m_mViewMatrix[static_cast<int>(eye)], xiiHandedness::LeftHanded);
 
   if (m_Mode != xiiCameraMode::Stereo)
   {

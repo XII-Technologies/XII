@@ -410,8 +410,7 @@ namespace
             else
             {
               // For header version four and higher, the color masks are part of the header
-              format = xiiImageFormat::FromPixelMask(
-                fileInfoHeaderV4.m_redMask, fileInfoHeaderV4.m_greenMask, fileInfoHeaderV4.m_blueMask, fileInfoHeaderV4.m_alphaMask, ref_uiBpp);
+              format = xiiImageFormat::FromPixelMask(fileInfoHeaderV4.m_redMask, fileInfoHeaderV4.m_greenMask, fileInfoHeaderV4.m_blueMask, fileInfoHeaderV4.m_alphaMask, ref_uiBpp);
             }
 
             break;

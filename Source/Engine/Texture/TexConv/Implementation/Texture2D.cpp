@@ -171,11 +171,9 @@ xiiResult xiiTexConvProcessor::DetermineTargetResolution(const xiiImage& image, 
 
     if (issueWarning)
     {
-      xiiLog::Warning(
-        "Chosen output image format is compressed, but target resolution does not fulfill block size requirements. {}x{} -> downscale {} / "
-        "clamp({}, {}) -> {}x{}, adjusted to {}x{}",
-        uiOrgResX, uiOrgResY, m_Descriptor.m_uiDownscaleSteps, m_Descriptor.m_uiMinResolution, m_Descriptor.m_uiMaxResolution, currentWidth,
-        currentHeight, out_uiTargetResolutionX, out_uiTargetResolutionY);
+      xiiLog::Warning("Chosen output image format is compressed, but target resolution does not fulfill block size requirements. {}x{} -> downscale {} / "
+                      "clamp({}, {}) -> {}x{}, adjusted to {}x{}",
+                      uiOrgResX, uiOrgResY, m_Descriptor.m_uiDownscaleSteps, m_Descriptor.m_uiMinResolution, m_Descriptor.m_uiMaxResolution, currentWidth, currentHeight, out_uiTargetResolutionX, out_uiTargetResolutionY);
     }
   }
 
