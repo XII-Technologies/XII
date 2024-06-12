@@ -19,17 +19,17 @@ void xiiInputDeviceXBox360::DestroyAllDevices()
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(InputDevices, InputDeviceXBox360)
- 
+
   BEGIN_SUBSYSTEM_DEPENDENCIES
-    "Foundation", 
+    "Foundation",
     "InputManager"
-    
+
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
   {
   }
- 
+
   ON_CORESYSTEMS_SHUTDOWN
   {
     xiiInputDeviceXBox360::DestroyAllDevices();
@@ -43,7 +43,7 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(InputDevices, InputDeviceXBox360)
       xiiControllerInput::SetDevice(pDevice);
     }
   }
- 
+
   ON_HIGHLEVELSYSTEMS_SHUTDOWN
   {
     if(xiiControllerInput::GetDevice() == g_InputDeviceXBox360)
@@ -52,6 +52,6 @@ XII_BEGIN_SUBSYSTEM_DECLARATION(InputDevices, InputDeviceXBox360)
     }
     xiiInputDeviceXBox360::DestroyAllDevices();
   }
- 
+
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
