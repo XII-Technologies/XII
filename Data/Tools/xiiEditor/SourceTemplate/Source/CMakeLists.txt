@@ -4,7 +4,7 @@ project (SourceTemplate VERSION 1.0 LANGUAGES C CXX)
 
 if(PROJECT_IS_TOP_LEVEL)
 
-	set (XII_SDK_DIR "" CACHE PATH "The xiiEngine SDK root directory.")
+	set (XII_SDK_DIR "" CACHE PATH "The XII Engine SDK root directory.")
 
 	message(STATUS "XII_SDK_DIR is set to '${XII_SDK_DIR}'")
 
@@ -22,7 +22,7 @@ if(PROJECT_IS_TOP_LEVEL)
 	set_property(GLOBAL PROPERTY XII_ROOT ${XII_ROOT})
 
 	include("xiiUtils")
-	include("xiiPlatformVars")
+	include("xiiPlatform")
 
 	xii_include_xiiExport()
 
