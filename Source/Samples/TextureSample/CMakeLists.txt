@@ -10,7 +10,7 @@ xii_create_target(APPLICATION ${PROJECT_NAME})
 xii_add_renderers(${PROJECT_NAME})
 
 # TODO: Add actual packaging code. This is done in PRE_BUILD so that it happens before the
-# apk gen steps that happen in POST_BUILD and which are already done via xii_create_target. 
+# apk gen steps that happen in POST_BUILD and which are already done via xii_create_target.
 add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_SOURCE_DIR}/${XII_SUBMODULE_PREFIX_PATH}/Data/Samples/TextureSample/ ${CMAKE_CURRENT_BINARY_DIR}/package/Assets/Data/Samples/TextureSample/)
