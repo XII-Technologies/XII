@@ -371,7 +371,7 @@ xiiResult xiiFileSystemModel::UnlinkDocument(xiiStringView sAbsolutePath)
       bDocumentLinkChanged = it.Value().m_DocumentID.IsValid();
       fileStatus           = it.Value();
       filePath             = it.Key();
-      it.Value().m_DocumentID= xiiUuid::MakeInvalid();
+      it.Value().m_DocumentID = xiiUuid::MakeInvalid();
     }
     else
     {
