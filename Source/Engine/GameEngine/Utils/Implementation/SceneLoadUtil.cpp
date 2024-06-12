@@ -1,7 +1,7 @@
 #include <GameEngine/GameEnginePCH.h>
 
-#include <Foundation/Utilities/AssetFileHeader.h>
 #include <Core/Collection/CollectionResource.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/Utils/SceneLoadUtil.h>
 

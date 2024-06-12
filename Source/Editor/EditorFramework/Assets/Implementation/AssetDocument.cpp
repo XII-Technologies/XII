@@ -1,6 +1,5 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
-#include <Foundation/Utilities/AssetFileHeader.h>
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocument.h>
@@ -9,6 +8,7 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GuiFoundation/PropertyGrid/PrefabDefaultStateProvider.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <GuiFoundation/UIServices/ImageCache.moc.h>

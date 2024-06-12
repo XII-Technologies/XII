@@ -1,9 +1,9 @@
 #include <Core/CorePCH.h>
 
-#include <Foundation/Utilities/AssetFileHeader.h>
 #include <Core/Prefabs/PrefabResource.h>
 #include <Foundation/Reflection/PropertyPath.h>
 #include <Foundation/Reflection/ReflectionUtils.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiPrefabResource, 1, xiiRTTIDefaultAllocator<xiiPrefabResource>)

@@ -1,10 +1,10 @@
 #include <Core/CorePCH.h>
 
-#include <Foundation/Utilities/AssetFileHeader.h>
 #include <Core/Messages/ApplyOnlyToMessage.h>
 #include <Core/Messages/CommonMessages.h>
 #include <Core/Physics/SurfaceResource.h>
 #include <Core/Prefabs/PrefabResource.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceResource, 1, xiiRTTIDefaultAllocator<xiiSurfaceResource>)

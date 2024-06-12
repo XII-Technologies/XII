@@ -1,12 +1,12 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
-#include <Foundation/Utilities/AssetFileHeader.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocument.h>
 #include <EditorFramework/Assets/AssetDocumentManager.h>
 #include <EditorFramework/EditorApp/EditorApp.moc.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/Serialization/DdlSerializer.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiAssetDocumentManager, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;

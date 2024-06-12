@@ -3,7 +3,6 @@
 #include <EnginePluginScene/SceneContext/SceneContext.h>
 #include <EnginePluginScene/SceneView/SceneView.h>
 
-#include <Foundation/Utilities/AssetFileHeader.h>
 #include <Core/Interfaces/SoundInterface.h>
 #include <Core/Prefabs/PrefabResource.h>
 #include <Core/World/EventMessageHandlerComponent.h>
@@ -12,6 +11,7 @@
 #include <EditorEngineProcessFramework/SceneExport/SceneExportModifier.h>
 #include <EnginePluginScene/SceneContext/LayerContext.h>
 #include <Foundation/IO/FileSystem/DeferredFileWriter.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GraphicsCore/AnimationSystem/Declarations.h>
 #include <GraphicsCore/Debug/DebugRenderer.h>

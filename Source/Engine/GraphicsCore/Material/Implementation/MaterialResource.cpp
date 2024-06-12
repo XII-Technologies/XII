@@ -1,10 +1,10 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Foundation/Utilities/AssetFileHeader.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/OpenDdlReader.h>
 #include <Foundation/IO/OpenDdlUtils.h>
 #include <Foundation/Types/ScopeExit.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/RenderContext/RenderContext.h>
 #include <GraphicsCore/RenderWorld/RenderWorld.h>

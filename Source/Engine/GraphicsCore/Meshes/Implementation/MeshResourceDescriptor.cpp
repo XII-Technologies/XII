@@ -1,9 +1,9 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Foundation/Utilities/AssetFileHeader.h>
 #include <Foundation/IO/ChunkStream.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/FileSystem/FileWriter.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Meshes/MeshResourceDescriptor.h>
 
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT

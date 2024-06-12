@@ -1,7 +1,7 @@
 #include <Core/CorePCH.h>
 
-#include <Foundation/Utilities/AssetFileHeader.h>
 #include <Core/Curves/Curve1DResource.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCurve1DResource, 1, xiiRTTIDefaultAllocator<xiiCurve1DResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
