@@ -1,6 +1,6 @@
 #include <Core/CorePCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <Core/Curves/ColorGradientResource.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiColorGradientResource, 1, xiiRTTIDefaultAllocator<xiiColorGradientResource>)

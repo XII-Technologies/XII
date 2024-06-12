@@ -1,6 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <Foundation/IO/ChunkStream.h>
 #include <GraphicsCore/BakedProbes/ProbeTreeSectorResource.h>
 

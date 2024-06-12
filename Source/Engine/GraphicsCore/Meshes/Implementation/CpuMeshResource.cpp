@@ -1,6 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Meshes/CpuMeshResource.h>
 
 // clang-format off

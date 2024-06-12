@@ -1,6 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/AnimationSystem/Implementation/OzzUtils.h>
 #include <GraphicsCore/AnimationSystem/SkeletonResource.h>
 #include <ozz/animation/runtime/skeleton.h>
