@@ -932,8 +932,7 @@ void xiiQtPropertyEditorQuaternionWidget::SlotValueChanged()
   xiiAngle y = xiiAngle::MakeFromDegree(m_pWidget[1]->value());
   xiiAngle z = xiiAngle::MakeFromDegree(m_pWidget[2]->value());
 
-  xiiQuat qRot;
-  qRot.SetFromEulerAngles(x, y, z);
+  xiiQuat qRot = xiiQuat::MakeFromEulerAngles(x, y, z);
 
   BroadcastValueChanged(qRot);
 }

@@ -1014,8 +1014,7 @@ void xiiQtEventTrackWidget::ComputeSelectionRect()
   if (m_SelectedPoints.GetCount() < 2)
     return;
 
-  xiiBoundingBox bbox;
-  bbox.SetInvalid();
+  xiiBoundingBox bbox = xiiBoundingBox::MakeInvalid();
 
   // TODO: properly implement the Y value
   // for (const auto& cpSel : m_SelectedPoints)

@@ -44,7 +44,7 @@ public:
   {
     xiiTreeNode<T>* pNode = XII_DEFAULT_NEW(xiiTreeNode<T>, data);
     pNode->m_Guid         = xiiUuid::MakeUuid();
-    m_Children.Insert(pNode, uiIndex);
+    m_Children.InsertAt(uiIndex, pNode);
     pNode->m_pParent = this;
     return pNode;
   }

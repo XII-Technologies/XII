@@ -1510,8 +1510,7 @@ void xiiQtCurveEditWidget::ComputeSelectionRect()
   if (m_SelectedCPs.GetCount() < 2)
     return;
 
-  xiiBoundingBox bbox;
-  bbox.SetInvalid();
+  xiiBoundingBox bbox = xiiBoundingBox::MakeInvalid();
 
   for (const auto& cpSel : m_SelectedCPs)
   {

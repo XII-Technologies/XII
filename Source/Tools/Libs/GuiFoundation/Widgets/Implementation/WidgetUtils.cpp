@@ -16,8 +16,7 @@ QScreen& xiiWidgetUtils::GetClosestScreen(const QPoint& point)
     for (QScreen* pScreen : screens)
     {
       const QRect    geom = pScreen->geometry();
-      xiiBoundingBox xiiGeom;
-      xiiGeom.SetCenterAndHalfExtents(xiiVec3(geom.center().x(), geom.center().y(), 0), xiiVec3(geom.width() / 2.0f, geom.height() / 2.0f, 0));
+      xiiBoundingBox xiiGeom = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3(geom.center().x(), geom.center().y(), 0), xiiVec3(geom.width() / 2.0f, geom.height() / 2.0f, 0));
       const xiiVec3 xiiPoint(point.x(), point.y(), 0);
       if (xiiGeom.Contains(xiiPoint))
       {
