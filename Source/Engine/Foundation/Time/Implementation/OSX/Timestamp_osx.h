@@ -11,7 +11,7 @@ const xiiTimestamp xiiTimestamp::CurrentTimestamp()
   timeval currentTime;
   gettimeofday(&currentTime, nullptr);
 
-  return xiiTimestamp(currentTime.tv_sec * 1000000LL + currentTime.tv_usec, xiiSIUnitOfTime::Microsecond);
+  return xiiTimestamp::MakeFromInt(currentTime.tv_sec * 1000000LL + currentTime.tv_usec, xiiSIUnitOfTime::Microsecond);
 }
 
 const xiiTimestamp xiiDateTime::GetTimestamp() const
@@ -28,7 +28,7 @@ const xiiTimestamp xiiDateTime::GetTimestamp() const
 
     if (year < yearMin.location || year > yearMax.length)
     {
-      return xiiTimestamp();
+      return xiiTimestamp::MakeInvalid();
     }
   }
 
@@ -38,7 +38,7 @@ const xiiTimestamp xiiDateTime::GetTimestamp() const
 
     if (month < monthMin.location || month > monthMax.length)
     {
-      return xiiTimestamp();
+      return xiiTimestamp::MakeInvalid();
     }
   }
 
@@ -48,20 +48,20 @@ const xiiTimestamp xiiDateTime::GetTimestamp() const
 
     if (day < dayMin.location || day > dayMax.length)
     {
-      return xiiTimestamp();
+      return xiiTimestamp::MakeInvalid();
     }
   }
 
   CFAbsoluteTime absTime;
   if (CFCalendarComposeAbsoluteTime(calendar, &absTime, "yMdHms", year, month, day, hour, minute, second) == FALSE)
   {
-    return xiiTimestamp();
+    return xiiTimestamp::MakeInvalid();
   }
 
-  return xiiTimestamp(static_cast<xiiInt64>((absTime + kCFAbsoluteTimeIntervalSince1970) * 1000000.0), xiiSIUnitOfTime::Microsecond);
+  return xiiTimestamp::MakeFromInt(static_cast<xiiInt64>((absTime + kCFAbsoluteTimeIntervalSince1970) * 1000000.0), xiiSIUnitOfTime::Microsecond);
 }
 
-bool xiiDateTime::SetTimestamp(xiiTimestamp timestamp)
+xiiResult xiiDateTime::SetFromTimestamp(xiiTimestamp timestamp)
 {
   // Round the microseconds to the full second so that we can reconstruct the right date / time afterwards
   xiiInt64 us           = timestamp.GetInt64(xiiSIUnitOfTime::Microsecond);
@@ -77,7 +77,7 @@ bool xiiDateTime::SetTimestamp(xiiTimestamp timestamp)
 
   if (CFCalendarDecomposeAbsoluteTime(calendar, at, "yMdHmsE", &year, &month, &day, &hour, &minute, &second, &dayOfWeek) == FALSE)
   {
-    return false;
+    return XII_FAILURE;
   }
 
   m_iYear          = (xiiInt16)year;
@@ -88,5 +88,5 @@ bool xiiDateTime::SetTimestamp(xiiTimestamp timestamp)
   m_uiMinute       = (xiiUInt8)minute;
   m_uiSecond       = (xiiUInt8)second;
   m_uiMicroseconds = (xiiUInt32)microseconds;
-  return true;
+  return XII_SUCCESS;
 }

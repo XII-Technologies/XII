@@ -474,7 +474,7 @@ XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
 // static
-void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
+void xiiDebugRenderer::DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
 {
   if (lines.IsEmpty())
     return;
@@ -520,15 +520,15 @@ void xiiDebugRenderer::Draw2DLines(const xiiDebugRendererContext& context, xiiAr
 }
 
 // static
-void xiiDebugRenderer::DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
+void xiiDebugRenderer::DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
 {
   if (fLineLength <= 0.0f)
     return;
 
   const float   fHalfLineLength = fLineLength * 0.5f;
-  const xiiVec3 xAxis           = xiiVec3::UnitXAxis() * fHalfLineLength;
-  const xiiVec3 yAxis           = xiiVec3::UnitYAxis() * fHalfLineLength;
-  const xiiVec3 zAxis           = xiiVec3::UnitZAxis() * fHalfLineLength;
+  const xiiVec3 xAxis           = xiiVec3::MakeAxisX() * fHalfLineLength;
+  const xiiVec3 yAxis           = xiiVec3::MakeAxisY() * fHalfLineLength;
+  const xiiVec3 zAxis           = xiiVec3::MakeAxisZ() * fHalfLineLength;
 
   XII_LOCK(s_Mutex);
 
@@ -553,7 +553,7 @@ void xiiDebugRenderer::DrawLineBox(const xiiDebugRendererContext& context, const
 
   auto& boxData = data.m_lineBoxes.ExpandAndGetRef();
 
-  xiiTransform boxTransform(box.GetCenter(), xiiQuat::IdentityQuaternion(), box.GetHalfExtents());
+  xiiTransform boxTransform(box.GetCenter(), xiiQuat::MakeIdentity(), box.GetHalfExtents());
 
   boxData.m_transform = transform * boxTransform;
   boxData.m_color     = color;
@@ -604,13 +604,13 @@ void xiiDebugRenderer::DrawLineBoxCorners(const xiiDebugRendererContext& context
 }
 
 // static
-void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
+void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
 {
   static constexpr xiiUInt32 NUM_SEGMENTS = 32;
 
   const xiiVec3  vCenter   = sphere.m_vCenter;
   const float    fRadius   = sphere.m_fRadius;
-  const xiiAngle stepAngle = xiiAngle::Degree(360.0f / (float)NUM_SEGMENTS);
+  const xiiAngle stepAngle = xiiAngle::MakeFromDegree(360.0f / (float)NUM_SEGMENTS);
 
   XII_LOCK(s_Mutex);
 
@@ -639,13 +639,13 @@ void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, co
 }
 
 
-void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::IdentityTransform()*/)
+void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
 {
   static constexpr xiiUInt32 NUM_SEGMENTS      = 32;
   static constexpr xiiUInt32 NUM_HALF_SEGMENTS = 16;
   static constexpr xiiUInt32 NUM_LINES         = NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + 4;
 
-  const xiiAngle stepAngle = xiiAngle::Degree(360.0f / (float)NUM_SEGMENTS);
+  const xiiAngle stepAngle = xiiAngle::MakeFromDegree(360.0f / (float)NUM_SEGMENTS);
 
   Line lines[NUM_LINES];
 
@@ -809,7 +809,7 @@ void xiiDebugRenderer::DrawSolidBox(const xiiDebugRendererContext& context, cons
 
   auto& boxData = data.m_solidBoxes.ExpandAndGetRef();
 
-  xiiTransform boxTransform(box.GetCenter(), xiiQuat::IdentityQuaternion(), box.GetHalfExtents());
+  xiiTransform boxTransform(box.GetCenter(), xiiQuat::MakeIdentity(), box.GetHalfExtents());
 
   boxData.m_transform = transform * boxTransform;
   boxData.m_color     = color;
@@ -996,7 +996,7 @@ void xiiDebugRenderer::AddPersistentLineBox(const xiiDebugRendererContext& conte
   item.m_Timeout   = data.m_Now + duration;
 }
 
-void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::UnitXAxis()*/, xiiVec3 vRotationAxis /*= xiiVec3::UnitZAxis()*/)
+void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/, xiiVec3 vRotationAxis /*= xiiVec3::MakeAxisZ()*/)
 {
   xiiHybridArray<Triangle, 64> tris;
   xiiHybridArray<Line, 64>     lines;
@@ -1005,17 +1005,17 @@ void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngl
   endAngle.NormalizeRange();
 
   if (startAngle > endAngle)
-    startAngle -= xiiAngle::Degree(360);
+    startAngle -= xiiAngle::MakeFromDegree(360);
 
   const xiiAngle  range         = endAngle - startAngle;
-  const xiiUInt32 uiTesselation = xiiMath::Max(1u, (xiiUInt32)(range / xiiAngle::Degree(5)));
+  const xiiUInt32 uiTesselation = xiiMath::Max(1u, (xiiUInt32)(range / xiiAngle::MakeFromDegree(5)));
   const xiiAngle  step          = range / (float)uiTesselation;
 
   xiiQuat qStart;
-  qStart.SetFromAxisAndAngle(vRotationAxis, startAngle);
+  qStart = xiiQuat::MakeFromAxisAndAngle(vRotationAxis, startAngle);
 
   xiiQuat qStep;
-  qStep.SetFromAxisAndAngle(vRotationAxis, step);
+  qStep = xiiQuat::MakeFromAxisAndAngle(vRotationAxis, step);
 
   xiiVec3 vCurDir = qStart * vForwardAxis;
 
@@ -1061,23 +1061,23 @@ void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngl
   DrawLines(context, lines, lineColor, transform);
 }
 
-void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::UnitXAxis()*/)
+void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/)
 {
   xiiHybridArray<Triangle, 64> trisInside;
   xiiHybridArray<Triangle, 64> trisOutside;
 
-  halfAngle = xiiMath::Clamp(halfAngle, xiiAngle(), xiiAngle::Degree(180));
+  halfAngle = xiiMath::Clamp(halfAngle, xiiAngle(), xiiAngle::MakeFromDegree(180));
 
-  const xiiAngle  refAngle      = halfAngle <= xiiAngle::Degree(90) ? halfAngle : xiiAngle::Degree(180) - halfAngle;
-  const xiiUInt32 uiTesselation = xiiMath::Max(8u, (xiiUInt32)(refAngle / xiiAngle::Degree(2)));
+  const xiiAngle  refAngle      = halfAngle <= xiiAngle::MakeFromDegree(90) ? halfAngle : xiiAngle::MakeFromDegree(180) - halfAngle;
+  const xiiUInt32 uiTesselation = xiiMath::Max(8u, (xiiUInt32)(refAngle / xiiAngle::MakeFromDegree(2)));
 
   const xiiVec3 tangentAxis = vForwardAxis.GetOrthogonalVector().GetNormalized();
 
   xiiQuat tilt;
-  tilt.SetFromAxisAndAngle(tangentAxis, halfAngle);
+  tilt = xiiQuat::MakeFromAxisAndAngle(tangentAxis, halfAngle);
 
   xiiQuat step;
-  step.SetFromAxisAndAngle(vForwardAxis, xiiAngle::Degree(360) / (float)uiTesselation);
+  step = xiiQuat::MakeFromAxisAndAngle(vForwardAxis, xiiAngle::MakeFromDegree(360) / (float)uiTesselation);
 
   xiiVec3 vCurDir = tilt * vForwardAxis;
 
@@ -1127,7 +1127,7 @@ void xiiDebugRenderer::DrawLimitCone(const xiiDebugRendererContext& context, xii
     for (xiiUInt32 i = 0; i <= NUM_LINES; i++)
     {
       const float   angle = 2 * xiiMath::Pi<float>() / NUM_LINES * i;
-      const float   c = xiiMath::Cos(xiiAngle::Radian(angle)), s = xiiMath::Sin(xiiAngle::Radian(angle));
+      const float   c = xiiMath::Cos(xiiAngle::MakeFromRadian(angle)), s = xiiMath::Sin(xiiAngle::MakeFromRadian(angle));
       const xiiVec3 rv(0, -tanQSwingZ * s, tanQSwingY * c);
       const float   rv2 = rv.GetLengthSquared();
       const float   r   = (1 / (1 + rv2));
@@ -1172,7 +1172,7 @@ void xiiDebugRenderer::DrawCylinder(const xiiDebugRendererContext& context, floa
   xiiHybridArray<Line, NUM_SEGMENTS * 3>         lines;
   xiiHybridArray<Triangle, NUM_SEGMENTS * 2 * 2> tris;
 
-  const xiiAngle step  = xiiAngle::Degree(360) / (float)NUM_SEGMENTS;
+  const xiiAngle step  = xiiAngle::MakeFromDegree(360) / (float)NUM_SEGMENTS;
   xiiAngle       angle = {};
 
   xiiVec3 vCurCircle(0, 1 /*xiiMath::Cos(angle)*/, 0 /*xiiMath::Sin(angle)*/);
@@ -1236,7 +1236,7 @@ void xiiDebugRenderer::DrawArrow(const xiiDebugRendererContext& context, float f
   const float   tipSize   = fSize * 0.1f;
 
   Line lines[9];
-  lines[0] = Line(xiiVec3::ZeroVector(), endPoint);
+  lines[0] = Line(xiiVec3::MakeZero(), endPoint);
   lines[1] = Line(endPoint, endPoint2 + right * tipSize);
   lines[2] = Line(endPoint, endPoint2 + up * tipSize);
   lines[3] = Line(endPoint, endPoint2 - right * tipSize);
@@ -1286,7 +1286,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         }
         else
         {
-          xiiDebugRenderer::DrawCross(context, xiiVec3::ZeroVector(), item.m_fSize, item.m_Color, item.m_Transform);
+          xiiDebugRenderer::DrawCross(context, xiiVec3::MakeZero(), item.m_fSize, item.m_Color, item.m_Transform);
 
           ++i;
         }
@@ -1307,7 +1307,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         }
         else
         {
-          xiiDebugRenderer::DrawLineSphere(context, xiiBoundingSphere(xiiVec3::ZeroVector(), item.m_fRadius), item.m_Color, item.m_Transform);
+          xiiDebugRenderer::DrawLineSphere(context, xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), item.m_fRadius), item.m_Color, item.m_Transform);
 
           ++i;
         }
@@ -1846,9 +1846,9 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(xiiScriptExtensionClass_Debug, xiiNoBase, 1, xii
     XII_SCRIPT_FUNCTION_PROPERTY(Draw3DText, In, "World", In, "Text", In, "Position", In, "Color", In, "SizeInPixel")->AddAttributes(new xiiFunctionArgumentAttributes(4, new xiiDefaultValueAttribute(16))),
     XII_SCRIPT_FUNCTION_PROPERTY(DrawInfoText, In, "World", In, "Text", In, "Placement", In, "Group", In, "Color"),
 
-    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentCross, In, "World", In, "Position", In, "Size", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(0.1f)),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
-    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineBox, In, "World", In, "Position", In, "HalfExtents", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(xiiVec3(1))),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
-    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineSphere, In, "World", In, "Position", In, "Radius", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(1.0f)),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::Seconds(1)))),
+    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentCross, In, "World", In, "Position", In, "Size", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(0.1f)),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(1)))),
+    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineBox, In, "World", In, "Position", In, "HalfExtents", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(xiiVec3(1))),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(1)))),
+    XII_SCRIPT_FUNCTION_PROPERTY(AddPersistentLineSphere, In, "World", In, "Position", In, "Radius", In, "Color", In, "Transform", In, "Duration")->AddAttributes(new xiiFunctionArgumentAttributes(2, new xiiDefaultValueAttribute(1.0f)),new xiiFunctionArgumentAttributes(3, new xiiExposeColorAlphaAttribute()),new xiiFunctionArgumentAttributes(5, new xiiDefaultValueAttribute(xiiTime::MakeFromSeconds(1)))),
   }
   XII_END_FUNCTIONS;
   XII_BEGIN_ATTRIBUTES
@@ -1869,22 +1869,20 @@ void xiiScriptExtensionClass_Debug::DrawCross(const xiiWorld* pWorld, const xiiV
 // static
 void xiiScriptExtensionClass_Debug::DrawLineBox(const xiiWorld* pWorld, const xiiVec3& vPosition, const xiiVec3& vHalfExtents, const xiiColor& color, const xiiTransform& transform)
 {
-  xiiBoundingBox bbox;
-  bbox.SetCenterAndHalfExtents(vPosition, vHalfExtents);
+  xiiBoundingBox bbox = xiiBoundingBox::MakeFromCenterAndHalfExtents(vPosition, vHalfExtents);
   xiiDebugRenderer::DrawLineBox(pWorld, bbox, color, transform);
 }
 
 // static
 void xiiScriptExtensionClass_Debug::DrawLineSphere(const xiiWorld* pWorld, const xiiVec3& vPosition, float fRadius, const xiiColor& color, const xiiTransform& transform)
 {
-  xiiDebugRenderer::DrawLineSphere(pWorld, xiiBoundingSphere(vPosition, fRadius), color, transform);
+  xiiDebugRenderer::DrawLineSphere(pWorld, xiiBoundingSphere::MakeFromCenterAndRadius(vPosition, fRadius), color, transform);
 }
 
 // static
 void xiiScriptExtensionClass_Debug::DrawSolidBox(const xiiWorld* pWorld, const xiiVec3& vPosition, const xiiVec3& vHalfExtents, const xiiColor& color, const xiiTransform& transform)
 {
-  xiiBoundingBox bbox;
-  bbox.SetCenterAndHalfExtents(vPosition, vHalfExtents);
+  xiiBoundingBox bbox = xiiBoundingBox::MakeFromCenterAndHalfExtents(vPosition, vHalfExtents);
   xiiDebugRenderer::DrawSolidBox(pWorld, bbox, color, transform);
 }
 

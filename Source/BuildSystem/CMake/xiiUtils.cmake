@@ -30,6 +30,9 @@ macro(xii_pull_config_vars)
 
   get_property(XII_CONFIG_VULKAN_SDK_LINUXX64_VERSION GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_VERSION)
   get_property(XII_CONFIG_VULKAN_SDK_LINUXX64_URL GLOBAL PROPERTY XII_CONFIG_VULKAN_SDK_LINUXX64_URL)
+
+  get_property(XII_CONFIG_VULKAN_VALIDATIONLAYERS_VERSION GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_VERSION)
+  get_property(XII_CONFIG_VULKAN_VALIDATIONLAYERS_ANDROID_URL GLOBAL PROPERTY XII_CONFIG_VULKAN_VALIDATIONLAYERS_ANDROID_URL)
 endmacro()
 
 # #####################################
@@ -44,6 +47,7 @@ macro(xii_pull_output_vars LIB_OUTPUT_DIR DLL_OUTPUT_DIR)
   set(PLATFORM_POSTFIX "")
   set(ARCH "x${XII_CMAKE_ARCHITECTURE_POSTFIX}")
 
+  # PLATFORM-TODO (build output path hook? add more variables?)
   if(XII_CMAKE_PLATFORM_WINDOWS_UWP)
     # UWP has deployment problems if all applications output to the same path.
     set(SUB_DIR "/${TARGET_NAME}")
@@ -86,6 +90,7 @@ macro(xii_pull_output_vars LIB_OUTPUT_DIR DLL_OUTPUT_DIR)
 
   set(OUTPUT_DLL_DEV "${DLL_OUTPUT_DIR}/${OUTPUT_DEV}")
   set(OUTPUT_LIB_DEV "${LIB_OUTPUT_DIR}/${OUTPUT_DEV}")
+
 endmacro()
 
 # #####################################
@@ -206,15 +211,15 @@ function(xii_set_common_target_definitions TARGET_NAME)
   string(TOUPPER ${TARGET_NAME} PROJECT_NAME_UPPER)
   target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_BUILDING_${PROJECT_NAME_UPPER}_LIB)
 
-  if (XII_BUILD_D3D11)
+  if(XII_BUILD_D3D11)
     target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_D3D11_SUPPORT)
   endif()
 
-  if (XII_BUILD_D3D12)
+  if(XII_BUILD_D3D12)
     target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_D3D12_SUPPORT)
   endif()
 
-  if (XII_BUILD_VULKAN)
+  if(XII_BUILD_VULKAN)
     target_compile_definitions(${TARGET_NAME} PRIVATE BUILDSYSTEM_ENABLE_VULKAN_SUPPORT)
   endif()
 
@@ -273,38 +278,6 @@ function(xii_add_output_xii_prefix TARGET_NAME)
 endfunction()
 
 # #####################################
-# ## xii_set_library_properties(<target>)
-# #####################################
-function(xii_set_library_properties TARGET_NAME)
-  xii_pull_all_vars()
-
-  if(XII_CMAKE_PLATFORM_LINUX)
-    # c = libc.so (the C standard library)
-    # m = libm.so (the C standard library math portion)
-    # pthread = libpthread.so (thread support)
-    # rt = librt.so (compiler runtime functions)
-    target_link_libraries(${TARGET_NAME} PRIVATE pthread rt c m)
-
-    if(XII_CMAKE_COMPILER_GCC)
-      # Workaround for: https://bugs.launchpad.net/ubuntu/+source/gcc-5/+bug/1568899
-      target_link_libraries(${TARGET_NAME} PRIVATE -lgcc_s -lgcc)
-    endif()
-  endif()
-endfunction()
-
-# #####################################
-# ## xii_set_application_properties(<target>)
-# #####################################
-function(xii_set_application_properties TARGET_NAME)
-  xii_pull_all_vars()
-
-  # We need to link against pthread and rt last or linker errors will occur.
-  if(XII_CMAKE_PLATFORM_LINUX)
-    target_link_libraries(${TARGET_NAME} PRIVATE pthread rt)
-  endif()
-endfunction()
-
-# #####################################
 # ## xii_make_winmain_executable(<target>)
 # #####################################
 function(xii_make_winmain_executable TARGET_NAME)
@@ -357,6 +330,8 @@ function(xii_glob_source_files ROOT_DIR RESULT_ALL_SOURCES)
     "${ROOT_DIR}/*.xiiPermVar"
     "${ROOT_DIR}/*.xiiShader"
     "${ROOT_DIR}/*.xiiShaderTemplate"
+    "${ROOT_DIR}/*.rml"
+    "${ROOT_DIR}/*.rcss"
   )
 
   set(${RESULT_ALL_SOURCES} ${RELEVANT_FILES} PARENT_SCOPE)
@@ -424,17 +399,10 @@ macro(xii_requires_one_of)
 endmacro()
 
 # #####################################
-# ## xii_requires_windows()
+# ## xii_requires_desktop()
 # #####################################
-macro(xii_requires_windows)
-  xii_requires(XII_CMAKE_PLATFORM_WINDOWS)
-endmacro()
-
-# #####################################
-# ## xii_requires_windows_desktop()
-# #####################################
-macro(xii_requires_windows_desktop)
-  xii_requires(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP)
+macro(xii_requires_desktop)
+  xii_requires_one_of(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP XII_CMAKE_PLATFORM_LINUX)
 endmacro()
 
 # #####################################
@@ -443,8 +411,8 @@ endmacro()
 macro(xii_requires_editor)
   xii_requires_qt()
   xii_requires_renderer()
-  if(XII_CMAKE_PLATFORM_LINUX)
-    xii_requires(XII_EXPERIMENTAL_EDITOR_ON_LINUX)
+  if(NOT XII_CMAKE_PLATFORM_SUPPORTS_EDITOR)
+    return()
   endif()
 endmacro()
 
@@ -574,7 +542,7 @@ function(xii_set_build_types)
 
   set(CMAKE_CONFIGURATION_TYPES "${XII_BUILDTYPENAME_DEBUG};${XII_BUILDTYPENAME_DEV};${XII_BUILDTYPENAME_RELEASE}" CACHE STRING "" FORCE)
 
-    if (XII_BUILDTYPE_ONLY)
+  if(XII_BUILDTYPE_ONLY)
     set(CMAKE_CONFIGURATION_TYPES "${XII_BUILDTYPE_ONLY}" CACHE STRING "" FORCE)
   endif()
 
@@ -601,8 +569,10 @@ function(xii_set_build_types)
 
   # Fix for cl : Command line warning D9025 : overriding '/Ob0' with '/Ob1'
   # We are adding /Ob1 to debug inside ./CMakeUtils/xiiUtilsCppFlags.cmake
-  string(REPLACE "/Ob0" "/Ob1" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
-  string(REPLACE "/Ob0" "/Ob1" CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+  if(XII_CMAKE_COMPILER_GCC)
+    string(REPLACE "/Ob0" "/Ob1" CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+    string(REPLACE "/Ob0" "/Ob1" CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+  endif()
 
   set(CMAKE_CXX_FLAGS_${XII_BUILDTYPENAME_DEBUG_UPPER} ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE)
   set(CMAKE_CXX_FLAGS_${XII_BUILDTYPENAME_DEV_UPPER} ${CMAKE_CXX_FLAGS_RELWITHDEBINFO} CACHE STRING "" FORCE)
@@ -729,4 +699,4 @@ function(xii_get_export_location DST_VAR)
       message(FATAL_ERROR "Unknown CMAKE_BUILD_TYPE: '${CMAKE_BUILD_TYPE}'")
     endif()
   endif()
-endfunction() 
+endfunction()

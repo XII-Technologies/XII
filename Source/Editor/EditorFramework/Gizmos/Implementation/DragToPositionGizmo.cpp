@@ -32,7 +32,7 @@ xiiDragToPositionGizmo::xiiDragToPositionGizmo()
   m_hAlignNZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb2, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/DragArrowNZ.obj");
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiDragToPositionGizmo::UpdateStatusBarText(xiiQtEngineDocumentWindow* pWindow)
@@ -175,7 +175,7 @@ xiiEditorInput xiiDragToPositionGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   const xiiTime tNow = xiiTime::Now();
 
-  if (tNow - m_LastInteraction < xiiTime::Seconds(1.0 / 25.0))
+  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
     return xiiEditorInput::WasExclusivelyHandled;
 
   m_LastInteraction = tNow;
@@ -243,13 +243,13 @@ xiiEditorInput xiiDragToPositionGizmo::DoMouseMoveEvent(QMouseEvent* e)
     alignAxis = m_qStartOrientation * alignAxis;
     alignAxis.Normalize();
 
-    if (alignAxis.GetAngleBetween(res.m_vPickedNormal) > xiiAngle::Degree(179))
+    if (alignAxis.GetAngleBetween(res.m_vPickedNormal) > xiiAngle::MakeFromDegree(179))
     {
-      rot.SetFromAxisAndAngle(m_qStartOrientation * orthoAxis, xiiAngle::Degree(180));
+      rot = xiiQuat::MakeFromAxisAndAngle(m_qStartOrientation * orthoAxis, xiiAngle::MakeFromDegree(180));
     }
     else
     {
-      rot.SetShortestRotation(alignAxis, res.m_vPickedNormal);
+      rot = xiiQuat::MakeShortestRotation(alignAxis, res.m_vPickedNormal);
     }
   }
 

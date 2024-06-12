@@ -2,9 +2,7 @@
 
 #include <Foundation/SimdMath/SimdQuatd.h>
 
-///\todo optimize these methods if needed
-
-void xiiSimdQuatd::SetShortestRotation(const xiiSimdVec4d& vDirFrom, const xiiSimdVec4d& vDirTo)
+xiiSimdQuatd xiiSimdQuatd::MakeShortestRotation(const xiiSimdVec4d& vDirFrom, const xiiSimdVec4d& vDirTo)
 {
   const xiiSimdVec4d v0 = vDirFrom.GetNormalized<3>();
   const xiiSimdVec4d v1 = vDirTo.GetNormalized<3>();
@@ -14,25 +12,24 @@ void xiiSimdQuatd::SetShortestRotation(const xiiSimdVec4d& vDirFrom, const xiiSi
   // if both vectors are identical -> no rotation needed
   if (fDot.IsEqual(1.0, 0.0001))
   {
-    SetIdentity();
-    return;
+    return xiiSimdQuatd::MakeIdentity();
   }
   else if (fDot.IsEqual(-1.0, 0.0001)) // if both vectors are opposing
   {
-    SetFromAxisAndAngle(v0.GetOrthogonalVector().GetNormalized<3>(), xiiAngled::Radian(xiiMath::Pi<double>()));
-    return;
+    return xiiSimdQuatd::MakeFromAxisAndAngle(v0.GetOrthogonalVector().GetNormalized<3>(), xiiAngled::MakeFromRadian(xiiMath::Pi<double>()));
   }
 
   const xiiSimdVec4d  c = v0.CrossRH(v1);
   const xiiSimdDouble s = ((fDot + xiiSimdDouble(1.0)) * xiiSimdDouble(2.0)).GetSqrt();
 
-  m_v = c / s;
-  m_v.SetW(s * xiiSimdDouble(0.5f));
-
-  Normalize();
+  xiiSimdQuatd res;
+  res.m_v = c / s;
+  res.m_v.SetW(s * xiiSimdDouble(0.5f));
+  res.Normalize();
+  return res;
 }
 
-void xiiSimdQuatd::SetSlerp(const xiiSimdQuatd& qFrom, const xiiSimdQuatd& qTo, const xiiSimdDouble& t)
+xiiSimdQuatd xiiSimdQuatd::MakeSlerp(const xiiSimdQuatd& qFrom, const xiiSimdQuatd& qTo, const xiiSimdDouble& t)
 {
   XII_ASSERT_DEBUG((t >= 0.0) && (t <= 1.0), "Invalid lerp factor.");
 
@@ -76,9 +73,10 @@ void xiiSimdQuatd::SetSlerp(const xiiSimdQuatd& qFrom, const xiiSimdQuatd& qTo, 
   if (bFlipSign)
     t1 = -t1;
 
-  m_v = qFrom.m_v * t0 + qTo.m_v * t1;
-
-  Normalize();
+  xiiSimdQuatd res;
+  res.m_v = qFrom.m_v * t0 + qTo.m_v * t1;
+  res.Normalize();
+  return res;
 }
 
 bool xiiSimdQuatd::IsEqualRotation(const xiiSimdQuatd& qOther, const xiiSimdDouble& fEpsilon) const
@@ -91,17 +89,16 @@ bool xiiSimdQuatd::IsEqualRotation(const xiiSimdQuatd& qOther, const xiiSimdDoub
   if (qOther.GetRotationAxisAndAngle(vA2, fA2) == XII_FAILURE)
     return false;
 
-  xiiAngled A1 = xiiAngled::Radian(fA1);
-  xiiAngled A2 = xiiAngled::Radian(fA2);
+  xiiAngled A1 = xiiAngled::MakeFromRadian(fA1);
+  xiiAngled A2 = xiiAngled::MakeFromRadian(fA2);
 
-  if ((A1.IsEqualSimple(A2, xiiAngled::Degree(fEpsilon))) && (vA1.IsEqual(vA2, fEpsilon).AllSet<3>()))
+  if ((A1.IsEqualSimple(A2, xiiAngled::MakeFromDegree(fEpsilon))) && (vA1.IsEqual(vA2, fEpsilon).AllSet<3>()))
     return true;
 
-  if ((A1.IsEqualSimple(-A2, xiiAngled::Degree(fEpsilon))) && (vA1.IsEqual(-vA2, fEpsilon).AllSet<3>()))
+  if ((A1.IsEqualSimple(-A2, xiiAngled::MakeFromDegree(fEpsilon))) && (vA1.IsEqual(-vA2, fEpsilon).AllSet<3>()))
     return true;
 
   return false;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_SimdMath_Implementation_SimdQuatd);

@@ -407,7 +407,7 @@ void xiiQtMaterialAssetDocumentWindow::OnVseConfigChanged(xiiStringView sFilenam
     return;
 
   // lalala ... this is to allow writes to the file to 'hopefully' finish before we try to read it
-  xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+  xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
 
   xiiVisualShaderTypeRegistry::GetSingleton()->UpdateNodeData(sFilename);
 

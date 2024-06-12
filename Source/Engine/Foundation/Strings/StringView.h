@@ -4,6 +4,10 @@
 
 #include <type_traits>
 
+#if XII_ENABLED(XII_INTEROP_STL_STRINGS)
+#  include <string_view>
+#endif
+
 /// Base class which marks a class as containing string data
 struct xiiThisIsAString
 {
@@ -42,21 +46,21 @@ public:
 
   /// \brief Creates a string view from any class / struct which is implicitly convertible to const char *
   template <typename T>
-  XII_ALWAYS_INLINE xiiStringView(const T&& str, typename std::enable_if<std::is_same<T, const char*>::value == false && std::is_convertible<T, const char*>::value, xiiInt32>::type* = 0); // [tested]
+  constexpr XII_ALWAYS_INLINE xiiStringView(const T&& str, typename std::enable_if<std::is_same<T, const char*>::value == false && std::is_convertible<T, const char*>::value, xiiInt32>::type* = 0); // [tested]
 
   /// \brief Creates a string view for the range from pStart to pEnd.
-  xiiStringView(const char* pStart, const char* pEnd); // [tested]
+  constexpr xiiStringView(const char* pStart, const char* pEnd); // [tested]
 
   /// \brief Creates a string view for the range from pStart to pStart + uiLength.
   constexpr xiiStringView(const char* pStart, xiiUInt32 uiLength);
 
   /// \brief Construct a string view from a string literal.
   template <size_t N>
-  xiiStringView(const char (&str)[N]);
+  constexpr xiiStringView(const char (&str)[N]);
 
   /// \brief Construct a string view from a fixed size buffer
   template <size_t N>
-  xiiStringView(char (&str)[N]);
+  constexpr xiiStringView(char (&str)[N]);
 
   /// \brief Advances the start to the next character, unless the end of the range was reached.
   void operator++(); // [tested]
@@ -74,13 +78,13 @@ public:
   ///
   /// The string will be copied to \a tempStorage and the pointer to that is returned.
   /// If you really need the raw pointer to the xiiStringView memory or are absolutely certain that the view points
-  /// to a zero-terminated string, you can use
+  /// to a zero-terminated string, you can use GetStartPointer()
   const char* GetData(xiiStringBuilder& ref_sTempStorage) const; // [tested]
 
   /// \brief Returns the number of bytes from the start position up to its end.
   ///
   /// \note Note that the element count (bytes) may be larger than the number of characters in that string, due to Utf8 encoding.
-  xiiUInt32 GetElementCount() const { return (xiiUInt32)(m_pEnd - m_pStart); } // [tested]
+  xiiUInt32 GetElementCount() const { return m_uiElementCount; } // [tested]
 
   /// \brief Allows to set the start position to a different value.
   ///
@@ -95,7 +99,7 @@ public:
   ///
   /// That means it might point to the '\0' terminator, UNLESS the view only represents a sub-string of a larger string.
   /// Accessing the value at 'GetEnd' has therefore no real use.
-  const char* GetEndPointer() const { return m_pEnd; } // [tested]
+  const char* GetEndPointer() const { return m_pStart + m_uiElementCount; } // [tested]
 
   /// Returns whether the string is an empty string.
   bool IsEmpty() const; // [tested]
@@ -230,12 +234,16 @@ public:
   /// \brief Checks whether the given path has any file extension
   bool HasAnyExtension() const; // [tested]
 
-  /// \brief Checks whether the given path ends with the given extension. szExtension should start with a '.' for performance reasons, but
-  /// it will work without a '.' too.
+  /// \brief Checks whether the given path ends with the given extension. szExtension may start with a '.', but doesn't have to.
+  ///
+  /// The check is case insensitive.
   bool HasExtension(xiiStringView sExtension) const; // [tested]
 
   /// \brief Returns the file extension of the given path. Will be empty, if the path does not end with a proper extension.
-  xiiStringView GetFileExtension() const; // [tested]
+  ///
+  /// If bFullExtension is false, a file named "file.a.b.c" will return "c".
+  /// If bFullExtension is true, a file named "file.a.b.c" will return "a.b.c".
+  xiiStringView GetFileExtension(bool bFullExtension = false) const; // [tested]
 
   /// \brief Returns the file name of a path, excluding the path and extension.
   ///
@@ -274,9 +282,23 @@ public:
   /// Returns an empty string, if the path is not rooted.
   xiiStringView GetRootedPathRootName() const; // [tested]
 
+#if XII_ENABLED(XII_INTEROP_STL_STRINGS)
+  /// \brief Makes the xiiStringView reference the same memory as the const std::string_view&.
+  xiiStringView(const std::string_view& rhs);
+
+  /// \brief Makes the xiiStringView reference the same memory as the const std::string_view&.
+  xiiStringView(const std::string& rhs);
+
+  /// \brief Returns a std::string_view to this string.
+  operator std::string_view() const;
+
+  /// \brief Returns a std::string_view to this string.
+  std::string_view GetAsStdView() const;
+#endif
+
 private:
-  const char* m_pStart = nullptr;
-  const char* m_pEnd   = nullptr;
+  const char* m_pStart         = nullptr;
+  xiiUInt32   m_uiElementCount = 0;
 };
 
 /// \brief String literal suffix to create a xiiStringView.

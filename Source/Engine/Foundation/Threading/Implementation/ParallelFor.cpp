@@ -37,7 +37,7 @@ private:
 };
 
 template <typename IndexType, typename Callback>
-void ParallelForIndexedInternal(IndexType uiStartIndex, IndexType uiNumItems, Callback&& taskCallback, xiiStringView sTaskName, const xiiParallelForParams& params)
+void ParallelForIndexedInternal(IndexType uiStartIndex, IndexType uiNumItems, const Callback&& taskCallback, xiiStringView sTaskName, const xiiParallelForParams& params, xiiTaskNesting taskNesting)
 {
   using Task = IndexedTask<IndexType, Callback>;
 
@@ -51,7 +51,7 @@ void ParallelForIndexedInternal(IndexType uiStartIndex, IndexType uiNumItems, Ca
     // If we have not exceeded the threading threshold we use serial execution
 
     Task indexedTask(uiStartIndex, uiNumItems, std::move(taskCallback), uiNumItems);
-    indexedTask.ConfigureTask(sTaskName, xiiTaskNesting::Never);
+    indexedTask.ConfigureTask(sTaskName, taskNesting);
 
     XII_PROFILE_SCOPE(sTaskName);
     indexedTask.Execute();
@@ -65,7 +65,7 @@ void ParallelForIndexedInternal(IndexType uiStartIndex, IndexType uiNumItems, Ca
     xiiAllocatorBase* pAllocator = (params.m_pTaskAllocator != nullptr) ? params.m_pTaskAllocator : xiiFoundation::GetDefaultAllocator();
 
     xiiSharedPtr<Task> pIndexedTask = XII_NEW(pAllocator, Task, uiStartIndex, uiNumItems, std::move(taskCallback), static_cast<IndexType>(uiItemsPerInvocation));
-    pIndexedTask->ConfigureTask(sTaskName, xiiTaskNesting::Never);
+    pIndexedTask->ConfigureTask(sTaskName, taskNesting);
 
     pIndexedTask->SetMultiplicity(uiMultiplicity);
     xiiTaskGroupID taskGroupId = xiiTaskSystem::StartSingleTask(pIndexedTask, xiiTaskPriority::EarlyThisFrame);
@@ -126,14 +126,14 @@ void xiiParallelForParams::DetermineThreading(xiiUInt64 uiNumItemsToExecute, xii
   }
 }
 
-void xiiTaskSystem::ParallelForIndexed(xiiUInt32 uiStartIndex, xiiUInt32 uiNumItems, xiiParallelForIndexedFunction32 taskCallback, xiiStringView sTaskName, const xiiParallelForParams& params)
+void xiiTaskSystem::ParallelForIndexed(xiiUInt32 uiStartIndex, xiiUInt32 uiNumItems, xiiParallelForIndexedFunction32 taskCallback, xiiStringView sTaskName, xiiTaskNesting taskNesting, const xiiParallelForParams& params)
 {
-  ParallelForIndexedInternal<xiiUInt32, xiiParallelForIndexedFunction32>(uiStartIndex, uiNumItems, std::move(taskCallback), sTaskName, params);
+  ParallelForIndexedInternal<xiiUInt32, xiiParallelForIndexedFunction32>(uiStartIndex, uiNumItems, std::move(taskCallback), sTaskName, params, taskNesting);
 }
 
-void xiiTaskSystem::ParallelForIndexed(xiiUInt64 uiStartIndex, xiiUInt64 uiNumItems, xiiParallelForIndexedFunction64 taskCallback, xiiStringView sTaskName, const xiiParallelForParams& params)
+void xiiTaskSystem::ParallelForIndexed(xiiUInt64 uiStartIndex, xiiUInt64 uiNumItems, xiiParallelForIndexedFunction64 taskCallback, xiiStringView sTaskName, xiiTaskNesting taskNesting, const xiiParallelForParams& params)
 {
-  ParallelForIndexedInternal<xiiUInt64, xiiParallelForIndexedFunction64>(uiStartIndex, uiNumItems, std::move(taskCallback), sTaskName, params);
+  ParallelForIndexedInternal<xiiUInt64, xiiParallelForIndexedFunction64>(uiStartIndex, uiNumItems, std::move(taskCallback), sTaskName, params, taskNesting);
 }
 
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_ParallelFor);

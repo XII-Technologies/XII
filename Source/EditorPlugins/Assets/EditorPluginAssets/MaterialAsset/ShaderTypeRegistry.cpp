@@ -436,7 +436,7 @@ public:
       desc.m_Flags           = xiiTypeFlags::Phantom | xiiTypeFlags::Abstract | xiiTypeFlags::Class;
       desc.m_uiTypeVersion   = 1;
 
-      context.RegisterObject(xiiUuid::StableUuidForString(desc.m_sTypeName.GetData()), xiiGetStaticRTTI<xiiReflectedTypeDescriptor>(), &desc);
+      context.RegisterObject(xiiUuid::MakeStableUuidFromString(desc.m_sTypeName.GetData()), xiiGetStaticRTTI<xiiReflectedTypeDescriptor>(), &desc);
       rttiConverter.AddObjectToGraph(xiiGetStaticRTTI<xiiReflectedTypeDescriptor>(), &desc);
     }
   }

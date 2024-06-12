@@ -44,6 +44,13 @@
 
 #endif
 
+#if defined(BUILDSYSTEM_BUILDTYPE_Debug)
+#  undef XII_MATH_CHECK_FOR_NAN
+#  define XII_MATH_CHECK_FOR_NAN XII_ON
+#  undef XII_USE_STRING_VALIDATION
+#  define XII_USE_STRING_VALIDATION XII_ON
+#endif
+
 /// Whether game objects compute and store their velocity since the last frame (increases object size)
 #define XII_GAMEOBJECT_VELOCITY XII_ON
 

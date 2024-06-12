@@ -342,7 +342,7 @@ xiiStatus xiiDocumentManager::CloneDocument(xiiStringView sPath, xiiStringView s
   }
   else
   {
-    seedGuid.CreateNewUuid();
+    seedGuid        = xiiUuid::MakeUuid();
     inout_cloneGuid = documentId;
     inout_cloneGuid.CombineWithSeed(seedGuid);
   }

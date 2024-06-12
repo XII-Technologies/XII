@@ -86,7 +86,7 @@ void xiiCVar::PluginEventHandler(const xiiPluginEvent& EventData)
       // After we loaded a new plugin, but before it is initialized, find all new CVars and assign them to that new plugin.
       AssignSubSystemPlugin(EventData.m_sPluginBinary);
 
-      // Aow load the state of all CVars.
+      // Now load the state of all CVars.
       LoadCVars();
     }
     break;
@@ -103,13 +103,9 @@ void xiiCVar::PluginEventHandler(const xiiPluginEvent& EventData)
 }
 
 xiiCVar::xiiCVar(xiiStringView sName, xiiBitflags<xiiCVarFlags> Flags, xiiStringView sDescription) :
-  m_sName(sName), m_Flags(Flags), m_sDescription(sDescription)
+  m_sName(sName), m_sDescription(sDescription), m_Flags(Flags)
 {
-  // 'RequiresRestart' only works together with 'Save'.
-  if (m_Flags.IsAnySet(xiiCVarFlags::RequiresRestart))
-    m_Flags.Add(xiiCVarFlags::Save);
-
-  XII_ASSERT_DEV(!sDescription.IsEmpty(), "Please add a useful description for CVar '{}'.", sName);
+  XII_ASSERT_DEV(!m_sDescription.IsEmpty(), "Please add a useful description for CVar '{}'.", sName);
 }
 
 xiiCVar* xiiCVar::FindCVarByName(xiiStringView sName)
@@ -211,31 +207,31 @@ void xiiCVar::SaveCVarsToFileInternal(xiiStringView path, const xiiDynamicArray<
         case xiiCVarType::Int:
         {
           xiiCVarInt* pInt = (xiiCVarInt*)pCVar;
-          sTemp.SetFormat("{0} = {1}\n", pCVar->GetName(), pInt->GetValue(xiiCVarValue::Restart));
+          sTemp.SetFormat("{0} = {1}\n", pCVar->GetName(), pInt->GetValue(xiiCVarValue::DelayedSync));
         }
         break;
         case xiiCVarType::Bool:
         {
           xiiCVarBool* pBool = (xiiCVarBool*)pCVar;
-          sTemp.SetFormat("{0} = {1}\n", pCVar->GetName(), pBool->GetValue(xiiCVarValue::Restart) ? "true" : "false");
+          sTemp.SetFormat("{0} = {1}\n", pCVar->GetName(), pBool->GetValue(xiiCVarValue::DelayedSync) ? "true" : "false");
         }
         break;
         case xiiCVarType::Float:
         {
           xiiCVarFloat* pFloat = (xiiCVarFloat*)pCVar;
-          sTemp.SetFormat("{0} = {1}\n", pCVar->GetName(), pFloat->GetValue(xiiCVarValue::Restart));
+          sTemp.SetFormat("{0} = {1}\n", pCVar->GetName(), pFloat->GetValue(xiiCVarValue::DelayedSync));
         }
         break;
         case xiiCVarType::Double:
         {
           xiiCVarDouble* pDouble = (xiiCVarDouble*)pCVar;
-          sTemp.SetFormat("{0} = {1}\n", pCVar->GetName(), pDouble->GetValue(xiiCVarValue::Restart));
+          sTemp.SetFormat("{0} = {1}\n", pCVar->GetName(), pDouble->GetValue(xiiCVarValue::DelayedSync));
         }
         break;
         case xiiCVarType::String:
         {
           xiiCVarString* pString = (xiiCVarString*)pCVar;
-          sTemp.SetFormat("{0} = \"{1}\"\n", pCVar->GetName(), pString->GetValue(xiiCVarValue::Restart));
+          sTemp.SetFormat("{0} = \"{1}\"\n", pCVar->GetName(), pString->GetValue(xiiCVarValue::DelayedSync));
         }
         break;
         default:
@@ -465,7 +461,7 @@ void xiiCVar::LoadCVarsFromFileInternal(xiiStringView path, const xiiDynamicArra
         }
 
         if (bSetAsCurrentValue)
-          pCVar->SetToRestartValue();
+          pCVar->SetToDelayedSyncValue();
       }
     }
   }
@@ -559,7 +555,7 @@ void xiiCVar::LoadCVarsFromCommandLine(bool bOnlyNewOnes /*= true*/, bool bSetAs
       }
 
       if (bSetAsCurrentValue)
-        pCVar->SetToRestartValue();
+        pCVar->SetToDelayedSyncValue();
     }
   }
 }

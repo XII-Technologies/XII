@@ -982,10 +982,7 @@ void xiiQtEventTrackWidget::ExecMultiSelection(xiiHybridArray<SelectedPoint, 32>
   }
 }
 
-bool xiiQtEventTrackWidget::CombineSelection(
-  xiiHybridArray<SelectedPoint, 32>&       inout_Selection,
-  const xiiHybridArray<SelectedPoint, 32>& change,
-  bool                                     add)
+bool xiiQtEventTrackWidget::CombineSelection(xiiHybridArray<SelectedPoint, 32>& inout_Selection, const xiiHybridArray<SelectedPoint, 32>& change, bool add)
 {
   bool bChange = false;
 
@@ -1014,8 +1011,7 @@ void xiiQtEventTrackWidget::ComputeSelectionRect()
   if (m_SelectedPoints.GetCount() < 2)
     return;
 
-  xiiBoundingBox bbox;
-  bbox.SetInvalid();
+  xiiBoundingBox bbox = xiiBoundingBox::MakeInvalid();
 
   // TODO: properly implement the Y value
   // for (const auto& cpSel : m_SelectedPoints)

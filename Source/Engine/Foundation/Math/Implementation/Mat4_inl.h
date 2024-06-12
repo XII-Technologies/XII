@@ -5,10 +5,11 @@
 template <typename Type>
 xiiMat4Template<Type>::xiiMat4Template()
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   const Type TypeNaN = xiiMath::NaN<Type>();
-  SetElements(TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN, TypeNaN);
+  for (xiiUInt32 i = 0; i < 16; ++i)
+    m_fElementsCM[i] = TypeNaN;
 #endif
 }
 
@@ -34,7 +35,22 @@ xiiMat4Template<Type>::xiiMat4Template(const Type* const pData, xiiMatrixLayout:
 template <typename Type>
 xiiMat4Template<Type>::xiiMat4Template(Type c1r1, Type c2r1, Type c3r1, Type c4r1, Type c1r2, Type c2r2, Type c3r2, Type c4r2, Type c1r3, Type c2r3, Type c3r3, Type c4r3, Type c1r4, Type c2r4, Type c3r4, Type c4r4)
 {
-  SetElements(c1r1, c2r1, c3r1, c4r1, c1r2, c2r2, c3r2, c4r2, c1r3, c2r3, c3r3, c4r3, c1r4, c2r4, c3r4, c4r4);
+  Element(0, 0) = c1r1;
+  Element(1, 0) = c2r1;
+  Element(2, 0) = c3r1;
+  Element(3, 0) = c4r1;
+  Element(0, 1) = c1r2;
+  Element(1, 1) = c2r2;
+  Element(2, 1) = c3r2;
+  Element(3, 1) = c4r2;
+  Element(0, 2) = c1r3;
+  Element(1, 2) = c2r3;
+  Element(2, 2) = c3r3;
+  Element(3, 2) = c4r3;
+  Element(0, 3) = c1r4;
+  Element(1, 3) = c2r4;
+  Element(2, 3) = c3r4;
+  Element(3, 3) = c4r4;
 }
 
 template <typename Type>
@@ -44,34 +60,147 @@ xiiMat4Template<Type>::xiiMat4Template(const xiiMat3Template<Type>& mRotation, c
 }
 
 template <typename Type>
-const xiiMat4Template<Type> xiiMat4Template<Type>::IdentityMatrix()
+xiiMat4Template<Type> xiiMat4Template<Type>::MakeZero()
 {
-  return xiiMat4Template(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
+  xiiMat4Template<Type> res;
+
+  for (xiiUInt32 i = 0; i < XII_ARRAY_SIZE(res.m_fElementsCM); ++i)
+    res.m_fElementsCM[i] = 0.0f;
+
+  return res;
 }
 
 template <typename Type>
-const xiiMat4Template<Type> xiiMat4Template<Type>::ZeroMatrix()
+xiiMat4Template<Type> xiiMat4Template<Type>::MakeIdentity()
 {
-  return xiiMat4Template(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  xiiMat4Template<Type> res;
+  res.m_fElementsCM[0]  = 1.0f;
+  res.m_fElementsCM[1]  = 0.0f;
+  res.m_fElementsCM[2]  = 0.0f;
+  res.m_fElementsCM[3]  = 0.0f;
+  res.m_fElementsCM[4]  = 0.0f;
+  res.m_fElementsCM[5]  = 1.0f;
+  res.m_fElementsCM[6]  = 0.0f;
+  res.m_fElementsCM[7]  = 0.0f;
+  res.m_fElementsCM[8]  = 0.0f;
+  res.m_fElementsCM[9]  = 0.0f;
+  res.m_fElementsCM[10] = 1.0f;
+  res.m_fElementsCM[11] = 0.0f;
+  res.m_fElementsCM[12] = 0.0f;
+  res.m_fElementsCM[13] = 0.0f;
+  res.m_fElementsCM[14] = 0.0f;
+  res.m_fElementsCM[15] = 1.0f;
+  return res;
 }
 
 template <typename Type>
-void xiiMat4Template<Type>::SetFromArray(const Type* const pData, xiiMatrixLayout::Enum layout)
+xiiMat4Template<Type> xiiMat4Template<Type>::MakeFromRowMajorArray(const Type* const pData)
 {
-  if (layout == xiiMatrixLayout::ColumnMajor)
+  xiiMat4Template<Type> res;
+  for (int i = 0; i < 4; ++i)
   {
-    xiiMemoryUtils::Copy(m_fElementsCM, pData, 16);
+    res.Element(0, i) = pData[i * 4 + 0];
+    res.Element(1, i) = pData[i * 4 + 1];
+    res.Element(2, i) = pData[i * 4 + 2];
+    res.Element(3, i) = pData[i * 4 + 3];
   }
-  else
-  {
-    for (xiiInt32 i = 0; i < 4; ++i)
-    {
-      Element(0, i) = pData[i * 4 + 0];
-      Element(1, i) = pData[i * 4 + 1];
-      Element(2, i) = pData[i * 4 + 2];
-      Element(3, i) = pData[i * 4 + 3];
-    }
-  }
+  return res;
+}
+
+template <typename Type>
+xiiMat4Template<Type> xiiMat4Template<Type>::MakeFromColumnMajorArray(const Type* const pData)
+{
+  xiiMat4Template<Type> res;
+  xiiMemoryUtils::Copy(res.m_fElementsCM, pData, 16);
+  return res;
+}
+
+template <typename Type>
+xiiMat4Template<Type> xiiMat4Template<Type>::MakeFromValues(Type c1r1, Type c2r1, Type c3r1, Type c4r1, Type c1r2, Type c2r2, Type c3r2, Type c4r2, Type c1r3, Type c2r3, Type c3r3, Type c4r3, Type c1r4, Type c2r4, Type c3r4, Type c4r4)
+{
+  xiiMat4Template<Type> res;
+  res.Element(0, 0) = c1r1;
+  res.Element(1, 0) = c2r1;
+  res.Element(2, 0) = c3r1;
+  res.Element(3, 0) = c4r1;
+  res.Element(0, 1) = c1r2;
+  res.Element(1, 1) = c2r2;
+  res.Element(2, 1) = c3r2;
+  res.Element(3, 1) = c4r2;
+  res.Element(0, 2) = c1r3;
+  res.Element(1, 2) = c2r3;
+  res.Element(2, 2) = c3r3;
+  res.Element(3, 2) = c4r3;
+  res.Element(0, 3) = c1r4;
+  res.Element(1, 3) = c2r4;
+  res.Element(2, 3) = c3r4;
+  res.Element(3, 3) = c4r4;
+  return res;
+}
+
+template <typename Type>
+xiiMat4Template<Type> xiiMat4Template<Type>::MakeTranslation(const xiiVec3Template<Type>& vTranslation)
+{
+  return xiiMat4Template<Type>::MakeFromValues(1, 0, 0, vTranslation.x, 0, 1, 0, vTranslation.y, 0, 0, 1, vTranslation.z, 0, 0, 0, 1);
+}
+
+
+template <typename Type>
+xiiMat4Template<Type> xiiMat4Template<Type>::MakeTransformation(const xiiMat3Template<Type>& mRotation, const xiiVec3Template<Type>& vTranslation)
+{
+  xiiMat4Template<Type> res;
+  res.SetTransformationMatrix(mRotation, vTranslation);
+  return res;
+}
+
+template <typename Type>
+xiiMat4Template<Type> xiiMat4Template<Type>::MakeScaling(const xiiVec3Template<Type>& vScale)
+{
+  xiiMat4Template<Type> res;
+  res.Element(0, 0) = vScale.x;
+  res.Element(1, 0) = 0;
+  res.Element(2, 0) = 0;
+  res.Element(3, 0) = 0;
+  res.Element(0, 1) = 0;
+  res.Element(1, 1) = vScale.y;
+  res.Element(2, 1) = 0;
+  res.Element(3, 1) = 0;
+  res.Element(0, 2) = 0;
+  res.Element(1, 2) = 0;
+  res.Element(2, 2) = vScale.z;
+  res.Element(3, 2) = 0;
+  res.Element(0, 3) = 0;
+  res.Element(1, 3) = 0;
+  res.Element(2, 3) = 0;
+  res.Element(3, 3) = 1;
+  return res;
+}
+
+template <typename Type>
+xiiMat4Template<Type> xiiMat4Template<Type>::MakeRotationX(xiiAngleTemplate<Type> angle)
+{
+  const Type fSin = xiiMath::Sin(angle);
+  const Type fCos = xiiMath::Cos(angle);
+
+  return xiiMat4Template<Type>::MakeFromValues(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, fCos, -fSin, 0.0f, 0.0f, fSin, fCos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+template <typename Type>
+xiiMat4Template<Type> xiiMat4Template<Type>::MakeRotationY(xiiAngleTemplate<Type> angle)
+{
+  const Type fSin = xiiMath::Sin(angle);
+  const Type fCos = xiiMath::Cos(angle);
+
+  return xiiMat4Template<Type>::MakeFromValues(fCos, 0.0f, fSin, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -fSin, 0.0f, fCos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+}
+
+template <typename Type>
+xiiMat4Template<Type> xiiMat4Template<Type>::MakeRotationZ(xiiAngleTemplate<Type> angle)
+{
+  const Type fSin = xiiMath::Sin(angle);
+  const Type fCos = xiiMath::Cos(angle);
+
+  return xiiMat4Template<Type>::MakeFromValues(fCos, -fSin, 0.0f, 0.0f, fSin, fCos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 template <typename Type>
@@ -93,7 +222,7 @@ void xiiMat4Template<Type>::GetAsArray(Type* out_pData, xiiMatrixLayout::Enum la
   }
   else
   {
-    for (xiiInt32 i = 0; i < 4; ++i)
+    for (int i = 0; i < 4; ++i)
     {
       out_pData[i * 4 + 0] = Element(0, i);
       out_pData[i * 4 + 1] = Element(1, i);
@@ -104,76 +233,15 @@ void xiiMat4Template<Type>::GetAsArray(Type* out_pData, xiiMatrixLayout::Enum la
 }
 
 template <typename Type>
-void xiiMat4Template<Type>::SetElements(Type c1r1, Type c2r1, Type c3r1, Type c4r1, Type c1r2, Type c2r2, Type c3r2, Type c4r2, Type c1r3, Type c2r3, Type c3r3, Type c4r3, Type c1r4, Type c2r4, Type c3r4, Type c4r4)
-{
-  Element(0, 0) = c1r1;
-  Element(1, 0) = c2r1;
-  Element(2, 0) = c3r1;
-  Element(3, 0) = c4r1;
-  Element(0, 1) = c1r2;
-  Element(1, 1) = c2r2;
-  Element(2, 1) = c3r2;
-  Element(3, 1) = c4r2;
-  Element(0, 2) = c1r3;
-  Element(1, 2) = c2r3;
-  Element(2, 2) = c3r3;
-  Element(3, 2) = c4r3;
-  Element(0, 3) = c1r4;
-  Element(1, 3) = c2r4;
-  Element(2, 3) = c3r4;
-  Element(3, 3) = c4r4;
-}
-
-template <typename Type>
 void xiiMat4Template<Type>::SetZero()
 {
-  SetElements(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  *this = MakeZero();
 }
 
 template <typename Type>
 void xiiMat4Template<Type>::SetIdentity()
 {
-  SetElements(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1);
-}
-
-template <typename Type>
-void xiiMat4Template<Type>::SetTranslationMatrix(const xiiVec3Template<Type>& vTranslation)
-{
-  SetElements(1, 0, 0, vTranslation.x, 0, 1, 0, vTranslation.y, 0, 0, 1, vTranslation.z, 0, 0, 0, 1);
-}
-
-template <typename Type>
-void xiiMat4Template<Type>::SetScalingMatrix(const xiiVec3Template<Type>& s)
-{
-  SetElements(s.x, 0, 0, 0, 0, s.y, 0, 0, 0, 0, s.z, 0, 0, 0, 0, 1);
-}
-
-template <typename Type>
-void xiiMat4Template<Type>::SetRotationMatrixX(xiiAngleTemplate<Type> angle)
-{
-  const Type fSin = xiiMath::Sin(angle);
-  const Type fCos = xiiMath::Cos(angle);
-
-  SetElements(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, fCos, -fSin, 0.0f, 0.0f, fSin, fCos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-}
-
-template <typename Type>
-void xiiMat4Template<Type>::SetRotationMatrixY(xiiAngleTemplate<Type> angle)
-{
-  const Type fSin = xiiMath::Sin(angle);
-  const Type fCos = xiiMath::Cos(angle);
-
-
-  SetElements(fCos, 0.0f, fSin, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -fSin, 0.0f, fCos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
-}
-
-template <typename Type>
-void xiiMat4Template<Type>::SetRotationMatrixZ(xiiAngleTemplate<Type> angle)
-{
-  const Type fSin = xiiMath::Sin(angle);
-  const Type fCos = xiiMath::Cos(angle);
-
-  SetElements(fCos, -fSin, 0.0f, 0.0f, fSin, fCos, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+  *this = MakeIdentity();
 }
 
 template <typename Type>
@@ -192,7 +260,7 @@ const xiiMat4Template<Type> xiiMat4Template<Type>::GetTranspose() const
 {
   XII_NAN_ASSERT(this);
 
-  return xiiMat4Template(m_fElementsCM, xiiMatrixLayout::RowMajor);
+  return xiiMat4Template::MakeFromRowMajorArray(m_fElementsCM);
 }
 
 template <typename Type>
@@ -287,10 +355,7 @@ const xiiVec3Template<Type> xiiMat4Template<Type>::TransformPosition(const xiiVe
 }
 
 template <typename Type>
-void xiiMat4Template<Type>::TransformPosition(
-  xiiVec3Template<Type>* pV,
-  xiiUInt32              uiNumVectors,
-  xiiUInt32              uiStride /* = sizeof(xiiVec3Template) */) const
+void xiiMat4Template<Type>::TransformPosition(xiiVec3Template<Type>* pV, xiiUInt32 uiNumVectors, xiiUInt32 uiStride /* = sizeof(xiiVec3Template) */) const
 {
   XII_ASSERT_DEBUG(pV != nullptr, "Array must not be nullptr.");
   XII_ASSERT_DEBUG(uiStride >= sizeof(xiiVec3Template<Type>), "Data must not overlap.");

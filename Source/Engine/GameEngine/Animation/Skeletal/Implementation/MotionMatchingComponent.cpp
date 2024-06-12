@@ -157,7 +157,7 @@
 //  dir.x = r - l;
 //  dir.z = 0;
 //
-//  // dir.NormalizeIfNotZero(xiiVec3::ZeroVector());
+//  // dir.NormalizeIfNotZero(xiiVec3::MakeZero());
 //  return dir * 3.0f;
 //}
 //
@@ -168,10 +168,10 @@
 //  xiiInputManager::GetInputActionState("mm", "turnleft", &tl);
 //  xiiInputManager::GetInputActionState("mm", "turnright", &tr);
 //
-//  const xiiAngle turn = xiiAngle::Degree((tr - tl) * 90.0f);
+//  const xiiAngle turn = xiiAngle::MakeFromDegree((tr - tl) * 90.0f);
 //
 //  xiiQuat q;
-//  q.SetFromAxisAndAngle(xiiVec3(0, 0, 1), turn);
+//  q = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), turn);
 //  return q;
 //}
 //
@@ -276,7 +276,7 @@
 //  if (uiLeftFootJoint != xiiInvalidJointIndex && uiRightFootJoint != xiiInvalidJointIndex)
 //  {
 //    xiiTransform tLeft, tRight;
-//    xiiBoundingSphere sphere(xiiVec3::ZeroVector(), 0.5f);
+//    xiiBoundingSphere sphere(xiiVec3::MakeZero(), 0.5f);
 //
 //    tLeft.SetFromMat4(m_AnimationPose.GetTransform(uiLeftFootJoint));
 //    tRight.SetFromMat4(m_AnimationPose.GetTransform(uiRightFootJoint));
@@ -443,7 +443,7 @@
 //    md.m_vLeftFootVelocity.SetZero();
 //    md.m_vRightFootVelocity.SetZero();
 //    md.m_vRootVelocity =
-//      animClip.HasRootMotion() ? fRootMotionToVelocity * animClip.GetJointKeyframes(uiRootJoint)[uiFrameIdx].m_vPosition : xiiVec3::ZeroVector();
+//      animClip.HasRootMotion() ? fRootMotionToVelocity * animClip.GetJointKeyframes(uiRootJoint)[uiFrameIdx].m_vPosition : xiiVec3::MakeZero();
 //  }
 //
 //  // now compute the velocity

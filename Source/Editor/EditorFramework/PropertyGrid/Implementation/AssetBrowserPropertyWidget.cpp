@@ -331,7 +331,7 @@ void xiiQtAssetPropertyWidget::OnCopyAssetGuid()
   mimeData->setText(QString::fromUtf8(sGuid.GetData()));
   clipboard->setMimeData(mimeData);
 
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied asset GUID: {}", sGuid), xiiTime::Seconds(5));
+  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied asset GUID: {}", sGuid), xiiTime::MakeFromSeconds(5));
 }
 
 void xiiQtAssetPropertyWidget::OnCreateNewAsset()

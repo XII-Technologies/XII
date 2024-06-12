@@ -72,7 +72,7 @@ write_data:
 
   if (out_pWasWrittenTo)
   {
-    *out_pWasWrittenTo = false;
+    *out_pWasWrittenTo = true;
   }
 
   m_sOutputFile.Clear();

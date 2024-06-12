@@ -31,7 +31,7 @@ void xiiQtFileWidget::ResetStats()
   m_bUpdateTable = true;
   m_FileOps.Clear();
   m_FileOps.Reserve(10000);
-  m_LastTableUpdate = xiiTime::Seconds(0);
+  m_LastTableUpdate = xiiTime::MakeFromSeconds(0);
 
   Table->clear();
 
@@ -221,7 +221,7 @@ void xiiQtFileWidget::ProcessTelemetry(void* pUnuseed)
 
     double dTime = 0.0;
     Msg.GetReader() >> dTime;
-    data.m_BlockedDuration += xiiTime::Seconds(dTime);
+    data.m_BlockedDuration += xiiTime::MakeFromSeconds(dTime);
 
     xiiUInt8 uiThreadTypes = 0;
     Msg.GetReader() >> uiThreadTypes;
@@ -325,7 +325,7 @@ void xiiQtFileWidget::UpdateTable()
   if (!m_bUpdateTable)
     return;
 
-  if (xiiTime::Now() - m_LastTableUpdate < xiiTime::Seconds(0.3))
+  if (xiiTime::Now() - m_LastTableUpdate < xiiTime::MakeFromSeconds(0.3))
     return;
 
   m_LastTableUpdate = xiiTime::Now();

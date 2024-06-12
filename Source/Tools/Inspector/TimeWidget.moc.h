@@ -59,7 +59,7 @@ private:
 
     bool             m_bDisplay    = true;
     xiiUInt8         m_uiColor     = 0xFF;
-    xiiTime          m_MinTimestep = xiiTime::Seconds(60.0);
+    xiiTime          m_MinTimestep = xiiTime::MakeFromSeconds(60.0);
     xiiTime          m_MaxTimestep;
     QListWidgetItem* m_pListItem = nullptr;
   };

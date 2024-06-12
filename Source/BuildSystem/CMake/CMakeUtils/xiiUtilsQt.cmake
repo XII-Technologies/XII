@@ -19,7 +19,7 @@ endmacro()
 macro(xii_find_qt)
   xii_prepare_find_qt()
 
-  set(XII_QT_COMPONENTS 
+  set(XII_QT_COMPONENTS
     Widgets
     Core
     Gui
@@ -28,7 +28,7 @@ macro(xii_find_qt)
     Svg
   )
 
-  # XII requires at least Qt 6.3 because earlier versions have a bug which prevents the 3d viewport in the 
+  # XII requires at least Qt 6.3 because earlier versions have a bug which prevents the 3d viewport in the
   # Editor from working correctly.
   SET(XII_REQUIRED_QT_VERSION "6.3")
 
@@ -41,7 +41,7 @@ macro(xii_find_qt)
   endif()
 
   message(STATUS "Found Qt6 Version ${Qt6_VERSION} in ${Qt6_DIR}")
-  
+
   mark_as_advanced(FORCE Qt6_DIR)
   mark_as_advanced(FORCE Qt6Core_DIR)
   mark_as_advanced(FORCE Qt6CoreTools_DIR)
@@ -56,16 +56,13 @@ macro(xii_find_qt)
   mark_as_advanced(FORCE WINDEPLOYQT_EXECUTABLE)
   mark_as_advanced(FORCE QT_ADDITIONAL_HOST_PACKAGES_PREFIX_PATH)
   mark_as_advanced(FORCE QT_ADDITIONAL_PACKAGES_PREFIX_PATH)
-  
-  if(XII_CMAKE_PLATFORM_WINDOWS AND XII_CMAKE_COMPILER_CLANG)
-    # The qt6 interface compile options contain msvc specific flags which don't exist for clang.
-    set_target_properties(Qt6::Platform PROPERTIES INTERFACE_COMPILE_OPTIONS "")
-    
-    # Qt6 link options include '-NXCOMPAT' which does not exist on clang.
-    get_target_property(QtLinkOptions Qt6::PlatformCommonInternal INTERFACE_LINK_OPTIONS)
-    string(REPLACE "-NXCOMPAT;" "" QtLinkOptions "${QtLinkOptions}")
-    set_target_properties(Qt6::PlatformCommonInternal PROPERTIES INTERFACE_LINK_OPTIONS ${QtLinkOptions})
+
+  if (XII_ENABLE_QT_SUPPORT)
+    if (COMMAND xii_platformhook_find_qt)
+      xii_platformhook_find_qt()
+    endif()
   endif()
+
 endmacro()
 
 # #####################################
@@ -75,57 +72,44 @@ function(xii_prepare_find_qt)
   set(XII_CACHED_QT_DIR "XII_CACHED_QT_DIR-NOTFOUND" CACHE STRING "")
   mark_as_advanced(XII_CACHED_QT_DIR FORCE)
 
-  # #####################
-  # # Download Qt package
-  xii_pull_compiler_and_architecture_vars()
-  xii_pull_platform_vars()
-  xii_pull_config_vars()
+  if (XII_ENABLE_QT_SUPPORT)
+    # #####################
+    # # Download Qt package
+    xii_pull_compiler_and_architecture_vars()
+    xii_pull_platform_vars()
+    xii_pull_config_vars()
 
-  # Currently only implemented for x64
-  if(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP AND XII_CMAKE_ARCHITECTURE_64BIT)
-    # Upgrade from Qt5 to Qt6 if the XII_QT_DIR points to a previously automatically downloaded Qt5 package.
-    if("${XII_QT_DIR}" MATCHES ".*Qt-5\\.13\\.0-vs141-x64")
-      set(XII_QT_DIR "XII_QT_DIR-NOTFOUND" CACHE PATH "Directory of the Qt installation" FORCE)
-    endif()
-  
-    if(XII_CMAKE_ARCHITECTURE_64BIT)
-      set(XII_SDK_VERSION "${XII_CONFIG_QT_WINX64_VERSION}")
-      set(XII_SDK_URL "${XII_CONFIG_QT_WINX64_URL}")
+    if (COMMAND xii_platformhook_download_qt)
+      xii_platformhook_download_qt()
     endif()
 
-    if((XII_QT_DIR STREQUAL "XII_QT_DIR-NOTFOUND") OR(XII_QT_DIR STREQUAL ""))
-      xii_download_and_extract("${XII_SDK_URL}" "${CMAKE_BINARY_DIR}" "${XII_SDK_VERSION}")
+    # # Download Qt package
+    # #####################
+    if(NOT "${XII_QT_DIR}" STREQUAL "${XII_CACHED_QT_DIR}")
+      # Need to reset qt vars now so that 'find_package' is re-executed
+      set(XII_CACHED_QT_DIR ${XII_QT_DIR} CACHE STRING "" FORCE)
 
-      set(XII_QT_DIR "${CMAKE_BINARY_DIR}/${XII_SDK_VERSION}" CACHE PATH "Directory of the Qt installation" FORCE)
+      message(STATUS "Qt-dir has changed, clearing cached Qt paths")
+
+      # Clear cached qt dirs
+      set(Qt6_DIR "Qt6_DIR-NOTFOUND" CACHE PATH "" FORCE)
+      set(Qt6Core_DIR "Qt6Core_DIR-NOTFOUND" CACHE PATH "" FORCE)
+      set(Qt6CoreTools_DIR "Qt6CoreTools_DIR-NOTFOUND" CACHE PATH "" FORCE)
+      set(Qt6Gui_DIR "Qt6Gui_DIR-NOTFOUND" CACHE PATH "" FORCE)
+      set(Qt6GuiTools_DIR "Qt6GuiTools_DIR-NOTFOUND" CACHE PATH "" FORCE)
+      set(Qt6Widgets_DIR "Qt6Widgets_DIR-NOTFOUND" CACHE PATH "" FORCE)
+      set(Qt6WidgetsTools_DIR "Qt6WidgetTools_DIR-NOTFOUND" CACHE PATH "" FORCE)
+      set(Qt6Network_DIR "Qt6Network_DIR-NOTFOUND" CACHE PATH "" FORCE)
+      set(Qt6Svg_DIR "Qt6Svg_DIR-NOTFOUND" CACHE PATH "" FORCE)
+      set(Qt6ZlibPrivate_DIR "Qt6ZlibPrivate_DIR-NOTFOUND" CACHE PATH "" FORCE)
+      set(Qt6EntryPointPrivate_DIR "Qt6EntryPointPrivate_DIR-NOTFOUND" CACHE PATH "" FORCE)
+      set(WINDEPLOYQT_EXECUTABLE "WINDEPLOYQT_EXECUTABLE-NOTFOUND" CACHE FILEPATH "" FORCE)
     endif()
-  endif()
 
-  # # Download Qt package
-  # #####################
-  if(NOT "${XII_QT_DIR}" STREQUAL "${XII_CACHED_QT_DIR}")
-    # Need to reset qt vars now so that 'find_package' is re-executed
-    set(XII_CACHED_QT_DIR ${XII_QT_DIR} CACHE STRING "" FORCE)
-
-    message(STATUS "Qt-dir has changed, clearing cached Qt paths")
-
-    # Clear cached qt dirs
-    set(Qt6_DIR "Qt6_DIR-NOTFOUND" CACHE PATH "" FORCE)
-    set(Qt6Core_DIR "Qt6Core_DIR-NOTFOUND" CACHE PATH "" FORCE)
-    set(Qt6CoreTools_DIR "Qt6CoreTools_DIR-NOTFOUND" CACHE PATH "" FORCE)
-    set(Qt6Gui_DIR "Qt6Gui_DIR-NOTFOUND" CACHE PATH "" FORCE)
-    set(Qt6GuiTools_DIR "Qt6GuiTools_DIR-NOTFOUND" CACHE PATH "" FORCE)
-    set(Qt6Widgets_DIR "Qt6Widgets_DIR-NOTFOUND" CACHE PATH "" FORCE)
-    set(Qt6WidgetsTools_DIR "Qt6WidgetTools_DIR-NOTFOUND" CACHE PATH "" FORCE)
-    set(Qt6Network_DIR "Qt6Network_DIR-NOTFOUND" CACHE PATH "" FORCE)
-    set(Qt6Svg_DIR "Qt6Svg_DIR-NOTFOUND" CACHE PATH "" FORCE)
-    set(Qt6ZlibPrivate_DIR "Qt6ZlibPrivate_DIR-NOTFOUND" CACHE PATH "" FORCE)
-    set(Qt6EntryPointPrivate_DIR "Qt6EntryPointPrivate_DIR-NOTFOUND" CACHE PATH "" FORCE)
-    set(WINDEPLOYQT_EXECUTABLE "WINDEPLOYQT_EXECUTABLE-NOTFOUND" CACHE FILEPATH "" FORCE)
-  endif()
-
-  # force find_package to search for Qt in the correct folder
-  if(XII_QT_DIR)
-    set(CMAKE_PREFIX_PATH ${XII_QT_DIR} PARENT_SCOPE)
+    # force find_package to search for Qt in the correct folder
+    if(XII_QT_DIR)
+      set(CMAKE_PREFIX_PATH ${XII_QT_DIR} PARENT_SCOPE)
+    endif()
   endif()
 endfunction()
 

@@ -28,8 +28,8 @@ struct XII_GRAPHICSCORE_DLL xiiEditableSkeletonBoneShape : public xiiReflectedCl
 
   xiiEnum<xiiSkeletonJointGeometryType> m_Geometry;
 
-  xiiVec3 m_vOffset   = xiiVec3::ZeroVector();
-  xiiQuat m_qRotation = xiiQuat::IdentityQuaternion();
+  xiiVec3 m_vOffset   = xiiVec3::MakeZero();
+  xiiQuat m_qRotation = xiiQuat::MakeIdentity();
 
   float m_fLength    = 0; // Box, Capsule; 0 means parent joint to this joint (auto mode)
   float m_fWidth     = 0; // Box
@@ -63,7 +63,7 @@ public:
   void CopyPropertiesFrom(const xiiEditableSkeletonJoint* pJoint);
 
   xiiHashedString m_sName;
-  xiiTransform    m_LocalTransform = xiiTransform::IdentityTransform();
+  xiiTransform    m_LocalTransform = xiiTransform::MakeIdentity();
 
   xiiEnum<xiiSkeletonJointType> m_JointType;
 
@@ -74,10 +74,10 @@ public:
   xiiAngle m_SwingLimitY;
   xiiAngle m_SwingLimitZ;
 
-  xiiVec3 m_vGizmoOffsetPositionRO = xiiVec3::ZeroVector();
-  xiiQuat m_qGizmoOffsetRotationRO = xiiQuat::IdentityQuaternion();
+  xiiVec3 m_vGizmoOffsetPositionRO = xiiVec3::MakeZero();
+  xiiQuat m_qGizmoOffsetRotationRO = xiiQuat::MakeIdentity();
 
-  xiiQuat m_qLocalJointRotation = xiiQuat::IdentityQuaternion();
+  xiiQuat m_qLocalJointRotation = xiiQuat::MakeIdentity();
 
   xiiHybridArray<xiiEditableSkeletonJoint*, 4>     m_Children;
   xiiHybridArray<xiiEditableSkeletonBoneShape, 1>  m_BoneShapes;

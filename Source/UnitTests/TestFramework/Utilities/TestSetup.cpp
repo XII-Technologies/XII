@@ -139,7 +139,6 @@ void xiiTestSetup::DeInitTestFramework(bool bSilent /*= false*/)
   if (!bSilent)
   {
     xiiGlobalLog::AddLogWriter(xiiLogWriter::Console::LogMessageHandler);
-    xiiStringUtils::PrintStringLengthStatistics();
   }
 #endif
 

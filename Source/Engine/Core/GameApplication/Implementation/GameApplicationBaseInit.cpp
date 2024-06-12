@@ -234,7 +234,7 @@ void xiiGameApplicationBase::Init_ConfigureCVars()
 void xiiGameApplicationBase::Init_SetupDefaultResources()
 {
   // continuously unload resources that are not in use anymore
-  xiiResourceManager::SetAutoFreeUnused(xiiTime::Microseconds(100), xiiTime::Seconds(10.0f));
+  xiiResourceManager::SetAutoFreeUnused(xiiTime::MakeFromMicroseconds(100), xiiTime::MakeFromSeconds(10.0f));
 }
 
 //////////////////////////////////////////////////////////////////////////

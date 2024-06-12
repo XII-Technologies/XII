@@ -24,6 +24,12 @@ public:
     m_sString = sFormat;
   }
 
+  xiiFormatStringImpl(const char* szFormat, ARGS&&... args) :
+    m_Arguments(std::forward<ARGS>(args)...)
+  {
+    m_sString = szFormat;
+  }
+
   /// \brief Generates the formatted text. Make sure to only call this function once and only when the formatted string is really needed.
   ///
   /// Requires a xiiStringBuilder as storage, ie. writes the formatted text into it. Additionally it returns a xiiStringView to that

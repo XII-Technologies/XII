@@ -870,7 +870,7 @@ void xiiQtAssetBrowserWidget::OnListCopyAssetGuid()
   mimeData->setText(xiiConversionUtils::ToString(guid, tmp).GetData());
   clipboard->setMimeData(mimeData);
 
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied asset GUID: {}", tmp), xiiTime::Seconds(5));
+  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied asset GUID: {}", tmp), xiiTime::MakeFromSeconds(5));
 }
 
 void xiiQtAssetBrowserWidget::OnFilterToThisPath()

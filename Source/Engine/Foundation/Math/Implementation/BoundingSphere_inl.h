@@ -5,7 +5,7 @@
 template <typename Type>
 XII_FORCE_INLINE xiiBoundingSphereTemplate<Type>::xiiBoundingSphereTemplate()
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   // m_vCenter is already initialized to NaN by its own constructor.
   const Type TypeNaN = xiiMath::NaN<Type>();
@@ -14,29 +14,76 @@ XII_FORCE_INLINE xiiBoundingSphereTemplate<Type>::xiiBoundingSphereTemplate()
 }
 
 template <typename Type>
-XII_FORCE_INLINE xiiBoundingSphereTemplate<Type>::xiiBoundingSphereTemplate(const xiiVec3Template<Type>& vCenter, Type fRadius) :
-  m_vCenter(vCenter), m_fRadius(fRadius)
+XII_FORCE_INLINE xiiBoundingSphereTemplate<Type> xiiBoundingSphereTemplate<Type>::MakeZero()
 {
+  xiiBoundingSphereTemplate<Type> res;
+  res.m_vCenter.SetZero();
+  res.m_fRadius = 0.0f;
+  return res;
 }
 
 template <typename Type>
-void xiiBoundingSphereTemplate<Type>::SetZero()
+XII_FORCE_INLINE xiiBoundingSphereTemplate<Type> xiiBoundingSphereTemplate<Type>::MakeInvalid(const xiiVec3Template<Type>& vCenter)
 {
-  m_vCenter.SetZero();
-  m_fRadius = 0.0f;
+  xiiBoundingSphereTemplate<Type> res;
+  res.m_vCenter = vCenter;
+  res.m_fRadius = -xiiMath::SmallEpsilon<Type>(); // has to be very small for ExpandToInclude to work
+  return res;
+}
+
+template <typename Type>
+XII_FORCE_INLINE xiiBoundingSphereTemplate<Type> xiiBoundingSphereTemplate<Type>::MakeFromCenterAndRadius(const xiiVec3Template<Type>& vCenter, Type fRadius)
+{
+  xiiBoundingSphereTemplate<Type> res;
+  res.m_vCenter = vCenter;
+  res.m_fRadius = fRadius;
+  XII_ASSERT_DEBUG(res.IsValid(), "The sphere was created with invalid values.");
+  return res;
+}
+
+template <typename Type>
+XII_FORCE_INLINE xiiBoundingSphereTemplate<Type> xiiBoundingSphereTemplate<Type>::MakeFromPoints(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /*= sizeof(xiiVec3Template<Type>)*/)
+{
+  XII_ASSERT_DEBUG(pPoints != nullptr, "The array must not be empty.");
+  XII_ASSERT_DEBUG(uiStride >= sizeof(xiiVec3Template<Type>), "The data must not overlap.");
+  XII_ASSERT_DEBUG(uiNumPoints > 0, "The array must contain at least one point.");
+
+  const xiiVec3Template<Type>* pCur = &pPoints[0];
+
+  xiiVec3Template<Type> vCenter(0.0f);
+
+  for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
+  {
+    vCenter += *pCur;
+    pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
+  }
+
+  vCenter /= (Type)uiNumPoints;
+
+  Type fMaxDistSQR = 0.0f;
+
+  pCur = &pPoints[0];
+  for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
+  {
+    const Type fDistSQR = (*pCur - vCenter).GetLengthSquared();
+    fMaxDistSQR         = xiiMath::Max(fMaxDistSQR, fDistSQR);
+
+    pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
+  }
+
+  xiiBoundingSphereTemplate<Type> res;
+  res.m_vCenter = vCenter;
+  res.m_fRadius = xiiMath::Sqrt(fMaxDistSQR);
+
+  XII_ASSERT_DEBUG(res.IsValid(), "The point cloud contained corrupted data.");
+
+  return res;
 }
 
 template <typename Type>
 bool xiiBoundingSphereTemplate<Type>::IsZero(Type fEpsilon /* = xiiMath::DefaultEpsilon<Type>() */) const
 {
   return m_vCenter.IsZero(fEpsilon) && xiiMath::IsZero(m_fRadius, fEpsilon);
-}
-
-template <typename Type>
-void xiiBoundingSphereTemplate<Type>::SetInvalid()
-{
-  m_vCenter.SetZero();
-  m_fRadius = -xiiMath::SmallEpsilon<Type>();
 }
 
 template <typename Type>
@@ -49,15 +96,6 @@ template <typename Type>
 bool xiiBoundingSphereTemplate<Type>::IsNaN() const
 {
   return (m_vCenter.IsNaN() || xiiMath::IsNaN(m_fRadius));
-}
-
-template <typename Type>
-XII_FORCE_INLINE void xiiBoundingSphereTemplate<Type>::SetElements(const xiiVec3Template<Type>& vCenter, Type fRadius)
-{
-  m_vCenter = vCenter;
-  m_fRadius = fRadius;
-
-  XII_ASSERT_DEBUG(IsValid(), "The sphere was created with invalid values.");
 }
 
 template <typename Type>
@@ -106,6 +144,12 @@ XII_ALWAYS_INLINE bool operator==(const xiiBoundingSphereTemplate<Type>& lhs, co
 }
 
 template <typename Type>
+XII_ALWAYS_INLINE bool operator!=(const xiiBoundingSphereTemplate<Type>& lhs, const xiiBoundingSphereTemplate<Type>& rhs)
+{
+  return !lhs.IsIdentical(rhs);
+}
+
+template <typename Type>
 XII_ALWAYS_INLINE void xiiBoundingSphereTemplate<Type>::Translate(const xiiVec3Template<Type>& vTranslation)
 {
   m_vCenter += vTranslation;
@@ -130,8 +174,8 @@ void xiiBoundingSphereTemplate<Type>::ScaleFromOrigin(const xiiVec3Template<Type
 
   m_vCenter = m_vCenter.CompMul(vScale);
 
-  // Scale the radius by the maximum scaling factor (the sphere cannot become an ellipsoid,
-  // so to be a 'bounding' sphere, it should be as large as possible.
+  // scale the radius by the maximum scaling factor (the sphere cannot become an ellipsoid,
+  // so to be a 'bounding' sphere, it should be as large as possible
   m_fRadius *= xiiMath::Max(vScale.x, vScale.y, vScale.z);
 }
 
@@ -201,10 +245,7 @@ const xiiVec3Template<Type> xiiBoundingSphereTemplate<Type>::GetClampedPoint(con
 }
 
 template <typename Type>
-bool xiiBoundingSphereTemplate<Type>::Contains(
-  const xiiVec3Template<Type>* pPoints,
-  xiiUInt32                    uiNumPoints,
-  xiiUInt32                    uiStride /* = sizeof(xiiVec3Template) */) const
+bool xiiBoundingSphereTemplate<Type>::Contains(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /* = sizeof(xiiVec3Template) */) const
 {
   XII_ASSERT_DEBUG(pPoints != nullptr, "The array must not be empty.");
   XII_ASSERT_DEBUG(uiNumPoints > 0, "The array must contain at least one point.");
@@ -226,10 +267,7 @@ bool xiiBoundingSphereTemplate<Type>::Contains(
 }
 
 template <typename Type>
-bool xiiBoundingSphereTemplate<Type>::Overlaps(
-  const xiiVec3Template<Type>* pPoints,
-  xiiUInt32                    uiNumPoints,
-  xiiUInt32                    uiStride /* = sizeof(xiiVec3Template) */) const
+bool xiiBoundingSphereTemplate<Type>::Overlaps(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /* = sizeof(xiiVec3Template) */) const
 {
   XII_ASSERT_DEBUG(pPoints != nullptr, "The array must not be empty.");
   XII_ASSERT_DEBUG(uiNumPoints > 0, "The array must contain at least one point.");
@@ -251,49 +289,7 @@ bool xiiBoundingSphereTemplate<Type>::Overlaps(
 }
 
 template <typename Type>
-void xiiBoundingSphereTemplate<Type>::SetFromPoints(
-  const xiiVec3Template<Type>* pPoints,
-  xiiUInt32                    uiNumPoints,
-  xiiUInt32                    uiStride /* = sizeof(xiiVec3Template) */)
-{
-  XII_ASSERT_DEBUG(pPoints != nullptr, "The array must not be empty.");
-  XII_ASSERT_DEBUG(uiStride >= sizeof(xiiVec3Template<Type>), "The data must not overlap.");
-  XII_ASSERT_DEBUG(uiNumPoints > 0, "The array must contain at least one point.");
-
-  const xiiVec3Template<Type>* pCur = &pPoints[0];
-
-  xiiVec3Template<Type> vCenter(0.0f);
-
-  for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
-  {
-    vCenter += *pCur;
-    pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
-  }
-
-  vCenter /= (Type)uiNumPoints;
-
-  Type fMaxDistSQR = 0.0f;
-
-  pCur = &pPoints[0];
-  for (xiiUInt32 i = 0; i < uiNumPoints; ++i)
-  {
-    const Type fDistSQR = (*pCur - vCenter).GetLengthSquared();
-    fMaxDistSQR         = xiiMath::Max(fMaxDistSQR, fDistSQR);
-
-    pCur = xiiMemoryUtils::AddByteOffset(pCur, uiStride);
-  }
-
-  m_vCenter = vCenter;
-  m_fRadius = xiiMath::Sqrt(fMaxDistSQR);
-
-  XII_ASSERT_DEBUG(IsValid(), "The point cloud contained corrupted data.");
-}
-
-template <typename Type>
-void xiiBoundingSphereTemplate<Type>::ExpandToInclude(
-  const xiiVec3Template<Type>* pPoints,
-  xiiUInt32                    uiNumPoints,
-  xiiUInt32                    uiStride /* = sizeof(xiiVec3Template) */)
+void xiiBoundingSphereTemplate<Type>::ExpandToInclude(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /* = sizeof(xiiVec3Template) */)
 {
   XII_ASSERT_DEBUG(pPoints != nullptr, "The array must not be empty.");
   XII_ASSERT_DEBUG(uiStride >= sizeof(xiiVec3Template<Type>), "The data must not overlap.");
@@ -315,10 +311,7 @@ void xiiBoundingSphereTemplate<Type>::ExpandToInclude(
 }
 
 template <typename Type>
-Type xiiBoundingSphereTemplate<Type>::GetDistanceTo(
-  const xiiVec3Template<Type>* pPoints,
-  xiiUInt32                    uiNumPoints,
-  xiiUInt32                    uiStride /* = sizeof(xiiVec3Template) */) const
+Type xiiBoundingSphereTemplate<Type>::GetDistanceTo(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /* = sizeof(xiiVec3Template) */) const
 {
   XII_ASSERT_DEBUG(pPoints != nullptr, "The array must not be empty.");
   XII_ASSERT_DEBUG(uiNumPoints > 0, "The array must contain at least one point.");

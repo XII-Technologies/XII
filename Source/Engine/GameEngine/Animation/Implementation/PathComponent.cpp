@@ -147,7 +147,7 @@ void xiiPathComponent::Nodes_SetNode(xiiUInt32 i, const xiiString& node)
 
 void xiiPathComponent::Nodes_Insert(xiiUInt32 uiIndex, const xiiString& node)
 {
-  m_Nodes.Insert(node, uiIndex);
+  m_Nodes.InsertAt(uiIndex, node);
   m_bControlPointsChanged            = true;
   m_bLinearizedRepresentationChanged = true;
 }
@@ -539,8 +539,8 @@ static void ComputeCpDirs(const xiiDynamicArray<xiiPathComponent::ControlPoint>&
 
     xiiVec3 dirP = (posPrev - cpC.m_vPosition);
     xiiVec3 dirN = (posNext - cpC.m_vPosition);
-    dirP.NormalizeIfNotZero(xiiVec3::ZeroVector()).IgnoreResult();
-    dirN.NormalizeIfNotZero(xiiVec3::ZeroVector()).IgnoreResult();
+    dirP.NormalizeIfNotZero(xiiVec3::MakeZero()).IgnoreResult();
+    dirN.NormalizeIfNotZero(xiiVec3::MakeZero()).IgnoreResult();
 
     xiiVec3 dirAvg = dirP - dirN;
     dirAvg.NormalizeIfNotZero(cs.m_vForwardDir).IgnoreResult();
@@ -664,7 +664,7 @@ static void ComputeSegmentUpVector(xiiArrayPtr<xiiPathComponent::LinearizedEleme
     const xiiAngle roll = xiiMath::Lerp(cp0.m_Roll, cp1.m_Roll, fLerpFactor);
 
     xiiQuat qRoll;
-    qRoll.SetFromAxisAndAngle(tangents[t], roll);
+    qRoll = xiiQuat::MakeFromAxisAndAngle(tangents[t], roll);
 
     xiiVec3 vLocalUp = xiiMath::Lerp(cp0up, cp1up, fLerpFactor);
     vLocalUp.NormalizeIfNotZero(vWorldUp).IgnoreResult();

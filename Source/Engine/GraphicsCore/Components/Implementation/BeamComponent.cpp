@@ -114,11 +114,10 @@ xiiResult xiiBeamComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds, boo
     const xiiVec3 currentTargetPosition      = pTargetObject->GetGlobalPosition();
     const xiiVec3 targetPositionInOwnerSpace = GetOwner()->GetGlobalTransform().GetInverse().TransformPosition(currentTargetPosition);
 
-    xiiVec3 pts[] = {xiiVec3::ZeroVector(), targetPositionInOwnerSpace};
+    xiiVec3 pts[] = {xiiVec3::MakeZero(), targetPositionInOwnerSpace};
 
-    xiiBoundingBox box;
-    box.SetFromPoints(pts, 2);
-    const float fHalfWidth = m_fWidth * 0.5f;
+    xiiBoundingBox box        = xiiBoundingBox::MakeFromPoints(pts, 2);
+    const float    fHalfWidth = m_fWidth * 0.5f;
     box.m_vMin -= xiiVec3(0, fHalfWidth, fHalfWidth);
     box.m_vMax += xiiVec3(0, fHalfWidth, fHalfWidth);
     ref_bounds = xiiBoundingBoxSphere(box);
@@ -258,16 +257,16 @@ void xiiBeamComponent::CreateMeshes()
   //      x
   //
   //  4        2
-  xiiVec3 crossVector1 = (0.5f * xiiVec3::UnitYAxis() + 0.5f * xiiVec3::UnitZAxis());
+  xiiVec3 crossVector1 = (0.5f * xiiVec3::MakeAxisY() + 0.5f * xiiVec3::MakeAxisZ());
   crossVector1.SetLength(m_fWidth * 0.5f).IgnoreResult();
 
-  xiiVec3 crossVector2 = (0.5f * xiiVec3::UnitYAxis() - 0.5f * xiiVec3::UnitZAxis());
+  xiiVec3 crossVector2 = (0.5f * xiiVec3::MakeAxisY() - 0.5f * xiiVec3::MakeAxisZ());
   crossVector2.SetLength(m_fWidth * 0.5f).IgnoreResult();
 
-  xiiVec3 crossVector3 = (-0.5f * xiiVec3::UnitYAxis() + 0.5f * xiiVec3::UnitZAxis());
+  xiiVec3 crossVector3 = (-0.5f * xiiVec3::MakeAxisY() + 0.5f * xiiVec3::MakeAxisZ());
   crossVector3.SetLength(m_fWidth * 0.5f).IgnoreResult();
 
-  xiiVec3 crossVector4 = (-0.5f * xiiVec3::UnitYAxis() - 0.5f * xiiVec3::UnitZAxis());
+  xiiVec3 crossVector4 = (-0.5f * xiiVec3::MakeAxisY() - 0.5f * xiiVec3::MakeAxisZ());
   crossVector4.SetLength(m_fWidth * 0.5f).IgnoreResult();
 
   const float fDistance = (m_vLastOwnerPosition - m_vLastTargetPosition).GetLength();
@@ -279,10 +278,10 @@ void xiiBeamComponent::CreateMeshes()
 
     // Quad 1
     {
-      xiiUInt32 index0 = g.AddVertex(xiiVec3::ZeroVector() + crossVector1, xiiVec3::UnitXAxis(), xiiVec2(0, 0), xiiColor::White);
-      xiiUInt32 index1 = g.AddVertex(xiiVec3::ZeroVector() + crossVector4, xiiVec3::UnitXAxis(), xiiVec2(0, 1), xiiColor::White);
-      xiiUInt32 index2 = g.AddVertex(targetPositionInOwnerSpace + crossVector1, xiiVec3::UnitXAxis(), xiiVec2(fDistance * m_fUVUnitsPerWorldUnit, 0), xiiColor::White);
-      xiiUInt32 index3 = g.AddVertex(targetPositionInOwnerSpace + crossVector4, xiiVec3::UnitXAxis(), xiiVec2(fDistance * m_fUVUnitsPerWorldUnit, 1), xiiColor::White);
+      xiiUInt32 index0 = g.AddVertex(xiiVec3::MakeZero() + crossVector1, xiiVec3::MakeAxisX(), xiiVec2(0, 0), xiiColor::White);
+      xiiUInt32 index1 = g.AddVertex(xiiVec3::MakeZero() + crossVector4, xiiVec3::MakeAxisX(), xiiVec2(0, 1), xiiColor::White);
+      xiiUInt32 index2 = g.AddVertex(targetPositionInOwnerSpace + crossVector1, xiiVec3::MakeAxisX(), xiiVec2(fDistance * m_fUVUnitsPerWorldUnit, 0), xiiColor::White);
+      xiiUInt32 index3 = g.AddVertex(targetPositionInOwnerSpace + crossVector4, xiiVec3::MakeAxisX(), xiiVec2(fDistance * m_fUVUnitsPerWorldUnit, 1), xiiColor::White);
 
       xiiUInt32 indices[] = {index0, index2, index3, index1};
       g.AddPolygon(xiiArrayPtr(indices), false);
@@ -291,10 +290,10 @@ void xiiBeamComponent::CreateMeshes()
 
     // Quad 2
     {
-      xiiUInt32 index0 = g.AddVertex(xiiVec3::ZeroVector() + crossVector2, xiiVec3::UnitXAxis(), xiiVec2(0, 0), xiiColor::White);
-      xiiUInt32 index1 = g.AddVertex(xiiVec3::ZeroVector() + crossVector3, xiiVec3::UnitXAxis(), xiiVec2(0, 1), xiiColor::White);
-      xiiUInt32 index2 = g.AddVertex(targetPositionInOwnerSpace + crossVector2, xiiVec3::UnitXAxis(), xiiVec2(fDistance * m_fUVUnitsPerWorldUnit, 0), xiiColor::White);
-      xiiUInt32 index3 = g.AddVertex(targetPositionInOwnerSpace + crossVector3, xiiVec3::UnitXAxis(), xiiVec2(fDistance * m_fUVUnitsPerWorldUnit, 1), xiiColor::White);
+      xiiUInt32 index0 = g.AddVertex(xiiVec3::MakeZero() + crossVector2, xiiVec3::MakeAxisX(), xiiVec2(0, 0), xiiColor::White);
+      xiiUInt32 index1 = g.AddVertex(xiiVec3::MakeZero() + crossVector3, xiiVec3::MakeAxisX(), xiiVec2(0, 1), xiiColor::White);
+      xiiUInt32 index2 = g.AddVertex(targetPositionInOwnerSpace + crossVector2, xiiVec3::MakeAxisX(), xiiVec2(fDistance * m_fUVUnitsPerWorldUnit, 0), xiiColor::White);
+      xiiUInt32 index3 = g.AddVertex(targetPositionInOwnerSpace + crossVector3, xiiVec3::MakeAxisX(), xiiVec2(fDistance * m_fUVUnitsPerWorldUnit, 1), xiiColor::White);
 
       xiiUInt32 indices[] = {index0, index2, index3, index1};
       g.AddPolygon(xiiArrayPtr(indices), false);

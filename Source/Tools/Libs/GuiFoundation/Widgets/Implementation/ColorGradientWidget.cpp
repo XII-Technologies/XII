@@ -374,13 +374,7 @@ void xiiQtColorGradientWidget::PaintCoordinateLines(QPainter& p)
   p.restore();
 }
 
-void xiiQtColorGradientWidget::PaintControlPoint(
-  QPainter&              p,
-  const QRect&           area,
-  double                 posX,
-  const xiiColorGammaUB& outlineColor,
-  const xiiColorGammaUB& fillColor,
-  bool                   selected) const
+void xiiQtColorGradientWidget::PaintControlPoint(QPainter& p, const QRect& area, double posX, const xiiColorGammaUB& outlineColor, const xiiColorGammaUB& fillColor, bool selected) const
 {
   const xiiInt32 iPosX = GradientToWindowCoord(posX);
 
@@ -972,11 +966,7 @@ bool xiiQtColorGradientWidget::HoversControlPoint(const QPoint& windowPos) const
   return HoversControlPoint(windowPos, iHoverColorCp, iHoverAlphaCp, iHoverIntensityCp);
 }
 
-bool xiiQtColorGradientWidget::HoversControlPoint(
-  const QPoint& windowPos,
-  xiiInt32&     iHoverColorCp,
-  xiiInt32&     iHoverAlphaCp,
-  xiiInt32&     iHoverIntensityCp) const
+bool xiiQtColorGradientWidget::HoversControlPoint(const QPoint& windowPos, xiiInt32& iHoverColorCp, xiiInt32& iHoverAlphaCp, xiiInt32& iHoverIntensityCp) const
 {
   iHoverColorCp     = -1;
   iHoverAlphaCp     = -1;

@@ -89,17 +89,15 @@ public:
 
   /// \brief Compares the shared ptr against another shared ptr.
   bool operator==(const xiiSharedPtr<T>& rhs) const;
-  bool operator<(const xiiSharedPtr<T>& rhs) const;
-  bool operator<=(const xiiSharedPtr<T>& rhs) const;
-  bool operator>(const xiiSharedPtr<T>& rhs) const;
-  bool operator>=(const xiiSharedPtr<T>& rhs) const;
+
+  /// \brief Compares the shared ptr against another shared ptr.
+  std::strong_ordering operator<=>(const xiiSharedPtr<T>& rhs) const;
 
   /// \brief Compares the shared ptr against nullptr.
   bool operator==(std::nullptr_t) const;
-  bool operator<(std::nullptr_t) const;
-  bool operator<=(std::nullptr_t) const;
-  bool operator>(std::nullptr_t) const;
-  bool operator>=(std::nullptr_t) const;
+
+  /// \brief Compares the shared ptr against nullptr.
+  std::strong_ordering operator<=>(std::nullptr_t) const;
 
   /// \brief Returns a copy of this, as a xiiSharedPtr<DERIVED>. Downcasts the stored pointer (using static_cast).
   ///

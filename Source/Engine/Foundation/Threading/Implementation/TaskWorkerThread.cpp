@@ -6,11 +6,11 @@
 
 thread_local xiiTaskWorkerInfo tl_TaskWorkerInfo;
 
-static const char* GenerateThreadName(xiiWorkerThreadType::Enum threadType, xiiUInt32 uiThreadNumber)
+static xiiString GenerateThreadName(xiiWorkerThreadType::Enum threadType, xiiUInt32 uiThreadNumber)
 {
-  static xiiStringBuilder sTemp;
+  xiiStringBuilder sTemp;
   sTemp.SetFormat("{} {}", xiiWorkerThreadType::GetThreadTypeName(threadType), uiThreadNumber);
-  return sTemp.GetData();
+  return sTemp;
 }
 
 xiiTaskWorkerThread::xiiTaskWorkerThread(xiiWorkerThreadType::Enum threadType, xiiUInt32 uiThreadNumber)
@@ -122,7 +122,7 @@ void xiiTaskWorkerThread::UpdateThreadUtilization(xiiTime timePassed)
   // The thread keeps track of how much time it spends executing tasks.
   // Here we retrieve that time and resets it to zero.
   {
-    m_ThreadActiveTime = xiiTime::Zero();
+    m_ThreadActiveTime = xiiTime::MakeZero();
 
     if (m_bExecutingTask)
     {
@@ -146,6 +146,5 @@ double xiiTaskWorkerThread::GetThreadUtilization(xiiUInt32* pNumTasksExecuted /*
 
   return m_fLastThreadUtilization;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_TaskWorkerThread);

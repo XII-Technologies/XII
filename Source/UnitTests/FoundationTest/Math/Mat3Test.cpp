@@ -36,7 +36,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
     const xiiMathTestType data[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
     {
-      xiiMat3T m(data, xiiMatrixLayout::ColumnMajor);
+      xiiMat3T m = xiiMat3T::MakeFromColumnMajorArray(data);
 
       XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 2.0f && m.m_fElementsCM[2] == 3.0f && m.m_fElementsCM[3] == 4.0f &&
                     m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 6.0f && m.m_fElementsCM[6] == 7.0f && m.m_fElementsCM[7] == 8.0f &&
@@ -44,7 +44,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
     }
 
     {
-      xiiMat3T m(data, xiiMatrixLayout::RowMajor);
+      xiiMat3T m = xiiMat3T::MakeFromRowMajorArray(data);
 
       XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 4.0f && m.m_fElementsCM[2] == 7.0f && m.m_fElementsCM[3] == 2.0f &&
                     m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 8.0f && m.m_fElementsCM[6] == 3.0f && m.m_fElementsCM[7] == 6.0f &&
@@ -54,7 +54,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor (Elements)")
   {
-    xiiMat3T m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     XII_TEST_FLOAT(m.Element(0, 0), 1, 0.00001f);
     XII_TEST_FLOAT(m.Element(1, 0), 2, 0.00001f);
@@ -72,8 +72,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
     const xiiMathTestType data[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
 
     {
-      xiiMat3T m;
-      m.SetFromArray(data, xiiMatrixLayout::ColumnMajor);
+      xiiMat3T m = xiiMat3::MakeFromColumnMajorArray(data);
 
       XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 2.0f && m.m_fElementsCM[2] == 3.0f && m.m_fElementsCM[3] == 4.0f &&
                     m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 6.0f && m.m_fElementsCM[6] == 7.0f && m.m_fElementsCM[7] == 8.0f &&
@@ -81,8 +80,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
     }
 
     {
-      xiiMat3T m;
-      m.SetFromArray(data, xiiMatrixLayout::RowMajor);
+      xiiMat3T m = xiiMat3::MakeFromRowMajorArray(data);
 
       XII_TEST_BOOL(m.m_fElementsCM[0] == 1.0f && m.m_fElementsCM[1] == 4.0f && m.m_fElementsCM[2] == 7.0f && m.m_fElementsCM[3] == 2.0f &&
                     m.m_fElementsCM[4] == 5.0f && m.m_fElementsCM[5] == 8.0f && m.m_fElementsCM[6] == 3.0f && m.m_fElementsCM[7] == 6.0f &&
@@ -92,8 +90,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetElements")
   {
-    xiiMat3T m;
-    m.SetElements(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     XII_TEST_FLOAT(m.Element(0, 0), 1, 0.00001f);
     XII_TEST_FLOAT(m.Element(1, 0), 2, 0.00001f);
@@ -108,7 +105,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetAsArray")
   {
-    xiiMat3T m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     xiiMathTestType data[9];
 
@@ -162,8 +159,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetScalingMatrix")
   {
-    xiiMat3T m;
-    m.SetScalingMatrix(xiiVec3T(2, 3, 4));
+    xiiMat3T m = xiiMat3::MakeScaling(xiiVec3T(2, 3, 4));
 
     XII_TEST_FLOAT(m.Element(0, 0), 2, 0);
     XII_TEST_FLOAT(m.Element(1, 0), 0, 0);
@@ -180,16 +176,16 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
   {
     xiiMat3T m;
 
-    m.SetRotationMatrixX(xiiAngle::Degree(90));
+    m = xiiMat3::MakeRotationX(xiiAngle::MakeFromDegree(90));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, -3, 2), 0.0001f));
 
-    m.SetRotationMatrixX(xiiAngle::Degree(180));
+    m = xiiMat3::MakeRotationX(xiiAngle::MakeFromDegree(180));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, -2, -3), 0.0001f));
 
-    m.SetRotationMatrixX(xiiAngle::Degree(270));
+    m = xiiMat3::MakeRotationX(xiiAngle::MakeFromDegree(270));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, 3, -2), 0.0001f));
 
-    m.SetRotationMatrixX(xiiAngle::Degree(360));
+    m = xiiMat3::MakeRotationX(xiiAngle::MakeFromDegree(360));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, 2, 3), 0.0001f));
   }
 
@@ -197,16 +193,16 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
   {
     xiiMat3T m;
 
-    m.SetRotationMatrixY(xiiAngle::Degree(90));
+    m = xiiMat3::MakeRotationY(xiiAngle::MakeFromDegree(90));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(3, 2, -1), 0.0001f));
 
-    m.SetRotationMatrixY(xiiAngle::Degree(180));
+    m = xiiMat3::MakeRotationY(xiiAngle::MakeFromDegree(180));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-1, 2, -3), 0.0001f));
 
-    m.SetRotationMatrixY(xiiAngle::Degree(270));
+    m = xiiMat3::MakeRotationY(xiiAngle::MakeFromDegree(270));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-3, 2, 1), 0.0001f));
 
-    m.SetRotationMatrixY(xiiAngle::Degree(360));
+    m = xiiMat3::MakeRotationY(xiiAngle::MakeFromDegree(360));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, 2, 3), 0.0001f));
   }
 
@@ -214,16 +210,16 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
   {
     xiiMat3T m;
 
-    m.SetRotationMatrixZ(xiiAngle::Degree(90));
+    m = xiiMat3::MakeRotationZ(xiiAngle::MakeFromDegree(90));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-2, 1, 3), 0.0001f));
 
-    m.SetRotationMatrixZ(xiiAngle::Degree(180));
+    m = xiiMat3::MakeRotationZ(xiiAngle::MakeFromDegree(180));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-1, -2, 3), 0.0001f));
 
-    m.SetRotationMatrixZ(xiiAngle::Degree(270));
+    m = xiiMat3::MakeRotationZ(xiiAngle::MakeFromDegree(270));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(2, -1, 3), 0.0001f));
 
-    m.SetRotationMatrixZ(xiiAngle::Degree(360));
+    m = xiiMat3::MakeRotationZ(xiiAngle::MakeFromDegree(360));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, 2, 3), 0.0001f));
   }
 
@@ -231,37 +227,37 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
   {
     xiiMat3T m;
 
-    m.SetRotationMatrix(xiiVec3T(1, 0, 0), xiiAngle::Degree(90));
+    m = xiiMat3::MakeAxisRotation(xiiVec3T(1, 0, 0), xiiAngle::MakeFromDegree(90));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, -3, 2), xiiMath::LargeEpsilon<xiiMathTestType>()));
 
-    m.SetRotationMatrix(xiiVec3T(1, 0, 0), xiiAngle::Degree(180));
+    m = xiiMat3::MakeAxisRotation(xiiVec3T(1, 0, 0), xiiAngle::MakeFromDegree(180));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, -2, -3), xiiMath::LargeEpsilon<xiiMathTestType>()));
 
-    m.SetRotationMatrix(xiiVec3T(1, 0, 0), xiiAngle::Degree(270));
+    m = xiiMat3::MakeAxisRotation(xiiVec3T(1, 0, 0), xiiAngle::MakeFromDegree(270));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(1, 3, -2), xiiMath::LargeEpsilon<xiiMathTestType>()));
 
-    m.SetRotationMatrix(xiiVec3T(0, 1, 0), xiiAngle::Degree(90));
+    m = xiiMat3::MakeAxisRotation(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(90));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(3, 2, -1), xiiMath::LargeEpsilon<xiiMathTestType>()));
 
-    m.SetRotationMatrix(xiiVec3T(0, 1, 0), xiiAngle::Degree(180));
+    m = xiiMat3::MakeAxisRotation(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(180));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-1, 2, -3), xiiMath::LargeEpsilon<xiiMathTestType>()));
 
-    m.SetRotationMatrix(xiiVec3T(0, 1, 0), xiiAngle::Degree(270));
+    m = xiiMat3::MakeAxisRotation(xiiVec3T(0, 1, 0), xiiAngle::MakeFromDegree(270));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-3, 2, 1), xiiMath::LargeEpsilon<xiiMathTestType>()));
 
-    m.SetRotationMatrix(xiiVec3T(0, 0, 1), xiiAngle::Degree(90));
+    m = xiiMat3::MakeAxisRotation(xiiVec3T(0, 0, 1), xiiAngle::MakeFromDegree(90));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-2, 1, 3), xiiMath::LargeEpsilon<xiiMathTestType>()));
 
-    m.SetRotationMatrix(xiiVec3T(0, 0, 1), xiiAngle::Degree(180));
+    m = xiiMat3::MakeAxisRotation(xiiVec3T(0, 0, 1), xiiAngle::MakeFromDegree(180));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(-1, -2, 3), xiiMath::LargeEpsilon<xiiMathTestType>()));
 
-    m.SetRotationMatrix(xiiVec3T(0, 0, 1), xiiAngle::Degree(270));
+    m = xiiMat3::MakeAxisRotation(xiiVec3T(0, 0, 1), xiiAngle::MakeFromDegree(270));
     XII_TEST_BOOL((m * xiiVec3T(1, 2, 3)).IsEqual(xiiVec3T(2, -1, 3), xiiMath::LargeEpsilon<xiiMathTestType>()));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "IdentityMatrix")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeIdentity")
   {
-    xiiMat3T m = xiiMat3T::IdentityMatrix();
+    xiiMat3T m = xiiMat3T::MakeIdentity();
 
     XII_TEST_FLOAT(m.Element(0, 0), 1, 0);
     XII_TEST_FLOAT(m.Element(1, 0), 0, 0);
@@ -274,9 +270,9 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
     XII_TEST_FLOAT(m.Element(2, 2), 1, 0);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "ZeroMatrix")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeZero")
   {
-    xiiMat3T m = xiiMat3T::ZeroMatrix();
+    xiiMat3T m = xiiMat3T::MakeZero();
 
     XII_TEST_FLOAT(m.Element(0, 0), 0, 0);
     XII_TEST_FLOAT(m.Element(1, 0), 0, 0);
@@ -291,7 +287,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Transpose")
   {
-    xiiMat3T m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     m.Transpose();
 
@@ -308,7 +304,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetTranspose")
   {
-    xiiMat3T m0(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m0 = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     xiiMat3T m = m0.GetTranspose();
 
@@ -332,7 +328,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
         for (float z = 3.0f; z < 360.0f; z += 23.0f)
         {
           xiiMat3T m, inv;
-          m.SetRotationMatrix(xiiVec3T(x, y, z).GetNormalized(), xiiAngle::Degree(19.0f));
+          m   = xiiMat3::MakeAxisRotation(xiiVec3T(x, y, z).GetNormalized(), xiiAngle::MakeFromDegree(19.0f));
           inv = m;
           XII_TEST_BOOL(inv.Invert() == XII_SUCCESS);
 
@@ -354,7 +350,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
         for (float z = 3.0f; z < 360.0f; z += 21.0f)
         {
           xiiMat3T m, inv;
-          m.SetRotationMatrix(xiiVec3T(x, y, z).GetNormalized(), xiiAngle::Degree(83.0f));
+          m   = xiiMat3::MakeAxisRotation(xiiVec3T(x, y, z).GetNormalized(), xiiAngle::MakeFromDegree(83.0f));
           inv = m.GetInverse();
 
           xiiVec3T v    = m * xiiVec3T(1, 1, 1);
@@ -404,7 +400,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetRow")
   {
-    xiiMat3T m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     XII_TEST_VEC3(m.GetRow(0), xiiVec3T(1, 2, 3), 0.0f);
     XII_TEST_VEC3(m.GetRow(1), xiiVec3T(4, 5, 6), 0.0f);
@@ -428,7 +424,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetColumn")
   {
-    xiiMat3T m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     XII_TEST_VEC3(m.GetColumn(0), xiiVec3T(1, 4, 7), 0.0f);
     XII_TEST_VEC3(m.GetColumn(1), xiiVec3T(2, 5, 8), 0.0f);
@@ -452,7 +448,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetDiagonal")
   {
-    xiiMat3T m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     XII_TEST_VEC3(m.GetDiagonal(), xiiVec3T(1, 5, 9), 0.0f);
   }
@@ -471,7 +467,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetScalingFactors")
   {
-    xiiMat3T m(1, 2, 3, 5, 6, 7, 9, 10, 11);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 5, 6, 7, 9, 10, 11);
 
     xiiVec3T s = m.GetScalingFactors();
     XII_TEST_VEC3(s, xiiVec3T(xiiMath::Sqrt((xiiMathTestType)(1 * 1 + 5 * 5 + 9 * 9)), xiiMath::Sqrt((xiiMathTestType)(2 * 2 + 6 * 6 + 10 * 10)), xiiMath::Sqrt((xiiMathTestType)(3 * 3 + 7 * 7 + 11 * 11))), 0.0001f);
@@ -479,7 +475,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetScalingFactors")
   {
-    xiiMat3T m(1, 2, 3, 5, 6, 7, 9, 10, 11);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 5, 6, 7, 9, 10, 11);
 
     XII_TEST_BOOL(m.SetScalingFactors(xiiVec3T(1, 2, 3)) == XII_SUCCESS);
 
@@ -489,7 +485,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "TransformDirection")
   {
-    xiiMat3T m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     const xiiVec3T r = m.TransformDirection(xiiVec3T(1, 2, 3));
 
@@ -498,7 +494,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*=")
   {
-    xiiMat3T m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     m *= 2.0f;
 
@@ -509,7 +505,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator/=")
   {
-    xiiMat3T m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     m *= 4.0f;
     m /= 2.0f;
@@ -521,7 +517,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsIdentical")
   {
-    xiiMat3T m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     xiiMat3T m2 = m;
 
@@ -533,7 +529,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsEqual")
   {
-    xiiMat3T m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     xiiMat3T m2 = m;
 
@@ -546,9 +542,9 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*(mat, mat)")
   {
-    xiiMat3T m1(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m1 = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
-    xiiMat3T m2(-1, -2, -3, -4, -5, -6, -7, -8, -9);
+    xiiMat3T m2 = xiiMat3T::MakeFromValues(-1, -2, -3, -4, -5, -6, -7, -8, -9);
 
     xiiMat3T r = m1 * m2;
 
@@ -559,7 +555,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*(mat, vec)")
   {
-    xiiMat3T m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     const xiiVec3T r = m * (xiiVec3T(1, 2, 3));
 
@@ -568,7 +564,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*(mat, float) | operator*(float, mat)")
   {
-    xiiMat3T m0(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m0 = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     xiiMat3T m  = m0 * (xiiMathTestType)2;
     xiiMat3T m2 = (xiiMathTestType)2 * m0;
@@ -584,7 +580,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator/(mat, float)")
   {
-    xiiMat3T m0(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m0 = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     m0 *= 4.0f;
 
@@ -597,9 +593,9 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator+(mat, mat) | operator-(mat, mat)")
   {
-    xiiMat3T m0(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m0 = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
-    xiiMat3T m1(-1, -2, -3, -4, -5, -6, -7, -8, -9);
+    xiiMat3T m1 = xiiMat3T::MakeFromValues(-1, -2, -3, -4, -5, -6, -7, -8, -9);
 
     XII_TEST_BOOL((m0 + m1).IsZero());
     XII_TEST_BOOL((m0 - m1).IsEqual(m0 * (xiiMathTestType)2, 0.0001f));
@@ -607,7 +603,7 @@ XII_CREATE_SIMPLE_TEST(Math, Mat3)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator== (mat, mat) | operator!= (mat, mat)")
   {
-    xiiMat3T m(1, 2, 3, 4, 5, 6, 7, 8, 9);
+    xiiMat3T m = xiiMat3T::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     xiiMat3T m2 = m;
 

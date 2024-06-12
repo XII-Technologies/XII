@@ -7,11 +7,6 @@ constexpr XII_ALWAYS_INLINE xiiTime::xiiTime(double fTime) :
 {
 }
 
-XII_ALWAYS_INLINE void xiiTime::SetZero()
-{
-  m_fTime = 0.0;
-}
-
 constexpr XII_ALWAYS_INLINE float xiiTime::AsFloatInSeconds() const
 {
   return static_cast<float>(m_fTime);
@@ -84,30 +79,30 @@ constexpr XII_ALWAYS_INLINE xiiTime xiiTime::operator+(const xiiTime& other) con
 
 constexpr XII_ALWAYS_INLINE xiiTime operator*(xiiTime t, double f)
 {
-  return xiiTime::Seconds(t.GetSeconds() * f);
+  return xiiTime::MakeFromSeconds(t.GetSeconds() * f);
 }
 
 constexpr XII_ALWAYS_INLINE xiiTime operator*(double f, xiiTime t)
 {
-  return xiiTime::Seconds(t.GetSeconds() * f);
+  return xiiTime::MakeFromSeconds(t.GetSeconds() * f);
 }
 
 constexpr XII_ALWAYS_INLINE xiiTime operator*(xiiTime f, xiiTime t)
 {
-  return xiiTime::Seconds(t.GetSeconds() * f.GetSeconds());
+  return xiiTime::MakeFromSeconds(t.GetSeconds() * f.GetSeconds());
 }
 
 constexpr XII_ALWAYS_INLINE xiiTime operator/(xiiTime t, double f)
 {
-  return xiiTime::Seconds(t.GetSeconds() / f);
+  return xiiTime::MakeFromSeconds(t.GetSeconds() / f);
 }
 
 constexpr XII_ALWAYS_INLINE xiiTime operator/(double f, xiiTime t)
 {
-  return xiiTime::Seconds(f / t.GetSeconds());
+  return xiiTime::MakeFromSeconds(f / t.GetSeconds());
 }
 
 constexpr XII_ALWAYS_INLINE xiiTime operator/(xiiTime f, xiiTime t)
 {
-  return xiiTime::Seconds(f.GetSeconds() / t.GetSeconds());
+  return xiiTime::MakeFromSeconds(f.GetSeconds() / t.GetSeconds());
 }

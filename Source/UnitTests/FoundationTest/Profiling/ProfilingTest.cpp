@@ -33,10 +33,10 @@ XII_CREATE_SIMPLE_TEST(Profiling, Profiling)
 
     {
       XII_PROFILE_SCOPE("Prewarm scope");
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
     }
 
-    xiiTime endTime = xiiTime::Now() + xiiTime::Milliseconds(1);
+    xiiTime endTime = xiiTime::Now() + xiiTime::MakeFromMilliseconds(1);
 
     {
       XII_PROFILE_SCOPE("Outer scope");

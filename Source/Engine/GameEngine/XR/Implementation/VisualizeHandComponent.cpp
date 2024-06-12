@@ -42,7 +42,7 @@ void xiiVisualizeHandComponent::Update()
         for (xiiUInt32 uiBone = 0; uiBone < bones.GetCount(); uiBone++)
         {
           const xiiXRHandBone& bone   = bones[uiBone];
-          xiiBoundingSphere    sphere = xiiBoundingSphere(xiiVec3::ZeroVector(), bone.m_fRadius);
+          xiiBoundingSphere    sphere = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), bone.m_fRadius);
           xiiDebugRenderer::DrawLineSphere(GetWorld(), sphere, xiiColor::Aquamarine, bone.m_Transform);
 
           if (uiBone + 1 < bones.GetCount())

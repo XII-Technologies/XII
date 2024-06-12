@@ -75,7 +75,7 @@ void xiiEngineProcessGameApplication::AfterCoreSystemsStartup()
 
   DisableErrorReport();
 
-  xiiTaskSystem::SetTargetFrameTime(xiiTime::Seconds(1.0 / 20.0));
+  xiiTaskSystem::SetTargetFrameTime(xiiTime::MakeFromSeconds(1.0 / 20.0));
 
   ConnectToHost();
 }
@@ -107,7 +107,7 @@ void xiiEngineProcessGameApplication::WaitForDebugger()
   {
     while (!xiiSystemInformation::IsDebuggerAttached())
     {
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
     }
   }
 }
@@ -116,7 +116,7 @@ bool xiiEngineProcessGameApplication::EditorAssertHandler(const char* szSourceFi
 {
   xiiLog::Error("*** Assertion ***:\nFile: \"{}\",\nLine: \"{}\",\nFunction: \"{}\",\nExpression: \"{}\",\nMessage: \"{}\"", szSourceFile, uiLine, szFunction, szExpression, szAssertMsg);
   // Wait for flush of IPC messages
-  xiiThreadUtils::Sleep(xiiTime::Milliseconds(500));
+  xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(500));
 
   if (g_PreviousAssertHandler)
     return g_PreviousAssertHandler(szSourceFile, uiLine, szFunction, szExpression, szAssertMsg);

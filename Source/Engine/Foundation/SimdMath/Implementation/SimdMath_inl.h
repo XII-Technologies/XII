@@ -114,8 +114,7 @@ XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Sin(const xiiSimdVec4f& f)
 #if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)
   return _mm_sin_ps(f.m_v);
 #else
-  return xiiSimdVec4f(xiiMath::Sin(xiiAngle::Radian(f.x())), xiiMath::Sin(xiiAngle::Radian(f.y())), xiiMath::Sin(xiiAngle::Radian(f.z())),
-                      xiiMath::Sin(xiiAngle::Radian(f.w())));
+  return xiiSimdVec4f(xiiMath::Sin(xiiAngle::MakeFromRadian(f.x())), xiiMath::Sin(xiiAngle::MakeFromRadian(f.y())), xiiMath::Sin(xiiAngle::MakeFromRadian(f.z())), xiiMath::Sin(xiiAngle::MakeFromRadian(f.w())));
 #endif
 }
 
@@ -125,8 +124,7 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Sin(const xiiSimdVec4d& f)
 #if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
   return _mm256_sin_pd(f.m_v);
 #else
-  return xiiSimdVec4d(xiiMath::Sin(xiiAngled::Radian(f.x())), xiiMath::Sin(xiiAngled::Radian(f.y())), xiiMath::Sin(xiiAngled::Radian(f.z())),
-                      xiiMath::Sin(xiiAngled::Radian(f.w())));
+  return xiiSimdVec4d(xiiMath::Sin(xiiAngled::MakeFromRadian(f.x())), xiiMath::Sin(xiiAngled::MakeFromRadian(f.y())), xiiMath::Sin(xiiAngled::MakeFromRadian(f.z())), xiiMath::Sin(xiiAngled::MakeFromRadian(f.w())));
 #endif
 }
 
@@ -136,8 +134,7 @@ XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Cos(const xiiSimdVec4f& f)
 #if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)
   return _mm_cos_ps(f.m_v);
 #else
-  return xiiSimdVec4f(xiiMath::Cos(xiiAngle::Radian(f.x())), xiiMath::Cos(xiiAngle::Radian(f.y())), xiiMath::Cos(xiiAngle::Radian(f.z())),
-                      xiiMath::Cos(xiiAngle::Radian(f.w())));
+  return xiiSimdVec4f(xiiMath::Cos(xiiAngle::MakeFromRadian(f.x())), xiiMath::Cos(xiiAngle::MakeFromRadian(f.y())), xiiMath::Cos(xiiAngle::MakeFromRadian(f.z())), xiiMath::Cos(xiiAngle::MakeFromRadian(f.w())));
 #endif
 }
 
@@ -147,8 +144,7 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Cos(const xiiSimdVec4d& f)
 #if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
   return _mm256_cos_pd(f.m_v);
 #else
-  return xiiSimdVec4d(xiiMath::Cos(xiiAngled::Radian(f.x())), xiiMath::Cos(xiiAngled::Radian(f.y())), xiiMath::Cos(xiiAngled::Radian(f.z())),
-                      xiiMath::Cos(xiiAngled::Radian(f.w())));
+  return xiiSimdVec4d(xiiMath::Cos(xiiAngled::MakeFromRadian(f.x())), xiiMath::Cos(xiiAngled::MakeFromRadian(f.y())), xiiMath::Cos(xiiAngled::MakeFromRadian(f.z())), xiiMath::Cos(xiiAngled::MakeFromRadian(f.w())));
 #endif
 }
 
@@ -158,8 +154,7 @@ XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::Tan(const xiiSimdVec4f& f)
 #if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_SSE)
   return _mm_tan_ps(f.m_v);
 #else
-  return xiiSimdVec4f(xiiMath::Tan(xiiAngle::Radian(f.x())), xiiMath::Tan(xiiAngle::Radian(f.y())), xiiMath::Tan(xiiAngle::Radian(f.z())),
-                      xiiMath::Tan(xiiAngle::Radian(f.w())));
+  return xiiSimdVec4f(xiiMath::Tan(xiiAngle::MakeFromRadian(f.x())), xiiMath::Tan(xiiAngle::MakeFromRadian(f.y())), xiiMath::Tan(xiiAngle::MakeFromRadian(f.z())), xiiMath::Tan(xiiAngle::MakeFromRadian(f.w())));
 #endif
 }
 
@@ -169,8 +164,7 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::Tan(const xiiSimdVec4d& f)
 #if XII_ENABLED(XII_COMPILER_MSVC) && (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX)
   return _mm256_tan_pd(f.m_v);
 #else
-  return xiiSimdVec4d(xiiMath::Tan(xiiAngled::Radian(f.x())), xiiMath::Tan(xiiAngled::Radian(f.y())), xiiMath::Tan(xiiAngled::Radian(f.z())),
-                      xiiMath::Tan(xiiAngled::Radian(f.w())));
+  return xiiSimdVec4d(xiiMath::Tan(xiiAngled::MakeFromRadian(f.x())), xiiMath::Tan(xiiAngled::MakeFromRadian(f.y())), xiiMath::Tan(xiiAngled::MakeFromRadian(f.z())), xiiMath::Tan(xiiAngled::MakeFromRadian(f.w())));
 #endif
 }
 
@@ -201,7 +195,7 @@ XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::ACos(const xiiSimdVec4f& f)
   s += x3 * -0.0187293f;
   s = s.CompMul((xiiSimdVec4f(1.0f) - x1).GetSqrt());
 
-  return xiiSimdVec4f::Select(f >= xiiSimdVec4f::ZeroVector(), s, xiiSimdVec4f(xiiMath::Pi<float>()) - s);
+  return xiiSimdVec4f::Select(f >= xiiSimdVec4f::MakeZero(), s, xiiSimdVec4f(xiiMath::Pi<float>()) - s);
 }
 
 // 4th order polynomial approximation
@@ -219,7 +213,7 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::ACos(const xiiSimdVec4d& f)
   s += x3 * -0.0187293;
   s = s.CompMul((xiiSimdVec4d(1.0) - x1).GetSqrt());
 
-  return xiiSimdVec4d::Select(f >= xiiSimdVec4d::ZeroVector(), s, xiiSimdVec4d(xiiMath::Pi<double>()) - s);
+  return xiiSimdVec4d::Select(f >= xiiSimdVec4d::MakeZero(), s, xiiSimdVec4d(xiiMath::Pi<double>()) - s);
 }
 
 // Reference: https://seblagarde.wordpress.com/2014/12/01/inverse-trigonometric-functions-gpu-optimization-for-amd-gcn-architecture/
@@ -235,7 +229,7 @@ XII_FORCE_INLINE xiiSimdVec4f xiiSimdMath::ATan(const xiiSimdVec4f& f)
   poly              = poly.CompMul(t0);
   t0                = xiiSimdVec4f::Select(x < xiiSimdVec4f(1.0f), poly, xiiSimdVec4f(xiiMath::Pi<float>() * 0.5f) - poly);
 
-  return xiiSimdVec4f::Select(f < xiiSimdVec4f::ZeroVector(), -t0, t0);
+  return xiiSimdVec4f::Select(f < xiiSimdVec4f::MakeZero(), -t0, t0);
 }
 
 // Reference: https://seblagarde.wordpress.com/2014/12/01/inverse-trigonometric-functions-gpu-optimization-for-amd-gcn-architecture/
@@ -251,5 +245,5 @@ XII_FORCE_INLINE xiiSimdVec4d xiiSimdMath::ATan(const xiiSimdVec4d& f)
   poly              = poly.CompMul(t0);
   t0                = xiiSimdVec4d::Select(x < xiiSimdVec4d(1.0), poly, xiiSimdVec4d(xiiMath::Pi<float>() * 0.5) - poly);
 
-  return xiiSimdVec4d::Select(f < xiiSimdVec4d::ZeroVector(), -t0, t0);
+  return xiiSimdVec4d::Select(f < xiiSimdVec4d::MakeZero(), -t0, t0);
 }

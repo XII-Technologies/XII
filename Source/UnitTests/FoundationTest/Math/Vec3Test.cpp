@@ -37,7 +37,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     xiiVec3T vCopy(vInit4F);
     XII_TEST_BOOL(vCopy.x == 1.0f && vCopy.y == 2.0f && vCopy.z == 3.0f);
 
-    xiiVec3T vZero = xiiVec3T::ZeroVector();
+    xiiVec3T vZero = xiiVec3T::MakeZero();
     XII_TEST_BOOL(vZero.x == 0.0f && vZero.y == 0.0f && vZero.z == 0.0f);
   }
 
@@ -77,19 +77,25 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     const xiiVec3T vOp1(-4.0, 4.0f, -2.0f);
     const xiiVec3T compArray[3] = {xiiVec3T(1.0f, 0.0f, 0.0f), xiiVec3T(0.0f, 1.0f, 0.0f), xiiVec3T(0.0f, 0.0f, 1.0f)};
 
-    XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetLength") { XII_TEST_FLOAT(vOp1.GetLength(), 6.0f, xiiMath::SmallEpsilon<xiiMathTestType>()); }
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetLength")
+    {
+      XII_TEST_FLOAT(vOp1.GetLength(), 6.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
+    }
 
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetLength")
     {
       xiiVec3T vSetLength = vOp1.GetNormalized() * xiiMath::DefaultEpsilon<xiiMathTestType>();
       XII_TEST_BOOL(vSetLength.SetLength(4.0f, xiiMath::LargeEpsilon<xiiMathTestType>()) == XII_FAILURE);
-      XII_TEST_BOOL(vSetLength == xiiVec3T::ZeroVector());
+      XII_TEST_BOOL(vSetLength == xiiVec3T::MakeZero());
       vSetLength = vOp1.GetNormalized() * (xiiMathTestType)0.001;
       XII_TEST_BOOL(vSetLength.SetLength(4.0f, (xiiMathTestType)xiiMath::DefaultEpsilon<xiiMathTestType>()) == XII_SUCCESS);
       XII_TEST_FLOAT(vSetLength.GetLength(), 4.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
     }
 
-    XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetLengthSquared") { XII_TEST_FLOAT(vOp1.GetLengthSquared(), 36.0f, xiiMath::SmallEpsilon<xiiMathTestType>()); }
+    XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetLengthSquared")
+    {
+      XII_TEST_FLOAT(vOp1.GetLengthSquared(), 36.0f, xiiMath::SmallEpsilon<xiiMathTestType>());
+    }
 
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetLengthAndNormalize")
     {
@@ -132,7 +138,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
 
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsZero")
     {
-      XII_TEST_BOOL(xiiVec3T::ZeroVector().IsZero());
+      XII_TEST_BOOL(xiiVec3T::MakeZero().IsZero());
       for (int i = 0; i < 3; ++i)
       {
         XII_TEST_BOOL(!compArray[i].IsZero());
@@ -141,7 +147,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
 
     XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsZero(float)")
     {
-      XII_TEST_BOOL(xiiVec3T::ZeroVector().IsZero(0.0f));
+      XII_TEST_BOOL(xiiVec3T::MakeZero().IsZero(0.0f));
       for (int i = 0; i < 3; ++i)
       {
         XII_TEST_BOOL(!compArray[i].IsZero(0.0f));
@@ -231,7 +237,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     vMulFloat *= 2.0f;
     XII_TEST_BOOL(vMulFloat.IsEqual(xiiVec3T(-8.0f, 0.4f, -14.0f), xiiMath::SmallEpsilon<xiiMathTestType>()));
     vMulFloat *= 0.0f;
-    XII_TEST_BOOL(vMulFloat.IsEqual(xiiVec3T::ZeroVector(), xiiMath::SmallEpsilon<xiiMathTestType>()));
+    XII_TEST_BOOL(vMulFloat.IsEqual(xiiVec3T::MakeZero(), xiiMath::SmallEpsilon<xiiMathTestType>()));
 
     // operator/= (float)
     xiiVec3T vDivFloat = vOp1;
@@ -248,15 +254,16 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
 
     // operator* (float, xiiVec3T)
     xiiVec3T vMulFloatVec3 = ((xiiMathTestType)2 * vOp1);
-    XII_TEST_BOOL(vMulFloatVec3.IsEqual(xiiVec3T((xiiMathTestType)-8.0, (xiiMathTestType)0.4, (xiiMathTestType)-14.0), xiiMath::SmallEpsilon<xiiMathTestType>()));
+    XII_TEST_BOOL(
+      vMulFloatVec3.IsEqual(xiiVec3T((xiiMathTestType)-8.0, (xiiMathTestType)0.4, (xiiMathTestType)-14.0), xiiMath::SmallEpsilon<xiiMathTestType>()));
     vMulFloatVec3 = ((xiiMathTestType)0 * vOp1);
-    XII_TEST_BOOL(vMulFloatVec3.IsEqual(xiiVec3T::ZeroVector(), xiiMath::SmallEpsilon<xiiMathTestType>()));
+    XII_TEST_BOOL(vMulFloatVec3.IsEqual(xiiVec3T::MakeZero(), xiiMath::SmallEpsilon<xiiMathTestType>()));
 
     // operator* (xiiVec3T, float)
     xiiVec3T vMulVec3Float = (vOp1 * (xiiMathTestType)2);
     XII_TEST_BOOL(vMulVec3Float.IsEqual(xiiVec3T(-8.0f, 0.4f, -14.0f), xiiMath::SmallEpsilon<xiiMathTestType>()));
     vMulVec3Float = (vOp1 * (xiiMathTestType)0);
-    XII_TEST_BOOL(vMulVec3Float.IsEqual(xiiVec3T::ZeroVector(), xiiMath::SmallEpsilon<xiiMathTestType>()));
+    XII_TEST_BOOL(vMulVec3Float.IsEqual(xiiVec3T::MakeZero(), xiiMath::SmallEpsilon<xiiMathTestType>()));
 
     // operator/ (xiiVec3T, float)
     xiiVec3T vDivVec3Float = (vOp1 / (xiiMathTestType)2);
@@ -403,20 +410,20 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_VEC3(v2, xiiVec3T(1, -1, 0), 0.0001f);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomPointInSphere (float)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeRandomPointInSphere (float)")
   {
-    xiiVec3T v;
+    xiiVec3 v;
 
     xiiRandom rng;
     rng.Initialize(0xEEFF0011AABBCCDDULL);
 
-    xiiVec3T avg;
+    xiiVec3 avg;
     avg.SetZero();
 
     const xiiUInt32 uiNumSamples = 100'000;
     for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
     {
-      v = xiiVec3T::CreateRandomPointInSphere(rng);
+      v = xiiVec3::MakeRandomPointInSphere(rng);
 
       XII_TEST_BOOL(v.GetLength() <= 1.0f + xiiMath::SmallEpsilon<float>());
       XII_TEST_BOOL(!v.IsZero());
@@ -431,20 +438,20 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsZero(0.1f));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomPointInSphere (double)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeRandomPointInSphere (double)")
   {
-    xiiVec3d v;
+    xiiVec3T v;
 
     xiiRandom rng;
     rng.Initialize(0xEEFF0011AABBCCDDULL);
 
-    xiiVec3d avg;
+    xiiVec3T avg;
     avg.SetZero();
 
     const xiiUInt32 uiNumSamples = 100'000;
     for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
     {
-      v = xiiVec3d::CreateRandomPointInSphere(rng);
+      v = xiiVec3T::MakeRandomPointInSphere(rng);
 
       XII_TEST_BOOL(v.GetLength() <= 1.0 + xiiMath::SmallEpsilon<double>());
       XII_TEST_BOOL(!v.IsZero());
@@ -459,20 +466,20 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsZero(0.1));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDirection (float)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeRandomDirection (float)")
   {
-    xiiVec3T v;
+    xiiVec3 v;
 
     xiiRandom rng;
     rng.InitializeFromCurrentTime();
 
-    xiiVec3T avg;
+    xiiVec3 avg;
     avg.SetZero();
 
     const xiiUInt32 uiNumSamples = 100'000;
     for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
     {
-      v = xiiVec3T::CreateRandomDirection(rng);
+      v = xiiVec3::MakeRandomDirection(rng);
 
       XII_TEST_BOOL(v.IsNormalized());
 
@@ -486,7 +493,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsZero(0.1f));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDirection (double)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeRandomDirection (double)")
   {
     xiiVec3d v;
 
@@ -499,7 +506,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     const xiiUInt32 uiNumSamples = 100'000;
     for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
     {
-      v = xiiVec3d::CreateRandomDirection(rng);
+      v = xiiVec3d::MakeRandomDirection(rng);
 
       XII_TEST_BOOL(v.IsNormalized());
 
@@ -513,22 +520,22 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsZero(0.1));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationX (float)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeRandomDeviationX (float)")
   {
-    xiiVec3T v;
-    xiiVec3T avg;
+    xiiVec3 v;
+    xiiVec3 avg;
     avg.SetZero();
 
     xiiRandom rng;
     rng.InitializeFromCurrentTime();
 
-    const xiiAngle  dev          = xiiAngle::Degree(65);
+    const xiiAngle  dev          = xiiAngle::MakeFromDegree(65);
     const xiiUInt32 uiNumSamples = 100'000;
     const xiiVec3   vAxis(1, 0, 0);
 
     for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
     {
-      v = xiiVec3T::CreateRandomDeviationX(rng, dev);
+      v = xiiVec3::MakeRandomDeviationX(rng, dev);
 
       XII_TEST_BOOL(v.IsNormalized());
 
@@ -542,7 +549,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsEqual(vAxis, 0.1f));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationX (double)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeRandomDeviationX (double)")
   {
     xiiVec3d v;
     xiiVec3d avg;
@@ -551,13 +558,13 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     xiiRandom rng;
     rng.InitializeFromCurrentTime();
 
-    const xiiAngled dev          = xiiAngled::Degree(65);
+    const xiiAngled dev          = xiiAngled::MakeFromDegree(65);
     const xiiUInt32 uiNumSamples = 100'000;
     const xiiVec3d  vAxis(1, 0, 0);
 
     for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
     {
-      v = xiiVec3d::CreateRandomDeviationX(rng, dev);
+      v = xiiVec3d::MakeRandomDeviationX(rng, dev);
 
       XII_TEST_BOOL(v.IsNormalized());
 
@@ -571,22 +578,22 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsEqual(vAxis, 0.1));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationY (float)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeRandomDeviationY (float)")
   {
-    xiiVec3T v;
-    xiiVec3T avg;
+    xiiVec3 v;
+    xiiVec3 avg;
     avg.SetZero();
 
     xiiRandom rng;
     rng.InitializeFromCurrentTime();
 
-    const xiiAngle  dev          = xiiAngle::Degree(65);
+    const xiiAngle  dev          = xiiAngle::MakeFromDegree(65);
     const xiiUInt32 uiNumSamples = 100'000;
     const xiiVec3   vAxis(0, 1, 0);
 
     for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
     {
-      v = xiiVec3T::CreateRandomDeviationY(rng, dev);
+      v = xiiVec3::MakeRandomDeviationY(rng, dev);
 
       XII_TEST_BOOL(v.IsNormalized());
 
@@ -600,7 +607,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsEqual(vAxis, 0.1f));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationY (double)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeRandomDeviationY (double)")
   {
     xiiVec3d v;
     xiiVec3d avg;
@@ -609,13 +616,13 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     xiiRandom rng;
     rng.InitializeFromCurrentTime();
 
-    const xiiAngled dev          = xiiAngled::Degree(65);
+    const xiiAngled dev          = xiiAngled::MakeFromDegree(65);
     const xiiUInt32 uiNumSamples = 100'000;
     const xiiVec3d  vAxis(0, 1, 0);
 
     for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
     {
-      v = xiiVec3d::CreateRandomDeviationY(rng, dev);
+      v = xiiVec3d::MakeRandomDeviationY(rng, dev);
 
       XII_TEST_BOOL(v.IsNormalized());
 
@@ -629,22 +636,22 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsEqual(vAxis, 0.1));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationZ (float)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeRandomDeviationZ (float)")
   {
-    xiiVec3T v;
-    xiiVec3T avg;
+    xiiVec3 v;
+    xiiVec3 avg;
     avg.SetZero();
 
     xiiRandom rng;
     rng.InitializeFromCurrentTime();
 
-    const xiiAngle  dev          = xiiAngle::Degree(65);
+    const xiiAngle  dev          = xiiAngle::MakeFromDegree(65);
     const xiiUInt32 uiNumSamples = 100'000;
     const xiiVec3   vAxis(0, 0, 1);
 
     for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
     {
-      v = xiiVec3T::CreateRandomDeviationZ(rng, dev);
+      v = xiiVec3::MakeRandomDeviationZ(rng, dev);
 
       XII_TEST_BOOL(v.IsNormalized());
 
@@ -658,7 +665,7 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsEqual(vAxis, 0.1f));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviationZ (double)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeRandomDeviationZ (double)")
   {
     xiiVec3d v;
     xiiVec3d avg;
@@ -667,17 +674,17 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     xiiRandom rng;
     rng.InitializeFromCurrentTime();
 
-    const xiiAngled dev          = xiiAngled::Degree(65);
+    const xiiAngled dev          = xiiAngled::MakeFromDegree(65);
     const xiiUInt32 uiNumSamples = 100'000;
     const xiiVec3d  vAxis(0, 0, 1);
 
     for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
     {
-      v = xiiVec3d::CreateRandomDeviationZ(rng, dev);
+      v = xiiVec3d::MakeRandomDeviationZ(rng, dev);
 
       XII_TEST_BOOL(v.IsNormalized());
 
-      XII_TEST_BOOL(vAxis.GetAngleBetween(v).GetRadian() <= dev.GetRadian() + xiiMath::DefaultEpsilon<double>());
+      XII_TEST_BOOL(vAxis.GetAngleBetween(v).GetRadian() <= dev.GetRadian() + xiiMath::DefaultEpsilon<float>());
 
       avg += v;
     }
@@ -687,22 +694,22 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     XII_TEST_BOOL(avg.IsEqual(vAxis, 0.1));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviation (float)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeRandomDeviation (float)")
   {
-    xiiVec3T v;
+    xiiVec3 v;
 
     xiiRandom rng;
     rng.InitializeFromCurrentTime();
 
-    const xiiAngle  dev          = xiiAngle::Degree(65);
+    const xiiAngle  dev          = xiiAngle::MakeFromDegree(65);
     const xiiUInt32 uiNumSamples = 100'000;
     xiiVec3         vAxis;
 
     for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
     {
-      vAxis = xiiVec3T::CreateRandomDirection(rng);
+      vAxis = xiiVec3::MakeRandomDirection(rng);
 
-      v = xiiVec3T::CreateRandomDeviation(rng, dev, vAxis);
+      v = xiiVec3::MakeRandomDeviation(rng, dev, vAxis);
 
       XII_TEST_BOOL(v.IsNormalized());
 
@@ -710,22 +717,22 @@ XII_CREATE_SIMPLE_TEST(Math, Vec3)
     }
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "CreateRandomDeviation (double)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeRandomDeviation (double)")
   {
     xiiVec3d v;
 
     xiiRandom rng;
     rng.InitializeFromCurrentTime();
 
-    const xiiAngled dev          = xiiAngled::Degree(65);
+    const xiiAngled dev          = xiiAngled::MakeFromDegree(65);
     const xiiUInt32 uiNumSamples = 100'000;
     xiiVec3d        vAxis;
 
     for (xiiUInt32 i = 0; i < uiNumSamples; ++i)
     {
-      vAxis = xiiVec3d::CreateRandomDirection(rng);
+      vAxis = xiiVec3d::MakeRandomDirection(rng);
 
-      v = xiiVec3d::CreateRandomDeviation(rng, dev, vAxis);
+      v = xiiVec3d::MakeRandomDeviation(rng, dev, vAxis);
 
       XII_TEST_BOOL(v.IsNormalized());
 

@@ -401,8 +401,7 @@ xiiUInt32 xiiMeshBufferResourceDescriptor::GetPrimitiveCount() const
 
 xiiBoundingBoxSphere xiiMeshBufferResourceDescriptor::ComputeBounds() const
 {
-  xiiBoundingBoxSphere bounds;
-  bounds.SetInvalid();
+  xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
 
   for (xiiUInt32 i = 0; i < m_InputLayout.m_VertexStreams.GetCount(); ++i)
   {
@@ -414,13 +413,11 @@ xiiBoundingBoxSphere xiiMeshBufferResourceDescriptor::ComputeBounds() const
 
       if (!m_VertexStreamData.IsEmpty() && m_uiVertexCount > 0)
       {
-        bounds.SetFromPoints(reinterpret_cast<const xiiVec3*>(&m_VertexStreamData[offset]), m_uiVertexCount, m_uiVertexSize);
+        bounds = xiiBoundingBoxSphere::MakeFromPoints(reinterpret_cast<const xiiVec3*>(&m_VertexStreamData[offset]), m_uiVertexCount, m_uiVertexSize);
       }
-
       return bounds;
     }
   }
-
   return bounds;
 }
 
@@ -493,7 +490,7 @@ xiiResult xiiMeshBufferResourceDescriptor::RecomputeNormals()
   for (xiiUInt32 i = 0; i < newNormals.GetCount(); ++i)
   {
     // normalize the new normal
-    if (newNormals[i].NormalizeIfNotZero(xiiVec3::UnitXAxis()).Failed())
+    if (newNormals[i].NormalizeIfNotZero(xiiVec3::MakeAxisX()).Failed())
       res = XII_FAILURE;
 
     // then encode it in the target format precision and write it back to the buffer

@@ -68,8 +68,7 @@ void xiiEngineProcessDocumentContext::DestroyDocumentContext(xiiUuid guid)
 
 xiiBoundingBoxSphere xiiEngineProcessDocumentContext::GetWorldBounds(xiiWorld* pWorld)
 {
-  xiiBoundingBoxSphere bounds;
-  bounds.SetInvalid();
+  xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
 
   {
     XII_LOCK(pWorld->GetReadMarker());
@@ -89,7 +88,7 @@ xiiBoundingBoxSphere xiiEngineProcessDocumentContext::GetWorldBounds(xiiWorld* p
   }
 
   if (!bounds.IsValid())
-    bounds = xiiBoundingBoxSphere(xiiVec3::ZeroVector(), xiiVec3(1, 1, 1), 2);
+    bounds = xiiBoundingBoxSphere::MakeFromCenterExtents(xiiVec3::MakeZero(), xiiVec3(1, 1, 1), 2);
 
   return bounds;
 }

@@ -36,7 +36,7 @@ XII_CREATE_SIMPLE_TEST(System, ProcessGroup)
     }
 
     // in a debugger with child debugging enabled etc. even 10 seconds can lead to timeouts due to long delays in the IDE
-    XII_TEST_BOOL(pgroup.WaitToFinish(xiiTime::Seconds(60)).Succeeded());
+    XII_TEST_BOOL(pgroup.WaitToFinish(xiiTime::MakeFromSeconds(60)).Succeeded());
     XII_TEST_STRING(out, "NaNaNaNaNaNaNaNa"); // BATMAN!
   }
 
@@ -62,7 +62,7 @@ XII_CREATE_SIMPLE_TEST(System, ProcessGroup)
     XII_TEST_BOOL(pgroup.TerminateAll().Succeeded());
     const xiiTime tDiff = xiiTime::Now() - tStart;
 
-    XII_TEST_BOOL(tDiff < xiiTime::Seconds(10));
+    XII_TEST_BOOL(tDiff < xiiTime::MakeFromSeconds(10));
   }
 }
 #endif

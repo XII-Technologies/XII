@@ -1,8 +1,8 @@
 #include <Core/CorePCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
 #include <Core/Collection/CollectionResource.h>
 #include <Foundation/Profiling/Profiling.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiCollectionResource, 1, xiiRTTIDefaultAllocator<xiiCollectionResource>)
 XII_END_DYNAMIC_REFLECTED_TYPE;

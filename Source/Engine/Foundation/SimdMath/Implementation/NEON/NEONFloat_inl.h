@@ -4,7 +4,7 @@ XII_ALWAYS_INLINE xiiSimdFloat::xiiSimdFloat()
 {
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   m_v = vmovq_n_f32(xiiMath::NaN<float>());
 #endif
@@ -49,9 +49,15 @@ XII_ALWAYS_INLINE xiiSimdFloat::operator float() const
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::Zero()
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::MakeZero()
 {
   return vmovq_n_f32(0.0f);
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::MakeNaN()
+{
+  return vmovq_n_f32(xiiMath::NaN<float>());
 }
 
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::operator+(const xiiSimdFloat& f) const

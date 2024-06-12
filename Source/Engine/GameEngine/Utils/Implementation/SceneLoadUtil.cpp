@@ -1,7 +1,7 @@
 #include <GameEngine/GameEnginePCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
 #include <Core/Collection/CollectionResource.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GameEngine/GameApplication/GameApplication.h>
 #include <GameEngine/Utils/SceneLoadUtil.h>
 
@@ -167,7 +167,7 @@ void xiiSceneLoadUtility::TickSceneLoading()
         return;
       }
 
-      m_pInstantiationContext = m_WorldReader.InstantiateWorld(*m_pWorld, nullptr, xiiTime::Milliseconds(1), &m_InstantiationProgress);
+      m_pInstantiationContext = m_WorldReader.InstantiateWorld(*m_pWorld, nullptr, xiiTime::MakeFromMilliseconds(1), &m_InstantiationProgress);
     }
   }
   else if (m_pInstantiationContext)

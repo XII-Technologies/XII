@@ -33,7 +33,6 @@ union xiiIntFloatUnion
 /// \brief Simple helper union to store ints and doubles to modify their bit patterns.
 union xiiInt64DoubleUnion
 {
-
   constexpr xiiInt64DoubleUnion(double fInit) :
     f(fInit)
   {
@@ -272,6 +271,9 @@ struct XII_FOUNDATION_DLL xiiBasisAxis
   /// \brief Returns the vector for the given axis. E.g. (1, 0, 0) or (0, -1, 0), etc.
   static xiiVec3 GetBasisVector(xiiBasisAxis::Enum basisAxis);
 
+  /// \brief Returns the vector for the given axis. E.g. (1, 0, 0) or (0, -1, 0), etc.
+  static xiiVec3d GetBasisVectorDouble(xiiBasisAxis::Enum basisAxis);
+
   /// \brief Computes a matrix representing the transformation. 'Forward' represents the X axis, 'Right' the Y axis and 'Up' the Z axis.
   static xiiMat3 CalculateTransformationMatrix(xiiBasisAxis::Enum forwardDir, xiiBasisAxis::Enum rightDir, xiiBasisAxis::Enum dir, float fUniformScale = 1.0f, float fScaleX = 1.0f, float fScaleY = 1.0f, float fScaleZ = 1.0f);
 
@@ -281,8 +283,14 @@ struct XII_FOUNDATION_DLL xiiBasisAxis
   /// \brief Returns a quaternion that rotates from 'identity' to 'axis'
   static xiiQuat GetBasisRotation(xiiBasisAxis::Enum identity, xiiBasisAxis::Enum axis);
 
+  /// \brief Returns a quaternion that rotates from 'identity' to 'axis'
+  static xiiQuatd GetBasisRotationDouble(xiiBasisAxis::Enum identity, xiiBasisAxis::Enum axis);
+
   /// \brief Returns a quaternion that rotates from 'PositiveX' to 'axis'
   static xiiQuat GetBasisRotation_PosX(xiiBasisAxis::Enum axis);
+
+  /// \brief Returns a quaternion that rotates from 'PositiveX' to 'axis'
+  static xiiQuatd GetBasisRotationDouble_PosX(xiiBasisAxis::Enum axis);
 
   /// \brief Returns the axis that is orthogonal to axis1 and axis2. If 'flip' is set, it returns the negated axis.
   ///
@@ -295,7 +303,7 @@ struct XII_FOUNDATION_DLL xiiComparisonOperator
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     Equal,
     NotEqual,

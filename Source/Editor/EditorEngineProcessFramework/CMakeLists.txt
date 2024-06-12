@@ -14,6 +14,6 @@ target_link_libraries(${PROJECT_NAME}
   Utilities
 )
 
-if(XII_3RDPARTY_GLFW_SUPPORT AND XII_CMAKE_PLATFORM_LINUX)
+if(XII_CMAKE_PLATFORM_LINUX)
   target_link_libraries(${PROJECT_NAME} PRIVATE xcb)
 endif()

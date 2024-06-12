@@ -554,8 +554,8 @@ XII_CREATE_SIMPLE_TEST(Strings, StringUtils)
     // substring test
     const char*     sz          = (const char*)u8"äbc def ghi";
     const xiiUInt32 uiByteCount = xiiStringUtils::GetStringElementCount((const char*)u8"äbc");
-    XII_TEST_BOOL(xiiStringUtils::StartsWith_NoCase(sz, (const char*)u8"ÄBC", sz + uiByteCount - 1) == false);
     XII_TEST_BOOL(xiiStringUtils::StartsWith_NoCase(sz, (const char*)u8"ÄBC", sz + uiByteCount) == true);
+    XII_TEST_BOOL(xiiStringUtils::StartsWith_NoCase(sz, (const char*)u8"ÄBC", sz + uiByteCount - 1) == false);
     XII_TEST_BOOL(xiiStringUtils::StartsWith_NoCase(sz, (const char*)u8"ÄBC", sz + 0) == false);
 
     const char* sz2 = (const char*)u8"Äbc def";

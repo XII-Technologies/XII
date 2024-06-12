@@ -10,7 +10,7 @@ void xiiRopeSimulator::SimulateRope(const xiiTime& diff)
 {
   m_LeftOverTimeStep += diff;
 
-  constexpr xiiTime  tStep         = xiiTime::Seconds(1.0 / 60.0);
+  constexpr xiiTime  tStep         = xiiTime::MakeFromSeconds(1.0 / 60.0);
   const xiiSimdFloat tStepSqr      = static_cast<float>(tStep.GetSeconds() * tStep.GetSeconds());
   const xiiSimdFloat fAllowedError = m_fSegmentLength;
 
@@ -41,7 +41,7 @@ void xiiRopeSimulator::SimulateStep(const xiiSimdFloat fDiffSqr, xiiUInt32 uiMax
 
 void xiiRopeSimulator::SimulateTillEquilibrium(xiiSimdFloat fAllowedMovement, xiiUInt32 uiMaxIterations)
 {
-  constexpr xiiTime tStep    = xiiTime::Seconds(1.0 / 60.0);
+  constexpr xiiTime tStep    = xiiTime::MakeFromSeconds(1.0 / 60.0);
   xiiSimdFloat      tStepSqr = static_cast<float>(tStep.GetSeconds() * tStep.GetSeconds());
 
   xiiUInt8 uiInEquilibrium = 0;
@@ -98,7 +98,7 @@ float xiiRopeSimulator::GetTotalLength() const
 xiiSimdVec4f xiiRopeSimulator::GetPositionAtLength(float fLength) const
 {
   if (m_Nodes.IsEmpty())
-    return xiiSimdVec4f::ZeroVector();
+    return xiiSimdVec4f::MakeZero();
 
   xiiSimdVec4f prev = m_Nodes[0].m_vPosition;
   for (xiiUInt32 i = 1; i < m_Nodes.GetCount(); ++i)
@@ -128,7 +128,7 @@ xiiSimdVec4f xiiRopeSimulator::MoveTowards(const xiiSimdVec4f posThis, const xii
 
   if (fLen < m_fSegmentLength)
   {
-    return xiiSimdVec4f::ZeroVector();
+    return xiiSimdVec4f::MakeZero();
   }
 
   vDir /= fLen;
@@ -155,7 +155,7 @@ xiiSimdFloat xiiRopeSimulator::EnforceDistanceConstraint()
   auto& firstNode = m_Nodes[0];
   auto& lastNode  = m_Nodes.PeekBack();
 
-  xiiSimdFloat fError = xiiSimdFloat::Zero();
+  xiiSimdFloat fError = xiiSimdFloat::MakeZero();
 
   if (!m_bFirstNodeIsFixed)
   {

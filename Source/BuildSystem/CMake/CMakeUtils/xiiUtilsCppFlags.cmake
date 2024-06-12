@@ -62,12 +62,19 @@ function(xii_set_build_flags_msvc TARGET_NAME)
   # /WX: Treat warnings as errors
   if(NOT ${ARG_NO_WARNINGS_AS_ERRORS} AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(${TARGET_NAME} PRIVATE "/WX")
+    # switch Warning 4996 (deprecation warning) from warning level 3 to warning level 1
+    # since you can't mark warnings as "not errors" in MSVC, we must switch off
+    # the global warning-as-errors flag
+    # instead we could switch ON selected warnings as errors
+    # target_compile_options(${TARGET_NAME} PRIVATE "/w14996")
   endif()
 
   if((CMAKE_SIZEOF_VOID_P EQUAL 4) AND XII_CMAKE_ARCHITECTURE_X86)
     # Enable SSE2 (incompatible with /fp:except)
     target_compile_options(${TARGET_NAME} PRIVATE "/arch:SSE2")
-  else()
+  endif()
+
+  if((CMAKE_SIZEOF_VOID_P EQUAL 8) AND XII_CMAKE_ARCHITECTURE_X86)
     # Enable AVX2
     target_compile_options(${TARGET_NAME} PRIVATE "/arch:AVX2")
   endif()
@@ -88,9 +95,11 @@ function(xii_set_build_flags_msvc TARGET_NAME)
   # /Oi: Replace some functions with intrinsics or other special forms of the function
   target_compile_options(${TARGET_NAME} PRIVATE "$<$<CONFIG:${XII_BUILDTYPENAME_RELEASE_UPPER}>:/Oi>")
 
+  # Enable SSE4.1 for Clang on Windows.
   # Enable AVX2 for Clang on Windows.
-  # Todo: In general we should make this configurable. As of writing AVX2 is always active for windows builds (independent of the compiler)
+  # Todo: In general we should make this configurable. As of writing SSE4.1 and AVX2 are always active for windows builds (independent of the compiler)
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND XII_CMAKE_ARCHITECTURE_X86)
+    target_compile_options(${TARGET_NAME} PRIVATE "-msse4.1")
     target_compile_options(${TARGET_NAME} PRIVATE "-mavx2" "-mfma" "-mf16c" "-mbmi" "-mlzcnt")
   endif()
 
@@ -160,64 +169,13 @@ endfunction()
 # ## xii_set_build_flags_clang(<target>)
 # #####################################
 function(xii_set_build_flags_clang TARGET_NAME)
-  # Cmake complains that this is not defined on OSX make build.
-  # if(XII_COMPILE_ENGINE_AS_DLL)
-  # set (CMAKE_CPP_CREATE_DYNAMIC_LIBRARY ON)
-  # else ()
-  # set (CMAKE_CPP_CREATE_STATIC_LIBRARY ON)
-  # endif ()
-  if(XII_CMAKE_PLATFORM_OSX)
-    target_compile_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-stdlib=libc++>)
-
-    target_link_options(${TARGET_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-stdlib=libc++>)
-  endif()
-
   if(XII_CMAKE_ARCHITECTURE_X86)
+    target_compile_options(${TARGET_NAME} PRIVATE "-msse4.1")
     target_compile_options(${TARGET_NAME} PRIVATE "-mavx2" "-mfma" "-mf16c" "-mbmi" "-mlzcnt")
-  endif()
-
-  if(XII_CMAKE_PLATFORM_LINUX)
-    target_compile_options(${TARGET_NAME} PRIVATE -fPIC)
-
-    # Look for the super fast ld compatible linker called "mold". If present we want to use it.
-    find_program(MOLD_PATH "mold")
-
-    # We want to use the llvm linker lld by default
-    # Unless the user has specified a different linker
-    get_target_property(TARGET_TYPE ${TARGET_NAME} TYPE)
-
-    if("${TARGET_TYPE}" STREQUAL "SHARED_LIBRARY")
-      if(NOT("${CMAKE_EXE_LINKER_FLAGS}" MATCHES "fuse-ld="))
-        if(MOLD_PATH)
-          target_link_options(${TARGET_NAME} PRIVATE "-fuse-ld=${MOLD_PATH}")
-        else()
-          target_link_options(${TARGET_NAME} PRIVATE "-fuse-ld=lld")
-        endif()
-      endif()
-
-      # Reporting missing symbols at linktime
-      target_link_options(${TARGET_NAME} PRIVATE "-Wl,-z,defs")
-    elseif("${TARGET_TYPE}" STREQUAL "EXECUTABLE")
-      if(NOT("${CMAKE_SHARED_LINKER_FLAGS}" MATCHES "fuse-ld="))
-        if(MOLD_PATH)
-          target_link_options(${TARGET_NAME} PRIVATE "-fuse-ld=${MOLD_PATH}")
-        else()
-          target_link_options(${TARGET_NAME} PRIVATE "-fuse-ld=lld")
-        endif()
-      endif()
-
-      # Reporting missing symbols at linktime
-      target_link_options(${TARGET_NAME} PRIVATE "-Wl,-z,defs")
-    endif()
   endif()
 
   # Disable warning: multi-character character constant
   target_compile_options(${TARGET_NAME} PRIVATE -Wno-multichar)
-
-  if(XII_CMAKE_PLATFORM_WINDOWS)
-    # Disable the warning that clang doesn't support pragma optimize.
-    target_compile_options(${TARGET_NAME} PRIVATE -Wno-ignored-pragma-optimize -Wno-pragma-pack)
-  endif()
 
   if(NOT(CMAKE_CURRENT_SOURCE_DIR MATCHES "Source/ThirdParty"))
     target_compile_options(${TARGET_NAME} PRIVATE -Werror=inconsistent-missing-override -Werror=switch -Werror=uninitialized -Werror=unused-result -Werror=return-type)
@@ -236,6 +194,11 @@ function(xii_set_build_flags_clang TARGET_NAME)
     target_compile_options(${TARGET_NAME} PRIVATE "--system-header-prefix=\"${XII_ROOT}/Source/ThirdParty\"")
   else()
     target_compile_options(${TARGET_NAME} PRIVATE "--system-header-prefix=\"${CMAKE_SOURCE_DIR}/Source/ThirdParty\"")
+  endif()
+
+  if(COMMAND xii_platformhook_set_build_flags_clang)
+    # call platform-specific hook
+    xii_platformhook_set_build_flags_clang()
   endif()
 endfunction()
 
@@ -256,6 +219,7 @@ function(xii_set_build_flags_gcc TARGET_NAME)
   target_compile_options(${TARGET_NAME} PRIVATE -fPIC -gdwarf-3)
 
   if(XII_CMAKE_ARCHITECTURE_X86)
+    target_compile_options(${TARGET_NAME} PRIVATE -msse4.1)
     target_compile_options(${TARGET_NAME} PRIVATE -mavx2 -mfma -mf16c -mbmi -mlzcnt)
   endif()
 
@@ -309,8 +273,8 @@ function(xii_set_build_flags TARGET_NAME)
 
   set_property(TARGET ${TARGET_NAME} PROPERTY CXX_STANDARD 20)
 
-  # On Android or Clang, we need to specify the C++ version manually.
-  if(ANDROID OR XII_CMAKE_COMPILER_CLANG)
+  # On Android, we need to specify it manually.
+  if(ANDROID)
     add_compile_options(-std=c++20)
   endif()
 
@@ -331,13 +295,17 @@ endfunction()
 # ## xii_enable_strict_warnings(<target>)
 # #####################################
 function(xii_enable_strict_warnings TARGET_NAME)
-  if(MSVC)
+  if(XII_CMAKE_COMPILER_MSVC)
     # In case there is W3 already, remove it so it doesn't spam warnings when using Ninja builds.
     get_target_property(TARGET_COMPILE_OPTS ${PROJECT_NAME} COMPILE_OPTIONS)
     list(REMOVE_ITEM TARGET_COMPILE_OPTS /W3)
     set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_OPTIONS "${TARGET_COMPILE_OPTS}")
 
     target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+  endif()
+
+  if(XII_CMAKE_COMPILER_CLANG)
+    target_compile_options(${PROJECT_NAME} PRIVATE -Werror -Wall -Wlogical-op-parentheses)
   endif()
 endfunction()
 
@@ -352,4 +320,3 @@ function(xii_set_clib_build_flags TARGET_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES COMPILE_OPTIONS "${TARGET_COMPILE_OPTS}")
   endif()
 endfunction()
-

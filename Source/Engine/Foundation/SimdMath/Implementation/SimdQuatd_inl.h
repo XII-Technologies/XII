@@ -7,26 +7,27 @@ XII_ALWAYS_INLINE xiiSimdQuatd::xiiSimdQuatd(const xiiSimdVec4d& v) :
 {
 }
 
-// static
-XII_ALWAYS_INLINE xiiSimdQuatd xiiSimdQuatd::IdentityQuaternion()
+XII_ALWAYS_INLINE const xiiSimdQuatd xiiSimdQuatd::MakeIdentity()
 {
   return xiiSimdQuatd(xiiSimdVec4d(0.0, 0.0, 0.0, 1.0));
 }
 
-XII_ALWAYS_INLINE void xiiSimdQuatd::SetIdentity()
+XII_ALWAYS_INLINE xiiSimdQuatd xiiSimdQuatd::MakeFromElements(xiiSimdDouble x, xiiSimdDouble y, xiiSimdDouble z, xiiSimdDouble w)
 {
-  m_v.Set(0.0, 0.0, 0.0, 1.0);
+  return xiiSimdQuatd(xiiSimdVec4d(x, y, z, w));
 }
 
-XII_ALWAYS_INLINE void xiiSimdQuatd::SetFromAxisAndAngle(const xiiSimdVec4d& vRotationAxis, const xiiSimdDouble& fAngle)
+inline xiiSimdQuatd xiiSimdQuatd::MakeFromAxisAndAngle(const xiiSimdVec4d& vRotationAxis, const xiiSimdDouble& fAngle)
 {
   ///\todo optimize
-  const xiiAngled halfAngle = xiiAngled::Radian(fAngle) * 0.5;
+  const xiiAngled halfAngle = xiiAngled::MakeFromRadian(fAngle) * 0.5;
   double          s         = xiiMath::Sin(halfAngle);
   double          c         = xiiMath::Cos(halfAngle);
 
-  m_v = vRotationAxis * s;
-  m_v.SetW(c);
+  xiiSimdQuatd res;
+  res.m_v = vRotationAxis * s;
+  res.m_v.SetW(c);
+  return res;
 }
 
 XII_ALWAYS_INLINE void xiiSimdQuatd::Normalize()
@@ -37,7 +38,7 @@ XII_ALWAYS_INLINE void xiiSimdQuatd::Normalize()
 inline xiiResult xiiSimdQuatd::GetRotationAxisAndAngle(xiiSimdVec4d& ref_vAxis, xiiSimdDouble& ref_fAngle, const xiiSimdDouble& fEpsilon) const
 {
   ///\todo optimize
-  const xiiAngled acos = xiiMath::ACos((double)m_v.w());
+  const xiiAngled acos = xiiMath::ACos((double)m_v.w().Max(-1).Min(1));
   const double    d    = xiiMath::Sin(acos);
 
   if (d < fEpsilon)
@@ -67,7 +68,7 @@ XII_ALWAYS_INLINE xiiSimdMat4d xiiSimdQuatd::GetAsMat4() const
   const xiiSimdVec4d yy2_xx2_xx2 = xx2yy2zz2.Get<xiiSwizzle::YXXX>();
   const xiiSimdVec4d zz2_zz2_yy2 = xx2yy2zz2.Get<xiiSwizzle::ZZYX>();
   xiiSimdVec4d       diagonal    = xiiSimdVec4d(1.0) - (yy2_xx2_xx2 + zz2_zz2_yy2);
-  diagonal.SetW(xiiSimdDouble::Zero());
+  diagonal.SetW(xiiSimdDouble::MakeZero());
 
   // non diagonal terms
   // xy2 +- wz2
@@ -98,7 +99,7 @@ XII_ALWAYS_INLINE xiiSimdMat4d xiiSimdQuatd::GetAsMat4() const
   const xiiSimdVec4d addZ_u_subY_u = adds.GetCombined<xiiSwizzle::ZXYX>(subs);
   const xiiSimdVec4d col2          = addZ_u_subY_u.GetCombined<xiiSwizzle::XZZW>(diagonal);
 
-  return xiiSimdMat4d(col0, col1, col2, xiiSimdVec4d(0, 0, 0, 1));
+  return xiiSimdMat4d::MakeFromColumns(col0, col1, col2, xiiSimdVec4d(0, 0, 0, 1));
 }
 
 XII_ALWAYS_INLINE bool xiiSimdQuatd::IsValid(const xiiSimdDouble& fEpsilon) const
@@ -113,7 +114,7 @@ XII_ALWAYS_INLINE bool xiiSimdQuatd::IsNaN() const
 
 XII_ALWAYS_INLINE xiiSimdQuatd xiiSimdQuatd::operator-() const
 {
-  return m_v.FlipSign(xiiSimdVec4b(true, true, true, false));
+  return xiiSimdQuatd(m_v.FlipSign(xiiSimdVec4b(true, true, true, false)));
 }
 
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdQuatd::operator*(const xiiSimdVec4d& v) const

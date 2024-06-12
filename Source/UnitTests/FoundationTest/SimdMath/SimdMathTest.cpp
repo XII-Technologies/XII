@@ -6,12 +6,12 @@ namespace
 {
   xiiSimdVec4f SimdDegree(float fDegree)
   {
-    return xiiSimdVec4f(xiiAngle::Degree(fDegree));
+    return xiiSimdVec4f(xiiAngle::MakeFromDegree(fDegree));
   }
 
   xiiSimdVec4d SimdDegree(double fDegree)
   {
-    return xiiSimdVec4d(xiiAngled::Degree(fDegree));
+    return xiiSimdVec4d(xiiAngled::MakeFromDegree(fDegree));
   }
 } // namespace
 
@@ -199,7 +199,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMath)
     XII_TEST_BOOL((xiiSimdMath::Tan(SimdDegree(89.9999f)) > xiiSimdVec4f(100000.0f)).AllSet());
 
     // Testing the period of tan(x) centered at 0 and the adjacent ones
-    xiiAngle angle = xiiAngle::Degree(-89.0f);
+    xiiAngle angle = xiiAngle::MakeFromDegree(-89.0f);
     while (angle.GetDegree() < 89.0f)
     {
       xiiSimdVec4f simdAngle(angle.GetRadian());
@@ -210,10 +210,10 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMath)
       xiiSimdVec4f fSin     = xiiSimdMath::Sin(simdAngle);
       xiiSimdVec4f fCos     = xiiSimdMath::Cos(simdAngle);
 
-      XII_TEST_BOOL((fTan - fTanPrev).IsEqual(xiiSimdVec4f::ZeroVector(), 0.002f).AllSet());
-      XII_TEST_BOOL((fTan - fTanNext).IsEqual(xiiSimdVec4f::ZeroVector(), 0.002f).AllSet());
-      XII_TEST_BOOL((fTan - fSin.CompDiv(fCos)).IsEqual(xiiSimdVec4f::ZeroVector(), 0.0005f).AllSet());
-      angle += xiiAngle::Degree(1.234f);
+      XII_TEST_BOOL((fTan - fTanPrev).IsEqual(xiiSimdVec4f::MakeZero(), 0.002f).AllSet());
+      XII_TEST_BOOL((fTan - fTanNext).IsEqual(xiiSimdVec4f::MakeZero(), 0.002f).AllSet());
+      XII_TEST_BOOL((fTan - fSin.CompDiv(fCos)).IsEqual(xiiSimdVec4f::MakeZero(), 0.0005f).AllSet());
+      angle += xiiAngle::MakeFromDegree(1.234f);
     }
   }
 
@@ -226,7 +226,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMath)
     XII_TEST_BOOL((xiiSimdMath::Tan(SimdDegree(89.9999)) > xiiSimdVec4d(100000.0)).AllSet());
 
     // Testing the period of tan(x) centered at 0 and the adjacent ones
-    xiiAngled angle = xiiAngled::Degree(-89.0);
+    xiiAngled angle = xiiAngled::MakeFromDegree(-89.0);
     while (angle.GetDegree() < 89.0)
     {
       xiiSimdVec4d simdAngle(angle.GetRadian());
@@ -237,10 +237,10 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdMath)
       xiiSimdVec4d fSin     = xiiSimdMath::Sin(simdAngle);
       xiiSimdVec4d fCos     = xiiSimdMath::Cos(simdAngle);
 
-      XII_TEST_BOOL((fTan - fTanPrev).IsEqual(xiiSimdVec4d::ZeroVector(), 0.002).AllSet());
-      XII_TEST_BOOL((fTan - fTanNext).IsEqual(xiiSimdVec4d::ZeroVector(), 0.002).AllSet());
-      XII_TEST_BOOL((fTan - fSin.CompDiv(fCos)).IsEqual(xiiSimdVec4d::ZeroVector(), 0.0005).AllSet());
-      angle += xiiAngled::Degree(1.234);
+      XII_TEST_BOOL((fTan - fTanPrev).IsEqual(xiiSimdVec4d::MakeZero(), 0.002).AllSet());
+      XII_TEST_BOOL((fTan - fTanNext).IsEqual(xiiSimdVec4d::MakeZero(), 0.002).AllSet());
+      XII_TEST_BOOL((fTan - fSin.CompDiv(fCos)).IsEqual(xiiSimdVec4d::MakeZero(), 0.0005).AllSet());
+      angle += xiiAngled::MakeFromDegree(1.234);
     }
   }
 

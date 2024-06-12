@@ -68,7 +68,7 @@ void xiiEditorEngineProcessConnection::UIServicesTickEventHandler(const xiiQtUiS
 
       if (m_uiRedrawCountSent > m_uiRedrawCountReceived)
       {
-        WaitForMessage(xiiGetStaticRTTI<xiiSyncWithProcessMsgToEditor>(), xiiTime::Seconds(2.0)).IgnoreResult();
+        WaitForMessage(xiiGetStaticRTTI<xiiSyncWithProcessMsgToEditor>(), xiiTime::MakeFromSeconds(2.0)).IgnoreResult();
       }
 
       ++m_uiRedrawCountSent;
@@ -134,9 +134,9 @@ void xiiEditorEngineProcessConnection::Initialize(const xiiRTTI* pFirstAllowedMe
   }
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  const char* EditorEngineProcessExecutableName = "EditorEngineProcess.exe";
+  const char* EditorEngineProcessExecutableName = "xiiEditorEngineProcess.exe";
 #elif XII_ENABLED(XII_PLATFORM_LINUX)
-  const char* EditorEngineProcessExecutableName = "EditorEngineProcess";
+  const char* EditorEngineProcessExecutableName = "xiiEditorEngineProcess";
 #else
 #  error Platform not supported
 #endif
@@ -321,7 +321,7 @@ xiiResult xiiEditorEngineProcessConnection::RestartProcess()
   XII_PROFILE_SCOPE("RestartProcess");
   XII_LOG_BLOCK("Restarting Engine Process");
 
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Reloading Engine Process...", xiiTime::Seconds(5));
+  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Reloading Engine Process...", xiiTime::MakeFromSeconds(5));
 
   ShutdownProcess();
 

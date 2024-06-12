@@ -90,8 +90,8 @@ private:
   };
 
   // used for mesh simplification
-  xiiAngle m_MinTriangleAngle          = xiiAngle::Degree(22.0f);
-  xiiAngle m_FlatVertexNormalThreshold = xiiAngle::Degree(5);
+  xiiAngle m_MinTriangleAngle          = xiiAngle::MakeFromDegree(22.0f);
+  xiiAngle m_FlatVertexNormalThreshold = xiiAngle::MakeFromDegree(5);
   double   m_fMinTriangleEdgeLength    = 0.05;
 
   xiiVec3d m_vCenter;

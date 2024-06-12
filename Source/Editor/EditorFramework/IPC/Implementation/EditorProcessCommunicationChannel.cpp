@@ -40,7 +40,7 @@ xiiResult xiiEditorProcessCommunicationChannel::StartClientProcess(const char* s
     if (m_pChannel->GetConnectionState() == xiiIpcChannel::ConnectionState::Connecting)
       break;
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
   }
   if (m_pChannel->GetConnectionState() != xiiIpcChannel::ConnectionState::Connecting)
   {

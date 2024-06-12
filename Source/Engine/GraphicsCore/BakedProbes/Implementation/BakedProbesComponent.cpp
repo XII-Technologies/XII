@@ -51,7 +51,7 @@ struct xiiBakedProbesComponent::RenderDebugViewTask : public xiiTask
   xiiBakingInterface* m_pBakingInterface = nullptr;
 
   const xiiWorld*                  m_pWorld                = nullptr;
-  xiiMat4                          m_InverseViewProjection = xiiMat4::IdentityMatrix();
+  xiiMat4                          m_InverseViewProjection = xiiMat4::MakeIdentity();
   xiiUInt32                        m_uiWidth               = 0;
   xiiUInt32                        m_uiHeight              = 0;
   xiiDynamicArray<xiiColorGammaUB> m_PixelData;
@@ -288,8 +288,7 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& ref_m
     return;
 
   // Don't trigger probe rendering in shadow or reflection views.
-  if (ref_msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow ||
-      ref_msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Reflection)
+  if (ref_msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Shadow || ref_msg.m_pView->GetCameraUsageHint() == xiiCameraUsageHint::Reflection)
     return;
 
   auto pModule = GetWorld()->GetModule<xiiBakedProbesWorldModule>();
@@ -300,7 +299,7 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& ref_m
   auto                 pManager = static_cast<const xiiBakedProbesComponentManager*>(GetOwningManager());
 
   auto addProbeRenderData = [&](const xiiVec3& vPosition, xiiCompressedSkyVisibility skyVisibility, xiiRenderData::Caching::Enum caching) {
-    xiiTransform transform = xiiTransform::IdentityTransform();
+    xiiTransform transform = xiiTransform::MakeIdentity();
     transform.m_vPosition  = vPosition;
 
     xiiColor encodedSkyVisibility = xiiColor::Black;
@@ -314,7 +313,7 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& ref_m
       pRenderData->m_Color           = encodedSkyVisibility;
       pRenderData->m_uiSubMeshIndex  = 0;
       pRenderData->m_uiUniqueID      = xiiRenderComponent::GetUniqueIdForRendering(this, 0);
-      pRenderData->m_GlobalBounds.SetInvalid();
+      pRenderData->m_GlobalBounds    = xiiBoundingBoxSphere::MakeInvalid();
 
       pRenderData->FillBatchIdAndSortingKey();
     }
@@ -325,7 +324,7 @@ void xiiBakedProbesComponent::OnExtractRenderData(xiiMsgExtractRenderData& ref_m
   if (m_bUseTestPosition)
   {
     xiiBakedProbesWorldModule::ProbeIndexData indexData;
-    if (pModule->GetProbeIndexData(m_vTestPosition, xiiVec3::UnitZAxis(), indexData).Failed())
+    if (pModule->GetProbeIndexData(m_vTestPosition, xiiVec3::MakeAxisZ(), indexData).Failed())
       return;
 
     if (true)

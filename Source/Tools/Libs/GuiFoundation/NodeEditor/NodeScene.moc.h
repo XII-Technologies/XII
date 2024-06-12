@@ -121,7 +121,7 @@ private:
   xiiQtPin*                              m_pStartPin              = nullptr;
   xiiQtConnection*                       m_pTempConnection        = nullptr;
   xiiDeque<const xiiDocumentObject*>     m_Selection;
-  xiiVec2                                m_vMousePos = xiiVec2::ZeroVector();
+  xiiVec2                                m_vMousePos = xiiVec2::MakeZero();
   QString                                m_sContextMenuSearchText;
   xiiDynamicArray<const xiiQtPin*>       m_ConnectablePins;
   xiiEnum<ConnectionStyle>               m_ConnectionStyle;

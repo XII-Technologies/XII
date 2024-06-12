@@ -117,7 +117,7 @@ xiiStatus xiiImageDataAssetDocument::RunTexConv(const char* szTargetFile, const 
   arguments << "-rgba";
   arguments << "in0.rgba";
 
-  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("TexConv", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
+  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTexConv", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
 
   if (bUpdateThumbnail)
   {

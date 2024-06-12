@@ -19,7 +19,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 static void CreatePreviewRect(xiiGeometry& ref_geom)
 {
-  const xiiMat4  mTransform = xiiMat4::IdentityMatrix();
+  const xiiMat4  mTransform = xiiMat4::MakeIdentity();
   const xiiVec2  size(1.0f);
   const xiiColor color = xiiColor::White;
 
@@ -135,8 +135,8 @@ void xiiTextureContext::OnInitialize()
     xiiGameObject*    pObj;
 
     obj.m_sName.Assign("TexturePreview");
-    obj.m_LocalRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
-    m_hPreviewObject = m_pWorld->CreateObject(obj, pObj);
+    obj.m_LocalRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(90));
+    m_hPreviewObject    = m_pWorld->CreateObject(obj, pObj);
 
     xiiMeshComponent* pMesh;
     m_hPreviewMesh2D = xiiMeshComponent::CreateComponent(pObj, pMesh);

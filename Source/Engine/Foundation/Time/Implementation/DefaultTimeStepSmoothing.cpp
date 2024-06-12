@@ -54,6 +54,4 @@ xiiTime xiiDefaultTimeStepSmoothing::GetSmoothedTimeStep(xiiTime rawTimeStep, co
   return m_LastTimeStepTaken;
 }
 
-
-
 XII_STATICLINK_FILE(Foundation, Foundation_Time_Implementation_DefaultTimeStepSmoothing);

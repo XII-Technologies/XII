@@ -123,7 +123,7 @@ void xiiRemoteInterfaceEnetImpl::InternalShutdownConnection()
 
     // process the network messages (e.g. send the disconnect messages)
     UpdateRemoteInterface();
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
   }
 
   // finally close the network connection
@@ -142,7 +142,7 @@ xiiTime xiiRemoteInterfaceEnetImpl::InternalGetPingToServer()
   XII_ASSERT_DEV(m_pEnetConnectionToServer != nullptr, "Client has not connected to server");
 
   enet_peer_ping(m_pEnetConnectionToServer);
-  return xiiTime::Milliseconds(m_pEnetConnectionToServer->lastRoundTripTime);
+  return xiiTime::MakeFromMilliseconds(m_pEnetConnectionToServer->lastRoundTripTime);
 }
 
 xiiResult xiiRemoteInterfaceEnetImpl::InternalTransmit(xiiRemoteTransmitMode tm, const xiiArrayPtr<const xiiUInt8>& data)
@@ -209,8 +209,7 @@ void xiiRemoteInterfaceEnetImpl::InternalUpdateRemoteInterface()
         else
         {
           const xiiUInt32 uiAppID = GetApplicationID();
-          Send(xiiRemoteTransmitMode::Reliable, GetConnectionToken(), 'XIID',
-               xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&uiAppID), sizeof(xiiUInt32)));
+          Send(xiiRemoteTransmitMode::Reliable, GetConnectionToken(), 'XIID', xiiArrayPtr<const xiiUInt8>(reinterpret_cast<const xiiUInt8*>(&uiAppID), sizeof(xiiUInt32)));
 
           // then wait for its acknowledgment message
         }
@@ -286,7 +285,5 @@ void xiiRemoteInterfaceEnetImpl::InternalUpdateRemoteInterface()
 }
 
 #endif
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_RemoteInterfaceEnet);

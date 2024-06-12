@@ -9,7 +9,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 xiiConeAngleGizmo::xiiConeAngleGizmo()
 {
-  m_Angle       = xiiAngle::Degree(1.0f);
+  m_Angle       = xiiAngle::MakeFromDegree(1.0f);
   m_fAngleScale = 1.0f;
   m_fRadius     = 1.0f;
 
@@ -18,7 +18,7 @@ xiiConeAngleGizmo::xiiConeAngleGizmo()
   m_hConeAngle.ConfigureHandle(this, xiiEngineGizmoHandleType::Cone, xiiColorLinearUB(200, 200, 0, 128), xiiGizmoFlags::Pickable);
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiConeAngleGizmo::OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)
@@ -110,7 +110,7 @@ xiiEditorInput xiiConeAngleGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   const xiiTime tNow = xiiTime::Now();
 
-  if (tNow - m_LastInteraction < xiiTime::Seconds(1.0 / 25.0))
+  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
     return xiiEditorInput::WasExclusivelyHandled;
 
   m_LastInteraction = tNow;
@@ -123,13 +123,13 @@ xiiEditorInput xiiConeAngleGizmo::DoMouseMoveEvent(QMouseEvent* e)
   m_vLastMousePos = UpdateMouseMode(e);
 
   const float    fSpeed = 0.02f;
-  const xiiAngle aSpeed = xiiAngle::Degree(1.0f);
+  const xiiAngle aSpeed = xiiAngle::MakeFromDegree(1.0f);
 
   {
     m_Angle += (float)vDiff.x * aSpeed;
     m_Angle -= (float)vDiff.y * aSpeed;
 
-    m_Angle = xiiMath::Clamp(m_Angle, xiiAngle(), xiiAngle::Degree(179.0f));
+    m_Angle = xiiMath::Clamp(m_Angle, xiiAngle(), xiiAngle::MakeFromDegree(179.0f));
 
     m_fAngleScale = xiiMath::Tan(m_Angle * 0.5f);
   }

@@ -301,7 +301,7 @@ void xiiLog::GenerateFormattedTimestamp(TimestampMode mode, xiiStringBuilder& re
     return;
   }
 
-  const xiiDateTime dateTime(xiiTimestamp::CurrentTimestamp());
+  const xiiDateTime dateTime = xiiDateTime::MakeFromTimestamp(xiiTimestamp::CurrentTimestamp());
 
   switch (mode)
   {

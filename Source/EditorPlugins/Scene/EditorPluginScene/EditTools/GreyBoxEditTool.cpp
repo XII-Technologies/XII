@@ -94,7 +94,7 @@ void xiiGreyBoxEditTool::UpdateGizmoState()
   xiiManipulatorManager::GetSingleton()->HideActiveManipulator(GetDocument(), GetDocument()->GetActiveEditTool() != nullptr);
 
   m_DrawBoxGizmo.SetVisible(IsActive());
-  m_DrawBoxGizmo.SetTransformation(xiiTransform::IdentityTransform());
+  m_DrawBoxGizmo.SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiGreyBoxEditTool::GameObjectEventHandler(const xiiGameObjectEvent& e)
@@ -170,8 +170,8 @@ void xiiGreyBoxEditTool::GizmoEventHandler(const xiiGizmoEvent& e)
     pHistory->StartTransaction("Add Grey-Box");
 
     xiiUuid objGuid, compGuid;
-    objGuid  = xiiUuid::CreateUuid();
-    compGuid = xiiUuid::CreateUuid();
+    objGuid  = xiiUuid::MakeUuid();
+    compGuid = xiiUuid::MakeUuid();
 
     {
       xiiAddObjectCommand cmdAdd;

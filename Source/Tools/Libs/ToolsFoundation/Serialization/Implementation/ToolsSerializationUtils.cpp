@@ -21,7 +21,7 @@ void xiiToolsSerializationUtils::SerializeTypes(const xiiSet<const xiiRTTI*>& ty
       xiiToolsReflectionUtils::GetMinimalReflectedTypeDescriptorFromRtti(pType, desc);
     }
 
-    context.RegisterObject(xiiUuid::StableUuidForString(pType->GetTypeName()), xiiGetStaticRTTI<xiiReflectedTypeDescriptor>(), &desc);
+    context.RegisterObject(xiiUuid::MakeStableUuidFromString(pType->GetTypeName()), xiiGetStaticRTTI<xiiReflectedTypeDescriptor>(), &desc);
     rttiConverter.AddObjectToGraph(xiiGetStaticRTTI<xiiReflectedTypeDescriptor>(), &desc);
   }
 }

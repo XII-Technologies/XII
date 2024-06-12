@@ -251,133 +251,95 @@ xiiVec3 xiiBasisAxis::GetBasisVector(Enum basisAxis)
   switch (basisAxis)
   {
     case xiiBasisAxis::PositiveX:
-      return xiiVec3(1, 0, 0);
+      return xiiVec3(1.0f, 0.0f, 0.0f);
 
     case xiiBasisAxis::NegativeX:
-      return xiiVec3(-1, 0, 0);
+      return xiiVec3(-1.0f, 0.0f, 0.0f);
 
     case xiiBasisAxis::PositiveY:
-      return xiiVec3(0, 1, 0);
+      return xiiVec3(0.0f, 1.0f, 0.0f);
 
     case xiiBasisAxis::NegativeY:
-      return xiiVec3(0, -1, 0);
+      return xiiVec3(0.0f, -1.0f, 0.0f);
 
     case xiiBasisAxis::PositiveZ:
-      return xiiVec3(0, 0, 1);
+      return xiiVec3(0.0f, 0.0f, 1.0f);
 
     case xiiBasisAxis::NegativeZ:
-      return xiiVec3(0, 0, -1);
+      return xiiVec3(0.0f, 0.0f, -1.0f);
 
     default:
       XII_REPORT_FAILURE("Invalid basis dir {0}", basisAxis);
-      return xiiVec3::ZeroVector();
+      return xiiVec3::MakeZero();
   }
 }
 
-xiiMat3 xiiBasisAxis::CalculateTransformationMatrix(Enum forwardDir, Enum rightDir, Enum upDir, float fUniformScale /*= 1.0f*/, float fScaleX /*= 1.0f*/, float fScaleY /*= 1.0f*/, float fScaleZ /*= 1.0f*/)
+xiiVec3d xiiBasisAxis::GetBasisVectorDouble(xiiBasisAxis::Enum basisAxis)
+{
+  switch (basisAxis)
+  {
+    case xiiBasisAxis::PositiveX:
+      return xiiVec3d(1.0, 0.0, 0.0);
+
+    case xiiBasisAxis::NegativeX:
+      return xiiVec3d(-1.0, 0.0, 0.0);
+
+    case xiiBasisAxis::PositiveY:
+      return xiiVec3d(0.0, 1.0, 0.0);
+
+    case xiiBasisAxis::NegativeY:
+      return xiiVec3d(0.0, -1.0, 0.0);
+
+    case xiiBasisAxis::PositiveZ:
+      return xiiVec3d(0.0, 0.0, 1.0);
+
+    case xiiBasisAxis::NegativeZ:
+      return xiiVec3d(0.0, 0.0, -1.0);
+
+    default:
+      XII_REPORT_FAILURE("Invalid basis dir {0}", basisAxis);
+      return xiiVec3d::MakeZero();
+  }
+}
+
+xiiMat3 xiiBasisAxis::CalculateTransformationMatrix(Enum forwardDir, Enum rightDir, Enum dir, float fUniformScale /*= 1.0f*/, float fScaleX /*= 1.0f*/, float fScaleY /*= 1.0f*/, float fScaleZ /*= 1.0f*/)
 {
   xiiMat3 mResult;
   mResult.SetRow(0, xiiBasisAxis::GetBasisVector(forwardDir) * fUniformScale * fScaleX);
   mResult.SetRow(1, xiiBasisAxis::GetBasisVector(rightDir) * fUniformScale * fScaleY);
-  mResult.SetRow(2, xiiBasisAxis::GetBasisVector(upDir) * fUniformScale * fScaleZ);
+  mResult.SetRow(2, xiiBasisAxis::GetBasisVector(dir) * fUniformScale * fScaleZ);
 
   return mResult;
 }
 
-xiiMat3d xiiBasisAxis::CalculateTransformationMatrix(Enum forwardDir, Enum rightDir, Enum upDir, double fUniformScale /*= 1.0f*/, double fScaleX /*= 1.0*/, double fScaleY /*= 1.0*/, double fScaleZ /*= 1.0*/)
+xiiMat3d xiiBasisAxis::CalculateTransformationMatrix(Enum forwardDir, Enum rightDir, Enum dir, double fUniformScale /*= 1.0f*/, double fScaleX /*= 1.0*/, double fScaleY /*= 1.0*/, double fScaleZ /*= 1.0*/)
 {
-  xiiVec3  mTemp;
   xiiMat3d mResult;
-
-  mTemp = xiiBasisAxis::GetBasisVector(forwardDir);
-  mResult.SetRow(0, xiiVec3d(mTemp.x, mTemp.y, mTemp.z) * fUniformScale * fScaleX);
-
-  mTemp = xiiBasisAxis::GetBasisVector(rightDir);
-  mResult.SetRow(1, xiiVec3d(mTemp.x, mTemp.y, mTemp.z) * fUniformScale * fScaleY);
-
-  mTemp = xiiBasisAxis::GetBasisVector(upDir);
-  mResult.SetRow(2, xiiVec3d(mTemp.x, mTemp.y, mTemp.z) * fUniformScale * fScaleZ);
+  mResult.SetRow(0, xiiBasisAxis::GetBasisVectorDouble(forwardDir) * fUniformScale * fScaleX);
+  mResult.SetRow(1, xiiBasisAxis::GetBasisVectorDouble(rightDir) * fUniformScale * fScaleY);
+  mResult.SetRow(2, xiiBasisAxis::GetBasisVectorDouble(dir) * fUniformScale * fScaleZ);
 
   return mResult;
 }
 
 xiiQuat xiiBasisAxis::GetBasisRotation_PosX(Enum axis)
 {
-  xiiQuat rotAxis;
-  switch (axis)
-  {
-    case xiiBasisAxis::PositiveX:
-      rotAxis.SetIdentity();
-      break;
-    case xiiBasisAxis::PositiveY:
-      rotAxis.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
-      break;
-    case xiiBasisAxis::PositiveZ:
-      rotAxis.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(-90));
-      break;
-    case xiiBasisAxis::NegativeX:
-      rotAxis.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(180));
-      break;
-    case xiiBasisAxis::NegativeY:
-      rotAxis.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(-90));
-      break;
-    case xiiBasisAxis::NegativeZ:
-      rotAxis.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
-      break;
-  }
+  return xiiQuat::MakeShortestRotation(xiiVec3::MakeAxisX(), GetBasisVector(axis));
+}
 
-  return rotAxis;
+xiiQuatd xiiBasisAxis::GetBasisRotationDouble_PosX(xiiBasisAxis::Enum axis)
+{
+  return xiiQuatd::MakeShortestRotation(xiiVec3d::MakeAxisX(), GetBasisVectorDouble(axis));
 }
 
 xiiQuat xiiBasisAxis::GetBasisRotation(Enum identity, Enum axis)
 {
-  xiiQuat rotId;
-  switch (identity)
-  {
-    case xiiBasisAxis::PositiveX:
-      rotId.SetIdentity();
-      break;
-    case xiiBasisAxis::PositiveY:
-      rotId.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(-90));
-      break;
-    case xiiBasisAxis::PositiveZ:
-      rotId.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
-      break;
-    case xiiBasisAxis::NegativeX:
-      rotId.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(180));
-      break;
-    case xiiBasisAxis::NegativeY:
-      rotId.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
-      break;
-    case xiiBasisAxis::NegativeZ:
-      rotId.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
-      break;
-  }
+  return xiiQuat::MakeShortestRotation(GetBasisVector(identity), GetBasisVector(axis));
+}
 
-  xiiQuat rotAxis;
-  switch (axis)
-  {
-    case xiiBasisAxis::PositiveX:
-      rotAxis.SetIdentity();
-      break;
-    case xiiBasisAxis::PositiveY:
-      rotAxis.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
-      break;
-    case xiiBasisAxis::PositiveZ:
-      rotAxis.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(-90));
-      break;
-    case xiiBasisAxis::NegativeX:
-      rotAxis.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(180));
-      break;
-    case xiiBasisAxis::NegativeY:
-      rotAxis.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(-90));
-      break;
-    case xiiBasisAxis::NegativeZ:
-      rotAxis.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(90));
-      break;
-  }
-
-  return rotAxis * rotId;
+xiiQuatd xiiBasisAxis::GetBasisRotationDouble(xiiBasisAxis::Enum identity, xiiBasisAxis::Enum axis)
+{
+  return xiiQuatd::MakeShortestRotation(GetBasisVectorDouble(identity), GetBasisVectorDouble(axis));
 }
 
 xiiBasisAxis::Enum xiiBasisAxis::GetOrthogonalAxis(Enum axis1, Enum axis2, bool bFlip)
@@ -390,19 +352,19 @@ xiiBasisAxis::Enum xiiBasisAxis::GetOrthogonalAxis(Enum axis1, Enum axis2, bool 
   if (bFlip)
     c = -c;
 
-  if (c.IsEqual(xiiVec3::UnitXAxis(), 0.01f))
+  if (c.IsEqual(xiiVec3::MakeAxisX(), 0.01f))
     return xiiBasisAxis::PositiveX;
-  if (c.IsEqual(-xiiVec3::UnitXAxis(), 0.01f))
+  if (c.IsEqual(-xiiVec3::MakeAxisX(), 0.01f))
     return xiiBasisAxis::NegativeX;
 
-  if (c.IsEqual(xiiVec3::UnitYAxis(), 0.01f))
+  if (c.IsEqual(xiiVec3::MakeAxisY(), 0.01f))
     return xiiBasisAxis::PositiveY;
-  if (c.IsEqual(-xiiVec3::UnitYAxis(), 0.01f))
+  if (c.IsEqual(-xiiVec3::MakeAxisY(), 0.01f))
     return xiiBasisAxis::NegativeY;
 
-  if (c.IsEqual(xiiVec3::UnitZAxis(), 0.01f))
+  if (c.IsEqual(xiiVec3::MakeAxisZ(), 0.01f))
     return xiiBasisAxis::PositiveZ;
-  if (c.IsEqual(-xiiVec3::UnitZAxis(), 0.01f))
+  if (c.IsEqual(-xiiVec3::MakeAxisZ(), 0.01f))
     return xiiBasisAxis::NegativeZ;
 
   return axis1;
@@ -449,8 +411,8 @@ XII_BEGIN_STATIC_REFLECTED_ENUM(xiiEasingFunction, 1)
  XII_ENUM_CONSTANT(xiiEasingFunction::InOutCirc),
  XII_ENUM_CONSTANT(xiiEasingFunction::InBack),
  XII_ENUM_CONSTANT(xiiEasingFunction::OutBack),
- XII_ENUM_CONSTANT(xiiEasingFunction::InOutBack), 
- XII_ENUM_CONSTANT(xiiEasingFunction::InElastic), 
+ XII_ENUM_CONSTANT(xiiEasingFunction::InOutBack),
+ XII_ENUM_CONSTANT(xiiEasingFunction::InElastic),
  XII_ENUM_CONSTANT(xiiEasingFunction::OutElastic),
  XII_ENUM_CONSTANT(xiiEasingFunction::InOutElastic),
  XII_ENUM_CONSTANT(xiiEasingFunction::InBounce),

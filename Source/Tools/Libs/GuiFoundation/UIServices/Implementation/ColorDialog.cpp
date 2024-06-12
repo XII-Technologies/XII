@@ -274,8 +274,7 @@ void xiiQtColorDialog::ComputeRgbAndHsv(const xiiColor& color)
 
 void xiiQtColorDialog::RecomputeRGB()
 {
-  xiiColor col;
-  col.SetHSV(m_fHue, m_fSaturation, m_fValue);
+  xiiColor col = xiiColor::MakeHSV(m_fHue, m_fSaturation, m_fValue);
 
   xiiColorGammaUB colGamma = col;
 
@@ -297,7 +296,7 @@ void xiiQtColorDialog::RecomputeHSV()
 
 void xiiQtColorDialog::RecomputeHDR()
 {
-  m_CurrentColor.SetHSV(m_fHue, m_fSaturation, m_fValue);
+  m_CurrentColor = xiiColor::MakeHSV(m_fHue, m_fSaturation, m_fValue);
   m_CurrentColor.ApplyHdrExposureValue(m_fExposureValue);
   m_CurrentColor.a = xiiMath::ColorByteToFloat(m_uiAlpha);
 }

@@ -5,7 +5,7 @@ XII_FOUNDATION_INTERNAL_HEADER
 #include <Foundation/Basics/Platform/Android/AndroidUtils.h>
 #include <android_native_app_glue.h>
 
-void xiiUuid::CreateNewUuid()
+xiiUuid xiiUuid::MakeUuid()
 {
   xiiJniAttachment attachment;
 
@@ -15,9 +15,8 @@ void xiiUuid::CreateNewUuid()
   jlong        mostSignificant  = javaUuid.Call<jlong>("getMostSignificantBits");
   jlong        leastSignificant = javaUuid.Call<jlong>("getLeastSignificantBits");
 
-  m_uiHigh = mostSignificant;
-  m_uiLow  = leastSignificant;
+  return xiiUuid(leastSignificant, mostSignificant);
 
-  //#TODO maybe faster to read /proc/sys/kernel/random/uuid, but that can't be done via xiiOSFile
+  // #TODO maybe faster to read /proc/sys/kernel/random/uuid, but that can't be done via xiiOSFile
   // see https://stackoverflow.com/questions/11888055/include-uuid-h-into-android-ndk-project
 }

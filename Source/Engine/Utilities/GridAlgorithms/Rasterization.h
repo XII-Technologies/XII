@@ -43,13 +43,7 @@ namespace xii2DGridUtils
   /// It returns xiiRasterizationResult::Finished if the entire line was rasterized.
   ///
   /// This function does not do any dynamic memory allocations internally.
-  XII_UTILITIES_DLL xiiRasterizationResult::Enum ComputePointsOnLine(
-    xiiInt32                      iStartX,
-    xiiInt32                      iStartY,
-    xiiInt32                      iEndX,
-    xiiInt32                      iEndY,
-    XII_RASTERIZED_POINT_CALLBACK callback,
-    void*                         pPassThrough = nullptr);
+  XII_UTILITIES_DLL xiiRasterizationResult::Enum ComputePointsOnLine(xiiInt32 iStartX, xiiInt32 iStartY, xiiInt32 iEndX, xiiInt32 iEndY, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr);
 
   /// \brief Computes all the points on a 2D line and calls a function to report every point.
   ///
@@ -69,12 +63,7 @@ namespace xii2DGridUtils
   /// The callback may abort the operation by returning xiiCallbackResult::Stop.
   ///
   /// This function does not do any dynamic memory allocations internally.
-  XII_UTILITIES_DLL xiiRasterizationResult::Enum ComputePointsOnCircle(
-    xiiInt32                      iStartX,
-    xiiInt32                      iStartY,
-    xiiUInt32                     uiRadius,
-    XII_RASTERIZED_POINT_CALLBACK callback,
-    void*                         pPassThrough = nullptr);
+  XII_UTILITIES_DLL xiiRasterizationResult::Enum ComputePointsOnCircle(xiiInt32 iStartX, xiiInt32 iStartY, xiiUInt32 uiRadius, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough = nullptr);
 
   /// \brief Starts at the given point and then fills all surrounding cells until a border is detected.
   ///

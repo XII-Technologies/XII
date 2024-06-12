@@ -738,5 +738,4 @@ void xiiOpenDdlWriter::WriteBinaryAsString(const void* pData, xiiUInt32 uiBytes)
   OutputString("\"", 1);
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_OpenDdlWriter);

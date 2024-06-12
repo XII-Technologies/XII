@@ -147,12 +147,16 @@ inline xiiUInt32 xiiUnicodeUtils::GetSizeForCharacterInUtf8(xiiUInt32 uiCharacte
   return 4;
 }
 
-inline bool xiiUnicodeUtils::IsValidUtf8(const char* szString, const char* szStringEnd)
+XII_ALWAYS_INLINE bool xiiUnicodeUtils::IsValidUtf8(const char* szString, const char* szStringEnd)
 {
+#if XII_ENABLED(XII_USE_STRING_VALIDATION)
   if (szStringEnd == GetMaxStringEnd<char>())
     szStringEnd = szString + strlen(szString);
 
   return utf8::is_valid(szString, szStringEnd);
+#else
+  return true;
+#endif
 }
 
 inline bool xiiUnicodeUtils::SkipUtf8Bom(const char*& ref_szUtf8)
@@ -194,13 +198,14 @@ inline bool xiiUnicodeUtils::SkipUtf16BomBE(const xiiUInt16*& ref_pUtf16)
   return false;
 }
 
-inline void xiiUnicodeUtils::MoveToNextUtf8(const char*& ref_szUtf8, xiiUInt32 uiNumCharacters)
+inline xiiResult xiiUnicodeUtils::MoveToNextUtf8(const char*& ref_szUtf8, xiiUInt32 uiNumCharacters)
 {
-  XII_ASSERT_DEBUG(ref_szUtf8 != nullptr, "Bad programmer!");
+  XII_ASSERT_DEBUG(ref_szUtf8 != nullptr, "Invalid string pointer to advance!");
 
   while (uiNumCharacters > 0)
   {
-    XII_ASSERT_DEV(*ref_szUtf8 != '\0', "The given string must not point to the zero terminator.");
+    if (*ref_szUtf8 == '\0')
+      return XII_FAILURE;
 
     do
     {
@@ -209,15 +214,18 @@ inline void xiiUnicodeUtils::MoveToNextUtf8(const char*& ref_szUtf8, xiiUInt32 u
 
     --uiNumCharacters;
   }
+
+  return XII_SUCCESS;
 }
 
-inline void xiiUnicodeUtils::MoveToNextUtf8(const char*& ref_szUtf8, const char* szUtf8End, xiiUInt32 uiNumCharacters)
+inline xiiResult xiiUnicodeUtils::MoveToNextUtf8(const char*& ref_szUtf8, const char* szUtf8End, xiiUInt32 uiNumCharacters)
 {
-  XII_ASSERT_DEBUG(ref_szUtf8 != nullptr, "Bad programmer!");
+  XII_ASSERT_DEBUG(ref_szUtf8 != nullptr, "Invalid string pointer to advance!");
 
-  while (uiNumCharacters > 0 && ref_szUtf8 < szUtf8End)
+  while (uiNumCharacters > 0)
   {
-    XII_ASSERT_DEV(*ref_szUtf8 != '\0', "The given string must not point to the zero terminator.");
+    if (ref_szUtf8 >= szUtf8End || *ref_szUtf8 == '\0')
+      return XII_FAILURE;
 
     do
     {
@@ -226,14 +234,19 @@ inline void xiiUnicodeUtils::MoveToNextUtf8(const char*& ref_szUtf8, const char*
 
     --uiNumCharacters;
   }
+
+  return XII_SUCCESS;
 }
 
-inline void xiiUnicodeUtils::MoveToPriorUtf8(const char*& ref_szUtf8, xiiUInt32 uiNumCharacters)
+inline xiiResult xiiUnicodeUtils::MoveToPriorUtf8(const char*& ref_szUtf8, const char* szUtf8Start, xiiUInt32 uiNumCharacters)
 {
-  XII_ASSERT_DEBUG(ref_szUtf8 != nullptr, "Bad programmer!");
+  XII_ASSERT_DEBUG(ref_szUtf8 != nullptr, "Invalid string pointer to advance!");
 
   while (uiNumCharacters > 0)
   {
+    if (ref_szUtf8 <= szUtf8Start)
+      return XII_FAILURE;
+
     do
     {
       --ref_szUtf8;
@@ -241,6 +254,8 @@ inline void xiiUnicodeUtils::MoveToPriorUtf8(const char*& ref_szUtf8, xiiUInt32 
 
     --uiNumCharacters;
   }
+
+  return XII_SUCCESS;
 }
 template <typename T>
 constexpr T* xiiUnicodeUtils::GetMaxStringEnd()

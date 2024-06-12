@@ -4,7 +4,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f()
 {
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   m_v = _mm_set1_ps(xiiMath::NaN<float>());
 #endif
@@ -394,10 +394,10 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::FlipSign(const xiiSimdVec4b& vCmp) 
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4f& vIfTrue, const xiiSimdVec4f& vIfFalse)
+XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4f& vTrue, const xiiSimdVec4f& vFalse)
 {
 #if XII_SSE_LEVEL >= XII_SSE_41
-  return _mm_blendv_ps(vIfFalse.m_v, vIfTrue.m_v, vCmp.m_v);
+  return _mm_blendv_ps(vFalse.m_v, vTrue.m_v, vCmp.m_v);
 #else
   return _mm_or_ps(_mm_andnot_ps(cmp.m_v, ifFalse.m_v), _mm_and_ps(cmp.m_v, ifTrue.m_v));
 #endif
@@ -581,15 +581,9 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetOrthogonalVector() const
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::ZeroVector()
-{
-  return _mm_setzero_ps();
-}
-
-// static
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulAdd(const xiiSimdVec4f& a, const xiiSimdVec4f& b, const xiiSimdVec4f& c)
 {
-#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_2)
+#if XII_SSE_LEVEL >= XII_SSE_AVX_2
   return _mm_fmadd_ps(a.m_v, b.m_v, c.m_v);
 #else
   return a.CompMul(b) + c;
@@ -599,7 +593,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulAdd(const xiiSimdVec4f& a, const
 // static
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulAdd(const xiiSimdVec4f& a, const xiiSimdFloat& b, const xiiSimdVec4f& c)
 {
-#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_2)
+#if XII_SSE_LEVEL >= XII_SSE_AVX_2
   return _mm_fmadd_ps(a.m_v, b.m_v, c.m_v);
 #else
   return a * b + c;
@@ -609,7 +603,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulAdd(const xiiSimdVec4f& a, const
 // static
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulSub(const xiiSimdVec4f& a, const xiiSimdVec4f& b, const xiiSimdVec4f& c)
 {
-#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_2)
+#if XII_SSE_LEVEL >= XII_SSE_AVX_2
   return _mm_fmsub_ps(a.m_v, b.m_v, c.m_v);
 #else
   return a.CompMul(b) - c;
@@ -619,7 +613,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulSub(const xiiSimdVec4f& a, const
 // static
 XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::MulSub(const xiiSimdVec4f& a, const xiiSimdFloat& b, const xiiSimdVec4f& c)
 {
-#if (XII_SIMD_IMPLEMENTATION == XII_SIMD_IMPLEMENTATION_AVX) && (XII_SSE_LEVEL >= XII_AVX_2)
+#if XII_SSE_LEVEL >= XII_SSE_AVX_2
   return _mm_fmsub_ps(a.m_v, b.m_v, c.m_v);
 #else
   return a * b - c;

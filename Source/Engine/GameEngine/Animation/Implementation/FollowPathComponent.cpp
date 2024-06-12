@@ -29,7 +29,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiFollowPathComponent, 1, xiiComponentMode::Dynamic)
     XII_MEMBER_PROPERTY("Smoothing", m_fSmoothing)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, 1.0f)),
     XII_ENUM_MEMBER_PROPERTY("FollowMode", xiiFollowPathMode, m_FollowMode),  
     XII_MEMBER_PROPERTY("TiltAmount", m_fTiltAmount)->AddAttributes(new xiiDefaultValueAttribute(5.0f)),
-    XII_MEMBER_PROPERTY("MaxTilt", m_MaxTilt)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::Degree(30.0f)), new xiiClampValueAttribute(xiiAngle::Degree(0.0f), xiiAngle::Degree(90.0f))),
+    XII_MEMBER_PROPERTY("MaxTilt", m_MaxTilt)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(30.0f)), new xiiClampValueAttribute(xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(90.0f))),
   }
   XII_END_PROPERTIES;
   XII_BEGIN_FUNCTIONS
@@ -137,29 +137,29 @@ void xiiFollowPathComponent::Update(bool bForce)
   xiiVec3 vTarget = transformAhead.m_vPosition - transform.m_vPosition;
   if (m_FollowMode == xiiFollowPathMode::AlignUpZ)
   {
-    const xiiPlane plane = xiiPlane(xiiVec3::UnitZAxis(), transform.m_vPosition);
+    const xiiPlane plane = xiiPlane::MakeFromNormalAndPoint(xiiVec3::MakeAxisZ(), transform.m_vPosition);
     vTarget              = plane.GetCoplanarDirection(vTarget);
   }
-  vTarget.NormalizeIfNotZero(xiiVec3::UnitXAxis()).IgnoreResult();
+  vTarget.NormalizeIfNotZero(xiiVec3::MakeAxisX()).IgnoreResult();
 
-  xiiVec3 vUp    = (m_FollowMode == xiiFollowPathMode::FullRotation) ? transform.m_vUpDirection : xiiVec3::UnitZAxis();
+  xiiVec3 vUp    = (m_FollowMode == xiiFollowPathMode::FullRotation) ? transform.m_vUpDirection : xiiVec3::MakeAxisZ();
   xiiVec3 vRight = vTarget.CrossRH(vUp);
-  vRight.NormalizeIfNotZero(xiiVec3::UnitYAxis()).IgnoreResult();
+  vRight.NormalizeIfNotZero(xiiVec3::MakeAxisY()).IgnoreResult();
 
   vUp = vRight.CrossRH(vTarget);
-  vUp.NormalizeIfNotZero(xiiVec3::UnitZAxis()).IgnoreResult();
+  vUp.NormalizeIfNotZero(xiiVec3::MakeAxisZ()).IgnoreResult();
 
   // check if we want to tilt the platform when turning
-  xiiAngle deltaAngle = xiiAngle::Degree(0.0f);
+  xiiAngle deltaAngle = xiiAngle::MakeFromDegree(0.0f);
   if (m_FollowMode == xiiFollowPathMode::AlignUpZ && !xiiMath::IsZero(m_fTiltAmount, 0.0001f) && !xiiMath::IsZero(m_MaxTilt.GetDegree(), 0.0001f))
   {
     if (m_bLastStateValid)
     {
       xiiVec3 vLastTarget = m_vLastTargetPosition - m_vLastPosition;
       {
-        const xiiPlane plane = xiiPlane(xiiVec3::UnitZAxis(), transform.m_vPosition);
+        const xiiPlane plane = xiiPlane::MakeFromNormalAndPoint(xiiVec3::MakeAxisZ(), transform.m_vPosition);
         vLastTarget          = plane.GetCoplanarDirection(vLastTarget);
-        vLastTarget.NormalizeIfNotZero(xiiVec3::UnitXAxis()).IgnoreResult();
+        vLastTarget.NormalizeIfNotZero(xiiVec3::MakeAxisX()).IgnoreResult();
       }
 
       const float fTiltStrength = xiiMath::Sign((vTarget - vLastTarget).Dot(vRight)) * xiiMath::Sign(m_fTiltAmount);
@@ -167,7 +167,7 @@ void xiiFollowPathComponent::Update(bool bForce)
       deltaAngle                = xiiMath::Lerp(tiltAngle * fTiltStrength, m_LastTiltAngle, 0.85f); // this smooths out the tilting from being jittery
 
       xiiQuat rot;
-      rot.SetFromAxisAndAngle(vTarget, deltaAngle);
+      rot    = xiiQuat::MakeFromAxisAndAngle(vTarget, deltaAngle);
       vUp    = rot * vUp;
       vRight = rot * vRight;
     }
@@ -181,7 +181,7 @@ void xiiFollowPathComponent::Update(bool bForce)
     m_LastTiltAngle       = deltaAngle;
   }
 
-  xiiMat3 mRot = xiiMat3::IdentityMatrix();
+  xiiMat3 mRot = xiiMat3::MakeIdentity();
   if (m_FollowMode != xiiFollowPathMode::OnlyPosition)
   {
     mRot.SetColumn(0, vTarget);
@@ -192,7 +192,7 @@ void xiiFollowPathComponent::Update(bool bForce)
   xiiTransform tFinal;
   tFinal.m_vPosition = transform.m_vPosition;
   tFinal.m_vScale.Set(1);
-  tFinal.m_qRotation.SetFromMat3(mRot);
+  tFinal.m_qRotation = xiiQuat::MakeFromMat3(mRot);
 
   GetOwner()->SetGlobalTransform(pPathObject->GetGlobalTransform() * tFinal);
 }

@@ -15,8 +15,7 @@ xiiResult xiiConvexHullGenerator::ComputeCenterAndScale(const xiiArrayPtr<const 
   if (vertices.IsEmpty())
     return XII_FAILURE;
 
-  xiiBoundingBox box;
-  box.SetFromPoints(vertices.GetPtr(), vertices.GetCount());
+  xiiBoundingBox box = xiiBoundingBox::MakeFromPoints(vertices.GetPtr(), vertices.GetCount());
 
   const xiiVec3 c = box.GetCenter();
   m_vCenter.Set(c.x, c.y, c.z);

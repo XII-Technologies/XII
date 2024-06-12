@@ -59,7 +59,7 @@ xiiQtSnapSettingsDlg::xiiQtSnapSettingsDlg(QWidget* pParent) :
   {
     RotationSnap->addItem(xiiMakeQString(xiiTranslate(m_Rotation[i].m_szKey)));
 
-    if (xiiSnapProvider::GetRotationSnapValue() == xiiAngle::Degree(m_Rotation[i].m_fValue))
+    if (xiiSnapProvider::GetRotationSnapValue() == xiiAngle::MakeFromDegree(m_Rotation[i].m_fValue))
       uiSelectedR = i;
   }
 
@@ -79,7 +79,7 @@ xiiQtSnapSettingsDlg::xiiQtSnapSettingsDlg(QWidget* pParent) :
 void xiiQtSnapSettingsDlg::QueryUI()
 {
   xiiSnapProvider::SetTranslationSnapValue(m_Translation[TranslationSnap->currentIndex()].m_fValue);
-  xiiSnapProvider::SetRotationSnapValue(xiiAngle::Degree(m_Rotation[RotationSnap->currentIndex()].m_fValue));
+  xiiSnapProvider::SetRotationSnapValue(xiiAngle::MakeFromDegree(m_Rotation[RotationSnap->currentIndex()].m_fValue));
   xiiSnapProvider::SetScaleSnapValue(m_Scale[ScaleSnap->currentIndex()].m_fValue);
 }
 

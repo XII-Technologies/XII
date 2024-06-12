@@ -9,7 +9,7 @@ const xiiTimestamp xiiTimestamp::CurrentTimestamp()
   timeval currentTime;
   gettimeofday(&currentTime, nullptr);
 
-  return xiiTimestamp(currentTime.tv_sec * 1000000LL + currentTime.tv_usec, xiiSIUnitOfTime::Microsecond);
+  return xiiTimestamp::MakeFromInt(currentTime.tv_sec * 1000000LL + currentTime.tv_usec, xiiSIUnitOfTime::Microsecond);
 }
 
 bool operator!=(const tm& lhs, const tm& rhs)
@@ -28,7 +28,6 @@ bool operator!=(const tm& lhs, const tm& rhs)
     return false;
   }
 }
-
 
 const xiiTimestamp xiiDateTime::GetTimestamp() const
 {
@@ -49,21 +48,21 @@ const xiiTimestamp xiiDateTime::GetTimestamp() const
   time_t iTimeStamp = mktime(&timeinfo);
   // mktime may have 'patched' our time to be valid, we don't want that to count as a valid date.
   if (iTimeStamp == (time_t)-1 || timeinfoCopy != timeinfo)
-    return xiiTimestamp();
+    return xiiTimestamp::MakeInvalid();
 
   iTimeStamp += timeinfo.tm_gmtoff;
   // Subtract one hour if daylight saving time was activated by mktime.
   if (timeinfo.tm_isdst == 1)
     iTimeStamp -= 3600;
-  return xiiTimestamp(iTimeStamp, xiiSIUnitOfTime::Second);
+  return xiiTimestamp::MakeFromInt(iTimeStamp, xiiSIUnitOfTime::Second);
 }
 
-bool xiiDateTime::SetTimestamp(xiiTimestamp timestamp)
+xiiResult xiiDateTime::SetFromTimestamp(xiiTimestamp timestamp)
 {
   tm     timeinfo = {0};
   time_t iTime    = (time_t)timestamp.GetInt64(xiiSIUnitOfTime::Second);
   if (gmtime_r(&iTime, &timeinfo) == nullptr)
-    return false;
+    return XII_FAILURE;
 
   m_iYear          = timeinfo.tm_year + 1900;
   m_uiMonth        = timeinfo.tm_mon + 1;
@@ -74,5 +73,5 @@ bool xiiDateTime::SetTimestamp(xiiTimestamp timestamp)
   m_uiSecond       = timeinfo.tm_sec;
   m_uiMicroseconds = 0;
 
-  return true;
+  return XII_SUCCESS;
 }

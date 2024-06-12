@@ -8,24 +8,54 @@ XII_ALWAYS_INLINE xiiBoundingBoxTemplate<Type>::xiiBoundingBoxTemplate() = defau
 template <typename Type>
 XII_FORCE_INLINE xiiBoundingBoxTemplate<Type>::xiiBoundingBoxTemplate(const xiiVec3Template<Type>& vMin, const xiiVec3Template<Type>& vMax)
 {
-  SetElements(vMin, vMax);
+  *this = MakeFromMinMax(vMin, vMax);
 }
 
 template <typename Type>
-XII_FORCE_INLINE void xiiBoundingBoxTemplate<Type>::SetElements(const xiiVec3Template<Type>& vMin, const xiiVec3Template<Type>& vMax)
+XII_FORCE_INLINE xiiBoundingBoxTemplate<Type> xiiBoundingBoxTemplate<Type>::MakeZero()
 {
-  m_vMin = vMin;
-  m_vMax = vMax;
-
-  XII_ASSERT_DEBUG(IsValid(), "The given values did not create a valid bounding box ({0} | {1} | {2} - {3} | {4} | {5})",
-                   xiiArgF(vMin.x, 2), xiiArgF(vMin.y, 2), xiiArgF(vMin.z, 2), xiiArgF(vMax.x, 2), xiiArgF(vMax.y, 2), xiiArgF(vMax.z, 2));
+  xiiBoundingBoxTemplate<Type> res;
+  res.m_vMin = xiiVec3Template<Type>::MakeZero();
+  res.m_vMax = xiiVec3Template<Type>::MakeZero();
+  return res;
 }
 
 template <typename Type>
-void xiiBoundingBoxTemplate<Type>::SetFromPoints(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /* = sizeof(xiiVec3Template<Type>) */)
+XII_FORCE_INLINE xiiBoundingBoxTemplate<Type> xiiBoundingBoxTemplate<Type>::MakeInvalid()
 {
-  SetInvalid();
-  ExpandToInclude(pPoints, uiNumPoints, uiStride);
+  xiiBoundingBoxTemplate<Type> res;
+  res.m_vMin.Set(xiiMath::MaxValue<Type>());
+  res.m_vMax.Set(-xiiMath::MaxValue<Type>());
+  return res;
+}
+
+template <typename Type>
+XII_FORCE_INLINE xiiBoundingBoxTemplate<Type> xiiBoundingBoxTemplate<Type>::MakeFromCenterAndHalfExtents(const xiiVec3Template<Type>& vCenter, const xiiVec3Template<Type>& vHalfExtents)
+{
+  xiiBoundingBoxTemplate<Type> res;
+  res.m_vMin = vCenter - vHalfExtents;
+  res.m_vMax = vCenter + vHalfExtents;
+  return res;
+}
+
+template <typename Type>
+XII_FORCE_INLINE xiiBoundingBoxTemplate<Type> xiiBoundingBoxTemplate<Type>::MakeFromMinMax(const xiiVec3Template<Type>& vMin, const xiiVec3Template<Type>& vMax)
+{
+  xiiBoundingBoxTemplate<Type> res;
+  res.m_vMin = vMin;
+  res.m_vMax = vMax;
+
+  XII_ASSERT_DEBUG(res.IsValid(), "The given values don't create a valid bounding box ({0} | {1} | {2} - {3} | {4} | {5})", xiiArgF(vMin.x, 2), xiiArgF(vMin.y, 2), xiiArgF(vMin.z, 2), xiiArgF(vMax.x, 2), xiiArgF(vMax.y, 2), xiiArgF(vMax.z, 2));
+
+  return res;
+}
+
+template <typename Type>
+XII_FORCE_INLINE xiiBoundingBoxTemplate<Type> xiiBoundingBoxTemplate<Type>::MakeFromPoints(const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /*= sizeof(xiiVec3Template<Type>)*/)
+{
+  xiiBoundingBoxTemplate<Type> res = MakeInvalid();
+  res.ExpandToInclude(pPoints, uiNumPoints, uiStride);
+  return res;
 }
 
 template <typename Type>
@@ -57,23 +87,9 @@ XII_ALWAYS_INLINE const xiiVec3Template<Type> xiiBoundingBoxTemplate<Type>::GetE
 }
 
 template <typename Type>
-const xiiVec3Template<Type> xiiBoundingBoxTemplate<Type>::GetHalfExtents() const
+XII_FORCE_INLINE const xiiVec3Template<Type> xiiBoundingBoxTemplate<Type>::GetHalfExtents() const
 {
   return (m_vMax - m_vMin) / (Type)2;
-}
-
-template <typename Type>
-void xiiBoundingBoxTemplate<Type>::SetCenterAndHalfExtents(const xiiVec3Template<Type>& vCenter, const xiiVec3Template<Type>& vHalfExtents)
-{
-  m_vMin = vCenter - vHalfExtents;
-  m_vMax = vCenter + vHalfExtents;
-}
-
-template <typename Type>
-void xiiBoundingBoxTemplate<Type>::SetInvalid()
-{
-  m_vMin.Set(xiiMath::MaxValue<Type>());
-  m_vMax.Set(-xiiMath::MaxValue<Type>());
 }
 
 template <typename Type>
@@ -99,8 +115,8 @@ template <typename Type>
 XII_FORCE_INLINE void xiiBoundingBoxTemplate<Type>::ExpandToInclude(const xiiBoundingBoxTemplate<Type>& rhs)
 {
   XII_ASSERT_DEBUG(rhs.IsValid(), "rhs must be a valid AABB.");
-  ExpandToInclude(rhs.m_vMin);
-  ExpandToInclude(rhs.m_vMax);
+  m_vMin = m_vMin.CompMin(rhs.m_vMin);
+  m_vMax = m_vMax.CompMax(rhs.m_vMax);
 }
 
 template <typename Type>
@@ -274,7 +290,7 @@ void xiiBoundingBoxTemplate<Type>::TransformFromCenter(const xiiMat4Template<Typ
   GetCorners(vCorners);
 
   const xiiVec3Template<Type> vCenter = GetCenter();
-  SetInvalid();
+  *this                               = MakeInvalid();
 
   for (xiiUInt32 i = 0; i < 8; ++i)
     ExpandToInclude(vCenter + mTransform.TransformPosition(vCorners[i] - vCenter));
@@ -288,7 +304,7 @@ void xiiBoundingBoxTemplate<Type>::TransformFromOrigin(const xiiMat4Template<Typ
 
   mTransform.TransformPosition(vCorners, 8);
 
-  SetInvalid();
+  *this = MakeInvalid();
   ExpandToInclude(vCorners, 8);
 }
 

@@ -141,7 +141,7 @@ void xiiSceneDocument::GroupSelection()
 
   pHistory->StartTransaction("Group Selection");
 
-  xiiUuid groupObj = xiiUuid::CreateUuid();
+  xiiUuid groupObj = xiiUuid::MakeUuid();
 
   xiiAddObjectCommand cmdAdd;
   cmdAdd.m_NewObjectGuid   = groupObj;
@@ -225,8 +225,8 @@ void xiiSceneDocument::DuplicateSpecial()
   cmd.m_bGroupDuplicates         = dlg.s_bGroupCopies;
   cmd.m_iRevolveAxis             = dlg.s_iRevolveAxis;
   cmd.m_fRevolveRadius           = dlg.s_fRevolveRadius;
-  cmd.m_RevolveStartAngle        = xiiAngle::Degree(dlg.s_iRevolveStartAngle);
-  cmd.m_RevolveAngleStep         = xiiAngle::Degree(dlg.s_iRevolveAngleStep);
+  cmd.m_RevolveStartAngle        = xiiAngle::MakeFromDegree(dlg.s_iRevolveStartAngle);
+  cmd.m_RevolveAngleStep         = xiiAngle::MakeFromDegree(dlg.s_iRevolveAngleStep);
 
   auto history = GetCommandHistory();
 
@@ -276,7 +276,7 @@ void xiiSceneDocument::SnapObjectToCamera()
   mRot.SetColumn(0, camera.GetCenterDirForwards());
   mRot.SetColumn(1, camera.GetCenterDirRight());
   mRot.SetColumn(2, camera.GetCenterDirUp());
-  transform.m_qRotation.SetFromMat3(mRot);
+  transform.m_qRotation = xiiQuat::MakeFromMat3(mRot);
 
   auto* pHistory = GetCommandHistory();
 
@@ -382,7 +382,7 @@ void xiiSceneDocument::CopyReference()
 
   QApplication::clipboard()->setText(sGuid.GetData());
 
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Object Reference: {}", sGuid), xiiTime::Seconds(5));
+  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Object Reference: {}", sGuid), xiiTime::MakeFromSeconds(5));
 }
 
 xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPickedPosition)
@@ -402,7 +402,7 @@ xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPick
 
   if (Sel.IsEmpty() || !bAttachToParent)
   {
-    cmdAdd.m_NewObjectGuid = xiiUuid::CreateUuid();
+    cmdAdd.m_NewObjectGuid = xiiUuid::MakeUuid();
     NewNode                = cmdAdd.m_NewObjectGuid;
 
     auto res = history->AddCommand(cmdAdd);
@@ -414,7 +414,7 @@ xiiStatus xiiSceneDocument::CreateEmptyObject(bool bAttachToParent, bool bAtPick
   }
   else
   {
-    cmdAdd.m_NewObjectGuid = xiiUuid::CreateUuid();
+    cmdAdd.m_NewObjectGuid = xiiUuid::MakeUuid();
     NewNode                = cmdAdd.m_NewObjectGuid;
 
     cmdAdd.m_Parent = Sel[0]->GetGuid();
@@ -626,7 +626,7 @@ xiiStatus xiiSceneDocument::CreatePrefabDocumentFromSelection(xiiStringView sFil
     {
       const xiiRTTI* pRtti = xiiGetStaticRTTI<xiiGameObject>();
 
-      xiiAbstractObjectNode* pRoot = ref_graph.AddNode(xiiUuid::CreateUuid(), pRtti->GetTypeName(), pRtti->GetTypeVersion());
+      xiiAbstractObjectNode* pRoot = ref_graph.AddNode(xiiUuid::MakeUuid(), pRtti->GetTypeName(), pRtti->GetTypeVersion());
       pRoot->AddProperty("Name", "<Prefab-Root>");
       pRoot->AddProperty("Children", varChildren);
 
@@ -1235,8 +1235,7 @@ xiiResult xiiSceneDocument::CreateLevelCamera(xiiUInt8 uiSlot)
   mRot.SetColumn(0, vDir);
   mRot.SetColumn(1, vUp.CrossRH(vDir).GetNormalized());
   mRot.SetColumn(2, vUp);
-  xiiQuat qRot;
-  qRot.SetFromMat3(mRot);
+  xiiQuat qRot = xiiQuat::MakeFromMat3(mRot);
   qRot.Normalize();
 
   SetGlobalTransform(pAccessor->GetObject(camObjGuid), xiiTransform(vPos, qRot), TransformationChanges::Translation | TransformationChanges::Rotation);
@@ -1557,7 +1556,7 @@ void xiiSceneDocument::ExportSceneGeometry(const char* szFile, bool bOnlySelecti
 
   SendMessageToEngine(&msg);
 
-  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Geometry exported to '{0}'", szFile), xiiTime::Seconds(5.0f));
+  xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Geometry exported to '{0}'", szFile), xiiTime::MakeFromSeconds(5.0f));
 }
 
 void xiiSceneDocument::HandleEngineMessage(const xiiEditorEngineDocumentMsg* pMsg)

@@ -8,7 +8,7 @@ set(XII_BUILD_EMBREE OFF CACHE BOOL "Whether support for Intel Embree should be 
 # ## xii_requires_embree()
 # #####################################
 macro(xii_requires_embree)
-  xii_requires_windows()
+  xii_requires(XII_CMAKE_PLATFORM_WINDOWS)
   xii_requires(XII_BUILD_EMBREE)
 endmacro()
 

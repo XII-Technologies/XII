@@ -943,7 +943,7 @@ bool xiiDequeBase<T, Construct>::RemoveAndSwap(const T& value)
 }
 
 template <typename T, bool Construct>
-void xiiDequeBase<T, Construct>::Insert(const T& value, xiiUInt32 uiIndex)
+void xiiDequeBase<T, Construct>::InsertAt(xiiUInt32 uiIndex, const T& value)
 {
   XII_CHECK_AT_COMPILETIME_MSG(Construct, "This function is not supported on Deques that do not construct their data.");
 

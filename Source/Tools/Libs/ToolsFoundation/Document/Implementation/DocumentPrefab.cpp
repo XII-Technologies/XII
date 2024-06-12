@@ -70,7 +70,7 @@ xiiStatus xiiDocument::CreatePrefabDocumentFromSelection(xiiStringView sFile, co
   }
 
   xiiUuid PrefabGuid, SeedGuid;
-  SeedGuid      = xiiUuid::CreateUuid();
+  SeedGuid      = xiiUuid::MakeUuid();
   xiiStatus res = CreatePrefabDocument(sFile, nodes, SeedGuid, PrefabGuid, adjustGraphNodeCB, true, finalizeGraphCB);
 
   if (res.m_Result.Succeeded())
@@ -205,8 +205,8 @@ xiiUuid xiiDocument::ReplaceByPrefab(const xiiDocumentObject* pRootObject, xiiSt
     auto pHistory = GetCommandHistory();
 
     xiiStringBuilder tmp;
-    xiiUuid          CmpGuid = xiiUuid::CreateUuid();
-    instantiatedRoot         = xiiUuid::CreateUuid();
+    xiiUuid          CmpGuid = xiiUuid::MakeUuid();
+    instantiatedRoot         = xiiUuid::MakeUuid();
 
     xiiAddObjectCommand cmd;
     cmd.m_Parent = (pRootObject->GetParent() == GetObjectManager()->GetRootObject()) ? xiiUuid() : pRootObject->GetParent()->GetGuid();

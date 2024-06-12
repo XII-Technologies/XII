@@ -1019,13 +1019,13 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     v = xiiVariant(xiiQuat(7, 9, 8, 4));
     XII_TEST_BOOL(v == xiiQuat(7, 9, 8, 4));
-    XII_TEST_BOOL(v[0][0] == 7);
-    XII_TEST_BOOL(v[0][1] == 9);
-    XII_TEST_BOOL(v[0][2] == 8);
-    XII_TEST_BOOL(v[1] == 4);
-    XII_TEST_BOOL(v["v"]["x"] == 7);
-    XII_TEST_BOOL(v["v"]["y"] == 9);
-    XII_TEST_BOOL(v["v"]["z"] == 8);
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v[2] == 8);
+    XII_TEST_BOOL(v[3] == 4);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+    XII_TEST_BOOL(v["z"] == 8);
     XII_TEST_BOOL(v["w"] == 4);
 
     XII_TEST_BOOL(v.IsNumber() == false);
@@ -1056,13 +1056,13 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     v = xiiVariant(xiiQuatd(7, 9, 8, 4));
     XII_TEST_BOOL(v == xiiQuatd(7, 9, 8, 4));
-    XII_TEST_BOOL(v[0][0] == 7);
-    XII_TEST_BOOL(v[0][1] == 9);
-    XII_TEST_BOOL(v[0][2] == 8);
-    XII_TEST_BOOL(v[1] == 4);
-    XII_TEST_BOOL(v["v"]["x"] == 7);
-    XII_TEST_BOOL(v["v"]["y"] == 9);
-    XII_TEST_BOOL(v["v"]["z"] == 8);
+    XII_TEST_BOOL(v[0] == 7);
+    XII_TEST_BOOL(v[1] == 9);
+    XII_TEST_BOOL(v[2] == 8);
+    XII_TEST_BOOL(v[3] == 4);
+    XII_TEST_BOOL(v["x"] == 7);
+    XII_TEST_BOOL(v["y"] == 9);
+    XII_TEST_BOOL(v["z"] == 8);
     XII_TEST_BOOL(v["w"] == 4);
 
     XII_TEST_BOOL(v.IsNumber() == false);
@@ -1077,22 +1077,22 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiMat3")
   {
-    xiiVariant v(xiiMat3(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    xiiVariant v(xiiMat3::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9));
     TestVariant<xiiMat3>(v, xiiVariantType::Matrix3);
 
-    XII_TEST_BOOL(v.Get<xiiMat3>() == xiiMat3(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    XII_TEST_BOOL(v.Get<xiiMat3>() == xiiMat3::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
-    XII_TEST_BOOL(v == xiiVariant(xiiMat3(1, 2, 3, 4, 5, 6, 7, 8, 9)));
-    XII_TEST_BOOL(v != xiiVariant(xiiMat3(1, 2, 3, 4, 5, 6, 7, 8, 8)));
+    XII_TEST_BOOL(v == xiiVariant(xiiMat3::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9)));
+    XII_TEST_BOOL(v != xiiVariant(xiiMat3::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 8)));
 
-    XII_TEST_BOOL(v == xiiMat3(1, 2, 3, 4, 5, 6, 7, 8, 9));
-    XII_TEST_BOOL(v != xiiMat3(1, 2, 3, 4, 5, 6, 7, 8, 8));
+    XII_TEST_BOOL(v == xiiMat3::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    XII_TEST_BOOL(v != xiiMat3::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 8));
 
-    v = xiiMat3(5, 8, 9, 3, 1, 2, 3, 4, 5);
-    XII_TEST_BOOL(v == xiiMat3(5, 8, 9, 3, 1, 2, 3, 4, 5));
+    v = xiiMat3::MakeFromValues(5, 8, 9, 3, 1, 2, 3, 4, 5);
+    XII_TEST_BOOL(v == xiiMat3::MakeFromValues(5, 8, 9, 3, 1, 2, 3, 4, 5));
 
-    v = xiiVariant(xiiMat3(5, 8, 9, 3, 1, 2, 3, 4, 4));
-    XII_TEST_BOOL(v == xiiMat3(5, 8, 9, 3, 1, 2, 3, 4, 4));
+    v = xiiVariant(xiiMat3::MakeFromValues(5, 8, 9, 3, 1, 2, 3, 4, 4));
+    XII_TEST_BOOL(v == xiiMat3::MakeFromValues(5, 8, 9, 3, 1, 2, 3, 4, 4));
 
     XII_TEST_BOOL(v.IsNumber() == false);
     XII_TEST_BOOL(!v.IsString());
@@ -1101,22 +1101,22 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiMat3d")
   {
-    xiiVariant v(xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    xiiVariant v(xiiMat3d::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9));
     TestVariant<xiiMat3d>(v, xiiVariantType::Matrix3d);
 
-    XII_TEST_BOOL(v.Get<xiiMat3d>() == xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    XII_TEST_BOOL(v.Get<xiiMat3d>() == xiiMat3d::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9));
 
-    XII_TEST_BOOL(v == xiiVariant(xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9)));
-    XII_TEST_BOOL(v != xiiVariant(xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 8)));
+    XII_TEST_BOOL(v == xiiVariant(xiiMat3d::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9)));
+    XII_TEST_BOOL(v != xiiVariant(xiiMat3d::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 8)));
 
-    XII_TEST_BOOL(v == xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 9));
-    XII_TEST_BOOL(v != xiiMat3d(1, 2, 3, 4, 5, 6, 7, 8, 8));
+    XII_TEST_BOOL(v == xiiMat3d::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9));
+    XII_TEST_BOOL(v != xiiMat3d::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 8));
 
-    v = xiiMat3d(5, 8, 9, 3, 1, 2, 3, 4, 5);
-    XII_TEST_BOOL(v == xiiMat3d(5, 8, 9, 3, 1, 2, 3, 4, 5));
+    v = xiiMat3d::MakeFromValues(5, 8, 9, 3, 1, 2, 3, 4, 5);
+    XII_TEST_BOOL(v == xiiMat3d::MakeFromValues(5, 8, 9, 3, 1, 2, 3, 4, 5));
 
-    v = xiiVariant(xiiMat3d(5, 8, 9, 3, 1, 2, 3, 4, 4));
-    XII_TEST_BOOL(v == xiiMat3d(5, 8, 9, 3, 1, 2, 3, 4, 4));
+    v = xiiVariant(xiiMat3d::MakeFromValues(5, 8, 9, 3, 1, 2, 3, 4, 4));
+    XII_TEST_BOOL(v == xiiMat3d::MakeFromValues(5, 8, 9, 3, 1, 2, 3, 4, 4));
 
     XII_TEST_BOOL(v.IsNumber() == false);
     XII_TEST_BOOL(!v.IsString());
@@ -1125,22 +1125,22 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiMat4")
   {
-    xiiVariant v(xiiMat4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+    xiiVariant v(xiiMat4::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
     TestVariant<xiiMat4>(v, xiiVariantType::Matrix4);
 
-    XII_TEST_BOOL(v.Get<xiiMat4>() == xiiMat4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+    XII_TEST_BOOL(v.Get<xiiMat4>() == xiiMat4::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
 
-    XII_TEST_BOOL(v == xiiVariant(xiiMat4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)));
-    XII_TEST_BOOL(v != xiiVariant(xiiMat4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15)));
+    XII_TEST_BOOL(v == xiiVariant(xiiMat4::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)));
+    XII_TEST_BOOL(v != xiiVariant(xiiMat4::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15)));
 
-    XII_TEST_BOOL(v == xiiMat4(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
-    XII_TEST_BOOL(v != xiiMat4(1, 2, 3, 4, 5, 6, 2, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+    XII_TEST_BOOL(v == xiiMat4::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+    XII_TEST_BOOL(v != xiiMat4::MakeFromValues(1, 2, 3, 4, 5, 6, 2, 8, 9, 10, 11, 12, 13, 14, 15, 16));
 
-    v = xiiMat4(5, 8, 9, 3, 1, 2, 3, 4, 5, 3, 7, 3, 6, 8, 6, 8);
-    XII_TEST_BOOL(v == xiiMat4(5, 8, 9, 3, 1, 2, 3, 4, 5, 3, 7, 3, 6, 8, 6, 8));
+    v = xiiMat4::MakeFromValues(5, 8, 9, 3, 1, 2, 3, 4, 5, 3, 7, 3, 6, 8, 6, 8);
+    XII_TEST_BOOL(v == xiiMat4::MakeFromValues(5, 8, 9, 3, 1, 2, 3, 4, 5, 3, 7, 3, 6, 8, 6, 8));
 
-    v = xiiVariant(xiiMat4(5, 8, 9, 3, 1, 2, 1, 4, 5, 3, 7, 3, 6, 8, 6, 8));
-    XII_TEST_BOOL(v == xiiMat4(5, 8, 9, 3, 1, 2, 1, 4, 5, 3, 7, 3, 6, 8, 6, 8));
+    v = xiiVariant(xiiMat4::MakeFromValues(5, 8, 9, 3, 1, 2, 1, 4, 5, 3, 7, 3, 6, 8, 6, 8));
+    XII_TEST_BOOL(v == xiiMat4::MakeFromValues(5, 8, 9, 3, 1, 2, 1, 4, 5, 3, 7, 3, 6, 8, 6, 8));
 
     XII_TEST_BOOL(v.IsNumber() == false);
     XII_TEST_BOOL(!v.IsString());
@@ -1149,22 +1149,22 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiMat4d")
   {
-    xiiVariant v(xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+    xiiVariant v(xiiMat4d::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
     TestVariant<xiiMat4d>(v, xiiVariantType::Matrix4d);
 
-    XII_TEST_BOOL(v.Get<xiiMat4d>() == xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+    XII_TEST_BOOL(v.Get<xiiMat4d>() == xiiMat4d::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
 
-    XII_TEST_BOOL(v == xiiVariant(xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)));
-    XII_TEST_BOOL(v != xiiVariant(xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15)));
+    XII_TEST_BOOL(v == xiiVariant(xiiMat4d::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)));
+    XII_TEST_BOOL(v != xiiVariant(xiiMat4d::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 15)));
 
-    XII_TEST_BOOL(v == xiiMat4d(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
-    XII_TEST_BOOL(v != xiiMat4d(1, 2, 3, 4, 5, 6, 2, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+    XII_TEST_BOOL(v == xiiMat4d::MakeFromValues(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16));
+    XII_TEST_BOOL(v != xiiMat4d::MakeFromValues(1, 2, 3, 4, 5, 6, 2, 8, 9, 10, 11, 12, 13, 14, 15, 16));
 
-    v = xiiMat4d(5, 8, 9, 3, 1, 2, 3, 4, 5, 3, 7, 3, 6, 8, 6, 8);
-    XII_TEST_BOOL(v == xiiMat4d(5, 8, 9, 3, 1, 2, 3, 4, 5, 3, 7, 3, 6, 8, 6, 8));
+    v = xiiMat4d::MakeFromValues(5, 8, 9, 3, 1, 2, 3, 4, 5, 3, 7, 3, 6, 8, 6, 8);
+    XII_TEST_BOOL(v == xiiMat4d::MakeFromValues(5, 8, 9, 3, 1, 2, 3, 4, 5, 3, 7, 3, 6, 8, 6, 8));
 
-    v = xiiVariant(xiiMat4d(5, 8, 9, 3, 1, 2, 1, 4, 5, 3, 7, 3, 6, 8, 6, 8));
-    XII_TEST_BOOL(v == xiiMat4d(5, 8, 9, 3, 1, 2, 1, 4, 5, 3, 7, 3, 6, 8, 6, 8));
+    v = xiiVariant(xiiMat4d::MakeFromValues(5, 8, 9, 3, 1, 2, 1, 4, 5, 3, 7, 3, 6, 8, 6, 8));
+    XII_TEST_BOOL(v == xiiMat4d::MakeFromValues(5, 8, 9, 3, 1, 2, 1, 4, 5, 3, 7, 3, 6, 8, 6, 8));
 
     XII_TEST_BOOL(v.IsNumber() == false);
     XII_TEST_BOOL(!v.IsString());
@@ -1236,6 +1236,10 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     XII_TEST_BOOL(v.IsNumber() == false);
     XII_TEST_BOOL(v.IsString());
+    XII_TEST_BOOL(v.CanConvertTo<xiiStringView>());
+
+    xiiStringView view = v.ConvertTo<xiiStringView>();
+    XII_TEST_BOOL(view == v.Get<xiiString>());
     XII_TEST_BOOL(v.IsFloatingPoint() == false);
   }
 
@@ -1247,6 +1251,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.Get<xiiString>() == xiiString("This is a xiiString"));
 
     XII_TEST_BOOL(v == xiiVariant(xiiString("This is a xiiString")));
+    XII_TEST_BOOL(v == xiiVariant(xiiStringView("This is a xiiString"), false));
     XII_TEST_BOOL(v != xiiVariant(xiiString("This is something else")));
 
     XII_TEST_BOOL(v == xiiString("This is a xiiString"));
@@ -1260,6 +1265,10 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     XII_TEST_BOOL(v.IsNumber() == false);
     XII_TEST_BOOL(v.IsString());
+    XII_TEST_BOOL(v.CanConvertTo<xiiStringView>());
+
+    xiiStringView view = v.ConvertTo<xiiStringView>();
+    XII_TEST_BOOL(view == v.Get<xiiString>());
     XII_TEST_BOOL(v.IsFloatingPoint() == false);
   }
 
@@ -1274,6 +1283,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
     XII_TEST_BOOL(v.Get<xiiStringView>() == sCopy);
 
     XII_TEST_BOOL(v == xiiVariant(xiiStringView(sCopy.GetData()), false));
+    XII_TEST_BOOL(v == xiiVariant(xiiString("This is a xiiStringView")));
     XII_TEST_BOOL(v != xiiVariant(xiiStringView("This is something else"), false));
 
     XII_TEST_BOOL(v == xiiStringView(sCopy.GetData()));
@@ -1284,6 +1294,10 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     XII_TEST_BOOL(v.IsNumber() == false);
     XII_TEST_BOOL(v.IsString());
+    XII_TEST_BOOL(v.CanConvertTo<xiiString>());
+
+    xiiString sString = v.ConvertTo<xiiString>();
+    XII_TEST_BOOL(sString == v.Get<xiiStringView>());
     XII_TEST_BOOL(v.IsFloatingPoint() == false);
   }
 
@@ -1365,22 +1379,22 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiTime")
   {
-    xiiVariant v(xiiTime::Seconds(1337));
+    xiiVariant v(xiiTime::MakeFromSeconds(1337));
     TestVariant<xiiTime>(v, xiiVariantType::Time);
 
-    XII_TEST_BOOL(v.Get<xiiTime>() == xiiTime::Seconds(1337));
+    XII_TEST_BOOL(v.Get<xiiTime>() == xiiTime::MakeFromSeconds(1337));
 
-    XII_TEST_BOOL(v == xiiVariant(xiiTime::Seconds(1337)));
-    XII_TEST_BOOL(v != xiiVariant(xiiTime::Seconds(1336)));
+    XII_TEST_BOOL(v == xiiVariant(xiiTime::MakeFromSeconds(1337)));
+    XII_TEST_BOOL(v != xiiVariant(xiiTime::MakeFromSeconds(1336)));
 
-    XII_TEST_BOOL(v == xiiTime::Seconds(1337));
-    XII_TEST_BOOL(v != xiiTime::Seconds(1338));
+    XII_TEST_BOOL(v == xiiTime::MakeFromSeconds(1337));
+    XII_TEST_BOOL(v != xiiTime::MakeFromSeconds(1338));
 
-    v = xiiTime::Seconds(8472);
-    XII_TEST_BOOL(v == xiiTime::Seconds(8472));
+    v = xiiTime::MakeFromSeconds(8472);
+    XII_TEST_BOOL(v == xiiTime::MakeFromSeconds(8472));
 
-    v = xiiVariant(xiiTime::Seconds(13));
-    XII_TEST_BOOL(v == xiiTime::Seconds(13));
+    v = xiiVariant(xiiTime::MakeFromSeconds(13));
+    XII_TEST_BOOL(v == xiiTime::MakeFromSeconds(13));
 
     XII_TEST_BOOL(v.IsNumber() == false);
     XII_TEST_BOOL(!v.IsString());
@@ -1395,13 +1409,11 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     XII_TEST_BOOL(v.Get<xiiUuid>() == xiiUuid());
 
-    xiiUuid uuid;
-    uuid.CreateNewUuid();
+    const xiiUuid uuid = xiiUuid::MakeUuid();
     XII_TEST_BOOL(v != xiiVariant(uuid));
     XII_TEST_BOOL(xiiVariant(uuid).Get<xiiUuid>() == uuid);
 
-    xiiUuid uuid2;
-    uuid2.CreateNewUuid();
+    const xiiUuid uuid2 = xiiUuid::MakeUuid();
     XII_TEST_BOOL(xiiVariant(uuid) != xiiVariant(uuid2));
 
     XII_TEST_BOOL(v.IsNumber() == false);
@@ -1411,22 +1423,22 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiAngle")
   {
-    xiiVariant v(xiiAngle::Degree(1337));
+    xiiVariant v(xiiAngle::MakeFromDegree(1337));
     TestVariant<xiiAngle>(v, xiiVariantType::Angle);
 
-    XII_TEST_BOOL(v.Get<xiiAngle>() == xiiAngle::Degree(1337));
+    XII_TEST_BOOL(v.Get<xiiAngle>() == xiiAngle::MakeFromDegree(1337));
 
-    XII_TEST_BOOL(v == xiiVariant(xiiAngle::Degree(1337)));
-    XII_TEST_BOOL(v != xiiVariant(xiiAngle::Degree(1336)));
+    XII_TEST_BOOL(v == xiiVariant(xiiAngle::MakeFromDegree(1337)));
+    XII_TEST_BOOL(v != xiiVariant(xiiAngle::MakeFromDegree(1336)));
 
-    XII_TEST_BOOL(v == xiiAngle::Degree(1337));
-    XII_TEST_BOOL(v != xiiAngle::Degree(1338));
+    XII_TEST_BOOL(v == xiiAngle::MakeFromDegree(1337));
+    XII_TEST_BOOL(v != xiiAngle::MakeFromDegree(1338));
 
-    v = xiiAngle::Degree(8472);
-    XII_TEST_BOOL(v == xiiAngle::Degree(8472));
+    v = xiiAngle::MakeFromDegree(8472);
+    XII_TEST_BOOL(v == xiiAngle::MakeFromDegree(8472));
 
-    v = xiiVariant(xiiAngle::Degree(13));
-    XII_TEST_BOOL(v == xiiAngle::Degree(13));
+    v = xiiVariant(xiiAngle::MakeFromDegree(13));
+    XII_TEST_BOOL(v == xiiAngle::MakeFromDegree(13));
 
     XII_TEST_BOOL(v.IsNumber() == false);
     XII_TEST_BOOL(!v.IsString());
@@ -1435,22 +1447,22 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "xiiAngled")
   {
-    xiiVariant v(xiiAngled::Degree(1337));
+    xiiVariant v(xiiAngled::MakeFromDegree(1337));
     TestVariant<xiiAngled>(v, xiiVariantType::Angled);
 
-    XII_TEST_BOOL(v.Get<xiiAngled>() == xiiAngled::Degree(1337));
+    XII_TEST_BOOL(v.Get<xiiAngled>() == xiiAngled::MakeFromDegree(1337));
 
-    XII_TEST_BOOL(v == xiiVariant(xiiAngled::Degree(1337)));
-    XII_TEST_BOOL(v != xiiVariant(xiiAngled::Degree(1336)));
+    XII_TEST_BOOL(v == xiiVariant(xiiAngled::MakeFromDegree(1337)));
+    XII_TEST_BOOL(v != xiiVariant(xiiAngled::MakeFromDegree(1336)));
 
-    XII_TEST_BOOL(v == xiiAngled::Degree(1337));
-    XII_TEST_BOOL(v != xiiAngled::Degree(1338));
+    XII_TEST_BOOL(v == xiiAngled::MakeFromDegree(1337));
+    XII_TEST_BOOL(v != xiiAngled::MakeFromDegree(1338));
 
-    v = xiiAngled::Degree(8472);
-    XII_TEST_BOOL(v == xiiAngled::Degree(8472));
+    v = xiiAngled::MakeFromDegree(8472);
+    XII_TEST_BOOL(v == xiiAngled::MakeFromDegree(8472));
 
-    v = xiiVariant(xiiAngled::Degree(13));
-    XII_TEST_BOOL(v == xiiAngled::Degree(13));
+    v = xiiVariant(xiiAngled::MakeFromDegree(13));
+    XII_TEST_BOOL(v == xiiAngled::MakeFromDegree(13));
 
     XII_TEST_BOOL(v.IsNumber() == false);
     XII_TEST_BOOL(!v.IsString());
@@ -1608,9 +1620,9 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
   {
     // xiiVarianceTypeAngle
     {
-      // xiiAngle::Degree(90.0f) was replaced with radian as release builds generate a different float then debug.
-      xiiVarianceTypeAngle value  = {0.1f, xiiAngle::Radian(1.57079637f)};
-      xiiVarianceTypeAngle value2 = {0.2f, xiiAngle::Radian(1.57079637f)};
+      // xiiAngle::MakeFromDegree(90.0f) was replaced with radian as release builds generate a different float then debug.
+      xiiVarianceTypeAngle value  = {0.1f, xiiAngle::MakeFromRadian(1.57079637f)};
+      xiiVarianceTypeAngle value2 = {0.2f, xiiAngle::MakeFromRadian(1.57079637f)};
 
       xiiVariant v(value);
       TestVariant<xiiVarianceTypeAngle>(v, xiiVariantType::TypedObject);
@@ -1633,7 +1645,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
       xiiUInt64 uiHash = v.ComputeHash(0);
       XII_TEST_INT(uiHash, 8527525522777555267UL);
 
-      xiiVarianceTypeAngle* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngle, {0.1f, xiiAngle::Radian(1.57079637f)});
+      xiiVarianceTypeAngle* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngle, {0.1f, xiiAngle::MakeFromRadian(1.57079637f)});
       xiiVariant            copy;
       copy.CopyTypedObject(pTypedAngle, xiiGetStaticRTTI<xiiVarianceTypeAngle>());
       xiiVariant move;
@@ -1644,8 +1656,8 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
     // xiiVarianceTypeAngled
     {
-      xiiVarianceTypeAngled value  = {0.1, xiiAngled::Radian(1.57079637)};
-      xiiVarianceTypeAngled value2 = {0.2, xiiAngled::Radian(1.57079637)};
+      xiiVarianceTypeAngled value  = {0.1, xiiAngled::MakeFromRadian(1.57079637)};
+      xiiVarianceTypeAngled value2 = {0.2, xiiAngled::MakeFromRadian(1.57079637)};
 
       xiiVariant v(value);
       TestVariant<xiiVarianceTypeAngled>(v, xiiVariantType::TypedObject);
@@ -1668,7 +1680,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
       xiiUInt64 uiHash = v.ComputeHash(0);
       XII_TEST_INT(uiHash, 5230335272281280496UL);
 
-      xiiVarianceTypeAngled* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngled, {0.1, xiiAngled::Radian(1.57079637)});
+      xiiVarianceTypeAngled* pTypedAngle = XII_DEFAULT_NEW(xiiVarianceTypeAngled, {0.1, xiiAngled::MakeFromRadian(1.57079637)});
       xiiVariant             copy;
       copy.CopyTypedObject(pTypedAngle, xiiGetStaticRTTI<xiiVarianceTypeAngled>());
       xiiVariant move;
@@ -2870,7 +2882,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiTime)")
   {
-    xiiTime    t = xiiTime::Seconds(123.0);
+    xiiTime    t = xiiTime::MakeFromSeconds(123.0);
     xiiVariant v(t);
 
     TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Time);
@@ -2884,8 +2896,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiUuid)")
   {
-    xiiUuid uuid;
-    uuid.CreateNewUuid();
+    xiiUuid    uuid = xiiUuid::MakeUuid();
     xiiVariant v(uuid);
 
     TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Uuid);
@@ -2899,7 +2910,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiAngle)")
   {
-    xiiAngle   t = xiiAngle::Degree(123.0);
+    xiiAngle   t = xiiAngle::MakeFromDegree(123.0);
     xiiVariant v(t);
 
     TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Angle);
@@ -2917,7 +2928,7 @@ XII_CREATE_SIMPLE_TEST(Basics, Variant)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "(Can)ConvertTo (xiiAngled)")
   {
-    xiiAngled  t = xiiAngled::Degree(123.0);
+    xiiAngled  t = xiiAngled::MakeFromDegree(123.0);
     xiiVariant v(t);
 
     TestCanOnlyConvertToStringAndID(v, xiiVariant::Type::Angled);

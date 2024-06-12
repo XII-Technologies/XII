@@ -66,7 +66,7 @@ void xiiQtTimeWidget::ResetStats()
   m_ClockData.Clear();
 
   m_uiMaxSamples    = 40000;
-  m_DisplayInterval = xiiTime::Seconds(60.0);
+  m_DisplayInterval = xiiTime::MakeFromSeconds(60.0);
   m_uiColorsUsed    = 1;
   m_bClocksChanged  = true;
 
@@ -111,8 +111,8 @@ void xiiQtTimeWidget::UpdateStats()
 
   QPainterPath pp[s_uiMaxColors];
 
-  xiiTime tMin = xiiTime::Seconds(100.0);
-  xiiTime tMax = xiiTime::Seconds(0.0);
+  xiiTime tMin = xiiTime::MakeFromSeconds(100.0);
+  xiiTime tMax = xiiTime::MakeFromSeconds(0.0);
 
   for (xiiMap<xiiString, ClockData>::Iterator it = s_pWidget->m_ClockData.GetIterator(); it.IsValid(); ++it)
   {
@@ -152,18 +152,18 @@ void xiiQtTimeWidget::UpdateStats()
 
     for (xiiUInt32 i = 1; i < 10; ++i)
     {
-      pMax.moveTo(QPointF(-m_DisplayInterval.GetSeconds(), xiiTime::Milliseconds(10.0 * i).GetSeconds()));
-      pMax.lineTo(QPointF(0, xiiTime::Milliseconds(10.0 * i).GetSeconds()));
+      pMax.moveTo(QPointF(-m_DisplayInterval.GetSeconds(), xiiTime::MakeFromMilliseconds(10.0 * i).GetSeconds()));
+      pMax.lineTo(QPointF(0, xiiTime::MakeFromMilliseconds(10.0 * i).GetSeconds()));
     }
 
     m_pPathMax->setPath(pMax);
   }
 
-  xiiTime tShowMax = xiiTime::Seconds(1.0 / 10.0);
+  xiiTime tShowMax = xiiTime::MakeFromSeconds(1.0 / 10.0);
 
   for (xiiUInt32 t = 25; t < 100; t += 25)
   {
-    tShowMax = xiiTime::Milliseconds(1) * t;
+    tShowMax = xiiTime::MakeFromMilliseconds(1) * t;
 
     if (tMax < tShowMax)
       break;
@@ -175,7 +175,7 @@ void xiiQtTimeWidget::UpdateStats()
   }
 
   // once a second update the display of the clocks in the list
-  if (xiiTime::Now() - m_LastUpdatedClockList > xiiTime::Seconds(1))
+  if (xiiTime::Now() - m_LastUpdatedClockList > xiiTime::MakeFromSeconds(1))
   {
     m_LastUpdatedClockList = xiiTime::Now();
 
@@ -229,13 +229,13 @@ void xiiQtTimeWidget::ProcessTelemetry(void* pUnuseed)
 
     s_pWidget->m_MaxGlobalTime = xiiMath::Max(s_pWidget->m_MaxGlobalTime, Sample.m_AtGlobalTime);
 
-    if (ad.m_TimeSamples.GetCount() > 1 && (xiiMath::IsEqual(ad.m_TimeSamples.PeekBack().m_Timestep, Sample.m_Timestep, xiiTime::Microseconds(100))))
+    if (ad.m_TimeSamples.GetCount() > 1 && (xiiMath::IsEqual(ad.m_TimeSamples.PeekBack().m_Timestep, Sample.m_Timestep, xiiTime::MakeFromMicroseconds(100))))
       ad.m_TimeSamples.PeekBack() = Sample;
     else
       ad.m_TimeSamples.PushBack(Sample);
 
     if (ads.m_TimeSamples.GetCount() > 1 &&
-        (xiiMath::IsEqual(ads.m_TimeSamples.PeekBack().m_Timestep, SampleSmooth.m_Timestep, xiiTime::Microseconds(100))))
+        (xiiMath::IsEqual(ads.m_TimeSamples.PeekBack().m_Timestep, SampleSmooth.m_Timestep, xiiTime::MakeFromMicroseconds(100))))
       ads.m_TimeSamples.PeekBack() = SampleSmooth;
     else
       ads.m_TimeSamples.PushBack(SampleSmooth);
@@ -284,5 +284,5 @@ void xiiQtTimeWidget::on_ComboTimeframe_currentIndexChanged(int index)
     60 * 10,
   };
 
-  m_DisplayInterval = xiiTime::Seconds(uiSeconds[index]);
+  m_DisplayInterval = xiiTime::MakeFromSeconds(uiSeconds[index]);
 }

@@ -570,7 +570,7 @@ XII_ALWAYS_INLINE void xiiGameObject::TransformationData::UpdateGlobalTransformW
 
   const xiiSimdVec4f     vScale = m_localScaling * m_localScaling.w();
   const xiiSimdTransform localTransform(m_localPosition, m_localRotation, vScale);
-  m_globalTransform.SetGlobalTransform(m_pParentData->m_globalTransform, localTransform);
+  m_globalTransform = xiiSimdTransform::MakeGlobalTransform(m_pParentData->m_globalTransform, localTransform);
 }
 
 XII_FORCE_INLINE void xiiGameObject::TransformationData::UpdateGlobalBounds()

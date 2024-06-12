@@ -190,18 +190,18 @@ xiiGameObjectHandle xiiWorld::CreateObject(const xiiGameObjectDesc& desc, xiiGam
   pNewObject->m_uiHierarchyLevel = static_cast<xiiUInt16>(uiHierarchyLevel);
 
   // fill out the transformation data
-  pTransformationData->m_pObject       = pNewObject;
-  pTransformationData->m_pParentData   = pParentData;
-  pTransformationData->m_localPosition = xiiSimdConversion::ToVec3(desc.m_LocalPosition);
-  pTransformationData->m_localRotation = xiiSimdConversion::ToQuat(desc.m_LocalRotation);
-  pTransformationData->m_localScaling  = xiiSimdConversion::ToVec4(desc.m_LocalScaling.GetAsVec4(desc.m_LocalUniformScaling));
-  pTransformationData->m_globalTransform.SetIdentity();
+  pTransformationData->m_pObject         = pNewObject;
+  pTransformationData->m_pParentData     = pParentData;
+  pTransformationData->m_localPosition   = xiiSimdConversion::ToVec3(desc.m_LocalPosition);
+  pTransformationData->m_localRotation   = xiiSimdConversion::ToQuat(desc.m_LocalRotation);
+  pTransformationData->m_localScaling    = xiiSimdConversion::ToVec4(desc.m_LocalScaling.GetAsVec4(desc.m_LocalUniformScaling));
+  pTransformationData->m_globalTransform = xiiSimdTransform::MakeIdentity();
 #if XII_ENABLED(XII_GAMEOBJECT_VELOCITY)
-  pTransformationData->m_lastGlobalTransform.SetIdentity();
+  pTransformationData->m_lastGlobalTransform                = xiiSimdTransform::MakeIdentity();
   pTransformationData->m_uiLastGlobalTransformUpdateCounter = xiiInvalidIndex;
 #endif
-  pTransformationData->m_localBounds.SetInvalid();
-  pTransformationData->m_localBounds.m_BoxHalfExtents.SetW(xiiSimdFloat::Zero());
+  pTransformationData->m_localBounds = xiiSimdBBoxSphere::MakeInvalid();
+  pTransformationData->m_localBounds.m_BoxHalfExtents.SetW(xiiSimdFloat::MakeZero());
   pTransformationData->m_globalBounds = pTransformationData->m_localBounds;
   pTransformationData->m_hSpatialData.Invalidate();
   pTransformationData->m_uiSpatialDataCategoryBitmask = 0;
@@ -304,7 +304,7 @@ void xiiWorld::DeleteObjectDelayed(const xiiGameObjectHandle& hObject, bool bAls
 {
   xiiMsgDeleteGameObject msg;
   msg.m_bDeleteEmptyParents = bAlsoDeleteEmptyParents;
-  PostMessage(hObject, msg, xiiTime::Zero());
+  PostMessage(hObject, msg, xiiTime::MakeZero());
 }
 
 xiiComponentInitBatchHandle xiiWorld::CreateComponentInitBatch(xiiStringView sBatchName, bool bMustFinishWithinOneFrame /*= true*/)
@@ -379,7 +379,7 @@ void xiiWorld::PostMessage(const xiiGameObjectHandle& receiverObject, const xiiM
 
   if (m_Data.m_ProcessingMessageQueue == queueType)
   {
-    delay = xiiMath::Max(delay, xiiTime::Milliseconds(1));
+    delay = xiiMath::Max(delay, xiiTime::MakeFromMilliseconds(1));
   }
 
   xiiRTTIAllocator* pMsgRTTIAllocator = msg.GetDynamicRTTI()->GetAllocator();
@@ -410,7 +410,7 @@ void xiiWorld::PostMessage(const xiiComponentHandle& hReceiverComponent, const x
 
   if (m_Data.m_ProcessingMessageQueue == queueType)
   {
-    delay = xiiMath::Max(delay, xiiTime::Milliseconds(1));
+    delay = xiiMath::Max(delay, xiiTime::MakeFromMilliseconds(1));
   }
 
   xiiRTTIAllocator* pMsgRTTIAllocator = msg.GetDynamicRTTI()->GetAllocator();
@@ -540,7 +540,7 @@ void xiiWorld::Update()
     XII_PROFILE_SCOPE("Initialize Phase 2");
     // Only process the default init batch here since it contains the components created at runtime.
     // Also make sure that all initialization is finished after this call by giving it enough time.
-    ProcessInitializationBatch(*m_Data.m_pDefaultInitBatch, xiiTime::Now() + xiiTime::Hours(10000));
+    ProcessInitializationBatch(*m_Data.m_pDefaultInitBatch, xiiTime::Now() + xiiTime::MakeFromHours(10000));
 
     ProcessQueuedMessages(xiiObjectMsgQueueType::AfterInitialized);
   }
@@ -1238,7 +1238,7 @@ void xiiWorld::ProcessComponentsToInitialize()
     auto& pInitBatch = it.Value();
     if (pInitBatch->m_bIsReady && pInitBatch->m_bMustFinishWithinOneFrame)
     {
-      ProcessInitializationBatch(*pInitBatch, xiiTime::Now() + xiiTime::Hours(10000));
+      ProcessInitializationBatch(*pInitBatch, xiiTime::Now() + xiiTime::MakeFromHours(10000));
     }
   }
 
@@ -1324,7 +1324,7 @@ xiiResult xiiWorld::RegisterUpdateFunctionInternal(const xiiWorldModule::UpdateF
     ++uiInsertionIndex;
   }
 
-  updateFunctions.Insert(newFunction, uiInsertionIndex);
+  updateFunctions.InsertAt(uiInsertionIndex, newFunction);
 
   return XII_SUCCESS;
 }

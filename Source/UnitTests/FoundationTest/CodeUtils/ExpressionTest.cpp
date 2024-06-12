@@ -552,52 +552,52 @@ XII_CREATE_SIMPLE_TEST(CodeUtils, Expression)
     XII_TEST_FLOAT(TestConstant<float>("output = pow2(5.0)"), 32.0f, xiiMath::DefaultEpsilon<float>());
 
     // Sin
-    XII_TEST_FLOAT(TestInstruction("output = sin(a)", xiiAngle::Degree(90.0f).GetRadian()), 1.0f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestInstruction("output = sin(a)", xiiAngle::Degree(45.0f).GetRadian()), xiiMath::Sin(xiiAngle::Degree(45.0f)), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = sin(a)", xiiAngle::MakeFromDegree(90.0f).GetRadian()), 1.0f, xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = sin(a)", xiiAngle::MakeFromDegree(45.0f).GetRadian()), xiiMath::Sin(xiiAngle::MakeFromDegree(45.0f)), xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = sin(PI / 2)"), 1.0f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestConstant<float>("output = sin(PI / 4)"), xiiMath::Sin(xiiAngle::Degree(45.0f)), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestConstant<float>("output = sin(PI / 4)"), xiiMath::Sin(xiiAngle::MakeFromDegree(45.0f)), xiiMath::DefaultEpsilon<float>());
 
     // Cos
     XII_TEST_FLOAT(TestInstruction("output = cos(a)", 0.0f), 1.0f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestInstruction("output = cos(a)", xiiAngle::Degree(45.0f).GetRadian()), xiiMath::Cos(xiiAngle::Degree(45.0f)), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = cos(a)", xiiAngle::MakeFromDegree(45.0f).GetRadian()), xiiMath::Cos(xiiAngle::MakeFromDegree(45.0f)), xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = cos(0)"), 1.0f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestConstant<float>("output = cos(PI / 4)"), xiiMath::Cos(xiiAngle::Degree(45.0f)), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestConstant<float>("output = cos(PI / 4)"), xiiMath::Cos(xiiAngle::MakeFromDegree(45.0f)), xiiMath::DefaultEpsilon<float>());
 
     // Tan
     XII_TEST_FLOAT(TestInstruction("output = tan(a)", 0.0f), 0.0f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestInstruction("output = tan(a)", xiiAngle::Degree(45.0f).GetRadian()), 1.0f, xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = tan(a)", xiiAngle::MakeFromDegree(45.0f).GetRadian()), 1.0f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = tan(0)"), 0.0f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = tan(PI / 4)"), 1.0f, xiiMath::DefaultEpsilon<float>());
 
     // ASin
-    XII_TEST_FLOAT(TestInstruction("output = asin(a)", 1.0f), xiiAngle::Degree(90.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestInstruction("output = asin(a)", xiiMath::Sin(xiiAngle::Degree(45.0f))), xiiAngle::Degree(45.0f).GetRadian(), xiiMath::LargeEpsilon<float>());
-    XII_TEST_FLOAT(TestConstant<float>("output = asin(1)"), xiiAngle::Degree(90.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestConstant<float>("output = asin(sin(PI / 4))"), xiiAngle::Degree(45.0f).GetRadian(), xiiMath::LargeEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = asin(a)", 1.0f), xiiAngle::MakeFromDegree(90.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = asin(a)", xiiMath::Sin(xiiAngle::MakeFromDegree(45.0f))), xiiAngle::MakeFromDegree(45.0f).GetRadian(), xiiMath::LargeEpsilon<float>());
+    XII_TEST_FLOAT(TestConstant<float>("output = asin(1)"), xiiAngle::MakeFromDegree(90.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestConstant<float>("output = asin(sin(PI / 4))"), xiiAngle::MakeFromDegree(45.0f).GetRadian(), xiiMath::LargeEpsilon<float>());
 
     // ACos
     XII_TEST_FLOAT(TestInstruction("output = acos(a)", 1.0f), 0.0f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestInstruction("output = acos(a)", xiiMath::Cos(xiiAngle::Degree(45.0f))), xiiAngle::Degree(45.0f).GetRadian(), xiiMath::LargeEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = acos(a)", xiiMath::Cos(xiiAngle::MakeFromDegree(45.0f))), xiiAngle::MakeFromDegree(45.0f).GetRadian(), xiiMath::LargeEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = acos(1)"), 0.0f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestConstant<float>("output = acos(cos(PI / 4))"), xiiAngle::Degree(45.0f).GetRadian(), xiiMath::LargeEpsilon<float>());
+    XII_TEST_FLOAT(TestConstant<float>("output = acos(cos(PI / 4))"), xiiAngle::MakeFromDegree(45.0f).GetRadian(), xiiMath::LargeEpsilon<float>());
 
     // ATan
     XII_TEST_FLOAT(TestInstruction("output = atan(a)", 0.0f), 0.0f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestInstruction("output = atan(a)", 1.0f), xiiAngle::Degree(45.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = atan(a)", 1.0f), xiiAngle::MakeFromDegree(45.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = atan(0)"), 0.0f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestConstant<float>("output = atan(1)"), xiiAngle::Degree(45.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestConstant<float>("output = atan(1)"), xiiAngle::MakeFromDegree(45.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
 
     // RadToDeg
-    XII_TEST_FLOAT(TestInstruction("output = radToDeg(a)", xiiAngle::Degree(135.0f).GetRadian()), 135.0f, xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestInstruction("output = rad_to_deg(a)", xiiAngle::Degree(180.0f).GetRadian()), 180.0f, xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = radToDeg(a)", xiiAngle::MakeFromDegree(135.0f).GetRadian()), 135.0f, xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = rad_to_deg(a)", xiiAngle::MakeFromDegree(180.0f).GetRadian()), 180.0f, xiiMath::LargeEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = radToDeg(PI / 2)"), 90.0f, xiiMath::DefaultEpsilon<float>());
     XII_TEST_FLOAT(TestConstant<float>("output = rad_to_deg(PI/4)"), 45.0f, xiiMath::DefaultEpsilon<float>());
 
     // DegToRad
-    XII_TEST_FLOAT(TestInstruction("output = degToRad(a)", 135.0f), xiiAngle::Degree(135.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestInstruction("output = deg_to_rad(a)", 180.0f), xiiAngle::Degree(180.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestConstant<float>("output = degToRad(90.0)"), xiiAngle ::Degree(90.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
-    XII_TEST_FLOAT(TestConstant<float>("output = deg_to_rad(45)"), xiiAngle ::Degree(45.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = degToRad(a)", 135.0f), xiiAngle::MakeFromDegree(135.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestInstruction("output = deg_to_rad(a)", 180.0f), xiiAngle::MakeFromDegree(180.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestConstant<float>("output = degToRad(90.0)"), xiiAngle::MakeFromDegree(90.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
+    XII_TEST_FLOAT(TestConstant<float>("output = deg_to_rad(45)"), xiiAngle::MakeFromDegree(45.0f).GetRadian(), xiiMath::DefaultEpsilon<float>());
 
     // Round
     XII_TEST_FLOAT(TestInstruction("output = round(a)", 12.34f), 12, xiiMath::DefaultEpsilon<float>());

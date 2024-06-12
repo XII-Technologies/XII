@@ -1,8 +1,8 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
 #include <Foundation/IO/MemoryStream.h>
 #include <Foundation/IO/Stream.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraph.h>
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphNode.h>
 #include <GraphicsCore/AnimationSystem/AnimGraph/AnimGraphResource.h>

@@ -104,6 +104,10 @@ public:
   /// \brief Returns the entry index for the given file or xiiInvalidIndex, if not found.
   xiiUInt32 FindEntry(xiiStringView sFile) const;
 
+  xiiUInt32 AddPathString(xiiStringView sPathString);
+
+  void RebuildPathToEntryHashes();
+
   xiiStringView GetEntryPathString(xiiUInt32 uiEntryIdx) const;
 
   xiiResult Serialize(xiiStreamWriter& ref_stream) const;

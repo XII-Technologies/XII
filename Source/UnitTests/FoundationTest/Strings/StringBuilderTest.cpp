@@ -17,7 +17,6 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     XII_TEST_BOOL(s.IsEmpty());
     XII_TEST_INT(s.GetCharacterCount(), 0);
     XII_TEST_INT(s.GetElementCount(), 0);
-    XII_TEST_BOOL(s.IsPureASCII());
     XII_TEST_BOOL(s == "");
   }
 
@@ -30,14 +29,12 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     XII_TEST_BOOL(s == sUtf8.GetData());
     XII_TEST_INT(s.GetElementCount(), 18);
     XII_TEST_INT(s.GetCharacterCount(), 13);
-    XII_TEST_BOOL(!s.IsPureASCII());
 
     xiiStringBuilder s2("test test");
 
     XII_TEST_BOOL(s2 == "test test");
     XII_TEST_INT(s2.GetElementCount(), 9);
     XII_TEST_INT(s2.GetCharacterCount(), 9);
-    XII_TEST_BOOL(s2.IsPureASCII());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor(wchar_t)")
@@ -48,14 +45,12 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     XII_TEST_BOOL(s == sUtf8.GetData());
     XII_TEST_INT(s.GetElementCount(), 18);
     XII_TEST_INT(s.GetCharacterCount(), 13);
-    XII_TEST_BOOL(!s.IsPureASCII());
 
     xiiStringBuilder s2(L"test test");
 
     XII_TEST_BOOL(s2 == "test test");
     XII_TEST_INT(s2.GetElementCount(), 9);
     XII_TEST_INT(s2.GetCharacterCount(), 9);
-    XII_TEST_BOOL(s2.IsPureASCII());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor(copy)")
@@ -67,7 +62,6 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     XII_TEST_BOOL(s2 == sUtf8.GetData());
     XII_TEST_INT(s2.GetElementCount(), 18);
     XII_TEST_INT(s2.GetCharacterCount(), 13);
-    XII_TEST_BOOL(!s2.IsPureASCII());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor(StringView)")
@@ -80,7 +74,6 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
 
     XII_TEST_INT(s.GetElementCount(), 6);
     XII_TEST_INT(s.GetCharacterCount(), 4);
-    XII_TEST_BOOL(!s.IsPureASCII());
     XII_TEST_BOOL(s == xiiStringUtf8(L"c äö").GetData());
   }
 
@@ -104,7 +97,6 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     XII_TEST_BOOL(s == sUtf8.GetData());
     XII_TEST_INT(s.GetElementCount(), 18);
     XII_TEST_INT(s.GetCharacterCount(), 13);
-    XII_TEST_BOOL(!s.IsPureASCII());
 
     xiiStringBuilder s2("bla");
     s2 = "test test";
@@ -112,7 +104,6 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     XII_TEST_BOOL(s2 == "test test");
     XII_TEST_INT(s2.GetElementCount(), 9);
     XII_TEST_INT(s2.GetCharacterCount(), 9);
-    XII_TEST_BOOL(s2.IsPureASCII());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator=(wchar_t)")
@@ -124,7 +115,6 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     XII_TEST_BOOL(s == sUtf8.GetData());
     XII_TEST_INT(s.GetElementCount(), 18);
     XII_TEST_INT(s.GetCharacterCount(), 13);
-    XII_TEST_BOOL(!s.IsPureASCII());
 
     xiiStringBuilder s2("bla");
     s2 = L"test test";
@@ -132,7 +122,6 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     XII_TEST_BOOL(s2 == "test test");
     XII_TEST_INT(s2.GetElementCount(), 9);
     XII_TEST_INT(s2.GetCharacterCount(), 9);
-    XII_TEST_BOOL(s2.IsPureASCII());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator=(copy)")
@@ -145,7 +134,6 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     XII_TEST_BOOL(s2 == sUtf8.GetData());
     XII_TEST_INT(s2.GetElementCount(), 18);
     XII_TEST_INT(s2.GetCharacterCount(), 13);
-    XII_TEST_BOOL(!s2.IsPureASCII());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator=(StringView)")
@@ -182,32 +170,27 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     xiiStringBuilder s(L"abc äöü € def");
 
     XII_TEST_BOOL(!s.IsEmpty());
-    XII_TEST_BOOL(!s.IsPureASCII());
 
     s.Clear();
     XII_TEST_BOOL(s.IsEmpty());
     XII_TEST_INT(s.GetElementCount(), 0);
     XII_TEST_INT(s.GetCharacterCount(), 0);
-    XII_TEST_BOOL(s.IsPureASCII());
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetElementCount / GetCharacterCount / IsPureASCII")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetElementCount / GetCharacterCount")
   {
     xiiStringBuilder s(L"abc äöü € def");
 
-    XII_TEST_BOOL(!s.IsPureASCII());
     XII_TEST_INT(s.GetElementCount(), 18);
     XII_TEST_INT(s.GetCharacterCount(), 13);
 
     s = "abc";
 
-    XII_TEST_BOOL(s.IsPureASCII());
     XII_TEST_INT(s.GetElementCount(), 3);
     XII_TEST_INT(s.GetCharacterCount(), 3);
 
     s = L"Hällo! I love €";
 
-    XII_TEST_BOOL(!s.IsPureASCII());
     XII_TEST_INT(s.GetElementCount(), 18);
     XII_TEST_INT(s.GetCharacterCount(), 15);
   }
@@ -334,12 +317,14 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     XII_TEST_BOOL(s == xiiStringUtf8(L"Test42foobär").GetData());
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Format")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetFormat")
   {
     xiiStringBuilder s("abc");
     s.SetFormat("Test{0}{1}{2}", 42, "foo", xiiStringUtf8(L"bär").GetData());
-
     XII_TEST_BOOL(s == xiiStringUtf8(L"Test42foobär").GetData());
+
+    s.SetFormat("%%процент{}%%", 100);
+    XII_TEST_BOOL(s == xiiStringUtf8(L"%процент100%").GetData());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ToUpper")
@@ -986,7 +971,11 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     p.ChangeFileName("toeff");
     XII_TEST_BOOL(p == "test/test/tut/murpf/toeff"); // filename is EMPTY -> thus ADDS it
 
-    p = "test/test/tut/murpf/.extension"; // folders that start with a dot must be considered to be empty filenames with an extension
+    p = "test/test/tut/murpf/.file"; // files that start with a dot are considered to be filenames with no extension
+    p.ChangeFileName("toeff");
+    XII_TEST_BOOL(p == "test/test/tut/murpf/toeff");
+
+    p = "test/test/tut/murpf/.file.extension";
     p.ChangeFileName("toeff");
     XII_TEST_BOOL(p == "test/test/tut/murpf/toeff.extension");
 
@@ -1140,9 +1129,11 @@ XII_CREATE_SIMPLE_TEST(Strings, StringBuilder)
     p = "This/Is\\My//Path.dot\\";
     XII_TEST_BOOL(p.GetFileName() == "");
 
-    // so far we treat file and folders whose names start with a '.' as extensions
-    p = "This/Is\\My//Path.dot\\.stupidfile";
-    XII_TEST_BOOL(p.GetFileName() == "");
+    p = "This/Is\\My//Path.dot\\.somefile";
+    XII_TEST_BOOL(p.GetFileName() == ".somefile");
+
+    p = "This/Is\\My//Path.dot\\.somefile.ext";
+    XII_TEST_BOOL(p.GetFileName() == ".somefile");
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetFileDirectory")

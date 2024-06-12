@@ -114,31 +114,31 @@ public:
   };
 
   /// \brief Renders the given set of lines for one frame.
-  static void DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color, const xiiTransform& transform = xiiTransform::IdentityTransform());
+  static void DrawLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
 
   /// \brief Renders the given set of lines in 2D (screen-space) for one frame.
   static void Draw2DLines(const xiiDebugRendererContext& context, xiiArrayPtr<const Line> lines, const xiiColor& color);
 
   /// \brief Renders a cross for one frame.
-  static void DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, const xiiTransform& transform = xiiTransform::IdentityTransform());
+  static void DrawCross(const xiiDebugRendererContext& context, const xiiVec3& vGlobalPosition, float fLineLength, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
 
   /// \brief Renders a wireframe box for one frame.
-  static void DrawLineBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, const xiiTransform& transform = xiiTransform::IdentityTransform());
+  static void DrawLineBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
 
   /// \brief Renders the corners of a wireframe box for one frame.
-  static void DrawLineBoxCorners(const xiiDebugRendererContext& context, const xiiBoundingBox& box, float fCornerFraction, const xiiColor& color, const xiiTransform& transform = xiiTransform::IdentityTransform());
+  static void DrawLineBoxCorners(const xiiDebugRendererContext& context, const xiiBoundingBox& box, float fCornerFraction, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
 
   /// \brief Renders a wireframe sphere for one frame.
-  static void DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, const xiiTransform& transform = xiiTransform::IdentityTransform());
+  static void DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
 
   /// \brief Renders an upright wireframe capsule for one frame.
-  static void DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform = xiiTransform::IdentityTransform());
+  static void DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
 
   /// \brief Renders a wireframe frustum for one frame.
   static void DrawLineFrustum(const xiiDebugRendererContext& context, const xiiFrustum& frustum, const xiiColor& color, bool bDrawPlaneNormals = false);
 
   /// \brief Renders a solid box for one frame.
-  static void DrawSolidBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, const xiiTransform& transform = xiiTransform::IdentityTransform());
+  static void DrawSolidBox(const xiiDebugRendererContext& context, const xiiBoundingBox& box, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
 
   /// \brief Renders the set of filled triangles for one frame.
   static void DrawSolidTriangles(const xiiDebugRendererContext& context, xiiArrayPtr<Triangle> triangles, const xiiColor& color);
@@ -197,10 +197,10 @@ public:
   /// The rotation goes around the given \a rotationAxis.
   /// An angle of zero is pointing into forwardAxis direction.
   /// Both angles may be negative.
-  static void DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::UnitXAxis(), xiiVec3 vRotationAxis = xiiVec3::UnitZAxis());
+  static void DrawAngle(const xiiDebugRendererContext& context, xiiAngle startAngle, xiiAngle endAngle, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::MakeAxisX(), xiiVec3 vRotationAxis = xiiVec3::MakeAxisZ());
 
   /// \brief Renders a cone with the tip at the center position, opening up with the given angle.
-  static void DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::UnitXAxis());
+  static void DrawOpeningCone(const xiiDebugRendererContext& context, xiiAngle halfAngle, const xiiColor& colorInside, const xiiColor& colorOutside, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::MakeAxisX());
 
   /// \brief Renders a bent cone with the tip at the center position, pointing into the +X direction opening up with halfAngle1 and halfAngle2 along the Y and Z axis.
   ///
@@ -215,7 +215,7 @@ public:
   static void DrawCylinder(const xiiDebugRendererContext& context, float fRadiusStart, float fRadiusEnd, float fLength, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, bool bCapStart = false, bool bCapEnd = false);
 
   /// \brief Renders a line arrow.
-  static void DrawArrow(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::UnitXAxis());
+  static void DrawArrow(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::MakeAxisX());
 
 private:
   friend class xiiSimpleRenderPass;

@@ -3,10 +3,7 @@
 #include <Foundation/Profiling/Profiling.h>
 #include <Texture/TexConv/TexConvProcessor.h>
 
-static xiiImageFormat::Enum DetermineOutputFormatPC(
-  xiiTexConvUsage::Enum           targetFormat,
-  xiiTexConvCompressionMode::Enum compressionMode,
-  xiiUInt32                       uiNumChannels)
+static xiiImageFormat::Enum DetermineOutputFormatPC(xiiTexConvUsage::Enum targetFormat, xiiTexConvCompressionMode::Enum compressionMode, xiiUInt32 uiNumChannels)
 {
   if (targetFormat == xiiTexConvUsage::NormalMap || targetFormat == xiiTexConvUsage::NormalMap_Inverted || targetFormat == xiiTexConvUsage::BumpMap)
   {

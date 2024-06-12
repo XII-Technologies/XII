@@ -58,8 +58,8 @@ static xiiTransform CalculateTransformationMatrix(const xiiEditableSkeleton* pPr
     }
   }
 
-  xiiMat3 rot = xiiBasisAxis::CalculateTransformationMatrix(forwardDir, rightDir, upDir, 1.0f);
-  t.m_qRotation.SetFromMat3(rot);
+  xiiMat3 rot   = xiiBasisAxis::CalculateTransformationMatrix(forwardDir, rightDir, upDir, 1.0f);
+  t.m_qRotation = xiiQuat::MakeFromMat3(rot);
 
   return t;
 }
@@ -395,7 +395,7 @@ const xiiEditableSkeleton* xiiSkeletonAssetDocument::MergeWithNewSkeleton(xiiEdi
       modelTransform = origin.GetAsMat4();
       xiiMsgAnimationPoseUpdated::ComputeFullBoneTransform(root.GetAsMat4(), modelTransform, fullTransform, pJoint->m_qGizmoOffsetRotationRO);
 
-      origin.SetGlobalTransform(origin, pJoint->m_LocalTransform);
+      origin                           = xiiTransform::MakeGlobalTransform(origin, pJoint->m_LocalTransform);
       pJoint->m_vGizmoOffsetPositionRO = root.TransformPosition(origin.m_vPosition);
 
       for (xiiEditableSkeletonJoint* pChild : pJoint->m_Children)
@@ -406,7 +406,7 @@ const xiiEditableSkeleton* xiiSkeletonAssetDocument::MergeWithNewSkeleton(xiiEdi
 
     for (xiiEditableSkeletonJoint* pChild : newSkeleton.m_Children)
     {
-      TraverseJoints(TraverseJoints, pChild, CalculateTransformationMatrix(pOldSkeleton), xiiTransform::IdentityTransform());
+      TraverseJoints(TraverseJoints, pChild, CalculateTransformationMatrix(pOldSkeleton), xiiTransform::MakeIdentity());
     }
   }
 

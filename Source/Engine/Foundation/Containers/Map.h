@@ -2,6 +2,164 @@
 
 #include <Foundation/Containers/Deque.h>
 
+template <typename KeyType, typename ValueType, typename Comparer>
+class xiiMapBase;
+
+/// \brief Base class for all iterators.
+template <typename KeyType, typename ValueType, typename Comparer, bool REVERSE>
+struct xiiMapBaseConstIteratorBase
+{
+  using iterator_category = std::forward_iterator_tag;
+  using value_type        = xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, false>;
+  using difference_type   = std::ptrdiff_t;
+  using pointer           = xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, false>*;
+  using reference         = xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, false>&;
+
+  XII_DECLARE_POD_TYPE();
+
+  /// \brief Constructs an invalid iterator.
+  XII_ALWAYS_INLINE xiiMapBaseConstIteratorBase() :
+    m_pElement(nullptr)
+  {
+  } // [tested]
+
+  /// \brief Checks whether this iterator points to a valid element.
+  XII_ALWAYS_INLINE bool IsValid() const { return (m_pElement != nullptr); } // [tested]
+
+  /// \brief Checks whether the two iterators point to the same element.
+  XII_ALWAYS_INLINE bool operator==(const xiiMapBaseConstIteratorBase& it2) const { return (m_pElement == it2.m_pElement); }
+
+  /// \brief Returns the 'key' of the element that this iterator points to.
+  XII_FORCE_INLINE const KeyType& Key() const
+  {
+    XII_ASSERT_DEBUG(IsValid(), "Cannot access the 'key' of an invalid iterator.");
+    return m_pElement->m_Key;
+  } // [tested]
+
+  /// \brief Returns the 'value' of the element that this iterator points to.
+  XII_FORCE_INLINE const ValueType& Value() const
+  {
+    XII_ASSERT_DEBUG(IsValid(), "Cannot access the 'value' of an invalid iterator.");
+    return m_pElement->m_Value;
+  } // [tested]
+
+  /// \brief Returns '*this' to enable foreach
+  XII_ALWAYS_INLINE xiiMapBaseConstIteratorBase& operator*() { return *this; } // [tested]
+
+  /// \brief Advances the iterator to the next element in the map. The iterator will not be valid anymore, if the end is reached.
+  void Next(); // [tested]
+
+  /// \brief Advances the iterator to the previous element in the map. The iterator will not be valid anymore, if the end is reached.
+  void Prev(); // [tested]
+
+  /// \brief Shorthand for 'Next'
+  XII_ALWAYS_INLINE void operator++() { Next(); } // [tested]
+
+  /// \brief Shorthand for 'Prev'
+  XII_ALWAYS_INLINE void operator--() { Prev(); } // [tested]
+
+protected:
+  void Advance(const xiiInt32 dir0, const xiiInt32 dir1);
+
+  friend class xiiMapBase<KeyType, ValueType, Comparer>;
+
+  XII_ALWAYS_INLINE explicit xiiMapBaseConstIteratorBase(typename xiiMapBase<KeyType, ValueType, Comparer>::Node* pInit) :
+    m_pElement(pInit)
+  {
+  }
+
+  typename xiiMapBase<KeyType, ValueType, Comparer>::Node* m_pElement;
+
+public:
+  struct Pointer
+  {
+    std::pair<const KeyType&, const ValueType&>        value;
+    const std::pair<const KeyType&, const ValueType&>* operator->() const { return &value; }
+  };
+
+  XII_ALWAYS_INLINE Pointer operator->() const
+  {
+    return Pointer{.value = {Key(), Value()}};
+  }
+
+  // This function is used to return the values for structured bindings.
+  // The number and type of each slot are defined in the inl file.
+  template <std::size_t Index>
+  std::tuple_element_t<Index, xiiMapBaseConstIteratorBase>& get() const
+  {
+    if constexpr (Index == 0)
+      return Key();
+    if constexpr (Index == 1)
+      return Value();
+  }
+};
+
+/// \brief Forward Iterator to iterate over all elements in sorted order.
+template <typename KeyType, typename ValueType, typename Comparer, bool REVERSE>
+struct xiiMapBaseIteratorBase : public xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>
+{
+  using iterator_category = std::forward_iterator_tag;
+  using value_type        = xiiMapBaseIteratorBase<KeyType, ValueType, Comparer, REVERSE>;
+  using difference_type   = std::ptrdiff_t;
+  using pointer           = xiiMapBaseIteratorBase<KeyType, ValueType, Comparer, REVERSE>*;
+  using reference         = xiiMapBaseIteratorBase<KeyType, ValueType, Comparer, REVERSE>&;
+
+  XII_DECLARE_POD_TYPE();
+
+  /// \brief Constructs an invalid iterator.
+  XII_ALWAYS_INLINE xiiMapBaseIteratorBase() :
+    xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>()
+  {
+  }
+
+  /// \brief Returns the 'value' of the element that this iterator points to.
+  XII_FORCE_INLINE ValueType& Value()
+  {
+    XII_ASSERT_DEBUG(this->IsValid(), "Cannot access the 'value' of an invalid iterator.");
+    return this->m_pElement->m_Value;
+  }
+
+  /// \brief Returns the 'value' of the element that this iterator points to.
+  XII_FORCE_INLINE ValueType& Value() const
+  {
+    XII_ASSERT_DEBUG(this->IsValid(), "Cannot access the 'value' of an invalid iterator.");
+    return this->m_pElement->m_Value;
+  }
+
+  /// \brief Returns '*this' to enable foreach
+  XII_ALWAYS_INLINE xiiMapBaseIteratorBase& operator*() { return *this; } // [tested]
+
+private:
+  friend class xiiMapBase<KeyType, ValueType, Comparer>;
+
+  XII_ALWAYS_INLINE explicit xiiMapBaseIteratorBase(typename xiiMapBase<KeyType, ValueType, Comparer>::Node* pInit) :
+    xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>(pInit)
+  {
+  }
+
+public:
+  // These functions are used to return the values for structured bindings.
+  // The number and type of type of each slot are defined in the inl file.
+
+  template <std::size_t Index>
+  std::tuple_element_t<Index, xiiMapBaseIteratorBase>& get()
+  {
+    if constexpr (Index == 0)
+      return xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>::Key();
+    if constexpr (Index == 1)
+      return Value();
+  }
+
+  template <std::size_t Index>
+  std::tuple_element_t<Index, xiiMapBaseIteratorBase>& get() const
+  {
+    if constexpr (Index == 0)
+      return xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, REVERSE>::Key();
+    if constexpr (Index == 1)
+      return Value();
+  }
+};
+
 /// \brief An associative container. Similar to STL::map
 ///
 /// A map allows to store key/value pairs. This in turn allows to search for values by looking them
@@ -16,7 +174,19 @@
 template <typename KeyType, typename ValueType, typename Comparer>
 class xiiMapBase
 {
+
+public:
+  using ConstIterator        = xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, false>;
+  using ConstReverseIterator = xiiMapBaseConstIteratorBase<KeyType, ValueType, Comparer, true>;
+
+  using Iterator        = xiiMapBaseIteratorBase<KeyType, ValueType, Comparer, false>;
+  using ReverseIterator = xiiMapBaseIteratorBase<KeyType, ValueType, Comparer, true>;
+
 private:
+  friend ConstIterator;
+  friend ConstReverseIterator;
+  friend Iterator;
+  friend ReverseIterator;
   struct Node;
 
   /// \brief Only used by the sentinel node.
@@ -32,109 +202,6 @@ private:
   {
     KeyType   m_Key;
     ValueType m_Value;
-  };
-
-public:
-  /// \brief Base class for all iterators.
-  struct ConstIterator
-  {
-    using iterator_category = std::forward_iterator_tag;
-    using value_type        = ConstIterator;
-    using difference_type   = std::ptrdiff_t;
-    using pointer           = ConstIterator*;
-    using reference         = ConstIterator&;
-
-    XII_DECLARE_POD_TYPE();
-
-    /// \brief Constructs an invalid iterator.
-    XII_ALWAYS_INLINE ConstIterator() :
-      m_pElement(nullptr)
-    {
-    } // [tested]
-
-    /// \brief Checks whether this iterator points to a valid element.
-    XII_ALWAYS_INLINE bool IsValid() const { return (m_pElement != nullptr); } // [tested]
-
-    /// \brief Checks whether the two iterators point to the same element.
-    XII_ALWAYS_INLINE bool operator==(const typename xiiMapBase<KeyType, ValueType, Comparer>::ConstIterator& it2) const { return (m_pElement == it2.m_pElement); }
-
-    /// \brief Returns the 'key' of the element that this iterator points to.
-    XII_FORCE_INLINE const KeyType& Key() const
-    {
-      XII_ASSERT_DEBUG(IsValid(), "Cannot access the 'key' of an invalid iterator.");
-      return m_pElement->m_Key;
-    } // [tested]
-
-    /// \brief Returns the 'value' of the element that this iterator points to.
-    XII_FORCE_INLINE const ValueType& Value() const
-    {
-      XII_ASSERT_DEBUG(IsValid(), "Cannot access the 'value' of an invalid iterator.");
-      return m_pElement->m_Value;
-    } // [tested]
-
-    /// \brief Returns '*this' to enable foreach
-    XII_ALWAYS_INLINE ConstIterator& operator*() { return *this; } // [tested]
-
-    /// \brief Advances the iterator to the next element in the map. The iterator will not be valid anymore, if the end is reached.
-    void Next(); // [tested]
-
-    /// \brief Advances the iterator to the previous element in the map. The iterator will not be valid anymore, if the end is reached.
-    void Prev(); // [tested]
-
-    /// \brief Shorthand for 'Next'
-    XII_ALWAYS_INLINE void operator++() { Next(); } // [tested]
-
-    /// \brief Shorthand for 'Prev'
-    XII_ALWAYS_INLINE void operator--() { Prev(); } // [tested]
-
-  protected:
-    friend class xiiMapBase<KeyType, ValueType, Comparer>;
-
-    XII_ALWAYS_INLINE explicit ConstIterator(Node* pInit) :
-      m_pElement(pInit)
-    {
-    }
-
-    Node* m_pElement;
-  };
-
-  /// \brief Forward Iterator to iterate over all elements in sorted order.
-  struct Iterator : public ConstIterator
-  {
-    using iterator_category = std::forward_iterator_tag;
-    using value_type        = Iterator;
-    using difference_type   = std::ptrdiff_t;
-    using pointer           = Iterator*;
-    using reference         = Iterator&;
-
-    // this is required to pull in the const version of this function
-    using ConstIterator::Value;
-
-    XII_DECLARE_POD_TYPE();
-
-    /// \brief Constructs an invalid iterator.
-    XII_ALWAYS_INLINE Iterator() :
-      ConstIterator()
-    {
-    }
-
-    /// \brief Returns the 'value' of the element that this iterator points to.
-    XII_FORCE_INLINE ValueType& Value()
-    {
-      XII_ASSERT_DEBUG(this->IsValid(), "Cannot access the 'value' of an invalid iterator.");
-      return this->m_pElement->m_Value;
-    }
-
-    /// \brief Returns '*this' to enable foreach
-    XII_ALWAYS_INLINE Iterator& operator*() { return *this; } // [tested]
-
-  private:
-    friend class xiiMapBase<KeyType, ValueType, Comparer>;
-
-    XII_ALWAYS_INLINE explicit Iterator(Node* pInit) :
-      ConstIterator(pInit)
-    {
-    }
   };
 
 protected:
@@ -163,14 +230,14 @@ public:
   /// \brief Returns an Iterator to the very first element.
   Iterator GetIterator(); // [tested]
 
+  /// \brief Returns a ReverseIterator to the very last element.
+  ReverseIterator GetReverseIterator(); // [tested]
+
   /// \brief Returns a constant Iterator to the very first element.
   ConstIterator GetIterator() const; // [tested]
 
-  /// \brief Returns an Iterator to the very last element. For reverse traversal.
-  Iterator GetLastIterator(); // [tested]
-
-  /// \brief Returns a constant Iterator to the very last element. For reverse traversal.
-  ConstIterator GetLastIterator() const; // [tested]
+  /// \brief Returns a constant ReverseIterator to the very last element.
+  ConstReverseIterator GetReverseIterator() const; // [tested]
 
   /// \brief Inserts the key/value pair into the tree and returns an Iterator to it. O(log n) operation.
   template <typename CompatibleKeyType, typename CompatibleValueType>
@@ -187,7 +254,7 @@ public:
   /// \brief Searches for the given key and returns an iterator to it. If it did not exist yet, it is default-created. \a bExisted is set to
   /// true, if the key was found, false if it needed to be created.
   template <typename CompatibleKeyType>
-  Iterator FindOrAdd(CompatibleKeyType&& key, bool* pExisted = nullptr); // [tested]
+  Iterator FindOrAdd(CompatibleKeyType&& key, bool* out_pExisted = nullptr); // [tested]
 
   /// \brief Allows read/write access to the value stored under the given key. If there is no such key, a new element is
   /// default-constructed.

@@ -41,7 +41,7 @@ XII_TESTFRAMEWORK_ENTRY_POINT_BEGIN("FoundationTest", "Foundation Tests")
     }
 
     // wait a little
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(cmd.GetIntOption("-sleep")));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(cmd.GetIntOption("-sleep")));
 
     // shutdown with exit code
     xiiTestSetup::DeInitTestFramework(true);

@@ -24,7 +24,7 @@ bool xiiCommandLineOption::IsHelpRequested(const xiiCommandLineUtils* pUtils /*=
   return pUtils->GetBoolOption("-help") || pUtils->GetBoolOption("--help") || pUtils->GetBoolOption("-h") || pUtils->GetBoolOption("-?");
 }
 
-xiiResult xiiCommandLineOption::RequireOptions(xiiStringView sRequiredOptions, xiiString* pMissingOption /*= {}*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
+xiiResult xiiCommandLineOption::RequireOptions(xiiStringView sRequiredOptions, xiiString* pMissingOption /*= nullptr*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
 {
   xiiStringBuilder                  tmp;
   xiiStringBuilder                  allOpts = sRequiredOptions;
@@ -54,7 +54,7 @@ xiiResult xiiCommandLineOption::RequireOptions(xiiStringView sRequiredOptions, x
   return XII_SUCCESS;
 }
 
-bool xiiCommandLineOption::LogAvailableOptions(LogAvailableModes mode, xiiStringView sGroupFilter0 /*= {}*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
+bool xiiCommandLineOption::LogAvailableOptions(LogAvailableModes mode, xiiStringView sGroupFilter /*= {} */, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
 {
   if (mode == LogAvailableModes::IfHelpRequested)
   {
@@ -64,10 +64,10 @@ bool xiiCommandLineOption::LogAvailableOptions(LogAvailableModes mode, xiiString
 
   xiiMap<xiiString, xiiHybridArray<xiiCommandLineOption*, 16>> sorted;
 
-  xiiStringBuilder sGroupFilter;
-  if (!sGroupFilter0.IsEmpty())
+  xiiStringBuilder sGroupFilterResult;
+  if (!sGroupFilter.IsEmpty())
   {
-    sGroupFilter.Set(";", sGroupFilter0, ";");
+    sGroupFilterResult.Set(";", sGroupFilter, ";");
   }
 
   for (xiiCommandLineOption* pOpt = xiiCommandLineOption::GetFirstInstance(); pOpt != nullptr; pOpt = pOpt->GetNextInstance())
@@ -77,9 +77,9 @@ bool xiiCommandLineOption::LogAvailableOptions(LogAvailableModes mode, xiiString
     sGroup.Prepend(";");
     sGroup.Append(";");
 
-    if (!sGroupFilter.IsEmpty())
+    if (!sGroupFilterResult.IsEmpty())
     {
-      if (sGroupFilter.FindSubString_NoCase(sGroup) == nullptr)
+      if (sGroupFilterResult.FindSubString_NoCase(sGroup) == nullptr)
         continue;
     }
 
@@ -157,7 +157,7 @@ bool xiiCommandLineOption::LogAvailableOptions(LogAvailableModes mode, xiiString
 }
 
 
-bool xiiCommandLineOption::LogAvailableOptionsToBuffer(xiiStringBuilder& out_sBuffer, LogAvailableModes mode, xiiStringView sGroupFilter /*= {}*/, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
+bool xiiCommandLineOption::LogAvailableOptionsToBuffer(xiiStringBuilder& out_sBuffer, LogAvailableModes mode, xiiStringView sGroupFilter /*= {} */, const xiiCommandLineUtils* pUtils /*= xiiCommandLineUtils::GetGlobalInstance()*/)
 {
   xiiLogSystemToBuffer log;
   xiiLogSystemScope    ls(&log);
@@ -294,7 +294,7 @@ bool xiiCommandLineOptionBool::GetOptionValue(LogMode logMode, const xiiCommandL
 //////////////////////////////////////////////////////////////////////////
 
 xiiCommandLineOptionInt::xiiCommandLineOptionInt(xiiStringView sSortingGroup, xiiStringView sArgument, xiiStringView sLongDesc, xiiInt32 iDefaultValue, xiiInt32 iMinValue /*= xiiMath::MinValue<xiiInt32>()*/, xiiInt32 iMaxValue /*= xiiMath::MaxValue<xiiInt32>()*/, bool bCaseSensitive /*= false*/) :
-  xiiCommandLineOptionDoc(sSortingGroup, sArgument, "<xiiInt32>", sLongDesc, "0", bCaseSensitive)
+  xiiCommandLineOptionDoc(sSortingGroup, sArgument, "<int>", sLongDesc, "0", bCaseSensitive)
 {
   m_iDefaultValue = iDefaultValue;
   m_iMinValue     = iMinValue;

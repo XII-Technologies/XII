@@ -21,14 +21,14 @@ void xiiRttiConverterContext::OnUnknownTypeError(xiiStringView sTypeName)
 xiiUuid xiiRttiConverterContext::GenerateObjectGuid(const xiiUuid& parentGuid, const xiiAbstractProperty* pProp, xiiVariant index, void* pObject) const
 {
   xiiUuid guid = parentGuid;
-  guid.HashCombine(xiiUuid::StableUuidForString(pProp->GetPropertyName()));
+  guid.HashCombine(xiiUuid::MakeStableUuidFromString(pProp->GetPropertyName()));
   if (index.IsA<xiiString>())
   {
-    guid.HashCombine(xiiUuid::StableUuidForString(index.Get<xiiString>()));
+    guid.HashCombine(xiiUuid::MakeStableUuidFromString(index.Get<xiiString>()));
   }
   else if (index.CanConvertTo<xiiUInt32>())
   {
-    guid.HashCombine(xiiUuid::StableUuidForInt(index.ConvertTo<xiiUInt32>()));
+    guid.HashCombine(xiiUuid::MakeStableUuidFromInt(index.ConvertTo<xiiUInt32>()));
   }
   else if (index.IsValid())
   {

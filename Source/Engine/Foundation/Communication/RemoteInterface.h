@@ -91,7 +91,7 @@ public:
   /// \brief Can only be called after ConnectToServer(). Updates the network in a loop until a connection is established, or the time has run out.
   ///
   /// A timeout of exactly zero means to wait indefinitely.
-  xiiResult WaitForConnectionToServer(xiiTime timeout = xiiTime::Seconds(10));
+  xiiResult WaitForConnectionToServer(xiiTime timeout = xiiTime::MakeFromSeconds(10));
 
   /// \brief Closes the connection in an orderly fashion
   void ShutdownConnection();
@@ -180,6 +180,9 @@ public:
   /// \brief Registers a message handler that is executed for all incoming messages for the given system
   void SetMessageHandler(xiiUInt32 uiSystemID, xiiRemoteMessageHandler messageHandler);
 
+  /// \brief Registers a message handler that is executed for all incoming messages for systems for which there are no dedicated message handlers.
+  void SetUnhandledMessageHandler(xiiRemoteMessageHandler messageHandler);
+
   /// \brief Executes the message handler for all messages that have arrived for the given system
   xiiUInt32 ExecuteMessageHandlers(xiiUInt32 uiSystem);
 
@@ -216,7 +219,7 @@ protected:
   virtual xiiResult InternalTransmit(xiiRemoteTransmitMode tm, const xiiArrayPtr<const xiiUInt8>& data) = 0;
 
   /// \brief Derived classes can override this to interpret an address differently
-  virtual xiiResult DetermineTargetAddress(xiiStringView sConnectTo0, xiiUInt32& out_IP, xiiUInt16& out_Port);
+  virtual xiiResult DetermineTargetAddress(xiiStringView sConnectTo, xiiUInt32& out_IP, xiiUInt16& out_Port);
 
   /// Derived classes should update this when the information is available
   // xiiString m_ServerInfoName;
@@ -255,6 +258,7 @@ private:
   xiiInt32                                       m_iConnectionsToClients     = 0;
   xiiDynamicArray<xiiUInt8>                      m_TempSendBuffer;
   xiiHashTable<xiiUInt32, xiiRemoteMessageQueue> m_MessageQueues;
+  xiiRemoteMessageHandler                        m_UnhandledMessageHandler;
 };
 
 /// \brief The remote interface thread updates in regular intervals to keep the connection alive.

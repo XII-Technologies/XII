@@ -36,16 +36,16 @@ void xiiIpcChannelEnet::InternalConnect()
   }
   else
   {
-    SetConnectionState(ConnectionState::Connected);
+    SetConnectionState(ConnectionState::Connecting);
 
-    if ((m_sLastAddress != m_sAddress) || (xiiTime::Now() - m_LastConnectAttempt > xiiTime::Seconds(10)))
+    if ((m_sLastAddress != m_sAddress) || (xiiTime::Now() - m_LastConnectAttempt > xiiTime::MakeFromSeconds(10)))
     {
       m_sLastAddress       = m_sAddress;
       m_LastConnectAttempt = xiiTime::Now();
       m_pNetwork->ConnectToServer('RMOT', m_sAddress, false).IgnoreResult();
     }
 
-    m_pNetwork->WaitForConnectionToServer(xiiTime::Milliseconds(10.0)).IgnoreResult();
+    m_pNetwork->WaitForConnectionToServer(xiiTime::MakeFromMilliseconds(10.0)).IgnoreResult();
   }
 
   SetConnectionState(m_pNetwork->IsConnectedToOther() ? ConnectionState::Connected : ConnectionState::Disconnected);

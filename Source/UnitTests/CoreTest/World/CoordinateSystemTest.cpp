@@ -38,7 +38,7 @@ void TestRotation(const xiiCoordinateSystemConversion& atoB, const xiiCoordinate
 xiiQuat FromAxisAndAngle(const xiiVec3& vAxis, xiiAngle angle)
 {
   xiiQuat q;
-  q.SetFromAxisAndAngle(vAxis.GetNormalized(), angle);
+  q = xiiQuat::MakeFromAxisAndAngle(vAxis.GetNormalized(), angle);
   return q;
 }
 
@@ -53,8 +53,8 @@ void TestCoordinateSystemConversion(const xiiCoordinateSystem& a, const xiiCoord
 {
   const bool     bAisRH  = IsRightHanded(a);
   const bool     bBisRH  = IsRightHanded(b);
-  const xiiAngle A_CWRot = bAisRH ? xiiAngle::Degree(-90.0f) : xiiAngle::Degree(90.0f);
-  const xiiAngle B_CWRot = bBisRH ? xiiAngle::Degree(-90.0f) : xiiAngle::Degree(90.0f);
+  const xiiAngle A_CWRot = bAisRH ? xiiAngle::MakeFromDegree(-90.0f) : xiiAngle::MakeFromDegree(90.0f);
+  const xiiAngle B_CWRot = bBisRH ? xiiAngle::MakeFromDegree(-90.0f) : xiiAngle::MakeFromDegree(90.0f);
 
   xiiCoordinateSystemConversion AtoB;
   AtoB.SetConversion(a, b);
@@ -154,7 +154,7 @@ XII_CREATE_SIMPLE_TEST(World, CoordinateSystem)
     xiiCoordSysLH.m_vRightDir   = xiiVec3(0.0f, 1.0f, 0.0f);
     xiiCoordSysLH.m_vUpDir      = xiiVec3(0.0f, 0.0f, 1.0f);
 
-    const xiiAngle rot = xiiAngle::Degree(90.0f);
+    const xiiAngle rot = xiiAngle::MakeFromDegree(90.0f);
 
     xiiCoordinateSystemConversion defaultConstucted;
 

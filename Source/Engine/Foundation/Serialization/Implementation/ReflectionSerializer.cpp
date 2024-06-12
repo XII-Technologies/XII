@@ -20,10 +20,7 @@ void xiiReflectionSerializer::WriteObjectToDDL(xiiStreamWriter& ref_stream, cons
   xiiRttiConverterContext context;
   xiiRttiConverterWriter  conv(&graph, &context, false, true);
 
-  xiiUuid guid;
-  guid.CreateNewUuid();
-
-  context.RegisterObject(guid, pRtti, const_cast<void*>(pObject));
+  context.RegisterObject(xiiUuid::MakeUuid(), pRtti, const_cast<void*>(pObject));
   conv.AddObjectToGraph(pRtti, const_cast<void*>(pObject), "root");
 
   xiiAbstractGraphDdlSerializer::Write(ref_stream, &graph, nullptr, bCompactMmode, typeMode);
@@ -36,7 +33,9 @@ void xiiReflectionSerializer::WriteObjectToDDL(xiiOpenDdlWriter& ref_ddl, const 
   xiiRttiConverterWriter  conv(&graph, &context, false, true);
 
   if (!guid.IsValid())
-    guid.CreateNewUuid();
+  {
+    guid = xiiUuid::MakeUuid();
+  }
 
   context.RegisterObject(guid, pRtti, const_cast<void*>(pObject));
   conv.AddObjectToGraph(pRtti, const_cast<void*>(pObject), "root");
@@ -50,10 +49,7 @@ void xiiReflectionSerializer::WriteObjectToBinary(xiiStreamWriter& ref_stream, c
   xiiRttiConverterContext context;
   xiiRttiConverterWriter  conv(&graph, &context, false, true);
 
-  xiiUuid guid;
-  guid.CreateNewUuid();
-
-  context.RegisterObject(guid, pRtti, const_cast<void*>(pObject));
+  context.RegisterObject(xiiUuid::MakeUuid(), pRtti, const_cast<void*>(pObject));
   conv.AddObjectToGraph(pRtti, const_cast<void*>(pObject), "root");
 
   xiiAbstractGraphBinarySerializer::Write(ref_stream, &graph);

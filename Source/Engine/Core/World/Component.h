@@ -118,7 +118,7 @@ public:
   XII_ALWAYS_INLINE bool SendMessage(xiiMessage& ref_msg) const { return SendMessageInternal(ref_msg, false); }
 
   /// \brief Queues the message for the given phase. The message is processed after the given delay in the corresponding phase.
-  void PostMessage(const xiiMessage& msg, xiiTime delay = xiiTime::Zero(), xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
+  void PostMessage(const xiiMessage& msg, xiiTime delay = xiiTime::MakeZero(), xiiObjectMsgQueueType::Enum queueType = xiiObjectMsgQueueType::NextFrame) const;
 
   /// \brief Returns whether the given Message is handled by this component.
   virtual bool HandlesMessage(const xiiMessage& msg) const;

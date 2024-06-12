@@ -66,9 +66,15 @@ XII_ALWAYS_INLINE xiiSimdDouble::operator double() const
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::Zero()
+XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::MakeZero()
 {
   return _mm256_setzero_pd();
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::MakeNaN()
+{
+  return _mm256_set1_pd(xiiMath::NaN<double>());
 }
 
 XII_ALWAYS_INLINE xiiSimdDouble xiiSimdDouble::operator+(const xiiSimdDouble& f) const

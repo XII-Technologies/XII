@@ -50,7 +50,7 @@ void xiiListBase<T>::operator=(const xiiListBase<T>& cc)
 }
 
 template <typename T>
-typename xiiListBase<T>::ListElement* xiiListBase<T>::AcquireNode(const T& data)
+typename xiiListBase<T>::ListElement* xiiListBase<T>::AcquireNode()
 {
   ListElement* pNode;
 
@@ -66,7 +66,6 @@ typename xiiListBase<T>::ListElement* xiiListBase<T>::AcquireNode(const T& data)
   }
 
   xiiMemoryUtils::Construct<SkipTrivialTypes, ListElement>(pNode, 1);
-  pNode->m_Data = data;
   return pNode;
 }
 
@@ -100,12 +99,6 @@ XII_ALWAYS_INLINE typename xiiListBase<T>::Iterator xiiListBase<T>::GetIterator(
 }
 
 template <typename T>
-XII_ALWAYS_INLINE typename xiiListBase<T>::Iterator xiiListBase<T>::GetLastIterator()
-{
-  return Iterator(m_Last.m_pPrev);
-}
-
-template <typename T>
 XII_ALWAYS_INLINE typename xiiListBase<T>::Iterator xiiListBase<T>::GetEndIterator()
 {
   return m_End;
@@ -115,12 +108,6 @@ template <typename T>
 XII_ALWAYS_INLINE typename xiiListBase<T>::ConstIterator xiiListBase<T>::GetIterator() const
 {
   return ConstIterator(m_First.m_pNext);
-}
-
-template <typename T>
-XII_ALWAYS_INLINE typename xiiListBase<T>::ConstIterator xiiListBase<T>::GetLastIterator() const
-{
-  return ConstIterator(m_Last.m_pPrev);
 }
 
 template <typename T>
@@ -191,9 +178,9 @@ XII_FORCE_INLINE const T& xiiListBase<T>::PeekBack() const
 
 
 template <typename T>
-XII_ALWAYS_INLINE void xiiListBase<T>::PushBack()
+XII_ALWAYS_INLINE T& xiiListBase<T>::PushBack()
 {
-  PushBack(T());
+  return *Insert(GetEndIterator());
 }
 
 template <typename T>
@@ -203,9 +190,9 @@ XII_ALWAYS_INLINE void xiiListBase<T>::PushBack(const T& element)
 }
 
 template <typename T>
-XII_ALWAYS_INLINE void xiiListBase<T>::PushFront()
+XII_ALWAYS_INLINE T& xiiListBase<T>::PushFront()
 {
-  PushFront(T());
+  return *Insert(GetIterator());
 }
 
 template <typename T>
@@ -231,12 +218,30 @@ void xiiListBase<T>::PopFront()
 }
 
 template <typename T>
+typename xiiListBase<T>::Iterator xiiListBase<T>::Insert(const Iterator& pos)
+{
+  XII_ASSERT_DEV(pos.m_pElement != nullptr, "The iterator (pos) is invalid.");
+
+  ++m_uiCount;
+  ListElement* elem = AcquireNode();
+
+  elem->m_pNext = pos.m_pElement;
+  elem->m_pPrev = pos.m_pElement->m_pPrev;
+
+  pos.m_pElement->m_pPrev->m_pNext = elem;
+  pos.m_pElement->m_pPrev          = elem;
+
+  return Iterator(elem);
+}
+
+template <typename T>
 typename xiiListBase<T>::Iterator xiiListBase<T>::Insert(const Iterator& pos, const T& data)
 {
   XII_ASSERT_DEV(pos.m_pElement != nullptr, "The iterator (pos) is invalid.");
 
   ++m_uiCount;
-  ListElement* elem = AcquireNode(data);
+  ListElement* elem = AcquireNode();
+  elem->m_Data      = data;
 
   elem->m_pNext = pos.m_pElement;
   elem->m_pPrev = pos.m_pElement->m_pPrev;

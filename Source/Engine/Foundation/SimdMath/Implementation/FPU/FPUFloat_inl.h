@@ -33,9 +33,15 @@ XII_ALWAYS_INLINE xiiSimdFloat::operator float() const
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::Zero()
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::MakeZero()
 {
   return xiiSimdFloat(0.0f);
+}
+
+// static
+XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::MakeNaN()
+{
+  return xiiSimdFloat(xiiMath::NaN<float>());
 }
 
 XII_ALWAYS_INLINE xiiSimdFloat xiiSimdFloat::operator+(const xiiSimdFloat& f) const

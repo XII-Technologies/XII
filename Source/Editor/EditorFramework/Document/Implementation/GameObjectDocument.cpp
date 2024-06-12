@@ -270,7 +270,7 @@ void xiiGameObjectDocument::DetermineNodeName(const xiiDocumentObject* pObject, 
     {
       bHasIcon = true;
 
-      xiiColor color = xiiColor::ZeroColor();
+      xiiColor color = xiiColor::MakeZero();
 
       if (auto pCatAttr = pChild->GetTypeAccessor().GetType()->GetAttributeByType<xiiCategoryAttribute>())
       {
@@ -447,7 +447,7 @@ void xiiGameObjectDocument::SetGlobalTransform(const xiiDocumentObject* pObject,
 
     xiiSimdTransform tParent = m_GlobalTransforms[pParent];
 
-    tLocal.SetLocalTransform(tParent, simdT);
+    tLocal = xiiSimdTransform::MakeLocalTransform(tParent, simdT);
   }
   else
   {
@@ -742,7 +742,7 @@ xiiStatus xiiGameObjectDocument::CreateGameObjectHere()
 
   if (true)
   {
-    cmdAdd.m_NewObjectGuid = xiiUuid::CreateUuid();
+    cmdAdd.m_NewObjectGuid = xiiUuid::MakeUuid();
     NewNode                = cmdAdd.m_NewObjectGuid;
 
     auto res = history->AddCommand(cmdAdd);
@@ -1020,15 +1020,14 @@ xiiTransform xiiGameObjectDocument::ComputeGlobalTransform(const xiiDocumentObje
 {
   if (pObject == nullptr || pObject->GetTypeAccessor().GetType() != xiiGetStaticRTTI<xiiGameObject>())
   {
-    m_GlobalTransforms[pObject] = xiiSimdTransform::IdentityTransform();
-    return xiiTransform::IdentityTransform();
+    m_GlobalTransforms[pObject] = xiiSimdTransform::MakeIdentity();
+    return xiiTransform::MakeIdentity();
   }
 
   const xiiSimdTransform tParent = xiiSimdConversion::ToTransform(ComputeGlobalTransform(pObject->GetParent()));
   const xiiSimdTransform tLocal  = QueryLocalTransformSimd(pObject);
 
-  xiiSimdTransform tGlobal;
-  tGlobal.SetGlobalTransform(tParent, tLocal);
+  xiiSimdTransform tGlobal = xiiSimdTransform::MakeGlobalTransform(tParent, tLocal);
 
   m_GlobalTransforms[pObject] = tGlobal;
 

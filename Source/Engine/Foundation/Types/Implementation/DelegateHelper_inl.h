@@ -232,8 +232,7 @@ public:
   /// assert that it is used correctly. It is best to not use this function at all.
   XII_ALWAYS_INLINE bool IsEqualIfComparable(const SelfType& other) const
   {
-    return m_Instance.m_Ptr == other.m_Instance.m_Ptr && m_DispatchFunction == other.m_DispatchFunction &&
-      memcmp(m_Data, other.m_Data, DataSize) == 0;
+    return m_Instance.m_Ptr == other.m_Instance.m_Ptr && m_DispatchFunction == other.m_DispatchFunction && memcmp(m_Data, other.m_Data, DataSize) == 0;
   }
 
   /// \brief Returns true when the delegate is bound to a valid non-nullptr function.

@@ -1,10 +1,10 @@
 #include <GameEngine/GameEnginePCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
 #include <Core/Collection/CollectionResource.h>
 #include <Core/Input/InputManager.h>
 #include <Core/WorldSerializer/WorldReader.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <Foundation/Utilities/CommandLineUtils.h>
 #include <GameEngine/Configuration/InputConfig.h>
 #include <GameEngine/GameApplication/GameApplication.h>
@@ -370,13 +370,13 @@ void xiiFallbackGameState::ProcessInput()
       m_MainCamera.MoveGlobally(0, 0, -fInput * fMoveSpeed);
 
     if (xiiInputManager::GetInputActionState("Game", "TurnLeft", &fInput) != xiiKeyState::Up)
-      m_MainCamera.RotateGlobally(xiiAngle(), xiiAngle(), xiiAngle::Degree(-fRotateSpeed * fInput));
+      m_MainCamera.RotateGlobally(xiiAngle(), xiiAngle(), xiiAngle::MakeFromDegree(-fRotateSpeed * fInput));
     if (xiiInputManager::GetInputActionState("Game", "TurnRight", &fInput) != xiiKeyState::Up)
-      m_MainCamera.RotateGlobally(xiiAngle(), xiiAngle(), xiiAngle::Degree(fRotateSpeed * fInput));
+      m_MainCamera.RotateGlobally(xiiAngle(), xiiAngle(), xiiAngle::MakeFromDegree(fRotateSpeed * fInput));
     if (xiiInputManager::GetInputActionState("Game", "TurnUp", &fInput) != xiiKeyState::Up)
-      m_MainCamera.RotateLocally(xiiAngle(), xiiAngle::Degree(fRotateSpeed * fInput), xiiAngle());
+      m_MainCamera.RotateLocally(xiiAngle(), xiiAngle::MakeFromDegree(fRotateSpeed * fInput), xiiAngle());
     if (xiiInputManager::GetInputActionState("Game", "TurnDown", &fInput) != xiiKeyState::Up)
-      m_MainCamera.RotateLocally(xiiAngle(), xiiAngle::Degree(-fRotateSpeed * fInput), xiiAngle());
+      m_MainCamera.RotateLocally(xiiAngle(), xiiAngle::MakeFromDegree(-fRotateSpeed * fInput), xiiAngle());
   }
 }
 

@@ -245,6 +245,4 @@ void xiiRandomGauss::Load(xiiStreamReader& ref_stream)
   m_Generator.Load(ref_stream);
 }
 
-
-
 XII_STATICLINK_FILE(Foundation, Foundation_Math_Implementation_Random);

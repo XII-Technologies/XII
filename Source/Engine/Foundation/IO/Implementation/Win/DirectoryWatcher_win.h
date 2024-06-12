@@ -174,7 +174,7 @@ void xiiDirectoryWatcher::EnumerateChanges(EnumerateChangesFunction func, xiiTim
 
   while (WaitForSingleObject(m_pImpl->m_overlappedEvent, static_cast<DWORD>(waitUpTo.GetMilliseconds())) == WAIT_OBJECT_0)
   {
-    waitUpTo = xiiTime::Zero(); // only wait on the first call to GetQueuedCompletionStatus
+    waitUpTo = xiiTime::MakeZero(); // only wait on the first call to GetQueuedCompletionStatus
 
     DWORD numberOfBytes = 0;
     GetOverlappedResult(m_pImpl->m_directoryHandle, &m_pImpl->m_overlapped, &numberOfBytes, FALSE);

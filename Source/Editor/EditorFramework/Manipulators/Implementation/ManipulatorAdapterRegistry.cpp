@@ -7,22 +7,22 @@ XII_IMPLEMENT_SINGLETON(xiiManipulatorAdapterRegistry);
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, ManipulatorAdapterRegistry)
- 
+
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "ManipulatorManager"
   END_SUBSYSTEM_DEPENDENCIES
- 
+
   ON_CORESYSTEMS_STARTUP
   {
     XII_DEFAULT_NEW(xiiManipulatorAdapterRegistry);
   }
- 
+
   ON_CORESYSTEMS_SHUTDOWN
   {
     auto ptr = xiiManipulatorAdapterRegistry::GetSingleton();
     XII_DEFAULT_DELETE(ptr);
   }
- 
+
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 

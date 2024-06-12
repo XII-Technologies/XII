@@ -163,8 +163,7 @@ void xiiAnimationClipContext::QuerySelectionBBox(const xiiEditorEngineDocumentMs
   if (m_pGameObject == nullptr)
     return;
 
-  xiiBoundingBoxSphere bounds;
-  bounds.SetInvalid();
+  xiiBoundingBoxSphere bounds = xiiBoundingSphere::MakeInvalid();
 
   {
     XII_LOCK(m_pWorld->GetWriteMarker());

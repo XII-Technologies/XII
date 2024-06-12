@@ -78,8 +78,7 @@ void xiiGlobalEvent::PrintGlobalEventStatistics()
 
   while (it.IsValid())
   {
-    xiiLog::Info("Event: '{0}', Num Handlers Regular / Once: {1} / {2}, Num Times Fired: {3}", it.Key(), it.Value().m_uiNumEventHandlersRegular,
-                 it.Value().m_uiNumEventHandlersOnce, it.Value().m_uiNumTimesFired);
+    xiiLog::Info("Event: '{0}', Num Handlers Regular / Once: {1} / {2}, Num Times Fired: {3}", it.Key(), it.Value().m_uiNumEventHandlersRegular, it.Value().m_uiNumEventHandlersOnce, it.Value().m_uiNumTimesFired);
 
     ++it;
   }

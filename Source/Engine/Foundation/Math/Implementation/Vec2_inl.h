@@ -3,7 +3,7 @@
 template <typename Type>
 XII_ALWAYS_INLINE xiiVec2Template<Type>::xiiVec2Template()
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   const Type TypeNaN = xiiMath::NaN<Type>();
   x                  = TypeNaN;
@@ -12,14 +12,14 @@ XII_ALWAYS_INLINE xiiVec2Template<Type>::xiiVec2Template()
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec2Template<Type>::xiiVec2Template(Type inX, Type inY) :
-  x(inX), y(inY)
+XII_ALWAYS_INLINE xiiVec2Template<Type>::xiiVec2Template(Type x, Type y) :
+  x(x), y(y)
 {
 }
 
 template <typename Type>
-XII_ALWAYS_INLINE xiiVec2Template<Type>::xiiVec2Template(Type inV) :
-  x(inV), y(inV)
+XII_ALWAYS_INLINE xiiVec2Template<Type>::xiiVec2Template(Type v) :
+  x(v), y(v)
 {
 }
 
@@ -52,7 +52,7 @@ XII_IMPLEMENT_IF_FLOAT_TYPE XII_ALWAYS_INLINE Type xiiVec2Template<Type>::GetLen
 template <typename Type>
 XII_IMPLEMENT_IF_FLOAT_TYPE xiiResult xiiVec2Template<Type>::SetLength(Type fNewLength, Type fEpsilon /* = xiiMath::DefaultEpsilon<Type>() */)
 {
-  if (NormalizeIfNotZero(xiiVec2Template<Type>::ZeroVector(), fEpsilon) == XII_FAILURE)
+  if (NormalizeIfNotZero(xiiVec2Template<Type>::MakeZero(), fEpsilon) == XII_FAILURE)
     return XII_FAILURE;
 
   *this *= fNewLength;
@@ -360,8 +360,9 @@ XII_FORCE_INLINE const xiiVec2Template<Type> operator/(const xiiVec2Template<Typ
   if constexpr (std::is_floating_point_v<Type>)
   {
     // Multiplication is much faster than division.
-    const Type f_inv = xiiMath::Invert(f);
-    return xiiVec2Template<Type>(v.x * f_inv, v.y * f_inv);
+    const Type fInverse = xiiMath::Invert(f);
+
+    return xiiVec2Template<Type>(v.x * fInverse, v.y * fInverse);
   }
   else
   {

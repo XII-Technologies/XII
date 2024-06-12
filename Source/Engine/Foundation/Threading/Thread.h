@@ -39,6 +39,9 @@ struct xiiThreadEvent
 class XII_FOUNDATION_DLL xiiThread : public xiiOSThread
 {
 public:
+  /// \brief Returns the current xiiThread if the current platform thread is a xiiThread. Returns nullptr otherwise.
+  static const xiiThread* GetCurrentThread();
+
   /// \brief Describes the thread status
   enum xiiThreadStatus
   {

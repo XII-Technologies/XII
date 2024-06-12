@@ -67,6 +67,9 @@ public:
   /// \brief Clears the range starting at uiFirstBit up to (and including) uiLastBit to 0.
   void ClearBitRange(xiiUInt32 uiFirstBit, xiiUInt32 uiNumBits); // [tested]
 
+  /// \brief Swaps two bitfields
+  void Swap(xiiBitfield<Container>& other); // [tested]
+
   struct ConstIterator
   {
     using iterator_category = std::forward_iterator_tag;
@@ -172,7 +175,7 @@ public:
   /// \brief Initializes the bitfield to all zero.
   xiiStaticBitfield();
 
-  static xiiStaticBitfield<T> FromMask(StorageType bits);
+  static xiiStaticBitfield<T> MakeFromMask(StorageType bits);
 
   /// \brief Returns true, if the bitfield is not zero.
   bool IsAnyBitSet() const; // [tested]
@@ -221,6 +224,9 @@ public:
 
   /// \brief Sets the raw uint that stores all bits.
   void SetValue(T value); // [tested]
+
+  /// \brief Swaps two bitfields
+  void Swap(xiiStaticBitfield<T>& other); // [tested]
 
   /// \brief Modifies \a this to also contain the bits from \a rhs.
   XII_ALWAYS_INLINE void operator|=(const xiiStaticBitfield<T>& rhs) { m_Storage |= rhs.m_Storage; }

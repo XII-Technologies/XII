@@ -35,7 +35,7 @@ void xiiScriptCoroutine_MoveTo::Start(xiiGameObjectHandle hObject, const xiiVec3
   m_Easing     = easing;
 
   m_Duration   = duration;
-  m_TimePassed = xiiTime::Zero();
+  m_TimePassed = xiiTime::MakeZero();
 }
 
 xiiScriptCoroutine::Result xiiScriptCoroutine_MoveTo::Update(xiiTime deltaTimeSinceLastUpdate)

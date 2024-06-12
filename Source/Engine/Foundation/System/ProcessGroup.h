@@ -28,7 +28,7 @@ public:
   /// Returns XII_SUCCESS only if all processes have shut down.
   /// In all other cases, e.g. if the optional timeout is reached,
   /// XII_FAILURE is returned.
-  xiiResult WaitToFinish(xiiTime timeout = xiiTime::Zero());
+  xiiResult WaitToFinish(xiiTime timeout = xiiTime::MakeZero());
 
   /// \brief Tries to kill all processes associated with this group.
   ///

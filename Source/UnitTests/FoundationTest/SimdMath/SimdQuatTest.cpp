@@ -30,7 +30,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdQuat)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IdentityQuaternion")
   {
-    xiiSimdQuat q = xiiSimdQuat::IdentityQuaternion();
+    xiiSimdQuat q = xiiSimdQuat::MakeIdentity();
 
     XII_TEST_BOOL(q.m_v.x() == 0.0f && q.m_v.y() == 0.0f && q.m_v.z() == 0.0f && q.m_v.w() == 1.0f);
   }
@@ -39,7 +39,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdQuat)
   {
     xiiSimdQuat q(xiiSimdVec4f(1, 2, 3, 4));
 
-    q.SetIdentity();
+    q = xiiSimdQuat::MakeIdentity();
 
     XII_TEST_BOOL(q.m_v.x() == 0.0f && q.m_v.y() == 0.0f && q.m_v.z() == 0.0f && q.m_v.w() == 1.0f);
   }
@@ -47,22 +47,19 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdQuat)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetFromAxisAndAngle / operator* (quat, vec)")
   {
     {
-      xiiSimdQuat q;
-      q.SetFromAxisAndAngle(xiiSimdVec4f(1, 0, 0), xiiAngle::Degree(90));
+      xiiSimdQuat q = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(1, 0, 0), xiiAngle::MakeFromDegree(90));
 
       XII_TEST_BOOL((q * xiiSimdVec4f(0, 1, 0)).IsEqual(xiiSimdVec4f(0, 0, 1), 0.0001f).AllSet());
     }
 
     {
-      xiiSimdQuat q;
-      q.SetFromAxisAndAngle(xiiSimdVec4f(0, 1, 0), xiiAngle::Degree(90));
+      xiiSimdQuat q = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 1, 0), xiiAngle::MakeFromDegree(90));
 
       XII_TEST_BOOL((q * xiiSimdVec4f(1, 0, 0)).IsEqual(xiiSimdVec4f(0, 0, -1), 0.0001f).AllSet());
     }
 
     {
-      xiiSimdQuat q;
-      q.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(90));
+      xiiSimdQuat q = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(90));
 
       XII_TEST_BOOL((q * xiiSimdVec4f(0, 1, 0)).IsEqual(xiiSimdVec4f(-1, 0, 0), 0.0001f).AllSet());
     }
@@ -71,25 +68,25 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdQuat)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetShortestRotation / IsEqualRotation")
   {
     xiiSimdQuat q1, q2, q3;
-    q1.SetShortestRotation(xiiSimdVec4f(0, 1, 0), xiiSimdVec4f(1, 0, 0));
-    q2.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, -1), xiiAngle::Degree(90));
-    q3.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(-90));
+    q1 = xiiSimdQuat::MakeShortestRotation(xiiSimdVec4f(0, 1, 0), xiiSimdVec4f(1, 0, 0));
+    q2 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, -1), xiiAngle::MakeFromDegree(90));
+    q3 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(-90));
 
     XII_TEST_BOOL(q1.IsEqualRotation(q2, xiiMath::LargeEpsilon<float>()));
     XII_TEST_BOOL(q1.IsEqualRotation(q3, xiiMath::LargeEpsilon<float>()));
 
-    XII_TEST_BOOL(xiiSimdQuat::IdentityQuaternion().IsEqualRotation(xiiSimdQuat::IdentityQuaternion(), xiiMath::LargeEpsilon<float>()));
-    XII_TEST_BOOL(xiiSimdQuat::IdentityQuaternion().IsEqualRotation(xiiSimdQuat(xiiSimdVec4f(0, 0, 0, -1)), xiiMath::LargeEpsilon<float>()));
+    XII_TEST_BOOL(xiiSimdQuat::MakeIdentity().IsEqualRotation(xiiSimdQuat::MakeIdentity(), xiiMath::LargeEpsilon<float>()));
+    XII_TEST_BOOL(xiiSimdQuat::MakeIdentity().IsEqualRotation(xiiSimdQuat(xiiSimdVec4f(0, 0, 0, -1)), xiiMath::LargeEpsilon<float>()));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetSlerp")
   {
     xiiSimdQuat q1, q2, q3, qr;
-    q1.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(45));
-    q2.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(0));
-    q3.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(90));
+    q1 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(45));
+    q2 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(0));
+    q3 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(90));
 
-    qr.SetSlerp(q2, q3, 0.5f);
+    qr = xiiSimdQuat::MakeSlerp(q2, q3, 0.5f);
 
     XII_TEST_BOOL(q1.IsEqualRotation(qr, 0.0001f));
   }
@@ -97,9 +94,9 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdQuat)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetRotationAxisAndAngle")
   {
     xiiSimdQuat q1, q2, q3;
-    q1.SetShortestRotation(xiiSimdVec4f(0, 1, 0), xiiSimdVec4f(1, 0, 0));
-    q2.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, -1), xiiAngle::Degree(90));
-    q3.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(-90));
+    q1 = xiiSimdQuat::MakeShortestRotation(xiiSimdVec4f(0, 1, 0), xiiSimdVec4f(1, 0, 0));
+    q2 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, -1), xiiAngle::MakeFromDegree(90));
+    q3 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(-90));
 
     xiiSimdVec4f axis;
     xiiSimdFloat angle;
@@ -116,7 +113,7 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdQuat)
     XII_TEST_BOOL(axis.IsEqual(xiiSimdVec4f(0, 0, -1), 0.001f).AllSet<3>());
     XII_TEST_FLOAT(xiiAngle::RadToDeg((float)angle), 90, xiiMath::LargeEpsilon<float>());
 
-    XII_TEST_BOOL(xiiSimdQuat::IdentityQuaternion().GetRotationAxisAndAngle(axis, angle) == XII_SUCCESS);
+    XII_TEST_BOOL(xiiSimdQuat::MakeIdentity().GetRotationAxisAndAngle(axis, angle) == XII_SUCCESS);
     XII_TEST_BOOL(axis.IsEqual(xiiSimdVec4f(1, 0, 0), 0.001f).AllSet<3>());
     XII_TEST_FLOAT(xiiAngle::RadToDeg((float)angle), 0, xiiMath::LargeEpsilon<float>());
 
@@ -138,8 +135,8 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdQuat)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator-")
   {
     xiiSimdQuat q, q1;
-    q.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(90));
-    q1.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(-90));
+    q  = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(90));
+    q1 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(-90));
 
     xiiSimdQuat q2 = -q;
     XII_TEST_BOOL(q1.IsEqualRotation(q2, 0.0001f));
@@ -148,9 +145,9 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdQuat)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator*(quat, quat)")
   {
     xiiSimdQuat q1, q2, qr, q3;
-    q1.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(60));
-    q2.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(30));
-    q3.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(90));
+    q1 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(60));
+    q2 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(30));
+    q3 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(90));
 
     qr = q1 * q2;
 
@@ -160,14 +157,14 @@ XII_CREATE_SIMPLE_TEST(SimdMath, SimdQuat)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "operator==/!=")
   {
     xiiSimdQuat q1, q2;
-    q1.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(60));
-    q2.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(30));
+    q1 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(60));
+    q2 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(30));
     XII_TEST_BOOL(q1 != q2);
 
-    q2.SetFromAxisAndAngle(xiiSimdVec4f(1, 0, 0), xiiAngle::Degree(60));
+    q2 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(1, 0, 0), xiiAngle::MakeFromDegree(60));
     XII_TEST_BOOL(q1 != q2);
 
-    q2.SetFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::Degree(60));
+    q2 = xiiSimdQuat::MakeFromAxisAndAngle(xiiSimdVec4f(0, 0, 1), xiiAngle::MakeFromDegree(60));
     XII_TEST_BOOL(q1 == q2);
   }
 }

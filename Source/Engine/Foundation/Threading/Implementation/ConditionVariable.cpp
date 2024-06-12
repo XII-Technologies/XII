@@ -34,6 +34,4 @@ void xiiConditionVariable::Unlock()
 #  error "Unsupported Platform."
 #endif
 
-
-
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_ConditionVariable);

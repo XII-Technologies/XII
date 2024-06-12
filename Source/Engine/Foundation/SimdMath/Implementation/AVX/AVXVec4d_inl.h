@@ -568,12 +568,6 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::GetOrthogonalVector() const
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::ZeroVector()
-{
-  return _mm256_setzero_pd();
-}
-
-// static
 XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MulAdd(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& c)
 {
 #if XII_SSE_LEVEL >= XII_AVX_2

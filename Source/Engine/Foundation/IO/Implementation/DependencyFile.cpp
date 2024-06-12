@@ -81,8 +81,7 @@ bool xiiDependencyFile::HasAnyFileChanged() const
 
     if (time > m_iMaxTimeStampStored)
     {
-      xiiLog::Dev("Detected file change in '{0}' (TimeStamp {1} > MaxTimeStamp {2})", xiiArgSensitive(sFile, "File"),
-                  ts.GetInt64(xiiSIUnitOfTime::Second), m_iMaxTimeStampStored);
+      xiiLog::Dev("Detected file change in '{0}' (TimeStamp {1} > MaxTimeStamp {2})", xiiArgSensitive(sFile, "File"), ts.GetInt64(xiiSIUnitOfTime::Second), m_iMaxTimeStampStored);
       return true;
     }
 
@@ -149,7 +148,7 @@ xiiResult xiiDependencyFile::RetrieveFileTimeStamp(xiiStringView sFile, xiiTimes
   bool bExisted = false;
   auto it       = s_FileTimestamps.FindOrAdd(sFile, &bExisted);
 
-  if (!bExisted || it.Value().m_LastCheck + xiiTime::Seconds(2.0) < xiiTime::Now())
+  if (!bExisted || it.Value().m_LastCheck + xiiTime::MakeFromSeconds(2.0) < xiiTime::Now())
   {
     it.Value().m_LastCheck = xiiTime::Now();
 
@@ -167,7 +166,7 @@ xiiResult xiiDependencyFile::RetrieveFileTimeStamp(xiiStringView sFile, xiiTimes
 
 #else
 
-  out_Result.SetInt64(0, xiiSIUnitOfTime::Second);
+  out_Result = xiiTimestamp::MakeFromInt(0, xiiSIUnitOfTime::Second);
   xiiLog::Warning("Trying to retrieve a file time stamp on a platform that does not support it (file: '{0}')", xiiArgSensitive(sFile, "File"));
 
 #endif
@@ -196,6 +195,5 @@ xiiResult xiiDependencyFile::ReadDependencyFile(xiiStringView sFile)
 
   return ReadDependencyFile(file);
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_DependencyFile);

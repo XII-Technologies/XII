@@ -65,7 +65,7 @@ void xiiGeometry::Clear()
   m_Lines.Clear();
 }
 
-xiiUInt32 xiiGeometry::AddVertex(const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord, const xiiColor& color, const xiiVec4U16& vBoneIndices /*= xiiVec4U16::ZeroVector()*/, const xiiColorLinearUB& boneWeights /*= xiiColorLinearUB(255, 0, 0, 0)*/)
+xiiUInt32 xiiGeometry::AddVertex(const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord, const xiiColor& color, const xiiVec4U16& vBoneIndices /*= xiiVec4U16::MakeZero()*/, const xiiColorLinearUB& boneWeights /*= xiiColorLinearUB(255, 0, 0, 0)*/)
 {
   Vertex& v       = m_Vertices.ExpandAndGetRef();
   v.m_vPosition   = vPos;
@@ -693,22 +693,22 @@ void xiiGeometry::AddGeodesicSphere(float fRadius, xiiUInt8 uiSubDivisions, cons
   // create icosahedron
   {
     xiiMat3 mRotX, mRotZ, mRotZh;
-    mRotX.SetRotationMatrixX(xiiAngle::Degree(360.0f / 6.0f));
-    mRotZ.SetRotationMatrixZ(xiiAngle::Degree(-360.0f / 5.0f));
-    mRotZh.SetRotationMatrixZ(xiiAngle::Degree(-360.0f / 10.0f));
+    mRotX  = xiiMat3::MakeRotationX(xiiAngle::MakeFromDegree(360.0f / 6.0f));
+    mRotZ  = xiiMat3::MakeRotationZ(xiiAngle::MakeFromDegree(-360.0f / 5.0f));
+    mRotZh = xiiMat3::MakeRotationZ(xiiAngle::MakeFromDegree(-360.0f / 10.0f));
 
     xiiUInt32 vert[12];
     xiiVec3   vDir(0, 0, 1);
 
     vDir.Normalize();
-    vert[0] = AddVertex(vDir * fRadius, vDir, xiiVec2::ZeroVector(), options.m_Color, boneIndices);
+    vert[0] = AddVertex(vDir * fRadius, vDir, xiiVec2::MakeZero(), options.m_Color, boneIndices);
 
     vDir = mRotX * vDir;
 
     for (xiiInt32 i = 0; i < 5; ++i)
     {
       vDir.Normalize();
-      vert[1 + i] = AddVertex(vDir * fRadius, vDir, xiiVec2::ZeroVector(), options.m_Color, boneIndices);
+      vert[1 + i] = AddVertex(vDir * fRadius, vDir, xiiVec2::MakeZero(), options.m_Color, boneIndices);
       vDir        = mRotZ * vDir;
     }
 
@@ -718,13 +718,13 @@ void xiiGeometry::AddGeodesicSphere(float fRadius, xiiUInt8 uiSubDivisions, cons
     for (xiiInt32 i = 0; i < 5; ++i)
     {
       vDir.Normalize();
-      vert[6 + i] = AddVertex(vDir * fRadius, vDir, xiiVec2::ZeroVector(), options.m_Color, boneIndices);
+      vert[6 + i] = AddVertex(vDir * fRadius, vDir, xiiVec2::MakeZero(), options.m_Color, boneIndices);
       vDir        = mRotZ * vDir;
     }
 
     vDir.Set(0, 0, -1);
     vDir.Normalize();
-    vert[11] = AddVertex(vDir * fRadius, vDir, xiiVec2::ZeroVector(), options.m_Color, boneIndices);
+    vert[11] = AddVertex(vDir * fRadius, vDir, xiiVec2::MakeZero(), options.m_Color, boneIndices);
 
 
     Tris[0].PushBack(Triangle(vert[0], vert[2], vert[1]));
@@ -781,7 +781,7 @@ void xiiGeometry::AddGeodesicSphere(float fRadius, xiiUInt8 uiSubDivisions, cons
         else
         {
           const xiiVec3 vCenter = (m_Vertices[Edges[i].m_uiVertex[0]].m_vPosition + m_Vertices[Edges[i].m_uiVertex[1]].m_vPosition).GetNormalized();
-          uiNewVert[i]          = AddVertex(vCenter * fRadius, vCenter, xiiVec2::ZeroVector(), options.m_Color, boneIndices);
+          uiNewVert[i]          = AddVertex(vCenter * fRadius, vCenter, xiiVec2::MakeZero(), options.m_Color, boneIndices);
 
           NewVertices[Edges[i]] = uiNewVert[i];
         }
@@ -806,17 +806,17 @@ void xiiGeometry::AddGeodesicSphere(float fRadius, xiiUInt8 uiSubDivisions, cons
   TransformVertices(options.m_Transform, uiFirstVertex);
 }
 
-void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPositiveLength, float fNegativeLength, bool bCapTop, bool bCapBottom, xiiUInt16 uiSegments, const GeoOptions& options, xiiAngle fraction /*= xiiAngle::Degree(360.0f)*/)
+void xiiGeometry::AddCylinder(float fRadiusTop, float fRadiusBottom, float fPositiveLength, float fNegativeLength, bool bCapTop, bool bCapBottom, xiiUInt16 uiSegments, const GeoOptions& options, xiiAngle fraction /*= xiiAngle::MakeFromDegree(360.0f)*/)
 {
   XII_ASSERT_DEV(uiSegments >= 3, "Cannot create a cylinder with only {0} segments", uiSegments);
   XII_ASSERT_DEV(fraction.GetDegree() >= -0.01f, "A cylinder cannot be built with more less than 0 degree");
   XII_ASSERT_DEV(fraction.GetDegree() <= 360.01f, "A cylinder cannot be built with more than 360 degree");
 
-  fraction = xiiMath::Clamp(fraction, xiiAngle(), xiiAngle::Degree(360.0f));
+  fraction = xiiMath::Clamp(fraction, xiiAngle(), xiiAngle::MakeFromDegree(360.0f));
 
   const bool     bFlipWinding = options.IsFlipWindingNecessary();
   const bool     bIsFraction  = fraction.GetDegree() < 360.0f;
-  const xiiAngle fDegStep     = xiiAngle::Degree(fraction.GetDegree() / uiSegments);
+  const xiiAngle fDegStep     = xiiAngle::MakeFromDegree(fraction.GetDegree() / uiSegments);
 
   const xiiVec3 vTopCenter(0, 0, fPositiveLength);
   const xiiVec3 vBottomCenter(0, 0, -fNegativeLength);
@@ -984,7 +984,7 @@ void xiiGeometry::AddCylinderOnePiece(float fRadiusTop, float fRadiusBottom, flo
   XII_ASSERT_DEV(uiSegments >= 3, "Cannot create a cylinder with only {0} segments", uiSegments);
 
   const bool     bFlipWinding = options.IsFlipWindingNecessary();
-  const xiiAngle fDegStep     = xiiAngle::Degree(360.0f / uiSegments);
+  const xiiAngle fDegStep     = xiiAngle::MakeFromDegree(360.0f / uiSegments);
 
   const xiiVec3 vTopCenter(0, 0, fPositiveLength);
   const xiiVec3 vBottomCenter(0, 0, -fNegativeLength);
@@ -1033,7 +1033,7 @@ void xiiGeometry::AddCone(float fRadius, float fHeight, bool bCap, xiiUInt16 uiS
 
   xiiHybridArray<xiiUInt32, 512> VertsBottom;
 
-  const xiiAngle fDegStep = xiiAngle::Degree(360.0f / uiSegments);
+  const xiiAngle fDegStep = xiiAngle::MakeFromDegree(360.0f / uiSegments);
 
   const xiiUInt32 uiTip = AddVertex(xiiVec3(0, 0, fHeight), xiiVec3(0, 0, 1), xiiVec2(0), options);
 
@@ -1072,15 +1072,15 @@ void xiiGeometry::AddSphere(float fRadius, xiiUInt16 uiSegments, xiiUInt16 uiSta
   XII_ASSERT_DEV(uiStacks >= 2, "Sphere must have at least 2 stacks");
 
   const bool     bFlipWinding        = options.IsFlipWindingNecessary();
-  const xiiAngle fDegreeDiffSegments = xiiAngle::Degree(360.0f / (float)(uiSegments));
-  const xiiAngle fDegreeDiffStacks   = xiiAngle::Degree(180.0f / (float)(uiStacks));
+  const xiiAngle fDegreeDiffSegments = xiiAngle::MakeFromDegree(360.0f / (float)(uiSegments));
+  const xiiAngle fDegreeDiffStacks   = xiiAngle::MakeFromDegree(180.0f / (float)(uiStacks));
 
   const xiiUInt32 uiFirstVertex = m_Vertices.GetCount();
 
   // first create all the vertex positions
   for (xiiUInt32 st = 1; st < uiStacks; ++st)
   {
-    const xiiAngle fDegreeStack = xiiAngle::Degree(-90.0f + (st * fDegreeDiffStacks.GetDegree()));
+    const xiiAngle fDegreeStack = xiiAngle::MakeFromDegree(-90.0f + (st * fDegreeDiffStacks.GetDegree()));
     const float    fCosDS       = xiiMath::Cos(fDegreeStack);
     const float    fSinDS       = xiiMath::Sin(fDegreeStack);
     const float    fY           = -fSinDS * fRadius;
@@ -1157,15 +1157,15 @@ void xiiGeometry::AddHalfSphere(float fRadius, xiiUInt16 uiSegments, xiiUInt16 u
   XII_ASSERT_DEV(uiStacks >= 1, "Sphere must have at least 1 stacks");
 
   const bool     bFlipWinding        = options.IsFlipWindingNecessary();
-  const xiiAngle fDegreeDiffSegments = xiiAngle::Degree(360.0f / (float)(uiSegments));
-  const xiiAngle fDegreeDiffStacks   = xiiAngle::Degree(90.0f / (float)(uiStacks));
+  const xiiAngle fDegreeDiffSegments = xiiAngle::MakeFromDegree(360.0f / (float)(uiSegments));
+  const xiiAngle fDegreeDiffStacks   = xiiAngle::MakeFromDegree(90.0f / (float)(uiStacks));
 
   const xiiUInt32 uiFirstVertex = m_Vertices.GetCount();
 
   // first create all the vertex positions
   for (xiiUInt32 st = 0; st < uiStacks; ++st)
   {
-    const xiiAngle fDegreeStack = xiiAngle::Degree(-90.0f + ((st + 1) * fDegreeDiffStacks.GetDegree()));
+    const xiiAngle fDegreeStack = xiiAngle::MakeFromDegree(-90.0f + ((st + 1) * fDegreeDiffStacks.GetDegree()));
     const float    fCosDS       = xiiMath::Cos(fDegreeStack);
     const float    fSinDS       = xiiMath::Sin(fDegreeStack);
     const float    fY           = -fSinDS * fRadius;
@@ -1242,7 +1242,7 @@ void xiiGeometry::AddCapsule(float fRadius, float fHeight, xiiUInt16 uiSegments,
   XII_ASSERT_DEV(fHeight >= 0.0f, "Height must be positive");
 
   const bool     bFlipWinding      = options.IsFlipWindingNecessary();
-  const xiiAngle fDegreeDiffStacks = xiiAngle::Degree(90.0f / (float)(uiStacks));
+  const xiiAngle fDegreeDiffStacks = xiiAngle::MakeFromDegree(90.0f / (float)(uiStacks));
 
   const xiiUInt32 uiFirstVertex = m_Vertices.GetCount();
 
@@ -1255,14 +1255,14 @@ void xiiGeometry::AddCapsule(float fRadius, float fHeight, xiiUInt16 uiSegments,
   {
     for (xiiUInt32 st = 0; st < uiStacks; ++st)
     {
-      const xiiAngle fDegreeStack = xiiAngle::Degree(-90.0f + ((st + 1) * fDegreeDiffStacks.GetDegree()));
+      const xiiAngle fDegreeStack = xiiAngle::MakeFromDegree(-90.0f + ((st + 1) * fDegreeDiffStacks.GetDegree()));
       const float    fCosDS       = xiiMath::Cos(fDegreeStack);
       const float    fSinDS       = xiiMath::Sin(fDegreeStack);
       const float    fY           = -fSinDS * fRadius;
 
       for (xiiUInt32 sp = 0; sp < uiSegments; ++sp)
       {
-        const xiiAngle fDegree = xiiAngle::Degree(sp * fDegreeStepSlices);
+        const xiiAngle fDegree = xiiAngle::MakeFromDegree(sp * fDegreeStepSlices);
 
         xiiVec3 vPos;
         vPos.x = xiiMath::Cos(fDegree) * fRadius * fCosDS;
@@ -1277,14 +1277,14 @@ void xiiGeometry::AddCapsule(float fRadius, float fHeight, xiiUInt16 uiSegments,
 
     for (xiiUInt32 st = 0; st < uiStacks; ++st)
     {
-      const xiiAngle fDegreeStack = xiiAngle::Degree(0.0f - (st * fDegreeDiffStacks.GetDegree()));
+      const xiiAngle fDegreeStack = xiiAngle::MakeFromDegree(0.0f - (st * fDegreeDiffStacks.GetDegree()));
       const float    fCosDS       = xiiMath::Cos(fDegreeStack);
       const float    fSinDS       = xiiMath::Sin(fDegreeStack);
       const float    fY           = fSinDS * fRadius;
 
       for (xiiUInt32 sp = 0; sp < uiSegments; ++sp)
       {
-        const xiiAngle fDegree = xiiAngle::Degree(sp * fDegreeStepSlices);
+        const xiiAngle fDegree = xiiAngle::MakeFromDegree(sp * fDegreeStepSlices);
 
         xiiVec3 vPos;
         vPos.x = xiiMath::Cos(fDegree) * fRadius * fCosDS;
@@ -1353,8 +1353,8 @@ void xiiGeometry::AddTorus(float fInnerRadius, float fOuterRadius, xiiUInt16 uiS
   const float fCylinderRadius = (fOuterRadius - fInnerRadius) * 0.5f;
   const float fLoopRadius     = fInnerRadius + fCylinderRadius;
 
-  const xiiAngle fAngleStepSegment  = xiiAngle::Degree(360.0f / uiSegments);
-  const xiiAngle fAngleStepCylinder = xiiAngle::Degree(360.0f / uiSegmentDetail);
+  const xiiAngle fAngleStepSegment  = xiiAngle::MakeFromDegree(360.0f / uiSegments);
+  const xiiAngle fAngleStepCylinder = xiiAngle::MakeFromDegree(360.0f / uiSegmentDetail);
 
   const xiiUInt16 uiFirstVertex = static_cast<xiiUInt16>(m_Vertices.GetCount());
 
@@ -1495,7 +1495,7 @@ void xiiGeometry::AddStairs(const xiiVec3& vSize, xiiUInt32 uiNumSteps, xiiAngle
 {
   const bool bFlipWinding = options.IsFlipWindingNecessary();
 
-  curvature                = xiiMath::Clamp(curvature, -xiiAngle::Degree(360), xiiAngle::Degree(360));
+  curvature                = xiiMath::Clamp(curvature, -xiiAngle::MakeFromDegree(360), xiiAngle::MakeFromDegree(360));
   const xiiAngle curveStep = curvature / (float)uiNumSteps;
 
   const float fStepDiv    = 1.0f / uiNumSteps;
@@ -1526,8 +1526,7 @@ void xiiGeometry::AddStairs(const xiiVec3& vSize, xiiUInt32 uiNumSteps, xiiAngle
   xiiVec3 vSideNormal1(0, 1, 0);
   xiiVec3 vStepFrontNormal(-1, 0, 0);
 
-  xiiQuat qRot;
-  qRot.SetFromAxisAndAngle(xiiVec3(0, 0, 1), curveStep);
+  xiiQuat qRot = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), curveStep);
 
   for (xiiUInt32 step = 0; step < uiNumSteps; ++step)
   {
@@ -1630,9 +1629,9 @@ void xiiGeometry::AddArch(const xiiVec3& vSize, xiiUInt32 uiNumSegments, float f
   // sanitize input values
   {
     if (angle.GetRadian() == 0.0f)
-      angle = xiiAngle::Degree(360);
+      angle = xiiAngle::MakeFromDegree(360);
 
-    angle = xiiMath::Clamp(angle, xiiAngle::Degree(-360.0f), xiiAngle::Degree(360.0f));
+    angle = xiiMath::Clamp(angle, xiiAngle::MakeFromDegree(-360.0f), xiiAngle::MakeFromDegree(360.0f));
 
     fThickness = xiiMath::Clamp(fThickness, 0.01f, xiiMath::Min(vSize.x, vSize.y) * 0.45f);
 
@@ -1688,7 +1687,7 @@ void xiiGeometry::AddArch(const xiiVec3& vSize, xiiUInt32 uiNumSegments, float f
     }
   }
 
-  const bool isFullCircle = xiiMath::Abs(angle.GetRadian()) >= xiiAngle::Degree(360).GetRadian();
+  const bool isFullCircle = xiiMath::Abs(angle.GetRadian()) >= xiiAngle::MakeFromDegree(360).GetRadian();
 
   const float fOuterUstep = 3.0f / uiNumSegments;
   for (xiiUInt32 segment = 0; segment < uiNumSegments; ++segment)

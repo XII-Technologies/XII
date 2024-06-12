@@ -245,8 +245,7 @@ struct xiiSpatialSystem_RegularGrid::Grid
   Grid(xiiSpatialSystem_RegularGrid& ref_system, xiiSpatialData::Category category) :
     m_System(ref_system), m_Cells(&ref_system.m_Allocator), m_CellKeyToCellIndex(&ref_system.m_Allocator), m_Category(category), m_bCanBeCached(CanBeCached(category))
   {
-    xiiSimdBBox overflowBox;
-    overflowBox.SetCenterAndHalfExtents(xiiSimdVec4f::ZeroVector(), xiiSimdVec4f((float)(ref_system.m_vCellSize.x() * MAX_CELL_INDEX)));
+    xiiSimdBBox overflowBox = xiiSimdBBox::MakeFromCenterAndHalfExtents(xiiSimdVec4f::MakeZero(), xiiSimdVec4f((float)(ref_system.m_vCellSize.x() * MAX_CELL_INDEX)));
 
     auto pOverflowCell      = XII_NEW(&m_System.m_AlignedAllocator, Cell, &m_System.m_AlignedAllocator, &m_System.m_Allocator);
     pOverflowCell->m_Bounds = overflowBox;
@@ -535,7 +534,7 @@ namespace xiiInternal
 
             if constexpr (UseOcclusionCallback)
             {
-              bbox.SetCenterAndHalfExtents(boundingSpheres[i].GetCenter(), boundingBoxHalfExtents[i]);
+              bbox = xiiSimdBBox::MakeFromCenterAndHalfExtents(boundingSpheres[i].GetCenter(), boundingBoxHalfExtents[i]);
               if (pQueryData->m_IsOccludedCB(bbox))
               {
                 continue;
@@ -569,7 +568,7 @@ namespace xiiInternal
 
           if constexpr (UseOcclusionCallback)
           {
-            bbox.SetCenterAndHalfExtents(boundingSpheres[i].GetCenter(), boundingBoxHalfExtents[i]);
+            bbox = xiiSimdBBox::MakeFromCenterAndHalfExtents(boundingSpheres[i].GetCenter(), boundingBoxHalfExtents[i]);
 
             if (pQueryData->m_IsOccludedCB(bbox))
             {
@@ -723,8 +722,7 @@ xiiSpatialDataHandle xiiSpatialSystem_RegularGrid::CreateSpatialDataAlwaysVisibl
   if (uiCategoryBitmask == 0)
     return xiiSpatialDataHandle();
 
-  xiiSimdBBox hugeBox;
-  hugeBox.SetCenterAndHalfExtents(xiiSimdVec4f::ZeroVector(), xiiSimdVec4f((float)(m_vCellSize.x() * MAX_CELL_INDEX)));
+  xiiSimdBBox hugeBox = xiiSimdBBox::MakeFromCenterAndHalfExtents(xiiSimdVec4f::MakeZero(), xiiSimdVec4f((float)(m_vCellSize.x() * MAX_CELL_INDEX)));
 
   return AddSpatialDataToGrids(hugeBox, pObject, uiCategoryBitmask, tags, true);
 }
@@ -793,8 +791,7 @@ void xiiSpatialSystem_RegularGrid::FindObjectsInSphere(const xiiBoundingSphere& 
   XII_PROFILE_SCOPE("FindObjectsInSphere");
 
   xiiSimdBSphere simdSphere(xiiSimdConversion::ToVec3(sphere.m_vCenter), sphere.m_fRadius);
-  xiiSimdBBox    simdBox;
-  simdBox.SetCenterAndHalfExtents(simdSphere.m_CenterAndRadius, simdSphere.m_CenterAndRadius.Get<xiiSwizzle::WWWW>());
+  xiiSimdBBox    simdBox = xiiSimdBBox::MakeFromCenterAndHalfExtents(simdSphere.m_CenterAndRadius, simdSphere.m_CenterAndRadius.Get<xiiSwizzle::WWWW>());
 
   xiiInternal::QueryHelper::ShapeQueryData<xiiSimdBSphere> queryData = {simdSphere, callback};
 
@@ -835,8 +832,7 @@ void xiiSpatialSystem_RegularGrid::FindVisibleObjects(const xiiFrustum& frustum,
     simdCornerPoints[i] = xiiSimdConversion::ToVec3(cornerPoints[i]);
   }
 
-  xiiSimdBBox simdBox;
-  simdBox.SetFromPoints(simdCornerPoints, 8);
+  xiiSimdBBox simdBox = xiiSimdBBox::MakeFromPoints(simdCornerPoints, 8);
 
   xiiInternal::QueryHelper::FrustumQueryData queryData;
   {
@@ -970,8 +966,7 @@ xiiSpatialDataHandle xiiSpatialSystem_RegularGrid::AddSpatialDataToGrids(const x
     if (pGrid == nullptr)
       continue;
 
-    if ((pGrid->m_Category.GetBitmask() & uiCategoryBitmask) == 0 ||
-        FilterByTags(tags, pGrid->m_IncludeTags, pGrid->m_ExcludeTags))
+    if ((pGrid->m_Category.GetBitmask() & uiCategoryBitmask) == 0 || FilterByTags(tags, pGrid->m_IncludeTags, pGrid->m_ExcludeTags))
       continue;
 
     data.m_uiGridBitmask |= XII_BIT(uiCachedGridIndex);
@@ -1034,9 +1029,7 @@ void xiiSpatialSystem_RegularGrid::ForEachCellInBoxInMatchingGrids(const xiiSimd
     if (pGrid == nullptr || pGrid->CachingCompleted() == false)
       continue;
 
-    if ((pGrid->m_Category.GetBitmask() & uiGridBitmask) == 0 ||
-        pGrid->m_IncludeTags != queryParams.m_IncludeTags ||
-        pGrid->m_ExcludeTags != queryParams.m_ExcludeTags)
+    if (((pGrid->m_Category.GetBitmask() & uiGridBitmask) == 0) || (pGrid->m_IncludeTags != queryParams.m_IncludeTags) || (pGrid->m_ExcludeTags != queryParams.m_ExcludeTags))
       continue;
 
     uiGridBitmask &= ~pGrid->m_Category.GetBitmask();
@@ -1059,7 +1052,7 @@ void xiiSpatialSystem_RegularGrid::ForEachCellInBoxInMatchingGrids(const xiiSimd
   }
 
   // then search for the rest
-  const bool   useTagsFilter = queryParams.m_IncludeTags.IsEmpty() == false || queryParams.m_ExcludeTags.IsEmpty() == false;
+  const bool   useTagsFilter = (queryParams.m_IncludeTags.IsEmpty() == false) || (queryParams.m_ExcludeTags.IsEmpty() == false);
   CellCallback cellCallback  = useTagsFilter ? filterByTagsCallback : noFilterCallback;
 
   while (uiGridBitmask > 0)
@@ -1203,9 +1196,7 @@ void xiiSpatialSystem_RegularGrid::UpdateCacheCandidate(const xiiTagSet& include
   CacheCandidate* pCacheCandiate = nullptr;
   for (auto& cacheCandidate : m_CacheCandidates)
   {
-    if (cacheCandidate.m_Category == category &&
-        cacheCandidate.m_IncludeTags == includeTags &&
-        cacheCandidate.m_ExcludeTags == excludeTags)
+    if ((cacheCandidate.m_Category == category) && (cacheCandidate.m_IncludeTags == includeTags) && (cacheCandidate.m_ExcludeTags == excludeTags))
     {
       pCacheCandiate = &cacheCandidate;
       break;

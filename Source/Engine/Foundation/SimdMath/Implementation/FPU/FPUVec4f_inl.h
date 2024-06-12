@@ -1,6 +1,6 @@
 #pragma once
 
-XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f() {}
+XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f() = default;
 
 XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f(float xyzw)
 {
@@ -106,7 +106,7 @@ void xiiSimdVec4f::NormalizeIfNotZero(const xiiSimdFloat& fEpsilon)
 {
   xiiSimdFloat sqLength = GetLengthSquared<N>();
   m_v *= sqLength.GetInvSqrt<acc>();
-  m_v = sqLength > fEpsilon.m_v ? m_v : xiiVec4::ZeroVector();
+  m_v = sqLength > fEpsilon.m_v ? m_v : xiiVec4::MakeZero();
 }
 
 template <xiiInt32 N>
@@ -485,12 +485,6 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetOrthogonalVector() const
   {
     return xiiVec4(0.0f, m_v.z, -m_v.y, 0.0f);
   }
-}
-
-// static
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::ZeroVector()
-{
-  return xiiVec4::ZeroVector();
 }
 
 // static

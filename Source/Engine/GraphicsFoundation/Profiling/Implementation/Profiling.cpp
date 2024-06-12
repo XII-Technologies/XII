@@ -52,8 +52,8 @@ public:
         {
           pStartQuery->Invalidate();
 
-          xiiTime startTime = xiiTime::Seconds(static_cast<double>(startTimestampData.m_uiCounter) / static_cast<double>(startTimestampData.m_uiFrequency));
-          xiiTime endTime   = xiiTime::Seconds(static_cast<double>(endTimestampData.m_uiCounter) / static_cast<double>(endTimestampData.m_uiFrequency));
+          xiiTime startTime = xiiTime::MakeFromSeconds(static_cast<double>(startTimestampData.m_uiCounter) / static_cast<double>(startTimestampData.m_uiFrequency));
+          xiiTime endTime   = xiiTime::MakeFromSeconds(static_cast<double>(endTimestampData.m_uiCounter) / static_cast<double>(endTimestampData.m_uiFrequency));
 
           if (!endTime.IsZero() && !startTime.IsZero())
           {
@@ -163,7 +163,7 @@ xiiDynamicArray<GPUTimingScope, xiiStaticAllocatorWrapper> GPUProfilingSystem::s
 //////////////////////////////////////////////////////////////////////////
 
 xiiProfilingScopeAndMarker::xiiProfilingScopeAndMarker(xiiGALCommandList* pCommandList, xiiStringView sName) :
-  xiiProfilingScope(sName, {}, xiiTime::Zero()), m_pCommandList(pCommandList)
+  xiiProfilingScope(sName, {}, xiiTime::MakeZero()), m_pCommandList(pCommandList)
 {
   m_pTimingScope = Start(pCommandList, sName);
 }

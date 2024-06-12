@@ -79,15 +79,14 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
     TestSetValue(pMath, "Vec2I", xiiVec2I32(1, 2));
     TestSetValue(pMath, "Vec3I", xiiVec3I32(1, 2, 3));
     TestSetValue(pMath, "Vec4I", xiiVec4I32(1, 2, 3, 4));
-    xiiQuat qValue;
-    qValue.SetFromEulerAngles(xiiAngle::Degree(30), xiiAngle::Degree(30), xiiAngle::Degree(30));
+    xiiQuat qValue = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(30), xiiAngle::MakeFromDegree(30), xiiAngle::MakeFromDegree(30));
     TestSetValue(pMath, "Quat", qValue);
     xiiMat3 mValue;
-    mValue.SetRotationMatrixX(xiiAngle::Degree(30));
+    mValue = xiiMat3::MakeRotationX(xiiAngle::MakeFromDegree(30));
     TestSetValue(pMath, "Mat3", mValue);
     xiiMat4 mValue2;
     mValue2.SetIdentity();
-    mValue2.SetRotationMatrixX(xiiAngle::Degree(30));
+    mValue2 = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(30));
     TestSetValue(pMath, "Mat4", mValue2);
 
     // Integer
@@ -124,8 +123,8 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
     const xiiDocumentObject* pFloat = CreateObject(xiiGetStaticRTTI<xiiFloatStruct>());
     TestSetValue(pFloat, "Float", -5.0f);
     TestSetValue(pFloat, "Double", -5.0);
-    TestSetValue(pFloat, "Time", xiiTime::Minutes(3.0f));
-    TestSetValue(pFloat, "Angle", xiiAngle::Degree(45.0f));
+    TestSetValue(pFloat, "Time", xiiTime::MakeFromMinutes(3.0f));
+    TestSetValue(pFloat, "Angle", xiiAngle::MakeFromDegree(45.0f));
 
     TestSetValue(pFloat, "Float", 5.0);
     TestSetValue(pFloat, "Float", xiiInt8(-5));
@@ -139,7 +138,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
     TestSetValue(pPOD, "ColorUB", xiiColorGammaUB(200, 100, 255));
     TestSetValue(pPOD, "String", "Test");
     xiiVarianceTypeAngle customFloat;
-    customFloat.m_Value     = xiiAngle::Degree(45.0f);
+    customFloat.m_Value     = xiiAngle::MakeFromDegree(45.0f);
     customFloat.m_fVariance = 1.0f;
     TestSetValue(pPOD, "VarianceAngle", customFloat);
 
@@ -431,8 +430,8 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
   }
 
   auto CreateGuid = [](const char* szType, xiiInt32 iIndex) -> xiiUuid {
-    xiiUuid A = xiiUuid::StableUuidForString(szType);
-    xiiUuid B = xiiUuid::StableUuidForInt(iIndex);
+    xiiUuid A = xiiUuid::MakeStableUuidFromString(szType);
+    xiiUuid B = xiiUuid::MakeStableUuidFromInt(iIndex);
     A.CombineWithSeed(B);
     return A;
   };

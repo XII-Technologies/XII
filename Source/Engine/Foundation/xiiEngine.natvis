@@ -11,20 +11,19 @@
         <StringView>m_Data.m_pElements,s8</StringView>
         <Expand>
             <Item Name="String">m_Data.m_pElements,s8</Item>
-            <Item Name="CharacterCount">m_uiCharacterCount</Item>
             <Item Name="ElementCount">m_Data.m_uiCount</Item>
         </Expand>
     </Type>
 
     <Type Name="xiiStringView">
-        <DisplayString Condition="m_pStart != 0">{m_pStart,[m_pEnd - m_pStart]s8}</DisplayString>
+        <DisplayString Condition="m_pStart != 0">{m_pStart,[m_uiElementCount]}</DisplayString>
         <DisplayString Condition="m_pStart == 0">&lt;Invalid String&gt;</DisplayString>
-        <StringView>m_pStart,[m_pEnd - m_pStart]s8</StringView>
+        <StringView>m_pStart,[m_uiElementCount]</StringView>
         <Expand>
-            <Item Name="String" Condition="m_pStart != 0">m_pStart,[m_pEnd - m_pStart]s8</Item>
-            <Item Name="ElementCount" Condition="m_pStart != 0">m_pEnd - m_pStart</Item>
+            <Item Name="String" Condition="m_pStart != 0">m_pStart,[m_uiElementCount]</Item>
+            <Item Name="ElementCount">m_uiElementCount</Item>
             <Item Name="Valid">m_pStart != 0</Item>
-            <Item Name="ZeroTerminated" Condition="m_pEnd != 0">m_pEnd[0] == 0</Item>
+            <Item Name="ZeroTerminated" Condition="m_pStart != 0">m_pStart[m_uiElementCount] == 0</Item>
         </Expand>
     </Type>
 
@@ -311,7 +310,7 @@
     </Type>
 
     <Type Name="xiiResource">
-        <DisplayString>{{ID = {m_UniqueID} }}</DisplayString>
+        <DisplayString>{{ID = {m_sUniqueID} }}</DisplayString>
         <Expand>
             <Item Name="ID">m_sUniqueID</Item>
             <Item Name="Desc">m_sResourceDescription</Item>

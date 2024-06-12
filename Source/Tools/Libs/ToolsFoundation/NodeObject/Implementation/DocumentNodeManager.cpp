@@ -19,7 +19,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 
 struct DocumentNodeManager_NodeMetaData
 {
-  xiiVec2 m_Pos = xiiVec2::ZeroVector();
+  xiiVec2 m_Pos = xiiVec2::MakeZero();
 };
 XII_DECLARE_REFLECTABLE_TYPE(XII_NO_LINKAGE, DocumentNodeManager_NodeMetaData);
 
@@ -51,7 +51,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(DocumentNodeManager_ConnectionMetaData, xiiNoBas
   {
     XII_MEMBER_PROPERTY("Connection::Source", m_Source),
     XII_MEMBER_PROPERTY("Connection::Target", m_Target),
-    XII_MEMBER_PROPERTY("Connection::SourcePin", m_SourcePin),    
+    XII_MEMBER_PROPERTY("Connection::SourcePin", m_SourcePin),
     XII_MEMBER_PROPERTY("Connection::TargetPin", m_TargetPin),
   }
   XII_END_PROPERTIES;
@@ -899,7 +899,7 @@ void xiiDocumentNodeManager::RestoreOldMetaDataAfterLoading(const xiiAbstractObj
     xiiDocumentNodeManager::CanConnectResult res;
     if (CanConnect(pConnectionType, *pSourcePin, *pTargetPin, res).m_Result.Succeeded())
     {
-      xiiDocumentObject* pConnectionObject = CreateObject(pConnectionType, xiiUuid::CreateUuid());
+      xiiDocumentObject* pConnectionObject = CreateObject(pConnectionType, xiiUuid::MakeUuid());
 
       AddObject(pConnectionObject, nullptr, "", -1);
 

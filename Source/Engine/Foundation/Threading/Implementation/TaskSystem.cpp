@@ -62,5 +62,4 @@ void xiiTaskSystem::SetTargetFrameTime(xiiTime targetFrameTime)
   s_pState->m_TargetFrameTime = targetFrameTime;
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_TaskSystem);

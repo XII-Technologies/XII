@@ -143,7 +143,7 @@ void xiiDuplicateObjectsCommand::CreateOneDuplicate(xiiAbstractObjectGraph& grap
   xiiSceneDocument* pDocument = static_cast<xiiSceneDocument*>(GetDocument());
 
   // Remap
-  const xiiUuid seed = xiiUuid::CreateUuid();
+  const xiiUuid seed = xiiUuid::MakeUuid();
   graph.ReMapNodeGuids(seed);
 
   xiiDocumentObjectConverterReader reader(&graph, pDocument->GetObjectManager(), xiiDocumentObjectConverterReader::Mode::CreateOnly);
@@ -264,14 +264,12 @@ void xiiDuplicateObjectsCommand::AdjustObjectPositions(xiiHybridArray<xiiDocumen
 
     revolve += fStep * m_RevolveAngleStep;
 
-    xiiMat3 mRevolve;
-    mRevolve.SetRotationMatrix(vRevolveAxis, revolve);
+    xiiMat3 mRevolve = xiiMat3::MakeAxisRotation(vRevolveAxis, revolve);
 
     vPosOffset = mRevolve * vPosOffset;
   }
 
-  xiiQuat qRot;
-  qRot.SetFromEulerAngles(xiiAngle::Degree(fStep * m_vAccumulativeRotation.x + vRandR.x), xiiAngle::Degree(fStep * m_vAccumulativeRotation.y + vRandR.y), xiiAngle::Degree(fStep * m_vAccumulativeRotation.z + vRandR.z));
+  xiiQuat qRot = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(fStep * m_vAccumulativeRotation.x + vRandR.x), xiiAngle::MakeFromDegree(fStep * m_vAccumulativeRotation.y + vRandR.y), xiiAngle::MakeFromDegree(fStep * m_vAccumulativeRotation.z + vRandR.z));
 
   for (const auto& pi : Duplicates)
   {

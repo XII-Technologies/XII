@@ -64,7 +64,7 @@ protected:
 
   void MapModelSpacePoseToSkinningSpace(const xiiHashTable<xiiHashedString, xiiMeshResourceDescriptor::BoneData>& bones, const xiiSkeleton& skeleton, xiiArrayPtr<const xiiMat4> modelSpaceTransforms, xiiBoundingBox* bounds);
 
-  xiiTransform              m_RootTransform = xiiTransform::IdentityTransform();
+  xiiTransform              m_RootTransform = xiiTransform::MakeIdentity();
   xiiBoundingBox            m_MaxBounds;
   xiiSkinningState          m_SkinningState;
   xiiSkeletonResourceHandle m_hDefaultSkeleton;

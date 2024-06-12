@@ -207,7 +207,7 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
 
         if (!sFile.IsEmpty())
         {
-          xiiUuid   newDoc = xiiUuid::CreateUuid();
+          xiiUuid   newDoc = xiiUuid::MakeUuid();
           xiiStatus res    = m_Context.m_pDocument->GetDocumentManager()->CloneDocument(m_Context.m_pDocument->GetDocumentPath(), sFile, newDoc);
 
           if (res.Failed())
@@ -311,7 +311,7 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
       mimeData->setText(sGuid.GetData());
       clipboard->setMimeData(mimeData);
 
-      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied asset GUID: {}", sGuid), xiiTime::Seconds(5));
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied asset GUID: {}", sGuid), xiiTime::MakeFromSeconds(5));
     }
     break;
 

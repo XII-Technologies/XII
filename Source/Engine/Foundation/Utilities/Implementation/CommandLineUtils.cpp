@@ -16,7 +16,7 @@ xiiCommandLineUtils* xiiCommandLineUtils::GetGlobalInstance()
   return &g_pCmdLineInstance;
 }
 
-void xiiCommandLineUtils::SplitCommandLineString(xiiStringView sCommandString, bool bAddExecutableDir, xiiDynamicArray<xiiString>& out_args, xiiDynamicArray<const char*>& out_argsV)
+void xiiCommandLineUtils::SplitCommandLineString(const char* szCommandString, bool bAddExecutableDir, xiiDynamicArray<xiiString>& out_args, xiiDynamicArray<const char*>& out_argsV)
 {
   // Add application dir as first argument as customary on other platforms.
   if (bAddExecutableDir)
@@ -31,7 +31,7 @@ void xiiCommandLineUtils::SplitCommandLineString(xiiStringView sCommandString, b
   }
 
   // Simple args splitting. Not as powerful as Win32's CommandLineToArgvW.
-  const char* currentChar = sCommandString.GetStartPointer();
+  const char* currentChar = szCommandString;
   const char* lastEnd     = currentChar;
   bool        inQuotes    = false;
   while (*currentChar != '\0')
@@ -45,7 +45,7 @@ void xiiCommandLineUtils::SplitCommandLineString(xiiStringView sCommandString, b
       out_args.PushBack(path);
       lastEnd = currentChar + 1;
     }
-    xiiUnicodeUtils::MoveToNextUtf8(currentChar);
+    xiiUnicodeUtils::MoveToNextUtf8(currentChar).IgnoreResult();
   }
 
   out_argsV.Reserve(out_argsV.GetCount());
@@ -210,7 +210,7 @@ xiiStringView xiiCommandLineUtils::GetStringOption(xiiStringView sOption, xiiUIn
   return sDefault;
 }
 
-const xiiString xiiCommandLineUtils::GetAbsolutePathOption(xiiStringView sOption, xiiUInt32 uiArgument /*= 0*/, xiiStringView sDefault /*= ""*/, bool bCaseSensitive /*= false*/) const
+const xiiString xiiCommandLineUtils::GetAbsolutePathOption(xiiStringView sOption, xiiUInt32 uiArgument /*= 0*/, xiiStringView sDefault /*= {} */, bool bCaseSensitive /*= false*/) const
 {
   xiiStringView sPath = GetStringOption(sOption, uiArgument, sDefault, bCaseSensitive);
 

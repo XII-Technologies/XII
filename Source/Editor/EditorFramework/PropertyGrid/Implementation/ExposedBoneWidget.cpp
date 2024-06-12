@@ -69,11 +69,11 @@ void xiiQtExposedBoneWidget::SlotValueChanged()
   xiiExposedBone* pCopy = reinterpret_cast<xiiExposedBone*>(xiiReflectionSerializer::Clone(obj.m_pObject, obj.m_pType));
 
   {
-    xiiAngle x = xiiAngle::Degree(m_pRotWidget[0]->value());
-    xiiAngle y = xiiAngle::Degree(m_pRotWidget[1]->value());
-    xiiAngle z = xiiAngle::Degree(m_pRotWidget[2]->value());
+    xiiAngle x = xiiAngle::MakeFromDegree(m_pRotWidget[0]->value());
+    xiiAngle y = xiiAngle::MakeFromDegree(m_pRotWidget[1]->value());
+    xiiAngle z = xiiAngle::MakeFromDegree(m_pRotWidget[2]->value());
 
-    pCopy->m_Transform.m_qRotation.SetFromEulerAngles(x, y, z);
+    pCopy->m_Transform.m_qRotation = xiiQuat::MakeFromEulerAngles(x, y, z);
   }
 
   xiiVariant newValue;

@@ -55,9 +55,5 @@ public:
   /// Bones are always ordered from furthest from the body moving inwards. E.g. for a finger index 0 should be the tip
   /// followed by distal, etc. ending in the wrist bone. Depending on the implementation the number
   /// of bones returned can be less than the number of actual bones in the hand.
-  virtual HandPartTrackingState TryGetBoneTransforms(
-    xiiEnum<xiiXRHand>              hand,
-    xiiEnum<xiiXRHandPart>          handPart,
-    xiiEnum<xiiXRTransformSpace>    space,
-    xiiDynamicArray<xiiXRHandBone>& out_bones) = 0;
+  virtual HandPartTrackingState TryGetBoneTransforms(xiiEnum<xiiXRHand> hand, xiiEnum<xiiXRHandPart> handPart, xiiEnum<xiiXRTransformSpace> space, xiiDynamicArray<xiiXRHandBone>& out_bones) = 0;
 };

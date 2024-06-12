@@ -12,13 +12,13 @@ XII_END_STATIC_REFLECTED_ENUM;
 // clang-format on
 
 static xiiTime s_Intervals[] = {
-  xiiTime::Zero(),              // EveryFrame
-  xiiTime::Seconds(1.0 / 30.0), // Max30fps
-  xiiTime::Seconds(1.0 / 20.0), // Max20fps
-  xiiTime::Seconds(1.0 / 10.0), // Max10fps
-  xiiTime::Seconds(1.0 / 5.0),  // Max5fps
-  xiiTime::Seconds(1.0 / 2.0),  // Max2fps
-  xiiTime::Seconds(1.0 / 1.0),  // Max1fps
+  xiiTime::MakeZero(),                  // EveryFrame
+  xiiTime::MakeFromSeconds(1.0 / 30.0), // Max30fps
+  xiiTime::MakeFromSeconds(1.0 / 20.0), // Max20fps
+  xiiTime::MakeFromSeconds(1.0 / 10.0), // Max10fps
+  xiiTime::MakeFromSeconds(1.0 / 5.0),  // Max5fps
+  xiiTime::MakeFromSeconds(1.0 / 2.0),  // Max2fps
+  xiiTime::MakeFromSeconds(1.0 / 1.0),  // Max1fps
 };
 
 static_assert(XII_ARRAY_SIZE(s_Intervals) == xiiUpdateRate::Max1fps + 1);

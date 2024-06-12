@@ -139,7 +139,7 @@ void xiiTriggerDelayModifierComponent::OnMsgComponentInternalTrigger(xiiMsgCompo
       newMsg.m_sMessage     = m_sMessage;
       newMsg.m_TriggerState = xiiTriggerState::Activated;
 
-      m_TriggerEventSender.PostEventMessage(newMsg, this, GetOwner()->GetParent(), xiiTime::Zero(), xiiObjectMsgQueueType::PostTransform);
+      m_TriggerEventSender.PostEventMessage(newMsg, this, GetOwner()->GetParent(), xiiTime::MakeZero(), xiiObjectMsgQueueType::PostTransform);
     }
   }
   else if (msg.m_sMessage == xiiTempHashedString("Deactivate"))
@@ -152,7 +152,7 @@ void xiiTriggerDelayModifierComponent::OnMsgComponentInternalTrigger(xiiMsgCompo
       newMsg.m_sMessage     = m_sMessage;
       newMsg.m_TriggerState = xiiTriggerState::Deactivated;
 
-      m_TriggerEventSender.PostEventMessage(newMsg, this, GetOwner()->GetParent(), xiiTime::Zero(), xiiObjectMsgQueueType::PostTransform);
+      m_TriggerEventSender.PostEventMessage(newMsg, this, GetOwner()->GetParent(), xiiTime::MakeZero(), xiiObjectMsgQueueType::PostTransform);
     }
   }
 }

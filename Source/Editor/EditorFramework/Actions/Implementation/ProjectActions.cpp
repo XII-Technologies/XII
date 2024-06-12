@@ -676,7 +676,7 @@ void xiiProjectAction::Execute(const xiiVariant& value)
 
     case xiiProjectAction::ButtonType::ReloadResources:
     {
-      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Reloading Resources...", xiiTime::Seconds(5));
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Reloading Resources...", xiiTime::MakeFromSeconds(5));
 
       xiiSimpleConfigMsgToEngine msg;
       msg.m_sWhatToDo = "ReloadResources";
@@ -705,7 +705,7 @@ void xiiProjectAction::Execute(const xiiVariant& value)
 
     case xiiProjectAction::ButtonType::LaunchFileserve:
     {
-      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Launching FileServe...", xiiTime::Seconds(5));
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Launching FileServe...", xiiTime::MakeFromSeconds(5));
 
       xiiQtLaunchFileserveDlg dlg(nullptr);
       dlg.exec();
@@ -714,7 +714,7 @@ void xiiProjectAction::Execute(const xiiVariant& value)
 
     case xiiProjectAction::ButtonType::LaunchInspector:
     {
-      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Launching xiiInspector...", xiiTime::Seconds(5));
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage("Launching xiiInspector...", xiiTime::MakeFromSeconds(5));
 
       xiiQtEditorApp::GetSingleton()->RunInspector();
     }
@@ -749,7 +749,7 @@ void xiiProjectAction::Execute(const xiiVariant& value)
         };
         xiiProcessCommunicationChannel::WaitForMessageCallback cb = callback;
 
-        if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForMessage(xiiGetStaticRTTI<xiiSaveProfilingResponseToEditor>(), xiiTime::Seconds(15), &cb).Failed())
+        if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForMessage(xiiGetStaticRTTI<xiiSaveProfilingResponseToEditor>(), xiiTime::MakeFromSeconds(15), &cb).Failed())
         {
           xiiLog::Error("Timeout while waiting for engine process to create profiling capture. Captures will not be merged.");
           return;
@@ -762,13 +762,13 @@ void xiiProjectAction::Execute(const xiiVariant& value)
       }
 
       xiiStringBuilder  sMergedFile;
-      const xiiDateTime dt = xiiDateTime(xiiTimestamp::CurrentTimestamp());
+      const xiiDateTime dt = xiiDateTime::MakeFromTimestamp(xiiTimestamp::CurrentTimestamp());
       sMergedFile.AppendFormat(":appdata/profiling_{0}-{1}-{2}_{3}-{4}-{5}-{6}.json", dt.GetYear(), xiiArgU(dt.GetMonth(), 2, true), xiiArgU(dt.GetDay(), 2, true), xiiArgU(dt.GetHour(), 2, true), xiiArgU(dt.GetMinute(), 2, true), xiiArgU(dt.GetSecond(), 2, true), xiiArgU(dt.GetMicroseconds() / 1000, 3, true));
 
       xiiStringBuilder sAbsPath;
       if (xiiProfilingUtils::MergeProfilingCaptures(sEngineProfilingFile, szEditorProfilingFile, sMergedFile).Succeeded() && xiiFileSystem::ResolvePath(sMergedFile, &sAbsPath, nullptr).Succeeded())
       {
-        xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Merged profiling capture saved to '{0}'.", sAbsPath), xiiTime::Seconds(5.0));
+        xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Merged profiling capture saved to '{0}'.", sAbsPath), xiiTime::MakeFromSeconds(5.0));
       }
     }
     break;

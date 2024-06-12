@@ -34,7 +34,7 @@ struct xiiPrefabInstantiationOptions
   RandomSeedMode m_RandomSeedMode              = RandomSeedMode::DeterministicFromParent;
   xiiUInt32      m_uiCustomRandomSeedRootValue = 0;
 
-  xiiTime m_MaxStepTime = xiiTime::Zero();
+  xiiTime m_MaxStepTime = xiiTime::MakeZero();
 
   xiiProgress* m_pProgress = nullptr;
 };
@@ -98,7 +98,7 @@ public:
   ///
   /// If pProgress is a valid pointer it is used to track the progress of the instantiation. The xiiProgress object
   /// has to be valid as long as the instantiation is in progress.
-  xiiUniquePtr<InstantiationContextBase> InstantiateWorld(xiiWorld& ref_world, const xiiUInt16* pOverrideTeamID = nullptr, xiiTime maxStepTime = xiiTime::Zero(), xiiProgress* pProgress = nullptr);
+  xiiUniquePtr<InstantiationContextBase> InstantiateWorld(xiiWorld& ref_world, const xiiUInt16* pOverrideTeamID = nullptr, xiiTime maxStepTime = xiiTime::MakeZero(), xiiProgress* pProgress = nullptr);
 
   /// \brief Creates one instance of the world that was previously read by ReadWorldDescription().
   ///

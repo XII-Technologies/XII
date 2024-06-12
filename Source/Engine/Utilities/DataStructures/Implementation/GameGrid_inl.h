@@ -36,10 +36,10 @@ void xiiGameGrid<CellData>::SetWorldSpaceDimensions(const xiiVec3& vLowerLeftCor
       mRot.SetIdentity();
       break;
     case InPlaneXZ:
-      mRot.SetRotationMatrix(xiiVec3(1, 0, 0), xiiAngle::Degree(90.0f));
+      mRot = xiiMat3::MakeAxisRotation(xiiVec3(1, 0, 0), xiiAngle::MakeFromDegree(90.0f));
       break;
     case InPlaneXminusZ:
-      mRot.SetRotationMatrix(xiiVec3(1, 0, 0), xiiAngle::Degree(-90.0f));
+      mRot = xiiMat3::MakeAxisRotation(xiiVec3(1, 0, 0), xiiAngle::MakeFromDegree(-90.0f));
       break;
   }
 
@@ -99,8 +99,7 @@ bool xiiGameGrid<CellData>::IsValidCellCoordinate(const xiiVec2I32& vCoord) cons
 template <class CellData>
 bool xiiGameGrid<CellData>::PickCell(const xiiVec3& vRayStartPos, const xiiVec3& vRayDirNorm, xiiVec2I32* out_pCellCoord, xiiVec3* out_pIntersection) const
 {
-  xiiPlane p;
-  p.SetFromNormalAndPoint(m_mRotateToWorldspace * xiiVec3(0, 0, -1), m_vWorldSpaceOrigin);
+  xiiPlane p = xiiPlane::MakeFromNormalAndPoint(m_mRotateToWorldspace * xiiVec3(0, 0, -1), m_vWorldSpaceOrigin);
 
   xiiVec3 vPos;
 

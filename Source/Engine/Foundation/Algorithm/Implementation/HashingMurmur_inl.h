@@ -77,10 +77,7 @@ constexpr XII_ALWAYS_INLINE xiiUInt32 xiiHashingUtils::MurmurHash32String(const 
   // h ^= h >> 15;
   // return h;
 
-  return xiiInternal::rightShift_and_xorWithPrevSelf(
-    xiiInternal::rightShift_and_xorWithPrevSelf(xiiInternal::CompileTimeMurmurHash<N, N - 1>()(uiSeed ^ static_cast<xiiUInt32>(N - 1), str, 0), 13) *
-      xiiInternal::MURMUR_M,
-    15);
+  return xiiInternal::rightShift_and_xorWithPrevSelf(xiiInternal::rightShift_and_xorWithPrevSelf(xiiInternal::CompileTimeMurmurHash<N, N - 1>()(uiSeed ^ static_cast<xiiUInt32>(N - 1), str, 0), 13) * xiiInternal::MURMUR_M, 15);
 }
 
 XII_ALWAYS_INLINE xiiUInt32 xiiHashingUtils::MurmurHash32String(xiiStringView sStr, xiiUInt32 uiSeed)

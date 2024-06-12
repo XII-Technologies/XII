@@ -1,6 +1,5 @@
 #include <EditorFramework/EditorFrameworkPCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
 #include <EditorEngineProcessFramework/IPC/SyncObject.h>
 #include <EditorFramework/Assets/AssetCurator.h>
 #include <EditorFramework/Assets/AssetDocument.h>
@@ -9,6 +8,7 @@
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
 #include <Foundation/Serialization/ReflectionSerializer.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GuiFoundation/PropertyGrid/PrefabDefaultStateProvider.h>
 #include <GuiFoundation/PropertyGrid/PropertyMetaState.h>
 #include <GuiFoundation/UIServices/ImageCache.moc.h>
@@ -765,7 +765,7 @@ xiiStatus xiiAssetDocument::RemoteExport(const xiiAssetFileHeader& header, const
   }
   else if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Initializing)
   {
-    if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiDocumentOpenResponseMsgToEditor::GetStaticRTTI(), xiiTime::Seconds(10)).Failed())
+    if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiDocumentOpenResponseMsgToEditor::GetStaticRTTI(), xiiTime::MakeFromSeconds(10)).Failed())
     {
       return xiiStatus(xiiFmt("Exporting {0} to \"{1}\" failed, document initialization timed out.", GetDocumentTypeName(), szOutputTarget));
     }
@@ -788,7 +788,7 @@ xiiStatus xiiAssetDocument::RemoteExport(const xiiAssetFileHeader& header, const
     return true;
   };
 
-  if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiExportDocumentMsgToEditor::GetStaticRTTI(), xiiTime::Seconds(60), &callback).Failed())
+  if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiExportDocumentMsgToEditor::GetStaticRTTI(), xiiTime::MakeFromSeconds(60), &callback).Failed())
   {
     return xiiStatus(xiiFmt("Remote exporting {0} to \"{1}\" timed out.", GetDocumentTypeName(), msg.m_sOutputFile));
   }
@@ -825,7 +825,7 @@ xiiStatus xiiAssetDocument::RemoteCreateThumbnail(const ThumbnailInfo& thumbnail
   }
   else if (GetEngineStatus() == xiiAssetDocument::EngineStatus::Initializing)
   {
-    if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiDocumentOpenResponseMsgToEditor::GetStaticRTTI(), xiiTime::Seconds(10)).Failed())
+    if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiDocumentOpenResponseMsgToEditor::GetStaticRTTI(), xiiTime::MakeFromSeconds(10)).Failed())
     {
       return xiiStatus(xiiFmt("Create {0} thumbnail for \"{1}\" failed, document initialization timed out.", GetDocumentTypeName(), GetDocumentPath()));
     }
@@ -849,7 +849,7 @@ xiiStatus xiiAssetDocument::RemoteCreateThumbnail(const ThumbnailInfo& thumbnail
     return true;
   };
 
-  if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiCreateThumbnailMsgToEditor::GetStaticRTTI(), xiiTime::Seconds(60), &callback).Failed())
+  if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForDocumentMessage(GetGuid(), xiiCreateThumbnailMsgToEditor::GetStaticRTTI(), xiiTime::MakeFromSeconds(60), &callback).Failed())
   {
     return xiiStatus(xiiFmt("Create {0} thumbnail for \"{1}\" failed timed out.", GetDocumentTypeName(), GetDocumentPath()));
   }

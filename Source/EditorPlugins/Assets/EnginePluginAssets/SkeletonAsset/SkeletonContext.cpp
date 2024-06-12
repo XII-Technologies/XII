@@ -195,8 +195,7 @@ void xiiSkeletonContext::QuerySelectionBBox(const xiiEditorEngineDocumentMsg* pM
   if (m_pGameObject == nullptr)
     return;
 
-  xiiBoundingBoxSphere bounds;
-  bounds.SetInvalid();
+  xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
 
   {
     XII_LOCK(m_pWorld->GetWriteMarker());

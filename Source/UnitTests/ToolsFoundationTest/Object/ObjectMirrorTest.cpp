@@ -102,43 +102,41 @@ xiiVariant GetVariantFromType(xiiVariant::Type::Enum type)
       return xiiVariant(xiiVec4U64(6, 7, 8, 9));
     case xiiVariant::Type::Quaternion:
     {
-      xiiQuat quat;
-      quat.SetFromEulerAngles(xiiAngle::Degree(30), xiiAngle::Degree(-15), xiiAngle::Degree(20));
+      xiiQuat quat = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(30), xiiAngle::MakeFromDegree(-15), xiiAngle::MakeFromDegree(20));
       return xiiVariant(quat);
     }
     case xiiVariant::Type::Quaterniond:
     {
-      xiiQuatd quat;
-      quat.SetFromEulerAngles(xiiAngled::Degree(30), xiiAngled::Degree(-15), xiiAngled::Degree(20));
+      xiiQuatd quat = xiiQuatd::MakeFromEulerAngles(xiiAngled::MakeFromDegree(30), xiiAngled::MakeFromDegree(-15), xiiAngled::MakeFromDegree(20));
       return xiiVariant(quat);
     }
     case xiiVariant::Type::Matrix3:
     {
-      xiiMat3 mat = xiiMat3::IdentityMatrix();
+      xiiMat3 mat = xiiMat3::MakeIdentity();
 
-      mat.SetRotationMatrix(xiiVec3(1.0f, 0.0f, 0.0f), xiiAngle::Degree(30));
+      mat = xiiMat3::MakeAxisRotation(xiiVec3(1.0f, 0.0f, 0.0f), xiiAngle::MakeFromDegree(30));
       return xiiVariant(mat);
     }
     case xiiVariant::Type::Matrix3d:
     {
-      xiiMat3d mat = xiiMat3d::IdentityMatrix();
+      xiiMat3d mat = xiiMat3d::MakeIdentity();
 
-      mat.SetRotationMatrix(xiiVec3d(1.0, 0.0, 0.0), xiiAngled::Degree(30));
+      mat = xiiMat3d::MakeAxisRotation(xiiVec3d(1.0, 0.0, 0.0), xiiAngled::MakeFromDegree(30));
       return xiiVariant(mat);
     }
     case xiiVariant::Type::Matrix4:
     {
-      xiiMat4 mat = xiiMat4::IdentityMatrix();
+      xiiMat4 mat = xiiMat4::MakeIdentity();
 
-      mat.SetRotationMatrix(xiiVec3(0.0f, 1.0f, 0.0f), xiiAngle::Degree(30));
+      mat = xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 1.0f, 0.0f), xiiAngle::MakeFromDegree(30));
       mat.SetTranslationVector(xiiVec3(1.0f, 2.0f, 3.0f));
       return xiiVariant(mat);
     }
     case xiiVariant::Type::Matrix4d:
     {
-      xiiMat4d mat = xiiMat4d::IdentityMatrix();
+      xiiMat4d mat = xiiMat4d::MakeIdentity();
 
-      mat.SetRotationMatrix(xiiVec3d(0.0, 1.0, 0.0), xiiAngled::Degree(30));
+      mat = xiiMat4d::MakeAxisRotation(xiiVec3d(0.0, 1.0, 0.0), xiiAngled::MakeFromDegree(30));
       mat.SetTranslationVector(xiiVec3d(1.0, 2.0, 3.0));
       return xiiVariant(mat);
     }
@@ -147,17 +145,17 @@ xiiVariant GetVariantFromType(xiiVariant::Type::Enum type)
     case xiiVariant::Type::StringView:
       return xiiVariant(xiiStringView("Test"), false);
     case xiiVariant::Type::Time:
-      return xiiVariant(xiiTime::Seconds(123.0f));
+      return xiiVariant(xiiTime::MakeFromSeconds(123.0f));
     case xiiVariant::Type::Uuid:
     {
       xiiUuid guid;
-      guid.CreateNewUuid();
+      guid = xiiUuid::MakeUuid();
       return xiiVariant(guid);
     }
     case xiiVariant::Type::Angle:
-      return xiiVariant(xiiAngle::Degree(30.0f));
+      return xiiVariant(xiiAngle::MakeFromDegree(30.0f));
     case xiiVariant::Type::Angled:
-      return xiiVariant(xiiAngled::Degree(30.0));
+      return xiiVariant(xiiAngled::MakeFromDegree(30.0));
     case xiiVariant::Type::DataBuffer:
     {
       xiiDataBuffer data;
@@ -191,7 +189,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
       if (pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner))
       {
         const xiiUuid oldGuid = pObjectAccessor->Get<xiiUuid>(pObject, pProp);
-        xiiUuid       newGuid = xiiUuid::CreateUuid();
+        xiiUuid       newGuid = xiiUuid::MakeUuid();
         if (oldGuid.IsValid())
         {
           XII_TEST_BOOL(pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(oldGuid)).m_Result.Succeeded());
@@ -249,7 +247,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
 
       if (pProp->GetCategory() == xiiPropertyCategory::Array)
       {
-        xiiUuid newGuid = xiiUuid::CreateUuid();
+        xiiUuid newGuid = xiiUuid::MakeUuid();
         XII_TEST_BOOL(pObjectAccessor->AddObject(pObject, pProp, 0, pProp->GetSpecificType(), newGuid).m_Result.Succeeded());
       }
     }
@@ -282,7 +280,7 @@ void RecursiveModifyProperty(const xiiDocumentObject* pObject, const xiiAbstract
         XII_TEST_BOOL(pObjectAccessor->RemoveObject(pObjectAccessor->GetObject(currentValues[i].Get<xiiUuid>())).m_Result.Succeeded());
       }
 
-      xiiUuid newGuid = xiiUuid::CreateUuid();
+      xiiUuid newGuid = xiiUuid::MakeUuid();
       XII_TEST_BOOL(pObjectAccessor->AddObject(pObject, pProp, "value1", pProp->GetSpecificType(), newGuid).m_Result.Succeeded());
     }
   }

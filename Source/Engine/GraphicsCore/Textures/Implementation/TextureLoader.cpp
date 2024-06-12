@@ -1,10 +1,10 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
 #include <Foundation/Configuration/CVar.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileReader.h>
 #include <Foundation/IO/OSFile.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Textures/RenderToTexture2DResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/Texture3DResource.h>
@@ -150,7 +150,7 @@ xiiResourceLoadData xiiTextureResourceLoader::OpenDataStream(const xiiResource* 
 
   if (cvar_StreamingTextureLoadDelay > 0)
   {
-    xiiThreadUtils::Sleep(xiiTime::Seconds(cvar_StreamingTextureLoadDelay));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromSeconds(cvar_StreamingTextureLoadDelay));
   }
 
   return res;

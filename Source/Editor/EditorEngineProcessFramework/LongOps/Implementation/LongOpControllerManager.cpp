@@ -119,7 +119,7 @@ void xiiLongOpControllerManager::RegisterLongOp(const xiiUuid& documentGuid, con
   auto& opInfo           = *opInfoPtr;
   opInfo.m_DocumentGuid  = documentGuid;
   opInfo.m_ComponentGuid = componentGuid;
-  opInfo.m_OperationGuid = xiiUuid::CreateUuid();
+  opInfo.m_OperationGuid = xiiUuid::MakeUuid();
 
   opInfo.m_pProxyOp = pRtti->GetAllocator()->Allocate<xiiLongOpProxy>();
   opInfo.m_pProxyOp->InitializeRegistered(documentGuid, componentGuid);
@@ -205,7 +205,7 @@ void xiiLongOpControllerManager::CancelAndRemoveAllOpsForDocument(const xiiUuid&
 
     if (bOperationsStillActive)
     {
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
     }
   }
 }
@@ -251,7 +251,7 @@ void xiiLongOpManager::AddLongOperation(xiiUniquePtr<xiiLongOp>&& pOperation, co
 
   auto& opInfo        = *opInfoPtr;
   opInfo.m_pOperation = std::move(pOperation);
-  opInfo.m_OperationGuid.CreateNewUuid();
+  opInfo.m_OperationGuid = xiiUuid::MakeUuid();
   opInfo.m_DocumentGuid         = documentGuid;
   opInfo.m_StartOrDuration      = xiiTime::Now();
   opInfo.m_Progress.m_pUserData = opInfo.m_pOperation.Borrow();

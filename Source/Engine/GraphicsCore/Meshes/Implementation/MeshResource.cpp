@@ -1,6 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Material/MaterialResource.h>
 #include <GraphicsCore/Meshes/MeshResource.h>
 
@@ -16,7 +16,7 @@ xiiUInt32 xiiMeshResource::s_uiMeshBufferNameSuffix = 0;
 xiiMeshResource::xiiMeshResource() :
   xiiResource(DoUpdate::OnAnyThread, 1)
 {
-  m_Bounds.SetInvalid();
+  m_Bounds = xiiBoundingBoxSphere::MakeInvalid();
 }
 
 xiiResourceLoadDesc xiiMeshResource::UnloadData(Unload WhatToUnload)

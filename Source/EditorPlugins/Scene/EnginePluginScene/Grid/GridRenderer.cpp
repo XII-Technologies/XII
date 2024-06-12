@@ -235,7 +235,7 @@ void xiiEditorGridExtractor::Extract(const xiiView& view, const xiiDynamicArray<
   xiiGridRenderData* pRenderData = xiiCreateRenderDataForThisFrame<xiiGridRenderData>(nullptr);
   pRenderData->m_bOrthoMode      = cam->IsOrthographic();
   pRenderData->m_bGlobal         = m_pSceneContext->IsGridInGlobalSpace();
-  pRenderData->m_GlobalBounds.SetInvalid();
+  pRenderData->m_GlobalBounds    = xiiBoundingBoxSphere::MakeInvalid();
 
   if (cam->IsOrthographic())
   {
@@ -253,14 +253,14 @@ void xiiEditorGridExtractor::Extract(const xiiView& view, const xiiDynamicArray<
     mRot.SetColumn(0, cam->GetCenterDirRight());
     mRot.SetColumn(1, cam->GetCenterDirUp());
     mRot.SetColumn(2, cam->GetCenterDirForwards());
-    pRenderData->m_GlobalTransform.m_qRotation.SetFromMat3(mRot);
+    pRenderData->m_GlobalTransform.m_qRotation = xiiQuat::MakeFromMat3(mRot);
 
     const xiiVec3 vBottomLeft = cam->GetCenterPosition() - cam->GetCenterDirRight() * fDimX - cam->GetCenterDirUp() * fDimY;
     const xiiVec3 vTopRight   = cam->GetCenterPosition() + cam->GetCenterDirRight() * fDimX + cam->GetCenterDirUp() * fDimY;
 
     xiiPlane plane1, plane2;
-    plane1 = xiiPlane(cam->GetCenterDirRight(), xiiVec3(0));
-    plane2 = xiiPlane(cam->GetCenterDirUp(), xiiVec3(0));
+    plane1 = xiiPlane::MakeFromNormalAndPoint(cam->GetCenterDirRight(), xiiVec3(0));
+    plane2 = xiiPlane::MakeFromNormalAndPoint(cam->GetCenterDirUp(), xiiVec3(0));
 
     const float fFirstDist1 = plane1.GetDistanceTo(vBottomLeft) - fDensity;
     const float fLastDist1  = plane1.GetDistanceTo(vTopRight) + fDensity;

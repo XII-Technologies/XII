@@ -68,10 +68,10 @@ void xiiMeshAssetDocument::CreateMeshFromGeom(xiiMeshAssetProperties* pProp, xii
   const xiiMat3 mTransformation = CalculateTransformationMatrix(pProp);
 
   xiiGeometry geom;
-  // const xiiMat4 mTrans(mTransformation, xiiVec3::ZeroVector());
+  // const xiiMat4 mTrans(mTransformation, xiiVec3::MakeZero());
 
   xiiGeometry::GeoOptions opt;
-  opt.m_Transform = xiiMat4(mTransformation, xiiVec3::ZeroVector());
+  opt.m_Transform = xiiMat4(mTransformation, xiiVec3::MakeZero());
 
   auto detail1 = pProp->m_uiDetail;
   auto detail2 = pProp->m_uiDetail2;
@@ -104,7 +104,7 @@ void xiiMeshAssetDocument::CreateMeshFromGeom(xiiMeshAssetProperties* pProp, xii
     if (detail1 == 0)
       detail1 = 32;
 
-    geom.AddCylinder(pProp->m_fRadius, pProp->m_fRadius2, pProp->m_fHeight * 0.5f, pProp->m_fHeight * 0.5f, pProp->m_bCap, pProp->m_bCap2, xiiMath::Max<xiiUInt16>(3, detail1), opt, xiiMath::Clamp(pProp->m_Angle, xiiAngle::Degree(0.0f), xiiAngle::Degree(360.0f)));
+    geom.AddCylinder(pProp->m_fRadius, pProp->m_fRadius2, pProp->m_fHeight * 0.5f, pProp->m_fHeight * 0.5f, pProp->m_bCap, pProp->m_bCap2, xiiMath::Max<xiiUInt16>(3, detail1), opt, xiiMath::Clamp(pProp->m_Angle, xiiAngle::MakeFromDegree(0.0f), xiiAngle::MakeFromDegree(360.0f)));
   }
   else if (pProp->m_PrimitiveType == xiiMeshPrimitive::GeodesicSphere)
   {

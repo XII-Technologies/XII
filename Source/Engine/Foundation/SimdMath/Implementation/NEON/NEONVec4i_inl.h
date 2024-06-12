@@ -4,7 +4,7 @@ XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i()
 {
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   m_v = vmovq_n_u32(0xCDCDCDCD);
 #endif
 }
@@ -27,6 +27,11 @@ XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i(xiiInt32 x, xiiInt32 y, xiiInt32 z,
 XII_ALWAYS_INLINE xiiSimdVec4i::xiiSimdVec4i(xiiInternal::QuadInt v)
 {
   m_v = v;
+}
+
+XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::MakeZero()
+{
+  return vmovq_n_s32(0);
 }
 
 XII_ALWAYS_INLINE void xiiSimdVec4i::Set(xiiInt32 xyzw)
@@ -299,12 +304,6 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4i::operator>=(const xiiSimdVec4i& v) c
 XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4i::operator>(const xiiSimdVec4i& v) const
 {
   return vcgtq_s32(m_v, v.m_v);
-}
-
-// static
-XII_ALWAYS_INLINE xiiSimdVec4i xiiSimdVec4i::ZeroVector()
-{
-  return vmovq_n_s32(0);
 }
 
 // static

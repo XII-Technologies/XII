@@ -382,40 +382,6 @@ XII_CREATE_SIMPLE_TEST(Containers, Map)
     XII_TEST_INT(i, 1000);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetLastIterator / Backward Iteration")
-  {
-    xiiMap<xiiUInt32, xiiUInt32> m;
-
-    for (xiiInt32 i = 0; i < 1000; ++i)
-      m[i] = i * 10;
-
-    xiiInt32 i = 1000 - 1;
-    for (xiiMap<xiiUInt32, xiiUInt32>::Iterator it = m.GetLastIterator(); it.IsValid(); --it)
-    {
-      XII_TEST_INT(it.Key(), i);
-      XII_TEST_INT(it.Value(), i * 10);
-      --i;
-    }
-  }
-
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetLastIterator / Backward Iteration (const)")
-  {
-    xiiMap<xiiUInt32, xiiUInt32> m;
-
-    for (xiiInt32 i = 0; i < 1000; ++i)
-      m[i] = i * 10;
-
-    const xiiMap<xiiUInt32, xiiUInt32> m2(m);
-
-    xiiInt32 i = 1000 - 1;
-    for (xiiMap<xiiUInt32, xiiUInt32>::ConstIterator it = m2.GetLastIterator(); it.IsValid(); --it)
-    {
-      XII_TEST_INT(it.Key(), i);
-      XII_TEST_INT(it.Value(), i * 10);
-      --i;
-    }
-  }
-
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "LowerBound")
   {
     xiiMap<xiiInt32, xiiInt32> m, m2;
@@ -721,5 +687,39 @@ XII_CREATE_SIMPLE_TEST(Containers, Map)
 
     map2->~xiiMap<xiiString, xiiInt32>();
     xiiMemoryUtils::PatternFill(map2Mem, 0xBA, uiMapSize);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetReverseIterator")
+  {
+    xiiMap<xiiUInt32, xiiUInt32> m;
+
+    for (xiiInt32 i = 0; i < 1000; ++i)
+      m[i] = i * 10;
+
+    xiiInt32 i = 1000 - 1;
+    for (xiiMap<xiiUInt32, xiiUInt32>::ReverseIterator it = m.GetReverseIterator(); it.IsValid(); ++it)
+    {
+      XII_TEST_INT(it.Key(), i);
+      XII_TEST_INT(it.Value(), i * 10);
+      --i;
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetReverseIterator (const)")
+  {
+    xiiMap<xiiUInt32, xiiUInt32> m;
+
+    for (xiiInt32 i = 0; i < 1000; ++i)
+      m[i] = i * 10;
+
+    const xiiMap<xiiUInt32, xiiUInt32> m2(m);
+
+    xiiInt32 i = 1000 - 1;
+    for (xiiMap<xiiUInt32, xiiUInt32>::ConstReverseIterator it = m2.GetReverseIterator(); it.IsValid(); ++it)
+    {
+      XII_TEST_INT(it.Key(), i);
+      XII_TEST_INT(it.Value(), i * 10);
+      --i;
+    }
   }
 }

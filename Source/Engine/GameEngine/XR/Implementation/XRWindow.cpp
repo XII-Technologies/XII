@@ -89,7 +89,7 @@ void xiiWindowOutputTargetXR::Present(bool bEnableVSync)
 void xiiWindowOutputTargetXR::RenderCompanionView(bool bThrottleCompanionView)
 {
   xiiTime currentTime = xiiTime::Now();
-  if (bThrottleCompanionView && currentTime < (m_LastPresent + xiiTime::Milliseconds(16)))
+  if (bThrottleCompanionView && currentTime < (m_LastPresent + xiiTime::MakeFromMilliseconds(16)))
     return;
 
   m_LastPresent = currentTime;

@@ -183,7 +183,7 @@ XII_CREATE_SIMPLE_TEST(ResourceManager, Basics)
       if (uiUnloaded == uiNumResources)
         break;
 
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
     }
 
     XII_TEST_INT(xiiResourceManager::GetAllResourcesOfType<TestResource>()->GetCount(), 0);
@@ -276,11 +276,11 @@ XII_CREATE_SIMPLE_TEST(ResourceManager, NestedLoading)
 
     while (xiiResourceManager::IsAnyLoadingInProgress())
     {
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
     }
 
     xiiResourceManager::FreeAllUnusedResources();
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
     xiiResourceManager::FreeAllUnusedResources();
 
     XII_TEST_INT(xiiResourceManager::GetAllResourcesOfType<TestResource>()->GetCount(), 0);

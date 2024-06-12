@@ -23,7 +23,7 @@ xiiScaleGizmo::xiiScaleGizmo()
   m_hAxisXYZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, coly, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/ScaleXYZ.obj");
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiScaleGizmo::UpdateStatusBarText(xiiQtEngineDocumentWindow* pWindow)
@@ -147,7 +147,7 @@ xiiEditorInput xiiScaleGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   const xiiTime tNow = xiiTime::Now();
 
-  if (tNow - m_LastInteraction < xiiTime::Seconds(1.0 / 25.0))
+  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
     return xiiEditorInput::WasExclusivelyHandled;
 
   m_LastInteraction = tNow;
@@ -219,11 +219,11 @@ void xiiManipulatorScaleGizmo::OnTransformationChanged(const xiiTransform& trans
 
   m_hAxisX.SetTransformation(transform * t);
 
-  t.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(90));
+  t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(90));
   t.m_vPosition = xiiVec3(0, fOffset, 0);
   m_hAxisY.SetTransformation(transform * t);
 
-  t.m_qRotation.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(-90));
+  t.m_qRotation = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(-90));
   t.m_vPosition = xiiVec3(0, 0, fOffset);
   m_hAxisZ.SetTransformation(transform * t);
 

@@ -316,12 +316,7 @@ struct XII_TEXTURE_DLL xiiImageFormat
   static xiiImageFormatType::Enum GetType(Enum format);
 
   /// \brief Finds a format matching the given component masks.
-  static xiiImageFormat::Enum FromPixelMask(
-    xiiUInt32 uiRedMask,
-    xiiUInt32 uiGreenMask,
-    xiiUInt32 uiBlueMask,
-    xiiUInt32 uiAlphaMask,
-    xiiUInt32 uiBitsPerPixel);
+  static xiiImageFormat::Enum FromPixelMask(xiiUInt32 uiRedMask, xiiUInt32 uiGreenMask, xiiUInt32 uiBlueMask, xiiUInt32 uiAlphaMask, xiiUInt32 uiBitsPerPixel);
 
   /// \brief Returns the format of a subplane of a given format.
   static xiiImageFormat::Enum GetPlaneSubFormat(xiiImageFormat::Enum format, xiiUInt32 uiPlaneIndex);

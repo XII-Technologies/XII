@@ -24,7 +24,7 @@ void xiiDynamicOctree::CreateTree(const xiiVec3& vCenter, const xiiVec3& vHalfEx
   // the bounding box should be square, so use the maximum of the x, y and z extents
   float fMax = xiiMath::Max(vHalfExtents.x, xiiMath::Max(vHalfExtents.y, vHalfExtents.z));
 
-  m_BBox.SetCenterAndHalfExtents(vCenter, xiiVec3(fMax));
+  m_BBox = xiiBoundingBox::MakeFromCenterAndHalfExtents(vCenter, xiiVec3(fMax));
 
   float fLength = fMax * 2.0f;
 

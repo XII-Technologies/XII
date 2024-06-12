@@ -344,21 +344,13 @@ XII_FORCE_INLINE void xiiWorld::SendMessageRecursive(const xiiGameObjectHandle& 
   }
 }
 
-XII_ALWAYS_INLINE void xiiWorld::PostMessage(
-  const xiiGameObjectHandle&  hReceiverObject,
-  const xiiMessage&           msg,
-  xiiTime                     delay,
-  xiiObjectMsgQueueType::Enum queueType) const
+XII_ALWAYS_INLINE void xiiWorld::PostMessage(const xiiGameObjectHandle& hReceiverObject, const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType) const
 {
   // This method is allowed to be called from multiple threads.
   PostMessage(hReceiverObject, msg, queueType, delay, false);
 }
 
-XII_ALWAYS_INLINE void xiiWorld::PostMessageRecursive(
-  const xiiGameObjectHandle&  hReceiverObject,
-  const xiiMessage&           msg,
-  xiiTime                     delay,
-  xiiObjectMsgQueueType::Enum queueType) const
+XII_ALWAYS_INLINE void xiiWorld::PostMessageRecursive(const xiiGameObjectHandle& hReceiverObject, const xiiMessage& msg, xiiTime delay, xiiObjectMsgQueueType::Enum queueType) const
 {
   // This method is allowed to be called from multiple threads.
   PostMessage(hReceiverObject, msg, queueType, delay, true);

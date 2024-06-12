@@ -1218,7 +1218,7 @@ namespace
       }
     }
 
-    return ExecResult::ContinueLater(xiiTime::Zero());
+    return ExecResult::ContinueLater(xiiTime::MakeZero());
   }
 
   static ExecResult NodeFunction_Builtin_Yield(xiiVisualScriptExecutionContext& inout_context, const xiiVisualScriptGraphDescription::Node& node)
@@ -1229,7 +1229,7 @@ namespace
       // set marker value of 0x1 to indicate we are in a yield
       inout_context.SetCurrentCoroutine(reinterpret_cast<xiiScriptCoroutine*>(0x1));
 
-      return ExecResult::ContinueLater(xiiTime::Zero());
+      return ExecResult::ContinueLater(xiiTime::MakeZero());
     }
 
     inout_context.SetCurrentCoroutine(nullptr);

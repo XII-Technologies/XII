@@ -50,16 +50,16 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditableSkeletonJoint, 2, xiiRTTIDefaultAllo
   XII_BEGIN_PROPERTIES
   {
     XII_ACCESSOR_PROPERTY("Name", GetName, SetName)->AddAttributes(new xiiReadOnlyAttribute()),
-    XII_MEMBER_PROPERTY("Transform", m_LocalTransform)->AddFlags(xiiPropertyFlags::Hidden)->AddAttributes(new xiiDefaultValueAttribute(xiiTransform::IdentityTransform())),
+    XII_MEMBER_PROPERTY("Transform", m_LocalTransform)->AddFlags(xiiPropertyFlags::Hidden)->AddAttributes(new xiiDefaultValueAttribute(xiiTransform::MakeIdentity())),
     XII_MEMBER_PROPERTY_READ_ONLY("GizmoOffsetTranslationRO", m_vGizmoOffsetPositionRO)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY_READ_ONLY("GizmoOffsetRotationRO", m_qGizmoOffsetRotationRO)->AddAttributes(new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("LocalRotation", m_qLocalJointRotation),
     XII_ENUM_MEMBER_PROPERTY("JointType", xiiSkeletonJointType, m_JointType),
     XII_MEMBER_PROPERTY("Stiffness", m_fStiffness)->AddAttributes(new xiiDefaultValueAttribute(10.0f)),
-    XII_MEMBER_PROPERTY("SwingLimitY", m_SwingLimitY)->AddAttributes(new xiiClampValueAttribute(xiiAngle(), xiiAngle::Degree(170)), new xiiDefaultValueAttribute(xiiAngle::Degree(30))),
-    XII_MEMBER_PROPERTY("SwingLimitZ", m_SwingLimitZ)->AddAttributes(new xiiClampValueAttribute(xiiAngle(), xiiAngle::Degree(170)), new xiiDefaultValueAttribute(xiiAngle::Degree(30))),
-    XII_MEMBER_PROPERTY("TwistLimitHalfAngle", m_TwistLimitHalfAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::Degree(10), xiiAngle::Degree(170)), new xiiDefaultValueAttribute(xiiAngle::Degree(30))),
-    XII_MEMBER_PROPERTY("TwistLimitCenterAngle", m_TwistLimitCenterAngle)->AddAttributes(new xiiClampValueAttribute(-xiiAngle::Degree(170), xiiAngle::Degree(170))),
+    XII_MEMBER_PROPERTY("SwingLimitY", m_SwingLimitY)->AddAttributes(new xiiClampValueAttribute(xiiAngle(), xiiAngle::MakeFromDegree(170)), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(30))),
+    XII_MEMBER_PROPERTY("SwingLimitZ", m_SwingLimitZ)->AddAttributes(new xiiClampValueAttribute(xiiAngle(), xiiAngle::MakeFromDegree(170)), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(30))),
+    XII_MEMBER_PROPERTY("TwistLimitHalfAngle", m_TwistLimitHalfAngle)->AddAttributes(new xiiClampValueAttribute(xiiAngle::MakeFromDegree(10), xiiAngle::MakeFromDegree(170)), new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(30))),
+    XII_MEMBER_PROPERTY("TwistLimitCenterAngle", m_TwistLimitCenterAngle)->AddAttributes(new xiiClampValueAttribute(-xiiAngle::MakeFromDegree(170), xiiAngle::MakeFromDegree(170))),
 
     XII_MEMBER_PROPERTY("OverrideSurface", m_bOverrideSurface),
     XII_MEMBER_PROPERTY("Surface", m_sSurfaceOverride)->AddAttributes(new xiiAssetBrowserAttribute("CompatibleAsset_Surface", xiiDependencyFlags::Package)),
@@ -222,7 +222,7 @@ void xiiEditableSkeleton::FillResourceDescriptor(xiiSkeletonResourceDescriptor& 
   {
     const xiiUInt16 idx = sb.AddJoint(pJoint->GetName(), pJoint->m_LocalTransform);
 
-    CreateJointsRecursive(sb, ref_desc, nullptr, pJoint, idx, xiiQuat::IdentityQuaternion(), ref_desc.m_RootTransform.GetAsMat4());
+    CreateJointsRecursive(sb, ref_desc, nullptr, pJoint, idx, xiiQuat::MakeIdentity(), ref_desc.m_RootTransform.GetAsMat4());
   }
 
   sb.BuildSkeleton(ref_desc.m_Skeleton);
@@ -235,9 +235,9 @@ static void BuildOzzRawSkeleton(const xiiEditableSkeletonJoint& srcJoint, ozz::a
   ref_dstJoint.transform.translation.x = srcJoint.m_LocalTransform.m_vPosition.x;
   ref_dstJoint.transform.translation.y = srcJoint.m_LocalTransform.m_vPosition.y;
   ref_dstJoint.transform.translation.z = srcJoint.m_LocalTransform.m_vPosition.z;
-  ref_dstJoint.transform.rotation.x    = srcJoint.m_LocalTransform.m_qRotation.v.x;
-  ref_dstJoint.transform.rotation.y    = srcJoint.m_LocalTransform.m_qRotation.v.y;
-  ref_dstJoint.transform.rotation.z    = srcJoint.m_LocalTransform.m_qRotation.v.z;
+  ref_dstJoint.transform.rotation.x    = srcJoint.m_LocalTransform.m_qRotation.x;
+  ref_dstJoint.transform.rotation.y    = srcJoint.m_LocalTransform.m_qRotation.y;
+  ref_dstJoint.transform.rotation.z    = srcJoint.m_LocalTransform.m_qRotation.z;
   ref_dstJoint.transform.rotation.w    = srcJoint.m_LocalTransform.m_qRotation.w;
   ref_dstJoint.transform.scale.x       = srcJoint.m_LocalTransform.m_vScale.x;
   ref_dstJoint.transform.scale.y       = srcJoint.m_LocalTransform.m_vScale.y;

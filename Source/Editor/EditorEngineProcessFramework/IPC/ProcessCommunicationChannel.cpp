@@ -110,7 +110,7 @@ xiiResult xiiProcessCommunicationChannel::WaitForMessage(const xiiRTTI* pMessage
     {
       xiiTime tTimeLeft = timeout - (xiiTime::Now() - tStart);
 
-      if (tTimeLeft < xiiTime::Zero())
+      if (tTimeLeft < xiiTime::MakeZero())
       {
         m_pWaitForMessageType = nullptr;
         xiiLog::Dev("Reached time-out of {0} seconds while waiting for {1}", xiiArgF(timeout.GetSeconds(), 1), pMessageType->GetTypeName());

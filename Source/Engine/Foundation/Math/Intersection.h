@@ -28,8 +28,7 @@ namespace xiiIntersectionUtils
   ///   can be larger, if the vertices are interleaved with other data.
   /// \return
   ///   True, if the ray intersects the polygon, false otherwise.
-  XII_FOUNDATION_DLL bool RayPolygonIntersection(const xiiVec3& vRayStartPos, const xiiVec3& vRayDir, const xiiVec3* pPolygonVertices, xiiUInt32 uiNumVertices, float* out_pIntersectionTime = nullptr, xiiVec3* out_pIntersectionPoint = nullptr,
-                                                 xiiUInt32 uiVertexStride = sizeof(xiiVec3)); // [tested]
+  XII_FOUNDATION_DLL bool RayPolygonIntersection(const xiiVec3& vRayStartPos, const xiiVec3& vRayDir, const xiiVec3* pPolygonVertices, xiiUInt32 uiNumVertices, float* out_pIntersectionTime = nullptr, xiiVec3* out_pIntersectionPoint = nullptr, xiiUInt32 uiVertexStride = sizeof(xiiVec3)); // [tested]
 
   /// \brief Checks whether a ray intersects with a polygon.
   ///
@@ -54,19 +53,16 @@ namespace xiiIntersectionUtils
   ///   can be larger, if the vertices are interleaved with other data.
   /// \return
   ///   True, if the ray intersects the polygon, false otherwise.
-  XII_FOUNDATION_DLL bool RayPolygonIntersection(const xiiVec3d& vRayStartPos, const xiiVec3d& vRayDir, const xiiVec3d* pPolygonVertices, xiiUInt32 uiNumVertices, double* out_pIntersectionTime = nullptr, xiiVec3d* out_pIntersectionPoint = nullptr,
-                                                 xiiUInt32 uiVertexStride = sizeof(xiiVec3d)); // [untested]
+  XII_FOUNDATION_DLL bool RayPolygonIntersection(const xiiVec3d& vRayStartPos, const xiiVec3d& vRayDir, const xiiVec3d* pPolygonVertices, xiiUInt32 uiNumVertices, double* out_pIntersectionTime = nullptr, xiiVec3d* out_pIntersectionPoint = nullptr, xiiUInt32 uiVertexStride = sizeof(xiiVec3d)); // [untested]
 
 
   /// \brief Returns point on the line segment that is closest to \a vStartPoint. Optionally also returns the fraction along the segment, where that
   /// point is located.
-  XII_FOUNDATION_DLL xiiVec3 ClosestPoint_PointLineSegment(const xiiVec3& vStartPoint, const xiiVec3& vLineSegmentPos0, const xiiVec3& vLineSegmentPos1,
-                                                           float* out_pFractionAlongSegment = nullptr); // [tested]
+  XII_FOUNDATION_DLL xiiVec3 ClosestPoint_PointLineSegment(const xiiVec3& vStartPoint, const xiiVec3& vLineSegmentPos0, const xiiVec3& vLineSegmentPos1, float* out_pFractionAlongSegment = nullptr); // [tested]
 
   /// \brief Returns point on the line segment that is closest to \a vStartPoint. Optionally also returns the fraction along the segment, where that
   /// point is located.
-  XII_FOUNDATION_DLL xiiVec3d ClosestPoint_PointLineSegment(const xiiVec3d& vStartPoint, const xiiVec3d& vLineSegmentPos0, const xiiVec3d& vLineSegmentPos1,
-                                                            double* out_pFractionAlongSegment = nullptr); // [untested]
+  XII_FOUNDATION_DLL xiiVec3d ClosestPoint_PointLineSegment(const xiiVec3d& vStartPoint, const xiiVec3d& vLineSegmentPos0, const xiiVec3d& vLineSegmentPos1, double* out_pFractionAlongSegment = nullptr); // [untested]
 
   /// \brief Computes the intersection point and time of the 2D ray with the 2D line segment. Returns true, if there is an intersection.
   XII_FOUNDATION_DLL bool Ray2DLine2D(const xiiVec2& vRayStartPos, const xiiVec2& vRayDir, const xiiVec2& vLineSegmentPos0, const xiiVec2& vLineSegmentPos1, float* out_pIntersectionTime = nullptr, xiiVec2* out_pIntersectionPoint = nullptr); // [tested]

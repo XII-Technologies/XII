@@ -93,17 +93,17 @@ void xiiSkeletonComponent::Update()
 
     for (const auto& shape : m_AngleShapes)
     {
-      xiiDebugRenderer::DrawAngle(GetWorld(), shape.m_StartAngle, shape.m_EndAngle, xiiColor::ZeroColor(), shape.m_Color, GetOwner()->GetGlobalTransform() * shape.m_Transform, vBoneTangent, vBoneDir);
+      xiiDebugRenderer::DrawAngle(GetWorld(), shape.m_StartAngle, shape.m_EndAngle, xiiColor::MakeZero(), shape.m_Color, GetOwner()->GetGlobalTransform() * shape.m_Transform, vBoneTangent, vBoneDir);
     }
 
     for (const auto& shape : m_ConeLimitShapes)
     {
-      xiiDebugRenderer::DrawLimitCone(GetWorld(), shape.m_Angle1, shape.m_Angle2, xiiColor::ZeroColor(), shape.m_Color, GetOwner()->GetGlobalTransform() * shape.m_Transform);
+      xiiDebugRenderer::DrawLimitCone(GetWorld(), shape.m_Angle1, shape.m_Angle2, xiiColor::MakeZero(), shape.m_Color, GetOwner()->GetGlobalTransform() * shape.m_Transform);
     }
 
     for (const auto& shape : m_CylinderShapes)
     {
-      xiiDebugRenderer::DrawCylinder(GetWorld(), shape.m_fRadius1, shape.m_fRadius2, shape.m_fLength, shape.m_Color, xiiColor::ZeroColor(), GetOwner()->GetGlobalTransform() * shape.m_Transform, false, false);
+      xiiDebugRenderer::DrawCylinder(GetWorld(), shape.m_fRadius1, shape.m_fRadius2, shape.m_fLength, shape.m_Color, xiiColor::MakeZero(), GetOwner()->GetGlobalTransform() * shape.m_Transform, false, false);
     }
   }
 }
@@ -146,7 +146,7 @@ void xiiSkeletonComponent::OnActivated()
 {
   SUPER::OnActivated();
 
-  m_MaxBounds.SetInvalid();
+  m_MaxBounds = xiiBoundingBox::MakeInvalid();
   VisualizeSkeletonDefaultState();
 }
 
@@ -177,7 +177,7 @@ void xiiSkeletonComponent::SetSkeleton(const xiiSkeletonResourceHandle& hResourc
   {
     m_hSkeleton = hResource;
 
-    m_MaxBounds.SetInvalid();
+    m_MaxBounds = xiiBoundingBox::MakeInvalid();
     VisualizeSkeletonDefaultState();
   }
 }
@@ -216,7 +216,7 @@ void xiiSkeletonComponent::OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated& ms
   BuildJointVisualization(msg);
 
   xiiBoundingBox poseBounds;
-  poseBounds.SetInvalid();
+  poseBounds = xiiBoundingBox::MakeInvalid();
 
   for (const auto& bone : msg.m_ModelTransforms)
   {
@@ -244,8 +244,8 @@ void xiiSkeletonComponent::BuildSkeletonVisualization(xiiMsgAnimationPoseUpdated
 
   struct Bone
   {
-    xiiVec3 pos            = xiiVec3::ZeroVector();
-    xiiVec3 dir            = xiiVec3::ZeroVector();
+    xiiVec3 pos            = xiiVec3::MakeZero();
+    xiiVec3 dir            = xiiVec3::MakeZero();
     float   distToParent   = 0.0f;
     float   minDistToChild = 10.0f;
     bool    highlight      = false;
@@ -271,16 +271,15 @@ void xiiSkeletonComponent::BuildSkeletonVisualization(xiiMsgAnimationPoseUpdated
     bone.pos          = v1;
     bone.distToParent = dirToBone.GetLength();
     bone.dir          = *msg.m_pRootTransform * msg.m_ModelTransforms[iCurrentBone].TransformDirection(vBoneDir);
-    bone.dir.NormalizeIfNotZero(xiiVec3::ZeroVector()).IgnoreResult();
+    bone.dir.NormalizeIfNotZero(xiiVec3::MakeZero()).IgnoreResult();
 
     auto& pb = bones[iParentBone];
 
-    if (!pb.dir.IsZero() && dirToBone.NormalizeIfNotZero(xiiVec3::ZeroVector()).Succeeded())
+    if (!pb.dir.IsZero() && dirToBone.NormalizeIfNotZero(xiiVec3::MakeZero()).Succeeded())
     {
-      if (pb.dir.GetAngleBetween(dirToBone) < xiiAngle::Degree(45))
+      if (pb.dir.GetAngleBetween(dirToBone) < xiiAngle::MakeFromDegree(45))
       {
-        xiiPlane plane;
-        plane.SetFromNormalAndPoint(pb.dir, pb.pos);
+        xiiPlane plane    = xiiPlane::MakeFromNormalAndPoint(pb.dir, pb.pos);
         pb.minDistToChild = xiiMath::Min(pb.minDistToChild, plane.GetDistanceTo(v1));
       }
     }
@@ -409,7 +408,7 @@ void xiiSkeletonComponent::BuildColliderVisualization(xiiMsgAnimationPoseUpdated
     bonesToHighlight.Clear();
 
   xiiQuat qRotZtoX; // the capsule should extend along X, but the debug renderer draws them along Z
-  qRotZtoX.SetFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::Degree(-90));
+  qRotZtoX = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 1, 0), xiiAngle::MakeFromDegree(-90));
 
   for (const auto& geo : pSkeleton->GetDescriptor().m_Geometry)
   {
@@ -436,7 +435,7 @@ void xiiSkeletonComponent::BuildColliderVisualization(xiiMsgAnimationPoseUpdated
       auto& shape       = m_SpheresShapes.ExpandAndGetRef();
       shape.m_Transform = st;
       shape.m_Color     = hlS;
-      shape.m_Shape     = xiiBoundingSphere(xiiVec3::ZeroVector(), geo.m_Transform.m_vScale.z);
+      shape.m_Shape     = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), geo.m_Transform.m_vScale.z);
     }
 
     if (geo.m_Type == xiiSkeletonJointGeometryType::Box)
@@ -452,7 +451,7 @@ void xiiSkeletonComponent::BuildColliderVisualization(xiiMsgAnimationPoseUpdated
       st.m_vPosition += qFinalBoneRot * xiiVec3(geo.m_Transform.m_vScale.x * 0.5f, 0, 0);
 
       shape.m_Transform = st;
-      shape.m_Shape     = xiiBoundingBox(xiiVec3::ZeroVector(), ext);
+      shape.m_Shape     = xiiBoundingBox(xiiVec3::MakeZero(), ext);
       shape.m_Color     = hlS;
     }
 
@@ -612,7 +611,7 @@ void xiiSkeletonComponent::BuildJointVisualization(xiiMsgAnimationPoseUpdated& m
     }
 
     // twist limit
-    if (m_bVisualizeTwistLimits && thisJoint.GetTwistLimitHalfAngle() > xiiAngle::Degree(0))
+    if (m_bVisualizeTwistLimits && thisJoint.GetTwistLimitHalfAngle() > xiiAngle::MakeFromDegree(0))
     {
       auto& shape        = m_AngleShapes.ExpandAndGetRef();
       shape.m_StartAngle = thisJoint.GetTwistLimitLow();
@@ -643,7 +642,7 @@ void xiiSkeletonComponent::BuildJointVisualization(xiiMsgAnimationPoseUpdated& m
         const xiiVec3 vRotDir = shape.m_Transform.m_qRotation * qBoneDir * xiiVec3(1, 0, 0);
 
         xiiQuat qRotRef;
-        qRotRef.SetFromAxisAndAngle(vRotDir, thisJoint.GetTwistLimitCenterAngle());
+        qRotRef = xiiQuat::MakeFromAxisAndAngle(vRotDir, thisJoint.GetTwistLimitCenterAngle());
         vDirRef = qRotRef * vDirRef;
 
         // if the current twist is outside the twist limit range, highlight the bone

@@ -61,7 +61,7 @@ public:
 protected:
   virtual void UpdateInputSlotValues() override;
 
-  xiiTime         m_DoubleClickTime = xiiTime::Milliseconds(500);
+  xiiTime         m_DoubleClickTime = xiiTime::MakeFromMilliseconds(500);
   static xiiInt32 s_iMouseIsOverWindowNumber;
 
 private:

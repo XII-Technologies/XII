@@ -1,10 +1,10 @@
 #include <Core/CorePCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
 #include <Core/Messages/ApplyOnlyToMessage.h>
 #include <Core/Messages/CommonMessages.h>
 #include <Core/Physics/SurfaceResource.h>
 #include <Core/Prefabs/PrefabResource.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 
 // clang-format off
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSurfaceResource, 1, xiiRTTIDefaultAllocator<xiiSurfaceResource>)
@@ -216,13 +216,12 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
   {
     double randomAngle = pWorld->GetRandomNumberGenerator().DoubleInRange(0.0, xiiMath::Pi<double>() * 2.0);
 
-    xiiMat3 rotMat;
-    rotMat.SetRotationMatrix(vDir, xiiAngle::Radian((float)randomAngle));
+    xiiMat3 rotMat = xiiMat3::MakeAxisRotation(vDir, xiiAngle::MakeFromRadian((float)randomAngle));
 
     vTangent = rotMat * vTangent;
   }
 
-  if (pIA->m_Deviation > xiiAngle::Radian(0.0f))
+  if (pIA->m_Deviation > xiiAngle::MakeFromRadian(0.0f))
   {
     xiiAngle maxDeviation;
 
@@ -235,7 +234,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
         const float fCosAngle     = vDir.Dot(-vSurfaceNormal);
         const float fMaxDeviation = xiiMath::Pi<float>() - xiiMath::ACos(fCosAngle).GetRadian();
 
-        maxDeviation = xiiMath::Min(pIA->m_Deviation, xiiAngle::Radian(fMaxDeviation));
+        maxDeviation = xiiMath::Min(pIA->m_Deviation, xiiAngle::MakeFromRadian(fMaxDeviation));
       }
       break;
 
@@ -245,7 +244,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
         const float fCosAngle     = vDir.Dot(vSurfaceNormal);
         const float fMaxDeviation = xiiMath::Pi<float>() - xiiMath::ACos(fCosAngle).GetRadian();
 
-        maxDeviation = xiiMath::Min(pIA->m_Deviation, xiiAngle::Radian(fMaxDeviation));
+        maxDeviation = xiiMath::Min(pIA->m_Deviation, xiiAngle::MakeFromRadian(fMaxDeviation));
       }
       break;
 
@@ -254,11 +253,10 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
         break;
     }
 
-    const xiiAngle deviation = xiiAngle::Radian((float)pWorld->GetRandomNumberGenerator().DoubleMinMax(-maxDeviation.GetRadian(), maxDeviation.GetRadian()));
+    const xiiAngle deviation = xiiAngle::MakeFromRadian((float)pWorld->GetRandomNumberGenerator().DoubleMinMax(-maxDeviation.GetRadian(), maxDeviation.GetRadian()));
 
     // tilt around the tangent (we don't want to compute another random rotation here)
-    xiiMat3 matTilt;
-    matTilt.SetRotationMatrix(vTangent, deviation);
+    xiiMat3 matTilt = xiiMat3::MakeAxisRotation(vTangent, deviation);
 
     vDir = matTilt * vDir;
   }
@@ -274,7 +272,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
 
   xiiTransform t;
   t.m_vPosition = vPosition;
-  t.m_qRotation.SetFromMat3(mRot);
+  t.m_qRotation = xiiQuat::MakeFromMat3(mRot);
   t.m_vScale.Set(1.0f);
 
   // attach to dynamic objects
@@ -284,7 +282,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
   if (pWorld->TryGetObject(hObject, pObject) && pObject->IsDynamic())
   {
     hParent = hObject;
-    t.SetLocalTransform(pObject->GetGlobalTransform(), t);
+    t       = xiiTransform::MakeLocalTransform(pObject->GetGlobalTransform(), t);
   }
 
   xiiHybridArray<xiiGameObject*, 8> rootObjects;
@@ -303,7 +301,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
 
     for (auto pRootObject : rootObjects)
     {
-      pRootObject->PostMessageRecursive(msgSetFloat, xiiTime::Zero(), xiiObjectMsgQueueType::AfterInitialized);
+      pRootObject->PostMessageRecursive(msgSetFloat, xiiTime::MakeZero(), xiiObjectMsgQueueType::AfterInitialized);
     }
   }
 
@@ -314,7 +312,7 @@ bool xiiSurfaceResource::InteractWithSurface(xiiWorld* pWorld, xiiGameObjectHand
 
     for (auto pRootObject : rootObjects)
     {
-      pRootObject->PostMessageRecursive(msg, xiiTime::Zero(), xiiObjectMsgQueueType::AfterInitialized);
+      pRootObject->PostMessageRecursive(msg, xiiTime::MakeZero(), xiiObjectMsgQueueType::AfterInitialized);
     }
   }
 

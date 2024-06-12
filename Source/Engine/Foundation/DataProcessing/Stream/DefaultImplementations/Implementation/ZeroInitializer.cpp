@@ -40,5 +40,4 @@ void xiiProcessingStreamSpawnerZeroInitialized::InitializeElements(xiiUInt64 uiS
   }
 }
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_DataProcessing_Stream_DefaultImplementations_Implementation_ZeroInitializer);

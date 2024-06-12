@@ -38,7 +38,7 @@ void xiiQtResourceWidget::ResetStats()
 
   m_bUpdateTable    = true;
   m_bUpdateTypeBox  = true;
-  m_LastTableUpdate = xiiTime::Seconds(0);
+  m_LastTableUpdate = xiiTime::MakeFromSeconds(0);
 
   Table->clear();
   Table->setRowCount(0);
@@ -93,7 +93,7 @@ void xiiQtResourceWidget::UpdateTable()
   if (!m_bUpdateTable)
     return;
 
-  if (xiiTime::Now() - m_LastTableUpdate < xiiTime::Seconds(0.25))
+  if (xiiTime::Now() - m_LastTableUpdate < xiiTime::MakeFromSeconds(0.25))
     return;
 
   bool bResizeFirstColumn = false;

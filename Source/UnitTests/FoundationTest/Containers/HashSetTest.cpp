@@ -555,4 +555,35 @@ XII_CREATE_SIMPLE_TEST(Containers, HashSet)
 
     XII_TEST_BOOL(set2.IsEmpty());
   }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Find")
+  {
+    xiiStringBuilder      tmp;
+    xiiHashSet<xiiString> set;
+
+    for (xiiUInt32 i = 0; i < 1000; ++i)
+    {
+      tmp.SetFormat("stuff{}bla", i);
+      set.Insert(tmp);
+    }
+
+    for (xiiInt32 i = set.GetCount() - 1; i > 0; --i)
+    {
+      tmp.SetFormat("stuff{}bla", i);
+
+      auto it = set.Find(tmp);
+
+      XII_TEST_STRING(it.Key(), tmp);
+
+      xiiInt32 allowedIterations = set.GetCount();
+      for (auto it2 = it; it2.IsValid(); ++it2)
+      {
+        // just test that iteration is possible and terminates correctly
+        --allowedIterations;
+        XII_TEST_BOOL(allowedIterations >= 0);
+      }
+
+      set.Remove(it);
+    }
+  }
 }

@@ -74,7 +74,7 @@ void xiiGameObjectGizmoEditTool::UpdateGizmoTransformation()
     const xiiTransform tGlobal = GetDocument()->GetGlobalTransform(LatestSelection);
 
     /// \todo Pivot point
-    const xiiVec3 vPivotPoint = tGlobal.m_qRotation * xiiVec3::ZeroVector(); // LatestSelection->GetEditorTypeAccessor().GetValue("Pivot").ConvertTo<xiiVec3>();
+    const xiiVec3 vPivotPoint = tGlobal.m_qRotation * xiiVec3::MakeZero(); // LatestSelection->GetEditorTypeAccessor().GetValue("Pivot").ConvertTo<xiiVec3>();
 
     xiiTransform mt;
     mt.SetIdentity();

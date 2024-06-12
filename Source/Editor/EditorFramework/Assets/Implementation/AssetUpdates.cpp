@@ -131,7 +131,7 @@ static xiiResult PatchAssetGuid(xiiStringView sAbsFilePath, xiiUuid oldGuid, xii
     if (uiTries >= 5)
       return XII_FAILURE;
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(50 * (uiTries + 1)));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(50 * (uiTries + 1)));
     uiTries++;
   }
 
@@ -179,7 +179,7 @@ xiiResult xiiAssetCurator::EnsureAssetInfoUpdated(const xiiDataDirPath& absFileP
 
       xiiLog::Error("Two assets have identical GUIDs: '{0}' and '{1}'", pNewAssetInfo->m_Path.GetAbsolutePath(), pCurrentAssetInfo->m_Path.GetAbsolutePath());
 
-      const xiiUuid mod             = xiiUuid::StableUuidForString(absFilePath);
+      const xiiUuid mod             = xiiUuid::MakeStableUuidFromString(absFilePath);
       xiiUuid       replacementGuid = pNewAssetInfo->m_Info->m_DocumentID;
       replacementGuid.CombineWithSeed(mod);
 

@@ -119,11 +119,11 @@ public:
 
   /// \brief Waits the given amount of time for the previously launched process to finish.
   ///
-  /// Pass in xiiTime::Zero() to wait indefinitely.
+  /// Pass in xiiTime::MakeZero() to wait indefinitely.
   /// Returns XII_FAILURE, if the process did not finish within the given time.
   ///
   /// \note Asserts that the xiiProcess instance was used to successfully launch a process before.
-  xiiResult WaitToFinish(xiiTime timeout = xiiTime::Zero());
+  xiiResult WaitToFinish(xiiTime timeout = xiiTime::MakeZero());
 
   /// \brief Kills the detached process, if possible.
   xiiResult Terminate();
@@ -162,6 +162,6 @@ private:
   xiiString                        m_sProcess;
   xiiDelegate<void(xiiStringView)> m_OnStdOut;
   xiiDelegate<void(xiiStringView)> m_OnStdError;
-  mutable xiiTime                  m_ProcessExited = xiiTime::Zero();
+  mutable xiiTime                  m_ProcessExited = xiiTime::MakeZero();
 };
 #endif

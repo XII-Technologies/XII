@@ -27,5 +27,5 @@ struct xiiWorldDesc
 
   bool m_bReportErrorWhenStaticObjectMoves = true;
 
-  xiiTime m_MaxComponentInitializationTimePerFrame = xiiTime::Hours(10000); // max time to spend on component initialization per frame
+  xiiTime m_MaxComponentInitializationTimePerFrame = xiiTime::MakeFromHours(10000); // max time to spend on component initialization per frame
 };

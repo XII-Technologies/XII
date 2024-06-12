@@ -422,7 +422,7 @@ void xiiStateMachineComponent::FireTransitionEvent(xiiStringView sEvent)
 
 void xiiStateMachineComponent::SendStateChangedMsg(xiiMsgStateMachineStateChanged& msg, xiiTime delay)
 {
-  if (delay > xiiTime::Zero())
+  if (delay > xiiTime::MakeZero())
   {
     m_StateChangedSender.PostEventMessage(msg, this, GetOwner(), delay, xiiObjectMsgQueueType::NextFrame);
   }

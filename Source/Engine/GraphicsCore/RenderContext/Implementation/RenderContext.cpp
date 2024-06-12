@@ -1097,7 +1097,7 @@ void xiiRenderContext::LoadBuiltinShader(xiiShaderUtilities::xiiBuiltinShaderTyp
 
   XII_ASSERT_DEV(pShaderPermutation->IsShaderValid(), "Builtin shader permutation shader is invalid!");
 
-  xiiStaticBitfield32 shaderBitfield = xiiStaticBitfield32::FromMask(pShaderPermutation->GetActiveShaderStages().GetValue());
+  xiiStaticBitfield32 shaderBitfield = xiiStaticBitfield32::MakeFromMask(pShaderPermutation->GetActiveShaderStages().GetValue());
   for (xiiUInt32 uiStageBitIndex : shaderBitfield)
   {
     out_shader.m_hActiveGALShaders[uiStageBitIndex] = pShaderPermutation->GetGALShader(xiiGALShaderType::GetStageFlag(uiStageBitIndex));
@@ -1543,7 +1543,7 @@ xiiShaderPermutationResource* xiiRenderContext::ApplyShaderState()
   }
 
 
-  xiiStaticBitfield32 shaderBitfield = xiiStaticBitfield32::FromMask(pShaderPermutation->GetActiveShaderStages().GetValue());
+  xiiStaticBitfield32 shaderBitfield = xiiStaticBitfield32::MakeFromMask(pShaderPermutation->GetActiveShaderStages().GetValue());
   for (xiiUInt32 uiStageBitIndex : shaderBitfield)
   {
     m_hActiveGALShaders[uiStageBitIndex] = pShaderPermutation->GetGALShader(xiiGALShaderType::GetStageFlag(uiStageBitIndex));

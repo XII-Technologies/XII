@@ -234,10 +234,10 @@ private:
 
 public:
   /// A helper function to process task items in a parallel fashion by having per-worker index ranges generated.
-  static void ParallelForIndexed(xiiUInt32 uiStartIndex, xiiUInt32 uiNumItems, xiiParallelForIndexedFunction32 taskCallback, xiiStringView sTaskName = {}, const xiiParallelForParams& params = xiiParallelForParams());
+  static void ParallelForIndexed(xiiUInt32 uiStartIndex, xiiUInt32 uiNumItems, xiiParallelForIndexedFunction32 taskCallback, xiiStringView sTaskName = {}, xiiTaskNesting taskNesting = xiiTaskNesting::Never, const xiiParallelForParams& params = xiiParallelForParams());
 
   /// A helper function to process task items in a parallel fashion by having per-worker index ranges generated.
-  static void ParallelForIndexed(xiiUInt64 uiStartIndex, xiiUInt64 uiNumItems, xiiParallelForIndexedFunction64 taskCallback, xiiStringView sTaskName = {}, const xiiParallelForParams& params = xiiParallelForParams());
+  static void ParallelForIndexed(xiiUInt64 uiStartIndex, xiiUInt64 uiNumItems, xiiParallelForIndexedFunction64 taskCallback, xiiStringView sTaskName = {}, xiiTaskNesting taskNesting = xiiTaskNesting::Never, const xiiParallelForParams& params = xiiParallelForParams());
 
   /// A helper function to process task items in a parallel fashion by generating per-worker sub-ranges
   /// from an initial item array pointer.
@@ -289,7 +289,7 @@ public:
   /// \brief Sets the target frame time that is supposed to not be exceeded.
   ///
   /// \see FinishFrameTasks() for more details.
-  static void SetTargetFrameTime(xiiTime targetFrameTime = xiiTime::Seconds(1.0 / 40.0) /* 40 FPS -> 25 ms */);
+  static void SetTargetFrameTime(xiiTime targetFrameTime = xiiTime::MakeFromSeconds(1.0 / 40.0) /* 40 FPS -> 25 ms */);
 
 private:
   XII_MAKE_SUBSYSTEM_STARTUP_FRIEND(Foundation, TaskSystem);

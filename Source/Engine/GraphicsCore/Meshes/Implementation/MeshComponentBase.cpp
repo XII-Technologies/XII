@@ -336,7 +336,7 @@ void xiiMeshComponentBase::Materials_Insert(xiiUInt32 uiIndex, const char* value
   if (!xiiStringUtils::IsNullOrEmpty(value))
     hMat = xiiResourceManager::LoadResource<xiiMaterialResource>(value);
 
-  m_Materials.Insert(hMat, uiIndex);
+  m_Materials.InsertAt(uiIndex, hMat);
 
   InvalidateCachedRenderData();
 }

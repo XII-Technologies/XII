@@ -468,7 +468,7 @@ void xiiQtNodeScene::CreateNodeObject(const xiiRTTI* pRtti)
   {
     xiiAddObjectCommand cmd;
     cmd.m_pType         = pRtti;
-    cmd.m_NewObjectGuid = xiiUuid::CreateUuid();
+    cmd.m_NewObjectGuid = xiiUuid::MakeUuid();
     cmd.m_Index         = -1;
 
     res = history->AddCommand(cmd);

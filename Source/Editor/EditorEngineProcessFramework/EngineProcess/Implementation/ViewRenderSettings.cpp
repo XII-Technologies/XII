@@ -261,7 +261,7 @@ void xiiEngineViewLightSettings::UpdateForEngine(xiiWorld* pWorld)
   if (xiiGameObject* pParent = SyncGameObject(m_pWorld, m_hGameObject, bNeedGameObject))
   {
     xiiQuat rot;
-    rot.SetFromAxisAndAngle(xiiVec3(0.0f, 1.0f, 0.0f), m_DirectionalLightAngle + xiiAngle::Degree(90.0));
+    rot = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0.0f, 1.0f, 0.0f), m_DirectionalLightAngle + xiiAngle::MakeFromDegree(90.0));
     pParent->SetLocalRotation(rot);
 
     if (xiiDirectionalLightComponent* pDirLight = SyncComponent<xiiDirectionalLightComponent>(m_pWorld, pParent, m_hDirLight, m_bDirectionalLight))

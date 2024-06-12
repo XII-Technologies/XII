@@ -82,7 +82,7 @@ void xiiAnimatedMeshComponent::OnDeactivated()
 
 void xiiAnimatedMeshComponent::InitializeAnimationPose()
 {
-  m_MaxBounds.SetInvalid();
+  m_MaxBounds = xiiBoundingBox::MakeInvalid();
 
   if (!m_hMesh.IsValid())
     return;
@@ -181,7 +181,7 @@ void xiiAnimatedMeshComponent::RetrievePose(xiiDynamicArray<xiiMat4>& out_modelT
 
   const xiiHashTable<xiiHashedString, xiiMeshResourceDescriptor::BoneData>& bones = pMesh->m_Bones;
 
-  out_modelTransforms.SetCount(skeleton.GetJointCount(), xiiMat4::IdentityMatrix());
+  out_modelTransforms.SetCount(skeleton.GetJointCount(), xiiMat4::MakeIdentity());
 
   for (auto itBone : bones)
   {
@@ -203,8 +203,7 @@ void xiiAnimatedMeshComponent::OnAnimationPoseUpdated(xiiMsgAnimationPoseUpdated
 
   xiiResourceLock<xiiMeshResource> pMesh(m_hMesh, xiiResourceAcquireMode::BlockTillLoaded);
 
-  xiiBoundingBox poseBounds;
-  poseBounds.SetInvalid();
+  xiiBoundingBox poseBounds = xiiBoundingBox::MakeInvalid();
   MapModelSpacePoseToSkinningSpace(pMesh->m_Bones, *msg.m_pSkeleton, msg.m_ModelTransforms, &poseBounds);
 
   if (poseBounds.IsValid() && (!m_MaxBounds.IsValid() || !m_MaxBounds.Contains(poseBounds)))
@@ -265,8 +264,7 @@ void xiiRootMotionMode::Apply(xiiRootMotionMode::Enum mode, xiiGameObject* pObje
       pObject->SetLocalPosition(vNewPos);
 
       // not tested whether this is actually correct
-      xiiQuat rotation;
-      rotation.SetFromEulerAngles(rotationX, rotationY, rotationZ);
+      xiiQuat rotation = xiiQuat::MakeFromEulerAngles(rotationX, rotationY, rotationZ);
 
       pObject->SetLocalRotation(rotation * pObject->GetLocalRotation());
 

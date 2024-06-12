@@ -295,7 +295,7 @@ xiiResult xiiTexConvProcessor::ClampInputValues(xiiImage& image, float maxValue)
 
 static bool FillAvgImageColor(xiiImage& ref_img)
 {
-  xiiColor  avg          = xiiColor::ZeroColor();
+  xiiColor  avg          = xiiColor::MakeZero();
   xiiUInt32 uiValidCount = 0;
 
   for (const xiiColor& col : ref_img.GetBlobPtr<xiiColor>())
@@ -356,8 +356,7 @@ static xiiColor GetAvgColor(xiiColor* pPixels, xiiInt32 iWidth, xiiInt32 iHeight
   if (colAt.a > 0)
     return colAt;
 
-  xiiColor avg;
-  avg.SetZero();
+  xiiColor  avg          = xiiColor::MakeZero();
   xiiUInt32 uiValidCount = 0;
 
   const xiiInt32 iRadius = 1;

@@ -33,7 +33,7 @@ xiiPipeChannel_win::~xiiPipeChannel_win()
   }
   while (IsConnected())
   {
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
   }
   m_pOwner->RemoveChannel(this);
 }

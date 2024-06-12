@@ -251,7 +251,7 @@ namespace SourceBSP
     Vertex_t             startPosition;               // start position used for orientation
     xiiInt32             DispVertStart;               // Index into LUMP_DISP_VERTS.
     xiiInt32             DispTriStart;                // Index into LUMP_DISP_TRIS.
-    xiiInt32             power;                       // power - indicates size of surface (2^power	1)
+    xiiInt32             power;                       // power - indicates size of surface (2^power  1)
     xiiInt32             minTess;                     // minimum tesselation allowed
     float                smoothingAngle;              // lighting smoothing angle
     xiiInt32             contents;                    // surface contents

@@ -68,7 +68,10 @@ XII_CREATE_SIMPLE_TEST(IO, Archive)
 
   xiiStringBuilder pathToArchiveTool = xiiCommandLineUtils::GetGlobalInstance()->GetParameter(0);
   pathToArchiveTool.PathParentDirectory();
-  pathToArchiveTool.AppendPath("ArchiveTool.exe");
+  pathToArchiveTool.AppendPath("xiiArchiveTool");
+#  if XII_ENABLED(XII_PLATFORM_WINDOWS)
+  pathToArchiveTool.Append(".exe");
+#  endif
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Create a Package")
   {

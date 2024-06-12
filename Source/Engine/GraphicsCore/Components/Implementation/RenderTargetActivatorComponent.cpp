@@ -54,7 +54,7 @@ xiiResult xiiRenderTargetActivatorComponent::GetLocalBounds(xiiBoundingBoxSphere
 {
   if (m_hRenderTarget.IsValid())
   {
-    ref_bounds = xiiBoundingSphere(xiiVec3::ZeroVector(), 0.1f);
+    ref_bounds = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), 0.1f);
     return XII_SUCCESS;
   }
 

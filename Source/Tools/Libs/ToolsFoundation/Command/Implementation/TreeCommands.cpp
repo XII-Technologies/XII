@@ -177,7 +177,7 @@ xiiStatus xiiAddObjectCommand::DoInternal(bool bRedo)
   if (!bRedo)
   {
     if (!m_NewObjectGuid.IsValid())
-      m_NewObjectGuid.CreateNewUuid();
+      m_NewObjectGuid = xiiUuid::MakeUuid();
   }
 
   xiiDocumentObject* pParent = nullptr;
@@ -249,7 +249,7 @@ xiiStatus xiiPasteObjectsCommand::DoInternal(bool bRedo)
     }
 
     // Remap
-    graph.ReMapNodeGuids(xiiUuid::CreateUuid());
+    graph.ReMapNodeGuids(xiiUuid::MakeUuid());
 
     xiiDocumentObjectConverterReader reader(&graph, pDocument->GetObjectManager(), xiiDocumentObjectConverterReader::Mode::CreateOnly);
 

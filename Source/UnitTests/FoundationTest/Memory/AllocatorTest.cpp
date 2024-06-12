@@ -8,11 +8,9 @@ struct alignas(XII_ALIGNMENT_MINIMUM) NonAlignedVector
 {
   XII_DECLARE_POD_TYPE();
 
-  NonAlignedVector()
+  NonAlignedVector() :
+    x(5.0f), y(6.0f), z(8.0f)
   {
-    x = 5.0f;
-    y = 6.0f;
-    z = 8.0f;
   }
 
   float x;
@@ -24,11 +22,9 @@ struct alignas(16) AlignedVector
 {
   XII_DECLARE_POD_TYPE();
 
-  AlignedVector()
+  AlignedVector() :
+    x(5.0f), y(6.0f), z(8.0f)
   {
-    x = 5.0f;
-    y = 6.0f;
-    z = 8.0f;
   }
 
   float x;
@@ -94,20 +90,17 @@ XII_CREATE_SIMPLE_TEST(Memory, Allocator)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "LargeBlockAllocator")
   {
-    enum
-    {
-      BLOCK_SIZE_IN_BYTES = 4096 * 4
-    };
-    const xiiUInt32 uiPageSize = xiiSystemInformation::Get().GetMemoryPageSize();
+    constexpr xiiUInt32 BLOCK_SIZE_IN_BYTES = 4096 * 4;
+    const xiiUInt32     uiPageSize          = xiiSystemInformation::Get().GetMemoryPageSize();
 
     xiiLargeBlockAllocator<BLOCK_SIZE_IN_BYTES> allocator("Test", xiiFoundation::GetDefaultAllocator(), xiiAllocatorTrackingMode::AllocationStats);
 
-    xiiDynamicArray<xiiDataBlock<int, BLOCK_SIZE_IN_BYTES>> blocks;
+    xiiDynamicArray<xiiDataBlock<xiiInt32, BLOCK_SIZE_IN_BYTES>> blocks;
     blocks.Reserve(1000);
 
     for (xiiUInt32 i = 0; i < 17; ++i)
     {
-      auto block = allocator.AllocateBlock<int>();
+      auto block = allocator.AllocateBlock<xiiInt32>();
       XII_TEST_BOOL(xiiMemoryUtils::IsAligned(block.m_pData, uiPageSize)); // test page alignment
       XII_TEST_INT(block.m_uiCount, 0);
 
@@ -122,7 +115,7 @@ XII_CREATE_SIMPLE_TEST(Memory, Allocator)
 
     for (xiiUInt32 i = 0; i < 200; ++i)
     {
-      auto block = allocator.AllocateBlock<int>();
+      auto block = allocator.AllocateBlock<xiiInt32>();
       blocks.PushBack(block);
     }
 
@@ -143,7 +136,7 @@ XII_CREATE_SIMPLE_TEST(Memory, Allocator)
       xiiUInt32 uiAction = rand() % 2;
       if (uiAction == 0)
       {
-        blocks.PushBack(allocator.AllocateBlock<int>());
+        blocks.PushBack(allocator.AllocateBlock<xiiInt32>());
       }
       else if (blocks.GetCount() > 0)
       {

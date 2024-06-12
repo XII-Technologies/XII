@@ -48,7 +48,7 @@ private:
 
     for (xiiUInt32 obst = 0; obst < m_uiIterations; ++obst)
     {
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
       xiiTime::Now();
 
       if (HasBeenCanceled() && m_bSupportCancel)
@@ -82,7 +82,7 @@ XII_CREATE_SIMPLE_TEST(Threading, TaskSystem)
   xiiInt8 iWorkersLong  = 4;
 
   xiiTaskSystem::SetWorkerThreadCount(iWorkersShort, iWorkersLong);
-  xiiThreadUtils::Sleep(xiiTime::Milliseconds(500));
+  xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(500));
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Single Tasks")
   {
@@ -210,7 +210,7 @@ XII_CREATE_SIMPLE_TEST(Threading, TaskSystem)
       {
         break;
       }
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
     }
     XII_TEST_INT(GroupsFinished, 4);
 
@@ -386,7 +386,7 @@ XII_CREATE_SIMPLE_TEST(Threading, TaskSystem)
       tg[i] = xiiTaskSystem::StartSingleTask(t[i], xiiTaskPriority::ThisFrame);
     }
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
 
     xiiUInt32 uiCanceled = 0;
 
@@ -436,7 +436,7 @@ XII_CREATE_SIMPLE_TEST(Threading, TaskSystem)
       tg[i] = xiiTaskSystem::StartSingleTask(t[i], xiiTaskPriority::ThisFrame);
     }
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
 
     xiiUInt32 uiCanceled = 0;
 
@@ -493,7 +493,7 @@ XII_CREATE_SIMPLE_TEST(Threading, TaskSystem)
     xiiTaskSystem::StartTaskGroup(g2);
     xiiTaskSystem::StartTaskGroup(g1);
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
     XII_TEST_BOOL(xiiTaskSystem::CancelGroup(g2, xiiOnTaskRunning::WaitTillFinished) == XII_SUCCESS);
 
@@ -503,7 +503,7 @@ XII_CREATE_SIMPLE_TEST(Threading, TaskSystem)
       XII_TEST_BOOL(t2[i]->IsTaskFinished());
     }
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(1));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(1));
 
     XII_TEST_BOOL(xiiTaskSystem::CancelGroup(g1, xiiOnTaskRunning::WaitTillFinished) == XII_FAILURE);
 
@@ -515,7 +515,7 @@ XII_CREATE_SIMPLE_TEST(Threading, TaskSystem)
       XII_TEST_BOOL(t2[i]->IsTaskFinished());
     }
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Tasks with Multiplicity")

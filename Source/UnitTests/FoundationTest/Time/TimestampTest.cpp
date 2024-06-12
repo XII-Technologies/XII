@@ -13,9 +13,9 @@ XII_CREATE_SIMPLE_TEST(Time, Timestamp)
     xiiTimestamp invalidTimestamp;
     XII_TEST_BOOL(!invalidTimestamp.IsValid());
 
-    xiiTimestamp validTimestamp(0, xiiSIUnitOfTime::Second);
+    xiiTimestamp validTimestamp = xiiTimestamp::MakeFromInt(0, xiiSIUnitOfTime::Second);
     XII_TEST_BOOL(validTimestamp.IsValid());
-    validTimestamp.Invalidate();
+    validTimestamp = xiiTimestamp::MakeInvalid();
     XII_TEST_BOOL(!validTimestamp.IsValid());
 
     xiiTimestamp currentTimestamp = xiiTimestamp::CurrentTimestamp();
@@ -26,48 +26,53 @@ XII_CREATE_SIMPLE_TEST(Time, Timestamp)
                       "This current time is after the year 3000! If this is actually the case, please fix this test.");
 
     // Sleep for 10 milliseconds
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
     XII_TEST_BOOL_MSG(currentTimestamp.GetInt64(xiiSIUnitOfTime::Microsecond) < xiiTimestamp::CurrentTimestamp().GetInt64(xiiSIUnitOfTime::Microsecond),
                       "Sleeping for 10 ms should cause the timestamp to change!");
     XII_TEST_BOOL_MSG(!currentTimestamp.Compare(xiiTimestamp::CurrentTimestamp(), xiiTimestamp::CompareMode::Identical),
                       "Sleeping for 10 ms should cause the timestamp to change!");
+
+    // a valid timestamp should always be 'newer' than an invalid one
+    XII_TEST_BOOL(currentTimestamp.Compare(xiiTimestamp::MakeInvalid(), xiiTimestamp::CompareMode::Newer) == true);
+    // an invalid timestamp should not be 'newer' than any valid one
+    XII_TEST_BOOL(xiiTimestamp::MakeInvalid().Compare(currentTimestamp, xiiTimestamp::CompareMode::Newer) == false);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Public Accessors")
   {
-    const xiiTimestamp epoch(0, xiiSIUnitOfTime::Second);
-    const xiiTimestamp firstContact(iFirstContactUnixTimeInSeconds, xiiSIUnitOfTime::Second);
+    const xiiTimestamp epoch        = xiiTimestamp::MakeFromInt(0, xiiSIUnitOfTime::Second);
+    const xiiTimestamp firstContact = xiiTimestamp::MakeFromInt(iFirstContactUnixTimeInSeconds, xiiSIUnitOfTime::Second);
     XII_TEST_BOOL(epoch.IsValid());
     XII_TEST_BOOL(firstContact.IsValid());
 
     // GetInt64 / SetInt64
-    xiiTimestamp firstContactTest(iFirstContactUnixTimeInSeconds, xiiSIUnitOfTime::Second);
+    xiiTimestamp firstContactTest = xiiTimestamp::MakeFromInt(iFirstContactUnixTimeInSeconds, xiiSIUnitOfTime::Second);
     XII_TEST_INT(firstContactTest.GetInt64(xiiSIUnitOfTime::Second), iFirstContactUnixTimeInSeconds);
     XII_TEST_INT(firstContactTest.GetInt64(xiiSIUnitOfTime::Millisecond), iFirstContactUnixTimeInSeconds * 1000LL);
     XII_TEST_INT(firstContactTest.GetInt64(xiiSIUnitOfTime::Microsecond), iFirstContactUnixTimeInSeconds * 1000000LL);
     XII_TEST_INT(firstContactTest.GetInt64(xiiSIUnitOfTime::Nanosecond), iFirstContactUnixTimeInSeconds * 1000000000LL);
 
-    firstContactTest.SetInt64(firstContactTest.GetInt64(xiiSIUnitOfTime::Second), xiiSIUnitOfTime::Second);
+    firstContactTest = xiiTimestamp::MakeFromInt(firstContactTest.GetInt64(xiiSIUnitOfTime::Second), xiiSIUnitOfTime::Second);
     XII_TEST_BOOL(firstContactTest.Compare(firstContact, xiiTimestamp::CompareMode::Identical));
-    firstContactTest.SetInt64(firstContactTest.GetInt64(xiiSIUnitOfTime::Millisecond), xiiSIUnitOfTime::Millisecond);
+    firstContactTest = xiiTimestamp::MakeFromInt(firstContactTest.GetInt64(xiiSIUnitOfTime::Millisecond), xiiSIUnitOfTime::Millisecond);
     XII_TEST_BOOL(firstContactTest.Compare(firstContact, xiiTimestamp::CompareMode::Identical));
-    firstContactTest.SetInt64(firstContactTest.GetInt64(xiiSIUnitOfTime::Microsecond), xiiSIUnitOfTime::Microsecond);
+    firstContactTest = xiiTimestamp::MakeFromInt(firstContactTest.GetInt64(xiiSIUnitOfTime::Microsecond), xiiSIUnitOfTime::Microsecond);
     XII_TEST_BOOL(firstContactTest.Compare(firstContact, xiiTimestamp::CompareMode::Identical));
-    firstContactTest.SetInt64(firstContactTest.GetInt64(xiiSIUnitOfTime::Nanosecond), xiiSIUnitOfTime::Nanosecond);
+    firstContactTest = xiiTimestamp::MakeFromInt(firstContactTest.GetInt64(xiiSIUnitOfTime::Nanosecond), xiiSIUnitOfTime::Nanosecond);
     XII_TEST_BOOL(firstContactTest.Compare(firstContact, xiiTimestamp::CompareMode::Identical));
 
     // IsEqual
-    const xiiTimestamp firstContactPlusAFewMicroseconds(firstContact.GetInt64(xiiSIUnitOfTime::Microsecond) + 42, xiiSIUnitOfTime::Microsecond);
+    const xiiTimestamp firstContactPlusAFewMicroseconds = xiiTimestamp::MakeFromInt(firstContact.GetInt64(xiiSIUnitOfTime::Microsecond) + 42, xiiSIUnitOfTime::Microsecond);
     XII_TEST_BOOL(firstContact.Compare(firstContactPlusAFewMicroseconds, xiiTimestamp::CompareMode::FileTimeEqual));
     XII_TEST_BOOL(!firstContact.Compare(firstContactPlusAFewMicroseconds, xiiTimestamp::CompareMode::Identical));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Operators")
   {
-    const xiiTimestamp firstContact(iFirstContactUnixTimeInSeconds, xiiSIUnitOfTime::Second);
+    const xiiTimestamp firstContact = xiiTimestamp::MakeFromInt(iFirstContactUnixTimeInSeconds, xiiSIUnitOfTime::Second);
 
     // Time span arithmetics
-    const xiiTime timeSpan1000s = xiiTime::Seconds(1000);
+    const xiiTime timeSpan1000s = xiiTime::MakeFromSeconds(1000);
     XII_TEST_BOOL(timeSpan1000s.GetMicroseconds() == 1000000000LL);
 
     // operator +
@@ -105,8 +110,8 @@ XII_CREATE_SIMPLE_TEST(Time, Timestamp)
     xiiDateTime invalidDateTime;
     XII_TEST_BOOL(!invalidDateTime.GetTimestamp().IsValid());
 
-    const xiiTimestamp firstContact(iFirstContactUnixTimeInSeconds, xiiSIUnitOfTime::Second);
-    xiiDateTime        firstContactDataTime(firstContact);
+    const xiiTimestamp firstContact         = xiiTimestamp::MakeFromInt(iFirstContactUnixTimeInSeconds, xiiSIUnitOfTime::Second);
+    xiiDateTime        firstContactDataTime = xiiDateTime::MakeFromTimestamp(firstContact);
 
     // Getter
     XII_TEST_INT(firstContactDataTime.GetYear(), 2063);
@@ -122,7 +127,7 @@ XII_CREATE_SIMPLE_TEST(Time, Timestamp)
     // SetTimestamp / GetTimestamp
     xiiTimestamp currentTimestamp = xiiTimestamp::CurrentTimestamp();
     xiiDateTime  currentDateTime;
-    currentDateTime.SetTimestamp(currentTimestamp);
+    currentDateTime.SetFromTimestamp(currentTimestamp).AssertSuccess();
     xiiTimestamp currentTimestamp2 = currentDateTime.GetTimestamp();
     // OS date time functions should be accurate within one second.
     xiiInt64 iDiff = xiiMath::Abs(currentTimestamp.GetInt64(xiiSIUnitOfTime::Microsecond) - currentTimestamp2.GetInt64(xiiSIUnitOfTime::Microsecond));

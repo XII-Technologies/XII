@@ -776,7 +776,7 @@ class XII_FOUNDATION_DLL xiiBoxVisualizerAttribute : public xiiVisualizerAttribu
 
 public:
   xiiBoxVisualizerAttribute();
-  xiiBoxVisualizerAttribute(xiiStringView sSizeProperty, float fSizeScale = 1.0f, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), xiiStringView sOffsetProperty = {}, xiiStringView sRotationProperty = {});
+  xiiBoxVisualizerAttribute(xiiStringView sSizeProperty, float fSizeScale = 1.0f, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::MakeZero(), xiiStringView sOffsetProperty = {}, xiiStringView sRotationProperty = {});
 
   const xiiUntrackedString& GetSizeProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetColorProperty() const { return m_sProperty2; }
@@ -796,7 +796,7 @@ class XII_FOUNDATION_DLL xiiSphereVisualizerAttribute : public xiiVisualizerAttr
 
 public:
   xiiSphereVisualizerAttribute();
-  xiiSphereVisualizerAttribute(xiiStringView sRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), xiiStringView sOffsetProperty = {});
+  xiiSphereVisualizerAttribute(xiiStringView sRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::MakeZero(), xiiStringView sOffsetProperty = {});
 
   const xiiUntrackedString& GetRadiusProperty() const { return m_sProperty1; }
   const xiiUntrackedString& GetColorProperty() const { return m_sProperty2; }
@@ -832,8 +832,8 @@ class XII_FOUNDATION_DLL xiiCylinderVisualizerAttribute : public xiiVisualizerAt
 
 public:
   xiiCylinderVisualizerAttribute();
-  xiiCylinderVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, xiiStringView sHeightProperty, xiiStringView sRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), xiiStringView sOffsetProperty = {});
-  xiiCylinderVisualizerAttribute(xiiStringView sAxisProperty, xiiStringView sHeightProperty, xiiStringView sRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::ZeroVector(), xiiStringView sOffsetProperty = {});
+  xiiCylinderVisualizerAttribute(xiiEnum<xiiBasisAxis> axis, xiiStringView sHeightProperty, xiiStringView sRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::MakeZero(), xiiStringView sOffsetProperty = {});
+  xiiCylinderVisualizerAttribute(xiiStringView sAxisProperty, xiiStringView sHeightProperty, xiiStringView sRadiusProperty, const xiiColor& fixedColor = xiiColorScheme::LightUI(xiiColorScheme::Grape), xiiStringView sColorProperty = {}, xiiBitflags<xiiVisualizerAnchor> anchor = xiiVisualizerAnchor::Center, xiiVec3 vOffsetOrScale = xiiVec3::MakeZero(), xiiStringView sOffsetProperty = {});
 
   const xiiUntrackedString& GetAxisProperty() const { return m_sProperty5; }
   const xiiUntrackedString& GetHeightProperty() const { return m_sProperty1; }

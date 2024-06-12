@@ -1,9 +1,9 @@
 #include <VisualScriptPlugin/VisualScriptPluginPCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/ChunkStream.h>
 #include <Foundation/IO/StringDeduplicationContext.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <VisualScriptPlugin/Resources/VisualScriptClassResource.h>
 #include <VisualScriptPlugin/Runtime/VisualScriptCoroutine.h>
 #include <VisualScriptPlugin/Runtime/VisualScriptFunctionProperty.h>
@@ -17,10 +17,10 @@ XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiVisualScriptClassResource);
 XII_BEGIN_SUBSYSTEM_DECLARATION(TypeScript, Resource)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-    "ResourceManager" 
+    "ResourceManager"
   END_SUBSYSTEM_DEPENDENCIES
 
-  ON_CORESYSTEMS_STARTUP 
+  ON_CORESYSTEMS_STARTUP
   {
     xiiResourceManager::RegisterResourceForAssetType("VisualScriptClass", xiiGetStaticRTTI<xiiVisualScriptClassResource>());
     xiiResourceManager::RegisterResourceOverrideType(xiiGetStaticRTTI<xiiVisualScriptClassResource>(), [](const xiiStringBuilder& sResourceID) -> bool  {

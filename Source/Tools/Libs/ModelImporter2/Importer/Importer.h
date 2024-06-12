@@ -20,7 +20,7 @@ namespace xiiModelImporter2
     bool    m_bRecomputeNormals   = false;
     bool    m_bRecomputeTangents  = false;
     bool    m_bNormalizeWeights   = false;
-    xiiMat3 m_RootTransform       = xiiMat3::IdentityMatrix();
+    xiiMat3 m_RootTransform       = xiiMat3::MakeIdentity();
 
     xiiMeshResourceDescriptor*          m_pMeshOutput             = nullptr;
     xiiEnum<xiiMeshNormalPrecision>     m_MeshNormalsPrecision    = xiiMeshNormalPrecision::Default;

@@ -4,24 +4,23 @@
 
 XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 {
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor(SetElements)")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeFromMinMax")
   {
-    xiiBoundingBoxT b(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
 
     XII_TEST_BOOL(b.m_vMin == xiiVec3T(-1, -2, -3));
     XII_TEST_BOOL(b.m_vMax == xiiVec3T(1, 2, 3));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetElements")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeFromMinMax")
   {
-    xiiBoundingBoxT b;
-    b.SetElements(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
+    xiiBoundingBoxT b = xiiBoundingBox::MakeFromMinMax(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
 
     XII_TEST_BOOL(b.m_vMin == xiiVec3T(-1, -2, -3));
     XII_TEST_BOOL(b.m_vMax == xiiVec3T(1, 2, 3));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetFromPoints")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeFromPoints")
   {
     xiiVec3T p[6] = {
       xiiVec3T(-4, 0, 0),
@@ -32,25 +31,23 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
       xiiVec3T(0, 0, 9),
     };
 
-    xiiBoundingBoxT b;
-    b.SetFromPoints(p, 6);
+    xiiBoundingBoxT b = xiiBoundingBox::MakeFromPoints(p, 6);
 
     XII_TEST_BOOL(b.m_vMin == xiiVec3T(-4, -6, -8));
     XII_TEST_BOOL(b.m_vMax == xiiVec3T(5, 7, 9));
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetInvalid")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeInvalid")
   {
     xiiBoundingBoxT b;
-    b.SetInvalid();
+    b = xiiBoundingBox::MakeInvalid();
 
     XII_TEST_BOOL(!b.IsValid());
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "SetCenterAndHalfExtents")
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "MakeFromCenterAndHalfExtents")
   {
-    xiiBoundingBoxT b;
-    b.SetCenterAndHalfExtents(xiiVec3T(1, 2, 3), xiiVec3T(4, 5, 6));
+    xiiBoundingBoxT b = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3T(1, 2, 3), xiiVec3T(4, 5, 6));
 
     XII_TEST_BOOL(b.m_vMin == xiiVec3T(-3, -3, -3));
     XII_TEST_BOOL(b.m_vMax == xiiVec3T(5, 7, 9));
@@ -58,8 +55,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetCorners")
   {
-    xiiBoundingBoxT b;
-    b.SetElements(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
+    xiiBoundingBoxT b = xiiBoundingBox::MakeFromMinMax(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
 
     xiiVec3T c[8];
     b.GetCorners(c);
@@ -77,7 +73,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ExpandToInclue (Point)")
   {
     xiiBoundingBoxT b;
-    b.SetInvalid();
+    b = xiiBoundingBox::MakeInvalid();
     b.ExpandToInclude(xiiVec3T(1, 2, 3));
 
     XII_TEST_BOOL(b.m_vMin == xiiVec3T(1, 2, 3));
@@ -99,15 +95,15 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
   {
     xiiBoundingBoxT b1, b2;
 
-    b1.SetElements(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
-    b2.SetElements(xiiVec3T(0), xiiVec3T(4, 5, 6));
+    b1 = xiiBoundingBox::MakeFromMinMax(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
+    b2 = xiiBoundingBox::MakeFromMinMax(xiiVec3T(0), xiiVec3T(4, 5, 6));
 
     b1.ExpandToInclude(b2);
 
     XII_TEST_BOOL(b1.m_vMin == xiiVec3T(-1, -2, -3));
     XII_TEST_BOOL(b1.m_vMax == xiiVec3T(4, 5, 6));
 
-    b2.SetElements(xiiVec3T(-4, -5, -6), xiiVec3T(0));
+    b2 = xiiBoundingBox::MakeFromMinMax(xiiVec3T(-4, -5, -6), xiiVec3T(0));
 
     b1.ExpandToInclude(b2);
 
@@ -120,7 +116,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
     xiiVec3T v[4] = {xiiVec3T(1, 1, 1), xiiVec3T(-1, -1, -1), xiiVec3T(2, 2, 2), xiiVec3T(4, 4, 4)};
 
     xiiBoundingBoxT b;
-    b.SetInvalid();
+    b = xiiBoundingBox::MakeInvalid();
     b.ExpandToInclude(v, 2, sizeof(xiiVec3T) * 2);
 
     XII_TEST_BOOL(b.m_vMin == xiiVec3T(1, 1, 1));
@@ -134,8 +130,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ExpandToCube")
   {
-    xiiBoundingBoxT b;
-    b.SetCenterAndHalfExtents(xiiVec3T(1, 2, 3), xiiVec3T(4, 5, 6));
+    xiiBoundingBoxT b = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3T(1, 2, 3), xiiVec3T(4, 5, 6));
 
     b.ExpandToCube();
 
@@ -145,7 +140,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Grow")
   {
-    xiiBoundingBoxT b(xiiVec3T(1, 2, 3), xiiVec3T(4, 5, 6));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(1, 2, 3), xiiVec3T(4, 5, 6));
     b.Grow(xiiVec3T(2, 4, 6));
 
     XII_TEST_BOOL(b.m_vMin == xiiVec3T(-1, -2, -3));
@@ -154,7 +149,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Contains (Point)")
   {
-    xiiBoundingBoxT b(xiiVec3T(0), xiiVec3T(0));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(0), xiiVec3T(0));
 
     XII_TEST_BOOL(b.Contains(xiiVec3T(0)));
     XII_TEST_BOOL(!b.Contains(xiiVec3T(1, 0, 0)));
@@ -163,9 +158,9 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Contains (Box)")
   {
-    xiiBoundingBoxT b1(xiiVec3T(-3), xiiVec3T(3));
-    xiiBoundingBoxT b2(xiiVec3T(-1), xiiVec3T(1));
-    xiiBoundingBoxT b3(xiiVec3T(-1), xiiVec3T(4));
+    xiiBoundingBoxT b1 = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(-3), xiiVec3T(3));
+    xiiBoundingBoxT b2 = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(-1), xiiVec3T(1));
+    xiiBoundingBoxT b3 = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(-1), xiiVec3T(4));
 
     XII_TEST_BOOL(b1.Contains(b1));
     XII_TEST_BOOL(b2.Contains(b2));
@@ -183,7 +178,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Contains (Array)")
   {
-    xiiBoundingBoxT b(xiiVec3T(1), xiiVec3T(5));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(1), xiiVec3T(5));
 
     xiiVec3T v[4] = {xiiVec3T(0), xiiVec3T(1), xiiVec3T(5), xiiVec3T(6)};
 
@@ -196,19 +191,19 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Contains (Sphere)")
   {
-    xiiBoundingBoxT b(xiiVec3T(1), xiiVec3T(5));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(1), xiiVec3T(5));
 
-    XII_TEST_BOOL(b.Contains(xiiBoundingSphereT(xiiVec3T(3), 2)));
-    XII_TEST_BOOL(!b.Contains(xiiBoundingSphereT(xiiVec3T(3), 2.1f)));
-    XII_TEST_BOOL(!b.Contains(xiiBoundingSphereT(xiiVec3T(8), 2)));
+    XII_TEST_BOOL(b.Contains(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(3), 2)));
+    XII_TEST_BOOL(!b.Contains(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(3), 2.1f)));
+    XII_TEST_BOOL(!b.Contains(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(8), 2)));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Overlaps (box)")
   {
-    xiiBoundingBoxT b1(xiiVec3T(-3), xiiVec3T(3));
-    xiiBoundingBoxT b2(xiiVec3T(-1), xiiVec3T(1));
-    xiiBoundingBoxT b3(xiiVec3T(1), xiiVec3T(4));
-    xiiBoundingBoxT b4(xiiVec3T(-4, 1, 1), xiiVec3T(4, 2, 2));
+    xiiBoundingBoxT b1 = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(-3), xiiVec3T(3));
+    xiiBoundingBoxT b2 = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(-1), xiiVec3T(1));
+    xiiBoundingBoxT b3 = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(1), xiiVec3T(4));
+    xiiBoundingBoxT b4 = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(-4, 1, 1), xiiVec3T(4, 2, 2));
 
     XII_TEST_BOOL(b1.Overlaps(b1));
     XII_TEST_BOOL(b2.Overlaps(b2));
@@ -227,7 +222,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Overlaps (Array)")
   {
-    xiiBoundingBoxT b(xiiVec3T(1), xiiVec3T(5));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(1), xiiVec3T(5));
 
     xiiVec3T v[4] = {xiiVec3T(0), xiiVec3T(1), xiiVec3T(5), xiiVec3T(6)};
 
@@ -243,20 +238,20 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Overlaps (Sphere)")
   {
-    xiiBoundingBoxT b(xiiVec3T(1), xiiVec3T(5));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(1), xiiVec3T(5));
 
-    XII_TEST_BOOL(b.Overlaps(xiiBoundingSphereT(xiiVec3T(3), 2)));
-    XII_TEST_BOOL(b.Overlaps(xiiBoundingSphereT(xiiVec3T(3), 2.1f)));
-    XII_TEST_BOOL(!b.Overlaps(xiiBoundingSphereT(xiiVec3T(8), 2)));
+    XII_TEST_BOOL(b.Overlaps(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(3), 2)));
+    XII_TEST_BOOL(b.Overlaps(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(3), 2.1f)));
+    XII_TEST_BOOL(!b.Overlaps(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(8), 2)));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsIdentical, ==, !=")
   {
     xiiBoundingBoxT b1, b2, b3;
 
-    b1.SetElements(xiiVec3T(1), xiiVec3T(2));
-    b2.SetElements(xiiVec3T(1), xiiVec3T(2));
-    b3.SetElements(xiiVec3T(1), xiiVec3T(2.01f));
+    b1 = xiiBoundingBox::MakeFromMinMax(xiiVec3T(1), xiiVec3T(2));
+    b2 = xiiBoundingBox::MakeFromMinMax(xiiVec3T(1), xiiVec3T(2));
+    b3 = xiiBoundingBox::MakeFromMinMax(xiiVec3T(1), xiiVec3T(2.01f));
 
     XII_TEST_BOOL(b1.IsIdentical(b1));
     XII_TEST_BOOL(b2.IsIdentical(b2));
@@ -286,8 +281,8 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "IsEqual")
   {
     xiiBoundingBoxT b1, b2;
-    b1.SetElements(xiiVec3T(-1), xiiVec3T(1));
-    b2.SetElements(xiiVec3T(-1), xiiVec3T(2));
+    b1 = xiiBoundingBox::MakeFromMinMax(xiiVec3T(-1), xiiVec3T(1));
+    b2 = xiiBoundingBox::MakeFromMinMax(xiiVec3T(-1), xiiVec3T(2));
 
     XII_TEST_BOOL(!b1.IsEqual(b2));
     XII_TEST_BOOL(!b1.IsEqual(b2, 0.5f));
@@ -297,28 +292,28 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetCenter")
   {
-    xiiBoundingBoxT b(xiiVec3T(3), xiiVec3T(7));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(3), xiiVec3T(7));
 
     XII_TEST_BOOL(b.GetCenter() == xiiVec3T(5));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetExtents")
   {
-    xiiBoundingBoxT b(xiiVec3T(3), xiiVec3T(7));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(3), xiiVec3T(7));
 
     XII_TEST_BOOL(b.GetExtents() == xiiVec3T(4));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetHalfExtents")
   {
-    xiiBoundingBoxT b(xiiVec3T(3), xiiVec3T(7));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(3), xiiVec3T(7));
 
     XII_TEST_BOOL(b.GetHalfExtents() == xiiVec3T(2));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Translate")
   {
-    xiiBoundingBoxT b(xiiVec3T(3), xiiVec3T(5));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(3), xiiVec3T(5));
 
     b.Translate(xiiVec3T(1, 2, 3));
 
@@ -329,7 +324,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ScaleFromCenter")
   {
     {
-      xiiBoundingBoxT b(xiiVec3T(3), xiiVec3T(5));
+      xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(3), xiiVec3T(5));
 
       b.ScaleFromCenter(xiiVec3T(1, 2, 3));
 
@@ -337,7 +332,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
       XII_TEST_BOOL(b.m_vMax == xiiVec3T(5, 6, 7));
     }
     {
-      xiiBoundingBoxT b(xiiVec3T(3), xiiVec3T(5));
+      xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(3), xiiVec3T(5));
 
       b.ScaleFromCenter(xiiVec3T(-1, -2, -3));
 
@@ -349,7 +344,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "ScaleFromOrigin")
   {
     {
-      xiiBoundingBoxT b(xiiVec3T(3), xiiVec3T(5));
+      xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(3), xiiVec3T(5));
 
       b.ScaleFromOrigin(xiiVec3T(1, 2, 3));
 
@@ -357,7 +352,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
       XII_TEST_BOOL(b.m_vMax == xiiVec3T(5, 10, 15));
     }
     {
-      xiiBoundingBoxT b(xiiVec3T(3), xiiVec3T(5));
+      xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(3), xiiVec3T(5));
 
       b.ScaleFromOrigin(xiiVec3T(-1, -2, -3));
 
@@ -368,10 +363,9 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "TransformFromOrigin")
   {
-    xiiBoundingBoxT b(xiiVec3T(3), xiiVec3T(5));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(3), xiiVec3T(5));
 
-    xiiMat4T m;
-    m.SetScalingMatrix(xiiVec3T(2));
+    xiiMat4T m = xiiMat4::MakeScaling(xiiVec3T(2));
 
     b.TransformFromOrigin(m);
 
@@ -381,10 +375,9 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "TransformFromCenter")
   {
-    xiiBoundingBoxT b(xiiVec3T(3), xiiVec3T(5));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(3), xiiVec3T(5));
 
-    xiiMat4T m;
-    m.SetScalingMatrix(xiiVec3T(2));
+    xiiMat4T m = xiiMat4::MakeScaling(xiiVec3T(2));
 
     b.TransformFromCenter(m);
 
@@ -394,7 +387,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetClampedPoint")
   {
-    xiiBoundingBoxT b(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
 
     XII_TEST_BOOL(b.GetClampedPoint(xiiVec3T(-2, 0, 0)) == xiiVec3T(-1, 0, 0));
     XII_TEST_BOOL(b.GetClampedPoint(xiiVec3T(2, 0, 0)) == xiiVec3T(1, 0, 0));
@@ -408,7 +401,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetDistanceTo (point)")
   {
-    xiiBoundingBoxT b(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
 
     XII_TEST_BOOL(b.GetDistanceTo(xiiVec3T(-2, 0, 0)) == 1);
     XII_TEST_BOOL(b.GetDistanceTo(xiiVec3T(2, 0, 0)) == 1);
@@ -422,21 +415,21 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetDistanceTo (Sphere)")
   {
-    xiiBoundingBoxT b(xiiVec3T(1), xiiVec3T(5));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(1), xiiVec3T(5));
 
-    XII_TEST_BOOL(b.GetDistanceTo(xiiBoundingSphereT(xiiVec3T(3), 2)) < 0);
-    XII_TEST_BOOL(b.GetDistanceTo(xiiBoundingSphereT(xiiVec3T(5), 1)) < 0);
-    XII_TEST_FLOAT(b.GetDistanceTo(xiiBoundingSphereT(xiiVec3T(8, 2, 2), 2)), 1, 0.001f);
+    XII_TEST_BOOL(b.GetDistanceTo(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(3), 2)) < 0);
+    XII_TEST_BOOL(b.GetDistanceTo(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(5), 1)) < 0);
+    XII_TEST_FLOAT(b.GetDistanceTo(xiiBoundingSphereT::MakeFromCenterAndRadius(xiiVec3T(8, 2, 2), 2)), 1, 0.001f);
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetDistanceTo (box)")
   {
-    xiiBoundingBoxT b(xiiVec3T(1), xiiVec3T(5));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(1), xiiVec3T(5));
 
     xiiBoundingBoxT b1, b2, b3;
-    b1.SetCenterAndHalfExtents(xiiVec3T(3), xiiVec3T(2));
-    b2.SetCenterAndHalfExtents(xiiVec3T(5), xiiVec3T(1));
-    b3.SetCenterAndHalfExtents(xiiVec3T(9, 2, 2), xiiVec3T(2));
+    b1 = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3T(3), xiiVec3T(2));
+    b2 = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3T(5), xiiVec3T(1));
+    b3 = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3T(9, 2, 2), xiiVec3T(2));
 
     XII_TEST_BOOL(b.GetDistanceTo(b1) <= 0);
     XII_TEST_BOOL(b.GetDistanceTo(b2) <= 0);
@@ -445,7 +438,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetDistanceSquaredTo (point)")
   {
-    xiiBoundingBoxT b(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(-1, -2, -3), xiiVec3T(1, 2, 3));
 
     XII_TEST_BOOL(b.GetDistanceSquaredTo(xiiVec3T(-2, 0, 0)) == 1);
     XII_TEST_BOOL(b.GetDistanceSquaredTo(xiiVec3T(2, 0, 0)) == 1);
@@ -459,12 +452,12 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetDistanceSquaredTo (box)")
   {
-    xiiBoundingBoxT b(xiiVec3T(1), xiiVec3T(5));
+    xiiBoundingBoxT b = xiiBoundingBoxT::MakeFromMinMax(xiiVec3T(1), xiiVec3T(5));
 
     xiiBoundingBoxT b1, b2, b3;
-    b1.SetCenterAndHalfExtents(xiiVec3T(3), xiiVec3T(2));
-    b2.SetCenterAndHalfExtents(xiiVec3T(5), xiiVec3T(1));
-    b3.SetCenterAndHalfExtents(xiiVec3T(9, 2, 2), xiiVec3T(2));
+    b1 = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3T(3), xiiVec3T(2));
+    b2 = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3T(5), xiiVec3T(1));
+    b3 = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3T(9, 2, 2), xiiVec3T(2));
 
     XII_TEST_BOOL(b.GetDistanceSquaredTo(b1) <= 0);
     XII_TEST_BOOL(b.GetDistanceSquaredTo(b2) <= 0);
@@ -474,7 +467,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetBoundingSphere")
   {
     xiiBoundingBoxT b;
-    b.SetCenterAndHalfExtents(xiiVec3T(5, 4, 2), xiiVec3T(3));
+    b = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3T(5, 4, 2), xiiVec3T(3));
 
     xiiBoundingSphereT s = b.GetBoundingSphere();
 
@@ -489,7 +482,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
       const xiiVec3T c = xiiVec3T(10);
 
       xiiBoundingBoxT b;
-      b.SetCenterAndHalfExtents(c, xiiVec3T(2, 4, 8));
+      b = xiiBoundingBox::MakeFromCenterAndHalfExtents(c, xiiVec3T(2, 4, 8));
 
       for (xiiMathTestType x = b.m_vMin.x - (xiiMathTestType)1; x < b.m_vMax.x + (xiiMathTestType)1; x += (xiiMathTestType)0.2f)
       {
@@ -529,7 +522,7 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
       const xiiVec3T c = xiiVec3T(10);
 
       xiiBoundingBoxT b;
-      b.SetCenterAndHalfExtents(c, xiiVec3T(2, 4, 8));
+      b = xiiBoundingBox::MakeFromCenterAndHalfExtents(c, xiiVec3T(2, 4, 8));
 
       for (xiiMathTestType x = b.m_vMin.x - (xiiMathTestType)1; x < b.m_vMax.x + (xiiMathTestType)1; x += (xiiMathTestType)0.2f)
       {
@@ -566,30 +559,30 @@ XII_CREATE_SIMPLE_TEST(Math, BoundingBox)
     {
       xiiBoundingBoxT b;
 
-      b.SetInvalid();
+      b = xiiBoundingBox::MakeInvalid();
       XII_TEST_BOOL(!b.IsNaN());
 
-      b.SetInvalid();
+      b          = xiiBoundingBox::MakeInvalid();
       b.m_vMin.x = xiiMath::NaN<xiiMathTestType>();
       XII_TEST_BOOL(b.IsNaN());
 
-      b.SetInvalid();
+      b          = xiiBoundingBox::MakeInvalid();
       b.m_vMin.y = xiiMath::NaN<xiiMathTestType>();
       XII_TEST_BOOL(b.IsNaN());
 
-      b.SetInvalid();
+      b          = xiiBoundingBox::MakeInvalid();
       b.m_vMin.z = xiiMath::NaN<xiiMathTestType>();
       XII_TEST_BOOL(b.IsNaN());
 
-      b.SetInvalid();
+      b          = xiiBoundingBox::MakeInvalid();
       b.m_vMax.x = xiiMath::NaN<xiiMathTestType>();
       XII_TEST_BOOL(b.IsNaN());
 
-      b.SetInvalid();
+      b          = xiiBoundingBox::MakeInvalid();
       b.m_vMax.y = xiiMath::NaN<xiiMathTestType>();
       XII_TEST_BOOL(b.IsNaN());
 
-      b.SetInvalid();
+      b          = xiiBoundingBox::MakeInvalid();
       b.m_vMax.z = xiiMath::NaN<xiiMathTestType>();
       XII_TEST_BOOL(b.IsNaN());
     }

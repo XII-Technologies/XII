@@ -48,9 +48,15 @@ void TakeEnum2(xiiTestEnum value) {}
 
 XII_CREATE_SIMPLE_TEST(Basics, Enum)
 {
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Default initialized enum") { xiiTestEnum e1; }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Default initialized enum")
+  {
+    xiiTestEnum e1;
+  }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Enum with explicit initialization") { xiiTestEnum e2(xiiTestEnum::Yes); }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Enum with explicit initialization")
+  {
+    xiiTestEnum e2(xiiTestEnum::Yes);
+  }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "This tests if the default initialization works and if the implicit conversion works")
   {

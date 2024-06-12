@@ -4,12 +4,7 @@
 #include <Core/WorldSerializer/WorldWriter.h>
 #include <GameEngine/Animation/SliderComponent.h>
 
-float CalculateAcceleratedMovement(
-  float    fDistanceInMeters,
-  float    fAcceleration,
-  float    fMaxVelocity,
-  float    fDeceleration,
-  xiiTime& ref_timeSinceStartInSec);
+float CalculateAcceleratedMovement(float fDistanceInMeters, float fAcceleration, float fMaxVelocity, float fDeceleration, xiiTime& ref_timeSinceStartInSec);
 
 // clang-format off
 XII_BEGIN_COMPONENT_TYPE(xiiSliderComponent, 3, xiiComponentMode::Dynamic)
@@ -20,7 +15,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiSliderComponent, 3, xiiComponentMode::Dynamic)
     XII_MEMBER_PROPERTY("Distance", m_fDistanceToTravel)->AddAttributes(new xiiDefaultValueAttribute(1.0f)),
     XII_MEMBER_PROPERTY("Acceleration", m_fAcceleration)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_MEMBER_PROPERTY("Deceleration", m_fDeceleration)->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
-    XII_MEMBER_PROPERTY("RandomStart", m_RandomStart)->AddAttributes(new xiiClampValueAttribute(xiiTime::Zero(), xiiVariant())),
+    XII_MEMBER_PROPERTY("RandomStart", m_RandomStart)->AddAttributes(new xiiClampValueAttribute(xiiTime::MakeZero(), xiiVariant())),
   }
   XII_END_PROPERTIES;
 
@@ -119,7 +114,7 @@ void xiiSliderComponent::OnSimulationStarted()
 
   if (m_RandomStart.IsPositive())
   {
-    m_AnimationTime = xiiTime::Seconds(GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, m_RandomStart.GetSeconds()));
+    m_AnimationTime = xiiTime::MakeFromSeconds(GetWorld()->GetRandomNumberGenerator().DoubleInRange(0.0, m_RandomStart.GetSeconds()));
   }
 }
 

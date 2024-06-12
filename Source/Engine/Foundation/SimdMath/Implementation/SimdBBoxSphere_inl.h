@@ -2,18 +2,6 @@
 
 XII_ALWAYS_INLINE xiiSimdBBoxSphere::xiiSimdBBoxSphere() = default;
 
-XII_ALWAYS_INLINE xiiSimdBBoxSphere::xiiSimdBBoxSphere(const xiiSimdVec4f& vCenter, const xiiSimdVec4f& vBoxHalfExtents, const xiiSimdFloat& fSphereRadius) :
-  m_CenterAndRadius(vCenter), m_BoxHalfExtents(vBoxHalfExtents)
-{
-  m_CenterAndRadius.SetW(fSphereRadius);
-}
-
-inline xiiSimdBBoxSphere::xiiSimdBBoxSphere(const xiiSimdBBox& box, const xiiSimdBSphere& sphere) :
-  m_CenterAndRadius(box.GetCenter()), m_BoxHalfExtents(m_CenterAndRadius - box.m_Min)
-{
-  m_CenterAndRadius.SetW(m_BoxHalfExtents.GetLength<3>().Min((sphere.GetCenter() - m_CenterAndRadius).GetLength<3>() + sphere.GetRadius()));
-}
-
 inline xiiSimdBBoxSphere::xiiSimdBBoxSphere(const xiiSimdBBox& box) :
   m_CenterAndRadius(box.GetCenter()), m_BoxHalfExtents(m_CenterAndRadius - box.m_Min)
 {
@@ -25,15 +13,71 @@ XII_ALWAYS_INLINE xiiSimdBBoxSphere::xiiSimdBBoxSphere(const xiiSimdBSphere& sph
 {
 }
 
-XII_ALWAYS_INLINE void xiiSimdBBoxSphere::SetInvalid()
+XII_ALWAYS_INLINE xiiSimdBBoxSphere xiiSimdBBoxSphere::MakeZero()
 {
-  m_CenterAndRadius.Set(0.0f, 0.0f, 0.0f, -xiiMath::SmallEpsilon<float>());
-  m_BoxHalfExtents.Set(-xiiMath::MaxValue<float>());
+  xiiSimdBBoxSphere res;
+  res.m_CenterAndRadius = xiiSimdVec4f::MakeZero();
+  res.m_BoxHalfExtents  = xiiSimdVec4f::MakeZero();
+  return res;
+}
+
+XII_ALWAYS_INLINE xiiSimdBBoxSphere xiiSimdBBoxSphere::MakeInvalid()
+{
+  xiiSimdBBoxSphere res;
+  res.m_CenterAndRadius.Set(0.0f, 0.0f, 0.0f, -xiiMath::SmallEpsilon<float>());
+  res.m_BoxHalfExtents.Set(-xiiMath::MaxValue<float>());
+  return res;
+}
+
+XII_ALWAYS_INLINE xiiSimdBBoxSphere xiiSimdBBoxSphere::MakeFromCenterExtents(const xiiSimdVec4f& vCenter, const xiiSimdVec4f& vBoxHalfExtents, const xiiSimdFloat& fSphereRadius)
+{
+  xiiSimdBBoxSphere res;
+  res.m_CenterAndRadius = vCenter;
+  res.m_BoxHalfExtents  = vBoxHalfExtents;
+  res.m_CenterAndRadius.SetW(fSphereRadius);
+  return res;
+}
+
+inline xiiSimdBBoxSphere xiiSimdBBoxSphere::MakeFromPoints(const xiiSimdVec4f* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride /*= sizeof(xiiSimdVec4f)*/)
+{
+  const xiiSimdBBox box = xiiSimdBBox::MakeFromPoints(pPoints, uiNumPoints, uiStride);
+
+  xiiSimdBBoxSphere res;
+
+  res.m_CenterAndRadius = box.GetCenter();
+  res.m_BoxHalfExtents  = res.m_CenterAndRadius - box.m_Min;
+
+  xiiSimdBSphere sphere(res.m_CenterAndRadius, xiiSimdFloat::MakeZero());
+  sphere.ExpandToInclude(pPoints, uiNumPoints, uiStride);
+
+  res.m_CenterAndRadius.SetW(sphere.GetRadius());
+
+  return res;
+}
+
+XII_ALWAYS_INLINE xiiSimdBBoxSphere xiiSimdBBoxSphere::MakeFromBox(const xiiSimdBBox& box)
+{
+  return xiiSimdBBoxSphere(box);
+}
+
+XII_ALWAYS_INLINE xiiSimdBBoxSphere xiiSimdBBoxSphere::MakeFromSphere(const xiiSimdBSphere& sphere)
+{
+  return xiiSimdBBoxSphere(sphere);
+}
+
+XII_ALWAYS_INLINE xiiSimdBBoxSphere xiiSimdBBoxSphere::MakeFromBoxAndSphere(const xiiSimdBBox& box, const xiiSimdBSphere& sphere)
+{
+  xiiSimdBBoxSphere res;
+  res.m_CenterAndRadius = box.GetCenter();
+  res.m_BoxHalfExtents  = res.m_CenterAndRadius - box.m_Min;
+  res.m_CenterAndRadius.SetW(res.m_BoxHalfExtents.GetLength<3>().Min((sphere.GetCenter() - res.m_CenterAndRadius).GetLength<3>() + sphere.GetRadius()));
+  return res;
 }
 
 XII_ALWAYS_INLINE bool xiiSimdBBoxSphere::IsValid() const
 {
-  return m_CenterAndRadius.IsValid<4>() && m_CenterAndRadius.w() >= xiiSimdFloat::Zero() && m_BoxHalfExtents.IsValid<3>() && (m_BoxHalfExtents >= xiiSimdVec4f::ZeroVector()).AllSet<3>();
+  return m_CenterAndRadius.IsValid<4>() && m_CenterAndRadius.w() >= xiiSimdFloat::MakeZero() && m_BoxHalfExtents.IsValid<3>() &&
+    (m_BoxHalfExtents >= xiiSimdVec4f::MakeZero()).AllSet<3>();
 }
 
 inline bool xiiSimdBBoxSphere::IsNaN() const
@@ -41,25 +85,9 @@ inline bool xiiSimdBBoxSphere::IsNaN() const
   return m_CenterAndRadius.IsNaN<4>() || m_BoxHalfExtents.IsNaN<3>();
 }
 
-inline void xiiSimdBBoxSphere::SetFromPoints(const xiiSimdVec4f* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride)
-{
-  xiiSimdBBox box;
-  box.SetFromPoints(pPoints, uiNumPoints, uiStride);
-
-  m_CenterAndRadius = box.GetCenter();
-  m_BoxHalfExtents  = m_CenterAndRadius - box.m_Min;
-
-  xiiSimdBSphere sphere(m_CenterAndRadius, xiiSimdFloat::Zero());
-  sphere.ExpandToInclude(pPoints, uiNumPoints, uiStride);
-
-  m_CenterAndRadius.SetW(sphere.GetRadius());
-}
-
 XII_ALWAYS_INLINE xiiSimdBBox xiiSimdBBoxSphere::GetBox() const
 {
-  xiiSimdBBox box;
-  box.SetCenterAndHalfExtents(m_CenterAndRadius, m_BoxHalfExtents);
-  return box;
+  return xiiSimdBBox::MakeFromCenterAndHalfExtents(m_CenterAndRadius, m_BoxHalfExtents);
 }
 
 XII_ALWAYS_INLINE xiiSimdBSphere xiiSimdBBoxSphere::GetSphere() const

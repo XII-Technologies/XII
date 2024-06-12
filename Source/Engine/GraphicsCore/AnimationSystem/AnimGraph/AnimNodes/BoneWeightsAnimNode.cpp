@@ -53,7 +53,7 @@ void xiiBoneWeightsAnimNode::RootBones_Insert(xiiUInt32 uiIndex, const char* val
 {
   xiiHashedString tmp;
   tmp.Assign(value);
-  m_RootBones.Insert(tmp, uiIndex);
+  m_RootBones.InsertAt(uiIndex, tmp);
 }
 
 void xiiBoneWeightsAnimNode::RootBones_Remove(xiiUInt32 uiIndex)
@@ -154,7 +154,8 @@ void xiiBoneWeightsAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGrap
         for (xiiUInt32 b = 0; b < ref_bw.m_Weights.GetCount(); ++b)
         {
           ref_bw.m_Weights[b] = ozz::math::MSub(oneBone, oneBone, pInstance->m_pSharedBoneWeights->m_Weights[b]);
-        } });
+        }
+      });
     }
 
     if (!m_WeightsPin.IsConnected())

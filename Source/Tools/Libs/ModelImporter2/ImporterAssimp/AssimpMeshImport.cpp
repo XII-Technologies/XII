@@ -223,7 +223,7 @@ namespace xiiModelImporter2
       if (streams.uiNormals != xiiInvalidIndex && pMesh->HasNormals())
       {
         xiiVec3 normal = normalsTransform * ConvertAssimpType(pMesh->mNormals[vertIdx]);
-        normal.NormalizeIfNotZero(xiiVec3::ZeroVector()).IgnoreResult();
+        normal.NormalizeIfNotZero(xiiVec3::MakeZero()).IgnoreResult();
 
         xiiMeshBufferUtils::EncodeNormal(normal, ref_mb.GetVertexData(streams.uiNormals, finalVertIdx), meshNormalsPrecision).IgnoreResult();
       }
@@ -260,9 +260,9 @@ namespace xiiModelImporter2
         xiiVec3 tangent   = normalsTransform * ConvertAssimpType(pMesh->mTangents[vertIdx]);
         xiiVec3 bitangent = normalsTransform * ConvertAssimpType(pMesh->mBitangents[vertIdx]);
 
-        normal.NormalizeIfNotZero(xiiVec3::ZeroVector()).IgnoreResult();
-        tangent.NormalizeIfNotZero(xiiVec3::ZeroVector()).IgnoreResult();
-        bitangent.NormalizeIfNotZero(xiiVec3::ZeroVector()).IgnoreResult();
+        normal.NormalizeIfNotZero(xiiVec3::MakeZero()).IgnoreResult();
+        tangent.NormalizeIfNotZero(xiiVec3::MakeZero()).IgnoreResult();
+        bitangent.NormalizeIfNotZero(xiiVec3::MakeZero()).IgnoreResult();
 
         const float fBitangentSign = xiiMath::Abs(tangent.CrossRH(bitangent).Dot(normal));
 

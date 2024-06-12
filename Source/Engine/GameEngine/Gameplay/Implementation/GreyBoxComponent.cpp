@@ -30,7 +30,7 @@ XII_BEGIN_COMPONENT_TYPE(xiiGreyBoxComponent, 5, xiiComponentMode::Static)
     XII_ACCESSOR_PROPERTY("SizeNegZ", GetSizeNegZ, SetSizeNegZ),//->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_ACCESSOR_PROPERTY("SizePosZ", GetSizePosZ, SetSizePosZ),//->AddAttributes(new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_ACCESSOR_PROPERTY("Detail", GetDetail, SetDetail)->AddAttributes(new xiiGroupAttribute("Misc"), new xiiDefaultValueAttribute(16), new xiiClampValueAttribute(3, 32)),
-    XII_ACCESSOR_PROPERTY("Curvature", GetCurvature, SetCurvature)->AddAttributes(new xiiClampValueAttribute(xiiAngle::Degree(-360), xiiAngle::Degree(360))),
+    XII_ACCESSOR_PROPERTY("Curvature", GetCurvature, SetCurvature)->AddAttributes(new xiiClampValueAttribute(xiiAngle::MakeFromDegree(-360), xiiAngle::MakeFromDegree(360))),
     XII_ACCESSOR_PROPERTY("Thickness", GetThickness, SetThickness)->AddAttributes(new xiiDefaultValueAttribute(0.5f), new xiiClampValueAttribute(0.0f, xiiVariant())),
     XII_ACCESSOR_PROPERTY("SlopedTop", GetSlopedTop, SetSlopedTop),
     XII_ACCESSOR_PROPERTY("SlopedBottom", GetSlopedBottom, SetSlopedBottom),
@@ -284,7 +284,7 @@ void xiiGreyBoxComponent::SetDetail(xiiUInt32 uiDetail)
 
 void xiiGreyBoxComponent::SetCurvature(xiiAngle curvature)
 {
-  m_Curvature = xiiAngle::Degree(xiiMath::RoundToMultiple(curvature.GetDegree(), 5.0f));
+  m_Curvature = xiiAngle::MakeFromDegree(xiiMath::RoundToMultiple(curvature.GetDegree(), 5.0f));
   InvalidateMesh();
 }
 
@@ -457,7 +457,7 @@ void xiiGreyBoxComponent::BuildGeometry(xiiGeometry& geom, xiiEnum<xiiGreyBoxSha
 
   xiiMat4 t2, t3;
 
-  opt.m_Transform.SetTranslationMatrix(offset);
+  opt.m_Transform = xiiMat4::MakeTranslation(offset);
 
   switch (shape)
   {
@@ -471,7 +471,7 @@ void xiiGreyBoxComponent::BuildGeometry(xiiGeometry& geom, xiiEnum<xiiGreyBoxSha
 
     case xiiGreyBoxShape::RampY:
       xiiMath::Swap(size.x, size.y);
-      opt.m_Transform.SetRotationMatrixZ(xiiAngle::Degree(-90.0f));
+      opt.m_Transform = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(-90.0f));
       opt.m_Transform.SetTranslationVector(offset);
       geom.AddTexturedRamp(size, opt);
       break;
@@ -487,7 +487,7 @@ void xiiGreyBoxComponent::BuildGeometry(xiiGeometry& geom, xiiEnum<xiiGreyBoxSha
 
     case xiiGreyBoxShape::StairsY:
       xiiMath::Swap(size.x, size.y);
-      opt.m_Transform.SetRotationMatrixZ(xiiAngle::Degree(-90.0f));
+      opt.m_Transform = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(-90.0f));
       opt.m_Transform.SetTranslationVector(offset);
       geom.AddStairs(size, m_uiDetail, m_Curvature, m_bSlopedTop, opt);
       break;
@@ -498,8 +498,8 @@ void xiiGreyBoxComponent::BuildGeometry(xiiGeometry& geom, xiiEnum<xiiGreyBoxSha
       size.z          = size.x;
       size.x          = size.y;
       size.y          = tmp;
-      opt.m_Transform.SetRotationMatrixY(xiiAngle::Degree(-90));
-      t2.SetRotationMatrixX(xiiAngle::Degree(90));
+      opt.m_Transform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(-90));
+      t2              = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(90));
       opt.m_Transform = t2 * opt.m_Transform;
       opt.m_Transform.SetTranslationVector(offset);
       geom.AddArch(size, m_uiDetail, m_fThickness, m_Curvature, false, false, false, !bOnlyRoughDetails, opt);
@@ -508,9 +508,9 @@ void xiiGreyBoxComponent::BuildGeometry(xiiGeometry& geom, xiiEnum<xiiGreyBoxSha
 
     case xiiGreyBoxShape::ArchY:
     {
-      opt.m_Transform.SetRotationMatrixY(xiiAngle::Degree(-90));
-      t2.SetRotationMatrixX(xiiAngle::Degree(90));
-      t3.SetRotationMatrixZ(xiiAngle::Degree(90));
+      opt.m_Transform = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(-90));
+      t2              = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(90));
+      t3              = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(90));
       xiiMath::Swap(size.y, size.z);
       opt.m_Transform = t3 * t2 * opt.m_Transform;
       opt.m_Transform.SetTranslationVector(offset);

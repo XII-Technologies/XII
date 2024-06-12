@@ -17,7 +17,7 @@ xiiConeLengthGizmo::xiiConeLengthGizmo()
   m_hConeRadius.ConfigureHandle(this, xiiEngineGizmoHandleType::Cone, xiiColorLinearUB(200, 200, 200, 128), xiiGizmoFlags::Pickable | xiiGizmoFlags::OnTop); // this gizmo should be rendered very last so it is always on top
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiConeLengthGizmo::OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)
@@ -109,7 +109,7 @@ xiiEditorInput xiiConeLengthGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   const xiiTime tNow = xiiTime::Now();
 
-  if (tNow - m_LastInteraction < xiiTime::Seconds(1.0 / 25.0))
+  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
     return xiiEditorInput::WasExclusivelyHandled;
 
   m_LastInteraction = tNow;
@@ -122,7 +122,7 @@ xiiEditorInput xiiConeLengthGizmo::DoMouseMoveEvent(QMouseEvent* e)
   m_vLastMousePos = UpdateMouseMode(e);
 
   const float    fSpeed = 0.02f;
-  const xiiAngle aSpeed = xiiAngle::Degree(1.0f);
+  const xiiAngle aSpeed = xiiAngle::MakeFromDegree(1.0f);
 
   if (m_ManipulateMode == ManipulateMode::Radius)
   {

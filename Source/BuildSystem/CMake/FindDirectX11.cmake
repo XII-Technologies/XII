@@ -138,4 +138,5 @@ if(XII_CMAKE_PLATFORM_WINDOWS) # The only platform it makes sense to check for D
     DirectX11_DXGUID_LIBRARY
     DirectX11_DXGI_LIBRARY
     DirectX11_D3DCOMPILER_LIBRARY)
-endif(XII_CMAKE_PLATFORM_WINDOWS)
+
+endif()

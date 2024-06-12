@@ -61,7 +61,7 @@ void xiiTransformComponent::OnSimulationStarted()
   SUPER::OnSimulationStarted();
 
   // reset to start state
-  m_AnimationTime = xiiTime::Zero();
+  m_AnimationTime = xiiTime::MakeZero();
   m_Flags.Add(xiiTransformComponentFlags::Running);
   m_Flags.Remove(xiiTransformComponentFlags::AnimationReversed);
 }
@@ -120,12 +120,7 @@ negative, internally the absolute value is used. Distance, acceleration, max vel
 "in seconds". The returned value is 0, if time is negative. It is clamped to fDistanceInMeters, if time is too big.
 */
 
-float CalculateAcceleratedMovement(
-  float    fDistanceInMeters,
-  float    fAcceleration,
-  float    fMaxVelocity,
-  float    fDeceleration,
-  xiiTime& ref_timeSinceStartInSec)
+float CalculateAcceleratedMovement(float fDistanceInMeters, float fAcceleration, float fMaxVelocity, float fDeceleration, xiiTime& ref_timeSinceStartInSec)
 {
   // linear motion, if no acceleration or deceleration is present
   if ((fAcceleration <= 0.0f) && (fDeceleration <= 0.0f))
@@ -134,7 +129,7 @@ float CalculateAcceleratedMovement(
 
     if (fDist > fDistanceInMeters)
     {
-      ref_timeSinceStartInSec = xiiTime::Seconds(fDistanceInMeters / fMaxVelocity);
+      ref_timeSinceStartInSec = xiiTime::MakeFromSeconds(fDistanceInMeters / fMaxVelocity);
       return fDistanceInMeters;
     }
 
@@ -192,7 +187,7 @@ float CalculateAcceleratedMovement(
   // if the time is, however, outside the whole path, just return the upper end
   if (ref_timeSinceStartInSec.GetSeconds() >= fAccTime + fMaxVelTime + fDecTime)
   {
-    ref_timeSinceStartInSec = xiiTime::Seconds(fAccTime + fMaxVelTime + fDecTime); // clamp the time
+    ref_timeSinceStartInSec = xiiTime::MakeFromSeconds(fAccTime + fMaxVelTime + fDecTime); // clamp the time
     return fDistanceInMeters;
   }
 

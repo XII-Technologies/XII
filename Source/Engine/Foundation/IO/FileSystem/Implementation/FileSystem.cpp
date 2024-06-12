@@ -108,7 +108,7 @@ xiiResult xiiFileSystem::AddDataDirectory(xiiStringView sDataDirectory, xiiStrin
 
       if (pDataDir != nullptr)
       {
-        DataDirectory dd;
+        DataDirectoryInfo dd;
         dd.m_Usage          = usage;
         dd.m_pDataDirectory = pDataDir;
         dd.m_sRootName      = sCleanRootName;
@@ -239,7 +239,7 @@ void xiiFileSystem::ClearAllDataDirectories()
   s_pData->m_DataDirectories.Clear();
 }
 
-xiiDataDirectoryType* xiiFileSystem::FindDataDirectoryWithRoot(xiiStringView sRootName)
+const xiiFileSystem::DataDirectoryInfo* xiiFileSystem::FindDataDirectoryWithRoot(xiiStringView sRootName)
 {
   if (sRootName.IsEmpty())
     return nullptr;
@@ -250,7 +250,7 @@ xiiDataDirectoryType* xiiFileSystem::FindDataDirectoryWithRoot(xiiStringView sRo
   {
     if (dd.m_sRootName.IsEqual_NoCase(sRootName))
     {
-      return dd.m_pDataDirectory;
+      return &dd;
     }
   }
 
@@ -269,6 +269,13 @@ xiiDataDirectoryType* xiiFileSystem::GetDataDirectory(xiiUInt32 uiDataDirIndex)
   XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
 
   return s_pData->m_DataDirectories[uiDataDirIndex].m_pDataDirectory;
+}
+
+const xiiFileSystem::DataDirectoryInfo& xiiFileSystem::GetDataDirectoryInfo(xiiUInt32 uiDataDirIndex)
+{
+  XII_ASSERT_DEV(s_pData != nullptr, "FileSystem is not initialized.");
+
+  return s_pData->m_DataDirectories[uiDataDirIndex];
 }
 
 xiiStringView xiiFileSystem::GetDataDirRelativePath(xiiStringView sPath, xiiUInt32 uiDataDir)
@@ -317,7 +324,7 @@ xiiStringView xiiFileSystem::GetDataDirRelativePath(xiiStringView sPath, xiiUInt
 }
 
 
-xiiFileSystem::DataDirectory* xiiFileSystem::GetDataDirForRoot(const xiiString& sRoot)
+xiiFileSystem::DataDirectoryInfo* xiiFileSystem::GetDataDirForRoot(const xiiString& sRoot)
 {
   XII_LOCK(s_pData->m_FsMutex);
 
@@ -430,29 +437,13 @@ xiiResult xiiFileSystem::GetFileStats(xiiStringView sFileOrFolder, xiiFileStats&
 
 xiiStringView xiiFileSystem::ExtractRootName(xiiStringView sPath, xiiString& rootName)
 {
-  rootName.Clear();
+  xiiStringView root, path;
+  xiiPathUtils::GetRootedPathParts(sPath, root, path);
 
-  if (!sPath.StartsWith(":"))
-    return sPath;
-
-  xiiStringBuilder    sCur;
-  const xiiStringView view = sPath;
-  xiiStringIterator   it   = view.GetIteratorFront();
-  ++it;
-
-  while (it.IsValid() && (it.GetCharacter() != '/'))
-  {
-    sCur.Append(it.GetCharacter());
-    ++it;
-  }
-
-  XII_ASSERT_DEV(it.IsValid(), "Cannot parse the path \"{0}\". The data-dir root name starts with a ':' but does not end with '/'.", sPath);
-
-  sCur.ToUpper();
-  rootName = sCur;
-  ++it;
-
-  return it.GetData(); // return the string after the data-dir filter declaration
+  xiiStringBuilder rootUpr = root;
+  rootUpr.ToUpper();
+  rootName = rootUpr;
+  return path;
 }
 
 xiiDataDirectoryReader* xiiFileSystem::GetFileReader(xiiStringView sFile, xiiFileShareMode::Enum FileShareMode, bool bAllowFileEvents)
@@ -613,7 +604,7 @@ xiiResult xiiFileSystem::ResolvePath(xiiStringView sPath, xiiStringBuilder* out_
     xiiString sRootName;
     ExtractRootName(sPath, sRootName);
 
-    DataDirectory* pDataDir = GetDataDirForRoot(sRootName);
+    DataDirectoryInfo* pDataDir = GetDataDirForRoot(sRootName);
 
     if (pDataDir == nullptr)
       return XII_FAILURE;
@@ -982,20 +973,62 @@ void xiiFileSystem::StartSearch(xiiFileSystemIterator& ref_iterator, xiiStringVi
   XII_LOCK(s_pData->m_FsMutex);
 
   xiiHybridArray<xiiString, 16> folders;
-  xiiStringBuilder              sDdPath;
+  xiiStringBuilder              sDdPath, sRelPath;
 
-  for (const auto& dd : s_pData->m_DataDirectories)
+  if (sSearchTerm.IsRootedPath())
   {
-    sDdPath = dd.m_pDataDirectory->GetRedirectedDataDirectoryPath();
+    const xiiStringView root = sSearchTerm.GetRootedPathRootName();
 
-    if (ResolvePath(sDdPath, &sDdPath, nullptr).Failed())
-      continue;
+    const DataDirectoryInfo* pDataDir = FindDataDirectoryWithRoot(root);
+    if (pDataDir == nullptr)
+      return;
 
-    if (sDdPath.IsEmpty() || !xiiOSFile::ExistsDirectory(sDdPath))
-      continue;
+    sSearchTerm.SetStartPosition(root.GetEndPointer());
 
+    if (!sSearchTerm.IsEmpty())
+    {
+      // root name should be followed by a slash
+      sSearchTerm.ChopAwayFirstCharacterAscii();
+    }
 
-    folders.PushBack(sDdPath);
+    folders.PushBack(pDataDir->m_pDataDirectory->GetRedirectedDataDirectoryPath().GetView());
+  }
+  else if (sSearchTerm.IsAbsolutePath())
+  {
+    for (xiiUInt32 idx = s_pData->m_DataDirectories.GetCount(); idx > 0; --idx)
+    {
+      const auto& dd = s_pData->m_DataDirectories[idx - 1];
+
+      sDdPath = dd.m_pDataDirectory->GetRedirectedDataDirectoryPath();
+
+      sRelPath = sSearchTerm;
+
+      if (!sDdPath.IsEmpty())
+      {
+        if (sRelPath.MakeRelativeTo(sDdPath).Failed())
+          continue;
+
+        // this would use "../" if necessary, which we don't want
+        if (sRelPath.StartsWith(".."))
+          continue;
+      }
+
+      sSearchTerm = sRelPath;
+
+      folders.PushBack(sDdPath);
+      break;
+    }
+  }
+  else
+  {
+    for (xiiUInt32 idx = s_pData->m_DataDirectories.GetCount(); idx > 0; --idx)
+    {
+      const auto& dd = s_pData->m_DataDirectories[idx - 1];
+
+      sDdPath = dd.m_pDataDirectory->GetRedirectedDataDirectoryPath();
+
+      folders.PushBack(sDdPath);
+    }
   }
 
   ref_iterator.StartMultiFolderSearch(folders, sSearchTerm, flags);
@@ -1007,6 +1040,11 @@ xiiResult xiiFileSystem::CreateDirectoryStructure(xiiStringView sPath)
 {
   xiiStringBuilder sRedir;
   XII_SUCCEED_OR_RETURN(ResolveSpecialDirectory(sPath, sRedir));
+
+  if (sRedir.IsRootedPath())
+  {
+    xiiFileSystem::ResolvePath(sRedir, &sRedir, nullptr).AssertSuccess();
+  }
 
   return xiiOSFile::CreateDirectoryStructure(sRedir);
 }

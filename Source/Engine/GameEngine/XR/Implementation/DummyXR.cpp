@@ -189,7 +189,7 @@ void xiiDummyXR::GameApplicationEventHandler(const xiiGameApplicationExecutionEv
         {
           const float fAspectRatio = (float)m_Info.m_vEyeRenderTargetSize.width / (float)m_Info.m_vEyeRenderTargetSize.height;
 
-          xiiMat4 mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::Degree(pCameraComponent->GetFieldOfView()), fAspectRatio,
+          xiiMat4 mProj = xiiGraphicsUtils::CreatePerspectiveProjectionMatrixFromFovX(xiiAngle::MakeFromDegree(pCameraComponent->GetFieldOfView()), fAspectRatio,
                                                                                       pCameraComponent->GetNearPlane(), xiiMath::Max(pCameraComponent->GetNearPlane() + 0.00001f, pCameraComponent->GetFarPlane()));
 
           m_pCameraToSynchronize->SetStereoProjection(mProj, mProj, fAspectRatio);
@@ -222,7 +222,7 @@ void xiiDummyXR::GameApplicationEventHandler(const xiiGameApplicationExecutionEv
             // Update device state
             xiiQuat rot;
             rot.SetIdentity();
-            xiiVec3 pos = xiiVec3::ZeroVector();
+            xiiVec3 pos = xiiVec3::MakeZero();
             if (m_StageSpace == xiiXRStageSpace::Standing)
             {
               pos.z = m_fHeadHeight;
@@ -242,13 +242,11 @@ void xiiDummyXR::GameApplicationEventHandler(const xiiGameApplicationExecutionEv
           {
             const float   fHeight         = m_StageSpace == xiiXRStageSpace::Standing ? m_fHeadHeight : 0.0f;
             const xiiMat4 mStageTransform = add.GetInverse().GetAsMat4();
-            xiiMat4       poseLeft;
-            poseLeft.SetTranslationMatrix(xiiVec3(0, -m_fEyeOffset, fHeight));
-            xiiMat4 poseRight;
-            poseRight.SetTranslationMatrix(xiiVec3(0, m_fEyeOffset, fHeight));
+            xiiMat4       poseLeft        = xiiMat4::MakeTranslation(xiiVec3(0, -m_fEyeOffset, fHeight));
+            xiiMat4       poseRight       = xiiMat4::MakeTranslation(xiiVec3(0, m_fEyeOffset, fHeight));
 
             // XII Forward is +X, need to add this to align the forward projection
-            const xiiMat4 viewMatrix          = xiiGraphicsUtils::CreateLookAtViewMatrix(xiiVec3::ZeroVector(), xiiVec3(1, 0, 0), xiiVec3(0, 0, 1));
+            const xiiMat4 viewMatrix          = xiiGraphicsUtils::CreateLookAtViewMatrix(xiiVec3::MakeZero(), xiiVec3(1, 0, 0), xiiVec3(0, 0, 1));
             const xiiMat4 mViewTransformLeft  = viewMatrix * mStageTransform * poseLeft.GetInverse();
             const xiiMat4 mViewTransformRight = viewMatrix * mStageTransform * poseRight.GetInverse();
 

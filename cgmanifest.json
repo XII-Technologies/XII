@@ -6,10 +6,10 @@
         "git": {
           "name": "XII",
           "repositoryUrl": "https://github.com/XII-Technologies/XII",
-          "commitHash": "50d1d106a6342e090086512a90f79f1c2c9bac3c"
+          "commitHash": "35814b8dd4b7169a4a648827cdd3e82a646c8c31"
         }
       },
-      "license": "Copyright (c) 2022-2023 Theophilus Eriata. All Rights Reserved."
+      "license": "Copyright (c) 2022-2024 Theophilus Eriata. All Rights Reserved."
     }
   ],
   "$schema": "https://json.schemastore.org/component-detection-manifest.json"

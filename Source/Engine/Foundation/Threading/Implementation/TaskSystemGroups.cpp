@@ -20,7 +20,7 @@ xiiTaskGroupID xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::Enum priority, xi
   {
     if (!s_pState->m_TaskGroups[i].m_bInUse)
     {
-      goto foundtaskgroup;
+      goto FoundTaskGroup;
     }
   }
 
@@ -28,7 +28,7 @@ xiiTaskGroupID xiiTaskSystem::CreateTaskGroup(xiiTaskPriority::Enum priority, xi
   s_pState->m_TaskGroups.ExpandAndGetRef();
   s_pState->m_TaskGroups[i].m_uiTaskGroupIndex = static_cast<xiiUInt16>(i);
 
-foundtaskgroup:
+FoundTaskGroup:
 
   s_pState->m_TaskGroups[i].Reuse(priority, callback);
 
@@ -149,7 +149,6 @@ void xiiTaskSystem::ScheduleGroupTasks(xiiTaskGroup* pGroup, bool bHighPriority)
   {
     XII_LOCK(s_TaskSystemMutex);
 
-
     // store how many tasks from this groups still need to be processed
 
     for (auto pTask : pGroup->m_Tasks)
@@ -159,7 +158,6 @@ void xiiTaskSystem::ScheduleGroupTasks(xiiTaskGroup* pGroup, bool bHighPriority)
     }
 
     pGroup->m_iNumRemainingTasks = iRemainingTasks;
-
 
     for (xiiUInt32 task = 0; task < pGroup->m_Tasks.GetCount(); ++task)
     {

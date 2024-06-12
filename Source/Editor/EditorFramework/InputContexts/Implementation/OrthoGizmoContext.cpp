@@ -98,7 +98,7 @@ xiiEditorInput xiiOrthoGizmoContext::DoMouseMoveEvent(QMouseEvent* e)
 
     m_vTranslationDiff = m_vTranslationResult - vLastTranslationResult;
 
-    m_UnsnappedRotationResult += xiiAngle::Degree(-diff.x);
+    m_UnsnappedRotationResult += xiiAngle::MakeFromDegree(-diff.x);
 
     xiiAngle snappedRotation = m_UnsnappedRotationResult;
 
@@ -106,7 +106,7 @@ xiiEditorInput xiiOrthoGizmoContext::DoMouseMoveEvent(QMouseEvent* e)
     if (!e->modifiers().testFlag(Qt::AltModifier))
       xiiSnapProvider::SnapRotation(snappedRotation);
 
-    m_qRotationResult.SetFromAxisAndAngle(m_pCamera->GetDirForwards(), snappedRotation);
+    m_qRotationResult = xiiQuat::MakeFromAxisAndAngle(m_pCamera->GetDirForwards(), snappedRotation);
 
     {
       m_fScaleMouseMove += diff.x;
@@ -143,7 +143,7 @@ xiiEditorInput xiiOrthoGizmoContext::DoMouseMoveEvent(QMouseEvent* e)
     m_vTranslationResult.SetZero();
     m_vUnsnappedTranslationResult.SetZero();
     m_qRotationResult.SetIdentity();
-    m_UnsnappedRotationResult = xiiAngle::Radian(0.0f);
+    m_UnsnappedRotationResult = xiiAngle::MakeFromRadian(0.0f);
     m_fScalingResult          = 1.0f;
     m_fUnsnappedScalingResult = 1.0f;
     m_fScaleMouseMove         = 0.0f;

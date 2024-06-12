@@ -144,7 +144,7 @@ public:
   /// In that case it might also make sense to use GetTelemetryMutex() to lock the entire section while waiting for the message.
   static void UpdateNetwork();
 
-  using ProcessMessagesCallback = void (*)(void* pPassThrough);
+  using ProcessMessagesCallback = void (*)(void*);
 
   static void AcceptMessagesForSystem(xiiUInt32 uiSystemID, bool bAccept, ProcessMessagesCallback callback = nullptr, void* pPassThrough = nullptr);
 
@@ -192,7 +192,7 @@ public:
 private:
   static void UpdateServerPing();
 
-  static xiiResult OpenConnection(ConnectionMode Mode, xiiStringView ConnectTo = nullptr);
+  static xiiResult OpenConnection(ConnectionMode Mode, xiiStringView sConnectTo = {});
 
   static void Transmit(TransmitMode tm, const void* pData, xiiUInt32 uiDataBytes);
 
@@ -205,7 +205,7 @@ private:
   static void FlushOutgoingQueues();
 
   static void           InitializeAsServer();
-  static xiiResult      InitializeAsClient(xiiStringView ConnectTo0);
+  static xiiResult      InitializeAsClient(xiiStringView sConnectTo);
   static ConnectionMode s_ConnectionMode;
 
   static xiiUInt32 s_uiApplicationID;

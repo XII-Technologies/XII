@@ -35,7 +35,7 @@ public:
 
 public: // Properties
   xiiUuid m_Object;
-  xiiVec2 m_NewPos = xiiVec2::ZeroVector();
+  xiiVec2 m_NewPos = xiiVec2::MakeZero();
 
 private:
   virtual xiiStatus DoInternal(bool bRedo) override;
@@ -44,7 +44,7 @@ private:
 
 private:
   xiiDocumentObject* m_pObject = nullptr;
-  xiiVec2            m_vOldPos = xiiVec2::ZeroVector();
+  xiiVec2            m_vOldPos = xiiVec2::MakeZero();
 };
 
 

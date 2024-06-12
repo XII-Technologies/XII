@@ -539,7 +539,7 @@ XII_CREATE_SIMPLE_TEST(Containers, Deque)
 
     // always inserts at the front
     for (xiiInt32 i = 0; i < 100; ++i)
-      a1.Insert(i, 0);
+      a1.InsertAt(0, i);
 
     for (xiiInt32 i = 0; i < 100; ++i)
       XII_TEST_INT(a1[i], 99 - i);
@@ -567,7 +567,7 @@ XII_CREATE_SIMPLE_TEST(Containers, Deque)
     xiiDeque<xiiInt32> a1;
 
     for (xiiInt32 i = 0; i < 10; ++i)
-      a1.Insert(i, i); // inserts at the end
+      a1.InsertAt(i, i); // inserts at the end
 
     a1.RemoveAndSwap(9);
     a1.RemoveAndSwap(7);
@@ -586,7 +586,7 @@ XII_CREATE_SIMPLE_TEST(Containers, Deque)
     xiiDeque<xiiInt32> a1;
 
     for (xiiInt32 i = 0; i < 10; ++i)
-      a1.Insert(i, i); // inserts at the end
+      a1.InsertAt(i, i); // inserts at the end
 
     a1.RemoveAtAndCopy(9);
     a1.RemoveAtAndCopy(7);
@@ -605,7 +605,7 @@ XII_CREATE_SIMPLE_TEST(Containers, Deque)
     xiiDeque<xiiInt32> a1;
 
     for (xiiInt32 i = 0; i < 10; ++i)
-      a1.Insert(i, i); // inserts at the end
+      a1.InsertAt(i, i); // inserts at the end
 
     a1.RemoveAtAndSwap(9);
     a1.RemoveAtAndSwap(7);
@@ -700,7 +700,7 @@ XII_CREATE_SIMPLE_TEST(Containers, Deque)
       a1.PushBack(DequeTestDetail::st(1));
       XII_TEST_BOOL(DequeTestDetail::st::HasDone(2, 1)); // one temporary, one final (copy constructed)
 
-      a1.Insert(DequeTestDetail::st(2), 0);
+      a1.InsertAt(0, DequeTestDetail::st(2));
       XII_TEST_BOOL(DequeTestDetail::st::HasDone(2, 1)); // one temporary, one final (copy constructed)
 
       a2 = a1;

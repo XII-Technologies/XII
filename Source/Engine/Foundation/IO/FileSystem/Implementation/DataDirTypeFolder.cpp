@@ -37,6 +37,25 @@ namespace xiiDataDirectory
     m_File.Close();
   }
 
+  xiiUInt64 FolderReader::Skip(xiiUInt64 uiBytes)
+  {
+    if (uiBytes == 0)
+    {
+      return 0;
+    }
+
+    const xiiUInt64 fileSize         = m_File.GetFileSize();
+    const xiiUInt64 origFilePosition = m_File.GetFilePosition();
+    XII_ASSERT_DEBUG(origFilePosition <= fileSize, "");
+
+    const xiiUInt64 newFilePosition = xiiMath::Min(fileSize, origFilePosition + uiBytes);
+    m_File.SetFilePosition(newFilePosition, xiiFileSeekMode::FromStart);
+    XII_ASSERT_DEBUG(newFilePosition == m_File.GetFilePosition(), "");
+
+    XII_ASSERT_DEBUG(newFilePosition >= origFilePosition, "");
+    return newFilePosition - origFilePosition;
+  }
+
   xiiUInt64 FolderReader::Read(void* pBuffer, xiiUInt64 uiBytes)
   {
     return m_File.Read(pBuffer, uiBytes);

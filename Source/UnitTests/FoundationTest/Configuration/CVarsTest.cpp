@@ -9,7 +9,7 @@ XII_CREATE_SIMPLE_TEST_GROUP(Configuration);
 
 #define xiiCVarValueDefault xiiCVarValue::Default
 #define xiiCVarValueStored  xiiCVarValue::Stored
-#define xiiCVarValueRestart xiiCVarValue::Restart
+#define xiiCVarValueRestart xiiCVarValue::DelayedSync
 
 // Interestingly using 'xiiCVarValue::Default' directly inside a macro does not work. (?!)
 #define CHECK_CVAR(var, Current, Default, Stored, Restart)        \
@@ -34,7 +34,7 @@ static void ChangedCVar(const xiiCVarEvent& e)
     case xiiCVarEvent::ValueChanged:
       ++iChangedValue;
       break;
-    case xiiCVarEvent::RestartValueChanged:
+    case xiiCVarEvent::DelayedSyncValueChanged:
       ++iChangedRestart;
       break;
     default:
@@ -376,7 +376,7 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
         XII_TEST_INT(iChangedValue, 1);
         XII_TEST_INT(iChangedRestart, 1);
 
-        pFloat->SetToRestartValue();
+        pFloat->SetToDelayedSyncValue();
         CHECK_CVAR(pFloat, 1.2f, 1.1f, 1.1f, 1.2f);
 
         XII_TEST_INT(iChangedValue, 2);
@@ -405,7 +405,7 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
         XII_TEST_INT(iChangedValue, 2);
         XII_TEST_INT(iChangedRestart, 2);
 
-        pDouble->SetToRestartValue();
+        pDouble->SetToDelayedSyncValue();
         CHECK_CVAR(pDouble, 12.11, 12.12, 12.12, 12.11);
 
         XII_TEST_INT(iChangedValue, 3);
@@ -489,7 +489,7 @@ XII_CREATE_SIMPLE_TEST(Configuration, CVars)
         *pString = "test2_value2";
         CHECK_CVAR(pString, "test2", "test2", "test2", "test2_value2");
 
-        pString->SetToRestartValue();
+        pString->SetToDelayedSyncValue();
         CHECK_CVAR(pString, "test2_value2", "test2", "test2", "test2_value2");
       }
     }

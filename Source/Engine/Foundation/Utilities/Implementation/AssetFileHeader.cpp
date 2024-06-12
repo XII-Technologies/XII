@@ -1,17 +1,11 @@
-#include <Core/CorePCH.h>
+#include <Foundation/FoundationPCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
 #include <Foundation/IO/MemoryStream.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 
 static const char* g_szAssetTag = "xiiAsset";
 
-xiiAssetFileHeader::xiiAssetFileHeader()
-{
-  // initialize to a 'valid' hash
-  // this may get stored, unless someone sets the hash
-  m_uiHash    = 0;
-  m_uiVersion = 0;
-}
+xiiAssetFileHeader::xiiAssetFileHeader() = default;
 
 enum xiiAssetFileHeaderVersion : xiiUInt8
 {
@@ -45,7 +39,7 @@ xiiResult xiiAssetFileHeader::Write(xiiStreamWriter& ref_stream) const
 xiiResult xiiAssetFileHeader::Read(xiiStreamReader& ref_stream)
 {
   // initialize to 'invalid'
-  m_uiHash    = 0xFFFFFFFFFFFFFFFF;
+  m_uiHash    = 0xFFFFFFFFFFFFFFFFU;
   m_uiVersion = 0;
 
   char szTag[9] = {0};
@@ -90,5 +84,3 @@ xiiResult xiiAssetFileHeader::Read(xiiStreamReader& ref_stream)
 
   return XII_SUCCESS;
 }
-
-XII_STATICLINK_FILE(Core, Core_Assets_Implementation_AssetFileHeader);

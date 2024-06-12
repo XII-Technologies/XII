@@ -10,28 +10,25 @@ public:
 
   xiiSimdMat4f();
 
-  xiiSimdMat4f(const float* const pData, xiiMatrixLayout::Enum layout); // [tested]
+  /// \brief Returns a zero matrix.
+  [[nodiscard]] static xiiSimdMat4f MakeZero();
 
-  xiiSimdMat4f(const xiiSimdVec4f& vCol0, const xiiSimdVec4f& vCol1, const xiiSimdVec4f& vCol2, const xiiSimdVec4f& vCol3); // [tested]
+  /// \brief Returns an identity matrix.
+  [[nodiscard]] static xiiSimdMat4f MakeIdentity();
 
-  /// \brief Sets each element manually: Naming is "column-n row-m"
-  xiiSimdMat4f(float f1r1, float f2r1, float f3r1, float f4r1, float f1r2, float f2r2, float f3r2, float f4r2, float f1r3, float f2r3, float f3r3, float f4r3, float f1r4, float f2r4, float f3r4, float f4r4); // [tested]
+  /// \brief Creates a matrix from 16 values that are in row-major layout.
+  [[nodiscard]] static xiiSimdMat4f MakeFromRowMajorArray(const float* const pData);
 
-  void SetFromArray(const float* const pData, xiiMatrixLayout::Enum layout); // [tested]
+  /// \brief Creates a matrix from 16 values that are in column-major layout.
+  [[nodiscard]] static xiiSimdMat4f MakeFromColumnMajorArray(const float* const pData);
+
+  /// \brief Creates a matrix from 4 column vectors.
+  [[nodiscard]] static xiiSimdMat4f MakeFromColumns(const xiiSimdVec4f& vCol0, const xiiSimdVec4f& vCol1, const xiiSimdVec4f& vCol2, const xiiSimdVec4f& vCol3);
+
+  /// \brief Creates a matrix from 16 values. Naming is "column-n row-m"
+  [[nodiscard]] static xiiSimdMat4f MakeFromValues(float f1r1, float f2r1, float f3r1, float f4r1, float f1r2, float f2r2, float f3r2, float f4r2, float f1r3, float f2r3, float f3r3, float f4r3, float f1r4, float f2r4, float f3r4, float f4r4);
 
   void GetAsArray(float* out_pData, xiiMatrixLayout::Enum layout) const; // [tested]
-
-  /// \brief Sets all elements to zero, except the diagonal, which is set to one.
-  void SetIdentity(); // [tested]
-
-  /// \brief Sets all elements to zero.
-  void SetZero(); // [tested]
-
-  /// \brief Returns an Identity Matrix.
-  static xiiSimdMat4f IdentityMatrix(); // [tested]
-
-  /// \brief Returns a Matrix where all elements are zero.
-  static xiiSimdMat4f ZeroMatrix(); // [tested]
 
 public:
   /// \brief Transposes this matrix.
@@ -65,16 +62,16 @@ public:
 
 public:
   /// \brief Matrix-vector multiplication, assuming the 4th component of the vector is one (default behavior).
-  xiiSimdVec4f TransformPosition(const xiiSimdVec4f& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4f TransformPosition(const xiiSimdVec4f& v) const; // [tested]
 
   /// \brief Matrix-vector multiplication, assuming the 4th component of the vector is zero. So, rotation/scaling only.
-  xiiSimdVec4f TransformDirection(const xiiSimdVec4f& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4f TransformDirection(const xiiSimdVec4f& v) const; // [tested]
 
-  xiiSimdMat4f operator*(const xiiSimdMat4f& rhs) const; // [tested]
-  void         operator*=(const xiiSimdMat4f& rhs);
+  [[nodiscard]] xiiSimdMat4f operator*(const xiiSimdMat4f& rhs) const; // [tested]
+  void                       operator*=(const xiiSimdMat4f& rhs);
 
-  bool operator==(const xiiSimdMat4f& rhs) const; // [tested]
-  bool operator!=(const xiiSimdMat4f& rhs) const; // [tested]
+  [[nodiscard]] bool operator==(const xiiSimdMat4f& rhs) const; // [tested]
+  [[nodiscard]] bool operator!=(const xiiSimdMat4f& rhs) const; // [tested]
 
 public:
   xiiSimdVec4f m_col0;

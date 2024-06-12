@@ -905,7 +905,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::onGradientColorCpAdded(double posX, c
     return;
 
   const xiiVariant trackGuid = pDoc->GetPropertyObject()->GetTypeAccessor().GetValue("Tracks", m_iMapGradientToTrack);
-  xiiInt64         tickX     = xiiColorGradientAssetData::TickFromTime(xiiTime::Seconds(posX));
+  xiiInt64         tickX     = xiiColorGradientAssetData::TickFromTime(xiiTime::MakeFromSeconds(posX));
   pDoc->InsertGradientColorCpAt(trackGuid.Get<xiiUuid>(), tickX, color);
 }
 
@@ -918,7 +918,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::onGradientAlphaCpAdded(double posX, x
     return;
 
   const xiiVariant trackGuid = pDoc->GetPropertyObject()->GetTypeAccessor().GetValue("Tracks", m_iMapGradientToTrack);
-  xiiInt64         tickX     = xiiColorGradientAssetData::TickFromTime(xiiTime::Seconds(posX));
+  xiiInt64         tickX     = xiiColorGradientAssetData::TickFromTime(xiiTime::MakeFromSeconds(posX));
   pDoc->InsertGradientAlphaCpAt(trackGuid.Get<xiiUuid>(), tickX, alpha);
 }
 
@@ -931,7 +931,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::onGradientIntensityCpAdded(double pos
     return;
 
   const xiiVariant trackGuid = pDoc->GetPropertyObject()->GetTypeAccessor().GetValue("Tracks", m_iMapGradientToTrack);
-  xiiInt64         tickX     = xiiColorGradientAssetData::TickFromTime(xiiTime::Seconds(posX));
+  xiiInt64         tickX     = xiiColorGradientAssetData::TickFromTime(xiiTime::MakeFromSeconds(posX));
   pDoc->InsertGradientIntensityCpAt(trackGuid.Get<xiiUuid>(), tickX, intensity);
 }
 
@@ -956,7 +956,7 @@ void xiiQtPropertyAnimAssetDocumentWindow::MoveGradientCP(xiiInt32 idx, double n
   cmdSet.m_Object = objGuid.Get<xiiUuid>();
 
   cmdSet.m_sProperty = "Tick";
-  cmdSet.m_NewValue  = pDoc->GetProperties()->m_Tracks[m_iMapGradientToTrack]->m_ColorGradient.TickFromTime(xiiTime::Seconds(newPosX));
+  cmdSet.m_NewValue  = pDoc->GetProperties()->m_Tracks[m_iMapGradientToTrack]->m_ColorGradient.TickFromTime(xiiTime::MakeFromSeconds(newPosX));
   history->AddCommand(cmdSet).AssertSuccess();
 
   history->FinishTransaction();

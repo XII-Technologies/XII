@@ -472,8 +472,8 @@ void xiiAnimPoseGenerator::SampleEventTrack(const xiiAnimationClipResource* pRes
 
   const xiiTime tPrev  = fPrevPos * duration;
   const xiiTime tNow   = fCurPos * duration;
-  const xiiTime tStart = xiiTime::Zero();
-  const xiiTime tEnd   = duration + xiiTime::Seconds(1.0); // sampling position is EXCLUSIVE
+  const xiiTime tStart = xiiTime::MakeZero();
+  const xiiTime tEnd   = duration + xiiTime::MakeFromSeconds(1.0); // sampling position is EXCLUSIVE
 
   xiiHybridArray<xiiHashedString, 16> events;
 

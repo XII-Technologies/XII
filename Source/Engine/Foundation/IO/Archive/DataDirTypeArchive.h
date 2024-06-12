@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Foundation/IO/Archive/ArchiveReader.h>
+#include <Foundation/IO/CompressedStreamZlib.h>
 #include <Foundation/IO/CompressedStreamZstd.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/IO/FileSystem/Implementation/DataDirType.h>
@@ -51,23 +52,22 @@ namespace xiiDataDirectory
     xiiHybridArray<xiiUniquePtr<ArchiveReaderZstd>, 4> m_ReadersZstd;
     xiiHybridArray<ArchiveReaderZstd*, 4>              m_FreeReadersZstd;
 #endif
+#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
+    xiiHybridArray<xiiUniquePtr<ArchiveReaderZip>, 4> m_ReadersZip;
+    xiiHybridArray<ArchiveReaderZip*, 4>              m_FreeReadersZip;
+#endif
   };
 
-  class XII_FOUNDATION_DLL ArchiveReaderUncompressed : public xiiDataDirectoryReader
+  class XII_FOUNDATION_DLL ArchiveReaderCommon : public xiiDataDirectoryReader
   {
-    XII_DISALLOW_COPY_AND_ASSIGN(ArchiveReaderUncompressed);
+    XII_DISALLOW_COPY_AND_ASSIGN(ArchiveReaderCommon);
 
   public:
-    ArchiveReaderUncompressed(xiiInt32 iDataDirUserData);
-    ~ArchiveReaderUncompressed();
+    ArchiveReaderCommon(xiiInt32 iDataDirUserData);
 
-    virtual xiiUInt64 Read(void* pBuffer, xiiUInt64 uiBytes) override;
     virtual xiiUInt64 GetFileSize() const override;
 
   protected:
-    virtual xiiResult InternalOpen(xiiFileShareMode::Enum FileShareMode) override;
-    virtual void      InternalClose() override;
-
     friend class ArchiveType;
 
     xiiUInt64                m_uiUncompressedSize = 0;
@@ -75,14 +75,49 @@ namespace xiiDataDirectory
     xiiRawMemoryStreamReader m_MemStreamReader;
   };
 
+  class XII_FOUNDATION_DLL ArchiveReaderUncompressed : public ArchiveReaderCommon
+  {
+    XII_DISALLOW_COPY_AND_ASSIGN(ArchiveReaderUncompressed);
+
+  public:
+    ArchiveReaderUncompressed(xiiInt32 iDataDirUserData);
+
+    virtual xiiUInt64 Skip(xiiUInt64 uiBytes) override;
+    virtual xiiUInt64 Read(void* pBuffer, xiiUInt64 uiBytes) override;
+
+  protected:
+    virtual xiiResult InternalOpen(xiiFileShareMode::Enum FileShareMode) override;
+    virtual void      InternalClose() override;
+  };
+
 #ifdef BUILDSYSTEM_ENABLE_ZSTD_SUPPORT
-  class XII_FOUNDATION_DLL ArchiveReaderZstd : public ArchiveReaderUncompressed
+  class XII_FOUNDATION_DLL ArchiveReaderZstd : public ArchiveReaderCommon
   {
     XII_DISALLOW_COPY_AND_ASSIGN(ArchiveReaderZstd);
 
   public:
     ArchiveReaderZstd(xiiInt32 iDataDirUserData);
-    ~ArchiveReaderZstd();
+
+    virtual xiiUInt64 Read(void* pBuffer, xiiUInt64 uiBytes) override;
+
+  protected:
+    virtual xiiResult InternalOpen(xiiFileShareMode::Enum FileShareMode) override;
+    virtual void      InternalClose() override;
+
+    xiiCompressedStreamReaderZstd m_CompressedStreamReader;
+  };
+#endif
+
+#ifdef BUILDSYSTEM_ENABLE_ZLIB_SUPPORT
+  /// \brief Allows reading of zip / apk containers.
+  /// Needed to allow Android to read data from the apk.
+  class XII_FOUNDATION_DLL ArchiveReaderZip : public ArchiveReaderUncompressed
+  {
+    XII_DISALLOW_COPY_AND_ASSIGN(ArchiveReaderZip);
+
+  public:
+    ArchiveReaderZip(xiiInt32 iDataDirUserData);
+    ~ArchiveReaderZip();
 
     virtual xiiUInt64 Read(void* pBuffer, xiiUInt64 uiBytes) override;
 
@@ -91,9 +126,7 @@ namespace xiiDataDirectory
 
     friend class ArchiveType;
 
-    xiiCompressedStreamReaderZstd m_CompressedStreamReader;
+    xiiCompressedStreamReaderZip m_CompressedStreamReader;
   };
 #endif
-
-
 } // namespace xiiDataDirectory

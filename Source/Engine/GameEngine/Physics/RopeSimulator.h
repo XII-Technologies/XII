@@ -18,8 +18,8 @@ class XII_GAMEENGINE_DLL xiiRopeSimulator
 public:
   struct Node
   {
-    xiiSimdVec4f m_vPosition         = xiiSimdVec4f::ZeroVector();
-    xiiSimdVec4f m_vPreviousPosition = xiiSimdVec4f::ZeroVector();
+    xiiSimdVec4f m_vPosition         = xiiSimdVec4f::MakeZero();
+    xiiSimdVec4f m_vPreviousPosition = xiiSimdVec4f::MakeZero();
 
     // could add per node acceleration
     // could add per node mass

@@ -1,10 +1,10 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
 #include <Core/ResourceManager/ResourceManager.h>
 #include <Foundation/Configuration/Startup.h>
 #include <Foundation/IO/FileSystem/FileSystem.h>
 #include <Foundation/Math/Rect.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Decals/DecalAtlasResource.h>
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsCore/Textures/TextureUtils.h>
@@ -59,7 +59,7 @@ XII_RESOURCE_IMPLEMENT_COMMON_CODE(xiiDecalAtlasResource);
 xiiUInt32 xiiDecalAtlasResource::s_uiDecalAtlasResources = 0;
 
 xiiDecalAtlasResource::xiiDecalAtlasResource() :
-  xiiResource(DoUpdate::OnAnyThread, 1), m_vBaseColorSize(xiiVec2U32::ZeroVector()), m_vNormalSize(xiiVec2U32::ZeroVector())
+  xiiResource(DoUpdate::OnAnyThread, 1), m_vBaseColorSize(xiiVec2U32::MakeZero()), m_vNormalSize(xiiVec2U32::MakeZero())
 {
 }
 

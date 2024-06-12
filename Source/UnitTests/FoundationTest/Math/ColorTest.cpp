@@ -81,8 +81,7 @@ XII_CREATE_SIMPLE_TEST(Math, Color)
       XII_TEST_FLOAT(sat, hsv[i].y, 0.1f);
       XII_TEST_FLOAT(val, hsv[i].z, 0.1f);
 
-      xiiColor fromHSV;
-      fromHSV.SetHSV(hsv[i].x, hsv[i].y, hsv[i].z);
+      xiiColor fromHSV = xiiColor::MakeHSV(hsv[i].x, hsv[i].y, hsv[i].z);
       XII_TEST_FLOAT(fromHSV.r, color.r, 0.01f);
       XII_TEST_FLOAT(fromHSV.g, color.g, 0.01f);
       XII_TEST_FLOAT(fromHSV.b, color.b, 0.01f);
@@ -369,7 +368,7 @@ XII_CREATE_SIMPLE_TEST(Math, Color)
     {
       xiiMat4 m;
       m.SetIdentity();
-      m.SetScalingMatrix(xiiVec3(0.5f, 0.75f, 0.25f));
+      m = xiiMat4::MakeScaling(xiiVec3(0.5f, 0.75f, 0.25f));
       m.SetTranslationVector(xiiVec3(0.1f, 0.2f, 0.3f));
 
       xiiColor c1 = m * xiiColor::White;

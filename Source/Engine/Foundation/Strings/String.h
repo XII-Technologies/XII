@@ -75,6 +75,20 @@ protected:
   /// \brief Moves the data from \a rhs.
   void operator=(xiiStringBuilder&& rhs); // [tested]
 
+#if XII_ENABLED(XII_INTEROP_STL_STRINGS)
+  /// \brief Copies the data from \a rhs.
+  xiiHybridStringBase(const std::string_view& rhs, xiiAllocatorBase* pAllocator);
+
+  /// \brief Copies the data from \a rhs.
+  xiiHybridStringBase(const std::string& rhs, xiiAllocatorBase* pAllocator);
+
+  /// \brief Copies the data from \a rhs.
+  void operator=(const std::string_view& rhs);
+
+  /// \brief Copies the data from \a rhs.
+  void operator=(const std::string& rhs);
+#endif
+
 public:
   /// \brief Resets this string to an empty string.
   ///
@@ -87,7 +101,11 @@ public:
   /// \brief Returns the amount of bytes that this string takes (excluding the '\0' terminator).
   xiiUInt32 GetElementCount() const; // [tested]
 
-  /// \brief Returns the number of characters in this string.
+  /// \brief Returns the number of characters in this string. Might be less than GetElementCount, if it contains Utf8
+  /// multi-byte characters.
+  ///
+  /// \note This is a slow operation, as it has to run through the entire string to count the Unicode characters.
+  /// Only call this once and use the result as long as the string doesn't change. Don't call this in a loop.
   xiiUInt32 GetCharacterCount() const; // [tested]
 
   /// \brief Returns a view to a sub-string of this string, starting at character uiFirstCharacter, up until uiFirstCharacter +
@@ -119,7 +137,6 @@ private:
   friend class xiiStringBuilder;
 
   xiiHybridArray<char, Size> m_Data;
-  xiiUInt32                  m_uiCharacterCount = 0;
 };
 
 
@@ -138,10 +155,8 @@ public:
   xiiHybridString(const xiiStringView& rhs);
   xiiHybridString(const xiiStringBuilder& rhs);
   xiiHybridString(xiiStringBuilder&& rhs);
-
   xiiHybridString(xiiHybridString<Size, AllocatorWrapper>&& other);
   xiiHybridString(xiiHybridStringBase<Size>&& other);
-
 
   void operator=(const xiiHybridString<Size, AllocatorWrapper>& rhs);
   void operator=(const xiiHybridStringBase<Size>& rhs);
@@ -150,22 +165,29 @@ public:
   void operator=(const xiiStringView& rhs);
   void operator=(const xiiStringBuilder& rhs);
   void operator=(xiiStringBuilder&& rhs);
-
   void operator=(xiiHybridString<Size, AllocatorWrapper>&& rhs);
   void operator=(xiiHybridStringBase<Size>&& rhs);
+
+#if XII_ENABLED(XII_INTEROP_STL_STRINGS)
+  xiiHybridString(const std::string_view& rhs);
+  xiiHybridString(const std::string& rhs);
+  void operator=(const std::string_view& rhs);
+  void operator=(const std::string& rhs);
+#endif
 };
 
-using xiiDynamicString = xiiHybridString<1>;
 /// \brief String that uses the static allocator to prevent leak reports in RTTI attributes.
-using xiiUntrackedString = xiiHybridString<32, xiiStaticAllocatorWrapper>;
-using xiiString          = xiiHybridString<32>;
-using xiiString16        = xiiHybridString<16>;
-using xiiString24        = xiiHybridString<24>;
-using xiiString32        = xiiHybridString<32>;
-using xiiString48        = xiiHybridString<48>;
-using xiiString64        = xiiHybridString<64>;
-using xiiString128       = xiiHybridString<128>;
-using xiiString256       = xiiHybridString<256>;
+using xiiUntrackedString = xiiHybridString<32U, xiiStaticAllocatorWrapper>;
+
+using xiiDynamicString = xiiHybridString<1U>;
+using xiiString        = xiiHybridString<32U>;
+using xiiString16      = xiiHybridString<16U>;
+using xiiString24      = xiiHybridString<24U>;
+using xiiString32      = xiiHybridString<32U>;
+using xiiString48      = xiiHybridString<48U>;
+using xiiString64      = xiiHybridString<64U>;
+using xiiString128     = xiiHybridString<128U>;
+using xiiString256     = xiiHybridString<256U>;
 
 static_assert(xiiGetTypeClass<xiiString>::value == xiiTypeIsClass::value);
 

@@ -114,7 +114,7 @@ void xiiInputDeviceController::UpdateVibration(xiiTime tTimeDifference)
   static xiiTime tElapsedTime;
   tElapsedTime += tTimeDifference;
 
-  const xiiTime tTimePerSample = xiiTime::Seconds(1.0 / static_cast<double>(VibrationSamplesPerSecond));
+  const xiiTime tTimePerSample = xiiTime::MakeFromSeconds(1.0 / static_cast<double>(VibrationSamplesPerSecond));
 
   // advance the vibration track sampling
   while (tElapsedTime >= tTimePerSample)
@@ -188,7 +188,7 @@ void xiiInputDeviceMouseKeyboard::UpdateInputSlotValues()
         if (tNow - m_LastMouseClick[i] <= m_DoubleClickTime)
         {
           m_InputSlotValues[dlbSlots[i]] = 1.0f;
-          m_LastMouseClick[i].SetZero(); // this prevents triple-clicks from appearing as two double clicks
+          m_LastMouseClick[i]            = xiiTime::MakeZero(); // this prevents triple-clicks from appearing as two double clicks
         }
         else
         {

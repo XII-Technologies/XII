@@ -87,7 +87,7 @@ public:
 
   /// \brief Returns the value stored at the given key. If none exists, one is created. \a bExisted indicates whether an element needed to be created.
   template <typename CompatibleKeyType>
-  VALUE& FindOrAdd(const CompatibleKeyType& key, bool* pExisted = nullptr); // [tested]
+  VALUE& FindOrAdd(const CompatibleKeyType& key, bool* out_pExisted = nullptr); // [tested]
 
   /// \brief Same as FindOrAdd.
   template <typename CompatibleKeyType>

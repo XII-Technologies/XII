@@ -83,6 +83,7 @@ namespace xiiDataDirectory
       m_bIsInUse = false;
     }
 
+    virtual xiiUInt64 Skip(xiiUInt64 uiBytes) override;
     virtual xiiUInt64 Read(void* pBuffer, xiiUInt64 uiBytes) override;
     virtual xiiUInt64 GetFileSize() const override;
 

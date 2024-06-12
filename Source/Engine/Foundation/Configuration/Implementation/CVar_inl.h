@@ -25,13 +25,13 @@ xiiCVarType::Enum xiiTypedCVar<Type, CVarType>::GetType() const
 }
 
 template <typename Type, xiiCVarType::Enum CVarType>
-void xiiTypedCVar<Type, CVarType>::SetToRestartValue()
+void xiiTypedCVar<Type, CVarType>::SetToDelayedSyncValue()
 {
-  if (m_Values[xiiCVarValue::Current] == m_Values[xiiCVarValue::Restart])
+  if (m_Values[xiiCVarValue::Current] == m_Values[xiiCVarValue::DelayedSync])
     return;
 
   // This will NOT trigger a 'restart value changed' event.
-  m_Values[xiiCVarValue::Current] = m_Values[xiiCVarValue::Restart];
+  m_Values[xiiCVarValue::Current] = m_Values[xiiCVarValue::DelayedSync];
 
   xiiCVarEvent e(this);
   e.m_EventType = xiiCVarEvent::ValueChanged;
@@ -52,12 +52,12 @@ void xiiTypedCVar<Type, CVarType>::operator=(const Type& value)
 {
   xiiCVarEvent e(this);
 
-  if (GetFlags().IsAnySet(xiiCVarFlags::RequiresRestart))
+  if (GetFlags().IsAnySet(xiiCVarFlags::RequiresDelayedSync))
   {
-    if (value == m_Values[xiiCVarValue::Restart]) // No change
+    if (value == m_Values[xiiCVarValue::DelayedSync]) // No change
       return;
 
-    e.m_EventType = xiiCVarEvent::RestartValueChanged;
+    e.m_EventType = xiiCVarEvent::DelayedSyncValueChanged;
   }
   else
   {
@@ -68,7 +68,7 @@ void xiiTypedCVar<Type, CVarType>::operator=(const Type& value)
     e.m_EventType                   = xiiCVarEvent::ValueChanged;
   }
 
-  m_Values[xiiCVarValue::Restart] = value;
+  m_Values[xiiCVarValue::DelayedSync] = value;
 
   m_CVarEvents.Broadcast(e);
 

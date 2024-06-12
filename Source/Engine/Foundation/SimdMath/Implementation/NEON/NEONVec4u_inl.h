@@ -4,7 +4,7 @@ XII_ALWAYS_INLINE xiiSimdVec4u::xiiSimdVec4u()
 {
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   m_v = vmovq_n_u32(0xCDCDCDCD);
 #endif
 }
@@ -227,7 +227,7 @@ XII_ALWAYS_INLINE xiiSimdVec4b xiiSimdVec4u::operator>(const xiiSimdVec4u& v) co
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4u xiiSimdVec4u::ZeroVector()
+XII_ALWAYS_INLINE xiiSimdVec4u xiiSimdVec4u::MakeZero()
 {
   return vmovq_n_u32(0);
 }

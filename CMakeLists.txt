@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
-	message(FATAL_ERROR "In-source builds are not supported. Please choose a different binary directory.")
-	return()
+  message(FATAL_ERROR "In-source builds are not supported. Please choose a different binary directory.")
+  return()
 endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/xiiCMakeConfig.cmake")
@@ -18,9 +18,9 @@ file(RELATIVE_PATH XII_SUBMODULE_PREFIX_PATH ${CMAKE_SOURCE_DIR} ${CMAKE_CURRENT
 set_property(GLOBAL PROPERTY XII_SUBMODULE_PREFIX_PATH ${XII_SUBMODULE_PREFIX_PATH})
 
 if(XII_SUBMODULE_PREFIX_PATH STREQUAL "")
-	set(XII_SUBMODULE_MODE FALSE)
+  set(XII_SUBMODULE_MODE FALSE)
 else()
-	set(XII_SUBMODULE_MODE TRUE)
+  set(XII_SUBMODULE_MODE TRUE)
 endif()
 
 set_property(GLOBAL PROPERTY XII_SUBMODULE_MODE ${XII_SUBMODULE_MODE})
@@ -34,28 +34,28 @@ xii_build_filter_init()
 xii_detect_project_name(DETECTED_NAME)
 
 if(NOT XII_SUBMODULE_MODE)
-	xii_detect_languages()
+  xii_detect_languages()
 
-	set(XII_SOLUTION_NAME ${DETECTED_NAME} CACHE STRING "The name of the solution")
-	project(${XII_SOLUTION_NAME}
-		VERSION 1.0
-		DESCRIPTION "Copyright (c) 2022-2023 Theophilus Eriata. All Rights Reserved."
-		HOMEPAGE_URL "https://github.com/XII-Technologies/XII"
-		LANGUAGES ${XII_LANGUAGES})
+  set(XII_SOLUTION_NAME ${DETECTED_NAME} CACHE STRING "The name of the solution")
+  project(${XII_SOLUTION_NAME}
+    VERSION 1.0
+    DESCRIPTION "Copyright (c) 2022-2024 Theophilus Eriata. All Rights Reserved."
+    HOMEPAGE_URL "www.xiitechnologies.com"
+    LANGUAGES ${XII_LANGUAGES})
 endif()
+
+include("xiiPlatform")
 
 xii_set_build_types()
 xii_check_build_type()
 xii_write_configuration_txt()
 
 if(XII_CUSTOM_TOOLCHAIN_FILE)
-	message(STATUS "Including XII_CUSTOM_TOOLCHAIN_FILE: '${XII_CUSTOM_TOOLCHAIN_FILE}'")
-	include("${XII_CUSTOM_TOOLCHAIN_FILE}")
+  message(STATUS "Including XII_CUSTOM_TOOLCHAIN_FILE: '${XII_CUSTOM_TOOLCHAIN_FILE}'")
+  include("${XII_CUSTOM_TOOLCHAIN_FILE}")
 endif()
 
 xii_pull_all_vars()
-
-include("xiiPlatformVars")
 
 set(XII_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Source")
 
@@ -64,7 +64,7 @@ xii_init_projects()
 
 get_property(SELECTED_FILTER_NAME GLOBAL PROPERTY XII_BUILD_FILTER_SELECTED)
 if (NOT ${SELECTED_FILTER_NAME} MATCHES "Everything")
-	set(CMAKE_SUPPRESS_REGENERATION true)
+  set(CMAKE_SUPPRESS_REGENERATION true)
 endif()
 add_subdirectory(${XII_CMAKE_RELPATH_CODE})
 add_subdirectory(Data)
@@ -74,17 +74,26 @@ xii_add_external_projects_folder("_2")
 xii_add_external_projects_folder("_3")
 
 if(NOT XII_SUBMODULE_MODE)
-	if(TARGET Editor)
-		# sets the Editor project as the default startup project in Visual Studio
-		set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT Editor)
-	endif()
+  if(TARGET Editor)
+    # sets the Editor project as the default startup project in Visual Studio
+    set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}" PROPERTY VS_STARTUP_PROJECT Editor)
+
+  get_property(EXTERNAL_PROJECTS GLOBAL PROPERTY "EXTERNAL_PROJECTS")
+  if(EXTERNAL_PROJECTS)
+    message(STATUS "External Projects (ezEditor): ${EXTERNAL_PROJECTS}")
+    add_dependencies(Editor ${EXTERNAL_PROJECTS})
+
+    message(STATUS "External Projects (ezPlayer): ${EXTERNAL_PROJECTS}")
+    add_dependencies(Player ${EXTERNAL_PROJECTS})
+  endif()
+  endif()
 endif()
 
 # finalizers may run into problems in split solutions
 # however, they aren't needed there, since CI will always build all projects
 # and finalizers are typically only needed to set up build dependencies
 if (${SELECTED_FILTER_NAME} MATCHES "Everything")
-xii_finalize_projects()
+  xii_finalize_projects()
 endif()
 
 get_property(EXPORT_PROJECTS GLOBAL PROPERTY "EXPORT_PROJECTS")

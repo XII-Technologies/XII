@@ -43,7 +43,7 @@ protected:
   xiiVariantArray                 m_Keys;
   xiiDynamicArray<xiiExposedBone> m_Bones;
   xiiDeque<ElementGizmo>          m_Gizmos;
-  xiiTransform                    m_RootTransform = xiiTransform::IdentityTransform();
+  xiiTransform                    m_RootTransform = xiiTransform::MakeIdentity();
 
   void    RetrieveBones();
   void    ConfigureGizmos();

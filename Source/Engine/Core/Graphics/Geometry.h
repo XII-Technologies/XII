@@ -58,10 +58,10 @@ public:
   {
     XII_DECLARE_POD_TYPE();
 
-    GeoOptions(){};                                      // NOLINT: This struct is used before the sourrounding class ends, so it needs a default constructor. "= default" does not work here.
-    xiiColor  m_Color       = xiiColor(1, 1, 1, 1);      ///< The color of the entire geometric object
-    xiiMat4   m_Transform   = xiiMat4::IdentityMatrix(); ///< An additional transform to apply to the geometry while adding it
-    xiiUInt16 m_uiBoneIndex = 0;                         ///< Which bone should influence this geometry, for single-bone skinning.
+    GeoOptions(){};                                    // NOLINT: This struct is used before the sourrounding class ends, so it needs a default constructor. "= default" does not work here.
+    xiiColor  m_Color       = xiiColor(1, 1, 1, 1);    ///< The color of the entire geometric object
+    xiiMat4   m_Transform   = xiiMat4::MakeIdentity(); ///< An additional transform to apply to the geometry while adding it
+    xiiUInt16 m_uiBoneIndex = 0;                       ///< Which bone should influence this geometry, for single-bone skinning.
 
     bool IsFlipWindingNecessary() const;
   };
@@ -88,7 +88,7 @@ public:
   void Clear();
 
   /// \brief Adds a vertex, returns the index to the added vertex.
-  xiiUInt32 AddVertex(const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord, const xiiColor& color, const xiiVec4U16& vBoneIndices = xiiVec4U16::ZeroVector(), const xiiColorLinearUB& boneWeights = xiiColorLinearUB(255, 0, 0, 0));
+  xiiUInt32 AddVertex(const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord, const xiiColor& color, const xiiVec4U16& vBoneIndices = xiiVec4U16::MakeZero(), const xiiColorLinearUB& boneWeights = xiiColorLinearUB(255, 0, 0, 0));
 
   /// \brief Adds a vertex, returns the index to the added vertex. Position and normal are transformed with the given matrix.
   xiiUInt32 AddVertex(const xiiVec3& vPos, const xiiVec3& vNormal, const xiiVec2& vTexCoord, const xiiColor& color, const xiiVec4U16& vBoneIndices, const xiiColorLinearUB& boneWeights, const xiiMat4& mTransform)
@@ -205,7 +205,7 @@ public:
   /// uiSegments is the detail around the up axis, must be at least 3.
   /// The top or bottom caps can be removed using \a bCapTop and \a bCapBottom.
   /// When \a fraction is set to any value below 360 degree, a pie / pacman shaped cylinder is created.
-  void AddCylinder(float fRadiusTop, float fRadiusBottom, float fPositiveLength, float fNegativeLength, bool bCapTop, bool bCapBottom, xiiUInt16 uiSegments, const GeoOptions& options = GeoOptions(), xiiAngle fraction = xiiAngle::Degree(360.0f));
+  void AddCylinder(float fRadiusTop, float fRadiusBottom, float fPositiveLength, float fNegativeLength, bool bCapTop, bool bCapBottom, xiiUInt16 uiSegments, const GeoOptions& options = GeoOptions(), xiiAngle fraction = xiiAngle::MakeFromDegree(360.0f));
 
   /// \brief Same as AddCylinder(), but always adds caps and does not generate separate vertices for the caps.
   ///

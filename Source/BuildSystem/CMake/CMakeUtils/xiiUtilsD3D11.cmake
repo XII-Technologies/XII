@@ -9,7 +9,7 @@ set(XII_BUILD_D3D11 OFF CACHE BOOL "Build the DirectX 11 Graphics Device")
 # #####################################
 
 macro(xii_requires_d3d11)
-  xii_requires_windows()
+  xii_requires(XII_CMAKE_PLATFORM_SUPPORTS_D3D11)
   xii_requires(XII_BUILD_D3D11)
 endmacro()
 

@@ -331,7 +331,7 @@ xiiStatus xiiDecalAssetDocumentManager::RunTexConv(const char* szTargetFile, con
   arguments << "-atlasDesc";
   arguments << QString(szInputFile);
 
-  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("TexConv", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
+  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTexConv", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
 
   return xiiStatus(XII_SUCCESS);
 }

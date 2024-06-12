@@ -471,12 +471,7 @@ xiiUInt32 xiiImageFormat::GetNumChannels(Enum format)
   return GetImageFormatMetaData(format).m_uiNumChannels;
 }
 
-xiiImageFormat::Enum xiiImageFormat::FromPixelMask(
-  xiiUInt32 uiRedMask,
-  xiiUInt32 uiGreenMask,
-  xiiUInt32 uiBlueMask,
-  xiiUInt32 uiAlphaMask,
-  xiiUInt32 uiBitsPerPixel)
+xiiImageFormat::Enum xiiImageFormat::FromPixelMask(xiiUInt32 uiRedMask, xiiUInt32 uiGreenMask, xiiUInt32 uiBlueMask, xiiUInt32 uiAlphaMask, xiiUInt32 uiBitsPerPixel)
 {
   // Some DDS files in the wild are encoded as this
   if (uiBitsPerPixel == 8 && uiRedMask == 0xff && uiGreenMask == 0xff && uiBlueMask == 0xff)

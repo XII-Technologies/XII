@@ -35,10 +35,17 @@ struct xiiCVarFlags
     /// Otherwise all changes to it will be lost on shutdown.
     Save = XII_BIT(0),
 
-    /// \brief Indicates that changing this cvar will only take effect after the proper subsystem has been reinitialized.
+    /// \brief If the CVar value is changed, the new value will not be visible by default, until SetToDelayedSyncValue() is called on it.
+    /// This allows to finalize the value change at a specific sync point in code.
+    /// When this flag is set the xiiCVarEvent::DelayedSyncValueChanged will be broadcast.
+    RequiresDelayedSync = XII_BIT(1),
+
+    ShowRequiresRestartMsg = XII_BIT(2),
+
+    /// \brief Indicates that changing this CVar will only take effect after the proper subsystem has been reinitialized.
     /// This will always enforce the 'Save' flag as well.
-    /// With this flag set, the 'Current' value never changes, unless 'SetToRestartValue' is called.
-    RequiresRestart = XII_BIT(1),
+    /// With this flag set, the 'Current' value never changes, unless 'SetToDelayedSyncValue' is called.
+    RequiresRestart = Save | RequiresDelayedSync | ShowRequiresRestartMsg,
 
     /// \brief By default CVars are not saved.
     Default = None
@@ -47,7 +54,8 @@ struct xiiCVarFlags
   struct Bits
   {
     StorageType Save : 1;
-    StorageType RequiresRestart : 1;
+    StorageType RequiresDelayedSync : 1;
+    StorageType ShowRequiresRestartMsg : 1;
   };
 };
 
@@ -63,9 +71,9 @@ struct xiiCVarEvent
 
   enum Type
   {
-    ValueChanged,        ///< Sent whenever the 'Current' value of the CVar is changed.
-    RestartValueChanged, ///< Sent whenever the 'Restart' value of the CVar changes. It might actually change back to the 'Current' value though.
-    ListOfVarsChanged,   ///< A CVar was added or removed dynamically (not just by loading a plugin), some stuff may need to update its state
+    ValueChanged,            ///< Sent whenever the 'Current' value of the CVar is changed.
+    DelayedSyncValueChanged, ///< Sent whenever the 'DelayedSync' value of the CVar changes. It might actually change back to the 'Current' value though.
+    ListOfVarsChanged,       ///< A CVar was added or removed dynamically (not just by loading a plugin), some stuff may need to update its state
   };
 
   /// \brief The type of this event.
@@ -144,9 +152,9 @@ public:
   /// If \a bOnlyNewOnes is set, only CVars that have never been loaded from file before are loaded.
   /// All other CVars will stay unchanged.
   /// If \a bSetAsCurrentValue is true, variables that are flagged as 'RequiresRestart', will be set
-  /// to the restart value immediately ('SetToRestartValue' is called on them).
+  /// to the restart value immediately ('SetToDelayedSyncValue' is called on them).
   /// Otherwise their 'Current' value will always stay unchanged and the value from disk will only be
-  /// stored in the 'Restart' value.
+  /// stored in the 'DelayedSync' value.
   /// Independent on the parameter settings, all CVar changes during loading will always trigger change events.
   ///
   ///
@@ -164,9 +172,9 @@ public:
   /// If \a bOnlyNewOnes is set, only CVars that have never been loaded from file before are loaded.
   /// All other CVars will stay unchanged.
   /// If \a bSetAsCurrentValue is true, variables that are flagged as 'RequiresRestart', will be set
-  /// to the restart value immediately ('SetToRestartValue' is called on them).
+  /// to the restart value immediately ('SetToDelayedSyncValue' is called on them).
   /// Otherwise their 'Current' value will always stay unchanged and the value from disk will only be
-  /// stored in the 'Restart' value.
+  /// stored in the 'DelayedSync' value.
   /// Independent on the parameter settings, all CVar changes during loading will always trigger change events.
   /// If bIgnoreSaveFlag is set all CVars are loaded whether they have the xiiCVarFlags::Save set or not.
   ///
@@ -184,12 +192,12 @@ public:
   /// otherwise it could get flagged as 'already loaded' even if the value was never taken from file or command line.
   static void LoadCVarsFromCommandLine(bool bOnlyNewOnes = true, bool bSetAsCurrentValue = true, xiiDynamicArray<xiiCVar*>* pOutCVars = nullptr); // [tested]
 
-  /// \brief Copies the 'Restart' value into the 'Current' value.
+  /// \brief Copies the 'DelayedSync' value into the 'Current' value.
   ///
-  /// This change will not trigger a 'restart value changed' event, but it might trigger a 'current value changed' event.
-  /// Code that uses a CVar that is flagged as 'RequiresRestart' for its initialization (and which is the reason, that that CVar
+  /// This change will not trigger a 'delayed sync value changed' event, but it might trigger a 'current value changed' event.
+  /// Code that uses a CVar that is flagged as 'RequiresDelayedSync' for its initialization (and which is the reason, that that CVar
   /// is flagged as such) should always call this BEFORE it uses the CVar value.
-  virtual void SetToRestartValue() = 0; // [tested]
+  virtual void SetToDelayedSyncValue() = 0; // [tested]
 
   /// \brief Returns the (display) name of the CVar.
   xiiStringView GetName() const { return m_sName; } // [tested]
@@ -246,11 +254,10 @@ struct xiiCVarValue
 {
   enum Enum
   {
-    Current, ///< The value that should be used.
-    Default, ///< The 'default' value of the CVar. Can be used to reset a variable to its default state.
-    Stored,  ///< The value that was read from disk (or the default). Can be used to reset a CVar to the 'saved' state, if desired.
-    Restart, ///< The state that will be saved to disk. This is identical to 'Current' unless the 'RequiresRestart' flag is set (in which case the
-             ///< 'Current' value never changes).
+    Current,     ///< The value that should be used.
+    Default,     ///< The 'default' value of the CVar. Can be used to reset a variable to its default state.
+    Stored,      ///< The value that was read from disk (or the default). Can be used to reset a CVar to the 'saved' state, if desired.
+    DelayedSync, ///< The state that will be stored for later. This is identical to 'Current' unless the 'RequiresDelayedSync' flag is set (in which case the 'Current' value only changes when the code requests so).
     ENUM_COUNT
   };
 };
@@ -270,12 +277,18 @@ public:
 
   /// \brief Changes the CVar's value and broadcasts the proper events.
   ///
-  /// Usually the 'Current' value is changed, unless the 'RequiresRestart' flag is set.
-  /// In that case only the 'Restart' value is modified.
+  /// Usually the 'Current' value is changed, unless the 'RequiresDelayedSync' flag is set.
+  /// In that case only the 'DelayedSync' value is modified.
   void operator=(const Type& value); // [tested]
 
   virtual xiiCVarType::Enum GetType() const override;
-  virtual void              SetToRestartValue() override;
+  virtual void              SetToDelayedSyncValue() override;
+
+  /// \brief Checks whether a new value was set and now won't be visible until SetToDelayedSyncValue() is called.
+  bool HasDelayedSyncValueChanged() const
+  {
+    return m_Values[xiiCVarValue::Current] != m_Values[xiiCVarValue::DelayedSync];
+  }
 
 private:
   friend class xiiCVar;

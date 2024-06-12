@@ -59,11 +59,7 @@ const xiiManipulatorAttribute* xiiManipulatorManager::GetActiveManipulator(
   return nullptr;
 }
 
-void xiiManipulatorManager::InternalSetActiveManipulator(
-  const xiiDocument*                             pDoc,
-  const xiiManipulatorAttribute*                 pManipulator,
-  const xiiHybridArray<xiiPropertySelection, 8>& selection,
-  bool                                           bUnhide)
+void xiiManipulatorManager::InternalSetActiveManipulator(const xiiDocument* pDoc, const xiiManipulatorAttribute* pManipulator, const xiiHybridArray<xiiPropertySelection, 8>& selection, bool bUnhide)
 {
   bool existed = false;
   auto it      = m_ActiveManipulator.FindOrAdd(pDoc, &existed);
@@ -94,10 +90,7 @@ void xiiManipulatorManager::InternalSetActiveManipulator(
 }
 
 
-void xiiManipulatorManager::SetActiveManipulator(
-  const xiiDocument*                             pDoc,
-  const xiiManipulatorAttribute*                 pManipulator,
-  const xiiHybridArray<xiiPropertySelection, 8>& selection)
+void xiiManipulatorManager::SetActiveManipulator(const xiiDocument* pDoc, const xiiManipulatorAttribute* pManipulator, const xiiHybridArray<xiiPropertySelection, 8>& selection)
 {
   InternalSetActiveManipulator(pDoc, pManipulator, selection, true);
 }

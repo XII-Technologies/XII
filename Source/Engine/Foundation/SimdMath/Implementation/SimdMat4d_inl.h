@@ -2,38 +2,45 @@
 
 XII_ALWAYS_INLINE xiiSimdMat4d::xiiSimdMat4d() = default;
 
-XII_ALWAYS_INLINE xiiSimdMat4d::xiiSimdMat4d(const double* const pData, xiiMatrixLayout::Enum layout)
+inline xiiSimdMat4d xiiSimdMat4d::MakeFromValues(double f1r1, double f2r1, double f3r1, double f4r1, double f1r2, double f2r2, double f3r2, double f4r2, double f1r3, double f2r3, double f3r3, double f4r3, double f1r4, double f2r4, double f3r4, double f4r4)
 {
-  SetFromArray(pData, layout);
+  xiiSimdMat4d res;
+  res.m_col0.Set(f1r1, f1r2, f1r3, f1r4);
+  res.m_col1.Set(f2r1, f2r2, f2r3, f2r4);
+  res.m_col2.Set(f3r1, f3r2, f3r3, f3r4);
+  res.m_col3.Set(f4r1, f4r2, f4r3, f4r4);
+  return res;
 }
 
-XII_ALWAYS_INLINE xiiSimdMat4d::xiiSimdMat4d(const xiiSimdVec4d& vCol0, const xiiSimdVec4d& vCol1, const xiiSimdVec4d& vCol2, const xiiSimdVec4d& vCol3) :
-  m_col0(vCol0),
-  m_col1(vCol1),
-  m_col2(vCol2),
-  m_col3(vCol3)
+inline xiiSimdMat4d xiiSimdMat4d::MakeFromColumns(const xiiSimdVec4d& vCol0, const xiiSimdVec4d& vCol1, const xiiSimdVec4d& vCol2, const xiiSimdVec4d& vCol3)
 {
+  xiiSimdMat4d res;
+  res.m_col0 = vCol0;
+  res.m_col1 = vCol1;
+  res.m_col2 = vCol2;
+  res.m_col3 = vCol3;
+  return res;
 }
 
-XII_ALWAYS_INLINE xiiSimdMat4d::xiiSimdMat4d(double f1r1, double f2r1, double f3r1, double f4r1, double f1r2, double f2r2, double f3r2, double f4r2, double f1r3, double f2r3, double f3r3, double f4r3, double f1r4, double f2r4, double f3r4, double f4r4)
+inline xiiSimdMat4d xiiSimdMat4d::MakeFromRowMajorArray(const double* const pData)
 {
-  m_col0.Set(f1r1, f1r2, f1r3, f1r4);
-  m_col1.Set(f2r1, f2r2, f2r3, f2r4);
-  m_col2.Set(f3r1, f3r2, f3r3, f3r4);
-  m_col3.Set(f4r1, f4r2, f4r3, f4r4);
+  xiiSimdMat4d res;
+  res.m_col0.Load<4>(pData + 0);
+  res.m_col1.Load<4>(pData + 4);
+  res.m_col2.Load<4>(pData + 8);
+  res.m_col3.Load<4>(pData + 12);
+  res.Transpose();
+  return res;
 }
 
-inline void xiiSimdMat4d::SetFromArray(const double* const pData, xiiMatrixLayout::Enum layout)
+inline xiiSimdMat4d xiiSimdMat4d::MakeFromColumnMajorArray(const double* const pData)
 {
-  m_col0.Load<4>(pData + 0);
-  m_col1.Load<4>(pData + 4);
-  m_col2.Load<4>(pData + 8);
-  m_col3.Load<4>(pData + 12);
-
-  if (layout == xiiMatrixLayout::RowMajor)
-  {
-    Transpose();
-  }
+  xiiSimdMat4d res;
+  res.m_col0.Load<4>(pData + 0);
+  res.m_col1.Load<4>(pData + 4);
+  res.m_col2.Load<4>(pData + 8);
+  res.m_col3.Load<4>(pData + 12);
+  return res;
 }
 
 inline void xiiSimdMat4d::GetAsArray(double* out_pData, xiiMatrixLayout::Enum layout) const
@@ -51,36 +58,24 @@ inline void xiiSimdMat4d::GetAsArray(double* out_pData, xiiMatrixLayout::Enum la
   tmp.m_col3.Store<4>(out_pData + 12);
 }
 
-XII_ALWAYS_INLINE void xiiSimdMat4d::SetIdentity()
+XII_ALWAYS_INLINE xiiSimdMat4d xiiSimdMat4d::MakeZero()
 {
-  m_col0.Set(1, 0, 0, 0);
-  m_col1.Set(0, 1, 0, 0);
-  m_col2.Set(0, 0, 1, 0);
-  m_col3.Set(0, 0, 0, 1);
+  xiiSimdMat4d res;
+  res.m_col0.SetZero();
+  res.m_col1.SetZero();
+  res.m_col2.SetZero();
+  res.m_col3.SetZero();
+  return res;
 }
 
-XII_ALWAYS_INLINE void xiiSimdMat4d::SetZero()
+XII_ALWAYS_INLINE xiiSimdMat4d xiiSimdMat4d::MakeIdentity()
 {
-  m_col0.SetZero();
-  m_col1.SetZero();
-  m_col2.SetZero();
-  m_col3.SetZero();
-}
-
-// static
-XII_ALWAYS_INLINE xiiSimdMat4d xiiSimdMat4d::IdentityMatrix()
-{
-  xiiSimdMat4d result;
-  result.SetIdentity();
-  return result;
-}
-
-// static
-XII_ALWAYS_INLINE xiiSimdMat4d xiiSimdMat4d::ZeroMatrix()
-{
-  xiiSimdMat4d result;
-  result.SetZero();
-  return result;
+  xiiSimdMat4d res;
+  res.m_col0.Set(1, 0, 0, 0);
+  res.m_col1.Set(0, 1, 0, 0);
+  res.m_col2.Set(0, 0, 1, 0);
+  res.m_col3.Set(0, 0, 0, 1);
+  return res;
 }
 
 XII_ALWAYS_INLINE xiiSimdMat4d xiiSimdMat4d::GetTranspose() const
@@ -99,16 +94,12 @@ XII_ALWAYS_INLINE xiiSimdMat4d xiiSimdMat4d::GetInverse(const xiiSimdDouble& fEp
 
 inline bool xiiSimdMat4d::IsEqual(const xiiSimdMat4d& rhs, const xiiSimdDouble& fEpsilon) const
 {
-  return (m_col0.IsEqual(rhs.m_col0, fEpsilon) && m_col1.IsEqual(rhs.m_col1, fEpsilon) && m_col2.IsEqual(rhs.m_col2, fEpsilon) &&
-          m_col3.IsEqual(rhs.m_col3, fEpsilon))
-    .AllSet<4>();
+  return (m_col0.IsEqual(rhs.m_col0, fEpsilon) && m_col1.IsEqual(rhs.m_col1, fEpsilon) && m_col2.IsEqual(rhs.m_col2, fEpsilon) && m_col3.IsEqual(rhs.m_col3, fEpsilon)).AllSet<4>();
 }
 
 inline bool xiiSimdMat4d::IsIdentity(const xiiSimdDouble& fEpsilon) const
 {
-  return (m_col0.IsEqual(xiiSimdVec4d(1, 0, 0, 0), fEpsilon) && m_col1.IsEqual(xiiSimdVec4d(0, 1, 0, 0), fEpsilon) &&
-          m_col2.IsEqual(xiiSimdVec4d(0, 0, 1, 0), fEpsilon) && m_col3.IsEqual(xiiSimdVec4d(0, 0, 0, 1), fEpsilon))
-    .AllSet<4>();
+  return (m_col0.IsEqual(xiiSimdVec4d(1, 0, 0, 0), fEpsilon) && m_col1.IsEqual(xiiSimdVec4d(0, 1, 0, 0), fEpsilon) && m_col2.IsEqual(xiiSimdVec4d(0, 0, 1, 0), fEpsilon) && m_col3.IsEqual(xiiSimdVec4d(0, 0, 0, 1), fEpsilon)).AllSet<4>();
 }
 
 inline bool xiiSimdMat4d::IsValid() const

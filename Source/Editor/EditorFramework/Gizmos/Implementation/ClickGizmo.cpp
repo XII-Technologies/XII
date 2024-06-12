@@ -15,7 +15,7 @@ xiiClickGizmo::xiiClickGizmo()
   m_hShape.ConfigureHandle(this, xiiEngineGizmoHandleType::Sphere, xiiColor::White, xiiGizmoFlags::Pickable);
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiClickGizmo::SetColor(const xiiColor& color)

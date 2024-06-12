@@ -5,7 +5,7 @@
 template <typename Type>
 XII_FORCE_INLINE xiiPlaneTemplate<Type>::xiiPlaneTemplate()
 {
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   const Type TypeNaN = xiiMath::NaN<Type>();
   m_vNormal.Set(TypeNaN);
@@ -14,42 +14,39 @@ XII_FORCE_INLINE xiiPlaneTemplate<Type>::xiiPlaneTemplate()
 }
 
 template <typename Type>
-xiiPlaneTemplate<Type>::xiiPlaneTemplate(const xiiVec3Template<Type>& vNormal, const xiiVec3Template<Type>& vPointOnPlane)
+xiiPlaneTemplate<Type> xiiPlaneTemplate<Type>::MakeInvalid()
 {
-  SetFromNormalAndPoint(vNormal, vPointOnPlane);
+  xiiPlaneTemplate<Type> res;
+  res.m_vNormal.Set(0);
+  res.m_fNegDistance = 0;
+  return res;
 }
 
 template <typename Type>
-xiiPlaneTemplate<Type>::xiiPlaneTemplate(const xiiVec3Template<Type>& v1, const xiiVec3Template<Type>& v2, const xiiVec3Template<Type>& v3)
+xiiPlaneTemplate<Type> xiiPlaneTemplate<Type>::MakeFromNormalAndPoint(const xiiVec3Template<Type>& vNormal, const xiiVec3Template<Type>& vPointOnPlane)
 {
-  SetFromPoints(v1, v2, v3).IgnoreResult();
+  XII_ASSERT_DEV(vNormal.IsNormalized(), "Normal must be normalized.");
+
+  xiiPlaneTemplate<Type> res;
+  res.m_vNormal      = vNormal;
+  res.m_fNegDistance = -vNormal.Dot(vPointOnPlane);
+  return res;
 }
 
 template <typename Type>
-xiiPlaneTemplate<Type>::xiiPlaneTemplate(const xiiVec3Template<Type>* const pVertices)
+xiiPlaneTemplate<Type> xiiPlaneTemplate<Type>::MakeFromPoints(const xiiVec3Template<Type>& v1, const xiiVec3Template<Type>& v2, const xiiVec3Template<Type>& v3)
 {
-  SetFromPoints(pVertices).IgnoreResult();
-}
+  xiiPlaneTemplate<Type> res;
+  XII_VERIFY(res.m_vNormal.CalculateNormal(v1, v2, v3).Succeeded(), "The 3 provided points do not form a plane");
 
-template <typename Type>
-xiiPlaneTemplate<Type>::xiiPlaneTemplate(const xiiVec3Template<Type>* const pVertices, xiiUInt32 uiMaxVertices)
-{
-  SetFromPoints(pVertices, uiMaxVertices).IgnoreResult();
+  res.m_fNegDistance = -res.m_vNormal.Dot(v1);
+  return res;
 }
 
 template <typename Type>
 xiiVec4Template<Type> xiiPlaneTemplate<Type>::GetAsVec4() const
 {
   return xiiVec4(m_vNormal.x, m_vNormal.y, m_vNormal.z, m_fNegDistance);
-}
-
-template <typename Type>
-void xiiPlaneTemplate<Type>::SetFromNormalAndPoint(const xiiVec3Template<Type>& vNormal, const xiiVec3Template<Type>& vPointOnPlane)
-{
-  XII_ASSERT_DEBUG(vNormal.IsNormalized(), "Normal must be normalized.");
-
-  m_vNormal      = vNormal;
-  m_fNegDistance = -m_vNormal.Dot(vPointOnPlane);
 }
 
 template <typename Type>
@@ -88,8 +85,13 @@ void xiiPlaneTemplate<Type>::Transform(const xiiMat3Template<Type>& m)
 {
   xiiVec3Template<Type> vPointOnPlane = m_vNormal * -m_fNegDistance;
 
-  // rotate the normal, translate the point
+  // Transform the normal
   xiiVec3Template<Type> vTransformedNormal = m.TransformDirection(m_vNormal);
+
+  // Normalize the normal vector
+  const bool normalizeSucceeded = vTransformedNormal.NormalizeIfNotZero().Succeeded();
+  XII_ASSERT_DEBUG(normalizeSucceeded, "");
+  XII_IGNORE_UNUSED(normalizeSucceeded);
 
   // If the plane's distance is already infinite, there won't be any meaningful change
   // to it as a result of the transformation.
@@ -99,7 +101,7 @@ void xiiPlaneTemplate<Type>::Transform(const xiiMat3Template<Type>& m)
   }
   else
   {
-    SetFromNormalAndPoint(vTransformedNormal, m * vPointOnPlane);
+    *this = xiiPlane::MakeFromNormalAndPoint(vTransformedNormal, m * vPointOnPlane);
   }
 }
 
@@ -108,8 +110,13 @@ void xiiPlaneTemplate<Type>::Transform(const xiiMat4Template<Type>& m)
 {
   xiiVec3Template<Type> vPointOnPlane = m_vNormal * -m_fNegDistance;
 
-  // rotate the normal, translate the point
+  // Transform the normal
   xiiVec3Template<Type> vTransformedNormal = m.TransformDirection(m_vNormal);
+
+  // Normalize the normal vector
+  const bool normalizeSucceeded = vTransformedNormal.NormalizeIfNotZero().Succeeded();
+  XII_ASSERT_DEBUG(normalizeSucceeded, "");
+  XII_IGNORE_UNUSED(normalizeSucceeded);
 
   // If the plane's distance is already infinite, there won't be any meaningful change
   // to it as a result of the transformation.
@@ -119,7 +126,7 @@ void xiiPlaneTemplate<Type>::Transform(const xiiMat4Template<Type>& m)
   }
   else
   {
-    SetFromNormalAndPoint(vTransformedNormal, m * vPointOnPlane);
+    *this = xiiPlane::MakeFromNormalAndPoint(vTransformedNormal, m * vPointOnPlane);
   }
 }
 
@@ -204,13 +211,6 @@ bool xiiPlaneTemplate<Type>::FlipIfNecessary(const xiiVec3Template<Type>& vPoint
   }
 
   return false;
-}
-
-template <typename Type>
-void xiiPlaneTemplate<Type>::SetInvalid()
-{
-  m_vNormal.Set(0);
-  m_fNegDistance = 0;
 }
 
 template <typename Type>

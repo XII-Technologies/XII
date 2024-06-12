@@ -195,6 +195,4 @@ void xiiDataTransfer::SendAllDataTransfers()
   }
 }
 
-
-
 XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_DataTransfer);

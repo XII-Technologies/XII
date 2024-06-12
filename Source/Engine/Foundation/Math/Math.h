@@ -28,31 +28,31 @@ namespace xiiMath
 
   /// ***** Trigonometric Functions *****
 
-  /// \brief Takes an angle, returns its sine
+  /// \brief Takes an angle, returns its sine.
   template <typename Type>
   [[nodiscard]] Type Sin(xiiAngleTemplate<Type> a); // [tested]
 
-  /// \brief Takes an angle, returns its cosine
+  /// \brief Takes an angle, returns its cosine.
   template <typename Type>
   [[nodiscard]] Type Cos(xiiAngleTemplate<Type> a); // [tested]
 
-  /// \brief Takes an angle, returns its tangent
+  /// \brief Takes an angle, returns its tangent.
   template <typename Type>
   [[nodiscard]] Type Tan(xiiAngleTemplate<Type> a); // [tested]
 
-  /// \brief Returns the arcus sinus of f
+  /// \brief Returns the arcus sinus of f.
   template <typename Type>
   [[nodiscard]] xiiAngleTemplate<Type> ASin(Type f); // [tested]
 
-  /// \brief Returns the arcus cosinus of f
+  /// \brief Returns the arcus cosinus of f.
   template <typename Type>
   [[nodiscard]] xiiAngleTemplate<Type> ACos(Type f); // [tested]
 
-  /// \brief Returns the arcus tangent of f
+  /// \brief Returns the arcus tangent of f.
   template <typename Type>
   [[nodiscard]] xiiAngleTemplate<Type> ATan(Type f); // [tested]
 
-  /// \brief Returns the atan2 of x and y
+  /// \brief Returns the atan2 of x and y.
   template <typename Type>
   [[nodiscard]] xiiAngleTemplate<Type> ATan2(Type y, Type x); // [tested]
 
@@ -314,6 +314,14 @@ namespace xiiMath
   template <typename T>
   [[nodiscard]] T Lerp(T f1, T f2, double fFactor); // [tested]
 
+  /// \brief Returns the interpolation factor such that Lerp(fMin, fMax, factor) == fValue.
+  template <typename T>
+  [[nodiscard]] constexpr float Unlerp(T fMin, T fMax, T fValue); // [tested]
+
+  /// \brief Returns the interpolation factor such that Lerp(fMin, fMax, factor) == fValue.
+  template <typename T>
+  [[nodiscard]] constexpr double UnlerpDouble(T fMin, T fMax, T fValue); // [tested]
+
   /// \brief Returns 0, if value < edge, and 1, if value >= edge.
   template <typename T>
   [[nodiscard]] constexpr T Step(T value, T edge); // [tested]
@@ -398,19 +406,19 @@ namespace xiiMath
   [[nodiscard]] T EvaluateBezierCurve(T2 t, const T& startPoint, const T& controlPoint1, const T& controlPoint2, const T& endPoint);
 
   /// \brief out_Result = \a a * \a b. If an overflow happens, XII_FAILURE is returned.
-  [[nodiscard]] XII_FOUNDATION_DLL xiiResult TryMultiply32(xiiUInt32& out_uiResult, xiiUInt32 a, xiiUInt32 b, xiiUInt32 c = 1, xiiUInt32 d = 1); // [tested]
+  XII_FOUNDATION_DLL xiiResult TryMultiply32(xiiUInt32& out_uiResult, xiiUInt32 a, xiiUInt32 b, xiiUInt32 c = 1, xiiUInt32 d = 1); // [tested]
 
   /// \brief returns \a a * \a b. If an overflow happens, the program is terminated.
   [[nodiscard]] XII_FOUNDATION_DLL xiiUInt32 SafeMultiply32(xiiUInt32 a, xiiUInt32 b, xiiUInt32 c = 1, xiiUInt32 d = 1);
 
   /// \brief out_Result = \a a * \a b. If an overflow happens, XII_FAILURE is returned.
-  [[nodiscard]] XII_FOUNDATION_DLL xiiResult TryMultiply64(xiiUInt64& out_uiResult, xiiUInt64 a, xiiUInt64 b, xiiUInt64 c = 1, xiiUInt64 d = 1); // [tested]
+  XII_FOUNDATION_DLL xiiResult TryMultiply64(xiiUInt64& out_uiResult, xiiUInt64 a, xiiUInt64 b, xiiUInt64 c = 1, xiiUInt64 d = 1); // [tested]
 
   /// \brief returns \a a * \a b. If an overflow happens, the program is terminated.
   [[nodiscard]] XII_FOUNDATION_DLL xiiUInt64 SafeMultiply64(xiiUInt64 a, xiiUInt64 b, xiiUInt64 c = 1, xiiUInt64 d = 1);
 
   /// \brief Checks whether the given 64bit value actually fits into size_t, If it doesn't XII_FAILURE is returned.
-  [[nodiscard]] xiiResult TryConvertToSizeT(size_t& out_uiResult, xiiUInt64 uiValue); // [tested]
+  xiiResult TryConvertToSizeT(size_t& out_uiResult, xiiUInt64 uiValue); // [tested]
 
   /// \brief Checks whether the given 64bit value actually fits into size_t, If it doesn't the program is terminated.
   [[nodiscard]] XII_FOUNDATION_DLL size_t SafeConvertToSizeT(xiiUInt64 uiValue);

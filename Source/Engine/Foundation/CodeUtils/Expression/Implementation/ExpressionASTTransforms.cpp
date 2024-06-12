@@ -586,11 +586,11 @@ xiiExpressionAST::Node* xiiExpressionAST::FoldConstants(Node* pNode)
           case NodeType::Pow2:
             return CreateConstant(xiiMath::Pow2(fValue));
           case NodeType::Sin:
-            return CreateConstant(xiiMath::Sin(xiiAngle::Radian(fValue)));
+            return CreateConstant(xiiMath::Sin(xiiAngle::MakeFromRadian(fValue)));
           case NodeType::Cos:
-            return CreateConstant(xiiMath::Cos(xiiAngle::Radian(fValue)));
+            return CreateConstant(xiiMath::Cos(xiiAngle::MakeFromRadian(fValue)));
           case NodeType::Tan:
-            return CreateConstant(xiiMath::Tan(xiiAngle::Radian(fValue)));
+            return CreateConstant(xiiMath::Tan(xiiAngle::MakeFromRadian(fValue)));
           case NodeType::ASin:
             return CreateConstant(xiiMath::ASin(fValue).GetRadian());
           case NodeType::ACos:
@@ -1037,7 +1037,7 @@ xiiResult xiiExpressionAST::ScalarizeInputs()
       {
         xiiEnum<VectorComponent> component = static_cast<VectorComponent::Enum>(i);
         auto                     pNewInput = CreateInput(CreateScalarizedStreamDesc(pInput->m_Desc, component));
-        m_InputNodes.Insert(pNewInput, uiInputIndex + i);
+        m_InputNodes.InsertAt(uiInputIndex + i, pNewInput);
       }
     }
   }
@@ -1063,7 +1063,7 @@ xiiResult xiiExpressionAST::ScalarizeOutputs()
         xiiEnum<VectorComponent> component  = static_cast<VectorComponent::Enum>(i);
         auto                     pSwizzle   = CreateSwizzle(component, pOutput->m_pExpression);
         auto                     pNewOutput = CreateOutput(CreateScalarizedStreamDesc(pOutput->m_Desc, component), pSwizzle);
-        m_OutputNodes.Insert(pNewOutput, uiOutputIndex + i);
+        m_OutputNodes.InsertAt(uiOutputIndex + i, pNewOutput);
       }
     }
   }

@@ -80,7 +80,7 @@ xiiQtEngineViewWidget::~xiiQtEngineViewWidget()
       };
       xiiProcessCommunicationChannel::WaitForMessageCallback cb = callback;
 
-      if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForMessage(xiiGetStaticRTTI<xiiViewDestroyedResponseMsgToEditor>(), xiiTime::Seconds(5), &cb).Failed())
+      if (xiiEditorEngineProcessConnection::GetSingleton()->WaitForMessage(xiiGetStaticRTTI<xiiViewDestroyedResponseMsgToEditor>(), xiiTime::MakeFromSeconds(5), &cb).Failed())
       {
         xiiLog::Error("Timeout while waiting for engine process to destroy view.");
       }
@@ -154,11 +154,11 @@ void xiiQtEngineViewWidget::UpdateCameraInterpolation()
 
   xiiCamera& cam = m_pViewConfig->m_Camera;
 
-  const float fLerpValue = xiiMath::Sin(xiiAngle::Degree(90.0f * m_fCameraLerp));
+  const float fLerpValue = xiiMath::Sin(xiiAngle::MakeFromDegree(90.0f * m_fCameraLerp));
 
   xiiQuat qRot, qRotFinal;
-  qRot.SetShortestRotation(m_vCameraStartDirection, m_vCameraTargetDirection);
-  qRotFinal.SetSlerp(xiiQuat::IdentityQuaternion(), qRot, fLerpValue);
+  qRot      = xiiQuat::MakeShortestRotation(m_vCameraStartDirection, m_vCameraTargetDirection);
+  qRotFinal = xiiQuat::MakeSlerp(xiiQuat::MakeIdentity(), qRot, fLerpValue);
 
   const xiiVec3 vNewDirection = qRotFinal * m_vCameraStartDirection;
   const xiiVec3 vNewPosition  = xiiMath::Lerp(m_vCameraStartPosition, m_vCameraTargetPosition, fLerpValue);
@@ -204,7 +204,7 @@ void xiiQtEngineViewWidget::InterpolateCameraTo(const xiiVec3& vPosition, const 
   if (bImmediate)
   {
     // make sure the next camera update interpolates all the way
-    m_LastCameraUpdate -= xiiTime::Seconds(10);
+    m_LastCameraUpdate -= xiiTime::MakeFromSeconds(10);
     m_fCameraLerp = 0.9f;
   }
 }
@@ -297,11 +297,11 @@ xiiPlane xiiQtEngineViewWidget::GetFallbackPickingPlane(xiiVec3 vPointOnPlane) c
 {
   if (m_pViewConfig->m_Camera.IsPerspective())
   {
-    return xiiPlane(xiiVec3(0, 0, 1), vPointOnPlane);
+    return xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, 0, 1), vPointOnPlane);
   }
   else
   {
-    return xiiPlane(-m_pViewConfig->m_Camera.GetCenterDirForwards(), vPointOnPlane);
+    return xiiPlane::MakeFromNormalAndPoint(-m_pViewConfig->m_Camera.GetCenterDirForwards(), vPointOnPlane);
   }
 }
 

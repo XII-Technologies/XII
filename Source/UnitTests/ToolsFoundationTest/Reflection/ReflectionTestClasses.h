@@ -49,9 +49,9 @@ public:
   {
     m_fFloat  = 1.0f;
     m_fDouble = 1.0;
-    m_Time    = xiiTime::Seconds(1.0);
-    m_Angle   = xiiAngle::Degree(45.0f);
-    m_Angled  = xiiAngled::Degree(45.0);
+    m_Time    = xiiTime::MakeFromSeconds(1.0);
+    m_Angle   = xiiAngle::MakeFromDegree(45.0f);
+    m_Angled  = xiiAngled::MakeFromDegree(45.0);
   }
 
   void      SetFloat(float f) { m_fFloat = f; }
@@ -89,8 +89,8 @@ public:
     m_Buffer.PushBack(0xFF);
     m_Buffer.PushBack(0x0);
     m_Buffer.PushBack(0xCD);
-    m_VarianceAngle  = {0.1f, xiiAngle::Degree(90.0f)};
-    m_VarianceAngled = {0.1, xiiAngled::Degree(90.0)};
+    m_VarianceAngle  = {0.1f, xiiAngle::MakeFromDegree(90.0f)};
+    m_VarianceAngled = {0.1, xiiAngled::MakeFromDegree(90.0)};
   }
 
   xiiIntegerStruct m_IntegerStruct;

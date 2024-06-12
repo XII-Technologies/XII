@@ -59,7 +59,7 @@ void xiiScriptCoroutine_TweenProperty::Start(xiiComponentHandle hComponent, xiiS
   m_Easing      = easing;
 
   m_Duration   = duration;
-  m_TimePassed = xiiTime::Zero();
+  m_TimePassed = xiiTime::MakeZero();
 }
 
 xiiScriptCoroutine::Result xiiScriptCoroutine_TweenProperty::Update(xiiTime deltaTimeSinceLastUpdate)

@@ -177,7 +177,7 @@ void xiiAssetProcessor::Run()
         m_ProcessRunning[i] = m_ProcessTasks[i].BeginExecute();
       }
     }
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
   }
 
   while (true)
@@ -197,7 +197,7 @@ void xiiAssetProcessor::Run()
     }
 
     if (bAnyRunning)
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
     else
       break;
   }
@@ -253,9 +253,9 @@ void xiiProcessTask::StartProcess()
   args << xiiGameApplication::GetActiveRenderer().GetData(tmp);
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  const char* EditorProcessorExecutable = "EditorProcessor.exe";
+  const char* EditorProcessorExecutable = "xiiEditorProcessor.exe";
 #else
-  const char* EditorProcessorExecutable = "EditorProcessor";
+  const char* EditorProcessorExecutable = "xiiEditorProcessor";
 #endif
 
   if (m_pIPC->StartClientProcess(EditorProcessorExecutable, args, false, pFirstAllowedMessageType).Failed())

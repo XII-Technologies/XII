@@ -391,7 +391,7 @@ void xiiMaterialAssetProperties::CreateProperties(const char* szShaderPath)
     cmd.m_sParentProperty = "ShaderProperties";
     cmd.m_Parent          = m_pDocument->GetPropertyObject()->GetGuid();
     cmd.m_NewObjectGuid   = cmd.m_Parent;
-    cmd.m_NewObjectGuid.CombineWithSeed(xiiUuid::StableUuidForString("ShaderProperties"));
+    cmd.m_NewObjectGuid.CombineWithSeed(xiiUuid::MakeStableUuidFromString("ShaderProperties"));
 
     auto res = pHistory->AddCommand(cmd);
     XII_ASSERT_DEV(res.m_Result.Succeeded(), "Addition of new properties should never fail.");
@@ -711,7 +711,7 @@ void xiiMaterialAssetDocument::UpdatePrefabObject(xiiDocumentObject* pObject, co
     {
       xiiAbstractGraphDiffOperation op = newInstanceToCurrentInstance[i];
       newInstanceToCurrentInstance.RemoveAtAndCopy(i);
-      newInstanceToCurrentInstance.Insert(op, 0);
+      newInstanceToCurrentInstance.InsertAt(0, op);
       break;
     }
   }
@@ -846,7 +846,7 @@ xiiTransformStatus xiiMaterialAssetDocument::InternalTransformAsset(const char* 
 
           xiiVisualShaderErrorLog log;
 
-          ret = xiiQtEditorApp::GetSingleton()->ExecuteTool("ShaderCompiler", arguments, 60, &log);
+          ret = xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiShaderCompilerTool", arguments, 60, &log);
           if (ret.Failed())
           {
             e.m_Type            = xiiMaterialVisualShaderEvent::TransformFailed;

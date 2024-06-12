@@ -418,7 +418,7 @@ void xiiQtPropertyEditorTimeWidget::SlotValueChanged()
 
   m_bTemporaryCommand = true;
 
-  BroadcastValueChanged(xiiTime::Seconds(m_pWidget->value()));
+  BroadcastValueChanged(xiiTime::MakeFromSeconds(m_pWidget->value()));
 }
 
 
@@ -508,7 +508,7 @@ void xiiQtPropertyEditorAngleWidget::SlotValueChanged()
 
   m_bTemporaryCommand = true;
 
-  BroadcastValueChanged(xiiAngle::Degree(m_pWidget->value()));
+  BroadcastValueChanged(xiiAngle::MakeFromDegree(m_pWidget->value()));
 }
 
 /// *** INT SPINBOX ***
@@ -928,12 +928,11 @@ void xiiQtPropertyEditorQuaternionWidget::SlotValueChanged()
 
   m_bTemporaryCommand = true;
 
-  xiiAngle x = xiiAngle::Degree(m_pWidget[0]->value());
-  xiiAngle y = xiiAngle::Degree(m_pWidget[1]->value());
-  xiiAngle z = xiiAngle::Degree(m_pWidget[2]->value());
+  xiiAngle x = xiiAngle::MakeFromDegree(m_pWidget[0]->value());
+  xiiAngle y = xiiAngle::MakeFromDegree(m_pWidget[1]->value());
+  xiiAngle z = xiiAngle::MakeFromDegree(m_pWidget[2]->value());
 
-  xiiQuat qRot;
-  qRot.SetFromEulerAngles(x, y, z);
+  xiiQuat qRot = xiiQuat::MakeFromEulerAngles(x, y, z);
 
   BroadcastValueChanged(qRot);
 }

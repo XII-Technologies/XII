@@ -213,8 +213,7 @@ xiiOsProcessID xiiProcess::GetCurrentProcessID()
 // https://devblogs.microsoft.com/oldnewthing/20111216-00/?p=8873
 static BOOL CreateProcessWithExplicitHandles(LPCWSTR pApplicationName, LPWSTR pCommandLine, LPSECURITY_ATTRIBUTES pProcessAttributes, LPSECURITY_ATTRIBUTES pThreadAttributes, BOOL inheritHandles, DWORD uiCreationFlags, LPVOID pEnvironment, LPCWSTR pCurrentDirectory, LPSTARTUPINFOW pStartupInfo, LPPROCESS_INFORMATION pProcessInformation,
                                              // here is the new stuff
-                                             DWORD   uiHandlesToInherit,
-                                             HANDLE* pHandlesToInherit)
+                                             DWORD uiHandlesToInherit, HANDLE* pHandlesToInherit)
 {
   BOOL                         fSuccess;
   BOOL                         fInitialized    = FALSE;
@@ -378,16 +377,19 @@ xiiResult xiiProcess::ResumeSuspended()
   if (m_pImpl->m_ProcessHandle == nullptr || m_pImpl->m_MainThreadHandle == nullptr)
     return XII_FAILURE;
 
-  ResumeThread(m_pImpl->m_MainThreadHandle);
+  const DWORD prevSuspendCount = ResumeThread(m_pImpl->m_MainThreadHandle);
+  if (prevSuspendCount != 1)
+    xiiLog::Warning("xiiProcess::ResumeSuspended: Unexpected ResumeThread result ({})", xiiUInt64(prevSuspendCount));
 
-  // Invalidate the thread handle, so that we cannot resume the process twice
-  CloseHandle(m_pImpl->m_MainThreadHandle);
+  // Invalidate the thread handle, so that we cannot resume the process twice.
+  if (!CloseHandle(m_pImpl->m_MainThreadHandle))
+    xiiLog::Warning("xiiProcess::ResumeSuspended: Failed to close handle");
   m_pImpl->m_MainThreadHandle = nullptr;
 
   return XII_SUCCESS;
 }
 
-xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
+xiiResult xiiProcess::WaitToFinish(xiiTime timeout /*= xiiTime::MakeZero()*/)
 {
   XII_ASSERT_DEV(m_pImpl->m_ProcessHandle != nullptr, "Launch a process before waiting on it");
   XII_ASSERT_DEV(m_pImpl->m_ProcessID != 0, "Launch a process before waiting on it");
@@ -484,7 +486,7 @@ xiiProcessState xiiProcess::GetState() const
   // Do not consider a process finished if the pipe threads have not exited yet.
   if (m_pImpl->m_pipeStdOut.IsRunning() || m_pImpl->m_pipeStdErr.IsRunning())
   {
-    if (xiiTime::Now() - m_ProcessExited < xiiTime::Seconds(2))
+    if (xiiTime::Now() - m_ProcessExited < xiiTime::MakeFromSeconds(2))
     {
       return xiiProcessState::Running;
     }

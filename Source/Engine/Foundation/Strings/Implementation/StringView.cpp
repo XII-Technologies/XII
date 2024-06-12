@@ -51,7 +51,9 @@ xiiInt32 xiiStringView::CompareN_NoCase(xiiStringView sOther, xiiUInt32 uiCharsT
 const char* xiiStringView::ComputeCharacterPosition(xiiUInt32 uiCharacterIndex) const
 {
   const char* pos = GetStartPointer();
-  xiiUnicodeUtils::MoveToNextUtf8(pos, GetEndPointer(), uiCharacterIndex);
+  if (xiiUnicodeUtils::MoveToNextUtf8(pos, GetEndPointer(), uiCharacterIndex).Failed())
+    return nullptr;
+
   return pos;
 }
 
@@ -117,17 +119,31 @@ const char* xiiStringView::FindWholeWord_NoCase(const char* szSearchFor, xiiStri
 
 void xiiStringView::Shrink(xiiUInt32 uiShrinkCharsFront, xiiUInt32 uiShrinkCharsBack)
 {
+  const char* pEnd = m_pStart + m_uiElementCount;
+
   while (IsValid() && (uiShrinkCharsFront > 0))
   {
-    xiiUnicodeUtils::MoveToNextUtf8(m_pStart, m_pEnd, 1);
+    if (xiiUnicodeUtils::MoveToNextUtf8(m_pStart, pEnd, 1).Failed())
+    {
+      *this = {};
+      return;
+    }
+
     --uiShrinkCharsFront;
   }
 
   while (IsValid() && (uiShrinkCharsBack > 0))
   {
-    xiiUnicodeUtils::MoveToPriorUtf8(m_pEnd, 1);
+    if (xiiUnicodeUtils::MoveToPriorUtf8(pEnd, m_pStart, 1).Failed())
+    {
+      *this = {};
+      return;
+    }
+
     --uiShrinkCharsBack;
   }
+
+  m_uiElementCount = static_cast<xiiUInt32>(pEnd - m_pStart);
 }
 
 xiiStringView xiiStringView::GetShrunk(xiiUInt32 uiShrinkCharsFront, xiiUInt32 uiShrinkCharsBack) const
@@ -144,25 +160,27 @@ xiiStringView xiiStringView::GetSubString(xiiUInt32 uiFirstCharacter, xiiUInt32 
     return {};
   }
 
-  const char* pStart = m_pStart;
-  xiiUnicodeUtils::MoveToNextUtf8(pStart, m_pEnd, uiFirstCharacter);
+  const char* pEnd = m_pStart + m_uiElementCount;
 
-  if (pStart == m_pEnd)
+  const char* pSubStart = m_pStart;
+  if (xiiUnicodeUtils::MoveToNextUtf8(pSubStart, pEnd, uiFirstCharacter).Failed() || pSubStart == pEnd)
   {
     return {};
   }
 
-  const char* pEnd = pStart;
-  xiiUnicodeUtils::MoveToNextUtf8(pEnd, m_pEnd, uiNumCharacters);
+  const char* pSubEnd = pSubStart;
+  xiiUnicodeUtils::MoveToNextUtf8(pSubEnd, pEnd, uiNumCharacters).IgnoreResult(); // if it fails, it just points to the end
 
-  return xiiStringView(pStart, pEnd);
+  return xiiStringView(pSubStart, pSubEnd);
 }
 
 void xiiStringView::ChopAwayFirstCharacterUtf8()
 {
   if (IsValid())
   {
-    xiiUnicodeUtils::MoveToNextUtf8(m_pStart, m_pEnd, 1);
+    const char* pEnd = m_pStart + m_uiElementCount;
+    xiiUnicodeUtils::MoveToNextUtf8(m_pStart, pEnd, 1).AssertSuccess();
+    m_uiElementCount = static_cast<xiiUInt32>(pEnd - m_pStart);
   }
 }
 
@@ -173,6 +191,7 @@ void xiiStringView::ChopAwayFirstCharacterAscii()
     XII_ASSERT_DEBUG(xiiUnicodeUtils::IsASCII(*m_pStart), "ChopAwayFirstCharacterAscii() was called on a non-ASCII character.");
 
     m_pStart += 1;
+    m_uiElementCount--;
   }
 }
 
@@ -234,9 +253,9 @@ bool xiiStringView::HasExtension(xiiStringView sExtension) const
   return xiiPathUtils::HasExtension(*this, sExtension);
 }
 
-xiiStringView xiiStringView::GetFileExtension() const
+xiiStringView xiiStringView::GetFileExtension(bool bFullExtension /*= false*/) const
 {
-  return xiiPathUtils::GetFileExtension(*this);
+  return xiiPathUtils::GetFileExtension(*this, bFullExtension);
 }
 
 xiiStringView xiiStringView::GetFileName() const
@@ -273,5 +292,35 @@ xiiStringView xiiStringView::GetRootedPathRootName() const
 {
   return xiiPathUtils::GetRootedPathRootName(*this);
 }
+
+#if XII_ENABLED(XII_INTEROP_STL_STRINGS)
+xiiStringView::xiiStringView(const std::string_view& rhs)
+{
+  if (!rhs.empty())
+  {
+    m_pStart         = rhs.data();
+    m_uiElementCount = static_cast<xiiUInt32>(rhs.size());
+  }
+}
+
+xiiStringView::xiiStringView(const std::string& rhs)
+{
+  if (!rhs.empty())
+  {
+    m_pStart         = rhs.data();
+    m_uiElementCount = static_cast<xiiUInt32>(rhs.size());
+  }
+}
+
+std::string_view xiiStringView::GetAsStdView() const
+{
+  return std::string_view(m_pStart, static_cast<size_t>(m_uiElementCount));
+}
+
+xiiStringView::operator std::string_view() const
+{
+  return GetAsStdView();
+}
+#endif
 
 XII_STATICLINK_FILE(Foundation, Foundation_Strings_Implementation_StringView);

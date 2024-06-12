@@ -13,10 +13,9 @@ xiiResult xiiSimdMat4d::Invert(const xiiSimdDouble& fEpsilon)
   if (tmp.Invert(fEpsilon).Failed())
     return XII_FAILURE;
 
-  SetFromArray(tmp.m_fElementsCM, xiiMatrixLayout::ColumnMajor);
+  *this = xiiSimdMat4d::MakeFromColumnMajorArray(tmp.m_fElementsCM);
 
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_SimdMath_Implementation_SimdMat4d);

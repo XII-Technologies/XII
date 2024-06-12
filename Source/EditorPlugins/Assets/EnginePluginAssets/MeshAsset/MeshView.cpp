@@ -13,7 +13,7 @@ xiiMeshViewContext::xiiMeshViewContext(xiiMeshContext* pMeshContext) :
 
   // Start with something valid.
   m_Camera.SetCameraMode(xiiCameraMode::PerspectiveFixedFovX, 45.0f, 0.05f, 10000.0f);
-  m_Camera.LookAt(xiiVec3(1, 1, 1), xiiVec3::ZeroVector(), xiiVec3(0.0f, 0.0f, 1.0f));
+  m_Camera.LookAt(xiiVec3(1, 1, 1), xiiVec3::MakeZero(), xiiVec3(0.0f, 0.0f, 1.0f));
 }
 
 xiiMeshViewContext::~xiiMeshViewContext() = default;

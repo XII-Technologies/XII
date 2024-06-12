@@ -2,13 +2,7 @@
 
 #include <Utilities/GridAlgorithms/Rasterization.h>
 
-xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnLine(
-  xiiInt32                      iStartX,
-  xiiInt32                      iStartY,
-  xiiInt32                      iEndX,
-  xiiInt32                      iEndY,
-  XII_RASTERIZED_POINT_CALLBACK callback,
-  void*                         pPassThrough /* = nullptr */)
+xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnLine(xiiInt32 iStartX, xiiInt32 iStartY, xiiInt32 iEndX, xiiInt32 iEndY, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough /* = nullptr */)
 {
   // Implements Bresenham's line algorithm:
   // http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
@@ -110,12 +104,7 @@ xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnLineConservative(xii
 }
 
 
-xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnCircle(
-  xiiInt32                      iStartX,
-  xiiInt32                      iStartY,
-  xiiUInt32                     uiRadius,
-  XII_RASTERIZED_POINT_CALLBACK callback,
-  void*                         pPassThrough /* = nullptr */)
+xiiRasterizationResult::Enum xii2DGridUtils::ComputePointsOnCircle(xiiInt32 iStartX, xiiInt32 iStartY, xiiUInt32 uiRadius, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough /* = nullptr */)
 {
   int f     = 1 - uiRadius;
   int ddF_x = 1;
@@ -245,12 +234,7 @@ static const xiiInt32 CircleCenter     = 7;
 static const xiiUInt8 CircleAreaMin[9] = {7, 6, 6, 5, 4, 3, 2, 1, 0};
 static const xiiUInt8 CircleAreaMax[9] = {7, 8, 8, 9, 10, 11, 12, 13, 14};
 
-xiiRasterizationResult::Enum xii2DGridUtils::RasterizeBlob(
-  xiiInt32                      iPosX,
-  xiiInt32                      iPosY,
-  xiiBlobType                   type,
-  XII_RASTERIZED_POINT_CALLBACK callback,
-  void*                         pPassThrough /* = nullptr */)
+xiiRasterizationResult::Enum xii2DGridUtils::RasterizeBlob(xiiInt32 iPosX, xiiInt32 iPosY, xiiBlobType type, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough /* = nullptr */)
 {
   const xiiUInt8 uiCircleType = xiiMath::Clamp<xiiUInt8>(type, 0, 8);
 
@@ -275,12 +259,7 @@ xiiRasterizationResult::Enum xii2DGridUtils::RasterizeBlob(
   return xiiRasterizationResult::Finished;
 }
 
-xiiRasterizationResult::Enum xii2DGridUtils::RasterizeBlobWithDistance(
-  xiiInt32                     iPosX,
-  xiiInt32                     iPosY,
-  xiiBlobType                  type,
-  XII_RASTERIZED_BLOB_CALLBACK callback,
-  void*                        pPassThrough /*= nullptr*/)
+xiiRasterizationResult::Enum xii2DGridUtils::RasterizeBlobWithDistance(xiiInt32 iPosX, xiiInt32 iPosY, xiiBlobType type, XII_RASTERIZED_BLOB_CALLBACK callback, void* pPassThrough /*= nullptr*/)
 {
   const xiiUInt8 uiCircleType = xiiMath::Clamp<xiiUInt8>(type, 0, 8);
 
@@ -307,12 +286,7 @@ xiiRasterizationResult::Enum xii2DGridUtils::RasterizeBlobWithDistance(
   return xiiRasterizationResult::Finished;
 }
 
-xiiRasterizationResult::Enum xii2DGridUtils::RasterizeCircle(
-  xiiInt32                      iPosX,
-  xiiInt32                      iPosY,
-  float                         fRadius,
-  XII_RASTERIZED_POINT_CALLBACK callback,
-  void*                         pPassThrough /* = nullptr */)
+xiiRasterizationResult::Enum xii2DGridUtils::RasterizeCircle(xiiInt32 iPosX, xiiInt32 iPosY, float fRadius, XII_RASTERIZED_POINT_CALLBACK callback, void* pPassThrough /* = nullptr */)
 {
   const xiiVec2 vCenter((float)iPosX, (float)iPosY);
 

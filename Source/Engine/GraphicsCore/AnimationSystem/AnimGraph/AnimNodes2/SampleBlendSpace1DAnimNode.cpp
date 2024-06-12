@@ -134,7 +134,7 @@ void xiiSampleBlendSpace1DAnimNode::Step(xiiAnimController& ref_controller, xiiA
 
   if ((!m_InStart.IsConnected() && !pState->m_bPlaying) || m_InStart.IsTriggered(ref_graph))
   {
-    pState->m_PlaybackTime = xiiTime::Zero();
+    pState->m_PlaybackTime = xiiTime::MakeZero();
     pState->m_bPlaying     = true;
 
     m_OutOnStarted.SetTriggered(ref_graph);

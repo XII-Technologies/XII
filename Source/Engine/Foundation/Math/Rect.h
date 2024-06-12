@@ -34,6 +34,23 @@ public:
   /// \brief Initializes x and y from pos, width and height from vSize.
   xiiRectTemplate<Type>(const xiiVec2Template<Type>& vTopLeftPosition, const xiiVec2Template<Type>& vSize);
 
+  /// \brief Creates an 'invalid' rect.
+  ///
+  /// IsValid() will return false.
+  /// It is possible to make an invalid rect valid using ExpandToInclude().
+  [[nodiscard]] static xiiRectTemplate<Type> MakeInvalid();
+
+  /// \brief Creates a rect that is the intersection of the two provided rects.
+  ///
+  /// If the two rects don't overlap, the result will be a valid rect, but have zero area.
+  /// See IsValid() and HasNonZeroArea().
+  [[nodiscard]] static xiiRectTemplate<Type> MakeIntersection(const xiiRectTemplate<Type>& r0, const xiiRectTemplate<Type>& r1);
+
+  /// \brief Creates a rect that is the union of the two provided rects.
+  ///
+  /// This is the same as constructing a bounding box around the two rects.
+  [[nodiscard]] static xiiRectTemplate<Type> MakeUnion(const xiiRectTemplate<Type>& r0, const xiiRectTemplate<Type>& r1);
+
   /// The smaller value along x.
   Type Left() const { return x; }
 
@@ -92,12 +109,6 @@ public:
 public:
   [[nodiscard]] bool operator==(const xiiRectTemplate<Type>& rhs) const;
 
-  /// \brief Sets the rect to invalid values.
-  ///
-  /// IsValid() will return false afterwards.
-  /// It is possible to make an invalid rect valid using ExpandToInclude().
-  void SetInvalid();
-
   /// \brief Checks whether the position and size contain valid values.
   [[nodiscard]] bool IsValid() const;
 
@@ -124,7 +135,7 @@ public:
 
   /// \brief The given point is clamped to the area of the rect, i.e. it will be either inside the rect or on its edge and it will have the closest
   /// possible distance to the original point.
-  const xiiVec2Template<Type> GetClampedPoint(const xiiVec2Template<Type>& vPoint) const;
+  [[nodiscard]] const xiiVec2Template<Type> GetClampedPoint(const xiiVec2Template<Type>& vPoint) const;
 
   /// \brief Clamps the given rect to the area of this rect and returns it.
   ///
@@ -136,11 +147,10 @@ public:
     return xiiRectTemplate<Type>(vNewMin, vNewMax - vNewMin);
   }
 
-  void SetIntersection(const xiiRectTemplate<Type>& r0, const xiiRectTemplate<Type>& r1);
+  /// \brief Sets the center of the rectangle.
+  void SetCenter(Type tX, Type tY);
 
-  void SetUnion(const xiiRectTemplate<Type>& r0, const xiiRectTemplate<Type>& r1);
-
-  /// \brief Moves the rectangle
+  /// \brief Moves the rectangle.
   void Translate(Type tX, Type tY);
 
   /// \brief Scales width and height, and moves the position as well.
@@ -152,10 +162,12 @@ public:
 using xiiRectU64 = xiiRectTemplate<xiiUInt64>;
 using xiiRectU32 = xiiRectTemplate<xiiUInt32>;
 using xiiRectU16 = xiiRectTemplate<xiiUInt16>;
+using xiiRectU8  = xiiRectTemplate<xiiUInt8>;
 
 using xiiRectI64 = xiiRectTemplate<xiiInt64>;
 using xiiRectI32 = xiiRectTemplate<xiiInt32>;
 using xiiRectI16 = xiiRectTemplate<xiiInt16>;
+using xiiRectI8  = xiiRectTemplate<xiiInt8>;
 
 using xiiRectFloat  = xiiRectTemplate<float>;
 using xiiRectDouble = xiiRectTemplate<double>;

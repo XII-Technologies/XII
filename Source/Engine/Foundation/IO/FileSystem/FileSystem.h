@@ -63,6 +63,15 @@ public:
     AllowWrites,
   };
 
+  struct DataDirectoryInfo
+  {
+    DataDirUsage m_Usage;
+
+    xiiString             m_sRootName;
+    xiiString             m_sGroup;
+    xiiDataDirectoryType* m_pDataDirectory = nullptr;
+  };
+
   /// \name Data Directory Modifications
   ///
   /// All functions that add / remove data directories are not thread safe and require that this is done
@@ -112,13 +121,16 @@ public:
   static void ClearAllDataDirectories(); // [tested]
 
   /// \brief If a data directory with the given root name already exists, it will be returned, nullptr otherwise.
-  static xiiDataDirectoryType* FindDataDirectoryWithRoot(xiiStringView sRootName);
+  static const DataDirectoryInfo* FindDataDirectoryWithRoot(xiiStringView sRootName);
 
   /// \brief Returns the number of currently active data directories.
   static xiiUInt32 GetNumDataDirectories(); // [tested]
 
   /// \brief Returns the n-th currently active data directory.
   static xiiDataDirectoryType* GetDataDirectory(xiiUInt32 uiDataDirIndex); // [tested]
+
+  /// \brief Returns the info about the n-th currently active data directory.
+  static const DataDirectoryInfo& GetDataDirectoryInfo(xiiUInt32 uiDataDirIndex);
 
   /// \brief Calls xiiDataDirectoryType::ReloadExternalConfigs() on all active data directories.
   static void ReloadAllExternalDataDirectoryConfigs();
@@ -225,11 +237,11 @@ public:
   /// If the path is relative, it is attempted to open the specified file, which means it is searched in all available
   /// data directories. The path to the file that is found will be returned.
   ///
+  /// \param sPath can be a relative, an absolute or a rooted path. This can also be used to find the relative location to the data
+  /// directory that would handle it.
   /// \param out_sAbsolutePath will contain the absolute path to the file. Can be nullptr.
   /// \param out_sDataDirRelativePath will contain the relative path to the file (from the data directory in which it might end up in). Can be
   /// nullptr.
-  /// \param szPath can be a relative, an absolute or a rooted path. This can also be used to find the relative location to the data
-  /// directory that would handle it.
   /// \param out_ppDataDir If not null, it will be set to the data directory that would handle this path.
   ///
   /// \returns The function will return XII_FAILURE if it was not able to determine any location where the file could be read from or written to.
@@ -290,15 +302,6 @@ private:
   static void Shutdown();
 
 private:
-  struct DataDirectory
-  {
-    DataDirUsage m_Usage;
-
-    xiiString             m_sRootName;
-    xiiString             m_sGroup;
-    xiiDataDirectoryType* m_pDataDirectory;
-  };
-
   struct Factory
   {
     XII_DECLARE_POD_TYPE();
@@ -309,20 +312,20 @@ private:
 
   struct FileSystemData
   {
-    xiiHybridArray<Factory, 4>        m_DataDirFactories;
-    xiiHybridArray<DataDirectory, 16> m_DataDirectories;
+    xiiHybridArray<Factory, 4>            m_DataDirFactories;
+    xiiHybridArray<DataDirectoryInfo, 16> m_DataDirectories;
 
     xiiEvent<const FileEvent&, xiiMutex> m_Event;
     xiiMutex                             m_FsMutex;
   };
 
-  /// \brief Returns a list of data directory categories that were embedded in the path.
+  /// \brief Extracts the root name in a rooted path, e.g. for ":bin/stuff" it would extract "bin". Returns the relative path (here "stuff") or an empty string if it is a root only.
   static xiiStringView ExtractRootName(xiiStringView sFile, xiiString& rootName);
 
   /// \brief Returns the given path relative to its data directory. The path must be inside the given data directory.
   static xiiStringView GetDataDirRelativePath(xiiStringView sFile, xiiUInt32 uiDataDir);
 
-  static DataDirectory* GetDataDirForRoot(const xiiString& sRoot);
+  static DataDirectoryInfo* GetDataDirForRoot(const xiiString& sRoot);
 
   static void CleanUpRootName(xiiStringBuilder& sRoot);
 

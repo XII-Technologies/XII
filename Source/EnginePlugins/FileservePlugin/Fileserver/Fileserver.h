@@ -86,7 +86,7 @@ public:
   /// \brief Broadcasts to all clients that they should reload their resources
   void BroadcastReloadResourcesCommand();
 
-  static xiiResult SendConnectionInfo(const char* szClientAddress, xiiUInt16 uiMyPort, const xiiArrayPtr<xiiStringBuilder>& myIPs, xiiTime timeout = xiiTime::Seconds(10));
+  static xiiResult SendConnectionInfo(const char* szClientAddress, xiiUInt16 uiMyPort, const xiiArrayPtr<xiiStringBuilder>& myIPs, xiiTime timeout = xiiTime::MakeFromSeconds(10));
 
 private:
   void                       NetworkEventHandler(const xiiRemoteEvent& e);

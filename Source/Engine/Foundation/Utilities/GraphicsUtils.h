@@ -96,7 +96,7 @@ namespace xiiGraphicsUtils
   /// \brief Retrieves the horizontal and vertical field-of-view angles from the perspective matrix.
   ///
   /// \note If an orthographic projection matrix is passed in, the returned angle values will be zero.
-  XII_FOUNDATION_DLL void ExtractPerspectiveMatrixFieldOfView(const xiiMat4d& mProjectionMatrix, xiiAngle& out_fovX, xiiAngle& out_fovY); // [tested]
+  XII_FOUNDATION_DLL void ExtractPerspectiveMatrixFieldOfView(const xiiMat4d& mProjectionMatrix, xiiAngled& out_fovX, xiiAngled& out_fovY); // [tested]
 
   /// \brief Extracts the field of view angles from a perspective matrix.
   /// \param ProjectionMatrix Perspective projection matrix to be decomposed.
@@ -114,7 +114,7 @@ namespace xiiGraphicsUtils
   /// \param out_fFovBottom Bottom angle of the frustum. Negative in symmetric projection.
   /// \param out_fFovTop Top angle of the frustum.
   /// \param yRange The Y range used to construct the perspective matrix.
-  XII_FOUNDATION_DLL void ExtractPerspectiveMatrixFieldOfView(const xiiMat4d& mProjectionMatrix, xiiAngle& out_fovLeft, xiiAngle& out_fovRight, xiiAngle& out_fovBottom, xiiAngle& out_fovTop, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular); // [tested]
+  XII_FOUNDATION_DLL void ExtractPerspectiveMatrixFieldOfView(const xiiMat4d& mProjectionMatrix, xiiAngled& out_fovLeft, xiiAngled& out_fovRight, xiiAngled& out_fovBottom, xiiAngled& out_fovTop, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular); // [tested]
 
   /// \brief Extracts the field of view distances on the near plane from a perspective matrix.
   ///
@@ -126,7 +126,7 @@ namespace xiiGraphicsUtils
   ///
   /// Convenience function that also extracts near / far values and returns the distances on the near plane to be the inverse of xiiGraphicsUtils::CreatePerspectiveProjectionMatrix.
   /// \sa xiiGraphicsUtils::CreatePerspectiveProjectionMatrix
-  XII_FOUNDATION_DLL xiiResult ExtractPerspectiveMatrixFieldOfView(const xiiMat4d& mProjectionMatrix, float& out_fLeft, float& out_fRight, float& out_fBottom, float& out_fTop, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular); // [tested]
+  XII_FOUNDATION_DLL xiiResult ExtractPerspectiveMatrixFieldOfView(const xiiMat4d& mProjectionMatrix, double& out_fLeft, double& out_fRight, double& out_fBottom, double& out_fTop, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular); // [tested]
 
   /// \brief Computes the distances of the near and far clip planes from the given perspective projection matrix.
   ///
@@ -136,8 +136,7 @@ namespace xiiGraphicsUtils
   /// \brief Computes the distances of the near and far clip planes from the given perspective projection matrix.
   ///
   /// Returns XII_FAILURE when one of the values could not be computed, because it would result in a "division by zero".
-  XII_FOUNDATION_DLL xiiResult ExtractNearAndFarClipPlaneDistances(float& out_fNear, float& out_fFar, const xiiMat4d& mProjectionMatrix, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
-
+  XII_FOUNDATION_DLL xiiResult ExtractNearAndFarClipPlaneDistances(double& out_fNear, double& out_fFar, const xiiMat4d& mProjectionMatrix, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
 
   enum class FrustumPlaneInterpolation
   {
@@ -164,7 +163,7 @@ namespace xiiGraphicsUtils
   ///
   /// \param dir Specifies which planes to interpolate.
   /// \param fLerpFactor The interpolation coefficient (usually in the interval [0;1]).
-  XII_FOUNDATION_DLL xiiPlaned ComputeInterpolatedFrustumPlane(FrustumPlaneInterpolation dir, float fLerpFactor, const xiiMat4d& mProjectionMatrix, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
+  XII_FOUNDATION_DLL xiiPlaned ComputeInterpolatedFrustumPlane(FrustumPlaneInterpolation dir, double fLerpFactor, const xiiMat4d& mProjectionMatrix, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default); // [tested]
 
   /// \brief Creates a perspective projection matrix with Left = -fViewWidth/2, Right = +fViewWidth/2, Bottom = -fViewHeight/2, Top =
   /// +fViewHeight/2.
@@ -190,25 +189,25 @@ namespace xiiGraphicsUtils
 
   /// \brief Creates a perspective projection matrix with Left = -fViewWidth/2, Right = +fViewWidth/2, Bottom = -fViewHeight/2, Top =
   /// +fViewHeight/2.
-  XII_FOUNDATION_DLL xiiMat4d CreatePerspectiveProjectionMatrixDouble(float fViewWidth, float fViewHeight, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
+  XII_FOUNDATION_DLL xiiMat4d CreatePerspectiveProjectionMatrixDouble(double fViewWidth, double fViewHeight, double fNearZ, double fFarZ, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
 
   /// \brief Creates a perspective projection matrix.
-  XII_FOUNDATION_DLL xiiMat4d CreatePerspectiveProjectionMatrixDouble(float fLeft, float fRight, float fBottom, float fTop, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
+  XII_FOUNDATION_DLL xiiMat4d CreatePerspectiveProjectionMatrixDouble(double fLeft, double fRight, double fBottom, double fTop, double fNearZ, double fFarZ, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
 
   /// \brief Creates a perspective projection matrix.
   /// \param fFieldOfViewX    Horizontal field of view.
-  XII_FOUNDATION_DLL xiiMat4d CreatePerspectiveProjectionMatrixDoubleFromFovX(xiiAngle fieldOfViewX, float fAspectRatioWidthDivHeight, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
+  XII_FOUNDATION_DLL xiiMat4d CreatePerspectiveProjectionMatrixDoubleFromFovX(xiiAngled fieldOfViewX, double fAspectRatioWidthDivHeight, double fNearZ, double fFarZ, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
 
   /// \brief Creates a perspective projection matrix.
   /// \param fFieldOfViewY    Vertical field of view.
-  XII_FOUNDATION_DLL xiiMat4d CreatePerspectiveProjectionMatrixDoubleFromFovY(xiiAngle fieldOfViewY, float fAspectRatioWidthDivHeight, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
+  XII_FOUNDATION_DLL xiiMat4d CreatePerspectiveProjectionMatrixDoubleFromFovY(xiiAngled fieldOfViewY, double fAspectRatioWidthDivHeight, double fNearZ, double fFarZ, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
 
   /// \brief Creates an orthographic projection matrix with Left = -fViewWidth/2, Right = +fViewWidth/2, Bottom = -fViewHeight/2, Top =
   /// +fViewHeight/2.
-  XII_FOUNDATION_DLL xiiMat4d CreateOrthographicProjectionMatrixDouble(float fViewWidth, float fViewHeight, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
+  XII_FOUNDATION_DLL xiiMat4d CreateOrthographicProjectionMatrixDouble(double fViewWidth, double fViewHeight, double fNearZ, double fFarZ, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
 
   /// \brief Creates an orthographic projection matrix.
-  XII_FOUNDATION_DLL xiiMat4d CreateOrthographicProjectionMatrixDouble(float fLeft, float fRight, float fBottom, float fTop, float fNearZ, float fFarZ, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
+  XII_FOUNDATION_DLL xiiMat4d CreateOrthographicProjectionMatrixDouble(double fLeft, double fRight, double fBottom, double fTop, double fNearZ, double fFarZ, xiiClipSpaceDepthRange::Enum depthRange = xiiClipSpaceDepthRange::Default, xiiClipSpaceYMode::Enum range = xiiClipSpaceYMode::Regular, xiiHandedness::Enum handedness = xiiHandedness::Default); // [tested]
 
   /// \brief Returns a look-at matrix (only direction, no translation).
   ///
@@ -283,5 +282,53 @@ namespace xiiGraphicsUtils
   ///
   /// \return If the triangle is degenerate (all points on a line, or two points identical), the function returns XII_FAILURE.
   XII_FOUNDATION_DLL xiiResult ComputeBarycentricCoordinates(xiiVec3d& out_vCoordinates, const xiiVec2d& v0, const xiiVec2d& v1, const xiiVec2d& v2, const xiiVec2d& vPos);
+
+  /// \brief Returns a coverage value of how much space a sphere at a given location would take up on screen using a perspective projection.
+  ///
+  /// The coverage value is close to 0 for very small or far away spheres and approaches 1 when the projected sphere would take up the entire screen.
+  /// The calculation is resolution independent and also doesn't take into account whether the sphere is inside the view frustum at all.
+  /// Thus the value doesn't change depending on camera view direction, it only depends on distance and the camera's field-of-view.
+  /// Values (much) larger than 1 are possible.
+  ///
+  /// \note Only one camera FOV angle is used for the calculation, pass in either the horizontal or vertical FOV angle,
+  /// depending on what is most relevant to you.
+  /// Typically the 'fixed' angle is used (usually the vertical one) since the other one depends on the window size.
+  XII_FOUNDATION_DLL float CalculateSphereScreenCoverage(const xiiBoundingSphere& sphere, const xiiVec3& vCameraPosition, xiiAngle perspectiveCameraFov);
+
+  /// \brief Returns a coverage value of how much space a sphere at a given location would take up on screen using a perspective projection.
+  ///
+  /// The coverage value is close to 0 for very small or far away spheres and approaches 1 when the projected sphere would take up the entire screen.
+  /// The calculation is resolution independent and also doesn't take into account whether the sphere is inside the view frustum at all.
+  /// Thus the value doesn't change depending on camera view direction, it only depends on distance and the camera's field-of-view.
+  /// Values (much) larger than 1 are possible.
+  ///
+  /// \note Only one camera FOV angle is used for the calculation, pass in either the horizontal or vertical FOV angle,
+  /// depending on what is most relevant to you.
+  /// Typically the 'fixed' angle is used (usually the vertical one) since the other one depends on the window size.
+  XII_FOUNDATION_DLL double CalculateSphereScreenCoverage(const xiiBoundingSphered& sphere, const xiiVec3d& vCameraPosition, xiiAngled perspectiveCameraFov);
+
+  /// \brief Returns a coverage value of how much space a sphere of a given size would take up on screen using an orthographic projection.
+  ///
+  /// The coverage value is close to 0 for very small spheres and approaches 1 when the projected sphere would take up the entire screen.
+  /// The calculation is resolution independent and also doesn't take into account whether the sphere is inside the view frustum at all.
+  /// Thus the value doesn't change depending on camera view direction. In orthographic projections even the distance to the camera is irrelevant,
+  /// only the dimensions of the ortho camera are needed.
+  /// Values (much) larger than 1 are possible.
+  ///
+  /// \note Only one camera dimension is used for the calculation, pass in either the X or Y dimension, depending on what is most relevant to you.
+  /// Typically the 'fixed' dimension is used (usually Y) since the other one depends on the window size.
+  XII_FOUNDATION_DLL float CalculateSphereScreenCoverage(float fSphereRadius, float fOrthoCameraDimensions);
+
+  /// \brief Returns a coverage value of how much space a sphere of a given size would take up on screen using an orthographic projection.
+  ///
+  /// The coverage value is close to 0 for very small spheres and approaches 1 when the projected sphere would take up the entire screen.
+  /// The calculation is resolution independent and also doesn't take into account whether the sphere is inside the view frustum at all.
+  /// Thus the value doesn't change depending on camera view direction. In orthographic projections even the distance to the camera is irrelevant,
+  /// only the dimensions of the ortho camera are needed.
+  /// Values (much) larger than 1 are possible.
+  ///
+  /// \note Only one camera dimension is used for the calculation, pass in either the X or Y dimension, depending on what is most relevant to you.
+  /// Typically the 'fixed' dimension is used (usually Y) since the other one depends on the window size.
+  XII_FOUNDATION_DLL double CalculateSphereScreenCoverage(double fSphereRadius, double fOrthoCameraDimensions);
 
 } // namespace xiiGraphicsUtils

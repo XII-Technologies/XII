@@ -33,10 +33,10 @@ namespace xiiApplicationDetails
 
     // This handler overrides the default handler
     // (which would call ExitProcess, which leads to disorderly engine shutdowns)
-    const auto consoleHandler = [](xiiMinWindows::DWORD dwCtrlType) -> xiiMinWindows::BOOL {
+    const auto consoleHandler = [](xiiMinWindows::DWORD ctrlType) -> xiiMinWindows::BOOL {
       // We have to wait until the application has shut down orderly
       // since Windows will kill everything after this handler returns
-      pApp->SetReturnCode(dwCtrlType);
+      pApp->SetReturnCode(ctrlType);
       pApp->RequestQuit();
       XII_LOCK(GetShutdownMutex());
       return 1; // returns TRUE, which deactivates the default console control handler
@@ -45,7 +45,7 @@ namespace xiiApplicationDetails
 
     xiiRun(pApp); // Life cycle & run method calling
 
-    const int iReturnCode = pApp->GetReturnCode();
+    const xiiInt32 iReturnCode = pApp->GetReturnCode();
     if (iReturnCode != 0)
     {
       std::string text = pApp->TranslateReturnCode();
@@ -59,8 +59,9 @@ namespace xiiApplicationDetails
     pApp->~AppClass();
     memset((void*)pApp, 0, sizeof(AppClass));
     if (memLeaks)
+    {
       xiiMemoryTracker::DumpMemoryLeaks();
-
+    }
     return iReturnCode;
   }
 
@@ -82,14 +83,18 @@ namespace xiiApplicationDetails
     {
       std::string text = pApp->TranslateReturnCode();
       if (!text.empty())
+      {
         xiiLog::Printf("Return Code: '%s'\n", text.c_str());
+      }
     }
 
     const bool memLeaks = pApp->IsMemoryLeakReportingEnabled();
     pApp->~AppClass();
     memset((void*)pApp, 0, sizeof(AppClass));
     if (memLeaks)
+    {
       xiiMemoryTracker::DumpMemoryLeaks();
+    }
 
     return iReturnCode;
   }
@@ -104,7 +109,10 @@ namespace xiiApplicationDetails
     _declspec(dllexport) xiiMinWindows::DWORD AmdPowerXpressRequestHighPerformance = 0x00000001; \
   }                                                                                              \
   XII_APPLICATION_ENTRY_POINT_CODE_INJECTION                                                     \
-  int main(int argc, const char** argv) { return xiiApplicationDetails::ConsoleEntry<AppClass>(argc, argv, __VA_ARGS__); }
+  int main(int argc, const char** argv)                                                          \
+  {                                                                                              \
+    return xiiApplicationDetails::ConsoleEntry<AppClass>(argc, argv, __VA_ARGS__);               \
+  }
 
 // If windows.h is already included use the native types, otherwise use types from xiiMinWindows
 //
@@ -127,19 +135,20 @@ namespace xiiApplicationDetails
 ///
 /// Just use the macro in a cpp file of your application and supply your app class (must be derived from xiiApplication).
 /// The additional (optional) parameters are passed to the constructor of your app class.
-#define XII_APPLICATION_ENTRY_POINT(AppClass, ...)                                                                                            \
-  /* Enables that on machines with multiple GPUs the NVIDIA / AMD GPU is preferred */                                                         \
-  extern "C"                                                                                                                                  \
-  {                                                                                                                                           \
-    _declspec(dllexport) xiiMinWindows::DWORD NvOptimusEnablement                  = 0x00000001;                                              \
-    _declspec(dllexport) xiiMinWindows::DWORD AmdPowerXpressRequestHighPerformance = 0x00000001;                                              \
-  }                                                                                                                                           \
-  XII_APPLICATION_ENTRY_POINT_CODE_INJECTION                                                                                                  \
-  int XII_WINDOWS_CALLBACK WinMain(_In_     XII_CONCAT(_XII_, XII_CONCAT(APPLICATION_ENTRY_POINT_HINSTANCE, _WINDOWS_)) hInstance,            \
-                                   _In_opt_ XII_CONCAT(_XII_, XII_CONCAT(APPLICATION_ENTRY_POINT_HINSTANCE, _WINDOWS_)) hPrevInstance,        \
-                                   _In_ XII_CONCAT(_XII_, XII_CONCAT(APPLICATION_ENTRY_POINT_LPSTR, _WINDOWS_)) lpCmdLine, _In_ int nCmdShow) \
-  {                                                                                                                                           \
-    return xiiApplicationDetails::ApplicationEntry<AppClass>(__VA_ARGS__);                                                                    \
+#define XII_APPLICATION_ENTRY_POINT(AppClass, ...)                                                                                     \
+  /* Enables that on machines with multiple GPUs the NVIDIA / AMD GPU is preferred */                                                  \
+  extern "C"                                                                                                                           \
+  {                                                                                                                                    \
+    _declspec(dllexport) xiiMinWindows::DWORD NvOptimusEnablement                  = 0x00000001;                                       \
+    _declspec(dllexport) xiiMinWindows::DWORD AmdPowerXpressRequestHighPerformance = 0x00000001;                                       \
+  }                                                                                                                                    \
+  XII_APPLICATION_ENTRY_POINT_CODE_INJECTION                                                                                           \
+  int XII_WINDOWS_CALLBACK WinMain(_In_     XII_CONCAT(_XII_, XII_CONCAT(APPLICATION_ENTRY_POINT_HINSTANCE, _WINDOWS_)) hInstance,     \
+                                   _In_opt_ XII_CONCAT(_XII_, XII_CONCAT(APPLICATION_ENTRY_POINT_HINSTANCE, _WINDOWS_)) hPrevInstance, \
+                                   _In_     XII_CONCAT(_XII_, XII_CONCAT(APPLICATION_ENTRY_POINT_LPSTR, _WINDOWS_)) lpCmdLine,         \
+                                   _In_ int nCmdShow)                                                                                  \
+  {                                                                                                                                    \
+    return xiiApplicationDetails::ApplicationEntry<AppClass>(__VA_ARGS__);                                                             \
   }
 
 #ifdef UndefSAL

@@ -107,7 +107,10 @@ XII_ALWAYS_INLINE T* xiiUniquePtr<T>::Borrow() const
 template <typename T>
 XII_ALWAYS_INLINE void xiiUniquePtr<T>::Clear()
 {
-  XII_DELETE(m_pAllocator, m_pInstance);
+  if (m_pAllocator != nullptr)
+  {
+    XII_DELETE(m_pAllocator, m_pInstance);
+  }
 
   m_pInstance  = nullptr;
   m_pAllocator = nullptr;
@@ -138,27 +141,9 @@ XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator==(const xiiUniquePtr<T>& rhs) c
 }
 
 template <typename T>
-XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator<(const xiiUniquePtr<T>& rhs) const
+XII_ALWAYS_INLINE std::strong_ordering xiiUniquePtr<T>::operator<=>(const xiiUniquePtr<T>& rhs) const
 {
-  return m_pInstance < rhs.m_pInstance;
-}
-
-template <typename T>
-XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator<=(const xiiUniquePtr<T>& rhs) const
-{
-  return !(rhs < *this);
-}
-
-template <typename T>
-XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator>(const xiiUniquePtr<T>& rhs) const
-{
-  return rhs < *this;
-}
-
-template <typename T>
-XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator>=(const xiiUniquePtr<T>& rhs) const
-{
-  return !(*this < rhs);
+  return m_pInstance <=> rhs.m_pInstance;
 }
 
 template <typename T>
@@ -168,27 +153,9 @@ XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator==(std::nullptr_t) const
 }
 
 template <typename T>
-XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator<(std::nullptr_t) const
+XII_ALWAYS_INLINE std::strong_ordering xiiUniquePtr<T>::operator<=>(std::nullptr_t) const
 {
-  return m_pInstance < nullptr;
-}
-
-template <typename T>
-XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator<=(std::nullptr_t) const
-{
-  return m_pInstance <= nullptr;
-}
-
-template <typename T>
-XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator>(std::nullptr_t) const
-{
-  return m_pInstance > nullptr;
-}
-
-template <typename T>
-XII_ALWAYS_INLINE bool xiiUniquePtr<T>::operator>=(std::nullptr_t) const
-{
-  return m_pInstance >= nullptr;
+  return m_pInstance <=> nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////

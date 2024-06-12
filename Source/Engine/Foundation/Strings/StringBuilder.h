@@ -46,14 +46,14 @@ public:
   /// \brief Copies the given string into this one.
   template <xiiUInt16 Size>
   xiiStringBuilder(const xiiHybridStringBase<Size>& rhs) :
-    m_uiCharacterCount(rhs.m_uiCharacterCount), m_Data(rhs.m_Data)
+    m_Data(rhs.m_Data)
   {
   }
 
   /// \brief Copies the given string into this one.
   template <xiiUInt16 Size, typename A>
   xiiStringBuilder(const xiiHybridString<Size, A>& rhs) :
-    m_uiCharacterCount(rhs.m_uiCharacterCount), m_Data(rhs.m_Data)
+    m_Data(rhs.m_Data)
   {
   }
 
@@ -61,14 +61,14 @@ public:
   /// \brief Moves the given string into this one.
   template <xiiUInt16 Size>
   xiiStringBuilder(xiiHybridStringBase<Size>&& rhs) :
-    m_uiCharacterCount(rhs.m_uiCharacterCount), m_Data(std::move(rhs.m_Data))
+    m_Data(std::move(rhs.m_Data))
   {
   }
 
   /// \brief Moves the given string into this one.
   template <xiiUInt16 Size, typename A>
   xiiStringBuilder(xiiHybridString<Size, A>&& rhs) :
-    m_uiCharacterCount(rhs.m_uiCharacterCount), m_Data(std::move(rhs.m_Data))
+    m_Data(std::move(rhs.m_Data))
   {
   }
 
@@ -103,32 +103,28 @@ public:
   template <xiiUInt16 Size>
   void operator=(const xiiHybridStringBase<Size>& rhs)
   {
-    m_uiCharacterCount = rhs.m_uiCharacterCount;
-    m_Data             = rhs.m_Data;
+    m_Data = rhs.m_Data;
   }
 
   /// \brief Copies the given string into this one.
   template <xiiUInt16 Size, typename A>
   void operator=(const xiiHybridString<Size, A>& rhs)
   {
-    m_uiCharacterCount = rhs.m_uiCharacterCount;
-    m_Data             = rhs.m_Data;
+    m_Data = rhs.m_Data;
   }
 
   /// \brief Moves the given string into this one.
   template <xiiUInt16 Size>
   void operator=(xiiHybridStringBase<Size>&& rhs)
   {
-    m_uiCharacterCount = rhs.m_uiCharacterCount;
-    m_Data             = std::move(rhs.m_Data);
+    m_Data = std::move(rhs.m_Data);
   }
 
   /// \brief Moves the given string into this one.
   template <xiiUInt16 Size, typename A>
   void operator=(xiiHybridString<Size, A>&& rhs) noexcept
   {
-    m_uiCharacterCount = rhs.m_uiCharacterCount;
-    m_Data             = std::move(rhs.m_Data);
+    m_Data = std::move(rhs.m_Data);
   }
 
   /// \brief Returns the allocator that is used by this object.
@@ -145,10 +141,10 @@ public:
 
   /// \brief Returns the number of characters of which this string consists. Might be less than GetElementCount, if it contains Utf8
   /// multi-byte characters.
+  ///
+  /// \note This is a slow operation, as it has to run through the entire string to count the Unicode characters.
+  /// Only call this once and use the result as long as the string doesn't change. Don't call this in a loop.
   xiiUInt32 GetCharacterCount() const; // [tested]
-
-  /// \brief Returns whether this string only contains ASCII characters, which means that GetElementCount() == GetCharacterCount()
-  bool IsPureASCII() const; // [tested]
 
   /// \brief Converts all characters to upper case. Might move the string data around, so all iterators to the data will be invalid
   /// afterwards.
@@ -168,8 +164,19 @@ public:
   /// If possible, do not use this function, at all.
   void ChangeCharacter(iterator& ref_it, xiiUInt32 uiCharacter); // [tested]
 
+  /// \brief Sets the string to the given string.
+  void Set(xiiStringView sData1); // [tested]
   /// \brief Sets the string by concatenating all given strings.
-  void Set(xiiStringView sData1, xiiStringView sData2 = {}, xiiStringView sData3 = {}, xiiStringView sData4 = {}, xiiStringView sData5 = {}, xiiStringView sData6 = {});
+  void Set(xiiStringView sData1, xiiStringView sData2); // [tested]
+  /// \brief Sets the string by concatenating all given strings.
+  void Set(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3); // [tested]
+  /// \brief Sets the string by concatenating all given strings.
+  void Set(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4); // [tested]
+  /// \brief Sets the string by concatenating all given strings.
+  void Set(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4, xiiStringView sData5, xiiStringView sData6 = {}); // [tested]
+
+  /// \brief Sets several path pieces. Makes sure they are always properly separated by a slash.
+  void SetPath(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3 = {}, xiiStringView sData4 = {});
 
   /// \brief Copies the string starting at \a pStart up to \a pEnd (exclusive).
   void SetSubString_FromTo(const char* pStart, const char* pEnd);
@@ -186,8 +193,16 @@ public:
   /// \brief Appends all the given strings at the back of this string in one operation.
   void Append(const wchar_t* pData1, const wchar_t* pData2 = nullptr, const wchar_t* pData3 = nullptr, const wchar_t* pData4 = nullptr, const wchar_t* pData5 = nullptr, const wchar_t* pData6 = nullptr); // [tested]
 
-  /// \brief Appends all the given strings at the back of this string in one operation.
-  void Append(xiiStringView sData1, xiiStringView sData2 = {}, xiiStringView sData3 = {}, xiiStringView sData4 = {}, xiiStringView sData5 = {}, xiiStringView sData6 = {}); // [tested]
+  /// \brief Appends all the given strings to the back of this string in one operation.
+  void Append(xiiStringView sData1); // [tested]
+  /// \brief Appends all the given strings to the back of this string in one operation.
+  void Append(xiiStringView sData1, xiiStringView sData2); // [tested]
+  /// \brief Appends all the given strings to the back of this string in one operation.
+  void Append(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3); // [tested]
+  /// \brief Appends all the given strings to the back of this string in one operation.
+  void Append(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4); // [tested]
+  /// \brief Appends all the given strings to the back of this string in one operation.
+  void Append(xiiStringView sData1, xiiStringView sData2, xiiStringView sData3, xiiStringView sData4, xiiStringView sData5, xiiStringView sData6 = {}); // [tested]
 
   /// \brief Prepends a single Utf32 character.
   void Prepend(xiiUInt32 uiChar); // [tested]
@@ -322,8 +337,6 @@ public:
   void PathParentDirectory(xiiUInt32 uiLevelsUp = 1); // [tested]
 
   /// \brief Appends several path pieces. Makes sure they are always properly separated by a slash.
-  ///
-  /// Will call 'MakeCleanPath' internally, so the representation of the path might change.
   void AppendPath(xiiStringView sPath1, xiiStringView sPath2 = {}, xiiStringView sPath3 = {}, xiiStringView sPath4 = {}); // [tested]
 
   /// \brief Similar to Append() but the very first argument is a separator that is only appended (once) if the existing string is not empty and does
@@ -346,11 +359,17 @@ public:
   /// sNewExtension may or may not start with a dot.
   /// If sNewExtension is empty, the file extension is removed, but the dot remains.
   /// E.g. "file.txt" -> "file."
-  /// If the full extension should be removed, including the dot, use RemoveFileExtension() instead.
-  void ChangeFileExtension(xiiStringView sNewExtension); // [tested]
+  /// If you also want to remove the dot, use RemoveFileExtension() instead.
+  ///
+  /// If bFullExtension is false, a file named "file.a.b.c" will replace only "c".
+  /// If bFullExtension is true, a file named "file.a.b.c" will replace all of "a.b.c".
+  void ChangeFileExtension(xiiStringView sNewExtension, bool bFullExtension = false); // [tested]
 
   /// \brief If any extension exists, it is removed, including the dot before it.
-  void RemoveFileExtension(); // [tested]
+  ///
+  /// If bFullExtension is false, a file named "file.a.b.c" will end up as "file.a.b"
+  /// If bFullExtension is true, a file named "file.a.b.c" will end up as "file"
+  void RemoveFileExtension(bool bFullExtension = false); // [tested]
 
   /// \brief Converts this path into a relative path to the path with the awesome variable name 'szAbsolutePathToMakeThisRelativeTo'
   ///
@@ -372,16 +391,42 @@ public:
   xiiUInt64 GetHeapMemoryUsage() const { return m_Data.GetHeapMemoryUsage(); }
 
   /// \brief Removes all characters from the start and end that appear in the given strings.
-  void Trim(const char* szTrimChars); // [tested]
+  ///
+  /// The default string removes all standard whitespace characters.
+  void Trim(const char* szTrimChars = " \f\n\r\t\v"); // [tested]
 
   /// \brief Removes all characters from the start and/or end that appear in the given strings.
   void Trim(const char* szTrimCharsStart, const char* szTrimCharsEnd); // [tested]
+
+  /// \brief Removes all characters from the start that appear in the given strings.
+  ///
+  /// The default string removes all standard whitespace characters.
+  void TrimLeft(const char* szTrimChars = " \f\n\r\t\v");
+
+  /// \brief Removes all characters from the end that appear in the given strings.
+  ///
+  /// The default string removes all standard whitespace characters.
+  void TrimRight(const char* szTrimChars = " \f\n\r\t\v");
 
   /// \brief If the string starts with the given word (case insensitive), it is removed and the function returns true.
   bool TrimWordStart(xiiStringView sWord); // [tested]
 
   /// \brief If the string ends with the given word (case insensitive), it is removed and the function returns true.
   bool TrimWordEnd(xiiStringView sWord); // [tested]
+
+#if XII_ENABLED(XII_INTEROP_STL_STRINGS)
+  /// \brief Copies the given substring into this one. The xiiStringView might actually be a substring of this very string.
+  /* implicit */ xiiStringBuilder(const std::string_view& rhs, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+
+  /// \brief Copies the given substring into this one. The xiiStringView might actually be a substring of this very string.
+  /* implicit */ xiiStringBuilder(const std::string& rhs, xiiAllocatorBase* pAllocator = xiiFoundation::GetDefaultAllocator());
+
+  /// \brief Copies the given substring into this one. The xiiStringView might actually be a substring of this very string.
+  void operator=(const std::string_view& rhs);
+
+  /// \brief Copies the given substring into this one. The xiiStringView might actually be a substring of this very string.
+  void operator=(const std::string& rhs);
+#endif
 
 private:
   /// \brief Will remove all double path separators (slashes and backslashes) in a path, except if the path starts with two (back-)slashes,
@@ -397,7 +442,6 @@ private:
 
   friend xiiStreamReader;
 
-  xiiUInt32                 m_uiCharacterCount;
   xiiHybridArray<char, 128> m_Data;
 };
 

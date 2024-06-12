@@ -293,7 +293,7 @@ void xiiQtPropertyWidget::ExtendContextMenu(QMenu& m)
       mimeData->setText(m_pProp->GetPropertyName().GetData(tmp));
       clipboard->setMimeData(mimeData);
 
-      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Property Name: {}", m_pProp->GetPropertyName()), xiiTime::Seconds(5));
+      xiiQtUiServices::GetSingleton()->ShowAllDocumentsTemporaryStatusBarMessage(xiiFmt("Copied Property Name: {}", m_pProp->GetPropertyName()), xiiTime::MakeFromSeconds(5));
     };
 
     QAction* pAction = m.addAction("Copy Internal Property Name:");
@@ -1255,7 +1255,7 @@ xiiQtPropertyContainerWidget::Element& xiiQtPropertyContainerWidget::AddElement(
     connect(pDeleteButton, &QToolButton::clicked, this, &xiiQtPropertyContainerWidget::OnElementButtonClicked);
   }
 
-  m_Elements.Insert(Element(pSubGroup, pNewWidget, pHelpButton), index);
+  m_Elements.InsertAt(index, Element(pSubGroup, pNewWidget, pHelpButton));
   return m_Elements[index];
 }
 
@@ -1624,7 +1624,7 @@ void xiiQtPropertyTypeContainerWidget::UpdateElement(xiiUInt32 index)
       elem.m_pSubGroup->SetTitle(sTitle);
     }
 
-    xiiColor borderIconColor = xiiColor::ZeroColor();
+    xiiColor borderIconColor = xiiColor::MakeZero();
 
     if (const xiiColorAttribute* pColorAttrib = pCommonType->GetAttributeByType<xiiColorAttribute>())
     {

@@ -28,7 +28,7 @@ xiiResult xiiProcessGroup::Launch(const xiiProcessOptions& opt)
   return process.Launch(opt);
 }
 
-xiiResult xiiProcessGroup::WaitToFinish(xiiTime timeout /*= xiiTime::Zero()*/)
+xiiResult xiiProcessGroup::WaitToFinish(xiiTime timeout /*= xiiTime::MakeZero()*/)
 {
   for (auto& process : m_Processes)
   {

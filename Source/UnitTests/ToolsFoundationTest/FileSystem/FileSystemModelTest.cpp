@@ -137,7 +137,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, DataDirPath)
     CheckIsValid(path);
     XII_TEST_INT(path.GetDataDirIndex(), 0);
 
-    newRootFolders.Insert("C:/Some/Other/DataDir2", 0);
+    newRootFolders.InsertAt(0, "C:/Some/Other/DataDir2");
     path.UpdateDataDirInfos(newRootFolders);
     CheckIsValid(path);
     XII_TEST_INT(path.GetDataDirIndex(), 1);
@@ -311,7 +311,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
       XII_LOCK(fileEventLock);
       if (fileEvents.GetCount() > 0)
@@ -335,7 +335,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     {
 #  if XII_ENABLED(XII_PLATFORM_LINUX)
       // EXT3 filesystem only support second resolution so we won't detect the modification if it is done within the same second.
-      xiiThreadUtils::Sleep(xiiTime::Seconds(1.0));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromSeconds(1.0));
 #  endif
       xiiFileWriter FileOut;
       XII_TEST_RESULT(FileOut.Open(sFilePath));
@@ -347,7 +347,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
       XII_LOCK(fileEventLock);
       if (fileEvents.GetCount() > 0)
@@ -376,7 +376,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
       XII_LOCK(fileEventLock);
       if (fileEvents.GetCount() == 2)
@@ -404,7 +404,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
       XII_LOCK(folderEventLock);
       if (folderEvents.GetCount() > 0)
@@ -433,7 +433,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
       XII_LOCK(fileEventLock);
       if (fileEvents.GetCount() == 2)
@@ -470,7 +470,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
       XII_LOCK(fileEventLock);
       XII_LOCK(folderEventLock);
@@ -549,8 +549,8 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
       dataDir.m_sDataDirSpecialPath = sOutputFolder2;
       dataDir.m_sRootName           = "output2";
 
-      rootFolders.Insert(sOutputFolder, 0);
-      fsConfig.m_DataDirs.Insert(dataDir, 0);
+      rootFolders.InsertAt(0, sOutputFolder);
+      fsConfig.m_DataDirs.InsertAt(0, dataDir);
     }
 
     xiiFileSystemModel::GetSingleton()->Initialize(fsConfig, std::move(referencedFiles), std::move(referencedFolders));
@@ -665,7 +665,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (size_t i = 0; i < 15; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
     }
     CompareFiles({});
     CompareFolders({});
@@ -703,7 +703,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (size_t i = 0; i < 15; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
     }
     CompareFiles({});
     CompareFolders({});
@@ -739,7 +739,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (size_t i = 0; i < 15; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
     }
     CompareFiles({});
     CompareFolders({});
@@ -783,7 +783,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (size_t i = 0; i < 15; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
     }
     CompareFiles({});
     CompareFolders({});
@@ -794,7 +794,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     xiiStringBuilder sFilePathNew(sOutputFolder);
     sFilePathNew.AppendPath("Folder12", "rootFile2.txt");
 
-    xiiUuid docGuid  = xiiUuid::CreateUuid();
+    xiiUuid docGuid  = xiiUuid::MakeUuid();
     auto    callback = [&](const xiiFileStatus& status, xiiStreamReader& ref_reader) {
       XII_TEST_INT((xiiInt64)status.m_uiHash, (xiiInt64)10983861097202158394u);
       xiiFileSystemModel::GetSingleton()->LinkDocument(sFilePathNew, docGuid).IgnoreResult();
@@ -814,8 +814,8 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     xiiStringBuilder sFilePathNew(sOutputFolder);
     sFilePathNew.AppendPath("Folder12", "rootFile2.txt");
 
-    xiiUuid guid  = xiiUuid::CreateUuid();
-    xiiUuid guid2 = xiiUuid::CreateUuid();
+    xiiUuid guid  = xiiUuid::MakeUuid();
+    xiiUuid guid2 = xiiUuid::MakeUuid();
     {
       XII_TEST_RESULT(xiiFileSystemModel::GetSingleton()->LinkDocument(sFilePathNew, guid));
       XII_TEST_RESULT(xiiFileSystemModel::GetSingleton()->LinkDocument(sFilePathNew, guid));
@@ -847,7 +847,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (size_t i = 0; i < 15; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
     }
     CompareFiles({});
     CompareFolders({});
@@ -866,7 +866,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
       XII_LOCK(fileEventLock);
       if (fileEvents.GetCount() == 2)
@@ -897,7 +897,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
       XII_LOCK(fileEventLock);
       if (fileEvents.GetCount() == 2 && folderEvents.GetCount() == 2)
@@ -942,7 +942,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
     for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
     {
       xiiFileSystemModel::GetSingleton()->MainThreadTick();
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
       XII_LOCK(fileEventLock);
       XII_LOCK(folderEventLock);
@@ -991,7 +991,7 @@ XII_CREATE_SIMPLE_TEST(FileSystem, FileSystemModel)
       for (xiiUInt32 i = 0; i < WAIT_LOOPS; i++)
       {
         xiiFileSystemModel::GetSingleton()->MainThreadTick();
-        xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+        xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
         XII_LOCK(fileEventLock);
         if (fileEvents.GetCount() > 0)

@@ -184,7 +184,7 @@ void xiiQtCurve1DEditorWidget::NormalizeCurveX(xiiUInt32 uiActiveCurve)
     pos.x -= minX;
     pos.x *= rangeNorm;
 
-    Q_EMIT CpMovedEvent(uiActiveCurve, i, m_Curves.TickFromTime(xiiTime::Seconds(pos.x)), pos.y);
+    Q_EMIT CpMovedEvent(uiActiveCurve, i, m_Curves.TickFromTime(xiiTime::MakeFromSeconds(pos.x)), pos.y);
 
     xiiVec2 lt = cp.m_LeftTangent;
     lt.x *= rangeNorm;
@@ -235,7 +235,7 @@ void xiiQtCurve1DEditorWidget::NormalizeCurveY(xiiUInt32 uiActiveCurve)
     pos.y -= minY;
     pos.y *= rangeNorm;
 
-    Q_EMIT CpMovedEvent(uiActiveCurve, i, m_Curves.TickFromTime(xiiTime::Seconds(pos.x)), pos.y);
+    Q_EMIT CpMovedEvent(uiActiveCurve, i, m_Curves.TickFromTime(xiiTime::MakeFromSeconds(pos.x)), pos.y);
 
     xiiVec2 lt = cp.m_LeftTangent;
     lt.y *= rangeNorm;
@@ -323,7 +323,7 @@ void xiiQtCurve1DEditorWidget::MirrorHorizontally(xiiUInt32 uiActiveCurve)
     xiiVec2d pos = cp.m_Position;
     pos.x        = centerX - (pos.x - centerX);
 
-    Q_EMIT CpMovedEvent(uiActiveCurve, i, m_Curves.TickFromTime(xiiTime::Seconds(pos.x)), pos.y);
+    Q_EMIT CpMovedEvent(uiActiveCurve, i, m_Curves.TickFromTime(xiiTime::MakeFromSeconds(pos.x)), pos.y);
 
     xiiVec2 lt = cp.m_RightTangent;
     xiiVec2 rt = cp.m_LeftTangent;
@@ -374,7 +374,7 @@ void xiiQtCurve1DEditorWidget::MirrorVertically(xiiUInt32 uiActiveCurve)
     xiiVec2d pos = cp.m_Position;
     pos.y        = centerY - (pos.y - centerY);
 
-    Q_EMIT CpMovedEvent(uiActiveCurve, i, m_Curves.TickFromTime(xiiTime::Seconds(pos.x)), pos.y);
+    Q_EMIT CpMovedEvent(uiActiveCurve, i, m_Curves.TickFromTime(xiiTime::MakeFromSeconds(pos.x)), pos.y);
 
     xiiVec2 lt = cp.m_LeftTangent;
     xiiVec2 rt = cp.m_RightTangent;
@@ -448,7 +448,7 @@ void xiiQtCurve1DEditorWidget::onMoveControlPoints(double x, double y)
 
     ClampPoint(newPos.x, newPos.y);
 
-    Q_EMIT CpMovedEvent(cpSel.m_uiCurve, cpSel.m_uiPoint, m_Curves.TickFromTime(xiiTime::Seconds(newPos.x)), newPos.y);
+    Q_EMIT CpMovedEvent(cpSel.m_uiCurve, cpSel.m_uiPoint, m_Curves.TickFromTime(xiiTime::MakeFromSeconds(newPos.x)), newPos.y);
   }
 
   Q_EMIT EndCpChangesEvent();
@@ -473,7 +473,7 @@ void xiiQtCurve1DEditorWidget::onScaleControlPoints(QPointF refPt, double scaleX
 
     ClampPoint(newPos.x, newPos.y);
 
-    Q_EMIT CpMovedEvent(cpSel.m_uiCurve, cpSel.m_uiPoint, m_Curves.TickFromTime(xiiTime::Seconds(newPos.x)), newPos.y);
+    Q_EMIT CpMovedEvent(cpSel.m_uiCurve, cpSel.m_uiPoint, m_Curves.TickFromTime(xiiTime::MakeFromSeconds(newPos.x)), newPos.y);
   }
 
   Q_EMIT EndCpChangesEvent();
@@ -768,7 +768,7 @@ void xiiQtCurve1DEditorWidget::onAddPoint()
 {
   Q_EMIT BeginCpChangesEvent("Add Control Point");
 
-  InsertCpAt(m_ContextMenuScenePos.x(), m_ContextMenuScenePos.y(), xiiVec2d::ZeroVector());
+  InsertCpAt(m_ContextMenuScenePos.x(), m_ContextMenuScenePos.y(), xiiVec2d::MakeZero());
 
   Q_EMIT EndCpChangesEvent();
 }
@@ -838,7 +838,7 @@ void xiiQtCurve1DEditorWidget::InsertCpAt(double posX, double value, xiiVec2d ep
     curveIdx = 0;
   }
 
-  Q_EMIT InsertCpEvent(curveIdx, m_Curves.TickFromTime(xiiTime::Seconds(posX)), value);
+  Q_EMIT InsertCpEvent(curveIdx, m_Curves.TickFromTime(xiiTime::MakeFromSeconds(posX)), value);
 }
 
 
@@ -966,7 +966,7 @@ void xiiQtCurve1DEditorWidget::onGenerateCurve(xiiEasingFunction::Enum function,
     const double y             = samples[uiIdx].m_fCorrectValue;
 
     cmp.AddControlPoint(x).m_Position.y = y;
-    InsertCpAt(x, y, xiiVec2d::ZeroVector());
+    InsertCpAt(x, y, xiiVec2d::MakeZero());
   };
 
   AddPt(0);
@@ -1014,7 +1014,7 @@ void xiiQtCurve1DEditorWidget::onGenerateCurve(xiiEasingFunction::Enum function,
   for (xiiUInt32 i = 0; i <= m_Curves.m_uiFramesPerSecond; i += 2)
   {
     const double x = i / fps;
-    InsertCpAt(x, xiiMath::GetEasingValue<double>(easingFunction, x, inverse), xiiVec2d::ZeroVector());
+    InsertCpAt(x, xiiMath::GetEasingValue<double>(easingFunction, x, inverse), xiiVec2d::MakeZero());
   }
 
 #endif
@@ -1276,7 +1276,7 @@ void xiiQtCurve1DEditorWidget::on_LinePosition_editingFinished()
   {
     const auto& cp = m_Curves.m_Curves[cpSel.m_uiCurve]->m_ControlPoints[cpSel.m_uiPoint];
 
-    xiiInt64 iTick = m_Curves.TickFromTime(xiiTime::Seconds(value));
+    xiiInt64 iTick = m_Curves.TickFromTime(xiiTime::MakeFromSeconds(value));
     if (cp.m_iTick != iTick)
       Q_EMIT CpMovedEvent(cpSel.m_uiCurve, cpSel.m_uiPoint, iTick, cp.m_fValue);
   }

@@ -33,7 +33,7 @@ namespace
     void Update(const xiiWorldModule::UpdateContext& context)
     {
       xiiQuat qRot;
-      qRot.SetFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::Degree(2.0f));
+      qRot = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), xiiAngle::MakeFromDegree(2.0f));
 
       m_qRotation = qRot * m_qRotation;
 

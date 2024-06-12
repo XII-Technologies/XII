@@ -104,11 +104,16 @@ xiiStringDeduplicationReadContext::~xiiStringDeduplicationReadContext() = defaul
 
 xiiStringView xiiStringDeduplicationReadContext::DeserializeString(xiiStreamReader& ref_reader)
 {
-  xiiUInt32 uiIndex;
+  xiiUInt32 uiIndex = xiiInvalidIndex;
   ref_reader >> uiIndex;
+
+  if (uiIndex >= m_DeduplicatedStrings.GetCount())
+  {
+    XII_ASSERT_DEBUG(uiIndex < m_DeduplicatedStrings.GetCount(), "Failed to read data from file.");
+    return {};
+  }
 
   return m_DeduplicatedStrings[uiIndex].GetView();
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_StringDeduplicationContext);

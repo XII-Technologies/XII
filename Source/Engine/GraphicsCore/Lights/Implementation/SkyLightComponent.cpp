@@ -57,7 +57,7 @@ XII_END_COMPONENT_TYPE
 
 xiiSkyLightComponent::xiiSkyLightComponent()
 {
-  m_Desc.m_uniqueID = xiiUuid::CreateUuid();
+  m_Desc.m_uniqueID = xiiUuid::MakeUuid();
 }
 
 xiiSkyLightComponent::~xiiSkyLightComponent() = default;

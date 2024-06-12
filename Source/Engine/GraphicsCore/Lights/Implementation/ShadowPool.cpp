@@ -503,7 +503,7 @@ xiiUInt32 xiiShadowPool::AddDirectionalLight(const xiiDirectionalLightComponent*
 
       if (false)
       {
-        xiiDebugRenderer::DrawLineSphere(pReferenceView->GetHandle(), xiiBoundingSphere(center, radius), xiiColor::OrangeRed);
+        xiiDebugRenderer::DrawLineSphere(pReferenceView->GetHandle(), xiiBoundingSphere::MakeFromCenterAndRadius(center, radius), xiiColor::OrangeRed);
       }
 
       float   fCameraToCenterDistance = radius + fNearPlaneOffset;
@@ -516,7 +516,7 @@ xiiUInt32 xiiShadowPool::AddDirectionalLight(const xiiDirectionalLightComponent*
 
       // stabilize
       xiiMat4 worldToLightMatrix = pView->GetViewMatrix(xiiCameraEye::Left);
-      xiiVec3 offset             = worldToLightMatrix.TransformPosition(xiiVec3::ZeroVector());
+      xiiVec3 offset             = worldToLightMatrix.TransformPosition(xiiVec3::MakeZero());
       float   texelInWorld       = (2.0f * radius) / s_uiShadowMapSize;
       offset.x -= xiiMath::Floor(offset.x / texelInWorld) * texelInWorld;
       offset.y -= xiiMath::Floor(offset.y / texelInWorld) * texelInWorld;
@@ -572,7 +572,7 @@ xiiUInt32 xiiShadowPool::AddPointLight(const xiiPointLightComponent* pPointLight
   xiiVec3              vUp       = xiiVec3(0.0f, 0.0f, 1.0f);
 
   float fPenumbraSize = xiiMath::Max(pPointLight->GetPenumbraSize(), (0.5f / s_uiMinShadowMapSize)); // at least one texel for hardware pcf
-  float fFov          = AddSafeBorder(xiiAngle::Degree(90.0f), fPenumbraSize);
+  float fFov          = AddSafeBorder(xiiAngle::MakeFromDegree(90.0f), fPenumbraSize);
 
   float fNearPlane = 0.1f; ///\todo expose somewhere
   float fFarPlane  = pPointLight->GetEffectiveRange();

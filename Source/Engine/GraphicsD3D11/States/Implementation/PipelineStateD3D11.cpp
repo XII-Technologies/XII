@@ -94,7 +94,7 @@ void xiiGALPipelineStateD3D11::SetConstantBufferPlatform(const xiiGALPipelineRes
 
   ID3D11Buffer* pD3D11Buffer = pConstantBuffer != nullptr ? static_cast<xiiGALBufferD3D11*>(pConstantBuffer)->GetBuffer() : nullptr;
 
-  xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::FromMask(bindingInformation.m_ShaderStages.GetValue());
+  xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::MakeFromMask(bindingInformation.m_ShaderStages.GetValue());
   for (auto it = stageBitfield.GetIterator(); it.IsValid(); ++it)
   {
     // xiiUInt32 uiStageIndex = it.Value();
@@ -117,7 +117,7 @@ void xiiGALPipelineStateD3D11::SetShaderResourceBufferViewPlatform(const xiiGALP
 
   ID3D11ShaderResourceView* pD3D11ShaderResourceView = pBufferView != nullptr ? static_cast<ID3D11ShaderResourceView*>(static_cast<xiiGALBufferViewD3D11*>(pBufferView)->GetBufferView()) : nullptr;
 
-  xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::FromMask(bindingInformation.m_ShaderStages.GetValue());
+  xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::MakeFromMask(bindingInformation.m_ShaderStages.GetValue());
   for (auto it = stageBitfield.GetIterator(); it.IsValid(); ++it)
   {
     xiiUInt32 uiStageIndex = ShaderType::GetIndex(xiiGALShaderType::GetStageFlag(it.Value()));
@@ -146,7 +146,7 @@ void xiiGALPipelineStateD3D11::SetShaderResourceTextureViewPlatform(const xiiGAL
 
   ID3D11ShaderResourceView* pD3D11ShaderResourceView = pTextureView != nullptr ? static_cast<ID3D11ShaderResourceView*>(static_cast<xiiGALTextureViewD3D11*>(pTextureView)->GetTextureView()) : nullptr;
 
-  xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::FromMask(bindingInformation.m_ShaderStages.GetValue());
+  xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::MakeFromMask(bindingInformation.m_ShaderStages.GetValue());
   for (auto it = stageBitfield.GetIterator(); it.IsValid(); ++it)
   {
     xiiUInt32 uiStageIndex = ShaderType::GetIndex(xiiGALShaderType::GetStageFlag(it.Value()));
@@ -213,7 +213,7 @@ void xiiGALPipelineStateD3D11::SetSamplerPlatform(const xiiGALPipelineResourceDe
 
   ID3D11SamplerState* pD3D11SamplerState = pSampler != nullptr ? static_cast<xiiGALSamplerD3D11*>(pSampler)->GetSampler() : nullptr;
 
-  xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::FromMask(bindingInformation.m_ShaderStages.GetValue());
+  xiiStaticBitfield32 stageBitfield = xiiStaticBitfield32::MakeFromMask(bindingInformation.m_ShaderStages.GetValue());
   for (auto it = stageBitfield.GetIterator(); it.IsValid(); ++it)
   {
     xiiUInt32 uiStageIndex = ShaderType::GetIndex(xiiGALShaderType::GetStageFlag(it.Value()));

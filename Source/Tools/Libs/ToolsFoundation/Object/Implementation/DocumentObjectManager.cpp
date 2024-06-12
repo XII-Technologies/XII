@@ -91,7 +91,7 @@ xiiDocumentObject* xiiDocumentObjectManager::CreateObject(const xiiRTTI* pRtti, 
   if (guid.IsValid())
     pObject->m_Guid = guid;
   else
-    pObject->m_Guid = xiiUuid::CreateUuid();
+    pObject->m_Guid = xiiUuid::MakeUuid();
 
   PatchEmbeddedClassObjectsInternal(pObject, pRtti, false);
 
@@ -680,7 +680,7 @@ void xiiDocumentObjectManager::PatchEmbeddedClassObjectsInternal(xiiDocumentObje
       xiiStringBuilder sTemp;
       xiiConversionUtils::ToString(pObject->GetGuid(), sTemp);
       sTemp.Append("/", pProperty->GetPropertyName());
-      const xiiUuid      subObjectGuid   = xiiUuid::StableUuidForString(sTemp);
+      const xiiUuid      subObjectGuid   = xiiUuid::MakeStableUuidFromString(sTemp);
       xiiDocumentObject* pEmbeddedObject = CreateObject(pProperty->GetSpecificType(), subObjectGuid);
       if (addToDoc)
       {

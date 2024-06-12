@@ -29,7 +29,7 @@ xiiTranslateGizmo::xiiTranslateGizmo()
   m_hPlaneXY.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable | xiiGizmoFlags::FaceCamera, "Editor/Meshes/TranslatePlaneZ.obj");
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 
   m_Mode                 = TranslateMode::None;
   m_MovementMode         = MovementMode::ScreenProjection;
@@ -216,8 +216,7 @@ xiiResult xiiTranslateGizmo::GetPointOnPlane(xiiInt32 iScreenPosX, xiiInt32 iScr
   if (xiiGraphicsUtils::ConvertScreenPosToWorldPos(m_mInvViewProj, 0, 0, m_vViewport.x, m_vViewport.y, xiiVec3(iScreenPosX, iScreenPosY, 0), vPos, &vRayDir).Failed())
     return XII_FAILURE;
 
-  xiiPlane Plane;
-  Plane = xiiPlane(m_vMoveAxis, m_vStartPosition);
+  xiiPlane Plane = xiiPlane::MakeFromNormalAndPoint(m_vMoveAxis, m_vStartPosition);
 
   xiiVec3 vIntersection;
   if (!Plane.GetRayIntersection(m_pCamera->GetPosition(), vRayDir, nullptr, &vIntersection))
@@ -238,8 +237,7 @@ xiiResult xiiTranslateGizmo::GetPointOnAxis(xiiInt32 iScreenPosX, xiiInt32 iScre
   const xiiVec3 vPlaneTangent = m_vMoveAxis.CrossRH(m_pCamera->GetDirForwards()).GetNormalized();
   const xiiVec3 vPlaneNormal  = m_vMoveAxis.CrossRH(vPlaneTangent);
 
-  xiiPlane Plane;
-  Plane = xiiPlane(vPlaneNormal, m_vStartPosition);
+  xiiPlane Plane = xiiPlane::MakeFromNormalAndPoint(vPlaneNormal, m_vStartPosition);
 
   xiiVec3 vIntersection;
   if (!Plane.GetRayIntersection(m_pCamera->GetPosition(), vRayDir, nullptr, &vIntersection))
@@ -259,7 +257,7 @@ xiiEditorInput xiiTranslateGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   const xiiTime tNow = xiiTime::Now();
 
-  if (tNow - m_LastInteraction < xiiTime::Seconds(1.0 / 25.0))
+  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
     return xiiEditorInput::WasExclusivelyHandled;
 
   const QPoint mousePosition = e->globalPosition().toPoint();
@@ -374,6 +372,6 @@ void xiiTranslateGizmo::SetCameraSpeed(float fSpeed)
 
 void xiiTranslateGizmo::UpdateStatusBarText(xiiQtEngineDocumentWindow* pWindow)
 {
-  const xiiVec3 diff = xiiVec3::ZeroVector();
+  const xiiVec3 diff = xiiVec3::MakeZero();
   GetOwnerWindow()->SetPermanentStatusBarMsg(xiiFmt("Translation: {}, {}, {}", xiiArgF(diff.x, 2), xiiArgF(diff.y, 2), xiiArgF(diff.z, 2)));
 }

@@ -204,7 +204,7 @@ void xiiQtImageCache::StopRequestProcessing(bool bPurgeExistingCache)
       bTaskRunning = m_bTaskRunning;
     }
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(100));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(100));
   }
 }
 
@@ -293,7 +293,7 @@ void xiiQtImageCache::CleanupCache()
   const xiiTime tNow = xiiTime::Now();
 
   // do not clean up too often
-  if (tNow - m_LastCleanupTime < xiiTime::Seconds(10))
+  if (tNow - m_LastCleanupTime < xiiTime::MakeFromSeconds(10))
     return;
 
   m_LastCleanupTime = tNow;
@@ -301,7 +301,7 @@ void xiiQtImageCache::CleanupCache()
   // purge everything older than 5 minutes, then 4 minutes, ...
   for (xiiInt32 i = 5; i > 2; --i)
   {
-    const xiiTime tPurgeThreshold = xiiTime::Seconds(60) * i;
+    const xiiTime tPurgeThreshold = xiiTime::MakeFromSeconds(60) * i;
 
     // purge images that have not been accessed in a longer time
     for (auto it = m_ImageCache.GetIterator(); it.IsValid();)

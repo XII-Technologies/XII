@@ -246,9 +246,9 @@ void xiiGameApplication::RenderFps()
   ++uiFrames;
   tAccumTime += m_FrameTime;
 
-  if (tAccumTime >= xiiTime::Seconds(0.5))
+  if (tAccumTime >= xiiTime::MakeFromSeconds(0.5))
   {
-    tAccumTime -= xiiTime::Seconds(0.5);
+    tAccumTime -= xiiTime::MakeFromSeconds(0.5);
     tDisplayedFrameTime = m_FrameTime;
 
     uiFPS    = uiFrames * 2;

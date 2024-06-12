@@ -4,9 +4,13 @@
 #include <Foundation/Math/Math.h>
 #include <Foundation/Types/ArrayPtr.h>
 
+#if XII_ENABLED(XII_INTEROP_STL_SPAN)
+#  include <span>
+#endif
+
 /// \brief Value used by containers for indices to indicate an invalid index.
 #ifndef xiiInvalidIndex
-#  define xiiInvalidIndex 0xFFFFFFFF
+#  define xiiInvalidIndex 0xFFFFFFFFU
 #endif
 
 /// \brief Base class for all array containers. Implements all the basic functionality that only requires a pointer and the element count.
@@ -71,10 +75,10 @@ public:
   bool Contains(const T& value) const; // [tested]
 
   /// \brief Inserts value at index by shifting all following elements.
-  void Insert(const T& value, xiiUInt32 uiIndex); // [tested]
+  void InsertAt(xiiUInt32 uiIndex, const T& value); // [tested]
 
   /// \brief Inserts value at index by shifting all following elements.
-  void Insert(T&& value, xiiUInt32 uiIndex); // [tested]
+  void InsertAt(xiiUInt32 uiIndex, T&& value); // [tested]
 
   /// \brief Inserts all elements in the range starting at the given index, shifting the elements after the index.
   void InsertRange(const xiiArrayPtr<const T>& range, xiiUInt32 uiIndex); // [tested]
@@ -159,6 +163,28 @@ public:
   using const_reverse_iterator = const_reverse_pointer_iterator<T>;
   using iterator               = T*;
   using reverse_iterator       = reverse_pointer_iterator<T>;
+
+#if XII_ENABLED(XII_INTEROP_STL_SPAN)
+  operator std::span<const T>() const
+  {
+    return std::span(GetData(), static_cast<size_t>(GetCount()));
+  }
+
+  operator std::span<T>()
+  {
+    return std::span(GetData(), static_cast<size_t>(GetCount()));
+  }
+
+  std::span<T> GetSpan()
+  {
+    return std::span(GetData(), static_cast<size_t>(GetCount()));
+  }
+
+  std::span<const T> GetSpan() const
+  {
+    return std::span(GetData(), static_cast<size_t>(GetCount()));
+  }
+#endif
 
 protected:
   void DoSwap(xiiArrayBase<T, Derived>& other);

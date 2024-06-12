@@ -264,7 +264,7 @@ void xiiMemoryTracker::ResetPerFrameAllocatorStats()
   {
     AllocatorData& data                     = it.Value();
     data.m_Stats.m_uiPerFrameAllocationSize = 0;
-    data.m_Stats.m_PerFrameAllocationTime.SetZero();
+    data.m_Stats.m_PerFrameAllocationTime   = xiiTime::MakeZero();
   }
 }
 

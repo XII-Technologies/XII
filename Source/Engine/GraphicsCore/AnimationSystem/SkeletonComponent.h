@@ -66,7 +66,7 @@ protected:
   xiiDebugRenderer::Line& AddLine(const xiiVec3& vStart, const xiiVec3& vEnd, const xiiColor& color);
 
   xiiSkeletonResourceHandle m_hSkeleton;
-  xiiTransform              m_RootTransform           = xiiTransform::IdentityTransform();
+  xiiTransform              m_RootTransform           = xiiTransform::MakeIdentity();
   xiiUInt32                 m_uiSkeletonChangeCounter = 0;
   xiiString                 m_sBonesToHighlight;
 

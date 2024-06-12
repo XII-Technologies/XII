@@ -4,13 +4,17 @@
 
 XII_CREATE_SIMPLE_TEST(Containers, List)
 {
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor") { xiiList<xiiInt32> l; }
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "Constructor")
+  {
+    xiiList<xiiInt32> l;
+  }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "PushBack() / PeekBack")
   {
     xiiList<xiiInt32> l;
-    l.PushBack();
+    xiiInt32&         val = l.PushBack();
 
+    XII_TEST_INT(val, 0);
     XII_TEST_INT(l.GetCount(), 1);
     XII_TEST_INT(l.PeekBack(), 0);
   }
@@ -59,8 +63,9 @@ XII_CREATE_SIMPLE_TEST(Containers, List)
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "PushFront() / PeekFront")
   {
     xiiList<xiiInt32> l;
-    l.PushFront();
+    xiiInt32&         val = l.PushFront();
 
+    XII_TEST_INT(val, 0);
     XII_TEST_INT(l.GetCount(), 1);
     XII_TEST_INT(l.PeekFront(), 0);
   }
@@ -247,13 +252,16 @@ XII_CREATE_SIMPLE_TEST(Containers, List)
       l.Insert(it, *it + 10000);
     }
 
+    i = 1;
+
     // now remove every second element and only keep the larger values
-    for (xiiList<xiiInt32>::Iterator it = l.GetLastIterator(); it.IsValid(); --it)
+    for (xiiList<xiiInt32>::Iterator it = l.GetIterator(); it.IsValid();)
     {
-      it = l.Remove(it);
-      --it;
-      --i;
       XII_TEST_INT(*it, i + 10000);
+
+      ++it;
+      it = l.Remove(it);
+      ++i;
     }
 
     i = 1;
@@ -292,13 +300,13 @@ XII_CREATE_SIMPLE_TEST(Containers, List)
     XII_TEST_BOOL(xiiConstructionCounter::HasAllDestructed());
 
     l.PushBack();
-    XII_TEST_BOOL(xiiConstructionCounter::HasDone(2, 1));
+    XII_TEST_BOOL(xiiConstructionCounter::HasDone(1, 0));
 
     l.PushBack(xiiConstructionCounter(1));
     XII_TEST_BOOL(xiiConstructionCounter::HasDone(2, 1));
 
     l.SetCount(4);
-    XII_TEST_BOOL(xiiConstructionCounter::HasDone(4, 2));
+    XII_TEST_BOOL(xiiConstructionCounter::HasDone(2, 0));
 
     l.Clear();
     XII_TEST_BOOL(xiiConstructionCounter::HasDone(0, 4));

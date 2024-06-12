@@ -81,8 +81,7 @@ namespace xiiModelImporter2
         // Only FBX files have this unit scale factor and the default unit for FBX is cm. We want meters.
         fUnitScale /= 100.0f;
 
-        xiiMat3 s;
-        s.SetScalingMatrix(xiiVec3(fUnitScale));
+        xiiMat3 s = xiiMat3::MakeScaling(xiiVec3(fUnitScale));
 
         m_Options.m_RootTransform = s * m_Options.m_RootTransform;
       }
@@ -164,11 +163,11 @@ namespace xiiModelImporter2
     if (m_Options.m_pSkeletonOutput != nullptr)
     {
       m_Options.m_pSkeletonOutput->m_Children.PushBack(XII_DEFAULT_NEW(xiiEditableSkeletonJoint));
-      XII_SUCCEED_OR_RETURN(TraverseAiNode(m_pScene->mRootNode, xiiMat4::IdentityMatrix(), m_Options.m_pSkeletonOutput->m_Children.PeekBack()));
+      XII_SUCCEED_OR_RETURN(TraverseAiNode(m_pScene->mRootNode, xiiMat4::MakeIdentity(), m_Options.m_pSkeletonOutput->m_Children.PeekBack()));
     }
     else
     {
-      XII_SUCCEED_OR_RETURN(TraverseAiNode(m_pScene->mRootNode, xiiMat4::IdentityMatrix(), nullptr));
+      XII_SUCCEED_OR_RETURN(TraverseAiNode(m_pScene->mRootNode, xiiMat4::MakeIdentity(), nullptr));
     }
 
     return XII_SUCCESS;
@@ -185,7 +184,7 @@ namespace xiiModelImporter2
     if (pCurJoint)
     {
       pCurJoint->m_sName.Assign(pNode->mName.C_Str());
-      pCurJoint->m_LocalTransform.SetFromMat4(localTransform);
+      pCurJoint->m_LocalTransform = xiiTransform::MakeFromMat4(localTransform);
     }
 
     if (pNode->mNumMeshes > 0)

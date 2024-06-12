@@ -381,7 +381,7 @@ namespace xiiOpenDdlUtils
   /// \brief Writes a primitives list with a single value and an optional name.
   XII_FOUNDATION_DLL void StoreUInt64(xiiOpenDdlWriter& ref_writer, xiiUInt64 value, xiiStringView sName = {}, bool bGlobalName = false); // [tested]
 
-  /// \brief Writes a primitives list with a single value and an optional name.
+  /// \brief Writes an invalid variant and an optional name.
   XII_FOUNDATION_DLL void StoreInvalid(xiiOpenDdlWriter& ref_writer, xiiStringView sName = {}, bool bGlobalName = false);
 
 } // namespace xiiOpenDdlUtils

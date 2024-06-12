@@ -106,7 +106,7 @@ void xiiSimdVec4d::NormalizeIfNotZero(const xiiSimdDouble& fEpsilon)
 {
   xiiSimdDouble sqLength = GetLengthSquared<N>();
   m_v *= sqLength.GetInvSqrt<acc>();
-  m_v = sqLength > fEpsilon.m_v ? m_v : xiiVec4d::ZeroVector();
+  m_v = sqLength > fEpsilon.m_v ? m_v : xiiVec4d::MakeZero();
 }
 
 template <xiiInt32 N>
@@ -504,9 +504,9 @@ XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::GetOrthogonalVector() const
 }
 
 // static
-XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::ZeroVector()
+XII_ALWAYS_INLINE xiiSimdVec4d xiiSimdVec4d::MakeZero()
 {
-  return xiiVec4d::ZeroVector();
+  return xiiVec4d::MakeZero();
 }
 
 // static

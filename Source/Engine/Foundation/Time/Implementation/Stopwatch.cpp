@@ -12,8 +12,8 @@ xiiStopwatch::xiiStopwatch()
 
 void xiiStopwatch::StopAndReset()
 {
-  m_TotalDuration.SetZero();
-  m_bRunning = false;
+  m_TotalDuration = xiiTime::MakeZero();
+  m_bRunning      = false;
 }
 
 void xiiStopwatch::Resume()
@@ -57,7 +57,5 @@ xiiTime xiiStopwatch::Checkpoint()
 
   return tDiff;
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Time_Implementation_Stopwatch);

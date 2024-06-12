@@ -16,6 +16,9 @@ public:
 
   xiiSimdVec4u(xiiInternal::QuadUInt v); // [tested]
 
+  /// \brief Creates a xiiSimdVec4u that is initialized to zero.
+  [[nodiscard]] static xiiSimdVec4u MakeZero(); // [tested]
+
   void Set(xiiUInt32 uiXyzw); // [tested]
 
   void Set(xiiUInt32 x, xiiUInt32 y, xiiUInt32 z, xiiUInt32 w); // [tested]
@@ -28,7 +31,7 @@ public:
 public:
   xiiSimdVec4f ToFloat() const; // [tested]
 
-  static xiiSimdVec4u Truncate(const xiiSimdVec4f& f); // [tested]
+  [[nodiscard]] static xiiSimdVec4u Truncate(const xiiSimdVec4f& f); // [tested]
 
 public:
   template <xiiInt32 N>
@@ -43,18 +46,18 @@ public:
   xiiSimdVec4u Get() const; // [tested]
 
 public:
-  xiiSimdVec4u operator+(const xiiSimdVec4u& v) const; // [tested]
-  xiiSimdVec4u operator-(const xiiSimdVec4u& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4u operator+(const xiiSimdVec4u& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4u operator-(const xiiSimdVec4u& v) const; // [tested]
 
-  xiiSimdVec4u CompMul(const xiiSimdVec4u& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4u CompMul(const xiiSimdVec4u& v) const; // [tested]
 
-  xiiSimdVec4u operator|(const xiiSimdVec4u& v) const; // [tested]
-  xiiSimdVec4u operator&(const xiiSimdVec4u& v) const; // [tested]
-  xiiSimdVec4u operator^(const xiiSimdVec4u& v) const; // [tested]
-  xiiSimdVec4u operator~() const;                      // [tested]
+  [[nodiscard]] xiiSimdVec4u operator|(const xiiSimdVec4u& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4u operator&(const xiiSimdVec4u& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4u operator^(const xiiSimdVec4u& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4u operator~() const;                      // [tested]
 
-  xiiSimdVec4u operator<<(xiiUInt32 uiShift) const; // [tested]
-  xiiSimdVec4u operator>>(xiiUInt32 uiShift) const; // [tested]
+  [[nodiscard]] xiiSimdVec4u operator<<(xiiUInt32 uiShift) const; // [tested]
+  [[nodiscard]] xiiSimdVec4u operator>>(xiiUInt32 uiShift) const; // [tested]
 
   xiiSimdVec4u& operator+=(const xiiSimdVec4u& v); // [tested]
   xiiSimdVec4u& operator-=(const xiiSimdVec4u& v); // [tested]
@@ -66,8 +69,8 @@ public:
   xiiSimdVec4u& operator<<=(xiiUInt32 uiShift); // [tested]
   xiiSimdVec4u& operator>>=(xiiUInt32 uiShift); // [tested]
 
-  xiiSimdVec4u CompMin(const xiiSimdVec4u& v) const; // [tested]
-  xiiSimdVec4u CompMax(const xiiSimdVec4u& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4u CompMin(const xiiSimdVec4u& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4u CompMax(const xiiSimdVec4u& v) const; // [tested]
 
   xiiSimdVec4b operator==(const xiiSimdVec4u& v) const; // [tested]
   xiiSimdVec4b operator!=(const xiiSimdVec4u& v) const; // [tested]
@@ -75,8 +78,6 @@ public:
   xiiSimdVec4b operator<(const xiiSimdVec4u& v) const;  // [tested]
   xiiSimdVec4b operator>=(const xiiSimdVec4u& v) const; // [tested]
   xiiSimdVec4b operator>(const xiiSimdVec4u& v) const;  // [tested]
-
-  static xiiSimdVec4u ZeroVector(); // [tested]
 
 public:
   xiiInternal::QuadUInt m_v;

@@ -181,7 +181,7 @@ void xiiSceneDocument::ConvertToEditorPrefab(const xiiDeque<const xiiDocumentObj
 
     const xiiTransform transform = GetGlobalTransform(pObject);
 
-    xiiUuid newGuid   = xiiUuid::CreateUuid();
+    xiiUuid newGuid   = xiiUuid::MakeUuid();
     xiiUuid newObject = ReplaceByPrefab(pObject, pAsset->m_pAssetInfo->m_Path.GetAbsolutePath(), assetGuid, newGuid, false);
 
     if (newObject.IsValid())
@@ -225,8 +225,8 @@ void xiiSceneDocument::ConvertToEnginePrefab(const xiiDeque<const xiiDocumentObj
     // create an object with the reference prefab component
     {
       xiiUuid ObjectGuid, CmpGuid;
-      ObjectGuid = xiiUuid::CreateUuid();
-      CmpGuid    = xiiUuid::CreateUuid();
+      ObjectGuid = xiiUuid::MakeUuid();
+      CmpGuid    = xiiUuid::MakeUuid();
 
       xiiAddObjectCommand cmd;
       cmd.m_Parent = (pObject->GetParent() == GetObjectManager()->GetRootObject()) ? xiiUuid() : pObject->GetParent()->GetGuid();

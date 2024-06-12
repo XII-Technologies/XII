@@ -38,8 +38,7 @@ void TestSerialize(T* pObject)
   xiiRttiConverterWriter conv(&graph, &context, true, true);
 
   const xiiRTTI* pRtti = xiiGetStaticRTTI<T>();
-  xiiUuid        guid;
-  guid.CreateNewUuid();
+  const xiiUuid  guid  = xiiUuid::MakeUuid();
 
   context.RegisterObject(guid, pRtti, pObject);
   xiiAbstractObjectNode* pNode = conv.AddObjectToGraph(pRtti, pObject, "root");
@@ -141,7 +140,7 @@ XII_CREATE_SIMPLE_TEST(Serialization, RttiConverter)
     t1.m_fFloat1 = 5.0f;
     t1.m_UInt8   = 222;
     t1.m_variant = "A";
-    t1.m_Angle   = xiiAngle::Degree(5);
+    t1.m_Angle   = xiiAngle::MakeFromDegree(5);
     t1.m_DataBuffer.PushBack(1);
     t1.m_DataBuffer.PushBack(5);
     t1.m_vVec3I = xiiVec3I32(0, 1, 333);
@@ -164,7 +163,7 @@ XII_CREATE_SIMPLE_TEST(Serialization, RttiConverter)
     t1.m_Struct.m_fFloat1 = 5.0f;
     t1.m_Struct.m_UInt8   = 222;
     t1.m_Struct.m_variant = "A";
-    t1.m_Struct.m_Angle   = xiiAngle::Degree(5);
+    t1.m_Struct.m_Angle   = xiiAngle::MakeFromDegree(5);
     t1.m_Struct.m_DataBuffer.PushBack(1);
     t1.m_Struct.m_DataBuffer.PushBack(5);
     t1.m_Struct.m_vVec3I = xiiVec3I32(0, 1, 333);
@@ -226,17 +225,19 @@ XII_CREATE_SIMPLE_TEST(Serialization, RttiConverter)
     t1.m_Struct.m_fFloat1 = 5.0f;
     t1.m_Struct.m_UInt8   = 222;
     t1.m_Struct.m_variant = "A";
-    t1.m_Struct.m_Angle   = xiiAngle::Degree(5);
+    t1.m_Struct.m_Angle   = xiiAngle::MakeFromDegree(5);
     t1.m_Struct.m_DataBuffer.PushBack(1);
     t1.m_Struct.m_DataBuffer.PushBack(5);
     t1.m_Struct.m_vVec3I = xiiVec3I32(0, 1, 333);
-    t1.m_Time            = xiiTime::Seconds(22.2f);
+    t1.m_Time            = xiiTime::MakeFromSeconds(22.2f);
     t1.m_enumClass       = xiiExampleEnum::Value3;
     t1.m_bitflagsClass   = xiiExampleBitflags::Value1 | xiiExampleBitflags::Value2;
     t1.m_array.PushBack(40.0f);
     t1.m_array.PushBack(-1.5f);
     t1.m_Variant = xiiVec4(1, 2, 3, 4);
-    t1.SetText("LALALALA");
+    t1.SetCharPtr("Hello");
+    t1.SetString("World");
+    t1.SetStringView("!!!");
     TestSerialize(&t1);
 
     {

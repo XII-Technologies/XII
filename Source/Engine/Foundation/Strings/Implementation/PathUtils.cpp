@@ -10,7 +10,7 @@ const char* xiiPathUtils::FindPreviousSeparator(const char* szPathStart, const c
 
   while (szStartSearchAt > szPathStart)
   {
-    xiiUnicodeUtils::MoveToPriorUtf8(szStartSearchAt);
+    xiiUnicodeUtils::MoveToPriorUtf8(szStartSearchAt, szPathStart).AssertSuccess();
 
     if (IsPathSeparator(*szStartSearchAt))
       return szStartSearchAt;
@@ -21,40 +21,63 @@ const char* xiiPathUtils::FindPreviousSeparator(const char* szPathStart, const c
 
 bool xiiPathUtils::HasAnyExtension(xiiStringView sPath)
 {
-  const char* szDot = xiiStringUtils::FindLastSubString(sPath.GetStartPointer(), ".", nullptr, sPath.GetEndPointer());
-
-  if (szDot == nullptr)
-    return false;
-
-  // find the last separator in the string
-  const char* szSeparator = FindPreviousSeparator(sPath.GetStartPointer(), sPath.GetEndPointer());
-
-  return (szSeparator < szDot);
+  return !GetFileExtension(sPath, true).IsEmpty();
 }
 
 bool xiiPathUtils::HasExtension(xiiStringView sPath, xiiStringView sExtension)
 {
-  if (xiiStringUtils::StartsWith(sExtension.GetStartPointer(), ".", sExtension.GetEndPointer()))
-    return xiiStringUtils::EndsWith_NoCase(sPath.GetStartPointer(), sExtension.GetStartPointer(), sPath.GetEndPointer(), sExtension.GetEndPointer());
+  sPath                 = GetFileNameAndExtension(sPath);
+  xiiStringView fullExt = GetFileExtension(sPath, true);
 
-  xiiStringBuilder sExt;
-  sExt.Append(".", sExtension);
+  if (sExtension.IsEmpty() && fullExt.IsEmpty())
+    return true;
 
-  return xiiStringUtils::EndsWith_NoCase(sPath.GetStartPointer(), sExt.GetData(), sPath.GetEndPointer());
+  // if there is a single dot at the start of the extension, remove it
+  if (sExtension.StartsWith("."))
+    sExtension.ChopAwayFirstCharacterAscii();
+
+  if (!fullExt.EndsWith_NoCase(sExtension))
+    return false;
+
+  // remove the checked extension
+  sPath = xiiStringView(sPath.GetStartPointer(), sPath.GetEndPointer() - sExtension.GetElementCount());
+
+  // checked extension didn't start with a dot -> make sure there is one at the end of sPath
+  if (!sPath.EndsWith("."))
+    return false;
+
+  // now make sure the rest isn't just the dot
+  return sPath.GetElementCount() > 1;
 }
 
-xiiStringView xiiPathUtils::GetFileExtension(xiiStringView sPath)
+xiiStringView xiiPathUtils::GetFileExtension(xiiStringView sPath, bool bFullExtension)
 {
-  const char* szDot = xiiStringUtils::FindLastSubString(sPath.GetStartPointer(), ".", nullptr, sPath.GetEndPointer());
+  // get rid of any path before the filename
+  sPath = GetFileNameAndExtension(sPath);
 
+  // ignore all dots that the file name may start with (".", "..", ".file", "..file", etc)
+  // filename may be empty afterwards, which means no dot will be found -> no extension
+  while (sPath.StartsWith("."))
+    sPath.ChopAwayFirstCharacterAscii();
+
+  const char* szDot;
+
+  if (bFullExtension)
+  {
+    szDot = sPath.FindSubString(".");
+  }
+  else
+  {
+    szDot = sPath.FindLastSubString(".");
+  }
+
+  // no dot at all -> no extension
   if (szDot == nullptr)
-    return xiiStringView(nullptr);
+    return xiiStringView();
 
-  // find the last separator in the string
-  const char* szSeparator = FindPreviousSeparator(sPath.GetStartPointer(), sPath.GetEndPointer());
-
-  if (szSeparator > szDot)
-    return xiiStringView(nullptr);
+  // dot at the very end of the string -> not an extension
+  if (szDot + 1 == sPath.GetEndPointer())
+    return xiiStringView();
 
   return xiiStringView(szDot + 1, sPath.GetEndPointer());
 }
@@ -69,28 +92,17 @@ xiiStringView xiiPathUtils::GetFileNameAndExtension(xiiStringView sPath)
   return xiiStringView(szSeparator + 1, sPath.GetEndPointer());
 }
 
-xiiStringView xiiPathUtils::GetFileName(xiiStringView sPath)
+xiiStringView xiiPathUtils::GetFileName(xiiStringView sPath, bool bRemoveFullExtension)
 {
-  const char* szSeparator = FindPreviousSeparator(sPath.GetStartPointer(), sPath.GetEndPointer());
+  // reduce the problem to just the filename + extension
+  sPath = GetFileNameAndExtension(sPath);
 
-  const char* szDot = xiiStringUtils::FindLastSubString(sPath.GetStartPointer(), ".", sPath.GetEndPointer());
+  xiiStringView ext = GetFileExtension(sPath, bRemoveFullExtension);
 
-  if (szDot < szSeparator) // includes (szDot == nullptr), szSeparator will never be nullptr here -> no extension
-  {
-    return xiiStringView(szSeparator + 1, sPath.GetEndPointer());
-  }
+  if (ext.IsEmpty())
+    return sPath;
 
-  if (szSeparator == nullptr)
-  {
-    if (szDot == nullptr) // no folder, no extension -> the entire thing is just a name
-      return sPath;
-
-    return xiiStringView(sPath.GetStartPointer(), szDot); // no folder, but an extension -> remove the extension
-  }
-
-  // now: there is a separator AND an extension
-
-  return xiiStringView(szSeparator + 1, szDot);
+  return xiiStringView(sPath.GetStartPointer(), sPath.GetEndPointer() - ext.GetElementCount() - 1);
 }
 
 xiiStringView xiiPathUtils::GetFileDirectory(xiiStringView sPath)
@@ -174,7 +186,7 @@ void xiiPathUtils::GetRootedPathParts(xiiStringView sPath, xiiStringView& ref_sR
 
   do
   {
-    xiiUnicodeUtils::MoveToNextUtf8(szStart, szPathEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(szStart, szPathEnd).AssertSuccess();
 
     if (*szStart == '\0')
       return;
@@ -182,10 +194,10 @@ void xiiPathUtils::GetRootedPathParts(xiiStringView sPath, xiiStringView& ref_sR
   } while (IsPathSeparator(*szStart));
 
   const char* szEnd = szStart;
-  xiiUnicodeUtils::MoveToNextUtf8(szEnd, szPathEnd);
+  xiiUnicodeUtils::MoveToNextUtf8(szEnd, szPathEnd).AssertSuccess();
 
   while (*szEnd != '\0' && !IsPathSeparator(*szEnd))
-    xiiUnicodeUtils::MoveToNextUtf8(szEnd, szPathEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(szEnd, szPathEnd).AssertSuccess();
 
   ref_sRoot = xiiStringView(szStart, szEnd);
   if (*szEnd == '\0')
@@ -195,7 +207,7 @@ void xiiPathUtils::GetRootedPathParts(xiiStringView sPath, xiiStringView& ref_sR
   else
   {
     // skip path separator for the relative path
-    xiiUnicodeUtils::MoveToNextUtf8(szEnd, szPathEnd);
+    xiiUnicodeUtils::MoveToNextUtf8(szEnd, szPathEnd).AssertSuccess();
     ref_sRelPath = xiiStringView(szEnd, szPathEnd);
   }
 }
@@ -258,20 +270,30 @@ void xiiPathUtils::MakeValidFilename(xiiStringView sFilename, xiiUInt32 uiReplac
   }
 }
 
-bool xiiPathUtils::IsSubPath(xiiStringView sPrefixPath, xiiStringView sFullPath)
+bool xiiPathUtils::IsSubPath(xiiStringView sPrefixPath, xiiStringView sFullPath0)
 {
-  /// \test this is new
+  if (sPrefixPath.IsEmpty())
+  {
+    if (sFullPath0.IsAbsolutePath())
+      return true;
+
+    XII_REPORT_FAILURE("Prefixpath is empty and checked path is not absolute.");
+    return false;
+  }
 
   xiiStringBuilder tmp = sPrefixPath;
   tmp.MakeCleanPath();
-  tmp.AppendPath("");
+  tmp.Trim("", "/");
+
+  xiiStringBuilder sFullPath = sFullPath0;
+  sFullPath.MakeCleanPath();
 
   if (sFullPath.StartsWith(tmp))
   {
     if (tmp.GetElementCount() == sFullPath.GetElementCount())
       return true;
 
-    return sFullPath.GetStartPointer()[tmp.GetElementCount()] == '/';
+    return sFullPath.GetData()[tmp.GetElementCount()] == '/';
   }
 
   return false;
@@ -281,7 +303,7 @@ bool xiiPathUtils::IsSubPath_NoCase(xiiStringView sPrefixPath, xiiStringView sFu
 {
   xiiStringBuilder tmp = sPrefixPath;
   tmp.MakeCleanPath();
-  tmp.AppendPath("");
+  tmp.Trim("", "/");
 
   if (sFullPath.StartsWith_NoCase(tmp))
   {

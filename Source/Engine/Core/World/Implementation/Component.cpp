@@ -249,8 +249,7 @@ bool xiiComponent::SendMessageInternal(xiiMessage& msg, bool bWasPostedMsg) cons
 
 #if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
   if (msg.GetDebugMessageRouting())
-    xiiLog::Warning(
-      "(const) Component type '{0}' does not have a CONST message handler for messages of type {1}", GetDynamicRTTI()->GetTypeName(), msg.GetId());
+    xiiLog::Warning("(const) Component type '{0}' does not have a CONST message handler for messages of type {1}", GetDynamicRTTI()->GetTypeName(), msg.GetId());
 #endif
 
   return false;

@@ -57,7 +57,7 @@ xiiResult xiiRootRotationAnimNode::DeserializeNode(xiiStreamReader& stream)
 
 void xiiRootRotationAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGraphInstance& ref_graph, xiiTime tDiff, const xiiSkeletonResource* pSkeleton, xiiGameObject* pTarget) const
 {
-  xiiVec3  vRootMotion = xiiVec3::ZeroVector();
+  xiiVec3  vRootMotion = xiiVec3::MakeZero();
   xiiAngle rootRotationX;
   xiiAngle rootRotationY;
   xiiAngle rootRotationZ;
@@ -66,15 +66,15 @@ void xiiRootRotationAnimNode::Step(xiiAnimController& ref_controller, xiiAnimGra
 
   if (m_InRotateX.IsConnected())
   {
-    rootRotationX += xiiAngle::Degree(static_cast<float>(m_InRotateX.GetNumber(ref_graph)));
+    rootRotationX += xiiAngle::MakeFromDegree(static_cast<float>(m_InRotateX.GetNumber(ref_graph)));
   }
   if (m_InRotateY.IsConnected())
   {
-    rootRotationY += xiiAngle::Degree(static_cast<float>(m_InRotateY.GetNumber(ref_graph)));
+    rootRotationY += xiiAngle::MakeFromDegree(static_cast<float>(m_InRotateY.GetNumber(ref_graph)));
   }
   if (m_InRotateZ.IsConnected())
   {
-    rootRotationZ += xiiAngle::Degree(static_cast<float>(m_InRotateZ.GetNumber(ref_graph)));
+    rootRotationZ += xiiAngle::MakeFromDegree(static_cast<float>(m_InRotateZ.GetNumber(ref_graph)));
   }
 
   ref_controller.SetRootMotion(vRootMotion, rootRotationX, rootRotationY, rootRotationZ);

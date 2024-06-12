@@ -34,7 +34,7 @@ xiiGameApplicationBase::~xiiGameApplicationBase()
 
 void AppendCurrentTimestamp(xiiStringBuilder& out_sString)
 {
-  const xiiDateTime dt = xiiTimestamp::CurrentTimestamp();
+  const xiiDateTime dt = xiiDateTime::MakeFromTimestamp(xiiTimestamp::CurrentTimestamp());
 
   out_sString.AppendFormat("_{0}-{1}-{2}_{3}-{4}-{5}-{6}", dt.GetYear(), xiiArgU(dt.GetMonth(), 2, true), xiiArgU(dt.GetDay(), 2, true), xiiArgU(dt.GetHour(), 2, true), xiiArgU(dt.GetMinute(), 2, true), xiiArgU(dt.GetSecond(), 2, true), xiiArgU(dt.GetMicroseconds() / 1000, 3, true));
 }
@@ -531,7 +531,7 @@ void xiiGameApplicationBase::Run_FinishFrame()
   xiiProfilingSystem::StartNewFrame();
 
   // If many messages have been logged, make sure they get written to disk
-  xiiLog::Flush(100, xiiTime::Seconds(10));
+  xiiLog::Flush(100, xiiTime::MakeFromSeconds(10));
 
   // Reset this state
   m_bTakeScreenshot = false;

@@ -27,7 +27,7 @@ xiiHybridArray<T, Size, AllocatorWrapper>::xiiHybridArray(const xiiArrayPtr<cons
 }
 
 template <typename T, xiiUInt32 Size, typename AllocatorWrapper /*= xiiDefaultAllocatorWrapper*/>
-xiiHybridArray<T, Size, AllocatorWrapper>::xiiHybridArray(xiiHybridArray<T, Size, AllocatorWrapper>&& other) :
+xiiHybridArray<T, Size, AllocatorWrapper>::xiiHybridArray(xiiHybridArray<T, Size, AllocatorWrapper>&& other) noexcept :
   xiiDynamicArray<T, AllocatorWrapper>(GetStaticArray(), Size, other.GetAllocator())
 {
   *this = std::move(other);

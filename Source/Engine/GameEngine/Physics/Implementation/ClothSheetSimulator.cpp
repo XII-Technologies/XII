@@ -7,7 +7,7 @@ void xiiClothSimulator::SimulateCloth(const xiiTime& diff)
 {
   m_LeftOverTimeStep += diff;
 
-  constexpr xiiTime  tStep    = xiiTime::Seconds(1.0 / 60.0);
+  constexpr xiiTime  tStep    = xiiTime::MakeFromSeconds(1.0 / 60.0);
   const xiiSimdFloat tStepSqr = static_cast<float>(tStep.GetSeconds() * tStep.GetSeconds());
 
   while (m_LeftOverTimeStep >= tStep)
@@ -37,7 +37,7 @@ void xiiClothSimulator::SimulateStep(const xiiSimdFloat fDiffSqr, xiiUInt32 uiMa
 
 xiiSimdFloat xiiClothSimulator::EnforceDistanceConstraint()
 {
-  xiiSimdFloat fError = xiiSimdFloat::Zero();
+  xiiSimdFloat fError = xiiSimdFloat::MakeZero();
 
   for (xiiUInt32 y = 0; y < m_uiHeight; ++y)
   {
@@ -86,7 +86,7 @@ xiiSimdVec4f xiiClothSimulator::MoveTowards(const xiiSimdVec4f posThis, const xi
   xiiSimdVec4f vDir = (posNext - posThis);
   xiiSimdFloat fLen = vDir.GetLength<3>();
 
-  if (fLen.IsEqual(xiiSimdFloat::Zero(), 0.001f))
+  if (fLen.IsEqual(xiiSimdFloat::MakeZero(), 0.001f))
   {
     vDir = fallbackDir;
     fLen = 1;

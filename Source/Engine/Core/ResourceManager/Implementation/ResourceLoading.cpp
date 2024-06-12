@@ -333,7 +333,7 @@ bool xiiResourceManager::ReloadResource(xiiResource* pResource, bool bForce)
 
     // resources that have been in use recently will be put into the preload queue immediately
     // everything else will be loaded on demand
-    if (pResource->GetLastAcquireTime() >= tNow - xiiTime::Seconds(30.0))
+    if (pResource->GetLastAcquireTime() >= tNow - xiiTime::MakeFromSeconds(30.0))
     {
       PreloadResource(pResource);
     }

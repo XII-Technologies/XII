@@ -140,7 +140,7 @@ void xiiSceneDocumentManager::InternalCloneDocument(xiiStringView sPath, xiiStri
             else
             {
               xiiLog::Error("Failed to resolve layer: {}. Cloned Layer will be invalid.");
-              pLayer->m_Layer .SetInvalid();
+              pLayer->m_Layer = xiiUuid::MakeInvalid();
             }
           }
           if (!sLayerPath.IsEmpty())
@@ -167,13 +167,13 @@ void xiiSceneDocumentManager::SetupDefaultScene(xiiDocument* pDocument)
   auto history = pDocument->GetCommandHistory();
   history->StartTransaction("Initial Scene Setup");
 
-  const xiiUuid skyObjectGuid   = xiiUuid::CreateUuid();
-  const xiiUuid lightObjectGuid = xiiUuid::CreateUuid();
-  const xiiUuid meshObjectGuid  = xiiUuid::CreateUuid();
+  const xiiUuid skyObjectGuid   = xiiUuid::MakeUuid();
+  const xiiUuid lightObjectGuid = xiiUuid::MakeUuid();
+  const xiiUuid meshObjectGuid  = xiiUuid::MakeUuid();
 
   // Thumbnail Camera
   {
-    const xiiUuid objectGuid = xiiUuid::CreateUuid();
+    const xiiUuid objectGuid = xiiUuid::MakeUuid();
 
     xiiAddObjectCommand cmd;
     cmd.m_Index = -1;
@@ -297,8 +297,7 @@ void xiiSceneDocumentManager::SetupDefaultScene(xiiDocument* pDocument)
     }
 
     {
-      xiiQuat qRot;
-      qRot.SetFromEulerAngles(xiiAngle::Degree(0), xiiAngle::Degree(55), xiiAngle::Degree(90));
+      xiiQuat qRot = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(0), xiiAngle::MakeFromDegree(55), xiiAngle::MakeFromDegree(90));
 
       xiiSetObjectPropertyCommand propCmd;
       propCmd.m_Object    = cmd.m_NewObjectGuid;

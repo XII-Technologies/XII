@@ -25,7 +25,7 @@ static xiiUInt64 HighLowToUInt64(xiiUInt32 uiHigh32, xiiUInt32 uiLow32)
 
 xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum OpenMode, xiiFileShareMode::Enum FileShareMode)
 {
-  const xiiTime sleepTime = xiiTime::Milliseconds(20);
+  const xiiTime sleepTime = xiiTime::MakeFromMilliseconds(20);
   xiiInt32      iRetries  = 20;
 
   if (FileShareMode == xiiFileShareMode::Default)
@@ -238,7 +238,8 @@ xiiResult xiiOSFile::InternalDeleteFile(xiiStringView sFile)
 {
   if (DeleteFileW(xiiDosDevicePath(sFile)) == FALSE)
   {
-    if (GetLastError() == ERROR_FILE_NOT_FOUND)
+    DWORD error = GetLastError();
+    if (error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND)
       return XII_SUCCESS;
 
     return XII_FAILURE;
@@ -251,7 +252,8 @@ xiiResult xiiOSFile::InternalDeleteDirectory(xiiStringView sDirectory)
 {
   if (RemoveDirectoryW(xiiDosDevicePath(sDirectory)) == FALSE)
   {
-    if (GetLastError() == ERROR_FILE_NOT_FOUND)
+    DWORD error = GetLastError();
+    if (error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND)
       return XII_SUCCESS;
 
     return XII_FAILURE;
@@ -304,8 +306,8 @@ xiiResult xiiOSFile::InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileSt
     out_Stats.m_uiFileSize   = 0;
     out_Stats.m_bIsDirectory = true;
     out_Stats.m_sParentPath.Clear();
-    out_Stats.m_sName = s;
-    out_Stats.m_LastModificationTime.Invalidate();
+    out_Stats.m_sName                = s;
+    out_Stats.m_LastModificationTime = xiiTimestamp::MakeInvalid();
     return XII_SUCCESS;
   }
 
@@ -319,8 +321,8 @@ xiiResult xiiOSFile::InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileSt
   out_Stats.m_bIsDirectory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
   out_Stats.m_sParentPath  = sFileOrFolder;
   out_Stats.m_sParentPath.PathParentDirectory();
-  out_Stats.m_sName = data.cFileName;
-  out_Stats.m_LastModificationTime.SetInt64(FileTimeToEpoch(data.ftLastWriteTime), xiiSIUnitOfTime::Microsecond);
+  out_Stats.m_sName                = data.cFileName;
+  out_Stats.m_LastModificationTime = xiiTimestamp::MakeFromInt(FileTimeToEpoch(data.ftLastWriteTime), xiiSIUnitOfTime::Microsecond);
 
   FindClose(hSearch);
   return XII_SUCCESS;
@@ -376,11 +378,11 @@ void xiiFileSystemIterator::StartSearch(xiiStringView sSearchStart, xiiBitflags<
   if ((hSearch == nullptr) || (hSearch == INVALID_HANDLE_VALUE))
     return;
 
-  m_CurFile.m_uiFileSize   = HighLowToUInt64(data.nFileSizeHigh, data.nFileSizeLow);
-  m_CurFile.m_bIsDirectory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-  m_CurFile.m_sParentPath  = m_sCurPath;
-  m_CurFile.m_sName        = data.cFileName;
-  m_CurFile.m_LastModificationTime.SetInt64(FileTimeToEpoch(data.ftLastWriteTime), xiiSIUnitOfTime::Microsecond);
+  m_CurFile.m_uiFileSize           = HighLowToUInt64(data.nFileSizeHigh, data.nFileSizeLow);
+  m_CurFile.m_bIsDirectory         = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+  m_CurFile.m_sParentPath          = m_sCurPath;
+  m_CurFile.m_sName                = data.cFileName;
+  m_CurFile.m_LastModificationTime = xiiTimestamp::MakeFromInt(FileTimeToEpoch(data.ftLastWriteTime), xiiSIUnitOfTime::Microsecond);
 
   m_Data.m_Handles.PushBack(hSearch);
 
@@ -447,11 +449,11 @@ xiiInt32 xiiFileSystemIterator::InternalNext()
 
     if ((hSearch != nullptr) && (hSearch != INVALID_HANDLE_VALUE))
     {
-      m_CurFile.m_uiFileSize   = HighLowToUInt64(data.nFileSizeHigh, data.nFileSizeLow);
-      m_CurFile.m_bIsDirectory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-      m_CurFile.m_sParentPath  = m_sCurPath;
-      m_CurFile.m_sName        = data.cFileName;
-      m_CurFile.m_LastModificationTime.SetInt64(FileTimeToEpoch(data.ftLastWriteTime), xiiSIUnitOfTime::Microsecond);
+      m_CurFile.m_uiFileSize           = HighLowToUInt64(data.nFileSizeHigh, data.nFileSizeLow);
+      m_CurFile.m_bIsDirectory         = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+      m_CurFile.m_sParentPath          = m_sCurPath;
+      m_CurFile.m_sName                = data.cFileName;
+      m_CurFile.m_LastModificationTime = xiiTimestamp::MakeFromInt(FileTimeToEpoch(data.ftLastWriteTime), xiiSIUnitOfTime::Microsecond);
 
       m_Data.m_Handles.PushBack(hSearch);
 
@@ -494,11 +496,11 @@ xiiInt32 xiiFileSystemIterator::InternalNext()
     return ReturnCallInternalNext;
   }
 
-  m_CurFile.m_uiFileSize   = HighLowToUInt64(data.nFileSizeHigh, data.nFileSizeLow);
-  m_CurFile.m_bIsDirectory = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-  m_CurFile.m_sParentPath  = m_sCurPath;
-  m_CurFile.m_sName        = data.cFileName;
-  m_CurFile.m_LastModificationTime.SetInt64(FileTimeToEpoch(data.ftLastWriteTime), xiiSIUnitOfTime::Microsecond);
+  m_CurFile.m_uiFileSize           = HighLowToUInt64(data.nFileSizeHigh, data.nFileSizeLow);
+  m_CurFile.m_bIsDirectory         = (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+  m_CurFile.m_sParentPath          = m_sCurPath;
+  m_CurFile.m_sName                = data.cFileName;
+  m_CurFile.m_LastModificationTime = xiiTimestamp::MakeFromInt(FileTimeToEpoch(data.ftLastWriteTime), xiiSIUnitOfTime::Microsecond);
 
   if ((m_CurFile.m_sName == "..") || (m_CurFile.m_sName == "."))
     return ReturnCallInternalNext;
@@ -519,7 +521,7 @@ xiiInt32 xiiFileSystemIterator::InternalNext()
 
 #endif
 
-xiiStringView xiiOSFile::GetApplicationDirectory()
+xiiStringView xiiOSFile::GetApplicationPath()
 {
   if (s_sApplicationPath.IsEmpty())
   {
@@ -551,7 +553,7 @@ xiiStringView xiiOSFile::GetApplicationDirectory()
       XII_REPORT_FAILURE("GetModuleFileNameW failed: {0}", xiiArgErrorCode(error));
     }
 
-    s_sApplicationPath = xiiPathUtils::GetFileDirectory(xiiStringUtf8(tmp.GetData()));
+    s_sApplicationPath = xiiStringUtf8(tmp.GetData()).GetData();
   }
 
   return s_sApplicationPath;

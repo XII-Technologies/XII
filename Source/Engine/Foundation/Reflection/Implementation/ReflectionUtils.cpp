@@ -1531,17 +1531,17 @@ xiiVariant xiiReflectionUtils::GetDefaultVariantFromType(xiiVariant::Type::Enum 
     case xiiVariant::Type::Quaterniond:
       return xiiVariant(xiiQuatd(0.0, 0.0, 0.0, 1.0));
     case xiiVariant::Type::Matrix3:
-      return xiiVariant(xiiMat3::IdentityMatrix());
+      return xiiVariant(xiiMat3::MakeIdentity());
     case xiiVariant::Type::Matrix3d:
-      return xiiVariant(xiiMat3d::IdentityMatrix());
+      return xiiVariant(xiiMat3d::MakeIdentity());
     case xiiVariant::Type::Matrix4:
-      return xiiVariant(xiiMat4::IdentityMatrix());
+      return xiiVariant(xiiMat4::MakeIdentity());
     case xiiVariant::Type::Matrix4d:
-      return xiiVariant(xiiMat4d::IdentityMatrix());
+      return xiiVariant(xiiMat4d::MakeIdentity());
     case xiiVariant::Type::Transform:
-      return xiiVariant(xiiTransform::IdentityTransform());
+      return xiiVariant(xiiTransform::MakeIdentity());
     case xiiVariant::Type::Transformd:
-      return xiiVariant(xiiTransformd::IdentityTransform());
+      return xiiVariant(xiiTransformd::MakeIdentity());
     case xiiVariant::Type::String:
       return xiiVariant(xiiString());
     case xiiVariant::Type::StringView:

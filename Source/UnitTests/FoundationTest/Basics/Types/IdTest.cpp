@@ -72,4 +72,4 @@ XII_CREATE_SIMPLE_TEST(Basics, Id)
   XII_TEST_INT(id4.m_Generation, 200);
 }
 
-XII_WARNING_POP();
+XII_WARNING_POP()

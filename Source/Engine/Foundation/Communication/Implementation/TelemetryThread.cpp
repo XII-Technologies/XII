@@ -28,7 +28,7 @@ private:
       {
         xiiTime tNow = xiiTime::Now();
 
-        if (tNow - LastPing > xiiTime::Milliseconds(500))
+        if (tNow - LastPing > xiiTime::MakeFromMilliseconds(500))
         {
           LastPing = tNow;
 
@@ -36,7 +36,7 @@ private:
         }
       }
 
-      xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+      xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
     }
 
     return 0;
@@ -71,7 +71,5 @@ void xiiTelemetry::StopTelemetryThread()
     XII_DEFAULT_DELETE(g_pBroadcastThread);
   }
 }
-
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_Communication_Implementation_TelemetryThread);

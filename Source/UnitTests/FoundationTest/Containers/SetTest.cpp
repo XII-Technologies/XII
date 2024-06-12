@@ -370,38 +370,6 @@ XII_CREATE_SIMPLE_TEST(Containers, Set)
     XII_TEST_INT(i, 1000);
   }
 
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetLastIterator / Backward Iteration")
-  {
-    xiiSet<xiiUInt32> m;
-
-    for (xiiInt32 i = 0; i < 1000; ++i)
-      m.Insert(i);
-
-    xiiInt32 i = 1000 - 1;
-    for (xiiSet<xiiUInt32>::Iterator it = m.GetLastIterator(); it.IsValid(); --it)
-    {
-      XII_TEST_INT(it.Key(), i);
-      --i;
-    }
-  }
-
-  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetLastIterator / Backward Iteration (const)")
-  {
-    xiiSet<xiiUInt32> m;
-
-    for (xiiInt32 i = 0; i < 1000; ++i)
-      m.Insert(i);
-
-    const xiiSet<xiiUInt32> m2(m);
-
-    xiiInt32 i = 1000 - 1;
-    for (xiiSet<xiiUInt32>::Iterator it = m2.GetLastIterator(); it.IsValid(); --it)
-    {
-      XII_TEST_INT(it.Key(), i);
-      --i;
-    }
-  }
-
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "LowerBound")
   {
     xiiSet<xiiInt32> m, m2;
@@ -679,5 +647,37 @@ XII_CREATE_SIMPLE_TEST(Containers, Set)
 
     set2->~xiiSet<xiiString>();
     xiiMemoryUtils::PatternFill(set2Mem, 0xBA, uiSetSize);
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetReverseIterator")
+  {
+    xiiSet<xiiUInt32> m;
+
+    for (xiiInt32 i = 0; i < 1000; ++i)
+      m.Insert(i);
+
+    xiiInt32 i = 1000 - 1;
+    for (xiiSet<xiiUInt32>::ReverseIterator it = m.GetReverseIterator(); it.IsValid(); ++it)
+    {
+      XII_TEST_INT(it.Key(), i);
+      --i;
+    }
+  }
+
+  XII_TEST_BLOCK(xiiTestBlock::Enabled, "GetReverseIterator (const)")
+  {
+    xiiSet<xiiUInt32> m;
+
+    for (xiiInt32 i = 0; i < 1000; ++i)
+      m.Insert(i);
+
+    const xiiSet<xiiUInt32> m2(m);
+
+    xiiInt32 i = 1000 - 1;
+    for (xiiSet<xiiUInt32>::ReverseIterator it = m2.GetReverseIterator(); it.IsValid(); ++it)
+    {
+      XII_TEST_INT(it.Key(), i);
+      --i;
+    }
   }
 }

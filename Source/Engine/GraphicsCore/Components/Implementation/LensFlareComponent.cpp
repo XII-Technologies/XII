@@ -186,7 +186,7 @@ xiiResult xiiLensFlareComponent::GetLocalBounds(xiiBoundingBoxSphere& ref_bounds
   }
   else
   {
-    ref_bounds = xiiBoundingSphere(xiiVec3::ZeroVector(), m_fOcclusionSampleRadius);
+    ref_bounds = xiiBoundingSphere::MakeFromCenterAndRadius(xiiVec3::MakeZero(), m_fOcclusionSampleRadius);
   }
   return XII_SUCCESS;
 }
@@ -269,10 +269,10 @@ void xiiLensFlareComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
   float fFade = 1.0f;
   if (auto pDirectionalLight = xiiDynamicCast<const xiiDirectionalLightComponent*>(pLightComponent))
   {
-    xiiTransform localOffset = xiiTransform::IdentityTransform();
+    xiiTransform localOffset = xiiTransform::MakeIdentity();
     localOffset.m_vPosition  = xiiVec3(pCamera->GetFarPlane() * -0.999, 0, 0);
 
-    globalTransform.SetGlobalTransform(globalTransform, localOffset);
+    globalTransform = xiiTransform::MakeGlobalTransform(globalTransform, localOffset);
     globalTransform.m_vPosition += pCamera->GetCenterPosition();
 
     if (pCamera->IsPerspective())
@@ -285,7 +285,7 @@ void xiiLensFlareComponent::OnMsgExtractRenderData(xiiMsgExtractRenderData& msg)
   }
   else if (auto pSpotLight = xiiDynamicCast<const xiiSpotLightComponent*>(pLightComponent))
   {
-    const xiiVec3 lightDir  = globalTransform.TransformDirection(xiiVec3::UnitXAxis());
+    const xiiVec3 lightDir  = globalTransform.TransformDirection(xiiVec3::MakeAxisX());
     const xiiVec3 cameraDir = (pCamera->GetCenterPosition() - globalTransform.m_vPosition).GetNormalized();
 
     const float cosAngle  = lightDir.Dot(cameraDir);

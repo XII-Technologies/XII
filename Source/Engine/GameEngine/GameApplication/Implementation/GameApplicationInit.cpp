@@ -151,7 +151,7 @@ void xiiGameApplication::Init_SetupDefaultResources()
 
     // Create mesh buffer resource
     xiiGeometry geom;
-    geom.AddBox(xiiVec3::OneVector(), true);
+    geom.AddBox(xiiVec3(1), true);
     geom.TriangulatePolygons(4);
     geom.ComputeTangents();
     geom.ComputeFaceNormals();
@@ -226,7 +226,7 @@ void xiiGameApplication::Init_SetupDefaultResources()
   // Property Animations
   {
     xiiPropertyAnimResourceDescriptor desc;
-    desc.m_AnimationDuration = xiiTime::Seconds(0.1);
+    desc.m_AnimationDuration = xiiTime::MakeFromSeconds(0.1);
 
     xiiPropertyAnimResourceHandle hResource = xiiResourceManager::CreateResource<xiiPropertyAnimResource>("MissingPropertyAnim", std::move(desc), "Missing Property Animation Resource");
     xiiResourceManager::SetResourceTypeMissingFallback<xiiPropertyAnimResource>(hResource);

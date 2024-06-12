@@ -140,8 +140,8 @@ XII_CREATE_SIMPLE_TEST(IO, StandardJSONWriter)
     xiiStandardJSONWriter js;
     js.SetOutputStream(&sc);
 
-    js.AddVariableTime("var1", xiiTime::Seconds(0.5));
-    js.AddVariableTime("var2", xiiTime::Seconds(2.25));
+    js.AddVariableTime("var1", xiiTime::MakeFromSeconds(0.5));
+    js.AddVariableTime("var2", xiiTime::MakeFromSeconds(2.25));
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "AddVariableUuid")
@@ -168,8 +168,8 @@ XII_CREATE_SIMPLE_TEST(IO, StandardJSONWriter)
     js.SetOutputStream(&sc);
 
     // vs2019 is so imprecise, that the degree->radian conversion introduces differences in the final output
-    js.AddVariableAngle("var1", xiiAngle::Radian(1.5707963267f));
-    js.AddVariableAngle("var2", xiiAngle::Radian(1.0f * xiiMath::Pi<float>()));
+    js.AddVariableAngle("var1", xiiAngle::MakeFromRadian(1.5707963267f));
+    js.AddVariableAngle("var2", xiiAngle::MakeFromRadian(1.0f * xiiMath::Pi<float>()));
   }
 
 

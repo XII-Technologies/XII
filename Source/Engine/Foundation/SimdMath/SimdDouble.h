@@ -32,7 +32,11 @@ public:
   /// \brief Returns the stored number as a standard double.
   operator double() const; // [tested]
 
-  static xiiSimdDouble Zero(); // [tested]
+  /// \brief Creates a xiiSimdDouble that is initialized to zero.
+  [[nodiscard]] static xiiSimdDouble MakeZero(); // [tested]
+
+  /// \brief Creates a xiiSimdDouble that is initialized to Not-A-Number (NaN).
+  [[nodiscard]] static xiiSimdDouble MakeNaN(); // [tested]
 
 public:
   xiiSimdDouble operator+(const xiiSimdDouble& f) const; // [tested]
@@ -70,9 +74,9 @@ public:
   template <xiiMathDoubleBits::Enum acc = xiiMathDoubleBits::FULL>
   xiiSimdDouble GetInvSqrt() const; // [tested]
 
-  xiiSimdDouble Max(const xiiSimdDouble& f) const; // [tested]
-  xiiSimdDouble Min(const xiiSimdDouble& f) const; // [tested]
-  xiiSimdDouble Abs() const;                       // [tested]
+  [[nodiscard]] xiiSimdDouble Max(const xiiSimdDouble& f) const; // [tested]
+  [[nodiscard]] xiiSimdDouble Min(const xiiSimdDouble& f) const; // [tested]
+  [[nodiscard]] xiiSimdDouble Abs() const;                       // [tested]
 
 public:
   xiiInternal::QuadDouble m_v;

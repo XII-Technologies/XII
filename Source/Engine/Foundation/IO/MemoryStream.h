@@ -119,7 +119,7 @@ public:
   }
 
   /// \brief The data is guaranteed to be contiguous.
-  const xiiUInt8* GetData() const { return &m_Storage[0]; }
+  const xiiUInt8* GetData() const { return m_Storage.GetData(); }
 
 private:
   virtual void SetInternalSize(xiiUInt64 uiSize) override

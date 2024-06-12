@@ -191,12 +191,12 @@ XII_ALWAYS_INLINE const xiiDynamicArray<typename xiiArrayMapBase<KEY, VALUE>::Pa
 
 template <typename KEY, typename VALUE>
 template <typename CompatibleKeyType>
-VALUE& xiiArrayMapBase<KEY, VALUE>::FindOrAdd(const CompatibleKeyType& key, bool* pExisted)
+VALUE& xiiArrayMapBase<KEY, VALUE>::FindOrAdd(const CompatibleKeyType& key, bool* out_pExisted)
 {
   xiiUInt32 uiIndex = Find<CompatibleKeyType>(key);
 
-  if (pExisted)
-    *pExisted = uiIndex != xiiInvalidIndex;
+  if (out_pExisted)
+    *out_pExisted = uiIndex != xiiInvalidIndex;
 
   if (uiIndex == xiiInvalidIndex)
   {

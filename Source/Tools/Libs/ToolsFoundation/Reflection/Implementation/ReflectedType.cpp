@@ -68,7 +68,7 @@ void xiiAttributeHolder::SetValue(xiiUInt32 uiIndex, const xiiPropertyAttribute*
 
 void xiiAttributeHolder::Insert(xiiUInt32 uiIndex, const xiiPropertyAttribute* value)
 {
-  m_Attributes.Insert(value, uiIndex);
+  m_Attributes.InsertAt(uiIndex, value);
 }
 
 void xiiAttributeHolder::Remove(xiiUInt32 uiIndex)

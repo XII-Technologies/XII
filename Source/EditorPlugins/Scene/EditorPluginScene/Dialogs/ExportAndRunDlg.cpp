@@ -19,9 +19,9 @@ xiiQtExportAndRunDlg::xiiQtExportAndRunDlg(QWidget* pParent) :
   setupUi(this);
 
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
-  ToolCombo->addItem("xiiPlayer", "Player.exe");
+  ToolCombo->addItem("xiiPlayer", "xiiPlayer.exe");
 #else
-  ToolCombo->addItem("xiiPlayer", "Player");
+  ToolCombo->addItem("xiiPlayer", "xiiPlayer");
 #endif
 
   xiiProjectPreferencesUser* pPref = xiiPreferences::QueryPreferences<xiiProjectPreferencesUser>();

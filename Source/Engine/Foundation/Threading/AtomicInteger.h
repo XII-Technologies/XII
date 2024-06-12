@@ -10,13 +10,25 @@ struct xiiAtomicStorageType
 };
 
 template <>
-struct xiiAtomicStorageType<0>
+struct xiiAtomicStorageType<1>
 {
   using Type = xiiInt32;
 };
 
 template <>
-struct xiiAtomicStorageType<1>
+struct xiiAtomicStorageType<2>
+{
+  using Type = xiiInt32;
+};
+
+template <>
+struct xiiAtomicStorageType<4>
+{
+  using Type = xiiInt32;
+};
+
+template <>
+struct xiiAtomicStorageType<8>
 {
   using Type = xiiInt64;
 };
@@ -25,7 +37,7 @@ struct xiiAtomicStorageType<1>
 template <typename T>
 class xiiAtomicInteger
 {
-  using UnderlyingType = typename xiiAtomicStorageType<sizeof(T) / 32>::Type;
+  using UnderlyingType = typename xiiAtomicStorageType<sizeof(T)>::Type;
 
 public:
   XII_DECLARE_POD_TYPE();
@@ -122,3 +134,5 @@ private:
 
 using xiiAtomicInteger32 = xiiAtomicInteger<xiiInt32>; // [tested]
 using xiiAtomicInteger64 = xiiAtomicInteger<xiiInt64>; // [tested]
+static_assert(sizeof(xiiAtomicInteger32) == sizeof(xiiInt32));
+static_assert(sizeof(xiiAtomicInteger64) == sizeof(xiiInt64));

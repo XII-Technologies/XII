@@ -26,7 +26,7 @@ void xiiQtTimeScrubberWidget::SetDuration(xiiUInt64 uiNumTicks)
     return;
 
   m_uiDurationTicks       = uiNumTicks;
-  m_Duration              = xiiTime::Seconds((double)uiNumTicks / 4800.0);
+  m_Duration              = xiiTime::MakeFromSeconds((double)uiNumTicks / 4800.0);
   m_fNormScrubberPosition = xiiMath::Clamp((double)m_uiScrubberTickPos / (double)m_uiDurationTicks, 0.0, 1.0);
 
   update();

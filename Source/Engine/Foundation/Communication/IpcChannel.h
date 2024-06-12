@@ -43,7 +43,7 @@ public:
   struct Mode
   {
     using StorageType = xiiUInt8;
-    enum Enum
+    enum Enum : StorageType
     {
       Server,
       Client,
@@ -54,7 +54,7 @@ public:
   struct ConnectionState
   {
     using StorageType = xiiUInt8;
-    enum Enum
+    enum Enum : StorageType
     {
       Disconnected,
       Connecting, ///< In case of the server, this state indicates that the server is ready to be connected to.

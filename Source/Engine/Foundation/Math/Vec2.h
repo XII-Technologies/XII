@@ -26,18 +26,24 @@ public:
   // *** Constructors ***
 public:
   /// \brief default-constructed vector is uninitialized (for speed)
-  xiiVec2Template<Type>(); // [tested]
+  xiiVec2Template(); // [tested]
 
   /// \brief Initializes the vector with x,y
-  xiiVec2Template<Type>(Type inX, Type inY); // [tested]
+  xiiVec2Template(Type x, Type y); // [tested]
 
   /// \brief Initializes all components with xy
-  explicit xiiVec2Template<Type>(Type inV); // [tested]
+  explicit xiiVec2Template(Type v); // [tested]
 
   // no copy-constructor and operator= since the default-generated ones will be faster
 
+  /// \brief Returns a vector with all components set to Not-a-Number (NaN).
+  XII_DECLARE_IF_FLOAT_TYPE [[nodiscard]] static const xiiVec2Template<Type> MakeNaN() { return xiiVec2Template<Type>(xiiMath::NaN<Type>()); }
+
   /// \brief Static function that returns a zero-vector.
-  static const xiiVec2Template<Type> ZeroVector() { return xiiVec2Template(0); } // [tested]
+  [[nodiscard]] static constexpr xiiVec2Template<Type> MakeZero() { return xiiVec2Template(0); } // [tested]
+
+  /// \brief Returns a vector initialized to x,y.
+  [[nodiscard]] static constexpr xiiVec2Template<Type> Make(Type x, Type y) { return xiiVec2Template<Type>(x, y); } // [tested]
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
@@ -50,10 +56,10 @@ public:
   // *** Conversions ***
 public:
   /// \brief Returns a xiiVec3Template with x,y from this vector and z set by the parameter.
-  const xiiVec3Template<Type> GetAsVec3(Type inZ) const; // [tested]
+  const xiiVec3Template<Type> GetAsVec3(Type z) const; // [tested]
 
   /// \brief Returns a xiiVec4Template with x,y from this vector and z and w set by the parameters.
-  const xiiVec4Template<Type> GetAsVec4(Type inZ, Type inW) const; // [tested]
+  const xiiVec4Template<Type> GetAsVec4(Type z, Type w) const; // [tested]
 
   /// \brief Returns the data as an array.
   const Type* GetData() const { return &x; }
@@ -67,7 +73,7 @@ public:
   void Set(Type xy); // [tested]
 
   /// \brief Sets the vector to these values.
-  void Set(Type inX, Type inY); // [tested]
+  void Set(Type x, Type y); // [tested]
 
   /// \brief Sets the vector to all zero.
   void SetZero(); // [tested]

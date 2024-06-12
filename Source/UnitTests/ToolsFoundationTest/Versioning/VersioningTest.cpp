@@ -177,7 +177,7 @@ namespace
       // Object
       xiiRttiConverterContext context;
       xiiRttiConverterWriter  rttiConverter(&ref_graph, &context, true, true);
-      context.RegisterObject(xiiUuid::StableUuidForString(pRtti->GetTypeName()), pRtti, pObject);
+      context.RegisterObject(xiiUuid::MakeStableUuidFromString(pRtti->GetTypeName()), pRtti, pObject);
       pNode = rttiConverter.AddObjectToGraph(pRtti, pObject, "ROOT");
     }
     {

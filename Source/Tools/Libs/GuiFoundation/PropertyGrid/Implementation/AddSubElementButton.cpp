@@ -207,13 +207,13 @@ void xiiQtAddSubElementButton::onMenuAboutToShow()
       const xiiInDevelopmentAttribute* pInDev = pRtti->GetAttributeByType<xiiInDevelopmentAttribute>();
       const xiiColorAttribute*         pColA  = pRtti->GetAttributeByType<xiiColorAttribute>();
 
-      xiiColor iconColor = xiiColor::ZeroColor();
+      xiiColor iconColor = xiiColor::MakeZero();
 
       if (pColA)
       {
         iconColor = pColA->GetColor();
       }
-      else if (pCatA && iconColor == xiiColor::ZeroColor())
+      else if (pCatA && iconColor == xiiColor::MakeZero())
       {
         iconColor = xiiColorScheme::GetCategoryColor(pCatA->GetCategory(), xiiColorScheme::CategoryColorUsage::MenuEntryIcon);
       }

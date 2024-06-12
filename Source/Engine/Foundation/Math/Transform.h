@@ -30,7 +30,7 @@ template <typename Type>
 class xiiTransformTemplate
 {
 public:
-  // Means this object can be copied using memcpy instead of copy construction.
+  // Means that vectors can be copied using memcpy instead of copy construction.
   XII_DECLARE_POD_TYPE();
 
   using ComponentType = Type;
@@ -45,21 +45,31 @@ public:
 public:
   /// \brief Default constructor: Does not do any initialization.
   xiiTransformTemplate() = default;
-  ; // [tested]
 
-  /// \brief Sets position and rotation.
-  explicit xiiTransformTemplate(const xiiVec3Template<Type>& vPosition,
-                                const xiiQuatTemplate<Type>& qRotation = xiiQuatTemplate<Type>::IdentityQuaternion(),
-                                const xiiVec3Template<Type>& vScale    = xiiVec3Template<Type>(1)); // [tested]
+  /// \brief Initializes the transform from the given position, rotation and scale.
+  xiiTransformTemplate(const xiiVec3Template<Type>& vPosition, const xiiQuatTemplate<Type>& qRotation = xiiQuatTemplate<Type>::MakeIdentity(), const xiiVec3Template<Type>& vScale = xiiVec3Template<Type>(1)); // [tested]
 
-  /// \brief Attempts to extract position, scale and rotation from the matrix. Negative scaling and shearing will get lost in the process.
-  void SetFromMat4(const xiiMat4Template<Type>& mMat);
+  /// \brief Creates a transform from the given position, rotation and scale.
+  [[nodiscard]] static xiiTransformTemplate<Type> Make(const xiiVec3Template<Type>& vPosition, const xiiQuatTemplate<Type>& qRotation = xiiQuatTemplate<Type>::MakeIdentity(), const xiiVec3Template<Type>& vScale = xiiVec3Template<Type>(1));
+
+  /// \brief Creates an identity transform.
+  [[nodiscard]] static xiiTransformTemplate<Type> MakeIdentity();
+
+  /// \brief Creates a transform from the given matrix.
+  ///
+  /// \note This operation always succeeds, even though the matrix may be complete garbage (e.g. a zero matrix)
+  /// or may not be representable as a transform (containing shearing).
+  /// Also be careful with mirroring. The transform may or may not be able to represent that.
+  [[nodiscard]] static xiiTransformTemplate<Type> MakeFromMat4(const xiiMat4Template<Type>& mMat);
+
+  /// \brief Creates a transform that is the local transformation needed to get from the parent's transform to the child's.
+  [[nodiscard]] static xiiTransformTemplate<Type> MakeLocalTransform(const xiiTransformTemplate& globalTransformParent, const xiiTransformTemplate& globalTransformChild); // [tested]
+
+  /// \brief Creates a transform that is the global transform, that is reached by applying the child's local transform to the parent's global one.
+  [[nodiscard]] static xiiTransformTemplate<Type> MakeGlobalTransform(const xiiTransformTemplate& globalTransformParent, const xiiTransformTemplate& localTransformChild); // [tested]
 
   /// \brief Sets the position to be zero and the rotation to identity.
   void SetIdentity(); // [tested]
-
-  /// \brief Returns an Identity Transform.
-  static const xiiTransformTemplate<Type> IdentityTransform();
 
   /// \brief Returns the scale component with maximum magnitude.
   Type GetMaxScale() const;
@@ -69,6 +79,9 @@ public:
 
   /// \brief Returns whether this transform contains uniform scaling.
   bool ContainsUniformScale() const;
+
+  /// \brief Checks that all components are valid (no NaN, only finite numbers).
+  bool IsValid() const;
 
   // *** Equality ***
 public:
@@ -86,20 +99,14 @@ public:
   /// \brief Returns the inverse of this transform.
   const xiiTransformTemplate GetInverse() const; // [tested]
 
-  xiiVec3Template<Type> TransformPosition(const xiiVec3Template<Type>& v) const;  // [tested]
-  xiiVec3Template<Type> TransformDirection(const xiiVec3Template<Type>& v) const; // [tested]
+  [[nodiscard]] xiiVec3Template<Type> TransformPosition(const xiiVec3Template<Type>& v) const;  // [tested]
+  [[nodiscard]] xiiVec3Template<Type> TransformDirection(const xiiVec3Template<Type>& v) const; // [tested]
 
   void operator+=(const xiiVec3Template<Type>& v); // [tested]
   void operator-=(const xiiVec3Template<Type>& v); // [tested]
 
   // *** Conversion operations ***
 public:
-  /// \brief Sets this transform to be the local transformation needed to get from the parent's transform to the child's.
-  void SetLocalTransform(const xiiTransformTemplate& globalTransformParent, const xiiTransformTemplate& globalTransformChild); // [tested]
-
-  /// \brief Sets this transform to the global transform, that is reached by applying the child's local transform to the parent's global one.
-  void SetGlobalTransform(const xiiTransformTemplate& globalTransformParent, const xiiTransformTemplate& localTransformChild); // [tested]
-
   /// \brief Returns the transformation as a matrix.
   const xiiMat4Template<Type> GetAsMat4() const; // [tested]
 };

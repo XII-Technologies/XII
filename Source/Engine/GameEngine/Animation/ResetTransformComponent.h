@@ -37,8 +37,8 @@ public:
   xiiResetTransformComponent();
   ~xiiResetTransformComponent();
 
-  xiiVec3 m_vLocalPosition       = xiiVec3::ZeroVector();
-  xiiQuat m_qLocalRotation       = xiiQuat::IdentityQuaternion();
+  xiiVec3 m_vLocalPosition       = xiiVec3::MakeZero();
+  xiiQuat m_qLocalRotation       = xiiQuat::MakeIdentity();
   xiiVec3 m_vLocalScaling        = xiiVec3(1, 1, 1);
   float   m_fLocalUniformScaling = 1.0f;
 

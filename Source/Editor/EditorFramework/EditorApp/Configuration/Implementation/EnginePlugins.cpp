@@ -82,7 +82,7 @@ void xiiQtEditorApp::RestartEngineProcessIfPluginsChanged(bool bForce)
 
   if (!bForce)
   {
-    if (m_LastPluginModificationCheck + xiiTime::Seconds(2) > xiiTime::Now())
+    if (m_LastPluginModificationCheck + xiiTime::MakeFromSeconds(2) > xiiTime::Now())
       return;
   }
 

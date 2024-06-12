@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Foundation/Basics.h>
-
+#include <Foundation/Strings/String.h>
 #include <Foundation/Threading/Implementation/ThreadingDeclarations.h>
 
 /// \brief Implementation of a thread.
@@ -13,8 +13,7 @@ class XII_FOUNDATION_DLL xiiOSThread
 public:
   /// \brief Initializes the thread instance (e.g. thread creation etc.)
   ///
-  /// Note that the thread won't start execution until Start() is called. Please note that szName must be valid until Start() has been
-  /// called!
+  /// Note that the thread won't start execution until Start() is called. Please note that szName must be valid until Start() has been called!
   xiiOSThread(xiiOSThreadEntryPoint threadEntryPoint, void* pUserData = nullptr, xiiStringView sName = "xiiOSThread", xiiUInt32 uiStackSize = 128 * 1024);
 
   /// \brief Destructor.
@@ -41,7 +40,7 @@ protected:
 
   void* m_pUserData;
 
-  xiiStringView m_sName;
+  xiiString m_sName;
 
   xiiUInt32 m_uiStackSize;
 

@@ -4,7 +4,7 @@ XII_ALWAYS_INLINE xiiSimdVec4f::xiiSimdVec4f()
 {
   XII_CHECK_SIMD_FLOAT_ALIGNMENT(this);
 
-#if XII_ENABLED(XII_COMPILE_FOR_DEBUG)
+#if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   // Initialize all data to NaN in debug mode to find problems with uninitialized data easier.
   m_v = vmovq_n_f32(xiiMath::NaN<float>());
 #endif
@@ -505,12 +505,6 @@ XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::GetOrthogonalVector() const
 {
   // See http://blog.selfshadow.com/2011/10/17/perp-vectors/ - this is Stark's first variant, SIMDified.
   return CrossRH(vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(m_v), vceqq_f32(m_v, HorizontalMin<3>().m_v))));
-}
-
-// static
-XII_ALWAYS_INLINE xiiSimdVec4f xiiSimdVec4f::ZeroVector()
-{
-  return vmovq_n_f32(0.0f);
 }
 
 // static

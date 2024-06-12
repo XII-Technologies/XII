@@ -34,7 +34,7 @@ xiiNonUniformBoxGizmo::xiiNonUniformBoxGizmo()
   }
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiNonUniformBoxGizmo::OnSetOwner(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)
@@ -60,7 +60,7 @@ void xiiNonUniformBoxGizmo::OnVisibleChanged(bool bVisible)
 void xiiNonUniformBoxGizmo::OnTransformationChanged(const xiiTransform& transform)
 {
   xiiMat4 scale, rot;
-  scale.SetScalingMatrix(m_vNegSize + m_vPosSize);
+  scale = xiiMat4::MakeScaling(m_vNegSize + m_vPosSize);
 
   const xiiVec3 center = xiiMath::Lerp(-m_vNegSize, m_vPosSize, 0.5f);
 
@@ -206,7 +206,7 @@ xiiEditorInput xiiNonUniformBoxGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   const xiiTime tNow = xiiTime::Now();
 
-  if (tNow - m_LastInteraction < xiiTime::Seconds(1.0 / 25.0))
+  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
     return xiiEditorInput::WasExclusivelyHandled;
 
   m_LastInteraction = tNow;
@@ -312,8 +312,7 @@ xiiResult xiiNonUniformBoxGizmo::GetPointOnAxis(xiiInt32 iScreenPosX, xiiInt32 i
   const xiiVec3 vPlaneTangent = m_vMoveAxis.CrossRH(vDir).GetNormalized();
   const xiiVec3 vPlaneNormal  = m_vMoveAxis.CrossRH(vPlaneTangent);
 
-  xiiPlane Plane;
-  Plane = xiiPlane(vPlaneNormal, m_vStartPosition);
+  xiiPlane Plane = xiiPlane::MakeFromNormalAndPoint(vPlaneNormal, m_vStartPosition);
 
   xiiVec3 vIntersection;
   if (m_pCamera->IsPerspective())

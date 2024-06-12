@@ -125,7 +125,7 @@ void xiiQtEventTrackEditorWidget::onMoveControlPoints(double x)
     double newPos = cp.GetTickAsTime().GetSeconds() + m_fControlPointMove;
     newPos        = xiiMath::Max(newPos, 0.0);
 
-    Q_EMIT CpMovedEvent(cpSel, m_pData->TickFromTime(xiiTime::Seconds(newPos)));
+    Q_EMIT CpMovedEvent(cpSel, m_pData->TickFromTime(xiiTime::MakeFromSeconds(newPos)));
   }
 
   Q_EMIT EndCpChangesEvent();
@@ -201,7 +201,7 @@ void xiiQtEventTrackEditorWidget::InsertCpAt(double posX, double epsilon)
   int curveIdx = 0, cpIdx = 0;
   posX = xiiMath::Max(posX, 0.0);
 
-  Q_EMIT InsertCpEvent(m_pData->TickFromTime(xiiTime::Seconds(posX)), ComboType->currentText().toUtf8().data());
+  Q_EMIT InsertCpEvent(m_pData->TickFromTime(xiiTime::MakeFromSeconds(posX)), ComboType->currentText().toUtf8().data());
 }
 
 void xiiQtEventTrackEditorWidget::onSelectionChanged()
@@ -296,7 +296,7 @@ void xiiQtEventTrackEditorWidget::on_LinePosition_editingFinished()
 
   Q_EMIT BeginCpChangesEvent("Set Event Time");
 
-  xiiInt64 tick = m_pData->TickFromTime(xiiTime::Seconds(value));
+  xiiInt64 tick = m_pData->TickFromTime(xiiTime::MakeFromSeconds(value));
 
   for (const auto& cpSel : selection)
   {

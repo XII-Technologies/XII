@@ -55,7 +55,7 @@ void xiiCrashHandler_WriteMiniDump::SetDumpFilePath(xiiStringView sAbsDirectoryP
 
   if (flags.IsSet(PathFlags::AppendDate))
   {
-    const xiiDateTime date = xiiTimestamp::CurrentTimestamp();
+    const xiiDateTime date = xiiDateTime::MakeFromTimestamp(xiiTimestamp::CurrentTimestamp());
     sOutputPath.AppendFormat("_{}", date);
   }
 

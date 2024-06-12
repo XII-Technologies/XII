@@ -126,7 +126,7 @@ void xiiSimpleAnimationComponent::Update()
   if (m_fSpeed == 0.0f && !GetUserFlag(1))
     return;
 
-  xiiTime            tMinStep = xiiTime::Seconds(0);
+  xiiTime            tMinStep = xiiTime::MakeFromSeconds(0);
   xiiVisibilityState visType  = GetOwner()->GetVisibilityState();
 
   if (visType != xiiVisibilityState::Direct)
@@ -149,7 +149,7 @@ void xiiSimpleAnimationComponent::Update()
     return;
 
   const xiiTime tDiff      = m_ElapsedTimeSinceUpdate;
-  m_ElapsedTimeSinceUpdate = xiiTime::Zero();
+  m_ElapsedTimeSinceUpdate = xiiTime::MakeZero();
 
   const xiiAnimationClipResourceDescriptor& animDesc = pAnimation->GetDescriptor();
 

@@ -29,7 +29,7 @@ public:
   /// \brief Holds the information about one Material.
   ///
   /// Only the diffuse texture is actually read and stored by this loader, but if needed this can easily be extended.
-  ///	The MaterialID is the ID of the Material itself, this is only needed by the loader.
+  ///  The MaterialID is the ID of the Material itself, this is only needed by the loader.
   struct Material
   {
     /// The path to the diffuse texture of this material.

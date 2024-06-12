@@ -19,6 +19,12 @@ public:
 
   xiiSimdVec4d(xiiInternal::QuadDouble v); // [tested]
 
+  /// \brief Creates a xiiSimdVec4d that is initialized to zero.
+  [[nodiscard]] static xiiSimdVec4d MakeZero(); // [tested]
+
+  /// \brief Creates a xiiSimdVec4d that is initialized to Not-A-Number (NaN).
+  [[nodiscard]] static xiiSimdVec4d MakeNaN(); // [tested]
+
   void Set(double fXyzw); // [tested]
 
   void Set(double x, double y, double z, double w); // [tested]
@@ -31,10 +37,10 @@ public:
   void SetZero(); // [tested]
 
   template <xiiInt32 N>
-  void Load(const double* pValues); // [tested]
+  void Load(const double* pDoubles); // [tested]
 
   template <xiiInt32 N>
-  void Store(double* pValues) const; // [tested]
+  void Store(double* pDoubles) const; // [tested]
 
 public:
   template <xiiMathDoubleBits::Enum acc = xiiMathDoubleBits::FULL>
@@ -98,36 +104,36 @@ public:
 
   ///\brief x = this[s0], y = this[s1], z = other[s2], w = other[s3]
   template <xiiSwizzle::Enum s>
-  xiiSimdVec4d GetCombined(const xiiSimdVec4d& other) const; // [tested]
+  [[nodiscard]] xiiSimdVec4d GetCombined(const xiiSimdVec4d& other) const; // [tested]
 
 public:
-  xiiSimdVec4d operator-() const;                      // [tested]
-  xiiSimdVec4d operator+(const xiiSimdVec4d& v) const; // [tested]
-  xiiSimdVec4d operator-(const xiiSimdVec4d& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4d operator-() const;                      // [tested]
+  [[nodiscard]] xiiSimdVec4d operator+(const xiiSimdVec4d& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4d operator-(const xiiSimdVec4d& v) const; // [tested]
 
-  xiiSimdVec4d operator*(const xiiSimdDouble& f) const; // [tested]
-  xiiSimdVec4d operator/(const xiiSimdDouble& f) const; // [tested]
+  [[nodiscard]] xiiSimdVec4d operator*(const xiiSimdDouble& f) const; // [tested]
+  [[nodiscard]] xiiSimdVec4d operator/(const xiiSimdDouble& f) const; // [tested]
 
-  xiiSimdVec4d CompMul(const xiiSimdVec4d& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4d CompMul(const xiiSimdVec4d& v) const; // [tested]
 
   template <xiiMathDoubleBits::Enum acc = xiiMathDoubleBits::FULL>
-  xiiSimdVec4d CompDiv(const xiiSimdVec4d& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4d CompDiv(const xiiSimdVec4d& v) const; // [tested]
 
-  xiiSimdVec4d CompMin(const xiiSimdVec4d& rhs) const; // [tested]
-  xiiSimdVec4d CompMax(const xiiSimdVec4d& rhs) const; // [tested]
+  [[nodiscard]] xiiSimdVec4d CompMin(const xiiSimdVec4d& rhs) const; // [tested]
+  [[nodiscard]] xiiSimdVec4d CompMax(const xiiSimdVec4d& rhs) const; // [tested]
 
-  xiiSimdVec4d Abs() const;      // [tested]
-  xiiSimdVec4d Round() const;    // [tested]
-  xiiSimdVec4d Floor() const;    // [tested]
-  xiiSimdVec4d Ceil() const;     // [tested]
-  xiiSimdVec4d Trunc() const;    // [tested]
-  xiiSimdVec4d Fraction() const; // [tested]
+  [[nodiscard]] xiiSimdVec4d Abs() const;      // [tested]
+  [[nodiscard]] xiiSimdVec4d Round() const;    // [tested]
+  [[nodiscard]] xiiSimdVec4d Floor() const;    // [tested]
+  [[nodiscard]] xiiSimdVec4d Ceil() const;     // [tested]
+  [[nodiscard]] xiiSimdVec4d Trunc() const;    // [tested]
+  [[nodiscard]] xiiSimdVec4d Fraction() const; // [tested]
 
-  xiiSimdVec4d FlipSign(const xiiSimdVec4b& vCmp) const; // [tested]
+  [[nodiscard]] xiiSimdVec4d FlipSign(const xiiSimdVec4b& vCmp) const; // [tested]
 
-  static xiiSimdVec4d Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4d& vIfTrue, const xiiSimdVec4d& vIfFalse); // [tested]
+  [[nodiscard]] static xiiSimdVec4d Select(const xiiSimdVec4b& vCmp, const xiiSimdVec4d& vTrue, const xiiSimdVec4d& vFalse); // [tested]
 
-  static xiiSimdVec4d Lerp(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& t);
+  [[nodiscard]] static xiiSimdVec4d Lerp(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& t);
 
   xiiSimdVec4d& operator+=(const xiiSimdVec4d& v); // [tested]
   xiiSimdVec4d& operator-=(const xiiSimdVec4d& v); // [tested]
@@ -137,40 +143,38 @@ public:
 
   xiiSimdVec4b IsEqual(const xiiSimdVec4d& rhs, const xiiSimdDouble& fEpsilon) const; // [tested]
 
-  xiiSimdVec4b operator==(const xiiSimdVec4d& v) const; // [tested]
-  xiiSimdVec4b operator!=(const xiiSimdVec4d& v) const; // [tested]
-  xiiSimdVec4b operator<=(const xiiSimdVec4d& v) const; // [tested]
-  xiiSimdVec4b operator<(const xiiSimdVec4d& v) const;  // [tested]
-  xiiSimdVec4b operator>=(const xiiSimdVec4d& v) const; // [tested]
-  xiiSimdVec4b operator>(const xiiSimdVec4d& v) const;  // [tested]
+  [[nodiscard]] xiiSimdVec4b operator==(const xiiSimdVec4d& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4b operator!=(const xiiSimdVec4d& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4b operator<=(const xiiSimdVec4d& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4b operator<(const xiiSimdVec4d& v) const;  // [tested]
+  [[nodiscard]] xiiSimdVec4b operator>=(const xiiSimdVec4d& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4b operator>(const xiiSimdVec4d& v) const;  // [tested]
 
   template <xiiInt32 N>
-  xiiSimdDouble HorizontalSum() const; // [tested]
+  [[nodiscard]] xiiSimdDouble HorizontalSum() const; // [tested]
 
   template <xiiInt32 N>
-  xiiSimdDouble HorizontalMin() const; // [tested]
+  [[nodiscard]] xiiSimdDouble HorizontalMin() const; // [tested]
 
   template <xiiInt32 N>
-  xiiSimdDouble HorizontalMax() const; // [tested]
+  [[nodiscard]] xiiSimdDouble HorizontalMax() const; // [tested]
 
   template <xiiInt32 N>
-  xiiSimdDouble Dot(const xiiSimdVec4d& v) const; // [tested]
+  [[nodiscard]] xiiSimdDouble Dot(const xiiSimdVec4d& v) const; // [tested]
 
   ///\brief 3D cross product, w is ignored.
-  xiiSimdVec4d CrossRH(const xiiSimdVec4d& v) const; // [tested]
+  [[nodiscard]] xiiSimdVec4d CrossRH(const xiiSimdVec4d& v) const; // [tested]
 
   ///\brief Generates an arbitrary vector such that Dot<3>(GetOrthogonalVector()) == 0
-  xiiSimdVec4d GetOrthogonalVector() const; // [tested]
+  [[nodiscard]] xiiSimdVec4d GetOrthogonalVector() const; // [tested]
 
-  static xiiSimdVec4d ZeroVector(); // [tested]
+  [[nodiscard]] static xiiSimdVec4d MulAdd(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& c);  // [tested]
+  [[nodiscard]] static xiiSimdVec4d MulAdd(const xiiSimdVec4d& a, const xiiSimdDouble& b, const xiiSimdVec4d& c); // [tested]
 
-  static xiiSimdVec4d MulAdd(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& c);  // [tested]
-  static xiiSimdVec4d MulAdd(const xiiSimdVec4d& a, const xiiSimdDouble& b, const xiiSimdVec4d& c); // [tested]
+  [[nodiscard]] static xiiSimdVec4d MulSub(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& c);  // [tested]
+  [[nodiscard]] static xiiSimdVec4d MulSub(const xiiSimdVec4d& a, const xiiSimdDouble& b, const xiiSimdVec4d& c); // [tested]
 
-  static xiiSimdVec4d MulSub(const xiiSimdVec4d& a, const xiiSimdVec4d& b, const xiiSimdVec4d& c);  // [tested]
-  static xiiSimdVec4d MulSub(const xiiSimdVec4d& a, const xiiSimdDouble& b, const xiiSimdVec4d& c); // [tested]
-
-  static xiiSimdVec4d CopySign(const xiiSimdVec4d& vMagnitude, const xiiSimdVec4d& vSign); // [tested]
+  [[nodiscard]] static xiiSimdVec4d CopySign(const xiiSimdVec4d& vMagnitude, const xiiSimdVec4d& vSign); // [tested]
 
 public:
   xiiInternal::QuadDouble m_v;

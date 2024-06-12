@@ -9,34 +9,34 @@ XII_CREATE_SIMPLE_TEST(Time, Stopwatch)
   {
     xiiStopwatch sw;
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(50));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(50));
 
     sw.StopAndReset();
     sw.Resume();
 
     const xiiTime t0 = sw.Checkpoint();
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
     const xiiTime t1 = sw.Checkpoint();
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(20));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(20));
 
     const xiiTime t2 = sw.Checkpoint();
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(30));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(30));
 
     const xiiTime t3 = sw.Checkpoint();
 
     const xiiTime tTotal1 = sw.GetRunningTotal();
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10));
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10));
 
-    sw.Pause(); // frexiie the current running total
+    sw.Pause(); // freeze the current running total
 
     const xiiTime tTotal2 = sw.GetRunningTotal();
 
-    xiiThreadUtils::Sleep(xiiTime::Milliseconds(10)); // should not affect the running total anymore
+    xiiThreadUtils::Sleep(xiiTime::MakeFromMilliseconds(10)); // should not affect the running total anymore
 
     const xiiTime tTotal3 = sw.GetRunningTotal();
 
@@ -44,10 +44,10 @@ XII_CREATE_SIMPLE_TEST(Time, Stopwatch)
     // these tests are deliberately written such that they cannot fail,
     // even when the OS is under heavy load
 
-    XII_TEST_BOOL(t0 > xiiTime::Milliseconds(5));
-    XII_TEST_BOOL(t1 > xiiTime::Milliseconds(5));
-    XII_TEST_BOOL(t2 > xiiTime::Milliseconds(5));
-    XII_TEST_BOOL(t3 > xiiTime::Milliseconds(5));
+    XII_TEST_BOOL(t0 > xiiTime::MakeFromMilliseconds(5));
+    XII_TEST_BOOL(t1 > xiiTime::MakeFromMilliseconds(5));
+    XII_TEST_BOOL(t2 > xiiTime::MakeFromMilliseconds(5));
+    XII_TEST_BOOL(t3 > xiiTime::MakeFromMilliseconds(5));
 
 
     XII_TEST_BOOL(t1 + t2 + t3 <= tTotal1);

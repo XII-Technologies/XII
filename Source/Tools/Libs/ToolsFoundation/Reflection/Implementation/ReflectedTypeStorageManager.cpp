@@ -13,7 +13,7 @@
 xiiMap<const xiiRTTI*, xiiReflectedTypeStorageManager::ReflectedTypeStorageMapping*> xiiReflectedTypeStorageManager::s_ReflectedTypeToStorageMapping;
 
 // clang-format off
-// 
+//
 XII_BEGIN_SUBSYSTEM_DECLARATION(ToolsFoundation, ReflectedTypeStorageManager)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES

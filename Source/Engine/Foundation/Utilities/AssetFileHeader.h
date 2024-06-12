@@ -1,11 +1,10 @@
 #pragma once
 
-#include <Core/CoreDLL.h>
 #include <Foundation/IO/Stream.h>
 #include <Foundation/Strings/HashedString.h>
 
 /// \brief Simple class to handle asset file headers (the very first bytes in all transformed asset files)
-class XII_CORE_DLL xiiAssetFileHeader
+class XII_FOUNDATION_DLL xiiAssetFileHeader
 {
 public:
   xiiAssetFileHeader();
@@ -39,7 +38,9 @@ public:
   void SetGenerator(xiiStringView sGenerator) { m_sGenerator.Assign(sGenerator); }
 
 private:
-  xiiUInt64       m_uiHash;
-  xiiUInt16       m_uiVersion;
+  // initialize to a 'valid' hash
+  // this may get stored, unless someone sets the hash
+  xiiUInt64       m_uiHash    = 0;
+  xiiUInt16       m_uiVersion = 0;
   xiiHashedString m_sGenerator;
 };

@@ -36,18 +36,20 @@ public:
   /// \brief Default constructor. Does not initialize the plane.
   xiiPlaneTemplate(); // [tested]
 
-  /// \brief Creates the plane-equation from a normal and a point on the plane.
-  xiiPlaneTemplate(const xiiVec3Template<Type>& vNormal, const xiiVec3Template<Type>& vPointOnPlane); // [tested]
+  /// \brief Returns an invalid plane with a zero normal.
+  [[nodiscard]] static xiiPlaneTemplate<Type> MakeInvalid();
 
-  /// \brief Creates the plane-equation from three points on the plane.
-  xiiPlaneTemplate(const xiiVec3Template<Type>& v1, const xiiVec3Template<Type>& v2, const xiiVec3Template<Type>& v3); // [tested]
+  /// \brief Creates a plane from a normal and a point on the plane.
+  ///
+  /// \note This function asserts that the normal is normalized.
+  [[nodiscard]] static xiiPlaneTemplate<Type> MakeFromNormalAndPoint(const xiiVec3Template<Type>& vNormal, const xiiVec3Template<Type>& vPointOnPlane);
 
-  /// \brief Creates the plane-equation from three points on the plane, given as an array.
-  xiiPlaneTemplate(const xiiVec3Template<Type>* const pVertices); // [tested]
-
-  /// \brief Creates the plane-equation from a set of unreliable points lying on the same plane. Some points might be equal or too close to each other
-  /// for the typical algorithm.
-  xiiPlaneTemplate(const xiiVec3Template<Type>* const pVertices, xiiUInt32 uiMaxVertices); // [tested]
+  /// \brief Creates a plane from three points.
+  ///
+  /// \note Asserts that the 3 points properly form a plane.
+  /// Only use this function when you are certain that the input data isn't degenerate.
+  /// If the data cannot be trusted, use SetFromPoints() and check the result.
+  [[nodiscard]] static xiiPlaneTemplate<Type> MakeFromPoints(const xiiVec3Template<Type>& v1, const xiiVec3Template<Type>& v2, const xiiVec3Template<Type>& v3);
 
 #if XII_ENABLED(XII_MATH_CHECK_FOR_NAN)
   void AssertNotNaN() const
@@ -59,9 +61,6 @@ public:
 
   /// \brief Returns a xiiVec4 with the plane normal in x,y,z and the negative distance in w.
   xiiVec4Template<Type> GetAsVec4() const;
-
-  /// \brief Creates the plane-equation from a normal and a point on the plane.
-  void SetFromNormalAndPoint(const xiiVec3Template<Type>& vNormal, const xiiVec3Template<Type>& vPointOnPlane); // [tested]
 
   /// \brief Creates the plane-equation from three points on the plane.
   xiiResult SetFromPoints(const xiiVec3Template<Type>& v1, const xiiVec3Template<Type>& v2, const xiiVec3Template<Type>& v3); // [tested]
@@ -75,9 +74,6 @@ public:
 
   /// \brief Creates a plane from two direction vectors that span the plane, and one point on it.
   xiiResult SetFromDirections(const xiiVec3Template<Type>& vTangent1, const xiiVec3Template<Type>& vTangent2, const xiiVec3Template<Type>& vPointOnPlane); // [tested]
-
-  /// \brief Sets the plane to an invalid state (all zero).
-  void SetInvalid(); // [tested]
 
   // *** Distance and Position ***
 public:
@@ -100,8 +96,7 @@ public:
   ///
   /// 'Minimum' (and 'maximum') means the (non-absolute) distance of a point to the plane. So a point behind the plane will always have a 'lower
   /// distance' than a point in front of the plane, even if that is closer to the plane's surface.
-  void GetMinMaxDistanceTo(Type& out_fMin, Type& out_fMax, const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints,
-                           xiiUInt32 uiStride = sizeof(xiiVec3Template<Type>)) const; // [tested]
+  void GetMinMaxDistanceTo(Type& out_fMin, Type& out_fMax, const xiiVec3Template<Type>* pPoints, xiiUInt32 uiNumPoints, xiiUInt32 uiStride = sizeof(xiiVec3Template<Type>)) const; // [tested]
 
   /// \brief Returns on which side of the plane the point lies.
   xiiPositionOnPlane::Enum GetPointPosition(const xiiVec3Template<Type>& vPoint) const; // [tested]
@@ -171,7 +166,7 @@ public:
   ///
   /// Intersections with \a out_fIntersection less than zero will be discarded and not reported as intersections.
   /// If such intersections are desired, use GetRayIntersectionBiDirectional instead.
-  [[nodiscard]] bool GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_pIntersection = nullptr, xiiVec3Template<Type>* out_pIntersectionDistance = nullptr) const; // [tested]
+  [[nodiscard]] bool GetRayIntersection(const xiiVec3Template<Type>& vRayStartPos, const xiiVec3Template<Type>& vRayDir, Type* out_pIntersectionDistance = nullptr, xiiVec3Template<Type>* out_pIntersection = nullptr) const; // [tested]
 
   /// \brief Returns true, if the ray intersects the plane. Intersection time and point are stored in the out-parameters. Allows for intersections at
   /// negative times (shooting into the opposite direction).

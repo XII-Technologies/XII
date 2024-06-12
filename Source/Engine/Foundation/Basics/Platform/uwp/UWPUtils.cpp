@@ -30,9 +30,9 @@ xiiQuat xiiUwpUtils::ConvertQuat(const ABI::Windows::Foundation::Numerics::Quate
 
 void xiiUwpUtils::ConvertQuat(const xiiQuat& in, ABI::Windows::Foundation::Numerics::Quaternion& out)
 {
-  out.X = in.v.x;
-  out.Y = in.v.y;
-  out.Z = in.v.z;
+  out.X = in.x;
+  out.Y = in.y;
+  out.Z = in.z;
   out.W = in.w;
 }
 

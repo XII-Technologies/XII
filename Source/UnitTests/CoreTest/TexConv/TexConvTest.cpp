@@ -68,9 +68,9 @@ private:
   void RunTexConv(xiiProcessOptions& options, const char* szOutName)
   {
 #  if XII_ENABLED(XII_PLATFORM_WINDOWS)
-    const char* szTexConvExecutableName = "TexConv.exe";
+    const char* szTexConvExecutableName = "xiiTexConv.exe";
 #  else
-    const char* szTexConvExecutableName = "TexConv";
+    const char* szTexConvExecutableName = "xiiTexConv";
 #  endif
     xiiStringBuilder sTexConvExe = xiiOSFile::GetApplicationDirectory();
     sTexConvExe.AppendPath(szTexConvExecutableName);
@@ -90,7 +90,7 @@ private:
     if (!XII_TEST_BOOL(m_pState->m_TexConvGroup.Launch(options).Succeeded()))
       return;
 
-    if (!XII_TEST_BOOL_MSG(m_pState->m_TexConvGroup.WaitToFinish(xiiTime::Minutes(1.0)).Succeeded(), "TexConv did not finish in time."))
+    if (!XII_TEST_BOOL_MSG(m_pState->m_TexConvGroup.WaitToFinish(xiiTime::MakeFromMinutes(1.0)).Succeeded(), "TexConv did not finish in time."))
       return;
 
     XII_TEST_INT_MSG(m_pState->m_TexConvGroup.GetProcesses().PeekBack().GetExitCode(), 0, "TexConv failed to process the image");

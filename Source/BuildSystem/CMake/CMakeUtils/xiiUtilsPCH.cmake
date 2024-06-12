@@ -5,7 +5,7 @@
 function(xii_set_target_pch TARGET_NAME PCH_NAME)
   # message(STATUS "Setting PCH for '${TARGET_NAME}': ${PCH_NAME}")
   set_property(TARGET ${TARGET_NAME} PROPERTY "PCH_FILE_NAME" ${PCH_NAME})
-  
+
   if(XII_USE_PCH)
     if(NOT XII_CMAKE_GENERATOR_MSVC)
       # When not generating a Visual Studio solution we use the cmake build in PCH support
@@ -115,7 +115,7 @@ function(xii_auto_pch TARGET_NAME FILES)
   endforeach()
 
   xii_find_pch_in_file_list("${FILES}" PCH_PATH PCH_NAME)
-  
+
   if(NOT PCH_NAME)
     return()
   endif()

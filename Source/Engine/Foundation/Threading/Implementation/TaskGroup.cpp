@@ -46,5 +46,4 @@ void xiiTaskGroup::DebugCheckTaskGroup(xiiTaskGroupID groupID, xiiMutex& mutex)
 }
 #endif
 
-
 XII_STATICLINK_FILE(Foundation, Foundation_Threading_Implementation_TaskGroup);

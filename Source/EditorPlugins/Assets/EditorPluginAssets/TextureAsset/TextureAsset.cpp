@@ -330,7 +330,7 @@ xiiStatus xiiTextureAssetDocument::RunTexConv(const char* szTargetFile, const xi
     break;
   }
 
-  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("TexConv", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
+  XII_SUCCEED_OR_RETURN(xiiQtEditorApp::GetSingleton()->ExecuteTool("xiiTexConv", arguments, 180, xiiLog::GetThreadLocalLogSystem()));
 
   if (bUpdateThumbnail)
   {
@@ -600,26 +600,28 @@ void xiiTextureAssetDocumentGenerator::GetImportModes(xiiStringView sAbsInputFil
       info2.m_sIcon                                = ":/AssetIcons/Texture_2D.svg";
     }
 
-    //{
-    //  xiiAssetDocumentGenerator::ImportMode& info2 = out_modes.ExpandAndGetRef();
-    //  info2.m_Priority = xiiAssetDocGeneratorPriority::LowPriority;
-    //  info2.m_sName = "TextureImport.Diffuse";
-    //  info2.m_sIcon = ":/AssetIcons/Texture_2D.svg";
-    //}
+#if 0
+    {
+      xiiAssetDocumentGenerator::ImportMode& info2 = out_modes.ExpandAndGetRef();
+      info2.m_Priority = xiiAssetDocGeneratorPriority::LowPriority;
+      info2.m_sName = "TextureImport.Diffuse";
+      info2.m_sIcon = ":/AssetIcons/Texture_2D.svg";
+    }
 
-    //{
-    //  xiiAssetDocumentGenerator::ImportMode& info2 = out_modes.ExpandAndGetRef();
-    //  info2.m_Priority = xiiAssetDocGeneratorPriority::LowPriority;
-    //  info2.m_sName = "TextureImport.Linear";
-    //  info2.m_sIcon = ":/AssetIcons/Texture_Linear.svg";
-    //}
+    {
+      xiiAssetDocumentGenerator::ImportMode& info2 = out_modes.ExpandAndGetRef();
+      info2.m_Priority = xiiAssetDocGeneratorPriority::LowPriority;
+      info2.m_sName = "TextureImport.Linear";
+      info2.m_sIcon = ":/AssetIcons/Texture_Linear.svg";
+    }
 
-    //{
-    //  xiiAssetDocumentGenerator::ImportMode& info2 = out_modes.ExpandAndGetRef();
-    //  info2.m_Priority = xiiAssetDocGeneratorPriority::LowPriority;
-    //  info2.m_sName = "TextureImport.Normal";
-    //  info2.m_sIcon = ":/AssetIcons/Texture_Normals.svg";
-    //}
+    {
+      xiiAssetDocumentGenerator::ImportMode& info2 = out_modes.ExpandAndGetRef();
+      info2.m_Priority = xiiAssetDocGeneratorPriority::LowPriority;
+      info2.m_sName = "TextureImport.Normal";
+      info2.m_sIcon = ":/AssetIcons/Texture_Normals.svg";
+    }
+#endif
     return;
   }
 

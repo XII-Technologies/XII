@@ -61,10 +61,14 @@ void xiiHashSetBase<K, H>::ConstIterator::Next()
     return;
   }
 
-  do
+  for (++m_uiCurrentIndex; m_uiCurrentIndex < m_pHashSet->m_uiCapacity; ++m_uiCurrentIndex)
   {
-    ++m_uiCurrentIndex;
-  } while (!m_pHashSet->IsValidEntry(m_uiCurrentIndex));
+    if (m_pHashSet->IsValidEntry(m_uiCurrentIndex))
+    {
+      return;
+    }
+  }
+  SetToEnd();
 }
 
 template <typename K, typename H>
@@ -370,6 +374,23 @@ XII_FORCE_INLINE bool xiiHashSetBase<K, H>::Contains(const CompatibleKeyType& ke
 }
 
 template <typename K, typename H>
+template <typename CompatibleKeyType>
+XII_FORCE_INLINE typename xiiHashSetBase<K, H>::ConstIterator xiiHashSetBase<K, H>::Find(const CompatibleKeyType& key) const
+{
+  xiiUInt32 uiIndex = FindEntry(key);
+  if (uiIndex == xiiInvalidIndex)
+  {
+    return GetEndIterator();
+  }
+
+  ConstIterator it(*this);
+  it.m_uiCurrentIndex = uiIndex;
+  it.m_uiCurrentCount = 0; // we do not know the 'count' (which is used as an optimization), so we just use 0
+
+  return it;
+}
+
+template <typename K, typename H>
 bool xiiHashSetBase<K, H>::ContainsSet(const xiiHashSetBase<K, H>& operand) const
 {
   for (const K& key : operand)
@@ -549,6 +570,8 @@ XII_FORCE_INLINE bool xiiHashSetBase<K, H>::IsFreeEntry(xiiUInt32 uiEntryIndex) 
 template <typename K, typename H>
 XII_FORCE_INLINE bool xiiHashSetBase<K, H>::IsValidEntry(xiiUInt32 uiEntryIndex) const
 {
+  XII_ASSERT_DEBUG(uiEntryIndex < m_uiCapacity, "Out of bounds access");
+
   return GetFlags(m_pEntryFlags, uiEntryIndex) == VALID_ENTRY;
 }
 

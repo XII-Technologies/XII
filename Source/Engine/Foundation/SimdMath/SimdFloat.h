@@ -29,7 +29,11 @@ public:
   /// \brief Returns the stored number as a standard float.
   operator float() const; // [tested]
 
-  static xiiSimdFloat Zero(); // [tested]
+  /// \brief Creates a xiiSimdFloat that is initialized to zero.
+  [[nodiscard]] static xiiSimdFloat MakeZero(); // [tested]
+
+  /// \brief Creates a xiiSimdFloat that is initialized to Not-A-Number (NaN).
+  [[nodiscard]] static xiiSimdFloat MakeNaN(); // [tested]
 
 public:
   xiiSimdFloat operator+(const xiiSimdFloat& f) const; // [tested]
@@ -67,9 +71,9 @@ public:
   template <xiiMathFloatBits::Enum acc = xiiMathFloatBits::FULL>
   xiiSimdFloat GetInvSqrt() const; // [tested]
 
-  xiiSimdFloat Max(const xiiSimdFloat& f) const; // [tested]
-  xiiSimdFloat Min(const xiiSimdFloat& f) const; // [tested]
-  xiiSimdFloat Abs() const;                      // [tested]
+  [[nodiscard]] xiiSimdFloat Max(const xiiSimdFloat& f) const; // [tested]
+  [[nodiscard]] xiiSimdFloat Min(const xiiSimdFloat& f) const; // [tested]
+  [[nodiscard]] xiiSimdFloat Abs() const;                      // [tested]
 
 public:
   xiiInternal::QuadFloat m_v;

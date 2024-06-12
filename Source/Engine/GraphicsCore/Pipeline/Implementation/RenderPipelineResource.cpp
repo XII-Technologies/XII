@@ -1,6 +1,6 @@
 #include <GraphicsCore/GraphicsCorePCH.h>
 
-#include <Core/Assets/AssetFileHeader.h>
+#include <Foundation/Utilities/AssetFileHeader.h>
 #include <GraphicsCore/Pipeline/Implementation/RenderPipelineResourceLoader.h>
 #include <GraphicsCore/Pipeline/Passes/SimpleRenderPass.h>
 #include <GraphicsCore/Pipeline/Passes/SourcePass.h>

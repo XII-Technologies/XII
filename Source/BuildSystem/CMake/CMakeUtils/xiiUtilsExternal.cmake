@@ -38,7 +38,7 @@ macro(xii_configure_external_project)
   else()
     set(XII_SUBMODULE_PREFIX_PATH "")
   endif()
-  
+
   set_property(GLOBAL PROPERTY XII_SUBMODULE_PREFIX_PATH ${XII_SUBMODULE_PREFIX_PATH})
 
   if(XII_SUBMODULE_PREFIX_PATH STREQUAL "")

@@ -10,12 +10,11 @@ xiiApplyNativePropertyChangesContext::xiiApplyNativePropertyChangesContext(xiiRt
 
 xiiUuid xiiApplyNativePropertyChangesContext::GenerateObjectGuid(const xiiUuid& parentGuid, const xiiAbstractProperty* pProp, xiiVariant index, void* pObject) const
 {
-  xiiUuid guid;
   if (pProp->GetFlags().IsSet(xiiPropertyFlags::PointerOwner))
   {
     // If the object is already known by the native context (a pointer that existed before the native changes)
     // we can just return it. Any other pointer will get a new guid assigned.
-    guid = m_NativeContext.GetObjectGUID(pProp->GetSpecificType(), pObject);
+    xiiUuid guid = m_NativeContext.GetObjectGUID(pProp->GetSpecificType(), pObject);
     if (guid.IsValid())
       return guid;
   }
@@ -73,8 +72,8 @@ xiiUuid xiiApplyNativePropertyChangesContext::GenerateObjectGuid(const xiiUuid& 
       }
     }
   }
-  guid.CreateNewUuid();
-  return guid;
+
+  return xiiUuid::MakeUuid();
 }
 
 

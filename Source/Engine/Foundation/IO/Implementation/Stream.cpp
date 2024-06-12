@@ -25,7 +25,6 @@ xiiResult xiiStreamReader::ReadString(xiiStringBuilder& ref_sBuilder)
       ref_sBuilder.m_Data.Reserve(uiCount + 1);
       ref_sBuilder.m_Data.SetCountUninitialized(uiCount);
       ReadBytes(ref_sBuilder.m_Data.GetData(), uiCount);
-      ref_sBuilder.m_uiCharacterCount = uiCount;
       ref_sBuilder.AppendTerminator();
     }
     else
@@ -68,6 +67,5 @@ xiiResult xiiStreamWriter::WriteString(const xiiStringView sStringView)
 
   return XII_SUCCESS;
 }
-
 
 XII_STATICLINK_FILE(Foundation, Foundation_IO_Implementation_Stream);

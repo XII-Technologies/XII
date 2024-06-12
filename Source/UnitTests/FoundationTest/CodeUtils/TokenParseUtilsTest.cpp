@@ -1,8 +1,7 @@
 #include <FoundationTest/FoundationTestPCH.h>
 
-#include <Foundation/CodeUtils/Tokenizer.h>
-
 #include <Foundation/CodeUtils/TokenParseUtils.h>
+#include <Foundation/CodeUtils/Tokenizer.h>
 
 XII_CREATE_SIMPLE_TEST(CodeUtils, TokenParseUtils)
 {

@@ -76,7 +76,7 @@ xiiResult xiiOSFile::InternalOpen(xiiStringView sFile, xiiFileOpenMode::Enum Ope
   }
 
   const xiiInt32 iSharedMode = (FileShareMode == xiiFileShareMode::Exclusive) ? LOCK_EX : LOCK_SH;
-  const xiiTime  sleepTime   = xiiTime::Milliseconds(20);
+  const xiiTime  sleepTime   = xiiTime::MakeFromMilliseconds(20);
   xiiInt32       iRetries    = m_bRetryOnSharingViolation ? 20 : 1;
 
   while (flock(fd, iSharedMode | LOCK_NB /* do not block */) != 0)
@@ -351,8 +351,8 @@ xiiResult xiiOSFile::InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileSt
   out_Stats.m_uiFileSize   = tempStat.st_size;
   out_Stats.m_sParentPath  = sFileOrFolder;
   out_Stats.m_sParentPath.PathParentDirectory();
-  out_Stats.m_sName = xiiPathUtils::GetFileNameAndExtension(sFileOrFolder); // no OS support, so just pass it through
-  out_Stats.m_LastModificationTime.SetInt64(tempStat.st_mtime, xiiSIUnitOfTime::Second);
+  out_Stats.m_sName                = xiiPathUtils::GetFileNameAndExtension(sFileOrFolder); // no OS support, so just pass it through
+  out_Stats.m_LastModificationTime = xiiTimestamp::MakeFromInt(tempStat.st_mtime, xiiSIUnitOfTime::Second);
 
   return XII_SUCCESS;
 }
@@ -360,11 +360,9 @@ xiiResult xiiOSFile::InternalGetFileStats(xiiStringView sFileOrFolder, xiiFileSt
 
 #if XII_DISABLED(XII_PLATFORM_WINDOWS_UWP)
 
-xiiStringView xiiOSFile::GetApplicationDirectory()
+xiiStringView xiiOSFile::GetApplicationPath()
 {
-  static xiiString256 s_Path;
-
-  if (s_Path.IsEmpty())
+  if (s_sApplicationPath.IsEmpty())
   {
 #  if XII_ENABLED(XII_PLATFORM_OSX)
 
@@ -381,7 +379,7 @@ xiiStringView xiiOSFile::GetApplicationDirectory()
 
       if (CFStringGetCString(bundlePath, temp.GetPtr(), maxSize, kCFStringEncodingUTF8))
       {
-        s_Path = temp.GetPtr();
+        s_sApplicationPath = temp.GetPtr();
       }
 
       XII_DEFAULT_DELETE_ARRAY(temp);
@@ -398,18 +396,17 @@ xiiStringView xiiOSFile::GetApplicationDirectory()
       // By convention, android requires assets to be placed in the 'Assets' folder
       // inside the apk thus we use that as our SDK root.
       xiiStringBuilder sTemp = packagePath.GetData();
-      sTemp.AppendPath("Assets");
-      s_Path = sTemp;
+      sTemp.AppendPath("Assets/xiiTempBin");
+      s_sApplicationPath = sTemp;
     }
 #  else
-    char             result[PATH_MAX];
-    ssize_t          length = readlink("/proc/self/exe", result, PATH_MAX);
-    xiiStringBuilder path(xiiStringView(result, result + length));
-    s_Path = path.GetFileDirectory();
+    char    result[PATH_MAX];
+    ssize_t length     = readlink("/proc/self/exe", result, PATH_MAX);
+    s_sApplicationPath = xiiStringView(result, result + length);
 #  endif
   }
 
-  return s_Path;
+  return s_sApplicationPath;
 }
 
 xiiString xiiOSFile::GetUserDataFolder(xiiStringView sSubFolder)
@@ -459,8 +456,6 @@ xiiString xiiOSFile::GetUserDocumentsFolder(xiiStringView sSubFolder)
   if (s_sUserDocumentsPath.IsEmpty())
   {
 #  if XII_ENABLED(XII_PLATFORM_ANDROID)
-    android_app* pAndroidApp = xiiAndroidUtils::GetNativeAndroidApp();
-    // s_sUserDataPath = pAndroidApp->activity->internalDataPath;
     XII_ASSERT_NOT_IMPLEMENTED;
 #  else
     s_sUserDataPath = getenv("HOME");
@@ -528,11 +523,11 @@ namespace
     struct stat fileStat = {};
     stat(absFileName.GetData(), &fileStat);
 
-    curFile.m_uiFileSize   = fileStat.st_size;
-    curFile.m_bIsDirectory = hCurrentFile->d_type == DT_DIR;
-    curFile.m_sParentPath  = curPath;
-    curFile.m_sName        = hCurrentFile->d_name;
-    curFile.m_LastModificationTime.SetInt64(fileStat.st_mtime, xiiSIUnitOfTime::Second);
+    curFile.m_uiFileSize           = fileStat.st_size;
+    curFile.m_bIsDirectory         = hCurrentFile->d_type == DT_DIR;
+    curFile.m_sParentPath          = curPath;
+    curFile.m_sName                = hCurrentFile->d_name;
+    curFile.m_LastModificationTime = xiiTimestamp::MakeFromInt(fileStat.st_mtime, xiiSIUnitOfTime::Second);
 
     return XII_SUCCESS;
   }

@@ -1,31 +1,9 @@
 #pragma once
 
-#include "Math.h"
 #include <algorithm>
 
 namespace xiiMath
 {
-  template <typename Type>
-  XII_ALWAYS_INLINE Type Sin(xiiAngleTemplate<Type> a) { return (Type)sin(a.GetRadian()); }
-
-  template <typename Type>
-  XII_ALWAYS_INLINE Type Cos(xiiAngleTemplate<Type> a) { return (Type)cos(a.GetRadian()); }
-
-  template <typename Type>
-  XII_ALWAYS_INLINE Type Tan(xiiAngleTemplate<Type> a) { return (Type)tan(a.GetRadian()); }
-
-  template <typename Type>
-  XII_ALWAYS_INLINE xiiAngleTemplate<Type> ASin(Type f) { return xiiAngleTemplate<Type>::Radian((Type)asin(f)); }
-
-  template <typename Type>
-  XII_ALWAYS_INLINE xiiAngleTemplate<Type> ACos(Type f) { return xiiAngleTemplate<Type>::Radian((Type)acos(f)); }
-
-  template <typename Type>
-  XII_ALWAYS_INLINE xiiAngleTemplate<Type> ATan(Type f) { return xiiAngleTemplate<Type>::Radian((Type)atan(f)); }
-
-  template <typename Type>
-  XII_ALWAYS_INLINE xiiAngleTemplate<Type> ATan2(Type y, Type x) { return xiiAngleTemplate<Type>::Radian((Type)atan2(y, x)); }
-
   template <typename T>
   constexpr XII_ALWAYS_INLINE T Square(T f)
   {
@@ -264,6 +242,18 @@ namespace xiiMath
     return (T)(f1 + (fFactor * (f2 - f1)));
   }
 
+  template <typename T>
+  XII_FORCE_INLINE constexpr float Unlerp(T fMin, T fMax, T fValue)
+  {
+    return static_cast<float>(fValue - fMin) / static_cast<float>(fMax - fMin);
+  }
+
+  template <typename T>
+  XII_FORCE_INLINE constexpr double UnlerpDouble(T fMin, T fMax, T fValue)
+  {
+    return static_cast<double>(fValue - fMin) / static_cast<double>(fMax - fMin);
+  }
+
   ///  Returns 0, if value < edge, and 1, if value >= edge.
   template <typename T>
   constexpr XII_FORCE_INLINE T Step(T value, T edge)
@@ -342,7 +332,7 @@ namespace xiiMath
   }
 
   template <typename Type>
-  Type SmootherStep(Type value, Type edge1, Type edge2)
+  inline Type SmootherStep(Type value, Type edge1, Type edge2)
   {
     const Type divider = edge2 - edge1;
 
@@ -496,7 +486,7 @@ XII_ALWAYS_INLINE xiiResult xiiMath::TryConvertToSizeT(size_t& out_uiResult, xii
 #if XII_ENABLED(XII_PLATFORM_32BIT)
   if (uiValue <= MaxValue<size_t>())
   {
-    out_Result = static_cast<size_t>(uiValue);
+    out_uiResult = static_cast<size_t>(uiValue);
     return XII_SUCCESS;
   }
 

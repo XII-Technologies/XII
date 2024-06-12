@@ -98,8 +98,8 @@ private:
   xiiUInt32 m_uiNextResourceID = 0;
 
   // Resource Unloading
-  xiiTime m_AutoFreeUnusedTimeout   = xiiTime::Zero();
-  xiiTime m_AutoFreeUnusedThreshold = xiiTime::Zero();
+  xiiTime m_AutoFreeUnusedTimeout   = xiiTime::MakeZero();
+  xiiTime m_AutoFreeUnusedThreshold = xiiTime::MakeZero();
 
   xiiMap<const xiiRTTI*, xiiResourceManager::ResourceTypeInfo> m_TypeInfo;
 };

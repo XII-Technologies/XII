@@ -22,7 +22,7 @@ xiiRotateGizmo::xiiRotateGizmo()
   m_hAxisZ.ConfigureHandle(this, xiiEngineGizmoHandleType::FromFile, colb, xiiGizmoFlags::ConstantSize | xiiGizmoFlags::Pickable, "Editor/Meshes/RotatePlaneZ.obj");
 
   SetVisible(false);
-  SetTransformation(xiiTransform::IdentityTransform());
+  SetTransformation(xiiTransform::MakeIdentity());
 }
 
 void xiiRotateGizmo::UpdateStatusBarText(xiiQtEngineDocumentWindow* pWindow)
@@ -116,8 +116,7 @@ xiiEditorInput xiiRotateGizmo::DoMousePressEvent(QMouseEvent* e)
     xiiVec3 vPosOnNearPlane, vRayDir;
     xiiGraphicsUtils::ConvertScreenPosToWorldPos(m_mInvViewProj, 0, 0, m_vViewport.x, m_vViewport.y, vMousePos, vPosOnNearPlane, &vRayDir).IgnoreResult();
 
-    xiiPlane plane;
-    plane = xiiPlane(vAxisWS, vGizmoPosWS);
+    xiiPlane plane = xiiPlane::MakeFromNormalAndPoint(vAxisWS, vGizmoPosWS);
 
     xiiVec3 vPointOnGizmoWS;
     if (!plane.GetRayIntersection(vPosOnNearPlane, vRayDir, nullptr, &vPointOnGizmoWS))
@@ -180,7 +179,7 @@ xiiEditorInput xiiRotateGizmo::DoMouseMoveEvent(QMouseEvent* e)
 
   const xiiTime tNow = xiiTime::Now();
 
-  if (tNow - m_LastInteraction < xiiTime::Seconds(1.0 / 25.0))
+  if (tNow - m_LastInteraction < xiiTime::MakeFromSeconds(1.0 / 25.0))
     return xiiEditorInput::WasExclusivelyHandled;
 
   m_LastInteraction = tNow;
@@ -193,7 +192,7 @@ xiiEditorInput xiiRotateGizmo::DoMouseMoveEvent(QMouseEvent* e)
   m_vLastMousePos = UpdateMouseMode(e);
 
   const float dv = m_vScreenTangent.Dot(vDiff);
-  m_Rotation += xiiAngle::Degree(dv);
+  m_Rotation += xiiAngle::MakeFromDegree(dv);
 
   xiiAngle rot = m_Rotation;
 
@@ -201,7 +200,7 @@ xiiEditorInput xiiRotateGizmo::DoMouseMoveEvent(QMouseEvent* e)
   if (!e->modifiers().testFlag(Qt::AltModifier))
     xiiSnapProvider::SnapRotation(rot);
 
-  m_qCurrentRotation.SetFromAxisAndAngle(m_vRotationAxis, rot);
+  m_qCurrentRotation = xiiQuat::MakeFromAxisAndAngle(m_vRotationAxis, rot);
 
   xiiTransform mTrans = GetTransformation();
   mTrans.m_qRotation  = m_qCurrentRotation * m_qStartRotation;
