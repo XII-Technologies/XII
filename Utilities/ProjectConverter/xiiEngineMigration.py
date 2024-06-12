@@ -85,7 +85,7 @@ class InstanceData:
     bShouldRenameFiles: bool = True
 
     xiiExtensionsNoRename: t.Set[str]    = set()
-    xiiExtensionsNoEdit: t.Set[str]      = { ".jpg", ".png", ".svg", ".dds", ".pdn" }
+    xiiExtensionsNoEdit: t.Set[str]      = { ".jpg", ".png", ".svg", ".dds", ".pdn", ".ico" }
     xiiInvariantPunctuations: t.Set[str] = {'!', '"', '#', '$', '%', '&', "'", '(', ')', '*', '+', ',', '-', '.', '/', ':', ';', '<', '=', '>', '?', '@', '[', '\\', ']', '^', '_', '`', '{', '|', '}', '~'}
 
     xiiDebugMacroRegex: t.Set[str] = {
@@ -213,6 +213,11 @@ def ResolveNamespace() -> None:
         try:
             #logger.info(f"Transforming file: {file}")
 
+            sExtension: str = os.path.splitext(file)[1]
+
+            if len(sExtension) > 0 and sExtension in InstanceData.xiiExtensionsNoEdit:
+                continue
+
             # Read file content, we will perform processing outside the file reading.
             fileContent: t.List[str] = []
             with open(file, mode='r') as filestream:
@@ -268,7 +273,7 @@ def ResolveNamespace() -> None:
                         uiIndexAdvancement += 1
 
                 # Cleanup multiline function arguments, clang-format does not clean them up.
-                if (rSearch := re.search(r"[a-zA-Z0-9]+\s+[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None:
+                if (rSearch := re.search(r"^[a-zA-Z0-9]+\s+[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None and False:
                     sLineParse: str = sLineContent
 
                     uiIndexAdvancement: int = 1
@@ -297,7 +302,7 @@ def ResolveNamespace() -> None:
 
                 # Cleanup multiline function arguments, clang-format does not clean them up.
                 # We do not apply code format rules on comments. (Block comments are unhandled)
-                if (rSearch := re.search(r"[a-zA-Z0-9]+\s+[a-zA-Z0-9_]+\(+([a-zA-Z0-9\s<>&*:,.\(\)])+$", sLineContent)) and rSearch != None and not sLineContent.strip().startswith("//") and not sLineContent.strip().startswith("/*") and not sLineContent.strip().startswith("*") and not sLineContent.strip().startswith("#"):
+                if (rSearch := re.search(r"^[a-zA-Z0-9]+\s+[a-zA-Z0-9_]+\(+([a-zA-Z0-9\s<>&*:,.\(\)])+$", sLineContent)) and rSearch != None and False and not sLineContent.strip().startswith("//") and not sLineContent.strip().startswith("/*") and not sLineContent.strip().startswith("*") and not sLineContent.strip().startswith("#"):
                     sLineParse: str = sLineContent
 
                     uiIndexAdvancement: int = 1
@@ -330,7 +335,7 @@ def ResolveNamespace() -> None:
 
                 # Cleanup multiline function arguments, clang-format does not clean them up.
                 # We do not apply code format rules on comments. (Block comments are unhandled)
-                if (rSearch := re.search(r"[a-zA-Z0-9]+::+[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None and not sLineContent.strip().startswith("//") and not sLineContent.strip().startswith("/*") and not sLineContent.strip().startswith("*") and not sLineContent.strip().startswith("#"):
+                if (rSearch := re.search(r"^[a-zA-Z0-9]+::+[a-zA-Z0-9_]+\($", sLineContent)) and rSearch != None and False and not sLineContent.strip().startswith("//") and not sLineContent.strip().startswith("/*") and not sLineContent.strip().startswith("*") and not sLineContent.strip().startswith("#"):
                     sLineParse: str = sLineContent
 
                     uiIndexAdvancement: int = 1
@@ -363,7 +368,7 @@ def ResolveNamespace() -> None:
 
                 # Cleanup multiline function arguments, clang-format does not clean them up.
                 # We do not apply code format rules on comments. (Block comments are unhandled)
-                if (rSearch := re.search(r"XII_ASSERT_(DEBUG|DEV|RELEASE|ALWAYS)\($", sLineContent)) and rSearch != None and not sLineContent.strip().startswith("//") and not sLineContent.strip().startswith("/*") and not sLineContent.strip().startswith("*") and not sLineContent.strip().startswith("#"):
+                if (rSearch := re.search(r"XII_ASSERT_(DEBUG|DEV|RELEASE|ALWAYS)\($", sLineContent)) and rSearch != None and False and not sLineContent.strip().startswith("//") and not sLineContent.strip().startswith("/*") and not sLineContent.strip().startswith("*") and not sLineContent.strip().startswith("#"):
                     sLineParse: str = sLineContent
 
                     uiIndexAdvancement: int = 1

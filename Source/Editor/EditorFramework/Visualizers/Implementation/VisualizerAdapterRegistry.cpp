@@ -7,22 +7,22 @@ XII_IMPLEMENT_SINGLETON(xiiVisualizerAdapterRegistry);
 
 // clang-format off
 XII_BEGIN_SUBSYSTEM_DECLARATION(EditorFramework, VisualizerAdapterRegistry)
- 
+
   BEGIN_SUBSYSTEM_DEPENDENCIES
     "VisualizerManager"
   END_SUBSYSTEM_DEPENDENCIES
- 
+
   ON_CORESYSTEMS_STARTUP
   {
     XII_DEFAULT_NEW(xiiVisualizerAdapterRegistry);
   }
- 
+
   ON_CORESYSTEMS_SHUTDOWN
   {
     auto ptr = xiiVisualizerAdapterRegistry::GetSingleton();
     XII_DEFAULT_DELETE(ptr);
   }
- 
+
 XII_END_SUBSYSTEM_DECLARATION;
 // clang-format on
 
