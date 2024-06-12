@@ -73,7 +73,7 @@ void xiiQtExposedBoneWidget::SlotValueChanged()
     xiiAngle y = xiiAngle::MakeFromDegree(m_pRotWidget[1]->value());
     xiiAngle z = xiiAngle::MakeFromDegree(m_pRotWidget[2]->value());
 
-    pCopy->m_Transform.m_qRotation.SetFromEulerAngles(x, y, z);
+    pCopy->m_Transform.m_qRotation = xiiQuat::MakeFromEulerAngles(x, y, z);
   }
 
   xiiVariant newValue;

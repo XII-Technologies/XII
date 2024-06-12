@@ -113,7 +113,7 @@ void xiiComponentDragDropHandler::MoveDraggedObjectsToPosition(xiiVec3 vPosition
 
   if (normal.IsValid() && !m_vAlignAxisWithNormal.IsZero(0.01f))
   {
-    rot.SetShortestRotation(m_vAlignAxisWithNormal, normal);
+    rot = xiiQuat::MakeShortestRotation(m_vAlignAxisWithNormal, normal);
   }
 
   for (const auto& guid : m_DraggedObjects)

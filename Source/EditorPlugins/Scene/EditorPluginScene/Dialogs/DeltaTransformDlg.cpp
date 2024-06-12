@@ -359,8 +359,8 @@ void xiiQtDeltaTransformDlg::on_ButtonApply_clicked()
 
         if (s_fNaturalDeviationZ > 0.0f)
         {
-          const xiiVec3 vDeviationAxis = xiiVec3::CreateRandomDeviationZ(rng, xiiAngle::MakeFromDegree(s_fNaturalDeviationZ));
-          qDeviation.SetShortestRotation(xiiVec3(0, 0, 1), vDeviationAxis);
+          const xiiVec3 vDeviationAxis = xiiVec3::MakeRandomDeviationZ(rng, xiiAngle::MakeFromDegree(s_fNaturalDeviationZ));
+          qDeviation                   = xiiQuat::MakeShortestRotation(xiiVec3(0, 0, 1), vDeviationAxis);
         }
 
         qRot                   = xiiQuat::MakeFromAxisAndAngle(xiiVec3(0, 0, 1), randomRotationZ);

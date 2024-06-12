@@ -249,7 +249,7 @@ xiiEditorInput xiiDragToPositionGizmo::DoMouseMoveEvent(QMouseEvent* e)
     }
     else
     {
-      rot.SetShortestRotation(alignAxis, res.m_vPickedNormal);
+      rot = xiiQuat::MakeShortestRotation(alignAxis, res.m_vPickedNormal);
     }
   }
 

@@ -296,7 +296,7 @@ void xiiQtAssetBrowserModel::HandleEntry(const VisibleEntry& entry, AssetOp op)
       return;
 
     beginInsertRows(QModelIndex(), uiInsertIndex, uiInsertIndex);
-    m_EntriesToDisplay.Insert(entry, uiInsertIndex);
+    m_EntriesToDisplay.InsertAt(uiInsertIndex, entry);
     if (entry.m_Guid.IsValid())
       m_DisplayedEntries.Insert(entry.m_Guid);
     endInsertRows();
@@ -799,7 +799,7 @@ void xiiQtAssetBrowserModel::HandleFile(const xiiFileChangedEvent& e)
       return;
     case xiiFileChangedEvent::Type::DocumentLinked:
     {
-      ve.m_Guid.SetInvalid();
+      ve.m_Guid = xiiUuid::MakeInvalid();
       HandleEntry(ve, AssetOp::Remove);
       ve.m_Guid = e.m_Status.m_DocumentID;
       HandleEntry(ve, AssetOp::Add);
@@ -809,7 +809,7 @@ void xiiQtAssetBrowserModel::HandleFile(const xiiFileChangedEvent& e)
     {
       ve.m_Guid = e.m_Status.m_DocumentID;
       HandleEntry(ve, AssetOp::Remove);
-      ve.m_Guid.SetInvalid();
+      ve.m_Guid = xiiUuid::MakeInvalid();
       HandleEntry(ve, AssetOp::Add);
       return;
     }

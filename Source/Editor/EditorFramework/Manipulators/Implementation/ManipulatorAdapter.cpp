@@ -90,8 +90,7 @@ xiiTransform xiiManipulatorAdapter::GetObjectTransform() const
 
   const xiiTransform offset = GetOffsetTransform();
 
-  xiiTransform tGlobal;
-  tGlobal.SetGlobalTransform(tObj, offset);
+  xiiTransform tGlobal = xiiTransform::MakeGlobalTransform(tObj, offset);
 
   return tGlobal;
 }

@@ -140,7 +140,7 @@ void xiiSceneDocumentManager::InternalCloneDocument(xiiStringView sPath, xiiStri
             else
             {
               xiiLog::Error("Failed to resolve layer: {}. Cloned Layer will be invalid.");
-              pLayer->m_Layer .SetInvalid();
+              pLayer->m_Layer = xiiUuid::MakeInvalid();
             }
           }
           if (!sLayerPath.IsEmpty())
@@ -297,8 +297,7 @@ void xiiSceneDocumentManager::SetupDefaultScene(xiiDocument* pDocument)
     }
 
     {
-      xiiQuat qRot;
-      qRot.SetFromEulerAngles(xiiAngle::MakeFromDegree(0), xiiAngle::MakeFromDegree(55), xiiAngle::MakeFromDegree(90));
+      xiiQuat qRot = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(0), xiiAngle::MakeFromDegree(55), xiiAngle::MakeFromDegree(90));
 
       xiiSetObjectPropertyCommand propCmd;
       propCmd.m_Object    = cmd.m_NewObjectGuid;

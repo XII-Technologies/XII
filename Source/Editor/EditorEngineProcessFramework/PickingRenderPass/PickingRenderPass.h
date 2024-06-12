@@ -52,7 +52,7 @@ private:
   xiiHashSet<xiiGameObjectHandle> m_SelectionSet;
 
   /// we need this matrix to compute the world space position of picked pixels
-  xiiMat4 m_mPickingInverseViewProjectionMatrix = xiiMat4::ZeroMatrix();
+  xiiMat4 m_mPickingInverseViewProjectionMatrix = xiiMat4::MakeZero();
 
   /// stores the 2D depth buffer image (32 Bit depth precision), to compute pixel positions from
   xiiDynamicArray<float> m_PickingResultsDepth;

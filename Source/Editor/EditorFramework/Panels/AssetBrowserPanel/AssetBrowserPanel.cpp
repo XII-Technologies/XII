@@ -59,5 +59,5 @@ void xiiQtAssetBrowserPanel::SlotAssetSelected(xiiUuid guid, QString sAssetPathR
 
 void xiiQtAssetBrowserPanel::SlotAssetCleared()
 {
-  m_LastSelected.SetInvalid();
+  m_LastSelected = xiiUuid::MakeInvalid();
 }

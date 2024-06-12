@@ -115,8 +115,7 @@ void xiiAnimatedMeshContext::QuerySelectionBBox(const xiiEditorEngineDocumentMsg
   if (m_pAnimatedMeshObject == nullptr)
     return;
 
-  xiiBoundingBoxSphere bounds;
-  bounds.SetInvalid();
+  xiiBoundingBoxSphere bounds = xiiBoundingBoxSphere::MakeInvalid();
 
   {
     XII_LOCK(m_pWorld->GetWriteMarker());

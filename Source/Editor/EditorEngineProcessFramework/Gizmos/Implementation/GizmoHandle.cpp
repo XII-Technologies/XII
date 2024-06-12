@@ -63,8 +63,7 @@ void xiiGizmoHandle::SetTransformation(const xiiTransform& m)
 
 void xiiGizmoHandle::SetTransformation(const xiiMat4& m)
 {
-  xiiTransform t;
-  t.SetFromMat4(m);
+  xiiTransform t = xiiTransform::MakeFromMat4(m);
   SetTransformation(t);
 }
 
@@ -361,9 +360,9 @@ static xiiMeshBufferResourceHandle CreateMeshBufferBoxCorners()
 
   xiiMat4 rot[6];
   rot[0].SetIdentity();
-  rot[1].SetRotationMatrixX(xiiAngle::MakeFromDegree(90));
-  rot[2].SetRotationMatrixX(xiiAngle::MakeFromDegree(180));
-  rot[3].SetRotationMatrixX(xiiAngle::MakeFromDegree(270));
+  rot[1] = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(90));
+  rot[2] = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(180));
+  rot[3] = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(270));
   rot[4] = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(90));
   rot[5] = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(-90));
 

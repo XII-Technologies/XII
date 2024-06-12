@@ -116,8 +116,7 @@ xiiEditorInput xiiRotateGizmo::DoMousePressEvent(QMouseEvent* e)
     xiiVec3 vPosOnNearPlane, vRayDir;
     xiiGraphicsUtils::ConvertScreenPosToWorldPos(m_mInvViewProj, 0, 0, m_vViewport.x, m_vViewport.y, vMousePos, vPosOnNearPlane, &vRayDir).IgnoreResult();
 
-    xiiPlane plane;
-    plane = xiiPlane(vAxisWS, vGizmoPosWS);
+    xiiPlane plane = xiiPlane::MakeFromNormalAndPoint(vAxisWS, vGizmoPosWS);
 
     xiiVec3 vPointOnGizmoWS;
     if (!plane.GetRayIntersection(vPosOnNearPlane, vRayDir, nullptr, &vPointOnGizmoWS))

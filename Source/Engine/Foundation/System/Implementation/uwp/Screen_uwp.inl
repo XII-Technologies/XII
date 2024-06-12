@@ -19,11 +19,11 @@ xiiResult xiiScreen::EnumerateScreens(xiiHybridArray<xiiScreenInfo, 2>& out_Scre
 
   xiiScreenInfo& currentScreen = out_Screens.ExpandAndGetRef();
   currentScreen.m_sDisplayName = "Current Display";
-  currentScreen.m_iOffsetX = 0;
-  currentScreen.m_iOffsetY = 0;
+  currentScreen.m_iOffsetX     = 0;
+  currentScreen.m_iOffsetY     = 0;
   currentScreen.m_iResolutionX = 0;
   currentScreen.m_iResolutionY = 0;
-  currentScreen.m_bIsPrimary = true;
+  currentScreen.m_bIsPrimary   = true;
 
   UINT rawPixelWidth, rawPixelHeight;
   XII_HRESULT_TO_FAILURE(currentDisplayInformation4->get_ScreenHeightInRawPixels(&rawPixelHeight));

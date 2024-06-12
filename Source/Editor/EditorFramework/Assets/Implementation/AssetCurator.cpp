@@ -353,7 +353,7 @@ xiiDateTime xiiAssetCurator::GetLastFullTransformDate() const
   if (xiiOSFile::GetFileStats(path, stat).Failed())
     return {};
 
-  return xiiDateTime(stat.m_LastModificationTime);
+  return xiiDateTime::MakeFromTimestamp(stat.m_LastModificationTime);
 }
 
 void xiiAssetCurator::StoreFullTransformDate()
@@ -365,7 +365,7 @@ void xiiAssetCurator::StoreFullTransformDate()
   if (file.Open(path, xiiFileOpenMode::Write).Succeeded())
   {
     xiiDateTime date;
-    XII_VERIFY(date.SetTimestamp(xiiTimestamp::CurrentTimestamp()), "Failed to retrieve transform date as Date Time.");
+    date.SetFromTimestamp(xiiTimestamp::CurrentTimestamp()).AssertSuccess();
 
     path.SetFormat("{}", date);
     file.Write(path.GetData(), path.GetElementCount()).AssertSuccess();
@@ -1948,7 +1948,7 @@ void xiiAssetCurator::LoadCaches(xiiFileSystemModel::FilesMap& out_referencedFil
           xiiFileStatus stat;
           reader >> stat;
           // We invalidate all asset guids as the current cache as stored on disk is missing various bits in the curator that requires the code to go through the found new asset init code on load again.
-          stat.m_DocumentID.SetInvalid();
+          stat.m_DocumentID = xiiUuid::MakeInvalid();
           out_referencedFiles.Insert(std::move(path), stat);
         }
       }

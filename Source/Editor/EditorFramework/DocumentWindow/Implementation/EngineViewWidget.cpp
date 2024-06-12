@@ -157,8 +157,8 @@ void xiiQtEngineViewWidget::UpdateCameraInterpolation()
   const float fLerpValue = xiiMath::Sin(xiiAngle::MakeFromDegree(90.0f * m_fCameraLerp));
 
   xiiQuat qRot, qRotFinal;
-  qRot.SetShortestRotation(m_vCameraStartDirection, m_vCameraTargetDirection);
-  qRotFinal.SetSlerp(xiiQuat::MakeIdentity(), qRot, fLerpValue);
+  qRot      = xiiQuat::MakeShortestRotation(m_vCameraStartDirection, m_vCameraTargetDirection);
+  qRotFinal = xiiQuat::MakeSlerp(xiiQuat::MakeIdentity(), qRot, fLerpValue);
 
   const xiiVec3 vNewDirection = qRotFinal * m_vCameraStartDirection;
   const xiiVec3 vNewPosition  = xiiMath::Lerp(m_vCameraStartPosition, m_vCameraTargetPosition, fLerpValue);
@@ -297,11 +297,11 @@ xiiPlane xiiQtEngineViewWidget::GetFallbackPickingPlane(xiiVec3 vPointOnPlane) c
 {
   if (m_pViewConfig->m_Camera.IsPerspective())
   {
-    return xiiPlane(xiiVec3(0, 0, 1), vPointOnPlane);
+    return xiiPlane::MakeFromNormalAndPoint(xiiVec3(0, 0, 1), vPointOnPlane);
   }
   else
   {
-    return xiiPlane(-m_pViewConfig->m_Camera.GetCenterDirForwards(), vPointOnPlane);
+    return xiiPlane::MakeFromNormalAndPoint(-m_pViewConfig->m_Camera.GetCenterDirForwards(), vPointOnPlane);
   }
 }
 

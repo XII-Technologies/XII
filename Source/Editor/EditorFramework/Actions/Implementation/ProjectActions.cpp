@@ -762,7 +762,7 @@ void xiiProjectAction::Execute(const xiiVariant& value)
       }
 
       xiiStringBuilder  sMergedFile;
-      const xiiDateTime dt = xiiDateTime(xiiTimestamp::CurrentTimestamp());
+      const xiiDateTime dt = xiiDateTime::MakeFromTimestamp(xiiTimestamp::CurrentTimestamp());
       sMergedFile.AppendFormat(":appdata/profiling_{0}-{1}-{2}_{3}-{4}-{5}-{6}.json", dt.GetYear(), xiiArgU(dt.GetMonth(), 2, true), xiiArgU(dt.GetDay(), 2, true), xiiArgU(dt.GetHour(), 2, true), xiiArgU(dt.GetMinute(), 2, true), xiiArgU(dt.GetSecond(), 2, true), xiiArgU(dt.GetMicroseconds() / 1000, 3, true));
 
       xiiStringBuilder sAbsPath;

@@ -50,12 +50,12 @@ void xiiBoxGizmo::OnVisibleChanged(bool bVisible)
 void xiiBoxGizmo::OnTransformationChanged(const xiiTransform& transform)
 {
   xiiMat4 scale, rot;
-  scale.SetScalingMatrix(m_vSize);
+  scale = xiiMat4::MakeScaling(m_vSize);
   scale = transform.GetAsMat4() * scale;
 
   m_hCorners.SetTransformation(scale);
 
-  rot.SetRotationMatrixX(xiiAngle::MakeFromDegree(90));
+  rot = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(90));
   m_Edges[0].SetTransformation(scale * rot);
 
   rot = xiiMat4::MakeRotationY(xiiAngle::MakeFromDegree(90));
@@ -64,7 +64,7 @@ void xiiBoxGizmo::OnTransformationChanged(const xiiTransform& transform)
   rot.SetIdentity();
   m_Edges[1].SetTransformation(scale * rot);
 
-  rot.SetRotationMatrixX(xiiAngle::MakeFromDegree(90));
+  rot = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(90));
   m_Faces[1].SetTransformation(scale * rot);
 
   rot = xiiMat4::MakeRotationZ(xiiAngle::MakeFromDegree(90));

@@ -124,8 +124,7 @@ xiiEditorInput xiiDrawBoxGizmo::DoMouseMoveEvent(QMouseEvent* e)
   }
   else
   {
-    xiiPlane plane;
-    plane = xiiPlane(m_vUpAxis, m_vFirstCorner);
+    xiiPlane plane = xiiPlane::MakeFromNormalAndPoint(m_vUpAxis, m_vFirstCorner);
 
     GetOwnerView()->PickPlane(e->pos().x(), e->pos().y(), plane, m_vCurrentPosition).IgnoreResult();
 

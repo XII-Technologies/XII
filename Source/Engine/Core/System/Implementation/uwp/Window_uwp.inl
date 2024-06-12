@@ -13,7 +13,7 @@ namespace
   struct xiiWindowUwpData
   {
     ComPtr<ABI::Windows::UI::Core::ICoreDispatcher> m_dispatcher;
-    ComPtr<ABI::Windows::UI::Core::ICoreWindow> m_coreWindow;
+    ComPtr<ABI::Windows::UI::Core::ICoreWindow>     m_coreWindow;
   };
   xiiUniquePtr<xiiWindowUwpData> s_uwpWindowData;
 } // namespace
@@ -32,13 +32,13 @@ xiiResult xiiWindow::Initialize()
     if (m_CreationDescription.m_WindowMode == xiiWindowMode::FullscreenFixedResolution)
     {
       xiiLog::Warning("xiiWindowMode::FullscreenFixedResolution is not supported on UWP. Falling back to "
-                     "xiiWindowMode::FullscreenBorderlessNativeResolution.");
+                      "xiiWindowMode::FullscreenBorderlessNativeResolution.");
       m_CreationDescription.m_WindowMode = xiiWindowMode::FullscreenBorderlessNativeResolution;
     }
     else if (m_CreationDescription.m_WindowMode == xiiWindowMode::WindowFixedResolution)
     {
       xiiLog::Warning("xiiWindowMode::WindowFixedResolution is not supported on UWP since resizing a window can not be restricted. Falling "
-                     "back to xiiWindowMode::WindowResizable");
+                      "back to xiiWindowMode::WindowResizable");
       m_CreationDescription.m_WindowMode = xiiWindowMode::WindowResizable;
     }
 
@@ -107,20 +107,20 @@ xiiResult xiiWindow::Initialize()
     // Set size. Pointless though if we're fullscreen.
     if (!isFullscreen)
     {
-      boolean successfulResize = false;
+      boolean                        successfulResize = false;
       ABI::Windows::Foundation::Size size;
-      size.Width = m_CreationDescription.m_Resolution.width * 96.0f / logicalDpi;
+      size.Width  = m_CreationDescription.m_Resolution.width * 96.0f / logicalDpi;
       size.Height = m_CreationDescription.m_Resolution.height * 96.0f / logicalDpi;
       XII_HRESULT_TO_FAILURE(appView3->TryResizeView(size, &successfulResize));
       if (!successfulResize)
       {
         ABI::Windows::Foundation::Rect visibleBounds;
         XII_HRESULT_TO_FAILURE(appView2->get_VisibleBounds(&visibleBounds));
-        xiiUInt32 actualWidth = static_cast<xiiUInt32>(visibleBounds.Width * (logicalDpi / 96.0f));
+        xiiUInt32 actualWidth  = static_cast<xiiUInt32>(visibleBounds.Width * (logicalDpi / 96.0f));
         xiiUInt32 actualHeight = static_cast<xiiUInt32>(visibleBounds.Height * (logicalDpi / 96.0f));
 
         xiiLog::Warning("Failed to resize the window to {0}x{1}, instead (visible) size remains at {2}x{3}",
-          m_CreationDescription.m_Resolution.width, m_CreationDescription.m_Resolution.height, actualWidth, actualHeight);
+                        m_CreationDescription.m_Resolution.width, m_CreationDescription.m_Resolution.height, actualWidth, actualHeight);
 
         // m_CreationDescription.m_Resolution.width = actualWidth;
         // m_CreationDescription.m_Resolution.height = actualHeight;
@@ -144,7 +144,7 @@ xiiResult xiiWindow::Destroy()
 
   XII_LOG_BLOCK("xiiWindow::Destroy");
 
-  m_pInputDevice = nullptr;
+  m_pInputDevice  = nullptr;
   s_uwpWindowData = nullptr;
 
 

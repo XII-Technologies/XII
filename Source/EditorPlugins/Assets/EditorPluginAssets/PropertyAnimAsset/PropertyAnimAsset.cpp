@@ -459,9 +459,8 @@ void xiiPropertyAnimAssetDocument::ApplyAnimation(const xiiPropertyReference& ke
 
   if (bIsRotation)
   {
-    xiiQuat qRotation;
-    qRotation.SetFromEulerAngles(euler[0], euler[1], euler[2]);
-    animValue = qRotation;
+    xiiQuat qRotation = xiiQuat::MakeFromEulerAngles(euler[0], euler[1], euler[2]);
+    animValue         = qRotation;
   }
 
   xiiDocumentObject* pObj = GetObjectManager()->GetObject(key.m_Object);

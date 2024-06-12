@@ -703,7 +703,7 @@ void xiiStandardInputDevice::WindowMessage(xiiMinWindows::HWND hWnd, xiiMinWindo
             static const xiiInt32 iVirtualDesktopH = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 
             static xiiVec2 vLastPos(xiiMath::MaxValue<float>());
-            const xiiVec2  vNewPos( (raw->data.mouse.lLastX / 65535.0f) * iVirtualDesktopW, (raw->data.mouse.lLastY / 65535.0f) * iVirtualDesktopH);
+            const xiiVec2  vNewPos((raw->data.mouse.lLastX / 65535.0f) * iVirtualDesktopW, (raw->data.mouse.lLastY / 65535.0f) * iVirtualDesktopH);
 
             if (vLastPos.x != xiiMath::MaxValue<float>())
             {

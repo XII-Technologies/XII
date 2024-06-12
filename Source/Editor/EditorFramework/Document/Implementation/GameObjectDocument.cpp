@@ -447,7 +447,7 @@ void xiiGameObjectDocument::SetGlobalTransform(const xiiDocumentObject* pObject,
 
     xiiSimdTransform tParent = m_GlobalTransforms[pParent];
 
-    tLocal.SetLocalTransform(tParent, simdT);
+    tLocal = xiiSimdTransform::MakeLocalTransform(tParent, simdT);
   }
   else
   {
@@ -1020,15 +1020,14 @@ xiiTransform xiiGameObjectDocument::ComputeGlobalTransform(const xiiDocumentObje
 {
   if (pObject == nullptr || pObject->GetTypeAccessor().GetType() != xiiGetStaticRTTI<xiiGameObject>())
   {
-    m_GlobalTransforms[pObject] = xiiSimdTransform::IdentityTransform();
+    m_GlobalTransforms[pObject] = xiiSimdTransform::MakeIdentity();
     return xiiTransform::MakeIdentity();
   }
 
   const xiiSimdTransform tParent = xiiSimdConversion::ToTransform(ComputeGlobalTransform(pObject->GetParent()));
   const xiiSimdTransform tLocal  = QueryLocalTransformSimd(pObject);
 
-  xiiSimdTransform tGlobal;
-  tGlobal.SetGlobalTransform(tParent, tLocal);
+  xiiSimdTransform tGlobal = xiiSimdTransform::MakeGlobalTransform(tParent, tLocal);
 
   m_GlobalTransforms[pObject] = tGlobal;
 

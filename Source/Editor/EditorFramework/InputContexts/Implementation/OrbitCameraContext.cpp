@@ -6,7 +6,7 @@
 
 xiiOrbitCameraContext::xiiOrbitCameraContext(xiiQtEngineDocumentWindow* pOwnerWindow, xiiQtEngineViewWidget* pOwnerView)
 {
-  m_Volume.SetCenterAndHalfExtents(xiiVec3::MakeZero(), xiiVec3::MakeZero());
+  m_Volume  = xiiBoundingBox::MakeFromCenterAndHalfExtents(xiiVec3::MakeZero(), xiiVec3::MakeZero());
   m_pCamera = nullptr;
 
   m_LastUpdate = xiiTime::Now();
@@ -69,7 +69,7 @@ void xiiOrbitCameraContext::SetOrbitVolume(const xiiVec3& vCenterPos, const xiiV
     bSetCamLookAt = true;
   }
 
-  m_Volume.SetCenterAndHalfExtents(vCenterPos, vHalfBoxSize);
+  m_Volume = xiiBoundingBox::MakeFromCenterAndHalfExtents(vCenterPos, vHalfBoxSize);
 
   if (bSetCamLookAt)
   {

@@ -216,8 +216,7 @@ xiiResult xiiTranslateGizmo::GetPointOnPlane(xiiInt32 iScreenPosX, xiiInt32 iScr
   if (xiiGraphicsUtils::ConvertScreenPosToWorldPos(m_mInvViewProj, 0, 0, m_vViewport.x, m_vViewport.y, xiiVec3(iScreenPosX, iScreenPosY, 0), vPos, &vRayDir).Failed())
     return XII_FAILURE;
 
-  xiiPlane Plane;
-  Plane = xiiPlane(m_vMoveAxis, m_vStartPosition);
+  xiiPlane Plane = xiiPlane::MakeFromNormalAndPoint(m_vMoveAxis, m_vStartPosition);
 
   xiiVec3 vIntersection;
   if (!Plane.GetRayIntersection(m_pCamera->GetPosition(), vRayDir, nullptr, &vIntersection))
@@ -238,8 +237,7 @@ xiiResult xiiTranslateGizmo::GetPointOnAxis(xiiInt32 iScreenPosX, xiiInt32 iScre
   const xiiVec3 vPlaneTangent = m_vMoveAxis.CrossRH(m_pCamera->GetDirForwards()).GetNormalized();
   const xiiVec3 vPlaneNormal  = m_vMoveAxis.CrossRH(vPlaneTangent);
 
-  xiiPlane Plane;
-  Plane = xiiPlane(vPlaneNormal, m_vStartPosition);
+  xiiPlane Plane = xiiPlane::MakeFromNormalAndPoint(vPlaneNormal, m_vStartPosition);
 
   xiiVec3 vIntersection;
   if (!Plane.GetRayIntersection(m_pCamera->GetPosition(), vRayDir, nullptr, &vIntersection))

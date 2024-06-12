@@ -80,8 +80,7 @@ void xiiTransformManipulatorAdapter::GizmoEventHandler(const xiiGizmoEvent& e)
       {
         const xiiTransform tParent = GetObjectTransform();
         const xiiTransform tGlobal = static_cast<const xiiGizmo*>(e.m_pGizmo)->GetTransformation();
-        xiiTransform       tLocal;
-        tLocal.SetLocalTransform(tParent, tGlobal);
+        xiiTransform       tLocal  = xiiTransform::MakeLocalTransform(tParent, tGlobal);
         if (e.m_pGizmo == &m_TranslateGizmo)
         {
           ChangeProperties(pAttr->GetTranslateProperty(), tLocal.m_vPosition);
@@ -114,11 +113,10 @@ void xiiTransformManipulatorAdapter::UpdateGizmoTransform()
 
   const xiiTransform tParent = GetObjectTransform();
   xiiTransform       tLocal;
-  tLocal.m_vPosition = vPos;
-  tLocal.m_qRotation = vRot;
-  tLocal.m_vScale    = vScale;
-  xiiTransform tGlobal;
-  tGlobal.SetGlobalTransform(tParent, tLocal);
+  tLocal.m_vPosition   = vPos;
+  tLocal.m_qRotation   = vRot;
+  tLocal.m_vScale      = vScale;
+  xiiTransform tGlobal = xiiTransform::MakeGlobalTransform(tParent, tLocal);
   // Let's not apply scaling to the gizmos.
   tGlobal.m_vScale = xiiVec3(1, 1, 1);
 
