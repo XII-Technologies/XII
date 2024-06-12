@@ -79,15 +79,14 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
     TestSetValue(pMath, "Vec2I", xiiVec2I32(1, 2));
     TestSetValue(pMath, "Vec3I", xiiVec3I32(1, 2, 3));
     TestSetValue(pMath, "Vec4I", xiiVec4I32(1, 2, 3, 4));
-    xiiQuat qValue;
-    qValue.SetFromEulerAngles(xiiAngle::MakeFromDegree(30), xiiAngle::MakeFromDegree(30), xiiAngle::MakeFromDegree(30));
+    xiiQuat qValue = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(30), xiiAngle::MakeFromDegree(30), xiiAngle::MakeFromDegree(30));
     TestSetValue(pMath, "Quat", qValue);
     xiiMat3 mValue;
-    mValue.SetRotationMatrixX(xiiAngle::MakeFromDegree(30));
+    mValue = xiiMat3::MakeRotationX(xiiAngle::MakeFromDegree(30));
     TestSetValue(pMath, "Mat3", mValue);
     xiiMat4 mValue2;
     mValue2.SetIdentity();
-    mValue2.SetRotationMatrixX(xiiAngle::MakeFromDegree(30));
+    mValue2 = xiiMat4::MakeRotationX(xiiAngle::MakeFromDegree(30));
     TestSetValue(pMath, "Mat4", mValue2);
 
     // Integer
@@ -432,7 +431,7 @@ XII_CREATE_SIMPLE_TEST(DocumentObject, CommandHistory)
 
   auto CreateGuid = [](const char* szType, xiiInt32 iIndex) -> xiiUuid {
     xiiUuid A = xiiUuid::MakeStableUuidFromString(szType);
-    xiiUuid B = xiiUuid::StableUuidForInt(iIndex);
+    xiiUuid B = xiiUuid::MakeStableUuidFromInt(iIndex);
     A.CombineWithSeed(B);
     return A;
   };

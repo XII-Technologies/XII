@@ -150,9 +150,9 @@ XII_CREATE_SIMPLE_TEST(Reflection, ReflectionUtils)
     VariantToPropertyTest(&mathClass, pRttiMath, "Quatd", xiiVariant::Type::Quaterniond);
     XII_TEST_BOOL(mathClass.GetQuatd() == xiiQuatd(0.0, 0.0, 0.0, 1.0));
     VariantToPropertyTest(&mathClass, pRttiMath, "Mat3d", xiiVariant::Type::Matrix3d);
-    XII_TEST_BOOL(mathClass.GetMat3d() == xiiMat3d::IdentityMatrix());
+    XII_TEST_BOOL(mathClass.GetMat3d() == xiiMat3d::MakeIdentity());
     VariantToPropertyTest(&mathClass, pRttiMath, "Mat4d", xiiVariant::Type::Matrix4d);
-    XII_TEST_BOOL(mathClass.GetMat4d() == xiiMat4d::IdentityMatrix());
+    XII_TEST_BOOL(mathClass.GetMat4d() == xiiMat4d::MakeIdentity());
   }
 
   XII_TEST_BLOCK(xiiTestBlock::Enabled, "Enumeration Properties")

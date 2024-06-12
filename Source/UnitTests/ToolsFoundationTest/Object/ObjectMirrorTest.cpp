@@ -102,43 +102,41 @@ xiiVariant GetVariantFromType(xiiVariant::Type::Enum type)
       return xiiVariant(xiiVec4U64(6, 7, 8, 9));
     case xiiVariant::Type::Quaternion:
     {
-      xiiQuat quat;
-      quat.SetFromEulerAngles(xiiAngle::MakeFromDegree(30), xiiAngle::MakeFromDegree(-15), xiiAngle::MakeFromDegree(20));
+      xiiQuat quat = xiiQuat::MakeFromEulerAngles(xiiAngle::MakeFromDegree(30), xiiAngle::MakeFromDegree(-15), xiiAngle::MakeFromDegree(20));
       return xiiVariant(quat);
     }
     case xiiVariant::Type::Quaterniond:
     {
-      xiiQuatd quat;
-      quat.SetFromEulerAngles(xiiAngled::MakeFromDegree(30), xiiAngled::MakeFromDegree(-15), xiiAngled::MakeFromDegree(20));
+      xiiQuatd quat = xiiQuatd::MakeFromEulerAngles(xiiAngled::MakeFromDegree(30), xiiAngled::MakeFromDegree(-15), xiiAngled::MakeFromDegree(20));
       return xiiVariant(quat);
     }
     case xiiVariant::Type::Matrix3:
     {
       xiiMat3 mat = xiiMat3::MakeIdentity();
 
-      mat.SetRotationMatrix(xiiVec3(1.0f, 0.0f, 0.0f), xiiAngle::MakeFromDegree(30));
+      mat = xiiMat3::MakeAxisRotation(xiiVec3(1.0f, 0.0f, 0.0f), xiiAngle::MakeFromDegree(30));
       return xiiVariant(mat);
     }
     case xiiVariant::Type::Matrix3d:
     {
-      xiiMat3d mat = xiiMat3d::IdentityMatrix();
+      xiiMat3d mat = xiiMat3d::MakeIdentity();
 
-      mat.SetRotationMatrix(xiiVec3d(1.0, 0.0, 0.0), xiiAngled::MakeFromDegree(30));
+      mat = xiiMat3d::MakeAxisRotation(xiiVec3d(1.0, 0.0, 0.0), xiiAngled::MakeFromDegree(30));
       return xiiVariant(mat);
     }
     case xiiVariant::Type::Matrix4:
     {
       xiiMat4 mat = xiiMat4::MakeIdentity();
 
-      mat.SetRotationMatrix(xiiVec3(0.0f, 1.0f, 0.0f), xiiAngle::MakeFromDegree(30));
+      mat = xiiMat4::MakeAxisRotation(xiiVec3(0.0f, 1.0f, 0.0f), xiiAngle::MakeFromDegree(30));
       mat.SetTranslationVector(xiiVec3(1.0f, 2.0f, 3.0f));
       return xiiVariant(mat);
     }
     case xiiVariant::Type::Matrix4d:
     {
-      xiiMat4d mat = xiiMat4d::IdentityMatrix();
+      xiiMat4d mat = xiiMat4d::MakeIdentity();
 
-      mat.SetRotationMatrix(xiiVec3d(0.0, 1.0, 0.0), xiiAngled::MakeFromDegree(30));
+      mat = xiiMat4d::MakeAxisRotation(xiiVec3d(0.0, 1.0, 0.0), xiiAngled::MakeFromDegree(30));
       mat.SetTranslationVector(xiiVec3d(1.0, 2.0, 3.0));
       return xiiVariant(mat);
     }
