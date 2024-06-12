@@ -27,8 +27,7 @@ namespace xiiModelImporter2
   {
     XII_ASSERT_DEBUG(!bDummy, "not implemented");
 
-    xiiMat4 mTransformation;
-    mTransformation.SetFromArray(&value.a1, xiiMatrixLayout::RowMajor);
+    xiiMat4 mTransformation = xiiMat4::MakeFromRowMajorArray(&value.a1);
     return mTransformation;
   }
 

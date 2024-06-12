@@ -81,8 +81,7 @@ namespace xiiModelImporter2
         // Only FBX files have this unit scale factor and the default unit for FBX is cm. We want meters.
         fUnitScale /= 100.0f;
 
-        xiiMat3 s;
-        s.SetScalingMatrix(xiiVec3(fUnitScale));
+        xiiMat3 s = xiiMat3::MakeScaling(xiiVec3(fUnitScale));
 
         m_Options.m_RootTransform = s * m_Options.m_RootTransform;
       }
@@ -185,7 +184,7 @@ namespace xiiModelImporter2
     if (pCurJoint)
     {
       pCurJoint->m_sName.Assign(pNode->mName.C_Str());
-      pCurJoint->m_LocalTransform.SetFromMat4(localTransform);
+      pCurJoint->m_LocalTransform = xiiTransform::MakeFromMat4(localTransform);
     }
 
     if (pNode->mNumMeshes > 0)
