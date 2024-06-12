@@ -51,7 +51,7 @@ XII_BEGIN_STATIC_REFLECTED_TYPE(DocumentNodeManager_ConnectionMetaData, xiiNoBas
   {
     XII_MEMBER_PROPERTY("Connection::Source", m_Source),
     XII_MEMBER_PROPERTY("Connection::Target", m_Target),
-    XII_MEMBER_PROPERTY("Connection::SourcePin", m_SourcePin),    
+    XII_MEMBER_PROPERTY("Connection::SourcePin", m_SourcePin),
     XII_MEMBER_PROPERTY("Connection::TargetPin", m_TargetPin),
   }
   XII_END_PROPERTIES;

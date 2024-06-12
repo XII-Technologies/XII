@@ -982,10 +982,7 @@ void xiiQtEventTrackWidget::ExecMultiSelection(xiiHybridArray<SelectedPoint, 32>
   }
 }
 
-bool xiiQtEventTrackWidget::CombineSelection(
-  xiiHybridArray<SelectedPoint, 32>&       inout_Selection,
-  const xiiHybridArray<SelectedPoint, 32>& change,
-  bool                                     add)
+bool xiiQtEventTrackWidget::CombineSelection(xiiHybridArray<SelectedPoint, 32>& inout_Selection, const xiiHybridArray<SelectedPoint, 32>& change, bool add)
 {
   bool bChange = false;
 

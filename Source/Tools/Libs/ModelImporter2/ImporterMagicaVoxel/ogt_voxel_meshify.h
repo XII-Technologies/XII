@@ -2,7 +2,7 @@
     opengametools voxel meshifier - v0.9 - MIT license - Justin Paver, April 2020
 
     This is a single-header-file library that provides easy-to-use
-    support for converting paletted voxel grid data into an indexed triangle mesh. 
+    support for converting paletted voxel grid data into an indexed triangle mesh.
 
     Please see the MIT license information at the end of this file.
 
@@ -19,11 +19,11 @@
     2. convert into a mesh
 
         ogt_mesh* mesh = ogt_mesh_from_paletted_voxels_simple( voxel_data, size_x, size_y, size_z, voxel_palette );
-    
+
     3. use the indexed triangle list in the mesh to construct renderable geometry, collision geometry.
 
         // This is old sceen OpenGL immediate mode rendering for demonstration purposes only.
-        // Ideally you'd use more modern practices for rendering, including converting ogt_mesh data to 
+        // Ideally you'd use more modern practices for rendering, including converting ogt_mesh data to
         // your own engine's layout.
 
         glBegin(GL_TRIANGLES);
@@ -58,7 +58,7 @@
         For this reason, palette[0] will never be used.
 
         Voxel data is laid out in x, then y, then z order. In other words, given
-        a coordinate (x,y,z) within your grid, you can compute where it is in your voxel 
+        a coordinate (x,y,z) within your grid, you can compute where it is in your voxel
         array using the following logic:
 
             voxel_index = x + (y * size_x) + (z * size_x * size_y);
@@ -1397,7 +1397,7 @@ uint32_t _tessellate_edge(ogt_mesh_vec2i* pTess, uint32_t max_tess, const ogt_me
 //
 //        (e1)
 //   v1 +-------+ v2
-//(e0)  | X | X |	 (e2)		X is the color inside the polygon
+//(e0)  | X | X |   (e2)    X is the color inside the polygon
 //   v0 +       + v3
 //
 // edge1 corresponds to the next_edge_index edge within the current polygon ring.
@@ -1427,9 +1427,9 @@ uint32_t _tessellate_edge(ogt_mesh_vec2i* pTess, uint32_t max_tess, const ogt_me
 //
 //        X   C
 //      +---*---+
-//    B | X | X | D			A,B,C,D are colors along the outside of the edges.
+//    B | X | X | D      A,B,C,D are colors along the outside of the edges.
 //      *   |   |           Here * are new points of the edges because of an
-//    A | X | X | D			exterior change of color along the edge.
+//    A | X | X | D      exterior change of color along the edge.
 //      |   |   |
 //    A | X | X | D
 //      +       +
@@ -1762,8 +1762,8 @@ void _polygon_meshify_voxels_in_face_direction(
         // space and fill outward from there. So skip any coords that don't match this
         // criteria.
         //if ((i > 0 && slice_colors[index_in_slice-1] == color_index) ||
-        //	(j > 0 && slice_colors[index_in_slice-size_x] == color_index))
-        //	continue;
+        //  (j > 0 && slice_colors[index_in_slice-size_x] == color_index))
+        //  continue;
 
         const uint32_t MAX_VERTS = 4096;
         ogt_mesh_vec2i verts[MAX_VERTS];

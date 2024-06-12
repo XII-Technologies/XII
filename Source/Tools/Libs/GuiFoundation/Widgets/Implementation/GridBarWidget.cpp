@@ -17,11 +17,7 @@ xiiQGridBarWidget::xiiQGridBarWidget(QWidget* pParent) :
   m_fTextGridStops = 100;
 }
 
-void xiiQGridBarWidget::SetConfig(
-  const QRectF&                        viewportSceneRect,
-  double                               fTextGridStops,
-  double                               fFineGridStops,
-  xiiDelegate<QPointF(const QPointF&)> mapFromSceneFunc)
+void xiiQGridBarWidget::SetConfig(const QRectF& viewportSceneRect, double fTextGridStops, double fFineGridStops, xiiDelegate<QPointF(const QPointF&)> mapFromSceneFunc)
 {
   m_MapFromSceneFunc = mapFromSceneFunc;
 
