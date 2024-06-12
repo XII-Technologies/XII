@@ -43,12 +43,17 @@ macro(xii_create_target TYPE TARGET_NAME)
       xii_add_output_xii_prefix(${TARGET_NAME})
     endif()
 
-    xii_set_library_properties(${TARGET_NAME})
+    if(COMMAND xii_platformhook_set_library_properties)
+      xii_platformhook_set_library_properties(${TARGET_NAME})
+    endif()
+
+    # PLATFORM-TODO (use hook above?)
     xii_uwp_fix_library_properties(${TARGET_NAME} "${ALL_SOURCE_FILES}")
 
   elseif(${TYPE} STREQUAL "APPLICATION")
     message(STATUS "Application: ${TARGET_NAME}")
 
+    # PLATFORM-TODO
     # On Android we can't use executables. Instead we have to use shared libraries which are loaded from java code.
     if(XII_CMAKE_PLATFORM_ANDROID)
       # All xii applications must include the native app glue implementation
@@ -63,9 +68,12 @@ macro(xii_create_target TYPE TARGET_NAME)
       add_executable(${TARGET_NAME} ${ALL_SOURCE_FILES})
     endif()
 
+    # PLATFORM-TODO (use hook from below?)
     xii_uwp_add_default_content(${TARGET_NAME})
 
-    xii_set_application_properties(${TARGET_NAME})
+    if(COMMAND xii_platformhook_set_application_properties)
+      xii_platformhook_set_application_properties(${TARGET_NAME})
+    endif()
 
   else()
     message(FATAL_ERROR "xii_create_target: Missing argument to specify target type. Pass in 'APP' or 'LIB'.")
@@ -81,8 +89,11 @@ macro(xii_create_target TYPE TARGET_NAME)
   # When using the Open Folder workflow inside visual studio on android, visual studio gets confused due to our custom output directory
   # Do not set the custom output directory in this case
   if((NOT ANDROID) OR(NOT XII_CMAKE_INSIDE_VS))
+    # PLATFORM-TODO
     xii_set_default_target_output_dirs(${TARGET_NAME})
   endif()
+
+  # PLATFORM-TODO: add general hook ?
 
   # We need the target directory to add the apk packaging steps for android. Thus, this step needs to be done here.
   if(${TYPE} STREQUAL "APPLICATION")
@@ -97,11 +108,13 @@ macro(xii_create_target TYPE TARGET_NAME)
 
   # On linux we want all symbols to be hidden by default. We manually "export" them.
   if(XII_COMPILE_ENGINE_AS_DLL AND XII_CMAKE_PLATFORM_LINUX AND NOT ARG_ALL_SYMBOLS_VISIBLE)
+    # PLATFORM-TODO (use general hook as above?)
     target_compile_options(${TARGET_NAME} PRIVATE "-fvisibility=hidden")
   endif()
 
   xii_set_project_ide_folder(${TARGET_NAME} ${CMAKE_CURRENT_SOURCE_DIR})
 
+  # PLATFORM-TODO (use general hook as above?)
   # Pass the windows sdk include paths to the resource compiler when not generating a visual studio solution.
   if(XII_CMAKE_PLATFORM_WINDOWS AND NOT XII_CMAKE_GENERATOR_MSVC)
     set(RC_FILES ${ALL_SOURCE_FILES})
@@ -114,6 +127,7 @@ macro(xii_create_target TYPE TARGET_NAME)
     endif()
   endif()
 
+  # PLATFORM-TODO (use general hook as above?)
   if(XII_CMAKE_PLATFORM_ANDROID)
     # Add the location for native_app_glue.h to the include directories.
     target_include_directories(${TARGET_NAME} PRIVATE "${CMAKE_ANDROID_NDK}/sources/android/native_app_glue")

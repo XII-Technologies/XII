@@ -20,5 +20,15 @@ endfunction()
 # ## xii_add_as_runtime_dependency(<target>)
 # #####################################
 function(xii_add_as_runtime_dependency TARGET_NAME)
-  # Add Editor and samples when ready.
+  # Editor
+  xii_add_dependency(Editor ${TARGET_NAME})
+  xii_add_dependency(EditorProcessor ${TARGET_NAME})
+
+  # Player
+  xii_add_dependency(Player ${TARGET_NAME})
+
+  # Samples
+  xii_add_dependency(GraphicsExplorer ${TARGET_NAME})
+  xii_add_dependency(ShaderExplorer ${TARGET_NAME})
+  xii_add_dependency(TextureSample ${TARGET_NAME})
 endfunction()

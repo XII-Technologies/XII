@@ -1,5 +1,7 @@
 xii_cmake_init()
 
+xii_requires_desktop()
+
 xii_requires_qt()
 
 xii_requires(XII_3RDPARTY_ADS_SUPPORT)

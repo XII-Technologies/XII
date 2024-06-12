@@ -1,6 +1,6 @@
 xii_cmake_init()
 
-xii_requires_one_of(XII_CMAKE_PLATFORM_WINDOWS_DESKTOP XII_CMAKE_PLATFORM_LINUX)
+xii_requires_desktop()
 
 xii_requires_renderer()
 

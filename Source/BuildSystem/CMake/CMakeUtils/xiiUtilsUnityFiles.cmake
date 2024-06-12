@@ -45,7 +45,7 @@ function(xii_generate_folder_unity_file TARGET_NAME PROJECT_DIRECTORY SUB_FOLDER
 
   set(FOLDER_UNITY_FILE "${CMAKE_BINARY_DIR}/${CURRENT_FOLDER_RELATIVE}/unity_${CURRENT_FOLDER_HASH}.cpp")
   set(TMP_UNITY_FILE "${CMAKE_BINARY_DIR}/temp/unity.cpp")
-  
+
   set(UNITY_FILE_CONTENTS "")
 
   # message (STATUS "Generating ${FOLDER_UNITY_FILE}")
@@ -69,7 +69,7 @@ function(xii_generate_folder_unity_file TARGET_NAME PROJECT_DIRECTORY SUB_FOLDER
 
     set_source_files_properties(${CUR_FILE_FULL} PROPERTIES HEADER_FILE_ONLY true)
   endforeach()
-  
+
   file(APPEND ${TMP_UNITY_FILE} ${UNITY_FILE_CONTENTS})
 
   set(UNITY_FILE_NEEDS_UPDATE true)
