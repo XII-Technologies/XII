@@ -4,12 +4,20 @@
 #include <EditorFramework/DocumentWindow/EngineViewWidget.moc.h>
 
 #include <EditorFramework/Assets/AssetDocument.h>
+#include <EditorFramework/Preferences/EditorPreferences.h>
 
 xiiQtEngineDocumentWindow::xiiQtEngineDocumentWindow(xiiAssetDocument* pDocument) :
   xiiQtDocumentWindow(pDocument)
 {
   pDocument->m_ProcessMessageEvent.AddEventHandler(xiiMakeDelegate(&xiiQtEngineDocumentWindow::ProcessMessageEventHandler, this));
   pDocument->m_CommonAssetUiChangeEvent.AddEventHandler(xiiMakeDelegate(&xiiQtEngineDocumentWindow::CommonAssetUiEventHandler, this));
+
+  auto pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>();
+
+  SetTargetFrameRate(pPreferences->GetMaxEditorFrameRate());
+  SetTargetFrameRateUnfocused(pPreferences->GetMaxEditorFrameRateWhenUnfocused());
+
+  m_PreferencesModifiedID = pPreferences->m_ChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtEngineDocumentWindow::PreferenceChangedEventHandler, this));
 }
 
 xiiQtEngineDocumentWindow::~xiiQtEngineDocumentWindow()
@@ -167,6 +175,15 @@ void xiiQtEngineDocumentWindow::CommonAssetUiEventHandler(const xiiCommonAssetUi
   if (!msg.m_sPayload.IsEmpty())
   {
     GetEditorEngineConnection()->SendMessage(&msg);
+  }
+}
+
+void xiiQtEngineDocumentWindow::PreferenceChangedEventHandler(xiiPreferences* pPreferenceBase)
+{
+  if (xiiEditorApplicationPreferences* pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>())
+  {
+    SetTargetFrameRate(pPreferences->GetMaxEditorFrameRate());
+    SetTargetFrameRateUnfocused(pPreferences->GetMaxEditorFrameRateWhenUnfocused());
   }
 }
 

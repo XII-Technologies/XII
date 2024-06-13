@@ -51,22 +51,27 @@ xiiQtLUTAssetDocumentWindow::xiiQtLUTAssetDocumentWindow(xiiLUTAssetDocument* pD
   }
 
   // 3D View
+#if 0
   {
-    /*
-        TODO: Add live 3D preview of the LUT with a slider for the strength etc.
+    // TODO: Add live 3D preview of the LUT with a slider for the strength etc.
 
-        SetTargetFramerate(10);
+    if (xiiEditorApplicationPreferences* pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>())
+    {
+      SetTargetFrameRate(pPreferences->GetMaxEditorFrameRate());
+      SetTargetFrameRateUnfocused(pPreferences->GetMaxEditorFrameRateWhenUnfocused());
+    }
 
-        m_ViewConfig.m_Camera.LookAt(xiiVec3(-2, 0, 0), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
-        m_ViewConfig.ApplyPerspectiveSetting(90);
+    m_ViewConfig.m_Camera.LookAt(xiiVec3(-2, 0, 0), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
+    m_ViewConfig.ApplyPerspectiveSetting(90);
 
-        m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig);
-        m_pViewWidget->ConfigureOrbitCameraVolume(xiiVec3(0), xiiVec3(1.0f), xiiVec3(-1, 0, 0));
-        AddViewWidget(m_pViewWidget);
-        xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, nullptr);
+    m_pViewWidget = new xiiQtOrbitCamViewWidget(this, &m_ViewConfig);
+    m_pViewWidget->ConfigureOrbitCameraVolume(xiiVec3(0), xiiVec3(1.0f), xiiVec3(-1, 0, 0));
+    AddViewWidget(m_pViewWidget);
+    xiiQtViewWidgetContainer* pContainer = new xiiQtViewWidgetContainer(this, m_pViewWidget, nullptr);
 
-        setCentralWidget(pContainer);*/
+    setCentralWidget(pContainer);
   }
+#endif
 
   {
     xiiQtDocumentPanel* pPropertyPanel = new xiiQtDocumentPanel(this, pDocument);

@@ -28,13 +28,11 @@ xiiQtPropertyAnimAssetDocumentWindow::xiiQtPropertyAnimAssetDocumentWindow(xiiPr
   };
   m_pQuadViewWidget = new xiiQtQuadViewWidget(pDocument, this, ViewFactory, "PropertyAnimAssetViewToolBar");
 
-  pDocument->SetEditToolConfigDelegate(
-    [this](xiiGameObjectEditTool* pTool) { pTool->ConfigureTool(static_cast<xiiGameObjectDocument*>(GetDocument()), this, this); });
+  pDocument->SetEditToolConfigDelegate([this](xiiGameObjectEditTool* pTool) { pTool->ConfigureTool(static_cast<xiiGameObjectDocument*>(GetDocument()), this, this); });
 
   pDocument->m_PropertyAnimEvents.AddEventHandler(xiiMakeDelegate(&xiiQtPropertyAnimAssetDocumentWindow::PropertyAnimAssetEventHandler, this));
 
   setCentralWidget(m_pQuadViewWidget);
-  SetTargetFramerate(25);
 
   // Menu Bar
   {
