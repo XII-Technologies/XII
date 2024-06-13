@@ -344,7 +344,7 @@ void xiiQtEditorApp::StartupEditor(xiiBitflags<StartupFlags> startupFlags, const
     m_Events.Broadcast(e);
   }
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  xiiEditorApplicationPreferences* pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>();
 
   if (pCmd->GetStringOptionArguments("-newproject") > 0)
   {

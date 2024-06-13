@@ -116,8 +116,6 @@ xiiQtTextureAssetDocumentWindow::xiiQtTextureAssetDocumentWindow(xiiTextureAsset
 
   // 3D View
   {
-    SetTargetFramerate(25);
-
     m_ViewConfig.m_Camera.LookAt(xiiVec3(-2, 0, 0), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
     m_ViewConfig.ApplyPerspectiveSetting(90);
 

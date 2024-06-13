@@ -39,8 +39,6 @@ xiiQtMeshAssetDocumentWindow::xiiQtMeshAssetDocumentWindow(xiiMeshAssetDocument*
   // 3D View
   xiiQtViewWidgetContainer* pContainer = nullptr;
   {
-    SetTargetFramerate(25);
-
     m_ViewConfig.m_Camera.LookAt(xiiVec3(-1.6f, 0, 0), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
     m_ViewConfig.ApplyPerspectiveSetting(90);
 

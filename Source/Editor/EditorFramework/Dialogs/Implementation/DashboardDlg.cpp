@@ -17,7 +17,7 @@ xiiQtDashboardDlg::xiiQtDashboardDlg(QWidget* pParent, DashboardTab activeTab) :
   SamplesTab->setFlat(true);
   DocumentationTab->setFlat(true);
 
-  if (xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>())
+  if (xiiEditorApplicationPreferences* pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>())
   {
     LoadLastProject->setChecked(pPreferences->m_bLoadLastProjectAtStartup);
   }
@@ -243,7 +243,7 @@ void xiiQtDashboardDlg::on_OpenSample_clicked()
 
 void xiiQtDashboardDlg::on_LoadLastProject_stateChanged(int)
 {
-  if (xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>())
+  if (xiiEditorApplicationPreferences* pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>())
   {
     pPreferences->m_bLoadLastProjectAtStartup = LoadLastProject->isChecked();
   }
@@ -264,7 +264,7 @@ void xiiQtDashboardDlg::on_SamplesList_itemDoubleClicked(QListWidgetItem* pItem)
 
 void xiiQtDashboardDlg::on_OpenDocs_clicked()
 {
-  QDesktopServices::openUrl(QUrl("https://xiitechnologies.com"));
+  QDesktopServices::openUrl(QUrl("https://www.xiitechnologies.com"));
 }
 
 void xiiQtDashboardDlg::on_OpenApiDocs_clicked()

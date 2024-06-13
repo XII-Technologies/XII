@@ -10,6 +10,7 @@
 class QWidget;
 class QHBoxLayout;
 class QPushButton;
+class xiiPreferences;
 class xiiQtEngineViewWidget;
 class xiiAssetDocument;
 class xiiEditorEngineDocumentMsg;
@@ -63,9 +64,12 @@ public:
 
 protected:
   friend class xiiQtEngineViewWidget;
+
+  xiiEventSubscriptionID                    m_PreferencesModifiedID;
   xiiHybridArray<xiiQtEngineViewWidget*, 4> m_ViewWidgets;
 
   virtual void CommonAssetUiEventHandler(const xiiCommonAssetUiState& e);
+  virtual void PreferenceChangedEventHandler(xiiPreferences* pPreferenceBase);
 
   virtual void ProcessMessageEventHandler(const xiiEditorEngineDocumentMsg* pMsg);
   void         RemoveViewWidget(xiiQtEngineViewWidget* pView);

@@ -24,7 +24,6 @@ class xiiPreferencesDocument : public xiiDocument
 {
   XII_ADD_DYNAMIC_REFLECTION(xiiPreferencesDocument, xiiDocument);
 
-
 public:
   xiiPreferencesDocument(xiiStringView sDocumentPath) :
     xiiDocument(sDocumentPath, XII_DEFAULT_NEW(xiiPreferencesObjectManager))
@@ -49,8 +48,7 @@ xiiQtPreferencesDlg::xiiQtPreferencesDlg(QWidget* pParent) :
   m_pDocument = XII_DEFAULT_NEW(xiiPreferencesDocument, "<none>");
 
   // if this is set, all properties are applied immediately
-  // m_pDocument->GetObjectManager()->m_PropertyEvents.AddEventHandler(xiiMakeDelegate(&xiiQtPreferencesDlg::PropertyChangedEventHandler,
-  // this));
+  // m_pDocument->GetObjectManager()->m_PropertyEvents.AddEventHandler(xiiMakeDelegate(&xiiQtPreferencesDlg::PropertyChangedEventHandler, this));
   std::unique_ptr<xiiQtDocumentTreeModel> pModel(new xiiQtDocumentTreeModel(m_pDocument->GetObjectManager()));
   pModel->AddAdapter(new xiiQtDummyAdapter(m_pDocument->GetObjectManager(), xiiGetStaticRTTI<xiiDocumentRoot>(), "Children"));
   pModel->AddAdapter(new xiiQtNamedAdapter(m_pDocument->GetObjectManager(), xiiPreferences::GetStaticRTTI(), "", "Name"));

@@ -105,8 +105,6 @@ xiiQtMaterialAssetDocumentWindow::xiiQtMaterialAssetDocumentWindow(xiiMaterialAs
 
   // 3D View
   {
-    SetTargetFramerate(25);
-
     m_ViewConfig.m_Camera.LookAt(xiiVec3(+1.6f, 0.5f, 0.3f), xiiVec3(0, 0, 0), xiiVec3(0, 0, 1));
     m_ViewConfig.ApplyPerspectiveSetting(90, 0.01f, 100.0f);
 

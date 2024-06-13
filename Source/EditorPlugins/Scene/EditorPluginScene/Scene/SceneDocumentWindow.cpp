@@ -27,9 +27,6 @@ xiiQtSceneDocumentWindow::xiiQtSceneDocumentWindow(xiiSceneDocument* pDocument) 
 
   setCentralWidget(m_pQuadViewWidget);
 
-  xiiEditorPreferencesUser* pPreferences = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
-  SetTargetFramerate(pPreferences->GetMaxFramerate());
-
   {
     // Menu Bar
     xiiQtMenuBarActionMapView* pMenuBar = static_cast<xiiQtMenuBarActionMapView*>(menuBar());

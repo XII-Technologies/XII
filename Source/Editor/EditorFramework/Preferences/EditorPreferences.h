@@ -21,11 +21,7 @@ public:
   xiiAngle m_RotationSnapValue           = xiiAngle::MakeFromDegree(15.0f);
   float    m_fScaleSnapValue             = 0.125f;
   float    m_fTranslationSnapValue       = 0.25f;
-  bool     m_bUsePrecompiledTools        = true;
-  bool     m_bLoadLastProjectAtStartup   = true;
-  bool     m_bShowSplashscreen           = true;
   bool     m_bExpandSceneTreeOnSelection = true;
-  bool     m_bBackgroundAssetProcessing  = true;
   bool     m_bHighlightUntranslatedUI    = false;
 
   bool      m_bSkyBox                    = true;
@@ -54,13 +50,31 @@ public:
   void  SetGizmoSize(float f);
   float GetGizmoSize() const { return m_fGizmoSize; }
 
-  void      SetMaxFramerate(xiiUInt16 uiFPS);
-  xiiUInt16 GetMaxFramerate() const { return m_uiMaxFramerate; }
-
 private:
   void SyncGlobalSettings();
 
-  float     m_fGizmoSize                 = 1.5f;
-  bool      m_bShowInDevelopmentFeatures = false;
-  xiiUInt16 m_uiMaxFramerate             = 60;
+  float m_fGizmoSize                 = 1.5f;
+  bool  m_bShowInDevelopmentFeatures = false;
+};
+
+class XII_EDITORFRAMEWORK_DLL xiiEditorApplicationPreferences : public xiiPreferences
+{
+  XII_ADD_DYNAMIC_REFLECTION(xiiEditorApplicationPreferences, xiiPreferences);
+
+public:
+  xiiEditorApplicationPreferences();
+  ~xiiEditorApplicationPreferences();
+
+  void      SetMaxEditorFrameRate(xiiUInt16 uiFPS);
+  xiiUInt16 GetMaxEditorFrameRate() const { return m_uiMaxEditorFrameRate; }
+
+  void      SetMaxEditorFrameRateWhenUnfocused(xiiUInt16 uiFPS);
+  xiiUInt16 GetMaxEditorFrameRateWhenUnfocused() const { return m_uiMaxEditorFrameRateWhenUnfocused; }
+
+  bool      m_bShowSplashScreen                 = true;
+  bool      m_bLoadLastProjectAtStartup         = true;
+  bool      m_bUsePrecompiledTools              = true;
+  bool      m_bBackgroundAssetProcessing        = true;
+  xiiUInt16 m_uiMaxEditorFrameRate              = 60U;
+  xiiUInt16 m_uiMaxEditorFrameRateWhenUnfocused = 15U;
 };

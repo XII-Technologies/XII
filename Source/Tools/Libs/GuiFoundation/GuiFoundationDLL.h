@@ -91,7 +91,7 @@ void operator>>(QDataStream& inout_stream, xiiDynamicArray<T>& rhs)
   rhs.Clear();
   rhs.Reserve(uiIndices);
 
-  for (int i = 0; i < uiIndices; ++i)
+  for (xiiUInt32 i = 0; i < uiIndices; ++i)
   {
     T obj = {};
     inout_stream >> obj;
