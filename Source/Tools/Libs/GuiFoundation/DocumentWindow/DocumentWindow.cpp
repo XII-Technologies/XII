@@ -138,7 +138,7 @@ void xiiQtDocumentWindow::UIServicesTickEventHandler(const xiiQtUiServices::Tick
   {
     const xiiUInt32 iSystemFramerate = static_cast<xiiUInt32>(xiiMath::Round(e.m_fRefreshRate));
 
-    xiiUInt32 uiTargetFramerate          = m_uiTargetFrameRate;
+    xiiUInt32 uiTargetFramerate = m_uiTargetFrameRate;
     if (uiTargetFramerate == 0U)
       uiTargetFramerate = iSystemFramerate;
 

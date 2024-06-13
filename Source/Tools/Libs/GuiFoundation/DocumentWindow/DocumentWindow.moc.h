@@ -119,8 +119,8 @@ private:
   bool                  m_bIsDrawingATM                = false;
   bool                  m_bTriggerRedrawQueued         = false;
   bool                  m_bAllowSaveWindowLayout       = true;
-  xiiUInt16              m_uiTargetFrameRate             = 0U;
-  xiiUInt16              m_uiTargetFrameRateUnfocused    = 0U;
+  xiiUInt16             m_uiTargetFrameRate            = 0U;
+  xiiUInt16             m_uiTargetFrameRateUnfocused   = 0U;
   xiiDocument*          m_pDocument                    = nullptr;
   xiiQtContainerWindow* m_pContainerWindow             = nullptr;
   QLabel*               m_pPermanentDocumentStatusText = nullptr;
