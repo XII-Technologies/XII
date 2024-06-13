@@ -353,6 +353,12 @@ void xiiQtNodeScene::keyPressEvent(QKeyEvent* event)
   {
     OpenSearchMenu(QCursor::pos());
   }
+
+  // Pass Shortcuts/KeyPresses up the chain again, so e.g. Ctrl+S work even if inside a window.
+  if (event->type() == QEvent::ShortcutOverride || event->type() == QEvent::KeyPress)
+  {
+    event->ignore();
+  }
 }
 
 void xiiQtNodeScene::Clear()
