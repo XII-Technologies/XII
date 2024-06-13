@@ -63,7 +63,8 @@ public:
   void ScheduleRestoreWindowLayout();
 
   bool IsVisibleInContainer() const { return m_bIsVisibleInContainer; }
-  void SetTargetFramerate(xiiInt16 iTargetFPS);
+  void SetTargetFrameRate(xiiUInt16 uiTargetFPS);
+  void SetTargetFrameRateUnfocused(xiiUInt16 uiTargetFPS);
 
   void TriggerRedraw();
 
@@ -118,7 +119,8 @@ private:
   bool                  m_bIsDrawingATM                = false;
   bool                  m_bTriggerRedrawQueued         = false;
   bool                  m_bAllowSaveWindowLayout       = true;
-  xiiInt16              m_iTargetFramerate             = 0;
+  xiiUInt16              m_uiTargetFrameRate             = 0U;
+  xiiUInt16              m_uiTargetFrameRateUnfocused    = 0U;
   xiiDocument*          m_pDocument                    = nullptr;
   xiiQtContainerWindow* m_pContainerWindow             = nullptr;
   QLabel*               m_pPermanentDocumentStatusText = nullptr;

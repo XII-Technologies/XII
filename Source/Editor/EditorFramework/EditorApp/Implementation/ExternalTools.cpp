@@ -16,7 +16,7 @@ xiiString xiiQtEditorApp::FindToolApplication(const char* szToolName)
 
   szToolName = toolExe;
 
-  xiiEditorPreferencesUser* pPref = xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  xiiEditorApplicationPreferences* pPref = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>();
 
   bool bFolders[2] = {false, true};
 

@@ -108,15 +108,23 @@ void xiiQtDocumentWindow::SetVisibleInContainer(bool bVisible)
   }
 }
 
-void xiiQtDocumentWindow::SetTargetFramerate(xiiInt16 iTargetFPS)
+void xiiQtDocumentWindow::SetTargetFrameRate(xiiUInt16 uiTargetFPS)
 {
-  if (m_iTargetFramerate == iTargetFPS)
+  if (m_uiTargetFrameRate == uiTargetFPS)
     return;
 
-  m_iTargetFramerate = iTargetFPS;
+  m_uiTargetFrameRate = uiTargetFPS;
 
-  if (m_iTargetFramerate != 0)
+  if (m_uiTargetFrameRate != 0)
     SlotRedraw();
+}
+
+void xiiQtDocumentWindow::SetTargetFrameRateUnfocused(xiiUInt16 uiTargetFPS)
+{
+  if (m_uiTargetFrameRateUnfocused == uiTargetFPS)
+    return;
+
+  m_uiTargetFrameRateUnfocused = uiTargetFPS;
 }
 
 void xiiQtDocumentWindow::TriggerRedraw()
@@ -128,20 +136,20 @@ void xiiQtDocumentWindow::UIServicesTickEventHandler(const xiiQtUiServices::Tick
 {
   if (e.m_Type == xiiQtUiServices::TickEvent::Type::StartFrame && m_bIsVisibleInContainer)
   {
-    const xiiInt32 iSystemFramerate = static_cast<xiiInt32>(xiiMath::Round(e.m_fRefreshRate));
+    const xiiUInt32 iSystemFramerate = static_cast<xiiUInt32>(xiiMath::Round(e.m_fRefreshRate));
 
-    xiiInt32 iTargetFramerate = m_iTargetFramerate;
-    if (iTargetFramerate <= 0)
-      iTargetFramerate = iSystemFramerate;
+    xiiUInt32 uiTargetFramerate          = m_uiTargetFrameRate;
+    if (uiTargetFramerate == 0U)
+      uiTargetFramerate = iSystemFramerate;
 
     // if the application does not have focus, drastically reduce the update rate to limit CPU draw etc.
     if (QApplication::activeWindow() == nullptr)
-      iTargetFramerate = xiiMath::Max(10, iTargetFramerate / 4);
+      uiTargetFramerate = m_uiTargetFrameRateUnfocused != 0 ? m_uiTargetFrameRateUnfocused : (iSystemFramerate / 5);
 
     // We do not hit the requested framerate directly if the system framerate can't be evenly divided. We will chose the next higher framerate.
-    if (iTargetFramerate < iSystemFramerate)
+    if (uiTargetFramerate < iSystemFramerate)
     {
-      xiiUInt32 mod = xiiMath::Max(1u, (xiiUInt32)xiiMath::Floor(iSystemFramerate / (double)iTargetFramerate));
+      xiiUInt32 mod = xiiMath::Max(1u, (xiiUInt32)xiiMath::Floor(iSystemFramerate / (double)uiTargetFramerate));
       if ((e.m_uiFrame % mod) != 0)
         return;
     }
@@ -424,8 +432,7 @@ xiiStatus xiiQtDocumentWindow::SaveDocument()
       if (m_pDocument->GetUnknownObjectTypeInstances() > 0)
       {
         if (xiiQtUiServices::MessageBoxQuestion("Warning! This document contained unknown object types that could not be loaded. Saving the "
-                                                "document means those objects will get lost permanently.\n\nDo you really want to save this "
-                                                "document?",
+                                                "document means those objects will get lost permanently.\n\nDo you really want to save this document?",
                                                 QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) != QMessageBox::StandardButton::Yes)
           return xiiStatus(XII_SUCCESS); // failed successfully
       }

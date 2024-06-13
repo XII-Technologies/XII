@@ -13,17 +13,12 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorPreferencesUser, 1, xiiRTTIDefaultAllo
 {
   XII_BEGIN_PROPERTIES
   {
-    XII_MEMBER_PROPERTY("RestoreProjectOnStartup", m_bLoadLastProjectAtStartup)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_MEMBER_PROPERTY("ShowSplashscreen", m_bShowSplashscreen)->AddAttributes(new xiiDefaultValueAttribute(true)),
-    XII_MEMBER_PROPERTY("BackgroundAssetProcessing", m_bBackgroundAssetProcessing)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("FieldOfView", m_fPerspectiveFieldOfView)->AddAttributes(new xiiDefaultValueAttribute(70.0f), new xiiClampValueAttribute(10.0f, 150.0f)),
-    XII_MEMBER_PROPERTY("MaxFramerate", m_uiMaxFramerate)->AddAttributes(new xiiDefaultValueAttribute(60)),
     XII_ACCESSOR_PROPERTY("GizmoSize", GetGizmoSize, SetGizmoSize)->AddAttributes(new xiiDefaultValueAttribute(1.5f), new xiiClampValueAttribute(0.2f, 5.0f)),
     XII_ACCESSOR_PROPERTY("ShowInDevelopmentFeatures", GetShowInDevelopmentFeatures, SetShowInDevelopmentFeatures),
     XII_MEMBER_PROPERTY("RotationSnap", m_RotationSnapValue)->AddAttributes(new xiiDefaultValueAttribute(xiiAngle::MakeFromDegree(15.0f)), new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("ScaleSnap", m_fScaleSnapValue)->AddAttributes(new xiiDefaultValueAttribute(0.125f), new xiiHiddenAttribute()),
     XII_MEMBER_PROPERTY("TranslationSnap", m_fTranslationSnapValue)->AddAttributes(new xiiDefaultValueAttribute(0.25f), new xiiHiddenAttribute()),
-    XII_MEMBER_PROPERTY("UsePrecompiledTools", m_bUsePrecompiledTools)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("ExpandSceneTreeOnSelection", m_bExpandSceneTreeOnSelection)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_MEMBER_PROPERTY("ClearEditorLogsOnPlay", m_bClearEditorLogsOnPlay)->AddAttributes(new xiiDefaultValueAttribute(true)),
     XII_ACCESSOR_PROPERTY("HighlightUntranslatedUI", GetHighlightUntranslatedUI, SetHighlightUntranslatedUI),
@@ -98,15 +93,6 @@ void xiiEditorPreferencesUser::SetGizmoSize(float f)
   SyncGlobalSettings();
 }
 
-
-void xiiEditorPreferencesUser::SetMaxFramerate(xiiUInt16 uiFPS)
-{
-  if (m_uiMaxFramerate == uiFPS)
-    return;
-
-  m_uiMaxFramerate = uiFPS;
-}
-
 void xiiEditorPreferencesUser::SyncGlobalSettings()
 {
   xiiGlobalSettingsMsgToEngine msg;
@@ -119,4 +105,50 @@ void xiiQtEditorApp::LoadEditorPreferences()
 {
   XII_PROFILE_SCOPE("Preferences");
   xiiPreferences::QueryPreferences<xiiEditorPreferencesUser>();
+  xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>();
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// Editor Application Settings. We will deprecate the current user editor preferences at a later date.
+///////////////////////////////////////////////////////////////////////////////////////////////
+
+// clang-format off
+XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiEditorApplicationPreferences, 1, xiiRTTIDefaultAllocator<xiiEditorApplicationPreferences>)
+{
+  XII_BEGIN_PROPERTIES
+  {
+    // START GROUP General
+    XII_MEMBER_PROPERTY("ShowSplashScreen", m_bShowSplashScreen)->AddAttributes(new xiiDefaultValueAttribute(true), new xiiGroupAttribute("General")),
+    XII_MEMBER_PROPERTY("RestoreProjectOnStartup", m_bLoadLastProjectAtStartup)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("UsePrecompiledTools", m_bUsePrecompiledTools)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_MEMBER_PROPERTY("BackgroundAssetProcessing", m_bBackgroundAssetProcessing)->AddAttributes(new xiiDefaultValueAttribute(true)),
+    XII_ACCESSOR_PROPERTY("MaxEditorFPS", GetMaxEditorFrameRate, SetMaxEditorFrameRate)->AddAttributes(new xiiDefaultValueAttribute(60U)),
+    XII_ACCESSOR_PROPERTY("MaxEditorFPSWhenUnfocused", GetMaxEditorFrameRateWhenUnfocused, SetMaxEditorFrameRateWhenUnfocused)->AddAttributes(new xiiDefaultValueAttribute(15U)),
+  }
+  XII_END_PROPERTIES;
+}
+XII_END_DYNAMIC_REFLECTED_TYPE;
+// clang-format on
+
+xiiEditorApplicationPreferences::xiiEditorApplicationPreferences() :
+  xiiPreferences(Domain::Application, "EditorPreferences")
+{
+}
+
+void xiiEditorApplicationPreferences::SetMaxEditorFrameRate(xiiUInt16 uiFPS)
+{
+  if (m_uiMaxEditorFrameRate == uiFPS)
+    return;
+
+  m_uiMaxEditorFrameRate = uiFPS;
+}
+
+void xiiEditorApplicationPreferences::SetMaxEditorFrameRateWhenUnfocused(xiiUInt16 uiFPS)
+{
+  if (m_uiMaxEditorFrameRateWhenUnfocused == uiFPS)
+    return;
+
+  m_uiMaxEditorFrameRateWhenUnfocused = uiFPS;
+}
+
+xiiEditorApplicationPreferences::~xiiEditorApplicationPreferences() = default;
