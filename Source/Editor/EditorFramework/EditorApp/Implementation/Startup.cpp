@@ -485,11 +485,12 @@ void xiiQtEditorApp::CreatePanels()
 
   xiiQtContainerWindow* pMainWnd     = xiiQtContainerWindow::GetContainerWindow();
   ads::CDockManager*    pDockManager = pMainWnd->GetDockManager();
-  pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pAssetBrowserPanel);
-  pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pLogPanel);
-  pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pAssetCuratorPanel);
-  pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pCVarPanel);
-  pDockManager->addDockWidgetTab(ads::RightDockWidgetArea, pLongOpsPanel);
+
+  pDockManager->addAutoHideDockWidget(ads::SideBarBottom, pAssetBrowserPanel);
+  pDockManager->addAutoHideDockWidget(ads::SideBarBottom, pLogPanel);
+  pDockManager->addAutoHideDockWidget(ads::SideBarBottom, pAssetCuratorPanel);
+  pDockManager->addAutoHideDockWidget(ads::SideBarRight, pCVarPanel);
+  pDockManager->addAutoHideDockWidget(ads::SideBarRight, pLongOpsPanel);
 
   pAssetBrowserPanel->raise();
 }
