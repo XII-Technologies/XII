@@ -17,7 +17,7 @@ xiiQtEngineDocumentWindow::xiiQtEngineDocumentWindow(xiiAssetDocument* pDocument
   SetTargetFrameRate(pPreferences->GetMaxEditorFrameRate());
   SetTargetFrameRateUnfocused(pPreferences->GetMaxEditorFrameRateWhenUnfocused());
 
-  m_PreferencesModifiedID = pPreferences->m_ChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtEngineDocumentWindow::PreferenceChangedEventHandler, this));
+  pPreferences->m_ChangedEvent.AddEventHandler(xiiMakeDelegate(&xiiQtEngineDocumentWindow::PreferenceChangedEventHandler, this));
 }
 
 xiiQtEngineDocumentWindow::~xiiQtEngineDocumentWindow()
@@ -30,6 +30,9 @@ xiiQtEngineDocumentWindow::~xiiQtEngineDocumentWindow()
 
   // delete all view widgets, so that they can send their messages before we clean up the engine connection
   DestroyAllViews();
+
+  auto pPreferences = xiiPreferences::QueryPreferences<xiiEditorApplicationPreferences>();
+  pPreferences->m_ChangedEvent.RemoveEventHandler(xiiMakeDelegate(&xiiQtEngineDocumentWindow::PreferenceChangedEventHandler, this));
 }
 
 xiiEditorEngineConnection* xiiQtEngineDocumentWindow::GetEditorEngineConnection() const
