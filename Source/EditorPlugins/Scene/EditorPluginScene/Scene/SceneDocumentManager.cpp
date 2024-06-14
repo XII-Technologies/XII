@@ -107,7 +107,6 @@ void xiiSceneDocumentManager::InternalCloneDocument(xiiStringView sPath, xiiStri
 {
   xiiAssetDocumentManager::InternalCloneDocument(sPath, sClonePath, documentId, seedGuid, cloneGuid, pHeader, pObjects, pTypes);
 
-
   auto    pRoot        = pObjects->GetNodeByName("ObjectTree");
   xiiUuid settingsGuid = pRoot->FindProperty("Settings")->m_Value.Get<xiiUuid>();
   auto    pSettings    = pObjects->GetNode(settingsGuid);
@@ -159,7 +158,8 @@ void xiiSceneDocumentManager::InternalCloneDocument(xiiStringView sPath, xiiStri
           }
         }
       }
-    } });
+    }
+  });
 }
 
 void xiiSceneDocumentManager::SetupDefaultScene(xiiDocument* pDocument)
