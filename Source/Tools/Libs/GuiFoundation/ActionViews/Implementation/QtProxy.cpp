@@ -365,8 +365,12 @@ void SetupQAction(xiiAction* pAction, QPointer<QAction>& ref_pQtAction, QObject*
       case xiiActionScope::Document:
       {
         // Parent is set to the window belonging to the document.
-        xiiQtDocumentWindow* pWindow = xiiQtDocumentWindow::FindWindowByDocument(pAction->GetContext().m_pDocument);
-        XII_ASSERT_DEBUG(pWindow != nullptr, "You can't map a xiiActionScope::Document action without that document existing!");
+        xiiQtDocumentWindow* pWindow = nullptr;
+        if (xiiDocument* pDocument = pAction->GetContext().m_pDocument)
+        {
+          pWindow = xiiQtDocumentWindow::FindWindowByDocument(pAction->GetContext().m_pDocument);
+          XII_ASSERT_DEBUG(pWindow != nullptr, "You can't map a xiiActionScope::Document action without that document existing!");
+        }
         ref_pQtAction->setParent(pWindow);
         ref_pQtAction->setShortcutContext(Qt::ShortcutContext::WidgetWithChildrenShortcut);
       }
@@ -383,7 +387,7 @@ void SetupQAction(xiiAction* pAction, QPointer<QAction>& ref_pQtAction, QObject*
 
 void xiiQtButtonProxy::SetAction(xiiAction* pAction)
 {
-  XII_ASSERT_DEV(m_pAction == nullptr, "Es darf nicht sein, es kann nicht sein!");
+  XII_ASSERT_DEV(m_pAction == nullptr, "Implementation error! Expected a valid action.");
 
   xiiQtProxy::SetAction(pAction);
   m_pAction->m_StatusUpdateEvent.AddEventHandler(xiiMakeDelegate(&xiiQtButtonProxy::StatusUpdateEventHandler, this));

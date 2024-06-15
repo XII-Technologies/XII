@@ -75,10 +75,8 @@ void xiiQtEditorApp::SlotVersionCheckCompleted(bool bNewVersionReleased, bool bF
   {
     if (m_pVersionChecker->IsLatestNewer())
     {
-      xiiQtUiServices::GetSingleton()->MessageBoxInformation(
-        xiiFmt("<html>A new version is available: {}<br><br>Your version is: {}<br><br>Please check the <A "
-               "href=\"https://github.com/xiiEngine/xiiEngine/releases\">Releases</A> for details.</html>",
-               m_pVersionChecker->GetKnownLatestVersion(), m_pVersionChecker->GetOwnVersion()));
+      xiiQtUiServices::GetSingleton()->MessageBoxInformation(xiiFmt("<html>A new version is available: {}<br><br>Your version is: {}<br><br>Please check the <A href=\"https://github.com/xiiEngine/xiiEngine/releases\">Releases</A> for details.</html>",
+                                                                    m_pVersionChecker->GetKnownLatestVersion(), m_pVersionChecker->GetOwnVersion()));
     }
     else
     {

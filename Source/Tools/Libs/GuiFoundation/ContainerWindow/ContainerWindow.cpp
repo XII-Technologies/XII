@@ -69,22 +69,29 @@ xiiQtContainerWindow::xiiQtContainerWindow()
 
   UpdateWindowTitle();
 
-  ads::CDockManager::ConfigFlags flags =
-    ads::CDockManager::DefaultDockAreaButtons |
-    ads::CDockManager::ActiveTabHasCloseButton |
-    ads::CDockManager::XmlCompressionEnabled |
-    ads::CDockManager::FloatingContainerHasWidgetTitle |
-    ads::CDockManager::DragPreviewShowsContentPixmap |
-    ads::CDockManager::FocusHighlighting |
-    ads::CDockManager::AlwaysShowTabs |
-    ads::CDockManager::DockAreaHasCloseButton |
-    ads::CDockManager::DockAreaCloseButtonClosesTab |
-    ads::CDockManager::MiddleMouseButtonClosesTab |
-    ads::CDockManager::DockAreaHasTabsMenuButton |
-    ads::CDockManager::FloatingContainerHasWidgetIcon |
-    ads::CDockManager::AllTabsHaveCloseButton |
-    ads::CDockManager::OpaqueSplitterResize;
+  ads::CDockManager::ConfigFlags flags = ads::CDockManager::DefaultDockAreaButtons;
+  flags |= ads::CDockManager::ActiveTabHasCloseButton;
+  flags |= ads::CDockManager::XmlCompressionEnabled;
+  flags |= ads::CDockManager::FloatingContainerHasWidgetTitle;
+  flags |= ads::CDockManager::DragPreviewShowsContentPixmap;
+  flags |= ads::CDockManager::FocusHighlighting;
+  flags |= ads::CDockManager::AlwaysShowTabs;
+  flags |= ads::CDockManager::DockAreaHasCloseButton;
+  flags |= ads::CDockManager::DockAreaCloseButtonClosesTab;
+  flags |= ads::CDockManager::MiddleMouseButtonClosesTab;
+  flags |= ads::CDockManager::DockAreaHasTabsMenuButton;
+  flags |= ads::CDockManager::FloatingContainerHasWidgetIcon;
+  flags |= ads::CDockManager::AllTabsHaveCloseButton;
+  flags |= ads::CDockManager::OpaqueSplitterResize;
+  flags |= ads::CDockManager::DockAreaHasUndockButton;
   ads::CDockManager::setConfigFlags(flags);
+
+  ads::CDockManager::AutoHideFlags autoHideFlags = ads::CDockManager::AutoHideFeatureEnabled;
+  autoHideFlags |= ads::CDockManager::DockAreaHasAutoHideButton;
+  autoHideFlags |= ads::CDockManager::AutoHideHasMinimizeButton;
+  autoHideFlags |= ads::CDockManager::AutoHideHasCloseButton;
+  autoHideFlags |= ads::CDockManager::AutoHideShowOnMouseOver;
+  ads::CDockManager::setAutoHideConfigFlags(autoHideFlags);
 
   m_pDockManager = new ads::CDockManager(this);
 

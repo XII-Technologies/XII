@@ -431,8 +431,7 @@ xiiStatus xiiQtDocumentWindow::SaveDocument()
     {
       if (m_pDocument->GetUnknownObjectTypeInstances() > 0)
       {
-        if (xiiQtUiServices::MessageBoxQuestion("Warning! This document contained unknown object types that could not be loaded. Saving the "
-                                                "document means those objects will get lost permanently.\n\nDo you really want to save this document?",
+        if (xiiQtUiServices::MessageBoxQuestion("Warning! This document contained unknown object types that could not be loaded. Saving the document means those objects will get lost permanently.\n\nDo you really want to save this document?",
                                                 QMessageBox::StandardButton::Yes | QMessageBox::StandardButton::No, QMessageBox::StandardButton::No) != QMessageBox::StandardButton::Yes)
           return xiiStatus(XII_SUCCESS); // failed successfully
       }

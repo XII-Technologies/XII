@@ -65,7 +65,6 @@ public:
 protected:
   friend class xiiQtEngineViewWidget;
 
-  xiiEventSubscriptionID                    m_PreferencesModifiedID;
   xiiHybridArray<xiiQtEngineViewWidget*, 4> m_ViewWidgets;
 
   virtual void CommonAssetUiEventHandler(const xiiCommonAssetUiState& e);

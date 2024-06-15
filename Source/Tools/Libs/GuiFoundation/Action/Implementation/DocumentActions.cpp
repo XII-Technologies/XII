@@ -185,6 +185,9 @@ void xiiDocumentAction::DocumentEventHandler(const xiiDocumentEvent& e)
 
 void xiiDocumentAction::Execute(const xiiVariant& value)
 {
+  if (!m_Context.m_pDocument)
+    return;
+
   switch (m_ButtonType)
   {
     case xiiDocumentAction::ButtonType::Save:
@@ -241,6 +244,10 @@ void xiiDocumentAction::Execute(const xiiVariant& value)
       xiiQtDocumentWindow* pWindow = xiiQtDocumentWindow::FindWindowByDocument(m_Context.m_pDocument);
 
       if (!pWindow->CanCloseWindow())
+        return;
+
+      // Prevent closing the document root window.
+      if (pWindow->GetUniqueName().Compare("Settings") == 0)
         return;
 
       pWindow->CloseDocumentWindow();
