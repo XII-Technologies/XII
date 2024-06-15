@@ -193,7 +193,8 @@ void xiiQtEditorApp::RunFileserve()
   const xiiStringBuilder sProjectDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
 
   QStringList args;
-  args << "-specialdirs" << "project" << sProjectDir.GetData() << "-fs_start";
+  args << "-specialdirs"
+       << "project" << sProjectDir.GetData() << "-fs_start";
 
   QProcess::startDetached(sToolPath.GetData(), args);
 }

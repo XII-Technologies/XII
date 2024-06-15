@@ -371,8 +371,8 @@ void SetupQAction(xiiAction* pAction, QPointer<QAction>& ref_pQtAction, QObject*
           pWindow = xiiQtDocumentWindow::FindWindowByDocument(pAction->GetContext().m_pDocument);
           XII_ASSERT_DEBUG(pWindow != nullptr, "You can't map a xiiActionScope::Document action without that document existing!");
         }
-          ref_pQtAction->setParent(pWindow);
-          ref_pQtAction->setShortcutContext(Qt::ShortcutContext::WidgetWithChildrenShortcut);
+        ref_pQtAction->setParent(pWindow);
+        ref_pQtAction->setShortcutContext(Qt::ShortcutContext::WidgetWithChildrenShortcut);
       }
       break;
       case xiiActionScope::Window:
