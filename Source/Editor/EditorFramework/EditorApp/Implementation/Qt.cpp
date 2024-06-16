@@ -53,17 +53,17 @@ void xiiQtEditorApp::SetStyleSheet()
   QApplication::setStyle(QStyleFactory::create("fusion"));
 
   palette.setColor(QPalette::WindowText, QColor(200, 200, 200, 255));
-  palette.setColor(QPalette::Button, QColor(0, 0, 0, 255));      // buttons, toolbuttons, dashboard background
+  palette.setColor(QPalette::Button, QColor(50, 50, 50, 255));   // buttons, toolbuttons, dashboard background
   palette.setColor(QPalette::Light, QColor(60, 60, 60, 255));    // lines between tabs, inactive tab gradient
   palette.setColor(QPalette::Midlight, QColor(59, 59, 59, 255)); // unused ?
   palette.setColor(QPalette::Dark, QColor(45, 45, 45, 255));     // line below active window highlight
   palette.setColor(QPalette::Mid, QColor(45, 45, 45, 255));      // color of the box around component properties (collapsible group box)
   palette.setColor(QPalette::Text, QColor(200, 200, 200, 255));  // scene graph, values in spin boxes, checkmarks
-  palette.setColor(QPalette::BrightText, QColor(37, 37, 37, 255));
-  palette.setColor(QPalette::ButtonText, QColor(200, 200, 200, 255));      // // menus, comboboxes, headers
-  palette.setColor(QPalette::Base, QColor(20, 20, 20, 255));               // background inside complex windows (scenegraph)
-  palette.setColor(QPalette::AlternateBase, QColor(20, 20, 20, 255));      // second base color, mainly used for alternate row colors
-  palette.setColor(QPalette::Window, QColor(30, 30, 30, 255));             // window borders, toolbars
+  palette.setColor(QPalette::BrightText, QColor(180, 180, 180, 255));
+  palette.setColor(QPalette::ButtonText, QColor(200, 200, 200, 255));      // menus, comboboxes, headers
+  palette.setColor(QPalette::Base, QColor(15, 15, 15, 255));               // background inside complex windows (scenegraph)
+  palette.setColor(QPalette::AlternateBase, QColor(15, 15, 15, 255));      // second base color, mainly used for alternate row colors
+  palette.setColor(QPalette::Window, QColor(25, 25, 25, 255));             // window borders, toolbars
   palette.setColor(QPalette::Shadow, QColor(0, 0, 0, 255));                // background color for arrays in property grids
   palette.setColor(QPalette::Highlight, QColor(103, 141, 178, 255));       // selected items
   palette.setColor(QPalette::HighlightedText, QColor(255, 255, 255, 255)); // text of selected items
