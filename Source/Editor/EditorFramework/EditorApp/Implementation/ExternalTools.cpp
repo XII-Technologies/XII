@@ -177,7 +177,7 @@ xiiStatus xiiQtEditorApp::ExecuteTool(const char* szTool, const QStringList& arg
 
 xiiString xiiQtEditorApp::BuildFileserveCommandLine() const
 {
-  const xiiStringBuilder sToolPath   = xiiQtEditorApp::GetSingleton()->FindToolApplication("Fileserve");
+  const xiiStringBuilder sToolPath   = xiiQtEditorApp::GetSingleton()->FindToolApplication("xiiFileserve");
   const xiiStringBuilder sProjectDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
   xiiStringBuilder       params;
 
@@ -189,7 +189,7 @@ xiiString xiiQtEditorApp::BuildFileserveCommandLine() const
 
 void xiiQtEditorApp::RunFileserve()
 {
-  const xiiStringBuilder sToolPath   = xiiQtEditorApp::GetSingleton()->FindToolApplication("Fileserve");
+  const xiiStringBuilder sToolPath   = xiiQtEditorApp::GetSingleton()->FindToolApplication("xiiFileserve");
   const xiiStringBuilder sProjectDir = xiiToolsProject::GetSingleton()->GetProjectDirectory();
 
   QStringList args;
@@ -201,7 +201,7 @@ void xiiQtEditorApp::RunFileserve()
 
 void xiiQtEditorApp::RunInspector()
 {
-  const xiiStringBuilder sToolPath = xiiQtEditorApp::GetSingleton()->FindToolApplication("Inspector");
+  const xiiStringBuilder sToolPath = xiiQtEditorApp::GetSingleton()->FindToolApplication("xiiInspector");
   QStringList            args;
 
   QProcess::startDetached(sToolPath.GetData(), args);
