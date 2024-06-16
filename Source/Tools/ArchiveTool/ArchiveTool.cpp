@@ -45,16 +45,16 @@ Description:
     If all inputs are files, the mode is 'unpack'.
 
 Examples:
-    ArchiveTool.exe "C:/Stuff"
+    xiiArchiveTool.exe "C:/Stuff"
       Packs all data in "C:/Stuff" into "C:/Stuff.xiiArchive"
 
-    ArchiveTool.exe "C:/Stuff" -out "C:/MyStuff.xiiArchive"
+    xiiArchiveTool.exe "C:/Stuff" -out "C:/MyStuff.xiiArchive"
       Packs all data in "C:/Stuff" into "C:/MyStuff.xiiArchive"
 
-    ArchiveTool.exe "C:/Stuff.xiiArchive"
+    xiiArchiveTool.exe "C:/Stuff.xiiArchive"
       Unpacks all data from the archive into "C:/Stuff"
 
-    ArchiveTool.exe "C:/Stuff.xiiArchive" -out "C:/MyStuff"
+    xiiArchiveTool.exe "C:/Stuff.xiiArchive" -out "C:/MyStuff"
       Unpacks all data from the archive into "C:/MyStuff"
 */
 
@@ -96,16 +96,16 @@ If all inputs are files, the mode is 'unpack'.\n\
                                  "");
 
 xiiCommandLineOptionDoc opt_Examples("_ArchiveTool", "Examples:", "", "\
-ArchiveTool.exe \"C:/Stuff\"\n\
+xiiArchiveTool.exe \"C:/Stuff\"\n\
   Packs all data in \"C:/Stuff\" into \"C:/Stuff.xiiArchive\"\n\
 \n\
-ArchiveTool.exe \"C:/Stuff\" -out \"C:/MyStuff.xiiArchive\"\n\
+xiiArchiveTool.exe \"C:/Stuff\" -out \"C:/MyStuff.xiiArchive\"\n\
   Packs all data in \"C:/Stuff\" into \"C:/MyStuff.xiiArchive\"\n\
 \n\
-ArchiveTool.exe \"C:/Stuff.xiiArchive\"\n\
+xiiArchiveTool.exe \"C:/Stuff.xiiArchive\"\n\
   Unpacks all data from the archive into \"C:/Stuff\"\n\
 \n\
-ArchiveTool.exe \"C:/Stuff.xiiArchive\" -out \"C:/MyStuff\"\n\
+xiiArchiveTool.exe \"C:/Stuff.xiiArchive\" -out \"C:/MyStuff\"\n\
   Unpacks all data from the archive into \"C:/MyStuff\"\n\
 ",
                                      "");
