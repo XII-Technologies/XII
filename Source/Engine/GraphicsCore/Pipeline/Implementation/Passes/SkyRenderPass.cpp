@@ -5,8 +5,8 @@
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSkyRenderPass, 1, xiiRTTIDefaultAllocator<xiiSkyRenderPass>)
 XII_END_DYNAMIC_REFLECTED_TYPE;
 
-xiiSkyRenderPass::xiiSkyRenderPass(const char* szName) :
-  xiiForwardRenderPass(szName)
+xiiSkyRenderPass::xiiSkyRenderPass(xiiStringView sName) :
+  xiiForwardRenderPass(sName)
 {
 }
 

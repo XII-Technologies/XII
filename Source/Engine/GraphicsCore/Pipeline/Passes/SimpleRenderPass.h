@@ -12,7 +12,7 @@ class XII_GRAPHICSCORE_DLL xiiSimpleRenderPass : public xiiRenderPipelinePass
   XII_ADD_DYNAMIC_REFLECTION(xiiSimpleRenderPass, xiiRenderPipelinePass);
 
 public:
-  xiiSimpleRenderPass(const char* szName = "SimpleRenderPass");
+  xiiSimpleRenderPass(xiiStringView sName = "SimpleRenderPass");
   ~xiiSimpleRenderPass();
 
   virtual bool      GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;

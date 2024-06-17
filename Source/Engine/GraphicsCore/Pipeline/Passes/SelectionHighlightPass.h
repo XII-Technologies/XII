@@ -9,7 +9,7 @@ class XII_GRAPHICSCORE_DLL xiiSelectionHighlightPass : public xiiRenderPipelineP
   XII_ADD_DYNAMIC_REFLECTION(xiiSelectionHighlightPass, xiiRenderPipelinePass);
 
 public:
-  xiiSelectionHighlightPass(const char* szName = "SelectionHighlightPass");
+  xiiSelectionHighlightPass(xiiStringView sName = "SelectionHighlightPass");
   ~xiiSelectionHighlightPass();
 
   virtual bool      GetRenderTargetDescriptions(const xiiView& view, const xiiArrayPtr<xiiGALTextureCreationDescription* const> inputs, xiiArrayPtr<xiiGALTextureCreationDescription> outputs) override;

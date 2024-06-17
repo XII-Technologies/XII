@@ -23,8 +23,8 @@ XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiSimpleRenderPass, 1, xiiRTTIDefaultAllocator
 XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
-xiiSimpleRenderPass::xiiSimpleRenderPass(const char* szName) :
-  xiiRenderPipelinePass(szName, true)
+xiiSimpleRenderPass::xiiSimpleRenderPass(xiiStringView sName) :
+  xiiRenderPipelinePass(sName, true)
 {
 }
 
