@@ -1,18 +1,41 @@
-<?xml version="1.0" standalone="no"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
- "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
-<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
- width="67.000000pt" height="65.000000pt" viewBox="0 0 67.000000 65.000000"
- preserveAspectRatio="xMidYMid meet">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
 
-<g transform="translate(0.000000,65.000000) scale(0.100000,-0.100000)"
-fill="#000000" stroke="none">
-<path d="M0 325 l0 -325 335 0 335 0 0 325 0 325 -335 0 -335 0 0 -325z m140
-123 l13 -73 14 65 c21 105 24 113 33 104 5 -5 1 -45 -9 -94 -18 -88 -18 -89
-13 -253 4 -20 2 -27 -6 -25 -7 3 -19 42 -28 89 l-16 84 -17 -84 c-9 -46 -19
--86 -22 -89 -15 -16 -15 18 1 102 16 89 16 99 1 171 -9 41 -17 83 -17 93 1 40
-27 -19 40 -90z m225 -93 c0 -95 -3 -176 -7 -180 -22 -22 -28 17 -28 175 0 176
-4 210 24 190 7 -7 11 -70 11 -185z m160 0 c0 -95 -3 -176 -7 -180 -22 -22 -28
-17 -28 175 0 176 4 210 24 190 7 -7 11 -70 11 -185z"/>
-</g>
+<svg
+   width="1023.9999"
+   height="1023.9999"
+   viewBox="0 0 270.93331 270.93331"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <title
+     id="title1">XII Logo Only 512. Copyright (c) 2024, Theophilus Eriata. All Rights Reserved.</title>
+  <defs
+     id="defs1" />
+  <g
+     id="layer1">
+    <text
+       xml:space="preserve"
+       style="font-size:135.467px;fill:#000000;stroke-width:0.264583;stroke-dasharray:none"
+       x="48.385464"
+       y="170.32561"
+       id="text1"><tspan
+         id="tspan1"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:135.467px;font-family:'Colonna MT';-inkscape-font-specification:'Colonna MT';fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.264583;stroke-dasharray:none;stroke-opacity:1"
+         x="48.385464"
+         y="170.32561">XII</tspan></text>
+  </g>
+  <metadata
+     id="metadata1">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>XII Logo Only 512. Copyright (c) 2024, Theophilus Eriata. All Rights Reserved.</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
 </svg>
