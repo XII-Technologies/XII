@@ -113,8 +113,10 @@ def ResolveFileNames() -> None:
     filesToRename: set = set()
     for file in files:
         # logger.debug(file)
-        sFileName: str = os.path.basename(file)
-        if sFileName.startswith('ez'):
+        sFileName: str                   = os.path.basename(file)
+        fileExtension: t.Tuple[str, str] = os.path.splitext(file)
+
+        if sFileName.startswith('ez') or fileExtension[1].startswith('.ez'):
             sExtension: str = os.path.splitext(sFileName)[1]
 
             if len(sExtension) > 0 and sExtension in InstanceData.xiiExtensionsNoRename:
@@ -124,8 +126,18 @@ def ResolveFileNames() -> None:
 
     logger.info(f"Renaming {len(filesToRename)} files.")
     for file in filesToRename:
-        sFileName: str = os.path.basename(file)
-        sFileName      = 'xii' + sFileName.removeprefix('ez')
+        sFileName, sFileExtension = os.path.splitext(os.path.basename(file))
+
+        # Resolve file name.
+        if sFileName.startswith('ez'):
+            sFileName = 'xii' + sFileName.removeprefix('ez')
+
+        # Resolve file extension.
+        if sFileExtension.startswith('.ez'):
+            sFileName += '.xii' + sFileExtension.removeprefix('.ez')
+        else:
+            sFileName += sFileExtension
+
         sFilePath: str = os.path.join(os.path.dirname(file), sFileName)
 
         logger.info(f"--  {file} -> {sFilePath}")
