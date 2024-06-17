@@ -10,6 +10,7 @@
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 #include <GraphicsCore/Pipeline/Declarations.h>
 #include <GraphicsCore/RenderContext/Implementation/RenderContextStructs.h>
@@ -22,8 +23,8 @@ using xiiTexture2DResourceHandle = xiiTypedResourceHandle<class xiiTexture2DReso
 struct XII_GRAPHICSCORE_DLL xiiTexture2DResourceDescriptor
 {
   /// Describes the texture format, etc.
-  xiiGALTextureCreationDescription m_DescGAL;
-  xiiGALSamplerCreationDescription m_SamplerDesc;
+  xiiGALTextureCreationDescription m_DescGAL = xiiGALGraphicsUtilities::GetDefaultTexture2DDescription();
+  xiiGALSamplerCreationDescription m_SamplerDesc = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
 
   /// How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
   xiiUInt8 m_uiQualityLevelsDiscardable = 0;
