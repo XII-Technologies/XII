@@ -103,7 +103,7 @@ void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext,
     xiiDebugRenderer::Draw2DText(*renderViewContext.m_pViewDebugContext, m_sMessage.GetData(), xiiVec2I32(20, 20), xiiColor::OrangeRed);
   }
 
-  xiiDebugRenderer::Render(renderViewContext);
+  xiiDebugRenderer::RenderWorldSpace(renderViewContext);
 
   renderViewContext.m_pRenderContext->SetShaderPermutationVariable("PREPARE_DEPTH", "TRUE");
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
@@ -112,6 +112,8 @@ void xiiSimpleRenderPass::Execute(const xiiRenderViewContext& renderViewContext,
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
 
   RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::GUI);
+
+  xiiDebugRenderer::RenderScreenSpace(renderViewContext);
 }
 
 xiiResult xiiSimpleRenderPass::Serialize(xiiStreamWriter& inout_stream) const

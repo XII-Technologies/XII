@@ -14,6 +14,7 @@
 #include <GraphicsCore/Textures/Texture2DResource.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -119,7 +120,7 @@ namespace
     xiiMap<xiiGALTextureViewHandle, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_texTriangle2DVertices;
     xiiMap<xiiGALTextureViewHandle, xiiDynamicArray<TexVertex, xiiAlignedAllocatorWrapper>> m_texTriangle3DVertices;
 
-    xiiDynamicArray<InfoTextData>                          m_infoTextData[(xiiInt32)xiiDebugTextPlacement::ENUM_COUNT];
+    xiiDynamicArray<InfoTextData>                          m_infoTextData[(xiiUInt8)xiiDebugTextPlacement::ENUM_COUNT];
     xiiDynamicArray<TextLineData2D>                        m_textLines2D;
     xiiDynamicArray<TextLineData3D>                        m_textLines3D;
     xiiDynamicArray<GlyphData, xiiAlignedAllocatorWrapper> m_glyphs;
@@ -225,12 +226,12 @@ namespace
 
   enum
   {
-    DEBUG_BUFFER_SIZE               = 1024 * 256,
-    BOXES_PER_BATCH                 = DEBUG_BUFFER_SIZE / sizeof(BoxData),
-    LINE_VERTICES_PER_BATCH         = DEBUG_BUFFER_SIZE / sizeof(Vertex),
-    TRIANGLE_VERTICES_PER_BATCH     = (DEBUG_BUFFER_SIZE / sizeof(Vertex) / 3) * 3,
+    DEBUG_BUFFER_SIZE = 1024 * 256,
+    BOXES_PER_BATCH = DEBUG_BUFFER_SIZE / sizeof(BoxData),
+    LINE_VERTICES_PER_BATCH = DEBUG_BUFFER_SIZE / sizeof(Vertex),
+    TRIANGLE_VERTICES_PER_BATCH = (DEBUG_BUFFER_SIZE / sizeof(Vertex) / 3) * 3,
     TEX_TRIANGLE_VERTICES_PER_BATCH = (DEBUG_BUFFER_SIZE / sizeof(TexVertex) / 3) * 3,
-    GLYPHS_PER_BATCH                = DEBUG_BUFFER_SIZE / sizeof(GlyphData),
+    GLYPHS_PER_BATCH = DEBUG_BUFFER_SIZE / sizeof(GlyphData),
   };
 
   static void CreateDataBuffer(BufferType::Enum bufferType, xiiUInt32 uiStructSize)
@@ -606,7 +607,10 @@ void xiiDebugRenderer::DrawLineBoxCorners(const xiiDebugRendererContext& context
 // static
 void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, const xiiBoundingSphere& sphere, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
 {
-  static constexpr xiiUInt32 NUM_SEGMENTS = 32;
+  enum
+  {
+    NUM_SEGMENTS = 32
+  };
 
   const xiiVec3  vCenter   = sphere.m_vCenter;
   const float    fRadius   = sphere.m_fRadius;
@@ -641,9 +645,12 @@ void xiiDebugRenderer::DrawLineSphere(const xiiDebugRendererContext& context, co
 
 void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
 {
-  static constexpr xiiUInt32 NUM_SEGMENTS      = 32;
-  static constexpr xiiUInt32 NUM_HALF_SEGMENTS = 16;
-  static constexpr xiiUInt32 NUM_LINES         = NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + 4;
+  enum
+  {
+    NUM_SEGMENTS      = 32,
+    NUM_HALF_SEGMENTS = 16,
+    NUM_LINES         = NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + NUM_SEGMENTS + 4,
+  };
 
   const xiiAngle stepAngle = xiiAngle::MakeFromDegree(360.0f / (float)NUM_SEGMENTS);
 
@@ -719,6 +726,65 @@ void xiiDebugRenderer::DrawLineCapsuleZ(const xiiDebugRendererContext& context, 
 
     lines[curLine].m_start = transform * xiiVec3(fCos1 * fRadius, 0.0f, -fSin1 * fRadius - fOffsetZ);
     lines[curLine].m_end   = transform * xiiVec3(fCos2 * fRadius, 0.0f, -fSin2 * fRadius - fOffsetZ);
+    ++curLine;
+  }
+
+  XII_ASSERT_DEBUG(curLine == NUM_LINES, "Invalid line count");
+  DrawLines(context, lines, color);
+}
+
+void xiiDebugRenderer::DrawLineCylinderZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform /*= xiiTransform::MakeIdentity()*/)
+{
+  enum
+  {
+    NUM_SEGMENTS      = 32,
+    NUM_HALF_SEGMENTS = 16,
+    NUM_LINES         = NUM_SEGMENTS + NUM_SEGMENTS + 4,
+  };
+
+  const xiiAngle stepAngle = xiiAngle::MakeFromDegree(360.0f / (float)NUM_SEGMENTS);
+
+  Line lines[NUM_LINES];
+
+  const float fOffsetZ = fLength * 0.5f;
+
+  xiiUInt32 curLine = 0;
+
+  // render 4 straight lines
+  lines[curLine].m_start = transform * xiiVec3(-fRadius, 0, fOffsetZ);
+  lines[curLine].m_end   = transform * xiiVec3(-fRadius, 0, -fOffsetZ);
+  ++curLine;
+
+  lines[curLine].m_start = transform * xiiVec3(+fRadius, 0, fOffsetZ);
+  lines[curLine].m_end   = transform * xiiVec3(+fRadius, 0, -fOffsetZ);
+  ++curLine;
+
+  lines[curLine].m_start = transform * xiiVec3(0, -fRadius, fOffsetZ);
+  lines[curLine].m_end   = transform * xiiVec3(0, -fRadius, -fOffsetZ);
+  ++curLine;
+
+  lines[curLine].m_start = transform * xiiVec3(0, +fRadius, fOffsetZ);
+  lines[curLine].m_end   = transform * xiiVec3(0, +fRadius, -fOffsetZ);
+  ++curLine;
+
+  // render top and bottom circle
+  for (xiiUInt32 s = 0; s < NUM_SEGMENTS; ++s)
+  {
+    const float fS1 = (float)s;
+    const float fS2 = (float)(s + 1);
+
+    const float fCos1 = xiiMath::Cos(fS1 * stepAngle);
+    const float fCos2 = xiiMath::Cos(fS2 * stepAngle);
+
+    const float fSin1 = xiiMath::Sin(fS1 * stepAngle);
+    const float fSin2 = xiiMath::Sin(fS2 * stepAngle);
+
+    lines[curLine].m_start = transform * xiiVec3(fCos1 * fRadius, fSin1 * fRadius, fOffsetZ);
+    lines[curLine].m_end   = transform * xiiVec3(fCos2 * fRadius, fSin2 * fRadius, fOffsetZ);
+    ++curLine;
+
+    lines[curLine].m_start = transform * xiiVec3(fCos1 * fRadius, fSin1 * fRadius, -fOffsetZ);
+    lines[curLine].m_end   = transform * xiiVec3(fCos2 * fRadius, fSin2 * fRadius, -fOffsetZ);
     ++curLine;
   }
 
@@ -943,7 +1009,7 @@ void xiiDebugRenderer::DrawInfoText(const xiiDebugRendererContext& context, xiiD
 
   xiiStringBuilder tmp;
 
-  auto& e   = data.m_infoTextData[(xiiInt32)placement].ExpandAndGetRef();
+  auto& e   = data.m_infoTextData[(xiiUInt8)placement].ExpandAndGetRef();
   e.m_group = sGroupName;
   e.m_text  = text.GetText(tmp);
   e.m_color = color;
@@ -1011,11 +1077,9 @@ void xiiDebugRenderer::DrawAngle(const xiiDebugRendererContext& context, xiiAngl
   const xiiUInt32 uiTesselation = xiiMath::Max(1u, (xiiUInt32)(range / xiiAngle::MakeFromDegree(5)));
   const xiiAngle  step          = range / (float)uiTesselation;
 
-  xiiQuat qStart;
-  qStart = xiiQuat::MakeFromAxisAndAngle(vRotationAxis, startAngle);
+  xiiQuat qStart = xiiQuat::MakeFromAxisAndAngle(vRotationAxis, startAngle);
 
-  xiiQuat qStep;
-  qStep = xiiQuat::MakeFromAxisAndAngle(vRotationAxis, step);
+  xiiQuat qStep = xiiQuat::MakeFromAxisAndAngle(vRotationAxis, step);
 
   xiiVec3 vCurDir = qStart * vForwardAxis;
 
@@ -1073,11 +1137,9 @@ void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, x
 
   const xiiVec3 tangentAxis = vForwardAxis.GetOrthogonalVector().GetNormalized();
 
-  xiiQuat tilt;
-  tilt = xiiQuat::MakeFromAxisAndAngle(tangentAxis, halfAngle);
+  xiiQuat tilt = xiiQuat::MakeFromAxisAndAngle(tangentAxis, halfAngle);
 
-  xiiQuat step;
-  step = xiiQuat::MakeFromAxisAndAngle(vForwardAxis, xiiAngle::MakeFromDegree(360) / (float)uiTesselation);
+  xiiQuat step = xiiQuat::MakeFromAxisAndAngle(vForwardAxis, xiiAngle::MakeFromDegree(360) / (float)uiTesselation);
 
   xiiVec3 vCurDir = tilt * vForwardAxis;
 
@@ -1111,7 +1173,11 @@ void xiiDebugRenderer::DrawOpeningCone(const xiiDebugRendererContext& context, x
 
 void xiiDebugRenderer::DrawLimitCone(const xiiDebugRendererContext& context, xiiAngle halfAngle1, xiiAngle halfAngle2, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform)
 {
-  constexpr xiiUInt32                     NUM_LINES = 32;
+  enum
+  {
+    NUM_LINES = 32
+  };
+
   xiiHybridArray<Line, NUM_LINES * 2>     lines;
   xiiHybridArray<Triangle, NUM_LINES * 2> tris;
 
@@ -1126,7 +1192,7 @@ void xiiDebugRenderer::DrawLimitCone(const xiiDebugRendererContext& context, xii
     xiiVec3 prev(0);
     for (xiiUInt32 i = 0; i <= NUM_LINES; i++)
     {
-      const float   angle = 2 * xiiMath::Pi<float>() / NUM_LINES * i;
+      const float   angle = 2 * xiiMath::Pi<float>() / (float)NUM_LINES * i;
       const float   c = xiiMath::Cos(xiiAngle::MakeFromRadian(angle)), s = xiiMath::Sin(xiiAngle::MakeFromRadian(angle));
       const xiiVec3 rv(0, -tanQSwingZ * s, tanQSwingY * c);
       const float   rv2 = rv.GetLengthSquared();
@@ -1166,9 +1232,16 @@ void xiiDebugRenderer::DrawLimitCone(const xiiDebugRendererContext& context, xii
   DrawLines(context, lines, lineColor, transform);
 }
 
-void xiiDebugRenderer::DrawCylinder(const xiiDebugRendererContext& context, float fRadiusStart, float fRadiusEnd, float fLength, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, bool bCapStart /*= false*/, bool bCapEnd /*= false*/)
+void xiiDebugRenderer::DrawCylinder(const xiiDebugRendererContext& context, float fRadiusStart, float fRadiusEnd, float fLength, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform0, bool bCapStart /*= false*/, bool bCapEnd /*= false*/, xiiBasisAxis::Enum cylinderAxis /*= xiiBasisAxis::PositiveX*/)
 {
-  constexpr xiiUInt32                            NUM_SEGMENTS = 16;
+  enum
+  {
+    NUM_SEGMENTS = 16,
+  };
+
+  const xiiQuat      tilt      = xiiBasisAxis::GetBasisRotation(xiiBasisAxis::PositiveX, cylinderAxis);
+  const xiiTransform transform = transform0 * tilt;
+
   xiiHybridArray<Line, NUM_SEGMENTS * 3>         lines;
   xiiHybridArray<Triangle, NUM_SEGMENTS * 2 * 2> tris;
 
@@ -1226,7 +1299,7 @@ void xiiDebugRenderer::DrawCylinder(const xiiDebugRendererContext& context, floa
   DrawLines(context, lines, lineColor, transform);
 }
 
-void xiiDebugRenderer::DrawArrow(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiVec3 vForwardAxis)
+void xiiDebugRenderer::DrawArrow(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiVec3 vForwardAxis /*= xiiVec3::MakeAxisX()*/)
 {
   vForwardAxis.Normalize();
   const xiiVec3 right     = vForwardAxis.GetOrthogonalVector();
@@ -1250,21 +1323,21 @@ void xiiDebugRenderer::DrawArrow(const xiiDebugRendererContext& context, float f
 }
 
 // static
-void xiiDebugRenderer::Render(const xiiRenderViewContext& renderViewContext)
+void xiiDebugRenderer::RenderWorldSpace(const xiiRenderViewContext& renderViewContext)
 {
   if (renderViewContext.m_pWorldDebugContext != nullptr)
   {
-    RenderInternal(*renderViewContext.m_pWorldDebugContext, renderViewContext);
+    RenderInternalWorldSpace(*renderViewContext.m_pWorldDebugContext, renderViewContext);
   }
 
   if (renderViewContext.m_pViewDebugContext != nullptr)
   {
-    RenderInternal(*renderViewContext.m_pViewDebugContext, renderViewContext);
+    RenderInternalWorldSpace(*renderViewContext.m_pViewDebugContext, renderViewContext);
   }
 }
 
 // static
-void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext)
+void xiiDebugRenderer::RenderInternalWorldSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext)
 {
   {
     XII_LOCK(s_Mutex);
@@ -1328,7 +1401,7 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
         }
         else
         {
-          xiiDebugRenderer::DrawLineBox(context, xiiBoundingBox(-item.m_vHalfSize, item.m_vHalfSize), item.m_Color, item.m_Transform);
+          xiiDebugRenderer::DrawLineBox(context, xiiBoundingBox::MakeFromMinMax(-item.m_vHalfSize, item.m_vHalfSize), item.m_Color, item.m_Transform);
 
           ++i;
         }
@@ -1347,65 +1420,6 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
   {
     return;
   }
-
-  // draw info text
-  {
-    static_assert((xiiInt32)xiiDebugTextPlacement::ENUM_COUNT == 6);
-
-    xiiDebugTextHAlign::Enum ha[(xiiInt32)xiiDebugTextPlacement::ENUM_COUNT] = {
-      xiiDebugTextHAlign::Left,
-      xiiDebugTextHAlign::Center,
-      xiiDebugTextHAlign::Right,
-      xiiDebugTextHAlign::Left,
-      xiiDebugTextHAlign::Center,
-      xiiDebugTextHAlign::Right,
-    };
-
-    xiiDebugTextVAlign::Enum va[(xiiInt32)xiiDebugTextPlacement::ENUM_COUNT] = {
-      xiiDebugTextVAlign::Top,
-      xiiDebugTextVAlign::Top,
-      xiiDebugTextVAlign::Top,
-      xiiDebugTextVAlign::Bottom,
-      xiiDebugTextVAlign::Bottom,
-      xiiDebugTextVAlign::Bottom,
-    };
-
-    xiiInt32 offs[(xiiInt32)xiiDebugTextPlacement::ENUM_COUNT] = {20, 20, 20, -20, -20, -20};
-
-    xiiInt32 resX = (xiiInt32)renderViewContext.m_pViewData->m_ViewPortRect.width;
-    xiiInt32 resY = (xiiInt32)renderViewContext.m_pViewData->m_ViewPortRect.height;
-
-    xiiVec2I32 anchor[(xiiInt32)xiiDebugTextPlacement::ENUM_COUNT] = {
-      xiiVec2I32(10, 10),
-      xiiVec2I32(resX / 2, 10),
-      xiiVec2I32(resX - 10, 10),
-      xiiVec2I32(10, resY - 10),
-      xiiVec2I32(resX / 2, resY - 10),
-      xiiVec2I32(resX - 10, resY - 10),
-    };
-
-    for (xiiUInt32 corner = 0; corner < (xiiUInt32)xiiDebugTextPlacement::ENUM_COUNT; ++corner)
-    {
-      auto& cd = pData->m_infoTextData[corner];
-
-      // InsertionSort is stable
-      xiiSorting::InsertionSort(cd, [](const InfoTextData& lhs, const InfoTextData& rhs) -> bool { return lhs.m_group < rhs.m_group; });
-
-      xiiVec2I32 pos = anchor[corner];
-
-      for (xiiUInt32 i = 0; i < cd.GetCount(); ++i)
-      {
-        // add some space between groups
-        if (i > 0 && cd[i - 1].m_group != cd[i].m_group)
-          pos.y += offs[corner];
-
-        pos.y += offs[corner] * Draw2DText(context, cd[i].m_text.GetData(), pos, cd[i].m_color, 16, ha[corner], va[corner]);
-      }
-    }
-  }
-
-  // update the frame counter
-  pDoubleBufferedContextData->m_uiLastRenderedFrame = xiiRenderWorld::GetFrameCounter();
 
   xiiGALDevice*      pDevice         = xiiGALDevice::GetDefaultDevice();
   xiiGALCommandList* pGALCommandList = renderViewContext.m_pRenderContext->GetCommandList();
@@ -1531,6 +1545,163 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
     }
   }
 
+  // LineBoxes
+  {
+    xiiUInt32 uiNumLineBoxes = pData->m_lineBoxes.GetCount();
+    if (uiNumLineBoxes != 0)
+    {
+      CreateDataBuffer(BufferType::LineBoxes, sizeof(BoxData));
+
+      renderViewContext.m_pRenderContext->BindShader(s_hDebugGeometryShader);
+      renderViewContext.m_pRenderContext->BindBuffer("boxData", pDevice->GetBuffer(s_hDataBuffer[BufferType::LineBoxes])->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+      renderViewContext.m_pRenderContext->BindMeshBuffer(s_hLineBoxMeshBuffer);
+
+      const BoxData* pLineBoxData = pData->m_lineBoxes.GetData();
+      while (uiNumLineBoxes > 0)
+      {
+        const xiiUInt32 uiNumLineBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineBoxes, BOXES_PER_BATCH);
+
+        pGALCommandList->UpdateBufferExtended(s_hDataBuffer[BufferType::LineBoxes], 0, xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray());
+
+        renderViewContext.m_pRenderContext->DrawMeshBuffer(0xFFFFFFFF, 0, uiNumLineBoxesInBatch).IgnoreResult();
+
+        uiNumLineBoxes -= uiNumLineBoxesInBatch;
+        pLineBoxData += BOXES_PER_BATCH;
+      }
+    }
+  }
+
+  // Text
+  {
+    pData->m_glyphs.Clear();
+
+    for (auto& textLine : pData->m_textLines3D)
+    {
+      xiiVec3 screenPos;
+      if (renderViewContext.m_pViewData->ComputeScreenSpacePos(textLine.m_position, screenPos).Succeeded() && screenPos.z > 0.0f)
+      {
+        textLine.m_topLeftCorner.x += xiiMath::Round(screenPos.x);
+        textLine.m_topLeftCorner.y += xiiMath::Round(screenPos.y);
+
+        AppendGlyphs(pData->m_glyphs, textLine);
+      }
+    }
+
+    xiiUInt32 uiNumGlyphs = pData->m_glyphs.GetCount();
+    if (uiNumGlyphs != 0)
+    {
+      CreateDataBuffer(BufferType::Glyphs, sizeof(GlyphData));
+
+      renderViewContext.m_pRenderContext->BindShader(s_hDebugTextShader);
+      renderViewContext.m_pRenderContext->BindBuffer("glyphData", pDevice->GetBuffer(s_hDataBuffer[BufferType::Glyphs])->GetDefaultView(xiiGALBufferViewType::ShaderResource));
+      renderViewContext.m_pRenderContext->BindTexture2D("FontTexture", s_hDebugFontTexture);
+
+      const GlyphData* pGlyphData = pData->m_glyphs.GetData();
+      while (uiNumGlyphs > 0)
+      {
+        const xiiUInt32 uiNumGlyphsInBatch = xiiMath::Min<xiiUInt32>(uiNumGlyphs, GLYPHS_PER_BATCH);
+
+        pGALCommandList->UpdateBufferExtended(s_hDataBuffer[BufferType::Glyphs], 0, xiiMakeArrayPtr(pGlyphData, uiNumGlyphsInBatch).ToByteArray());
+
+        renderViewContext.m_pRenderContext->BindMeshBuffer(xiiGALBufferHandle(), xiiGALBufferHandle(), nullptr, xiiGALPrimitiveTopology::TriangleList, uiNumGlyphsInBatch * 2);
+
+        renderViewContext.m_pRenderContext->DrawMeshBuffer().IgnoreResult();
+
+        uiNumGlyphs -= uiNumGlyphsInBatch;
+        pGlyphData += GLYPHS_PER_BATCH;
+      }
+    }
+  }
+}
+
+// static
+void xiiDebugRenderer::RenderScreenSpace(const xiiRenderViewContext& renderViewContext)
+{
+  if (renderViewContext.m_pWorldDebugContext != nullptr)
+  {
+    RenderInternalScreenSpace(*renderViewContext.m_pWorldDebugContext, renderViewContext);
+  }
+
+  if (renderViewContext.m_pViewDebugContext != nullptr)
+  {
+    RenderInternalScreenSpace(*renderViewContext.m_pViewDebugContext, renderViewContext);
+  }
+}
+
+// static
+void xiiDebugRenderer::RenderInternalScreenSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext)
+{
+  DoubleBufferedPerContextData* pDoubleBufferedContextData = nullptr;
+  if (!s_PerContextData.TryGetValue(context, pDoubleBufferedContextData))
+  {
+    return;
+  }
+
+  PerContextData* pData = pDoubleBufferedContextData->m_pData[xiiRenderWorld::GetDataIndexForRendering()].Borrow();
+  if (pData == nullptr)
+  {
+    return;
+  }
+
+  // draw info text
+  {
+    static_assert((xiiUInt8)xiiDebugTextPlacement::ENUM_COUNT == 6);
+
+    xiiDebugTextHAlign::Enum ha[(xiiUInt8)xiiDebugTextPlacement::ENUM_COUNT] = {
+      xiiDebugTextHAlign::Left,
+      xiiDebugTextHAlign::Center,
+      xiiDebugTextHAlign::Right,
+      xiiDebugTextHAlign::Left,
+      xiiDebugTextHAlign::Center,
+      xiiDebugTextHAlign::Right};
+
+    xiiDebugTextVAlign::Enum va[(xiiUInt8)xiiDebugTextPlacement::ENUM_COUNT] = {
+      xiiDebugTextVAlign::Top,
+      xiiDebugTextVAlign::Top,
+      xiiDebugTextVAlign::Top,
+      xiiDebugTextVAlign::Bottom,
+      xiiDebugTextVAlign::Bottom,
+      xiiDebugTextVAlign::Bottom};
+
+    int offs[(xiiUInt8)xiiDebugTextPlacement::ENUM_COUNT] = {20, 20, 20, -20, -20, -20};
+
+    xiiInt32 resX = (xiiInt32)renderViewContext.m_pViewData->m_ViewPortRect.width;
+    xiiInt32 resY = (xiiInt32)renderViewContext.m_pViewData->m_ViewPortRect.height;
+
+    xiiVec2I32 anchor[(xiiUInt8)xiiDebugTextPlacement::ENUM_COUNT] = {
+      xiiVec2I32(10, 10),
+      xiiVec2I32(resX / 2, 10),
+      xiiVec2I32(resX - 10, 10),
+      xiiVec2I32(10, resY - 10),
+      xiiVec2I32(resX / 2, resY - 10),
+      xiiVec2I32(resX - 10, resY - 10)};
+
+    for (xiiUInt32 corner = 0; corner < (xiiUInt32)xiiDebugTextPlacement::ENUM_COUNT; ++corner)
+    {
+      auto& cd = pData->m_infoTextData[corner];
+
+      // InsertionSort is stable
+      xiiSorting::InsertionSort(cd, [](const InfoTextData& lhs, const InfoTextData& rhs) -> bool { return lhs.m_group < rhs.m_group; });
+
+      xiiVec2I32 pos = anchor[corner];
+
+      for (xiiUInt32 i = 0; i < cd.GetCount(); ++i)
+      {
+        // add some space between groups
+        if (i > 0 && cd[i - 1].m_group != cd[i].m_group)
+          pos.y += offs[corner];
+
+        pos.y += offs[corner] * Draw2DText(context, cd[i].m_text.GetData(), pos, cd[i].m_color, 16, ha[corner], va[corner]);
+      }
+    }
+  }
+
+  // update the frame counter
+  pDoubleBufferedContextData->m_uiLastRenderedFrame = xiiRenderWorld::GetFrameCounter();
+
+  xiiGALDevice*      pDevice         = xiiGALDevice::GetDefaultDevice();
+  xiiGALCommandList* pGALCommandList = renderViewContext.m_pRenderContext->GetCommandList();
+
   // 2D Lines
   {
     xiiUInt32 uiNumLineVertices = pData->m_line2DVertices.GetCount();
@@ -1555,32 +1726,6 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
 
         uiNumLineVertices -= uiNumLineVerticesInBatch;
         pLineData += LINE_VERTICES_PER_BATCH;
-      }
-    }
-  }
-
-  // LineBoxes
-  {
-    xiiUInt32 uiNumLineBoxes = pData->m_lineBoxes.GetCount();
-    if (uiNumLineBoxes != 0)
-    {
-      CreateDataBuffer(BufferType::LineBoxes, sizeof(BoxData));
-
-      renderViewContext.m_pRenderContext->BindShader(s_hDebugGeometryShader);
-      renderViewContext.m_pRenderContext->BindBuffer("boxData", pDevice->GetBuffer(s_hDataBuffer[BufferType::LineBoxes])->GetDefaultView(xiiGALBufferViewType::ShaderResource));
-      renderViewContext.m_pRenderContext->BindMeshBuffer(s_hLineBoxMeshBuffer);
-
-      const BoxData* pLineBoxData = pData->m_lineBoxes.GetData();
-      while (uiNumLineBoxes > 0)
-      {
-        const xiiUInt32 uiNumLineBoxesInBatch = xiiMath::Min<xiiUInt32>(uiNumLineBoxes, BOXES_PER_BATCH);
-
-        pGALCommandList->UpdateBufferExtended(s_hDataBuffer[BufferType::LineBoxes], 0, xiiMakeArrayPtr(pLineBoxData, uiNumLineBoxesInBatch).ToByteArray());
-
-        renderViewContext.m_pRenderContext->DrawMeshBuffer(0xFFFFFFFF, 0, uiNumLineBoxesInBatch).IgnoreResult();
-
-        uiNumLineBoxes -= uiNumLineBoxesInBatch;
-        pLineBoxData += BOXES_PER_BATCH;
       }
     }
   }
@@ -1652,23 +1797,10 @@ void xiiDebugRenderer::RenderInternal(const xiiDebugRendererContext& context, co
   {
     pData->m_glyphs.Clear();
 
-    for (auto& textLine : pData->m_textLines3D)
-    {
-      xiiVec3 screenPos;
-      if (renderViewContext.m_pViewData->ComputeScreenSpacePos(textLine.m_position, screenPos).Succeeded() && screenPos.z > 0.0f)
-      {
-        textLine.m_topLeftCorner.x += xiiMath::Round(screenPos.x);
-        textLine.m_topLeftCorner.y += xiiMath::Round(screenPos.y);
-
-        AppendGlyphs(pData->m_glyphs, textLine);
-      }
-    }
-
     for (auto& textLine : pData->m_textLines2D)
     {
       AppendGlyphs(pData->m_glyphs, textLine);
     }
-
 
     xiiUInt32 uiNumGlyphs = pData->m_glyphs.GetCount();
     if (uiNumGlyphs != 0)
@@ -1789,7 +1921,7 @@ void xiiDebugRenderer::OnEngineStartup()
     memoryDesc.m_uiDepthStride = static_cast<xiiUInt32>(debugFontImage.GetDepthPitch());
 
     xiiTexture2DResourceDescriptor desc;
-    desc.m_DescGAL.m_Type        = xiiGALResourceDimension::Texture2D;
+    desc.m_DescGAL               = xiiGALGraphicsUtilities::GetDefaultTexture2DDescription();
     desc.m_DescGAL.m_Size.width  = debugFontImage.GetWidth();
     desc.m_DescGAL.m_Size.height = debugFontImage.GetHeight();
     desc.m_DescGAL.m_Format      = xiiGALTextureFormat::RGBA8UNormalized;
@@ -1869,8 +2001,7 @@ void xiiScriptExtensionClass_Debug::DrawCross(const xiiWorld* pWorld, const xiiV
 // static
 void xiiScriptExtensionClass_Debug::DrawLineBox(const xiiWorld* pWorld, const xiiVec3& vPosition, const xiiVec3& vHalfExtents, const xiiColor& color, const xiiTransform& transform)
 {
-  xiiBoundingBox bbox = xiiBoundingBox::MakeFromCenterAndHalfExtents(vPosition, vHalfExtents);
-  xiiDebugRenderer::DrawLineBox(pWorld, bbox, color, transform);
+  xiiDebugRenderer::DrawLineBox(pWorld, xiiBoundingBox::MakeFromCenterAndHalfExtents(vPosition, vHalfExtents), color, transform);
 }
 
 // static
@@ -1882,8 +2013,7 @@ void xiiScriptExtensionClass_Debug::DrawLineSphere(const xiiWorld* pWorld, const
 // static
 void xiiScriptExtensionClass_Debug::DrawSolidBox(const xiiWorld* pWorld, const xiiVec3& vPosition, const xiiVec3& vHalfExtents, const xiiColor& color, const xiiTransform& transform)
 {
-  xiiBoundingBox bbox = xiiBoundingBox::MakeFromCenterAndHalfExtents(vPosition, vHalfExtents);
-  xiiDebugRenderer::DrawSolidBox(pWorld, bbox, color, transform);
+  xiiDebugRenderer::DrawSolidBox(pWorld, xiiBoundingBox::MakeFromCenterAndHalfExtents(vPosition, vHalfExtents), color, transform);
 }
 
 // static
