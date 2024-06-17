@@ -226,12 +226,12 @@ namespace
 
   enum
   {
-    DEBUG_BUFFER_SIZE = 1024 * 256,
-    BOXES_PER_BATCH = DEBUG_BUFFER_SIZE / sizeof(BoxData),
-    LINE_VERTICES_PER_BATCH = DEBUG_BUFFER_SIZE / sizeof(Vertex),
-    TRIANGLE_VERTICES_PER_BATCH = (DEBUG_BUFFER_SIZE / sizeof(Vertex) / 3) * 3,
+    DEBUG_BUFFER_SIZE               = 1024 * 256,
+    BOXES_PER_BATCH                 = DEBUG_BUFFER_SIZE / sizeof(BoxData),
+    LINE_VERTICES_PER_BATCH         = DEBUG_BUFFER_SIZE / sizeof(Vertex),
+    TRIANGLE_VERTICES_PER_BATCH     = (DEBUG_BUFFER_SIZE / sizeof(Vertex) / 3) * 3,
     TEX_TRIANGLE_VERTICES_PER_BATCH = (DEBUG_BUFFER_SIZE / sizeof(TexVertex) / 3) * 3,
-    GLYPHS_PER_BATCH = DEBUG_BUFFER_SIZE / sizeof(GlyphData),
+    GLYPHS_PER_BATCH                = DEBUG_BUFFER_SIZE / sizeof(GlyphData),
   };
 
   static void CreateDataBuffer(BufferType::Enum bufferType, xiiUInt32 uiStructSize)
