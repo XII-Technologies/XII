@@ -552,7 +552,7 @@ void xiiQtEditorApp::LaunchEditor(const char* szProject, bool bCreate)
 
   xiiStringBuilder app;
   app = xiiOSFile::GetApplicationDirectory();
-  app.AppendPath("Editor");
+  app.AppendPath("xiiEditor");
 #if XII_ENABLED(XII_PLATFORM_WINDOWS)
   app.Append(".exe");
 #endif
