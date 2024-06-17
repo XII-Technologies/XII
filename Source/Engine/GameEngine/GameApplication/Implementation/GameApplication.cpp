@@ -138,6 +138,7 @@ void xiiGameApplication::Run_Present()
   xiiHybridArray<xiiActor*, 8> allActors;
   xiiActorManager::GetSingleton()->GetAllActors(allActors);
 
+  bool bIsExecutingFrameCapture = false;
   for (xiiActor* pActor : allActors)
   {
     XII_PROFILE_SCOPE(pActor->GetName());
@@ -159,9 +160,11 @@ void xiiGameApplication::Run_Present()
 
       ExecuteTakeScreenshot(pOutput, ctxt);
 
-      if (pWindowPlugin->GetWindow())
+      if (pWindowPlugin->GetWindow() && !bIsExecutingFrameCapture)
       {
         ExecuteFrameCapture(pWindowPlugin->GetWindow()->GetNativeWindowHandle(), ctxt);
+
+        bIsExecutingFrameCapture = true;
       }
 
       XII_PROFILE_SCOPE("Present");
