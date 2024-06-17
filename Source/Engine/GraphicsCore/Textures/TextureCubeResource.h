@@ -24,7 +24,7 @@ struct xiiTextureCubeResourceDescriptor
   }
 
   /// Describes the texture format, etc.
-  xiiGALTextureCreationDescription m_DescGAL = xiiGALGraphicsUtilities::GetDefaultTextureCubeDescription();
+  xiiGALTextureCreationDescription m_DescGAL     = xiiGALGraphicsUtilities::GetDefaultTextureCubeDescription();
   xiiGALSamplerCreationDescription m_SamplerDesc = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
 
   /// How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
