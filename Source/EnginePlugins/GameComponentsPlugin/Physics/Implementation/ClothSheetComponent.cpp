@@ -477,7 +477,7 @@ void xiiClothSheetRenderer::RenderBatch(const xiiRenderViewContext& renderViewCo
   const bool bNeedsNormals = (renderViewContext.m_pViewData->m_CameraUsageHint != xiiCameraUsageHint::Shadow);
 
 
-  xiiRenderContext*     pRenderContext     = renderViewContext.m_pRenderContext;
+  xiiRenderContext*  pRenderContext  = renderViewContext.m_pRenderContext;
   xiiGALCommandList* pGALCommandList = pRenderContext->GetCommandList();
 
   xiiInstanceData* pInstanceData = pPass->GetPipeline()->GetFrameDataProvider<xiiInstanceDataProvider>()->GetData(renderViewContext);
