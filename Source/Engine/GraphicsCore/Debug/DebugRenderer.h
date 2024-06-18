@@ -20,7 +20,7 @@ struct xiiDebugTextHAlign
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     Left,
     Center,
@@ -37,7 +37,7 @@ struct xiiDebugTextVAlign
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     Top,
     Center,
@@ -54,7 +54,7 @@ struct xiiDebugTextPlacement
 {
   using StorageType = xiiUInt8;
 
-  enum Enum
+  enum Enum : StorageType
   {
     TopLeft,
     TopCenter,
@@ -74,7 +74,8 @@ XII_DECLARE_REFLECTABLE_TYPE(XII_GRAPHICSCORE_DLL, xiiDebugTextPlacement);
 /// \brief Draws simple shapes into the scene or view.
 ///
 /// Shapes can be rendered for a single frame, or 'persistent' for a certain duration.
-/// The 'context' specifies whether shapes are generally visible in a scene, from all views, or specific to a single view. See the xiiDebugRendererContext constructors for what can be implicitly used as a context.
+/// The 'context' specifies whether shapes are generally visible in a scene, from all views,
+/// or specific to a single view. See the xiiDebugRendererContext constructors for what can be implicitly used as a context.
 class XII_GRAPHICSCORE_DLL xiiDebugRenderer
 {
 public:
@@ -133,6 +134,9 @@ public:
 
   /// \brief Renders an upright wireframe capsule for one frame.
   static void DrawLineCapsuleZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
+
+  /// \brief Renders an upright wireframe cylinder for one frame.
+  static void DrawLineCylinderZ(const xiiDebugRendererContext& context, float fLength, float fRadius, const xiiColor& color, const xiiTransform& transform = xiiTransform::MakeIdentity());
 
   /// \brief Renders a wireframe frustum for one frame.
   static void DrawLineFrustum(const xiiDebugRendererContext& context, const xiiFrustum& frustum, const xiiColor& color, bool bDrawPlaneNormals = false);
@@ -212,7 +216,7 @@ public:
   /// \brief Renders a cylinder starting at the center position, along the +X axis.
   ///
   /// If the start and end radius are different, a cone or arrow can be created.
-  static void DrawCylinder(const xiiDebugRendererContext& context, float fRadiusStart, float fRadiusEnd, float fLength, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, bool bCapStart = false, bool bCapEnd = false);
+  static void DrawCylinder(const xiiDebugRendererContext& context, float fRadiusStart, float fRadiusEnd, float fLength, const xiiColor& solidColor, const xiiColor& lineColor, const xiiTransform& transform, bool bCapStart = false, bool bCapEnd = false, xiiBasisAxis::Enum cylinderAxis = xiiBasisAxis::PositiveX);
 
   /// \brief Renders a line arrow.
   static void DrawArrow(const xiiDebugRendererContext& context, float fSize, const xiiColor& color, const xiiTransform& transform, xiiVec3 vForwardAxis = xiiVec3::MakeAxisX());
@@ -220,8 +224,11 @@ public:
 private:
   friend class xiiSimpleRenderPass;
 
-  static void Render(const xiiRenderViewContext& renderViewContext);
-  static void RenderInternal(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext);
+  static void RenderScreenSpace(const xiiRenderViewContext& renderViewContext);
+  static void RenderInternalScreenSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext);
+
+  static void RenderWorldSpace(const xiiRenderViewContext& renderViewContext);
+  static void RenderInternalWorldSpace(const xiiDebugRendererContext& context, const xiiRenderViewContext& renderViewContext);
 
   static void OnEngineStartup();
   static void OnEngineShutdown();

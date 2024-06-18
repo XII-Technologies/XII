@@ -8,7 +8,7 @@ class XII_GRAPHICSCORE_DLL xiiSkyRenderPass : public xiiForwardRenderPass
   XII_ADD_DYNAMIC_REFLECTION(xiiSkyRenderPass, xiiForwardRenderPass);
 
 public:
-  xiiSkyRenderPass(const char* szName = "SkyRenderPass");
+  xiiSkyRenderPass(xiiStringView sName = "SkyRenderPass");
   ~xiiSkyRenderPass();
 
 protected:

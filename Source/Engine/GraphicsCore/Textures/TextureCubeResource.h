@@ -9,6 +9,7 @@
 #include <GraphicsFoundation/Declarations/Descriptors.h>
 #include <GraphicsFoundation/Resources/Sampler.h>
 #include <GraphicsFoundation/Resources/Texture.h>
+#include <GraphicsFoundation/Utilities/GraphicsUtilities.h>
 #include <Texture/Image/Image.h>
 
 using xiiTextureCubeResourceHandle = xiiTypedResourceHandle<class xiiTextureCubeResource>;
@@ -23,8 +24,8 @@ struct xiiTextureCubeResourceDescriptor
   }
 
   /// Describes the texture format, etc.
-  xiiGALTextureCreationDescription m_DescGAL;
-  xiiGALSamplerCreationDescription m_SamplerDesc;
+  xiiGALTextureCreationDescription m_DescGAL     = xiiGALGraphicsUtilities::GetDefaultTextureCubeDescription();
+  xiiGALSamplerCreationDescription m_SamplerDesc = xiiGALGraphicsUtilities::GetDefaultSamplerDescription();
 
   /// How many quality levels can be discarded and reloaded. For created textures this can currently only be 0 or 1.
   xiiUInt8 m_uiQualityLevelsDiscardable;
