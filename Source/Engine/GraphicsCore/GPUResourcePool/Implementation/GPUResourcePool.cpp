@@ -13,11 +13,9 @@
 
 xiiGPUResourcePool* xiiGPUResourcePool::s_pDefaultInstance = nullptr;
 
-xiiGPUResourcePool::xiiGPUResourcePool()
+xiiGPUResourcePool::xiiGPUResourcePool() :
+  m_pDevice(xiiGALDevice::GetDefaultDevice()), m_GALDeviceEventSubscriptionID(xiiGALDevice::s_Events.AddEventHandler(xiiMakeDelegate(&xiiGPUResourcePool::GALDeviceEventHandler, this)))
 {
-  m_pDevice = xiiGALDevice::GetDefaultDevice();
-
-  m_GALDeviceEventSubscriptionID = xiiGALDevice::s_Events.AddEventHandler(xiiMakeDelegate(&xiiGPUResourcePool::GALDeviceEventHandler, this));
 }
 
 xiiGPUResourcePool::~xiiGPUResourcePool()

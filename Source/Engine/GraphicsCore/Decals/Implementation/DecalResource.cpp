@@ -9,9 +9,9 @@ static xiiDecalResourceLoader s_DecalResourceLoader;
 XII_BEGIN_SUBSYSTEM_DECLARATION(GraphicsCore, DecalResource)
 
   BEGIN_SUBSYSTEM_DEPENDENCIES
-  "Foundation",
-  "Core",
-  "TextureResource"
+    "Foundation",
+    "Core",
+    "TextureResource"
   END_SUBSYSTEM_DEPENDENCIES
 
   ON_CORESYSTEMS_STARTUP
