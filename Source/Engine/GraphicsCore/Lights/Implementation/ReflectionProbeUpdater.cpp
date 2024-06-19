@@ -417,7 +417,6 @@ void xiiReflectionProbeUpdater::AddViewToRender(const ProbeUpdateInfo::Step& ste
       pView->SetRenderPassProperty("ReflectionFilterPass", "SpecularOutputIndex", updateInfo.m_TargetSlot.m_iSpecularOutputIndex);
       pView->SetRenderPassProperty("ReflectionFilterPass", "IrradianceOutputIndex", updateInfo.m_TargetSlot.m_iIrradianceOutputIndex);
 
-
       xiiGALTextureHandle hSourceTexture = updateInfo.m_hCubemap;
       if (updateInfo.m_desc.m_Mode == xiiReflectionProbeMode::Static)
       {

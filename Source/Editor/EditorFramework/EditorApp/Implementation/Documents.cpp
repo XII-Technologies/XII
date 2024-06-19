@@ -175,8 +175,6 @@ void xiiQtEditorApp::DocumentManagerEventHandler(const xiiDocumentManager::Event
   }
 }
 
-
-
 void xiiQtEditorApp::DocumentManagerRequestHandler(xiiDocumentManager::Request& r)
 {
   switch (r.m_Type)

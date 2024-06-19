@@ -237,7 +237,6 @@ void xiiReflectionProbeMapping::PostExtraction()
       }
       else
       {
-
         //#TODO Add static probes once resources are loaded.
         if (probeData.m_Flags.IsSet(xiiProbeMappingFlags::Dirty))
         {
