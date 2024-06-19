@@ -42,13 +42,6 @@ void xiiGALCommandList::Begin(xiiStringView sScopeName /*= {}*/)
   if (m_RecordingState != RecordingState::Recording)
   {
     BeginPlatform();
-
-    if (!sScopeName.IsEmpty())
-    {
-      BeginDebugGroup(sScopeName);
-
-      m_bHasActiveScope = true;
-    }
   }
 }
 
@@ -58,13 +51,6 @@ void xiiGALCommandList::End()
 
   if (m_RecordingState == RecordingState::Recording)
   {
-    if (m_bHasActiveScope)
-    {
-      EndDebugGroup();
-
-      m_bHasActiveScope = false;
-    }
-
     EndPlatform();
   }
 }
