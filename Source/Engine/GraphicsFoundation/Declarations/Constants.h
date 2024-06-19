@@ -32,3 +32,10 @@
 
 /// \brief The maximum number of resource signatures that one pipeline can use.
 #define XII_GAL_MAX_RESOURCE_SIGNATURES_COUNT 8
+
+
+/// \brief Special constant for all remaining mipmap levels.
+#define XII_GAL_REMAINING_MIP_LEVELS 0xFFFFFFFFU
+
+/// \brief Special constant for all remaining array slices.
+#define XII_GAL_REMAINING_ARRAY_SLICES 0xFFFFFFFFU

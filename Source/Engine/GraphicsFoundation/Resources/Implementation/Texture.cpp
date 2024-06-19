@@ -4,7 +4,6 @@
 #include <GraphicsFoundation/Resources/Texture.h>
 
 // clang-format off
-
 XII_BEGIN_STATIC_REFLECTED_BITFLAGS(xiiGALMiscTextureFlags, 1)
   XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::None),
   XII_BITFLAGS_CONSTANT(xiiGALMiscTextureFlags::GenerateMips),
@@ -15,7 +14,6 @@ XII_END_STATIC_REFLECTED_BITFLAGS;
 
 XII_BEGIN_DYNAMIC_REFLECTED_TYPE(xiiGALTexture, 1, xiiRTTINoAllocator)
 XII_END_DYNAMIC_REFLECTED_TYPE;
-
 // clang-format on
 
 xiiGALTexture::xiiGALTexture(xiiGALDevice* pDevice, const xiiGALTextureCreationDescription& creationDescription) :
@@ -27,33 +25,48 @@ xiiGALTexture::~xiiGALTexture() = default;
 
 void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
 {
-  xiiGALTextureViewCreationDescription viewDescription;
-  viewDescription.m_hTexture                  = hTexture;
-  viewDescription.m_uiMostDetailedMip         = 0U;
-  viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
-  viewDescription.m_uiMipLevelCount           = m_Description.m_uiMipLevels;
-  viewDescription.m_uiArrayOrDepthSlicesCount = m_Description.GetArraySize();
-
-  // Allow viewDescription.m_Format and viewDescription.m_ResourceDimension to be determined by the device.
+  // For texture cubes and texture cube arrays, we only address a single texture view per texture cube.
+  xiiUInt32 uiArraySize = XII_GAL_REMAINING_ARRAY_SLICES;
+  if (m_Description.IsCube() && m_Description.IsArray())
+    uiArraySize = m_Description.GetArraySize() / 6U;
 
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShaderResource))
   {
-    auto shaderResourceViewDescription       = viewDescription;
-    shaderResourceViewDescription.m_ViewType = xiiGALTextureViewType::ShaderResource;
+    xiiGALTextureViewCreationDescription viewDescription;
+    viewDescription.m_ViewType                  = xiiGALTextureViewType::ShaderResource;
+    viewDescription.m_hTexture                  = hTexture;
+    viewDescription.m_uiMostDetailedMip         = 0U;
+    viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
+    viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
+    viewDescription.m_uiArrayOrDepthSlicesCount = XII_GAL_REMAINING_ARRAY_SLICES;
 
     if (m_Description.m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
-      shaderResourceViewDescription.m_Flags.Add(xiiGALTextureViewFlags::AllowMipGeneration);
+      viewDescription.m_Flags.Add(xiiGALTextureViewFlags::AllowMipGeneration);
 
-    m_DefaultTextureViews[xiiGALTextureViewType::ShaderResource] = m_pDevice->CreateTextureView(shaderResourceViewDescription);
+    m_DefaultTextureViews[xiiGALTextureViewType::ShaderResource] = m_pDevice->CreateTextureView(viewDescription);
   }
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::RenderTarget))
   {
-    viewDescription.m_ViewType                                 = xiiGALTextureViewType::RenderTarget;
+    xiiGALTextureViewCreationDescription viewDescription;
+    viewDescription.m_ViewType                  = xiiGALTextureViewType::RenderTarget;
+    viewDescription.m_hTexture                  = hTexture;
+    viewDescription.m_uiMostDetailedMip         = 0U;
+    viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
+    viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
+    viewDescription.m_uiArrayOrDepthSlicesCount = uiArraySize;
+
     m_DefaultTextureViews[xiiGALTextureViewType::RenderTarget] = m_pDevice->CreateTextureView(viewDescription);
   }
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::DepthStencil))
   {
-    viewDescription.m_ViewType                                 = xiiGALTextureViewType::DepthStencil;
+    xiiGALTextureViewCreationDescription viewDescription;
+    viewDescription.m_ViewType                  = xiiGALTextureViewType::DepthStencil;
+    viewDescription.m_hTexture                  = hTexture;
+    viewDescription.m_uiMostDetailedMip         = 0U;
+    viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
+    viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
+    viewDescription.m_uiArrayOrDepthSlicesCount = uiArraySize;
+
     m_DefaultTextureViews[xiiGALTextureViewType::DepthStencil] = m_pDevice->CreateTextureView(viewDescription);
 
     viewDescription.m_ViewType                                         = xiiGALTextureViewType::ReadOnlyDepthStencil;
@@ -61,12 +74,26 @@ void xiiGALTexture::CreateDefaultResourceViews(xiiGALTextureHandle hTexture)
   }
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::UnorderedAccess))
   {
-    viewDescription.m_ViewType                                    = xiiGALTextureViewType::UnorderedAccess;
+    xiiGALTextureViewCreationDescription viewDescription;
+    viewDescription.m_ViewType                  = xiiGALTextureViewType::UnorderedAccess;
+    viewDescription.m_hTexture                  = hTexture;
+    viewDescription.m_uiMostDetailedMip         = 0U;
+    viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
+    viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
+    viewDescription.m_uiArrayOrDepthSlicesCount = uiArraySize;
+
     m_DefaultTextureViews[xiiGALTextureViewType::UnorderedAccess] = m_pDevice->CreateTextureView(viewDescription);
   }
   if (m_Description.m_BindFlags.IsSet(xiiGALBindFlags::ShadingRate))
   {
-    viewDescription.m_ViewType                                = xiiGALTextureViewType::ShadingRate;
+    xiiGALTextureViewCreationDescription viewDescription;
+    viewDescription.m_ViewType                  = xiiGALTextureViewType::ShadingRate;
+    viewDescription.m_hTexture                  = hTexture;
+    viewDescription.m_uiMostDetailedMip         = 0U;
+    viewDescription.m_uiFirstArrayOrDepthSlice  = 0U;
+    viewDescription.m_uiMipLevelCount           = XII_GAL_REMAINING_MIP_LEVELS;
+    viewDescription.m_uiArrayOrDepthSlicesCount = uiArraySize;
+
     m_DefaultTextureViews[xiiGALTextureViewType::ShadingRate] = m_pDevice->CreateTextureView(viewDescription);
   }
 }
