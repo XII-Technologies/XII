@@ -56,10 +56,10 @@ public:
 
   Statistics GetAndResetStatistics();
 
-  void BeginRendering(const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName = {}, bool bStereoRendering = false);
+  void               BeginRendering(const xiiGALRenderingSetup& renderingSetup, const xiiRectFloat& viewport, xiiStringView sName = {}, bool bStereoRendering = false);
   void               EndRendering();
 
-  void BeginCompute(xiiStringView sName = {});
+  void               BeginCompute(xiiStringView sName = {});
   void               EndCompute();
 
   // Helper class to automatically end rendering or compute on scope exit
@@ -97,7 +97,7 @@ public:
     }
 
     XII_ALWAYS_INLINE xiiGALCommandList* operator->() { return m_pCommandList; }
-    XII_ALWAYS_INLINE    operator const xiiGALCommandList*() { return m_pCommandList; }
+    XII_ALWAYS_INLINE                    operator const xiiGALCommandList*() { return m_pCommandList; }
 
   private:
     friend class xiiRenderContext;
@@ -105,13 +105,13 @@ public:
     XII_ALWAYS_INLINE CommandListScope(xiiRenderContext& renderContext, xiiGALCommandList* pCommandListScope) :
       m_RenderContext(renderContext), m_pCommandListScope(pCommandListScope)
     {
-      m_pCommandList = renderContext.GetCommandList();
+      m_pCommandList                     = renderContext.GetCommandList();
       renderContext.m_pScopedCommandList = nullptr;
     }
 
     xiiRenderContext&   m_RenderContext;
-    xiiGALCommandList*                  m_pCommandList ;
-    xiiGALCommandList*                  m_pCommandListScope ;
+    xiiGALCommandList*  m_pCommandList;
+    xiiGALCommandList*  m_pCommandListScope;
   };
 
   using RenderingScope = CommandListScope<xiiGALCommandQueueType::Graphics>;
@@ -420,12 +420,12 @@ private: // Per Renderer States
   xiiGALRenderPassHandle  m_hCurrentRenderPass;
   xiiGALRenderingSetup    m_CurrentRenderingSetup = {};
 
-  xiiUInt32 m_uiActiveScopeCount         = 0U;
+  xiiUInt32                 m_uiActiveScopeCount     = 0U;
   xiiGALCommandList*        m_pCommandList  = nullptr;
-  xiiGALCommandList*        m_pScopedCommandList  = nullptr;
-  xiiGALCommandList*        m_pPersistentCommandList  = nullptr;
-  bool               m_bIsRendering = false;
-  bool                      m_bIsCompute      = false;
+  xiiGALCommandList*        m_pScopedCommandList     = nullptr;
+  xiiGALCommandList*        m_pPersistentCommandList = nullptr;
+  bool                      m_bIsRendering           = false;
+  bool                      m_bIsCompute             = false;
 
   // Member Functions
   void UploadConstants();

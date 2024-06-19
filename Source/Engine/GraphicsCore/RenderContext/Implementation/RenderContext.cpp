@@ -121,7 +121,7 @@ xiiRenderContext::xiiRenderContext()
 
   // Retrive a command list that we record all commands in the render context with.
   xiiGALCommandQueue* pCommandQueue = pDevice->GetDefaultCommandQueue();
-  m_pPersistentCommandList  = pCommandQueue->BeginCommandList();
+  m_pPersistentCommandList          = pCommandQueue->BeginCommandList();
   // No commands to record, so we end the command list immediately.
   m_pPersistentCommandList->End();
 
@@ -174,10 +174,10 @@ void xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& renderingSetup
   XII_ASSERT_DEV(m_bIsRendering == false && m_bIsCompute == false, "Already in a scope.");
   XII_ASSERT_DEV(m_pCommandList == nullptr, "Already in a scope.");
 
-  m_CurrentRenderingSetup         = renderingSetup;
-  m_bIsRendering                  = true;
-  m_bClearSubmitted  = !(renderingSetup.m_bClearDepth || renderingSetup.m_bClearStencil || renderingSetup.m_uiRenderTargetClearMask);
-  m_bStereoRendering = bStereoSupport;
+  m_CurrentRenderingSetup = renderingSetup;
+  m_bIsRendering          = true;
+  m_bClearSubmitted       = !(renderingSetup.m_bClearDepth || renderingSetup.m_bClearStencil || renderingSetup.m_uiRenderTargetClearMask);
+  m_bStereoRendering      = bStereoSupport;
 
   xiiGALDevice*           pDevice = xiiGALDevice::GetDefaultDevice();
   xiiGALTextureViewHandle hRTV;
@@ -210,9 +210,9 @@ void xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& renderingSetup
   }
 
   {
-  auto& gc          = WriteGlobalConstants();
-  gc.ViewportSize   = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
-  gc.NumMsaaSamples = uiSampleCount;
+    auto& gc          = WriteGlobalConstants();
+    gc.ViewportSize   = xiiVec4(viewport.width, viewport.height, 1.0f / viewport.width, 1.0f / viewport.height);
+    gc.NumMsaaSamples = uiSampleCount;
   }
 
   m_pCommandList = (m_pScopedCommandList != nullptr) ? m_pScopedCommandList : m_pPersistentCommandList;
@@ -287,7 +287,7 @@ void xiiRenderContext::BeginCompute(xiiStringView sName /*= {}*/)
   XII_ASSERT_DEV(m_bIsRendering == false && m_bIsCompute == false, "Already in a scope.");
   XII_ASSERT_DEV(m_pCommandList == nullptr, "Already in a scope.");
 
-  m_bIsCompute = true;
+  m_bIsCompute   = true;
   m_pCommandList = (m_pScopedCommandList != nullptr) ? m_pScopedCommandList : m_pPersistentCommandList;
   {
     if (m_pCommandList->GetRecordingState() != xiiGALCommandList::RecordingState::Recording)
@@ -317,8 +317,8 @@ void xiiRenderContext::EndCompute()
   m_pCommandList->Submit(false);
   m_pCommandList->GetCommandQueue()->WaitForIdle();
 
-  m_pCommandList        = nullptr;
-  m_bIsCompute = false;
+  m_pCommandList = nullptr;
+  m_bIsCompute   = false;
 
   // TODO: See EndRendering
   // ResetContextState();
