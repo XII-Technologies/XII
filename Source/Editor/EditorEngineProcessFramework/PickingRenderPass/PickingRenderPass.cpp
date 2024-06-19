@@ -144,13 +144,15 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
   {
     auto pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue();
 
-    auto pCommandList = pCommandQueue->BeginCommandList("Readback Picking Rendertargets");
+    auto pCommandList = pCommandQueue->BeginCommandList();
+
+    pCommandList->BeginDebugGroup("Readback Picking Rendertargets");
 
     pCommandList->CopyTexture(GetPickingDepthRT(), m_hPickingDepthRTStaging);
     pCommandList->CopyTexture(GetPickingIdRT(), m_hPickingIdRTStaging);
 
     // Submit immediately, so that the data is available when reading back the result from the staging texture.
-    pCommandQueue->Submit(pCommandList, false);
+    pCommandList->Submit(false);
     pCommandQueue->WaitForIdle();
 
     xiiMat4 mProj;
@@ -262,7 +264,8 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
         pCommandList->UnmapTextureSubresource(m_hPickingIdRTStaging, sourceSubResource).IgnoreResult();
       }
     }
-    pCommandQueue->Submit(pCommandList);
+    pCommandList->EndDebugGroup();
+    pCommandList->Submit();
     pCommandQueue->WaitForIdle();
   }
 }

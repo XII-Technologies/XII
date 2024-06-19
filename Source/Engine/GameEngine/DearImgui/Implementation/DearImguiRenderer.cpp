@@ -173,7 +173,7 @@ void xiiImguiRenderer::RenderBatch(const xiiRenderViewContext& renderContext, co
     return;
 
   xiiRenderContext*  pRenderContext = renderContext.m_pRenderContext;
-  xiiGALCommandList* pCommandList   = pRenderContext->GetGraphicsCommandList();
+  xiiGALCommandList* pCommandList   = pRenderContext->GetCommandList();
 
   pRenderContext->BindShader(m_hShader);
   const auto&     textures    = xiiImgui::GetSingleton()->m_Textures;

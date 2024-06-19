@@ -49,7 +49,7 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  renderViewContext.m_pRenderContext->GetGraphicsCommandList()->BeginDebugGroup(GetName());
+  renderViewContext.m_pRenderContext->GetCommandList()->BeginDebugGroup(GetName());
 
   SetupResources(renderViewContext, inputs, outputs);
   SetupPermutationVars(renderViewContext);
@@ -62,7 +62,7 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   RenderObjects(renderViewContext);
 
-  renderViewContext.m_pRenderContext->GetGraphicsCommandList()->EndDebugGroup();
+  renderViewContext.m_pRenderContext->GetCommandList()->EndDebugGroup();
 
   renderViewContext.m_pRenderContext->EndRendering();
 

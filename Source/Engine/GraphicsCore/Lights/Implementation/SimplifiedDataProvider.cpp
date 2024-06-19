@@ -46,7 +46,7 @@ xiiSimplifiedDataProvider::~xiiSimplifiedDataProvider() = default;
 
 void* xiiSimplifiedDataProvider::UpdateData(const xiiRenderViewContext& renderViewContext, const xiiExtractedRenderData& extractedData)
 {
-  xiiGALCommandList* pGALCommandList = renderViewContext.m_pRenderContext->GetGraphicsCommandList();
+  xiiGALCommandList* pGALCommandList = renderViewContext.m_pRenderContext->GetCommandList();
 
   XII_PROFILE_AND_MARKER(pGALCommandList, "Update Clustered Data");
 

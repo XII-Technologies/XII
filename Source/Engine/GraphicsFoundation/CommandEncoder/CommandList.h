@@ -71,7 +71,7 @@ public:
   XII_NODISCARD const xiiGALCommandListCreationDescription& GetDescription() const;
 
   /// \brief This returns the command queue for this object.
-  XII_NODISCARD const xiiGALCommandQueue* GetCommandQueue() const;
+  XII_NODISCARD xiiGALCommandQueue* GetCommandQueue() const;
 
 public:
   /// \brief Begins the command list for recording commands. This method should be called before any command is issued.

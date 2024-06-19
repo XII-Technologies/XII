@@ -449,12 +449,14 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
       {
         auto pGALCommandQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue();
 
-        auto pGALCommandList = pGALCommandQueue->BeginCommandList("Thumbnail Readback");
+        auto pGALCommandList = pGALCommandQueue->BeginCommandList();
 
+        pGALCommandList->BeginDebugGroup("Thumbnail Readback");
         pGALCommandList->CopyTexture(m_hThumbnailColorRT, m_hThumbnailColorRTStaging);
 
         // Submit this before attempting to download thumbnail image from staging texture.
-        pGALCommandQueue->Submit(pGALCommandList, false);
+        pGALCommandList->Submit(false);
+        pGALCommandList->EndDebugGroup();
         pGALCommandQueue->WaitForIdle();
 
         const xiiGALTexture*               pThumbnailColor = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hThumbnailColorRT);
@@ -478,7 +480,9 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
 
         xiiGALTextureMipLevelData sourceSubResource;
 
-        pGALCommandList->Begin("Thumbnail Readback Download");
+        pGALCommandList->Begin();
+
+        pGALCommandList->BeginDebugGroup("Thumbnail Readback Download");
 
         xiiGALMappedTextureSubresource mappedSubResource;
         if (pGALCommandList->MapTextureSubresource(m_hThumbnailColorRTStaging, sourceSubResource, xiiGALMapType::Read, xiiGALMapFlags::None, nullptr, mappedSubResource).Succeeded())
@@ -517,7 +521,8 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
           pGALCommandList->UnmapTextureSubresource(m_hThumbnailColorRTStaging, sourceSubResource).IgnoreResult();
         }
 
-        pGALCommandQueue->Submit(pGALCommandList);
+        pGALCommandList->EndDebugGroup();
+        pGALCommandList->Submit();
         pGALCommandQueue->WaitForIdle();
 
         xiiImage  imageSwap;
@@ -549,7 +554,6 @@ xiiStatus xiiEngineProcessDocumentContext::ExportDocument(const xiiExportDocumen
 {
   return xiiStatus(xiiFmt("Export document not implemented for '{0}'", GetDynamicRTTI()->GetTypeName()));
 }
-
 
 void xiiEngineProcessDocumentContext::CreateThumbnailViewContext(const xiiCreateThumbnailMsgToEngine* pMsg)
 {

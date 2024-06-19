@@ -131,7 +131,7 @@ void xiiInstancedMeshComponentManager::OnRenderEvent(const xiiRenderWorldRenderE
     return;
 
   xiiRenderContext* pRenderContext = xiiRenderContext::GetDefaultInstance();
-  auto              pCommandList   = pRenderContext->BeginCompute("Update Instanced Mesh Data");
+  pRenderContext->BeginCompute("Update Instanced Mesh Data");
 
   for (const auto& componentToUpdate : m_RequireUpdate)
   {

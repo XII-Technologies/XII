@@ -4,7 +4,7 @@ XII_ALWAYS_INLINE const xiiGALCommandListCreationDescription& xiiGALCommandList:
   return m_Description;
 }
 
-XII_ALWAYS_INLINE const xiiGALCommandQueue* xiiGALCommandList::GetCommandQueue() const
+XII_ALWAYS_INLINE xiiGALCommandQueue* xiiGALCommandList::GetCommandQueue() const
 {
   return m_pCommandQueue;
 }
