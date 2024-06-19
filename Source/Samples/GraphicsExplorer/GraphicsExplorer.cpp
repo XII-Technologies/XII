@@ -170,8 +170,8 @@ xiiApplication::Execution xiiGraphicsExplorerWindowApp::Run()
 
       pCommandList->BeginRenderPass(beginRenderPass);
       pCommandList->EndRenderPass();
+      pCommandList->Submit();
 
-      pGraphicsQueue->Submit(pCommandList);
       pGraphicsQueue->WaitForIdle();
     }
 

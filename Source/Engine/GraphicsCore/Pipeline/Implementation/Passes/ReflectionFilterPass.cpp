@@ -88,10 +88,13 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
   if (pInputCubemap->GetDescription().m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
   {
     auto pGraphicsQueue = pDevice->GetDefaultCommandQueue();
-    auto pCommandList   = pGraphicsQueue->BeginCommandList("MipMaps");
+    auto pCommandList   = pGraphicsQueue->BeginCommandList();
 
+    pCommandList->BeginDebugGroup("MipMaps");
     pCommandList->GenerateMips(pDevice->GetTexture(m_hInputCubemap)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
-    pGraphicsQueue->Submit(pCommandList);
+    pCommandList->EndDebugGroup();
+    pCommandList->Submit();
+
     pGraphicsQueue->WaitForIdle();
   }
 

@@ -420,8 +420,8 @@ void xiiGALSwapChainD3D11::Present()
       auto pCommandList = pQueue->BeginCommandList();
 
       pCommandList->CopyTexture(m_hBackBufferTexture, m_hActualBackBufferTexture);
+      pCommandList->Submit();
 
-      pQueue->Submit(pCommandList);
       pQueue->WaitForIdle();
     }
   }

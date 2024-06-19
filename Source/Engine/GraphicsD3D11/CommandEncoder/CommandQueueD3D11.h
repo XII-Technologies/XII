@@ -19,18 +19,19 @@ public:
 
   virtual xiiUInt64 WaitForIdle() override final;
 
-  virtual xiiGALCommandList* BeginCommandList(xiiStringView sScopeName) override final;
+  virtual xiiGALCommandList* BeginCommandList() override final;
 
   void AddSwapChainCommandListReference(xiiGALCommandListD3D11* pCommandListD3D11);
   void RemoveSwapChainCommandListReference(xiiGALCommandListD3D11* pCommandListD3D11);
   void ReleaseSwapChainCommanListReferences();
 
 protected:
-  virtual xiiUInt64 SubmitPlatform(xiiGALCommandList* pCommandList, bool bReset) override final;
+  xiiUInt64 Submit(xiiGALCommandList* pCommandList, bool bReset);
 
 protected:
   friend class xiiGALDeviceD3D11;
   friend class xiiMemoryUtils;
+  friend class xiiGALCommandListD3D11;
 
   xiiGALCommandQueueD3D11(xiiGALDeviceD3D11* pDeviceD3D11, const xiiGALCommandQueueCreationDescription& creationDescription);
 

@@ -12,7 +12,7 @@ protected:
   friend class xiiGALDeviceNull;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandListNull(xiiGALDeviceNull* pDeviceNull, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandListNull(xiiGALDeviceNull* pDeviceNull, xiiGALCommandQueueNull* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandListNull();
 
@@ -20,6 +20,8 @@ protected:
   virtual void BeginPlatform() override final;
   virtual void EndPlatform() override final;
   virtual void ResetPlatform() override final;
+
+  virtual xiiUInt64 SubmitPlatform(bool bReset) override final;
 
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) override final;
 

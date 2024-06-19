@@ -1,6 +1,7 @@
 #include <GraphicsFoundation/GraphicsFoundationPCH.h>
 
 #include <GraphicsFoundation/CommandEncoder/CommandList.h>
+#include <GraphicsFoundation/CommandEncoder/CommandQueue.h>
 #include <GraphicsFoundation/Device/Device.h>
 #include <GraphicsFoundation/Resources/Buffer.h>
 #include <GraphicsFoundation/Resources/Framebuffer.h>
@@ -28,14 +29,14 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
     if (!(expression)) { return XII_FAILURE; }          \
   } while (false)
 
-xiiGALCommandList::xiiGALCommandList(xiiGALDevice* pDevice, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALDeviceObject(pDevice), m_Description(creationDescription)
+xiiGALCommandList::xiiGALCommandList(xiiGALDevice* pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription) :
+  xiiGALDeviceObject(pDevice), m_pCommandQueue(pCommandQueue), m_Description(creationDescription)
 {
 }
 
 xiiGALCommandList::~xiiGALCommandList() = default;
 
-void xiiGALCommandList::Begin(xiiStringView sScopeName /*= {}*/)
+void xiiGALCommandList::Begin()
 {
   XII_ASSERT_DEV(m_RecordingState == RecordingState::Ended || m_RecordingState == RecordingState::Reset, "The command list has not been ended.");
 
@@ -65,6 +66,15 @@ void xiiGALCommandList::Reset()
   {
     ResetPlatform();
   }
+}
+
+xiiUInt64 xiiGALCommandList::Submit(bool bReset)
+{
+  if (m_RecordingState == xiiGALCommandList::RecordingState::Recording)
+  {
+    End();
+  }
+  return SubmitPlatform(bReset);
 }
 
 void xiiGALCommandList::SetPipelineState(xiiGALPipelineStateHandle hPipelineState)

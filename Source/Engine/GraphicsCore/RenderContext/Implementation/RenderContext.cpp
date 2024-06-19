@@ -209,7 +209,8 @@ xiiGALCommandList* xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& 
 
   if (m_pCommandList->GetRecordingState() != xiiGALCommandList::RecordingState::Recording)
   {
-    m_pCommandList->Begin(sName);
+    // \todo Use scope name
+    m_pCommandList->Begin();
   }
   else
   {
@@ -251,7 +252,7 @@ void xiiRenderContext::EndRendering()
 
   EndRenderPass();
 
-  m_pCommandQueue->Submit(GetGraphicsCommandList(), false);
+  m_pCommandList->Submit(false);
   m_pCommandQueue->WaitForIdle();
 
   if (m_pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
@@ -273,7 +274,8 @@ xiiGALCommandList* xiiRenderContext::BeginCompute(xiiStringView sName /*= {}*/)
 {
   if (m_pCommandList->GetRecordingState() != xiiGALCommandList::RecordingState::Recording)
   {
-    m_pCommandList->Begin(sName);
+    // \todo use scope name.
+    m_pCommandList->Begin();
   }
   else
   {
@@ -287,7 +289,7 @@ xiiGALCommandList* xiiRenderContext::BeginCompute(xiiStringView sName /*= {}*/)
 
 void xiiRenderContext::EndCompute()
 {
-  m_pCommandQueue->Submit(GetComputeCommandList(), false);
+  m_pCommandList->Submit(false);
   m_pCommandQueue->WaitForIdle();
 
   if (m_pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)

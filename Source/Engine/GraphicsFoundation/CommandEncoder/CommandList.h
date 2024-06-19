@@ -70,6 +70,10 @@ public:
   /// \brief This returns the creation description for this object.
   XII_NODISCARD const xiiGALCommandListCreationDescription& GetDescription() const;
 
+  /// \brief This returns the command queue for this object.
+  XII_NODISCARD const xiiGALCommandQueue* GetCommandQueue() const;
+
+public:
   /// \brief Begins the command list for recording commands. This method should be called before any command is issued.
   ///
   /// \remarks This method is called automatically when using xiiGALCommandQueue::BeginCommandList to request a command list.
@@ -82,6 +86,13 @@ public:
 
   /// \brief Resets the command list. This method is used to clear all commands that have been recorded in the command list.
   void Reset();
+
+  /// \brief Submits a command list for execution. If bReset is true, the command list is reset after submission.
+  ///
+  /// \param bReset - Calls Reset() to reset the command list after submission.
+  ///
+  /// \return The current internal fence value.
+  xiiUInt64 Submit(bool bReset = true);
 
   // State functions.
 
@@ -388,7 +399,7 @@ protected:
   friend class xiiGALDevice;
   friend class xiiMemoryUtils;
 
-  xiiGALCommandList(xiiGALDevice* pDevice, const xiiGALCommandListCreationDescription& creationDescription);
+  xiiGALCommandList(xiiGALDevice* pDevice, xiiGALCommandQueue* pCommandQueue, const xiiGALCommandListCreationDescription& creationDescription);
 
   virtual ~xiiGALCommandList();
 
@@ -400,6 +411,8 @@ protected:
   virtual void BeginPlatform() = 0;
   virtual void EndPlatform()   = 0;
   virtual void ResetPlatform() = 0;
+
+  virtual xiiUInt64 SubmitPlatform(bool bReset) = 0;
 
   virtual void SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState) = 0;
 
@@ -461,6 +474,8 @@ protected:
 
 protected:
   xiiGALCommandListCreationDescription m_Description;
+
+  xiiGALCommandQueue* m_pCommandQueue;
 
   RecordingState m_RecordingState = RecordingState::Reset;
 

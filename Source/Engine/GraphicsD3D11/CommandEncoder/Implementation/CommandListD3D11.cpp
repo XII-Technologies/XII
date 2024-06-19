@@ -34,7 +34,7 @@ XII_END_DYNAMIC_REFLECTED_TYPE;
 // clang-format on
 
 xiiGALCommandListD3D11::xiiGALCommandListD3D11(xiiGALDeviceD3D11* pDeviceD3D11, xiiGALCommandQueueD3D11* pCommandQueueD3D11, const xiiGALCommandListCreationDescription& creationDescription) :
-  xiiGALCommandList(pDeviceD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11)
+  xiiGALCommandList(pDeviceD3D11, pCommandQueueD3D11, creationDescription), m_pCommandQueueD3D11(pCommandQueueD3D11)
 {
   HRESULT hResult = pDeviceD3D11->GetD3D11Device()->CreateDeferredContext1(0U, &m_pCommandList);
 
@@ -87,6 +87,11 @@ void xiiGALCommandListD3D11::ResetPlatform()
   m_RecordingState = RecordingState::Reset;
 
   InvalidateState();
+}
+
+xiiUInt64 xiiGALCommandListD3D11::SubmitPlatform(bool bReset)
+{
+  return static_cast<xiiGALCommandQueueD3D11*>(m_pCommandQueue)->Submit(this, bReset);
 }
 
 void xiiGALCommandListD3D11::SetPipelineStatePlatform(xiiGALPipelineState* pPipelineState)
