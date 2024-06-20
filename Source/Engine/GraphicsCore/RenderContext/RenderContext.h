@@ -421,12 +421,12 @@ private: // Per Renderer States
   xiiGALRenderingSetup    m_CurrentRenderingSetup = {};
 
   bool                      m_bHasScopedCommandListLabel = false;
-  xiiUInt32                 m_uiActiveScopeCount     = 0U;
+  xiiUInt32                 m_uiActiveScopeCount         = 0U;
   xiiGALCommandList*        m_pCommandList  = nullptr;
-  xiiGALCommandList*        m_pScopedCommandList     = nullptr;
-  xiiGALCommandList*        m_pPersistentCommandList = nullptr;
-  bool                      m_bIsRendering           = false;
-  bool                      m_bIsCompute             = false;
+  xiiGALCommandList*        m_pScopedCommandList         = nullptr;
+  xiiGALCommandList*        m_pPersistentCommandList     = nullptr;
+  bool                      m_bIsRendering               = false;
+  bool                      m_bIsCompute                 = false;
 
   // Member Functions
   void UploadConstants();

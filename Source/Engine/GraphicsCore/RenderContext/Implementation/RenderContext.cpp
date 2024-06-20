@@ -348,7 +348,7 @@ void xiiRenderContext::EndCompute()
   m_pCommandList = nullptr;
   m_bIsCompute   = false;
 
-    XII_ASSERT_DEBUG(!m_bHasScopedCommandListLabel, "");
+  XII_ASSERT_DEBUG(!m_bHasScopedCommandListLabel, "");
 
   // TODO: See EndRendering
   // ResetContextState();
