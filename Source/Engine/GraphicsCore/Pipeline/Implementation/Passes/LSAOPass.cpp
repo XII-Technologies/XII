@@ -250,7 +250,7 @@ void xiiLSAOPass::ExecuteInactive(const xiiRenderViewContext& renderViewContext,
   renderingSetup.m_uiRenderTargetClearMask = 0xFFFFFFFF;
   renderingSetup.m_ClearColor              = xiiColor::White;
 
-  auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, renderingSetup, "Clear");
+  auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, "Clear");
 }
 
 xiiResult xiiLSAOPass::Serialize(xiiStreamWriter& inout_stream) const
