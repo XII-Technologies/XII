@@ -49,10 +49,10 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   xiiGALDevice* pDevice = xiiGALDevice::GetDefaultDevice();
 
-  renderViewContext.m_pRenderContext->GetCommandList()->BeginDebugGroup(GetName());
-
+  {
   SetupResources(renderViewContext, inputs, outputs);
   SetupPermutationVars(renderViewContext);
+  SetupLighting(renderViewContext);
 
   UpdateSceneColorTexture(renderViewContext, hSceneColor, pColorInput->m_TextureHandle);
 
@@ -62,10 +62,8 @@ void xiiTransparentForwardRenderPass::Execute(const xiiRenderViewContext& render
 
   RenderObjects(renderViewContext);
 
-  renderViewContext.m_pRenderContext->GetCommandList()->EndDebugGroup();
-
   renderViewContext.m_pRenderContext->EndRendering();
-
+  }
   xiiGPUResourcePool::GetDefaultInstance()->ReturnRenderTarget(hSceneColor);
 }
 

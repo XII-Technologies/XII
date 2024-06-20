@@ -462,11 +462,9 @@ void xiiEngineProcessDocumentContext::UpdateDocumentContext()
         const xiiGALTexture*               pThumbnailColor = xiiGALDevice::GetDefaultDevice()->GetTexture(m_hThumbnailColorRT);
         const xiiEnum<xiiGALTextureFormat> format          = pThumbnailColor->GetDescription().m_Format;
 
-        xiiGALTextureSubResourceData MemDesc;
-        {
-          MemDesc.m_uiStride      = 4 * m_uiThumbnailWidth;
-          MemDesc.m_uiDepthStride = 4 * m_uiThumbnailWidth * m_uiThumbnailHeight;
-        }
+        xiiGALTextureSubResourceData MemDesc{
+          .m_uiStride      = 4U * m_uiThumbnailWidth,
+          .m_uiDepthStride = 4U * m_uiThumbnailWidth * m_uiThumbnailHeight};
 
         xiiImageHeader header;
         header.SetImageFormat(xiiTextureUtils::GalFormatToImageFormat(format, true));

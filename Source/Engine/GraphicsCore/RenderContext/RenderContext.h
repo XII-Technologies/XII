@@ -420,6 +420,7 @@ private: // Per Renderer States
   xiiGALRenderPassHandle  m_hCurrentRenderPass;
   xiiGALRenderingSetup    m_CurrentRenderingSetup = {};
 
+  bool                      m_bHasScopedCommandListLabel = false;
   xiiUInt32                 m_uiActiveScopeCount     = 0U;
   xiiGALCommandList*        m_pCommandList  = nullptr;
   xiiGALCommandList*        m_pScopedCommandList     = nullptr;

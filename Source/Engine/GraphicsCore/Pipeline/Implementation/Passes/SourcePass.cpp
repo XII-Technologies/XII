@@ -168,7 +168,7 @@ void xiiSourcePass::Execute(const xiiRenderViewContext& renderViewContext, const
     renderingSetup.m_RenderTargetSetup.SetRenderTarget(0, pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::RenderTarget));
   }
 
-  auto pCommandList = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, renderingSetup, GetName());
+  auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, GetName());
 }
 
 xiiResult xiiSourcePass::Serialize(xiiStreamWriter& inout_stream) const

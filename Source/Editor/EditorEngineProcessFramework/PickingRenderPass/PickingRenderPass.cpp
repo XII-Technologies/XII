@@ -60,7 +60,6 @@ void xiiPickingRenderPass::InitRenderPipelinePass(const xiiArrayPtr<xiiRenderPip
 void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> inputs, const xiiArrayPtr<xiiRenderPipelinePassConnection* const> outputs)
 {
   // Render result
-  {
     const xiiRectFloat& viewPortRect = renderViewContext.m_pViewData->m_ViewPortRect;
     m_uiWindowWidth                  = (xiiUInt32)viewPortRect.width;
     m_uiWindowHeight                 = (xiiUInt32)viewPortRect.height;
@@ -75,7 +74,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
     renderingSetup.m_bClearDepth             = true;
     renderingSetup.m_bClearStencil           = true;
 
-    auto pCommandList = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, renderingSetup, GetName());
+    auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, renderingSetup, GetName());
 
     xiiViewRenderMode::Enum viewRenderMode = renderViewContext.m_pViewData->m_ViewRenderMode;
     if (viewRenderMode == xiiViewRenderMode::WireframeColor || viewRenderMode == xiiViewRenderMode::WireframeMonochrome)
@@ -137,15 +136,10 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
     RenderDataWithCategory(renderViewContext, xiiDefaultRenderDataCategories::SimpleForeground);
 
     renderViewContext.m_pRenderContext->SetShaderPermutationVariable("RENDER_PASS", "RENDER_PASS_FORWARD");
-  }
 
   // download the picking information from the GPU
   if (m_uiWindowWidth != 0 && m_uiWindowHeight != 0)
   {
-    auto pCommandQueue = xiiGALDevice::GetDefaultDevice()->GetDefaultCommandQueue();
-
-    auto pCommandList = pCommandQueue->BeginCommandList();
-
     pCommandList->BeginDebugGroup("Readback Picking Rendertargets");
 
     pCommandList->CopyTexture(GetPickingDepthRT(), m_hPickingDepthRTStaging);
@@ -153,7 +147,7 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
 
     // Submit immediately, so that the data is available when reading back the result from the staging texture.
     pCommandList->Submit(false);
-    pCommandQueue->WaitForIdle();
+    pCommandList->GetCommandQueue()->WaitForIdle();
 
     xiiMat4 mProj;
     renderViewContext.m_pCamera->GetProjectionMatrix((float)m_uiWindowWidth / m_uiWindowHeight, mProj);
@@ -265,8 +259,8 @@ void xiiPickingRenderPass::Execute(const xiiRenderViewContext& renderViewContext
       }
     }
     pCommandList->EndDebugGroup();
-    pCommandList->Submit();
-    pCommandQueue->WaitForIdle();
+    pCommandList->Submit(false);
+    pCommandList->GetCommandQueue()->WaitForIdle();
   }
 }
 

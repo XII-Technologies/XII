@@ -87,15 +87,8 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
 
   if (pInputCubemap->GetDescription().m_MiscFlags.IsSet(xiiGALMiscTextureFlags::GenerateMips))
   {
-    auto pGraphicsQueue = pDevice->GetDefaultCommandQueue();
-    auto pCommandList   = pGraphicsQueue->BeginCommandList();
-
-    pCommandList->BeginDebugGroup("MipMaps");
-    pCommandList->GenerateMips(pDevice->GetTexture(m_hInputCubemap)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
-    pCommandList->EndDebugGroup();
-    pCommandList->Submit();
-
-    pGraphicsQueue->WaitForIdle();
+    auto pCommandList = xiiRenderContext::BeginRenderingScope(renderViewContext, xiiGALRenderingSetup(), "MipMaps");
+    renderViewContext.m_pRenderContext->GetCommandList()->GenerateMips(pDevice->GetTexture(m_hInputCubemap)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
   }
 
   {
@@ -107,7 +100,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
       xiiUInt32 uiWidth  = pFilteredSpecularOutput->m_Desc.m_Size.width;
       xiiUInt32 uiHeight = pFilteredSpecularOutput->m_Desc.m_Size.height;
 
-      auto pCommandList = xiiRenderContext::BeginPassAndComputeScope(renderViewContext, "ReflectionFilter");
+      auto pCommandList = xiiRenderContext::BeginComputeScope(renderViewContext, "ReflectionFilter");
       renderViewContext.m_pRenderContext->BindTextureCube("InputCubemap", pDevice->GetTexture(m_hInputCubemap)->GetDefaultView(xiiGALTextureViewType::ShaderResource));
       renderViewContext.m_pRenderContext->BindConstantBuffer("xiiReflectionFilteredSpecularConstants", m_hFilteredSpecularConstantBuffer);
       renderViewContext.m_pRenderContext->BindShader(m_hFilteredSpecularShader);
@@ -143,7 +136,7 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
   auto pIrradianceOutput = outputs[m_PinIrradianceData.m_uiOutputIndex];
   if (pIrradianceOutput != nullptr && !pIrradianceOutput->m_TextureHandle.IsInvalidated())
   {
-    auto pCommandList = xiiRenderContext::BeginPassAndComputeScope(renderViewContext, "Irradiance");
+    auto pCommandList = xiiRenderContext::BeginComputeScope(renderViewContext, "Irradiance");
 
     xiiGALTextureViewHandle hIrradianceOutput;
     {
@@ -152,7 +145,6 @@ void xiiReflectionFilterPass::Execute(const xiiRenderViewContext& renderViewCont
       desc.m_hTexture                  = pIrradianceOutput->m_TextureHandle;
       desc.m_uiFirstArrayOrDepthSlice  = 0U;
       desc.m_uiMostDetailedMip         = 0U;
-      desc.m_uiMipLevelCount           = 1U;
       desc.m_uiArrayOrDepthSlicesCount = 1U;
 
       hIrradianceOutput = pDevice->CreateTextureView(desc);

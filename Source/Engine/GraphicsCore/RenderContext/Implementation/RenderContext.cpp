@@ -226,6 +226,8 @@ void xiiRenderContext::BeginRendering(const xiiGALRenderingSetup& renderingSetup
     {
       m_pCommandList->BeginDebugGroup(sName);
 
+      m_bHasScopedCommandListLabel = (m_pCommandList == m_pScopedCommandList) && (m_pScopedCommandList != nullptr);
+
       ++m_uiActiveScopeCount;
     }
   }
@@ -261,7 +263,18 @@ void xiiRenderContext::EndRendering()
 
   if (m_uiActiveScopeCount > 0)
   {
-    m_pCommandList->EndDebugGroup();
+    if (m_bHasScopedCommandListLabel)
+    {
+      m_pScopedCommandList->EndDebugGroup();
+
+      m_bHasScopedCommandListLabel = false;
+    }
+    else
+    {
+      m_pPersistentCommandList->EndDebugGroup();
+    }
+
+    --m_uiActiveScopeCount;
   }
   if (m_pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
   {
@@ -275,6 +288,8 @@ void xiiRenderContext::EndRendering()
   m_hCurrentRenderPass  = xiiGALRenderPassHandle();
   m_bStereoRendering    = false;
   m_bIsRendering        = false;
+
+  XII_ASSERT_DEBUG(!m_bHasScopedCommandListLabel, "");
 
   // TODO: The render context needs to reset its state after every encoding block if we want to record to separate command buffers.
   // Although this is currently not possible since a lot of high level code binds stuff only once per frame on the render context.
@@ -299,6 +314,8 @@ void xiiRenderContext::BeginCompute(xiiStringView sName /*= {}*/)
     {
       m_pCommandList->BeginDebugGroup(sName);
 
+      m_bHasScopedCommandListLabel = (m_pCommandList == m_pScopedCommandList) && (m_pScopedCommandList != nullptr);
+
       ++m_uiActiveScopeCount;
     }
   }
@@ -308,7 +325,18 @@ void xiiRenderContext::EndCompute()
 {
   if (m_uiActiveScopeCount > 0)
   {
-    m_pCommandList->EndDebugGroup();
+    if (m_bHasScopedCommandListLabel)
+    {
+      m_pScopedCommandList->EndDebugGroup();
+
+      m_bHasScopedCommandListLabel = false;
+    }
+    else
+    {
+      m_pPersistentCommandList->EndDebugGroup();
+    }
+
+    --m_uiActiveScopeCount;
   }
   if (m_pCommandList->GetRecordingState() == xiiGALCommandList::RecordingState::Recording)
   {
@@ -319,6 +347,8 @@ void xiiRenderContext::EndCompute()
 
   m_pCommandList = nullptr;
   m_bIsCompute   = false;
+
+    XII_ASSERT_DEBUG(!m_bHasScopedCommandListLabel, "");
 
   // TODO: See EndRendering
   // ResetContextState();

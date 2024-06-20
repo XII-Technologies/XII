@@ -77,7 +77,7 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
     renderingSetup.m_RenderTargetSetup.SetDepthStencilTarget(pDevice->GetTexture(pOutput->m_TextureHandle)->GetDefaultView(xiiGALTextureViewType::DepthStencil));
 
     // Bind render target and viewport
-    auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
+    auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, std::move(renderingSetup), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
     auto& globals          = renderViewContext.m_pRenderContext->WriteGlobalConstants();
     globals.NumMsaaSamples = m_MsaaSampleCount;
@@ -90,7 +90,7 @@ void xiiMsaaResolvePass::Execute(const xiiRenderViewContext& renderViewContext, 
   }
   else
   {
-    auto pCommandEncoder = xiiRenderContext::BeginPassAndRenderingScope(renderViewContext, xiiGALRenderingSetup(), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
+    auto pCommandEncoder = xiiRenderContext::BeginRenderingScope(renderViewContext, xiiGALRenderingSetup(), GetName(), renderViewContext.m_pCamera->IsStereoscopic());
 
     xiiGALTextureMipLevelData subresource;
     subresource.m_uiMipLevel   = 0;
